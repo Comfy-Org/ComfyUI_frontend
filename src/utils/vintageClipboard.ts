@@ -31,7 +31,7 @@ export function serialise(nodes: LGraphNode[], graph: LGraph): string {
   for (const node of cloneable) {
     const cloned = node.clone()
     if (!cloned) {
-      console.warn('node type not found: ' + node.type)
+      console.warn(`node type not found: ${node.type}`)
       continue
     }
 

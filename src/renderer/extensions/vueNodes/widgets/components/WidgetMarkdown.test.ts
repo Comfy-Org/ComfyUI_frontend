@@ -365,7 +365,7 @@ Another line with more content.`
 
   describe('Edge Cases', () => {
     it('handles very long markdown content', async () => {
-      const longMarkdown = '# Heading\n' + 'Lorem ipsum '.repeat(1000)
+      const longMarkdown = `# Heading\n${'Lorem ipsum '.repeat(1000)}`
       const widget = createMockWidget(longMarkdown)
       const wrapper = mountComponent(widget, longMarkdown)
 
@@ -399,12 +399,12 @@ Another line with more content.`
       const textarea = wrapper.find('textarea')
       expect(textarea.element.value).toBe(unicode)
 
-      await textarea.setValue(unicode + ' more unicode')
+      await textarea.setValue(`${unicode} more unicode`)
       await textarea.trigger('input')
 
       const emitted = wrapper.emitted('update:modelValue')
       expect(emitted).toBeDefined()
-      expect(emitted![emitted!.length - 1]).toEqual([unicode + ' more unicode'])
+      expect(emitted![emitted!.length - 1]).toEqual([`${unicode} more unicode`])
     })
 
     it('handles rapid edit mode toggling', async () => {

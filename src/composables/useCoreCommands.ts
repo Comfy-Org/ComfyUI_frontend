@@ -205,7 +205,7 @@ export function useCoreCommands(): ComfyCommand[] {
         })
         if (!newName || newName === workflow.filename) return
 
-        const newPath = workflow.directory + '/' + newName + '.json'
+        const newPath = `${workflow.directory}/${newName}.json`
         await workflowService.renameWorkflow(workflow, newPath)
       }
     },

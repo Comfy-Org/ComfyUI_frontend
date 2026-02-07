@@ -196,7 +196,7 @@ export const useSubgraphStore = defineStore('subgraph', () => {
     }
     async function loadInstalledBlueprints() {
       async function loadGlobalBlueprint([k, v]: [string, GlobalSubgraphData]) {
-        const path = SubgraphBlueprint.basePath + v.name + '.json'
+        const path = `${SubgraphBlueprint.basePath}${v.name}.json`
         const blueprint = new SubgraphBlueprint({
           path,
           modified: Date.now(),
@@ -322,7 +322,7 @@ export const useSubgraphStore = defineStore('subgraph', () => {
       return
 
     //upload file
-    const path = SubgraphBlueprint.basePath + name + '.json'
+    const path = `${SubgraphBlueprint.basePath}${name}.json`
     const workflow = new SubgraphBlueprint({
       path,
       size: -1,

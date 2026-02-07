@@ -345,7 +345,7 @@ const onAddFilter = async (
   filters.value.push({
     filter: filterAndValue,
     badge: filterAndValue.filterDef.invokeSequence.toUpperCase(),
-    badgeClass: filterAndValue.filterDef.invokeSequence + '-badge',
+    badgeClass: `${filterAndValue.filterDef.invokeSequence}-badge`,
     text: filterAndValue.value,
     id: +new Date()
   })

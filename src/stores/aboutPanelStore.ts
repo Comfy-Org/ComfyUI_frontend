@@ -25,7 +25,7 @@ export const useAboutPanelStore = defineStore('aboutPanel', () => {
     {
       label: `ComfyUI ${
         isElectron()
-          ? 'v' + electronAPI().getComfyUIVersion()
+          ? `v${electronAPI().getComfyUIVersion()}`
           : formatCommitHash(coreVersion.value)
       }`,
       url: isCloud ? staticUrls.comfyOrg : staticUrls.github,

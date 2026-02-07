@@ -240,7 +240,7 @@ const buildJsonataContext = (
   // Count connected inputs per autogrow group
   const inputGroups: Record<string, number> = {}
   for (const groupName of rule.depends_on.input_groups) {
-    const prefix = groupName + '.'
+    const prefix = `${groupName}.`
     inputGroups[groupName] =
       node.inputs?.filter(
         (inp: INodeInputSlot) =>

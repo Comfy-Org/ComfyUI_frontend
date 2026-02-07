@@ -302,7 +302,7 @@ const extraRows = computed<DetailRow[]>(() => {
     const totalGenTimeValue =
       execMs !== undefined ? formatElapsedTime(execMs) : ''
     const computeHoursValue =
-      execMs !== undefined ? (execMs / 3600000).toFixed(3) + ' hours' : ''
+      execMs !== undefined ? `${(execMs / 3600000).toFixed(3)} hours` : ''
 
     const rows: DetailRow[] = [
       { label: t('queue.jobDetails.generatedOn'), value: generatedOnValue },
@@ -325,7 +325,7 @@ const extraRows = computed<DetailRow[]>(() => {
     const failedAfterValue =
       execMs !== undefined ? formatElapsedTime(execMs) : ''
     const computeHoursValue =
-      execMs !== undefined ? (execMs / 3600000).toFixed(3) + ' hours' : ''
+      execMs !== undefined ? `${(execMs / 3600000).toFixed(3)} hours` : ''
     const rows: DetailRow[] = [
       { label: t('queue.jobDetails.queuedAt'), value: queuedAtValue.value },
       { label: t('queue.jobDetails.failedAfter'), value: failedAfterValue }

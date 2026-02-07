@@ -17,7 +17,7 @@ const { errorMessage, repoOwner, repoName } = defineProps<{
   repoName: string
 }>()
 
-const queryString = computed(() => errorMessage + ' is:issue')
+const queryString = computed(() => `${errorMessage} is:issue`)
 
 const openGitHubIssues = () => {
   useTelemetry()?.trackUiButtonClicked({

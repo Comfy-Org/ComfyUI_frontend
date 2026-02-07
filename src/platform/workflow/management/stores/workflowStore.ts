@@ -397,7 +397,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
   } = useAsyncState(
     async (dir: string = '') => {
       await syncEntities(
-        dir ? 'workflows/' + dir : 'workflows',
+        dir ? `workflows/${dir}` : 'workflows',
         workflowLookup.value,
         (file) =>
           new ComfyWorkflow({

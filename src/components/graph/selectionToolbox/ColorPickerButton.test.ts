@@ -45,7 +45,7 @@ vi.mock('@/lib/litegraph/src/litegraph', async () => {
 
 // Mock the colorUtil module
 vi.mock('@/utils/colorUtil', () => ({
-  adjustColor: vi.fn((color: string) => color + '_light')
+  adjustColor: vi.fn((color: string) => `${color}_light`)
 }))
 
 // Mock the litegraphUtil module

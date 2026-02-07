@@ -88,7 +88,7 @@ function dynamicComboWidget(
     widgetName
   )
   function isInGroup(e: { name: string }): boolean {
-    return e.name.startsWith(inputName + '.')
+    return e.name.startsWith(`${inputName}.`)
   }
   const updateWidgets = (value?: string) => {
     if (!node.widgets) throw new Error('Not Reachable')
@@ -138,7 +138,7 @@ function dynamicComboWidget(
         node.inputs.length !== startingInputLength
       )
         //input is inputOnly, but lacks an insertion point
-        throw new Error('Failed to find input socket for ' + widget.name)
+        throw new Error(`Failed to find input socket for ${widget.name}`)
       return
     }
     const addedInputs = spliceInputs(node, startingInputLength).map(
@@ -442,7 +442,7 @@ function autogrowInputConnected(index: number, node: AutogrowNode) {
   const input = node.inputs[index]
   const groupName = input.name.slice(0, input.name.lastIndexOf('.'))
   const lastInput = node.inputs.findLast((inp) =>
-    inp.name.startsWith(groupName + '.')
+    inp.name.startsWith(`${groupName}.`)
   )
   const ordinal = resolveAutogrowOrdinal(input.name, groupName, node)
   if (
@@ -465,7 +465,7 @@ function autogrowInputDisconnected(index: number, node: AutogrowNode) {
   //resolve all inputs in group
   const groupInputs = node.inputs.filter(
     (inp) =>
-      inp.name.startsWith(groupName + '.') &&
+      inp.name.startsWith(`${groupName}.`) &&
       inp.name.lastIndexOf('.') === groupName.length
   )
   const stride = inputSpecs.length

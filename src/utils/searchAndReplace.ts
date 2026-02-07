@@ -48,7 +48,7 @@ export function applyTextReplacements(
       return match
     }
 
-    return ((widget.value ?? '') + '').replaceAll(
+    return `${widget.value ?? ''}`.replaceAll(
       // eslint-disable-next-line no-control-regex
       /[/?<>\\:*|"\x00-\x1F\x7F]/g,
       '_'

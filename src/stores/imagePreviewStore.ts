@@ -302,10 +302,10 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
     const { graph } = subgraphNode
     if (!graph) return
 
-    const graphId = graph.isRootGraph ? '' : graph.id + ':'
-    revokePreviewsByLocatorId(graphId + subgraphNode.id)
+    const graphId = graph.isRootGraph ? '' : `${graph.id}:`
+    revokePreviewsByLocatorId(`${graphId}${subgraphNode.id}`)
     for (const node of subgraphNode.subgraph.nodes) {
-      revokePreviewsByLocatorId(subgraphNode.subgraph.id + node.id)
+      revokePreviewsByLocatorId(`${subgraphNode.subgraph.id}${node.id}`)
     }
   }
 

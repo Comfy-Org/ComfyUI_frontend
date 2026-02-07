@@ -152,7 +152,7 @@ const renderedBookmarkedRoot = computed<TreeExplorerNode<ComfyNodeDefImpl>>(
           const customization =
             nodeBookmarkStore.bookmarksCustomization[node.data?.nodePath]
           return customization?.icon
-            ? 'pi ' + customization.icon
+            ? `pi ${customization.icon}`
             : 'pi pi-bookmark-fill'
         },
         children: sortedChildren,
@@ -181,7 +181,7 @@ const renderedBookmarkedRoot = computed<TreeExplorerNode<ComfyNodeDefImpl>>(
           }
           const folderNodeDef = node.data as ComfyNodeDefImpl
           // @ts-expect-error fixme ts strict error
-          const nodePath = folderNodeDef.category + '/' + nodeDefToAdd.name
+          const nodePath = `${folderNodeDef.category}/${nodeDefToAdd.name}`
           await nodeBookmarkStore.addBookmark(nodePath)
         },
         handleClick(e: MouseEvent) {

@@ -77,11 +77,11 @@ export class ResultItemImpl {
    * `/viewvideo` always returns a webm file.
    */
   get vhsAdvancedPreviewUrl(): string {
-    return api.apiURL('/viewvideo?' + this.urlParams)
+    return api.apiURL(`/viewvideo?${this.urlParams}`)
   }
 
   get url(): string {
-    return api.apiURL('/view?' + this.urlParams)
+    return api.apiURL(`/view?${this.urlParams}`)
   }
 
   get urlWithTimestamp(): string {

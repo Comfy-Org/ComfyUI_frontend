@@ -18,9 +18,9 @@ export function getResourceURL(
   type: ResultItemType = 'input'
 ): string {
   const params = [
-    'filename=' + encodeURIComponent(filename),
-    'type=' + type,
-    'subfolder=' + subfolder,
+    `filename=${encodeURIComponent(filename)}`,
+    `type=${type}`,
+    `subfolder=${subfolder}`,
     app.getRandParam().slice(1)
   ].join('&')
 
