@@ -167,6 +167,7 @@ import {
   nextTick,
   onErrorCaptured,
   onMounted,
+  onUnmounted,
   ref,
   watch
 } from 'vue'
@@ -189,6 +190,7 @@ import { useTelemetry } from '@/platform/telemetry'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import { LayoutSource } from '@/renderer/core/layout/types'
 import SlotConnectionDot from '@/renderer/extensions/vueNodes/components/SlotConnectionDot.vue'
 import { useNodeEventHandlers } from '@/renderer/extensions/vueNodes/composables/useNodeEventHandlers'
 import { useNodePointerInteractions } from '@/renderer/extensions/vueNodes/composables/useNodePointerInteractions'
@@ -327,15 +329,8 @@ const handleContextMenu = (event: MouseEvent) => {
   showNodeOptions(event)
 }
 
-onMounted(() => {
-  initSizeStyles()
-})
-
 /**
- * Set initial DOM size from layout store, but respect intrinsic content minimum.
- * Important: nodes can mount in a collapsed state, and the collapse watcher won't
- * run initially. Match the collapsed runtime behavior by writing to the correct
- * CSS variables on mount.
+ * Set initial DOM size from layout store.
  */
 function initSizeStyles() {
   const el = nodeContainerRef.value
@@ -343,13 +338,50 @@ function initSizeStyles() {
   if (!el) return
 
   const suffix = isCollapsed.value ? '-x' : ''
+  const fullHeight = height + LiteGraph.NODE_TITLE_HEIGHT
 
   el.style.setProperty(`--node-width${suffix}`, `${width}px`)
-  el.style.setProperty(
-    `--node-height${suffix}`,
-    `${height + LiteGraph.NODE_TITLE_HEIGHT}px`
-  )
+  el.style.setProperty(`--node-height${suffix}`, `${fullHeight}px`)
 }
+
+/**
+ * Handle external size changes (e.g., from extensions calling node.setSize()).
+ * Updates CSS variables when layoutStore changes from Canvas/External source.
+ */
+function handleLayoutChange(change: {
+  source: LayoutSource
+  nodeIds: string[]
+}) {
+  // Only handle Canvas or External source (extensions calling setSize)
+  if (
+    change.source !== LayoutSource.Canvas &&
+    change.source !== LayoutSource.External
+  )
+    return
+
+  if (!change.nodeIds.includes(nodeData.id)) return
+  if (layoutStore.isResizingVueNodes.value) return
+  if (isCollapsed.value) return
+
+  const el = nodeContainerRef.value
+  if (!el) return
+
+  const newSize = size.value
+  const fullHeight = newSize.height + LiteGraph.NODE_TITLE_HEIGHT
+  el.style.setProperty('--node-width', `${newSize.width}px`)
+  el.style.setProperty('--node-height', `${fullHeight}px`)
+}
+
+let unsubscribeLayoutChange: (() => void) | null = null
+
+onMounted(() => {
+  initSizeStyles()
+  unsubscribeLayoutChange = layoutStore.onChange(handleLayoutChange)
+})
+
+onUnmounted(() => {
+  unsubscribeLayoutChange?.()
+})
 
 const baseResizeHandleClasses =
   'absolute h-5 w-5 opacity-0 pointer-events-auto focus-visible:outline focus-visible:outline-2 focus-visible:outline-white/40'
