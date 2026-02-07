@@ -58,6 +58,7 @@
     ],
     "no-eval": "off",
     "no-new-func": "error",
+    "no-param-reassign": "warn",
     "no-redeclare": "error",
     "no-return-assign": ["error", "always"],
     "no-throw-literal": "error",
