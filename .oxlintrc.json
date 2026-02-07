@@ -121,6 +121,7 @@
       }
     ],
     "vitest/consistent-vitest-vi": "error",
+    "vitest/warn-todo": "warn",
     "vitest/hoisted-apis-on-top": "error",
     "vitest/no-conditional-tests": "error",
     "vitest/prefer-describe-function-title": "warn",
