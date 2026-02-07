@@ -47,6 +47,10 @@ vi.mock('@/platform/cloud/subscription/composables/useSubscription', () => ({
   useSubscription: () => subscriptionMocks
 }))
 
+vi.mock('@/composables/billing/useBillingContext', () => ({
+  useBillingContext: () => subscriptionMocks
+}))
+
 // Avoid real network / isCloud behavior
 const mockPerformSubscriptionCheckout = vi.fn()
 vi.mock('@/platform/cloud/subscription/utils/subscriptionCheckoutUtil', () => ({

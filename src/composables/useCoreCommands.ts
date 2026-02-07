@@ -18,9 +18,9 @@ import {
   LiteGraph
 } from '@/lib/litegraph/src/litegraph'
 import type { Point } from '@/lib/litegraph/src/litegraph'
+import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useAssetBrowserDialog } from '@/platform/assets/composables/useAssetBrowserDialog'
 import { createModelNodeFromAsset } from '@/platform/assets/utils/createModelNodeFromAsset'
-import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { buildSupportUrl } from '@/platform/support/config'
 import { useTelemetry } from '@/platform/telemetry'
@@ -70,7 +70,7 @@ import { useDialogStore } from '@/stores/dialogStore'
 
 const moveSelectedNodesVersionAdded = '1.22.2'
 export function useCoreCommands(): ComfyCommand[] {
-  const { isActiveSubscription, showSubscriptionDialog } = useSubscription()
+  const { isActiveSubscription, showSubscriptionDialog } = useBillingContext()
   const workflowService = useWorkflowService()
   const workflowStore = useWorkflowStore()
   const dialogService = useDialogService()

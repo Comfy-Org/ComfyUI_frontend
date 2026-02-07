@@ -158,6 +158,7 @@ import Button from '@/components/ui/button/Button.vue'
 import FormattedNumberStepper from '@/components/ui/stepper/FormattedNumberStepper.vue'
 import { useFirebaseAuthActions } from '@/composables/auth/useFirebaseAuthActions'
 import { useExternalLink } from '@/composables/useExternalLink'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
 import { useTelemetry } from '@/platform/telemetry'
 import { clearTopupTracking } from '@/platform/telemetry/topupTracker'
@@ -176,8 +177,9 @@ const dialogService = useDialogService()
 const telemetry = useTelemetry()
 const toast = useToast()
 const { buildDocsUrl, docsPaths } = useExternalLink()
-const { isSubscriptionEnabled } = useSubscription()
+const { flags } = useFeatureFlags()
 
+const { isSubscriptionEnabled } = useSubscription()
 // Constants
 const PRESET_AMOUNTS = [10, 25, 50, 100]
 const MIN_AMOUNT = 5
@@ -256,9 +258,15 @@ async function handleBuy() {
 
     // Close top-up dialog (keep tracking) and open credits panel to show updated balance
     handleClose(false)
-    dialogService.showSettingsDialog(
-      isSubscriptionEnabled() ? 'subscription' : 'credits'
-    )
+
+    // In workspace mode (personal workspace), show workspace settings panel
+    // Otherwise, show legacy subscription/credits panel
+    const settingsPanel = flags.teamWorkspacesEnabled
+      ? 'workspace'
+      : isSubscriptionEnabled()
+        ? 'subscription'
+        : 'credits'
+    dialogService.showSettingsDialog(settingsPanel)
   } catch (error) {
     console.error('Purchase failed:', error)
 
