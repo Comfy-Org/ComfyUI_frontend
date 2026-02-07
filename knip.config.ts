@@ -31,6 +31,7 @@ const config: KnipConfig = {
   ignoreBinaries: ['python3', 'gh'],
   ignoreDependencies: [
     // Weird importmap things
+    '@iconify-json/lucide',
     '@iconify/json',
     '@primeuix/forms',
     '@primeuix/styled',
