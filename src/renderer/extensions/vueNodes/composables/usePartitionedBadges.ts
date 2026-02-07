@@ -92,10 +92,6 @@ export function usePartitionedBadges(nodeData: VueNodeData) {
     const extension: NodeBadgeProps[] = []
     const pricing: { required: string; rest?: string }[] = []
     if (
-      settingStore.get('Comfy.NodeBadge.NodeIdBadgeMode') !== NodeBadgeMode.None
-    )
-      core.push({ text: String(nodeData.id) })
-    if (
       settingStore.get('Comfy.NodeBadge.NodeLifeCycleBadgeMode') !==
       NodeBadgeMode.None
     ) {
@@ -103,6 +99,10 @@ export function usePartitionedBadges(nodeData: VueNodeData) {
       const trimmed = trim(lifecycleText, ['[', ']'])
       if (trimmed) core.push({ text: trimmed })
     }
+    if (
+      settingStore.get('Comfy.NodeBadge.NodeIdBadgeMode') !== NodeBadgeMode.None
+    )
+      core.push({ text: `#${nodeData.id}` })
     const sourceText = nodeDef.nodeSource?.badgeText
     if (
       !nodeDef.isCoreNode &&
