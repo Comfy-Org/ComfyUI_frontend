@@ -144,6 +144,7 @@
     "unicorn/no-abusive-eslint-disable": "error",
     "unicorn/no-instanceof-array": "error",
     "unicorn/no-length-as-slice-end": "error",
+    "unicorn/no-lonely-if": "error",
     "unicorn/no-negation-in-equality-check": "error",
     "unicorn/no-typeof-undefined": "error",
     "unicorn/prefer-math-min-max": "error",

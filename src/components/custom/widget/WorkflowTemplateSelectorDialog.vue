@@ -593,12 +593,10 @@ const coordinateNavAndSort = (source: 'nav' | 'sort') => {
       // When navigating away from 'Popular' category while sort is 'Popular', reset sort to default.
       sortBy.value = 'default'
     }
-  } else if (source === 'sort') {
+  } else if (source === 'sort' && isPopularNav && !isPopularSort) {
     // When sort is changed away from 'Popular' while in the 'Popular' category,
     // reset the category to 'All Templates' to avoid a confusing state.
-    if (isPopularNav && !isPopularSort) {
-      selectedNavItem.value = 'all'
-    }
+    selectedNavItem.value = 'all'
   }
 }
 

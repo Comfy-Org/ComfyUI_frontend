@@ -2805,14 +2805,13 @@ export class LGraphNode
 
     if (!output) return null
 
-    if (output.links?.length) {
-      if (
-        output.type === LiteGraph.EVENT &&
-        !LiteGraph.allow_multi_output_for_events
-      ) {
-        graph.beforeChange()
-        this.disconnectOutput(slot)
-      }
+    if (
+      output.links?.length &&
+      output.type === LiteGraph.EVENT &&
+      !LiteGraph.allow_multi_output_for_events
+    ) {
+      graph.beforeChange()
+      this.disconnectOutput(slot)
     }
 
     const link = this.connectSlots(output, target_node, input, afterRerouteId)

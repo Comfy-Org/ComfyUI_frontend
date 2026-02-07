@@ -1481,19 +1481,16 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
     let dialogCloseTimer: ReturnType<typeof setTimeout> | undefined
     dialog.addEventListener('mouseleave', function () {
-      if (LiteGraph.dialog_close_on_mouse_leave) {
-        if (!dialog.is_modified && LiteGraph.dialog_close_on_mouse_leave) {
-          dialogCloseTimer = setTimeout(
-            dialog.close,
-            LiteGraph.dialog_close_on_mouse_leave_delay
-          )
-        }
+      if (LiteGraph.dialog_close_on_mouse_leave && !dialog.is_modified) {
+        dialogCloseTimer = setTimeout(
+          dialog.close,
+          LiteGraph.dialog_close_on_mouse_leave_delay
+        )
       }
     })
     dialog.addEventListener('mouseenter', function () {
-      if (LiteGraph.dialog_close_on_mouse_leave) {
-        if (dialogCloseTimer) clearTimeout(dialogCloseTimer)
-      }
+      if (LiteGraph.dialog_close_on_mouse_leave && dialogCloseTimer)
+        clearTimeout(dialogCloseTimer)
     })
 
     function inner() {
@@ -2748,14 +2745,15 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
             linkConnector.dragNewFromOutput(graph, node, output)
             this._linkConnectorDrop()
 
-            if (LiteGraph.shift_click_do_break_link_from) {
-              if (e.shiftKey) {
-                node.disconnectOutput(i)
-              }
-            } else if (LiteGraph.ctrl_alt_click_do_break_link) {
-              if (ctrlOrMeta && e.altKey && !e.shiftKey) {
-                node.disconnectOutput(i)
-              }
+            if (LiteGraph.shift_click_do_break_link_from && e.shiftKey) {
+              node.disconnectOutput(i)
+            } else if (
+              LiteGraph.ctrl_alt_click_do_break_link &&
+              ctrlOrMeta &&
+              e.altKey &&
+              !e.shiftKey
+            ) {
+              node.disconnectOutput(i)
             }
 
             // TODO: Move callbacks to the start of this closure (onInputClick is already correct).
@@ -3873,20 +3871,18 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       } else if (e.keyCode === 86 && (e.metaKey || e.ctrlKey)) {
         // paste
         this.pasteFromClipboard({ connectInputs: e.shiftKey })
-      } else if (e.key === 'Delete' || e.key === 'Backspace') {
-        // delete or backspace
-        if (
-          (e.target as Element)?.localName !== 'input' &&
-          (e.target as Element)?.localName !== 'textarea'
-        ) {
-          if (this.selectedItems.size === 0) {
-            this._noItemsSelected()
-            return
-          }
-
-          this.deleteSelected()
-          block_default = true
+      } else if (
+        (e.key === 'Delete' || e.key === 'Backspace') &&
+        (e.target as Element)?.localName !== 'input' &&
+        (e.target as Element)?.localName !== 'textarea'
+      ) {
+        if (this.selectedItems.size === 0) {
+          this._noItemsSelected()
+          return
         }
+
+        this.deleteSelected()
+        block_default = true
       }
 
       // TODO
@@ -6904,13 +6900,11 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     let prevent_timeout = 0
     LiteGraph.pointerListenerAdd(dialog, 'leave', function () {
       if (prevent_timeout) return
-      if (LiteGraph.dialog_close_on_mouse_leave) {
-        if (!dialog.is_modified && LiteGraph.dialog_close_on_mouse_leave) {
-          dialogCloseTimer = setTimeout(
-            dialog.close,
-            LiteGraph.dialog_close_on_mouse_leave_delay
-          )
-        }
+      if (LiteGraph.dialog_close_on_mouse_leave && !dialog.is_modified) {
+        dialogCloseTimer = setTimeout(
+          dialog.close,
+          LiteGraph.dialog_close_on_mouse_leave_delay
+        )
       }
     })
     LiteGraph.pointerListenerAdd(dialog, 'enter', function () {
@@ -7792,9 +7786,11 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       }
     })
     dialog.addEventListener('mouseenter', function () {
-      if (options.closeOnLeave || LiteGraph.dialog_close_on_mouse_leave) {
-        if (dialogCloseTimer) clearTimeout(dialogCloseTimer)
-      }
+      if (
+        (options.closeOnLeave || LiteGraph.dialog_close_on_mouse_leave) &&
+        dialogCloseTimer
+      )
+        clearTimeout(dialogCloseTimer)
     })
     const selInDia = dialog.querySelectorAll('select')
     // if filtering, check focus changed to comboboxes and prevent closing

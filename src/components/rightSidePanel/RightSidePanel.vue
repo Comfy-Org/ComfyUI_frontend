@@ -107,13 +107,15 @@ const tabs = computed<RightSidePanelTabList>(() => {
     })
   }
 
-  if (hasSelection.value) {
-    if (selectedSingleNode.value && !isSingleSubgraphNode.value) {
-      list.push({
-        label: () => t('rightSidePanel.info'),
-        value: 'info'
-      })
-    }
+  if (
+    hasSelection.value &&
+    selectedSingleNode.value &&
+    !isSingleSubgraphNode.value
+  ) {
+    list.push({
+      label: () => t('rightSidePanel.info'),
+      value: 'info'
+    })
   }
 
   list.push({
