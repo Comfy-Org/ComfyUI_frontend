@@ -239,12 +239,11 @@ export function useCanvasTools() {
           currentAlpha !== 255 &&
           Math.abs(currentAlpha - targetAlpha) <= tolerance
         )
-      } else {
-        return (
-          currentAlpha === 255 ||
-          Math.abs(currentAlpha - targetAlpha) <= tolerance
-        )
       }
+      return (
+        currentAlpha === 255 ||
+        Math.abs(currentAlpha - targetAlpha) <= tolerance
+      )
     }
 
     if (shouldProcessPixel(targetAlpha, targetAlpha, tolerance, isFillMode)) {

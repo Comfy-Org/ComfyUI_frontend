@@ -28,6 +28,12 @@
   ],
   "rules": {
     "no-async-promise-executor": "off",
+    "no-else-return": [
+      "error",
+      {
+        "allowElseIf": false
+      }
+    ],
     "no-console": [
       "error",
       {

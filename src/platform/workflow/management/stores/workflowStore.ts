@@ -580,7 +580,8 @@ export const useWorkflowStore = defineStore('workflow', () => {
     // Short-circuit: ID belongs to the parent workflow / no active subgraph
     if (!id.includes(':')) {
       return !subgraph ? id : undefined
-    } else if (!subgraph) {
+    }
+    if (!subgraph) {
       return
     }
 

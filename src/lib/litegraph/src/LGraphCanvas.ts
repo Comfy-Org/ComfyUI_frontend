@@ -2511,7 +2511,8 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
             this._linkConnectorDrop()
 
             return
-          } else if (e.altKey && !e.shiftKey) {
+          }
+          if (e.altKey && !e.shiftKey) {
             const newReroute = graph.createReroute([x, y], linkSegment)
             pointer.onDragStart = (pointer) =>
               this._startDraggingItems(newReroute, pointer)
@@ -8575,7 +8576,8 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
         }
         node.graph.afterChange()
         return
-      } else if (v.content === 'Disconnect Links') {
+      }
+      if (v.content === 'Disconnect Links') {
         if (!node?.graph) throw new NullGraphError()
 
         const info = v.slot
@@ -8592,7 +8594,8 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
         }
         node.graph.afterChange()
         return
-      } else if (v.content === 'Rename Slot') {
+      }
+      if (v.content === 'Rename Slot') {
         if (!node)
           throw new TypeError(
             '`node` was null when processing the context menu.'

@@ -42,9 +42,8 @@ function loadBrushFromCache(key: string): Brush | null {
     const brushString = getStorageValue(key)
     if (brushString) {
       return JSON.parse(brushString) as Brush
-    } else {
-      return null
     }
+    return null
   } catch (error) {
     console.error('Failed to load brush from cache:', error)
     return null

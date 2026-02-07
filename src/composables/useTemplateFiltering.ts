@@ -178,7 +178,8 @@ export function useTemplateFiltering(
       return selectedRunsOn.value.some((runsOn) => {
         if (runsOn === 'External or Remote API') {
           return isExternalAPI
-        } else if (runsOn === 'ComfyUI') {
+        }
+        if (runsOn === 'ComfyUI') {
           return isComfyUI
         }
         return false

@@ -3319,7 +3319,8 @@ export class LGraphNode
       out[0] = nodeX + inputPos[0]
       out[1] = nodeY + inputPos[1]
       return out
-    } else if (!is_input && outputPos) {
+    }
+    if (!is_input && outputPos) {
       out[0] = nodeX + outputPos[0]
       out[1] = nodeY + outputPos[1]
       return out

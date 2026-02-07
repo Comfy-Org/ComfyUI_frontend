@@ -573,7 +573,8 @@ export const CORE_SETTINGS: SettingParams[] = [
       // Floating is now supported by dragging the docked actionbar off.
       if (value === 'Floating') {
         return 'Top'
-      } else if (value === 'Bottom') {
+      }
+      if (value === 'Bottom') {
         return 'Top'
       }
       return value

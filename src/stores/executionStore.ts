@@ -136,7 +136,8 @@ export const useExecutionStore = defineStore('execution', () => {
     const mergedState = { ...currentState }
     if (mergedState.state === 'error') {
       return mergedState
-    } else if (newState.state === 'running') {
+    }
+    if (newState.state === 'running') {
       const newPerc = newState.max > 0 ? newState.value / newState.max : 0.0
       const oldPerc =
         mergedState.max > 0 ? mergedState.value / mergedState.max : 0.0

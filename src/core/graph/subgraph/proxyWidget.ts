@@ -204,7 +204,7 @@ function newProxyFromOverlay(subgraphNode: SubgraphNode, overlay: Overlay) {
       let redirectedTarget: object = backingWidget
       let redirectedReceiver = receiver
       if (property === '_overlay') return overlay
-      else if (property === 'value') redirectedReceiver = backingWidget
+      if (property === 'value') redirectedReceiver = backingWidget
       if (Object.hasOwn(overlay, property)) {
         redirectedTarget = overlay
         redirectedReceiver = overlay

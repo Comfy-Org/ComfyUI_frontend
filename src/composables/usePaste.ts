@@ -114,7 +114,8 @@ export const usePaste = () => {
       if (item.type.startsWith('image/')) {
         pasteImageNode(canvas as LGraphCanvas, items, imageNode)
         return
-      } else if (item.type.startsWith('video/')) {
+      }
+      if (item.type.startsWith('video/')) {
         if (!videoNode) {
           // No video node selected: add a new one
           // TODO: when video node exists

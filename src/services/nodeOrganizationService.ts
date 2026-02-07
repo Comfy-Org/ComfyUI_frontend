@@ -46,7 +46,8 @@ class NodeOrganizationService {
         if (parts[0] === 'nodes') {
           // Core nodes - just use 'core'
           return ['core', nodeDef.name]
-        } else if (parts[0] === 'custom_nodes') {
+        }
+        if (parts[0] === 'custom_nodes') {
           // Custom nodes - use the package name as the folder
           if (parts.length > 1) {
             // Return the custom node package name
@@ -67,13 +68,14 @@ class NodeOrganizationService {
       getNodePath: (nodeDef: ComfyNodeDefImpl) => {
         if (nodeDef.api_node) {
           return ['API nodes', nodeDef.name]
-        } else if (nodeDef.nodeSource.type === NodeSourceType.Core) {
-          return ['Core', nodeDef.name]
-        } else if (nodeDef.nodeSource.type === NodeSourceType.CustomNodes) {
-          return ['Custom nodes', nodeDef.name]
-        } else {
-          return ['Unknown', nodeDef.name]
         }
+        if (nodeDef.nodeSource.type === NodeSourceType.Core) {
+          return ['Core', nodeDef.name]
+        }
+        if (nodeDef.nodeSource.type === NodeSourceType.CustomNodes) {
+          return ['Custom nodes', nodeDef.name]
+        }
+        return ['Unknown', nodeDef.name]
       }
     }
   ]

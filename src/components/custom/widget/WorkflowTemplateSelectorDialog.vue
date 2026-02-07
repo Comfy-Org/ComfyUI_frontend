@@ -677,37 +677,37 @@ const runsOnOptions = computed(() =>
 const modelFilterLabel = computed(() => {
   if (selectedModelObjects.value.length === 0) {
     return t('templateWorkflows.modelFilter', 'Model Filter')
-  } else if (selectedModelObjects.value.length === 1) {
-    return selectedModelObjects.value[0].name
-  } else {
-    return t('templateWorkflows.modelsSelected', {
-      count: selectedModelObjects.value.length
-    })
   }
+  if (selectedModelObjects.value.length === 1) {
+    return selectedModelObjects.value[0].name
+  }
+  return t('templateWorkflows.modelsSelected', {
+    count: selectedModelObjects.value.length
+  })
 })
 
 const useCaseFilterLabel = computed(() => {
   if (selectedUseCaseObjects.value.length === 0) {
     return t('templateWorkflows.useCaseFilter', 'Use Case')
-  } else if (selectedUseCaseObjects.value.length === 1) {
-    return selectedUseCaseObjects.value[0].name
-  } else {
-    return t('templateWorkflows.useCasesSelected', {
-      count: selectedUseCaseObjects.value.length
-    })
   }
+  if (selectedUseCaseObjects.value.length === 1) {
+    return selectedUseCaseObjects.value[0].name
+  }
+  return t('templateWorkflows.useCasesSelected', {
+    count: selectedUseCaseObjects.value.length
+  })
 })
 
 const runsOnFilterLabel = computed(() => {
   if (selectedRunsOnObjects.value.length === 0) {
     return t('templateWorkflows.runsOnFilter', 'Runs On')
-  } else if (selectedRunsOnObjects.value.length === 1) {
-    return selectedRunsOnObjects.value[0].name
-  } else {
-    return t('templateWorkflows.runsOnSelected', {
-      count: selectedRunsOnObjects.value.length
-    })
   }
+  if (selectedRunsOnObjects.value.length === 1) {
+    return selectedRunsOnObjects.value[0].name
+  }
+  return t('templateWorkflows.runsOnSelected', {
+    count: selectedRunsOnObjects.value.length
+  })
 })
 
 // Sort options

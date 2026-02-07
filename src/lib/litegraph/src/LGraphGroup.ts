@@ -289,11 +289,11 @@ export class LGraphGroup implements Positionable, IPinnable, IColorable {
     groups.sort((a, b) => {
       if (a === this) {
         return children.has(b) ? -1 : 0
-      } else if (b === this) {
-        return children.has(a) ? 1 : 0
-      } else {
-        return 0
       }
+      if (b === this) {
+        return children.has(a) ? 1 : 0
+      }
+      return 0
     })
   }
 
