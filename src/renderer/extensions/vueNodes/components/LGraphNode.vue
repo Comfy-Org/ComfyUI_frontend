@@ -17,7 +17,7 @@
         // hover (only when node should handle events)
         shouldHandleNodePointerEvents &&
           'hover:ring-7 ring-node-component-ring',
-        'outline-transparent outline-2 focus-visible:outline-node-component-outline',
+        'outline-transparent outline-3 focus-visible:outline-node-component-outline',
         borderClass,
         outlineClass,
         cursorClass,
@@ -29,7 +29,7 @@
           'ring-4 ring-primary-500 bg-primary-500/10': isDraggingOver
         },
 
-        shouldHandleNodePointerEvents
+        shouldHandleNodePointerEvents && !nodeData.flags?.ghost
           ? 'pointer-events-auto'
           : 'pointer-events-none',
         !isCollapsed && ' pb-1'
@@ -269,6 +269,8 @@ const muted = computed((): boolean => nodeData.mode === LGraphEventMode.NEVER)
 const nodeOpacity = computed(() => {
   const globalOpacity = settingStore.get('Comfy.Node.Opacity') ?? 1
 
+  if (nodeData.flags?.ghost) return globalOpacity * 0.3
+
   // For muted/bypassed nodes, apply the 0.5 multiplier on top of global opacity
   if (bypassed.value || muted.value) {
     return globalOpacity * 0.5
@@ -343,7 +345,10 @@ function initSizeStyles() {
   const suffix = isCollapsed.value ? '-x' : ''
 
   el.style.setProperty(`--node-width${suffix}`, `${width}px`)
-  el.style.setProperty(`--node-height${suffix}`, `${height}px`)
+  el.style.setProperty(
+    `--node-height${suffix}`,
+    `${height + LiteGraph.NODE_TITLE_HEIGHT}px`
+  )
 }
 
 const baseResizeHandleClasses =

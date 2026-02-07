@@ -263,6 +263,12 @@
   "Comfy_ShowSettingsDialog": {
     "label": "Show Settings Dialog"
   },
+  "Comfy_Subgraph_SetDescription": {
+    "label": "Set Subgraph Description"
+  },
+  "Comfy_Subgraph_SetSearchAliases": {
+    "label": "Set Subgraph Search Aliases"
+  },
   "Comfy_ToggleAssetAPI": {
     "label": "Experimental: Enable AssetAPI"
   },

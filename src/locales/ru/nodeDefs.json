@@ -2018,6 +2018,20 @@
       }
     }
   },
+  "CreateList": {
+    "display_name": "Создать список",
+    "inputs": {
+      "inputs": {
+        "name": "входные данные"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "список",
+        "tooltip": null
+      }
+    }
+  },
   "CreateVideo": {
     "description": "Создайте видео из изображений.",
     "display_name": "Создать видео",
@@ -6418,7 +6432,9 @@
   "Load3D": {
     "display_name": "Загрузить 3D",
     "inputs": {
-      "clear": "Очистить",
+      "clear": {
+        "": "Очистить"
+      },
       "height": {
         "name": "высота"
       },
@@ -6428,8 +6444,12 @@
       "model_file": {
         "name": "файл модели"
       },
-      "upload 3d model": "Загрузить 3D-модель",
-      "upload extra resources": "Загрузить дополнительные ресурсы",
+      "upload 3d model": {
+        "": "Загрузить 3D-модель"
+      },
+      "upload extra resources": {
+        "": "Загрузить дополнительные ресурсы"
+      },
       "width": {
         "name": "ширина"
       }
@@ -13940,6 +13960,9 @@
       "bpm": {
         "name": "bpm"
       },
+      "cfg_scale": {
+        "name": "cfg_scale"
+      },
       "clip": {
         "name": "clip"
       },
@@ -13948,6 +13971,10 @@
       },
       "duration": {
         "name": "длительность"
+      },
+      "generate_audio_codes": {
+        "name": "генерировать аудиокоды",
+        "tooltip": "Включить LLM, который генерирует аудиокоды. Это может быть медленно, но повысит качество сгенерированного аудио. Отключите, если вы предоставляете модели аудиореференс."
       },
       "keyscale": {
         "name": "тональность"
@@ -13964,8 +13991,17 @@
       "tags": {
         "name": "теги"
       },
+      "temperature": {
+        "name": "температура"
+      },
       "timesignature": {
         "name": "размер"
+      },
+      "top_k": {
+        "name": "top_k"
+      },
+      "top_p": {
+        "name": "top_p"
       }
     },
     "outputs": {
@@ -14889,6 +14925,28 @@
     "inputs": {
       "samples": {
         "name": "образцы"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "VAEDecodeAudioTiled": {
+    "display_name": "VAE декодирование аудио (плитками)",
+    "inputs": {
+      "overlap": {
+        "name": "перекрытие"
+      },
+      "samples": {
+        "name": "образцы"
+      },
+      "tile_size": {
+        "name": "размер плитки"
       },
       "vae": {
         "name": "vae"

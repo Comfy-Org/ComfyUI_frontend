@@ -31,7 +31,12 @@ test.describe('Vue Integer Widget', () => {
     await expect(seedWidget).toBeVisible()
 
     // Delete the node that is linked to the slot (freeing up the widget)
-    await comfyPage.vueNodes.getNodeByTitle('Int').click()
+    // Click on the header to select the node (clicking center may land on
+    // the widget area where pointerdown.stop prevents node selection)
+    await comfyPage.vueNodes
+      .getNodeByTitle('Int')
+      .locator('.lg-node-header')
+      .click()
     await comfyPage.vueNodes.deleteSelected()
 
     // Test widget works when unlinked
