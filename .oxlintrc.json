@@ -73,6 +73,7 @@
         ]
       }
     ],
+    "prefer-const": "error",
     "no-self-assign": "allow",
     "no-unused-expressions": "off",
     "no-unused-private-class-members": "off",
