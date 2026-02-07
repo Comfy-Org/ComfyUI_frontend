@@ -9,7 +9,6 @@ import { useSettingStore } from '@/platform/settings/settingStore'
 import { useReleaseStore } from '@/platform/updates/common/releaseStore'
 import { useReleaseService } from '@/platform/updates/common/releaseService'
 import { useSystemStatsStore } from '@/stores/systemStatsStore'
-import { isElectron } from '@/utils/envUtil'
 import { createTestingPinia } from '@pinia/testing'
 import type { SystemStats } from '@/types'
 
@@ -19,11 +18,14 @@ vi.mock('semver', () => ({
   valid: vi.fn(() => '1.0.0')
 }))
 
-vi.mock('@/utils/envUtil', () => ({
-  isElectron: vi.fn(() => true)
-}))
+const mockData = vi.hoisted(() => ({ isDesktop: true }))
 
-vi.mock('@/platform/distribution/types', () => ({ isCloud: false }))
+vi.mock('@/platform/distribution/types', () => ({
+  get isDesktop() {
+    return mockData.isDesktop
+  },
+  isCloud: false
+}))
 
 vi.mock('@/platform/updates/common/releaseService', () => {
   const getReleases = vi.fn()
@@ -675,10 +677,10 @@ describe('useReleaseStore', () => {
     })
   })
 
-  describe('isElectron environment checks', () => {
-    describe('when running in Electron (desktop)', () => {
+  describe('isDesktop environment checks', () => {
+    describe('when running on desktop', () => {
       beforeEach(() => {
-        vi.mocked(isElectron).mockReturnValue(true)
+        mockData.isDesktop = true
       })
 
       it('should show toast when conditions are met', () => {
@@ -709,9 +711,9 @@ describe('useReleaseStore', () => {
       })
     })
 
-    describe('when NOT running in Electron (web)', () => {
+    describe('when NOT running on desktop (web)', () => {
       beforeEach(() => {
-        vi.mocked(isElectron).mockReturnValue(false)
+        mockData.isDesktop = false
       })
 
       it('should NOT show toast even when all other conditions are met', () => {
