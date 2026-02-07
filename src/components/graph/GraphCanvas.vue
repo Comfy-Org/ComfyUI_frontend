@@ -76,6 +76,13 @@
     />
   </TransformPane>
 
+  <LinkOverlayCanvas
+    v-if="shouldRenderVueNodes && comfyApp.canvas && comfyAppReady"
+    :canvas="comfyApp.canvas"
+    @ready="onLinkOverlayReady"
+    @dispose="onLinkOverlayDispose"
+  />
+
   <!-- Selection rectangle overlay - rendered in DOM layer to appear above DOM widgets -->
   <SelectionRectangle v-if="comfyAppReady" />
 
@@ -111,6 +118,7 @@ import BottomPanel from '@/components/bottomPanel/BottomPanel.vue'
 import ExtensionSlot from '@/components/common/ExtensionSlot.vue'
 import DomWidgets from '@/components/graph/DomWidgets.vue'
 import GraphCanvasMenu from '@/components/graph/GraphCanvasMenu.vue'
+import LinkOverlayCanvas from '@/components/graph/LinkOverlayCanvas.vue'
 import NodeTooltip from '@/components/graph/NodeTooltip.vue'
 import SelectionToolbox from '@/components/graph/SelectionToolbox.vue'
 import TitleEditor from '@/components/graph/TitleEditor.vue'
@@ -240,6 +248,18 @@ watch(
 const allNodes = computed((): VueNodeData[] =>
   Array.from(vueNodeLifecycle.nodeManager.value?.vueNodeData?.values() ?? [])
 )
+
+function onLinkOverlayReady(el: HTMLCanvasElement) {
+  if (!canvasStore.canvas) return
+  canvasStore.canvas.overlayCanvas = el
+  canvasStore.canvas.overlayCtx = el.getContext('2d')
+}
+
+function onLinkOverlayDispose() {
+  if (!canvasStore.canvas) return
+  canvasStore.canvas.overlayCanvas = null
+  canvasStore.canvas.overlayCtx = null
+}
 
 watchEffect(() => {
   LiteGraph.nodeOpacity = settingStore.get('Comfy.Node.Opacity')
