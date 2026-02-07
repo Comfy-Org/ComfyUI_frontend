@@ -192,6 +192,7 @@
     "unicorn/prefer-query-selector": "error",
     "unicorn/prefer-spread": "error",
     "unicorn/prefer-regexp-test": "error",
+    "unicorn/prefer-set-has": "error",
     "unicorn/prefer-string-replace-all": "error",
     "unicorn/prefer-string-slice": "error",
     "unicorn/prefer-string-trim-start-end": "error",
