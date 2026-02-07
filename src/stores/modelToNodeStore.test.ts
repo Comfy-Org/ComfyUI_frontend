@@ -26,7 +26,19 @@ const EXPECTED_DEFAULT_TYPES = [
   'chatterbox/chatterbox',
   'chatterbox/chatterbox_turbo',
   'chatterbox/chatterbox_multilingual',
-  'chatterbox/chatterbox_vc'
+  'chatterbox/chatterbox_vc',
+  'latent_upscale_models',
+  'sam2',
+  'sams',
+  'ultralytics',
+  'depthanything',
+  'ipadapter',
+  'segformer_b2_clothes',
+  'segformer_b3_clothes',
+  'segformer_b3_fashion',
+  'nlf',
+  'FlashVSR',
+  'FlashVSR-v1.1'
 ] as const
 
 type NodeDefStoreType = ReturnType<typeof useNodeDefStore>
@@ -68,7 +80,17 @@ const MOCK_NODE_NAMES = [
   'FL_ChatterboxTTS',
   'FL_ChatterboxTurboTTS',
   'FL_ChatterboxMultilingualTTS',
-  'FL_ChatterboxVC'
+  'FL_ChatterboxVC',
+  // New extension node mappings
+  'LatentUpscaleModelLoader',
+  'DownloadAndLoadSAM2Model',
+  'SAMLoader',
+  'UltralyticsDetectorProvider',
+  'DownloadAndLoadDepthAnythingV2Model',
+  'IPAdapterModelLoader',
+  'LS_LoadSegformerModel',
+  'LoadNLFModel',
+  'FlashVSRNode'
 ] as const
 
 const mockNodeDefsByName = Object.fromEntries(
@@ -171,6 +193,79 @@ describe('useModelToNodeStore', () => {
       expect(provider).toBeDefined()
       expect(provider?.nodeDef?.name).toBe('FL_ChatterboxVC')
       expect(provider?.key).toBe('')
+    })
+
+    it('should return provider for new extension model types', () => {
+      const modelToNodeStore = useModelToNodeStore()
+      modelToNodeStore.registerDefaults()
+
+      // SAM2
+      const sam2Provider = modelToNodeStore.getNodeProvider('sam2')
+      expect(sam2Provider?.nodeDef?.name).toBe('DownloadAndLoadSAM2Model')
+      expect(sam2Provider?.key).toBe('model')
+
+      // SAMLoader (original SAM)
+      const samsProvider = modelToNodeStore.getNodeProvider('sams')
+      expect(samsProvider?.nodeDef?.name).toBe('SAMLoader')
+      expect(samsProvider?.key).toBe('model_name')
+
+      // IP-Adapter
+      const ipadapterProvider = modelToNodeStore.getNodeProvider('ipadapter')
+      expect(ipadapterProvider?.nodeDef?.name).toBe('IPAdapterModelLoader')
+      expect(ipadapterProvider?.key).toBe('ipadapter_file')
+
+      // DepthAnything
+      const depthProvider = modelToNodeStore.getNodeProvider('depthanything')
+      expect(depthProvider?.nodeDef?.name).toBe(
+        'DownloadAndLoadDepthAnythingV2Model'
+      )
+      expect(depthProvider?.key).toBe('model')
+    })
+
+    it('should use hierarchical fallback for ultralytics subcategories', () => {
+      const modelToNodeStore = useModelToNodeStore()
+      modelToNodeStore.registerDefaults()
+
+      // ultralytics/bbox should fall back to ultralytics
+      const bboxProvider = modelToNodeStore.getNodeProvider('ultralytics/bbox')
+      expect(bboxProvider?.nodeDef?.name).toBe('UltralyticsDetectorProvider')
+      expect(bboxProvider?.key).toBe('model_name')
+
+      // ultralytics/segm should also fall back to ultralytics
+      const segmProvider = modelToNodeStore.getNodeProvider('ultralytics/segm')
+      expect(segmProvider?.nodeDef?.name).toBe('UltralyticsDetectorProvider')
+    })
+
+    it('should return provider for FlashVSR nodes with empty key (auto-load)', () => {
+      const modelToNodeStore = useModelToNodeStore()
+      modelToNodeStore.registerDefaults()
+
+      const flashVSRProvider = modelToNodeStore.getNodeProvider('FlashVSR')
+      expect(flashVSRProvider?.nodeDef?.name).toBe('FlashVSRNode')
+      expect(flashVSRProvider?.key).toBe('')
+
+      const flashVSR11Provider =
+        modelToNodeStore.getNodeProvider('FlashVSR-v1.1')
+      expect(flashVSR11Provider?.nodeDef?.name).toBe('FlashVSRNode')
+      expect(flashVSR11Provider?.key).toBe('')
+    })
+
+    it('should return provider for segformer models', () => {
+      const modelToNodeStore = useModelToNodeStore()
+      modelToNodeStore.registerDefaults()
+
+      const segformerB2Provider = modelToNodeStore.getNodeProvider(
+        'segformer_b2_clothes'
+      )
+      expect(segformerB2Provider?.nodeDef?.name).toBe('LS_LoadSegformerModel')
+      expect(segformerB2Provider?.key).toBe('model_name')
+
+      const segformerB3FashionProvider = modelToNodeStore.getNodeProvider(
+        'segformer_b3_fashion'
+      )
+      expect(segformerB3FashionProvider?.nodeDef?.name).toBe(
+        'LS_LoadSegformerModel'
+      )
     })
   })
 
