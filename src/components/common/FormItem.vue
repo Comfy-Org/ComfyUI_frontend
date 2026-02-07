@@ -57,7 +57,9 @@ function getFormAttrs(formItem: FormItem) {
     attrs['renderFunction'] = () =>
       inputType(
         formItem.name,
-        (v: unknown) => (formValue.value = v),
+        (v: unknown) => {
+          formValue.value = v
+        },
         formValue.value,
         formItem.attrs
       )

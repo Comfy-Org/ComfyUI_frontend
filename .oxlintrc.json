@@ -45,6 +45,7 @@
     "no-eval": "off",
     "no-new-func": "error",
     "no-redeclare": "error",
+    "no-return-assign": ["error", "always"],
     "no-throw-literal": "error",
     "no-useless-constructor": "error",
     "no-var": "error",

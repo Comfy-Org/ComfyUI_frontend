@@ -536,7 +536,9 @@ function withComfyAutogrow(node: LGraphNode): asserts node is AutogrowNode {
   const originalOnConnectInput = node.onConnectInput
   node.onConnectInput = function (slot: number, ...args) {
     pendingConnection = slot
-    requestAnimationFrame(() => (pendingConnection = undefined))
+    requestAnimationFrame(() => {
+      pendingConnection = undefined
+    })
     return originalOnConnectInput?.apply(this, [slot, ...args]) ?? true
   }
 
@@ -563,7 +565,9 @@ function withComfyAutogrow(node: LGraphNode): asserts node is AutogrowNode {
       } else {
         if (pendingConnection === slot) {
           swappingConnection = true
-          requestAnimationFrame(() => (swappingConnection = false))
+          requestAnimationFrame(() => {
+            swappingConnection = false
+          })
           return
         }
         requestAnimationFrame(() => autogrowInputDisconnected(slot, this))

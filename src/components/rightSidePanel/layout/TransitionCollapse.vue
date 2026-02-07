@@ -23,7 +23,9 @@ const {
 const closed = '0px'
 
 const isMounted = ref(false)
-onMounted(() => (isMounted.value = true))
+onMounted(() => {
+  isMounted.value = true
+})
 
 const effectiveDuration = computed(() =>
   isMounted.value && !disable ? duration : 0

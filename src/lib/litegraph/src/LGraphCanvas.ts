@@ -633,7 +633,9 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
   visible_links: LLink[] = []
   /** @deprecated This array is populated and cleared to support legacy extensions. The contents are ignored by Litegraph. */
   connecting_links: ConnectingLink[] | null
-  linkConnector = new LinkConnector((links) => (this.connecting_links = links))
+  linkConnector = new LinkConnector((links) => {
+    this.connecting_links = links
+  })
   /** The viewport of this canvas.  Tightly coupled with {@link ds}. */
   readonly viewport?: Rect
   autoresize: boolean
@@ -2372,7 +2374,9 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     }
 
     if (this.read_only) {
-      pointer.finally = () => (this.dragging_canvas = false)
+      pointer.finally = () => {
+        this.dragging_canvas = false
+      }
       this.dragging_canvas = true
       return
     }
@@ -2524,8 +2528,12 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
           this.ctx.lineWidth = lineWidth
 
           pointer.onClick = () => this.showLinkMenu(linkSegment, e)
-          pointer.onDragStart = () => (this.dragging_canvas = true)
-          pointer.finally = () => (this.dragging_canvas = false)
+          pointer.onDragStart = () => {
+            this.dragging_canvas = true
+          }
+          pointer.finally = () => {
+            this.dragging_canvas = false
+          }
 
           // clear tooltip
           this.over_link_center = undefined
@@ -2546,7 +2554,9 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
           const offsetX = x - (b[0] + b[2])
           const offsetY = y - (b[1] + b[3])
 
-          pointer.onDragStart = () => (this.resizingGroup = group)
+          pointer.onDragStart = () => {
+            this.resizingGroup = group
+          }
           pointer.onDrag = (eMove) => {
             if (this.read_only) return
 
@@ -2561,7 +2571,9 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
             const resized = group.resize(pos[0], pos[1])
             if (resized) this.dirty_bgcanvas = true
           }
-          pointer.finally = () => (this.resizingGroup = null)
+          pointer.finally = () => {
+            this.resizingGroup = null
+          }
         } else {
           const f = group.font_size || LiteGraph.DEFAULT_GROUP_FONT_SIZE
           const headerHeight = f * 1.4
@@ -2616,7 +2628,9 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       // allow dragging canvas based on leftMouseClickBehavior or read-only mode
       if (LiteGraph.leftMouseClickBehavior === 'panning' || this.read_only) {
         pointer.onClick = () => this.processSelect(null, e)
-        pointer.finally = () => (this.dragging_canvas = false)
+        pointer.finally = () => {
+          this.dragging_canvas = false
+        }
         this.dragging_canvas = true
       } else {
         this._setupNodeSelectionDrag(e, pointer)
@@ -2642,7 +2656,9 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
         node ?? this._getPositionableOnPos(eUp.canvasX, eUp.canvasY)
       this.processSelect(clickedItem, eUp)
     }
-    pointer.onDragStart = () => (this.dragging_rectangle = dragRect)
+    pointer.onDragStart = () => {
+      this.dragging_rectangle = dragRect
+    }
 
     if (this.liveSelection) {
       const initialSelection = new Set(this.selectedItems)
@@ -2657,7 +2673,9 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
         this._handleMultiSelect(upEvent, dragRect)
     }
 
-    pointer.finally = () => (this.dragging_rectangle = null)
+    pointer.finally = () => {
+      this.dragging_rectangle = null
+    }
   }
 
   /**
@@ -3140,8 +3158,12 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
     // Drag canvas using middle mouse button
     if (this.allow_dragcanvas) {
-      pointer.onDragStart = () => (this.dragging_canvas = true)
-      pointer.finally = () => (this.dragging_canvas = false)
+      pointer.onDragStart = () => {
+        this.dragging_canvas = true
+      }
+      pointer.finally = () => {
+        this.dragging_canvas = false
+      }
     }
   }
 
@@ -3511,7 +3533,8 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
             this._highlight_pos = reroute.pos
           }
 
-          return (underPointer |= CanvasItem.RerouteSlot)
+          underPointer |= CanvasItem.RerouteSlot
+          return underPointer
         }
       }
     }

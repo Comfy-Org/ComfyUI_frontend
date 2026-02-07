@@ -18,7 +18,9 @@ export const useMenuItemStore = defineStore('menuItem', () => {
 
   whenever(
     () => canvasStore.linearMode,
-    () => (hasSeenLinear.value = true),
+    () => {
+      hasSeenLinear.value = true
+    },
     { immediate: true, once: true }
   )
 

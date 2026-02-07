@@ -52,7 +52,9 @@ const widgetsContainer = ref<HTMLElement>()
 const rootElement = ref<HTMLElement>()
 
 const widgets = shallowRef(widgetsProp)
-watchEffect(() => (widgets.value = widgetsProp))
+watchEffect(() => {
+  widgets.value = widgetsProp
+})
 
 provide(HideLayoutFieldKey, true)
 

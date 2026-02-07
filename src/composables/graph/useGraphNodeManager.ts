@@ -119,7 +119,9 @@ function getControlWidget(widget: IBaseWidget): SafeControlWidget | undefined {
   if (!cagWidget) return
   return {
     value: normalizeControlOption(cagWidget.value),
-    update: (value) => (cagWidget.value = normalizeControlOption(value))
+    update: (value) => {
+      cagWidget.value = normalizeControlOption(value)
+    }
   }
 }
 

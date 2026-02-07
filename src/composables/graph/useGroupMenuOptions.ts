@@ -51,7 +51,9 @@ export function useGroupMenuOptions() {
       label: shape.localizedName,
       action: () => {
         const nodes = (groupContext.nodes || []) as LGraphNode[]
-        nodes.forEach((node) => (node.shape = shape.value))
+        nodes.forEach((node) => {
+          node.shape = shape.value
+        })
         canvasRefresh.refreshCanvas()
         bump()
       }

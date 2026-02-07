@@ -162,7 +162,9 @@ function resolveTitle() {
 }
 
 const panelTitle = ref(resolveTitle())
-watchEffect(() => (panelTitle.value = resolveTitle()))
+watchEffect(() => {
+  panelTitle.value = resolveTitle()
+})
 
 const isEditing = ref(false)
 

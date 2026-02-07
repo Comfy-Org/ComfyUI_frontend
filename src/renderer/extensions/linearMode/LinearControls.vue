@@ -46,11 +46,9 @@ const { ready: jobToastTimeout, start: resetJobToastTimeout } = useTimeout(
 )
 
 const graphNodes = shallowRef<LGraphNode[]>(app.rootGraph.nodes)
-useEventListener(
-  app.rootGraph.events,
-  'configured',
-  () => (graphNodes.value = app.rootGraph.nodes)
-)
+useEventListener(app.rootGraph.events, 'configured', () => {
+  graphNodes.value = app.rootGraph.nodes
+})
 
 function getDropIndicator(node: LGraphNode) {
   if (node.type !== 'LoadImage') return

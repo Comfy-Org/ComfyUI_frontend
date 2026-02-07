@@ -180,7 +180,9 @@ async function customSearcher(
     isCleanup = true
     cleanupFn?.()
   })
-  await searcher(query, items, (cb) => (cleanupFn = cb)).then((results) => {
+  await searcher(query, items, (cb) => {
+    cleanupFn = cb
+  }).then((results) => {
     if (!isCleanup) filteredItems.value = results
   })
 }

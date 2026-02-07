@@ -34,7 +34,7 @@ const left = ref<string>()
 const top = ref<string>()
 
 function hideTooltip() {
-  return (tooltipText.value = '')
+  tooltipText.value = ''
 }
 
 async function showTooltip(tooltip: string | null | undefined) {
