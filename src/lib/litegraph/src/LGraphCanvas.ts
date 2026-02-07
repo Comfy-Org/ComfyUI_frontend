@@ -1385,7 +1385,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
   ): void {
     if (!node) return
 
-    const fApplyMultiNode = function (node: LGraphNode) {
+    function fApplyMultiNode(node: LGraphNode) {
       node.setSize(node.computeSize())
     }
 
@@ -1544,7 +1544,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
     node.graph.beforeChange()
 
-    const fApplyMultiNode = function (node: LGraphNode) {
+    function fApplyMultiNode(node: LGraphNode) {
       node.collapse()
     }
 
@@ -1573,7 +1573,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     if (!node.graph) throw new NullGraphError()
 
     node.graph.beforeChange()
-    const fApplyMultiNode = function (node: LGraphNode) {
+    function fApplyMultiNode(node: LGraphNode) {
       node.toggleAdvanced()
     }
 
@@ -1609,7 +1609,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       if (!node) return
 
       const kV = Object.values(LiteGraph.NODE_MODES).indexOf(v)
-      const fApplyMultiNode = function (node: LGraphNode) {
+      function fApplyMultiNode(node: LGraphNode) {
         if (kV !== -1 && LiteGraph.NODE_MODES[kV]) {
           node.changeMode(kV)
         } else {
@@ -1675,7 +1675,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     function inner_clicked(v: IContextMenuValue<string>) {
       if (!node) return
 
-      const fApplyColor = function (item: IColorable) {
+      function fApplyColor(item: IColorable) {
         const colorOption = v.value ? LGraphCanvas.node_colors[v.value] : null
         item.setColorOption(colorOption)
       }
@@ -1722,7 +1722,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
       node.graph.beforeChange()
 
-      const fApplyMultiNode = function (node: LGraphNode) {
+      function fApplyMultiNode(node: LGraphNode) {
         node.shape = v
       }
 
@@ -8164,7 +8164,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       panel.alt_content.innerHTML = "<textarea class='code'></textarea>"
       const textarea: HTMLTextAreaElement =
         panel.alt_content.querySelector('textarea')!
-      const fDoneWith = function () {
+      function fDoneWith() {
         panel.toggleAltContent(false)
         panel.toggleFooterVisibility(true)
         textarea.remove()
@@ -8616,7 +8616,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
         if (input && slot_info) {
           input.value = slot_info.label || ''
         }
-        const inner = function () {
+        const inner = () => {
           if (!node.graph) throw new NullGraphError()
 
           node.graph.beforeChange()

@@ -49,6 +49,13 @@
         "null": "ignore"
       }
     ],
+    "func-style": [
+      "error",
+      "declaration",
+      {
+        "allowArrowFunctions": true
+      }
+    ],
     "no-eval": "off",
     "no-new-func": "error",
     "no-redeclare": "error",

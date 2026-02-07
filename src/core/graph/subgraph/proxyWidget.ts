@@ -76,10 +76,7 @@ export function registerProxyWidgets(canvas: LGraphCanvas) {
 }
 
 const originalOnConfigure = SubgraphNode.prototype.onConfigure
-const onConfigure = function (
-  this: LGraphNode,
-  serialisedNode: ISerialisedNode
-) {
+function onConfigure(this: LGraphNode, serialisedNode: ISerialisedNode) {
   if (!this.isSubgraphNode())
     throw new Error("Can't add proxyWidgets to non-subgraphNode")
 
