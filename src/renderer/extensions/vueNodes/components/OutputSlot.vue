@@ -4,7 +4,7 @@
     <div class="relative h-full flex items-center min-w-0">
       <!-- Slot Name -->
       <span
-        v-if="!props.dotOnly && !hasNoLabel"
+        v-if="!dotOnly && !hasNoLabel"
         class="truncate text-node-component-slot-text"
       >
         {{ slotData.localized_name || (slotData.name ?? `Output ${index}`) }}
@@ -45,13 +45,20 @@ interface OutputSlotProps {
   dotOnly?: boolean
 }
 
-const { nodeType, nodeId, slotData, index, connected, compatible, dotOnly: dotOnlyProp } =
-  defineProps<OutputSlotProps>()
+const {
+  nodeType,
+  nodeId,
+  slotData,
+  index,
+  connected,
+  compatible,
+  dotOnly: dotOnlyProp
+} = defineProps<OutputSlotProps>()
 
 const hasNoLabel = computed(
   () => !slotData.localized_name && slotData.name === ''
 )
-const dotOnly = computed(() => dotOnlyProp.value || hasNoLabel.value)
+const dotOnly = computed(() => dotOnlyProp || hasNoLabel.value)
 
 // Error boundary implementation
 const renderError = ref<string | null>(null)
