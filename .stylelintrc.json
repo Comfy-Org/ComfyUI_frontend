@@ -52,7 +52,8 @@
           "reference",
           "plugin",
           "custom-variant",
-          "utility"
+          "utility",
+          "source"
         ]
       }
     ],
