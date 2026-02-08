@@ -1,5 +1,5 @@
 <template>
-  <section class="prompt-dialog-content m-2 mt-4 flex flex-col gap-6">
+  <section class="m-2 mt-4 flex flex-col gap-6 whitespace-pre-wrap break-words">
     <span>{{ message }}</span>
     <ul v-if="itemList?.length" class="m-0 flex flex-col gap-2 pl-4">
       <li v-for="item of itemList" :key="item">
@@ -152,9 +152,3 @@ const onConfirm = () => {
 }
 </script>
 
-<style lang="css" scoped>
-.prompt-dialog-content {
-  white-space: pre-wrap;
-  overflow-wrap: break-word;
-}
-</style>
