@@ -81,10 +81,9 @@
 
 <script setup lang="ts">
 import { useResizeObserver } from '@vueuse/core'
-import jsonata from 'jsonata'
 import { computed, ref } from 'vue'
 
-import { CREDITS_PER_USD, formatCredits } from '@/base/credits/comfyCredits'
+import { evaluateNodeDefPricing } from '@/composables/node/useNodePricing'
 import BadgePill from '@/components/common/BadgePill.vue'
 import { getProviderBorderStyle, getProviderIcon } from '@/utils/categoryUtil'
 import LGraphNodePreview from '@/renderer/extensions/vueNodes/components/LGraphNodePreview.vue'
@@ -114,25 +113,11 @@ const categoryLabel = computed(() => {
 
 const creditsLabel = ref('')
 
-// Evaluate pricing expression with empty context to get base/default credits
-if (nodeDef.api_node && nodeDef.price_badge?.expr) {
-  const emptyContext = { widgets: {}, inputs: {}, inputGroups: {} }
-  jsonata(nodeDef.price_badge.expr)
-    .evaluate(emptyContext)
-    .then((result: unknown) => {
-      if (
-        result &&
-        typeof result === 'object' &&
-        'usd' in result &&
-        typeof result.usd === 'number'
-      ) {
-        const credits = Math.round(result.usd * CREDITS_PER_USD)
-        creditsLabel.value = formatCredits({ value: credits })
-      }
-    })
-    .catch(() => {
-      // Silently ignore evaluation errors for preview
-    })
+// Evaluate pricing using shared utility from useNodePricing
+if (nodeDef.api_node) {
+  evaluateNodeDefPricing(nodeDef).then((label) => {
+    creditsLabel.value = label
+  })
 }
 
 const inputs = computed(() => {
