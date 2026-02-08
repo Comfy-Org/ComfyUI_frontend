@@ -61,7 +61,10 @@ test.describe('Subgraph Operations', { tag: ['@slow', '@subgraph'] }, () => {
       await subgraphNode.navigateIntoSubgraph()
 
       const initialCount = await getSubgraphSlotCount(comfyPage, 'inputs')
-      const vaeEncodeNode = await comfyPage.nodeOps.getNodeRefById('2')
+      const [vaeEncodeNode] = await comfyPage.nodeOps.getNodeRefsByType(
+        'VAEEncode',
+        true
+      )
 
       await comfyPage.subgraph.connectFromInput(vaeEncodeNode, 0)
       await comfyPage.nextFrame()
@@ -77,7 +80,10 @@ test.describe('Subgraph Operations', { tag: ['@slow', '@subgraph'] }, () => {
       await subgraphNode.navigateIntoSubgraph()
 
       const initialCount = await getSubgraphSlotCount(comfyPage, 'outputs')
-      const vaeEncodeNode = await comfyPage.nodeOps.getNodeRefById('2')
+      const [vaeEncodeNode] = await comfyPage.nodeOps.getNodeRefsByType(
+        'VAEEncode',
+        true
+      )
 
       await comfyPage.subgraph.connectToOutput(vaeEncodeNode, 0)
       await comfyPage.nextFrame()

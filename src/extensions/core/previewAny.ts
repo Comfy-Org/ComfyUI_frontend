@@ -19,14 +19,14 @@ useExtensionService().registerExtension({
 
         const showValueWidget = ComfyWidgets['MARKDOWN'](
           this,
-          'preview',
+          'preview_markdown',
           ['MARKDOWN', {}],
           app
         ).widget as DOMWidget<HTMLTextAreaElement, string>
 
         const showValueWidgetPlain = ComfyWidgets['STRING'](
           this,
-          'preview',
+          'preview_text',
           ['STRING', { multiline: true }],
           app
         ).widget as DOMWidget<HTMLTextAreaElement, string>
@@ -48,6 +48,7 @@ useExtensionService().registerExtension({
           showValueWidgetPlain.options.hidden = value
         }
 
+        showValueWidget.label = 'Preview'
         showValueWidget.hidden = true
         showValueWidget.options.hidden = true
         showValueWidget.options.read_only = true
@@ -55,6 +56,7 @@ useExtensionService().registerExtension({
         showValueWidget.element.disabled = true
         showValueWidget.serialize = false
 
+        showValueWidgetPlain.label = 'Preview'
         showValueWidgetPlain.hidden = false
         showValueWidgetPlain.options.hidden = false
         showValueWidgetPlain.options.read_only = true
@@ -71,7 +73,7 @@ useExtensionService().registerExtension({
           : onExecuted.apply(this, [message])
 
         const previewWidgets =
-          this.widgets?.filter((w) => w.name === 'preview') ?? []
+          this.widgets?.filter((w) => w.name.startsWith('preview_')) ?? []
 
         for (const previewWidget of previewWidgets) {
           const text = message.text ?? ''

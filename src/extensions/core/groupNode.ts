@@ -1412,7 +1412,7 @@ export class GroupNodeHandler {
               handlerGroupData.oldToNewWidgetMap[Number(n)]?.[w]
             const widget = this.widgets.find((wg) => wg.name === widgetName)
             if (widget) {
-              widget.type = 'hidden'
+              widget.hidden = true
               widget.computeSize = () => [0, -4]
             }
           }

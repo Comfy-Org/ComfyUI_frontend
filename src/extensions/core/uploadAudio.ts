@@ -23,6 +23,7 @@ import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
 
 import { api } from '../../scripts/api'
 import { app } from '../../scripts/app'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
 
 function updateUIWidget(
   audioUIWidget: DOMWidget<HTMLAudioElement, string>,
@@ -137,9 +138,16 @@ app.registerExtension({
           }
         }
 
-        let value = ''
-        audioUIWidget.options.getValue = () => value
-        audioUIWidget.options.setValue = (v) => (value = v)
+        audioUIWidget.options.getValue = () =>
+          (useWidgetValueStore().getWidget(node.id, inputName)
+            ?.value as string) ?? ''
+        audioUIWidget.options.setValue = (v) => {
+          const widgetState = useWidgetValueStore().getWidget(
+            node.id,
+            inputName
+          )
+          if (widgetState) widgetState.value = v
+        }
 
         return { widget: audioUIWidget }
       }

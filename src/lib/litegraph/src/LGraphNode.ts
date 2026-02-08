@@ -1957,6 +1957,18 @@ export class LGraphNode
     this.widgets ||= []
     const widget = toConcreteWidget(custom_widget, this, false) ?? custom_widget
     this.widgets.push(widget)
+
+    // Only register with store if node has a valid ID (is already in a graph).
+    // If the node isn't in a graph yet (id === -1), registration happens
+    // when the node is added via LGraph.add() -> node.onAdded.
+    if (
+      this.id !== -1 &&
+      'setNodeId' in widget &&
+      typeof widget.setNodeId === 'function'
+    ) {
+      widget.setNodeId(this.id)
+    }
+
     return widget
   }
 
@@ -3499,7 +3511,7 @@ export class LGraphNode
    * Toggles advanced mode of the node, showing advanced widgets
    */
   toggleAdvanced() {
-    if (!this.widgets?.some((w) => w.advanced)) return
+    if (!this.hasAdvancedWidgets()) return
     if (!this.graph) throw new NullGraphError()
     this.graph._version++
     this.showAdvanced = !this.showAdvanced
@@ -3877,6 +3889,21 @@ export class LGraphNode
     return !isHidden
   }
 
+  /**
+   * Returns all widgets that should participate in layout calculations.
+   * Filters out hidden widgets only (not collapsed/advanced).
+   */
+  getLayoutWidgets(): IBaseWidget[] {
+    return this.widgets?.filter((w) => !w.hidden) ?? []
+  }
+
+  /**
+   * Returns `true` if the node has any advanced widgets.
+   */
+  hasAdvancedWidgets(): boolean {
+    return this.widgets?.some((w) => w.advanced) ?? false
+  }
+
   updateComputedDisabled() {
     if (!this.widgets) return
     for (const widget of this.widgets)
@@ -4087,7 +4114,7 @@ export class LGraphNode
       w: IBaseWidget
     }[] = []
 
-    const visibleWidgets = this.widgets.filter((w) => !w.hidden)
+    const visibleWidgets = this.getLayoutWidgets()
 
     for (const w of visibleWidgets) {
       if (w.computeSize) {

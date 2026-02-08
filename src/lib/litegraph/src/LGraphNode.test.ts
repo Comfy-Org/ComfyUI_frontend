@@ -1,3 +1,5 @@
+import { createTestingPinia } from '@pinia/testing'
+import { setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, vi } from 'vitest'
 
 import type {
@@ -42,6 +44,7 @@ describe('LGraphNode', () => {
   let origLiteGraph: typeof LiteGraph
 
   beforeEach(() => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
     origLiteGraph = Object.assign({}, LiteGraph)
     // @ts-expect-error Intended: Force remove an otherwise readonly non-optional property
     delete origLiteGraph.Classes
