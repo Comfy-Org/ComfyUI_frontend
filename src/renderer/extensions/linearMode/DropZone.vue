@@ -23,7 +23,7 @@ const { isOverDropZone } = useDropZone(dropZoneRef, {
     event?.stopPropagation()
 
     if (onDragDrop && event) {
-      onDragDrop(event)
+      void onDragDrop(event)
     }
     canAcceptDrop.value = false
   },
