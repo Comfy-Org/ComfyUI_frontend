@@ -2,7 +2,6 @@ import { defineAsyncComponent } from 'vue'
 import { useDialogService } from '@/services/dialogService'
 import { useDialogStore } from '@/stores/dialogStore'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
-import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
 const DIALOG_KEY = 'subscription-required'
 
@@ -10,15 +9,13 @@ export const useSubscriptionDialog = () => {
   const { flags } = useFeatureFlags()
   const dialogService = useDialogService()
   const dialogStore = useDialogStore()
-  const workspaceStore = useTeamWorkspaceStore()
 
   function hide() {
     dialogStore.closeDialog({ key: DIALOG_KEY })
   }
 
   function show() {
-    const useWorkspaceVariant =
-      flags.teamWorkspacesEnabled && !workspaceStore.isInPersonalWorkspace
+    const useWorkspaceVariant = flags.teamWorkspacesEnabled
 
     const component = useWorkspaceVariant
       ? defineAsyncComponent(

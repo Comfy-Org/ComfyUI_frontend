@@ -3,6 +3,14 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useBillingContext } from './useBillingContext'
 
+vi.mock('@/composables/useFeatureFlags', () => ({
+  useFeatureFlags: () => ({
+    flags: {
+      teamWorkspacesEnabled: true
+    }
+  })
+}))
+
 vi.mock('@/platform/workspace/stores/teamWorkspaceStore', () => {
   const isInPersonalWorkspace = { value: true }
   const activeWorkspace = { value: { id: 'personal-123', type: 'personal' } }
@@ -10,6 +18,7 @@ vi.mock('@/platform/workspace/stores/teamWorkspaceStore', () => {
     useTeamWorkspaceStore: () => ({
       isInPersonalWorkspace: isInPersonalWorkspace.value,
       activeWorkspace: activeWorkspace.value,
+      updateActiveWorkspace: vi.fn(),
       _setPersonalWorkspace: (value: boolean) => {
         isInPersonalWorkspace.value = value
         activeWorkspace.value = value
@@ -80,7 +89,10 @@ vi.mock('@/platform/workspace/api/workspaceApi', () => ({
       currency: 'usd'
     }),
     subscribe: vi.fn().mockResolvedValue({ status: 'subscribed' }),
-    previewSubscribe: vi.fn().mockResolvedValue({ allowed: true })
+    previewSubscribe: vi.fn().mockResolvedValue({ allowed: true }),
+    getPaymentPortalUrl: vi
+      .fn()
+      .mockResolvedValue({ url: 'https://example.com/billing' })
   }
 }))
 
@@ -90,35 +102,37 @@ describe('useBillingContext', () => {
     vi.clearAllMocks()
   })
 
-  it('returns legacy type for personal workspace', () => {
+  it('returns workspace type for personal workspace when feature flag enabled', () => {
     const { type } = useBillingContext()
-    expect(type.value).toBe('legacy')
+    expect(type.value).toBe('workspace')
   })
 
-  it('provides subscription info from legacy billing', () => {
-    const { subscription } = useBillingContext()
+  it('provides subscription info from workspace billing', async () => {
+    const { subscription, initialize } = useBillingContext()
+    await initialize()
 
     expect(subscription.value).toEqual({
       isActive: true,
       tier: 'PRO',
       duration: 'MONTHLY',
       planSlug: null,
-      renewalDate: 'Jan 1, 2025',
+      renewalDate: null,
       endDate: null,
       isCancelled: false,
       hasFunds: true
     })
   })
 
-  it('provides balance info from legacy billing', () => {
-    const { balance } = useBillingContext()
+  it('provides balance info from workspace billing', async () => {
+    const { balance, initialize } = useBillingContext()
+    await initialize()
 
     expect(balance.value).toEqual({
-      amountMicros: 5000000,
+      amountMicros: 10000000,
       currency: 'usd',
-      effectiveBalanceMicros: 5000000,
-      prepaidBalanceMicros: 0,
-      cloudCreditBalanceMicros: 0
+      effectiveBalanceMicros: undefined,
+      prepaidBalanceMicros: undefined,
+      cloudCreditBalanceMicros: undefined
     })
   })
 
@@ -139,7 +153,7 @@ describe('useBillingContext', () => {
 
   it('exposes subscribe action', async () => {
     const { subscribe } = useBillingContext()
-    await expect(subscribe('pro-monthly')).resolves.toBeUndefined()
+    await expect(subscribe('pro-monthly')).resolves.toBeDefined()
   })
 
   it('exposes manageSubscription action', async () => {
