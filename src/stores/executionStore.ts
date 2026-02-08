@@ -455,7 +455,7 @@ export const useExecutionStore = defineStore('execution', () => {
       const map = { ...nodeProgressStatesByPrompt.value }
       delete map[promptId]
       nodeProgressStatesByPrompt.value = map
-      useJobPreviewStore().clearPreview(String(promptId))
+      useJobPreviewStore().clearPreview(promptId)
     }
     if (activePromptId.value) {
       delete queuedPrompts.value[activePromptId.value]
