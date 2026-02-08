@@ -10803,6 +10803,9 @@
       "camera_info": {
         "name": "相机信息"
       },
+      "image": {
+        "name": "图像"
+      },
       "model_file": {
         "name": "模型文件",
         "tooltip": "3D模型文件或路径字符串"
@@ -12625,6 +12628,9 @@
     "inputs": {
       "filename_prefix": {
         "name": "文件名前缀"
+      },
+      "image": {
+        "name": "图像"
       },
       "mesh": {
         "name": "网格",
