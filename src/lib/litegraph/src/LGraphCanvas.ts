@@ -1878,7 +1878,8 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     canvas: string | HTMLCanvasElement
   ): HTMLCanvasElement & { data?: LGraphCanvas } {
     if (typeof canvas === 'string') {
-      const el = document.querySelector(`#${canvas}`)
+      // oxlint-disable-next-line prefer-query-selector
+      const el = document.getElementById(canvas)
       if (!(el instanceof HTMLCanvasElement))
         throw new Error(
           'Error validating LiteGraph canvas: Canvas element not found'

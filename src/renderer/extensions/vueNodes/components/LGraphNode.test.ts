@@ -64,9 +64,12 @@ vi.mock(
   () => ({
     useNodeExecutionState: vi.fn(() => ({
       executing: computed(() => mockData.mockExecuting),
-      progress: computed(() => null),
-      progressPercentage: computed(() => null),
-      progressState: computed(() => null),
+      // eslint-disable-next-line vue/return-in-computed-property
+      progress: computed(() => {}),
+      // eslint-disable-next-line vue/return-in-computed-property
+      progressPercentage: computed(() => {}),
+      // eslint-disable-next-line vue/return-in-computed-property
+      progressState: computed(() => {}),
       executionState: computed(() => 'idle' as const)
     }))
   })

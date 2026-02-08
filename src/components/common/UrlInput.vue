@@ -17,7 +17,7 @@
         'pi pi-times cursor-pointer text-red-500':
           validationState === ValidationState.INVALID
       }"
-      @click="validateUrl(modelValue)"
+      @click="validateUrl(model)"
     />
   </IconField>
 </template>
@@ -32,13 +32,13 @@ import { isValidUrl } from '@/utils/formatUtil'
 import { checkUrlReachable } from '@/utils/networkUtil'
 import { ValidationState } from '@/utils/validationUtil'
 
-const { modelValue, validateUrlFn } = defineProps<{
-  modelValue: string
+const model = defineModel<string>({ required: true })
+
+const { validateUrlFn } = defineProps<{
   validateUrlFn?: (url: string) => Promise<boolean>
 }>()
 
 const emit = defineEmits<{
-  'update:modelValue': [value: string]
   'state-change': [state: ValidationState]
 }>()
 
@@ -47,22 +47,19 @@ const validationState = ref<ValidationState>(ValidationState.IDLE)
 const cleanInput = (value: string): string =>
   value ? value.replaceAll(/\s+/g, '') : ''
 
-const internalValue = ref(cleanInput(modelValue))
+const internalValue = ref(cleanInput(model.value))
 
-watch(
-  () => modelValue,
-  async (newValue: string) => {
-    internalValue.value = cleanInput(newValue)
-    await validateUrl(newValue)
-  }
-)
+watch(model, async (newValue: string) => {
+  internalValue.value = cleanInput(newValue)
+  await validateUrl(newValue)
+})
 
 watch(validationState, (newState) => {
   emit('state-change', newState)
 })
 
 onMounted(async () => {
-  await validateUrl(modelValue)
+  await validateUrl(model.value)
 })
 
 const handleInput = (value: string | undefined) => {
@@ -84,7 +81,7 @@ const handleBlur = async () => {
   }
 
   // Emit the update only on blur
-  emit('update:modelValue', normalizedUrl)
+  model.value = normalizedUrl
 }
 
 // Default validation implementation

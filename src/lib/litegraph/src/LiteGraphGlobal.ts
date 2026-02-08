@@ -410,7 +410,7 @@ export class LiteGraphGlobal {
     const classname = base_class.name
 
     const pos = type.lastIndexOf('/')
-    base_class.category = type.slice(0, pos)
+    base_class.category = pos === -1 ? '' : type.slice(0, pos)
 
     base_class.title ||= classname
 
