@@ -812,7 +812,7 @@
       "activeJobsSuffix": "active jobs",
       "jobQueue": "Job Queue",
       "expandCollapsedQueue": "Expand job queue",
-      "viewJobHistory": "View job history",
+      "viewJobHistory": "View active jobs (right-click to clear queue)",
       "noActiveJobs": "No active jobs",
       "stubClipTextEncode": "CLIP Text Encode:",
       "jobsCompleted": "{count} job completed | {count} jobs completed",

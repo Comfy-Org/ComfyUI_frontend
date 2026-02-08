@@ -72,7 +72,7 @@ import { useI18n } from 'vue-i18n'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { useExternalLink } from '@/composables/useExternalLink'
 import { useCommandStore } from '@/stores/commandStore'
-import { isElectron } from '@/utils/envUtil'
+import { isDesktop } from '@/platform/distribution/types'
 import { formatVersionAnchor } from '@/utils/formatUtil'
 import { renderMarkdownToHtml } from '@/utils/markdownRendererUtil'
 
@@ -177,7 +177,7 @@ const handleLearnMore = () => {
 }
 
 const handleUpdate = async () => {
-  if (isElectron()) {
+  if (isDesktop) {
     try {
       await useCommandStore().execute('Comfy-Desktop.CheckForUpdates')
       dismissToast()

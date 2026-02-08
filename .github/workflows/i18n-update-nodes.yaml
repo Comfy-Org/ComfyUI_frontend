@@ -36,7 +36,7 @@ jobs:
         env:
           PLAYWRIGHT_TEST_URL: http://localhost:5173
       - name: Update translations
-        run: pnpm locale
+        run: pnpm locale && pnpm fix-i18n-node-defs
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
       - name: Create Pull Request

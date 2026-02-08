@@ -18,9 +18,8 @@ import { useCommandStore } from '@/stores/commandStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { TaskItemImpl, useQueueStore } from '@/stores/queueStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
-import { isElectron } from '@/utils/envUtil'
 
-const mockData = vi.hoisted(() => ({ isLoggedIn: false }))
+const mockData = vi.hoisted(() => ({ isLoggedIn: false, isDesktop: false }))
 
 vi.mock('@/composables/auth/useCurrentUser', () => ({
   useCurrentUser: () => {
@@ -30,7 +29,13 @@ vi.mock('@/composables/auth/useCurrentUser', () => ({
   }
 }))
 
-vi.mock('@/utils/envUtil')
+vi.mock('@/platform/distribution/types', () => ({
+  isCloud: false,
+  isNightly: false,
+  get isDesktop() {
+    return mockData.isDesktop
+  }
+}))
 vi.mock('@/stores/firebaseAuthStore', () => ({
   useFirebaseAuthStore: vi.fn(() => ({
     currentUser: null,
@@ -107,6 +112,8 @@ describe('TopMenuSection', () => {
   beforeEach(() => {
     vi.resetAllMocks()
     localStorage.clear()
+    mockData.isDesktop = false
+    mockData.isLoggedIn = false
   })
 
   describe('authentication state', () => {
@@ -129,7 +136,7 @@ describe('TopMenuSection', () => {
 
       describe('on desktop platform', () => {
         it('should display LoginButton and not display CurrentUserButton', () => {
-          vi.mocked(isElectron).mockReturnValue(true)
+          mockData.isDesktop = true
           const wrapper = createWrapper()
           expect(wrapper.findComponent(LoginButton).exists()).toBe(true)
           expect(wrapper.findComponent(CurrentUserButton).exists()).toBe(false)

@@ -1,5 +1,3 @@
-import { isElectron } from '@/utils/envUtil'
-
 /**
  * Distribution types and compile-time constants for managing
  * multi-distribution builds (Desktop, Localhost, Cloud)
@@ -15,10 +13,8 @@ declare global {
 /** Current distribution - replaced at compile time */
 const DISTRIBUTION: Distribution = __DISTRIBUTION__
 
-/** Distribution type checks */
-export const isDesktop = DISTRIBUTION === 'desktop' || isElectron() // TODO: replace with build var
+export const isDesktop = DISTRIBUTION === 'desktop'
 export const isCloud = DISTRIBUTION === 'cloud'
-// export const isLocalhost = DISTRIBUTION === 'localhost' || (!isDesktop && !isCloud)
 
 /**
  * Whether this is a nightly build (from main branch).
