@@ -45,7 +45,7 @@
     "src/types/**/*.d.ts",
     "playwright.config.ts",
     "playwright.i18n.config.ts",
-    "tailwind.config.ts",
+
     "tests-ui/**/*",
     "vite.config.mts",
     "vitest.config.ts"

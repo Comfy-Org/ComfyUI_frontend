@@ -90,6 +90,13 @@ vi.mock('@/composables/auth/useFirebaseAuthActions', () => ({
   }))
 }))
 
+vi.mock('@/composables/billing/useBillingContext', () => ({
+  useBillingContext: () => ({
+    isActiveSubscription: computed(() => mockIsActiveSubscription.value),
+    manageSubscription: vi.fn()
+  })
+}))
+
 // Create i18n instance for testing
 const i18n = createI18n({
   legacy: false,

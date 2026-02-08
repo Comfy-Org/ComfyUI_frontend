@@ -6442,12 +6442,8 @@
       "model_file": {
         "name": "archivo_modelo"
       },
-      "upload 3d model": {
-        "es": "Subir modelo 3D"
-      },
-      "upload extra resources": {
-        "es": "Subir recursos adicionales"
-      },
+      "upload 3d model": {},
+      "upload extra resources": {},
       "width": {
         "name": "ancho"
       }
@@ -10805,6 +10801,9 @@
       "camera_info": {
         "name": "camera_info"
       },
+      "image": {
+        "name": "imagen"
+      },
       "model_file": {
         "name": "archivo_modelo",
         "tooltip": "Archivo de modelo 3D o ruta del archivo"
@@ -12622,6 +12621,9 @@
     "inputs": {
       "filename_prefix": {
         "name": "prefijo_nombre_archivo"
+      },
+      "image": {
+        "name": "imagen"
       },
       "mesh": {
         "name": "malla",

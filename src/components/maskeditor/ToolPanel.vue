@@ -31,18 +31,19 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import type { useToolManager } from '@/composables/maskeditor/useToolManager'
 import { iconsHtml } from '@/extensions/core/maskeditor/constants'
 import type { Tools } from '@/extensions/core/maskeditor/types'
 import { allTools } from '@/extensions/core/maskeditor/types'
-import { t } from '@/i18n'
 import { useMaskEditorStore } from '@/stores/maskEditorStore'
 
 const { toolManager } = defineProps<{
   toolManager: ReturnType<typeof useToolManager>
 }>()
 
+const { t } = useI18n()
 const store = useMaskEditorStore()
 
 const onToolSelect = (tool: Tools) => {

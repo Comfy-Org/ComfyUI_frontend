@@ -287,12 +287,12 @@ export default defineConfig([
     files: ['**/*.vue'],
     rules: {
       'no-restricted-imports': [
-        'warn',
+        'error',
         {
           paths: [
             {
               name: '@/i18n',
-              importNames: ['t', 'd', 'st', 'te'],
+              importNames: ['t', 'd', 'te'],
               message:
                 "In Vue components, use `const { t } = useI18n()` instead of importing from '@/i18n'."
             }
@@ -301,13 +301,13 @@ export default defineConfig([
       ]
     }
   },
-  // Non-composable .ts files must use the global t/d/st/te, not useI18n()
+  // Non-composable .ts files must use the global t/d/te, not useI18n()
   {
     files: ['**/*.ts'],
     ignores: ['**/use[A-Z]*.ts', '**/*.test.ts', 'src/i18n.ts'],
     rules: {
       'no-restricted-imports': [
-        'warn',
+        'error',
         {
           paths: [
             {

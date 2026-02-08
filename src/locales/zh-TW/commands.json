@@ -35,6 +35,9 @@
   "Comfy-Desktop_Restart": {
     "label": "重新啟動"
   },
+  "Comfy_3DViewer_Open3DViewer": {
+    "label": "為選取的節點開啟 3D 檢視器（Beta）"
+  },
   "Comfy_BrowseModelAssets": {
     "label": "實驗性：瀏覽模型資源"
   },
@@ -313,6 +316,12 @@
   },
   "Workspace_ToggleBottomPanel": {
     "label": "切換下方面板"
+  },
+  "Workspace_ToggleBottomPanelTab_command-terminal": {
+    "label": "切換終端機底部面板"
+  },
+  "Workspace_ToggleBottomPanelTab_logs-terminal": {
+    "label": "切換日誌底部面板"
   },
   "Workspace_ToggleBottomPanelTab_shortcuts-essentials": {
     "label": "切換基本下方面板"

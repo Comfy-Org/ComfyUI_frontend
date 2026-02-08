@@ -87,18 +87,26 @@
         <SubscribeButton
           v-else-if="isPersonalWorkspace"
           :fluid="false"
-          :label="$t('workspaceSwitcher.subscribe')"
+          :label="
+            isCancelled
+              ? $t('subscription.resubscribe')
+              : $t('workspaceSwitcher.subscribe')
+          "
           size="sm"
           variant="gradient"
         />
-        <!-- Non-personal workspace: Navigate to workspace settings -->
+        <!-- Non-personal workspace: Show pricing table -->
         <Button
           v-else
           variant="primary"
           size="sm"
-          @click="handleOpenPlanAndCreditsSettings"
+          @click="handleOpenPlansAndPricing"
         >
-          {{ $t('workspaceSwitcher.subscribe') }}
+          {{
+            isCancelled
+              ? $t('subscription.resubscribe')
+              : $t('workspaceSwitcher.subscribe')
+          }}
         </Button>
       </div>
 
@@ -196,18 +204,19 @@ import { storeToRefs } from 'pinia'
 import Divider from 'primevue/divider'
 import Popover from 'primevue/popover'
 import Skeleton from 'primevue/skeleton'
-import { computed, onMounted, ref } from 'vue'
+import { computed, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 
+import { formatCreditsFromCents } from '@/base/credits/comfyCredits'
 import UserAvatar from '@/components/common/UserAvatar.vue'
 import WorkspaceProfilePic from '@/components/common/WorkspaceProfilePic.vue'
 import WorkspaceSwitcherPopover from '@/components/topbar/WorkspaceSwitcherPopover.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
-import { useFirebaseAuthActions } from '@/composables/auth/useFirebaseAuthActions'
+
 import { useExternalLink } from '@/composables/useExternalLink'
+import { useBillingContext } from '@/composables/billing/useBillingContext'
 import SubscribeButton from '@/platform/cloud/subscription/components/SubscribeButton.vue'
-import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
-import { useSubscriptionCredits } from '@/platform/cloud/subscription/composables/useSubscriptionCredits'
 import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
@@ -233,22 +242,30 @@ const { buildDocsUrl, docsPaths } = useExternalLink()
 
 const { userDisplayName, userEmail, userPhotoUrl, handleSignOut } =
   useCurrentUser()
-const authActions = useFirebaseAuthActions()
 const dialogService = useDialogService()
-const { isActiveSubscription, subscriptionStatus } = useSubscription()
-const { totalCredits, isLoadingBalance } = useSubscriptionCredits()
+const { isActiveSubscription, subscription, balance, isLoading, fetchBalance } =
+  useBillingContext()
+
+const isCancelled = computed(() => subscription.value?.isCancelled ?? false)
 const subscriptionDialog = useSubscriptionDialog()
+
+const { locale } = useI18n()
+const isLoadingBalance = isLoading
 
 const displayedCredits = computed(() => {
   if (initState.value !== 'ready') return ''
-  // Only personal workspaces have subscription status from useSubscription()
-  // Team workspaces don't have backend subscription data yet
-  if (isPersonalWorkspace.value) {
-    // Wait for subscription status to load
-    if (subscriptionStatus.value === null) return ''
-    return isActiveSubscription.value ? totalCredits.value : '0'
-  }
-  return '0'
+
+  // API field is named _micros but contains cents (naming inconsistency)
+  const cents =
+    balance.value?.effectiveBalanceMicros ?? balance.value?.amountMicros ?? 0
+  return formatCreditsFromCents({
+    cents,
+    locale: locale.value,
+    numberOptions: {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 2
+    }
+  })
 })
 
 const canUpgrade = computed(() => {
@@ -322,7 +339,9 @@ const toggleWorkspaceSwitcher = (event: MouseEvent) => {
   workspaceSwitcherPopover.value?.toggle(event)
 }
 
-onMounted(() => {
-  void authActions.fetchBalance()
-})
+const refreshBalance = () => {
+  void fetchBalance()
+}
+
+defineExpose({ refreshBalance })
 </script>

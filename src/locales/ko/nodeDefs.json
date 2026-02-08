@@ -10801,6 +10801,9 @@
       "camera_info": {
         "name": "카메라 정보"
       },
+      "image": {
+        "name": "이미지"
+      },
       "model_file": {
         "name": "모델 파일",
         "tooltip": "3D 모델 파일 또는 경로 문자열"
@@ -12618,6 +12621,9 @@
     "inputs": {
       "filename_prefix": {
         "name": "파일명 접두사"
+      },
+      "image": {
+        "name": "이미지"
       },
       "mesh": {
         "name": "메시",

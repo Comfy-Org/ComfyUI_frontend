@@ -151,6 +151,51 @@
     },
     "tooltip": "キャンバス上のノード間の接続リンクの外観と表示を制御します。"
   },
+  "Comfy_Load3D_3DViewerEnable": {
+    "name": "3Dビューアーを有効化（ベータ）",
+    "tooltip": "選択したノードに対して3Dビューアー（ベータ）を有効にします。この機能により、フルサイズの3Dビューアー内で3Dモデルを直接可視化し、操作できます。"
+  },
+  "Comfy_Load3D_BackgroundColor": {
+    "name": "初期背景色",
+    "tooltip": "3Dシーンのデフォルト背景色を設定します。この設定は新しい3Dウィジェット作成時の背景の見た目を決定しますが、作成後に各ウィジェットごとに個別調整が可能です。"
+  },
+  "Comfy_Load3D_CameraType": {
+    "name": "初期カメラタイプ",
+    "options": {
+      "orthographic": "直交投影",
+      "perspective": "パースペクティブ"
+    },
+    "tooltip": "新しい3Dウィジェット作成時に、カメラがデフォルトでパースペクティブか直交投影かを制御します。このデフォルトは作成後に各ウィジェットごとに切り替え可能です。"
+  },
+  "Comfy_Load3D_LightAdjustmentIncrement": {
+    "name": "ライト調整増分",
+    "tooltip": "3Dシーンでライトの強度を調整する際の増分サイズを制御します。小さいステップ値はより細かい調整を可能にし、大きい値は一度の調整でより大きな変化となります。"
+  },
+  "Comfy_Load3D_LightIntensity": {
+    "name": "初期ライト強度",
+    "tooltip": "3Dシーンの照明のデフォルトの明るさレベルを設定します。この値は新しい3Dウィジェット作成時にライトがどれだけ強くオブジェクトを照らすかを決定しますが、作成後に各ウィジェットごとに調整可能です。"
+  },
+  "Comfy_Load3D_LightIntensityMaximum": {
+    "name": "ライト強度の最大値",
+    "tooltip": "3Dシーンで設定可能なライト強度の最大値を設定します。これは、任意の3Dウィジェットで照明を調整する際の明るさの上限を定義します。"
+  },
+  "Comfy_Load3D_LightIntensityMinimum": {
+    "name": "ライト強度の最小値",
+    "tooltip": "3Dシーンで設定可能なライト強度の最小値を設定します。これは、任意の3Dウィジェットで照明を調整する際の明るさの下限を定義します。"
+  },
+  "Comfy_Load3D_PLYEngine": {
+    "name": "PLYエンジン",
+    "options": {
+      "fastply": "fastply",
+      "sparkjs": "sparkjs",
+      "threejs": "threejs"
+    },
+    "tooltip": "PLYファイルを読み込むエンジンを選択します。「threejs」はネイティブのThree.js PLYLoaderを使用（メッシュPLYファイルに最適）。「fastply」はASCIIポイントクラウドPLYファイル用の最適化ローダーを使用。「sparkjs」は3DガウシアンスプラッティングPLYファイル用にSpark.jsを使用します。"
+  },
+  "Comfy_Load3D_ShowGrid": {
+    "name": "初期グリッド表示",
+    "tooltip": "新しい3Dウィジェット作成時にグリッドがデフォルトで表示されるかどうかを制御します。このデフォルトは作成後に各ウィジェットごとに切り替え可能です。"
+  },
   "Comfy_Locale": {
     "name": "言語"
   },

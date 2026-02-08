@@ -8,26 +8,36 @@
  */
 
 import { useExtensionService } from '@/services/extensionService'
+import { app } from '@/scripts/app'
+import { useExtensionStore } from '@/stores/extensionStore'
+
+import type { ComfyExtension } from '@/types/comfy'
 
 const LOAD3D_NODE_TYPES = new Set(['Load3D', 'Preview3D', 'SaveGLB'])
 
 let load3dExtensionsLoaded = false
-let load3dExtensionsLoading: Promise<void> | null = null
+let load3dExtensionsLoading: Promise<ComfyExtension[]> | null = null
 
 /**
- * Dynamically load the 3D extensions (and THREE.js) on demand
+ * Dynamically load the 3D extensions (and THREE.js) on demand.
+ * Returns the list of newly registered extensions so the caller can
+ * replay hooks that they missed.
  */
-async function loadLoad3dExtensions(): Promise<void> {
-  if (load3dExtensionsLoaded) return
+async function loadLoad3dExtensions(): Promise<ComfyExtension[]> {
+  if (load3dExtensionsLoaded) return []
 
   if (load3dExtensionsLoading) {
     return load3dExtensionsLoading
   }
 
   load3dExtensionsLoading = (async () => {
+    const before = new Set(useExtensionStore().enabledExtensions)
     // Import both extensions - they will self-register via useExtensionService()
     await Promise.all([import('./load3d'), import('./saveMesh')])
     load3dExtensionsLoaded = true
+    return useExtensionStore().enabledExtensions.filter(
+      (ext) => !before.has(ext)
+    )
   })()
 
   return load3dExtensionsLoading
@@ -44,10 +54,15 @@ function isLoad3dNodeType(nodeTypeName: string): boolean {
 useExtensionService().registerExtension({
   name: 'Comfy.Load3DLazy',
 
-  async beforeRegisterNodeDef(_nodeType, nodeData) {
-    // When a 3D node type is being registered, load the 3D extensions
+  async beforeRegisterNodeDef(nodeType, nodeData) {
     if (isLoad3dNodeType(nodeData.name)) {
-      await loadLoad3dExtensions()
+      // Load the 3D extensions and replay their beforeRegisterNodeDef hooks,
+      // since invokeExtensionsAsync already captured the extensions snapshot
+      // before these new extensions were registered.
+      const newExtensions = await loadLoad3dExtensions()
+      for (const ext of newExtensions) {
+        await ext.beforeRegisterNodeDef?.(nodeType, nodeData, app)
+      }
     }
   }
 })

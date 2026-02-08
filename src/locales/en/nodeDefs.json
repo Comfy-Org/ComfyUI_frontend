@@ -10865,6 +10865,9 @@
       },
       "bg_image": {
         "name": "bg_image"
+      },
+      "image": {
+        "name": "image"
       }
     }
   },
@@ -12567,6 +12570,9 @@
       },
       "filename_prefix": {
         "name": "filename_prefix"
+      },
+      "image": {
+        "name": "image"
       }
     }
   },

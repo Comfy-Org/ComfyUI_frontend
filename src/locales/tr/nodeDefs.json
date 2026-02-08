@@ -6432,9 +6432,7 @@
   "Load3D": {
     "display_name": "3D Yükle",
     "inputs": {
-      "clear": {
-        "": "Temizle"
-      },
+      "clear": {},
       "height": {
         "name": "yükseklik"
       },
@@ -6444,12 +6442,8 @@
       "model_file": {
         "name": "model_dosyası"
       },
-      "upload 3d model": {
-        "": "3D modeli yükle"
-      },
-      "upload extra resources": {
-        "": "Ek kaynakları yükle"
-      },
+      "upload 3d model": {},
+      "upload extra resources": {},
       "width": {
         "name": "genişlik"
       }
@@ -10807,6 +10801,9 @@
       "camera_info": {
         "name": "kamera_bilgisi"
       },
+      "image": {
+        "name": "görüntü"
+      },
       "model_file": {
         "name": "model_dosyası",
         "tooltip": "3D model dosyası veya yol dizgesi"
@@ -12624,6 +12621,9 @@
     "inputs": {
       "filename_prefix": {
         "name": "dosyaadı_öneki"
+      },
+      "image": {
+        "name": "görüntü"
       },
       "mesh": {
         "name": "ağ",

@@ -46,6 +46,7 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useI18n()
+
 const canvasStore = useCanvasStore()
 const favoritedWidgetsStore = useFavoritedWidgetsStore()
 const isEditing = ref(false)

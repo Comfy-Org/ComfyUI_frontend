@@ -26,13 +26,14 @@ export const TIER_PRICING: Record<Exclude<TierKey, 'founder'>, TierPricing> = {
 
 interface TierFeatures {
   customLoRAs: boolean
+  maxMembers: number
 }
 
 const TIER_FEATURES: Record<TierKey, TierFeatures> = {
-  standard: { customLoRAs: false },
-  creator: { customLoRAs: true },
-  pro: { customLoRAs: true },
-  founder: { customLoRAs: false }
+  standard: { customLoRAs: false, maxMembers: 1 },
+  creator: { customLoRAs: true, maxMembers: 5 },
+  pro: { customLoRAs: true, maxMembers: 20 },
+  founder: { customLoRAs: false, maxMembers: 1 }
 }
 
 export const DEFAULT_TIER_KEY: TierKey = 'standard'

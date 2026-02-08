@@ -2,7 +2,7 @@ import { onScopeDispose, ref } from 'vue'
 import type { ComputedRef, Ref } from 'vue'
 import { defaultWindow, useEventListener, useTimeoutFn } from '@vueuse/core'
 
-import type { TelemetryProvider } from '@/platform/telemetry/types'
+import type { TelemetryDispatcher } from '@/platform/telemetry/types'
 
 import type { CloudSubscriptionStatusResponse } from './useSubscription'
 
@@ -14,7 +14,10 @@ type CancellationWatcherOptions = {
   fetchStatus: () => Promise<CloudSubscriptionStatusResponse | null | void>
   isActiveSubscription: ComputedRef<boolean>
   subscriptionStatus: Ref<CloudSubscriptionStatusResponse | null>
-  telemetry: Pick<TelemetryProvider, 'trackMonthlySubscriptionCancelled'> | null
+  telemetry: Pick<
+    TelemetryDispatcher,
+    'trackMonthlySubscriptionCancelled'
+  > | null
   shouldWatchCancellation: () => boolean
 }
 

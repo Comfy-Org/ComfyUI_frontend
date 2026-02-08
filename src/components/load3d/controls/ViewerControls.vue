@@ -19,13 +19,15 @@
 </template>
 
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n'
+
 import Load3DViewerContent from '@/components/load3d/Load3dViewerContent.vue'
 import Button from '@/components/ui/button/Button.vue'
-import { t } from '@/i18n'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { useLoad3dService } from '@/services/load3dService'
 import { useDialogStore } from '@/stores/dialogStore'
 
+const { t } = useI18n()
 const { node } = defineProps<{
   node: LGraphNode
 }>()

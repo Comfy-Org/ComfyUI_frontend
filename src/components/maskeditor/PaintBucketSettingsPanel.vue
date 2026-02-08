@@ -27,11 +27,13 @@
 </template>
 
 <script setup lang="ts">
-import { t } from '@/i18n'
+import { useI18n } from 'vue-i18n'
+
 import { useMaskEditorStore } from '@/stores/maskEditorStore'
 
 import SliderControl from './controls/SliderControl.vue'
 
+const { t } = useI18n()
 const store = useMaskEditorStore()
 
 const onToleranceChange = (value: number) => {

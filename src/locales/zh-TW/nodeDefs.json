@@ -6442,12 +6442,8 @@
       "model_file": {
         "name": "模型檔案"
       },
-      "upload 3d model": {
-        "zh-TW": "上傳 3D 模型"
-      },
-      "upload extra resources": {
-        "zh-TW": "上傳額外資源"
-      },
+      "upload 3d model": {},
+      "upload extra resources": {},
       "width": {
         "name": "寬度"
       }
@@ -10805,6 +10801,9 @@
       "camera_info": {
         "name": "camera_info"
       },
+      "image": {
+        "name": "影像"
+      },
       "model_file": {
         "name": "model_file",
         "tooltip": "3D 模型檔案或路徑字串"
@@ -12622,6 +12621,9 @@
     "inputs": {
       "filename_prefix": {
         "name": "檔名前綴"
+      },
+      "image": {
+        "name": "影像"
       },
       "mesh": {
         "name": "mesh",

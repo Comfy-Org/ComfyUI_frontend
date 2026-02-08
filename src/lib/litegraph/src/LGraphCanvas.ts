@@ -688,6 +688,8 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
   canvas: HTMLCanvasElement & ICustomEventTarget<LGraphCanvasEventMap>
   bgcanvas: HTMLCanvasElement
+  overlayCanvas: HTMLCanvasElement | null = null
+  overlayCtx: CanvasRenderingContext2D | null = null
   ctx: CanvasRenderingContext2D
   _events_binded?: boolean
   _mousedown_callback?(e: PointerEvent): void
@@ -4849,7 +4851,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
   drawFrontCanvas(): void {
     this.dirty_canvas = false
 
-    const { ctx, canvas, graph, linkConnector } = this
+    const { ctx, canvas, graph } = this
 
     // @ts-expect-error start2D method not in standard CanvasRenderingContext2D
     if (ctx.start2D && !this.viewport) {
@@ -4949,78 +4951,14 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
         this.drawConnections(ctx)
       }
 
-      if (linkConnector.isConnecting) {
-        // current connection (the one being dragged by the mouse)
-        const { renderLinks } = linkConnector
-        const highlightPos = this._getHighlightPosition()
-        ctx.lineWidth = this.connections_width
-
-        for (const renderLink of renderLinks) {
-          const {
-            fromSlot,
-            fromPos: pos,
-            fromDirection,
-            dragDirection
-          } = renderLink
-          const connShape = fromSlot.shape
-          const connType = fromSlot.type
-
-          const colour = resolveConnectingLinkColor(connType)
-
-          // the connection being dragged by the mouse
-          if (this.linkRenderer) {
-            this.linkRenderer.renderDraggingLink(
-              ctx,
-              pos,
-              highlightPos,
-              colour,
-              fromDirection,
-              dragDirection,
-              {
-                ...this.buildLinkRenderContext(),
-                linkMarkerShape: LinkMarkerShape.None
-              }
-            )
-          }
-
-          ctx.fillStyle = colour
-          ctx.beginPath()
-          if (connType === LiteGraph.EVENT || connShape === RenderShape.BOX) {
-            ctx.rect(pos[0] - 6 + 0.5, pos[1] - 5 + 0.5, 14, 10)
-            ctx.rect(
-              highlightPos[0] - 6 + 0.5,
-              highlightPos[1] - 5 + 0.5,
-              14,
-              10
-            )
-          } else if (connShape === RenderShape.ARROW) {
-            ctx.moveTo(pos[0] + 8, pos[1] + 0.5)
-            ctx.lineTo(pos[0] - 4, pos[1] + 6 + 0.5)
-            ctx.lineTo(pos[0] - 4, pos[1] - 6 + 0.5)
-            ctx.closePath()
-          } else {
-            ctx.arc(pos[0], pos[1], 4, 0, Math.PI * 2)
-            ctx.arc(highlightPos[0], highlightPos[1], 4, 0, Math.PI * 2)
-          }
-          ctx.fill()
-        }
-
-        // Gradient half-border over target node
-        this._renderSnapHighlight(ctx, highlightPos)
-      }
-
-      // on top of link center
-      if (
-        !this.isDragging &&
-        this.over_link_center &&
-        this.render_link_tooltip
-      ) {
-        this.drawLinkTooltip(ctx, this.over_link_center)
+      if (!LiteGraph.vueNodesMode || !this.overlayCtx) {
+        this._drawConnectingLinks(ctx)
       } else {
-        this.onDrawLinkTooltip?.(ctx, null)
+        this._drawOverlayLinks()
       }
 
-      // custom info
+      this._drawLinkTooltip(ctx)
+
       this.onDrawForeground?.(ctx, this.visible_area)
 
       ctx.restore()
@@ -5031,9 +4969,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     if (area) ctx.restore()
   }
 
-  /** @returns If the pointer is over a link centre marker, the link segment it belongs to.  Otherwise, `undefined`.  */
   private _getLinkCentreOnPos(e: CanvasPointerEvent): LinkSegment | undefined {
-    // Skip hit detection if center markers are disabled
     if (this.linkMarkerShape === LinkMarkerShape.None) {
       return undefined
     }
@@ -5048,6 +4984,90 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
         return linkSegment
       }
     }
+  }
+
+  private _drawConnectingLinks(ctx: CanvasRenderingContext2D): void {
+    const { linkConnector } = this
+    if (!linkConnector.isConnecting) return
+
+    const { renderLinks } = linkConnector
+    const highlightPos = this._getHighlightPosition()
+    ctx.lineWidth = this.connections_width
+
+    for (const renderLink of renderLinks) {
+      const {
+        fromSlot,
+        fromPos: pos,
+        fromDirection,
+        dragDirection
+      } = renderLink
+      const connShape = fromSlot.shape
+      const connType = fromSlot.type
+
+      const colour = resolveConnectingLinkColor(connType)
+
+      if (this.linkRenderer) {
+        this.linkRenderer.renderDraggingLink(
+          ctx,
+          pos,
+          highlightPos,
+          colour,
+          fromDirection,
+          dragDirection,
+          {
+            ...this.buildLinkRenderContext(),
+            linkMarkerShape: LinkMarkerShape.None
+          }
+        )
+      }
+
+      ctx.fillStyle = colour
+      ctx.beginPath()
+      if (connType === LiteGraph.EVENT || connShape === RenderShape.BOX) {
+        ctx.rect(pos[0] - 6 + 0.5, pos[1] - 5 + 0.5, 14, 10)
+        ctx.rect(highlightPos[0] - 6 + 0.5, highlightPos[1] - 5 + 0.5, 14, 10)
+      } else if (connShape === RenderShape.ARROW) {
+        ctx.moveTo(pos[0] + 8, pos[1] + 0.5)
+        ctx.lineTo(pos[0] - 4, pos[1] + 6 + 0.5)
+        ctx.lineTo(pos[0] - 4, pos[1] - 6 + 0.5)
+        ctx.closePath()
+      } else {
+        ctx.arc(pos[0], pos[1], 4, 0, Math.PI * 2)
+        ctx.arc(highlightPos[0], highlightPos[1], 4, 0, Math.PI * 2)
+      }
+      ctx.fill()
+    }
+
+    this._renderSnapHighlight(ctx, highlightPos)
+  }
+
+  private _drawLinkTooltip(ctx: CanvasRenderingContext2D): void {
+    if (!this.isDragging && this.over_link_center && this.render_link_tooltip) {
+      this.drawLinkTooltip(ctx, this.over_link_center)
+    } else {
+      this.onDrawLinkTooltip?.(ctx, null)
+    }
+  }
+
+  private _drawOverlayLinks(): void {
+    const octx = this.overlayCtx
+    const overlayCanvas = this.overlayCanvas
+    if (!octx || !overlayCanvas) return
+
+    octx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height)
+
+    if (!this.linkConnector.isConnecting) return
+
+    octx.save()
+
+    const scale = window.devicePixelRatio
+    octx.setTransform(scale, 0, 0, scale, 0, 0)
+
+    this.ds.toCanvasContext(octx)
+
+    this._drawConnectingLinks(octx)
+
+    octx.restore()
   }
 
   /** Get the target snap / highlight point in graph space */

@@ -15,6 +15,10 @@ export const useImageCompareWidget = (): ComfyWidgetConstructorV2 => {
       ...options
     }) as IImageCompareWidget
 
+    // widget.serialize controls workflow persistence; widget.options.serialize
+    // controls prompt (API) serialization — only disable the former.
+    widget.serialize = false
+
     return widget
   }
 }

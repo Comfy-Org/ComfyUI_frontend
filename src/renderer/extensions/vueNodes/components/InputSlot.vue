@@ -7,7 +7,7 @@
       cn(
         'lg-slot lg-slot--input flex items-center group rounded-r-lg m-0',
         'cursor-crosshair',
-        props.dotOnly ? 'lg-slot--dot-only' : 'pr-6',
+        dotOnly ? 'lg-slot--dot-only' : 'pr-6',
         {
           'lg-slot--connected': props.connected,
           'lg-slot--compatible': props.compatible,
@@ -36,7 +36,7 @@
     <!-- Slot Name -->
     <div class="h-full flex items-center min-w-0">
       <span
-        v-if="!dotOnly"
+        v-if="!props.dotOnly && !hasNoLabel"
         :class="
           cn(
             'truncate text-node-component-slot-text',
@@ -47,8 +47,7 @@
         {{
           slotData.label ||
           slotData.localized_name ||
-          slotData.name ||
-          `Input ${index}`
+          (slotData.name ?? `Input ${index}`)
         }}
       </span>
     </div>
@@ -83,6 +82,14 @@ interface InputSlotProps {
 }
 
 const props = defineProps<InputSlotProps>()
+
+const hasNoLabel = computed(
+  () =>
+    !props.slotData.label &&
+    !props.slotData.localized_name &&
+    props.slotData.name === ''
+)
+const dotOnly = computed(() => props.dotOnly || hasNoLabel.value)
 
 const executionStore = useExecutionStore()
 

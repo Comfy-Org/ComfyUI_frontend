@@ -6432,9 +6432,7 @@
   "Load3D": {
     "display_name": "Загрузить 3D",
     "inputs": {
-      "clear": {
-        "": "Очистить"
-      },
+      "clear": {},
       "height": {
         "name": "высота"
       },
@@ -6444,12 +6442,8 @@
       "model_file": {
         "name": "файл модели"
       },
-      "upload 3d model": {
-        "": "Загрузить 3D-модель"
-      },
-      "upload extra resources": {
-        "": "Загрузить дополнительные ресурсы"
-      },
+      "upload 3d model": {},
+      "upload extra resources": {},
       "width": {
         "name": "ширина"
       }
@@ -10807,6 +10801,9 @@
       "camera_info": {
         "name": "информация_камеры"
       },
+      "image": {
+        "name": "изображение"
+      },
       "model_file": {
         "name": "файл_модели",
         "tooltip": "Файл 3D-модели или строка пути"
@@ -12624,6 +12621,9 @@
     "inputs": {
       "filename_prefix": {
         "name": "префикс_имени_файла"
+      },
+      "image": {
+        "name": "изображение"
       },
       "mesh": {
         "name": "сетка",

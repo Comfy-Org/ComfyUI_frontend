@@ -7,11 +7,16 @@
 
 @plugin 'tailwindcss-primeui';
 
-@config '../../tailwind.config.ts';
+@plugin "@iconify/tailwind4" {
+  scale: 1.2;
+  icon-sets: from-folder(comfy, './packages/design-system/src/icons');
+}
 
 @custom-variant touch (@media (hover: none));
 
 @theme {
+  --shadow-interface: var(--interface-panel-box-shadow);
+
   --text-xxs: 0.625rem;
   --text-xxs--line-height: calc(1 / 0.625);
 

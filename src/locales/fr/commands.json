@@ -35,6 +35,9 @@
   "Comfy-Desktop_Restart": {
     "label": "Redémarrer"
   },
+  "Comfy_3DViewer_Open3DViewer": {
+    "label": "Ouvrir le visualiseur 3D (bêta) pour le nœud sélectionné"
+  },
   "Comfy_BrowseModelAssets": {
     "label": "Expérimental : Parcourir les ressources de modèles"
   },
@@ -313,6 +316,12 @@
   },
   "Workspace_ToggleBottomPanel": {
     "label": "Basculer le panneau inférieur"
+  },
+  "Workspace_ToggleBottomPanelTab_command-terminal": {
+    "label": "Afficher/Masquer le panneau inférieur du terminal"
+  },
+  "Workspace_ToggleBottomPanelTab_logs-terminal": {
+    "label": "Afficher/Masquer le panneau inférieur des journaux"
   },
   "Workspace_ToggleBottomPanelTab_shortcuts-essentials": {
     "label": "Afficher/Masquer le panneau inférieur essentiel"

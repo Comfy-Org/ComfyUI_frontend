@@ -10,6 +10,7 @@ import type {
   ListMembersParams,
   Member,
   PendingInvite as ApiPendingInvite,
+  SubscriptionTier,
   WorkspaceWithRole
 } from '../api/workspaceApi'
 import { workspaceApi } from '../api/workspaceApi'
@@ -30,11 +31,12 @@ export interface PendingInvite {
   expiryDate: Date
 }
 
-type SubscriptionPlan = 'PRO_MONTHLY' | 'PRO_YEARLY' | null
+type SubscriptionPlan = string | null
 
 interface WorkspaceState extends WorkspaceWithRole {
   isSubscribed: boolean
   subscriptionPlan: SubscriptionPlan
+  subscriptionTier: SubscriptionTier | null
   members: WorkspaceMember[]
   pendingInvites: PendingInvite[]
 }
@@ -65,8 +67,10 @@ function createWorkspaceState(workspace: WorkspaceWithRole): WorkspaceState {
   return {
     ...workspace,
     // Personal workspaces use user-scoped subscription from useSubscription()
-    isSubscribed: workspace.type === 'personal',
+    isSubscribed:
+      workspace.type === 'personal' || !!workspace.subscription_tier,
     subscriptionPlan: null,
+    subscriptionTier: workspace.subscription_tier ?? null,
     members: [],
     pendingInvites: []
   }
@@ -561,10 +565,6 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
     }
   }
 
-  // ════════════════════════════════════════════════════════════
-  // INVITE LINK HELPERS
-  // ════════════════════════════════════════════════════════════
-
   function buildInviteLink(token: string): string {
     const baseUrl = window.location.origin
     return `${baseUrl}?invite=${encodeURIComponent(token)}`
@@ -671,6 +671,7 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
     copyInviteLink,
 
     // Subscription
-    subscribeWorkspace
+    subscribeWorkspace,
+    updateActiveWorkspace
   }
 })

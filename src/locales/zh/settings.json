@@ -151,6 +151,51 @@
     },
     "tooltip": "控制画布上节点之间连接线的外观和可见性。"
   },
+  "Comfy_Load3D_3DViewerEnable": {
+    "name": "启用3D查看器（测试版）",
+    "tooltip": "为选定节点启用3D查看器（测试版）。此功能允许你在全尺寸3D查看器中直接可视化和交互3D模型。"
+  },
+  "Comfy_Load3D_BackgroundColor": {
+    "name": "初始背景颜色",
+    "tooltip": "控制3D场景的默认背景颜色。此设置决定新建3D组件时的背景外观，但每个组件创建后可单独调整。"
+  },
+  "Comfy_Load3D_CameraType": {
+    "name": "初始相机类型",
+    "options": {
+      "orthographic": "正交",
+      "perspective": "透视"
+    },
+    "tooltip": "控制新建3D组件时相机默认是透视还是正交。此默认值可在每个组件创建后单独切换。"
+  },
+  "Comfy_Load3D_LightAdjustmentIncrement": {
+    "name": "光照调整步长",
+    "tooltip": "控制调整3D场景光照强度时的步长。较小的步长值可实现更精细的光照调整，较大的值则每次调整变化更明显。"
+  },
+  "Comfy_Load3D_LightIntensity": {
+    "name": "初始光照强度",
+    "tooltip": "设置3D场景光照的默认亮度级别。此值决定新建3D组件时灯光照亮物体的强度，但每个组件创建后可单独调整。"
+  },
+  "Comfy_Load3D_LightIntensityMaximum": {
+    "name": "光照强度上限",
+    "tooltip": "设置3D场景允许的最大光照强度值。此值定义在任何3D组件中调整光照时可设置的最大亮度。"
+  },
+  "Comfy_Load3D_LightIntensityMinimum": {
+    "name": "光照强度下限",
+    "tooltip": "设置3D场景允许的最小光照强度值。此值定义在任何3D组件中调整光照时可设置的最小亮度。"
+  },
+  "Comfy_Load3D_PLYEngine": {
+    "name": "PLY引擎",
+    "options": {
+      "fastply": "fastply",
+      "sparkjs": "sparkjs",
+      "threejs": "threejs"
+    },
+    "tooltip": "选择用于加载PLY文件的引擎。\"threejs\" 使用原生Three.js PLYLoader（适合网格PLY文件）。\"fastply\" 用于优化的ASCII点云PLY文件加载。\"sparkjs\" 用于3D高斯斑点PLY文件的Spark.js。"
+  },
+  "Comfy_Load3D_ShowGrid": {
+    "name": "初始网格可见性",
+    "tooltip": "控制新建3D组件时网格是否默认可见。此默认值可在每个组件创建后单独切换。"
+  },
   "Comfy_Locale": {
     "name": "语言"
   },
