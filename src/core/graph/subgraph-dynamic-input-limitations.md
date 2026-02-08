@@ -34,6 +34,7 @@ The subgraph boundary slot type is frozen at connection time with no subsequent 
 Autogrow hooks `onConnectionsChange` and splices new inputs into the node's `inputs` array when the last slot is connected. These inputs are added to the **internal node**, not to the subgraph's input/output definitions. `SubgraphNode` only listens for events on the subgraph definition — there is no bridge.
 
 Open UX questions (from the autogrow author):
+
 - Should promoting an autogrow connection cause the `SubgraphNode` to autogrow from that slot?
 - How to distinguish "promote this specific input" vs "promote the autogrow behavior"?
 
