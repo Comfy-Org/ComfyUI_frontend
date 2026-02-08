@@ -1,0 +1,81 @@
+name: 'CI: Telemetry Tree-Shaking Validation'
+
+on:
+  pull_request:
+    branches-ignore: [wip/*, draft/*, temp/*]
+  push:
+    branches: [main, dev*]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate-tree-shaking:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Setup frontend
+        uses: ./.github/actions/setup-frontend
+      - name: Build project
+        run: pnpm build
+      - name: Check for telemetry code in dist
+        run: |
+          # Check for GTM/GA code that should NOT appear in dist
+          # Note: Mixpanel uses conditional dynamic imports and is expected in dist as a lazy chunk
+          FOUND_VIOLATIONS=0
+
+          echo '🔍 Checking dist for telemetry code that should be tree-shaken...'
+          echo ''
+
+          # Verify dist/ directory exists and is not empty
+          if [ ! -d "dist" ]; then
+            echo "❌ ERROR: dist/ directory does not exist!"
+            echo "Build may have failed or produced no output."
+            exit 1
+          fi
+
+          if [ -z "$(ls -A dist)" ]; then
+            echo "❌ ERROR: dist/ directory is empty!"
+            echo "Build may have failed or produced no output."
+            exit 1
+          fi
+
+          # Check for Google Tag Manager / Google Analytics
+          echo "Checking for GTM/GA code..."
+          # Exclude source maps and credit files
+          if grep -r -i --exclude='*.map' --exclude='CREDIT.txt' \
+            -e 'googletagmanager' \
+            -e 'gtm\.js' \
+            -e 'analytics\.js' \
+            -e 'gtag(.config' \
+            -e 'gtag(.event' \
+            dist/; then
+            echo "❌ ERROR: Found GTM/GA code in dist files!"
+            echo "Google Tag Manager / Google Analytics must be properly tree-shaken from OSS builds."
+            FOUND_VIOLATIONS=1
+          else
+            echo "✓ No GTM/GA code found"
+          fi
+
+          if [ $FOUND_VIOLATIONS -eq 1 ]; then
+            echo ''
+            echo '============================================'
+            echo '❌ Telemetry tree-shaking validation FAILED'
+            echo '============================================'
+            echo ''
+            echo 'GTM/GA telemetry code was found in the compiled dist.'
+            echo 'This code must be properly tree-shaken from OSS builds.'
+            echo ''
+            echo 'To fix this:'
+            echo '1. Use the TelemetryProvider pattern (see src/platform/telemetry/)'
+            echo '2. Call telemetry via useTelemetry() hook'
+            echo '3. Avoid top-level imports of GTM/GA libraries'
+            echo '4. Use conditional dynamic imports behind isCloud checks'
+            echo ''
+            exit 1
+          fi
+
+          echo ''
+          echo '✅ Telemetry tree-shaking validation passed!'
+          echo 'No GTM/GA telemetry code found in dist files.'
