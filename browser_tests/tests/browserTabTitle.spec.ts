@@ -1,7 +1,6 @@
 import { expect } from '@playwright/test'
 
 import { comfyPageFixture as test } from '../fixtures/ComfyPage'
-import type { WorkspaceStore } from '../types/globals'
 
 test.describe('Browser tab title', { tag: '@smoke' }, () => {
   test.describe('Beta Menu', () => {
@@ -11,8 +10,7 @@ test.describe('Browser tab title', { tag: '@smoke' }, () => {
 
     test('Can display workflow name', async ({ comfyPage }) => {
       const workflowName = await comfyPage.page.evaluate(async () => {
-        return (window.app!.extensionManager as WorkspaceStore).workflow
-          .activeWorkflow?.filename
+        return wss().workflow.activeWorkflow?.filename
       })
       expect(await comfyPage.page.title()).toBe(`*${workflowName} - ComfyUI`)
     })
@@ -23,8 +21,7 @@ test.describe('Browser tab title', { tag: '@smoke' }, () => {
       comfyPage
     }) => {
       const workflowName = await comfyPage.page.evaluate(async () => {
-        return (window.app!.extensionManager as WorkspaceStore).workflow
-          .activeWorkflow?.filename
+        return wss().workflow.activeWorkflow?.filename
       })
       expect(await comfyPage.page.title()).toBe(`${workflowName} - ComfyUI`)
 
@@ -38,9 +35,7 @@ test.describe('Browser tab title', { tag: '@smoke' }, () => {
 
       // Delete the saved workflow for cleanup.
       await comfyPage.page.evaluate(async () => {
-        return (
-          window.app!.extensionManager as WorkspaceStore
-        ).workflow.activeWorkflow?.delete()
+        return wss().workflow.activeWorkflow?.delete()
       })
     })
   })

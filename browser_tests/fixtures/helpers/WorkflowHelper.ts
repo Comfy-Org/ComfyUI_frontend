@@ -4,7 +4,6 @@ import type {
   ComfyApiWorkflow,
   ComfyWorkflowJSON
 } from '../../../src/platform/workflow/validation/schemas/workflowSchema'
-import type { WorkspaceStore } from '../../types/globals'
 import type { ComfyPage } from '../ComfyPage'
 
 type FolderStructure = {
@@ -47,9 +46,7 @@ export class WorkflowHelper {
     }
 
     await this.comfyPage.page.evaluate(async () => {
-      await (
-        window.app!.extensionManager as WorkspaceStore
-      ).workflow.syncWorkflows()
+      await wss().workflow.syncWorkflows()
     })
 
     // Wait for Vue to re-render the workflow list
@@ -90,24 +87,19 @@ export class WorkflowHelper {
 
   async getUndoQueueSize(): Promise<number | undefined> {
     return this.comfyPage.page.evaluate(() => {
-      const workflow = (window.app!.extensionManager as WorkspaceStore).workflow
-        .activeWorkflow
-      return workflow?.changeTracker.undoQueue.length
+      return wss().workflow.activeWorkflow?.changeTracker.undoQueue.length
     })
   }
 
   async getRedoQueueSize(): Promise<number | undefined> {
     return this.comfyPage.page.evaluate(() => {
-      const workflow = (window.app!.extensionManager as WorkspaceStore).workflow
-        .activeWorkflow
-      return workflow?.changeTracker.redoQueue.length
+      return wss().workflow.activeWorkflow?.changeTracker.redoQueue.length
     })
   }
 
   async isCurrentWorkflowModified(): Promise<boolean | undefined> {
     return this.comfyPage.page.evaluate(() => {
-      return (window.app!.extensionManager as WorkspaceStore).workflow
-        .activeWorkflow?.isModified
+      return wss().workflow.activeWorkflow?.isModified
     })
   }
 
