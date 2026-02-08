@@ -743,6 +743,17 @@ describe('useJobMenu', () => {
       'd3',
       'delete'
     ])
+
+    expect(
+      findActionEntry(jobMenuEntries.value, 'inspect-asset')?.disabled
+    ).toBe(false)
+    expect(
+      findActionEntry(jobMenuEntries.value, 'add-to-current')?.disabled
+    ).toBe(false)
+    expect(findActionEntry(jobMenuEntries.value, 'download')?.disabled).toBe(
+      false
+    )
+
     const inspectEntry = findActionEntry(jobMenuEntries.value, 'inspect-asset')
     await inspectEntry?.onClick?.()
     expect(inspectSpy).toHaveBeenCalledWith(currentItem.value)
@@ -760,6 +771,7 @@ describe('useJobMenu', () => {
     await nextTick()
     const inspectEntry = findActionEntry(jobMenuEntries.value, 'inspect-asset')
     expect(inspectEntry?.onClick).toBeUndefined()
+    expect(inspectEntry?.disabled).toBe(true)
   })
 
   it('omits delete asset entry when no preview exists', async () => {
@@ -767,6 +779,15 @@ describe('useJobMenu', () => {
     setCurrentItem(createJobItem({ state: 'completed', taskRef: {} }))
 
     await nextTick()
+    expect(
+      findActionEntry(jobMenuEntries.value, 'inspect-asset')?.disabled
+    ).toBe(true)
+    expect(
+      findActionEntry(jobMenuEntries.value, 'add-to-current')?.disabled
+    ).toBe(true)
+    expect(findActionEntry(jobMenuEntries.value, 'download')?.disabled).toBe(
+      true
+    )
     expect(jobMenuEntries.value.some((entry) => entry.key === 'delete')).toBe(
       false
     )

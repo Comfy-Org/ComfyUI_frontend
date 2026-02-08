@@ -29,6 +29,7 @@ export type MenuEntry =
       key: string
       label: string
       icon?: string
+      disabled?: boolean
       onClick?: () => void | Promise<void>
     }
   | { kind: 'divider'; key: string }
@@ -239,13 +240,14 @@ export function useJobMenu(
     const item = currentMenuItem()
     const state = item?.state
     if (!state) return []
-    const hasDeletableAsset = !!item?.taskRef?.previewOutput
+    const hasPreviewAsset = !!item?.taskRef?.previewOutput
     if (state === 'completed') {
       return [
         {
           key: 'inspect-asset',
           label: st('queue.jobMenu.inspectAsset', 'Inspect asset'),
           icon: 'icon-[lucide--zoom-in]',
+          disabled: !hasPreviewAsset || !onInspectAsset,
           onClick: onInspectAsset
             ? () => {
                 const item = currentMenuItem()
@@ -260,12 +262,14 @@ export function useJobMenu(
             'Add to current workflow'
           ),
           icon: 'icon-[comfy--node]',
+          disabled: !hasPreviewAsset,
           onClick: addOutputLoaderNode
         },
         {
           key: 'download',
           label: st('queue.jobMenu.download', 'Download'),
           icon: 'icon-[lucide--download]',
+          disabled: !hasPreviewAsset,
           onClick: downloadPreviewAsset
         },
         { kind: 'divider', key: 'd1' },
@@ -289,7 +293,7 @@ export function useJobMenu(
           onClick: copyJobId
         },
         { kind: 'divider', key: 'd3' },
-        ...(hasDeletableAsset
+        ...(hasPreviewAsset
           ? [
               {
                 key: 'delete',
