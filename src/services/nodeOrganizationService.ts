@@ -16,7 +16,7 @@ const DEFAULT_ICON = 'pi pi-sort'
 
 export const DEFAULT_GROUPING_ID = 'category' as const
 export const DEFAULT_SORTING_ID = 'original' as const
-export const DEFAULT_TAB_ID = 'essential' as const
+export const DEFAULT_TAB_ID = 'essentials' as const
 
 class NodeOrganizationService {
   private readonly groupingStrategies: NodeGroupingStrategy[] = [
@@ -127,7 +127,7 @@ class NodeOrganizationService {
     }
 
     switch (tabId) {
-      case 'essential': {
+      case 'essentials': {
         const essentialNodes = nodes.filter(
           (nodeDef) => nodeDef.nodeSource.type === NodeSourceType.Essentials
         )

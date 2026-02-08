@@ -57,8 +57,8 @@ export const getNodeSource = (python_module?: string): NodeSource => {
       displayText: displayName,
       badgeText: displayName
     }
-  } else if (modules[0] === 'essential') {
-    const moduleName = modules[1] ?? 'essential'
+  } else if (modules[0] === 'essentials') {
+    const moduleName = modules[1] ?? 'essentials'
     const displayName = shortenNodeName(moduleName.split('@')[0])
     return {
       type: NodeSourceType.Essentials,

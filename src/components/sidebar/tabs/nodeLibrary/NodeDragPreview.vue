@@ -15,14 +15,23 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted } from 'vue'
+import { onMounted, onUnmounted } from 'vue'
 
 import { useNodeDragToCanvas } from '@/composables/node/useNodeDragToCanvas'
 
-const { isDragging, draggedNode, cursorPosition, setupGlobalListeners } =
-  useNodeDragToCanvas()
+const {
+  isDragging,
+  draggedNode,
+  cursorPosition,
+  setupGlobalListeners,
+  cleanupGlobalListeners
+} = useNodeDragToCanvas()
 
 onMounted(() => {
   setupGlobalListeners()
+})
+
+onUnmounted(() => {
+  cleanupGlobalListeners()
 })
 </script>

@@ -1,10 +1,6 @@
 <template>
   <div class="flex flex-col gap-2">
-    <ComboboxRoot
-      v-model:search-term="searchTerm"
-      :ignore-filter="true"
-      :open="false"
-    >
+    <ComboboxRoot :ignore-filter="true" :open="false">
       <ComboboxAnchor
         :class="
           cn(

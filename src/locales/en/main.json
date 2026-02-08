@@ -772,7 +772,7 @@
     "openWorkflow": "Open workflow in local file system",
     "newBlankWorkflow": "Create a new blank workflow",
     "nodeLibraryTab": {
-      "essential": "Essential",
+      "essentials": "Essentials",
       "allNodes": "All nodes",
       "custom": "Custom",
       "groupBy": "Group By",

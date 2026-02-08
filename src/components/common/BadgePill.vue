@@ -35,7 +35,7 @@ const customStyle = computed(() => {
   if (isGradient) {
     return {
       borderColor: 'transparent',
-      backgroundImage: `linear-gradient(#1a1a1a, #1a1a1a), ${borderStyle}`,
+      backgroundImage: `linear-gradient(var(--base-background), var(--base-background)), ${borderStyle}`,
       backgroundOrigin: 'border-box',
       backgroundClip: 'padding-box, border-box'
     }

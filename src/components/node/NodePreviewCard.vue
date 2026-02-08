@@ -81,7 +81,7 @@
 
 <script setup lang="ts">
 import { useResizeObserver } from '@vueuse/core'
-import { computed, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 
 import { evaluateNodeDefPricing } from '@/composables/node/useNodePricing'
 import BadgePill from '@/components/common/BadgePill.vue'
@@ -113,28 +113,31 @@ const categoryLabel = computed(() => {
 
 const creditsLabel = ref('')
 
-// Evaluate pricing using shared utility from useNodePricing
-if (nodeDef.api_node) {
-  evaluateNodeDefPricing(nodeDef).then((label) => {
-    creditsLabel.value = label
-  })
-}
+onMounted(async () => {
+  if (nodeDef.api_node) {
+    try {
+      creditsLabel.value = await evaluateNodeDefPricing(nodeDef)
+    } catch {
+      creditsLabel.value = ''
+    }
+  }
+})
 
 const inputs = computed(() => {
   if (!nodeDef.inputs) return []
   return Object.entries(nodeDef.inputs)
-    .filter(([_, input]) => !(input as { hidden?: boolean }).hidden)
+    .filter(([_, input]) => !input.hidden)
     .map(([name, input]) => ({
       name,
-      type: (input as { type: string }).type
+      type: input.type
     }))
 })
 
 const outputs = computed(() => {
   if (!nodeDef.outputs) return []
-  return nodeDef.outputs.map((output: { name: string; type?: string }) => ({
+  return nodeDef.outputs.map((output) => ({
     name: output.name,
-    type: output.type ?? output.name
+    type: output.type
   }))
 })
 </script>

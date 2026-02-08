@@ -100,7 +100,7 @@ const { t } = useI18n()
 const searchBoxRef = ref()
 const searchQuery = ref('')
 const expandedKeysByTab = ref<Record<TabId, string[]>>({
-  essential: [],
+  essentials: [],
   all: [],
   custom: []
 })
@@ -187,7 +187,7 @@ const essentialSections = computed(() => {
     filteredNodeDefs.value.length > 0
       ? filteredNodeDefs.value
       : nodeDefStore.visibleNodeDefs
-  return nodeOrganizationService.organizeNodesByTab(nodes, 'essential')
+  return nodeOrganizationService.organizeNodesByTab(nodes, 'essentials')
 })
 
 const renderedEssentialRoot = computed(() => {
@@ -245,7 +245,7 @@ async function handleSearch() {
   }
 
   const allKeys: string[] = []
-  if (selectedTab.value === 'essential') {
+  if (selectedTab.value === 'essentials') {
     for (const section of essentialSections.value) {
       allKeys.push(...collectFolderKeys(section.tree))
     }
@@ -262,7 +262,7 @@ async function handleSearch() {
 }
 
 const tabs = computed(() => [
-  { value: 'essential', label: t('sideToolbar.nodeLibraryTab.essential') },
+  { value: 'essentials', label: t('sideToolbar.nodeLibraryTab.essentials') },
   { value: 'all', label: t('sideToolbar.nodeLibraryTab.allNodes') },
   { value: 'custom', label: t('sideToolbar.nodeLibraryTab.custom') }
 ])
