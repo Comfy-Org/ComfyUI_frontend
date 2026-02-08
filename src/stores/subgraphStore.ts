@@ -3,6 +3,7 @@ import { computed, ref } from 'vue'
 
 import { t } from '@/i18n'
 import { SubgraphNode } from '@/lib/litegraph/src/litegraph'
+import { isCloud, isDesktop } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
@@ -221,9 +222,17 @@ export const useSubgraphStore = defineStore('subgraph', () => {
         )
       }
       const subgraphs = await api.getGlobalSubgraphs()
-      await Promise.allSettled(
-        Object.entries(subgraphs).map(loadGlobalBlueprint)
-      )
+      const distribution = isCloud
+        ? 'cloud'
+        : isDesktop
+          ? 'desktop'
+          : 'localhost'
+      const filtered = Object.entries(subgraphs).filter(([, v]) => {
+        const includedOn = v.info.includeOnDistributions
+        if (!includedOn || includedOn.length === 0) return true
+        return includedOn.includes(distribution)
+      })
+      await Promise.allSettled(filtered.map(loadGlobalBlueprint))
     }
 
     const userSubs = (
