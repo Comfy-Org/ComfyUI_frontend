@@ -42,7 +42,9 @@ const config: KnipConfig = {
     'src/workbench/extensions/manager/types/generatedManagerTypes.ts',
     'packages/registry-types/src/comfyRegistryTypes.ts',
     // Used by a custom node (that should move off of this)
-    'src/scripts/ui/components/splitButton.ts'
+    'src/scripts/ui/components/splitButton.ts',
+    // Unused experimental publish dialog
+    'src/components/actionbar/PublishToHubDialogContent.vue'
   ],
   compilers: {
     // https://github.com/webpro-nl/knip/issues/1008#issuecomment-3207756199

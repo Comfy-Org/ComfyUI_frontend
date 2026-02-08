@@ -42,6 +42,7 @@
         >
           <i class="icon-[lucide--x] size-4" />
         </Button>
+        <ShareButton />
       </div>
     </Panel>
 
@@ -80,6 +81,7 @@ import { useExecutionStore } from '@/stores/executionStore'
 import { cn } from '@/utils/tailwindUtil'
 
 import ComfyRunButton from './ComfyRunButton'
+import ShareButton from './ShareButton.vue'
 
 const { topMenuContainer, queueOverlayExpanded = false } = defineProps<{
   topMenuContainer?: HTMLElement | null

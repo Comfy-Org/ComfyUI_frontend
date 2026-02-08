@@ -77,6 +77,11 @@ const router = createRouter({
           path: 'user-select',
           name: 'UserSelectView',
           component: () => import('@/views/UserSelectView.vue')
+        },
+        {
+          path: 'profiles/:slug',
+          name: 'AuthorProfileView',
+          component: () => import('@/views/AuthorProfileView.vue')
         }
       ]
     }
