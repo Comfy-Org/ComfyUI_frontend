@@ -48,9 +48,10 @@ describe('BadgePill', () => {
     const wrapper = mount(BadgePill, {
       props: { text: 'Gradient', borderStyle: gradient }
     })
-    const style = wrapper.attributes('style')
-    expect(style).toContain('border-color: transparent')
-    expect(style).toContain('background-image')
+    const element = wrapper.element as HTMLElement
+    expect(element.style.borderColor).toBe('transparent')
+    expect(element.style.backgroundOrigin).toBe('border-box')
+    expect(element.style.backgroundClip).toBe('padding-box, border-box')
   })
 
   it('applies filled style with background and text color', () => {

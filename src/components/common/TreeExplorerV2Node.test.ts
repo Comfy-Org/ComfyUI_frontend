@@ -190,7 +190,7 @@ describe('TreeExplorerV2Node', () => {
 
     it('renders folder icon for folder type', () => {
       const { wrapper } = mountComponent({
-        item: createMockItem('folder')
+        item: createMockItem('folder', { icon: 'icon-[ph--folder-fill]' })
       })
 
       expect(wrapper.find('i.icon-\\[ph--folder-fill\\]').exists()).toBe(true)

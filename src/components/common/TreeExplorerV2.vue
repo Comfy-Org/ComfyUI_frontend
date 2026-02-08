@@ -1,13 +1,14 @@
 <template>
   <ContextMenuRoot v-if="showContextMenu">
     <TreeRoot
-      :expanded="[...expandedKeys]"
+      :expanded="expandedKeys"
       :items="root.children ?? []"
       :get-key="(item) => item.key"
       :get-children="
         (item) => (item.children?.length ? item.children : undefined)
       "
       class="m-0 p-0"
+      @update:expanded="expandedKeys = $event"
     >
       <TreeVirtualizer
         v-slot="{ item }"
