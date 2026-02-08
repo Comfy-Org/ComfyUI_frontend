@@ -1,10 +1,17 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { useExternalLink } from '@/composables/useExternalLink'
-import { electronAPI, isElectron } from '@/utils/envUtil'
+import { electronAPI } from '@/utils/envUtil'
+
+const mockData = vi.hoisted(() => ({ isDesktop: false }))
+
+vi.mock('@/platform/distribution/types', () => ({
+  get isDesktop() {
+    return mockData.isDesktop
+  }
+}))
 
 // Mock the environment utilities
 vi.mock('@/utils/envUtil', () => ({
-  isElectron: vi.fn(),
   electronAPI: vi.fn()
 }))
 
@@ -25,7 +32,7 @@ describe('useExternalLink', () => {
     vi.clearAllMocks()
     // Reset to default state
     i18n.global.locale.value = 'en'
-    vi.mocked(isElectron).mockReturnValue(false)
+    mockData.isDesktop = false
   })
 
   describe('staticUrls', () => {
@@ -93,7 +100,7 @@ describe('useExternalLink', () => {
 
     it('should add platform suffix when requested', () => {
       i18n.global.locale.value = 'en'
-      vi.mocked(isElectron).mockReturnValue(true)
+      mockData.isDesktop = true
       vi.mocked(electronAPI).mockReturnValue({
         getPlatform: () => 'darwin'
       } as ReturnType<typeof electronAPI>)
@@ -105,7 +112,7 @@ describe('useExternalLink', () => {
 
     it('should add platform suffix with trailing slash', () => {
       i18n.global.locale.value = 'en'
-      vi.mocked(isElectron).mockReturnValue(true)
+      mockData.isDesktop = true
       vi.mocked(electronAPI).mockReturnValue({
         getPlatform: () => 'win32'
       } as ReturnType<typeof electronAPI>)
@@ -117,7 +124,7 @@ describe('useExternalLink', () => {
 
     it('should combine locale and platform', () => {
       i18n.global.locale.value = 'zh'
-      vi.mocked(isElectron).mockReturnValue(true)
+      mockData.isDesktop = true
       vi.mocked(electronAPI).mockReturnValue({
         getPlatform: () => 'darwin'
       } as ReturnType<typeof electronAPI>)
@@ -134,7 +141,7 @@ describe('useExternalLink', () => {
 
     it('should not add platform when not desktop', () => {
       i18n.global.locale.value = 'en'
-      vi.mocked(isElectron).mockReturnValue(false)
+      mockData.isDesktop = false
 
       const { buildDocsUrl } = useExternalLink()
       const url = buildDocsUrl('/installation/desktop', { platform: true })

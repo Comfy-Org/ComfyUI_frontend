@@ -1,10 +1,9 @@
 import { useAsyncState } from '@vueuse/core'
 import { defineStore } from 'pinia'
 
-import { isCloud } from '@/platform/distribution/types'
+import { isCloud, isDesktop } from '@/platform/distribution/types'
 import type { SystemStats } from '@/schemas/apiSchema'
 import { api } from '@/scripts/api'
-import { isElectron } from '@/utils/envUtil'
 
 export const useSystemStatsStore = defineStore('systemStats', () => {
   const fetchSystemStatsData = async () => {
@@ -40,7 +39,6 @@ export const useSystemStatsStore = defineStore('systemStats', () => {
     }
 
     const os = systemStats.value.system.os.toLowerCase()
-    const isDesktop = isElectron()
 
     if (isDesktop) {
       if (os.includes('windows')) {

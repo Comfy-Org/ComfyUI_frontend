@@ -20,7 +20,8 @@ import { app } from '@/scripts/app'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { useConflictDetection } from '@/workbench/extensions/manager/composables/useConflictDetection'
 
-import { electronAPI, isElectron } from './utils/envUtil'
+import { electronAPI } from '@/utils/envUtil'
+import { isDesktop } from '@/platform/distribution/types'
 
 const workspaceStore = useWorkspaceStore()
 app.extensionManager = useWorkspaceStore()
@@ -42,7 +43,7 @@ const showContextMenu = (event: MouseEvent) => {
 onMounted(() => {
   window['__COMFYUI_FRONTEND_VERSION__'] = config.app_version
 
-  if (isElectron()) {
+  if (isDesktop) {
     document.addEventListener('contextmenu', showContextMenu)
   }
 
