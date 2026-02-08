@@ -252,5 +252,17 @@ describe('WidgetToggleSwitch Value Binding', () => {
       expect(wrapperOff.text()).toContain('inactive')
       expect(wrapperOff.text()).toContain('true')
     })
+
+    it('treats empty string labels as explicit values', () => {
+      const widget = createMockWidget(false, { on: '', off: 'disabled' })
+      const wrapper = mountComponent(widget, false)
+
+      expect(wrapper.findComponent({ name: 'FormSelectButton' }).exists()).toBe(
+        true
+      )
+      expect(wrapper.findComponent({ name: 'ToggleSwitch' }).exists()).toBe(
+        false
+      )
+    })
   })
 })
