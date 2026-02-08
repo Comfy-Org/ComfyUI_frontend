@@ -1,7 +1,13 @@
 <template>
   <FloatLabel
-    variant="in"
+    variant="on"
     :unstyled="hideLayoutField"
+    :pt="{
+      root: {
+        class:
+          '[&_label]:!bg-component-node-widget-background [&_label]:!text-muted-foreground [&_label]:px-1'
+      }
+    }"
     :class="
       cn(
         'rounded-lg space-y-1 focus-within:ring focus-within:ring-component-node-widget-background-highlighted transition-all',
