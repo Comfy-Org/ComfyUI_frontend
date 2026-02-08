@@ -817,6 +817,7 @@
       "stubClipTextEncode": "CLIP Text Encode:",
       "jobsCompleted": "{count} job completed | {count} jobs completed",
       "jobsFailed": "{count} job failed | {count} jobs failed",
+      "jobsAddedToQueue": "{count} job added to queue | {count} jobs added to queue",
       "cancelJobTooltip": "Cancel job",
       "clearQueueTooltip": "Clear queue",
       "clearHistoryDialogTitle": "Clear your job queue history?",

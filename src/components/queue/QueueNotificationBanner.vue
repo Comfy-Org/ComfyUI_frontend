@@ -1,0 +1,87 @@
+<template>
+  <div
+    class="inline-flex items-center gap-2 rounded-lg bg-charcoal-600 py-1 pr-2 pl-1 shadow-interface"
+  >
+    <div
+      class="flex size-8 shrink-0 items-center justify-center rounded-sm p-1"
+    >
+      <img
+        v-if="showThumbnail"
+        :src="notification.thumbnailUrl"
+        :alt="t('sideToolbar.queueProgressOverlay.preview')"
+        class="h-full w-full rounded-sm object-cover"
+      />
+      <i
+        v-else
+        :class="cn(iconClass, 'size-4', iconColorClass)"
+        aria-hidden="true"
+      />
+    </div>
+    <div class="pr-1">
+      <span class="text-[12px] leading-[1] font-normal text-white">
+        {{ bannerText }}
+      </span>
+    </div>
+  </div>
+</template>
+
+<script setup lang="ts">
+import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
+
+import type { QueueNotificationBanner as QueueNotificationBannerItem } from '@/composables/queue/useQueueNotificationBanners'
+import { cn } from '@/utils/tailwindUtil'
+
+const { notification } = defineProps<{
+  notification: QueueNotificationBannerItem
+}>()
+
+const { t, n } = useI18n()
+
+const showThumbnail = computed(
+  () =>
+    notification.type === 'completed' &&
+    typeof notification.thumbnailUrl === 'string' &&
+    notification.thumbnailUrl.length > 0
+)
+
+const bannerText = computed(() => {
+  const count = notification.count
+  if (notification.type === 'queued') {
+    return t(
+      'sideToolbar.queueProgressOverlay.jobsAddedToQueue',
+      { count: n(count) },
+      count
+    )
+  }
+  if (notification.type === 'failed') {
+    return t(
+      'sideToolbar.queueProgressOverlay.jobsFailed',
+      { count: n(count) },
+      count
+    )
+  }
+  return t(
+    'sideToolbar.queueProgressOverlay.jobsCompleted',
+    { count: n(count) },
+    count
+  )
+})
+
+const iconClass = computed(() => {
+  if (notification.type === 'queued') {
+    return 'icon-[lucide--check]'
+  }
+  if (notification.type === 'failed') {
+    return 'icon-[lucide--circle-alert]'
+  }
+  return 'icon-[lucide--check]'
+})
+
+const iconColorClass = computed(() => {
+  if (notification.type === 'failed') {
+    return 'text-destructive-background'
+  }
+  return 'text-white'
+})
+</script>
