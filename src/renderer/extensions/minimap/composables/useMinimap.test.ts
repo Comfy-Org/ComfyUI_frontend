@@ -223,6 +223,11 @@ describe('useMinimap', () => {
   beforeEach(() => {
     vi.clearAllMocks()
 
+    for (const key of Object.keys(rafCallbacks)) {
+      delete rafCallbacks[key]
+    }
+    rafCallbackId = 0
+
     mockPause.mockClear()
     mockResume.mockClear()
 

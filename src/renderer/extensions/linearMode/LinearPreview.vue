@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, defineAsyncComponent } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { downloadFile } from '@/base/common/downloadUtil'
@@ -25,7 +25,9 @@ import { collectAllNodes } from '@/utils/graphTraversalUtil'
 import { executeWidgetsCallback } from '@/utils/litegraphUtil'
 
 // Lazy-loaded to avoid pulling THREE.js into the main bundle
-const Preview3d = () => import('@/renderer/extensions/linearMode/Preview3d.vue')
+const Preview3d = defineAsyncComponent(
+  () => import('@/renderer/extensions/linearMode/Preview3d.vue')
+)
 
 const { t, d } = useI18n()
 const mediaActions = useMediaAssetActions()
