@@ -11,6 +11,13 @@ export function isActiveJobState(state: JobState): boolean {
 }
 
 /**
+ * Checks if a job state should be shown in the assets sidebar QPOV2 job area.
+ */
+export function isAssetsSidebarJobState(state: JobState): boolean {
+  return state !== 'completed'
+}
+
+/**
  * Map a task to a UI job state, including initialization override.
  *
  * @param task Task item from the queue store

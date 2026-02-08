@@ -1,11 +1,11 @@
 <template>
   <div class="flex h-full flex-col">
     <div
-      v-if="isQueuePanelV2Enabled && activeJobItems.length"
+      v-if="isQueuePanelV2Enabled && sidebarJobItems.length"
       class="flex max-h-[50%] scrollbar-custom flex-col gap-2 overflow-y-auto px-2"
     >
       <AssetsListItem
-        v-for="job in activeJobItems"
+        v-for="job in sidebarJobItems"
         :key="job.id"
         :class="
           cn(
@@ -41,7 +41,7 @@
 
     <div
       v-if="assets.length"
-      :class="cn('px-2', activeJobItems.length && 'mt-2')"
+      :class="cn('px-2', sidebarJobItems.length && 'mt-2')"
     >
       <div
         class="flex items-center p-2 text-sm font-normal leading-normal text-muted-foreground font-inter"
@@ -124,7 +124,7 @@ import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataS
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { iconForMediaType } from '@/platform/assets/utils/mediaIconUtil'
 import { useAssetsStore } from '@/stores/assetsStore'
-import { isActiveJobState } from '@/utils/queueUtil'
+import { isActiveJobState, isAssetsSidebarJobState } from '@/utils/queueUtil'
 import {
   formatDuration,
   formatSize,
@@ -165,12 +165,19 @@ const hoveredAssetId = ref<string | null>(null)
 
 type AssetListItem = { key: string; asset: AssetItem }
 
-const activeJobItems = computed(() =>
-  jobItems.value.filter((item) => isActiveJobState(item.state))
+const hasActiveJobItems = computed(() =>
+  jobItems.value.some((item) => isActiveJobState(item.state))
 )
+
+const sidebarJobItems = computed(() => {
+  if (!hasActiveJobItems.value) {
+    return []
+  }
+  return jobItems.value.filter((item) => isAssetsSidebarJobState(item.state))
+})
 const hoveredJob = computed(() =>
   hoveredJobId.value
-    ? (activeJobItems.value.find((job) => job.id === hoveredJobId.value) ??
+    ? (sidebarJobItems.value.find((job) => job.id === hoveredJobId.value) ??
       null)
     : null
 )

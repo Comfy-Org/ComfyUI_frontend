@@ -2,12 +2,12 @@
   <div class="flex h-full flex-col">
     <!-- Active Jobs Grid -->
     <div
-      v-if="isQueuePanelV2Enabled && activeJobItems.length"
+      v-if="isQueuePanelV2Enabled && sidebarJobItems.length"
       class="grid max-h-[50%] scrollbar-custom overflow-y-auto"
       :style="gridStyle"
     >
       <ActiveMediaAssetCard
-        v-for="job in activeJobItems"
+        v-for="job in sidebarJobItems"
         :key="job.id"
         :job="job"
       />
@@ -16,7 +16,7 @@
     <!-- Assets Header -->
     <div
       v-if="assets.length"
-      :class="cn('px-2 2xl:px-4', activeJobItems.length && 'mt-2')"
+      :class="cn('px-2 2xl:px-4', sidebarJobItems.length && 'mt-2')"
     >
       <div
         class="flex items-center py-2 text-sm font-normal leading-normal text-muted-foreground font-inter"
@@ -63,7 +63,7 @@ import ActiveMediaAssetCard from '@/platform/assets/components/ActiveMediaAssetC
 import { useJobList } from '@/composables/queue/useJobList'
 import MediaAssetCard from '@/platform/assets/components/MediaAssetCard.vue'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
-import { isActiveJobState } from '@/utils/queueUtil'
+import { isActiveJobState, isAssetsSidebarJobState } from '@/utils/queueUtil'
 import { cn } from '@/utils/tailwindUtil'
 import { useSettingStore } from '@/platform/settings/settingStore'
 
@@ -99,9 +99,16 @@ const isQueuePanelV2Enabled = computed(() =>
 
 type AssetGridItem = { key: string; asset: AssetItem }
 
-const activeJobItems = computed(() =>
-  jobItems.value.filter((item) => isActiveJobState(item.state))
+const hasActiveJobItems = computed(() =>
+  jobItems.value.some((item) => isActiveJobState(item.state))
 )
+
+const sidebarJobItems = computed(() => {
+  if (!hasActiveJobItems.value) {
+    return []
+  }
+  return jobItems.value.filter((item) => isAssetsSidebarJobState(item.state))
+})
 
 const assetItems = computed<AssetGridItem[]>(() =>
   assets.map((asset) => ({
