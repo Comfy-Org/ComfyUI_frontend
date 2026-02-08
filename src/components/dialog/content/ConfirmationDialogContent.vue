@@ -1,21 +1,26 @@
 <template>
-  <section class="m-2 mt-4 flex flex-col gap-6 whitespace-pre-wrap break-words">
-    <span>{{ message }}</span>
-    <ul v-if="itemList?.length" class="m-0 flex flex-col gap-2 pl-4">
-      <li v-for="item of itemList" :key="item">
-        {{ item }}
-      </li>
-    </ul>
-    <Message
-      v-if="hint"
-      icon="pi pi-info-circle"
-      severity="secondary"
-      size="small"
-      variant="simple"
-    >
-      {{ hint }}
-    </Message>
-    <div class="flex flex-wrap justify-end gap-4">
+  <section
+    class="m-2 mt-4 flex max-h-[70vh] flex-col gap-6 whitespace-pre-wrap break-words"
+  >
+    <div class="flex-1 overflow-y-auto">
+      <span>{{ message }}</span>
+      <ul v-if="itemList?.length" class="m-0 mt-2 flex flex-col gap-2 pl-4">
+        <li v-for="item of itemList" :key="item">
+          {{ item }}
+        </li>
+      </ul>
+      <Message
+        v-if="hint"
+        class="mt-2"
+        icon="pi pi-info-circle"
+        severity="secondary"
+        size="small"
+        variant="simple"
+      >
+        {{ hint }}
+      </Message>
+    </div>
+    <div class="flex shrink-0 flex-wrap justify-end gap-4">
       <div
         v-if="type === 'overwriteBlueprint'"
         class="flex flex-col justify-start gap-1"
