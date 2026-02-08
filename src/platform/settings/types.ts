@@ -26,7 +26,7 @@ export interface SettingOption {
   value?: string | number
 }
 
-export interface SettingParams<TValue = any> extends FormItem {
+export interface SettingParams<TValue = unknown> extends FormItem {
   id: keyof Settings
   defaultValue: TValue | (() => TValue)
   defaultsByInstallVersion?: Record<`${number}.${number}.${number}`, TValue>

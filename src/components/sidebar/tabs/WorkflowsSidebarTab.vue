@@ -50,7 +50,8 @@
                 <template #before-label="{ node: treeNode }">
                   <span
                     v-if="
-                      treeNode.data?.isModified || !treeNode.data?.isPersisted
+                      (treeNode.data as ComfyWorkflow)?.isModified ||
+                      !(treeNode.data as ComfyWorkflow)?.isPersisted
                     "
                     >*</span
                   >

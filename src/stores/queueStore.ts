@@ -31,6 +31,13 @@ enum TaskItemDisplayStatus {
   Cancelled = 'Cancelled'
 }
 
+interface ResultItemInit extends ResultItem {
+  nodeId: NodeId
+  mediaType: string
+  format?: string
+  frame_rate?: number
+}
+
 export class ResultItemImpl {
   filename: string
   subfolder: string
@@ -44,7 +51,7 @@ export class ResultItemImpl {
   format?: string
   frame_rate?: number
 
-  constructor(obj: Record<string, any>) {
+  constructor(obj: ResultItemInit) {
     this.filename = obj.filename ?? ''
     this.subfolder = obj.subfolder ?? ''
     this.type = obj.type ?? ''

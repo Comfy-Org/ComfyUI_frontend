@@ -1,5 +1,5 @@
 import type { MenuItem } from 'primevue/menuitem'
-import { ref } from 'vue'
+import { shallowRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import type { RenderedTreeExplorerNode } from '@/types/treeExplorerTypes'
@@ -8,12 +8,14 @@ import type { RenderedTreeExplorerNode } from '@/types/treeExplorerTypes'
  * Use this to handle folder operations in a tree.
  * @param expandNode - The function to expand a node.
  */
-export function useTreeFolderOperations(
-  expandNode: (node: RenderedTreeExplorerNode) => void
+export function useTreeFolderOperations<T>(
+  expandNode: (node: RenderedTreeExplorerNode<T>) => void
 ) {
   const { t } = useI18n()
-  const newFolderNode = ref<RenderedTreeExplorerNode | null>(null)
-  const addFolderTargetNode = ref<RenderedTreeExplorerNode | null>(null)
+  const newFolderNode = shallowRef<RenderedTreeExplorerNode<T> | null>(null)
+  const addFolderTargetNode = shallowRef<RenderedTreeExplorerNode<T> | null>(
+    null
+  )
 
   // Generate a unique temporary key for the new folder
   const generateTempKey = (parentKey: string) => {
@@ -37,7 +39,7 @@ export function useTreeFolderOperations(
    * The command to add a folder to a node via the context menu
    * @param targetNode - The node where the folder will be added under
    */
-  const addFolderCommand = (targetNode: RenderedTreeExplorerNode) => {
+  const addFolderCommand = (targetNode: RenderedTreeExplorerNode<T>) => {
     expandNode(targetNode)
     newFolderNode.value = {
       key: generateTempKey(targetNode.key),
@@ -49,13 +51,13 @@ export function useTreeFolderOperations(
       totalLeaves: 0,
       badgeText: '',
       isEditingLabel: true
-    }
+    } as RenderedTreeExplorerNode<T>
     addFolderTargetNode.value = targetNode
   }
 
   // Generate the "Add Folder" menu item
   const getAddFolderMenuItem = (
-    targetNode: RenderedTreeExplorerNode | null
+    targetNode: RenderedTreeExplorerNode<T> | null
   ): MenuItem => {
     return {
       label: t('g.newFolder'),

@@ -75,7 +75,7 @@ describe('PackVersionBadge', () => {
 
   const mountComponent = ({
     props = {}
-  }: Record<string, any> = {}): VueWrapper => {
+  }: { props?: Record<string, unknown> } = {}): VueWrapper => {
     const i18n = createI18n({
       legacy: false,
       locale: 'en',
