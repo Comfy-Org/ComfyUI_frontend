@@ -20,10 +20,6 @@ const config: KnipConfig = {
     'packages/tailwind-utils': {
       project: ['src/**/*.{js,ts}']
     },
-    'packages/design-system': {
-      entry: ['src/**/*.ts'],
-      project: ['src/**/*.{js,ts}', '*.{js,ts,mts}']
-    },
     'packages/registry-types': {
       project: ['src/**/*.{js,ts}']
     }
