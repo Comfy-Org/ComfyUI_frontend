@@ -325,6 +325,8 @@ describe('WidgetSelectDropdown custom label mapping', () => {
 describe('WidgetSelectDropdown cloud asset mode (COM-14333)', () => {
   interface CloudModeInstance extends ComponentPublicInstance {
     dropdownItems: FormDropdownItem[]
+    displayItems: FormDropdownItem[]
+    selectedSet: Set<string>
   }
 
   const createTestAsset = (
@@ -425,5 +427,27 @@ describe('WidgetSelectDropdown cloud asset mode (COM-14333)', () => {
 
     const dropdownItems = wrapper.vm.dropdownItems
     expect(dropdownItems).toHaveLength(0)
+  })
+
+  it('includes missing cloud asset in displayItems for input field visibility', () => {
+    mockAssetsData.items = [
+      createTestAsset(
+        'asset-1',
+        'existing_model.safetensors',
+        'https://example.com/preview.jpg'
+      )
+    ]
+
+    const widget = createCloudModeWidget('missing_model.safetensors')
+    const wrapper = mountCloudComponent(widget, 'missing_model.safetensors')
+
+    const displayItems = wrapper.vm.displayItems
+    expect(displayItems).toHaveLength(2)
+    expect(displayItems[0].name).toBe('missing_model.safetensors')
+    expect(displayItems[0].id).toBe('missing-missing_model.safetensors')
+    expect(displayItems[1].name).toBe('existing_model.safetensors')
+
+    const selectedSet = wrapper.vm.selectedSet
+    expect(selectedSet.has('missing-missing_model.safetensors')).toBe(true)
   })
 })

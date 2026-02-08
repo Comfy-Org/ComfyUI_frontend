@@ -342,18 +342,20 @@ const acceptTypes = computed(() => {
 const layoutMode = ref<LayoutMode>(props.defaultLayoutMode ?? 'grid')
 
 watch(
-  [modelValue, dropdownItems],
-  ([currentValue, _dropdownItems]) => {
+  [modelValue, displayItems],
+  ([currentValue]) => {
     if (currentValue === undefined) {
       selectedSet.value.clear()
       return
     }
 
-    const item = dropdownItems.value.find((item) => item.name === currentValue)
-    if (item) {
+    const item = displayItems.value.find((item) => item.name === currentValue)
+    if (!item) {
       selectedSet.value.clear()
-      selectedSet.value.add(item.id)
+      return
     }
+    selectedSet.value.clear()
+    selectedSet.value.add(item.id)
   },
   { immediate: true }
 )
