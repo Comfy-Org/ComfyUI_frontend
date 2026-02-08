@@ -530,6 +530,12 @@ export const useQueueStore = defineStore('queue', () => {
         }
       })
 
+      const activeJobIds = new Set([
+        ...queue.Running.map((j) => j.id),
+        ...queue.Pending.map((j) => j.id)
+      ])
+      executionStore.reconcileInitializingPrompts(activeJobIds)
+
       // Sort by create_time descending and limit to maxItems
       const sortedHistory = [...history]
         .sort((a, b) => b.create_time - a.create_time)
