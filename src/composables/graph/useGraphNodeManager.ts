@@ -205,11 +205,12 @@ function safeWidgetMapper(
         node.widgets?.forEach((w) => w.triggerDraw?.())
       }
 
-      // Extract only render-critical options (canvasOnly, advanced)
+      // Extract only render-critical options (canvasOnly, advanced, read_only)
       const options = widget.options
         ? {
             canvasOnly: widget.options.canvasOnly,
-            advanced: widget.advanced
+            advanced: widget.advanced,
+            read_only: widget.options.read_only
           }
         : undefined
       const subgraphId = node.isSubgraphNode() && node.subgraph.id
@@ -236,7 +237,6 @@ function safeWidgetMapper(
       }
     } catch (error) {
       return {
-        nodeId: String(node.id),
         name: widget.name || 'unknown',
         type: widget.type || 'text'
       }
