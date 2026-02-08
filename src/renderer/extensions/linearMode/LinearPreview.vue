@@ -178,9 +178,13 @@ async function rerun(e: Event) {
     class="w-full max-w-128 m-auto my-12 overflow-y-auto"
     v-text="selectedOutput!.url"
   />
-  <Preview3d
-    v-else-if="getMediaType(selectedOutput) === '3d'"
-    :model-url="selectedOutput!.url"
-  />
+  <Suspense v-else-if="getMediaType(selectedOutput) === '3d'">
+    <Preview3d :model-url="selectedOutput!.url" />
+    <template #fallback>
+      <div class="flex items-center justify-center flex-1">
+        <i class="icon-[lucide--loader-circle] animate-spin text-2xl" />
+      </div>
+    </template>
+  </Suspense>
   <LinearWelcome v-else />
 </template>
