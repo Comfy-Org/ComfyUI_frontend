@@ -161,7 +161,7 @@ describe('TopMenuSection', () => {
     expect(queueButton.text()).toContain('3 active')
   })
 
-  it('hides queue progress overlay when QPO V2 is enabled', async () => {
+  it('renders queue progress overlay when QPO V2 is enabled with no active jobs', async () => {
     const pinia = createTestingPinia({ createSpy: vi.fn })
     const settingStore = useSettingStore(pinia)
     vi.mocked(settingStore.get).mockImplementation((key) =>
@@ -176,7 +176,52 @@ describe('TopMenuSection', () => {
     )
     expect(
       wrapper.findComponent({ name: 'QueueProgressOverlay' }).exists()
-    ).toBe(false)
+    ).toBe(true)
+  })
+
+  it('renders queue progress overlay when QPO V2 is enabled and jobs are active', async () => {
+    const pinia = createTestingPinia({ createSpy: vi.fn })
+    const settingStore = useSettingStore(pinia)
+    vi.mocked(settingStore.get).mockImplementation((key) =>
+      key === 'Comfy.Queue.QPOV2' ? true : undefined
+    )
+    const wrapper = createWrapper({ pinia })
+    const queueStore = useQueueStore(pinia)
+    queueStore.pendingTasks = [createTask('pending-1', 'pending')]
+
+    await nextTick()
+
+    expect(
+      wrapper.findComponent({ name: 'QueueProgressOverlay' }).exists()
+    ).toBe(true)
+  })
+
+  it('passes completion summary only mode to queue progress overlay when QPO V2 is enabled', async () => {
+    const pinia = createTestingPinia({ createSpy: vi.fn })
+    const settingStore = useSettingStore(pinia)
+    vi.mocked(settingStore.get).mockImplementation((key) =>
+      key === 'Comfy.Queue.QPOV2' ? true : undefined
+    )
+
+    const wrapper = createWrapper({
+      pinia,
+      stubs: {
+        QueueProgressOverlay: {
+          name: 'QueueProgressOverlay',
+          props: ['completionSummaryOnly'],
+          template:
+            '<div data-testid="queue-progress-overlay-prop" :data-completion-summary-only="completionSummaryOnly ? \'true\' : \'false\'" />'
+        }
+      }
+    })
+
+    await nextTick()
+
+    expect(
+      wrapper
+        .get('[data-testid="queue-progress-overlay-prop"]')
+        .attributes('data-completion-summary-only')
+    ).toBe('true')
   })
 
   it('toggles the queue progress overlay when QPO V2 is disabled', async () => {

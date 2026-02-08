@@ -90,9 +90,11 @@ const props = withDefaults(
   defineProps<{
     expanded?: boolean
     menuHovered?: boolean
+    completionSummaryOnly?: boolean
   }>(),
   {
-    menuHovered: false
+    menuHovered: false,
+    completionSummaryOnly: false
   }
 )
 
@@ -140,6 +142,10 @@ const hasActiveJob = computed(() => runningCount.value > 0 || isExecuting.value)
 const activeJobsCount = computed(() => runningCount.value + queuedCount.value)
 
 const overlayState = computed<OverlayState>(() => {
+  if (props.completionSummaryOnly) {
+    if (hasCompletionSummary.value) return 'empty'
+    return 'hidden'
+  }
   if (isExpanded.value) return 'expanded'
   if (hasActiveJob.value) return 'active'
   if (hasCompletionSummary.value) return 'empty'
@@ -231,6 +237,10 @@ const setExpanded = (expanded: boolean) => {
 }
 
 const openExpandedFromEmpty = () => {
+  if (props.completionSummaryOnly) {
+    openAssetsSidebar()
+    return
+  }
   setExpanded(true)
 }
 
