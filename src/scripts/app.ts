@@ -54,12 +54,14 @@ import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useExtensionService } from '@/services/extensionService'
 import { useLitegraphService } from '@/services/litegraphService'
 import { useSubgraphService } from '@/services/subgraphService'
+import { useGraphErrorState } from '@/core/graph/state/useGraphErrorState'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import { useCommandStore } from '@/stores/commandStore'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useExtensionStore } from '@/stores/extensionStore'
 import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
+import { useGraphStateStore } from '@/core/graph/state/graphStateStore'
 import { useNodeOutputStore } from '@/stores/imagePreviewStore'
 import { KeyComboImpl } from '@/platform/keybindings/keyCombo'
 import { useKeybindingStore } from '@/platform/keybindings/keybindingStore'
@@ -90,6 +92,7 @@ import {
   findLegacyRerouteNodes,
   noNativeReroutes
 } from '@/utils/migration/migrateReroute'
+import { collectMissingNodes } from '@/workbench/extensions/manager/utils/graphHasMissingNodes'
 import { getSelectedModelsMetadata } from '@/workbench/utils/modelMetadataUtil'
 import { deserialiseAndCreate } from '@/utils/vintageClipboard'
 
@@ -782,6 +785,8 @@ export class ComfyApp {
     void useNodeReplacementStore().load()
     await useExtensionService().loadExtensions()
 
+    useGraphErrorState()
+
     this.addProcessKeyHandler()
     this.addConfigureHandler()
     this.addApiUpdateHandlers()
@@ -1258,6 +1263,23 @@ export class ComfyApp {
         } else {
           useLitegraphService().fitView()
         }
+      }
+
+      const graphStateStore = useGraphStateStore()
+      const missingNodes = collectMissingNodes(
+        this.rootGraph,
+        useNodeDefStore().nodeDefsByName
+      )
+      for (const node of missingNodes) {
+        const locatorId = node.graph?.isRootGraph
+          ? String(node.id)
+          : `${node.graph?.id}:${node.id}`
+        graphStateStore.execute({
+          type: 'SetNodeError',
+          version: 1,
+          nodeId: locatorId,
+          hasError: true
+        })
       }
     } catch (error) {
       useDialogService().showErrorDialog(error, {
