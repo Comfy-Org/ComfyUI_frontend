@@ -23,11 +23,9 @@ export function getComfyApiBaseUrl(): string {
     return BUILD_TIME_API_BASE_URL
   }
 
-  return configValueOrDefault(
-    remoteConfig.value,
-    'comfy_api_base_url',
-    BUILD_TIME_API_BASE_URL
-  )
+  // In cloud mode, proxy all comfy-api requests through the cloud server
+  // instead of calling api.comfy.org directly
+  return ''
 }
 
 export function getComfyPlatformBaseUrl(): string {
