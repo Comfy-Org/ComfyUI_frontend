@@ -6,7 +6,7 @@ import { api } from '@/scripts/api'
 
 const BANNER_DISMISS_DELAY_MS = 4000
 
-export type QueueNotificationBannerType = 'queued' | 'completed' | 'failed'
+type QueueNotificationBannerType = 'queued' | 'completed' | 'failed'
 
 export type QueueNotificationBanner = {
   type: QueueNotificationBannerType
