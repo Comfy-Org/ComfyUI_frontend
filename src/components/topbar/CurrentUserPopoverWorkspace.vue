@@ -254,9 +254,6 @@ const isLoadingBalance = isLoading
 
 const displayedCredits = computed(() => {
   if (initState.value !== 'ready') return ''
-  // Wait for subscription to load
-  if (subscription.value === null) return ''
-  if (!isActiveSubscription.value) return '0'
 
   // API field is named _micros but contains cents (naming inconsistency)
   const cents =
@@ -343,9 +340,7 @@ const toggleWorkspaceSwitcher = (event: MouseEvent) => {
 }
 
 const refreshBalance = () => {
-  if (isActiveSubscription.value) {
-    void fetchBalance()
-  }
+  void fetchBalance()
 }
 
 defineExpose({ refreshBalance })
