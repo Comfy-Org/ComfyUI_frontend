@@ -1,8 +1,5 @@
 <template>
-  <div
-    ref="container"
-    class="h-full overflow-y-auto scrollbar-thin scrollbar-track-transparent scrollbar-thumb-(--dialog-surface)"
-  >
+  <div ref="container" class="h-full scrollbar-custom">
     <div :style="topSpacerStyle" />
     <div :style="mergedGridStyle">
       <div
