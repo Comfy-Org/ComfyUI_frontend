@@ -815,6 +815,8 @@
       "viewJobHistory": "View job history",
       "noActiveJobs": "No active jobs",
       "stubClipTextEncode": "CLIP Text Encode:",
+      "jobCompleted": "Job completed",
+      "jobFailed": "Job failed",
       "jobsCompleted": "{count} job completed | {count} jobs completed",
       "jobsFailed": "{count} job failed | {count} jobs failed",
       "jobsAddedToQueue": "{count} job added to queue | {count} jobs added to queue",

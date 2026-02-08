@@ -25,9 +25,9 @@
           aria-hidden="true"
         />
       </div>
-      <div class="pr-1">
+      <div class="flex h-full items-center pr-1">
         <span
-          class="font-inter text-[12px] leading-[1] font-normal text-base-foreground"
+          class="overflow-hidden text-ellipsis text-center font-inter text-[12px] leading-normal font-normal text-base-foreground"
         >
           {{ bannerText }}
         </span>
@@ -67,6 +67,9 @@ const showsCompletionPreview = computed(
 const bannerText = computed(() => {
   const count = notification.count
   if (notification.type === 'queued') {
+    if (count === 1) {
+      return t('queue.jobAddedToQueue')
+    }
     return t(
       'sideToolbar.queueProgressOverlay.jobsAddedToQueue',
       { count: n(count) },
@@ -74,11 +77,17 @@ const bannerText = computed(() => {
     )
   }
   if (notification.type === 'failed') {
+    if (count === 1) {
+      return t('sideToolbar.queueProgressOverlay.jobFailed')
+    }
     return t(
       'sideToolbar.queueProgressOverlay.jobsFailed',
       { count: n(count) },
       count
     )
+  }
+  if (count === 1) {
+    return t('sideToolbar.queueProgressOverlay.jobCompleted')
   }
   return t(
     'sideToolbar.queueProgressOverlay.jobsCompleted',

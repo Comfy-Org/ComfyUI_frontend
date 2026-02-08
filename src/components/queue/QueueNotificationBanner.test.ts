@@ -10,9 +10,14 @@ const i18n = createI18n({
   locale: 'en',
   messages: {
     en: {
+      queue: {
+        jobAddedToQueue: 'Job added to queue'
+      },
       sideToolbar: {
         queueProgressOverlay: {
           preview: 'Preview',
+          jobCompleted: 'Job completed',
+          jobFailed: 'Job failed',
           jobsAddedToQueue:
             '{count} job added to queue | {count} jobs added to queue',
           jobsCompleted: '{count} job completed | {count} jobs completed',
@@ -32,6 +37,16 @@ const mountComponent = (notification: QueueNotificationBannerItem) =>
   })
 
 describe('QueueNotificationBanner', () => {
+  it('renders singular queued message without count prefix', () => {
+    const wrapper = mountComponent({
+      type: 'queued',
+      count: 1
+    })
+
+    expect(wrapper.text()).toContain('Job added to queue')
+    expect(wrapper.text()).not.toContain('1 job')
+  })
+
   it('renders queued message with pluralization', () => {
     const wrapper = mountComponent({
       type: 'queued',
@@ -48,7 +63,7 @@ describe('QueueNotificationBanner', () => {
       count: 1
     })
 
-    expect(wrapper.text()).toContain('1 job failed')
+    expect(wrapper.text()).toContain('Job failed')
     expect(wrapper.html()).toContain('icon-[lucide--circle-alert]')
   })
 
