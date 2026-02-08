@@ -1,26 +1,37 @@
 <template>
-  <div
-    class="inline-flex items-center gap-2 rounded-lg bg-charcoal-600 py-1 pr-2 pl-1 shadow-interface"
-  >
-    <div
-      class="flex size-8 shrink-0 items-center justify-center rounded-sm p-1"
-    >
-      <img
-        v-if="showThumbnail"
-        :src="notification.thumbnailUrl"
-        :alt="t('sideToolbar.queueProgressOverlay.preview')"
-        class="h-full w-full rounded-sm object-cover"
-      />
-      <i
-        v-else
-        :class="cn(iconClass, 'size-4', iconColorClass)"
-        aria-hidden="true"
-      />
-    </div>
-    <div class="pr-1">
-      <span class="text-[12px] leading-[1] font-normal text-white">
-        {{ bannerText }}
-      </span>
+  <div class="inline-flex overflow-hidden rounded-lg bg-secondary-background">
+    <div class="flex items-center gap-2 py-1 pr-2 pl-1">
+      <div
+        :class="
+          cn(
+            'relative flex size-8 shrink-0 items-center justify-center rounded-[4px]',
+            showsCompletionPreview ? 'overflow-hidden p-0' : 'p-1'
+          )
+        "
+      >
+        <img
+          v-if="showThumbnail"
+          :src="notification.thumbnailUrl"
+          :alt="t('sideToolbar.queueProgressOverlay.preview')"
+          class="h-full w-full object-cover"
+        />
+        <div
+          v-else-if="showCompletionGradientFallback"
+          class="size-full bg-linear-to-br from-coral-500 via-coral-500 to-azure-600"
+        />
+        <i
+          v-else
+          :class="cn(iconClass, 'size-4', iconColorClass)"
+          aria-hidden="true"
+        />
+      </div>
+      <div class="pr-1">
+        <span
+          class="font-inter text-[12px] leading-[1] font-normal text-base-foreground"
+        >
+          {{ bannerText }}
+        </span>
+      </div>
     </div>
   </div>
 </template>
@@ -43,6 +54,14 @@ const showThumbnail = computed(
     notification.type === 'completed' &&
     typeof notification.thumbnailUrl === 'string' &&
     notification.thumbnailUrl.length > 0
+)
+
+const showCompletionGradientFallback = computed(
+  () => notification.type === 'completed' && !showThumbnail.value
+)
+
+const showsCompletionPreview = computed(
+  () => showThumbnail.value || showCompletionGradientFallback.value
 )
 
 const bannerText = computed(() => {
@@ -75,13 +94,13 @@ const iconClass = computed(() => {
   if (notification.type === 'failed') {
     return 'icon-[lucide--circle-alert]'
   }
-  return 'icon-[lucide--check]'
+  return 'icon-[lucide--image]'
 })
 
 const iconColorClass = computed(() => {
   if (notification.type === 'failed') {
-    return 'text-destructive-background'
+    return 'text-danger-200'
   }
-  return 'text-white'
+  return 'text-slate-100'
 })
 </script>
