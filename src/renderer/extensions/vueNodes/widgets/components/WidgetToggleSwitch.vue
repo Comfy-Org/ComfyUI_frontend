@@ -3,6 +3,7 @@
     <!-- Use FormSelectButton when explicit labels are provided -->
     <FormSelectButton
       v-if="hasLabels"
+      v-bind="filteredProps"
       :model-value="modelValue ? 'on' : 'off'"
       :options="booleanOptions"
       option-label="label"
