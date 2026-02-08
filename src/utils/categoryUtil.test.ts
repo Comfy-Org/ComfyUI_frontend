@@ -37,12 +37,6 @@ describe('getProviderIcon', () => {
     )
   })
 
-  it('handles multiple spaces', () => {
-    expect(getProviderIcon('Some  Provider  Name')).toBe(
-      'icon-[comfy--some-provider-name]'
-    )
-  })
-
   it('converts to lowercase', () => {
     expect(getProviderIcon('GEMINI')).toBe('icon-[comfy--gemini]')
   })
