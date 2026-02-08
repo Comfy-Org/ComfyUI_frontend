@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { computed, ref, watch } from 'vue'
+import { computed, readonly, ref, watch } from 'vue'
 
 import { useSettingStore } from '@/platform/settings/settingStore'
 import {
@@ -12,6 +12,7 @@ type PromptPreviewMap = Record<string, string>
 export const useJobPreviewStore = defineStore('jobPreview', () => {
   const settingStore = useSettingStore()
   const previewsByPromptId = ref<PromptPreviewMap>({})
+  const readonlyPreviewsByPromptId = readonly(previewsByPromptId)
 
   const previewMethod = computed(() =>
     settingStore.get('Comfy.Execution.PreviewMethod')
@@ -52,7 +53,7 @@ export const useJobPreviewStore = defineStore('jobPreview', () => {
   })
 
   return {
-    previewsByPromptId,
+    previewsByPromptId: readonlyPreviewsByPromptId,
     isPreviewEnabled,
     setPreviewUrl,
     clearPreview,
