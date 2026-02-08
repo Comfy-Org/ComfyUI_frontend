@@ -6,13 +6,9 @@
     @show="onMenuShow"
     @hide="onMenuHide"
   >
-    <template #item="{ item, props: itemProps, hasSubmenu }">
+    <template #item="{ item, props: itemProps }">
       <a v-bind="itemProps.action" class="flex items-center gap-2 px-3 py-1.5">
         <span class="flex-1">{{ item.label }}</span>
-        <i
-          v-if="hasSubmenu"
-          class="icon-[lucide--chevron-right] size-4 opacity-60"
-        />
       </a>
     </template>
   </ContextMenu>
@@ -113,16 +109,17 @@ const menuItems = computed<MenuItem[]>(() => {
   if (targets.length === 0) {
     items.push({ label: 'No compatible nodes', disabled: true })
   } else {
-    items.push({
-      label: 'Connect to...',
-      items: targets.map((target) => ({
+    items.push({ label: 'Connect to...', disabled: true })
+    items.push({ separator: true })
+    items.push(
+      ...targets.map((target) => ({
         label: `${target.slotInfo.name} @ ${target.node.title || target.node.type}`,
         command: () => {
           connectSlots(ctx, target)
           hide()
         }
       }))
-    })
+    )
   }
 
   return items
