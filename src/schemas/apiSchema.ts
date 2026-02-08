@@ -207,14 +207,14 @@ const zPromptResponse = z.object({
 const zDeviceStats = z.object({
   name: z.string(),
   type: z.string(),
-  index: z.number(),
+  index: z.number().nullable(),
   vram_total: z.number(),
   vram_free: z.number(),
   torch_vram_total: z.number(),
   torch_vram_free: z.number()
 })
 
-const zSystemStats = z.object({
+export const zSystemStats = z.object({
   system: z.object({
     os: z.string(),
     python_version: z.string(),

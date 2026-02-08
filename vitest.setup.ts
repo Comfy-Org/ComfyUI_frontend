@@ -1,6 +1,9 @@
 import { vi } from 'vitest'
 import 'vue'
 
+process.env.LANG = 'en_US.UTF-8'
+process.env.LC_ALL = 'en_US.UTF-8'
+
 // Mock @sparkjsdev/spark which uses WASM that doesn't work in Node.js
 vi.mock('@sparkjsdev/spark', () => ({
   SplatMesh: class SplatMesh {
@@ -62,6 +65,46 @@ window.__CONFIG__ = {
     messagingSenderId: '123',
     appId: '123'
   }
+}
+
+class LocalStorageMock implements Storage {
+  private store = new Map<string, string>()
+
+  get length() {
+    return this.store.size
+  }
+
+  clear() {
+    this.store.clear()
+  }
+
+  getItem(key: string) {
+    return this.store.get(key) ?? null
+  }
+
+  key(index: number) {
+    return Array.from(this.store.keys())[index] ?? null
+  }
+
+  removeItem(key: string) {
+    this.store.delete(key)
+  }
+
+  setItem(key: string, value: string) {
+    this.store.set(key, value)
+  }
+}
+
+const localStorageMock = new LocalStorageMock()
+Object.defineProperty(globalThis, 'localStorage', {
+  value: localStorageMock,
+  writable: true
+})
+if (typeof window !== 'undefined') {
+  Object.defineProperty(window, 'localStorage', {
+    value: localStorageMock,
+    writable: true
+  })
 }
 
 // Mock Worker for extendable-media-recorder

@@ -1928,7 +1928,8 @@ const ext: ComfyExtension = {
       commandId: 'Comfy.GroupNode.ConvertSelectedNodesToGroupNode',
       combo: {
         alt: true,
-        key: 'g'
+        key: 'g',
+        code: 'KeyG'
       }
     },
     {
@@ -1936,7 +1937,8 @@ const ext: ComfyExtension = {
       combo: {
         alt: true,
         shift: true,
-        key: 'G'
+        key: 'G',
+        code: 'KeyG'
       }
     }
   ],
