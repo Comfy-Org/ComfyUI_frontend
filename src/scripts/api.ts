@@ -157,14 +157,14 @@ interface BackendApiCalls {
   logs: LogsWsMessage
   /** Binary preview/progress data */
   b_preview: Blob
-  /** Binary preview with metadata (node_id, prompt_id) */
+  /** Binary preview with metadata (node_id, job_id) */
   b_preview_with_metadata: {
     blob: Blob
     nodeId: string
     parentNodeId: string
     displayNodeId: string
     realNodeId: string
-    promptId: string
+    jobId: string
   }
   progress_text: ProgressTextWsMessage
   progress_state: ProgressStateWsMessage
@@ -646,7 +646,7 @@ export class ComfyApi extends EventTarget {
                 displayNodeId: metadata.display_node_id,
                 parentNodeId: metadata.parent_node_id,
                 realNodeId: metadata.real_node_id,
-                promptId: metadata.prompt_id
+                jobId: metadata.prompt_id
               })
 
               // Also dispatch legacy b_preview for backward compatibility
@@ -943,7 +943,7 @@ export class ComfyApi extends EventTarget {
 
   /**
    * Gets detailed job info including outputs and workflow
-   * @param jobId The job/prompt ID
+   * @param jobId The job ID
    * @returns Full job details or undefined if not found
    */
   async getJobDetail(jobId: string): Promise<JobDetail | undefined> {
@@ -996,14 +996,14 @@ export class ComfyApi extends EventTarget {
   }
 
   /**
-   * Interrupts the execution of the running prompt. If runningPromptId is provided,
+   * Interrupts the execution of the running job. If runningJobId is provided,
    * it is included in the payload as a helpful hint to the backend.
-   * @param {string | null} [runningPromptId] Optional Running Prompt ID to interrupt
+   * @param {string | null} [runningJobId] Optional Running Job ID to interrupt
    */
-  async interrupt(runningPromptId: string | null) {
+  async interrupt(runningJobId: string | null) {
     await this._postItem(
       'interrupt',
-      runningPromptId ? { prompt_id: runningPromptId } : undefined
+      runningJobId ? { prompt_id: runningJobId } : undefined
     )
   }
 

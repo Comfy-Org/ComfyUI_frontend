@@ -46,12 +46,12 @@ export function useMediaAssetActions() {
     assetType: string
   ): Promise<void> => {
     if (assetType === 'output') {
-      const promptId =
-        getOutputAssetMetadata(asset.user_metadata)?.promptId || asset.id
-      if (!promptId) {
-        throw new Error('Unable to extract prompt ID from asset')
+      const jobId =
+        getOutputAssetMetadata(asset.user_metadata)?.jobId || asset.id
+      if (!jobId) {
+        throw new Error('Unable to extract job ID from asset')
       }
-      await api.deleteItem('history', promptId)
+      await api.deleteItem('history', jobId)
     } else {
       // Input assets can only be deleted in cloud environment
       if (!isCloud) {
@@ -191,11 +191,11 @@ export function useMediaAssetActions() {
     if (!targetAsset) return
 
     const metadata = getOutputAssetMetadata(targetAsset.user_metadata)
-    const promptId =
-      metadata?.promptId ||
+    const jobId =
+      metadata?.jobId ||
       (getAssetType(targetAsset) === 'output' ? targetAsset.id : undefined)
 
-    if (!promptId) {
+    if (!jobId) {
       toast.add({
         severity: 'warn',
         summary: t('g.warning'),
@@ -205,7 +205,7 @@ export function useMediaAssetActions() {
       return
     }
 
-    await copyToClipboard(promptId)
+    await copyToClipboard(jobId)
   }
 
   /**

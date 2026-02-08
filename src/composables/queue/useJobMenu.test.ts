@@ -72,8 +72,7 @@ const interruptMock = vi.fn()
 const deleteItemMock = vi.fn()
 vi.mock('@/scripts/api', () => ({
   api: {
-    interrupt: (runningPromptId: string | null) =>
-      interruptMock(runningPromptId),
+    interrupt: (runningJobId: string | null) => interruptMock(runningJobId),
     deleteItem: (type: string, id: string) => deleteItemMock(type, id)
   }
 }))
@@ -120,7 +119,7 @@ vi.mock('@/stores/queueStore', () => ({
 }))
 
 const executionStoreMock = {
-  clearInitializationByPromptId: vi.fn()
+  clearInitializationByJobId: vi.fn()
 }
 vi.mock('@/stores/executionStore', () => ({
   useExecutionStore: () => executionStoreMock

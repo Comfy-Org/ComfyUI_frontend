@@ -132,12 +132,10 @@ if (isDesktop) {
     (newTasks, oldTasks) => {
       // Report tasks that previously running but are now completed (i.e. in history)
       const oldRunningTaskIds = new Set(
-        oldTasks.filter((task) => task.isRunning).map((task) => task.promptId)
+        oldTasks.filter((task) => task.isRunning).map((task) => task.jobId)
       )
       newTasks
-        .filter(
-          (task) => oldRunningTaskIds.has(task.promptId) && task.isHistory
-        )
+        .filter((task) => oldRunningTaskIds.has(task.jobId) && task.isHistory)
         .forEach((task) => {
           electronAPI().Events.incrementUserProperty(
             `execution:${task.displayStatus.toLowerCase()}`,
