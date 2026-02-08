@@ -38,7 +38,8 @@ function useSubscriptionInternal() {
   const { reportError, accessBillingPortal } = useFirebaseAuthActions()
   const { showSubscriptionRequiredDialog } = useDialogService()
 
-  const { getFirebaseAuthHeader } = useFirebaseAuthStore()
+  const firebaseAuthStore = useFirebaseAuthStore()
+  const { getFirebaseAuthHeader } = firebaseAuthStore
   const { wrapWithErrorHandlingAsync } = useErrorHandling()
 
   const { isLoggedIn } = useCurrentUser()
@@ -93,7 +94,9 @@ function useSubscriptionInternal() {
       : baseName
   })
 
-  const buildApiUrl = (path: string) => `${getComfyApiBaseUrl()}${path}`
+  function buildApiUrl(path: string): string {
+    return `${getComfyApiBaseUrl()}${path}`
+  }
 
   const fetchStatus = wrapWithErrorHandlingAsync(
     fetchSubscriptionStatus,
@@ -194,6 +197,7 @@ function useSubscriptionInternal() {
 
     const statusData = await response.json()
     subscriptionStatus.value = statusData
+
     return statusData
   }
 
