@@ -23,7 +23,6 @@
     "dev": "nx serve",
     "devtools:pycheck": "python3 -m compileall -q tools/devtools",
     "format:check": "oxfmt --check",
-    "fix-i18n-node-defs": "tsx scripts/fix-i18n-node-defs.ts",
     "format": "oxfmt --write",
     "json-schema": "tsx scripts/generate-json-schema.ts",
     "knip:no-cache": "knip",
