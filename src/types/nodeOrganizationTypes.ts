@@ -1,7 +1,9 @@
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
+import type { TreeNode } from '@/types/treeExplorerTypes'
 
 export type GroupingStrategyId = 'category' | 'module' | 'source'
 export type SortingStrategyId = 'original' | 'alphabetical'
+export type TabId = 'essentials' | 'all' | 'custom'
 
 /**
  * Strategy for grouping nodes into tree structure
@@ -41,4 +43,14 @@ export interface NodeSortStrategy {
 export interface NodeOrganizationOptions {
   groupBy?: string
   sortBy?: string
+}
+
+/**
+ * A section of nodes with an optional header title
+ */
+export interface NodeSection {
+  /** Section title (i18n key), optional */
+  title?: string
+  /** Tree of nodes in this section */
+  tree: TreeNode
 }

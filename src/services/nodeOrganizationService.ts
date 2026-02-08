@@ -3,16 +3,20 @@ import { buildNodeDefTree } from '@/stores/nodeDefStore'
 import type {
   NodeGroupingStrategy,
   NodeOrganizationOptions,
-  NodeSortStrategy
+  NodeSection,
+  NodeSortStrategy,
+  TabId
 } from '@/types/nodeOrganizationTypes'
 import { NodeSourceType } from '@/types/nodeSource'
 import type { TreeNode } from '@/types/treeExplorerTypes'
 import { sortedTree } from '@/utils/treeUtil'
+import { upperCase } from 'es-toolkit/string'
 
 const DEFAULT_ICON = 'pi pi-sort'
 
 export const DEFAULT_GROUPING_ID = 'category' as const
 export const DEFAULT_SORTING_ID = 'original' as const
+export const DEFAULT_TAB_ID = 'essentials' as const
 
 class NodeOrganizationService {
   private readonly groupingStrategies: NodeGroupingStrategy[] = [
@@ -112,6 +116,74 @@ class NodeOrganizationService {
     return this.sortingStrategies.find((strategy) => strategy.id === id)
   }
 
+  organizeNodesByTab(
+    nodes: ComfyNodeDefImpl[],
+    tabId: TabId = DEFAULT_TAB_ID
+  ): NodeSection[] {
+    const categoryPathExtractor = (nodeDef: ComfyNodeDefImpl) => {
+      const category = nodeDef.category || ''
+      const categoryParts = category ? category.split('/') : []
+      return [...categoryParts, nodeDef.name]
+    }
+
+    switch (tabId) {
+      case 'essentials': {
+        const essentialNodes = nodes.filter(
+          (nodeDef) => nodeDef.nodeSource.type === NodeSourceType.Essentials
+        )
+        return [
+          {
+            tree: buildNodeDefTree(essentialNodes, {
+              pathExtractor: categoryPathExtractor
+            })
+          }
+        ]
+      }
+      case 'custom': {
+        const customNodes = nodes.filter(
+          (nodeDef) => nodeDef.nodeSource.type === NodeSourceType.CustomNodes
+        )
+        const groupedByMainCategory = new Map<string, ComfyNodeDefImpl[]>()
+        for (const node of customNodes) {
+          const mainCategory = node.main_category ?? 'custom_extensions'
+          if (!groupedByMainCategory.has(mainCategory)) {
+            groupedByMainCategory.set(mainCategory, [])
+          }
+          groupedByMainCategory.get(mainCategory)!.push(node)
+        }
+
+        return Array.from(groupedByMainCategory.entries()).map(
+          ([mainCategory, categoryNodes]) => ({
+            title: upperCase(mainCategory),
+            tree: buildNodeDefTree(categoryNodes, {
+              pathExtractor: categoryPathExtractor
+            })
+          })
+        )
+      }
+      case 'all':
+      default: {
+        const groupedByMainCategory = new Map<string, ComfyNodeDefImpl[]>()
+        for (const node of nodes) {
+          const mainCategory = node.main_category ?? 'basics'
+          if (!groupedByMainCategory.has(mainCategory)) {
+            groupedByMainCategory.set(mainCategory, [])
+          }
+          groupedByMainCategory.get(mainCategory)!.push(node)
+        }
+
+        return Array.from(groupedByMainCategory.entries()).map(
+          ([mainCategory, categoryNodes]) => ({
+            title: upperCase(mainCategory),
+            tree: buildNodeDefTree(categoryNodes, {
+              pathExtractor: categoryPathExtractor
+            })
+          })
+        )
+      }
+    }
+  }
+
   organizeNodes(
     nodes: ComfyNodeDefImpl[],
     options: NodeOrganizationOptions = {}
@@ -131,9 +203,9 @@ class NodeOrganizationService {
     }
 
     const sortedNodes =
-      sortingStrategy.id !== 'original'
-        ? [...nodes].sort(sortingStrategy.compare)
-        : nodes
+      sortingStrategy.id === 'original'
+        ? nodes
+        : [...nodes].sort(sortingStrategy.compare)
 
     const tree = buildNodeDefTree(sortedNodes, {
       pathExtractor: groupingStrategy.getNodePath

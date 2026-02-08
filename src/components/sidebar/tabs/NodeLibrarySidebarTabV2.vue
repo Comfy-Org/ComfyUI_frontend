@@ -1,0 +1,273 @@
+<template>
+  <div class="flex h-full flex-col overflow-hidden">
+    <div id="node-library-node-preview-container-v2" />
+    <NodeDragPreview />
+    <!-- Fixed header -->
+    <div class="shrink-0 px-4 pt-2 pb-1">
+      <h2 class="m-0 mb-1 text-sm font-bold leading-8">
+        {{ $t('sideToolbar.nodes') }}
+      </h2>
+      <SearchBox
+        ref="searchBoxRef"
+        v-model="searchQuery"
+        :placeholder="$t('g.search') + '...'"
+        @search="handleSearch"
+      />
+    </div>
+
+    <!-- Tabs container -->
+    <TabsRoot
+      v-model="selectedTab"
+      class="flex min-h-0 flex-1 flex-col overflow-hidden"
+    >
+      <!-- Fixed tab list -->
+      <TabsList
+        class="shrink-0 flex gap-4 border-b border-comfy-input px-4 pb-2"
+      >
+        <TabsTrigger
+          v-for="tab in tabs"
+          :key="tab.value"
+          :value="tab.value"
+          :class="
+            cn(
+              'select-none border-none outline-none px-3 py-2 rounded-lg cursor-pointer',
+              'text-sm text-foreground transition-colors',
+              selectedTab === tab.value
+                ? 'bg-comfy-input font-bold'
+                : 'bg-transparent font-normal'
+            )
+          "
+        >
+          {{ tab.label }}
+        </TabsTrigger>
+      </TabsList>
+
+      <!-- Scrollable tab content -->
+      <EssentialNodesPanel
+        v-model:expanded-keys="expandedKeys"
+        :root="renderedEssentialRoot"
+        @node-click="handleNodeClick"
+      />
+      <AllNodesPanel
+        v-model:expanded-keys="expandedKeys"
+        :sections="renderedSections"
+        :fill-node-info="fillNodeInfo"
+        @node-click="handleNodeClick"
+      />
+      <CustomNodesPanel
+        v-model:expanded-keys="expandedKeys"
+        :sections="renderedCustomSections"
+        @node-click="handleNodeClick"
+      />
+    </TabsRoot>
+  </div>
+</template>
+
+<script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
+import { useLocalStorage } from '@vueuse/core'
+import { TabsList, TabsRoot, TabsTrigger } from 'reka-ui'
+import { computed, nextTick, onMounted, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
+
+import SearchBox from '@/components/common/SearchBoxV2.vue'
+import { useNodeDragToCanvas } from '@/composables/node/useNodeDragToCanvas'
+import {
+  DEFAULT_TAB_ID,
+  nodeOrganizationService
+} from '@/services/nodeOrganizationService'
+import { getProviderIcon } from '@/utils/categoryUtil'
+import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
+import { useNodeDefStore } from '@/stores/nodeDefStore'
+import type { TabId } from '@/types/nodeOrganizationTypes'
+import type {
+  RenderedTreeExplorerNode,
+  TreeNode
+} from '@/types/treeExplorerTypes'
+
+import AllNodesPanel from './nodeLibrary/AllNodesPanel.vue'
+import CustomNodesPanel from './nodeLibrary/CustomNodesPanel.vue'
+import EssentialNodesPanel from './nodeLibrary/EssentialNodesPanel.vue'
+import NodeDragPreview from './nodeLibrary/NodeDragPreview.vue'
+
+const selectedTab = useLocalStorage<TabId>(
+  'Comfy.NodeLibrary.Tab',
+  DEFAULT_TAB_ID
+)
+
+const { t } = useI18n()
+
+const searchBoxRef = ref()
+const searchQuery = ref('')
+const expandedKeysByTab = ref<Record<TabId, string[]>>({
+  essentials: [],
+  all: [],
+  custom: []
+})
+const expandedKeys = computed({
+  get: () => expandedKeysByTab.value[selectedTab.value],
+  set: (value) => {
+    expandedKeysByTab.value[selectedTab.value] = value
+  }
+})
+
+const nodeDefStore = useNodeDefStore()
+const { startDrag } = useNodeDragToCanvas()
+
+const filteredNodeDefs = computed(() => {
+  if (searchQuery.value.length === 0) {
+    return []
+  }
+  return nodeDefStore.nodeSearchService.searchNode(
+    searchQuery.value,
+    [],
+    { limit: 64 },
+    { matchWildcards: false }
+  )
+})
+
+const sections = computed(() => {
+  const nodes =
+    filteredNodeDefs.value.length > 0
+      ? filteredNodeDefs.value
+      : nodeDefStore.visibleNodeDefs
+
+  return nodeOrganizationService.organizeNodesByTab(nodes, 'all')
+})
+
+function getFolderIcon(node: TreeNode): string {
+  const firstLeaf = findFirstLeaf(node)
+  if (
+    firstLeaf?.key?.startsWith('root/api node') &&
+    firstLeaf.key.replace(`${node.key}/`, '') === firstLeaf.label
+  ) {
+    return getProviderIcon(node.label ?? '')
+  }
+  return 'icon-[ph--folder-fill]'
+}
+
+function findFirstLeaf(node: TreeNode): TreeNode | undefined {
+  if (node.leaf) return node
+  for (const child of node.children ?? []) {
+    const leaf = findFirstLeaf(child)
+    if (leaf) return leaf
+  }
+  return undefined
+}
+
+function fillNodeInfo(
+  node: TreeNode
+): RenderedTreeExplorerNode<ComfyNodeDefImpl> {
+  const children = node.children?.map(fillNodeInfo)
+  const totalLeaves = node.leaf
+    ? 1
+    : (children?.reduce((acc, child) => acc + child.totalLeaves, 0) ?? 0)
+
+  return {
+    key: node.key,
+    label: node.leaf ? node.data?.display_name : node.label,
+    leaf: node.leaf,
+    data: node.data,
+    icon: node.leaf ? 'icon-[comfy--node]' : getFolderIcon(node),
+    type: node.leaf ? 'node' : 'folder',
+    totalLeaves,
+    children
+  }
+}
+
+const renderedSections = computed(() => {
+  return sections.value.map((section) => ({
+    title: section.title,
+    root: fillNodeInfo(section.tree)
+  }))
+})
+
+const essentialSections = computed(() => {
+  const nodes =
+    filteredNodeDefs.value.length > 0
+      ? filteredNodeDefs.value
+      : nodeDefStore.visibleNodeDefs
+  return nodeOrganizationService.organizeNodesByTab(nodes, 'essentials')
+})
+
+const renderedEssentialRoot = computed(() => {
+  const section = essentialSections.value[0]
+  return section
+    ? fillNodeInfo(section.tree)
+    : fillNodeInfo({ key: 'root', label: '', children: [] })
+})
+
+const customSections = computed(() => {
+  const nodes =
+    filteredNodeDefs.value.length > 0
+      ? filteredNodeDefs.value
+      : nodeDefStore.visibleNodeDefs
+
+  return nodeOrganizationService.organizeNodesByTab(nodes, 'custom')
+})
+
+const renderedCustomSections = computed(() => {
+  return customSections.value.map((section) => ({
+    title: section.title,
+    root: fillNodeInfo(section.tree)
+  }))
+})
+
+function collectFolderKeys(node: TreeNode): string[] {
+  if (node.leaf) return []
+  const keys = [node.key]
+  for (const child of node.children ?? []) {
+    keys.push(...collectFolderKeys(child))
+  }
+  return keys
+}
+
+function handleNodeClick(node: RenderedTreeExplorerNode<ComfyNodeDefImpl>) {
+  if (node.type === 'node' && node.data) {
+    startDrag(node.data)
+  }
+  if (node.type === 'folder') {
+    const index = expandedKeys.value.indexOf(node.key)
+    if (index === -1) {
+      expandedKeys.value = [...expandedKeys.value, node.key]
+    } else {
+      expandedKeys.value = expandedKeys.value.filter((k) => k !== node.key)
+    }
+  }
+}
+
+async function handleSearch() {
+  await nextTick()
+
+  if (filteredNodeDefs.value.length === 0) {
+    expandedKeys.value = []
+    return
+  }
+
+  const allKeys: string[] = []
+  if (selectedTab.value === 'essentials') {
+    for (const section of essentialSections.value) {
+      allKeys.push(...collectFolderKeys(section.tree))
+    }
+  } else if (selectedTab.value === 'custom') {
+    for (const section of customSections.value) {
+      allKeys.push(...collectFolderKeys(section.tree))
+    }
+  } else {
+    for (const section of sections.value) {
+      allKeys.push(...collectFolderKeys(section.tree))
+    }
+  }
+  expandedKeys.value = allKeys
+}
+
+const tabs = computed(() => [
+  { value: 'essentials', label: t('sideToolbar.nodeLibraryTab.essentials') },
+  { value: 'all', label: t('sideToolbar.nodeLibraryTab.allNodes') },
+  { value: 'custom', label: t('sideToolbar.nodeLibraryTab.custom') }
+])
+
+onMounted(() => {
+  searchBoxRef.value?.focus()
+})
+</script>
