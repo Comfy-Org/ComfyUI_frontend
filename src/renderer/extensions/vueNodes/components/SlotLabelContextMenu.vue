@@ -22,9 +22,11 @@ import { computed, onMounted, onUnmounted, ref, watchEffect } from 'vue'
 
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import {
-  connectSlots,
-  findCompatibleTargets,
-  registerSlotMenuInstance
+  canRenameSlot,
+  disconnectSlotLinks,
+  hasConnectedLinks,
+  registerSlotLabelMenuInstance,
+  renameSlot
 } from '@/renderer/extensions/vueNodes/composables/useSlotContextMenu'
 import type { SlotMenuContext } from '@/renderer/extensions/vueNodes/composables/useSlotContextMenu'
 
@@ -87,22 +89,36 @@ const menuItems = computed<MenuItem[]>(() => {
   const ctx = activeContext.value
   if (!ctx) return []
 
-  const targets = findCompatibleTargets(ctx)
-  if (targets.length === 0) {
-    return [{ label: 'No compatible nodes', disabled: true }]
-  }
+  const items: MenuItem[] = []
 
-  return [
-    { label: 'Connect to...', disabled: true },
-    { separator: true },
-    ...targets.map((target) => ({
-      label: `${target.slotInfo.name} @ ${target.node.title || target.node.type}`,
+  if (canRenameSlot(ctx)) {
+    items.push({
+      label: 'Rename slot',
       command: () => {
-        connectSlots(ctx, target)
+        const newName = window.prompt('New name for slot:')
+        if (newName != null) {
+          renameSlot(ctx, newName)
+        }
         hide()
       }
-    }))
-  ]
+    })
+  }
+
+  if (hasConnectedLinks(ctx)) {
+    items.push({
+      label: 'Disconnect links',
+      command: () => {
+        disconnectSlotLinks(ctx)
+        hide()
+      }
+    })
+  }
+
+  if (items.length === 0) {
+    return [{ label: 'No actions available', disabled: true }]
+  }
+
+  return items
 })
 
 function show(event: MouseEvent, context: SlotMenuContext) {
@@ -140,10 +156,10 @@ function onMenuHide() {
 defineExpose({ show, hide, isOpen })
 
 onMounted(() => {
-  registerSlotMenuInstance({ show, hide, isOpen })
+  registerSlotLabelMenuInstance({ show, hide, isOpen })
 })
 
 onUnmounted(() => {
-  registerSlotMenuInstance(null)
+  registerSlotLabelMenuInstance(null)
 })
 </script>
