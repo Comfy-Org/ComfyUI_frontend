@@ -6,13 +6,9 @@
     @show="onMenuShow"
     @hide="onMenuHide"
   >
-    <template #item="{ item, props: itemProps, hasSubmenu }">
+    <template #item="{ item, props: itemProps }">
       <a v-bind="itemProps.action" class="flex items-center gap-2 px-3 py-1.5">
         <span class="flex-1">{{ item.label }}</span>
-        <i
-          v-if="hasSubmenu"
-          class="icon-[lucide--chevron-right] size-4 opacity-60"
-        />
       </a>
     </template>
   </ContextMenu>
@@ -26,9 +22,11 @@ import { computed, onMounted, onUnmounted, ref, watchEffect } from 'vue'
 
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import {
+  canRenameSlot,
   connectSlots,
   findCompatibleTargets,
-  registerSlotMenuInstance
+  registerSlotMenuInstance,
+  renameSlot
 } from '@/renderer/extensions/vueNodes/composables/useSlotContextMenu'
 import type { SlotMenuContext } from '@/renderer/extensions/vueNodes/composables/useSlotContextMenu'
 
@@ -91,23 +89,40 @@ const menuItems = computed<MenuItem[]>(() => {
   const ctx = activeContext.value
   if (!ctx) return []
 
-  const targets = findCompatibleTargets(ctx)
-  if (targets.length === 0) {
-    return [{ label: 'No compatible nodes', disabled: true }]
+  const items: MenuItem[] = []
+
+  if (canRenameSlot(ctx)) {
+    items.push({
+      label: 'Rename slot',
+      command: () => {
+        const newLabel = window.prompt('New slot label:')
+        if (newLabel !== null) {
+          renameSlot(ctx, newLabel)
+        }
+        hide()
+      }
+    })
+    items.push({ separator: true })
   }
 
-  return [
-    {
-      label: 'Connect to...',
-      items: targets.map((target) => ({
+  const targets = findCompatibleTargets(ctx)
+  if (targets.length === 0) {
+    items.push({ label: 'No compatible nodes', disabled: true })
+  } else {
+    items.push({ label: 'Connect to...', disabled: true })
+    items.push({ separator: true })
+    items.push(
+      ...targets.map((target) => ({
         label: `${target.slotInfo.name} @ ${target.node.title || target.node.type}`,
         command: () => {
           connectSlots(ctx, target)
           hide()
         }
       }))
-    }
-  ]
+    )
+  }
+
+  return items
 })
 
 function show(event: MouseEvent, context: SlotMenuContext) {
