@@ -12,8 +12,10 @@ import {
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useDialogService } from '@/services/dialogService'
+import { useAdvancedWidgetOverridesStore } from '@/stores/workspace/advancedWidgetOverridesStore'
 import { useFavoritedWidgetsStore } from '@/stores/workspace/favoritedWidgetsStore'
 
 const {
@@ -31,7 +33,9 @@ const {
 const label = defineModel<string>('label', { required: true })
 
 const canvasStore = useCanvasStore()
+const settingStore = useSettingStore()
 const favoritedWidgetsStore = useFavoritedWidgetsStore()
+const advancedOverridesStore = useAdvancedWidgetOverridesStore()
 const dialogService = useDialogService()
 const { t } = useI18n()
 
@@ -41,6 +45,18 @@ const favoriteNode = computed(() =>
 )
 const isFavorited = computed(() =>
   favoritedWidgetsStore.isFavorited(favoriteNode.value, widget.name)
+)
+
+const isEffectivelyAdvanced = computed(() =>
+  advancedOverridesStore.getAdvancedState(node, widget)
+)
+
+const backendDefaultAdvanced = computed(() => !!widget.options?.advanced)
+
+const showAdvancedToggle = computed(
+  () =>
+    !hasParents.value &&
+    !settingStore.get('Comfy.Node.AlwaysShowAdvancedWidgets')
 )
 
 async function handleRename() {
@@ -97,6 +113,17 @@ function handleToggleFavorite() {
   favoritedWidgetsStore.toggleFavorite(favoriteNode.value, widget.name)
 }
 
+function handleToggleAdvanced() {
+  const newEffective = !isEffectivelyAdvanced.value
+  if (newEffective === backendDefaultAdvanced.value) {
+    advancedOverridesStore.clearOverride(node, widget.name)
+  } else {
+    advancedOverridesStore.setAdvanced(node, widget.name, newEffective)
+  }
+
+  node.expandToFitContent()
+}
+
 const buttonClasses = cn([
   'border-none bg-transparent',
   'w-full flex items-center gap-2 rounded px-3 py-2 text-sm',
@@ -141,6 +168,26 @@ const buttonClasses = cn([
         <template v-else>
           <i class="icon-[lucide--eye] size-4" />
           <span>{{ t('rightSidePanel.showInput') }}</span>
+        </template>
+      </button>
+
+      <button
+        v-if="showAdvancedToggle"
+        :class="buttonClasses"
+        @click="
+          () => {
+            handleToggleAdvanced()
+            close()
+          }
+        "
+      >
+        <template v-if="isEffectivelyAdvanced">
+          <i class="icon-[lucide--eye] size-4" />
+          <span>{{ t('rightSidePanel.showInput') }}</span>
+        </template>
+        <template v-else>
+          <i class="icon-[lucide--eye-off] size-4" />
+          <span>{{ t('rightSidePanel.hideInput') }}</span>
         </template>
       </button>
 

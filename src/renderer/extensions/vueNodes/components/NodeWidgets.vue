@@ -27,8 +27,8 @@
     >
       <div
         v-if="
-          !widget.simplified.options?.hidden &&
-          (!widget.simplified.options?.advanced || showAdvanced)
+          !widget.simplified.hidden &&
+          (!widget.simplified.advanced || showAdvanced)
         "
         class="lg-node-widget group col-span-full grid grid-cols-subgrid items-stretch"
         :data-widget-name="widget.name"
@@ -80,9 +80,10 @@ import type {
   VueNodeData,
   WidgetSlotMetadata
 } from '@/composables/graph/useGraphNodeManager'
-import { useSettingStore } from '@/platform/settings/settingStore'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { st } from '@/i18n'
+import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
 import { useNodeTooltips } from '@/renderer/extensions/vueNodes/composables/useNodeTooltips'
 import { useNodeZIndex } from '@/renderer/extensions/vueNodes/composables/useNodeZIndex'
@@ -94,6 +95,7 @@ import {
   shouldExpand,
   shouldRenderAsVue
 } from '@/renderer/extensions/vueNodes/widgets/registry/widgetRegistry'
+import { useAdvancedWidgetOverridesStore } from '@/stores/workspace/advancedWidgetOverridesStore'
 import type { SimplifiedWidget, WidgetValue } from '@/types/simplifiedWidget'
 import { cn } from '@/utils/tailwindUtil'
 
@@ -101,13 +103,16 @@ import InputSlot from './InputSlot.vue'
 
 interface NodeWidgetsProps {
   nodeData?: VueNodeData
+  node?: LGraphNode | null
 }
 
-const { nodeData } = defineProps<NodeWidgetsProps>()
+const { nodeData, node: lgraphNode = null } = defineProps<NodeWidgetsProps>()
 
 const { shouldHandleNodePointerEvents, forwardEventToCanvas } =
   useCanvasInteractions()
 const { bringNodeToFront } = useNodeZIndex()
+
+const advancedOverridesStore = useAdvancedWidgetOverridesStore()
 
 function handleWidgetPointerEvent(event: PointerEvent) {
   if (shouldHandleNodePointerEvents.value) return
@@ -134,10 +139,11 @@ onErrorCaptured((error) => {
 
 const nodeType = computed(() => nodeData?.type || '')
 const settingStore = useSettingStore()
+const alwaysShowAdvancedWidgets = computed(() =>
+  settingStore.get('Comfy.Node.AlwaysShowAdvancedWidgets')
+)
 const showAdvanced = computed(
-  () =>
-    nodeData?.showAdvanced ||
-    settingStore.get('Comfy.Node.AlwaysShowAdvancedWidgets')
+  () => nodeData?.showAdvanced || alwaysShowAdvancedWidgets.value
 )
 const { getWidgetTooltip, createTooltipConfig } = useNodeTooltips(
   nodeType.value
@@ -154,6 +160,12 @@ interface ProcessedWidget {
   slotMetadata?: WidgetSlotMetadata
 }
 
+/**
+ * Preprocess Vue widgets for rendering and value updates.
+ *
+ * Widgets with linked input slots are forced disabled to avoid conflicting
+ * input sources (linked slot vs. local widget value).
+ */
 const processedWidgets = computed((): ProcessedWidget[] => {
   if (!nodeData?.widgets) return []
 
@@ -169,12 +181,13 @@ const processedWidgets = computed((): ProcessedWidget[] => {
 
     const { slotMetadata, options } = widget
 
-    // Core feature: Disable Vue widgets when their input slots are connected
-    // This prevents conflicting input sources - when a slot is linked to another
-    // node's output, the widget should be read-only to avoid data conflicts
     const widgetOptions = slotMetadata?.linked
       ? { ...options, disabled: true }
       : options
+
+    const resolvedAdvanced = lgraphNode
+      ? advancedOverridesStore.getAdvancedState(lgraphNode, widget)
+      : !!widget.options?.advanced
 
     const simplified: SimplifiedWidget = {
       name: widget.name,
@@ -186,13 +199,13 @@ const processedWidgets = computed((): ProcessedWidget[] => {
       label: widget.label,
       nodeType: widget.nodeType,
       options: widgetOptions,
-      spec: widget.spec
+      spec: widget.spec,
+      advanced: resolvedAdvanced,
+      hidden: widget.options?.hidden
     }
 
     function updateHandler(value: WidgetValue) {
-      // Update the widget value directly
       widget.value = value
-
       widget.callback?.(value)
     }
 
@@ -211,19 +224,33 @@ const processedWidgets = computed((): ProcessedWidget[] => {
     })
   }
 
+  if (nodeData?.showAdvanced && !alwaysShowAdvancedWidgets.value) {
+    const normal = result.filter((w) => !w.simplified.advanced)
+    const advanced = result.filter((w) => w.simplified.advanced)
+    return [...normal, ...advanced]
+  }
+
   return result
 })
 
+/**
+ * Grid rows must follow the original `nodeData.widgets` order; the rendered list
+ * may reorder widgets (e.g. grouping advanced widgets at the end).
+ */
 const gridTemplateRows = computed((): string => {
   if (!nodeData?.widgets) return ''
   const processedNames = new Set(toValue(processedWidgets).map((w) => w.name))
   return nodeData.widgets
-    .filter(
-      (w) =>
-        processedNames.has(w.name) &&
-        !w.options?.hidden &&
-        (!w.options?.advanced || showAdvanced.value)
-    )
+    .filter((w) => {
+      if (!processedNames.has(w.name)) return false
+      if (w.options?.hidden) return false
+
+      const resolved = lgraphNode
+        ? advancedOverridesStore.getAdvancedState(lgraphNode, w)
+        : !!w.options?.advanced
+
+      return !resolved || showAdvanced.value
+    })
     .map((w) =>
       shouldExpand(w.type) || w.hasLayoutSize ? 'auto' : 'min-content'
     )

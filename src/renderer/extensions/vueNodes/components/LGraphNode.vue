@@ -110,7 +110,11 @@
       >
         <NodeSlots :node-data="nodeData" />
 
-        <NodeWidgets v-if="nodeData.widgets?.length" :node-data="nodeData" />
+        <NodeWidgets
+          v-if="nodeData.widgets?.length"
+          :node-data="nodeData"
+          :node="lgraphNode"
+        />
 
         <div v-if="hasCustomContent" class="min-h-0 flex-1 flex">
           <NodeContent :node-data="nodeData" :media="nodeMedia" />
@@ -203,6 +207,7 @@ import { applyLightThemeColor } from '@/renderer/extensions/vueNodes/utils/nodeS
 import { app } from '@/scripts/app'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useNodeOutputStore } from '@/stores/imagePreviewStore'
+import { useAdvancedWidgetOverridesStore } from '@/stores/workspace/advancedWidgetOverridesStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import { isTransparent } from '@/utils/colorUtil'
 import {
@@ -504,23 +509,29 @@ const lgraphNode = computed(() => {
   return getNodeByLocatorId(app.rootGraph, locatorId)
 })
 
+const advancedOverridesStore = useAdvancedWidgetOverridesStore()
+
+/**
+ * Whether to show the "Show Advanced Inputs" toggle button.
+ *
+ * - Subgraph nodes: button is shown when there are unpromoted interior widgets.
+ * - Regular nodes: button is shown when the node has any effectively-advanced
+ *   widgets and advanced widgets are not forced visible by the global setting.
+ */
 const showAdvancedInputsButton = computed(() => {
   const node = lgraphNode.value
   if (!node) return false
 
-  // For subgraph nodes: check for unpromoted widgets
   if (node instanceof SubgraphNode) {
     const interiorNodes = node.subgraph.nodes
     const allInteriorWidgets = interiorNodes.flatMap((n) => n.widgets ?? [])
     return allInteriorWidgets.some((w) => !w.computedDisabled && !w.promoted)
   }
 
-  // For regular nodes: show button if there are advanced widgets and they're currently hidden
-  const hasAdvancedWidgets = nodeData.widgets?.some((w) => w.options?.advanced)
   const alwaysShowAdvanced = settingStore.get(
     'Comfy.Node.AlwaysShowAdvancedWidgets'
   )
-  return hasAdvancedWidgets && !alwaysShowAdvanced
+  return advancedOverridesStore.hasAnyAdvanced(node) && !alwaysShowAdvanced
 })
 
 const showAdvancedState = customRef((track, trigger) => {
@@ -551,6 +562,9 @@ const showAdvancedState = customRef((track, trigger) => {
       } else {
         node.showAdvanced = value
         internalState = value
+        nextTick(() => {
+          node.expandToFitContent()
+        })
       }
       trigger()
     }
