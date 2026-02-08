@@ -1406,7 +1406,7 @@ export class ComfyApp {
             } else {
               try {
                 if (res.prompt_id) {
-                  executionStore.storePrompt({
+                  executionStore.storeJob({
                     id: res.prompt_id,
                     nodes: Object.keys(p.output),
                     workflow: useWorkspaceStore().workflow
