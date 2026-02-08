@@ -36,13 +36,15 @@ function endDrag(e: PointerEvent) {
     e.clientY >= rect.top &&
     e.clientY <= rect.bottom
 
-  if (isOverCanvas) {
-    const pos = canvas.convertEventToCanvasOffset(e)
-    const litegraphService = useLitegraphService()
-    litegraphService.addNodeOnGraph(draggedNode.value, { pos })
+  try {
+    if (isOverCanvas) {
+      const pos = canvas.convertEventToCanvasOffset(e)
+      const litegraphService = useLitegraphService()
+      litegraphService.addNodeOnGraph(draggedNode.value, { pos })
+    }
+  } finally {
+    cancelDrag()
   }
-
-  cancelDrag()
 }
 
 function handleKeydown(e: KeyboardEvent) {

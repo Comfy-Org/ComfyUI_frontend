@@ -1,5 +1,7 @@
 <template>
-  <div class="flex w-44 flex-col overflow-hidden rounded-2xl bg-[#1a1a1a]">
+  <div
+    class="flex w-44 flex-col overflow-hidden rounded-2xl bg-(--base-background)"
+  >
     <!-- Node Preview: LGraphNodePreview is 350px wide, scale to fit 144px (w-44 - p-4*2) -->
     <div ref="previewContainerRef" class="overflow-hidden p-4">
       <div ref="previewWrapperRef" class="origin-top-left scale-[0.41]">
