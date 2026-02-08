@@ -2,15 +2,30 @@ import { createTestingPinia } from '@pinia/testing'
 import { mount } from '@vue/test-utils'
 import type { VueWrapper } from '@vue/test-utils'
 import PrimeVue from 'primevue/config'
+import { computed } from 'vue'
 import type { ComponentPublicInstance } from 'vue'
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
+import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import type { FormDropdownItem } from '@/renderer/extensions/vueNodes/widgets/components/form/dropdown/types'
 import type { ComboInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 
 import WidgetSelectDropdown from '@/renderer/extensions/vueNodes/widgets/components/WidgetSelectDropdown.vue'
+
+const mockAssetsData = vi.hoisted(() => ({ items: [] as AssetItem[] }))
+vi.mock(
+  '@/renderer/extensions/vueNodes/widgets/composables/useAssetWidgetData',
+  () => ({
+    useAssetWidgetData: () => ({
+      category: computed(() => 'checkpoints'),
+      assets: computed(() => mockAssetsData.items),
+      isLoading: computed(() => false),
+      error: computed(() => null)
+    })
+  })
+)
 
 const i18n = createI18n({
   legacy: false,
@@ -304,5 +319,111 @@ describe('WidgetSelectDropdown custom label mapping', () => {
         dropdownItems.every((item) => !String(item.id).startsWith('missing-'))
       ).toBe(true)
     })
+  })
+})
+
+describe('WidgetSelectDropdown cloud asset mode (COM-14333)', () => {
+  interface CloudModeInstance extends ComponentPublicInstance {
+    dropdownItems: FormDropdownItem[]
+  }
+
+  const createTestAsset = (
+    id: string,
+    name: string,
+    preview_url: string
+  ): AssetItem => ({
+    id,
+    name,
+    preview_url,
+    tags: []
+  })
+
+  const createCloudModeWidget = (
+    value: string = 'model.safetensors'
+  ): SimplifiedWidget<string | undefined> => ({
+    name: 'test_model_select',
+    type: 'combo',
+    value,
+    options: {
+      values: [],
+      nodeType: 'CheckpointLoaderSimple'
+    }
+  })
+
+  const mountCloudComponent = (
+    widget: SimplifiedWidget<string | undefined>,
+    modelValue: string | undefined
+  ): VueWrapper<CloudModeInstance> => {
+    return mount(WidgetSelectDropdown, {
+      props: {
+        widget,
+        modelValue,
+        assetKind: 'model',
+        isAssetMode: true,
+        nodeType: 'CheckpointLoaderSimple'
+      },
+      global: {
+        plugins: [PrimeVue, createTestingPinia(), i18n]
+      }
+    }) as unknown as VueWrapper<CloudModeInstance>
+  }
+
+  beforeEach(() => {
+    mockAssetsData.items = []
+  })
+
+  it('does not include missing items in cloud asset mode dropdown', () => {
+    mockAssetsData.items = [
+      createTestAsset(
+        'asset-1',
+        'existing_model.safetensors',
+        'https://example.com/preview.jpg'
+      )
+    ]
+
+    const widget = createCloudModeWidget('missing_model.safetensors')
+    const wrapper = mountCloudComponent(widget, 'missing_model.safetensors')
+
+    const dropdownItems = wrapper.vm.dropdownItems
+    expect(dropdownItems).toHaveLength(1)
+    expect(dropdownItems[0].name).toBe('existing_model.safetensors')
+    expect(
+      dropdownItems.some((item) => item.name === 'missing_model.safetensors')
+    ).toBe(false)
+  })
+
+  it('shows only available cloud assets in dropdown', () => {
+    mockAssetsData.items = [
+      createTestAsset(
+        'asset-1',
+        'model_a.safetensors',
+        'https://example.com/a.jpg'
+      ),
+      createTestAsset(
+        'asset-2',
+        'model_b.safetensors',
+        'https://example.com/b.jpg'
+      )
+    ]
+
+    const widget = createCloudModeWidget('model_a.safetensors')
+    const wrapper = mountCloudComponent(widget, 'model_a.safetensors')
+
+    const dropdownItems = wrapper.vm.dropdownItems
+    expect(dropdownItems).toHaveLength(2)
+    expect(dropdownItems.map((item) => item.name)).toEqual([
+      'model_a.safetensors',
+      'model_b.safetensors'
+    ])
+  })
+
+  it('returns empty dropdown when no cloud assets available', () => {
+    mockAssetsData.items = []
+
+    const widget = createCloudModeWidget('missing_model.safetensors')
+    const wrapper = mountCloudComponent(widget, 'missing_model.safetensors')
+
+    const dropdownItems = wrapper.vm.dropdownItems
+    expect(dropdownItems).toHaveLength(0)
   })
 })
