@@ -897,7 +897,7 @@
     "theme": "Theme",
     "dark": "Dark",
     "light": "Light",
-    "manageExtensions": "Manage Extensions",
+    "manageExtensions": "Extensions",
     "customNodesManager": "Custom Nodes Manager",
     "settings": "Settings",
     "help": "Help",
@@ -1101,7 +1101,7 @@
     "theme": "Theme",
     "dark": "Dark",
     "light": "Light",
-    "manageExtensions": "Manage Extensions",
+    "manageExtensions": "Extensions",
     "settings": "Settings",
     "help": "Help",
     "queue": "Queue Panel"
