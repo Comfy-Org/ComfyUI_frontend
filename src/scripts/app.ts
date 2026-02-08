@@ -1425,6 +1425,35 @@ export class ComfyApp {
                 {}) as MissingNodeTypeExtraInfo
               const missingNodeType = createMissingNodeTypeFromError(extraInfo)
               this.showMissingNodesError([missingNodeType])
+            } else if (
+              // Specific handling for prompt validation failures
+              error instanceof PromptExecutionError &&
+              typeof error.response.error === 'object' &&
+              error.response.error?.type === 'prompt_outputs_failed_validation'
+            ) {
+              const nodeErrors = error.response.node_errors || {}
+              const nodeIds = Object.keys(nodeErrors)
+              if (nodeIds.length === 0) {
+                // fallback: ComfyUI always returns at least one node ID in node_errors when a 'prompt_outputs_failed_validation' error occurs
+                // but the backend logic may change.
+                useDialogService().showErrorDialog(error, {
+                  title: t('errorDialog.promptExecutionError'),
+                  reportType: 'promptExecutionError'
+                })
+              } else {
+                // Focus on the first identified node causing the validation failure.
+                // This provides the user with a direct starting point for fixing the workflow.
+                const firstNodeId = nodeIds[0]
+                const nodeError = nodeErrors[firstNodeId]
+
+                useDialogService().showPromptExecutionErrorDialog({
+                  exception_type: t('errorDialog.promptExecutionError'),
+                  exception_message: error.toString(),
+                  node_id: firstNodeId,
+                  node_type: nodeError?.class_type ?? '',
+                  traceback: [] // Validation errors usually don't have server-side backtraces
+                })
+              }
             } else {
               useDialogService().showErrorDialog(error, {
                 title: t('errorDialog.promptExecutionError'),

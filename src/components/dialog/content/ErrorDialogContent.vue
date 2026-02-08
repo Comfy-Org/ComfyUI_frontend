@@ -1,16 +1,34 @@
 <template>
-  <div class="comfy-error-report flex flex-col gap-4">
+  <div class="comfy-error-report flex flex-col gap-4 relative">
     <NoResultsPlaceholder
       class="pb-0"
       icon="pi pi-exclamation-circle"
       :title="title"
       :message="error.exceptionMessage"
       text-class="break-words max-w-[60vw]"
-    />
+    >
+      <div v-if="error.nodeId" class="mt-4 flex flex-col items-center gap-2">
+        <Button
+          variant="secondary"
+          size="sm"
+          class="font-mono rounded-full px-4"
+          @click="handleLocateNode"
+        >
+          <i class="icon-[lucide--locate] size-3" />
+          #{{ error.nodeId }}
+          <span class="ml-1 text-xs opacity-70"
+            >({{ t('errorDialog.locateNode') }})</span
+          >
+        </Button>
+      </div>
+    </NoResultsPlaceholder>
+
     <template v-if="error.extensionFile">
-      <span>{{ t('errorDialog.extensionFileHint') }}:</span>
-      <br />
-      <span class="font-bold">{{ error.extensionFile }}</span>
+      <div class="px-8">
+        <span>{{ t('errorDialog.extensionFileHint') }}:</span>
+        <br />
+        <span class="font-bold">{{ error.extensionFile }}</span>
+      </div>
     </template>
 
     <div class="flex justify-center gap-2">
@@ -50,20 +68,25 @@
 import Divider from 'primevue/divider'
 import ScrollPanel from 'primevue/scrollpanel'
 import { useToast } from 'primevue/usetoast'
-import { computed, onMounted, ref } from 'vue'
+import { computed, nextTick, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import NoResultsPlaceholder from '@/components/common/NoResultsPlaceholder.vue'
 import FindIssueButton from '@/components/dialog/content/error/FindIssueButton.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
+import { useDialogStore } from '@/stores/dialogStore'
 import { useTelemetry } from '@/platform/telemetry'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { useCommandStore } from '@/stores/commandStore'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useSystemStatsStore } from '@/stores/systemStatsStore'
+import { Subgraph } from '@/lib/litegraph/src/litegraph'
+import type { LGraph } from '@/lib/litegraph/src/litegraph'
 import { generateErrorReport } from '@/utils/errorReportUtil'
 import type { ErrorReportData } from '@/utils/errorReportUtil'
+import { getNodeByExecutionId } from '@/utils/graphTraversalUtil'
 
 const { error } = defineProps<{
   error: Omit<ErrorReportData, 'workflow' | 'systemStats' | 'serverLogs'> & {
@@ -95,7 +118,70 @@ const showReport = () => {
 const toast = useToast()
 const { t } = useI18n()
 const systemStatsStore = useSystemStatsStore()
+const canvasStore = useCanvasStore()
 const telemetry = useTelemetry()
+const dialogStore = useDialogStore()
+
+/**
+ * Locates the node associated with the error on the canvas.
+ *
+ * This function handles multi-graph navigation, ensuring that if a node resides
+ * within a subgraph, the canvas correctly switches context before animating.
+ * It uses a sequence of nextTick and requestAnimationFrame to ensure LiteGraph
+ * has completed its layout and initial draw before calculating bounds for animation.
+ */
+async function handleLocateNode() {
+  if (!error.nodeId) {
+    toast.add({
+      severity: 'error',
+      summary: t('g.error'),
+      detail: t('errorDialog.nodeIdNotFound')
+    })
+    return
+  }
+  if (!canvasStore.canvas) {
+    toast.add({
+      severity: 'error',
+      summary: t('g.error'),
+      detail: t('errorDialog.canvasNotInitialized')
+    })
+    return
+  }
+
+  const graphNode = getNodeByExecutionId(app.rootGraph, String(error.nodeId))
+  if (!graphNode) {
+    toast.add({
+      severity: 'error',
+      summary: t('g.error'),
+      detail: t('errorDialog.nodeNotFound')
+    })
+    return
+  }
+
+  const canvas = canvasStore.canvas
+  if (graphNode.graph && canvas.graph !== graphNode.graph) {
+    // If the node is in a different graph (e.g. inside a subgraph), navigate to it first.
+    // We update the subgraph context and set the active graph.
+    const targetGraph = graphNode.graph as LGraph
+    canvas.subgraph =
+      !targetGraph.isRootGraph && targetGraph instanceof Subgraph
+        ? targetGraph
+        : undefined
+    canvas.setGraph(targetGraph)
+
+    // Wait for the navigation to pick up and stores to update.
+    await nextTick()
+    // Wait for two animation frames to ensure LiteGraph has performed layout and initial draw.
+    // This is crucial because graph elements are not immediately available after context switch.
+    await new Promise((resolve) =>
+      requestAnimationFrame(() => requestAnimationFrame(resolve))
+    )
+  }
+
+  // Animate the canvas view to comfortably fit the node's bounding rectangle.
+  canvas.animateToBounds(graphNode.boundingRect)
+  dialogStore.closeDialog()
+}
 
 const title = computed<string>(
   () => error.nodeType ?? error.exceptionType ?? t('errorDialog.defaultTitle')

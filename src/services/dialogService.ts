@@ -177,20 +177,71 @@ export const useDialogService = () => {
     })
   }
 
+  /**
+   * Shows an error dialog for a runtime graph execution error (server-side).
+   * These errors are received from the WebSocket 'execution_error' event
+   * during the node processing phase of a generation.
+   * @param executionError Structured error information including traceback and node context.
+   */
   function showExecutionErrorDialog(executionError: ExecutionErrorDialogInput) {
+    // Set up the error properties, ensuring a localized fallback for empty stack traces.
     const props: ComponentAttrs<typeof ErrorDialogContent> = {
       error: {
         exceptionType: executionError.exception_type,
         exceptionMessage: executionError.exception_message,
         nodeId: executionError.node_id?.toString(),
         nodeType: executionError.node_type,
-        traceback: executionError.traceback.join('\n'),
+        traceback:
+          executionError.traceback.length > 0
+            ? executionError.traceback.join('\n')
+            : t('errorDialog.noStackTrace'),
+
         reportType: 'graphExecutionError'
       }
     }
 
+    // Display the global error dialog with telemetry tracking for closure.
     dialogStore.showDialog({
       key: 'global-execution-error',
+      component: ErrorDialogContent,
+      props,
+      dialogComponentProps: {
+        onClose: () => {
+          useTelemetry()?.trackUiButtonClicked({
+            button_id: 'error_dialog_closed'
+          })
+        }
+      }
+    })
+  }
+
+  /**
+   * Show a dialog when a prompt submission returns an error (e.g. 400 Bad Request from /prompt).
+   * error.type: "prompt_outputs_failed_validation"
+   * Common validation errors: "value_not_in_list", "required_input_missing", etc.
+   * @param executionError the error information from the prompt execution.
+   */
+  function showPromptExecutionErrorDialog(
+    executionError: ExecutionErrorDialogInput
+  ) {
+    // Set up the error properties, ensuring a localized fallback for empty stack traces.
+    const props: ComponentAttrs<typeof ErrorDialogContent> = {
+      error: {
+        exceptionType: t('errorDialog.promptExecutionError'),
+        exceptionMessage: executionError.exception_message,
+        nodeId: executionError.node_id?.toString(),
+        nodeType: executionError.node_type,
+        traceback:
+          executionError.traceback.length > 0
+            ? executionError.traceback.join('\n')
+            : t('errorDialog.noStackTrace'),
+        reportType: 'promptExecutionError'
+      }
+    }
+
+    // Display the global error dialog with telemetry tracking for closure.
+    dialogStore.showDialog({
+      key: 'global-error',
       component: ErrorDialogContent,
       props,
       dialogComponentProps: {
@@ -754,6 +805,7 @@ export const useDialogService = () => {
     showSettingsDialog,
     showAboutDialog,
     showExecutionErrorDialog,
+    showPromptExecutionErrorDialog,
     showApiNodesSignInDialog,
     showSignInDialog,
     showSubscriptionRequiredDialog,

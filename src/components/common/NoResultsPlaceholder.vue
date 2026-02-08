@@ -8,6 +8,7 @@
           <p :class="textClass" class="text-center whitespace-pre-line">
             {{ message }}
           </p>
+          <slot />
           <Button
             v-if="buttonLabel"
             variant="textonly"
