@@ -3,8 +3,11 @@
   <div v-else v-tooltip.right="tooltipConfig" :class="slotWrapperClass">
     <div class="relative h-full flex items-center min-w-0">
       <!-- Slot Name -->
-      <span v-if="!dotOnly" class="truncate text-node-component-slot-text">
-        {{ slotData.localized_name || slotData.name || `Output ${index}` }}
+      <span
+        v-if="!props.dotOnly && !hasNoLabel"
+        class="truncate text-node-component-slot-text"
+      >
+        {{ slotData.localized_name || (slotData.name ?? `Output ${index}`) }}
       </span>
     </div>
     <!-- Connection Dot -->
@@ -42,9 +45,15 @@ interface OutputSlotProps {
   dotOnly?: boolean
 }
 
-const { nodeType, nodeId, slotData, index, connected, compatible, dotOnly } =
+const { nodeType, nodeId, slotData, index, connected, compatible, dotOnly: dotOnlyProp } =
   defineProps<OutputSlotProps>()
 
+const hasNoLabel = computed(
+  () => !slotData.localized_name && slotData.name === ''
+)
+const dotOnly = computed(() => dotOnlyProp.value || hasNoLabel.value)
+
+// Error boundary implementation
 const renderError = ref<string | null>(null)
 
 const { toastErrorHandler } = useErrorHandling()
@@ -77,7 +86,7 @@ const slotWrapperClass = computed(() =>
   cn(
     'lg-slot lg-slot--output flex items-center justify-end group rounded-l-lg h-6',
     'cursor-crosshair',
-    dotOnly ? 'lg-slot--dot-only justify-center' : 'pl-6',
+    dotOnly.value ? 'lg-slot--dot-only justify-center' : 'pl-6',
     {
       'lg-slot--connected': connected,
       'lg-slot--compatible': compatible,

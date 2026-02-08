@@ -36,7 +36,7 @@
     <!-- Slot Name -->
     <div class="h-full flex items-center min-w-0">
       <span
-        v-if="!dotOnly"
+        v-if="!props.dotOnly && !hasNoLabel"
         :class="
           cn(
             'truncate text-node-component-slot-text',
@@ -47,8 +47,7 @@
         {{
           slotData.label ||
           slotData.localized_name ||
-          slotData.name ||
-          `Input ${index}`
+          (slotData.name ?? `Input ${index}`)
         }}
       </span>
     </div>
@@ -92,6 +91,14 @@ const {
   dotOnly,
   socketless
 } = defineProps<InputSlotProps>()
+
+const hasNoLabel = computed(
+  () =>
+    !props.slotData.label &&
+    !props.slotData.localized_name &&
+    props.slotData.name === ''
+)
+const dotOnly = computed(() => props.dotOnly || hasNoLabel.value)
 
 const executionStore = useExecutionStore()
 
