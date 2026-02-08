@@ -5,10 +5,10 @@ import type { TabId } from '@/types/nodeOrganizationTypes'
 
 describe('NodeLibrarySidebarTabV2 expandedKeys logic', () => {
   describe('per-tab expandedKeys', () => {
-    function createExpandedKeysState(initialTab: TabId = 'essential') {
+    function createExpandedKeysState(initialTab: TabId = 'essentials') {
       const selectedTab = ref<TabId>(initialTab)
       const expandedKeysByTab = ref<Record<TabId, string[]>>({
-        essential: [],
+        essentials: [],
         all: [],
         custom: []
       })
@@ -25,16 +25,16 @@ describe('NodeLibrarySidebarTabV2 expandedKeys logic', () => {
     it('should initialize with empty arrays for all tabs', () => {
       const { expandedKeysByTab } = createExpandedKeysState()
 
-      expect(expandedKeysByTab.value.essential).toEqual([])
+      expect(expandedKeysByTab.value.essentials).toEqual([])
       expect(expandedKeysByTab.value.all).toEqual([])
       expect(expandedKeysByTab.value.custom).toEqual([])
     })
 
     it('should return keys for the current tab', () => {
       const { selectedTab, expandedKeysByTab, expandedKeys } =
-        createExpandedKeysState('essential')
+        createExpandedKeysState('essentials')
 
-      expandedKeysByTab.value.essential = ['key1', 'key2']
+      expandedKeysByTab.value.essentials = ['key1', 'key2']
       expandedKeysByTab.value.all = ['key3']
 
       expect(expandedKeys.value).toEqual(['key1', 'key2'])
@@ -45,11 +45,11 @@ describe('NodeLibrarySidebarTabV2 expandedKeys logic', () => {
 
     it('should set keys only for the current tab', () => {
       const { expandedKeysByTab, expandedKeys } =
-        createExpandedKeysState('essential')
+        createExpandedKeysState('essentials')
 
       expandedKeys.value = ['new-key1', 'new-key2']
 
-      expect(expandedKeysByTab.value.essential).toEqual([
+      expect(expandedKeysByTab.value.essentials).toEqual([
         'new-key1',
         'new-key2'
       ])
@@ -59,24 +59,25 @@ describe('NodeLibrarySidebarTabV2 expandedKeys logic', () => {
 
     it('should preserve keys when switching tabs', () => {
       const { selectedTab, expandedKeysByTab, expandedKeys } =
-        createExpandedKeysState('essential')
+        createExpandedKeysState('essentials')
 
-      expandedKeys.value = ['essential-key']
+      expandedKeys.value = ['essentials-key']
       selectedTab.value = 'all'
       expandedKeys.value = ['all-key']
       selectedTab.value = 'custom'
       expandedKeys.value = ['custom-key']
 
-      expect(expandedKeysByTab.value.essential).toEqual(['essential-key'])
+      expect(expandedKeysByTab.value.essentials).toEqual(['essentials-key'])
       expect(expandedKeysByTab.value.all).toEqual(['all-key'])
       expect(expandedKeysByTab.value.custom).toEqual(['custom-key'])
 
-      selectedTab.value = 'essential'
-      expect(expandedKeys.value).toEqual(['essential-key'])
+      selectedTab.value = 'essentials'
+      expect(expandedKeys.value).toEqual(['essentials-key'])
     })
 
     it('should not share keys between tabs', () => {
-      const { selectedTab, expandedKeys } = createExpandedKeysState('essential')
+      const { selectedTab, expandedKeys } =
+        createExpandedKeysState('essentials')
 
       expandedKeys.value = ['shared-key']
 
@@ -86,7 +87,7 @@ describe('NodeLibrarySidebarTabV2 expandedKeys logic', () => {
       selectedTab.value = 'custom'
       expect(expandedKeys.value).toEqual([])
 
-      selectedTab.value = 'essential'
+      selectedTab.value = 'essentials'
       expect(expandedKeys.value).toEqual(['shared-key'])
     })
   })

@@ -3,7 +3,7 @@ import type { TreeNode } from '@/types/treeExplorerTypes'
 
 export type GroupingStrategyId = 'category' | 'module' | 'source'
 export type SortingStrategyId = 'original' | 'alphabetical'
-export type TabId = 'essential' | 'all' | 'custom'
+export type TabId = 'essentials' | 'all' | 'custom'
 
 /**
  * Strategy for grouping nodes into tree structure

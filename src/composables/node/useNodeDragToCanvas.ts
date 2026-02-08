@@ -58,6 +58,15 @@ function setupGlobalListeners() {
   document.addEventListener('keydown', handleKeydown)
 }
 
+function cleanupGlobalListeners() {
+  if (!listenersSetup) return
+  listenersSetup = false
+
+  document.removeEventListener('pointermove', updatePosition)
+  document.removeEventListener('pointerup', endDrag, true)
+  document.removeEventListener('keydown', handleKeydown)
+}
+
 export function useNodeDragToCanvas() {
   function startDrag(nodeDef: ComfyNodeDefImpl) {
     isDragging.value = true
@@ -70,6 +79,7 @@ export function useNodeDragToCanvas() {
     cursorPosition,
     startDrag,
     cancelDrag,
-    setupGlobalListeners
+    setupGlobalListeners,
+    cleanupGlobalListeners
   }
 }

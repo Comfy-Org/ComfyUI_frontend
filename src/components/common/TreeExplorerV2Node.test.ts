@@ -193,7 +193,7 @@ describe('TreeExplorerV2Node', () => {
         item: createMockItem('folder')
       })
 
-      expect(wrapper.find('i').exists()).toBe(true)
+      expect(wrapper.find('i.icon-\\[ph--folder-fill\\]').exists()).toBe(true)
     })
 
     it('renders label text', () => {
