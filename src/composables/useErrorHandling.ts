@@ -52,10 +52,17 @@ export interface ErrorRecoveryStrategy<
 export function useErrorHandling() {
   const toast = useToastStore()
   const toastErrorHandler = (error: unknown) => {
+    const isNetworkError =
+      error instanceof TypeError && error.message === 'Failed to fetch'
+    const message = isNetworkError
+      ? t('g.disconnectedFromBackend')
+      : error instanceof Error
+        ? error.message
+        : t('g.unknownError')
     toast.add({
       severity: 'error',
       summary: t('g.error'),
-      detail: error instanceof Error ? error.message : t('g.unknownError')
+      detail: message
     })
     console.error(error)
   }

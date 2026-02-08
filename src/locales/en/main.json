@@ -95,6 +95,7 @@
     "imageFailedToLoad": "Image failed to load",
     "reconnecting": "Reconnecting",
     "reconnected": "Reconnected",
+    "disconnectedFromBackend": "Disconnected from backend. Check if the server is running.",
     "delete": "Delete",
     "rename": "Rename",
     "save": "Save",
