@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { computed, inject, ref } from 'vue'
 
-import LazyImage from '@/components/common/LazyImage.vue'
 import { cn } from '@/utils/tailwindUtil'
 
 import { AssetKindKey } from './types'
@@ -56,13 +55,12 @@ function handleVideoLoad(event: Event) {
   <div
     :class="
       cn(
-        'flex gap-1 select-none group/item cursor-pointer bg-component-node-widget-background',
-        'transition-all duration-150',
+        'flex gap-1 select-none group/item cursor-pointer transition-all duration-150',
         {
-          'flex-col text-center': layout === 'grid',
-          'flex-row text-left max-h-16 rounded-lg hover:scale-102 active:scale-98':
+          'flex-col text-center rounded-sm': layout === 'grid',
+          'flex-row text-left max-h-16 rounded-lg bg-component-node-widget-background hover:scale-102 active:scale-98 hover:bg-component-node-widget-background-hovered':
             layout === 'list',
-          'flex-row text-left hover:bg-component-node-widget-background-hovered rounded-lg':
+          'flex-row text-left rounded-lg bg-component-node-widget-background hover:bg-component-node-widget-background-hovered':
             layout === 'list-small',
           // selection
           'ring-2 ring-component-node-widget-background-highlighted':
@@ -108,11 +106,12 @@ function handleVideoLoad(event: Event) {
         muted
         @loadeddata="handleVideoLoad"
       />
-      <LazyImage
+      <img
         v-else-if="previewUrl"
         :src="previewUrl"
         :alt="name"
-        image-class="size-full object-cover"
+        draggable="false"
+        class="size-full object-cover"
         @load="handleImageLoad"
       />
       <div

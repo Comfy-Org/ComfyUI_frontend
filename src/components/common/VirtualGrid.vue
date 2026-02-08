@@ -6,12 +6,12 @@
     <div :style="topSpacerStyle" />
     <div :style="mergedGridStyle">
       <div
-        v-for="item in renderedItems"
+        v-for="(item, i) in renderedItems"
         :key="item.key"
         class="transition-[width] duration-150 ease-out"
         data-virtual-grid-item
       >
-        <slot name="item" :item="item" />
+        <slot name="item" :item :index="state.start + i" />
       </div>
     </div>
     <div :style="bottomSpacerStyle" />
@@ -104,6 +104,7 @@ const renderedItems = computed(() =>
 function rowsToHeight(rows: number): string {
   return `${(rows / cols.value) * itemHeight.value}px`
 }
+
 const topSpacerStyle = computed<CSSProperties>(() => ({
   height: rowsToHeight(state.value.start)
 }))
@@ -118,7 +119,7 @@ whenever(
   }
 )
 
-const updateItemSize = () => {
+function updateItemSize(): void {
   if (container.value) {
     const firstItem = container.value.querySelector('[data-virtual-grid-item]')
 
@@ -136,6 +137,7 @@ const updateItemSize = () => {
 const onResize = debounce(updateItemSize, resizeDebounce)
 watch([width, height], onResize, { flush: 'post' })
 whenever(() => items, updateItemSize, { flush: 'post' })
+
 onBeforeUnmount(() => {
   onResize.cancel()
 })
