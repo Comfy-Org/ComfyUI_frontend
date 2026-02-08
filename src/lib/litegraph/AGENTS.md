@@ -28,6 +28,10 @@ import { LGraph } from '@/lib/litegraph/src/LGraph'
 
 **Root cause**: `LGraph` ↔ `Subgraph` circular dependency (Subgraph extends LGraph, LGraph creates Subgraph instances).
 
+## Known Limitations
+
+- Subgraph dynamic input limitations (autogrow/matchtype): see [`src/core/graph/subgraph-dynamic-input-limitations.md`](../../core/graph/subgraph-dynamic-input-limitations.md)
+
 ## Test Helpers
 
 ```typescript
