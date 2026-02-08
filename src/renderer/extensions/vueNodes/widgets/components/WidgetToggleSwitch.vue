@@ -15,9 +15,7 @@
     <!-- Use ToggleSwitch for implicit boolean states -->
     <div
       v-else
-      :class="
-        cn('flex w-fit items-center gap-2', !hideLayoutField && 'ml-auto')
-      "
+      :class="cn('flex w-fit items-center gap-2', hideLayoutField || 'ml-auto')"
     >
       <ToggleSwitch
         v-model="modelValue"
