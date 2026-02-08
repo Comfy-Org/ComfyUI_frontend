@@ -283,34 +283,30 @@ else
     done
     unset IFS
     
-    # Determine overall status
+    # Determine overall status (flaky tests are treated as passing)
     if [ $total_failed -gt 0 ]; then
         status_icon="❌"
         status_text="Failed"
-    elif [ $total_flaky -gt 0 ]; then
-        status_icon="⚠️"
-        status_text="Passed with flaky tests"
     elif [ $total_tests -gt 0 ]; then
         status_icon="✅"
         status_text="Passed"
     else
         status_icon="🕵🏻"
-        status_text="No test results"
+        status_text="No tests"
     fi
     
-    # Generate concise completion comment
-    comment="$COMMENT_MARKER
-## 🎭 Playwright Tests: $status_icon **$status_text**"
-
-    # Add summary counts if we have test data
-    if [ $total_tests -gt 0 ]; then
-        comment="$comment
-
-**Results:** $total_passed passed, $total_failed failed, $total_flaky flaky, $total_skipped skipped (Total: $total_tests)"
+    # Build flaky indicator if any (small subtext, no warning icon)
+    flaky_note=""
+    if [ $total_flaky -gt 0 ]; then
+        flaky_note=" · $total_flaky flaky"
     fi
+    
+    # Generate compact single-line comment
+    comment="$COMMENT_MARKER
+**Playwright:** $status_icon $total_passed passed, $total_failed failed$flaky_note"
 
-    # Extract and display failed tests from all browsers
-    if [ $total_failed -gt 0 ] || [ $total_flaky -gt 0 ]; then
+    # Extract and display failed tests from all browsers (flaky tests are treated as passing)
+    if [ $total_failed -gt 0 ]; then
         comment="$comment
 
 ### ❌ Failed Tests"
