@@ -59,7 +59,7 @@ const filteredProps = computed(() =>
 )
 
 const hasLabels = computed(() => {
-  return !!(widget.options?.on || widget.options?.off)
+  return widget.options?.on != null || widget.options?.off != null
 })
 
 const booleanOptions = computed(() => [
