@@ -285,7 +285,12 @@ export const zComfyNodeDef = z.object({
    * Contains a JSONata expression to calculate pricing based on widget values
    * and input connectivity.
    */
-  price_badge: zPriceBadge.optional()
+  price_badge: zPriceBadge.optional(),
+  /**
+   * Optional main category for top-level tabs in the node library
+   * (e.g., 'Basic', 'Image Tools', 'Partner Nodes').
+   */
+  main_category: z.string().optional()
 })
 
 export const zAutogrowOptions = z.object({
