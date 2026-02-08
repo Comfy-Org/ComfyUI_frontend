@@ -6441,9 +6441,7 @@
   "Load3D": {
     "display_name": "Carregar 3D & Animação",
     "inputs": {
-      "clear": {
-        "": "limpar"
-      },
+      "clear": {},
       "height": {
         "name": "altura"
       },
@@ -6453,12 +6451,8 @@
       "model_file": {
         "name": "arquivo_do_modelo"
       },
-      "upload 3d model": {
-        "": "enviar modelo 3D"
-      },
-      "upload extra resources": {
-        "": "enviar recursos extras"
-      },
+      "upload 3d model": {},
+      "upload extra resources": {},
       "width": {
         "name": "largura"
       }
@@ -10809,6 +10803,9 @@
       "camera_info": {
         "name": "camera_info"
       },
+      "image": {
+        "name": "imagem"
+      },
       "model_file": {
         "name": "model_file",
         "tooltip": "Arquivo de modelo 3D ou caminho do arquivo"
@@ -12631,6 +12628,9 @@
     "inputs": {
       "filename_prefix": {
         "name": "prefixo_do_arquivo"
+      },
+      "image": {
+        "name": "imagem"
       },
       "mesh": {
         "name": "malha",

@@ -14,15 +14,18 @@ const mockSubscriptionTier = ref<
 const mockIsYearlySubscription = ref(false)
 const mockAccessBillingPortal = vi.fn()
 const mockReportError = vi.fn()
+const mockTrackBeginCheckout = vi.fn()
 const mockGetFirebaseAuthHeader = vi.fn(() =>
   Promise.resolve({ Authorization: 'Bearer test-token' })
 )
+const mockGetCheckoutAttribution = vi.hoisted(() => vi.fn(() => ({})))
 
 vi.mock('@/platform/cloud/subscription/composables/useSubscription', () => ({
   useSubscription: () => ({
     isActiveSubscription: computed(() => mockIsActiveSubscription.value),
     subscriptionTier: computed(() => mockSubscriptionTier.value),
-    isYearlySubscription: computed(() => mockIsYearlySubscription.value)
+    isYearlySubscription: computed(() => mockIsYearlySubscription.value),
+    subscriptionStatus: ref(null)
   })
 }))
 
@@ -53,9 +56,20 @@ vi.mock('@/composables/useErrorHandling', () => ({
 
 vi.mock('@/stores/firebaseAuthStore', () => ({
   useFirebaseAuthStore: () => ({
-    getFirebaseAuthHeader: mockGetFirebaseAuthHeader
+    getFirebaseAuthHeader: mockGetFirebaseAuthHeader,
+    userId: 'user-123'
   }),
   FirebaseAuthStoreError: class extends Error {}
+}))
+
+vi.mock('@/platform/telemetry', () => ({
+  useTelemetry: () => ({
+    trackBeginCheckout: mockTrackBeginCheckout
+  })
+}))
+
+vi.mock('@/platform/telemetry/utils/checkoutAttribution', () => ({
+  getCheckoutAttribution: mockGetCheckoutAttribution
 }))
 
 vi.mock('@/platform/distribution/types', () => ({
@@ -79,6 +93,17 @@ const i18n = createI18n({
         currentPlan: 'Current Plan',
         subscribeTo: 'Subscribe to {plan}',
         changeTo: 'Change to {plan}',
+        tierNameYearly: '{name} Yearly',
+        yearlyCreditsLabel: 'Yearly credits',
+        monthlyCreditsLabel: 'Monthly credits',
+        maxDurationLabel: 'Max duration',
+        gpuLabel: 'GPU',
+        addCreditsLabel: 'Add more credits',
+        customLoRAsLabel: 'Custom LoRAs',
+        videoEstimateLabel: 'Video estimate',
+        videoEstimateHelp: 'How is this calculated?',
+        videoEstimateExplanation: 'Based on average usage.',
+        videoEstimateTryTemplate: 'Try template',
         maxDuration: {
           standard: '30 min',
           creator: '30 min',
@@ -126,6 +151,7 @@ describe('PricingTable', () => {
     mockIsActiveSubscription.value = false
     mockSubscriptionTier.value = null
     mockIsYearlySubscription.value = false
+    mockTrackBeginCheckout.mockReset()
     vi.mocked(global.fetch).mockResolvedValue({
       ok: true,
       json: async () => ({ checkout_url: 'https://checkout.stripe.com/test' })
@@ -148,6 +174,13 @@ describe('PricingTable', () => {
       await creatorButton?.trigger('click')
       await flushPromises()
 
+      expect(mockTrackBeginCheckout).toHaveBeenCalledWith({
+        user_id: 'user-123',
+        tier: 'creator',
+        cycle: 'yearly',
+        checkout_type: 'change',
+        previous_tier: 'standard'
+      })
       expect(mockAccessBillingPortal).toHaveBeenCalledWith('creator-yearly')
     })
 

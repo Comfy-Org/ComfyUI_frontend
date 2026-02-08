@@ -123,17 +123,14 @@ test.describe('Workflows sidebar', () => {
   test('Can save workflow as', async ({ comfyPage }) => {
     await comfyPage.command.executeCommand('Comfy.NewBlankWorkflow')
     await comfyPage.menu.topbar.saveWorkflowAs('workflow3.json')
-    expect(await comfyPage.menu.workflowsTab.getOpenedWorkflowNames()).toEqual([
-      '*Unsaved Workflow.json',
-      'workflow3.json'
-    ])
+    await expect
+      .poll(() => comfyPage.menu.workflowsTab.getOpenedWorkflowNames())
+      .toEqual(['*Unsaved Workflow.json', 'workflow3.json'])
 
     await comfyPage.menu.topbar.saveWorkflowAs('workflow4.json')
-    expect(await comfyPage.menu.workflowsTab.getOpenedWorkflowNames()).toEqual([
-      '*Unsaved Workflow.json',
-      'workflow3.json',
-      'workflow4.json'
-    ])
+    await expect
+      .poll(() => comfyPage.menu.workflowsTab.getOpenedWorkflowNames())
+      .toEqual(['*Unsaved Workflow.json', 'workflow3.json', 'workflow4.json'])
   })
 
   test('Exported workflow does not contain localized slot names', async ({
@@ -220,24 +217,22 @@ test.describe('Workflows sidebar', () => {
     await topbar.saveWorkflow('workflow1.json')
     await topbar.saveWorkflowAs('workflow2.json')
     await comfyPage.nextFrame()
-    expect(await comfyPage.menu.workflowsTab.getOpenedWorkflowNames()).toEqual([
-      'workflow1.json',
-      'workflow2.json'
-    ])
-    expect(await comfyPage.menu.workflowsTab.getActiveWorkflowName()).toEqual(
-      'workflow2.json'
-    )
+    await expect
+      .poll(() => comfyPage.menu.workflowsTab.getOpenedWorkflowNames())
+      .toEqual(['workflow1.json', 'workflow2.json'])
+    await expect
+      .poll(() => comfyPage.menu.workflowsTab.getActiveWorkflowName())
+      .toEqual('workflow2.json')
 
     await topbar.saveWorkflowAs('workflow1.json')
     await comfyPage.confirmDialog.click('overwrite')
     // The old workflow1.json should be deleted and the new one should be saved.
-    expect(await comfyPage.menu.workflowsTab.getOpenedWorkflowNames()).toEqual([
-      'workflow2.json',
-      'workflow1.json'
-    ])
-    expect(await comfyPage.menu.workflowsTab.getActiveWorkflowName()).toEqual(
-      'workflow1.json'
-    )
+    await expect
+      .poll(() => comfyPage.menu.workflowsTab.getOpenedWorkflowNames())
+      .toEqual(['workflow2.json', 'workflow1.json'])
+    await expect
+      .poll(() => comfyPage.menu.workflowsTab.getActiveWorkflowName())
+      .toEqual('workflow1.json')
   })
 
   test('Does not report warning when switching between opened workflows', async ({
