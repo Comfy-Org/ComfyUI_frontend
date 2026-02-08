@@ -10,7 +10,8 @@
     :class="
       cn(
         'bg-component-node-background lg-node absolute text-sm',
-        'contain-style contain-layout min-w-[225px] min-h-(--node-height) w-(--node-width)',
+        'contain-style contain-layout min-h-(--node-height) w-(--node-width)',
+        !isRerouteNode && 'min-w-[225px]',
         shapeClass,
         'touch-none flex flex-col',
         'border-1 border-solid border-component-node-border',
@@ -32,7 +33,7 @@
         shouldHandleNodePointerEvents
           ? 'pointer-events-auto'
           : 'pointer-events-none',
-        !isCollapsed && ' pb-1'
+        !isCollapsed && !isRerouteNode && 'pb-1'
       )
     "
     :style="[
@@ -259,6 +260,8 @@ const hasAnyError = computed((): boolean => {
 
 const displayHeader = computed(() => nodeData.titleMode !== TitleMode.NO_TITLE)
 
+const isRerouteNode = computed(() => nodeData.type === 'Reroute')
+
 const isCollapsed = computed(() => nodeData.flags?.collapsed ?? false)
 const bypassed = computed(
   (): boolean => nodeData.mode === LGraphEventMode.BYPASS
@@ -353,7 +356,6 @@ const MIN_NODE_WIDTH = 225
 const { startResize } = useNodeResize((result, element) => {
   if (isCollapsed.value) return
 
-  // Clamp width to minimum to avoid conflicts with CSS min-width
   const clampedWidth = Math.max(result.size.width, MIN_NODE_WIDTH)
 
   // Apply size directly to DOM element - ResizeObserver will pick this up
