@@ -5,7 +5,6 @@ import type { Ref } from 'vue'
 
 import { useJobList } from '@/composables/queue/useJobList'
 import type { JobState } from '@/types/queue'
-import { buildJobDisplay } from '@/utils/queueDisplay'
 import type { BuildJobDisplayCtx } from '@/utils/queueDisplay'
 import type { TaskItemImpl } from '@/stores/queueStore'
 
@@ -232,78 +231,6 @@ describe('useJobList', () => {
     api = mounted.composable
     return api!
   }
-
-  it('tracks recently added pending jobs and clears the hint after expiry', async () => {
-    vi.useFakeTimers()
-    queueStoreMock.pendingTasks = [
-      createTask({ promptId: '1', queueIndex: 1, mockState: 'pending' })
-    ]
-
-    const { jobItems } = initComposable()
-    await flush()
-
-    jobItems.value
-    expect(buildJobDisplay).toHaveBeenCalledWith(
-      expect.anything(),
-      'pending',
-      expect.objectContaining({ showAddedHint: true })
-    )
-
-    vi.mocked(buildJobDisplay).mockClear()
-    await vi.advanceTimersByTimeAsync(3000)
-    await flush()
-
-    jobItems.value
-    expect(buildJobDisplay).toHaveBeenCalledWith(
-      expect.anything(),
-      'pending',
-      expect.objectContaining({ showAddedHint: false })
-    )
-  })
-
-  it('removes pending hint immediately when the task leaves the queue', async () => {
-    vi.useFakeTimers()
-    const taskId = '2'
-    queueStoreMock.pendingTasks = [
-      createTask({ promptId: taskId, queueIndex: 1, mockState: 'pending' })
-    ]
-
-    const { jobItems } = initComposable()
-    await flush()
-    jobItems.value
-
-    queueStoreMock.pendingTasks = []
-    await flush()
-    expect(vi.getTimerCount()).toBe(0)
-
-    vi.mocked(buildJobDisplay).mockClear()
-    queueStoreMock.pendingTasks = [
-      createTask({ promptId: taskId, queueIndex: 2, mockState: 'pending' })
-    ]
-    await flush()
-    jobItems.value
-    expect(buildJobDisplay).toHaveBeenCalledWith(
-      expect.anything(),
-      'pending',
-      expect.objectContaining({ showAddedHint: true })
-    )
-  })
-
-  it('cleans up timeouts on unmount', async () => {
-    vi.useFakeTimers()
-    queueStoreMock.pendingTasks = [
-      createTask({ promptId: '3', queueIndex: 1, mockState: 'pending' })
-    ]
-
-    initComposable()
-    await flush()
-    expect(vi.getTimerCount()).toBeGreaterThan(0)
-
-    wrapper?.unmount()
-    wrapper = null
-    await flush()
-    expect(vi.getTimerCount()).toBe(0)
-  })
 
   it('sorts all tasks by create time', async () => {
     queueStoreMock.pendingTasks = [

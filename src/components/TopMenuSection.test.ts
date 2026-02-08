@@ -78,7 +78,7 @@ function createWrapper({
       stubs: {
         SubgraphBreadcrumb: true,
         QueueProgressOverlay: true,
-        QueueInlineProgressSummary: true,
+        QueueNotificationBannerHost: true,
         CurrentUserButton: true,
         LoginButton: true,
         ContextMenu: {
@@ -233,7 +233,7 @@ describe('TopMenuSection', () => {
     expect(sidebarTabStore.activeSidebarTabId).toBe(null)
   })
 
-  describe('inline progress summary', () => {
+  describe('queue notification banners', () => {
     const configureSettings = (
       pinia: ReturnType<typeof createTestingPinia>,
       qpoV2Enabled: boolean
@@ -246,7 +246,7 @@ describe('TopMenuSection', () => {
       })
     }
 
-    it('renders inline progress summary when QPO V2 is enabled', async () => {
+    it('renders queue notification banners when QPO V2 is enabled', async () => {
       const pinia = createTestingPinia({ createSpy: vi.fn })
       configureSettings(pinia, true)
 
@@ -255,11 +255,11 @@ describe('TopMenuSection', () => {
       await nextTick()
 
       expect(
-        wrapper.findComponent({ name: 'QueueInlineProgressSummary' }).exists()
+        wrapper.findComponent({ name: 'QueueNotificationBannerHost' }).exists()
       ).toBe(true)
     })
 
-    it('does not render inline progress summary when QPO V2 is disabled', async () => {
+    it('does not render queue notification banners when QPO V2 is disabled', async () => {
       const pinia = createTestingPinia({ createSpy: vi.fn })
       configureSettings(pinia, false)
 
@@ -268,11 +268,11 @@ describe('TopMenuSection', () => {
       await nextTick()
 
       expect(
-        wrapper.findComponent({ name: 'QueueInlineProgressSummary' }).exists()
+        wrapper.findComponent({ name: 'QueueNotificationBannerHost' }).exists()
       ).toBe(false)
     })
 
-    it('teleports inline progress summary when actionbar is floating', async () => {
+    it('teleports queue notification banners when actionbar is floating', async () => {
       localStorage.setItem('Comfy.MenuPosition.Docked', 'false')
       const actionbarTarget = document.createElement('div')
       document.body.appendChild(actionbarTarget)
@@ -296,14 +296,16 @@ describe('TopMenuSection', () => {
         attachTo: document.body,
         stubs: {
           ComfyActionbar: ComfyActionbarStub,
-          QueueInlineProgressSummary: false
+          QueueNotificationBannerHost: true
         }
       })
 
       try {
         await nextTick()
 
-        expect(actionbarTarget.querySelector('[role="status"]')).not.toBeNull()
+        expect(
+          actionbarTarget.querySelector('queue-notification-banner-host-stub')
+        ).not.toBeNull()
       } finally {
         wrapper.unmount()
         actionbarTarget.remove()
