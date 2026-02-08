@@ -21,7 +21,7 @@ const mockWorkflow: ComfyWorkflowJSON = {
 // Jobs API detail response structure (matches actual /jobs/{id} response)
 // workflow is nested at: workflow.extra_data.extra_pnginfo.workflow
 const mockJobDetailResponse: JobDetail = {
-  id: 'test-prompt-id',
+  id: 'test-job-id',
   status: 'completed',
   create_time: 1234567890,
   update_time: 1234567900,
@@ -43,15 +43,15 @@ const mockJobDetailResponse: JobDetail = {
 }
 
 describe('fetchJobDetail', () => {
-  it('should fetch job detail from /jobs/{prompt_id} endpoint', async () => {
+  it('should fetch job detail from /jobs/{job_id} endpoint', async () => {
     const mockFetchApi = vi.fn().mockResolvedValue({
       ok: true,
       json: async () => mockJobDetailResponse
     })
 
-    await fetchJobDetail(mockFetchApi, 'test-prompt-id')
+    await fetchJobDetail(mockFetchApi, 'test-job-id')
 
-    expect(mockFetchApi).toHaveBeenCalledWith('/jobs/test-prompt-id')
+    expect(mockFetchApi).toHaveBeenCalledWith('/jobs/test-job-id')
   })
 
   it('should return job detail with workflow and outputs', async () => {
@@ -60,10 +60,10 @@ describe('fetchJobDetail', () => {
       json: async () => mockJobDetailResponse
     })
 
-    const result = await fetchJobDetail(mockFetchApi, 'test-prompt-id')
+    const result = await fetchJobDetail(mockFetchApi, 'test-job-id')
 
     expect(result).toBeDefined()
-    expect(result?.id).toBe('test-prompt-id')
+    expect(result?.id).toBe('test-job-id')
     expect(result?.outputs).toEqual(mockJobDetailResponse.outputs)
     expect(result?.workflow).toBeDefined()
   })
@@ -82,7 +82,7 @@ describe('fetchJobDetail', () => {
   it('should handle fetch errors gracefully', async () => {
     const mockFetchApi = vi.fn().mockRejectedValue(new Error('Network error'))
 
-    const result = await fetchJobDetail(mockFetchApi, 'test-prompt-id')
+    const result = await fetchJobDetail(mockFetchApi, 'test-job-id')
 
     expect(result).toBeUndefined()
   })
@@ -95,7 +95,7 @@ describe('fetchJobDetail', () => {
       }
     })
 
-    const result = await fetchJobDetail(mockFetchApi, 'test-prompt-id')
+    const result = await fetchJobDetail(mockFetchApi, 'test-job-id')
 
     expect(result).toBeUndefined()
   })

@@ -8,13 +8,13 @@ import { useJobErrorReporting } from '@/components/queue/job/useJobErrorReportin
 import type { ExecutionError } from '@/platform/remote/comfyui/jobs/jobTypes'
 
 const createTaskWithError = (
-  promptId: string,
+  jobId: string,
   errorMessage?: string,
   executionError?: ExecutionError,
   createTime?: number
 ): TaskItemImpl =>
   ({
-    promptId,
+    jobId,
     errorMessage,
     executionError,
     createTime: createTime ?? Date.now()

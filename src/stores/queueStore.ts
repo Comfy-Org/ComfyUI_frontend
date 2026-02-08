@@ -302,14 +302,14 @@ export class TaskItemImpl {
   }
 
   get key() {
-    return this.promptId + this.displayStatus
+    return this.jobId + this.displayStatus
   }
 
   get queueIndex() {
     return this.job.priority
   }
 
-  get promptId() {
+  get jobId() {
     return this.job.id
   }
 
@@ -398,7 +398,7 @@ export class TaskItemImpl {
     if (!this.isHistory) {
       return this
     }
-    const jobDetail = await getJobDetail(this.promptId)
+    const jobDetail = await getJobDetail(this.jobId)
 
     if (!jobDetail?.outputs) {
       return this
@@ -414,7 +414,7 @@ export class TaskItemImpl {
     }
 
     // Single fetch for both workflow and outputs (with caching)
-    const jobDetail = await getJobDetail(this.promptId)
+    const jobDetail = await getJobDetail(this.jobId)
 
     const workflowData = await extractWorkflow(jobDetail)
     if (!workflowData) {
@@ -453,7 +453,7 @@ export class TaskItemImpl {
         new TaskItemImpl(
           {
             ...this.job,
-            id: `${this.promptId}-${i}`
+            id: `${this.jobId}-${i}`
           },
           {
             [output.nodeId]: {
@@ -520,13 +520,10 @@ export const useQueueStore = defineStore('queue', () => {
       const appearedTasks = [...pendingTasks.value, ...runningTasks.value]
       const executionStore = useExecutionStore()
       appearedTasks.forEach((task) => {
-        const promptIdString = String(task.promptId)
+        const jobIdString = String(task.jobId)
         const workflowId = task.workflowId
-        if (workflowId && promptIdString) {
-          executionStore.registerPromptWorkflowIdMapping(
-            promptIdString,
-            workflowId
-          )
+        if (workflowId && jobIdString) {
+          executionStore.registerJobWorkflowIdMapping(jobIdString, workflowId)
         }
       })
 
@@ -537,12 +534,12 @@ export const useQueueStore = defineStore('queue', () => {
 
       // Reuse existing TaskItemImpl instances or create new
       // Must recreate if outputs_count changed (e.g., API started returning it)
-      const existingByPromptId = new Map(
-        currentHistory.map((impl) => [impl.promptId, impl])
+      const existingByJobId = new Map(
+        currentHistory.map((impl) => [impl.jobId, impl])
       )
 
       historyTasks.value = sortedHistory.map((job) => {
-        const existing = existingByPromptId.get(job.id)
+        const existing = existingByJobId.get(job.id)
         if (!existing) return new TaskItemImpl(job)
         // Recreate if outputs_count changed to ensure lazy loading works
         if (existing.outputsCount !== (job.outputs_count ?? undefined)) {
@@ -571,7 +568,7 @@ export const useQueueStore = defineStore('queue', () => {
   }
 
   const deleteTask = async (task: TaskItemImpl) => {
-    await api.deleteItem(task.apiTaskType, task.promptId)
+    await api.deleteItem(task.apiTaskType, task.jobId)
     await update()
   }
 

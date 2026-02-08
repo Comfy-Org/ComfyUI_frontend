@@ -279,7 +279,7 @@ describe('TopMenuSection', () => {
       const pinia = createTestingPinia({ createSpy: vi.fn })
       configureSettings(pinia, true)
       const executionStore = useExecutionStore(pinia)
-      executionStore.activePromptId = 'prompt-1'
+      executionStore.activeJobId = 'job-1'
 
       const ComfyActionbarStub = defineComponent({
         name: 'ComfyActionbar',

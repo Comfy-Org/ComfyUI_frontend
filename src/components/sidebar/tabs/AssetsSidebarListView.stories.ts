@@ -80,7 +80,7 @@ const sampleAssets: AssetItem[] = [
     size: 1887437,
     tags: [],
     user_metadata: {
-      promptId: 'job-running-1',
+      jobId: 'job-running-1',
       nodeId: 12,
       executionTimeInSeconds: 1.84
     }

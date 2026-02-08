@@ -90,10 +90,10 @@ vi.mock('@/stores/queueStore', () => ({
           url: string
         }
       | undefined
-    public promptId: string
+    public jobId: string
 
     constructor(public job: JobListItem) {
-      this.promptId = job.id
+      this.jobId = job.id
       this.flatOutputs = [
         {
           supportsPreview: true,
@@ -123,9 +123,9 @@ vi.mock('@/platform/assets/composables/media/assetMappers', () => ({
     preview_url: `http://test.com/${name}`
   })),
   mapTaskOutputToAssetItem: vi.fn((task, output) => {
-    const index = parseInt(task.promptId.split('_')[1]) || 0
+    const index = parseInt(task.jobId.split('_')[1]) || 0
     return {
-      id: task.promptId,
+      id: task.jobId,
       name: output.filename,
       size: 0,
       created_at: new Date(Date.now() - index * 1000).toISOString(),

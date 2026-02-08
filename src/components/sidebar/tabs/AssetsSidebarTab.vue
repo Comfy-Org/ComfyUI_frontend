@@ -9,7 +9,7 @@
       >
         <div class="flex items-center gap-2">
           <span class="font-bold">{{ $t('assetBrowser.jobId') }}:</span>
-          <span class="text-sm">{{ folderPromptId?.substring(0, 8) }}</span>
+          <span class="text-sm">{{ folderJobId?.substring(0, 8) }}</span>
           <button
             class="m-0 cursor-pointer border-0 bg-transparent p-0 outline-0"
             role="button"
@@ -258,9 +258,9 @@ const executionStore = useExecutionStore()
 const settingStore = useSettingStore()
 
 const activeTab = ref<'input' | 'output'>('output')
-const folderPromptId = ref<string | null>(null)
+const folderJobId = ref<string | null>(null)
 const folderExecutionTime = ref<number | undefined>(undefined)
-const isInFolderView = computed(() => folderPromptId.value !== null)
+const isInFolderView = computed(() => folderJobId.value !== null)
 const viewMode = useStorage<'list' | 'grid'>(
   'Comfy.Assets.Sidebar.ViewMode',
   'grid'
@@ -521,13 +521,13 @@ const handleBulkDelete = async (assets: AssetItem[]) => {
 }
 
 const handleClearQueue = async () => {
-  const pendingPromptIds = queueStore.pendingTasks
-    .map((task) => task.promptId)
+  const pendingJobIds = queueStore.pendingTasks
+    .map((task) => task.jobId)
     .filter((id): id is string => typeof id === 'string' && id.length > 0)
 
   await commandStore.execute('Comfy.ClearPendingTasks')
 
-  executionStore.clearInitializationByPromptIds(pendingPromptIds)
+  executionStore.clearInitializationByJobIds(pendingJobIds)
 }
 
 const handleBulkAddToWorkflow = async (assets: AssetItem[]) => {
@@ -590,14 +590,14 @@ const enterFolderView = async (asset: AssetItem) => {
     return
   }
 
-  const { promptId, executionTimeInSeconds } = metadata
+  const { jobId, executionTimeInSeconds } = metadata
 
-  if (!promptId) {
+  if (!jobId) {
     console.warn('Missing required folder view data')
     return
   }
 
-  folderPromptId.value = promptId
+  folderJobId.value = jobId
   folderExecutionTime.value = executionTimeInSeconds
 
   let folderItems: AssetItem[] = []
@@ -618,7 +618,7 @@ const enterFolderView = async (asset: AssetItem) => {
 }
 
 const exitFolderView = () => {
-  folderPromptId.value = null
+  folderJobId.value = null
   folderExecutionTime.value = undefined
   folderAssets.value = []
   searchQuery.value = ''
@@ -643,9 +643,9 @@ const handleEmptySpaceClick = () => {
 }
 
 const copyJobId = async () => {
-  if (folderPromptId.value) {
+  if (folderJobId.value) {
     try {
-      await navigator.clipboard.writeText(folderPromptId.value)
+      await navigator.clipboard.writeText(folderJobId.value)
       toast.add({
         severity: 'success',
         summary: t('mediaAsset.jobIdToast.copied'),

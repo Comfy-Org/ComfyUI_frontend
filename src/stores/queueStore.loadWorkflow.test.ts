@@ -31,7 +31,7 @@ const mockWorkflow: ComfyWorkflowJSON = {
 // Mock job detail response (matches actual /jobs/{id} API response structure)
 // workflow is nested at: workflow.extra_data.extra_pnginfo.workflow
 const mockJobDetail = {
-  id: 'test-prompt-id',
+  id: 'test-job-id',
   status: 'completed' as const,
   create_time: Date.now(),
   update_time: Date.now(),
@@ -86,7 +86,7 @@ describe('TaskItemImpl.loadWorkflow - workflow fetching', () => {
   })
 
   it('should fetch workflow from API for history tasks', async () => {
-    const job = createHistoryJob('test-prompt-id')
+    const job = createHistoryJob('test-job-id')
     const task = new TaskItemImpl(job)
 
     vi.spyOn(jobOutputCache, 'getJobDetail').mockResolvedValue(
@@ -95,12 +95,12 @@ describe('TaskItemImpl.loadWorkflow - workflow fetching', () => {
 
     await task.loadWorkflow(mockApp)
 
-    expect(jobOutputCache.getJobDetail).toHaveBeenCalledWith('test-prompt-id')
+    expect(jobOutputCache.getJobDetail).toHaveBeenCalledWith('test-job-id')
     expect(mockApp.loadGraphData).toHaveBeenCalledWith(mockWorkflow)
   })
 
   it('should not load workflow when fetch returns undefined', async () => {
-    const job = createHistoryJob('test-prompt-id')
+    const job = createHistoryJob('test-job-id')
     const task = new TaskItemImpl(job)
 
     vi.spyOn(jobOutputCache, 'getJobDetail').mockResolvedValue(undefined)
@@ -112,7 +112,7 @@ describe('TaskItemImpl.loadWorkflow - workflow fetching', () => {
   })
 
   it('should only fetch for history tasks, not running tasks', async () => {
-    const job = createRunningJob('test-prompt-id')
+    const job = createRunningJob('test-job-id')
     const runningTask = new TaskItemImpl(job)
 
     vi.spyOn(jobOutputCache, 'getJobDetail').mockResolvedValue(
@@ -126,7 +126,7 @@ describe('TaskItemImpl.loadWorkflow - workflow fetching', () => {
   })
 
   it('should handle fetch errors gracefully by returning undefined', async () => {
-    const job = createHistoryJob('test-prompt-id')
+    const job = createHistoryJob('test-job-id')
     const task = new TaskItemImpl(job)
 
     vi.spyOn(jobOutputCache, 'getJobDetail').mockResolvedValue(undefined)
