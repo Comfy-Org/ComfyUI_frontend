@@ -15,17 +15,19 @@
       </h3>
 
       <!-- Badges -->
-      <div class="flex flex-wrap gap-1">
+      <div class="flex flex-wrap gap-2">
         <BadgePill
           v-show="nodeDef.api_node && creditsLabel"
           :text="creditsLabel"
           icon="icon-[comfy--credits]"
-          icon-class="text-amber-400"
+          border-style="#f59e0b"
+          filled
         />
         <BadgePill
           v-show="nodeDef.api_node && categoryLabel"
           :text="categoryLabel"
-          icon="icon-[lucide--bar-chart-2]"
+          :icon="getProviderIcon(categoryLabel ?? '')"
+          :border-style="getProviderBorderStyle(categoryLabel ?? '')"
         />
       </div>
 
@@ -84,6 +86,7 @@ import { computed, ref } from 'vue'
 
 import { CREDITS_PER_USD, formatCredits } from '@/base/credits/comfyCredits'
 import BadgePill from '@/components/common/BadgePill.vue'
+import { getProviderBorderStyle, getProviderIcon } from '@/utils/categoryUtil'
 import LGraphNodePreview from '@/renderer/extensions/vueNodes/components/LGraphNodePreview.vue'
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 

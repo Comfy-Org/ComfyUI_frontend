@@ -76,6 +76,7 @@ import {
   DEFAULT_TAB_ID,
   nodeOrganizationService
 } from '@/services/nodeOrganizationService'
+import { getProviderIcon } from '@/utils/categoryUtil'
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import type { TabId } from '@/types/nodeOrganizationTypes'
@@ -140,8 +141,7 @@ function getFolderIcon(node: TreeNode): string {
     firstLeaf?.key?.startsWith('root/api node') &&
     firstLeaf.key.replace(`${node.key}/`, '') === firstLeaf.label
   ) {
-    const iconKey = node.label?.toLowerCase().replaceAll(/\s+/g, '-') ?? ''
-    return `icon-[comfy--${iconKey}]`
+    return getProviderIcon(node.label ?? '')
   }
   return 'icon-[ph--folder-fill]'
 }

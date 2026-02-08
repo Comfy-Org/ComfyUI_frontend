@@ -305,8 +305,6 @@ interface Props {
   loadingTier?: CheckoutTierKey | null
 }
 
-const { t } = useI18n()
-
 const props = withDefaults(defineProps<Props>(), {
   isLoading: false,
   loadingTier: null
