@@ -286,13 +286,10 @@ else
     # Determine overall status (flaky tests are treated as passing)
     if [ $total_failed -gt 0 ]; then
         status_icon="❌"
-        status_text="Failed"
     elif [ $total_tests -gt 0 ]; then
         status_icon="✅"
-        status_text="Passed"
     else
         status_icon="🕵🏻"
-        status_text="No tests"
     fi
     
     # Build flaky indicator if any (small subtext, no warning icon)
