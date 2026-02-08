@@ -201,7 +201,7 @@ The project supports three types of icons, all with automatic imports (no manual
 2. **Iconify Icons** - 200,000+ icons from various libraries: `<i class="icon-[lucide--settings]" />`, `<i class="icon-[mdi--folder]" />`
 3. **Custom Icons** - Your own SVG icons: `<i-comfy:workflow />`
 
-Icons are powered by the unplugin-icons system, which automatically discovers and imports icons as Vue components. Tailwind CSS icon classes (`icon-[prefix--name]`) are provided by `@iconify/tailwind4`, configured in `packages/design-system/src/css/style.css`. Custom icons are stored in `packages/design-system/src/icons/` and loaded via `from-folder` at build time.
+Icons are powered by the unplugin-icons system, which automatically discovers and imports icons as Vue components. Tailwind CSS icon classes (`icon-[comfy--template]`) are provided by `@iconify/tailwind4`, configured in `packages/design-system/src/css/style.css`. Custom icons are stored in `packages/design-system/src/icons/` and loaded via `from-folder` at build time.
 
 For detailed instructions and code examples, see [packages/design-system/src/icons/README.md](packages/design-system/src/icons/README.md).
 
