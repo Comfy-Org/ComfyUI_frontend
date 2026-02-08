@@ -5,7 +5,7 @@ export const is_all_same_aspect_ratio = (imgs: HTMLImageElement[]): boolean => {
 
   for (let i = 1; i < imgs.length; i++) {
     const this_ratio = imgs[i].naturalWidth / imgs[i].naturalHeight
-    if (ratio != this_ratio) return false
+    if (ratio !== this_ratio) return false
   }
 
   return true

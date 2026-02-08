@@ -16,20 +16,17 @@ import type { TopbarBadge as TopbarBadgeType } from '@/types/comfy'
 
 import TopbarBadge from './TopbarBadge.vue'
 
-withDefaults(
-  defineProps<{
-    displayMode?: 'full' | 'compact' | 'icon-only'
-    reverseOrder?: boolean
-    noPadding?: boolean
-    backgroundColor?: string
-  }>(),
-  {
-    displayMode: 'full',
-    reverseOrder: false,
-    noPadding: false,
-    backgroundColor: 'var(--comfy-menu-bg)'
-  }
-)
+const {
+  displayMode = 'full',
+  reverseOrder = false,
+  noPadding = false,
+  backgroundColor = 'var(--comfy-menu-bg)'
+} = defineProps<{
+  displayMode?: 'full' | 'compact' | 'icon-only'
+  reverseOrder?: boolean
+  noPadding?: boolean
+  backgroundColor?: string
+}>()
 
 const { t } = useI18n()
 

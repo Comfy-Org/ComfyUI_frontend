@@ -38,11 +38,11 @@ describe('useChainCallback', () => {
     const originalCalls: number[] = []
     const chainedCalls: number[] = []
 
-    const original = function (this: unknown, num: number) {
+    function original(this: unknown, num: number) {
       originalCalls.push(num)
     }
 
-    const chained = function (this: unknown, num: number) {
+    function chained(this: unknown, num: number) {
       chainedCalls.push(num)
     }
 

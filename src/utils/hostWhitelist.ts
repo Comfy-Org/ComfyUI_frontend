@@ -31,7 +31,7 @@ export function normalizeHost(input: string): string {
   }
 
   // Strip any remaining brackets (e.g., '[::1]' -> '::1')
-  h = h.replace(/^\[|\]$/g, '')
+  h = h.replaceAll(/^\[|\]$/g, '')
 
   return h
 }
@@ -56,7 +56,7 @@ function isLocalhostLabel(h: string): boolean {
 
 const IPV4_OCTET = '(?:25[0-5]|2[0-4]\\d|1\\d\\d|0?\\d?\\d)'
 const V4_LOOPBACK_RE = new RegExp(
-  '^127\\.' + IPV4_OCTET + '\\.' + IPV4_OCTET + '\\.' + IPV4_OCTET + '$'
+  `^127\\.${IPV4_OCTET}\\.${IPV4_OCTET}\\.${IPV4_OCTET}$`
 )
 
 function isIPv4Loopback(h: string): boolean {

@@ -3,7 +3,7 @@
     :class="
       cn(
         'comfy-vue-side-bar-container group/sidebar-tab flex h-full flex-col',
-        props.class
+        className
       )
     "
   >
@@ -12,8 +12,8 @@
         class="min-h-16 bg-transparent rounded-none border-x-0 border-t-0 px-2 2xl:px-4"
       >
         <template #start>
-          <span class="truncate font-bold" :title="props.title">
-            {{ props.title }}
+          <span class="truncate font-bold" :title="title">
+            {{ title }}
           </span>
           <slot name="alt-title" />
         </template>
@@ -41,7 +41,7 @@ import Toolbar from 'primevue/toolbar'
 
 import { cn } from '@/utils/tailwindUtil'
 
-const props = defineProps<{
+const { title, class: className } = defineProps<{
   title: string
   class?: string
 }>()

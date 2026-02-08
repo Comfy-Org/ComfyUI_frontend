@@ -39,8 +39,8 @@ export class ComboWidget
     if (getOptionLabel) {
       try {
         return getOptionLabel(this.value ? String(this.value) : null)
-      } catch (e) {
-        console.error('Failed to map value:', e)
+      } catch (error) {
+        console.error('Failed to map value:', error)
         return this.value ? String(this.value) : ''
       }
     }
@@ -161,8 +161,8 @@ export class ComboWidget
             ? getOptionLabel(String(value))
             : String(value)
           menu.addItem(label, value, menuOptions)
-        } catch (err) {
-          console.error('Failed to map value:', err)
+        } catch (error) {
+          console.error('Failed to map value:', error)
           menu.addItem(String(value), value, menuOptions)
         }
       }
@@ -170,14 +170,14 @@ export class ComboWidget
     }
 
     // Show dropdown menu when user clicks on widget label
-    const text_values = values != values_list ? Object.values(values) : values
+    const text_values = values !== values_list ? Object.values(values) : values
     new LiteGraph.ContextMenu(text_values, {
       scale: Math.max(1, canvas.ds.scale),
       event: e,
       className: 'dark',
       callback: (value: string) => {
         this.setValue(
-          values != values_list ? text_values.indexOf(value) : value,
+          values !== values_list ? text_values.indexOf(value) : value,
           { e, node, canvas }
         )
       }

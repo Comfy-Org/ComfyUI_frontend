@@ -58,11 +58,12 @@ export function demoteWidget(
 }
 
 export function matchesWidgetItem([nodeId, widgetName]: [string, string]) {
-  return ([n, w]: WidgetItem) => n.id == nodeId && w.name === widgetName
+  return ([n, w]: WidgetItem) =>
+    String(n.id) === nodeId && w.name === widgetName
 }
 export function matchesPropertyItem([n, w]: WidgetItem) {
   return ([nodeId, widgetName]: [string, string]) =>
-    n.id == nodeId && w.name === widgetName
+    String(n.id) === nodeId && w.name === widgetName
 }
 export function widgetItemToProperty([n, w]: WidgetItem): [string, string] {
   return [`${n.id}`, w.name]
@@ -133,18 +134,17 @@ export function tryToggleWidgetPromotion() {
     promoteWidget(node, widget, promotableParents)
   else demoteWidget(node, widget, parents)
 }
-const recommendedNodes = [
+const recommendedNodes = new Set([
   'CLIPTextEncode',
   'LoadImage',
   'SaveImage',
   'PreviewImage'
-]
-const recommendedWidgetNames = ['seed']
+])
+const recommendedWidgetNames = new Set(['seed'])
 export function isRecommendedWidget([node, widget]: WidgetItem) {
   return (
     !widget.computedDisabled &&
-    (recommendedNodes.includes(node.type) ||
-      recommendedWidgetNames.includes(widget.name))
+    (recommendedNodes.has(node.type) || recommendedWidgetNames.has(widget.name))
   )
 }
 

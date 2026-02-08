@@ -240,7 +240,7 @@ const buildJsonataContext = (
   // Count connected inputs per autogrow group
   const inputGroups: Record<string, number> = {}
   for (const groupName of rule.depends_on.input_groups) {
-    const prefix = groupName + '.'
+    const prefix = `${groupName}.`
     inputGroups[groupName] =
       node.inputs?.filter(
         (inp: INodeInputSlot) =>
@@ -336,9 +336,9 @@ const formatPricingResult = (
 const compileRule = (rule: JsonataPricingRule): CompiledJsonataPricingRule => {
   try {
     return { ...rule, _compiled: jsonata(rule.expr) }
-  } catch (e) {
+  } catch (error) {
     // Do not crash app on bad expressions; just disable rule.
-    console.error('[pricing/jsonata] failed to compile expr:', rule.expr, e)
+    console.error('[pricing/jsonata] failed to compile expr:', rule.expr, error)
     return { ...rule, _compiled: null }
   }
 }
@@ -453,9 +453,9 @@ const scheduleEvaluation = (
         })
       }
     })
-    .catch((err) => {
+    .catch((error) => {
       if (process.env.NODE_ENV === 'development') {
-        console.warn('[pricing/jsonata] evaluation failed', nodeName, err)
+        console.warn('[pricing/jsonata] evaluation failed', nodeName, error)
       }
 
       // Cache empty to avoid retry-spam for same signature
@@ -540,7 +540,7 @@ export const useNodePricing = () => {
    */
   const getNodePricingConfig = (node: LGraphNode) => {
     const rule = getRuleForNode(node)
-    if (!rule) return undefined
+    if (!rule) return
     const { _compiled, ...config } = rule
     return config
   }

@@ -61,7 +61,7 @@ describe('domWidgetStore', () => {
       store.registerWidget(widget)
 
       // Should still only have one entry
-      const states = Array.from(store.widgetStates.values())
+      const states = [...store.widgetStates.values()]
       expect(states.length).toBe(1)
     })
   })

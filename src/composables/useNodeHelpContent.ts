@@ -54,9 +54,12 @@ export function useNodeHelpContent(
           const content = await request
           if (currentRequest !== request) return
           helpContent.value = content
-        } catch (e: unknown) {
+        } catch (errorCaught) {
           if (currentRequest !== request) return
-          error.value = e instanceof Error ? e.message : String(e)
+          error.value =
+            errorCaught instanceof Error
+              ? errorCaught.message
+              : String(errorCaught)
           helpContent.value = node.description || ''
         } finally {
           if (currentRequest === request) {

@@ -2,16 +2,12 @@
 <template>
   <div class="flex flex-row items-center gap-2">
     <div class="form-label flex grow items-center">
-      <span
-        :id="`${props.id}-label`"
-        class="text-muted"
-        :class="props.labelClass"
-      >
+      <span :id="`${id}-label`" class="text-muted" :class="labelClass">
         <slot name="name-prefix" />
-        {{ props.item.name }}
+        {{ item.name }}
         <i
-          v-if="props.item.tooltip"
-          v-tooltip="props.item.tooltip"
+          v-if="item.tooltip"
+          v-tooltip="item.tooltip"
           class="pi pi-info-circle bg-transparent"
         />
         <slot name="name-suffix" />
@@ -19,11 +15,11 @@
     </div>
     <div class="form-input flex justify-end">
       <component
-        :is="markRaw(getFormComponent(props.item))"
-        :id="props.id"
+        :is="markRaw(getFormComponent(item))"
+        :id="id"
         v-model:model-value="formValue"
-        :aria-labelledby="`${props.id}-label`"
-        v-bind="getFormAttrs(props.item)"
+        :aria-labelledby="`${id}-label`"
+        v-bind="getFormAttrs(item)"
       />
     </div>
   </div>
@@ -48,35 +44,37 @@ import UrlInput from '@/components/common/UrlInput.vue'
 import type { FormItem } from '@/platform/settings/types'
 
 const formValue = defineModel<unknown>('formValue')
-const props = defineProps<{
+const { item, id, labelClass } = defineProps<{
   item: FormItem
   id?: string
   labelClass?: string | Record<string, boolean>
 }>()
 
-function getFormAttrs(item: FormItem) {
-  const attrs = { ...(item.attrs || {}) }
-  const inputType = item.type
+function getFormAttrs(formItem: FormItem) {
+  const attrs = { ...(formItem.attrs || {}) }
+  const inputType = formItem.type
   if (typeof inputType === 'function') {
     attrs['renderFunction'] = () =>
       inputType(
-        props.item.name,
-        (v: unknown) => (formValue.value = v),
+        formItem.name,
+        (v: unknown) => {
+          formValue.value = v
+        },
         formValue.value,
-        item.attrs
+        formItem.attrs
       )
   }
-  switch (item.type) {
+  switch (formItem.type) {
     case 'combo':
     case 'radio':
       attrs['options'] =
-        typeof item.options === 'function'
+        typeof formItem.options === 'function'
           ? // @ts-expect-error: Audit and deprecate usage of legacy options type:
             // (value) => [string | {text: string, value: string}]
-            item.options(formValue.value)
-          : item.options
+            formItem.options(formValue.value)
+          : formItem.options
 
-      if (typeof item.options?.[0] !== 'string') {
+      if (typeof formItem.options?.[0] !== 'string') {
         attrs['optionLabel'] = 'text'
         attrs['optionValue'] = 'value'
       }
@@ -85,11 +83,11 @@ function getFormAttrs(item: FormItem) {
   return attrs
 }
 
-function getFormComponent(item: FormItem): Component {
-  if (typeof item.type === 'function') {
+function getFormComponent(formItem: FormItem): Component {
+  if (typeof formItem.type === 'function') {
     return CustomFormValue
   }
-  switch (item.type) {
+  switch (formItem.type) {
     case 'boolean':
       return ToggleSwitch
     case 'number':

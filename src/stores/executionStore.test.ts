@@ -1,16 +1,16 @@
+import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+
+import type * as WorkflowStoreModule from '@/platform/workflow/management/stores/workflowStore'
 import { app } from '@/scripts/app'
 import { useExecutionStore } from '@/stores/executionStore'
+import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
 
 // Create mock functions that will be shared
 const mockNodeExecutionIdToNodeLocatorId = vi.fn()
 const mockNodeIdToNodeLocatorId = vi.fn()
 const mockNodeLocatorIdToNodeExecutionId = vi.fn()
-
-import type * as WorkflowStoreModule from '@/platform/workflow/management/stores/workflowStore'
-import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
-import { createTestingPinia } from '@pinia/testing'
 
 // Mock the workflowStore
 vi.mock('@/platform/workflow/management/stores/workflowStore', async () => {

@@ -1,5 +1,5 @@
 <template>
-  <div class="no-results-placeholder h-full p-8" :class="props.class">
+  <div :class="cn('no-results-placeholder h-full p-8', className)">
     <Card>
       <template #content>
         <div class="flex flex-col items-center">
@@ -25,8 +25,16 @@
 import Card from 'primevue/card'
 
 import Button from '@/components/ui/button/Button.vue'
+import { cn } from '@/utils/tailwindUtil'
 
-const props = defineProps<{
+const {
+  class: className,
+  icon,
+  title,
+  message,
+  textClass,
+  buttonLabel
+} = defineProps<{
   class?: string
   icon?: string
   title: string

@@ -17,10 +17,16 @@ interface Props {
   accept?: string
 }
 
-const props = withDefaults(defineProps<Props>(), {
-  isOpen: false,
-  placeholder: 'Select...'
-})
+const {
+  items,
+  selected,
+  maxSelectable,
+  uploadable,
+  disabled,
+  accept,
+  isOpen = false,
+  placeholder = 'Select...'
+} = defineProps<Props>()
 
 const emit = defineEmits<{
   (e: 'select-click', event: MouseEvent): void
@@ -28,13 +34,13 @@ const emit = defineEmits<{
 }>()
 
 const selectedItems = computed(() => {
-  return props.items.filter((item) => props.selected.has(item.id))
+  return items.filter((item) => selected.has(item.id))
 })
 
 const theButtonStyle = computed(() =>
   cn(
     'border-0 bg-component-node-widget-background outline-none text-text-secondary',
-    props.disabled
+    disabled
       ? 'cursor-not-allowed'
       : 'hover:bg-component-node-widget-background-hovered cursor-pointer',
     selectedItems.value.length > 0 && 'text-text-primary'

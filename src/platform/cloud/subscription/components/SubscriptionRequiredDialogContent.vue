@@ -132,7 +132,7 @@ import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
 import { useCommandStore } from '@/stores/commandStore'
 
-const props = defineProps<{
+const { onClose } = defineProps<{
   onClose: () => void
 }>()
 
@@ -234,7 +234,7 @@ const handleSubscribed = () => {
 
 const handleClose = () => {
   stopPolling()
-  props.onClose()
+  onClose()
 }
 
 const handleContactUs = async () => {

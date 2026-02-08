@@ -266,7 +266,7 @@ export function useUploadModelWizard(modelTypes: Ref<ModelTypeOption[]>) {
 
   function goToPreviousStep() {
     if (currentStep.value > 1) {
-      currentStep.value = currentStep.value - 1
+      currentStep.value -= 1
     }
   }
 

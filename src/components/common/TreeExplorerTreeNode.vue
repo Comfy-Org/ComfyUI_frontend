@@ -5,21 +5,21 @@
       'tree-node',
       {
         'can-drop': canDrop,
-        'tree-folder': !props.node.leaf,
-        'tree-leaf': props.node.leaf
+        'tree-folder': !node.leaf,
+        'tree-leaf': node.leaf
       }
     ]"
     :data-testid="`tree-node-${node.key}`"
   >
     <div class="node-content">
       <span class="node-label">
-        <slot name="before-label" :node="props.node" />
+        <slot name="before-label" :node="node" />
         <EditableText
           :model-value="node.label"
           :is-editing="isEditing"
           @edit="handleRename"
         />
-        <slot name="after-label" :node="props.node" />
+        <slot name="after-label" :node="node" />
       </span>
       <Badge
         v-if="showNodeBadgeText"
@@ -31,7 +31,7 @@
     <div
       class="node-actions flex gap-1 touch:opacity-100 motion-safe:opacity-0 motion-safe:group-hover/tree-node:opacity-100"
     >
-      <slot name="actions" :node="props.node" />
+      <slot name="actions" :node="node" />
     </div>
   </div>
 </template>
@@ -52,7 +52,7 @@ import type {
   TreeExplorerDragAndDropData
 } from '@/types/treeExplorerTypes'
 
-const props = defineProps<{
+const { node } = defineProps<{
   node: RenderedTreeExplorerNode
 }>()
 
@@ -67,20 +67,20 @@ const emit = defineEmits<{
 }>()
 
 const nodeBadgeText = computed<string>(() => {
-  if (props.node.leaf) {
+  if (node.leaf) {
     return ''
   }
-  if (props.node.badgeText !== undefined && props.node.badgeText !== null) {
-    return props.node.badgeText
+  if (node.badgeText !== undefined && node.badgeText !== null) {
+    return node.badgeText
   }
-  return props.node.totalLeaves.toString()
+  return node.totalLeaves.toString()
 })
 const showNodeBadgeText = computed<boolean>(() => nodeBadgeText.value !== '')
 
-const isEditing = computed<boolean>(() => props.node.isEditingLabel ?? false)
+const isEditing = computed<boolean>(() => node.isEditingLabel ?? false)
 const handleEditLabel = inject(InjectKeyHandleEditLabelFunction)
 const handleRename = (newName: string) => {
-  handleEditLabel?.(props.node, newName)
+  handleEditLabel?.(node, newName)
 }
 
 const container = ref<HTMLElement | null>(null)
@@ -89,21 +89,21 @@ const canDrop = ref(false)
 const treeNodeElementGetter = () =>
   container.value?.closest('.p-tree-node-content') as HTMLElement
 
-if (props.node.draggable) {
+if (node.draggable) {
   usePragmaticDraggable(treeNodeElementGetter, {
     getInitialData: () => {
       return {
         type: 'tree-explorer-node',
-        data: props.node
+        data: node
       }
     },
-    onDragStart: () => emit('dragStart', props.node),
-    onDrop: () => emit('dragEnd', props.node),
-    onGenerateDragPreview: props.node.renderDragPreview
+    onDragStart: () => emit('dragStart', node),
+    onDrop: () => emit('dragEnd', node),
+    onGenerateDragPreview: node.renderDragPreview
       ? ({ nativeSetDragImage }) => {
           setCustomNativeDragPreview({
             render: ({ container }) => {
-              return props.node.renderDragPreview?.(container)
+              return node.renderDragPreview?.(container)
             },
             nativeSetDragImage
           })
@@ -112,14 +112,14 @@ if (props.node.draggable) {
   })
 }
 
-if (props.node.droppable) {
+if (node.droppable) {
   usePragmaticDroppable(treeNodeElementGetter, {
     onDrop: async (event) => {
       const dndData = event.source.data as TreeExplorerDragAndDropData
       if (dndData.type === 'tree-explorer-node') {
-        await props.node.handleDrop?.(dndData)
+        await node.handleDrop?.(dndData)
         canDrop.value = false
-        emit('itemDropped', props.node, dndData.data)
+        emit('itemDropped', node, dndData.data)
       }
     },
     onDragEnter: (event) => {

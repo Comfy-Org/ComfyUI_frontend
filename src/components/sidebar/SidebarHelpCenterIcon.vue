@@ -16,7 +16,7 @@ import { useHelpCenter } from '@/composables/useHelpCenter'
 
 import SidebarIcon from './SidebarIcon.vue'
 
-defineProps<{
+const { isSmall } = defineProps<{
   isSmall: boolean
 }>()
 

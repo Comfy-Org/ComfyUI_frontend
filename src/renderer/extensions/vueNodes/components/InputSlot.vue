@@ -9,11 +9,11 @@
         'cursor-crosshair',
         dotOnly ? 'lg-slot--dot-only' : 'pr-6',
         {
-          'lg-slot--connected': props.connected,
-          'lg-slot--compatible': props.compatible,
+          'lg-slot--connected': connected,
+          'lg-slot--compatible': compatible,
           'opacity-40': shouldDim
         },
-        props.socketless && 'pointer-events-none invisible'
+        socketless && 'pointer-events-none invisible'
       )
     "
   >
@@ -36,7 +36,7 @@
     <!-- Slot Name -->
     <div class="h-full flex items-center min-w-0">
       <span
-        v-if="!props.dotOnly && !hasNoLabel"
+        v-if="!dotOnly && !hasNoLabel"
         :class="
           cn(
             'truncate text-node-component-slot-text',
@@ -81,23 +81,29 @@ interface InputSlotProps {
   socketless?: boolean
 }
 
-const props = defineProps<InputSlotProps>()
+const {
+  nodeType,
+  nodeId,
+  slotData,
+  index,
+  connected,
+  compatible,
+  dotOnly: dotOnlyProp,
+  socketless
+} = defineProps<InputSlotProps>()
 
 const hasNoLabel = computed(
-  () =>
-    !props.slotData.label &&
-    !props.slotData.localized_name &&
-    props.slotData.name === ''
+  () => !slotData.label && !slotData.localized_name && slotData.name === ''
 )
-const dotOnly = computed(() => props.dotOnly || hasNoLabel.value)
+const dotOnly = computed(() => dotOnlyProp || hasNoLabel.value)
 
 const executionStore = useExecutionStore()
 
 const hasSlotError = computed(() => {
-  const nodeErrors = executionStore.lastNodeErrors?.[props.nodeId ?? '']
+  const nodeErrors = executionStore.lastNodeErrors?.[nodeId ?? '']
   if (!nodeErrors) return false
 
-  const slotName = props.slotData.name
+  const slotName = slotData.name
   return nodeErrors.errors.some(
     (error) => error.extra_info?.input_name === slotName
   )
@@ -107,11 +113,11 @@ const renderError = ref<string | null>(null)
 const { toastErrorHandler } = useErrorHandling()
 
 const { getInputSlotTooltip, createTooltipConfig } = useNodeTooltips(
-  props.nodeType || ''
+  nodeType || ''
 )
 
 const tooltipConfig = computed(() => {
-  const slotName = props.slotData.localized_name || props.slotData.name || ''
+  const slotName = slotData.localized_name || slotData.name || ''
   const tooltipText = getInputSlotTooltip(slotName)
   const fallbackText = tooltipText || `Input: ${slotName}`
   return createTooltipConfig(fallbackText)
@@ -124,9 +130,7 @@ onErrorCaptured((error) => {
 })
 
 const { state: dragState } = useSlotLinkDragUIState()
-const slotKey = computed(() =>
-  getSlotKey(props.nodeId ?? '', props.index, true)
-)
+const slotKey = computed(() => getSlotKey(nodeId ?? '', index, true))
 const shouldDim = computed(() => {
   if (!dragState.active) return false
   return !dragState.compatible.get(slotKey.value)
@@ -143,15 +147,15 @@ watchEffect(() => {
 })
 
 useSlotElementTracking({
-  nodeId: props.nodeId ?? '',
-  index: props.index,
+  nodeId: nodeId ?? '',
+  index,
   type: 'input',
   element: slotElRef
 })
 
 const { onClick, onDoubleClick, onPointerDown } = useSlotLinkInteraction({
-  nodeId: props.nodeId ?? '',
-  index: props.index,
+  nodeId: nodeId ?? '',
+  index,
   type: 'input'
 })
 </script>

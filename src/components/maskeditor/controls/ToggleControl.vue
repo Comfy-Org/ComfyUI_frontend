@@ -21,7 +21,7 @@ interface Props {
   modelValue: boolean
 }
 
-defineProps<Props>()
+const { label, modelValue } = defineProps<Props>()
 
 const emit = defineEmits<{
   'update:modelValue': [value: boolean]

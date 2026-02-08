@@ -81,10 +81,10 @@ export function useSubscriptionCancellationWatcher({
           cancellationTracked.value = true
           try {
             telemetry?.trackMonthlySubscriptionCancelled()
-          } catch (telemetryError) {
+          } catch (error) {
             console.error(
               '[Subscription] Failed to track cancellation telemetry:',
-              telemetryError
+              error
             )
           }
         }

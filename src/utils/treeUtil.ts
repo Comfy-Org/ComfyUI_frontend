@@ -20,7 +20,7 @@ export function buildTree<T>(items: T[], key: (item: T) => string[]): TreeNode {
       // 'a/b/c/' is split into ['a', 'b', 'c', '']
       if (k === '' && i === keys.length - 1) break
 
-      const id = parent.key + '/' + k
+      const id = `${parent.key}/${k}`
       if (!map[id]) {
         const node: TreeNode = {
           key: id,

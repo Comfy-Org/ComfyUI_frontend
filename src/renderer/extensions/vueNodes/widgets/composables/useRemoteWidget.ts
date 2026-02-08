@@ -164,8 +164,8 @@ export function useRemoteWidget<
 
       setSuccess(currentEntry, data)
       return currentEntry.data
-    } catch (err) {
-      setError(currentEntry, err)
+    } catch (error) {
+      setError(currentEntry, error)
       return currentEntry.data
     } finally {
       currentEntry.fetchPromise = undefined
@@ -224,8 +224,8 @@ export function useRemoteWidget<
         }
         onFulfilled?.()
       })
-      .catch((err) => {
-        console.error(err)
+      .catch((error) => {
+        console.error(error)
       })
     return getCachedValue() ?? defaultValue
   }

@@ -55,8 +55,7 @@ export const useUserStore = defineStore('user', () => {
     const data = await resp.json()
     if (resp.status >= 300) {
       throw new Error(
-        data.error ??
-          'Error creating user: ' + resp.status + ' ' + resp.statusText
+        data.error ?? `Error creating user: ${resp.status} ${resp.statusText}`
       )
     }
     return {

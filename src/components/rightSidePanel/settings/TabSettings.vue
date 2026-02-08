@@ -40,16 +40,16 @@ import { isLGraphGroup, isLGraphNode } from '@/utils/litegraphUtil'
 import PropertiesAccordionItem from '../layout/PropertiesAccordionItem.vue'
 import NodeSettings from './NodeSettings.vue'
 
-const props = defineProps<{
+const { nodes } = defineProps<{
   nodes: Raw<Positionable>[]
 }>()
 
 const theNodes = computed<LGraphNode[]>(() =>
-  props.nodes.filter((node) => isLGraphNode(node))
+  nodes.filter((node) => isLGraphNode(node))
 )
 
 const theGroups = computed<LGraphGroup[]>(() =>
-  props.nodes.filter((node) => isLGraphGroup(node))
+  nodes.filter((node) => isLGraphGroup(node))
 )
 
 const hasGroups = computed(() => theGroups.value.length > 0)

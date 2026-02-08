@@ -81,7 +81,7 @@ export function useRegistrySearch(
     }
 
     if (options.append && searchResults.value?.length) {
-      searchResults.value = searchResults.value.concat(sortedPacks)
+      searchResults.value = [...searchResults.value, ...sortedPacks]
     } else {
       searchResults.value = sortedPacks
     }

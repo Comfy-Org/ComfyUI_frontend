@@ -22,10 +22,10 @@ const currentPanelComponent = computed<Component>(() => {
 
   if (tool === Tools.MaskBucket) {
     return PaintBucketSettingsPanel
-  } else if (tool === Tools.MaskColorFill) {
-    return ColorSelectSettingsPanel
-  } else {
-    return BrushSettingsPanel
   }
+  if (tool === Tools.MaskColorFill) {
+    return ColorSelectSettingsPanel
+  }
+  return BrushSettingsPanel
 })
 </script>

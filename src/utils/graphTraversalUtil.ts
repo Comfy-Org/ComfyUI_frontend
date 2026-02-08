@@ -183,7 +183,7 @@ export function collectAllNodes(
     if (!filter || filter(node)) {
       return node
     }
-    return undefined
+    return
   })
 }
 
@@ -393,7 +393,7 @@ export function mapSubgraphNodes<T>(
     if (node.type === subgraphId) {
       return mapFn(node)
     }
-    return undefined
+    return
   })
 }
 
@@ -575,7 +575,7 @@ function findPartialExecutionPathToGraph(
     if (node.subgraph === target) return `${node.id}`
 
     const subpath = findPartialExecutionPathToGraph(target, node.subgraph)
-    if (subpath !== undefined) return node.id + ':' + subpath
+    if (subpath !== undefined) return `${node.id}:${subpath}`
   }
   return undefined
 }

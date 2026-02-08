@@ -567,10 +567,10 @@ const nodeMedia = computed(() => {
   const newOutputs = nodeOutputs.nodeOutputs[nodeOutputLocatorId.value]
   const node = lgraphNode.value
 
-  if (!node || !newOutputs?.images?.length) return undefined
+  if (!node || !newOutputs?.images?.length) return
 
   const urls = nodeOutputs.getNodeImageUrls(node)
-  if (!urls?.length) return undefined
+  if (!urls?.length) return
 
   const type =
     node.previewMediaType === 'video' ||

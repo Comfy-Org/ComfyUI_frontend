@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
 
-defineProps<{
+const { label, tooltip, singleline } = defineProps<{
   label: string
   tooltip?: string
   singleline?: boolean

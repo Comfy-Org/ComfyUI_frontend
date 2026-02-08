@@ -88,7 +88,17 @@ import JobContextMenu from './job/JobContextMenu.vue'
 import JobFiltersBar from './job/JobFiltersBar.vue'
 import JobGroupsList from './job/JobGroupsList.vue'
 
-defineProps<{
+const {
+  headerTitle,
+  showConcurrentIndicator,
+  concurrentWorkflowCount,
+  queuedCount,
+  selectedJobTab,
+  selectedWorkflowFilter,
+  selectedSortMode,
+  displayedJobGroups,
+  hasFailedJobs
+} = defineProps<{
   headerTitle: string
   showConcurrentIndicator: boolean
   concurrentWorkflowCount: number

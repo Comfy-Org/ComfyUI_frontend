@@ -5,10 +5,7 @@
     :ref="
       (el) => {
         if (el)
-          mountCustomExtension(
-            props.extension as CustomExtension,
-            el as HTMLElement
-          )
+          mountCustomExtension(extension as CustomExtension, el as HTMLElement)
       }
     "
   />
@@ -19,17 +16,17 @@ import { onBeforeUnmount } from 'vue'
 
 import type { CustomExtension, VueExtension } from '@/types/extensionTypes'
 
-const props = defineProps<{
+const { extension } = defineProps<{
   extension: VueExtension | CustomExtension
 }>()
 
-const mountCustomExtension = (extension: CustomExtension, el: HTMLElement) => {
-  extension.render(el)
+const mountCustomExtension = (ext: CustomExtension, el: HTMLElement) => {
+  ext.render(el)
 }
 
 onBeforeUnmount(() => {
-  if (props.extension.type === 'custom' && props.extension.destroy) {
-    props.extension.destroy()
+  if (extension.type === 'custom' && extension.destroy) {
+    extension.destroy()
   }
 })
 </script>

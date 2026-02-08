@@ -47,7 +47,7 @@ export function useCachedRequest<TParams, TResult>(
       cache.set(cacheKey, result)
 
       return result
-    } catch (err) {
+    } catch {
       // Set cache on error to prevent retrying bad requests
       cache.set(cacheKey, null)
       return null
@@ -62,8 +62,8 @@ export function useCachedRequest<TParams, TResult>(
   ): Promise<TResult | null> => {
     try {
       return await pendingRequest
-    } catch (err) {
-      console.error('Error in pending request:', err)
+    } catch (error) {
+      console.error('Error in pending request:', error)
       return null
     }
   }

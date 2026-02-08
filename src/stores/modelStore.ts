@@ -167,7 +167,7 @@ export class ModelFolder {
   ) {}
 
   get key(): string {
-    return this.directory + '/'
+    return `${this.directory}/`
   }
 
   /**

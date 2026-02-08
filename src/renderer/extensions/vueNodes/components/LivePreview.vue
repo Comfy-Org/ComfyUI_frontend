@@ -32,13 +32,13 @@ interface LivePreviewProps {
   imageUrl: string
 }
 
-const props = defineProps<LivePreviewProps>()
+const { imageUrl } = defineProps<LivePreviewProps>()
 
 const actualDimensions = ref<string | null>(null)
 const imageError = ref(false)
 
 watch(
-  () => props.imageUrl,
+  () => imageUrl,
   () => {
     // Reset states when URL changes
     actualDimensions.value = null

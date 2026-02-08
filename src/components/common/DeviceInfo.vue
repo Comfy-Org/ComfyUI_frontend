@@ -5,7 +5,7 @@
         {{ col.header }}
       </div>
       <div>
-        {{ formatValue(props.device[col.field], col.field) }}
+        {{ formatValue(device[col.field], col.field) }}
       </div>
     </template>
   </div>
@@ -15,7 +15,7 @@
 import type { DeviceStats } from '@/schemas/apiSchema'
 import { formatSize } from '@/utils/formatUtil'
 
-const props = defineProps<{
+const { device } = defineProps<{
   device: DeviceStats
 }>()
 

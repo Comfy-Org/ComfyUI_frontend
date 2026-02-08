@@ -11,7 +11,7 @@ function clampPercent(value: number) {
 }
 
 function normalizeProgressPercent(value: ProgressPercent) {
-  if (value === undefined || !Number.isFinite(value)) return undefined
+  if (value === undefined || !Number.isFinite(value)) return
 
   return clampPercent(value)
 }
@@ -30,7 +30,7 @@ function hasAnyProgressPercent(
 function progressPercentStyle(value: ProgressPercent) {
   const normalized = normalizeProgressPercent(value)
 
-  if (normalized === undefined) return undefined
+  if (normalized === undefined) return
 
   return { width: `${normalized}%` }
 }

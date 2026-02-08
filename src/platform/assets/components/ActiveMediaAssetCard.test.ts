@@ -3,9 +3,9 @@ import { computed } from 'vue'
 import { describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
-import ActiveJobCard from './ActiveMediaAssetCard.vue'
-
 import type { JobListItem } from '@/composables/queue/useJobList'
+
+import ActiveJobCard from './ActiveMediaAssetCard.vue'
 
 vi.mock('@/composables/queue/useJobActions', () => ({
   useJobActions: () => ({

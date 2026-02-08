@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { reactiveOmit } from '@vueuse/core'
 import type { SliderRootEmits, SliderRootProps } from 'reka-ui'
 import {
   SliderRange,
@@ -13,8 +12,7 @@ import type { HTMLAttributes } from 'vue'
 
 import { cn } from '@/utils/tailwindUtil'
 
-const props = defineProps<
-  // eslint-disable-next-line vue/no-unused-properties
+const { class: className, ...restProps } = defineProps<
   SliderRootProps & { class?: HTMLAttributes['class'] }
 >()
 
@@ -25,9 +23,7 @@ const setPressed = (val: boolean) => {
 
 const emits = defineEmits<SliderRootEmits>()
 
-const delegatedProps = reactiveOmit(props, 'class')
-
-const forwarded = useForwardPropsEmits(delegatedProps, emits)
+const forwarded = useForwardPropsEmits(restProps, emits)
 </script>
 
 <template>
@@ -38,7 +34,7 @@ const forwarded = useForwardPropsEmits(delegatedProps, emits)
       cn(
         'relative flex w-full touch-none items-center select-none data-[disabled]:opacity-50',
         'data-[orientation=vertical]:h-full data-[orientation=vertical]:min-h-44 data-[orientation=vertical]:w-auto data-[orientation=vertical]:flex-col',
-        props.class
+        className
       )
     "
     v-bind="forwarded"

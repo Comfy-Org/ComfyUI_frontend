@@ -351,7 +351,7 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
 
   const handleExportRecording = () => {
     if (load3d) {
-      const timestamp = new Date().toISOString().replace(/[:.]/g, '-')
+      const timestamp = new Date().toISOString().replaceAll(/[:.]/g, '-')
       const filename = `${timestamp}-scene-recording.mp4`
       load3d.exportRecording(filename)
     }

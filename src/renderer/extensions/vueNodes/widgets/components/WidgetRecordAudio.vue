@@ -100,7 +100,7 @@ import { formatTime } from '../utils/audioUtils'
 
 const { t } = useI18n()
 
-const props = defineProps<{
+const { readonly, nodeId } = defineProps<{
   readonly?: boolean
   nodeId: string
 }>()
@@ -157,8 +157,8 @@ const isWaveformActive = computed(() => isRecording.value || isPlaying.value)
 const modelValue = defineModel<string>({ default: '' })
 
 const litegraphNode = computed(() => {
-  if (!props.nodeId || !app.canvas.graph) return null
-  return app.canvas.graph.getNodeById(props.nodeId) as LGraphNode | null
+  if (!nodeId || !app.canvas.graph) return null
+  return app.canvas.graph.getNodeById(nodeId) as LGraphNode | null
 })
 
 async function handleRecordingComplete(blob: Blob) {
@@ -166,13 +166,13 @@ async function handleRecordingComplete(blob: Blob) {
     const path = await useAudioService().convertBlobToFileAndSubmit(blob)
     modelValue.value = path
     lastUploadedPath = path
-  } catch (e) {
+  } catch {
     useToastStore().addAlert('Failed to upload recorded audio')
   }
 }
 
 async function handleStartRecording() {
-  if (props.readonly) return
+  if (readonly) return
 
   try {
     await waveform.setupAudioContext()
@@ -191,8 +191,8 @@ async function handleStartRecording() {
     resumeTimer()
     waveform.initWaveform()
     waveform.updateWaveform(isWaveformActive)
-  } catch (err) {
-    console.error('Failed to start recording:', err)
+  } catch (error) {
+    console.error('Failed to start recording:', error)
   }
 }
 

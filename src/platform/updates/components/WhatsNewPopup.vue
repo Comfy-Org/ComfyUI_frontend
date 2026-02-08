@@ -105,7 +105,7 @@ const formattedContent = computed(() => {
 
     // Check if content is meaningful (not just whitespace)
     const trimmedContent = markdown.trim()
-    if (!trimmedContent || trimmedContent.replace(/\s+/g, '') === '') {
+    if (!trimmedContent || trimmedContent.replaceAll(/\s+/g, '') === '') {
       return DOMPurify.sanitize(`<p>${t('whatsNewPopup.noReleaseNotes')}</p>`)
     }
 
@@ -126,7 +126,7 @@ const formattedContent = computed(() => {
   } catch (error) {
     console.error('Error parsing markdown:', error)
     // Fallback to plain text with line breaks - sanitize the HTML we create
-    const fallbackContent = latestRelease.value.content.replace(/\n/g, '<br>')
+    const fallbackContent = latestRelease.value.content.replaceAll('\n', '<br>')
     return fallbackContent.trim()
       ? DOMPurify.sanitize(fallbackContent)
       : DOMPurify.sanitize(`<p>${t('whatsNewPopup.noReleaseNotes')}</p>`)

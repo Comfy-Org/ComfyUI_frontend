@@ -4,7 +4,7 @@
     <div class="relative h-full flex items-center min-w-0">
       <!-- Slot Name -->
       <span
-        v-if="!props.dotOnly && !hasNoLabel"
+        v-if="!dotOnly && !hasNoLabel"
         class="truncate text-node-component-slot-text"
       >
         {{ slotData.localized_name || (slotData.name ?? `Output ${index}`) }}
@@ -45,12 +45,20 @@ interface OutputSlotProps {
   dotOnly?: boolean
 }
 
-const props = defineProps<OutputSlotProps>()
+const {
+  nodeType,
+  nodeId,
+  slotData,
+  index,
+  connected,
+  compatible,
+  dotOnly: dotOnlyProp
+} = defineProps<OutputSlotProps>()
 
 const hasNoLabel = computed(
-  () => !props.slotData.localized_name && props.slotData.name === ''
+  () => !slotData.localized_name && slotData.name === ''
 )
-const dotOnly = computed(() => props.dotOnly || hasNoLabel.value)
+const dotOnly = computed(() => dotOnlyProp || hasNoLabel.value)
 
 // Error boundary implementation
 const renderError = ref<string | null>(null)
@@ -58,12 +66,12 @@ const renderError = ref<string | null>(null)
 const { toastErrorHandler } = useErrorHandling()
 
 const { getOutputSlotTooltip, createTooltipConfig } = useNodeTooltips(
-  props.nodeType || ''
+  nodeType || ''
 )
 
 const tooltipConfig = computed(() => {
-  const slotName = props.slotData.name || ''
-  const tooltipText = getOutputSlotTooltip(props.index)
+  const slotName = slotData.name || ''
+  const tooltipText = getOutputSlotTooltip(index)
   const fallbackText = tooltipText || `Output: ${slotName}`
   return createTooltipConfig(fallbackText)
 })
@@ -75,9 +83,7 @@ onErrorCaptured((error) => {
 })
 
 const { state: dragState } = useSlotLinkDragUIState()
-const slotKey = computed(() =>
-  getSlotKey(props.nodeId ?? '', props.index, false)
-)
+const slotKey = computed(() => getSlotKey(nodeId ?? '', index, false))
 const shouldDim = computed(() => {
   if (!dragState.active) return false
   return !dragState.compatible.get(slotKey.value)
@@ -89,8 +95,8 @@ const slotWrapperClass = computed(() =>
     'cursor-crosshair',
     dotOnly.value ? 'lg-slot--dot-only justify-center' : 'pl-6',
     {
-      'lg-slot--connected': props.connected,
-      'lg-slot--compatible': props.compatible,
+      'lg-slot--connected': connected,
+      'lg-slot--compatible': compatible,
       'opacity-40': shouldDim.value
     }
   )
@@ -109,15 +115,15 @@ watchEffect(() => {
 })
 
 useSlotElementTracking({
-  nodeId: props.nodeId ?? '',
-  index: props.index,
+  nodeId: nodeId ?? '',
+  index,
   type: 'output',
   element: slotElRef
 })
 
 const { onPointerDown } = useSlotLinkInteraction({
-  nodeId: props.nodeId ?? '',
-  index: props.index,
+  nodeId: nodeId ?? '',
+  index,
   type: 'output'
 })
 </script>

@@ -384,7 +384,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
   }
 
   const persistedWorkflows = computed(() =>
-    Array.from(workflows.value).filter(
+    [...workflows.value].filter(
       (workflow) =>
         workflow.isPersisted && !workflow.path.startsWith('subgraphs/')
     )
@@ -397,7 +397,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
   } = useAsyncState(
     async (dir: string = '') => {
       await syncEntities(
-        dir ? 'workflows/' + dir : 'workflows',
+        dir ? `workflows/${dir}` : 'workflows',
         workflowLookup.value,
         (file) =>
           new ComfyWorkflow({
@@ -580,7 +580,8 @@ export const useWorkflowStore = defineStore('workflow', () => {
     // Short-circuit: ID belongs to the parent workflow / no active subgraph
     if (!id.includes(':')) {
       return !subgraph ? id : undefined
-    } else if (!subgraph) {
+    }
+    if (!subgraph) {
       return
     }
 
@@ -789,13 +790,13 @@ export const useWorkflowBookmarkStore = defineStore('workflowBookmark', () => {
     const resp = await api.getUserData('workflows/.index.json')
     if (resp.status === 200) {
       const info = await resp.json()
-      bookmarks.value = new Set(info?.favorites ?? [])
+      bookmarks.value = new Set(info?.favorites)
     }
   }
 
   const saveBookmarks = async () => {
     await api.storeUserData('workflows/.index.json', {
-      favorites: Array.from(bookmarks.value)
+      favorites: [...bookmarks.value]
     })
   }
 

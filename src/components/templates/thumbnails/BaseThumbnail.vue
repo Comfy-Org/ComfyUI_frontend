@@ -35,7 +35,7 @@ const { hoverZoom = 4 } = defineProps<{
 }>()
 
 onMounted(() => {
-  const images = Array.from(contentRef.value?.getElementsByTagName('img') ?? [])
+  const images = [...(contentRef.value?.getElementsByTagName('img') ?? [])]
   images.forEach((img) => {
     useEventListener(img, 'error', () => {
       error.value = true

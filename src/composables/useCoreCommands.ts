@@ -63,10 +63,10 @@ import {
 } from '@/workbench/extensions/manager/composables/useManagerState'
 import { ManagerTab } from '@/workbench/extensions/manager/types/comfyManagerTypes'
 
-import { useWorkflowTemplateSelectorDialog } from './useWorkflowTemplateSelectorDialog'
-
-import { useMaskEditorStore } from '@/stores/maskEditorStore'
 import { useDialogStore } from '@/stores/dialogStore'
+import { useMaskEditorStore } from '@/stores/maskEditorStore'
+
+import { useWorkflowTemplateSelectorDialog } from './useWorkflowTemplateSelectorDialog'
 
 const moveSelectedNodesVersionAdded = '1.22.2'
 export function useCoreCommands(): ComfyCommand[] {
@@ -205,7 +205,7 @@ export function useCoreCommands(): ComfyCommand[] {
         })
         if (!newName || newName === workflow.filename) return
 
-        const newPath = workflow.directory + '/' + newName + '.json'
+        const newPath = `${workflow.directory}/${newName}.json`
         await workflowService.renameWorkflow(workflow, newPath)
       }
     },

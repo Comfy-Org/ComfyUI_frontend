@@ -83,7 +83,14 @@ import type { CSSProperties } from 'vue'
 
 import type { MinimapSettingsKey } from '@/renderer/extensions/minimap/types'
 
-defineProps<{
+const {
+  panelStyles,
+  nodeColors,
+  showLinks,
+  showGroups,
+  renderBypass,
+  renderError
+} = defineProps<{
   panelStyles: CSSProperties
   nodeColors: boolean
   showLinks: boolean

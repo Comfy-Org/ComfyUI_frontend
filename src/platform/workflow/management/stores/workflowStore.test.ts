@@ -701,7 +701,7 @@ describe('useWorkflowStore', () => {
         _nodes: [],
         nodes: [],
         clear() {
-          return undefined
+          return
         }
       } as Partial<Subgraph> as Subgraph
 

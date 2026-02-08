@@ -59,10 +59,7 @@ function mkFileUrl(props: { ref: ImageRef; preview?: boolean }): string {
   }
 
   const pathPlusQueryParams = api.apiURL(
-    '/view?' +
-      params.toString() +
-      app.getPreviewFormatParam() +
-      app.getRandParam()
+    `/view?${params.toString()}${app.getPreviewFormatParam()}${app.getRandParam()}`
   )
   const imageElement = new Image()
   imageElement.crossOrigin = 'anonymous'
@@ -116,17 +113,14 @@ export function useMaskEditorLoader() {
           const typeMatch = filename.match(/ \[([^\]]+)\]$/)
           if (typeMatch) {
             type = typeMatch[1]
-            filename = filename.substring(
-              0,
-              filename.length - typeMatch[0].length
-            )
+            filename = filename.slice(0, filename.length - typeMatch[0].length)
           }
 
           // Check for subfolder (forward slash separator)
           const lastSlashIndex = filename.lastIndexOf('/')
           if (lastSlashIndex !== -1) {
-            subfolder = filename.substring(0, lastSlashIndex)
-            filename = filename.substring(lastSlashIndex + 1)
+            subfolder = filename.slice(0, lastSlashIndex)
+            filename = filename.slice(lastSlashIndex + 1)
           }
 
           nodeImageRef = {
@@ -137,8 +131,8 @@ export function useMaskEditorLoader() {
 
           // We also need to update nodeImageUrl to match this new ref so subsequent logic works
           nodeImageUrl = mkFileUrl({ ref: nodeImageRef })
-        } catch (e) {
-          console.warn('Failed to parse widget filename as ref', e)
+        } catch (error) {
+          console.warn('Failed to parse widget filename as ref', error)
         }
       }
 
@@ -153,7 +147,7 @@ export function useMaskEditorLoader() {
           if (response.ok) {
             maskLayersFromApi = await response.json()
           }
-        } catch (error) {
+        } catch {
           // Fallback to pattern matching if API call fails
         }
       }
@@ -280,7 +274,7 @@ export function useMaskEditorLoader() {
         subfolder: urlObj.searchParams.get('subfolder') || undefined,
         type: urlObj.searchParams.get('type') || undefined
       }
-    } catch (error) {
+    } catch {
       try {
         const urlObj = new URL(url, window.location.origin)
         const filename = urlObj.searchParams.get('filename')
@@ -294,7 +288,7 @@ export function useMaskEditorLoader() {
           subfolder: urlObj.searchParams.get('subfolder') || undefined,
           type: urlObj.searchParams.get('type') || undefined
         }
-      } catch (e) {
+      } catch {
         throw new Error(`Invalid image URL: ${url}`)
       }
     }
@@ -327,8 +321,10 @@ export function useMaskEditorLoader() {
       const img = new Image()
       img.crossOrigin = 'anonymous'
 
-      img.onload = () => resolve(img)
-      img.onerror = () => reject(new Error(`Failed to load image: ${url}`))
+      img.addEventListener('load', () => resolve(img))
+      img.addEventListener('error', () =>
+        reject(new Error(`Failed to load image: ${url}`))
+      )
 
       img.src = url
     })

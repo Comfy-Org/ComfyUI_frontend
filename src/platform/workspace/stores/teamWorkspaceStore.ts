@@ -283,21 +283,28 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
         initState.value = 'ready'
         isFetchingWorkspaces.value = false
         return
-      } catch (e) {
+      } catch (errorCaught) {
         const isNoWorkspacesError =
-          e instanceof Error && e.message === 'No workspaces available'
+          errorCaught instanceof Error &&
+          errorCaught.message === 'No workspaces available'
 
         // Don't retry on permanent errors (no workspaces available)
         if (isNoWorkspacesError || attempt >= MAX_INIT_RETRIES) {
-          error.value = e instanceof Error ? e : new Error('Unknown error')
+          error.value =
+            errorCaught instanceof Error
+              ? errorCaught
+              : new Error('Unknown error')
           initState.value = 'error'
           isFetchingWorkspaces.value = false
-          throw e
+          throw errorCaught
         }
 
         // Retry with exponential backoff for transient errors
         const delay = BASE_RETRY_DELAY_MS * Math.pow(2, attempt)
-        const errorMessage = e instanceof Error ? e.message : String(e)
+        const errorMessage =
+          errorCaught instanceof Error
+            ? errorCaught.message
+            : String(errorCaught)
         console.warn(
           `[teamWorkspaceStore] Init failed (attempt ${attempt + 1}/${MAX_INIT_RETRIES + 1}), retrying in ${delay}ms: ${errorMessage}`
         )
@@ -353,9 +360,9 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
       // Reload to reinitialize with new workspace
       window.location.reload()
       // Code after this won't run (page reloads)
-    } catch (e) {
+    } catch (error) {
       isSwitching.value = false
-      throw e
+      throw error
     }
   }
 
@@ -384,9 +391,9 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
 
       // Code after this won't run (page reloads)
       return workspaceState
-    } catch (e) {
+    } catch (error) {
       isCreating.value = false
-      throw e
+      throw error
     }
   }
 
@@ -425,9 +432,9 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
         workspaces.value = workspaces.value.filter((w) => w.id !== targetId)
         isDeleting.value = false
       }
-    } catch (e) {
+    } catch (error) {
       isDeleting.value = false
-      throw e
+      throw error
     }
   }
 

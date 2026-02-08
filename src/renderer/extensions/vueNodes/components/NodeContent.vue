@@ -39,12 +39,11 @@ interface NodeContentProps {
   }
 }
 
-const props = defineProps<NodeContentProps>()
+const { nodeData, media } = defineProps<NodeContentProps>()
 
-const hasMedia = computed(() => props.media && props.media.urls.length > 0)
+const hasMedia = computed(() => media && media.urls.length > 0)
 
-// Get node ID from nodeData
-const nodeId = computed(() => props.nodeData?.id?.toString())
+const nodeId = computed(() => nodeData?.id?.toString())
 
 // Error boundary implementation
 const renderError = ref<string | null>(null)

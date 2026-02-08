@@ -209,9 +209,9 @@ export const useAssetsStore = defineStore('assets', () => {
     try {
       await fetchHistoryAssets(false)
       historyAssets.value = allHistoryItems.value
-    } catch (err) {
-      console.error('Error fetching history assets:', err)
-      historyError.value = err
+    } catch (error) {
+      console.error('Error fetching history assets:', error)
+      historyError.value = error
       // Keep existing data when error occurs
       if (!historyAssets.value.length) {
         historyAssets.value = []
@@ -234,9 +234,9 @@ export const useAssetsStore = defineStore('assets', () => {
     try {
       await fetchHistoryAssets(true)
       historyAssets.value = allHistoryItems.value
-    } catch (err) {
-      console.error('Error loading more history:', err)
-      historyError.value = err
+    } catch (error) {
+      console.error('Error loading more history:', error)
+      historyError.value = error
       // Keep existing data when error occurs (consistent with updateHistory)
       if (!historyAssets.value.length) {
         historyAssets.value = []
@@ -346,7 +346,7 @@ export const useAssetsStore = defineStore('assets', () => {
           return cached.array
         }
 
-        const array = Array.from(assetsMap.values())
+        const array = [...assetsMap.values()]
         assetsArrayCache.set(category, { source: assetsMap, array })
         return array
       }
@@ -443,11 +443,12 @@ export const useAssetsStore = defineStore('assets', () => {
               if (state.hasMore) {
                 await new Promise((resolve) => setTimeout(resolve, 50))
               }
-            } catch (err) {
+            } catch (error) {
               if (isStale(category, state)) return
-              console.error(`Error loading batch for ${category}:`, err)
+              console.error(`Error loading batch for ${category}:`, error)
 
-              state.error = err instanceof Error ? err : new Error(String(err))
+              state.error =
+                error instanceof Error ? error : new Error(String(error))
               state.hasMore = false
               state.isLoading = false
               pendingRequestByCategory.delete(category)
@@ -523,7 +524,7 @@ export const useAssetsStore = defineStore('assets', () => {
 
         const categoriesToCheck = category
           ? [category]
-          : Array.from(modelStateByCategory.value.keys())
+          : [...modelStateByCategory.value.keys()]
 
         for (const cat of categoriesToCheck) {
           const state = modelStateByCategory.value.get(cat)
@@ -626,7 +627,7 @@ export const useAssetsStore = defineStore('assets', () => {
     return {
       getAssets: () => emptyAssets,
       isLoading: () => false,
-      getError: () => undefined,
+      getError: () => {},
       hasMore: () => false,
       hasAssetKey: () => false,
       updateModelsForNodeType: async () => {},

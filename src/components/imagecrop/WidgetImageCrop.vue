@@ -110,7 +110,7 @@ import { ASPECT_RATIOS, useImageCrop } from '@/composables/useImageCrop'
 import type { NodeId } from '@/platform/workflow/validation/schemas/workflowSchema'
 import type { Bounds } from '@/renderer/core/layout/types'
 
-const props = defineProps<{
+const { nodeId } = defineProps<{
   nodeId: NodeId
 }>()
 
@@ -142,5 +142,5 @@ const {
   handleResizeStart,
   handleResizeMove,
   handleResizeEnd
-} = useImageCrop(props.nodeId, { imageEl, containerEl, modelValue })
+} = useImageCrop(nodeId, { imageEl, containerEl, modelValue })
 </script>

@@ -121,7 +121,8 @@ export function transformInputSpecV1ToV2(
         ? inputSpecV1[0]
         : getComboSpecComboOptions(inputSpecV1)
     }
-  } else if (typeof inputSpecV1[0] === 'string') {
+  }
+  if (typeof inputSpecV1[0] === 'string') {
     // Handle standard types (INT, FLOAT, BOOLEAN, STRING) and custom types
     return {
       type: inputSpecV1[0],

@@ -91,7 +91,7 @@ export function useAssetBrowser(
     if (typeTag) {
       // Remove category prefix from badge label (e.g. "checkpoint/model" → "model")
       const badgeLabel = typeTag.includes('/')
-        ? typeTag.substring(typeTag.indexOf('/') + 1)
+        ? typeTag.slice(typeTag.indexOf('/') + 1)
         : typeTag
 
       badges.push({ label: badgeLabel, type: 'type' })
@@ -127,13 +127,11 @@ export function useAssetBrowser(
       .filter((tag): tag is string => typeof tag === 'string' && tag.length > 0)
       .map((tag) => tag.split('/')[0])
 
-    return Array.from(new Set(categories))
-      .sort()
-      .map((category) => ({
-        id: category,
-        label: category.charAt(0).toUpperCase() + category.slice(1),
-        icon: 'icon-[lucide--folder]'
-      }))
+    return [...new Set(categories)].sort().map((category) => ({
+      id: category,
+      label: category.charAt(0).toUpperCase() + category.slice(1),
+      icon: 'icon-[lucide--folder]'
+    }))
   })
 
   const navItems = computed<(NavItemData | NavGroupData)[]>(() => {

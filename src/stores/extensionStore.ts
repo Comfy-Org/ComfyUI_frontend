@@ -35,7 +35,7 @@ export const useExtensionStore = defineStore('extension', () => {
   // If a node pack is disabled in the backend, we shouldn't remove the configuration
   // of the frontend extension disable list, in case the node pack is re-enabled.
   const inactiveDisabledExtensionNames = computed(() => {
-    return Array.from(disabledExtensionNames.value).filter(
+    return [...disabledExtensionNames.value].filter(
       (name) => !(name in extensionByName.value)
     )
   })

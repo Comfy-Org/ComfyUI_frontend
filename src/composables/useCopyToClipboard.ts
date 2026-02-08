@@ -43,7 +43,7 @@ export function useCopyToClipboard() {
       } else {
         showErrorToast()
       }
-    } catch (err) {
+    } catch {
       showErrorToast()
     } finally {
       textarea.remove()
@@ -59,7 +59,7 @@ export function useCopyToClipboard() {
         // If VueUse copy failed, try fallback
         fallbackCopy(text)
       }
-    } catch (err) {
+    } catch {
       // VueUse copy failed, try fallback
       fallbackCopy(text)
     }

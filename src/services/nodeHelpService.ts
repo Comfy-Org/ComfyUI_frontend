@@ -13,9 +13,8 @@ class NodeHelpService {
 
     if (nodeSource.type === NodeSourceType.CustomNodes) {
       return this.fetchCustomNodeHelp(node, locale)
-    } else {
-      return this.fetchCoreNodeHelp(node, locale)
     }
+    return this.fetchCoreNodeHelp(node, locale)
   }
 
   private async fetchCustomNodeHelp(

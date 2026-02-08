@@ -502,7 +502,8 @@ export async function validateComfyWorkflow(
     const error = fromZodError(versionResult.error)
     onError(`Workflow does not contain a valid version.  Zod error:\n${error}`)
     return null
-  } else if (versionResult.data.version === 1) {
+  }
+  if (versionResult.data.version === 1) {
     // Schema version 1
     result = await zComfyWorkflow1.safeParseAsync(data)
   } else {

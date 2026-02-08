@@ -59,11 +59,11 @@ export function useAudioRecorder(options: AudioRecorderOptions = {}) {
       // Start recording
       mediaRecorder.value.start(100)
       isRecording.value = true
-    } catch (err) {
+    } catch (error) {
       if (options.onError) {
-        options.onError(err as Error)
+        options.onError(error as Error)
       }
-      throw err
+      throw error
     }
   }
 

@@ -81,8 +81,9 @@ const login = async () => {
 
     await userStore.login(user)
     await router.push('/')
-  } catch (err) {
-    loginError.value = err instanceof Error ? err.message : JSON.stringify(err)
+  } catch (error) {
+    loginError.value =
+      error instanceof Error ? error.message : JSON.stringify(error)
   }
 }
 

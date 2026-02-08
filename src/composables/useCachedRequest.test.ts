@@ -204,11 +204,13 @@ describe('useCachedRequest', () => {
     const cachedRequest = useCachedRequest(mockRequestFn)
 
     // Make a request that returns null
+    // oxlint-disable-next-line no-useless-call -- false positive: call is an object method, not Function.prototype.call
     const result = await cachedRequest.call(null)
     expect(result).toBeNull()
     expect(mockRequestFn).toHaveBeenCalledTimes(1)
 
     // Make the same request again
+    // oxlint-disable-next-line no-useless-call -- false positive: call is an object method, not Function.prototype.call
     const result2 = await cachedRequest.call(null)
     expect(result2).toBeNull()
 

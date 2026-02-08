@@ -13,7 +13,7 @@ type DynamicInputs = ('INT' | 'STRING' | 'IMAGE' | DynamicInputs)[][]
 const { addNodeInput } = useLitegraphService()
 
 function nextTick() {
-  return new Promise<void>((r) => requestAnimationFrame(() => r()))
+  return new Promise<void>((resolve) => requestAnimationFrame(() => resolve()))
 }
 
 function addDynamicCombo(node: LGraphNode, inputs: DynamicInputs) {

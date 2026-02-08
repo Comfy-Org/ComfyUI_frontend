@@ -4,7 +4,9 @@ import { ref } from 'vue'
 
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 
-// Mock useKeyModifier before importing the composable
+import { useAssetSelection } from './useAssetSelection'
+import { useAssetSelectionStore } from './useAssetSelectionStore'
+
 const mockShiftKey = ref(false)
 const mockCtrlKey = ref(false)
 const mockMetaKey = ref(false)
@@ -21,9 +23,6 @@ vi.mock('@vueuse/core', async (importOriginal) => {
     }
   }
 })
-
-import { useAssetSelection } from './useAssetSelection'
-import { useAssetSelectionStore } from './useAssetSelectionStore'
 
 function createMockAssets(count: number): AssetItem[] {
   return Array.from({ length: count }, (_, i) => ({
@@ -59,7 +58,7 @@ describe('useAssetSelection', () => {
 
       selection.reconcileSelection([assets[1]])
 
-      expect(Array.from(store.selectedAssetIds)).toEqual(['b'])
+      expect([...store.selectedAssetIds]).toEqual(['b'])
       expect(store.lastSelectedIndex).toBe(0)
       expect(store.lastSelectedAssetId).toBe('b')
     })
@@ -111,7 +110,7 @@ describe('useAssetSelection', () => {
 
       selection.reconcileSelection([assets[1]])
 
-      expect(Array.from(store.selectedAssetIds)).toEqual(['b'])
+      expect([...store.selectedAssetIds]).toEqual(['b'])
       expect(store.lastSelectedIndex).toBe(-1)
       expect(store.lastSelectedAssetId).toBeNull()
     })

@@ -34,14 +34,14 @@ const left = ref<string>()
 const top = ref<string>()
 
 function hideTooltip() {
-  return (tooltipText.value = '')
+  tooltipText.value = ''
 }
 
 async function showTooltip(tooltip: string | null | undefined) {
   if (!tooltip) return
 
-  left.value = comfyApp.canvas.mouse[0] + 'px'
-  top.value = comfyApp.canvas.mouse[1] + 'px'
+  left.value = `${comfyApp.canvas.mouse[0]}px`
+  top.value = `${comfyApp.canvas.mouse[1]}px`
   tooltipText.value = tooltip
 
   await nextTick()
@@ -50,11 +50,11 @@ async function showTooltip(tooltip: string | null | undefined) {
   if (!rect) return
 
   if (rect.right > window.innerWidth) {
-    left.value = comfyApp.canvas.mouse[0] - rect.width + 'px'
+    left.value = `${comfyApp.canvas.mouse[0] - rect.width}px`
   }
 
   if (rect.top < 0) {
-    top.value = comfyApp.canvas.mouse[1] + rect.height + 'px'
+    top.value = `${comfyApp.canvas.mouse[1] + rect.height}px`
   }
 }
 

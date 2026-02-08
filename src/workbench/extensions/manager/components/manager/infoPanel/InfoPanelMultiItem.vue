@@ -179,7 +179,7 @@ const conflictInfo = computed<ConflictDetail[]>(() => {
     })
   })
 
-  return Array.from(conflictMap.values())
+  return [...conflictMap.values()]
 })
 
 const hasConflicts = computed(() => conflictInfo.value.length > 0)

@@ -40,7 +40,7 @@ function useVueNodeLifecycleIndividual() {
     for (const reroute of activeGraph.reroutes.values()) {
       const [x, y] = reroute.pos
       const parent = reroute.parentId ?? undefined
-      const linkIds = Array.from(reroute.linkIds)
+      const linkIds = [...reroute.linkIds]
       layoutMutations.createReroute(reroute.id, { x, y }, parent, linkIds)
     }
 

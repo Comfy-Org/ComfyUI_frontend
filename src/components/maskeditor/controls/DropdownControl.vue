@@ -33,14 +33,14 @@ interface Props {
   modelValue: string | number
 }
 
-const props = defineProps<Props>()
+const { label, options, modelValue } = defineProps<Props>()
 
 const emit = defineEmits<{
   'update:modelValue': [value: string | number]
 }>()
 
 const normalizedOptions = computed((): DropdownOption[] => {
-  return props.options.map((option) => {
+  return options.map((option) => {
     if (typeof option === 'string') {
       return { label: option, value: option }
     }

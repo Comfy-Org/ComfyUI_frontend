@@ -33,7 +33,7 @@ export const useCanvasStore = defineStore('canvas', () => {
    */
   const selectedItems = ref<Raw<Positionable>[]>([])
   const updateSelectedItems = () => {
-    const items = Array.from(canvas.value?.selectedItems ?? [])
+    const items = [...(canvas.value?.selectedItems ?? [])]
     selectedItems.value = items.map((item) => markRaw(item))
   }
 
@@ -43,8 +43,7 @@ export const useCanvasStore = defineStore('canvas', () => {
   const linearMode = ref(false)
 
   // Set up scale synchronization when canvas is available
-  let originalOnChanged: ((scale: number, offset: Point) => void) | undefined =
-    undefined
+  let originalOnChanged: ((scale: number, offset: Point) => void) | undefined
   const initScaleSync = () => {
     if (app.canvas?.ds) {
       // Initial sync

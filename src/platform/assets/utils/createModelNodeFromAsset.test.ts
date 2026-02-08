@@ -141,7 +141,7 @@ async function setupMocks(
   const {
     nodeProvider = createMockNodeProvider(),
     canvasCenter = [100, 200],
-    activeSubgraph = undefined,
+    activeSubgraph,
     createdNode = await createMockNode()
   } = overrides
 

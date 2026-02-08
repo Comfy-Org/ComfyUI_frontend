@@ -50,7 +50,7 @@ export function useNodeAnimatedImage() {
       )
 
       widget.serialize = false
-      widget.serializeValue = () => undefined
+      widget.serializeValue = () => {}
     }
   }
 

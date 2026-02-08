@@ -7,7 +7,7 @@ Symbol.asyncDispose ??= Symbol('Symbol.asyncDispose')
 // like rect but rounded corners
 export function loadPolyfills() {
   if (
-    typeof window != 'undefined' &&
+    typeof window !== 'undefined' &&
     window.CanvasRenderingContext2D &&
     !window.CanvasRenderingContext2D.prototype.roundRect
   ) {
@@ -34,16 +34,16 @@ export function loadPolyfills() {
 
       // make it compatible with official one
       if (Array.isArray(radius)) {
-        if (radius.length == 1) {
+        if (radius.length === 1) {
           top_left_radius =
             top_right_radius =
             bottom_left_radius =
             bottom_right_radius =
               radius[0]
-        } else if (radius.length == 2) {
+        } else if (radius.length === 2) {
           top_left_radius = bottom_right_radius = radius[0]
           top_right_radius = bottom_left_radius = radius[1]
-        } else if (radius.length == 4) {
+        } else if (radius.length === 4) {
           top_left_radius = radius[0]
           top_right_radius = radius[1]
           bottom_left_radius = radius[2]
@@ -80,7 +80,7 @@ export function loadPolyfills() {
     }
   }
 
-  if (typeof window != 'undefined' && !window['requestAnimationFrame']) {
+  if (typeof window !== 'undefined' && !window['requestAnimationFrame']) {
     window.requestAnimationFrame =
       // @ts-expect-error Legacy code
       window.webkitRequestAnimationFrame ||

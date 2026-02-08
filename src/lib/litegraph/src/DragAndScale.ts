@@ -157,7 +157,7 @@ export class DragAndScale {
     } else if (value > this.max_scale) {
       value = this.max_scale
     }
-    if (value == this.scale) return
+    if (value === this.scale) return
 
     const rect = this.element.getBoundingClientRect()
     if (!rect) return

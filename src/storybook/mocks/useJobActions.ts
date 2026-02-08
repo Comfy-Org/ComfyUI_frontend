@@ -36,7 +36,7 @@ export function useJobActions(
   })
 
   async function runCancelJob() {
-    return undefined
+    return
   }
 
   return {

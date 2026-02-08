@@ -110,25 +110,26 @@ const assetStore = useAssetsStore()
 const modelToNodeStore = useModelToNodeStore()
 const breakpoints = useBreakpoints(breakpointsTailwind)
 
-const props = defineProps<{
-  nodeType?: string
-  assetType?: string
-  onSelect?: (asset: AssetItem) => void
-  onClose?: () => void
-  showLeftPanel?: boolean
-  title?: string
-}>()
+const { nodeType, assetType, onSelect, onClose, showLeftPanel, title } =
+  defineProps<{
+    nodeType?: string
+    assetType?: string
+    onSelect?: (asset: AssetItem) => void
+    onClose?: () => void
+    showLeftPanel?: boolean
+    title?: string
+  }>()
 
 const emit = defineEmits<{
   'asset-select': [asset: AssetDisplayItem]
   close: []
 }>()
 
-provide(OnCloseKey, props.onClose ?? (() => {}))
+provide(OnCloseKey, onClose ?? (() => {}))
 
 const cacheKey = computed(() => {
-  if (props.nodeType) return props.nodeType
-  if (props.assetType) return `tag:${props.assetType}`
+  if (nodeType) return nodeType
+  if (assetType) return `tag:${assetType}`
   return ''
 })
 
@@ -141,10 +142,10 @@ const isLoading = computed(
 )
 
 async function refreshAssets(): Promise<void> {
-  if (props.nodeType) {
-    await assetStore.updateModelsForNodeType(props.nodeType)
-  } else if (props.assetType) {
-    await assetStore.updateModelsForTag(props.assetType)
+  if (nodeType) {
+    await assetStore.updateModelsForNodeType(nodeType)
+  } else if (assetType) {
+    await assetStore.updateModelsForTag(assetType)
   }
 }
 
@@ -178,12 +179,12 @@ const primaryCategoryTag = computed(() => {
 
   if (tagFromAssets) return tagFromAssets
 
-  if (props.nodeType) {
-    const mapped = modelToNodeStore.getCategoryForNodeType(props.nodeType)
+  if (nodeType) {
+    const mapped = modelToNodeStore.getCategoryForNodeType(nodeType)
     if (mapped) return mapped
   }
 
-  if (props.assetType) return props.assetType
+  if (assetType) return assetType
 
   return 'models'
 })
@@ -196,14 +197,14 @@ const activeCategoryTag = computed(() => {
 })
 
 const displayTitle = computed(() => {
-  if (props.title) return props.title
+  if (title) return title
 
   const label = formatCategoryLabel(activeCategoryTag.value)
   return t('assetBrowser.allCategory', { category: label })
 })
 
 const shouldShowLeftPanel = computed(() => {
-  return props.showLeftPanel ?? true
+  return showLeftPanel ?? true
 })
 
 const showOwnershipFilter = computed(
@@ -225,7 +226,7 @@ const emptyMessage = computed(() => {
 })
 
 function handleClose() {
-  props.onClose?.()
+  onClose?.()
   emit('close')
 }
 
@@ -240,6 +241,6 @@ function handleShowInfo(asset: AssetDisplayItem) {
 
 function handleAssetSelectAndEmit(asset: AssetDisplayItem) {
   emit('asset-select', asset)
-  props.onSelect?.(asset)
+  onSelect?.(asset)
 }
 </script>

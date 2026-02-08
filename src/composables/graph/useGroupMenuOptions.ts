@@ -27,8 +27,8 @@ export function useGroupMenuOptions() {
     action: () => {
       try {
         groupContext.recomputeInsideNodes()
-      } catch (e) {
-        console.warn('Failed to recompute group nodes:', e)
+      } catch (error) {
+        console.warn('Failed to recompute group nodes:', error)
         return
       }
 
@@ -51,7 +51,9 @@ export function useGroupMenuOptions() {
       label: shape.localizedName,
       action: () => {
         const nodes = (groupContext.nodes || []) as LGraphNode[]
-        nodes.forEach((node) => (node.shape = shape.value))
+        nodes.forEach((node) => {
+          node.shape = shape.value
+        })
         canvasRefresh.refreshCanvas()
         bump()
       }
@@ -88,8 +90,8 @@ export function useGroupMenuOptions() {
 
     try {
       groupContext.recomputeInsideNodes()
-    } catch (e) {
-      console.warn('Failed to recompute group nodes for mode options:', e)
+    } catch (error) {
+      console.warn('Failed to recompute group nodes for mode options:', error)
       return options
     }
 

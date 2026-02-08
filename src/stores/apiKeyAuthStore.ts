@@ -26,8 +26,8 @@ export const useApiKeyAuthStore = defineStore('apiKeyAuth', () => {
   const initializeUserFromApiKey = async () => {
     const createCustomerResponse = await firebaseAuthStore
       .createCustomer()
-      .catch((err) => {
-        console.error(err)
+      .catch((error) => {
+        console.error(error)
         return
       })
     if (!createCustomerResponse) {

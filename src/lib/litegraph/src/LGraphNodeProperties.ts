@@ -82,10 +82,7 @@ export class LGraphNodeProperties {
 
     const { targetObject, propertyName } = this._resolveTargetObject(parts)
 
-    const hasProperty = Object.prototype.hasOwnProperty.call(
-      targetObject,
-      propertyName
-    )
+    const hasProperty = Object.hasOwn(targetObject, propertyName)
     const currentValue = targetObject[propertyName]
 
     if (!hasProperty) {

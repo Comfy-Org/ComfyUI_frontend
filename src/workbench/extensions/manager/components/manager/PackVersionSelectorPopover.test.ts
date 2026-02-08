@@ -56,7 +56,7 @@ const mockGetPackVersions = vi.fn()
 const mockInstallPack = vi.fn().mockResolvedValue(undefined)
 const mockCheckNodeCompatibility = vi.fn()
 const mockIsPackInstalled = vi.fn(() => false)
-const mockGetInstalledPackVersion = vi.fn(() => undefined)
+const mockGetInstalledPackVersion = vi.fn(() => {})
 
 // Mock the registry service
 vi.mock('@/services/comfyRegistryService', () => ({

@@ -301,7 +301,7 @@ class ConversionContext {
       floatingLinks: floatingLinks.length > 0 ? floatingLinks : undefined,
       extra: {
         ...this.workflow.extra,
-        reroutes: Array.from(this.validReroutes).map(
+        reroutes: [...this.validReroutes].map(
           (reroute) => _.omit(reroute, 'nodeId') as Reroute
         ),
         linkExtensions: this.linkExtensions

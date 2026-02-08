@@ -9,7 +9,7 @@
       <NodeTreeFolder :node="node" />
     </template>
     <template #node="{ node }">
-      <NodeTreeLeaf :node="node" :open-node-help="props.openNodeHelp" />
+      <NodeTreeLeaf :node="node" :open-node-help="openNodeHelp" />
     </template>
   </TreeExplorer>
 
@@ -51,7 +51,7 @@ import type {
 
 const instance = getCurrentInstance()!
 const appContext = instance.appContext
-const props = defineProps<{
+const { filteredNodeDefs, openNodeHelp } = defineProps<{
   filteredNodeDefs: ComfyNodeDefImpl[]
   openNodeHelp: (nodeDef: ComfyNodeDefImpl) => void
 }>()
@@ -64,7 +64,7 @@ const bookmarkedRoot = computed<TreeNode>(() => {
   const filterTree = (node: TreeNode): TreeNode | null => {
     if (node.leaf) {
       // Check if the node's display_name is in the filteredNodeDefs list
-      return props.filteredNodeDefs.some((def) => def.name === node.data.name)
+      return filteredNodeDefs.some((def) => def.name === node.data.name)
         ? node
         : null
     }
@@ -83,7 +83,7 @@ const bookmarkedRoot = computed<TreeNode>(() => {
     return null // Remove empty folders
   }
 
-  return props.filteredNodeDefs.length
+  return filteredNodeDefs.length
     ? filterTree(nodeBookmarkStore.bookmarkedRoot) || {
         key: 'root',
         label: 'Root',
@@ -92,7 +92,7 @@ const bookmarkedRoot = computed<TreeNode>(() => {
     : nodeBookmarkStore.bookmarkedRoot
 })
 watch(
-  () => props.filteredNodeDefs,
+  () => filteredNodeDefs,
   async (newValue) => {
     if (newValue.length) {
       await nextTick()
@@ -152,7 +152,7 @@ const renderedBookmarkedRoot = computed<TreeExplorerNode<ComfyNodeDefImpl>>(
           const customization =
             nodeBookmarkStore.bookmarksCustomization[node.data?.nodePath]
           return customization?.icon
-            ? 'pi ' + customization.icon
+            ? `pi ${customization.icon}`
             : 'pi pi-bookmark-fill'
         },
         children: sortedChildren,
@@ -181,7 +181,7 @@ const renderedBookmarkedRoot = computed<TreeExplorerNode<ComfyNodeDefImpl>>(
           }
           const folderNodeDef = node.data as ComfyNodeDefImpl
           // @ts-expect-error fixme ts strict error
-          const nodePath = folderNodeDef.category + '/' + nodeDefToAdd.name
+          const nodePath = `${folderNodeDef.category}/${nodeDefToAdd.name}`
           await nodeBookmarkStore.addBookmark(nodePath)
         },
         handleClick(e: MouseEvent) {

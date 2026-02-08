@@ -70,7 +70,7 @@ export type GalleryValue = string[] | GalleryImage[]
 
 const value = defineModel<GalleryValue>({ required: true })
 
-const props = defineProps<{
+const { widget } = defineProps<{
   widget: SimplifiedWidget<GalleryValue>
 }>()
 
@@ -79,7 +79,7 @@ const activeIndex = ref(0)
 const { t } = useI18n()
 
 const filteredProps = computed(() =>
-  filterWidgetProps(props.widget.options, GALLERIA_EXCLUDED_PROPS)
+  filterWidgetProps(widget.options, GALLERIA_EXCLUDED_PROPS)
 )
 
 const galleryImages = computed(() => {
@@ -101,14 +101,13 @@ const galleryImages = computed(() => {
 
 const showThumbnails = computed(() => {
   return (
-    props.widget.options?.showThumbnails !== false &&
-    galleryImages.value.length > 1
+    widget.options?.showThumbnails !== false && galleryImages.value.length > 1
   )
 })
 
 const showNavButtons = computed(() => {
   return (
-    props.widget.options?.showItemNavigators !== false &&
+    widget.options?.showItemNavigators !== false &&
     galleryImages.value.length > 1
   )
 })

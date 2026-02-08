@@ -27,14 +27,14 @@ export function setupAutoQueueHandler() {
   queueCountStore.$subscribe(
     async () => {
       internalCount = queueCountStore.count
-      if (!internalCount && !app.lastExecutionError) {
-        if (
-          queueSettingsStore.mode === 'instant' ||
-          (queueSettingsStore.mode === 'change' && graphHasChanged)
-        ) {
-          graphHasChanged = false
-          await app.queuePrompt(0, queueSettingsStore.batchCount)
-        }
+      if (
+        !internalCount &&
+        !app.lastExecutionError &&
+        (queueSettingsStore.mode === 'instant' ||
+          (queueSettingsStore.mode === 'change' && graphHasChanged))
+      ) {
+        graphHasChanged = false
+        await app.queuePrompt(0, queueSettingsStore.batchCount)
       }
     },
     { detached: true }

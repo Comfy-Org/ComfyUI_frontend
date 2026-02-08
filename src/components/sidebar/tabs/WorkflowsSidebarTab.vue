@@ -257,7 +257,7 @@ const renderTreeNode = (
         async handleRename(newName: string) {
           const newPath =
             type === WorkflowTreeType.Browse
-              ? workflow.directory + '/' + appendJsonExt(newName)
+              ? `${workflow.directory}/${appendJsonExt(newName)}`
               : ComfyWorkflow.basePath + appendJsonExt(newName)
 
           await workflowService.renameWorkflow(workflow, newPath)

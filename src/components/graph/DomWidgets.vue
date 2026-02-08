@@ -65,11 +65,12 @@ const updateWidgets = () => {
 const canvasStore = useCanvasStore()
 whenever(
   () => canvasStore.canvas,
-  (canvas) =>
-    (canvas.onDrawForeground = useChainCallback(
+  (canvas) => {
+    canvas.onDrawForeground = useChainCallback(
       canvas.onDrawForeground,
       updateWidgets
-    )),
+    )
+  },
   { immediate: true }
 )
 </script>

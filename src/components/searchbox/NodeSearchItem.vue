@@ -70,19 +70,17 @@ const showNodeFrequency = computed(() =>
   settingStore.get('Comfy.NodeSearchBoxImpl.ShowNodeFrequency')
 )
 const nodeFrequencyStore = useNodeFrequencyStore()
-const nodeFrequency = computed(() =>
-  nodeFrequencyStore.getNodeFrequency(props.nodeDef)
-)
-
-const nodeBookmarkStore = useNodeBookmarkStore()
-const isBookmarked = computed(() =>
-  nodeBookmarkStore.isBookmarked(props.nodeDef)
-)
-
-const props = defineProps<{
+const { nodeDef, currentQuery } = defineProps<{
   nodeDef: ComfyNodeDefImpl
   currentQuery: string
 }>()
+
+const nodeFrequency = computed(() =>
+  nodeFrequencyStore.getNodeFrequency(nodeDef)
+)
+
+const nodeBookmarkStore = useNodeBookmarkStore()
+const isBookmarked = computed(() => nodeBookmarkStore.isBookmarked(nodeDef))
 </script>
 
 <style scoped>

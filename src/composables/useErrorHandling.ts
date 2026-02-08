@@ -69,8 +69,8 @@ export function useErrorHandling() {
     (...args: TArgs): TReturn | undefined => {
       try {
         return action(...args)
-      } catch (e) {
-        ;(errorHandler ?? toastErrorHandler)(e)
+      } catch (error) {
+        ;(errorHandler ?? toastErrorHandler)(error)
       } finally {
         finallyHandler?.()
       }
@@ -86,19 +86,20 @@ export function useErrorHandling() {
     async (...args: TArgs): Promise<TReturn | undefined> => {
       try {
         return await action(...args)
-      } catch (e) {
+      } catch (error) {
         for (const strategy of recoveryStrategies) {
-          if (strategy.shouldHandle(e)) {
+          if (strategy.shouldHandle(error)) {
             try {
-              await strategy.recover(e, action, args)
+              await strategy.recover(error, action, args)
               return
+              // oxlint-disable-next-line unicorn/catch-error-name -- nested catch; outer scope already uses `error`
             } catch (recoveryError) {
               console.error('Recovery strategy failed:', recoveryError)
             }
           }
         }
 
-        ;(errorHandler ?? toastErrorHandler)(e)
+        ;(errorHandler ?? toastErrorHandler)(error)
       } finally {
         finallyHandler?.()
       }

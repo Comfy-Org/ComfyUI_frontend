@@ -142,7 +142,7 @@ import type { JobSortMode, JobTab } from '@/composables/queue/useJobList'
 import { buildTooltipConfig } from '@/composables/useTooltipConfig'
 import { isCloud } from '@/platform/distribution/types'
 
-const props = defineProps<{
+const { hasFailedJobs } = defineProps<{
   selectedJobTab: JobTab
   selectedWorkflowFilter: 'all' | 'current'
   selectedSortMode: JobSortMode
@@ -170,7 +170,7 @@ const sortTooltipConfig = computed(() =>
 const showWorkflowFilter = !isCloud
 
 const visibleJobTabs = computed(() =>
-  props.hasFailedJobs ? jobTabs : jobTabs.filter((tab) => tab !== 'Failed')
+  hasFailedJobs ? jobTabs : jobTabs.filter((tab) => tab !== 'Failed')
 )
 
 const onFilterClick = (event: Event) => {

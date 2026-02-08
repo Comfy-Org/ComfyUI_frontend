@@ -16,7 +16,8 @@ interface Props {
   layout?: LayoutMode
 }
 
-const props = defineProps<Props>()
+const { index, selected, previewUrl, name, label, layout } =
+  defineProps<Props>()
 
 const emit = defineEmits<{
   click: [index: number]
@@ -30,7 +31,7 @@ const assetKind = inject(AssetKindKey)
 const isVideo = computed(() => assetKind?.value === 'video')
 
 function handleClick() {
-  emit('click', props.index)
+  emit('click', index)
 }
 
 function handleImageLoad(event: Event) {

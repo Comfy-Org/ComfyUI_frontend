@@ -44,7 +44,7 @@ import { ref } from 'vue'
 
 defineOptions({ inheritAttrs: false })
 
-defineProps<{
+const { imageUrl, name, timeLabel } = defineProps<{
   imageUrl: string
   name: string
   timeLabel?: string

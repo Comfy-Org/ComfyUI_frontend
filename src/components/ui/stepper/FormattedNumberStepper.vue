@@ -92,7 +92,7 @@ function formatNumber(num: number): string {
 }
 
 function parseFormattedNumber(str: string): number {
-  const cleaned = str.replace(/[^0-9]/g, '')
+  const cleaned = str.replaceAll(/[^0-9]/g, '')
   return cleaned === '' ? 0 : parseInt(cleaned, 10)
 }
 
@@ -109,7 +109,7 @@ function formatWithCursor(
 
   const digitsBeforeCursor = value
     .slice(0, cursorPos)
-    .replace(/[^0-9]/g, '').length
+    .replaceAll(/[^0-9]/g, '').length
 
   let digitCount = 0
   let newCursor = 0

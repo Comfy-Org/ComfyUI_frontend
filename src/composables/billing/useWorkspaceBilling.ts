@@ -117,10 +117,10 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
           await fetchStatus()
           return
         }
-      } catch (err) {
+      } catch (error) {
         pendingCancelOpId.value = null
         stopCancelPolling()
-        throw err
+        throw error
       }
 
       cancelPollTimeout = window.setTimeout(
@@ -142,10 +142,12 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
     try {
       await Promise.all([fetchStatus(), fetchBalance(), fetchPlans()])
       isInitialized.value = true
-    } catch (err) {
+    } catch (errorCaught) {
       error.value =
-        err instanceof Error ? err.message : 'Failed to initialize billing'
-      throw err
+        errorCaught instanceof Error
+          ? errorCaught.message
+          : 'Failed to initialize billing'
+      throw errorCaught
     } finally {
       isLoading.value = false
     }
@@ -156,10 +158,12 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
     error.value = null
     try {
       statusData.value = await workspaceApi.getBillingStatus()
-    } catch (err) {
+    } catch (errorCaught) {
       error.value =
-        err instanceof Error ? err.message : 'Failed to fetch billing status'
-      throw err
+        errorCaught instanceof Error
+          ? errorCaught.message
+          : 'Failed to fetch billing status'
+      throw errorCaught
     } finally {
       isLoading.value = false
     }
@@ -170,10 +174,12 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
     error.value = null
     try {
       balanceData.value = await workspaceApi.getBillingBalance()
-    } catch (err) {
+    } catch (errorCaught) {
       error.value =
-        err instanceof Error ? err.message : 'Failed to fetch balance'
-      throw err
+        errorCaught instanceof Error
+          ? errorCaught.message
+          : 'Failed to fetch balance'
+      throw errorCaught
     } finally {
       isLoading.value = false
     }
@@ -197,9 +203,12 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
       await Promise.all([fetchStatus(), fetchBalance()])
 
       return response
-    } catch (err) {
-      error.value = err instanceof Error ? err.message : 'Failed to subscribe'
-      throw err
+    } catch (errorCaught) {
+      error.value =
+        errorCaught instanceof Error
+          ? errorCaught.message
+          : 'Failed to subscribe'
+      throw errorCaught
     } finally {
       isLoading.value = false
     }
@@ -212,10 +221,12 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
     error.value = null
     try {
       return await workspaceApi.previewSubscribe(planSlug)
-    } catch (err) {
+    } catch (errorCaught) {
       error.value =
-        err instanceof Error ? err.message : 'Failed to preview subscription'
-      throw err
+        errorCaught instanceof Error
+          ? errorCaught.message
+          : 'Failed to preview subscription'
+      throw errorCaught
     } finally {
       isLoading.value = false
     }
@@ -230,10 +241,12 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
       if (response.url) {
         window.open(response.url, '_blank')
       }
-    } catch (err) {
+    } catch (errorCaught) {
       error.value =
-        err instanceof Error ? err.message : 'Failed to open billing portal'
-      throw err
+        errorCaught instanceof Error
+          ? errorCaught.message
+          : 'Failed to open billing portal'
+      throw errorCaught
     } finally {
       isLoading.value = false
     }
@@ -246,10 +259,12 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
       const response = await workspaceApi.cancelSubscription()
       pendingCancelOpId.value = response.billing_op_id
       await pollCancelStatus(response.billing_op_id)
-    } catch (err) {
+    } catch (errorCaught) {
       error.value =
-        err instanceof Error ? err.message : 'Failed to cancel subscription'
-      throw err
+        errorCaught instanceof Error
+          ? errorCaught.message
+          : 'Failed to cancel subscription'
+      throw errorCaught
     } finally {
       isLoading.value = false
     }

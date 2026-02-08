@@ -35,18 +35,15 @@
 
 <script setup lang="ts">
 import Popover from 'primevue/popover'
-import { nextTick, ref, toRefs, useId } from 'vue'
+import { nextTick, ref, useId } from 'vue'
 
 const POPOVER_WIDTH = 250
 
-interface Props {
+const { workflowFilename, thumbnailUrl, isActiveTab } = defineProps<{
   workflowFilename: string
   thumbnailUrl?: string
   isActiveTab: boolean
-}
-
-const props = defineProps<Props>()
-const { thumbnailUrl, isActiveTab } = toRefs(props)
+}>()
 const popoverRef = ref<InstanceType<typeof Popover> | null>(null)
 const positionRef = ref<HTMLElement | null>(null)
 let hideTimeout: ReturnType<typeof setTimeout> | null = null

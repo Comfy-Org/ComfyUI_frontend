@@ -13,14 +13,14 @@ const ValueControlPopover = defineAsyncComponent(
   () => import('./ValueControlPopover.vue')
 )
 
-const props = defineProps<{
+const { widget, component } = defineProps<{
   widget: SimplifiedControlWidget<T>
   component: Component
 }>()
 
 const modelValue = defineModel<T>()
 
-const controlModel = ref(props.widget.controlWidget.value)
+const controlModel = ref(widget.controlWidget.value)
 
 const controlButtonIcon = computed(() => {
   switch (controlModel.value) {
@@ -35,7 +35,7 @@ const controlButtonIcon = computed(() => {
   }
 })
 
-watch(controlModel, props.widget.controlWidget.update)
+watch(controlModel, widget.controlWidget.update)
 </script>
 <template>
   <div class="relative grid grid-cols-subgrid">

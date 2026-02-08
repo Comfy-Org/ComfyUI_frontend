@@ -35,7 +35,7 @@ import { useTelemetry } from '@/platform/telemetry'
 import type { Settings } from '@/schemas/apiSchema'
 import { normalizeI18nKey } from '@/utils/formatUtil'
 
-const props = defineProps<{
+const { setting } = defineProps<{
   setting: SettingParams
 }>()
 
@@ -45,7 +45,7 @@ function translateOptions(options: (SettingOption | string)[]) {
   if (typeof options === 'function') {
     // @ts-expect-error: Audit and deprecate usage of legacy options type:
     // (value) => [string | {text: string, value: string}]
-    return translateOptions(options(props.setting.value ?? ''))
+    return translateOptions(options(setting.value ?? ''))
   }
 
   return options.map((option) => {
@@ -54,7 +54,7 @@ function translateOptions(options: (SettingOption | string)[]) {
 
     return {
       text: t(
-        `settings.${normalizeI18nKey(props.setting.id)}.options.${normalizeI18nKey(optionLabel)}`,
+        `settings.${normalizeI18nKey(setting.id)}.options.${normalizeI18nKey(optionLabel)}`,
         optionLabel
       ),
       value: optionValue
@@ -63,26 +63,24 @@ function translateOptions(options: (SettingOption | string)[]) {
 }
 
 const formItem = computed(() => {
-  const normalizedId = normalizeI18nKey(props.setting.id)
+  const normalizedId = normalizeI18nKey(setting.id)
   return {
-    ...props.setting,
-    name: t(`settings.${normalizedId}.name`, props.setting.name),
-    tooltip: props.setting.tooltip
-      ? st(`settings.${normalizedId}.tooltip`, props.setting.tooltip)
+    ...setting,
+    name: t(`settings.${normalizedId}.name`, setting.name),
+    tooltip: setting.tooltip
+      ? st(`settings.${normalizedId}.tooltip`, setting.tooltip)
       : undefined,
-    options: props.setting.options
-      ? translateOptions(props.setting.options)
-      : undefined
+    options: setting.options ? translateOptions(setting.options) : undefined
   }
 })
 
 const settingStore = useSettingStore()
-const settingValue = computed(() => settingStore.get(props.setting.id))
+const settingValue = computed(() => settingStore.get(setting.id))
 const updateSettingValue = async <K extends keyof Settings>(
   newValue: Settings[K]
 ) => {
   const telemetry = useTelemetry()
-  const settingId = props.setting.id
+  const settingId = setting.id
   const previousValue = settingValue.value
 
   await settingStore.set(settingId, newValue)

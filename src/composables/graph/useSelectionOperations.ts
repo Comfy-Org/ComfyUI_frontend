@@ -96,7 +96,7 @@ export function useSelectionOperations() {
   }
 
   const renameSelection = async () => {
-    const selectedItems = Array.from(canvasStore.selectedItems)
+    const selectedItems = [...canvasStore.selectedItems]
 
     // Handle single node selection
     if (selectedItems.length === 1) {
@@ -116,14 +116,11 @@ export function useSelectionOperations() {
         defaultValue: currentTitle
       })
 
-      if (newTitle && newTitle !== currentTitle) {
-        if ('title' in item) {
-          // Type-safe assignment for items with title property
-          const titledItem = item as { title: string }
-          titledItem.title = newTitle
-          app.canvas.setDirty(true, true)
-          workflowStore.activeWorkflow?.changeTracker?.checkState()
-        }
+      if (newTitle && newTitle !== currentTitle && 'title' in item) {
+        const titledItem = item as { title: string }
+        titledItem.title = newTitle
+        app.canvas.setDirty(true, true)
+        workflowStore.activeWorkflow?.changeTracker?.checkState()
       }
       return
     }

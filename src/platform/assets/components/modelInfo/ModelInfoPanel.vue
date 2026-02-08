@@ -316,9 +316,10 @@ const debouncedSaveModelType = useDebounceFn((newModelType: string) => {
   if (isImmutable.value) return
   const currentModelType = getAssetModelType(asset)
   if (currentModelType === newModelType) return
-  const newTags = asset.tags
-    .filter((tag) => tag !== currentModelType)
-    .concat(newModelType)
+  const newTags = [
+    ...asset.tags.filter((tag) => tag !== currentModelType),
+    newModelType
+  ]
   assetsStore.updateAssetTags(asset, newTags, cacheKey)
 }, 500)
 

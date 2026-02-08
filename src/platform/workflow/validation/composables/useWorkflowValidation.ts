@@ -39,14 +39,12 @@ export function useWorkflowValidation() {
     }
 
     // If links were fixed, notify the user
-    if (linkValidation.fixed) {
-      if (!silent) {
-        toastStore.add({
-          severity: 'success',
-          summary: 'Workflow Links Fixed',
-          detail: `Fixed ${linkValidation.patched} node connections and removed ${linkValidation.deleted} invalid links.`
-        })
-      }
+    if (linkValidation.fixed && !silent) {
+      toastStore.add({
+        severity: 'success',
+        summary: 'Workflow Links Fixed',
+        detail: `Fixed ${linkValidation.patched} node connections and removed ${linkValidation.deleted} invalid links.`
+      })
     }
 
     return linkValidation.graph
@@ -80,9 +78,9 @@ export function useWorkflowValidation() {
         validatedData = tryFixLinks(validatedGraphData, {
           silent
         }) as ComfyWorkflowJSON
-      } catch (err) {
+      } catch (error) {
         // Link fixer itself is throwing an error
-        console.error(err)
+        console.error(error)
       }
     }
 

@@ -202,8 +202,11 @@ class LegacyMenuCompat {
       }
 
       return addedItems
-    } catch (e) {
-      console.error('[Context Menu Compat] Failed to extract legacy items:', e)
+    } catch (error) {
+      console.error(
+        '[Context Menu Compat] Failed to extract legacy items:',
+        error
+      )
       return []
     } finally {
       this.isExtracting = false

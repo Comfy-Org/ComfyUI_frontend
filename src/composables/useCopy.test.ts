@@ -4,9 +4,7 @@ import { describe, expect, it } from 'vitest'
  * Encodes a UTF-8 string to base64 (same logic as useCopy.ts)
  */
 function encodeClipboardData(data: string): string {
-  return btoa(
-    String.fromCharCode(...Array.from(new TextEncoder().encode(data)))
-  )
+  return btoa(String.fromCharCode(...[...new TextEncoder().encode(data)]))
 }
 
 /**

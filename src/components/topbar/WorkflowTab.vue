@@ -63,7 +63,7 @@ interface WorkflowOption {
   workflow: ComfyWorkflow
 }
 
-const props = defineProps<{
+const { workflowOption } = defineProps<{
   workflowOption: WorkflowOption
 }>()
 
@@ -89,11 +89,11 @@ const shouldShowStatusIndicator = computed(() => {
     // Branch 1: Shift key is held down, do not show the status indicator.
     return false
   }
-  if (!props.workflowOption.workflow.isPersisted) {
+  if (!workflowOption.workflow.isPersisted) {
     // Branch 2: Workflow is not persisted, show the status indicator.
     return true
   }
-  if (props.workflowOption.workflow.isModified) {
+  if (workflowOption.workflow.isModified) {
     // Branch 3: Workflow is modified.
     if (autoSaveSetting.value === 'off') {
       // Sub-branch 3a: Autosave is off, so show the status indicator.
@@ -111,11 +111,11 @@ const shouldShowStatusIndicator = computed(() => {
 })
 
 const isActiveTab = computed(() => {
-  return workflowStore.activeWorkflow?.key === props.workflowOption.workflow.key
+  return workflowStore.activeWorkflow?.key === workflowOption.workflow.key
 })
 
 const thumbnailUrl = computed(() => {
-  return workflowThumbnail.getThumbnail(props.workflowOption.workflow.key)
+  return workflowThumbnail.getThumbnail(workflowOption.workflow.key)
 })
 
 // Event handlers that delegate to the popover component
@@ -153,7 +153,7 @@ const tabGetter = () => workflowTabRef.value as HTMLElement
 usePragmaticDraggable(tabGetter, {
   getInitialData: () => {
     return {
-      workflowKey: props.workflowOption.workflow.key
+      workflowKey: workflowOption.workflow.key
     }
   }
 })
@@ -161,7 +161,7 @@ usePragmaticDraggable(tabGetter, {
 usePragmaticDroppable(tabGetter, {
   getData: () => {
     return {
-      workflowKey: props.workflowOption.workflow.key
+      workflowKey: workflowOption.workflow.key
     }
   },
   onDrop: (e) => {

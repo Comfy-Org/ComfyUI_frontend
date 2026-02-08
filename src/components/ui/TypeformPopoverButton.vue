@@ -5,7 +5,7 @@ import { useTemplateRef } from 'vue'
 import Popover from '@/components/ui/Popover.vue'
 import Button from '@/components/ui/button/Button.vue'
 
-defineProps<{
+const { dataTfWidget } = defineProps<{
   dataTfWidget: string
 }>()
 

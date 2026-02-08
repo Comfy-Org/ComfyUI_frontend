@@ -17,7 +17,7 @@ import { useI18n } from 'vue-i18n'
 import CompletionSummaryBanner from '@/components/queue/CompletionSummaryBanner.vue'
 import type { CompletionSummary } from '@/composables/queue/useCompletionSummary'
 
-defineProps<{ summary: CompletionSummary }>()
+const { summary } = defineProps<{ summary: CompletionSummary }>()
 
 defineEmits<{
   (e: 'summaryClick'): void

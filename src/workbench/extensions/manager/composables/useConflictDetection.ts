@@ -106,7 +106,7 @@ export function useConflictDetection() {
 
       systemEnvironment.value = environment
       return environment
-    } catch (error) {
+    } catch {
       const fallbackEnvironment: SystemEnvironment = {
         comfyui_version: undefined,
         frontend_version: undefined,
@@ -506,11 +506,11 @@ export function useConflictDetection() {
           detected_system_environment: systemEnvInfo
         }
         return response
-      } else {
-        // No conflicts detected, clear the results
-        conflictStore.clearConflicts()
-        detectionResults.value = []
       }
+
+      // No conflicts detected, clear the results
+      conflictStore.clearConflicts()
+      detectionResults.value = []
 
       const response: ConflictDetectionResponse = {
         success: true,

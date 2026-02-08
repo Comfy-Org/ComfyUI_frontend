@@ -444,7 +444,6 @@ const distributions = computed(() => {
       return [TemplateIncludeOnDistributionEnum.Cloud]
     case 'localhost':
       return [TemplateIncludeOnDistributionEnum.Local]
-    case 'desktop':
     default:
       if (systemStatsStore.systemStats?.system.os === 'darwin') {
         return [
@@ -595,12 +594,10 @@ const coordinateNavAndSort = (source: 'nav' | 'sort') => {
       // When navigating away from 'Popular' category while sort is 'Popular', reset sort to default.
       sortBy.value = 'default'
     }
-  } else if (source === 'sort') {
+  } else if (source === 'sort' && isPopularNav && !isPopularSort) {
     // When sort is changed away from 'Popular' while in the 'Popular' category,
     // reset the category to 'All Templates' to avoid a confusing state.
-    if (isPopularNav && !isPopularSort) {
-      selectedNavItem.value = 'all'
-    }
+    selectedNavItem.value = 'all'
   }
 }
 
@@ -681,37 +678,37 @@ const runsOnOptions = computed(() =>
 const modelFilterLabel = computed(() => {
   if (selectedModelObjects.value.length === 0) {
     return t('templateWorkflows.modelFilter', 'Model Filter')
-  } else if (selectedModelObjects.value.length === 1) {
-    return selectedModelObjects.value[0].name
-  } else {
-    return t('templateWorkflows.modelsSelected', {
-      count: selectedModelObjects.value.length
-    })
   }
+  if (selectedModelObjects.value.length === 1) {
+    return selectedModelObjects.value[0].name
+  }
+  return t('templateWorkflows.modelsSelected', {
+    count: selectedModelObjects.value.length
+  })
 })
 
 const useCaseFilterLabel = computed(() => {
   if (selectedUseCaseObjects.value.length === 0) {
     return t('templateWorkflows.useCaseFilter', 'Use Case')
-  } else if (selectedUseCaseObjects.value.length === 1) {
-    return selectedUseCaseObjects.value[0].name
-  } else {
-    return t('templateWorkflows.useCasesSelected', {
-      count: selectedUseCaseObjects.value.length
-    })
   }
+  if (selectedUseCaseObjects.value.length === 1) {
+    return selectedUseCaseObjects.value[0].name
+  }
+  return t('templateWorkflows.useCasesSelected', {
+    count: selectedUseCaseObjects.value.length
+  })
 })
 
 const runsOnFilterLabel = computed(() => {
   if (selectedRunsOnObjects.value.length === 0) {
     return t('templateWorkflows.runsOnFilter', 'Runs On')
-  } else if (selectedRunsOnObjects.value.length === 1) {
-    return selectedRunsOnObjects.value[0].name
-  } else {
-    return t('templateWorkflows.runsOnSelected', {
-      count: selectedRunsOnObjects.value.length
-    })
   }
+  if (selectedRunsOnObjects.value.length === 1) {
+    return selectedRunsOnObjects.value[0].name
+  }
+  return t('templateWorkflows.runsOnSelected', {
+    count: selectedRunsOnObjects.value.length
+  })
 })
 
 // Sort options

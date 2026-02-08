@@ -19,7 +19,7 @@ vi.mock('@/stores/workspace/colorPaletteStore', () => ({
 }))
 
 vi.mock('@/utils/colorUtil', () => ({
-  adjustColor: vi.fn((color: string) => color + '_adjusted')
+  adjustColor: vi.fn((color: string) => `${color}_adjusted`)
 }))
 
 describe('minimapCanvasRenderer', () => {

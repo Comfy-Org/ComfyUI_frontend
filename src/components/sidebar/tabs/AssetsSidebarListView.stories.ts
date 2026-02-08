@@ -144,7 +144,7 @@ function renderAssetsSidebarListView(args: StoryArgs) {
         useOutputStacks({
           assets: toRef(args, 'assets')
         })
-      const selectedIds = new Set(args.selectedAssetIds ?? [])
+      const selectedIds = new Set(args.selectedAssetIds)
       function isSelected(assetId: string) {
         return selectedIds.has(assetId)
       }

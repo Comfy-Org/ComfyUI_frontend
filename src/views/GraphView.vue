@@ -104,12 +104,7 @@ let hasTrackedLogin = false
 watch(
   () => colorPaletteStore.completedActivePalette,
   (newTheme) => {
-    const DARK_THEME_CLASS = 'dark-theme'
-    if (newTheme.light_theme) {
-      document.body.classList.remove(DARK_THEME_CLASS)
-    } else {
-      document.body.classList.add(DARK_THEME_CLASS)
-    }
+    document.body.classList.toggle('dark-theme', !newTheme.light_theme)
 
     if (isDesktop) {
       electronAPI().changeTheme({
@@ -256,8 +251,8 @@ onMounted(() => {
   try {
     // Relocate the legacy menu container to the graph canvas container so it is below other elements
     graphCanvasContainerRef.value?.prepend(app.ui.menuContainer)
-  } catch (e) {
-    console.error('Failed to init ComfyUI frontend', e)
+  } catch (error) {
+    console.error('Failed to init ComfyUI frontend', error)
   }
 })
 
@@ -303,14 +298,14 @@ const onGraphReady = () => {
       const currentTabId = crypto.randomUUID()
 
       // Listen for heartbeats from other tabs
-      tabCountChannel.onmessage = (event) => {
+      tabCountChannel.addEventListener('message', (event) => {
         if (
           event.data.type === 'heartbeat' &&
           event.data.tabId !== currentTabId
         ) {
           activeTabs.set(event.data.tabId, Date.now())
         }
-      }
+      })
 
       // 5-minute heartbeat interval
       useIntervalFn(() => {

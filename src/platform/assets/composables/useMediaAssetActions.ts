@@ -76,7 +76,7 @@ export function useMediaAssetActions() {
         detail: t('mediaAsset.selection.downloadsStarted', { count: 1 }),
         life: 2000
       })
-    } catch (error) {
+    } catch {
       toast.add({
         severity: 'error',
         summary: t('g.error'),

@@ -80,7 +80,7 @@ interface Emits {
   (e: 'submenu-click', subOption: SubMenuOption): void
 }
 
-const props = defineProps<Props>()
+const { option } = defineProps<Props>()
 const emit = defineEmits<Emits>()
 
 const { getCurrentShape } = useNodeCustomization()
@@ -113,9 +113,9 @@ const isShapeSelected = (subOption: SubMenuOption): boolean => {
 
 const isColorSubmenu = computed(() => {
   return (
-    props.option.submenu &&
-    props.option.submenu.length > 0 &&
-    props.option.submenu.every((item) => item.color && !item.icon)
+    option.submenu &&
+    option.submenu.length > 0 &&
+    option.submenu.every((item) => item.color && !item.icon)
   )
 })
 </script>

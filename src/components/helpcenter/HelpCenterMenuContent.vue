@@ -593,11 +593,11 @@ const onUpdateComfyUI = async (): Promise<void> => {
     })
 
     await rebootComfyUI()
-  } catch (err) {
+  } catch (error) {
     toast.add({
       severity: 'error',
       summary: t('g.error'),
-      detail: err instanceof Error ? err.message : t('g.unknownError'),
+      detail: error instanceof Error ? error.message : t('g.unknownError'),
       life: 5000
     })
   }

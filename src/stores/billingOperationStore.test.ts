@@ -2,6 +2,9 @@ import { setActivePinia, createPinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi, afterEach } from 'vitest'
 
 import type { BillingOpStatusResponse } from '@/platform/workspace/api/workspaceApi'
+import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
+
+import { useBillingOperationStore } from './billingOperationStore'
 
 const mockFetchStatus = vi.fn()
 const mockFetchBalance = vi.fn()
@@ -44,10 +47,6 @@ vi.mock('@/stores/dialogStore', () => ({
     closeDialog: vi.fn()
   })
 }))
-
-import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
-
-import { useBillingOperationStore } from './billingOperationStore'
 
 describe('billingOperationStore', () => {
   beforeEach(() => {

@@ -47,8 +47,8 @@ describe.skip('SubgraphNode Construction', () => {
     })
 
     expect(subgraphNode.id).toBe(42)
-    expect(Array.from(subgraphNode.pos)).toEqual([300, 150])
-    expect(Array.from(subgraphNode.size)).toEqual([180, 80])
+    expect([...subgraphNode.pos]).toEqual([300, 150])
+    expect([...subgraphNode.size]).toEqual([180, 80])
   })
 
   it('should maintain reference to root graph', () => {
@@ -507,8 +507,8 @@ describe.skip('Foundation Test Utilities', () => {
       size: customSize
     })
 
-    expect(Array.from(subgraphNode.pos)).toEqual(customPos)
-    expect(Array.from(subgraphNode.size)).toEqual(customSize)
+    expect([...subgraphNode.pos]).toEqual(customPos)
+    expect([...subgraphNode.size]).toEqual(customSize)
   })
 
   subgraphTest(

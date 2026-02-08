@@ -16,8 +16,8 @@ export const useManagerStatePersistence = () => {
       if (stored) {
         return JSON.parse(stored)
       }
-    } catch (e) {
-      console.error('Failed to load manager UI state:', e)
+    } catch (error) {
+      console.error('Failed to load manager UI state:', error)
     }
     return {
       selectedTabId: ManagerTab.All,

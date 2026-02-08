@@ -552,10 +552,10 @@ whenever(selectedNodePack, async () => {
 
 let gridContainer: HTMLElement | null = null
 onMounted(() => {
-  gridContainer = document.getElementById('results-grid')
+  gridContainer = document.querySelector('#results-grid')
 })
 watch([searchQuery, selectedNavId], () => {
-  gridContainer ??= document.getElementById('results-grid')
+  gridContainer ??= document.querySelector('#results-grid')
   if (gridContainer) {
     pageNumber.value = 0
     gridContainer.scrollTop = 0

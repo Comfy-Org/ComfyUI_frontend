@@ -161,15 +161,10 @@ import { formatTime } from '../../utils/audioUtils'
 const { t } = useI18n()
 const toast = useToast()
 
-const props = withDefaults(
-  defineProps<{
-    hideWhenEmpty?: boolean
-    showOptionsButton?: boolean
-  }>(),
-  {
-    hideWhenEmpty: true
-  }
-)
+const { hideWhenEmpty = true, showOptionsButton } = defineProps<{
+  hideWhenEmpty?: boolean
+  showOptionsButton?: boolean
+}>()
 
 // Refs
 const audioRef = useTemplateRef('audioRef')

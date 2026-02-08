@@ -128,7 +128,7 @@ describe('useNodePricing', () => {
       )
 
       getNodeDisplayPrice(node)
-      await new Promise((r) => setTimeout(r, 50))
+      await new Promise((resolve) => setTimeout(resolve, 50))
       const price = getNodeDisplayPrice(node)
       expect(price).toBe(creditsLabel(0.05))
     })
@@ -141,7 +141,7 @@ describe('useNodePricing', () => {
       )
 
       getNodeDisplayPrice(node)
-      await new Promise((r) => setTimeout(r, 50))
+      await new Promise((resolve) => setTimeout(resolve, 50))
       const price = getNodeDisplayPrice(node)
       expect(price).toBe('Free')
     })
@@ -159,7 +159,7 @@ describe('useNodePricing', () => {
       )
 
       getNodeDisplayPrice(node)
-      await new Promise((r) => setTimeout(r, 50))
+      await new Promise((resolve) => setTimeout(resolve, 50))
       const price = getNodeDisplayPrice(node)
       expect(price).toBe(creditsLabel(0.05))
     })
@@ -175,7 +175,7 @@ describe('useNodePricing', () => {
       )
 
       getNodeDisplayPrice(node)
-      await new Promise((r) => setTimeout(r, 50))
+      await new Promise((resolve) => setTimeout(resolve, 50))
       const price = getNodeDisplayPrice(node)
       expect(price).toBe(creditsLabel(0.5))
     })
@@ -191,7 +191,7 @@ describe('useNodePricing', () => {
       )
 
       getNodeDisplayPrice(node)
-      await new Promise((r) => setTimeout(r, 50))
+      await new Promise((resolve) => setTimeout(resolve, 50))
       const price = getNodeDisplayPrice(node)
       expect(price).toBe(creditsLabel(0.35))
     })
@@ -208,7 +208,7 @@ describe('useNodePricing', () => {
       )
 
       getNodeDisplayPrice(node)
-      await new Promise((r) => setTimeout(r, 50))
+      await new Promise((resolve) => setTimeout(resolve, 50))
       const price = getNodeDisplayPrice(node)
       expect(price).toBe(creditsLabel(0.1))
     })
@@ -224,7 +224,7 @@ describe('useNodePricing', () => {
       )
 
       getNodeDisplayPrice(node)
-      await new Promise((r) => setTimeout(r, 50))
+      await new Promise((resolve) => setTimeout(resolve, 50))
       const price = getNodeDisplayPrice(node)
       expect(price).toBe(creditsLabel(0.1))
     })
@@ -241,7 +241,7 @@ describe('useNodePricing', () => {
       )
 
       getNodeDisplayPrice(node)
-      await new Promise((r) => setTimeout(r, 50))
+      await new Promise((resolve) => setTimeout(resolve, 50))
       const price = getNodeDisplayPrice(node)
       expect(price).toBe(creditsLabel(0.1))
     })
@@ -263,7 +263,7 @@ describe('useNodePricing', () => {
       )
 
       getNodeDisplayPrice(node)
-      await new Promise((r) => setTimeout(r, 50))
+      await new Promise((resolve) => setTimeout(resolve, 50))
       const price = getNodeDisplayPrice(node)
       expect(price).toBe(creditsLabel(0.1))
     })
@@ -289,7 +289,7 @@ describe('useNodePricing', () => {
       )
 
       getNodeDisplayPrice(node)
-      await new Promise((r) => setTimeout(r, 50))
+      await new Promise((resolve) => setTimeout(resolve, 50))
       const price = getNodeDisplayPrice(node)
       expect(price).toBe(creditsLabel(1.0))
     })
@@ -316,7 +316,7 @@ describe('useNodePricing', () => {
       )
 
       getNodeDisplayPrice(node)
-      await new Promise((r) => setTimeout(r, 50))
+      await new Promise((resolve) => setTimeout(resolve, 50))
       const price = getNodeDisplayPrice(node)
       expect(price).toBe(creditsLabel(0.56))
     })
@@ -331,7 +331,7 @@ describe('useNodePricing', () => {
       )
 
       getNodeDisplayPrice(node)
-      await new Promise((r) => setTimeout(r, 50))
+      await new Promise((resolve) => setTimeout(resolve, 50))
       const price = getNodeDisplayPrice(node)
       expect(price).toMatch(/\d+\.?\d*-\d+\.?\d* credits\/Run/)
     })
@@ -344,7 +344,7 @@ describe('useNodePricing', () => {
       )
 
       getNodeDisplayPrice(node)
-      await new Promise((r) => setTimeout(r, 50))
+      await new Promise((resolve) => setTimeout(resolve, 50))
       const price = getNodeDisplayPrice(node)
       expect(price).toMatch(/\d+\.?\d*\/\d+\.?\d*\/\d+\.?\d* credits\/Run/)
     })
@@ -357,7 +357,7 @@ describe('useNodePricing', () => {
       )
 
       getNodeDisplayPrice(node)
-      await new Promise((r) => setTimeout(r, 50))
+      await new Promise((resolve) => setTimeout(resolve, 50))
       const price = getNodeDisplayPrice(node)
       expect(price).toBe(creditsLabel(0.07, '/second'))
     })
@@ -370,7 +370,7 @@ describe('useNodePricing', () => {
       )
 
       getNodeDisplayPrice(node)
-      await new Promise((r) => setTimeout(r, 50))
+      await new Promise((resolve) => setTimeout(resolve, 50))
       const price = getNodeDisplayPrice(node)
       expect(price).toMatch(/^~\d+\.?\d* credits\/Run$/)
     })
@@ -383,7 +383,7 @@ describe('useNodePricing', () => {
       )
 
       getNodeDisplayPrice(node)
-      await new Promise((r) => setTimeout(r, 50))
+      await new Promise((resolve) => setTimeout(resolve, 50))
       const price = getNodeDisplayPrice(node)
       expect(price).toMatch(/credits\/Run \(estimated\)$/)
     })
@@ -398,7 +398,7 @@ describe('useNodePricing', () => {
       )
 
       getNodeDisplayPrice(node)
-      await new Promise((r) => setTimeout(r, 50))
+      await new Promise((resolve) => setTimeout(resolve, 50))
       const price = getNodeDisplayPrice(node)
       expect(price).toMatch(/^~\d+\.?\d* credits\/image \(beta\)$/)
     })
@@ -413,7 +413,7 @@ describe('useNodePricing', () => {
       )
 
       getNodeDisplayPrice(node)
-      await new Promise((r) => setTimeout(r, 50))
+      await new Promise((resolve) => setTimeout(resolve, 50))
       const price = getNodeDisplayPrice(node)
       expect(price).toMatch(/\d+\.?\d* or \d+\.?\d* credits\/Run/)
     })
@@ -434,7 +434,7 @@ describe('useNodePricing', () => {
       )
 
       getNodeDisplayPrice(node)
-      await new Promise((r) => setTimeout(r, 50))
+      await new Promise((resolve) => setTimeout(resolve, 50))
       const price = getNodeDisplayPrice(node)
       expect(price).toBe(creditsLabel(0.1))
     })
@@ -453,7 +453,7 @@ describe('useNodePricing', () => {
       )
 
       getNodeDisplayPrice(node)
-      await new Promise((r) => setTimeout(r, 50))
+      await new Promise((resolve) => setTimeout(resolve, 50))
       const price = getNodeDisplayPrice(node)
       expect(price).toBe(creditsLabel(0.05))
     })
@@ -494,7 +494,7 @@ describe('useNodePricing', () => {
       )
 
       getNodeDisplayPrice(node)
-      await new Promise((r) => setTimeout(r, 50))
+      await new Promise((resolve) => setTimeout(resolve, 50))
       const price = getNodeDisplayPrice(node)
       expect(price).toBe(creditsLabel(0.05))
     })
@@ -511,7 +511,7 @@ describe('useNodePricing', () => {
       )
 
       getNodeDisplayPrice(node)
-      await new Promise((r) => setTimeout(r, 50))
+      await new Promise((resolve) => setTimeout(resolve, 50))
       const price = getNodeDisplayPrice(node)
       expect(price).toBe(creditsLabel(0.05))
     })
@@ -528,7 +528,7 @@ describe('useNodePricing', () => {
       )
 
       getNodeDisplayPrice(node)
-      await new Promise((r) => setTimeout(r, 50))
+      await new Promise((resolve) => setTimeout(resolve, 50))
       const price = getNodeDisplayPrice(node)
       expect(price).toBe(creditsLabel(0.05))
     })
@@ -639,7 +639,7 @@ describe('useNodePricing', () => {
       )
 
       getNodeDisplayPrice(node)
-      await new Promise((r) => setTimeout(r, 50))
+      await new Promise((resolve) => setTimeout(resolve, 50))
       const price = getNodeDisplayPrice(node)
       // Should not crash, just return empty
       expect(price).toBe('')
@@ -654,7 +654,7 @@ describe('useNodePricing', () => {
       )
 
       getNodeDisplayPrice(node)
-      await new Promise((r) => setTimeout(r, 50))
+      await new Promise((resolve) => setTimeout(resolve, 50))
       const price = getNodeDisplayPrice(node)
       expect(price).toBe('')
     })
@@ -668,7 +668,7 @@ describe('useNodePricing', () => {
       )
 
       getNodeDisplayPrice(node)
-      await new Promise((r) => setTimeout(r, 50))
+      await new Promise((resolve) => setTimeout(resolve, 50))
       const price = getNodeDisplayPrice(node)
       expect(price).toBe('')
     })
@@ -682,7 +682,7 @@ describe('useNodePricing', () => {
       )
 
       getNodeDisplayPrice(node)
-      await new Promise((r) => setTimeout(r, 50))
+      await new Promise((resolve) => setTimeout(resolve, 50))
       const price = getNodeDisplayPrice(node)
       expect(price).toBe('')
     })
@@ -696,7 +696,7 @@ describe('useNodePricing', () => {
       )
 
       getNodeDisplayPrice(node)
-      await new Promise((r) => setTimeout(r, 50))
+      await new Promise((resolve) => setTimeout(resolve, 50))
       const price = getNodeDisplayPrice(node)
       expect(price).toBe('')
     })
@@ -709,7 +709,7 @@ describe('useNodePricing', () => {
       )
 
       getNodeDisplayPrice(node)
-      await new Promise((r) => setTimeout(r, 50))
+      await new Promise((resolve) => setTimeout(resolve, 50))
       const price = getNodeDisplayPrice(node)
       expect(price).toBe('')
     })
@@ -744,7 +744,7 @@ describe('useNodePricing', () => {
       )
 
       getNodeDisplayPrice(node)
-      await new Promise((r) => setTimeout(r, 50))
+      await new Promise((resolve) => setTimeout(resolve, 50))
       const price = getNodeDisplayPrice(node)
       // 2 connected inputs in 'videos' group * 0.05 = 0.10
       expect(price).toBe(creditsLabel(0.1))
@@ -819,7 +819,7 @@ describe('useNodePricing', () => {
         )
 
         getNodeDisplayPrice(node)
-        await new Promise((r) => setTimeout(r, 50))
+        await new Promise((resolve) => setTimeout(resolve, 50))
         const price = getNodeDisplayPrice(node)
         expect(price).toBe('10.6 credits/Run')
       })
@@ -833,7 +833,7 @@ describe('useNodePricing', () => {
         )
 
         getNodeDisplayPrice(node)
-        await new Promise((r) => setTimeout(r, 50))
+        await new Promise((resolve) => setTimeout(resolve, 50))
         const price = getNodeDisplayPrice(node)
         expect(price).toBe('211 credits/Run')
       })
@@ -848,7 +848,7 @@ describe('useNodePricing', () => {
         )
 
         getNodeDisplayPrice(node)
-        await new Promise((r) => setTimeout(r, 50))
+        await new Promise((resolve) => setTimeout(resolve, 50))
         const price = getNodeDisplayPrice(node)
         expect(price).toBe('10.6-211 credits/Run')
       })

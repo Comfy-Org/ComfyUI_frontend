@@ -5,10 +5,10 @@
       <i v-if="status === 'completed'" class="pi pi-check text-green-500" />
       <div class="file-info">
         <div class="file-details">
-          <span class="file-type" :title="hint">{{ label }}</span>
+          <span class="file-type" :title="displayHint">{{ displayLabel }}</span>
         </div>
-        <div v-if="props.error" class="file-error">
-          {{ props.error }}
+        <div v-if="error" class="file-error">
+          {{ error }}
         </div>
       </div>
 
@@ -18,14 +18,14 @@
           class="file-action-button"
           variant="secondary"
           size="sm"
-          :disabled="!!props.error"
+          :disabled="!!error"
           @click="triggerDownload"
         >
           <i class="pi pi-download" />
           {{ $t('g.downloadWithSize', { size: fileSize }) }}
         </Button>
         <Button
-          v-if="(status === null || status === 'error') && !!props.url"
+          v-if="(status === null || status === 'error') && !!url"
           variant="secondary"
           size="sm"
           @click="copyURL"
@@ -53,7 +53,7 @@
         class="file-action-button"
         variant="secondary"
         size="sm"
-        :disabled="!!props.error"
+        :disabled="!!error"
         @click="triggerPauseDownload"
       >
         <i class="pi pi-pause-circle" />
@@ -66,7 +66,7 @@
         variant="secondary"
         size="sm"
         :aria-label="t('electronFileDownload.resume')"
-        :disabled="!!props.error"
+        :disabled="!!error"
         @click="triggerResumeDownload"
       >
         <i class="pi pi-play-circle" />
@@ -78,7 +78,7 @@
         variant="destructive"
         size="sm"
         :aria-label="t('electronFileDownload.cancel')"
-        :disabled="!!props.error"
+        :disabled="!!error"
         @click="triggerCancelDownload"
       >
         <i class="pi pi-times-circle" />
@@ -98,7 +98,7 @@ import { useDownload } from '@/composables/useDownload'
 import { useElectronDownloadStore } from '@/stores/electronDownloadStore'
 import { formatSize } from '@/utils/formatUtil'
 
-const props = defineProps<{
+const { url, hint, label, error } = defineProps<{
   url: string
   hint?: string
   label?: string
@@ -106,9 +106,9 @@ const props = defineProps<{
 }>()
 
 const { t } = useI18n()
-const label = computed(() => props.label || props.url.split('/').pop())
-const hint = computed(() => props.hint || props.url)
-const download = useDownload(props.url)
+const displayLabel = computed(() => label || url.split('/').pop())
+const displayHint = computed(() => hint || url)
+const download = useDownload(url)
 const downloadProgress = ref<number>(0)
 const status = ref<string | null>(null)
 const fileSize = computed(() =>
@@ -117,10 +117,10 @@ const fileSize = computed(() =>
 const { copyToClipboard } = useCopyToClipboard()
 const electronDownloadStore = useElectronDownloadStore()
 // @ts-expect-error fixme ts strict error
-const [savePath, filename] = props.label.split('/')
+const [savePath, filename] = label.split('/')
 
 electronDownloadStore.$subscribe((_, { downloads }) => {
-  const download = downloads.find((download) => props.url === download.url)
+  const download = downloads.find((download) => url === download.url)
 
   if (download) {
     // @ts-expect-error fixme ts strict error
@@ -132,17 +132,17 @@ electronDownloadStore.$subscribe((_, { downloads }) => {
 
 const triggerDownload = async () => {
   await electronDownloadStore.start({
-    url: props.url,
+    url,
     savePath: savePath.trim(),
     filename: filename.trim()
   })
 }
 
-const triggerCancelDownload = () => electronDownloadStore.cancel(props.url)
-const triggerPauseDownload = () => electronDownloadStore.pause(props.url)
-const triggerResumeDownload = () => electronDownloadStore.resume(props.url)
+const triggerCancelDownload = () => electronDownloadStore.cancel(url)
+const triggerPauseDownload = () => electronDownloadStore.pause(url)
+const triggerResumeDownload = () => electronDownloadStore.resume(url)
 
 const copyURL = async () => {
-  await copyToClipboard(props.url)
+  await copyToClipboard(url)
 }
 </script>

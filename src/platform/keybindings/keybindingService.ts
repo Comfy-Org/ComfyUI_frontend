@@ -49,11 +49,10 @@ export function useKeybindingService() {
         event.key === 'Escape' &&
         !event.ctrlKey &&
         !event.altKey &&
-        !event.metaKey
+        !event.metaKey &&
+        dialogStore.dialogStack.length > 0
       ) {
-        if (dialogStore.dialogStack.length > 0) {
-          return
-        }
+        return
       }
 
       event.preventDefault()

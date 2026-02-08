@@ -26,7 +26,7 @@ import { computed } from 'vue'
 
 import type { SettingOption } from '@/platform/settings/types'
 
-const props = defineProps<{
+const { modelValue, options, optionLabel, optionValue, id } = defineProps<{
   modelValue: T
   options?: (string | SettingOption | Record<string, string>)[]
   optionLabel?: string
@@ -39,9 +39,9 @@ defineEmits<{
 }>()
 
 const normalizedOptions = computed<SettingOption[]>(() => {
-  if (!props.options) return []
+  if (!options) return []
 
-  return props.options.map((option) => {
+  return options.map((option) => {
     if (typeof option === 'string') {
       return { text: option, value: option }
     }
@@ -54,8 +54,8 @@ const normalizedOptions = computed<SettingOption[]>(() => {
     }
     // Handle optionLabel/optionValue
     return {
-      text: option[props.optionLabel || 'text'] || 'Unknown',
-      value: option[props.optionValue || 'value']
+      text: option[optionLabel || 'text'] || 'Unknown',
+      value: option[optionValue || 'value']
     }
   })
 })

@@ -83,7 +83,7 @@
 <script setup lang="ts">
 import type { AssetMetadata } from '@/platform/assets/schemas/assetSchema'
 
-defineProps<{
+const { result, error, metadata, modelType, previewImage } = defineProps<{
   result: 'processing' | 'success' | 'error'
   error?: string
   metadata?: AssetMetadata

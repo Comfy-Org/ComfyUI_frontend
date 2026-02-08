@@ -35,7 +35,14 @@ import { computed, onMounted, onUnmounted, ref } from 'vue'
 import LoadingOverlay from '@/components/common/LoadingOverlay.vue'
 import { useLoad3dDrag } from '@/composables/useLoad3dDrag'
 
-const props = defineProps<{
+const {
+  initializeLoad3d,
+  cleanup,
+  loading,
+  loadingMessage,
+  onModelDrop,
+  isPreview
+} = defineProps<{
   initializeLoad3d: (containerRef: HTMLElement) => Promise<void>
   cleanup: () => void
   loading: boolean
@@ -53,20 +60,20 @@ function focusContainer() {
 const { isDragging, dragMessage, handleDragOver, handleDragLeave, handleDrop } =
   useLoad3dDrag({
     onModelDrop: async (file) => {
-      if (props.onModelDrop) {
-        await props.onModelDrop(file)
+      if (onModelDrop) {
+        await onModelDrop(file)
       }
     },
-    disabled: computed(() => props.isPreview)
+    disabled: computed(() => isPreview)
   })
 
 onMounted(() => {
   if (container.value) {
-    void props.initializeLoad3d(container.value)
+    void initializeLoad3d(container.value)
   }
 })
 
 onUnmounted(() => {
-  props.cleanup()
+  cleanup()
 })
 </script>

@@ -8,8 +8,9 @@ import type {
   ContextMenu
 } from '@/lib/litegraph/src/litegraph'
 
-import type { MenuOption, SubMenuOption } from './useMoreOptionsMenu'
 import type { ContextMenuDivElement } from '@/lib/litegraph/src/interfaces'
+
+import type { MenuOption, SubMenuOption } from './useMoreOptionsMenu'
 
 /**
  * Hard blacklist - items that should NEVER be included
@@ -295,7 +296,7 @@ export function buildStructuredMenu(options: MenuOption[]): MenuOption[] {
   }
   // Build ordered core items based on MENU_ORDER
   const orderedCoreItems: MenuOption[] = []
-  const coreLabels = Array.from(coreItemsMap.keys())
+  const coreLabels = [...coreItemsMap.keys()]
   coreLabels.sort((a, b) => getMenuItemOrder(a) - getMenuItemOrder(b))
 
   // Section boundaries based on MENU_ORDER indices
@@ -619,5 +620,5 @@ function stripHtmlTags(html: string): string {
   // Use DOMPurify to sanitize and strip all HTML tags
   const sanitized = DOMPurify.sanitize(html, { ALLOWED_TAGS: [] })
   const result = sanitized.trim()
-  return result || html.replace(/<[^>]*>/g, '').trim() || html
+  return result || html.replaceAll(/<[^>]*>/g, '').trim() || html
 }

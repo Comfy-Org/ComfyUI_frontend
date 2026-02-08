@@ -32,7 +32,7 @@ export function truncateText(
 
   while (low <= high) {
     const mid = Math.floor((low + high) / 2)
-    const testText = text.substring(0, mid)
+    const testText = text.slice(0, mid)
     const testWidth = ctx.measureText(testText).width
 
     if (testWidth <= availableWidth) {
@@ -43,5 +43,5 @@ export function truncateText(
     }
   }
 
-  return text.substring(0, bestFit) + ellipsis
+  return text.slice(0, bestFit) + ellipsis
 }

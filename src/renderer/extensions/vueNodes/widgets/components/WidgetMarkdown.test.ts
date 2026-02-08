@@ -15,11 +15,11 @@ vi.mock('@/utils/markdownRendererUtil', () => ({
   renderMarkdownToHtml: vi.fn((markdown: string) => {
     // Simple mock that converts some markdown to HTML
     return markdown
-      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-      .replace(/\*(.*?)\*/g, '<em>$1</em>')
-      .replace(/^# (.*?)$/gm, '<h1>$1</h1>')
-      .replace(/^## (.*?)$/gm, '<h2>$1</h2>')
-      .replace(/\n/g, '<br>')
+      .replaceAll(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+      .replaceAll(/\*(.*?)\*/g, '<em>$1</em>')
+      .replaceAll(/^# (.*?)$/gm, '<h1>$1</h1>')
+      .replaceAll(/^## (.*?)$/gm, '<h2>$1</h2>')
+      .replaceAll('\n', '<br>')
   })
 }))
 
@@ -365,7 +365,7 @@ Another line with more content.`
 
   describe('Edge Cases', () => {
     it('handles very long markdown content', async () => {
-      const longMarkdown = '# Heading\n' + 'Lorem ipsum '.repeat(1000)
+      const longMarkdown = `# Heading\n${'Lorem ipsum '.repeat(1000)}`
       const widget = createMockWidget(longMarkdown)
       const wrapper = mountComponent(widget, longMarkdown)
 
@@ -399,12 +399,12 @@ Another line with more content.`
       const textarea = wrapper.find('textarea')
       expect(textarea.element.value).toBe(unicode)
 
-      await textarea.setValue(unicode + ' more unicode')
+      await textarea.setValue(`${unicode} more unicode`)
       await textarea.trigger('input')
 
       const emitted = wrapper.emitted('update:modelValue')
       expect(emitted).toBeDefined()
-      expect(emitted![emitted!.length - 1]).toEqual([unicode + ' more unicode'])
+      expect(emitted![emitted!.length - 1]).toEqual([`${unicode} more unicode`])
     })
 
     it('handles rapid edit mode toggling', async () => {

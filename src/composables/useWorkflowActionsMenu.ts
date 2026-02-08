@@ -112,8 +112,7 @@ export function useWorkflowActionsMenu(
       bookmarkStore.isBookmarked(workflow?.path ?? '')
         ? t('tabMenu.removeFromBookmarks')
         : t('tabMenu.addToBookmarks'),
-      'pi pi-bookmark' +
-        (bookmarkStore.isBookmarked(workflow?.path ?? '') ? '-fill' : ''),
+      `pi pi-bookmark${bookmarkStore.isBookmarked(workflow?.path ?? '') ? '-fill' : ''}`,
       async () => {
         if (workflow?.path) {
           await bookmarkStore.toggleBookmarked(workflow.path)

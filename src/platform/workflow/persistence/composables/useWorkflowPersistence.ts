@@ -142,8 +142,8 @@ export function useWorkflowPersistence() {
       if (!restored) {
         await loadDefaultWorkflow()
       }
-    } catch (err) {
-      console.error('Error loading previous workflow', err)
+    } catch (error) {
+      console.error('Error loading previous workflow', error)
       await loadDefaultWorkflow()
     }
   }
@@ -232,10 +232,10 @@ export function useWorkflowPersistence() {
       try {
         const workflowData = JSON.parse(draft.data)
         workflowStore.createTemporary(draft.name, workflowData)
-      } catch (err) {
+      } catch (error) {
         console.warn(
           'Failed to parse workflow draft, creating with default',
-          err
+          error
         )
         workflowDraftStore.removeDraft(path)
         workflowStore.createTemporary(draft.name)

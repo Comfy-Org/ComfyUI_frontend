@@ -407,7 +407,6 @@ export class CanvasPathRenderer {
         return { x: 0, y: -distance }
       case 'down':
         return { x: 0, y: distance }
-      case 'none':
       default:
         return { x: 0, y: 0 }
     }
@@ -623,7 +622,6 @@ export class CanvasPathRenderer {
         return 'down'
       case 'down':
         return 'up'
-      case 'none':
       default:
         return 'none'
     }

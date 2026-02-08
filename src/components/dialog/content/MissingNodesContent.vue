@@ -54,7 +54,7 @@ import { isCloud } from '@/platform/distribution/types'
 import type { MissingNodeType } from '@/types/comfy'
 import { useMissingNodes } from '@/workbench/extensions/manager/composables/nodePack/useMissingNodes'
 
-const props = defineProps<{
+const { missingNodeTypes } = defineProps<{
   missingNodeTypes: MissingNodeType[]
 }>()
 
@@ -63,7 +63,7 @@ const { missingCoreNodes } = useMissingNodes()
 
 const uniqueNodes = computed(() => {
   const seenTypes = new Set()
-  return props.missingNodeTypes
+  return missingNodeTypes
     .filter((node) => {
       const type = typeof node === 'object' ? node.type : node
       if (seenTypes.has(type)) return false

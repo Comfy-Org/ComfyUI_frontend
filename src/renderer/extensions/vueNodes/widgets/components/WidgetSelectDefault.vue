@@ -49,7 +49,7 @@ interface Props {
   widget: SimplifiedWidget<string | undefined>
 }
 
-const props = defineProps<Props>()
+const { widget } = defineProps<Props>()
 
 const modelValue = defineModel<string | undefined>({
   default(props: Props) {
@@ -62,7 +62,7 @@ const transformCompatProps = useTransformCompatOverlayProps()
 
 // Extract select options from widget options
 const selectOptions = computed(() => {
-  const options = props.widget.options
+  const options = widget.options
 
   if (options?.values && Array.isArray(options.values)) {
     return options.values
@@ -75,7 +75,7 @@ const invalid = computed(
 )
 
 const combinedProps = computed(() => ({
-  ...filterWidgetProps(props.widget.options, PANEL_EXCLUDED_PROPS),
+  ...filterWidgetProps(widget.options, PANEL_EXCLUDED_PROPS),
   ...transformCompatProps.value,
   ...(invalid.value ? { placeholder: `${modelValue.value}` } : {})
 }))

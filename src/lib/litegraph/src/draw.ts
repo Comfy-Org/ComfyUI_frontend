@@ -189,7 +189,7 @@ function truncateTextToWidth(
       continue
     }
 
-    const sub = text.substring(0, mid)
+    const sub = text.slice(0, mid)
     const currentWidth = ctx.measureText(sub).width + ellipsisWidth
 
     if (currentWidth <= maxWidth) {
@@ -202,7 +202,7 @@ function truncateTextToWidth(
     }
   }
 
-  return bestLen === 0 ? ELLIPSIS : text.substring(0, bestLen) + ELLIPSIS
+  return bestLen === 0 ? ELLIPSIS : text.slice(0, bestLen) + ELLIPSIS
 }
 
 /**

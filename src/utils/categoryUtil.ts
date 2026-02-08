@@ -58,5 +58,5 @@ export function generateCategoryId(
   categoryGroup: string,
   categoryTitle: string
 ) {
-  return `${categoryGroup.toLowerCase().replace(/\s+/g, '-')}-${categoryTitle.toLowerCase().replace(/\s+/g, '-')}`
+  return `${categoryGroup.toLowerCase().replaceAll(/\s+/g, '-')}-${categoryTitle.toLowerCase().replaceAll(/\s+/g, '-')}`
 }

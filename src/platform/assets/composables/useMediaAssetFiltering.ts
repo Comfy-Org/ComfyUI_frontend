@@ -81,7 +81,6 @@ export function useMediaAssetFiltering(assets: Ref<AssetItem[]>) {
       case 'fastest':
         // Ascending order (fastest execution time first)
         return sortByUtil(typeFiltered.value, [getAssetExecutionTime])
-      case 'newest':
       default:
         // Descending order (newest first) - negate for descending
         return sortByUtil(typeFiltered.value, [(asset) => -getAssetTime(asset)])

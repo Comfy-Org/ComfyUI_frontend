@@ -4,7 +4,7 @@ import { ref } from 'vue'
 
 import { cn } from '@/utils/tailwindUtil'
 
-const props = defineProps<{
+const { onDragOver, onDragDrop, dropIndicator } = defineProps<{
   onDragOver?: (e: DragEvent) => boolean
   onDragDrop?: (e: DragEvent) => Promise<boolean> | boolean
   dropIndicator?: {
@@ -20,17 +20,16 @@ const canAcceptDrop = ref(false)
 
 const { isOverDropZone } = useDropZone(dropZoneRef, {
   onDrop: (_files, event) => {
-    // Stop propagation to prevent global handlers from creating a new node
     event?.stopPropagation()
 
-    if (props.onDragDrop && event) {
-      props.onDragDrop(event)
+    if (onDragDrop && event) {
+      void onDragDrop(event)
     }
     canAcceptDrop.value = false
   },
   onOver: (_, event) => {
-    if (props.onDragOver && event) {
-      canAcceptDrop.value = props.onDragOver(event)
+    if (onDragOver && event) {
+      canAcceptDrop.value = onDragOver(event)
     }
   },
   onLeave: () => {

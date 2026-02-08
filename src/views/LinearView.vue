@@ -32,7 +32,9 @@ const mobileDisplay = useBreakpoints(breakpointsTailwind).smaller('md')
 const hasPreview = ref(false)
 whenever(
   () => nodeOutputStore.latestPreview[0],
-  () => (hasPreview.value = true)
+  () => {
+    hasPreview.value = true
+  }
 )
 
 const selectedItem = ref<AssetItem>()

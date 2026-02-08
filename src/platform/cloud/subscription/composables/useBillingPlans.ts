@@ -19,9 +19,12 @@ export function useBillingPlans() {
       const response = await workspaceApi.getBillingPlans()
       plans.value = response.plans
       currentPlanSlug.value = response.current_plan_slug ?? null
-    } catch (err) {
-      error.value = err instanceof Error ? err.message : 'Failed to fetch plans'
-      console.error('[useBillingPlans] Failed to fetch plans:', err)
+    } catch (errorCaught) {
+      error.value =
+        errorCaught instanceof Error
+          ? errorCaught.message
+          : 'Failed to fetch plans'
+      console.error('[useBillingPlans] Failed to fetch plans:', errorCaught)
     } finally {
       isLoading.value = false
     }

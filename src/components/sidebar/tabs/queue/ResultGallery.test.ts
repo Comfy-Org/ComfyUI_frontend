@@ -96,7 +96,7 @@ describe('ResultGallery', () => {
         activeIndex: 0,
         ...props
       },
-      attachTo: document.getElementById('app') || undefined
+      attachTo: document.querySelector('#app') || undefined
     })
   }
 

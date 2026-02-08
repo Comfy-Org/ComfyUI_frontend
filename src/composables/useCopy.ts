@@ -25,9 +25,7 @@ export const useCopy = () => {
       const serializedData = canvas.copyToClipboard()
       // Use TextEncoder to handle Unicode characters properly
       const base64Data = btoa(
-        String.fromCharCode(
-          ...Array.from(new TextEncoder().encode(serializedData))
-        )
+        String.fromCharCode(...[...new TextEncoder().encode(serializedData)])
       )
       // clearData doesn't remove images from clipboard
       e.clipboardData?.setData(

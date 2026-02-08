@@ -1,7 +1,7 @@
 import type { ISlotType } from './litegraph'
 
 export function parseSlotTypes(type: ISlotType): string[] {
-  return type == '' || type == '0'
+  return type === '' || type === '0'
     ? ['*']
     : String(type).toLowerCase().split(',')
 }

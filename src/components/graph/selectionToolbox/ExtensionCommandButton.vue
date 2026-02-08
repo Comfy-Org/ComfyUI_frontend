@@ -24,7 +24,7 @@ import type { ComfyCommand } from '@/stores/commandStore'
 import { useCommandStore } from '@/stores/commandStore'
 import { normalizeI18nKey } from '@/utils/formatUtil'
 
-defineProps<{
+const { command } = defineProps<{
   command: ComfyCommand
 }>()
 

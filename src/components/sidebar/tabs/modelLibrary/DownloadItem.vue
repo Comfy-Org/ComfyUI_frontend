@@ -79,7 +79,7 @@ const { t } = useI18n()
 
 const electronDownloadStore = useElectronDownloadStore()
 
-const props = defineProps<{
+const { download } = defineProps<{
   download: ElectronDownload
 }>()
 
@@ -91,18 +91,13 @@ const getDownloadLabel = (savePath: string) => {
   return `${dir}/${name}`
 }
 
-const triggerCancelDownload = () =>
-  electronDownloadStore.cancel(props.download.url)
-const triggerPauseDownload = () =>
-  electronDownloadStore.pause(props.download.url)
-const triggerResumeDownload = () =>
-  electronDownloadStore.resume(props.download.url)
+const triggerCancelDownload = () => electronDownloadStore.cancel(download.url)
+const triggerPauseDownload = () => electronDownloadStore.pause(download.url)
+const triggerResumeDownload = () => electronDownloadStore.resume(download.url)
 
 const handleRemoveDownload = () => {
   electronDownloadStore.$patch((state) => {
-    state.downloads = state.downloads.filter(
-      ({ url }) => url !== props.download.url
-    )
+    state.downloads = state.downloads.filter(({ url }) => url !== download.url)
   })
 }
 </script>

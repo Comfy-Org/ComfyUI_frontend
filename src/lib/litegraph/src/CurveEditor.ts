@@ -82,7 +82,7 @@ export class CurveEditor {
     if (!inactive) {
       for (const [i, p] of points.entries()) {
         ctx.fillStyle =
-          this.selected == i ? '#FFF' : this.nearest == i ? '#DDD' : '#AAA'
+          this.selected === i ? '#FFF' : this.nearest === i ? '#DDD' : '#AAA'
         ctx.beginPath()
         ctx.arc(p[0] * w, (1.0 - p[1]) * h, 2, 0, Math.PI * 2)
         ctx.fill()
@@ -109,7 +109,7 @@ export class CurveEditor {
     // search closer one
     this.selected = this.getCloserPoint(pos, max_dist)
     // create one
-    if (this.selected == -1) {
+    if (this.selected === -1) {
       const point: Point = [x / w, 1 - y / h]
       points.push(point)
       points.sort(function (a, b) {
@@ -118,7 +118,7 @@ export class CurveEditor {
       this.selected = points.indexOf(point)
       this.must_update = true
     }
-    if (this.selected != -1) return true
+    if (this.selected !== -1) return true
   }
 
   onMouseMove(localpos: Point, graphcanvas: LGraphCanvas): void {
@@ -140,7 +140,7 @@ export class CurveEditor {
     this._nearest = this.getCloserPoint(curvepos, max_dist)
     const point = points[s]
     if (point) {
-      const is_edge_point = s == 0 || s == points.length - 1
+      const is_edge_point = s === 0 || s === points.length - 1
       if (
         !is_edge_point &&
         (localpos[0] < -10 ||
@@ -154,7 +154,7 @@ export class CurveEditor {
       }
       // not edges
       if (!is_edge_point) point[0] = clamp(x, 0, 1)
-      else point[0] = s == 0 ? 0 : 1
+      else point[0] = s === 0 ? 0 : 1
       point[1] = 1.0 - clamp(y, 0, 1)
       points.sort(function (a, b) {
         return a[0] - b[0]

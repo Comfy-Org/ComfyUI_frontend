@@ -33,6 +33,7 @@ fi
 
 EXCLUDE_PATTERNS=(
   '**/tsconfig*.json'
+  '.oxlintrc.json'
 )
 
 if [ -n "${JSON_LINT_EXCLUDES:-}" ]; then

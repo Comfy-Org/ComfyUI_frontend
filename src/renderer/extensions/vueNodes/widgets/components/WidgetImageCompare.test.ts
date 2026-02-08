@@ -182,7 +182,7 @@ describe('WidgetImageCompare Display', () => {
 
     it('handles special content - long URLs, special characters, and long alt text', () => {
       // Test very long URLs
-      const longUrl = 'https://example.com/' + 'a'.repeat(1000) + '.jpg'
+      const longUrl = `https://example.com/${'a'.repeat(1000)}.jpg`
       const longUrlValue: ImageCompareValue = {
         before: longUrl,
         after: longUrl
@@ -207,9 +207,7 @@ describe('WidgetImageCompare Display', () => {
       expect(specialUrlImages[1].attributes('src')).toBe(specialUrl)
 
       // Test very long alt text
-      const longAlt =
-        'Very long alt text that exceeds normal length: ' +
-        'description '.repeat(50)
+      const longAlt = `Very long alt text that exceeds normal length: ${'description '.repeat(50)}`
       const longAltValue: ImageCompareValue = {
         before: 'https://example.com/before.jpg',
         after: 'https://example.com/after.jpg',

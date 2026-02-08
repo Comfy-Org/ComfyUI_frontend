@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, defineAsyncComponent } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { downloadFile } from '@/base/common/downloadUtil'
@@ -12,8 +12,6 @@ import { useWorkflowStore } from '@/platform/workflow/management/stores/workflow
 import { extractWorkflowFromAsset } from '@/platform/workflow/utils/workflowExtractionUtil'
 import ImagePreview from '@/renderer/extensions/linearMode/ImagePreview.vue'
 import LinearWelcome from '@/renderer/extensions/linearMode/LinearWelcome.vue'
-// Lazy-loaded to avoid pulling THREE.js into the main bundle
-const Preview3d = () => import('@/renderer/extensions/linearMode/Preview3d.vue')
 import VideoPreview from '@/renderer/extensions/linearMode/VideoPreview.vue'
 import {
   getMediaType,
@@ -25,6 +23,11 @@ import type { ResultItemImpl } from '@/stores/queueStore'
 import { formatDuration } from '@/utils/dateTimeUtil'
 import { collectAllNodes } from '@/utils/graphTraversalUtil'
 import { executeWidgetsCallback } from '@/utils/litegraphUtil'
+
+// Lazy-loaded to avoid pulling THREE.js into the main bundle
+const Preview3d = defineAsyncComponent(
+  () => import('@/renderer/extensions/linearMode/Preview3d.vue')
+)
 
 const { t, d } = useI18n()
 const mediaActions = useMediaAssetActions()
@@ -92,7 +95,7 @@ async function rerun(e: Event) {
   await loadWorkflow(selectedItem)
   //FIXME don't use timeouts here
   //Currently seeds fail to properly update even with timeouts?
-  await new Promise((r) => setTimeout(r, 500))
+  await new Promise((resolve) => setTimeout(resolve, 500))
   executeWidgetsCallback(collectAllNodes(app.rootGraph), 'afterQueued')
 
   runButtonClick(e)
@@ -175,9 +178,13 @@ async function rerun(e: Event) {
     class="w-full max-w-128 m-auto my-12 overflow-y-auto"
     v-text="selectedOutput!.url"
   />
-  <Preview3d
-    v-else-if="getMediaType(selectedOutput) === '3d'"
-    :model-url="selectedOutput!.url"
-  />
+  <Suspense v-else-if="getMediaType(selectedOutput) === '3d'">
+    <Preview3d :model-url="selectedOutput!.url" />
+    <template #fallback>
+      <div class="flex items-center justify-center flex-1">
+        <i class="icon-[lucide--loader-circle] animate-spin text-2xl" />
+      </div>
+    </template>
+  </Suspense>
   <LinearWelcome v-else />
 </template>

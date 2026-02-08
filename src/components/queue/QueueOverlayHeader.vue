@@ -74,11 +74,12 @@ import Button from '@/components/ui/button/Button.vue'
 import { buildTooltipConfig } from '@/composables/useTooltipConfig'
 import { isCloud } from '@/platform/distribution/types'
 
-defineProps<{
-  headerTitle: string
-  showConcurrentIndicator: boolean
-  concurrentWorkflowCount: number
-}>()
+const { headerTitle, showConcurrentIndicator, concurrentWorkflowCount } =
+  defineProps<{
+    headerTitle: string
+    showConcurrentIndicator: boolean
+    concurrentWorkflowCount: number
+  }>()
 
 const emit = defineEmits<{
   (e: 'clearHistory'): void

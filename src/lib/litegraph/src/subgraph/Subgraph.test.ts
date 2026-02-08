@@ -319,7 +319,7 @@ describe.skip('Subgraph Integration', () => {
     expect(subgraph.links.size).toBe(1)
 
     // Verify link integrity
-    const link = Array.from(subgraph.links.values())[0]
+    const link = [...subgraph.links.values()][0]
     expect(link.origin_id).toBe(node1.id)
     expect(link.target_id).toBe(node2.id)
   })

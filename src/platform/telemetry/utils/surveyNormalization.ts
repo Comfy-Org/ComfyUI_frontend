@@ -536,7 +536,7 @@ export function normalizeIndustry(rawIndustry: unknown): string {
 
   // Handle common undefined responses
   if (
-    industry.match(/^(other|none|undefined|unknown|n\/a|not applicable|-|)$/)
+    /^(other|none|undefined|unknown|n\/a|not applicable|-|)$/.test(industry)
   ) {
     return 'Other / Undefined'
   }
@@ -563,9 +563,7 @@ export function normalizeUseCase(rawUseCase: unknown): string {
   const useCase = rawUseCase.toLowerCase().trim()
 
   // Handle common undefined responses
-  if (
-    useCase.match(/^(other|none|undefined|unknown|n\/a|not applicable|-|)$/)
-  ) {
+  if (/^(other|none|undefined|unknown|n\/a|not applicable|-|)$/.test(useCase)) {
     return 'Other / Undefined'
   }
 

@@ -24,16 +24,17 @@ export function useNodeFileInput(node: LGraphNode, options: FileInputOptions) {
   fileInput.accept = accept ?? '*'
   fileInput.multiple = allow_batch
 
-  fileInput.onchange = () => {
+  const handleChange = () => {
     if (fileInput?.files?.length) {
-      const files = Array.from(fileInput.files).filter(fileFilter)
+      const files = [...fileInput.files].filter(fileFilter)
       if (files.length) onSelect(files)
     }
   }
+  fileInput.addEventListener('change', handleChange)
 
   node.onRemoved = useChainCallback(node.onRemoved, () => {
     if (fileInput) {
-      fileInput.onchange = null
+      fileInput.removeEventListener('change', handleChange)
       fileInput = null
     }
   })

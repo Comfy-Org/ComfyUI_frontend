@@ -121,9 +121,7 @@ export function overlapBounding(a: ReadOnlyRect, b: ReadOnlyRect): boolean {
   const bRight = b[0] + b[2]
   const bBottom = b[1] + b[3]
 
-  return a[0] > bRight || a[1] > bBottom || aRight < b[0] || aBottom < b[1]
-    ? false
-    : true
+  return !(a[0] > bRight || a[1] > bBottom || aRight < b[0] || aBottom < b[1])
 }
 
 /**

@@ -96,7 +96,7 @@ const loading = computed(() => authStore.loading)
 
 const { t } = useI18n()
 
-defineProps<{
+const { authError } = defineProps<{
   authError?: string
 }>()
 
