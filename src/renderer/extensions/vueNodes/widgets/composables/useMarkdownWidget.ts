@@ -40,6 +40,7 @@ function addMarkdownWidget(
   inputEl.classList.add('comfy-markdown')
   const textarea = document.createElement('textarea')
   inputEl.append(textarea)
+  const editorDom: HTMLElement = editor.view.dom
 
   const widget = node.addDOMWidget(name, 'MARKDOWN', inputEl, {
     getValue(): string {
@@ -89,6 +90,42 @@ function addMarkdownWidget(
     if (event.button === 1) {
       app.canvas.processMouseUp(event)
     }
+  })
+
+  inputEl.addEventListener('wheel', (event: WheelEvent) => {
+    const deltaX = event.deltaX
+    const deltaY = event.deltaY
+
+    const canScrollYMarkdown = editorDom.scrollHeight > editorDom.clientHeight
+    const canScrollYTextarea = textarea.scrollHeight > textarea.clientHeight
+    const isHorizontal = Math.abs(deltaX) > Math.abs(deltaY)
+
+    // Prevent pinch zoom from zooming the page
+    if (event.ctrlKey) {
+      event.preventDefault()
+      event.stopPropagation()
+      app.canvas.processMouseWheel(event)
+      return
+    }
+
+    // When gestures disabled: horizontal always goes to canvas (no horizontal scroll in textarea)
+    if (isHorizontal) {
+      event.preventDefault()
+      event.stopPropagation()
+      app.canvas.processMouseWheel(event)
+      return
+    }
+
+    // Vertical scrolling when gestures disabled: let textarea scroll if scrollable
+    const isEditing = inputEl.classList.contains('editing')
+    if (isEditing ? canScrollYTextarea : canScrollYMarkdown) {
+      event.stopPropagation()
+      return
+    }
+
+    // If textarea can't scroll vertically, pass to canvas
+    event.preventDefault()
+    app.canvas.processMouseWheel(event)
   })
 
   return widget
