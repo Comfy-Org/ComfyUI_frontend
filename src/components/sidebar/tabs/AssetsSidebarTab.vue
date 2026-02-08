@@ -103,6 +103,7 @@
           :asset-type="activeTab"
           @select-asset="handleAssetSelect"
           @context-menu="handleAssetContextMenu"
+          @job-context-menu="handleJobContextMenu"
           @approach-end="handleApproachEnd"
         />
         <AssetsSidebarGridView
@@ -114,6 +115,7 @@
           :get-output-count="getOutputCount"
           @select-asset="handleAssetSelect"
           @context-menu="handleAssetContextMenu"
+          @job-context-menu="handleJobContextMenu"
           @approach-end="handleApproachEnd"
           @zoom="handleZoomClick"
           @output-count-click="enterFolderView"
@@ -198,6 +200,11 @@
     @bulk-open-workflow="handleBulkOpenWorkflow"
     @bulk-export-workflow="handleBulkExportWorkflow"
   />
+  <JobContextMenu
+    ref="jobContextMenuRef"
+    :entries="jobMenuEntries"
+    @action="onJobMenuAction"
+  />
 </template>
 
 <script setup lang="ts">
@@ -218,6 +225,7 @@ import NoResultsPlaceholder from '@/components/common/NoResultsPlaceholder.vue'
 import Load3dViewerContent from '@/components/load3d/Load3dViewerContent.vue'
 import AssetsSidebarGridView from '@/components/sidebar/tabs/AssetsSidebarGridView.vue'
 import AssetsSidebarListView from '@/components/sidebar/tabs/AssetsSidebarListView.vue'
+import JobContextMenu from '@/components/queue/job/JobContextMenu.vue'
 import SidebarTabTemplate from '@/components/sidebar/tabs/SidebarTabTemplate.vue'
 import ResultGallery from '@/components/sidebar/tabs/queue/ResultGallery.vue'
 import Tab from '@/components/tab/Tab.vue'
@@ -225,7 +233,13 @@ import TabList from '@/components/tab/TabList.vue'
 import Button from '@/components/ui/button/Button.vue'
 import MediaAssetContextMenu from '@/platform/assets/components/MediaAssetContextMenu.vue'
 import MediaAssetFilterBar from '@/platform/assets/components/MediaAssetFilterBar.vue'
-import { getAssetType } from '@/platform/assets/composables/media/assetMappers'
+import type { JobListItem } from '@/composables/queue/useJobList'
+import type { MenuEntry } from '@/composables/queue/useJobMenu'
+import { useJobMenu } from '@/composables/queue/useJobMenu'
+import {
+  getAssetType,
+  mapTaskOutputToAssetItem
+} from '@/platform/assets/composables/media/assetMappers'
 import { useMediaAssets } from '@/platform/assets/composables/media/useMediaAssets'
 import { useAssetSelection } from '@/platform/assets/composables/useAssetSelection'
 import { useMediaAssetActions } from '@/platform/assets/composables/useMediaAssetActions'
@@ -273,6 +287,20 @@ const isListView = computed(
 
 const contextMenuRef = ref<InstanceType<typeof MediaAssetContextMenu>>()
 const contextMenuAsset = ref<AssetItem | null>(null)
+const currentJobMenuItem = ref<JobListItem | null>(null)
+const jobContextMenuRef = ref<InstanceType<typeof JobContextMenu> | null>(null)
+
+const onInspectJobAsset = (item: JobListItem) => {
+  const task = item.taskRef
+  const preview = task?.previewOutput
+  if (!task || !preview) return
+  handleZoomClick(mapTaskOutputToAssetItem(task, preview))
+}
+
+const { jobMenuEntries } = useJobMenu(
+  () => currentJobMenuItem.value,
+  onInspectJobAsset
+)
 
 // Determine if delete button should be shown
 // Hide delete button when in input tab and not in cloud (OSS mode - files are from local folders)
@@ -480,6 +508,17 @@ function handleAssetContextMenu(event: MouseEvent, asset: AssetItem) {
   void nextTick(() => {
     contextMenuRef.value?.show(event)
   })
+}
+
+function handleJobContextMenu(event: MouseEvent, job: JobListItem) {
+  currentJobMenuItem.value = job
+  jobContextMenuRef.value?.open(event)
+}
+
+const onJobMenuAction = async (entry: MenuEntry) => {
+  if (entry.kind === 'divider') return
+  if (entry.onClick) await entry.onClick()
+  jobContextMenuRef.value?.hide()
 }
 
 function handleContextMenuHide() {

@@ -4,6 +4,7 @@
     tabindex="0"
     :aria-label="t('sideToolbar.activeJobStatus', { status: statusText })"
     class="flex flex-col gap-2 p-2 rounded-lg"
+    @contextmenu.stop.prevent="emit('context-menu', $event)"
     @mouseenter="hovered = true"
     @mouseleave="hovered = false"
     @focusin="hovered = true"
@@ -86,6 +87,9 @@ import type { JobListItem } from '@/composables/queue/useJobList'
 import { useProgressBarBackground } from '@/composables/useProgressBarBackground'
 
 const { job } = defineProps<{ job: JobListItem }>()
+const emit = defineEmits<{
+  (e: 'context-menu', event: MouseEvent): void
+}>()
 
 const { t } = useI18n()
 const hovered = ref(false)

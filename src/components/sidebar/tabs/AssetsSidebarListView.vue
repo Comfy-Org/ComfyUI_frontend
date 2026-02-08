@@ -23,6 +23,7 @@
         :progress-current-percent="job.progressCurrentPercent"
         @mouseenter="onJobEnter(job.id)"
         @mouseleave="onJobLeave(job.id)"
+        @contextmenu.prevent.stop="emit('job-context-menu', $event, job)"
         @click.stop
       >
         <template v-if="hoveredJobId === job.id" #actions>
@@ -150,6 +151,7 @@ const assetsStore = useAssetsStore()
 const emit = defineEmits<{
   (e: 'select-asset', asset: AssetItem): void
   (e: 'context-menu', event: MouseEvent, asset: AssetItem): void
+  (e: 'job-context-menu', event: MouseEvent, job: JobListItem): void
   (e: 'approach-end'): void
 }>()
 

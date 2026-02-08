@@ -10,6 +10,7 @@
         v-for="job in activeJobItems"
         :key="job.id"
         :job="job"
+        @context-menu="emit('job-context-menu', $event, job)"
       />
     </div>
 
@@ -60,6 +61,7 @@ import { useI18n } from 'vue-i18n'
 
 import VirtualGrid from '@/components/common/VirtualGrid.vue'
 import ActiveMediaAssetCard from '@/platform/assets/components/ActiveMediaAssetCard.vue'
+import type { JobListItem } from '@/composables/queue/useJobList'
 import { useJobList } from '@/composables/queue/useJobList'
 import MediaAssetCard from '@/platform/assets/components/MediaAssetCard.vue'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
@@ -84,6 +86,7 @@ const {
 const emit = defineEmits<{
   (e: 'select-asset', asset: AssetItem): void
   (e: 'context-menu', event: MouseEvent, asset: AssetItem): void
+  (e: 'job-context-menu', event: MouseEvent, job: JobListItem): void
   (e: 'approach-end'): void
   (e: 'zoom', asset: AssetItem): void
   (e: 'output-count-click', asset: AssetItem): void
