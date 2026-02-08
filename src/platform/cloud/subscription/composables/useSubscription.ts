@@ -8,6 +8,7 @@ import { getComfyApiBaseUrl, getComfyPlatformBaseUrl } from '@/config/comfyApi'
 import { t } from '@/i18n'
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
+import { getCheckoutAttribution } from '@/platform/telemetry/utils/checkoutAttribution'
 import {
   FirebaseAuthStoreError,
   useFirebaseAuthStore
@@ -231,6 +232,7 @@ function useSubscriptionInternal() {
           t('toastMessages.userNotAuthenticated')
         )
       }
+      const checkoutAttribution = getCheckoutAttribution()
 
       const response = await fetch(
         buildApiUrl('/customers/cloud-subscription-checkout'),
@@ -239,7 +241,8 @@ function useSubscriptionInternal() {
           headers: {
             ...authHeader,
             'Content-Type': 'application/json'
-          }
+          },
+          body: JSON.stringify(checkoutAttribution)
         }
       )
 

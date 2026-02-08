@@ -1,13 +1,8 @@
 import { isPlainObject } from 'es-toolkit'
 
-interface CheckoutAttribution {
-  ga_client_id?: string
-  ga_session_id?: string
-  ga_session_number?: string
-  gclid?: string
-  gbraid?: string
-  wbraid?: string
-}
+import type { CheckoutAttributionMetadata } from '../types'
+
+type CheckoutAttribution = CheckoutAttributionMetadata
 
 type GaIdentity = {
   client_id?: string
@@ -15,20 +10,30 @@ type GaIdentity = {
   session_number?: string
 }
 
-const CLICK_ID_KEYS = ['gclid', 'gbraid', 'wbraid'] as const
-type ClickIdKey = (typeof CLICK_ID_KEYS)[number]
+const ATTRIBUTION_QUERY_KEYS = [
+  'im_ref',
+  'utm_source',
+  'utm_medium',
+  'utm_campaign',
+  'utm_term',
+  'utm_content',
+  'gclid',
+  'gbraid',
+  'wbraid'
+] as const
+type AttributionQueryKey = (typeof ATTRIBUTION_QUERY_KEYS)[number]
 const ATTRIBUTION_STORAGE_KEY = 'comfy_checkout_attribution'
 
-function readStoredClickIds(): Partial<Record<ClickIdKey, string>> {
+function readStoredAttribution(): Partial<Record<AttributionQueryKey, string>> {
   try {
     const stored = localStorage.getItem(ATTRIBUTION_STORAGE_KEY)
     if (!stored) return {}
 
     const parsed: unknown = JSON.parse(stored)
     if (!isPlainObject(parsed)) return {}
-    const result: Partial<Record<ClickIdKey, string>> = {}
+    const result: Partial<Record<AttributionQueryKey, string>> = {}
 
-    for (const key of CLICK_ID_KEYS) {
+    for (const key of ATTRIBUTION_QUERY_KEYS) {
       const value = parsed[key]
       if (typeof value === 'string' && value.length > 0) {
         result[key] = value
@@ -41,7 +46,9 @@ function readStoredClickIds(): Partial<Record<ClickIdKey, string>> {
   }
 }
 
-function persistClickIds(payload: Partial<Record<ClickIdKey, string>>): void {
+function persistAttribution(
+  payload: Partial<Record<AttributionQueryKey, string>>
+): void {
   try {
     localStorage.setItem(ATTRIBUTION_STORAGE_KEY, JSON.stringify(payload))
   } catch {
@@ -49,14 +56,28 @@ function persistClickIds(payload: Partial<Record<ClickIdKey, string>>): void {
   }
 }
 
-function readClickIdsFromUrl(
+function hasAttributionChanges(
+  existing: Partial<Record<AttributionQueryKey, string>>,
+  incoming: Partial<Record<AttributionQueryKey, string>>
+): boolean {
+  for (const key of ATTRIBUTION_QUERY_KEYS) {
+    const value = incoming[key]
+    if (value !== undefined && existing[key] !== value) {
+      return true
+    }
+  }
+
+  return false
+}
+
+function readAttributionFromUrl(
   search: string
-): Partial<Record<ClickIdKey, string>> {
+): Partial<Record<AttributionQueryKey, string>> {
   const params = new URLSearchParams(search)
 
-  const result: Partial<Record<ClickIdKey, string>> = {}
+  const result: Partial<Record<AttributionQueryKey, string>> = {}
 
-  for (const key of CLICK_ID_KEYS) {
+  for (const key of ATTRIBUTION_QUERY_KEYS) {
     const value = params.get(key)
     if (value) {
       result[key] = value
@@ -83,24 +104,41 @@ function getGaIdentity(): GaIdentity | undefined {
   }
 }
 
+export function captureCheckoutAttributionFromSearch(search: string): void {
+  const stored = readStoredAttribution()
+  const fromSearch = readAttributionFromUrl(search)
+  if (Object.keys(fromSearch).length === 0) return
+  if (!hasAttributionChanges(stored, fromSearch)) return
+
+  persistAttribution({
+    ...stored,
+    ...fromSearch
+  })
+}
+
 export function getCheckoutAttribution(): CheckoutAttribution {
   if (typeof window === 'undefined') return {}
 
-  const stored = readStoredClickIds()
-  const fromUrl = readClickIdsFromUrl(window.location.search)
-  const merged: Partial<Record<ClickIdKey, string>> = {
+  const stored = readStoredAttribution()
+  const fromUrl = readAttributionFromUrl(window.location.search)
+  const merged: Partial<Record<AttributionQueryKey, string>> = {
     ...stored,
     ...fromUrl
   }
 
-  if (Object.keys(fromUrl).length > 0) {
-    persistClickIds(merged)
+  if (
+    Object.keys(fromUrl).length > 0 &&
+    hasAttributionChanges(stored, fromUrl)
+  ) {
+    persistAttribution(merged)
   }
 
   const gaIdentity = getGaIdentity()
+  const impactClickId = merged.im_ref
 
   return {
     ...merged,
+    impact_click_id: impactClickId,
     ga_client_id: gaIdentity?.client_id,
     ga_session_id: gaIdentity?.session_id,
     ga_session_number: gaIdentity?.session_number

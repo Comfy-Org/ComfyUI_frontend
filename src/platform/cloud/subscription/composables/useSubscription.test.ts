@@ -9,6 +9,7 @@ const {
   mockAccessBillingPortal,
   mockShowSubscriptionRequiredDialog,
   mockGetAuthHeader,
+  mockGetCheckoutAttribution,
   mockTelemetry,
   mockUserId,
   mockIsCloud
@@ -21,6 +22,11 @@ const {
   mockGetAuthHeader: vi.fn(() =>
     Promise.resolve({ Authorization: 'Bearer test-token' })
   ),
+  mockGetCheckoutAttribution: vi.fn(() => ({
+    im_ref: 'impact-click-001',
+    impact_click_id: 'impact-click-001',
+    utm_source: 'impact'
+  })),
   mockTelemetry: {
     trackSubscription: vi.fn(),
     trackMonthlySubscriptionCancelled: vi.fn()
@@ -82,6 +88,10 @@ vi.mock('@/platform/distribution/types', () => ({
   get isCloud() {
     return mockIsCloud.value
   }
+}))
+
+vi.mock('@/platform/telemetry/utils/checkoutAttribution', () => ({
+  getCheckoutAttribution: mockGetCheckoutAttribution
 }))
 
 vi.mock('@/services/dialogService', () => ({
@@ -284,6 +294,11 @@ describe('useSubscription', () => {
           headers: expect.objectContaining({
             Authorization: 'Bearer test-token',
             'Content-Type': 'application/json'
+          }),
+          body: JSON.stringify({
+            im_ref: 'impact-click-001',
+            impact_click_id: 'impact-click-001',
+            utm_source: 'impact'
           })
         })
       )
