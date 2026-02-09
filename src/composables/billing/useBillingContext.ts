@@ -83,13 +83,11 @@ function useBillingContextInternal(): BillingContext {
   /**
    * Determines which billing type to use:
    * - If team workspaces feature is disabled: always use legacy (/customers)
-   * - If team workspaces feature is enabled:
-   *   - Personal workspace: use legacy (/customers)
-   *   - Team workspace: use workspace (/billing)
+   * - If team workspaces feature is enabled: always use workspace (/billing)
    */
   const type = computed<BillingType>(() => {
     if (!flags.teamWorkspacesEnabled) return 'legacy'
-    return store.isInPersonalWorkspace ? 'legacy' : 'workspace'
+    return 'workspace'
   })
 
   const activeContext = computed(() =>
@@ -121,7 +119,7 @@ function useBillingContextInternal(): BillingContext {
   watch(
     subscription,
     (sub) => {
-      if (!sub || store.isInPersonalWorkspace) return
+      if (!sub) return
 
       store.updateActiveWorkspace({
         isSubscribed: sub.isActive && !sub.isCancelled,

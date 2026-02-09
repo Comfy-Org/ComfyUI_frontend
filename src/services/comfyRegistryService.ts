@@ -4,11 +4,10 @@ import { ref } from 'vue'
 
 import type { components, operations } from '@/types/comfyRegistryTypes'
 import { isAbortError } from '@/utils/typeGuardUtil'
-
-const API_BASE_URL = 'https://api.comfy.org'
+import { getComfyApiBaseUrl } from '@/config/comfyApi'
 
 const registryApiClient = axios.create({
-  baseURL: API_BASE_URL,
+  baseURL: getComfyApiBaseUrl(),
   headers: {
     'Content-Type': 'application/json'
   },

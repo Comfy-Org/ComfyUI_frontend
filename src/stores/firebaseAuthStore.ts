@@ -340,10 +340,8 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
     email: string,
     password: string
   ): Promise<UserCredential> => {
-    const result = await executeAuthAction(
-      (authInstance) =>
-        signInWithEmailAndPassword(authInstance, email, password),
-      { createCustomer: true }
+    const result = await executeAuthAction((authInstance) =>
+      signInWithEmailAndPassword(authInstance, email, password)
     )
 
     if (isCloud) {
@@ -361,10 +359,8 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
     email: string,
     password: string
   ): Promise<UserCredential> => {
-    const result = await executeAuthAction(
-      (authInstance) =>
-        createUserWithEmailAndPassword(authInstance, email, password),
-      { createCustomer: true }
+    const result = await executeAuthAction((authInstance) =>
+      createUserWithEmailAndPassword(authInstance, email, password)
     )
 
     if (isCloud) {
@@ -379,9 +375,8 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
   }
 
   const loginWithGoogle = async (): Promise<UserCredential> => {
-    const result = await executeAuthAction(
-      (authInstance) => signInWithPopup(authInstance, googleProvider),
-      { createCustomer: true }
+    const result = await executeAuthAction((authInstance) =>
+      signInWithPopup(authInstance, googleProvider)
     )
 
     if (isCloud) {
@@ -398,9 +393,8 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
   }
 
   const loginWithGithub = async (): Promise<UserCredential> => {
-    const result = await executeAuthAction(
-      (authInstance) => signInWithPopup(authInstance, githubProvider),
-      { createCustomer: true }
+    const result = await executeAuthAction((authInstance) =>
+      signInWithPopup(authInstance, githubProvider)
     )
 
     if (isCloud) {
