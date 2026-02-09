@@ -13,6 +13,7 @@ import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
 import type {
   IBaseWidget,
+  NodeBindable,
   TWidgetType
 } from '@/lib/litegraph/src/types/widgets'
 import type { WidgetState } from '@/stores/widgetValueStore'
@@ -40,9 +41,9 @@ export interface WidgetEventOptions {
   canvas: LGraphCanvas
 }
 
-export abstract class BaseWidget<
-  TWidget extends IBaseWidget = IBaseWidget
-> implements IBaseWidget {
+export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
+  implements IBaseWidget, NodeBindable
+{
   /** From node edge to widget edge */
   static margin = 15
   /** From widget edge to tip of arrow button */

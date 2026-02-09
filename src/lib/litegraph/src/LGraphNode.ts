@@ -10,7 +10,11 @@ import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMuta
 import { LayoutSource } from '@/renderer/core/layout/types'
 import { adjustColor } from '@/utils/colorUtil'
 import type { ColorAdjustOptions } from '@/utils/colorUtil'
-import { commonType, toClass } from '@/lib/litegraph/src/utils/type'
+import {
+  commonType,
+  isNodeBindable,
+  toClass
+} from '@/lib/litegraph/src/utils/type'
 
 import { SUBGRAPH_OUTPUT_ID } from '@/lib/litegraph/src/constants'
 import type { DragAndScale } from './DragAndScale'
@@ -1961,11 +1965,7 @@ export class LGraphNode
     // Only register with store if node has a valid ID (is already in a graph).
     // If the node isn't in a graph yet (id === -1), registration happens
     // when the node is added via LGraph.add() -> node.onAdded.
-    if (
-      this.id !== -1 &&
-      'setNodeId' in widget &&
-      typeof widget.setNodeId === 'function'
-    ) {
+    if (this.id !== -1 && isNodeBindable(widget)) {
       widget.setNodeId(this.id)
     }
 

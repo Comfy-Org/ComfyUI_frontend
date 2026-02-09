@@ -1,8 +1,17 @@
 import type { Bounds } from '@/renderer/core/layout/types'
 
 import type { CanvasColour, Point, RequiredProps, Size } from '../interfaces'
-import type { CanvasPointer, LGraphCanvas, LGraphNode } from '../litegraph'
+import type {
+  CanvasPointer,
+  LGraphCanvas,
+  LGraphNode,
+  NodeId
+} from '../litegraph'
 import type { CanvasPointerEvent } from './events'
+
+export interface NodeBindable {
+  setNodeId(nodeId: NodeId): void
+}
 
 export interface IWidgetOptions<TValues = unknown> {
   on?: string

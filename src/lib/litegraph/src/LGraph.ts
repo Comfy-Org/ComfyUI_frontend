@@ -4,6 +4,7 @@ import {
   SUBGRAPH_INPUT_ID,
   SUBGRAPH_OUTPUT_ID
 } from '@/lib/litegraph/src/constants'
+import { isNodeBindable } from '@/lib/litegraph/src/utils/type'
 import type { UUID } from '@/lib/litegraph/src/utils/uuid'
 import { createUuidv4, zeroUuid } from '@/lib/litegraph/src/utils/uuid'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
@@ -964,9 +965,7 @@ export class LGraph
     // Widgets added before the node was in the graph deferred their setNodeId call.
     if (node.widgets) {
       for (const widget of node.widgets) {
-        if ('setNodeId' in widget && typeof widget.setNodeId === 'function') {
-          widget.setNodeId(node.id)
-        }
+        if (isNodeBindable(widget)) widget.setNodeId(node.id)
       }
     }
 
