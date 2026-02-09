@@ -19,6 +19,8 @@ jobs:
         uses: ./.github/actions/setup-frontend
       - name: Build project
         run: pnpm build
+        env:
+          DISTRIBUTION: localhost
       - name: Check for telemetry code in dist
         run: |
           # Check for GTM/GA code that should NOT appear in dist
@@ -44,12 +46,13 @@ jobs:
           # Check for Google Tag Manager / Google Analytics
           echo "Checking for GTM/GA code..."
           # Exclude source maps and credit files
-          if grep -r -i --exclude='*.map' --exclude='CREDIT.txt' \
+          # Use extended regex (-E) for explicit pattern matching
+          if grep -rEi --exclude='*.map' --exclude='CREDIT.txt' \
             -e 'googletagmanager' \
             -e 'gtm\.js' \
             -e 'analytics\.js' \
-            -e 'gtag(.config' \
-            -e 'gtag(.event' \
+            -e "gtag\(['\"]config" \
+            -e "gtag\(['\"]event" \
             dist/; then
             echo "❌ ERROR: Found GTM/GA code in dist files!"
             echo "Google Tag Manager / Google Analytics must be properly tree-shaken from OSS builds."
