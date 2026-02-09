@@ -2,6 +2,7 @@ import { toString } from 'es-toolkit/compat'
 import { toValue } from 'vue'
 
 import { PREFIX, SEPARATOR } from '@/constants/groupNodeConstants'
+import { AutoPanController } from '@/renderer/core/canvas/useAutoPan'
 import { LitegraphLinkAdapter } from '@/renderer/core/canvas/litegraph/litegraphLinkAdapter'
 import type { LinkRenderContext } from '@/renderer/core/canvas/litegraph/litegraphLinkAdapter'
 import { getSlotPosition } from '@/renderer/core/canvas/litegraph/slotCalculations'
@@ -670,6 +671,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
   highlighted_links: Dictionary<boolean> = {}
 
   private _visibleReroutes: Set<Reroute> = new Set()
+  private _autoPan: AutoPanController | null = null
 
   dirty_canvas: boolean = true
   dirty_bgcanvas: boolean = true
@@ -2051,7 +2053,27 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     if (!graph) throw new NullGraphError()
 
     pointer.onDragEnd = (upEvent) => linkConnector.dropLinks(graph, upEvent)
-    pointer.finally = () => this.linkConnector.reset(true)
+    pointer.finally = () => {
+      this._autoPan?.stop()
+      this._autoPan = null
+      this.linkConnector.reset(true)
+    }
+
+    this._autoPan = new AutoPanController({
+      canvas: this.canvas,
+      ds: this.ds,
+      onPan: () => {
+        const rect = this.canvas.getBoundingClientRect()
+        const { scale } = this.ds
+        this.graph_mouse[0] =
+          (this.mouse[0] - rect.left) / scale - this.ds.offset[0]
+        this.graph_mouse[1] =
+          (this.mouse[1] - rect.top) / scale - this.ds.offset[1]
+        this._dirty()
+      }
+    })
+    this._autoPan.updatePointer(this.mouse[0], this.mouse[1])
+    this._autoPan.start()
   }
 
   /**
@@ -3259,7 +3281,10 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       (this.allow_interaction || node?.flags.allow_interaction) &&
       !this.read_only
     ) {
-      if (linkConnector.isConnecting) this.dirty_canvas = true
+      if (linkConnector.isConnecting) {
+        this._autoPan?.updatePointer(e.clientX, e.clientY)
+        this.dirty_canvas = true
+      }
 
       // remove mouseover flag
       this.updateMouseOverNodes(node, e)
@@ -3465,6 +3490,8 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
       // Items being dragged
       if (this.isDragging) {
+        this._autoPan?.updatePointer(e.clientX, e.clientY)
+
         const selected = this.selectedItems
         const allItems = e.ctrlKey ? selected : getAllNestedItems(selected)
 
@@ -3543,12 +3570,35 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     // Ensure that dragging is properly cleaned up, on success or failure.
     pointer.finally = () => {
       this.isDragging = false
+      this._autoPan?.stop()
+      this._autoPan = null
       this.graph?.afterChange()
       this.emitAfterChange()
     }
 
     this.processSelect(item, pointer.eDown, sticky)
     this.isDragging = true
+
+    this._autoPan = new AutoPanController({
+      canvas: this.canvas,
+      ds: this.ds,
+      onPan: (panX, panY) => {
+        const selected = this.selectedItems
+        const allItems = getAllNestedItems(selected)
+
+        if (LiteGraph.vueNodesMode) {
+          this.moveChildNodesInGroupVueMode(allItems, panX, panY)
+        } else {
+          for (const item of allItems) {
+            item.move(panX, panY, true)
+          }
+        }
+
+        this._dirty()
+      }
+    })
+    this._autoPan.updatePointer(this.mouse[0], this.mouse[1])
+    this._autoPan.start()
   }
 
   /**
