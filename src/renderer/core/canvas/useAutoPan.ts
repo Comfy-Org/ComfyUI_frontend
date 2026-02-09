@@ -3,7 +3,7 @@ import type { DragAndScale } from '@/lib/litegraph/src/DragAndScale'
 const EDGE_THRESHOLD = 50
 const MAX_PAN_SPEED = 15
 
-export interface AutoPanOptions {
+interface AutoPanOptions {
   canvas: HTMLCanvasElement
   ds: DragAndScale
   onPan: (canvasDeltaX: number, canvasDeltaY: number) => void
