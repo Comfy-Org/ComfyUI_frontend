@@ -50,7 +50,7 @@ import {
   DOMWidgetImpl
 } from '@/scripts/domWidget'
 import { useDialogService } from '@/services/dialogService'
-import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
+import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useExtensionService } from '@/services/extensionService'
 import { useLitegraphService } from '@/services/litegraphService'
 import { useSubgraphService } from '@/services/subgraphService'
@@ -61,6 +61,7 @@ import { useExecutionStore } from '@/stores/executionStore'
 import { useExtensionStore } from '@/stores/extensionStore'
 import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
 import { useNodeOutputStore } from '@/stores/imagePreviewStore'
+import { useJobPreviewStore } from '@/stores/jobPreviewStore'
 import { KeyComboImpl } from '@/platform/keybindings/keyCombo'
 import { useKeybindingStore } from '@/platform/keybindings/keybindingStore'
 import { useModelStore } from '@/stores/modelStore'
@@ -87,6 +88,10 @@ import {
   fixLinkInputSlots,
   isImageNode
 } from '@/utils/litegraphUtil'
+import {
+  createSharedObjectUrl,
+  releaseSharedObjectUrl
+} from '@/utils/objectUrlUtil'
 import {
   findLegacyRerouteNodes,
   noNativeReroutes
@@ -694,7 +699,7 @@ export class ComfyApp {
           'Payment Required: Please add credits to your account to use this node.'
         )
       ) {
-        const { isActiveSubscription } = useSubscription()
+        const { isActiveSubscription } = useBillingContext()
         if (isActiveSubscription.value) {
           useDialogService().showTopUpCreditsDialog({
             isInsufficientCredits: true
@@ -708,12 +713,13 @@ export class ComfyApp {
 
     api.addEventListener('b_preview_with_metadata', ({ detail }) => {
       // Enhanced preview with explicit node context
-      const { blob, displayNodeId } = detail
+      const { blob, displayNodeId, promptId } = detail
       const { setNodePreviewsByExecutionId, revokePreviewsByExecutionId } =
         useNodeOutputStore()
+      const blobUrl = createSharedObjectUrl(blob)
+      useJobPreviewStore().setPreviewUrl(promptId, blobUrl)
       // Ensure clean up if `executing` event is missed.
       revokePreviewsByExecutionId(displayNodeId)
-      const blobUrl = URL.createObjectURL(blob)
       // Preview cleanup is handled in progress_state event to support multiple concurrent previews
       const nodeParents = displayNodeId.split(':')
       for (let i = 1; i <= nodeParents.length; i++) {
@@ -721,6 +727,7 @@ export class ComfyApp {
           blobUrl
         ])
       }
+      releaseSharedObjectUrl(blobUrl)
     })
 
     api.init()
@@ -992,9 +999,11 @@ export class ComfyApp {
     await useExtensionService().invokeExtensionsAsync('addCustomNodeDefs', defs)
 
     // Register a node for each definition
-    for (const nodeId in defs) {
-      this.registerNodeDef(nodeId, defs[nodeId])
-    }
+    await Promise.all(
+      Object.keys(defs).map((nodeId) =>
+        this.registerNodeDef(nodeId, defs[nodeId])
+      )
+    )
   }
 
   loadTemplateData(templateData: {

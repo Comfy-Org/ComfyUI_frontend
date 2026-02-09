@@ -151,6 +151,51 @@
     },
     "tooltip": "Contrôle l’apparence et la visibilité des liens de connexion entre les nœuds sur le canevas."
   },
+  "Comfy_Load3D_3DViewerEnable": {
+    "name": "Activer le visualiseur 3D (Bêta)",
+    "tooltip": "Active le visualiseur 3D (Bêta) pour les nœuds sélectionnés. Cette fonctionnalité vous permet de visualiser et d’interagir avec des modèles 3D directement dans le visualiseur 3D en taille réelle."
+  },
+  "Comfy_Load3D_BackgroundColor": {
+    "name": "Couleur de fond initiale",
+    "tooltip": "Contrôle la couleur de fond par défaut de la scène 3D. Ce paramètre détermine l’apparence du fond lors de la création d’un nouveau widget 3D, mais peut être ajusté individuellement pour chaque widget après la création."
+  },
+  "Comfy_Load3D_CameraType": {
+    "name": "Type de caméra initial",
+    "options": {
+      "orthographic": "orthographique",
+      "perspective": "perspective"
+    },
+    "tooltip": "Définit si la caméra est en perspective ou orthographique par défaut lors de la création d’un nouveau widget 3D. Ce paramètre peut toujours être modifié individuellement pour chaque widget après la création."
+  },
+  "Comfy_Load3D_LightAdjustmentIncrement": {
+    "name": "Incrément d’ajustement de la lumière",
+    "tooltip": "Contrôle la taille de l’incrément lors de l’ajustement de l’intensité lumineuse dans les scènes 3D. Une valeur de pas plus petite permet un réglage plus précis de la lumière, tandis qu’une valeur plus grande entraîne des changements plus marqués à chaque ajustement."
+  },
+  "Comfy_Load3D_LightIntensity": {
+    "name": "Intensité lumineuse initiale",
+    "tooltip": "Définit le niveau de luminosité par défaut de l’éclairage dans la scène 3D. Cette valeur détermine l’intensité avec laquelle les lumières éclairent les objets lors de la création d’un nouveau widget 3D, mais peut être ajustée individuellement pour chaque widget après la création."
+  },
+  "Comfy_Load3D_LightIntensityMaximum": {
+    "name": "Intensité lumineuse maximale",
+    "tooltip": "Définit la valeur maximale autorisée pour l’intensité lumineuse dans les scènes 3D. Cela définit la limite supérieure de luminosité pouvant être appliquée lors de l’ajustement de l’éclairage dans n’importe quel widget 3D."
+  },
+  "Comfy_Load3D_LightIntensityMinimum": {
+    "name": "Intensité lumineuse minimale",
+    "tooltip": "Définit la valeur minimale autorisée pour l’intensité lumineuse dans les scènes 3D. Cela définit la limite inférieure de luminosité pouvant être appliquée lors de l’ajustement de l’éclairage dans n’importe quel widget 3D."
+  },
+  "Comfy_Load3D_PLYEngine": {
+    "name": "Moteur PLY",
+    "options": {
+      "fastply": "fastply",
+      "sparkjs": "sparkjs",
+      "threejs": "threejs"
+    },
+    "tooltip": "Sélectionnez le moteur pour charger les fichiers PLY. « threejs » utilise le PLYLoader natif de Three.js (idéal pour les fichiers PLY de maillage). « fastply » utilise un chargeur optimisé pour les fichiers PLY de nuages de points ASCII. « sparkjs » utilise Spark.js pour les fichiers PLY de Gaussian Splatting 3D."
+  },
+  "Comfy_Load3D_ShowGrid": {
+    "name": "Visibilité initiale de la grille",
+    "tooltip": "Contrôle si la grille est visible par défaut lors de la création d’un nouveau widget 3D. Ce paramètre peut toujours être modifié individuellement pour chaque widget après la création."
+  },
   "Comfy_Locale": {
     "name": "Langue"
   },

@@ -13,7 +13,7 @@
   </div>
   <ListBox :options="missingModels" class="comfy-missing-models">
     <template #option="{ option }">
-      <Suspense v-if="isElectron()">
+      <Suspense v-if="isDesktop">
         <ElectronFileDownload
           :url="option.url"
           :label="option.label"
@@ -40,7 +40,7 @@ import ElectronFileDownload from '@/components/common/ElectronFileDownload.vue'
 import FileDownload from '@/components/common/FileDownload.vue'
 import NoResultsPlaceholder from '@/components/common/NoResultsPlaceholder.vue'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { isElectron } from '@/utils/envUtil'
+import { isDesktop } from '@/platform/distribution/types'
 
 // TODO: Read this from server internal API rather than hardcoding here
 // as some installations may wish to use custom sources

@@ -188,7 +188,7 @@ export const useColorPaletteService = () => {
    * @param schema - The Zod schema object to analyze.
    * @returns Array of optional key names.
    */
-  const getOptionalKeys = (schema: z.ZodObject<any, any>) => {
+  const getOptionalKeys = (schema: z.ZodObject<z.ZodRawShape>) => {
     const optionalKeys: string[] = []
     const shape = schema.shape
 
