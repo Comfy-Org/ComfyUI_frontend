@@ -12,7 +12,7 @@
     <!-- Content Section -->
     <div class="flex flex-col gap-2 p-3 pt-1">
       <!-- Title -->
-      <h3 class="text-xs font-bold text-white m-0">
+      <h3 class="text-xs font-bold text-foreground m-0">
         {{ nodeDef.display_name }}
       </h3>
 
@@ -36,18 +36,18 @@
       <!-- Description -->
       <p
         v-if="nodeDef.description"
-        class="line-clamp-2 text-xxs leading-relaxed text-neutral-400 m-0"
+        class="line-clamp-2 text-xxs leading-relaxed text-muted-foreground m-0"
       >
         {{ nodeDef.description }}
       </p>
 
       <!-- Divider -->
-      <div class="border-t border-neutral-700" />
+      <div class="border-t border-border-default" />
 
       <!-- Inputs Section -->
       <div v-if="inputs.length > 0" class="flex flex-col gap-1">
         <h4
-          class="text-xxs font-semibold uppercase tracking-wide text-neutral-500 m-0"
+          class="text-xxs font-semibold uppercase tracking-wide text-muted-foreground m-0"
         >
           {{ $t('nodeHelpPage.inputs') }}
         </h4>
@@ -56,15 +56,15 @@
           :key="input.name"
           class="flex items-center justify-between text-xxs"
         >
-          <span class="text-white">{{ input.name }}</span>
-          <span class="text-neutral-500">{{ input.type }}</span>
+          <span class="text-foreground">{{ input.name }}</span>
+          <span class="text-muted-foreground">{{ input.type }}</span>
         </div>
       </div>
 
       <!-- Outputs Section -->
       <div v-if="outputs.length > 0" class="flex flex-col gap-1">
         <h4
-          class="text-xxs font-semibold uppercase tracking-wide text-neutral-500 m-0"
+          class="text-xxs font-semibold uppercase tracking-wide text-muted-foreground m-0"
         >
           {{ $t('nodeHelpPage.outputs') }}
         </h4>
@@ -73,8 +73,8 @@
           :key="output.name"
           class="flex items-center justify-between text-xxs"
         >
-          <span class="text-white">{{ output.name }}</span>
-          <span class="text-neutral-500">{{ output.type }}</span>
+          <span class="text-foreground">{{ output.name }}</span>
+          <span class="text-muted-foreground">{{ output.type }}</span>
         </div>
       </div>
     </div>

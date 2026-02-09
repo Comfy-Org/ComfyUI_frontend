@@ -1,14 +1,13 @@
 <template>
-  <ContextMenuRoot v-if="showContextMenu">
+  <ContextMenuRoot>
     <TreeRoot
-      :expanded="expandedKeys"
+      :expanded="[...expandedKeys]"
       :items="root.children ?? []"
       :get-key="(item) => item.key"
       :get-children="
         (item) => (item.children?.length ? item.children : undefined)
       "
       class="m-0 p-0"
-      @update:expanded="expandedKeys = $event"
     >
       <TreeVirtualizer
         v-slot="{ item }"
@@ -33,7 +32,7 @@
       </TreeVirtualizer>
     </TreeRoot>
 
-    <ContextMenuPortal>
+    <ContextMenuPortal v-if="showContextMenu">
       <ContextMenuContent
         class="z-[9999] min-w-32 overflow-hidden rounded-md border border-border-default bg-comfy-menu-bg p-1 shadow-md"
       >
@@ -54,40 +53,6 @@
       </ContextMenuContent>
     </ContextMenuPortal>
   </ContextMenuRoot>
-
-  <!-- Without context menu -->
-  <TreeRoot
-    v-else
-    :expanded="[...expandedKeys]"
-    :items="root.children ?? []"
-    :get-key="(item) => item.key"
-    :get-children="
-      (item) => (item.children?.length ? item.children : undefined)
-    "
-    class="m-0 p-0"
-  >
-    <TreeVirtualizer
-      v-slot="{ item }"
-      :estimate-size="36"
-      :text-content="(item) => item.value.label ?? ''"
-    >
-      <TreeExplorerV2Node
-        :item="item as FlattenedItem<RenderedTreeExplorerNode>"
-        :show-context-menu="false"
-        @node-click="
-          (node: RenderedTreeExplorerNode, e: MouseEvent) =>
-            emit('nodeClick', node, e)
-        "
-      >
-        <template #folder="{ node }">
-          <slot name="folder" :node="node" />
-        </template>
-        <template #node="{ node }">
-          <slot name="node" :node="node" />
-        </template>
-      </TreeExplorerV2Node>
-    </TreeVirtualizer>
-  </TreeRoot>
 </template>
 
 <script setup lang="ts">
