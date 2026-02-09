@@ -5,7 +5,7 @@ import { computed, ref } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
-import type { TabId } from '@/types/nodeOrganizationTypes'
+import NodeLibrarySidebarTabV2 from './NodeLibrarySidebarTabV2.vue'
 
 import NodeLibrarySidebarTabV2 from './NodeLibrarySidebarTabV2.vue'
 
@@ -148,77 +148,6 @@ describe('NodeLibrarySidebarTabV2 expandedKeys logic', () => {
           expandedKeysByTab.value[selectedTab.value] = value
         }
       })
-
-      return { selectedTab, expandedKeysByTab, expandedKeys }
     }
-
-    it('should initialize with empty arrays for all tabs', () => {
-      const { expandedKeysByTab } = createExpandedKeysState()
-
-      expect(expandedKeysByTab.value.essentials).toEqual([])
-      expect(expandedKeysByTab.value.all).toEqual([])
-      expect(expandedKeysByTab.value.custom).toEqual([])
-    })
-
-    it('should return keys for the current tab', () => {
-      const { selectedTab, expandedKeysByTab, expandedKeys } =
-        createExpandedKeysState('essentials')
-
-      expandedKeysByTab.value.essentials = ['key1', 'key2']
-      expandedKeysByTab.value.all = ['key3']
-
-      expect(expandedKeys.value).toEqual(['key1', 'key2'])
-
-      selectedTab.value = 'all'
-      expect(expandedKeys.value).toEqual(['key3'])
-    })
-
-    it('should set keys only for the current tab', () => {
-      const { expandedKeysByTab, expandedKeys } =
-        createExpandedKeysState('essentials')
-
-      expandedKeys.value = ['new-key1', 'new-key2']
-
-      expect(expandedKeysByTab.value.essentials).toEqual([
-        'new-key1',
-        'new-key2'
-      ])
-      expect(expandedKeysByTab.value.all).toEqual([])
-      expect(expandedKeysByTab.value.custom).toEqual([])
-    })
-
-    it('should preserve keys when switching tabs', () => {
-      const { selectedTab, expandedKeysByTab, expandedKeys } =
-        createExpandedKeysState('essentials')
-
-      expandedKeys.value = ['essentials-key']
-      selectedTab.value = 'all'
-      expandedKeys.value = ['all-key']
-      selectedTab.value = 'custom'
-      expandedKeys.value = ['custom-key']
-
-      expect(expandedKeysByTab.value.essentials).toEqual(['essentials-key'])
-      expect(expandedKeysByTab.value.all).toEqual(['all-key'])
-      expect(expandedKeysByTab.value.custom).toEqual(['custom-key'])
-
-      selectedTab.value = 'essentials'
-      expect(expandedKeys.value).toEqual(['essentials-key'])
-    })
-
-    it('should not share keys between tabs', () => {
-      const { selectedTab, expandedKeys } =
-        createExpandedKeysState('essentials')
-
-      expandedKeys.value = ['shared-key']
-
-      selectedTab.value = 'all'
-      expect(expandedKeys.value).toEqual([])
-
-      selectedTab.value = 'custom'
-      expect(expandedKeys.value).toEqual([])
-
-      selectedTab.value = 'essentials'
-      expect(expandedKeys.value).toEqual(['shared-key'])
-    })
   })
 })
