@@ -1,7 +1,7 @@
 <template>
   <ContextMenuRoot>
     <TreeRoot
-      :expanded="expandedKeys"
+      :expanded="[...expandedKeys]"
       :items="root.children ?? []"
       :get-key="(item) => item.key"
       :get-children="
