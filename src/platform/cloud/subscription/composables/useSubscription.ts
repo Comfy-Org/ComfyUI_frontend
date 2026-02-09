@@ -232,7 +232,7 @@ function useSubscriptionInternal() {
           t('toastMessages.userNotAuthenticated')
         )
       }
-      const checkoutAttribution = getCheckoutAttribution()
+      const checkoutAttribution = await getCheckoutAttribution()
 
       const response = await fetch(
         buildApiUrl('/customers/cloud-subscription-checkout'),

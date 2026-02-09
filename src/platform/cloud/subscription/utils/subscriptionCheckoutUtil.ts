@@ -46,7 +46,7 @@ export async function performSubscriptionCheckout(
   }
 
   const checkoutTier = getCheckoutTier(tierKey, currentBillingCycle)
-  const checkoutAttribution = getCheckoutAttribution()
+  const checkoutAttribution = await getCheckoutAttribution()
   const checkoutPayload = { ...checkoutAttribution }
 
   const response = await fetch(

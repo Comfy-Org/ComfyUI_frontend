@@ -24,18 +24,18 @@ export async function initTelemetry(): Promise<void> {
       { TelemetryRegistry },
       { MixpanelTelemetryProvider },
       { GtmTelemetryProvider },
-      { CheckoutAttributionTelemetryProvider }
+      { ImpactTelemetryProvider }
     ] = await Promise.all([
       import('./TelemetryRegistry'),
       import('./providers/cloud/MixpanelTelemetryProvider'),
       import('./providers/cloud/GtmTelemetryProvider'),
-      import('./providers/cloud/CheckoutAttributionTelemetryProvider')
+      import('./providers/cloud/ImpactTelemetryProvider')
     ])
 
     const registry = new TelemetryRegistry()
-    registry.registerProvider(new CheckoutAttributionTelemetryProvider())
     registry.registerProvider(new MixpanelTelemetryProvider())
     registry.registerProvider(new GtmTelemetryProvider())
+    registry.registerProvider(new ImpactTelemetryProvider())
 
     setTelemetryRegistry(registry)
   })()

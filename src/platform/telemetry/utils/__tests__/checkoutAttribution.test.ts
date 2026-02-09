@@ -1,39 +1,16 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import {
-  captureCheckoutAttributionFromSearch,
-  getCheckoutAttribution
-} from '../checkoutAttribution'
-
-const storage = new Map<string, string>()
-
-const mockLocalStorage = vi.hoisted(() => ({
-  getItem: vi.fn((key: string) => storage.get(key) ?? null),
-  setItem: vi.fn((key: string, value: string) => {
-    storage.set(key, value)
-  }),
-  removeItem: vi.fn((key: string) => {
-    storage.delete(key)
-  }),
-  clear: vi.fn(() => {
-    storage.clear()
-  })
-}))
-
-Object.defineProperty(window, 'localStorage', {
-  value: mockLocalStorage,
-  writable: true
-})
+import { getCheckoutAttribution } from '../checkoutAttribution'
 
 describe('getCheckoutAttribution', () => {
   beforeEach(() => {
-    storage.clear()
     vi.clearAllMocks()
     window.__ga_identity__ = undefined
+    window.ire = undefined
     window.history.pushState({}, '', '/')
   })
 
-  it('reads GA identity and persists attribution from URL', () => {
+  it('reads GA identity and URL attribution, and prefers generated click id', async () => {
     window.__ga_identity__ = {
       client_id: '123.456',
       session_id: '1700000000',
@@ -42,10 +19,18 @@ describe('getCheckoutAttribution', () => {
     window.history.pushState(
       {},
       '',
-      '/?gclid=gclid-123&utm_source=impact&im_ref=impact-123'
+      '/?gclid=gclid-123&utm_source=impact&im_ref=url-click-id'
     )
+    const mockIreCall = vi.fn()
+    window.ire = (...args: unknown[]) => {
+      mockIreCall(...args)
+      const callback = args[1]
+      if (typeof callback === 'function') {
+        ;(callback as (value: string) => void)('generated-click-id')
+      }
+    }
 
-    const attribution = getCheckoutAttribution()
+    const attribution = await getCheckoutAttribution()
 
     expect(attribution).toMatchObject({
       ga_client_id: '123.456',
@@ -53,83 +38,53 @@ describe('getCheckoutAttribution', () => {
       ga_session_number: '2',
       gclid: 'gclid-123',
       utm_source: 'impact',
-      im_ref: 'impact-123',
-      impact_click_id: 'impact-123'
+      im_ref: 'generated-click-id',
+      impact_click_id: 'generated-click-id'
     })
-    expect(mockLocalStorage.setItem).toHaveBeenCalledTimes(1)
-    const firstPersistedPayload = mockLocalStorage.setItem.mock.calls[0]?.[1]
-    expect(JSON.parse(firstPersistedPayload)).toEqual({
-      gclid: 'gclid-123',
-      utm_source: 'impact',
-      im_ref: 'impact-123'
-    })
+    expect(mockIreCall).toHaveBeenCalledWith(
+      'generateClickId',
+      expect.any(Function)
+    )
   })
 
-  it('uses stored attribution when URL is empty', () => {
-    storage.set(
-      'comfy_checkout_attribution',
-      JSON.stringify({ gbraid: 'gbraid-1', im_ref: 'impact-abc' })
+  it('falls back to URL click id when generateClickId is unavailable', async () => {
+    window.history.pushState(
+      {},
+      '',
+      '/?utm_campaign=launch&im_ref=fallback-from-url'
     )
 
-    const attribution = getCheckoutAttribution()
-
-    expect(attribution.gbraid).toBe('gbraid-1')
-    expect(attribution.im_ref).toBe('impact-abc')
-    expect(attribution.impact_click_id).toBe('impact-abc')
-  })
-
-  it('captures attribution from current URL search string', () => {
-    window.history.pushState({}, '', '/?utm_campaign=launch&im_ref=impact-456')
-
-    captureCheckoutAttributionFromSearch(window.location.search)
-
-    expect(mockLocalStorage.setItem).toHaveBeenCalledTimes(1)
-    const capturedPayload = mockLocalStorage.setItem.mock.calls[0]?.[1]
-    expect(JSON.parse(capturedPayload)).toEqual({
-      utm_campaign: 'launch',
-      im_ref: 'impact-456'
-    })
-  })
-
-  it('captures attribution from an explicit search string', () => {
-    captureCheckoutAttributionFromSearch(
-      '?utm_source=impact&utm_medium=affiliate&im_ref=impact-789'
-    )
-
-    expect(mockLocalStorage.setItem).toHaveBeenCalledTimes(1)
-    const capturedPayload = mockLocalStorage.setItem.mock.calls[0]?.[1]
-    expect(JSON.parse(capturedPayload)).toEqual({
-      utm_source: 'impact',
-      utm_medium: 'affiliate',
-      im_ref: 'impact-789'
-    })
-  })
-
-  it('does not persist when explicit search attribution matches stored values', () => {
-    storage.set(
-      'comfy_checkout_attribution',
-      JSON.stringify({ utm_source: 'impact', im_ref: 'impact-789' })
-    )
-
-    captureCheckoutAttributionFromSearch('?utm_source=impact&im_ref=impact-789')
-
-    expect(mockLocalStorage.setItem).not.toHaveBeenCalled()
-  })
-
-  it('does not persist from URL when query attribution matches stored values', () => {
-    storage.set(
-      'comfy_checkout_attribution',
-      JSON.stringify({ gclid: 'gclid-123', im_ref: 'impact-abc' })
-    )
-    window.history.pushState({}, '', '/?gclid=gclid-123&im_ref=impact-abc')
-
-    const attribution = getCheckoutAttribution()
+    const attribution = await getCheckoutAttribution()
 
     expect(attribution).toMatchObject({
-      gclid: 'gclid-123',
-      im_ref: 'impact-abc',
-      impact_click_id: 'impact-abc'
+      utm_campaign: 'launch',
+      im_ref: 'fallback-from-url',
+      impact_click_id: 'fallback-from-url'
     })
-    expect(mockLocalStorage.setItem).not.toHaveBeenCalled()
+  })
+
+  it('returns URL attribution only when no click id is available', async () => {
+    window.history.pushState({}, '', '/?utm_source=impact&utm_medium=affiliate')
+
+    const attribution = await getCheckoutAttribution()
+
+    expect(attribution).toMatchObject({
+      utm_source: 'impact',
+      utm_medium: 'affiliate'
+    })
+    expect(attribution.im_ref).toBeUndefined()
+    expect(attribution.impact_click_id).toBeUndefined()
+  })
+
+  it('falls back to URL im_ref when generateClickId throws', async () => {
+    window.history.pushState({}, '', '/?im_ref=url-fallback')
+    window.ire = () => {
+      throw new Error('Impact unavailable')
+    }
+
+    const attribution = await getCheckoutAttribution()
+
+    expect(attribution.im_ref).toBe('url-fallback')
+    expect(attribution.impact_click_id).toBe('url-fallback')
   })
 })

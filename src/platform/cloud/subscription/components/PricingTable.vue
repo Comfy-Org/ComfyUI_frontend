@@ -414,7 +414,7 @@ const handleSubscribe = wrapWithErrorHandlingAsync(
 
     try {
       if (isActiveSubscription.value) {
-        const checkoutAttribution = getCheckoutAttribution()
+        const checkoutAttribution = await getCheckoutAttribution()
         if (userId) {
           telemetry?.trackBeginCheckout({
             user_id: userId,
