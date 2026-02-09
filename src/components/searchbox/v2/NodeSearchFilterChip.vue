@@ -8,6 +8,7 @@
     <button
       type="button"
       class="ml-1 cursor-pointer border-none bg-transparent text-muted-foreground hover:text-base-foreground rounded-full aspect-square"
+      :aria-label="$t('g.remove')"
       @click="$emit('remove', $event)"
     >
       <i class="pi pi-times text-xs" />

@@ -12,7 +12,8 @@ export const useSearchBoxStore = defineStore('searchBox', () => {
 
   // Feature flag for the new search box V2 with category sidebar
   const useSearchBoxV2 = ref(
-    new URLSearchParams(window.location.search).get('nodeRedesign') === 'true'
+    typeof window !== 'undefined' &&
+      new URLSearchParams(window.location.search).get('nodeRedesign') === 'true'
   )
 
   const newSearchBoxEnabled = computed(
