@@ -8,6 +8,7 @@ import type { UUID } from '@/lib/litegraph/src/utils/uuid'
 import { createUuidv4, zeroUuid } from '@/lib/litegraph/src/utils/uuid'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { LayoutSource } from '@/renderer/core/layout/types'
+import { forEachNode } from '@/utils/graphTraversalUtil'
 
 import type { DragAndScaleState } from './DragAndScale'
 import { LGraphCanvas } from './LGraphCanvas'
@@ -973,6 +974,13 @@ export class LGraph
       this.canvasAction((c) => c.startGhostPlacement(node, opts.dragEvent))
     }
 
+    if (node.isSubgraphNode?.()) {
+      forEachNode(node.subgraph, (innerNode) => {
+        if (innerNode.isSubgraphNode())
+          this.subgraphs.set(innerNode.subgraph.id, innerNode.subgraph)
+      })
+    }
+
     // to chain actions
     return node
   }
@@ -1034,14 +1042,14 @@ export class LGraph
       }
     }
 
-    // Subgraph cleanup (use local const to avoid type narrowing affecting node.graph assignment)
-    const subgraphNode = node.isSubgraphNode() ? node : null
-    if (subgraphNode) {
-      for (const innerNode of subgraphNode.subgraph.nodes) {
+    if (node.isSubgraphNode()) {
+      forEachNode(node.subgraph, (innerNode) => {
         innerNode.onRemoved?.()
-        subgraphNode.subgraph.onNodeRemoved?.(innerNode)
-      }
-      this.rootGraph.subgraphs.delete(subgraphNode.subgraph.id)
+        innerNode.graph?.onNodeRemoved?.(innerNode)
+        if (innerNode.isSubgraphNode())
+          this.rootGraph.subgraphs.delete(innerNode.subgraph.id)
+      })
+      this.rootGraph.subgraphs.delete(node.subgraph.id)
     }
 
     // callback
