@@ -8,7 +8,6 @@
       :options="booleanOptions"
       option-label="label"
       option-value="value"
-      :class="cn(hideLayoutField || 'ml-auto')"
       @update:model-value="handleOptionChange"
     />
 
