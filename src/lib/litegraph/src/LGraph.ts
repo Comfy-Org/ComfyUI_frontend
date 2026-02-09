@@ -2555,18 +2555,21 @@ export class LGraph
 
         if (usedNodeIds.has(node.id)) {
           const oldId = node.id
-          const newId = ++state.lastNodeId
+          while (usedNodeIds.has(++state.lastNodeId));
+          const newId = state.lastNodeId
           delete graph._nodes_by_id[oldId]
           node.id = newId
           graph._nodes_by_id[newId] = node
+          usedNodeIds.add(newId)
           remappedIds.set(oldId, newId)
           console.warn(
             `LiteGraph: duplicate node ID ${oldId} reassigned to ${newId} in graph ${graph.id}`
           )
+        } else {
+          usedNodeIds.add(node.id as number)
+          if ((node.id as number) > state.lastNodeId)
+            state.lastNodeId = node.id as number
         }
-        usedNodeIds.add(node.id as number)
-        if ((node.id as number) > state.lastNodeId)
-          state.lastNodeId = node.id as number
       }
 
       if (remappedIds.size > 0) {
