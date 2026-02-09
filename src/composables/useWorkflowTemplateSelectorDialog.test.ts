@@ -1,5 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { useWorkflowTemplateSelectorDialog } from './useWorkflowTemplateSelectorDialog'
+
 const mockDialogService = vi.hoisted(() => ({
   showLayoutDialog: vi.fn()
 }))
@@ -38,8 +40,6 @@ vi.mock(
     default: { name: 'MockWorkflowTemplateSelectorDialog' }
   })
 )
-
-import { useWorkflowTemplateSelectorDialog } from './useWorkflowTemplateSelectorDialog'
 
 describe('useWorkflowTemplateSelectorDialog', () => {
   beforeEach(() => {
