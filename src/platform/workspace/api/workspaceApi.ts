@@ -211,6 +211,7 @@ export interface BillingStatusResponse {
   billing_status?: BillingStatus
   has_funds: boolean
   cancel_at?: string
+  renewal_date?: string
 }
 
 export interface BillingBalanceResponse {

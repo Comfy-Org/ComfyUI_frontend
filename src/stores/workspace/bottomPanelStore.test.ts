@@ -48,8 +48,12 @@ vi.mock('@/stores/commandStore', () => ({
   })
 }))
 
-vi.mock('@/utils/envUtil', () => ({
-  isElectron: () => false
+const mockData = vi.hoisted(() => ({ isDesktop: false }))
+
+vi.mock('@/platform/distribution/types', () => ({
+  get isDesktop() {
+    return mockData.isDesktop
+  }
 }))
 
 describe('useBottomPanelStore', () => {

@@ -10801,6 +10801,9 @@
       "camera_info": {
         "name": "カメラ情報"
       },
+      "image": {
+        "name": "画像"
+      },
       "model_file": {
         "name": "モデルファイル",
         "tooltip": "3Dモデルファイルまたはパス文字列"
@@ -12618,6 +12621,9 @@
     "inputs": {
       "filename_prefix": {
         "name": "ファイル名のプレフィックス"
+      },
+      "image": {
+        "name": "画像"
       },
       "mesh": {
         "name": "メッシュ",
