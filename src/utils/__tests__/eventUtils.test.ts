@@ -1,36 +1,65 @@
-import { extractFileFromDragEvent } from '@/utils/eventUtils'
+import { extractFilesFromDragEvent } from '@/utils/eventUtils'
 import { describe, expect, it } from 'vitest'
 
 describe('eventUtils', () => {
-  describe('extractFileFromDragEvent', () => {
-    it('should handle drops with no data', async () => {
-      const actual = await extractFileFromDragEvent(new FakeDragEvent('drop'))
-      expect(actual).toBe(undefined)
+  describe('extractFilesFromDragEvent', () => {
+    it('should return empty array when no dataTransfer', async () => {
+      const actual = await extractFilesFromDragEvent(new FakeDragEvent('drop'))
+      expect(actual).toEqual([])
     })
 
-    it('should handle drops with dataTransfer but no files', async () => {
-      const actual = await extractFileFromDragEvent(
+    it('should return empty array when dataTransfer has no files', async () => {
+      const actual = await extractFilesFromDragEvent(
         new FakeDragEvent('drop', { dataTransfer: new DataTransfer() })
       )
-      expect(actual).toBe(undefined)
+      expect(actual).toEqual([])
     })
 
-    it('should handle drops with dataTransfer with files', async () => {
-      const fileWithWorkflowMaybeWhoKnows = new File(
-        [new Uint8Array()],
-        'fake_workflow.json',
-        {
-          type: 'application/json'
-        }
-      )
-
+    it('should return single file from dataTransfer', async () => {
+      const file = new File([new Uint8Array()], 'workflow.json', {
+        type: 'application/json'
+      })
       const dataTransfer = new DataTransfer()
-      dataTransfer.items.add(fileWithWorkflowMaybeWhoKnows)
+      dataTransfer.items.add(file)
 
-      const event = new FakeDragEvent('drop', { dataTransfer })
+      const actual = await extractFilesFromDragEvent(
+        new FakeDragEvent('drop', { dataTransfer })
+      )
+      expect(actual).toEqual([file])
+    })
 
-      const actual = await extractFileFromDragEvent(event)
-      expect(actual).toBe(fileWithWorkflowMaybeWhoKnows)
+    it('should return multiple files from dataTransfer', async () => {
+      const file1 = new File([new Uint8Array()], 'workflow1.json', {
+        type: 'application/json'
+      })
+      const file2 = new File([new Uint8Array()], 'workflow2.json', {
+        type: 'application/json'
+      })
+      const dataTransfer = new DataTransfer()
+      dataTransfer.items.add(file1)
+      dataTransfer.items.add(file2)
+
+      const actual = await extractFilesFromDragEvent(
+        new FakeDragEvent('drop', { dataTransfer })
+      )
+      expect(actual).toEqual([file1, file2])
+    })
+
+    it('should filter out bmp files', async () => {
+      const jsonFile = new File([new Uint8Array()], 'workflow.json', {
+        type: 'application/json'
+      })
+      const bmpFile = new File([new Uint8Array()], 'image.bmp', {
+        type: 'image/bmp'
+      })
+      const dataTransfer = new DataTransfer()
+      dataTransfer.items.add(jsonFile)
+      dataTransfer.items.add(bmpFile)
+
+      const actual = await extractFilesFromDragEvent(
+        new FakeDragEvent('drop', { dataTransfer })
+      )
+      expect(actual).toEqual([jsonFile])
     })
 
     // Skip until we can setup MSW
@@ -38,14 +67,14 @@ describe('eventUtils', () => {
       const urlWithWorkflow = 'https://fakewebsite.notreal/fake_workflow.json'
 
       const dataTransfer = new DataTransfer()
-
       dataTransfer.setData('text/uri-list', urlWithWorkflow)
       dataTransfer.setData('text/x-moz-url', urlWithWorkflow)
 
-      const event = new FakeDragEvent('drop', { dataTransfer })
-
-      const actual = await extractFileFromDragEvent(event)
-      expect(actual).toBeInstanceOf(File)
+      const actual = await extractFilesFromDragEvent(
+        new FakeDragEvent('drop', { dataTransfer })
+      )
+      expect(actual.length).toBe(1)
+      expect(actual[0]).toBeInstanceOf(File)
     })
   })
 })
