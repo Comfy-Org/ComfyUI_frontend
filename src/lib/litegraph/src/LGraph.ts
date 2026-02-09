@@ -974,7 +974,7 @@ export class LGraph
       this.canvasAction((c) => c.startGhostPlacement(node, opts.dragEvent))
     }
 
-    if (node.isSubgraphNode()) {
+    if (node.isSubgraphNode?.()) {
       forEachNode(node.subgraph, (innerNode) => {
         if (innerNode.isSubgraphNode())
           this.subgraphs.set(innerNode.subgraph.id, innerNode.subgraph)
