@@ -1,10 +1,7 @@
 <template>
   <div
     :class="
-      cn(
-        WidgetInputBaseClass,
-        'p-1 flex min-w-0 justify-center items-center gap-1'
-      )
+      cn(WidgetInputBaseClass, 'w-full p-1 flex min-w-0 items-center gap-1')
     "
   >
     <button
