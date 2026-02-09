@@ -793,8 +793,7 @@
         "alphabeticalDesc": "Sort alphabetically within groups"
       },
       "sections": {
-        "favorites": "Favorites",
-        "basics": "Basics"
+        "favorites": "Favorites"
       }
     },
     "modelLibrary": "Model Library",

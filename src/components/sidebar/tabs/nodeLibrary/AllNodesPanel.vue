@@ -19,9 +19,9 @@
     <div v-for="(section, index) in sections" :key="section.title ?? index">
       <h3
         v-if="section.title"
-        class="px-4 py-2 text-xs font-medium uppercase tracking-wide text-muted-foreground"
+        class="px-4 py-2 text-xs font-medium tracking-wide text-muted-foreground"
       >
-        {{ $t(section.title) }}
+        {{ section.title }}
       </h3>
       <TreeExplorerV2
         v-model:expanded-keys="expandedKeys"

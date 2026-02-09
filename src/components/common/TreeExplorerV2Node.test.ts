@@ -145,10 +145,9 @@ describe('TreeExplorerV2Node', () => {
       ).toBe(true)
     })
 
-    it('does not render ContextMenuTrigger when showContextMenu is false', () => {
+    it('does not render ContextMenuTrigger for folder items', () => {
       const { wrapper } = mountComponent({
-        item: createMockItem('node'),
-        showContextMenu: false
+        item: createMockItem('folder')
       })
 
       expect(

@@ -33,7 +33,9 @@ describe('BadgePill', () => {
     const wrapper = mount(BadgePill, {
       props: { text: 'Default' }
     })
-    expect(wrapper.attributes('style')).toContain('border-color: #525252')
+    expect(wrapper.attributes('style')).toContain(
+      'border-color: var(--border-color)'
+    )
   })
 
   it('applies solid border color when borderStyle is a color', () => {
@@ -64,18 +66,18 @@ describe('BadgePill', () => {
     expect(style).toContain('color: #f59e0b')
   })
 
-  it('has white text when not filled', () => {
+  it('has foreground text when not filled', () => {
     const wrapper = mount(BadgePill, {
       props: { text: 'Not Filled', borderStyle: '#f59e0b' }
     })
-    expect(wrapper.classes()).toContain('text-white')
+    expect(wrapper.classes()).toContain('text-foreground')
   })
 
-  it('does not have white text class when filled', () => {
+  it('does not have foreground text class when filled', () => {
     const wrapper = mount(BadgePill, {
       props: { text: 'Filled', borderStyle: '#f59e0b', filled: true }
     })
-    expect(wrapper.classes()).not.toContain('text-white')
+    expect(wrapper.classes()).not.toContain('text-foreground')
   })
 
   it('renders slot content', () => {

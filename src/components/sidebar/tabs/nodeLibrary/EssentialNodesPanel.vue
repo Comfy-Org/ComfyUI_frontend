@@ -1,5 +1,5 @@
 <template>
-  <TabsContent value="essential" class="min-h-0 flex-1 overflow-y-auto">
+  <TabsContent value="essentials" class="min-h-0 flex-1 overflow-y-auto">
     <TreeExplorerV2
       v-model:expanded-keys="expandedKeys"
       :root="root"

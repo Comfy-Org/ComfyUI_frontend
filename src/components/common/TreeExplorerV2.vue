@@ -16,7 +16,6 @@
       >
         <TreeExplorerV2Node
           :item="item as FlattenedItem<RenderedTreeExplorerNode>"
-          :show-context-menu="showContextMenu"
           @node-click="
             (node: RenderedTreeExplorerNode, e: MouseEvent) =>
               emit('nodeClick', node, e)

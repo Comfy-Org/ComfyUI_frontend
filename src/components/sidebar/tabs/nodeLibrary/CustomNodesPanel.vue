@@ -4,9 +4,9 @@
       <!-- Section header -->
       <h3
         v-if="section.title"
-        class="px-4 py-2 text-xs font-medium uppercase tracking-wide text-muted-foreground"
+        class="px-4 py-2 text-xs font-medium tracking-wide text-muted-foreground"
       >
-        {{ $t(section.title) }}
+        {{ section.title }}
       </h3>
       <!-- Section tree -->
       <TreeExplorerV2

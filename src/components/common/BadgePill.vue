@@ -23,12 +23,12 @@ const { borderStyle, filled } = defineProps<{
 }>()
 
 const textColorClass = computed(() =>
-  borderStyle && filled ? '' : 'text-white'
+  borderStyle && filled ? '' : 'text-foreground'
 )
 
 const customStyle = computed(() => {
   if (!borderStyle) {
-    return { borderColor: '#525252' }
+    return { borderColor: 'var(--border-color)' }
   }
 
   const isGradient = borderStyle.includes('linear-gradient')

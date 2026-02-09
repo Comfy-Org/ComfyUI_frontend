@@ -126,13 +126,15 @@ const filteredNodeDefs = computed(() => {
   )
 })
 
-const sections = computed(() => {
-  const nodes =
-    filteredNodeDefs.value.length > 0
-      ? filteredNodeDefs.value
-      : nodeDefStore.visibleNodeDefs
+const activeNodes = computed(() =>
+  filteredNodeDefs.value.length > 0
+    ? filteredNodeDefs.value
+    : nodeDefStore.visibleNodeDefs
+)
 
-  return nodeOrganizationService.organizeNodesByTab(nodes, 'all')
+const sections = computed(() => {
+  if (selectedTab.value !== 'all') return []
+  return nodeOrganizationService.organizeNodesByTab(activeNodes.value, 'all')
 })
 
 function getFolderIcon(node: TreeNode): string {
@@ -183,11 +185,11 @@ const renderedSections = computed(() => {
 })
 
 const essentialSections = computed(() => {
-  const nodes =
-    filteredNodeDefs.value.length > 0
-      ? filteredNodeDefs.value
-      : nodeDefStore.visibleNodeDefs
-  return nodeOrganizationService.organizeNodesByTab(nodes, 'essentials')
+  if (selectedTab.value !== 'essentials') return []
+  return nodeOrganizationService.organizeNodesByTab(
+    activeNodes.value,
+    'essentials'
+  )
 })
 
 const renderedEssentialRoot = computed(() => {
@@ -198,12 +200,8 @@ const renderedEssentialRoot = computed(() => {
 })
 
 const customSections = computed(() => {
-  const nodes =
-    filteredNodeDefs.value.length > 0
-      ? filteredNodeDefs.value
-      : nodeDefStore.visibleNodeDefs
-
-  return nodeOrganizationService.organizeNodesByTab(nodes, 'custom')
+  if (selectedTab.value !== 'custom') return []
+  return nodeOrganizationService.organizeNodesByTab(activeNodes.value, 'custom')
 })
 
 const renderedCustomSections = computed(() => {
