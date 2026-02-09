@@ -4,6 +4,7 @@ import ToggleSwitch from 'primevue/toggleswitch'
 import { createI18n } from 'vue-i18n'
 import { describe, expect, it } from 'vitest'
 
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import type { IWidgetOptions } from '@/lib/litegraph/src/types/widgets'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 
@@ -50,7 +51,7 @@ describe('WidgetToggleSwitch Value Binding', () => {
       },
       global: {
         plugins: [PrimeVue, i18n],
-        components: { ToggleSwitch }
+        components: { ToggleSwitch, ToggleGroup, ToggleGroupItem }
       }
     })
   }
@@ -84,12 +85,10 @@ describe('WidgetToggleSwitch Value Binding', () => {
       const widget = createMockWidget(false)
       const wrapper = mountComponent(widget, false)
 
-      // Should not throw when changing values
       const toggle = wrapper.findComponent({ name: 'ToggleSwitch' })
       await toggle.setValue(true)
       await toggle.setValue(false)
 
-      // Should emit events for all changes
       const emitted = wrapper.emitted('update:modelValue')
       expect(emitted).toHaveLength(2)
       expect(emitted![0]).toContain(true)
@@ -131,12 +130,10 @@ describe('WidgetToggleSwitch Value Binding', () => {
 
       const toggle = wrapper.findComponent({ name: 'ToggleSwitch' })
 
-      // Rapid toggle sequence
       await toggle.setValue(true)
       await toggle.setValue(false)
       await toggle.setValue(true)
 
-      // Should have emitted 3 Vue events with correct values
       const emitted = wrapper.emitted('update:modelValue')
       expect(emitted).toHaveLength(3)
       expect(emitted![0]).toContain(true)
@@ -150,7 +147,6 @@ describe('WidgetToggleSwitch Value Binding', () => {
 
       const toggle = wrapper.findComponent({ name: 'ToggleSwitch' })
 
-      // Multiple state changes
       await toggle.setValue(true)
       await toggle.setValue(false)
       await toggle.setValue(true)
@@ -158,7 +154,6 @@ describe('WidgetToggleSwitch Value Binding', () => {
 
       const emitted = wrapper.emitted('update:modelValue')
       expect(emitted).toHaveLength(4)
-      // Verify alternating pattern
       expect(emitted![0]).toContain(true)
       expect(emitted![1]).toContain(false)
       expect(emitted![2]).toContain(true)
@@ -167,11 +162,11 @@ describe('WidgetToggleSwitch Value Binding', () => {
   })
 
   describe('Label Display (label_on/label_off)', () => {
-    it('renders FormSelectButton when labels are provided', () => {
+    it('renders ToggleGroup when labels are provided', () => {
       const widget = createMockWidget(false, { on: 'inside', off: 'outside' })
       const wrapper = mountComponent(widget, false)
 
-      expect(wrapper.findComponent({ name: 'FormSelectButton' }).exists()).toBe(
+      expect(wrapper.findComponent({ name: 'ToggleGroupRoot' }).exists()).toBe(
         true
       )
       expect(wrapper.findComponent({ name: 'ToggleSwitch' }).exists()).toBe(
@@ -186,12 +181,12 @@ describe('WidgetToggleSwitch Value Binding', () => {
       expect(wrapper.findComponent({ name: 'ToggleSwitch' }).exists()).toBe(
         true
       )
-      expect(wrapper.findComponent({ name: 'FormSelectButton' }).exists()).toBe(
+      expect(wrapper.findComponent({ name: 'ToggleGroupRoot' }).exists()).toBe(
         false
       )
     })
 
-    it('displays both on and off labels in FormSelectButton', () => {
+    it('displays both on and off labels in ToggleGroup', () => {
       const widget = createMockWidget(false, { on: 'inside', off: 'outside' })
       const wrapper = mountComponent(widget, false)
 
@@ -203,16 +198,16 @@ describe('WidgetToggleSwitch Value Binding', () => {
       const widget = createMockWidget(false, { on: 'enabled', off: 'disabled' })
       const wrapper = mountComponent(widget, false)
 
-      const selectButton = wrapper.findComponent({ name: 'FormSelectButton' })
-      expect(selectButton.props('modelValue')).toBe('off')
+      const toggleGroup = wrapper.findComponent({ name: 'ToggleGroupRoot' })
+      expect(toggleGroup.props('modelValue')).toBe('off')
     })
 
     it('selects correct option based on boolean value (true)', () => {
       const widget = createMockWidget(true, { on: 'enabled', off: 'disabled' })
       const wrapper = mountComponent(widget, true)
 
-      const selectButton = wrapper.findComponent({ name: 'FormSelectButton' })
-      expect(selectButton.props('modelValue')).toBe('on')
+      const toggleGroup = wrapper.findComponent({ name: 'ToggleGroupRoot' })
+      expect(toggleGroup.props('modelValue')).toBe('on')
     })
 
     it('emits true when "on" option is clicked', async () => {
@@ -257,7 +252,7 @@ describe('WidgetToggleSwitch Value Binding', () => {
       const widget = createMockWidget(false, { on: '', off: 'disabled' })
       const wrapper = mountComponent(widget, false)
 
-      expect(wrapper.findComponent({ name: 'FormSelectButton' }).exists()).toBe(
+      expect(wrapper.findComponent({ name: 'ToggleGroupRoot' }).exists()).toBe(
         true
       )
       expect(wrapper.findComponent({ name: 'ToggleSwitch' }).exists()).toBe(
