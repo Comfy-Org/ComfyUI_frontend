@@ -172,16 +172,11 @@
           </div>
         </div>
 
-        <div class="flex flex-col lg:flex-row gap-6 pt-9">
-          <div class="flex flex-col shrink-0">
-            <div class="flex flex-col gap-3">
+        <div class="flex flex-col lg:flex-row lg:items-stretch gap-6 pt-6">
+          <div class="flex flex-col">
+            <div class="flex flex-col gap-3 h-full">
               <div
-                :class="
-                  cn(
-                    'relative flex flex-col gap-6 rounded-2xl p-5',
-                    'bg-modal-panel-background'
-                  )
-                "
+                class="relative flex flex-col gap-6 rounded-2xl p-5 bg-modal-panel-background justify-between h-full"
               >
                 <Button
                   variant="muted-textonly"
@@ -246,9 +241,15 @@
                   </tbody>
                 </table>
 
-                <div class="flex items-center justify-between">
+                <div
+                  v-if="
+                    isActiveSubscription &&
+                    !showZeroState &&
+                    permissions.canTopUp
+                  "
+                  class="flex items-center justify-between"
+                >
                   <Button
-                    v-if="isActiveSubscription && !showZeroState"
                     variant="secondary"
                     class="p-2 min-h-8 rounded-lg text-sm font-normal text-text-primary bg-interface-menu-component-surface-selected"
                     @click="handleAddApiCredits"
@@ -296,7 +297,11 @@
 
       <!-- Members invoice card -->
       <div
-        v-if="isActiveSubscription && !isInPersonalWorkspace"
+        v-if="
+          isActiveSubscription &&
+          !isInPersonalWorkspace &&
+          workspaceRole != 'member'
+        "
         class="mt-6 flex gap-1 rounded-2xl border border-interface-stroke p-6 justify-between items-center text-sm"
       >
         <div class="flex flex-col gap-2">
@@ -319,7 +324,10 @@
       </div>
 
       <!-- View More Details - Outside main content -->
-      <div class="flex items-center gap-2 py-6">
+      <div
+        v-if="workspaceRole === 'owner'"
+        class="flex items-center gap-2 py-6"
+      >
         <i class="pi pi-external-link text-muted"></i>
         <a
           href="https://www.comfy.org/cloud/pricing"
