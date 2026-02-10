@@ -11,6 +11,8 @@ interface Workspace {
   id: string
   name: string
   type: WorkspaceType
+  created_at: string
+  joined_at: string
 }
 
 export interface WorkspaceWithRole extends Workspace {

@@ -7,6 +7,7 @@ import { st } from '@/i18n'
 import { isCloud } from '@/platform/distribution/types'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useExecutionStore } from '@/stores/executionStore'
+import { useJobPreviewStore } from '@/stores/jobPreviewStore'
 import { useQueueStore } from '@/stores/queueStore'
 import type { TaskItemImpl } from '@/stores/queueStore'
 import type { JobState } from '@/types/queue'
@@ -96,6 +97,7 @@ export function useJobList() {
   const { t, locale } = useI18n()
   const queueStore = useQueueStore()
   const executionStore = useExecutionStore()
+  const jobPreviewStore = useJobPreviewStore()
   const workflowStore = useWorkflowStore()
 
   const seenPendingIds = ref<Set<string>>(new Set())
@@ -256,6 +258,11 @@ export function useJobList() {
         String(task.promptId ?? '') ===
         String(executionStore.activePromptId ?? '')
       const showAddedHint = shouldShowAddedHint(task, state)
+      const promptKey = taskIdToKey(task.promptId)
+      const promptPreviewUrl =
+        state === 'running' && jobPreviewStore.isPreviewEnabled && promptKey
+          ? jobPreviewStore.previewsByPromptId[promptKey]
+          : undefined
 
       const display = buildJobDisplay(task, state, {
         t,
@@ -275,7 +282,7 @@ export function useJobList() {
         meta: display.secondary,
         state,
         iconName: display.iconName,
-        iconImageUrl: display.iconImageUrl,
+        iconImageUrl: promptPreviewUrl ?? display.iconImageUrl,
         showClear: display.showClear,
         taskRef: task,
         progressTotalPercent:

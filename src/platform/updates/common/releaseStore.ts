@@ -208,9 +208,11 @@ export const useReleaseStore = defineStore('release', () => {
       return
     }
 
-    await settingStore.set('Comfy.Release.Version', version)
-    await settingStore.set('Comfy.Release.Status', 'skipped')
-    await settingStore.set('Comfy.Release.Timestamp', Date.now())
+    await settingStore.setMany({
+      'Comfy.Release.Version': version,
+      'Comfy.Release.Status': 'skipped',
+      'Comfy.Release.Timestamp': Date.now()
+    })
   }
 
   async function handleShowChangelog(version: string): Promise<void> {
@@ -218,9 +220,11 @@ export const useReleaseStore = defineStore('release', () => {
       return
     }
 
-    await settingStore.set('Comfy.Release.Version', version)
-    await settingStore.set('Comfy.Release.Status', 'changelog seen')
-    await settingStore.set('Comfy.Release.Timestamp', Date.now())
+    await settingStore.setMany({
+      'Comfy.Release.Version': version,
+      'Comfy.Release.Status': 'changelog seen',
+      'Comfy.Release.Timestamp': Date.now()
+    })
   }
 
   async function handleWhatsNewSeen(version: string): Promise<void> {
@@ -228,9 +232,11 @@ export const useReleaseStore = defineStore('release', () => {
       return
     }
 
-    await settingStore.set('Comfy.Release.Version', version)
-    await settingStore.set('Comfy.Release.Status', "what's new seen")
-    await settingStore.set('Comfy.Release.Timestamp', Date.now())
+    await settingStore.setMany({
+      'Comfy.Release.Version': version,
+      'Comfy.Release.Status': "what's new seen",
+      'Comfy.Release.Timestamp': Date.now()
+    })
   }
 
   // Fetch releases from API

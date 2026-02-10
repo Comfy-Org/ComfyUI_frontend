@@ -30,6 +30,7 @@ import type {
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { useNodeOutputStore } from '@/stores/imagePreviewStore'
+import { useJobPreviewStore } from '@/stores/jobPreviewStore'
 import type { NodeLocatorId } from '@/types/nodeIdentification'
 import { createNodeLocatorId } from '@/types/nodeIdentification'
 import { forEachNode, getNodeByExecutionId } from '@/utils/graphTraversalUtil'
@@ -455,6 +456,7 @@ export const useExecutionStore = defineStore('execution', () => {
       const map = { ...nodeProgressStatesByPrompt.value }
       delete map[promptId]
       nodeProgressStatesByPrompt.value = map
+      useJobPreviewStore().clearPreview(promptId)
     }
     if (activePromptId.value) {
       delete queuedPrompts.value[activePromptId.value]
