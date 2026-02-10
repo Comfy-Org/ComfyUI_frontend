@@ -56,6 +56,16 @@ useExtensionService().registerExtension({
 
   async beforeRegisterNodeDef(nodeType, nodeData) {
     if (isLoad3dNodeType(nodeData.name)) {
+      // Inject mesh_upload spec flags so WidgetSelect.vue can detect
+      // Load3D's model_file as a mesh upload widget without hardcoding.
+      if (nodeData.name === 'Load3D') {
+        const modelFile = nodeData.input?.required?.model_file
+        if (modelFile?.[1]) {
+          modelFile[1].mesh_upload = true
+          modelFile[1].upload_subfolder = '3d'
+        }
+      }
+
       // Load the 3D extensions and replay their beforeRegisterNodeDef hooks,
       // since invokeExtensionsAsync already captured the extensions snapshot
       // before these new extensions were registered.

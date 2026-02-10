@@ -4,6 +4,7 @@ import { computed, provide, ref, toRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { useTransformCompatOverlayProps } from '@/composables/useTransformCompatOverlayProps'
+import { SUPPORTED_EXTENSIONS_ACCEPT } from '@/extensions/core/load3d/constants'
 import { useAssetFilterOptions } from '@/platform/assets/composables/useAssetFilterOptions'
 import {
   filterItemByBaseModels,
@@ -44,6 +45,7 @@ interface Props {
   assetKind?: AssetKind
   allowUpload?: boolean
   uploadFolder?: ResultItemType
+  uploadSubfolder?: string
   isAssetMode?: boolean
   defaultLayoutMode?: LayoutMode
 }
@@ -151,7 +153,7 @@ const inputItems = computed<FormDropdownItem[]>(() => {
   }))
 })
 const outputItems = computed<FormDropdownItem[]>(() => {
-  if (!['image', 'video'].includes(assetKind ?? '')) return []
+  if (!['image', 'video', 'mesh'].includes(assetKind ?? '')) return []
 
   const outputs = new Set<string>()
 
@@ -160,7 +162,8 @@ const outputItems = computed<FormDropdownItem[]>(() => {
     task.flatOutputs.forEach((output) => {
       const isTargetType =
         (assetKind === 'image' && output.mediaType === 'images') ||
-        (assetKind === 'video' && output.mediaType === 'video')
+        (assetKind === 'video' && output.mediaType === 'video') ||
+        (assetKind === 'mesh' && output.is3D)
 
       if (output.type === 'output' && isTargetType) {
         const path = output.subfolder
@@ -299,6 +302,8 @@ const mediaPlaceholder = computed(() => {
       return t('widgets.uploadSelect.placeholderVideo')
     case 'audio':
       return t('widgets.uploadSelect.placeholderAudio')
+    case 'mesh':
+      return t('widgets.uploadSelect.placeholderMesh')
     case 'model':
       return t('widgets.uploadSelect.placeholderModel')
     case 'unknown':
@@ -313,15 +318,22 @@ const uploadable = computed(() => {
   return allowUpload === true
 })
 
-const assetKindAcceptTypes: Record<string, string> = {
-  image: 'image/*',
-  video: 'video/*',
-  audio: 'audio/*'
-}
-
-const acceptTypes = computed(() =>
-  assetKind ? assetKindAcceptTypes[assetKind] : undefined
-)
+const acceptTypes = computed(() => {
+  // Be permissive with accept types because backend uses libraries
+  // that can handle a wide range of formats
+  switch (assetKind) {
+    case 'image':
+      return 'image/*'
+    case 'video':
+      return 'video/*'
+    case 'audio':
+      return 'audio/*'
+    case 'mesh':
+      return SUPPORTED_EXTENSIONS_ACCEPT
+    default:
+      return undefined // model or unknown
+  }
+})
 
 const layoutMode = ref<LayoutMode>(defaultLayoutMode ?? 'grid')
 
@@ -367,6 +379,8 @@ const uploadFile = async (
   const body = new FormData()
   body.append('image', file)
   if (isPasted) body.append('subfolder', 'pasted')
+  else if (props.uploadSubfolder)
+    body.append('subfolder', props.uploadSubfolder)
   if (formFields.type) body.append('type', formFields.type)
 
   const resp = await api.fetchApi('/upload/image', {
