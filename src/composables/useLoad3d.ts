@@ -219,22 +219,15 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
         return modelPath
       }
 
-      let cleanPath = modelPath.trim()
-      let forcedType: 'output' | 'input' | undefined
-
-      if (cleanPath.endsWith('[output]')) {
-        cleanPath = cleanPath.replace(/\s*\[output\]$/, '').trim()
-        forcedType = 'output'
-      }
+      const trimmed = modelPath.trim()
+      const hasOutputSuffix = trimmed.endsWith('[output]')
+      const cleanPath = hasOutputSuffix
+        ? trimmed.replace(/\s*\[output\]$/, '')
+        : trimmed
+      const type = hasOutputSuffix || isPreview.value ? 'output' : 'input'
 
       const [subfolder, filename] = Load3dUtils.splitFilePath(cleanPath)
-      return api.apiURL(
-        Load3dUtils.getResourceURL(
-          subfolder,
-          filename,
-          forcedType ?? (isPreview.value ? 'output' : 'input')
-        )
-      )
+      return api.apiURL(Load3dUtils.getResourceURL(subfolder, filename, type))
     } catch (error) {
       console.error('Failed to construct model URL:', error)
       return null
