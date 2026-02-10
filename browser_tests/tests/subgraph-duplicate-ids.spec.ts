@@ -6,16 +6,13 @@ test.describe('Subgraph duplicate ID remapping', { tag: ['@subgraph'] }, () => {
   const WORKFLOW = 'subgraphs/subgraph-nested-duplicate-ids'
 
   test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.settings.setSetting(
-      'Comfy.Graph.DeduplicateSubgraphNodeIds',
-      true
-    )
+    await comfyPage.setSetting('Comfy.Graph.DeduplicateSubgraphNodeIds', true)
   })
 
   test('All node IDs are globally unique after loading', async ({
     comfyPage
   }) => {
-    await comfyPage.workflow.loadWorkflow(WORKFLOW)
+    await comfyPage.loadWorkflow(WORKFLOW)
 
     const result = await comfyPage.page.evaluate(() => {
       const graph = window.app!.canvas.graph!
@@ -37,7 +34,7 @@ test.describe('Subgraph duplicate ID remapping', { tag: ['@subgraph'] }, () => {
   test('Root graph node IDs are preserved as canonical', async ({
     comfyPage
   }) => {
-    await comfyPage.workflow.loadWorkflow(WORKFLOW)
+    await comfyPage.loadWorkflow(WORKFLOW)
 
     const rootIds = await comfyPage.page.evaluate(() => {
       const graph = window.app!.canvas.graph!
@@ -53,7 +50,7 @@ test.describe('Subgraph duplicate ID remapping', { tag: ['@subgraph'] }, () => {
   test('All links reference valid nodes in their graph', async ({
     comfyPage
   }) => {
-    await comfyPage.workflow.loadWorkflow(WORKFLOW)
+    await comfyPage.loadWorkflow(WORKFLOW)
 
     const invalidLinks = await comfyPage.page.evaluate(() => {
       const graph = window.app!.canvas.graph!
@@ -87,9 +84,9 @@ test.describe('Subgraph duplicate ID remapping', { tag: ['@subgraph'] }, () => {
   test('Subgraph navigation works after ID remapping', async ({
     comfyPage
   }) => {
-    await comfyPage.workflow.loadWorkflow(WORKFLOW)
+    await comfyPage.loadWorkflow(WORKFLOW)
 
-    const subgraphNode = await comfyPage.nodeOps.getNodeRefById('5')
+    const subgraphNode = await comfyPage.getNodeRefById('5')
     await subgraphNode.navigateIntoSubgraph()
 
     const isInSubgraph = () =>
