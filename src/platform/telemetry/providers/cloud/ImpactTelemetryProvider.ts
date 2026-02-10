@@ -86,6 +86,7 @@ export class ImpactTelemetryProvider implements TelemetryProvider {
 
     const { customerId, customerEmail } = this.resolveCustomerIdentity()
     const normalizedEmail = customerEmail.trim().toLowerCase()
+    // Impact's Identify spec requires customerEmail to be sent as a SHA1 hash.
     const hashedEmail = normalizedEmail
       ? await this.hashSha1(normalizedEmail)
       : EMPTY_CUSTOMER_VALUE
