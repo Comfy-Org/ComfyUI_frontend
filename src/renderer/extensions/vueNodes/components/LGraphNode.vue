@@ -29,7 +29,7 @@
           'ring-4 ring-primary-500 bg-primary-500/10': isDraggingOver
         },
 
-        shouldHandleNodePointerEvents
+        shouldHandleNodePointerEvents && !nodeData.flags?.ghost
           ? 'pointer-events-auto'
           : 'pointer-events-none',
         !isCollapsed && ' pb-1'
@@ -116,9 +116,10 @@
           <NodeContent :node-data="nodeData" :media="nodeMedia" />
         </div>
         <!-- Live mid-execution preview images -->
-        <div v-if="shouldShowPreviewImg" class="min-h-0 flex-1 px-4">
-          <LivePreview :image-url="latestPreviewUrl || null" />
-        </div>
+        <LivePreview
+          v-if="shouldShowPreviewImg"
+          :image-url="latestPreviewUrl"
+        />
 
         <!-- Show advanced inputs button for subgraph nodes -->
         <div v-if="showAdvancedInputsButton" class="flex justify-center px-3">
@@ -267,6 +268,8 @@ const muted = computed((): boolean => nodeData.mode === LGraphEventMode.NEVER)
 
 const nodeOpacity = computed(() => {
   const globalOpacity = settingStore.get('Comfy.Node.Opacity') ?? 1
+
+  if (nodeData.flags?.ghost) return globalOpacity * 0.3
 
   // For muted/bypassed nodes, apply the 0.5 multiplier on top of global opacity
   if (bypassed.value || muted.value) {

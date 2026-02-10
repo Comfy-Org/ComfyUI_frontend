@@ -1,7 +1,7 @@
 import { watch } from 'vue'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
-import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
+import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useExtensionService } from '@/services/extensionService'
 
 /**
@@ -12,7 +12,7 @@ useExtensionService().registerExtension({
 
   setup: async () => {
     const { isLoggedIn } = useCurrentUser()
-    const { requireActiveSubscription } = useSubscription()
+    const { requireActiveSubscription } = useBillingContext()
 
     const checkSubscriptionStatus = () => {
       if (!isLoggedIn.value) return

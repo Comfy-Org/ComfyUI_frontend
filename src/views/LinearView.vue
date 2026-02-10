@@ -8,12 +8,12 @@ import {
 import Splitter from 'primevue/splitter'
 import SplitterPanel from 'primevue/splitterpanel'
 import { ref, useTemplateRef } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import ModeToggle from '@/components/sidebar/ModeToggle.vue'
 import TopbarBadges from '@/components/topbar/TopbarBadges.vue'
 import WorkflowTabs from '@/components/topbar/WorkflowTabs.vue'
 import TypeformPopoverButton from '@/components/ui/TypeformPopoverButton.vue'
-import { t } from '@/i18n'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import LinearControls from '@/renderer/extensions/linearMode/LinearControls.vue'
@@ -23,6 +23,7 @@ import OutputHistory from '@/renderer/extensions/linearMode/OutputHistory.vue'
 import { useNodeOutputStore } from '@/stores/imagePreviewStore'
 import type { ResultItemImpl } from '@/stores/queueStore'
 
+const { t } = useI18n()
 const nodeOutputStore = useNodeOutputStore()
 const settingStore = useSettingStore()
 

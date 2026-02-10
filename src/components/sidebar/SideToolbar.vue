@@ -58,6 +58,7 @@
 import { useResizeObserver } from '@vueuse/core'
 import { debounce } from 'es-toolkit/compat'
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import HelpCenterPopups from '@/components/helpcenter/HelpCenterPopups.vue'
 import ComfyMenuButton from '@/components/sidebar/ComfyMenuButton.vue'
@@ -66,7 +67,6 @@ import SidebarBottomPanelToggleButton from '@/components/sidebar/SidebarBottomPa
 import SidebarSettingsButton from '@/components/sidebar/SidebarSettingsButton.vue'
 import SidebarShortcutsToggleButton from '@/components/sidebar/SidebarShortcutsToggleButton.vue'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
-import { t } from '@/i18n'
 import { isCloud } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
@@ -84,6 +84,7 @@ import SidebarIcon from './SidebarIcon.vue'
 import SidebarLogoutIcon from './SidebarLogoutIcon.vue'
 import SidebarTemplatesButton from './SidebarTemplatesButton.vue'
 
+const { t } = useI18n()
 const workspaceStore = useWorkspaceStore()
 const settingStore = useSettingStore()
 const userStore = useUserStore()

@@ -6441,9 +6441,7 @@
   "Load3D": {
     "display_name": "بارگذاری ۳بعدی و انیمیشن",
     "inputs": {
-      "clear": {
-        "": "پاک‌سازی"
-      },
+      "clear": {},
       "height": {
         "name": "ارتفاع"
       },
@@ -6453,12 +6451,8 @@
       "model_file": {
         "name": "فایل مدل"
       },
-      "upload 3d model": {
-        "": "بارگذاری مدل سه‌بعدی"
-      },
-      "upload extra resources": {
-        "": "بارگذاری منابع اضافی"
-      },
+      "upload 3d model": {},
+      "upload extra resources": {},
       "width": {
         "name": "عرض"
       }
@@ -10809,6 +10803,9 @@
       "camera_info": {
         "name": "اطلاعات دوربین"
       },
+      "image": {
+        "name": "تصویر"
+      },
       "model_file": {
         "name": "فایل مدل",
         "tooltip": "فایل مدل سه‌بعدی یا مسیر فایل"
@@ -12631,6 +12628,9 @@
     "inputs": {
       "filename_prefix": {
         "name": "filename_prefix"
+      },
+      "image": {
+        "name": "تصویر"
       },
       "mesh": {
         "name": "mesh",
