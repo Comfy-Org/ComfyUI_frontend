@@ -2,6 +2,7 @@ import { expect } from '@playwright/test'
 
 import type { Settings } from '../../src/schemas/apiSchema'
 import { comfyPageFixture as test } from '../fixtures/ComfyPage'
+import { TestIds } from '../fixtures/selectors'
 
 /**
  * Type helper for test settings with arbitrary IDs.
@@ -50,9 +51,7 @@ test.describe('Settings Search functionality', { tag: '@settings' }, () => {
 
   test('can open settings dialog and use search box', async ({ comfyPage }) => {
     await comfyPage.page.keyboard.press('Control+,')
-    const settingsDialog = comfyPage.page.locator(
-      '[data-testid="settings-dialog"]'
-    )
+    const settingsDialog = comfyPage.page.getByTestId(TestIds.dialogs.settings)
     await expect(settingsDialog).toBeVisible()
 
     const searchBox = settingsDialog.locator('input[placeholder*="Search"]')
@@ -66,9 +65,7 @@ test.describe('Settings Search functionality', { tag: '@settings' }, () => {
 
   test('search box is functional and accepts input', async ({ comfyPage }) => {
     await comfyPage.page.keyboard.press('Control+,')
-    const settingsDialog = comfyPage.page.locator(
-      '[data-testid="settings-dialog"]'
-    )
+    const settingsDialog = comfyPage.page.getByTestId(TestIds.dialogs.settings)
     await expect(settingsDialog).toBeVisible()
 
     const searchBox = settingsDialog.locator('input[placeholder*="Search"]')
@@ -79,9 +76,7 @@ test.describe('Settings Search functionality', { tag: '@settings' }, () => {
 
   test('search box clears properly', async ({ comfyPage }) => {
     await comfyPage.page.keyboard.press('Control+,')
-    const settingsDialog = comfyPage.page.locator(
-      '[data-testid="settings-dialog"]'
-    )
+    const settingsDialog = comfyPage.page.getByTestId(TestIds.dialogs.settings)
     await expect(settingsDialog).toBeVisible()
 
     const searchBox = settingsDialog.locator('input[placeholder*="Search"]')
@@ -94,9 +89,7 @@ test.describe('Settings Search functionality', { tag: '@settings' }, () => {
 
   test('settings categories are visible in sidebar', async ({ comfyPage }) => {
     await comfyPage.page.keyboard.press('Control+,')
-    const settingsDialog = comfyPage.page.locator(
-      '[data-testid="settings-dialog"]'
-    )
+    const settingsDialog = comfyPage.page.getByTestId(TestIds.dialogs.settings)
     await expect(settingsDialog).toBeVisible()
 
     const categories = settingsDialog.locator('nav [role="button"]')
@@ -107,9 +100,7 @@ test.describe('Settings Search functionality', { tag: '@settings' }, () => {
 
   test('can select different categories in sidebar', async ({ comfyPage }) => {
     await comfyPage.page.keyboard.press('Control+,')
-    const settingsDialog = comfyPage.page.locator(
-      '[data-testid="settings-dialog"]'
-    )
+    const settingsDialog = comfyPage.page.getByTestId(TestIds.dialogs.settings)
     await expect(settingsDialog).toBeVisible()
 
     const categories = settingsDialog.locator('nav [role="button"]')
@@ -126,9 +117,7 @@ test.describe('Settings Search functionality', { tag: '@settings' }, () => {
 
   test('settings content area is visible', async ({ comfyPage }) => {
     await comfyPage.page.keyboard.press('Control+,')
-    const settingsDialog = comfyPage.page.locator(
-      '[data-testid="settings-dialog"]'
-    )
+    const settingsDialog = comfyPage.page.getByTestId(TestIds.dialogs.settings)
     await expect(settingsDialog).toBeVisible()
 
     const contentArea = settingsDialog.locator('main')
@@ -137,9 +126,7 @@ test.describe('Settings Search functionality', { tag: '@settings' }, () => {
 
   test('search functionality affects UI state', async ({ comfyPage }) => {
     await comfyPage.page.keyboard.press('Control+,')
-    const settingsDialog = comfyPage.page.locator(
-      '[data-testid="settings-dialog"]'
-    )
+    const settingsDialog = comfyPage.page.getByTestId(TestIds.dialogs.settings)
     await expect(settingsDialog).toBeVisible()
 
     const searchBox = settingsDialog.locator('input[placeholder*="Search"]')
@@ -150,9 +137,7 @@ test.describe('Settings Search functionality', { tag: '@settings' }, () => {
 
   test('settings dialog can be closed', async ({ comfyPage }) => {
     await comfyPage.page.keyboard.press('Control+,')
-    const settingsDialog = comfyPage.page.locator(
-      '[data-testid="settings-dialog"]'
-    )
+    const settingsDialog = comfyPage.page.getByTestId(TestIds.dialogs.settings)
     await expect(settingsDialog).toBeVisible()
 
     await comfyPage.page.keyboard.press('Escape')
@@ -162,9 +147,7 @@ test.describe('Settings Search functionality', { tag: '@settings' }, () => {
 
   test('search box has proper debouncing behavior', async ({ comfyPage }) => {
     await comfyPage.page.keyboard.press('Control+,')
-    const settingsDialog = comfyPage.page.locator(
-      '[data-testid="settings-dialog"]'
-    )
+    const settingsDialog = comfyPage.page.getByTestId(TestIds.dialogs.settings)
     await expect(settingsDialog).toBeVisible()
 
     const searchBox = settingsDialog.locator('input[placeholder*="Search"]')
@@ -180,9 +163,7 @@ test.describe('Settings Search functionality', { tag: '@settings' }, () => {
     comfyPage
   }) => {
     await comfyPage.page.keyboard.press('Control+,')
-    const settingsDialog = comfyPage.page.locator(
-      '[data-testid="settings-dialog"]'
-    )
+    const settingsDialog = comfyPage.page.getByTestId(TestIds.dialogs.settings)
     await expect(settingsDialog).toBeVisible()
 
     const searchBox = settingsDialog.locator('input[placeholder*="Search"]')
@@ -198,9 +179,7 @@ test.describe('Settings Search functionality', { tag: '@settings' }, () => {
     comfyPage
   }) => {
     await comfyPage.page.keyboard.press('Control+,')
-    const settingsDialog = comfyPage.page.locator(
-      '[data-testid="settings-dialog"]'
-    )
+    const settingsDialog = comfyPage.page.getByTestId(TestIds.dialogs.settings)
     await expect(settingsDialog).toBeVisible()
 
     const searchBox = settingsDialog.locator('input[placeholder*="Search"]')
@@ -216,9 +195,7 @@ test.describe('Settings Search functionality', { tag: '@settings' }, () => {
     comfyPage
   }) => {
     await comfyPage.page.keyboard.press('Control+,')
-    const settingsDialog = comfyPage.page.locator(
-      '[data-testid="settings-dialog"]'
-    )
+    const settingsDialog = comfyPage.page.getByTestId(TestIds.dialogs.settings)
     await expect(settingsDialog).toBeVisible()
 
     const searchBox = settingsDialog.locator('input[placeholder*="Search"]')
@@ -236,9 +213,7 @@ test.describe('Settings Search functionality', { tag: '@settings' }, () => {
     comfyPage
   }) => {
     await comfyPage.page.keyboard.press('Control+,')
-    const settingsDialog = comfyPage.page.locator(
-      '[data-testid="settings-dialog"]'
-    )
+    const settingsDialog = comfyPage.page.getByTestId(TestIds.dialogs.settings)
     await expect(settingsDialog).toBeVisible()
 
     const searchBox = settingsDialog.locator('input[placeholder*="Search"]')

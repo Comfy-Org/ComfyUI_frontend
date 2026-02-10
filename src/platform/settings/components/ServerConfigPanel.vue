@@ -27,6 +27,7 @@
         <Button
           size="icon"
           variant="muted-textonly"
+          :aria-label="$t('g.copyToClipboard')"
           @click="copyCommandLineArgs"
         >
           <i class="pi pi-clipboard" />
