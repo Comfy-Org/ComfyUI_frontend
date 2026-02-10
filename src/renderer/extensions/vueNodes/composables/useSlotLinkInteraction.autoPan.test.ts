@@ -233,7 +233,9 @@ describe('useSlotLinkInteraction auto-pan', () => {
   beforeEach(() => {
     capturedOnPan.current = null
     capturedAutoPan.current = null
-    Object.keys(capturedHandlers).forEach((k) => delete capturedHandlers[k])
+    for (const k of Object.keys(capturedHandlers)) {
+      delete capturedHandlers[k]
+    }
     mockDs.offset = [0, 0]
     mockDs.scale = 1
     mockSetDirty.mockClear()
