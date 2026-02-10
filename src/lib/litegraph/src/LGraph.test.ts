@@ -34,7 +34,7 @@ class DummyNode extends LGraphNode {
   }
 }
 
-describe('LGraph', () => {
+describe(LGraph, () => {
   it('should serialize deterministic node order', async () => {
     LiteGraph.registerNodeType('dummy', DummyNode)
     const node1 = new DummyNode()

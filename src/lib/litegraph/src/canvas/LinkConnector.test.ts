@@ -42,7 +42,7 @@ function mockRenderLinkImpl(canConnect: boolean): RenderLinkItem {
 const mockNode = createMockLGraphNode()
 const mockInput = createMockNodeInputSlot()
 
-describe.skip('LinkConnector', () => {
+describe.skip(LinkConnector, () => {
   let connector: LinkConnector
 
   beforeEach(() => {

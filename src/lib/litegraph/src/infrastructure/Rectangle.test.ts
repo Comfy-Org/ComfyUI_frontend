@@ -12,7 +12,7 @@ const test = baseTest.extend<{ rect: Rectangle }>({
   }
 })
 
-describe('Rectangle', () => {
+describe(Rectangle, () => {
   describe('constructor and basic properties', () => {
     test('should create a default rectangle', ({ rect }) => {
       expect(rect.x).toBe(0)

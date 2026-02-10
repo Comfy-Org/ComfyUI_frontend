@@ -189,7 +189,7 @@
       "error",
       {
         "checkArguments": false,
-        "checkArrowFunctionBody": true
+        "checkArrowFunctionBody": false
       }
     ],
     "unicorn/prefer-classlist-toggle": "error",
@@ -221,7 +221,8 @@
     "typescript/no-floating-promises": "error",
     // TODO: Enable and fix 372 violations (use { "ignoreConditionalTests": true })
     "typescript/prefer-nullish-coalescing": "off",
-    "typescript/prefer-optional-chain": "error",
+    // TODO: Enable and fix violations
+    "typescript/prefer-optional-chain": "off",
     "typescript/prefer-ts-expect-error": "error",
     "vue/define-props-destructuring": "error",
     "vue/no-import-compiler-macros": "error",

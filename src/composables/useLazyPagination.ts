@@ -64,8 +64,7 @@ export function useLazyPagination<T>(
     // Simulate network delay
     // await new Promise((resolve) => setTimeout(resolve, 5000))
 
-    const newLoadedPages = new Set(loadedPages.value)
-    newLoadedPages.add(nextPage)
+    const newLoadedPages = new Set([...loadedPages.value, nextPage])
     loadedPages.value = newLoadedPages
     currentPage.value = nextPage
     isLoading.value = false

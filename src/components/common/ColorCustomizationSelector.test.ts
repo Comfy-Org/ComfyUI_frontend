@@ -7,7 +7,7 @@ import { createApp, nextTick } from 'vue'
 
 import ColorCustomizationSelector from './ColorCustomizationSelector.vue'
 
-describe('ColorCustomizationSelector', () => {
+describe(ColorCustomizationSelector, () => {
   const colorOptions = [
     { name: 'Blue', value: '#0d6efd' },
     { name: 'Green', value: '#28a745' }

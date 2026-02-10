@@ -21,7 +21,7 @@ const i18n = createI18n({
   fallbackWarn: false
 })
 
-describe('ModelInfoPanel', () => {
+describe(ModelInfoPanel, () => {
   const createMockAsset = (
     overrides: Partial<AssetDisplayItem> = {}
   ): AssetDisplayItem => ({

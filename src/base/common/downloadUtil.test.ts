@@ -46,7 +46,7 @@ describe('downloadUtil', () => {
     vi.unstubAllGlobals()
   })
 
-  describe('downloadFile', () => {
+  describe(downloadFile, () => {
     it('should create and trigger download with basic URL', () => {
       const testUrl = 'https://example.com/image.png'
 

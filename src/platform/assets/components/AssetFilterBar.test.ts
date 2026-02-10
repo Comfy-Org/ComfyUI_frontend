@@ -92,7 +92,7 @@ function findSortFilter(wrapper: ReturnType<typeof mountAssetFilterBar>) {
   return wrapper.findComponent('[data-component-id="asset-filter-sort"]')
 }
 
-describe('AssetFilterBar', () => {
+describe(AssetFilterBar, () => {
   describe('Filter State Management', () => {
     it('handles multiple simultaneous filter changes correctly', async () => {
       // Provide assets with options so filters are visible

@@ -70,7 +70,7 @@ vi.mock('@/utils/formatUtil', () => ({
   truncateFilename: (name: string) => name
 }))
 
-describe('AssetsSidebarListView', () => {
+describe(AssetsSidebarListView, () => {
   beforeEach(() => {
     vi.clearAllMocks()
     mockJobItems.value = []

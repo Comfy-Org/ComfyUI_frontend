@@ -923,7 +923,7 @@ export class LGraph
     // groups
     if (node instanceof LGraphGroup) {
       // Assign group ID
-      if (node.id == null || node.id === -1) node.id = ++state.lastGroupId
+      if (node.id === -1) node.id = ++state.lastGroupId
       if (node.id > state.lastGroupId) state.lastGroupId = node.id
 
       this._groups.push(node)
@@ -948,9 +948,9 @@ export class LGraph
 
     // give him an id
     if (LiteGraph.use_uuids) {
-      if (node.id == null || node.id === -1) node.id = LiteGraph.uuidv4()
+      if (node.id === -1) node.id = LiteGraph.uuidv4()
     } else {
-      if (node.id == null || node.id === -1) {
+      if (node.id === -1) {
         node.id = ++state.lastNodeId
       } else if (typeof node.id === 'number' && state.lastNodeId < node.id) {
         state.lastNodeId = node.id

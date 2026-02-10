@@ -6,7 +6,7 @@ import type { CloudSubscriptionStatusResponse } from '@/platform/cloud/subscript
 import { useSubscriptionCancellationWatcher } from '@/platform/cloud/subscription/composables/useSubscriptionCancellationWatcher'
 import type { TelemetryDispatcher } from '@/platform/telemetry/types'
 
-describe('useSubscriptionCancellationWatcher', () => {
+describe(useSubscriptionCancellationWatcher, () => {
   const trackMonthlySubscriptionCancelled = vi.fn()
   const telemetryMock: Pick<
     TelemetryDispatcher,

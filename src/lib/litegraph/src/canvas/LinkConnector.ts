@@ -678,7 +678,7 @@ export class LinkConnector {
           // Only reuse the slot if the next link's type would be compatible
           // Otherwise, keep using EmptySubgraphOutput to create a new slot
           const nextLink = renderLinks[renderLinks.indexOf(link) + 1]
-          if (nextLink && link.fromSlot.type === nextLink.fromSlot.type) {
+          if (link.fromSlot.type === nextLink?.fromSlot.type) {
             targetSlot = createdSlot
           } else {
             // Reset to EmptySubgraphOutput for different types
@@ -724,7 +724,7 @@ export class LinkConnector {
           // Only reuse the slot if the next link's type would be compatible
           // Otherwise, keep using EmptySubgraphInput to create a new slot
           const nextLink = renderLinks[renderLinks.indexOf(link) + 1]
-          if (nextLink && link.fromSlot.type === nextLink.fromSlot.type) {
+          if (link.fromSlot.type === nextLink?.fromSlot.type) {
             targetSlot = createdSlot
           } else {
             // Reset to EmptySubgraphInput for different types

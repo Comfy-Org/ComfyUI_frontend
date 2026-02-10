@@ -41,7 +41,7 @@ export function serialise(nodes: LGraphNode[], graph: LGraph): string {
 
     // For inputs only, gather link details of every connection
     for (const input of node.inputs) {
-      if (!input || input.link == null) continue
+      if (input?.link == null) continue
 
       const link = graph.links.get(input.link)
       if (!link) continue

@@ -805,7 +805,7 @@ export const useLitegraphService = () => {
 
     node.prototype.onKeyDown = function (e) {
       // @ts-expect-error fixme ts strict error
-      if (origNodeOnKeyDown && origNodeOnKeyDown.apply(this, e) === false) {
+      if (origNodeOnKeyDown?.apply(this, e) === false) {
         return false
       }
 

@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useCachedRequest } from '@/composables/useCachedRequest'
 
-describe('useCachedRequest', () => {
+describe(useCachedRequest, () => {
   let mockRequestFn: (
     params: unknown,
     signal?: AbortSignal

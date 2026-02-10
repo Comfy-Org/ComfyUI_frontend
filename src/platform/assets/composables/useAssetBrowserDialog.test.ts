@@ -40,7 +40,7 @@ function setupDialogMocks() {
   return { mockShowDialog, mockCloseDialog }
 }
 
-describe('useAssetBrowserDialog', () => {
+describe(useAssetBrowserDialog, () => {
   describe('Asset Selection Flow', () => {
     it('auto-closes dialog when asset is selected', async () => {
       const { mockShowDialog, mockCloseDialog } = setupDialogMocks()

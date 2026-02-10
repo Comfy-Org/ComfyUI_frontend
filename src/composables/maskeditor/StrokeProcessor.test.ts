@@ -3,7 +3,7 @@ import type { Point } from '@/extensions/core/maskeditor/types'
 
 import { StrokeProcessor } from './StrokeProcessor'
 
-describe('StrokeProcessor', () => {
+describe(StrokeProcessor, () => {
   it('should generate equidistant points from irregular input', () => {
     const spacing = 10
     const processor = new StrokeProcessor(spacing)
@@ -77,12 +77,12 @@ describe('StrokeProcessor', () => {
   it('should handle a simple 3-point stroke', () => {
     const spacing = 5
     const processor = new StrokeProcessor(spacing)
-    const points: Point[] = []
-
-    points.push(...processor.addPoint({ x: 0, y: 0 }))
-    points.push(...processor.addPoint({ x: 10, y: 0 }))
-    points.push(...processor.addPoint({ x: 20, y: 0 }))
-    points.push(...processor.endStroke())
+    const points: Point[] = [
+      ...processor.addPoint({ x: 0, y: 0 }),
+      ...processor.addPoint({ x: 10, y: 0 }),
+      ...processor.addPoint({ x: 20, y: 0 }),
+      ...processor.endStroke()
+    ]
 
     expect(points.length).toBeGreaterThan(0)
 
@@ -98,10 +98,10 @@ describe('StrokeProcessor', () => {
   it('should handle a single point click', () => {
     const spacing = 5
     const processor = new StrokeProcessor(spacing)
-    const points: Point[] = []
-
-    points.push(...processor.addPoint({ x: 100, y: 100 }))
-    points.push(...processor.endStroke())
+    const points: Point[] = [
+      ...processor.addPoint({ x: 100, y: 100 }),
+      ...processor.endStroke()
+    ]
 
     expect(points.length).toBe(1)
     expect(points[0]).toEqual({ x: 100, y: 100 })

@@ -22,7 +22,7 @@ vi.mock('@/platform/distribution/types', () => ({
   isCloud: false
 }))
 
-describe('useSystemStatsStore', () => {
+describe(useSystemStatsStore, () => {
   let store: ReturnType<typeof useSystemStatsStore>
 
   beforeEach(() => {

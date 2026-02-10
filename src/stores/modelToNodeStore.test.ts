@@ -111,7 +111,7 @@ vi.mock('@/stores/nodeDefStore', async (importOriginal) => {
   }
 })
 
-describe('useModelToNodeStore', () => {
+describe(useModelToNodeStore, () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
     vi.clearAllMocks()

@@ -4,7 +4,7 @@ import type { ReadOnlyRect } from '@/lib/litegraph/src/interfaces'
 import { computeUnionBounds, gcd, lcm } from '@/utils/mathUtil'
 
 describe('mathUtil', () => {
-  describe('gcd', () => {
+  describe(gcd, () => {
     it('should compute greatest common divisor correctly', () => {
       expect(gcd(48, 18)).toBe(6)
       expect(gcd(100, 25)).toBe(25)
@@ -27,7 +27,7 @@ describe('mathUtil', () => {
     })
   })
 
-  describe('lcm', () => {
+  describe(lcm, () => {
     it('should compute least common multiple correctly', () => {
       expect(lcm(4, 6)).toBe(12)
       expect(lcm(15, 20)).toBe(60)
@@ -35,7 +35,7 @@ describe('mathUtil', () => {
     })
   })
 
-  describe('computeUnionBounds', () => {
+  describe(computeUnionBounds, () => {
     it('should return null for empty input', () => {
       expect(computeUnionBounds([])).toBe(null)
     })

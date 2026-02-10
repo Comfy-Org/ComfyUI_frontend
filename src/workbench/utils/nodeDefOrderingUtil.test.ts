@@ -8,7 +8,7 @@ import {
 } from '@/workbench/utils/nodeDefOrderingUtil'
 
 describe('nodeDefOrderingUtil', () => {
-  describe('getOrderedInputSpecs', () => {
+  describe(getOrderedInputSpecs, () => {
     it('should maintain order when no input_order is specified', () => {
       const nodeDef: ComfyNodeDef = {
         name: 'TestNode',
@@ -212,7 +212,7 @@ describe('nodeDefOrderingUtil', () => {
     })
   })
 
-  describe('sortWidgetValuesByInputOrder', () => {
+  describe(sortWidgetValuesByInputOrder, () => {
     it('should reorder widget values to match input_order', () => {
       const widgetValues = [0, 'model_ref', 5, 1]
       const currentWidgetOrder = ['momentum', 'model', 'norm_threshold', 'eta']

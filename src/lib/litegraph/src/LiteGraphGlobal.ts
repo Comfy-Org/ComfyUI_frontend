@@ -738,13 +738,7 @@ export class LiteGraphGlobal {
     fCall: (e: Event) => boolean | void,
     capture = false
   ): void {
-    if (
-      !oDOM ||
-      !oDOM.addEventListener ||
-      !sEvIn ||
-      typeof fCall !== 'function'
-    )
-      return
+    if (!oDOM?.addEventListener || !sEvIn || typeof fCall !== 'function') return
 
     let sMethod = this.pointerevents_method
     let sEvent = sEvIn
@@ -825,12 +819,7 @@ export class LiteGraphGlobal {
     fCall: (e: Event) => boolean | void,
     capture = false
   ): void {
-    if (
-      !oDOM ||
-      !oDOM.removeEventListener ||
-      !sEvent ||
-      typeof fCall !== 'function'
-    )
+    if (!oDOM?.removeEventListener || !sEvent || typeof fCall !== 'function')
       return
 
     switch (sEvent) {

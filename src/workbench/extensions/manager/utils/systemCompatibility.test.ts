@@ -11,7 +11,7 @@ import {
 } from '@/workbench/extensions/manager/utils/systemCompatibility'
 
 describe('systemCompatibility', () => {
-  describe('checkOSCompatibility', () => {
+  describe(checkOSCompatibility, () => {
     it('should return null when supported OS list is null', () => {
       const result = checkOSCompatibility(null, 'darwin')
       expect(result).toBeNull()
@@ -92,7 +92,7 @@ describe('systemCompatibility', () => {
     })
   })
 
-  describe('checkAcceleratorCompatibility', () => {
+  describe(checkAcceleratorCompatibility, () => {
     it('should return null when supported accelerator list is null', () => {
       const result = checkAcceleratorCompatibility(null, 'cuda')
       expect(result).toBeNull()
@@ -192,7 +192,7 @@ describe('systemCompatibility', () => {
     })
   })
 
-  describe('normalizeOSList', () => {
+  describe(normalizeOSList, () => {
     it('should return undefined for null input', () => {
       const result = normalizeOSList(null)
       expect(result).toBeUndefined()

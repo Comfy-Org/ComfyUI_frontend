@@ -22,7 +22,7 @@ type ManagerTaskHistory = Record<
 >
 type ManagerTaskQueue = components['schemas']['TaskStateMessage']
 
-describe('useManagerQueue', () => {
+describe(useManagerQueue, () => {
   let taskHistory: Ref<ManagerTaskHistory>
   let taskQueue: Ref<ManagerTaskQueue>
   let installedPacks: Ref<

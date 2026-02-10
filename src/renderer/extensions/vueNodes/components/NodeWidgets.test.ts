@@ -9,7 +9,7 @@ import type {
 
 import NodeWidgets from '@/renderer/extensions/vueNodes/components/NodeWidgets.vue'
 
-describe('NodeWidgets', () => {
+describe(NodeWidgets, () => {
   const createMockWidget = (
     overrides: Partial<SafeWidgetData> = {}
   ): SafeWidgetData => ({

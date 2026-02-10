@@ -43,7 +43,7 @@ const mountComponent = (summary: CompletionSummary) =>
     }
   })
 
-describe('QueueOverlayEmpty', () => {
+describe(QueueOverlayEmpty, () => {
   it('renders completion summary banner and proxies click', async () => {
     const summary: CompletionSummary = {
       mode: 'mixed',

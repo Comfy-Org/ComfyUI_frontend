@@ -56,7 +56,7 @@ function createMockWheelEvent(ctrlKey = false, metaKey = false): WheelEvent {
   return mockEvent as WheelEvent
 }
 
-describe('useCanvasInteractions', () => {
+describe(useCanvasInteractions, () => {
   beforeEach(() => {
     vi.resetAllMocks()
   })

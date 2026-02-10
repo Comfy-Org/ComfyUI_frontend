@@ -151,7 +151,7 @@ vi.mock('vue-i18n', () => ({
   })
 }))
 
-describe('AssetBrowserModal', () => {
+describe(AssetBrowserModal, () => {
   const createTestAsset = (
     id: string,
     name: string,

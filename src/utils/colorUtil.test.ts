@@ -93,7 +93,7 @@ describe('colorUtil conversions', () => {
     })
   })
 
-  describe('parseToRgb', () => {
+  describe(parseToRgb, () => {
     it('parses #hex', () => {
       expect(parseToRgb('#ff0000')).toEqual({ r: 255, g: 0, b: 0 })
     })
@@ -112,7 +112,7 @@ describe('colorUtil conversions', () => {
     })
   })
 
-  describe('hsbToRgb', () => {
+  describe(hsbToRgb, () => {
     it('converts HSB to primary RGB colors', () => {
       expect(hsbToRgb({ h: 0, s: 100, b: 100 })).toEqual({ r: 255, g: 0, b: 0 })
       expect(hsbToRgb({ h: 120, s: 100, b: 100 })).toEqual({
@@ -157,8 +157,8 @@ describe('colorUtil - adjustColor', () => {
     })
   }
 
-  describe.each(Object.entries(colors))('%s color', (_colorName, color) => {
-    describe.each(formats)('%s format', (format) => {
+  describe.for(Object.entries(colors))('%s color', ([_colorName, color]) => {
+    describe.for(formats)('%s format', (format) => {
       runAdjustColorTests(color, format as ColorFormat)
     })
   })

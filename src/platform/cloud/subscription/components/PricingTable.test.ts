@@ -147,7 +147,7 @@ function createWrapper() {
   })
 }
 
-describe('PricingTable', () => {
+describe(PricingTable, () => {
   beforeEach(() => {
     vi.clearAllMocks()
     mockIsActiveSubscription.value = false

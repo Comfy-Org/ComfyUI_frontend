@@ -202,7 +202,7 @@ vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
   }))
 }))
 
-describe('useMinimap', () => {
+describe(useMinimap, () => {
   let moduleMockCanvasElement: HTMLCanvasElement
   let mockContainerElement: MockContainerElement
   let mockContext2D: CanvasRenderingContext2D

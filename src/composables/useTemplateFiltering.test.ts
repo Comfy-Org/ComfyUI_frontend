@@ -51,7 +51,7 @@ vi.mock('@/scripts/api', () => ({
   }
 }))
 
-describe('useTemplateFiltering', () => {
+describe(useTemplateFiltering, () => {
   beforeEach(() => {
     setActivePinia(createPinia())
     vi.clearAllMocks()

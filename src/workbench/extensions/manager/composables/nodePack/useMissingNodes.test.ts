@@ -58,7 +58,7 @@ const mockUseComfyManagerStore = vi.mocked(useComfyManagerStore)
 const mockUseNodeDefStore = vi.mocked(useNodeDefStore)
 const mockCollectAllNodes = vi.mocked(collectAllNodes)
 
-describe('useMissingNodes', () => {
+describe(useMissingNodes, () => {
   const mockWorkflowPacks = [
     {
       id: 'pack-1',

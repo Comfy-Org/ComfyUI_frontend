@@ -8,7 +8,7 @@ vi.mock('@/stores/comfyRegistryStore', () => ({
   useComfyRegistryStore: vi.fn()
 }))
 
-describe('useComfyRegistrySearchProvider', () => {
+describe(useComfyRegistrySearchProvider, () => {
   const mockSearchCall = vi.fn()
   const mockSearchClear = vi.fn()
   const mockListAllPacksCall = vi.fn()

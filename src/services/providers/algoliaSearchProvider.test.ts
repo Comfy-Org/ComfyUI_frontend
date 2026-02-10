@@ -27,7 +27,7 @@ interface MockSearchClient {
   search: Mock
 }
 
-describe('useAlgoliaSearchProvider', () => {
+describe(useAlgoliaSearchProvider, () => {
   let mockSearchClient: MockSearchClient
 
   beforeEach(() => {

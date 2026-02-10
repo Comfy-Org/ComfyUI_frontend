@@ -130,7 +130,7 @@ function createMockInputSpec(overrides: Partial<InputSpec> = {}): InputSpec {
   return inputSpec
 }
 
-describe('useComboWidget', () => {
+describe(useComboWidget, () => {
   beforeEach(() => {
     vi.clearAllMocks()
     mockSettingStoreGet.mockReturnValue(false)

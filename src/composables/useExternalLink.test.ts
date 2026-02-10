@@ -27,7 +27,7 @@ vi.mock('@/i18n', () => ({
   i18n
 }))
 
-describe('useExternalLink', () => {
+describe(useExternalLink, () => {
   beforeEach(() => {
     vi.clearAllMocks()
     // Reset to default state

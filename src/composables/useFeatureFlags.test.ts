@@ -21,7 +21,7 @@ vi.mock('@/platform/distribution/types', () => ({
   isNightly: false
 }))
 
-describe('useFeatureFlags', () => {
+describe(useFeatureFlags, () => {
   beforeEach(() => {
     vi.clearAllMocks()
   })

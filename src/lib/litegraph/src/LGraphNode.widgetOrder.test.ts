@@ -97,7 +97,7 @@ describe('LGraphNode widget ordering', () => {
   })
 })
 
-describe('sortWidgetValuesByInputOrder', () => {
+describe(sortWidgetValuesByInputOrder, () => {
   it('should reorder widget values based on input_order', () => {
     const inputOrder = ['steps', 'seed', 'prompt']
     const currentWidgetOrder = ['seed', 'prompt', 'steps']

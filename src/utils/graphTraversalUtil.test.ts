@@ -82,7 +82,7 @@ function createMockSubgraph(
 
 describe('graphTraversalUtil', () => {
   describe('Pure utility functions', () => {
-    describe('parseExecutionId', () => {
+    describe(parseExecutionId, () => {
       it('should parse simple execution ID', () => {
         expect(parseExecutionId('123')).toEqual(['123'])
       })
@@ -102,7 +102,7 @@ describe('graphTraversalUtil', () => {
       })
     })
 
-    describe('getLocalNodeIdFromExecutionId', () => {
+    describe(getLocalNodeIdFromExecutionId, () => {
       it('should extract local node ID from simple ID', () => {
         expect(getLocalNodeIdFromExecutionId('123')).toBe('123')
       })
@@ -116,7 +116,7 @@ describe('graphTraversalUtil', () => {
       })
     })
 
-    describe('getSubgraphPathFromExecutionId', () => {
+    describe(getSubgraphPathFromExecutionId, () => {
       it('should return empty array for root node', () => {
         expect(getSubgraphPathFromExecutionId('123')).toEqual([])
       })
@@ -133,7 +133,7 @@ describe('graphTraversalUtil', () => {
       })
     })
 
-    describe('visitGraphNodes', () => {
+    describe(visitGraphNodes, () => {
       it('should visit all nodes in graph', () => {
         const visited: number[] = []
         const nodes = [createMockNode(1), createMockNode(2), createMockNode(3)]
@@ -158,7 +158,7 @@ describe('graphTraversalUtil', () => {
       })
     })
 
-    describe('traverseSubgraphPath', () => {
+    describe(traverseSubgraphPath, () => {
       it('should return start graph for empty path', () => {
         const graph = createMockGraph([])
         const result = traverseSubgraphPath(graph, [])
@@ -200,7 +200,7 @@ describe('graphTraversalUtil', () => {
   })
 
   describe('Main functions', () => {
-    describe('triggerCallbackOnAllNodes', () => {
+    describe(triggerCallbackOnAllNodes, () => {
       it('should trigger callbacks on all nodes in a flat graph', () => {
         const callback1 = vi.fn()
         const callback2 = vi.fn()
@@ -272,7 +272,7 @@ describe('graphTraversalUtil', () => {
       })
     })
 
-    describe('collectAllNodes', () => {
+    describe(collectAllNodes, () => {
       it('should collect all nodes from a flat graph', () => {
         const nodes = [createMockNode(1), createMockNode(2), createMockNode(3)]
 
@@ -310,7 +310,7 @@ describe('graphTraversalUtil', () => {
       })
     })
 
-    describe('mapAllNodes', () => {
+    describe(mapAllNodes, () => {
       it('should map over all nodes in a flat graph', () => {
         const nodes = [createMockNode(1), createMockNode(2), createMockNode(3)]
         const graph = createMockGraph(nodes)
@@ -374,7 +374,7 @@ describe('graphTraversalUtil', () => {
       })
     })
 
-    describe('forEachNode', () => {
+    describe(forEachNode, () => {
       it('should execute function on all nodes in a flat graph', () => {
         const nodes = [createMockNode(1), createMockNode(2), createMockNode(3)]
         const graph = createMockGraph(nodes)
@@ -445,7 +445,7 @@ describe('graphTraversalUtil', () => {
       })
     })
 
-    describe('findNodeInHierarchy', () => {
+    describe(findNodeInHierarchy, () => {
       it('should find node in root graph', () => {
         const nodes = [createMockNode(1), createMockNode(2), createMockNode(3)]
 
@@ -481,7 +481,7 @@ describe('graphTraversalUtil', () => {
       })
     })
 
-    describe('findSubgraphByUuid', () => {
+    describe(findSubgraphByUuid, () => {
       it('should find subgraph by UUID', () => {
         const targetUuid = 'target-uuid'
         const subgraph = createMockSubgraph(targetUuid, [])
@@ -527,7 +527,7 @@ describe('graphTraversalUtil', () => {
       })
     })
 
-    describe('getNodeByExecutionId', () => {
+    describe(getNodeByExecutionId, () => {
       it('should find node in root graph', () => {
         const nodes = [createMockNode('123'), createMockNode('456')]
 
@@ -596,7 +596,7 @@ describe('graphTraversalUtil', () => {
       })
     })
 
-    describe('getNodeByLocatorId', () => {
+    describe(getNodeByLocatorId, () => {
       it('should find node in root graph', () => {
         const nodes = [createMockNode('123'), createMockNode('456')]
 
@@ -645,7 +645,7 @@ describe('graphTraversalUtil', () => {
       })
     })
 
-    describe('getRootGraph', () => {
+    describe(getRootGraph, () => {
       it('should return the same graph if it is already root', () => {
         const graph = createMockGraph([])
         expect(getRootGraph(graph)).toBe(graph)
@@ -672,7 +672,7 @@ describe('graphTraversalUtil', () => {
       })
     })
 
-    describe('forEachSubgraphNode', () => {
+    describe(forEachSubgraphNode, () => {
       it('should apply function to all nodes matching subgraph type', () => {
         const subgraphId = 'my-subgraph-123'
         const nodes = [
@@ -737,7 +737,7 @@ describe('graphTraversalUtil', () => {
       })
     })
 
-    describe('mapSubgraphNodes', () => {
+    describe(mapSubgraphNodes, () => {
       it('should map over nodes matching subgraph type', () => {
         const subgraphId = 'my-subgraph-123'
         const nodes = [
@@ -781,7 +781,7 @@ describe('graphTraversalUtil', () => {
       })
     })
 
-    describe('getAllNonIoNodesInSubgraph', () => {
+    describe(getAllNonIoNodesInSubgraph, () => {
       it('should filter out SubgraphInputNode and SubgraphOutputNode', () => {
         const nodes = [
           { id: 'input', constructor: { comfyClass: 'SubgraphInputNode' } },
@@ -830,7 +830,7 @@ describe('graphTraversalUtil', () => {
       })
     })
 
-    describe('traverseNodesDepthFirst', () => {
+    describe(traverseNodesDepthFirst, () => {
       it('should traverse nodes in depth-first order', () => {
         const visited: string[] = []
         const nodes = [
@@ -921,7 +921,7 @@ describe('graphTraversalUtil', () => {
       })
     })
 
-    describe('collectFromNodes', () => {
+    describe(collectFromNodes, () => {
       it('should collect data from all nodes', () => {
         const nodes = [
           createMockNode('1'),
@@ -996,7 +996,7 @@ describe('graphTraversalUtil', () => {
       })
     })
 
-    describe('getExecutionIdsForSelectedNodes', () => {
+    describe(getExecutionIdsForSelectedNodes, () => {
       it('should return simple IDs for top-level nodes', () => {
         const graph = createMockGraph([])
         createMockNode('123', { graph })

@@ -76,7 +76,7 @@ const createHarness = (options?: HarnessOptions) => {
   }
 }
 
-describe('formatElapsedTime', () => {
+describe(formatElapsedTime, () => {
   it('formats elapsed milliseconds and clamps negatives to zero', () => {
     expect(formatElapsedTime(0)).toBe('0m 0s')
     expect(formatElapsedTime(61000)).toBe('1m 1s')
@@ -85,7 +85,7 @@ describe('formatElapsedTime', () => {
   })
 })
 
-describe('useQueueEstimates', () => {
+describe(useQueueEstimates, () => {
   it('only shows parallel queued stats for pending jobs seen with multiple runners', () => {
     const ready = createHarness({
       executionStore: createExecutionStore({ runningWorkflowCount: 2 }),

@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from 'vitest'
 
 import { truncateText } from '@/lib/litegraph/src/litegraph'
 
-describe('truncateText', () => {
+describe(truncateText, () => {
   const createMockContext = (charWidth: number = 10) => {
     return {
       measureText: vi.fn(

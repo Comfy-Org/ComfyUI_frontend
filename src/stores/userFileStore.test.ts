@@ -16,7 +16,7 @@ vi.mock('@/scripts/api', () => ({
   }
 }))
 
-describe('useUserFileStore', () => {
+describe(useUserFileStore, () => {
   let store: ReturnType<typeof useUserFileStore>
 
   beforeEach(() => {
@@ -88,7 +88,7 @@ describe('useUserFileStore', () => {
     })
   })
 
-  describe('UserFile', () => {
+  describe(UserFile, () => {
     describe('load', () => {
       it('should load file content', async () => {
         const file = new UserFile('file1.txt', 123, 100)

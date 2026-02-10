@@ -9,13 +9,13 @@ import type {
   RerouteId
 } from '@/lib/litegraph/src/litegraph'
 import { LGraphNode, LLink, LinkConnector } from '@/lib/litegraph/src/litegraph'
-
-import { test as baseTest } from '../__fixtures__/testExtensions'
 import type { ConnectingLink } from '@/lib/litegraph/src/interfaces'
 import {
   createMockCanvasPointerEvent,
   createMockCanvasRenderingContext2D
 } from '@/utils/__tests__/litegraphTestUtils'
+
+import { test as baseTest } from '../__fixtures__/testExtensions'
 
 interface TestContext {
   graph: LGraph

@@ -21,7 +21,7 @@ const i18n = createI18n({
   }
 })
 
-describe('LivePreview', () => {
+describe(LivePreview, () => {
   const defaultProps = {
     imageUrl: '/api/view?filename=test_sample.png&type=temp'
   }

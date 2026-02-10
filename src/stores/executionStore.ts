@@ -413,8 +413,7 @@ export const useExecutionStore = defineStore('execution', () => {
     if (!id) return
     // Until cloud implements a proper message
     if (text.includes('Waiting for a machine')) {
-      const next = new Set(initializingPromptIds.value)
-      next.add(id)
+      const next = new Set([...initializingPromptIds.value, id])
       initializingPromptIds.value = next
     }
   }

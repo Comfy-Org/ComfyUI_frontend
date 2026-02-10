@@ -92,7 +92,7 @@ const waitForPromises = async () => {
   await nextTick()
 }
 
-describe('PackVersionSelectorPopover', () => {
+describe(PackVersionSelectorPopover, () => {
   beforeEach(() => {
     vi.clearAllMocks()
     mockGetPackVersions.mockReset()

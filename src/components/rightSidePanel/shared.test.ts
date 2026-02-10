@@ -6,7 +6,7 @@ import { describe, expect, it, beforeEach } from 'vitest'
 
 import { flatAndCategorizeSelectedItems, searchWidgets } from './shared'
 
-describe('searchWidgets', () => {
+describe(searchWidgets, () => {
   const createWidget = (
     name: string,
     type: string,
@@ -72,7 +72,7 @@ describe('searchWidgets', () => {
   })
 })
 
-describe('flatAndCategorizeSelectedItems', () => {
+describe(flatAndCategorizeSelectedItems, () => {
   let testGroup1: LGraphGroup
   let testGroup2: LGraphGroup
   let testNode1: LGraphNode

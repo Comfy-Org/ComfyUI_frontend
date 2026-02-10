@@ -256,7 +256,7 @@ export function findSubgraphPathById(
     const { graph, path } = stack.pop()!
 
     // Check if graph exists and has _nodes property
-    if (!graph || !graph._nodes || !Array.isArray(graph._nodes)) {
+    if (!graph?._nodes || !Array.isArray(graph._nodes)) {
       continue
     }
 

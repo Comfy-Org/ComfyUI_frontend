@@ -49,7 +49,7 @@ vi.mock('@/types/nodeSource', () => ({
   })
 }))
 
-describe('useNodeHelpContent', () => {
+describe(useNodeHelpContent, () => {
   const mockCoreNode = createMockNode({
     name: 'TestNode',
     display_name: 'Test Node',

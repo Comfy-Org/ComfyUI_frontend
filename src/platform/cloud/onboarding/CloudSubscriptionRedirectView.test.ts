@@ -97,7 +97,7 @@ const mountView = async (query: Record<string, unknown>) => {
   return { wrapper }
 }
 
-describe('CloudSubscriptionRedirectView', () => {
+describe(CloudSubscriptionRedirectView, () => {
   beforeEach(() => {
     vi.clearAllMocks()
     mockQuery = {}

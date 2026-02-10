@@ -46,7 +46,7 @@ vi.mock('vue-i18n', () => ({
   })
 }))
 
-describe('useWorkspaceSwitch', () => {
+describe(useWorkspaceSwitch, () => {
   beforeEach(() => {
     vi.clearAllMocks()
     mockActiveWorkspace.value = {

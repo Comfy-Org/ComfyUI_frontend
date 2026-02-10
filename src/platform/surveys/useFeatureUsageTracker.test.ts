@@ -4,7 +4,7 @@ import { useFeatureUsageTracker } from './useFeatureUsageTracker'
 
 const STORAGE_KEY = 'Comfy.FeatureUsage'
 
-describe('useFeatureUsageTracker', () => {
+describe(useFeatureUsageTracker, () => {
   beforeEach(() => {
     localStorage.clear()
     vi.clearAllMocks()

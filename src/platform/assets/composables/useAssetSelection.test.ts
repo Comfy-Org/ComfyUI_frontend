@@ -35,7 +35,7 @@ function createMockAssets(count: number): AssetItem[] {
   }))
 }
 
-describe('useAssetSelection', () => {
+describe(useAssetSelection, () => {
   beforeEach(() => {
     setActivePinia(createPinia())
     mockShiftKey.value = false

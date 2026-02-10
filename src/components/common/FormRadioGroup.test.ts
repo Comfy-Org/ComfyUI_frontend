@@ -9,7 +9,7 @@ import type { ComponentProps } from 'vue-component-type-helpers'
 
 import FormRadioGroup from './FormRadioGroup.vue'
 
-describe('FormRadioGroup', () => {
+describe(FormRadioGroup, () => {
   beforeAll(() => {
     const app = createApp({})
     app.use(PrimeVue)

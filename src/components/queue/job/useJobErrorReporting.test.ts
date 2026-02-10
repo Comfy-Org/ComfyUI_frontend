@@ -20,7 +20,7 @@ const createTaskWithError = (
     createTime: createTime ?? Date.now()
   }) as Partial<TaskItemImpl> as TaskItemImpl
 
-describe('useJobErrorReporting', () => {
+describe(useJobErrorReporting, () => {
   let taskState = ref<TaskItemImpl | null>(null)
   let taskForJob: ComputedRef<TaskItemImpl | null>
   let copyToClipboard: ReturnType<typeof vi.fn>

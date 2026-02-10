@@ -7,7 +7,7 @@ import {
   createMockLGraphNode
 } from '@/utils/__tests__/litegraphTestUtils'
 
-describe('LGraphNodeProperties', () => {
+describe(LGraphNodeProperties, () => {
   let mockNode: LGraphNode
   let mockGraph: LGraph
 

@@ -30,7 +30,7 @@ vi.mock('@/platform/updates/common/toastStore', () => ({
   useToastStore: vi.fn(() => mockToastStore)
 }))
 
-describe('useAudioService', () => {
+describe(useAudioService, () => {
   let service: ReturnType<typeof useAudioService>
 
   const mockBlob = new Blob(['test audio data'], { type: 'audio/wav' })

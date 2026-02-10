@@ -33,7 +33,7 @@ function createStore(enabled = true) {
   return useNodeReplacementStore()
 }
 
-describe('useNodeReplacementStore', () => {
+describe(useNodeReplacementStore, () => {
   let store: ReturnType<typeof useNodeReplacementStore>
 
   beforeEach(() => {

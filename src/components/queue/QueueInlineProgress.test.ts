@@ -20,7 +20,7 @@ vi.mock('@/composables/queue/useQueueProgress', () => ({
 const createWrapper = (props: { hidden?: boolean } = {}) =>
   mount(QueueInlineProgress, { props })
 
-describe('QueueInlineProgress', () => {
+describe(QueueInlineProgress, () => {
   beforeEach(() => {
     mockProgress.totalPercent = ref(0)
     mockProgress.currentNodePercent = ref(0)

@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest'
 import { normalizePackId, normalizePackKeys } from '@/utils/packUtils'
 
 describe('packUtils', () => {
-  describe('normalizePackId', () => {
+  describe(normalizePackId, () => {
     it('should return pack ID unchanged when no version suffix exists', () => {
       expect(normalizePackId('ComfyUI-GGUF')).toBe('ComfyUI-GGUF')
       expect(normalizePackId('ComfyUI-Manager')).toBe('ComfyUI-Manager')
@@ -51,7 +51,7 @@ describe('packUtils', () => {
     })
   })
 
-  describe('normalizePackKeys', () => {
+  describe(normalizePackKeys, () => {
     it('should normalize all keys with version suffixes', () => {
       const input = {
         'ComfyUI-GGUF': { ver: '1.1.4', enabled: true },

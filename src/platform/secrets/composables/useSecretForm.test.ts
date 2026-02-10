@@ -39,7 +39,7 @@ function createMockSecret(
   }
 }
 
-describe('useSecretForm', () => {
+describe(useSecretForm, () => {
   beforeEach(() => {
     vi.clearAllMocks()
   })

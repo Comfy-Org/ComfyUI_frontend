@@ -53,7 +53,7 @@ function dispatch(msg: AssetDownloadWsMessage) {
   eventHandler.current(new CustomEvent('asset_download', { detail: msg }))
 }
 
-describe('useAssetDownloadStore', () => {
+describe(useAssetDownloadStore, () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
     vi.useFakeTimers({ shouldAdvanceTime: false })

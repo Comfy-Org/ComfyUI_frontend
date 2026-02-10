@@ -19,7 +19,7 @@ describe('nodeFilterUtil', () => {
     return node
   }
 
-  describe('filterOutputNodes', () => {
+  describe(filterOutputNodes, () => {
     it('should return empty array when given empty array', () => {
       const result = filterOutputNodes([])
       expect(result).toEqual([])
@@ -83,7 +83,7 @@ describe('nodeFilterUtil', () => {
     })
   })
 
-  describe('isOutputNode', () => {
+  describe(isOutputNode, () => {
     it('should filter selected nodes to only output nodes', () => {
       const selectedNodes = [
         createMockNode(1, false),

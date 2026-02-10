@@ -116,7 +116,7 @@ const mockMemberWorkspace = {
   joined_at: '2026-03-01T00:00:00Z'
 }
 
-describe('useTeamWorkspaceStore', () => {
+describe(useTeamWorkspaceStore, () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
     vi.clearAllMocks()
@@ -931,7 +931,7 @@ describe('useTeamWorkspaceStore', () => {
   })
 })
 
-describe('sortWorkspaces', () => {
+describe(sortWorkspaces, () => {
   it('places personal first, then sorts ascending by created_at for owners and joined_at for members', () => {
     const input = [
       {

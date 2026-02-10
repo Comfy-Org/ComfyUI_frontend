@@ -3,7 +3,7 @@ import type { LocationQuery } from 'vue-router'
 
 import { getSafePreviousFullPath } from './previousFullPath'
 
-describe('getSafePreviousFullPath', () => {
+describe(getSafePreviousFullPath, () => {
   test('returns null when missing', () => {
     expect(getSafePreviousFullPath({})).toBeNull()
   })

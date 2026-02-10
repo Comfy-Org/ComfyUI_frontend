@@ -134,7 +134,7 @@ const mockNodeData: VueNodeData = {
   executing: false
 }
 
-describe('LGraphNode', () => {
+describe(LGraphNode, () => {
   beforeEach(() => {
     vi.resetAllMocks()
     mockData.mockExecuting = false

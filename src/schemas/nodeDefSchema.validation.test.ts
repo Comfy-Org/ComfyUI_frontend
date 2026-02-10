@@ -27,7 +27,7 @@ describe('validateNodeDef', () => {
     expect(validateComfyNodeDef(EXAMPLE_NODE_DEF)).not.toBeNull()
   })
 
-  describe.each([
+  describe.for([
     [{ ckpt_name: ['foo', { default: 1 }] }, ['foo', { default: 1 }]],
     // Extra input spec should be preserved
     [{ ckpt_name: ['foo', { bar: 1 }] }, ['foo', { bar: 1 }]],
@@ -35,7 +35,7 @@ describe('validateNodeDef', () => {
     [{ ckpt_name: [[1, 2, 3], { bar: 1 }] }, [[1, 2, 3], { bar: 1 }]]
   ])(
     'validateComfyNodeDef with various input spec formats',
-    (inputSpec, expected) => {
+    ([inputSpec, expected]) => {
       it(`should accept input spec format: ${JSON.stringify(inputSpec)}`, async () => {
         expect(
           // @ts-expect-error fixme ts strict error
@@ -50,7 +50,7 @@ describe('validateNodeDef', () => {
     }
   )
 
-  describe.each([
+  describe.for([
     [{ ckpt_name: { 'model1.safetensors': 'foo' } }],
     [{ ckpt_name: ['*', ''] }],
     [{ ckpt_name: ['foo', { default: 1 }, { default: 2 }] }],
@@ -58,7 +58,7 @@ describe('validateNodeDef', () => {
     [{ ckpt_name: ['INT', { default: '124' }] }]
   ])(
     'validateComfyNodeDef rejects with various input spec formats',
-    (inputSpec) => {
+    ([inputSpec]) => {
       it(`should accept input spec format: ${JSON.stringify(inputSpec)}`, async () => {
         expect(
           validateComfyNodeDef({

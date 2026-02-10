@@ -56,7 +56,7 @@ vi.mock('@/utils/litegraphUtil', () => ({
   isReroute: vi.fn(() => false)
 }))
 
-describe('ColorPickerButton', () => {
+describe(ColorPickerButton, () => {
   let canvasStore: ReturnType<typeof useCanvasStore>
   let workflowStore: ReturnType<typeof useWorkflowStore>
 

@@ -206,7 +206,7 @@ function gotoPreviousOutput() {
   selectedIndex.value = [0, 0]
 }
 
-let pointer = new CanvasPointer(document.body)
+const pointer = new CanvasPointer(document.body)
 let scrollOffset = 0
 function onWheel(e: WheelEvent) {
   if (!e.ctrlKey && !e.metaKey) return

@@ -102,7 +102,7 @@ vi.mock('@/stores/nodeDefStore', () => ({
   })
 }))
 
-describe('SelectionToolbox', () => {
+describe(SelectionToolbox, () => {
   let canvasStore: ReturnType<typeof useCanvasStore>
 
   const i18n = createI18n({

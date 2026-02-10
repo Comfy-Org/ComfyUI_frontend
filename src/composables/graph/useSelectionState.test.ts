@@ -39,7 +39,7 @@ const mockConnection = {
   isNode: false
 }
 
-describe('useSelectionState', () => {
+describe(useSelectionState, () => {
   beforeEach(() => {
     vi.clearAllMocks()
 

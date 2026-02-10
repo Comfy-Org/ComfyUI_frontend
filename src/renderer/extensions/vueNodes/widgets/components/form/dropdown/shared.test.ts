@@ -12,7 +12,7 @@ function createItem(name: string, label?: string): FormDropdownItem {
   }
 }
 
-describe('defaultSearcher', () => {
+describe(defaultSearcher, () => {
   const items: FormDropdownItem[] = [
     createItem('apple.png'),
     createItem('banana.jpg'),
@@ -53,7 +53,7 @@ describe('defaultSearcher', () => {
   })
 })
 
-describe('getDefaultSortOptions', () => {
+describe(getDefaultSortOptions, () => {
   const sortOptions = getDefaultSortOptions()
 
   describe('Default sorter', () => {

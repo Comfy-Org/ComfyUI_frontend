@@ -138,6 +138,10 @@ export default defineConfig([
       'import-x/no-useless-path-segments': 'error',
       'import-x/no-relative-packages': 'error',
       'unused-imports/no-unused-imports': 'error',
+      'vue/return-in-computed-property': [
+        'error',
+        { treatUndefinedAsUnspecified: false }
+      ],
       'vue/no-v-html': 'off',
       // Prohibit dark-theme: and dark: prefixes
       'vue/no-restricted-class': ['error', '/^dark(-theme)?:/'],

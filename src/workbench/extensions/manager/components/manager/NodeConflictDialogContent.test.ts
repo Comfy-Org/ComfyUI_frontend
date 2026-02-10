@@ -44,7 +44,7 @@ vi.mock(
   })
 )
 
-describe('NodeConflictDialogContent', () => {
+describe(NodeConflictDialogContent, () => {
   let pinia: ReturnType<typeof createTestingPinia>
 
   beforeEach(() => {

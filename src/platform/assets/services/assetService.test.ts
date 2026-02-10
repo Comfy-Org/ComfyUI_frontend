@@ -84,6 +84,7 @@ function mockApiError(status: number, statusText = 'Error') {
   )
 }
 
+// oxlint-disable-next-line vitest/prefer-describe-function-title -- assetService is an object, not a function
 describe('assetService', () => {
   beforeEach(() => {
     vi.resetAllMocks()

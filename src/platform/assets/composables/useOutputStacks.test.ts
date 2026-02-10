@@ -48,7 +48,7 @@ function createAsset(overrides: Partial<AssetItem> = {}): AssetItem {
   }
 }
 
-describe('useOutputStacks', () => {
+describe(useOutputStacks, () => {
   beforeEach(() => {
     vi.resetAllMocks()
   })

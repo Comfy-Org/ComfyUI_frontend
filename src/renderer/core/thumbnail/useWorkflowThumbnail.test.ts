@@ -22,7 +22,7 @@ vi.mock('@/scripts/api', () => ({
   }
 }))
 
-describe('useWorkflowThumbnail', () => {
+describe(useWorkflowThumbnail, () => {
   let workflowStore: ReturnType<typeof useWorkflowStore>
 
   beforeEach(() => {

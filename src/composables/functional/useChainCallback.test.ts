@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import { useChainCallback } from '@/composables/functional/useChainCallback'
 
-describe('useChainCallback', () => {
+describe(useChainCallback, () => {
   it('preserves "this" context in original callback and chained callbacks', () => {
     class TestClass {
       value = 'test'

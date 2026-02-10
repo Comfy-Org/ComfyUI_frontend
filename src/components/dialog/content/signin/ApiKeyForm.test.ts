@@ -56,7 +56,7 @@ const i18n = createI18n({
   }
 })
 
-describe('ApiKeyForm', () => {
+describe(ApiKeyForm, () => {
   beforeEach(() => {
     const app = createApp({})
     app.use(PrimeVue)

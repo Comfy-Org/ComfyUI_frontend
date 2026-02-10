@@ -31,7 +31,7 @@ vi.mock('@/platform/settings/settingStore', () => ({
 //@ts-expect-error Define global for the test
 global.__COMFYUI_FRONTEND_VERSION__ = '1.24.0'
 
-describe('useNewUserService', () => {
+describe(useNewUserService, () => {
   let service: ReturnType<typeof useNewUserService>
 
   beforeEach(() => {

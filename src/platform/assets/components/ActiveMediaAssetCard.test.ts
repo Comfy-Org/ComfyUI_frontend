@@ -57,7 +57,7 @@ const mountComponent = (job: JobListItem) =>
     }
   })
 
-describe('ActiveJobCard', () => {
+describe(ActiveJobCard, () => {
   it('displays percentage and progress bar when job is running', () => {
     const wrapper = mountComponent(
       createJob({ state: 'running', progressTotalPercent: 65 })

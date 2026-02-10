@@ -8,7 +8,7 @@ import { useComfyRegistrySearchProvider } from '@/services/providers/registrySea
 vi.mock('@/services/providers/algoliaSearchProvider')
 vi.mock('@/services/providers/registrySearchProvider')
 
-describe('useRegistrySearchGateway', () => {
+describe(useRegistrySearchGateway, () => {
   let consoleWarnSpy: ReturnType<typeof vi.spyOn>
   let consoleInfoSpy: ReturnType<typeof vi.spyOn>
 

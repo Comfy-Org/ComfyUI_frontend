@@ -100,7 +100,7 @@ vi.mock('@vueuse/core', () => ({
   createSharedComposable: vi.fn((fn) => fn)
 }))
 
-describe('useReleaseStore', () => {
+describe(useReleaseStore, () => {
   const mockRelease = {
     id: 1,
     project: 'comfyui' as const,

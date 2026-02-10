@@ -19,7 +19,7 @@ const i18n = createI18n({
   }
 })
 
-describe('SearchBox', () => {
+describe(SearchBox, () => {
   beforeEach(() => {
     vi.clearAllMocks()
     vi.useFakeTimers()

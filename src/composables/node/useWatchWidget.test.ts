@@ -15,7 +15,7 @@ vi.mock('@/composables/functional/useChainCallback', () => ({
   })
 }))
 
-describe('useComputedWithWidgetWatch', () => {
+describe(useComputedWithWidgetWatch, () => {
   const createMockNode = (
     widgets: Array<{
       name: string
@@ -59,7 +59,7 @@ describe('useComputedWithWidgetWatch', () => {
 
     // Change widget value and trigger callback
     const widthWidget = mockNode.widgets?.find((w) => w.name === 'width')
-    if (widthWidget && widthWidget.callback) {
+    if (widthWidget?.callback) {
       widthWidget.value = 150
       widthWidget.callback(widthWidget.value)
     }
@@ -89,7 +89,7 @@ describe('useComputedWithWidgetWatch', () => {
 
     // Change observed widget
     const widthWidget = mockNode.widgets?.find((w) => w.name === 'width')
-    if (widthWidget && widthWidget.callback) {
+    if (widthWidget?.callback) {
       widthWidget.value = 150
       widthWidget.callback(widthWidget.value)
     }
@@ -117,7 +117,7 @@ describe('useComputedWithWidgetWatch', () => {
 
     // Change widget value
     const widget = mockNode.widgets?.[0]
-    if (widget && widget.callback) {
+    if (widget?.callback) {
       widget.value = 20
       widget.callback(widget.value)
     }
@@ -139,7 +139,7 @@ describe('useComputedWithWidgetWatch', () => {
 
     // Change widget value
     const widget = mockNode.widgets?.[0]
-    if (widget && widget.callback) {
+    if (widget?.callback) {
       widget.value = 20
       widget.callback(widget.value)
     }
@@ -171,7 +171,7 @@ describe('useComputedWithWidgetWatch', () => {
 
     // Trigger widget callback
     const widget = mockNode.widgets?.[0]
-    if (widget && widget.callback) {
+    if (widget?.callback) {
       widget.callback(widget.value)
     }
 

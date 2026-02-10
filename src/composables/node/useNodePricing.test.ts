@@ -118,7 +118,7 @@ function createMockNode(
 // Tests
 // -----------------------------------------------------------------------------
 
-describe('useNodePricing', () => {
+describe(useNodePricing, () => {
   describe('static expressions', () => {
     it('should evaluate simple static USD price', async () => {
       const { getNodeDisplayPrice } = useNodePricing()

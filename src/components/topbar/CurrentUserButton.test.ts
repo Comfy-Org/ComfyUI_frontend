@@ -75,7 +75,7 @@ vi.mock('./CurrentUserPopoverLegacy.vue', () => ({
   }
 }))
 
-describe('CurrentUserButton', () => {
+describe(CurrentUserButton, () => {
   beforeEach(() => {
     vi.clearAllMocks()
   })

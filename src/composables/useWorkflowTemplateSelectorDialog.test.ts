@@ -41,7 +41,7 @@ vi.mock(
   })
 )
 
-describe('useWorkflowTemplateSelectorDialog', () => {
+describe(useWorkflowTemplateSelectorDialog, () => {
   beforeEach(() => {
     vi.clearAllMocks()
   })

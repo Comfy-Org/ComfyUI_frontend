@@ -15,7 +15,7 @@ const i18n = createI18n({
   }
 })
 
-describe('DescriptionTabPanel', () => {
+describe(DescriptionTabPanel, () => {
   const mountComponent = (props: {
     nodePack: Partial<components['schemas']['Node']>
   }) => {

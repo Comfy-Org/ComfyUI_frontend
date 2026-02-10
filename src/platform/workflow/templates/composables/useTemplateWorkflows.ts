@@ -118,7 +118,7 @@ export function useTemplateWorkflows() {
         )
         const template = allCategory?.templates.find((t) => t.name === id)
 
-        if (!template || !template.sourceModule) return false
+        if (!template?.sourceModule) return false
 
         // Use the stored source module for loading
         sourceModule = template.sourceModule

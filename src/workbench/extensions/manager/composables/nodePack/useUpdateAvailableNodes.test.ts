@@ -39,7 +39,7 @@ const mockUseComfyManagerStore = vi.mocked(useComfyManagerStore)
 const mockSemverCompare = vi.mocked(compare)
 const mockSemverValid = vi.mocked(valid)
 
-describe('useUpdateAvailableNodes', () => {
+describe(useUpdateAvailableNodes, () => {
   const mockInstalledPacks = [
     {
       id: 'pack-1',

@@ -65,7 +65,7 @@ vi.mock('@/scripts/api', () => ({
   }
 }))
 
-describe('TaskItemImpl', () => {
+describe(TaskItemImpl, () => {
   it('should remove animated property from outputs during construction', () => {
     const job = createHistoryJob(0, 'prompt-id')
     const taskItem = new TaskItemImpl(job, {
@@ -244,7 +244,7 @@ describe('TaskItemImpl', () => {
   })
 })
 
-describe('useQueueStore', () => {
+describe(useQueueStore, () => {
   let store: ReturnType<typeof useQueueStore>
 
   beforeEach(() => {

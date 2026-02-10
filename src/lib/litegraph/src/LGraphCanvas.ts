@@ -1322,7 +1322,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     prev_menu: ContextMenu<string>,
     node: LGraphNode
   ): boolean | undefined {
-    if (!node || !node.properties) return
+    if (!node?.properties) return
 
     const canvas = LGraphCanvas.active_canvas
 
@@ -1648,12 +1648,13 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       string | null,
       unknown,
       { value: string | null }
-    >[] = []
-    values.push({
-      value: null,
-      content:
-        "<span style='display: block; padding-left: 4px;'>No color</span>"
-    })
+    >[] = [
+      {
+        value: null,
+        content:
+          "<span style='display: block; padding-left: 4px;'>No color</span>"
+      }
+    ]
 
     for (const i in LGraphCanvas.node_colors) {
       const color = LGraphCanvas.node_colors[i]
@@ -5812,7 +5813,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       if (!inputs?.length) continue
 
       for (const [i, input] of inputs.entries()) {
-        if (!input || input.link == null) continue
+        if (input?.link == null) continue
 
         const link_id = input.link
         const link = graph._links.get(link_id)
@@ -7030,9 +7031,9 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       show_general_after_typefiltered: true,
       hide_on_mouse_leave: LiteGraph.search_hide_on_mouse_leave,
       show_all_if_empty: true,
-      show_all_on_open: LiteGraph.search_show_all_on_open
+      show_all_on_open: LiteGraph.search_show_all_on_open,
+      ...searchOptions
     }
-    Object.assign(options, searchOptions)
 
     // console.log(options);
 
@@ -7577,7 +7578,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     property: string,
     options: IDialogOptions
   ): IDialog | undefined {
-    if (!node || node.properties[property] === undefined) return
+    if (node?.properties[property] === undefined) return
 
     options = options || {}
 

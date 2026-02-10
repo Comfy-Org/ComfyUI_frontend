@@ -35,7 +35,7 @@ vi.mock('@/composables/billing/useBillingContext', () => ({
   })
 }))
 
-describe('useSubscriptionCredits', () => {
+describe(useSubscriptionCredits, () => {
   beforeEach(() => {
     mockBillingBalance = null
     mockBillingIsLoading = false

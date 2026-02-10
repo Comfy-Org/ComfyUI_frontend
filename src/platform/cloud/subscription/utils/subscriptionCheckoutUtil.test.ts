@@ -56,14 +56,14 @@ global.fetch = vi.fn()
 
 function createDeferred<T>() {
   let resolve: (value: T) => void = () => {}
-  const promise = new Promise<T>((res) => {
-    resolve = res
+  const promise = new Promise<T>((_resolve) => {
+    resolve = _resolve
   })
 
   return { promise, resolve }
 }
 
-describe('performSubscriptionCheckout', () => {
+describe(performSubscriptionCheckout, () => {
   beforeEach(() => {
     vi.clearAllMocks()
     mockIsCloud.value = true

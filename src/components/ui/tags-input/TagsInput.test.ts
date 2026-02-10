@@ -15,7 +15,7 @@ const i18n = createI18n({
   messages: { en: { g: { removeTag: 'Remove tag' } } }
 })
 
-describe('TagsInput', () => {
+describe(TagsInput, () => {
   function mountTagsInput(props = {}, slots = {}) {
     return mount(TagsInput, {
       props: {

@@ -37,7 +37,7 @@ const createNode = (
   } as unknown as LGraphNode
 }
 
-describe('graphHasMissingNodes', () => {
+describe(graphHasMissingNodes, () => {
   it('returns false when graph is null', () => {
     expect(graphHasMissingNodes(null, {})).toBe(false)
   })

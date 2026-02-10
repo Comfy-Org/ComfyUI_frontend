@@ -111,7 +111,7 @@ if (globalThis.ImageBitmap === undefined) {
   } as typeof ImageBitmap
 }
 
-describe('useCanvasTransform', () => {
+describe(useCanvasTransform, () => {
   let mockMaskCanvas: IMockCanvas
   let mockRgbCanvas: IMockCanvas
   let mockImgCanvas: IMockCanvas

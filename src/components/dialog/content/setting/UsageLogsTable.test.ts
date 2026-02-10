@@ -76,7 +76,7 @@ const i18n = createI18n({
   }
 })
 
-describe('UsageLogsTable', () => {
+describe(UsageLogsTable, () => {
   const mockEventsResponse = {
     events: [
       {

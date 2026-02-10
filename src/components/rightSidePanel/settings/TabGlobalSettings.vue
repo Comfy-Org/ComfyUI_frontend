@@ -66,7 +66,7 @@ let theOldLinkRenderMode: LinkRenderType = LiteGraph.SPLINE_LINK
 const showConnectedLinks = computed({
   get: () => settingStore.get('Comfy.LinkRenderMode') !== LiteGraph.HIDDEN_LINK,
   set: (value) => {
-    let oldLinkRenderMode = settingStore.get('Comfy.LinkRenderMode')
+    const oldLinkRenderMode = settingStore.get('Comfy.LinkRenderMode')
     if (oldLinkRenderMode !== LiteGraph.HIDDEN_LINK) {
       theOldLinkRenderMode = oldLinkRenderMode
     }

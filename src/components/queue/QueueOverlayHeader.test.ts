@@ -64,7 +64,7 @@ const mountHeader = (props = {}) =>
     }
   })
 
-describe('QueueOverlayHeader', () => {
+describe(QueueOverlayHeader, () => {
   it('renders header title and concurrent indicator when enabled', () => {
     const wrapper = mountHeader({ concurrentWorkflowCount: 3 })
 

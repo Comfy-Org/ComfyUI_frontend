@@ -22,7 +22,7 @@ Object.defineProperty(window, 'localStorage', {
   writable: true
 })
 
-describe('getCheckoutAttribution', () => {
+describe(getCheckoutAttribution, () => {
   beforeEach(() => {
     storage.clear()
     vi.clearAllMocks()

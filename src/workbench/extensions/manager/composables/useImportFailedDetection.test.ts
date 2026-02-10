@@ -22,7 +22,7 @@ vi.mock('vue-i18n', async () => {
   }
 })
 
-describe('useImportFailedDetection', () => {
+describe(useImportFailedDetection, () => {
   let mockComfyManagerStore: ReturnType<
     typeof comfyManagerStore.useComfyManagerStore
   >

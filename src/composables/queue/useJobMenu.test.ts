@@ -183,7 +183,7 @@ const findActionEntry = (entries: MenuEntry[], key: string) =>
       entry.key === key && entry.kind !== 'divider'
   )
 
-describe('useJobMenu', () => {
+describe(useJobMenu, () => {
   beforeEach(() => {
     vi.clearAllMocks()
     currentItem = ref<JobListItem | null>(null)

@@ -84,7 +84,7 @@ vi.mock('@/platform/workspace/api/workspaceApi', () => ({
   }
 }))
 
-describe('useBillingContext', () => {
+describe(useBillingContext, () => {
   beforeEach(() => {
     setActivePinia(createPinia())
     vi.clearAllMocks()

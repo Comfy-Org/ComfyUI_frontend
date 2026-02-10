@@ -67,7 +67,7 @@ const mockListResult: operations['listAllNodes']['responses'][200]['content']['a
     limit: 10
   }
 
-describe('useComfyRegistryStore', () => {
+describe(useComfyRegistryStore, () => {
   let mockRegistryService: {
     isLoading: ReturnType<typeof ref<boolean>>
     error: ReturnType<typeof ref<string | null>>

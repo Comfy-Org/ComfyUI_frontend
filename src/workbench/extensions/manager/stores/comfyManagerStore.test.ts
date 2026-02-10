@@ -59,7 +59,7 @@ interface EnabledDisabledTestCase {
   packName?: string
 }
 
-describe('useComfyManagerStore', () => {
+describe(useComfyManagerStore, () => {
   let mockManagerService: ReturnType<typeof useComfyManagerService>
 
   const triggerPacksChange = async (

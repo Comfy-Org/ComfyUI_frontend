@@ -115,7 +115,7 @@ vi.mock('@/workbench/extensions/manager/composables/useManagerState', () => ({
   }))
 }))
 
-describe('useConflictDetection', () => {
+describe(useConflictDetection, () => {
   let pinia: ReturnType<typeof createTestingPinia>
 
   const mockComfyManagerService = {

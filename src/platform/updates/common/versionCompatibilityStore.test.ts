@@ -35,7 +35,7 @@ type MockSystemStatsStore = {
   refetchSystemStats: ReturnType<typeof vi.fn>
 }
 
-describe('useVersionCompatibilityStore', () => {
+describe(useVersionCompatibilityStore, () => {
   let store: ReturnType<typeof useVersionCompatibilityStore>
   let mockSystemStatsStore: MockSystemStatsStore
   let mockSettingStore: { get: ReturnType<typeof vi.fn> }

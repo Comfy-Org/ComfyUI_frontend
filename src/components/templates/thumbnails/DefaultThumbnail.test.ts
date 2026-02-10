@@ -20,7 +20,7 @@ vi.mock('@/components/common/LazyImage.vue', () => ({
   }
 }))
 
-describe('DefaultThumbnail', () => {
+describe(DefaultThumbnail, () => {
   const mountThumbnail = (props = {}) => {
     return mount(DefaultThumbnail, {
       props: {

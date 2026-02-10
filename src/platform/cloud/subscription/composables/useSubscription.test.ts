@@ -103,7 +103,7 @@ vi.mock('@/stores/firebaseAuthStore', () => ({
 // Mock fetch
 global.fetch = vi.fn()
 
-describe('useSubscription', () => {
+describe(useSubscription, () => {
   afterEach(() => {
     scope?.stop()
     scope = undefined

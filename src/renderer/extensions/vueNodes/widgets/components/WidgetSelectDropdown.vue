@@ -56,6 +56,7 @@ const {
   assetKind,
   allowUpload,
   uploadFolder,
+  uploadSubfolder,
   isAssetMode,
   defaultLayoutMode
 } = defineProps<Props>()
@@ -331,7 +332,7 @@ const acceptTypes = computed(() => {
     case 'mesh':
       return SUPPORTED_EXTENSIONS_ACCEPT
     default:
-      return undefined // model or unknown
+      return
   }
 })
 
@@ -379,8 +380,7 @@ const uploadFile = async (
   const body = new FormData()
   body.append('image', file)
   if (isPasted) body.append('subfolder', 'pasted')
-  else if (props.uploadSubfolder)
-    body.append('subfolder', props.uploadSubfolder)
+  else if (uploadSubfolder) body.append('subfolder', uploadSubfolder)
   if (formFields.type) body.append('type', formFields.type)
 
   const resp = await api.fetchApi('/upload/image', {

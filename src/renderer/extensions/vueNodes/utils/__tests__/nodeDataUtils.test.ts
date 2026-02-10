@@ -31,7 +31,7 @@ function makeFakeNodeData(inputs: INodeInputSlot[]): VueNodeData {
 }
 
 describe('nodeDataUtils', () => {
-  describe('nonWidgetedInputs', () => {
+  describe(nonWidgetedInputs, () => {
     it('should handle an empty inputs list', () => {
       const inputs: INodeInputSlot[] = []
       const nodeData = makeFakeNodeData(inputs)
@@ -80,7 +80,7 @@ describe('nodeDataUtils', () => {
     })
   })
 
-  describe('linkedWidgetedInputs', () => {
+  describe(linkedWidgetedInputs, () => {
     it('should return input slots that are bound to widgets and are linked: none present', () => {
       const inputs: INodeInputSlot[] = [
         makeFakeInputSlot('first'),

@@ -33,7 +33,7 @@ function createMockSettingStore(): ReturnType<typeof useSettingStore> {
   > as unknown as ReturnType<typeof useSettingStore>
 }
 
-describe('useSearchBoxStore', () => {
+describe(useSearchBoxStore, () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
 

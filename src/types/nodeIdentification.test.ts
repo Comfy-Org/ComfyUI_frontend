@@ -12,12 +12,13 @@ import {
 import type { NodeLocatorId } from '@/types/nodeIdentification'
 
 describe('nodeIdentification', () => {
+  // oxlint-disable-next-line vitest/prefer-describe-function-title -- NodeLocatorId is a type, not a value
   describe('NodeLocatorId', () => {
     const validUuid = 'a1b2c3d4-e5f6-7890-abcd-ef1234567890'
     const validNodeId = '123'
     const validNodeLocatorId = `${validUuid}:${validNodeId}` as NodeLocatorId
 
-    describe('isNodeLocatorId', () => {
+    describe(isNodeLocatorId, () => {
       it('should return true for valid NodeLocatorId', () => {
         expect(isNodeLocatorId(validNodeLocatorId)).toBe(true)
         expect(isNodeLocatorId(`${validUuid}:456`)).toBe(true)
@@ -65,7 +66,7 @@ describe('nodeIdentification', () => {
       })
     })
 
-    describe('parseNodeLocatorId', () => {
+    describe(parseNodeLocatorId, () => {
       it('should parse valid NodeLocatorId', () => {
         const result = parseNodeLocatorId(validNodeLocatorId)
         expect(result).toEqual({
@@ -103,7 +104,7 @@ describe('nodeIdentification', () => {
       })
     })
 
-    describe('createNodeLocatorId', () => {
+    describe(createNodeLocatorId, () => {
       it('should create NodeLocatorId from components', () => {
         const result = createNodeLocatorId(validUuid, 123)
         expect(result).toBe(validNodeLocatorId)
@@ -119,7 +120,7 @@ describe('nodeIdentification', () => {
   })
 
   describe('NodeExecutionId', () => {
-    describe('isNodeExecutionId', () => {
+    describe(isNodeExecutionId, () => {
       it('should return true for execution IDs', () => {
         expect(isNodeExecutionId('123:456')).toBe(true)
         expect(isNodeExecutionId('123:456:789')).toBe(true)
@@ -136,7 +137,7 @@ describe('nodeIdentification', () => {
       })
     })
 
-    describe('parseNodeExecutionId', () => {
+    describe(parseNodeExecutionId, () => {
       it('should parse execution IDs correctly', () => {
         expect(parseNodeExecutionId('123:456')).toEqual([123, 456])
         expect(parseNodeExecutionId('123:456:789')).toEqual([123, 456, 789])
@@ -157,7 +158,7 @@ describe('nodeIdentification', () => {
       })
     })
 
-    describe('createNodeExecutionId', () => {
+    describe(createNodeExecutionId, () => {
       it('should create execution IDs from node arrays', () => {
         expect(createNodeExecutionId([123, 456])).toBe('123:456')
         expect(createNodeExecutionId([123, 456, 789])).toBe('123:456:789')

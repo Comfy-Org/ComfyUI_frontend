@@ -36,7 +36,7 @@ function getMockISerialisedNode(
   }
 }
 
-describe('LGraphNode', () => {
+describe(LGraphNode, () => {
   let node: LGraphNode
   let origLiteGraph: typeof LiteGraph
 

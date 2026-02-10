@@ -86,7 +86,7 @@ function enableMocks(useAssetAPI = false) {
   })
 }
 
-describe('useModelStore', () => {
+describe(useModelStore, () => {
   let store: ReturnType<typeof useModelStore>
 
   beforeEach(async () => {

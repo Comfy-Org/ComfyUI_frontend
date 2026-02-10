@@ -23,7 +23,7 @@ vi.mock('@/platform/distribution/types', () => ({
   }
 }))
 
-describe('useSurveyEligibility', () => {
+describe(useSurveyEligibility, () => {
   const defaultConfig = {
     featureId: 'test-feature',
     typeformId: 'abc123'

@@ -79,7 +79,7 @@ vi.mock('vue', async () => {
   }
 })
 
-describe('useFrontendVersionMismatchWarning', () => {
+describe(useFrontendVersionMismatchWarning, () => {
   beforeEach(() => {
     vi.clearAllMocks()
     setActivePinia(createPinia())

@@ -22,7 +22,7 @@ function createMockLinks(): LGraph['links'] {
 }
 
 describe('MinimapDataSource', () => {
-  describe('MinimapDataSourceFactory', () => {
+  describe(MinimapDataSourceFactory, () => {
     it('should create LayoutStoreDataSource when LayoutStore has data', () => {
       // Arrange
       const mockNodes = new Map<string, NodeLayout>([

@@ -266,7 +266,7 @@ export class ContextMenu<TValue = unknown> {
 
     function inner_over(this: ContextMenuDivElement<TValue>, e: MouseEvent) {
       const value = this.value
-      if (!value || !(value as IContextMenuValue).has_submenu) return
+      if (!(value as IContextMenuValue)?.has_submenu) return
 
       // if it is a submenu, autoopen like the item was clicked
       inner_onclick.call(this, e)

@@ -162,7 +162,7 @@ async function setupMocks(
   })
   vi.mocked(LiteGraph.createNode).mockReturnValue(createdNode)
 }
-describe('createModelNodeFromAsset', () => {
+describe(createModelNodeFromAsset, () => {
   beforeEach(() => {
     vi.clearAllMocks()
     vi.spyOn(console, 'warn').mockImplementation(() => {})

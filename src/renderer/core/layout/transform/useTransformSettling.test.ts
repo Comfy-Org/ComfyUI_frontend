@@ -4,7 +4,7 @@ import { nextTick, ref } from 'vue'
 
 import { useTransformSettling } from '@/renderer/core/layout/transform/useTransformSettling'
 
-describe('useTransformSettling', () => {
+describe(useTransformSettling, () => {
   let element: HTMLDivElement
 
   beforeEach(() => {

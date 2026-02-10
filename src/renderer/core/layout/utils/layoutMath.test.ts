@@ -9,7 +9,7 @@ import {
 } from '@/renderer/core/layout/utils/layoutMath'
 
 describe('layoutMath utils', () => {
-  describe('pointInBounds', () => {
+  describe(pointInBounds, () => {
     it('detects inclusion correctly', () => {
       const bounds = { x: 10, y: 10, width: 100, height: 50 }
       expect(pointInBounds({ x: 10, y: 10 }, bounds)).toBe(true)
@@ -27,7 +27,7 @@ describe('layoutMath utils', () => {
     })
   })
 
-  describe('boundsIntersect', () => {
+  describe(boundsIntersect, () => {
     it('detects intersection correctly', () => {
       const a = { x: 0, y: 0, width: 10, height: 10 }
       const b = { x: 5, y: 5, width: 10, height: 10 }
@@ -43,13 +43,14 @@ describe('layoutMath utils', () => {
     })
   })
 
+  // oxlint-disable-next-line vitest/prefer-describe-function-title -- REROUTE_RADIUS is a number constant, not a function
   describe('REROUTE_RADIUS', () => {
     it('exports a sensible reroute radius', () => {
       expect(REROUTE_RADIUS).toBeGreaterThan(0)
     })
   })
 
-  describe('calculateBounds', () => {
+  describe(calculateBounds, () => {
     const createTestNode = (
       id: string,
       x: number,

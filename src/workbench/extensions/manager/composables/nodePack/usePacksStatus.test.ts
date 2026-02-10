@@ -12,7 +12,7 @@ type NodePack = components['schemas']['Node']
 type NodeStatus = components['schemas']['NodeStatus']
 type NodeVersionStatus = components['schemas']['NodeVersionStatus']
 
-describe('usePacksStatus', () => {
+describe(usePacksStatus, () => {
   let conflictDetectionStore: ReturnType<typeof useConflictDetectionStore>
 
   const createMockPack = (

@@ -61,7 +61,7 @@ const mockGraph = {
   definitions: { subgraphs: [{ id: '123' }] }
 }
 
-describe('useSubgraphStore', () => {
+describe(useSubgraphStore, () => {
   let store: ReturnType<typeof useSubgraphStore>
   async function mockFetch(
     filenames: Record<string, unknown>,

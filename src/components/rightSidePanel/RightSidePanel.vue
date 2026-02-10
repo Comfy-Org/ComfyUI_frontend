@@ -90,15 +90,15 @@ type RightSidePanelTabList = Array<{
 }>
 
 const tabs = computed<RightSidePanelTabList>(() => {
-  const list: RightSidePanelTabList = []
-
-  list.push({
-    label: () =>
-      flattedItems.value.length > 1
-        ? t('rightSidePanel.nodes')
-        : t('rightSidePanel.parameters'),
-    value: 'parameters'
-  })
+  const list: RightSidePanelTabList = [
+    {
+      label: () =>
+        flattedItems.value.length > 1
+          ? t('rightSidePanel.nodes')
+          : t('rightSidePanel.parameters'),
+      value: 'parameters'
+    }
+  ]
 
   if (!hasSelection.value) {
     list.push({

@@ -54,7 +54,7 @@ vi.mock('@vueuse/core', () => ({
     fn
 }))
 
-describe('useImageLoader', () => {
+describe(useImageLoader, () => {
   let mockBaseImage: HTMLImageElement
   let mockMaskImage: HTMLImageElement
   let mockPaintImage: HTMLImageElement

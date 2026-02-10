@@ -68,7 +68,7 @@ const createWrapper = (props = {}) => {
   })
 }
 
-describe('ZoomControlsModal', () => {
+describe(ZoomControlsModal, () => {
   beforeEach(() => {
     vi.resetAllMocks()
   })

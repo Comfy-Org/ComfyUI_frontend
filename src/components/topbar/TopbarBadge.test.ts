@@ -17,7 +17,7 @@ const i18n = createI18n({
   }
 })
 
-describe('TopbarBadge', () => {
+describe(TopbarBadge, () => {
   const exampleBadge: TopbarBadgeType = {
     text: 'Test Badge',
     label: 'BETA',

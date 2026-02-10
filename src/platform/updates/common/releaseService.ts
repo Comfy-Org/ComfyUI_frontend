@@ -50,8 +50,7 @@ export const useReleaseService = () => {
     if (axiosError.response) {
       const { status, data } = axiosError.response
 
-      if (routeSpecificErrors && routeSpecificErrors[status])
-        return routeSpecificErrors[status]
+      if (routeSpecificErrors?.[status]) return routeSpecificErrors[status]
 
       switch (status) {
         case 400:

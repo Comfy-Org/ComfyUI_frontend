@@ -329,10 +329,7 @@ export function buildStructuredMenu(options: MenuOption[]): MenuOption[] {
   }
 
   // Build the final menu structure
-  const result: MenuOption[] = []
-
-  // Add ordered core items with their dividers
-  result.push(...orderedCoreItems)
+  const result: MenuOption[] = [...orderedCoreItems]
 
   // Add extensions section if there are extension items
   if (extensionItems.length > 0) {

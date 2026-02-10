@@ -72,7 +72,7 @@ vi.mock('@/composables/graph/useVueNodeLifecycle', () => {
   }
 })
 
-describe('useNodeEventHandlers', () => {
+describe(useNodeEventHandlers, () => {
   const { nodeManager: mockNodeManager } = useVueNodeLifecycle()
 
   const mockNode = mockNodeManager.value!.getNode('fake_id')

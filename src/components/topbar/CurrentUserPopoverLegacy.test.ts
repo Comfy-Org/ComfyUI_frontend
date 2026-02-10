@@ -172,7 +172,7 @@ vi.mock('@/platform/cloud/subscription/components/SubscribeButton.vue', () => ({
   }
 }))
 
-describe('CurrentUserPopoverLegacy', () => {
+describe(CurrentUserPopoverLegacy, () => {
   beforeEach(() => {
     vi.clearAllMocks()
     mockAuthStoreState.balance = {

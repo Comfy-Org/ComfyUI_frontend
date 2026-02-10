@@ -39,7 +39,7 @@ let mockAutoSaveDelay: number = 1000
 let mockActiveWorkflow: { isModified: boolean; isPersisted?: boolean } | null =
   null
 
-describe('useWorkflowAutoSave', () => {
+describe(useWorkflowAutoSave, () => {
   beforeEach(() => {
     vi.clearAllMocks()
     vi.useFakeTimers()

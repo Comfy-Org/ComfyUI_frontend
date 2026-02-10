@@ -12,10 +12,9 @@ import type {
 } from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-
-import PropertiesAccordionItem from '../layout/PropertiesAccordionItem.vue'
 import { HideLayoutFieldKey } from '@/types/widgetTypes'
 
+import PropertiesAccordionItem from '../layout/PropertiesAccordionItem.vue'
 import { GetNodeParentGroupKey } from '../shared'
 import WidgetItem from './WidgetItem.vue'
 

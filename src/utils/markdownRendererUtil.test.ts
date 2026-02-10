@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest'
 import { renderMarkdownToHtml } from '@/utils/markdownRendererUtil'
 
 describe('markdownRendererUtil', () => {
-  describe('renderMarkdownToHtml', () => {
+  describe(renderMarkdownToHtml, () => {
     it('should render basic markdown to HTML', () => {
       const markdown = '# Hello\n\nThis is a test.'
       const html = renderMarkdownToHtml(markdown)

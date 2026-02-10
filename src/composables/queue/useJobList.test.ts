@@ -230,7 +230,7 @@ const flush = async () => {
   await nextTick()
 }
 
-describe('useJobList', () => {
+describe(useJobList, () => {
   let wrapper: ReturnType<typeof mount> | null = null
   let api: ReturnType<typeof useJobList> | null = null
 

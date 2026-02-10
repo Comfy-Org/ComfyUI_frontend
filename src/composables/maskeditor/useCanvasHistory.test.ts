@@ -78,7 +78,7 @@ if (globalThis.ImageBitmap === undefined) {
   } as typeof ImageBitmap
 }
 
-describe('useCanvasHistory', () => {
+describe(useCanvasHistory, () => {
   beforeEach(() => {
     vi.clearAllMocks()
     let rafCallCount = 0

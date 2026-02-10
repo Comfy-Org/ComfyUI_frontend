@@ -16,7 +16,7 @@ vi.mock('vue-i18n', () => ({
   })
 }))
 
-describe('useAssetFilterOptions', () => {
+describe(useAssetFilterOptions, () => {
   describe('File Format Extraction', () => {
     it('extracts file formats from asset names', () => {
       const assets = [

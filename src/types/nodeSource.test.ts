@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import { NodeSourceType, getNodeSource } from '@/types/nodeSource'
 
-describe('getNodeSource', () => {
+describe(getNodeSource, () => {
   it('should return UNKNOWN_NODE_SOURCE when python_module is undefined', () => {
     const result = getNodeSource(undefined)
     expect(result).toEqual({

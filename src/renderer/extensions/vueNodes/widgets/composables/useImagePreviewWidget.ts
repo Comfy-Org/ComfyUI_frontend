@@ -294,7 +294,7 @@ const renderPreview = (
 
   if (
     drawButton(dw - 40, shiftY + 10, 30, `x`) &&
-    (!node.pointerDown || node.pointerDown.index !== null)
+    node.pointerDown?.index !== null
   ) {
     node.pointerDown = { index: null, pos: [...mouse] }
   }

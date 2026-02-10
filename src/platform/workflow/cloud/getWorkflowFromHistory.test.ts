@@ -42,7 +42,7 @@ const mockJobDetailResponse: JobDetail = {
   }
 }
 
-describe('fetchJobDetail', () => {
+describe(fetchJobDetail, () => {
   it('should fetch job detail from /jobs/{prompt_id} endpoint', async () => {
     const mockFetchApi = vi.fn().mockResolvedValue({
       ok: true,
@@ -101,7 +101,7 @@ describe('fetchJobDetail', () => {
   })
 })
 
-describe('extractWorkflow', () => {
+describe(extractWorkflow, () => {
   it('should extract workflow from job detail', async () => {
     const result = await extractWorkflow(mockJobDetailResponse)
 

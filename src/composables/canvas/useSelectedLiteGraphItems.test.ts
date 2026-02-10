@@ -69,7 +69,7 @@ class MockReroute extends Reroute implements Positionable {
   }
 }
 
-describe('useSelectedLiteGraphItems', () => {
+describe(useSelectedLiteGraphItems, () => {
   let canvasStore: ReturnType<typeof useCanvasStore>
   let mockCanvas: { selectedItems: Set<Positionable> }
 

@@ -67,7 +67,7 @@ vi.mock('@/workbench/extensions/manager/composables/useManagerDialog', () => {
   }
 })
 
-describe('useManagerState', () => {
+describe(useManagerState, () => {
   let systemStatsStore: ReturnType<typeof useSystemStatsStore>
 
   beforeEach(() => {

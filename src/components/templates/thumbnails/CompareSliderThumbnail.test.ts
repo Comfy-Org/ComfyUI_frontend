@@ -29,7 +29,7 @@ vi.mock('@vueuse/core', () => ({
   })
 }))
 
-describe('CompareSliderThumbnail', () => {
+describe(CompareSliderThumbnail, () => {
   const mountThumbnail = (props = {}) => {
     return mount(CompareSliderThumbnail, {
       props: {

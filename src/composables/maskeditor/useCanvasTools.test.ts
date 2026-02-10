@@ -51,7 +51,7 @@ vi.mock('@/stores/maskEditorStore', () => ({
   useMaskEditorStore: vi.fn(() => mockStore)
 }))
 
-describe('useCanvasTools', () => {
+describe(useCanvasTools, () => {
   let mockMaskImageData: ImageData
   let mockImgImageData: ImageData
 

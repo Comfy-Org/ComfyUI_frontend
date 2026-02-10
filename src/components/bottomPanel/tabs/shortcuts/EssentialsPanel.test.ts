@@ -51,7 +51,7 @@ vi.mock('@/stores/commandStore', () => ({
   })
 }))
 
-describe('EssentialsPanel', () => {
+describe(EssentialsPanel, () => {
   beforeEach(() => {
     setActivePinia(createPinia())
   })

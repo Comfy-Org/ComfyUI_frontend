@@ -1437,7 +1437,7 @@ export class LGraphNode
     options: { action_call?: string }
   ): void {
     const { outputs } = this
-    if (!outputs || !outputs.length) {
+    if (!outputs?.length) {
       return
     }
 
@@ -1483,7 +1483,7 @@ export class LGraphNode
     if (!output) return
 
     const links = output.links
-    if (!links || !links.length) return
+    if (!links?.length) return
 
     if (!this.graph) throw new NullGraphError()
     this.graph._last_trigger_time = LiteGraph.getTime()
@@ -1531,7 +1531,7 @@ export class LGraphNode
     if (!output) return
 
     const links = output.links
-    if (!links || !links.length) return
+    if (!links?.length) return
 
     if (!this.graph) throw new NullGraphError()
 
@@ -1628,7 +1628,7 @@ export class LGraphNode
 
     for (let i = slot; i < outputs.length; ++i) {
       const output = outputs[i]
-      if (!output || !output.links) continue
+      if (!output?.links) continue
 
       // Only update link indices if node is part of a graph
       if (this.graph) {
@@ -3466,7 +3466,7 @@ export class LGraphNode
     warnDeprecated(
       '[DEPRECATED] captureInput will be removed in a future version. Please use LGraphCanvas.pointer (CanvasPointer) instead.'
     )
-    if (!this.graph || !this.graph.list_of_graphcanvas) return
+    if (!this.graph?.list_of_graphcanvas) return
 
     const list = this.graph.list_of_graphcanvas
 
@@ -4074,7 +4074,7 @@ export class LGraphNode
    * @param widgetStartY The y-coordinate of the first widget
    */
   private _arrangeWidgets(widgetStartY: number): void {
-    if (!this.widgets || !this.widgets.length) return
+    if (!this.widgets?.length) return
 
     const bodyHeight = this.bodyHeight
     const startY =

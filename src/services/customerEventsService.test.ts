@@ -39,7 +39,7 @@ vi.mock('@/utils/typeGuardUtil', () => ({
   isAbortError: vi.fn()
 }))
 
-describe('useCustomerEventsService', () => {
+describe(useCustomerEventsService, () => {
   let service: ReturnType<typeof useCustomerEventsService>
 
   const mockAuthHeaders = {

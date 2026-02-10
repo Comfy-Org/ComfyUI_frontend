@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest'
 
 import { LGraphButton, Rectangle } from '@/lib/litegraph/src/litegraph'
 
-describe('LGraphButton', () => {
+describe(LGraphButton, () => {
   describe('Constructor', () => {
     it('should create a button with default options', () => {
       const button = new LGraphButton({ text: '' })

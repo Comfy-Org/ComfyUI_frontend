@@ -105,7 +105,7 @@ async function getResolvedValue(hook: ReturnType<typeof useRemoteWidget>) {
   return hook.getCachedValue()
 }
 
-describe('useRemoteWidget', () => {
+describe(useRemoteWidget, () => {
   beforeEach(() => {
     vi.clearAllMocks()
     // Reset mocks

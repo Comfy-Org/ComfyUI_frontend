@@ -10,7 +10,7 @@ function createMockNode(nodeConstructor?: NodeConstructor): LGraphNode {
 }
 
 describe('typeGuardUtil', () => {
-  describe('isSubgraphIoNode', () => {
+  describe(isSubgraphIoNode, () => {
     it('should identify SubgraphInputNode as IO node', () => {
       const node = createMockNode({ comfyClass: 'SubgraphInputNode' })
 

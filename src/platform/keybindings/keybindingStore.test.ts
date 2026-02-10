@@ -5,7 +5,7 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import { KeybindingImpl } from '@/platform/keybindings/keybinding'
 import { useKeybindingStore } from '@/platform/keybindings/keybindingStore'
 
-describe('useKeybindingStore', () => {
+describe(useKeybindingStore, () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
   })
