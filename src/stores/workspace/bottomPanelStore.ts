@@ -3,10 +3,10 @@ import { computed, ref } from 'vue'
 
 import { useShortcutsTab } from '@/composables/bottomPanelTabs/useShortcutsTab'
 
+import { isDesktop } from '@/platform/distribution/types'
 import { useCommandStore } from '@/stores/commandStore'
 import type { ComfyExtension } from '@/types/comfy'
 import type { BottomPanelExtension } from '@/types/extensionTypes'
-import { isElectron } from '@/utils/envUtil'
 
 type PanelType = 'terminal' | 'shortcuts'
 
@@ -138,7 +138,7 @@ export const useBottomPanelStore = defineStore('bottomPanel', () => {
         const { useLogsTerminalTab, useCommandTerminalTab } =
           await import('@/composables/bottomPanelTabs/useTerminalTabs')
         registerBottomPanelTab(useLogsTerminalTab())
-        if (isElectron()) {
+        if (isDesktop) {
           registerBottomPanelTab(useCommandTerminalTab())
         }
       } catch (error) {

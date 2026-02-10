@@ -57,7 +57,7 @@ provide(
 
 const modelValue = defineModel<string | undefined>({
   default(props: Props) {
-    return props.widget.options?.values?.[0] || ''
+    return props.widget.options?.values?.[0] ?? ''
   }
 })
 
@@ -73,7 +73,8 @@ const combinedProps = computed(() => ({
 }))
 
 const getAssetData = () => {
-  const nodeType = props.widget.options?.nodeType ?? props.nodeType
+  const nodeType: string | undefined =
+    props.widget.options?.nodeType ?? props.nodeType
   if (props.isAssetMode && nodeType) {
     return useAssetWidgetData(toRef(nodeType))
   }
@@ -134,11 +135,11 @@ const inputItems = computed<FormDropdownItem[]>(() => {
     return []
   }
 
-  return values.map((value: string, index: number) => ({
+  return values.map((value, index) => ({
     id: `input-${index}`,
-    preview_url: getMediaUrl(value, 'input'),
-    name: value,
-    label: getDisplayLabel(value)
+    preview_url: getMediaUrl(String(value), 'input'),
+    name: String(value),
+    label: getDisplayLabel(String(value))
   }))
 })
 const outputItems = computed<FormDropdownItem[]>(() => {

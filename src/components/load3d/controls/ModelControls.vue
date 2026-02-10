@@ -94,15 +94,16 @@
 
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
 import type {
   MaterialMode,
   UpDirection
 } from '@/extensions/core/load3d/interfaces'
-import { t } from '@/i18n'
 import { cn } from '@/utils/tailwindUtil'
 
+const { t } = useI18n()
 const {
   hideMaterialMode = false,
   isPlyModel = false,

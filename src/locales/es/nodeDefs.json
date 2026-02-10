@@ -2018,6 +2018,20 @@
       }
     }
   },
+  "CreateList": {
+    "display_name": "Crear lista",
+    "inputs": {
+      "inputs": {
+        "name": "entradas"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "lista",
+        "tooltip": null
+      }
+    }
+  },
   "CreateVideo": {
     "description": "Crea un video a partir de imágenes.",
     "display_name": "Crear video",
@@ -6418,9 +6432,7 @@
   "Load3D": {
     "display_name": "Cargar 3D",
     "inputs": {
-      "clear": {
-        "": "limpiar"
-      },
+      "clear": {},
       "height": {
         "name": "alto"
       },
@@ -6430,12 +6442,8 @@
       "model_file": {
         "name": "archivo_modelo"
       },
-      "upload 3d model": {
-        "": "subir modelo 3D"
-      },
-      "upload extra resources": {
-        "": "subir recursos adicionales"
-      },
+      "upload 3d model": {},
+      "upload extra resources": {},
       "width": {
         "name": "ancho"
       }
@@ -10793,6 +10801,9 @@
       "camera_info": {
         "name": "camera_info"
       },
+      "image": {
+        "name": "imagen"
+      },
       "model_file": {
         "name": "archivo_modelo",
         "tooltip": "Archivo de modelo 3D o ruta del archivo"
@@ -12611,6 +12622,9 @@
       "filename_prefix": {
         "name": "prefijo_nombre_archivo"
       },
+      "image": {
+        "name": "imagen"
+      },
       "mesh": {
         "name": "malla",
         "tooltip": "Malla o archivo GLB para guardar"
@@ -13946,6 +13960,9 @@
       "bpm": {
         "name": "bpm"
       },
+      "cfg_scale": {
+        "name": "cfg_scale"
+      },
       "clip": {
         "name": "clip"
       },
@@ -13954,6 +13971,10 @@
       },
       "duration": {
         "name": "duración"
+      },
+      "generate_audio_codes": {
+        "name": "generar_códigos_de_audio",
+        "tooltip": "Activa el LLM que genera códigos de audio. Esto puede ser lento, pero aumentará la calidad del audio generado. Desactívalo si proporcionas una referencia de audio al modelo."
       },
       "keyscale": {
         "name": "escala tonal"
@@ -13970,8 +13991,17 @@
       "tags": {
         "name": "etiquetas"
       },
+      "temperature": {
+        "name": "temperatura"
+      },
       "timesignature": {
         "name": "compás"
+      },
+      "top_k": {
+        "name": "top_k"
+      },
+      "top_p": {
+        "name": "top_p"
       }
     },
     "outputs": {
@@ -14895,6 +14925,28 @@
     "inputs": {
       "samples": {
         "name": "muestras"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "VAEDecodeAudioTiled": {
+    "display_name": "VAE Decodificar audio (en mosaico)",
+    "inputs": {
+      "overlap": {
+        "name": "superposición"
+      },
+      "samples": {
+        "name": "muestras"
+      },
+      "tile_size": {
+        "name": "tamaño_de_mosaico"
       },
       "vae": {
         "name": "vae"

@@ -18,7 +18,7 @@
 </template>
 
 <script setup lang="ts">
-import { useElementBounding, useEventListener } from '@vueuse/core'
+import { useElementBounding, useEventListener, whenever } from '@vueuse/core'
 import type { CSSProperties } from 'vue'
 import { computed, nextTick, onMounted, ref, watch } from 'vue'
 
@@ -180,6 +180,8 @@ watch(
     mountElementIfVisible()
   }
 )
+
+whenever(() => !canvasStore.linearMode, mountElementIfVisible)
 </script>
 
 <style scoped>

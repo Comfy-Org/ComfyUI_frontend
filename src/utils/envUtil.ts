@@ -1,12 +1,14 @@
 import type { ElectronAPI } from '@comfyorg/comfyui-electron-types'
 
-// Extend Window interface to include electronAPI
-type ElectronWindow = typeof window & {
-  electronAPI?: ElectronAPI
-}
+import { isDesktop } from '@/platform/distribution/types'
 
-export function isElectron() {
-  return 'electronAPI' in window && window.electronAPI !== undefined
+/**
+ * Extend Window interface to include electronAPI
+ * Used by desktop-ui app storybook stories
+ * @public
+ */
+export type ElectronWindow = typeof window & {
+  electronAPI?: ElectronAPI
 }
 
 export function electronAPI() {
@@ -18,5 +20,5 @@ export function showNativeSystemMenu() {
 }
 
 export function isNativeWindow() {
-  return isElectron() && !!window.navigator.windowControlsOverlay?.visible
+  return isDesktop && !!window.navigator.windowControlsOverlay?.visible
 }

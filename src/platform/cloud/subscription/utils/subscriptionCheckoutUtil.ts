@@ -1,6 +1,10 @@
+import { storeToRefs } from 'pinia'
+
 import { getComfyApiBaseUrl } from '@/config/comfyApi'
 import { t } from '@/i18n'
 import { isCloud } from '@/platform/distribution/types'
+import { useTelemetry } from '@/platform/telemetry'
+import { getCheckoutAttribution } from '@/platform/telemetry/utils/checkoutAttribution'
 import {
   FirebaseAuthStoreError,
   useFirebaseAuthStore
@@ -35,20 +39,25 @@ export async function performSubscriptionCheckout(
 ): Promise<void> {
   if (!isCloud) return
 
-  const { getFirebaseAuthHeader } = useFirebaseAuthStore()
-  const authHeader = await getFirebaseAuthHeader()
+  const firebaseAuthStore = useFirebaseAuthStore()
+  const { userId } = storeToRefs(firebaseAuthStore)
+  const telemetry = useTelemetry()
+  const authHeader = await firebaseAuthStore.getFirebaseAuthHeader()
 
   if (!authHeader) {
     throw new FirebaseAuthStoreError(t('toastMessages.userNotAuthenticated'))
   }
 
   const checkoutTier = getCheckoutTier(tierKey, currentBillingCycle)
+  const checkoutAttribution = getCheckoutAttribution()
+  const checkoutPayload = { ...checkoutAttribution }
 
   const response = await fetch(
     `${getComfyApiBaseUrl()}/customers/cloud-subscription-checkout/${checkoutTier}`,
     {
       method: 'POST',
-      headers: { ...authHeader, 'Content-Type': 'application/json' }
+      headers: { ...authHeader, 'Content-Type': 'application/json' },
+      body: JSON.stringify(checkoutPayload)
     }
   )
 
@@ -78,6 +87,15 @@ export async function performSubscriptionCheckout(
   const data = await response.json()
 
   if (data.checkout_url) {
+    if (userId.value) {
+      telemetry?.trackBeginCheckout({
+        user_id: userId.value,
+        tier: tierKey,
+        cycle: currentBillingCycle,
+        checkout_type: 'new',
+        ...checkoutAttribution
+      })
+    }
     if (openInNewTab) {
       window.open(data.checkout_url, '_blank')
     } else {

@@ -124,7 +124,9 @@ export function getWebpMetadata(file: File) {
           break
         }
 
-        offset += 8 + chunk_length
+        // RIFF spec requires odd-sized chunks to be padded with a single byte
+        // https://developers.google.com/speed/webp/docs/riff_container#riff_file_format
+        offset += 8 + chunk_length + (chunk_length % 2)
       }
 
       r(txt_chunks)
