@@ -827,6 +827,8 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
     // @deprecated Workaround: Keep until connecting_links is removed.
     this.linkConnector.events.addEventListener('reset', () => {
+      this._autoPan?.stop()
+      this._autoPan = null
       this.connecting_links = null
       this.dirty_bgcanvas = true
     })
