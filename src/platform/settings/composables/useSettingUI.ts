@@ -7,10 +7,12 @@ import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useVueFeatureFlags } from '@/composables/useVueFeatureFlags'
 import { isCloud, isDesktop } from '@/platform/distribution/types'
+import {
+  getSettingInfo,
+  useSettingStore
+} from '@/platform/settings/settingStore'
 import type { SettingTreeNode } from '@/platform/settings/settingStore'
-import { useSettingStore } from '@/platform/settings/settingStore'
 import type { SettingParams } from '@/platform/settings/types'
-
 import { normalizeI18nKey } from '@/utils/formatUtil'
 import { buildTree } from '@/utils/treeUtil'
 
@@ -30,7 +32,8 @@ export function useSettingUI(
     | 'credits'
     | 'subscription'
     | 'workspace'
-    | 'secrets'
+    | 'secrets',
+  scrollToSettingId?: string
 ) {
   const { t } = useI18n()
   const { isLoggedIn } = useCurrentUser()
@@ -238,12 +241,23 @@ export function useSettingUI(
    * The default category to show when the dialog is opened.
    */
   const defaultCategory = computed<SettingTreeNode>(() => {
-    if (!defaultPanel) return settingCategories.value[0]
-    // Search through all groups in groupedMenuTreeNodes
-    for (const group of groupedMenuTreeNodes.value) {
-      const found = group.children?.find((node) => node.key === defaultPanel)
-      if (found) return found
+    if (defaultPanel) {
+      for (const group of groupedMenuTreeNodes.value) {
+        const found = group.children?.find((node) => node.key === defaultPanel)
+        if (found) return found
+      }
+      return settingCategories.value[0]
     }
+
+    if (scrollToSettingId) {
+      const setting = settingStore.settingsById[scrollToSettingId]
+      if (setting) {
+        const { category } = getSettingInfo(setting)
+        const found = settingCategories.value.find((c) => c.label === category)
+        if (found) return found
+      }
+    }
+
     return settingCategories.value[0]
   })
 
