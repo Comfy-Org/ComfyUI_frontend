@@ -16,6 +16,8 @@ import { buildTree } from '@/utils/treeUtil'
 
 const CATEGORY_ICONS: Record<string, string> = {
   Comfy: 'icon-[lucide--settings]',
+const CATEGORY_ICONS = {
+  Comfy: 'icon-[lucide--settings]',
   LiteGraph: 'icon-[lucide--workflow]',
   Appearance: 'icon-[lucide--palette]',
   '3D': 'icon-[lucide--box]',
@@ -28,10 +30,8 @@ const CATEGORY_ICONS: Record<string, string> = {
   keybinding: 'icon-[lucide--keyboard]',
   extension: 'icon-[lucide--puzzle]',
   'server-config': 'icon-[lucide--server]',
-  PlanCredits: 'icon-[lucide--credit-card]',
-  subscription: 'icon-[lucide--credit-card]',
-  secrets: 'icon-[lucide--key-round]'
-}
+  PlanCredits: 'icon-[lucide--credit-card]'
+} as const
 
 interface SettingPanelItem {
   node: SettingTreeNode
