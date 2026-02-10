@@ -55,12 +55,7 @@ export class ImpactTelemetryProvider implements TelemetryProvider {
     script.async = true
     script.src = IMPACT_SCRIPT_URL
 
-    const firstScript = document.getElementsByTagName('script')[0]
-    if (firstScript?.parentNode) {
-      firstScript.parentNode.insertBefore(script, firstScript)
-    } else {
-      document.head.append(script)
-    }
+    document.head.insertBefore(script, document.head.firstChild)
 
     this.initialized = true
   }
