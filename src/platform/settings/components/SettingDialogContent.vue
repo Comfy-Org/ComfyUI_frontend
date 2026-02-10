@@ -205,18 +205,15 @@ const tabValue = computed<string>(() =>
 
 // Scroll to and highlight the target setting once the correct tab renders.
 if (scrollToSettingId) {
-  let settled = false
   const stopScrollWatch = watch(
     tabValue,
     () => {
-      if (settled) return
-      settled = true
       void nextTick(() => {
-        stopScrollWatch()
         const el = document.querySelector(
           `[data-setting-id="${CSS.escape(scrollToSettingId)}"]`
         )
         if (!el) return
+        stopScrollWatch()
         el.scrollIntoView({ behavior: 'smooth', block: 'center' })
         el.classList.add('setting-highlight')
         el.addEventListener(

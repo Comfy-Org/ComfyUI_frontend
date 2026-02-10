@@ -27,7 +27,7 @@
             type="checkbox"
             class="h-4 w-4 cursor-pointer"
           />
-          <label for="doNotAskAgain" severity="secondary">{{
+          <label for="doNotAskAgain">{{
             t('missingModelsDialog.doNotAskAgain')
           }}</label>
         </div>
