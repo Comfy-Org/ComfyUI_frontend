@@ -28,7 +28,9 @@ const CATEGORY_ICONS: Record<string, string> = {
   keybinding: 'icon-[lucide--keyboard]',
   extension: 'icon-[lucide--puzzle]',
   'server-config': 'icon-[lucide--server]',
-  PlanCredits: 'icon-[lucide--credit-card]'
+  PlanCredits: 'icon-[lucide--credit-card]',
+  subscription: 'icon-[lucide--credit-card]',
+  secrets: 'icon-[lucide--key-round]'
 }
 
 interface SettingPanelItem {

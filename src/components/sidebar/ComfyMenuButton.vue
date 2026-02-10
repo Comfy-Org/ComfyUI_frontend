@@ -111,6 +111,7 @@ import { useI18n } from 'vue-i18n'
 import ComfyLogo from '@/components/icons/ComfyLogo.vue'
 import { useWorkflowTemplateSelectorDialog } from '@/composables/useWorkflowTemplateSelectorDialog'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import type { SettingPanelType } from '@/platform/settings/types'
 import { useTelemetry } from '@/platform/telemetry'
 import { useColorPaletteService } from '@/services/colorPaletteService'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
@@ -164,8 +165,8 @@ const translateMenuItem = (item: MenuItem): MenuItem => {
   }
 }
 
-const showSettings = (defaultPanel?: string) => {
-  settingsDialog.show(defaultPanel as Parameters<typeof settingsDialog.show>[0])
+const showSettings = (defaultPanel?: SettingPanelType) => {
+  settingsDialog.show(defaultPanel)
 }
 
 const showManageExtensions = async () => {

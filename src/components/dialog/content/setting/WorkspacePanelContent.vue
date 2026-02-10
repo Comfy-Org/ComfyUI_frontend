@@ -150,7 +150,7 @@ const {
 const { fetchMembers, fetchPendingInvites } = workspaceStore
 
 const { workspaceRole, permissions, uiConfig } = useWorkspaceUI()
-const activeTab = ref('plan')
+const activeTab = ref(defaultTab)
 
 const menu = ref<InstanceType<typeof Menu> | null>(null)
 
@@ -225,7 +225,6 @@ const menuItems = computed(() => {
 })
 
 onMounted(() => {
-  activeTab.value = defaultTab
   fetchMembers()
   fetchPendingInvites()
 })
