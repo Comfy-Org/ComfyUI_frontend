@@ -5,6 +5,13 @@ import { comfyPageFixture as test } from '../fixtures/ComfyPage'
 test.describe('Subgraph duplicate ID remapping', { tag: ['@subgraph'] }, () => {
   const WORKFLOW = 'subgraphs/subgraph-nested-duplicate-ids'
 
+  test.beforeEach(async ({ comfyPage }) => {
+    await comfyPage.settings.setSetting(
+      'Comfy.Graph.DeduplicateSubgraphNodeIds',
+      true
+    )
+  })
+
   test('All node IDs are globally unique after loading', async ({
     comfyPage
   }) => {

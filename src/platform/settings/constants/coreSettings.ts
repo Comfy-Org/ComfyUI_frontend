@@ -1201,5 +1201,16 @@ export const CORE_SETTINGS: SettingParams[] = [
     defaultValue: false,
     experimental: true,
     versionAdded: '1.40.0'
+  },
+  {
+    id: 'Comfy.Graph.DeduplicateSubgraphNodeIds',
+    category: ['Comfy', 'Graph', 'Subgraph'],
+    name: 'Deduplicate subgraph node IDs',
+    tooltip:
+      'Automatically reassign duplicate node IDs in subgraphs when loading a workflow.',
+    type: 'boolean',
+    defaultValue: false,
+    experimental: true,
+    versionAdded: '1.41.0'
   }
 ]
