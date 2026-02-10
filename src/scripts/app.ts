@@ -786,7 +786,7 @@ export class ComfyApp {
     await useWorkspaceStore().workflow.syncWorkflows()
     //Doesn't need to block. Blueprints will load async
     void useSubgraphStore().fetchSubgraphs()
-    void useNodeReplacementStore().load()
+    await useNodeReplacementStore().load()
     await useExtensionService().loadExtensions()
 
     this.addProcessKeyHandler()
@@ -1134,6 +1134,8 @@ export class ComfyApp {
 
     const embeddedModels: ModelFile[] = []
 
+    const nodeReplacementStore = useNodeReplacementStore()
+
     const collectMissingNodesAndModels = (
       nodes: ComfyWorkflowJSON['nodes'],
       path: string = ''
@@ -1157,15 +1159,7 @@ export class ComfyApp {
 
         // Find missing node types
         if (!(n.type in LiteGraph.registered_node_types)) {
-          const nodeReplacementStore = useNodeReplacementStore()
           const replacement = nodeReplacementStore.getReplacementFor(n.type)
-
-          // TODO: Remove debug log
-          console.log('[MissingNode]', n.type, {
-            isReplaceable: replacement !== null,
-            replacement,
-            allReplacements: nodeReplacementStore.replacements
-          })
 
           missingNodeTypes.push({
             type: n.type,
