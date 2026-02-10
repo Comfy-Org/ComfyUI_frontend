@@ -120,7 +120,7 @@ describe('ImpactTelemetryProvider', () => {
     ])
   })
 
-  it('deduplicates repeated identify payloads', async () => {
+  it('invokes identify on each page view even with identical identity payloads', async () => {
     mockUseCurrentUser.mockReturnValue({
       resolvedUserInfo: ref({ id: 'user-123' }),
       userEmail: ref('user@example.com')
@@ -140,9 +140,13 @@ describe('ImpactTelemetryProvider', () => {
 
     await flushAsyncWork()
 
-    expect(window.ire?.a).toHaveLength(1)
+    expect(window.ire?.a).toHaveLength(2)
     expect(window.ire?.a?.[0]?.[0]).toBe('identify')
     expect(window.ire?.a?.[0]?.[1]).toMatchObject({
+      customerId: 'user-123'
+    })
+    expect(window.ire?.a?.[1]?.[0]).toBe('identify')
+    expect(window.ire?.a?.[1]?.[1]).toMatchObject({
       customerId: 'user-123'
     })
   })

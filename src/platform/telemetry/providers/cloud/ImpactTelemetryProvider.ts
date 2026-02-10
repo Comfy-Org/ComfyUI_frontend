@@ -14,7 +14,6 @@ const EMPTY_CUSTOMER_VALUE = ''
  */
 export class ImpactTelemetryProvider implements TelemetryProvider {
   private initialized = false
-  private lastIdentifySignature = ''
 
   constructor() {
     this.initialize()
@@ -90,15 +89,11 @@ export class ImpactTelemetryProvider implements TelemetryProvider {
     const hashedEmail = normalizedEmail
       ? await this.hashSha1(normalizedEmail)
       : EMPTY_CUSTOMER_VALUE
-    const identifySignature = `${customerId}|${hashedEmail}`
-
-    if (identifySignature === this.lastIdentifySignature) return
 
     window.ire?.('identify', {
       customerId,
       customerEmail: hashedEmail
     })
-    this.lastIdentifySignature = identifySignature
   }
 
   private resolveCustomerIdentity(): {
