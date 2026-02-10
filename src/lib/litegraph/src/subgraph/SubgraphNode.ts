@@ -895,16 +895,19 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
 
     this.inputs.length = 0
     this.inputs.push(
-      ...this.subgraph.inputNode.slots.map((slot) =>
-        Object.assign(
+      ...this.subgraph.inputNode.slots.map((slot) => {
+        const shapes = slot.linkIds.map(
+          (id) => this.subgraph.links[id]?.resolve(this.subgraph)?.input?.shape
+        )
+        return Object.assign(
           new NodeInputSlot(
             {
               name: slot.name,
               localized_name: slot.localized_name,
               label: slot.label,
-              shape: this.subgraph.links[slot.linkIds[0]]?.resolve(
-                this.subgraph
-              )?.input?.shape,
+              shape: shapes.every((shape) => shape === shapes[0])
+                ? shapes[0]
+                : undefined,
               type: slot.type,
               link: null
             },
@@ -914,7 +917,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
             _subgraphSlot: slot
           }
         )
-      )
+      })
     )
 
     this.outputs.length = 0
