@@ -64,9 +64,7 @@ describe('useWidgetValueStore', () => {
       expect(state.name).toBe('seed')
       expect(state.type).toBe('number')
       expect(state.value).toBe(12345)
-      expect(state.hidden).toBeUndefined()
       expect(state.disabled).toBeUndefined()
-      expect(state.advanced).toBeUndefined()
       expect(state.promoted).toBeUndefined()
       expect(state.serialize).toBeUndefined()
       expect(state.options).toEqual({})
@@ -77,9 +75,7 @@ describe('useWidgetValueStore', () => {
       const state = store.registerWidget(
         widget('node-1', 'prompt', 'string', 'test', {
           label: 'Prompt Text',
-          hidden: true,
           disabled: true,
-          advanced: true,
           promoted: true,
           serialize: false,
           options: { multiline: true }
@@ -87,9 +83,7 @@ describe('useWidgetValueStore', () => {
       )
 
       expect(state.label).toBe('Prompt Text')
-      expect(state.hidden).toBe(true)
       expect(state.disabled).toBe(true)
-      expect(state.advanced).toBe(true)
       expect(state.promoted).toBe(true)
       expect(state.serialize).toBe(false)
       expect(state.options).toEqual({ multiline: true })
@@ -125,19 +119,6 @@ describe('useWidgetValueStore', () => {
   })
 
   describe('direct property mutation', () => {
-    it('hidden can be set directly via getWidget', () => {
-      const store = useWidgetValueStore()
-      const state = store.registerWidget(
-        widget('node-1', 'seed', 'number', 100)
-      )
-
-      state.hidden = true
-      expect(store.getWidget('node-1', 'seed')?.hidden).toBe(true)
-
-      state.hidden = false
-      expect(store.getWidget('node-1', 'seed')?.hidden).toBe(false)
-    })
-
     it('disabled can be set directly via getWidget', () => {
       const store = useWidgetValueStore()
       const state = store.registerWidget(
@@ -146,16 +127,6 @@ describe('useWidgetValueStore', () => {
 
       state.disabled = true
       expect(store.getWidget('node-1', 'seed')?.disabled).toBe(true)
-    })
-
-    it('advanced can be set directly via getWidget', () => {
-      const store = useWidgetValueStore()
-      const state = store.registerWidget(
-        widget('node-1', 'seed', 'number', 100)
-      )
-
-      state.advanced = true
-      expect(store.getWidget('node-1', 'seed')?.advanced).toBe(true)
     })
 
     it('promoted can be set directly via getWidget', () => {

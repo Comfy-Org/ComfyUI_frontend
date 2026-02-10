@@ -35,8 +35,6 @@ export interface WidgetState<
   | 'label'
   | 'serialize'
   | 'disabled'
-  | 'hidden'
-  | 'advanced'
   | 'promoted'
 > {
   nodeId: NodeId

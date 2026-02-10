@@ -100,10 +100,11 @@ describe('BaseWidget store integration', () => {
 
       const state = store.getWidget(1, 'writeWidget')
       expect(state?.label).toBe('Updated Label')
-      expect(state?.hidden).toBe(true)
       expect(state?.disabled).toBe(true)
-      expect(state?.advanced).toBe(true)
       expect(state?.promoted).toBe(true)
+
+      expect(widget.hidden).toBe(true)
+      expect(widget.advanced).toBe(true)
     })
 
     it('syncs value with store', () => {
@@ -139,11 +140,12 @@ describe('BaseWidget store integration', () => {
       expect(state?.type).toBe('number')
       expect(state?.value).toBe(100)
       expect(state?.label).toBe('Auto Label')
-      expect(state?.hidden).toBe(true)
       expect(state?.disabled).toBe(true)
-      expect(state?.advanced).toBe(true)
       expect(state?.promoted).toBe(true)
       expect(state?.options).toEqual({ min: 0, max: 100 })
+
+      expect(widget.hidden).toBe(true)
+      expect(widget.advanced).toBe(true)
     })
 
     it('registers widget with default metadata values', () => {
@@ -152,11 +154,12 @@ describe('BaseWidget store integration', () => {
 
       const state = store.getWidget(1, 'defaultsWidget')
       expect(state).toBeDefined()
-      expect(state?.hidden).toBe(false)
       expect(state?.disabled).toBe(false)
-      expect(state?.advanced).toBe(false)
       expect(state?.promoted).toBe(false)
       expect(state?.label).toBeUndefined()
+
+      expect(widget.hidden).toBeUndefined()
+      expect(widget.advanced).toBeUndefined()
     })
 
     it('registers widget value accessible via getWidget', () => {
@@ -181,11 +184,9 @@ describe('BaseWidget store integration', () => {
       const widget = createTestWidget(node)
       widget.setNodeId(1)
 
-      widget.hidden = undefined
       widget.disabled = undefined
 
       const state = store.getWidget(1, 'testWidget')
-      expect(state?.hidden).toBe(false)
       expect(state?.disabled).toBe(false)
     })
   })

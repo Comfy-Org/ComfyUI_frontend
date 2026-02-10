@@ -154,11 +154,8 @@ interface ProcessedWidget {
   updateHandler: (value: WidgetValue) => void
   tooltipConfig: TooltipOptions
   slotMetadata?: WidgetSlotMetadata
-  /** Whether widget is hidden (from widgetValueStore) */
   hidden: boolean
-  /** Whether widget is advanced (from widgetValueStore) */
   advanced: boolean
-  /** Whether widget has custom layout size computation */
   hasLayoutSize: boolean
 }
 
@@ -195,7 +192,7 @@ const processedWidgets = computed((): ProcessedWidget[] => {
     const borderStyle =
       widgetState?.promoted && String(widgetState?.nodeId) === String(nodeId)
         ? 'ring ring-component-node-widget-promoted'
-        : widgetState?.advanced
+        : widget.options?.advanced
           ? 'ring ring-component-node-widget-advanced'
           : undefined
 
@@ -231,8 +228,8 @@ const processedWidgets = computed((): ProcessedWidget[] => {
       updateHandler,
       tooltipConfig,
       slotMetadata,
-      hidden: widgetState?.hidden ?? false,
-      advanced: widgetState?.advanced ?? false,
+      hidden: widget.options?.hidden ?? false,
+      advanced: widget.options?.advanced ?? false,
       hasLayoutSize: widget.hasLayoutSize ?? false
     })
   }

@@ -60,7 +60,12 @@ export interface SafeWidgetData {
    * Widget options needed for render decisions.
    * Note: Most metadata should be accessed via widgetValueStore.getWidget().
    */
-  options?: { canvasOnly?: boolean; advanced?: boolean; read_only?: boolean }
+  options?: {
+    canvasOnly?: boolean
+    advanced?: boolean
+    hidden?: boolean
+    read_only?: boolean
+  }
   /** Input specification from node definition */
   spec?: InputSpec
   /** Input slot metadata (index and link status) */
@@ -210,6 +215,7 @@ function safeWidgetMapper(
         ? {
             canvasOnly: widget.options.canvasOnly,
             advanced: widget.advanced,
+            hidden: widget.options.hidden,
             read_only: widget.options.read_only
           }
         : undefined

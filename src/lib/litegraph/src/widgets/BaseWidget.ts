@@ -90,25 +90,14 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
     this._state.label = value
   }
 
-  get hidden(): boolean | undefined {
-    return this._state.hidden
-  }
-  set hidden(value: boolean | undefined) {
-    this._state.hidden = value ?? false
-  }
+  hidden?: boolean
+  advanced?: boolean
 
   get disabled(): boolean | undefined {
     return this._state.disabled
   }
   set disabled(value: boolean | undefined) {
     this._state.disabled = value ?? false
-  }
-
-  get advanced(): boolean | undefined {
-    return this._state.advanced
-  }
-  set advanced(value: boolean | undefined) {
-    this._state.advanced = value ?? false
   }
 
   get promoted(): boolean | undefined {
@@ -191,9 +180,7 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
       // @ts-expect-error Prevent naming conflicts with custom nodes.
       labelBaseline,
       label,
-      hidden,
       disabled,
-      advanced,
       promoted,
       value,
       linkedWidgets,
@@ -207,9 +194,7 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
       type: this.type as TWidgetType,
       value,
       label,
-      hidden: hidden ?? false,
       disabled: disabled ?? false,
-      advanced: advanced ?? false,
       promoted: promoted ?? false,
       serialize: this.serialize,
       options: this.options
