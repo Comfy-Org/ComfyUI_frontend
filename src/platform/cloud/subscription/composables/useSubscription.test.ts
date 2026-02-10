@@ -34,6 +34,13 @@ const {
 }))
 
 let scope: ReturnType<typeof effectScope> | undefined
+type Distribution = 'desktop' | 'localhost' | 'cloud'
+
+const setDistribution = (distribution: Distribution) => {
+  ;(
+    globalThis as typeof globalThis & { __DISTRIBUTION__: Distribution }
+  ).__DISTRIBUTION__ = distribution
+}
 
 function useSubscriptionWithScope() {
   if (!scope) {
@@ -116,11 +123,13 @@ describe('useSubscription', () => {
   afterEach(() => {
     scope?.stop()
     scope = undefined
+    setDistribution('localhost')
   })
 
   beforeEach(() => {
     scope?.stop()
     scope = effectScope()
+    setDistribution('cloud')
 
     vi.clearAllMocks()
     mockIsLoggedIn.value = false

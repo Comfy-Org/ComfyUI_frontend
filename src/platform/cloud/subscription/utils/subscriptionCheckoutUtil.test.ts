@@ -58,6 +58,14 @@ vi.mock('@/platform/telemetry/utils/checkoutAttribution', () => ({
 
 global.fetch = vi.fn()
 
+type Distribution = 'desktop' | 'localhost' | 'cloud'
+
+const setDistribution = (distribution: Distribution) => {
+  ;(
+    globalThis as typeof globalThis & { __DISTRIBUTION__: Distribution }
+  ).__DISTRIBUTION__ = distribution
+}
+
 function createDeferred<T>() {
   let resolve: (value: T) => void = () => {}
   const promise = new Promise<T>((res) => {
@@ -69,6 +77,7 @@ function createDeferred<T>() {
 
 describe('performSubscriptionCheckout', () => {
   beforeEach(() => {
+    setDistribution('cloud')
     vi.clearAllMocks()
     mockIsCloud.value = true
     mockUserId.value = 'user-123'
@@ -76,6 +85,7 @@ describe('performSubscriptionCheckout', () => {
 
   afterEach(() => {
     vi.restoreAllMocks()
+    setDistribution('localhost')
   })
 
   it('tracks begin_checkout with user id and tier metadata', async () => {

@@ -8,7 +8,7 @@ import { getComfyApiBaseUrl, getComfyPlatformBaseUrl } from '@/config/comfyApi'
 import { t } from '@/i18n'
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
-import { getCheckoutAttribution } from '@/platform/telemetry/utils/checkoutAttribution'
+import type { CheckoutAttributionMetadata } from '@/platform/telemetry/types'
 import {
   FirebaseAuthStoreError,
   useFirebaseAuthStore
@@ -98,6 +98,18 @@ function useSubscriptionInternal() {
   function buildApiUrl(path: string): string {
     return `${getComfyApiBaseUrl()}${path}`
   }
+
+  const getCheckoutAttributionForCloud =
+    async (): Promise<CheckoutAttributionMetadata> => {
+      if (__DISTRIBUTION__ !== 'cloud') {
+        return {}
+      }
+
+      const { getCheckoutAttribution } =
+        await import('@/platform/telemetry/utils/checkoutAttribution')
+
+      return getCheckoutAttribution()
+    }
 
   const fetchStatus = wrapWithErrorHandlingAsync(
     fetchSubscriptionStatus,
@@ -232,7 +244,7 @@ function useSubscriptionInternal() {
           t('toastMessages.userNotAuthenticated')
         )
       }
-      const checkoutAttribution = await getCheckoutAttribution()
+      const checkoutAttribution = await getCheckoutAttributionForCloud()
 
       const response = await fetch(
         buildApiUrl('/customers/cloud-subscription-checkout'),
