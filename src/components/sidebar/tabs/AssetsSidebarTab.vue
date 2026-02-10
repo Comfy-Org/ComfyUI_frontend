@@ -78,7 +78,7 @@
             :aria-label="
               t('sideToolbar.queueProgressOverlay.clearQueueTooltip')
             "
-            :disabled="activeJobsCount === 0"
+            :disabled="queueStore.pendingTasks.length === 0"
             @click="handleClearQueue"
           >
             <i class="icon-[lucide--list-x] size-4" />

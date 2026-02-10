@@ -75,7 +75,10 @@ const { viewMode = 'grid' } = defineProps<{
 const { jobItems } = useJobList()
 
 const activeJobItems = computed(() =>
-  jobItems.value.filter((item) => isActiveJobState(item.state)).toReversed()
+  jobItems.value
+    .filter((item) => isActiveJobState(item.state))
+    .slice()
+    .reverse()
 )
 
 const gridItems = computed(() =>

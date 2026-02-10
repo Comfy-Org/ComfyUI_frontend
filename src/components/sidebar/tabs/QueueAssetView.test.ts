@@ -1,12 +1,19 @@
 import { mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import type { Ref } from 'vue'
 import { ref } from 'vue'
 
 import type { JobListItem } from '@/composables/queue/useJobList'
 
 import QueueAssetView from './QueueAssetView.vue'
 
-const mockJobItems = ref<JobListItem[]>([])
+const { mockJobItems } = vi.hoisted<{
+  mockJobItems: Ref<JobListItem[]>
+}>(() => {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const { ref: hoistedRef } = require('vue')
+  return { mockJobItems: hoistedRef([]) }
+})
 
 vi.mock('@/composables/queue/useJobList', () => ({
   useJobList: () => ({
