@@ -2387,6 +2387,7 @@
       "placeholderImage": "Select image...",
       "placeholderAudio": "Select audio...",
       "placeholderVideo": "Select video...",
+      "placeholderMesh": "Select mesh...",
       "placeholderModel": "Select model...",
       "placeholderUnknown": "Select media..."
     },
