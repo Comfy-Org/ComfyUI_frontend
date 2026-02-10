@@ -112,7 +112,7 @@ import Listbox from 'primevue/listbox'
 import ScrollPanel from 'primevue/scrollpanel'
 import TabPanels from 'primevue/tabpanels'
 import Tabs from 'primevue/tabs'
-import { computed, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, watch } from 'vue'
 
 import SearchBox from '@/components/common/SearchBox.vue'
 import CurrentUserMessage from '@/components/dialog/content/setting/CurrentUserMessage.vue'
@@ -129,7 +129,7 @@ import type { SettingTreeNode } from '@/platform/settings/settingStore'
 import type { ISettingGroup, SettingParams } from '@/platform/settings/types'
 import { flattenTree } from '@/utils/treeUtil'
 
-const { defaultPanel } = defineProps<{
+const { defaultPanel, scrollToSettingId } = defineProps<{
   defaultPanel?:
     | 'about'
     | 'keybinding'
@@ -140,6 +140,7 @@ const { defaultPanel } = defineProps<{
     | 'subscription'
     | 'workspace'
     | 'secrets'
+  scrollToSettingId?: string
 }>()
 
 const { flags } = useFeatureFlags()
@@ -153,7 +154,7 @@ const {
   settingCategories,
   groupedMenuTreeNodes,
   panels
-} = useSettingUI(defaultPanel)
+} = useSettingUI(defaultPanel, scrollToSettingId)
 
 const {
   searchQuery,
@@ -202,6 +203,34 @@ const tabValue = computed<string>(() =>
   inSearch.value ? 'Search Results' : (activeCategory.value?.label ?? '')
 )
 
+// Scroll to and highlight the target setting once the correct tab renders.
+if (scrollToSettingId) {
+  let settled = false
+  const stopScrollWatch = watch(
+    tabValue,
+    () => {
+      if (settled) return
+      settled = true
+      void nextTick(() => {
+        stopScrollWatch()
+        const el = document.querySelector(
+          `[data-setting-id="${CSS.escape(scrollToSettingId)}"]`
+        )
+        if (!el) return
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+        el.classList.add('setting-highlight')
+        el.addEventListener(
+          'animationend',
+          () => el.classList.remove('setting-highlight'),
+          { once: true }
+        )
+      })
+    },
+    { immediate: true }
+  )
+  onBeforeUnmount(stopScrollWatch)
+}
+
 // Don't allow null category to be set outside of search.
 // In search mode, the active category can be null to show all search results.
 watch(activeCategory, (_, oldValue) => {
@@ -217,6 +246,26 @@ watch(activeCategory, (_, oldValue) => {
 <style>
 .settings-tab-panels {
   padding-top: 0 !important;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .setting-highlight {
+    animation: setting-highlight-pulse 1.5s ease-in-out;
+  }
+}
+
+@keyframes setting-highlight-pulse {
+  0%,
+  100% {
+    background-color: transparent;
+  }
+  30% {
+    background-color: color-mix(
+      in srgb,
+      var(--p-primary-color) 15%,
+      transparent
+    );
+  }
 }
 </style>
 
