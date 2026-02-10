@@ -170,13 +170,15 @@ export const CORE_SETTINGS: SettingParams[] = [
       const settingStore = useSettingStore()
 
       if (newValue === 'standard') {
-        // Update related settings to match standard mode - select + panning
-        await settingStore.set('Comfy.Canvas.LeftMouseClickBehavior', 'select')
-        await settingStore.set('Comfy.Canvas.MouseWheelScroll', 'panning')
+        await settingStore.setMany({
+          'Comfy.Canvas.LeftMouseClickBehavior': 'select',
+          'Comfy.Canvas.MouseWheelScroll': 'panning'
+        })
       } else if (newValue === 'legacy') {
-        // Update related settings to match legacy mode - panning + zoom
-        await settingStore.set('Comfy.Canvas.LeftMouseClickBehavior', 'panning')
-        await settingStore.set('Comfy.Canvas.MouseWheelScroll', 'zoom')
+        await settingStore.setMany({
+          'Comfy.Canvas.LeftMouseClickBehavior': 'panning',
+          'Comfy.Canvas.MouseWheelScroll': 'zoom'
+        })
       }
     }
   },
