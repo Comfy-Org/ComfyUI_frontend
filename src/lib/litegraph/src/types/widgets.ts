@@ -37,6 +37,14 @@ export interface IWidgetOptions<TValues = unknown[]> {
   getOptionLabel?: (value?: string | null) => string
   callback?: IWidget['callback']
   iconClass?: string
+
+  // Vue widget options
+  disabled?: boolean
+  useGrouping?: boolean
+  placeholder?: string
+  showThumbnails?: boolean
+  showItemNavigators?: boolean
+  hidden?: boolean
 }
 
 interface IWidgetSliderOptions extends IWidgetOptions<number[]> {

@@ -50,7 +50,7 @@ import {
   DOMWidgetImpl
 } from '@/scripts/domWidget'
 import { useDialogService } from '@/services/dialogService'
-import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
+import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useExtensionService } from '@/services/extensionService'
 import { useLitegraphService } from '@/services/litegraphService'
 import { useSubgraphService } from '@/services/subgraphService'
@@ -61,6 +61,7 @@ import { useExecutionStore } from '@/stores/executionStore'
 import { useExtensionStore } from '@/stores/extensionStore'
 import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
 import { useNodeOutputStore } from '@/stores/imagePreviewStore'
+import { useJobPreviewStore } from '@/stores/jobPreviewStore'
 import { KeyComboImpl } from '@/platform/keybindings/keyCombo'
 import { useKeybindingStore } from '@/platform/keybindings/keybindingStore'
 import { useModelStore } from '@/stores/modelStore'
@@ -86,6 +87,10 @@ import {
   fixLinkInputSlots,
   isImageNode
 } from '@/utils/litegraphUtil'
+import {
+  createSharedObjectUrl,
+  releaseSharedObjectUrl
+} from '@/utils/objectUrlUtil'
 import {
   findLegacyRerouteNodes,
   noNativeReroutes
@@ -687,7 +692,7 @@ export class ComfyApp {
           'Payment Required: Please add credits to your account to use this node.'
         )
       ) {
-        const { isActiveSubscription } = useSubscription()
+        const { isActiveSubscription } = useBillingContext()
         if (isActiveSubscription.value) {
           useDialogService().showTopUpCreditsDialog({
             isInsufficientCredits: true
@@ -701,12 +706,13 @@ export class ComfyApp {
 
     api.addEventListener('b_preview_with_metadata', ({ detail }) => {
       // Enhanced preview with explicit node context
-      const { blob, displayNodeId } = detail
+      const { blob, displayNodeId, promptId } = detail
       const { setNodePreviewsByExecutionId, revokePreviewsByExecutionId } =
         useNodeOutputStore()
+      const blobUrl = createSharedObjectUrl(blob)
+      useJobPreviewStore().setPreviewUrl(promptId, blobUrl)
       // Ensure clean up if `executing` event is missed.
       revokePreviewsByExecutionId(displayNodeId)
-      const blobUrl = URL.createObjectURL(blob)
       // Preview cleanup is handled in progress_state event to support multiple concurrent previews
       const nodeParents = displayNodeId.split(':')
       for (let i = 1; i <= nodeParents.length; i++) {
@@ -714,6 +720,7 @@ export class ComfyApp {
           blobUrl
         ])
       }
+      releaseSharedObjectUrl(blobUrl)
     })
 
     api.init()
@@ -779,7 +786,7 @@ export class ComfyApp {
     await useWorkspaceStore().workflow.syncWorkflows()
     //Doesn't need to block. Blueprints will load async
     void useSubgraphStore().fetchSubgraphs()
-    void useNodeReplacementStore().load()
+    await useNodeReplacementStore().load()
     await useExtensionService().loadExtensions()
 
     this.addProcessKeyHandler()
@@ -985,9 +992,11 @@ export class ComfyApp {
     await useExtensionService().invokeExtensionsAsync('addCustomNodeDefs', defs)
 
     // Register a node for each definition
-    for (const nodeId in defs) {
-      this.registerNodeDef(nodeId, defs[nodeId])
-    }
+    await Promise.all(
+      Object.keys(defs).map((nodeId) =>
+        this.registerNodeDef(nodeId, defs[nodeId])
+      )
+    )
   }
 
   loadTemplateData(templateData: {
@@ -1125,6 +1134,8 @@ export class ComfyApp {
 
     const embeddedModels: ModelFile[] = []
 
+    const nodeReplacementStore = useNodeReplacementStore()
+
     const collectMissingNodesAndModels = (
       nodes: ComfyWorkflowJSON['nodes'],
       path: string = ''
@@ -1137,17 +1148,18 @@ export class ComfyApp {
         return
       }
       for (let n of nodes) {
+        // TODO: Remove these patches after the affected nodes are updated in the backend
+        // Patch T2IAdapterLoader to ControlNetLoader since they are the same node now
+        if (n.type == 'T2IAdapterLoader') n.type = 'ControlNetLoader'
+        if (n.type == 'ConditioningAverage ') n.type = 'ConditioningAverage' //typo fix
+        if (n.type == 'SDV_img2vid_Conditioning')
+          n.type = 'SVD_img2vid_Conditioning' //typo fix
+        if (n.type == 'Load3DAnimation') n.type = 'Load3D' // Animation node merged into Load3D
+        if (n.type == 'Preview3DAnimation') n.type = 'Preview3D' // Animation node merged into Load3D
+
         // Find missing node types
         if (!(n.type in LiteGraph.registered_node_types)) {
-          const nodeReplacementStore = useNodeReplacementStore()
           const replacement = nodeReplacementStore.getReplacementFor(n.type)
-
-          // TODO: Remove debug log
-          console.log('[MissingNode]', n.type, {
-            isReplaceable: replacement !== null,
-            replacement,
-            allReplacements: nodeReplacementStore.replacements
-          })
 
           missingNodeTypes.push({
             type: n.type,

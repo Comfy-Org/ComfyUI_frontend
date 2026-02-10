@@ -6,7 +6,7 @@
     class="manager-dialog"
   >
     <template #leftPanelHeaderTitle>
-      <i class="icon-[lucide--puzzle]" />
+      <i class="icon-[comfy--extensions-blocks]" />
       <h2 class="text-neutral text-base">{{ $t('manager.title') }}</h2>
     </template>
     <template #leftPanel>

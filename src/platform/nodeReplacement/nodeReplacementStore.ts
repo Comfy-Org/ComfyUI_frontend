@@ -16,7 +16,6 @@ export const useNodeReplacementStore = defineStore('nodeReplacement', () => {
 
   async function load() {
     if (!isEnabled.value || isLoaded.value) return
-
     try {
       replacements.value = await fetchNodeReplacements()
       isLoaded.value = true

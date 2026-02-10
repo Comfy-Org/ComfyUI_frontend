@@ -422,8 +422,9 @@ import { createGridStyle } from '@/utils/gridUtil'
 
 const { t } = useI18n()
 
-const { onClose: originalOnClose } = defineProps<{
+const { onClose: originalOnClose, initialCategory = 'all' } = defineProps<{
   onClose: () => void
+  initialCategory?: string
 }>()
 
 // Track session time for telemetry
@@ -547,7 +548,7 @@ const allTemplates = computed(() => {
 })
 
 // Navigation
-const selectedNavItem = ref<string | null>('all')
+const selectedNavItem = ref<string | null>(initialCategory)
 
 // Filter templates based on selected navigation item
 const navigationFilteredTemplates = computed(() => {

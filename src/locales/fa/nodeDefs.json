@@ -2020,6 +2020,20 @@
       }
     }
   },
+  "CreateList": {
+    "display_name": "ایجاد لیست",
+    "inputs": {
+      "inputs": {
+        "name": "ورودی‌ها"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "لیست",
+        "tooltip": null
+      }
+    }
+  },
   "CreateVideo": {
     "description": "ایجاد ویدیو از تصاویر.",
     "display_name": "ایجاد ویدیو",
@@ -10789,6 +10803,9 @@
       "camera_info": {
         "name": "اطلاعات دوربین"
       },
+      "image": {
+        "name": "تصویر"
+      },
       "model_file": {
         "name": "فایل مدل",
         "tooltip": "فایل مدل سه‌بعدی یا مسیر فایل"
@@ -12612,6 +12629,9 @@
       "filename_prefix": {
         "name": "filename_prefix"
       },
+      "image": {
+        "name": "تصویر"
+      },
       "mesh": {
         "name": "mesh",
         "tooltip": "مش یا فایل GLB برای ذخیره"
@@ -13953,6 +13973,9 @@
       "bpm": {
         "name": "ضرب در دقیقه (BPM)"
       },
+      "cfg_scale": {
+        "name": "cfg_scale"
+      },
       "clip": {
         "name": "clip"
       },
@@ -13961,6 +13984,10 @@
       },
       "duration": {
         "name": "مدت زمان"
+      },
+      "generate_audio_codes": {
+        "name": "تولید کدهای صوتی",
+        "tooltip": "فعال‌سازی LLM برای تولید کدهای صوتی. این کار ممکن است کند باشد اما کیفیت صدای تولیدشده را افزایش می‌دهد. اگر به مدل یک مرجع صوتی می‌دهید، این گزینه را غیرفعال کنید."
       },
       "keyscale": {
         "name": "گام"
@@ -13977,8 +14004,17 @@
       "tags": {
         "name": "برچسب‌ها"
       },
+      "temperature": {
+        "name": "temperature"
+      },
       "timesignature": {
         "name": "امضای زمانی"
+      },
+      "top_k": {
+        "name": "top_k"
+      },
+      "top_p": {
+        "name": "top_p"
       }
     },
     "outputs": {
@@ -14902,6 +14938,28 @@
     "inputs": {
       "samples": {
         "name": "نمونه‌ها"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "VAEDecodeAudioTiled": {
+    "display_name": "رمزگشایی VAE صوتی (کاشی‌بندی‌شده)",
+    "inputs": {
+      "overlap": {
+        "name": "همپوشانی"
+      },
+      "samples": {
+        "name": "نمونه‌ها"
+      },
+      "tile_size": {
+        "name": "اندازه کاشی"
       },
       "vae": {
         "name": "vae"

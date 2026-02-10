@@ -128,15 +128,16 @@
 
 <script setup lang="ts">
 import { ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
 import { useCanvasTools } from '@/composables/maskeditor/useCanvasTools'
 import { useCanvasTransform } from '@/composables/maskeditor/useCanvasTransform'
 import { useMaskEditorSaver } from '@/composables/maskeditor/useMaskEditorSaver'
-import { t } from '@/i18n'
 import { useDialogStore } from '@/stores/dialogStore'
 import { useMaskEditorStore } from '@/stores/maskEditorStore'
 
+const { t } = useI18n()
 const store = useMaskEditorStore()
 const dialogStore = useDialogStore()
 const canvasTools = useCanvasTools()
