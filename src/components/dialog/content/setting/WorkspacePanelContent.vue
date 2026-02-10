@@ -9,81 +9,98 @@
         {{ workspaceName }}
       </h1>
     </div>
-    <div class="flex w-full items-center">
-      <TabList v-model="activeTab">
-        <Tab value="plan">{{ $t('workspacePanel.tabs.planCredits') }}</Tab>
-        <Tab value="members">
-          {{
-            $t('workspacePanel.tabs.membersCount', {
-              count: isInPersonalWorkspace ? 1 : members.length
-            })
-          }}
-        </Tab>
-      </TabList>
+    <TabsRoot v-model="activeTab">
+      <div class="flex w-full items-center">
+        <TabsList class="flex items-center gap-2 pb-1">
+          <TabsTrigger
+            value="plan"
+            :class="
+              cn(
+                tabTriggerBase,
+                activeTab === 'plan' ? tabTriggerActive : tabTriggerInactive
+              )
+            "
+          >
+            {{ $t('workspacePanel.tabs.planCredits') }}
+          </TabsTrigger>
+          <TabsTrigger
+            value="members"
+            :class="
+              cn(
+                tabTriggerBase,
+                activeTab === 'members' ? tabTriggerActive : tabTriggerInactive
+              )
+            "
+          >
+            {{
+              $t('workspacePanel.tabs.membersCount', {
+                count: isInPersonalWorkspace ? 1 : members.length
+              })
+            }}
+          </TabsTrigger>
+        </TabsList>
 
-      <Button
-        v-if="permissions.canInviteMembers"
-        v-tooltip="
-          inviteTooltip
-            ? { value: inviteTooltip, showDelay: 0 }
-            : { value: $t('workspacePanel.inviteMember'), showDelay: 300 }
-        "
-        variant="muted-textonly"
-        size="icon"
-        :disabled="isInviteLimitReached"
-        :class="isInviteLimitReached && 'opacity-50 cursor-not-allowed'"
-        :aria-label="$t('workspacePanel.inviteMember')"
-        @click="handleInviteMember"
-      >
-        <i class="pi pi-plus text-sm" />
-      </Button>
-      <template v-if="permissions.canAccessWorkspaceMenu">
         <Button
-          v-tooltip="{ value: $t('g.moreOptions'), showDelay: 300 }"
+          v-if="permissions.canInviteMembers"
+          v-tooltip="
+            inviteTooltip
+              ? { value: inviteTooltip, showDelay: 0 }
+              : { value: $t('workspacePanel.inviteMember'), showDelay: 300 }
+          "
           variant="muted-textonly"
           size="icon"
-          :aria-label="$t('g.moreOptions')"
-          @click="menu?.toggle($event)"
+          :disabled="isInviteLimitReached"
+          :class="isInviteLimitReached && 'opacity-50 cursor-not-allowed'"
+          :aria-label="$t('workspacePanel.inviteMember')"
+          @click="handleInviteMember"
         >
-          <i class="pi pi-ellipsis-h" />
+          <i class="pi pi-plus text-sm" />
         </Button>
-        <Menu ref="menu" :model="menuItems" :popup="true">
-          <template #item="{ item }">
-            <div
-              v-tooltip="
-                item.disabled && deleteTooltip
-                  ? { value: deleteTooltip, showDelay: 0 }
-                  : null
-              "
-              :class="[
-                'flex items-center gap-2 px-3 py-2',
-                item.class,
-                item.disabled ? 'pointer-events-auto' : ''
-              ]"
-              @click="
-                item.command?.({
-                  originalEvent: $event,
-                  item
-                })
-              "
-            >
-              <i :class="item.icon" />
-              <span>{{ item.label }}</span>
-            </div>
-          </template>
-        </Menu>
-      </template>
-    </div>
+        <template v-if="permissions.canAccessWorkspaceMenu">
+          <Button
+            v-tooltip="{ value: $t('g.moreOptions'), showDelay: 300 }"
+            variant="muted-textonly"
+            size="icon"
+            :aria-label="$t('g.moreOptions')"
+            @click="menu?.toggle($event)"
+          >
+            <i class="pi pi-ellipsis-h" />
+          </Button>
+          <Menu ref="menu" :model="menuItems" :popup="true">
+            <template #item="{ item }">
+              <div
+                v-tooltip="
+                  item.disabled && deleteTooltip
+                    ? { value: deleteTooltip, showDelay: 0 }
+                    : null
+                "
+                :class="[
+                  'flex items-center gap-2 px-3 py-2',
+                  item.class,
+                  item.disabled ? 'pointer-events-auto' : ''
+                ]"
+                @click="
+                  item.command?.({
+                    originalEvent: $event,
+                    item
+                  })
+                "
+              >
+                <i :class="item.icon" />
+                <span>{{ item.label }}</span>
+              </div>
+            </template>
+          </Menu>
+        </template>
+      </div>
 
-    <SubscriptionPanelContentWorkspace
-      v-if="activeTab === 'plan'"
-      class="mt-4"
-    />
-    <MembersPanelContent
-      v-else-if="activeTab === 'members'"
-      :key="workspaceRole"
-      class="mt-4"
-    />
+      <TabsContent value="plan" class="mt-4">
+        <SubscriptionPanelContentWorkspace />
+      </TabsContent>
+      <TabsContent value="members" class="mt-4">
+        <MembersPanelContent :key="workspaceRole" />
+      </TabsContent>
+    </TabsRoot>
   </div>
 </template>
 
@@ -93,8 +110,7 @@ import Menu from 'primevue/menu'
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import Tab from '@/components/tab/Tab.vue'
-import TabList from '@/components/tab/TabList.vue'
+import { TabsContent, TabsList, TabsRoot, TabsTrigger } from 'reka-ui'
 
 import WorkspaceProfilePic from '@/components/common/WorkspaceProfilePic.vue'
 import MembersPanelContent from '@/components/dialog/content/setting/MembersPanelContent.vue'
@@ -103,6 +119,14 @@ import SubscriptionPanelContentWorkspace from '@/platform/cloud/subscription/com
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useDialogService } from '@/services/dialogService'
+import { cn } from '@/utils/tailwindUtil'
+
+const tabTriggerBase =
+  'flex items-center justify-center shrink-0 px-2.5 py-2 text-sm rounded-lg cursor-pointer transition-all duration-200 outline-hidden border-none'
+const tabTriggerActive =
+  'bg-interface-menu-component-surface-hovered text-text-primary text-bold'
+const tabTriggerInactive =
+  'bg-transparent text-text-secondary hover:bg-button-hover-surface focus:bg-button-hover-surface'
 
 const { defaultTab = 'plan' } = defineProps<{
   defaultTab?: string
@@ -127,10 +151,6 @@ const { fetchMembers, fetchPendingInvites } = workspaceStore
 
 const { workspaceRole, permissions, uiConfig } = useWorkspaceUI()
 const activeTab = ref('plan')
-
-function setActiveTab(tab: string) {
-  activeTab.value = tab
-}
 
 const menu = ref<InstanceType<typeof Menu> | null>(null)
 
@@ -205,7 +225,7 @@ const menuItems = computed(() => {
 })
 
 onMounted(() => {
-  setActiveTab(defaultTab)
+  activeTab.value = defaultTab
   fetchMembers()
   fetchPendingInvites()
 })
