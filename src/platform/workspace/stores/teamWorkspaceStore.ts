@@ -76,7 +76,7 @@ function createWorkspaceState(workspace: WorkspaceWithRole): WorkspaceState {
   }
 }
 
-function sortWorkspaces(list: WorkspaceState[]): WorkspaceState[] {
+export function sortWorkspaces<T extends WorkspaceWithRole>(list: T[]): T[] {
   return [...list].sort((a, b) => {
     if (a.type === 'personal') return -1
     if (b.type === 'personal') return 1
