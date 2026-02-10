@@ -14,11 +14,11 @@
       <span class="flex-auto select-none text-nowrap text-neutral text-base">
         {{ teamWorkspacesEnabled ? workspaceName : $t('g.settings') }}
       </span>
-      <Tag
+      <StatusBadge
         v-if="isStaging"
-        value="staging"
+        :label="t('staging')"
         severity="warn"
-        class="ml-2 text-xs"
+        class="ml-2"
       />
     </template>
 
@@ -86,7 +86,7 @@
 </template>
 
 <script setup lang="ts">
-import Tag from 'primevue/tag'
+import StatusBadge from '@/components/common/StatusBadge.vue'
 import { computed, nextTick, provide, ref, watch } from 'vue'
 
 import SearchBox from '@/components/common/SearchBox.vue'
@@ -110,7 +110,9 @@ import type {
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { OnCloseKey } from '@/types/widgetTypes'
 import { flattenTree } from '@/utils/treeUtil'
+import { useI18n } from 'vue-i18n'
 
+const { t } = useI18n()
 const { onClose, defaultPanel } = defineProps<{
   onClose: () => void
   defaultPanel?: SettingPanelType
