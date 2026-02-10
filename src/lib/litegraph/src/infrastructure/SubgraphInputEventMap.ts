@@ -7,7 +7,7 @@ import type { LGraphEventMap } from './LGraphEventMap'
 export interface SubgraphInputEventMap extends LGraphEventMap {
   'input-connected': {
     input: INodeInputSlot
-    widget: IBaseWidget
+    widget?: IBaseWidget
   }
 
   'input-disconnected': {
