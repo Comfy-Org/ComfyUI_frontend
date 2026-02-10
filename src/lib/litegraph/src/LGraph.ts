@@ -159,7 +159,6 @@ export class LGraph
 
   static STATUS_STOPPED = 1
   static STATUS_RUNNING = 2
-  static deduplicateSubgraphIds = false
 
   /** List of LGraph properties that are manually handled by {@link LGraph.configure}. */
   static readonly ConfigureProperties = new Set([
@@ -2446,7 +2445,7 @@ export class LGraph
           this.subgraphs.get(subgraph.id)?.configure(subgraph)
       }
 
-      if (this.isRootGraph && LGraph.deduplicateSubgraphIds) {
+      if (this.isRootGraph) {
         const reservedNodeIds = nodesData
           ?.map((n) => n.id)
           .filter((id): id is number => typeof id === 'number')
