@@ -34,6 +34,7 @@
       </div>
 
       <nav
+        ref="navRef"
         class="scrollbar-hide flex flex-1 flex-col gap-1 overflow-y-auto px-3 py-4"
       >
         <div
@@ -45,10 +46,11 @@
           <NavItem
             v-for="item in group.items"
             :key="item.id"
+            :data-nav-id="item.id"
             :icon="item.icon"
             :badge="item.badge"
             :active="activeCategoryKey === item.id"
-            @click="activeCategoryKey = item.id"
+            @click="onNavItemClick(item.id)"
           >
             {{ item.label }}
           </NavItem>
@@ -85,7 +87,7 @@
 
 <script setup lang="ts">
 import Tag from 'primevue/tag'
-import { computed, provide, ref, watch } from 'vue'
+import { computed, nextTick, provide, ref, watch } from 'vue'
 
 import SearchBox from '@/components/common/SearchBox.vue'
 import WorkspaceProfilePic from '@/components/common/WorkspaceProfilePic.vue'
@@ -131,13 +133,26 @@ const workspaceName = computed(() => workspaceStore.workspaceName)
 const {
   searchQuery,
   inSearch,
+  searchResultsCategories,
   handleSearch: handleSearchBase,
   getSearchResults
 } = useSettingSearch()
 
 const authActions = useFirebaseAuthActions()
 
+const navRef = ref<HTMLElement | null>(null)
 const activeCategoryKey = ref<string | null>(defaultCategory.value?.key ?? null)
+
+watch(searchResultsCategories, (categories) => {
+  if (!inSearch.value || categories.size === 0) return
+  const firstMatch = navGroups.value
+    .flatMap((g) => g.items)
+    .find((item) => {
+      const node = findCategoryByKey(item.id)
+      return node && categories.has(node.label)
+    })
+  activeCategoryKey.value = firstMatch?.id ?? null
+})
 
 const activeSettingCategory = computed<SettingTreeNode | null>(() => {
   if (!activeCategoryKey.value) return null
@@ -176,6 +191,14 @@ function handleSearch(query: string) {
   activeCategoryKey.value = query ? null : (defaultCategory.value?.key ?? null)
 }
 
+function onNavItemClick(id: string) {
+  if (inSearch.value) {
+    searchQuery.value = ''
+    handleSearchBase('')
+  }
+  activeCategoryKey.value = id
+}
+
 const searchResults = computed<ISettingGroup[]>(() => {
   const category = activeCategoryKey.value
     ? findCategoryByKey(activeCategoryKey.value)
@@ -189,6 +212,13 @@ watch(activeCategoryKey, (newKey, oldKey) => {
   }
   if (newKey === 'credits') {
     void authActions.fetchBalance()
+  }
+  if (newKey) {
+    void nextTick(() => {
+      navRef.value
+        ?.querySelector(`[data-nav-id="${newKey}"]`)
+        ?.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
+    })
   }
 })
 </script>
