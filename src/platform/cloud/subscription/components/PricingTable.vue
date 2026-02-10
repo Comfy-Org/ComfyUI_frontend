@@ -243,6 +243,7 @@
 
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
+import { storeToRefs } from 'pinia'
 import Popover from 'primevue/popover'
 import SelectButton from 'primevue/selectbutton'
 import type { ToggleButtonPassThroughMethodOptions } from 'primevue/togglebutton'
@@ -333,7 +334,7 @@ const tiers: PricingTierConfig[] = [
 const { isActiveSubscription, subscriptionTier, isYearlySubscription } =
   useSubscription()
 const telemetry = useTelemetry()
-const { userId } = useFirebaseAuthStore()
+const { userId } = storeToRefs(useFirebaseAuthStore())
 const { accessBillingPortal, reportError } = useFirebaseAuthActions()
 const { wrapWithErrorHandlingAsync } = useErrorHandling()
 
@@ -415,9 +416,9 @@ const handleSubscribe = wrapWithErrorHandlingAsync(
     try {
       if (isActiveSubscription.value) {
         const checkoutAttribution = await getCheckoutAttribution()
-        if (userId) {
+        if (userId.value) {
           telemetry?.trackBeginCheckout({
-            user_id: userId,
+            user_id: userId.value,
             tier: tierKey,
             cycle: currentBillingCycle.value,
             checkout_type: 'change',

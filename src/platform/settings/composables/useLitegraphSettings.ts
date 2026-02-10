@@ -2,6 +2,7 @@ import { watchEffect } from 'vue'
 
 import {
   CanvasPointer,
+  LGraph,
   LGraphNode,
   LiteGraph
 } from '@/lib/litegraph/src/litegraph'
@@ -160,6 +161,12 @@ export const useLitegraphSettings = () => {
   watchEffect(() => {
     LiteGraph.saveViewportWithGraph = settingStore.get(
       'Comfy.EnableWorkflowViewRestore'
+    )
+  })
+
+  watchEffect(() => {
+    LGraph.deduplicateSubgraphIds = settingStore.get(
+      'Comfy.Graph.DeduplicateSubgraphNodeIds'
     )
   })
 }

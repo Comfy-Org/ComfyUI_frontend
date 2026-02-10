@@ -1,3 +1,5 @@
+import { storeToRefs } from 'pinia'
+
 import { getComfyApiBaseUrl } from '@/config/comfyApi'
 import { t } from '@/i18n'
 import { isCloud } from '@/platform/distribution/types'
@@ -37,9 +39,10 @@ export async function performSubscriptionCheckout(
 ): Promise<void> {
   if (!isCloud) return
 
-  const { getFirebaseAuthHeader, userId } = useFirebaseAuthStore()
+  const firebaseAuthStore = useFirebaseAuthStore()
+  const { userId } = storeToRefs(firebaseAuthStore)
   const telemetry = useTelemetry()
-  const authHeader = await getFirebaseAuthHeader()
+  const authHeader = await firebaseAuthStore.getFirebaseAuthHeader()
 
   if (!authHeader) {
     throw new FirebaseAuthStoreError(t('toastMessages.userNotAuthenticated'))
@@ -93,9 +96,9 @@ export async function performSubscriptionCheckout(
   const data = await response.json()
 
   if (data.checkout_url) {
-    if (userId) {
+    if (userId.value) {
       telemetry?.trackBeginCheckout({
-        user_id: userId,
+        user_id: userId.value,
         tier: tierKey,
         cycle: currentBillingCycle,
         checkout_type: 'new',
