@@ -46,7 +46,16 @@ export async function performSubscriptionCheckout(
   }
 
   const checkoutTier = getCheckoutTier(tierKey, currentBillingCycle)
-  const checkoutAttribution = await getCheckoutAttribution()
+  let checkoutAttribution: Awaited<ReturnType<typeof getCheckoutAttribution>> =
+    {}
+  try {
+    checkoutAttribution = await getCheckoutAttribution()
+  } catch (error) {
+    console.warn(
+      '[SubscriptionCheckout] Failed to collect checkout attribution',
+      error
+    )
+  }
   const checkoutPayload = { ...checkoutAttribution }
 
   const response = await fetch(
