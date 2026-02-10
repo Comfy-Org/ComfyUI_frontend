@@ -190,7 +190,11 @@ function sortedGroups(category: SettingTreeNode): ISettingGroup[] {
 
 function handleSearch(query: string) {
   handleSearchBase(query.trim())
-  activeCategoryKey.value = query ? null : (defaultCategory.value?.key ?? null)
+  if (query) {
+    activeCategoryKey.value = null
+  } else if (!activeCategoryKey.value) {
+    activeCategoryKey.value = defaultCategory.value?.key ?? null
+  }
 }
 
 function onNavItemClick(id: string) {
