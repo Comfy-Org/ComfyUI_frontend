@@ -496,8 +496,9 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     subgraphInput.events.addEventListener(
       'input-connected',
       (e) => {
+        input.shape = e.detail.input.shape
         const widget = subgraphInput._widget
-        if (!widget) return
+        if (!widget || !e.detail.node) return
 
         // If this widget is already promoted, demote it first
         // so it transitions cleanly to being linked via SubgraphInput.
@@ -519,6 +520,8 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
         }
 
         const widgetLocator = e.detail.input.widget
+        if (!widgetLocator) return
+
         this._setWidget(
           subgraphInput,
           input,
@@ -568,6 +571,9 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
               name: slot.name,
               localized_name: slot.localized_name,
               label: slot.label,
+              shape: this.subgraph.links[slot.linkIds[0]]?.resolve(
+                this.subgraph
+              )?.input?.shape,
               type: slot.type,
               link: null
             },
