@@ -1,10 +1,14 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { getCheckoutAttribution } from '../checkoutAttribution'
+import {
+  captureCheckoutAttributionFromSearch,
+  getCheckoutAttribution
+} from '../checkoutAttribution'
 
 describe('getCheckoutAttribution', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    window.localStorage.clear()
     window.__ga_identity__ = undefined
     window.ire = undefined
     window.history.pushState({}, '', '/')
@@ -38,8 +42,7 @@ describe('getCheckoutAttribution', () => {
       ga_session_number: '2',
       gclid: 'gclid-123',
       utm_source: 'impact',
-      im_ref: 'generated-click-id',
-      impact_click_id: 'generated-click-id'
+      im_ref: 'generated-click-id'
     })
     expect(mockIreCall).toHaveBeenCalledWith(
       'generateClickId',
@@ -58,8 +61,7 @@ describe('getCheckoutAttribution', () => {
 
     expect(attribution).toMatchObject({
       utm_campaign: 'launch',
-      im_ref: 'fallback-from-url',
-      impact_click_id: 'fallback-from-url'
+      im_ref: 'fallback-from-url'
     })
   })
 
@@ -73,7 +75,6 @@ describe('getCheckoutAttribution', () => {
       utm_medium: 'affiliate'
     })
     expect(attribution.im_ref).toBeUndefined()
-    expect(attribution.impact_click_id).toBeUndefined()
   })
 
   it('falls back to URL im_ref when generateClickId throws', async () => {
@@ -85,6 +86,71 @@ describe('getCheckoutAttribution', () => {
     const attribution = await getCheckoutAttribution()
 
     expect(attribution.im_ref).toBe('url-fallback')
-    expect(attribution.impact_click_id).toBe('url-fallback')
+  })
+
+  it('persists click and UTM attribution across navigation', async () => {
+    window.history.pushState(
+      {},
+      '',
+      '/?gclid=gclid-123&utm_source=impact&utm_campaign=spring-launch'
+    )
+
+    await getCheckoutAttribution()
+    window.history.pushState({}, '', '/pricing')
+
+    const attribution = await getCheckoutAttribution()
+
+    expect(attribution).toMatchObject({
+      gclid: 'gclid-123',
+      utm_source: 'impact',
+      utm_campaign: 'spring-launch'
+    })
+  })
+
+  it('stores attribution from page-view capture for later checkout', async () => {
+    captureCheckoutAttributionFromSearch(
+      '?gbraid=gbraid-123&utm_medium=affiliate'
+    )
+    window.history.pushState({}, '', '/pricing')
+
+    const attribution = await getCheckoutAttribution()
+
+    expect(attribution).toMatchObject({
+      gbraid: 'gbraid-123',
+      utm_medium: 'affiliate'
+    })
+  })
+
+  it('stores click id from page-view capture for later checkout', async () => {
+    captureCheckoutAttributionFromSearch('?im_ref=impact-123')
+    window.history.pushState({}, '', '/pricing')
+
+    const attribution = await getCheckoutAttribution()
+
+    expect(attribution).toMatchObject({
+      im_ref: 'impact-123'
+    })
+  })
+
+  it('does not rewrite click id when page-view capture value is unchanged', () => {
+    window.localStorage.setItem(
+      'comfy_checkout_attribution',
+      JSON.stringify({
+        im_ref: 'impact-123'
+      })
+    )
+    const setItemSpy = vi.spyOn(Storage.prototype, 'setItem')
+
+    captureCheckoutAttributionFromSearch('?im_ref=impact-123')
+
+    expect(setItemSpy).not.toHaveBeenCalled()
+  })
+
+  it('ignores impact_click_id query param', async () => {
+    window.history.pushState({}, '', '/?impact_click_id=impact-query-id')
+
+    const attribution = await getCheckoutAttribution()
+
+    expect(attribution.im_ref).toBeUndefined()
   })
 })

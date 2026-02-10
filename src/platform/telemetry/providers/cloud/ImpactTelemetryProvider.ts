@@ -3,11 +3,6 @@ import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 
 import type { PageViewMetadata, TelemetryProvider } from '../../types'
 
-interface ImpactQueueFunction {
-  (...args: unknown[]): void
-  a?: unknown[][]
-}
-
 const IMPACT_SCRIPT_URL =
   'https://utt.impactcdn.com/A6951770-3747-434a-9ac7-4e582e67d91f1.js'
 const IMPACT_QUEUE_NAME = 'ire'
@@ -43,7 +38,7 @@ export class ImpactTelemetryProvider implements TelemetryProvider {
     window.ire_o = IMPACT_QUEUE_NAME
 
     if (!window.ire) {
-      const queueFn: ImpactQueueFunction = (...args: unknown[]) => {
+      const queueFn: NonNullable<Window['ire']> = (...args: unknown[]) => {
         ;(queueFn.a ??= []).push(args)
       }
       window.ire = queueFn

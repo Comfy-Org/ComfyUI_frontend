@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto'
 import { ref } from 'vue'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -23,6 +24,14 @@ const IMPACT_SCRIPT_URL =
 async function flushAsyncWork() {
   await Promise.resolve()
   await Promise.resolve()
+}
+
+function toUint8Array(data: BufferSource): Uint8Array {
+  if (data instanceof ArrayBuffer) {
+    return new Uint8Array(data)
+  }
+
+  return new Uint8Array(data.buffer, data.byteOffset, data.byteLength)
 }
 
 describe('ImpactTelemetryProvider', () => {
@@ -54,11 +63,18 @@ describe('ImpactTelemetryProvider', () => {
   it('captures attribution and invokes identify with hashed email', async () => {
     mockUseCurrentUser.mockReturnValue({
       resolvedUserInfo: ref({ id: 'user-123' }),
-      userEmail: ref('User@Example.com')
+      userEmail: ref(' User@Example.com ')
     })
     vi.stubGlobal('crypto', {
       subtle: {
-        digest: vi.fn(async () => new Uint8Array([0, 1, 2]).buffer)
+        digest: vi.fn(
+          async (_algorithm: AlgorithmIdentifier, data: BufferSource) => {
+            const digest = createHash('sha1')
+              .update(toUint8Array(data))
+              .digest()
+            return Uint8Array.from(digest).buffer
+          }
+        )
       }
     })
     const provider = new ImpactTelemetryProvider()
@@ -74,8 +90,9 @@ describe('ImpactTelemetryProvider', () => {
     )
     expect(window.ire?.a).toHaveLength(1)
     expect(window.ire?.a?.[0]?.[0]).toBe('identify')
-    expect(window.ire?.a?.[0]?.[1]).toMatchObject({
-      customerId: 'user-123'
+    expect(window.ire?.a?.[0]?.[1]).toEqual({
+      customerId: 'user-123',
+      customerEmail: '63a710569261a24b3766275b7000ce8d7b32e2f7'
     })
   })
 

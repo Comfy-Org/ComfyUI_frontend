@@ -24,7 +24,6 @@ const {
   ),
   mockGetCheckoutAttribution: vi.fn(() => ({
     im_ref: 'impact-click-001',
-    impact_click_id: 'impact-click-001',
     utm_source: 'impact'
   })),
   mockTelemetry: {
@@ -297,7 +296,6 @@ describe('useSubscription', () => {
           }),
           body: JSON.stringify({
             im_ref: 'impact-click-001',
-            impact_click_id: 'impact-click-001',
             utm_source: 'impact'
           })
         })

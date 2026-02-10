@@ -1,8 +1,7 @@
 import { isPlainObject } from 'es-toolkit'
+import { withTimeout } from 'es-toolkit/promise'
 
 import type { CheckoutAttributionMetadata } from '../types'
-
-type CheckoutAttribution = CheckoutAttributionMetadata
 
 type GaIdentity = {
   client_id?: string
@@ -12,7 +11,6 @@ type GaIdentity = {
 
 const ATTRIBUTION_QUERY_KEYS = [
   'im_ref',
-  'impact_click_id',
   'utm_source',
   'utm_medium',
   'utm_campaign',
@@ -23,8 +21,45 @@ const ATTRIBUTION_QUERY_KEYS = [
   'wbraid'
 ] as const
 type AttributionQueryKey = (typeof ATTRIBUTION_QUERY_KEYS)[number]
+const ATTRIBUTION_STORAGE_KEY = 'comfy_checkout_attribution'
 const GENERATE_CLICK_ID_TIMEOUT_MS = 300
-const IMPACT_CLICK_ID_STORAGE_KEY = 'comfy_impact_click_id'
+
+function readStoredAttribution(): Partial<Record<AttributionQueryKey, string>> {
+  if (typeof window === 'undefined') return {}
+
+  try {
+    const stored = localStorage.getItem(ATTRIBUTION_STORAGE_KEY)
+    if (!stored) return {}
+
+    const parsed: unknown = JSON.parse(stored)
+    if (!isPlainObject(parsed)) return {}
+
+    const result: Partial<Record<AttributionQueryKey, string>> = {}
+
+    for (const key of ATTRIBUTION_QUERY_KEYS) {
+      const value = asNonEmptyString(parsed[key])
+      if (value) {
+        result[key] = value
+      }
+    }
+
+    return result
+  } catch {
+    return {}
+  }
+}
+
+function persistAttribution(
+  payload: Partial<Record<AttributionQueryKey, string>>
+): void {
+  if (typeof window === 'undefined') return
+
+  try {
+    localStorage.setItem(ATTRIBUTION_STORAGE_KEY, JSON.stringify(payload))
+  } catch {
+    return
+  }
+}
 
 function readAttributionFromUrl(
   search: string
@@ -43,34 +78,22 @@ function readAttributionFromUrl(
   return result
 }
 
+function hasAttributionChanges(
+  existing: Partial<Record<AttributionQueryKey, string>>,
+  incoming: Partial<Record<AttributionQueryKey, string>>
+): boolean {
+  for (const key of ATTRIBUTION_QUERY_KEYS) {
+    const value = incoming[key]
+    if (value !== undefined && existing[key] !== value) {
+      return true
+    }
+  }
+
+  return false
+}
+
 function asNonEmptyString(value: unknown): string | undefined {
   return typeof value === 'string' && value.length > 0 ? value : undefined
-}
-
-function getImpactClickId(
-  attribution: Partial<Record<AttributionQueryKey, string>>
-): string | undefined {
-  return attribution.impact_click_id ?? attribution.im_ref
-}
-
-function readStoredImpactClickId(): string | undefined {
-  if (typeof window === 'undefined') return undefined
-
-  try {
-    return asNonEmptyString(localStorage.getItem(IMPACT_CLICK_ID_STORAGE_KEY))
-  } catch {
-    return undefined
-  }
-}
-
-function persistImpactClickId(clickId: string): void {
-  if (typeof window === 'undefined') return
-
-  try {
-    localStorage.setItem(IMPACT_CLICK_ID_STORAGE_KEY, clickId)
-  } catch {
-    return
-  }
 }
 
 function getGaIdentity(): GaIdentity | undefined {
@@ -96,63 +119,61 @@ async function getGeneratedClickId(): Promise<string | undefined> {
     return undefined
   }
 
-  return await new Promise((resolve) => {
-    let settled = false
-
-    const finish = (value: unknown): void => {
-      if (settled) return
-      settled = true
-      resolve(asNonEmptyString(value))
-    }
-
-    const timeoutHandle = window.setTimeout(() => {
-      finish(undefined)
-    }, GENERATE_CLICK_ID_TIMEOUT_MS)
-
-    try {
-      impactQueue('generateClickId', (clickId: unknown) => {
-        window.clearTimeout(timeoutHandle)
-        finish(clickId)
-      })
-    } catch {
-      window.clearTimeout(timeoutHandle)
-      finish(undefined)
-    }
-  })
+  try {
+    return await withTimeout(
+      () =>
+        new Promise<string | undefined>((resolve, reject) => {
+          try {
+            impactQueue('generateClickId', (clickId: unknown) => {
+              resolve(asNonEmptyString(clickId))
+            })
+          } catch (error) {
+            reject(error)
+          }
+        }),
+      GENERATE_CLICK_ID_TIMEOUT_MS
+    )
+  } catch {
+    return undefined
+  }
 }
 
 export function captureCheckoutAttributionFromSearch(search: string): void {
   const fromUrl = readAttributionFromUrl(search)
-  const clickId = getImpactClickId(fromUrl)
+  const storedAttribution = readStoredAttribution()
+  if (Object.keys(fromUrl).length === 0) return
 
-  if (!clickId) return
+  if (!hasAttributionChanges(storedAttribution, fromUrl)) return
 
-  persistImpactClickId(clickId)
+  persistAttribution({
+    ...storedAttribution,
+    ...fromUrl
+  })
 }
 
-export async function getCheckoutAttribution(): Promise<CheckoutAttribution> {
+export async function getCheckoutAttribution(): Promise<CheckoutAttributionMetadata> {
   if (typeof window === 'undefined') return {}
 
+  const storedAttribution = readStoredAttribution()
   const fromUrl = readAttributionFromUrl(window.location.search)
   const generatedClickId = await getGeneratedClickId()
-  const storedClickId = readStoredImpactClickId()
-
-  const gaIdentity = getGaIdentity()
-  const impactClickId =
-    generatedClickId ?? getImpactClickId(fromUrl) ?? storedClickId
-
-  if (impactClickId && impactClickId !== storedClickId) {
-    persistImpactClickId(impactClickId)
+  const attribution: Partial<Record<AttributionQueryKey, string>> = {
+    ...storedAttribution,
+    ...fromUrl
   }
 
+  if (generatedClickId) {
+    attribution.im_ref = generatedClickId
+  }
+
+  if (hasAttributionChanges(storedAttribution, attribution)) {
+    persistAttribution(attribution)
+  }
+
+  const gaIdentity = getGaIdentity()
+
   return {
-    ...fromUrl,
-    ...(impactClickId
-      ? {
-          im_ref: impactClickId,
-          impact_click_id: impactClickId
-        }
-      : {}),
+    ...attribution,
     ga_client_id: gaIdentity?.client_id,
     ga_session_id: gaIdentity?.session_id,
     ga_session_number: gaIdentity?.session_number
