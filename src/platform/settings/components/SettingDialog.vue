@@ -1,59 +1,59 @@
 <template>
-  <BaseModalLayout content-title="" data-testid="settings-dialog">
+  <BaseModalLayout
+    content-title=""
+    data-testid="settings-dialog"
+    class="settings-dialog"
+  >
+    <template #leftPanelHeaderTitle>
+      <WorkspaceProfilePic
+        v-if="teamWorkspacesEnabled"
+        class="size-6 text-xs"
+        :workspace-name="workspaceName"
+      />
+      <i v-else class="pi pi-cog" />
+      <span class="flex-auto select-none text-nowrap text-neutral text-base">
+        {{ teamWorkspacesEnabled ? workspaceName : $t('g.settings') }}
+      </span>
+      <Tag
+        v-if="isStaging"
+        value="staging"
+        severity="warn"
+        class="ml-2 text-xs"
+      />
+    </template>
+
     <template #leftPanel>
-      <div class="flex h-full w-full flex-col bg-modal-panel-background">
-        <PanelHeader>
-          <template #icon>
-            <WorkspaceProfilePic
-              v-if="teamWorkspacesEnabled"
-              class="size-6 text-xs"
-              :workspace-name="workspaceName"
-            />
-            <i v-else class="pi pi-cog" />
-          </template>
-          <span class="text-neutral text-base">
-            {{ teamWorkspacesEnabled ? workspaceName : $t('g.settings') }}
-          </span>
-          <Tag
-            v-if="isStaging"
-            value="staging"
-            severity="warn"
-            class="ml-2 text-xs"
-          />
-        </PanelHeader>
-
-        <div class="px-3">
-          <SearchBox
-            v-model:model-value="searchQuery"
-            size="md"
-            :placeholder="$t('g.searchSettings') + '...'"
-            :debounce-time="128"
-            @search="handleSearch"
-          />
-        </div>
-
-        <nav
-          class="scrollbar-hide flex flex-1 flex-col gap-1 overflow-y-auto px-3 py-4"
-        >
-          <div
-            v-for="(group, index) in navGroups"
-            :key="index"
-            class="flex flex-col gap-2"
-          >
-            <NavTitle :title="group.title" />
-            <NavItem
-              v-for="item in group.items"
-              :key="item.id"
-              :icon="item.icon"
-              :badge="item.badge"
-              :active="activeCategoryKey === item.id"
-              @click="activeCategoryKey = item.id"
-            >
-              {{ item.label }}
-            </NavItem>
-          </div>
-        </nav>
+      <div class="px-3">
+        <SearchBox
+          v-model:model-value="searchQuery"
+          size="md"
+          :placeholder="$t('g.searchSettings') + '...'"
+          :debounce-time="128"
+          @search="handleSearch"
+        />
       </div>
+
+      <nav
+        class="scrollbar-hide flex flex-1 flex-col gap-1 overflow-y-auto px-3 py-4"
+      >
+        <div
+          v-for="(group, index) in navGroups"
+          :key="index"
+          class="flex flex-col gap-2"
+        >
+          <NavTitle :title="group.title" />
+          <NavItem
+            v-for="item in group.items"
+            :key="item.id"
+            :icon="item.icon"
+            :badge="item.badge"
+            :active="activeCategoryKey === item.id"
+            @click="activeCategoryKey = item.id"
+          >
+            {{ item.label }}
+          </NavItem>
+        </div>
+      </nav>
     </template>
 
     <template #header />
@@ -93,7 +93,6 @@ import CurrentUserMessage from '@/components/dialog/content/setting/CurrentUserM
 import BaseModalLayout from '@/components/widget/layout/BaseModalLayout.vue'
 import NavItem from '@/components/widget/nav/NavItem.vue'
 import NavTitle from '@/components/widget/nav/NavTitle.vue'
-import PanelHeader from '@/components/widget/panel/PanelHeader.vue'
 import { useFirebaseAuthActions } from '@/composables/auth/useFirebaseAuthActions'
 import { isStaging } from '@/config/staging'
 import ColorPaletteMessage from '@/platform/settings/components/ColorPaletteMessage.vue'
@@ -193,3 +192,10 @@ watch(activeCategoryKey, (newKey, oldKey) => {
   }
 })
 </script>
+
+<style>
+.settings-dialog.base-widget-layout {
+  max-width: 1400px;
+  aspect-ratio: auto !important;
+}
+</style>
