@@ -7,6 +7,7 @@
     :asset-kind="assetKind"
     :allow-upload="allowUpload"
     :upload-folder="uploadFolder"
+    :upload-subfolder="uploadSubfolder"
     :is-asset-mode="isAssetMode"
     :default-layout-mode="defaultLayoutMode"
   />
@@ -58,13 +59,15 @@ const specDescriptor = computed<{
   kind: AssetKind
   allowUpload: boolean
   folder: ResultItemType | undefined
+  subfolder: string | undefined
 }>(() => {
   const spec = comboSpec.value
   if (!spec) {
     return {
       kind: 'unknown',
       allowUpload: false,
-      folder: undefined
+      folder: undefined,
+      subfolder: undefined
     }
   }
 
@@ -73,7 +76,9 @@ const specDescriptor = computed<{
     animated_image_upload,
     video_upload,
     image_folder,
-    audio_upload
+    audio_upload,
+    mesh_upload,
+    upload_subfolder
   } = spec
 
   let kind: AssetKind = 'unknown'
@@ -83,18 +88,26 @@ const specDescriptor = computed<{
     kind = 'image'
   } else if (audio_upload) {
     kind = 'audio'
+  } else if (mesh_upload) {
+    kind = 'mesh'
   }
+
   // TODO: add support for models (checkpoints, VAE, LoRAs, etc.) -- get widgetType from spec
 
   const allowUpload =
     image_upload === true ||
     animated_image_upload === true ||
     video_upload === true ||
-    audio_upload === true
+    audio_upload === true ||
+    mesh_upload === true
+
+  const folder = mesh_upload ? 'input' : image_folder
+
   return {
     kind,
     allowUpload,
-    folder: image_folder
+    folder,
+    subfolder: upload_subfolder
   }
 })
 
@@ -120,6 +133,7 @@ const allowUpload = computed(() => specDescriptor.value.allowUpload)
 const uploadFolder = computed<ResultItemType>(() => {
   return specDescriptor.value.folder ?? 'input'
 })
+const uploadSubfolder = computed(() => specDescriptor.value.subfolder)
 const defaultLayoutMode = computed<LayoutMode>(() => {
   return isAssetMode.value ? 'list' : 'grid'
 })
