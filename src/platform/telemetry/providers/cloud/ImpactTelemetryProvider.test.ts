@@ -1,19 +1,45 @@
 import { createHash } from 'node:crypto'
-import { ref } from 'vue'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-const { mockCaptureCheckoutAttributionFromSearch, mockUseCurrentUser } =
-  vi.hoisted(() => ({
-    mockCaptureCheckoutAttributionFromSearch: vi.fn(),
-    mockUseCurrentUser: vi.fn()
-  }))
+type MockApiKeyUser = {
+  id: string
+  email?: string
+} | null
+
+type MockFirebaseUser = {
+  uid: string
+  email?: string | null
+} | null
+
+const {
+  mockCaptureCheckoutAttributionFromSearch,
+  mockUseApiKeyAuthStore,
+  mockUseFirebaseAuthStore,
+  mockApiKeyAuthStore,
+  mockFirebaseAuthStore
+} = vi.hoisted(() => ({
+  mockCaptureCheckoutAttributionFromSearch: vi.fn(),
+  mockUseApiKeyAuthStore: vi.fn(),
+  mockUseFirebaseAuthStore: vi.fn(),
+  mockApiKeyAuthStore: {
+    isAuthenticated: false,
+    currentUser: null as MockApiKeyUser
+  },
+  mockFirebaseAuthStore: {
+    currentUser: null as MockFirebaseUser
+  }
+}))
 
 vi.mock('@/platform/telemetry/utils/checkoutAttribution', () => ({
   captureCheckoutAttributionFromSearch: mockCaptureCheckoutAttributionFromSearch
 }))
 
-vi.mock('@/composables/auth/useCurrentUser', () => ({
-  useCurrentUser: mockUseCurrentUser
+vi.mock('@/stores/apiKeyAuthStore', () => ({
+  useApiKeyAuthStore: mockUseApiKeyAuthStore
+}))
+
+vi.mock('@/stores/firebaseAuthStore', () => ({
+  useFirebaseAuthStore: mockUseFirebaseAuthStore
 }))
 
 import { ImpactTelemetryProvider } from './ImpactTelemetryProvider'
@@ -37,9 +63,15 @@ function toUint8Array(data: BufferSource): Uint8Array {
 describe('ImpactTelemetryProvider', () => {
   beforeEach(() => {
     mockCaptureCheckoutAttributionFromSearch.mockReset()
-    mockUseCurrentUser.mockReset()
+    mockUseApiKeyAuthStore.mockReset()
+    mockUseFirebaseAuthStore.mockReset()
+    mockApiKeyAuthStore.isAuthenticated = false
+    mockApiKeyAuthStore.currentUser = null
+    mockFirebaseAuthStore.currentUser = null
     vi.restoreAllMocks()
     vi.unstubAllGlobals()
+    mockUseApiKeyAuthStore.mockReturnValue(mockApiKeyAuthStore)
+    mockUseFirebaseAuthStore.mockReturnValue(mockFirebaseAuthStore)
 
     const queueFn: NonNullable<Window['ire']> = (...args: unknown[]) => {
       ;(queueFn.a ??= []).push(args)
@@ -61,10 +93,10 @@ describe('ImpactTelemetryProvider', () => {
   })
 
   it('captures attribution and invokes identify with hashed email', async () => {
-    mockUseCurrentUser.mockReturnValue({
-      resolvedUserInfo: ref({ id: 'user-123' }),
-      userEmail: ref(' User@Example.com ')
-    })
+    mockFirebaseAuthStore.currentUser = {
+      uid: 'user-123',
+      email: ' User@Example.com '
+    }
     vi.stubGlobal('crypto', {
       subtle: {
         digest: vi.fn(
@@ -97,7 +129,7 @@ describe('ImpactTelemetryProvider', () => {
   })
 
   it('falls back to current URL search and empty identify values when user is unresolved', async () => {
-    mockUseCurrentUser.mockImplementation(() => {
+    mockUseApiKeyAuthStore.mockImplementation(() => {
       throw new Error('No active pinia')
     })
     window.history.pushState({}, '', '/?im_ref=fallback-123')
@@ -121,10 +153,10 @@ describe('ImpactTelemetryProvider', () => {
   })
 
   it('invokes identify on each page view even with identical identity payloads', async () => {
-    mockUseCurrentUser.mockReturnValue({
-      resolvedUserInfo: ref({ id: 'user-123' }),
-      userEmail: ref('user@example.com')
-    })
+    mockFirebaseAuthStore.currentUser = {
+      uid: 'user-123',
+      email: 'user@example.com'
+    }
     vi.stubGlobal('crypto', {
       subtle: {
         digest: vi.fn(async () => new Uint8Array([16, 32, 48]).buffer)
@@ -149,5 +181,80 @@ describe('ImpactTelemetryProvider', () => {
     expect(window.ire?.a?.[1]?.[1]).toMatchObject({
       customerId: 'user-123'
     })
+  })
+
+  it('prefers firebase identity when both firebase and API key identity are available', async () => {
+    mockApiKeyAuthStore.isAuthenticated = true
+    mockApiKeyAuthStore.currentUser = {
+      id: 'api-key-user-123',
+      email: 'apikey@example.com'
+    }
+    mockFirebaseAuthStore.currentUser = {
+      uid: 'firebase-user-123',
+      email: 'firebase@example.com'
+    }
+    vi.stubGlobal('crypto', {
+      subtle: {
+        digest: vi.fn(
+          async (_algorithm: AlgorithmIdentifier, data: BufferSource) => {
+            const digest = createHash('sha1')
+              .update(toUint8Array(data))
+              .digest()
+            return Uint8Array.from(digest).buffer
+          }
+        )
+      }
+    })
+
+    const provider = new ImpactTelemetryProvider()
+    provider.trackPageView('home', {
+      path: 'https://cloud.comfy.org/?im_ref=impact-123'
+    })
+
+    await flushAsyncWork()
+
+    expect(window.ire?.a?.[0]).toEqual([
+      'identify',
+      {
+        customerId: 'firebase-user-123',
+        customerEmail: '2a2f2883bb1c5dd4ec5d18d95630834744609a7e'
+      }
+    ])
+  })
+
+  it('falls back to API key identity when firebase user is unavailable', async () => {
+    mockApiKeyAuthStore.isAuthenticated = true
+    mockApiKeyAuthStore.currentUser = {
+      id: 'api-key-user-123',
+      email: 'apikey@example.com'
+    }
+    mockFirebaseAuthStore.currentUser = null
+    vi.stubGlobal('crypto', {
+      subtle: {
+        digest: vi.fn(
+          async (_algorithm: AlgorithmIdentifier, data: BufferSource) => {
+            const digest = createHash('sha1')
+              .update(toUint8Array(data))
+              .digest()
+            return Uint8Array.from(digest).buffer
+          }
+        )
+      }
+    })
+
+    const provider = new ImpactTelemetryProvider()
+    provider.trackPageView('home', {
+      path: 'https://cloud.comfy.org/?im_ref=impact-123'
+    })
+
+    await flushAsyncWork()
+
+    expect(window.ire?.a?.[0]).toEqual([
+      'identify',
+      {
+        customerId: 'api-key-user-123',
+        customerEmail: '76ce7ed8519b3ab66d7520bbc3c4efcdff657028'
+      }
+    ])
   })
 })

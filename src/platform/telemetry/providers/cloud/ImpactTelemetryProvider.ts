@@ -1,5 +1,6 @@
 import { captureCheckoutAttributionFromSearch } from '@/platform/telemetry/utils/checkoutAttribution'
-import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
+import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
 
 import type { PageViewMetadata, TelemetryProvider } from '../../types'
 
@@ -14,6 +15,10 @@ const EMPTY_CUSTOMER_VALUE = ''
  */
 export class ImpactTelemetryProvider implements TelemetryProvider {
   private initialized = false
+  private stores: {
+    apiKeyAuthStore: ReturnType<typeof useApiKeyAuthStore>
+    firebaseAuthStore: ReturnType<typeof useFirebaseAuthStore>
+  } | null = null
 
   constructor() {
     this.initialize()
@@ -96,18 +101,55 @@ export class ImpactTelemetryProvider implements TelemetryProvider {
     customerId: string
     customerEmail: string
   } {
-    try {
-      const { resolvedUserInfo, userEmail } = useCurrentUser()
-
-      return {
-        customerId: resolvedUserInfo.value?.id ?? EMPTY_CUSTOMER_VALUE,
-        customerEmail: userEmail.value ?? EMPTY_CUSTOMER_VALUE
-      }
-    } catch {
+    const stores = this.resolveAuthStores()
+    if (!stores) {
       return {
         customerId: EMPTY_CUSTOMER_VALUE,
         customerEmail: EMPTY_CUSTOMER_VALUE
       }
+    }
+
+    if (stores.firebaseAuthStore.currentUser) {
+      return {
+        customerId:
+          stores.firebaseAuthStore.currentUser.uid ?? EMPTY_CUSTOMER_VALUE,
+        customerEmail:
+          stores.firebaseAuthStore.currentUser.email ?? EMPTY_CUSTOMER_VALUE
+      }
+    }
+
+    if (stores.apiKeyAuthStore.isAuthenticated) {
+      return {
+        customerId:
+          stores.apiKeyAuthStore.currentUser?.id ?? EMPTY_CUSTOMER_VALUE,
+        customerEmail:
+          stores.apiKeyAuthStore.currentUser?.email ?? EMPTY_CUSTOMER_VALUE
+      }
+    }
+
+    return {
+      customerId: EMPTY_CUSTOMER_VALUE,
+      customerEmail: EMPTY_CUSTOMER_VALUE
+    }
+  }
+
+  private resolveAuthStores(): {
+    apiKeyAuthStore: ReturnType<typeof useApiKeyAuthStore>
+    firebaseAuthStore: ReturnType<typeof useFirebaseAuthStore>
+  } | null {
+    if (this.stores) {
+      return this.stores
+    }
+
+    try {
+      const stores = {
+        apiKeyAuthStore: useApiKeyAuthStore(),
+        firebaseAuthStore: useFirebaseAuthStore()
+      }
+      this.stores = stores
+      return stores
+    } catch {
+      return null
     }
   }
 
