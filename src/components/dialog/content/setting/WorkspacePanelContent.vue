@@ -75,12 +75,15 @@
       </template>
     </div>
 
-    <div v-if="activeTab === 'plan'" class="pt-4">
-      <SubscriptionPanelContentWorkspace />
-    </div>
-    <div v-else-if="activeTab === 'members'" class="pt-4">
-      <MembersPanelContent :key="workspaceRole" />
-    </div>
+    <SubscriptionPanelContentWorkspace
+      v-if="activeTab === 'plan'"
+      class="mt-4"
+    />
+    <MembersPanelContent
+      v-else-if="activeTab === 'members'"
+      :key="workspaceRole"
+      class="mt-4"
+    />
   </div>
 </template>
 

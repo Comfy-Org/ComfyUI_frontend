@@ -2,7 +2,6 @@ import { expect } from '@playwright/test'
 
 import type { Settings } from '../../src/schemas/apiSchema'
 import { comfyPageFixture as test } from '../fixtures/ComfyPage'
-import { TestIds } from '../fixtures/selectors'
 
 /**
  * Type helper for test settings with arbitrary IDs.
@@ -50,188 +49,143 @@ test.describe('Settings Search functionality', { tag: '@settings' }, () => {
   })
 
   test('can open settings dialog and use search box', async ({ comfyPage }) => {
-    await comfyPage.page.keyboard.press('Control+,')
-    const settingsDialog = comfyPage.page.getByTestId(TestIds.dialogs.settings)
-    await expect(settingsDialog).toBeVisible()
+    const dialog = comfyPage.settingDialog
+    await dialog.open()
 
-    const searchBox = settingsDialog.locator('input[placeholder*="Search"]')
-    await expect(searchBox).toBeVisible()
-
-    await expect(searchBox).toHaveAttribute(
+    await expect(dialog.searchBox).toHaveAttribute(
       'placeholder',
       expect.stringContaining('Search')
     )
   })
 
   test('search box is functional and accepts input', async ({ comfyPage }) => {
-    await comfyPage.page.keyboard.press('Control+,')
-    const settingsDialog = comfyPage.page.getByTestId(TestIds.dialogs.settings)
-    await expect(settingsDialog).toBeVisible()
+    const dialog = comfyPage.settingDialog
+    await dialog.open()
 
-    const searchBox = settingsDialog.locator('input[placeholder*="Search"]')
-    await searchBox.fill('Comfy')
-
-    await expect(searchBox).toHaveValue('Comfy')
+    await dialog.searchBox.fill('Comfy')
+    await expect(dialog.searchBox).toHaveValue('Comfy')
   })
 
   test('search box clears properly', async ({ comfyPage }) => {
-    await comfyPage.page.keyboard.press('Control+,')
-    const settingsDialog = comfyPage.page.getByTestId(TestIds.dialogs.settings)
-    await expect(settingsDialog).toBeVisible()
+    const dialog = comfyPage.settingDialog
+    await dialog.open()
 
-    const searchBox = settingsDialog.locator('input[placeholder*="Search"]')
-    await searchBox.fill('test')
-    await expect(searchBox).toHaveValue('test')
+    await dialog.searchBox.fill('test')
+    await expect(dialog.searchBox).toHaveValue('test')
 
-    await searchBox.clear()
-    await expect(searchBox).toHaveValue('')
+    await dialog.searchBox.clear()
+    await expect(dialog.searchBox).toHaveValue('')
   })
 
   test('settings categories are visible in sidebar', async ({ comfyPage }) => {
-    await comfyPage.page.keyboard.press('Control+,')
-    const settingsDialog = comfyPage.page.getByTestId(TestIds.dialogs.settings)
-    await expect(settingsDialog).toBeVisible()
+    const dialog = comfyPage.settingDialog
+    await dialog.open()
 
-    const categories = settingsDialog.locator('nav [role="button"]')
-    expect(await categories.count()).toBeGreaterThan(0)
-
-    await expect(categories.first()).toBeVisible()
+    expect(await dialog.categories.count()).toBeGreaterThan(0)
   })
 
   test('can select different categories in sidebar', async ({ comfyPage }) => {
-    await comfyPage.page.keyboard.press('Control+,')
-    const settingsDialog = comfyPage.page.getByTestId(TestIds.dialogs.settings)
-    await expect(settingsDialog).toBeVisible()
+    const dialog = comfyPage.settingDialog
+    await dialog.open()
 
-    const categories = settingsDialog.locator('nav [role="button"]')
-    const categoryCount = await categories.count()
+    const categoryCount = await dialog.categories.count()
 
     if (categoryCount > 1) {
-      await categories.nth(1).click()
+      await dialog.categories.nth(1).click()
 
-      await expect(categories.nth(1)).toHaveClass(
+      await expect(dialog.categories.nth(1)).toHaveClass(
         /bg-interface-menu-component-surface-selected/
       )
     }
   })
 
-  test('settings content area is visible', async ({ comfyPage }) => {
-    await comfyPage.page.keyboard.press('Control+,')
-    const settingsDialog = comfyPage.page.getByTestId(TestIds.dialogs.settings)
-    await expect(settingsDialog).toBeVisible()
-
-    const contentArea = settingsDialog.locator('main')
-    await expect(contentArea).toBeVisible()
-  })
-
   test('search functionality affects UI state', async ({ comfyPage }) => {
-    await comfyPage.page.keyboard.press('Control+,')
-    const settingsDialog = comfyPage.page.getByTestId(TestIds.dialogs.settings)
-    await expect(settingsDialog).toBeVisible()
+    const dialog = comfyPage.settingDialog
+    await dialog.open()
 
-    const searchBox = settingsDialog.locator('input[placeholder*="Search"]')
-    await searchBox.fill('graph')
-
-    await expect(searchBox).toHaveValue('graph')
+    await dialog.searchBox.fill('graph')
+    await expect(dialog.searchBox).toHaveValue('graph')
   })
 
   test('settings dialog can be closed', async ({ comfyPage }) => {
-    await comfyPage.page.keyboard.press('Control+,')
-    const settingsDialog = comfyPage.page.getByTestId(TestIds.dialogs.settings)
-    await expect(settingsDialog).toBeVisible()
+    const dialog = comfyPage.settingDialog
+    await dialog.open()
 
     await comfyPage.page.keyboard.press('Escape')
-
-    await expect(settingsDialog).not.toBeVisible()
+    await expect(dialog.root).not.toBeVisible()
   })
 
   test('search box has proper debouncing behavior', async ({ comfyPage }) => {
-    await comfyPage.page.keyboard.press('Control+,')
-    const settingsDialog = comfyPage.page.getByTestId(TestIds.dialogs.settings)
-    await expect(settingsDialog).toBeVisible()
+    const dialog = comfyPage.settingDialog
+    await dialog.open()
 
-    const searchBox = settingsDialog.locator('input[placeholder*="Search"]')
-    await searchBox.fill('a')
-    await searchBox.fill('ab')
-    await searchBox.fill('abc')
-    await searchBox.fill('abcd')
+    await dialog.searchBox.fill('a')
+    await dialog.searchBox.fill('ab')
+    await dialog.searchBox.fill('abc')
+    await dialog.searchBox.fill('abcd')
 
-    await expect(searchBox).toHaveValue('abcd')
+    await expect(dialog.searchBox).toHaveValue('abcd')
   })
 
   test('search excludes hidden settings from results', async ({
     comfyPage
   }) => {
-    await comfyPage.page.keyboard.press('Control+,')
-    const settingsDialog = comfyPage.page.getByTestId(TestIds.dialogs.settings)
-    await expect(settingsDialog).toBeVisible()
+    const dialog = comfyPage.settingDialog
+    await dialog.open()
 
-    const searchBox = settingsDialog.locator('input[placeholder*="Search"]')
-    await searchBox.fill('Test')
+    await dialog.searchBox.fill('Test')
 
-    const contentArea = settingsDialog.locator('main')
-
-    await expect(contentArea).toContainText('Test Visible Setting')
-    await expect(contentArea).not.toContainText('Test Hidden Setting')
+    await expect(dialog.contentArea).toContainText('Test Visible Setting')
+    await expect(dialog.contentArea).not.toContainText('Test Hidden Setting')
   })
 
   test('search excludes deprecated settings from results', async ({
     comfyPage
   }) => {
-    await comfyPage.page.keyboard.press('Control+,')
-    const settingsDialog = comfyPage.page.getByTestId(TestIds.dialogs.settings)
-    await expect(settingsDialog).toBeVisible()
+    const dialog = comfyPage.settingDialog
+    await dialog.open()
 
-    const searchBox = settingsDialog.locator('input[placeholder*="Search"]')
-    await searchBox.fill('Test')
+    await dialog.searchBox.fill('Test')
 
-    const contentArea = settingsDialog.locator('main')
-
-    await expect(contentArea).toContainText('Test Visible Setting')
-    await expect(contentArea).not.toContainText('Test Deprecated Setting')
+    await expect(dialog.contentArea).toContainText('Test Visible Setting')
+    await expect(dialog.contentArea).not.toContainText(
+      'Test Deprecated Setting'
+    )
   })
 
   test('search shows visible settings but excludes hidden and deprecated', async ({
     comfyPage
   }) => {
-    await comfyPage.page.keyboard.press('Control+,')
-    const settingsDialog = comfyPage.page.getByTestId(TestIds.dialogs.settings)
-    await expect(settingsDialog).toBeVisible()
+    const dialog = comfyPage.settingDialog
+    await dialog.open()
 
-    const searchBox = settingsDialog.locator('input[placeholder*="Search"]')
-    await searchBox.fill('Test')
+    await dialog.searchBox.fill('Test')
 
-    const contentArea = settingsDialog.locator('main')
-
-    await expect(contentArea).toContainText('Test Visible Setting')
-
-    await expect(contentArea).not.toContainText('Test Hidden Setting')
-    await expect(contentArea).not.toContainText('Test Deprecated Setting')
+    await expect(dialog.contentArea).toContainText('Test Visible Setting')
+    await expect(dialog.contentArea).not.toContainText('Test Hidden Setting')
+    await expect(dialog.contentArea).not.toContainText(
+      'Test Deprecated Setting'
+    )
   })
 
   test('search by setting name excludes hidden and deprecated', async ({
     comfyPage
   }) => {
-    await comfyPage.page.keyboard.press('Control+,')
-    const settingsDialog = comfyPage.page.getByTestId(TestIds.dialogs.settings)
-    await expect(settingsDialog).toBeVisible()
+    const dialog = comfyPage.settingDialog
+    await dialog.open()
 
-    const searchBox = settingsDialog.locator('input[placeholder*="Search"]')
-    const contentArea = settingsDialog.locator('main')
+    await dialog.searchBox.clear()
+    await dialog.searchBox.fill('Hidden')
+    await expect(dialog.contentArea).not.toContainText('Test Hidden Setting')
 
-    await searchBox.clear()
-    await searchBox.fill('Hidden')
+    await dialog.searchBox.clear()
+    await dialog.searchBox.fill('Deprecated')
+    await expect(dialog.contentArea).not.toContainText(
+      'Test Deprecated Setting'
+    )
 
-    await expect(contentArea).not.toContainText('Test Hidden Setting')
-
-    await searchBox.clear()
-    await searchBox.fill('Deprecated')
-
-    await expect(contentArea).not.toContainText('Test Deprecated Setting')
-
-    await searchBox.clear()
-    await searchBox.fill('Visible')
-
-    await expect(contentArea).toContainText('Test Visible Setting')
+    await dialog.searchBox.clear()
+    await dialog.searchBox.fill('Visible')
+    await expect(dialog.contentArea).toContainText('Test Visible Setting')
   })
 })

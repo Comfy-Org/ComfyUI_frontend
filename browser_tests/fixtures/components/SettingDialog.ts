@@ -36,9 +36,21 @@ export class SettingDialog extends BaseDialog {
     await settingInputDiv.locator('input').click()
   }
 
+  get searchBox() {
+    return this.root.getByPlaceholder(/Search/)
+  }
+
+  get categories() {
+    return this.root.locator('nav').getByRole('button')
+  }
+
+  get contentArea() {
+    return this.root.getByRole('main')
+  }
+
   async goToAboutPanel() {
-    const aboutButton = this.root.locator('nav [role="button"]', {
-      hasText: 'About'
+    const aboutButton = this.root.locator('nav').getByRole('button', {
+      name: 'About'
     })
     await aboutButton.click()
     await this.page.waitForSelector('.about-container')

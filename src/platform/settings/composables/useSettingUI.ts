@@ -168,7 +168,8 @@ export function useSettingUI(defaultPanel?: SettingPanelType) {
       children: []
     },
     component: defineAsyncComponent(
-      () => import('@/components/dialog/content/setting/WorkspacePanel.vue')
+      () =>
+        import('@/components/dialog/content/setting/WorkspacePanelContent.vue')
     )
   }
 
