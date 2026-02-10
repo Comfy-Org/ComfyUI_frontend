@@ -1148,15 +1148,6 @@ export class ComfyApp {
         return
       }
       for (let n of nodes) {
-        // TODO: Remove these patches after the affected nodes are updated in the backend
-        // Patch T2IAdapterLoader to ControlNetLoader since they are the same node now
-        if (n.type == 'T2IAdapterLoader') n.type = 'ControlNetLoader'
-        if (n.type == 'ConditioningAverage ') n.type = 'ConditioningAverage' //typo fix
-        if (n.type == 'SDV_img2vid_Conditioning')
-          n.type = 'SVD_img2vid_Conditioning' //typo fix
-        if (n.type == 'Load3DAnimation') n.type = 'Load3D' // Animation node merged into Load3D
-        if (n.type == 'Preview3DAnimation') n.type = 'Preview3D' // Animation node merged into Load3D
-
         // Find missing node types
         if (!(n.type in LiteGraph.registered_node_types)) {
           const replacement = nodeReplacementStore.getReplacementFor(n.type)
