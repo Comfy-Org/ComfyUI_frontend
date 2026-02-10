@@ -2,6 +2,7 @@ import { tryOnScopeDispose, useEventListener } from '@vueuse/core'
 import type { Fn } from '@vueuse/core'
 
 import { useSharedCanvasPositionConversion } from '@/composables/element/useCanvasPositionConversion'
+import { AutoPanController } from '@/renderer/core/canvas/useAutoPan'
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import type { LGraphNode, NodeId } from '@/lib/litegraph/src/LGraphNode'
 import { LLink } from '@/lib/litegraph/src/LLink'
@@ -124,6 +125,7 @@ export function useSlotLinkInteraction({
   const conversion = useSharedCanvasPositionConversion()
   const pointerSession = createPointerSession()
   let activeAdapter: LinkConnectorAdapter | null = null
+  let autoPan: AutoPanController | null = null
 
   // Per-drag drag-state context (non-reactive caches + RAF batching)
   const dragContext = createSlotLinkDragContext()
@@ -283,6 +285,8 @@ export function useSlotLinkInteraction({
   }
 
   const cleanupInteraction = () => {
+    autoPan?.stop()
+    autoPan = null
     if (state.pointerId != null) {
       clearCanvasPointerHistory(state.pointerId)
     }
@@ -410,6 +414,8 @@ export function useSlotLinkInteraction({
   const handlePointerMove = (event: PointerEvent) => {
     if (!pointerSession.matches(event)) return
     event.stopPropagation()
+
+    autoPan?.updatePointer(event.clientX, event.clientY)
 
     dragContext.pendingPointerMove = {
       clientX: event.clientX,
@@ -737,6 +743,29 @@ export function useSlotLinkInteraction({
           : activeAdapter.isOutputValidDrop(slotLayout.nodeId, idx)
       setCompatibleForKey(key, ok)
     }
+    autoPan = new AutoPanController({
+      canvas: canvas.canvas,
+      ds: canvas.ds,
+      onPan: () => {
+        const [canvasX, canvasY] = conversion.clientPosToCanvasPos([
+          state.pointer.client.x,
+          state.pointer.client.y
+        ])
+        updatePointerPosition(
+          state.pointer.client.x,
+          state.pointer.client.y,
+          canvasX,
+          canvasY
+        )
+        if (activeAdapter) {
+          activeAdapter.linkConnector.state.snapLinksPos = [canvasX, canvasY]
+        }
+        canvas.setDirty(true, true)
+      }
+    })
+    autoPan.updatePointer(event.clientX, event.clientY)
+    autoPan.start()
+
     canvas.setDirty(true, true)
   }
 
