@@ -243,22 +243,24 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
 
     this.inputs.length = 0
     this.inputs.push(
-      ...this.subgraph.inputNode.slots.map(
-        (slot) =>
-          new NodeInputSlot(
-            {
-              name: slot.name,
-              localized_name: slot.localized_name,
-              label: slot.label,
-              shape: this.subgraph.links[slot.linkIds[0]]?.resolve(
-                this.subgraph
-              )?.input?.shape,
-              type: slot.type,
-              link: null
-            },
-            this
-          )
-      )
+      ...this.subgraph.inputNode.slots.map((slot) => {
+        const shapes = slot.linkIds.map(
+          (id) => this.subgraph.links[id]?.resolve(this.subgraph)?.input?.shape
+        )
+        return new NodeInputSlot(
+          {
+            name: slot.name,
+            localized_name: slot.localized_name,
+            label: slot.label,
+            shape: shapes.every((shape) => shape === shapes[0])
+              ? shapes[0]
+              : undefined,
+            type: slot.type,
+            link: null
+          },
+          this
+        )
+      })
     )
 
     this.outputs.length = 0
