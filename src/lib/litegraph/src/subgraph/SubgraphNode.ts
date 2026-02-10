@@ -764,6 +764,8 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
       'input-connected',
       (e) => {
         this._invalidatePromotedViewsCache()
+        input.shape = e.detail.input.shape
+        if (!e.detail.widget || !e.detail.node) return
 
         // `SubgraphInput.connect()` dispatches before appending to `linkIds`,
         // so resolve by current links would miss this new connection.
@@ -900,6 +902,9 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
               name: slot.name,
               localized_name: slot.localized_name,
               label: slot.label,
+              shape: this.subgraph.links[slot.linkIds[0]]?.resolve(
+                this.subgraph
+              )?.input?.shape,
               type: slot.type,
               link: null
             },
