@@ -147,6 +147,7 @@ export class LGraph
 
   static STATUS_STOPPED = 1
   static STATUS_RUNNING = 2
+  static deduplicateSubgraphIds = false
 
   /** List of LGraph properties that are manually handled by {@link LGraph.configure}. */
   static readonly ConfigureProperties = new Set([
@@ -188,11 +189,19 @@ export class LGraph
   list_of_graphcanvas: LGraphCanvas[] | null
   status: number = LGraph.STATUS_STOPPED
 
-  state: LGraphState = {
+  private _state: LGraphState = {
     lastGroupId: 0,
     lastNodeId: 0,
     lastLinkId: 0,
     lastRerouteId: 0
+  }
+
+  get state(): LGraphState {
+    return this._state
+  }
+
+  set state(value: LGraphState) {
+    this._state = value
   }
 
   readonly events = new CustomEventTarget<LGraphEventMap>()
@@ -2309,15 +2318,19 @@ export class LGraph
       } else {
         // New schema - one version so far, no check required.
 
-        // State
+        // State - use max to prevent ID collisions across root and subgraphs
         if (data.state) {
           const { lastGroupId, lastLinkId, lastNodeId, lastRerouteId } =
             data.state
           const { state } = this
-          if (lastGroupId != null) state.lastGroupId = lastGroupId
-          if (lastLinkId != null) state.lastLinkId = lastLinkId
-          if (lastNodeId != null) state.lastNodeId = lastNodeId
-          if (lastRerouteId != null) state.lastRerouteId = lastRerouteId
+          if (lastGroupId != null)
+            state.lastGroupId = Math.max(state.lastGroupId, lastGroupId)
+          if (lastLinkId != null)
+            state.lastLinkId = Math.max(state.lastLinkId, lastLinkId)
+          if (lastNodeId != null)
+            state.lastNodeId = Math.max(state.lastNodeId, lastNodeId)
+          if (lastRerouteId != null)
+            state.lastRerouteId = Math.max(state.lastRerouteId, lastRerouteId)
         }
 
         // Links
@@ -2354,6 +2367,13 @@ export class LGraph
         for (const subgraph of subgraphs) this.createSubgraph(subgraph)
         for (const subgraph of subgraphs)
           this.subgraphs.get(subgraph.id)?.configure(subgraph)
+      }
+
+      if (this.isRootGraph && LGraph.deduplicateSubgraphIds) {
+        const reservedNodeIds = nodesData
+          ?.map((n) => n.id)
+          .filter((id): id is number => typeof id === 'number')
+        this.ensureGlobalIdUniqueness(reservedNodeIds)
       }
 
       let error = false
@@ -2448,6 +2468,50 @@ export class LGraph
     }
   }
 
+  /**
+   * Ensures all node IDs are globally unique across the root graph and all
+   * subgraphs. Reassigns any colliding IDs found in subgraphs, preserving
+   * root graph IDs as canonical. Updates link references (`origin_id`,
+   * `target_id`) within the affected graph to match the new node IDs.
+   */
+  ensureGlobalIdUniqueness(reservedNodeIds?: Iterable<number>): void {
+    const { state } = this
+
+    const allGraphs: LGraph[] = [this, ...this._subgraphs.values()]
+
+    const usedNodeIds = new Set<number>(reservedNodeIds)
+    for (const graph of allGraphs) {
+      const remappedIds = new Map<NodeId, NodeId>()
+
+      for (const node of graph._nodes) {
+        if (typeof node.id !== 'number') continue
+
+        if (usedNodeIds.has(node.id)) {
+          const oldId = node.id
+          while (usedNodeIds.has(++state.lastNodeId));
+          const newId = state.lastNodeId
+          delete graph._nodes_by_id[oldId]
+          node.id = newId
+          graph._nodes_by_id[newId] = node
+          usedNodeIds.add(newId)
+          remappedIds.set(oldId, newId)
+          console.warn(
+            `LiteGraph: duplicate node ID ${oldId} reassigned to ${newId} in graph ${graph.id}`
+          )
+        } else {
+          usedNodeIds.add(node.id as number)
+          if ((node.id as number) > state.lastNodeId)
+            state.lastNodeId = node.id as number
+        }
+      }
+
+      if (remappedIds.size > 0) {
+        patchLinkNodeIds(graph._links, remappedIds)
+        patchLinkNodeIds(graph.floatingLinksInternal, remappedIds)
+      }
+    }
+  }
+
   #canvas?: LGraphCanvas
   get primaryCanvas(): LGraphCanvas | undefined {
     return this.rootGraph.#canvas
@@ -2526,6 +2590,14 @@ export class Subgraph
   #rootGraph: LGraph
   override get rootGraph(): LGraph {
     return this.#rootGraph
+  }
+
+  override get state(): LGraphState {
+    return this.#rootGraph.state
+  }
+
+  override set state(_value: LGraphState) {
+    // No-op: subgraphs share the root graph's state.
   }
 
   constructor(rootGraph: LGraph, data: ExportedSubgraph) {
@@ -2780,5 +2852,18 @@ export class Subgraph
         : undefined,
       extra: this.extra
     }
+  }
+}
+
+function patchLinkNodeIds(
+  links: Map<LinkId, LLink>,
+  remappedIds: Map<NodeId, NodeId>
+): void {
+  for (const link of links.values()) {
+    const newOrigin = remappedIds.get(link.origin_id)
+    if (newOrigin !== undefined) link.origin_id = newOrigin
+
+    const newTarget = remappedIds.get(link.target_id)
+    if (newTarget !== undefined) link.target_id = newTarget
   }
 }

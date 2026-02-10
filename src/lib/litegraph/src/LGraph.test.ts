@@ -1,6 +1,13 @@
 import { describe, expect, it } from 'vitest'
 
-import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import type { Subgraph } from '@/lib/litegraph/src/litegraph'
+import {
+  LGraph,
+  LGraphNode,
+  LiteGraph,
+  LLink
+} from '@/lib/litegraph/src/litegraph'
+import { createTestSubgraphData } from './subgraph/__fixtures__/subgraphHelpers'
 
 import { test } from './__fixtures__/testExtensions'
 
@@ -221,5 +228,184 @@ describe('Legacy LGraph Compatibility Layer', () => {
 
   test('is correctly assigned to LiteGraph', ({ expect }) => {
     expect(LiteGraph.LGraph).toBe(LGraph)
+  })
+})
+
+describe('Shared LGraphState', () => {
+  function createSubgraphOnGraph(rootGraph: LGraph): Subgraph {
+    const data = createTestSubgraphData()
+    return rootGraph.createSubgraph(data)
+  }
+
+  it('subgraph state is the same object as rootGraph state', () => {
+    const rootGraph = new LGraph()
+    const subgraph = createSubgraphOnGraph(rootGraph)
+    expect(subgraph.state).toBe(rootGraph.state)
+  })
+
+  it('adding a node in a subgraph increments the root counter', () => {
+    const rootGraph = new LGraph()
+    const subgraph = createSubgraphOnGraph(rootGraph)
+
+    rootGraph.add(new DummyNode())
+    const rootNodeId = rootGraph.state.lastNodeId
+
+    subgraph.add(new DummyNode())
+    expect(rootGraph.state.lastNodeId).toBe(rootNodeId + 1)
+  })
+
+  it('node IDs never collide between root and subgraph', () => {
+    const rootGraph = new LGraph()
+    const subgraph = createSubgraphOnGraph(rootGraph)
+
+    const rootNode = new DummyNode()
+    rootGraph.add(rootNode)
+
+    const subNode = new DummyNode()
+    subgraph.add(subNode)
+
+    expect(rootNode.id).not.toBe(subNode.id)
+  })
+
+  it('configure merges state using max', () => {
+    const rootGraph = new LGraph()
+    rootGraph.state.lastNodeId = 10
+
+    const data = createTestSubgraphData()
+    data.state = {
+      lastNodeId: 5,
+      lastLinkId: 20,
+      lastGroupId: 0,
+      lastRerouteId: 0
+    }
+    const subgraph = rootGraph.createSubgraph(data)
+    subgraph.configure(data)
+
+    expect(rootGraph.state.lastNodeId).toBe(10)
+    expect(rootGraph.state.lastLinkId).toBe(20)
+  })
+})
+
+describe('ensureGlobalIdUniqueness', () => {
+  function createSubgraphOnGraph(rootGraph: LGraph): Subgraph {
+    const data = createTestSubgraphData()
+    return rootGraph.createSubgraph(data)
+  }
+
+  it('reassigns duplicate node IDs in subgraphs', () => {
+    const rootGraph = new LGraph()
+    const subgraph = createSubgraphOnGraph(rootGraph)
+
+    const rootNode = new DummyNode()
+    rootGraph.add(rootNode)
+
+    const subNode = new DummyNode()
+    subNode.id = rootNode.id
+    subgraph._nodes.push(subNode)
+    subgraph._nodes_by_id[subNode.id] = subNode
+
+    rootGraph.ensureGlobalIdUniqueness()
+
+    expect(subNode.id).not.toBe(rootNode.id)
+    expect(subgraph._nodes_by_id[subNode.id]).toBe(subNode)
+    expect(subgraph._nodes_by_id[rootNode.id as number]).toBeUndefined()
+  })
+
+  it('preserves root graph node IDs as canonical', () => {
+    const rootGraph = new LGraph()
+    const subgraph = createSubgraphOnGraph(rootGraph)
+
+    const rootNode = new DummyNode()
+    rootGraph.add(rootNode)
+    const originalRootId = rootNode.id
+
+    const subNode = new DummyNode()
+    subNode.id = rootNode.id
+    subgraph._nodes.push(subNode)
+    subgraph._nodes_by_id[subNode.id] = subNode
+
+    rootGraph.ensureGlobalIdUniqueness()
+
+    expect(rootNode.id).toBe(originalRootId)
+  })
+
+  it('updates lastNodeId to reflect reassigned IDs', () => {
+    const rootGraph = new LGraph()
+    const subgraph = createSubgraphOnGraph(rootGraph)
+
+    const rootNode = new DummyNode()
+    rootGraph.add(rootNode)
+
+    const subNode = new DummyNode()
+    subNode.id = rootNode.id
+    subgraph._nodes.push(subNode)
+    subgraph._nodes_by_id[subNode.id] = subNode
+
+    rootGraph.ensureGlobalIdUniqueness()
+
+    expect(rootGraph.state.lastNodeId).toBeGreaterThanOrEqual(
+      subNode.id as number
+    )
+  })
+
+  it('patches link origin_id and target_id after reassignment', () => {
+    const rootGraph = new LGraph()
+    const subgraph = createSubgraphOnGraph(rootGraph)
+
+    const rootNode = new DummyNode()
+    rootGraph.add(rootNode)
+
+    const subNodeA = new DummyNode()
+    subNodeA.id = rootNode.id
+    subgraph._nodes.push(subNodeA)
+    subgraph._nodes_by_id[subNodeA.id] = subNodeA
+
+    const subNodeB = new DummyNode()
+    subNodeB.id = 999
+    subgraph._nodes.push(subNodeB)
+    subgraph._nodes_by_id[subNodeB.id] = subNodeB
+
+    const link = new LLink(1, 'number', subNodeA.id, 0, subNodeB.id, 0)
+    subgraph._links.set(link.id, link)
+
+    rootGraph.ensureGlobalIdUniqueness()
+
+    expect(link.origin_id).toBe(subNodeA.id)
+    expect(link.target_id).toBe(subNodeB.id)
+    expect(link.origin_id).not.toBe(rootNode.id)
+  })
+
+  it('detects collisions with reserved (not-yet-created) node IDs', () => {
+    const rootGraph = new LGraph()
+    const subgraph = createSubgraphOnGraph(rootGraph)
+
+    const subNode = new DummyNode()
+    subNode.id = 42
+    subgraph._nodes.push(subNode)
+    subgraph._nodes_by_id[subNode.id] = subNode
+
+    rootGraph.ensureGlobalIdUniqueness([42])
+
+    expect(subNode.id).not.toBe(42)
+    expect(subgraph._nodes_by_id[subNode.id]).toBe(subNode)
+  })
+
+  it('is a no-op when there are no collisions', () => {
+    const rootGraph = new LGraph()
+    const subgraph = createSubgraphOnGraph(rootGraph)
+
+    const rootNode = new DummyNode()
+    rootGraph.add(rootNode)
+
+    const subNode = new DummyNode()
+    subgraph.add(subNode)
+
+    const rootId = rootNode.id
+    const subId = subNode.id
+
+    rootGraph.ensureGlobalIdUniqueness()
+
+    expect(rootNode.id).toBe(rootId)
+    expect(subNode.id).toBe(subId)
   })
 })
