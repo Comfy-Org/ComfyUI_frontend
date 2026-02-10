@@ -1211,6 +1211,6 @@ export const CORE_SETTINGS: SettingParams[] = [
     type: 'boolean',
     defaultValue: false,
     experimental: true,
-    versionAdded: '1.41.0'
+    versionAdded: '1.40.0'
   }
 ]
