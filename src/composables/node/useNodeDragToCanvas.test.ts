@@ -41,6 +41,8 @@ describe('useNodeDragToCanvas', () => {
   })
 
   afterEach(() => {
+    const { cleanupGlobalListeners } = useNodeDragToCanvas()
+    cleanupGlobalListeners()
     vi.restoreAllMocks()
   })
 
@@ -56,6 +58,22 @@ describe('useNodeDragToCanvas', () => {
       expect(isDragging.value).toBe(true)
       expect(draggedNode.value).toBe(mockNodeDef)
     })
+
+    it('should set dragMode to click by default', () => {
+      const { dragMode, startDrag } = useNodeDragToCanvas()
+
+      startDrag(mockNodeDef)
+
+      expect(dragMode.value).toBe('click')
+    })
+
+    it('should set dragMode to native when specified', () => {
+      const { dragMode, startDrag } = useNodeDragToCanvas()
+
+      startDrag(mockNodeDef, 'native')
+
+      expect(dragMode.value).toBe('native')
+    })
   })
 
   describe('cancelDrag', () => {
@@ -70,6 +88,17 @@ describe('useNodeDragToCanvas', () => {
 
       expect(isDragging.value).toBe(false)
       expect(draggedNode.value).toBeNull()
+    })
+
+    it('should reset dragMode to click', () => {
+      const { dragMode, startDrag, cancelDrag } = useNodeDragToCanvas()
+
+      startDrag(mockNodeDef, 'native')
+      expect(dragMode.value).toBe('native')
+
+      cancelDrag()
+
+      expect(dragMode.value).toBe('click')
     })
   })
 
@@ -202,6 +231,106 @@ describe('useNodeDragToCanvas', () => {
       document.dispatchEvent(keyEvent)
 
       expect(isDragging.value).toBe(true)
+    })
+
+    it('should not add node on pointerup when in native drag mode', () => {
+      mockCanvas.canvas.getBoundingClientRect.mockReturnValue({
+        left: 0,
+        right: 500,
+        top: 0,
+        bottom: 500
+      })
+      mockConvertEventToCanvasOffset.mockReturnValue([150, 150])
+
+      const { startDrag, setupGlobalListeners, isDragging } =
+        useNodeDragToCanvas()
+
+      setupGlobalListeners()
+      startDrag(mockNodeDef, 'native')
+
+      const pointerEvent = new PointerEvent('pointerup', {
+        clientX: 250,
+        clientY: 250,
+        bubbles: true
+      })
+      document.dispatchEvent(pointerEvent)
+
+      expect(mockAddNodeOnGraph).not.toHaveBeenCalled()
+      expect(isDragging.value).toBe(true)
+    })
+  })
+
+  describe('handleNativeDrop', () => {
+    it('should add node when drop position is over canvas', () => {
+      mockCanvas.canvas.getBoundingClientRect.mockReturnValue({
+        left: 0,
+        right: 500,
+        top: 0,
+        bottom: 500
+      })
+      mockConvertEventToCanvasOffset.mockReturnValue([200, 200])
+
+      const { startDrag, handleNativeDrop } = useNodeDragToCanvas()
+
+      startDrag(mockNodeDef, 'native')
+      handleNativeDrop(250, 250)
+
+      expect(mockAddNodeOnGraph).toHaveBeenCalledWith(mockNodeDef, {
+        pos: [200, 200]
+      })
+    })
+
+    it('should not add node when drop position is outside canvas', () => {
+      mockCanvas.canvas.getBoundingClientRect.mockReturnValue({
+        left: 0,
+        right: 500,
+        top: 0,
+        bottom: 500
+      })
+
+      const { startDrag, handleNativeDrop, isDragging } = useNodeDragToCanvas()
+
+      startDrag(mockNodeDef, 'native')
+      handleNativeDrop(600, 250)
+
+      expect(mockAddNodeOnGraph).not.toHaveBeenCalled()
+      expect(isDragging.value).toBe(false)
+    })
+
+    it('should not add node when dragMode is click', () => {
+      mockCanvas.canvas.getBoundingClientRect.mockReturnValue({
+        left: 0,
+        right: 500,
+        top: 0,
+        bottom: 500
+      })
+      mockConvertEventToCanvasOffset.mockReturnValue([200, 200])
+
+      const { startDrag, handleNativeDrop } = useNodeDragToCanvas()
+
+      startDrag(mockNodeDef, 'click')
+      handleNativeDrop(250, 250)
+
+      expect(mockAddNodeOnGraph).not.toHaveBeenCalled()
+    })
+
+    it('should reset drag state after drop', () => {
+      mockCanvas.canvas.getBoundingClientRect.mockReturnValue({
+        left: 0,
+        right: 500,
+        top: 0,
+        bottom: 500
+      })
+      mockConvertEventToCanvasOffset.mockReturnValue([200, 200])
+
+      const { startDrag, handleNativeDrop, isDragging, dragMode } =
+        useNodeDragToCanvas()
+
+      startDrag(mockNodeDef, 'native')
+      handleNativeDrop(250, 250)
+
+      expect(isDragging.value).toBe(false)
+      expect(dragMode.value).toBe('click')
     })
   })
 })

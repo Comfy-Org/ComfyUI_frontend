@@ -4,9 +4,12 @@ import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useLitegraphService } from '@/services/litegraphService'
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 
+export type DragMode = 'click' | 'native'
+
 const isDragging = ref(false)
 const draggedNode = shallowRef<ComfyNodeDefImpl | null>(null)
 const cursorPosition = ref({ x: 0, y: 0 })
+const dragMode = ref<DragMode>('click')
 let listenersSetup = false
 
 function updatePosition(e: PointerEvent) {
@@ -16,32 +19,42 @@ function updatePosition(e: PointerEvent) {
 function cancelDrag() {
   isDragging.value = false
   draggedNode.value = null
+  dragMode.value = 'click'
 }
 
-function endDrag(e: PointerEvent) {
-  if (!isDragging.value || !draggedNode.value) return
+function addNodeAtPosition(clientX: number, clientY: number): boolean {
+  if (!draggedNode.value) return false
 
   const canvasStore = useCanvasStore()
   const canvas = canvasStore.canvas
-  if (!canvas) {
-    cancelDrag()
-    return
-  }
+  if (!canvas) return false
 
   const canvasElement = canvas.canvas as HTMLCanvasElement
   const rect = canvasElement.getBoundingClientRect()
   const isOverCanvas =
-    e.clientX >= rect.left &&
-    e.clientX <= rect.right &&
-    e.clientY >= rect.top &&
-    e.clientY <= rect.bottom
+    clientX >= rect.left &&
+    clientX <= rect.right &&
+    clientY >= rect.top &&
+    clientY <= rect.bottom
+
+  if (isOverCanvas) {
+    const pos = canvas.convertEventToCanvasOffset({
+      clientX,
+      clientY
+    } as PointerEvent)
+    const litegraphService = useLitegraphService()
+    litegraphService.addNodeOnGraph(draggedNode.value, { pos })
+    return true
+  }
+  return false
+}
+
+function endDrag(e: PointerEvent) {
+  if (!isDragging.value || !draggedNode.value) return
+  if (dragMode.value !== 'click') return
 
   try {
-    if (isOverCanvas) {
-      const pos = canvas.convertEventToCanvasOffset(e)
-      const litegraphService = useLitegraphService()
-      litegraphService.addNodeOnGraph(draggedNode.value, { pos })
-    }
+    addNodeAtPosition(e.clientX, e.clientY)
   } finally {
     cancelDrag()
   }
@@ -70,17 +83,29 @@ function cleanupGlobalListeners() {
 }
 
 export function useNodeDragToCanvas() {
-  function startDrag(nodeDef: ComfyNodeDefImpl) {
+  function startDrag(nodeDef: ComfyNodeDefImpl, mode: DragMode = 'click') {
     isDragging.value = true
     draggedNode.value = nodeDef
+    dragMode.value = mode
+  }
+
+  function handleNativeDrop(clientX: number, clientY: number) {
+    if (dragMode.value !== 'native') return
+    try {
+      addNodeAtPosition(clientX, clientY)
+    } finally {
+      cancelDrag()
+    }
   }
 
   return {
     isDragging,
     draggedNode,
     cursorPosition,
+    dragMode,
     startDrag,
     cancelDrag,
+    handleNativeDrop,
     setupGlobalListeners,
     cleanupGlobalListeners
   }

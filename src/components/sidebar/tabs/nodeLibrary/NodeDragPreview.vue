@@ -1,37 +1,69 @@
 <template>
   <Teleport to="body">
     <div
-      v-if="isDragging && draggedNode"
-      class="pointer-events-none fixed z-[10000] flex items-center gap-2 rounded-lg bg-neutral-700 px-3 py-2 text-sm font-medium text-neutral-400 shadow-lg"
+      v-if="isDragging && draggedNode && showPreview"
+      class="pointer-events-none fixed z-[10000]"
       :style="{
-        left: `${cursorPosition.x + 12}px`,
-        top: `${cursorPosition.y + 12}px`
+        left: `${previewPosition.x + 12}px`,
+        top: `${previewPosition.y + 12}px`
       }"
     >
-      <span class="size-3 shrink-0 rounded-full bg-neutral-500" />
-      {{ draggedNode.display_name }}
+      <div class="origin-top-left scale-50 opacity-80">
+        <LGraphNodePreview :node-def="draggedNode" position="relative" />
+      </div>
     </div>
   </Teleport>
 </template>
 
 <script setup lang="ts">
-import { onMounted, onUnmounted } from 'vue'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
 
 import { useNodeDragToCanvas } from '@/composables/node/useNodeDragToCanvas'
+import LGraphNodePreview from '@/renderer/extensions/vueNodes/components/LGraphNodePreview.vue'
 
 const {
   isDragging,
   draggedNode,
   cursorPosition,
+  dragMode,
   setupGlobalListeners,
   cleanupGlobalListeners
 } = useNodeDragToCanvas()
 
+const nativeDragPosition = ref({ x: 0, y: 0 })
+
+const previewPosition = computed(() => {
+  if (dragMode.value === 'native') {
+    return nativeDragPosition.value
+  }
+  return cursorPosition.value
+})
+
+const showPreview = computed(() => {
+  if (dragMode.value === 'native') {
+    return nativeDragPosition.value.x > 0 || nativeDragPosition.value.y > 0
+  }
+  return true
+})
+
+function handleDrag(e: DragEvent) {
+  if (e.clientX === 0 && e.clientY === 0) return
+  nativeDragPosition.value = { x: e.clientX, y: e.clientY }
+}
+
+function handleDragEnd() {
+  nativeDragPosition.value = { x: 0, y: 0 }
+}
+
 onMounted(() => {
   setupGlobalListeners()
+  document.addEventListener('drag', handleDrag)
+  document.addEventListener('dragend', handleDragEnd)
 })
 
 onUnmounted(() => {
   cleanupGlobalListeners()
+  document.removeEventListener('drag', handleDrag)
+  document.removeEventListener('dragend', handleDragEnd)
 })
 </script>

@@ -10,10 +10,13 @@
       <div
         :class="cn(ROW_CLASS, isSelected && 'bg-highlight')"
         :style="rowStyle"
+        draggable="true"
         @click.stop="handleClick($event, handleToggle, handleSelect)"
         @contextmenu="handleContextMenu"
         @mouseenter="handleMouseEnter"
         @mouseleave="handleMouseLeave"
+        @dragstart="handleDragStart"
+        @dragend="handleDragEnd"
       >
         <i class="icon-[comfy--node] size-4 shrink-0 text-muted-foreground" />
         <span class="min-w-0 flex-1 truncate text-sm text-foreground">
@@ -52,7 +55,7 @@
   </TreeItem>
 
   <Teleport
-    v-if="isHovered && item.value.type === 'node' && item.value.data"
+    v-if="showPreview && item.value.type === 'node' && item.value.data"
     to="#node-library-node-preview-container-v2"
   >
     <div ref="previewRef" :style="nodePreviewStyle">
@@ -68,6 +71,7 @@ import type { CSSProperties } from 'vue'
 import { computed, inject, ref } from 'vue'
 
 import NodePreviewCard from '@/components/node/NodePreviewCard.vue'
+import { useNodeDragToCanvas } from '@/composables/node/useNodeDragToCanvas'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { InjectKeyContextMenuNode } from '@/types/treeExplorerTypes'
 import type { RenderedTreeExplorerNode } from '@/types/treeExplorerTypes'
@@ -86,8 +90,10 @@ const emit = defineEmits<{
 
 const contextMenuNode = inject(InjectKeyContextMenuNode)
 const settingStore = useSettingStore()
+const { startDrag, handleNativeDrop, cancelDrag } = useNodeDragToCanvas()
 
 const isHovered = ref(false)
+const isDraggingNode = ref(false)
 const previewRef = ref<HTMLElement>()
 const nodePreviewStyle = ref<CSSProperties>({
   position: 'fixed',
@@ -96,6 +102,8 @@ const nodePreviewStyle = ref<CSSProperties>({
   pointerEvents: 'none',
   zIndex: 1001
 })
+
+const showPreview = computed(() => isHovered.value && !isDraggingNode.value)
 
 const rowStyle = computed(() => ({
   paddingLeft: `${16 + (item.level - 1) * 24}px`
@@ -180,5 +188,47 @@ function handleMouseEnter(e: MouseEvent) {
 
 function handleMouseLeave() {
   isHovered.value = false
+}
+
+function handleDragStart(e: DragEvent) {
+  if (item.value.type !== 'node' || !item.value.data) return
+
+  isDraggingNode.value = true
+  isHovered.value = false
+
+  startDrag(item.value.data, 'native')
+
+  if (e.dataTransfer) {
+    e.dataTransfer.effectAllowed = 'copy'
+    e.dataTransfer.setData('application/x-comfy-node', item.value.data.name)
+
+    const dragImage = createDragImage()
+    document.body.appendChild(dragImage)
+    e.dataTransfer.setDragImage(dragImage, 0, 0)
+
+    requestAnimationFrame(() => {
+      document.body.removeChild(dragImage)
+    })
+  }
+}
+
+function createDragImage(): HTMLElement {
+  const el = document.createElement('div')
+  el.style.position = 'absolute'
+  el.style.left = '-9999px'
+  el.style.top = '-9999px'
+  el.style.width = '1px'
+  el.style.height = '1px'
+  return el
+}
+
+function handleDragEnd(e: DragEvent) {
+  isDraggingNode.value = false
+
+  if (e.dataTransfer?.dropEffect !== 'none') {
+    handleNativeDrop(e.clientX, e.clientY)
+  } else {
+    cancelDrag()
+  }
 }
 </script>
