@@ -47,8 +47,8 @@ declare module '@/lib/litegraph/src/types/widgets' {
 
   interface IBaseWidget {
     onRemove?(): void
-    beforeQueued?(): unknown
-    afterQueued?(): unknown
+    beforeQueued?(options?: { isPartialExecution?: boolean }): unknown
+    afterQueued?(options?: { isPartialExecution?: boolean }): unknown
     serializeValue?(node: LGraphNode, index: number): Promise<unknown> | unknown
 
     /**
