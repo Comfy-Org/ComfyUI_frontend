@@ -1801,7 +1801,7 @@
     },
     "openIn3DViewer": "Open in 3D Viewer",
     "dropToLoad": "Drop 3D model to load",
-    "unsupportedFileType": "Unsupported file type (supports .gltf, .glb, .obj, .fbx, .stl)",
+    "unsupportedFileType": "Unsupported file type (supports .gltf, .glb, .obj, .fbx, .stl, .ply, .spz, .splat, .ksplat)",
     "uploadingModel": "Uploading 3D model..."
   },
   "imageCrop": {

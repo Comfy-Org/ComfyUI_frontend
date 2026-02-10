@@ -7,6 +7,7 @@
     :asset-kind="assetKind"
     :allow-upload="allowUpload"
     :upload-folder="uploadFolder"
+    :upload-subfolder="uploadSubfolder"
     :is-asset-mode="isAssetMode"
     :default-layout-mode="defaultLayoutMode"
   />
@@ -58,16 +59,15 @@ const specDescriptor = computed<{
   kind: AssetKind
   allowUpload: boolean
   folder: ResultItemType | undefined
+  subfolder: string | undefined
 }>(() => {
-  const isLoad3DMesh =
-    props.nodeType === 'Load3D' && props.widget.name === 'model_file'
-
   const spec = comboSpec.value
-  if (!spec && !isLoad3DMesh) {
+  if (!spec) {
     return {
       kind: 'unknown',
       allowUpload: false,
-      folder: undefined
+      folder: undefined,
+      subfolder: undefined
     }
   }
 
@@ -76,8 +76,10 @@ const specDescriptor = computed<{
     animated_image_upload,
     video_upload,
     image_folder,
-    audio_upload
-  } = spec || {}
+    audio_upload,
+    mesh_upload,
+    upload_subfolder
+  } = spec
 
   let kind: AssetKind = 'unknown'
   if (video_upload) {
@@ -86,7 +88,7 @@ const specDescriptor = computed<{
     kind = 'image'
   } else if (audio_upload) {
     kind = 'audio'
-  } else if (isLoad3DMesh) {
+  } else if (mesh_upload) {
     kind = 'mesh'
   }
 
@@ -97,16 +99,15 @@ const specDescriptor = computed<{
     animated_image_upload === true ||
     video_upload === true ||
     audio_upload === true ||
-    isLoad3DMesh
+    mesh_upload === true
 
-  const subfolder = isLoad3DMesh ? '3d' : undefined
-  const folder = isLoad3DMesh ? 'input' : image_folder
+  const folder = mesh_upload ? 'input' : image_folder
 
   return {
     kind,
     allowUpload,
     folder,
-    subfolder
+    subfolder: upload_subfolder
   }
 })
 
@@ -132,6 +133,7 @@ const allowUpload = computed(() => specDescriptor.value.allowUpload)
 const uploadFolder = computed<ResultItemType>(() => {
   return specDescriptor.value.folder ?? 'input'
 })
+const uploadSubfolder = computed(() => specDescriptor.value.subfolder)
 const defaultLayoutMode = computed<LayoutMode>(() => {
   return isAssetMode.value ? 'list' : 'grid'
 })
