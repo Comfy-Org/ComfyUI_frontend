@@ -9,7 +9,7 @@ import {
   VramManagement
 } from '@/types/serverArgs'
 
-export type ServerConfigValue = string | number | true | null | undefined
+export type ServerConfigValue = string | number | boolean | null | undefined
 
 export interface ServerConfig<T> extends FormItem {
   id: string
@@ -19,7 +19,7 @@ export interface ServerConfig<T> extends FormItem {
   getValue?: (value: T) => Record<string, ServerConfigValue>
 }
 
-export const SERVER_CONFIG_ITEMS: ServerConfig<any>[] = [
+export const SERVER_CONFIG_ITEMS = [
   // Network settings
   {
     id: 'listen',

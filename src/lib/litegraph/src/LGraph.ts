@@ -90,12 +90,13 @@ export interface LGraphState {
   lastRerouteId: number
 }
 
-type ParamsArray<
-  T extends Record<any, any>,
-  K extends MethodNames<T>
-> = Parameters<T[K]>[1] extends undefined
-  ? Parameters<T[K]> | Parameters<T[K]>[0]
-  : Parameters<T[K]>
+type ParamsArray<T, K extends MethodNames<T>> = Parameters<
+  Extract<T[K], (...args: never[]) => unknown>
+>[1] extends undefined
+  ?
+      | Parameters<Extract<T[K], (...args: never[]) => unknown>>
+      | Parameters<Extract<T[K], (...args: never[]) => unknown>>[0]
+  : Parameters<Extract<T[K], (...args: never[]) => unknown>>
 
 /** Configuration used by {@link LGraph} `config`. */
 export interface LGraphConfig {
