@@ -27,11 +27,11 @@ catalog:
   '@sentry/vite-plugin': ^4.6.0
   '@sentry/vue': ^10.32.1
   '@sparkjsdev/spark': ^0.1.10
-  '@storybook/addon-docs': ^10.1.9
+  '@storybook/addon-docs': ^10.2.8
   '@storybook/addon-mcp': 0.1.6
-  '@storybook/vue3': ^10.1.9
-  '@storybook/vue3-vite': ^10.1.9
-  '@tailwindcss/vite': ^4.1.12
+  '@storybook/vue3': ^10.2.8
+  '@storybook/vue3-vite': ^10.2.8
+  '@tailwindcss/vite': ^4.1.18
   '@types/fs-extra': ^11.0.4
   '@types/jsdom': ^21.1.7
   '@types/node': ^24.1.0
@@ -45,7 +45,7 @@ catalog:
   '@vueuse/integrations': ^14.2.0
   '@webgpu/types': ^0.1.66
   algoliasearch: ^5.21.0
-  axios: ^1.8.2
+  axios: ^1.13.5
   cross-env: ^10.1.0
   cva: 1.0.0-beta.4
   dotenv: ^16.4.5
@@ -54,7 +54,7 @@ catalog:
   eslint-import-resolver-typescript: ^4.4.4
   eslint-plugin-import-x: ^4.16.1
   eslint-plugin-oxlint: 1.25.0
-  eslint-plugin-storybook: ^10.1.9
+  eslint-plugin-storybook: ^10.2.8
   eslint-plugin-unused-imports: ^4.3.0
   eslint-plugin-vue: ^10.6.2
   firebase: ^11.6.0
@@ -80,9 +80,9 @@ catalog:
   primevue: ^4.2.5
   reka-ui: ^2.5.0
   rollup-plugin-visualizer: ^6.0.4
-  storybook: ^10.1.9
+  storybook: ^10.2.8
   stylelint: ^16.26.1
-  tailwindcss: ^4.1.12
+  tailwindcss: ^4.1.18
   tailwindcss-primeui: ^0.6.1
   tsx: ^4.15.6
   tw-animate-css: ^1.3.8
@@ -100,7 +100,7 @@ catalog:
   vue: ^3.5.13
   vue-component-type-helpers: ^3.2.1
   vue-eslint-parser: ^10.2.0
-  vue-i18n: ^9.14.3
+  vue-i18n: ^9.14.5
   vue-router: ^4.4.3
   vue-tsc: ^3.2.1
   vuefire: ^3.2.1
