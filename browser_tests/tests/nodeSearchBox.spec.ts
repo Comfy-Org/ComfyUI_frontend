@@ -73,6 +73,7 @@ test.describe('Node search box', { tag: '@node' }, () => {
     'Can auto link batch moved node',
     { tag: '@screenshot' },
     async ({ comfyPage }) => {
+      await comfyPage.settings.setSetting('Comfy.Graph.AutoPanSpeed', 0)
       await comfyPage.workflow.loadWorkflow('links/batch_move_links')
 
       // Get the CLIP output slot (index 1) from the first CheckpointLoaderSimple node (id: 4)
