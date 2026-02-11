@@ -15,7 +15,7 @@ import {
 import { WidgetInputBaseClass } from './layout'
 import WidgetLayoutField from './layout/WidgetLayoutField.vue'
 
-const { n } = useI18n()
+const { locale } = useI18n()
 
 const props = defineProps<{
   widget: SimplifiedWidget<number>
@@ -30,8 +30,16 @@ onClickOutside(widgetContainer, () => {
   }
 })
 
-const decimalSeparator = computed(() => n(1.1).replace(/\p{Number}/gu, ''))
-const groupSeparator = computed(() => n(11111).replace(/\p{Number}/gu, ''))
+function formatNumber(value: number, options?: Intl.NumberFormatOptions) {
+  return new Intl.NumberFormat(locale.value, options).format(value)
+}
+
+const decimalSeparator = computed(() =>
+  formatNumber(1.1).replace(/\p{Number}/gu, '')
+)
+const groupSeparator = computed(() =>
+  formatNumber(11111).replace(/\p{Number}/gu, '')
+)
 function unformatValue(value: string) {
   return value
     .replaceAll(groupSeparator.value, '')
@@ -45,41 +53,54 @@ const formattedValue = computed(() => {
   if ((unformattedValue as unknown) === '' || !isFinite(unformattedValue))
     return `${unformattedValue}`
 
-  return n(unformattedValue, {
-    useGrouping: useGrouping.value,
-    minimumFractionDigits: precision.value,
-    maximumFractionDigits: precision.value
-  })
+  const options: Intl.NumberFormatOptions = {
+    useGrouping: useGrouping.value
+  }
+  if (precision.value !== undefined) {
+    options.minimumFractionDigits = precision.value
+    options.maximumFractionDigits = precision.value
+  }
+  return formatNumber(unformattedValue, options)
 })
 
 function updateValue(e: UIEvent) {
   const { target } = e
   if (!(target instanceof HTMLInputElement)) return
   const parsed = evaluateInput(unformatValue(target.value))
-  if (parsed !== undefined)
-    modelValue.value = Math.min(
-      filteredProps.value.max,
-      Math.max(filteredProps.value.min, parsed)
-    )
-  else target.value = formattedValue.value
+  if (parsed !== undefined) {
+    const max = filteredProps.value.max ?? Number.MAX_VALUE
+    const min = filteredProps.value.min ?? -Number.MAX_VALUE
+    modelValue.value = Math.min(max, Math.max(min, parsed))
+  } else target.value = formattedValue.value
 
   textEdit.value = false
 }
 
-const canDecrement = computed(
-  () =>
-    modelValue.value > filteredProps.value.min &&
-    !props.widget.options?.disabled
-)
-const canIncrement = computed(
-  () =>
-    modelValue.value < filteredProps.value.max &&
-    !props.widget.options?.disabled
-)
+interface NumericWidgetOptions {
+  min: number
+  max: number
+  step?: number
+  step2?: number
+  precision?: number
+  disabled?: boolean
+  useGrouping?: boolean
+}
 
-const filteredProps = computed(() =>
-  filterWidgetProps(props.widget.options, INPUT_EXCLUDED_PROPS)
-)
+const filteredProps = computed(() => {
+  const filtered = filterWidgetProps(props.widget.options, INPUT_EXCLUDED_PROPS)
+  return filtered as Partial<NumericWidgetOptions>
+})
+
+const isDisabled = computed(() => props.widget.options?.disabled ?? false)
+
+const canDecrement = computed(() => {
+  const min = filteredProps.value.min ?? -Number.MAX_VALUE
+  return modelValue.value > min && !isDisabled.value
+})
+const canIncrement = computed(() => {
+  const max = filteredProps.value.max ?? Number.MAX_VALUE
+  return modelValue.value < max && !isDisabled.value
+})
 
 // Get the precision value for proper number formatting
 const precision = computed(() => {
@@ -97,7 +118,7 @@ const stepValue = computed(() => {
   // Use step / 10 for custom large step values (> 10) to match litegraph behavior
   // This is important for extensions like Impact Pack that use custom step values (e.g., 640)
   // We skip default step values (1, 10) to avoid affecting normal widgets
-  const step = props.widget.options?.step
+  const step = props.widget.options?.step as number | undefined
   if (step !== undefined && step > 10) {
     return Number(step) / 10
   }
@@ -129,16 +150,16 @@ const buttonsDisabled = computed(() => {
 })
 
 function updateValueBy(delta: number) {
-  modelValue.value = Math.min(
-    filteredProps.value.max,
-    Math.max(filteredProps.value.min, modelValue.value + delta)
-  )
+  const max = filteredProps.value.max ?? Number.MAX_VALUE
+  const min = filteredProps.value.min ?? -Number.MAX_VALUE
+  modelValue.value = Math.min(max, Math.max(min, modelValue.value + delta))
 }
 
 const dragValue = ref<number>()
 const dragDelta = ref(0)
 function handleMouseDown(e: PointerEvent) {
-  if (props.widget.options?.disabled) return
+  if (e.button > 0) return
+  if (isDisabled.value) return
   const { target } = e
   if (!(target instanceof HTMLElement)) return
   target.setPointerCapture(e.pointerId)
@@ -151,22 +172,22 @@ function handleMouseMove(e: PointerEvent) {
   const unclippedValue =
     dragValue.value + ((dragDelta.value / 10) | 0) * stepValue.value
   dragDelta.value %= 10
-  dragValue.value = Math.min(
-    filteredProps.value.max,
-    Math.max(filteredProps.value.min, unclippedValue)
-  )
+  const max = filteredProps.value.max ?? Number.MAX_VALUE
+  const min = filteredProps.value.min ?? -Number.MAX_VALUE
+  dragValue.value = Math.min(max, Math.max(min, unclippedValue))
 }
 function handleMouseUp() {
   const newValue = dragValue.value
   if (newValue === undefined) return
-  modelValue.value = newValue
-  dragValue.value = undefined
 
-  if (dragDelta.value === 0) {
+  if (newValue === modelValue.value) {
     textEdit.value = true
     inputField.value?.focus()
     inputField.value?.setSelectionRange(0, -1)
   }
+
+  modelValue.value = newValue
+  dragValue.value = undefined
   dragDelta.value = 0
 }
 
@@ -202,9 +223,13 @@ const sliderWidth = computed(() => {
       :class="cn(WidgetInputBaseClass, 'grow text-xs flex h-7 relative')"
     >
       <div
-        class="bg-primary-background/15 absolute left-0 bottom-0 h-full rounded-lg pointer-events-none"
-        :style="{ width: `${sliderWidth}%` }"
-      />
+        class="absolute size-full rounded-lg pointer-events-none overflow-clip"
+      >
+        <div
+          class="bg-primary-background/15 size-full"
+          :style="{ width: `${sliderWidth}%` }"
+        />
+      </div>
       <Button
         v-if="!buttonsDisabled"
         data-testid="decrement"
@@ -231,7 +256,7 @@ const sliderWidth = computed(() => {
           :value="formattedValue"
           role="spinbutton"
           tabindex="0"
-          :disabled="widget.options?.disabled"
+          :disabled="isDisabled"
           autocomplete="off"
           autocorrect="off"
           spellcheck="false"

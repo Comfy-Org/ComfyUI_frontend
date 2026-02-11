@@ -76,6 +76,13 @@
     />
   </TransformPane>
 
+  <LinkOverlayCanvas
+    v-if="shouldRenderVueNodes && comfyApp.canvas && comfyAppReady"
+    :canvas="comfyApp.canvas"
+    @ready="onLinkOverlayReady"
+    @dispose="onLinkOverlayDispose"
+  />
+
   <!-- Selection rectangle overlay - rendered in DOM layer to appear above DOM widgets -->
   <SelectionRectangle v-if="comfyAppReady" />
 
@@ -87,13 +94,14 @@
   <template v-if="comfyAppReady">
     <TitleEditor />
     <SelectionToolbox v-if="selectionToolboxEnabled" />
+    <NodeContextMenu />
     <!-- Render legacy DOM widgets only when Vue nodes are disabled -->
     <DomWidgets v-if="!shouldRenderVueNodes" />
   </template>
 </template>
 
 <script setup lang="ts">
-import { useEventListener, whenever } from '@vueuse/core'
+import { until, useEventListener } from '@vueuse/core'
 import {
   computed,
   nextTick,
@@ -104,6 +112,7 @@ import {
   watch,
   watchEffect
 } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import LiteGraphCanvasSplitterOverlay from '@/components/LiteGraphCanvasSplitterOverlay.vue'
 import TopMenuSection from '@/components/TopMenuSection.vue'
@@ -111,7 +120,9 @@ import BottomPanel from '@/components/bottomPanel/BottomPanel.vue'
 import ExtensionSlot from '@/components/common/ExtensionSlot.vue'
 import DomWidgets from '@/components/graph/DomWidgets.vue'
 import GraphCanvasMenu from '@/components/graph/GraphCanvasMenu.vue'
+import LinkOverlayCanvas from '@/components/graph/LinkOverlayCanvas.vue'
 import NodeTooltip from '@/components/graph/NodeTooltip.vue'
+import NodeContextMenu from '@/components/graph/NodeContextMenu.vue'
 import SelectionToolbox from '@/components/graph/SelectionToolbox.vue'
 import TitleEditor from '@/components/graph/TitleEditor.vue'
 import NodePropertiesPanel from '@/components/rightSidePanel/RightSidePanel.vue'
@@ -129,7 +140,6 @@ import { useCopy } from '@/composables/useCopy'
 import { useGlobalLitegraph } from '@/composables/useGlobalLitegraph'
 import { usePaste } from '@/composables/usePaste'
 import { useVueFeatureFlags } from '@/composables/useVueFeatureFlags'
-import { mergeCustomNodesI18n, t } from '@/i18n'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { useLitegraphSettings } from '@/platform/settings/composables/useLitegraphSettings'
 import { CORE_SETTINGS } from '@/platform/settings/constants/coreSettings'
@@ -144,12 +154,15 @@ import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteracti
 import TransformPane from '@/renderer/core/layout/transform/TransformPane.vue'
 import MiniMap from '@/renderer/extensions/minimap/MiniMap.vue'
 import LGraphNode from '@/renderer/extensions/vueNodes/components/LGraphNode.vue'
-import { UnauthorizedError, api } from '@/scripts/api'
+import { UnauthorizedError } from '@/scripts/api'
 import { app as comfyApp } from '@/scripts/app'
 import { ChangeTracker } from '@/scripts/changeTracker'
 import { IS_CONTROL_WIDGET, updateControlWidgetLabel } from '@/scripts/widgets'
 import { useColorPaletteService } from '@/services/colorPaletteService'
-import { newUserService } from '@/services/newUserService'
+import { useNewUserService } from '@/services/useNewUserService'
+import { storeToRefs } from 'pinia'
+
+import { useBootstrapStore } from '@/stores/bootstrapStore'
 import { useCommandStore } from '@/stores/commandStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
@@ -160,7 +173,11 @@ import { isNativeWindow } from '@/utils/envUtil'
 import { forEachNode } from '@/utils/graphTraversalUtil'
 
 import SelectionRectangle from './SelectionRectangle.vue'
+import { isCloud } from '@/platform/distribution/types'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import { useInviteUrlLoader } from '@/platform/workspace/composables/useInviteUrlLoader'
 
+const { t } = useI18n()
 const emit = defineEmits<{
   ready: []
 }>()
@@ -172,11 +189,16 @@ const settingStore = useSettingStore()
 const nodeDefStore = useNodeDefStore()
 const workspaceStore = useWorkspaceStore()
 const canvasStore = useCanvasStore()
+const workflowStore = useWorkflowStore()
 const executionStore = useExecutionStore()
 const toastStore = useToastStore()
 const colorPaletteStore = useColorPaletteStore()
 const colorPaletteService = useColorPaletteService()
 const canvasInteractions = useCanvasInteractions()
+const bootstrapStore = useBootstrapStore()
+const { isI18nReady, i18nError } = storeToRefs(bootstrapStore)
+const { isReady: isSettingsReady, error: settingsError } =
+  storeToRefs(settingStore)
 
 const betaMenuEnabled = computed(
   () => settingStore.get('Comfy.UseNewMenu') !== 'Disabled'
@@ -229,6 +251,18 @@ watch(
 const allNodes = computed((): VueNodeData[] =>
   Array.from(vueNodeLifecycle.nodeManager.value?.vueNodeData?.values() ?? [])
 )
+
+function onLinkOverlayReady(el: HTMLCanvasElement) {
+  if (!canvasStore.canvas) return
+  canvasStore.canvas.overlayCanvas = el
+  canvasStore.canvas.overlayCtx = el.getContext('2d')
+}
+
+function onLinkOverlayDispose() {
+  if (!canvasStore.canvas) return
+  canvasStore.canvas.overlayCanvas = null
+  canvasStore.canvas.overlayCtx = null
+}
 
 watchEffect(() => {
   LiteGraph.nodeOpacity = settingStore.get('Comfy.Node.Opacity')
@@ -383,50 +417,79 @@ useEventListener(
   { passive: true }
 )
 
-const loadCustomNodesI18n = async () => {
-  try {
-    const i18nData = await api.getCustomNodesI18n()
-    mergeCustomNodesI18n(i18nData)
-  } catch (error) {
-    console.error('Failed to load custom nodes i18n', error)
-  }
-}
-
 const comfyAppReady = ref(false)
 const workflowPersistence = useWorkflowPersistence()
+const { flags } = useFeatureFlags()
+// Set up invite loader during setup phase so useRoute/useRouter work correctly
+const inviteUrlLoader = isCloud ? useInviteUrlLoader() : null
 useCanvasDrop(canvasRef)
 useLitegraphSettings()
 useNodeBadge()
 
+useGlobalLitegraph()
+useContextMenuTranslation()
+useCopy()
+usePaste()
+useWorkflowAutoSave()
+
+// Start watching for locale change after the initial value is loaded.
+watch(
+  () => settingStore.get('Comfy.Locale'),
+  async (_newLocale, oldLocale) => {
+    if (!oldLocale) return
+    await Promise.all([
+      until(() => isSettingsReady.value || !!settingsError.value).toBe(true),
+      until(() => isI18nReady.value || !!i18nError.value).toBe(true)
+    ])
+    if (settingsError.value || i18nError.value) {
+      console.warn(
+        'Somehow the Locale setting was changed while the settings or i18n had a setup error'
+      )
+    }
+    await useCommandStore().execute('Comfy.RefreshNodeDefinitions')
+    await useWorkflowService().reloadCurrentWorkflow()
+  }
+)
+useEventListener(
+  () => canvasStore.canvas?.canvas,
+  'litegraph:set-graph',
+  () => {
+    workflowStore.updateActiveGraph()
+  }
+)
+
 onMounted(async () => {
-  useGlobalLitegraph()
-  useContextMenuTranslation()
-  useCopy()
-  usePaste()
-  useWorkflowAutoSave()
-  useVueFeatureFlags()
-
   comfyApp.vueAppReady = true
-
   workspaceStore.spinner = true
   // ChangeTracker needs to be initialized before setup, as it will overwrite
   // some listeners of litegraph canvas.
   ChangeTracker.init()
-  await loadCustomNodesI18n()
-  try {
-    await settingStore.loadSettingValues()
-  } catch (error) {
-    if (error instanceof UnauthorizedError) {
+
+  await until(() => isSettingsReady.value || !!settingsError.value).toBe(true)
+
+  if (settingsError.value) {
+    if (settingsError.value instanceof UnauthorizedError) {
       localStorage.removeItem('Comfy.userId')
       localStorage.removeItem('Comfy.userName')
       window.location.reload()
-    } else {
-      throw error
+      return
     }
+    throw settingsError.value
   }
+
+  // Register core settings immediately after settings are ready
   CORE_SETTINGS.forEach(settingStore.addSetting)
 
-  await newUserService().initializeIfNewUser(settingStore)
+  await Promise.all([
+    until(() => isI18nReady.value || !!i18nError.value).toBe(true),
+    useNewUserService().initializeIfNewUser()
+  ])
+  if (i18nError.value) {
+    console.warn(
+      '[GraphCanvas] Failed to load custom nodes i18n:',
+      i18nError.value
+    )
+  }
 
   // @ts-expect-error fixme ts strict error
   await comfyApp.setup(canvasRef.value)
@@ -459,30 +522,17 @@ onMounted(async () => {
   // Load template from URL if present
   await workflowPersistence.loadTemplateFromUrlIfPresent()
 
+  // Accept workspace invite from URL if present (e.g., ?invite=TOKEN)
+  // WorkspaceAuthGate ensures flag state is resolved before GraphCanvas mounts
+  if (inviteUrlLoader && flags.teamWorkspacesEnabled) {
+    await inviteUrlLoader.loadInviteFromUrl()
+  }
+
   // Initialize release store to fetch releases from comfy-api (fire-and-forget)
   const { useReleaseStore } =
     await import('@/platform/updates/common/releaseStore')
   const releaseStore = useReleaseStore()
   void releaseStore.initialize()
-
-  // Start watching for locale change after the initial value is loaded.
-  watch(
-    () => settingStore.get('Comfy.Locale'),
-    async () => {
-      await useCommandStore().execute('Comfy.RefreshNodeDefinitions')
-      await useWorkflowService().reloadCurrentWorkflow()
-    }
-  )
-
-  whenever(
-    () => useCanvasStore().canvas,
-    (canvas) => {
-      useEventListener(canvas.canvas, 'litegraph:set-graph', () => {
-        useWorkflowStore().updateActiveGraph()
-      })
-    },
-    { immediate: true }
-  )
 
   emit('ready')
 })

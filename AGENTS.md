@@ -1,6 +1,6 @@
 # Repository Guidelines
 
-See @docs/guidance/*.md for file-type-specific conventions (auto-loaded by glob).
+See @docs/guidance/\*.md for file-type-specific conventions (auto-loaded by glob).
 
 ## Project Structure & Module Organization
 
@@ -21,7 +21,7 @@ See @docs/guidance/*.md for file-type-specific conventions (auto-loaded by glob)
 - i18n: `src/i18n.ts`,
 - Entry Point: `src/main.ts`.
 - Tests:
-  - unit/component in `tests-ui/` and `src/**/*.test.ts`
+  - unit/component in `src/**/*.test.ts`
   - E2E (Playwright) in `browser_tests/**/*.spec.ts`
 - Public assets: `public/`
 - Build output: `dist/`
@@ -44,7 +44,7 @@ The project uses **Nx** for build orchestration and task management
 - `pnpm build`: Type-check then production build to `dist/`
 - `pnpm preview`: Preview the production build locally
 - `pnpm test:unit`: Run Vitest unit tests
-- `pnpm test:browser`: Run Playwright E2E tests (`browser_tests/`)
+- `pnpm test:browser:local`: Run Playwright E2E tests (`browser_tests/`)
 - `pnpm lint` / `pnpm lint:fix`: Lint (ESLint)
 - `pnpm format` / `pnpm format:check`: oxfmt
 - `pnpm typecheck`: Vue TSC type checking
@@ -93,7 +93,6 @@ The project uses **Nx** for build orchestration and task management
   - composables `useXyz.ts`
   - Pinia stores `*Store.ts`
 
-
 ## Commit & Pull Request Guidelines
 
 - PRs:
@@ -131,8 +130,8 @@ The project uses **Nx** for build orchestration and task management
 
     ```typescript
     const { nodes, showTotal = true } = defineProps<{
-    nodes: ApiNodeCost[]
-    showTotal?: boolean
+      nodes: ApiNodeCost[]
+      showTotal?: boolean
     }>()
     ```
 
@@ -178,7 +177,7 @@ The project uses **Nx** for build orchestration and task management
 
 ## Testing Guidelines
 
-See @docs/testing/*.md for detailed patterns.
+See @docs/testing/\*.md for detailed patterns.
 
 - Frameworks:
   - Vitest (unit/component, happy-dom)
@@ -265,7 +264,7 @@ A particular type of complexity is over-engineering, where developers have made 
 
 ## Repository Navigation
 
-- Check README files in key folders (tests-ui, browser_tests, composables, etc.)
+- Check README files in key folders (browser_tests, composables, etc.)
 - Prefer running single tests for performance
 - Use --help for unfamiliar CLI tools
 
@@ -299,6 +298,13 @@ When referencing Comfy-Org repos:
 ## Agent-only rules
 
 Rules for agent-based coding tasks.
+
+### Chrome DevTools MCP
+
+When using `take_snapshot` to inspect dropdowns, listboxes, or other components with dynamic options:
+
+- Use `verbose: true` to see the full accessibility tree including list items
+- Non-verbose snapshots often omit nested options in comboboxes/listboxes
 
 ### Temporary Files
 

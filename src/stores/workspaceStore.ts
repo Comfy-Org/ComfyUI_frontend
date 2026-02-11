@@ -1,3 +1,4 @@
+import { useMagicKeys } from '@vueuse/core'
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 
@@ -16,9 +17,9 @@ import { useQueueSettingsStore } from './queueStore'
 import { useBottomPanelStore } from './workspace/bottomPanelStore'
 import { useSidebarTabStore } from './workspace/sidebarTabStore'
 
-export const useWorkspaceStore = defineStore('workspace', () => {
+function workspaceStoreSetup() {
   const spinner = ref(false)
-  const shiftDown = ref(false)
+  const { shift: shiftDown } = useMagicKeys()
   /**
    * Whether the workspace is in focus mode.
    * When in focus mode, only the graph editor is visible.
@@ -36,7 +37,8 @@ export const useWorkspaceStore = defineStore('workspace', () => {
     settings: useSettingStore().settingsById,
     // Allow generic key access to settings as custom nodes may add their
     // own settings which is not tracked by the `Setting` schema.
-    get: (key: string) => useSettingStore().get(key as keyof Settings),
+    get: <T = unknown>(key: string): T | undefined =>
+      useSettingStore().get(key as keyof Settings) as T | undefined,
     set: (key: string, value: unknown) =>
       useSettingStore().set(key as keyof Settings, value)
   }))
@@ -106,4 +108,6 @@ export const useWorkspaceStore = defineStore('workspace', () => {
     unregisterSidebarTab,
     getSidebarTabs
   }
-})
+}
+
+export const useWorkspaceStore = defineStore('workspace', workspaceStoreSetup)

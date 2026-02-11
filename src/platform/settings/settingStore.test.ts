@@ -1,4 +1,5 @@
-import { createPinia, setActivePinia } from 'pinia'
+import { createTestingPinia } from '@pinia/testing'
+import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
@@ -6,6 +7,7 @@ import {
   useSettingStore
 } from '@/platform/settings/settingStore'
 import type { SettingParams } from '@/platform/settings/types'
+import type { Settings } from '@/schemas/apiSchema'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 
@@ -13,7 +15,8 @@ import { app } from '@/scripts/app'
 vi.mock('@/scripts/api', () => ({
   api: {
     getSettings: vi.fn(),
-    storeSetting: vi.fn()
+    storeSetting: vi.fn(),
+    storeSettings: vi.fn()
   }
 }))
 
@@ -32,7 +35,7 @@ describe('useSettingStore', () => {
   let store: ReturnType<typeof useSettingStore>
 
   beforeEach(() => {
-    setActivePinia(createPinia())
+    setActivePinia(createTestingPinia({ stubActions: false }))
     store = useSettingStore()
     vi.clearAllMocks()
   })
@@ -42,18 +45,20 @@ describe('useSettingStore', () => {
     expect(store.settingsById).toEqual({})
   })
 
-  describe('loadSettingValues', () => {
+  describe('load', () => {
     it('should load settings from API', async () => {
       const mockSettings = { 'test.setting': 'value' }
-      vi.mocked(api.getSettings).mockResolvedValue(mockSettings as any)
+      vi.mocked(api.getSettings).mockResolvedValue(
+        mockSettings as Partial<Settings> as Settings
+      )
 
-      await store.loadSettingValues()
+      await store.load()
 
       expect(store.settingValues).toEqual(mockSettings)
       expect(api.getSettings).toHaveBeenCalled()
     })
 
-    it('should throw error if settings are loaded after registration', async () => {
+    it('should set error if settings are loaded after registration', async () => {
       const setting: SettingParams = {
         id: 'test.setting',
         name: 'test.setting',
@@ -62,9 +67,14 @@ describe('useSettingStore', () => {
       }
       store.addSetting(setting)
 
-      await expect(store.loadSettingValues()).rejects.toThrow(
-        'Setting values must be loaded before any setting is registered.'
-      )
+      await store.load()
+
+      expect(store.error).toBeInstanceOf(Error)
+      if (store.error instanceof Error) {
+        expect(store.error.message).toBe(
+          'Setting values must be loaded before any setting is registered.'
+        )
+      }
     })
   })
 
@@ -82,18 +92,24 @@ describe('useSettingStore', () => {
       expect(store.settingsById['test.setting']).toEqual(setting)
     })
 
-    it('should throw error for duplicate setting ID', () => {
+    it('should warn and skip for duplicate setting ID', () => {
       const setting: SettingParams = {
         id: 'test.setting',
         name: 'test.setting',
         type: 'text',
         defaultValue: 'default'
       }
+      const consoleWarnSpy = vi
+        .spyOn(console, 'warn')
+        .mockImplementation(() => {})
 
       store.addSetting(setting)
-      expect(() => store.addSetting(setting)).toThrow(
-        'Setting test.setting must have a unique ID.'
+      store.addSetting(setting)
+
+      expect(consoleWarnSpy).toHaveBeenCalledWith(
+        'Setting already registered: test.setting'
       )
+      consoleWarnSpy.mockRestore()
     })
 
     it('should migrate deprecated values', () => {
@@ -486,6 +502,85 @@ describe('useSettingStore', () => {
         // Verify the stored value wasn't affected by the mutation
         expect(newRetrievedValue).toEqual([1, 2, { value: 3 }])
       })
+    })
+  })
+
+  describe('setMany', () => {
+    it('should set multiple values and make a single API call', async () => {
+      const onChange1 = vi.fn()
+      const onChange2 = vi.fn()
+      store.addSetting({
+        id: 'Comfy.Release.Version',
+        name: 'Release Version',
+        type: 'hidden',
+        defaultValue: '',
+        onChange: onChange1
+      })
+      store.addSetting({
+        id: 'Comfy.Release.Status',
+        name: 'Release Status',
+        type: 'hidden',
+        defaultValue: 'skipped',
+        onChange: onChange2
+      })
+      vi.clearAllMocks()
+
+      await store.setMany({
+        'Comfy.Release.Version': '1.0.0',
+        'Comfy.Release.Status': 'changelog seen'
+      })
+
+      expect(store.get('Comfy.Release.Version')).toBe('1.0.0')
+      expect(store.get('Comfy.Release.Status')).toBe('changelog seen')
+      expect(onChange1).toHaveBeenCalledWith('1.0.0', '')
+      expect(onChange2).toHaveBeenCalledWith('changelog seen', 'skipped')
+      expect(api.storeSettings).toHaveBeenCalledTimes(1)
+      expect(api.storeSettings).toHaveBeenCalledWith({
+        'Comfy.Release.Version': '1.0.0',
+        'Comfy.Release.Status': 'changelog seen'
+      })
+      expect(api.storeSetting).not.toHaveBeenCalled()
+    })
+
+    it('should skip unchanged values', async () => {
+      store.addSetting({
+        id: 'Comfy.Release.Version',
+        name: 'Release Version',
+        type: 'hidden',
+        defaultValue: ''
+      })
+      store.addSetting({
+        id: 'Comfy.Release.Status',
+        name: 'Release Status',
+        type: 'hidden',
+        defaultValue: 'skipped'
+      })
+      await store.set('Comfy.Release.Version', 'existing')
+      vi.clearAllMocks()
+
+      await store.setMany({
+        'Comfy.Release.Version': 'existing',
+        'Comfy.Release.Status': 'changelog seen'
+      })
+
+      expect(api.storeSettings).toHaveBeenCalledWith({
+        'Comfy.Release.Status': 'changelog seen'
+      })
+    })
+
+    it('should not call API when all values are unchanged', async () => {
+      store.addSetting({
+        id: 'Comfy.Release.Version',
+        name: 'Release Version',
+        type: 'hidden',
+        defaultValue: ''
+      })
+      await store.set('Comfy.Release.Version', 'existing')
+      vi.clearAllMocks()
+
+      await store.setMany({ 'Comfy.Release.Version': 'existing' })
+
+      expect(api.storeSettings).not.toHaveBeenCalled()
     })
   })
 })

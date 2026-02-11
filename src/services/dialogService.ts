@@ -1,38 +1,61 @@
 import { merge } from 'es-toolkit/compat'
 import type { Component } from 'vue'
 
-import ApiNodesSignInContent from '@/components/dialog/content/ApiNodesSignInContent.vue'
-import MissingNodesContent from '@/components/dialog/content/MissingNodesContent.vue'
-import MissingNodesFooter from '@/components/dialog/content/MissingNodesFooter.vue'
-import MissingNodesHeader from '@/components/dialog/content/MissingNodesHeader.vue'
 import ConfirmationDialogContent from '@/components/dialog/content/ConfirmationDialogContent.vue'
 import ErrorDialogContent from '@/components/dialog/content/ErrorDialogContent.vue'
-import MissingModelsWarning from '@/components/dialog/content/MissingModelsWarning.vue'
 import PromptDialogContent from '@/components/dialog/content/PromptDialogContent.vue'
-import SignInContent from '@/components/dialog/content/SignInContent.vue'
-import TopUpCreditsDialogContent from '@/components/dialog/content/TopUpCreditsDialogContent.vue'
-import UpdatePasswordContent from '@/components/dialog/content/UpdatePasswordContent.vue'
-import ComfyOrgHeader from '@/components/dialog/header/ComfyOrgHeader.vue'
-import SettingDialogHeader from '@/components/dialog/header/SettingDialogHeader.vue'
+import TopUpCreditsDialogContentLegacy from '@/components/dialog/content/TopUpCreditsDialogContentLegacy.vue'
+import TopUpCreditsDialogContentWorkspace from '@/components/dialog/content/TopUpCreditsDialogContentWorkspace.vue'
 import { t } from '@/i18n'
 import { useTelemetry } from '@/platform/telemetry'
 import { isCloud } from '@/platform/distribution/types'
-import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
-import SettingDialogContent from '@/platform/settings/components/SettingDialogContent.vue'
+import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useDialogStore } from '@/stores/dialogStore'
 import type {
   DialogComponentProps,
   ShowDialogOptions
 } from '@/stores/dialogStore'
 
-import ImportFailedNodeContent from '@/workbench/extensions/manager/components/manager/ImportFailedNodeContent.vue'
-import ImportFailedNodeFooter from '@/workbench/extensions/manager/components/manager/ImportFailedNodeFooter.vue'
-import ImportFailedNodeHeader from '@/workbench/extensions/manager/components/manager/ImportFailedNodeHeader.vue'
-import NodeConflictDialogContent from '@/workbench/extensions/manager/components/manager/NodeConflictDialogContent.vue'
-import NodeConflictFooter from '@/workbench/extensions/manager/components/manager/NodeConflictFooter.vue'
-import NodeConflictHeader from '@/workbench/extensions/manager/components/manager/NodeConflictHeader.vue'
 import type { ConflictDetectionResult } from '@/workbench/extensions/manager/types/conflictDetectionTypes'
 import type { ComponentAttrs } from 'vue-component-type-helpers'
+
+// Type-only imports for ComponentAttrs inference (no runtime cost)
+import type MissingNodesContent from '@/components/dialog/content/MissingNodesContent.vue'
+import type MissingModelsWarning from '@/components/dialog/content/MissingModelsWarning.vue'
+
+// Lazy loaders for dialogs - components are loaded on first use
+const lazyMissingNodesContent = () =>
+  import('@/components/dialog/content/MissingNodesContent.vue')
+const lazyMissingNodesHeader = () =>
+  import('@/components/dialog/content/MissingNodesHeader.vue')
+const lazyMissingNodesFooter = () =>
+  import('@/components/dialog/content/MissingNodesFooter.vue')
+const lazyMissingModelsWarning = () =>
+  import('@/components/dialog/content/MissingModelsWarning.vue')
+const lazyApiNodesSignInContent = () =>
+  import('@/components/dialog/content/ApiNodesSignInContent.vue')
+const lazySignInContent = () =>
+  import('@/components/dialog/content/SignInContent.vue')
+const lazyUpdatePasswordContent = () =>
+  import('@/components/dialog/content/UpdatePasswordContent.vue')
+const lazyComfyOrgHeader = () =>
+  import('@/components/dialog/header/ComfyOrgHeader.vue')
+const lazySettingDialogHeader = () =>
+  import('@/components/dialog/header/SettingDialogHeader.vue')
+const lazySettingDialogContent = () =>
+  import('@/platform/settings/components/SettingDialogContent.vue')
+const lazyImportFailedNodeContent = () =>
+  import('@/workbench/extensions/manager/components/manager/ImportFailedNodeContent.vue')
+const lazyImportFailedNodeHeader = () =>
+  import('@/workbench/extensions/manager/components/manager/ImportFailedNodeHeader.vue')
+const lazyImportFailedNodeFooter = () =>
+  import('@/workbench/extensions/manager/components/manager/ImportFailedNodeFooter.vue')
+const lazyNodeConflictDialogContent = () =>
+  import('@/workbench/extensions/manager/components/manager/NodeConflictDialogContent.vue')
+const lazyNodeConflictHeader = () =>
+  import('@/workbench/extensions/manager/components/manager/NodeConflictHeader.vue')
+const lazyNodeConflictFooter = () =>
+  import('@/workbench/extensions/manager/components/manager/NodeConflictFooter.vue')
 
 export type ConfirmationDialogType =
   | 'default'
@@ -41,6 +64,7 @@ export type ConfirmationDialogType =
   | 'delete'
   | 'dirtyClose'
   | 'reinstall'
+  | 'info'
 
 /**
  * Minimal interface for execution error dialogs.
@@ -57,9 +81,19 @@ export interface ExecutionErrorDialogInput {
 export const useDialogService = () => {
   const dialogStore = useDialogStore()
 
-  function showLoadWorkflowWarning(
+  async function showLoadWorkflowWarning(
     props: ComponentAttrs<typeof MissingNodesContent>
   ) {
+    const [
+      { default: MissingNodesContent },
+      { default: MissingNodesHeader },
+      { default: MissingNodesFooter }
+    ] = await Promise.all([
+      lazyMissingNodesContent(),
+      lazyMissingNodesHeader(),
+      lazyMissingNodesFooter()
+    ])
+
     dialogStore.showDialog({
       key: 'global-missing-nodes',
       headerComponent: MissingNodesHeader,
@@ -83,9 +117,10 @@ export const useDialogService = () => {
     })
   }
 
-  function showMissingModelsWarning(
+  async function showMissingModelsWarning(
     props: ComponentAttrs<typeof MissingModelsWarning>
   ) {
+    const { default: MissingModelsWarning } = await lazyMissingModelsWarning()
     dialogStore.showDialog({
       key: 'global-missing-models-warning',
       component: MissingModelsWarning,
@@ -93,7 +128,7 @@ export const useDialogService = () => {
     })
   }
 
-  function showSettingsDialog(
+  async function showSettingsDialog(
     panel?:
       | 'about'
       | 'keybinding'
@@ -102,8 +137,27 @@ export const useDialogService = () => {
       | 'user'
       | 'credits'
       | 'subscription'
+      | 'workspace'
+      | 'secrets',
+    settingId?: string
   ) {
-    const props = panel ? { props: { defaultPanel: panel } } : undefined
+    const [
+      { default: SettingDialogHeader },
+      { default: SettingDialogContent }
+    ] = await Promise.all([
+      lazySettingDialogHeader(),
+      lazySettingDialogContent()
+    ])
+
+    const props =
+      panel || settingId
+        ? {
+            props: {
+              defaultPanel: panel,
+              scrollToSettingId: settingId
+            }
+          }
+        : undefined
 
     dialogStore.showDialog({
       key: 'global-settings',
@@ -113,7 +167,15 @@ export const useDialogService = () => {
     })
   }
 
-  function showAboutDialog() {
+  async function showAboutDialog() {
+    const [
+      { default: SettingDialogHeader },
+      { default: SettingDialogContent }
+    ] = await Promise.all([
+      lazySettingDialogHeader(),
+      lazySettingDialogContent()
+    ])
+
     dialogStore.showDialog({
       key: 'global-settings',
       headerComponent: SettingDialogHeader,
@@ -220,6 +282,9 @@ export const useDialogService = () => {
   async function showApiNodesSignInDialog(
     apiNodeNames: string[]
   ): Promise<boolean> {
+    const [{ default: ApiNodesSignInContent }, { default: ComfyOrgHeader }] =
+      await Promise.all([lazyApiNodesSignInContent(), lazyComfyOrgHeader()])
+
     return new Promise<boolean>((resolve) => {
       dialogStore.showDialog({
         key: 'api-nodes-signin',
@@ -242,6 +307,9 @@ export const useDialogService = () => {
   }
 
   async function showSignInDialog(): Promise<boolean> {
+    const [{ default: SignInContent }, { default: ComfyOrgHeader }] =
+      await Promise.all([lazySignInContent(), lazyComfyOrgHeader()])
+
     return new Promise<boolean>((resolve) => {
       dialogStore.showDialog({
         key: 'global-signin',
@@ -337,15 +405,20 @@ export const useDialogService = () => {
     })
   }
 
-  function showTopUpCreditsDialog(options?: {
+  async function showTopUpCreditsDialog(options?: {
     isInsufficientCredits?: boolean
   }) {
-    const { isActiveSubscription } = useSubscription()
+    const { isActiveSubscription, type } = useBillingContext()
     if (!isActiveSubscription.value) return
+
+    const component =
+      type.value === 'workspace'
+        ? TopUpCreditsDialogContentWorkspace
+        : TopUpCreditsDialogContentLegacy
 
     return dialogStore.showDialog({
       key: 'top-up-credits',
-      component: TopUpCreditsDialogContent,
+      component,
       props: options,
       dialogComponentProps: {
         headless: true,
@@ -361,7 +434,10 @@ export const useDialogService = () => {
   /**
    * Shows a dialog for updating the current user's password.
    */
-  function showUpdatePasswordDialog() {
+  async function showUpdatePasswordDialog() {
+    const [{ default: UpdatePasswordContent }, { default: ComfyOrgHeader }] =
+      await Promise.all([lazyUpdatePasswordContent(), lazyComfyOrgHeader()])
+
     return dialogStore.showDialog({
       key: 'global-update-password',
       component: UpdatePasswordContent,
@@ -391,10 +467,10 @@ export const useDialogService = () => {
     }
   }
 
-  function showLayoutDialog(options: {
+  function showLayoutDialog<C extends Component>(options: {
     key: string
-    component: Component
-    props: { onClose: () => void } & Record<string, unknown>
+    component: C
+    props: ComponentAttrs<C>
     dialogComponentProps?: DialogComponentProps
   }) {
     const layoutDefaultProps: DialogComponentProps = {
@@ -423,12 +499,22 @@ export const useDialogService = () => {
     })
   }
 
-  function showImportFailedNodeDialog(
+  async function showImportFailedNodeDialog(
     options: {
       conflictedPackages?: ConflictDetectionResult[]
       dialogComponentProps?: DialogComponentProps
     } = {}
   ) {
+    const [
+      { default: ImportFailedNodeHeader },
+      { default: ImportFailedNodeFooter },
+      { default: ImportFailedNodeContent }
+    ] = await Promise.all([
+      lazyImportFailedNodeHeader(),
+      lazyImportFailedNodeFooter(),
+      lazyImportFailedNodeContent()
+    ])
+
     const { dialogComponentProps, conflictedPackages } = options
 
     return dialogStore.showDialog({
@@ -460,7 +546,7 @@ export const useDialogService = () => {
     })
   }
 
-  function showNodeConflictDialog(
+  async function showNodeConflictDialog(
     options: {
       showAfterWhatsNew?: boolean
       conflictedPackages?: ConflictDetectionResult[]
@@ -469,6 +555,16 @@ export const useDialogService = () => {
       onButtonClick?: () => void
     } = {}
   ) {
+    const [
+      { default: NodeConflictHeader },
+      { default: NodeConflictFooter },
+      { default: NodeConflictDialogContent }
+    ] = await Promise.all([
+      lazyNodeConflictHeader(),
+      lazyNodeConflictFooter(),
+      lazyNodeConflictDialogContent()
+    ])
+
     const {
       dialogComponentProps,
       buttonText,
@@ -519,6 +615,148 @@ export const useDialogService = () => {
     show()
   }
 
+  // Workspace dialogs - dynamically imported to avoid bundling when feature flag is off
+  const workspaceDialogPt = {
+    headless: true,
+    pt: {
+      header: { class: 'p-0! hidden' },
+      content: { class: 'p-0! m-0! rounded-2xl' },
+      root: { class: 'rounded-2xl' }
+    }
+  } as const
+
+  async function showDeleteWorkspaceDialog(options?: {
+    workspaceId?: string
+    workspaceName?: string
+  }) {
+    const { default: component } =
+      await import('@/components/dialog/content/workspace/DeleteWorkspaceDialogContent.vue')
+    return dialogStore.showDialog({
+      key: 'delete-workspace',
+      component,
+      props: options,
+      dialogComponentProps: workspaceDialogPt
+    })
+  }
+
+  async function showCreateWorkspaceDialog(
+    onConfirm?: (name: string) => void | Promise<void>
+  ) {
+    const { default: component } =
+      await import('@/components/dialog/content/workspace/CreateWorkspaceDialogContent.vue')
+    return dialogStore.showDialog({
+      key: 'create-workspace',
+      component,
+      props: { onConfirm },
+      dialogComponentProps: {
+        ...workspaceDialogPt,
+        pt: {
+          ...workspaceDialogPt.pt,
+          root: { class: 'rounded-2xl max-w-[400px] w-full' }
+        }
+      }
+    })
+  }
+
+  async function showLeaveWorkspaceDialog() {
+    const { default: component } =
+      await import('@/components/dialog/content/workspace/LeaveWorkspaceDialogContent.vue')
+    return dialogStore.showDialog({
+      key: 'leave-workspace',
+      component,
+      dialogComponentProps: workspaceDialogPt
+    })
+  }
+
+  async function showEditWorkspaceDialog() {
+    const { default: component } =
+      await import('@/components/dialog/content/workspace/EditWorkspaceDialogContent.vue')
+    return dialogStore.showDialog({
+      key: 'edit-workspace',
+      component,
+      dialogComponentProps: {
+        ...workspaceDialogPt,
+        pt: {
+          ...workspaceDialogPt.pt,
+          root: { class: 'rounded-2xl max-w-[400px] w-full' }
+        }
+      }
+    })
+  }
+
+  async function showRemoveMemberDialog(memberId: string) {
+    const { default: component } =
+      await import('@/components/dialog/content/workspace/RemoveMemberDialogContent.vue')
+    return dialogStore.showDialog({
+      key: 'remove-member',
+      component,
+      props: { memberId },
+      dialogComponentProps: workspaceDialogPt
+    })
+  }
+
+  async function showInviteMemberDialog() {
+    const { default: component } =
+      await import('@/components/dialog/content/workspace/InviteMemberDialogContent.vue')
+    return dialogStore.showDialog({
+      key: 'invite-member',
+      component,
+      dialogComponentProps: {
+        ...workspaceDialogPt,
+        pt: {
+          ...workspaceDialogPt.pt,
+          root: { class: 'rounded-2xl max-w-[512px] w-full' }
+        }
+      }
+    })
+  }
+
+  async function showRevokeInviteDialog(inviteId: string) {
+    const { default: component } =
+      await import('@/components/dialog/content/workspace/RevokeInviteDialogContent.vue')
+    return dialogStore.showDialog({
+      key: 'revoke-invite',
+      component,
+      props: { inviteId },
+      dialogComponentProps: workspaceDialogPt
+    })
+  }
+
+  function showBillingComingSoonDialog() {
+    return dialogStore.showDialog({
+      key: 'billing-coming-soon',
+      title: t('subscription.billingComingSoon.title'),
+      component: ConfirmationDialogContent,
+      props: {
+        message: t('subscription.billingComingSoon.message'),
+        type: 'info' as ConfirmationDialogType,
+        onConfirm: () => {}
+      },
+      dialogComponentProps: {
+        pt: {
+          root: { class: 'max-w-[360px]' }
+        }
+      }
+    })
+  }
+
+  async function showCancelSubscriptionDialog(cancelAt?: string) {
+    const { default: component } =
+      await import('@/components/dialog/content/subscription/CancelSubscriptionDialogContent.vue')
+    return dialogStore.showDialog({
+      key: 'cancel-subscription',
+      component,
+      props: { cancelAt },
+      dialogComponentProps: {
+        ...workspaceDialogPt,
+        pt: {
+          ...workspaceDialogPt.pt,
+          root: { class: 'rounded-2xl max-w-[400px] w-full' }
+        }
+      }
+    })
+  }
+
   return {
     showLoadWorkflowWarning,
     showMissingModelsWarning,
@@ -536,6 +774,15 @@ export const useDialogService = () => {
     confirm,
     showLayoutDialog,
     showImportFailedNodeDialog,
-    showNodeConflictDialog
+    showNodeConflictDialog,
+    showDeleteWorkspaceDialog,
+    showCreateWorkspaceDialog,
+    showLeaveWorkspaceDialog,
+    showEditWorkspaceDialog,
+    showRemoveMemberDialog,
+    showRevokeInviteDialog,
+    showInviteMemberDialog,
+    showBillingComingSoonDialog,
+    showCancelSubscriptionDialog
   }
 }

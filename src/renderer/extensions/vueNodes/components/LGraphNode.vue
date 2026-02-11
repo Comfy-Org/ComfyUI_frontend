@@ -9,7 +9,7 @@
     :data-node-id="nodeData.id"
     :class="
       cn(
-        'bg-component-node-background lg-node absolute text-sm',
+        'group/node bg-node-component-header-surface lg-node absolute text-sm',
         'contain-style contain-layout min-w-[225px] min-h-(--node-height) w-(--node-width)',
         shapeClass,
         'touch-none flex flex-col',
@@ -17,7 +17,7 @@
         // hover (only when node should handle events)
         shouldHandleNodePointerEvents &&
           'hover:ring-7 ring-node-component-ring',
-        'outline-transparent outline-2 focus-visible:outline-node-component-outline',
+        'outline-transparent outline-3 focus-visible:outline-node-component-outline',
         borderClass,
         outlineClass,
         cursorClass,
@@ -28,11 +28,9 @@
             muted,
           'ring-4 ring-primary-500 bg-primary-500/10': isDraggingOver
         },
-
-        shouldHandleNodePointerEvents
+        shouldHandleNodePointerEvents && !nodeData.flags?.ghost
           ? 'pointer-events-auto'
-          : 'pointer-events-none',
-        !isCollapsed && ' pb-1'
+          : 'pointer-events-none'
       )
     "
     :style="[
@@ -40,7 +38,8 @@
         transform: `translate(${position.x ?? 0}px, ${(position.y ?? 0) - LiteGraph.NODE_TITLE_HEIGHT}px)`,
         zIndex: zIndex,
         opacity: nodeOpacity,
-        '--component-node-background': applyLightThemeColor(nodeData.bgcolor)
+        '--component-node-background': applyLightThemeColor(nodeData.bgcolor),
+        backgroundColor: applyLightThemeColor(nodeData?.color)
       }
     ]"
     v-bind="remainingPointerHandlers"
@@ -71,9 +70,9 @@
       <NodeHeader
         :node-data="nodeData"
         :collapsed="isCollapsed"
+        :price-badges="badges.pricing"
         @collapse="handleCollapse"
         @update:title="handleHeaderTitleUpdate"
-        @enter-subgraph="handleEnterSubgraph"
       />
     </div>
 
@@ -89,7 +88,7 @@
     />
 
     <template v-if="!isCollapsed">
-      <div class="relative mb-1">
+      <div class="relative">
         <!-- Progress bar for executing state -->
         <div
           v-if="executing && progress !== undefined"
@@ -105,7 +104,7 @@
       </div>
 
       <div
-        class="flex flex-1 flex-col gap-1 pb-2"
+        class="flex flex-1 flex-col gap-1 pt-1 pb-3 bg-component-node-background rounded-b-2xl"
         :data-testid="`node-body-${nodeData.id}`"
       >
         <NodeSlots :node-data="nodeData" />
@@ -116,45 +115,96 @@
           <NodeContent :node-data="nodeData" :media="nodeMedia" />
         </div>
         <!-- Live mid-execution preview images -->
-        <div v-if="shouldShowPreviewImg" class="min-h-0 flex-1 px-4">
-          <LivePreview :image-url="latestPreviewUrl || null" />
-        </div>
-
-        <!-- Show advanced inputs button for subgraph nodes -->
-        <div v-if="showAdvancedInputsButton" class="flex justify-center px-3">
-          <button
-            :class="
-              cn(
-                WidgetInputBaseClass,
-                'w-full h-7 flex justify-center items-center gap-2 text-sm px-3 outline-0 ring-0 truncate',
-                'transition-all cursor-pointer hover:bg-accent-background duration-150 active:scale-95'
-              )
-            "
-            @click.stop="handleShowAdvancedInputs"
-          >
-            <i class="icon-[lucide--settings-2] size-4" />
-            <span>{{ t('rightSidePanel.showAdvancedInputsButton') }}</span>
-          </button>
-        </div>
+        <LivePreview
+          v-if="shouldShowPreviewImg"
+          :image-url="latestPreviewUrl"
+        />
+        <NodeBadges v-bind="badges" :pricing="undefined" />
       </div>
     </template>
-
+    <Button
+      variant="textonly"
+      :class="
+        cn(
+          'w-full h-12 rounded-b-2xl -mt-5 pt-7 pb-2 -z-1 text-xs',
+          hasAnyError && 'hover:bg-destructive-background-hover'
+        )
+      "
+      as-child
+    >
+      <button
+        v-if="hasAnyError"
+        @click.stop="useRightSidePanelStore().openPanel('error')"
+      >
+        <span>{{ t('g.error') }}</span>
+        <i class="icon-[lucide--info] size-4" />
+      </button>
+      <button
+        v-else-if="lgraphNode?.isSubgraphNode()"
+        data-testid="subgraph-enter-button"
+        @click.stop="handleEnterSubgraph"
+      >
+        <span>{{ t('g.enterSubgraph') }}</span>
+        <i class="icon-[comfy--workflow] size-4" />
+      </button>
+      <button
+        v-else-if="showAdvancedState || showAdvancedInputsButton"
+        @click.stop="showAdvancedState = !showAdvancedState"
+      >
+        <template v-if="showAdvancedState">
+          <span>{{ t('rightSidePanel.hideAdvancedInputsButton') }}</span>
+          <i class="icon-[lucide--chevron-up] size-4" />
+        </template>
+        <template v-else>
+          <span>{{ t('rightSidePanel.showAdvancedInputsButton') }} </span>
+          <i class="icon-[lucide--settings-2] size-4" />
+        </template>
+      </button>
+    </Button>
     <!-- Resize handle (bottom-right only) -->
     <div
       v-if="!isCollapsed && nodeData.resizable !== false"
       role="button"
       :aria-label="t('g.resizeFromBottomRight')"
-      :class="cn(baseResizeHandleClasses, 'right-0 bottom-0 cursor-se-resize')"
+      :class="
+        cn(
+          baseResizeHandleClasses,
+          '-right-1 -bottom-1 cursor-se-resize group-hover/node:opacity-100'
+        )
+      "
       @pointerdown.stop="handleResizePointerDown"
-    />
+    >
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        viewBox="0 0 12 12"
+        class="w-2/5 h-2/5 top-1 left-1 absolute"
+      >
+        <path
+          d="M11 1L1 11M11 6L6 11"
+          stroke="var(--color-muted-foreground)"
+          stroke-width="0.975"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        />
+      </svg>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { storeToRefs } from 'pinia'
-import { computed, nextTick, onErrorCaptured, onMounted, ref, watch } from 'vue'
+import {
+  computed,
+  customRef,
+  nextTick,
+  onErrorCaptured,
+  onMounted,
+  ref,
+  watch
+} from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import Button from '@/components/ui/button/Button.vue'
 import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
 import { showNodeOptions } from '@/composables/graph/useMoreOptionsMenu'
 import { useErrorHandling } from '@/composables/useErrorHandling'
@@ -172,10 +222,12 @@ import { useTelemetry } from '@/platform/telemetry'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import NodeBadges from '@/renderer/extensions/vueNodes/components/NodeBadges.vue'
 import SlotConnectionDot from '@/renderer/extensions/vueNodes/components/SlotConnectionDot.vue'
 import { useNodeEventHandlers } from '@/renderer/extensions/vueNodes/composables/useNodeEventHandlers'
 import { useNodePointerInteractions } from '@/renderer/extensions/vueNodes/composables/useNodePointerInteractions'
 import { useNodeZIndex } from '@/renderer/extensions/vueNodes/composables/useNodeZIndex'
+import { usePartitionedBadges } from '@/renderer/extensions/vueNodes/composables/usePartitionedBadges'
 import { useVueElementTracking } from '@/renderer/extensions/vueNodes/composables/useVueNodeResizeTracking'
 import { useNodeExecutionState } from '@/renderer/extensions/vueNodes/execution/useNodeExecutionState'
 import { useNodeDrag } from '@/renderer/extensions/vueNodes/layout/useNodeDrag'
@@ -195,7 +247,6 @@ import {
 import { cn } from '@/utils/tailwindUtil'
 
 import { useNodeResize } from '../interactions/resize/useNodeResize'
-import { WidgetInputBaseClass } from '../widgets/components/layout'
 import LivePreview from './LivePreview.vue'
 import NodeContent from './NodeContent.vue'
 import NodeHeader from './NodeHeader.vue'
@@ -211,6 +262,8 @@ interface LGraphNodeProps {
 const { nodeData, error = null } = defineProps<LGraphNodeProps>()
 
 const { t } = useI18n()
+
+const settingStore = useSettingStore()
 
 const { handleNodeCollapse, handleNodeTitleUpdate, handleNodeRightClick } =
   useNodeEventHandlers()
@@ -248,7 +301,9 @@ const bypassed = computed(
 const muted = computed((): boolean => nodeData.mode === LGraphEventMode.NEVER)
 
 const nodeOpacity = computed(() => {
-  const globalOpacity = useSettingStore().get('Comfy.Node.Opacity') ?? 1
+  const globalOpacity = settingStore.get('Comfy.Node.Opacity') ?? 1
+
+  if (nodeData.flags?.ghost) return globalOpacity * 0.3
 
   // For muted/bypassed nodes, apply the 0.5 multiplier on top of global opacity
   if (bypassed.value || muted.value) {
@@ -278,6 +333,7 @@ const { position, size, zIndex } = useNodeLayout(() => nodeData.id)
 const { pointerHandlers } = useNodePointerInteractions(() => nodeData.id)
 const { onPointerdown, ...remainingPointerHandlers } = pointerHandlers
 const { startDrag } = useNodeDrag()
+const badges = usePartitionedBadges(nodeData)
 
 async function nodeOnPointerdown(event: PointerEvent) {
   if (event.altKey && lgraphNode.value) {
@@ -324,11 +380,14 @@ function initSizeStyles() {
   const suffix = isCollapsed.value ? '-x' : ''
 
   el.style.setProperty(`--node-width${suffix}`, `${width}px`)
-  el.style.setProperty(`--node-height${suffix}`, `${height}px`)
+  el.style.setProperty(
+    `--node-height${suffix}`,
+    `${height + LiteGraph.NODE_TITLE_HEIGHT}px`
+  )
 }
 
 const baseResizeHandleClasses =
-  'absolute h-3 w-3 opacity-0 pointer-events-auto focus-visible:outline focus-visible:outline-2 focus-visible:outline-white/40'
+  'absolute h-5 w-5 opacity-0 pointer-events-auto focus-visible:outline focus-visible:outline-2 focus-visible:outline-white/40'
 
 const MIN_NODE_WIDTH = 225
 
@@ -381,7 +440,7 @@ const { latestPreviewUrl, shouldShowPreviewImg } = useNodePreviewState(
 )
 
 const borderClass = computed(() => {
-  if (hasAnyError.value) return 'border-node-stroke-error'
+  if (hasAnyError.value) return 'border-node-stroke-error bg-error'
   //FIXME need a better way to detecting transparency
   if (
     !displayHeader.value &&
@@ -493,20 +552,51 @@ const showAdvancedInputsButton = computed(() => {
 
   // For regular nodes: show button if there are advanced widgets and they're currently hidden
   const hasAdvancedWidgets = nodeData.widgets?.some((w) => w.options?.advanced)
-  return hasAdvancedWidgets && !node.showAdvanced
+  const alwaysShowAdvanced = settingStore.get(
+    'Comfy.Node.AlwaysShowAdvancedWidgets'
+  )
+  return hasAdvancedWidgets && !alwaysShowAdvanced
 })
 
-function handleShowAdvancedInputs() {
-  const node = lgraphNode.value
-  if (!node) return
+const showAdvancedState = customRef((track, trigger) => {
+  let internalState = false
 
-  if (node instanceof SubgraphNode) {
-    const rightSidePanelStore = useRightSidePanelStore()
-    rightSidePanelStore.focusSection('advanced-inputs')
-  } else {
-    node.showAdvanced = true
+  const node = lgraphNode.value
+  if (node && !(node instanceof SubgraphNode)) {
+    internalState = !!node.showAdvanced
   }
-}
+
+  return {
+    get() {
+      track()
+      return internalState
+    },
+    set(value: boolean) {
+      const node = lgraphNode.value
+      if (!node) return
+
+      if (node instanceof SubgraphNode) {
+        // Do not modify internalState for subgraph nodes
+        const rightSidePanelStore = useRightSidePanelStore()
+        if (value) {
+          rightSidePanelStore.focusSection('advanced-inputs')
+        } else {
+          rightSidePanelStore.closePanel()
+        }
+      } else {
+        node.showAdvanced = value
+        internalState = value
+      }
+      trigger()
+    }
+  }
+})
+
+const hasVideoInput = computed(() => {
+  return (
+    lgraphNode.value?.inputs?.some((input) => input.type === 'VIDEO') ?? false
+  )
+})
 
 const nodeMedia = computed(() => {
   const newOutputs = nodeOutputs.nodeOutputs[nodeOutputLocatorId.value]
@@ -517,13 +607,9 @@ const nodeMedia = computed(() => {
   const urls = nodeOutputs.getNodeImageUrls(node)
   if (!urls?.length) return undefined
 
-  // Determine media type from previewMediaType or fallback to input slot types
-  // Note: Despite the field name "images", videos are also included in outputs
-  // TODO: fix the backend to return videos using the videos key instead of the images key
-  const hasVideoInput = node.inputs?.some((input) => input.type === 'VIDEO')
   const type =
     node.previewMediaType === 'video' ||
-    (!node.previewMediaType && hasVideoInput)
+    (!node.previewMediaType && hasVideoInput.value)
       ? 'video'
       : 'image'
 

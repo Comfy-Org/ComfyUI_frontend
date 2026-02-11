@@ -100,7 +100,8 @@ ComfyUI supports three types of icons that can be used throughout the interface.
 
 ```vue
 <template>
-  <i class="icon-[lucide--info]"
+  <i
+    class="icon-[lucide--info]"
     v-tooltip="'Click for more information'"
     class="cursor-pointer"
   />
@@ -147,6 +148,7 @@ packages/design-system/src/icons/
 ```
 
 **Important:**
+
 - Use `viewBox` for proper scaling (24x24 is standard)
 - Don't include `width` or `height` attributes
 - Use `currentColor` for theme-aware icons
@@ -249,26 +251,25 @@ Icons are automatically imported using `unplugin-icons` - no manual imports need
 
 The icon system has two layers:
 
-1. **Build-time Processing** (`packages/design-system/src/iconCollection.ts`):
-   - Scans `packages/design-system/src/icons/` for SVG files
-   - Validates SVG content and structure
-   - Creates Iconify collection for Tailwind CSS
-   - Provides error handling for malformed files
+1. **Tailwind CSS Plugin** (`@iconify/tailwind4`):
+   - Configured via `@plugin` directive in `packages/design-system/src/css/style.css`
+   - Uses `from-folder(comfy, ...)` to load SVGs from `packages/design-system/src/icons/`
+   - Auto-cleans and optimizes SVGs at build time
 
 2. **Vite Runtime** (`vite.config.mts`):
    - Enables direct SVG import as Vue components
    - Supports dynamic icon loading
 
-```typescript
-// Build script creates Iconify collection
-export const iconCollection: IconifyCollection = {
-  prefix: 'comfy',
-  icons: {
-    'workflow': { body: '<svg>...</svg>' },
-    'node': { body: '<svg>...</svg>' }
-  }
+```css
+/* CSS configuration for Tailwind icon classes */
+@plugin "@iconify/tailwind4" {
+  prefix: 'icon';
+  scale: 1.2;
+  icon-sets: from-folder(comfy, './packages/design-system/src/icons');
 }
+```
 
+```typescript
 // Vite configuration for component-based usage
 Icons({
   compiler: 'vue3',
@@ -289,6 +290,7 @@ Icons are fully typed. If TypeScript doesn't recognize a new custom icon:
 ## Troubleshooting
 
 ### Icon Not Showing
+
 1. **Check filename**: Must be kebab-case without special characters
 2. **Restart dev server**: Required after adding new icons
 3. **Verify SVG**: Ensure it's valid SVG syntax (build script validates automatically)
@@ -296,11 +298,13 @@ Icons are fully typed. If TypeScript doesn't recognize a new custom icon:
 5. **Build script errors**: Check console during build - malformed SVGs are logged but don't break builds
 
 ### Icon Wrong Color
+
 - Replace hardcoded colors with `currentColor`
 - Use `stroke="currentColor"` for outlines
 - Use `fill="currentColor"` for filled shapes
 
 ### Icon Wrong Size
+
 - Remove `width` and `height` from SVG
 - Ensure `viewBox` is present
 - Use CSS classes for sizing: `class="w-6 h-6"`

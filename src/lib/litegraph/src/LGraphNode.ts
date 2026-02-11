@@ -1,3 +1,5 @@
+import { toValue } from 'vue'
+
 import { LGraphNodeProperties } from '@/lib/litegraph/src/LGraphNodeProperties'
 import {
   calculateInputSlotPosFromSlot,
@@ -8,7 +10,11 @@ import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMuta
 import { LayoutSource } from '@/renderer/core/layout/types'
 import { adjustColor } from '@/utils/colorUtil'
 import type { ColorAdjustOptions } from '@/utils/colorUtil'
-import { commonType, toClass } from '@/lib/litegraph/src/utils/type'
+import {
+  commonType,
+  isNodeBindable,
+  toClass
+} from '@/lib/litegraph/src/utils/type'
 
 import { SUBGRAPH_OUTPUT_ID } from '@/lib/litegraph/src/constants'
 import type { DragAndScale } from './DragAndScale'
@@ -233,6 +239,14 @@ export class LGraphNode
   static description?: string
   static filter?: string
   static skip_list?: boolean
+  static nodeData?: {
+    dev_only?: boolean
+    deprecated?: boolean
+    experimental?: boolean
+    output_node?: boolean
+    api_node?: boolean
+    name?: string
+  }
 
   static resizeHandleSize = 15
   static resizeEdgeSize = 5
@@ -263,8 +277,8 @@ export class LGraphNode
   inputs: INodeInputSlot[] = []
   outputs: INodeOutputSlot[] = []
 
-  #concreteInputs: NodeInputSlot[] = []
-  #concreteOutputs: NodeOutputSlot[] = []
+  private _concreteInputs: NodeInputSlot[] = []
+  private _concreteOutputs: NodeOutputSlot[] = []
 
   properties: Dictionary<NodeProperty | undefined> = {}
   properties_info: INodePropertyInfo[] = []
@@ -383,6 +397,10 @@ export class LGraphNode
   action_call?: string
   execute_triggered?: number
   action_triggered?: number
+  /**
+   * @deprecated This property is unsupported and will be removed in a future release.
+   * Use `widgets_start_y` or a custom `arrange()` override instead.
+   */
   widgets_up?: boolean
   widgets_start_y?: number
   lostFocusAt?: number
@@ -428,24 +446,24 @@ export class LGraphNode
   }
 
   /** @inheritdoc {@link renderArea} */
-  #renderArea = new Rectangle()
+  private _renderArea = new Rectangle()
   /**
    * Rect describing the node area, including shadows and any protrusions.
    * Determines if the node is visible.  Calculated once at the start of every frame.
    */
   get renderArea(): ReadOnlyRect {
-    return this.#renderArea
+    return this._renderArea
   }
 
   /** @inheritdoc {@link boundingRect} */
-  #boundingRect: Rectangle = new Rectangle()
+  private _boundingRect: Rectangle = new Rectangle()
   /**
    * Cached node position & area as `x, y, width, height`.  Includes changes made by {@link onBounding}, if present.
    *
    * Determines the node hitbox and other rendering effects.  Calculated once at the start of every frame.
    */
   get boundingRect(): ReadOnlyRectangle {
-    return this.#boundingRect
+    return this._boundingRect
   }
 
   /** The offset from {@link pos} to the top-left of {@link boundingRect}. */
@@ -743,7 +761,9 @@ export class LGraphNode
   onPropertyChange?(this: LGraphNode): void
   updateOutputData?(this: LGraphNode, origin_slot: number): void
 
-  #getErrorStrokeStyle(this: LGraphNode): IDrawBoundingOptions | undefined {
+  private _getErrorStrokeStyle(
+    this: LGraphNode
+  ): IDrawBoundingOptions | undefined {
     if (this.has_errors) {
       return {
         padding: 12,
@@ -753,7 +773,9 @@ export class LGraphNode
     }
   }
 
-  #getSelectedStrokeStyle(this: LGraphNode): IDrawBoundingOptions | undefined {
+  private _getSelectedStrokeStyle(
+    this: LGraphNode
+  ): IDrawBoundingOptions | undefined {
     if (this.selected) {
       return {
         padding: this.has_errors ? 20 : undefined
@@ -768,8 +790,8 @@ export class LGraphNode
     this.size = [LiteGraph.NODE_WIDTH, 60]
     this.pos = [10, 10]
     this.strokeStyles = {
-      error: this.#getErrorStrokeStyle,
-      selected: this.#getSelectedStrokeStyle
+      error: this._getErrorStrokeStyle,
+      selected: this._getSelectedStrokeStyle
     }
     // Initialize property manager with tracked properties
     this.changeTracker = new LGraphNodeProperties(this)
@@ -785,6 +807,7 @@ export class LGraphNode
     if (this.graph) {
       this.graph._version++
     }
+    if (info.id === -1) info.id = this.id
     for (const j in info) {
       if (j == 'properties') {
         // i don't want to clone properties, I want to reuse the old container
@@ -877,6 +900,14 @@ export class LGraphNode
 
     // Sync the state of this.resizable.
     if (this.pinned) this.resizable = false
+
+    if (this.widgets_up) {
+      console.warn(
+        `[LiteGraph] Node type "${this.type}" uses deprecated property "widgets_up". ` +
+          'This property is unsupported and will be removed. ' +
+          'Use "widgets_start_y" or a custom arrange() override instead.'
+      )
+    }
 
     this.onConfigure?.(info)
   }
@@ -1930,6 +1961,14 @@ export class LGraphNode
     this.widgets ||= []
     const widget = toConcreteWidget(custom_widget, this, false) ?? custom_widget
     this.widgets.push(widget)
+
+    // Only register with store if node has a valid ID (is already in a graph).
+    // If the node isn't in a graph yet (id === -1), registration happens
+    // when the node is added via LGraph.add() -> node.onAdded.
+    if (this.id !== -1 && isNodeBindable(widget)) {
+      widget.setNodeId(this.id)
+    }
+
     return widget
   }
 
@@ -2056,11 +2095,11 @@ export class LGraphNode
    * Called automatically at the start of every frame.
    */
   updateArea(ctx?: CanvasRenderingContext2D): void {
-    const bounds = this.#boundingRect
+    const bounds = this._boundingRect
     this.measure(bounds, ctx)
     this.onBounding?.(bounds)
 
-    const renderArea = this.#renderArea
+    const renderArea = this._renderArea
     renderArea.set(bounds)
     // 4 offset for collapsed node connection points
     renderArea[0] -= 4
@@ -2075,7 +2114,13 @@ export class LGraphNode
    * checks if a point is inside the shape of a node
    */
   isPointInside(x: number, y: number): boolean {
-    return isInRect(x, y, this.boundingRect)
+    if (isInRect(x, y, this.boundingRect)) return true
+
+    for (const badge of this.badges.map(toValue).filter((b) => b.onClick)) {
+      if (isInRect(x - this.pos[0], y - this.pos[1], badge.boundingRect))
+        return true
+    }
+    return false
   }
 
   /**
@@ -2276,7 +2321,7 @@ export class LGraphNode
     optsIn?: FindFreeSlotOptions & { returnObj?: TReturn }
   ): INodeInputSlot | -1
   findInputSlotFree(optsIn?: FindFreeSlotOptions) {
-    return this.#findFreeSlot(this.inputs, optsIn)
+    return this._findFreeSlot(this.inputs, optsIn)
   }
 
   /**
@@ -2291,14 +2336,14 @@ export class LGraphNode
     optsIn?: FindFreeSlotOptions & { returnObj?: TReturn }
   ): INodeOutputSlot | -1
   findOutputSlotFree(optsIn?: FindFreeSlotOptions) {
-    return this.#findFreeSlot(this.outputs, optsIn)
+    return this._findFreeSlot(this.outputs, optsIn)
   }
 
   /**
    * Finds the next free slot
    * @param slots The slots to search, i.e. this.inputs or this.outputs
    */
-  #findFreeSlot<TSlot extends INodeInputSlot | INodeOutputSlot>(
+  private _findFreeSlot<TSlot extends INodeInputSlot | INodeOutputSlot>(
     slots: TSlot[],
     options?: FindFreeSlotOptions
   ): TSlot | number {
@@ -2340,7 +2385,7 @@ export class LGraphNode
     preferFreeSlot?: boolean,
     doNotUseOccupied?: boolean
   ) {
-    return this.#findSlotByType(
+    return this._findSlotByType(
       this.inputs,
       type,
       returnObj,
@@ -2370,7 +2415,7 @@ export class LGraphNode
     preferFreeSlot?: boolean,
     doNotUseOccupied?: boolean
   ) {
-    return this.#findSlotByType(
+    return this._findSlotByType(
       this.outputs,
       type,
       returnObj,
@@ -2416,14 +2461,14 @@ export class LGraphNode
     doNotUseOccupied?: boolean
   ): number | INodeOutputSlot | INodeInputSlot {
     return input
-      ? this.#findSlotByType(
+      ? this._findSlotByType(
           this.inputs,
           type,
           returnObj,
           preferFreeSlot,
           doNotUseOccupied
         )
-      : this.#findSlotByType(
+      : this._findSlotByType(
           this.outputs,
           type,
           returnObj,
@@ -2444,7 +2489,7 @@ export class LGraphNode
    * @see {findInputSlotByType}
    * @returns If a match is found, the slot if returnObj is true, otherwise the index.  If no matches are found, -1
    */
-  #findSlotByType<TSlot extends INodeInputSlot | INodeOutputSlot>(
+  private _findSlotByType<TSlot extends INodeInputSlot | INodeOutputSlot>(
     slots: TSlot[],
     type: ISlotType,
     returnObj?: boolean,
@@ -3293,8 +3338,8 @@ export class LGraphNode
     // default vertical slots
     const offset = LiteGraph.NODE_SLOT_HEIGHT * 0.5
     const slotIndex = is_input
-      ? this.#defaultVerticalInputs.indexOf(this.inputs[slot_number])
-      : this.#defaultVerticalOutputs.indexOf(this.outputs[slot_number])
+      ? this._defaultVerticalInputs.indexOf(this.inputs[slot_number])
+      : this._defaultVerticalOutputs.indexOf(this.outputs[slot_number])
 
     out[0] = is_input ? nodeX + offset : nodeX + this.size[0] + 1 - offset
     out[1] =
@@ -3307,7 +3352,7 @@ export class LGraphNode
   /**
    * @internal The inputs that are not positioned with absolute coordinates.
    */
-  get #defaultVerticalInputs() {
+  private get _defaultVerticalInputs() {
     return this.inputs.filter(
       (slot) => !slot.pos && !(this.widgets?.length && isWidgetInputSlot(slot))
     )
@@ -3316,7 +3361,7 @@ export class LGraphNode
   /**
    * @internal The outputs that are not positioned with absolute coordinates.
    */
-  get #defaultVerticalOutputs() {
+  private get _defaultVerticalOutputs() {
     return this.outputs.filter((slot: INodeOutputSlot) => !slot.pos)
   }
 
@@ -3324,7 +3369,7 @@ export class LGraphNode
    * Get the context needed for slot position calculations
    * @internal
    */
-  #getSlotPositionContext(): SlotPositionContext {
+  private _getSlotPositionContext(): SlotPositionContext {
     return {
       nodeX: this.pos[0],
       nodeY: this.pos[1],
@@ -3356,7 +3401,7 @@ export class LGraphNode
    * @returns Position of the centre of the input slot in graph co-ordinates.
    */
   getInputSlotPos(input: INodeInputSlot): Point {
-    return calculateInputSlotPosFromSlot(this.#getSlotPositionContext(), input)
+    return calculateInputSlotPosFromSlot(this._getSlotPositionContext(), input)
   }
 
   /**
@@ -3466,7 +3511,7 @@ export class LGraphNode
    * Toggles advanced mode of the node, showing advanced widgets
    */
   toggleAdvanced() {
-    if (!this.widgets?.some((w) => w.advanced)) return
+    if (!this.hasAdvancedWidgets()) return
     if (!this.graph) throw new NullGraphError()
     this.graph._version++
     this.showAdvanced = !this.showAdvanced
@@ -3844,6 +3889,21 @@ export class LGraphNode
     return !isHidden
   }
 
+  /**
+   * Returns all widgets that should participate in layout calculations.
+   * Filters out hidden widgets only (not collapsed/advanced).
+   */
+  getLayoutWidgets(): IBaseWidget[] {
+    return this.widgets?.filter((w) => !w.hidden) ?? []
+  }
+
+  /**
+   * Returns `true` if the node has any advanced widgets.
+   */
+  hasAdvancedWidgets(): boolean {
+    return this.widgets?.some((w) => w.advanced) ?? false
+  }
+
   updateComputedDisabled() {
     if (!this.widgets) return
     for (const widget of this.widgets)
@@ -3899,13 +3959,13 @@ export class LGraphNode
    */
   drawCollapsedSlots(ctx: CanvasRenderingContext2D): void {
     // Render the first connected slot only.
-    for (const slot of this.#concreteInputs) {
+    for (const slot of this._concreteInputs) {
       if (slot.link != null) {
         slot.drawCollapsed(ctx)
         break
       }
     }
-    for (const slot of this.#concreteOutputs) {
+    for (const slot of this._concreteOutputs) {
       if (slot.links?.length) {
         slot.drawCollapsed(ctx)
         break
@@ -3917,7 +3977,7 @@ export class LGraphNode
     return [...this.inputs, ...this.outputs]
   }
 
-  #measureSlot(
+  private _measureSlot(
     slot: NodeInputSlot | NodeOutputSlot,
     slotIndex: number,
     isInput: boolean
@@ -3934,27 +3994,27 @@ export class LGraphNode
     slot.boundingRect[3] = LiteGraph.NODE_SLOT_HEIGHT
   }
 
-  #measureSlots(): ReadOnlyRect | null {
+  private _measureSlots(): ReadOnlyRect | null {
     const slots: (NodeInputSlot | NodeOutputSlot)[] = []
 
-    for (const [slotIndex, slot] of this.#concreteInputs.entries()) {
+    for (const [slotIndex, slot] of this._concreteInputs.entries()) {
       // Unrecognized nodes (Nodes with error) has inputs but no widgets. Treat
       // converted inputs as normal inputs.
       /** Widget input slots are handled in {@link layoutWidgetInputSlots} */
       if (this.widgets?.length && isWidgetInputSlot(slot)) continue
 
-      this.#measureSlot(slot, slotIndex, true)
+      this._measureSlot(slot, slotIndex, true)
       slots.push(slot)
     }
-    for (const [slotIndex, slot] of this.#concreteOutputs.entries()) {
-      this.#measureSlot(slot, slotIndex, false)
+    for (const [slotIndex, slot] of this._concreteOutputs.entries()) {
+      this._measureSlot(slot, slotIndex, false)
       slots.push(slot)
     }
 
     return slots.length ? createBounds(slots, 0) : null
   }
 
-  #getMouseOverSlot(slot: INodeSlot): INodeSlot | null {
+  private _getMouseOverSlot(slot: INodeSlot): INodeSlot | null {
     const isInput = isINodeInputSlot(slot)
     const mouseOverId = this.mouseOver?.[isInput ? 'inputId' : 'outputId'] ?? -1
     if (mouseOverId === -1) {
@@ -3963,11 +4023,11 @@ export class LGraphNode
     return isInput ? this.inputs[mouseOverId] : this.outputs[mouseOverId]
   }
 
-  #isMouseOverSlot(slot: INodeSlot): boolean {
-    return this.#getMouseOverSlot(slot) === slot
+  private _isMouseOverSlot(slot: INodeSlot): boolean {
+    return this._getMouseOverSlot(slot) === slot
   }
 
-  #isMouseOverWidget(widget: IBaseWidget | undefined): boolean {
+  private _isMouseOverWidget(widget: IBaseWidget | undefined): boolean {
     if (!widget) return false
     return this.mouseOver?.overWidget === widget
   }
@@ -3999,9 +4059,9 @@ export class LGraphNode
     ctx: CanvasRenderingContext2D,
     { fromSlot, colorContext, editorAlpha, lowQuality }: DrawSlotsOptions
   ) {
-    for (const slot of [...this.#concreteInputs, ...this.#concreteOutputs]) {
+    for (const slot of [...this._concreteInputs, ...this._concreteOutputs]) {
       const isValidTarget = fromSlot && slot.isValidTarget(fromSlot)
-      const isMouseOverSlot = this.#isMouseOverSlot(slot)
+      const isMouseOverSlot = this._isMouseOverSlot(slot)
 
       // change opacity of incompatible slots when dragging a connection
       const isValid = !fromSlot || isValidTarget
@@ -4016,7 +4076,7 @@ export class LGraphNode
         isMouseOverSlot ||
         isValidTarget ||
         !slot.isWidgetInputSlot ||
-        this.#isMouseOverWidget(this.getWidgetFromSlot(slot)) ||
+        this._isMouseOverWidget(this.getWidgetFromSlot(slot)) ||
         slot.isConnected ||
         slot.alwaysVisible
       ) {
@@ -4037,7 +4097,7 @@ export class LGraphNode
    * -  {@link IBaseWidget.y}
    * @param widgetStartY The y-coordinate of the first widget
    */
-  #arrangeWidgets(widgetStartY: number): void {
+  private _arrangeWidgets(widgetStartY: number): void {
     if (!this.widgets || !this.widgets.length) return
 
     const bodyHeight = this.bodyHeight
@@ -4054,7 +4114,7 @@ export class LGraphNode
       w: IBaseWidget
     }[] = []
 
-    const visibleWidgets = this.widgets.filter((w) => !w.hidden)
+    const visibleWidgets = this.getLayoutWidgets()
 
     for (const w of visibleWidgets) {
       if (w.computeSize) {
@@ -4115,7 +4175,7 @@ export class LGraphNode
   /**
    * Arranges the layout of the node's widget input slots.
    */
-  #arrangeWidgetInputSlots(): void {
+  private _arrangeWidgetInputSlots(): void {
     if (!this.widgets) return
 
     const slotByWidgetName = new Map<
@@ -4137,10 +4197,10 @@ export class LGraphNode
         const slot = slotByWidgetName.get(widget.name)
         if (!slot) continue
 
-        const actualSlot = this.#concreteInputs[slot.index]
+        const actualSlot = this._concreteInputs[slot.index]
         const offset = LiteGraph.NODE_SLOT_HEIGHT * 0.5
         actualSlot.pos = [offset, widget.y + offset]
-        this.#measureSlot(actualSlot, slot.index, true)
+        this._measureSlot(actualSlot, slot.index, true)
       }
     } else {
       // For Vue positioning, just measure the slots without setting pos
@@ -4148,7 +4208,7 @@ export class LGraphNode
         const slot = slotByWidgetName.get(widget.name)
         if (!slot) continue
 
-        this.#measureSlot(this.#concreteInputs[slot.index], slot.index, true)
+        this._measureSlot(this._concreteInputs[slot.index], slot.index, true)
       }
     }
   }
@@ -4161,10 +4221,10 @@ export class LGraphNode
    * have been removed from the ecosystem.
    */
   _setConcreteSlots(): void {
-    this.#concreteInputs = this.inputs.map((slot) =>
+    this._concreteInputs = this.inputs.map((slot) =>
       toClass(NodeInputSlot, slot, this)
     )
-    this.#concreteOutputs = this.outputs.map((slot) =>
+    this._concreteOutputs = this.outputs.map((slot) =>
       toClass(NodeOutputSlot, slot, this)
     )
   }
@@ -4173,12 +4233,12 @@ export class LGraphNode
    * Arranges node elements in preparation for rendering (slots & widgets).
    */
   arrange(): void {
-    const slotsBounds = this.#measureSlots()
+    const slotsBounds = this._measureSlots()
     const widgetStartY = slotsBounds
       ? slotsBounds[1] + slotsBounds[3] - this.pos[1]
       : 0
-    this.#arrangeWidgets(widgetStartY)
-    this.#arrangeWidgetInputSlots()
+    this._arrangeWidgets(widgetStartY)
+    this._arrangeWidgetInputSlots()
   }
 
   /**

@@ -72,6 +72,9 @@ export function getAssetDisplayName(asset: AssetItem): string {
  * @returns The source URL or null if not present/parseable
  */
 export function getAssetSourceUrl(asset: AssetItem): string | null {
+  if (typeof asset.metadata?.repo_url === 'string') {
+    return asset.metadata.repo_url
+  }
   // Note: Reversed priority for backwards compatibility
   const sourceArn =
     asset.metadata?.source_arn ?? asset.user_metadata?.source_arn
@@ -148,4 +151,14 @@ export function getAssetUserDescription(asset: AssetItem): string {
   return typeof asset.user_metadata?.user_description === 'string'
     ? asset.user_metadata.user_description
     : ''
+}
+
+/**
+ * Gets the filename for an asset with fallback chain
+ * Checks user_metadata.filename first, then metadata.filename, then asset.name
+ * @param asset - The asset to extract filename from
+ * @returns The filename string
+ */
+export function getAssetFilename(asset: AssetItem): string {
+  return getStringProperty(asset, 'filename') ?? asset.name
 }

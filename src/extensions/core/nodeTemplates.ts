@@ -32,9 +32,13 @@ import { GroupNodeConfig, GroupNodeHandler } from './groupNode'
 const id = 'Comfy.NodeTemplates'
 const file = 'comfy.templates.json'
 
+interface NodeTemplate {
+  name: string
+  data: string
+}
+
 class ManageTemplates extends ComfyDialog {
-  // @ts-expect-error fixme ts strict error
-  templates: any[]
+  templates: NodeTemplate[] = []
   draggedEl: HTMLElement | null
   saveVisualCue: number | null
   emptyImg: HTMLImageElement

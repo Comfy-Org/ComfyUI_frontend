@@ -5,7 +5,6 @@ import {
   GoogleAuthProvider,
   browserLocalPersistence,
   createUserWithEmailAndPassword,
-  deleteUser,
   getAdditionalUserInfo,
   onAuthStateChanged,
   onIdTokenChanged,
@@ -212,6 +211,31 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
     return token ? { Authorization: `Bearer ${token}` } : null
   }
 
+  /**
+   * Returns the raw auth token (not wrapped in a header object).
+   * Priority: workspace token > Firebase token.
+   * Use this for WebSocket connections and backend node auth.
+   */
+  const getAuthToken = async (): Promise<string | undefined> => {
+    if (flags.teamWorkspacesEnabled) {
+      const workspaceToken = sessionStorage.getItem(
+        WORKSPACE_STORAGE_KEYS.TOKEN
+      )
+      const expiresAt = sessionStorage.getItem(
+        WORKSPACE_STORAGE_KEYS.EXPIRES_AT
+      )
+
+      if (workspaceToken && expiresAt) {
+        const expiryTime = parseInt(expiresAt, 10)
+        if (Date.now() < expiryTime) {
+          return workspaceToken
+        }
+      }
+    }
+
+    return await getIdToken()
+  }
+
   const fetchBalance = async (): Promise<GetCustomerBalanceResponse | null> => {
     isFetchingBalance.value = true
     try {
@@ -325,7 +349,8 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
     if (isCloud) {
       useTelemetry()?.trackAuth({
         method: 'email',
-        is_new_user: false
+        is_new_user: false,
+        user_id: result.user.uid
       })
     }
 
@@ -345,7 +370,8 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
     if (isCloud) {
       useTelemetry()?.trackAuth({
         method: 'email',
-        is_new_user: true
+        is_new_user: true,
+        user_id: result.user.uid
       })
     }
 
@@ -363,7 +389,8 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
       const isNewUser = additionalUserInfo?.isNewUser ?? false
       useTelemetry()?.trackAuth({
         method: 'google',
-        is_new_user: isNewUser
+        is_new_user: isNewUser,
+        user_id: result.user.uid
       })
     }
 
@@ -381,7 +408,8 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
       const isNewUser = additionalUserInfo?.isNewUser ?? false
       useTelemetry()?.trackAuth({
         method: 'github',
-        is_new_user: isNewUser
+        is_new_user: isNewUser,
+        user_id: result.user.uid
       })
     }
 
@@ -402,14 +430,6 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
       throw new FirebaseAuthStoreError(t('toastMessages.userNotAuthenticated'))
     }
     await updatePassword(currentUser.value, newPassword)
-  }
-
-  /** Delete the current user account */
-  const _deleteAccount = async (): Promise<void> => {
-    if (!currentUser.value) {
-      throw new FirebaseAuthStoreError(t('toastMessages.userNotAuthenticated'))
-    }
-    await deleteUser(currentUser.value)
   }
 
   const addCredits = async (
@@ -511,7 +531,8 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
     accessBillingPortal,
     sendPasswordReset,
     updatePassword: _updatePassword,
-    deleteAccount: _deleteAccount,
-    getAuthHeader
+    getAuthHeader,
+    getFirebaseAuthHeader,
+    getAuthToken
   }
 })

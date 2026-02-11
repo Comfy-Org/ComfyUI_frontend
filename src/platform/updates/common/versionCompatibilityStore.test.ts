@@ -1,10 +1,10 @@
-import { createPinia, setActivePinia } from 'pinia'
+import { until } from '@vueuse/core'
+import { createTestingPinia } from '@pinia/testing'
+import { setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 
 import { useVersionCompatibilityStore } from '@/platform/updates/common/versionCompatibilityStore'
-import { useSettingStore } from '@/platform/settings/settingStore'
-import { useSystemStatsStore } from '@/stores/systemStatsStore'
 
 vi.mock('@/config', () => ({
   default: {
@@ -12,13 +12,14 @@ vi.mock('@/config', () => ({
   }
 }))
 
-vi.mock('@/stores/systemStatsStore')
+const mockUseSystemStatsStore = vi.hoisted(() => vi.fn())
+vi.mock('@/stores/systemStatsStore', () => ({
+  useSystemStatsStore: mockUseSystemStatsStore
+}))
 
-// Mock settingStore
+const mockUseSettingStore = vi.hoisted(() => vi.fn())
 vi.mock('@/platform/settings/settingStore', () => ({
-  useSettingStore: vi.fn(() => ({
-    get: vi.fn(() => false) // Default to warnings enabled (false = not disabled)
-  }))
+  useSettingStore: mockUseSettingStore
 }))
 
 // Mock useStorage and until from VueUse
@@ -28,13 +29,19 @@ vi.mock('@vueuse/core', () => ({
   until: vi.fn(() => Promise.resolve())
 }))
 
+type MockSystemStatsStore = {
+  systemStats: unknown
+  isInitialized: boolean
+  refetchSystemStats: ReturnType<typeof vi.fn>
+}
+
 describe('useVersionCompatibilityStore', () => {
   let store: ReturnType<typeof useVersionCompatibilityStore>
-  let mockSystemStatsStore: any
-  let mockSettingStore: any
+  let mockSystemStatsStore: MockSystemStatsStore
+  let mockSettingStore: { get: ReturnType<typeof vi.fn> }
 
   beforeEach(() => {
-    setActivePinia(createPinia())
+    setActivePinia(createTestingPinia({ stubActions: false }))
 
     // Clear the mock dismissal storage
     mockDismissalStorage.value = {}
@@ -49,8 +56,8 @@ describe('useVersionCompatibilityStore', () => {
       get: vi.fn(() => false) // Default to warnings enabled
     }
 
-    vi.mocked(useSystemStatsStore).mockReturnValue(mockSystemStatsStore)
-    vi.mocked(useSettingStore).mockReturnValue(mockSettingStore)
+    mockUseSystemStatsStore.mockReturnValue(mockSystemStatsStore)
+    mockUseSettingStore.mockReturnValue(mockSettingStore)
 
     store = useVersionCompatibilityStore()
   })
@@ -213,7 +220,9 @@ describe('useVersionCompatibilityStore', () => {
 
     it('should not show warning when disabled via setting', async () => {
       // Enable the disable setting
-      mockSettingStore.get.mockReturnValue(true)
+      ;(
+        mockSettingStore as { get: ReturnType<typeof vi.fn> }
+      ).get.mockReturnValue(true)
 
       // Set up version mismatch that would normally show warning
       mockSystemStatsStore.systemStats = {
@@ -227,9 +236,9 @@ describe('useVersionCompatibilityStore', () => {
       await store.checkVersionCompatibility()
 
       expect(store.shouldShowWarning).toBe(false)
-      expect(mockSettingStore.get).toHaveBeenCalledWith(
-        'Comfy.VersionCompatibility.DisableWarnings'
-      )
+      expect(
+        (mockSettingStore as { get: ReturnType<typeof vi.fn> }).get
+      ).toHaveBeenCalledWith('Comfy.VersionCompatibility.DisableWarnings')
     })
   })
 
@@ -350,17 +359,15 @@ describe('useVersionCompatibilityStore', () => {
 
   describe('initialization', () => {
     it('should fetch system stats if not available', async () => {
-      const { until } = await import('@vueuse/core')
       mockSystemStatsStore.systemStats = null
       mockSystemStatsStore.isInitialized = false
 
       await store.initialize()
 
-      expect(until).toHaveBeenCalled()
+      expect(vi.mocked(until)).toHaveBeenCalled()
     })
 
     it('should not fetch system stats if already available', async () => {
-      const { until } = await import('@vueuse/core')
       mockSystemStatsStore.systemStats = {
         system: {
           comfyui_version: '1.24.0',
@@ -371,7 +378,7 @@ describe('useVersionCompatibilityStore', () => {
 
       await store.initialize()
 
-      expect(until).not.toHaveBeenCalled()
+      expect(vi.mocked(until)).not.toHaveBeenCalled()
     })
   })
 })

@@ -5,7 +5,8 @@ import { st } from '@/i18n'
 import {
   assetItemSchema,
   assetResponseSchema,
-  asyncUploadResponseSchema
+  asyncUploadResponseSchema,
+  tagsOperationResultSchema
 } from '@/platform/assets/schemas/assetSchema'
 import type {
   AssetItem,
@@ -14,7 +15,8 @@ import type {
   AssetUpdatePayload,
   AsyncUploadResponse,
   ModelFile,
-  ModelFolder
+  ModelFolder,
+  TagsOperationResult
 } from '@/platform/assets/schemas/assetSchema'
 import { api } from '@/scripts/api'
 import { useModelToNodeStore } from '@/stores/modelToNodeStore'
@@ -34,6 +36,7 @@ interface AssetRequestOptions extends PaginationOptions {
  */
 function getLocalizedErrorMessage(errorCode: string): string {
   const errorMessages: Record<string, string> = {
+    // Validation errors
     FILE_TOO_LARGE: st('assetBrowser.errorFileTooLarge', 'File too large'),
     FORMAT_NOT_ALLOWED: st(
       'assetBrowser.errorFormatNotAllowed',
@@ -50,6 +53,95 @@ function getLocalizedErrorMessage(errorCode: string): string {
     MODEL_TYPE_NOT_SUPPORTED: st(
       'assetBrowser.errorModelTypeNotSupported',
       'Model type not supported'
+    ),
+
+    // HTTP 400 - Bad Request
+    INVALID_URL: st('assetBrowser.errorInvalidUrl', 'Please provide a URL.'),
+    INVALID_URL_FORMAT: st(
+      'assetBrowser.errorInvalidUrlFormat',
+      'The URL format is invalid. Please check and try again.'
+    ),
+    UNSUPPORTED_SOURCE: st(
+      'assetBrowser.errorUnsupportedSource',
+      'This URL is not supported. Only Hugging Face and Civitai URLs are allowed.'
+    ),
+
+    // HTTP 401 - Unauthorized
+    UNAUTHORIZED: st(
+      'assetBrowser.errorUnauthorized',
+      'Please sign in to continue.'
+    ),
+
+    // HTTP 422 - External Source Errors
+    USER_TOKEN_INVALID: st(
+      'assetBrowser.errorUserTokenInvalid',
+      'Your stored API token is invalid or expired. Please update your token in settings.'
+    ),
+    USER_TOKEN_ACCESS_DENIED: st(
+      'assetBrowser.errorUserTokenAccessDenied',
+      'Your API token does not have access to this resource. Please check your token permissions.'
+    ),
+    UNAUTHORIZED_SOURCE: st(
+      'assetBrowser.errorUnauthorizedSource',
+      'This resource requires authentication. Please add your API token in settings.'
+    ),
+    ACCESS_FORBIDDEN: st(
+      'assetBrowser.errorAccessForbidden',
+      'Access to this resource is forbidden.'
+    ),
+    RESOURCE_NOT_FOUND: st(
+      'assetBrowser.errorResourceNotFound',
+      'The file was not found. Please check the URL and try again.'
+    ),
+    RATE_LIMITED: st(
+      'assetBrowser.errorRateLimited',
+      'Too many requests. Please try again in a few minutes.'
+    ),
+    SOURCE_SERVER_ERROR: st(
+      'assetBrowser.errorSourceServerError',
+      'The source server is experiencing issues. Please try again later.'
+    ),
+    NETWORK_TIMEOUT: st(
+      'assetBrowser.errorNetworkTimeout',
+      'Request timed out. Please try again.'
+    ),
+    CONNECTION_REFUSED: st(
+      'assetBrowser.errorConnectionRefused',
+      'Unable to connect to the source. Please try again later.'
+    ),
+    INVALID_HOST: st(
+      'assetBrowser.errorInvalidHost',
+      'The source URL hostname could not be resolved.'
+    ),
+    NETWORK_ERROR: st(
+      'assetBrowser.errorNetworkError',
+      'A network error occurred. Please check your connection and try again.'
+    ),
+    REQUEST_CANCELLED: st(
+      'assetBrowser.errorRequestCancelled',
+      'Request was cancelled.'
+    ),
+    DOWNLOAD_CANCELLED: st(
+      'assetBrowser.errorDownloadCancelled',
+      'Download was cancelled.'
+    ),
+    METADATA_FETCH_FAILED: st(
+      'assetBrowser.errorMetadataFetchFailed',
+      'Failed to fetch file information from the source.'
+    ),
+    HTTP_ERROR: st(
+      'assetBrowser.errorHttpError',
+      'An error occurred while fetching metadata.'
+    ),
+
+    // HTTP 500 - Internal Server Errors
+    SERVICE_UNAVAILABLE: st(
+      'assetBrowser.errorServiceUnavailable',
+      'Service temporarily unavailable. Please try again later.'
+    ),
+    INTERNAL_ERROR: st(
+      'assetBrowser.errorInternalError',
+      'An unexpected error occurred. Please try again.'
     )
   }
   return (
@@ -395,7 +487,7 @@ function createAssetService() {
     url: string
     name: string
     tags?: string[]
-    user_metadata?: Record<string, any>
+    user_metadata?: Record<string, unknown>
     preview_id?: string
   }): Promise<AssetItem & { created_new: boolean }> {
     const res = await api.fetchApi(ASSETS_ENDPOINT, {
@@ -433,7 +525,7 @@ function createAssetService() {
     data: string
     name: string
     tags?: string[]
-    user_metadata?: Record<string, any>
+    user_metadata?: Record<string, unknown>
   }): Promise<AssetItem & { created_new: boolean }> {
     // Validate that data is a data URL
     if (!params.data || !params.data.startsWith('data:')) {
@@ -469,6 +561,66 @@ function createAssetService() {
     }
 
     return await res.json()
+  }
+
+  /**
+   * Add tags to an asset
+   * @param id - The asset ID (UUID)
+   * @param tags - Tags to add
+   * @returns Promise<TagsOperationResult>
+   */
+  async function addAssetTags(
+    id: string,
+    tags: string[]
+  ): Promise<TagsOperationResult> {
+    const res = await api.fetchApi(`${ASSETS_ENDPOINT}/${id}/tags`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ tags })
+    })
+
+    if (!res.ok) {
+      throw new Error(
+        `Unable to add tags to asset ${id}: Server returned ${res.status}`
+      )
+    }
+
+    const result = await res.json()
+    const parseResult = tagsOperationResultSchema.safeParse(result)
+    if (!parseResult.success) {
+      throw fromZodError(parseResult.error)
+    }
+    return parseResult.data
+  }
+
+  /**
+   * Remove tags from an asset
+   * @param id - The asset ID (UUID)
+   * @param tags - Tags to remove
+   * @returns Promise<TagsOperationResult>
+   */
+  async function removeAssetTags(
+    id: string,
+    tags: string[]
+  ): Promise<TagsOperationResult> {
+    const res = await api.fetchApi(`${ASSETS_ENDPOINT}/${id}/tags`, {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ tags })
+    })
+
+    if (!res.ok) {
+      throw new Error(
+        `Unable to remove tags from asset ${id}: Server returned ${res.status}`
+      )
+    }
+
+    const result = await res.json()
+    const parseResult = tagsOperationResultSchema.safeParse(result)
+    if (!parseResult.success) {
+      throw fromZodError(parseResult.error)
+    }
+    return parseResult.data
   }
 
   /**
@@ -546,6 +698,8 @@ function createAssetService() {
     getAssetsByTag,
     deleteAsset,
     updateAsset,
+    addAssetTags,
+    removeAssetTags,
     getAssetMetadata,
     uploadAssetFromUrl,
     uploadAssetFromBase64,

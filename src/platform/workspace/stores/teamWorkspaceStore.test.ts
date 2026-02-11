@@ -1,7 +1,8 @@
-import { createPinia, setActivePinia } from 'pinia'
+import { createTestingPinia } from '@pinia/testing'
+import { setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { useTeamWorkspaceStore } from './teamWorkspaceStore'
+import { sortWorkspaces, useTeamWorkspaceStore } from './teamWorkspaceStore'
 
 // Mock workspaceAuthStore
 const mockWorkspaceAuthStore = vi.hoisted(() => ({
@@ -92,26 +93,32 @@ const mockPersonalWorkspace = {
   id: 'ws-personal-123',
   name: 'Personal',
   type: 'personal' as const,
-  role: 'owner' as const
+  role: 'owner' as const,
+  created_at: '2026-01-01T00:00:00Z',
+  joined_at: '2026-01-01T00:00:00Z'
 }
 
 const mockTeamWorkspace = {
   id: 'ws-team-456',
   name: 'Team Alpha',
   type: 'team' as const,
-  role: 'owner' as const
+  role: 'owner' as const,
+  created_at: '2026-02-01T00:00:00Z',
+  joined_at: '2026-02-01T00:00:00Z'
 }
 
 const mockMemberWorkspace = {
   id: 'ws-team-789',
   name: 'Team Beta',
   type: 'team' as const,
-  role: 'member' as const
+  role: 'member' as const,
+  created_at: '2026-03-01T00:00:00Z',
+  joined_at: '2026-03-01T00:00:00Z'
 }
 
 describe('useTeamWorkspaceStore', () => {
   beforeEach(() => {
-    setActivePinia(createPinia())
+    setActivePinia(createTestingPinia({ stubActions: false }))
     vi.clearAllMocks()
     vi.stubGlobal('localStorage', mockLocalStorage)
     sessionStorage.clear()
@@ -208,14 +215,33 @@ describe('useTeamWorkspaceStore', () => {
       expect(store.activeWorkspaceId).toBe(mockPersonalWorkspace.id)
     })
 
-    it('sets error state when workspaces fetch fails', async () => {
+    it('sets error state when workspaces fetch fails after retries', async () => {
+      vi.useFakeTimers()
       mockWorkspaceApi.list.mockRejectedValue(new Error('Network error'))
 
       const store = useTeamWorkspaceStore()
 
-      await expect(store.initialize()).rejects.toThrow('Network error')
+      // Start initialization and catch rejections to prevent unhandled promise warning
+      let initError: unknown = null
+      const initPromise = store.initialize().catch((e: unknown) => {
+        initError = e
+      })
+
+      // Fast-forward through all retry delays (1s, 2s, 4s)
+      await vi.advanceTimersByTimeAsync(1000)
+      await vi.advanceTimersByTimeAsync(2000)
+      await vi.advanceTimersByTimeAsync(4000)
+
+      await initPromise
+
+      expect(initError).toBeInstanceOf(Error)
+      expect((initError as Error).message).toBe('Network error')
       expect(store.initState).toBe('error')
       expect(store.error).toBeInstanceOf(Error)
+      // Should have been called 4 times (initial + 3 retries)
+      expect(mockWorkspaceApi.list).toHaveBeenCalledTimes(4)
+
+      vi.useRealTimers()
     })
 
     it('does not reinitialize if already initialized', async () => {
@@ -289,7 +315,9 @@ describe('useTeamWorkspaceStore', () => {
         id: 'ws-new-999',
         name: 'New Workspace',
         type: 'team' as const,
-        role: 'member' as const
+        role: 'member' as const,
+        created_at: '2026-04-01T00:00:00Z',
+        joined_at: '2026-04-01T00:00:00Z'
       }
 
       mockWorkspaceApi.list
@@ -327,7 +355,9 @@ describe('useTeamWorkspaceStore', () => {
         id: 'ws-new-created',
         name: 'Created Workspace',
         type: 'team' as const,
-        role: 'owner' as const
+        role: 'owner' as const,
+        created_at: '2026-05-01T00:00:00Z',
+        joined_at: '2026-05-01T00:00:00Z'
       }
       mockWorkspaceApi.create.mockResolvedValue(newWorkspace)
 
@@ -366,7 +396,9 @@ describe('useTeamWorkspaceStore', () => {
         id: 'ws-new',
         name: 'New Workspace',
         type: 'team',
-        role: 'owner'
+        role: 'owner',
+        created_at: '2026-06-01T00:00:00Z',
+        joined_at: '2026-06-01T00:00:00Z'
       })
       await resultPromise
     })
@@ -552,7 +584,9 @@ describe('useTeamWorkspaceStore', () => {
         id: `ws-owned-${i}`,
         name: `Owned ${i}`,
         type: 'team' as const,
-        role: 'owner' as const
+        role: 'owner' as const,
+        created_at: `2026-${String(i + 1).padStart(2, '0')}-01T00:00:00Z`,
+        joined_at: `2026-${String(i + 1).padStart(2, '0')}-01T00:00:00Z`
       }))
 
       mockWorkspaceApi.list.mockResolvedValue({
@@ -894,5 +928,51 @@ describe('useTeamWorkspaceStore', () => {
       expect(store.totalMemberSlots).toBe(50)
       expect(store.isInviteLimitReached).toBe(true)
     })
+  })
+})
+
+describe('sortWorkspaces', () => {
+  it('places personal first, then sorts ascending by created_at for owners and joined_at for members', () => {
+    const input = [
+      {
+        created_at: '2026-06-01T00:00:00Z',
+        id: 'w-team-new-owner',
+        joined_at: '2026-01-01T00:00:00Z',
+        name: 'Newest Owner Team',
+        role: 'owner' as const,
+        type: 'team' as const
+      },
+      {
+        created_at: '2026-12-01T00:00:00Z',
+        id: 'w-personal',
+        joined_at: '2026-12-01T00:00:00Z',
+        name: 'Personal Workspace',
+        role: 'owner' as const,
+        type: 'personal' as const
+      },
+      {
+        created_at: '2026-01-01T00:00:00Z',
+        id: 'w-team-member',
+        joined_at: '2026-04-01T00:00:00Z',
+        name: 'Member Team',
+        role: 'member' as const,
+        type: 'team' as const
+      },
+      {
+        created_at: '2026-02-01T00:00:00Z',
+        id: 'w-team-old-owner',
+        joined_at: '2026-09-01T00:00:00Z',
+        name: 'Oldest Owner Team',
+        role: 'owner' as const,
+        type: 'team' as const
+      }
+    ]
+
+    expect(sortWorkspaces(input).map((w) => w.id)).toEqual([
+      'w-personal',
+      'w-team-old-owner',
+      'w-team-member',
+      'w-team-new-owner'
+    ])
   })
 })

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import InputNumber from 'primevue/inputnumber'
 import Select from 'primevue/select'
-import { computed, ref } from 'vue'
+import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
@@ -23,7 +23,11 @@ const settingStore = useSettingStore()
 const dialogService = useDialogService()
 
 // NODES settings
-const showAdvancedParameters = ref(false) // Placeholder for future implementation
+const showAdvancedParameters = computed({
+  get: () => settingStore.get('Comfy.Node.AlwaysShowAdvancedWidgets'),
+  set: (value) =>
+    settingStore.set('Comfy.Node.AlwaysShowAdvancedWidgets', value)
+})
 
 const showToolbox = computed({
   get: () => settingStore.get('Comfy.Canvas.SelectionToolbox'),
@@ -103,15 +107,17 @@ function openFullSettings() {
         <FieldSwitch
           v-model="showAdvancedParameters"
           :label="t('rightSidePanel.globalSettings.showAdvanced')"
-          :tooltip="t('rightSidePanel.globalSettings.showAdvancedTooltip')"
+          :tooltip="t('settings.Comfy_Node_AlwaysShowAdvancedWidgets.tooltip')"
         />
         <FieldSwitch
           v-model="showToolbox"
           :label="t('rightSidePanel.globalSettings.showToolbox')"
+          :tooltip="t('settings.Comfy_Canvas_SelectionToolbox.tooltip')"
         />
         <FieldSwitch
           v-model="nodes2Enabled"
           :label="t('rightSidePanel.globalSettings.nodes2')"
+          :tooltip="t('settings.Comfy_VueNodes_Enabled.tooltip')"
         />
       </div>
     </PropertiesAccordionItem>
@@ -152,6 +158,7 @@ function openFullSettings() {
         <FieldSwitch
           v-model="snapToGrid"
           :label="t('rightSidePanel.globalSettings.snapNodesToGrid')"
+          :tooltip="t('settings.pysssss_SnapToGrid.tooltip')"
         />
       </div>
     </PropertiesAccordionItem>
@@ -183,6 +190,7 @@ function openFullSettings() {
         <FieldSwitch
           v-model="showConnectedLinks"
           :label="t('rightSidePanel.globalSettings.showConnectedLinks')"
+          :tooltip="t('settings.Comfy_LinkRenderMode.tooltip')"
         />
       </div>
     </PropertiesAccordionItem>

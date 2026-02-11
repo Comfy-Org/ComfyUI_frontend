@@ -8,9 +8,10 @@ import { createI18n } from 'vue-i18n'
 import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
 import LGraphNode from '@/renderer/extensions/vueNodes/components/LGraphNode.vue'
 import { useVueElementTracking } from '@/renderer/extensions/vueNodes/composables/useVueNodeResizeTracking'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { setActivePinia } from 'pinia'
 
 const mockData = vi.hoisted(() => ({
-  mockNodeIds: new Set<string>(),
   mockExecuting: false
 }))
 
@@ -22,17 +23,6 @@ vi.mock('@/renderer/core/layout/transform/useTransformState', () => {
       camera: { z: 1 },
       isNodeInViewport: vi.fn()
     })
-  }
-})
-
-vi.mock('@/renderer/core/canvas/canvasStore', () => {
-  const getCanvas = vi.fn()
-  const useCanvasStore = () => ({
-    getCanvas,
-    selectedNodeIds: computed(() => mockData.mockNodeIds)
-  })
-  return {
-    useCanvasStore
   }
 })
 
@@ -76,7 +66,7 @@ vi.mock(
       executing: computed(() => mockData.mockExecuting),
       progress: computed(() => undefined),
       progressPercentage: computed(() => undefined),
-      progressState: computed(() => undefined as any),
+      progressState: computed(() => undefined),
       executionState: computed(() => 'idle' as const)
     }))
   })
@@ -108,17 +98,16 @@ const i18n = createI18n({
     }
   }
 })
+
+const pinia = createTestingPinia({
+  createSpy: vi.fn
+})
+
 function mountLGraphNode(props: ComponentProps<typeof LGraphNode>) {
   return mount(LGraphNode, {
     props,
     global: {
-      plugins: [
-        createTestingPinia({
-          createSpy: vi.fn
-        }),
-        i18n
-      ],
-
+      plugins: [pinia, i18n],
       stubs: {
         NodeHeader: true,
         NodeSlots: true,
@@ -145,8 +134,11 @@ const mockNodeData: VueNodeData = {
 describe('LGraphNode', () => {
   beforeEach(() => {
     vi.resetAllMocks()
-    mockData.mockNodeIds = new Set()
     mockData.mockExecuting = false
+
+    setActivePinia(pinia)
+    const canvasStore = useCanvasStore()
+    canvasStore.selectedNodeIds.clear()
   })
 
   it('should call resize tracking composable with node ID', () => {
@@ -172,12 +164,7 @@ describe('LGraphNode', () => {
     const wrapper = mount(LGraphNode, {
       props: { nodeData: mockNodeData },
       global: {
-        plugins: [
-          createTestingPinia({
-            createSpy: vi.fn
-          }),
-          i18n
-        ],
+        plugins: [pinia, i18n],
         stubs: {
           NodeSlots: true,
           NodeWidgets: true,
@@ -190,10 +177,14 @@ describe('LGraphNode', () => {
     expect(wrapper.text()).toContain('Test Node')
   })
 
-  it('should apply selected styling when selected prop is true', () => {
-    mockData.mockNodeIds = new Set(['test-node-123'])
+  it('should apply selected styling when selected prop is true', async () => {
+    const canvasStore = useCanvasStore()
+    canvasStore.selectedNodeIds.clear()
+    canvasStore.selectedNodeIds.add('test-node-123')
+
     const wrapper = mountLGraphNode({ nodeData: mockNodeData })
-    expect(wrapper.classes()).toContain('outline-2')
+
+    expect(wrapper.classes()).toContain('outline-3')
     expect(wrapper.classes()).toContain('outline-node-component-outline')
   })
 
@@ -215,7 +206,7 @@ describe('LGraphNode', () => {
 
     expect(wrapper.element.style.getPropertyValue('--node-height')).toBe('')
     expect(wrapper.element.style.getPropertyValue('--node-height-x')).toBe(
-      '100px'
+      '130px'
     )
   })
 
@@ -228,7 +219,7 @@ describe('LGraphNode', () => {
     })
 
     expect(wrapper.element.style.getPropertyValue('--node-height')).toBe(
-      '100px'
+      '130px'
     )
     expect(wrapper.element.style.getPropertyValue('--node-height-x')).toBe('')
   })

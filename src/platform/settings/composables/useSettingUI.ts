@@ -3,19 +3,23 @@ import type { Component } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
-import { isCloud } from '@/platform/distribution/types'
+import { useBillingContext } from '@/composables/billing/useBillingContext'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import { useVueFeatureFlags } from '@/composables/useVueFeatureFlags'
+import { isCloud, isDesktop } from '@/platform/distribution/types'
+import {
+  getSettingInfo,
+  useSettingStore
+} from '@/platform/settings/settingStore'
 import type { SettingTreeNode } from '@/platform/settings/settingStore'
-import { useSettingStore } from '@/platform/settings/settingStore'
 import type { SettingParams } from '@/platform/settings/types'
-import { isElectron } from '@/utils/envUtil'
 import { normalizeI18nKey } from '@/utils/formatUtil'
 import { buildTree } from '@/utils/treeUtil'
-import { useVueFeatureFlags } from '@/composables/useVueFeatureFlags'
-import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
 
 interface SettingPanelItem {
   node: SettingTreeNode
   component: Component
+  props?: Record<string, unknown>
 }
 
 export function useSettingUI(
@@ -27,14 +31,22 @@ export function useSettingUI(
     | 'user'
     | 'credits'
     | 'subscription'
+    | 'workspace'
+    | 'secrets',
+  scrollToSettingId?: string
 ) {
   const { t } = useI18n()
   const { isLoggedIn } = useCurrentUser()
   const settingStore = useSettingStore()
   const activeCategory = ref<SettingTreeNode | null>(null)
 
+  const { flags } = useFeatureFlags()
   const { shouldRenderVueNodes } = useVueFeatureFlags()
-  const { isActiveSubscription } = useSubscription()
+  const { isActiveSubscription } = useBillingContext()
+
+  const teamWorkspacesEnabled = computed(
+    () => isCloud && flags.teamWorkspacesEnabled
+  )
 
   const settingRoot = computed<SettingTreeNode>(() => {
     const root = buildTree(
@@ -62,6 +74,33 @@ export function useSettingUI(
 
   const settingCategories = computed<SettingTreeNode[]>(
     () => settingRoot.value.children ?? []
+  )
+
+  // Core setting categories (built-in to ComfyUI) in display order
+  // 'Other' includes floating settings that don't have a specific category
+  const CORE_CATEGORIES_ORDER = [
+    'Comfy',
+    'LiteGraph',
+    'Appearance',
+    '3D',
+    'Mask Editor',
+    'Other'
+  ]
+  const CORE_CATEGORIES = new Set(CORE_CATEGORIES_ORDER)
+
+  const coreSettingCategories = computed<SettingTreeNode[]>(() => {
+    const categories = settingCategories.value.filter((node) =>
+      CORE_CATEGORIES.has(node.label)
+    )
+    return categories.sort(
+      (a, b) =>
+        CORE_CATEGORIES_ORDER.indexOf(a.label) -
+        CORE_CATEGORIES_ORDER.indexOf(b.label)
+    )
+  })
+
+  const customNodeSettingCategories = computed<SettingTreeNode[]>(() =>
+    settingCategories.value.filter((node) => !CORE_CATEGORIES.has(node.label))
   )
 
   // Define panel items
@@ -118,6 +157,37 @@ export function useSettingUI(
     )
   }
 
+  // Workspace panel: only available on cloud with team workspaces enabled
+  const workspacePanel: SettingPanelItem = {
+    node: {
+      key: 'workspace',
+      label: 'Workspace',
+      children: []
+    },
+    component: defineAsyncComponent(
+      () => import('@/components/dialog/content/setting/WorkspacePanel.vue')
+    )
+  }
+
+  const shouldShowWorkspacePanel = computed(
+    () => teamWorkspacesEnabled.value && isLoggedIn.value
+  )
+
+  const secretsPanel: SettingPanelItem = {
+    node: {
+      key: 'secrets',
+      label: 'Secrets',
+      children: []
+    },
+    component: defineAsyncComponent(
+      () => import('@/platform/secrets/components/SecretsPanel.vue')
+    )
+  }
+
+  const shouldShowSecretsPanel = computed(
+    () => flags.userSecretsEnabled && isLoggedIn.value
+  )
+
   const keybindingPanel: SettingPanelItem = {
     node: {
       key: 'keybinding',
@@ -156,25 +226,38 @@ export function useSettingUI(
       aboutPanel,
       creditsPanel,
       userPanel,
+      ...(shouldShowWorkspacePanel.value ? [workspacePanel] : []),
       keybindingPanel,
       extensionPanel,
-      ...(isElectron() ? [serverConfigPanel] : []),
+      ...(isDesktop ? [serverConfigPanel] : []),
       ...(shouldShowPlanCreditsPanel.value && subscriptionPanel
         ? [subscriptionPanel]
-        : [])
-    ].filter((panel) => panel.component)
+        : []),
+      ...(shouldShowSecretsPanel.value ? [secretsPanel] : [])
+    ].filter((panel) => panel !== null && panel.component)
   )
 
   /**
    * The default category to show when the dialog is opened.
    */
   const defaultCategory = computed<SettingTreeNode>(() => {
-    if (!defaultPanel) return settingCategories.value[0]
-    // Search through all groups in groupedMenuTreeNodes
-    for (const group of groupedMenuTreeNodes.value) {
-      const found = group.children?.find((node) => node.key === defaultPanel)
-      if (found) return found
+    if (defaultPanel) {
+      for (const group of groupedMenuTreeNodes.value) {
+        const found = group.children?.find((node) => node.key === defaultPanel)
+        if (found) return found
+      }
+      return settingCategories.value[0]
     }
+
+    if (scrollToSettingId) {
+      const setting = settingStore.settingsById[scrollToSettingId]
+      if (setting) {
+        const { category } = getSettingInfo(setting)
+        const found = settingCategories.value.find((c) => c.label === category)
+        if (found) return found
+      }
+    }
+
     return settingCategories.value[0]
   })
 
@@ -186,7 +269,51 @@ export function useSettingUI(
     )
   })
 
-  const groupedMenuTreeNodes = computed<SettingTreeNode[]>(() => [
+  // Sidebar structure when team workspaces is enabled
+  const workspaceMenuTreeNodes = computed<SettingTreeNode[]>(() => [
+    // Workspace settings
+    translateCategory({
+      key: 'workspace',
+      label: 'Workspace',
+      children: [
+        ...(shouldShowWorkspacePanel.value ? [workspacePanel.node] : []),
+        ...(isLoggedIn.value &&
+        !(isCloud && window.__CONFIG__?.subscription_required)
+          ? [creditsPanel.node]
+          : [])
+      ].map(translateCategory)
+    }),
+    // General settings - Profile + all core settings + special panels
+    translateCategory({
+      key: 'general',
+      label: 'General',
+      children: [
+        translateCategory(userPanel.node),
+        ...coreSettingCategories.value.slice(0, 1).map(translateCategory),
+        ...(shouldShowSecretsPanel.value
+          ? [translateCategory(secretsPanel.node)]
+          : []),
+        ...coreSettingCategories.value.slice(1).map(translateCategory),
+        translateCategory(keybindingPanel.node),
+        translateCategory(extensionPanel.node),
+        translateCategory(aboutPanel.node),
+        ...(isDesktop ? [translateCategory(serverConfigPanel.node)] : [])
+      ]
+    }),
+    // Custom node settings (only shown if custom nodes have registered settings)
+    ...(customNodeSettingCategories.value.length > 0
+      ? [
+          translateCategory({
+            key: 'other',
+            label: 'Other',
+            children: customNodeSettingCategories.value.map(translateCategory)
+          })
+        ]
+      : [])
+  ])
+
+  // Sidebar structure when team workspaces is disabled (legacy)
+  const legacyMenuTreeNodes = computed<SettingTreeNode[]>(() => [
     // Account settings - show different panels based on distribution and auth state
     {
       key: 'account',
@@ -198,6 +325,7 @@ export function useSettingUI(
         subscriptionPanel
           ? [subscriptionPanel.node]
           : []),
+        ...(shouldShowSecretsPanel.value ? [secretsPanel.node] : []),
         ...(isLoggedIn.value &&
         !(isCloud && window.__CONFIG__?.subscription_required)
           ? [creditsPanel.node]
@@ -218,10 +346,16 @@ export function useSettingUI(
         keybindingPanel.node,
         extensionPanel.node,
         aboutPanel.node,
-        ...(isElectron() ? [serverConfigPanel.node] : [])
+        ...(isDesktop ? [serverConfigPanel.node] : [])
       ].map(translateCategory)
     }
   ])
+
+  const groupedMenuTreeNodes = computed<SettingTreeNode[]>(() =>
+    teamWorkspacesEnabled.value
+      ? workspaceMenuTreeNodes.value
+      : legacyMenuTreeNodes.value
+  )
 
   onMounted(() => {
     activeCategory.value = defaultCategory.value

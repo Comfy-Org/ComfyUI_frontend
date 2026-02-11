@@ -3,7 +3,8 @@
     ref="container"
     class="relative h-full w-full min-h-[200px]"
     data-capture-wheel="true"
-    @pointerdown.stop
+    tabindex="-1"
+    @pointerdown.stop="focusContainer"
     @pointermove.stop
     @pointerup.stop
     @mousedown.stop
@@ -31,7 +32,7 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 
-import LoadingOverlay from '@/components/load3d/LoadingOverlay.vue'
+import LoadingOverlay from '@/components/common/LoadingOverlay.vue'
 import { useLoad3dDrag } from '@/composables/useLoad3dDrag'
 
 const props = defineProps<{
@@ -44,6 +45,10 @@ const props = defineProps<{
 }>()
 
 const container = ref<HTMLElement | null>(null)
+
+function focusContainer() {
+  container.value?.focus()
+}
 
 const { isDragging, dragMessage, handleDragOver, handleDragLeave, handleDrop } =
   useLoad3dDrag({

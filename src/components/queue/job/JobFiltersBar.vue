@@ -179,7 +179,7 @@ const onFilterClick = (event: Event) => {
   }
 }
 const selectWorkflowFilter = (value: 'all' | 'current') => {
-  ;(filterPopoverRef.value as any)?.hide?.()
+  filterPopoverRef.value?.hide()
   emit('update:selectedWorkflowFilter', value)
 }
 
@@ -190,7 +190,7 @@ const onSortClick = (event: Event) => {
 }
 
 const selectSortMode = (value: JobSortMode) => {
-  ;(sortPopoverRef.value as any)?.hide?.()
+  sortPopoverRef.value?.hide()
   emit('update:selectedSortMode', value)
 }
 

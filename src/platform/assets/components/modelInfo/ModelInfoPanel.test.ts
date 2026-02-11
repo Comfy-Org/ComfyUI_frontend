@@ -1,11 +1,17 @@
 import { mount } from '@vue/test-utils'
 import { createTestingPinia } from '@pinia/testing'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
 import type { AssetDisplayItem } from '@/platform/assets/composables/useAssetBrowser'
 
 import ModelInfoPanel from './ModelInfoPanel.vue'
+
+vi.mock('@/composables/useCopyToClipboard', () => ({
+  useCopyToClipboard: () => ({
+    copyToClipboard: vi.fn()
+  })
+}))
 
 const i18n = createI18n({
   legacy: false,
@@ -28,7 +34,7 @@ describe('ModelInfoPanel', () => {
     created_at: '2024-01-01T00:00:00Z',
     updated_at: '2024-01-01T00:00:00Z',
     last_access_time: '2024-01-01T00:00:00Z',
-    description: 'A test model description',
+    secondaryText: 'A test model description',
     badges: [],
     stats: {},
     ...overrides

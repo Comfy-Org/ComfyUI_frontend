@@ -190,7 +190,7 @@ export function useJobMenu(
     if (settingStore.get('Comfy.PromptFilename')) {
       const input = await useDialogService().prompt({
         title: t('workflowService.exportWorkflow'),
-        message: t('workflowService.enterFilename') + ':',
+        message: t('workflowService.enterFilenamePrompt'),
         defaultValue: filename
       })
       if (!input) return
@@ -210,8 +210,8 @@ export function useJobMenu(
     if (!task || !preview) return
 
     const asset = mapTaskOutputToAssetItem(task, preview)
-    const success = await mediaAssetActions.confirmDelete(asset)
-    if (success) {
+    const confirmed = await mediaAssetActions.deleteAssets(asset)
+    if (confirmed) {
       await queueStore.update()
     }
   }

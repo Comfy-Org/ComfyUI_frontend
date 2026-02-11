@@ -6,9 +6,9 @@ import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 
+import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useFirebaseAuthActions } from '@/composables/auth/useFirebaseAuthActions'
 import { useErrorHandling } from '@/composables/useErrorHandling'
-import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
 import type { TierKey } from '@/platform/cloud/subscription/constants/tierPricing'
 import { performSubscriptionCheckout } from '@/platform/cloud/subscription/utils/subscriptionCheckoutUtil'
 
@@ -20,7 +20,7 @@ const router = useRouter()
 const { reportError, accessBillingPortal } = useFirebaseAuthActions()
 const { wrapWithErrorHandlingAsync } = useErrorHandling()
 
-const { isActiveSubscription, isInitialized } = useSubscription()
+const { isActiveSubscription, isInitialized } = useBillingContext()
 
 const selectedTierKey = ref<TierKey | null>(null)
 

@@ -447,43 +447,6 @@
       }
     }
   },
-  "ByteDanceImageEditNode": {
-    "description": "ویرایش تصاویر با استفاده از مدل‌های ByteDance از طریق API بر اساس پرامپت",
-    "display_name": "ویرایش تصویر ByteDance",
-    "inputs": {
-      "control_after_generate": {
-        "name": "کنترل پس از تولید"
-      },
-      "guidance_scale": {
-        "name": "guidance_scale",
-        "tooltip": "مقدار بالاتر باعث می‌شود تصویر بیشتر از پرامپت پیروی کند"
-      },
-      "image": {
-        "name": "تصویر",
-        "tooltip": "تصویر پایه برای ویرایش"
-      },
-      "model": {
-        "name": "مدل"
-      },
-      "prompt": {
-        "name": "پرامپت",
-        "tooltip": "دستورالعمل ویرایش تصویر"
-      },
-      "seed": {
-        "name": "seed",
-        "tooltip": "seed مورد استفاده برای تولید"
-      },
-      "watermark": {
-        "name": "واترمارک",
-        "tooltip": "آیا واترمارک «تولید شده توسط هوش مصنوعی» به تصویر اضافه شود یا خیر"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
   "ByteDanceImageNode": {
     "description": "تولید تصویر با استفاده از مدل‌های ByteDance از طریق API بر اساس پرامپت",
     "display_name": "تصویر ByteDance",
@@ -1303,6 +1266,21 @@
       }
     }
   },
+  "ColorToRGBInt": {
+    "description": "تبدیل یک رنگ به مقدار صحیح RGB.",
+    "display_name": "تبدیل رنگ به مقدار صحیح RGB",
+    "inputs": {
+      "color": {
+        "name": "رنگ"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "مقدار صحیح RGB",
+        "tooltip": null
+      }
+    }
+  },
   "CombineHooks2": {
     "display_name": "ترکیب هوک‌ها [۲]",
     "inputs": {
@@ -2042,6 +2020,20 @@
       }
     }
   },
+  "CreateList": {
+    "display_name": "ایجاد لیست",
+    "inputs": {
+      "inputs": {
+        "name": "ورودی‌ها"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "لیست",
+        "tooltip": null
+      }
+    }
+  },
   "CreateVideo": {
     "description": "ایجاد ویدیو از تصاویر.",
     "display_name": "ایجاد ویدیو",
@@ -2095,14 +2087,16 @@
       "choice": {
         "name": "انتخاب"
       },
-      "option0": {
-      }
+      "index": {},
+      "option1": {}
     },
-    "outputs": {
-      "0": {
+    "outputs": [
+      null,
+      {
+        "name": "INDEX",
         "tooltip": null
       }
-    }
+    ]
   },
   "DiffControlNetLoader": {
     "display_name": "بارگذاری مدل ControlNet (diff)",
@@ -2224,6 +2218,23 @@
     "outputs": {
       "0": {
         "tooltip": "مدل با EasyCache."
+      }
+    }
+  },
+  "EmptyAceStep1_5LatentAudio": {
+    "display_name": "Empty Ace Step 1.5 Latent Audio",
+    "inputs": {
+      "batch_size": {
+        "name": "اندازه دسته",
+        "tooltip": "تعداد تصاویر latent در هر دسته."
+      },
+      "seconds": {
+        "name": "ثانیه"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -3424,6 +3435,142 @@
       }
     }
   },
+  "GrokImageEditNode": {
+    "description": "ویرایش یک تصویر موجود بر اساس یک متن راهنما",
+    "display_name": "ویرایش تصویر Grok",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "image": {
+        "name": "تصویر"
+      },
+      "model": {
+        "name": "مدل"
+      },
+      "number_of_images": {
+        "name": "تعداد تصاویر",
+        "tooltip": "تعداد تصاویر ویرایش‌شده برای تولید"
+      },
+      "prompt": {
+        "name": "راهنما",
+        "tooltip": "متن راهنما برای تولید تصویر استفاده می‌شود"
+      },
+      "resolution": {
+        "name": "وضوح"
+      },
+      "seed": {
+        "name": "بذر",
+        "tooltip": "بذر برای تعیین اینکه node باید دوباره اجرا شود؛ نتایج واقعی صرف‌نظر از بذر غیرقطعی هستند."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "GrokImageNode": {
+    "description": "تولید تصویر با استفاده از Grok بر اساس یک متن راهنما",
+    "display_name": "تصویر Grok",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "نسبت ابعاد"
+      },
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "model": {
+        "name": "مدل"
+      },
+      "number_of_images": {
+        "name": "تعداد تصاویر",
+        "tooltip": "تعداد تصاویر برای تولید"
+      },
+      "prompt": {
+        "name": "راهنما",
+        "tooltip": "متن راهنما برای تولید تصویر استفاده می‌شود"
+      },
+      "seed": {
+        "name": "بذر",
+        "tooltip": "بذر برای تعیین اینکه node باید دوباره اجرا شود؛ نتایج واقعی صرف‌نظر از بذر غیرقطعی هستند."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "GrokVideoEditNode": {
+    "description": "ویرایش یک ویدیوی موجود بر اساس یک متن راهنما.",
+    "display_name": "ویرایش ویدیو Grok",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "model": {
+        "name": "مدل"
+      },
+      "prompt": {
+        "name": "راهنما",
+        "tooltip": "توضیح متنی از ویدیوی مورد نظر."
+      },
+      "seed": {
+        "name": "بذر",
+        "tooltip": "بذر برای تعیین اینکه node باید دوباره اجرا شود؛ نتایج واقعی صرف‌نظر از بذر غیرقطعی هستند."
+      },
+      "video": {
+        "name": "ویدیو",
+        "tooltip": "حداکثر مدت زمان پشتیبانی‌شده ۸.۷ ثانیه و حجم فایل ۵۰ مگابایت است."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "GrokVideoNode": {
+    "description": "تولید ویدیو از یک راهنما یا تصویر",
+    "display_name": "ویدیو Grok",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "نسبت ابعاد",
+        "tooltip": "نسبت ابعاد ویدیوی خروجی."
+      },
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "duration": {
+        "name": "مدت زمان",
+        "tooltip": "مدت زمان ویدیوی خروجی بر حسب ثانیه."
+      },
+      "image": {
+        "name": "تصویر"
+      },
+      "model": {
+        "name": "مدل"
+      },
+      "prompt": {
+        "name": "راهنما",
+        "tooltip": "توضیح متنی از ویدیوی مورد نظر."
+      },
+      "resolution": {
+        "name": "وضوح",
+        "tooltip": "وضوح ویدیوی خروجی."
+      },
+      "seed": {
+        "name": "بذر",
+        "tooltip": "بذر برای تعیین اینکه node باید دوباره اجرا شود؛ نتایج واقعی صرف‌نظر از بذر غیرقطعی هستند."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "GrowMask": {
     "display_name": "گسترش ماسک",
     "inputs": {
@@ -3435,6 +3582,50 @@
       },
       "tapered_corners": {
         "name": "گوشه‌های نرم"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HitPawGeneralImageEnhance": {
+    "description": "ارتقاء تصاویر با وضوح پایین به وضوح بسیار بالا، حذف نویز و آرتیفکت‌ها. حداکثر خروجی: ۳۲ مگاپیکسل.",
+    "display_name": "افزایش کیفیت تصویر عمومی HitPaw",
+    "inputs": {
+      "auto_downscale": {
+        "name": "کاهش خودکار مقیاس",
+        "tooltip": "در صورت تجاوز خروجی از حد مجاز، تصویر ورودی به طور خودکار کوچک می‌شود."
+      },
+      "image": {
+        "name": "تصویر"
+      },
+      "model": {
+        "name": "مدل"
+      },
+      "upscale_factor": {
+        "name": "ضریب بزرگ‌نمایی"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HitPawVideoEnhance": {
+    "description": "ارتقاء ویدیوهای با وضوح پایین به وضوح بالا، حذف نویز و آرتیفکت‌ها. قیمت‌ها به ازای هر ثانیه ویدیو محاسبه می‌شود.",
+    "display_name": "افزایش کیفیت ویدیو HitPaw",
+    "inputs": {
+      "model": {
+        "name": "مدل"
+      },
+      "model_resolution": {
+        "name": "وضوح"
+      },
+      "video": {
+        "name": "ویدیو"
       }
     },
     "outputs": {
@@ -4842,6 +5033,46 @@
       }
     }
   },
+  "KlingFirstLastFrameNode": {
+    "description": "تولید ویدیو با Kling V3 با استفاده از اولین و آخرین فریم.",
+    "display_name": "Kling 3.0 تبدیل اولین و آخرین فریم به ویدیو",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "duration": {
+        "name": "مدت زمان"
+      },
+      "end_frame": {
+        "name": "آخرین فریم"
+      },
+      "first_frame": {
+        "name": "اولین فریم"
+      },
+      "generate_audio": {
+        "name": "تولید صدا"
+      },
+      "model": {
+        "name": "مدل",
+        "tooltip": "تنظیمات مدل و تولید."
+      },
+      "model_resolution": {
+        "name": "رزولوشن"
+      },
+      "prompt": {
+        "name": "پرامپت"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "seed تعیین می‌کند که node باید دوباره اجرا شود یا خیر؛ نتایج حتی با seed یکسان غیرقطعی هستند."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "KlingImage2VideoNode": {
     "display_name": "تبدیل تصویر Kling (فریم اول) به ویدیو",
     "inputs": {
@@ -4894,6 +5125,9 @@
       "aspect_ratio": {
         "name": "aspect_ratio"
       },
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
       "human_fidelity": {
         "name": "human_fidelity",
         "tooltip": "شباهت مرجع سوژه"
@@ -4922,6 +5156,10 @@
       "prompt": {
         "name": "prompt",
         "tooltip": "پرامپت متنی مثبت"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "seed تعیین می‌کند که node باید دوباره اجرا شود یا خیر؛ نتایج حتی با seed یکسان غیرقطعی هستند."
       }
     },
     "outputs": {
@@ -5054,6 +5292,9 @@
     "description": "ویرایش یک ویدیوی موجود با جدیدترین مدل Kling.",
     "display_name": "ویرایش ویدیوی Omni Kling (حرفه‌ای)",
     "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
       "keep_original_sound": {
         "name": "حفظ صدای اصلی"
       },
@@ -5071,6 +5312,10 @@
       "resolution": {
         "name": "وضوح"
       },
+      "seed": {
+        "name": "seed",
+        "tooltip": "seed تعیین می‌کند که node باید دوباره اجرا شود یا خیر؛ نتایج حتی با seed یکسان غیرقطعی هستند."
+      },
       "video": {
         "name": "ویدیو",
         "tooltip": "ویدیو برای ویرایش. طول ویدیوی خروجی همانند ورودی خواهد بود."
@@ -5086,6 +5331,9 @@
     "description": "استفاده از یک فریم شروع، یک فریم پایانی اختیاری یا تصاویر مرجع با جدیدترین مدل Kling.",
     "display_name": "Kling Omni تبدیل اولین-آخرین فریم به ویدیو (Pro)",
     "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
       "duration": {
         "name": "duration"
       },
@@ -5095,6 +5343,10 @@
       },
       "first_frame": {
         "name": "first_frame"
+      },
+      "generate_audio": {
+        "name": "تولید صدا",
+        "tooltip": "تولید صدا برای ویدیو. فقط برای kling-v3-omni پشتیبانی می‌شود."
       },
       "model_name": {
         "name": "model_name"
@@ -5109,6 +5361,14 @@
       },
       "resolution": {
         "name": "resolution"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "seed تعیین می‌کند که node باید دوباره اجرا شود یا خیر؛ نتایج حتی با seed یکسان غیرقطعی هستند."
+      },
+      "storyboards": {
+        "name": "استوری‌بوردها",
+        "tooltip": "تولید مجموعه‌ای از بخش‌های ویدیویی با پرامپت و مدت زمان جداگانه. فقط برای kling-v3-omni پشتیبانی می‌شود."
       }
     },
     "outputs": {
@@ -5124,6 +5384,9 @@
       "aspect_ratio": {
         "name": "aspect_ratio"
       },
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
       "model_name": {
         "name": "model_name"
       },
@@ -5137,6 +5400,14 @@
       },
       "resolution": {
         "name": "resolution"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "seed تعیین می‌کند که node باید دوباره اجرا شود یا خیر؛ نتایج حتی با seed یکسان غیرقطعی هستند."
+      },
+      "series_amount": {
+        "name": "تعداد سری",
+        "tooltip": "تولید مجموعه‌ای از تصاویر. برای kling-image-o1 پشتیبانی نمی‌شود."
       }
     },
     "outputs": {
@@ -5152,8 +5423,15 @@
       "aspect_ratio": {
         "name": "aspect_ratio"
       },
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
       "duration": {
         "name": "duration"
+      },
+      "generate_audio": {
+        "name": "تولید صدا",
+        "tooltip": "تولید صدا برای ویدیو. فقط برای kling-v3-omni پشتیبانی می‌شود."
       },
       "model_name": {
         "name": "model_name"
@@ -5168,6 +5446,14 @@
       },
       "resolution": {
         "name": "resolution"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "seed تعیین می‌کند که node باید دوباره اجرا شود یا خیر؛ نتایج حتی با seed یکسان غیرقطعی هستند."
+      },
+      "storyboards": {
+        "name": "استوری‌بوردها",
+        "tooltip": "تولید مجموعه‌ای از بخش‌های ویدیویی با پرامپت و مدت زمان جداگانه. فقط برای kling-v3-omni پشتیبانی می‌شود."
       }
     },
     "outputs": {
@@ -5183,8 +5469,14 @@
       "aspect_ratio": {
         "name": "aspect_ratio"
       },
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
       "duration": {
         "name": "duration"
+      },
+      "generate_audio": {
+        "name": "تولید صدا"
       },
       "model_name": {
         "name": "model_name"
@@ -5195,6 +5487,14 @@
       },
       "resolution": {
         "name": "resolution"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "seed تعیین می‌کند که node باید دوباره اجرا شود یا خیر؛ نتایج حتی با seed یکسان غیرقطعی هستند."
+      },
+      "storyboards": {
+        "name": "استوری‌بوردها",
+        "tooltip": "تولید مجموعه‌ای از بخش‌های ویدیویی با پرامپت و مدت زمان جداگانه. برای مدل o1 نادیده گرفته می‌شود."
       }
     },
     "outputs": {
@@ -5209,6 +5509,9 @@
     "inputs": {
       "aspect_ratio": {
         "name": "aspect_ratio"
+      },
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
       },
       "duration": {
         "name": "duration"
@@ -5233,6 +5536,10 @@
       },
       "resolution": {
         "name": "resolution"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "seed تعیین می‌کند که آیا node باید دوباره اجرا شود؛ نتایج صرف‌نظر از seed غیرقطعی هستند."
       }
     },
     "outputs": {
@@ -5414,6 +5721,54 @@
       },
       "2": {
         "name": "duration",
+        "tooltip": null
+      }
+    }
+  },
+  "KlingVideoNode": {
+    "description": "تولید ویدیو با Kling V3. پشتیبانی از تبدیل متن به ویدیو و تصویر به ویدیو با امکان استفاده از استوری‌بورد چندپرومپتی و تولید صوت اختیاری.",
+    "display_name": "Kling 3.0 ویدیو",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "generate_audio": {
+        "name": "تولید صوت"
+      },
+      "model": {
+        "name": "مدل",
+        "tooltip": "تنظیمات مدل و تولید."
+      },
+      "model_aspect_ratio": {
+        "name": "نسبت تصویر"
+      },
+      "model_resolution": {
+        "name": "رزولوشن"
+      },
+      "multi_shot": {
+        "name": "چند شات",
+        "tooltip": "تولید مجموعه‌ای از بخش‌های ویدیویی با پرومپت‌ها و مدت زمان‌های جداگانه."
+      },
+      "multi_shot_duration": {
+        "name": "مدت زمان"
+      },
+      "multi_shot_negative_prompt": {
+        "name": "پرومپت منفی"
+      },
+      "multi_shot_prompt": {
+        "name": "پرومپت"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "seed تعیین می‌کند که آیا node باید دوباره اجرا شود؛ نتایج صرف‌نظر از seed غیرقطعی هستند."
+      },
+      "start_frame": {
+        "name": "فریم شروع",
+        "tooltip": "تصویر فریم شروع اختیاری. در صورت اتصال، به حالت تصویر به ویدیو تغییر می‌کند."
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -6250,8 +6605,7 @@
   "Load3D": {
     "display_name": "بارگذاری ۳بعدی و انیمیشن",
     "inputs": {
-      "clear": {
-      },
+      "clear": {},
       "height": {
         "name": "ارتفاع"
       },
@@ -6261,40 +6615,24 @@
       "model_file": {
         "name": "فایل مدل"
       },
-      "upload 3d model": {
-      },
-      "upload extra resources": {
-      },
+      "upload 3d model": {},
+      "upload extra resources": {},
       "width": {
         "name": "عرض"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "تصویر",
-        "tooltip": null
-      },
-      "1": {
-        "name": "ماسک",
-        "tooltip": null
-      },
-      "2": {
-        "name": "مسیر مش",
-        "tooltip": null
-      },
-      "3": {
-        "name": "نرمال",
-        "tooltip": null
-      },
-      "4": {
-        "name": "اطلاعات دوربین",
-        "tooltip": null
-      },
-      "5": {
-        "name": "ویدئوی ضبط‌شده",
+    "outputs": [
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      {
+        "name": "مدل_۳بعدی",
         "tooltip": null
       }
-    }
+    ]
   },
   "LoadAudio": {
     "display_name": "بارگذاری صوت",
@@ -6359,13 +6697,11 @@
     "description": "بارگذاری یک تصویر از پوشه خروجی. با کلیک روی دکمه تازه‌سازی، فهرست تصاویر به‌روزرسانی شده و اولین تصویر به طور خودکار انتخاب می‌شود تا تکرار آسان‌تر شود.",
     "display_name": "بارگذاری تصویر (از خروجی‌ها)",
     "inputs": {
-      "Auto-refresh after generation": {
-      },
+      "Auto-refresh after generation": {},
       "image": {
         "name": "تصویر"
       },
-      "refresh": {
-      },
+      "refresh": {},
       "upload": {
         "name": "انتخاب فایل برای بارگذاری"
       }
@@ -6467,6 +6803,60 @@
       }
     }
   },
+  "LoraLoaderBypass": {
+    "description": "اعمال LoRA در حالت bypass. برخلاف LoRA معمولی، این روش وزن‌های مدل را تغییر نمی‌دهد بلکه محاسبات LoRA را در طول عبور رو به جلو تزریق می‌کند. مناسب برای سناریوهای آموزش.",
+    "display_name": "بارگذاری LoRA (حالت Bypass) (برای اشکال‌زدایی)",
+    "inputs": {
+      "clip": {
+        "name": "clip",
+        "tooltip": "مدل CLIP که LoRA بر روی آن اعمال می‌شود."
+      },
+      "lora_name": {
+        "name": "lora_name",
+        "tooltip": "نام LoRA."
+      },
+      "model": {
+        "name": "مدل",
+        "tooltip": "مدل diffusion که LoRA بر روی آن اعمال می‌شود."
+      },
+      "strength_clip": {
+        "name": "قدرت_clip",
+        "tooltip": "میزان شدت تغییر مدل CLIP. این مقدار می‌تواند منفی باشد."
+      },
+      "strength_model": {
+        "name": "قدرت_مدل",
+        "tooltip": "میزان شدت تغییر مدل diffusion. این مقدار می‌تواند منفی باشد."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "مدل diffusion تغییر یافته."
+      },
+      "1": {
+        "tooltip": "مدل CLIP تغییر یافته."
+      }
+    }
+  },
+  "LoraLoaderBypassModelOnly": {
+    "description": "اعمال LoRA در حالت bypass. برخلاف LoRA معمولی، این روش وزن‌های مدل را تغییر نمی‌دهد بلکه محاسبات LoRA را در طول عبور رو به جلو تزریق می‌کند. مناسب برای سناریوهای آموزش.",
+    "display_name": "بارگذاری LoRA (حالت Bypass، فقط مدل) (برای اشکال‌زدایی)",
+    "inputs": {
+      "lora_name": {
+        "name": "lora_name"
+      },
+      "model": {
+        "name": "مدل"
+      },
+      "strength_model": {
+        "name": "قدرت_مدل"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "مدل diffusion تغییر یافته."
+      }
+    }
+  },
   "LoraLoaderModelOnly": {
     "description": "LoRAها برای تغییر مدل‌های diffusion و CLIP استفاده می‌شوند و نحوه حذف نویز از latents را تغییر می‌دهند، مانند اعمال سبک‌ها. چندین node LoRA می‌توانند به هم متصل شوند.",
     "display_name": "LoraLoaderModelOnly",
@@ -6490,6 +6880,10 @@
   "LoraModelLoader": {
     "display_name": "بارگذاری مدل LoRA",
     "inputs": {
+      "bypass": {
+        "name": "bypass",
+        "tooltip": "زمانی که فعال باشد، LoRA را در حالت bypass بدون تغییر وزن‌های مدل پایه اعمال می‌کند. این گزینه برای آموزش و زمانی که وزن‌های مدل offload شده‌اند مفید است."
+      },
       "lora": {
         "name": "lora",
         "tooltip": "مدل LoRA که باید روی مدل diffusion اعمال شود."
@@ -6835,6 +7229,126 @@
       }
     }
   },
+  "MagnificImageRelightNode": {
+    "description": "بازنورپردازی تصویر با تنظیمات نور و انتقال نور مبتنی بر مرجع (اختیاری).",
+    "display_name": "بازنورپردازی تصویر Magnific",
+    "inputs": {
+      "advanced_settings": {
+        "name": "تنظیمات_پیشرفته",
+        "tooltip": "گزینه‌های تنظیم دقیق برای کنترل پیشرفته نورپردازی."
+      },
+      "change_background": {
+        "name": "تغییر_پس‌زمینه",
+        "tooltip": "پس‌زمینه را بر اساس پرامپت/مرجع تغییر می‌دهد."
+      },
+      "image": {
+        "name": "تصویر",
+        "tooltip": "تصویری که قرار است بازنورپردازی شود."
+      },
+      "interpolate_from_original": {
+        "name": "درون‌یابی_از_مبدأ",
+        "tooltip": "آزادی تولید را محدود می‌کند تا با تصویر اصلی بیشتر مطابقت داشته باشد."
+      },
+      "light_transfer_strength": {
+        "name": "شدت_انتقال_نور",
+        "tooltip": "شدت اعمال انتقال نور."
+      },
+      "preserve_details": {
+        "name": "حفظ_جزئیات",
+        "tooltip": "بافت و جزئیات ریز تصویر اصلی را حفظ می‌کند."
+      },
+      "prompt": {
+        "name": "پرامپت",
+        "tooltip": "راهنمای توصیفی برای نورپردازی. از نشانه‌گذاری تأکید (۱-۱.۴) پشتیبانی می‌کند."
+      },
+      "reference_image": {
+        "name": "تصویر_مرجع",
+        "tooltip": "تصویر مرجع اختیاری برای انتقال نور از آن."
+      },
+      "style": {
+        "name": "سبک",
+        "tooltip": "ترجیح خروجی از نظر سبک."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MagnificImageSkinEnhancerNode": {
+    "description": "بهبود پوست برای پرتره‌ها با حالت‌های پردازشی مختلف.",
+    "display_name": "بهبود پوست تصویر Magnific",
+    "inputs": {
+      "image": {
+        "name": "تصویر",
+        "tooltip": "تصویر پرتره‌ای که باید بهبود یابد."
+      },
+      "mode": {
+        "name": "حالت",
+        "tooltip": "حالت پردازش: creative برای بهبود هنری، faithful برای حفظ ظاهر اصلی، flexible برای بهینه‌سازی هدفمند."
+      },
+      "sharpen": {
+        "name": "شارپ‌سازی",
+        "tooltip": "سطح شدت شارپ‌سازی."
+      },
+      "smart_grain": {
+        "name": "دانه‌بندی_هوشمند",
+        "tooltip": "سطح شدت دانه‌بندی هوشمند."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MagnificImageStyleTransferNode": {
+    "description": "سبک را از یک تصویر مرجع به تصویر ورودی خود منتقل کنید.",
+    "display_name": "انتقال سبک تصویر Magnific",
+    "inputs": {
+      "engine": {
+        "name": "engine",
+        "tooltip": "انتخاب موتور پردازش."
+      },
+      "fixed_generation": {
+        "name": "fixed_generation",
+        "tooltip": "در صورت غیرفعال بودن، هر بار تولید تصویر مقداری تصادفی بودن به همراه دارد که منجر به نتایج متنوع‌تر می‌شود."
+      },
+      "flavor": {
+        "name": "flavor",
+        "tooltip": "نوع انتقال سبک."
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "تصویری که قرار است انتقال سبک روی آن اعمال شود."
+      },
+      "portrait_mode": {
+        "name": "portrait_mode",
+        "tooltip": "فعال‌سازی حالت پرتره برای بهبود چهره."
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "reference_image": {
+        "name": "reference_image",
+        "tooltip": "تصویر مرجعی که سبک از آن استخراج می‌شود."
+      },
+      "structure_strength": {
+        "name": "structure_strength",
+        "tooltip": "ساختار تصویر اصلی را حفظ می‌کند."
+      },
+      "style_strength": {
+        "name": "style_strength",
+        "tooltip": "درصد قدرت سبک."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "Mahiro": {
     "description": "راهنمایی را به گونه‌ای تغییر می‌دهد که بیشتر بر «جهت» پرامپت مثبت تمرکز کند تا تفاوت بین پرامپت منفی.",
     "display_name": "Mahiro CFG",
@@ -6983,12 +7497,17 @@
         "name": "rig_task_id"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "model_file",
+    "outputs": [
+      null,
+      {
+        "name": "GLB",
+        "tooltip": null
+      },
+      {
+        "name": "FBX",
         "tooltip": null
       }
-    }
+    ]
   },
   "MeshyImageToModelNode": {
     "display_name": "Meshy: تصویر به مدل",
@@ -7034,16 +7553,18 @@
         "name": "symmetry_mode"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "model_file",
+    "outputs": [
+      null,
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       },
-      "1": {
-        "name": "meshy_task_id",
+      {
+        "name": "FBX",
         "tooltip": null
       }
-    }
+    ]
   },
   "MeshyMultiImageToModelNode": {
     "display_name": "Meshy: چند تصویر به مدل",
@@ -7089,16 +7610,18 @@
         "name": "symmetry_mode"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "model_file",
+    "outputs": [
+      null,
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       },
-      "1": {
-        "name": "meshy_task_id",
+      {
+        "name": "FBX",
         "tooltip": null
       }
-    }
+    ]
   },
   "MeshyRefineNode": {
     "description": "یک مدل پیش‌نویس ایجادشده قبلی را بهبود دهید.",
@@ -7123,16 +7646,18 @@
         "tooltip": "یک متن راهنما برای هدایت فرایند بافت‌دهی وارد کنید. حداکثر ۶۰۰ کاراکتر. نمی‌توان همزمان با 'texture_image' استفاده کرد."
       }
     },
-    "outputs": {
-      "0": {
-        "name": "model_file",
+    "outputs": [
+      null,
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       },
-      "1": {
-        "name": "meshy_task_id",
+      {
+        "name": "FBX",
         "tooltip": null
       }
-    }
+    ]
   },
   "MeshyRigModelNode": {
     "description": "یک کاراکتر ریگ‌شده در فرمت‌های استاندارد ارائه می‌دهد. ریگ خودکار در حال حاضر برای مش‌های بدون بافت، دارایی‌های غیرانسان‌نما یا دارایی‌های انسان‌نمایی که ساختار اندام و بدن آن‌ها نامشخص است، مناسب نیست.",
@@ -7150,16 +7675,18 @@
         "tooltip": "تصویر بافت رنگ پایه مدل با UV باز شده."
       }
     },
-    "outputs": {
-      "0": {
-        "name": "model_file",
+    "outputs": [
+      null,
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       },
-      "1": {
-        "name": "rig_task_id",
+      {
+        "name": "FBX",
         "tooltip": null
       }
-    }
+    ]
   },
   "MeshyTextToModelNode": {
     "display_name": "Meshy: متن به مدل",
@@ -7198,16 +7725,18 @@
         "name": "symmetry_mode"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "model_file",
+    "outputs": [
+      null,
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       },
-      "1": {
-        "name": "meshy_task_id",
+      {
+        "name": "FBX",
         "tooltip": null
       }
-    }
+    ]
   },
   "MeshyTextureNode": {
     "display_name": "Meshy: مدل بافت",
@@ -7234,16 +7763,18 @@
         "tooltip": "سبک بافت مورد نظر شیء را با استفاده از متن توصیف کنید. حداکثر ۶۰۰ کاراکتر. نمی‌توان همزمان با 'image_style' استفاده کرد."
       }
     },
-    "outputs": {
-      "0": {
-        "name": "فایل مدل",
+    "outputs": [
+      null,
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       },
-      "1": {
-        "name": "meshy_task_id",
+      {
+        "name": "FBX",
         "tooltip": null
       }
-    }
+    ]
   },
   "MinimaxHailuoVideoNode": {
     "description": "تولید ویدئو از طریق پرامپت، با امکان استفاده از فریم ابتدایی با مدل جدید MiniMax Hailuo-02.",
@@ -10444,17 +10975,16 @@
         "name": "تصویر"
       },
       "model_file": {
-        "name": "فایل مدل"
+        "name": "فایل مدل",
+        "tooltip": "فایل مدل سه‌بعدی یا مسیر فایل"
       }
     }
   },
   "PreviewAny": {
     "display_name": "پیش‌نمایش به صورت متن",
     "inputs": {
-      "preview": {
-      },
-      "previewMode": {
-      },
+      "preview": {},
+      "previewMode": {},
       "source": {
         "name": "سورس"
       }
@@ -10726,6 +11256,25 @@
     "outputs": {
       "0": {
         "name": "کنترل‌های Recraft",
+        "tooltip": null
+      }
+    }
+  },
+  "RecraftCreateStyleNode": {
+    "description": "ایجاد یک استایل سفارشی از تصاویر مرجع. ۱ تا ۵ تصویر را برای استفاده به عنوان مرجع استایل بارگذاری کنید. مجموع حجم تمام تصاویر حداکثر ۵ مگابایت است.",
+    "display_name": "ایجاد استایل سفارشی Recraft",
+    "inputs": {
+      "images": {
+        "name": "تصاویر"
+      },
+      "style": {
+        "name": "استایل",
+        "tooltip": "استایل پایه تصاویر تولید شده."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "شناسه استایل",
         "tooltip": null
       }
     }
@@ -11068,6 +11617,23 @@
       }
     }
   },
+  "ReferenceTimbreAudio": {
+    "description": "این نود صدای مرجع برای timbre را تنظیم می‌کند (برای ace step 1.5)",
+    "display_name": "ReferenceTimbreAudio",
+    "inputs": {
+      "conditioning": {
+        "name": "شرایط‌دهی"
+      },
+      "latent": {
+        "name": "latent"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "RegexExtract": {
     "display_name": "استخراج با Regex",
     "inputs": {
@@ -11287,19 +11853,28 @@
     }
   },
   "ResizeImageMaskNode": {
+    "description": "تغییر اندازه تصویر یا mask با استفاده از روش‌های مختلف مقیاس‌گذاری.",
     "display_name": "تغییر اندازه تصویر/ماسک",
     "inputs": {
       "input": {
         "name": "ورودی"
       },
       "resize_type": {
-        "name": "نوع تغییر اندازه"
+        "name": "نوع تغییر اندازه",
+        "tooltip": "نحوه تغییر اندازه را انتخاب کنید: بر اساس ابعاد دقیق، ضریب مقیاس، تطبیق با تصویر دیگر و غیره."
       },
-      "resize_type_multiplier": {
-        "name": "ضریب"
+      "resize_type_crop": {
+        "name": "برش"
+      },
+      "resize_type_height": {
+        "name": "ارتفاع"
+      },
+      "resize_type_width": {
+        "name": "عرض"
       },
       "scale_method": {
-        "name": "روش مقیاس‌دهی"
+        "name": "روش مقیاس‌دهی",
+        "tooltip": "الگوریتم درون‌یابی. 'area' برای کاهش اندازه بهترین است، 'lanczos' برای افزایش اندازه، و 'nearest-exact' برای هنر پیکسلی مناسب است."
       }
     },
     "outputs": {
@@ -11387,12 +11962,13 @@
         "name": "Seed"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "مسیر مدل سه‌بعدی",
+    "outputs": [
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       }
-    }
+    ]
   },
   "Rodin3D_Gen2": {
     "description": "تولید دارایی‌های سه‌بعدی با استفاده از Rodin API",
@@ -11414,12 +11990,13 @@
         "name": "TAPose"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "مسیر مدل سه‌بعدی",
+    "outputs": [
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       }
-    }
+    ]
   },
   "Rodin3D_Regular": {
     "description": "تولید دارایی‌های سه‌بعدی با استفاده از Rodin API",
@@ -11438,12 +12015,13 @@
         "name": "Seed"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "مسیر مدل سه‌بعدی",
+    "outputs": [
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       }
-    }
+    ]
   },
   "Rodin3D_Sketch": {
     "description": "تولید دارایی‌های سه‌بعدی با استفاده از Rodin API",
@@ -11456,12 +12034,13 @@
         "name": "Seed"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "مسیر مدل سه‌بعدی",
+    "outputs": [
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       }
-    }
+    ]
   },
   "Rodin3D_Smooth": {
     "description": "تولید دارایی‌های سه‌بعدی با استفاده از Rodin API",
@@ -11480,12 +12059,13 @@
         "name": "Seed"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "مسیر مدل سه‌بعدی",
+    "outputs": [
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       }
-    }
+    ]
   },
   "RunwayFirstLastFrameNode": {
     "description": "اولین و آخرین فریم کلیدی را بارگذاری کنید، یک پرامپت بنویسید و ویدیو تولید کنید. انتقال‌های پیچیده‌تر، مانند زمانی که فریم آخر کاملاً با فریم اول متفاوت است، ممکن است از مدت زمان طولانی‌تر ۱۰ ثانیه‌ای بهره‌مند شوند. این کار به تولید اجازه می‌دهد تا زمان بیشتری برای انتقال روان بین دو ورودی داشته باشد. پیش از شروع، این نکات کلیدی را مرور کنید تا مطمئن شوید انتخاب‌های ورودی شما باعث موفقیت تولید خواهد شد: https://help.runwayml.com/hc/en-us/articles/34170748696595-Creating-with-Keyframes-on-Gen-3.",
@@ -12218,10 +12798,11 @@
         "name": "filename_prefix"
       },
       "image": {
-        "name": "image"
+        "name": "تصویر"
       },
       "mesh": {
-        "name": "mesh"
+        "name": "mesh",
+        "tooltip": "مش یا فایل GLB برای ذخیره"
       }
     }
   },
@@ -13444,6 +14025,94 @@
       }
     }
   },
+  "TencentImageToModelNode": {
+    "display_name": "Hunyuan3D: تبدیل تصویر(ها) به مدل (پیشرفته)",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "face_count": {
+        "name": "تعداد وجه‌ها"
+      },
+      "generate_type": {
+        "name": "نوع تولید"
+      },
+      "generate_type_pbr": {
+        "name": "pbr"
+      },
+      "image": {
+        "name": "تصویر"
+      },
+      "image_back": {
+        "name": "تصویر پشت"
+      },
+      "image_left": {
+        "name": "تصویر چپ"
+      },
+      "image_right": {
+        "name": "تصویر راست"
+      },
+      "model": {
+        "name": "مدل",
+        "tooltip": "گزینه LowPoly برای مدل `۳.۱` در دسترس نیست."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "seed تعیین می‌کند که node باید دوباره اجرا شود یا خیر؛ نتایج صرف‌نظر از seed غیرقطعی هستند."
+      }
+    },
+    "outputs": [
+      null,
+      {
+        "name": "GLB",
+        "tooltip": null
+      },
+      {
+        "name": "OBJ",
+        "tooltip": null
+      }
+    ]
+  },
+  "TencentTextToModelNode": {
+    "display_name": "Hunyuan3D: تبدیل متن به مدل (پیشرفته)",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "face_count": {
+        "name": "تعداد وجه‌ها"
+      },
+      "generate_type": {
+        "name": "نوع تولید"
+      },
+      "generate_type_pbr": {
+        "name": "pbr"
+      },
+      "model": {
+        "name": "مدل",
+        "tooltip": "گزینه LowPoly برای مدل `۳.۱` در دسترس نیست."
+      },
+      "prompt": {
+        "name": "پرامپت",
+        "tooltip": "حداکثر تا ۱۰۲۴ کاراکتر پشتیبانی می‌شود."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "seed تعیین می‌کند که node باید دوباره اجرا شود یا خیر؛ نتایج صرف‌نظر از seed غیرقطعی هستند."
+      }
+    },
+    "outputs": [
+      null,
+      {
+        "name": "GLB",
+        "tooltip": null
+      },
+      {
+        "name": "OBJ",
+        "tooltip": null
+      }
+    ]
+  },
   "TextEncodeAceStepAudio": {
     "display_name": "TextEncodeAceStepAudio",
     "inputs": {
@@ -13458,6 +14127,62 @@
       },
       "tags": {
         "name": "برچسب‌ها"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "TextEncodeAceStepAudio1_5": {
+    "display_name": "TextEncodeAceStepAudio1.5",
+    "inputs": {
+      "bpm": {
+        "name": "ضرب در دقیقه (BPM)"
+      },
+      "cfg_scale": {
+        "name": "cfg_scale"
+      },
+      "clip": {
+        "name": "clip"
+      },
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "duration": {
+        "name": "مدت زمان"
+      },
+      "generate_audio_codes": {
+        "name": "تولید کدهای صوتی",
+        "tooltip": "فعال‌سازی LLM برای تولید کدهای صوتی. این کار ممکن است کند باشد اما کیفیت صدای تولیدشده را افزایش می‌دهد. اگر به مدل یک مرجع صوتی می‌دهید، این گزینه را غیرفعال کنید."
+      },
+      "keyscale": {
+        "name": "گام"
+      },
+      "language": {
+        "name": "زبان"
+      },
+      "lyrics": {
+        "name": "متن ترانه"
+      },
+      "seed": {
+        "name": "بذر"
+      },
+      "tags": {
+        "name": "برچسب‌ها"
+      },
+      "temperature": {
+        "name": "temperature"
+      },
+      "timesignature": {
+        "name": "امضای زمانی"
+      },
+      "top_k": {
+        "name": "top_k"
+      },
+      "top_p": {
+        "name": "top_p"
       }
     },
     "outputs": {
@@ -13778,6 +14503,14 @@
         "name": "حالت سطل‌بندی رزولوشن",
         "tooltip": "فعال‌سازی حالت سطل‌بندی رزولوشن. در صورت فعال بودن، انتظار می‌رود لاتنت‌های پیش‌سطل‌بندی شده از node ResolutionBucket دریافت شود."
       },
+      "bypass_mode": {
+        "name": "bypass_mode",
+        "tooltip": "فعال‌سازی حالت bypass برای آموزش. در این حالت، آداپتورها از طریق forward hookها به جای تغییر وزن‌ها اعمال می‌شوند. این روش برای مدل‌های quantized که امکان تغییر مستقیم وزن‌ها وجود ندارد، مفید است."
+      },
+      "checkpoint_depth": {
+        "name": "checkpoint_depth",
+        "tooltip": "سطح عمق برای gradient checkpointing."
+      },
       "control_after_generate": {
         "name": "کنترل پس از تولید"
       },
@@ -13812,6 +14545,10 @@
       "model": {
         "name": "مدل",
         "tooltip": "مدلی که LoRA روی آن آموزش داده می‌شود."
+      },
+      "offloading": {
+        "name": "offloading",
+        "tooltip": "سطح عمق برای gradient checkpointing."
       },
       "optimizer": {
         "name": "بهینه‌ساز",
@@ -13850,10 +14587,6 @@
       "2": {
         "name": "نقشه خطا",
         "tooltip": "تاریخچه خطا"
-      },
-      "3": {
-        "name": "مراحل",
-        "tooltip": "کل مراحل آموزش"
       }
     }
   },
@@ -14021,16 +14754,14 @@
         "name": "بذر تکسچر"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "فایل مدل",
-        "tooltip": null
-      },
-      "1": {
-        "name": "شناسه وظیفه مدل",
+    "outputs": [
+      null,
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       }
-    }
+    ]
   },
   "TripoMultiviewToModelNode": {
     "display_name": "Tripo: چندنما به مدل",
@@ -14082,16 +14813,14 @@
         "name": "بذر تکسچر"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "فایل مدل",
-        "tooltip": null
-      },
-      "1": {
-        "name": "شناسه وظیفه مدل",
+    "outputs": [
+      null,
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       }
-    }
+    ]
   },
   "TripoRefineNode": {
     "description": "بهبود یک مدل پیش‌نویس که فقط توسط مدل‌های Tripo نسخه ۱.۴ ایجاد شده است.",
@@ -14102,16 +14831,14 @@
         "tooltip": "باید یک مدل Tripo نسخه ۱.۴ باشد"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "فایل مدل",
-        "tooltip": null
-      },
-      "1": {
-        "name": "شناسه وظیفه مدل",
+    "outputs": [
+      null,
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       }
-    }
+    ]
   },
   "TripoRetargetNode": {
     "display_name": "Tripo: هدف‌گذاری مجدد مدل ریگ‌شده",
@@ -14123,16 +14850,14 @@
         "name": "شناسه وظیفه مدل اصلی"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "فایل مدل",
-        "tooltip": null
-      },
-      "1": {
-        "name": "شناسه وظیفه هدف‌گذاری مجدد",
+    "outputs": [
+      null,
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       }
-    }
+    ]
   },
   "TripoRigNode": {
     "display_name": "Tripo: ریگ مدل",
@@ -14141,16 +14866,14 @@
         "name": "شناسه وظیفه مدل اصلی"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "فایل مدل",
-        "tooltip": null
-      },
-      "1": {
-        "name": "شناسه وظیفه ریگ",
+    "outputs": [
+      null,
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       }
-    }
+    ]
   },
   "TripoTextToModelNode": {
     "display_name": "Tripo: متن به مدل",
@@ -14195,16 +14918,14 @@
         "name": "بذر تکسچر"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "فایل مدل",
-        "tooltip": null
-      },
-      "1": {
-        "name": "شناسه وظیفه مدل",
+    "outputs": [
+      null,
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       }
-    }
+    ]
   },
   "TripoTextureNode": {
     "display_name": "Tripo: مدل بافت",
@@ -14228,16 +14949,14 @@
         "name": "بذر بافت"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "فایل مدل",
-        "tooltip": null
-      },
-      "1": {
-        "name": "شناسه وظیفه مدل",
+    "outputs": [
+      null,
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       }
-    }
+    ]
   },
   "TruncateText": {
     "display_name": "کوتاه‌سازی متن",
@@ -14395,6 +15114,28 @@
     "inputs": {
       "samples": {
         "name": "نمونه‌ها"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "VAEDecodeAudioTiled": {
+    "display_name": "رمزگشایی VAE صوتی (کاشی‌بندی‌شده)",
+    "inputs": {
+      "overlap": {
+        "name": "همپوشانی"
+      },
+      "samples": {
+        "name": "نمونه‌ها"
+      },
+      "tile_size": {
+        "name": "اندازه کاشی"
       },
       "vae": {
         "name": "vae"
@@ -14719,6 +15460,31 @@
       }
     }
   },
+  "Video Slice": {
+    "display_name": "برش ویدیو",
+    "inputs": {
+      "duration": {
+        "name": "مدت زمان",
+        "tooltip": "مدت زمان بر حسب ثانیه، یا ۰ برای مدت نامحدود"
+      },
+      "start_time": {
+        "name": "زمان شروع",
+        "tooltip": "زمان شروع بر حسب ثانیه"
+      },
+      "strict_duration": {
+        "name": "مدت زمان دقیق",
+        "tooltip": "اگر True باشد، در صورت عدم امکان مدت زمان مشخص شده، خطا نمایش داده می‌شود."
+      },
+      "video": {
+        "name": "ویدیو"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "VideoLinearCFGGuidance": {
     "display_name": "VideoLinearCFGGuidance",
     "inputs": {
@@ -14901,6 +15667,119 @@
       }
     }
   },
+  "Vidu3ImageToVideoNode": {
+    "description": "تولید یک ویدیو از یک تصویر و یک پرامپت اختیاری.",
+    "display_name": "تولید ویدیو از تصویر Vidu Q3",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "image": {
+        "name": "تصویر",
+        "tooltip": "تصویری که به عنوان فریم ابتدایی ویدیوی تولیدشده استفاده می‌شود."
+      },
+      "model": {
+        "name": "مدل",
+        "tooltip": "مدلی که برای تولید ویدیو استفاده می‌شود."
+      },
+      "model_audio": {
+        "name": "صدا"
+      },
+      "model_duration": {
+        "name": "مدت زمان"
+      },
+      "model_resolution": {
+        "name": "رزولوشن"
+      },
+      "prompt": {
+        "name": "پرامپت",
+        "tooltip": "یک پرامپت متنی اختیاری برای تولید ویدیو (حداکثر ۲۰۰۰ کاراکتر)."
+      },
+      "seed": {
+        "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Vidu3TextToVideoNode": {
+    "description": "تولید ویدیو از یک پرامپت متنی.",
+    "display_name": "تولید ویدیو از متن Vidu Q3",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "model": {
+        "name": "مدل",
+        "tooltip": "مدلی که برای تولید ویدیو استفاده می‌شود."
+      },
+      "model_aspect_ratio": {
+        "name": "نسبت تصویر"
+      },
+      "model_audio": {
+        "name": "صدا"
+      },
+      "model_duration": {
+        "name": "مدت زمان"
+      },
+      "model_resolution": {
+        "name": "رزولوشن"
+      },
+      "prompt": {
+        "name": "پرامپت",
+        "tooltip": "توضیح متنی برای تولید ویدیو، با حداکثر طول ۲۰۰۰ کاراکتر."
+      },
+      "seed": {
+        "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ViduExtendVideoNode": {
+    "description": "افزایش طول یک ویدیوی موجود با تولید فریم‌های اضافی.",
+    "display_name": "افزایش طول ویدیو Vidu",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "end_frame": {
+        "name": "فریم پایانی"
+      },
+      "model": {
+        "name": "مدل",
+        "tooltip": "مدلی که برای افزایش طول ویدیو استفاده می‌شود."
+      },
+      "model_duration": {
+        "name": "مدت زمان"
+      },
+      "model_resolution": {
+        "name": "رزولوشن"
+      },
+      "prompt": {
+        "name": "پرامپت",
+        "tooltip": "یک پرامپت متنی اختیاری برای ویدیوی افزایش‌یافته (حداکثر ۲۰۰۰ کاراکتر)."
+      },
+      "seed": {
+        "name": "seed"
+      },
+      "video": {
+        "name": "ویدیو",
+        "tooltip": "ویدیوی منبع برای افزایش طول."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ViduImageToVideoNode": {
     "description": "تولید ویدیو از یک تصویر و متن اختیاری",
     "display_name": "تولید ویدیو از تصویر با Vidu",
@@ -14935,6 +15814,49 @@
       "seed": {
         "name": "بذر",
         "tooltip": "بذر برای تولید ویدیو (۰ برای تصادفی)"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ViduMultiFrameVideoNode": {
+    "description": "تولید ویدیو با چندین انتقال کلیدی بین فریم‌ها.",
+    "display_name": "تولید ویدیو چندفریمی Vidu",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "frames": {
+        "name": "فریم‌ها",
+        "tooltip": "تعداد انتقال‌های کلیدی بین فریم‌ها (۲ تا ۹)."
+      },
+      "frames_duration1": {
+        "name": "مدت زمان ۱"
+      },
+      "frames_duration2": {
+        "name": "مدت زمان ۲"
+      },
+      "frames_prompt1": {
+        "name": "پرامپت ۱"
+      },
+      "frames_prompt2": {
+        "name": "پرامپت ۲"
+      },
+      "model": {
+        "name": "مدل"
+      },
+      "resolution": {
+        "name": "رزولوشن"
+      },
+      "seed": {
+        "name": "seed"
+      },
+      "start_image": {
+        "name": "تصویر شروع",
+        "tooltip": "تصویر فریم ابتدایی. نسبت تصویر باید بین ۱:۴ تا ۴:۱ باشد."
       }
     },
     "outputs": {
@@ -15748,6 +16670,79 @@
       }
     }
   },
+  "WanInfiniteTalkToVideo": {
+    "display_name": "WanInfiniteTalkToVideo",
+    "inputs": {
+      "audio_encoder_output_1": {
+        "name": "خروجی رمزگذار صوتی ۱"
+      },
+      "audio_scale": {
+        "name": "مقیاس صوتی"
+      },
+      "clip_vision_output": {
+        "name": "خروجی بینایی clip"
+      },
+      "height": {
+        "name": "ارتفاع"
+      },
+      "length": {
+        "name": "طول"
+      },
+      "mode": {
+        "name": "حالت"
+      },
+      "model": {
+        "name": "مدل"
+      },
+      "model_patch": {
+        "name": "patch مدل"
+      },
+      "motion_frame_count": {
+        "name": "تعداد فریم‌های حرکتی",
+        "tooltip": "تعداد فریم‌های قبلی که به عنوان زمینه حرکت استفاده می‌شود."
+      },
+      "negative": {
+        "name": "منفی"
+      },
+      "positive": {
+        "name": "مثبت"
+      },
+      "previous_frames": {
+        "name": "فریم‌های قبلی"
+      },
+      "start_image": {
+        "name": "تصویر شروع"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "عرض"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "مدل",
+        "tooltip": null
+      },
+      "1": {
+        "name": "مثبت",
+        "tooltip": null
+      },
+      "2": {
+        "name": "منفی",
+        "tooltip": null
+      },
+      "3": {
+        "name": "latent",
+        "tooltip": null
+      },
+      "4": {
+        "name": "تصویر برش‌خورده",
+        "tooltip": null
+      }
+    }
+  },
   "WanMoveConcatTrack": {
     "display_name": "WanMoveConcatTrack",
     "inputs": {
@@ -16313,8 +17308,7 @@
       "image": {
         "name": "تصویر"
       },
-      "waiting for camera___": {
-      },
+      "waiting for camera___": {},
       "width": {
         "name": "عرض"
       }

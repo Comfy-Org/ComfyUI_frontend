@@ -32,6 +32,7 @@
 import { onClickOutside } from '@vueuse/core'
 import ContextMenu from 'primevue/contextmenu'
 import type { MenuItem } from 'primevue/menuitem'
+import type { ComponentPublicInstance } from 'vue'
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -72,13 +73,18 @@ const emit = defineEmits<{
   'bulk-export-workflow': [assets: AssetItem[]]
 }>()
 
-const contextMenu = ref<InstanceType<typeof ContextMenu>>()
+type ContextMenuInstance = ComponentPublicInstance & {
+  show: (event: MouseEvent) => void
+  hide: () => void
+}
+
+const contextMenu = ref<ContextMenuInstance | null>(null)
 const actions = useMediaAssetActions()
 const { t } = useI18n()
 
 // Close context menu when clicking outside
 onClickOutside(
-  computed(() => (contextMenu.value as any)?.$el),
+  computed(() => contextMenu.value?.$el),
   () => {
     hide()
   }
@@ -247,8 +253,8 @@ const contextMenuItems = computed<MenuItem[]>(() => {
       icon: 'icon-[lucide--trash-2]',
       command: async () => {
         if (asset) {
-          const success = await actions.confirmDelete(asset)
-          if (success) {
+          const confirmed = await actions.deleteAssets(asset)
+          if (confirmed) {
             emit('asset-deleted')
           }
         }

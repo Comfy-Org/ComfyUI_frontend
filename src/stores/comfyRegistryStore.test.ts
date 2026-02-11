@@ -1,4 +1,5 @@
-import { createPinia, setActivePinia } from 'pinia'
+import { createTestingPinia } from '@pinia/testing'
+import { setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 
@@ -83,7 +84,7 @@ describe('useComfyRegistryStore', () => {
   }
 
   beforeEach(() => {
-    setActivePinia(createPinia())
+    setActivePinia(createTestingPinia({ stubActions: false }))
     vi.clearAllMocks()
     mockRegistryService = {
       isLoading: ref(false),
@@ -126,7 +127,9 @@ describe('useComfyRegistryStore', () => {
     }
 
     vi.mocked(useComfyRegistryService).mockReturnValue(
-      mockRegistryService as any
+      mockRegistryService as Partial<
+        ReturnType<typeof useComfyRegistryService>
+      > as ReturnType<typeof useComfyRegistryService>
     )
   })
 
@@ -176,7 +179,7 @@ describe('useComfyRegistryStore', () => {
     const store = useComfyRegistryStore()
     vi.spyOn(store.getPackById, 'call').mockResolvedValueOnce(null)
 
-    const result = await store.getPackById.call(null as any)
+    const result = await store.getPackById.call(null!)
 
     expect(result).toBeNull()
     expect(mockRegistryService.getPackById).not.toHaveBeenCalled()

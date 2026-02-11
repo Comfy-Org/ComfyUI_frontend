@@ -19,12 +19,12 @@
   <RerouteMigrationToast />
   <ModelImportProgressDialog />
   <ManagerProgressToast />
-  <UnloadWindowConfirmDialog v-if="!isElectron()" />
+  <UnloadWindowConfirmDialog v-if="!isDesktop" />
   <MenuHamburger />
 </template>
 
 <script setup lang="ts">
-import { useEventListener } from '@vueuse/core'
+import { useEventListener, useIntervalFn } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
 import type { ToastMessageOptions } from 'primevue/toast'
 import { useToast } from 'primevue/usetoast'
@@ -52,7 +52,7 @@ import { useProgressFavicon } from '@/composables/useProgressFavicon'
 import { SERVER_CONFIG_ITEMS } from '@/constants/serverConfig'
 import { i18n, loadLocale } from '@/i18n'
 import ModelImportProgressDialog from '@/platform/assets/components/ModelImportProgressDialog.vue'
-import { isCloud } from '@/platform/distribution/types'
+import { isCloud, isDesktop } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
 import { useFrontendVersionMismatchWarning } from '@/platform/updates/common/useFrontendVersionMismatchWarning'
@@ -62,7 +62,7 @@ import type { StatusWsMessageStatus } from '@/schemas/apiSchema'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { setupAutoQueueHandler } from '@/services/autoQueueService'
-import { useKeybindingService } from '@/services/keybindingService'
+import { useKeybindingService } from '@/platform/keybindings/keybindingService'
 import { useAssetsStore } from '@/stores/assetsStore'
 import { useCommandStore } from '@/stores/commandStore'
 import { useExecutionStore } from '@/stores/executionStore'
@@ -78,8 +78,7 @@ import { useServerConfigStore } from '@/stores/serverConfigStore'
 import { useBottomPanelStore } from '@/stores/workspace/bottomPanelStore'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
-import { useWorkspaceStore } from '@/stores/workspaceStore'
-import { electronAPI, isElectron } from '@/utils/envUtil'
+import { electronAPI } from '@/utils/envUtil'
 import LinearView from '@/views/LinearView.vue'
 import ManagerProgressToast from '@/workbench/extensions/manager/components/ManagerProgressToast.vue'
 
@@ -101,9 +100,6 @@ const { linearMode } = storeToRefs(useCanvasStore())
 const telemetry = useTelemetry()
 const firebaseAuthStore = useFirebaseAuthStore()
 let hasTrackedLogin = false
-let visibilityListener: (() => void) | null = null
-let tabCountInterval: number | null = null
-let tabCountChannel: BroadcastChannel | null = null
 
 watch(
   () => colorPaletteStore.completedActivePalette,
@@ -115,7 +111,7 @@ watch(
       document.body.classList.add(DARK_THEME_CLASS)
     }
 
-    if (isElectron()) {
+    if (isDesktop) {
       electronAPI().changeTheme({
         color: 'rgba(0, 0, 0, 0)',
         symbolColor: newTheme.colors.comfy_base['input-text']
@@ -125,7 +121,7 @@ watch(
   { immediate: true }
 )
 
-if (isElectron()) {
+if (isDesktop) {
   watch(
     () => queueStore.tasks,
     (newTasks, oldTasks) => {
@@ -197,15 +193,12 @@ watchEffect(() => {
   queueStore.maxHistoryItems = settingStore.get('Comfy.Queue.MaxHistoryItems')
 })
 
-const init = () => {
-  const coreCommands = useCoreCommands()
-  useCommandStore().registerCommands(coreCommands)
-  useMenuItemStore().registerCoreMenuCommands()
-  useKeybindingService().registerCoreKeybindings()
-  useSidebarTabStore().registerCoreSidebarTabs()
-  useBottomPanelStore().registerCoreBottomPanelTabs()
-  app.extensionManager = useWorkspaceStore()
-}
+const coreCommands = useCoreCommands()
+useCommandStore().registerCommands(coreCommands)
+useMenuItemStore().registerCoreMenuCommands()
+useKeybindingService().registerCoreKeybindings()
+useSidebarTabStore().registerCoreSidebarTabs()
+void useBottomPanelStore().registerCoreBottomPanelTabs()
 
 const queuePendingTaskCountStore = useQueuePendingTaskCountStore()
 const sidebarTabStore = useSidebarTabStore()
@@ -252,15 +245,15 @@ const onReconnected = () => {
   }
 }
 
+useEventListener(api, 'status', onStatus)
+useEventListener(api, 'execution_success', onExecutionSuccess)
+useEventListener(api, 'reconnecting', onReconnecting)
+useEventListener(api, 'reconnected', onReconnected)
+
 onMounted(() => {
-  api.addEventListener('status', onStatus)
-  api.addEventListener('execution_success', onExecutionSuccess)
-  api.addEventListener('reconnecting', onReconnecting)
-  api.addEventListener('reconnected', onReconnected)
   executionStore.bindExecutionEvents()
 
   try {
-    init()
     // Relocate the legacy menu container to the graph canvas container so it is below other elements
     graphCanvasContainerRef.value?.prepend(app.ui.menuContainer)
   } catch (e) {
@@ -269,27 +262,7 @@ onMounted(() => {
 })
 
 onBeforeUnmount(() => {
-  api.removeEventListener('status', onStatus)
-  api.removeEventListener('execution_success', onExecutionSuccess)
-  api.removeEventListener('reconnecting', onReconnecting)
-  api.removeEventListener('reconnected', onReconnected)
   executionStore.unbindExecutionEvents()
-
-  // Clean up page visibility listener
-  if (visibilityListener) {
-    document.removeEventListener('visibilitychange', visibilityListener)
-    visibilityListener = null
-  }
-
-  // Clean up tab count tracking
-  if (tabCountInterval) {
-    window.clearInterval(tabCountInterval)
-    tabCountInterval = null
-  }
-  if (tabCountChannel) {
-    tabCountChannel.close()
-    tabCountChannel = null
-  }
 })
 
 useEventListener(window, 'keydown', useKeybindingService().keybindHandler)
@@ -315,18 +288,17 @@ const onGraphReady = () => {
     }
 
     // Set up page visibility tracking (cloud only)
-    if (isCloud && telemetry && !visibilityListener) {
-      visibilityListener = () => {
+    if (isCloud && telemetry) {
+      useEventListener(document, 'visibilitychange', () => {
         telemetry.trackPageVisibilityChanged({
           visibility_state: document.visibilityState as 'visible' | 'hidden'
         })
-      }
-      document.addEventListener('visibilitychange', visibilityListener)
+      })
     }
 
     // Set up tab count tracking (cloud only)
-    if (isCloud && telemetry && !tabCountInterval) {
-      tabCountChannel = new BroadcastChannel('comfyui-tab-count')
+    if (isCloud && telemetry) {
+      const tabCountChannel = new BroadcastChannel('comfyui-tab-count')
       const activeTabs = new Map<string, number>()
       const currentTabId = crypto.randomUUID()
 
@@ -341,7 +313,7 @@ const onGraphReady = () => {
       }
 
       // 5-minute heartbeat interval
-      tabCountInterval = window.setInterval(() => {
+      useIntervalFn(() => {
         const now = Date.now()
 
         // Clean up stale tabs (no heartbeat for 45 seconds)
@@ -352,7 +324,10 @@ const onGraphReady = () => {
         })
 
         // Broadcast our heartbeat
-        tabCountChannel?.postMessage({ type: 'heartbeat', tabId: currentTabId })
+        tabCountChannel.postMessage({
+          type: 'heartbeat',
+          tabId: currentTabId
+        })
 
         // Track tab count (include current tab)
         const tabCount = activeTabs.size + 1

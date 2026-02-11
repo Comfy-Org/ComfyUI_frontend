@@ -1,27 +1,37 @@
 import { expect } from '@playwright/test'
 
+import type { Settings } from '../../src/schemas/apiSchema'
 import { comfyPageFixture as test } from '../fixtures/ComfyPage'
 
+/**
+ * Type helper for test settings with arbitrary IDs.
+ * Extensions can register settings with any ID, but SettingParams.id
+ * is typed as keyof Settings for autocomplete.
+ */
+type TestSettingId = keyof Settings
+
 test.beforeEach(async ({ comfyPage }) => {
-  await comfyPage.setSetting('Comfy.UseNewMenu', 'Disabled')
+  await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Disabled')
 })
 
-test.describe('Settings Search functionality', () => {
+test.describe('Settings Search functionality', { tag: '@settings' }, () => {
   test.beforeEach(async ({ comfyPage }) => {
     // Register test settings to verify hidden/deprecated filtering
     await comfyPage.page.evaluate(() => {
-      window['app'].registerExtension({
+      window.app!.registerExtension({
         name: 'TestSettingsExtension',
         settings: [
           {
-            id: 'TestHiddenSetting',
+            // Extensions can register arbitrary setting IDs
+            id: 'TestHiddenSetting' as TestSettingId,
             name: 'Test Hidden Setting',
             type: 'hidden',
             defaultValue: 'hidden_value',
             category: ['Test', 'Hidden']
           },
           {
-            id: 'TestDeprecatedSetting',
+            // Extensions can register arbitrary setting IDs
+            id: 'TestDeprecatedSetting' as TestSettingId,
             name: 'Test Deprecated Setting',
             type: 'text',
             defaultValue: 'deprecated_value',
@@ -29,7 +39,8 @@ test.describe('Settings Search functionality', () => {
             category: ['Test', 'Deprecated']
           },
           {
-            id: 'TestVisibleSetting',
+            // Extensions can register arbitrary setting IDs
+            id: 'TestVisibleSetting' as TestSettingId,
             name: 'Test Visible Setting',
             type: 'text',
             defaultValue: 'visible_value',
@@ -109,19 +120,14 @@ test.describe('Settings Search functionality', () => {
     const settingsDialog = comfyPage.page.locator('.settings-container')
     await expect(settingsDialog).toBeVisible()
 
-    // Get categories and click on different ones
-    const categories = comfyPage.page.locator(
-      '.settings-sidebar .p-listbox-option'
-    )
-    const categoryCount = await categories.count()
+    // Click on a specific category (Appearance) to verify category switching
+    const appearanceCategory = comfyPage.page.getByRole('option', {
+      name: 'Appearance'
+    })
+    await appearanceCategory.click()
 
-    if (categoryCount > 1) {
-      // Click on the second category
-      await categories.nth(1).click()
-
-      // Verify the category is selected
-      await expect(categories.nth(1)).toHaveClass(/p-listbox-option-selected/)
-    }
+    // Verify the category is selected
+    await expect(appearanceCategory).toHaveClass(/p-listbox-option-selected/)
   })
 
   test('settings content area is visible', async ({ comfyPage }) => {

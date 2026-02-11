@@ -1,5 +1,6 @@
 <template>
   <Tree
+    v-bind="$attrs"
     v-model:expanded-keys="expandedKeys"
     v-model:selection-keys="selectionKeys"
     class="tree-explorer px-2 py-0 2xl:px-4 bg-transparent"
@@ -36,6 +37,10 @@
   <ContextMenu ref="menu" :model="menuItems" />
 </template>
 <script setup lang="ts">
+defineOptions({
+  inheritAttrs: false
+})
+
 import ContextMenu from 'primevue/contextmenu'
 import type { MenuItem, MenuItemCommandEvent } from 'primevue/menuitem'
 import Tree from 'primevue/tree'
@@ -221,7 +226,7 @@ const wrapCommandWithErrorHandler = (
 ) => {
   return isAsync
     ? errorHandling.wrapWithErrorHandlingAsync(
-        command as (...args: any[]) => Promise<any>,
+        command as (event: MenuItemCommandEvent) => Promise<void>,
         menuTargetNode.value?.handleError
       )
     : errorHandling.wrapWithErrorHandling(

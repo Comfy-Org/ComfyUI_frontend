@@ -16,12 +16,15 @@
   "assetBrowser": {
     "allCategory": "所有 {category}",
     "allModels": "所有模型",
+    "apiKeyHint": "要匯入私人或受限模型嗎？{link}。",
+    "apiKeyHintLink": "請在設定中新增您的 API 金鑰",
     "ariaLabel": {
       "assetCard": "{name} - {type} 資源",
       "loadingAsset": "載入資源中"
     },
     "assetCollection": "資產收藏",
     "assets": "資產",
+    "baseModel": "基礎模型",
     "baseModels": "基礎模型",
     "browseAssets": "瀏覽資產",
     "byType": "依類型",
@@ -50,13 +53,34 @@
       "canImport": "尚未匯入模型。點擊「匯入模型」以新增您的模型。",
       "restricted": "個人模型僅限 Creator 方案及以上等級使用。"
     },
+    "errorAccessForbidden": "無法存取此資源。",
+    "errorConnectionRefused": "無法連接來源，請稍後再試。",
+    "errorDownloadCancelled": "下載已取消。",
     "errorFileTooLarge": "檔案超過允許的最大大小限制",
     "errorFormatNotAllowed": "僅允許 SafeTensor 格式",
+    "errorHttpError": "擷取中繼資料時發生錯誤。",
+    "errorInternalError": "發生非預期錯誤，請再試一次。",
+    "errorInvalidHost": "無法解析來源網址的主機名稱。",
+    "errorInvalidUrl": "請提供一個網址。",
+    "errorInvalidUrlFormat": "網址格式無效，請檢查後再試。",
+    "errorMetadataFetchFailed": "無法從來源取得檔案資訊。",
     "errorModelTypeNotSupported": "不支援此模型類型",
+    "errorNetworkError": "網路錯誤，請檢查連線後再試。",
+    "errorNetworkTimeout": "請求逾時，請再試一次。",
+    "errorRateLimited": "請求過多，請幾分鐘後再試。",
+    "errorRequestCancelled": "請求已取消。",
+    "errorResourceNotFound": "找不到檔案，請檢查網址後再試。",
+    "errorServiceUnavailable": "服務暫時無法使用，請稍後再試。",
+    "errorSourceServerError": "來源伺服器發生問題，請稍後再試。",
+    "errorUnauthorized": "請登入以繼續。",
+    "errorUnauthorizedSource": "此資源需要驗證，請在設定中新增 API 金鑰。",
     "errorUnknown": "發生未預期的錯誤",
     "errorUnsafePickleScan": "CivitAI 偵測到此檔案中可能存在不安全的程式碼",
     "errorUnsafeVirusScan": "CivitAI 偵測到此檔案中有惡意軟體或可疑內容",
+    "errorUnsupportedSource": "此網址不支援。僅支援 Hugging Face 與 Civitai 網址。",
     "errorUploadFailed": "匯入資產失敗，請再試一次。",
+    "errorUserTokenAccessDenied": "您的 API 金鑰無法存取此資源，請檢查權限。",
+    "errorUserTokenInvalid": "儲存的 API 金鑰無效或已過期，請在設定中更新。",
     "failedToCreateNode": "無法建立節點。請重試或查看主控台以取得詳細資訊。",
     "fileFormats": "檔案格式",
     "fileName": "檔案名稱",
@@ -67,6 +91,10 @@
     "genericLinkPlaceholder": "請在此貼上連結",
     "importAnother": "匯入其他",
     "imported": "已匯入",
+    "invalidAsset": "無效的資產",
+    "invalidAssetDetail": "無法驗證所選資產。請再試一次。",
+    "invalidFilename": "無效的檔案名稱",
+    "invalidFilenameDetail": "無法判斷資產檔案名稱。請再試一次。",
     "jobId": "工作 ID",
     "loadingModels": "正在載入 {type}...",
     "maxFileSize": "最大檔案大小：{size}",
@@ -87,6 +115,7 @@
       "descriptionNotSet": "尚未設定描述",
       "descriptionPlaceholder": "為此模型新增描述...",
       "displayName": "顯示名稱",
+      "editDisplayName": "編輯顯示名稱",
       "fileName": "檔案名稱",
       "modelDescription": "模型描述",
       "modelTagging": "模型標籤",
@@ -106,6 +135,7 @@
     "modelUploaded": "模型匯入成功。",
     "noAssetsFound": "找不到資產",
     "noModelsInFolder": "此資料夾中沒有可用的 {type}",
+    "noResultsCanImport": "請嘗試調整搜尋或篩選條件。\n你也可以使用上方的「匯入」按鈕新增模型。",
     "noValidSourceDetected": "未偵測到有效的匯入來源",
     "notSureLeaveAsIs": "不確定？請保持原樣",
     "onlyCivitaiUrlsSupported": "僅支援 Civitai 的網址",
@@ -125,6 +155,7 @@
     "selectProjects": "選擇專案",
     "sortAZ": "A-Z",
     "sortBy": "排序依據",
+    "sortDefault": "預設",
     "sortPopular": "熱門",
     "sortRecent": "最近",
     "sortZA": "Z-A",
@@ -175,13 +206,7 @@
       "whitelistInfo": "關於未列入白名單的網站"
     },
     "deleteAccount": {
-      "cancel": "取消",
-      "confirm": "刪除帳號",
-      "confirmMessage": "您確定要刪除您的帳號嗎？此操作無法復原，且將永久移除您所有的資料。",
-      "confirmTitle": "刪除帳號",
-      "deleteAccount": "刪除帳號",
-      "success": "帳號已刪除",
-      "successDetail": "您的帳號已成功刪除。"
+      "contactSupport": "若要刪除你的帳號，請聯絡 {email}"
     },
     "errors": {
       "auth/cancelled-popup-request": "登入已取消。請再試一次。",
@@ -266,6 +291,16 @@
       "signUpWithGoogle": "使用 Google 註冊",
       "title": "建立帳戶"
     }
+  },
+  "billingOperation": {
+    "subscriptionFailed": "訂閱更新失敗",
+    "subscriptionProcessing": "正在處理付款 — 設定您的工作區...",
+    "subscriptionSuccess": "訂閱已成功更新",
+    "subscriptionTimeout": "訂閱驗證逾時",
+    "topupFailed": "儲值失敗",
+    "topupProcessing": "正在處理付款 — 新增點數中...",
+    "topupSuccess": "點數儲值成功",
+    "topupTimeout": "儲值驗證逾時"
   },
   "boundingBox": {
     "height": "高度",
@@ -547,6 +582,7 @@
       "needMore": "需要更多？",
       "purchaseError": "購買失敗",
       "purchaseErrorDetail": "購買點數失敗：{error}",
+      "purchaseSuccess": "點數儲值成功！",
       "quickPurchase": "快速購買",
       "seeDetails": "查看詳情",
       "selectAmount": "選擇金額",
@@ -576,12 +612,20 @@
     "CLIP": "CLIP",
     "CLIP_VISION": "CLIP 視覺",
     "CLIP_VISION_OUTPUT": "CLIP 視覺輸出",
+    "COLOR": "顏色",
     "COMBO": "組合",
     "COMFY_AUTOGROW_V3": "COMFY_AUTOGROW_V3",
     "COMFY_DYNAMICCOMBO_V3": "COMFY_DYNAMICCOMBO_V3",
     "COMFY_MATCHTYPE_V3": "COMFY_MATCHTYPE_V3",
     "CONDITIONING": "條件設定",
     "CONTROL_NET": "ControlNet",
+    "FILE_3D": "FILE_3D",
+    "FILE_3D_FBX": "FILE_3D_FBX",
+    "FILE_3D_GLB": "FILE_3D_GLB",
+    "FILE_3D_GLTF": "FILE_3D_GLTF",
+    "FILE_3D_OBJ": "FILE_3D_OBJ",
+    "FILE_3D_STL": "FILE_3D_STL",
+    "FILE_3D_USDZ": "FILE_3D_USDZ",
     "FLOAT": "浮點數",
     "FLOATS": "浮點數組",
     "GEMINI_INPUT_FILES": "Gemini輸入檔案",
@@ -722,6 +766,7 @@
     "commandProhibited": "指令 {command} 已被禁止。如需更多資訊，請聯絡管理員。",
     "community": "社群",
     "completed": "已完成",
+    "completedWithCheckmark": "已完成 ✓",
     "confirm": "確認",
     "confirmed": "已確認",
     "content": "內容",
@@ -730,6 +775,7 @@
     "control_before_generate": "生成前控制",
     "copied": "已複製",
     "copy": "複製",
+    "copyAll": "全部複製",
     "copyJobId": "複製工作 ID",
     "copyToClipboard": "複製到剪貼簿",
     "copyURL": "複製網址",
@@ -746,6 +792,7 @@
     "deleteImage": "刪除圖片",
     "deprecated": "已棄用",
     "description": "描述",
+    "devOnly": "開發專用",
     "devices": "裝置",
     "disableAll": "全部停用",
     "disableSelected": "停用所選",
@@ -753,8 +800,10 @@
     "disabling": "停用中",
     "dismiss": "關閉",
     "download": "下載",
+    "downloadAudio": "下載音訊",
     "downloadImage": "下載圖片",
     "downloadVideo": "下載影片",
+    "downloadWithSize": "下載（{size}）",
     "downloading": "下載中",
     "dropYourFileOr": "拖放您的檔案或",
     "duplicate": "複製",
@@ -770,12 +819,14 @@
     "enabling": "啟用中",
     "enterBaseName": "輸入基礎名稱",
     "enterNewName": "輸入新名稱",
+    "enterNewNamePrompt": "輸入新名稱：",
     "error": "錯誤",
     "errorLoadingImage": "載入圖片時發生錯誤",
     "errorLoadingVideo": "載入影片時發生錯誤",
     "experimental": "實驗性",
     "export": "匯出",
     "extensionName": "擴充套件名稱",
+    "extensions": "擴充功能",
     "failed": "失敗",
     "failedToCopyJobId": "複製工作 ID 失敗",
     "failedToDownloadImage": "下載圖片失敗",
@@ -814,6 +865,7 @@
     "jobIdCopied": "工作 ID 已複製到剪貼簿",
     "keybinding": "快捷鍵",
     "keybindingAlreadyExists": "快捷鍵已存在於",
+    "keybindings": "快捷鍵",
     "learnMore": "了解更多",
     "listening": "聆聽中...",
     "liveSamplingPreview": "即時取樣預覽",
@@ -925,6 +977,7 @@
     "selectedFile": "已選取的檔案",
     "setAsBackground": "設為背景",
     "settings": "設定",
+    "shortcutSuffix": "（{shortcut}）",
     "showLeftPanel": "顯示左側面板",
     "showReport": "顯示報告",
     "showRightPanel": "顯示右側面板",
@@ -958,11 +1011,10 @@
     "videoPreview": "影片預覽 - 使用方向鍵在影片間導航",
     "viewImageOfTotal": "檢視第 {index} 張圖片（共 {total} 張）",
     "viewVideoOfTotal": "檢視第 {index} 個影片（共 {total} 個）",
-    "vitePreloadErrorMessage": "應用程式的新版本已發佈。您要重新載入嗎？\n如果不重新載入，應用程式的某些部分可能無法正常運作。\n您可以拒絕並先儲存進度，稍後再重新載入。",
-    "vitePreloadErrorTitle": "新版本可用",
     "volume": "音量",
     "warning": "警告",
-    "workflow": "工作流程"
+    "workflow": "工作流程",
+    "you": "你"
   },
   "graphCanvasMenu": {
     "fitView": "適合視窗",
@@ -1027,8 +1079,12 @@
   },
   "imageCrop": {
     "cropPreviewAlt": "裁切預覽",
+    "custom": "自訂",
     "loading": "載入中...",
-    "noInputImage": "未連接輸入影像"
+    "lockRatio": "鎖定長寬比",
+    "noInputImage": "未連接輸入影像",
+    "ratio": "比例",
+    "unlockRatio": "解除鎖定長寬比"
   },
   "importFailed": {
     "copyError": "複製錯誤",
@@ -1152,14 +1208,21 @@
     "helpFix": "協助修復此問題"
   },
   "linearMode": {
-    "beta": "Beta - 提供回饋",
+    "beta": "App 模式 Beta - 提供回饋",
     "downloadAll": "全部下載",
     "dragAndDropImage": "拖曳圖片到此",
     "graphMode": "圖形模式",
-    "linearMode": "簡易模式",
+    "linearMode": "App 模式",
     "rerun": "重新執行",
     "reuseParameters": "重用參數",
-    "runCount": "執行次數："
+    "runCount": "執行次數：",
+    "welcome": {
+      "intro": "這是一個簡化視圖，隱藏節點圖，讓你專注於創作。",
+      "layout": "左側顯示你產生的圖片、影片和輸出，右側只保留必要的控制項。所有複雜內容都被隱藏。",
+      "sharing": "分享很簡單：建立工作流程，開啟 App 模式，右鍵分頁並匯出。其他人開啟你的檔案時，會直接進入這個乾淨的視圖。你可以將強大的工作流程分享成簡單工具，無需理解節點圖。",
+      "title": "歡迎使用 App 模式",
+      "widget": "如果想控制哪些設定顯示，請將頂層節點轉為子圖，然後在上方工具箱使用元件推廣，選擇要公開的項目。"
+    }
   },
   "load3d": {
     "applyingTexture": "正在套用材質貼圖...",
@@ -1259,8 +1322,10 @@
     }
   },
   "manager": {
+    "actions": "操作",
     "allMissingNodesInstalled": "所有缺少的節點已成功安裝",
     "applyChanges": "套用變更",
+    "basicInfo": "基本資訊",
     "changingVersion": "正在將版本從 {from} 變更為 {to}",
     "clickToFinishSetup": "點擊",
     "conflicts": {
@@ -1296,6 +1361,28 @@
     "disabledNodesWontUpdate": "已停用的節點將不會更新",
     "discoverCommunityContent": "探索社群製作的節點包、擴充功能等...",
     "downloads": "下載次數",
+    "emptyState": {
+      "allInstalled": {
+        "message": "你尚未安裝任何擴充功能。",
+        "title": "尚未安裝擴充功能"
+      },
+      "conflicting": {
+        "message": "你的所有擴充功能皆相容。",
+        "title": "未偵測到衝突"
+      },
+      "missing": {
+        "message": "所有必要的節點都已安裝。",
+        "title": "無缺少的節點"
+      },
+      "updateAvailable": {
+        "message": "你的所有擴充功能都是最新的。",
+        "title": "全部為最新版本"
+      },
+      "workflow": {
+        "message": "此工作流程未使用任何擴充節點。",
+        "title": "工作流程中無擴充功能"
+      }
+    },
     "enablePackToChangeVersion": "啟用此套件以變更版本",
     "errorConnecting": "連線至 Comfy Node Registry 時發生錯誤。",
     "extensionsSuccessfullyInstalled": "擴充功能已成功安裝並可使用！",
@@ -1317,18 +1404,31 @@
     "installingDependencies": "正在安裝相依套件...",
     "lastUpdated": "最後更新",
     "latestVersion": "最新版本",
+    "legacyManagerSearchTip": "正在尋找 ComfyUI-Manager？你可以在啟動 ComfyUI 時加上 --enable-manager-legacy-ui 參數來啟用舊版管理介面。",
     "legacyManagerUI": "使用舊版介面",
     "legacyManagerUIDescription": "若要使用舊版管理介面，請以 --enable-manager-legacy-ui 啟動 ComfyUI",
     "legacyMenuNotAvailable": "舊版管理選單不可用，已預設切換至新版管理選單。",
     "license": "授權條款",
     "loadingVersions": "正在載入版本...",
     "mixedSelectionMessage": "無法對混合選取執行批次操作",
+    "nav": {
+      "allExtensions": "所有擴充功能",
+      "allInWorkflow": "全部於：{workflowName}",
+      "allInstalled": "全部已安裝",
+      "conflicting": "有衝突",
+      "inWorkflowSection": "工作流程中",
+      "installedSection": "已安裝",
+      "missingNodes": "缺少節點",
+      "notInstalled": "未安裝",
+      "updatesAvailable": "有可用更新"
+    },
     "nightlyVersion": "每夜建置版",
     "noDescription": "沒有可用的說明",
     "noNodesFound": "找不到任何節點",
     "noNodesFoundDescription": "此套件的節點無法解析，或此套件僅為前端擴充功能，沒有任何節點。",
     "noResultsFound": "找不到符合搜尋條件的結果。",
     "nodePack": "節點包",
+    "nodePackInfo": "節點包資訊",
     "notAvailable": "不可用",
     "packsSelected": "已選擇套件",
     "repository": "儲存庫",
@@ -1336,6 +1436,7 @@
     "restartingBackend": "正在重新啟動後端以套用變更...",
     "searchPlaceholder": "搜尋",
     "selectVersion": "選擇版本",
+    "selected": "已選取",
     "sort": {
       "created": "最新上架",
       "downloads": "最受歡迎",
@@ -1572,7 +1673,7 @@
     "Node Library": "節點庫",
     "Node Links": "節點連結",
     "Open": "開啟",
-    "Open 3D Viewer (Beta) for Selected Node": "為選取節點開啟 3D 檢視器（測試版）",
+    "Open 3D Viewer (Beta) for Selected Node": "為所選節點開啟 3D 檢視器（Beta）",
     "Open Color Picker in MaskEditor": "在 MaskEditor 中開啟顏色選擇器",
     "Open Custom Nodes Folder": "開啟自訂節點資料夾",
     "Open DevTools": "開啟開發者工具",
@@ -1602,15 +1703,17 @@
     "Rotate Right in MaskEditor": "在遮罩編輯器中向右旋轉",
     "Save": "儲存",
     "Save As": "另存新檔",
+    "Set Subgraph Description": "設定子圖描述",
+    "Set Subgraph Search Aliases": "設定子圖搜尋別名",
     "Show Keybindings Dialog": "顯示快捷鍵對話框",
     "Show Model Selector (Dev)": "顯示模型選擇器（開發用）",
     "Show Settings Dialog": "顯示設定對話框",
     "Sign Out": "登出",
+    "Toggle App Mode": "切換 App 模式",
     "Toggle Essential Bottom Panel": "切換基本底部面板",
     "Toggle Logs Bottom Panel": "切換日誌底部面板",
     "Toggle Queue Panel V2": "切換佇列面板 V2",
     "Toggle Search Box": "切換搜尋框",
-    "Toggle Simple Mode": "切換簡易模式",
     "Toggle Terminal Bottom Panel": "切換終端機底部面板",
     "Toggle Theme (Dark/Light)": "切換主題（深色/淺色）",
     "Toggle View Controls Bottom Panel": "切換檢視控制底部面板",
@@ -1637,7 +1740,9 @@
   "missingModelsDialog": {
     "doNotAskAgain": "不要再顯示此訊息",
     "missingModels": "缺少模型",
-    "missingModelsMessage": "載入圖形時，找不到以下模型"
+    "missingModelsMessage": "載入圖形時，找不到以下模型",
+    "reEnableInSettings": "請在{link}中重新啟用",
+    "reEnableInSettingsLink": "設定"
   },
   "missingNodes": {
     "cloud": {
@@ -1668,10 +1773,13 @@
     "Bria": "Bria",
     "ByteDance": "字節跳動",
     "Gemini": "雙子星",
+    "Grok": "Grok",
+    "HitPaw": "HitPaw",
     "Ideogram": "Ideogram",
     "Kling": "Kling",
     "LTXV": "LTXV",
     "Luma": "Luma",
+    "Magnific": "Magnific",
     "Meshy": "Meshy",
     "MiniMax": "MiniMax",
     "Moonvalley Marey": "月谷馬雷",
@@ -1682,6 +1790,7 @@
     "Runway": "跑道",
     "Sora": "蒼穹",
     "Stability AI": "Stability AI",
+    "Tencent": "Tencent",
     "Topaz": "Topaz",
     "Tripo": "三重奏",
     "Veo": "Veo",
@@ -1766,6 +1875,16 @@
     "render": "節點渲染錯誤",
     "slots": "節點插槽錯誤",
     "widgets": "節點元件錯誤"
+  },
+  "nodeFilters": {
+    "hideDeprecated": "隱藏已棄用節點",
+    "hideDeprecatedDescription": "隱藏標記為已棄用的節點，除非明確啟用",
+    "hideDevOnly": "隱藏僅限開發者節點",
+    "hideDevOnlyDescription": "隱藏標記為僅限開發者的節點，除非啟用開發者模式",
+    "hideExperimental": "隱藏實驗性節點",
+    "hideExperimentalDescription": "隱藏標記為實驗性的節點，除非明確啟用",
+    "hideSubgraph": "隱藏子圖節點",
+    "hideSubgraphDescription": "暫時從節點庫與搜尋中隱藏子圖節點"
   },
   "nodeHelpPage": {
     "documentationPage": "說明文件頁面",
@@ -1877,6 +1996,7 @@
     "favorites": "已收藏輸入",
     "favoritesNone": "尚無已收藏輸入",
     "favoritesNoneDesc": "你收藏的輸入會顯示在這裡",
+    "favoritesNoneHint": "在參數分頁，點擊任一輸入的 {moreIcon} 可加入這裡",
     "favoritesNoneTooltip": "將元件加星標，快速存取無需選擇節點",
     "globalSettings": {
       "canvas": "畫布",
@@ -1897,6 +2017,7 @@
     },
     "groupSettings": "群組設定",
     "groups": "群組",
+    "hideAdvancedInputsButton": "隱藏進階輸入",
     "hideInput": "隱藏輸入",
     "info": "資訊",
     "inputs": "輸入",
@@ -1920,6 +2041,36 @@
     "title": "未選取節點 | 已選取 1 個節點 | 已選取 {count} 個節點",
     "togglePanel": "切換屬性面板",
     "workflowOverview": "工作流程總覽"
+  },
+  "secrets": {
+    "addSecret": "新增機密",
+    "createdAt": "建立於 {date}",
+    "deleteConfirmMessage": "您確定要刪除「{name}」嗎？此操作無法復原。",
+    "deleteConfirmTitle": "刪除機密",
+    "description": "機密會被加密，用於儲存像 API 金鑰這類敏感資料。",
+    "descriptionUsage": "在這裡儲存您的權杖，以啟用從支援的供應商下載私人與受限模型。",
+    "editSecret": "編輯機密",
+    "errors": {
+      "duplicateName": "已存在同名的機密",
+      "duplicateProvider": "此供應商已存在機密",
+      "nameRequired": "名稱為必填項目",
+      "nameTooLong": "名稱長度必須在 255 個字元以內",
+      "providerRequired": "供應商為必填項目",
+      "secretValueRequired": "機密值為必填項目"
+    },
+    "lastUsed": "上次使用 {date}",
+    "modelProviders": "模型供應商",
+    "name": "名稱",
+    "namePlaceholder": "例如：我的 API 金鑰",
+    "noSecrets": "尚未儲存任何機密。新增您的第一個 API 金鑰以開始使用。",
+    "provider": "供應商",
+    "providerHint": "選填。選擇供應商可自動啟用權杖使用。",
+    "secretValue": "機密值",
+    "secretValueHint": "此值將被加密，且無法再次查看。",
+    "secretValueHintEdit": "若要保留目前的值，請留空。",
+    "secretValuePlaceholder": "請輸入您的 API 金鑰",
+    "secretValuePlaceholderEdit": "輸入新值以變更",
+    "title": "API 金鑰與機密"
   },
   "selectionToolbox": {
     "Bypass Group Nodes": "繞過群組節點",
@@ -2129,6 +2280,7 @@
     "NodeLibrary": "節點庫",
     "Nodes 2_0": "Nodes 2.0",
     "Notification Preferences": "通知偏好設定",
+    "Other": "其他",
     "PLY": "PLY",
     "PlanCredits": "方案與點數",
     "Pointer": "指標",
@@ -2137,6 +2289,7 @@
     "Reroute": "重新導向",
     "RerouteBeta": "重新導向 Beta",
     "Scene": "場景",
+    "Secrets": "機密資訊",
     "Server": "伺服器",
     "Server-Config": "伺服器設定",
     "Settings": "設定",
@@ -2148,7 +2301,8 @@
     "Vue Nodes": "Vue 節點",
     "VueNodes": "Vue 節點",
     "Window": "視窗",
-    "Workflow": "工作流程"
+    "Workflow": "工作流程",
+    "Workspace": "工作區"
   },
   "shape": {
     "CARD": "卡片",
@@ -2242,6 +2396,7 @@
       "filterBy": "篩選依據",
       "filterCurrentWorkflow": "目前工作流程",
       "filterJobs": "篩選作業",
+      "inlineTotalLabel": "總計",
       "interruptAll": "中斷所有執行中作業",
       "jobQueue": "作業佇列",
       "jobsCompleted": "{count} 個作業已完成",
@@ -2288,8 +2443,12 @@
   },
   "subgraphStore": {
     "blueprintName": "子圖名稱",
+    "blueprintNamePrompt": "子圖名稱：",
+    "cannotDeleteGlobal": "無法刪除已安裝的藍圖",
     "confirmDelete": "此操作將永久從您的程式庫中移除藍圖",
     "confirmDeleteTitle": "刪除藍圖？",
+    "enterDescription": "輸入描述",
+    "enterSearchAliases": "輸入搜尋別名（以逗號分隔）",
     "hidden": "隱藏 / 巢狀參數",
     "hideAll": "全部隱藏",
     "loadFailure": "載入子圖藍圖失敗",
@@ -2300,6 +2459,7 @@
     "publishSuccess": "已儲存至節點庫",
     "publishSuccessMessage": "您可以在節點庫的「子圖藍圖」中找到您的子圖藍圖",
     "saveBlueprint": "將子圖儲存到資料庫",
+    "searchAliases": "搜尋別名",
     "showAll": "顯示全部",
     "showRecommended": "顯示建議的小工具",
     "shown": "在節點上顯示"
@@ -2315,9 +2475,30 @@
     "beta": "測試版",
     "billedMonthly": "每月收費",
     "billedYearly": "每年收費 {total}",
+    "billingComingSoon": {
+      "message": "團隊計費功能即將推出。屆時你可以為你的工作區訂閱方案，並依照每位成員計價。請持續關注最新消息。",
+      "title": "即將推出"
+    },
+    "cancelDialog": {
+      "confirmCancel": "取消訂閱",
+      "description": "您的存取權限將持續至 {date}。您將不會再次被收費，您的工作區與點數將被保留。您可隨時重新訂閱。",
+      "endOfBillingPeriod": "帳單週期結束",
+      "failed": "取消訂閱失敗",
+      "keepSubscription": "保留訂閱",
+      "title": "取消訂閱"
+    },
+    "cancelSubscription": "取消訂閱",
+    "cancelSuccess": "訂閱已成功取消",
+    "canceled": "已取消",
+    "canceledCard": {
+      "description": "您將不會再次被收費。您的功能將持續至 {date}。",
+      "title": "您的訂閱已取消"
+    },
     "changeTo": "切換至 {plan}",
+    "chooseBestPlanWorkspace": "為您的工作區選擇最佳方案",
     "comfyCloud": "Comfy Cloud",
     "comfyCloudLogo": "Comfy Cloud 標誌",
+    "contactOwnerToSubscribe": "請聯絡工作區擁有者以訂閱",
     "contactUs": "聯絡我們",
     "creditsRemainingThisMonth": "本月剩餘點數",
     "creditsRemainingThisYear": "本年剩餘點數",
@@ -2325,11 +2506,13 @@
     "currentPlan": "目前方案",
     "customLoRAsLabel": "匯入您自己的 LoRAs",
     "description": "選擇最適合您的方案",
+    "descriptionWorkspace": "為您的工作區選擇最佳方案",
     "expiresDate": "將於 {date} 到期",
     "gpuLabel": "RTX 6000 Pro（96GB VRAM）",
     "haveQuestions": "有疑問或想了解企業方案？",
     "invoiceHistory": "發票記錄",
     "learnMore": "了解更多",
+    "managePayment": "管理付款",
     "managePlan": "管理方案",
     "manageSubscription": "管理訂閱",
     "maxDuration": {
@@ -2339,14 +2522,20 @@
       "standard": "30 分鐘"
     },
     "maxDurationLabel": "每次工作流程最長執行時間",
+    "maxMembersLabel": "最大成員數",
+    "member": "成員",
+    "memberCount": "{count} 位成員",
+    "membersLabel": "最多 {count} 位成員",
     "messageSupport": "聯繫客服",
     "monthly": "每月",
     "monthlyBonusDescription": "每月點數獎勵",
     "monthlyCreditsInfo": "這些點數每月重置，不可累積",
     "monthlyCreditsLabel": "每月點數",
+    "monthlyCreditsPerMemberLabel": "每月點數／成員",
     "monthlyCreditsRollover": "這些點數將結轉至下個月",
     "mostPopular": "最受歡迎",
     "nextBillingCycle": "下個計費週期",
+    "nextMonthInvoice": "下月發票",
     "partnerNodesBalance": "「合作夥伴節點」點數餘額",
     "partnerNodesCredits": "合作節點點數",
     "partnerNodesDescription": "用於執行商業/專有模型",
@@ -2354,17 +2543,45 @@
     "plansAndPricing": "方案與價格",
     "prepaidCreditsInfo": "單獨購買且不會過期的點數",
     "prepaidDescription": "預付點數",
+    "preview": {
+      "addCreditCard": "新增信用卡",
+      "backToAllPlans": "返回所有方案",
+      "confirm": "確認",
+      "confirmPayment": "確認您的付款",
+      "confirmPlanChange": "確認您的方案變更",
+      "eachMonthCreditsRefill": "每月點數補充至",
+      "ends": "結束於 {date}",
+      "hideFeatures": "隱藏功能",
+      "nextPaymentDue": "下次付款日為 {date}。可隨時取消。",
+      "perMember": "／成員",
+      "privacyPolicy": "隱私政策",
+      "proratedCharge": "{plan} 按比例收費",
+      "proratedRefund": "{plan} 按比例退款",
+      "showMoreFeatures": "顯示更多功能",
+      "starting": "自 {date} 開始",
+      "startingToday": "今日開始",
+      "terms": "服務條款",
+      "termsAgreement": "繼續即表示您同意 Comfy Org 的{terms}與{privacy}。",
+      "totalDueToday": "今日應付總額"
+    },
     "renewsDate": "將於 {date} 續訂",
     "required": {
+      "pollingFailed": "訂閱啟用失敗",
+      "pollingSuccess": "訂閱已成功啟用！",
+      "pollingTimeout": "等待訂閱逾時。請重新整理並再試一次。",
       "subscribe": "訂閱",
       "title": "訂閱",
       "waitingForSubscription": "請在新分頁中完成訂閱。完成後我們會自動偵測！"
     },
+    "resubscribe": "重新訂閱",
+    "resubscribeSuccess": "訂閱已重新啟用",
+    "resubscribeTo": "重新訂閱 {plan}",
     "subscribeNow": "立即訂閱",
     "subscribeTo": "訂閱 {plan}",
     "subscribeToComfyCloud": "訂閱 Comfy Cloud",
     "subscribeToRun": "訂閱",
     "subscribeToRunFull": "訂閱運行方案",
+    "subscriptionRequiredMessage": "會員需訂閱才能在雲端執行工作流程",
     "tierNameYearly": "{name} 年度方案",
     "tiers": {
       "creator": {
@@ -2387,6 +2604,7 @@
     "upgradePlan": "升級方案",
     "upgradeTo": "升級至 {plan}",
     "usdPerMonth": "美元／月",
+    "usdPerMonthPerMember": "美元／月／成員",
     "videoEstimateExplanation": "此估算以 Wan 2.2 圖轉影範本的預設設定（5 秒、640x640、16fps、4 步採樣）為基礎。",
     "videoEstimateHelp": "查看更多此範本細節",
     "videoEstimateLabel": "以 Wan 2.2 圖轉影範本約可產生的 5 秒影片數量",
@@ -2396,6 +2614,7 @@
     "viewMoreDetails": "查看更多詳情",
     "viewMoreDetailsPlans": "查看更多方案與價格細節",
     "viewUsageHistory": "檢視使用記錄",
+    "workspaceNotSubscribed": "此工作區尚未訂閱",
     "yearly": "每年",
     "yearlyCreditsLabel": "年度總點數",
     "yearlyDiscount": "八折優惠",
@@ -2471,6 +2690,9 @@
     "useCaseFilter": "任務",
     "useCasesSelected": "{count} 個使用案例"
   },
+  "templates": {
+    "logoProviderSeparator": " ＆ "
+  },
   "toastMessages": {
     "cannotCreateSubgraph": "無法建立子圖",
     "couldNotDetermineFileType": "無法判斷檔案類型",
@@ -2497,6 +2719,7 @@
     "failedToLoadModel": "無法載入 3D 模型",
     "failedToPurchaseCredits": "購買點數失敗：{error}",
     "failedToQueue": "加入佇列失敗",
+    "failedToSaveDraft": "無法儲存工作流程草稿",
     "failedToToggleCamera": "切換相機失敗",
     "failedToToggleGrid": "切換格線失敗",
     "failedToUpdateBackgroundColor": "更新背景顏色失敗",
@@ -2545,7 +2768,8 @@
     "notSet": "未設定",
     "provider": "登入提供者",
     "title": "使用者設定",
-    "updatePassword": "更新密碼"
+    "updatePassword": "更新密碼",
+    "workspaceSettings": "工作區設定"
   },
   "validation": {
     "descriptionRequired": "說明為必填項目",
@@ -2585,6 +2809,9 @@
   "vueNodesMigrationMainMenu": {
     "message": "隨時可從主選單切換回 Nodes 2.0。"
   },
+  "vueNodesSlot": {
+    "iterative": "（反覆運算）"
+  },
   "welcome": {
     "getStarted": "開始使用",
     "title": "歡迎使用 ComfyUI"
@@ -2605,6 +2832,7 @@
       "placeholder": "選擇...",
       "placeholderAudio": "選擇音訊...",
       "placeholderImage": "選擇圖片...",
+      "placeholderMesh": "選擇網格...",
       "placeholderModel": "選擇模型...",
       "placeholderUnknown": "選擇媒體...",
       "placeholderVideo": "選擇影片..."
@@ -2632,10 +2860,14 @@
   },
   "workflowService": {
     "enterFilename": "輸入檔案名稱",
+    "enterFilenamePrompt": "請輸入檔案名稱：",
     "exportWorkflow": "匯出工作流程",
     "saveWorkflow": "儲存工作流程"
   },
   "workspace": {
+    "addedToWorkspace": "你已被加入 {workspaceName}",
+    "inviteAccepted": "已接受邀請",
+    "inviteFailed": "接受邀請失敗",
     "unsavedChanges": {
       "message": "您有未儲存的變更。是否要捨棄這些變更並切換工作區？",
       "title": "未儲存的變更"
@@ -2649,6 +2881,128 @@
       "tokenExchangeFailed": "與工作區驗證失敗：{error}",
       "workspaceNotFound": "找不到工作區"
     }
+  },
+  "workspacePanel": {
+    "createWorkspaceDialog": {
+      "create": "建立",
+      "message": "工作區可讓成員共用點數池。建立後您將成為擁有者。",
+      "nameLabel": "工作區名稱*",
+      "namePlaceholder": "輸入工作區名稱",
+      "title": "建立新工作區"
+    },
+    "dashboard": {
+      "placeholder": "儀表板工作區設定"
+    },
+    "deleteDialog": {
+      "message": "任何未使用的點數或未儲存的資產都將遺失。此操作無法復原。",
+      "messageWithName": "刪除「{name}」？任何未使用的點數或未儲存的資產都將遺失。此操作無法復原。",
+      "title": "確定要刪除此工作區？"
+    },
+    "editWorkspaceDialog": {
+      "nameLabel": "工作區名稱",
+      "save": "儲存",
+      "title": "編輯工作區詳細資料"
+    },
+    "invite": "邀請",
+    "inviteLimitReached": "你已達到最多 50 位成員的上限",
+    "inviteMember": "邀請成員",
+    "inviteMemberDialog": {
+      "createLink": "建立連結",
+      "linkCopied": "已複製",
+      "linkCopyFailed": "複製連結失敗",
+      "linkStep": {
+        "copyLink": "複製連結",
+        "done": "完成",
+        "message": "請確認他們的帳號使用此電子郵件。",
+        "title": "將此連結發送給對方"
+      },
+      "message": "建立可分享的邀請連結並發送給對方",
+      "placeholder": "輸入對方的電子郵件",
+      "title": "邀請他人加入此工作區"
+    },
+    "leaveDialog": {
+      "leave": "離開",
+      "message": "除非聯絡工作區擁有者，否則您將無法再次加入。",
+      "title": "確定要離開此工作區？"
+    },
+    "members": {
+      "actions": {
+        "copyLink": "複製邀請連結",
+        "removeMember": "移除成員",
+        "revokeInvite": "撤銷邀請"
+      },
+      "columns": {
+        "expiryDate": "到期日",
+        "inviteDate": "邀請日期",
+        "joinDate": "加入日期"
+      },
+      "createNewWorkspace": "建立新工作區。",
+      "membersCount": "{count}/50 位成員",
+      "noInvites": "沒有待處理邀請",
+      "noMembers": "沒有成員",
+      "pendingInvitesCount": "{count} 個待處理邀請",
+      "personalWorkspaceMessage": "你目前無法邀請其他成員加入你的個人工作區。若要新增成員，請",
+      "tabs": {
+        "active": "已啟用",
+        "pendingCount": "待處理 ({count})"
+      }
+    },
+    "menu": {
+      "deleteWorkspace": "刪除工作區",
+      "deleteWorkspaceDisabledTooltip": "請先取消工作區的有效訂閱",
+      "editWorkspace": "編輯工作區詳細資料",
+      "leaveWorkspace": "離開工作區"
+    },
+    "removeMemberDialog": {
+      "error": "移除成員失敗",
+      "message": "此成員將會從你的工作區中移除。他們已使用的點數不會退還。",
+      "remove": "移除成員",
+      "success": "已移除成員",
+      "title": "要移除此成員嗎？"
+    },
+    "revokeInviteDialog": {
+      "message": "此人將無法再加入你的工作區，他們的邀請連結也會失效。",
+      "revoke": "取消邀請",
+      "title": "要取消邀請此人嗎？"
+    },
+    "tabs": {
+      "dashboard": "儀表板",
+      "membersCount": "成員 ({count})",
+      "planCredits": "方案與點數"
+    },
+    "toast": {
+      "failedToCreateWorkspace": "建立工作區失敗",
+      "failedToDeleteWorkspace": "刪除工作區失敗",
+      "failedToFetchWorkspaces": "載入工作區失敗",
+      "failedToLeaveWorkspace": "離開工作區失敗",
+      "failedToUpdateWorkspace": "更新工作區失敗",
+      "workspaceCreated": {
+        "message": "訂閱方案、邀請團隊成員並開始協作。",
+        "subscribe": "訂閱",
+        "title": "已建立工作區"
+      },
+      "workspaceDeleted": {
+        "message": "該工作區已被永久刪除。",
+        "title": "已刪除工作區"
+      },
+      "workspaceLeft": {
+        "message": "你已離開該工作區。",
+        "title": "已離開工作區"
+      },
+      "workspaceUpdated": {
+        "message": "工作區詳細資料已儲存。",
+        "title": "工作區已更新"
+      }
+    }
+  },
+  "workspaceSwitcher": {
+    "createWorkspace": "建立新工作區",
+    "maxWorkspacesReached": "您最多只能擁有 10 個工作區。請刪除一個以建立新工作區。",
+    "personal": "個人",
+    "roleMember": "成員",
+    "roleOwner": "擁有者",
+    "subscribe": "訂閱",
+    "switchWorkspace": "切換工作區"
   },
   "zoomControls": {
     "hideMinimap": "隱藏小地圖",

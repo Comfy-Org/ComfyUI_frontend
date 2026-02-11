@@ -74,12 +74,45 @@
     <div v-if="$slots.actions" class="relative z-1 flex items-center gap-2">
       <slot name="actions" />
     </div>
+
+    <div
+      v-if="typeof stackCount === 'number' && stackCount > 1"
+      class="relative z-1 flex shrink-0 items-center"
+    >
+      <Button
+        variant="secondary"
+        size="md"
+        class="gap-1 font-bold"
+        :aria-label="stackIndicatorLabel"
+        :aria-expanded="stackExpanded"
+        @click.stop="emit('stack-toggle')"
+      >
+        <i aria-hidden="true" class="icon-[lucide--layers] size-4" />
+        <span class="text-xs leading-none">{{ stackCount }}</span>
+        <i
+          aria-hidden="true"
+          :class="
+            cn(
+              stackExpanded
+                ? 'icon-[lucide--chevron-down]'
+                : 'icon-[lucide--chevron-right]',
+              'size-3'
+            )
+          "
+        />
+      </Button>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { useProgressBarBackground } from '@/composables/useProgressBarBackground'
+import Button from '@/components/ui/button/Button.vue'
 import { cn } from '@/utils/tailwindUtil'
+
+const emit = defineEmits<{
+  'stack-toggle': []
+}>()
 
 const {
   previewUrl,
@@ -90,6 +123,9 @@ const {
   iconWrapperClass,
   primaryText,
   secondaryText,
+  stackCount,
+  stackIndicatorLabel,
+  stackExpanded = false,
   progressTotalPercent,
   progressCurrentPercent
 } = defineProps<{
@@ -101,6 +137,9 @@ const {
   iconWrapperClass?: string
   primaryText?: string
   secondaryText?: string
+  stackCount?: number
+  stackIndicatorLabel?: string
+  stackExpanded?: boolean
   progressTotalPercent?: number
   progressCurrentPercent?: number
 }>()

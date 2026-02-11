@@ -1,8 +1,9 @@
 import { computed, ref } from 'vue'
 import type { Ref } from 'vue'
 
-import type { LGraphGroup } from '@/lib/litegraph/src/litegraph'
+import type { LGraphGroup, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { getExtraOptionsForWidget } from '@/services/litegraphService'
 import { isLGraphGroup } from '@/utils/litegraphUtil'
 
 import {
@@ -45,6 +46,8 @@ export enum BadgeVariant {
 // Global singleton for NodeOptions component reference
 let nodeOptionsInstance: null | NodeOptionsInstance = null
 
+const hoveredWidgetName = ref<string>()
+
 /**
  * Toggle the node options popover
  * @param event - The trigger event
@@ -61,6 +64,13 @@ export function toggleNodeOptions(event: Event) {
  * @param event - The trigger event (must be MouseEvent for position)
  */
 export function showNodeOptions(event: MouseEvent) {
+  hoveredWidgetName.value = undefined
+  const target = event.target
+  if (target instanceof HTMLElement) {
+    const widgetEl = target.closest('.lg-node-widget')
+    if (widgetEl instanceof HTMLElement)
+      hoveredWidgetName.value = widgetEl.dataset.widgetName
+  }
   if (nodeOptionsInstance?.show) {
     nodeOptionsInstance.show(event)
   }
@@ -133,8 +143,8 @@ export function useMoreOptionsMenu() {
   } = useGroupMenuOptions()
   const {
     getBasicSelectionOptions,
-    getSubgraphOptions,
-    getMultipleNodesOptions
+    getMultipleNodesOptions,
+    getSubgraphOptions
   } = useSelectionMenuOptions()
 
   const hasSubgraphs = hasSubgraphsComputed
@@ -164,13 +174,13 @@ export function useMoreOptionsMenu() {
 
     // For single node selection, also get LiteGraph menu items to merge
     const litegraphOptions: MenuOption[] = []
+    const node: LGraphNode | undefined = selectedNodes.value[0]
     if (
       selectedNodes.value.length === 1 &&
       !groupContext &&
       canvasStore.canvas
     ) {
       try {
-        const node = selectedNodes.value[0]
         const rawItems = canvasStore.canvas.getNodeMenuOptions(node)
         // Don't apply structuring yet - we'll do it after merging with Vue options
         litegraphOptions.push(
@@ -249,6 +259,18 @@ export function useMoreOptionsMenu() {
       options.push(...getImageMenuOptions(selectedNodes.value[0]))
       options.push({ type: 'divider' })
     }
+    const rawName = hoveredWidgetName.value
+    const widget = node?.widgets?.find((w) => w.name === rawName)
+    if (widget) {
+      const widgetOptions = convertContextMenuToOptions(
+        getExtraOptionsForWidget(node, widget)
+      )
+      if (widgetOptions) {
+        options.push(...widgetOptions)
+        options.push({ type: 'divider' })
+      }
+    }
+
     // Section 6 & 7: Extensions and Delete are handled by buildStructuredMenu
 
     // Mark all Vue options with source

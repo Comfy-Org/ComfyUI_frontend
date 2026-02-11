@@ -161,22 +161,25 @@ export const useColorPaletteService = () => {
     }
     app.canvas._pattern = undefined
 
-    for (const [key, value] of Object.entries(palette)) {
-      if (Object.prototype.hasOwnProperty.call(LiteGraph, key)) {
-        if (key === 'NODE_DEFAULT_SHAPE' && typeof value === 'string') {
-          console.warn(
-            `litegraph_base.NODE_DEFAULT_SHAPE only accepts [${[
-              LiteGraph.BOX_SHAPE,
-              LiteGraph.ROUND_SHAPE,
-              LiteGraph.CARD_SHAPE
-            ].join(', ')}] but got ${value}`
-          )
-          LiteGraph.NODE_DEFAULT_SHAPE = LiteGraph.ROUND_SHAPE
-        } else {
-          ;(LiteGraph as any)[key] = value
-        }
-      }
+    if (typeof palette.NODE_DEFAULT_SHAPE === 'string')
+      console.warn(
+        `litegraph_base.NODE_DEFAULT_SHAPE only accepts [${[
+          LiteGraph.BOX_SHAPE,
+          LiteGraph.ROUND_SHAPE,
+          LiteGraph.CARD_SHAPE
+        ].join(', ')}] but got ${palette.NODE_DEFAULT_SHAPE}`
+      )
+
+    const default_shape =
+      typeof palette.NODE_DEFAULT_SHAPE === 'string'
+        ? LiteGraph.ROUND_SHAPE
+        : palette.NODE_DEFAULT_SHAPE
+    const sanitizedPalette: Partial<typeof LiteGraph> = {
+      ...palette,
+      NODE_DEFAULT_SHAPE: default_shape
     }
+
+    Object.assign(LiteGraph, sanitizedPalette)
   }
 
   /**
@@ -185,7 +188,7 @@ export const useColorPaletteService = () => {
    * @param schema - The Zod schema object to analyze.
    * @returns Array of optional key names.
    */
-  const getOptionalKeys = (schema: z.ZodObject<any, any>) => {
+  const getOptionalKeys = (schema: z.ZodObject<z.ZodRawShape>) => {
     const optionalKeys: string[] = []
     const shape = schema.shape
 
@@ -222,10 +225,7 @@ export const useColorPaletteService = () => {
 
     const backgroundImage = settingStore.get('Comfy.Canvas.BackgroundImage')
     if (backgroundImage) {
-      rootStyle.setProperty(
-        '--bg-img',
-        `url('${backgroundImage}') no-repeat center /cover`
-      )
+      rootStyle.setProperty('--bg-img', `url('${backgroundImage}')`)
     } else {
       rootStyle.removeProperty('--bg-img')
     }

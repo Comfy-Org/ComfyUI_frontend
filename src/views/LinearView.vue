@@ -8,19 +8,22 @@ import {
 import Splitter from 'primevue/splitter'
 import SplitterPanel from 'primevue/splitterpanel'
 import { ref, useTemplateRef } from 'vue'
+import { useI18n } from 'vue-i18n'
 
+import ModeToggle from '@/components/sidebar/ModeToggle.vue'
 import TopbarBadges from '@/components/topbar/TopbarBadges.vue'
 import WorkflowTabs from '@/components/topbar/WorkflowTabs.vue'
 import TypeformPopoverButton from '@/components/ui/TypeformPopoverButton.vue'
-import { t } from '@/i18n'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import LinearControls from '@/renderer/extensions/linearMode/LinearControls.vue'
 import LinearPreview from '@/renderer/extensions/linearMode/LinearPreview.vue'
+import MobileMenu from '@/renderer/extensions/linearMode/MobileMenu.vue'
 import OutputHistory from '@/renderer/extensions/linearMode/OutputHistory.vue'
 import { useNodeOutputStore } from '@/stores/imagePreviewStore'
 import type { ResultItemImpl } from '@/stores/queueStore'
 
+const { t } = useI18n()
 const nodeOutputStore = useNodeOutputStore()
 const settingStore = useSettingStore()
 
@@ -58,6 +61,7 @@ const linearWorkflowRef = useTemplateRef('linearWorkflowRef')
       v-if="mobileDisplay"
       class="justify-center border-border-subtle border-t overflow-y-scroll h-[calc(100%-38px)] bg-comfy-menu-bg"
     >
+      <MobileMenu />
       <div class="flex flex-col text-muted-foreground">
         <LinearPreview
           :latent-preview="
@@ -84,12 +88,12 @@ const linearWorkflowRef = useTemplateRef('linearWorkflowRef')
         "
       />
       <LinearControls ref="linearWorkflowRef" mobile />
-      <div class="text-base-foreground flex items-center gap-4 justify-end m-4">
-        <a
-          href="https://form.typeform.com/to/gmVqFi8l"
-          v-text="t('linearMode.beta')"
-        />
-        <TypeformPopoverButton data-tf-widget="gmVqFi8l" />
+      <div class="text-base-foreground flex items-center gap-4">
+        <div class="border-r border-border-subtle mr-auto">
+          <ModeToggle class="m-2" />
+        </div>
+        <div v-text="t('linearMode.beta')" />
+        <TypeformPopoverButton data-tf-widget="gmVqFi8l" class="mx-2" />
       </div>
     </div>
     <Splitter

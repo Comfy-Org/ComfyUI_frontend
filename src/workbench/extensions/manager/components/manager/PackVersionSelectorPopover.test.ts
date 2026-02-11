@@ -1,6 +1,6 @@
 import type { VueWrapper } from '@vue/test-utils'
 import { mount } from '@vue/test-utils'
-import { createPinia } from 'pinia'
+import { createTestingPinia } from '@pinia/testing'
 import Button from '@/components/ui/button/Button.vue'
 import PrimeVue from 'primevue/config'
 import Listbox from 'primevue/listbox'
@@ -55,6 +55,8 @@ const mockNodePack = {
 const mockGetPackVersions = vi.fn()
 const mockInstallPack = vi.fn().mockResolvedValue(undefined)
 const mockCheckNodeCompatibility = vi.fn()
+const mockIsPackInstalled = vi.fn(() => false)
+const mockGetInstalledPackVersion = vi.fn(() => undefined)
 
 // Mock the registry service
 vi.mock('@/services/comfyRegistryService', () => ({
@@ -70,8 +72,8 @@ vi.mock('@/workbench/extensions/manager/stores/comfyManagerStore', () => ({
       call: mockInstallPack,
       clear: vi.fn()
     },
-    isPackInstalled: vi.fn(() => false),
-    getInstalledPackVersion: vi.fn(() => undefined)
+    isPackInstalled: mockIsPackInstalled,
+    getInstalledPackVersion: mockGetInstalledPackVersion
   }))
 }))
 
@@ -98,6 +100,8 @@ describe('PackVersionSelectorPopover', () => {
     mockCheckNodeCompatibility
       .mockReset()
       .mockReturnValue({ hasConflict: false, conflicts: [] })
+    mockIsPackInstalled.mockReset().mockReturnValue(false)
+    mockGetInstalledPackVersion.mockReset().mockReturnValue(undefined)
   })
 
   const mountComponent = ({
@@ -115,7 +119,7 @@ describe('PackVersionSelectorPopover', () => {
         ...props
       },
       global: {
-        plugins: [PrimeVue, createPinia(), i18n],
+        plugins: [PrimeVue, createTestingPinia({ stubActions: false }), i18n],
         components: {
           Listbox,
           VerifiedIcon,

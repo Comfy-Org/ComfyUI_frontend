@@ -5,22 +5,34 @@
   >
     <PropertiesAccordionItem :class="accordionClass">
       <template #label>
-        <span class="text-xs uppercase font-inter">
+        <span class="text-xs uppercase font-inter select-none">
           {{ t('assetBrowser.modelInfo.basicInfo') }}
         </span>
       </template>
       <ModelInfoField :label="t('assetBrowser.modelInfo.displayName')">
-        <EditableText
-          :model-value="displayName"
-          :is-editing="isEditingDisplayName"
-          :class="cn('break-all', !isImmutable && 'text-base-foreground')"
-          @dblclick="isEditingDisplayName = !isImmutable"
-          @edit="handleDisplayNameEdit"
-          @cancel="isEditingDisplayName = false"
-        />
+        <div class="group flex justify-between">
+          <EditableText
+            :model-value="displayName"
+            :is-editing="isEditingDisplayName"
+            :class="cn('break-all text-muted-foreground flex-auto')"
+            @dblclick="isEditingDisplayName = !isImmutable"
+            @edit="handleDisplayNameEdit"
+            @cancel="isEditingDisplayName = false"
+          />
+          <Button
+            v-if="!isImmutable && !isEditingDisplayName"
+            size="icon-sm"
+            variant="muted-textonly"
+            class="transition-opacity opacity-0 group-hover:opacity-100"
+            :aria-label="t('assetBrowser.modelInfo.editDisplayName')"
+            @click="isEditingDisplayName = !isImmutable"
+          >
+            <i class="icon-[lucide--square-pen] self-center size-4" />
+          </Button>
+        </div>
       </ModelInfoField>
       <ModelInfoField :label="t('assetBrowser.modelInfo.fileName')">
-        <span class="break-all">{{ asset.name }}</span>
+        <span class="break-all text-muted-foreground">{{ asset.name }}</span>
       </ModelInfoField>
       <ModelInfoField
         v-if="sourceUrl"
@@ -38,6 +50,12 @@
             alt=""
             class="size-4 shrink-0"
           />
+          <img
+            v-else-if="sourceName === 'Hugging Face'"
+            src="/assets/images/hf-logo.svg"
+            alt=""
+            class="size-4 shrink-0"
+          />
           {{ t('assetBrowser.modelInfo.viewOnSource', { source: sourceName }) }}
           <i class="icon-[lucide--external-link] size-4 shrink-0" />
         </a>
@@ -46,12 +64,12 @@
 
     <PropertiesAccordionItem :class="accordionClass">
       <template #label>
-        <span class="text-xs uppercase font-inter">
+        <span class="text-xs uppercase font-inter select-none">
           {{ t('assetBrowser.modelInfo.modelTagging') }}
         </span>
       </template>
       <ModelInfoField :label="t('assetBrowser.modelInfo.modelType')">
-        <Select v-model="selectedModelType" :disabled="isImmutable">
+        <Select v-if="!isImmutable" v-model="selectedModelType">
           <SelectTrigger class="w-full">
             <SelectValue
               :placeholder="t('assetBrowser.modelInfo.selectModelType')"
@@ -67,6 +85,12 @@
             </SelectItem>
           </SelectContent>
         </Select>
+        <div v-else class="p-2 text-sm text-muted-foreground">
+          {{
+            modelTypes.find((o) => o.value === selectedModelType)?.name ??
+            t('assetBrowser.unknown')
+          }}
+        </div>
       </ModelInfoField>
       <ModelInfoField :label="t('assetBrowser.modelInfo.compatibleBaseModels')">
         <TagsInput
@@ -116,7 +140,7 @@
 
     <PropertiesAccordionItem :class="accordionClass">
       <template #label>
-        <span class="text-xs uppercase font-inter">
+        <span class="text-xs uppercase font-inter select-none">
           {{ t('assetBrowser.modelInfo.modelDescription') }}
         </span>
       </template>
@@ -124,14 +148,31 @@
         v-if="triggerPhrases.length > 0"
         :label="t('assetBrowser.modelInfo.triggerPhrases')"
       >
-        <div class="flex flex-wrap gap-1">
-          <span
+        <template #label-action>
+          <Button
+            variant="muted-textonly"
+            size="icon-sm"
+            :title="t('g.copyAll')"
+            :aria-label="t('g.copyAll')"
+            class="p-0"
+            @click="copyToClipboard(triggerPhrases.join(', '))"
+          >
+            <i class="icon-[lucide--copy] size-4 min-w-4 min-h-4 opacity-60" />
+          </Button>
+        </template>
+        <div class="flex flex-wrap gap-1 pt-1">
+          <Button
             v-for="phrase in triggerPhrases"
             :key="phrase"
-            class="rounded px-2 py-0.5 text-xs"
+            variant="muted-textonly"
+            size="unset"
+            :title="t('g.copyToClipboard')"
+            class="text-pretty whitespace-normal text-left text-xs"
+            @click="copyToClipboard(phrase)"
           >
             {{ phrase }}
-          </span>
+            <i class="icon-[lucide--copy] size-4 min-w-4 min-h-4 opacity-60" />
+          </Button>
         </div>
       </ModelInfoField>
       <ModelInfoField
@@ -170,7 +211,9 @@ import { computed, ref, useTemplateRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import EditableText from '@/components/common/EditableText.vue'
+import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
 import PropertiesAccordionItem from '@/components/rightSidePanel/layout/PropertiesAccordionItem.vue'
+import Button from '@/components/ui/button/Button.vue'
 import Select from '@/components/ui/select/Select.vue'
 import SelectContent from '@/components/ui/select/SelectContent.vue'
 import SelectItem from '@/components/ui/select/SelectItem.vue'
@@ -201,6 +244,7 @@ import { cn } from '@/utils/tailwindUtil'
 import ModelInfoField from './ModelInfoField.vue'
 
 const { t } = useI18n()
+const { copyToClipboard } = useCopyToClipboard()
 
 const descriptionTextarea = useTemplateRef<HTMLTextAreaElement>(
   'descriptionTextarea'
@@ -219,6 +263,7 @@ const assetsStore = useAssetsStore()
 const { modelTypes } = useModelTypes()
 
 const pendingUpdates = ref<AssetUserMetadata>({})
+const pendingModelType = ref<string | undefined>(undefined)
 const isEditingDisplayName = ref(false)
 
 const isImmutable = computed(() => asset.is_immutable ?? true)
@@ -239,10 +284,17 @@ watch(
   }
 )
 
+watch(
+  () => asset.tags,
+  () => {
+    pendingModelType.value = undefined
+  }
+)
+
 const debouncedFlushMetadata = useDebounceFn(() => {
   if (isImmutable.value) return
   assetsStore.updateAssetMetadata(
-    asset.id,
+    asset,
     { ...(asset.user_metadata ?? {}), ...pendingUpdates.value },
     cacheKey
   )
@@ -267,7 +319,7 @@ const debouncedSaveModelType = useDebounceFn((newModelType: string) => {
   const newTags = asset.tags
     .filter((tag) => tag !== currentModelType)
     .concat(newModelType)
-  assetsStore.updateAssetTags(asset.id, newTags, cacheKey)
+  assetsStore.updateAssetTags(asset, newTags, cacheKey)
 }, 500)
 
 const baseModels = computed({
@@ -288,9 +340,11 @@ const userDescription = computed({
 })
 
 const selectedModelType = computed({
-  get: () => getAssetModelType(asset) ?? undefined,
+  get: () => pendingModelType.value ?? getAssetModelType(asset) ?? undefined,
   set: (value: string | undefined) => {
-    if (value) debouncedSaveModelType(value)
+    if (!value) return
+    pendingModelType.value = value
+    debouncedSaveModelType(value)
   }
 })
 </script>
