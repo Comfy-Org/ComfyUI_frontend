@@ -24,7 +24,10 @@ defineProps<{
       class="rounded-full bg-component-node-widget-background h-6 flex justify-center items-center overflow-clip"
     >
       <template v-for="(badge, index) of core" :key="badge.text">
-        <div v-if="index">|</div>
+        <div
+          v-if="index !== 0"
+          class="border-muted-foreground border-r h-4 mr-0.5 pr-0.5"
+        />
         <NodeBadge
           bg-color="transparent"
           v-bind="badge"
@@ -37,7 +40,10 @@ defineProps<{
       class="rounded-full bg-component-node-widget-background h-6 flex justify-center items-center overflow-clip"
     >
       <template v-for="(badge, index) of extension" :key="badge.text">
-        <div v-if="index">|</div>
+        <div
+          v-if="index !== 0"
+          class="border-muted-foreground border-r h-4 mr-0.5 pr-0.5"
+        />
         <NodeBadge
           bg-color="transparent"
           v-bind="badge"

@@ -64,7 +64,7 @@
             )
           "
         >
-          <i class="h-full icon-[lucide--component] bg-[#FABC25]" />
+          <i class="h-full icon-[lucide--component] bg-amber-400" />
           <span class="truncate" v-text="badge.required" />
         </span>
         <span
@@ -75,9 +75,9 @@
         </span>
       </template>
       <NodeBadge v-if="statusBadge" v-bind="statusBadge" />
-      <i-comfy:pin
+      <i
         v-if="isPinned"
-        class="size-5"
+        class="size-5 icon-[comfy--pin]"
         data-testid="node-pin-indicator"
       />
     </div>

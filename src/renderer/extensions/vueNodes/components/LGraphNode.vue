@@ -148,18 +148,17 @@
         <i class="icon-[comfy--workflow] size-4" />
       </button>
       <button
-        v-else-if="showAdvancedState"
+        v-else-if="showAdvancedState || showAdvancedInputsButton"
         @click.stop="showAdvancedState = !showAdvancedState"
       >
-        <span>{{ t('rightSidePanel.hideAdvancedInputsButton') }}</span>
-        <i class="icon-[lucide--chevron-up] size-4" />
-      </button>
-      <button
-        v-else-if="showAdvancedInputsButton"
-        @click.stop="showAdvancedState = !showAdvancedState"
-      >
-        <span>{{ t('rightSidePanel.showAdvancedInputsButton') }} </span>
-        <i class="icon-[lucide--settings-2] size-4" />
+        <template v-if="showAdvancedState">
+          <span>{{ t('rightSidePanel.hideAdvancedInputsButton') }}</span>
+          <i class="icon-[lucide--chevron-up] size-4" />
+        </template>
+        <template v-else>
+          <span>{{ t('rightSidePanel.showAdvancedInputsButton') }} </span>
+          <i class="icon-[lucide--settings-2] size-4" />
+        </template>
       </button>
     </Button>
     <!-- Resize handle (bottom-right only) -->
