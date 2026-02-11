@@ -286,7 +286,7 @@ const mediaPlaceholder = computed(() => {
   const options = props.widget.options
 
   if (options?.placeholder) {
-    return options.placeholder as string
+    return options.placeholder
   }
 
   switch (props.assetKind) {
