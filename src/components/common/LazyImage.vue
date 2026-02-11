@@ -12,7 +12,6 @@
     />
     <img
       v-if="cachedSrc"
-      ref="imageRef"
       :src="cachedSrc"
       :alt="alt"
       draggable="false"
@@ -23,7 +22,7 @@
     />
     <div
       v-if="hasError"
-      class="absolute inset-0 flex items-center justify-center bg-surface-50 text-muted dark-theme:bg-surface-800"
+      class="absolute inset-0 flex items-center justify-center"
     >
       <img
         src="/assets/images/default-template.png"
@@ -39,6 +38,7 @@
 <script setup lang="ts">
 import Skeleton from 'primevue/skeleton'
 import { computed, onUnmounted, ref, watch } from 'vue'
+import type { StyleValue } from 'vue'
 
 import { useIntersectionObserver } from '@/composables/useIntersectionObserver'
 import { useMediaCache } from '@/services/mediaCacheService'
@@ -56,12 +56,11 @@ const {
   alt?: string
   containerClass?: ClassValue
   imageClass?: ClassValue
-  imageStyle?: Record<string, any>
+  imageStyle?: StyleValue
   rootMargin?: string
 }>()
 
 const containerRef = ref<HTMLElement | null>(null)
-const imageRef = ref<HTMLImageElement | null>(null)
 const isIntersecting = ref(false)
 const isImageLoaded = ref(false)
 const hasError = ref(false)

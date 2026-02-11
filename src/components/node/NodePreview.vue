@@ -2,11 +2,15 @@
 https://github.com/Nuked88/ComfyUI-N-Sidebar/blob/7ae7da4a9761009fb6629bc04c683087a3e168db/app/js/functions/sb_fn.js#L149
 -->
 <template>
-  <LGraphNodePreview v-if="shouldRenderVueNodes" :node-def="nodeDef" />
-  <div v-else class="_sb_node_preview">
+  <LGraphNodePreview
+    v-if="shouldRenderVueNodes"
+    :node-def="nodeDef"
+    :position="position"
+  />
+  <div v-else class="_sb_node_preview bg-component-node-background">
     <div class="_sb_table">
       <div
-        class="node_header mr-4 text-ellipsis"
+        class="node_header text-ellipsis"
         :title="nodeDef.display_name"
         :style="{
           backgroundColor: litegraphColors.NODE_DEFAULT_COLOR,
@@ -92,8 +96,9 @@ import { useWidgetStore } from '@/stores/widgetStore'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import { renderMarkdownToHtml } from '@/utils/markdownRendererUtil'
 
-const { nodeDef } = defineProps<{
+const { nodeDef, position = 'absolute' } = defineProps<{
   nodeDef: ComfyNodeDefV2
+  position?: 'absolute' | 'relative'
 }>()
 
 const { shouldRenderVueNodes } = useVueFeatureFlags()
@@ -119,7 +124,10 @@ const slotInputDefs = allInputDefs.filter(
 const widgetInputDefs = allInputDefs.filter((input) =>
   widgetStore.inputIsWidget(input)
 )
-const truncateDefaultValue = (value: any, charLimit: number = 32): string => {
+const truncateDefaultValue = (
+  value: unknown,
+  charLimit: number = 32
+): string => {
   let stringValue: string
 
   if (typeof value === 'object' && value !== null) {
@@ -200,8 +208,6 @@ const truncateDefaultValue = (value: any, charLimit: number = 32): string => {
 }
 
 ._sb_node_preview {
-  background-color: var(--comfy-menu-bg);
-  font-family: 'Open Sans', sans-serif;
   color: var(--descrip-text);
   border: 1px solid var(--descrip-text);
   min-width: 300px;

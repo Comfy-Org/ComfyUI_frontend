@@ -8,7 +8,8 @@ const config: KnipConfig = {
         'src/assets/css/style.css',
         'src/main.ts',
         'src/scripts/ui/menu/index.ts',
-        'src/types/index.ts'
+        'src/types/index.ts',
+        'src/storybook/mocks/**/*.ts'
       ],
       project: ['**/*.{js,ts,vue}', '*.{js,ts,mts}']
     },
@@ -19,17 +20,14 @@ const config: KnipConfig = {
     'packages/tailwind-utils': {
       project: ['src/**/*.{js,ts}']
     },
-    'packages/design-system': {
-      entry: ['src/**/*.ts'],
-      project: ['src/**/*.{js,ts}', '*.{js,ts,mts}']
-    },
     'packages/registry-types': {
       project: ['src/**/*.{js,ts}']
     }
   },
-  ignoreBinaries: ['python3'],
+  ignoreBinaries: ['python3', 'gh'],
   ignoreDependencies: [
     // Weird importmap things
+    '@iconify-json/lucide',
     '@iconify/json',
     '@primeuix/forms',
     '@primeuix/styled',

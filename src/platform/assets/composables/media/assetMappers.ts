@@ -32,7 +32,7 @@ export function mapTaskOutputToAssetItem(
     subfolder: output.subfolder,
     executionTimeInSeconds: taskItem.executionTimeInSeconds,
     format: output.format,
-    workflow: taskItem.workflow
+    create_time: taskItem.createTime
   }
 
   return {

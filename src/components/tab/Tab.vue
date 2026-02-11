@@ -12,19 +12,19 @@
   </button>
 </template>
 
-<script setup lang="ts">
+<script setup lang="ts" generic="T extends string = string">
 import type { Ref } from 'vue'
 import { computed, inject } from 'vue'
 
 import { cn } from '@/utils/tailwindUtil'
 
 const { value, panelId } = defineProps<{
-  value: string
+  value: T
   panelId?: string
 }>()
 
-const currentValue = inject<Ref<string>>('tabs-value')
-const updateValue = inject<(value: string) => void>('tabs-update')
+const currentValue = inject<Ref<T>>('tabs-value')
+const updateValue = inject<(value: T) => void>('tabs-update')
 
 const tabId = computed(() => `tab-${value}`)
 const isActive = computed(() => currentValue?.value === value)

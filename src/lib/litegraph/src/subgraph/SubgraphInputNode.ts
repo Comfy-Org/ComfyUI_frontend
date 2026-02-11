@@ -206,14 +206,16 @@ export class SubgraphInputNode
         link.id
       )
     }
-
-    node.onConnectionsChange?.(
-      NodeSlotType.OUTPUT,
-      index,
-      false,
-      link,
-      subgraphInput
-    )
+    const slotIndex = node.inputs.findIndex((inp) => inp === input)
+    if (slotIndex !== -1) {
+      node.onConnectionsChange?.(
+        NodeSlotType.INPUT,
+        slotIndex,
+        false,
+        link,
+        subgraphInput
+      )
+    }
   }
 
   override drawProtected(

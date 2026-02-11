@@ -1,30 +1,26 @@
 <template>
-  <Card
-    class="shadow-elevation-3 inline-flex h-full w-full flex-col items-start justify-between overflow-hidden rounded-lg transition-all duration-200 dark-theme:bg-dark-elevation-2"
-    :class="{
-      'selected-card': isSelected,
-      'opacity-60': isDisabled
-    }"
-    :pt="{
-      body: { class: 'p-0 flex flex-col w-full h-full rounded-lg gap-0' },
-      content: { class: 'flex-1 flex flex-col rounded-lg min-h-0' },
-      title: { class: 'w-full h-full rounded-t-lg cursor-pointer' },
-      footer: {
-        class: 'p-0 m-0 flex flex-col gap-0',
-        style: {
-          borderTop: isLightTheme ? '1px solid #f4f4f4' : '1px solid #2C2C2C'
-        }
-      }
-    }"
+  <div
+    :class="
+      cn(
+        'flex size-full flex-col overflow-hidden rounded-lg bg-modal-card-background transition-colors duration-200 cursor-pointer select-none',
+        isSelected
+          ? 'ring-3 ring-modal-card-border-highlighted'
+          : 'hover:bg-modal-card-background-hovered',
+        isDisabled && 'opacity-60'
+      )
+    "
   >
-    <template #title>
+    <!-- Banner -->
+    <div class="w-full rounded-t-lg">
       <PackBanner :node-pack="nodePack" />
-    </template>
-    <template #content>
-      <div class="h-full w-full px-4 pt-4 pb-3">
+    </div>
+
+    <!-- Content -->
+    <div class="flex flex-1 flex-col rounded-lg min-h-0">
+      <div class="h-full w-full py-2 px-3">
         <div class="flex h-full w-full flex-col gap-y-1">
           <span
-            class="truncate overflow-hidden text-sm font-bold text-ellipsis"
+            class="truncate overflow-hidden text-xs font-bold text-ellipsis"
           >
             {{ nodePack.name }}
           </span>
@@ -36,8 +32,8 @@
           </p>
           <div class="flex flex-col gap-y-2">
             <div class="flex flex-1 items-center gap-2">
-              <div v-if="nodesCount" class="p-2 pl-0 text-xs">
-                {{ nodesCount }} {{ $t('g.nodes') }}
+              <div v-if="nodesLabel" class="p-2 pl-0 text-xs">
+                {{ nodesLabel }}
               </div>
               <PackVersionBadge
                 :node-pack="nodePack"
@@ -63,19 +59,20 @@
           </div>
         </div>
       </div>
-    </template>
-    <template #footer>
+    </div>
+
+    <!-- Footer -->
+    <div class="border-t border-border-default">
       <PackCardFooter :node-pack="nodePack" :is-installing="isInstalling" />
-    </template>
-  </Card>
+    </div>
+  </div>
 </template>
 
 <script setup lang="ts">
-import Card from 'primevue/card'
 import { computed, provide } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
+import { cn } from '@/utils/tailwindUtil'
 import PackVersionBadge from '@/workbench/extensions/manager/components/manager/PackVersionBadge.vue'
 import PackBanner from '@/workbench/extensions/manager/components/manager/packBanner/PackBanner.vue'
 import PackCardFooter from '@/workbench/extensions/manager/components/manager/packCard/PackCardFooter.vue'
@@ -94,12 +91,7 @@ const { nodePack, isSelected = false } = defineProps<{
   isSelected?: boolean
 }>()
 
-const { d } = useI18n()
-
-const colorPaletteStore = useColorPaletteStore()
-const isLightTheme = computed(
-  () => colorPaletteStore.completedActivePalette.light_theme
-)
+const { d, t } = useI18n()
 
 const { isPackInstalled, isPackEnabled, isPackInstalling } =
   useComfyManagerStore()
@@ -114,6 +106,9 @@ const isDisabled = computed(
 
 const nodesCount = computed(() =>
   isMergedNodePack(nodePack) ? nodePack.comfy_nodes?.length : undefined
+)
+const nodesLabel = computed(() =>
+  nodesCount.value ? t('g.nodesCount', nodesCount.value) : ''
 )
 const publisherName = computed(() => {
   if (!nodePack) return null
@@ -130,22 +125,3 @@ const formattedLatestVersionDate = computed(() => {
   })
 })
 </script>
-
-<style scoped>
-.selected-card {
-  position: relative;
-}
-
-.selected-card::after {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  border: 4px solid var(--p-primary-color);
-  border-radius: 0.5rem;
-  pointer-events: none;
-  z-index: 100;
-}
-</style>

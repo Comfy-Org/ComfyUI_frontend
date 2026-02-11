@@ -2,7 +2,7 @@ import type { NeverNever, PickNevers } from '@/lib/litegraph/src/types/utility'
 
 type EventListeners<T> = {
   readonly [K in keyof T]:
-    | ((this: EventTarget, ev: CustomEvent<T[K]>) => any)
+    | ((this: EventTarget, ev: CustomEvent<T[K]>) => unknown)
     | EventListenerObject
     | null
 }
@@ -81,9 +81,9 @@ export interface CustomEventDispatcher<
  *    ```
  */
 export class CustomEventTarget<
-    EventMap extends Record<Keys, unknown>,
-    Keys extends keyof EventMap & string = keyof EventMap & string
-  >
+  EventMap extends Record<Keys, unknown>,
+  Keys extends keyof EventMap & string = keyof EventMap & string
+>
   extends EventTarget
   implements ICustomEventTarget<EventMap, Keys>
 {

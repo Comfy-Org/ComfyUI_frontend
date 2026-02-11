@@ -18,13 +18,13 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0
           token: ${{ secrets.PR_GH_TOKEN || secrets.GITHUB_TOKEN }}
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: 'lts/*'
 
@@ -148,13 +148,83 @@ jobs:
           done
 
           {
-            echo "results<<'EOF'"
+            echo "results<<EOF"
             cat "$RESULTS_FILE"
             echo "EOF"
-          } >> $GITHUB_OUTPUT
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Ensure release labels
+        if: steps.check_version.outputs.is_minor_bump == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.PR_GH_TOKEN || secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+
+          BRANCH_BASE="${{ steps.check_version.outputs.branch_base }}"
+
+          if [[ -z "$BRANCH_BASE" ]]; then
+            echo "::error::Branch base not set; unable to manage labels"
+            exit 1
+          fi
+
+          declare -A COLORS=(
+            [core]="4361ee"
+            [cloud]="4f6ef5"
+          )
+
+          for PREFIX in core cloud; do
+            LABEL="${PREFIX}/${BRANCH_BASE}"
+            COLOR="${COLORS[$PREFIX]}"
+            DESCRIPTION="Backport PRs for ${PREFIX} ${BRANCH_BASE}"
+
+            if gh label view "$LABEL" >/dev/null 2>&1; then
+              gh label edit "$LABEL" \
+                --color "$COLOR" \
+                --description "$DESCRIPTION"
+              echo "🔄 Updated label $LABEL"
+            else
+              gh label create "$LABEL" \
+                --color "$COLOR" \
+                --description "$DESCRIPTION"
+              echo "✨ Created label $LABEL"
+            fi
+          done
+
+          MIN_LABELS_TO_KEEP=3
+          MAX_LABELS_TO_FETCH=200
+
+          for PREFIX in core cloud; do
+            mapfile -t LABELS < <(
+              gh label list \
+                --json name \
+                --limit "$MAX_LABELS_TO_FETCH" \
+                --jq '.[].name' |
+              grep -E "^${PREFIX}/[0-9]+\.[0-9]+$" |
+              sort -t/ -k2,2V
+            )
+
+            TOTAL=${#LABELS[@]}
+
+            if (( TOTAL <= MIN_LABELS_TO_KEEP )); then
+              echo "ℹ️  Nothing to prune for $PREFIX labels"
+              continue
+            fi
+
+            REMOVE_COUNT=$((TOTAL - MIN_LABELS_TO_KEEP))
+
+            if (( REMOVE_COUNT > 1 )); then
+              REMOVE_COUNT=1
+            fi
+
+            for ((i=0; i<REMOVE_COUNT; i++)); do
+              OLD_LABEL="${LABELS[$i]}"
+              gh label delete "$OLD_LABEL" --yes
+              echo "🗑️ Removed old label $OLD_LABEL"
+            done
+          done
 
       - name: Post summary
-        if: steps.check_version.outputs.is_minor_bump == 'true'
+        if: always() && steps.check_version.outputs.is_minor_bump == 'true'
         run: |
           CURRENT_VERSION="${{ steps.check_version.outputs.current_version }}"
           RESULTS="${{ steps.create_branches.outputs.results }}"

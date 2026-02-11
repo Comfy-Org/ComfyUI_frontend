@@ -1,13 +1,16 @@
 <template>
   <div class="shortcuts-list flex justify-center">
-    <div class="grid h-full w-[90%] grid-cols-1 gap-4 md:grid-cols-3 md:gap-24">
+    <div
+      data-testid="shortcuts-columns"
+      class="grid h-full w-[90%] grid-cols-1 gap-4 md:grid-cols-3 md:gap-24"
+    >
       <div
         v-for="(subcategoryCommands, subcategory) in filteredSubcategories"
         :key="subcategory"
         class="flex flex-col"
       >
         <h3
-          class="subcategory-title mb-4 text-xs font-bold tracking-wide text-surface-600 uppercase dark-theme:text-surface-400"
+          class="subcategory-title mb-4 text-xs font-bold tracking-wide text-text-secondary uppercase"
         >
           {{ getSubcategoryTitle(subcategory) }}
         </h3>
@@ -16,7 +19,7 @@
           <div
             v-for="command in subcategoryCommands"
             :key="command.id"
-            class="shortcut-item flex items-center justify-between rounded py-2 transition-colors duration-200 hover:bg-surface-100 dark-theme:hover:bg-surface-700"
+            class="shortcut-item flex items-center justify-between rounded py-2 transition-colors duration-200"
           >
             <div class="shortcut-info grow pr-4">
               <div class="shortcut-name text-sm font-medium">
@@ -32,7 +35,7 @@
                 <span
                   v-for="key in command.keybinding!.combo.getKeySequences()"
                   :key="key"
-                  class="key-badge min-w-6 rounded border bg-surface-200 px-2 py-1 text-center font-mono text-xs dark-theme:bg-surface-600"
+                  class="key-badge min-w-6 rounded bg-muted-background px-2 py-1 text-center font-mono text-xs"
                 >
                   {{ formatKey(key) }}
                 </span>
@@ -55,7 +58,6 @@ import { normalizeI18nKey } from '@/utils/formatUtil'
 const { t } = useI18n()
 
 const { subcategories } = defineProps<{
-  commands: ComfyCommandImpl[]
   subcategories: Record<string, ComfyCommandImpl[]>
 }>()
 
@@ -100,21 +102,3 @@ const formatKey = (key: string): string => {
   return keyMap[key] || key
 }
 </script>
-
-<style scoped>
-.subcategory-title {
-  color: var(--p-text-muted-color);
-}
-
-.key-badge {
-  background-color: var(--p-surface-200);
-  border: 1px solid var(--p-surface-300);
-  min-width: 1.5rem;
-  text-align: center;
-}
-
-.dark-theme .key-badge {
-  background-color: var(--p-surface-600);
-  border-color: var(--p-surface-500);
-}
-</style>

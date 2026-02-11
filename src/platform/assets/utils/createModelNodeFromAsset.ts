@@ -6,6 +6,7 @@ import {
   MISSING_TAG,
   MODELS_TAG
 } from '@/platform/assets/services/assetService'
+import { getAssetFilename } from '@/platform/assets/utils/assetMetadataUtils'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { app } from '@/scripts/app'
 import { useLitegraphService } from '@/services/litegraphService'
@@ -69,21 +70,8 @@ export function createModelNodeFromAsset(
 
   const validAsset = validatedAsset.data
 
-  const userMetadata = validAsset.user_metadata
-  if (!userMetadata) {
-    console.error(`Asset ${validAsset.id} missing required user_metadata`)
-    return {
-      success: false,
-      error: {
-        code: 'INVALID_ASSET',
-        message: 'Asset missing required user_metadata',
-        assetId: validAsset.id
-      }
-    }
-  }
-
-  const filename = userMetadata.filename
-  if (typeof filename !== 'string' || filename.length === 0) {
+  const filename = getAssetFilename(validAsset)
+  if (filename.length === 0) {
     console.error(
       `Asset ${validAsset.id} has invalid user_metadata.filename (expected non-empty string, got ${typeof filename})`
     )
@@ -183,24 +171,28 @@ export function createModelNodeFromAsset(
     }
   }
 
-  const widget = node.widgets?.find((w) => w.name === provider.key)
-  if (!widget) {
-    console.error(
-      `Widget ${provider.key} not found on node ${provider.nodeDef.name}`
-    )
-    return {
-      success: false,
-      error: {
-        code: 'MISSING_WIDGET',
-        message: `Widget ${provider.key} not found on node ${provider.nodeDef.name}`,
-        assetId: validAsset.id,
-        details: { widgetName: provider.key, nodeType: provider.nodeDef.name }
+  // Set widget value if provider specifies a key (some nodes auto-load models without a widget)
+  if (provider.key) {
+    const widget = node.widgets?.find((w) => w.name === provider.key)
+    if (!widget) {
+      console.error(
+        `Widget ${provider.key} not found on node ${provider.nodeDef.name}`
+      )
+      return {
+        success: false,
+        error: {
+          code: 'MISSING_WIDGET',
+          message: `Widget ${provider.key} not found on node ${provider.nodeDef.name}`,
+          assetId: validAsset.id,
+          details: { widgetName: provider.key, nodeType: provider.nodeDef.name }
+        }
       }
     }
+    widget.value = filename
   }
 
+  // Add the node to the graph
   targetGraph.add(node)
-  widget.value = filename
 
   return { success: true, value: node }
 }

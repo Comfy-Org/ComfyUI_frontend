@@ -20,22 +20,22 @@
   </div>
 </template>
 
-<script setup lang="ts">
+<script setup lang="ts" generic="T extends string | number | boolean | null">
 import RadioButton from 'primevue/radiobutton'
 import { computed } from 'vue'
 
 import type { SettingOption } from '@/platform/settings/types'
 
 const props = defineProps<{
-  modelValue: any
-  options: (SettingOption | string)[]
+  modelValue: T
+  options?: (string | SettingOption | Record<string, string>)[]
   optionLabel?: string
   optionValue?: string
   id?: string
 }>()
 
 defineEmits<{
-  'update:modelValue': [value: any]
+  'update:modelValue': [value: T]
 }>()
 
 const normalizedOptions = computed<SettingOption[]>(() => {

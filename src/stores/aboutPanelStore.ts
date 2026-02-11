@@ -1,8 +1,11 @@
 import { defineStore } from 'pinia'
 import { computed } from 'vue'
 
+import { useExternalLink } from '@/composables/useExternalLink'
+import { isCloud, isDesktop } from '@/platform/distribution/types'
 import type { AboutPageBadge } from '@/types/comfy'
-import { electronAPI, isElectron } from '@/utils/envUtil'
+import { electronAPI } from '@/utils/envUtil'
+import { formatCommitHash } from '@/utils/formatUtil'
 
 import { useExtensionStore } from './extensionStore'
 import { useSystemStatsStore } from './systemStatsStore'
@@ -11,6 +14,7 @@ export const useAboutPanelStore = defineStore('aboutPanel', () => {
   const frontendVersion = __COMFYUI_FRONTEND_VERSION__
   const extensionStore = useExtensionStore()
   const systemStatsStore = useSystemStatsStore()
+  const { staticUrls } = useExternalLink()
   const coreVersion = computed(
     () => systemStatsStore?.systemStats?.system?.comfyui_version ?? ''
   )
@@ -20,24 +24,24 @@ export const useAboutPanelStore = defineStore('aboutPanel', () => {
     // so the python server's API doesn't have the version info.
     {
       label: `ComfyUI ${
-        isElectron()
+        isDesktop
           ? 'v' + electronAPI().getComfyUIVersion()
-          : coreVersion.value
+          : formatCommitHash(coreVersion.value)
       }`,
-      url: 'https://github.com/comfyanonymous/ComfyUI',
-      icon: 'pi pi-github'
+      url: isCloud ? staticUrls.comfyOrg : staticUrls.github,
+      icon: isCloud ? 'pi pi-cloud' : 'pi pi-github'
     },
     {
       label: `ComfyUI_frontend v${frontendVersion}`,
-      url: 'https://github.com/Comfy-Org/ComfyUI_frontend',
+      url: staticUrls.githubFrontend,
       icon: 'pi pi-github'
     },
     {
       label: 'Discord',
-      url: 'https://www.comfy.org/discord',
+      url: staticUrls.discord,
       icon: 'pi pi-discord'
     },
-    { label: 'ComfyOrg', url: 'https://www.comfy.org/', icon: 'pi pi-globe' }
+    { label: 'ComfyOrg', url: staticUrls.comfyOrg, icon: 'pi pi-globe' }
   ])
 
   const allBadges = computed<AboutPageBadge[]>(() => [

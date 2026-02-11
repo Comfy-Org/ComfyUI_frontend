@@ -1,4 +1,5 @@
 import type { OverridedMixpanel } from 'mixpanel-browser'
+import { watch } from 'vue'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import {
@@ -7,6 +8,7 @@ import {
   startTopupTracking as startTopupUtil
 } from '@/platform/telemetry/topupTracker'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import type { AuditLog } from '@/services/customerEventsService'
 import { useWorkflowTemplatesStore } from '@/platform/workflow/templates/repositories/workflowTemplatesStore'
 import { app } from '@/scripts/app'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
@@ -16,7 +18,9 @@ import { reduceAllNodes } from '@/utils/graphTraversalUtil'
 import type {
   AuthMetadata,
   CreditTopupMetadata,
+  EnterLinearMetadata,
   ExecutionContext,
+  ExecutionTriggerSource,
   ExecutionErrorMetadata,
   ExecutionSuccessMetadata,
   HelpCenterClosedMetadata,
@@ -40,8 +44,29 @@ import type {
   WorkflowCreatedMetadata,
   WorkflowImportMetadata
 } from '../../types'
+import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
+import type { RemoteConfig } from '@/platform/remoteConfig/types'
 import { TelemetryEvents } from '../../types'
 import { normalizeSurveyResponses } from '../../utils/surveyNormalization'
+
+const DEFAULT_DISABLED_EVENTS = [
+  TelemetryEvents.WORKFLOW_OPENED,
+  TelemetryEvents.PAGE_VISIBILITY_CHANGED,
+  TelemetryEvents.TAB_COUNT_TRACKING,
+  TelemetryEvents.NODE_SEARCH,
+  TelemetryEvents.NODE_SEARCH_RESULT_SELECTED,
+  TelemetryEvents.TEMPLATE_FILTER_CHANGED,
+  TelemetryEvents.SETTING_CHANGED,
+  TelemetryEvents.HELP_CENTER_OPENED,
+  TelemetryEvents.HELP_RESOURCE_CLICKED,
+  TelemetryEvents.HELP_CENTER_CLOSED,
+  TelemetryEvents.WORKFLOW_CREATED,
+  TelemetryEvents.UI_BUTTON_CLICKED
+] as const satisfies TelemetryEventName[]
+
+const TELEMETRY_EVENT_SET = new Set<TelemetryEventName>(
+  Object.values(TelemetryEvents) as TelemetryEventName[]
+)
 
 interface QueuedEvent {
   eventName: TelemetryEventName
@@ -65,8 +90,20 @@ export class MixpanelTelemetryProvider implements TelemetryProvider {
   private mixpanel: OverridedMixpanel | null = null
   private eventQueue: QueuedEvent[] = []
   private isInitialized = false
+  private lastTriggerSource: ExecutionTriggerSource | undefined
+  private disabledEvents = new Set<TelemetryEventName>(DEFAULT_DISABLED_EVENTS)
 
   constructor() {
+    this.configureDisabledEvents(
+      (window.__CONFIG__ as Partial<RemoteConfig> | undefined) ?? null
+    )
+    watch(
+      remoteConfig,
+      (config) => {
+        this.configureDisabledEvents(config)
+      },
+      { immediate: true }
+    )
     const token = window.__CONFIG__?.mixpanel_token
 
     if (token) {
@@ -129,6 +166,10 @@ export class MixpanelTelemetryProvider implements TelemetryProvider {
       return
     }
 
+    if (this.disabledEvents.has(eventName)) {
+      return
+    }
+
     const event: QueuedEvent = { eventName, properties }
 
     if (this.isInitialized && this.mixpanel) {
@@ -142,6 +183,31 @@ export class MixpanelTelemetryProvider implements TelemetryProvider {
       // Mixpanel not ready yet, queue the event
       this.eventQueue.push(event)
     }
+  }
+
+  private configureDisabledEvents(config: Partial<RemoteConfig> | null): void {
+    const disabledSource =
+      config?.telemetry_disabled_events ?? DEFAULT_DISABLED_EVENTS
+
+    this.disabledEvents = this.buildEventSet(disabledSource)
+  }
+
+  private buildEventSet(values: TelemetryEventName[]): Set<TelemetryEventName> {
+    return new Set(
+      values.filter((value) => {
+        const isValid = TELEMETRY_EVENT_SET.has(value)
+        if (!isValid && import.meta.env.DEV) {
+          console.warn(
+            `Unknown telemetry event name in disabled list: ${value}`
+          )
+        }
+        return isValid
+      })
+    )
+  }
+
+  trackSignupOpened(): void {
+    this.trackEvent(TelemetryEvents.USER_SIGN_UP_OPENED)
   }
 
   trackAuth(metadata: AuthMetadata): void {
@@ -169,6 +235,14 @@ export class MixpanelTelemetryProvider implements TelemetryProvider {
     this.trackEvent(TelemetryEvents.MONTHLY_SUBSCRIPTION_SUCCEEDED)
   }
 
+  /**
+   * Track when a user completes a subscription cancellation flow.
+   * Fired after we detect the backend reports `is_active: false` and the UI stops polling.
+   */
+  trackMonthlySubscriptionCancelled(): void {
+    this.trackEvent(TelemetryEvents.MONTHLY_SUBSCRIPTION_CANCELLED)
+  }
+
   trackApiCreditTopupButtonPurchaseClicked(amount: number): void {
     const metadata: CreditTopupMetadata = {
       credit_amount: amount
@@ -188,7 +262,7 @@ export class MixpanelTelemetryProvider implements TelemetryProvider {
     startTopupUtil()
   }
 
-  checkForCompletedTopup(events: any[] | undefined | null): boolean {
+  checkForCompletedTopup(events: AuditLog[] | undefined | null): boolean {
     return checkTopupUtil(events)
   }
 
@@ -196,7 +270,10 @@ export class MixpanelTelemetryProvider implements TelemetryProvider {
     clearTopupUtil()
   }
 
-  trackRunButton(options?: { subscribe_to_run?: boolean }): void {
+  trackRunButton(options?: {
+    subscribe_to_run?: boolean
+    trigger_source?: ExecutionTriggerSource
+  }): void {
     const executionContext = this.getExecutionContext()
 
     const runButtonProperties: RunButtonProperties = {
@@ -207,18 +284,12 @@ export class MixpanelTelemetryProvider implements TelemetryProvider {
       total_node_count: executionContext.total_node_count,
       subgraph_count: executionContext.subgraph_count,
       has_api_nodes: executionContext.has_api_nodes,
-      api_node_names: executionContext.api_node_names
+      api_node_names: executionContext.api_node_names,
+      trigger_source: options?.trigger_source
     }
 
+    this.lastTriggerSource = options?.trigger_source
     this.trackEvent(TelemetryEvents.RUN_BUTTON_CLICKED, runButtonProperties)
-  }
-
-  trackRunTriggeredViaKeybinding(): void {
-    this.trackEvent(TelemetryEvents.RUN_TRIGGERED_KEYBINDING)
-  }
-
-  trackRunTriggeredViaMenu(): void {
-    this.trackEvent(TelemetryEvents.RUN_TRIGGERED_MENU)
   }
 
   trackSurvey(
@@ -285,6 +356,10 @@ export class MixpanelTelemetryProvider implements TelemetryProvider {
     this.trackEvent(TelemetryEvents.WORKFLOW_OPENED, metadata)
   }
 
+  trackEnterLinear(metadata: EnterLinearMetadata): void {
+    this.trackEvent(TelemetryEvents.ENTER_LINEAR_MODE, metadata)
+  }
+
   trackPageVisibilityChanged(metadata: PageVisibilityMetadata): void {
     this.trackEvent(TelemetryEvents.PAGE_VISIBILITY_CHANGED, metadata)
   }
@@ -323,7 +398,12 @@ export class MixpanelTelemetryProvider implements TelemetryProvider {
 
   trackWorkflowExecution(): void {
     const context = this.getExecutionContext()
-    this.trackEvent(TelemetryEvents.EXECUTION_START, context)
+    const eventContext: ExecutionContext = {
+      ...context,
+      trigger_source: this.lastTriggerSource ?? 'unknown'
+    }
+    this.trackEvent(TelemetryEvents.EXECUTION_START, eventContext)
+    this.lastTriggerSource = undefined
   }
 
   trackExecutionError(metadata: ExecutionErrorMetadata): void {
@@ -359,7 +439,7 @@ export class MixpanelTelemetryProvider implements TelemetryProvider {
     }
 
     const nodeCounts = reduceAllNodes<NodeMetrics>(
-      app.graph,
+      app.rootGraph,
       (metrics, node) => {
         const nodeDef = nodeDefStore.nodeDefsByName[node.type]
         const isCustomNode =

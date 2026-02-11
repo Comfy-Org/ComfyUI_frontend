@@ -5,6 +5,7 @@ Bootstrap the ComfyUI Frontend monorepo with all necessary dependencies and veri
 ## Overview
 
 This command will:
+
 1. Install pnpm package manager (if not present)
 2. Install all project dependencies
 3. Verify the project builds successfully
@@ -93,7 +94,7 @@ sleep 10
 # Check if server is running
 if curl -s http://localhost:5173 > /dev/null 2>&1; then
   echo "✅ Development server started successfully at http://localhost:5173"
-  
+
   # Kill the background server
   kill $SERVER_PID
   wait $SERVER_PID 2>/dev/null
@@ -122,7 +123,7 @@ echo "  pnpm build        - Build for production"
 echo "  pnpm test:unit    - Run unit tests"
 echo "  pnpm typecheck    - Run TypeScript checks"
 echo "  pnpm lint         - Run ESLint"
-echo "  pnpm format       - Format code with Prettier"
+echo "  pnpm format       - Format code with oxfmt"
 echo ""
 echo "Next steps:"
 echo "1. Run 'pnpm dev' to start developing"

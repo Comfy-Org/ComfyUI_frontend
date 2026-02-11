@@ -1,13 +1,11 @@
 <template>
   <div class="relative size-full overflow-hidden rounded">
     <div
-      class="flex size-full flex-col items-center justify-center gap-2 bg-zinc-200 dark-theme:bg-zinc-700/50"
+      class="flex size-full flex-col items-center justify-center gap-2 bg-modal-card-placeholder-background transition-transform duration-300 group-hover:scale-105 group-data-[selected=true]:scale-105"
     >
-      <i
-        class="icon-[lucide--music] text-3xl text-zinc-600 dark-theme:text-zinc-200"
-      />
-      <span class="text-zinc-600 dark-theme:text-zinc-200">{{
-        $t('Audio')
+      <i class="icon-[lucide--music] text-3xl text-base-foreground" />
+      <span class="text-base-foreground">{{
+        $t('assetBrowser.media.audioPlaceholder')
       }}</span>
     </div>
     <audio

@@ -1,6 +1,6 @@
 import type { VueWrapper } from '@vue/test-utils'
 import { mount } from '@vue/test-utils'
-import Button from 'primevue/button'
+import Button from '@/components/ui/button/Button.vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { h } from 'vue'
 import { createI18n } from 'vue-i18n'
@@ -25,7 +25,24 @@ vi.mock('firebase/auth', () => ({
 }))
 
 // Mock pinia
-vi.mock('pinia')
+vi.mock('pinia', () => ({
+  storeToRefs: vi.fn((store) => store)
+}))
+
+// Mock the useFeatureFlags composable
+vi.mock('@/composables/useFeatureFlags', () => ({
+  useFeatureFlags: vi.fn(() => ({
+    flags: { teamWorkspacesEnabled: false }
+  }))
+}))
+
+// Mock the useTeamWorkspaceStore
+vi.mock('@/platform/workspace/stores/teamWorkspaceStore', () => ({
+  useTeamWorkspaceStore: vi.fn(() => ({
+    workspaceName: { value: '' },
+    initState: { value: 'idle' }
+  }))
+}))
 
 // Mock the useCurrentUser composable
 vi.mock('@/composables/auth/useCurrentUser', () => ({
@@ -47,10 +64,10 @@ vi.mock('@/components/common/UserAvatar.vue', () => ({
   }
 }))
 
-// Mock the CurrentUserPopover component
-vi.mock('./CurrentUserPopover.vue', () => ({
+// Mock the CurrentUserPopoverLegacy component
+vi.mock('./CurrentUserPopoverLegacy.vue', () => ({
   default: {
-    name: 'CurrentUserPopoverMock',
+    name: 'CurrentUserPopoverLegacyMock',
     render() {
       return h('div', 'Popover Content')
     },

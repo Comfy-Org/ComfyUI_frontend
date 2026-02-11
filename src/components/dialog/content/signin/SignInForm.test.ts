@@ -1,7 +1,7 @@
 import { Form } from '@primevue/forms'
 import type { VueWrapper } from '@vue/test-utils'
 import { mount } from '@vue/test-utils'
-import Button from 'primevue/button'
+import Button from '@/components/ui/button/Button.vue'
 import PrimeVue from 'primevue/config'
 import InputText from 'primevue/inputtext'
 import Password from 'primevue/password'
@@ -112,8 +112,10 @@ describe('SignInForm', () => {
 
       // Mock getElementById to track focus
       const mockFocus = vi.fn()
-      const mockElement = { focus: mockFocus }
-      vi.spyOn(document, 'getElementById').mockReturnValue(mockElement as any)
+      const mockElement: Partial<HTMLElement> = { focus: mockFocus }
+      vi.spyOn(document, 'getElementById').mockReturnValue(
+        mockElement as HTMLElement
+      )
 
       // Click forgot password link while email is empty
       await forgotPasswordSpan.trigger('click')
@@ -138,7 +140,10 @@ describe('SignInForm', () => {
 
     it('calls handleForgotPassword with email when link is clicked', async () => {
       const wrapper = mountComponent()
-      const component = wrapper.vm as any
+      const component = wrapper.vm as typeof wrapper.vm & {
+        handleForgotPassword: (email: string, valid: boolean) => void
+        onSubmit: (data: { valid: boolean; values: unknown }) => void
+      }
 
       // Spy on handleForgotPassword
       const handleForgotPasswordSpy = vi.spyOn(
@@ -161,7 +166,10 @@ describe('SignInForm', () => {
   describe('Form Submission', () => {
     it('emits submit event when onSubmit is called with valid data', async () => {
       const wrapper = mountComponent()
-      const component = wrapper.vm as any
+      const component = wrapper.vm as typeof wrapper.vm & {
+        handleForgotPassword: (email: string, valid: boolean) => void
+        onSubmit: (data: { valid: boolean; values: unknown }) => void
+      }
 
       // Call onSubmit directly with valid data
       component.onSubmit({
@@ -181,7 +189,10 @@ describe('SignInForm', () => {
 
     it('does not emit submit event when form is invalid', async () => {
       const wrapper = mountComponent()
-      const component = wrapper.vm as any
+      const component = wrapper.vm as typeof wrapper.vm & {
+        handleForgotPassword: (email: string, valid: boolean) => void
+        onSubmit: (data: { valid: boolean; values: unknown }) => void
+      }
 
       // Call onSubmit with invalid form
       component.onSubmit({ valid: false, values: {} })
@@ -254,12 +265,17 @@ describe('SignInForm', () => {
   describe('Focus Behavior', () => {
     it('focuses email input when handleForgotPassword is called with invalid email', async () => {
       const wrapper = mountComponent()
-      const component = wrapper.vm as any
+      const component = wrapper.vm as typeof wrapper.vm & {
+        handleForgotPassword: (email: string, valid: boolean) => void
+        onSubmit: (data: { valid: boolean; values: unknown }) => void
+      }
 
       // Mock getElementById to track focus
       const mockFocus = vi.fn()
-      const mockElement = { focus: mockFocus }
-      vi.spyOn(document, 'getElementById').mockReturnValue(mockElement as any)
+      const mockElement: Partial<HTMLElement> = { focus: mockFocus }
+      vi.spyOn(document, 'getElementById').mockReturnValue(
+        mockElement as HTMLElement
+      )
 
       // Call handleForgotPassword with no email
       await component.handleForgotPassword('', false)
@@ -273,12 +289,17 @@ describe('SignInForm', () => {
 
     it('does not focus email input when valid email is provided', async () => {
       const wrapper = mountComponent()
-      const component = wrapper.vm as any
+      const component = wrapper.vm as typeof wrapper.vm & {
+        handleForgotPassword: (email: string, valid: boolean) => void
+        onSubmit: (data: { valid: boolean; values: unknown }) => void
+      }
 
       // Mock getElementById
       const mockFocus = vi.fn()
-      const mockElement = { focus: mockFocus }
-      vi.spyOn(document, 'getElementById').mockReturnValue(mockElement as any)
+      const mockElement: Partial<HTMLElement> = { focus: mockFocus }
+      vi.spyOn(document, 'getElementById').mockReturnValue(
+        mockElement as HTMLElement
+      )
 
       // Call handleForgotPassword with valid email
       await component.handleForgotPassword('test@example.com', true)

@@ -1,11 +1,8 @@
 <template>
-  <div
-    class="widget-expands widget-markdown relative w-full"
-    @dblclick="startEditing"
-  >
+  <div class="widget-markdown relative w-full" @dblclick="startEditing">
     <!-- Display mode: Rendered markdown -->
     <div
-      class="comfy-markdown-content lod-toggle size-full min-h-[60px] overflow-y-auto rounded-lg px-4 py-2 text-sm"
+      class="comfy-markdown-content size-full min-h-[60px] overflow-y-auto rounded-lg text-sm"
       :class="isEditing === false ? 'visible' : 'invisible'"
       v-html="renderedHtml"
     />
@@ -14,7 +11,7 @@
     <Textarea
       v-show="isEditing"
       ref="textareaRef"
-      v-model="localValue"
+      v-model="modelValue"
       :aria-label="`${$t('g.edit')} ${widget.name || $t('g.markdown')} ${$t('g.content')}`"
       class="absolute inset-0 min-h-[60px] w-full resize-none"
       :pt="{
@@ -24,11 +21,12 @@
         }
       }"
       data-capture-wheel="true"
-      @update:model-value="onChange"
+      @pointerdown.capture.stop
+      @pointermove.capture.stop
+      @pointerup.capture.stop
       @click.stop
       @keydown.stop
     />
-    <LODFallback />
   </div>
 </template>
 
@@ -36,40 +34,27 @@
 import Textarea from 'primevue/textarea'
 import { computed, nextTick, ref } from 'vue'
 
-import { useStringWidgetValue } from '@/composables/graph/useWidgetValue'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import { renderMarkdownToHtml } from '@/utils/markdownRendererUtil'
 
-import LODFallback from '../../components/LODFallback.vue'
-
-const props = defineProps<{
+const { widget } = defineProps<{
   widget: SimplifiedWidget<string>
-  modelValue: string
 }>()
 
-const emit = defineEmits<{
-  'update:modelValue': [value: string]
-}>()
+const modelValue = defineModel<string>({ default: '' })
 
 // State
 const isEditing = ref(false)
 const textareaRef = ref<InstanceType<typeof Textarea> | undefined>()
 
-// Use the composable for consistent widget value handling
-const { localValue, onChange } = useStringWidgetValue(
-  props.widget,
-  props.modelValue,
-  emit
-)
-
 // Computed
 const renderedHtml = computed(() => {
-  return renderMarkdownToHtml(localValue.value || '')
+  return renderMarkdownToHtml(modelValue.value || '')
 })
 
 // Methods
 const startEditing = async () => {
-  if (isEditing.value) return
+  if (isEditing.value || widget.options?.read_only) return
 
   isEditing.value = true
   await nextTick()

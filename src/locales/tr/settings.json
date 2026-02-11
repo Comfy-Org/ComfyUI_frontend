@@ -29,15 +29,31 @@
     "name": "Tuval arka plan resmi",
     "tooltip": "Tuval arka planı için resim URL'si. Çıktılar panelindeki bir resme sağ tıklayıp \"Arka Plan Olarak Ayarla\"yı seçerek kullanabilir veya yükleme düğmesini kullanarak kendi resminizi yükleyebilirsiniz."
   },
+  "Comfy_Canvas_LeftMouseClickBehavior": {
+    "name": "Sol Fare Tıklama Davranışı",
+    "options": {
+      "Panning": "Kaydırma",
+      "Select": "Seç"
+    }
+  },
+  "Comfy_Canvas_MouseWheelScroll": {
+    "name": "Fare Tekerleği Kaydırma",
+    "options": {
+      "Panning": "Kaydırma",
+      "Zoom in/out": "Yakınlaştır/Uzaklaştır"
+    }
+  },
   "Comfy_Canvas_NavigationMode": {
     "name": "Tuval Gezinme Modu",
     "options": {
+      "Custom": "Özel",
       "Drag Navigation": "Sürükleyerek Gezinme",
       "Standard (New)": "Standart (Yeni)"
     }
   },
   "Comfy_Canvas_SelectionToolbox": {
-    "name": "Seçim araç kutusunu göster"
+    "name": "Seçim araç kutusunu göster",
+    "tooltip": "Düğümler seçildiğinde, yaygın işlemlere hızlı erişim sağlayan bir araç çubuğu gösterir."
   },
   "Comfy_ConfirmClear": {
     "name": "İş akışını temizlerken onay iste"
@@ -64,6 +80,17 @@
   "Comfy_EnableWorkflowViewRestore": {
     "name": "İş akışlarında tuval konumunu ve yakınlaştırma seviyesini kaydet ve geri yükle"
   },
+  "Comfy_Execution_PreviewMethod": {
+    "name": "Canlı önizleme yöntemi",
+    "options": {
+      "auto": "otomatik",
+      "default": "default",
+      "latent2rgb": "latent2rgb",
+      "none": "hiçbiri",
+      "taesd": "taesd"
+    },
+    "tooltip": "Görüntü oluşturma sırasında canlı önizleme yöntemi. \"default\" sunucu CLI ayarını kullanır."
+  },
   "Comfy_FloatRoundingPrecision": {
     "name": "Ondalık sayı widget yuvarlama ondalık basamakları [0 = otomatik].",
     "tooltip": "(sayfanın yeniden yüklenmesini gerektirir)"
@@ -84,6 +111,10 @@
       "Circle": "Daire",
       "None": "Yok"
     }
+  },
+  "Comfy_Graph_LiveSelection": {
+    "name": "Canlı seçim",
+    "tooltip": "Etkinleştirildiğinde, seçim dikdörtgenini sürüklerken düğümler gerçek zamanlı olarak seçilir/seçimi kaldırılır; diğer tasarım araçlarına benzer şekilde çalışır."
   },
   "Comfy_Graph_ZoomSpeed": {
     "name": "Tuval yakınlaştırma hızı"
@@ -117,15 +148,16 @@
       "Linear": "Doğrusal",
       "Spline": "Eğri",
       "Straight": "Düz"
-    }
+    },
+    "tooltip": "Tuvaldeki düğümler arasındaki bağlantı çizgilerinin görünümünü ve görünürlüğünü kontrol eder."
   },
   "Comfy_Load3D_3DViewerEnable": {
     "name": "3D Görüntüleyiciyi Etkinleştir (Beta)",
-    "tooltip": "Seçili düğümler için 3D Görüntüleyiciyi (Beta) etkinleştirir. Bu özellik, 3D modelleri doğrudan tam boyutlu 3D görüntüleyici içinde görselleştirmenize ve etkileşimde bulunmanıza olanak tanır."
+    "tooltip": "Seçili düğümler için 3D Görüntüleyiciyi (Beta) etkinleştirir. Bu özellik, tam boyutlu 3D görüntüleyicide 3D modelleri doğrudan görselleştirmenize ve etkileşimde bulunmanıza olanak tanır."
   },
   "Comfy_Load3D_BackgroundColor": {
     "name": "Başlangıç Arka Plan Rengi",
-    "tooltip": "3D sahnenin varsayılan arka plan rengini kontrol eder. Bu ayar, yeni bir 3D widget oluşturulduğunda arka plan görünümünü belirler, ancak oluşturulduktan sonra her widget için ayrı ayrı ayarlanabilir."
+    "tooltip": "3D sahnenin varsayılan arka plan rengini kontrol eder. Bu ayar, yeni bir 3D bileşeni oluşturulduğunda arka planın nasıl görüneceğini belirler, ancak oluşturulduktan sonra her bileşen için ayrı ayrı ayarlanabilir."
   },
   "Comfy_Load3D_CameraType": {
     "name": "Başlangıç Kamera Tipi",
@@ -133,27 +165,36 @@
       "orthographic": "ortografik",
       "perspective": "perspektif"
     },
-    "tooltip": "Yeni bir 3D widget oluşturulduğunda kameranın varsayılan olarak perspektif mi yoksa ortografik mi olacağını kontrol eder. Bu varsayılan, oluşturulduktan sonra her widget için ayrı ayrı değiştirilebilir."
+    "tooltip": "Yeni bir 3D bileşeni oluşturulduğunda kameranın varsayılan olarak perspektif mi yoksa ortografik mi olacağını kontrol eder. Bu varsayılan ayar, oluşturulduktan sonra her bileşen için ayrı ayrı değiştirilebilir."
   },
   "Comfy_Load3D_LightAdjustmentIncrement": {
-    "name": "Işık Ayarlama Artışı",
-    "tooltip": "3D sahnelerde ışık yoğunluğunu ayarlarken artış boyutunu kontrol eder. Daha küçük bir adım değeri, aydınlatma ayarlamaları üzerinde daha ince kontrol sağlarken, daha büyük bir değer ayarlama başına daha belirgin değişikliklere neden olur."
+    "name": "Işık Ayar Artışı",
+    "tooltip": "3D sahnelerde ışık yoğunluğunu ayarlarken artış miktarını kontrol eder. Daha küçük bir adım değeri, ışık ayarlarında daha hassas kontrol sağlar; daha büyük bir değer ise her ayarda daha belirgin değişiklikler oluşturur."
   },
   "Comfy_Load3D_LightIntensity": {
     "name": "Başlangıç Işık Yoğunluğu",
-    "tooltip": "3D sahnedeki aydınlatmanın varsayılan parlaklık seviyesini ayarlar. Bu değer, yeni bir 3D widget oluşturulduğunda ışıkların nesneleri ne kadar yoğun aydınlatacağını belirler, ancak oluşturulduktan sonra her widget için ayrı ayrı ayarlanabilir."
+    "tooltip": "3D sahnedeki ışıkların varsayılan parlaklık seviyesini ayarlar. Bu değer, yeni bir 3D bileşeni oluşturulduğunda nesnelerin ne kadar aydınlatılacağını belirler, ancak oluşturulduktan sonra her bileşen için ayrı ayrı ayarlanabilir."
   },
   "Comfy_Load3D_LightIntensityMaximum": {
     "name": "Maksimum Işık Yoğunluğu",
-    "tooltip": "3D sahneler için izin verilen maksimum ışık yoğunluğu değerini ayarlar. Bu, herhangi bir 3D widget'ta aydınlatma ayarlanırken ayarlanabilecek üst parlaklık sınırını tanımlar."
+    "tooltip": "3D sahneler için izin verilen maksimum ışık yoğunluğu değerini ayarlar. Bu, herhangi bir 3D bileşende ışık ayarlanırken belirlenebilecek en yüksek parlaklık sınırını tanımlar."
   },
   "Comfy_Load3D_LightIntensityMinimum": {
     "name": "Minimum Işık Yoğunluğu",
-    "tooltip": "3D sahneler için izin verilen minimum ışık yoğunluğu değerini ayarlar. Bu, herhangi bir 3D widget'ta aydınlatma ayarlanırken ayarlanabilecek alt parlaklık sınırını tanımlar."
+    "tooltip": "3D sahneler için izin verilen minimum ışık yoğunluğu değerini ayarlar. Bu, herhangi bir 3D bileşende ışık ayarlanırken belirlenebilecek en düşük parlaklık sınırını tanımlar."
+  },
+  "Comfy_Load3D_PLYEngine": {
+    "name": "PLY Motoru",
+    "options": {
+      "fastply": "fastply",
+      "sparkjs": "sparkjs",
+      "threejs": "threejs"
+    },
+    "tooltip": "PLY dosyalarını yüklemek için motoru seçin. \"threejs\" yerel Three.js PLYLoader'ı kullanır (ağ PLY dosyaları için en iyisi). \"fastply\" ASCII nokta bulutu PLY dosyaları için optimize edilmiş bir yükleyici kullanır. \"sparkjs\" ise 3D Gaussian Splatting PLY dosyaları için Spark.js kullanır."
   },
   "Comfy_Load3D_ShowGrid": {
     "name": "Başlangıç Izgara Görünürlüğü",
-    "tooltip": "Yeni bir 3D widget oluşturulduğunda ızgaranın varsayılan olarak görünür olup olmadığını kontrol eder. Bu varsayılan, oluşturulduktan sonra her widget için ayrı ayrı değiştirilebilir."
+    "tooltip": "Yeni bir 3D bileşeni oluşturulduğunda ızgaranın varsayılan olarak görünüp görünmeyeceğini kontrol eder. Bu varsayılan ayar, oluşturulduktan sonra her bileşen için ayrı ayrı değiştirilebilir."
   },
   "Comfy_Locale": {
     "name": "Dil"
@@ -165,10 +206,6 @@
   "Comfy_MaskEditor_UseDominantAxis": {
     "name": "Fırça ayarını baskın eksene kilitle",
     "tooltip": "Etkinleştirildiğinde, fırça ayarları yalnızca daha fazla hareket ettiğiniz yöne bağlı olarak boyutu VEYA sertliği etkileyecektir"
-  },
-  "Comfy_MaskEditor_UseNewEditor": {
-    "name": "Yeni maske düzenleyiciyi kullan",
-    "tooltip": "Yeni maske düzenleyici arayüzüne geç"
   },
   "Comfy_ModelLibrary_AutoLoadAll": {
     "name": "Tüm model klasörlerini otomatik olarak yükle",
@@ -207,6 +244,10 @@
   "Comfy_NodeBadge_ShowApiPricing": {
     "name": "API düğüm fiyatlandırma rozetini göster"
   },
+  "Comfy_NodeReplacement_Enabled": {
+    "name": "Otomatik düğüm değiştirmeyi etkinleştir",
+    "tooltip": "Etkinleştirildiğinde, eksik düğümler için bir değiştirme eşlemesi varsa otomatik olarak daha yeni karşılıklarıyla değiştirilebilir."
+  },
   "Comfy_NodeSearchBoxImpl": {
     "name": "Düğüm arama kutusu uygulaması",
     "options": {
@@ -236,6 +277,10 @@
   },
   "Comfy_Node_AllowImageSizeDraw": {
     "name": "Görüntü önizlemesinin altında genişlik × yüksekliği göster"
+  },
+  "Comfy_Node_AlwaysShowAdvancedWidgets": {
+    "name": "Tüm düğümlerde gelişmiş araçları her zaman göster",
+    "tooltip": "Etkinleştirildiğinde, gelişmiş araçlar tüm düğümlerde ayrı ayrı genişletmeye gerek kalmadan her zaman görünür olur."
   },
   "Comfy_Node_AutoSnapLinkToSlot": {
     "name": "Bağlantıyı otomatik olarak düğüm yuvasına yapıştır",
@@ -297,6 +342,10 @@
     "name": "Kuyruk geçmişi boyutu",
     "tooltip": "Kuyruk geçmişinde gösterilen maksimum görev sayısı."
   },
+  "Comfy_Queue_QPOV2": {
+    "name": "Varlıklar yan panelinde birleşik iş kuyruğunu kullan",
+    "tooltip": "Kayan iş kuyruğu panelini, Varlıklar yan paneline gömülü eşdeğer bir iş kuyruğu ile değiştirir. Kayan panel düzenine dönmek için bunu devre dışı bırakabilirsiniz."
+  },
   "Comfy_Sidebar_Location": {
     "name": "Kenar çubuğu konumu",
     "options": {
@@ -309,6 +358,13 @@
     "options": {
       "normal": "normal",
       "small": "küçük"
+    }
+  },
+  "Comfy_Sidebar_Style": {
+    "name": "Kenar Çubuğu Stili",
+    "options": {
+      "connected": "Bağlı",
+      "floating": "Yüzer"
     }
   },
   "Comfy_Sidebar_UnifiedWidth": {
@@ -327,6 +383,14 @@
   "Comfy_TreeExplorer_ItemPadding": {
     "name": "Ağaç gezgini öğe dolgusu"
   },
+  "Comfy_UI_TabBarLayout": {
+    "name": "Sekme Çubuğu Düzeni",
+    "options": {
+      "Default": "Varsayılan",
+      "Integrated": "Entegre"
+    },
+    "tooltip": "Sekme çubuğu düzenini kontrol eder. \"Entegre\" seçeneği, Yardım ve Kullanıcı kontrollerini sekme çubuğu alanına taşır."
+  },
   "Comfy_UseNewMenu": {
     "name": "Yeni menüyü kullan",
     "options": {
@@ -337,6 +401,14 @@
   },
   "Comfy_Validation_Workflows": {
     "name": "İş akışlarını doğrula"
+  },
+  "Comfy_VueNodes_AutoScaleLayout": {
+    "name": "Otomatik ölçeklendirme düzeni (Vue düğümleri)",
+    "tooltip": "Vue işlemeye geçerken düğüm konumlarını örtüşmeyi önlemek için otomatik olarak ölçeklendir"
+  },
+  "Comfy_VueNodes_Enabled": {
+    "name": "Modern Düğüm Tasarımı (Vue Düğümleri)",
+    "tooltip": "Modern: Gelişmiş etkileşim, yerel tarayıcı özellikleri ve güncellenmiş görsel tasarıma sahip DOM tabanlı işleme. Klasik: Geleneksel tuval işleme."
   },
   "Comfy_WidgetControlMode": {
     "name": "Widget kontrol modu",
@@ -375,6 +447,9 @@
   "Comfy_Workflow_SortNodeIdOnSave": {
     "name": "İş akışını kaydederken düğüm kimliklerini sırala"
   },
+  "Comfy_Workflow_WarnBlueprintOverwrite": {
+    "name": "Mevcut bir alt grafik şablonunun üzerine yazmak için onay iste"
+  },
   "Comfy_Workflow_WorkflowTabsPosition": {
     "name": "Açılan iş akışları konumu",
     "options": {
@@ -405,6 +480,7 @@
     "tooltip": "Yeniden yönlendirme merkez noktasından bezier kontrol noktası ofseti"
   },
   "pysssss_SnapToGrid": {
-    "name": "Her zaman ızgaraya yapıştır"
+    "name": "Her zaman ızgaraya yapıştır",
+    "tooltip": "Etkinleştirildiğinde, düğümler taşındığında veya yeniden boyutlandırıldığında otomatik olarak ızgaraya hizalanır."
   }
 }

@@ -34,6 +34,17 @@ export class ComboWidget
 
   override get _displayValue() {
     if (this.computedDisabled) return ''
+
+    const getOptionLabel = this.options.getOptionLabel
+    if (getOptionLabel) {
+      try {
+        return getOptionLabel(this.value ? String(this.value) : null)
+      } catch (e) {
+        console.error('Failed to map value:', e)
+        return this.value ? String(this.value) : ''
+      }
+    }
+
     const { values: rawValues } = this.options
     if (rawValues) {
       const values = typeof rawValues === 'function' ? rawValues() : rawValues
@@ -131,7 +142,34 @@ export class ComboWidget
     const values = this.getValues(node)
     const values_list = toArray(values)
 
-    // Handle center click - show dropdown menu
+    // Use addItem to solve duplicate filename issues
+    if (this.options.getOptionLabel) {
+      const menuOptions = {
+        scale: Math.max(1, canvas.ds.scale),
+        event: e,
+        className: 'dark',
+        callback: (value: string) => {
+          this.setValue(value, { e, node, canvas })
+        }
+      }
+      const menu = new LiteGraph.ContextMenu([], menuOptions)
+
+      const getOptionLabel = this.options.getOptionLabel
+      for (const value of values_list) {
+        try {
+          const label = getOptionLabel
+            ? getOptionLabel(String(value))
+            : String(value)
+          menu.addItem(label, value, menuOptions)
+        } catch (err) {
+          console.error('Failed to map value:', err)
+          menu.addItem(String(value), value, menuOptions)
+        }
+      }
+      return
+    }
+
+    // Show dropdown menu when user clicks on widget label
     const text_values = values != values_list ? Object.values(values) : values
     new LiteGraph.ContextMenu(text_values, {
       scale: Math.max(1, canvas.ds.scale),

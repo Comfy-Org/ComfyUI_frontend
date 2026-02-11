@@ -1,26 +1,63 @@
 import { createTestingPinia } from '@pinia/testing'
 import { mount } from '@vue/test-utils'
 import PrimeVue from 'primevue/config'
-import Select from 'primevue/select'
 import type { SelectProps } from 'primevue/select'
-import { describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { createI18n } from 'vue-i18n'
 
+import SelectPlus from '@/components/primevueOverride/SelectPlus.vue'
+
+const i18n = createI18n({
+  legacy: false,
+  locale: 'en',
+  messages: { en: {} }
+})
 import type { ComboInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
+import WidgetSelect from '@/renderer/extensions/vueNodes/widgets/components/WidgetSelect.vue'
+import WidgetSelectDefault from '@/renderer/extensions/vueNodes/widgets/components/WidgetSelectDefault.vue'
+import WidgetSelectDropdown from '@/renderer/extensions/vueNodes/widgets/components/WidgetSelectDropdown.vue'
 
-import WidgetSelect from './WidgetSelect.vue'
-import WidgetSelectDefault from './WidgetSelectDefault.vue'
-import WidgetSelectDropdown from './WidgetSelectDropdown.vue'
+// Mock state for distribution and settings
+const mockDistributionState = vi.hoisted(() => ({ isCloud: false }))
+const mockSettingStoreGet = vi.hoisted(() => vi.fn(() => false))
+const mockIsAssetBrowserEligible = vi.hoisted(() => vi.fn(() => false))
+
+vi.mock('@/platform/distribution/types', () => ({
+  get isCloud() {
+    return mockDistributionState.isCloud
+  }
+}))
+
+vi.mock('@/platform/settings/settingStore', () => ({
+  useSettingStore: vi.fn(() => ({
+    get: mockSettingStoreGet
+  }))
+}))
+
+vi.mock('@/platform/assets/services/assetService', () => ({
+  assetService: {
+    isAssetBrowserEligible: mockIsAssetBrowserEligible
+  }
+}))
 
 describe('WidgetSelect Value Binding', () => {
+  beforeEach(() => {
+    // Reset all mocks before each test
+    mockDistributionState.isCloud = false
+    mockSettingStoreGet.mockReturnValue(false)
+    mockIsAssetBrowserEligible.mockReturnValue(false)
+    vi.clearAllMocks()
+  })
+
   const createMockWidget = (
     value: string = 'option1',
     options: Partial<
       SelectProps & { values?: string[]; return_index?: boolean }
     > = {},
-    callback?: (value: string | number | undefined) => void,
+    callback?: (value: string | undefined) => void,
     spec?: ComboInputSpec
-  ): SimplifiedWidget<string | number | undefined> => ({
+  ): SimplifiedWidget<string | undefined> => ({
     name: 'test_select',
     type: 'combo',
     value,
@@ -33,8 +70,8 @@ describe('WidgetSelect Value Binding', () => {
   })
 
   const mountComponent = (
-    widget: SimplifiedWidget<string | number | undefined>,
-    modelValue: string | number | undefined,
+    widget: SimplifiedWidget<string | undefined>,
+    modelValue: string | undefined,
     readonly = false
   ) => {
     return mount(WidgetSelect, {
@@ -44,8 +81,8 @@ describe('WidgetSelect Value Binding', () => {
         readonly
       },
       global: {
-        plugins: [PrimeVue, createTestingPinia()],
-        components: { Select }
+        plugins: [PrimeVue, createTestingPinia(), i18n],
+        components: { SelectPlus }
       }
     })
   }
@@ -54,7 +91,7 @@ describe('WidgetSelect Value Binding', () => {
     wrapper: ReturnType<typeof mount>,
     value: string
   ) => {
-    const select = wrapper.findComponent({ name: 'Select' })
+    const select = wrapper.findComponent({ name: 'SelectPlus' })
     await select.setValue(value)
     return wrapper.emitted('update:modelValue')
   }
@@ -119,7 +156,7 @@ describe('WidgetSelect Value Binding', () => {
       const widget = createMockWidget('', { values: [] })
       const wrapper = mountComponent(widget, '')
 
-      const select = wrapper.findComponent({ name: 'Select' })
+      const select = wrapper.findComponent({ name: 'SelectPlus' })
       expect(select.props('options')).toEqual([])
     })
 
@@ -129,7 +166,7 @@ describe('WidgetSelect Value Binding', () => {
       })
       const wrapper = mountComponent(widget, 'only_option')
 
-      const select = wrapper.findComponent({ name: 'Select' })
+      const select = wrapper.findComponent({ name: 'SelectPlus' })
       const options = select.props('options')
       expect(options).toHaveLength(1)
       expect(options[0]).toEqual('only_option')
@@ -181,6 +218,92 @@ describe('WidgetSelect Value Binding', () => {
     })
   })
 
+  describe('node-type prop passing', () => {
+    it('passes node-type prop to WidgetSelectDropdown', () => {
+      const spec: ComboInputSpec = {
+        type: 'COMBO',
+        name: 'test_select',
+        image_upload: true
+      }
+      const widget = createMockWidget('option1', {}, undefined, spec)
+      const wrapper = mount(WidgetSelect, {
+        props: {
+          widget,
+          modelValue: 'option1',
+          nodeType: 'CheckpointLoaderSimple'
+        },
+        global: {
+          plugins: [PrimeVue, createTestingPinia(), i18n],
+          components: { SelectPlus }
+        }
+      })
+
+      const dropdown = wrapper.findComponent(WidgetSelectDropdown)
+      expect(dropdown.exists()).toBe(true)
+      expect(dropdown.props('nodeType')).toBe('CheckpointLoaderSimple')
+    })
+
+    it('does not pass node-type prop to WidgetSelectDefault', () => {
+      const widget = createMockWidget('option1')
+      const wrapper = mount(WidgetSelect, {
+        props: {
+          widget,
+          modelValue: 'option1',
+          nodeType: 'KSampler'
+        },
+        global: {
+          plugins: [PrimeVue, createTestingPinia(), i18n],
+          components: { SelectPlus }
+        }
+      })
+
+      const defaultSelect = wrapper.findComponent(WidgetSelectDefault)
+      expect(defaultSelect.exists()).toBe(true)
+    })
+  })
+
+  describe('Asset mode detection', () => {
+    it('enables asset mode when all conditions are met', () => {
+      mockDistributionState.isCloud = true
+      mockSettingStoreGet.mockReturnValue(true)
+      mockIsAssetBrowserEligible.mockReturnValue(true)
+
+      const widget = createMockWidget('test.safetensors')
+      const wrapper = mount(WidgetSelect, {
+        props: {
+          widget,
+          modelValue: 'test.safetensors',
+          nodeType: 'CheckpointLoaderSimple'
+        },
+        global: {
+          plugins: [PrimeVue, createTestingPinia(), i18n],
+          components: { SelectPlus }
+        }
+      })
+
+      expect(wrapper.findComponent(WidgetSelectDropdown).exists()).toBe(true)
+    })
+
+    it('disables asset mode when conditions are not met', () => {
+      mockDistributionState.isCloud = false
+
+      const widget = createMockWidget('test.safetensors')
+      const wrapper = mount(WidgetSelect, {
+        props: {
+          widget,
+          modelValue: 'test.safetensors',
+          nodeType: 'CheckpointLoaderSimple'
+        },
+        global: {
+          plugins: [PrimeVue, createTestingPinia(), i18n],
+          components: { SelectPlus }
+        }
+      })
+
+      expect(wrapper.findComponent(WidgetSelectDefault).exists()).toBe(true)
+    })
+  })
+
   describe('Spec-aware rendering', () => {
     it('uses dropdown variant when combo spec enables image uploads', () => {
       const spec: ComboInputSpec = {
@@ -209,6 +332,24 @@ describe('WidgetSelect Value Binding', () => {
       expect(dropdown.exists()).toBe(true)
       expect(dropdown.props('assetKind')).toBe('audio')
       expect(dropdown.props('allowUpload')).toBe(false)
+    })
+
+    it('uses dropdown variant for mesh uploads via spec', () => {
+      const spec: ComboInputSpec = {
+        type: 'COMBO',
+        name: 'model_file',
+        mesh_upload: true,
+        upload_subfolder: '3d'
+      }
+      const widget = createMockWidget('model.glb', {}, undefined, spec)
+      const wrapper = mountComponent(widget, 'model.glb')
+      const dropdown = wrapper.findComponent(WidgetSelectDropdown)
+
+      expect(dropdown.exists()).toBe(true)
+      expect(dropdown.props('assetKind')).toBe('mesh')
+      expect(dropdown.props('allowUpload')).toBe(true)
+      expect(dropdown.props('uploadFolder')).toBe('input')
+      expect(dropdown.props('uploadSubfolder')).toBe('3d')
     })
 
     it('keeps default select when no spec or media hints are present', () => {

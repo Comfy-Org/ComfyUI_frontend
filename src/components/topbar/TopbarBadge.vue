@@ -174,7 +174,7 @@ const textClasses = computed(() => {
     case 'error':
       return 'text-danger-100'
     case 'warning':
-      return 'text-gold-600'
+      return 'text-warning-background'
     case 'info':
     default:
       return 'text-text-primary'
@@ -191,7 +191,7 @@ const iconClass = computed(() => {
     case 'error':
       return 'pi pi-exclamation-circle'
     case 'warning':
-      return 'pi pi-exclamation-triangle'
+      return 'icon-[lucide--triangle-alert]'
     case 'info':
     default:
       return undefined
@@ -219,10 +219,10 @@ const popoverPt = computed(() => ({
   content: {
     class: cn(
       'mt-1 rounded-lg',
-      'bg-white dark-theme:bg-zinc-800',
-      'text-neutral dark-theme:text-white',
+      'bg-base-background',
+      'text-base-foreground',
       'shadow-lg',
-      'border border-zinc-200 dark-theme:border-zinc-700'
+      'border border-border-default'
     )
   }
 }))

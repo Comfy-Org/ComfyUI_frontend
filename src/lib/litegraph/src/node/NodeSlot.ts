@@ -30,12 +30,14 @@ export interface IDrawOptions {
   highlight?: boolean
 }
 
+const ROTATION_OFFSET = -Math.PI
+
 /** Shared base class for {@link LGraphNode} input and output slots. */
 export abstract class NodeSlot extends SlotBase implements INodeSlot {
   pos?: Point
 
   /** The offset from the parent node to the centre point of this slot. */
-  get #centreOffset(): Readonly<Point> {
+  private get _centreOffset(): Readonly<Point> {
     const nodePos = this.node.pos
     const { boundingRect } = this
 
@@ -53,9 +55,9 @@ export abstract class NodeSlot extends SlotBase implements INodeSlot {
   /** The center point of this slot when the node is collapsed. */
   abstract get collapsedPos(): Readonly<Point>
 
-  #node: LGraphNode
+  protected _node: LGraphNode
   get node(): LGraphNode {
-    return this.#node
+    return this._node
   }
 
   get highlightColor(): CanvasColour {
@@ -87,7 +89,7 @@ export abstract class NodeSlot extends SlotBase implements INodeSlot {
     super(name, type, rectangle)
 
     Object.assign(this, rest)
-    this.#node = node
+    this._node = node
   }
 
   /**
@@ -124,12 +126,13 @@ export abstract class NodeSlot extends SlotBase implements INodeSlot {
       ? this.highlightColor
       : LiteGraph.NODE_TEXT_COLOR
 
-    const pos = this.#centreOffset
+    const pos = this._centreOffset
     const slot_type = this.type
     const slot_shape = (
       slot_type === SlotType.Array ? SlotShape.Grid : this.shape
     ) as SlotShape
 
+    ctx.save()
     ctx.beginPath()
     let doFill = true
 
@@ -163,16 +166,52 @@ export abstract class NodeSlot extends SlotBase implements INodeSlot {
       if (lowQuality) {
         ctx.rect(pos[0] - 4, pos[1] - 4, 8, 8)
       } else {
-        let radius: number
         if (slot_shape === SlotShape.HollowCircle) {
+          const path = new Path2D()
+          path.arc(pos[0], pos[1], 10, 0, Math.PI * 2)
+          path.arc(pos[0], pos[1], highlight ? 2.5 : 1.5, 0, Math.PI * 2)
+          ctx.clip(path, 'evenodd')
+        }
+        const radius = highlight ? 5 : 4
+        const typesSet = new Set(
+          `${this.type}`
+            .split(',')
+            .map(
+              this.isConnected
+                ? (type) => colorContext.getConnectedColor(type)
+                : (type) => colorContext.getDisconnectedColor(type)
+            )
+        )
+        const types = [...typesSet].slice(0, 3)
+        if (types.length > 1) {
           doFill = false
-          doStroke = true
-          ctx.lineWidth = 3
-          ctx.strokeStyle = ctx.fillStyle
-          radius = highlight ? 4 : 3
-        } else {
-          // Normal circle
-          radius = highlight ? 5 : 4
+          const arcLen = (Math.PI * 2) / types.length
+          types.forEach((type, idx) => {
+            ctx.moveTo(pos[0], pos[1])
+            ctx.fillStyle = type
+            ctx.arc(
+              pos[0],
+              pos[1],
+              radius,
+              arcLen * idx + ROTATION_OFFSET,
+              Math.PI * 2 + ROTATION_OFFSET
+            )
+            ctx.fill()
+            ctx.beginPath()
+          })
+          //add stroke dividers
+          ctx.save()
+          ctx.strokeStyle = 'black'
+          ctx.lineWidth = 0.5
+          types.forEach((_, idx) => {
+            ctx.moveTo(pos[0], pos[1])
+            const xOffset = Math.cos(arcLen * idx + ROTATION_OFFSET) * radius
+            const yOffset = Math.sin(arcLen * idx + ROTATION_OFFSET) * radius
+            ctx.lineTo(pos[0] + xOffset, pos[1] + yOffset)
+          })
+          ctx.stroke()
+          ctx.restore()
+          ctx.beginPath()
         }
         ctx.arc(pos[0], pos[1], radius, 0, Math.PI * 2)
       }
@@ -180,6 +219,7 @@ export abstract class NodeSlot extends SlotBase implements INodeSlot {
 
     if (doFill) ctx.fill()
     if (!lowQuality && doStroke) ctx.stroke()
+    ctx.restore()
 
     // render slot label
     const hideLabel = lowQuality || this.isWidgetInputSlot
@@ -218,6 +258,25 @@ export abstract class NodeSlot extends SlotBase implements INodeSlot {
     ctx.fillStyle = originalFillStyle
     ctx.strokeStyle = originalStrokeStyle
     ctx.lineWidth = originalLineWidth
+  }
+
+  /**
+   * Custom JSON serialization to prevent circular reference errors.
+   * Returns only serializable slot properties without the node back-reference.
+   */
+  toJSON(): INodeSlot {
+    return {
+      name: this.name,
+      type: this.type,
+      label: this.label,
+      color_on: this.color_on,
+      color_off: this.color_off,
+      shape: this.shape,
+      dir: this.dir,
+      localized_name: this.localized_name,
+      pos: this.pos,
+      boundingRect: [...this.boundingRect] as [number, number, number, number]
+    }
   }
 
   drawCollapsed(ctx: CanvasRenderingContext2D) {

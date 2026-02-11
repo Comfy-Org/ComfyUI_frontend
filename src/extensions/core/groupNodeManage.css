@@ -2,7 +2,6 @@
   background: var(--bg-color);
   color: var(--fg-color);
   padding: 0;
-  font-family: Arial, Helvetica, sans-serif;
   border-color: black;
   margin: 20vh auto;
   max-height: 60vh;
@@ -96,7 +95,7 @@
   font-size: 15px;
 }
 .comfy-group-manage-node header a:last-child {
-    border-right: none;
+  border-right: none;
 }
 .comfy-group-manage-node header a:not(.active):hover {
   text-decoration: underline;
@@ -124,7 +123,7 @@
   background: var(--comfy-input-bg);
   padding: 5px 10px;
 }
-.comfy-group-manage-node-page input[type="text"] {
+.comfy-group-manage-node-page input[type='text'] {
   flex: auto;
 }
 .comfy-group-manage-node-page label {

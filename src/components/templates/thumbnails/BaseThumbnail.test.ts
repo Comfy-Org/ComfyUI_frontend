@@ -4,6 +4,10 @@ import { nextTick } from 'vue'
 
 import BaseThumbnail from '@/components/templates/thumbnails/BaseThumbnail.vue'
 
+type ComponentInstance = InstanceType<typeof BaseThumbnail> & {
+  error: boolean
+}
+
 vi.mock('@vueuse/core', () => ({
   useEventListener: vi.fn()
 }))
@@ -45,7 +49,7 @@ describe('BaseThumbnail', () => {
 
   it('shows error state when image fails to load', async () => {
     const wrapper = mountThumbnail()
-    const vm = wrapper.vm as any
+    const vm = wrapper.vm as ComponentInstance
 
     // Manually set error since useEventListener is mocked
     vm.error = true

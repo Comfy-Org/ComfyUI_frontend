@@ -29,12 +29,6 @@ vi.mock('@/renderer/core/layout/transform/useTransformState', () => {
   }
 })
 
-vi.mock('@/renderer/extensions/vueNodes/lod/useLOD', () => ({
-  useLOD: vi.fn(() => ({
-    isLOD: false
-  }))
-}))
-
 function createMockCanvas(): LGraphCanvas {
   return {
     canvas: {
@@ -120,22 +114,6 @@ describe('TransformPane', () => {
 
       const transformState = useTransformState()
       expect(transformState.syncWithCanvas).toHaveBeenCalledWith(mockCanvas)
-    })
-
-    it('should emit transform update timing', async () => {
-      const mockCanvas = createMockCanvas()
-      const wrapper = mount(TransformPane, {
-        props: {
-          canvas: mockCanvas
-        }
-      })
-
-      await nextTick()
-
-      // Allow RAF to execute
-      vi.advanceTimersToNextFrame()
-
-      expect(wrapper.emitted('transformUpdate')).toBeTruthy()
     })
   })
 

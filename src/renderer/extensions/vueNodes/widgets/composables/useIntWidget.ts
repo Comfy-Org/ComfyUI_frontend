@@ -1,11 +1,11 @@
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { INumericWidget } from '@/lib/litegraph/src/types/widgets'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { transformInputSpecV2ToV1 } from '@/schemas/nodeDef/migration'
-import { isIntInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
-import { addValueControlWidget } from '@/scripts/widgets'
+import { isIntInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import type { ComfyWidgetConstructorV2 } from '@/scripts/widgets'
+import { addValueControlWidget } from '@/scripts/widgets'
+import { transformInputSpecV2ToV1 } from '@/schemas/nodeDef/migration'
 
 function onValueChange(this: INumericWidget, v: number) {
   // For integers, always round to the nearest step
@@ -69,22 +69,22 @@ export const useIntWidget = () => {
 
     const controlAfterGenerate =
       inputSpec.control_after_generate ??
-      /**
-       * Compatibility with legacy node convention. Int input with name
-       * 'seed' or 'noise_seed' get automatically added a control widget.
-       */
       ['seed', 'noise_seed'].includes(inputSpec.name)
 
     if (controlAfterGenerate) {
-      const seedControl = addValueControlWidget(
+      const defaultType =
+        typeof inputSpec.control_after_generate === 'string'
+          ? inputSpec.control_after_generate
+          : 'randomize'
+      const controlWidget = addValueControlWidget(
         node,
         widget,
-        'randomize',
+        defaultType,
         undefined,
         undefined,
         transformInputSpecV2ToV1(inputSpec)
       )
-      widget.linkedWidgets = [seedControl]
+      widget.linkedWidgets = [controlWidget]
     }
 
     return widget

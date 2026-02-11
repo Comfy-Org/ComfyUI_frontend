@@ -5,6 +5,7 @@ import { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { DrawTitleBoxOptions } from '@/lib/litegraph/src/LGraphNode'
 import { LLink } from '@/lib/litegraph/src/LLink'
 import type { ResolvedConnection } from '@/lib/litegraph/src/LLink'
+import { NullGraphError } from '@/lib/litegraph/src/infrastructure/NullGraphError'
 import { RecursionError } from '@/lib/litegraph/src/infrastructure/RecursionError'
 import type {
   ISubgraphInput,
@@ -28,7 +29,8 @@ import type {
 } from '@/lib/litegraph/src/types/serialisation'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import type { UUID } from '@/lib/litegraph/src/utils/uuid'
-import { toConcreteWidget } from '@/lib/litegraph/src/widgets/widgetMap'
+import { BaseWidget } from '@/lib/litegraph/src/widgets/BaseWidget'
+import { AssetWidget } from '@/lib/litegraph/src/widgets/AssetWidget'
 
 import { ExecutableNodeDTO } from './ExecutableNodeDTO'
 import type { ExecutableLGraphNode, ExecutionId } from './ExecutableNodeDTO'
@@ -46,8 +48,11 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
 
   override readonly type: UUID
   override readonly isVirtualNode = true as const
+  override graph: GraphOrSubgraph | null
 
   get rootGraph(): LGraph {
+    if (!this.graph)
+      throw new NullGraphError(`SubgraphNode ${this.id} has no graph`)
     return this.graph.rootGraph
   }
 
@@ -62,20 +67,21 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
   override widgets: IBaseWidget[] = []
 
   /** Manages lifecycle of all subgraph event listeners */
-  #eventAbortController = new AbortController()
+  private _eventAbortController = new AbortController()
 
   constructor(
     /** The (sub)graph that contains this subgraph instance. */
-    override readonly graph: GraphOrSubgraph,
+    graph: GraphOrSubgraph,
     /** The definition of this subgraph; how its nodes are configured, etc. */
     readonly subgraph: Subgraph,
     instanceData: ExportedSubgraphInstance
   ) {
     super(subgraph.name, subgraph.id)
+    this.graph = graph
 
     // Update this node when the subgraph input / output slots are changed
     const subgraphEvents = this.subgraph.events
-    const { signal } = this.#eventAbortController
+    const { signal } = this._eventAbortController
 
     subgraphEvents.addEventListener(
       'input-added',
@@ -88,12 +94,12 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
           const { inputNode, input } = subgraph.links[linkId].resolve(subgraph)
           const widget = inputNode?.widgets?.find?.((w) => w.name == name)
           if (widget)
-            this.#setWidget(subgraphInput, existingInput, widget, input?.widget)
+            this._setWidget(subgraphInput, existingInput, widget, input?.widget)
           return
         }
         const input = this.addInput(name, type)
 
-        this.#addSubgraphInputListeners(subgraphInput, input)
+        this._addSubgraphInputListeners(subgraphInput, input)
       },
       { signal }
     )
@@ -178,7 +184,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     }
   }
 
-  #addSubgraphInputListeners(
+  private _addSubgraphInputListeners(
     subgraphInput: SubgraphInput,
     input: INodeInputSlot & Partial<ISubgraphInput>
   ) {
@@ -200,7 +206,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
         if (!widget) return
 
         const widgetLocator = e.detail.input.widget
-        this.#setWidget(subgraphInput, input, widget, widgetLocator)
+        this._setWidget(subgraphInput, input, widget, widgetLocator)
       },
       { signal }
     )
@@ -287,7 +293,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
         continue
       }
 
-      this.#addSubgraphInputListeners(subgraphInput, input)
+      this._addSubgraphInputListeners(subgraphInput, input)
 
       // Find the first widget that this slot is connected to
       for (const linkId of subgraphInput.linkIds) {
@@ -300,32 +306,42 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
           continue
         }
 
-        const resolved = link.resolve(this.subgraph)
-        if (!resolved.input || !resolved.inputNode) {
-          console.warn('Invalid resolved link', resolved, this)
+        const { inputNode } = link.resolve(this.subgraph)
+        if (!inputNode) {
+          console.warn('Failed to resolve inputNode', link, this)
+          continue
+        }
+
+        //Manually find input since target_slot can't be trusted
+        const targetInput = inputNode.inputs.find((inp) => inp.link === linkId)
+        if (!targetInput) {
+          console.warn('Failed to find corresponding input', link, inputNode)
           continue
         }
 
         // No widget - ignore this link
-        const widget = resolved.inputNode.getWidgetFromSlot(resolved.input)
+        const widget = inputNode.getWidgetFromSlot(targetInput)
         if (!widget) continue
 
-        this.#setWidget(subgraphInput, input, widget, resolved.input.widget)
+        this._setWidget(subgraphInput, input, widget, targetInput.widget)
         break
       }
     }
   }
 
-  #setWidget(
+  private _setWidget(
     subgraphInput: Readonly<SubgraphInput>,
     input: INodeInputSlot,
     widget: Readonly<IBaseWidget>,
     inputWidget: IWidgetLocator | undefined
   ) {
     // Use the first matching widget
-    const promotedWidget = toConcreteWidget(widget, this).createCopyForNode(
-      this
-    )
+    const promotedWidget =
+      widget instanceof BaseWidget
+        ? widget.createCopyForNode(this)
+        : { ...widget, node: this }
+    if (widget instanceof AssetWidget)
+      promotedWidget.options.nodeType ??= widget.node.type
 
     Object.assign(promotedWidget, {
       get name() {
@@ -485,7 +501,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     const subgraphInstanceIdPath = [...subgraphNodePath, this.id]
 
     // Store the subgraph node DTO
-    const parentSubgraphNode = this.graph.rootGraph
+    const parentSubgraphNode = this.rootGraph
       .resolveSubgraphIdPath(subgraphNodePath)
       .at(-1)
     const subgraphNodeDto = new ExecutableNodeDTO(
@@ -542,7 +558,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
 
   override onRemoved(): void {
     // Clean up all subgraph event listeners
-    this.#eventAbortController.abort()
+    this._eventAbortController.abort()
 
     // Clean up all promoted widgets
     for (const widget of this.widgets) {
@@ -622,7 +638,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
   override clone() {
     const clone = super.clone()
     // force reasign so domWidgets reset ownership
-    // eslint-disable-next-line  no-self-assign
+
     this.properties.proxyWidgets = this.properties.proxyWidgets
 
     //TODO: Consider deep cloning subgraphs here.

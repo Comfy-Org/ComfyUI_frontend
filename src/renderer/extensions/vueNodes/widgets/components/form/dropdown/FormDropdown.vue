@@ -1,25 +1,23 @@
 <script setup lang="ts">
-import { refDebounced } from '@vueuse/core'
 import Popover from 'primevue/popover'
-import { computed, ref, useTemplateRef, watch } from 'vue'
+import { computed, ref, useTemplateRef } from 'vue'
+import { useI18n } from 'vue-i18n'
 
-import { t } from '@/i18n'
 import { useToastStore } from '@/platform/updates/common/toastStore'
+
+import type {
+  FilterOption,
+  OwnershipFilterOption,
+  OwnershipOption
+} from '@/platform/assets/types/filterTypes'
 
 import FormDropdownInput from './FormDropdownInput.vue'
 import FormDropdownMenu from './FormDropdownMenu.vue'
 import { defaultSearcher, getDefaultSortOptions } from './shared'
-import type {
-  DropdownItem,
-  FilterOption,
-  LayoutMode,
-  OptionId,
-  SelectedKey,
-  SortOption
-} from './types'
+import type { FormDropdownItem, LayoutMode, SortOption } from './types'
 
 interface Props {
-  items: DropdownItem[]
+  items: FormDropdownItem[]
   placeholder?: string
   /**
    * If true, allows multiple selections. If a number is provided,
@@ -32,98 +30,86 @@ interface Props {
   accept?: string
   filterOptions?: FilterOption[]
   sortOptions?: SortOption[]
+  showOwnershipFilter?: boolean
+  ownershipOptions?: OwnershipFilterOption[]
+  showBaseModelFilter?: boolean
+  baseModelOptions?: FilterOption[]
   isSelected?: (
-    selected: Set<SelectedKey>,
-    item: DropdownItem,
+    selected: Set<string>,
+    item: FormDropdownItem,
     index: number
   ) => boolean
   searcher?: (
     query: string,
-    items: DropdownItem[],
+    items: FormDropdownItem[],
     onCleanup: (cleanupFn: () => void) => void
-  ) => Promise<DropdownItem[]>
+  ) => Promise<FormDropdownItem[]>
 }
 
-const props = withDefaults(defineProps<Props>(), {
-  placeholder: t('widgets.uploadSelect.placeholder'),
-  multiple: false,
-  uploadable: false,
-  disabled: false,
-  filterOptions: () => [],
-  sortOptions: () => getDefaultSortOptions(),
-  isSelected: (selected, item, _index) => selected.has(item.id),
-  searcher: defaultSearcher
-})
+const { t } = useI18n()
 
-const selected = defineModel<Set<SelectedKey>>('selected', {
-  default: new Set()
+const {
+  placeholder,
+  multiple = false,
+  uploadable = false,
+  disabled = false,
+  accept,
+  filterOptions = [],
+  sortOptions = getDefaultSortOptions(),
+  showOwnershipFilter,
+  ownershipOptions,
+  showBaseModelFilter,
+  baseModelOptions,
+  isSelected = (selected, item, _index) => selected.has(item.id),
+  searcher = defaultSearcher,
+  items
+} = defineProps<Props>()
+
+const placeholderText = computed(
+  () => placeholder ?? t('widgets.uploadSelect.placeholder')
+)
+
+const selected = defineModel<Set<string>>('selected', {
+  default: () => new Set()
 })
-const filterSelected = defineModel<OptionId>('filterSelected', { default: '' })
-const sortSelected = defineModel<OptionId>('sortSelected', {
+const filterSelected = defineModel<string>('filterSelected', { default: '' })
+const sortSelected = defineModel<string>('sortSelected', {
   default: 'default'
 })
 const layoutMode = defineModel<LayoutMode>('layoutMode', {
   default: 'grid'
 })
-const files = defineModel<File[]>('files', { default: [] })
+const files = defineModel<File[]>('files', { default: () => [] })
 const searchQuery = defineModel<string>('searchQuery', { default: '' })
-
-const debouncedSearchQuery = refDebounced(searchQuery, 700, {
-  maxWait: 700
+const ownershipSelected = defineModel<OwnershipOption>('ownershipSelected', {
+  default: 'all'
 })
-const isQuerying = ref(false)
+const baseModelSelected = defineModel<Set<string>>('baseModelSelected', {
+  default: () => new Set()
+})
+
 const toastStore = useToastStore()
 const popoverRef = ref<InstanceType<typeof Popover>>()
 const triggerRef = useTemplateRef('triggerRef')
 const isOpen = ref(false)
 
 const maxSelectable = computed(() => {
-  if (props.multiple === true) return Infinity
-  if (typeof props.multiple === 'number') return props.multiple
+  if (multiple === true) return Infinity
+  if (typeof multiple === 'number') return multiple
   return 1
 })
 
-const filteredItems = ref<DropdownItem[]>([])
+const itemsKey = computed(() => items.map((item) => item.id).join('|'))
 
-watch(searchQuery, (value) => {
-  isQuerying.value = value !== debouncedSearchQuery.value
-})
-
-watch(
-  [debouncedSearchQuery, () => props.items],
-  (_, __, onCleanup) => {
-    let isCleanup = false
-    let cleanupFn: undefined | (() => void)
-    onCleanup(() => {
-      isCleanup = true
-      cleanupFn?.()
-    })
-
-    void props
-      .searcher(
-        debouncedSearchQuery.value,
-        props.items,
-        (cb) => (cleanupFn = cb)
-      )
-      .then((result) => {
-        if (!isCleanup) filteredItems.value = result
-      })
-      .finally(() => {
-        if (!isCleanup) isQuerying.value = false
-      })
-  },
-  { immediate: true }
-)
+const filteredItems = ref<FormDropdownItem[]>([])
 
 const defaultSorter = computed<SortOption['sorter']>(() => {
-  const sorter = props.sortOptions.find(
-    (option) => option.id === 'default'
-  )?.sorter
-  return sorter || (({ items }) => items.slice())
+  const sorter = sortOptions.find((option) => option.id === 'default')?.sorter
+  return sorter || (({ items: i }) => i.slice())
 })
 const selectedSorter = computed<SortOption['sorter']>(() => {
   if (sortSelected.value === 'default') return defaultSorter.value
-  const sorter = props.sortOptions.find(
+  const sorter = sortOptions.find(
     (option) => option.id === sortSelected.value
   )?.sorter
   return sorter || defaultSorter.value
@@ -132,12 +118,12 @@ const sortedItems = computed(() => {
   return selectedSorter.value({ items: filteredItems.value }) || []
 })
 
-function internalIsSelected(item: DropdownItem, index: number): boolean {
-  return props.isSelected?.(selected.value, item, index) ?? false
+function internalIsSelected(item: FormDropdownItem, index: number): boolean {
+  return isSelected(selected.value, item, index)
 }
 
 const toggleDropdown = (event: Event) => {
-  if (props.disabled) return
+  if (disabled) return
   if (popoverRef.value && triggerRef.value) {
     popoverRef.value.toggle(event, triggerRef.value)
     isOpen.value = !isOpen.value
@@ -152,17 +138,17 @@ const closeDropdown = () => {
 }
 
 function handleFileChange(event: Event) {
-  if (props.disabled) return
-  const input = event.target as HTMLInputElement
-  if (input.files) {
-    files.value = Array.from(input.files)
+  if (disabled) return
+  const target = event.target
+  if (!(target instanceof HTMLInputElement)) return
+  if (target.files) {
+    files.value = Array.from(target.files)
   }
-  // Clear the input value to allow re-selecting the same file
-  input.value = ''
+  target.value = ''
 }
 
-function handleSelection(item: DropdownItem, index: number) {
-  if (props.disabled) return
+function handleSelection(item: FormDropdownItem, index: number) {
+  if (disabled) return
   const sel = selected.value
   if (internalIsSelected(item, index)) {
     sel.delete(item.id)
@@ -183,20 +169,35 @@ function handleSelection(item: DropdownItem, index: number) {
     closeDropdown()
   }
 }
+
+async function customSearcher(
+  query: string,
+  onCleanup: (cleanupFn: () => void) => void
+) {
+  let isCleanup = false
+  let cleanupFn: undefined | (() => void)
+  onCleanup(() => {
+    isCleanup = true
+    cleanupFn?.()
+  })
+  await searcher(query, items, (cb) => (cleanupFn = cb)).then((results) => {
+    if (!isCleanup) filteredItems.value = results
+  })
+}
 </script>
 
 <template>
   <div ref="triggerRef">
     <FormDropdownInput
-      :files="files"
-      :is-open="isOpen"
-      :placeholder="placeholder"
-      :items="items"
-      :max-selectable="maxSelectable"
-      :selected="selected"
-      :uploadable="uploadable"
-      :disabled="disabled"
-      :accept="accept"
+      :files
+      :is-open
+      :placeholder="placeholderText"
+      :items
+      :max-selectable
+      :selected
+      :uploadable
+      :disabled
+      :accept
       @select-click="toggleDropdown"
       @file-change="handleFileChange"
     />
@@ -220,13 +221,20 @@ function handleSelection(item: DropdownItem, index: number) {
         v-model:layout-mode="layoutMode"
         v-model:sort-selected="sortSelected"
         v-model:search-query="searchQuery"
-        :filter-options="filterOptions"
-        :sort-options="sortOptions"
-        :disabled="disabled"
-        :is-querying="isQuerying"
+        v-model:ownership-selected="ownershipSelected"
+        v-model:base-model-selected="baseModelSelected"
+        :filter-options
+        :sort-options
+        :show-ownership-filter
+        :ownership-options
+        :show-base-model-filter
+        :base-model-options
+        :disabled
+        :searcher="customSearcher"
         :items="sortedItems"
         :is-selected="internalIsSelected"
-        :max-selectable="maxSelectable"
+        :max-selectable
+        :update-key="itemsKey"
         @close="closeDropdown"
         @item-click="handleSelection"
       />

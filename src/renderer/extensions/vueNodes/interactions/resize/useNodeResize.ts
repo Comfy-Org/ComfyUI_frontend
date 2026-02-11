@@ -1,51 +1,30 @@
 import { useEventListener } from '@vueuse/core'
 import { ref } from 'vue'
 
-import type { TransformState } from '@/renderer/core/layout/injectionKeys'
 import type { Point, Size } from '@/renderer/core/layout/types'
+import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { useNodeSnap } from '@/renderer/extensions/vueNodes/composables/useNodeSnap'
 import { useShiftKeySync } from '@/renderer/extensions/vueNodes/composables/useShiftKeySync'
-
-import type { ResizeHandleDirection } from './resizeMath'
-import { createResizeSession, toCanvasDelta } from './resizeMath'
-
-interface UseNodeResizeOptions {
-  /** Transform state for coordinate conversion */
-  transformState: TransformState
-}
+import { useTransformState } from '@/renderer/core/layout/transform/useTransformState'
 
 interface ResizeCallbackPayload {
   size: Size
-  position: Point
 }
 
 /**
- * Composable for node resizing functionality
+ * Composable for node resizing functionality (bottom-right corner only)
  *
  * Provides resize handle interaction that integrates with the layout system.
  * Handles pointer capture, coordinate calculations, and size constraints.
  */
 export function useNodeResize(
-  resizeCallback: (
-    payload: ResizeCallbackPayload,
-    element: HTMLElement
-  ) => void,
-  options: UseNodeResizeOptions
+  resizeCallback: (payload: ResizeCallbackPayload, element: HTMLElement) => void
 ) {
-  const { transformState } = options
+  const transformState = useTransformState()
 
   const isResizing = ref(false)
   const resizeStartPointer = ref<Point | null>(null)
-  const resizeSession = ref<
-    | ((
-        delta: Point,
-        snapFn?: (size: Size) => Size
-      ) => {
-        size: Size
-        position: Point
-      })
-    | null
-  >(null)
+  const resizeStartSize = ref<Size | null>(null)
 
   // Snap-to-grid functionality
   const { shouldSnap, applySnapToSize } = useNodeSnap()
@@ -53,11 +32,7 @@ export function useNodeResize(
   // Shift key sync for LiteGraph canvas preview
   const { trackShiftKey } = useShiftKeySync()
 
-  const startResize = (
-    event: PointerEvent,
-    handle: ResizeHandleDirection,
-    startPosition: Point
-  ) => {
+  const startResize = (event: PointerEvent) => {
     event.preventDefault()
     event.stopPropagation()
 
@@ -81,47 +56,49 @@ export function useNodeResize(
     // Capture pointer to ensure we get all move/up events
     target.setPointerCapture(event.pointerId)
 
+    // Mark as resizing to prevent drag from activating
+    layoutStore.isResizingVueNodes.value = true
     isResizing.value = true
     resizeStartPointer.value = { x: event.clientX, y: event.clientY }
-    resizeSession.value = createResizeSession({
-      startSize,
-      startPosition: { ...startPosition },
-      handle
-    })
+    resizeStartSize.value = startSize
 
     const handlePointerMove = (moveEvent: PointerEvent) => {
       if (
         !isResizing.value ||
         !resizeStartPointer.value ||
-        !resizeSession.value
-      )
+        !resizeStartSize.value
+      ) {
         return
+      }
 
-      const startPointer = resizeStartPointer.value
-      const session = resizeSession.value
+      const scale = transformState.camera.z
+      const deltaX =
+        (moveEvent.clientX - resizeStartPointer.value.x) / (scale || 1)
+      const deltaY =
+        (moveEvent.clientY - resizeStartPointer.value.y) / (scale || 1)
 
-      const delta = toCanvasDelta(
-        startPointer,
-        { x: moveEvent.clientX, y: moveEvent.clientY },
-        transformState.camera.z
-      )
+      let newSize: Size = {
+        width: resizeStartSize.value.width + deltaX,
+        height: resizeStartSize.value.height + deltaY
+      }
+
+      // Apply snap if shift is held
+      if (shouldSnap(moveEvent)) {
+        newSize = applySnapToSize(newSize)
+      }
 
       const nodeElement = target.closest('[data-node-id]')
       if (nodeElement instanceof HTMLElement) {
-        const outcome = session(
-          delta,
-          shouldSnap(moveEvent) ? applySnapToSize : undefined
-        )
-
-        resizeCallback(outcome, nodeElement)
+        resizeCallback({ size: newSize }, nodeElement)
       }
     }
 
     const handlePointerUp = (upEvent: PointerEvent) => {
       if (isResizing.value) {
         isResizing.value = false
+        layoutStore.isResizingVueNodes.value = false
         resizeStartPointer.value = null
-        resizeSession.value = null
+        resizeStartSize.value = null
 
         // Stop tracking shift key state
         stopShiftSync()

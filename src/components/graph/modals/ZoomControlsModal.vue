@@ -4,7 +4,7 @@
     class="absolute right-0 bottom-[62px] z-1300 flex w-[250px] justify-center border-0! bg-inherit!"
   >
     <div
-      class="w-4/5 rounded-lg border border-node-border bg-interface-panel-surface p-2 text-text-primary shadow-lg select-none"
+      class="w-4/5 rounded-lg border border-interface-stroke bg-interface-panel-surface p-2 text-text-primary shadow-lg select-none"
       :style="filteredMinimapStyles"
       @click.stop
     >
@@ -48,7 +48,6 @@
           class="zoomInputContainer flex items-center gap-1 rounded bg-input-surface p-2"
         >
           <InputNumber
-            ref="zoomInput"
             :default-value="canvasStore.appScalePercentage"
             :min="1"
             :max="1000"
@@ -130,7 +129,6 @@ const zoomOutCommandText = computed(() =>
 const zoomToFitCommandText = computed(() =>
   formatKeySequence(commandStore.getCommand('Comfy.Canvas.FitView'))
 )
-const zoomInput = ref<InstanceType<typeof InputNumber> | null>(null)
 const zoomInputContainer = ref<HTMLDivElement | null>(null)
 
 watch(

@@ -3,7 +3,9 @@
     <template #header>
       <SearchBox
         v-model="filters['global'].value"
-        :placeholder="$t('g.searchExtensions') + '...'"
+        :placeholder="
+          $t('g.searchPlaceholder', { subject: $t('g.extensions') })
+        "
       />
       <Message
         v-if="hasChanges"
@@ -20,17 +22,19 @@
           </li>
         </ul>
         <div class="flex justify-end">
-          <Button
-            :label="$t('g.reloadToApplyChanges')"
-            outlined
-            severity="danger"
-            @click="applyChanges"
-          />
+          <Button variant="destructive" @click="applyChanges">
+            {{ $t('g.reloadToApplyChanges') }}
+          </Button>
         </div>
       </Message>
     </template>
     <div class="mb-3 flex gap-2">
-      <SelectButton v-model="filterType" :options="filterTypes" />
+      <SelectButton
+        v-model="filterType"
+        :options="filterTypes"
+        option-label="label"
+        option-value="value"
+      />
     </div>
     <DataTable
       v-model:selection="selectedExtensions"
@@ -47,9 +51,9 @@
           {{ slotProps.data.name }}
           <Tag
             v-if="extensionStore.isCoreExtension(slotProps.data.name)"
-            value="Core"
+            :value="$t('g.core')"
           />
-          <Tag v-else value="Custom" severity="info" />
+          <Tag v-else :value="$t('g.custom')" severity="info" />
         </template>
       </Column>
       <Column
@@ -60,11 +64,12 @@
       >
         <template #header>
           <Button
-            icon="pi pi-ellipsis-h"
-            text
-            severity="secondary"
+            size="icon"
+            variant="muted-textonly"
             @click="menu?.show($event)"
-          />
+          >
+            <i class="pi pi-ellipsis-h" />
+          </Button>
           <ContextMenu ref="menu" :model="contextMenuItems" />
         </template>
         <template #body="slotProps">
@@ -81,7 +86,6 @@
 
 <script setup lang="ts">
 import { FilterMatchMode } from '@primevue/core/api'
-import Button from 'primevue/button'
 import Column from 'primevue/column'
 import ContextMenu from 'primevue/contextmenu'
 import DataTable from 'primevue/datatable'
@@ -90,15 +94,27 @@ import SelectButton from 'primevue/selectbutton'
 import Tag from 'primevue/tag'
 import ToggleSwitch from 'primevue/toggleswitch'
 import { computed, onMounted, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import SearchBox from '@/components/common/SearchBox.vue'
 import PanelTemplate from '@/components/dialog/content/setting/PanelTemplate.vue'
+import Button from '@/components/ui/button/Button.vue'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useExtensionStore } from '@/stores/extensionStore'
+import type { ComfyExtension } from '@/types/comfy'
 
-const filterTypes = ['All', 'Core', 'Custom']
-const filterType = ref('All')
-const selectedExtensions = ref<Array<any>>([])
+const { t } = useI18n()
+
+const filterTypeKeys = ['all', 'core', 'custom'] as const
+type FilterTypeKey = (typeof filterTypeKeys)[number]
+const filterTypes = computed(() =>
+  filterTypeKeys.map((key) => ({
+    label: t(`g.${key}`),
+    value: key
+  }))
+)
+const filterType = ref<FilterTypeKey>('all')
+const selectedExtensions = ref<ComfyExtension[]>([])
 
 const filters = ref({
   global: { value: '', matchMode: FilterMatchMode.CONTAINS }
@@ -112,11 +128,11 @@ const editingEnabledExtensions = ref<Record<string, boolean>>({})
 const filteredExtensions = computed(() => {
   const extensions = extensionStore.extensions
   switch (filterType.value) {
-    case 'Core':
+    case 'core':
       return extensions.filter((ext) =>
         extensionStore.isCoreExtension(ext.name)
       )
-    case 'Custom':
+    case 'custom':
       return extensions.filter(
         (ext) => !extensionStore.isCoreExtension(ext.name)
       )
@@ -190,9 +206,9 @@ const applyChanges = () => {
 }
 
 const menu = ref<InstanceType<typeof ContextMenu>>()
-const contextMenuItems = [
+const contextMenuItems = computed(() => [
   {
-    label: 'Enable Selected',
+    label: t('g.enableSelected'),
     icon: 'pi pi-check',
     command: async () => {
       selectedExtensions.value.forEach((ext) => {
@@ -204,7 +220,7 @@ const contextMenuItems = [
     }
   },
   {
-    label: 'Disable Selected',
+    label: t('g.disableSelected'),
     icon: 'pi pi-times',
     command: async () => {
       selectedExtensions.value.forEach((ext) => {
@@ -219,20 +235,20 @@ const contextMenuItems = [
     separator: true
   },
   {
-    label: 'Enable All',
+    label: t('g.enableAll'),
     icon: 'pi pi-check',
     command: enableAllExtensions
   },
   {
-    label: 'Disable All',
+    label: t('g.disableAll'),
     icon: 'pi pi-times',
     command: disableAllExtensions
   },
   {
-    label: 'Disable 3rd Party',
+    label: t('g.disableThirdParty'),
     icon: 'pi pi-times',
     command: disableThirdPartyExtensions,
     disabled: !extensionStore.hasThirdPartyExtensions
   }
-]
+])
 </script>

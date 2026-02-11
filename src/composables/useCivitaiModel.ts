@@ -36,7 +36,7 @@ interface CivitaiModelVersionResponse {
   model: CivitaiModel
   modelId: number
   files: CivitaiModelFile[]
-  [key: string]: any
+  [key: string]: unknown
 }
 
 /**

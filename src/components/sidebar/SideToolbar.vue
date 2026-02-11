@@ -1,17 +1,17 @@
 <template>
   <nav
     ref="sideToolbarRef"
+    data-testid="side-toolbar"
     class="side-tool-bar-container flex h-full flex-col items-center bg-transparent [.floating-sidebar]:-mr-2"
     :class="{
       'small-sidebar': isSmall,
-      'connected-sidebar': isConnected,
+      'connected-sidebar pointer-events-auto': isConnected,
       'floating-sidebar': !isConnected,
       'overflowing-sidebar': isOverflowing,
       'border-r border-[var(--interface-stroke)] shadow-interface': isConnected
     }"
   >
     <div
-      ref="contentMeasureRef"
       :class="
         isOverflowing
           ? 'side-tool-bar-container overflow-y-auto'
@@ -41,11 +41,16 @@
           v-if="userStore.isMultiUserServer"
           :is-small="isSmall"
         />
-        <SidebarHelpCenterIcon :is-small="isSmall" />
-        <SidebarBottomPanelToggleButton :is-small="isSmall" />
+        <SidebarHelpCenterIcon v-if="!isIntegratedTabBar" :is-small="isSmall" />
+        <SidebarBottomPanelToggleButton v-if="!isCloud" :is-small="isSmall" />
         <SidebarShortcutsToggleButton :is-small="isSmall" />
+        <SidebarSettingsButton :is-small="isSmall" />
+        <ModeToggle
+          v-if="menuItemStore.hasSeenLinear || flags.linearToggleEnabled"
+        />
       </div>
     </div>
+    <HelpCenterPopups :is-small="isSmall" />
   </nav>
 </template>
 
@@ -53,15 +58,22 @@
 import { useResizeObserver } from '@vueuse/core'
 import { debounce } from 'es-toolkit/compat'
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 
+import HelpCenterPopups from '@/components/helpcenter/HelpCenterPopups.vue'
 import ComfyMenuButton from '@/components/sidebar/ComfyMenuButton.vue'
+import ModeToggle from '@/components/sidebar/ModeToggle.vue'
 import SidebarBottomPanelToggleButton from '@/components/sidebar/SidebarBottomPanelToggleButton.vue'
+import SidebarSettingsButton from '@/components/sidebar/SidebarSettingsButton.vue'
 import SidebarShortcutsToggleButton from '@/components/sidebar/SidebarShortcutsToggleButton.vue'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import { isCloud } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCommandStore } from '@/stores/commandStore'
-import { useKeybindingStore } from '@/stores/keybindingStore'
+import { useKeybindingStore } from '@/platform/keybindings/keybindingStore'
+import { useMenuItemStore } from '@/stores/menuItemStore'
 import { useUserStore } from '@/stores/userStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import type { SidebarTabExtension } from '@/types/extensionTypes'
@@ -72,15 +84,17 @@ import SidebarIcon from './SidebarIcon.vue'
 import SidebarLogoutIcon from './SidebarLogoutIcon.vue'
 import SidebarTemplatesButton from './SidebarTemplatesButton.vue'
 
+const { t } = useI18n()
 const workspaceStore = useWorkspaceStore()
 const settingStore = useSettingStore()
 const userStore = useUserStore()
 const commandStore = useCommandStore()
 const canvasStore = useCanvasStore()
+const menuItemStore = useMenuItemStore()
 const sideToolbarRef = ref<HTMLElement>()
-const contentMeasureRef = ref<HTMLElement>()
 const topToolbarRef = ref<HTMLElement>()
 const bottomToolbarRef = ref<HTMLElement>()
+const { flags } = useFeatureFlags()
 
 const isSmall = computed(
   () => settingStore.get('Comfy.Sidebar.Size') === 'small'
@@ -89,6 +103,9 @@ const sidebarLocation = computed<'left' | 'right'>(() =>
   settingStore.get('Comfy.Sidebar.Location')
 )
 const sidebarStyle = computed(() => settingStore.get('Comfy.Sidebar.Style'))
+const isIntegratedTabBar = computed(
+  () => settingStore.get('Comfy.UI.TabBarLayout') === 'Integrated'
+)
 const isConnected = computed(
   () =>
     selectedTab.value ||
@@ -136,17 +153,17 @@ const onTabClick = async (item: SidebarTabExtension) => {
 
 const keybindingStore = useKeybindingStore()
 const getTabTooltipSuffix = (tab: SidebarTabExtension) => {
-  const keybinding = keybindingStore.getKeybindingByCommandId(
-    `Workspace.ToggleSidebarTab.${tab.id}`
-  )
-  return keybinding ? ` (${keybinding.combo.toString()})` : ''
+  const shortcut = keybindingStore
+    .getKeybindingByCommandId(`Workspace.ToggleSidebarTab.${tab.id}`)
+    ?.combo.toString()
+  return shortcut ? t('g.shortcutSuffix', { shortcut }) : ''
 }
 
 const isOverflowing = ref(false)
 const groupClasses = computed(() =>
   cn(
-    'sidebar-item-group pointer-events-auto flex flex-col items-center overflow-hidden flex-shrink-0' +
-      (isConnected.value ? '' : ' rounded-lg shadow-interface')
+    'sidebar-item-group flex flex-col items-center overflow-hidden flex-shrink-0',
+    !isConnected.value && 'rounded-lg shadow-interface pointer-events-auto'
   )
 )
 

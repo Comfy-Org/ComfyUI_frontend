@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { whenever } from '@vueuse/core'
 import { onMounted, ref } from 'vue'
 
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
@@ -9,21 +10,29 @@ import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 const props = defineProps<{
   widget: SimplifiedWidget<void>
   nodeId: string
-  readonly?: boolean
 }>()
 
 const domEl = ref<HTMLElement>()
 
-const { canvas } = useCanvasStore()
-onMounted(() => {
+const canvasStore = useCanvasStore()
+const { canvas } = canvasStore
+
+function mountWidgetElement() {
   if (!domEl.value) return
   const node = canvas?.graph?.getNodeById(props.nodeId) ?? undefined
   if (!node) return
   const widget = node.widgets?.find((w) => w.name === props.widget.name)
   if (!widget || !isDOMWidget(widget)) return
+  if (domEl.value.contains(widget.element)) return
   domEl.value.replaceChildren(widget.element)
+}
+
+onMounted(() => {
+  mountWidgetElement()
 })
+
+whenever(() => !canvasStore.linearMode, mountWidgetElement)
 </script>
 <template>
-  <div ref="domEl" />
+  <div ref="domEl" @pointerdown.stop @pointermove.stop @pointerup.stop />
 </template>

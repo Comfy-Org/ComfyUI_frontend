@@ -2,6 +2,7 @@ import { watchEffect } from 'vue'
 
 import {
   CanvasPointer,
+  LGraph,
   LGraphNode,
   LiteGraph
 } from '@/lib/litegraph/src/litegraph'
@@ -94,6 +95,12 @@ export const useLitegraphSettings = () => {
   })
 
   watchEffect(() => {
+    const liveSelection = settingStore.get('Comfy.Graph.LiveSelection')
+    const { canvas } = canvasStore
+    if (canvas) canvas.liveSelection = liveSelection
+  })
+
+  watchEffect(() => {
     CanvasPointer.doubleClickTime = settingStore.get(
       'Comfy.Pointer.DoubleClickTime'
     )
@@ -154,6 +161,12 @@ export const useLitegraphSettings = () => {
   watchEffect(() => {
     LiteGraph.saveViewportWithGraph = settingStore.get(
       'Comfy.EnableWorkflowViewRestore'
+    )
+  })
+
+  watchEffect(() => {
+    LGraph.deduplicateSubgraphIds = settingStore.get(
+      'Comfy.Graph.DeduplicateSubgraphNodeIds'
     )
   })
 }

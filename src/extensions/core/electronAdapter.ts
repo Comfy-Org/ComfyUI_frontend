@@ -1,5 +1,6 @@
 import log from 'loglevel'
 
+import { useExternalLink } from '@/composables/useExternalLink'
 import { PYTHON_MIRROR } from '@/constants/uvMirrors'
 import { t } from '@/i18n'
 import { useToastStore } from '@/platform/updates/common/toastStore'
@@ -7,21 +8,16 @@ import { useWorkflowStore } from '@/platform/workflow/management/stores/workflow
 import { app } from '@/scripts/app'
 import { useDialogService } from '@/services/dialogService'
 import { checkMirrorReachable } from '@/utils/electronMirrorCheck'
-import { electronAPI as getElectronAPI, isElectron } from '@/utils/envUtil'
-
-// Desktop documentation URLs
-const DESKTOP_DOCS = {
-  WINDOWS: 'https://docs.comfy.org/installation/desktop/windows',
-  MACOS: 'https://docs.comfy.org/installation/desktop/macos'
-} as const
-
+import { isDesktop } from '@/platform/distribution/types'
+import { electronAPI as getElectronAPI } from '@/utils/envUtil'
 ;(async () => {
-  if (!isElectron()) return
+  if (!isDesktop) return
 
   const electronAPI = getElectronAPI()
   const desktopAppVersion = await electronAPI.getElectronVersion()
   const workflowStore = useWorkflowStore()
   const toastStore = useToastStore()
+  const { staticUrls, buildDocsUrl } = useExternalLink()
 
   const onChangeRestartApp = (newValue: string, oldValue: string) => {
     // Add a delay to allow changes to take effect before restarting.
@@ -165,11 +161,13 @@ const DESKTOP_DOCS = {
         label: 'Desktop User Guide',
         icon: 'pi pi-book',
         function() {
-          const docsUrl =
-            electronAPI.getPlatform() === 'darwin'
-              ? DESKTOP_DOCS.MACOS
-              : DESKTOP_DOCS.WINDOWS
-          window.open(docsUrl, '_blank')
+          window.open(
+            buildDocsUrl('/installation/desktop', {
+              includeLocale: true,
+              platform: true
+            }),
+            '_blank'
+          )
         }
       },
       {
@@ -304,7 +302,7 @@ const DESKTOP_DOCS = {
     aboutPageBadges: [
       {
         label: 'ComfyUI_desktop v' + desktopAppVersion,
-        url: 'https://github.com/Comfy-Org/electron',
+        url: staticUrls.githubElectron,
         icon: 'pi pi-github'
       }
     ]

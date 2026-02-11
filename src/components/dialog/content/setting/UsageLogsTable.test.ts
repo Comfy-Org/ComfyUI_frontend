@@ -1,7 +1,7 @@
 import { createTestingPinia } from '@pinia/testing'
 import { mount } from '@vue/test-utils'
 import Badge from 'primevue/badge'
-import Button from 'primevue/button'
+import Button from '@/components/ui/button/Button.vue'
 import Column from 'primevue/column'
 import PrimeVue from 'primevue/config'
 import DataTable from 'primevue/datatable'
@@ -12,6 +12,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
+import type { AuditLog } from '@/services/customerEventsService'
 import { EventType } from '@/services/customerEventsService'
 
 import UsageLogsTable from './UsageLogsTable.vue'
@@ -19,7 +20,7 @@ import UsageLogsTable from './UsageLogsTable.vue'
 type ComponentInstance = InstanceType<typeof UsageLogsTable> & {
   loading: boolean
   error: string | null
-  events: any[]
+  events: Partial<AuditLog>[]
   pagination: {
     page: number
     limit: number

@@ -5,11 +5,13 @@
     @mouseleave="isHovered = false"
   >
     <video
-      ref="videoRef"
       :controls="shouldShowControls"
-      preload="none"
+      preload="metadata"
+      muted
+      loop
+      playsinline
       :poster="asset.preview_url"
-      class="relative size-full object-contain"
+      class="relative size-full object-contain transition-transform duration-300 group-hover:scale-105 group-data-[selected=true]:scale-105"
       @click.stop
       @play="onVideoPlay"
       @pause="onVideoPause"
@@ -23,20 +25,17 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
 
-import type { AssetContext, AssetMeta } from '../schemas/mediaAssetSchema'
+import type { AssetMeta } from '../schemas/mediaAssetSchema'
 
 const { asset } = defineProps<{
   asset: AssetMeta
-  context: AssetContext
 }>()
 
 const emit = defineEmits<{
-  play: [assetId: string]
   videoPlayingStateChanged: [isPlaying: boolean]
   videoControlsChanged: [showControls: boolean]
 }>()
 
-const videoRef = ref<HTMLVideoElement>()
 const isHovered = ref(false)
 const isPlaying = ref(false)
 

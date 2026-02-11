@@ -1,43 +1,63 @@
 <template>
   <div v-if="shouldShow" class="release-toast-popup">
-    <div class="release-notification-toast">
-      <!-- Header section with icon and text -->
-      <div class="toast-header">
-        <div class="toast-icon">
-          <i class="pi pi-download" />
-        </div>
-        <div class="toast-text">
-          <div class="toast-title">
-            {{ $t('releaseToast.newVersionAvailable') }}
+    <div
+      class="w-96 max-h-96 bg-base-background border border-border-default rounded-lg shadow-[1px_1px_8px_0_rgba(0,0,0,0.4)] flex flex-col"
+    >
+      <!-- Main content -->
+      <div class="p-4 flex flex-col gap-4 flex-1 min-h-0">
+        <!-- Header section with icon and text -->
+        <div class="flex items-center gap-4">
+          <div
+            class="p-3 bg-primary-background-hover rounded-lg flex items-center justify-center shrink-0"
+          >
+            <i class="icon-[lucide--rocket] w-4 h-4 text-white" />
           </div>
-          <div class="toast-version-badge">
-            {{ latestRelease?.version }}
+          <div class="flex flex-col gap-1">
+            <div
+              class="text-sm font-normal text-base-foreground leading-[1.429]"
+            >
+              {{ $t('releaseToast.newVersionAvailable') }}
+            </div>
+            <div
+              class="text-sm font-normal text-muted-foreground leading-[1.21]"
+            >
+              {{ latestRelease?.version }}
+            </div>
           </div>
         </div>
+
+        <!-- Description section -->
+        <div
+          class="pl-14 text-sm font-normal text-muted-foreground leading-[1.21] overflow-y-auto flex-1 min-h-0"
+          v-html="formattedContent"
+        ></div>
       </div>
 
-      <!-- Actions section -->
-      <div class="toast-actions-section">
-        <div class="actions-row">
-          <div class="left-actions">
-            <a
-              class="learn-more-link"
-              :href="changelogUrl"
-              target="_blank"
-              rel="noopener,noreferrer"
-              @click="handleLearnMore"
-            >
-              {{ $t('releaseToast.whatsNew') }}
-            </a>
-          </div>
-          <div class="right-actions">
-            <button class="skip-button" @click="handleSkip">
-              {{ $t('releaseToast.skip') }}
-            </button>
-            <button class="cta-button" @click="handleUpdate">
-              {{ $t('releaseToast.update') }}
-            </button>
-          </div>
+      <!-- Footer section -->
+      <div class="flex justify-between items-center px-4 pb-4">
+        <a
+          class="flex items-center gap-2 text-sm font-normal py-1 text-muted-foreground hover:text-base-foreground"
+          :href="changelogUrl"
+          target="_blank"
+          rel="noopener noreferrer"
+          @click="handleLearnMore"
+        >
+          <i class="icon-[lucide--external-link] w-4 h-4"></i>
+          {{ $t('releaseToast.whatsNew') }}
+        </a>
+        <div class="flex items-center gap-4">
+          <button
+            class="h-6 px-0 bg-transparent border-none text-sm font-normal text-muted-foreground hover:text-base-foreground cursor-pointer"
+            @click="handleSkip"
+          >
+            {{ $t('releaseToast.skip') }}
+          </button>
+          <button
+            class="h-10 px-4 bg-secondary-background hover:bg-secondary-background-hover rounded-lg border-none text-sm font-normal text-base-foreground cursor-pointer"
+            @click="handleUpdate"
+          >
+            {{ $t('releaseToast.update') }}
+          </button>
         </div>
       </div>
     </div>
@@ -45,24 +65,32 @@
 </template>
 
 <script setup lang="ts">
+import { default as DOMPurify } from 'dompurify'
 import { computed, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import { useErrorHandling } from '@/composables/useErrorHandling'
+import { useExternalLink } from '@/composables/useExternalLink'
+import { useCommandStore } from '@/stores/commandStore'
+import { isDesktop } from '@/platform/distribution/types'
 import { formatVersionAnchor } from '@/utils/formatUtil'
+import { renderMarkdownToHtml } from '@/utils/markdownRendererUtil'
 
 import type { ReleaseNote } from '../common/releaseService'
 import { useReleaseStore } from '../common/releaseStore'
 
-const { locale } = useI18n()
+const { buildDocsUrl } = useExternalLink()
+const { toastErrorHandler } = useErrorHandling()
 const releaseStore = useReleaseStore()
+const { t } = useI18n()
 
 // Local state for dismissed status
 const isDismissed = ref(false)
 
 // Get latest release from store
-const latestRelease = computed<ReleaseNote | null>(
-  () => releaseStore.recentRelease
-)
+const latestRelease = computed<ReleaseNote | null>(() => {
+  return releaseStore.recentRelease
+})
 
 // Show toast when new version available and not dismissed
 const shouldShow = computed(
@@ -71,16 +99,44 @@ const shouldShow = computed(
 
 // Generate changelog URL with version anchor (language-aware)
 const changelogUrl = computed(() => {
-  const isChineseLocale = locale.value === 'zh'
-  const baseUrl = isChineseLocale
-    ? 'https://docs.comfy.org/zh-CN/changelog'
-    : 'https://docs.comfy.org/changelog'
-
+  const changelogBaseUrl = buildDocsUrl('/changelog', { includeLocale: true })
   if (latestRelease.value?.version) {
     const versionAnchor = formatVersionAnchor(latestRelease.value.version)
-    return `${baseUrl}#${versionAnchor}`
+    return `${changelogBaseUrl}#${versionAnchor}`
   }
-  return baseUrl
+  return changelogBaseUrl
+})
+
+const formattedContent = computed(() => {
+  if (!latestRelease.value?.content) {
+    return DOMPurify.sanitize(`<p>${t('releaseToast.description')}</p>`)
+  }
+
+  try {
+    const markdown = latestRelease.value.content
+    // Remove the h1 title line and images for toast mode
+    const contentWithoutTitle = markdown.replace(/^# .+$/m, '')
+    const contentWithoutImages = contentWithoutTitle.replace(
+      /!\[.*?\]\(.*?\)/g,
+      ''
+    )
+
+    // Check if there's meaningful content left after cleanup
+    const trimmedContent = contentWithoutImages.trim()
+    if (!trimmedContent || trimmedContent.replace(/\s+/g, '') === '') {
+      return DOMPurify.sanitize(`<p>${t('releaseToast.description')}</p>`)
+    }
+
+    // renderMarkdownToHtml already sanitizes with DOMPurify, so this is safe
+    return renderMarkdownToHtml(contentWithoutImages)
+  } catch (error) {
+    console.error('Error parsing markdown:', error)
+    // Fallback to plain text with line breaks - sanitize the HTML we create
+    const fallbackContent = latestRelease.value.content.replace(/\n/g, '<br>')
+    return fallbackContent.trim()
+      ? DOMPurify.sanitize(fallbackContent)
+      : DOMPurify.sanitize(`<p>${t('releaseToast.description')}</p>`)
+  }
 })
 
 // Auto-hide timer
@@ -120,12 +176,23 @@ const handleLearnMore = () => {
   dismissToast()
 }
 
-const handleUpdate = () => {
-  window.open('https://docs.comfy.org/installation/update_comfyui', '_blank')
+const handleUpdate = async () => {
+  if (isDesktop) {
+    try {
+      await useCommandStore().execute('Comfy-Desktop.CheckForUpdates')
+      dismissToast()
+    } catch (error) {
+      toastErrorHandler(error)
+    }
+    return
+  }
+
+  window.open(
+    buildDocsUrl('/installation/update_comfyui', { includeLocale: true }),
+    '_blank'
+  )
   dismissToast()
 }
-
-// Learn more handled by anchor href
 
 // Start auto-hide when toast becomes visible
 watch(shouldShow, (isVisible) => {
@@ -143,6 +210,13 @@ onMounted(async () => {
     await releaseStore.fetchReleases()
   }
 })
+
+// Expose methods for testing
+defineExpose({
+  handleSkip,
+  handleLearnMore,
+  handleUpdate
+})
 </script>
 
 <style scoped>
@@ -155,155 +229,12 @@ onMounted(async () => {
 }
 
 /* Sidebar positioning classes applied by parent - matching help center */
-.release-toast-popup.sidebar-left {
-  left: 1rem;
-}
-
+.release-toast-popup.sidebar-left,
 .release-toast-popup.sidebar-left.small-sidebar {
   left: 1rem;
 }
 
 .release-toast-popup.sidebar-right {
   right: 1rem;
-}
-
-/* Main toast container */
-.release-notification-toast {
-  width: 448px;
-  padding: 16px 16px 8px;
-  background: #353535;
-  box-shadow: 0 4px 4px rgb(0 0 0 / 0.25);
-  border-radius: 12px;
-  outline: 1px solid #4e4e4e;
-  outline-offset: -1px;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-/* Header section */
-.toast-header {
-  display: flex;
-  gap: 16px;
-  align-items: flex-start;
-}
-
-/* Icon container */
-.toast-icon {
-  width: 42px;
-  height: 42px;
-  padding: 10px;
-  background: rgb(0 122 255 / 0.2);
-  border-radius: 8px;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-
-.toast-icon i {
-  color: #007aff;
-  font-size: 16px;
-}
-
-/* Text content */
-.toast-text {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  gap: 4px;
-}
-
-.toast-title {
-  color: white;
-  font-size: 14px;
-  font-family: 'Satoshi', sans-serif;
-  font-weight: 500;
-  line-height: 18.2px;
-}
-
-.toast-version-badge {
-  color: #a0a1a2;
-  font-size: 12px;
-  font-family: 'Satoshi', sans-serif;
-  font-weight: 500;
-  line-height: 15.6px;
-}
-
-/* Actions section */
-.toast-actions-section {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.actions-row {
-  padding-left: 58px; /* Align with text content */
-  padding-right: 0;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.left-actions {
-  display: flex;
-  align-items: center;
-}
-
-/* Learn more link - simple text link */
-.learn-more-link {
-  color: #60a5fa;
-  font-size: 12px;
-  font-family: 'Inter', sans-serif;
-  font-weight: 500;
-  line-height: 15.6px;
-  text-decoration: none;
-}
-
-.learn-more-link:hover {
-  text-decoration: underline;
-}
-
-.right-actions {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-}
-
-/* Button styles */
-.skip-button {
-  padding: 8px 16px;
-  background: #353535;
-  border-radius: 6px;
-  outline: 1px solid #4e4e4e;
-  outline-offset: -1px;
-  border: none;
-  color: #aeaeb2;
-  font-size: 12px;
-  font-family: 'Inter', sans-serif;
-  font-weight: 500;
-  cursor: pointer;
-}
-
-.skip-button:hover {
-  background: #404040;
-}
-
-.cta-button {
-  padding: 8px 16px;
-  background: white;
-  border-radius: 6px;
-  outline: 1px solid #4e4e4e;
-  outline-offset: -1px;
-  border: none;
-  color: black;
-  font-size: 12px;
-  font-family: 'Inter', sans-serif;
-  font-weight: 500;
-  cursor: pointer;
-}
-
-.cta-button:hover {
-  background: #f0f0f0;
 }
 </style>

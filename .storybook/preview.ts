@@ -9,9 +9,9 @@ import ConfirmationService from 'primevue/confirmationservice'
 import ToastService from 'primevue/toastservice'
 import Tooltip from 'primevue/tooltip'
 
-import '@/assets/css/style.css'
 import { i18n } from '@/i18n'
 import '@/lib/litegraph/public/css/litegraph.css'
+import '@/assets/css/style.css'
 
 const ComfyUIPreset = definePreset(Aura, {
   semantic: {
@@ -58,6 +58,7 @@ export const withTheme = (Story: StoryFn, context: StoryContext) => {
     document.documentElement.classList.remove('dark-theme')
     document.body.classList.remove('dark-theme')
   }
+  document.body.classList.add('[&_*]:!font-inter')
 
   return Story(context.args, context)
 }

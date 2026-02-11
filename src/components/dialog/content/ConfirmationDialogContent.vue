@@ -18,83 +18,105 @@
     <div class="flex justify-end gap-4">
       <div
         v-if="type === 'overwriteBlueprint'"
-        class="flex justify-start gap-4"
+        class="flex flex-col justify-start gap-1"
       >
-        <Checkbox
-          v-model="doNotAskAgain"
-          class="flex justify-start gap-4"
-          input-id="doNotAskAgain"
-          binary
-        />
-        <label for="doNotAskAgain" severity="secondary">{{
-          t('missingModelsDialog.doNotAskAgain')
-        }}</label>
+        <div class="flex gap-4">
+          <input
+            id="doNotAskAgain"
+            v-model="doNotAskAgain"
+            type="checkbox"
+            class="h-4 w-4 cursor-pointer"
+          />
+          <label for="doNotAskAgain">{{
+            t('missingModelsDialog.doNotAskAgain')
+          }}</label>
+        </div>
+        <i18n-t
+          v-if="doNotAskAgain"
+          keypath="missingModelsDialog.reEnableInSettings"
+          tag="span"
+          class="text-sm text-muted-foreground ml-8"
+        >
+          <template #link>
+            <Button
+              variant="textonly"
+              class="underline cursor-pointer p-0 text-sm text-muted-foreground hover:bg-transparent"
+              @click="openBlueprintOverwriteSetting"
+            >
+              {{ t('missingModelsDialog.reEnableInSettingsLink') }}
+            </Button>
+          </template>
+        </i18n-t>
       </div>
 
       <Button
-        :label="$t('g.cancel')"
-        icon="pi pi-undo"
-        severity="secondary"
+        v-if="type !== 'info'"
+        variant="secondary"
         autofocus
         @click="onCancel"
-      />
-      <Button
-        v-if="type === 'default'"
-        :label="$t('g.confirm')"
-        severity="primary"
-        icon="pi pi-check"
-        @click="onConfirm"
-      />
+      >
+        <i class="pi pi-undo" />
+        {{ $t('g.cancel') }}
+      </Button>
+      <Button v-if="type === 'default'" variant="primary" @click="onConfirm">
+        <i class="pi pi-check" />
+        {{ $t('g.confirm') }}
+      </Button>
       <Button
         v-else-if="type === 'delete'"
-        :label="$t('g.delete')"
-        severity="danger"
-        icon="pi pi-trash"
+        variant="destructive"
         @click="onConfirm"
-      />
+      >
+        <i class="pi pi-trash" />
+        {{ $t('g.delete') }}
+      </Button>
       <Button
         v-else-if="type === 'overwrite' || type === 'overwriteBlueprint'"
-        :label="$t('g.overwrite')"
-        severity="warn"
-        icon="pi pi-save"
+        variant="destructive"
         @click="onConfirm"
-      />
+      >
+        <i class="pi pi-save" />
+        {{ $t('g.overwrite') }}
+      </Button>
       <template v-else-if="type === 'dirtyClose'">
-        <Button
-          :label="$t('g.no')"
-          severity="secondary"
-          icon="pi pi-times"
-          @click="onDeny"
-        />
-        <Button :label="$t('g.save')" icon="pi pi-save" @click="onConfirm" />
+        <Button variant="secondary" @click="onDeny">
+          <i class="pi pi-times" />
+          {{ $t('g.no') }}
+        </Button>
+        <Button @click="onConfirm">
+          <i class="pi pi-save" />
+          {{ $t('g.save') }}
+        </Button>
       </template>
       <Button
         v-else-if="type === 'reinstall'"
-        :label="$t('desktopMenu.reinstall')"
-        severity="warn"
-        icon="pi pi-eraser"
+        variant="destructive"
         @click="onConfirm"
-      />
+      >
+        <i class="pi pi-eraser" />
+        {{ $t('desktopMenu.reinstall') }}
+      </Button>
+      <!-- Info - just show an OK button -->
+      <Button v-else-if="type === 'info'" variant="primary" @click="onCancel">
+        {{ $t('g.ok') }}
+      </Button>
       <!-- Invalid - just show a close button. -->
-      <Button
-        v-else
-        :label="$t('g.close')"
-        severity="primary"
-        icon="pi pi-times"
-        @click="onCancel"
-      />
+      <Button v-else variant="primary" @click="onCancel">
+        <i class="pi pi-times" />
+        {{ $t('g.close') }}
+      </Button>
     </div>
   </section>
 </template>
 
 <script setup lang="ts">
-import Button from 'primevue/button'
-import Checkbox from 'primevue/checkbox'
 import Message from 'primevue/message'
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import Button from '@/components/ui/button/Button.vue'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { useDialogService } from '@/services/dialogService'
 import type { ConfirmationDialogType } from '@/services/dialogService'
 import { useDialogStore } from '@/stores/dialogStore'
 
@@ -109,6 +131,14 @@ const props = defineProps<{
 const { t } = useI18n()
 
 const onCancel = () => useDialogStore().closeDialog()
+
+function openBlueprintOverwriteSetting() {
+  useDialogStore().closeDialog()
+  void useDialogService().showSettingsDialog(
+    undefined,
+    'Comfy.Workflow.WarnBlueprintOverwrite'
+  )
+}
 
 const doNotAskAgain = ref(false)
 

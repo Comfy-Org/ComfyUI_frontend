@@ -3,22 +3,24 @@
     class="comfy-vue-node-search-container flex w-full min-w-96 items-center justify-center"
   >
     <div
-      v-if="enableNodePreview"
-      class="comfy-vue-node-preview-container absolute top-[50px] left-[-350px]"
+      v-if="enableNodePreview && hoveredSuggestion"
+      class="comfy-vue-node-preview-container absolute top-[50px] left-[-375px] z-50 cursor-pointer"
+      @mousedown.stop="onAddNode(hoveredSuggestion!)"
     >
       <NodePreview
-        v-if="hoveredSuggestion"
         :key="hoveredSuggestion?.name || ''"
         :node-def="hoveredSuggestion"
       />
     </div>
 
     <Button
-      icon="pi pi-filter"
-      severity="secondary"
+      variant="secondary"
+      :aria-label="$t('g.addNodeFilterCondition')"
       class="filter-button z-10"
       @click="nodeSearchFilterVisible = true"
-    />
+    >
+      <i class="pi pi-filter" />
+    </Button>
     <Dialog
       v-model:visible="nodeSearchFilterVisible"
       class="min-w-96"
@@ -49,7 +51,7 @@
       auto-option-focus
       force-selection
       multiple
-      :option-label="'display_name'"
+      option-label="display_name"
       @complete="search($event.query)"
       @option-select="onAddNode($event.value)"
       @focused-option-changed="setHoverSuggestion($event)"
@@ -79,7 +81,6 @@
 
 <script setup lang="ts">
 import { debounce } from 'es-toolkit/compat'
-import Button from 'primevue/button'
 import Dialog from 'primevue/dialog'
 import { computed, nextTick, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -88,6 +89,7 @@ import NodePreview from '@/components/node/NodePreview.vue'
 import AutoCompletePlus from '@/components/primevueOverride/AutoCompletePlus.vue'
 import NodeSearchFilter from '@/components/searchbox/NodeSearchFilter.vue'
 import NodeSearchItem from '@/components/searchbox/NodeSearchItem.vue'
+import Button from '@/components/ui/button/Button.vue'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
@@ -116,7 +118,9 @@ const suggestions = ref<ComfyNodeDefImpl[]>([])
 const hoveredSuggestion = ref<ComfyNodeDefImpl | null>(null)
 const currentQuery = ref('')
 const placeholder = computed(() => {
-  return filters.length === 0 ? t('g.searchNodes') + '...' : ''
+  return filters.length === 0
+    ? t('g.searchPlaceholder', { subject: t('g.nodes') })
+    : ''
 })
 
 const nodeDefStore = useNodeDefStore()

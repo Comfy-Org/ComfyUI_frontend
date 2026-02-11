@@ -61,7 +61,7 @@ async function showTooltip(tooltip: string | null | undefined) {
 function onIdle() {
   const { canvas } = comfyApp
   const node = canvas?.node_over
-  if (!node) return
+  if (!node || node.flags?.ghost) return
 
   const ctor = node.constructor as { title_mode?: 0 | 1 | 2 | 3 }
   const nodeDef = nodeDefStore.nodeDefsByName[node.type ?? '']
@@ -138,7 +138,6 @@ useEventListener(window, 'click', hideTooltip)
   border-radius: 5px;
   box-shadow: 0 0 5px rgb(0 0 0 / 0.4);
   color: var(--input-text);
-  font-family: sans-serif;
   left: 0;
   max-width: 30vw;
   padding: 4px 8px;

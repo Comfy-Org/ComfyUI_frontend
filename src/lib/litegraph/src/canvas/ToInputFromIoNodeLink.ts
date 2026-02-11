@@ -58,11 +58,20 @@ export class ToInputFromIoNodeLink implements RenderLink {
     events: CustomEventTarget<LinkConnectorEventMap>
   ) {
     const { fromSlot, fromReroute, existingLink } = this
+    if (
+      existingLink &&
+      node.id === existingLink.target_id &&
+      node.inputs[existingLink.target_slot] === input
+    )
+      return
 
     const newLink = fromSlot.connect(input, node, fromReroute?.id)
 
     if (existingLink) {
       // Moving an existing link
+      const { input, inputNode } = existingLink.resolve(this.network)
+      if (inputNode && input)
+        this.node._disconnectNodeInput(inputNode, input, existingLink)
       events.dispatch('input-moved', this)
     } else {
       // Creating a new link

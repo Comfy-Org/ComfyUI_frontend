@@ -1,8 +1,8 @@
 <template>
   <div v-if="renderError" class="node-error p-2 text-sm text-red-500">
-    {{ $t('Node Content Error') }}
+    {{ st('nodeErrors.content', 'Node Content Error') }}
   </div>
-  <div v-else class="lg-node-content flex h-full flex-col">
+  <div v-else class="lg-node-content flex grow flex-col">
     <!-- Default slot for custom content -->
     <slot>
       <VideoPreview
@@ -26,6 +26,7 @@ import { computed, onErrorCaptured, ref } from 'vue'
 
 import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
 import { useErrorHandling } from '@/composables/useErrorHandling'
+import { st } from '@/i18n'
 
 import VideoPreview from '../VideoPreview.vue'
 import ImagePreview from './ImagePreview.vue'

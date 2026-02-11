@@ -6,22 +6,20 @@ import type {
   IStringWidget
 } from '@/lib/litegraph/src/types/widgets'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { dynamicWidgets } from '@/core/graph/widgets/dynamicWidgets'
 import { useBooleanWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useBooleanWidget'
+import { useBoundingBoxWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useBoundingBoxWidget'
 import { useChartWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useChartWidget'
 import { useColorWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useColorWidget'
 import { useComboWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useComboWidget'
-import { useFileUploadWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useFileUploadWidget'
 import { useFloatWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useFloatWidget'
 import { useGalleriaWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useGalleriaWidget'
 import { useImageCompareWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useImageCompareWidget'
 import { useImageUploadWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useImageUploadWidget'
 import { useIntWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useIntWidget'
 import { useMarkdownWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useMarkdownWidget'
-import { useMultiSelectWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useMultiSelectWidget'
-import { useSelectButtonWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useSelectButtonWidget'
 import { useStringWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useStringWidget'
 import { useTextareaWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useTextareaWidget'
-import { useTreeSelectWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useTreeSelectWidget'
 import { transformInputSpecV1ToV2 } from '@/schemas/nodeDef/migration'
 import type { InputSpec as InputSpecV2 } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import type { InputSpec } from '@/schemas/nodeDefSchema'
@@ -142,6 +140,9 @@ export function addValueControlWidgets(
     'Allows the linked widget to be changed automatically, for example randomizing the noise seed.'
   valueControl[IS_CONTROL_WIDGET] = true
   updateControlWidgetLabel(valueControl)
+  Object.defineProperty(valueControl, 'disabled', {
+    get: () => targetWidget.computedDisabled
+  })
   const widgets: [IComboWidget, ...IStringWidget[]] = [valueControl]
 
   const isCombo = isComboWidget(targetWidget)
@@ -163,6 +164,9 @@ export function addValueControlWidgets(
     updateControlWidgetLabel(comboFilter)
     comboFilter.tooltip =
       "Allows for filtering the list of values when changing the value via the control generate mode. Allows for RegEx matches in the format /abc/ to only filter to values containing 'abc'."
+    Object.defineProperty(comboFilter, 'disabled', {
+      get: () => targetWidget.computedDisabled
+    })
 
     widgets.push(comboFilter)
   }
@@ -269,8 +273,8 @@ export function addValueControlWidgets(
     }
   }
 
-  valueControl.beforeQueued = () => {
-    if (controlValueRunBefore()) {
+  valueControl.beforeQueued = ({ isPartialExecution } = {}) => {
+    if (!isPartialExecution && controlValueRunBefore()) {
       // Don't run on first execution
       if (valueControl[HAS_EXECUTED]) {
         applyWidgetControl()
@@ -279,8 +283,8 @@ export function addValueControlWidgets(
     valueControl[HAS_EXECUTED] = true
   }
 
-  valueControl.afterQueued = () => {
-    if (!controlValueRunBefore()) {
+  valueControl.afterQueued = ({ isPartialExecution } = {}) => {
+    if (!isPartialExecution && !controlValueRunBefore()) {
       applyWidgetControl()
     }
   }
@@ -288,7 +292,7 @@ export function addValueControlWidgets(
   return widgets
 }
 
-export const ComfyWidgets: Record<string, ComfyWidgetConstructor> = {
+export const ComfyWidgets = {
   INT: transformWidgetConstructorV2ToV1(useIntWidget()),
   FLOAT: transformWidgetConstructorV2ToV1(useFloatWidget()),
   BOOLEAN: transformWidgetConstructorV2ToV1(useBooleanWidget()),
@@ -296,13 +300,17 @@ export const ComfyWidgets: Record<string, ComfyWidgetConstructor> = {
   MARKDOWN: transformWidgetConstructorV2ToV1(useMarkdownWidget()),
   COMBO: transformWidgetConstructorV2ToV1(useComboWidget()),
   IMAGEUPLOAD: useImageUploadWidget(),
-  FILEUPLOAD: transformWidgetConstructorV2ToV1(useFileUploadWidget()),
   COLOR: transformWidgetConstructorV2ToV1(useColorWidget()),
   IMAGECOMPARE: transformWidgetConstructorV2ToV1(useImageCompareWidget()),
-  TREESELECT: transformWidgetConstructorV2ToV1(useTreeSelectWidget()),
-  MULTISELECT: transformWidgetConstructorV2ToV1(useMultiSelectWidget()),
+  BOUNDING_BOX: transformWidgetConstructorV2ToV1(useBoundingBoxWidget()),
   CHART: transformWidgetConstructorV2ToV1(useChartWidget()),
   GALLERIA: transformWidgetConstructorV2ToV1(useGalleriaWidget()),
-  SELECTBUTTON: transformWidgetConstructorV2ToV1(useSelectButtonWidget()),
-  TEXTAREA: transformWidgetConstructorV2ToV1(useTextareaWidget())
+  TEXTAREA: transformWidgetConstructorV2ToV1(useTextareaWidget()),
+  ...dynamicWidgets
+} as const
+
+export function isValidWidgetType(
+  key: unknown
+): key is keyof typeof ComfyWidgets {
+  return ComfyWidgets[key as keyof typeof ComfyWidgets] !== undefined
 }

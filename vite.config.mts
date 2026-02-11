@@ -10,12 +10,13 @@ import { FileSystemIconLoader } from 'unplugin-icons/loaders'
 import IconsResolver from 'unplugin-icons/resolver'
 import Icons from 'unplugin-icons/vite'
 import Components from 'unplugin-vue-components/vite'
-import { defineConfig } from 'vite'
-import type { ProxyOptions, UserConfig } from 'vite'
+import typegpuPlugin from 'unplugin-typegpu/vite'
+import { defineConfig } from 'vitest/config'
+import type { ProxyOptions } from 'vite'
 import { createHtmlPlugin } from 'vite-plugin-html'
 import vueDevTools from 'vite-plugin-vue-devtools'
 
-import { comfyAPIPlugin, generateImportMapPlugin } from './build/plugins'
+import { comfyAPIPlugin } from './build/plugins'
 
 dotenvConfig()
 
@@ -26,6 +27,16 @@ const ANALYZE_BUNDLE = process.env.ANALYZE_BUNDLE === 'true'
 const VITE_REMOTE_DEV = process.env.VITE_REMOTE_DEV === 'true'
 const DISABLE_TEMPLATES_PROXY = process.env.DISABLE_TEMPLATES_PROXY === 'true'
 const GENERATE_SOURCEMAP = process.env.GENERATE_SOURCEMAP !== 'false'
+const IS_STORYBOOK = process.env.npm_lifecycle_event === 'storybook'
+
+// Open Graph / Twitter Meta Tags Constants
+const VITE_OG_URL = 'https://cloud.comfy.org'
+const VITE_OG_TITLE =
+  'Comfy Cloud: Run ComfyUI online | Zero Setup, Powerful GPUs, Create anywhere'
+const VITE_OG_DESC =
+  'Bring your creative ideas to life with Comfy Cloud. Build and run your workflows to generate stunning images and videos instantly using powerful GPUs — all from your browser, no installation required.'
+const VITE_OG_IMAGE = `${VITE_OG_URL}/assets/images/og-image.png`
+const VITE_OG_KEYWORDS = 'ComfyUI, Comfy Cloud, ComfyUI online'
 
 // Auto-detect cloud mode from DEV_SERVER_COMFYUI_URL
 const DEV_SERVER_COMFYUI_ENV_URL = process.env.DEV_SERVER_COMFYUI_URL
@@ -40,10 +51,15 @@ const DISTRIBUTION: 'desktop' | 'localhost' | 'cloud' =
       ? 'cloud'
       : 'localhost'
 
+// Nightly builds are from main branch; RC/stable builds are from core/* branches
+// Can be overridden via IS_NIGHTLY env var for testing
+const IS_NIGHTLY = process.env.IS_NIGHTLY === 'true'
+
 // Disable Vue DevTools for production cloud distribution
 const DISABLE_VUE_PLUGINS =
   process.env.DISABLE_VUE_PLUGINS === 'true' ||
-  (DISTRIBUTION === 'cloud' && !IS_DEV)
+  (DISTRIBUTION === 'cloud' && !IS_DEV) ||
+  IS_STORYBOOK
 
 const DEV_SEVER_FALLBACK_URL =
   DISTRIBUTION === 'cloud'
@@ -122,7 +138,7 @@ const gcsRedirectProxyConfig: ProxyOptions = {
 }
 
 export default defineConfig({
-  base: '',
+  base: DISTRIBUTION === 'cloud' ? '/' : '',
   server: {
     host: VITE_REMOTE_DEV ? '0.0.0.0' : undefined,
     watch: {
@@ -131,11 +147,12 @@ export default defineConfig({
         './node_modules/**',
         './tests-ui/**',
         '.eslintcache',
+        '.oxlintrc.json',
         '*.config.{ts,mts}',
         '**/.git/**',
         '**/.github/**',
         '**/.nx/**',
-        '**/*.{test,spec}.ts',
+        '**/*.{test,spec,stories}.ts',
         '**/coverage/**',
         '**/dist/**',
         '**/playwright-report/**',
@@ -159,6 +176,8 @@ export default defineConfig({
         target: DEV_SERVER_COMFYUI_URL,
         ...cloudProxyConfig,
         bypass: (req, res, _options) => {
+          if (!res) return null
+
           // Return empty array for extensions API as these modules
           // are not on vite's dev server.
           if (req.url === '/api/extensions') {
@@ -221,43 +240,125 @@ export default defineConfig({
       ? [vueDevTools(), vue(), createHtmlPlugin({})]
       : [vue()]),
     tailwindcss(),
+    typegpuPlugin({}),
     comfyAPIPlugin(IS_DEV),
-    generateImportMapPlugin([
-      {
-        name: 'vue',
-        pattern: 'vue',
-        entry: './dist/vue.esm-browser.prod.js'
-      },
-      {
-        name: 'vue-i18n',
-        pattern: 'vue-i18n',
-        entry: './dist/vue-i18n.esm-browser.prod.js'
-      },
-      {
-        name: 'primevue',
-        pattern: /^primevue\/?.*/,
-        entry: './index.mjs',
-        recursiveDependence: true
-      },
-      {
-        name: '@primevue/themes',
-        pattern: /^@primevue\/themes\/?.*/,
-        entry: './index.mjs',
-        recursiveDependence: true
-      },
-      {
-        name: '@primevue/forms',
-        pattern: /^@primevue\/forms\/?.*/,
-        entry: './index.mjs',
-        recursiveDependence: true,
-        override: {
-          '@primeuix/forms': {
-            entry: ''
-          }
+    // Inject legacy user stylesheet links for desktop/localhost only
+    {
+      name: 'inject-user-stylesheet-links',
+      enforce: 'post',
+      transformIndexHtml(html) {
+        if (DISTRIBUTION === 'cloud') return html
+
+        return {
+          html,
+          tags: [
+            {
+              tag: 'link',
+              attrs: {
+                rel: 'stylesheet',
+                type: 'text/css',
+                href: 'user.css'
+              },
+              injectTo: 'head-prepend'
+            },
+            {
+              tag: 'link',
+              attrs: {
+                rel: 'stylesheet',
+                type: 'text/css',
+                href: 'api/userdata/user.css'
+              },
+              injectTo: 'head-prepend'
+            }
+          ]
         }
       }
-    ]),
+    },
 
+    // Twitter/Open Graph meta tags plugin (cloud distribution only)
+    {
+      name: 'inject-twitter-meta',
+      transformIndexHtml(html) {
+        if (DISTRIBUTION !== 'cloud') return html
+
+        return {
+          html,
+          tags: [
+            // Basic SEO
+            { tag: 'title', children: VITE_OG_TITLE, injectTo: 'head' },
+            {
+              tag: 'meta',
+              attrs: { name: 'description', content: VITE_OG_DESC },
+              injectTo: 'head'
+            },
+            {
+              tag: 'meta',
+              attrs: { name: 'keywords', content: VITE_OG_KEYWORDS },
+              injectTo: 'head'
+            },
+
+            // Twitter Card tags
+            {
+              tag: 'meta',
+              attrs: { name: 'twitter:card', content: 'summary_large_image' },
+              injectTo: 'head'
+            },
+            {
+              tag: 'meta',
+              attrs: { name: 'twitter:title', content: VITE_OG_TITLE },
+              injectTo: 'head'
+            },
+            {
+              tag: 'meta',
+              attrs: { name: 'twitter:description', content: VITE_OG_DESC },
+              injectTo: 'head'
+            },
+            {
+              tag: 'meta',
+              attrs: { name: 'twitter:image', content: VITE_OG_IMAGE },
+              injectTo: 'head'
+            },
+
+            // Open Graph tags (Twitter fallback & other platforms)
+            {
+              tag: 'meta',
+              attrs: { property: 'og:title', content: VITE_OG_TITLE },
+              injectTo: 'head'
+            },
+            {
+              tag: 'meta',
+              attrs: { property: 'og:description', content: VITE_OG_DESC },
+              injectTo: 'head'
+            },
+            {
+              tag: 'meta',
+              attrs: { property: 'og:image', content: VITE_OG_IMAGE },
+              injectTo: 'head'
+            },
+            {
+              tag: 'meta',
+              attrs: { property: 'og:url', content: VITE_OG_URL },
+              injectTo: 'head'
+            },
+            {
+              tag: 'meta',
+              attrs: { property: 'og:type', content: 'website' },
+              injectTo: 'head'
+            },
+            {
+              tag: 'meta',
+              attrs: { property: 'og:site_name', content: 'Comfy Cloud' },
+              injectTo: 'head'
+            },
+            {
+              tag: 'meta',
+              attrs: { property: 'og:locale', content: 'en_US' },
+              injectTo: 'head'
+            }
+          ]
+        }
+      }
+    },
     Icons({
       compiler: 'vue3',
       customCollections: {
@@ -315,80 +416,156 @@ export default defineConfig({
   ],
 
   build: {
-    minify: SHOULD_MINIFY ? 'esbuild' : false,
+    minify: SHOULD_MINIFY,
     target: 'es2022',
     sourcemap: GENERATE_SOURCEMAP,
-    rollupOptions: {
-      treeshake: true,
-      output: {
-        manualChunks: (id) => {
-          if (!id.includes('node_modules')) {
-            return undefined
-          }
+    // Exclude heavy optional vendor chunks from initial module preload
+    // These chunks are only needed when their features are used (3D, terminal, etc.)
+    modulePreload: {
+      resolveDependencies: (_filename, deps, { hostType }) => {
+        // Only filter for HTML entry points, not for dynamic imports
+        if (hostType !== 'html') return deps
 
-          if (id.includes('primevue') || id.includes('@primeuix')) {
-            return 'vendor-primevue'
-          }
-
-          if (id.includes('@tiptap')) {
-            return 'vendor-tiptap'
-          }
-
-          if (id.includes('chart.js')) {
-            return 'vendor-chart'
-          }
-
-          if (id.includes('three')) {
-            return 'vendor-three'
-          }
-
-          if (id.includes('@xterm')) {
-            return 'vendor-xterm'
-          }
-
-          if (id.includes('/vue') || id.includes('pinia')) {
-            return 'vendor-vue'
-          }
-
-          return 'vendor-other'
-        }
+        // Exclude heavy vendor chunks that should be lazy-loaded
+        // - vendor-three: 3D preview (Load3D nodes)
+        // - vendor-xterm: Terminal emulator (logs panel)
+        // - vendor-tiptap: Rich text editor (markdown widgets)
+        // - vendor-chart: Chart.js (stats/monitoring)
+        // - vendor-yjs: CRDT library (layout store, loaded on first graph)
+        const lazyVendors = [
+          'vendor-three',
+          'vendor-xterm',
+          'vendor-tiptap',
+          'vendor-chart',
+          'vendor-yjs'
+        ]
+        return deps.filter(
+          (dep) => !lazyVendors.some((vendor) => dep.includes(vendor))
+        )
       }
-    }
-  },
-
-  esbuild: {
-    minifyIdentifiers: SHOULD_MINIFY,
-    keepNames: true,
-    minifySyntax: SHOULD_MINIFY,
-    minifyWhitespace: SHOULD_MINIFY,
-    pure: SHOULD_MINIFY
-      ? [
-          'console.log',
+    },
+    rolldownOptions: {
+      treeshake: {
+        manualPureFunctions: [
+          'console.clear',
+          'console.count',
+          'console.countReset',
           'console.debug',
-          'console.info',
-          'console.trace',
           'console.dir',
           'console.dirxml',
           'console.group',
           'console.groupCollapsed',
           'console.groupEnd',
+          'console.info',
+          'console.log',
+          'console.profile',
+          'console.profileEnd',
           'console.table',
           'console.time',
           'console.timeEnd',
           'console.timeLog',
-          'console.count',
-          'console.countReset',
-          'console.profile',
-          'console.profileEnd',
-          'console.clear'
+          'console.trace'
         ]
-      : []
-  },
+      },
+      output: {
+        keepNames: true,
+        codeSplitting: {
+          groups: [
+            // Framework core - highest priority, very stable
+            {
+              name: 'vendor-vue-core',
+              test: /[\\/]node_modules[\\/](vue|@vue|pinia|vue-router)[\\/]/,
+              priority: 20
+            },
 
-  test: {
-    globals: true,
-    environment: 'happy-dom',
-    setupFiles: ['./vitest.setup.ts']
+            {
+              name: 'vendor-firebase',
+              test: /[\\/]node_modules[\\/](@?firebase|@firebase)[\\/]/,
+              priority: 15
+            },
+            {
+              name: 'vendor-sentry',
+              test: /[\\/]node_modules[\\/]@sentry[\\/]/,
+              priority: 15
+            },
+
+            // UI component libraries
+            {
+              name: 'vendor-primevue',
+              test: /[\\/]node_modules[\\/](@?primevue|@primeuix)[\\/]/,
+              priority: 15
+            },
+            {
+              name: 'vendor-reka-ui',
+              test: /[\\/]node_modules[\\/]reka-ui[\\/]/,
+              priority: 15
+            },
+
+            // Heavy optional features
+            {
+              name: 'vendor-three',
+              test: /[\\/]node_modules[\\/](three|@sparkjsdev)[\\/]/,
+              priority: 15
+            },
+            {
+              name: 'vendor-tiptap',
+              test: /[\\/]node_modules[\\/]@tiptap[\\/]/,
+              priority: 15
+            },
+            {
+              name: 'vendor-chart',
+              test: /[\\/]node_modules[\\/]chart\.js[\\/]/,
+              priority: 15
+            },
+            {
+              name: 'vendor-xterm',
+              test: /[\\/]node_modules[\\/]@xterm[\\/]/,
+              priority: 15
+            },
+            {
+              name: 'vendor-yjs',
+              test: /[\\/]node_modules[\\/](yjs|lib0)[\\/]/,
+              priority: 15
+            },
+
+            // Utilities and validation
+            {
+              name: 'vendor-vueuse',
+              test: /[\\/]node_modules[\\/]@vueuse[\\/]/,
+              priority: 12
+            },
+            {
+              name: 'vendor-i18n',
+              test: /[\\/]node_modules[\\/](vue-i18n|@intlify)[\\/]/,
+              priority: 12
+            },
+            {
+              name: 'vendor-zod',
+              test: /[\\/]node_modules[\\/](zod|zod-validation-error)[\\/]/,
+              priority: 12
+            },
+            {
+              name: 'vendor-axios',
+              test: /[\\/]node_modules[\\/]axios[\\/]/,
+              priority: 12
+            },
+            {
+              name: 'vendor-markdown',
+              test: /[\\/]node_modules[\\/](marked|dompurify)[\\/]/,
+              priority: 12
+            },
+
+            // Catch-all for remaining node_modules
+            {
+              name: 'vendor-other',
+              test: /[\\/]node_modules[\\/]/,
+              priority: 0,
+              minSize: 10000
+            }
+          ]
+        }
+      }
+    }
   },
 
   define: {
@@ -402,7 +579,8 @@ export default defineConfig({
     __ALGOLIA_APP_ID__: JSON.stringify(process.env.ALGOLIA_APP_ID || ''),
     __ALGOLIA_API_KEY__: JSON.stringify(process.env.ALGOLIA_API_KEY || ''),
     __USE_PROD_CONFIG__: process.env.USE_PROD_CONFIG === 'true',
-    __DISTRIBUTION__: JSON.stringify(DISTRIBUTION)
+    __DISTRIBUTION__: JSON.stringify(DISTRIBUTION),
+    __IS_NIGHTLY__: JSON.stringify(IS_NIGHTLY)
   },
 
   resolve: {
@@ -417,5 +595,28 @@ export default defineConfig({
   optimizeDeps: {
     exclude: ['@comfyorg/comfyui-electron-types'],
     entries: ['index.html']
+  },
+
+  test: {
+    globals: true,
+    environment: 'happy-dom',
+    setupFiles: ['./vitest.setup.ts'],
+    retry: process.env.CI ? 2 : 0,
+    include: [
+      'src/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}',
+      'packages/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}'
+    ],
+    coverage: {
+      reporter: ['text', 'json', 'html']
+    },
+    exclude: [
+      '**/node_modules/**',
+      '**/dist/**',
+      '**/cypress/**',
+      '**/.{idea,git,cache,output,temp}/**',
+      '**/{karma,rollup,webpack,vite,vitest,jest,ava,babel,nyc,cypress,tsup,build,eslint}.config.*',
+      '**/.{oxlintrc,oxfmtrc}.json'
+    ],
+    silent: 'passed-only'
   }
-}) satisfies UserConfig as UserConfig
+})

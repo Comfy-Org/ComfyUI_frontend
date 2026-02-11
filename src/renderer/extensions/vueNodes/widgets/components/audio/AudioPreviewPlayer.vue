@@ -1,17 +1,13 @@
 <template>
   <div class="relative">
     <div
-      v-if="!hidden"
-      :class="
-        cn(
-          'bg-zinc-500/10 dark-theme:bg-charcoal-600 box-border flex gap-4 items-center justify-start relative rounded-lg w-full h-16 px-4 py-0',
-          { hidden: hideWhenEmpty && !hasAudio }
-        )
-      "
+      v-if="!hideWhenEmpty || modelValue"
+      class="bg-component-node-widget-background box-border flex gap-4 items-center justify-start relative rounded-lg w-full h-16 px-4 py-0"
     >
       <!-- Hidden audio element -->
       <audio
         ref="audioRef"
+        :src="modelValue"
         @loadedmetadata="handleLoadedMetadata"
         @timeupdate="handleTimeUpdate"
         @ended="handleEnded"
@@ -20,22 +16,19 @@
       <!-- Left Actions -->
       <div class="relative flex shrink-0 items-center justify-start gap-2">
         <!-- Play/Pause Button -->
-        <div
-          role="button"
-          :tabindex="0"
-          aria-label="Play/Pause"
-          class="flex size-6 cursor-pointer items-center justify-center rounded hover:bg-black/10 dark-theme:hover:bg-white/10"
+        <Button
+          variant="textonly"
+          size="unset"
+          :aria-label="$t('g.playPause')"
+          class="size-6 rounded"
           @click="togglePlayPause"
         >
           <i
             v-if="!isPlaying"
-            class="icon-[lucide--play] size-4 text-smoke-600 dark-theme:text-smoke-800"
+            class="text-secondary icon-[lucide--play] size-4"
           />
-          <i
-            v-else
-            class="icon-[lucide--pause] size-4 text-smoke-600 dark-theme:text-smoke-800"
-          />
-        </div>
+          <i v-else class="text-secondary icon-[lucide--pause] size-4" />
+        </Button>
 
         <!-- Time Display -->
         <div class="text-sm font-normal text-nowrap text-base-foreground">
@@ -44,11 +37,9 @@
       </div>
 
       <!-- Progress Bar -->
-      <div
-        class="relative h-0.5 flex-1 rounded-full bg-smoke-300 dark-theme:bg-ash-800"
-      >
+      <div class="relative h-0.5 flex-1 rounded-full bg-interface-stroke">
         <div
-          class="absolute top-0 left-0 h-full rounded-full bg-smoke-600 transition-all dark-theme:bg-white/50"
+          class="absolute top-0 left-0 h-full rounded-full bg-button-icon transition-all"
           :style="{ width: `${progressPercentage}%` }"
         />
         <input
@@ -66,41 +57,48 @@
       <!-- Right Actions -->
       <div class="relative flex shrink-0 items-center justify-start gap-2">
         <!-- Volume Button -->
-        <div
-          role="button"
-          :tabindex="0"
-          aria-label="Volume"
-          class="flex size-6 cursor-pointer items-center justify-center rounded hover:bg-black/10 dark-theme:hover:bg-white/10"
+        <Button
+          variant="textonly"
+          size="unset"
+          :aria-label="$t('g.volume')"
+          class="size-6 rounded"
           @click="toggleMute"
         >
           <i
             v-if="showVolumeTwo"
-            class="icon-[lucide--volume-2] size-4 text-smoke-600 dark-theme:text-smoke-800"
+            class="text-secondary icon-[lucide--volume-2] size-4"
           />
           <i
             v-else-if="showVolumeOne"
-            class="icon-[lucide--volume-1] size-4 text-smoke-600 dark-theme:text-smoke-800"
+            class="text-secondary icon-[lucide--volume-1] size-4"
           />
-          <i
-            v-else
-            class="icon-[lucide--volume-x] size-4 text-smoke-600 dark-theme:text-smoke-800"
-          />
-        </div>
+          <i v-else class="text-secondary icon-[lucide--volume-x] size-4" />
+        </Button>
+
+        <!-- Download Button -->
+        <Button
+          v-if="modelValue"
+          size="icon-sm"
+          variant="textonly"
+          :aria-label="$t('g.downloadAudio')"
+          :title="$t('g.downloadAudio')"
+          class="size-6 hover:bg-interface-menu-component-surface-hovered"
+          @click="handleDownload"
+        >
+          <i class="text-secondary icon-[lucide--download] size-4" />
+        </Button>
 
         <!-- Options Button -->
-        <div
+        <Button
           v-if="showOptionsButton"
-          ref="optionsButtonRef"
-          role="button"
-          :tabindex="0"
-          aria-label="More Options"
-          class="flex size-6 cursor-pointer items-center justify-center rounded hover:bg-black/10 dark-theme:hover:bg-white/10"
+          variant="textonly"
+          size="unset"
+          :aria-label="$t('g.moreOptions')"
+          class="size-6 rounded"
           @click="toggleOptionsMenu"
         >
-          <i
-            class="icon-[lucide--more-vertical] size-4 text-smoke-600 dark-theme:text-smoke-800"
-          />
-        </div>
+          <i class="text-secondary icon-[lucide--more-vertical] size-4" />
+        </Button>
       </div>
 
       <!-- Options Menu -->
@@ -109,8 +107,10 @@
         :model="menuItems"
         popup
         class="audio-player-menu"
-        pt:root:class="!bg-white dark-theme:!bg-charcoal-800 !border-sand-100 dark-theme:!border-charcoal-600"
-        pt:submenu:class="!bg-white dark-theme:!bg-charcoal-800"
+        :pt:root:class="
+          cn('bg-component-node-widget-background border-component-node-border')
+        "
+        :pt:submenu:class="cn('bg-component-node-widget-background')"
       >
         <template #item="{ item }">
           <div v-if="item.key === 'volume'" class="w-48 px-4 py-2">
@@ -140,37 +140,31 @@
         </template>
       </TieredMenu>
     </div>
-    <LODFallback />
   </div>
 </template>
 
 <script setup lang="ts">
 import Slider from 'primevue/slider'
 import TieredMenu from 'primevue/tieredmenu'
-import { computed, nextTick, onUnmounted, ref, watch } from 'vue'
+import { computed, ref, useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { whenever } from '@vueuse/core'
 
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import LODFallback from '@/renderer/extensions/vueNodes/components/LODFallback.vue'
-import { api } from '@/scripts/api'
-import { app } from '@/scripts/app'
-import { useNodeOutputStore } from '@/stores/imagePreviewStore'
-import { getLocatorIdFromNodeData } from '@/utils/graphTraversalUtil'
-import { isOutputNode } from '@/utils/nodeFilterUtil'
+import { useToast } from 'primevue/usetoast'
+
+import { downloadFile } from '@/base/common/downloadUtil'
+import Button from '@/components/ui/button/Button.vue'
 import { cn } from '@/utils/tailwindUtil'
 
-import { formatTime, getResourceURL } from '../../utils/audioUtils'
+import { formatTime } from '../../utils/audioUtils'
 
 const { t } = useI18n()
+const toast = useToast()
 
 const props = withDefaults(
   defineProps<{
-    readonly?: boolean
     hideWhenEmpty?: boolean
     showOptionsButton?: boolean
-    modelValue?: string
-    nodeId?: string
-    audioUrl?: string
   }>(),
   {
     hideWhenEmpty: true
@@ -178,15 +172,13 @@ const props = withDefaults(
 )
 
 // Refs
-const audioRef = ref<HTMLAudioElement>()
+const audioRef = useTemplateRef('audioRef')
 const optionsMenu = ref()
-const optionsButtonRef = ref<HTMLElement>()
 const isPlaying = ref(false)
 const isMuted = ref(false)
 const volume = ref(1)
 const currentTime = ref(0)
 const duration = ref(0)
-const hasAudio = ref(false)
 const playbackRate = ref(1)
 
 // Computed
@@ -194,60 +186,10 @@ const progressPercentage = computed(() => {
   if (!duration.value || duration.value === 0) return 0
   return (currentTime.value / duration.value) * 100
 })
+const modelValue = defineModel<string>()
 
 const showVolumeTwo = computed(() => !isMuted.value && volume.value > 0.5)
 const showVolumeOne = computed(() => isMuted.value && volume.value > 0)
-
-const litegraphNode = computed(() => {
-  if (!props.nodeId || !app.rootGraph) return null
-  return app.rootGraph.getNodeById(props.nodeId) as LGraphNode | null
-})
-
-const hidden = computed(() => {
-  if (!litegraphNode.value) return false
-  // dont show if its a LoadAudio and we have nodeId
-  const isLoadAudio =
-    litegraphNode.value.constructor?.comfyClass === 'LoadAudio'
-  return isLoadAudio && !!props.nodeId
-})
-
-// Check if this is an output node
-const isOutputNodeRef = computed(() => {
-  const node = litegraphNode.value
-  return !!node && isOutputNode(node)
-})
-
-const nodeLocatorId = computed(() => {
-  const node = litegraphNode.value
-  if (!node) return null
-  return getLocatorIdFromNodeData(node)
-})
-
-const nodeOutputStore = useNodeOutputStore()
-
-// Computed audio URL from node output (for output nodes)
-const audioUrlFromOutput = computed(() => {
-  if (!isOutputNodeRef.value || !nodeLocatorId.value) return ''
-
-  const nodeOutput = nodeOutputStore.nodeOutputs[nodeLocatorId.value]
-  if (!nodeOutput?.audio || nodeOutput.audio.length === 0) return ''
-
-  const audio = nodeOutput.audio[0]
-  if (!audio.filename) return ''
-
-  return api.apiURL(
-    getResourceURL(
-      audio.subfolder || '',
-      audio.filename,
-      audio.type || 'output'
-    )
-  )
-})
-
-// Combined audio URL (output takes precedence for output nodes)
-const finalAudioUrl = computed(() => {
-  return audioUrlFromOutput.value || props.audioUrl || ''
-})
 
 // Playback controls
 const togglePlayPause = () => {
@@ -261,6 +203,20 @@ const togglePlayPause = () => {
     void audioRef.value.play()
   }
   isPlaying.value = !isPlaying.value
+}
+
+const handleDownload = () => {
+  if (!modelValue.value) return
+  try {
+    downloadFile(modelValue.value)
+  } catch {
+    toast.add({
+      severity: 'error',
+      summary: t('g.error'),
+      detail: t('g.failedToDownloadFile'),
+      life: 3000
+    })
+  }
 }
 
 const toggleMute = () => {
@@ -349,36 +305,15 @@ const menuItems = computed(() => [
   }
 ])
 
-// Load audio from URL
-const loadAudioFromUrl = (url: string) => {
-  if (!audioRef.value) return
-  isPlaying.value = false
-  audioRef.value.pause()
-  audioRef.value.src = url
-  void audioRef.value.load()
-  hasAudio.value = !!url
-}
-
-// Watch for finalAudioUrl changes
-watch(
-  finalAudioUrl,
-  (newUrl) => {
-    if (newUrl) {
-      void nextTick(() => {
-        loadAudioFromUrl(newUrl)
-      })
-    }
+whenever(
+  modelValue,
+  () => {
+    isPlaying.value = false
+    audioRef.value?.pause()
+    void audioRef.value?.load()
   },
   { immediate: true }
 )
-
-// Cleanup
-onUnmounted(() => {
-  if (audioRef.value) {
-    audioRef.value.pause()
-    audioRef.value.src = ''
-  }
-})
 </script>
 
 <style scoped>

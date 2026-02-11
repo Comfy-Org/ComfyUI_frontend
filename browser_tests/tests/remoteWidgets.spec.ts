@@ -3,7 +3,7 @@ import { expect } from '@playwright/test'
 import type { ComfyPage } from '../fixtures/ComfyPage'
 import { comfyPageFixture as test } from '../fixtures/ComfyPage'
 
-test.describe('Remote COMBO Widget', () => {
+test.describe('Remote COMBO Widget', { tag: '@widget' }, () => {
   const mockOptions = ['d', 'c', 'b', 'a']
 
   const addRemoteWidgetNode = async (
@@ -26,40 +26,38 @@ test.describe('Remote COMBO Widget', () => {
     nodeName: string
   ): Promise<string[] | undefined> => {
     return await comfyPage.page.evaluate((name) => {
-      const node = window['app'].graph.nodes.find((node) => node.title === name)
-      return node.widgets[0].options.values
+      const node = window.app!.graph!.nodes.find((node) => node.title === name)
+      return node!.widgets![0].options.values as string[] | undefined
     }, nodeName)
   }
 
   const getWidgetValue = async (comfyPage: ComfyPage, nodeName: string) => {
     return await comfyPage.page.evaluate((name) => {
-      const node = window['app'].graph.nodes.find((node) => node.title === name)
-      return node.widgets[0].value
+      const node = window.app!.graph!.nodes.find((node) => node.title === name)
+      return node!.widgets![0].value
     }, nodeName)
   }
 
   const clickRefreshButton = (comfyPage: ComfyPage, nodeName: string) => {
     return comfyPage.page.evaluate((name) => {
-      const node = window['app'].graph.nodes.find((node) => node.title === name)
-      const buttonWidget = node.widgets.find((w) => w.name === 'refresh')
-      return buttonWidget?.callback()
+      const node = window.app!.graph!.nodes.find((node) => node.title === name)
+      const buttonWidget = node!.widgets!.find((w) => w.name === 'refresh')
+      return buttonWidget?.callback?.(buttonWidget.value)
     }, nodeName)
   }
 
   const waitForWidgetUpdate = async (comfyPage: ComfyPage) => {
     // Force re-render to trigger first access of widget's options
     await comfyPage.page.mouse.click(400, 300)
-    // Wait for the widget to actually update instead of fixed timeout
-    await comfyPage.page.waitForTimeout(300)
   }
 
   test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.setSetting('Comfy.UseNewMenu', 'Top')
+    await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
   })
 
   test.describe('Loading options', () => {
     test.beforeEach(async ({ comfyPage }) => {
-      await comfyPage.setSetting('Comfy.UseNewMenu', 'Top')
+      await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
       await comfyPage.page.route(
         '**/api/models/checkpoints**',
         async (route, request) => {
@@ -91,11 +89,10 @@ test.describe('Remote COMBO Widget', () => {
       comfyPage
     }) => {
       const nodeName = 'Remote Widget Node'
-      await comfyPage.loadWorkflow('inputs/remote_widget')
-      await comfyPage.page.waitForTimeout(512)
+      await comfyPage.workflow.loadWorkflow('inputs/remote_widget')
 
       const node = await comfyPage.page.evaluate((name) => {
-        return window['app'].graph.nodes.find((node) => node.title === name)
+        return window.app!.graph!.nodes.find((node) => node.title === name)
       }, nodeName)
       expect(node).toBeDefined()
 
@@ -160,8 +157,6 @@ test.describe('Remote COMBO Widget', () => {
         }
       })
 
-      // Wait a reasonable time to ensure no request is made
-      await comfyPage.page.waitForTimeout(512)
       expect(requestWasMade).toBe(false)
     })
 
@@ -181,7 +176,7 @@ test.describe('Remote COMBO Widget', () => {
     test('refresh button is visible in selection toolbar when node is selected', async ({
       comfyPage
     }) => {
-      await comfyPage.setSetting('Comfy.Canvas.SelectionToolbox', true)
+      await comfyPage.settings.setSetting('Comfy.Canvas.SelectionToolbox', true)
 
       const nodeName = 'Remote Widget Node'
       await addRemoteWidgetNode(comfyPage, nodeName)
@@ -201,7 +196,7 @@ test.describe('Remote COMBO Widget', () => {
       // Fulfill each request with a unique timestamp
       await comfyPage.page.route(
         '**/api/models/checkpoints**',
-        async (route, request) => {
+        async (route, _request) => {
           await route.fulfill({
             body: JSON.stringify([Date.now()]),
             status: 200
@@ -214,18 +209,15 @@ test.describe('Remote COMBO Widget', () => {
       await waitForWidgetUpdate(comfyPage)
       const initialOptions = await getWidgetOptions(comfyPage, nodeName)
 
-      // Wait for the refresh (TTL) to expire with extra buffer for processing
-      // TTL is 300ms, wait 600ms to ensure it has expired
-      await comfyPage.page.waitForTimeout(600)
-
       // Click on the canvas to trigger widget refresh
       await comfyPage.page.mouse.click(400, 300)
 
-      // Wait a bit for the refresh to complete
-      await comfyPage.page.waitForTimeout(100)
-
-      const refreshedOptions = await getWidgetOptions(comfyPage, nodeName)
-      expect(refreshedOptions).not.toEqual(initialOptions)
+      await expect(async () => {
+        const refreshedOptions = await getWidgetOptions(comfyPage, nodeName)
+        expect(refreshedOptions).not.toEqual(initialOptions)
+      }).toPass({
+        timeout: 2_000
+      })
     })
 
     test('does not refresh when TTL is not set', async ({ comfyPage }) => {
@@ -265,13 +257,11 @@ test.describe('Remote COMBO Widget', () => {
       await addRemoteWidgetNode(comfyPage, nodeName)
       await waitForWidgetUpdate(comfyPage)
 
-      // Wait for timeout and backoff, then force re-render, repeat
-      const requestTimeout = 512
-      await comfyPage.page.waitForTimeout(requestTimeout)
-      await waitForWidgetUpdate(comfyPage)
-      await comfyPage.page.waitForTimeout(requestTimeout * 2)
-      await waitForWidgetUpdate(comfyPage)
-      await comfyPage.page.waitForTimeout(requestTimeout * 3)
+      // Wait for exponential backoff retries to accumulate timestamps
+      await expect(async () => {
+        await waitForWidgetUpdate(comfyPage)
+        expect(timestamps.length).toBeGreaterThanOrEqual(3)
+      }).toPass({ timeout: 10000, intervals: [500, 1000, 1500] })
 
       // Verify exponential backoff between retries
       const intervals = timestamps.slice(1).map((t, i) => t - timestamps[i])
@@ -331,11 +321,14 @@ test.describe('Remote COMBO Widget', () => {
 
       // Click refresh button
       await clickRefreshButton(comfyPage, nodeName)
-      await comfyPage.page.waitForTimeout(200)
 
       // Verify the selected value of the widget is the first option in the refreshed list
-      const refreshedValue = await getWidgetValue(comfyPage, nodeName)
-      expect(refreshedValue).toEqual('new first option')
+      await expect(async () => {
+        const refreshedValue = await getWidgetValue(comfyPage, nodeName)
+        expect(refreshedValue).toEqual('new first option')
+      }).toPass({
+        timeout: 2_000
+      })
     })
   })
 

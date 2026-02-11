@@ -1,46 +1,58 @@
 <template>
   <div
     v-if="imageUrls.length > 0"
-    class="image-preview group relative flex size-full min-h-16 min-w-16 flex-col px-2"
-    tabindex="0"
-    role="region"
-    :aria-label="$t('g.imagePreview')"
-    @mouseenter="handleMouseEnter"
-    @mouseleave="handleMouseLeave"
+    class="image-preview group relative flex size-full min-h-55 min-w-16 flex-col px-2 justify-center"
     @keydown="handleKeyDown"
   >
     <!-- Image Wrapper -->
     <div
-      class="relative h-88 w-full grow overflow-hidden rounded-[5px] bg-node-component-surface"
+      ref="imageWrapperEl"
+      class="h-full w-full overflow-hidden rounded-[5px] bg-muted-background relative"
+      tabindex="0"
+      role="img"
+      :aria-label="$t('g.imagePreview')"
+      :aria-busy="showLoader"
+      @mouseenter="handleMouseEnter"
+      @mouseleave="handleMouseLeave"
+      @focusin="handleFocusIn"
+      @focusout="handleFocusOut"
     >
       <!-- Error State -->
       <div
         v-if="imageError"
-        class="flex size-full flex-col items-center justify-center bg-smoke-800/50 text-center text-white"
+        role="alert"
+        class="flex size-full flex-col items-center justify-center bg-muted-background text-center text-base-foreground py-8"
       >
-        <i class="mb-2 icon-[lucide--image-off] h-12 w-12 text-smoke-400" />
-        <p class="text-sm text-smoke-300">{{ $t('g.imageFailedToLoad') }}</p>
-        <p class="mt-1 text-xs text-smoke-400">
+        <i
+          class="mb-2 icon-[lucide--image-off] h-12 w-12 text-base-foreground"
+        />
+        <p class="text-sm text-base-foreground">
+          {{ $t('g.imageFailedToLoad') }}
+        </p>
+        <p class="mt-1 text-xs text-base-foreground">
           {{ getImageFilename(currentImageUrl) }}
         </p>
       </div>
-
       <!-- Loading State -->
-      <Skeleton v-else-if="isLoading" class="size-full" border-radius="5px" />
-
+      <div v-if="showLoader && !imageError" class="size-full">
+        <Skeleton border-radius="5px" width="100%" height="100%" />
+      </div>
       <!-- Main Image -->
       <img
-        v-else
+        v-if="!imageError"
         ref="currentImageEl"
         :src="currentImageUrl"
         :alt="imageAltText"
-        class="block size-full object-contain pointer-events-none"
+        class="block size-full object-contain pointer-events-none contain-size"
         @load="handleImageLoad"
         @error="handleImageError"
       />
 
-      <!-- Floating Action Buttons (appear on hover) -->
-      <div v-if="isHovered" class="actions absolute top-2 right-2 flex gap-2.5">
+      <!-- Floating Action Buttons (appear on hover and focus) -->
+      <div
+        v-if="isHovered || isFocused"
+        class="actions absolute top-2 right-2 flex gap-2.5"
+      >
         <!-- Mask/Edit Button -->
         <button
           v-if="!hasMultipleImages"
@@ -72,46 +84,44 @@
           <i class="icon-[lucide--x] h-4 w-4" />
         </button>
       </div>
-
-      <!-- Multiple Images Navigation -->
-      <div
-        v-if="hasMultipleImages"
-        class="absolute right-2 bottom-2 left-2 flex justify-center gap-1"
-      >
-        <button
-          v-for="(_, index) in imageUrls"
-          :key="index"
-          :class="getNavigationDotClass(index)"
-          :aria-label="
-            $t('g.viewImageOfTotal', {
-              index: index + 1,
-              total: imageUrls.length
-            })
-          "
-          @click="setCurrentIndex(index)"
-        />
-      </div>
     </div>
 
-    <div class="relative">
-      <!-- Image Dimensions -->
-      <div class="mt-2 text-center text-xs text-white">
-        <span v-if="imageError" class="text-red-400">
-          {{ $t('g.errorLoadingImage') }}
-        </span>
-        <span v-else-if="isLoading" class="text-smoke-400">
-          {{ $t('g.loading') }}...
-        </span>
-        <span v-else>
-          {{ actualDimensions || $t('g.calculatingDimensions') }}
-        </span>
-      </div>
-      <LODFallback />
+    <!-- Image Dimensions -->
+    <div class="pt-2 text-center text-xs text-base-foreground">
+      <span v-if="imageError" class="text-red-400">
+        {{ $t('g.errorLoadingImage') }}
+      </span>
+      <span v-else-if="showLoader" class="text-base-foreground">
+        {{ $t('g.loading') }}...
+      </span>
+      <span v-else>
+        {{ actualDimensions || $t('g.calculatingDimensions') }}
+      </span>
+    </div>
+    <!-- Multiple Images Navigation -->
+    <div
+      v-if="hasMultipleImages"
+      class="flex flex-wrap justify-center gap-1 pt-4"
+    >
+      <button
+        v-for="(_, index) in imageUrls"
+        :key="index"
+        :class="getNavigationDotClass(index)"
+        :aria-current="index === currentIndex ? 'true' : undefined"
+        :aria-label="
+          $t('g.viewImageOfTotal', {
+            index: index + 1,
+            total: imageUrls.length
+          })
+        "
+        @click="setCurrentIndex(index)"
+      />
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
+import { useTimeoutFn } from '@vueuse/core'
 import { useToast } from 'primevue'
 import Skeleton from 'primevue/skeleton'
 import { computed, ref, watch } from 'vue'
@@ -121,8 +131,6 @@ import { downloadFile } from '@/base/common/downloadUtil'
 import { app } from '@/scripts/app'
 import { useCommandStore } from '@/stores/commandStore'
 import { useNodeOutputStore } from '@/stores/imagePreviewStore'
-
-import LODFallback from './LODFallback.vue'
 
 interface ImagePreviewProps {
   /** Array of image URLs to display */
@@ -143,11 +151,22 @@ const actionButtonClass =
 // Component state
 const currentIndex = ref(0)
 const isHovered = ref(false)
+const isFocused = ref(false)
 const actualDimensions = ref<string | null>(null)
 const imageError = ref(false)
-const isLoading = ref(false)
+const showLoader = ref(false)
 
 const currentImageEl = ref<HTMLImageElement>()
+const imageWrapperEl = ref<HTMLDivElement>()
+
+const { start: startDelayedLoader, stop: stopDelayedLoader } = useTimeoutFn(
+  () => {
+    showLoader.value = true
+  },
+  250,
+  // Make sure it doesnt run on component mount
+  { immediate: false }
+)
 
 // Computed values
 const currentImageUrl = computed(() => props.imageUrls[currentIndex.value])
@@ -157,7 +176,15 @@ const imageAltText = computed(() => `Node output ${currentIndex.value + 1}`)
 // Watch for URL changes and reset state
 watch(
   () => props.imageUrls,
-  (newUrls) => {
+  (newUrls, oldUrls) => {
+    // Only reset state if URLs actually changed (not just array reference)
+    const urlsChanged =
+      !oldUrls ||
+      newUrls.length !== oldUrls.length ||
+      newUrls.some((url, i) => url !== oldUrls[i])
+
+    if (!urlsChanged) return
+
     // Reset current index if it's out of bounds
     if (currentIndex.value >= newUrls.length) {
       currentIndex.value = 0
@@ -165,17 +192,19 @@ watch(
 
     // Reset loading and error states when URLs change
     actualDimensions.value = null
+
     imageError.value = false
-    isLoading.value = false
+    if (newUrls.length > 0) startDelayedLoader()
   },
-  { deep: true }
+  { immediate: true }
 )
 
 // Event handlers
 const handleImageLoad = (event: Event) => {
   if (!event.target || !(event.target instanceof HTMLImageElement)) return
   const img = event.target
-  isLoading.value = false
+  stopDelayedLoader()
+  showLoader.value = false
   imageError.value = false
   if (img.naturalWidth && img.naturalHeight) {
     actualDimensions.value = `${img.naturalWidth} x ${img.naturalHeight}`
@@ -183,7 +212,8 @@ const handleImageLoad = (event: Event) => {
 }
 
 const handleImageError = () => {
-  isLoading.value = false
+  stopDelayedLoader()
+  showLoader.value = false
   imageError.value = true
   actualDimensions.value = null
 }
@@ -223,10 +253,10 @@ const handleRemove = () => {
 }
 
 const setCurrentIndex = (index: number) => {
+  if (currentIndex.value === index) return
   if (index >= 0 && index < props.imageUrls.length) {
     currentIndex.value = index
-    actualDimensions.value = null
-    isLoading.value = false
+    startDelayedLoader()
     imageError.value = false
   }
 }
@@ -239,10 +269,23 @@ const handleMouseLeave = () => {
   isHovered.value = false
 }
 
+const handleFocusIn = () => {
+  isFocused.value = true
+}
+
+const handleFocusOut = (event: FocusEvent) => {
+  // Only unfocus if focus is leaving the wrapper entirely
+  if (!imageWrapperEl.value?.contains(event.relatedTarget as Node)) {
+    isFocused.value = false
+  }
+}
+
 const getNavigationDotClass = (index: number) => {
   return [
-    'w-2 h-2 rounded-full transition-all duration-200 border-0 cursor-pointer',
-    index === currentIndex.value ? 'bg-white' : 'bg-white/50 hover:bg-white/80'
+    'w-2 h-2 rounded-full transition-all duration-200 border-0 cursor-pointer p-0',
+    index === currentIndex.value
+      ? 'bg-base-foreground'
+      : 'bg-base-foreground/50 hover:bg-base-foreground/80'
   ]
 }
 

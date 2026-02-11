@@ -1,8 +1,6 @@
 <template>
   <div class="flex flex-col gap-1">
-    <div
-      class="max-h-[48rem] rounded border border-smoke-300 p-4 dark-theme:border-smoke-600"
-    >
+    <div class="max-h-[48rem] rounded border p-4">
       <Chart
         :type="chartType"
         :data="chartData"
@@ -18,10 +16,12 @@ import type { ChartData } from 'chart.js'
 import Chart from 'primevue/chart'
 import { computed } from 'vue'
 
+import type { IWidgetOptions } from '@/lib/litegraph/src/types/widgets'
 import type { ChartInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 
-type ChartWidgetOptions = NonNullable<ChartInputSpec['options']>
+type ChartWidgetOptions = NonNullable<ChartInputSpec['options']> &
+  IWidgetOptions
 
 const value = defineModel<ChartData>({ required: true })
 

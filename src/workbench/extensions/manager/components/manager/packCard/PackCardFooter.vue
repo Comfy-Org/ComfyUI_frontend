@@ -6,6 +6,7 @@
       <i class="pi pi-download text-muted"></i>
       <span>{{ formattedDownloads }}</span>
     </div>
+    <div v-else></div>
     <PackInstallButton
       v-if="!isInstalled"
       :node-packs="[nodePack]"
@@ -13,11 +14,7 @@
       :has-conflict="hasConflicts"
       :conflict-info="conflictInfo"
     />
-    <PackEnableToggle
-      v-else
-      :has-conflict="hasConflicts"
-      :node-pack="nodePack"
-    />
+    <PackEnableToggle v-else :node-pack="nodePack" />
   </div>
 </template>
 

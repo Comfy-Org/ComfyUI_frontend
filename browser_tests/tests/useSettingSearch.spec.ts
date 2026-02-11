@@ -1,27 +1,37 @@
 import { expect } from '@playwright/test'
 
+import type { Settings } from '../../src/schemas/apiSchema'
 import { comfyPageFixture as test } from '../fixtures/ComfyPage'
 
+/**
+ * Type helper for test settings with arbitrary IDs.
+ * Extensions can register settings with any ID, but SettingParams.id
+ * is typed as keyof Settings for autocomplete.
+ */
+type TestSettingId = keyof Settings
+
 test.beforeEach(async ({ comfyPage }) => {
-  await comfyPage.setSetting('Comfy.UseNewMenu', 'Disabled')
+  await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Disabled')
 })
 
-test.describe('Settings Search functionality', () => {
+test.describe('Settings Search functionality', { tag: '@settings' }, () => {
   test.beforeEach(async ({ comfyPage }) => {
     // Register test settings to verify hidden/deprecated filtering
     await comfyPage.page.evaluate(() => {
-      window['app'].registerExtension({
+      window.app!.registerExtension({
         name: 'TestSettingsExtension',
         settings: [
           {
-            id: 'TestHiddenSetting',
+            // Extensions can register arbitrary setting IDs
+            id: 'TestHiddenSetting' as TestSettingId,
             name: 'Test Hidden Setting',
             type: 'hidden',
             defaultValue: 'hidden_value',
             category: ['Test', 'Hidden']
           },
           {
-            id: 'TestDeprecatedSetting',
+            // Extensions can register arbitrary setting IDs
+            id: 'TestDeprecatedSetting' as TestSettingId,
             name: 'Test Deprecated Setting',
             type: 'text',
             defaultValue: 'deprecated_value',
@@ -29,7 +39,8 @@ test.describe('Settings Search functionality', () => {
             category: ['Test', 'Deprecated']
           },
           {
-            id: 'TestVisibleSetting',
+            // Extensions can register arbitrary setting IDs
+            id: 'TestVisibleSetting' as TestSettingId,
             name: 'Test Visible Setting',
             type: 'text',
             defaultValue: 'visible_value',
@@ -109,19 +120,14 @@ test.describe('Settings Search functionality', () => {
     const settingsDialog = comfyPage.page.locator('.settings-container')
     await expect(settingsDialog).toBeVisible()
 
-    // Get categories and click on different ones
-    const categories = comfyPage.page.locator(
-      '.settings-sidebar .p-listbox-option'
-    )
-    const categoryCount = await categories.count()
+    // Click on a specific category (Appearance) to verify category switching
+    const appearanceCategory = comfyPage.page.getByRole('option', {
+      name: 'Appearance'
+    })
+    await appearanceCategory.click()
 
-    if (categoryCount > 1) {
-      // Click on the second category
-      await categories.nth(1).click()
-
-      // Verify the category is selected
-      await expect(categories.nth(1)).toHaveClass(/p-listbox-option-selected/)
-    }
+    // Verify the category is selected
+    await expect(appearanceCategory).toHaveClass(/p-listbox-option-selected/)
   })
 
   test('settings content area is visible', async ({ comfyPage }) => {
@@ -150,7 +156,6 @@ test.describe('Settings Search functionality', () => {
 
     // Type in search box
     await searchBox.fill('graph')
-    await comfyPage.page.waitForTimeout(200) // Wait for debounce
 
     // Verify that the search input is handled
     await expect(searchBox).toHaveValue('graph')
@@ -182,9 +187,6 @@ test.describe('Settings Search functionality', () => {
     await searchBox.fill('abc')
     await searchBox.fill('abcd')
 
-    // Wait for debounce
-    await comfyPage.page.waitForTimeout(200)
-
     // Verify final value
     await expect(searchBox).toHaveValue('abcd')
   })
@@ -200,7 +202,6 @@ test.describe('Settings Search functionality', () => {
     // Search for our test settings
     const searchBox = comfyPage.page.locator('.settings-search-box input')
     await searchBox.fill('Test')
-    await comfyPage.page.waitForTimeout(300) // Wait for debounce
 
     // Get all settings content
     const settingsContent = comfyPage.page.locator('.settings-tab-panels')
@@ -221,7 +222,6 @@ test.describe('Settings Search functionality', () => {
     // Search for our test settings
     const searchBox = comfyPage.page.locator('.settings-search-box input')
     await searchBox.fill('Test')
-    await comfyPage.page.waitForTimeout(300) // Wait for debounce
 
     // Get all settings content
     const settingsContent = comfyPage.page.locator('.settings-tab-panels')
@@ -242,7 +242,6 @@ test.describe('Settings Search functionality', () => {
     // Search for our test settings
     const searchBox = comfyPage.page.locator('.settings-search-box input')
     await searchBox.fill('Test')
-    await comfyPage.page.waitForTimeout(300) // Wait for debounce
 
     // Get all settings content
     const settingsContent = comfyPage.page.locator('.settings-tab-panels')
@@ -269,7 +268,6 @@ test.describe('Settings Search functionality', () => {
     // Search specifically for hidden setting by name
     await searchBox.clear()
     await searchBox.fill('Hidden')
-    await comfyPage.page.waitForTimeout(300)
 
     // Should not show the hidden setting even when searching by name
     await expect(settingsContent).not.toContainText('Test Hidden Setting')
@@ -277,7 +275,6 @@ test.describe('Settings Search functionality', () => {
     // Search specifically for deprecated setting by name
     await searchBox.clear()
     await searchBox.fill('Deprecated')
-    await comfyPage.page.waitForTimeout(300)
 
     // Should not show the deprecated setting even when searching by name
     await expect(settingsContent).not.toContainText('Test Deprecated Setting')
@@ -285,7 +282,6 @@ test.describe('Settings Search functionality', () => {
     // Search for visible setting by name - should work
     await searchBox.clear()
     await searchBox.fill('Visible')
-    await comfyPage.page.waitForTimeout(300)
 
     // Should show the visible setting
     await expect(settingsContent).toContainText('Test Visible Setting')

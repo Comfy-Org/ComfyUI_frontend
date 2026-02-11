@@ -1,6 +1,6 @@
 <template>
   <div>
-    <h2 class="px-4">
+    <h2 :class="cn(flags.teamWorkspacesEnabled ? 'px-6' : 'px-4')">
       <i class="pi pi-cog" />
       <span>{{ $t('g.settings') }}</span>
       <Tag
@@ -15,9 +15,10 @@
 <script setup lang="ts">
 import Tag from 'primevue/tag'
 
-// Global variable from vite build defined in global.d.ts
-// eslint-disable-next-line no-undef
-const isStaging = !__USE_PROD_CONFIG__
+import { isStaging } from '@/config/staging'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import { cn } from '@comfyorg/tailwind-utils'
+const { flags } = useFeatureFlags()
 </script>
 
 <style scoped>

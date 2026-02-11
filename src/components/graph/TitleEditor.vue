@@ -58,7 +58,7 @@ const onEdit = (newValue: string) => {
       target.subgraph.name = trimmedTitle
     }
 
-    app.graph.setDirtyCanvas(true, true)
+    app.canvas.setDirty(true, true)
   }
   showInput.value = false
   titleEditorStore.titleEditorTarget = null
