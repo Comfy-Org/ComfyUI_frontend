@@ -527,6 +527,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
   readonly pointer: CanvasPointer
   zoom_modify_alpha: boolean
   zoom_speed: number
+  auto_pan_speed: number
   node_title_color: string
   default_link_color: string
   default_connection_color: {
@@ -896,6 +897,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     this.zoom_modify_alpha = true
     // in range (1.01, 2.5). Less than 1 will invert the zoom direction
     this.zoom_speed = 1.1
+    this.auto_pan_speed = 15
 
     this.node_title_color = LiteGraph.NODE_TITLE_COLOR
     this.default_link_color = LiteGraph.LINK_COLOR
@@ -2064,6 +2066,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     this._autoPan = new AutoPanController({
       canvas: this.canvas,
       ds: this.ds,
+      maxPanSpeed: this.auto_pan_speed,
       onPan: () => {
         const rect = this.canvas.getBoundingClientRect()
         const { scale } = this.ds
@@ -3584,6 +3587,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     this._autoPan = new AutoPanController({
       canvas: this.canvas,
       ds: this.ds,
+      maxPanSpeed: this.auto_pan_speed,
       onPan: (panX, panY) => {
         const selected = this.selectedItems
         const allItems = getAllNestedItems(selected)

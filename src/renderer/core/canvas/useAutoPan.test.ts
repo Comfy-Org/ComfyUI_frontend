@@ -8,48 +8,60 @@ import {
 } from '@/renderer/core/canvas/useAutoPan'
 
 describe('calculateEdgePanSpeed', () => {
+  const MAX = 15
+
   it('returns 0 when pointer is in the center', () => {
-    expect(calculateEdgePanSpeed(500, 0, 1000, 1)).toBe(0)
+    expect(calculateEdgePanSpeed(500, 0, 1000, 1, MAX)).toBe(0)
   })
 
   it('returns negative speed near the left/top edge', () => {
-    const speed = calculateEdgePanSpeed(10, 0, 1000, 1)
+    const speed = calculateEdgePanSpeed(10, 0, 1000, 1, MAX)
     expect(speed).toBeLessThan(0)
   })
 
   it('returns positive speed near the right/bottom edge', () => {
-    const speed = calculateEdgePanSpeed(990, 0, 1000, 1)
+    const speed = calculateEdgePanSpeed(990, 0, 1000, 1, MAX)
     expect(speed).toBeGreaterThan(0)
   })
 
   it('returns max speed at the exact edge', () => {
-    const speed = calculateEdgePanSpeed(0, 0, 1000, 1)
+    const speed = calculateEdgePanSpeed(0, 0, 1000, 1, MAX)
     expect(speed).toBe(-15)
   })
 
   it('returns 0 at exactly the threshold boundary', () => {
-    const speed = calculateEdgePanSpeed(50, 0, 1000, 1)
+    const speed = calculateEdgePanSpeed(50, 0, 1000, 1, MAX)
     expect(speed).toBe(0)
   })
 
   it('scales speed linearly with edge proximity', () => {
-    const halfwaySpeed = calculateEdgePanSpeed(25, 0, 1000, 1)
-    const quarterSpeed = calculateEdgePanSpeed(37.5, 0, 1000, 1)
+    const halfwaySpeed = calculateEdgePanSpeed(25, 0, 1000, 1, MAX)
+    const quarterSpeed = calculateEdgePanSpeed(37.5, 0, 1000, 1, MAX)
 
     expect(halfwaySpeed).toBeCloseTo(-15 * 0.5)
     expect(quarterSpeed).toBeCloseTo(-15 * 0.25)
   })
 
   it('divides speed by scale (zoom level)', () => {
-    const speedAtScale1 = calculateEdgePanSpeed(0, 0, 1000, 1)
-    const speedAtScale2 = calculateEdgePanSpeed(0, 0, 1000, 2)
+    const speedAtScale1 = calculateEdgePanSpeed(0, 0, 1000, 1, MAX)
+    const speedAtScale2 = calculateEdgePanSpeed(0, 0, 1000, 2, MAX)
 
     expect(speedAtScale2).toBe(speedAtScale1 / 2)
   })
 
   it('returns max speed when pointer is outside bounds', () => {
-    expect(calculateEdgePanSpeed(-10, 0, 1000, 1)).toBe(-15)
-    expect(calculateEdgePanSpeed(1010, 0, 1000, 1)).toBe(15)
+    expect(calculateEdgePanSpeed(-10, 0, 1000, 1, MAX)).toBe(-15)
+    expect(calculateEdgePanSpeed(1010, 0, 1000, 1, MAX)).toBe(15)
+  })
+
+  it('returns 0 when maxPanSpeed is 0 (disabled)', () => {
+    expect(calculateEdgePanSpeed(0, 0, 1000, 1, 0)).toBe(0)
+    expect(calculateEdgePanSpeed(10, 0, 1000, 1, 0)).toBe(0)
+  })
+
+  it('uses custom maxPanSpeed', () => {
+    const speed = calculateEdgePanSpeed(0, 0, 1000, 1, 30)
+    expect(speed).toBe(-30)
   })
 })
 
@@ -85,6 +97,7 @@ describe('AutoPanController', () => {
     controller = new AutoPanController({
       canvas: mockCanvas,
       ds: mockDs,
+      maxPanSpeed: 15,
       onPan: onPanMock
     })
   })
@@ -179,5 +192,22 @@ describe('AutoPanController', () => {
 
     vi.advanceTimersByTime(16)
     expect(onPanMock).toHaveBeenCalledTimes(callCount)
+  })
+
+  it('does not pan when maxPanSpeed is 0', () => {
+    const disabledController = new AutoPanController({
+      canvas: mockCanvas,
+      ds: mockDs,
+      maxPanSpeed: 0,
+      onPan: onPanMock
+    })
+
+    disabledController.updatePointer(0, 0)
+    disabledController.start()
+
+    vi.advanceTimersByTime(16)
+
+    expect(onPanMock).not.toHaveBeenCalled()
+    disabledController.stop()
   })
 })

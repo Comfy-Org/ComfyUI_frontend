@@ -307,6 +307,20 @@ export const CORE_SETTINGS: SettingParams[] = [
       step: 0.01
     }
   },
+  {
+    id: 'Comfy.Graph.AutoPanSpeed',
+    category: ['LiteGraph', 'Canvas', 'AutoPanSpeed'],
+    name: 'Auto-pan speed',
+    tooltip:
+      'Maximum speed when auto-panning by dragging to the canvas edge. Set to 0 to disable auto-panning.',
+    type: 'slider',
+    defaultValue: 15,
+    attrs: {
+      min: 0,
+      max: 30,
+      step: 1
+    }
+  },
   // Bookmarks are stored in the settings store.
   // Bookmarks are in format of category/display_name. e.g. "conditioning/CLIPTextEncode"
   {

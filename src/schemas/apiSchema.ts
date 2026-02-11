@@ -285,6 +285,7 @@ const zSettings = z.object({
   'Comfy.EnableTooltips': z.boolean(),
   'Comfy.EnableWorkflowViewRestore': z.boolean(),
   'Comfy.FloatRoundingPrecision': z.number(),
+  'Comfy.Graph.AutoPanSpeed': z.number(),
   'Comfy.Graph.CanvasInfo': z.boolean(),
   'Comfy.Graph.CanvasMenu': z.boolean(),
   'Comfy.Graph.CtrlShiftZoom': z.boolean(),
