@@ -842,6 +842,14 @@ export const CORE_SETTINGS: SettingParams[] = [
     versionAdded: '1.37.0'
   },
   {
+    id: 'Comfy.Queue.ShowClearPendingTasksButton',
+    category: ['Comfy', 'Queue', 'ShowClearPendingTasksButton'],
+    defaultValue: false,
+    name: 'Show clear pending tasks button in action bar',
+    type: 'boolean',
+    tooltip: 'Adds a clear pending tasks button to the action bar.'
+  },
+  {
     id: 'Comfy.Execution.PreviewMethod',
     category: ['Comfy', 'Execution', 'PreviewMethod'],
     name: 'Live preview method',

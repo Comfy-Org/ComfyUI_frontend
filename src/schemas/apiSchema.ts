@@ -346,6 +346,7 @@ const zSettings = z.object({
   'Comfy.QueueButton.BatchCountLimit': z.number(),
   'Comfy.Queue.MaxHistoryItems': z.number(),
   'Comfy.Queue.History.Expanded': z.boolean(),
+  'Comfy.Queue.ShowClearPendingTasksButton': z.boolean(),
   'Comfy.Keybinding.UnsetBindings': z.array(zKeybinding),
   'Comfy.Keybinding.NewBindings': z.array(zKeybinding),
   'Comfy.Extension.Disabled': z.array(z.string()),
