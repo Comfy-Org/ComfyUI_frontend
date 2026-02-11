@@ -300,7 +300,7 @@
         v-if="
           isActiveSubscription &&
           !isInPersonalWorkspace &&
-          workspaceRole != 'member'
+          permissions.canManageSubscription
         "
         class="mt-6 flex gap-1 rounded-2xl border border-interface-stroke p-6 justify-between items-center text-sm"
       >
@@ -325,7 +325,7 @@
 
       <!-- View More Details - Outside main content -->
       <div
-        v-if="workspaceRole === 'owner'"
+        v-if="permissions.canManageSubscription"
         class="flex items-center gap-2 py-6"
       >
         <i class="pi pi-external-link text-muted"></i>
@@ -374,7 +374,7 @@ import { cn } from '@/utils/tailwindUtil'
 const workspaceStore = useTeamWorkspaceStore()
 const { isWorkspaceSubscribed, isInPersonalWorkspace, members } =
   storeToRefs(workspaceStore)
-const { permissions, workspaceRole } = useWorkspaceUI()
+const { permissions } = useWorkspaceUI()
 const { t, n } = useI18n()
 const toast = useToast()
 
@@ -429,7 +429,7 @@ const isCancelled = computed(
 // Show subscribe prompt to owners without active subscription
 // Don't show if subscription is cancelled (still active until end date)
 const showSubscribePrompt = computed(() => {
-  if (workspaceRole.value !== 'owner') return false
+  if (!permissions.value.canManageSubscription) return false
   if (isCancelled.value) return false
   if (isInPersonalWorkspace.value) return !isActiveSubscription.value
   return !isWorkspaceSubscribed.value
