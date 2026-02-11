@@ -1740,7 +1740,9 @@
   "missingModelsDialog": {
     "doNotAskAgain": "Ne plus afficher ce message",
     "missingModels": "Modèles manquants",
-    "missingModelsMessage": "Lors du chargement du graphique, les modèles suivants n'ont pas été trouvés"
+    "missingModelsMessage": "Lors du chargement du graphique, les modèles suivants n'ont pas été trouvés",
+    "reEnableInSettings": "Réactiver dans {link}",
+    "reEnableInSettingsLink": "Paramètres"
   },
   "missingNodes": {
     "cloud": {
@@ -2807,6 +2809,9 @@
   "vueNodesMigrationMainMenu": {
     "message": "Revenez à Nodes 2.0 à tout moment depuis le menu principal."
   },
+  "vueNodesSlot": {
+    "iterative": "(Itératif)"
+  },
   "welcome": {
     "getStarted": "Commencer",
     "title": "Bienvenue sur ComfyUI"
@@ -2827,6 +2832,7 @@
       "placeholder": "Sélectionner...",
       "placeholderAudio": "Sélectionner un audio...",
       "placeholderImage": "Sélectionner une image...",
+      "placeholderMesh": "Sélectionner un mesh...",
       "placeholderModel": "Sélectionner un modèle...",
       "placeholderUnknown": "Sélectionner un média...",
       "placeholderVideo": "Sélectionner une vidéo..."

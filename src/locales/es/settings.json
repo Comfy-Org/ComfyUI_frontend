@@ -104,6 +104,10 @@
   "Comfy_Graph_CtrlShiftZoom": {
     "name": "Habilitar atajo de zoom rápido (Ctrl + Shift + Arrastrar)"
   },
+  "Comfy_Graph_DeduplicateSubgraphNodeIds": {
+    "name": "Eliminar duplicados de IDs de nodos en subgráficos",
+    "tooltip": "Reasigna automáticamente los IDs de nodos duplicados en subgráficos al cargar un flujo de trabajo."
+  },
   "Comfy_Graph_LinkMarkers": {
     "name": "Marcadores de punto medio de enlace",
     "options": {

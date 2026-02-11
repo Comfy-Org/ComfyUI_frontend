@@ -68,6 +68,7 @@
     "icon": "Icon",
     "color": "Color",
     "error": "Error",
+    "enterSubgraph": "Enter Subgraph",
     "resizeFromBottomRight": "Resize from bottom-right corner",
     "resizeFromTopRight": "Resize from top-right corner",
     "resizeFromBottomLeft": "Resize from bottom-left corner",
@@ -1691,6 +1692,8 @@
   },
   "missingModelsDialog": {
     "doNotAskAgain": "Don't show this again",
+    "reEnableInSettings": "Re-enable in {link}",
+    "reEnableInSettingsLink": "Settings",
     "missingModels": "Missing Models",
     "missingModelsMessage": "When loading the graph, the following models were not found"
   },
@@ -1801,7 +1804,7 @@
     },
     "openIn3DViewer": "Open in 3D Viewer",
     "dropToLoad": "Drop 3D model to load",
-    "unsupportedFileType": "Unsupported file type (supports .gltf, .glb, .obj, .fbx, .stl)",
+    "unsupportedFileType": "Unsupported file type (supports .gltf, .glb, .obj, .fbx, .stl, .ply, .spz, .splat, .ksplat)",
     "uploadingModel": "Uploading 3D model..."
   },
   "imageCrop": {
@@ -2387,6 +2390,7 @@
       "placeholderImage": "Select image...",
       "placeholderAudio": "Select audio...",
       "placeholderVideo": "Select video...",
+      "placeholderMesh": "Select mesh...",
       "placeholderModel": "Select model...",
       "placeholderUnknown": "Select media..."
     },
@@ -2830,6 +2834,9 @@
         "Close": "Close"
       }
     }
+  },
+  "vueNodesSlot": {
+    "iterative": "(Iterative)"
   },
   "vueNodesBanner": {
     "title": "Introducing Nodes 2.0",

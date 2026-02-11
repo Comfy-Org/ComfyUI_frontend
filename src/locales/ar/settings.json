@@ -104,6 +104,10 @@
   "Comfy_Graph_CtrlShiftZoom": {
     "name": "تمكين اختصار التكبير السريع (Ctrl + Shift + سحب)"
   },
+  "Comfy_Graph_DeduplicateSubgraphNodeIds": {
+    "name": "إزالة التكرار من معرفات العقد الفرعية",
+    "tooltip": "إعادة تعيين معرفات العقد المكررة تلقائيًا في العقد الفرعية عند تحميل سير العمل."
+  },
   "Comfy_Graph_LinkMarkers": {
     "name": "علامات منتصف الروابط",
     "options": {
