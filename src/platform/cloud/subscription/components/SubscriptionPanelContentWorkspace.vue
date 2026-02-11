@@ -179,7 +179,7 @@
           <div class="flex flex-col">
             <div class="flex flex-col gap-3 h-full">
               <div
-                class="relative flex flex-col gap-6 rounded-2xl p-5 bg-modal-panel-background justify-between h-full"
+                class="relative flex flex-col gap-6 rounded-2xl p-5 bg-secondary-background justify-between h-full"
               >
                 <Button
                   variant="muted-textonly"
