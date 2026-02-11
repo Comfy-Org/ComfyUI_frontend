@@ -1211,7 +1211,8 @@ export const CORE_SETTINGS: SettingParams[] = [
     tooltip:
       'Automatically reassign duplicate node IDs in subgraphs when loading a workflow.',
     type: 'boolean',
-    defaultValue: false,
+    deprecated: true,
+    defaultValue: true,
     experimental: true,
     versionAdded: '1.40.0'
   }
