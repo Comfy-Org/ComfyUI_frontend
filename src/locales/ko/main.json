@@ -1740,7 +1740,9 @@
   "missingModelsDialog": {
     "doNotAskAgain": "다시 보지 않기",
     "missingModels": "모델이 없습니다",
-    "missingModelsMessage": "그래프를 로드할 때 다음 모델을 찾을 수 없었습니다"
+    "missingModelsMessage": "그래프를 로드할 때 다음 모델을 찾을 수 없었습니다",
+    "reEnableInSettings": "{link}에서 다시 활성화",
+    "reEnableInSettingsLink": "설정"
   },
   "missingNodes": {
     "cloud": {
@@ -2807,6 +2809,9 @@
   "vueNodesMigrationMainMenu": {
     "message": "메인 메뉴에서 언제든지 Nodes 2.0으로 다시 전환할 수 있습니다."
   },
+  "vueNodesSlot": {
+    "iterative": "(반복)"
+  },
   "welcome": {
     "getStarted": "시작하기",
     "title": "ComfyUI에 오신 것을 환영합니다"
@@ -2827,6 +2832,7 @@
       "placeholder": "선택...",
       "placeholderAudio": "오디오 선택...",
       "placeholderImage": "이미지 선택...",
+      "placeholderMesh": "메시 선택...",
       "placeholderModel": "모델 선택...",
       "placeholderUnknown": "미디어 선택...",
       "placeholderVideo": "비디오 선택..."

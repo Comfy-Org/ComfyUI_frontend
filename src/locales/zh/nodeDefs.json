@@ -5033,6 +5033,46 @@
       }
     }
   },
+  "KlingFirstLastFrameNode": {
+    "description": "使用 Kling V3 通过首帧和末帧生成视频。",
+    "display_name": "Kling 3.0 首帧-末帧生成视频",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "duration": {
+        "name": "时长"
+      },
+      "end_frame": {
+        "name": "末帧"
+      },
+      "first_frame": {
+        "name": "首帧"
+      },
+      "generate_audio": {
+        "name": "生成音频"
+      },
+      "model": {
+        "name": "模型",
+        "tooltip": "模型与生成设置。"
+      },
+      "model_resolution": {
+        "name": "分辨率"
+      },
+      "prompt": {
+        "name": "提示词"
+      },
+      "seed": {
+        "name": "种子",
+        "tooltip": "种子控制节点是否重新运行；无论种子如何，结果都是非确定性的。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "KlingImage2VideoNode": {
     "display_name": "Kling 图像转视频",
     "inputs": {
@@ -5085,6 +5125,9 @@
       "aspect_ratio": {
         "name": "宽高比"
       },
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
       "human_fidelity": {
         "name": "主体参考强度",
         "tooltip": "主体参考相似度"
@@ -5113,6 +5156,10 @@
       "prompt": {
         "name": "提示词",
         "tooltip": "正向文本提示"
+      },
+      "seed": {
+        "name": "种子",
+        "tooltip": "种子控制节点是否重新运行；无论种子如何，结果都是非确定性的。"
       }
     },
     "outputs": {
@@ -5245,6 +5292,9 @@
     "description": "使用 Kling 最新模型编辑视频。",
     "display_name": "Kling Omni 编辑视频 (Pro)",
     "inputs": {
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
       "keep_original_sound": {
         "name": "保留原音频"
       },
@@ -5262,6 +5312,10 @@
       "resolution": {
         "name": "分辨率"
       },
+      "seed": {
+        "name": "种子",
+        "tooltip": "种子控制节点是否重新运行；无论种子如何，结果都是非确定性的。"
+      },
       "video": {
         "name": "视频",
         "tooltip": "需要编辑的视频，输出视频的时长和输入视频相同。"
@@ -5277,6 +5331,9 @@
     "description": "使用 Kling 最新模型和起始帧、可选的结束帧或参考图像。",
     "display_name": "Kling Omni 首尾帧到视频 (Pro)",
     "inputs": {
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
       "duration": {
         "name": "时长"
       },
@@ -5286,6 +5343,10 @@
       },
       "first_frame": {
         "name": "起始帧"
+      },
+      "generate_audio": {
+        "name": "生成音频",
+        "tooltip": "为视频生成音频。仅支持 kling-v3-omni。"
       },
       "model_name": {
         "name": "模型"
@@ -5300,6 +5361,14 @@
       },
       "resolution": {
         "name": "分辨率"
+      },
+      "seed": {
+        "name": "种子",
+        "tooltip": "种子控制节点是否重新运行；无论种子如何，结果都是非确定性的。"
+      },
+      "storyboards": {
+        "name": "分镜",
+        "tooltip": "生成一系列带有独立提示词和时长的视频片段。仅支持 kling-v3-omni。"
       }
     },
     "outputs": {
@@ -5315,6 +5384,9 @@
       "aspect_ratio": {
         "name": "宽高比"
       },
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
       "model_name": {
         "name": "模型"
       },
@@ -5328,6 +5400,14 @@
       },
       "resolution": {
         "name": "分辨率"
+      },
+      "seed": {
+        "name": "种子",
+        "tooltip": "种子控制节点是否重新运行；无论种子如何，结果都是非确定性的。"
+      },
+      "series_amount": {
+        "name": "系列数量",
+        "tooltip": "生成一系列图像。不支持 kling-image-o1。"
       }
     },
     "outputs": {
@@ -5343,8 +5423,15 @@
       "aspect_ratio": {
         "name": "宽高比"
       },
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
       "duration": {
         "name": "时长"
+      },
+      "generate_audio": {
+        "name": "生成音频",
+        "tooltip": "为视频生成音频。仅支持 kling-v3-omni。"
       },
       "model_name": {
         "name": "模型"
@@ -5359,6 +5446,14 @@
       },
       "resolution": {
         "name": "分辨率"
+      },
+      "seed": {
+        "name": "种子",
+        "tooltip": "种子控制节点是否重新运行；无论种子如何，结果都是非确定性的。"
+      },
+      "storyboards": {
+        "name": "分镜",
+        "tooltip": "生成一系列带有独立提示词和时长的视频片段。仅支持 kling-v3-omni。"
       }
     },
     "outputs": {
@@ -5374,8 +5469,14 @@
       "aspect_ratio": {
         "name": "宽高比"
       },
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
       "duration": {
         "name": "时长"
+      },
+      "generate_audio": {
+        "name": "生成音频"
       },
       "model_name": {
         "name": "模型"
@@ -5386,6 +5487,14 @@
       },
       "resolution": {
         "name": "分辨率"
+      },
+      "seed": {
+        "name": "种子",
+        "tooltip": "种子控制节点是否重新运行；无论种子如何，结果都是非确定性的。"
+      },
+      "storyboards": {
+        "name": "分镜",
+        "tooltip": "生成一系列带有独立提示词和时长的视频片段。o1 模型将忽略此项。"
       }
     },
     "outputs": {
@@ -5400,6 +5509,9 @@
     "inputs": {
       "aspect_ratio": {
         "name": "宽高比"
+      },
+      "control_after_generate": {
+        "name": "生成后控制"
       },
       "duration": {
         "name": "时长"
@@ -5424,6 +5536,10 @@
       },
       "resolution": {
         "name": "分辨率"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed 控制节点是否重新运行；无论 seed 如何，结果都是非确定性的。"
       }
     },
     "outputs": {
@@ -5605,6 +5721,54 @@
       },
       "2": {
         "name": "时长",
+        "tooltip": null
+      }
+    }
+  },
+  "KlingVideoNode": {
+    "description": "使用 Kling V3 生成视频。支持文生视频和图生视频，可选分镜多提示词和音频生成。",
+    "display_name": "Kling 3.0 视频",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "generate_audio": {
+        "name": "生成音频"
+      },
+      "model": {
+        "name": "模型",
+        "tooltip": "模型和生成设置。"
+      },
+      "model_aspect_ratio": {
+        "name": "宽高比"
+      },
+      "model_resolution": {
+        "name": "分辨率"
+      },
+      "multi_shot": {
+        "name": "多镜头",
+        "tooltip": "使用单独的提示词和时长生成一系列视频片段。"
+      },
+      "multi_shot_duration": {
+        "name": "时长"
+      },
+      "multi_shot_negative_prompt": {
+        "name": "反向提示词"
+      },
+      "multi_shot_prompt": {
+        "name": "提示词"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed 控制节点是否重新运行；无论 seed 如何，结果都是非确定性的。"
+      },
+      "start_frame": {
+        "name": "起始帧",
+        "tooltip": "可选的起始帧图像。连接后切换为图生视频模式。"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -15276,6 +15440,31 @@
       "seed": {
         "name": "随机种",
         "tooltip": "视频生成的种子（0 表示随机）"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Video Slice": {
+    "display_name": "视频切片",
+    "inputs": {
+      "duration": {
+        "name": "时长",
+        "tooltip": "以秒为单位的时长，0 表示不限时长"
+      },
+      "start_time": {
+        "name": "起始时间",
+        "tooltip": "以秒为单位的起始时间"
+      },
+      "strict_duration": {
+        "name": "严格时长",
+        "tooltip": "如为 True，当指定时长无法实现时将报错。"
+      },
+      "video": {
+        "name": "视频"
       }
     },
     "outputs": {

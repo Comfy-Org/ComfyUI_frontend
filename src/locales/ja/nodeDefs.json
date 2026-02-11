@@ -5024,6 +5024,46 @@
       }
     }
   },
+  "KlingFirstLastFrameNode": {
+    "description": "Kling V3 を使用して最初と最後のフレームからビデオを生成します。",
+    "display_name": "Kling 3.0 ファースト・ラストフレームからビデオ生成",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後のコントロール"
+      },
+      "duration": {
+        "name": "継続時間"
+      },
+      "end_frame": {
+        "name": "最後のフレーム"
+      },
+      "first_frame": {
+        "name": "最初のフレーム"
+      },
+      "generate_audio": {
+        "name": "音声を生成"
+      },
+      "model": {
+        "name": "モデル",
+        "tooltip": "モデルと生成設定。"
+      },
+      "model_resolution": {
+        "name": "解像度"
+      },
+      "prompt": {
+        "name": "プロンプト"
+      },
+      "seed": {
+        "name": "シード",
+        "tooltip": "シードはノードを再実行するかどうかを制御します。シードに関係なく結果は非決定的です。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "KlingImage2VideoNode": {
     "display_name": "Kling 画像から動画へ",
     "inputs": {
@@ -5076,6 +5116,9 @@
       "aspect_ratio": {
         "name": "アスペクト比"
       },
+      "control_after_generate": {
+        "name": "生成後のコントロール"
+      },
       "human_fidelity": {
         "name": "人物忠実度",
         "tooltip": "被写体の参照類似度"
@@ -5104,6 +5147,10 @@
       "prompt": {
         "name": "プロンプト",
         "tooltip": "ポジティブテキストプロンプト"
+      },
+      "seed": {
+        "name": "シード",
+        "tooltip": "シードはノードを再実行するかどうかを制御します。シードに関係なく結果は非決定的です。"
       }
     },
     "outputs": {
@@ -5236,6 +5283,9 @@
     "description": "Klingの最新モデルで既存のビデオを編集します。",
     "display_name": "Kling Omniビデオ編集（Pro）",
     "inputs": {
+      "control_after_generate": {
+        "name": "生成後のコントロール"
+      },
       "keep_original_sound": {
         "name": "元の音声を保持"
       },
@@ -5253,6 +5303,10 @@
       "resolution": {
         "name": "解像度"
       },
+      "seed": {
+        "name": "シード",
+        "tooltip": "シードはノードを再実行するかどうかを制御します。シードに関係なく結果は非決定的です。"
+      },
       "video": {
         "name": "ビデオ",
         "tooltip": "編集するビデオ。出力ビデオの長さは同じになります。"
@@ -5268,6 +5322,9 @@
     "description": "開始フレーム、オプションの終了フレーム、またはリファレンス画像を使用して最新のKlingモデルでビデオを生成します。",
     "display_name": "Kling Omni ファースト・ラストフレームからビデオへ (Pro)",
     "inputs": {
+      "control_after_generate": {
+        "name": "生成後のコントロール"
+      },
       "duration": {
         "name": "継続時間"
       },
@@ -5277,6 +5334,10 @@
       },
       "first_frame": {
         "name": "開始フレーム"
+      },
+      "generate_audio": {
+        "name": "音声を生成",
+        "tooltip": "ビデオ用の音声を生成します。kling-v3-omni のみ対応。"
       },
       "model_name": {
         "name": "model_name"
@@ -5291,6 +5352,14 @@
       },
       "resolution": {
         "name": "解像度"
+      },
+      "seed": {
+        "name": "シード",
+        "tooltip": "シードはノードを再実行するかどうかを制御します。シードに関係なく結果は非決定的です。"
+      },
+      "storyboards": {
+        "name": "ストーリーボード",
+        "tooltip": "個別のプロンプトと継続時間で一連のビデオセグメントを生成します。kling-v3-omni のみ対応。"
       }
     },
     "outputs": {
@@ -5306,6 +5375,9 @@
       "aspect_ratio": {
         "name": "アスペクト比"
       },
+      "control_after_generate": {
+        "name": "生成後のコントロール"
+      },
       "model_name": {
         "name": "model_name"
       },
@@ -5319,6 +5391,14 @@
       },
       "resolution": {
         "name": "解像度"
+      },
+      "seed": {
+        "name": "シード",
+        "tooltip": "シードはノードを再実行するかどうかを制御します。シードに関係なく結果は非決定的です。"
+      },
+      "series_amount": {
+        "name": "シリーズ数",
+        "tooltip": "一連の画像を生成します。kling-image-o1 では非対応。"
       }
     },
     "outputs": {
@@ -5334,8 +5414,15 @@
       "aspect_ratio": {
         "name": "アスペクト比"
       },
+      "control_after_generate": {
+        "name": "生成後のコントロール"
+      },
       "duration": {
         "name": "継続時間"
+      },
+      "generate_audio": {
+        "name": "音声を生成",
+        "tooltip": "ビデオ用の音声を生成します。kling-v3-omni のみ対応。"
       },
       "model_name": {
         "name": "model_name"
@@ -5350,6 +5437,14 @@
       },
       "resolution": {
         "name": "解像度"
+      },
+      "seed": {
+        "name": "シード",
+        "tooltip": "シードはノードを再実行するかどうかを制御します。シードに関係なく結果は非決定的です。"
+      },
+      "storyboards": {
+        "name": "ストーリーボード",
+        "tooltip": "個別のプロンプトと継続時間で一連のビデオセグメントを生成します。kling-v3-omni のみ対応。"
       }
     },
     "outputs": {
@@ -5365,8 +5460,14 @@
       "aspect_ratio": {
         "name": "アスペクト比"
       },
+      "control_after_generate": {
+        "name": "生成後のコントロール"
+      },
       "duration": {
         "name": "継続時間"
+      },
+      "generate_audio": {
+        "name": "音声を生成"
       },
       "model_name": {
         "name": "model_name"
@@ -5377,6 +5478,14 @@
       },
       "resolution": {
         "name": "解像度"
+      },
+      "seed": {
+        "name": "シード",
+        "tooltip": "シードはノードを再実行するかどうかを制御します。シードに関係なく結果は非決定的です。"
+      },
+      "storyboards": {
+        "name": "ストーリーボード",
+        "tooltip": "個別のプロンプトと継続時間で一連のビデオセグメントを生成します。o1 モデルでは無視されます。"
       }
     },
     "outputs": {
@@ -5391,6 +5500,9 @@
     "inputs": {
       "aspect_ratio": {
         "name": "アスペクト比"
+      },
+      "control_after_generate": {
+        "name": "生成後のコントロール"
       },
       "duration": {
         "name": "長さ"
@@ -5415,6 +5527,10 @@
       },
       "resolution": {
         "name": "解像度"
+      },
+      "seed": {
+        "name": "シード",
+        "tooltip": "シードはノードの再実行を制御します。シードに関係なく結果は非決定的です。"
       }
     },
     "outputs": {
@@ -5596,6 +5712,54 @@
       },
       "2": {
         "name": "duration",
+        "tooltip": null
+      }
+    }
+  },
+  "KlingVideoNode": {
+    "description": "Kling V3でビデオを生成します。テキストからビデオ、画像からビデオ、オプションでストーリーボードのマルチプロンプトやオーディオ生成に対応しています。",
+    "display_name": "Kling 3.0 ビデオ",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後のコントロール"
+      },
+      "generate_audio": {
+        "name": "オーディオ生成"
+      },
+      "model": {
+        "name": "モデル",
+        "tooltip": "モデルと生成設定。"
+      },
+      "model_aspect_ratio": {
+        "name": "アスペクト比"
+      },
+      "model_resolution": {
+        "name": "解像度"
+      },
+      "multi_shot": {
+        "name": "マルチショット",
+        "tooltip": "個別のプロンプトと時間で一連のビデオセグメントを生成します。"
+      },
+      "multi_shot_duration": {
+        "name": "時間"
+      },
+      "multi_shot_negative_prompt": {
+        "name": "ネガティブプロンプト"
+      },
+      "multi_shot_prompt": {
+        "name": "プロンプト"
+      },
+      "seed": {
+        "name": "シード",
+        "tooltip": "シードはノードの再実行を制御します。シードに関係なく結果は非決定的です。"
+      },
+      "start_frame": {
+        "name": "開始フレーム",
+        "tooltip": "オプションの開始フレーム画像。接続すると画像からビデオモードに切り替わります。"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -15263,6 +15427,31 @@
       "seed": {
         "name": "seed",
         "tooltip": "ビデオ生成用のシード値（0でランダム）"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Video Slice": {
+    "display_name": "ビデオスライス",
+    "inputs": {
+      "duration": {
+        "name": "時間",
+        "tooltip": "時間（秒）、0の場合は無制限"
+      },
+      "start_time": {
+        "name": "開始時間",
+        "tooltip": "開始時間（秒）"
+      },
+      "strict_duration": {
+        "name": "厳密な時間",
+        "tooltip": "Trueの場合、指定した時間が不可能な場合はエラーになります。"
+      },
+      "video": {
+        "name": "ビデオ"
       }
     },
     "outputs": {
