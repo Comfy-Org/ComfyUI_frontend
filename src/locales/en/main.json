@@ -2936,7 +2936,23 @@
     "nodesNoneDesc": "NO NODES",
     "fallbackGroupTitle": "Group",
     "fallbackNodeTitle": "Node",
-    "hideAdvancedInputsButton": "Hide advanced inputs"
+    "hideAdvancedInputsButton": "Hide advanced inputs",
+    "errors": "Errors",
+    "noErrors": "No errors",
+    "enterSubgraph": "Enter subgraph",
+    "seeError": "See Error",
+    "promptErrors": {
+      "prompt_no_outputs": {
+        "desc": "The workflow does not contain any output nodes (e.g. Save Image, Preview Image) to produce a result."
+      },
+      "no_prompt": {
+        "desc": "The workflow data sent to the server is empty. This may be an unexpected system error."
+      }
+    },
+    "errorHelpPrefix": "For more help, ",
+    "errorHelpGithub": "submit a GitHub issue",
+    "errorHelpOr": " or ",
+    "errorHelpSupport": "contact our support"
   },
   "help": {
     "recentReleases": "Recent releases",

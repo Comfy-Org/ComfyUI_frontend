@@ -89,7 +89,7 @@ function handleFocus(event: FocusEvent) {
     <input
       v-model="searchQuery"
       type="text"
-      class="bg-transparent border-0 outline-0 ring-0 h-5 w-full my-1.5 mx-2"
+      class="bg-transparent border-0 outline-0 ring-0 h-5 w-full my-1.5 mx-2 min-w-0"
       :placeholder="$t('g.searchPlaceholder', { subject: '' })"
       :autofocus
       @focus="handleFocus"
