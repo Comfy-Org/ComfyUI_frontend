@@ -6546,6 +6546,10 @@
       "strength_model": {
         "name": "strength_model",
         "tooltip": "How strongly to modify the diffusion model. This value can be negative."
+      },
+      "bypass": {
+        "name": "bypass",
+        "tooltip": "When enabled, applies LoRA in bypass mode without modifying base model weights. Useful for training and when model weights are offloaded."
       }
     },
     "outputs": {
@@ -14626,6 +14630,14 @@
       "gradient_checkpointing": {
         "name": "gradient_checkpointing",
         "tooltip": "Use gradient checkpointing for training."
+      },
+      "checkpoint_depth": {
+        "name": "checkpoint_depth",
+        "tooltip": "Depth level for gradient checkpointing."
+      },
+      "offloading": {
+        "name": "offloading",
+        "tooltip": "Depth level for gradient checkpointing."
       },
       "existing_lora": {
         "name": "existing_lora",

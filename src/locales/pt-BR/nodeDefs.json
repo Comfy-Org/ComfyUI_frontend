@@ -6880,6 +6880,10 @@
   "LoraModelLoader": {
     "display_name": "Carregar Modelo LoRA",
     "inputs": {
+      "bypass": {
+        "name": "bypass",
+        "tooltip": "Quando ativado, aplica o LoRA no modo bypass sem modificar os pesos do modelo base. Útil para treinamento e quando os pesos do modelo são descarregados."
+      },
       "lora": {
         "name": "lora",
         "tooltip": "O modelo LoRA a ser aplicado ao modelo de difusão."
@@ -14503,6 +14507,10 @@
         "name": "bypass_mode",
         "tooltip": "Ativar modo bypass para treinamento. Quando ativado, os adaptadores são aplicados via hooks de encaminhamento em vez de modificação de pesos. Útil para modelos quantizados onde os pesos não podem ser modificados diretamente."
       },
+      "checkpoint_depth": {
+        "name": "checkpoint_depth",
+        "tooltip": "Nível de profundidade para checkpointing de gradiente."
+      },
       "control_after_generate": {
         "name": "controlar após gerar"
       },
@@ -14537,6 +14545,10 @@
       "model": {
         "name": "modelo",
         "tooltip": "O modelo no qual treinar a LoRA."
+      },
+      "offloading": {
+        "name": "offloading",
+        "tooltip": "Nível de profundidade para checkpointing de gradiente."
       },
       "optimizer": {
         "name": "otimizador",
