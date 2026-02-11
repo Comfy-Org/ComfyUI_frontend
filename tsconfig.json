@@ -17,7 +17,6 @@
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true,
     "noImplicitOverride": true,
-    "allowJs": true,
     "verbatimModuleSyntax": true,
     "paths": {
       "@/*": ["./src/*"],
