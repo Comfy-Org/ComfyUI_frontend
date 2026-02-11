@@ -12,6 +12,10 @@ import type {
 } from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { useExecutionStore } from '@/stores/executionStore'
+import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
+import { getNodeByExecutionId } from '@/utils/graphTraversalUtil'
+import { app } from '@/scripts/app'
 
 import PropertiesAccordionItem from '../layout/PropertiesAccordionItem.vue'
 import { HideLayoutFieldKey } from '@/types/widgetTypes'
@@ -57,7 +61,40 @@ watchEffect(() => (widgets.value = widgetsProp))
 provide(HideLayoutFieldKey, true)
 
 const canvasStore = useCanvasStore()
+const executionStore = useExecutionStore()
+const rightSidePanelStore = useRightSidePanelStore()
 const { t } = useI18n()
+
+/**
+ * Checks whether the current node has errors from lastNodeErrors or lastExecutionError.
+ * Uses execution ID mapping to match graph node IDs.
+ */
+const nodeHasError = computed(() => {
+  if (!targetNode.value) return false
+  const nodeId = targetNode.value.id
+
+  // Check lastNodeErrors (validation errors from 400 Bad Request)
+  if (executionStore.lastNodeErrors) {
+    for (const executionId of Object.keys(executionStore.lastNodeErrors)) {
+      const graphNode = getNodeByExecutionId(app.rootGraph, executionId)
+      if (graphNode && String(graphNode.id) === String(nodeId)) return true
+    }
+  }
+
+  // Check lastExecutionError (runtime WebSocket error)
+  if (executionStore.lastExecutionError) {
+    const execNodeId = String(executionStore.lastExecutionError.node_id)
+    const graphNode = getNodeByExecutionId(app.rootGraph, execNodeId)
+    if (graphNode && String(graphNode.id) === String(nodeId)) return true
+  }
+
+  return false
+})
+
+/** Switches the right side panel to the Errors tab. */
+function navigateToErrorTab() {
+  rightSidePanelStore.openPanel('errors')
+}
 
 const getNodeParentGroup = inject(GetNodeParentGroupKey, null)
 
@@ -142,9 +179,16 @@ defineExpose({
       :tooltip
     >
       <template #label>
-        <div class="flex items-center gap-2 flex-1 min-w-0">
+        <div class="flex flex-wrap items-center gap-2 flex-1 min-w-0">
           <span class="flex-1 flex items-center gap-2 min-w-0">
-            <span class="truncate">
+            <i
+              v-if="nodeHasError"
+              class="icon-[lucide--octagon-alert] size-4 shrink-0 text-destructive-background-hover"
+            />
+            <span
+              class="truncate"
+              :class="nodeHasError ? 'text-destructive-background-hover' : ''"
+            >
               <slot name="label">
                 {{ displayLabel }}
               </slot>
@@ -157,6 +201,15 @@ defineExpose({
               {{ parentGroup.title }}
             </span>
           </span>
+          <Button
+            v-if="nodeHasError"
+            variant="secondary"
+            size="sm"
+            class="shrink-0 rounded-lg text-sm"
+            @click.stop="navigateToErrorTab"
+          >
+            {{ t('rightSidePanel.seeError') }}
+          </Button>
           <Button
             v-if="canShowLocateButton"
             variant="textonly"

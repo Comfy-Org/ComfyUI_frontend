@@ -33,12 +33,16 @@ import {
   useFlatAndCategorizeSelectedItems
 } from './shared'
 import SubgraphEditor from './subgraph/SubgraphEditor.vue'
+import TabErrors from './errors/TabErrors.vue'
+
 
 const canvasStore = useCanvasStore()
 const executionStore = useExecutionStore()
 const rightSidePanelStore = useRightSidePanelStore()
 const settingStore = useSettingStore()
 const { t } = useI18n()
+
+const { hasAnyError } = storeToRefs(executionStore)
 
 const { findParentGroup } = useGraphHierarchy()
 
@@ -110,6 +114,14 @@ const tabs = computed<RightSidePanelTabList>(() => {
     })
   }
 
+  if (hasAnyError.value && !hasSelection.value) {
+    list.push({
+      label: () => t('rightSidePanel.errors'),
+      value: 'errors',
+      icon: 'icon-[lucide--octagon-alert] bg-node-stroke-error ml-1'
+    })
+  }
+
   list.push({
     label: () =>
       flattedItems.value.length > 1
@@ -154,6 +166,7 @@ watchEffect(() => {
     rightSidePanelStore.openPanel(tabs.value[0].value)
   }
 })
+
 
 function resolveTitle() {
   const items = flattedItems.value
@@ -213,7 +226,7 @@ function handleTitleCancel() {
 
 function handleProxyWidgetsUpdate(value: ProxyWidgetsProperty) {
   if (!selectedSingleNode.value) return
-  ;(selectedSingleNode.value as SubgraphNode).properties.proxyWidgets = value
+;(selectedSingleNode.value as SubgraphNode).properties.proxyWidgets = value
   canvasStore.canvas?.setDirty(true, true)
 }
 </script>
@@ -298,7 +311,8 @@ function handleProxyWidgetsUpdate(value: ProxyWidgetsProperty) {
     <!-- Panel Content -->
     <div class="scrollbar-thin flex-1 overflow-y-auto">
       <template v-if="!hasSelection">
-        <TabGlobalParameters v-if="activeTab === 'parameters'" />
+        <TabErrors v-if="activeTab === 'errors'" />
+        <TabGlobalParameters v-else-if="activeTab === 'parameters'" />
         <TabNodes v-else-if="activeTab === 'nodes'" />
         <TabGlobalSettings v-else-if="activeTab === 'settings'" />
       </template>
