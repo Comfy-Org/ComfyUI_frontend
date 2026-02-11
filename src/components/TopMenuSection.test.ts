@@ -2,7 +2,7 @@ import { createTestingPinia } from '@pinia/testing'
 import { mount } from '@vue/test-utils'
 import type { MenuItem } from 'primevue/menuitem'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { computed, defineComponent, h, nextTick, onMounted } from 'vue'
+import { computed, defineComponent, h, nextTick, onMounted, ref } from 'vue'
 import type { Component } from 'vue'
 import { createI18n } from 'vue-i18n'
 
@@ -22,7 +22,7 @@ import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 const mockData = vi.hoisted(() => ({
   isLoggedIn: false,
   isDesktop: false,
-  showConflictRedDot: false
+  setShowConflictRedDot: (_value: boolean) => {}
 }))
 
 vi.mock('@/composables/auth/useCurrentUser', () => ({
@@ -49,11 +49,18 @@ vi.mock('@/platform/updates/common/releaseStore', () => ({
 
 vi.mock(
   '@/workbench/extensions/manager/composables/useConflictAcknowledgment',
-  () => ({
-    useConflictAcknowledgment: () => ({
-      shouldShowRedDot: computed(() => mockData.showConflictRedDot)
-    })
-  })
+  () => {
+    const shouldShowConflictRedDot = ref(false)
+    mockData.setShowConflictRedDot = (value: boolean) => {
+      shouldShowConflictRedDot.value = value
+    }
+
+    return {
+      useConflictAcknowledgment: () => ({
+        shouldShowRedDot: shouldShowConflictRedDot
+      })
+    }
+  }
 )
 
 vi.mock('@/workbench/extensions/manager/composables/useManagerState', () => ({
@@ -141,7 +148,7 @@ describe('TopMenuSection', () => {
     localStorage.clear()
     mockData.isDesktop = false
     mockData.isLoggedIn = false
-    mockData.showConflictRedDot = false
+    mockData.setShowConflictRedDot(false)
   })
 
   describe('authentication state', () => {
@@ -365,7 +372,7 @@ describe('TopMenuSection', () => {
     // Release red dot is mocked as true globally for this test file.
     expect(wrapper.find('span.bg-red-500').exists()).toBe(false)
 
-    mockData.showConflictRedDot = true
+    mockData.setShowConflictRedDot(true)
     await nextTick()
 
     expect(wrapper.find('span.bg-red-500').exists()).toBe(true)
