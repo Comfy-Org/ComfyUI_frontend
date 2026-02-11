@@ -63,7 +63,7 @@ onUnmounted(() => {
 })
 
 const expandedKeys = inject(InjectKeyExpandedKeys)
-const handleItemDrop = (node: RenderedTreeExplorerNode) => {
+const handleItemDrop = (node: RenderedTreeExplorerNode<ComfyNodeDefImpl>) => {
   if (!expandedKeys) return
   expandedKeys.value[node.key] = true
 }

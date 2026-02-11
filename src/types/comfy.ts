@@ -259,5 +259,5 @@ export interface ComfyExtension {
    */
   onAuthUserLogout?(): Promise<void> | void
 
-  [key: string]: any
+  [key: string]: unknown
 }

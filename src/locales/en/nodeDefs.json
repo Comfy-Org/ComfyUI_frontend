@@ -4921,6 +4921,46 @@
       }
     }
   },
+  "KlingFirstLastFrameNode": {
+    "display_name": "Kling 3.0 First-Last-Frame to Video",
+    "description": "Generate videos with Kling V3 using first and last frames.",
+    "inputs": {
+      "prompt": {
+        "name": "prompt"
+      },
+      "duration": {
+        "name": "duration"
+      },
+      "first_frame": {
+        "name": "first_frame"
+      },
+      "end_frame": {
+        "name": "end_frame"
+      },
+      "generate_audio": {
+        "name": "generate_audio"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Model and generation settings."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed controls whether the node should re-run; results are non-deterministic regardless of seed."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "KlingImage2VideoNode": {
     "display_name": "Kling Image(First Frame) to Video",
     "inputs": {
@@ -4967,7 +5007,7 @@
     }
   },
   "KlingImageGenerationNode": {
-    "display_name": "Kling Image Generation",
+    "display_name": "Kling 3.0 Image",
     "description": "Kling Image Generation Node. Generate an image from a text prompt with an optional reference image.",
     "inputs": {
       "prompt": {
@@ -5001,6 +5041,13 @@
       },
       "image": {
         "name": "image"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed controls whether the node should re-run; results are non-deterministic regardless of seed."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
       }
     },
     "outputs": {
@@ -5010,7 +5057,7 @@
     }
   },
   "KlingImageToVideoWithAudio": {
-    "display_name": "Kling Image(First Frame) to Video with Audio",
+    "display_name": "Kling 2.6 Image(First Frame) to Video with Audio",
     "inputs": {
       "model_name": {
         "name": "model_name"
@@ -5130,7 +5177,7 @@
     }
   },
   "KlingOmniProEditVideoNode": {
-    "display_name": "Kling Omni Edit Video (Pro)",
+    "display_name": "Kling 3.0 Omni Edit Video",
     "description": "Edit an existing video with the latest model from Kling.",
     "inputs": {
       "model_name": {
@@ -5153,6 +5200,13 @@
       },
       "resolution": {
         "name": "resolution"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed controls whether the node should re-run; results are non-deterministic regardless of seed."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
       }
     },
     "outputs": {
@@ -5162,7 +5216,7 @@
     }
   },
   "KlingOmniProFirstLastFrameNode": {
-    "display_name": "Kling Omni First-Last-Frame to Video (Pro)",
+    "display_name": "Kling 3.0 Omni First-Last-Frame to Video",
     "description": "Use a start frame, an optional end frame, or reference images with the latest Kling model.",
     "inputs": {
       "model_name": {
@@ -5170,7 +5224,7 @@
       },
       "prompt": {
         "name": "prompt",
-        "tooltip": "A text prompt describing the video content. This can include both positive and negative descriptions."
+        "tooltip": "A text prompt describing the video content. This can include both positive and negative descriptions. Ignored when storyboards are enabled."
       },
       "duration": {
         "name": "duration"
@@ -5180,7 +5234,7 @@
       },
       "end_frame": {
         "name": "end_frame",
-        "tooltip": "An optional end frame for the video. This cannot be used simultaneously with 'reference_images'."
+        "tooltip": "An optional end frame for the video. This cannot be used simultaneously with 'reference_images'. Does not work with storyboards."
       },
       "reference_images": {
         "name": "reference_images",
@@ -5188,6 +5242,21 @@
       },
       "resolution": {
         "name": "resolution"
+      },
+      "storyboards": {
+        "name": "storyboards",
+        "tooltip": "Generate a series of video segments with individual prompts and durations. Only supported for kling-v3-omni."
+      },
+      "generate_audio": {
+        "name": "generate_audio",
+        "tooltip": "Generate audio for the video. Only supported for kling-v3-omni."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed controls whether the node should re-run; results are non-deterministic regardless of seed."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
       }
     },
     "outputs": {
@@ -5197,7 +5266,7 @@
     }
   },
   "KlingOmniProImageNode": {
-    "display_name": "Kling Omni Image (Pro)",
+    "display_name": "Kling 3.0 Omni Image",
     "description": "Create or edit images with the latest model from Kling.",
     "inputs": {
       "model_name": {
@@ -5213,9 +5282,20 @@
       "aspect_ratio": {
         "name": "aspect_ratio"
       },
+      "series_amount": {
+        "name": "series_amount",
+        "tooltip": "Generate a series of images. Not supported for kling-image-o1."
+      },
       "reference_images": {
         "name": "reference_images",
         "tooltip": "Up to 10 additional reference images."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed controls whether the node should re-run; results are non-deterministic regardless of seed."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
       }
     },
     "outputs": {
@@ -5225,7 +5305,7 @@
     }
   },
   "KlingOmniProImageToVideoNode": {
-    "display_name": "Kling Omni Image to Video (Pro)",
+    "display_name": "Kling 3.0 Omni Image to Video",
     "description": "Use up to 7 reference images to generate a video with the latest Kling model.",
     "inputs": {
       "model_name": {
@@ -5233,7 +5313,7 @@
       },
       "prompt": {
         "name": "prompt",
-        "tooltip": "A text prompt describing the video content. This can include both positive and negative descriptions."
+        "tooltip": "A text prompt describing the video content. This can include both positive and negative descriptions. Ignored when storyboards are enabled."
       },
       "aspect_ratio": {
         "name": "aspect_ratio"
@@ -5247,6 +5327,21 @@
       },
       "resolution": {
         "name": "resolution"
+      },
+      "storyboards": {
+        "name": "storyboards",
+        "tooltip": "Generate a series of video segments with individual prompts and durations. Only supported for kling-v3-omni."
+      },
+      "generate_audio": {
+        "name": "generate_audio",
+        "tooltip": "Generate audio for the video. Only supported for kling-v3-omni."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed controls whether the node should re-run; results are non-deterministic regardless of seed."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
       }
     },
     "outputs": {
@@ -5256,7 +5351,7 @@
     }
   },
   "KlingOmniProTextToVideoNode": {
-    "display_name": "Kling Omni Text to Video (Pro)",
+    "display_name": "Kling 3.0 Omni Text to Video",
     "description": "Use text prompts to generate videos with the latest Kling model.",
     "inputs": {
       "model_name": {
@@ -5264,7 +5359,7 @@
       },
       "prompt": {
         "name": "prompt",
-        "tooltip": "A text prompt describing the video content. This can include both positive and negative descriptions."
+        "tooltip": "A text prompt describing the video content. This can include both positive and negative descriptions. Ignored when storyboards are enabled."
       },
       "aspect_ratio": {
         "name": "aspect_ratio"
@@ -5274,6 +5369,20 @@
       },
       "resolution": {
         "name": "resolution"
+      },
+      "storyboards": {
+        "name": "storyboards",
+        "tooltip": "Generate a series of video segments with individual prompts and durations. Ignored for o1 model."
+      },
+      "generate_audio": {
+        "name": "generate_audio"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed controls whether the node should re-run; results are non-deterministic regardless of seed."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
       }
     },
     "outputs": {
@@ -5283,7 +5392,7 @@
     }
   },
   "KlingOmniProVideoToVideoNode": {
-    "display_name": "Kling Omni Video to Video (Pro)",
+    "display_name": "Kling 3.0 Omni Video to Video",
     "description": "Use a video and up to 4 reference images to generate a video with the latest Kling model.",
     "inputs": {
       "model_name": {
@@ -5312,6 +5421,13 @@
       },
       "resolution": {
         "name": "resolution"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed controls whether the node should re-run; results are non-deterministic regardless of seed."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
       }
     },
     "outputs": {
@@ -5435,7 +5551,7 @@
     }
   },
   "KlingTextToVideoWithAudio": {
-    "display_name": "Kling Text to Video with Audio",
+    "display_name": "Kling 2.6 Text to Video with Audio",
     "inputs": {
       "model_name": {
         "name": "model_name"
@@ -5493,6 +5609,54 @@
       },
       "2": {
         "name": "duration",
+        "tooltip": null
+      }
+    }
+  },
+  "KlingVideoNode": {
+    "display_name": "Kling 3.0 Video",
+    "description": "Generate videos with Kling V3. Supports text-to-video and image-to-video with optional storyboard multi-prompt and audio generation.",
+    "inputs": {
+      "multi_shot": {
+        "name": "multi_shot",
+        "tooltip": "Generate a series of video segments with individual prompts and durations."
+      },
+      "generate_audio": {
+        "name": "generate_audio"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Model and generation settings."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed controls whether the node should re-run; results are non-deterministic regardless of seed."
+      },
+      "start_frame": {
+        "name": "start_frame",
+        "tooltip": "Optional start frame image. When connected, switches to image-to-video mode."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      },
+      "multi_shot_duration": {
+        "name": "duration"
+      },
+      "multi_shot_negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "multi_shot_prompt": {
+        "name": "prompt"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -6382,6 +6546,10 @@
       "strength_model": {
         "name": "strength_model",
         "tooltip": "How strongly to modify the diffusion model. This value can be negative."
+      },
+      "bypass": {
+        "name": "bypass",
+        "tooltip": "When enabled, applies LoRA in bypass mode without modifying base model weights. Useful for training and when model weights are offloaded."
       }
     },
     "outputs": {
@@ -14463,6 +14631,14 @@
         "name": "gradient_checkpointing",
         "tooltip": "Use gradient checkpointing for training."
       },
+      "checkpoint_depth": {
+        "name": "checkpoint_depth",
+        "tooltip": "Depth level for gradient checkpointing."
+      },
+      "offloading": {
+        "name": "offloading",
+        "tooltip": "Depth level for gradient checkpointing."
+      },
       "existing_lora": {
         "name": "existing_lora",
         "tooltip": "The existing LoRA to append to. Set to None for new LoRA."
@@ -15401,6 +15577,31 @@
       },
       "control_after_generate": {
         "name": "control after generate"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Video Slice": {
+    "display_name": "Video Slice",
+    "inputs": {
+      "video": {
+        "name": "video"
+      },
+      "start_time": {
+        "name": "start_time",
+        "tooltip": "Start time in seconds"
+      },
+      "duration": {
+        "name": "duration",
+        "tooltip": "Duration in seconds, or 0 for unlimited duration"
+      },
+      "strict_duration": {
+        "name": "strict_duration",
+        "tooltip": "If True, when the specified duration is not possible, an error will be raised."
       }
     },
     "outputs": {
