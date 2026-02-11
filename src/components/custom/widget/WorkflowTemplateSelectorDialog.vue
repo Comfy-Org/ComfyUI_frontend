@@ -1,7 +1,7 @@
 <template>
   <BaseModalLayout
     :content-title="$t('templateWorkflows.title', 'Workflow Templates')"
-    class="workflow-template-selector-dialog"
+    size="md"
   >
     <template #leftPanelHeaderTitle>
       <i class="icon-[comfy--template]" />
@@ -854,19 +854,3 @@ onBeforeUnmount(() => {
   cardRefs.value = [] // Release DOM refs
 })
 </script>
-
-<style>
-/* Ensure the workflow template selector dialog fits within provided dialog */
-.workflow-template-selector-dialog.base-widget-layout {
-  width: 100% !important;
-  max-width: 1400px;
-  height: 100% !important;
-  aspect-ratio: auto !important;
-}
-
-@media (min-width: 1600px) {
-  .workflow-template-selector-dialog.base-widget-layout {
-    max-width: 1600px;
-  }
-}
-</style>

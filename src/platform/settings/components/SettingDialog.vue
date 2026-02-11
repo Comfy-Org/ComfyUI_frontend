@@ -1,25 +1,8 @@
 <template>
-  <BaseModalLayout
-    content-title=""
-    data-testid="settings-dialog"
-    class="settings-dialog"
-  >
+  <BaseModalLayout content-title="" data-testid="settings-dialog" size="md">
     <template #leftPanelHeaderTitle>
-      <WorkspaceProfilePic
-        v-if="teamWorkspacesEnabled"
-        class="size-6 text-xs"
-        :workspace-name="workspaceName"
-      />
-      <i v-else class="pi pi-cog" />
-      <span class="flex-auto select-none text-nowrap text-neutral text-base">
-        {{ teamWorkspacesEnabled ? workspaceName : $t('g.settings') }}
-      </span>
-      <StatusBadge
-        v-if="isStaging"
-        :label="t('staging')"
-        severity="warn"
-        class="ml-2"
-      />
+      <i class="icon-[lucide--settings]" />
+      <h2 class="text-neutral text-base">{{ $t('g.settings') }}</h2>
     </template>
 
     <template #leftPanel>
@@ -86,17 +69,14 @@
 </template>
 
 <script setup lang="ts">
-import StatusBadge from '@/components/common/StatusBadge.vue'
 import { computed, nextTick, provide, ref, watch } from 'vue'
 
 import SearchBox from '@/components/common/SearchBox.vue'
-import WorkspaceProfilePic from '@/components/common/WorkspaceProfilePic.vue'
 import CurrentUserMessage from '@/components/dialog/content/setting/CurrentUserMessage.vue'
 import BaseModalLayout from '@/components/widget/layout/BaseModalLayout.vue'
 import NavItem from '@/components/widget/nav/NavItem.vue'
 import NavTitle from '@/components/widget/nav/NavTitle.vue'
 import { useFirebaseAuthActions } from '@/composables/auth/useFirebaseAuthActions'
-import { isStaging } from '@/config/staging'
 import ColorPaletteMessage from '@/platform/settings/components/ColorPaletteMessage.vue'
 import SettingsPanel from '@/platform/settings/components/SettingsPanel.vue'
 import { useSettingSearch } from '@/platform/settings/composables/useSettingSearch'
@@ -107,12 +87,9 @@ import type {
   SettingPanelType,
   SettingParams
 } from '@/platform/settings/types'
-import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { OnCloseKey } from '@/types/widgetTypes'
 import { flattenTree } from '@/utils/treeUtil'
-import { useI18n } from 'vue-i18n'
 
-const { t } = useI18n()
 const { onClose, defaultPanel } = defineProps<{
   onClose: () => void
   defaultPanel?: SettingPanelType
@@ -124,13 +101,9 @@ const {
   defaultCategory,
   settingCategories,
   navGroups,
-  teamWorkspacesEnabled,
   findCategoryByKey,
   findPanelByKey
 } = useSettingUI(defaultPanel)
-
-const workspaceStore = useTeamWorkspaceStore()
-const workspaceName = computed(() => workspaceStore.workspaceName)
 
 const {
   searchQuery,
@@ -198,10 +171,6 @@ function handleSearch(query: string) {
 }
 
 function onNavItemClick(id: string) {
-  if (inSearch.value) {
-    searchQuery.value = ''
-    handleSearchBase('')
-  }
   activeCategoryKey.value = id
 }
 
@@ -228,10 +197,3 @@ watch(activeCategoryKey, (newKey, oldKey) => {
   }
 })
 </script>
-
-<style>
-.settings-dialog.base-widget-layout {
-  max-width: 1400px;
-  aspect-ratio: auto !important;
-}
-</style>
