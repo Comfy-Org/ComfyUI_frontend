@@ -9,6 +9,7 @@ const {
   mockAccessBillingPortal,
   mockShowSubscriptionRequiredDialog,
   mockGetAuthHeader,
+  mockGetCheckoutAttribution,
   mockTelemetry,
   mockUserId,
   mockIsCloud
@@ -21,6 +22,10 @@ const {
   mockGetAuthHeader: vi.fn(() =>
     Promise.resolve({ Authorization: 'Bearer test-token' })
   ),
+  mockGetCheckoutAttribution: vi.fn(() => ({
+    im_ref: 'impact-click-001',
+    utm_source: 'impact'
+  })),
   mockTelemetry: {
     trackSubscription: vi.fn(),
     trackMonthlySubscriptionCancelled: vi.fn()
@@ -29,6 +34,13 @@ const {
 }))
 
 let scope: ReturnType<typeof effectScope> | undefined
+type Distribution = 'desktop' | 'localhost' | 'cloud'
+
+const setDistribution = (distribution: Distribution) => {
+  ;(
+    globalThis as typeof globalThis & { __DISTRIBUTION__: Distribution }
+  ).__DISTRIBUTION__ = distribution
+}
 
 function useSubscriptionWithScope() {
   if (!scope) {
@@ -84,6 +96,10 @@ vi.mock('@/platform/distribution/types', () => ({
   }
 }))
 
+vi.mock('@/platform/telemetry/utils/checkoutAttribution', () => ({
+  getCheckoutAttribution: mockGetCheckoutAttribution
+}))
+
 vi.mock('@/services/dialogService', () => ({
   useDialogService: vi.fn(() => ({
     showSubscriptionRequiredDialog: mockShowSubscriptionRequiredDialog
@@ -107,11 +123,13 @@ describe(useSubscription, () => {
   afterEach(() => {
     scope?.stop()
     scope = undefined
+    setDistribution('localhost')
   })
 
   beforeEach(() => {
     scope?.stop()
     scope = effectScope()
+    setDistribution('cloud')
 
     vi.clearAllMocks()
     mockIsLoggedIn.value = false
@@ -284,6 +302,10 @@ describe(useSubscription, () => {
           headers: expect.objectContaining({
             Authorization: 'Bearer test-token',
             'Content-Type': 'application/json'
+          }),
+          body: JSON.stringify({
+            im_ref: 'impact-click-001',
+            utm_source: 'impact'
           })
         })
       )

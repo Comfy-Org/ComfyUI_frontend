@@ -1691,6 +1691,8 @@
   },
   "missingModelsDialog": {
     "doNotAskAgain": "Don't show this again",
+    "reEnableInSettings": "Re-enable in {link}",
+    "reEnableInSettingsLink": "Settings",
     "missingModels": "Missing Models",
     "missingModelsMessage": "When loading the graph, the following models were not found"
   },
@@ -2387,6 +2389,7 @@
       "placeholderImage": "Select image...",
       "placeholderAudio": "Select audio...",
       "placeholderVideo": "Select video...",
+      "placeholderMesh": "Select mesh...",
       "placeholderModel": "Select model...",
       "placeholderUnknown": "Select media..."
     },
@@ -2830,6 +2833,9 @@
         "Close": "Close"
       }
     }
+  },
+  "vueNodesSlot": {
+    "iterative": "(Iterative)"
   },
   "vueNodesBanner": {
     "title": "Introducing Nodes 2.0",

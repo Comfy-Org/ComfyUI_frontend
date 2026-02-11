@@ -1389,11 +1389,14 @@ export class ComfyApp {
           'Comfy.Execution.PreviewMethod'
         )
 
+        const isPartialExecution = !!queueNodeIds?.length
         for (let i = 0; i < batchCount; i++) {
           // Allow widgets to run callbacks before a prompt has been queued
           // e.g. random seed before every gen
           forEachNode(this.rootGraph, (node) => {
-            for (const widget of node.widgets ?? []) widget.beforeQueued?.()
+            for (const widget of node.widgets ?? []) {
+              widget.beforeQueued?.({ isPartialExecution })
+            }
           })
 
           const p = await this.graphToPrompt(this.rootGraph)
@@ -1449,7 +1452,9 @@ export class ComfyApp {
 
           // Allow widgets to run callbacks after a prompt has been queued
           // e.g. random seed after every gen
-          executeWidgetsCallback(queuedNodes, 'afterQueued')
+          executeWidgetsCallback(queuedNodes, 'afterQueued', {
+            isPartialExecution
+          })
           this.canvas.draw(true, true)
           await this.ui.queue.update()
         }

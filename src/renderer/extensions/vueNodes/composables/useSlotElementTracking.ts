@@ -29,9 +29,6 @@ const raf = createRafBatch(() => {
 
 function scheduleSlotLayoutSync(nodeId: string) {
   pendingNodes.add(nodeId)
-  // Re-assert pending flag for late mounts (Vue components mounting after
-  // flushScheduledSlotLayoutSync was called synchronously in onConfigure)
-  layoutStore.setPendingSlotSync(true)
   raf.schedule()
 }
 

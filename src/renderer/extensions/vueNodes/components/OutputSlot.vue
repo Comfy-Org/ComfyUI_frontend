@@ -23,9 +23,11 @@
 <script setup lang="ts">
 import { computed, onErrorCaptured, ref, watchEffect } from 'vue'
 import type { ComponentPublicInstance } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import type { INodeSlot } from '@/lib/litegraph/src/litegraph'
+import { RenderShape } from '@/lib/litegraph/src/types/globalEnums'
 import { useSlotLinkDragUIState } from '@/renderer/core/canvas/links/slotLinkDragUIState'
 import { getSlotKey } from '@/renderer/core/layout/slots/slotIdentifier'
 import { useNodeTooltips } from '@/renderer/extensions/vueNodes/composables/useNodeTooltips'
@@ -55,6 +57,8 @@ const {
   dotOnly: dotOnlyProp
 } = defineProps<OutputSlotProps>()
 
+const { t } = useI18n()
+
 const hasNoLabel = computed(
   () => !slotData.localized_name && slotData.name === ''
 )
@@ -73,7 +77,11 @@ const tooltipConfig = computed(() => {
   const slotName = slotData.name || ''
   const tooltipText = getOutputSlotTooltip(index)
   const fallbackText = tooltipText || `Output: ${slotName}`
-  return createTooltipConfig(fallbackText)
+  const iterativeSuffix =
+    props.slotData.shape === RenderShape.GRID
+      ? ` ${t('vueNodesSlot.iterative')}`
+      : ''
+  return createTooltipConfig(fallbackText + iterativeSuffix)
 })
 
 onErrorCaptured((error) => {

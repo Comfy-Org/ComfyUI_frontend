@@ -5,11 +5,34 @@
     :title="t('missingModelsDialog.missingModels')"
     :message="t('missingModelsDialog.missingModelsMessage')"
   />
-  <div class="mb-4 flex gap-1">
-    <Checkbox v-model="doNotAskAgain" binary input-id="doNotAskAgain" />
-    <label for="doNotAskAgain">{{
-      t('missingModelsDialog.doNotAskAgain')
-    }}</label>
+  <div class="mb-4 flex flex-col gap-1">
+    <div class="flex gap-1">
+      <input
+        id="doNotAskAgain"
+        v-model="doNotAskAgain"
+        type="checkbox"
+        class="h-4 w-4 cursor-pointer"
+      />
+      <label for="doNotAskAgain">{{
+        t('missingModelsDialog.doNotAskAgain')
+      }}</label>
+    </div>
+    <i18n-t
+      v-if="doNotAskAgain"
+      keypath="missingModelsDialog.reEnableInSettings"
+      tag="span"
+      class="text-sm text-muted-foreground ml-6"
+    >
+      <template #link>
+        <Button
+          variant="textonly"
+          class="underline cursor-pointer p-0 text-sm text-muted-foreground hover:bg-transparent"
+          @click="openShowMissingModelsSetting"
+        >
+          {{ t('missingModelsDialog.reEnableInSettingsLink') }}
+        </Button>
+      </template>
+    </i18n-t>
   </div>
   <ListBox :options="missingModels" class="comfy-missing-models">
     <template #option="{ option }">
@@ -31,16 +54,18 @@
 </template>
 
 <script setup lang="ts">
-import Checkbox from 'primevue/checkbox'
 import ListBox from 'primevue/listbox'
 import { computed, onBeforeUnmount, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import Button from '@/components/ui/button/Button.vue'
 import ElectronFileDownload from '@/components/common/ElectronFileDownload.vue'
 import FileDownload from '@/components/common/FileDownload.vue'
 import NoResultsPlaceholder from '@/components/common/NoResultsPlaceholder.vue'
-import { useSettingStore } from '@/platform/settings/settingStore'
 import { isDesktop } from '@/platform/distribution/types'
+import { useSettingStore } from '@/platform/settings/settingStore'
+import { useDialogService } from '@/services/dialogService'
+import { useDialogStore } from '@/stores/dialogStore'
 
 // TODO: Read this from server internal API rather than hardcoding here
 // as some installations may wish to use custom sources
@@ -77,6 +102,14 @@ const { missingModels: missingModelsProp, paths } = defineProps<{
 const { t } = useI18n()
 
 const doNotAskAgain = ref(false)
+
+function openShowMissingModelsSetting() {
+  useDialogStore().closeDialog({ key: 'global-missing-models-warning' })
+  void useDialogService().showSettingsDialog(
+    undefined,
+    'Comfy.Workflow.ShowMissingModelsWarning'
+  )
+}
 
 const modelDownloads = ref<Record<string, ModelInfo>>({})
 const missingModels = computed(() => {
