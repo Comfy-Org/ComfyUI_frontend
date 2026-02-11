@@ -104,6 +104,13 @@ function executionIdToNodeLocatorId(
   return nodeLocatorId
 }
 
+/** Prompt-level errors without node IDs (e.g. invalid_prompt, prompt_no_outputs) */
+export interface PromptError {
+  type: string
+  message: string
+  details: string
+}
+
 export const useExecutionStore = defineStore('execution', () => {
   const workflowStore = useWorkflowStore()
   const canvasStore = useCanvasStore()
@@ -113,6 +120,7 @@ export const useExecutionStore = defineStore('execution', () => {
   const queuedPrompts = ref<Record<NodeId, QueuedPrompt>>({})
   const lastNodeErrors = ref<Record<NodeId, NodeError> | null>(null)
   const lastExecutionError = ref<ExecutionErrorWsMessage | null>(null)
+  const lastPromptError = ref<PromptError | null>(null)
   // This is the progress of all nodes in the currently executing workflow
   const nodeProgressStates = ref<Record<string, NodeProgressState>>({})
   const nodeProgressStatesByPrompt = ref<
@@ -287,6 +295,7 @@ export const useExecutionStore = defineStore('execution', () => {
 
   function handleExecutionStart(e: CustomEvent<ExecutionStartWsMessage>) {
     lastExecutionError.value = null
+    lastPromptError.value = null
     activePromptId.value = e.detail.prompt_id
     queuedPrompts.value[activePromptId.value] ??= { nodes: {} }
     clearInitializationByPromptId(activePromptId.value)
@@ -641,6 +650,14 @@ export const useExecutionStore = defineStore('execution', () => {
     }
   })
 
+  /** Whether any error (node validation, runtime execution, or prompt-level) is present */
+  const hasAnyError = computed(
+    () =>
+      !!lastExecutionError.value ||
+      !!lastPromptError.value ||
+      (!!lastNodeErrors.value && Object.keys(lastNodeErrors.value).length > 0)
+  )
+
   return {
     isIdle,
     clientId,
@@ -648,6 +665,8 @@ export const useExecutionStore = defineStore('execution', () => {
     queuedPrompts,
     lastNodeErrors,
     lastExecutionError,
+    lastPromptError,
+    hasAnyError,
     lastExecutionErrorNodeId,
     executingNodeId,
     executingNodeIds,
