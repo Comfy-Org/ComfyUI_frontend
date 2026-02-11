@@ -1740,7 +1740,9 @@
   "missingModelsDialog": {
     "doNotAskAgain": "不再显示此消息",
     "missingModels": "缺少模型",
-    "missingModelsMessage": "加载工作流时，未找到以下模型"
+    "missingModelsMessage": "加载工作流时，未找到以下模型",
+    "reEnableInSettings": "可在{link}中重新启用",
+    "reEnableInSettingsLink": "设置"
   },
   "missingNodes": {
     "cloud": {
@@ -2818,6 +2820,9 @@
   "vueNodesMigrationMainMenu": {
     "message": "在主菜单中随时切换回 Nodes 2.0"
   },
+  "vueNodesSlot": {
+    "iterative": "（迭代）"
+  },
   "welcome": {
     "getStarted": "开始使用",
     "title": "欢迎使用 ComfyUI"
@@ -2838,6 +2843,7 @@
       "placeholder": "请选择...",
       "placeholderAudio": "请选择音频...",
       "placeholderImage": "请选择图片...",
+      "placeholderMesh": "选择网格...",
       "placeholderModel": "请选择模型...",
       "placeholderUnknown": "请选择媒体...",
       "placeholderVideo": "请选择视频..."

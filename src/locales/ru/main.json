@@ -1740,7 +1740,9 @@
   "missingModelsDialog": {
     "doNotAskAgain": "Больше не показывать это",
     "missingModels": "Отсутствующие модели",
-    "missingModelsMessage": "При загрузке графа следующие модели не были найдены"
+    "missingModelsMessage": "При загрузке графа следующие модели не были найдены",
+    "reEnableInSettings": "Включить снова в {link}",
+    "reEnableInSettingsLink": "Настройки"
   },
   "missingNodes": {
     "cloud": {
@@ -2807,6 +2809,9 @@
   "vueNodesMigrationMainMenu": {
     "message": "Переключиться обратно на Nodes 2.0 можно в главном меню."
   },
+  "vueNodesSlot": {
+    "iterative": "(Итеративно)"
+  },
   "welcome": {
     "getStarted": "Начать",
     "title": "Добро пожаловать в ComfyUI"
@@ -2827,6 +2832,7 @@
       "placeholder": "Выбрать...",
       "placeholderAudio": "Выбрать аудио...",
       "placeholderImage": "Выбрать изображение...",
+      "placeholderMesh": "Выберите mesh...",
       "placeholderModel": "Выбрать модель...",
       "placeholderUnknown": "Выбрать медиа...",
       "placeholderVideo": "Выбрать видео..."

@@ -953,20 +953,25 @@ export class ComfyApp {
   }
 
   async getNodeDefs(): Promise<Record<string, ComfyNodeDefV1>> {
-    const translateNodeDef = (def: ComfyNodeDefV1): ComfyNodeDefV1 => ({
-      ...def,
-      display_name: st(
-        `nodeDefs.${def.name}.display_name`,
-        def.display_name ?? def.name
-      ),
-      description: def.description
-        ? st(`nodeDefs.${def.name}.description`, def.description)
-        : '',
-      category: def.category
-        .split('/')
-        .map((category: string) => st(`nodeCategories.${category}`, category))
-        .join('/')
-    })
+    const translateNodeDef = (def: ComfyNodeDefV1): ComfyNodeDefV1 => {
+      // Use object info display_name as fallback before using name
+      const objectInfoDisplayName = def.display_name || def.name
+
+      return {
+        ...def,
+        display_name: st(
+          `nodeDefs.${def.name}.display_name`,
+          objectInfoDisplayName
+        ),
+        description: def.description
+          ? st(`nodeDefs.${def.name}.description`, def.description)
+          : '',
+        category: def.category
+          .split('/')
+          .map((category: string) => st(`nodeCategories.${category}`, category))
+          .join('/')
+      }
+    }
 
     return _.mapValues(await api.getNodeDefs(), (def) => translateNodeDef(def))
   }
@@ -1389,11 +1394,14 @@ export class ComfyApp {
           'Comfy.Execution.PreviewMethod'
         )
 
+        const isPartialExecution = !!queueNodeIds?.length
         for (let i = 0; i < batchCount; i++) {
           // Allow widgets to run callbacks before a prompt has been queued
           // e.g. random seed before every gen
           forEachNode(this.rootGraph, (node) => {
-            for (const widget of node.widgets ?? []) widget.beforeQueued?.()
+            for (const widget of node.widgets ?? []) {
+              widget.beforeQueued?.({ isPartialExecution })
+            }
           })
 
           const p = await this.graphToPrompt(this.rootGraph)
@@ -1449,7 +1457,9 @@ export class ComfyApp {
 
           // Allow widgets to run callbacks after a prompt has been queued
           // e.g. random seed after every gen
-          executeWidgetsCallback(queuedNodes, 'afterQueued')
+          executeWidgetsCallback(queuedNodes, 'afterQueued', {
+            isPartialExecution
+          })
           this.canvas.draw(true, true)
           await this.ui.queue.update()
         }

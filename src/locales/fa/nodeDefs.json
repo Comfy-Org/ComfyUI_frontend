@@ -5033,6 +5033,46 @@
       }
     }
   },
+  "KlingFirstLastFrameNode": {
+    "description": "تولید ویدیو با Kling V3 با استفاده از اولین و آخرین فریم.",
+    "display_name": "Kling 3.0 تبدیل اولین و آخرین فریم به ویدیو",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "duration": {
+        "name": "مدت زمان"
+      },
+      "end_frame": {
+        "name": "آخرین فریم"
+      },
+      "first_frame": {
+        "name": "اولین فریم"
+      },
+      "generate_audio": {
+        "name": "تولید صدا"
+      },
+      "model": {
+        "name": "مدل",
+        "tooltip": "تنظیمات مدل و تولید."
+      },
+      "model_resolution": {
+        "name": "رزولوشن"
+      },
+      "prompt": {
+        "name": "پرامپت"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "seed تعیین می‌کند که node باید دوباره اجرا شود یا خیر؛ نتایج حتی با seed یکسان غیرقطعی هستند."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "KlingImage2VideoNode": {
     "display_name": "تبدیل تصویر Kling (فریم اول) به ویدیو",
     "inputs": {
@@ -5085,6 +5125,9 @@
       "aspect_ratio": {
         "name": "aspect_ratio"
       },
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
       "human_fidelity": {
         "name": "human_fidelity",
         "tooltip": "شباهت مرجع سوژه"
@@ -5113,6 +5156,10 @@
       "prompt": {
         "name": "prompt",
         "tooltip": "پرامپت متنی مثبت"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "seed تعیین می‌کند که node باید دوباره اجرا شود یا خیر؛ نتایج حتی با seed یکسان غیرقطعی هستند."
       }
     },
     "outputs": {
@@ -5245,6 +5292,9 @@
     "description": "ویرایش یک ویدیوی موجود با جدیدترین مدل Kling.",
     "display_name": "ویرایش ویدیوی Omni Kling (حرفه‌ای)",
     "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
       "keep_original_sound": {
         "name": "حفظ صدای اصلی"
       },
@@ -5262,6 +5312,10 @@
       "resolution": {
         "name": "وضوح"
       },
+      "seed": {
+        "name": "seed",
+        "tooltip": "seed تعیین می‌کند که node باید دوباره اجرا شود یا خیر؛ نتایج حتی با seed یکسان غیرقطعی هستند."
+      },
       "video": {
         "name": "ویدیو",
         "tooltip": "ویدیو برای ویرایش. طول ویدیوی خروجی همانند ورودی خواهد بود."
@@ -5277,6 +5331,9 @@
     "description": "استفاده از یک فریم شروع، یک فریم پایانی اختیاری یا تصاویر مرجع با جدیدترین مدل Kling.",
     "display_name": "Kling Omni تبدیل اولین-آخرین فریم به ویدیو (Pro)",
     "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
       "duration": {
         "name": "duration"
       },
@@ -5286,6 +5343,10 @@
       },
       "first_frame": {
         "name": "first_frame"
+      },
+      "generate_audio": {
+        "name": "تولید صدا",
+        "tooltip": "تولید صدا برای ویدیو. فقط برای kling-v3-omni پشتیبانی می‌شود."
       },
       "model_name": {
         "name": "model_name"
@@ -5300,6 +5361,14 @@
       },
       "resolution": {
         "name": "resolution"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "seed تعیین می‌کند که node باید دوباره اجرا شود یا خیر؛ نتایج حتی با seed یکسان غیرقطعی هستند."
+      },
+      "storyboards": {
+        "name": "استوری‌بوردها",
+        "tooltip": "تولید مجموعه‌ای از بخش‌های ویدیویی با پرامپت و مدت زمان جداگانه. فقط برای kling-v3-omni پشتیبانی می‌شود."
       }
     },
     "outputs": {
@@ -5315,6 +5384,9 @@
       "aspect_ratio": {
         "name": "aspect_ratio"
       },
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
       "model_name": {
         "name": "model_name"
       },
@@ -5328,6 +5400,14 @@
       },
       "resolution": {
         "name": "resolution"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "seed تعیین می‌کند که node باید دوباره اجرا شود یا خیر؛ نتایج حتی با seed یکسان غیرقطعی هستند."
+      },
+      "series_amount": {
+        "name": "تعداد سری",
+        "tooltip": "تولید مجموعه‌ای از تصاویر. برای kling-image-o1 پشتیبانی نمی‌شود."
       }
     },
     "outputs": {
@@ -5343,8 +5423,15 @@
       "aspect_ratio": {
         "name": "aspect_ratio"
       },
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
       "duration": {
         "name": "duration"
+      },
+      "generate_audio": {
+        "name": "تولید صدا",
+        "tooltip": "تولید صدا برای ویدیو. فقط برای kling-v3-omni پشتیبانی می‌شود."
       },
       "model_name": {
         "name": "model_name"
@@ -5359,6 +5446,14 @@
       },
       "resolution": {
         "name": "resolution"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "seed تعیین می‌کند که node باید دوباره اجرا شود یا خیر؛ نتایج حتی با seed یکسان غیرقطعی هستند."
+      },
+      "storyboards": {
+        "name": "استوری‌بوردها",
+        "tooltip": "تولید مجموعه‌ای از بخش‌های ویدیویی با پرامپت و مدت زمان جداگانه. فقط برای kling-v3-omni پشتیبانی می‌شود."
       }
     },
     "outputs": {
@@ -5374,8 +5469,14 @@
       "aspect_ratio": {
         "name": "aspect_ratio"
       },
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
       "duration": {
         "name": "duration"
+      },
+      "generate_audio": {
+        "name": "تولید صدا"
       },
       "model_name": {
         "name": "model_name"
@@ -5386,6 +5487,14 @@
       },
       "resolution": {
         "name": "resolution"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "seed تعیین می‌کند که node باید دوباره اجرا شود یا خیر؛ نتایج حتی با seed یکسان غیرقطعی هستند."
+      },
+      "storyboards": {
+        "name": "استوری‌بوردها",
+        "tooltip": "تولید مجموعه‌ای از بخش‌های ویدیویی با پرامپت و مدت زمان جداگانه. برای مدل o1 نادیده گرفته می‌شود."
       }
     },
     "outputs": {
@@ -5400,6 +5509,9 @@
     "inputs": {
       "aspect_ratio": {
         "name": "aspect_ratio"
+      },
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
       },
       "duration": {
         "name": "duration"
@@ -5424,6 +5536,10 @@
       },
       "resolution": {
         "name": "resolution"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "seed تعیین می‌کند که آیا node باید دوباره اجرا شود؛ نتایج صرف‌نظر از seed غیرقطعی هستند."
       }
     },
     "outputs": {
@@ -5605,6 +5721,54 @@
       },
       "2": {
         "name": "duration",
+        "tooltip": null
+      }
+    }
+  },
+  "KlingVideoNode": {
+    "description": "تولید ویدیو با Kling V3. پشتیبانی از تبدیل متن به ویدیو و تصویر به ویدیو با امکان استفاده از استوری‌بورد چندپرومپتی و تولید صوت اختیاری.",
+    "display_name": "Kling 3.0 ویدیو",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "generate_audio": {
+        "name": "تولید صوت"
+      },
+      "model": {
+        "name": "مدل",
+        "tooltip": "تنظیمات مدل و تولید."
+      },
+      "model_aspect_ratio": {
+        "name": "نسبت تصویر"
+      },
+      "model_resolution": {
+        "name": "رزولوشن"
+      },
+      "multi_shot": {
+        "name": "چند شات",
+        "tooltip": "تولید مجموعه‌ای از بخش‌های ویدیویی با پرومپت‌ها و مدت زمان‌های جداگانه."
+      },
+      "multi_shot_duration": {
+        "name": "مدت زمان"
+      },
+      "multi_shot_negative_prompt": {
+        "name": "پرومپت منفی"
+      },
+      "multi_shot_prompt": {
+        "name": "پرومپت"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "seed تعیین می‌کند که آیا node باید دوباره اجرا شود؛ نتایج صرف‌نظر از seed غیرقطعی هستند."
+      },
+      "start_frame": {
+        "name": "فریم شروع",
+        "tooltip": "تصویر فریم شروع اختیاری. در صورت اتصال، به حالت تصویر به ویدیو تغییر می‌کند."
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -6716,6 +6880,10 @@
   "LoraModelLoader": {
     "display_name": "بارگذاری مدل LoRA",
     "inputs": {
+      "bypass": {
+        "name": "bypass",
+        "tooltip": "زمانی که فعال باشد، LoRA را در حالت bypass بدون تغییر وزن‌های مدل پایه اعمال می‌کند. این گزینه برای آموزش و زمانی که وزن‌های مدل offload شده‌اند مفید است."
+      },
       "lora": {
         "name": "lora",
         "tooltip": "مدل LoRA که باید روی مدل diffusion اعمال شود."
@@ -14339,6 +14507,10 @@
         "name": "bypass_mode",
         "tooltip": "فعال‌سازی حالت bypass برای آموزش. در این حالت، آداپتورها از طریق forward hookها به جای تغییر وزن‌ها اعمال می‌شوند. این روش برای مدل‌های quantized که امکان تغییر مستقیم وزن‌ها وجود ندارد، مفید است."
       },
+      "checkpoint_depth": {
+        "name": "checkpoint_depth",
+        "tooltip": "سطح عمق برای gradient checkpointing."
+      },
       "control_after_generate": {
         "name": "کنترل پس از تولید"
       },
@@ -14373,6 +14545,10 @@
       "model": {
         "name": "مدل",
         "tooltip": "مدلی که LoRA روی آن آموزش داده می‌شود."
+      },
+      "offloading": {
+        "name": "offloading",
+        "tooltip": "سطح عمق برای gradient checkpointing."
       },
       "optimizer": {
         "name": "بهینه‌ساز",
@@ -15276,6 +15452,31 @@
       "seed": {
         "name": "seed",
         "tooltip": "Seed برای تولید ویدیو (۰ برای تصادفی)"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Video Slice": {
+    "display_name": "برش ویدیو",
+    "inputs": {
+      "duration": {
+        "name": "مدت زمان",
+        "tooltip": "مدت زمان بر حسب ثانیه، یا ۰ برای مدت نامحدود"
+      },
+      "start_time": {
+        "name": "زمان شروع",
+        "tooltip": "زمان شروع بر حسب ثانیه"
+      },
+      "strict_duration": {
+        "name": "مدت زمان دقیق",
+        "tooltip": "اگر True باشد، در صورت عدم امکان مدت زمان مشخص شده، خطا نمایش داده می‌شود."
+      },
+      "video": {
+        "name": "ویدیو"
       }
     },
     "outputs": {

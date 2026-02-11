@@ -57,15 +57,20 @@ export function demoteWidget(
   widget.promoted = false
 }
 
+function getWidgetName(w: IBaseWidget): string {
+  return isProxyWidget(w) ? w._overlay.widgetName : w.name
+}
+
 export function matchesWidgetItem([nodeId, widgetName]: [string, string]) {
-  return ([n, w]: WidgetItem) => n.id == nodeId && w.name === widgetName
+  return ([n, w]: WidgetItem) =>
+    n.id == nodeId && getWidgetName(w) === widgetName
 }
 export function matchesPropertyItem([n, w]: WidgetItem) {
   return ([nodeId, widgetName]: [string, string]) =>
-    n.id == nodeId && w.name === widgetName
+    n.id == nodeId && getWidgetName(w) === widgetName
 }
 export function widgetItemToProperty([n, w]: WidgetItem): [string, string] {
-  return [`${n.id}`, w.name]
+  return [`${n.id}`, getWidgetName(w)]
 }
 
 function getParentNodes(): SubgraphNode[] {

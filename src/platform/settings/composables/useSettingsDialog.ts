@@ -14,13 +14,14 @@ export function useSettingsDialog() {
     dialogStore.closeDialog({ key: DIALOG_KEY })
   }
 
-  function show(panel?: SettingPanelType) {
+  function show(panel?: SettingPanelType, settingId?: string) {
     dialogService.showLayoutDialog({
       key: DIALOG_KEY,
       component: SettingDialog,
       props: {
         onClose: hide,
-        ...(panel ? { defaultPanel: panel } : {})
+        ...(panel ? { defaultPanel: panel } : {}),
+        ...(settingId ? { scrollToSettingId: settingId } : {})
       }
     })
   }

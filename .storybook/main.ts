@@ -98,9 +98,6 @@ const config: StorybookConfig = {
       },
       build: {
         rolldownOptions: {
-          experimental: {
-            strictExecutionOrder: true
-          },
           treeshake: false,
           output: {
             keepNames: true

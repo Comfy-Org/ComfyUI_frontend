@@ -7,16 +7,17 @@ import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useVueFeatureFlags } from '@/composables/useVueFeatureFlags'
 import { isCloud, isDesktop } from '@/platform/distribution/types'
+import {
+  getSettingInfo,
+  useSettingStore
+} from '@/platform/settings/settingStore'
 import type { SettingTreeNode } from '@/platform/settings/settingStore'
-import { useSettingStore } from '@/platform/settings/settingStore'
 import type { SettingPanelType, SettingParams } from '@/platform/settings/types'
 import type { NavGroupData } from '@/types/navTypes'
 import { normalizeI18nKey } from '@/utils/formatUtil'
 import { buildTree } from '@/utils/treeUtil'
 
 const CATEGORY_ICONS: Record<string, string> = {
-  Comfy: 'icon-[lucide--settings]',
-const CATEGORY_ICONS = {
   Comfy: 'icon-[lucide--settings]',
   LiteGraph: 'icon-[lucide--workflow]',
   Appearance: 'icon-[lucide--palette]',
@@ -30,6 +31,8 @@ const CATEGORY_ICONS = {
   keybinding: 'icon-[lucide--keyboard]',
   extension: 'icon-[lucide--puzzle]',
   'server-config': 'icon-[lucide--server]',
+  subscription: 'icon-[lucide--credit-card]',
+  secrets: 'icon-[lucide--key-round]',
   PlanCredits: 'icon-[lucide--credit-card]'
 } as const
 
@@ -39,7 +42,10 @@ interface SettingPanelItem {
   props?: Record<string, unknown>
 }
 
-export function useSettingUI(defaultPanel?: SettingPanelType) {
+export function useSettingUI(
+  defaultPanel?: SettingPanelType,
+  scrollToSettingId?: string
+) {
   const { t } = useI18n()
   const { isLoggedIn } = useCurrentUser()
   const settingStore = useSettingStore()
@@ -247,12 +253,23 @@ export function useSettingUI(defaultPanel?: SettingPanelType) {
    * The default category to show when the dialog is opened.
    */
   const defaultCategory = computed<SettingTreeNode>(() => {
-    if (!defaultPanel) return settingCategories.value[0]
-    // Search through all groups in groupedMenuTreeNodes
-    for (const group of groupedMenuTreeNodes.value) {
-      const found = group.children?.find((node) => node.key === defaultPanel)
-      if (found) return found
+    if (defaultPanel) {
+      for (const group of groupedMenuTreeNodes.value) {
+        const found = group.children?.find((node) => node.key === defaultPanel)
+        if (found) return found
+      }
+      return settingCategories.value[0]
     }
+
+    if (scrollToSettingId) {
+      const setting = settingStore.settingsById[scrollToSettingId]
+      if (setting) {
+        const { category } = getSettingInfo(setting)
+        const found = settingCategories.value.find((c) => c.label === category)
+        if (found) return found
+      }
+    }
+
     return settingCategories.value[0]
   })
 

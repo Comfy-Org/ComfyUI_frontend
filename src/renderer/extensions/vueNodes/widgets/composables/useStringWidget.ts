@@ -4,14 +4,18 @@ import { isStringInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { app } from '@/scripts/app'
 import type { ComfyWidgetConstructorV2 } from '@/scripts/widgets'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
 
 const TRACKPAD_DETECTION_THRESHOLD = 50
 
+// TODO: This widget manually syncs with widgetValueStore via getValue/setValue.
+// Consolidate with useMarkdownWidget into shared helpers (domWidgetHelpers.ts).
 function addMultilineWidget(
   node: LGraphNode,
   name: string,
   opts: { defaultVal: string; placeholder?: string }
 ) {
+  const widgetStore = useWidgetValueStore()
   const inputEl = document.createElement('textarea')
   inputEl.className = 'comfy-multiline-input'
   inputEl.value = opts.defaultVal
@@ -20,17 +24,24 @@ function addMultilineWidget(
 
   const widget = node.addDOMWidget(name, 'customtext', inputEl, {
     getValue(): string {
-      return inputEl.value
+      const widgetState = widgetStore.getWidget(node.id, name)
+
+      return (widgetState?.value as string) ?? inputEl.value
     },
     setValue(v: string) {
       inputEl.value = v
+      const widgetState = widgetStore.getWidget(node.id, name)
+      if (widgetState) widgetState.value = v
     }
   })
 
-  widget.inputEl = inputEl
+  widget.element = inputEl
   widget.options.minNodeSize = [400, 200]
 
-  inputEl.addEventListener('input', () => {
+  inputEl.addEventListener('input', (event) => {
+    if (event.target instanceof HTMLTextAreaElement) {
+      widget.value = event.target.value
+    }
     widget.callback?.(widget.value)
   })
 

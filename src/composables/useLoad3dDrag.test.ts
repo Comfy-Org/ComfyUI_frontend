@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 
 import { useLoad3dDrag } from '@/composables/useLoad3dDrag'
+import { SUPPORTED_EXTENSIONS } from '@/extensions/core/load3d/constants'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { createMockFileList } from '@/utils/__tests__/litegraphTestUtils'
 
@@ -199,7 +200,7 @@ describe('useLoad3dDrag', () => {
         onModelDrop: mockOnModelDrop
       })
 
-      const extensions = ['.gltf', '.glb', '.obj', '.fbx', '.stl']
+      const extensions = [...SUPPORTED_EXTENSIONS]
 
       for (const ext of extensions) {
         vi.mocked(mockOnModelDrop).mockClear()

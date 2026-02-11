@@ -90,9 +90,10 @@ import type {
 import { OnCloseKey } from '@/types/widgetTypes'
 import { flattenTree } from '@/utils/treeUtil'
 
-const { onClose, defaultPanel } = defineProps<{
+const { onClose, defaultPanel, scrollToSettingId } = defineProps<{
   onClose: () => void
   defaultPanel?: SettingPanelType
+  scrollToSettingId?: string
 }>()
 
 provide(OnCloseKey, onClose)
@@ -103,7 +104,7 @@ const {
   navGroups,
   findCategoryByKey,
   findPanelByKey
-} = useSettingUI(defaultPanel)
+} = useSettingUI(defaultPanel, scrollToSettingId)
 
 const {
   searchQuery,
