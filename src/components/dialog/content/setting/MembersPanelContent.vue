@@ -249,23 +249,21 @@
           <!-- Upsell Banner -->
           <div
             v-if="isSingleSeatPlan"
-            class="flex items-center justify-between rounded-xl border border-border-default px-4 py-3 mt-4"
+            class="flex items-center gap-2 rounded-xl border bg-secondary-background border-border-default px-4 py-3 mt-4 justify-center"
           >
-            <p class="m-0 text-sm text-muted-foreground">
+            <p class="m-0 text-sm text-foreground">
               {{
                 isActiveSubscription
                   ? $t('workspacePanel.members.upsellBannerUpgrade')
                   : $t('workspacePanel.members.upsellBannerSubscribe')
               }}
             </p>
-            <Button
-              variant="secondary"
-              size="md"
-              class="shrink-0 ml-4"
+            <div
+              class="cursor-pointer underline text-sm"
               @click="showSubscriptionDialog()"
             >
               {{ $t('workspacePanel.members.viewPlans') }}
-            </Button>
+            </div>
           </div>
 
           <!-- Pending Invites -->
