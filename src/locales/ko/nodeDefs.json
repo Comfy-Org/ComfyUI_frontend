@@ -5024,6 +5024,46 @@
       }
     }
   },
+  "KlingFirstLastFrameNode": {
+    "description": "Kling V3를 사용하여 첫 프레임과 마지막 프레임으로 비디오를 생성합니다.",
+    "display_name": "Kling 3.0 첫-마지막 프레임에서 비디오 생성",
+    "inputs": {
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "duration": {
+        "name": "지속 시간"
+      },
+      "end_frame": {
+        "name": "마지막 프레임"
+      },
+      "first_frame": {
+        "name": "첫 프레임"
+      },
+      "generate_audio": {
+        "name": "오디오 생성"
+      },
+      "model": {
+        "name": "모델",
+        "tooltip": "모델 및 생성 설정."
+      },
+      "model_resolution": {
+        "name": "해상도"
+      },
+      "prompt": {
+        "name": "프롬프트"
+      },
+      "seed": {
+        "name": "시드",
+        "tooltip": "시드는 노드가 다시 실행될지 여부를 제어합니다. 시드와 관계없이 결과는 비결정적입니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "KlingImage2VideoNode": {
     "display_name": "Kling 비디오 생성 (이미지 → 비디오)",
     "inputs": {
@@ -5076,6 +5116,9 @@
       "aspect_ratio": {
         "name": "종횡비"
       },
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
       "human_fidelity": {
         "name": "사람 충실도",
         "tooltip": "피사체 참조 유사도"
@@ -5104,6 +5147,10 @@
       "prompt": {
         "name": "프롬프트",
         "tooltip": "이미지 생성을 위한 프롬프트"
+      },
+      "seed": {
+        "name": "시드",
+        "tooltip": "시드는 노드가 다시 실행될지 여부를 제어합니다. 시드와 관계없이 결과는 비결정적입니다."
       }
     },
     "outputs": {
@@ -5236,6 +5283,9 @@
     "description": "Kling의 최신 모델로 기존 비디오를 편집합니다.",
     "display_name": "Kling 옴니 비디오 편집 (Pro)",
     "inputs": {
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
       "keep_original_sound": {
         "name": "원본 사운드 유지"
       },
@@ -5253,6 +5303,10 @@
       "resolution": {
         "name": "해상도"
       },
+      "seed": {
+        "name": "시드",
+        "tooltip": "시드는 노드가 다시 실행될지 여부를 제어합니다. 시드와 관계없이 결과는 비결정적입니다."
+      },
       "video": {
         "name": "비디오",
         "tooltip": "편집할 비디오입니다. 출력 비디오 길이는 동일합니다."
@@ -5268,6 +5322,9 @@
     "description": "최신 Kling 모델을 사용하여 시작 프레임, 선택적 종료 프레임 또는 참조 이미지를 사용합니다.",
     "display_name": "Kling Omni 첫-마지막 프레임에서 비디오로 (Pro)",
     "inputs": {
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
       "duration": {
         "name": "지속 시간"
       },
@@ -5277,6 +5334,10 @@
       },
       "first_frame": {
         "name": "시작 프레임"
+      },
+      "generate_audio": {
+        "name": "오디오 생성",
+        "tooltip": "비디오용 오디오를 생성합니다. kling-v3-omni에서만 지원됩니다."
       },
       "model_name": {
         "name": "model_name"
@@ -5291,6 +5352,14 @@
       },
       "resolution": {
         "name": "해상도"
+      },
+      "seed": {
+        "name": "시드",
+        "tooltip": "시드는 노드가 다시 실행될지 여부를 제어합니다. 시드와 관계없이 결과는 비결정적입니다."
+      },
+      "storyboards": {
+        "name": "스토리보드",
+        "tooltip": "각각의 프롬프트와 지속 시간으로 비디오 세그먼트 시리즈를 생성합니다. kling-v3-omni에서만 지원됩니다."
       }
     },
     "outputs": {
@@ -5306,6 +5375,9 @@
       "aspect_ratio": {
         "name": "화면 비율"
       },
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
       "model_name": {
         "name": "model_name"
       },
@@ -5319,6 +5391,14 @@
       },
       "resolution": {
         "name": "해상도"
+      },
+      "seed": {
+        "name": "시드",
+        "tooltip": "시드는 노드가 다시 실행될지 여부를 제어합니다. 시드와 관계없이 결과는 비결정적입니다."
+      },
+      "series_amount": {
+        "name": "시리즈 개수",
+        "tooltip": "이미지 시리즈를 생성합니다. kling-image-o1에서는 지원되지 않습니다."
       }
     },
     "outputs": {
@@ -5334,8 +5414,15 @@
       "aspect_ratio": {
         "name": "화면 비율"
       },
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
       "duration": {
         "name": "지속 시간"
+      },
+      "generate_audio": {
+        "name": "오디오 생성",
+        "tooltip": "비디오용 오디오를 생성합니다. kling-v3-omni에서만 지원됩니다."
       },
       "model_name": {
         "name": "model_name"
@@ -5350,6 +5437,14 @@
       },
       "resolution": {
         "name": "해상도"
+      },
+      "seed": {
+        "name": "시드",
+        "tooltip": "시드는 노드가 다시 실행될지 여부를 제어합니다. 시드와 관계없이 결과는 비결정적입니다."
+      },
+      "storyboards": {
+        "name": "스토리보드",
+        "tooltip": "각각의 프롬프트와 지속 시간으로 비디오 세그먼트 시리즈를 생성합니다. kling-v3-omni에서만 지원됩니다."
       }
     },
     "outputs": {
@@ -5365,8 +5460,14 @@
       "aspect_ratio": {
         "name": "화면 비율"
       },
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
       "duration": {
         "name": "지속 시간"
+      },
+      "generate_audio": {
+        "name": "오디오 생성"
       },
       "model_name": {
         "name": "model_name"
@@ -5377,6 +5478,14 @@
       },
       "resolution": {
         "name": "해상도"
+      },
+      "seed": {
+        "name": "시드",
+        "tooltip": "시드는 노드가 다시 실행될지 여부를 제어합니다. 시드와 관계없이 결과는 비결정적입니다."
+      },
+      "storyboards": {
+        "name": "스토리보드",
+        "tooltip": "각각의 프롬프트와 지속 시간으로 비디오 세그먼트 시리즈를 생성합니다. o1 모델에서는 무시됩니다."
       }
     },
     "outputs": {
@@ -5391,6 +5500,9 @@
     "inputs": {
       "aspect_ratio": {
         "name": "종횡비"
+      },
+      "control_after_generate": {
+        "name": "생성 후 제어"
       },
       "duration": {
         "name": "길이"
@@ -5415,6 +5527,10 @@
       },
       "resolution": {
         "name": "해상도"
+      },
+      "seed": {
+        "name": "시드",
+        "tooltip": "시드는 노드가 다시 실행되어야 하는지 제어합니다. 시드와 관계없이 결과는 비결정적입니다."
       }
     },
     "outputs": {
@@ -5596,6 +5712,54 @@
       },
       "2": {
         "name": "길이",
+        "tooltip": null
+      }
+    }
+  },
+  "KlingVideoNode": {
+    "description": "Kling V3로 비디오를 생성합니다. 텍스트-투-비디오, 이미지-투-비디오, 선택적 스토리보드 멀티 프롬프트 및 오디오 생성을 지원합니다.",
+    "display_name": "Kling 3.0 비디오",
+    "inputs": {
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "generate_audio": {
+        "name": "오디오 생성"
+      },
+      "model": {
+        "name": "모델",
+        "tooltip": "모델 및 생성 설정."
+      },
+      "model_aspect_ratio": {
+        "name": "종횡비"
+      },
+      "model_resolution": {
+        "name": "해상도"
+      },
+      "multi_shot": {
+        "name": "멀티 샷",
+        "tooltip": "각각의 프롬프트와 지속 시간을 가진 비디오 세그먼트 시리즈를 생성합니다."
+      },
+      "multi_shot_duration": {
+        "name": "지속 시간"
+      },
+      "multi_shot_negative_prompt": {
+        "name": "네거티브 프롬프트"
+      },
+      "multi_shot_prompt": {
+        "name": "프롬프트"
+      },
+      "seed": {
+        "name": "시드",
+        "tooltip": "시드는 노드가 다시 실행되어야 하는지 제어합니다. 시드와 관계없이 결과는 비결정적입니다."
+      },
+      "start_frame": {
+        "name": "시작 프레임",
+        "tooltip": "선택적 시작 프레임 이미지입니다. 연결 시 이미지-투-비디오 모드로 전환됩니다."
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -15263,6 +15427,31 @@
       "seed": {
         "name": "시드",
         "tooltip": "비디오 생성용 시드 (0은 무작위)"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Video Slice": {
+    "display_name": "비디오 슬라이스",
+    "inputs": {
+      "duration": {
+        "name": "지속 시간",
+        "tooltip": "초 단위 지속 시간, 0은 무제한 지속"
+      },
+      "start_time": {
+        "name": "시작 시간",
+        "tooltip": "초 단위 시작 시간"
+      },
+      "strict_duration": {
+        "name": "엄격한 지속 시간",
+        "tooltip": "True로 설정 시, 지정한 지속 시간이 불가능하면 오류가 발생합니다."
+      },
+      "video": {
+        "name": "비디오"
       }
     },
     "outputs": {

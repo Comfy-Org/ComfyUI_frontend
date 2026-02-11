@@ -5024,6 +5024,46 @@
       }
     }
   },
+  "KlingFirstLastFrameNode": {
+    "description": "إنشاء مقاطع فيديو باستخدام Kling V3 من خلال الإطارين الأول والأخير.",
+    "display_name": "Kling 3.0 الإطار الأول والأخير إلى فيديو",
+    "inputs": {
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "duration": {
+        "name": "المدة"
+      },
+      "end_frame": {
+        "name": "الإطار الأخير"
+      },
+      "first_frame": {
+        "name": "الإطار الأول"
+      },
+      "generate_audio": {
+        "name": "توليد الصوت"
+      },
+      "model": {
+        "name": "النموذج",
+        "tooltip": "إعدادات النموذج والتوليد."
+      },
+      "model_resolution": {
+        "name": "الدقة"
+      },
+      "prompt": {
+        "name": "الوصف"
+      },
+      "seed": {
+        "name": "البذرة",
+        "tooltip": "البذرة تتحكم في ما إذا كان يجب إعادة تشغيل العقدة؛ النتائج غير حتمية بغض النظر عن البذرة."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "KlingImage2VideoNode": {
     "display_name": "كليغ صورة إلى فيديو",
     "inputs": {
@@ -5076,6 +5116,9 @@
       "aspect_ratio": {
         "name": "نسبة العرض إلى الارتفاع"
       },
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
       "human_fidelity": {
         "name": "تشابه الموضوع",
         "tooltip": "تشابه المرجع للموضوع البشري"
@@ -5104,6 +5147,10 @@
       "prompt": {
         "name": "نص التوجيه الإيجابي",
         "tooltip": "نص التوجيه الإيجابي"
+      },
+      "seed": {
+        "name": "البذرة",
+        "tooltip": "البذرة تتحكم في ما إذا كان يجب إعادة تشغيل العقدة؛ النتائج غير حتمية بغض النظر عن البذرة."
       }
     },
     "outputs": {
@@ -5236,6 +5283,9 @@
     "description": "حرر فيديو موجود باستخدام أحدث نموذج من Kling.",
     "display_name": "تحرير فيديو Kling Omni (احترافي)",
     "inputs": {
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
       "keep_original_sound": {
         "name": "الاحتفاظ بالصوت الأصلي"
       },
@@ -5253,6 +5303,10 @@
       "resolution": {
         "name": "الدقة"
       },
+      "seed": {
+        "name": "البذرة",
+        "tooltip": "البذرة تتحكم في ما إذا كان يجب إعادة تشغيل العقدة؛ النتائج غير حتمية بغض النظر عن البذرة."
+      },
       "video": {
         "name": "فيديو",
         "tooltip": "الفيديو للتحرير. سيكون طول الفيديو الناتج هو نفسه."
@@ -5268,6 +5322,9 @@
     "description": "استخدم إطار بداية، وإطار نهاية اختياري، أو صور مرجعية مع أحدث نموذج من Kling.",
     "display_name": "Kling Omni من الإطار الأول إلى الأخير إلى فيديو (احترافي)",
     "inputs": {
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
       "duration": {
         "name": "duration"
       },
@@ -5277,6 +5334,10 @@
       },
       "first_frame": {
         "name": "first_frame"
+      },
+      "generate_audio": {
+        "name": "توليد الصوت",
+        "tooltip": "توليد صوت للفيديو. مدعوم فقط لـ kling-v3-omni."
       },
       "model_name": {
         "name": "model_name"
@@ -5291,6 +5352,14 @@
       },
       "resolution": {
         "name": "resolution"
+      },
+      "seed": {
+        "name": "البذرة",
+        "tooltip": "البذرة تتحكم في ما إذا كان يجب إعادة تشغيل العقدة؛ النتائج غير حتمية بغض النظر عن البذرة."
+      },
+      "storyboards": {
+        "name": "لوحات القصة",
+        "tooltip": "إنشاء سلسلة من مقاطع الفيديو مع أوصاف ومدد فردية. مدعوم فقط لـ kling-v3-omni."
       }
     },
     "outputs": {
@@ -5306,6 +5375,9 @@
       "aspect_ratio": {
         "name": "aspect_ratio"
       },
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
       "model_name": {
         "name": "model_name"
       },
@@ -5319,6 +5391,14 @@
       },
       "resolution": {
         "name": "resolution"
+      },
+      "seed": {
+        "name": "البذرة",
+        "tooltip": "البذرة تتحكم في ما إذا كان يجب إعادة تشغيل العقدة؛ النتائج غير حتمية بغض النظر عن البذرة."
+      },
+      "series_amount": {
+        "name": "عدد السلاسل",
+        "tooltip": "إنشاء سلسلة من الصور. غير مدعوم لـ kling-image-o1."
       }
     },
     "outputs": {
@@ -5334,8 +5414,15 @@
       "aspect_ratio": {
         "name": "aspect_ratio"
       },
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
       "duration": {
         "name": "duration"
+      },
+      "generate_audio": {
+        "name": "توليد الصوت",
+        "tooltip": "توليد صوت للفيديو. مدعوم فقط لـ kling-v3-omni."
       },
       "model_name": {
         "name": "model_name"
@@ -5350,6 +5437,14 @@
       },
       "resolution": {
         "name": "resolution"
+      },
+      "seed": {
+        "name": "البذرة",
+        "tooltip": "البذرة تتحكم في ما إذا كان يجب إعادة تشغيل العقدة؛ النتائج غير حتمية بغض النظر عن البذرة."
+      },
+      "storyboards": {
+        "name": "لوحات القصة",
+        "tooltip": "إنشاء سلسلة من مقاطع الفيديو مع أوصاف ومدد فردية. مدعوم فقط لـ kling-v3-omni."
       }
     },
     "outputs": {
@@ -5365,8 +5460,14 @@
       "aspect_ratio": {
         "name": "aspect_ratio"
       },
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
       "duration": {
         "name": "duration"
+      },
+      "generate_audio": {
+        "name": "توليد الصوت"
       },
       "model_name": {
         "name": "model_name"
@@ -5377,6 +5478,14 @@
       },
       "resolution": {
         "name": "resolution"
+      },
+      "seed": {
+        "name": "البذرة",
+        "tooltip": "البذرة تتحكم في ما إذا كان يجب إعادة تشغيل العقدة؛ النتائج غير حتمية بغض النظر عن البذرة."
+      },
+      "storyboards": {
+        "name": "لوحات القصة",
+        "tooltip": "إنشاء سلسلة من مقاطع الفيديو مع أوصاف ومدد فردية. يتم تجاهلها لنموذج o1."
       }
     },
     "outputs": {
@@ -5391,6 +5500,9 @@
     "inputs": {
       "aspect_ratio": {
         "name": "aspect_ratio"
+      },
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
       },
       "duration": {
         "name": "duration"
@@ -5415,6 +5527,10 @@
       },
       "resolution": {
         "name": "resolution"
+      },
+      "seed": {
+        "name": "البذرة",
+        "tooltip": "تتحكم البذرة فيما إذا كان يجب إعادة تشغيل العقدة؛ النتائج غير حتمية بغض النظر عن البذرة."
       }
     },
     "outputs": {
@@ -5596,6 +5712,54 @@
       },
       "2": {
         "name": "duration",
+        "tooltip": null
+      }
+    }
+  },
+  "KlingVideoNode": {
+    "description": "إنشاء مقاطع فيديو باستخدام Kling V3. يدعم التحويل من نص إلى فيديو ومن صورة إلى فيديو مع إمكانية استخدام لوحة قصة متعددة التعليمات وخيار توليد الصوت.",
+    "display_name": "Kling 3.0 فيديو",
+    "inputs": {
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "generate_audio": {
+        "name": "توليد الصوت"
+      },
+      "model": {
+        "name": "النموذج",
+        "tooltip": "إعدادات النموذج والتوليد."
+      },
+      "model_aspect_ratio": {
+        "name": "نسبة العرض إلى الارتفاع"
+      },
+      "model_resolution": {
+        "name": "الدقة"
+      },
+      "multi_shot": {
+        "name": "متعدد اللقطات",
+        "tooltip": "إنشاء سلسلة من مقاطع الفيديو مع تعليمات ومدة زمنية منفصلة لكل مقطع."
+      },
+      "multi_shot_duration": {
+        "name": "المدة"
+      },
+      "multi_shot_negative_prompt": {
+        "name": "تعليمة سلبية"
+      },
+      "multi_shot_prompt": {
+        "name": "تعليمة"
+      },
+      "seed": {
+        "name": "البذرة",
+        "tooltip": "تتحكم البذرة فيما إذا كان يجب إعادة تشغيل العقدة؛ النتائج غير حتمية بغض النظر عن البذرة."
+      },
+      "start_frame": {
+        "name": "الإطار الابتدائي",
+        "tooltip": "صورة الإطار الابتدائي (اختياري). عند التوصيل، يتحول إلى وضع صورة إلى فيديو."
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -15263,6 +15427,31 @@
       "seed": {
         "name": "البذرة",
         "tooltip": "بذرة توليد الفيديو (0 عشوائي)"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Video Slice": {
+    "display_name": "تقطيع الفيديو",
+    "inputs": {
+      "duration": {
+        "name": "المدة",
+        "tooltip": "المدة بالثواني، أو 0 لمدة غير محدودة"
+      },
+      "start_time": {
+        "name": "وقت البدء",
+        "tooltip": "وقت البدء بالثواني"
+      },
+      "strict_duration": {
+        "name": "مدة صارمة",
+        "tooltip": "إذا كانت القيمة صحيحة، سيتم رفع خطأ عند عدم إمكانية تحقيق المدة المحددة."
+      },
+      "video": {
+        "name": "الفيديو"
       }
     },
     "outputs": {

@@ -5024,6 +5024,46 @@
       }
     }
   },
+  "KlingFirstLastFrameNode": {
+    "description": "Générez des vidéos avec Kling V3 en utilisant la première et la dernière image.",
+    "display_name": "Kling 3.0 Première-Dernière-Image en Vidéo",
+    "inputs": {
+      "control_after_generate": {
+        "name": "contrôle après génération"
+      },
+      "duration": {
+        "name": "durée"
+      },
+      "end_frame": {
+        "name": "dernière image"
+      },
+      "first_frame": {
+        "name": "première image"
+      },
+      "generate_audio": {
+        "name": "générer l'audio"
+      },
+      "model": {
+        "name": "modèle",
+        "tooltip": "Paramètres du modèle et de la génération."
+      },
+      "model_resolution": {
+        "name": "résolution"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Le seed contrôle si le nœud doit être relancé ; les résultats sont non déterministes quel que soit le seed."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "KlingImage2VideoNode": {
     "display_name": "Kling Image to Video",
     "inputs": {
@@ -5076,6 +5116,9 @@
       "aspect_ratio": {
         "name": "aspect_ratio"
       },
+      "control_after_generate": {
+        "name": "contrôle après génération"
+      },
       "human_fidelity": {
         "name": "human_fidelity",
         "tooltip": "Similarité de référence du sujet"
@@ -5104,6 +5147,10 @@
       "prompt": {
         "name": "prompt",
         "tooltip": "Invite textuelle positive"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Le seed contrôle si le nœud doit être relancé ; les résultats sont non déterministes quel que soit le seed."
       }
     },
     "outputs": {
@@ -5236,6 +5283,9 @@
     "description": "Éditez une vidéo existante avec le dernier modèle de Kling.",
     "display_name": "Kling Omni Édition Vidéo (Pro)",
     "inputs": {
+      "control_after_generate": {
+        "name": "contrôle après génération"
+      },
       "keep_original_sound": {
         "name": "garder_son_original"
       },
@@ -5253,6 +5303,10 @@
       "resolution": {
         "name": "résolution"
       },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Le seed contrôle si le nœud doit être relancé ; les résultats sont non déterministes quel que soit le seed."
+      },
       "video": {
         "name": "vidéo",
         "tooltip": "Vidéo à éditer. La longueur de la vidéo de sortie sera la même."
@@ -5268,6 +5322,9 @@
     "description": "Utilisez une image de départ, une image de fin optionnelle ou des images de référence avec le dernier modèle Kling.",
     "display_name": "Kling Omni Première-Dernière-Image vers Vidéo (Pro)",
     "inputs": {
+      "control_after_generate": {
+        "name": "contrôle après génération"
+      },
       "duration": {
         "name": "duration"
       },
@@ -5277,6 +5334,10 @@
       },
       "first_frame": {
         "name": "first_frame"
+      },
+      "generate_audio": {
+        "name": "générer l'audio",
+        "tooltip": "Générer l'audio pour la vidéo. Pris en charge uniquement pour kling-v3-omni."
       },
       "model_name": {
         "name": "model_name"
@@ -5291,6 +5352,14 @@
       },
       "resolution": {
         "name": "resolution"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Le seed contrôle si le nœud doit être relancé ; les résultats sont non déterministes quel que soit le seed."
+      },
+      "storyboards": {
+        "name": "storyboards",
+        "tooltip": "Générez une série de segments vidéo avec des prompts et des durées individuelles. Pris en charge uniquement pour kling-v3-omni."
       }
     },
     "outputs": {
@@ -5306,6 +5375,9 @@
       "aspect_ratio": {
         "name": "aspect_ratio"
       },
+      "control_after_generate": {
+        "name": "contrôle après génération"
+      },
       "model_name": {
         "name": "model_name"
       },
@@ -5319,6 +5391,14 @@
       },
       "resolution": {
         "name": "resolution"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Le seed contrôle si le nœud doit être relancé ; les résultats sont non déterministes quel que soit le seed."
+      },
+      "series_amount": {
+        "name": "nombre de séries",
+        "tooltip": "Générez une série d'images. Non pris en charge pour kling-image-o1."
       }
     },
     "outputs": {
@@ -5334,8 +5414,15 @@
       "aspect_ratio": {
         "name": "aspect_ratio"
       },
+      "control_after_generate": {
+        "name": "contrôle après génération"
+      },
       "duration": {
         "name": "duration"
+      },
+      "generate_audio": {
+        "name": "générer l'audio",
+        "tooltip": "Générer l'audio pour la vidéo. Pris en charge uniquement pour kling-v3-omni."
       },
       "model_name": {
         "name": "model_name"
@@ -5350,6 +5437,14 @@
       },
       "resolution": {
         "name": "resolution"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Le seed contrôle si le nœud doit être relancé ; les résultats sont non déterministes quel que soit le seed."
+      },
+      "storyboards": {
+        "name": "storyboards",
+        "tooltip": "Générez une série de segments vidéo avec des prompts et des durées individuelles. Pris en charge uniquement pour kling-v3-omni."
       }
     },
     "outputs": {
@@ -5365,8 +5460,14 @@
       "aspect_ratio": {
         "name": "aspect_ratio"
       },
+      "control_after_generate": {
+        "name": "contrôle après génération"
+      },
       "duration": {
         "name": "duration"
+      },
+      "generate_audio": {
+        "name": "générer l'audio"
       },
       "model_name": {
         "name": "model_name"
@@ -5377,6 +5478,14 @@
       },
       "resolution": {
         "name": "resolution"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Le seed contrôle si le nœud doit être relancé ; les résultats sont non déterministes quel que soit le seed."
+      },
+      "storyboards": {
+        "name": "storyboards",
+        "tooltip": "Générez une série de segments vidéo avec des prompts et des durées individuelles. Ignoré pour le modèle o1."
       }
     },
     "outputs": {
@@ -5391,6 +5500,9 @@
     "inputs": {
       "aspect_ratio": {
         "name": "aspect_ratio"
+      },
+      "control_after_generate": {
+        "name": "contrôle après génération"
       },
       "duration": {
         "name": "duration"
@@ -5415,6 +5527,10 @@
       },
       "resolution": {
         "name": "resolution"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Le seed contrôle si le nœud doit être relancé ; les résultats sont non déterministes quel que soit le seed."
       }
     },
     "outputs": {
@@ -5596,6 +5712,54 @@
       },
       "2": {
         "name": "duration",
+        "tooltip": null
+      }
+    }
+  },
+  "KlingVideoNode": {
+    "description": "Générez des vidéos avec Kling V3. Prend en charge le texte-vers-vidéo et l’image-vers-vidéo avec storyboard multi-invite optionnel et génération audio.",
+    "display_name": "Kling 3.0 Vidéo",
+    "inputs": {
+      "control_after_generate": {
+        "name": "contrôle après génération"
+      },
+      "generate_audio": {
+        "name": "générer audio"
+      },
+      "model": {
+        "name": "modèle",
+        "tooltip": "Paramètres du modèle et de la génération."
+      },
+      "model_aspect_ratio": {
+        "name": "ratio d’aspect"
+      },
+      "model_resolution": {
+        "name": "résolution"
+      },
+      "multi_shot": {
+        "name": "multi_shot",
+        "tooltip": "Générez une série de segments vidéo avec des invites et des durées individuelles."
+      },
+      "multi_shot_duration": {
+        "name": "durée"
+      },
+      "multi_shot_negative_prompt": {
+        "name": "invite_négative"
+      },
+      "multi_shot_prompt": {
+        "name": "invite"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Le seed contrôle si le nœud doit être relancé ; les résultats sont non déterministes quel que soit le seed."
+      },
+      "start_frame": {
+        "name": "image de départ",
+        "tooltip": "Image de départ optionnelle. Lorsqu’elle est connectée, passe en mode image-vers-vidéo."
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -15263,6 +15427,31 @@
       "seed": {
         "name": "seed",
         "tooltip": "Graine pour la génération vidéo (0 pour aléatoire)"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Video Slice": {
+    "display_name": "Découpage Vidéo",
+    "inputs": {
+      "duration": {
+        "name": "durée",
+        "tooltip": "Durée en secondes, ou 0 pour une durée illimitée"
+      },
+      "start_time": {
+        "name": "heure_de_début",
+        "tooltip": "Heure de début en secondes"
+      },
+      "strict_duration": {
+        "name": "durée_stricte",
+        "tooltip": "Si vrai, lorsqu’il n’est pas possible de respecter la durée spécifiée, une erreur sera générée."
+      },
+      "video": {
+        "name": "vidéo"
       }
     },
     "outputs": {

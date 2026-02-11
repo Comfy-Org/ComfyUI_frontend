@@ -5024,6 +5024,46 @@
       }
     }
   },
+  "KlingFirstLastFrameNode": {
+    "description": "Genera videos con Kling V3 usando el primer y último fotograma.",
+    "display_name": "Kling 3.0 Primer-Último Fotograma a Video",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controlar después de generar"
+      },
+      "duration": {
+        "name": "duración"
+      },
+      "end_frame": {
+        "name": "último_fotograma"
+      },
+      "first_frame": {
+        "name": "primer_fotograma"
+      },
+      "generate_audio": {
+        "name": "generar_audio"
+      },
+      "model": {
+        "name": "modelo",
+        "tooltip": "Configuración del modelo y generación."
+      },
+      "model_resolution": {
+        "name": "resolución"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "seed": {
+        "name": "semilla",
+        "tooltip": "La semilla controla si el nodo debe ejecutarse de nuevo; los resultados son no deterministas independientemente de la semilla."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "KlingImage2VideoNode": {
     "display_name": "Kling Imagen a Video",
     "inputs": {
@@ -5076,6 +5116,9 @@
       "aspect_ratio": {
         "name": "aspect_ratio"
       },
+      "control_after_generate": {
+        "name": "controlar después de generar"
+      },
       "human_fidelity": {
         "name": "human_fidelity",
         "tooltip": "Similitud de referencia del sujeto"
@@ -5104,6 +5147,10 @@
       "prompt": {
         "name": "prompt",
         "tooltip": "Prompt de texto positivo"
+      },
+      "seed": {
+        "name": "semilla",
+        "tooltip": "La semilla controla si el nodo debe ejecutarse de nuevo; los resultados son no deterministas independientemente de la semilla."
       }
     },
     "outputs": {
@@ -5236,6 +5283,9 @@
     "description": "Edita un video existente con el modelo más reciente de Kling.",
     "display_name": "Kling Omni Editar Video (Pro)",
     "inputs": {
+      "control_after_generate": {
+        "name": "controlar después de generar"
+      },
       "keep_original_sound": {
         "name": "mantener_sonido_original"
       },
@@ -5253,6 +5303,10 @@
       "resolution": {
         "name": "resolución"
       },
+      "seed": {
+        "name": "semilla",
+        "tooltip": "La semilla controla si el nodo debe ejecutarse de nuevo; los resultados son no deterministas independientemente de la semilla."
+      },
       "video": {
         "name": "video",
         "tooltip": "Video para editar. La longitud del video de salida será la misma."
@@ -5268,6 +5322,9 @@
     "description": "Utiliza un fotograma inicial, un fotograma final opcional o imágenes de referencia con el último modelo de Kling.",
     "display_name": "Kling Omni Primer-Último-Frame a Video (Pro)",
     "inputs": {
+      "control_after_generate": {
+        "name": "controlar después de generar"
+      },
       "duration": {
         "name": "duration"
       },
@@ -5277,6 +5334,10 @@
       },
       "first_frame": {
         "name": "first_frame"
+      },
+      "generate_audio": {
+        "name": "generar_audio",
+        "tooltip": "Genera audio para el video. Solo compatible con kling-v3-omni."
       },
       "model_name": {
         "name": "model_name"
@@ -5291,6 +5352,14 @@
       },
       "resolution": {
         "name": "resolution"
+      },
+      "seed": {
+        "name": "semilla",
+        "tooltip": "La semilla controla si el nodo debe ejecutarse de nuevo; los resultados son no deterministas independientemente de la semilla."
+      },
+      "storyboards": {
+        "name": "storyboards",
+        "tooltip": "Genera una serie de segmentos de video con prompts y duraciones individuales. Solo compatible con kling-v3-omni."
       }
     },
     "outputs": {
@@ -5306,6 +5375,9 @@
       "aspect_ratio": {
         "name": "aspect_ratio"
       },
+      "control_after_generate": {
+        "name": "controlar después de generar"
+      },
       "model_name": {
         "name": "model_name"
       },
@@ -5319,6 +5391,14 @@
       },
       "resolution": {
         "name": "resolution"
+      },
+      "seed": {
+        "name": "semilla",
+        "tooltip": "La semilla controla si el nodo debe ejecutarse de nuevo; los resultados son no deterministas independientemente de la semilla."
+      },
+      "series_amount": {
+        "name": "cantidad_de_series",
+        "tooltip": "Genera una serie de imágenes. No compatible con kling-image-o1."
       }
     },
     "outputs": {
@@ -5334,8 +5414,15 @@
       "aspect_ratio": {
         "name": "aspect_ratio"
       },
+      "control_after_generate": {
+        "name": "controlar después de generar"
+      },
       "duration": {
         "name": "duration"
+      },
+      "generate_audio": {
+        "name": "generar_audio",
+        "tooltip": "Genera audio para el video. Solo compatible con kling-v3-omni."
       },
       "model_name": {
         "name": "model_name"
@@ -5350,6 +5437,14 @@
       },
       "resolution": {
         "name": "resolution"
+      },
+      "seed": {
+        "name": "semilla",
+        "tooltip": "La semilla controla si el nodo debe ejecutarse de nuevo; los resultados son no deterministas independientemente de la semilla."
+      },
+      "storyboards": {
+        "name": "storyboards",
+        "tooltip": "Genera una serie de segmentos de video con prompts y duraciones individuales. Solo compatible con kling-v3-omni."
       }
     },
     "outputs": {
@@ -5365,8 +5460,14 @@
       "aspect_ratio": {
         "name": "aspect_ratio"
       },
+      "control_after_generate": {
+        "name": "controlar después de generar"
+      },
       "duration": {
         "name": "duration"
+      },
+      "generate_audio": {
+        "name": "generar_audio"
       },
       "model_name": {
         "name": "model_name"
@@ -5377,6 +5478,14 @@
       },
       "resolution": {
         "name": "resolution"
+      },
+      "seed": {
+        "name": "semilla",
+        "tooltip": "La semilla controla si el nodo debe ejecutarse de nuevo; los resultados son no deterministas independientemente de la semilla."
+      },
+      "storyboards": {
+        "name": "storyboards",
+        "tooltip": "Genera una serie de segmentos de video con prompts y duraciones individuales. Ignorado para el modelo o1."
       }
     },
     "outputs": {
@@ -5391,6 +5500,9 @@
     "inputs": {
       "aspect_ratio": {
         "name": "aspect_ratio"
+      },
+      "control_after_generate": {
+        "name": "controlar después de generar"
       },
       "duration": {
         "name": "duration"
@@ -5415,6 +5527,10 @@
       },
       "resolution": {
         "name": "resolution"
+      },
+      "seed": {
+        "name": "semilla",
+        "tooltip": "La semilla controla si el nodo debe volver a ejecutarse; los resultados son no deterministas independientemente de la semilla."
       }
     },
     "outputs": {
@@ -5596,6 +5712,54 @@
       },
       "2": {
         "name": "duration",
+        "tooltip": null
+      }
+    }
+  },
+  "KlingVideoNode": {
+    "description": "Genera videos con Kling V3. Soporta texto a video e imagen a video con opción de storyboard multiprompt y generación de audio.",
+    "display_name": "Kling 3.0 Video",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controlar después de generar"
+      },
+      "generate_audio": {
+        "name": "generar audio"
+      },
+      "model": {
+        "name": "modelo",
+        "tooltip": "Configuración del modelo y generación."
+      },
+      "model_aspect_ratio": {
+        "name": "relación de aspecto"
+      },
+      "model_resolution": {
+        "name": "resolución"
+      },
+      "multi_shot": {
+        "name": "multi_shot",
+        "tooltip": "Genera una serie de segmentos de video con indicaciones y duraciones individuales."
+      },
+      "multi_shot_duration": {
+        "name": "duración"
+      },
+      "multi_shot_negative_prompt": {
+        "name": "indicaciones negativas"
+      },
+      "multi_shot_prompt": {
+        "name": "indicaciones"
+      },
+      "seed": {
+        "name": "semilla",
+        "tooltip": "La semilla controla si el nodo debe volver a ejecutarse; los resultados son no deterministas independientemente de la semilla."
+      },
+      "start_frame": {
+        "name": "fotograma inicial",
+        "tooltip": "Imagen de fotograma inicial opcional. Al conectarse, cambia al modo imagen a video."
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -15263,6 +15427,31 @@
       "seed": {
         "name": "seed",
         "tooltip": "Semilla para la generación de video (0 para aleatorio)"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Video Slice": {
+    "display_name": "Corte de Video",
+    "inputs": {
+      "duration": {
+        "name": "duración",
+        "tooltip": "Duración en segundos, o 0 para duración ilimitada"
+      },
+      "start_time": {
+        "name": "hora de inicio",
+        "tooltip": "Hora de inicio en segundos"
+      },
+      "strict_duration": {
+        "name": "duración estricta",
+        "tooltip": "Si es Verdadero, cuando la duración especificada no sea posible, se generará un error."
+      },
+      "video": {
+        "name": "video"
       }
     },
     "outputs": {
