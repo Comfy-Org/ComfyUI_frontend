@@ -6879,6 +6879,10 @@
   "LoraModelLoader": {
     "display_name": "LoRA Modeli Yükle",
     "inputs": {
+      "bypass": {
+        "name": "bypass",
+        "tooltip": "Etkinleştirildiğinde, LoRA'yı temel model ağırlıklarını değiştirmeden bypass modunda uygular. Eğitim sırasında ve model ağırlıkları dışa aktarıldığında kullanışlıdır."
+      },
       "lora": {
         "name": "lora",
         "tooltip": "Difüzyon modeline uygulanacak LoRA modeli."
@@ -14490,6 +14494,10 @@
         "name": "bypass_mode",
         "tooltip": "Eğitim için bypass modunu etkinleştir. Etkinleştirildiğinde, adapter'lar ağırlık değişikliği yerine forward hook'lar ile uygulanır. Ağırlıkların doğrudan değiştirilemediği quantized modeller için kullanışlıdır."
       },
+      "checkpoint_depth": {
+        "name": "checkpoint_depth",
+        "tooltip": "Gradyan kontrol noktası derinlik seviyesi."
+      },
       "control_after_generate": {
         "name": "oluşturduktan sonra kontrol et"
       },
@@ -14524,6 +14532,10 @@
       "model": {
         "name": "model",
         "tooltip": "LoRA'nın eğitileceği model."
+      },
+      "offloading": {
+        "name": "offloading",
+        "tooltip": "Gradyan kontrol noktası derinlik seviyesi."
       },
       "optimizer": {
         "name": "optimize_edici",

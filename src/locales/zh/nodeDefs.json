@@ -6880,6 +6880,10 @@
   "LoraModelLoader": {
     "display_name": "加载 LoRA 模型",
     "inputs": {
+      "bypass": {
+        "name": "bypass",
+        "tooltip": "启用后，以旁路模式应用LoRA，不修改基础模型权重。适用于训练和模型权重卸载时。"
+      },
       "lora": {
         "name": "lora",
         "tooltip": "要应用于扩散模型的 LoRA 模型。"
@@ -14503,6 +14507,10 @@
         "name": "bypass_mode",
         "tooltip": "为训练启用旁路模式。启用后，适配器通过前向钩子应用，而不是直接修改权重。适用于权重无法直接修改的量化模型。"
       },
+      "checkpoint_depth": {
+        "name": "checkpoint_depth",
+        "tooltip": "用于梯度检查点的深度级别。"
+      },
       "control_after_generate": {
         "name": "生成后控制"
       },
@@ -14537,6 +14545,10 @@
       "model": {
         "name": "模型",
         "tooltip": "用于训练 LoRA 的模型。"
+      },
+      "offloading": {
+        "name": "offloading",
+        "tooltip": "用于梯度检查点的深度级别。"
       },
       "optimizer": {
         "name": "优化器",

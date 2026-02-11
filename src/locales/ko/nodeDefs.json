@@ -6879,6 +6879,10 @@
   "LoraModelLoader": {
     "display_name": "LoRA 모델 로드",
     "inputs": {
+      "bypass": {
+        "name": "bypass",
+        "tooltip": "활성화하면 LoRA를 바이패스 모드로 적용하여 기본 모델 가중치를 변경하지 않습니다. 학습 시나 모델 가중치 오프로딩 시 유용합니다."
+      },
       "lora": {
         "name": "LoRA",
         "tooltip": "디퓨전 모델에 적용할 LoRA 모델입니다."
@@ -14490,6 +14494,10 @@
         "name": "bypass_mode",
         "tooltip": "학습을 위한 바이패스 모드를 활성화합니다. 활성화 시, 어댑터가 가중치 수정 대신 forward hook을 통해 적용됩니다. 가중치를 직접 수정할 수 없는 양자화된 모델에 유용합니다."
       },
+      "checkpoint_depth": {
+        "name": "checkpoint_depth",
+        "tooltip": "그래디언트 체크포인팅의 깊이 수준입니다."
+      },
       "control_after_generate": {
         "name": "생성 후 제어"
       },
@@ -14524,6 +14532,10 @@
       "model": {
         "name": "모델",
         "tooltip": "LoRA를 학습시킬 모델입니다."
+      },
+      "offloading": {
+        "name": "offloading",
+        "tooltip": "그래디언트 체크포인팅의 깊이 수준입니다."
       },
       "optimizer": {
         "name": "옵티마이저",

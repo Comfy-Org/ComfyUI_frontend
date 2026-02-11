@@ -6879,6 +6879,10 @@
   "LoraModelLoader": {
     "display_name": "LoRAモデルを読み込み",
     "inputs": {
+      "bypass": {
+        "name": "バイパス",
+        "tooltip": "有効にすると、LoRAをバイパスモードで適用し、ベースモデルの重みを変更しません。トレーニングやモデルの重みをオフロードする際に便利です。"
+      },
       "lora": {
         "name": "LoRA",
         "tooltip": "拡散モデルに適用するLoRAモデル。"
@@ -14490,6 +14494,10 @@
         "name": "bypass_mode",
         "tooltip": "トレーニング用のバイパスモードを有効にします。有効にすると、アダプターは重みの変更ではなくフォワードフックで適用されます。重みを直接変更できない量子化モデルで便利です。"
       },
+      "checkpoint_depth": {
+        "name": "チェックポイント深度",
+        "tooltip": "勾配チェックポイントの深度レベル。"
+      },
       "control_after_generate": {
         "name": "control after generate"
       },
@@ -14524,6 +14532,10 @@
       "model": {
         "name": "モデル",
         "tooltip": "LoRAを学習させる対象のモデル。"
+      },
+      "offloading": {
+        "name": "オフロード",
+        "tooltip": "勾配チェックポイントの深度レベル。"
       },
       "optimizer": {
         "name": "オプティマイザ",

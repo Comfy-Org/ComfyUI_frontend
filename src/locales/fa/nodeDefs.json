@@ -6880,6 +6880,10 @@
   "LoraModelLoader": {
     "display_name": "بارگذاری مدل LoRA",
     "inputs": {
+      "bypass": {
+        "name": "bypass",
+        "tooltip": "زمانی که فعال باشد، LoRA را در حالت bypass بدون تغییر وزن‌های مدل پایه اعمال می‌کند. این گزینه برای آموزش و زمانی که وزن‌های مدل offload شده‌اند مفید است."
+      },
       "lora": {
         "name": "lora",
         "tooltip": "مدل LoRA که باید روی مدل diffusion اعمال شود."
@@ -14503,6 +14507,10 @@
         "name": "bypass_mode",
         "tooltip": "فعال‌سازی حالت bypass برای آموزش. در این حالت، آداپتورها از طریق forward hookها به جای تغییر وزن‌ها اعمال می‌شوند. این روش برای مدل‌های quantized که امکان تغییر مستقیم وزن‌ها وجود ندارد، مفید است."
       },
+      "checkpoint_depth": {
+        "name": "checkpoint_depth",
+        "tooltip": "سطح عمق برای gradient checkpointing."
+      },
       "control_after_generate": {
         "name": "کنترل پس از تولید"
       },
@@ -14537,6 +14545,10 @@
       "model": {
         "name": "مدل",
         "tooltip": "مدلی که LoRA روی آن آموزش داده می‌شود."
+      },
+      "offloading": {
+        "name": "offloading",
+        "tooltip": "سطح عمق برای gradient checkpointing."
       },
       "optimizer": {
         "name": "بهینه‌ساز",
