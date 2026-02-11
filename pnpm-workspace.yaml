@@ -6,15 +6,16 @@ catalog:
   '@alloc/quick-lru': ^5.2.0
   '@comfyorg/comfyui-electron-types': 0.6.2
   '@eslint/js': ^9.39.1
-  '@iconify-json/lucide': ^1.1.178
+  '@atlaskit/pragmatic-drag-and-drop': ^1.7.7
+  '@iconify-json/lucide': ^1.2.90
   '@iconify/json': ^2.2.438
   '@iconify/tailwind4': ^1.2.0
   '@intlify/eslint-plugin-vue-i18n': ^4.1.1
-  '@lobehub/i18n-cli': ^1.25.1
-  '@nx/eslint': 22.2.6
-  '@nx/playwright': 22.2.6
-  '@nx/storybook': 22.2.4
-  '@nx/vite': 22.2.6
+  '@lobehub/i18n-cli': ^1.26.0
+  '@nx/eslint': 22.5.0
+  '@nx/playwright': 22.5.0
+  '@nx/storybook': 22.5.0
+  '@nx/vite': 22.5.0
   '@pinia/testing': ^1.0.3
   '@playwright/test': ^1.58.2
   '@primeuix/forms': 0.0.2
@@ -24,8 +25,8 @@ catalog:
   '@primevue/forms': ^4.2.5
   '@primevue/icons': 4.2.5
   '@primevue/themes': ^4.2.5
-  '@sentry/vite-plugin': ^4.6.0
-  '@sentry/vue': ^10.32.1
+  '@sentry/vite-plugin': ^4.9.1
+  '@sentry/vue': ^10.38.0
   '@sparkjsdev/spark': ^0.1.10
   '@storybook/addon-docs': ^10.2.8
   '@storybook/addon-mcp': 0.1.6
@@ -44,35 +45,40 @@ catalog:
   '@vueuse/core': ^14.2.1
   '@vueuse/integrations': ^14.2.1
   '@webgpu/types': ^0.1.66
-  algoliasearch: ^5.21.0
+  algoliasearch: ^5.48.0
   axios: ^1.13.5
   chart.js: ^4.5.1
   cross-env: ^10.1.0
   cva: 1.0.0-beta.4
+  dompurify: ^3.3.1
   dotenv: ^16.4.5
+  es-toolkit: ^1.44.0
   eslint: ^9.39.1
   eslint-config-prettier: ^10.1.8
   eslint-import-resolver-typescript: ^4.4.4
   eslint-plugin-import-x: ^4.16.1
-  eslint-plugin-oxlint: 1.25.0
+  eslint-plugin-oxlint: 1.46.0
   eslint-plugin-storybook: ^10.2.8
-  eslint-plugin-unused-imports: ^4.3.0
-  eslint-plugin-vue: ^10.6.2
+  eslint-plugin-unused-imports: ^4.4.1
+  eslint-plugin-vue: ^10.7.0
+  extendable-media-recorder: ^9.2.36
+  extendable-media-recorder-wav-encoder: ^7.0.136
   firebase: ^11.6.0
+  fuse.js: ^7.1.0
   fs-extra: ^11.3.3
   globals: ^16.5.0
-  happy-dom: ^20.0.11
+  happy-dom: ^20.6.1
   husky: ^9.1.7
   jiti: 2.6.1
   jsdom: ^27.4.0
   jsonata: ^2.1.0
-  knip: ^5.75.1
+  knip: ^5.83.1
   lint-staged: ^16.2.7
   markdown-table: ^3.0.4
-  mixpanel-browser: ^2.71.0
-  nx: 22.2.6
-  oxfmt: ^0.26.0
-  oxlint: ^1.33.0
+  mixpanel-browser: ^2.74.0
+  nx: 22.5.0
+  oxfmt: ^0.31.0
+  oxlint: ^1.46.0
   oxlint-tsgolint: ^0.9.1
   picocolors: ^1.1.1
   pinia: ^3.0.4
@@ -80,18 +86,18 @@ catalog:
   pretty-bytes: ^7.1.0
   primeicons: ^7.0.0
   primevue: ^4.2.5
-  reka-ui: ^2.5.0
+  reka-ui: ^2.8.0
   rollup-plugin-visualizer: ^6.0.5
   semver: ^7.7.4
   storybook: ^10.2.8
   stylelint: ^16.26.1
   tailwindcss: ^4.1.18
   tailwindcss-primeui: ^0.6.1
-  tsx: ^4.15.6
-  tw-animate-css: ^1.3.8
+  tsx: ^4.21.0
+  tw-animate-css: ^1.4.0
   typegpu: ^0.8.2
   typescript: ^5.9.3
-  typescript-eslint: ^8.49.0
+  typescript-eslint: ^8.55.0
   unplugin-icons: ^22.5.0
   unplugin-typegpu: 0.8.0
   unplugin-vue-components: ^30.0.0
@@ -110,7 +116,7 @@ catalog:
   wwobjloader2: ^6.2.1
   yjs: ^13.6.29
   zod: ^3.23.8
-  zod-to-json-schema: ^3.24.1
+  zod-to-json-schema: ^3.25.1
   zod-validation-error: ^3.3.0
 
 cleanupUnusedCatalogs: true
