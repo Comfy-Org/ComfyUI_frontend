@@ -10,12 +10,9 @@
             <template v-if="activeView === 'active'">
               {{
                 isSingleSeatPlan || isPersonalWorkspace
-                  ? $t(
-                      'workspacePanel.members.memberCountSimple',
-                      {
-                        count: isPersonalWorkspace ? 1 : members.length
-                      }
-                    )
+                  ? $t('workspacePanel.members.memberCountSimple', {
+                      count: isPersonalWorkspace ? 1 : members.length
+                    })
                   : $t('workspacePanel.members.membersCount', {
                       count: members.length
                     })
