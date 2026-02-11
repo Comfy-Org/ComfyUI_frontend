@@ -1,8 +1,12 @@
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n'
+
 import Button from '@/components/ui/button/Button.vue'
 import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
-import { t } from '@/i18n'
 import type { NodeError } from '@/schemas/apiSchema'
+
+const { t } = useI18n()
+
 defineProps<{
   errors: NodeError[]
 }>()
