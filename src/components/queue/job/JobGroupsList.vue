@@ -41,7 +41,9 @@ import { onBeforeUnmount, ref, watch } from 'vue'
 import QueueJobItem from '@/components/queue/job/QueueJobItem.vue'
 import type { JobGroup, JobListItem } from '@/composables/queue/useJobList'
 
-const props = defineProps<{ displayedJobGroups: JobGroup[] }>()
+const { displayedJobGroups } = defineProps<{
+  displayedJobGroups: JobGroup[]
+}>()
 
 const emit = defineEmits<{
   (e: 'cancelItem', item: JobListItem): void
@@ -97,7 +99,7 @@ const resetActiveDetails = () => {
 }
 
 watch(
-  () => props.displayedJobGroups,
+  () => displayedJobGroups,
   (groups) => {
     const activeId = activeDetailsId.value
     if (!activeId) return

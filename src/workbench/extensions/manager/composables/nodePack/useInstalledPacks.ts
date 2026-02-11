@@ -13,9 +13,9 @@ export const useInstalledPacks = (options: UseNodePacksOptions = {}) => {
   const isInitializing = ref(false)
   const lastFetchedIds = ref<string>('')
 
-  const installedPackIds = computed(() =>
-    Array.from(comfyManagerStore.installedPacksIds)
-  )
+  const installedPackIds = computed(() => [
+    ...comfyManagerStore.installedPacksIds
+  ])
 
   const { startFetch, cleanup, error, isLoading, nodePacks, isReady } =
     useNodePacks(installedPackIds, options)

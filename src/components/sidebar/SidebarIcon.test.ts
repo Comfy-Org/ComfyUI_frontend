@@ -22,7 +22,7 @@ const i18n = createI18n({
   }
 })
 
-describe('SidebarIcon', () => {
+describe(SidebarIcon.__name ?? 'SidebarIcon', () => {
   const exampleProps: SidebarIconProps = {
     icon: 'pi pi-cog',
     selected: false

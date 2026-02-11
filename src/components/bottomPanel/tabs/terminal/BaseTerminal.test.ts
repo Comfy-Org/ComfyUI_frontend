@@ -106,7 +106,7 @@ const mountBaseTerminal = () => {
   })
 }
 
-describe('BaseTerminal', () => {
+describe(BaseTerminal.__name ?? 'BaseTerminal', () => {
   let wrapper: VueWrapper<InstanceType<typeof BaseTerminal>> | undefined
 
   beforeEach(() => {

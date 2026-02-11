@@ -178,7 +178,7 @@ export const useNodeBadge = () => {
                 const isRelevantInput =
                   relevantInputs.includes(inputName) ||
                   inputGroupPrefixes.some((prefix) =>
-                    inputName.startsWith(prefix + '.')
+                    inputName.startsWith(`${prefix}.`)
                   )
                 if (isRelevantInput) {
                   nodePricing.triggerPriceRecalculation(node)

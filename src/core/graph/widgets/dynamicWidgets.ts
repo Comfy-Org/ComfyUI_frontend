@@ -88,7 +88,7 @@ function dynamicComboWidget(
     widgetName
   )
   function isInGroup(e: { name: string }): boolean {
-    return e.name.startsWith(inputName + '.')
+    return e.name.startsWith(`${inputName}.`)
   }
   const updateWidgets = (value?: string) => {
     if (!node.widgets) throw new Error('Not Reachable')
@@ -138,7 +138,7 @@ function dynamicComboWidget(
         node.inputs.length !== startingInputLength
       )
         //input is inputOnly, but lacks an insertion point
-        throw new Error('Failed to find input socket for ' + widget.name)
+        throw new Error(`Failed to find input socket for ${widget.name}`)
       return
     }
     const addedInputs = spliceInputs(node, startingInputLength).map(
@@ -317,7 +317,7 @@ function withComfyMatchType(node: LGraphNode): asserts node is MatchTypeNode {
       const outputType = commonType(...connectedTypes)
       if (!outputType) throw new Error('invalid connection')
       this.outputs.forEach((output, idx) => {
-        if (!(outputGroups?.[idx] == matchKey)) return
+        if (outputGroups?.[idx] !== matchKey) return
         changeOutputType(this, output, outputType)
       })
       app.canvas?.setDirty(true, true)
@@ -369,7 +369,7 @@ function autogrowOrdinalToName(
   } = node.comfyDynamic.autogrow[groupName]
   const baseName = names
     ? names[ordinal]
-    : (inputSpecs.length == 1 ? prefix : key) + ordinal
+    : (inputSpecs.length === 1 ? prefix : key) + ordinal
   return { name: `${groupName}.${baseName}`, display_name: baseName }
 }
 
@@ -436,18 +436,18 @@ function resolveAutogrowOrdinal(
   const match = name.match(ORDINAL_REGEX)
   if (!match) return undefined
   const ordinal = parseInt(match[0])
-  return ordinal !== ordinal ? undefined : ordinal
+  return Number.isNaN(ordinal) ? undefined : ordinal
 }
 function autogrowInputConnected(index: number, node: AutogrowNode) {
   const input = node.inputs[index]
   const groupName = input.name.slice(0, input.name.lastIndexOf('.'))
   const lastInput = node.inputs.findLast((inp) =>
-    inp.name.startsWith(groupName + '.')
+    inp.name.startsWith(`${groupName}.`)
   )
   const ordinal = resolveAutogrowOrdinal(input.name, groupName, node)
   if (
     !lastInput ||
-    ordinal == undefined ||
+    ordinal === undefined ||
     (ordinal !== resolveAutogrowOrdinal(lastInput.name, groupName, node) &&
       !app.configuringGraph)
   )
@@ -460,12 +460,12 @@ function autogrowInputDisconnected(index: number, node: AutogrowNode) {
   const groupName = input.name.slice(0, input.name.lastIndexOf('.'))
   const { min = 1, inputSpecs } = node.comfyDynamic.autogrow[groupName]
   const ordinal = resolveAutogrowOrdinal(input.name, groupName, node)
-  if (ordinal == undefined || ordinal + 1 < min) return
+  if (ordinal === undefined || ordinal + 1 < min) return
 
   //resolve all inputs in group
   const groupInputs = node.inputs.filter(
     (inp) =>
-      inp.name.startsWith(groupName + '.') &&
+      inp.name.startsWith(`${groupName}.`) &&
       inp.name.lastIndexOf('.') === groupName.length
   )
   const stride = inputSpecs.length
@@ -536,7 +536,9 @@ function withComfyAutogrow(node: LGraphNode): asserts node is AutogrowNode {
   const originalOnConnectInput = node.onConnectInput
   node.onConnectInput = function (slot: number, ...args) {
     pendingConnection = slot
-    requestAnimationFrame(() => (pendingConnection = undefined))
+    requestAnimationFrame(() => {
+      pendingConnection = undefined
+    })
     return originalOnConnectInput?.apply(this, [slot, ...args]) ?? true
   }
 
@@ -563,7 +565,9 @@ function withComfyAutogrow(node: LGraphNode): asserts node is AutogrowNode {
       } else {
         if (pendingConnection === slot) {
           swappingConnection = true
-          requestAnimationFrame(() => (swappingConnection = false))
+          requestAnimationFrame(() => {
+            swappingConnection = false
+          })
           return
         }
         requestAnimationFrame(() => autogrowInputDisconnected(slot, this))

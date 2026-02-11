@@ -5,7 +5,7 @@ import type { Ref } from 'vue'
 import { useMinimapInteraction } from '@/renderer/extensions/minimap/composables/useMinimapInteraction'
 import type { MinimapCanvas } from '@/renderer/extensions/minimap/types'
 
-describe('useMinimapInteraction', () => {
+describe(useMinimapInteraction, () => {
   let mockContainer: HTMLDivElement
   let mockCanvas: MinimapCanvas
   let centerViewOnMock: (worldX: number, worldY: number) => void

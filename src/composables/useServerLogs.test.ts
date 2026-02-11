@@ -18,7 +18,7 @@ vi.mock('@vueuse/core', () => ({
   useEventListener: vi.fn().mockReturnValue(vi.fn())
 }))
 
-describe('useServerLogs', () => {
+describe(useServerLogs, () => {
   beforeEach(() => {
     vi.clearAllMocks()
   })

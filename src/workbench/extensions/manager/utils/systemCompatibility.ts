@@ -116,8 +116,11 @@ export function normalizeOSList(
   // Filter to valid Registry OS values only
   const validOS: RegistryOS[] = []
   osValues.forEach((os) => {
-    if (os === 'Windows' || os === 'macOS' || os === 'Linux') {
-      if (!validOS.includes(os)) validOS.push(os)
+    if (
+      (os === 'Windows' || os === 'macOS' || os === 'Linux') &&
+      !validOS.includes(os)
+    ) {
+      validOS.push(os)
     }
   })
 

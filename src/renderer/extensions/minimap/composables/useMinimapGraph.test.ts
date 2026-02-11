@@ -24,7 +24,7 @@ vi.mock('@/scripts/api', () => ({
   }
 }))
 
-describe('useMinimapGraph', () => {
+describe(useMinimapGraph, () => {
   let mockGraph: LGraph
   let onGraphChangedMock: () => void
 

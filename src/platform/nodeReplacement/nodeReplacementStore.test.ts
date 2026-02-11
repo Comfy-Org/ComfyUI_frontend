@@ -1,9 +1,9 @@
-import type { NodeReplacementResponse } from './types'
-
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useSettingStore } from '@/platform/settings/settingStore'
+
+import type { NodeReplacementResponse } from './types'
 import { fetchNodeReplacements } from './nodeReplacementService'
 import { useNodeReplacementStore } from './nodeReplacementStore'
 
@@ -33,7 +33,7 @@ function createStore(enabled = true) {
   return useNodeReplacementStore()
 }
 
-describe('useNodeReplacementStore', () => {
+describe(useNodeReplacementStore, () => {
   let store: ReturnType<typeof useNodeReplacementStore>
 
   beforeEach(() => {

@@ -30,7 +30,7 @@ const createMockNode = (type: string, version?: string): LGraphNode =>
     outputs: []
   })
 
-describe('MissingCoreNodesMessage', () => {
+describe(MissingCoreNodesMessage.__name ?? 'MissingCoreNodesMessage', () => {
   const mockSystemStatsStore = {
     systemStats: null as { system?: { comfyui_version?: string } } | null,
     refetchSystemStats: vi.fn()

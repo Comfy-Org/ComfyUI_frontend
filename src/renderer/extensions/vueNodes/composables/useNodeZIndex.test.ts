@@ -11,7 +11,7 @@ vi.mock('@/renderer/core/layout/operations/layoutMutations', () => ({
 
 const mockedUseLayoutMutations = vi.mocked(useLayoutMutations)
 
-describe('useNodeZIndex', () => {
+describe(useNodeZIndex, () => {
   beforeEach(() => {
     vi.clearAllMocks()
   })

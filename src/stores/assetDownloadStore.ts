@@ -49,7 +49,7 @@ export const useAssetDownloadStore = defineStore('assetDownload', () => {
   const downloads = ref<Map<string, AssetDownload>>(new Map())
   const lastCompletedDownload = ref<CompletedDownload | null>(null)
 
-  const downloadList = computed(() => Array.from(downloads.value.values()))
+  const downloadList = computed(() => [...downloads.value.values()])
   const activeDownloads = computed(() =>
     downloadList.value.filter(
       (d) => d.status === 'created' || d.status === 'running'

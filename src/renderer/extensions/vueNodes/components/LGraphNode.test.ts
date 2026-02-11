@@ -64,9 +64,12 @@ vi.mock(
   () => ({
     useNodeExecutionState: vi.fn(() => ({
       executing: computed(() => mockData.mockExecuting),
-      progress: computed(() => undefined),
-      progressPercentage: computed(() => undefined),
-      progressState: computed(() => undefined),
+      // eslint-disable-next-line vue/return-in-computed-property
+      progress: computed(() => {}),
+      // eslint-disable-next-line vue/return-in-computed-property
+      progressPercentage: computed(() => {}),
+      // eslint-disable-next-line vue/return-in-computed-property
+      progressState: computed(() => {}),
       executionState: computed(() => 'idle' as const)
     }))
   })
@@ -131,7 +134,7 @@ const mockNodeData: VueNodeData = {
   executing: false
 }
 
-describe('LGraphNode', () => {
+describe(LGraphNode.__name ?? 'LGraphNode', () => {
   beforeEach(() => {
     vi.resetAllMocks()
     mockData.mockExecuting = false

@@ -60,7 +60,7 @@ export function useSubgraphOperations() {
       return
     }
 
-    const selectedItems = Array.from(canvas.selectedItems)
+    const selectedItems = [...canvas.selectedItems]
     const subgraphNodes = selectedItems.filter(
       (item): item is SubgraphNode => item instanceof SubgraphNode
     )
@@ -72,7 +72,7 @@ export function useSubgraphOperations() {
   }
 
   const addSubgraphToLibrary = async () => {
-    const selectedItems = Array.from(canvasStore.selectedItems)
+    const selectedItems = [...canvasStore.selectedItems]
 
     // Handle single node selection like BookmarkButton.vue
     if (selectedItems.length === 1) {
@@ -118,7 +118,7 @@ export function useSubgraphOperations() {
   }
 
   const isSubgraphSelected = (): boolean => {
-    const selectedItems = Array.from(canvasStore.selectedItems)
+    const selectedItems = [...canvasStore.selectedItems]
     return selectedItems.some((item) => item instanceof SubgraphNode)
   }
 

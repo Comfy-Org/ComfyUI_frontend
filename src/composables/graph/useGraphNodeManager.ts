@@ -112,17 +112,19 @@ export interface GraphNodeManager {
 
 function getControlWidget(widget: IBaseWidget): SafeControlWidget | undefined {
   const cagWidget = widget.linkedWidgets?.find(
-    (w) => w.name == 'control_after_generate'
+    (w) => w.name === 'control_after_generate'
   )
   if (!cagWidget) return
   return {
     value: normalizeControlOption(cagWidget.value),
-    update: (value) => (cagWidget.value = normalizeControlOption(value))
+    update: (value) => {
+      cagWidget.value = normalizeControlOption(value)
+    }
   }
 }
 
 function getNodeType(node: LGraphNode, widget: IBaseWidget) {
-  if (!node.isSubgraphNode() || !isProxyWidget(widget)) return undefined
+  if (!node.isSubgraphNode() || !isProxyWidget(widget)) return
   const subNode = node.subgraph.getNodeById(widget._overlay.nodeId)
   return subNode?.type
 }
@@ -241,7 +243,7 @@ function safeWidgetMapper(
         options,
         slotMetadata: slotInfo
       }
-    } catch (error) {
+    } catch {
       return {
         name: widget.name || 'unknown',
         type: widget.type || 'text'
@@ -368,7 +370,7 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
     const currentNodes = new Set(graph._nodes.map((n) => String(n.id)))
 
     // Remove deleted nodes
-    for (const id of Array.from(vueNodeData.keys())) {
+    for (const id of [...vueNodeData.keys()]) {
       if (!currentNodes.has(id)) {
         nodeRefs.delete(id)
         vueNodeData.delete(id)

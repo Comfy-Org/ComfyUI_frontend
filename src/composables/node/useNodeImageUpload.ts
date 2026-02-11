@@ -33,7 +33,7 @@ const uploadFile = async (
   })
 
   if (resp.status !== 200) {
-    useToastStore().addAlert(resp.status + ' - ' + resp.statusText)
+    useToastStore().addAlert(`${resp.status} - ${resp.statusText}`)
     return
   }
 

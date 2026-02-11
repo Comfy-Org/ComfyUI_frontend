@@ -110,7 +110,7 @@ import { useLoad3dService } from '@/services/load3dService'
 import { useDialogStore } from '@/stores/dialogStore'
 
 const { t } = useI18n()
-const props = defineProps<{
+const { node, modelUrl } = defineProps<{
   node?: LGraphNode
   modelUrl?: string
 }>()
@@ -120,11 +120,10 @@ const containerRef = ref<HTMLDivElement>()
 const maximized = ref(false)
 const mutationObserver = ref<MutationObserver | null>(null)
 
-const isStandaloneMode = !props.node && props.modelUrl
+const isStandaloneMode = !node && modelUrl
 
-// Use sync version since useLoad3dViewer is already imported (module is loaded)
-const viewer = props.node
-  ? useLoad3dService().getOrCreateViewerSync(toRaw(props.node), useLoad3dViewer)
+const viewer = node
+  ? useLoad3dService().getOrCreateViewerSync(toRaw(node), useLoad3dViewer)
   : useLoad3dViewer()
 
 const { isDragging, dragMessage, handleDragOver, handleDragLeave, handleDrop } =
@@ -138,10 +137,10 @@ const { isDragging, dragMessage, handleDragOver, handleDragLeave, handleDrop } =
 onMounted(async () => {
   if (!containerRef.value) return
 
-  if (isStandaloneMode && props.modelUrl) {
-    await viewer.initializeStandaloneViewer(containerRef.value, props.modelUrl)
-  } else if (props.node) {
-    const source = useLoad3dService().getLoad3d(props.node)
+  if (isStandaloneMode && modelUrl) {
+    await viewer.initializeStandaloneViewer(containerRef.value, modelUrl)
+  } else if (node) {
+    const source = useLoad3dService().getLoad3d(node)
     if (source) {
       await viewer.initializeViewer(containerRef.value, source)
     }

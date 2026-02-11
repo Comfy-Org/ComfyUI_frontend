@@ -6,7 +6,7 @@ import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import type { NodeDefFilter } from '@/stores/nodeDefStore'
 
-describe('useNodeDefStore', () => {
+describe(useNodeDefStore, () => {
   let store: ReturnType<typeof useNodeDefStore>
 
   beforeEach(() => {

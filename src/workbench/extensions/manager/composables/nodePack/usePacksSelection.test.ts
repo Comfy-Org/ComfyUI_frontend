@@ -19,7 +19,7 @@ vi.mock('vue-i18n', async () => {
 
 type NodePack = components['schemas']['Node']
 
-describe('usePacksSelection', () => {
+describe(usePacksSelection, () => {
   let managerStore: ReturnType<typeof useComfyManagerStore>
   let mockIsPackInstalled: (packName: string | undefined) => boolean
 

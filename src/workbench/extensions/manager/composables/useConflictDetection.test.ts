@@ -115,7 +115,7 @@ vi.mock('@/workbench/extensions/manager/composables/useManagerState', () => ({
   }))
 }))
 
-describe('useConflictDetection', () => {
+describe(useConflictDetection, () => {
   let pinia: ReturnType<typeof createTestingPinia>
 
   const mockComfyManagerService = {
@@ -485,7 +485,7 @@ describe('useConflictDetection', () => {
       await expect(
         Promise.race([
           initializeConflictDetection(),
-          new Promise((_, reject) =>
+          new Promise((_resolve, reject) =>
             setTimeout(() => reject(new Error('Timeout')), 1000)
           )
         ])

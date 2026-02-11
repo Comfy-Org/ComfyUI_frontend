@@ -84,24 +84,24 @@ import { app } from '@/scripts/app'
 import type { ComponentWidget } from '@/scripts/domWidget'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 
-const props = defineProps<{
+const { widget, nodeId } = defineProps<{
   widget: ComponentWidget<string[]> | SimplifiedWidget
   nodeId?: NodeId
 }>()
 
 function isComponentWidget(
-  widget: ComponentWidget<string[]> | SimplifiedWidget
-): widget is ComponentWidget<string[]> {
-  return 'node' in widget && widget.node !== undefined
+  w: ComponentWidget<string[]> | SimplifiedWidget
+): w is ComponentWidget<string[]> {
+  return 'node' in w && w.node !== undefined
 }
 
 const node = ref<LGraphNode | null>(null)
 
-if (isComponentWidget(props.widget)) {
-  node.value = props.widget.node
-} else if (props.nodeId) {
+if (isComponentWidget(widget)) {
+  node.value = widget.node
+} else if (nodeId) {
   onMounted(() => {
-    node.value = app.rootGraph?.getNodeById(props.nodeId!) || null
+    node.value = app.rootGraph?.getNodeById(nodeId!) || null
   })
 }
 

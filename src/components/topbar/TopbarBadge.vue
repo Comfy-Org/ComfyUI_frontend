@@ -129,21 +129,19 @@ import { computed, ref } from 'vue'
 import type { TopbarBadge } from '@/types/comfy'
 import { cn } from '@/utils/tailwindUtil'
 
-const props = withDefaults(
-  defineProps<{
-    badge: TopbarBadge
-    displayMode?: 'full' | 'compact' | 'icon-only'
-    reverseOrder?: boolean
-    noPadding?: boolean
-    backgroundColor?: string
-  }>(),
-  {
-    displayMode: 'full',
-    reverseOrder: false,
-    noPadding: false,
-    backgroundColor: 'var(--comfy-menu-bg)'
-  }
-)
+const {
+  badge,
+  displayMode = 'full',
+  reverseOrder = false,
+  noPadding = false,
+  backgroundColor = 'var(--comfy-menu-bg)'
+} = defineProps<{
+  badge: TopbarBadge
+  displayMode?: 'full' | 'compact' | 'icon-only'
+  reverseOrder?: boolean
+  noPadding?: boolean
+  backgroundColor?: string
+}>()
 
 const popover = ref<InstanceType<typeof Popover>>()
 
@@ -151,10 +149,10 @@ const togglePopover = (event: Event) => {
   popover.value?.toggle(event)
 }
 
-const variant = computed(() => props.badge.variant ?? 'info')
+const variant = computed(() => badge.variant ?? 'info')
 
 const menuBackgroundStyle = computed(() => ({
-  backgroundColor: props.backgroundColor
+  backgroundColor
 }))
 
 const labelClasses = computed(() => {
@@ -163,7 +161,6 @@ const labelClasses = computed(() => {
       return 'bg-danger-100 text-white'
     case 'warning':
       return 'bg-gold-600 text-black'
-    case 'info':
     default:
       return 'bg-white text-black'
   }
@@ -175,7 +172,6 @@ const textClasses = computed(() => {
       return 'text-danger-100'
     case 'warning':
       return 'text-warning-background'
-    case 'info':
     default:
       return 'text-text-primary'
   }
@@ -183,19 +179,14 @@ const textClasses = computed(() => {
 
 const iconColorClass = computed(() => textClasses.value)
 
+const variantIcons: Record<string, string | undefined> = {
+  error: 'pi pi-exclamation-circle',
+  warning: 'icon-[lucide--triangle-alert]'
+}
+
 const iconClass = computed(() => {
-  if (props.badge.icon) {
-    return props.badge.icon
-  }
-  switch (variant.value) {
-    case 'error':
-      return 'pi pi-exclamation-circle'
-    case 'warning':
-      return 'icon-[lucide--triangle-alert]'
-    case 'info':
-    default:
-      return undefined
-  }
+  if (badge.icon) return badge.icon
+  return variantIcons[variant.value]
 })
 
 const clickableClasses = 'cursor-pointer transition-opacity hover:opacity-80'
@@ -206,7 +197,6 @@ const dotClasses = computed(() => {
       return 'bg-danger-100'
     case 'warning':
       return 'bg-gold-600'
-    case 'info':
     default:
       return 'bg-slate-100'
   }

@@ -115,7 +115,7 @@ class LayoutStoreImpl implements LayoutStore {
     ACTOR_CONFIG.DEFAULT_SOURCE as LayoutSource
   private currentActor = `${ACTOR_CONFIG.USER_PREFIX}${Math.random()
     .toString(36)
-    .substring(2, 2 + ACTOR_CONFIG.ID_LENGTH)}`
+    .slice(2, 2 + ACTOR_CONFIG.ID_LENGTH)}`
 
   // Change listeners
   private changeListeners = new Set<(change: LayoutChange) => void>()
@@ -601,7 +601,7 @@ class LayoutStoreImpl implements LayoutStore {
    * Useful for global passes without relying on spatial queries.
    */
   getAllSlotKeys(): string[] {
-    return Array.from(this.slotLayouts.keys())
+    return [...this.slotLayouts.keys()]
   }
 
   /**
@@ -833,7 +833,7 @@ class LayoutStoreImpl implements LayoutStore {
 
     return {
       nodes: this.queryNodesInBounds(bounds),
-      links: Array.from(linkIds),
+      links: [...linkIds],
       slots: this.slotSpatialIndex.query(bounds),
       reroutes: this.rerouteSpatialIndex
         .query(bounds)

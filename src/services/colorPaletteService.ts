@@ -79,7 +79,7 @@ export const useColorPaletteService = () => {
    */
   const loadLinkColorPalette = (linkColorPalette: Colors['node_slot']) => {
     const types = Object.fromEntries(
-      Array.from(nodeDefStore.nodeDataTypes).map((type) => [type, ''])
+      [...nodeDefStore.nodeDataTypes].map((type) => [type, ''])
     )
     Object.assign(
       app.canvas.default_connection_color_byType,
@@ -211,13 +211,13 @@ export const useColorPaletteService = () => {
     if (!comfyColorPalette) return
     const rootStyle = document.documentElement.style
     for (const [key, value] of Object.entries(comfyColorPalette)) {
-      rootStyle.setProperty('--' + key, value)
+      rootStyle.setProperty(`--${key}`, value)
     }
 
     for (const optionalKey of optionalComfyBaseKeys) {
       if (!(optionalKey in comfyColorPalette)) {
         rootStyle.setProperty(
-          '--' + optionalKey,
+          `--${optionalKey}`,
           `var(--palette-${optionalKey})`
         )
       }
@@ -267,7 +267,7 @@ export const useColorPaletteService = () => {
       throw new Error(`Color palette ${colorPaletteId} not found`)
     }
     downloadBlob(
-      colorPalette.id + '.json',
+      `${colorPalette.id}.json`,
       new Blob([JSON.stringify(toRaw(colorPalette), null, 2)], {
         type: 'application/json'
       })

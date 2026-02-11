@@ -82,7 +82,7 @@
 <script setup lang="ts">
 import { debounce } from 'es-toolkit/compat'
 import Dialog from 'primevue/dialog'
-import { computed, nextTick, onMounted, ref } from 'vue'
+import { computed, nextTick, onMounted, ref, useId } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import NodePreview from '@/components/node/NodePreview.vue'
@@ -113,7 +113,7 @@ const { filters, searchLimit = 64 } = defineProps<{
 
 const autoCompletePlus = ref()
 const nodeSearchFilterVisible = ref(false)
-const inputId = `comfy-vue-node-search-box-input-${Math.random()}`
+const inputId = `comfy-vue-node-search-box-input-${useId()}`
 const suggestions = ref<ComfyNodeDefImpl[]>([])
 const hoveredSuggestion = ref<ComfyNodeDefImpl | null>(null)
 const currentQuery = ref('')
@@ -161,7 +161,7 @@ const onAddNode = (nodeDef: ComfyNodeDefImpl) => {
 
 let inputElement: HTMLInputElement | null = null
 const reFocusInput = async () => {
-  inputElement ??= document.getElementById(inputId) as HTMLInputElement
+  inputElement ??= document.querySelector(`#${inputId}`) as HTMLInputElement
   if (inputElement) {
     inputElement.blur()
     await nextTick(() => inputElement?.focus())
@@ -169,7 +169,7 @@ const reFocusInput = async () => {
 }
 
 onMounted(() => {
-  inputElement ??= document.getElementById(inputId) as HTMLInputElement
+  inputElement ??= document.querySelector(`#${inputId}`) as HTMLInputElement
   if (inputElement) inputElement.focus()
   autoCompletePlus.value.hide = () => search('')
   search('')

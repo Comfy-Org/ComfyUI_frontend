@@ -275,7 +275,6 @@ function handleDroppedOnCanvas(e: CustomEvent<CanvasPointerEvent>) {
       cancelNextReset(e)
       showContextMenu(e.detail)
       break
-    case LinkReleaseTriggerAction.NO_ACTION:
     default:
       break
   }

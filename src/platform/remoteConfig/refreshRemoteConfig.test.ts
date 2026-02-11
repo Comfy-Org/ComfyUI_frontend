@@ -13,7 +13,7 @@ vi.mock('@/scripts/api', () => ({
 
 vi.stubGlobal('fetch', vi.fn())
 
-describe('refreshRemoteConfig', () => {
+describe(refreshRemoteConfig, () => {
   const mockConfig = { feature1: true, feature2: 'value' }
 
   function mockSuccessResponse(config = mockConfig) {

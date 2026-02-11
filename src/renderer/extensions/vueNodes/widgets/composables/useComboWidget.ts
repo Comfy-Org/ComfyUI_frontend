@@ -28,7 +28,7 @@ const getDefaultValue = (inputSpec: ComboInputSpec) => {
   if (inputSpec.default) return inputSpec.default
   if (inputSpec.options?.length) return inputSpec.options[0]
   if (inputSpec.remote) return 'Loading...'
-  return undefined
+  return
 }
 
 // Map node types to expected media types

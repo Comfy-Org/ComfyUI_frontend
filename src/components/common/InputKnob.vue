@@ -30,24 +30,25 @@ import InputNumber from 'primevue/inputnumber'
 import Knob from 'primevue/knob'
 import { ref, watch } from 'vue'
 
-const props = defineProps<{
-  modelValue: number
-  inputClass?: string
-  knobClass?: string
-  min?: number
-  max?: number
-  step?: number
-  resolution?: number
-}>()
+const { modelValue, inputClass, knobClass, min, max, step, resolution } =
+  defineProps<{
+    modelValue: number
+    inputClass?: string
+    knobClass?: string
+    min?: number
+    max?: number
+    step?: number
+    resolution?: number
+  }>()
 
 const emit = defineEmits<{
   (e: 'update:modelValue', value: number): void
 }>()
 
-const localValue = ref(props.modelValue)
+const localValue = ref(modelValue)
 
 watch(
-  () => props.modelValue,
+  () => modelValue,
   (newValue) => {
     localValue.value = newValue
   }
@@ -56,18 +57,18 @@ watch(
 const updateValue = (newValue: number | null) => {
   if (newValue === null) {
     // If the input is cleared, reset to the minimum value or 0
-    newValue = Number(props.min) || 0
+    newValue = Number(min) || 0
   }
 
-  const min = Number(props.min ?? Number.NEGATIVE_INFINITY)
-  const max = Number(props.max ?? Number.POSITIVE_INFINITY)
-  const step = Number(props.step) || 1
+  const minVal = Number(min ?? Number.NEGATIVE_INFINITY)
+  const maxVal = Number(max ?? Number.POSITIVE_INFINITY)
+  const stepVal = Number(step) || 1
 
   // Ensure the value is within the allowed range
-  newValue = Math.max(min, Math.min(max, newValue))
+  newValue = Math.max(minVal, Math.min(maxVal, newValue))
 
   // Round to the nearest step
-  newValue = Math.round(newValue / step) * step
+  newValue = Math.round(newValue / stepVal) * stepVal
 
   // Update local value and emit change
   localValue.value = newValue
@@ -76,11 +77,11 @@ const updateValue = (newValue: number | null) => {
 
 const displayValue = (value: number): string => {
   updateValue(value)
-  const stepString = (props.step ?? 1).toString()
-  const resolution = stepString.includes('.')
+  const stepString = (step ?? 1).toString()
+  const decimalPlaces = stepString.includes('.')
     ? stepString.split('.')[1].length
     : 0
-  return value.toFixed(props.resolution ?? resolution)
+  return value.toFixed(resolution ?? decimalPlaces)
 }
 
 defineOptions({

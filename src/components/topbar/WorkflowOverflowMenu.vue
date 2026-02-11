@@ -27,7 +27,7 @@ import Button from '@/components/ui/button/Button.vue'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 
-const props = defineProps<{
+const { workflows, activeWorkflow } = defineProps<{
   workflows: ComfyWorkflow[]
   activeWorkflow: ComfyWorkflow | null
 }>()
@@ -36,10 +36,9 @@ const menu = ref<InstanceType<typeof Menu> | null>(null)
 const workflowService = useWorkflowService()
 
 const menuItems = computed(() =>
-  props.workflows.map((workflow: ComfyWorkflow) => ({
+  workflows.map((workflow: ComfyWorkflow) => ({
     label: workflow.filename,
-    icon:
-      props.activeWorkflow?.key === workflow.key ? 'pi pi-check' : undefined,
+    icon: activeWorkflow?.key === workflow.key ? 'pi pi-check' : undefined,
     command: () => {
       void workflowService.openWorkflow(workflow)
     }

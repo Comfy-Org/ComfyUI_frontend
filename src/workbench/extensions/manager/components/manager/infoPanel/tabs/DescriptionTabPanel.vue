@@ -112,13 +112,14 @@ const parseLicenseObject = (
       text: url,
       isUrl: !!url && isValidUrl(url)
     }
-  } else if (licenseObj.text) {
+  }
+  if (licenseObj.text) {
     return {
       text: licenseObj.text,
       isUrl: false
     }
-  } else if (typeof licenseFile === 'string') {
-    // Return the license file name if repository is missing
+  }
+  if (typeof licenseFile === 'string') {
     return {
       text: licenseFile,
       isUrl: false
@@ -143,7 +144,7 @@ const formatLicense = (
       return null
     }
     return parseLicenseObject(licenseObj)
-  } catch (e) {
+  } catch {
     if (isLicenseFile(license) && nodePack.repository) {
       const url = createLicenseUrl(license, nodePack.repository)
       return {

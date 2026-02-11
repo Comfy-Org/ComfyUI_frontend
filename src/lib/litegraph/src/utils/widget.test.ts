@@ -3,7 +3,7 @@ import { describe, expect, test } from 'vitest'
 import type { IWidgetOptions } from '@/lib/litegraph/src/litegraph'
 import { getWidgetStep } from '@/lib/litegraph/src/litegraph'
 
-describe('getWidgetStep', () => {
+describe(getWidgetStep, () => {
   test('should return step2 when available', () => {
     const options: IWidgetOptions<unknown> = {
       step2: 0.5,

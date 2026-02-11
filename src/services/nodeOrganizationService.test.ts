@@ -4,6 +4,7 @@ import { nodeOrganizationService } from '@/services/nodeOrganizationService'
 import { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 import { NodeSourceType } from '@/types/nodeSource'
 
+// oxlint-disable-next-line vitest/prefer-describe-function-title -- nodeOrganizationService is an object, not a function
 describe('nodeOrganizationService', () => {
   const createMockNodeDef = (overrides: Partial<ComfyNodeDefImpl> = {}) => {
     const mockNodeDef = {

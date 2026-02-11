@@ -4,7 +4,7 @@ import { nextTick, ref } from 'vue'
 
 import { useLegacySearchTip } from './useLegacySearchTip'
 
-describe('useLegacySearchTip', () => {
+describe(useLegacySearchTip, () => {
   let searchQuery: Ref<string>
   let isNewManagerUI: Ref<boolean>
 

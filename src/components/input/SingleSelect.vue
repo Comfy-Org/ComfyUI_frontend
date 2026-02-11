@@ -170,7 +170,7 @@ const getLabel = (val: string | null | undefined) => {
 
 // Extract complex style logic from template
 const optionStyle = computed(() => {
-  if (!popoverMinWidth && !popoverMaxWidth) return undefined
+  if (!popoverMinWidth && !popoverMaxWidth) return
 
   const styles: string[] = []
   if (popoverMinWidth) styles.push(`min-width: ${popoverMinWidth}`)

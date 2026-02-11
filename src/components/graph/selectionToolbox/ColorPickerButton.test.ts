@@ -45,7 +45,7 @@ vi.mock('@/lib/litegraph/src/litegraph', async () => {
 
 // Mock the colorUtil module
 vi.mock('@/utils/colorUtil', () => ({
-  adjustColor: vi.fn((color: string) => color + '_light')
+  adjustColor: vi.fn((color: string) => `${color}_light`)
 }))
 
 // Mock the litegraphUtil module
@@ -56,7 +56,7 @@ vi.mock('@/utils/litegraphUtil', () => ({
   isReroute: vi.fn(() => false)
 }))
 
-describe('ColorPickerButton', () => {
+describe(ColorPickerButton.__name ?? 'ColorPickerButton', () => {
   let canvasStore: ReturnType<typeof useCanvasStore>
   let workflowStore: ReturnType<typeof useWorkflowStore>
 

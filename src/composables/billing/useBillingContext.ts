@@ -147,9 +147,9 @@ function useBillingContextInternal(): BillingContext {
         isInitialized.value = false
         try {
           await initialize()
-        } catch (err) {
+        } catch (error) {
           // Error is already captured in error ref
-          console.error('Failed to initialize billing context:', err)
+          console.error('Failed to initialize billing context:', error)
         }
       }
     },
@@ -164,10 +164,12 @@ function useBillingContextInternal(): BillingContext {
     try {
       await activeContext.value.initialize()
       isInitialized.value = true
-    } catch (err) {
+    } catch (errorCaught) {
       error.value =
-        err instanceof Error ? err.message : 'Failed to initialize billing'
-      throw err
+        errorCaught instanceof Error
+          ? errorCaught.message
+          : 'Failed to initialize billing'
+      throw errorCaught
     } finally {
       isLoading.value = false
     }

@@ -43,7 +43,7 @@ vi.mock('@/i18n', () => ({
   t: vi.fn((key) => key)
 }))
 
-describe('useLoad3d', () => {
+describe(useLoad3d, () => {
   let mockLoad3d: Partial<Load3d>
   let mockNode: LGraphNode
   let mockToastStore: ReturnType<typeof useToastStore>

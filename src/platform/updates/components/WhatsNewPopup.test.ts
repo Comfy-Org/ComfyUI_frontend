@@ -41,7 +41,7 @@ vi.mock('vue-i18n', () => ({
 }))
 
 vi.mock('@/utils/formatUtil', () => ({
-  formatVersionAnchor: vi.fn((version: string) => version.replace(/\./g, ''))
+  formatVersionAnchor: vi.fn((version: string) => version.replaceAll('.', ''))
 }))
 
 vi.mock('@/utils/markdownRendererUtil', () => ({
@@ -61,7 +61,7 @@ vi.mock('../common/releaseStore', () => ({
   useReleaseStore: vi.fn(() => mockReleaseStore)
 }))
 
-describe('WhatsNewPopup', () => {
+describe(WhatsNewPopup.__name ?? 'WhatsNewPopup', () => {
   let wrapper: VueWrapper
 
   const mountComponent = (props = {}) => {

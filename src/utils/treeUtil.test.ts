@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest'
 import type { TreeNode } from '@/types/treeExplorerTypes'
 import { buildTree, sortedTree } from '@/utils/treeUtil'
 
-describe('buildTree', () => {
+describe(buildTree, () => {
   it('should handle empty folder items correctly', () => {
     const items = [
       { path: 'a/b/c/' },
@@ -65,7 +65,7 @@ describe('buildTree', () => {
   })
 })
 
-describe('sortedTree', () => {
+describe(sortedTree, () => {
   const createNode = (label: string, leaf = false): TreeNode => ({
     key: label,
     label,

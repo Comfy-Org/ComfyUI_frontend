@@ -287,9 +287,8 @@ const openCustomNodeManager = async () => {
   } catch (error) {
     try {
       toastErrorHandler(error)
-    } catch (toastError) {
+    } catch (error) {
       console.error(error)
-      console.error(toastError)
     }
   }
 }

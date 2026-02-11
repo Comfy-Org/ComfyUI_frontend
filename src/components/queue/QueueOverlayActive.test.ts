@@ -2,8 +2,9 @@ import { mount } from '@vue/test-utils'
 import { describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
-import QueueOverlayActive from './QueueOverlayActive.vue'
 import * as tooltipConfig from '@/composables/useTooltipConfig'
+
+import QueueOverlayActive from './QueueOverlayActive.vue'
 
 const i18n = createI18n({
   legacy: false,
@@ -64,7 +65,7 @@ const mountComponent = (props: Record<string, unknown> = {}) =>
     }
   })
 
-describe('QueueOverlayActive', () => {
+describe(QueueOverlayActive.__name ?? 'QueueOverlayActive', () => {
   it('renders progress metrics and emits actions when buttons clicked', async () => {
     const wrapper = mountComponent({ runningCount: 2, queuedCount: 3 })
 
@@ -72,7 +73,7 @@ describe('QueueOverlayActive', () => {
     expect(progressBars[0].attributes('style')).toContain('width: 65%')
     expect(progressBars[1].attributes('style')).toContain('width: 40%')
 
-    const content = wrapper.text().replace(/\s+/g, ' ')
+    const content = wrapper.text().replaceAll(/\s+/g, ' ')
     expect(content).toContain('Total: 65%')
 
     const [runningSection, queuedSection] = wrapper.findAll(

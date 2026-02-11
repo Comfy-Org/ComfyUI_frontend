@@ -14,7 +14,7 @@ vi.mock('@/config', () => ({
 }))
 
 describe('versionUtil', () => {
-  describe('checkVersionCompatibility', () => {
+  describe(checkVersionCompatibility, () => {
     it('should return null when current version is undefined', () => {
       const result = checkVersionCompatibility(
         'comfyui_version',
@@ -266,7 +266,7 @@ describe('versionUtil', () => {
     })
   })
 
-  describe('getFrontendVersion', () => {
+  describe(getFrontendVersion, () => {
     let originalEnv: string | undefined
 
     beforeEach(() => {

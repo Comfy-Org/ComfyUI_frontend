@@ -28,16 +28,16 @@ export function useSecrets() {
     loading.value = true
     try {
       secrets.value = await listSecrets()
-    } catch (err) {
-      if (err instanceof SecretsApiError) {
+    } catch (error) {
+      if (error instanceof SecretsApiError) {
         toastStore.add({
           severity: 'error',
           summary: t('g.error'),
-          detail: err.message,
+          detail: error.message,
           life: 5000
         })
       } else {
-        console.error('Unexpected error fetching secrets:', err)
+        console.error('Unexpected error fetching secrets:', error)
         toastStore.add({
           severity: 'error',
           summary: t('g.error'),
@@ -55,16 +55,16 @@ export function useSecrets() {
     try {
       await deleteSecretApi(secret.id)
       secrets.value = secrets.value.filter((s) => s.id !== secret.id)
-    } catch (err) {
-      if (err instanceof SecretsApiError) {
+    } catch (error) {
+      if (error instanceof SecretsApiError) {
         toastStore.add({
           severity: 'error',
           summary: t('g.error'),
-          detail: err.message,
+          detail: error.message,
           life: 5000
         })
       } else {
-        console.error('Unexpected error deleting secret:', err)
+        console.error('Unexpected error deleting secret:', error)
         toastStore.add({
           severity: 'error',
           summary: t('g.error'),

@@ -72,12 +72,10 @@ export const useDomClipping = (options: ClippingOptions = {}) => {
       }
 
       // Convert intersection to canvas scale (element has scale transform)
-      const clipX =
-        (intersection[0] - elementRect.left + canvasRect.left) / scale + 'px'
-      const clipY =
-        (intersection[1] - elementRect.top + canvasRect.top) / scale + 'px'
-      const clipWidth = intersection[2] / scale + 'px'
-      const clipHeight = intersection[3] / scale + 'px'
+      const clipX = `${(intersection[0] - elementRect.left + canvasRect.left) / scale}px`
+      const clipY = `${(intersection[1] - elementRect.top + canvasRect.top) / scale}px`
+      const clipWidth = `${intersection[2] / scale}px`
+      const clipHeight = `${intersection[3] / scale}px`
 
       return `polygon(0% 0%, 0% 100%, ${clipX} 100%, ${clipX} ${clipY}, calc(${clipX} + ${clipWidth}) ${clipY}, calc(${clipX} + ${clipWidth}) calc(${clipY} + ${clipHeight}), ${clipX} calc(${clipY} + ${clipHeight}), ${clipX} 100%, 100% 100%, 100% 0%)`
     }

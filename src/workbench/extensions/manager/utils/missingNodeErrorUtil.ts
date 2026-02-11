@@ -14,9 +14,11 @@ export function buildMissingNodeHint(
   const hasTitle = nodeTitle && nodeTitle !== classType
   if (hasTitle && nodeId) {
     return `"${nodeTitle}" (Node ID #${nodeId})`
-  } else if (hasTitle) {
+  }
+  if (hasTitle) {
     return `"${nodeTitle}"`
-  } else if (nodeId) {
+  }
+  if (nodeId) {
     return `Node ID #${nodeId}`
   }
   return undefined

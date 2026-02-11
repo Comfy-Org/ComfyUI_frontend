@@ -6,10 +6,11 @@ import InputText from 'primevue/inputtext'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { createApp, nextTick } from 'vue'
 
-import UrlInput from './UrlInput.vue'
 import type { ComponentProps } from 'vue-component-type-helpers'
 
-describe('UrlInput', () => {
+import UrlInput from './UrlInput.vue'
+
+describe(UrlInput.__name ?? 'UrlInput', () => {
   beforeEach(() => {
     const app = createApp({})
     app.use(PrimeVue)

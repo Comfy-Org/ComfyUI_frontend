@@ -33,7 +33,7 @@ const { batchCount } = storeToRefs(useQueueSettingsStore())
 const { isActiveSubscription } = useBillingContext()
 const workflowStore = useWorkflowStore()
 
-const props = defineProps<{
+const { toastTo, notesTo, mobile } = defineProps<{
   toastTo?: string | HTMLElement
   notesTo?: string | HTMLElement
   mobile?: boolean
@@ -46,14 +46,12 @@ const { ready: jobToastTimeout, start: resetJobToastTimeout } = useTimeout(
 )
 
 const graphNodes = shallowRef<LGraphNode[]>(app.rootGraph.nodes)
-useEventListener(
-  app.rootGraph.events,
-  'configured',
-  () => (graphNodes.value = app.rootGraph.nodes)
-)
+useEventListener(app.rootGraph.events, 'configured', () => {
+  graphNodes.value = app.rootGraph.nodes
+})
 
 function getDropIndicator(node: LGraphNode) {
-  if (node.type !== 'LoadImage') return undefined
+  if (node.type !== 'LoadImage') return
 
   const filename = node.widgets?.[0]?.value
   const resultItem = { type: 'input', filename: `${filename}` }

@@ -112,7 +112,7 @@ function createMockAsset(overrides: Partial<AssetItem> = {}): AssetItem {
   }
 }
 
-describe('useMediaAssetActions', () => {
+describe(useMediaAssetActions, () => {
   beforeEach(() => {
     vi.resetModules()
     setActivePinia(createPinia())

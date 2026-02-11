@@ -47,7 +47,7 @@ function createMockSceneManager(): Load3d['sceneManager'] {
   return mock as Load3d['sceneManager']
 }
 
-describe('useLoad3dViewer', () => {
+describe(useLoad3dViewer, () => {
   let mockLoad3d: Partial<Load3d>
   let mockSourceLoad3d: Partial<Load3d>
   let mockLoad3dService: ReturnType<typeof useLoad3dService>

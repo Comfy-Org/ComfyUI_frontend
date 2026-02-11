@@ -472,7 +472,7 @@ export class LGraph
    * @param interval amount of milliseconds between executions, if 0 then it renders to the monitor refresh rate
    */
   start(interval?: number): void {
-    if (this.status == LGraph.STATUS_RUNNING) return
+    if (this.status === LGraph.STATUS_RUNNING) return
     this.status = LGraph.STATUS_RUNNING
 
     this.onPlayEvent?.()
@@ -485,12 +485,12 @@ export class LGraph
 
     // execute once per frame
     if (
-      interval == 0 &&
-      typeof window != 'undefined' &&
+      interval === 0 &&
+      typeof window !== 'undefined' &&
       window.requestAnimationFrame
     ) {
       const on_frame = () => {
-        if (this.execution_timer_id != -1) return
+        if (this.execution_timer_id !== -1) return
 
         window.requestAnimationFrame(on_frame)
         this.onBeforeStep?.()
@@ -516,14 +516,14 @@ export class LGraph
    * Stops the execution loop of the graph
    */
   stop(): void {
-    if (this.status == LGraph.STATUS_STOPPED) return
+    if (this.status === LGraph.STATUS_STOPPED) return
 
     this.status = LGraph.STATUS_STOPPED
 
     this.onStopEvent?.()
 
     if (this.execution_timer_id != null) {
-      if (this.execution_timer_id != -1) {
+      if (this.execution_timer_id !== -1) {
         clearInterval(this.execution_timer_id)
       }
       this.execution_timer_id = null
@@ -555,7 +555,7 @@ export class LGraph
         for (let j = 0; j < limit; ++j) {
           const node = nodes[j]
           // FIXME: Looks like copy/paste broken logic - checks for "on", executes "do"
-          if (node.mode == LGraphEventMode.ALWAYS && node.onExecute) {
+          if (node.mode === LGraphEventMode.ALWAYS && node.onExecute) {
             // wrap node.onExecute();
             node.doExecute?.()
           }
@@ -572,7 +572,7 @@ export class LGraph
         for (let i = 0; i < num; i++) {
           for (let j = 0; j < limit; ++j) {
             const node = nodes[j]
-            if (node.mode == LGraphEventMode.ALWAYS) {
+            if (node.mode === LGraphEventMode.ALWAYS) {
               node.onExecute?.()
             }
           }
@@ -594,7 +594,7 @@ export class LGraph
 
     const now = LiteGraph.getTime()
     let elapsed = now - start
-    if (elapsed == 0) elapsed = 1
+    if (elapsed === 0) elapsed = 1
 
     this.execution_time = 0.001 * elapsed
     this.globaltime += 0.001 * elapsed
@@ -651,7 +651,7 @@ export class LGraph
         }
       }
 
-      if (num == 0) {
+      if (num === 0) {
         // is a starting node
         S.push(node)
         if (set_level) node._level = 1
@@ -678,7 +678,7 @@ export class LGraph
       for (const output of node.outputs) {
         // not connected
         // TODO: Confirm functionality, clean condition
-        if (output?.links == null || output.links.length == 0) continue
+        if (output?.links == null || output.links.length === 0) continue
 
         // for every connection
         for (const link_id of output.links) {
@@ -707,7 +707,7 @@ export class LGraph
           remaining_links[target_node.id] -= 1
 
           // if no more links, then add to starters array
-          if (remaining_links[target_node.id] == 0) S.push(target_node)
+          if (remaining_links[target_node.id] === 0) S.push(target_node)
         }
       }
     }
@@ -717,7 +717,7 @@ export class LGraph
       L.push(M[i])
     }
 
-    if (L.length != this._nodes.length && LiteGraph.debug)
+    if (L.length !== this._nodes.length && LiteGraph.debug)
       console.warn('something went wrong, nodes missing')
 
     /** Ensure type is set */
@@ -744,7 +744,7 @@ export class LGraph
       const Bp = B.constructor.priority || B.priority || 0
       // if same priority, sort by order
 
-      return Ap == Bp ? A.order - B.order : Ap - Bp
+      return Ap === Bp ? A.order - B.order : Ap - Bp
     })
 
     // save order number in the node, again...
@@ -775,13 +775,13 @@ export class LGraph
       let max_size = 100
       let y = margin + LiteGraph.NODE_TITLE_HEIGHT
       for (const node of column) {
-        node.pos[0] = layout == LiteGraph.VERTICAL_LAYOUT ? y : x
-        node.pos[1] = layout == LiteGraph.VERTICAL_LAYOUT ? x : y
-        const max_size_index = layout == LiteGraph.VERTICAL_LAYOUT ? 1 : 0
+        node.pos[0] = layout === LiteGraph.VERTICAL_LAYOUT ? y : x
+        node.pos[1] = layout === LiteGraph.VERTICAL_LAYOUT ? x : y
+        const max_size_index = layout === LiteGraph.VERTICAL_LAYOUT ? 1 : 0
         if (node.size[max_size_index] > max_size) {
           max_size = node.size[max_size_index]
         }
-        const node_size_index = layout == LiteGraph.VERTICAL_LAYOUT ? 0 : 1
+        const node_size_index = layout === LiteGraph.VERTICAL_LAYOUT ? 0 : 1
         y += node.size[node_size_index] + margin + LiteGraph.NODE_TITLE_HEIGHT
       }
       x += max_size + margin
@@ -835,13 +835,13 @@ export class LGraph
 
     for (const node of nodes) {
       // @ts-expect-error deprecated
-      if (!node[eventname] || node.mode != mode) continue
+      if (!node[eventname] || node.mode !== mode) continue
       if (params === undefined) {
         // @ts-expect-error deprecated
         node[eventname]()
       } else if (params && params.constructor === Array) {
         // @ts-expect-error deprecated
-        // eslint-disable-next-line prefer-spread
+        // oxlint-disable-next-line prefer-spread
         node[eventname].apply(node, params)
       } else {
         // @ts-expect-error deprecated
@@ -923,7 +923,7 @@ export class LGraph
     // groups
     if (node instanceof LGraphGroup) {
       // Assign group ID
-      if (node.id == null || node.id === -1) node.id = ++state.lastGroupId
+      if (node.id === -1) node.id = ++state.lastGroupId
       if (node.id > state.lastGroupId) state.lastGroupId = node.id
 
       this._groups.push(node)
@@ -935,7 +935,7 @@ export class LGraph
     }
 
     // nodes
-    if (node.id != -1 && this._nodes_by_id[node.id] != null) {
+    if (node.id !== -1 && this._nodes_by_id[node.id] != null) {
       console.warn(
         'LiteGraph: there is already a node with this ID, changing it'
       )
@@ -943,14 +943,14 @@ export class LGraph
     }
 
     if (this._nodes.length >= LiteGraph.MAX_NUMBER_OF_NODES) {
-      throw 'LiteGraph: max number of nodes in a graph reached'
+      throw new Error('LiteGraph: max number of nodes in a graph reached')
     }
 
     // give him an id
     if (LiteGraph.use_uuids) {
-      if (node.id == null || node.id == -1) node.id = LiteGraph.uuidv4()
+      if (node.id === -1) node.id = LiteGraph.uuidv4()
     } else {
-      if (node.id == null || node.id == -1) {
+      if (node.id === -1) {
         node.id = ++state.lastNodeId
       } else if (typeof node.id === 'number' && state.lastNodeId < node.id) {
         state.lastNodeId = node.id
@@ -1012,7 +1012,7 @@ export class LGraph
       this.canvasAction((c) => c.deselect(node))
 
       const index = this._groups.indexOf(node)
-      if (index != -1) {
+      if (index !== -1) {
         this._groups.splice(index, 1)
       }
       node.graph = undefined
@@ -1088,7 +1088,7 @@ export class LGraph
 
     // remove from containers
     const pos = this._nodes.indexOf(node)
-    if (pos != -1) this._nodes.splice(pos, 1)
+    if (pos !== -1) this._nodes.splice(pos, 1)
 
     delete this._nodes_by_id[node.id]
 
@@ -1139,7 +1139,7 @@ export class LGraph
     result.length = 0
     const { _nodes } = this
     for (const node of _nodes) {
-      if (node.type?.toLowerCase() == matchType) result.push(node)
+      if (node.type?.toLowerCase() === matchType) result.push(node)
     }
     return result
   }
@@ -1152,7 +1152,7 @@ export class LGraph
   findNodeByTitle(title: string): LGraphNode | null {
     const { _nodes } = this
     for (const node of _nodes) {
-      if (node.title == title) return node
+      if (node.title === title) return node
     }
     return null
   }
@@ -1166,7 +1166,7 @@ export class LGraph
     const result: LGraphNode[] = []
     const { _nodes } = this
     for (const node of _nodes) {
-      if (node.title == title) result.push(node)
+      if (node.title === title) result.push(node)
     }
     return result
   }
@@ -1282,7 +1282,7 @@ export class LGraph
     const { _nodes } = this
     for (const [i, node] of _nodes.entries()) {
       const ctor = LiteGraph.registered_node_types[node.type]
-      if (node.constructor == ctor) continue
+      if (node.constructor === ctor) continue
 
       console.warn('node being replaced by newer version:', node.type)
       const newnode = LiteGraph.createNode(node.type)
@@ -1489,7 +1489,7 @@ export class LGraph
       rerouteId,
       { x: pos[0], y: pos[1] },
       before.parentId,
-      Array.from(linkIds)
+      [...linkIds]
     )
 
     for (const linkId of linkIds) {
@@ -2041,7 +2041,7 @@ export class LGraph
     const linkIdMap = new Map<LinkId, LinkId[]>()
     for (const newLink of newLinks) {
       let created: LLink | null | undefined
-      if (newLink.oid == SUBGRAPH_INPUT_ID) {
+      if (newLink.oid === SUBGRAPH_INPUT_ID) {
         if (!(this instanceof Subgraph)) {
           console.error('Ignoring link to subgraph outside subgraph')
           continue
@@ -2051,7 +2051,7 @@ export class LGraph
           tnode.inputs[newLink.tslot],
           tnode
         )
-      } else if (newLink.tid == SUBGRAPH_OUTPUT_ID) {
+      } else if (newLink.tid === SUBGRAPH_OUTPUT_ID) {
         if (!(this instanceof Subgraph)) {
           console.error('Ignoring link to subgraph outside subgraph')
           continue
@@ -2103,7 +2103,7 @@ export class LGraph
         continue
       }
       let instance: Reroute | LLink | undefined = linkInstance
-      let parentId: RerouteId | undefined = undefined
+      let parentId: RerouteId | undefined
       if (newLink.externalFirst) {
         parentId = newLink.eparent
         //TODO: recursion check/helper method? Probably exists, but wouldn't mesh with the reference tracking used by this implementation

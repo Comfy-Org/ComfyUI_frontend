@@ -203,7 +203,7 @@ function flatItems(
       result.push(item)
       groups.push(item)
 
-      const children = Array.from(item.children)
+      const children = [...item.children]
       const childCtx: FlatItemsContext = {
         nodeToParentGroup: ctx.nodeToParentGroup,
         depth: ctx.depth + 1,

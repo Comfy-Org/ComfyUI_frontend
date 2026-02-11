@@ -81,7 +81,7 @@ export const useNodeBookmarkStore = defineStore('nodeBookmark', () => {
     folderName: string
   ) => {
     const parentPath = parent ? parent.nodePath : ''
-    const newFolderPath = parentPath + folderName + '/'
+    const newFolderPath = `${parentPath}${folderName}/`
     await addBookmark(newFolderPath)
     return newFolderPath
   }
@@ -98,9 +98,7 @@ export const useNodeBookmarkStore = defineStore('nodeBookmark', () => {
       throw new Error('Folder name cannot contain "/"')
     }
 
-    const newNodePath =
-      folderNode.category.split('/').slice(0, -1).concat(newName).join('/') +
-      '/'
+    const newNodePath = `${[...folderNode.category.split('/').slice(0, -1), newName].join('/')}/`
 
     if (newNodePath === folderNode.nodePath) {
       return

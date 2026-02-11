@@ -25,7 +25,7 @@ const mountOption = (
     }
   })
 
-describe('CreditTopUpOption', () => {
+describe(CreditTopUpOption.__name ?? 'CreditTopUpOption', () => {
   it('renders credit amount and description', () => {
     const wrapper = mountOption({ credits: 5000, description: '~500 videos*' })
     expect(wrapper.text()).toContain('5,000')

@@ -43,7 +43,7 @@ function createMockResponse(
 }
 
 describe('fetchJobs', () => {
-  describe('fetchHistory', () => {
+  describe(fetchHistory, () => {
     it('fetches completed jobs', async () => {
       const mockFetch = vi.fn().mockResolvedValue({
         ok: true,
@@ -152,7 +152,7 @@ describe('fetchJobs', () => {
     })
   })
 
-  describe('fetchQueue', () => {
+  describe(fetchQueue, () => {
     it('fetches running and pending jobs', async () => {
       const mockFetch = vi.fn().mockResolvedValue({
         ok: true,
@@ -209,7 +209,7 @@ describe('fetchJobs', () => {
     })
   })
 
-  describe('fetchJobDetail', () => {
+  describe(fetchJobDetail, () => {
     it('fetches job detail by id', async () => {
       const jobDetail = {
         ...createMockJob('job1', 'completed'),
@@ -252,7 +252,7 @@ describe('fetchJobs', () => {
     })
   })
 
-  describe('extractWorkflow', () => {
+  describe(extractWorkflow, () => {
     const validWorkflow = {
       version: 0.4,
       last_node_id: 1,

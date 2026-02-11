@@ -27,7 +27,7 @@ function createMockGroup(overrides: Partial<LGraphGroup> = {}): LGraphGroup {
   return createMockLGraphGroup(overrides)
 }
 
-describe('useGraphHierarchy', () => {
+describe(useGraphHierarchy, () => {
   let mockCanvasStore: Partial<ReturnType<typeof useCanvasStore>>
   let mockNode: LGraphNode
   let mockGroups: LGraphGroup[]

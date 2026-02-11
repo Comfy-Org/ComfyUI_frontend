@@ -85,9 +85,7 @@ describe('contextMenuCompat', () => {
       legacyMenuCompat.install(LGraphCanvas.prototype, methodName)
       legacyMenuCompat.setCurrentExtension('test.extension')
 
-      const patchFunction = function (
-        this: LGraphCanvas
-      ): (IContextMenuValue | null)[] {
+      function patchFunction(this: LGraphCanvas): (IContextMenuValue | null)[] {
         const items = originalGetCanvasMenuOptions.call(this)
         items.push({ content: 'Custom', callback: () => {} })
         return items
@@ -335,9 +333,7 @@ describe('contextMenuCompat', () => {
 
       // Create a wrapper that adds new API items (simulating useContextMenuTranslation)
       const originalMethod = LGraphCanvas.prototype.getCanvasMenuOptions
-      const wrapperMethod = function (
-        this: LGraphCanvas
-      ): (IContextMenuValue | null)[] {
+      function wrapperMethod(this: LGraphCanvas): (IContextMenuValue | null)[] {
         const items = originalMethod.apply(this)
         // Add new API items
         items.push({ content: 'New API Item 1', callback: () => {} })
@@ -375,7 +371,7 @@ describe('contextMenuCompat', () => {
 
       // Register a wrapper (but don't set it as the current method)
       const originalMethod = LGraphCanvas.prototype.getCanvasMenuOptions
-      const wrapperMethod = function (): (IContextMenuValue | null)[] {
+      function wrapperMethod(): (IContextMenuValue | null)[] {
         return [{ content: 'Wrapper Item', callback: () => {} }]
       }
       legacyMenuCompat.registerWrapper(

@@ -56,7 +56,7 @@ vi.mock('@/platform/distribution/types', () => ({
   }
 }))
 
-describe('useBottomPanelStore', () => {
+describe(useBottomPanelStore, () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
   })

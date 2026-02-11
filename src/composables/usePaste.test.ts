@@ -95,7 +95,7 @@ vi.mock('@/workbench/eventHelpers', () => ({
   shouldIgnoreCopyPaste: vi.fn()
 }))
 
-describe('pasteImageNode', () => {
+describe(pasteImageNode, () => {
   beforeEach(() => {
     vi.clearAllMocks()
     vi.mocked(mockCanvas.graph!.add).mockImplementation(
@@ -183,7 +183,7 @@ describe('pasteImageNode', () => {
   })
 })
 
-describe('usePaste', () => {
+describe(usePaste, () => {
   beforeEach(() => {
     vi.clearAllMocks()
     mockCanvas.current_node = null

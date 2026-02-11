@@ -109,7 +109,7 @@ export class ContextMenu<TValue = unknown> {
     root.addEventListener(
       'pointerdown',
       (e) => {
-        if (e.button == 2) {
+        if (e.button === 2) {
           this.close()
           e.preventDefault()
         }
@@ -168,7 +168,7 @@ export class ContextMenu<TValue = unknown> {
 
       const body_rect = document.body.getBoundingClientRect()
       const root_rect = root.getBoundingClientRect()
-      if (body_rect.height == 0)
+      if (body_rect.height === 0)
         console.error(
           'document.body height is 0. That is dangerous, set html,body { height: 100%; }'
         )
@@ -266,7 +266,7 @@ export class ContextMenu<TValue = unknown> {
 
     function inner_over(this: ContextMenuDivElement<TValue>, e: MouseEvent) {
       const value = this.value
-      if (!value || !(value as IContextMenuValue).has_submenu) return
+      if (!(value as IContextMenuValue)?.has_submenu) return
 
       // if it is a submenu, autoopen like the item was clicked
       inner_onclick.call(this, e)
@@ -275,6 +275,7 @@ export class ContextMenu<TValue = unknown> {
 
     // menu option clicked
 
+    // oxlint-disable-next-line unicorn/no-this-assignment -- inner_onclick uses both its own `this` (DOM element) and the outer ContextMenu `this`
     const that = this
     function inner_onclick(this: ContextMenuDivElement<TValue>, e: MouseEvent) {
       const value = this.value
@@ -320,7 +321,8 @@ export class ContextMenu<TValue = unknown> {
           if (r === true) close_parent = false
         }
         if (value.submenu) {
-          if (!value.submenu.options) throw 'ContextMenu submenu needs options'
+          if (!value.submenu.options)
+            throw new Error('ContextMenu submenu needs options')
 
           new that.constructor(value.submenu.options, {
             callback: value.submenu.callback,

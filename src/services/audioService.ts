@@ -38,14 +38,14 @@ export const useAudioService = () => {
     try {
       await register(await connect())
       isEncoderRegistered = true
-    } catch (err) {
+    } catch (error) {
       if (
-        err instanceof Error &&
-        err.message.includes('already an encoder stored')
+        error instanceof Error &&
+        error.message.includes('already an encoder stored')
       ) {
         isEncoderRegistered = true
       } else {
-        handleError('encoder', 'Failed to register WAV encoder', err)
+        handleError('encoder', 'Failed to register WAV encoder', error)
       }
     }
   }

@@ -7,34 +7,34 @@ import { RenderShape } from '@/lib/litegraph/src/types/globalEnums'
 import { cn } from '@/utils/tailwindUtil'
 import type { ClassValue } from '@/utils/tailwindUtil'
 
-const props = defineProps<{
+const {
+  slotData,
+  class: classValue,
+  hasError,
+  multi
+} = defineProps<{
   slotData?: INodeSlot
   class?: ClassValue
   hasError?: boolean
   multi?: boolean
 }>()
 
-const clipPath = computed(() => {
-  switch (props.slotData?.shape) {
-    case 6:
-      return 'url(#square)'
-    case 7:
-      return 'url(#hollow)'
-    default:
-      return undefined
-  }
-})
+const shapeClipPaths: Record<number, string> = {
+  6: 'url(#square)',
+  7: 'url(#hollow)'
+}
+
+const clipPath = computed(() =>
+  slotData?.shape !== undefined ? shapeClipPaths[slotData.shape] : undefined
+)
 
 const slotElRef = useTemplateRef('slot-el')
 
 const types = computed(() => {
-  if (props.hasError) return ['var(--color-error)']
-  //TODO Support connected/disconnected colors?
-  if (!props.slotData) return [getSlotColor()]
-  if (props.slotData.type === '*') return ['']
-  const typesSet = new Set(
-    `${props.slotData.type}`.split(',').map(getSlotColor)
-  )
+  if (hasError) return ['var(--color-error)']
+  if (!slotData) return [getSlotColor()]
+  if (slotData.type === '*') return ['']
+  const typesSet = new Set(`${slotData.type}`.split(',').map(getSlotColor))
   return [...typesSet].slice(0, 3)
 })
 
@@ -42,7 +42,7 @@ defineExpose({
   slotElRef
 })
 
-const isListShape = computed(() => props.slotData?.shape === RenderShape.GRID)
+const isListShape = computed(() => slotData?.shape === RenderShape.GRID)
 
 const slotClass = computed(() =>
   cn(
@@ -50,7 +50,7 @@ const slotClass = computed(() =>
     isListShape.value ? 'rounded-[1px]' : 'rounded-full',
     'transition-all duration-150',
     'border border-solid border-node-component-slot-dot-outline',
-    props.multi
+    multi
       ? 'w-3 h-6'
       : 'size-3 cursor-crosshair group-hover/slot:[--node-component-slot-dot-outline-opacity-mult:5] group-hover/slot:scale-125'
   )
@@ -62,7 +62,7 @@ const slotClass = computed(() =>
     :class="
       cn(
         'after:absolute after:inset-y-0 after:w-5/2 relative size-6 flex items-center justify-center group/slot',
-        props.class
+        classValue
       )
     "
   >

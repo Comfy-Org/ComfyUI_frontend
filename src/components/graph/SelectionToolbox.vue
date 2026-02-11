@@ -82,16 +82,14 @@ const { visible } = useSelectionToolboxPosition(toolboxRef)
 
 const extensionToolboxCommands = computed<ComfyCommandImpl[]>(() => {
   const commandIds = new Set<string>(
-    canvasStore.selectedItems
-      .map(
-        (item) =>
-          extensionService
-            .invokeExtensions('getSelectionToolboxCommands', item)
-            .flat() as string[]
-      )
-      .flat()
+    canvasStore.selectedItems.flatMap(
+      (item) =>
+        extensionService
+          .invokeExtensions('getSelectionToolboxCommands', item)
+          .flat() as string[]
+    )
   )
-  return Array.from(commandIds)
+  return [...commandIds]
     .map((commandId) => commandStore.getCommand(commandId))
     .filter((command): command is ComfyCommandImpl => command !== undefined)
 })

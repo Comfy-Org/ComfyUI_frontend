@@ -24,7 +24,7 @@ import SettingItem from '@/platform/settings/components/SettingItem.vue'
 import type { SettingParams } from '@/platform/settings/types'
 import { normalizeI18nKey } from '@/utils/formatUtil'
 
-defineProps<{
+const { group, divider } = defineProps<{
   group: {
     label: string
     settings: SettingParams[]

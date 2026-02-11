@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest'
 import { makeLinkSegmentKey } from '@/renderer/core/layout/utils/layoutUtils'
 
 describe('layoutUtils', () => {
-  describe('makeLinkSegmentKey', () => {
+  describe(makeLinkSegmentKey, () => {
     it('creates stable keys for null reroute', () => {
       expect(makeLinkSegmentKey(10, null)).toBe('10:final')
       expect(makeLinkSegmentKey(42, null)).toBe('42:final')

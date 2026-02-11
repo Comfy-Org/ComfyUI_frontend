@@ -28,10 +28,9 @@ export function useInternalFilesApi(directory: 'input' | 'output') {
     if (directory === 'input') {
       await assetsStore.updateInputs()
       return assetsStore.inputAssets
-    } else {
-      await assetsStore.updateHistory()
-      return assetsStore.historyAssets
     }
+    await assetsStore.updateHistory()
+    return assetsStore.historyAssets
   }
 
   const refresh = () => fetchMediaList()

@@ -5,13 +5,14 @@ import type {
   ToolInternalSettings
 } from '@/extensions/core/maskeditor/types'
 import { Tools } from '@/extensions/core/maskeditor/types'
+import { app } from '@/scripts/app'
 import { useMaskEditorStore } from '@/stores/maskEditorStore'
+
 import { useBrushDrawing } from './useBrushDrawing'
 import { useCanvasTools } from './useCanvasTools'
 import { useCoordinateTransform } from './useCoordinateTransform'
 import type { useKeyboard } from './useKeyboard'
 import type { usePanAndZoom } from './usePanAndZoom'
-import { app } from '@/scripts/app'
 
 export function useToolManager(
   keyboard: ReturnType<typeof useKeyboard>,

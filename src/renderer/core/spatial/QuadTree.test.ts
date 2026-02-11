@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import { QuadTree } from '@/renderer/core/spatial/QuadTree'
 import type { Bounds } from '@/renderer/core/spatial/QuadTree'
 
-describe('QuadTree', () => {
+describe(QuadTree, () => {
   let quadTree: QuadTree<string>
   const worldBounds: Bounds = { x: 0, y: 0, width: 1000, height: 1000 }
 

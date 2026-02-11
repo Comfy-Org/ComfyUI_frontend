@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it } from 'vitest'
 
 import { useAssetSelectionStore } from './useAssetSelectionStore'
 
-describe('useAssetSelectionStore', () => {
+describe(useAssetSelectionStore, () => {
   beforeEach(() => {
     setActivePinia(createPinia())
   })

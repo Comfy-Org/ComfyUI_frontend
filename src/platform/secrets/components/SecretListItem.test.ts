@@ -10,7 +10,7 @@ vi.mock('../providers', () => ({
     if (provider === 'civitai') return 'Civitai'
     return ''
   },
-  getProviderLogo: () => undefined
+  getProviderLogo: () => {}
 }))
 
 function createMockSecret(
@@ -52,7 +52,7 @@ function mountComponent(props: {
   })
 }
 
-describe('SecretListItem', () => {
+describe(SecretListItem.__name ?? 'SecretListItem', () => {
   describe('rendering', () => {
     it('displays secret name', () => {
       const secret = createMockSecret({ name: 'My API Key' })

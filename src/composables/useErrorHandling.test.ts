@@ -4,7 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { ErrorRecoveryStrategy } from '@/composables/useErrorHandling'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 
-describe('useErrorHandling', () => {
+describe(useErrorHandling, () => {
   let errorHandler: ReturnType<typeof useErrorHandling>
 
   beforeEach(() => {

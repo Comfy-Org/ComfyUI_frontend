@@ -14,7 +14,7 @@ vi.mock('@/stores/workspace/colorPaletteStore', () => ({
   useColorPaletteStore: mockUseColorPaletteStore
 }))
 
-describe('useMinimapSettings', () => {
+describe(useMinimapSettings, () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
     vi.clearAllMocks()

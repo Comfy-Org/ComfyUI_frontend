@@ -71,7 +71,7 @@ vi.mock('../stores/teamWorkspaceStore', () => ({
   })
 }))
 
-describe('useInviteUrlLoader', () => {
+describe(useInviteUrlLoader, () => {
   beforeEach(() => {
     vi.clearAllMocks()
     mockRouteQuery.value = {}

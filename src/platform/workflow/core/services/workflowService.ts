@@ -91,7 +91,7 @@ export const useWorkflowService = () => {
     const newFilename = await workflow.promptSave()
     if (!newFilename) return
 
-    const newPath = workflow.directory + '/' + appendJsonExt(newFilename)
+    const newPath = `${workflow.directory}/${appendJsonExt(newFilename)}`
     const existingWorkflow = workflowStore.getWorkflowByPath(newPath)
 
     if (existingWorkflow && !existingWorkflow.isTemporary) {

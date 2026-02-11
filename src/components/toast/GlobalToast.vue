@@ -64,7 +64,7 @@ watch(
 
 function updateToastPosition() {
   const styleElement =
-    document.getElementById('dynamic-toast-style') || createStyleElement()
+    document.querySelector('#dynamic-toast-style') || createStyleElement()
   const rect = document
     .querySelector('.graph-canvas-container')
     ?.getBoundingClientRect()

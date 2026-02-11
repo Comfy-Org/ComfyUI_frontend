@@ -55,7 +55,7 @@ const setExecutingNodeProgress = (value?: number | null) => {
   executingNodeProgressRef.value = value ?? null
 }
 
-describe('useQueueProgress', () => {
+describe(useQueueProgress, () => {
   beforeEach(() => {
     localeRef.value = 'en-US'
     setExecutionProgress(null)

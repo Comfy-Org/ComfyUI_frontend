@@ -211,7 +211,7 @@ function createWrapper(overrides = {}) {
   })
 }
 
-describe('SubscriptionPanel', () => {
+describe(SubscriptionPanel.__name ?? 'SubscriptionPanel', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     // Reset mock state

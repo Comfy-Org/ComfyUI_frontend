@@ -16,7 +16,7 @@ const defaultSettingStore = {
       case 'Comfy.Templates.SortBy':
         return 'newest'
       default:
-        return undefined
+        return
     }
   }),
   set: vi.fn().mockResolvedValue(undefined)
@@ -51,7 +51,7 @@ vi.mock('@/scripts/api', () => ({
   }
 }))
 
-describe('useTemplateFiltering', () => {
+describe(useTemplateFiltering, () => {
   beforeEach(() => {
     setActivePinia(createPinia())
     vi.clearAllMocks()

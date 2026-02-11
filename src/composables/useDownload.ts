@@ -24,9 +24,12 @@ export function useDownload(url: string, fileName?: string) {
         console.error('"content-length" header not found')
         return null
       }
-    } catch (e) {
-      console.error('Error fetching file size:', e)
-      error.value = e instanceof Error ? e : new Error(String(e))
+    } catch (errorCaught) {
+      console.error('Error fetching file size:', errorCaught)
+      error.value =
+        errorCaught instanceof Error
+          ? errorCaught
+          : new Error(String(errorCaught))
       return null
     }
   }

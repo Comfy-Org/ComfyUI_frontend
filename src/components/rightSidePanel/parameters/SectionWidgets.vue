@@ -12,10 +12,9 @@ import type {
 } from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-
-import PropertiesAccordionItem from '../layout/PropertiesAccordionItem.vue'
 import { HideLayoutFieldKey } from '@/types/widgetTypes'
 
+import PropertiesAccordionItem from '../layout/PropertiesAccordionItem.vue'
 import { GetNodeParentGroupKey } from '../shared'
 import WidgetItem from './WidgetItem.vue'
 
@@ -52,7 +51,9 @@ const widgetsContainer = ref<HTMLElement>()
 const rootElement = ref<HTMLElement>()
 
 const widgets = shallowRef(widgetsProp)
-watchEffect(() => (widgets.value = widgetsProp))
+watchEffect(() => {
+  widgets.value = widgetsProp
+})
 
 provide(HideLayoutFieldKey, true)
 
@@ -72,7 +73,7 @@ function isWidgetShownOnParents(
   if (isProxyWidget(widget)) {
     return proxyWidgets.some(
       ([nodeId, widgetName]) =>
-        widget._overlay.nodeId == nodeId &&
+        widget._overlay.nodeId === nodeId &&
         widget._overlay.widgetName === widgetName
     )
   }
@@ -80,7 +81,7 @@ function isWidgetShownOnParents(
   // For regular widgets (not yet promoted), check using node ID and widget name
   return proxyWidgets.some(
     ([nodeId, widgetName]) =>
-      widgetNode.id == nodeId && widget.name === widgetName
+      String(widgetNode.id) === nodeId && widget.name === widgetName
   )
 }
 

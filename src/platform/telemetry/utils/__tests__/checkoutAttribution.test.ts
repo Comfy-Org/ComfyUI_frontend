@@ -5,7 +5,7 @@ import {
   getCheckoutAttribution
 } from '../checkoutAttribution'
 
-describe('getCheckoutAttribution', () => {
+describe(getCheckoutAttribution, () => {
   beforeEach(() => {
     vi.clearAllMocks()
     window.localStorage.clear()

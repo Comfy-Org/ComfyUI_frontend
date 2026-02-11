@@ -44,7 +44,7 @@ vi.mock('@/utils/typeGuardUtil', () => ({
   isSubgraph: vi.fn(() => false)
 }))
 
-describe('useWorkflowStore', () => {
+describe(useWorkflowStore, () => {
   let store: ReturnType<typeof useWorkflowStore>
   let bookmarkStore: ReturnType<typeof useWorkflowBookmarkStore>
 
@@ -701,7 +701,7 @@ describe('useWorkflowStore', () => {
         _nodes: [],
         nodes: [],
         clear() {
-          return undefined
+          return
         }
       } as Partial<Subgraph> as Subgraph
 

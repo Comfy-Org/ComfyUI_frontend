@@ -19,7 +19,7 @@ vi.mock('@/renderer/core/spatial/boundsCalculator', () => ({
   enforceMinimumBounds: vi.fn()
 }))
 
-describe('useMinimapViewport', () => {
+describe(useMinimapViewport, () => {
   let mockCanvas: MinimapCanvas
   let mockGraph: LGraph
 

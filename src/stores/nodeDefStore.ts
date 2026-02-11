@@ -102,7 +102,7 @@ export class ComfyNodeDefImpl
     // it now has no effect.
     for (const [name, spec] of Object.entries(def.input.required ?? {})) {
       const inputOptions = spec[1]
-      if (inputOptions && inputOptions.defaultInput) {
+      if (inputOptions?.defaultInput) {
         console.warn(
           `Use of defaultInput on required input ${nodeDef.python_module}:${nodeDef.name}:${name} is deprecated. Please drop the defaultInput option.`
         )
@@ -113,7 +113,7 @@ export class ComfyNodeDefImpl
     // User can connect the socket to override the seed.
     for (const [name, spec] of Object.entries(def.input.optional ?? {})) {
       const inputOptions = spec[1]
-      if (inputOptions && inputOptions.defaultInput) {
+      if (inputOptions?.defaultInput) {
         console.warn(
           `Use of defaultInput on optional input ${nodeDef.python_module}:${nodeDef.name}:${name} is deprecated. Please use forceInput instead.`
         )

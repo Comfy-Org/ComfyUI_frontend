@@ -42,7 +42,7 @@ function createMockCanvas(): LGraphCanvas {
   } as unknown as LGraphCanvas
 }
 
-describe('TransformPane', () => {
+describe(TransformPane.__name ?? 'TransformPane', () => {
   beforeEach(() => {
     vi.useFakeTimers()
     vi.resetAllMocks()

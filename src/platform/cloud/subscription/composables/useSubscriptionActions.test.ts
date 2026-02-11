@@ -45,7 +45,7 @@ Object.defineProperty(window, 'open', {
   value: mockOpen
 })
 
-describe('useSubscriptionActions', () => {
+describe(useSubscriptionActions, () => {
   beforeEach(() => {
     vi.clearAllMocks()
   })

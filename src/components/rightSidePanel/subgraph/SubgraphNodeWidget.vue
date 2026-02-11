@@ -3,7 +3,13 @@ import Button from '@/components/ui/button/Button.vue'
 import { cn } from '@/utils/tailwindUtil'
 import type { ClassValue } from '@/utils/tailwindUtil'
 
-const props = defineProps<{
+const {
+  nodeTitle,
+  widgetName,
+  isDraggable,
+  isPhysical,
+  class: className
+} = defineProps<{
   nodeTitle: string
   widgetName: string
   isDraggable?: boolean
@@ -15,9 +21,9 @@ defineEmits<{
 }>()
 
 function getIcon() {
-  return props.isPhysical
+  return isPhysical
     ? 'icon-[lucide--link]'
-    : props.isDraggable
+    : isDraggable
       ? 'icon-[lucide--eye]'
       : 'icon-[lucide--eye-off]'
 }
@@ -29,9 +35,9 @@ function getIcon() {
       cn(
         'flex py-1 px-2 break-all rounded items-center gap-1',
         'bg-node-component-surface',
-        props.isDraggable &&
+        isDraggable &&
           'draggable-item drag-handle cursor-grab [&.is-draggable]:cursor-grabbing hover:ring-1 ring-accent-background',
-        props.class
+        className
       )
     "
   >

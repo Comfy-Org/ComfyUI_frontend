@@ -80,8 +80,7 @@ export function useOutputStacks({ assets }: UseOutputStacksOptions) {
       if (loadingStackPromptIds.value.has(promptId)) {
         return
       }
-      const nextLoading = new Set(loadingStackPromptIds.value)
-      nextLoading.add(promptId)
+      const nextLoading = new Set([...loadingStackPromptIds.value, promptId])
       loadingStackPromptIds.value = nextLoading
 
       const children = await resolveStackChildren(asset)
@@ -100,8 +99,7 @@ export function useOutputStacks({ assets }: UseOutputStacksOptions) {
       }
     }
 
-    const nextExpanded = new Set(expandedStackPromptIds.value)
-    nextExpanded.add(promptId)
+    const nextExpanded = new Set([...expandedStackPromptIds.value, promptId])
     expandedStackPromptIds.value = nextExpanded
   }
 

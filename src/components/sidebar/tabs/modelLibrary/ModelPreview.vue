@@ -37,14 +37,12 @@
 <script setup lang="ts">
 import { ComfyModelDef } from '@/stores/modelStore'
 
-const props = defineProps({
+const { modelDef } = defineProps({
   modelDef: {
     type: ComfyModelDef,
     required: true
   }
 })
-
-const modelDef = props.modelDef
 </script>
 <style scoped>
 .model_preview {

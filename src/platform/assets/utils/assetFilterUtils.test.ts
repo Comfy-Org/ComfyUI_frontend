@@ -24,7 +24,7 @@ function createAsset(
   } satisfies AssetItem
 }
 
-describe('filterByCategory', () => {
+describe(filterByCategory, () => {
   it.for([
     { category: 'all', tags: ['checkpoint'], expected: true },
     { category: 'checkpoint', tags: ['checkpoint'], expected: true },
@@ -45,7 +45,7 @@ describe('filterByCategory', () => {
   )
 })
 
-describe('filterByFileFormats', () => {
+describe(filterByFileFormats, () => {
   it.for([
     { formats: [], name: 'model.safetensors', expected: true },
     { formats: ['safetensors'], name: 'model.safetensors', expected: true },
@@ -69,7 +69,7 @@ describe('filterByFileFormats', () => {
   })
 })
 
-describe('filterByBaseModels', () => {
+describe(filterByBaseModels, () => {
   it.for([
     { models: [], expected: true },
     { models: new Set<string>(), expected: true }
@@ -113,7 +113,7 @@ describe('filterByBaseModels', () => {
   })
 })
 
-describe('filterByOwnership', () => {
+describe(filterByOwnership, () => {
   it.for([
     { ownership: 'all' as const, is_immutable: true, expected: true },
     { ownership: 'all' as const, is_immutable: false, expected: true },
@@ -139,7 +139,7 @@ describe('filterByOwnership', () => {
   )
 })
 
-describe('filterItemByOwnership', () => {
+describe(filterItemByOwnership, () => {
   const items = [
     { id: '1', is_immutable: true },
     { id: '2', is_immutable: false },
@@ -159,7 +159,7 @@ describe('filterItemByOwnership', () => {
   )
 })
 
-describe('filterItemByBaseModels', () => {
+describe(filterItemByBaseModels, () => {
   const items = [
     { id: '1', base_models: ['SDXL'] },
     { id: '2', base_models: ['SD1.5'] },

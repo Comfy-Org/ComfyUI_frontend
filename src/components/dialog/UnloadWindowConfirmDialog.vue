@@ -26,7 +26,7 @@ const handleBeforeUnload = (event: BeforeUnloadEvent) => {
     event.preventDefault()
     return true
   }
-  return undefined
+  return
 }
 
 onMounted(() => {

@@ -41,7 +41,6 @@ const spinnerSizeClass = computed(() => {
   switch (size) {
     case 'sm':
       return 'h-6 w-6 border-2'
-    case 'md':
     default:
       return 'h-12 w-12 border-4'
   }

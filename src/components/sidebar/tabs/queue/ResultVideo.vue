@@ -12,7 +12,7 @@ import { useSettingStore } from '@/platform/settings/settingStore'
 import { useExtensionStore } from '@/stores/extensionStore'
 import type { ResultItemImpl } from '@/stores/queueStore'
 
-const props = defineProps<{
+const { result } = defineProps<{
   result: ResultItemImpl
 }>()
 
@@ -29,11 +29,9 @@ const vhsAdvancedPreviews = computed(() => {
 })
 
 const url = computed(() =>
-  vhsAdvancedPreviews.value
-    ? props.result.vhsAdvancedPreviewUrl
-    : props.result.url
+  vhsAdvancedPreviews.value ? result.vhsAdvancedPreviewUrl : result.url
 )
 const htmlVideoType = computed(() =>
-  vhsAdvancedPreviews.value ? 'video/webm' : props.result.htmlVideoType
+  vhsAdvancedPreviews.value ? 'video/webm' : result.htmlVideoType
 )
 </script>

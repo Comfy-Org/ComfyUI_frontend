@@ -17,7 +17,7 @@ function widget<T>(
   return { nodeId, name, type, value, options: {}, ...extra }
 }
 
-describe('useWidgetValueStore', () => {
+describe(useWidgetValueStore, () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
   })

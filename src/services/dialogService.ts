@@ -219,7 +219,7 @@ export const useDialogService = () => {
         : error.stack?.match(/(\/extensions\/.*\.js)/)?.[1]
 
     const extensionFile = filename
-      ? filename.substring(filename.indexOf('/extensions/'))
+      ? filename.slice(filename.indexOf('/extensions/'))
       : undefined
 
     return {

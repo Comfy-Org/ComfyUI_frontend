@@ -20,8 +20,8 @@ function pasteClipboardItems(data: DataTransfer): boolean {
     const decodedData = new TextDecoder().decode(bytes)
     useCanvasStore().getCanvas()._deserializeItems(JSON.parse(decodedData), {})
     return true
-  } catch (err) {
-    console.error(err)
+  } catch (error) {
+    console.error(error)
   }
   return false
 }
@@ -33,7 +33,7 @@ function pasteItemsOnNode(
 ): void {
   if (!node) return
 
-  const filteredItems = Array.from(items).filter((item) =>
+  const filteredItems = [...items].filter((item) =>
     item.type.startsWith(contentType)
   )
 
@@ -42,9 +42,7 @@ function pasteItemsOnNode(
 
   node.pasteFile?.(blob)
   node.pasteFiles?.(
-    Array.from(filteredItems)
-      .map((i) => i.getAsFile())
-      .filter((f) => f !== null)
+    [...filteredItems].map((i) => i.getAsFile()).filter((f) => f !== null)
   )
 }
 
@@ -116,7 +114,8 @@ export const usePaste = () => {
       if (item.type.startsWith('image/')) {
         pasteImageNode(canvas as LGraphCanvas, items, imageNode)
         return
-      } else if (item.type.startsWith('video/')) {
+      }
+      if (item.type.startsWith('video/')) {
         if (!videoNode) {
           // No video node selected: add a new one
           // TODO: when video node exists
@@ -146,12 +145,12 @@ export const usePaste = () => {
     try {
       data = data.slice(data.indexOf('{'))
       workflow = JSON.parse(data)
-    } catch (err) {
+    } catch {
       try {
         data = data.slice(data.indexOf('workflow\n'))
         data = data.slice(data.indexOf('{'))
         workflow = JSON.parse(data)
-      } catch (error) {
+      } catch {
         workflow = null
       }
     }

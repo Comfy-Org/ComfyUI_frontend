@@ -50,7 +50,7 @@ import SingleSelect from '@/components/input/SingleSelect.vue'
 import { useModelTypes } from '@/platform/assets/composables/useModelTypes'
 import type { AssetMetadata } from '@/platform/assets/schemas/assetSchema'
 
-defineProps<{
+const { metadata, previewImage } = defineProps<{
   metadata?: AssetMetadata
   previewImage?: string
 }>()

@@ -131,7 +131,7 @@ const createMouseEvent = (
   })
 }
 
-describe('useNodePointerInteractions', () => {
+describe(useNodePointerInteractions, () => {
   beforeEach(async () => {
     vi.resetAllMocks()
     selectedItemsState.items = []

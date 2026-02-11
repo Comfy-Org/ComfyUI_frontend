@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest'
 import { isHostWhitelisted, normalizeHost } from '@/utils/hostWhitelist'
 
 describe('hostWhitelist utils', () => {
-  describe('normalizeHost', () => {
+  describe(normalizeHost, () => {
     it.each([
       ['LOCALHOST', 'localhost'],
       ['localhost.', 'localhost'], // trims trailing dot
@@ -27,7 +27,7 @@ describe('hostWhitelist utils', () => {
     })
   })
 
-  describe('isHostWhitelisted', () => {
+  describe(isHostWhitelisted, () => {
     describe('localhost label', () => {
       it.each([
         'localhost',

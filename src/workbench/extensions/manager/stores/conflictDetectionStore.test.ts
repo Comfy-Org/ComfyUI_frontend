@@ -5,7 +5,7 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import { useConflictDetectionStore } from '@/workbench/extensions/manager/stores/conflictDetectionStore'
 import type { ConflictDetectionResult } from '@/workbench/extensions/manager/types/conflictDetectionTypes'
 
-describe('useConflictDetectionStore', () => {
+describe(useConflictDetectionStore, () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
   })

@@ -17,7 +17,7 @@ import WidgetLayoutField from './layout/WidgetLayoutField.vue'
 
 const { locale } = useI18n()
 
-const props = defineProps<{
+const { widget } = defineProps<{
   widget: SimplifiedWidget<number>
 }>()
 
@@ -35,10 +35,10 @@ function formatNumber(value: number, options?: Intl.NumberFormatOptions) {
 }
 
 const decimalSeparator = computed(() =>
-  formatNumber(1.1).replace(/\p{Number}/gu, '')
+  formatNumber(1.1).replaceAll(/\p{Number}/gu, '')
 )
 const groupSeparator = computed(() =>
-  formatNumber(11111).replace(/\p{Number}/gu, '')
+  formatNumber(11111).replaceAll(/\p{Number}/gu, '')
 )
 function unformatValue(value: string) {
   return value
@@ -87,11 +87,11 @@ interface NumericWidgetOptions {
 }
 
 const filteredProps = computed(() => {
-  const filtered = filterWidgetProps(props.widget.options, INPUT_EXCLUDED_PROPS)
+  const filtered = filterWidgetProps(widget.options, INPUT_EXCLUDED_PROPS)
   return filtered as Partial<NumericWidgetOptions>
 })
 
-const isDisabled = computed(() => props.widget.options?.disabled ?? false)
+const isDisabled = computed(() => widget.options?.disabled ?? false)
 
 const canDecrement = computed(() => {
   const min = filteredProps.value.min ?? -Number.MAX_VALUE
@@ -104,7 +104,7 @@ const canIncrement = computed(() => {
 
 // Get the precision value for proper number formatting
 const precision = computed(() => {
-  const p = props.widget.options?.precision
+  const p = widget.options?.precision
   // Treat negative or non-numeric precision as undefined
   return typeof p === 'number' && p >= 0 ? p : undefined
 })
@@ -112,13 +112,10 @@ const precision = computed(() => {
 // Calculate the step value based on precision or widget options
 const stepValue = computed(() => {
   // Use step2 (correct input spec value) if available
-  if (props.widget.options?.step2 !== undefined) {
-    return Number(props.widget.options.step2)
+  if (widget.options?.step2 !== undefined) {
+    return Number(widget.options.step2)
   }
-  // Use step / 10 for custom large step values (> 10) to match litegraph behavior
-  // This is important for extensions like Impact Pack that use custom step values (e.g., 640)
-  // We skip default step values (1, 10) to avoid affecting normal widgets
-  const step = props.widget.options?.step as number | undefined
+  const step = widget.options?.step as number | undefined
   if (step !== undefined && step > 10) {
     return Number(step) / 10
   }
@@ -137,7 +134,7 @@ const stepValue = computed(() => {
 
 // Disable grouping separators by default unless explicitly enabled by the node author
 const useGrouping = computed(() => {
-  return props.widget.options?.useGrouping === true
+  return widget.options?.useGrouping === true
 })
 
 // Check if increment/decrement buttons should be disabled due to precision limits

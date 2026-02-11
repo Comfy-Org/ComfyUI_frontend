@@ -119,7 +119,7 @@ export class LitegraphLinkAdapter {
         time: LiteGraph.getTime() * 0.001
       },
       scale: context.scale,
-      highlightedIds: new Set(Array.from(context.highlightedLinks).map(String))
+      highlightedIds: new Set([...context.highlightedLinks].map(String))
     }
   }
 
@@ -132,7 +132,6 @@ export class LitegraphLinkAdapter {
         return 'linear'
       case LinkRenderType.STRAIGHT_LINK:
         return 'straight'
-      case LinkRenderType.SPLINE_LINK:
       default:
         return 'spline'
     }
@@ -145,7 +144,6 @@ export class LitegraphLinkAdapter {
     switch (shape) {
       case LinkMarkerShape.Circle:
         return 'circle'
-      case LinkMarkerShape.Arrow:
       default:
         return 'triangle'
     }

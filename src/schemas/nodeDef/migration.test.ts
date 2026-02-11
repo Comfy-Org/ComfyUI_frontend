@@ -252,7 +252,7 @@ describe('NodeDef Migration', () => {
   })
 })
 
-describe('ComfyNodeDefImpl', () => {
+describe(ComfyNodeDefImpl, () => {
   it('should transform a basic node definition correctly', () => {
     const plainObject = {
       name: 'TestNode',

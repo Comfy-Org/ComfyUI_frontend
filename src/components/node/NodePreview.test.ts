@@ -10,7 +10,7 @@ import * as markdownRendererUtil from '@/utils/markdownRendererUtil'
 
 import NodePreview from './NodePreview.vue'
 
-describe('NodePreview', () => {
+describe(NodePreview.__name ?? 'NodePreview', () => {
   let i18n: ReturnType<typeof createI18n>
   let pinia: ReturnType<typeof createPinia>
 

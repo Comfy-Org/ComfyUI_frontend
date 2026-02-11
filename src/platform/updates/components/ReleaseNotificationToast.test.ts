@@ -47,7 +47,7 @@ vi.mock('vue-i18n', () => ({
 }))
 
 vi.mock('@/utils/formatUtil', () => ({
-  formatVersionAnchor: vi.fn((version: string) => version.replace(/\./g, ''))
+  formatVersionAnchor: vi.fn((version: string) => version.replaceAll('.', ''))
 }))
 
 vi.mock('@/utils/markdownRendererUtil', () => ({
@@ -80,7 +80,7 @@ vi.mock('../common/releaseStore', () => ({
   useReleaseStore: vi.fn(() => mockReleaseStore)
 }))
 
-describe('ReleaseNotificationToast', () => {
+describe(ReleaseNotificationToast.__name ?? 'ReleaseNotificationToast', () => {
   let wrapper: VueWrapper<InstanceType<typeof ReleaseNotificationToast>>
 
   const mountComponent = (props = {}) => {

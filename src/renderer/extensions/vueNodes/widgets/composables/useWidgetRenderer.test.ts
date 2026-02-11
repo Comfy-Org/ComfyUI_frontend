@@ -39,7 +39,7 @@ describe('widgetRegistry', () => {
     setActivePinia(createTestingPinia())
     vi.clearAllMocks()
   })
-  describe('getComponent', () => {
+  describe(getComponent, () => {
     // Test number type mappings
     describe('number types', () => {
       it('should map int types to slider widget', () => {
@@ -116,7 +116,7 @@ describe('widgetRegistry', () => {
     })
   })
 
-  describe('shouldRenderAsVue', () => {
+  describe(shouldRenderAsVue, () => {
     it('should return false for widgets marked as canvas-only', () => {
       const widget = { type: 'text', options: { canvasOnly: true } }
       expect(shouldRenderAsVue(widget)).toBe(false)
@@ -142,7 +142,7 @@ describe('widgetRegistry', () => {
     })
   })
 
-  describe('isEssential', () => {
+  describe(isEssential, () => {
     it('should identify essential widget types', () => {
       expect(isEssential('int')).toBe(true)
       expect(isEssential('INT')).toBe(true)

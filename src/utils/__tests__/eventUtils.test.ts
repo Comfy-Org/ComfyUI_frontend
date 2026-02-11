@@ -2,7 +2,7 @@ import { extractFileFromDragEvent } from '@/utils/eventUtils'
 import { describe, expect, it } from 'vitest'
 
 describe('eventUtils', () => {
-  describe('extractFileFromDragEvent', () => {
+  describe(extractFileFromDragEvent, () => {
     it('should handle drops with no data', async () => {
       const actual = await extractFileFromDragEvent(new FakeDragEvent('drop'))
       expect(actual).toBe(undefined)

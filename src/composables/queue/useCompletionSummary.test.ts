@@ -35,7 +35,7 @@ vi.mock('@/stores/executionStore', () => {
   }
 })
 
-describe('useCompletionSummary', () => {
+describe(useCompletionSummary, () => {
   const queueStore = () =>
     useQueueStore() as {
       runningTasks: MockTask[]

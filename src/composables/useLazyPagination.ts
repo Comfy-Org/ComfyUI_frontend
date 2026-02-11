@@ -14,7 +14,7 @@ export function useLazyPagination<T>(
 
   const currentPage = ref(initialPage)
   const isLoading = ref(false)
-  const loadedPages = shallowRef(new Set<number>([]))
+  const loadedPages = shallowRef(new Set<number>())
 
   // Get reactive items array
   const itemsArray = computed(() => {
@@ -29,9 +29,7 @@ export function useLazyPagination<T>(
       return []
     }
 
-    const loadedPageNumbers = Array.from(loadedPages.value).sort(
-      (a, b) => a - b
-    )
+    const loadedPageNumbers = [...loadedPages.value].sort((a, b) => a - b)
     const maxLoadedPage = Math.max(...loadedPageNumbers, 0)
     const endIndex = maxLoadedPage * itemsPerPage
     return itemData.slice(0, endIndex)
@@ -43,7 +41,7 @@ export function useLazyPagination<T>(
       return false
     }
 
-    const loadedPagesArray = Array.from(loadedPages.value)
+    const loadedPagesArray = [...loadedPages.value]
     const maxLoadedPage = Math.max(...loadedPagesArray, 0)
     return maxLoadedPage * itemsPerPage < itemData.length
   })
@@ -60,14 +58,13 @@ export function useLazyPagination<T>(
     if (isLoading.value || !hasMoreItems.value) return
 
     isLoading.value = true
-    const loadedPagesArray = Array.from(loadedPages.value)
+    const loadedPagesArray = [...loadedPages.value]
     const nextPage = Math.max(...loadedPagesArray, 0) + 1
 
     // Simulate network delay
     // await new Promise((resolve) => setTimeout(resolve, 5000))
 
-    const newLoadedPages = new Set(loadedPages.value)
-    newLoadedPages.add(nextPage)
+    const newLoadedPages = new Set([...loadedPages.value, nextPage])
     loadedPages.value = newLoadedPages
     currentPage.value = nextPage
     isLoading.value = false
@@ -86,7 +83,7 @@ export function useLazyPagination<T>(
 
   const reset = () => {
     currentPage.value = initialPage
-    loadedPages.value = new Set([])
+    loadedPages.value = new Set()
     isLoading.value = false
 
     // Immediately load first page if we have items

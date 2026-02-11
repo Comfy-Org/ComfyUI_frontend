@@ -90,7 +90,7 @@ export function useTemplateWorkflows() {
   const getTemplateDescription = (template: TemplateInfo) => {
     return (
       (template.localizedDescription || template.description)
-        ?.replace(/[-_]/g, ' ')
+        ?.replaceAll(/[-_]/g, ' ')
         .trim() ?? ''
     )
   }
@@ -118,7 +118,7 @@ export function useTemplateWorkflows() {
         )
         const template = allCategory?.templates.find((t) => t.name === id)
 
-        if (!template || !template.sourceModule) return false
+        if (!template?.sourceModule) return false
 
         // Use the stored source module for loading
         sourceModule = template.sourceModule
@@ -160,11 +160,10 @@ export function useTemplateWorkflows() {
     if (sourceModule === 'default') {
       // Default templates provided by frontend are served on this separate endpoint
       return fetch(api.fileURL(`/templates/${id}.json`)).then((r) => r.json())
-    } else {
-      return fetch(
-        api.apiURL(`/workflow_templates/${sourceModule}/${id}.json`)
-      ).then((r) => r.json())
     }
+    return fetch(
+      api.apiURL(`/workflow_templates/${sourceModule}/${id}.json`)
+    ).then((r) => r.json())
   }
 
   return {

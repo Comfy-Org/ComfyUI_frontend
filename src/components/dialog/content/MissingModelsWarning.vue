@@ -94,7 +94,7 @@ interface ModelInfo {
   folder_path?: string
 }
 
-const props = defineProps<{
+const { missingModels: missingModelsProp, paths } = defineProps<{
   missingModels: ModelInfo[]
   paths: Record<string, string[]>
 }>()
@@ -113,9 +113,9 @@ function openShowMissingModelsSetting() {
 
 const modelDownloads = ref<Record<string, ModelInfo>>({})
 const missingModels = computed(() => {
-  return props.missingModels.map((model) => {
-    const paths = props.paths[model.directory]
-    if (model.directory_invalid || !paths) {
+  return missingModelsProp.map((model) => {
+    const modelPaths = paths[model.directory]
+    if (model.directory_invalid || !modelPaths) {
       return {
         label: `${model.directory} / ${model.name}`,
         url: model.url,
@@ -130,7 +130,7 @@ const missingModels = computed(() => {
       name: model.name,
       directory: model.directory,
       url: model.url,
-      folder_path: paths[0]
+      folder_path: modelPaths[0]
     }
     modelDownloads.value[model.name] = downloadInfo
     if (!whiteListedUrls.has(model.url)) {
@@ -157,7 +157,7 @@ const missingModels = computed(() => {
       progress: downloadInfo.progress,
       error: downloadInfo.error,
       name: model.name,
-      paths: paths,
+      paths: modelPaths,
       folderPath: downloadInfo.folder_path
     }
   })

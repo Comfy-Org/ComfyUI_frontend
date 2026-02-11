@@ -10,14 +10,14 @@ import WidgetInputNumberInput from './WidgetInputNumberInput.vue'
 import WidgetInputNumberSlider from './WidgetInputNumberSlider.vue'
 import WidgetWithControl from './WidgetWithControl.vue'
 
-const props = defineProps<{
+const { widget } = defineProps<{
   widget: SimplifiedWidget<number>
 }>()
 
 const modelValue = defineModel<number>({ default: 0 })
 
 const hasControlAfterGenerate = computed(() => {
-  return !!props.widget.controlWidget
+  return !!widget.controlWidget
 })
 </script>
 

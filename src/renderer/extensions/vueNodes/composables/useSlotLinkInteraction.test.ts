@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { resolvePointerTarget } from '@/renderer/extensions/vueNodes/composables/useSlotLinkInteraction'
 
-describe('resolvePointerTarget', () => {
+describe(resolvePointerTarget, () => {
   afterEach(() => {
     vi.restoreAllMocks()
   })

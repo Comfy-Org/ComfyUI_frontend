@@ -40,8 +40,7 @@ export const useComfyRegistryService = () => {
     if (axiosError.response) {
       const { status, data } = axiosError.response
 
-      if (routeSpecificErrors && routeSpecificErrors[status])
-        return routeSpecificErrors[status]
+      if (routeSpecificErrors?.[status]) return routeSpecificErrors[status]
 
       switch (status) {
         case 400:
@@ -82,11 +81,15 @@ export const useComfyRegistryService = () => {
     try {
       const response = await apiCall()
       return response.data
-    } catch (err) {
+    } catch (errorCaught) {
       // Don't treat cancellations as errors
-      if (isAbortError(err)) return null
+      if (isAbortError(errorCaught)) return null
 
-      error.value = handleApiError(err, errorContext, routeSpecificErrors)
+      error.value = handleApiError(
+        errorCaught,
+        errorContext,
+        routeSpecificErrors
+      )
       return null
     } finally {
       isLoading.value = false

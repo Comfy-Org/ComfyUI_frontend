@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest'
 import { getEffectiveBrushSize, getEffectiveHardness } from './brushUtils'
 
 describe('brushUtils', () => {
-  describe('getEffectiveBrushSize', () => {
+  describe(getEffectiveBrushSize, () => {
     it('should return original size when hardness is 1.0', () => {
       const size = 100
       const hardness = 1.0
@@ -23,7 +23,7 @@ describe('brushUtils', () => {
     })
   })
 
-  describe('getEffectiveHardness', () => {
+  describe(getEffectiveHardness, () => {
     it('should return same hardness if effective size matches size', () => {
       const size = 100
       const hardness = 0.8

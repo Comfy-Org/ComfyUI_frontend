@@ -76,11 +76,9 @@ import { useRouter } from 'vue-router'
 import Button from '@/components/ui/button/Button.vue'
 import { useFirebaseAuthActions } from '@/composables/auth/useFirebaseAuthActions'
 
-interface Props {
+const { errorMessage } = defineProps<{
   errorMessage?: string
-}
-
-defineProps<Props>()
+}>()
 
 const router = useRouter()
 const { logout } = useFirebaseAuthActions()

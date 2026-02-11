@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest'
 import { distributeSpace } from '@/lib/litegraph/src/litegraph'
 import type { SpaceRequest } from '@/lib/litegraph/src/litegraph'
 
-describe('distributeSpace', () => {
+describe(distributeSpace, () => {
   it('should distribute space according to minimum sizes when space is limited', () => {
     const requests: SpaceRequest[] = [
       { minSize: 100 },

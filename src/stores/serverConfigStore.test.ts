@@ -11,7 +11,7 @@ const dummyFormItem: FormItem = {
   type: 'text'
 }
 
-describe('useServerConfigStore', () => {
+describe(useServerConfigStore, () => {
   let store: ReturnType<typeof useServerConfigStore>
 
   beforeEach(() => {

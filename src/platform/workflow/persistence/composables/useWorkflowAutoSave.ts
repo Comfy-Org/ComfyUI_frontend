@@ -43,8 +43,8 @@ export function useWorkflowAutoSave() {
           try {
             isSaving = true
             await workflowService.saveWorkflow(activeWorkflow)
-          } catch (err) {
-            console.error('Auto save failed:', err)
+          } catch (error) {
+            console.error('Auto save failed:', error)
           } finally {
             isSaving = false
             if (needsAutoSave) {

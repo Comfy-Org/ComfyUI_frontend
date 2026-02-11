@@ -21,6 +21,7 @@
     "eslint",
     "import",
     "oxc",
+    "promise",
     "typescript",
     "unicorn",
     "vitest",
@@ -28,6 +29,12 @@
   ],
   "rules": {
     "no-async-promise-executor": "off",
+    "no-else-return": [
+      "error",
+      {
+        "allowElseIf": false
+      }
+    ],
     "no-console": [
       "error",
       {
@@ -35,8 +42,29 @@
       }
     ],
     "no-control-regex": "off",
+    "eqeqeq": [
+      "error",
+      "always",
+      {
+        "null": "ignore"
+      }
+    ],
+    "func-style": [
+      "error",
+      "declaration",
+      {
+        "allowArrowFunctions": true
+      }
+    ],
     "no-eval": "off",
+    "no-new-func": "error",
+    // TODO: Enable and fix 104 violations
+    "no-param-reassign": "off",
     "no-redeclare": "error",
+    "no-return-assign": ["error", "always"],
+    "no-throw-literal": "error",
+    "no-useless-constructor": "error",
+    "no-var": "error",
     "no-restricted-imports": [
       "error",
       {
@@ -64,15 +92,66 @@
         ]
       }
     ],
+    "no-unneeded-ternary": [
+      "error",
+      {
+        "defaultAssignment": false
+      }
+    ],
+    "no-useless-call": "error",
+    "no-useless-concat": "error",
+    "prefer-const": "error",
+    // TODO: Enable and fix 581 violations
+    "prefer-destructuring": "off",
+    "prefer-object-has-own": "error",
+    "prefer-object-spread": "error",
+    "prefer-rest-params": "error",
+    "prefer-spread": "error",
+    "prefer-template": "error",
+    "promise/no-nesting": "error",
+    "promise/param-names": "error",
+    // TODO: Enable and fix 76 violations
+    "promise/prefer-await-to-callbacks": "off",
+    // TODO: Enable and fix 91 violations
+    "promise/prefer-await-to-then": "off",
+    "promise/prefer-catch": "error",
+    "preserve-caught-error": "error",
+    "yoda": [
+      "error",
+      "never",
+      {
+        "exceptRange": true
+      }
+    ],
     "no-self-assign": "allow",
     "no-unused-expressions": "off",
     "no-unused-private-class-members": "off",
     "no-useless-rename": "off",
+    "operator-assignment": ["error", "always"],
     "import/default": "error",
     "import/export": "error",
+    "import/first": ["error", "absolute-first"],
     "import/namespace": "error",
     "import/no-duplicates": "error",
     "import/consistent-type-specifier-style": ["error", "prefer-top-level"],
+    "vitest/consistent-each-for": [
+      "error",
+      {
+        "test": "for",
+        "describe": "for"
+      }
+    ],
+    "vitest/consistent-test-filename": [
+      "error",
+      {
+        "pattern": ".*\\.test\\.ts$"
+      }
+    ],
+    "vitest/consistent-vitest-vi": "error",
+    "vitest/warn-todo": "warn",
+    "vitest/hoisted-apis-on-top": "error",
+    "vitest/no-conditional-tests": "error",
+    "vitest/prefer-describe-function-title": "error",
     "jest/expect-expect": "off",
     "jest/no-conditional-expect": "off",
     "jest/no-disabled-tests": "off",
@@ -82,11 +161,55 @@
     "typescript/no-unnecessary-parameter-property-assignment": "off",
     "typescript/no-unsafe-declaration-merging": "off",
     "typescript/no-unused-vars": "off",
+    "unicorn/catch-error-name": [
+      "error",
+      {
+        "ignore": ["^error\\w+$"]
+      }
+    ],
+    // TODO: Enable and fix 147 violations
+    "unicorn/consistent-function-scoping": "off",
+    "unicorn/error-message": "error",
+    "unicorn/no-abusive-eslint-disable": "error",
+    // TODO: Enable and fix 165 violations
+    "unicorn/no-array-for-each": "off",
+    "unicorn/no-immediate-mutation": "error",
+    "unicorn/no-instanceof-array": "error",
+    "unicorn/no-length-as-slice-end": "error",
+    "unicorn/no-lonely-if": "error",
+    "unicorn/no-negation-in-equality-check": "error",
+    "unicorn/no-typeof-undefined": "error",
+    "unicorn/prefer-math-min-max": "error",
+    "unicorn/prefer-array-flat-map": "error",
     "unicorn/no-empty-file": "off",
     "unicorn/no-new-array": "off",
+    "unicorn/prefer-add-event-listener": "error",
+    "unicorn/prefer-array-find": "error",
+    "unicorn/no-useless-undefined": [
+      "error",
+      {
+        "checkArguments": false,
+        "checkArrowFunctionBody": false
+      }
+    ],
+    "unicorn/prefer-classlist-toggle": "error",
     "unicorn/no-single-promise-in-promise-methods": "off",
+    "unicorn/no-this-assignment": "error",
+    "unicorn/no-useless-collection-argument": "error",
+    "unicorn/no-useless-switch-case": "error",
     "unicorn/no-useless-fallback-in-spread": "off",
     "unicorn/no-useless-spread": "off",
+    "unicorn/prefer-optional-catch-binding": "error",
+    "unicorn/prefer-prototype-methods": "error",
+    "unicorn/prefer-query-selector": "error",
+    "unicorn/prefer-spread": "error",
+    "unicorn/prefer-regexp-test": "error",
+    "unicorn/prefer-set-has": "error",
+    "unicorn/prefer-string-replace-all": "error",
+    "unicorn/prefer-string-slice": "error",
+    "unicorn/prefer-string-trim-start-end": "error",
+    "unicorn/prefer-type-error": "error",
+    "unicorn/throw-new-error": "error",
     "typescript/await-thenable": "off",
     "typescript/no-base-to-string": "off",
     "typescript/no-duplicate-type-constituents": "off",
@@ -96,6 +219,12 @@
     "typescript/restrict-template-expressions": "off",
     "typescript/unbound-method": "off",
     "typescript/no-floating-promises": "error",
+    // TODO: Enable and fix 372 violations (use { "ignoreConditionalTests": true })
+    "typescript/prefer-nullish-coalescing": "off",
+    // TODO: Enable and fix violations
+    "typescript/prefer-optional-chain": "off",
+    "typescript/prefer-ts-expect-error": "error",
+    "vue/define-props-destructuring": "error",
     "vue/no-import-compiler-macros": "error",
     "vue/no-dupe-keys": "error"
   },
@@ -114,7 +243,8 @@
         "no-control-regex": "error",
         "no-useless-rename": "error",
         "no-unused-private-class-members": "error",
-        "unicorn/no-empty-file": "error"
+        "unicorn/no-empty-file": "error",
+        "vitest/consistent-test-filename": "off"
       }
     }
   ]

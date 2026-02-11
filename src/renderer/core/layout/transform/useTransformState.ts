@@ -93,7 +93,7 @@ function useTransformStateIndividual() {
    * @param canvas - LiteGraph canvas instance with DragAndScale (ds) transform state
    */
   function syncWithCanvas(canvas: LGraphCanvas) {
-    if (!canvas || !canvas.ds) return
+    if (!canvas?.ds) return
 
     // Mirror LiteGraph's transform state to Vue's reactive state
     // ds.offset = pan offset, ds.scale = zoom level

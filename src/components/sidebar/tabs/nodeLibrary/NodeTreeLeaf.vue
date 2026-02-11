@@ -96,13 +96,13 @@ import { cn } from '@/utils/tailwindUtil'
 
 const { t } = useI18n()
 
-const props = defineProps<{
+const { node, openNodeHelp } = defineProps<{
   node: RenderedTreeExplorerNode<ComfyNodeDefImpl>
   openNodeHelp: (nodeDef: ComfyNodeDefImpl) => void
 }>()
 
 // Note: node.data should be present for leaf nodes.
-const nodeDef = computed(() => props.node.data!)
+const nodeDef = computed(() => node.data!)
 const nodeBookmarkStore = useNodeBookmarkStore()
 const isBookmarked = computed(() =>
   nodeBookmarkStore.isBookmarked(nodeDef.value)
@@ -120,14 +120,14 @@ const onHelpClick = () => {
   useTelemetry()?.trackUiButtonClicked({
     button_id: 'node_library_help_button'
   })
-  props.openNodeHelp(nodeDef.value)
+  openNodeHelp(nodeDef.value)
 }
 const editBlueprint = async () => {
-  if (!props.node.data)
+  if (!node.data)
     throw new Error(
       'Failed to edit subgraph blueprint lacking backing node data'
     )
-  await useSubgraphStore().editBlueprint(props.node.data.name)
+  await useSubgraphStore().editBlueprint(node.data.name)
 }
 const menu = ref<InstanceType<typeof ContextMenu> | null>(null)
 const subgraphStore = useSubgraphStore()
@@ -155,8 +155,8 @@ function handleContextMenu(event: Event) {
   menu.value?.show(event)
 }
 function deleteBlueprint() {
-  if (!props.node.data) return
-  void subgraphStore.deleteBlueprint(props.node.data.name)
+  if (!node.data) return
+  void subgraphStore.deleteBlueprint(node.data.name)
 }
 
 const nodePreviewStyle = ref<CSSProperties>({

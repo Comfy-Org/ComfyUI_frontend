@@ -17,7 +17,7 @@ vi.mock('@/utils/formatUtil', () => ({
   normalizeI18nKey: vi.fn()
 }))
 
-describe('SettingItem', () => {
+describe(SettingItem.__name ?? 'SettingItem', () => {
   const mountComponent = (props: Record<string, unknown>, options = {}) => {
     return mount(SettingItem, {
       global: {

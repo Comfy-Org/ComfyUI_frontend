@@ -95,7 +95,7 @@ const test = baseTest.extend<TestContext>({
   }
 })
 
-describe('LinkConnector', () => {
+describe(LinkConnector, () => {
   test('should initialize with default state', ({ connector }) => {
     expect(connector.state).toEqual({
       connectingTo: undefined,

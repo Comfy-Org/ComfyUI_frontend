@@ -19,7 +19,7 @@ const i18n = createI18n({
   messages: {}
 })
 
-describe('TreeExplorerTreeNode', () => {
+describe(TreeExplorerTreeNode.__name ?? 'TreeExplorerTreeNode', () => {
   const mockNode = {
     key: '1',
     label: 'Test Node',

@@ -402,13 +402,15 @@ export class LiteGraphGlobal {
    */
   registerNodeType(type: string, base_class: typeof LGraphNode): void {
     if (!base_class.prototype)
-      throw 'Cannot register a simple object, it must be a class with a prototype'
+      throw new Error(
+        'Cannot register a simple object, it must be a class with a prototype'
+      )
     base_class.type = type
 
     const classname = base_class.name
 
     const pos = type.lastIndexOf('/')
-    base_class.category = type.substring(0, pos)
+    base_class.category = pos === -1 ? '' : type.slice(0, pos)
 
     base_class.title ||= classname
 
@@ -446,7 +448,7 @@ export class LiteGraphGlobal {
   unregisterNodeType(type: string | typeof LGraphNode): void {
     const base_class =
       typeof type === 'string' ? this.registered_node_types[type] : type
-    if (!base_class) throw `node type not found: ${String(type)}`
+    if (!base_class) throw new Error(`node type not found: ${String(type)}`)
 
     delete this.registered_node_types[String(base_class.type)]
 
@@ -478,7 +480,7 @@ export class LiteGraphGlobal {
     let allTypes = []
     if (typeof slot_type === 'string') {
       allTypes = slot_type.split(',')
-    } else if (slot_type == this.EVENT || slot_type == this.ACTION) {
+    } else if (slot_type === this.EVENT || slot_type === this.ACTION) {
       allTypes = ['_event_']
     } else {
       allTypes = ['*']
@@ -590,11 +592,11 @@ export class LiteGraphGlobal {
     const r = []
     for (const i in this.registered_node_types) {
       const type = this.registered_node_types[i]
-      if (type.filter != filter) continue
+      if (type.filter !== filter) continue
 
-      if (category == '') {
+      if (category === '') {
         if (type.category == null) r.push(type)
-      } else if (type.category == category) {
+      } else if (type.category === category) {
         r.push(type)
       }
     }
@@ -612,7 +614,7 @@ export class LiteGraphGlobal {
     for (const i in this.registered_node_types) {
       const type = this.registered_node_types[i]
       if (type.category && !type.skip_list) {
-        if (type.filter != filter) continue
+        if (type.filter !== filter) continue
 
         categories[type.category] = 1
       }
@@ -626,26 +628,26 @@ export class LiteGraphGlobal {
 
   // debug purposes: reloads all the js scripts that matches a wildcard
   reloadNodes(folder_wildcard: string): void {
-    const tmp = document.getElementsByTagName('script')
+    const tmp = document.querySelectorAll('script')
     // weird, this array changes by its own, so we use a copy
     const script_files = []
     for (const element of tmp) {
       script_files.push(element)
     }
 
-    const docHeadObj = document.getElementsByTagName('head')[0]
+    const docHeadObj = document.querySelector('head')
     folder_wildcard = document.location.href + folder_wildcard
 
     for (const script_file of script_files) {
       const src = script_file.src
-      if (!src || src.substr(0, folder_wildcard.length) != folder_wildcard)
+      if (!src || src.slice(0, folder_wildcard.length) !== folder_wildcard)
         continue
 
       try {
         const dynamicScript = document.createElement('script')
         dynamicScript.type = 'text/javascript'
         dynamicScript.src = src
-        docHeadObj.append(dynamicScript)
+        docHeadObj?.append(dynamicScript)
         script_file.remove()
       } catch (error) {
         if (this.throw_errors) throw error
@@ -682,14 +684,14 @@ export class LiteGraphGlobal {
    * @returns true if they can be connected
    */
   isValidConnection(type_a: ISlotType, type_b: ISlotType): boolean {
-    if (type_a == '' || type_a === '*') type_a = 0
-    if (type_b == '' || type_b === '*') type_b = 0
+    if (type_a === '' || type_a === '*') type_a = 0
+    if (type_b === '' || type_b === '*') type_b = 0
     // If generic in/output, matching types (valid for triggers), or event/action types
     if (
       !type_a ||
       !type_b ||
-      type_a == type_b ||
-      (type_a == this.EVENT && type_b == this.ACTION)
+      type_a === type_b ||
+      (type_a === this.EVENT && type_b === this.ACTION)
     ) {
       return true
     }
@@ -701,7 +703,7 @@ export class LiteGraphGlobal {
     type_b = type_b.toLowerCase()
 
     // For nodes supporting multiple connection types
-    if (!type_a.includes(',') && !type_b.includes(',')) return type_a == type_b
+    if (!type_a.includes(',') && !type_b.includes(',')) return type_a === type_b
 
     // Check all permutations to see if one is valid
     const supported_types_a = type_a.split(',')
@@ -736,20 +738,14 @@ export class LiteGraphGlobal {
     fCall: (e: Event) => boolean | void,
     capture = false
   ): void {
-    if (
-      !oDOM ||
-      !oDOM.addEventListener ||
-      !sEvIn ||
-      typeof fCall !== 'function'
-    )
-      return
+    if (!oDOM?.addEventListener || !sEvIn || typeof fCall !== 'function') return
 
     let sMethod = this.pointerevents_method
     let sEvent = sEvIn
 
     // UNDER CONSTRUCTION
     // convert pointerevents to touch event when not available
-    if (sMethod == 'pointer' && !window.PointerEvent) {
+    if (sMethod === 'pointer' && !window.PointerEvent) {
       console.warn("sMethod=='pointer' && !window.PointerEvent")
       console.warn(
         `Converting pointer[${sEvent}] : down move up cancel enter TO touchstart touchmove touchend, etc ..`
@@ -806,7 +802,7 @@ export class LiteGraphGlobal {
       case 'gotpointercapture':
       // @ts-expect-error - intentional fallthrough
       case 'lostpointercapture': {
-        if (sMethod != 'mouse') {
+        if (sMethod !== 'mouse') {
           return oDOM.addEventListener(sMethod + sEvent, fCall, capture)
         }
       }
@@ -823,12 +819,7 @@ export class LiteGraphGlobal {
     fCall: (e: Event) => boolean | void,
     capture = false
   ): void {
-    if (
-      !oDOM ||
-      !oDOM.removeEventListener ||
-      !sEvent ||
-      typeof fCall !== 'function'
-    )
+    if (!oDOM?.removeEventListener || !sEvent || typeof fCall !== 'function')
       return
 
     switch (sEvent) {
@@ -841,8 +832,8 @@ export class LiteGraphGlobal {
       // @ts-expect-error - intentional fallthrough
       case 'enter': {
         if (
-          this.pointerevents_method == 'pointer' ||
-          this.pointerevents_method == 'mouse'
+          this.pointerevents_method === 'pointer' ||
+          this.pointerevents_method === 'mouse'
         ) {
           oDOM.removeEventListener(
             this.pointerevents_method + sEvent,
@@ -858,7 +849,7 @@ export class LiteGraphGlobal {
       case 'gotpointercapture':
       // @ts-expect-error - intentional fallthrough
       case 'lostpointercapture': {
-        if (this.pointerevents_method == 'pointer') {
+        if (this.pointerevents_method === 'pointer') {
           return oDOM.removeEventListener(
             this.pointerevents_method + sEvent,
             fCall,
@@ -883,7 +874,7 @@ export class LiteGraphGlobal {
     return `rgba(${Math.round(c[0] * 255).toFixed()},${Math.round(
       c[1] * 255
     ).toFixed()},${Math.round(c[2] * 255).toFixed()},${
-      c.length == 4 ? c[3].toFixed(2) : '1.0'
+      c.length === 4 ? c[3].toFixed(2) : '1.0'
     })`
   }
 
@@ -923,7 +914,7 @@ export class LiteGraphGlobal {
   // format of a hex triplet - the kind we use for HTML colours. The function
   // will return an array with three values.
   hex2num(hex: string): number[] {
-    if (hex.charAt(0) == '#') {
+    if (hex.charAt(0) === '#') {
       hex = hex.slice(1)
       // Remove the '#' char - if there is one.
     }

@@ -120,7 +120,13 @@ import { useDialogService } from '@/services/dialogService'
 import type { ConfirmationDialogType } from '@/services/dialogService'
 import { useDialogStore } from '@/stores/dialogStore'
 
-const props = defineProps<{
+const {
+  message,
+  type,
+  onConfirm: onConfirmProp,
+  itemList,
+  hint
+} = defineProps<{
   message: string
   type: ConfirmationDialogType
   onConfirm: (value?: boolean) => void
@@ -143,14 +149,14 @@ function openBlueprintOverwriteSetting() {
 const doNotAskAgain = ref(false)
 
 const onDeny = () => {
-  props.onConfirm(false)
+  onConfirmProp(false)
   useDialogStore().closeDialog()
 }
 
 const onConfirm = () => {
-  if (props.type === 'overwriteBlueprint' && doNotAskAgain.value)
+  if (type === 'overwriteBlueprint' && doNotAskAgain.value)
     void useSettingStore().set('Comfy.Workflow.WarnBlueprintOverwrite', false)
-  props.onConfirm(true)
+  onConfirmProp(true)
   useDialogStore().closeDialog()
 }
 </script>

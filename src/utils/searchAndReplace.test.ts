@@ -4,7 +4,7 @@ import { LGraph } from '@/lib/litegraph/src/litegraph'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { applyTextReplacements } from '@/utils/searchAndReplace'
 
-describe('applyTextReplacements', () => {
+describe(applyTextReplacements, () => {
   // Test specifically the filename sanitization part
   describe('filename sanitization', () => {
     it('should replace invalid filename characters with underscores', () => {

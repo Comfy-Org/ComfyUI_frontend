@@ -90,15 +90,15 @@ type RightSidePanelTabList = Array<{
 }>
 
 const tabs = computed<RightSidePanelTabList>(() => {
-  const list: RightSidePanelTabList = []
-
-  list.push({
-    label: () =>
-      flattedItems.value.length > 1
-        ? t('rightSidePanel.nodes')
-        : t('rightSidePanel.parameters'),
-    value: 'parameters'
-  })
+  const list: RightSidePanelTabList = [
+    {
+      label: () =>
+        flattedItems.value.length > 1
+          ? t('rightSidePanel.nodes')
+          : t('rightSidePanel.parameters'),
+      value: 'parameters'
+    }
+  ]
 
   if (!hasSelection.value) {
     list.push({
@@ -107,13 +107,15 @@ const tabs = computed<RightSidePanelTabList>(() => {
     })
   }
 
-  if (hasSelection.value) {
-    if (selectedSingleNode.value && !isSingleSubgraphNode.value) {
-      list.push({
-        label: () => t('rightSidePanel.info'),
-        value: 'info'
-      })
-    }
+  if (
+    hasSelection.value &&
+    selectedSingleNode.value &&
+    !isSingleSubgraphNode.value
+  ) {
+    list.push({
+      label: () => t('rightSidePanel.info'),
+      value: 'info'
+    })
   }
 
   list.push({
@@ -162,7 +164,9 @@ function resolveTitle() {
 }
 
 const panelTitle = ref(resolveTitle())
-watchEffect(() => (panelTitle.value = resolveTitle()))
+watchEffect(() => {
+  panelTitle.value = resolveTitle()
+})
 
 const isEditing = ref(false)
 

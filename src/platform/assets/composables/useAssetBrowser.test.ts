@@ -19,7 +19,7 @@ vi.mock('@/i18n', () => ({
   d: (date: Date) => date.toLocaleDateString()
 }))
 
-describe('useAssetBrowser', () => {
+describe(useAssetBrowser, () => {
   beforeEach(() => {
     setActivePinia(createPinia())
     vi.restoreAllMocks()

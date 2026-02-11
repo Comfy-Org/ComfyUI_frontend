@@ -130,7 +130,7 @@ function createMockInputSpec(overrides: Partial<InputSpec> = {}): InputSpec {
   return inputSpec
 }
 
-describe('useComboWidget', () => {
+describe(useComboWidget, () => {
   beforeEach(() => {
     vi.clearAllMocks()
     mockSettingStoreGet.mockReturnValue(false)
@@ -365,7 +365,7 @@ describe('useComboWidget', () => {
       }
 
       if (typeof options.getOptionLabel !== 'function') {
-        throw new Error('Expected getOptionLabel to be a function')
+        throw new TypeError('Expected getOptionLabel to be a function')
       }
 
       // Test that the injected function calls getInputName

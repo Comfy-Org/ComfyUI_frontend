@@ -20,7 +20,7 @@ export const CORE_SETTINGS: SettingParams[] = [
     id: 'Comfy.Memory.AllowManualUnload',
     name: 'Allow manual unload of models and execution cache via user command',
     type: 'hidden',
-    defaultValue: isCloud ? false : true,
+    defaultValue: !isCloud,
     versionAdded: '1.18.0'
   },
   {
@@ -286,7 +286,7 @@ export const CORE_SETTINGS: SettingParams[] = [
     id: 'Comfy.Workflow.ShowMissingModelsWarning',
     name: 'Show missing models warning',
     type: isCloud ? 'hidden' : 'boolean',
-    defaultValue: isCloud ? false : true,
+    defaultValue: !isCloud,
     experimental: true
   },
   {
@@ -545,7 +545,9 @@ export const CORE_SETTINGS: SettingParams[] = [
     type: 'boolean',
     defaultValue: false,
     onChange: (value) => {
-      const element = document.getElementById('comfy-dev-save-api-button')
+      const element = document.querySelector<HTMLElement>(
+        '#comfy-dev-save-api-button'
+      )
       if (element) {
         element.style.display = value ? 'flex' : 'none'
       }
@@ -573,7 +575,8 @@ export const CORE_SETTINGS: SettingParams[] = [
       // Floating is now supported by dragging the docked actionbar off.
       if (value === 'Floating') {
         return 'Top'
-      } else if (value === 'Bottom') {
+      }
+      if (value === 'Bottom') {
         return 'Top'
       }
       return value
@@ -1156,7 +1159,7 @@ export const CORE_SETTINGS: SettingParams[] = [
     name: 'Use Asset API for model library',
     type: 'hidden',
     tooltip: 'Use new Asset API for model browsing',
-    defaultValue: isCloud ? true : false,
+    defaultValue: isCloud,
     experimental: true
   },
   {

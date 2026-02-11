@@ -137,7 +137,8 @@ export const useExecutionStore = defineStore('execution', () => {
     const mergedState = { ...currentState }
     if (mergedState.state === 'error') {
       return mergedState
-    } else if (newState.state === 'running') {
+    }
+    if (newState.state === 'running') {
       const newPerc = newState.max > 0 ? newState.value / newState.max : 0.0
       const oldPerc =
         mergedState.max > 0 ? mergedState.value / mergedState.max : 0.0
@@ -412,8 +413,7 @@ export const useExecutionStore = defineStore('execution', () => {
     if (!id) return
     // Until cloud implements a proper message
     if (text.includes('Waiting for a machine')) {
-      const next = new Set(initializingPromptIds.value)
-      next.add(id)
+      const next = new Set([...initializingPromptIds.value, id])
       initializingPromptIds.value = next
     }
   }

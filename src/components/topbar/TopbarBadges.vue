@@ -19,16 +19,10 @@ import { useTopbarBadgeStore } from '@/stores/topbarBadgeStore'
 
 import TopbarBadge from './TopbarBadge.vue'
 
-withDefaults(
-  defineProps<{
-    reverseOrder?: boolean
-    noPadding?: boolean
-  }>(),
-  {
-    reverseOrder: false,
-    noPadding: false
-  }
-)
+const { reverseOrder = false, noPadding = false } = defineProps<{
+  reverseOrder?: boolean
+  noPadding?: boolean
+}>()
 
 const breakpoints = useBreakpoints(breakpointsTailwind)
 const isXl = breakpoints.greaterOrEqual('xl')

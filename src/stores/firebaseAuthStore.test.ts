@@ -99,7 +99,9 @@ vi.mock('@/stores/toastStore', () => ({
 // Mock useDialogService
 vi.mock('@/services/dialogService')
 
-describe('useFirebaseAuthStore', () => {
+vi.mock('@/platform/distribution/types', () => mockDistributionTypes)
+
+describe(useFirebaseAuthStore, () => {
   let store: ReturnType<typeof useFirebaseAuthStore>
   let authStateCallback: (user: User | null) => void
   let idTokenCallback: (user: User | null) => void
@@ -170,7 +172,6 @@ describe('useFirebaseAuthStore', () => {
   describe('token refresh events', () => {
     beforeEach(async () => {
       vi.resetModules()
-      vi.mock('@/platform/distribution/types', () => mockDistributionTypes)
 
       vi.mocked(firebaseAuth.onIdTokenChanged).mockImplementation(
         (_auth, callback) => {
@@ -241,7 +242,7 @@ describe('useFirebaseAuthStore', () => {
 
     try {
       await store.login('test@example.com', 'wrong-password')
-    } catch (e) {
+    } catch {
       // Error expected
     }
 

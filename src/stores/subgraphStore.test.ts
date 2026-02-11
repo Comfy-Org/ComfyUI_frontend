@@ -61,7 +61,7 @@ const mockGraph = {
   definitions: { subgraphs: [{ id: '123' }] }
 }
 
-describe('useSubgraphStore', () => {
+describe(useSubgraphStore, () => {
   let store: ReturnType<typeof useSubgraphStore>
   async function mockFetch(
     filenames: Record<string, unknown>,
@@ -134,7 +134,7 @@ describe('useSubgraphStore', () => {
   })
   it('should allow subgraphs to be edited', async () => {
     await mockFetch({ 'test.json': mockGraph })
-    await store.editBlueprint(store.typePrefix + 'test')
+    await store.editBlueprint(`${store.typePrefix}test`)
     //check active graph
     expect(comfyApp.loadGraphData).toHaveBeenCalled()
   })

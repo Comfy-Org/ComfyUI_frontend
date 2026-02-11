@@ -4,6 +4,9 @@ import type { Ref } from 'vue'
 
 import type { JobListItem } from '@/composables/queue/useJobList'
 import type { MenuEntry } from '@/composables/queue/useJobMenu'
+import { useJobMenu } from '@/composables/queue/useJobMenu'
+import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
+import type { ResultItemImpl, TaskItemImpl } from '@/stores/queueStore'
 
 vi.mock('@/platform/distribution/types', () => ({
   isCloud: false
@@ -145,10 +148,6 @@ vi.mock('@/utils/formatUtil', () => ({
     appendJsonExtMock(...args)
 }))
 
-import { useJobMenu } from '@/composables/queue/useJobMenu'
-import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
-import type { ResultItemImpl, TaskItemImpl } from '@/stores/queueStore'
-
 type MockTaskRef = Record<string, unknown>
 
 type TestJobListItem = Omit<JobListItem, 'taskRef'> & {
@@ -184,7 +183,7 @@ const findActionEntry = (entries: MenuEntry[], key: string) =>
       entry.key === key && entry.kind !== 'divider'
   )
 
-describe('useJobMenu', () => {
+describe(useJobMenu, () => {
   beforeEach(() => {
     vi.clearAllMocks()
     currentItem = ref<JobListItem | null>(null)

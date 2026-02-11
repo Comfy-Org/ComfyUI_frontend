@@ -11,7 +11,7 @@ vi.mock('@/renderer/extensions/minimap/minimapCanvasRenderer', () => ({
   renderMinimapToCanvas: vi.fn()
 }))
 
-describe('useMinimapRenderer', () => {
+describe(useMinimapRenderer, () => {
   let mockCanvas: HTMLCanvasElement
   let mockContext: CanvasRenderingContext2D
   let mockGraph: LGraph

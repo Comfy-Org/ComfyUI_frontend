@@ -10,7 +10,7 @@ function createItem(
   return { name, ...options }
 }
 
-describe('sortAssets', () => {
+describe(sortAssets, () => {
   describe('default sort', () => {
     it('preserves original order', () => {
       const items = [createItem('z'), createItem('a'), createItem('m')]

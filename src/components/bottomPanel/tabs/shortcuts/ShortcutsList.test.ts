@@ -23,7 +23,7 @@ vi.mock('vue-i18n', () => ({
   })
 }))
 
-describe('ShortcutsList', () => {
+describe(ShortcutsList.__name ?? 'ShortcutsList', () => {
   const mockCommands: ComfyCommandImpl[] = [
     {
       id: 'Workflow.New',

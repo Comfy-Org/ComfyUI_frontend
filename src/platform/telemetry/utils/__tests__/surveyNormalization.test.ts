@@ -11,7 +11,7 @@ import {
   normalizeSurveyResponses
 } from '../surveyNormalization'
 
-describe('normalizeIndustry', () => {
+describe(normalizeIndustry, () => {
   describe('Film / TV / Animation category', () => {
     it('should categorize film and television production', () => {
       expect(normalizeIndustry('Film and television production')).toBe(
@@ -346,7 +346,7 @@ describe('normalizeIndustry', () => {
   })
 })
 
-describe('normalizeUseCase', () => {
+describe(normalizeUseCase, () => {
   describe('Content Creation & Marketing', () => {
     it('should categorize content creation', () => {
       expect(normalizeUseCase('YouTube thumbnail generation')).toBe(
@@ -521,7 +521,7 @@ describe('normalizeUseCase', () => {
   })
 })
 
-describe('normalizeSurveyResponses', () => {
+describe(normalizeSurveyResponses, () => {
   it('should normalize both industry and use case', () => {
     const input = {
       industry: 'Film and television production',

@@ -30,12 +30,12 @@ import type { RenderedTreeExplorerNode } from '@/types/treeExplorerTypes'
 
 import ModelPreview from './ModelPreview.vue'
 
-const props = defineProps<{
+const { node } = defineProps<{
   node: RenderedTreeExplorerNode<ComfyModelDef>
 }>()
 
 // Note: The leaf node should always have a model definition on node.data.
-const modelDef = computed<ComfyModelDef>(() => props.node.data!)
+const modelDef = computed<ComfyModelDef>(() => node.data!)
 
 const modelPreviewUrl = computed(() => {
   if (modelDef.value.image) {
@@ -45,7 +45,7 @@ const modelPreviewUrl = computed(() => {
   const path_index = modelDef.value.path_index
   const extension = modelDef.value.file_name.split('.').pop()
   const filename = modelDef.value.file_name.replace(`.${extension}`, '.webp')
-  const encodedFilename = encodeURIComponent(filename).replace(/%2F/g, '/')
+  const encodedFilename = encodeURIComponent(filename).replaceAll('%2F', '/')
   return `/api/experiment/models/preview/${folder}/${path_index}/${encodedFilename}`
 })
 
@@ -93,7 +93,7 @@ const showPreview = computed(() => {
     modelDef.value &&
     modelDef.value.has_loaded_metadata &&
     (modelDef.value.author ||
-      modelDef.value.simplified_file_name != modelDef.value.title ||
+      modelDef.value.simplified_file_name !== modelDef.value.title ||
       modelDef.value.description ||
       modelDef.value.usage_hint ||
       modelDef.value.trigger_phrase ||

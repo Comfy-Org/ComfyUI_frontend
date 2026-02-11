@@ -9,7 +9,7 @@ import type {
 import { ExecutableGroupNodeChildDTO } from '@/utils/executableGroupNodeChildDTO'
 import { createMockLGraphNode } from './__tests__/litegraphTestUtils'
 
-describe('ExecutableGroupNodeChildDTO', () => {
+describe(ExecutableGroupNodeChildDTO, () => {
   let mockNode: LGraphNode
   let mockInputNode: LGraphNode
   let mockNodesByExecutionId: Map<ExecutionId, ExecutableLGraphNode>

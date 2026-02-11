@@ -27,7 +27,7 @@ describe('assetMetadataUtils', () => {
     last_access_time: '2024-01-01T00:00:00Z'
   }
 
-  describe('getAssetDescription', () => {
+  describe(getAssetDescription, () => {
     it.for([
       {
         name: 'returns string description when present',
@@ -46,7 +46,7 @@ describe('assetMetadataUtils', () => {
     })
   })
 
-  describe('getAssetBaseModel', () => {
+  describe(getAssetBaseModel, () => {
     it.for([
       {
         name: 'returns string base_model when present',
@@ -65,7 +65,7 @@ describe('assetMetadataUtils', () => {
     })
   })
 
-  describe('getAssetDisplayName', () => {
+  describe(getAssetDisplayName, () => {
     it.for([
       {
         name: 'returns name from user_metadata when present',
@@ -88,7 +88,7 @@ describe('assetMetadataUtils', () => {
     })
   })
 
-  describe('getAssetSourceUrl', () => {
+  describe(getAssetSourceUrl, () => {
     it.for([
       {
         name: 'constructs URL from civitai format',
@@ -111,7 +111,7 @@ describe('assetMetadataUtils', () => {
     })
   })
 
-  describe('getAssetTriggerPhrases', () => {
+  describe(getAssetTriggerPhrases, () => {
     it.for([
       {
         name: 'returns array when array present',
@@ -138,7 +138,7 @@ describe('assetMetadataUtils', () => {
     })
   })
 
-  describe('getAssetAdditionalTags', () => {
+  describe(getAssetAdditionalTags, () => {
     it.for([
       {
         name: 'returns array of tags when present',
@@ -165,7 +165,7 @@ describe('assetMetadataUtils', () => {
     })
   })
 
-  describe('getSourceName', () => {
+  describe(getSourceName, () => {
     it.for([
       {
         name: 'returns Civitai for civitai.com',
@@ -187,7 +187,7 @@ describe('assetMetadataUtils', () => {
     })
   })
 
-  describe('getAssetBaseModels', () => {
+  describe(getAssetBaseModels, () => {
     it.for([
       {
         name: 'array of strings',
@@ -220,7 +220,7 @@ describe('assetMetadataUtils', () => {
     })
   })
 
-  describe('getAssetModelType', () => {
+  describe(getAssetModelType, () => {
     it.for([
       {
         name: 'returns model type from tags',
@@ -244,7 +244,7 @@ describe('assetMetadataUtils', () => {
     })
   })
 
-  describe('getAssetUserDescription', () => {
+  describe(getAssetUserDescription, () => {
     it.for([
       {
         name: 'returns description when present',

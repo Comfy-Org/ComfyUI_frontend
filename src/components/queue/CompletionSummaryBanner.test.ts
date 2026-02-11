@@ -32,7 +32,7 @@ const mountComponent = (props: Record<string, unknown>) =>
     }
   })
 
-describe('CompletionSummaryBanner', () => {
+describe(CompletionSummaryBanner.__name ?? 'CompletionSummaryBanner', () => {
   it('renders success mode text, thumbnails, and aria label', () => {
     const wrapper = mountComponent({
       mode: 'allSuccess',
@@ -73,7 +73,7 @@ describe('CompletionSummaryBanner', () => {
       failedCount: 1
     })
 
-    const summaryText = wrapper.text().replace(/\s+/g, ' ').trim()
+    const summaryText = wrapper.text().replaceAll(/\s+/g, ' ').trim()
     expect(summaryText).toContain('2 jobs completed, 1 job failed')
   })
 

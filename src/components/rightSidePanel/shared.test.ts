@@ -1,11 +1,12 @@
 import { LGraphGroup } from '@/lib/litegraph/src/LGraphGroup'
 import { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { Positionable } from '@/lib/litegraph/src/interfaces'
-import { describe, expect, it, beforeEach } from 'vitest'
-import { flatAndCategorizeSelectedItems, searchWidgets } from './shared'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import { describe, expect, it, beforeEach } from 'vitest'
 
-describe('searchWidgets', () => {
+import { flatAndCategorizeSelectedItems, searchWidgets } from './shared'
+
+describe(searchWidgets, () => {
   const createWidget = (
     name: string,
     type: string,
@@ -71,7 +72,7 @@ describe('searchWidgets', () => {
   })
 })
 
-describe('flatAndCategorizeSelectedItems', () => {
+describe(flatAndCategorizeSelectedItems, () => {
   let testGroup1: LGraphGroup
   let testGroup2: LGraphGroup
   let testNode1: LGraphNode

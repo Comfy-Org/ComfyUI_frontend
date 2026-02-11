@@ -68,7 +68,7 @@ export function useTemplateFiltering(
         template.models.forEach((model) => modelSet.add(model))
       }
     })
-    return Array.from(modelSet).sort()
+    return [...modelSet].sort()
   })
 
   const availableUseCases = computed(() => {
@@ -78,7 +78,7 @@ export function useTemplateFiltering(
         template.tags.forEach((tag) => tagSet.add(tag))
       }
     })
-    return Array.from(tagSet).sort()
+    return [...tagSet].sort()
   })
 
   const availableRunsOn = computed(() => {
@@ -178,7 +178,8 @@ export function useTemplateFiltering(
       return selectedRunsOn.value.some((runsOn) => {
         if (runsOn === 'External or Remote API') {
           return isExternalAPI
-        } else if (runsOn === 'ComfyUI') {
+        }
+        if (runsOn === 'ComfyUI') {
           return isComfyUI
         }
         return false
@@ -270,7 +271,6 @@ export function useTemplateFiltering(
           if (sizeA === sizeB) return 0
           return sizeA - sizeB
         })
-      case 'default':
       default:
         return templates
     }

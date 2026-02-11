@@ -84,7 +84,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
 
   async function poll(opId: string) {
     const operation = operations.value.get(opId)
-    if (!operation || operation.status !== 'pending') return
+    if (operation?.status !== 'pending') return
 
     if (Date.now() - operation.startedAt > TIMEOUT_MS) {
       handleTimeout(opId)

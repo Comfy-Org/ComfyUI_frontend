@@ -1,10 +1,15 @@
 import { mount } from '@vue/test-utils'
+import * as tooltipConfig from '@/composables/useTooltipConfig'
 import { describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 import { defineComponent } from 'vue'
 
-const popoverToggleSpy = vi.fn()
-const popoverHideSpy = vi.fn()
+import QueueOverlayHeader from './QueueOverlayHeader.vue'
+
+const { popoverToggleSpy, popoverHideSpy } = vi.hoisted(() => ({
+  popoverToggleSpy: vi.fn(),
+  popoverHideSpy: vi.fn()
+}))
 
 vi.mock('primevue/popover', () => {
   const PopoverStub = defineComponent({
@@ -22,9 +27,6 @@ vi.mock('primevue/popover', () => {
   })
   return { default: PopoverStub }
 })
-
-import QueueOverlayHeader from './QueueOverlayHeader.vue'
-import * as tooltipConfig from '@/composables/useTooltipConfig'
 
 const tooltipDirectiveStub = {
   mounted: vi.fn(),
@@ -62,7 +64,7 @@ const mountHeader = (props = {}) =>
     }
   })
 
-describe('QueueOverlayHeader', () => {
+describe(QueueOverlayHeader.__name ?? 'QueueOverlayHeader', () => {
   it('renders header title and concurrent indicator when enabled', () => {
     const wrapper = mountHeader({ concurrentWorkflowCount: 3 })
 

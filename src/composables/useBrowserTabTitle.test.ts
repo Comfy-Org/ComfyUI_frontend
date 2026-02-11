@@ -68,7 +68,7 @@ vi.mock('@/stores/workspaceStore', () => ({
   useWorkspaceStore: () => workspaceStore
 }))
 
-describe('useBrowserTabTitle', () => {
+describe(useBrowserTabTitle, () => {
   beforeEach(() => {
     // reset execution store
     executionStore.isIdle = true

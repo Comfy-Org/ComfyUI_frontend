@@ -27,7 +27,7 @@ export class ComfyWorkflow extends UserFile {
   }
 
   override get key() {
-    return this.path.substring(ComfyWorkflow.basePath.length)
+    return this.path.slice(ComfyWorkflow.basePath.length)
   }
 
   get activeState(): ComfyWorkflowJSON | null {
@@ -67,19 +67,17 @@ export class ComfyWorkflow extends UserFile {
     let draftState: ComfyWorkflowJSON | null = null
     let draftContent: string | null = null
 
-    if (draft) {
-      if (draft.updatedAt < this.lastModified) {
-        draftStore.removeDraft(this.path)
-        draft = undefined
-      }
+    if (draft && draft.updatedAt < this.lastModified) {
+      draftStore.removeDraft(this.path)
+      draft = undefined
     }
 
     if (draft) {
       try {
         draftState = JSON.parse(draft.data)
         draftContent = draft.data
-      } catch (err) {
-        console.warn('Failed to parse workflow draft, clearing it', err)
+      } catch (error) {
+        console.warn('Failed to parse workflow draft, clearing it', error)
         draftStore.removeDraft(this.path)
       }
     }

@@ -49,7 +49,7 @@ import { ref } from 'vue'
 import Button from '@/components/ui/button/Button.vue'
 import type { MenuEntry } from '@/composables/queue/useJobMenu'
 
-defineProps<{ entries: MenuEntry[] }>()
+const { entries } = defineProps<{ entries: MenuEntry[] }>()
 
 const emit = defineEmits<{
   (e: 'action', entry: MenuEntry): void

@@ -99,7 +99,7 @@ export const useFavoritedWidgetsStore = defineStore('favoritedWidgets', () => {
   function normalizeFavoritedId(
     id: FavoritedWidgetId | { nodeId?: unknown; widgetName?: unknown } | null
   ): FavoritedWidgetId | null {
-    if (!id || !id.widgetName) return null
+    if (!id?.widgetName) return null
 
     if ('nodeLocatorId' in id && id.nodeLocatorId) {
       return {

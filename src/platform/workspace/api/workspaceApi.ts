@@ -341,8 +341,8 @@ export const workspaceApi = {
         { headers }
       )
       return response.data
-    } catch (err) {
-      handleAxiosError(err)
+    } catch (error) {
+      handleAxiosError(error)
     }
   },
 
@@ -359,8 +359,8 @@ export const workspaceApi = {
         { headers }
       )
       return response.data
-    } catch (err) {
-      handleAxiosError(err)
+    } catch (error) {
+      handleAxiosError(error)
     }
   },
 
@@ -380,8 +380,8 @@ export const workspaceApi = {
         { headers }
       )
       return response.data
-    } catch (err) {
-      handleAxiosError(err)
+    } catch (error) {
+      handleAxiosError(error)
     }
   },
 
@@ -398,8 +398,8 @@ export const workspaceApi = {
           headers
         }
       )
-    } catch (err) {
-      handleAxiosError(err)
+    } catch (error) {
+      handleAxiosError(error)
     }
   },
 
@@ -413,8 +413,8 @@ export const workspaceApi = {
       await workspaceApiClient.post(api.apiURL('/workspace/leave'), null, {
         headers
       })
-    } catch (err) {
-      handleAxiosError(err)
+    } catch (error) {
+      handleAxiosError(error)
     }
   },
 
@@ -430,8 +430,8 @@ export const workspaceApi = {
         { headers, params }
       )
       return response.data
-    } catch (err) {
-      handleAxiosError(err)
+    } catch (error) {
+      handleAxiosError(error)
     }
   },
 
@@ -446,8 +446,8 @@ export const workspaceApi = {
         api.apiURL(`/workspace/members/${userId}`),
         { headers }
       )
-    } catch (err) {
-      handleAxiosError(err)
+    } catch (error) {
+      handleAxiosError(error)
     }
   },
 
@@ -463,8 +463,8 @@ export const workspaceApi = {
         { headers }
       )
       return response.data
-    } catch (err) {
-      handleAxiosError(err)
+    } catch (error) {
+      handleAxiosError(error)
     }
   },
 
@@ -481,8 +481,8 @@ export const workspaceApi = {
         { headers }
       )
       return response.data
-    } catch (err) {
-      handleAxiosError(err)
+    } catch (error) {
+      handleAxiosError(error)
     }
   },
 
@@ -497,8 +497,8 @@ export const workspaceApi = {
         api.apiURL(`/workspace/invites/${inviteId}`),
         { headers }
       )
-    } catch (err) {
-      handleAxiosError(err)
+    } catch (error) {
+      handleAxiosError(error)
     }
   },
 
@@ -516,8 +516,8 @@ export const workspaceApi = {
         { headers }
       )
       return response.data
-    } catch (err) {
-      handleAxiosError(err)
+    } catch (error) {
+      handleAxiosError(error)
     }
   },
 
@@ -533,8 +533,8 @@ export const workspaceApi = {
         { headers }
       )
       return response.data
-    } catch (err) {
-      handleAxiosError(err)
+    } catch (error) {
+      handleAxiosError(error)
     }
   },
 
@@ -550,8 +550,8 @@ export const workspaceApi = {
         { headers }
       )
       return response.data
-    } catch (err) {
-      handleAxiosError(err)
+    } catch (error) {
+      handleAxiosError(error)
     }
   },
 
@@ -567,8 +567,8 @@ export const workspaceApi = {
         { headers }
       )
       return response.data
-    } catch (err) {
-      handleAxiosError(err)
+    } catch (error) {
+      handleAxiosError(error)
     }
   },
 
@@ -585,8 +585,8 @@ export const workspaceApi = {
         { headers }
       )
       return response.data
-    } catch (err) {
-      handleAxiosError(err)
+    } catch (error) {
+      handleAxiosError(error)
     }
   },
 
@@ -611,8 +611,8 @@ export const workspaceApi = {
         { headers }
       )
       return response.data
-    } catch (err) {
-      handleAxiosError(err)
+    } catch (error) {
+      handleAxiosError(error)
     }
   },
 
@@ -634,8 +634,8 @@ export const workspaceApi = {
           { headers }
         )
       return response.data
-    } catch (err) {
-      handleAxiosError(err)
+    } catch (error) {
+      handleAxiosError(error)
     }
   },
 
@@ -652,8 +652,8 @@ export const workspaceApi = {
         { headers }
       )
       return response.data
-    } catch (err) {
-      handleAxiosError(err)
+    } catch (error) {
+      handleAxiosError(error)
     }
   },
 
@@ -672,8 +672,8 @@ export const workspaceApi = {
         { headers }
       )
       return response.data
-    } catch (err) {
-      handleAxiosError(err)
+    } catch (error) {
+      handleAxiosError(error)
     }
   },
 
@@ -696,8 +696,8 @@ export const workspaceApi = {
         { headers }
       )
       return response.data
-    } catch (err) {
-      handleAxiosError(err)
+    } catch (error) {
+      handleAxiosError(error)
     }
   },
 
@@ -713,8 +713,8 @@ export const workspaceApi = {
         { headers }
       )
       return response.data
-    } catch (err) {
-      handleAxiosError(err)
+    } catch (error) {
+      handleAxiosError(error)
     }
   },
 
@@ -732,8 +732,8 @@ export const workspaceApi = {
         { headers, params }
       )
       return response.data
-    } catch (err) {
-      handleAxiosError(err)
+    } catch (error) {
+      handleAxiosError(error)
     }
   },
 
@@ -749,8 +749,8 @@ export const workspaceApi = {
         { headers }
       )
       return response.data
-    } catch (err) {
-      handleAxiosError(err)
+    } catch (error) {
+      handleAxiosError(error)
     }
   }
 }

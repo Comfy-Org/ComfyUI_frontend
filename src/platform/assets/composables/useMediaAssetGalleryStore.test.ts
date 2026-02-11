@@ -17,7 +17,7 @@ vi.mock('@/stores/queueStore', () => ({
     })
 }))
 
-describe('useMediaAssetGalleryStore', () => {
+describe(useMediaAssetGalleryStore, () => {
   beforeEach(() => {
     setActivePinia(createPinia())
   })

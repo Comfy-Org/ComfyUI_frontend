@@ -11,7 +11,7 @@ import {
 } from '@/workbench/extensions/manager/utils/conflictUtils'
 
 describe('conflictUtils', () => {
-  describe('createBannedConflict', () => {
+  describe(createBannedConflict, () => {
     it('should return banned conflict when isBanned is true', () => {
       const result = createBannedConflict(true)
       expect(result).toEqual({
@@ -32,7 +32,7 @@ describe('conflictUtils', () => {
     })
   })
 
-  describe('createPendingConflict', () => {
+  describe(createPendingConflict, () => {
     it('should return pending conflict when isPending is true', () => {
       const result = createPendingConflict(true)
       expect(result).toEqual({
@@ -53,7 +53,7 @@ describe('conflictUtils', () => {
     })
   })
 
-  describe('consolidateConflictsByPackage', () => {
+  describe(consolidateConflictsByPackage, () => {
     it('should group conflicts by normalized package name', () => {
       const conflicts: ConflictDetectionResult[] = [
         {

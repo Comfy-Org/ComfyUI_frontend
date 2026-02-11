@@ -27,21 +27,21 @@ interface TransformPaneProps {
   canvas?: LGraphCanvas
 }
 
-const props = defineProps<TransformPaneProps>()
+const { canvas } = defineProps<TransformPaneProps>()
 
 const { transformStyle, syncWithCanvas } = useTransformState()
 
-const canvasElement = computed(() => props.canvas?.canvas)
+const canvasElement = computed(() => canvas?.canvas)
 const { isTransforming: isInteracting } = useTransformSettling(canvasElement, {
   settleDelay: 16
 })
 
 useRafFn(
   () => {
-    if (!props.canvas) {
+    if (!canvas) {
       return
     }
-    syncWithCanvas(props.canvas)
+    syncWithCanvas(canvas)
   },
   { immediate: true }
 )

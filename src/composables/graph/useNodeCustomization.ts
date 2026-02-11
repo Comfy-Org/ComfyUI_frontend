@@ -102,7 +102,7 @@ export function useNodeCustomization() {
   }
 
   const applyShape = (shapeOption: ShapeOption) => {
-    const selectedNodes = Array.from(canvasStore.selectedItems).filter(
+    const selectedNodes = [...canvasStore.selectedItems].filter(
       (item): item is LGraphNode => item instanceof LGraphNode
     )
 
@@ -118,7 +118,7 @@ export function useNodeCustomization() {
   }
 
   const getCurrentColor = (): ColorOption | null => {
-    const selectedItems = Array.from(canvasStore.selectedItems)
+    const selectedItems = [...canvasStore.selectedItems]
     if (selectedItems.length === 0) return null
 
     // Get color from first colorable item
@@ -140,7 +140,7 @@ export function useNodeCustomization() {
   }
 
   const getCurrentShape = (): ShapeOption | null => {
-    const selectedNodes = Array.from(canvasStore.selectedItems).filter(
+    const selectedNodes = [...canvasStore.selectedItems].filter(
       (item): item is LGraphNode => item instanceof LGraphNode
     )
 

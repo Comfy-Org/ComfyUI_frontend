@@ -80,7 +80,7 @@ vi.mock('@/renderer/core/canvas/canvasStore', () => ({
   useCanvasStore: () => mockCanvasStore
 }))
 
-describe('useTemplateUrlLoader', () => {
+describe(useTemplateUrlLoader, () => {
   beforeEach(() => {
     vi.clearAllMocks()
     mockQueryParams = {}

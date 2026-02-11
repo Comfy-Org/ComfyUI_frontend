@@ -2,8 +2,9 @@ import { mount } from '@vue/test-utils'
 import { describe, expect, it } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
-import QueueOverlayEmpty from './QueueOverlayEmpty.vue'
 import type { CompletionSummary } from '@/composables/queue/useCompletionSummary'
+
+import QueueOverlayEmpty from './QueueOverlayEmpty.vue'
 
 const i18n = createI18n({
   legacy: false,
@@ -42,7 +43,7 @@ const mountComponent = (summary: CompletionSummary) =>
     }
   })
 
-describe('QueueOverlayEmpty', () => {
+describe(QueueOverlayEmpty.__name ?? 'QueueOverlayEmpty', () => {
   it('renders completion summary banner and proxies click', async () => {
     const summary: CompletionSummary = {
       mode: 'mixed',

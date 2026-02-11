@@ -25,7 +25,7 @@ export function isTransparent(color: string) {
   if (color === 'transparent') return true
   if (color[0] === '#') {
     if (color.length === 5) return color[4] === '0'
-    if (color.length === 9) return color.substring(7) === '00'
+    if (color.length === 9) return color.slice(7) === '00'
   }
   return false
 }
@@ -65,13 +65,13 @@ export function hexToRgb(hex: string): RGB {
     g = 0,
     b = 0
   // 3 digits
-  if (hex.length == 4) {
+  if (hex.length === 4) {
     r = parseInt(hex[1] + hex[1], 16)
     g = parseInt(hex[2] + hex[2], 16)
     b = parseInt(hex[3] + hex[3], 16)
   }
   // 6 digits
-  else if (hex.length == 7) {
+  else if (hex.length === 7) {
     r = parseInt(hex.slice(1, 3), 16)
     g = parseInt(hex.slice(3, 5), 16)
     b = parseInt(hex.slice(5, 7), 16)

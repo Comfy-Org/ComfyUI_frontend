@@ -8,12 +8,12 @@ export function applyTextReplacements(
 ): string {
   const allNodes = collectAllNodes(graph)
 
-  return value.replace(/%([^%]+)%/g, function (match, text) {
+  return value.replaceAll(/%([^%]+)%/g, function (match, text) {
     const split = text.split('.')
     if (split.length !== 2) {
       // Special handling for dates
       if (split[0].startsWith('date:')) {
-        return formatDate(split[0].substring(5), new Date())
+        return formatDate(split[0].slice(5), new Date())
       }
 
       if (text !== 'width' && text !== 'height') {
@@ -48,7 +48,7 @@ export function applyTextReplacements(
       return match
     }
 
-    return ((widget.value ?? '') + '').replaceAll(
+    return `${widget.value ?? ''}`.replaceAll(
       // eslint-disable-next-line no-control-regex
       /[/?<>\\:*|"\x00-\x1F\x7F]/g,
       '_'

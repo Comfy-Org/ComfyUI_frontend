@@ -51,7 +51,7 @@ global.fetch = vi.fn()
 
 type MockWorkflowTemplatesStore = ReturnType<typeof useWorkflowTemplatesStore>
 
-describe('useTemplateWorkflows', () => {
+describe(useTemplateWorkflows, () => {
   let mockWorkflowTemplatesStore: MockWorkflowTemplatesStore
 
   beforeEach(() => {

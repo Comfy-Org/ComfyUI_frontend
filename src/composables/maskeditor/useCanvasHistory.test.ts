@@ -66,7 +66,7 @@ vi.mock('@/stores/maskEditorStore', () => ({
 }))
 
 // Mock ImageBitmap using safe global augmentation pattern
-if (typeof globalThis.ImageBitmap === 'undefined') {
+if (globalThis.ImageBitmap === undefined) {
   globalThis.ImageBitmap = class ImageBitmap {
     width: number
     height: number
@@ -78,7 +78,7 @@ if (typeof globalThis.ImageBitmap === 'undefined') {
   } as typeof ImageBitmap
 }
 
-describe('useCanvasHistory', () => {
+describe(useCanvasHistory, () => {
   beforeEach(() => {
     vi.clearAllMocks()
     let rafCallCount = 0

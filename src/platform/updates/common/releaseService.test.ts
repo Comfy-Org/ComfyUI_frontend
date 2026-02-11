@@ -15,7 +15,7 @@ vi.mock('axios', () => ({
   }
 }))
 
-describe('useReleaseService', () => {
+describe(useReleaseService, () => {
   let service: ReturnType<typeof useReleaseService>
 
   const mockReleases = [

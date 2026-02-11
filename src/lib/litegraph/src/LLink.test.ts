@@ -4,7 +4,7 @@ import { LLink } from '@/lib/litegraph/src/litegraph'
 
 import { test } from './__fixtures__/testExtensions'
 
-describe('LLink', () => {
+describe(LLink, () => {
   test('matches previous snapshot', () => {
     const link = new LLink(1, 'float', 4, 2, 5, 3)
     expect(link.serialize()).toMatchSnapshot('Basic')

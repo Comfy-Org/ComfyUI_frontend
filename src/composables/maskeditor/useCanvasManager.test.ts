@@ -26,7 +26,7 @@ function createMockImage(width: number, height: number): HTMLImageElement {
   } as HTMLImageElement
 }
 
-describe('useCanvasManager', () => {
+describe(useCanvasManager, () => {
   let mockImageData: ImageData
 
   beforeEach(() => {

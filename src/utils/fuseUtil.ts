@@ -46,7 +46,7 @@ export class FuseFilter<T, O = string> {
         options.add(option)
       }
     }
-    return Array.from(options)
+    return [...options]
   }
 
   public matches(
@@ -172,7 +172,7 @@ export class FuseSearch<T> {
     let aux1 = 0
     let aux2 = 0
 
-    if (item == query) {
+    if (item === query) {
       main = 0
     } else if (item.startsWith(query)) {
       main = 1

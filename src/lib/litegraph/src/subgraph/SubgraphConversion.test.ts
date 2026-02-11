@@ -25,10 +25,10 @@ function createNode(
       constructor(title: string) {
         super(title)
         let i_count = 0
-        for (const input of inputs) this.addInput('input_' + i_count++, input)
+        for (const input of inputs) this.addInput(`input_${i_count++}`, input)
         let o_count = 0
         for (const output of outputs)
-          this.addOutput('output_' + o_count++, output)
+          this.addOutput(`output_${o_count++}`, output)
       }
     }
     LiteGraph.registered_node_types[type] = testnode

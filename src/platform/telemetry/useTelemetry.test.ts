@@ -6,7 +6,7 @@ vi.mock('@/platform/distribution/types', () => ({
   isCloud: false
 }))
 
-describe('useTelemetry', () => {
+describe(useTelemetry, () => {
   beforeEach(() => {
     vi.clearAllMocks()
   })

@@ -51,7 +51,7 @@ function getNodeById(graph: ISerialisedGraph | LGraph, id: NodeId) {
     return (graph as LGraph).getNodeById(id)
   }
   graph = graph as ISerialisedGraph
-  return graph.nodes.find((node: ISerialisedNode) => node.id == id)!
+  return graph.nodes.find((node: ISerialisedNode) => node.id === id)!
 }
 
 function extendLink(link: SerialisedLLinkArray) {
@@ -124,7 +124,7 @@ export function fixBadLinks(
   ) {
     patchedNodeSlots[node.id] = patchedNodeSlots[node.id] || {}
     const patchedNode = patchedNodeSlots[node.id]!
-    if (ioDir == IoDirection.INPUT) {
+    if (ioDir === IoDirection.INPUT) {
       patchedNode['inputs'] = patchedNode['inputs'] || {}
       // We can set to null (delete), so undefined means we haven't set it at all.
       if (patchedNode['inputs']![slot] !== undefined) {
@@ -210,7 +210,7 @@ export function fixBadLinks(
           patchedNodeSlots[node.id]!['inputs']![slot] === linkId
         // If we're fixing, double check that node matches.
         if (fix && nodeHasIt !== patchedHasIt) {
-          throw Error('Error. Expected node to match patched data.')
+          throw new Error('Error. Expected node to match patched data.')
         }
         has = patchedHasIt
       } else {
@@ -223,7 +223,7 @@ export function fixBadLinks(
           patchedNodeSlots[node.id]!['outputs']![slot]?.links.includes(linkId)
         // If we're fixing, double check that node matches.
         if (fix && nodeHasIt !== patchedHasIt) {
-          throw Error('Error. Expected node to match patched data.')
+          throw new Error('Error. Expected node to match patched data.')
         }
         has = !!patchedHasIt
       } else {
@@ -250,7 +250,7 @@ export function fixBadLinks(
           patchedNodeSlots[node.id]!['inputs']![slot] != null
         // If we're fixing, double check that node matches.
         if (fix && nodeHasAny !== patchedHasAny) {
-          throw Error('Error. Expected node to match patched data.')
+          throw new Error('Error. Expected node to match patched data.')
         }
         hasAny = patchedHasAny
       } else {
@@ -263,7 +263,7 @@ export function fixBadLinks(
           patchedNodeSlots[node.id]!['outputs']![slot]?.links.length
         // If we're fixing, double check that node matches.
         if (fix && nodeHasAny !== patchedHasAny) {
-          throw Error('Error. Expected node to match patched data.')
+          throw new Error('Error. Expected node to match patched data.')
         }
         hasAny = !!patchedHasAny
       } else {

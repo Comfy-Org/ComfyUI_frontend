@@ -23,7 +23,7 @@ vi.mock('@/stores/queueStore', () => ({
   })
 }))
 
-describe('useAssetsSidebarTab', () => {
+describe(useAssetsSidebarTab, () => {
   it('hides icon badge when QPO V2 is disabled', () => {
     mockGetSetting.mockReturnValue(false)
     mockPendingTasks.splice(0, mockPendingTasks.length, {}, {})

@@ -8,7 +8,7 @@ import {
   migrateWidgetsValues
 } from '@/utils/litegraphUtil'
 
-describe('migrateWidgetsValues', () => {
+describe(migrateWidgetsValues, () => {
   it('should remove widget values for forceInput inputs', () => {
     const inputDefs: Record<string, InputSpec> = {
       normalInput: {
@@ -115,7 +115,7 @@ describe('migrateWidgetsValues', () => {
   })
 })
 
-describe('compressWidgetInputSlots', () => {
+describe(compressWidgetInputSlots, () => {
   it('should remove unconnected widget input slots', () => {
     // Using partial mock - only including properties needed for test
     const graph = {

@@ -15,8 +15,9 @@ import {
   NodeOutputSlot
 } from '@/lib/litegraph/src/litegraph'
 
-import { test } from './__fixtures__/testExtensions'
 import { createMockLGraphNodeWithArrayBoundingRect } from '@/utils/__tests__/litegraphTestUtils'
+
+import { test } from './__fixtures__/testExtensions'
 
 interface NodeConstructorWithSlotOffset {
   slot_start_y?: number
@@ -25,26 +26,25 @@ interface NodeConstructorWithSlotOffset {
 function getMockISerialisedNode(
   data: Partial<ISerialisedNode>
 ): ISerialisedNode {
-  return Object.assign(
-    {
-      id: 0,
-      flags: {},
-      type: 'TestNode',
-      pos: [100, 100],
-      size: [100, 100],
-      order: 0,
-      mode: 0
-    },
-    data
-  )
+  return {
+    id: 0,
+    flags: {},
+    type: 'TestNode',
+    pos: [100, 100],
+    size: [100, 100],
+    order: 0,
+    mode: 0,
+    ...data
+  }
 }
 
-describe('LGraphNode', () => {
+describe(LGraphNode, () => {
   let node: LGraphNode
   let origLiteGraph: typeof LiteGraph
 
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
+    // oxlint-disable-next-line prefer-object-spread -- LiteGraph is a class instance; spread loses methods
     origLiteGraph = Object.assign({}, LiteGraph)
     // @ts-expect-error Intended: Force remove an otherwise readonly non-optional property
     delete origLiteGraph.Classes
@@ -648,9 +648,7 @@ describe('LGraphNode', () => {
       delete (node.constructor as NodeConstructorWithSlotOffset).slot_start_y
     })
     test('should not overwrite onMouseDown prototype', () => {
-      expect(Object.prototype.hasOwnProperty.call(node, 'onMouseDown')).toEqual(
-        false
-      )
+      expect(Object.hasOwn(node, 'onMouseDown')).toEqual(false)
     })
   })
 })

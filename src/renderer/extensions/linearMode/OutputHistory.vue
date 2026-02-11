@@ -48,7 +48,7 @@ const workflowTab = useWorkspaceStore()
 
 void outputs.fetchMediaList()
 
-defineProps<{
+const { scrollResetButtonTo, mobile } = defineProps<{
   scrollResetButtonTo?: string | HTMLElement
   mobile?: boolean
 }>()
@@ -147,7 +147,7 @@ function allOutputs(item?: AssetItem): MaybeRef<ResultItemImpl[]> {
 
 const selectedOutput = computed(() => {
   const [index, key] = selectedIndex.value
-  if (index < 0) return undefined
+  if (index < 0) return
 
   return toValue(allOutputs(outputs.media.value[index]))[key]
 })
@@ -206,7 +206,7 @@ function gotoPreviousOutput() {
   selectedIndex.value = [0, 0]
 }
 
-let pointer = new CanvasPointer(document.body)
+const pointer = new CanvasPointer(document.body)
 let scrollOffset = 0
 function onWheel(e: WheelEvent) {
   if (!e.ctrlKey && !e.metaKey) return

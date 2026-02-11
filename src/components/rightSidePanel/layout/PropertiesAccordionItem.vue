@@ -24,7 +24,7 @@ const isCollapse = defineModel<boolean>('collapse', { default: false })
 const isExpanded = computed(() => !isCollapse.value && !disabled)
 
 const tooltipConfig = computed(() => {
-  if (!tooltip) return undefined
+  if (!tooltip) return
   return { value: tooltip, showDelay: 1000 }
 })
 </script>

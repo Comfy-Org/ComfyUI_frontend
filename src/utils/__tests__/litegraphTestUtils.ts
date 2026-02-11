@@ -193,6 +193,7 @@ export function createMockLGraphNodeWithArrayBoundingRect(
  * Creates a mock FileList from an array of files
  */
 export function createMockFileList(files: File[]): FileList {
+  // oxlint-disable-next-line prefer-object-spread -- spreading array overwrites length and Symbol.iterator
   const fileList = Object.assign(
     {
       length: files.length,

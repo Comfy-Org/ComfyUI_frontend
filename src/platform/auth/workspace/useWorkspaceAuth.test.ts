@@ -57,7 +57,7 @@ const mockTokenResponse = {
   permissions: ['owner:*']
 }
 
-describe('useWorkspaceAuthStore', () => {
+describe(useWorkspaceAuthStore, () => {
   beforeEach(() => {
     setActivePinia(createPinia())
     vi.clearAllMocks()

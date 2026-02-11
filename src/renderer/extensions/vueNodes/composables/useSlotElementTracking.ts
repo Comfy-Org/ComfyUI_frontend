@@ -48,7 +48,7 @@ export function flushScheduledSlotLayoutSync() {
     return
   }
   const conv = useSharedCanvasPositionConversion()
-  for (const nodeId of Array.from(pendingNodes)) {
+  for (const nodeId of [...pendingNodes]) {
     pendingNodes.delete(nodeId)
     syncNodeSlotLayoutsFromDOM(nodeId, conv)
   }

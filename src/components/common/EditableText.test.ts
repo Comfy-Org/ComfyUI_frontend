@@ -6,7 +6,7 @@ import { createApp } from 'vue'
 
 import EditableText from './EditableText.vue'
 
-describe('EditableText', () => {
+describe(EditableText.__name ?? 'EditableText', () => {
   beforeAll(() => {
     // Create a Vue app instance for PrimeVue
     const app = createApp({})

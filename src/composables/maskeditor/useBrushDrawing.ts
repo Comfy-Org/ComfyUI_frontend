@@ -2,6 +2,7 @@
 import { ref, watch, nextTick, onUnmounted } from 'vue'
 import QuickLRU from '@alloc/quick-lru'
 import { debounce } from 'es-toolkit/compat'
+import { tgpu } from 'typegpu'
 import { hexToRgb, parseToRgb } from '@/utils/colorUtil'
 import { getStorageValue, setStorageValue } from '@/scripts/utils'
 import {
@@ -11,12 +12,12 @@ import {
 } from '@/extensions/core/maskeditor/types'
 import type { Brush, Point } from '@/extensions/core/maskeditor/types'
 import { useMaskEditorStore } from '@/stores/maskEditorStore'
-import { useCoordinateTransform } from './useCoordinateTransform'
-import { resampleSegment } from './splineUtils'
-import { tgpu } from 'typegpu'
-import { GPUBrushRenderer } from './gpu/GPUBrushRenderer'
-import { StrokeProcessor } from './StrokeProcessor'
+
 import { getEffectiveBrushSize, getEffectiveHardness } from './brushUtils'
+import { GPUBrushRenderer } from './gpu/GPUBrushRenderer'
+import { resampleSegment } from './splineUtils'
+import { StrokeProcessor } from './StrokeProcessor'
+import { useCoordinateTransform } from './useCoordinateTransform'
 
 /**
  * Saves the brush settings to local storage with a debounce.
@@ -42,9 +43,8 @@ function loadBrushFromCache(key: string): Brush | null {
     const brushString = getStorageValue(key)
     if (brushString) {
       return JSON.parse(brushString) as Brush
-    } else {
-      return null
     }
+    return null
   } catch (error) {
     console.error('Failed to load brush from cache:', error)
     return null
@@ -1285,9 +1285,11 @@ export function useBrushDrawing(initialSettings?: {
     // 5. Read Data & Update Canvas
     // We use slice(0) to copy data because unmap() invalidates the array
     const maskDataArr = new Uint8ClampedArray(
+      // oxlint-disable-next-line unicorn/prefer-spread -- ArrayBuffer is not iterable
       readbackStagingMask.getMappedRange().slice(0)
     )
     const rgbDataArr = new Uint8ClampedArray(
+      // oxlint-disable-next-line unicorn/prefer-spread -- ArrayBuffer is not iterable
       readbackStagingRgb.getMappedRange().slice(0)
     )
 

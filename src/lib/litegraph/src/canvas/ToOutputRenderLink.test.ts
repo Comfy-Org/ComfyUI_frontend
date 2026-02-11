@@ -13,7 +13,7 @@ import {
   createMockNodeOutputSlot
 } from '@/utils/__tests__/litegraphTestUtils'
 
-describe('ToOutputRenderLink', () => {
+describe(ToOutputRenderLink, () => {
   describe('connectToOutput', () => {
     it('should return early if inputNode is null', () => {
       // Setup

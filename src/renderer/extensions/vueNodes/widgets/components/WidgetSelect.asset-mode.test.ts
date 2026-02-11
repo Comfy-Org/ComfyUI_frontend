@@ -4,6 +4,7 @@ import PrimeVue from 'primevue/config'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
+import { assetService } from '@/platform/assets/services/assetService'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 
 import WidgetSelect from '@/renderer/extensions/vueNodes/widgets/components/WidgetSelect.vue'
@@ -33,8 +34,6 @@ vi.mock('@/platform/settings/settingStore', () => ({
   }))
 }))
 
-// Import after mocks are defined
-import { assetService } from '@/platform/assets/services/assetService'
 const mockAssetServiceEligible = vi.mocked(assetService.isAssetBrowserEligible)
 
 describe('WidgetSelect asset mode', () => {

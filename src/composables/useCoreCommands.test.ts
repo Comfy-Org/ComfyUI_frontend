@@ -134,7 +134,7 @@ vi.mock('@/composables/billing/useBillingContext', () => ({
   }))
 }))
 
-describe('useCoreCommands', () => {
+describe(useCoreCommands, () => {
   const createMockNode = (id: number, comfyClass: string): LGraphNode => {
     const baseNode = createMockLGraphNode({ id })
     return Object.assign(baseNode, {

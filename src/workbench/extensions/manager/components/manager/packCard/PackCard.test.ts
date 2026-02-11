@@ -54,7 +54,10 @@ vi.mock('@vueuse/core', () => ({
   }),
   createSharedComposable: vi.fn((fn) => {
     let cached: ReturnType<typeof fn>
-    return (...args: Parameters<typeof fn>) => (cached ??= fn(...args))
+    return (...args: Parameters<typeof fn>) => {
+      cached ??= fn(...args)
+      return cached
+    }
   })
 }))
 
@@ -73,7 +76,7 @@ vi.mock('@/stores/systemStatsStore', () => ({
   }))
 }))
 
-describe('PackCard', () => {
+describe(PackCard.__name ?? 'PackCard', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     storageMap.clear()

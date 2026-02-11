@@ -33,7 +33,7 @@ describe('topupTracker', () => {
     vi.clearAllMocks()
   })
 
-  describe('startTopupTracking', () => {
+  describe(startTopupTracking, () => {
     it('should save current timestamp to localStorage', () => {
       const beforeTimestamp = Date.now()
 
@@ -53,7 +53,7 @@ describe('topupTracker', () => {
     })
   })
 
-  describe('checkForCompletedTopup', () => {
+  describe(checkForCompletedTopup, () => {
     it('should return false if no pending topup exists', () => {
       mockLocalStorage.getItem.mockReturnValue(null)
 
@@ -196,7 +196,7 @@ describe('topupTracker', () => {
     })
   })
 
-  describe('clearTopupTracking', () => {
+  describe(clearTopupTracking, () => {
     it('should remove pending topup from localStorage', () => {
       clearTopupTracking()
 

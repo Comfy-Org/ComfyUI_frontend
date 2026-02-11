@@ -7,7 +7,7 @@ import {
 } from './contextMenuConverter'
 
 describe('contextMenuConverter', () => {
-  describe('buildStructuredMenu', () => {
+  describe(buildStructuredMenu, () => {
     it('should order core items before extension items', () => {
       const options: MenuOption[] = [
         { label: 'Custom Extension Item', source: 'litegraph' },
@@ -157,7 +157,7 @@ describe('contextMenuConverter', () => {
     })
   })
 
-  describe('convertContextMenuToOptions', () => {
+  describe(convertContextMenuToOptions, () => {
     it('should convert empty array to empty result', () => {
       const result = convertContextMenuToOptions([])
       expect(result).toEqual([])

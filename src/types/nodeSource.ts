@@ -37,17 +37,17 @@ export const getNodeSource = (python_module?: string): NodeSource => {
       displayText: 'Comfy Core',
       badgeText: '🦊'
     }
-  } else if (modules[0] === 'blueprint') {
+  }
+  if (modules[0] === 'blueprint') {
     return {
       type: NodeSourceType.Blueprint,
       className: 'blueprint',
       displayText: 'Blueprint',
       badgeText: 'bp'
     }
-  } else if (modules[0] === 'custom_nodes') {
+  }
+  if (modules[0] === 'custom_nodes') {
     const moduleName = modules[1]
-    // Custom nodes installed via ComfyNodeRegistry will be in the format of
-    // custom_nodes.<custom node name>@<version>
     const customNodeName = moduleName.split('@')[0]
     const displayName = shortenNodeName(customNodeName)
     return {
@@ -56,9 +56,8 @@ export const getNodeSource = (python_module?: string): NodeSource => {
       displayText: displayName,
       badgeText: displayName
     }
-  } else {
-    return UNKNOWN_NODE_SOURCE
   }
+  return UNKNOWN_NODE_SOURCE
 }
 
 export enum NodeBadgeMode {

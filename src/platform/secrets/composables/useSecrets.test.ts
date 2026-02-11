@@ -44,7 +44,7 @@ function createMockSecret(
   }
 }
 
-describe('useSecrets', () => {
+describe(useSecrets, () => {
   beforeEach(() => {
     vi.clearAllMocks()
   })

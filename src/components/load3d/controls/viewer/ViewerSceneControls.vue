@@ -69,7 +69,7 @@ const backgroundRenderMode = defineModel<'tiled' | 'panorama'>(
   'backgroundRenderMode'
 )
 
-defineProps<{
+const { hasBackgroundImage, disableBackgroundUpload } = defineProps<{
   hasBackgroundImage?: boolean
   disableBackgroundUpload?: boolean
 }>()

@@ -238,7 +238,7 @@ const nodeBadges = computed<NodeBadgeProps[]>(() => {
       if (groupPrefixes.length > 0) {
         nodeData?.inputs?.forEach((inp) => {
           if (
-            groupPrefixes.some((prefix) => inp.name?.startsWith(prefix + '.'))
+            groupPrefixes.some((prefix) => inp.name?.startsWith(`${prefix}.`))
           ) {
             void inp.link // Access link to create reactive dependency
           }

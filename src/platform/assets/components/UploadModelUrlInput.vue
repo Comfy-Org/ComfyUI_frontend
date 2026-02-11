@@ -97,7 +97,7 @@ function openSecretsSettings() {
   dialogService.showSettingsDialog('secrets')
 }
 
-const props = defineProps<{
+const { modelValue, error } = defineProps<{
   modelValue: string
   error?: string
 }>()
@@ -107,7 +107,7 @@ const emit = defineEmits<{
 }>()
 
 const url = computed({
-  get: () => props.modelValue,
+  get: () => modelValue,
   set: (value: string) => emit('update:modelValue', value)
 })
 

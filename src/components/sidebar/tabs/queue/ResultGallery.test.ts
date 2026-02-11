@@ -21,7 +21,7 @@ type MockResultItem = Partial<ResultItemImpl> & {
   isVideo?: boolean
 }
 
-describe('ResultGallery', () => {
+describe(ResultGallery.__name ?? 'ResultGallery', () => {
   // Mock ComfyImage and ResultVideo components
   const mockComfyImage = {
     name: 'ComfyImage',
@@ -96,7 +96,7 @@ describe('ResultGallery', () => {
         activeIndex: 0,
         ...props
       },
-      attachTo: document.getElementById('app') || undefined
+      attachTo: document.querySelector('#app') || undefined
     })
   }
 

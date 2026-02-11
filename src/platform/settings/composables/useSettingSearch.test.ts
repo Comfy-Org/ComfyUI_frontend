@@ -30,7 +30,7 @@ vi.mock('@/platform/settings/settingStore', () => ({
   getSettingInfo: vi.fn()
 }))
 
-describe('useSettingSearch', () => {
+describe(useSettingSearch, () => {
   let mockSettingStore: ReturnType<typeof useSettingStore>
   let mockSettings: Record<string, MockSettingParams>
 

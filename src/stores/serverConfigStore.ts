@@ -94,8 +94,7 @@ export const useServerConfigStore = defineStore('serverConfig', () => {
   })
   const commandLineArgs = computed<string>(() => {
     return Object.entries(launchArgs.value)
-      .map(([key, value]) => [`--${key}`, value])
-      .flat()
+      .flatMap(([key, value]) => [`--${key}`, value])
       .filter((arg: string) => arg !== '')
       .join(' ')
   })

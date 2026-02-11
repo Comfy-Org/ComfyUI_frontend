@@ -141,7 +141,7 @@ async function setupMocks(
   const {
     nodeProvider = createMockNodeProvider(),
     canvasCenter = [100, 200],
-    activeSubgraph = undefined,
+    activeSubgraph,
     createdNode = await createMockNode()
   } = overrides
 
@@ -162,7 +162,7 @@ async function setupMocks(
   })
   vi.mocked(LiteGraph.createNode).mockReturnValue(createdNode)
 }
-describe('createModelNodeFromAsset', () => {
+describe(createModelNodeFromAsset, () => {
   beforeEach(() => {
     vi.clearAllMocks()
     vi.spyOn(console, 'warn').mockImplementation(() => {})

@@ -26,9 +26,9 @@ type Deferred<T> = {
 function createDeferred<T>(): Deferred<T> {
   let resolve!: (value: T) => void
   let reject!: (reason?: unknown) => void
-  const promise = new Promise<T>((resolveFn, rejectFn) => {
-    resolve = resolveFn
-    reject = rejectFn
+  const promise = new Promise<T>((_resolve, _reject) => {
+    resolve = _resolve
+    reject = _reject
   })
   return { promise, resolve, reject }
 }
@@ -48,7 +48,7 @@ function createAsset(overrides: Partial<AssetItem> = {}): AssetItem {
   }
 }
 
-describe('useOutputStacks', () => {
+describe(useOutputStacks, () => {
   beforeEach(() => {
     vi.resetAllMocks()
   })

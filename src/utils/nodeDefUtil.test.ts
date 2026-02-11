@@ -10,7 +10,7 @@ import type {
 import { mergeInputSpec } from '@/utils/nodeDefUtil'
 
 describe('nodeDefUtil', () => {
-  describe('mergeInputSpec', () => {
+  describe(mergeInputSpec, () => {
     // Test numeric input specs (INT and FLOAT)
     describe('numeric input specs', () => {
       it('should merge INT specs with overlapping ranges', () => {

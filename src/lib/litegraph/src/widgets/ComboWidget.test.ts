@@ -37,7 +37,7 @@ function setupIncrementDecrementTest() {
   return { mockCanvas, mockEvent }
 }
 
-describe('ComboWidget', () => {
+describe(ComboWidget, () => {
   let node: LGraphNode
   let widget: ComboWidget
 

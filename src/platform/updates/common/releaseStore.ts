@@ -278,9 +278,11 @@ export const useReleaseStore = defineStore('release', () => {
       } else if (releaseService.error.value) {
         error.value = releaseService.error.value
       }
-    } catch (err) {
+    } catch (errorCaught) {
       error.value =
-        err instanceof Error ? err.message : 'Unknown error occurred'
+        errorCaught instanceof Error
+          ? errorCaught.message
+          : 'Unknown error occurred'
     } finally {
       isLoading.value = false
     }

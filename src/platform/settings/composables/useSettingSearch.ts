@@ -18,7 +18,9 @@ export function useSettingSearch() {
   const filteredSettingIds = ref<string[]>([])
   const searchInProgress = ref<boolean>(false)
 
-  watch(searchQuery, () => (searchInProgress.value = true))
+  watch(searchQuery, () => {
+    searchInProgress.value = true
+  })
 
   /**
    * Settings categories that contains at least one setting in search results.

@@ -124,7 +124,7 @@ export const buildJobDisplay = (
   if (state === 'completed') {
     const time = task.executionTimeInSeconds
     const preview = task.previewOutput
-    const iconImageUrl = preview && preview.isImage ? preview.url : undefined
+    const iconImageUrl = preview?.isImage ? preview.url : undefined
 
     // Cloud shows "Completed in Xh Ym Zs", non-cloud shows filename
     const primary = ctx.isCloud

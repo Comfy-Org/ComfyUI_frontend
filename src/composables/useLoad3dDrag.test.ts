@@ -35,7 +35,7 @@ function createMockDragEvent(
   return event as DragEvent
 }
 
-describe('useLoad3dDrag', () => {
+describe(useLoad3dDrag, () => {
   let mockToastStore: ReturnType<typeof useToastStore>
   let mockOnModelDrop: (file: File) => void | Promise<void>
 

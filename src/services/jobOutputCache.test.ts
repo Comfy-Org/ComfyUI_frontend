@@ -77,7 +77,7 @@ describe('jobOutputCache', () => {
     vi.clearAllMocks()
   })
 
-  describe('findActiveIndex', () => {
+  describe(findActiveIndex, () => {
     it('returns index of matching URL', () => {
       const items = [
         createResultItem('a'),
@@ -101,7 +101,7 @@ describe('jobOutputCache', () => {
     })
   })
 
-  describe('getOutputsForTask', () => {
+  describe(getOutputsForTask, () => {
     it('returns previewable outputs directly when no lazy load needed', async () => {
       const outputs = [createResultItem('p-1'), createResultItem('p-2')]
       const task = createTask(undefined, outputs, 1)
@@ -278,7 +278,7 @@ describe('jobOutputCache', () => {
     })
   })
 
-  describe('getJobDetail', () => {
+  describe(getJobDetail, () => {
     it('fetches and caches job detail', async () => {
       const jobId = uniqueId('job')
 
@@ -330,7 +330,7 @@ describe('jobOutputCache', () => {
     })
   })
 
-  describe('getJobWorkflow', () => {
+  describe(getJobWorkflow, () => {
     it('fetches job detail and extracts workflow', async () => {
       const jobId = uniqueId('job-wf')
 

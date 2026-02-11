@@ -62,7 +62,7 @@ export const useQueueEstimates = ({
   const runningRemainingRangeSeconds = computed<EstimateRange | null>(() => {
     const durations = recentDurations.value
     if (!durations.length) return null
-    const sorted = durations.slice().sort((a, b) => a - b)
+    const sorted = [...durations].sort((a, b) => a - b)
     const avg = sorted.reduce((sum, value) => sum + value, 0) / sorted.length
     const p75 =
       sorted[Math.min(sorted.length - 1, Math.floor(sorted.length * 0.75))]
@@ -95,7 +95,7 @@ export const useQueueEstimates = ({
     if (!durations.length) return null
     const ahead = jobsAhead.value
     if (ahead == null) return null
-    const sorted = durations.slice().sort((a, b) => a - b)
+    const sorted = [...durations].sort((a, b) => a - b)
     const avg = sorted.reduce((sum, value) => sum + value, 0) / sorted.length
     const p75 =
       sorted[Math.min(sorted.length - 1, Math.floor(sorted.length * 0.75))]
@@ -110,7 +110,7 @@ export const useQueueEstimates = ({
   const estimateRemainingRangeSeconds = computed<EstimateRange | null>(() => {
     const durations = recentDurations.value
     if (!durations.length) return null
-    const sorted = durations.slice().sort((a, b) => a - b)
+    const sorted = [...durations].sort((a, b) => a - b)
     const avg = sorted.reduce((sum, value) => sum + value, 0) / sorted.length
     const p75 =
       sorted[Math.min(sorted.length - 1, Math.floor(sorted.length * 0.75))]

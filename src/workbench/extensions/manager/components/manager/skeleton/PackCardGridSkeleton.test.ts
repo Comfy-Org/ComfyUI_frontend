@@ -12,7 +12,7 @@ import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import GridSkeleton from './GridSkeleton.vue'
 import PackCardSkeleton from './PackCardSkeleton.vue'
 
-describe('GridSkeleton', () => {
+describe(GridSkeleton.__name ?? 'GridSkeleton', () => {
   function mountComponent({
     props = {}
   }: {

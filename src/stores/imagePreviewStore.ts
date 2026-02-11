@@ -147,7 +147,7 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
           const newValue = (outputs as Record<NodeLocatorId, any>)[k]
 
           if (Array.isArray(existingValue) && Array.isArray(newValue)) {
-            existingOutput[k] = existingValue.concat(newValue)
+            existingOutput[k] = [...existingValue, ...newValue]
           } else {
             existingOutput[k] = newValue
           }
@@ -324,10 +324,10 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
     const { graph } = subgraphNode
     if (!graph) return
 
-    const graphId = graph.isRootGraph ? '' : graph.id + ':'
-    revokePreviewsByLocatorId(graphId + subgraphNode.id)
+    const graphId = graph.isRootGraph ? '' : `${graph.id}:`
+    revokePreviewsByLocatorId(`${graphId}${subgraphNode.id}`)
     for (const node of subgraphNode.subgraph.nodes) {
-      revokePreviewsByLocatorId(subgraphNode.subgraph.id + node.id)
+      revokePreviewsByLocatorId(`${subgraphNode.subgraph.id}${node.id}`)
     }
   }
 

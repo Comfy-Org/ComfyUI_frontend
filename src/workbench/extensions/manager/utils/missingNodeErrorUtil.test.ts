@@ -5,7 +5,7 @@ import {
   createMissingNodeTypeFromError
 } from './missingNodeErrorUtil'
 
-describe('buildMissingNodeHint', () => {
+describe(buildMissingNodeHint, () => {
   it('returns hint with title and node ID when both available', () => {
     expect(buildMissingNodeHint('My Node', 'MyNodeClass', '42')).toBe(
       '"My Node" (Node ID #42)'
@@ -39,7 +39,7 @@ describe('buildMissingNodeHint', () => {
   })
 })
 
-describe('createMissingNodeTypeFromError', () => {
+describe(createMissingNodeTypeFromError, () => {
   it('returns string type when no hint is generated', () => {
     const result = createMissingNodeTypeFromError({
       class_type: 'MyNodeClass',

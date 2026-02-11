@@ -41,19 +41,16 @@ import type { AssetKind } from '@/types/widgetTypes'
 
 type StringControlWidget = SimplifiedControlWidget<string | undefined>
 
-const props = defineProps<{
+const { widget, nodeType } = defineProps<{
   widget: SimplifiedWidget<string | undefined>
   nodeType?: string
 }>()
 
 const modelValue = defineModel<string | undefined>()
 
-const comboSpec = computed<ComboInputSpec | undefined>(() => {
-  if (props.widget.spec && isComboInputSpec(props.widget.spec)) {
-    return props.widget.spec
-  }
-  return undefined
-})
+const comboSpec = computed<ComboInputSpec | undefined>(() =>
+  widget.spec && isComboInputSpec(widget.spec) ? widget.spec : undefined
+)
 
 const specDescriptor = computed<{
   kind: AssetKind
@@ -116,8 +113,8 @@ const isAssetMode = computed(() => {
     const settingStore = useSettingStore()
     const isUsingAssetAPI = settingStore.get('Comfy.Assets.UseAssetAPI')
     const isEligible =
-      assetService.isAssetBrowserEligible(props.nodeType, props.widget.name) ||
-      props.widget.type === 'asset'
+      assetService.isAssetBrowserEligible(nodeType, widget.name) ||
+      widget.type === 'asset'
 
     return isUsingAssetAPI && isEligible
   }

@@ -27,7 +27,7 @@ function createMockCanvasContext() {
   }
 }
 
-describe('useTransformState', () => {
+describe(useTransformState, () => {
   const transformState = useTransformState()
 
   beforeEach(() => {

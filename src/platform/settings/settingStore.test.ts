@@ -31,7 +31,7 @@ vi.mock('@/scripts/app', () => ({
   }
 }))
 
-describe('useSettingStore', () => {
+describe(useSettingStore, () => {
   let store: ReturnType<typeof useSettingStore>
 
   beforeEach(() => {
@@ -585,7 +585,7 @@ describe('useSettingStore', () => {
   })
 })
 
-describe('getSettingInfo', () => {
+describe(getSettingInfo, () => {
   const baseSetting: SettingParams = {
     id: 'test.setting',
     name: 'test.setting',

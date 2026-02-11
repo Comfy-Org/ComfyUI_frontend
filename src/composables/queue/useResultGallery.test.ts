@@ -58,7 +58,7 @@ const createJobViewItem = (
     taskRef
   }) as JobListViewItem
 
-describe('useResultGallery', () => {
+describe(useResultGallery, () => {
   beforeEach(() => {
     setActivePinia(createPinia())
   })

@@ -5,7 +5,7 @@ import { defineComponent, h, nextTick, ref } from 'vue'
 
 import HoneyToast from './HoneyToast.vue'
 
-describe('HoneyToast', () => {
+describe(HoneyToast.__name ?? 'HoneyToast', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     document.body.innerHTML = ''

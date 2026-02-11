@@ -1,9 +1,9 @@
-import type { NodeReplacement, NodeReplacementResponse } from './types'
-
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 
 import { useSettingStore } from '@/platform/settings/settingStore'
+
+import type { NodeReplacement, NodeReplacementResponse } from './types'
 import { fetchNodeReplacements } from './nodeReplacementService'
 
 export const useNodeReplacementStore = defineStore('nodeReplacement', () => {

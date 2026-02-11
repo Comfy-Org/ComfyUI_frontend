@@ -18,10 +18,10 @@ export function getResourceURL(
   type: ResultItemType = 'input'
 ): string {
   const params = [
-    'filename=' + encodeURIComponent(filename),
-    'type=' + type,
-    'subfolder=' + subfolder,
-    app.getRandParam().substring(1)
+    `filename=${encodeURIComponent(filename)}`,
+    `type=${type}`,
+    `subfolder=${subfolder}`,
+    app.getRandParam().slice(1)
   ].join('&')
 
   return `/view?${params}`
@@ -32,8 +32,5 @@ export function splitFilePath(path: string): [string, string] {
   if (folder_separator === -1) {
     return ['', path]
   }
-  return [
-    path.substring(0, folder_separator),
-    path.substring(folder_separator + 1)
-  ]
+  return [path.slice(0, folder_separator), path.slice(folder_separator + 1)]
 }

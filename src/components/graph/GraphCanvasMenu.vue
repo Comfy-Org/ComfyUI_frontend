@@ -114,8 +114,8 @@ const { isModalVisible, toggleModal, hideModal, hasActivePopup } =
   useZoomControls()
 
 const stringifiedMinimapStyles = computed(() => {
-  const buttonGroupKeys = ['borderRadius']
-  const buttonKeys = ['borderRadius']
+  const buttonGroupKeys = new Set(['borderRadius'])
+  const buttonKeys = new Set(['borderRadius'])
   const additionalButtonStyles = {
     border: 'none'
   }
@@ -124,14 +124,12 @@ const stringifiedMinimapStyles = computed(() => {
 
   const buttonStyles = {
     ...Object.fromEntries(
-      Object.entries(containerStyles).filter(([key]) =>
-        buttonKeys.includes(key)
-      )
+      Object.entries(containerStyles).filter(([key]) => buttonKeys.has(key))
     ),
     ...additionalButtonStyles
   }
   const buttonGroupStyles = Object.entries(containerStyles)
-    .filter(([key]) => buttonGroupKeys.includes(key))
+    .filter(([key]) => buttonGroupKeys.has(key))
     .reduce((acc, [key, value]) => ({ ...acc, [key]: value }), {})
 
   return { buttonStyles, buttonGroupStyles }

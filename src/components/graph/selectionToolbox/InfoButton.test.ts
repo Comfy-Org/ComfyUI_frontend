@@ -18,7 +18,7 @@ vi.mock('@/stores/workspace/rightSidePanelStore', () => ({
   })
 }))
 
-describe('InfoButton', () => {
+describe(InfoButton.__name ?? 'InfoButton', () => {
   const i18n = createI18n({
     legacy: false,
     locale: 'en',

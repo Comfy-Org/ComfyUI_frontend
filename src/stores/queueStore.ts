@@ -77,11 +77,11 @@ export class ResultItemImpl {
    * `/viewvideo` always returns a webm file.
    */
   get vhsAdvancedPreviewUrl(): string {
-    return api.apiURL('/viewvideo?' + this.urlParams)
+    return api.apiURL(`/viewvideo?${this.urlParams}`)
   }
 
   get url(): string {
-    return api.apiURL('/view?' + this.urlParams)
+    return api.apiURL(`/view?${this.urlParams}`)
   }
 
   get urlWithTimestamp(): string {
@@ -215,7 +215,7 @@ export class ResultItemImpl {
   static findByUrl(items: readonly ResultItemImpl[], url?: string): number {
     if (!url) return 0
     const idx = items.findIndex((o) => o.url === url)
-    return idx >= 0 ? idx : 0
+    return Math.max(idx, 0)
   }
 }
 
@@ -378,7 +378,7 @@ export class TaskItemImpl {
 
   get executionTime() {
     if (!this.executionStartTimestamp || !this.executionEndTimestamp) {
-      return undefined
+      return
     }
     return this.executionEndTimestamp - this.executionStartTimestamp
   }

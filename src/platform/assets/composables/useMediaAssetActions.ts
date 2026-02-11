@@ -11,18 +11,18 @@ import { extractWorkflowFromAsset } from '@/platform/workflow/utils/workflowExtr
 import { api } from '@/scripts/api'
 import { useLitegraphService } from '@/services/litegraphService'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
-import { getOutputAssetMetadata } from '../schemas/assetMetadataSchema'
 import { useAssetsStore } from '@/stores/assetsStore'
 import { useDialogStore } from '@/stores/dialogStore'
-import { getAssetType } from '../utils/assetTypeUtil'
-import { getAssetUrl } from '../utils/assetUrlUtil'
 import { createAnnotatedPath } from '@/utils/createAnnotatedPath'
 import { detectNodeTypeFromFilename } from '@/utils/loaderNodeUtil'
 import { isResultItemType } from '@/utils/typeGuardUtil'
 
+import { getOutputAssetMetadata } from '../schemas/assetMetadataSchema'
 import type { AssetItem } from '../schemas/assetSchema'
 import { MediaAssetKey } from '../schemas/mediaAssetSchema'
 import { assetService } from '../services/assetService'
+import { getAssetType } from '../utils/assetTypeUtil'
+import { getAssetUrl } from '../utils/assetUrlUtil'
 
 export function useMediaAssetActions() {
   const { t } = useI18n()
@@ -76,7 +76,7 @@ export function useMediaAssetActions() {
         detail: t('mediaAsset.selection.downloadsStarted', { count: 1 }),
         life: 2000
       })
-    } catch (error) {
+    } catch {
       toast.add({
         severity: 'error',
         summary: t('g.error'),

@@ -35,7 +35,7 @@ export function getOrderedInputSpecs(
   if (nodeDefImpl.input_order.optional) {
     for (const name of nodeDefImpl.input_order.optional) {
       const inputSpec = inputs[name]
-      if (inputSpec && inputSpec.isOptional) {
+      if (inputSpec?.isOptional) {
         orderedInputSpecs.push(inputSpec)
       }
     }

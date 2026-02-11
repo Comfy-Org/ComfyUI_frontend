@@ -6,8 +6,7 @@ import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { isDOMWidget } from '@/scripts/domWidget'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 
-// Button widgets don't have a v-model value, they trigger actions
-const props = defineProps<{
+const { widget, nodeId } = defineProps<{
   widget: SimplifiedWidget<void>
   nodeId: string
 }>()
@@ -19,12 +18,12 @@ const { canvas } = canvasStore
 
 function mountWidgetElement() {
   if (!domEl.value) return
-  const node = canvas?.graph?.getNodeById(props.nodeId) ?? undefined
+  const node = canvas?.graph?.getNodeById(nodeId) ?? undefined
   if (!node) return
-  const widget = node.widgets?.find((w) => w.name === props.widget.name)
-  if (!widget || !isDOMWidget(widget)) return
-  if (domEl.value.contains(widget.element)) return
-  domEl.value.replaceChildren(widget.element)
+  const matchedWidget = node.widgets?.find((w) => w.name === widget.name)
+  if (!matchedWidget || !isDOMWidget(matchedWidget)) return
+  if (domEl.value.contains(matchedWidget.element)) return
+  domEl.value.replaceChildren(matchedWidget.element)
 }
 
 onMounted(() => {

@@ -14,7 +14,7 @@ import {
 } from './__fixtures__/subgraphHelpers'
 
 describe.skip('subgraphUtils', () => {
-  describe.skip('getDirectSubgraphIds', () => {
+  describe.skip(getDirectSubgraphIds, () => {
     it('should return empty set for graph with no subgraph nodes', () => {
       const graph = new LGraph()
       const result = getDirectSubgraphIds(graph)
@@ -65,7 +65,7 @@ describe.skip('subgraphUtils', () => {
     })
   })
 
-  describe.skip('findUsedSubgraphIds', () => {
+  describe.skip(findUsedSubgraphIds, () => {
     it('should handle graph with no subgraphs', () => {
       const graph = new LGraph()
       const registry = new Map<UUID, LGraph>()

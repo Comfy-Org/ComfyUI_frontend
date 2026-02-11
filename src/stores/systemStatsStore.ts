@@ -9,9 +9,9 @@ export const useSystemStatsStore = defineStore('systemStats', () => {
   const fetchSystemStatsData = async () => {
     try {
       return await api.getSystemStats()
-    } catch (err) {
-      console.error('Error fetching system stats:', err)
-      throw err
+    } catch (error) {
+      console.error('Error fetching system stats:', error)
+      throw error
     }
   }
 

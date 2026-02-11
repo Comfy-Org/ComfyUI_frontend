@@ -172,19 +172,17 @@ const splitterRefreshKey = computed(() => {
   return `main-splitter${rightSidePanelVisible.value ? '-with-right-panel' : ''}-${sidebarLocation.value}`
 })
 
-const firstPanelStyle = computed(() => {
-  if (sidebarLocation.value === 'left') {
-    return { display: sidebarPanelVisible.value ? 'flex' : 'none' }
-  }
-  return undefined
-})
+const firstPanelStyle = computed(() =>
+  sidebarLocation.value === 'left'
+    ? { display: sidebarPanelVisible.value ? 'flex' : 'none' }
+    : undefined
+)
 
-const lastPanelStyle = computed(() => {
-  if (sidebarLocation.value === 'right') {
-    return { display: sidebarPanelVisible.value ? 'flex' : 'none' }
-  }
-  return undefined
-})
+const lastPanelStyle = computed(() =>
+  sidebarLocation.value === 'right'
+    ? { display: sidebarPanelVisible.value ? 'flex' : 'none' }
+    : undefined
+)
 </script>
 
 <style scoped>

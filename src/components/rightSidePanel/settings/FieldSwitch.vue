@@ -3,7 +3,7 @@ import ToggleSwitch from 'primevue/toggleswitch'
 
 import LayoutField from './LayoutField.vue'
 
-defineProps<{
+const { label, tooltip } = defineProps<{
   label: string
   tooltip?: string
 }>()

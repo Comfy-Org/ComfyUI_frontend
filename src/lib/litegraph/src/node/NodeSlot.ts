@@ -230,13 +230,13 @@ export abstract class NodeSlot extends SlotBase implements INodeSlot {
         ctx.fillStyle = labelColor
 
         if (labelPosition === LabelPosition.Right) {
-          if (this.dir == LinkDirection.UP) {
+          if (this.dir === LinkDirection.UP) {
             ctx.fillText(text, pos[0], pos[1] - 10)
           } else {
             ctx.fillText(text, pos[0] + 10, pos[1] + 5)
           }
         } else {
-          if (this.dir == LinkDirection.DOWN) {
+          if (this.dir === LinkDirection.DOWN) {
             ctx.fillText(text, pos[0], pos[1] - 8)
           } else {
             ctx.fillText(text, pos[0] - 10, pos[1] + 5)

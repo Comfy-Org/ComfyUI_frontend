@@ -30,7 +30,18 @@ interface Props {
   baseModelOptions?: FilterOption[]
 }
 
-defineProps<Props>()
+const {
+  items,
+  isSelected,
+  filterOptions,
+  sortOptions,
+  searcher,
+  updateKey,
+  showOwnershipFilter,
+  ownershipOptions,
+  showBaseModelFilter,
+  baseModelOptions
+} = defineProps<Props>()
 const emit = defineEmits<{
   (e: 'item-click', item: FormDropdownItem, index: number): void
 }>()

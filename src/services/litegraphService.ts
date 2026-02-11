@@ -62,8 +62,9 @@ import {
 } from '@/utils/litegraphUtil'
 import { getOrderedInputSpecs } from '@/workbench/utils/nodeDefOrderingUtil'
 
-import { useExtensionService } from './extensionService'
 import { useMaskEditor } from '@/composables/maskeditor/useMaskEditor'
+
+import { useExtensionService } from './extensionService'
 
 export interface HasInitialMinSize {
   _initialMinSize: { width: number; height: number }
@@ -166,12 +167,12 @@ export const useLitegraphService = () => {
       }
     }
     node.strokeStyles['dragOver'] = function (this: LGraphNode) {
-      if (app.dragOverNode?.id == this.id) {
+      if (app.dragOverNode?.id === this.id) {
         return { color: 'dodgerblue' }
       }
     }
     node.strokeStyles['executionError'] = function (this: LGraphNode) {
-      if (app.lastExecutionError?.node_id == this.id) {
+      if (app.lastExecutionError?.node_id === this.id) {
         return { color: '#f0f', lineWidth: 3 }
       }
     }
@@ -361,7 +362,7 @@ export const useLitegraphService = () => {
         // Note: input name is unique in a node definition, so we can lookup
         // input by name.
         const inputByName = new Map<string, ISerialisableNodeInput>(
-          data.inputs?.map((input) => [input.name, input]) ?? []
+          data.inputs?.map((input) => [input.name, input])
         )
         // Inputs defined by the node definition.
         const definedInputNames = new Set(
@@ -374,7 +375,7 @@ export const useLitegraphService = () => {
                 ...inputData,
                 // Whether the input has associated widget follows the
                 // original node definition.
-                ..._.pick(input, RESERVED_KEYS.concat('widget'))
+                ..._.pick(input, [...RESERVED_KEYS, 'widget'])
               }
             : input
         })
@@ -469,7 +470,7 @@ export const useLitegraphService = () => {
         // Note: input name is unique in a node definition, so we can lookup
         // input by name.
         const inputByName = new Map<string, ISerialisableNodeInput>(
-          data.inputs?.map((input) => [input.name, input]) ?? []
+          data.inputs?.map((input) => [input.name, input])
         )
         // Inputs defined by the node definition.
         const definedInputNames = new Set(
@@ -482,7 +483,7 @@ export const useLitegraphService = () => {
                 ...inputData,
                 // Whether the input has associated widget follows the
                 // original node definition.
-                ..._.pick(input, RESERVED_KEYS.concat('widget'))
+                ..._.pick(input, [...RESERVED_KEYS, 'widget'])
               }
             : input
         })
@@ -556,7 +557,7 @@ export const useLitegraphService = () => {
    */
   function addNodeContextMenuHandler(node: typeof LGraphNode) {
     function getCopyImageOption(img: HTMLImageElement): IContextMenuValue[] {
-      if (typeof window.ClipboardItem === 'undefined') return []
+      if (window.ClipboardItem === undefined) return []
       return [
         {
           content: 'Copy Image',
@@ -586,20 +587,17 @@ export const useLitegraphService = () => {
                     height: img.naturalHeight
                   }) as HTMLCanvasElement
                   const ctx = canvas.getContext('2d')
-                  // @ts-expect-error fixme ts strict error
-                  let image
-                  if (typeof window.createImageBitmap === 'undefined') {
-                    image = new Image()
+                  let image: HTMLImageElement | ImageBitmap
+                  if (window.createImageBitmap === undefined) {
+                    const img = new Image()
+                    image = img
                     const p = new Promise((resolve, reject) => {
-                      // @ts-expect-error fixme ts strict error
-                      image.onload = resolve
-                      // @ts-expect-error fixme ts strict error
-                      image.onerror = reject
+                      img.addEventListener('load', resolve)
+                      img.addEventListener('error', reject)
                     }).finally(() => {
-                      // @ts-expect-error fixme ts strict error
-                      URL.revokeObjectURL(image.src)
+                      URL.revokeObjectURL(img.src)
                     })
-                    image.src = URL.createObjectURL(blob)
+                    img.src = URL.createObjectURL(blob)
                     await p
                   } else {
                     image = await createImageBitmap(blob)
@@ -807,7 +805,7 @@ export const useLitegraphService = () => {
 
     node.prototype.onKeyDown = function (e) {
       // @ts-expect-error fixme ts strict error
-      if (origNodeOnKeyDown && origNodeOnKeyDown.apply(this, e) === false) {
+      if (origNodeOnKeyDown?.apply(this, e) === false) {
         return false
       }
 

@@ -3,11 +3,11 @@
     variant="secondary"
     size="lg"
     class="group w-full justify-between gap-3 p-1 text-left font-normal hover:cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-background"
-    :aria-label="props.ariaLabel"
+    :aria-label="ariaLabel"
     @click="emit('click', $event)"
   >
     <span class="inline-flex items-center gap-2">
-      <span v-if="props.mode === 'allFailed'" class="inline-flex items-center">
+      <span v-if="mode === 'allFailed'" class="inline-flex items-center">
         <i
           class="ml-1 icon-[lucide--circle-alert] block size-4 leading-none text-destructive-background"
         />
@@ -15,11 +15,11 @@
 
       <span class="inline-flex items-center gap-2">
         <span
-          v-if="props.mode !== 'allFailed'"
+          v-if="mode !== 'allFailed'"
           class="relative inline-flex h-6 items-center"
         >
           <span
-            v-for="(url, idx) in props.thumbnailUrls"
+            v-for="(url, idx) in thumbnailUrls"
             :key="url + idx"
             class="inline-block h-6 w-6 overflow-hidden rounded-[6px] border-0 bg-secondary-background"
             :style="{ marginLeft: idx === 0 ? '0' : '-12px' }"
@@ -33,42 +33,42 @@
         </span>
 
         <span class="text-[14px] font-normal text-text-primary">
-          <template v-if="props.mode === 'allSuccess'">
+          <template v-if="mode === 'allSuccess'">
             <i18n-t
               keypath="sideToolbar.queueProgressOverlay.jobsCompleted"
-              :plural="props.completedCount"
+              :plural="completedCount"
             >
               <template #count>
-                <span class="font-bold">{{ props.completedCount }}</span>
+                <span class="font-bold">{{ completedCount }}</span>
               </template>
             </i18n-t>
           </template>
-          <template v-else-if="props.mode === 'mixed'">
+          <template v-else-if="mode === 'mixed'">
             <i18n-t
               keypath="sideToolbar.queueProgressOverlay.jobsCompleted"
-              :plural="props.completedCount"
+              :plural="completedCount"
             >
               <template #count>
-                <span class="font-bold">{{ props.completedCount }}</span>
+                <span class="font-bold">{{ completedCount }}</span>
               </template>
             </i18n-t>
             <span>, </span>
             <i18n-t
               keypath="sideToolbar.queueProgressOverlay.jobsFailed"
-              :plural="props.failedCount"
+              :plural="failedCount"
             >
               <template #count>
-                <span class="font-bold">{{ props.failedCount }}</span>
+                <span class="font-bold">{{ failedCount }}</span>
               </template>
             </i18n-t>
           </template>
           <template v-else>
             <i18n-t
               keypath="sideToolbar.queueProgressOverlay.jobsFailed"
-              :plural="props.failedCount"
+              :plural="failedCount"
             >
               <template #count>
-                <span class="font-bold">{{ props.failedCount }}</span>
+                <span class="font-bold">{{ failedCount }}</span>
               </template>
             </i18n-t>
           </template>
@@ -99,9 +99,13 @@ type Props = {
   ariaLabel?: string
 }
 
-const props = withDefaults(defineProps<Props>(), {
-  thumbnailUrls: () => []
-})
+const {
+  mode,
+  completedCount,
+  failedCount,
+  thumbnailUrls = [],
+  ariaLabel
+} = defineProps<Props>()
 
 const emit = defineEmits<{
   (e: 'click', event: MouseEvent): void

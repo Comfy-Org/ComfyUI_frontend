@@ -59,7 +59,7 @@ const DEFAULT_VALUE = 'Loading...'
 
 function createMockConfig(overrides = {}): RemoteWidgetConfig {
   return {
-    route: `/api/test/${Date.now()}${Math.random().toString(36).substring(2, 15)}`,
+    route: `/api/test/${Date.now()}${Math.random().toString(36).slice(2, 15)}`,
     refresh: 0,
     ...overrides
   }
@@ -105,7 +105,7 @@ async function getResolvedValue(hook: ReturnType<typeof useRemoteWidget>) {
   return hook.getCachedValue()
 }
 
-describe('useRemoteWidget', () => {
+describe(useRemoteWidget, () => {
   beforeEach(() => {
     vi.clearAllMocks()
     // Reset mocks

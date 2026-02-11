@@ -58,7 +58,7 @@ vi.mock('primevue/usetoast', () => ({
   }))
 }))
 
-describe('SignInForm', () => {
+describe(SignInForm.__name ?? 'SignInForm', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     mockSendPasswordReset.mockReset()
@@ -110,12 +110,17 @@ describe('SignInForm', () => {
         'span.text-muted.text-base.font-medium.cursor-pointer'
       )
 
-      // Mock getElementById to track focus
+      // Mock querySelector to track focus on the email input
       const mockFocus = vi.fn()
       const mockElement: Partial<HTMLElement> = { focus: mockFocus }
-      vi.spyOn(document, 'getElementById').mockReturnValue(
-        mockElement as HTMLElement
-      )
+      const originalQuerySelector = document.querySelector.bind(document)
+      const spy = vi
+        .spyOn(document, 'querySelector')
+        .mockImplementation((selector: string) => {
+          if (selector === '#comfy-org-sign-in-email')
+            return mockElement as HTMLElement
+          return originalQuerySelector(selector)
+        })
 
       // Click forgot password link while email is empty
       await forgotPasswordSpan.trigger('click')
@@ -129,10 +134,9 @@ describe('SignInForm', () => {
       })
 
       // Should focus email input
-      expect(document.getElementById).toHaveBeenCalledWith(
-        'comfy-org-sign-in-email'
-      )
+      expect(spy).toHaveBeenCalledWith('#comfy-org-sign-in-email')
       expect(mockFocus).toHaveBeenCalled()
+      spy.mockRestore()
 
       // Should NOT call sendPasswordReset
       expect(mockSendPasswordReset).not.toHaveBeenCalled()
@@ -212,7 +216,7 @@ describe('SignInForm', () => {
 
         expect(wrapper.findComponent(ProgressSpinner).exists()).toBe(true)
         expect(wrapper.findComponent(Button).exists()).toBe(false)
-      } catch (error) {
+      } catch {
         // Fallback test - check HTML content if component rendering fails
         mockLoading = true
         const wrapper = mountComponent()
@@ -270,21 +274,25 @@ describe('SignInForm', () => {
         onSubmit: (data: { valid: boolean; values: unknown }) => void
       }
 
-      // Mock getElementById to track focus
+      // Mock querySelector to track focus on the email input
       const mockFocus = vi.fn()
       const mockElement: Partial<HTMLElement> = { focus: mockFocus }
-      vi.spyOn(document, 'getElementById').mockReturnValue(
-        mockElement as HTMLElement
-      )
+      const originalQuerySelector = document.querySelector.bind(document)
+      const spy = vi
+        .spyOn(document, 'querySelector')
+        .mockImplementation((selector: string) => {
+          if (selector === '#comfy-org-sign-in-email')
+            return mockElement as HTMLElement
+          return originalQuerySelector(selector)
+        })
 
       // Call handleForgotPassword with no email
       await component.handleForgotPassword('', false)
 
       // Should focus email input
-      expect(document.getElementById).toHaveBeenCalledWith(
-        'comfy-org-sign-in-email'
-      )
+      expect(spy).toHaveBeenCalledWith('#comfy-org-sign-in-email')
       expect(mockFocus).toHaveBeenCalled()
+      spy.mockRestore()
     })
 
     it('does not focus email input when valid email is provided', async () => {

@@ -12,7 +12,7 @@ vi.mock('@vueuse/core', () => ({
   useEventListener: vi.fn()
 }))
 
-describe('BaseThumbnail', () => {
+describe(BaseThumbnail.__name ?? 'BaseThumbnail', () => {
   const mountThumbnail = (props = {}, slots = {}) => {
     return mount(BaseThumbnail, {
       props,

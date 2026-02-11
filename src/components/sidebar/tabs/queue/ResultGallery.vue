@@ -56,12 +56,12 @@ const emit = defineEmits<{
   (e: 'update:activeIndex', value: number): void
 }>()
 
-const props = defineProps<{
+const { allGalleryItems, activeIndex } = defineProps<{
   allGalleryItems: ResultItemImpl[]
   activeIndex: number
 }>()
 
-const hasMultiple = computed(() => props.allGalleryItems.length > 1)
+const hasMultiple = computed(() => allGalleryItems.length > 1)
 
 let maskMouseDownTarget: EventTarget | null = null
 
@@ -82,7 +82,7 @@ const onMaskMouseUp = (event: MouseEvent) => {
 }
 
 watch(
-  () => props.activeIndex,
+  () => activeIndex,
   (index) => {
     if (index !== -1) {
       galleryVisible.value = true
@@ -119,8 +119,7 @@ const handleKeyDown = (event: KeyboardEvent) => {
 
 const navigateImage = (direction: number) => {
   const newIndex =
-    (props.activeIndex + direction + props.allGalleryItems.length) %
-    props.allGalleryItems.length
+    (activeIndex + direction + allGalleryItems.length) % allGalleryItems.length
   emit('update:activeIndex', newIndex)
 }
 

@@ -48,7 +48,7 @@ vi.mock('@/utils/graphTraversalUtil', () => ({
   findSubgraphPathById: vi.fn()
 }))
 
-describe('useSubgraphNavigationStore', () => {
+describe(useSubgraphNavigationStore, () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
   })

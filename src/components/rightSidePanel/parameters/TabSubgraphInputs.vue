@@ -122,7 +122,7 @@ const advancedInputsWidgets = computed((): NodeWidgetsList => {
   return allInteriorWidgets.filter(({ node: interiorNode, widget }) => {
     return !proxyWidgetsValue.some(
       ([nodeId, widgetName]) =>
-        interiorNode.id == nodeId && widget.name === widgetName
+        String(interiorNode.id) === nodeId && widget.name === widgetName
     )
   })
 })
@@ -172,7 +172,7 @@ function setDraggableState() {
 
     for (let index = 0; index < this.getAllItems().length; index++) {
       const item = reorderedItems[index]
-      if (typeof item === 'undefined') {
+      if (item === undefined) {
         reorderedItems[index] = this.draggableItem as HTMLElement
       }
     }

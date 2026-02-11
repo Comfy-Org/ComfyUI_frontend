@@ -32,7 +32,7 @@ function createOutput(overrides: OutputOverrides = {}): ResultItemImpl {
   } as ResultItemImpl
 }
 
-describe('resolveOutputAssetItems', () => {
+describe(resolveOutputAssetItems, () => {
   beforeEach(() => {
     vi.clearAllMocks()
   })
