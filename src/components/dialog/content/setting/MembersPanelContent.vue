@@ -6,15 +6,17 @@
       <!-- Section Header -->
       <div class="flex w-full items-center gap-9">
         <div class="flex min-w-0 flex-1 items-baseline gap-2">
-          <span
-            v-if="uiConfig.showMembersList"
-            class="text-base font-semibold text-base-foreground"
-          >
+          <span class="text-base font-semibold text-base-foreground">
             <template v-if="activeView === 'active'">
               {{
-                $t('workspacePanel.members.membersCount', {
-                  count: members.length
-                })
+                isSingleSeatPlan || isPersonalWorkspace
+                  ? $t(
+                      'workspacePanel.members.memberCountSimple',
+                      isPersonalWorkspace ? 1 : members.length
+                    )
+                  : $t('workspacePanel.members.membersCount', {
+                      count: members.length
+                    })
               }}
             </template>
             <template v-else-if="permissions.canViewPendingInvites">
@@ -27,7 +29,10 @@
             </template>
           </span>
         </div>
-        <div v-if="uiConfig.showSearch" class="flex items-start gap-2">
+        <div
+          v-if="uiConfig.showSearch && !isSingleSeatPlan"
+          class="flex items-start gap-2"
+        >
           <SearchBox
             v-model="searchQuery"
             :placeholder="$t('g.search')"
@@ -45,14 +50,16 @@
           :class="
             cn(
               'grid w-full items-center py-2',
-              activeView === 'pending'
-                ? uiConfig.pendingGridCols
-                : uiConfig.headerGridCols
+              isSingleSeatPlan
+                ? 'grid-cols-1 py-0'
+                : activeView === 'pending'
+                  ? uiConfig.pendingGridCols
+                  : uiConfig.headerGridCols
             )
           "
         >
           <!-- Tab buttons in first column -->
-          <div class="flex items-center gap-2">
+          <div v-if="!isSingleSeatPlan" class="flex items-center gap-2">
             <Button
               :variant="
                 activeView === 'active' ? 'secondary' : 'muted-textonly'
@@ -101,17 +108,19 @@
             <div />
           </template>
           <template v-else>
-            <Button
-              variant="muted-textonly"
-              size="sm"
-              class="justify-end"
-              @click="toggleSort('joinDate')"
-            >
-              {{ $t('workspacePanel.members.columns.joinDate') }}
-              <i class="icon-[lucide--chevrons-up-down] size-4" />
-            </Button>
-            <!-- Empty cell for action column header (OWNER only) -->
-            <div v-if="permissions.canRemoveMembers" />
+            <template v-if="!isSingleSeatPlan">
+              <Button
+                variant="muted-textonly"
+                size="sm"
+                class="justify-end"
+                @click="toggleSort('joinDate')"
+              >
+                {{ $t('workspacePanel.members.columns.joinDate') }}
+                <i class="icon-[lucide--chevrons-up-down] size-4" />
+              </Button>
+              <!-- Empty cell for action column header (OWNER only) -->
+              <div v-if="permissions.canRemoveMembers" />
+            </template>
           </template>
         </div>
 
@@ -166,7 +175,7 @@
                 :class="
                   cn(
                     'grid w-full items-center rounded-lg p-2',
-                    uiConfig.membersGridCols,
+                    isSingleSeatPlan ? 'grid-cols-1' : uiConfig.membersGridCols,
                     index % 2 === 1 && 'bg-secondary-background/50'
                   )
                 "
@@ -206,14 +215,14 @@
                 </div>
                 <!-- Join date -->
                 <span
-                  v-if="uiConfig.showDateColumn"
+                  v-if="uiConfig.showDateColumn && !isSingleSeatPlan"
                   class="text-sm text-muted-foreground text-right"
                 >
                   {{ formatDate(member.joinDate) }}
                 </span>
                 <!-- Remove member action (OWNER only, can't remove yourself) -->
                 <div
-                  v-if="permissions.canRemoveMembers"
+                  v-if="permissions.canRemoveMembers && !isSingleSeatPlan"
                   class="flex items-center justify-end"
                 >
                   <Button
@@ -237,8 +246,30 @@
             </template>
           </template>
 
+          <!-- Upsell Banner -->
+          <div
+            v-if="isSingleSeatPlan"
+            class="flex items-center justify-between rounded-xl border border-border-default px-4 py-3 mt-4"
+          >
+            <p class="m-0 text-sm text-muted-foreground">
+              {{
+                isActiveSubscription
+                  ? $t('workspacePanel.members.upsellBannerUpgrade')
+                  : $t('workspacePanel.members.upsellBannerSubscribe')
+              }}
+            </p>
+            <Button
+              variant="secondary"
+              size="md"
+              class="shrink-0 ml-4"
+              @click="showSubscriptionDialog()"
+            >
+              {{ $t('workspacePanel.members.viewPlans') }}
+            </Button>
+          </div>
+
           <!-- Pending Invites -->
-          <template v-else>
+          <template v-if="activeView === 'pending'">
             <div
               v-for="(invite, index) in filteredPendingInvites"
               :key="invite.id"
@@ -342,6 +373,11 @@ import SearchBox from '@/components/common/SearchBox.vue'
 import UserAvatar from '@/components/common/UserAvatar.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import { useBillingContext } from '@/composables/billing/useBillingContext'
+import {
+  getTierFeatures,
+  TIER_TO_KEY
+} from '@/platform/cloud/subscription/constants/tierPricing'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import type {
   PendingInvite,
@@ -367,6 +403,16 @@ const {
 } = storeToRefs(workspaceStore)
 const { copyInviteLink } = workspaceStore
 const { permissions, uiConfig } = useWorkspaceUI()
+const { isActiveSubscription, subscription, showSubscriptionDialog } =
+  useBillingContext()
+
+const isSingleSeatPlan = computed(() => {
+  if (isPersonalWorkspace.value) return false
+  if (!isActiveSubscription.value) return true
+  const tier = subscription.value?.tier
+  if (!tier) return true
+  return getTierFeatures(TIER_TO_KEY[tier]).maxMembers <= 1
+})
 
 const searchQuery = ref('')
 const activeView = ref<'active' | 'pending'>('active')

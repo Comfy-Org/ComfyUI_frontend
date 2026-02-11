@@ -88,10 +88,13 @@
                 </div>
                 <div class="flex items-baseline gap-1 font-inter font-semibold">
                   <span class="text-2xl">${{ tierPrice }}</span>
-                  <span class="text-base"
-                    >{{ $t('subscription.perMonth') }} /
-                    {{ $t('subscription.member') }}</span
-                  >
+                  <span class="text-base">
+                    {{
+                      isInPersonalWorkspace
+                        ? $t('subscription.usdPerMonth')
+                        : $t('subscription.usdPerMonthPerMember')
+                    }}
+                  </span>
                 </div>
                 <div
                   v-if="isActiveSubscription"

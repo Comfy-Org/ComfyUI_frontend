@@ -55,8 +55,12 @@
           "
           variant="secondary"
           size="lg"
-          :disabled="isInviteLimitReached"
-          :class="isInviteLimitReached && 'opacity-50 cursor-not-allowed'"
+          :disabled="!isSingleSeatPlan && isInviteLimitReached"
+          :class="
+            !isSingleSeatPlan &&
+            isInviteLimitReached &&
+            'opacity-50 cursor-not-allowed'
+          "
           :aria-label="$t('workspacePanel.inviteMember')"
           @click="handleInviteMember"
         >
@@ -129,6 +133,11 @@ import WorkspaceProfilePic from '@/components/common/WorkspaceProfilePic.vue'
 import MembersPanelContent from '@/components/dialog/content/setting/MembersPanelContent.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { buttonVariants } from '@/components/ui/button/button.variants'
+import { useBillingContext } from '@/composables/billing/useBillingContext'
+import {
+  getTierFeatures,
+  TIER_TO_KEY
+} from '@/platform/cloud/subscription/constants/tierPricing'
 import SubscriptionPanelContentWorkspace from '@/platform/cloud/subscription/components/SubscriptionPanelContentWorkspace.vue'
 import { cn } from '@/utils/tailwindUtil'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
@@ -144,8 +153,17 @@ const {
   showLeaveWorkspaceDialog,
   showDeleteWorkspaceDialog,
   showInviteMemberDialog,
+  showInviteMemberUpsellDialog,
   showEditWorkspaceDialog
 } = useDialogService()
+const { isActiveSubscription, subscription } = useBillingContext()
+
+const isSingleSeatPlan = computed(() => {
+  if (!isActiveSubscription.value) return true
+  const tier = subscription.value?.tier
+  if (!tier) return true
+  return getTierFeatures(TIER_TO_KEY[tier]).maxMembers <= 1
+})
 const workspaceStore = useTeamWorkspaceStore()
 const {
   workspaceName,
@@ -187,11 +205,16 @@ const deleteTooltip = computed(() => {
 })
 
 const inviteTooltip = computed(() => {
+  if (isSingleSeatPlan.value) return null
   if (!isInviteLimitReached.value) return null
   return t('workspacePanel.inviteLimitReached')
 })
 
 function handleInviteMember() {
+  if (isSingleSeatPlan.value) {
+    showInviteMemberUpsellDialog()
+    return
+  }
   if (isInviteLimitReached.value) return
   showInviteMemberDialog()
 }
