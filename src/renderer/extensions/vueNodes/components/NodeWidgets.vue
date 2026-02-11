@@ -154,7 +154,10 @@ const { getWidgetTooltip, createTooltipConfig } = useNodeTooltips(
 const widgetValueStore = useWidgetValueStore()
 
 interface ProcessedWidget {
+  advanced: boolean
+  hasLayoutSize: boolean
   hasError: boolean
+  hidden: boolean
   name: string
   simplified: SimplifiedWidget
   tooltipConfig: TooltipOptions
@@ -163,9 +166,6 @@ interface ProcessedWidget {
   value: WidgetValue
   vueComponent: Component
   slotMetadata?: WidgetSlotMetadata
-  hidden: boolean
-  advanced: boolean
-  hasLayoutSize: boolean
 }
 
 const processedWidgets = computed((): ProcessedWidget[] => {
@@ -230,10 +230,13 @@ const processedWidgets = computed((): ProcessedWidget[] => {
     const tooltipConfig = createTooltipConfig(tooltipText)
 
     result.push({
+      advanced: widget.options?.advanced ?? false,
+      hasLayoutSize: widget.hasLayoutSize ?? false,
       hasError:
         nodeErrors?.errors?.some(
           (error) => error.extra_info?.input_name === widget.name
         ) ?? false,
+      hidden: widget.options?.hidden ?? false,
       name: widget.name,
       type: widget.type,
       vueComponent,
@@ -241,10 +244,7 @@ const processedWidgets = computed((): ProcessedWidget[] => {
       value,
       updateHandler,
       tooltipConfig,
-      slotMetadata,
-      hidden: widget.options?.hidden ?? false,
-      advanced: widget.options?.advanced ?? false,
-      hasLayoutSize: widget.hasLayoutSize ?? false
+      slotMetadata
     })
   }
 
