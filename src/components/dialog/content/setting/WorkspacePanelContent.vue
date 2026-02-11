@@ -162,7 +162,9 @@ const isSingleSeatPlan = computed(() => {
   if (!isActiveSubscription.value) return true
   const tier = subscription.value?.tier
   if (!tier) return true
-  return getTierFeatures(TIER_TO_KEY[tier]).maxMembers <= 1
+  const tierKey = TIER_TO_KEY[tier]
+  if (!tierKey) return true
+  return getTierFeatures(tierKey).maxMembers <= 1
 })
 const workspaceStore = useTeamWorkspaceStore()
 const {

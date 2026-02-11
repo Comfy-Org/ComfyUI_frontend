@@ -258,12 +258,13 @@
                   : $t('workspacePanel.members.upsellBannerSubscribe')
               }}
             </p>
-            <div
+            <Button
+              variant="muted-textonly"
               class="cursor-pointer underline text-sm"
               @click="showSubscriptionDialog()"
             >
               {{ $t('workspacePanel.members.viewPlans') }}
-            </div>
+            </Button>
           </div>
 
           <!-- Pending Invites -->
@@ -409,7 +410,9 @@ const isSingleSeatPlan = computed(() => {
   if (!isActiveSubscription.value) return true
   const tier = subscription.value?.tier
   if (!tier) return true
-  return getTierFeatures(TIER_TO_KEY[tier]).maxMembers <= 1
+  const tierKey = TIER_TO_KEY[tier]
+  if (!tierKey) return true
+  return getTierFeatures(tierKey).maxMembers <= 1
 })
 
 const searchQuery = ref('')
