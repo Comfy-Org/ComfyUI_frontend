@@ -70,6 +70,8 @@ const { t } = useI18n()
  * Uses execution ID mapping to match graph node IDs.
  */
 const nodeHasError = computed(() => {
+  // Only show error indicator in workflow overview (nothing selected on canvas)
+  if (canvasStore.selectedItems.length > 0) return false
   if (!targetNode.value) return false
   const nodeId = targetNode.value.id
 
@@ -91,7 +93,7 @@ const nodeHasError = computed(() => {
   return false
 })
 
-/** Switches the right side panel to the Errors tab. */
+/** Switches the right side panel to the global Errors tab. */
 function navigateToErrorTab() {
   rightSidePanelStore.openPanel('errors')
 }
