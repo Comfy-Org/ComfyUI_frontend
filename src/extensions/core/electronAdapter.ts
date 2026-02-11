@@ -54,10 +54,13 @@ import { electronAPI as getElectronAPI } from '@/utils/envUtil'
         experimental: true,
         defaultValue: 'default',
         options: ['default', 'custom'],
-        onChange: (newValue: unknown, oldValue?: unknown) => {
+        onChange: (
+          newValue: 'default' | 'custom',
+          oldValue?: 'default' | 'custom'
+        ) => {
           if (!oldValue) return
 
-          electronAPI.Config.setWindowStyle(newValue as 'default' | 'custom')
+          electronAPI.Config.setWindowStyle(newValue)
         }
       },
       {
