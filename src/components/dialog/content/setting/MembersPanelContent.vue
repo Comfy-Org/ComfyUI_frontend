@@ -12,7 +12,9 @@
                 isSingleSeatPlan || isPersonalWorkspace
                   ? $t(
                       'workspacePanel.members.memberCountSimple',
-                      isPersonalWorkspace ? 1 : members.length
+                      {
+                        count: isPersonalWorkspace ? 1 : members.length
+                      }
                     )
                   : $t('workspacePanel.members.membersCount', {
                       count: members.length
