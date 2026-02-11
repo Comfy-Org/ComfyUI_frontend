@@ -18,17 +18,35 @@
     <div class="flex justify-end gap-4">
       <div
         v-if="type === 'overwriteBlueprint'"
-        class="flex justify-start gap-4"
+        class="flex flex-col justify-start gap-1"
       >
-        <Checkbox
-          v-model="doNotAskAgain"
-          class="flex justify-start gap-4"
-          input-id="doNotAskAgain"
-          binary
-        />
-        <label for="doNotAskAgain" severity="secondary">{{
-          t('missingModelsDialog.doNotAskAgain')
-        }}</label>
+        <div class="flex gap-4">
+          <input
+            id="doNotAskAgain"
+            v-model="doNotAskAgain"
+            type="checkbox"
+            class="h-4 w-4 cursor-pointer"
+          />
+          <label for="doNotAskAgain">{{
+            t('missingModelsDialog.doNotAskAgain')
+          }}</label>
+        </div>
+        <i18n-t
+          v-if="doNotAskAgain"
+          keypath="missingModelsDialog.reEnableInSettings"
+          tag="span"
+          class="text-sm text-muted-foreground ml-8"
+        >
+          <template #link>
+            <Button
+              variant="textonly"
+              class="underline cursor-pointer p-0 text-sm text-muted-foreground hover:bg-transparent"
+              @click="openBlueprintOverwriteSetting"
+            >
+              {{ t('missingModelsDialog.reEnableInSettingsLink') }}
+            </Button>
+          </template>
+        </i18n-t>
       </div>
 
       <Button
@@ -92,13 +110,13 @@
 </template>
 
 <script setup lang="ts">
-import Checkbox from 'primevue/checkbox'
 import Message from 'primevue/message'
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { useDialogService } from '@/services/dialogService'
 import type { ConfirmationDialogType } from '@/services/dialogService'
 import { useDialogStore } from '@/stores/dialogStore'
 
@@ -113,6 +131,14 @@ const props = defineProps<{
 const { t } = useI18n()
 
 const onCancel = () => useDialogStore().closeDialog()
+
+function openBlueprintOverwriteSetting() {
+  useDialogStore().closeDialog()
+  void useDialogService().showSettingsDialog(
+    undefined,
+    'Comfy.Workflow.WarnBlueprintOverwrite'
+  )
+}
 
 const doNotAskAgain = ref(false)
 

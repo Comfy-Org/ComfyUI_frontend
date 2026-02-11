@@ -104,6 +104,10 @@
   "Comfy_Graph_CtrlShiftZoom": {
     "name": "فعال‌سازی میانبر بزرگ‌نمایی سریع (Ctrl + Shift + کشیدن)"
   },
+  "Comfy_Graph_DeduplicateSubgraphNodeIds": {
+    "name": "حذف شناسه‌های تکراری node در زیرگراف",
+    "tooltip": "شناسه‌های تکراری node در زیرگراف‌ها هنگام بارگذاری workflow به‌صورت خودکار دوباره اختصاص داده می‌شوند."
+  },
   "Comfy_Graph_LinkMarkers": {
     "name": "نشانگرهای میانه‌ی پیوند",
     "options": {

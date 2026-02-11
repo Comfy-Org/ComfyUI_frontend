@@ -61,6 +61,7 @@ import { useExecutionStore } from '@/stores/executionStore'
 import { useExtensionStore } from '@/stores/extensionStore'
 import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
 import { useNodeOutputStore } from '@/stores/imagePreviewStore'
+import { useJobPreviewStore } from '@/stores/jobPreviewStore'
 import { KeyComboImpl } from '@/platform/keybindings/keyCombo'
 import { useKeybindingStore } from '@/platform/keybindings/keybindingStore'
 import { useModelStore } from '@/stores/modelStore'
@@ -86,6 +87,10 @@ import {
   fixLinkInputSlots,
   isImageNode
 } from '@/utils/litegraphUtil'
+import {
+  createSharedObjectUrl,
+  releaseSharedObjectUrl
+} from '@/utils/objectUrlUtil'
 import {
   findLegacyRerouteNodes,
   noNativeReroutes
@@ -701,12 +706,13 @@ export class ComfyApp {
 
     api.addEventListener('b_preview_with_metadata', ({ detail }) => {
       // Enhanced preview with explicit node context
-      const { blob, displayNodeId } = detail
+      const { blob, displayNodeId, promptId } = detail
       const { setNodePreviewsByExecutionId, revokePreviewsByExecutionId } =
         useNodeOutputStore()
+      const blobUrl = createSharedObjectUrl(blob)
+      useJobPreviewStore().setPreviewUrl(promptId, blobUrl)
       // Ensure clean up if `executing` event is missed.
       revokePreviewsByExecutionId(displayNodeId)
-      const blobUrl = URL.createObjectURL(blob)
       // Preview cleanup is handled in progress_state event to support multiple concurrent previews
       const nodeParents = displayNodeId.split(':')
       for (let i = 1; i <= nodeParents.length; i++) {
@@ -714,6 +720,7 @@ export class ComfyApp {
           blobUrl
         ])
       }
+      releaseSharedObjectUrl(blobUrl)
     })
 
     api.init()
@@ -946,20 +953,25 @@ export class ComfyApp {
   }
 
   async getNodeDefs(): Promise<Record<string, ComfyNodeDefV1>> {
-    const translateNodeDef = (def: ComfyNodeDefV1): ComfyNodeDefV1 => ({
-      ...def,
-      display_name: st(
-        `nodeDefs.${def.name}.display_name`,
-        def.display_name ?? def.name
-      ),
-      description: def.description
-        ? st(`nodeDefs.${def.name}.description`, def.description)
-        : '',
-      category: def.category
-        .split('/')
-        .map((category: string) => st(`nodeCategories.${category}`, category))
-        .join('/')
-    })
+    const translateNodeDef = (def: ComfyNodeDefV1): ComfyNodeDefV1 => {
+      // Use object info display_name as fallback before using name
+      const objectInfoDisplayName = def.display_name || def.name
+
+      return {
+        ...def,
+        display_name: st(
+          `nodeDefs.${def.name}.display_name`,
+          objectInfoDisplayName
+        ),
+        description: def.description
+          ? st(`nodeDefs.${def.name}.description`, def.description)
+          : '',
+        category: def.category
+          .split('/')
+          .map((category: string) => st(`nodeCategories.${category}`, category))
+          .join('/')
+      }
+    }
 
     return _.mapValues(await api.getNodeDefs(), (def) => translateNodeDef(def))
   }
@@ -1382,11 +1394,14 @@ export class ComfyApp {
           'Comfy.Execution.PreviewMethod'
         )
 
+        const isPartialExecution = !!queueNodeIds?.length
         for (let i = 0; i < batchCount; i++) {
           // Allow widgets to run callbacks before a prompt has been queued
           // e.g. random seed before every gen
           forEachNode(this.rootGraph, (node) => {
-            for (const widget of node.widgets ?? []) widget.beforeQueued?.()
+            for (const widget of node.widgets ?? []) {
+              widget.beforeQueued?.({ isPartialExecution })
+            }
           })
 
           const p = await this.graphToPrompt(this.rootGraph)
@@ -1442,7 +1457,9 @@ export class ComfyApp {
 
           // Allow widgets to run callbacks after a prompt has been queued
           // e.g. random seed after every gen
-          executeWidgetsCallback(queuedNodes, 'afterQueued')
+          executeWidgetsCallback(queuedNodes, 'afterQueued', {
+            isPartialExecution
+          })
           this.canvas.draw(true, true)
           await this.ui.queue.update()
         }

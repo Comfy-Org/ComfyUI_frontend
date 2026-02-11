@@ -14,7 +14,8 @@ import type {
 } from '@/lib/litegraph/src/types/serialisation'
 import type {
   IBaseWidget,
-  IComboWidget
+  IComboWidget,
+  WidgetCallbackOptions
 } from '@/lib/litegraph/src/types/widgets'
 import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 
@@ -83,11 +84,12 @@ export const getItemsColorOption = (items: unknown[]): ColorOption | null => {
 
 export function executeWidgetsCallback(
   nodes: LGraphNode[],
-  callbackName: 'onRemove' | 'beforeQueued' | 'afterQueued'
+  callbackName: 'onRemove' | 'beforeQueued' | 'afterQueued',
+  options?: WidgetCallbackOptions
 ) {
   for (const node of nodes) {
     for (const widget of node.widgets ?? []) {
-      widget[callbackName]?.()
+      widget[callbackName]?.(options)
     }
   }
 }

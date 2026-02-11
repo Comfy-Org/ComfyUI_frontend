@@ -5033,6 +5033,46 @@
       }
     }
   },
+  "KlingFirstLastFrameNode": {
+    "description": "Gere vídeos com Kling V3 usando o primeiro e o último frame.",
+    "display_name": "Kling 3.0 Primeiro-Último-Frame para Vídeo",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controlar após gerar"
+      },
+      "duration": {
+        "name": "duração"
+      },
+      "end_frame": {
+        "name": "último_frame"
+      },
+      "first_frame": {
+        "name": "primeiro_frame"
+      },
+      "generate_audio": {
+        "name": "gerar_áudio"
+      },
+      "model": {
+        "name": "modelo",
+        "tooltip": "Configurações de modelo e geração."
+      },
+      "model_resolution": {
+        "name": "resolução"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "seed": {
+        "name": "semente",
+        "tooltip": "A semente controla se o nó deve ser executado novamente; os resultados são não determinísticos independentemente da semente."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "KlingImage2VideoNode": {
     "display_name": "Kling Imagem (Primeiro Quadro) para Vídeo",
     "inputs": {
@@ -5085,6 +5125,9 @@
       "aspect_ratio": {
         "name": "aspect_ratio"
       },
+      "control_after_generate": {
+        "name": "controlar após gerar"
+      },
       "human_fidelity": {
         "name": "human_fidelity",
         "tooltip": "Similaridade de referência do sujeito"
@@ -5113,6 +5156,10 @@
       "prompt": {
         "name": "prompt",
         "tooltip": "Prompt de texto positivo"
+      },
+      "seed": {
+        "name": "semente",
+        "tooltip": "A semente controla se o nó deve ser executado novamente; os resultados são não determinísticos independentemente da semente."
       }
     },
     "outputs": {
@@ -5245,6 +5292,9 @@
     "description": "Edite um vídeo existente com o modelo mais recente da Kling.",
     "display_name": "Kling Omni Editar Vídeo (Pro)",
     "inputs": {
+      "control_after_generate": {
+        "name": "controlar após gerar"
+      },
       "keep_original_sound": {
         "name": "manter_som_original"
       },
@@ -5262,6 +5312,10 @@
       "resolution": {
         "name": "resolução"
       },
+      "seed": {
+        "name": "semente",
+        "tooltip": "A semente controla se o nó deve ser executado novamente; os resultados são não determinísticos independentemente da semente."
+      },
       "video": {
         "name": "vídeo",
         "tooltip": "Vídeo para edição. O comprimento do vídeo de saída será o mesmo."
@@ -5277,6 +5331,9 @@
     "description": "Use um quadro inicial, um quadro final opcional ou imagens de referência com o modelo mais recente da Kling.",
     "display_name": "Kling Omni Quadro Inicial-Final para Vídeo (Pro)",
     "inputs": {
+      "control_after_generate": {
+        "name": "controlar após gerar"
+      },
       "duration": {
         "name": "duration"
       },
@@ -5286,6 +5343,10 @@
       },
       "first_frame": {
         "name": "first_frame"
+      },
+      "generate_audio": {
+        "name": "gerar_áudio",
+        "tooltip": "Gerar áudio para o vídeo. Suportado apenas para kling-v3-omni."
       },
       "model_name": {
         "name": "model_name"
@@ -5300,6 +5361,14 @@
       },
       "resolution": {
         "name": "resolution"
+      },
+      "seed": {
+        "name": "semente",
+        "tooltip": "A semente controla se o nó deve ser executado novamente; os resultados são não determinísticos independentemente da semente."
+      },
+      "storyboards": {
+        "name": "storyboards",
+        "tooltip": "Gere uma série de segmentos de vídeo com prompts e durações individuais. Suportado apenas para kling-v3-omni."
       }
     },
     "outputs": {
@@ -5315,6 +5384,9 @@
       "aspect_ratio": {
         "name": "aspect_ratio"
       },
+      "control_after_generate": {
+        "name": "controlar após gerar"
+      },
       "model_name": {
         "name": "model_name"
       },
@@ -5328,6 +5400,14 @@
       },
       "resolution": {
         "name": "resolution"
+      },
+      "seed": {
+        "name": "semente",
+        "tooltip": "A semente controla se o nó deve ser executado novamente; os resultados são não determinísticos independentemente da semente."
+      },
+      "series_amount": {
+        "name": "quantidade_de_séries",
+        "tooltip": "Gere uma série de imagens. Não suportado para kling-image-o1."
       }
     },
     "outputs": {
@@ -5343,8 +5423,15 @@
       "aspect_ratio": {
         "name": "aspect_ratio"
       },
+      "control_after_generate": {
+        "name": "controlar após gerar"
+      },
       "duration": {
         "name": "duration"
+      },
+      "generate_audio": {
+        "name": "gerar_áudio",
+        "tooltip": "Gerar áudio para o vídeo. Suportado apenas para kling-v3-omni."
       },
       "model_name": {
         "name": "model_name"
@@ -5359,6 +5446,14 @@
       },
       "resolution": {
         "name": "resolution"
+      },
+      "seed": {
+        "name": "semente",
+        "tooltip": "A semente controla se o nó deve ser executado novamente; os resultados são não determinísticos independentemente da semente."
+      },
+      "storyboards": {
+        "name": "storyboards",
+        "tooltip": "Gere uma série de segmentos de vídeo com prompts e durações individuais. Suportado apenas para kling-v3-omni."
       }
     },
     "outputs": {
@@ -5374,8 +5469,14 @@
       "aspect_ratio": {
         "name": "aspect_ratio"
       },
+      "control_after_generate": {
+        "name": "controlar após gerar"
+      },
       "duration": {
         "name": "duration"
+      },
+      "generate_audio": {
+        "name": "gerar_áudio"
       },
       "model_name": {
         "name": "model_name"
@@ -5386,6 +5487,14 @@
       },
       "resolution": {
         "name": "resolution"
+      },
+      "seed": {
+        "name": "semente",
+        "tooltip": "A semente controla se o nó deve ser executado novamente; os resultados são não determinísticos independentemente da semente."
+      },
+      "storyboards": {
+        "name": "storyboards",
+        "tooltip": "Gere uma série de segmentos de vídeo com prompts e durações individuais. Ignorado para o modelo o1."
       }
     },
     "outputs": {
@@ -5400,6 +5509,9 @@
     "inputs": {
       "aspect_ratio": {
         "name": "aspect_ratio"
+      },
+      "control_after_generate": {
+        "name": "controlar após gerar"
       },
       "duration": {
         "name": "duration"
@@ -5424,6 +5536,10 @@
       },
       "resolution": {
         "name": "resolution"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "O seed controla se o nó deve ser executado novamente; os resultados são não determinísticos independentemente do seed."
       }
     },
     "outputs": {
@@ -5605,6 +5721,54 @@
       },
       "2": {
         "name": "duration",
+        "tooltip": null
+      }
+    }
+  },
+  "KlingVideoNode": {
+    "description": "Gere vídeos com Kling V3. Suporta texto-para-vídeo e imagem-para-vídeo com storyboard opcional, multi-prompt e geração de áudio.",
+    "display_name": "Kling 3.0 Vídeo",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controlar após gerar"
+      },
+      "generate_audio": {
+        "name": "gerar áudio"
+      },
+      "model": {
+        "name": "modelo",
+        "tooltip": "Configurações de modelo e geração."
+      },
+      "model_aspect_ratio": {
+        "name": "proporção"
+      },
+      "model_resolution": {
+        "name": "resolução"
+      },
+      "multi_shot": {
+        "name": "multi_shot",
+        "tooltip": "Gere uma série de segmentos de vídeo com prompts e durações individuais."
+      },
+      "multi_shot_duration": {
+        "name": "duração"
+      },
+      "multi_shot_negative_prompt": {
+        "name": "prompt_negativo"
+      },
+      "multi_shot_prompt": {
+        "name": "prompt"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "O seed controla se o nó deve ser executado novamente; os resultados são não determinísticos independentemente do seed."
+      },
+      "start_frame": {
+        "name": "quadro inicial",
+        "tooltip": "Quadro inicial opcional. Quando conectado, alterna para o modo imagem-para-vídeo."
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -6716,6 +6880,10 @@
   "LoraModelLoader": {
     "display_name": "Carregar Modelo LoRA",
     "inputs": {
+      "bypass": {
+        "name": "bypass",
+        "tooltip": "Quando ativado, aplica o LoRA no modo bypass sem modificar os pesos do modelo base. Útil para treinamento e quando os pesos do modelo são descarregados."
+      },
       "lora": {
         "name": "lora",
         "tooltip": "O modelo LoRA a ser aplicado ao modelo de difusão."
@@ -14339,6 +14507,10 @@
         "name": "bypass_mode",
         "tooltip": "Ativar modo bypass para treinamento. Quando ativado, os adaptadores são aplicados via hooks de encaminhamento em vez de modificação de pesos. Útil para modelos quantizados onde os pesos não podem ser modificados diretamente."
       },
+      "checkpoint_depth": {
+        "name": "checkpoint_depth",
+        "tooltip": "Nível de profundidade para checkpointing de gradiente."
+      },
       "control_after_generate": {
         "name": "controlar após gerar"
       },
@@ -14373,6 +14545,10 @@
       "model": {
         "name": "modelo",
         "tooltip": "O modelo no qual treinar a LoRA."
+      },
+      "offloading": {
+        "name": "offloading",
+        "tooltip": "Nível de profundidade para checkpointing de gradiente."
       },
       "optimizer": {
         "name": "otimizador",
@@ -15276,6 +15452,31 @@
       "seed": {
         "name": "seed",
         "tooltip": "Semente para geração de vídeo (0 para aleatório)"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Video Slice": {
+    "display_name": "Corte de Vídeo",
+    "inputs": {
+      "duration": {
+        "name": "duração",
+        "tooltip": "Duração em segundos, ou 0 para duração ilimitada"
+      },
+      "start_time": {
+        "name": "início",
+        "tooltip": "Tempo de início em segundos"
+      },
+      "strict_duration": {
+        "name": "duração_estrita",
+        "tooltip": "Se Verdadeiro, quando a duração especificada não for possível, um erro será exibido."
+      },
+      "video": {
+        "name": "vídeo"
       }
     },
     "outputs": {

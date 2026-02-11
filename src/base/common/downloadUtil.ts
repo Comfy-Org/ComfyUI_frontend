@@ -75,14 +75,57 @@ const extractFilenameFromUrl = (url: string): string | null => {
   }
 }
 
+/**
+ * Extract filename from Content-Disposition header
+ * Handles both simple format: attachment; filename="name.png"
+ * And RFC 5987 format: attachment; filename="fallback.png"; filename*=UTF-8''encoded%20name.png
+ * @param header - The Content-Disposition header value
+ * @returns The extracted filename or null if not found
+ */
+export function extractFilenameFromContentDisposition(
+  header: string | null
+): string | null {
+  if (!header) return null
+
+  // Try RFC 5987 extended format first (filename*=UTF-8''...)
+  const extendedMatch = header.match(/filename\*=UTF-8''([^;]+)/i)
+  if (extendedMatch?.[1]) {
+    try {
+      return decodeURIComponent(extendedMatch[1])
+    } catch {
+      // Fall through to simple format
+    }
+  }
+
+  // Try simple quoted format: filename="..."
+  const quotedMatch = header.match(/filename="([^"]+)"/i)
+  if (quotedMatch?.[1]) {
+    return quotedMatch[1]
+  }
+
+  // Try unquoted format: filename=...
+  const unquotedMatch = header.match(/filename=([^;\s]+)/i)
+  if (unquotedMatch?.[1]) {
+    return unquotedMatch[1]
+  }
+
+  return null
+}
+
 const downloadViaBlobFetch = async (
   href: string,
-  filename: string
+  fallbackFilename: string
 ): Promise<void> => {
   const response = await fetch(href)
   if (!response.ok) {
     throw new Error(`Failed to fetch ${href}: ${response.status}`)
   }
+
+  // Try to get filename from Content-Disposition header (set by backend)
+  const contentDisposition = response.headers.get('Content-Disposition')
+  const headerFilename =
+    extractFilenameFromContentDisposition(contentDisposition)
+
   const blob = await response.blob()
-  downloadBlob(filename, blob)
+  downloadBlob(headerFilename ?? fallbackFilename, blob)
 }
