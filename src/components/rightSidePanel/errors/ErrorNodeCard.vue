@@ -9,6 +9,7 @@
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
+import { cn } from '@/utils/tailwindUtil'
 
 import type { ErrorCardData } from './types'
 
@@ -85,10 +86,10 @@ const { t } = useI18n()
         <!-- Traceback / Details -->
         <div
           v-if="error.details"
-          :class="[
+          :class="cn(
             'rounded-lg bg-secondary-background-hover p-2.5 overflow-y-auto border border-interface-stroke/30',
              error.isRuntimeError ? 'max-h-[10lh]' : 'max-h-[6lh]'
-          ]"
+          )"
         >
           <p class="m-0 text-[11px] text-muted-foreground break-words whitespace-pre-wrap font-mono leading-relaxed">
             {{ error.details }}

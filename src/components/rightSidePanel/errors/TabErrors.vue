@@ -182,9 +182,7 @@ const filteredGroups = computed<ErrorGroup[]>(() => {
     .filter((group) => group.cards.length > 0)
 })
 
-async function searcher(query: string) {
-  searchQuery.value = query
-}
+
 
 const collapseState = reactive<Record<string, boolean>>({})
 
@@ -241,7 +239,7 @@ async function locateNode(nodeId: string) {
   if (!graphNode) return
 
   await navigateToGraph(graphNode.graph as LGraph)
-  canvasStore.canvas!.animateToBounds(graphNode.boundingRect)
+  canvasStore.canvas?.animateToBounds(graphNode.boundingRect)
 }
 
 /**
@@ -272,7 +270,7 @@ function openGitHubIssues() {
     button_id: 'error_tab_github_issues_clicked'
   })
   const url = `https://github.com/${REPO_OWNER}/${REPO_NAME}/issues`
-  window.open(url, '_blank')
+  window.open(url, '_blank', 'noopener,noreferrer')
 }
 
 /**
@@ -292,7 +290,7 @@ async function contactSupport() {
   <div class="flex flex-col h-full min-w-0">
     <!-- Search bar -->
     <div class="px-4 pt-1 pb-4 flex gap-2 border-b border-interface-stroke shrink-0 min-w-0">
-      <FormSearchInput v-model="searchQuery" :searcher />
+      <FormSearchInput v-model="searchQuery" />
     </div>
 
     <!-- Scrollable content -->
@@ -358,15 +356,15 @@ async function contactSupport() {
     <div class="shrink-0 border-t border-interface-stroke px-4 py-4 min-w-0">
       <p class="m-0 text-sm text-muted-foreground leading-tight break-words">
         {{ t('rightSidePanel.errorHelpPrefix') }}
-        <a
-          class="underline cursor-pointer hover:text-base-foreground transition-colors whitespace-nowrap"
+        <button
+          class="inline underline cursor-pointer hover:text-base-foreground transition-colors whitespace-nowrap bg-transparent border-none p-0 text-inherit text-sm"
           @click="openGitHubIssues"
-        >{{ t('rightSidePanel.errorHelpGithub') }}</a>
+        >{{ t('rightSidePanel.errorHelpGithub') }}</button>
         {{ t('rightSidePanel.errorHelpOr') }}
-        <a
-          class="underline cursor-pointer hover:text-base-foreground transition-colors whitespace-nowrap"
+        <button
+          class="inline underline cursor-pointer hover:text-base-foreground transition-colors whitespace-nowrap bg-transparent border-none p-0 text-inherit text-sm"
           @click="contactSupport"
-        >{{ t('rightSidePanel.errorHelpSupport') }}</a>.
+        >{{ t('rightSidePanel.errorHelpSupport') }}</button>.
       </p>
     </div>
   </div>

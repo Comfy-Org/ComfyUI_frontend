@@ -1468,7 +1468,7 @@ export class ComfyApp {
                   executionStore.lastPromptError = {
                     type: respError.type,
                     message: respError.message,
-                    details: respError.details || ""
+                    details: respError.details ?? ""
                   }
                 } else if (typeof respError === 'string') {
                   executionStore.lastPromptError = {

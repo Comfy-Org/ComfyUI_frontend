@@ -33,7 +33,7 @@ vi.mock('@/services/litegraphService', () => ({
 }))
 
 describe('TabErrors.vue', () => {
-  let i18n: any
+  let i18n: ReturnType<typeof createI18n>
 
   beforeEach(() => {
     i18n = createI18n({
@@ -59,7 +59,7 @@ describe('TabErrors.vue', () => {
     })
   })
 
-  const mountComponent = (initialState = {}) => {
+  function mountComponent(initialState = {}) {
     return mount(TabErrors, {
       global: {
         plugins: [
@@ -111,7 +111,7 @@ describe('TabErrors.vue', () => {
 
   it('renders node validation errors grouped by class_type', async () => {
     const { getNodeByExecutionId } = await import('@/utils/graphTraversalUtil')
-    ;(getNodeByExecutionId as any).mockReturnValue({ title: 'CLIP Text Encode' })
+    vi.mocked(getNodeByExecutionId).mockReturnValue({ title: 'CLIP Text Encode' } as any)
 
     const wrapper = mountComponent({
       execution: {
@@ -132,7 +132,7 @@ describe('TabErrors.vue', () => {
 
   it('renders runtime execution errors from WebSocket', async () => {
     const { getNodeByExecutionId } = await import('@/utils/graphTraversalUtil')
-    ;(getNodeByExecutionId as any).mockReturnValue({ title: 'KSampler' })
+    vi.mocked(getNodeByExecutionId).mockReturnValue({ title: 'KSampler' } as any)
 
     const wrapper = mountComponent({
       execution: {
@@ -177,7 +177,7 @@ describe('TabErrors.vue', () => {
   it('calls copyToClipboard when copy button is clicked', async () => {
     const { useCopyToClipboard } = await import('@/composables/useCopyToClipboard')
     const mockCopy = vi.fn()
-    ;(useCopyToClipboard as any).mockReturnValue({ copyToClipboard: mockCopy })
+    vi.mocked(useCopyToClipboard).mockReturnValue({ copyToClipboard: mockCopy })
     
     const wrapper = mountComponent({
       execution: {
