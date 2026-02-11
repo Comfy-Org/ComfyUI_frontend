@@ -7,16 +7,16 @@ catalog:
   '@comfyorg/comfyui-electron-types': 0.6.2
   '@eslint/js': ^9.39.1
   '@iconify-json/lucide': ^1.1.178
-  '@iconify/json': ^2.2.380
+  '@iconify/json': ^2.2.438
   '@iconify/tailwind4': ^1.2.0
-  '@intlify/eslint-plugin-vue-i18n': ^4.1.0
+  '@intlify/eslint-plugin-vue-i18n': ^4.1.1
   '@lobehub/i18n-cli': ^1.25.1
   '@nx/eslint': 22.2.6
   '@nx/playwright': 22.2.6
   '@nx/storybook': 22.2.4
   '@nx/vite': 22.2.6
   '@pinia/testing': ^1.0.3
-  '@playwright/test': ^1.58.1
+  '@playwright/test': ^1.58.2
   '@primeuix/forms': 0.0.2
   '@primeuix/styled': 0.3.2
   '@primeuix/utils': ^0.3.2
@@ -35,17 +35,18 @@ catalog:
   '@types/fs-extra': ^11.0.4
   '@types/jsdom': ^21.1.7
   '@types/node': ^24.1.0
-  '@types/semver': ^7.7.0
+  '@types/semver': ^7.7.1
   '@types/three': ^0.169.0
-  '@vitejs/plugin-vue': ^6.0.0
-  '@vitest/coverage-v8': ^4.0.16
-  '@vitest/ui': ^4.0.16
+  '@vitejs/plugin-vue': ^6.0.4
+  '@vitest/coverage-v8': ^4.0.18
+  '@vitest/ui': ^4.0.18
   '@vue/test-utils': ^2.4.6
-  '@vueuse/core': ^14.2.0
-  '@vueuse/integrations': ^14.2.0
+  '@vueuse/core': ^14.2.1
+  '@vueuse/integrations': ^14.2.1
   '@webgpu/types': ^0.1.66
   algoliasearch: ^5.21.0
   axios: ^1.13.5
+  chart.js: ^4.5.1
   cross-env: ^10.1.0
   cva: 1.0.0-beta.4
   dotenv: ^16.4.5
@@ -58,6 +59,7 @@ catalog:
   eslint-plugin-unused-imports: ^4.3.0
   eslint-plugin-vue: ^10.6.2
   firebase: ^11.6.0
+  fs-extra: ^11.3.3
   globals: ^16.5.0
   happy-dom: ^20.0.11
   husky: ^9.1.7
@@ -74,12 +76,13 @@ catalog:
   oxlint-tsgolint: ^0.9.1
   picocolors: ^1.1.1
   pinia: ^3.0.4
-  postcss-html: ^1.8.0
+  postcss-html: ^1.8.1
   pretty-bytes: ^7.1.0
   primeicons: ^7.0.0
   primevue: ^4.2.5
   reka-ui: ^2.5.0
-  rollup-plugin-visualizer: ^6.0.4
+  rollup-plugin-visualizer: ^6.0.5
+  semver: ^7.7.4
   storybook: ^10.2.8
   stylelint: ^16.26.1
   tailwindcss: ^4.1.18
@@ -95,17 +98,17 @@ catalog:
   vite: 8.0.0-beta.13
   vite-plugin-dts: ^4.5.4
   vite-plugin-html: ^3.2.2
-  vite-plugin-vue-devtools: ^8.0.0
-  vitest: ^4.0.16
-  vue: ^3.5.13
+  vite-plugin-vue-devtools: ^8.0.6
+  vitest: ^4.0.18
+  vue: ^3.5.28
   vue-component-type-helpers: ^3.2.1
   vue-eslint-parser: ^10.2.0
   vue-i18n: ^9.14.5
   vue-router: ^4.4.3
-  vue-tsc: ^3.2.1
-  vuefire: ^3.2.1
+  vue-tsc: ^3.2.4
+  vuefire: ^3.2.2
   wwobjloader2: ^6.2.1
-  yjs: ^13.6.27
+  yjs: ^13.6.29
   zod: ^3.23.8
   zod-to-json-schema: ^3.24.1
   zod-validation-error: ^3.3.0
