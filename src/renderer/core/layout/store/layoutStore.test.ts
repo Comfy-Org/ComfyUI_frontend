@@ -1,9 +1,14 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { getSlotKey } from '@/renderer/core/layout/slots/slotIdentifier'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { LayoutSource } from '@/renderer/core/layout/types'
-import type { LayoutChange, NodeLayout } from '@/renderer/core/layout/types'
+import type {
+  LayoutChange,
+  NodeLayout,
+  SlotLayout
+} from '@/renderer/core/layout/types'
 
 describe('layoutStore CRDT operations', () => {
   beforeEach(() => {
@@ -406,4 +411,49 @@ describe('layoutStore CRDT operations', () => {
       LiteGraph.NODE_TITLE_HEIGHT = originalTitleHeight
     }
   })
+
+  it.each([
+    { type: 'input' as const, isInput: true },
+    { type: 'output' as const, isInput: false }
+  ])(
+    'should preserve $type slot layouts when deleting a node',
+    ({ type, isInput }) => {
+      const nodeId = 'slot-persist-node'
+      const layout = createTestNode(nodeId)
+
+      layoutStore.applyOperation({
+        type: 'createNode',
+        entity: 'node',
+        nodeId,
+        layout,
+        timestamp: Date.now(),
+        source: LayoutSource.External,
+        actor: 'test'
+      })
+
+      const slotKey = getSlotKey(nodeId, 0, isInput)
+      const slotLayout: SlotLayout = {
+        nodeId,
+        index: 0,
+        type,
+        position: { x: 110, y: 120 },
+        bounds: { x: 105, y: 115, width: 10, height: 10 }
+      }
+      layoutStore.batchUpdateSlotLayouts([{ key: slotKey, layout: slotLayout }])
+      expect(layoutStore.getSlotLayout(slotKey)).toEqual(slotLayout)
+
+      layoutStore.applyOperation({
+        type: 'deleteNode',
+        entity: 'node',
+        nodeId,
+        previousLayout: layout,
+        timestamp: Date.now(),
+        source: LayoutSource.External,
+        actor: 'test'
+      })
+
+      // Slot layout must survive so Vue-patched components can still drag links
+      expect(layoutStore.getSlotLayout(slotKey)).toEqual(slotLayout)
+    }
+  )
 })
