@@ -78,9 +78,7 @@ const tooltipConfig = computed(() => {
   const tooltipText = getOutputSlotTooltip(index)
   const fallbackText = tooltipText || `Output: ${slotName}`
   const iterativeSuffix =
-    props.slotData.shape === RenderShape.GRID
-      ? ` ${t('vueNodesSlot.iterative')}`
-      : ''
+    slotData.shape === RenderShape.GRID ? ` ${t('vueNodesSlot.iterative')}` : ''
   return createTooltipConfig(fallbackText + iterativeSuffix)
 })
 

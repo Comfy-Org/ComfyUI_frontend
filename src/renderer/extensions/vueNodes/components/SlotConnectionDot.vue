@@ -42,7 +42,7 @@ defineExpose({
   slotElRef
 })
 
-const isListShape = computed(() => props.slotData?.shape === RenderShape.GRID)
+const isListShape = computed(() => slotData?.shape === RenderShape.GRID)
 
 const slotClass = computed(() =>
   cn(
