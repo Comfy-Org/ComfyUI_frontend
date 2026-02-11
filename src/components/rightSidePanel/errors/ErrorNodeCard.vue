@@ -86,12 +86,16 @@ const { t } = useI18n()
         <!-- Traceback / Details -->
         <div
           v-if="error.details"
-          :class="cn(
-            'rounded-lg bg-secondary-background-hover p-2.5 overflow-y-auto border border-interface-stroke/30',
-             error.isRuntimeError ? 'max-h-[10lh]' : 'max-h-[6lh]'
-          )"
+          :class="
+            cn(
+              'rounded-lg bg-secondary-background-hover p-2.5 overflow-y-auto border border-interface-stroke/30',
+              error.isRuntimeError ? 'max-h-[10lh]' : 'max-h-[6lh]'
+            )
+          "
         >
-          <p class="m-0 text-[11px] text-muted-foreground break-words whitespace-pre-wrap font-mono leading-relaxed">
+          <p
+            class="m-0 text-[11px] text-muted-foreground break-words whitespace-pre-wrap font-mono leading-relaxed"
+          >
             {{ error.details }}
           </p>
         </div>
@@ -100,7 +104,12 @@ const { t } = useI18n()
           variant="secondary"
           size="sm"
           class="w-full justify-center gap-2 h-8 text-[11px]"
-          @click="emit('copyToClipboard', [error.message, error.details].filter(Boolean).join('\n\n'))"
+          @click="
+            emit(
+              'copyToClipboard',
+              [error.message, error.details].filter(Boolean).join('\n\n')
+            )
+          "
         >
           <i class="icon-[lucide--copy] size-3.5" />
           {{ t('g.copy') }}

@@ -63,8 +63,8 @@ describe('TabErrors.vue', () => {
     return mount(TabErrors, {
       global: {
         plugins: [
-          PrimeVue, 
-          i18n, 
+          PrimeVue,
+          i18n,
           createTestingPinia({
             createSpy: vi.fn,
             initialState
@@ -72,7 +72,8 @@ describe('TabErrors.vue', () => {
         ],
         stubs: {
           FormSearchInput: {
-            template: '<input @input="$emit(\'update:modelValue\', $event.target.value)" />'
+            template:
+              '<input @input="$emit(\'update:modelValue\', $event.target.value)" />'
           },
           PropertiesAccordionItem: {
             template: '<div><slot name="label" /><slot /></div>'
@@ -100,7 +101,7 @@ describe('TabErrors.vue', () => {
         }
       }
     })
-    
+
     // Group title should be the raw message from store
     expect(wrapper.text()).toContain('Server Error: No outputs')
     // Item message should be localized desc
@@ -111,14 +112,18 @@ describe('TabErrors.vue', () => {
 
   it('renders node validation errors grouped by class_type', async () => {
     const { getNodeByExecutionId } = await import('@/utils/graphTraversalUtil')
-    vi.mocked(getNodeByExecutionId).mockReturnValue({ title: 'CLIP Text Encode' } as any)
+    vi.mocked(getNodeByExecutionId).mockReturnValue({
+      title: 'CLIP Text Encode'
+    } as ReturnType<typeof getNodeByExecutionId>)
 
     const wrapper = mountComponent({
       execution: {
         lastNodeErrors: {
           '6': {
             class_type: 'CLIPTextEncode',
-            errors: [{ message: 'Required input is missing', details: 'Input: text' }]
+            errors: [
+              { message: 'Required input is missing', details: 'Input: text' }
+            ]
           }
         }
       }
@@ -132,7 +137,9 @@ describe('TabErrors.vue', () => {
 
   it('renders runtime execution errors from WebSocket', async () => {
     const { getNodeByExecutionId } = await import('@/utils/graphTraversalUtil')
-    vi.mocked(getNodeByExecutionId).mockReturnValue({ title: 'KSampler' } as any)
+    vi.mocked(getNodeByExecutionId).mockReturnValue({
+      title: 'KSampler'
+    } as ReturnType<typeof getNodeByExecutionId>)
 
     const wrapper = mountComponent({
       execution: {
@@ -163,22 +170,23 @@ describe('TabErrors.vue', () => {
         }
       }
     })
-    
+
     expect(wrapper.text()).toContain('GroupA')
     expect(wrapper.text()).toContain('GroupB')
 
     const searchInput = wrapper.find('input')
     await searchInput.setValue('Apple')
-    
+
     expect(wrapper.text()).toContain('GroupA')
     expect(wrapper.text()).not.toContain('GroupB')
   })
 
   it('calls copyToClipboard when copy button is clicked', async () => {
-    const { useCopyToClipboard } = await import('@/composables/useCopyToClipboard')
+    const { useCopyToClipboard } =
+      await import('@/composables/useCopyToClipboard')
     const mockCopy = vi.fn()
     vi.mocked(useCopyToClipboard).mockReturnValue({ copyToClipboard: mockCopy })
-    
+
     const wrapper = mountComponent({
       execution: {
         lastNodeErrors: {
@@ -189,13 +197,13 @@ describe('TabErrors.vue', () => {
         }
       }
     })
-    
+
     // Find the copy button (rendered inside ErrorNodeCard)
     const copyButtons = wrapper.findAll('button')
     const copyButton = copyButtons.find((btn) => btn.text().includes('Copy'))
     expect(copyButton).toBeTruthy()
     await copyButton!.trigger('click')
-    
+
     expect(mockCopy).toHaveBeenCalledWith('Test message\n\nTest details')
   })
 })

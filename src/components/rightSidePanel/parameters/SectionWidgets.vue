@@ -15,6 +15,7 @@ import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import { getNodeByExecutionId } from '@/utils/graphTraversalUtil'
+import { cn } from '@/utils/tailwindUtil'
 import { app } from '@/scripts/app'
 
 import PropertiesAccordionItem from '../layout/PropertiesAccordionItem.vue'
@@ -188,8 +189,7 @@ defineExpose({
               class="icon-[lucide--octagon-alert] size-4 shrink-0 text-destructive-background-hover"
             />
             <span
-              class="truncate"
-              :class="nodeHasError ? 'text-destructive-background-hover' : ''"
+              :class="cn('truncate', nodeHasError && 'text-destructive-background-hover')"
             >
               <slot name="label">
                 {{ displayLabel }}

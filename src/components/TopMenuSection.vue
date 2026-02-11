@@ -36,10 +36,14 @@
 
           <div
             ref="actionbarContainerRef"
-            :class="cn(
-              'actionbar-container relative pointer-events-auto flex gap-2 h-12 items-center rounded-lg border bg-comfy-menu-bg px-2 shadow-interface',
-              hasPromptError ? 'border-destructive-background-hover' : 'border-interface-stroke'
-            )"
+            :class="
+              cn(
+                'actionbar-container relative pointer-events-auto flex gap-2 h-12 items-center rounded-lg border bg-comfy-menu-bg px-2 shadow-interface',
+                hasPromptError
+                  ? 'border-destructive-background-hover'
+                  : 'border-interface-stroke'
+              )
+            "
           >
             <ActionBarButtons />
             <!-- Support for legacy topbar elements attached by custom scripts, hidden if no elements present -->

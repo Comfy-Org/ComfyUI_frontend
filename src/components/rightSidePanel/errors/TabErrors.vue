@@ -1,7 +1,7 @@
 <script setup lang="ts">
 /**
  * TabErrors.vue
- * 
+ *
  * This component displays all errors (prompt-level, node-specific, and runtime execution errors)
  * in a unified, searchable, and grouped view within the Right Side Panel.
  */
@@ -25,6 +25,7 @@ import { NodeBadgeMode } from '@/types/nodeSource'
 import PropertiesAccordionItem from '../layout/PropertiesAccordionItem.vue'
 import FormSearchInput from '@/renderer/extensions/vueNodes/widgets/components/form/FormSearchInput.vue'
 import ErrorNodeCard from './ErrorNodeCard.vue'
+import Button from '@/components/ui/button/Button.vue'
 import type { ErrorCardData, ErrorGroup } from './types'
 
 /** Prompt error types that have predefined localized descriptions. */
@@ -39,8 +40,10 @@ const searchQuery = ref('')
 const settingStore = useSettingStore()
 
 /** Whether to show node ID badges, based on the user's LiteGraph Node ID Badge Mode setting */
-const showNodeIdBadge = computed(() =>
-  (settingStore.get('Comfy.NodeBadge.NodeIdBadgeMode') as NodeBadgeMode) !== NodeBadgeMode.None
+const showNodeIdBadge = computed(
+  () =>
+    (settingStore.get('Comfy.NodeBadge.NodeIdBadgeMode') as NodeBadgeMode) !==
+    NodeBadgeMode.None
 )
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
@@ -69,7 +72,10 @@ function isSubgraphId(nodeId: string): boolean {
  * Organizes by: Group (class_type) -> Card (nodeId) -> Errors (list of items).
  */
 const errorGroups = computed<ErrorGroup[]>(() => {
-  const groupsMap = new Map<string, { priority: number, cards: Map<string, ErrorCardData> }>()
+  const groupsMap = new Map<
+    string,
+    { priority: number; cards: Map<string, ErrorCardData> }
+  >()
 
   const getOrCreateGroup = (title: string, priority = 1) => {
     if (!groupsMap.has(title)) {
@@ -88,17 +94,21 @@ const errorGroups = computed<ErrorGroup[]>(() => {
     group.set('__prompt__', {
       id: '__prompt__',
       title: groupTitle,
-      errors: [{
-        message: isKnown
-          ? t(`rightSidePanel.promptErrors.${error.type}.desc`)
-          : error.message,
-      }]
+      errors: [
+        {
+          message: isKnown
+            ? t(`rightSidePanel.promptErrors.${error.type}.desc`)
+            : error.message
+        }
+      ]
     })
   }
 
   // 2. Node validation errors (400 Bad Request)
   if (executionStore.lastNodeErrors) {
-    for (const [nodeId, nodeError] of Object.entries(executionStore.lastNodeErrors)) {
+    for (const [nodeId, nodeError] of Object.entries(
+      executionStore.lastNodeErrors
+    )) {
       const group = getOrCreateGroup(nodeError.class_type, 1)
       if (!group.has(nodeId)) {
         group.set(nodeId, {
@@ -111,10 +121,12 @@ const errorGroups = computed<ErrorGroup[]>(() => {
         })
       }
       const card = group.get(nodeId)!
-      card.errors.push(...nodeError.errors.map(e => ({
-        message: e.message,
-        details: e.details ?? undefined
-      })))
+      card.errors.push(
+        ...nodeError.errors.map((e) => ({
+          message: e.message,
+          details: e.details ?? undefined
+        }))
+      )
     }
   }
 
@@ -123,7 +135,7 @@ const errorGroups = computed<ErrorGroup[]>(() => {
     const e = executionStore.lastExecutionError
     const nodeId = String(e.node_id)
     const group = getOrCreateGroup(e.node_type, 1)
-    
+
     if (!group.has(nodeId)) {
       group.set(nodeId, {
         id: `exec-${nodeId}`,
@@ -171,9 +183,10 @@ const filteredGroups = computed<ErrorGroup[]>(() => {
           isHeaderMatch ||
           card.nodeId?.toLowerCase().includes(query) ||
           card.nodeTitle?.toLowerCase().includes(query) ||
-          card.errors.some(e => 
-            e.message.toLowerCase().includes(query) || 
-            e.details?.toLowerCase().includes(query)
+          card.errors.some(
+            (e) =>
+              e.message.toLowerCase().includes(query) ||
+              e.details?.toLowerCase().includes(query)
           )
       )
 
@@ -181,8 +194,6 @@ const filteredGroups = computed<ErrorGroup[]>(() => {
     })
     .filter((group) => group.cards.length > 0)
 })
-
-
 
 const collapseState = reactive<Record<string, boolean>>({})
 
@@ -198,12 +209,12 @@ async function copyToClipboard(text: string) {
 
 /**
  * Navigates the canvas to a specific graph or subgraph.
- * 
+ *
  * NOTE: requestAnimationFrame is called twice consecutively to ensure the canvas
  * has completed its internal coordinate adjustments and DOM updates before
- * we attempt to center or focus on a specific node bounding box. This is 
+ * we attempt to center or focus on a specific node bounding box. This is
  * required due to the asynchronous nature of LiteGraph's subgraph switching.
- * 
+ *
  * @param targetGraph The graph to navigate to.
  */
 async function navigateToGraph(targetGraph: LGraph) {
@@ -219,7 +230,7 @@ async function navigateToGraph(targetGraph: LGraph) {
 
     // Ensure DOM and graph state are synchronised
     await nextTick()
-    
+
     // Double RAF to wait for LiteGraph's internal canvas frame cycle
     await new Promise((resolve) =>
       requestAnimationFrame(() => requestAnimationFrame(resolve))
@@ -236,7 +247,7 @@ async function locateNode(nodeId: string) {
   if (!canvasStore.canvas) return
 
   const graphNode = getNodeByExecutionId(app.rootGraph, nodeId)
-  if (!graphNode) return
+  if (!graphNode?.graph) return
 
   await navigateToGraph(graphNode.graph as LGraph)
   canvasStore.canvas?.animateToBounds(graphNode.boundingRect)
@@ -289,7 +300,9 @@ async function contactSupport() {
 <template>
   <div class="flex flex-col h-full min-w-0">
     <!-- Search bar -->
-    <div class="px-4 pt-1 pb-4 flex gap-2 border-b border-interface-stroke shrink-0 min-w-0">
+    <div
+      class="px-4 pt-1 pb-4 flex gap-2 border-b border-interface-stroke shrink-0 min-w-0"
+    >
       <FormSearchInput v-model="searchQuery" />
     </div>
 
@@ -321,9 +334,7 @@ async function contactSupport() {
                 <i
                   class="icon-[lucide--octagon-alert] size-4 text-destructive-background-hover shrink-0"
                 />
-                <span
-                  class="text-destructive-background-hover truncate"
-                >
+                <span class="text-destructive-background-hover truncate">
                   {{ group.title }}
                 </span>
                 <span
@@ -356,15 +367,23 @@ async function contactSupport() {
     <div class="shrink-0 border-t border-interface-stroke px-4 py-4 min-w-0">
       <p class="m-0 text-sm text-muted-foreground leading-tight break-words">
         {{ t('rightSidePanel.errorHelpPrefix') }}
-        <button
-          class="inline underline cursor-pointer hover:text-base-foreground transition-colors whitespace-nowrap bg-transparent border-none p-0 text-inherit text-sm"
+        <Button
+          variant="textonly"
+          size="unset"
+          class="inline underline text-inherit text-sm whitespace-nowrap"
           @click="openGitHubIssues"
-        >{{ t('rightSidePanel.errorHelpGithub') }}</button>
+        >
+          {{ t('rightSidePanel.errorHelpGithub') }}
+        </Button>
         {{ t('rightSidePanel.errorHelpOr') }}
-        <button
-          class="inline underline cursor-pointer hover:text-base-foreground transition-colors whitespace-nowrap bg-transparent border-none p-0 text-inherit text-sm"
+        <Button
+          variant="textonly"
+          size="unset"
+          class="inline underline text-inherit text-sm whitespace-nowrap"
           @click="contactSupport"
-        >{{ t('rightSidePanel.errorHelpSupport') }}</button>.
+        >
+          {{ t('rightSidePanel.errorHelpSupport') }}
+        </Button>.
       </p>
     </div>
   </div>

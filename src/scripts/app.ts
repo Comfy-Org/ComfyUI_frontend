@@ -1460,7 +1460,8 @@ export class ComfyApp {
               // because node errors already carry the full context. Prompt-level errors
               // (e.g. prompt_no_outputs, no_prompt) lack node IDs and need their own path.
               const nodeErrors = error.response.node_errors
-              const hasNodeErrors = nodeErrors && Object.keys(nodeErrors).length > 0
+              const hasNodeErrors =
+                nodeErrors && Object.keys(nodeErrors).length > 0
 
               if (!hasNodeErrors) {
                 const respError = error.response.error
@@ -1468,7 +1469,7 @@ export class ComfyApp {
                   executionStore.lastPromptError = {
                     type: respError.type,
                     message: respError.message,
-                    details: respError.details ?? ""
+                    details: respError.details ?? ''
                   }
                 } else if (typeof respError === 'string') {
                   executionStore.lastPromptError = {

@@ -35,7 +35,6 @@ import {
 import SubgraphEditor from './subgraph/SubgraphEditor.vue'
 import TabErrors from './errors/TabErrors.vue'
 
-
 const canvasStore = useCanvasStore()
 const executionStore = useExecutionStore()
 const rightSidePanelStore = useRightSidePanelStore()
@@ -167,7 +166,6 @@ watchEffect(() => {
   }
 })
 
-
 function resolveTitle() {
   const items = flattedItems.value
   const nodes = selectedNodes.value
@@ -226,7 +224,7 @@ function handleTitleCancel() {
 
 function handleProxyWidgetsUpdate(value: ProxyWidgetsProperty) {
   if (!selectedSingleNode.value) return
-;(selectedSingleNode.value as SubgraphNode).properties.proxyWidgets = value
+  ;(selectedSingleNode.value as SubgraphNode).properties.proxyWidgets = value
   canvasStore.canvas?.setDirty(true, true)
 }
 </script>
