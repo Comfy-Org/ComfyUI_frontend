@@ -3,6 +3,7 @@ import { computed, useTemplateRef } from 'vue'
 
 import { getSlotColor } from '@/constants/slotColors'
 import type { INodeSlot } from '@/lib/litegraph/src/litegraph'
+import { RenderShape } from '@/lib/litegraph/src/types/globalEnums'
 import { cn } from '@/utils/tailwindUtil'
 import type { ClassValue } from '@/utils/tailwindUtil'
 
@@ -41,9 +42,12 @@ defineExpose({
   slotElRef
 })
 
+const isListShape = computed(() => props.slotData?.shape === RenderShape.GRID)
+
 const slotClass = computed(() =>
   cn(
-    'bg-slate-300 rounded-full slot-dot',
+    'bg-slate-300 slot-dot',
+    isListShape.value ? 'rounded-[1px]' : 'rounded-full',
     'transition-all duration-150',
     'border border-solid border-node-component-slot-dot-outline',
     props.multi
@@ -63,7 +67,7 @@ const slotClass = computed(() =>
     "
   >
     <div
-      v-if="types.length === 1 && slotData?.shape == undefined"
+      v-if="types.length === 1 && (slotData?.shape == undefined || isListShape)"
       ref="slot-el"
       :style="{ backgroundColor: types.length === 1 ? types[0] : undefined }"
       :class="slotClass"

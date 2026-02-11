@@ -138,7 +138,8 @@ export const useDialogService = () => {
       | 'credits'
       | 'subscription'
       | 'workspace'
-      | 'secrets'
+      | 'secrets',
+    settingId?: string
   ) {
     const [
       { default: SettingDialogHeader },
@@ -148,7 +149,15 @@ export const useDialogService = () => {
       lazySettingDialogContent()
     ])
 
-    const props = panel ? { props: { defaultPanel: panel } } : undefined
+    const props =
+      panel || settingId
+        ? {
+            props: {
+              defaultPanel: panel,
+              scrollToSettingId: settingId
+            }
+          }
+        : undefined
 
     dialogStore.showDialog({
       key: 'global-settings',
