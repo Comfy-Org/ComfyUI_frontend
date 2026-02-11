@@ -39,7 +39,7 @@ vi.mock('@/stores/firebaseAuthStore', () => ({
   }))
 }))
 
-describe(UserCredit, () => {
+describe(UserCredit.__name ?? 'UserCredit', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     mockBalance.value = {

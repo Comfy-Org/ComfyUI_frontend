@@ -66,7 +66,7 @@ const PopoverStub = {
   }
 }
 
-describe(PackVersionBadge, () => {
+describe(PackVersionBadge.__name ?? 'PackVersionBadge', () => {
   beforeEach(() => {
     mockToggle.mockReset()
     mockHide.mockReset()

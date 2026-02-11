@@ -58,7 +58,7 @@ vi.mock('primevue/usetoast', () => ({
   }))
 }))
 
-describe(SignInForm, () => {
+describe(SignInForm.__name ?? 'SignInForm', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     mockSendPasswordReset.mockReset()

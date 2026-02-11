@@ -10,7 +10,7 @@ vi.mock('@/components/templates/thumbnails/BaseThumbnail.vue', () => ({
   }
 }))
 
-describe(AudioThumbnail, () => {
+describe(AudioThumbnail.__name ?? 'AudioThumbnail', () => {
   const mountThumbnail = (props = {}) => {
     return mount(AudioThumbnail, {
       props: {

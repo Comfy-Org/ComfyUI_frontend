@@ -10,7 +10,7 @@ import type { ComponentProps } from 'vue-component-type-helpers'
 
 import UrlInput from './UrlInput.vue'
 
-describe(UrlInput, () => {
+describe(UrlInput.__name ?? 'UrlInput', () => {
   beforeEach(() => {
     const app = createApp({})
     app.use(PrimeVue)

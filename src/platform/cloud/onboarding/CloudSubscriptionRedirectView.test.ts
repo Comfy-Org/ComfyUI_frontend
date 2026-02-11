@@ -97,71 +97,74 @@ const mountView = async (query: Record<string, unknown>) => {
   return { wrapper }
 }
 
-describe(CloudSubscriptionRedirectView, () => {
-  beforeEach(() => {
-    vi.clearAllMocks()
-    mockQuery = {}
-    subscriptionMocks.isActiveSubscription.value = false
-    subscriptionMocks.isInitialized.value = true
-  })
-
-  test('redirects to home when subscriptionType is missing', async () => {
-    await mountView({})
-
-    expect(mockRouterPush).toHaveBeenCalledWith('/')
-  })
-
-  test('redirects to home when subscriptionType is invalid', async () => {
-    await mountView({ tier: 'invalid' })
-
-    expect(mockRouterPush).toHaveBeenCalledWith('/')
-  })
-
-  test('shows subscription copy when subscriptionType is valid', async () => {
-    const { wrapper } = await mountView({ tier: 'creator' })
-
-    // Should not redirect to home
-    expect(mockRouterPush).not.toHaveBeenCalledWith('/')
-
-    // Shows copy under logo
-    expect(wrapper.text()).toContain('Subscribe to Creator')
-
-    // Triggers checkout flow
-    expect(mockPerformSubscriptionCheckout).toHaveBeenCalledWith(
-      'creator',
-      'monthly',
-      false
-    )
-
-    // Shows loading affordances
-    expect(wrapper.findComponent({ name: 'ProgressSpinner' }).exists()).toBe(
-      true
-    )
-    const skipLink = wrapper.get('a[href="/"]')
-    expect(skipLink.text()).toContain('Skip to the cloud app')
-  })
-
-  test('opens billing portal when subscription is already active', async () => {
-    subscriptionMocks.isActiveSubscription.value = true
-
-    await mountView({ tier: 'creator' })
-
-    expect(mockRouterPush).not.toHaveBeenCalledWith('/')
-    expect(authActionMocks.accessBillingPortal).toHaveBeenCalledTimes(1)
-    expect(mockPerformSubscriptionCheckout).not.toHaveBeenCalled()
-  })
-
-  test('uses first value when subscriptionType is an array', async () => {
-    const { wrapper } = await mountView({
-      tier: ['creator', 'pro']
+describe(
+  CloudSubscriptionRedirectView.__name ?? 'CloudSubscriptionRedirectView',
+  () => {
+    beforeEach(() => {
+      vi.clearAllMocks()
+      mockQuery = {}
+      subscriptionMocks.isActiveSubscription.value = false
+      subscriptionMocks.isInitialized.value = true
     })
 
-    expect(mockRouterPush).not.toHaveBeenCalledWith('/')
-    expect(wrapper.text()).toContain('Subscribe to Creator')
-    expect(mockPerformSubscriptionCheckout).toHaveBeenCalledWith(
-      'creator',
-      'monthly',
-      false
-    )
-  })
-})
+    test('redirects to home when subscriptionType is missing', async () => {
+      await mountView({})
+
+      expect(mockRouterPush).toHaveBeenCalledWith('/')
+    })
+
+    test('redirects to home when subscriptionType is invalid', async () => {
+      await mountView({ tier: 'invalid' })
+
+      expect(mockRouterPush).toHaveBeenCalledWith('/')
+    })
+
+    test('shows subscription copy when subscriptionType is valid', async () => {
+      const { wrapper } = await mountView({ tier: 'creator' })
+
+      // Should not redirect to home
+      expect(mockRouterPush).not.toHaveBeenCalledWith('/')
+
+      // Shows copy under logo
+      expect(wrapper.text()).toContain('Subscribe to Creator')
+
+      // Triggers checkout flow
+      expect(mockPerformSubscriptionCheckout).toHaveBeenCalledWith(
+        'creator',
+        'monthly',
+        false
+      )
+
+      // Shows loading affordances
+      expect(wrapper.findComponent({ name: 'ProgressSpinner' }).exists()).toBe(
+        true
+      )
+      const skipLink = wrapper.get('a[href="/"]')
+      expect(skipLink.text()).toContain('Skip to the cloud app')
+    })
+
+    test('opens billing portal when subscription is already active', async () => {
+      subscriptionMocks.isActiveSubscription.value = true
+
+      await mountView({ tier: 'creator' })
+
+      expect(mockRouterPush).not.toHaveBeenCalledWith('/')
+      expect(authActionMocks.accessBillingPortal).toHaveBeenCalledTimes(1)
+      expect(mockPerformSubscriptionCheckout).not.toHaveBeenCalled()
+    })
+
+    test('uses first value when subscriptionType is an array', async () => {
+      const { wrapper } = await mountView({
+        tier: ['creator', 'pro']
+      })
+
+      expect(mockRouterPush).not.toHaveBeenCalledWith('/')
+      expect(wrapper.text()).toContain('Subscribe to Creator')
+      expect(mockPerformSubscriptionCheckout).toHaveBeenCalledWith(
+        'creator',
+        'monthly',
+        false
+      )
+    })
+  }
+)

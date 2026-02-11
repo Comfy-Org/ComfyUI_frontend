@@ -54,7 +54,7 @@ vi.mock('primevue/progressspinner', () => ({
   default: { template: '<div class="progress-spinner" />' }
 }))
 
-describe(WorkspaceAuthGate, () => {
+describe(WorkspaceAuthGate.__name ?? 'WorkspaceAuthGate', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     mockIsCloud.value = true

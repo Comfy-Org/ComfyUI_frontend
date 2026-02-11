@@ -65,7 +65,7 @@ const mountComponent = (props: Record<string, unknown> = {}) =>
     }
   })
 
-describe(QueueOverlayActive, () => {
+describe(QueueOverlayActive.__name ?? 'QueueOverlayActive', () => {
   it('renders progress metrics and emits actions when buttons clicked', async () => {
     const wrapper = mountComponent({ runningCount: 2, queuedCount: 3 })
 

@@ -42,7 +42,7 @@ function findDownloadButton(wrapper: ReturnType<typeof mountPlayer>) {
   return wrapper.find('[aria-label="g.downloadAudio"]')
 }
 
-describe(AudioPreviewPlayer, () => {
+describe(AudioPreviewPlayer.__name ?? 'AudioPreviewPlayer', () => {
   describe('download button', () => {
     it('shows download button when audio is loaded', () => {
       const wrapper = mountPlayer('http://example.com/audio.mp3')

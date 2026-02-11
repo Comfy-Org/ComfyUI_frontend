@@ -50,7 +50,7 @@ vi.mock('@/workbench/extensions/manager/stores/conflictDetectionStore', () => ({
   }))
 }))
 
-describe(PackEnableToggle, () => {
+describe(PackEnableToggle.__name ?? 'PackEnableToggle', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     mockIsPackEnabled.mockReset()

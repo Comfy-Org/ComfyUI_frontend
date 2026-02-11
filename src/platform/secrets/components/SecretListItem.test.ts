@@ -52,7 +52,7 @@ function mountComponent(props: {
   })
 }
 
-describe(SecretListItem, () => {
+describe(SecretListItem.__name ?? 'SecretListItem', () => {
   describe('rendering', () => {
     it('displays secret name', () => {
       const secret = createMockSecret({ name: 'My API Key' })

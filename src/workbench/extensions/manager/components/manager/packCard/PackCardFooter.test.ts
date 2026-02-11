@@ -53,7 +53,7 @@ const mockNodePack = {
   downloads: 1000
 }
 
-describe(PackCardFooter, () => {
+describe(PackCardFooter.__name ?? 'PackCardFooter', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     mockIsPackInstalled.mockReset()

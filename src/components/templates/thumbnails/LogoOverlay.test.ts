@@ -16,7 +16,7 @@ vi.mock('vue-i18n', () => ({
 
 type LogoOverlayProps = ComponentProps<typeof LogoOverlay>
 
-describe(LogoOverlay, () => {
+describe(LogoOverlay.__name ?? 'LogoOverlay', () => {
   function mockGetLogoUrl(provider: string) {
     return `/logos/${provider}.png`
   }

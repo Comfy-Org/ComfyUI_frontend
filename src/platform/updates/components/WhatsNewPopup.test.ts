@@ -61,7 +61,7 @@ vi.mock('../common/releaseStore', () => ({
   useReleaseStore: vi.fn(() => mockReleaseStore)
 }))
 
-describe(WhatsNewPopup, () => {
+describe(WhatsNewPopup.__name ?? 'WhatsNewPopup', () => {
   let wrapper: VueWrapper
 
   const mountComponent = (props = {}) => {

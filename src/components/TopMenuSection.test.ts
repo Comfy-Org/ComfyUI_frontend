@@ -108,7 +108,7 @@ function createTask(id: string, status: JobStatus): TaskItemImpl {
   return new TaskItemImpl(createJob(id, status))
 }
 
-describe(TopMenuSection, () => {
+describe(TopMenuSection.__name ?? 'TopMenuSection', () => {
   beforeEach(() => {
     vi.resetAllMocks()
     localStorage.clear()

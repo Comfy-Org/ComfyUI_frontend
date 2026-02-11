@@ -23,7 +23,7 @@ const i18n = createI18n({
   }
 })
 
-describe(UserAvatar, () => {
+describe(UserAvatar.__name ?? 'UserAvatar', () => {
   beforeEach(() => {
     const app = createApp({})
     app.use(PrimeVue)

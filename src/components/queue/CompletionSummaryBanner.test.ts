@@ -32,7 +32,7 @@ const mountComponent = (props: Record<string, unknown>) =>
     }
   })
 
-describe(CompletionSummaryBanner, () => {
+describe(CompletionSummaryBanner.__name ?? 'CompletionSummaryBanner', () => {
   it('renders success mode text, thumbnails, and aria label', () => {
     const wrapper = mountComponent({
       mode: 'allSuccess',

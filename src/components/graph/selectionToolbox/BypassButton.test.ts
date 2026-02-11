@@ -20,7 +20,7 @@ vi.mock('@/utils/litegraphUtil', () => ({
   isLGraphNode: vi.fn(() => true)
 }))
 
-describe(BypassButton, () => {
+describe(BypassButton.__name ?? 'BypassButton', () => {
   let canvasStore: ReturnType<typeof useCanvasStore>
   let commandStore: ReturnType<typeof useCommandStore>
 

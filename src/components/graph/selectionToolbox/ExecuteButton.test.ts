@@ -30,7 +30,7 @@ vi.mock('@/composables/graph/useSelectionState', () => ({
   }))
 }))
 
-describe(ExecuteButton, () => {
+describe(ExecuteButton.__name ?? 'ExecuteButton', () => {
   let mockCanvas: LGraphCanvas
   let mockSelectedNodes: LGraphNode[]
 
