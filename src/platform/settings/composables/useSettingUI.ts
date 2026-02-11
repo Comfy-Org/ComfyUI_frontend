@@ -18,23 +18,23 @@ import { normalizeI18nKey } from '@/utils/formatUtil'
 import { buildTree } from '@/utils/treeUtil'
 
 const CATEGORY_ICONS: Record<string, string> = {
-  Comfy: 'icon-[lucide--settings]',
-  LiteGraph: 'icon-[lucide--workflow]',
-  Appearance: 'icon-[lucide--palette]',
   '3D': 'icon-[lucide--box]',
+  about: 'icon-[lucide--info]',
+  Appearance: 'icon-[lucide--palette]',
+  Comfy: 'icon-[lucide--settings]',
+  credits: 'icon-[lucide--coins]',
+  extension: 'icon-[lucide--puzzle]',
+  keybinding: 'icon-[lucide--keyboard]',
+  LiteGraph: 'icon-[lucide--workflow]',
   'Mask Editor': 'icon-[lucide--pen-tool]',
   Other: 'icon-[lucide--ellipsis]',
-  about: 'icon-[lucide--info]',
-  credits: 'icon-[lucide--coins]',
-  user: 'icon-[lucide--user]',
-  workspace: 'icon-[lucide--building-2]',
-  keybinding: 'icon-[lucide--keyboard]',
-  extension: 'icon-[lucide--puzzle]',
+  PlanCredits: 'icon-[lucide--credit-card]',
+  secrets: 'icon-[lucide--key-round]',
   'server-config': 'icon-[lucide--server]',
   subscription: 'icon-[lucide--credit-card]',
-  secrets: 'icon-[lucide--key-round]',
-  PlanCredits: 'icon-[lucide--credit-card]'
-} as const
+  user: 'icon-[lucide--user]',
+  workspace: 'icon-[lucide--building-2]'
+}
 
 interface SettingPanelItem {
   node: SettingTreeNode

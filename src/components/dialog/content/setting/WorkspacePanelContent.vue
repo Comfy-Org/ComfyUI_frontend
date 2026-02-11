@@ -1,6 +1,6 @@
 <template>
   <div class="flex h-full w-full flex-col">
-    <div class="pb-8 flex items-center gap-4">
+    <header class="mb-8 flex items-center gap-4">
       <WorkspaceProfilePic
         class="size-12 !text-3xl"
         :workspace-name="workspaceName"
@@ -8,7 +8,7 @@
       <h1 class="text-3xl text-base-foreground">
         {{ workspaceName }}
       </h1>
-    </div>
+    </header>
     <TabsRoot v-model="activeTab">
       <div class="flex w-full items-center">
         <TabsList class="flex items-center gap-2 pb-1">
@@ -34,7 +34,7 @@
           >
             {{
               $t('workspacePanel.tabs.membersCount', {
-                count: isInPersonalWorkspace ? 1 : members.length
+                count: members.length
               })
             }}
           </TabsTrigger>
@@ -68,17 +68,21 @@
           </Button>
           <Menu ref="menu" :model="menuItems" :popup="true">
             <template #item="{ item }">
-              <div
+              <button
                 v-tooltip="
                   item.disabled && deleteTooltip
                     ? { value: deleteTooltip, showDelay: 0 }
                     : null
                 "
-                :class="[
-                  'flex items-center gap-2 px-3 py-2',
-                  item.class,
-                  item.disabled ? 'pointer-events-auto' : ''
-                ]"
+                type="button"
+                :disabled="!!item.disabled"
+                :class="
+                  cn(
+                    'flex w-full items-center gap-2 px-3 py-2 bg-transparent border-none cursor-pointer',
+                    item.class,
+                    item.disabled && 'pointer-events-auto cursor-not-allowed'
+                  )
+                "
                 @click="
                   item.command?.({
                     originalEvent: $event,
@@ -88,7 +92,7 @@
               >
                 <i :class="item.icon" />
                 <span>{{ item.label }}</span>
-              </div>
+              </button>
             </template>
           </Menu>
         </template>
@@ -140,13 +144,8 @@ const {
   showEditWorkspaceDialog
 } = useDialogService()
 const workspaceStore = useTeamWorkspaceStore()
-const {
-  workspaceName,
-  members,
-  isInviteLimitReached,
-  isWorkspaceSubscribed,
-  isInPersonalWorkspace
-} = storeToRefs(workspaceStore)
+const { workspaceName, members, isInviteLimitReached, isWorkspaceSubscribed } =
+  storeToRefs(workspaceStore)
 const { fetchMembers, fetchPendingInvites } = workspaceStore
 
 const { workspaceRole, permissions, uiConfig } = useWorkspaceUI()

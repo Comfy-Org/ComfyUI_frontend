@@ -67,11 +67,11 @@ export interface ISettingGroup {
 
 export type SettingPanelType =
   | 'about'
-  | 'keybinding'
-  | 'extension'
-  | 'server-config'
-  | 'user'
   | 'credits'
-  | 'subscription'
-  | 'workspace'
+  | 'extension'
+  | 'keybinding'
   | 'secrets'
+  | 'server-config'
+  | 'subscription'
+  | 'user'
+  | 'workspace'
