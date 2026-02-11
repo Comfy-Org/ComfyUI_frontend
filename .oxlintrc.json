@@ -243,7 +243,8 @@
         "no-control-regex": "error",
         "no-useless-rename": "error",
         "no-unused-private-class-members": "error",
-        "unicorn/no-empty-file": "error"
+        "unicorn/no-empty-file": "error",
+        "vitest/consistent-test-filename": "off"
       }
     }
   ]

@@ -26,10 +26,7 @@
       :key="`widget-${index}-${widget.name}`"
     >
       <div
-        v-if="
-          !widget.simplified.options?.hidden &&
-          (!widget.simplified.options?.advanced || showAdvanced)
-        "
+        v-if="!widget.hidden && (!widget.advanced || showAdvanced)"
         class="lg-node-widget group col-span-full grid grid-cols-subgrid items-stretch"
         :data-widget-name="widget.name"
       >
@@ -94,6 +91,10 @@ import {
   shouldExpand,
   shouldRenderAsVue
 } from '@/renderer/extensions/vueNodes/widgets/registry/widgetRegistry'
+import {
+  stripGraphPrefix,
+  useWidgetValueStore
+} from '@/stores/widgetValueStore'
 import type { SimplifiedWidget, WidgetValue } from '@/types/simplifiedWidget'
 import { cn } from '@/utils/tailwindUtil'
 
@@ -142,6 +143,7 @@ const showAdvanced = computed(
 const { getWidgetTooltip, createTooltipConfig } = useNodeTooltips(
   nodeType.value
 )
+const widgetValueStore = useWidgetValueStore()
 
 interface ProcessedWidget {
   name: string
@@ -152,11 +154,15 @@ interface ProcessedWidget {
   updateHandler: (value: WidgetValue) => void
   tooltipConfig: TooltipOptions
   slotMetadata?: WidgetSlotMetadata
+  hidden: boolean
+  advanced: boolean
+  hasLayoutSize: boolean
 }
 
 const processedWidgets = computed((): ProcessedWidget[] => {
   if (!nodeData?.widgets) return []
 
+  const nodeId = nodeData.id
   const { widgets } = nodeData
   const result: ProcessedWidget[] = []
 
@@ -167,33 +173,47 @@ const processedWidgets = computed((): ProcessedWidget[] => {
       getComponent(widget.type) ||
       (widget.isDOMWidget ? WidgetDOM : WidgetLegacy)
 
-    const { slotMetadata, options } = widget
+    const { slotMetadata } = widget
 
-    // Core feature: Disable Vue widgets when their input slots are connected
-    // This prevents conflicting input sources - when a slot is linked to another
-    // node's output, the widget should be read-only to avoid data conflicts
+    // Get metadata from store (registered during BaseWidget.setNodeId)
+    const bareWidgetId = stripGraphPrefix(widget.nodeId ?? nodeId)
+    const widgetState = widgetValueStore.getWidget(bareWidgetId, widget.name)
+
+    // Get value from store (falls back to undefined if not registered)
+    const value = widgetState?.value as WidgetValue
+
+    // Build options from store state, with slot-linked override for disabled
+    const storeOptions = widgetState?.options ?? {}
     const widgetOptions = slotMetadata?.linked
-      ? { ...options, disabled: true }
-      : options
+      ? { ...storeOptions, disabled: true }
+      : storeOptions
+
+    // Derive border style from store metadata
+    const borderStyle =
+      widgetState?.promoted && String(widgetState?.nodeId) === String(nodeId)
+        ? 'ring ring-component-node-widget-promoted'
+        : widget.options?.advanced
+          ? 'ring ring-component-node-widget-advanced'
+          : undefined
 
     const simplified: SimplifiedWidget = {
       name: widget.name,
       type: widget.type,
-      value: widget.value,
-      borderStyle: widget.borderStyle,
+      value,
+      borderStyle,
       callback: widget.callback,
       controlWidget: widget.controlWidget,
-      label: widget.label,
+      label: widgetState?.label,
       nodeType: widget.nodeType,
       options: widgetOptions,
       spec: widget.spec
     }
 
-    function updateHandler(value: WidgetValue) {
-      // Update the widget value directly
-      widget.value = value
-
-      widget.callback?.(value)
+    function updateHandler(newValue: WidgetValue) {
+      // Update value in store
+      if (widgetState) widgetState.value = newValue
+      // Invoke LiteGraph callback wrapper (handles triggerDraw, etc.)
+      widget.callback?.(newValue)
     }
 
     const tooltipText = getWidgetTooltip(widget)
@@ -204,10 +224,13 @@ const processedWidgets = computed((): ProcessedWidget[] => {
       type: widget.type,
       vueComponent,
       simplified,
-      value: widget.value,
+      value,
       updateHandler,
       tooltipConfig,
-      slotMetadata
+      slotMetadata,
+      hidden: widget.options?.hidden ?? false,
+      advanced: widget.options?.advanced ?? false,
+      hasLayoutSize: widget.hasLayoutSize ?? false
     })
   }
 
@@ -215,15 +238,9 @@ const processedWidgets = computed((): ProcessedWidget[] => {
 })
 
 const gridTemplateRows = computed((): string => {
-  if (!nodeData?.widgets) return ''
-  const processedNames = new Set(toValue(processedWidgets).map((w) => w.name))
-  return nodeData.widgets
-    .filter(
-      (w) =>
-        processedNames.has(w.name) &&
-        !w.options?.hidden &&
-        (!w.options?.advanced || showAdvanced.value)
-    )
+  // Use processedWidgets directly since it already has store-based hidden/advanced
+  return toValue(processedWidgets)
+    .filter((w) => !w.hidden && (!w.advanced || showAdvanced.value))
     .map((w) =>
       shouldExpand(w.type) || w.hasLayoutSize ? 'auto' : 'min-content'
     )

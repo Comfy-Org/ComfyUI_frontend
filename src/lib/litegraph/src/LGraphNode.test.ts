@@ -1,3 +1,5 @@
+import { createTestingPinia } from '@pinia/testing'
+import { setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, vi } from 'vitest'
 
 import type {
@@ -41,6 +43,7 @@ describe(LGraphNode, () => {
   let origLiteGraph: typeof LiteGraph
 
   beforeEach(() => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
     // oxlint-disable-next-line prefer-object-spread -- LiteGraph is a class instance; spread loses methods
     origLiteGraph = Object.assign({}, LiteGraph)
     // @ts-expect-error Intended: Force remove an otherwise readonly non-optional property
