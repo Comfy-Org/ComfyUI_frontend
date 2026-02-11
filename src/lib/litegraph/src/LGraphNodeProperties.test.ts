@@ -68,6 +68,37 @@ describe('LGraphNodeProperties', () => {
     })
   })
 
+  describe('prototype accessor preservation', () => {
+    it('should not shadow prototype getter/setter with closure-based accessor', () => {
+      // Mirrors LGraphNode.shape / _shape pattern
+      class NodeWithShape {
+        _shape: number | undefined = undefined
+        id = 1
+        flags = {}
+        graph = mockGraph
+        title = 'test'
+        get shape(): number | undefined {
+          return this._shape
+        }
+        set shape(v: number) {
+          this._shape = v
+        }
+      }
+
+      const node = new NodeWithShape()
+      new LGraphNodeProperties(node as Partial<LGraphNode> as LGraphNode)
+
+      // The prototype getter/setter should NOT be shadowed
+      expect(Object.prototype.hasOwnProperty.call(node, 'shape')).toBe(false)
+
+      // Before fix: the closure-based accessor would shadow the prototype,
+      // storing the value in a closure and leaving _shape unchanged.
+      node.shape = 42
+      expect(node._shape).toBe(42)
+      expect(node.shape).toBe(42)
+    })
+  })
+
   describe('isTracked', () => {
     it('should correctly identify tracked properties', () => {
       const propManager = new LGraphNodeProperties(mockNode)
