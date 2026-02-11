@@ -11,10 +11,13 @@ interface Workspace {
   id: string
   name: string
   type: WorkspaceType
+  created_at: string
+  joined_at: string
 }
 
 export interface WorkspaceWithRole extends Workspace {
   role: WorkspaceRole
+  subscription_tier?: SubscriptionTier
 }
 
 export interface Member {
@@ -62,14 +65,6 @@ interface AcceptInviteResponse {
   workspace_name: string
 }
 
-interface BillingPortalRequest {
-  return_url: string
-}
-
-interface BillingPortalResponse {
-  billing_portal_url: string
-}
-
 interface CreateWorkspacePayload {
   name: string
 }
@@ -80,6 +75,207 @@ interface UpdateWorkspacePayload {
 
 interface ListWorkspacesResponse {
   workspaces: WorkspaceWithRole[]
+}
+
+export type SubscriptionTier =
+  | 'STANDARD'
+  | 'CREATOR'
+  | 'PRO'
+  | 'FOUNDERS_EDITION'
+export type SubscriptionDuration = 'MONTHLY' | 'ANNUAL'
+type PlanAvailabilityReason =
+  | 'same_plan'
+  | 'incompatible_transition'
+  | 'requires_team'
+  | 'requires_personal'
+  | 'exceeds_max_seats'
+
+interface PlanAvailability {
+  available: boolean
+  reason?: PlanAvailabilityReason
+}
+
+interface PlanSeatSummary {
+  seat_count: number
+  total_cost_cents: number
+  total_credits_cents: number
+}
+
+export interface Plan {
+  slug: string
+  tier: SubscriptionTier
+  duration: SubscriptionDuration
+  price_cents: number
+  credits_cents: number
+  max_seats: number
+  availability: PlanAvailability
+  seat_summary: PlanSeatSummary
+}
+
+interface BillingPlansResponse {
+  current_plan_slug?: string
+  plans: Plan[]
+}
+
+type SubscriptionTransitionType =
+  | 'new_subscription'
+  | 'upgrade'
+  | 'downgrade'
+  | 'duration_change'
+
+interface PreviewSubscribeRequest {
+  plan_slug: string
+}
+
+interface SubscribeRequest {
+  plan_slug: string
+  idempotency_key?: string
+  return_url?: string
+  cancel_url?: string
+}
+
+type SubscribeStatus = 'subscribed' | 'needs_payment_method' | 'pending_payment'
+
+export interface SubscribeResponse {
+  billing_op_id: string
+  status: SubscribeStatus
+  effective_at?: string
+  payment_method_url?: string
+}
+
+interface CancelSubscriptionRequest {
+  idempotency_key?: string
+}
+
+interface CancelSubscriptionResponse {
+  billing_op_id: string
+  cancel_at: string
+}
+
+interface ResubscribeRequest {
+  idempotency_key?: string
+}
+
+interface ResubscribeResponse {
+  billing_op_id: string
+  status: 'active'
+  message?: string
+}
+
+interface PaymentPortalRequest {
+  return_url?: string
+}
+
+interface PaymentPortalResponse {
+  url: string
+}
+
+interface PreviewPlanInfo {
+  slug: string
+  tier: SubscriptionTier
+  duration: SubscriptionDuration
+  price_cents: number
+  credits_cents: number
+  seat_summary: PlanSeatSummary
+  period_start?: string
+  period_end?: string
+}
+
+export interface PreviewSubscribeResponse {
+  allowed: boolean
+  reason?: string
+  transition_type: SubscriptionTransitionType
+  effective_at: string
+  is_immediate: boolean
+  cost_today_cents: number
+  cost_next_period_cents: number
+  credits_today_cents: number
+  credits_next_period_cents: number
+  current_plan?: PreviewPlanInfo
+  new_plan: PreviewPlanInfo
+}
+
+type BillingSubscriptionStatus = 'active' | 'scheduled' | 'ended' | 'canceled'
+
+type BillingStatus =
+  | 'awaiting_payment_method'
+  | 'pending_payment'
+  | 'paid'
+  | 'payment_failed'
+  | 'inactive'
+
+export interface BillingStatusResponse {
+  is_active: boolean
+  subscription_status?: BillingSubscriptionStatus
+  subscription_tier?: SubscriptionTier
+  subscription_duration?: SubscriptionDuration
+  plan_slug?: string
+  billing_status?: BillingStatus
+  has_funds: boolean
+  cancel_at?: string
+  renewal_date?: string
+}
+
+export interface BillingBalanceResponse {
+  amount_micros: number
+  prepaid_balance_micros?: number
+  cloud_credit_balance_micros?: number
+  pending_charges_micros?: number
+  effective_balance_micros?: number
+  currency: string
+}
+
+interface CreateTopupRequest {
+  amount_cents: number
+  idempotency_key?: string
+}
+
+type TopupStatus = 'pending' | 'completed' | 'failed'
+
+interface CreateTopupResponse {
+  billing_op_id: string
+  topup_id: string
+  status: TopupStatus
+  amount_cents: number
+}
+
+interface TopupStatusResponse {
+  topup_id: string
+  status: TopupStatus
+  amount_cents: number
+  error_message?: string
+  created_at: string
+  completed_at?: string
+}
+
+type BillingOpStatus = 'pending' | 'succeeded' | 'failed'
+
+export interface BillingOpStatusResponse {
+  id: string
+  status: BillingOpStatus
+  error_message?: string
+  started_at: string
+  completed_at?: string
+}
+
+interface BillingEvent {
+  event_type: string
+  event_id: string
+  params?: Record<string, unknown>
+  createdAt: string
+}
+
+interface BillingEventsResponse {
+  total: number
+  events: BillingEvent[]
+  page: number
+  limit: number
+  totalPages: number
+}
+
+interface GetBillingEventsParams {
+  page?: number
+  limit?: number
 }
 
 class WorkspaceApiError extends Error {
@@ -326,19 +522,230 @@ export const workspaceApi = {
   },
 
   /**
-   * Access the billing portal for the current workspace.
-   * POST /api/billing/portal
+   * Get billing status for the current workspace
+   * GET /api/billing/status
    */
-  async accessBillingPortal(
-    returnUrl?: string
-  ): Promise<BillingPortalResponse> {
+  async getBillingStatus(): Promise<BillingStatusResponse> {
     const headers = await getAuthHeaderOrThrow()
     try {
-      const response = await workspaceApiClient.post<BillingPortalResponse>(
-        api.apiURL('/billing/portal'),
+      const response = await workspaceApiClient.get<BillingStatusResponse>(
+        api.apiURL('/billing/status'),
+        { headers }
+      )
+      return response.data
+    } catch (err) {
+      handleAxiosError(err)
+    }
+  },
+
+  /**
+   * Get credit balance for the current workspace
+   * GET /api/billing/balance
+   */
+  async getBillingBalance(): Promise<BillingBalanceResponse> {
+    const headers = await getAuthHeaderOrThrow()
+    try {
+      const response = await workspaceApiClient.get<BillingBalanceResponse>(
+        api.apiURL('/billing/balance'),
+        { headers }
+      )
+      return response.data
+    } catch (err) {
+      handleAxiosError(err)
+    }
+  },
+
+  /**
+   * Get available subscription plans
+   * GET /api/billing/plans
+   */
+  async getBillingPlans(): Promise<BillingPlansResponse> {
+    const headers = await getAuthHeaderOrThrow()
+    try {
+      const response = await workspaceApiClient.get<BillingPlansResponse>(
+        api.apiURL('/billing/plans'),
+        { headers }
+      )
+      return response.data
+    } catch (err) {
+      handleAxiosError(err)
+    }
+  },
+
+  /**
+   * Preview subscription change
+   * POST /api/billing/preview-subscribe
+   */
+  async previewSubscribe(planSlug: string): Promise<PreviewSubscribeResponse> {
+    const headers = await getAuthHeaderOrThrow()
+    try {
+      const response = await workspaceApiClient.post<PreviewSubscribeResponse>(
+        api.apiURL('/billing/preview-subscribe'),
+        { plan_slug: planSlug } satisfies PreviewSubscribeRequest,
+        { headers }
+      )
+      return response.data
+    } catch (err) {
+      handleAxiosError(err)
+    }
+  },
+
+  /**
+   * Subscribe to a billing plan
+   * POST /api/billing/subscribe
+   */
+  async subscribe(
+    planSlug: string,
+    returnUrl?: string,
+    cancelUrl?: string
+  ): Promise<SubscribeResponse> {
+    const headers = await getAuthHeaderOrThrow()
+    try {
+      const response = await workspaceApiClient.post<SubscribeResponse>(
+        api.apiURL('/billing/subscribe'),
         {
-          return_url: returnUrl ?? window.location.href
-        } satisfies BillingPortalRequest,
+          plan_slug: planSlug,
+          return_url: returnUrl,
+          cancel_url: cancelUrl
+        } satisfies SubscribeRequest,
+        { headers }
+      )
+      return response.data
+    } catch (err) {
+      handleAxiosError(err)
+    }
+  },
+
+  /**
+   * Cancel current subscription
+   * POST /api/billing/subscription/cancel
+   */
+  async cancelSubscription(
+    idempotencyKey?: string
+  ): Promise<CancelSubscriptionResponse> {
+    const headers = await getAuthHeaderOrThrow()
+    try {
+      const response =
+        await workspaceApiClient.post<CancelSubscriptionResponse>(
+          api.apiURL('/billing/subscription/cancel'),
+          {
+            idempotency_key: idempotencyKey
+          } satisfies CancelSubscriptionRequest,
+          { headers }
+        )
+      return response.data
+    } catch (err) {
+      handleAxiosError(err)
+    }
+  },
+
+  /**
+   * Resubscribe (undo cancel) before period ends
+   * POST /api/billing/subscription/resubscribe
+   */
+  async resubscribe(idempotencyKey?: string): Promise<ResubscribeResponse> {
+    const headers = await getAuthHeaderOrThrow()
+    try {
+      const response = await workspaceApiClient.post<ResubscribeResponse>(
+        api.apiURL('/billing/subscription/resubscribe'),
+        { idempotency_key: idempotencyKey } satisfies ResubscribeRequest,
+        { headers }
+      )
+      return response.data
+    } catch (err) {
+      handleAxiosError(err)
+    }
+  },
+
+  /**
+   * Get Stripe payment portal URL for managing payment methods
+   * POST /api/billing/payment-portal
+   */
+  async getPaymentPortalUrl(
+    returnUrl?: string
+  ): Promise<PaymentPortalResponse> {
+    const headers = await getAuthHeaderOrThrow()
+    try {
+      const response = await workspaceApiClient.post<PaymentPortalResponse>(
+        api.apiURL('/billing/payment-portal'),
+        { return_url: returnUrl } satisfies PaymentPortalRequest,
+        { headers }
+      )
+      return response.data
+    } catch (err) {
+      handleAxiosError(err)
+    }
+  },
+
+  /**
+   * Create a credit top-up
+   * POST /api/billing/topup
+   */
+  async createTopup(
+    amountCents: number,
+    idempotencyKey?: string
+  ): Promise<CreateTopupResponse> {
+    const headers = await getAuthHeaderOrThrow()
+    try {
+      const response = await workspaceApiClient.post<CreateTopupResponse>(
+        api.apiURL('/billing/topup'),
+        {
+          amount_cents: amountCents,
+          idempotency_key: idempotencyKey
+        } satisfies CreateTopupRequest,
+        { headers }
+      )
+      return response.data
+    } catch (err) {
+      handleAxiosError(err)
+    }
+  },
+
+  /**
+   * Get top-up status
+   * GET /api/billing/topup/:id
+   */
+  async getTopupStatus(topupId: string): Promise<TopupStatusResponse> {
+    const headers = await getAuthHeaderOrThrow()
+    try {
+      const response = await workspaceApiClient.get<TopupStatusResponse>(
+        api.apiURL(`/billing/topup/${topupId}`),
+        { headers }
+      )
+      return response.data
+    } catch (err) {
+      handleAxiosError(err)
+    }
+  },
+
+  /**
+   * Get billing events
+   * GET /api/billing/events
+   */
+  async getBillingEvents(
+    params?: GetBillingEventsParams
+  ): Promise<BillingEventsResponse> {
+    const headers = await getAuthHeaderOrThrow()
+    try {
+      const response = await workspaceApiClient.get<BillingEventsResponse>(
+        api.apiURL('/billing/events'),
+        { headers, params }
+      )
+      return response.data
+    } catch (err) {
+      handleAxiosError(err)
+    }
+  },
+
+  /**
+   * Get billing operation status
+   * GET /api/billing/ops/:id
+   */
+  async getBillingOpStatus(opId: string): Promise<BillingOpStatusResponse> {
+    const headers = await getAuthHeaderOrThrow()
+    try {
+      const response = await workspaceApiClient.get<BillingOpStatusResponse>(
+        api.apiURL(`/billing/ops/${opId}`),
         { headers }
       )
       return response.data

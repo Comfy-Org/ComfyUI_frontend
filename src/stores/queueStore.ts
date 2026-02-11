@@ -475,6 +475,9 @@ export const useQueueStore = defineStore('queue', () => {
   const maxHistoryItems = ref(64)
   const isLoading = ref(false)
 
+  // Scoped per-store instance; incremented to dedupe concurrent update() calls
+  let updateRequestId = 0
+
   const tasks = computed<TaskItemImpl[]>(
     () =>
       [
@@ -498,12 +501,15 @@ export const useQueueStore = defineStore('queue', () => {
   )
 
   const update = async () => {
+    const requestId = ++updateRequestId
     isLoading.value = true
     try {
       const [queue, history] = await Promise.all([
         api.getQueue(),
         api.getHistory(maxHistoryItems.value)
       ])
+
+      if (requestId !== updateRequestId) return
 
       // API returns pre-sorted data (sort_by=create_time&order=desc)
       runningTasks.value = queue.Running.map((job) => new TaskItemImpl(job))
@@ -545,7 +551,12 @@ export const useQueueStore = defineStore('queue', () => {
         return existing
       })
     } finally {
-      isLoading.value = false
+      // Only clear loading if this is the latest request.
+      // A stale request completing (success or error) should not touch loading state
+      // since a newer request is responsible for it.
+      if (requestId === updateRequestId) {
+        isLoading.value = false
+      }
     }
   }
 

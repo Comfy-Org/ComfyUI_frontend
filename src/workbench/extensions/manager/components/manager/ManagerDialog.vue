@@ -6,7 +6,7 @@
     class="manager-dialog"
   >
     <template #leftPanelHeaderTitle>
-      <i class="icon-[lucide--puzzle]" />
+      <i class="icon-[comfy--extensions-blocks]" />
       <h2 class="text-neutral text-base">{{ $t('manager.title') }}</h2>
     </template>
     <template #leftPanel>
@@ -130,16 +130,8 @@
       </div>
       <NoResultsPlaceholder
         v-else-if="displayPacks.length === 0"
-        :title="
-          comfyManagerStore.error
-            ? $t('manager.errorConnecting')
-            : $t('manager.noResultsFound')
-        "
-        :message="
-          comfyManagerStore.error
-            ? $t('manager.tryAgainLater')
-            : $t('manager.tryDifferentSearch')
-        "
+        :title="emptyStateTitle"
+        :message="emptyStateMessage"
       />
       <div v-else class="h-full w-full" @click="handleGridContainerClick">
         <VirtualGrid
@@ -214,6 +206,8 @@ import { useManagerDisplayPacks } from '@/workbench/extensions/manager/composabl
 import { useManagerStatePersistence } from '@/workbench/extensions/manager/composables/useManagerStatePersistence'
 import { useRegistrySearch } from '@/workbench/extensions/manager/composables/useRegistrySearch'
 import { useConflictDetectionStore } from '@/workbench/extensions/manager/stores/conflictDetectionStore'
+import { useLegacySearchTip } from '@/workbench/extensions/manager/composables/useLegacySearchTip'
+import { useManagerState } from '@/workbench/extensions/manager/composables/useManagerState'
 import { useComfyManagerStore } from '@/workbench/extensions/manager/stores/comfyManagerStore'
 import { ManagerTab } from '@/workbench/extensions/manager/types/comfyManagerTypes'
 
@@ -230,6 +224,7 @@ const comfyManagerStore = useComfyManagerStore()
 const { getPackById } = useComfyRegistryStore()
 const conflictAcknowledgment = useConflictAcknowledgment()
 const conflictDetectionStore = useConflictDetectionStore()
+const { isNewManagerUI } = useManagerState()
 const workflowStore = useWorkflowStore()
 const persistedState = useManagerStatePersistence()
 const initialState = persistedState.loadStoredState()
@@ -357,7 +352,11 @@ const {
 })
 pageNumber.value = 0
 
-// Filter and sort options for SingleSelect
+const { isLegacyManagerSearch } = useLegacySearchTip(
+  searchQuery,
+  isNewManagerUI
+)
+
 const filterOptions = computed(() => [
   { name: t('manager.filter.nodePack'), value: 'packs' },
   { name: t('g.nodes'), value: 'nodes' }
@@ -397,6 +396,46 @@ const isUpdateAvailableTab = computed(
 const isMissingTab = computed(
   () => selectedTab.value?.id === ManagerTab.Missing
 )
+
+// Map of tab IDs to their empty state i18n key suffixes
+const tabEmptyStateKeys: Partial<Record<ManagerTab, string>> = {
+  [ManagerTab.AllInstalled]: 'allInstalled',
+  [ManagerTab.UpdateAvailable]: 'updateAvailable',
+  [ManagerTab.Conflicting]: 'conflicting',
+  [ManagerTab.Workflow]: 'workflow',
+  [ManagerTab.Missing]: 'missing'
+}
+
+// Empty state messages based on current tab and search state
+const emptyStateTitle = computed(() => {
+  if (comfyManagerStore.error) return t('manager.errorConnecting')
+  if (searchQuery.value) return t('manager.noResultsFound')
+
+  const tabId = selectedTab.value?.id as ManagerTab | undefined
+  const emptyStateKey = tabId ? tabEmptyStateKeys[tabId] : undefined
+
+  return emptyStateKey
+    ? t(`manager.emptyState.${emptyStateKey}.title`)
+    : t('manager.noResultsFound')
+})
+
+const emptyStateMessage = computed(() => {
+  if (comfyManagerStore.error) return t('manager.tryAgainLater')
+  if (searchQuery.value) {
+    const baseMessage = t('manager.tryDifferentSearch')
+    if (isLegacyManagerSearch.value) {
+      return `${baseMessage}\n\n${t('manager.legacyManagerSearchTip')}`
+    }
+    return baseMessage
+  }
+
+  const tabId = selectedTab.value?.id as ManagerTab | undefined
+  const emptyStateKey = tabId ? tabEmptyStateKeys[tabId] : undefined
+
+  return emptyStateKey
+    ? t(`manager.emptyState.${emptyStateKey}.message`)
+    : t('manager.tryDifferentSearch')
+})
 
 const onClickWarningLink = () => {
   window.open(

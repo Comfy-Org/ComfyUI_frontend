@@ -2,9 +2,11 @@ import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import type { SystemStats } from '@/schemas/apiSchema'
 import { api } from '@/scripts/api'
 import { useSystemStatsStore } from '@/stores/systemStatsStore'
-import { isElectron } from '@/utils/envUtil'
+
+const mockData = vi.hoisted(() => ({ isDesktop: false }))
 
 // Mock the API
 vi.mock('@/scripts/api', () => ({
@@ -13,19 +15,19 @@ vi.mock('@/scripts/api', () => ({
   }
 }))
 
-// Mock the envUtil
-vi.mock('@/utils/envUtil', () => ({
-  isElectron: vi.fn()
+vi.mock('@/platform/distribution/types', () => ({
+  get isDesktop() {
+    return mockData.isDesktop
+  },
+  isCloud: false
 }))
-
-vi.mock('@/platform/distribution/types', () => ({ isCloud: false }))
 
 describe('useSystemStatsStore', () => {
   let store: ReturnType<typeof useSystemStatsStore>
 
   beforeEach(() => {
     // Mock API to prevent automatic fetch on store creation
-    vi.mocked(api.getSystemStats).mockResolvedValue(null as any)
+    vi.mocked(api.getSystemStats).mockResolvedValue(null!)
     setActivePinia(createTestingPinia({ stubActions: false }))
     store = useSystemStatsStore()
     vi.clearAllMocks()
@@ -90,8 +92,8 @@ describe('useSystemStatsStore', () => {
     })
 
     it('should set loading state correctly', async () => {
-      let resolvePromise: (value: any) => void = () => {}
-      const promise = new Promise<any>((resolve) => {
+      let resolvePromise: (value: SystemStats) => void = () => {}
+      const promise = new Promise<SystemStats>((resolve) => {
         resolvePromise = resolve
       })
       vi.mocked(api.getSystemStats).mockReturnValue(promise)
@@ -99,7 +101,7 @@ describe('useSystemStatsStore', () => {
       const fetchPromise = store.refetchSystemStats()
       expect(store.isLoading).toBe(true)
 
-      resolvePromise({})
+      resolvePromise({} as SystemStats)
       await fetchPromise
 
       expect(store.isLoading).toBe(false)
@@ -153,16 +155,16 @@ describe('useSystemStatsStore', () => {
           argv: [],
           ram_total: 16000000000,
           ram_free: 8000000000
-        } as any,
+        } as Partial<SystemStats['system']> as SystemStats['system'],
         devices: []
       }
 
       expect(store.getFormFactor()).toBe('other')
     })
 
-    describe('desktop environment (Electron)', () => {
+    describe('desktop environment', () => {
       beforeEach(() => {
-        vi.mocked(isElectron).mockReturnValue(true)
+        mockData.isDesktop = true
       })
 
       it('should return "desktop-windows" for Windows desktop', () => {
@@ -238,9 +240,9 @@ describe('useSystemStatsStore', () => {
       })
     })
 
-    describe('git environment (non-Electron)', () => {
+    describe('git environment (non-desktop)', () => {
       beforeEach(() => {
-        vi.mocked(isElectron).mockReturnValue(false)
+        mockData.isDesktop = false
       })
 
       it('should return "git-windows" for Windows git', () => {
@@ -318,7 +320,7 @@ describe('useSystemStatsStore', () => {
 
     describe('case insensitive OS detection', () => {
       beforeEach(() => {
-        vi.mocked(isElectron).mockReturnValue(false)
+        mockData.isDesktop = false
       })
 
       it('should handle uppercase OS names', () => {

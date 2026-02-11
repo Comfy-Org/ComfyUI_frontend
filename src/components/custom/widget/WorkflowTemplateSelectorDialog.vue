@@ -256,6 +256,11 @@
                         "
                       />
                     </template>
+                    <LogoOverlay
+                      v-if="template.logos?.length"
+                      :logos="template.logos"
+                      :get-logo-url="workflowTemplatesStore.getLogoUrl"
+                    />
                     <ProgressSpinner
                       v-if="loadingTemplate === template.name"
                       class="absolute inset-0 z-10 m-auto h-12 w-12"
@@ -397,6 +402,7 @@ import AudioThumbnail from '@/components/templates/thumbnails/AudioThumbnail.vue
 import CompareSliderThumbnail from '@/components/templates/thumbnails/CompareSliderThumbnail.vue'
 import DefaultThumbnail from '@/components/templates/thumbnails/DefaultThumbnail.vue'
 import HoverDissolveThumbnail from '@/components/templates/thumbnails/HoverDissolveThumbnail.vue'
+import LogoOverlay from '@/components/templates/thumbnails/LogoOverlay.vue'
 import Button from '@/components/ui/button/Button.vue'
 import BaseModalLayout from '@/components/widget/layout/BaseModalLayout.vue'
 import LeftSidePanel from '@/components/widget/panel/LeftSidePanel.vue'
@@ -406,8 +412,8 @@ import { useTemplateFiltering } from '@/composables/useTemplateFiltering'
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
 import { useTemplateWorkflows } from '@/platform/workflow/templates/composables/useTemplateWorkflows'
-import { useWorkflowTemplatesStore } from '@/platform/workflow/templates/repositories/workflowTemplatesStore'
 import type { TemplateInfo } from '@/platform/workflow/templates/types/template'
+import { useWorkflowTemplatesStore } from '@/platform/workflow/templates/repositories/workflowTemplatesStore'
 import { TemplateIncludeOnDistributionEnum } from '@/platform/workflow/templates/types/template'
 import { useSystemStatsStore } from '@/stores/systemStatsStore'
 import type { NavGroupData, NavItemData } from '@/types/navTypes'
@@ -416,8 +422,9 @@ import { createGridStyle } from '@/utils/gridUtil'
 
 const { t } = useI18n()
 
-const { onClose: originalOnClose } = defineProps<{
+const { onClose: originalOnClose, initialCategory = 'all' } = defineProps<{
   onClose: () => void
+  initialCategory?: string
 }>()
 
 // Track session time for telemetry
@@ -541,7 +548,7 @@ const allTemplates = computed(() => {
 })
 
 // Navigation
-const selectedNavItem = ref<string | null>('all')
+const selectedNavItem = ref<string | null>(initialCategory)
 
 // Filter templates based on selected navigation item
 const navigationFilteredTemplates = computed(() => {
@@ -772,7 +779,7 @@ useIntersectionObserver(loadTrigger, () => {
 // Reset pagination when filters change
 watch(
   [
-    searchQuery,
+    filteredTemplates,
     selectedNavItem,
     sortBy,
     selectedModels,
@@ -788,7 +795,7 @@ watch(
 )
 
 // Methods
-const onLoadWorkflow = async (template: any) => {
+const onLoadWorkflow = async (template: TemplateInfo) => {
   loadingTemplate.value = template.name
   try {
     await loadWorkflowTemplate(

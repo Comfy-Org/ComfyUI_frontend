@@ -1266,6 +1266,21 @@
       }
     }
   },
+  "ColorToRGBInt": {
+    "description": "Преобразовать цвет в целочисленное значение RGB.",
+    "display_name": "Преобразование цвета в RGB Int",
+    "inputs": {
+      "color": {
+        "name": "цвет"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "rgb_int",
+        "tooltip": null
+      }
+    }
+  },
   "CombineHooks2": {
     "display_name": "Объединить хуки [2]",
     "inputs": {
@@ -2003,6 +2018,20 @@
       }
     }
   },
+  "CreateList": {
+    "display_name": "Создать список",
+    "inputs": {
+      "inputs": {
+        "name": "входные данные"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "список",
+        "tooltip": null
+      }
+    }
+  },
   "CreateVideo": {
     "description": "Создайте видео из изображений.",
     "display_name": "Создать видео",
@@ -2187,6 +2216,23 @@
     "outputs": {
       "0": {
         "tooltip": "Модель с EasyCache."
+      }
+    }
+  },
+  "EmptyAceStep1_5LatentAudio": {
+    "display_name": "Empty Ace Step 1.5 Latent Audio",
+    "inputs": {
+      "batch_size": {
+        "name": "размер_пакета",
+        "tooltip": "Количество латентных изображений в пакете."
+      },
+      "seconds": {
+        "name": "секунды"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -3531,6 +3577,50 @@
       },
       "tapered_corners": {
         "name": "заостренные_углы"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HitPawGeneralImageEnhance": {
+    "description": "Увеличение разрешения низкокачественных изображений до сверхвысокого, устранение артефактов и шума. Максимальный выход: 32 мегапикселя.",
+    "display_name": "HitPaw General Image Enhance",
+    "inputs": {
+      "auto_downscale": {
+        "name": "авто_понижение_разрешения",
+        "tooltip": "Автоматически понижать разрешение входного изображения, если выход превышает лимит."
+      },
+      "image": {
+        "name": "изображение"
+      },
+      "model": {
+        "name": "модель"
+      },
+      "upscale_factor": {
+        "name": "коэффициент_масштабирования"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HitPawVideoEnhance": {
+    "description": "Увеличение разрешения низкокачественных видео до высокого, устранение артефактов и шума. Цена указана за секунду видео.",
+    "display_name": "HitPaw Video Enhance",
+    "inputs": {
+      "model": {
+        "name": "модель"
+      },
+      "model_resolution": {
+        "name": "разрешение"
+      },
+      "video": {
+        "name": "видео"
       }
     },
     "outputs": {
@@ -7237,12 +7327,17 @@
         "name": "rig_task_id"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "model_file",
+    "outputs": [
+      null,
+      {
+        "name": "GLB",
+        "tooltip": null
+      },
+      {
+        "name": "FBX",
         "tooltip": null
       }
-    }
+    ]
   },
   "MeshyImageToModelNode": {
     "display_name": "Meshy: Изображение в модель",
@@ -7288,16 +7383,18 @@
         "name": "symmetry_mode"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "model_file",
+    "outputs": [
+      null,
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       },
-      "1": {
-        "name": "meshy_task_id",
+      {
+        "name": "FBX",
         "tooltip": null
       }
-    }
+    ]
   },
   "MeshyMultiImageToModelNode": {
     "display_name": "Meshy: Мульти-изображение в модель",
@@ -7343,16 +7440,18 @@
         "name": "symmetry_mode"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "model_file",
+    "outputs": [
+      null,
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       },
-      "1": {
-        "name": "meshy_task_id",
+      {
+        "name": "FBX",
         "tooltip": null
       }
-    }
+    ]
   },
   "MeshyRefineNode": {
     "description": "Улучшить ранее созданную черновую модель.",
@@ -7377,16 +7476,18 @@
         "tooltip": "Введите текстовый запрос для управления процессом текстурирования. Максимум 600 символов. Не может использоваться одновременно с 'texture_image'."
       }
     },
-    "outputs": {
-      "0": {
-        "name": "model_file",
+    "outputs": [
+      null,
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       },
-      "1": {
-        "name": "meshy_task_id",
+      {
+        "name": "FBX",
         "tooltip": null
       }
-    }
+    ]
   },
   "MeshyRigModelNode": {
     "description": "Предоставляет персонажа с риггингом в стандартных форматах. Автоматический риггинг в настоящее время не подходит для моделей без текстур, не-гуманоидных объектов или гуманоидов с нечеткой структурой конечностей и тела.",
@@ -7404,16 +7505,18 @@
         "tooltip": "UV-развернутая текстура базового цвета модели."
       }
     },
-    "outputs": {
-      "0": {
-        "name": "model_file",
+    "outputs": [
+      null,
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       },
-      "1": {
-        "name": "rig_task_id",
+      {
+        "name": "FBX",
         "tooltip": null
       }
-    }
+    ]
   },
   "MeshyTextToModelNode": {
     "display_name": "Meshy: Текст в Модель",
@@ -7452,16 +7555,18 @@
         "name": "symmetry_mode"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "model_file",
+    "outputs": [
+      null,
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       },
-      "1": {
-        "name": "meshy_task_id",
+      {
+        "name": "FBX",
         "tooltip": null
       }
-    }
+    ]
   },
   "MeshyTextureNode": {
     "display_name": "Meshy: Модель текстуры",
@@ -7488,16 +7593,18 @@
         "tooltip": "Опишите желаемый стиль текстуры объекта с помощью текста. Максимум 600 символов. Нельзя использовать одновременно с 'image_style'."
       }
     },
-    "outputs": {
-      "0": {
-        "name": "model_file",
+    "outputs": [
+      null,
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       },
-      "1": {
-        "name": "meshy_task_id",
+      {
+        "name": "FBX",
         "tooltip": null
       }
-    }
+    ]
   },
   "MinimaxHailuoVideoNode": {
     "description": "Создает видео из промпта с возможностью использования начального кадра с помощью новой модели MiniMax Hailuo-02.",
@@ -10698,7 +10805,8 @@
         "name": "изображение"
       },
       "model_file": {
-        "name": "файл_модели"
+        "name": "файл_модели",
+        "tooltip": "Файл 3D-модели или строка пути"
       }
     }
   },
@@ -10978,6 +11086,25 @@
     "outputs": {
       "0": {
         "name": "recraft_controls",
+        "tooltip": null
+      }
+    }
+  },
+  "RecraftCreateStyleNode": {
+    "description": "Создайте пользовательский стиль на основе референсных изображений. Загрузите 1–5 изображений для использования в качестве референсов стиля. Общий размер всех изображений ограничен 5 МБ.",
+    "display_name": "Recraft Создать стиль",
+    "inputs": {
+      "images": {
+        "name": "изображения"
+      },
+      "style": {
+        "name": "стиль",
+        "tooltip": "Базовый стиль сгенерированных изображений."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "style_id",
         "tooltip": null
       }
     }
@@ -11320,6 +11447,23 @@
       }
     }
   },
+  "ReferenceTimbreAudio": {
+    "description": "Этот узел задаёт эталонное аудио для тембра (для ace step 1.5)",
+    "display_name": "ReferenceTimbreAudio",
+    "inputs": {
+      "conditioning": {
+        "name": "conditioning"
+      },
+      "latent": {
+        "name": "latent"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "RegexExtract": {
     "display_name": "Извлечение по регулярному выражению",
     "inputs": {
@@ -11648,12 +11792,13 @@
         "name": "Сид"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "Путь к 3D-модели",
+    "outputs": [
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       }
-    }
+    ]
   },
   "Rodin3D_Gen2": {
     "description": "Создание 3D-объектов с помощью Rodin API",
@@ -11675,12 +11820,13 @@
         "name": "TAPose"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "Путь к 3D-модели",
+    "outputs": [
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       }
-    }
+    ]
   },
   "Rodin3D_Regular": {
     "description": "Создание 3D-объектов с помощью Rodin API",
@@ -11699,12 +11845,13 @@
         "name": "Сид"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "Путь к 3D-модели",
+    "outputs": [
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       }
-    }
+    ]
   },
   "Rodin3D_Sketch": {
     "description": "Создание 3D-объектов с помощью Rodin API",
@@ -11717,12 +11864,13 @@
         "name": "Сид"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "Путь к 3D-модели",
+    "outputs": [
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       }
-    }
+    ]
   },
   "Rodin3D_Smooth": {
     "description": "Создание 3D-объектов с помощью Rodin API",
@@ -11741,12 +11889,13 @@
         "name": "Сид"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "Путь к 3D-модели",
+    "outputs": [
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       }
-    }
+    ]
   },
   "RunwayFirstLastFrameNode": {
     "description": "Загрузите первый и последний ключевые кадры, составьте промпт и создайте видео. Более сложные переходы, например, когда последний кадр полностью отличается от первого, могут выиграть от более длительной продолжительности в 10 секунд. Это даст генерации больше времени для плавного перехода между двумя входными данными. Прежде чем начать, ознакомьтесь с лучшими практиками, чтобы убедиться, что ваши входные данные обеспечат успешный результат: https://help.runwayml.com/hc/en-us/articles/34170748696595-Creating-with-Keyframes-on-Gen-3.",
@@ -12477,7 +12626,8 @@
         "name": "изображение"
       },
       "mesh": {
-        "name": "сетка"
+        "name": "сетка",
+        "tooltip": "Меш или GLB-файл для сохранения"
       }
     }
   },
@@ -13730,12 +13880,17 @@
         "tooltip": "Seed управляет тем, будет ли узел запускаться повторно; результаты всегда недетерминированы, независимо от seed."
       }
     },
-    "outputs": {
-      "0": {
-        "name": "файл_модели",
+    "outputs": [
+      null,
+      {
+        "name": "GLB",
+        "tooltip": null
+      },
+      {
+        "name": "OBJ",
         "tooltip": null
       }
-    }
+    ]
   },
   "TencentTextToModelNode": {
     "display_name": "Hunyuan3D: Текст в модель (Pro)",
@@ -13765,12 +13920,17 @@
         "tooltip": "Seed управляет тем, будет ли узел запускаться повторно; результаты всегда недетерминированы, независимо от seed."
       }
     },
-    "outputs": {
-      "0": {
-        "name": "файл_модели",
+    "outputs": [
+      null,
+      {
+        "name": "GLB",
+        "tooltip": null
+      },
+      {
+        "name": "OBJ",
         "tooltip": null
       }
-    }
+    ]
   },
   "TextEncodeAceStepAudio": {
     "display_name": "TextEncodeAceStepAudio",
@@ -13786,6 +13946,62 @@
       },
       "tags": {
         "name": "теги"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "TextEncodeAceStepAudio1_5": {
+    "display_name": "TextEncodeAceStepAudio1.5",
+    "inputs": {
+      "bpm": {
+        "name": "bpm"
+      },
+      "cfg_scale": {
+        "name": "cfg_scale"
+      },
+      "clip": {
+        "name": "clip"
+      },
+      "control_after_generate": {
+        "name": "контроль после генерации"
+      },
+      "duration": {
+        "name": "длительность"
+      },
+      "generate_audio_codes": {
+        "name": "генерировать аудиокоды",
+        "tooltip": "Включить LLM, который генерирует аудиокоды. Это может быть медленно, но повысит качество сгенерированного аудио. Отключите, если вы предоставляете модели аудиореференс."
+      },
+      "keyscale": {
+        "name": "тональность"
+      },
+      "language": {
+        "name": "язык"
+      },
+      "lyrics": {
+        "name": "текст песни"
+      },
+      "seed": {
+        "name": "seed"
+      },
+      "tags": {
+        "name": "теги"
+      },
+      "temperature": {
+        "name": "температура"
+      },
+      "timesignature": {
+        "name": "размер"
+      },
+      "top_k": {
+        "name": "top_k"
+      },
+      "top_p": {
+        "name": "top_p"
       }
     },
     "outputs": {
@@ -14349,16 +14565,14 @@
         "name": "texture_seed"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "model_file",
-        "tooltip": null
-      },
-      "1": {
-        "name": "model task_id",
+    "outputs": [
+      null,
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       }
-    }
+    ]
   },
   "TripoMultiviewToModelNode": {
     "display_name": "Tripo: Мультивью в модель",
@@ -14410,16 +14624,14 @@
         "name": "сид_текстуры"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "файл_модели",
-        "tooltip": null
-      },
-      "1": {
-        "name": "идентификатор_задачи_модели",
+    "outputs": [
+      null,
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       }
-    }
+    ]
   },
   "TripoRefineNode": {
     "description": "Уточнение черновой модели, созданной только моделями Tripo v1.4.",
@@ -14430,16 +14642,14 @@
         "tooltip": "Должна быть модель Tripo v1.4"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "файл_модели",
-        "tooltip": null
-      },
-      "1": {
-        "name": "идентификатор_задачи_модели",
+    "outputs": [
+      null,
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       }
-    }
+    ]
   },
   "TripoRetargetNode": {
     "display_name": "Tripo: Перепривязка ригнутой модели",
@@ -14451,16 +14661,14 @@
         "name": "идентификатор_задачи_исходной_модели"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "файл_модели",
-        "tooltip": null
-      },
-      "1": {
-        "name": "идентификатор_задачи_перепривязки",
+    "outputs": [
+      null,
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       }
-    }
+    ]
   },
   "TripoRigNode": {
     "display_name": "Tripo: Риггинг модели",
@@ -14469,16 +14677,14 @@
         "name": "идентификатор_задачи_исходной_модели"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "файл_модели",
-        "tooltip": null
-      },
-      "1": {
-        "name": "идентификатор_задачи_риггинга",
+    "outputs": [
+      null,
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       }
-    }
+    ]
   },
   "TripoTextToModelNode": {
     "display_name": "Tripo: Текст в модель",
@@ -14523,16 +14729,14 @@
         "name": "texture_seed"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "model_file",
-        "tooltip": null
-      },
-      "1": {
-        "name": "model task_id",
+    "outputs": [
+      null,
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       }
-    }
+    ]
   },
   "TripoTextureNode": {
     "display_name": "Tripo: Модель текстур",
@@ -14556,16 +14760,14 @@
         "name": "texture_seed"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "model_file",
-        "tooltip": null
-      },
-      "1": {
-        "name": "model task_id",
+    "outputs": [
+      null,
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       }
-    }
+    ]
   },
   "TruncateText": {
     "display_name": "Обрезать текст",
@@ -14723,6 +14925,28 @@
     "inputs": {
       "samples": {
         "name": "образцы"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "VAEDecodeAudioTiled": {
+    "display_name": "VAE декодирование аудио (плитками)",
+    "inputs": {
+      "overlap": {
+        "name": "перекрытие"
+      },
+      "samples": {
+        "name": "образцы"
+      },
+      "tile_size": {
+        "name": "размер плитки"
       },
       "vae": {
         "name": "vae"
@@ -15229,6 +15453,119 @@
       }
     }
   },
+  "Vidu3ImageToVideoNode": {
+    "description": "Создайте видео из изображения и необязательной текстовой подсказки.",
+    "display_name": "Vidu Q3: генерация видео из изображения",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "Изображение, используемое в качестве первого кадра генерируемого видео."
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Модель для генерации видео."
+      },
+      "model_audio": {
+        "name": "audio"
+      },
+      "model_duration": {
+        "name": "duration"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Необязательная текстовая подсказка для генерации видео (максимум 2000 символов)."
+      },
+      "seed": {
+        "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Vidu3TextToVideoNode": {
+    "description": "Создайте видео по текстовой подсказке.",
+    "display_name": "Vidu Q3: генерация видео по тексту",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Модель для генерации видео."
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_audio": {
+        "name": "audio"
+      },
+      "model_duration": {
+        "name": "duration"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Текстовое описание для генерации видео, максимум 2000 символов."
+      },
+      "seed": {
+        "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ViduExtendVideoNode": {
+    "description": "Расширьте существующее видео, сгенерировав дополнительные кадры.",
+    "display_name": "Vidu: расширение видео",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "end_frame": {
+        "name": "end_frame"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Модель для расширения видео."
+      },
+      "model_duration": {
+        "name": "duration"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Необязательная текстовая подсказка для расширенного видео (максимум 2000 символов)."
+      },
+      "seed": {
+        "name": "seed"
+      },
+      "video": {
+        "name": "video",
+        "tooltip": "Исходное видео для расширения."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ViduImageToVideoNode": {
     "description": "Генерация видео из изображения и необязательного промпта",
     "display_name": "Vidu Image To Video Generation",
@@ -15263,6 +15600,49 @@
       "seed": {
         "name": "seed",
         "tooltip": "Сид для генерации видео (0 для случайного)"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ViduMultiFrameVideoNode": {
+    "description": "Создайте видео с несколькими переходами между ключевыми кадрами.",
+    "display_name": "Vidu: генерация видео с несколькими ключевыми кадрами",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "frames": {
+        "name": "frames",
+        "tooltip": "Количество переходов между ключевыми кадрами (2-9)."
+      },
+      "frames_duration1": {
+        "name": "duration1"
+      },
+      "frames_duration2": {
+        "name": "duration2"
+      },
+      "frames_prompt1": {
+        "name": "prompt1"
+      },
+      "frames_prompt2": {
+        "name": "prompt2"
+      },
+      "model": {
+        "name": "model"
+      },
+      "resolution": {
+        "name": "resolution"
+      },
+      "seed": {
+        "name": "seed"
+      },
+      "start_image": {
+        "name": "start_image",
+        "tooltip": "Изображение начального кадра. Соотношение сторон должно быть от 1:4 до 4:1."
       }
     },
     "outputs": {

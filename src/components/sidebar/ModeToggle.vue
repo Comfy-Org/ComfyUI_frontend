@@ -1,10 +1,23 @@
 <script setup lang="ts">
+import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
+
 import Button from '@/components/ui/button/Button.vue'
-import { t } from '@/i18n'
+import { useKeybindingStore } from '@/platform/keybindings/keybindingStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCommandStore } from '@/stores/commandStore'
 
+const { t } = useI18n()
 const canvasStore = useCanvasStore()
+const keybindingStore = useKeybindingStore()
+
+const keybindingSuffix = computed(() => {
+  const shortcut = keybindingStore
+    .getKeybindingByCommandId('Comfy.ToggleLinear')
+    ?.combo.toString()
+  return shortcut ? t('g.shortcutSuffix', { shortcut }) : ''
+})
+
 function toggleLinearMode() {
   useCommandStore().execute('Comfy.ToggleLinear', {
     metadata: { source: 'button' }
@@ -12,10 +25,13 @@ function toggleLinearMode() {
 }
 </script>
 <template>
-  <div class="p-1 bg-secondary-background rounded-lg w-10">
+  <div
+    data-testid="mode-toggle"
+    class="p-1 bg-secondary-background rounded-lg w-10"
+  >
     <Button
       v-tooltip="{
-        value: t('linearMode.linearMode'),
+        value: t('linearMode.linearMode') + keybindingSuffix,
         showDelay: 300,
         hideDelay: 300
       }"
@@ -27,7 +43,7 @@ function toggleLinearMode() {
     </Button>
     <Button
       v-tooltip="{
-        value: t('linearMode.graphMode'),
+        value: t('linearMode.graphMode') + keybindingSuffix,
         showDelay: 300,
         hideDelay: 300
       }"

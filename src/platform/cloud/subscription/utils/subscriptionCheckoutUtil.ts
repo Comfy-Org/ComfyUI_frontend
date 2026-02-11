@@ -1,10 +1,14 @@
+import { storeToRefs } from 'pinia'
+
 import { getComfyApiBaseUrl } from '@/config/comfyApi'
 import { t } from '@/i18n'
 import { isCloud } from '@/platform/distribution/types'
+import { useTelemetry } from '@/platform/telemetry'
 import {
   FirebaseAuthStoreError,
   useFirebaseAuthStore
 } from '@/stores/firebaseAuthStore'
+import type { CheckoutAttributionMetadata } from '@/platform/telemetry/types'
 import type { TierKey } from '@/platform/cloud/subscription/constants/tierPricing'
 import type { BillingCycle } from './subscriptionTierRank'
 
@@ -14,6 +18,18 @@ const getCheckoutTier = (
   tierKey: TierKey,
   billingCycle: BillingCycle
 ): CheckoutTier => (billingCycle === 'yearly' ? `${tierKey}-yearly` : tierKey)
+
+const getCheckoutAttributionForCloud =
+  async (): Promise<CheckoutAttributionMetadata> => {
+    if (__DISTRIBUTION__ !== 'cloud') {
+      return {}
+    }
+
+    const { getCheckoutAttribution } =
+      await import('@/platform/telemetry/utils/checkoutAttribution')
+
+    return getCheckoutAttribution()
+  }
 
 /**
  * Core subscription checkout logic shared between PricingTable and
@@ -35,20 +51,33 @@ export async function performSubscriptionCheckout(
 ): Promise<void> {
   if (!isCloud) return
 
-  const { getFirebaseAuthHeader } = useFirebaseAuthStore()
-  const authHeader = await getFirebaseAuthHeader()
+  const firebaseAuthStore = useFirebaseAuthStore()
+  const { userId } = storeToRefs(firebaseAuthStore)
+  const telemetry = useTelemetry()
+  const authHeader = await firebaseAuthStore.getFirebaseAuthHeader()
 
   if (!authHeader) {
     throw new FirebaseAuthStoreError(t('toastMessages.userNotAuthenticated'))
   }
 
   const checkoutTier = getCheckoutTier(tierKey, currentBillingCycle)
+  let checkoutAttribution: CheckoutAttributionMetadata = {}
+  try {
+    checkoutAttribution = await getCheckoutAttributionForCloud()
+  } catch (error) {
+    console.warn(
+      '[SubscriptionCheckout] Failed to collect checkout attribution',
+      error
+    )
+  }
+  const checkoutPayload = { ...checkoutAttribution }
 
   const response = await fetch(
     `${getComfyApiBaseUrl()}/customers/cloud-subscription-checkout/${checkoutTier}`,
     {
       method: 'POST',
-      headers: { ...authHeader, 'Content-Type': 'application/json' }
+      headers: { ...authHeader, 'Content-Type': 'application/json' },
+      body: JSON.stringify(checkoutPayload)
     }
   )
 
@@ -78,6 +107,15 @@ export async function performSubscriptionCheckout(
   const data = await response.json()
 
   if (data.checkout_url) {
+    if (userId.value) {
+      telemetry?.trackBeginCheckout({
+        user_id: userId.value,
+        tier: tierKey,
+        cycle: currentBillingCycle,
+        checkout_type: 'new',
+        ...checkoutAttribution
+      })
+    }
     if (openInNewTab) {
       window.open(data.checkout_url, '_blank')
     } else {

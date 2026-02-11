@@ -3,14 +3,16 @@ import type { Component } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useVueFeatureFlags } from '@/composables/useVueFeatureFlags'
-import { isCloud } from '@/platform/distribution/types'
+import { isCloud, isDesktop } from '@/platform/distribution/types'
+import {
+  getSettingInfo,
+  useSettingStore
+} from '@/platform/settings/settingStore'
 import type { SettingTreeNode } from '@/platform/settings/settingStore'
-import { useSettingStore } from '@/platform/settings/settingStore'
 import type { SettingParams } from '@/platform/settings/types'
-import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
-import { isElectron } from '@/utils/envUtil'
 import { normalizeI18nKey } from '@/utils/formatUtil'
 import { buildTree } from '@/utils/treeUtil'
 
@@ -30,6 +32,8 @@ export function useSettingUI(
     | 'credits'
     | 'subscription'
     | 'workspace'
+    | 'secrets',
+  scrollToSettingId?: string
 ) {
   const { t } = useI18n()
   const { isLoggedIn } = useCurrentUser()
@@ -38,7 +42,7 @@ export function useSettingUI(
 
   const { flags } = useFeatureFlags()
   const { shouldRenderVueNodes } = useVueFeatureFlags()
-  const { isActiveSubscription } = useSubscription()
+  const { isActiveSubscription } = useBillingContext()
 
   const teamWorkspacesEnabled = computed(
     () => isCloud && flags.teamWorkspacesEnabled
@@ -169,6 +173,21 @@ export function useSettingUI(
     () => teamWorkspacesEnabled.value && isLoggedIn.value
   )
 
+  const secretsPanel: SettingPanelItem = {
+    node: {
+      key: 'secrets',
+      label: 'Secrets',
+      children: []
+    },
+    component: defineAsyncComponent(
+      () => import('@/platform/secrets/components/SecretsPanel.vue')
+    )
+  }
+
+  const shouldShowSecretsPanel = computed(
+    () => flags.userSecretsEnabled && isLoggedIn.value
+  )
+
   const keybindingPanel: SettingPanelItem = {
     node: {
       key: 'keybinding',
@@ -210,10 +229,11 @@ export function useSettingUI(
       ...(shouldShowWorkspacePanel.value ? [workspacePanel] : []),
       keybindingPanel,
       extensionPanel,
-      ...(isElectron() ? [serverConfigPanel] : []),
+      ...(isDesktop ? [serverConfigPanel] : []),
       ...(shouldShowPlanCreditsPanel.value && subscriptionPanel
         ? [subscriptionPanel]
-        : [])
+        : []),
+      ...(shouldShowSecretsPanel.value ? [secretsPanel] : [])
     ].filter((panel) => panel !== null && panel.component)
   )
 
@@ -221,12 +241,23 @@ export function useSettingUI(
    * The default category to show when the dialog is opened.
    */
   const defaultCategory = computed<SettingTreeNode>(() => {
-    if (!defaultPanel) return settingCategories.value[0]
-    // Search through all groups in groupedMenuTreeNodes
-    for (const group of groupedMenuTreeNodes.value) {
-      const found = group.children?.find((node) => node.key === defaultPanel)
-      if (found) return found
+    if (defaultPanel) {
+      for (const group of groupedMenuTreeNodes.value) {
+        const found = group.children?.find((node) => node.key === defaultPanel)
+        if (found) return found
+      }
+      return settingCategories.value[0]
     }
+
+    if (scrollToSettingId) {
+      const setting = settingStore.settingsById[scrollToSettingId]
+      if (setting) {
+        const { category } = getSettingInfo(setting)
+        const found = settingCategories.value.find((c) => c.label === category)
+        if (found) return found
+      }
+    }
+
     return settingCategories.value[0]
   })
 
@@ -258,11 +289,15 @@ export function useSettingUI(
       label: 'General',
       children: [
         translateCategory(userPanel.node),
-        ...coreSettingCategories.value.map(translateCategory),
+        ...coreSettingCategories.value.slice(0, 1).map(translateCategory),
+        ...(shouldShowSecretsPanel.value
+          ? [translateCategory(secretsPanel.node)]
+          : []),
+        ...coreSettingCategories.value.slice(1).map(translateCategory),
         translateCategory(keybindingPanel.node),
         translateCategory(extensionPanel.node),
         translateCategory(aboutPanel.node),
-        ...(isElectron() ? [translateCategory(serverConfigPanel.node)] : [])
+        ...(isDesktop ? [translateCategory(serverConfigPanel.node)] : [])
       ]
     }),
     // Custom node settings (only shown if custom nodes have registered settings)
@@ -290,6 +325,7 @@ export function useSettingUI(
         subscriptionPanel
           ? [subscriptionPanel.node]
           : []),
+        ...(shouldShowSecretsPanel.value ? [secretsPanel.node] : []),
         ...(isLoggedIn.value &&
         !(isCloud && window.__CONFIG__?.subscription_required)
           ? [creditsPanel.node]
@@ -310,7 +346,7 @@ export function useSettingUI(
         keybindingPanel.node,
         extensionPanel.node,
         aboutPanel.node,
-        ...(isElectron() ? [serverConfigPanel.node] : [])
+        ...(isDesktop ? [serverConfigPanel.node] : [])
       ].map(translateCategory)
     }
   ])

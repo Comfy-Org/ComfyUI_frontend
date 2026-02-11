@@ -234,6 +234,7 @@ export type GlobalSubgraphData = {
   info: {
     node_pack: string
     category?: string
+    search_aliases?: string[]
   }
   data: string | Promise<string>
 }
@@ -294,7 +295,7 @@ export class PromptExecutionError extends Error {
 }
 
 export class ComfyApi extends EventTarget {
-  #registered = new Set()
+  private _registered = new Set()
   api_host: string
   api_base: string
   /**
@@ -451,7 +452,7 @@ export class ComfyApi extends EventTarget {
   ) {
     // Type assertion: strictFunctionTypes.  So long as we emit events in a type-safe fashion, this is safe.
     super.addEventListener(type, callback as EventListener, options)
-    this.#registered.add(type)
+    this._registered.add(type)
   }
 
   override removeEventListener<TEvent extends keyof ApiEvents>(
@@ -492,7 +493,7 @@ export class ComfyApi extends EventTarget {
   /**
    * Poll status  for colab and other things that don't support websockets.
    */
-  #pollQueue() {
+  private _pollQueue() {
     setInterval(async () => {
       try {
         const resp = await this.fetchApi('/prompt')
@@ -568,7 +569,7 @@ export class ComfyApi extends EventTarget {
     this.socket.addEventListener('error', () => {
       if (this.socket) this.socket.close()
       if (!isReconnect && !opened) {
-        this.#pollQueue()
+        this._pollQueue()
       }
     })
 
@@ -691,7 +692,7 @@ export class ComfyApi extends EventTarget {
               )
               break
             default:
-              if (this.#registered.has(msg.type)) {
+              if (this._registered.has(msg.type)) {
                 // Fallback for custom types - calls super direct.
                 super.dispatchEvent(
                   new CustomEvent(msg.type, { detail: msg.data })
@@ -956,7 +957,7 @@ export class ComfyApi extends EventTarget {
    * @param {*} type The endpoint to post to
    * @param {*} body Optional POST data
    */
-  async #postItem(type: string, body?: Record<string, unknown>) {
+  private async _postItem(type: string, body?: Record<string, unknown>) {
     try {
       await this.fetchApi('/' + type, {
         method: 'POST',
@@ -976,7 +977,7 @@ export class ComfyApi extends EventTarget {
    * @param {number} id The id of the item to delete
    */
   async deleteItem(type: string, id: string) {
-    await this.#postItem(type, { delete: [id] })
+    await this._postItem(type, { delete: [id] })
   }
 
   /**
@@ -984,7 +985,7 @@ export class ComfyApi extends EventTarget {
    * @param {string} type The type of list to clear, queue or history
    */
   async clearItems(type: string) {
-    await this.#postItem(type, { clear: true })
+    await this._postItem(type, { clear: true })
   }
 
   /**
@@ -993,7 +994,7 @@ export class ComfyApi extends EventTarget {
    * @param {string | null} [runningPromptId] Optional Running Prompt ID to interrupt
    */
   async interrupt(runningPromptId: string | null) {
-    await this.#postItem(
+    await this._postItem(
       'interrupt',
       runningPromptId ? { prompt_id: runningPromptId } : undefined
     )
@@ -1046,7 +1047,7 @@ export class ComfyApi extends EventTarget {
   /**
    * Stores a dictionary of settings for the current user
    */
-  async storeSettings(settings: Settings) {
+  async storeSettings(settings: Partial<Settings>) {
     return this.fetchApi(`/settings`, {
       method: 'POST',
       body: JSON.stringify(settings)

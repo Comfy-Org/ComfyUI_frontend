@@ -1,6 +1,6 @@
 {
   "name": "@comfyorg/comfyui-frontend",
-  "version": "1.39.1",
+  "version": "1.39.11",
   "private": true,
   "description": "Official front-end implementation of ComfyUI",
   "homepage": "https://comfy.org",
@@ -18,7 +18,7 @@
     "collect-i18n": "pnpm exec playwright test --config=playwright.i18n.config.ts",
     "dev:cloud": "cross-env DEV_SERVER_COMFYUI_URL='https://testcloud.comfy.org/' nx serve",
     "dev:desktop": "nx dev @comfyorg/desktop-ui",
-    "dev:electron": "nx serve --config vite.electron.config.mts",
+    "dev:electron": "cross-env DISTRIBUTION=desktop nx serve --config vite.electron.config.mts",
     "dev:no-vue": "cross-env DISABLE_VUE_PLUGINS=true nx serve",
     "dev": "nx serve",
     "devtools:pycheck": "python3 -m compileall -q tools/devtools",
@@ -47,6 +47,7 @@
     "test:browser:local": "cross-env PLAYWRIGHT_LOCAL=1 pnpm test:browser",
     "test:unit": "nx run test",
     "typecheck": "vue-tsc --noEmit",
+    "typecheck:browser": "vue-tsc --project browser_tests/tsconfig.json",
     "typecheck:desktop": "nx run @comfyorg/desktop-ui:typecheck",
     "zipdist": "node scripts/zipdist.js",
     "clean": "nx reset"

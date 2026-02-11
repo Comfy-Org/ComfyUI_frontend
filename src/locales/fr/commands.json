@@ -266,6 +266,12 @@
   "Comfy_ShowSettingsDialog": {
     "label": "Afficher la boîte de dialogue des paramètres"
   },
+  "Comfy_Subgraph_SetDescription": {
+    "label": "Définir la description du sous-graphe"
+  },
+  "Comfy_Subgraph_SetSearchAliases": {
+    "label": "Définir les alias de recherche du sous-graphe"
+  },
   "Comfy_ToggleAssetAPI": {
     "label": "Expérimental : Activer AssetAPI"
   },
@@ -312,10 +318,10 @@
     "label": "Basculer le panneau inférieur"
   },
   "Workspace_ToggleBottomPanelTab_command-terminal": {
-    "label": "Basculer le panneau inférieur du terminal"
+    "label": "Afficher/Masquer le panneau inférieur du terminal"
   },
   "Workspace_ToggleBottomPanelTab_logs-terminal": {
-    "label": "Basculer le panneau inférieur des journaux"
+    "label": "Afficher/Masquer le panneau inférieur des journaux"
   },
   "Workspace_ToggleBottomPanelTab_shortcuts-essentials": {
     "label": "Afficher/Masquer le panneau inférieur essentiel"

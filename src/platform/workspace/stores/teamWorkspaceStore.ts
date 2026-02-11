@@ -10,6 +10,7 @@ import type {
   ListMembersParams,
   Member,
   PendingInvite as ApiPendingInvite,
+  SubscriptionTier,
   WorkspaceWithRole
 } from '../api/workspaceApi'
 import { workspaceApi } from '../api/workspaceApi'
@@ -30,11 +31,12 @@ export interface PendingInvite {
   expiryDate: Date
 }
 
-type SubscriptionPlan = 'PRO_MONTHLY' | 'PRO_YEARLY' | null
+type SubscriptionPlan = string | null
 
 interface WorkspaceState extends WorkspaceWithRole {
   isSubscribed: boolean
   subscriptionPlan: SubscriptionPlan
+  subscriptionTier: SubscriptionTier | null
   members: WorkspaceMember[]
   pendingInvites: PendingInvite[]
 }
@@ -65,11 +67,23 @@ function createWorkspaceState(workspace: WorkspaceWithRole): WorkspaceState {
   return {
     ...workspace,
     // Personal workspaces use user-scoped subscription from useSubscription()
-    isSubscribed: workspace.type === 'personal',
+    isSubscribed:
+      workspace.type === 'personal' || !!workspace.subscription_tier,
     subscriptionPlan: null,
+    subscriptionTier: workspace.subscription_tier ?? null,
     members: [],
     pendingInvites: []
   }
+}
+
+export function sortWorkspaces<T extends WorkspaceWithRole>(list: T[]): T[] {
+  return [...list].sort((a, b) => {
+    if (a.type === 'personal') return -1
+    if (b.type === 'personal') return 1
+    const dateA = a.role === 'owner' ? a.created_at : a.joined_at
+    const dateB = b.role === 'owner' ? b.created_at : b.joined_at
+    return dateA.localeCompare(dateB)
+  })
 }
 
 function getLastWorkspaceId(): string | null {
@@ -201,7 +215,9 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
         if (hasValidSession && workspaceAuthStore.currentWorkspace) {
           // Valid session exists - fetch workspace list and verify access
           const response = await workspaceApi.list()
-          workspaces.value = response.workspaces.map(createWorkspaceState)
+          workspaces.value = sortWorkspaces(
+            response.workspaces.map(createWorkspaceState)
+          )
 
           if (workspaces.value.length === 0) {
             throw new Error('No workspaces available')
@@ -243,7 +259,9 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
 
         // 2. No valid session - fetch workspaces and pick default
         const response = await workspaceApi.list()
-        workspaces.value = response.workspaces.map(createWorkspaceState)
+        workspaces.value = sortWorkspaces(
+          response.workspaces.map(createWorkspaceState)
+        )
 
         if (workspaces.value.length === 0) {
           throw new Error('No workspaces available')
@@ -311,7 +329,9 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
     isFetchingWorkspaces.value = true
     try {
       const response = await workspaceApi.list()
-      workspaces.value = response.workspaces.map(createWorkspaceState)
+      workspaces.value = sortWorkspaces(
+        response.workspaces.map(createWorkspaceState)
+      )
     } finally {
       isFetchingWorkspaces.value = false
     }
@@ -561,10 +581,6 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
     }
   }
 
-  // ════════════════════════════════════════════════════════════
-  // INVITE LINK HELPERS
-  // ════════════════════════════════════════════════════════════
-
   function buildInviteLink(token: string): string {
     const baseUrl = window.location.origin
     return `${baseUrl}?invite=${encodeURIComponent(token)}`
@@ -671,6 +687,7 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
     copyInviteLink,
 
     // Subscription
-    subscribeWorkspace
+    subscribeWorkspace,
+    updateActiveWorkspace
   }
 })

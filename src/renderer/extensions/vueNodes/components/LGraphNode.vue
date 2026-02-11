@@ -17,7 +17,7 @@
         // hover (only when node should handle events)
         shouldHandleNodePointerEvents &&
           'hover:ring-7 ring-node-component-ring',
-        'outline-transparent outline-2 focus-visible:outline-node-component-outline',
+        'outline-transparent outline-3 focus-visible:outline-node-component-outline',
         borderClass,
         outlineClass,
         cursorClass,
@@ -29,7 +29,7 @@
           'ring-4 ring-primary-500 bg-primary-500/10': isDraggingOver
         },
 
-        shouldHandleNodePointerEvents
+        shouldHandleNodePointerEvents && !nodeData.flags?.ghost
           ? 'pointer-events-auto'
           : 'pointer-events-none',
         !isCollapsed && ' pb-1'
@@ -116,9 +116,10 @@
           <NodeContent :node-data="nodeData" :media="nodeMedia" />
         </div>
         <!-- Live mid-execution preview images -->
-        <div v-if="shouldShowPreviewImg" class="min-h-0 flex-1 px-4">
-          <LivePreview :image-url="latestPreviewUrl || null" />
-        </div>
+        <LivePreview
+          v-if="shouldShowPreviewImg"
+          :image-url="latestPreviewUrl"
+        />
 
         <!-- Show advanced inputs button for subgraph nodes -->
         <div v-if="showAdvancedInputsButton" class="flex justify-center px-3">
@@ -268,6 +269,8 @@ const muted = computed((): boolean => nodeData.mode === LGraphEventMode.NEVER)
 const nodeOpacity = computed(() => {
   const globalOpacity = settingStore.get('Comfy.Node.Opacity') ?? 1
 
+  if (nodeData.flags?.ghost) return globalOpacity * 0.3
+
   // For muted/bypassed nodes, apply the 0.5 multiplier on top of global opacity
   if (bypassed.value || muted.value) {
     return globalOpacity * 0.5
@@ -342,7 +345,10 @@ function initSizeStyles() {
   const suffix = isCollapsed.value ? '-x' : ''
 
   el.style.setProperty(`--node-width${suffix}`, `${width}px`)
-  el.style.setProperty(`--node-height${suffix}`, `${height}px`)
+  el.style.setProperty(
+    `--node-height${suffix}`,
+    `${height + LiteGraph.NODE_TITLE_HEIGHT}px`
+  )
 }
 
 const baseResizeHandleClasses =
@@ -551,6 +557,12 @@ const showAdvancedState = customRef((track, trigger) => {
   }
 })
 
+const hasVideoInput = computed(() => {
+  return (
+    lgraphNode.value?.inputs?.some((input) => input.type === 'VIDEO') ?? false
+  )
+})
+
 const nodeMedia = computed(() => {
   const newOutputs = nodeOutputs.nodeOutputs[nodeOutputLocatorId.value]
   const node = lgraphNode.value
@@ -560,13 +572,9 @@ const nodeMedia = computed(() => {
   const urls = nodeOutputs.getNodeImageUrls(node)
   if (!urls?.length) return undefined
 
-  // Determine media type from previewMediaType or fallback to input slot types
-  // Note: Despite the field name "images", videos are also included in outputs
-  // TODO: fix the backend to return videos using the videos key instead of the images key
-  const hasVideoInput = node.inputs?.some((input) => input.type === 'VIDEO')
   const type =
     node.previewMediaType === 'video' ||
-    (!node.previewMediaType && hasVideoInput)
+    (!node.previewMediaType && hasVideoInput.value)
       ? 'video'
       : 'image'
 

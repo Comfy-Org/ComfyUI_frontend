@@ -5,6 +5,8 @@ import { reactive, unref } from 'vue'
 import { shallowRef } from 'vue'
 
 import { useCanvasPositionConversion } from '@/composables/element/useCanvasPositionConversion'
+import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import { flushScheduledSlotLayoutSync } from '@/renderer/extensions/vueNodes/composables/useSlotElementTracking'
 import { registerProxyWidgets } from '@/core/graph/subgraph/proxyWidget'
 import { st, t } from '@/i18n'
 import type { IContextMenuValue } from '@/lib/litegraph/src/interfaces'
@@ -48,7 +50,7 @@ import {
   DOMWidgetImpl
 } from '@/scripts/domWidget'
 import { useDialogService } from '@/services/dialogService'
-import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
+import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useExtensionService } from '@/services/extensionService'
 import { useLitegraphService } from '@/services/litegraphService'
 import { useSubgraphService } from '@/services/subgraphService'
@@ -59,16 +61,21 @@ import { useExecutionStore } from '@/stores/executionStore'
 import { useExtensionStore } from '@/stores/extensionStore'
 import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
 import { useNodeOutputStore } from '@/stores/imagePreviewStore'
-import { KeyComboImpl, useKeybindingStore } from '@/stores/keybindingStore'
+import { useJobPreviewStore } from '@/stores/jobPreviewStore'
+import { KeyComboImpl } from '@/platform/keybindings/keyCombo'
+import { useKeybindingStore } from '@/platform/keybindings/keybindingStore'
 import { useModelStore } from '@/stores/modelStore'
 import { SYSTEM_NODE_DEFS, useNodeDefStore } from '@/stores/nodeDefStore'
+import { useNodeReplacementStore } from '@/platform/nodeReplacement/nodeReplacementStore'
 import { useSubgraphStore } from '@/stores/subgraphStore'
 import { useWidgetStore } from '@/stores/widgetStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import type { ComfyExtension, MissingNodeType } from '@/types/comfy'
-import { type ExtensionManager } from '@/types/extensionTypes'
+import type { ExtensionManager } from '@/types/extensionTypes'
 import type { NodeExecutionId } from '@/types/nodeIdentification'
 import { graphToPrompt } from '@/utils/executionUtil'
+import type { MissingNodeTypeExtraInfo } from '@/workbench/extensions/manager/types/missingNodeErrorTypes'
+import { createMissingNodeTypeFromError } from '@/workbench/extensions/manager/utils/missingNodeErrorUtil'
 import { anyItemOverlapsRect } from '@/utils/mathUtil'
 import { collectAllNodes, forEachNode } from '@/utils/graphTraversalUtil'
 import {
@@ -80,6 +87,10 @@ import {
   fixLinkInputSlots,
   isImageNode
 } from '@/utils/litegraphUtil'
+import {
+  createSharedObjectUrl,
+  releaseSharedObjectUrl
+} from '@/utils/objectUrlUtil'
 import {
   findLegacyRerouteNodes,
   noNativeReroutes
@@ -120,7 +131,7 @@ type Clipspace = {
   widgets?: Pick<IBaseWidget, 'type' | 'name' | 'value'>[] | null
   imgs?: HTMLImageElement[] | null
   original_imgs?: HTMLImageElement[] | null
-  images?: any[] | null
+  images?: ResultItem[] | null
   selectedIndex: number
   img_paste_mode: string
   paintedIndex: number
@@ -681,7 +692,7 @@ export class ComfyApp {
           'Payment Required: Please add credits to your account to use this node.'
         )
       ) {
-        const { isActiveSubscription } = useSubscription()
+        const { isActiveSubscription } = useBillingContext()
         if (isActiveSubscription.value) {
           useDialogService().showTopUpCreditsDialog({
             isInsufficientCredits: true
@@ -695,12 +706,13 @@ export class ComfyApp {
 
     api.addEventListener('b_preview_with_metadata', ({ detail }) => {
       // Enhanced preview with explicit node context
-      const { blob, displayNodeId } = detail
+      const { blob, displayNodeId, promptId } = detail
       const { setNodePreviewsByExecutionId, revokePreviewsByExecutionId } =
         useNodeOutputStore()
+      const blobUrl = createSharedObjectUrl(blob)
+      useJobPreviewStore().setPreviewUrl(promptId, blobUrl)
       // Ensure clean up if `executing` event is missed.
       revokePreviewsByExecutionId(displayNodeId)
-      const blobUrl = URL.createObjectURL(blob)
       // Preview cleanup is handled in progress_state event to support multiple concurrent previews
       const nodeParents = displayNodeId.split(':')
       for (let i = 1; i <= nodeParents.length; i++) {
@@ -708,6 +720,7 @@ export class ComfyApp {
           blobUrl
         ])
       }
+      releaseSharedObjectUrl(blobUrl)
     })
 
     api.init()
@@ -730,17 +743,31 @@ export class ComfyApp {
   private addAfterConfigureHandler(graph: LGraph) {
     const { onConfigure } = graph
     graph.onConfigure = function (...args) {
-      fixLinkInputSlots(this)
+      // Set pending sync flag to suppress link rendering until slots are synced
+      if (LiteGraph.vueNodesMode) {
+        layoutStore.setPendingSlotSync(true)
+      }
 
-      // Fire callbacks before the onConfigure, this is used by widget inputs to setup the config
-      triggerCallbackOnAllNodes(this, 'onGraphConfigured')
+      try {
+        fixLinkInputSlots(this)
 
-      const r = onConfigure?.apply(this, args)
+        // Fire callbacks before the onConfigure, this is used by widget inputs to setup the config
+        triggerCallbackOnAllNodes(this, 'onGraphConfigured')
 
-      // Fire after onConfigure, used by primitives to generate widget using input nodes config
-      triggerCallbackOnAllNodes(this, 'onAfterGraphConfigured')
+        const r = onConfigure?.apply(this, args)
 
-      return r
+        // Fire after onConfigure, used by primitives to generate widget using input nodes config
+        triggerCallbackOnAllNodes(this, 'onAfterGraphConfigured')
+
+        return r
+      } finally {
+        // Flush pending slot layout syncs to fix link alignment after undo/redo
+        // Using finally ensures links aren't permanently suppressed if an error occurs
+        if (LiteGraph.vueNodesMode) {
+          flushScheduledSlotLayoutSync()
+          app.canvas?.setDirty(true, true)
+        }
+      }
     }
   }
 
@@ -759,6 +786,7 @@ export class ComfyApp {
     await useWorkspaceStore().workflow.syncWorkflows()
     //Doesn't need to block. Blueprints will load async
     void useSubgraphStore().fetchSubgraphs()
+    void useNodeReplacementStore().load()
     await useExtensionService().loadExtensions()
 
     this.addProcessKeyHandler()
@@ -919,8 +947,7 @@ export class ComfyApp {
     const nodeDefArray: ComfyNodeDefV1[] = Object.values(allNodeDefs)
     useExtensionService().invokeExtensions(
       'beforeRegisterVueAppNodeDefs',
-      nodeDefArray,
-      this
+      nodeDefArray
     )
     nodeDefStore.updateNodeDefs(nodeDefArray)
   }
@@ -965,9 +992,11 @@ export class ComfyApp {
     await useExtensionService().invokeExtensionsAsync('addCustomNodeDefs', defs)
 
     // Register a node for each definition
-    for (const nodeId in defs) {
-      this.registerNodeDef(nodeId, defs[nodeId])
-    }
+    await Promise.all(
+      Object.keys(defs).map((nodeId) =>
+        this.registerNodeDef(nodeId, defs[nodeId])
+      )
+    )
   }
 
   loadTemplateData(templateData: {
@@ -1360,11 +1389,14 @@ export class ComfyApp {
           'Comfy.Execution.PreviewMethod'
         )
 
+        const isPartialExecution = !!queueNodeIds?.length
         for (let i = 0; i < batchCount; i++) {
           // Allow widgets to run callbacks before a prompt has been queued
           // e.g. random seed before every gen
           forEachNode(this.rootGraph, (node) => {
-            for (const widget of node.widgets ?? []) widget.beforeQueued?.()
+            for (const widget of node.widgets ?? []) {
+              widget.beforeQueued?.({ isPartialExecution })
+            }
           })
 
           const p = await this.graphToPrompt(this.rootGraph)
@@ -1394,10 +1426,21 @@ export class ComfyApp {
               } catch (error) {}
             }
           } catch (error: unknown) {
-            useDialogService().showErrorDialog(error, {
-              title: t('errorDialog.promptExecutionError'),
-              reportType: 'promptExecutionError'
-            })
+            if (
+              error instanceof PromptExecutionError &&
+              typeof error.response.error === 'object' &&
+              error.response.error?.type === 'missing_node_type'
+            ) {
+              const extraInfo = (error.response.error.extra_info ??
+                {}) as MissingNodeTypeExtraInfo
+              const missingNodeType = createMissingNodeTypeFromError(extraInfo)
+              this.showMissingNodesError([missingNodeType])
+            } else {
+              useDialogService().showErrorDialog(error, {
+                title: t('errorDialog.promptExecutionError'),
+                reportType: 'promptExecutionError'
+              })
+            }
             console.error(error)
 
             if (error instanceof PromptExecutionError) {
@@ -1409,7 +1452,9 @@ export class ComfyApp {
 
           // Allow widgets to run callbacks after a prompt has been queued
           // e.g. random seed after every gen
-          executeWidgetsCallback(queuedNodes, 'afterQueued')
+          executeWidgetsCallback(queuedNodes, 'afterQueued', {
+            isPartialExecution
+          })
           this.canvas.draw(true, true)
           await this.ui.queue.update()
         }

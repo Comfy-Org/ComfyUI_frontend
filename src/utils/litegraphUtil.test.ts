@@ -26,10 +26,10 @@ describe('migrateWidgetsValues', () => {
       }
     }
 
-    const widgets: IWidget[] = [
+    const widgets = [
       { name: 'normalInput', type: 'number' },
       { name: 'anotherNormal', type: 'number' }
-    ] as unknown as IWidget[]
+    ] as Partial<IWidget>[] as IWidget[]
 
     const widgetValues = [42, 'dummy value', 3.14]
 
@@ -56,7 +56,7 @@ describe('migrateWidgetsValues', () => {
   it('should handle empty widgets and values', () => {
     const inputDefs: Record<string, InputSpec> = {}
     const widgets: IWidget[] = []
-    const widgetValues: any[] = []
+    const widgetValues: unknown[] = []
 
     const result = migrateWidgetsValues(inputDefs, widgets, widgetValues)
     expect(result).toEqual([])
@@ -79,21 +79,46 @@ describe('migrateWidgetsValues', () => {
       }
     }
 
-    const widgets: IWidget[] = [
+    const widgets = [
       { name: 'first', type: 'number' },
       { name: 'last', type: 'number' }
-    ] as unknown as IWidget[]
+    ] as Partial<IWidget>[] as IWidget[]
 
     const widgetValues = ['first value', 'dummy', 'last value']
 
     const result = migrateWidgetsValues(inputDefs, widgets, widgetValues)
     expect(result).toEqual(['first value', 'last value'])
   })
+  it('should correctly handle seed with unexpected value', () => {
+    const inputDefs: Record<string, InputSpec> = {
+      normalInput: {
+        type: 'INT',
+        name: 'normalInput',
+        control_after_generate: true
+      },
+      forceInputField: {
+        type: 'STRING',
+        name: 'forceInputField',
+        forceInput: true
+      }
+    }
+
+    const widgets = [
+      { name: 'normalInput', type: 'number' },
+      { name: 'control_after_generate', type: 'string' }
+    ] as Partial<IWidget>[] as IWidget[]
+
+    const widgetValues = [42, 'fixed', 'unexpected widget value']
+
+    const result = migrateWidgetsValues(inputDefs, widgets, widgetValues)
+    expect(result).toEqual([42, 'fixed'])
+  })
 })
 
 describe('compressWidgetInputSlots', () => {
   it('should remove unconnected widget input slots', () => {
-    const graph: ISerialisedGraph = {
+    // Using partial mock - only including properties needed for test
+    const graph = {
       nodes: [
         {
           id: 1,
@@ -112,7 +137,7 @@ describe('compressWidgetInputSlots', () => {
         }
       ],
       links: [[2, 1, 0, 1, 0, 'INT']]
-    } as unknown as ISerialisedGraph
+    } as Partial<ISerialisedGraph> as ISerialisedGraph
 
     compressWidgetInputSlots(graph)
 
@@ -122,7 +147,7 @@ describe('compressWidgetInputSlots', () => {
   })
 
   it('should update link target slots correctly', () => {
-    const graph: ISerialisedGraph = {
+    const graph = {
       nodes: [
         {
           id: 1,
@@ -144,7 +169,7 @@ describe('compressWidgetInputSlots', () => {
         [2, 1, 0, 1, 1, 'INT'],
         [3, 1, 0, 1, 2, 'INT']
       ]
-    } as unknown as ISerialisedGraph
+    } as Partial<ISerialisedGraph> as ISerialisedGraph
 
     compressWidgetInputSlots(graph)
 
@@ -160,10 +185,11 @@ describe('compressWidgetInputSlots', () => {
   })
 
   it('should handle graphs with no nodes gracefully', () => {
-    const graph: ISerialisedGraph = {
+    // Using partial mock - only including properties needed for test
+    const graph = {
       nodes: [],
       links: []
-    } as unknown as ISerialisedGraph
+    } as Partial<ISerialisedGraph> as ISerialisedGraph
 
     compressWidgetInputSlots(graph)
 

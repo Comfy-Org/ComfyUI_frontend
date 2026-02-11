@@ -3,7 +3,7 @@ import { isCloud } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import type { SettingParams } from '@/platform/settings/types'
 import type { ColorPalettes } from '@/schemas/colorPaletteSchema'
-import type { Keybinding } from '@/schemas/keyBindingSchema'
+import type { Keybinding } from '@/platform/keybindings/types'
 import { NodeBadgeMode } from '@/types/nodeSource'
 import { LinkReleaseTriggerAction } from '@/types/searchBoxTypes'
 import { breakpointsTailwind } from '@vueuse/core'
@@ -170,13 +170,15 @@ export const CORE_SETTINGS: SettingParams[] = [
       const settingStore = useSettingStore()
 
       if (newValue === 'standard') {
-        // Update related settings to match standard mode - select + panning
-        await settingStore.set('Comfy.Canvas.LeftMouseClickBehavior', 'select')
-        await settingStore.set('Comfy.Canvas.MouseWheelScroll', 'panning')
+        await settingStore.setMany({
+          'Comfy.Canvas.LeftMouseClickBehavior': 'select',
+          'Comfy.Canvas.MouseWheelScroll': 'panning'
+        })
       } else if (newValue === 'legacy') {
-        // Update related settings to match legacy mode - panning + zoom
-        await settingStore.set('Comfy.Canvas.LeftMouseClickBehavior', 'panning')
-        await settingStore.set('Comfy.Canvas.MouseWheelScroll', 'zoom')
+        await settingStore.setMany({
+          'Comfy.Canvas.LeftMouseClickBehavior': 'panning',
+          'Comfy.Canvas.MouseWheelScroll': 'zoom'
+        })
       }
     }
   },
@@ -603,7 +605,7 @@ export const CORE_SETTINGS: SettingParams[] = [
     tooltip:
       'The maximum number of tasks added to the queue at one button click',
     type: 'number',
-    defaultValue: isCloud ? 4 : 100,
+    defaultValue: isCloud ? 32 : 100,
     versionAdded: '1.3.5'
   },
   {
@@ -1178,7 +1180,7 @@ export const CORE_SETTINGS: SettingParams[] = [
     type: 'boolean',
     tooltip:
       'Replaces the floating job queue panel with an equivalent job queue embedded in the Assets side panel. You can disable this to return to the floating panel layout.',
-    defaultValue: true,
+    defaultValue: false,
     experimental: true
   },
   {
@@ -1190,5 +1192,27 @@ export const CORE_SETTINGS: SettingParams[] = [
     type: 'boolean',
     defaultValue: false,
     versionAdded: '1.39.0'
+  },
+  {
+    id: 'Comfy.NodeReplacement.Enabled',
+    category: ['Comfy', 'Workflow', 'NodeReplacement'],
+    name: 'Enable automatic node replacement',
+    tooltip:
+      'When enabled, missing nodes can be automatically replaced with their newer equivalents if a replacement mapping exists.',
+    type: 'boolean',
+    defaultValue: false,
+    experimental: true,
+    versionAdded: '1.40.0'
+  },
+  {
+    id: 'Comfy.Graph.DeduplicateSubgraphNodeIds',
+    category: ['Comfy', 'Graph', 'Subgraph'],
+    name: 'Deduplicate subgraph node IDs',
+    tooltip:
+      'Automatically reassign duplicate node IDs in subgraphs when loading a workflow.',
+    type: 'boolean',
+    defaultValue: false,
+    experimental: true,
+    versionAdded: '1.40.0'
   }
 ]

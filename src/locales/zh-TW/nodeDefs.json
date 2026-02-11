@@ -1266,6 +1266,21 @@
       }
     }
   },
+  "ColorToRGBInt": {
+    "description": "將顏色轉換為 RGB 整數值。",
+    "display_name": "顏色轉為 RGB 整數值",
+    "inputs": {
+      "color": {
+        "name": "顏色"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "rgb 整數值",
+        "tooltip": null
+      }
+    }
+  },
   "CombineHooks2": {
     "display_name": "合併 Hooks [2]",
     "inputs": {
@@ -2003,6 +2018,20 @@
       }
     }
   },
+  "CreateList": {
+    "display_name": "建立清單",
+    "inputs": {
+      "inputs": {
+        "name": "輸入"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "清單",
+        "tooltip": null
+      }
+    }
+  },
   "CreateVideo": {
     "description": "從圖片建立影片。",
     "display_name": "建立影片",
@@ -2187,6 +2216,23 @@
     "outputs": {
       "0": {
         "tooltip": "帶有 EasyCache 的模型。"
+      }
+    }
+  },
+  "EmptyAceStep1_5LatentAudio": {
+    "display_name": "Empty Ace Step 1.5 Latent Audio",
+    "inputs": {
+      "batch_size": {
+        "name": "批次大小",
+        "tooltip": "批次中 latent 圖像的數量。"
+      },
+      "seconds": {
+        "name": "秒數"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -3531,6 +3577,50 @@
       },
       "tapered_corners": {
         "name": "圓角"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HitPawGeneralImageEnhance": {
+    "description": "將低解析度影像升級為超高解析度，消除雜訊與失真。最大輸出：32 百萬像素。",
+    "display_name": "HitPaw 通用影像增強",
+    "inputs": {
+      "auto_downscale": {
+        "name": "自動縮小",
+        "tooltip": "若輸出超過限制，將自動縮小輸入影像。"
+      },
+      "image": {
+        "name": "影像"
+      },
+      "model": {
+        "name": "模型"
+      },
+      "upscale_factor": {
+        "name": "放大倍率"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HitPawVideoEnhance": {
+    "description": "將低解析度影片升級為高解析度，消除雜訊與失真。價格以每秒影片計算。",
+    "display_name": "HitPaw 影片增強",
+    "inputs": {
+      "model": {
+        "name": "模型"
+      },
+      "model_resolution": {
+        "name": "解析度"
+      },
+      "video": {
+        "name": "影片"
       }
     },
     "outputs": {
@@ -7237,12 +7327,17 @@
         "name": "rig_task_id"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "model_file",
+    "outputs": [
+      null,
+      {
+        "name": "GLB",
+        "tooltip": null
+      },
+      {
+        "name": "FBX",
         "tooltip": null
       }
-    }
+    ]
   },
   "MeshyImageToModelNode": {
     "display_name": "Meshy：圖片轉模型",
@@ -7288,16 +7383,18 @@
         "name": "symmetry_mode"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "model_file",
+    "outputs": [
+      null,
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       },
-      "1": {
-        "name": "meshy_task_id",
+      {
+        "name": "FBX",
         "tooltip": null
       }
-    }
+    ]
   },
   "MeshyMultiImageToModelNode": {
     "display_name": "Meshy：多圖轉模型",
@@ -7343,16 +7440,18 @@
         "name": "symmetry_mode"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "model_file",
+    "outputs": [
+      null,
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       },
-      "1": {
-        "name": "meshy_task_id",
+      {
+        "name": "FBX",
         "tooltip": null
       }
-    }
+    ]
   },
   "MeshyRefineNode": {
     "description": "精修先前建立的草稿模型。",
@@ -7377,16 +7476,18 @@
         "tooltip": "提供文字提示以引導材質製作。最多 600 字元。不可與「texture_image」同時使用。"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "model_file",
+    "outputs": [
+      null,
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       },
-      "1": {
-        "name": "meshy_task_id",
+      {
+        "name": "FBX",
         "tooltip": null
       }
-    }
+    ]
   },
   "MeshyRigModelNode": {
     "description": "提供標準格式的骨架綁定角色。目前自動綁定不適用於無材質網格、非人形資產，或肢體結構不明確的人形資產。",
@@ -7404,16 +7505,18 @@
         "tooltip": "模型 UV 展開後的基礎色彩貼圖。"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "model_file",
+    "outputs": [
+      null,
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       },
-      "1": {
-        "name": "rig_task_id",
+      {
+        "name": "FBX",
         "tooltip": null
       }
-    }
+    ]
   },
   "MeshyTextToModelNode": {
     "display_name": "Meshy：文字生成模型",
@@ -7452,16 +7555,18 @@
         "name": "symmetry_mode"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "model_file",
+    "outputs": [
+      null,
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       },
-      "1": {
-        "name": "meshy_task_id",
+      {
+        "name": "FBX",
         "tooltip": null
       }
-    }
+    ]
   },
   "MeshyTextureNode": {
     "display_name": "Meshy：材質模型",
@@ -7488,16 +7593,18 @@
         "tooltip": "用文字描述你想要的物件材質風格。最多600字。不能與「image_style」同時使用。"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "模型檔案",
+    "outputs": [
+      null,
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       },
-      "1": {
-        "name": "meshy_task_id",
+      {
+        "name": "FBX",
         "tooltip": null
       }
-    }
+    ]
   },
   "MinimaxHailuoVideoNode": {
     "description": "使用新的 MiniMax 海螺-02 模型，從提示詞生成影片，可選起始幀。",
@@ -10698,7 +10805,8 @@
         "name": "影像"
       },
       "model_file": {
-        "name": "model_file"
+        "name": "model_file",
+        "tooltip": "3D 模型檔案或路徑字串"
       }
     }
   },
@@ -10978,6 +11086,25 @@
     "outputs": {
       "0": {
         "name": "recraft_controls",
+        "tooltip": null
+      }
+    }
+  },
+  "RecraftCreateStyleNode": {
+    "description": "從參考圖片建立自訂風格。上傳 1-5 張圖片作為風格參考。所有圖片的總大小限制為 5 MB。",
+    "display_name": "Recraft 建立風格",
+    "inputs": {
+      "images": {
+        "name": "圖片"
+      },
+      "style": {
+        "name": "風格",
+        "tooltip": "生成圖片的基礎風格。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "風格 ID",
         "tooltip": null
       }
     }
@@ -11320,6 +11447,23 @@
       }
     }
   },
+  "ReferenceTimbreAudio": {
+    "description": "此節點設定 timbre 的參考音訊（適用於 ace step 1.5）",
+    "display_name": "ReferenceTimbreAudio",
+    "inputs": {
+      "conditioning": {
+        "name": "條件"
+      },
+      "latent": {
+        "name": "latent"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "RegexExtract": {
     "display_name": "正則表達式提取",
     "inputs": {
@@ -11648,12 +11792,13 @@
         "name": "種子值"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "3D 模型路徑",
+    "outputs": [
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       }
-    }
+    ]
   },
   "Rodin3D_Gen2": {
     "description": "使用 Rodin API 生成 3D 資源",
@@ -11675,12 +11820,13 @@
         "name": "TAPose"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "3D 模型路徑",
+    "outputs": [
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       }
-    }
+    ]
   },
   "Rodin3D_Regular": {
     "description": "使用 Rodin API 生成 3D 資源",
@@ -11699,12 +11845,13 @@
         "name": "種子值"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "3D 模型路徑",
+    "outputs": [
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       }
-    }
+    ]
   },
   "Rodin3D_Sketch": {
     "description": "使用 Rodin API 生成 3D 資源",
@@ -11717,12 +11864,13 @@
         "name": "種子值"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "3D 模型路徑",
+    "outputs": [
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       }
-    }
+    ]
   },
   "Rodin3D_Smooth": {
     "description": "使用 Rodin API 生成 3D 資源",
@@ -11741,12 +11889,13 @@
         "name": "種子值"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "3D 模型路徑",
+    "outputs": [
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       }
-    }
+    ]
   },
   "RunwayFirstLastFrameNode": {
     "description": "上傳首尾關鍵幀，草擬提示詞，並生成影片。對於較複雜的轉場（例如最後一幀與第一幀完全不同的情況），較長的 10 秒持續時間可能更有利，這能讓生成過程有更多時間在兩個輸入之間平滑過渡。開始前，請先閱讀這些最佳實踐指南，確保您的輸入選擇能為生成成功奠定基礎：https://help.runwayml.com/hc/en-us/articles/34170748696595-Creating-with-Keyframes-on-Gen-3。",
@@ -12477,7 +12626,8 @@
         "name": "影像"
       },
       "mesh": {
-        "name": "mesh"
+        "name": "mesh",
+        "tooltip": "要儲存的 Mesh 或 GLB 檔案"
       }
     }
   },
@@ -13730,12 +13880,17 @@
         "tooltip": "種子控制節點是否重新執行；無論種子如何，結果皆為非確定性。"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "模型檔案",
+    "outputs": [
+      null,
+      {
+        "name": "GLB",
+        "tooltip": null
+      },
+      {
+        "name": "OBJ",
         "tooltip": null
       }
-    }
+    ]
   },
   "TencentTextToModelNode": {
     "display_name": "Hunyuan3D：文字轉模型（專業版）",
@@ -13765,12 +13920,17 @@
         "tooltip": "種子控制節點是否重新執行；無論種子如何，結果皆為非確定性。"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "模型檔案",
+    "outputs": [
+      null,
+      {
+        "name": "GLB",
+        "tooltip": null
+      },
+      {
+        "name": "OBJ",
         "tooltip": null
       }
-    }
+    ]
   },
   "TextEncodeAceStepAudio": {
     "display_name": "TextEncodeAceStepAudio",
@@ -13786,6 +13946,62 @@
       },
       "tags": {
         "name": "標籤"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "TextEncodeAceStepAudio1_5": {
+    "display_name": "TextEncodeAceStepAudio1.5",
+    "inputs": {
+      "bpm": {
+        "name": "每分鐘節拍數"
+      },
+      "cfg_scale": {
+        "name": "cfg_scale"
+      },
+      "clip": {
+        "name": "clip"
+      },
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "duration": {
+        "name": "時長"
+      },
+      "generate_audio_codes": {
+        "name": "產生音訊編碼",
+        "tooltip": "啟用產生音訊編碼的 LLM。這可能會較慢，但能提升產生音訊的品質。如果你已提供模型音訊參考，請關閉此選項。"
+      },
+      "keyscale": {
+        "name": "調性"
+      },
+      "language": {
+        "name": "語言"
+      },
+      "lyrics": {
+        "name": "歌詞"
+      },
+      "seed": {
+        "name": "種子"
+      },
+      "tags": {
+        "name": "標籤"
+      },
+      "temperature": {
+        "name": "temperature"
+      },
+      "timesignature": {
+        "name": "拍號"
+      },
+      "top_k": {
+        "name": "top_k"
+      },
+      "top_p": {
+        "name": "top_p"
       }
     },
     "outputs": {
@@ -14349,16 +14565,14 @@
         "name": "紋理種子"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "模型檔案",
-        "tooltip": null
-      },
-      "1": {
-        "name": "模型任務ID",
+    "outputs": [
+      null,
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       }
-    }
+    ]
   },
   "TripoMultiviewToModelNode": {
     "display_name": "Tripo：多視角轉模型",
@@ -14410,16 +14624,14 @@
         "name": "texture_seed"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "model_file",
-        "tooltip": null
-      },
-      "1": {
-        "name": "model task_id",
+    "outputs": [
+      null,
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       }
-    }
+    ]
   },
   "TripoRefineNode": {
     "description": "僅精修由 v1.4 Tripo 模型建立的草稿模型。",
@@ -14430,16 +14642,14 @@
         "tooltip": "必須是 v1.4 Tripo 模型"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "model_file",
-        "tooltip": null
-      },
-      "1": {
-        "name": "model task_id",
+    "outputs": [
+      null,
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       }
-    }
+    ]
   },
   "TripoRetargetNode": {
     "display_name": "Tripo: 重新定位骨架模型",
@@ -14451,16 +14661,14 @@
         "name": "original_model_task_id"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "model_file",
-        "tooltip": null
-      },
-      "1": {
-        "name": "retarget task_id",
+    "outputs": [
+      null,
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       }
-    }
+    ]
   },
   "TripoRigNode": {
     "display_name": "Tripo: 骨架模型",
@@ -14469,16 +14677,14 @@
         "name": "原始模型任務ID"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "模型檔案",
-        "tooltip": null
-      },
-      "1": {
-        "name": "綁定任務ID",
+    "outputs": [
+      null,
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       }
-    }
+    ]
   },
   "TripoTextToModelNode": {
     "display_name": "Tripo：文字轉模型",
@@ -14523,16 +14729,14 @@
         "name": "紋理種子"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "模型檔案",
-        "tooltip": null
-      },
-      "1": {
-        "name": "模型任務ID",
+    "outputs": [
+      null,
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       }
-    }
+    ]
   },
   "TripoTextureNode": {
     "display_name": "Tripo：紋理模型",
@@ -14556,16 +14760,14 @@
         "name": "紋理種子"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "模型檔案",
-        "tooltip": null
-      },
-      "1": {
-        "name": "模型任務ID",
+    "outputs": [
+      null,
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       }
-    }
+    ]
   },
   "TruncateText": {
     "display_name": "截斷文字",
@@ -14723,6 +14925,28 @@
     "inputs": {
       "samples": {
         "name": "samples"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "VAEDecodeAudioTiled": {
+    "display_name": "VAE 解碼音訊（分塊）",
+    "inputs": {
+      "overlap": {
+        "name": "重疊"
+      },
+      "samples": {
+        "name": "樣本"
+      },
+      "tile_size": {
+        "name": "分塊大小"
       },
       "vae": {
         "name": "vae"
@@ -15229,6 +15453,119 @@
       }
     }
   },
+  "Vidu3ImageToVideoNode": {
+    "description": "從圖像及可選提示詞生成影片。",
+    "display_name": "Vidu Q3 圖像轉影片生成",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "作為生成影片起始畫格的圖像。"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "用於影片生成的模型。"
+      },
+      "model_audio": {
+        "name": "audio"
+      },
+      "model_duration": {
+        "name": "duration"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "影片生成的可選文字提示（最多 2000 字元）。"
+      },
+      "seed": {
+        "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Vidu3TextToVideoNode": {
+    "description": "根據文字提示生成影片。",
+    "display_name": "Vidu Q3 文字轉影片生成",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "用於影片生成的模型。"
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_audio": {
+        "name": "audio"
+      },
+      "model_duration": {
+        "name": "duration"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "影片生成的文字描述，最長 2000 字元。"
+      },
+      "seed": {
+        "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ViduExtendVideoNode": {
+    "description": "透過生成額外畫格來延伸現有影片。",
+    "display_name": "Vidu 影片延伸",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "end_frame": {
+        "name": "end_frame"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "用於影片延伸的模型。"
+      },
+      "model_duration": {
+        "name": "duration"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "延伸影片的可選文字提示（最多 2000 字元）。"
+      },
+      "seed": {
+        "name": "seed"
+      },
+      "video": {
+        "name": "video",
+        "tooltip": "要延伸的來源影片。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ViduImageToVideoNode": {
     "description": "從圖像和可選提示生成影片",
     "display_name": "Vidu 圖像轉影片生成",
@@ -15263,6 +15600,49 @@
       "seed": {
         "name": "seed",
         "tooltip": "影片生成的種子值（0 表示隨機）"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ViduMultiFrameVideoNode": {
+    "description": "生成具有多個關鍵畫格轉場的影片。",
+    "display_name": "Vidu 多畫格影片生成",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "frames": {
+        "name": "frames",
+        "tooltip": "關鍵畫格轉場數量（2-9）。"
+      },
+      "frames_duration1": {
+        "name": "duration1"
+      },
+      "frames_duration2": {
+        "name": "duration2"
+      },
+      "frames_prompt1": {
+        "name": "prompt1"
+      },
+      "frames_prompt2": {
+        "name": "prompt2"
+      },
+      "model": {
+        "name": "model"
+      },
+      "resolution": {
+        "name": "resolution"
+      },
+      "seed": {
+        "name": "seed"
+      },
+      "start_image": {
+        "name": "start_image",
+        "tooltip": "起始畫格圖像。長寬比需介於 1:4 與 4:1 之間。"
       }
     },
     "outputs": {

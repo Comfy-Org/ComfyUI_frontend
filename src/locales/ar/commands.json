@@ -36,7 +36,7 @@
     "label": "إعادة التشغيل"
   },
   "Comfy_3DViewer_Open3DViewer": {
-    "label": "فتح عارض ثلاثي الأبعاد (بيتا) للعقدة المحددة"
+    "label": "افتح عارض ثلاثي الأبعاد (تجريبي) للعقدة المحددة"
   },
   "Comfy_BrowseModelAssets": {
     "label": "تجريبي: تصفح أصول النماذج"
@@ -265,6 +265,12 @@
   },
   "Comfy_ShowSettingsDialog": {
     "label": "عرض نافذة الإعدادات"
+  },
+  "Comfy_Subgraph_SetDescription": {
+    "label": "تعيين وصف الرسم البياني الفرعي"
+  },
+  "Comfy_Subgraph_SetSearchAliases": {
+    "label": "تعيين الأسماء المستعارة للبحث في الرسم البياني الفرعي"
   },
   "Comfy_ToggleAssetAPI": {
     "label": "تجريبي: تمكين AssetAPI"

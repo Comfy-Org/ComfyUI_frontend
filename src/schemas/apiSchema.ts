@@ -3,7 +3,7 @@ import { z } from 'zod'
 import { LinkMarkerShape } from '@/lib/litegraph/src/litegraph'
 import { zNodeId } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { colorPalettesSchema } from '@/schemas/colorPaletteSchema'
-import { zKeybinding } from '@/schemas/keyBindingSchema'
+import { zKeybinding } from '@/platform/keybindings/types'
 import { NodeBadgeMode } from '@/types/nodeSource'
 import { LinkReleaseTriggerAction } from '@/types/searchBoxTypes'
 
@@ -288,6 +288,7 @@ const zSettings = z.object({
   'Comfy.Graph.CanvasInfo': z.boolean(),
   'Comfy.Graph.CanvasMenu': z.boolean(),
   'Comfy.Graph.CtrlShiftZoom': z.boolean(),
+  'Comfy.Graph.DeduplicateSubgraphNodeIds': z.boolean(),
   'Comfy.Graph.LiveSelection': z.boolean(),
   'Comfy.Graph.LinkMarkers': z.nativeEnum(LinkMarkerShape),
   'Comfy.Graph.ZoomSpeed': z.number(),
@@ -315,6 +316,7 @@ const zSettings = z.object({
   'Comfy.Node.MiddleClickRerouteNode': z.boolean(),
   'Comfy.Node.ShowDeprecated': z.boolean(),
   'Comfy.Node.ShowExperimental': z.boolean(),
+  'Comfy.NodeReplacement.Enabled': z.boolean(),
   'Comfy.Pointer.ClickBufferTime': z.number(),
   'Comfy.Pointer.ClickDrift': z.number(),
   'Comfy.Pointer.DoubleClickTime': z.number(),

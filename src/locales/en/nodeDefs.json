@@ -1266,6 +1266,21 @@
       }
     }
   },
+  "ColorToRGBInt": {
+    "display_name": "Color to RGB Int",
+    "description": "Convert a color to a RGB integer value.",
+    "inputs": {
+      "color": {
+        "name": "color"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "rgb_int",
+        "tooltip": null
+      }
+    }
+  },
   "CombineHooks2": {
     "display_name": "Combine Hooks [2]",
     "inputs": {
@@ -2005,6 +2020,20 @@
       }
     }
   },
+  "CreateList": {
+    "display_name": "Create List",
+    "inputs": {
+      "inputs": {
+        "name": "inputs"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "list",
+        "tooltip": null
+      }
+    }
+  },
   "CreateVideo": {
     "display_name": "Create Video",
     "description": "Create a video from images.",
@@ -2194,8 +2223,25 @@
       }
     }
   },
+  "EmptyAceStep1_5LatentAudio": {
+    "display_name": "Empty Ace Step 1.5 Latent Audio",
+    "inputs": {
+      "seconds": {
+        "name": "seconds"
+      },
+      "batch_size": {
+        "name": "batch_size",
+        "tooltip": "The number of latent images in the batch."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "EmptyAceStepLatentAudio": {
-    "display_name": "EmptyAceStepLatentAudio",
+    "display_name": "Empty Ace Step 1.0 Latent Audio",
     "inputs": {
       "seconds": {
         "name": "seconds"
@@ -3538,6 +3584,50 @@
       },
       "tapered_corners": {
         "name": "tapered_corners"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HitPawGeneralImageEnhance": {
+    "display_name": "HitPaw General Image Enhance",
+    "description": "Upscale low-resolution images to super-resolution, eliminate artifacts and noise. Maximum output: 32 megapixels.",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "image": {
+        "name": "image"
+      },
+      "upscale_factor": {
+        "name": "upscale_factor"
+      },
+      "auto_downscale": {
+        "name": "auto_downscale",
+        "tooltip": "Automatically downscale input image if output would exceed the limit."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HitPawVideoEnhance": {
+    "display_name": "HitPaw Video Enhance",
+    "description": "Upscale low-resolution videos to high resolution, eliminate artifacts and noise. Prices shown are per second of video.",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "video": {
+        "name": "video"
+      },
+      "model_resolution": {
+        "name": "resolution"
       }
     },
     "outputs": {
@@ -6028,6 +6118,10 @@
       "5": {
         "name": "recording_video",
         "tooltip": null
+      },
+      "6": {
+        "name": "model_3d",
+        "tooltip": null
       }
     }
   },
@@ -7259,6 +7353,14 @@
       "0": {
         "name": "model_file",
         "tooltip": null
+      },
+      "1": {
+        "name": "GLB",
+        "tooltip": null
+      },
+      "2": {
+        "name": "FBX",
+        "tooltip": null
       }
     }
   },
@@ -7313,6 +7415,14 @@
       },
       "1": {
         "name": "meshy_task_id",
+        "tooltip": null
+      },
+      "2": {
+        "name": "GLB",
+        "tooltip": null
+      },
+      "3": {
+        "name": "FBX",
         "tooltip": null
       }
     }
@@ -7369,6 +7479,14 @@
       "1": {
         "name": "meshy_task_id",
         "tooltip": null
+      },
+      "2": {
+        "name": "GLB",
+        "tooltip": null
+      },
+      "3": {
+        "name": "FBX",
+        "tooltip": null
       }
     }
   },
@@ -7403,6 +7521,14 @@
       "1": {
         "name": "meshy_task_id",
         "tooltip": null
+      },
+      "2": {
+        "name": "GLB",
+        "tooltip": null
+      },
+      "3": {
+        "name": "FBX",
+        "tooltip": null
       }
     }
   },
@@ -7429,6 +7555,14 @@
       },
       "1": {
         "name": "rig_task_id",
+        "tooltip": null
+      },
+      "2": {
+        "name": "GLB",
+        "tooltip": null
+      },
+      "3": {
+        "name": "FBX",
         "tooltip": null
       }
     }
@@ -7478,6 +7612,14 @@
       "1": {
         "name": "meshy_task_id",
         "tooltip": null
+      },
+      "2": {
+        "name": "GLB",
+        "tooltip": null
+      },
+      "3": {
+        "name": "FBX",
+        "tooltip": null
       }
     }
   },
@@ -7513,6 +7655,14 @@
       },
       "1": {
         "name": "meshy_task_id",
+        "tooltip": null
+      },
+      "2": {
+        "name": "GLB",
+        "tooltip": null
+      },
+      "3": {
+        "name": "FBX",
         "tooltip": null
       }
     }
@@ -10707,7 +10857,8 @@
     "display_name": "Preview 3D & Animation",
     "inputs": {
       "model_file": {
-        "name": "model_file"
+        "name": "model_file",
+        "tooltip": "3D model file or path string"
       },
       "camera_info": {
         "name": "camera_info"
@@ -10996,6 +11147,25 @@
     "outputs": {
       "0": {
         "name": "recraft_controls",
+        "tooltip": null
+      }
+    }
+  },
+  "RecraftCreateStyleNode": {
+    "display_name": "Recraft Create Style",
+    "description": "Create a custom style from reference images. Upload 1-5 images to use as style references. Total size of all images is limited to 5 MB.",
+    "inputs": {
+      "style": {
+        "name": "style",
+        "tooltip": "The base style of the generated images."
+      },
+      "images": {
+        "name": "images"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "style_id",
         "tooltip": null
       }
     }
@@ -11324,6 +11494,23 @@
   "ReferenceLatent": {
     "display_name": "ReferenceLatent",
     "description": "This node sets the guiding latent for an edit model. If the model supports it you can chain multiple to set multiple reference images.",
+    "inputs": {
+      "conditioning": {
+        "name": "conditioning"
+      },
+      "latent": {
+        "name": "latent"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ReferenceTimbreAudio": {
+    "display_name": "Reference Audio",
+    "description": "This node sets the reference audio for ace step 1.5",
     "inputs": {
       "conditioning": {
         "name": "conditioning"
@@ -11670,6 +11857,10 @@
       "0": {
         "name": "3D Model Path",
         "tooltip": null
+      },
+      "1": {
+        "name": "GLB",
+        "tooltip": null
       }
     }
   },
@@ -11697,6 +11888,10 @@
       "0": {
         "name": "3D Model Path",
         "tooltip": null
+      },
+      "1": {
+        "name": "GLB",
+        "tooltip": null
       }
     }
   },
@@ -11721,6 +11916,10 @@
       "0": {
         "name": "3D Model Path",
         "tooltip": null
+      },
+      "1": {
+        "name": "GLB",
+        "tooltip": null
       }
     }
   },
@@ -11738,6 +11937,10 @@
     "outputs": {
       "0": {
         "name": "3D Model Path",
+        "tooltip": null
+      },
+      "1": {
+        "name": "GLB",
         "tooltip": null
       }
     }
@@ -11762,6 +11965,10 @@
     "outputs": {
       "0": {
         "name": "3D Model Path",
+        "tooltip": null
+      },
+      "1": {
+        "name": "GLB",
         "tooltip": null
       }
     }
@@ -12355,10 +12562,11 @@
     }
   },
   "SaveGLB": {
-    "display_name": "SaveGLB",
+    "display_name": "Save 3D Model",
     "inputs": {
       "mesh": {
-        "name": "mesh"
+        "name": "mesh",
+        "tooltip": "Mesh or 3D file to save"
       },
       "filename_prefix": {
         "name": "filename_prefix"
@@ -13763,6 +13971,14 @@
       "0": {
         "name": "model_file",
         "tooltip": null
+      },
+      "1": {
+        "name": "GLB",
+        "tooltip": null
+      },
+      "2": {
+        "name": "OBJ",
+        "tooltip": null
       }
     }
   },
@@ -13798,6 +14014,14 @@
       "0": {
         "name": "model_file",
         "tooltip": null
+      },
+      "1": {
+        "name": "GLB",
+        "tooltip": null
+      },
+      "2": {
+        "name": "OBJ",
+        "tooltip": null
       }
     }
   },
@@ -13815,6 +14039,62 @@
       },
       "lyrics_strength": {
         "name": "lyrics_strength"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "TextEncodeAceStepAudio1_5": {
+    "display_name": "TextEncodeAceStepAudio1.5",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "tags": {
+        "name": "tags"
+      },
+      "lyrics": {
+        "name": "lyrics"
+      },
+      "seed": {
+        "name": "seed"
+      },
+      "bpm": {
+        "name": "bpm"
+      },
+      "duration": {
+        "name": "duration"
+      },
+      "timesignature": {
+        "name": "timesignature"
+      },
+      "language": {
+        "name": "language"
+      },
+      "keyscale": {
+        "name": "keyscale"
+      },
+      "generate_audio_codes": {
+        "name": "generate_audio_codes",
+        "tooltip": "Enable the LLM that generates audio codes. This can be slow but will increase the quality of the generated audio. Turn this off if you are giving the model an audio reference."
+      },
+      "cfg_scale": {
+        "name": "cfg_scale"
+      },
+      "temperature": {
+        "name": "temperature"
+      },
+      "top_p": {
+        "name": "top_p"
+      },
+      "top_k": {
+        "name": "top_k"
+      },
+      "control_after_generate": {
+        "name": "control after generate"
       }
     },
     "outputs": {
@@ -14386,6 +14666,10 @@
       "1": {
         "name": "model task_id",
         "tooltip": null
+      },
+      "2": {
+        "name": "GLB",
+        "tooltip": null
       }
     }
   },
@@ -14447,6 +14731,10 @@
       "1": {
         "name": "model task_id",
         "tooltip": null
+      },
+      "2": {
+        "name": "GLB",
+        "tooltip": null
       }
     }
   },
@@ -14466,6 +14754,10 @@
       },
       "1": {
         "name": "model task_id",
+        "tooltip": null
+      },
+      "2": {
+        "name": "GLB",
         "tooltip": null
       }
     }
@@ -14488,6 +14780,10 @@
       "1": {
         "name": "retarget task_id",
         "tooltip": null
+      },
+      "2": {
+        "name": "GLB",
+        "tooltip": null
       }
     }
   },
@@ -14505,6 +14801,10 @@
       },
       "1": {
         "name": "rig task_id",
+        "tooltip": null
+      },
+      "2": {
+        "name": "GLB",
         "tooltip": null
       }
     }
@@ -14560,6 +14860,10 @@
       "1": {
         "name": "model task_id",
         "tooltip": null
+      },
+      "2": {
+        "name": "GLB",
+        "tooltip": null
       }
     }
   },
@@ -14592,6 +14896,10 @@
       },
       "1": {
         "name": "model task_id",
+        "tooltip": null
+      },
+      "2": {
+        "name": "GLB",
         "tooltip": null
       }
     }
@@ -14780,6 +15088,28 @@
       },
       "vae": {
         "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "VAEDecodeAudioTiled": {
+    "display_name": "VAE Decode Audio (Tiled)",
+    "inputs": {
+      "samples": {
+        "name": "samples"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "tile_size": {
+        "name": "tile_size"
+      },
+      "overlap": {
+        "name": "overlap"
       }
     },
     "outputs": {
@@ -15261,6 +15591,119 @@
       }
     }
   },
+  "Vidu3ImageToVideoNode": {
+    "display_name": "Vidu Q3 Image-to-Video Generation",
+    "description": "Generate a video from an image and an optional prompt.",
+    "inputs": {
+      "model": {
+        "name": "model",
+        "tooltip": "Model to use for video generation."
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "An image to be used as the start frame of the generated video."
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "An optional text prompt for video generation (max 2000 characters)."
+      },
+      "seed": {
+        "name": "seed"
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model_audio": {
+        "name": "audio"
+      },
+      "model_duration": {
+        "name": "duration"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Vidu3TextToVideoNode": {
+    "display_name": "Vidu Q3 Text-to-Video Generation",
+    "description": "Generate video from a text prompt.",
+    "inputs": {
+      "model": {
+        "name": "model",
+        "tooltip": "Model to use for video generation."
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "A textual description for video generation, with a maximum length of 2000 characters."
+      },
+      "seed": {
+        "name": "seed"
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_audio": {
+        "name": "audio"
+      },
+      "model_duration": {
+        "name": "duration"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ViduExtendVideoNode": {
+    "display_name": "Vidu Video Extension",
+    "description": "Extend an existing video by generating additional frames.",
+    "inputs": {
+      "model": {
+        "name": "model",
+        "tooltip": "Model to use for video extension."
+      },
+      "video": {
+        "name": "video",
+        "tooltip": "The source video to extend."
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "An optional text prompt for the extended video (max 2000 characters)."
+      },
+      "seed": {
+        "name": "seed"
+      },
+      "end_frame": {
+        "name": "end_frame"
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model_duration": {
+        "name": "duration"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ViduImageToVideoNode": {
     "display_name": "Vidu Image To Video Generation",
     "description": "Generate video from image and optional prompt",
@@ -15295,6 +15738,49 @@
       },
       "control_after_generate": {
         "name": "control after generate"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ViduMultiFrameVideoNode": {
+    "display_name": "Vidu Multi-Frame Video Generation",
+    "description": "Generate a video with multiple keyframe transitions.",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "start_image": {
+        "name": "start_image",
+        "tooltip": "The starting frame image. Aspect ratio must be between 1:4 and 4:1."
+      },
+      "seed": {
+        "name": "seed"
+      },
+      "resolution": {
+        "name": "resolution"
+      },
+      "frames": {
+        "name": "frames",
+        "tooltip": "Number of keyframe transitions (2-9)."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "frames_duration1": {
+        "name": "duration1"
+      },
+      "frames_duration2": {
+        "name": "duration2"
+      },
+      "frames_prompt1": {
+        "name": "prompt1"
+      },
+      "frames_prompt2": {
+        "name": "prompt2"
       }
     },
     "outputs": {

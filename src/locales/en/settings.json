@@ -280,6 +280,10 @@
   "Comfy_NodeBadge_ShowApiPricing": {
     "name": "Show API node pricing badge"
   },
+  "Comfy_NodeReplacement_Enabled": {
+    "name": "Enable automatic node replacement",
+    "tooltip": "When enabled, missing nodes can be automatically replaced with their newer equivalents if a replacement mapping exists."
+  },
   "Comfy_NodeSearchBoxImpl": {
     "name": "Node search box implementation",
     "options": {

@@ -1,5 +1,6 @@
+import type { MaybeRef } from 'vue'
+
 import { toRef } from '@vueuse/core'
-import type { MaybeRef } from '@vueuse/core'
 import { nextTick, ref, toRaw, watch } from 'vue'
 
 import Load3d from '@/extensions/core/load3d/Load3d'
@@ -218,14 +219,15 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
         return modelPath
       }
 
-      const [subfolder, filename] = Load3dUtils.splitFilePath(modelPath)
-      return api.apiURL(
-        Load3dUtils.getResourceURL(
-          subfolder,
-          filename,
-          isPreview.value ? 'output' : 'input'
-        )
-      )
+      const trimmed = modelPath.trim()
+      const hasOutputSuffix = trimmed.endsWith('[output]')
+      const cleanPath = hasOutputSuffix
+        ? trimmed.replace(/\s*\[output\]$/, '')
+        : trimmed
+      const type = hasOutputSuffix || isPreview.value ? 'output' : 'input'
+
+      const [subfolder, filename] = Load3dUtils.splitFilePath(cleanPath)
+      return api.apiURL(Load3dUtils.getResourceURL(subfolder, filename, type))
     } catch (error) {
       console.error('Failed to construct model URL:', error)
       return null

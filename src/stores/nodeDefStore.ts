@@ -3,6 +3,7 @@ import _ from 'es-toolkit/compat'
 import { defineStore } from 'pinia'
 import { computed, ref, watchEffect } from 'vue'
 
+import { t } from '@/i18n'
 import { isProxyWidget } from '@/core/graph/subgraph/proxyWidget'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
@@ -76,11 +77,16 @@ export class ComfyNodeDefImpl
    * and input connectivity.
    */
   readonly price_badge?: PriceBadge
+  /**
+   * Alternative names for search. Useful for synonyms, abbreviations,
+   * or old names after renaming a node.
+   */
+  readonly search_aliases?: string[]
 
   // V2 fields
   readonly inputs: Record<string, InputSpecV2>
   readonly outputs: OutputSpecV2[]
-  readonly hidden?: Record<string, any>
+  readonly hidden?: Record<string, boolean>
 
   // ComfyNodeDefImpl fields
   readonly nodeSource: NodeSource
@@ -89,7 +95,7 @@ export class ComfyNodeDefImpl
    * @internal
    * Migrate default input options to forceInput.
    */
-  static #migrateDefaultInput(nodeDef: ComfyNodeDefV1): ComfyNodeDefV1 {
+  private static _migrateDefaultInput(nodeDef: ComfyNodeDefV1): ComfyNodeDefV1 {
     const def = _.cloneDeep(nodeDef)
     def.input ??= {}
     // For required inputs, now we have the input socket always present. Specifying
@@ -118,7 +124,7 @@ export class ComfyNodeDefImpl
   }
 
   constructor(def: ComfyNodeDefV1) {
-    const obj = ComfyNodeDefImpl.#migrateDefaultInput(def)
+    const obj = ComfyNodeDefImpl._migrateDefaultInput(def)
 
     /**
      * Assign extra fields to `this` for compatibility with group node feature.
@@ -428,25 +434,24 @@ export const useNodeDefStore = defineStore('nodeDef', () => {
     // Deprecated nodes filter
     registerNodeDefFilter({
       id: 'core.deprecated',
-      name: 'Hide Deprecated Nodes',
-      description: 'Hides nodes marked as deprecated unless explicitly enabled',
+      name: t('nodeFilters.hideDeprecated'),
+      description: t('nodeFilters.hideDeprecatedDescription'),
       predicate: (nodeDef) => showDeprecated.value || !nodeDef.deprecated
     })
 
     // Experimental nodes filter
     registerNodeDefFilter({
       id: 'core.experimental',
-      name: 'Hide Experimental Nodes',
-      description:
-        'Hides nodes marked as experimental unless explicitly enabled',
+      name: t('nodeFilters.hideExperimental'),
+      description: t('nodeFilters.hideExperimentalDescription'),
       predicate: (nodeDef) => showExperimental.value || !nodeDef.experimental
     })
 
     // Dev-only nodes filter
     registerNodeDefFilter({
       id: 'core.dev_only',
-      name: 'Hide Dev-Only Nodes',
-      description: 'Hides nodes marked as dev-only unless dev mode is enabled',
+      name: t('nodeFilters.hideDevOnly'),
+      description: t('nodeFilters.hideDevOnlyDescription'),
       predicate: (nodeDef) => showDevOnly.value || !nodeDef.dev_only
     })
 
@@ -454,9 +459,8 @@ export const useNodeDefStore = defineStore('nodeDef', () => {
     // Filter out litegraph typed subgraphs, saved blueprints are added in separately
     registerNodeDefFilter({
       id: 'core.subgraph',
-      name: 'Hide Subgraph Nodes',
-      description:
-        'Temporarily hides subgraph nodes from node library and search',
+      name: t('nodeFilters.hideSubgraph'),
+      description: t('nodeFilters.hideSubgraphDescription'),
       predicate: (nodeDef) => {
         // Hide subgraph nodes (identified by category='subgraph' and python_module='nodes')
         return !(

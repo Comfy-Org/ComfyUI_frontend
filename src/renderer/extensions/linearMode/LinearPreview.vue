@@ -1,17 +1,19 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import { downloadFile } from '@/base/common/downloadUtil'
 import Popover from '@/components/ui/Popover.vue'
 import Button from '@/components/ui/button/Button.vue'
-import { d, t } from '@/i18n'
 import { useMediaAssetActions } from '@/platform/assets/composables/useMediaAssetActions'
 import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { extractWorkflowFromAsset } from '@/platform/workflow/utils/workflowExtractionUtil'
 import ImagePreview from '@/renderer/extensions/linearMode/ImagePreview.vue'
-import Preview3d from '@/renderer/extensions/linearMode/Preview3d.vue'
+import LinearWelcome from '@/renderer/extensions/linearMode/LinearWelcome.vue'
+// Lazy-loaded to avoid pulling THREE.js into the main bundle
+const Preview3d = () => import('@/renderer/extensions/linearMode/Preview3d.vue')
 import VideoPreview from '@/renderer/extensions/linearMode/VideoPreview.vue'
 import {
   getMediaType,
@@ -24,6 +26,7 @@ import { formatDuration } from '@/utils/dateTimeUtil'
 import { collectAllNodes } from '@/utils/graphTraversalUtil'
 import { executeWidgetsCallback } from '@/utils/litegraphUtil'
 
+const { t, d } = useI18n()
 const mediaActions = useMediaAssetActions()
 
 const { runButtonClick, selectedItem, selectedOutput } = defineProps<{
@@ -176,9 +179,5 @@ async function rerun(e: Event) {
     v-else-if="getMediaType(selectedOutput) === '3d'"
     :model-url="selectedOutput!.url"
   />
-  <img
-    v-else
-    class="pointer-events-none flex-1 max-h-full md:contain-size brightness-50 opacity-10"
-    src="/assets/images/comfy-logo-mono.svg"
-  />
+  <LinearWelcome v-else />
 </template>

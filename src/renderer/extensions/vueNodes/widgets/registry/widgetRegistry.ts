@@ -195,7 +195,7 @@ const coreWidgetDefinitions: Array<[string, WidgetDefinition]> = [
     'boundingbox',
     {
       component: WidgetBoundingBox,
-      aliases: ['BOUNDINGBOX'],
+      aliases: ['BOUNDING_BOX'],
       essential: false
     }
   ]

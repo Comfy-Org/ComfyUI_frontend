@@ -45,7 +45,7 @@ export function useMediaAssetActions() {
   ): Promise<void> => {
     if (assetType === 'output') {
       const promptId =
-        asset.id || getOutputAssetMetadata(asset.user_metadata)?.promptId
+        getOutputAssetMetadata(asset.user_metadata)?.promptId || asset.id
       if (!promptId) {
         throw new Error('Unable to extract prompt ID from asset')
       }
@@ -65,15 +65,8 @@ export function useMediaAssetActions() {
 
     try {
       const filename = targetAsset.name
-      let downloadUrl: string
-
-      // In cloud, use preview_url directly (from cloud storage)
-      // In OSS/localhost, use the /view endpoint
-      if (isCloud && targetAsset.preview_url) {
-        downloadUrl = targetAsset.preview_url
-      } else {
-        downloadUrl = getAssetUrl(targetAsset)
-      }
+      // Prefer preview_url (already includes subfolder) with getAssetUrl as fallback
+      const downloadUrl = targetAsset.preview_url || getAssetUrl(targetAsset)
 
       downloadFile(downloadUrl, filename)
 
@@ -103,15 +96,8 @@ export function useMediaAssetActions() {
     try {
       assets.forEach((asset) => {
         const filename = asset.name
-        let downloadUrl: string
-
-        // In cloud, use preview_url directly (from GCS or other cloud storage)
-        // In OSS/localhost, use the /view endpoint
-        if (isCloud && asset.preview_url) {
-          downloadUrl = asset.preview_url
-        } else {
-          downloadUrl = getAssetUrl(asset)
-        }
+        // Prefer preview_url (already includes subfolder) with getAssetUrl as fallback
+        const downloadUrl = asset.preview_url || getAssetUrl(asset)
         downloadFile(downloadUrl, filename)
       })
 
@@ -138,9 +124,10 @@ export function useMediaAssetActions() {
     const targetAsset = asset ?? mediaContext?.asset.value
     if (!targetAsset) return
 
-    // Try asset.id first (OSS), then fall back to metadata (Cloud)
     const metadata = getOutputAssetMetadata(targetAsset.user_metadata)
-    const promptId = targetAsset.id || metadata?.promptId
+    const promptId =
+      metadata?.promptId ||
+      (getAssetType(targetAsset) === 'output' ? targetAsset.id : undefined)
 
     if (!promptId) {
       toast.add({

@@ -8,6 +8,7 @@ import Tab from '@/components/tab/Tab.vue'
 import TabList from '@/components/tab/TabList.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useGraphHierarchy } from '@/composables/graph/useGraphHierarchy'
+import type { ProxyWidgetsProperty } from '@/core/schemas/proxyWidget'
 import { st } from '@/i18n'
 import { SubgraphNode } from '@/lib/litegraph/src/litegraph'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
@@ -35,6 +36,7 @@ const canvasStore = useCanvasStore()
 const rightSidePanelStore = useRightSidePanelStore()
 const settingStore = useSettingStore()
 const { t } = useI18n()
+
 const { findParentGroup } = useGraphHierarchy()
 
 const { selectedItems: directlySelectedItems } = storeToRefs(canvasStore)
@@ -190,6 +192,12 @@ function handleTitleEdit(newTitle: string) {
 function handleTitleCancel() {
   isEditing.value = false
 }
+
+function handleProxyWidgetsUpdate(value: ProxyWidgetsProperty) {
+  if (!selectedSingleNode.value) return
+  ;(selectedSingleNode.value as SubgraphNode).properties.proxyWidgets = value
+  canvasStore.canvas?.setDirty(true, true)
+}
 </script>
 
 <template>
@@ -283,6 +291,7 @@ function handleTitleCancel() {
         <TabSubgraphInputs
           v-if="activeTab === 'parameters' && isSingleSubgraphNode"
           :node="selectedSingleNode as SubgraphNode"
+          @update:proxy-widgets="handleProxyWidgetsUpdate"
         />
         <TabNormalInputs
           v-else-if="activeTab === 'parameters'"

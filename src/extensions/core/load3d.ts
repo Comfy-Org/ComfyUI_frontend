@@ -9,6 +9,7 @@ import type {
   CameraState
 } from '@/extensions/core/load3d/interfaces'
 import Load3DConfiguration from '@/extensions/core/load3d/Load3DConfiguration'
+import { SUPPORTED_EXTENSIONS_ACCEPT } from '@/extensions/core/load3d/constants'
 import Load3dUtils from '@/extensions/core/load3d/Load3dUtils'
 import { t } from '@/i18n'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
@@ -258,10 +259,7 @@ useExtensionService().registerExtension({
   getCustomWidgets() {
     return {
       LOAD_3D(node) {
-        const fileInput = createFileInput(
-          '.gltf,.glb,.obj,.fbx,.stl,.ply,.spz,.splat,.ksplat',
-          false
-        )
+        const fileInput = createFileInput(SUPPORTED_EXTENSIONS_ACCEPT, false)
 
         node.properties['Resource Folder'] = ''
 
