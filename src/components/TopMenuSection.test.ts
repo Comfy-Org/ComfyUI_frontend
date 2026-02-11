@@ -19,7 +19,11 @@ import { useExecutionStore } from '@/stores/executionStore'
 import { TaskItemImpl, useQueueStore } from '@/stores/queueStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 
-const mockData = vi.hoisted(() => ({ isLoggedIn: false, isDesktop: false }))
+const mockData = vi.hoisted(() => ({
+  isLoggedIn: false,
+  isDesktop: false,
+  showConflictRedDot: false
+}))
 
 vi.mock('@/composables/auth/useCurrentUser', () => ({
   useCurrentUser: () => {
@@ -36,6 +40,29 @@ vi.mock('@/platform/distribution/types', () => ({
     return mockData.isDesktop
   }
 }))
+
+vi.mock('@/platform/updates/common/releaseStore', () => ({
+  useReleaseStore: () => ({
+    shouldShowRedDot: computed(() => true)
+  })
+}))
+
+vi.mock(
+  '@/workbench/extensions/manager/composables/useConflictAcknowledgment',
+  () => ({
+    useConflictAcknowledgment: () => ({
+      shouldShowRedDot: computed(() => mockData.showConflictRedDot)
+    })
+  })
+)
+
+vi.mock('@/workbench/extensions/manager/composables/useManagerState', () => ({
+  useManagerState: () => ({
+    shouldShowManagerButtons: computed(() => true),
+    openManager: vi.fn()
+  })
+}))
+
 vi.mock('@/stores/firebaseAuthStore', () => ({
   useFirebaseAuthStore: vi.fn(() => ({
     currentUser: null,
@@ -114,6 +141,7 @@ describe('TopMenuSection', () => {
     localStorage.clear()
     mockData.isDesktop = false
     mockData.isLoggedIn = false
+    mockData.showConflictRedDot = false
   })
 
   describe('authentication state', () => {
@@ -329,5 +357,17 @@ describe('TopMenuSection', () => {
     const menu = wrapper.findComponent({ name: 'ContextMenu' })
     const model = menu.props('model') as MenuItem[]
     expect(model[0]?.disabled).toBe(false)
+  })
+
+  it('shows manager red dot only for manager conflicts', async () => {
+    const wrapper = createWrapper()
+
+    // Release red dot is mocked as true globally for this test file.
+    expect(wrapper.find('span.bg-red-500').exists()).toBe(false)
+
+    mockData.showConflictRedDot = true
+    await nextTick()
+
+    expect(wrapper.find('span.bg-red-500').exists()).toBe(true)
   })
 })
