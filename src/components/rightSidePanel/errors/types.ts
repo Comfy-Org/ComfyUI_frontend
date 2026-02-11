@@ -5,7 +5,7 @@
 /**
  * Represents a single error entry within a card.
  */
-export interface ErrorItem {
+interface ErrorItem {
   /** The localized or raw error message to display */
   message: string
   /** Optional technical details (e.g., traceback, sub-error info) */

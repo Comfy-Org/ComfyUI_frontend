@@ -105,7 +105,7 @@ function executionIdToNodeLocatorId(
 }
 
 /** Prompt-level errors without node IDs (e.g. invalid_prompt, prompt_no_outputs) */
-export interface PromptError {
+interface PromptError {
   type: string
   message: string
   details: string
