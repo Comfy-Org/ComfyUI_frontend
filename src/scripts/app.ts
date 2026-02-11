@@ -1394,8 +1394,9 @@ export class ComfyApp {
           // Allow widgets to run callbacks before a prompt has been queued
           // e.g. random seed before every gen
           forEachNode(this.rootGraph, (node) => {
-            for (const widget of node.widgets ?? [])
+            for (const widget of node.widgets ?? []) {
               widget.beforeQueued?.({ isPartialExecution })
+            }
           })
 
           const p = await this.graphToPrompt(this.rootGraph)

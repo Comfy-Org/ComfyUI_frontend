@@ -45,10 +45,14 @@ declare module '@/lib/litegraph/src/types/widgets' {
     hidden?: boolean
   }
 
+  interface WidgetCallbackOptions {
+    isPartialExecution?: boolean
+  }
+
   interface IBaseWidget {
     onRemove?(): void
-    beforeQueued?(options?: { isPartialExecution?: boolean }): unknown
-    afterQueued?(options?: { isPartialExecution?: boolean }): unknown
+    beforeQueued?(options?: WidgetCallbackOptions): unknown
+    afterQueued?(options?: WidgetCallbackOptions): unknown
     serializeValue?(node: LGraphNode, index: number): Promise<unknown> | unknown
 
     /**
