@@ -104,6 +104,7 @@ function useNodeDragIndividual() {
       autoPan = new AutoPanController({
         canvas: lgCanvas.canvas,
         ds: lgCanvas.ds,
+        maxPanSpeed: lgCanvas.auto_pan_speed,
         onPan: (panX, panY) => {
           if (dragStartPos) {
             dragStartPos.x += panX
