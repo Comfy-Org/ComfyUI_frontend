@@ -12,6 +12,18 @@ This guide covers patterns and examples for testing Vue components in the ComfyU
 6. [Asynchronous Component Testing](#asynchronous-component-testing)
 7. [Working with Vue Reactivity](#working-with-vue-reactivity)
 
+## Describe Block Naming
+
+Use `Component.__name ?? 'ComponentName'` for the top-level `describe` title. This passes the function reference (satisfying the `prefer-describe-function-title` lint rule) while providing a readable fallback:
+
+```typescript
+import MyComponent from './MyComponent.vue'
+
+describe(MyComponent.__name ?? 'MyComponent', () => {
+  // ...
+})
+```
+
 ## Basic Component Testing
 
 Basic approach to testing a component's rendering and structure:
@@ -21,7 +33,7 @@ Basic approach to testing a component's rendering and structure:
 import { mount } from '@vue/test-utils'
 import SidebarIcon from './SidebarIcon.vue'
 
-describe('SidebarIcon', () => {
+describe(SidebarIcon.__name ?? 'SidebarIcon', () => {
   const exampleProps = {
     icon: 'pi pi-cog',
     selected: false

@@ -164,7 +164,7 @@ export class ImpactTelemetryProvider implements TelemetryProvider {
         new TextEncoder().encode(value)
       )
 
-      return Array.from(new Uint8Array(digestBuffer))
+      return [...new Uint8Array(digestBuffer)]
         .map((byte) => byte.toString(16).padStart(2, '0'))
         .join('')
     } catch {

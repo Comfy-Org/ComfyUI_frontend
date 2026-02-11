@@ -1,6 +1,8 @@
 import { createHash } from 'node:crypto'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { ImpactTelemetryProvider } from './ImpactTelemetryProvider'
+
 type MockApiKeyUser = {
   id: string
   email?: string
@@ -42,8 +44,6 @@ vi.mock('@/stores/firebaseAuthStore', () => ({
   useFirebaseAuthStore: mockUseFirebaseAuthStore
 }))
 
-import { ImpactTelemetryProvider } from './ImpactTelemetryProvider'
-
 const IMPACT_SCRIPT_URL =
   'https://utt.impactcdn.com/A6951770-3747-434a-9ac7-4e582e67d91f1.js'
 
@@ -60,7 +60,7 @@ function toUint8Array(data: BufferSource): Uint8Array {
   return new Uint8Array(data.buffer, data.byteOffset, data.byteLength)
 }
 
-describe('ImpactTelemetryProvider', () => {
+describe(ImpactTelemetryProvider, () => {
   beforeEach(() => {
     mockCaptureCheckoutAttributionFromSearch.mockReset()
     mockUseApiKeyAuthStore.mockReset()

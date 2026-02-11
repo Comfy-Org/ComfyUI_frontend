@@ -18,7 +18,7 @@ function mountDot(slotData?: INodeSlot) {
   })
 }
 
-describe('SlotConnectionDot', () => {
+describe(SlotConnectionDot.__name ?? 'SlotConnectionDot', () => {
   it('renders circle shape by default', () => {
     const wrapper = mountDot(defaultSlot)
 

@@ -51,7 +51,7 @@ interface MockSettingParams {
   category?: string[]
 }
 
-describe('useSettingUI', () => {
+describe(useSettingUI, () => {
   const mockSettings: Record<string, MockSettingParams> = {
     'Comfy.Locale': {
       id: 'Comfy.Locale',
