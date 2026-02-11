@@ -59,9 +59,37 @@ const trackingConfigs: Map<string, ElementTrackingConfig> = new Map([
   ]
 ])
 
+// Elements whose ResizeObserver fired while the tab was hidden
+const deferredElements = new Set<HTMLElement>()
+
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState !== 'visible' || deferredElements.size === 0)
+    return
+
+  // Re-observe deferred elements to trigger fresh measurements
+  for (const element of deferredElements) {
+    if (element.isConnected) {
+      resizeObserver.unobserve(element)
+      resizeObserver.observe(element)
+    }
+  }
+  deferredElements.clear()
+})
+
 // Single ResizeObserver instance for all Vue elements
 const resizeObserver = new ResizeObserver((entries) => {
   if (useCanvasStore().linearMode) return
+
+  // Skip measurements when tab is hidden — bounding rects are unreliable
+  if (document.visibilityState === 'hidden') {
+    for (const entry of entries) {
+      if (entry.target instanceof HTMLElement) {
+        deferredElements.add(entry.target)
+      }
+    }
+    return
+  }
+
   // Canvas is ready when this code runs; no defensive guards needed.
   const conv = useSharedCanvasPositionConversion()
   // Group updates by type, then flush via each config's handler
