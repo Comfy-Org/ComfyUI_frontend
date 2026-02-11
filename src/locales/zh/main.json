@@ -16,12 +16,15 @@
   "assetBrowser": {
     "allCategory": "全部{category}",
     "allModels": "全部模型",
+    "apiKeyHint": "导入私有或受限模型？{link}。",
+    "apiKeyHintLink": "在设置中添加您的 API 密钥",
     "ariaLabel": {
       "assetCard": "{name} - {type}资产",
       "loadingAsset": "正在加载资产"
     },
     "assetCollection": "资产合集",
     "assets": "资产",
+    "baseModel": "基础模型",
     "baseModels": "基础模型",
     "browseAssets": "浏览资产",
     "byType": "按类型",
@@ -50,13 +53,34 @@
       "canImport": "尚未导入模型。点击“导入模型”添加您的模型。",
       "restricted": "个人模型仅限创作者及以上等级使用。"
     },
+    "errorAccessForbidden": "无法访问此资源。",
+    "errorConnectionRefused": "无法连接到来源。请稍后再试。",
+    "errorDownloadCancelled": "下载已取消。",
     "errorFileTooLarge": "允许执行文件的文件大小限制",
     "errorFormatNotAllowed": "仅允许 SafeTensor 格式",
+    "errorHttpError": "获取元数据时发生错误。",
+    "errorInternalError": "发生意外错误。请重试。",
+    "errorInvalidHost": "无法解析来源 URL 的主机名。",
+    "errorInvalidUrl": "请输入一个 URL。",
+    "errorInvalidUrlFormat": "URL 格式无效。请检查后重试。",
+    "errorMetadataFetchFailed": "从来源获取文件信息失败。",
     "errorModelTypeNotSupported": "不支持该类型的模型",
+    "errorNetworkError": "发生网络错误。请检查您的连接并重试。",
+    "errorNetworkTimeout": "请求超时。请重试。",
+    "errorRateLimited": "请求过多。请几分钟后再试。",
+    "errorRequestCancelled": "请求已取消。",
+    "errorResourceNotFound": "未找到文件。请检查 URL 并重试。",
+    "errorServiceUnavailable": "服务暂时不可用。请稍后再试。",
+    "errorSourceServerError": "来源服务器出现问题。请稍后再试。",
+    "errorUnauthorized": "请登录以继续。",
+    "errorUnauthorizedSource": "此资源需要身份验证。请在设置中添加您的 API 密钥。",
     "errorUnknown": "发生了意外错误",
     "errorUnsafePickleScan": "CivitAI 在该文件中检测到不安全代码",
     "errorUnsafeVirusScan": "CivitAI 在该文件中检测到木马或可疑文件",
+    "errorUnsupportedSource": "此 URL 不受支持。仅允许 Hugging Face 和 Civitai 的链接。",
     "errorUploadFailed": "导入资产失败，请重试。",
+    "errorUserTokenAccessDenied": "您的 API 密钥无权访问此资源。请检查密钥权限。",
+    "errorUserTokenInvalid": "您保存的 API 密钥无效或已过期。请在设置中更新密钥。",
     "failedToCreateNode": "创建节点失败。请重试或查看控制台获取详细信息。",
     "fileFormats": "文件格式",
     "fileName": "文件名",
@@ -67,6 +91,10 @@
     "genericLinkPlaceholder": "粘贴链接到这",
     "importAnother": "导入其他",
     "imported": "已导入",
+    "invalidAsset": "无效资源",
+    "invalidAssetDetail": "所选资源无法验证。请重试。",
+    "invalidFilename": "无效文件名",
+    "invalidFilenameDetail": "无法确定资源文件名。请重试。",
     "jobId": "任务ID",
     "loadingModels": "正在加载{type}...",
     "maxFileSize": "最大文件大小：{size}",
@@ -107,6 +135,7 @@
     "modelUploaded": "模型导入成功！🎉",
     "noAssetsFound": "未找到资产",
     "noModelsInFolder": "此文件夹中没有可用的{type}",
+    "noResultsCanImport": "尝试调整您的搜索或筛选条件。\n您也可以使用上方的“导入”按钮添加模型。",
     "noValidSourceDetected": "检测不到有效的导入源",
     "notSureLeaveAsIs": "不确定？那就放着不管吧",
     "onlyCivitaiUrlsSupported": "仅支持 Civitai 链接",
@@ -126,6 +155,7 @@
     "selectProjects": "选择项目",
     "sortAZ": "A-Z",
     "sortBy": "排序方式",
+    "sortDefault": "默认",
     "sortPopular": "最受欢迎",
     "sortRecent": "最近",
     "sortZA": "Z-A",
@@ -142,7 +172,7 @@
     "uploadFailed": "导入失败",
     "uploadModel": "导入模型",
     "uploadModelDescription1": "粘贴 Civitai 模型下载链接，将其添加到库中。",
-    "uploadModelDescription1Generic": "站贴模型下载链接，将其添加到模型库中。",
+    "uploadModelDescription1Generic": "粘贴模型下载链接，将其添加到模型库中。",
     "uploadModelDescription2": "目前仅支持 <a href=\"https://civitai.com\" target=\"_blank\" class=\"text-muted-foreground\">https://civitai.com</a> 链接。",
     "uploadModelDescription2Generic": "仅支持来自以下提供服务的 URL ：",
     "uploadModelDescription2Link": "https://civitai.com/models",
@@ -176,13 +206,7 @@
       "whitelistInfo": "关于非白名单网站"
     },
     "deleteAccount": {
-      "cancel": "取消",
-      "confirm": "删除账户",
-      "confirmMessage": "您确定要删除您的账户吗？此操作无法撤销，并且会永久删除您的所有数据。",
-      "confirmTitle": "删除账户",
-      "deleteAccount": "删除账户",
-      "success": "账户已删除",
-      "successDetail": "您的账户已成功删除。"
+      "contactSupport": "如需删除您的账户，请联系 {email}"
     },
     "errors": {
       "auth/cancelled-popup-request": "登录已取消。请重试。",
@@ -267,6 +291,16 @@
       "signUpWithGoogle": "使用Google注册",
       "title": "创建一个账户"
     }
+  },
+  "billingOperation": {
+    "subscriptionFailed": "订阅更新失败",
+    "subscriptionProcessing": "正在处理付款 — 正在设置您的工作区...",
+    "subscriptionSuccess": "订阅更新成功",
+    "subscriptionTimeout": "订阅验证超时",
+    "topupFailed": "充值失败",
+    "topupProcessing": "正在处理付款 — 正在添加积分...",
+    "topupSuccess": "积分添加成功",
+    "topupTimeout": "充值验证超时"
   },
   "boundingBox": {
     "height": "高度",
@@ -482,7 +516,7 @@
     "Open Image": "打开图像",
     "Open in Mask Editor": "用遮罩编辑器打开",
     "Outputs": "输出",
-    "Paste": "站贴",
+    "Paste": "粘贴",
     "Pin": "固定",
     "Properties": "属性",
     "Properties Panel": "属性面板",
@@ -548,6 +582,7 @@
       "needMore": "需要更多？",
       "purchaseError": "购买失败",
       "purchaseErrorDetail": "购买积分失败：{error}",
+      "purchaseSuccess": "积分添加成功！",
       "quickPurchase": "快速购买",
       "seeDetails": "查看详情",
       "selectAmount": "选择金额",
@@ -577,12 +612,20 @@
     "CLIP": "CLIP",
     "CLIP_VISION": "CLIP视觉",
     "CLIP_VISION_OUTPUT": "CLIP视觉输出",
+    "COLOR": "颜色",
     "COMBO": "组合",
     "COMFY_AUTOGROW_V3": "COMFY_AUTOGROW_V3",
     "COMFY_DYNAMICCOMBO_V3": "COMFY_DYNAMICCOMBO_V3",
     "COMFY_MATCHTYPE_V3": "COMFY_MATCHTYPE_V3",
     "CONDITIONING": "条件",
     "CONTROL_NET": "ControlNet",
+    "FILE_3D": "FILE_3D",
+    "FILE_3D_FBX": "FILE_3D_FBX",
+    "FILE_3D_GLB": "FILE_3D_GLB",
+    "FILE_3D_GLTF": "FILE_3D_GLTF",
+    "FILE_3D_OBJ": "FILE_3D_OBJ",
+    "FILE_3D_STL": "FILE_3D_STL",
+    "FILE_3D_USDZ": "FILE_3D_USDZ",
     "FLOAT": "浮点",
     "FLOATS": "浮点组",
     "GEMINI_INPUT_FILES": "GEMINI 输入文件",
@@ -723,6 +766,7 @@
     "commandProhibited": "命令 {command} 被禁止。请联系管理员了解更多信息。",
     "community": "社区",
     "completed": "已完成",
+    "completedWithCheckmark": "已完成 ✓",
     "confirm": "确认",
     "confirmed": "已确认",
     "content": "内容",
@@ -748,6 +792,7 @@
     "deleteImage": "删除图片",
     "deprecated": "已弃用",
     "description": "描述",
+    "devOnly": "开发专用",
     "devices": "设备",
     "disableAll": "禁用全部",
     "disableSelected": "禁用选中项",
@@ -755,8 +800,10 @@
     "disabling": "禁用中",
     "dismiss": "关闭",
     "download": "下载",
+    "downloadAudio": "下载音频",
     "downloadImage": "下载图片",
     "downloadVideo": "下载视频",
+    "downloadWithSize": "下载（{size}）",
     "downloading": "正在下载",
     "dropYourFileOr": "拖放您的文件或",
     "duplicate": "复制",
@@ -772,12 +819,14 @@
     "enabling": "启用中",
     "enterBaseName": "输入基础名称",
     "enterNewName": "输入新名称",
+    "enterNewNamePrompt": "输入新名称：",
     "error": "错误",
     "errorLoadingImage": "图片加载出错",
     "errorLoadingVideo": "视频加载出错",
     "experimental": "测试版",
     "export": "导出",
     "extensionName": "扩展名称",
+    "extensions": "扩展",
     "failed": "失败",
     "failedToCopyJobId": "未能复制队列 ID",
     "failedToDownloadImage": "图片下载失败",
@@ -816,6 +865,7 @@
     "jobIdCopied": "队列 ID 已复制到剪贴板",
     "keybinding": "按键绑定",
     "keybindingAlreadyExists": "快捷键已存在",
+    "keybindings": "快捷键",
     "learnMore": "了解更多",
     "listening": "正在监听...",
     "liveSamplingPreview": "实时采样预览",
@@ -927,6 +977,7 @@
     "selectedFile": "已选文件",
     "setAsBackground": "设为背景",
     "settings": "设置",
+    "shortcutSuffix": "（{shortcut}）",
     "showLeftPanel": "显示左侧面板",
     "showReport": "显示报告",
     "showRightPanel": "显示右侧面板",
@@ -960,11 +1011,10 @@
     "videoPreview": "视频预览 - 使用方向键切换视频",
     "viewImageOfTotal": "查看第 {index} 张图片，共 {total} 张",
     "viewVideoOfTotal": "查看第 {index} 个视频，共 {total} 个",
-    "vitePreloadErrorMessage": "应用已发布新版本。是否立即重新加载？\n如果不重新加载，应用的某些功能可能无法正常工作。\n您可以先拒绝，保存进度后再重新加载。",
-    "vitePreloadErrorTitle": "新版本可用",
     "volume": "音量",
     "warning": "警告",
-    "workflow": "工作流"
+    "workflow": "工作流",
+    "you": "你"
   },
   "graphCanvasMenu": {
     "fitView": "适应视图",
@@ -1029,8 +1079,12 @@
   },
   "imageCrop": {
     "cropPreviewAlt": "裁剪预览",
+    "custom": "自定义",
     "loading": "加载中...",
-    "noInputImage": "未连接输入图像"
+    "lockRatio": "锁定宽高比",
+    "noInputImage": "未连接输入图像",
+    "ratio": "比例",
+    "unlockRatio": "解锁宽高比"
   },
   "importFailed": {
     "copyError": "复制错误",
@@ -1154,14 +1208,21 @@
     "helpFix": "帮助修复这个"
   },
   "linearMode": {
-    "beta": "测试版 - 提供反馈",
+    "beta": "App 模式测试版 - 提供反馈",
     "downloadAll": "全部下载",
     "dragAndDropImage": "拖拽图片到此处",
     "graphMode": "图形模式",
-    "linearMode": "简易模式",
+    "linearMode": "App 模式",
     "rerun": "重新运行",
     "reuseParameters": "复用参数",
-    "runCount": "运行次数："
+    "runCount": "运行次数：",
+    "welcome": {
+      "intro": "简化视图，隐藏节点图，让你专注于创作。",
+      "layout": "左侧显示你生成的图像、视频和输出。右侧只保留所需的控制项。所有复杂内容都被隐藏。",
+      "sharing": "分享很简单：创建工作流，打开应用模式，右键点击标签页并导出。当他人打开你的文件时，会直接进入这个简洁视图。你可以将强大的工作流作为简单工具分享，无需理解节点图。",
+      "title": "欢迎使用应用模式",
+      "widget": "如果你想控制显示哪些设置，将顶层节点转换为子图，然后在上方工具箱中使用控件提升，选择要暴露的内容。"
+    }
   },
   "load3d": {
     "applyingTexture": "应用纹理中...",
@@ -1261,8 +1322,10 @@
     }
   },
   "manager": {
+    "actions": "操作",
     "allMissingNodesInstalled": "所有缺失节点已成功安装",
     "applyChanges": "应用更改",
+    "basicInfo": "基本信息",
     "changingVersion": "将版本从 {from} 更改为 {to}",
     "clickToFinishSetup": "点击",
     "conflicts": {
@@ -1298,6 +1361,28 @@
     "disabledNodesWontUpdate": "已禁用的节点不会被更新",
     "discoverCommunityContent": "发现社区制作的节点包，扩展等等...",
     "downloads": "下载",
+    "emptyState": {
+      "allInstalled": {
+        "message": "你还没有安装任何扩展。",
+        "title": "未安装扩展"
+      },
+      "conflicting": {
+        "message": "你的所有扩展均兼容。",
+        "title": "未检测到冲突"
+      },
+      "missing": {
+        "message": "所有必需节点均已安装。",
+        "title": "无缺失节点"
+      },
+      "updateAvailable": {
+        "message": "你的所有扩展都是最新的。",
+        "title": "全部已是最新"
+      },
+      "workflow": {
+        "message": "此工作流未使用任何扩展节点。",
+        "title": "工作流中无扩展"
+      }
+    },
     "enablePackToChangeVersion": "启用此包以更改版本",
     "errorConnecting": "连接到Comfy节点注册表时出错。",
     "extensionsSuccessfullyInstalled": "扩展已成功安装并可使用！",
@@ -1319,18 +1404,31 @@
     "installingDependencies": "正在安装依赖项...",
     "lastUpdated": "最后更新",
     "latestVersion": "最新",
+    "legacyManagerSearchTip": "在找 ComfyUI-Manager？你可以通过启动 ComfyUI 并添加 --enable-manager-legacy-ui 参数来启用旧版管理器界面。",
     "legacyManagerUI": "使用传统界面",
     "legacyManagerUIDescription": "如需使用传统管理器界面，请以 --enable-manager-legacy-ui 参数启动 ComfyUI",
     "legacyMenuNotAvailable": "传统管理器菜单不可用，已切换为新管理器菜单。",
     "license": "许可证",
     "loadingVersions": "正在加载版本...",
     "mixedSelectionMessage": "无法对混合选择执行批量操作",
+    "nav": {
+      "allExtensions": "全部扩展",
+      "allInWorkflow": "全部在：{workflowName}",
+      "allInstalled": "全部已安装",
+      "conflicting": "存在冲突",
+      "inWorkflowSection": "工作流中",
+      "installedSection": "已安装",
+      "missingNodes": "缺失节点",
+      "notInstalled": "未安装",
+      "updatesAvailable": "有可用更新"
+    },
     "nightlyVersion": "每夜",
     "noDescription": "无可用描述",
     "noNodesFound": "未找到节点",
     "noNodesFoundDescription": "无法解析包的节点，或者该包仅为前端扩展，没有任何节点。",
     "noResultsFound": "未找到符合您搜索的结果。",
     "nodePack": "节点包",
+    "nodePackInfo": "节点包信息",
     "notAvailable": "不可用",
     "packsSelected": "选定的包",
     "repository": "仓库",
@@ -1338,6 +1436,7 @@
     "restartingBackend": "正在重启后端以应用更改...",
     "searchPlaceholder": "搜索",
     "selectVersion": "选择版本",
+    "selected": "已选择",
     "sort": {
       "created": "最新",
       "downloads": "最受欢迎",
@@ -1604,15 +1703,17 @@
     "Rotate Right in MaskEditor": "在蒙版编辑器中向右旋转",
     "Save": "保存",
     "Save As": "另存为",
+    "Set Subgraph Description": "设置子图描述",
+    "Set Subgraph Search Aliases": "设置子图搜索别名",
     "Show Keybindings Dialog": "显示快捷键对话框",
     "Show Model Selector (Dev)": "显示模型选择器（开发用）",
     "Show Settings Dialog": "显示设置对话框",
     "Sign Out": "退出登录",
+    "Toggle App Mode": "切换 App 模式",
     "Toggle Essential Bottom Panel": "切换基础底部面板",
     "Toggle Logs Bottom Panel": "切换日志底部面板",
     "Toggle Queue Panel V2": "切换队列面板 V2",
     "Toggle Search Box": "切换搜索框",
-    "Toggle Simple Mode": "切换简易模式",
     "Toggle Terminal Bottom Panel": "切换终端底部面板",
     "Toggle Theme (Dark/Light)": "切换主题（暗/亮）",
     "Toggle View Controls Bottom Panel": "切换视图控制底部面板",
@@ -1670,10 +1771,13 @@
     "Bria": "Bria",
     "ByteDance": "字节跳动",
     "Gemini": "Gemini",
+    "Grok": "Grok",
+    "HitPaw": "HitPaw",
     "Ideogram": "Ideogram",
     "Kling": "Kling",
     "LTXV": "LTXV",
     "Luma": "Luma",
+    "Magnific": "Magnific",
     "Meshy": "Meshy",
     "MiniMax": "MiniMax",
     "Moonvalley Marey": "Moonvalley Marey",
@@ -1684,6 +1788,7 @@
     "Runway": "Runway",
     "Sora": "Sora",
     "Stability AI": "Stability AI",
+    "Tencent": "Tencent",
     "Topaz": "Topaz",
     "Tripo": "Tripo",
     "Veo": "Veo",
@@ -1768,6 +1873,16 @@
     "render": "节点渲染错误",
     "slots": "节点接口错误",
     "widgets": "节点组件错误"
+  },
+  "nodeFilters": {
+    "hideDeprecated": "隐藏已弃用节点",
+    "hideDeprecatedDescription": "隐藏标记为已弃用的节点，除非明确启用",
+    "hideDevOnly": "隐藏仅开发者可见节点",
+    "hideDevOnlyDescription": "隐藏标记为仅开发者可见的节点，除非启用开发者模式",
+    "hideExperimental": "隐藏实验性节点",
+    "hideExperimentalDescription": "隐藏标记为实验性的节点，除非明确启用",
+    "hideSubgraph": "隐藏子图节点",
+    "hideSubgraphDescription": "暂时从节点库和搜索中隐藏子图节点"
   },
   "nodeHelpPage": {
     "documentationPage": "文档页面",
@@ -1879,6 +1994,7 @@
     "favorites": "已收藏输入",
     "favoritesNone": "暂无已收藏输入",
     "favoritesNoneDesc": "你收藏的输入会显示在这里",
+    "favoritesNoneHint": "在参数标签页，点击任意输入项的 {moreIcon} 可将其添加到这里",
     "favoritesNoneTooltip": "星标组件后可快速访问，无需选择节点",
     "globalSettings": {
       "canvas": "画布",
@@ -1899,6 +2015,7 @@
     },
     "groupSettings": "分组设置",
     "groups": "分组",
+    "hideAdvancedInputsButton": "隐藏高级输入",
     "hideInput": "隐藏输入",
     "info": "信息",
     "inputs": "输入",
@@ -1922,6 +2039,36 @@
     "title": "无选中节点 | 选中了 1 个节点 | 选中了 {count} 个节点",
     "togglePanel": "开关属性面板",
     "workflowOverview": "工作流总览"
+  },
+  "secrets": {
+    "addSecret": "添加机密",
+    "createdAt": "创建于 {date}",
+    "deleteConfirmMessage": "确定要删除“{name}”吗？此操作无法撤销。",
+    "deleteConfirmTitle": "删除机密",
+    "description": "机密信息会被加密，用于存储诸如 API 密钥等敏感数据。",
+    "descriptionUsage": "在此处存储您的令牌，以便从支持的提供商下载私有和受限模型。",
+    "editSecret": "编辑机密",
+    "errors": {
+      "duplicateName": "已存在同名机密",
+      "duplicateProvider": "该提供商的机密已存在",
+      "nameRequired": "名称为必填项",
+      "nameTooLong": "名称长度不能超过 255 个字符",
+      "providerRequired": "提供商为必填项",
+      "secretValueRequired": "机密值为必填项"
+    },
+    "lastUsed": "上次使用 {date}",
+    "modelProviders": "模型提供商",
+    "name": "名称",
+    "namePlaceholder": "例如：我的 API 密钥",
+    "noSecrets": "尚未存储任何机密。添加您的第一个 API 密钥以开始使用。",
+    "provider": "提供商",
+    "providerHint": "可选。选择提供商可自动使用令牌。",
+    "secretValue": "机密值",
+    "secretValueHint": "该值将被加密，之后无法再次查看。",
+    "secretValueHintEdit": "如需保留当前值，请留空。",
+    "secretValuePlaceholder": "请输入您的 API 密钥",
+    "secretValuePlaceholderEdit": "输入新值以更改",
+    "title": "API 密钥与机密"
   },
   "selectionToolbox": {
     "Bypass Group Nodes": "绕过分组节点",
@@ -2140,6 +2287,7 @@
     "Reroute": "重新路由",
     "RerouteBeta": "转接点 Beta",
     "Scene": "场景",
+    "Secrets": "密钥",
     "Server": "服务器",
     "Server-Config": "服务器配置",
     "Settings": "设置",
@@ -2257,6 +2405,7 @@
       "filterBy": "筛选方式",
       "filterCurrentWorkflow": "当前工作流",
       "filterJobs": "筛选任务",
+      "inlineTotalLabel": "总计",
       "interruptAll": "中断全部正在运行的任务",
       "jobQueue": "任务队列",
       "jobsCompleted": "{count} 任务完成 | {count} 任务完成",
@@ -2303,8 +2452,12 @@
   },
   "subgraphStore": {
     "blueprintName": "子工作流名称",
+    "blueprintNamePrompt": "子图名称：",
+    "cannotDeleteGlobal": "无法删除已安装的蓝图",
     "confirmDelete": "此操作将永久从您的库中移除该子工作流",
     "confirmDeleteTitle": "删除子工作流？",
+    "enterDescription": "输入描述",
+    "enterSearchAliases": "输入搜索别名（用逗号分隔）",
     "hidden": "隐藏/嵌套参数",
     "hideAll": "全部隐藏",
     "loadFailure": "加载子工作流蓝图失败",
@@ -2315,6 +2468,7 @@
     "publishSuccess": "已保存到节点库",
     "publishSuccessMessage": "您可以在节点库的“子工作流蓝图”下找到您的子工作流蓝图",
     "saveBlueprint": "保存子工作流到节点库",
+    "searchAliases": "搜索别名",
     "showAll": "全部显示",
     "showRecommended": "显示推荐控件",
     "shown": "节点上显示"
@@ -2330,8 +2484,27 @@
     "beta": "测试版",
     "billedMonthly": "每月付款",
     "billedYearly": "{total} 每年付款",
+    "billingComingSoon": {
+      "message": "团队计费功能即将上线。您将可以为您的工作区按成员数订阅套餐。敬请关注后续更新。",
+      "title": "即将推出"
+    },
+    "cancelDialog": {
+      "confirmCancel": "取消订阅",
+      "description": "您的访问权限将持续到 {date}。您将不再被扣费，您的工作区和积分将被保留。您可以随时重新订阅。",
+      "endOfBillingPeriod": "账单周期结束",
+      "failed": "取消订阅失败",
+      "keepSubscription": "保留订阅",
+      "title": "取消订阅"
+    },
     "cancelSubscription": "取消订阅",
+    "cancelSuccess": "订阅取消成功",
+    "canceled": "已取消",
+    "canceledCard": {
+      "description": "您将不再被扣费。您的功能将在 {date} 前保持激活。",
+      "title": "您的订阅已被取消"
+    },
     "changeTo": "更改为 {plan}",
+    "chooseBestPlanWorkspace": "为您的工作区选择最佳方案",
     "comfyCloud": "Comfy 云",
     "comfyCloudLogo": "Comfy Cloud Logo",
     "contactOwnerToSubscribe": "请联系工作区所有者进行订阅",
@@ -2342,6 +2515,7 @@
     "currentPlan": "当前订阅计划",
     "customLoRAsLabel": "导入您的 Lora",
     "description": "选择最适合您的订阅计划",
+    "descriptionWorkspace": "为您的工作区选择最佳方案",
     "expiresDate": "于 {date} 过期",
     "gpuLabel": "RTX 6000 Pro (96GB VRAM)",
     "haveQuestions": "对企业级有疑问？",
@@ -2357,14 +2531,20 @@
       "standard": "30 分钟"
     },
     "maxDurationLabel": "运行单个工作流的最大时长",
+    "maxMembersLabel": "最大成员数",
+    "member": "成员",
+    "memberCount": "{count} 名成员",
+    "membersLabel": "最多 {count} 名成员",
     "messageSupport": "消息支持",
     "monthly": "月度",
     "monthlyBonusDescription": "每月积分奖励",
     "monthlyCreditsInfo": "积分每月刷新，不会保留",
     "monthlyCreditsLabel": "每月积分",
+    "monthlyCreditsPerMemberLabel": "每成员每月积分",
     "monthlyCreditsRollover": "这些积分将结转到下个月",
     "mostPopular": "最受欢迎",
     "nextBillingCycle": "下一个计费周期",
+    "nextMonthInvoice": "下月账单",
     "partnerNodesBalance": "\"合作伙伴节点\"积分余额",
     "partnerNodesCredits": "合作伙伴节点积分",
     "partnerNodesDescription": "用于运行商业/专有模型",
@@ -2372,12 +2552,39 @@
     "plansAndPricing": "订阅和定价",
     "prepaidCreditsInfo": "单独购买且不会过期的积分",
     "prepaidDescription": "预付款额度",
+    "preview": {
+      "addCreditCard": "添加信用卡",
+      "backToAllPlans": "返回所有方案",
+      "confirm": "确认",
+      "confirmPayment": "确认付款",
+      "confirmPlanChange": "确认更改方案",
+      "eachMonthCreditsRefill": "每月积分补充至",
+      "ends": "{date} 结束",
+      "hideFeatures": "隐藏功能",
+      "nextPaymentDue": "下次付款截止日期 {date}。可随时取消。",
+      "perMember": "/ 每成员",
+      "privacyPolicy": "隐私政策",
+      "proratedCharge": "{plan} 按比例收费",
+      "proratedRefund": "{plan} 按比例退款",
+      "showMoreFeatures": "显示更多功能",
+      "starting": "{date} 开始",
+      "startingToday": "今日开始",
+      "terms": "条款",
+      "termsAgreement": "继续操作即表示您同意 Comfy Org 的{terms}和{privacy}。",
+      "totalDueToday": "今日应付总额"
+    },
     "renewsDate": "将于 {date} 续订",
     "required": {
+      "pollingFailed": "订阅激活失败",
+      "pollingSuccess": "订阅激活成功！",
+      "pollingTimeout": "等待订阅超时。请刷新并重试。",
       "subscribe": "订阅",
       "title": "订阅",
       "waitingForSubscription": "请在新标签页中完成订阅。我们会自动检测到您已完成！"
     },
+    "resubscribe": "重新订阅",
+    "resubscribeSuccess": "订阅已成功重新激活",
+    "resubscribeTo": "重新订阅 {plan}",
     "subscribeNow": "立即订阅",
     "subscribeTo": "订阅 {plan}",
     "subscribeToComfyCloud": "订阅 Comfy Cloud",
@@ -2406,6 +2613,7 @@
     "upgradePlan": "升级订阅",
     "upgradeTo": "升级到 {plan}",
     "usdPerMonth": "USD / mo",
+    "usdPerMonthPerMember": "美元 / 月 / 每成员",
     "videoEstimateExplanation": "这些预估基于 Wan Fun Control 生成 5 秒视频。",
     "videoEstimateHelp": "这是什么？",
     "videoEstimateLabel": "可使用  Wan Fun Control 模板生成 5 秒视频的数量",
@@ -2491,6 +2699,9 @@
     "useCaseFilter": "使用例",
     "useCasesSelected": "已选 {count} 个用例"
   },
+  "templates": {
+    "logoProviderSeparator": " 与 "
+  },
   "toastMessages": {
     "cannotCreateSubgraph": "无法创建子工作流",
     "couldNotDetermineFileType": "无法确定文件类型",
@@ -2517,6 +2728,7 @@
     "failedToLoadModel": "无法加载3D模型",
     "failedToPurchaseCredits": "购买积分失败：{error}",
     "failedToQueue": "排队失败",
+    "failedToSaveDraft": "保存工作流草稿失败",
     "failedToToggleCamera": "切换镜头失败",
     "failedToToggleGrid": "切换网格失败",
     "failedToUpdateBackgroundColor": "更新背景色失败",
@@ -2653,10 +2865,14 @@
   },
   "workflowService": {
     "enterFilename": "输入文件名",
+    "enterFilenamePrompt": "输入文件名：",
     "exportWorkflow": "导出工作流",
     "saveWorkflow": "保存工作流"
   },
   "workspace": {
+    "addedToWorkspace": "您已被加入 {workspaceName}",
+    "inviteAccepted": "邀请已接受",
+    "inviteFailed": "接受邀请失败",
     "unsavedChanges": {
       "message": "您有未保存的更改。是否要放弃这些更改并切换工作区？",
       "title": "未保存的更改"
@@ -2679,6 +2895,9 @@
       "namePlaceholder": "请输入工作区名称",
       "title": "创建新工作区"
     },
+    "dashboard": {
+      "placeholder": "仪表盘工作区设置"
+    },
     "deleteDialog": {
       "message": "任何未使用的积分或未保存的资源都将丢失。此操作无法撤销。",
       "messageWithName": "删除“{name}”？任何未使用的积分或未保存的资源都将丢失。此操作无法撤销。",
@@ -2689,10 +2908,49 @@
       "save": "保存",
       "title": "编辑工作区详情"
     },
+    "invite": "邀请",
+    "inviteLimitReached": "您已达到最多 50 名成员的上限",
+    "inviteMember": "邀请成员",
+    "inviteMemberDialog": {
+      "createLink": "创建链接",
+      "linkCopied": "已复制",
+      "linkCopyFailed": "复制链接失败",
+      "linkStep": {
+        "copyLink": "复制链接",
+        "done": "完成",
+        "message": "请确保其账号使用的是该邮箱。",
+        "title": "将此链接发送给对方"
+      },
+      "message": "创建一个可分享的邀请链接发送给他人",
+      "placeholder": "输入对方邮箱",
+      "title": "邀请他人加入此工作区"
+    },
     "leaveDialog": {
       "leave": "离开",
       "message": "除非联系工作区所有者，否则您将无法重新加入。",
       "title": "离开此工作区？"
+    },
+    "members": {
+      "actions": {
+        "copyLink": "复制邀请链接",
+        "removeMember": "移除成员",
+        "revokeInvite": "撤销邀请"
+      },
+      "columns": {
+        "expiryDate": "过期日期",
+        "inviteDate": "邀请日期",
+        "joinDate": "加入日期"
+      },
+      "createNewWorkspace": "创建新工作区。",
+      "membersCount": "{count}/50 名成员",
+      "noInvites": "暂无待处理邀请",
+      "noMembers": "暂无成员",
+      "pendingInvitesCount": "{count} 个待处理邀请",
+      "personalWorkspaceMessage": "您目前无法邀请其他成员加入您的个人工作区。如需添加成员，请",
+      "tabs": {
+        "active": "已激活",
+        "pendingCount": "待处理（{count}）"
+      }
     },
     "menu": {
       "deleteWorkspace": "删除工作区",
@@ -2700,14 +2958,42 @@
       "editWorkspace": "编辑工作区详情",
       "leaveWorkspace": "离开工作区"
     },
+    "removeMemberDialog": {
+      "error": "移除成员失败",
+      "message": "该成员将被移出您的工作区。其已使用的积分不会被退还。",
+      "remove": "移除成员",
+      "success": "成员已移除",
+      "title": "移除该成员？"
+    },
+    "revokeInviteDialog": {
+      "message": "该成员将无法再加入您的工作区，其邀请链接将失效。",
+      "revoke": "取消邀请",
+      "title": "取消邀请此人？"
+    },
     "tabs": {
+      "dashboard": "仪表盘",
+      "membersCount": "成员（{count}）",
       "planCredits": "套餐与积分"
     },
     "toast": {
       "failedToCreateWorkspace": "创建工作区失败",
       "failedToDeleteWorkspace": "删除工作区失败",
+      "failedToFetchWorkspaces": "加载工作区失败",
       "failedToLeaveWorkspace": "离开工作区失败",
       "failedToUpdateWorkspace": "更新工作区失败",
+      "workspaceCreated": {
+        "message": "订阅套餐，邀请队友，开始协作。",
+        "subscribe": "订阅",
+        "title": "工作区已创建"
+      },
+      "workspaceDeleted": {
+        "message": "该工作区已被永久删除。",
+        "title": "工作区已删除"
+      },
+      "workspaceLeft": {
+        "message": "您已退出该工作区。",
+        "title": "已退出工作区"
+      },
       "workspaceUpdated": {
         "message": "工作区详情已保存。",
         "title": "工作区已更新"
@@ -2717,6 +3003,7 @@
   "workspaceSwitcher": {
     "createWorkspace": "创建新工作区",
     "maxWorkspacesReached": "您最多只能拥有10个工作区。请删除一个以创建新工作区。",
+    "personal": "个人",
     "roleMember": "成员",
     "roleOwner": "所有者",
     "subscribe": "订阅",

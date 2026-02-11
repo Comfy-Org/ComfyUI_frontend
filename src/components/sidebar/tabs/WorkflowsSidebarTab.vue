@@ -2,6 +2,7 @@
   <SidebarTabTemplate
     :title="$t('sideToolbar.workflows')"
     v-bind="$attrs"
+    data-testid="workflows-sidebar"
     class="workflows-sidebar-tab"
   >
     <template #tool-buttons>
@@ -21,7 +22,9 @@
           ref="searchBoxRef"
           v-model:model-value="searchQuery"
           class="workflows-search-box"
-          :placeholder="$t('g.searchWorkflows') + '...'"
+          :placeholder="
+            $t('g.searchPlaceholder', { subject: $t('g.workflow') })
+          "
           @search="handleSearch"
         />
       </div>

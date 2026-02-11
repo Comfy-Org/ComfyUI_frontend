@@ -3,7 +3,7 @@ import { isCloud } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import type { SettingParams } from '@/platform/settings/types'
 import type { ColorPalettes } from '@/schemas/colorPaletteSchema'
-import type { Keybinding } from '@/schemas/keyBindingSchema'
+import type { Keybinding } from '@/platform/keybindings/types'
 import { NodeBadgeMode } from '@/types/nodeSource'
 import { LinkReleaseTriggerAction } from '@/types/searchBoxTypes'
 import { breakpointsTailwind } from '@vueuse/core'
@@ -170,13 +170,15 @@ export const CORE_SETTINGS: SettingParams[] = [
       const settingStore = useSettingStore()
 
       if (newValue === 'standard') {
-        // Update related settings to match standard mode - select + panning
-        await settingStore.set('Comfy.Canvas.LeftMouseClickBehavior', 'select')
-        await settingStore.set('Comfy.Canvas.MouseWheelScroll', 'panning')
+        await settingStore.setMany({
+          'Comfy.Canvas.LeftMouseClickBehavior': 'select',
+          'Comfy.Canvas.MouseWheelScroll': 'panning'
+        })
       } else if (newValue === 'legacy') {
-        // Update related settings to match legacy mode - panning + zoom
-        await settingStore.set('Comfy.Canvas.LeftMouseClickBehavior', 'panning')
-        await settingStore.set('Comfy.Canvas.MouseWheelScroll', 'zoom')
+        await settingStore.setMany({
+          'Comfy.Canvas.LeftMouseClickBehavior': 'panning',
+          'Comfy.Canvas.MouseWheelScroll': 'zoom'
+        })
       }
     }
   },
@@ -603,7 +605,7 @@ export const CORE_SETTINGS: SettingParams[] = [
     tooltip:
       'The maximum number of tasks added to the queue at one button click',
     type: 'number',
-    defaultValue: isCloud ? 4 : 100,
+    defaultValue: isCloud ? 32 : 100,
     versionAdded: '1.3.5'
   },
   {
@@ -642,6 +644,8 @@ export const CORE_SETTINGS: SettingParams[] = [
     id: 'Comfy.LinkRenderMode',
     category: ['LiteGraph', 'Graph', 'LinkRenderMode'],
     name: 'Link Render Mode',
+    tooltip:
+      'Controls the appearance and visibility of connection links between nodes on the canvas.',
     defaultValue: 2,
     type: 'combo',
     options: [
@@ -793,6 +797,8 @@ export const CORE_SETTINGS: SettingParams[] = [
     id: 'pysssss.SnapToGrid',
     category: ['LiteGraph', 'Canvas', 'AlwaysSnapToGrid'],
     name: 'Always snap to grid',
+    tooltip:
+      'When enabled, nodes will automatically align to the grid when moved or resized.',
     type: 'boolean',
     defaultValue: false,
     versionAdded: '1.3.13'
@@ -960,6 +966,8 @@ export const CORE_SETTINGS: SettingParams[] = [
     id: 'Comfy.Canvas.SelectionToolbox',
     category: ['LiteGraph', 'Canvas', 'SelectionToolbox'],
     name: 'Show selection toolbox',
+    tooltip:
+      'Display a floating toolbar when nodes are selected, providing quick access to common actions.',
     type: 'boolean',
     defaultValue: true,
     versionAdded: '1.10.5'
@@ -1172,7 +1180,39 @@ export const CORE_SETTINGS: SettingParams[] = [
     type: 'boolean',
     tooltip:
       'Replaces the floating job queue panel with an equivalent job queue embedded in the Assets side panel. You can disable this to return to the floating panel layout.',
-    defaultValue: true,
+    defaultValue: false,
     experimental: true
+  },
+  {
+    id: 'Comfy.Node.AlwaysShowAdvancedWidgets',
+    category: ['LiteGraph', 'Node Widget', 'AlwaysShowAdvancedWidgets'],
+    name: 'Always show advanced widgets on all nodes',
+    tooltip:
+      'When enabled, advanced widgets are always visible on all nodes without needing to expand them individually.',
+    type: 'boolean',
+    defaultValue: false,
+    versionAdded: '1.39.0'
+  },
+  {
+    id: 'Comfy.NodeReplacement.Enabled',
+    category: ['Comfy', 'Workflow', 'NodeReplacement'],
+    name: 'Enable automatic node replacement',
+    tooltip:
+      'When enabled, missing nodes can be automatically replaced with their newer equivalents if a replacement mapping exists.',
+    type: 'boolean',
+    defaultValue: false,
+    experimental: true,
+    versionAdded: '1.40.0'
+  },
+  {
+    id: 'Comfy.Graph.DeduplicateSubgraphNodeIds',
+    category: ['Comfy', 'Graph', 'Subgraph'],
+    name: 'Deduplicate subgraph node IDs',
+    tooltip:
+      'Automatically reassign duplicate node IDs in subgraphs when loading a workflow.',
+    type: 'boolean',
+    defaultValue: false,
+    experimental: true,
+    versionAdded: '1.40.0'
   }
 ]

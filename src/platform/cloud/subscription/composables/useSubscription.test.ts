@@ -1,22 +1,60 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { ref } from 'vue'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { effectScope } from 'vue'
 
 import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
 
-// Create mocks
-const mockIsLoggedIn = ref(false)
-const mockReportError = vi.fn()
-const mockAccessBillingPortal = vi.fn()
-const mockShowSubscriptionRequiredDialog = vi.fn()
-const mockGetAuthHeader = vi.fn(() =>
-  Promise.resolve({ Authorization: 'Bearer test-token' })
-)
-const mockTelemetry = {
-  trackSubscription: vi.fn(),
-  trackMonthlySubscriptionCancelled: vi.fn()
+const {
+  mockIsLoggedIn,
+  mockReportError,
+  mockAccessBillingPortal,
+  mockShowSubscriptionRequiredDialog,
+  mockGetAuthHeader,
+  mockGetCheckoutAttribution,
+  mockTelemetry,
+  mockUserId,
+  mockIsCloud
+} = vi.hoisted(() => ({
+  mockIsLoggedIn: { value: false },
+  mockIsCloud: { value: true },
+  mockReportError: vi.fn(),
+  mockAccessBillingPortal: vi.fn(),
+  mockShowSubscriptionRequiredDialog: vi.fn(),
+  mockGetAuthHeader: vi.fn(() =>
+    Promise.resolve({ Authorization: 'Bearer test-token' })
+  ),
+  mockGetCheckoutAttribution: vi.fn(() => ({
+    im_ref: 'impact-click-001',
+    utm_source: 'impact'
+  })),
+  mockTelemetry: {
+    trackSubscription: vi.fn(),
+    trackMonthlySubscriptionCancelled: vi.fn()
+  },
+  mockUserId: { value: 'user-123' }
+}))
+
+let scope: ReturnType<typeof effectScope> | undefined
+type Distribution = 'desktop' | 'localhost' | 'cloud'
+
+const setDistribution = (distribution: Distribution) => {
+  ;(
+    globalThis as typeof globalThis & { __DISTRIBUTION__: Distribution }
+  ).__DISTRIBUTION__ = distribution
 }
 
-// Mock dependencies
+function useSubscriptionWithScope() {
+  if (!scope) {
+    throw new Error('Test scope not initialized')
+  }
+
+  const subscription = scope.run(() => useSubscription())
+  if (!subscription) {
+    throw new Error('Failed to initialize subscription composable')
+  }
+
+  return subscription
+}
+
 vi.mock('@/composables/auth/useCurrentUser', () => ({
   useCurrentUser: vi.fn(() => ({
     isLoggedIn: mockIsLoggedIn
@@ -38,7 +76,7 @@ vi.mock('@/composables/useErrorHandling', () => ({
   useErrorHandling: vi.fn(() => ({
     wrapWithErrorHandlingAsync: vi.fn(
       (fn, errorHandler) =>
-        async (...args: any[]) => {
+        async (...args: Parameters<typeof fn>) => {
           try {
             return await fn(...args)
           } catch (error) {
@@ -53,7 +91,13 @@ vi.mock('@/composables/useErrorHandling', () => ({
 }))
 
 vi.mock('@/platform/distribution/types', () => ({
-  isCloud: true
+  get isCloud() {
+    return mockIsCloud.value
+  }
+}))
+
+vi.mock('@/platform/telemetry/utils/checkoutAttribution', () => ({
+  getCheckoutAttribution: mockGetCheckoutAttribution
 }))
 
 vi.mock('@/services/dialogService', () => ({
@@ -64,7 +108,10 @@ vi.mock('@/services/dialogService', () => ({
 
 vi.mock('@/stores/firebaseAuthStore', () => ({
   useFirebaseAuthStore: vi.fn(() => ({
-    getFirebaseAuthHeader: mockGetAuthHeader
+    getFirebaseAuthHeader: mockGetAuthHeader,
+    get userId() {
+      return mockUserId.value
+    }
   })),
   FirebaseAuthStoreError: class extends Error {}
 }))
@@ -73,11 +120,23 @@ vi.mock('@/stores/firebaseAuthStore', () => ({
 global.fetch = vi.fn()
 
 describe('useSubscription', () => {
+  afterEach(() => {
+    scope?.stop()
+    scope = undefined
+    setDistribution('localhost')
+  })
+
   beforeEach(() => {
+    scope?.stop()
+    scope = effectScope()
+    setDistribution('cloud')
+
     vi.clearAllMocks()
     mockIsLoggedIn.value = false
     mockTelemetry.trackSubscription.mockReset()
     mockTelemetry.trackMonthlySubscriptionCancelled.mockReset()
+    mockUserId.value = 'user-123'
+    mockIsCloud.value = true
     window.__CONFIG__ = {
       subscription_required: true
     } as typeof window.__CONFIG__
@@ -103,7 +162,7 @@ describe('useSubscription', () => {
       } as Response)
 
       mockIsLoggedIn.value = true
-      const { isActiveSubscription, fetchStatus } = useSubscription()
+      const { isActiveSubscription, fetchStatus } = useSubscriptionWithScope()
 
       await fetchStatus()
       expect(isActiveSubscription.value).toBe(true)
@@ -120,7 +179,7 @@ describe('useSubscription', () => {
       } as Response)
 
       mockIsLoggedIn.value = true
-      const { isActiveSubscription, fetchStatus } = useSubscription()
+      const { isActiveSubscription, fetchStatus } = useSubscriptionWithScope()
 
       await fetchStatus()
       expect(isActiveSubscription.value).toBe(false)
@@ -137,7 +196,7 @@ describe('useSubscription', () => {
       } as Response)
 
       mockIsLoggedIn.value = true
-      const { formattedRenewalDate, fetchStatus } = useSubscription()
+      const { formattedRenewalDate, fetchStatus } = useSubscriptionWithScope()
 
       await fetchStatus()
       // The date format may vary based on timezone, so we just check it's a valid date string
@@ -147,7 +206,7 @@ describe('useSubscription', () => {
     })
 
     it('should return empty string when renewal date is not available', () => {
-      const { formattedRenewalDate } = useSubscription()
+      const { formattedRenewalDate } = useSubscriptionWithScope()
 
       expect(formattedRenewalDate.value).toBe('')
     })
@@ -164,14 +223,14 @@ describe('useSubscription', () => {
       } as Response)
 
       mockIsLoggedIn.value = true
-      const { subscriptionTier, fetchStatus } = useSubscription()
+      const { subscriptionTier, fetchStatus } = useSubscriptionWithScope()
 
       await fetchStatus()
       expect(subscriptionTier.value).toBe('CREATOR')
     })
 
     it('should return null when subscription tier is not available', () => {
-      const { subscriptionTier } = useSubscription()
+      const { subscriptionTier } = useSubscriptionWithScope()
 
       expect(subscriptionTier.value).toBeNull()
     })
@@ -191,7 +250,7 @@ describe('useSubscription', () => {
       } as Response)
 
       mockIsLoggedIn.value = true
-      const { fetchStatus } = useSubscription()
+      const { fetchStatus } = useSubscriptionWithScope()
 
       await fetchStatus()
 
@@ -212,7 +271,7 @@ describe('useSubscription', () => {
         json: async () => ({ message: 'Subscription not found' })
       } as Response)
 
-      const { fetchStatus } = useSubscription()
+      const { fetchStatus } = useSubscriptionWithScope()
 
       await expect(fetchStatus()).rejects.toThrow()
     })
@@ -232,7 +291,7 @@ describe('useSubscription', () => {
         .spyOn(window, 'open')
         .mockImplementation(() => null)
 
-      const { subscribe } = useSubscription()
+      const { subscribe } = useSubscriptionWithScope()
 
       await subscribe()
 
@@ -243,6 +302,10 @@ describe('useSubscription', () => {
           headers: expect.objectContaining({
             Authorization: 'Bearer test-token',
             'Content-Type': 'application/json'
+          }),
+          body: JSON.stringify({
+            im_ref: 'impact-click-001',
+            utm_source: 'impact'
           })
         })
       )
@@ -258,7 +321,7 @@ describe('useSubscription', () => {
         json: async () => ({})
       } as Response)
 
-      const { subscribe } = useSubscription()
+      const { subscribe } = useSubscriptionWithScope()
 
       await expect(subscribe()).rejects.toThrow()
     })
@@ -275,7 +338,7 @@ describe('useSubscription', () => {
         })
       } as Response)
 
-      const { requireActiveSubscription } = useSubscription()
+      const { requireActiveSubscription } = useSubscriptionWithScope()
 
       await requireActiveSubscription()
 
@@ -292,7 +355,7 @@ describe('useSubscription', () => {
         })
       } as Response)
 
-      const { requireActiveSubscription } = useSubscription()
+      const { requireActiveSubscription } = useSubscriptionWithScope()
 
       await requireActiveSubscription()
 
@@ -306,7 +369,7 @@ describe('useSubscription', () => {
         .spyOn(window, 'open')
         .mockImplementation(() => null)
 
-      const { handleViewUsageHistory } = useSubscription()
+      const { handleViewUsageHistory } = useSubscriptionWithScope()
       handleViewUsageHistory()
 
       expect(windowOpenSpy).toHaveBeenCalledWith(
@@ -322,7 +385,7 @@ describe('useSubscription', () => {
         .spyOn(window, 'open')
         .mockImplementation(() => null)
 
-      const { handleLearnMore } = useSubscription()
+      const { handleLearnMore } = useSubscriptionWithScope()
       handleLearnMore()
 
       expect(windowOpenSpy).toHaveBeenCalledWith(
@@ -334,7 +397,7 @@ describe('useSubscription', () => {
     })
 
     it('should call accessBillingPortal for invoice history', async () => {
-      const { handleInvoiceHistory } = useSubscription()
+      const { handleInvoiceHistory } = useSubscriptionWithScope()
 
       await handleInvoiceHistory()
 
@@ -342,7 +405,7 @@ describe('useSubscription', () => {
     })
 
     it('should call accessBillingPortal for manage subscription', async () => {
-      const { manageSubscription } = useSubscription()
+      const { manageSubscription } = useSubscriptionWithScope()
 
       await manageSubscription()
 
@@ -378,7 +441,7 @@ describe('useSubscription', () => {
         .mockResolvedValueOnce(cancelledResponse as Response)
 
       try {
-        const { fetchStatus, manageSubscription } = useSubscription()
+        const { fetchStatus, manageSubscription } = useSubscriptionWithScope()
 
         await fetchStatus()
         await manageSubscription()
@@ -422,7 +485,7 @@ describe('useSubscription', () => {
         .mockResolvedValueOnce(cancelledResponse as Response)
 
       try {
-        const { fetchStatus, manageSubscription } = useSubscription()
+        const { fetchStatus, manageSubscription } = useSubscriptionWithScope()
 
         await fetchStatus()
         await manageSubscription()

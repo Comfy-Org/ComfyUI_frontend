@@ -17,7 +17,7 @@
         // hover (only when node should handle events)
         shouldHandleNodePointerEvents &&
           'hover:ring-7 ring-node-component-ring',
-        'outline-transparent outline-2 focus-visible:outline-node-component-outline',
+        'outline-transparent outline-3 focus-visible:outline-node-component-outline',
         borderClass,
         outlineClass,
         cursorClass,
@@ -29,7 +29,7 @@
           'ring-4 ring-primary-500 bg-primary-500/10': isDraggingOver
         },
 
-        shouldHandleNodePointerEvents
+        shouldHandleNodePointerEvents && !nodeData.flags?.ghost
           ? 'pointer-events-auto'
           : 'pointer-events-none',
         !isCollapsed && ' pb-1'
@@ -116,9 +116,10 @@
           <NodeContent :node-data="nodeData" :media="nodeMedia" />
         </div>
         <!-- Live mid-execution preview images -->
-        <div v-if="shouldShowPreviewImg" class="min-h-0 flex-1 px-4">
-          <LivePreview :image-url="latestPreviewUrl || null" />
-        </div>
+        <LivePreview
+          v-if="shouldShowPreviewImg"
+          :image-url="latestPreviewUrl"
+        />
 
         <!-- Show advanced inputs button for subgraph nodes -->
         <div v-if="showAdvancedInputsButton" class="flex justify-center px-3">
@@ -130,10 +131,16 @@
                 'transition-all cursor-pointer hover:bg-accent-background duration-150 active:scale-95'
               )
             "
-            @click.stop="handleShowAdvancedInputs"
+            @click.stop="showAdvancedState = !showAdvancedState"
           >
-            <i class="icon-[lucide--settings-2] size-4" />
-            <span>{{ t('rightSidePanel.showAdvancedInputsButton') }}</span>
+            <template v-if="showAdvancedState">
+              <i class="icon-[lucide--chevron-up] size-4" />
+              <span>{{ t('rightSidePanel.hideAdvancedInputsButton') }}</span>
+            </template>
+            <template v-else>
+              <i class="icon-[lucide--settings-2] size-4" />
+              <span>{{ t('rightSidePanel.showAdvancedInputsButton') }} </span>
+            </template>
           </button>
         </div>
       </div>
@@ -144,7 +151,9 @@
       v-if="!isCollapsed && nodeData.resizable !== false"
       role="button"
       :aria-label="t('g.resizeFromBottomRight')"
-      :class="cn(baseResizeHandleClasses, 'right-0 bottom-0 cursor-se-resize')"
+      :class="
+        cn(baseResizeHandleClasses, '-right-1 -bottom-1 cursor-se-resize')
+      "
       @pointerdown.stop="handleResizePointerDown"
     />
   </div>
@@ -152,7 +161,15 @@
 
 <script setup lang="ts">
 import { storeToRefs } from 'pinia'
-import { computed, nextTick, onErrorCaptured, onMounted, ref, watch } from 'vue'
+import {
+  computed,
+  customRef,
+  nextTick,
+  onErrorCaptured,
+  onMounted,
+  ref,
+  watch
+} from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
@@ -212,6 +229,8 @@ const { nodeData, error = null } = defineProps<LGraphNodeProps>()
 
 const { t } = useI18n()
 
+const settingStore = useSettingStore()
+
 const { handleNodeCollapse, handleNodeTitleUpdate, handleNodeRightClick } =
   useNodeEventHandlers()
 const { bringNodeToFront } = useNodeZIndex()
@@ -248,7 +267,9 @@ const bypassed = computed(
 const muted = computed((): boolean => nodeData.mode === LGraphEventMode.NEVER)
 
 const nodeOpacity = computed(() => {
-  const globalOpacity = useSettingStore().get('Comfy.Node.Opacity') ?? 1
+  const globalOpacity = settingStore.get('Comfy.Node.Opacity') ?? 1
+
+  if (nodeData.flags?.ghost) return globalOpacity * 0.3
 
   // For muted/bypassed nodes, apply the 0.5 multiplier on top of global opacity
   if (bypassed.value || muted.value) {
@@ -324,11 +345,14 @@ function initSizeStyles() {
   const suffix = isCollapsed.value ? '-x' : ''
 
   el.style.setProperty(`--node-width${suffix}`, `${width}px`)
-  el.style.setProperty(`--node-height${suffix}`, `${height}px`)
+  el.style.setProperty(
+    `--node-height${suffix}`,
+    `${height + LiteGraph.NODE_TITLE_HEIGHT}px`
+  )
 }
 
 const baseResizeHandleClasses =
-  'absolute h-3 w-3 opacity-0 pointer-events-auto focus-visible:outline focus-visible:outline-2 focus-visible:outline-white/40'
+  'absolute h-5 w-5 opacity-0 pointer-events-auto focus-visible:outline focus-visible:outline-2 focus-visible:outline-white/40'
 
 const MIN_NODE_WIDTH = 225
 
@@ -493,20 +517,51 @@ const showAdvancedInputsButton = computed(() => {
 
   // For regular nodes: show button if there are advanced widgets and they're currently hidden
   const hasAdvancedWidgets = nodeData.widgets?.some((w) => w.options?.advanced)
-  return hasAdvancedWidgets && !node.showAdvanced
+  const alwaysShowAdvanced = settingStore.get(
+    'Comfy.Node.AlwaysShowAdvancedWidgets'
+  )
+  return hasAdvancedWidgets && !alwaysShowAdvanced
 })
 
-function handleShowAdvancedInputs() {
-  const node = lgraphNode.value
-  if (!node) return
+const showAdvancedState = customRef((track, trigger) => {
+  let internalState = false
 
-  if (node instanceof SubgraphNode) {
-    const rightSidePanelStore = useRightSidePanelStore()
-    rightSidePanelStore.focusSection('advanced-inputs')
-  } else {
-    node.showAdvanced = true
+  const node = lgraphNode.value
+  if (node && !(node instanceof SubgraphNode)) {
+    internalState = !!node.showAdvanced
   }
-}
+
+  return {
+    get() {
+      track()
+      return internalState
+    },
+    set(value: boolean) {
+      const node = lgraphNode.value
+      if (!node) return
+
+      if (node instanceof SubgraphNode) {
+        // Do not modify internalState for subgraph nodes
+        const rightSidePanelStore = useRightSidePanelStore()
+        if (value) {
+          rightSidePanelStore.focusSection('advanced-inputs')
+        } else {
+          rightSidePanelStore.closePanel()
+        }
+      } else {
+        node.showAdvanced = value
+        internalState = value
+      }
+      trigger()
+    }
+  }
+})
+
+const hasVideoInput = computed(() => {
+  return (
+    lgraphNode.value?.inputs?.some((input) => input.type === 'VIDEO') ?? false
+  )
+})
 
 const nodeMedia = computed(() => {
   const newOutputs = nodeOutputs.nodeOutputs[nodeOutputLocatorId.value]
@@ -517,13 +572,9 @@ const nodeMedia = computed(() => {
   const urls = nodeOutputs.getNodeImageUrls(node)
   if (!urls?.length) return undefined
 
-  // Determine media type from previewMediaType or fallback to input slot types
-  // Note: Despite the field name "images", videos are also included in outputs
-  // TODO: fix the backend to return videos using the videos key instead of the images key
-  const hasVideoInput = node.inputs?.some((input) => input.type === 'VIDEO')
   const type =
     node.previewMediaType === 'video' ||
-    (!node.previewMediaType && hasVideoInput)
+    (!node.previewMediaType && hasVideoInput.value)
       ? 'video'
       : 'image'
 

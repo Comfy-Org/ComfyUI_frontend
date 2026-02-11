@@ -3,8 +3,15 @@ import { mount } from '@vue/test-utils'
 import PrimeVue from 'primevue/config'
 import type { SelectProps } from 'primevue/select'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { createI18n } from 'vue-i18n'
 
 import SelectPlus from '@/components/primevueOverride/SelectPlus.vue'
+
+const i18n = createI18n({
+  legacy: false,
+  locale: 'en',
+  messages: { en: {} }
+})
 import type { ComboInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import WidgetSelect from '@/renderer/extensions/vueNodes/widgets/components/WidgetSelect.vue'
@@ -74,7 +81,7 @@ describe('WidgetSelect Value Binding', () => {
         readonly
       },
       global: {
-        plugins: [PrimeVue, createTestingPinia()],
+        plugins: [PrimeVue, createTestingPinia(), i18n],
         components: { SelectPlus }
       }
     })
@@ -226,7 +233,7 @@ describe('WidgetSelect Value Binding', () => {
           nodeType: 'CheckpointLoaderSimple'
         },
         global: {
-          plugins: [PrimeVue, createTestingPinia()],
+          plugins: [PrimeVue, createTestingPinia(), i18n],
           components: { SelectPlus }
         }
       })
@@ -245,7 +252,7 @@ describe('WidgetSelect Value Binding', () => {
           nodeType: 'KSampler'
         },
         global: {
-          plugins: [PrimeVue, createTestingPinia()],
+          plugins: [PrimeVue, createTestingPinia(), i18n],
           components: { SelectPlus }
         }
       })
@@ -269,7 +276,7 @@ describe('WidgetSelect Value Binding', () => {
           nodeType: 'CheckpointLoaderSimple'
         },
         global: {
-          plugins: [PrimeVue, createTestingPinia()],
+          plugins: [PrimeVue, createTestingPinia(), i18n],
           components: { SelectPlus }
         }
       })
@@ -288,7 +295,7 @@ describe('WidgetSelect Value Binding', () => {
           nodeType: 'CheckpointLoaderSimple'
         },
         global: {
-          plugins: [PrimeVue, createTestingPinia()],
+          plugins: [PrimeVue, createTestingPinia(), i18n],
           components: { SelectPlus }
         }
       })
@@ -325,6 +332,24 @@ describe('WidgetSelect Value Binding', () => {
       expect(dropdown.exists()).toBe(true)
       expect(dropdown.props('assetKind')).toBe('audio')
       expect(dropdown.props('allowUpload')).toBe(false)
+    })
+
+    it('uses dropdown variant for mesh uploads via spec', () => {
+      const spec: ComboInputSpec = {
+        type: 'COMBO',
+        name: 'model_file',
+        mesh_upload: true,
+        upload_subfolder: '3d'
+      }
+      const widget = createMockWidget('model.glb', {}, undefined, spec)
+      const wrapper = mountComponent(widget, 'model.glb')
+      const dropdown = wrapper.findComponent(WidgetSelectDropdown)
+
+      expect(dropdown.exists()).toBe(true)
+      expect(dropdown.props('assetKind')).toBe('mesh')
+      expect(dropdown.props('allowUpload')).toBe(true)
+      expect(dropdown.props('uploadFolder')).toBe('input')
+      expect(dropdown.props('uploadSubfolder')).toBe('3d')
     })
 
     it('keeps default select when no spec or media hints are present', () => {

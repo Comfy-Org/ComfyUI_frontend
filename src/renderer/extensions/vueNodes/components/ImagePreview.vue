@@ -1,7 +1,7 @@
 <template>
   <div
     v-if="imageUrls.length > 0"
-    class="image-preview group relative flex size-full min-h-16 min-w-16 flex-col px-2 justify-center"
+    class="image-preview group relative flex size-full min-h-55 min-w-16 flex-col px-2 justify-center"
     @keydown="handleKeyDown"
   >
     <!-- Image Wrapper -->
@@ -43,7 +43,7 @@
         ref="currentImageEl"
         :src="currentImageUrl"
         :alt="imageAltText"
-        class="block size-full object-contain pointer-events-none"
+        class="block size-full object-contain pointer-events-none contain-size"
         @load="handleImageLoad"
         @error="handleImageError"
       />
@@ -176,7 +176,15 @@ const imageAltText = computed(() => `Node output ${currentIndex.value + 1}`)
 // Watch for URL changes and reset state
 watch(
   () => props.imageUrls,
-  (newUrls) => {
+  (newUrls, oldUrls) => {
+    // Only reset state if URLs actually changed (not just array reference)
+    const urlsChanged =
+      !oldUrls ||
+      newUrls.length !== oldUrls.length ||
+      newUrls.some((url, i) => url !== oldUrls[i])
+
+    if (!urlsChanged) return
+
     // Reset current index if it's out of bounds
     if (currentIndex.value >= newUrls.length) {
       currentIndex.value = 0
@@ -188,7 +196,7 @@ watch(
     imageError.value = false
     if (newUrls.length > 0) startDelayedLoader()
   },
-  { deep: true, immediate: true }
+  { immediate: true }
 )
 
 // Event handlers

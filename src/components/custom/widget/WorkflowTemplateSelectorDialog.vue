@@ -3,21 +3,23 @@
     :content-title="$t('templateWorkflows.title', 'Workflow Templates')"
     class="workflow-template-selector-dialog"
   >
+    <template #leftPanelHeaderTitle>
+      <i class="icon-[comfy--template]" />
+      <h2 class="text-neutral text-base">
+        {{ $t('sideToolbar.templates', 'Templates') }}
+      </h2>
+    </template>
     <template #leftPanel>
-      <LeftSidePanel v-model="selectedNavItem" :nav-items="navItems">
-        <template #header-icon>
-          <i class="icon-[comfy--template]" />
-        </template>
-        <template #header-title>
-          <span class="text-neutral text-base">{{
-            $t('sideToolbar.templates', 'Templates')
-          }}</span>
-        </template>
-      </LeftSidePanel>
+      <LeftSidePanel v-model="selectedNavItem" :nav-items="navItems" />
     </template>
 
     <template #header>
-      <SearchBox v-model="searchQuery" size="lg" class="max-w-[384px]" />
+      <SearchBox
+        v-model="searchQuery"
+        size="lg"
+        class="max-w-[384px]"
+        autofocus
+      />
     </template>
 
     <template #header-right-area>
@@ -254,6 +256,11 @@
                         "
                       />
                     </template>
+                    <LogoOverlay
+                      v-if="template.logos?.length"
+                      :logos="template.logos"
+                      :get-logo-url="workflowTemplatesStore.getLogoUrl"
+                    />
                     <ProgressSpinner
                       v-if="loadingTemplate === template.name"
                       class="absolute inset-0 z-10 m-auto h-12 w-12"
@@ -395,6 +402,7 @@ import AudioThumbnail from '@/components/templates/thumbnails/AudioThumbnail.vue
 import CompareSliderThumbnail from '@/components/templates/thumbnails/CompareSliderThumbnail.vue'
 import DefaultThumbnail from '@/components/templates/thumbnails/DefaultThumbnail.vue'
 import HoverDissolveThumbnail from '@/components/templates/thumbnails/HoverDissolveThumbnail.vue'
+import LogoOverlay from '@/components/templates/thumbnails/LogoOverlay.vue'
 import Button from '@/components/ui/button/Button.vue'
 import BaseModalLayout from '@/components/widget/layout/BaseModalLayout.vue'
 import LeftSidePanel from '@/components/widget/panel/LeftSidePanel.vue'
@@ -404,8 +412,8 @@ import { useTemplateFiltering } from '@/composables/useTemplateFiltering'
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
 import { useTemplateWorkflows } from '@/platform/workflow/templates/composables/useTemplateWorkflows'
-import { useWorkflowTemplatesStore } from '@/platform/workflow/templates/repositories/workflowTemplatesStore'
 import type { TemplateInfo } from '@/platform/workflow/templates/types/template'
+import { useWorkflowTemplatesStore } from '@/platform/workflow/templates/repositories/workflowTemplatesStore'
 import { TemplateIncludeOnDistributionEnum } from '@/platform/workflow/templates/types/template'
 import { useSystemStatsStore } from '@/stores/systemStatsStore'
 import type { NavGroupData, NavItemData } from '@/types/navTypes'
@@ -414,8 +422,9 @@ import { createGridStyle } from '@/utils/gridUtil'
 
 const { t } = useI18n()
 
-const { onClose: originalOnClose } = defineProps<{
+const { onClose: originalOnClose, initialCategory = 'all' } = defineProps<{
   onClose: () => void
+  initialCategory?: string
 }>()
 
 // Track session time for telemetry
@@ -539,7 +548,7 @@ const allTemplates = computed(() => {
 })
 
 // Navigation
-const selectedNavItem = ref<string | null>('all')
+const selectedNavItem = ref<string | null>(initialCategory)
 
 // Filter templates based on selected navigation item
 const navigationFilteredTemplates = computed(() => {
@@ -550,13 +559,15 @@ const navigationFilteredTemplates = computed(() => {
   return workflowTemplatesStore.filterTemplatesByCategory(selectedNavItem.value)
 })
 
-// Template filtering
+// Template filtering with scope awareness
 const {
   searchQuery,
   selectedModels,
   selectedUseCases,
   selectedRunsOn,
   sortBy,
+  activeModels,
+  activeUseCases,
   filteredTemplates,
   availableModels,
   availableUseCases,
@@ -565,7 +576,7 @@ const {
   totalCount,
   resetFilters,
   loadFuseOptions
-} = useTemplateFiltering(navigationFilteredTemplates)
+} = useTemplateFiltering(navigationFilteredTemplates, selectedNavItem)
 
 /**
  * Coordinates state between the selected navigation item and the sort order to
@@ -598,9 +609,11 @@ watch(selectedNavItem, () => coordinateNavAndSort('nav'))
 watch(sortBy, () => coordinateNavAndSort('sort'))
 
 // Convert between string array and object array for MultiSelect component
+// Only show selected items that exist in the current scope
 const selectedModelObjects = computed({
   get() {
-    return selectedModels.value.map((model) => ({ name: model, value: model }))
+    // Only include selected models that exist in availableModels
+    return activeModels.value.map((model) => ({ name: model, value: model }))
   },
   set(value: { name: string; value: string }[]) {
     selectedModels.value = value.map((item) => item.value)
@@ -609,7 +622,7 @@ const selectedModelObjects = computed({
 
 const selectedUseCaseObjects = computed({
   get() {
-    return selectedUseCases.value.map((useCase) => ({
+    return activeUseCases.value.map((useCase) => ({
       name: useCase,
       value: useCase
     }))
@@ -766,7 +779,7 @@ useIntersectionObserver(loadTrigger, () => {
 // Reset pagination when filters change
 watch(
   [
-    searchQuery,
+    filteredTemplates,
     selectedNavItem,
     sortBy,
     selectedModels,
@@ -782,7 +795,7 @@ watch(
 )
 
 // Methods
-const onLoadWorkflow = async (template: any) => {
+const onLoadWorkflow = async (template: TemplateInfo) => {
   loadingTemplate.value = template.name
   try {
     await loadWorkflowTemplate(

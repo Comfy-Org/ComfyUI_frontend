@@ -3,6 +3,8 @@ import { WORKFLOW_ACCEPT_STRING } from '@/platform/workflow/core/types/formats'
 import { type StatusWsMessageStatus } from '@/schemas/apiSchema'
 import { useDialogService } from '@/services/dialogService'
 import { isCloud } from '@/platform/distribution/types'
+import { extractWorkflow } from '@/platform/remote/comfyui/jobs/fetchJobs'
+import type { JobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
 import { useTelemetry } from '@/platform/telemetry'
 import { useLitegraphService } from '@/services/litegraphService'
 import { useCommandStore } from '@/stores/commandStore'
@@ -28,21 +30,10 @@ type Props = {
   style?: Partial<CSSStyleDeclaration>
   for?: string
   textContent?: string
-  [key: string]: any
+  [key: string]: unknown
 }
 
 type Children = Element[] | Element | string | string[]
-
-/**
- * @deprecated Legacy queue item structure from old history API.
- * Will be removed when ComfyList is migrated to Jobs API.
- */
-interface LegacyQueueItem {
-  prompt: [unknown, string, unknown, { extra_pnginfo: { workflow: unknown } }]
-  outputs?: Record<string, unknown>
-  meta?: Record<string, { display_node?: string }>
-  remove?: { name: string; cb: () => Promise<void> | void }
-}
 
 type ElementType<K extends string> = K extends keyof HTMLElementTagNameMap
   ? HTMLElementTagNameMap[K]
@@ -241,17 +232,17 @@ function dragElement(dragEl): () => void {
 }
 
 class ComfyList {
-  #type
-  #text
-  #reverse
+  private _type
+  private _text
+  private _reverse
   element: HTMLDivElement
   button?: HTMLButtonElement
 
   // @ts-expect-error fixme ts strict error
   constructor(text, type?, reverse?) {
-    this.#text = text
-    this.#type = type || text.toLowerCase()
-    this.#reverse = reverse || false
+    this._text = text
+    this._type = type || text.toLowerCase()
+    this._reverse = reverse || false
     this.element = $el('div.comfy-list') as HTMLDivElement
     this.element.style.display = 'none'
   }
@@ -261,7 +252,10 @@ class ComfyList {
   }
 
   async load() {
-    const items = await api.getItems(this.#type)
+    const items =
+      this._type === 'history'
+        ? { history: await api.getHistory() }
+        : await api.getQueue()
     this.element.replaceChildren(
       ...Object.keys(items).flatMap((section) => [
         $el('h4', {
@@ -269,30 +263,31 @@ class ComfyList {
         }),
         $el('div.comfy-list-items', [
           // @ts-expect-error fixme ts strict error
-          ...(this.#reverse ? items[section].reverse() : items[section]).map(
-            (item: LegacyQueueItem) => {
+          ...(this._reverse ? items[section].reverse() : items[section]).map(
+            (item: JobListItem) => {
               // Allow items to specify a custom remove action (e.g. for interrupt current prompt)
-              const removeAction = item.remove ?? {
-                name: 'Delete',
-                cb: () => api.deleteItem(this.#type, item.prompt[1])
-              }
-              return $el('div', { textContent: item.prompt[0] + ': ' }, [
+              const removeAction =
+                section === 'Running'
+                  ? {
+                      name: 'Cancel',
+                      cb: () => api.interrupt(item.id)
+                    }
+                  : {
+                      name: 'Delete',
+                      cb: () => api.deleteItem(this._type, item.id)
+                    }
+              return $el('div', { textContent: item.priority + ': ' }, [
                 $el('button', {
                   textContent: 'Load',
                   onclick: async () => {
-                    await app.loadGraphData(
-                      item.prompt[3].extra_pnginfo.workflow as Parameters<
-                        typeof app.loadGraphData
-                      >[0],
-                      true,
-                      false
-                    )
-                    if ('outputs' in item && item.outputs) {
+                    const job = await api.getJobDetail(item.id)
+                    if (!job) return
+                    const workflow = await extractWorkflow(job)
+                    await app.loadGraphData(workflow, true, false)
+                    if ('outputs' in job && job.outputs) {
                       app.nodeOutputs = {}
-                      for (const [key, value] of Object.entries(item.outputs)) {
-                        const realKey = item['meta']?.[key]?.display_node ?? key
-                        // @ts-expect-error fixme ts strict error
-                        app.nodeOutputs[realKey] = value
+                      for (const [key, value] of Object.entries(job.outputs)) {
+                        app.nodeOutputs[key] = value
                       }
                     }
                   }
@@ -311,9 +306,9 @@ class ComfyList {
       ]),
       $el('div.comfy-list-actions', [
         $el('button', {
-          textContent: 'Clear ' + this.#text,
+          textContent: 'Clear ' + this._text,
           onclick: async () => {
-            await api.clearItems(this.#type)
+            await api.clearItems(this._type)
             await this.load()
           }
         }),
@@ -339,7 +334,7 @@ class ComfyList {
   hide() {
     this.element.style.display = 'none'
     // @ts-expect-error fixme ts strict error
-    this.button.textContent = 'View ' + this.#text
+    this.button.textContent = 'View ' + this._text
   }
 
   toggle() {

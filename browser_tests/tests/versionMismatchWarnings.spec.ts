@@ -3,7 +3,7 @@ import { expect } from '@playwright/test'
 import type { SystemStats } from '../../src/schemas/apiSchema'
 import { comfyPageFixture as test } from '../fixtures/ComfyPage'
 
-test.describe('Version Mismatch Warnings', () => {
+test.describe('Version Mismatch Warnings', { tag: '@slow' }, () => {
   const ALWAYS_AHEAD_OF_INSTALLED_VERSION = '100.100.100'
   const ALWAYS_BEHIND_INSTALLED_VERSION = '0.0.0'
 
@@ -37,7 +37,11 @@ test.describe('Version Mismatch Warnings', () => {
   }
 
   test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.setSetting('Comfy.UseNewMenu', 'Top')
+    await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
+    await comfyPage.settings.setSetting(
+      'Comfy.VersionCompatibility.DisableWarnings',
+      false
+    )
   })
 
   test('should show version mismatch warnings when installed version lower than required', async ({
@@ -99,10 +103,9 @@ test.describe('Version Mismatch Warnings', () => {
     await comfyPage.setup()
 
     // Locate the warning toast and dismiss it
-    const warningToast = comfyPage.page
-      .locator('div')
-      .filter({ hasText: 'Version Compatibility' })
-      .nth(3)
+    const warningToast = comfyPage.page.locator('.p-toast-message').filter({
+      hasText: 'Version Compatibility'
+    })
     await warningToast.waitFor({ state: 'visible' })
     const dismissButton = warningToast.getByRole('button', { name: 'Close' })
     await dismissButton.click()

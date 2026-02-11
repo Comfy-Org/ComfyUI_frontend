@@ -8,11 +8,11 @@ import {
   TOKEN_REFRESH_BUFFER_MS,
   WORKSPACE_STORAGE_KEYS
 } from '@/platform/auth/workspace/workspaceConstants'
-import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 import { api } from '@/scripts/api'
 import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
 import type { AuthHeader } from '@/types/authTypes'
 import type { WorkspaceWithRole } from '@/platform/auth/workspace/workspaceTypes'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 
 const WorkspaceWithRoleSchema = z.object({
   id: z.string(),
@@ -44,6 +44,8 @@ export class WorkspaceAuthError extends Error {
 }
 
 export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
+  const { flags } = useFeatureFlags()
+
   // State
   const currentWorkspace = shallowRef<WorkspaceWithRole | null>(null)
   const workspaceToken = ref<string | null>(null)
@@ -120,7 +122,7 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
   }
 
   function initializeFromSession(): boolean {
-    if (!remoteConfig.value.team_workspaces_enabled) {
+    if (!flags.teamWorkspacesEnabled) {
       return false
     }
 
@@ -164,7 +166,7 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
   }
 
   async function switchWorkspace(workspaceId: string): Promise<void> {
-    if (!remoteConfig.value.team_workspaces_enabled) {
+    if (!flags.teamWorkspacesEnabled) {
       return
     }
 

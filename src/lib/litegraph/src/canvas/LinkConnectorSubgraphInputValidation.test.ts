@@ -9,10 +9,20 @@ import {
   LLink
 } from '@/lib/litegraph/src/litegraph'
 import { ToInputFromIoNodeLink } from '@/lib/litegraph/src/canvas/ToInputFromIoNodeLink'
-import type { NodeInputSlot } from '@/lib/litegraph/src/litegraph'
+import type {
+  CanvasPointerEvent,
+  NodeInputSlot
+} from '@/lib/litegraph/src/litegraph'
 import { LinkDirection } from '@/lib/litegraph/src/types/globalEnums'
 
 import { createTestSubgraph } from '../subgraph/__fixtures__/subgraphHelpers'
+import {
+  createMockCanvasPointerEvent,
+  createMockNodeInputSlot
+} from '@/utils/__tests__/litegraphTestUtils'
+
+type MockPointerEvent = CanvasPointerEvent
+type MockRenderLink = ToOutputRenderLink
 
 describe('LinkConnector SubgraphInput connection validation', () => {
   let connector: LinkConnector
@@ -62,6 +72,28 @@ describe('LinkConnector SubgraphInput connection validation', () => {
       expect(toTargetNode.inputs[0].link).not.toBeNull()
       expect(toTargetNode.onConnectionsChange).toHaveBeenCalledTimes(1)
       expect(fromTargetNode.onConnectionsChange).toHaveBeenCalledTimes(1)
+    })
+    it('should allow reconnection to same target', () => {
+      const subgraph = createTestSubgraph({
+        inputs: [{ name: 'number_input', type: 'number' }]
+      })
+
+      const node = new LGraphNode('TargetNode')
+      node.addInput('number_in', 'number')
+      subgraph.add(node)
+
+      const link = subgraph.inputNode.slots[0].connect(node.inputs[0], node)
+
+      const renderLink = new ToInputFromIoNodeLink(
+        subgraph,
+        subgraph.inputNode,
+        subgraph.inputNode.slots[0],
+        undefined,
+        LinkDirection.CENTER,
+        link
+      )
+      renderLink.connectToInput(node, node.inputs[0], connector.events)
+      expect(node.inputs[0].link).not.toBeNull()
     })
   })
 
@@ -206,10 +238,7 @@ describe('LinkConnector SubgraphInput connection validation', () => {
       connector.state.connectingTo = 'output'
 
       // Create mock event
-      const mockEvent = {
-        canvasX: 100,
-        canvasY: 100
-      } as any
+      const mockEvent: MockPointerEvent = createMockCanvasPointerEvent(100, 100)
 
       // Mock the getSlotInPosition to return the subgraph input
       const mockGetSlotInPosition = vi.fn().mockReturnValue(subgraph.inputs[0])
@@ -256,10 +285,7 @@ describe('LinkConnector SubgraphInput connection validation', () => {
       connector.state.connectingTo = 'output'
 
       // Create mock event
-      const mockEvent = {
-        canvasX: 100,
-        canvasY: 100
-      } as any
+      const mockEvent: MockPointerEvent = createMockCanvasPointerEvent(100, 100)
 
       // Mock the getSlotInPosition to return the subgraph input
       const mockGetSlotInPosition = vi.fn().mockReturnValue(subgraph.inputs[0])
@@ -342,12 +368,12 @@ describe('LinkConnector SubgraphInput connection validation', () => {
       })
 
       // Create a mock render link without the method
-      const mockLink = {
-        fromSlot: { type: 'number' }
+      const mockLink: Partial<MockRenderLink> = {
+        fromSlot: createMockNodeInputSlot({ type: 'number' })
         // No canConnectToSubgraphInput method
-      } as any
+      }
 
-      connector.renderLinks.push(mockLink)
+      connector.renderLinks.push(mockLink as MockRenderLink)
 
       const subgraphInput = subgraph.inputs[0]
 

@@ -9,7 +9,7 @@
     >
       <InputSlot
         v-for="(input, index) in filteredInputs"
-        :key="`input-${index}`"
+        :key="`input-${input.name}`"
         :slot-data="input"
         :node-type="nodeData?.type || ''"
         :node-id="nodeData?.id != null ? String(nodeData.id) : ''"
@@ -23,7 +23,7 @@
     >
       <OutputSlot
         v-for="(output, index) in nodeData.outputs"
-        :key="`output-${index}`"
+        :key="`output-${output.name}`"
         :slot-data="output"
         :node-type="nodeData?.type || ''"
         :node-id="nodeData?.id != null ? String(nodeData.id) : ''"

@@ -1,4 +1,5 @@
-import { createPinia, setActivePinia } from 'pinia'
+import { createTestingPinia } from '@pinia/testing'
+import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { ComfyNodeDef as ComfyNodeDefV1 } from '@/schemas/nodeDefSchema'
@@ -22,7 +23,23 @@ const EXPECTED_DEFAULT_TYPES = [
   'audio_encoders',
   'model_patches',
   'animatediff_models',
-  'animatediff_motion_lora'
+  'animatediff_motion_lora',
+  'chatterbox/chatterbox',
+  'chatterbox/chatterbox_turbo',
+  'chatterbox/chatterbox_multilingual',
+  'chatterbox/chatterbox_vc',
+  'latent_upscale_models',
+  'sam2',
+  'sams',
+  'ultralytics',
+  'depthanything',
+  'ipadapter',
+  'segformer_b2_clothes',
+  'segformer_b3_clothes',
+  'segformer_b3_fashion',
+  'nlf',
+  'FlashVSR',
+  'FlashVSR-v1.1'
 ] as const
 
 type NodeDefStoreType = ReturnType<typeof useNodeDefStore>
@@ -60,7 +77,21 @@ const MOCK_NODE_NAMES = [
   'AudioEncoderLoader',
   'ModelPatchLoader',
   'ADE_LoadAnimateDiffModel',
-  'ADE_AnimateDiffLoRALoader'
+  'ADE_AnimateDiffLoRALoader',
+  'FL_ChatterboxTTS',
+  'FL_ChatterboxTurboTTS',
+  'FL_ChatterboxMultilingualTTS',
+  'FL_ChatterboxVC',
+  // New extension node mappings
+  'LatentUpscaleModelLoader',
+  'DownloadAndLoadSAM2Model',
+  'SAMLoader',
+  'UltralyticsDetectorProvider',
+  'DownloadAndLoadDepthAnythingV2Model',
+  'IPAdapterModelLoader',
+  'LS_LoadSegformerModel',
+  'LoadNLFModel',
+  'FlashVSRNode'
 ] as const
 
 const mockNodeDefsByName = Object.fromEntries(
@@ -82,7 +113,7 @@ vi.mock('@/stores/nodeDefStore', async (importOriginal) => {
 
 describe('useModelToNodeStore', () => {
   beforeEach(() => {
-    setActivePinia(createPinia())
+    setActivePinia(createTestingPinia({ stubActions: false }))
     vi.clearAllMocks()
   })
 
@@ -134,6 +165,109 @@ describe('useModelToNodeStore', () => {
       const provider = modelToNodeStore.getNodeProvider('checkpoints')
       expect(provider).toBeDefined()
     })
+
+    it('should fallback to top-level folder for hierarchical model types', () => {
+      const modelToNodeStore = useModelToNodeStore()
+      modelToNodeStore.registerDefaults()
+
+      const provider = modelToNodeStore.getNodeProvider('checkpoints/subfolder')
+      expect(provider).toBeDefined()
+      expect(provider?.nodeDef?.name).toBe('CheckpointLoaderSimple')
+    })
+
+    it('should return undefined for hierarchical type with unregistered top-level', () => {
+      const modelToNodeStore = useModelToNodeStore()
+      modelToNodeStore.registerDefaults()
+
+      expect(
+        modelToNodeStore.getNodeProvider('UnknownType/subfolder')
+      ).toBeUndefined()
+    })
+
+    it('should return provider for chatterbox nodes with empty key', () => {
+      const modelToNodeStore = useModelToNodeStore()
+      modelToNodeStore.registerDefaults()
+
+      const provider = modelToNodeStore.getNodeProvider(
+        'chatterbox/chatterbox_vc'
+      )
+      expect(provider).toBeDefined()
+      expect(provider?.nodeDef?.name).toBe('FL_ChatterboxVC')
+      expect(provider?.key).toBe('')
+    })
+
+    it('should return provider for new extension model types', () => {
+      const modelToNodeStore = useModelToNodeStore()
+      modelToNodeStore.registerDefaults()
+
+      // SAM2
+      const sam2Provider = modelToNodeStore.getNodeProvider('sam2')
+      expect(sam2Provider?.nodeDef?.name).toBe('DownloadAndLoadSAM2Model')
+      expect(sam2Provider?.key).toBe('model')
+
+      // SAMLoader (original SAM)
+      const samsProvider = modelToNodeStore.getNodeProvider('sams')
+      expect(samsProvider?.nodeDef?.name).toBe('SAMLoader')
+      expect(samsProvider?.key).toBe('model_name')
+
+      // IP-Adapter
+      const ipadapterProvider = modelToNodeStore.getNodeProvider('ipadapter')
+      expect(ipadapterProvider?.nodeDef?.name).toBe('IPAdapterModelLoader')
+      expect(ipadapterProvider?.key).toBe('ipadapter_file')
+
+      // DepthAnything
+      const depthProvider = modelToNodeStore.getNodeProvider('depthanything')
+      expect(depthProvider?.nodeDef?.name).toBe(
+        'DownloadAndLoadDepthAnythingV2Model'
+      )
+      expect(depthProvider?.key).toBe('model')
+    })
+
+    it('should use hierarchical fallback for ultralytics subcategories', () => {
+      const modelToNodeStore = useModelToNodeStore()
+      modelToNodeStore.registerDefaults()
+
+      // ultralytics/bbox should fall back to ultralytics
+      const bboxProvider = modelToNodeStore.getNodeProvider('ultralytics/bbox')
+      expect(bboxProvider?.nodeDef?.name).toBe('UltralyticsDetectorProvider')
+      expect(bboxProvider?.key).toBe('model_name')
+
+      // ultralytics/segm should also fall back to ultralytics
+      const segmProvider = modelToNodeStore.getNodeProvider('ultralytics/segm')
+      expect(segmProvider?.nodeDef?.name).toBe('UltralyticsDetectorProvider')
+    })
+
+    it('should return provider for FlashVSR nodes with empty key (auto-load)', () => {
+      const modelToNodeStore = useModelToNodeStore()
+      modelToNodeStore.registerDefaults()
+
+      const flashVSRProvider = modelToNodeStore.getNodeProvider('FlashVSR')
+      expect(flashVSRProvider?.nodeDef?.name).toBe('FlashVSRNode')
+      expect(flashVSRProvider?.key).toBe('')
+
+      const flashVSR11Provider =
+        modelToNodeStore.getNodeProvider('FlashVSR-v1.1')
+      expect(flashVSR11Provider?.nodeDef?.name).toBe('FlashVSRNode')
+      expect(flashVSR11Provider?.key).toBe('')
+    })
+
+    it('should return provider for segformer models', () => {
+      const modelToNodeStore = useModelToNodeStore()
+      modelToNodeStore.registerDefaults()
+
+      const segformerB2Provider = modelToNodeStore.getNodeProvider(
+        'segformer_b2_clothes'
+      )
+      expect(segformerB2Provider?.nodeDef?.name).toBe('LS_LoadSegformerModel')
+      expect(segformerB2Provider?.key).toBe('model_name')
+
+      const segformerB3FashionProvider = modelToNodeStore.getNodeProvider(
+        'segformer_b3_fashion'
+      )
+      expect(segformerB3FashionProvider?.nodeDef?.name).toBe(
+        'LS_LoadSegformerModel'
+      )
+    })
   })
 
   describe('getAllNodeProviders', () => {
@@ -183,13 +317,24 @@ describe('useModelToNodeStore', () => {
       const providers = modelToNodeStore.getAllNodeProviders('checkpoints')
       expect(providers.length).toBeGreaterThan(0)
     })
+
+    it('should fallback to top-level folder for hierarchical model types', () => {
+      const modelToNodeStore = useModelToNodeStore()
+      modelToNodeStore.registerDefaults()
+
+      const providers = modelToNodeStore.getAllNodeProviders(
+        'checkpoints/subfolder'
+      )
+      expect(providers).toHaveLength(2)
+      expect(providers[0].nodeDef.name).toBe('CheckpointLoaderSimple')
+    })
   })
 
   describe('registerNodeProvider', () => {
     it('should not register provider when nodeDef is undefined', () => {
       const modelToNodeStore = useModelToNodeStore()
       const providerWithoutNodeDef = new ModelNodeProvider(
-        undefined as any,
+        undefined!,
         'custom_key'
       )
 
@@ -330,7 +475,7 @@ describe('useModelToNodeStore', () => {
 
     it('should not register when nodeDefStore is empty', () => {
       // Create fresh Pinia for this test to avoid state persistence
-      setActivePinia(createPinia())
+      setActivePinia(createTestingPinia({ stubActions: false }))
 
       vi.mocked(useNodeDefStore, { partial: true }).mockReturnValue({
         nodeDefsByName: {}
@@ -355,7 +500,7 @@ describe('useModelToNodeStore', () => {
 
     it('should return empty Record when nodeDefStore is empty', () => {
       // Create fresh Pinia for this test to avoid state persistence
-      setActivePinia(createPinia())
+      setActivePinia(createTestingPinia({ stubActions: false }))
 
       vi.mocked(useNodeDefStore, { partial: true }).mockReturnValue({
         nodeDefsByName: {}
@@ -457,15 +602,11 @@ describe('useModelToNodeStore', () => {
       modelToNodeStore.registerDefaults()
 
       // These should not throw but return undefined
+      expect(modelToNodeStore.getCategoryForNodeType(null!)).toBeUndefined()
       expect(
-        modelToNodeStore.getCategoryForNodeType(null as any)
+        modelToNodeStore.getCategoryForNodeType(undefined!)
       ).toBeUndefined()
-      expect(
-        modelToNodeStore.getCategoryForNodeType(undefined as any)
-      ).toBeUndefined()
-      expect(
-        modelToNodeStore.getCategoryForNodeType(123 as any)
-      ).toBeUndefined()
+      expect(modelToNodeStore.getCategoryForNodeType('123')).toBeUndefined()
     })
 
     it('should be case-sensitive for node type matching', () => {
@@ -489,6 +630,17 @@ describe('useModelToNodeStore', () => {
       const modelToNodeStore = useModelToNodeStore()
       expect(modelToNodeStore.getNodeProvider('')).toBeUndefined()
       expect(modelToNodeStore.getAllNodeProviders('')).toEqual([])
+    })
+
+    it('should handle invalid input types gracefully', () => {
+      const modelToNodeStore = useModelToNodeStore()
+      modelToNodeStore.registerDefaults()
+
+      expect(modelToNodeStore.getNodeProvider(null as any)).toBeUndefined()
+      expect(modelToNodeStore.getNodeProvider(undefined as any)).toBeUndefined()
+      expect(modelToNodeStore.getNodeProvider(123 as any)).toBeUndefined()
+      expect(modelToNodeStore.getAllNodeProviders(null as any)).toEqual([])
+      expect(modelToNodeStore.getAllNodeProviders(undefined as any)).toEqual([])
     })
   })
 })

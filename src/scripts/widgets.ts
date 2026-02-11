@@ -273,8 +273,8 @@ export function addValueControlWidgets(
     }
   }
 
-  valueControl.beforeQueued = () => {
-    if (controlValueRunBefore()) {
+  valueControl.beforeQueued = ({ isPartialExecution } = {}) => {
+    if (!isPartialExecution && controlValueRunBefore()) {
       // Don't run on first execution
       if (valueControl[HAS_EXECUTED]) {
         applyWidgetControl()
@@ -283,8 +283,8 @@ export function addValueControlWidgets(
     valueControl[HAS_EXECUTED] = true
   }
 
-  valueControl.afterQueued = () => {
-    if (!controlValueRunBefore()) {
+  valueControl.afterQueued = ({ isPartialExecution } = {}) => {
+    if (!isPartialExecution && !controlValueRunBefore()) {
       applyWidgetControl()
     }
   }
@@ -302,7 +302,7 @@ export const ComfyWidgets = {
   IMAGEUPLOAD: useImageUploadWidget(),
   COLOR: transformWidgetConstructorV2ToV1(useColorWidget()),
   IMAGECOMPARE: transformWidgetConstructorV2ToV1(useImageCompareWidget()),
-  BOUNDINGBOX: transformWidgetConstructorV2ToV1(useBoundingBoxWidget()),
+  BOUNDING_BOX: transformWidgetConstructorV2ToV1(useBoundingBoxWidget()),
   CHART: transformWidgetConstructorV2ToV1(useChartWidget()),
   GALLERIA: transformWidgetConstructorV2ToV1(useGalleriaWidget()),
   TEXTAREA: transformWidgetConstructorV2ToV1(useTextareaWidget()),

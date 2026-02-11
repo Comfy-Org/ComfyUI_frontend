@@ -7,6 +7,7 @@ import { st } from '@/i18n'
 import { isCloud } from '@/platform/distribution/types'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useExecutionStore } from '@/stores/executionStore'
+import { useJobPreviewStore } from '@/stores/jobPreviewStore'
 import { useQueueStore } from '@/stores/queueStore'
 import type { TaskItemImpl } from '@/stores/queueStore'
 import type { JobState } from '@/types/queue'
@@ -17,7 +18,7 @@ import {
   isToday,
   isYesterday
 } from '@/utils/dateTimeUtil'
-import { normalizeI18nKey } from '@/utils/formatUtil'
+import { resolveNodeDisplayName } from '@/utils/nodeTitleUtil'
 import { buildJobDisplay } from '@/utils/queueDisplay'
 import { jobStateFromTask } from '@/utils/queueUtil'
 
@@ -96,6 +97,7 @@ export function useJobList() {
   const { t, locale } = useI18n()
   const queueStore = useQueueStore()
   const executionStore = useExecutionStore()
+  const jobPreviewStore = useJobPreviewStore()
   const workflowStore = useWorkflowStore()
 
   const seenPendingIds = ref<Set<string>>(new Set())
@@ -185,13 +187,11 @@ export function useJobList() {
     executionStore.isPromptInitializing(promptId)
 
   const currentNodeName = computed(() => {
-    const node = executionStore.executingNode
-    if (!node) return t('g.emDash')
-    const title = (node.title ?? '').toString().trim()
-    if (title) return title
-    const nodeType = (node.type ?? '').toString().trim() || t('g.untitled')
-    const key = `nodeDefs.${normalizeI18nKey(nodeType)}.display_name`
-    return st(key, nodeType)
+    return resolveNodeDisplayName(executionStore.executingNode, {
+      emptyLabel: t('g.emDash'),
+      untitledLabel: t('g.untitled'),
+      st
+    })
   })
 
   const selectedJobTab = ref<JobTab>('All')
@@ -258,6 +258,11 @@ export function useJobList() {
         String(task.promptId ?? '') ===
         String(executionStore.activePromptId ?? '')
       const showAddedHint = shouldShowAddedHint(task, state)
+      const promptKey = taskIdToKey(task.promptId)
+      const promptPreviewUrl =
+        state === 'running' && jobPreviewStore.isPreviewEnabled && promptKey
+          ? jobPreviewStore.previewsByPromptId[promptKey]
+          : undefined
 
       const display = buildJobDisplay(task, state, {
         t,
@@ -277,7 +282,7 @@ export function useJobList() {
         meta: display.secondary,
         state,
         iconName: display.iconName,
-        iconImageUrl: display.iconImageUrl,
+        iconImageUrl: promptPreviewUrl ?? display.iconImageUrl,
         showClear: display.showClear,
         taskRef: task,
         progressTotalPercent:

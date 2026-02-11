@@ -1,20 +1,20 @@
 import type { Page } from '@playwright/test'
 
 import type { ComfyPage } from '../ComfyPage'
+import { TestIds } from '../selectors'
+import { BaseDialog } from './BaseDialog'
 
-export class SettingDialog {
+export class SettingDialog extends BaseDialog {
   constructor(
-    public readonly page: Page,
+    page: Page,
     public readonly comfyPage: ComfyPage
-  ) {}
-
-  get root() {
-    return this.page.locator('div.settings-container')
+  ) {
+    super(page, TestIds.dialogs.settings)
   }
 
   async open() {
-    await this.comfyPage.executeCommand('Comfy.ShowSettingsDialog')
-    await this.page.waitForSelector('div.settings-container')
+    await this.comfyPage.command.executeCommand('Comfy.ShowSettingsDialog')
+    await this.waitForVisible()
   }
 
   /**
@@ -41,8 +41,9 @@ export class SettingDialog {
   }
 
   async goToAboutPanel() {
-    const aboutButton = this.page.locator('li[aria-label="About"]')
-    await aboutButton.click()
-    await this.page.waitForSelector('div.about-container')
+    await this.page.getByTestId(TestIds.dialogs.settingsTabAbout).click()
+    await this.page
+      .getByTestId(TestIds.dialogs.about)
+      .waitFor({ state: 'visible' })
   }
 }

@@ -3,8 +3,11 @@
   <div v-else v-tooltip.right="tooltipConfig" :class="slotWrapperClass">
     <div class="relative h-full flex items-center min-w-0">
       <!-- Slot Name -->
-      <span v-if="!dotOnly" class="truncate text-node-component-slot-text">
-        {{ slotData.localized_name || slotData.name || `Output ${index}` }}
+      <span
+        v-if="!props.dotOnly && !hasNoLabel"
+        class="truncate text-node-component-slot-text"
+      >
+        {{ slotData.localized_name || (slotData.name ?? `Output ${index}`) }}
       </span>
     </div>
     <!-- Connection Dot -->
@@ -20,9 +23,11 @@
 <script setup lang="ts">
 import { computed, onErrorCaptured, ref, watchEffect } from 'vue'
 import type { ComponentPublicInstance } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import type { INodeSlot } from '@/lib/litegraph/src/litegraph'
+import { RenderShape } from '@/lib/litegraph/src/types/globalEnums'
 import { useSlotLinkDragUIState } from '@/renderer/core/canvas/links/slotLinkDragUIState'
 import { getSlotKey } from '@/renderer/core/layout/slots/slotIdentifier'
 import { useNodeTooltips } from '@/renderer/extensions/vueNodes/composables/useNodeTooltips'
@@ -44,6 +49,13 @@ interface OutputSlotProps {
 
 const props = defineProps<OutputSlotProps>()
 
+const { t } = useI18n()
+
+const hasNoLabel = computed(
+  () => !props.slotData.localized_name && props.slotData.name === ''
+)
+const dotOnly = computed(() => props.dotOnly || hasNoLabel.value)
+
 // Error boundary implementation
 const renderError = ref<string | null>(null)
 
@@ -57,7 +69,11 @@ const tooltipConfig = computed(() => {
   const slotName = props.slotData.name || ''
   const tooltipText = getOutputSlotTooltip(props.index)
   const fallbackText = tooltipText || `Output: ${slotName}`
-  return createTooltipConfig(fallbackText)
+  const iterativeSuffix =
+    props.slotData.shape === RenderShape.GRID
+      ? ` ${t('vueNodesSlot.iterative')}`
+      : ''
+  return createTooltipConfig(fallbackText + iterativeSuffix)
 })
 
 onErrorCaptured((error) => {
@@ -79,7 +95,7 @@ const slotWrapperClass = computed(() =>
   cn(
     'lg-slot lg-slot--output flex items-center justify-end group rounded-l-lg h-6',
     'cursor-crosshair',
-    props.dotOnly ? 'lg-slot--dot-only justify-center' : 'pl-6',
+    dotOnly.value ? 'lg-slot--dot-only justify-center' : 'pl-6',
     {
       'lg-slot--connected': props.connected,
       'lg-slot--compatible': props.compatible,

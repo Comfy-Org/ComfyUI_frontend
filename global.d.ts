@@ -5,8 +5,14 @@ declare const __ALGOLIA_APP_ID__: string
 declare const __ALGOLIA_API_KEY__: string
 declare const __USE_PROD_CONFIG__: boolean
 
+interface ImpactQueueFunction {
+  (...args: unknown[]): void
+  a?: unknown[][]
+}
+
 interface Window {
   __CONFIG__: {
+    gtm_container_id?: string
     mixpanel_token?: string
     require_whitelist?: boolean
     subscription_required?: boolean
@@ -30,6 +36,14 @@ interface Window {
       badge?: string
     }
   }
+  __ga_identity__?: {
+    client_id?: string
+    session_id?: string
+    session_number?: string
+  }
+  dataLayer?: Array<Record<string, unknown>>
+  ire_o?: string
+  ire?: ImpactQueueFunction
 }
 
 interface Navigator {

@@ -10,7 +10,10 @@ test.describe('Properties panel', () => {
 
     await expect(propertiesPanel.panelTitle).toContainText('Workflow Overview')
 
-    await comfyPage.selectNodes(['KSampler', 'CLIP Text Encode (Prompt)'])
+    await comfyPage.nodeOps.selectNodes([
+      'KSampler',
+      'CLIP Text Encode (Prompt)'
+    ])
 
     await expect(propertiesPanel.panelTitle).toContainText('3 items selected')
     await expect(propertiesPanel.root.getByText('KSampler')).toHaveCount(1)

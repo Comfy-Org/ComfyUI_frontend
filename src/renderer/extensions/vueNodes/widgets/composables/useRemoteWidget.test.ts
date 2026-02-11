@@ -2,18 +2,20 @@ import axios from 'axios'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { IWidget } from '@/lib/litegraph/src/litegraph'
-import { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { api } from '@/scripts/api'
 import { useRemoteWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useRemoteWidget'
 import type { RemoteWidgetConfig } from '@/schemas/nodeDefSchema'
+import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
 
-const createMockNode = (overrides: Partial<LGraphNode> = {}): LGraphNode => {
-  const node = new LGraphNode('TestNode')
-  Object.assign(node, overrides)
-  return node
+function createMockWidget(overrides: Partial<IWidget> = {}): IWidget {
+  return {
+    name: 'test_widget',
+    type: 'text',
+    value: '',
+    options: {},
+    ...overrides
+  } as Partial<IWidget> as IWidget
 }
-
-const createMockWidget = (overrides = {}): IWidget =>
-  ({ ...overrides }) as unknown as IWidget
 
 const mockCloudAuth = vi.hoisted(() => ({
   isCloud: false,
@@ -66,7 +68,10 @@ function createMockConfig(overrides = {}): RemoteWidgetConfig {
 const createMockOptions = (inputOverrides = {}) => ({
   remoteConfig: createMockConfig(inputOverrides),
   defaultValue: DEFAULT_VALUE,
-  node: createMockNode(),
+  node: createMockLGraphNode({
+    addWidget: vi.fn(() => createMockWidget()),
+    onRemoved: undefined
+  }),
   widget: createMockWidget()
 })
 
@@ -498,12 +503,14 @@ describe('useRemoteWidget', () => {
     })
 
     it('should handle rapid cache clearing during fetch', async () => {
-      let resolvePromise: (value: any) => void
-      const delayedPromise = new Promise((resolve) => {
-        resolvePromise = resolve
-      })
+      let resolvePromise: (value: { data: unknown; status?: number }) => void
+      const delayedPromise = new Promise<{ data: unknown; status?: number }>(
+        (resolve) => {
+          resolvePromise = resolve
+        }
+      )
 
-      vi.mocked(axios.get).mockImplementationOnce(() => delayedPromise as any)
+      vi.mocked(axios.get).mockImplementationOnce(() => delayedPromise)
 
       const hook = useRemoteWidget(createMockOptions())
       hook.getValue()
@@ -519,17 +526,20 @@ describe('useRemoteWidget', () => {
     })
 
     it('should handle widget destroyed during fetch', async () => {
-      let resolvePromise: (value: any) => void
-      const delayedPromise = new Promise((resolve) => {
-        resolvePromise = resolve
-      })
+      let resolvePromise: (value: { data: unknown; status?: number }) => void
+      const delayedPromise = new Promise<{ data: unknown; status?: number }>(
+        (resolve) => {
+          resolvePromise = resolve
+        }
+      )
 
-      vi.mocked(axios.get).mockImplementationOnce(() => delayedPromise as any)
+      vi.mocked(axios.get).mockImplementationOnce(() => delayedPromise)
 
-      let hook = useRemoteWidget(createMockOptions())
+      let hook: ReturnType<typeof useRemoteWidget> | null =
+        useRemoteWidget(createMockOptions())
       const fetchPromise = hook.getValue()
 
-      hook = null as any
+      hook = null
 
       resolvePromise!({ data: ['delayed data'] })
       await fetchPromise
@@ -582,19 +592,19 @@ describe('useRemoteWidget', () => {
 
   describe('auto-refresh on task completion', () => {
     it('should add auto-refresh toggle widget', () => {
-      const mockNode = {
+      const mockNode = createMockLGraphNode({
         addWidget: vi.fn(),
         widgets: []
-      }
-      const mockWidget = {
+      })
+      const mockWidget = createMockWidget({
         refresh: vi.fn()
-      }
+      })
 
       useRemoteWidget({
         remoteConfig: createMockConfig(),
         defaultValue: DEFAULT_VALUE,
-        node: mockNode as any,
-        widget: mockWidget as any
+        node: mockNode,
+        widget: mockWidget
       })
 
       // Should add auto-refresh toggle widget
@@ -610,22 +620,21 @@ describe('useRemoteWidget', () => {
     })
 
     it('should register event listener when enabled', async () => {
-      const { api } = await import('@/scripts/api')
       const addEventListenerSpy = vi.spyOn(api, 'addEventListener')
 
-      const mockNode = {
+      const mockNode = createMockLGraphNode({
         addWidget: vi.fn(),
         widgets: []
-      }
-      const mockWidget = {
+      })
+      const mockWidget = createMockWidget({
         refresh: vi.fn()
-      }
+      })
 
       useRemoteWidget({
         remoteConfig: createMockConfig(),
         defaultValue: DEFAULT_VALUE,
-        node: mockNode as any,
-        widget: mockWidget as any
+        node: mockNode,
+        widget: mockWidget
       })
 
       // Event listener should be registered immediately
@@ -636,7 +645,6 @@ describe('useRemoteWidget', () => {
     })
 
     it('should refresh widget when workflow completes successfully', async () => {
-      const { api } = await import('@/scripts/api')
       let executionSuccessHandler: (() => void) | undefined
 
       vi.spyOn(api, 'addEventListener').mockImplementation((event, handler) => {
@@ -645,16 +653,16 @@ describe('useRemoteWidget', () => {
         }
       })
 
-      const mockNode = {
+      const mockNode = createMockLGraphNode({
         addWidget: vi.fn(),
         widgets: []
-      }
-      const mockWidget = {} as any
+      })
+      const mockWidget = createMockWidget({})
 
       useRemoteWidget({
         remoteConfig: createMockConfig(),
         defaultValue: DEFAULT_VALUE,
-        node: mockNode as any,
+        node: mockNode,
         widget: mockWidget
       })
 
@@ -662,8 +670,9 @@ describe('useRemoteWidget', () => {
       const refreshSpy = vi.spyOn(mockWidget, 'refresh')
 
       // Get the toggle callback and enable auto-refresh
-      const toggleCallback = mockNode.addWidget.mock.calls.find(
-        (call) => call[0] === 'toggle'
+      const addWidgetMock = mockNode.addWidget as ReturnType<typeof vi.fn>
+      const toggleCallback = addWidgetMock.mock.calls.find(
+        (call: unknown[]) => call[0] === 'toggle'
       )?.[3]
       toggleCallback?.(true)
 
@@ -674,7 +683,6 @@ describe('useRemoteWidget', () => {
     })
 
     it('should not refresh when toggle is disabled', async () => {
-      const { api } = await import('@/scripts/api')
       let executionSuccessHandler: (() => void) | undefined
 
       vi.spyOn(api, 'addEventListener').mockImplementation((event, handler) => {
@@ -683,16 +691,16 @@ describe('useRemoteWidget', () => {
         }
       })
 
-      const mockNode = {
+      const mockNode = createMockLGraphNode({
         addWidget: vi.fn(),
         widgets: []
-      }
-      const mockWidget = {} as any
+      })
+      const mockWidget = createMockWidget({})
 
       useRemoteWidget({
         remoteConfig: createMockConfig(),
         defaultValue: DEFAULT_VALUE,
-        node: mockNode as any,
+        node: mockNode,
         widget: mockWidget
       })
 
@@ -707,7 +715,6 @@ describe('useRemoteWidget', () => {
     })
 
     it('should cleanup event listener on node removal', async () => {
-      const { api } = await import('@/scripts/api')
       let executionSuccessHandler: (() => void) | undefined
 
       vi.spyOn(api, 'addEventListener').mockImplementation((event, handler) => {
@@ -718,20 +725,20 @@ describe('useRemoteWidget', () => {
 
       const removeEventListenerSpy = vi.spyOn(api, 'removeEventListener')
 
-      const mockNode = {
+      const mockNode = createMockLGraphNode({
         addWidget: vi.fn(),
         widgets: [],
-        onRemoved: undefined as any
-      }
-      const mockWidget = {
+        onRemoved: undefined
+      })
+      const mockWidget = createMockWidget({
         refresh: vi.fn()
-      }
+      })
 
       useRemoteWidget({
         remoteConfig: createMockConfig(),
         defaultValue: DEFAULT_VALUE,
-        node: mockNode as any,
-        widget: mockWidget as any
+        node: mockNode,
+        widget: mockWidget
       })
 
       // Simulate node removal

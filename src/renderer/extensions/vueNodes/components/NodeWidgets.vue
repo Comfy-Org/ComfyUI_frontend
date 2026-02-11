@@ -6,14 +6,15 @@
     v-else
     :class="
       cn(
-        'lg-node-widgets grid grid-cols-[min-content_minmax(80px,max-content)_minmax(125px,auto)] flex-1 gap-y-1 pr-3',
+        'lg-node-widgets grid grid-cols-[min-content_minmax(80px,max-content)_minmax(125px,auto)] gap-y-1 pr-3',
         shouldHandleNodePointerEvents
           ? 'pointer-events-auto'
           : 'pointer-events-none'
       )
     "
     :style="{
-      'grid-template-rows': gridTemplateRows
+      'grid-template-rows': gridTemplateRows,
+      flex: gridTemplateRows.includes('auto') ? 1 : undefined
     }"
     @pointerdown.capture="handleBringToFront"
     @pointerdown="handleWidgetPointerEvent"
@@ -27,9 +28,10 @@
       <div
         v-if="
           !widget.simplified.options?.hidden &&
-          (!widget.simplified.options?.advanced || nodeData?.showAdvanced)
+          (!widget.simplified.options?.advanced || showAdvanced)
         "
         class="lg-node-widget group col-span-full grid grid-cols-subgrid items-stretch"
+        :data-widget-name="widget.name"
       >
         <!-- Widget Input Slot Dot -->
         <div
@@ -78,6 +80,7 @@ import type {
   VueNodeData,
   WidgetSlotMetadata
 } from '@/composables/graph/useGraphNodeManager'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { st } from '@/i18n'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
@@ -130,6 +133,12 @@ onErrorCaptured((error) => {
 })
 
 const nodeType = computed(() => nodeData?.type || '')
+const settingStore = useSettingStore()
+const showAdvanced = computed(
+  () =>
+    nodeData?.showAdvanced ||
+    settingStore.get('Comfy.Node.AlwaysShowAdvancedWidgets')
+)
 const { getWidgetTooltip, createTooltipConfig } = useNodeTooltips(
   nodeType.value
 )
@@ -213,7 +222,7 @@ const gridTemplateRows = computed((): string => {
       (w) =>
         processedNames.has(w.name) &&
         !w.options?.hidden &&
-        (!w.options?.advanced || nodeData?.showAdvanced)
+        (!w.options?.advanced || showAdvanced.value)
     )
     .map((w) =>
       shouldExpand(w.type) || w.hasLayoutSize ? 'auto' : 'min-content'

@@ -5,12 +5,22 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { ReleaseNote } from '../common/releaseService'
 import ReleaseNotificationToast from './ReleaseNotificationToast.vue'
 
+const mockData = vi.hoisted(() => ({ isDesktop: false }))
+
 const { commandExecuteMock } = vi.hoisted(() => ({
   commandExecuteMock: vi.fn()
 }))
 
 const { toastErrorHandlerMock } = vi.hoisted(() => ({
   toastErrorHandlerMock: vi.fn()
+}))
+
+vi.mock('@/platform/distribution/types', () => ({
+  isCloud: false,
+  isNightly: false,
+  get isDesktop() {
+    return mockData.isDesktop
+  }
 }))
 
 // Mock dependencies
@@ -101,6 +111,7 @@ describe('ReleaseNotificationToast', () => {
 
   beforeEach(() => {
     vi.clearAllMocks()
+    mockData.isDesktop = false
     // Reset store state
     mockReleaseStore.recentRelease = null
     mockReleaseStore.shouldShowToast = true // Force show for testing
@@ -179,7 +190,8 @@ describe('ReleaseNotificationToast', () => {
     )
   })
 
-  it('executes desktop updater flow when running in Electron', async () => {
+  it('executes desktop updater flow when running on desktop', async () => {
+    mockData.isDesktop = true
     mockReleaseStore.recentRelease = {
       version: '1.2.3',
       content: '# Test Release'
@@ -192,7 +204,6 @@ describe('ReleaseNotificationToast', () => {
       value: mockWindowOpen,
       writable: true
     })
-    ;(window as any).electronAPI = {}
 
     wrapper = mountComponent()
     await wrapper.vm.handleUpdate()
@@ -202,11 +213,10 @@ describe('ReleaseNotificationToast', () => {
     )
     expect(mockWindowOpen).not.toHaveBeenCalled()
     expect(toastErrorHandlerMock).not.toHaveBeenCalled()
-
-    delete (window as any).electronAPI
   })
 
-  it('shows an error toast if the desktop updater flow fails in Electron', async () => {
+  it('shows an error toast if the desktop updater flow fails on desktop', async () => {
+    mockData.isDesktop = true
     mockReleaseStore.recentRelease = {
       version: '1.2.3',
       content: '# Test Release'
@@ -220,15 +230,12 @@ describe('ReleaseNotificationToast', () => {
       value: mockWindowOpen,
       writable: true
     })
-    ;(window as any).electronAPI = {}
 
     wrapper = mountComponent()
     await wrapper.vm.handleUpdate()
 
     expect(toastErrorHandlerMock).toHaveBeenCalledWith(error)
     expect(mockWindowOpen).not.toHaveBeenCalled()
-
-    delete (window as any).electronAPI
   })
 
   it('calls handleShowChangelog when learn more link is clicked', async () => {

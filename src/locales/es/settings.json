@@ -52,7 +52,8 @@
     }
   },
   "Comfy_Canvas_SelectionToolbox": {
-    "name": "Mostrar caja de herramientas de selección"
+    "name": "Mostrar caja de herramientas de selección",
+    "tooltip": "Muestra una barra de herramientas flotante cuando se seleccionan nodos, proporcionando acceso rápido a acciones comunes."
   },
   "Comfy_ConfirmClear": {
     "name": "Requerir confirmación al borrar el flujo de trabajo"
@@ -147,7 +148,8 @@
       "Linear": "Lineal",
       "Spline": "Spline",
       "Straight": "Recto"
-    }
+    },
+    "tooltip": "Controla la apariencia y visibilidad de los enlaces de conexión entre nodos en el lienzo."
   },
   "Comfy_Load3D_3DViewerEnable": {
     "name": "Habilitar visor 3D (Beta)",
@@ -158,28 +160,28 @@
     "tooltip": "Controla el color de fondo predeterminado de la escena 3D. Esta configuración determina la apariencia del fondo cuando se crea un nuevo widget 3D, pero puede ajustarse individualmente para cada widget después de su creación."
   },
   "Comfy_Load3D_CameraType": {
-    "name": "Tipo de Cámara",
+    "name": "Tipo de cámara inicial",
     "options": {
       "orthographic": "ortográfica",
       "perspective": "perspectiva"
     },
-    "tooltip": "Controla si la cámara es perspectiva u ortográfica por defecto cuando se crea un nuevo widget 3D. Este valor predeterminado aún puede ser alternado individualmente para cada widget después de su creación."
+    "tooltip": "Controla si la cámara es perspectiva u ortográfica por defecto cuando se crea un nuevo widget 3D. Este valor predeterminado aún puede cambiarse individualmente para cada widget después de su creación."
   },
   "Comfy_Load3D_LightAdjustmentIncrement": {
     "name": "Incremento de ajuste de luz",
-    "tooltip": "Controla el tamaño del incremento al ajustar la intensidad de la luz en escenas 3D. Un valor de paso más pequeño permite un control más preciso sobre los ajustes de iluminación, mientras que un valor más grande resulta en cambios más notorios por cada ajuste."
+    "tooltip": "Controla el tamaño del incremento al ajustar la intensidad de la luz en escenas 3D. Un valor de paso menor permite un control más preciso de los ajustes de iluminación, mientras que un valor mayor resulta en cambios más notorios por ajuste."
   },
   "Comfy_Load3D_LightIntensity": {
-    "name": "Intensidad Inicial de la Luz",
-    "tooltip": "Establece el nivel de brillo predeterminado de la iluminación en la escena 3D. Este valor determina cuán intensamente las luces iluminan los objetos cuando se crea un nuevo widget 3D, pero puede ajustarse individualmente para cada widget después de la creación."
+    "name": "Intensidad de luz inicial",
+    "tooltip": "Establece el nivel de brillo predeterminado de la iluminación en la escena 3D. Este valor determina cuán intensamente las luces iluminan los objetos cuando se crea un nuevo widget 3D, pero puede ajustarse individualmente para cada widget después de su creación."
   },
   "Comfy_Load3D_LightIntensityMaximum": {
-    "name": "Intensidad Máxima de Luz",
-    "tooltip": "Establece el valor máximo permitido de intensidad de luz para escenas 3D. Esto define el límite superior de brillo que se puede ajustar al modificar la iluminación en cualquier widget 3D."
+    "name": "Intensidad máxima de luz",
+    "tooltip": "Establece el valor máximo permitido de intensidad de luz para escenas 3D. Esto define el límite superior de brillo que se puede establecer al ajustar la iluminación en cualquier widget 3D."
   },
   "Comfy_Load3D_LightIntensityMinimum": {
-    "name": "Intensidad de luz mínima",
-    "tooltip": "Establece el valor mínimo permitido de intensidad de luz para escenas 3D. Esto define el límite inferior de brillo que se puede ajustar al modificar la iluminación en cualquier widget 3D."
+    "name": "Intensidad mínima de luz",
+    "tooltip": "Establece el valor mínimo permitido de intensidad de luz para escenas 3D. Esto define el límite inferior de brillo que se puede establecer al ajustar la iluminación en cualquier widget 3D."
   },
   "Comfy_Load3D_PLYEngine": {
     "name": "Motor PLY",
@@ -191,8 +193,8 @@
     "tooltip": "Selecciona el motor para cargar archivos PLY. \"threejs\" utiliza el cargador nativo Three.js PLYLoader (mejor para archivos PLY de malla). \"fastply\" utiliza un cargador optimizado para archivos PLY de nube de puntos ASCII. \"sparkjs\" utiliza Spark.js para archivos PLY de Gaussian Splatting 3D."
   },
   "Comfy_Load3D_ShowGrid": {
-    "name": "Mostrar Cuadrícula",
-    "tooltip": "Cambiar para mostrar cuadrícula por defecto"
+    "name": "Visibilidad inicial de la cuadrícula",
+    "tooltip": "Controla si la cuadrícula es visible por defecto cuando se crea un nuevo widget 3D. Este valor predeterminado aún puede cambiarse individualmente para cada widget después de su creación."
   },
   "Comfy_Locale": {
     "name": "Idioma"
@@ -242,6 +244,10 @@
   "Comfy_NodeBadge_ShowApiPricing": {
     "name": "Mostrar insignia de precios de nodo API"
   },
+  "Comfy_NodeReplacement_Enabled": {
+    "name": "Habilitar reemplazo automático de nodos",
+    "tooltip": "Cuando está habilitado, los nodos faltantes pueden ser reemplazados automáticamente por sus equivalentes más nuevos si existe un mapeo de reemplazo."
+  },
   "Comfy_NodeSearchBoxImpl": {
     "name": "Implementación de la caja de búsqueda de nodos",
     "options": {
@@ -271,6 +277,10 @@
   },
   "Comfy_Node_AllowImageSizeDraw": {
     "name": "Mostrar ancho × altura debajo de la vista previa de la imagen"
+  },
+  "Comfy_Node_AlwaysShowAdvancedWidgets": {
+    "name": "Mostrar siempre los widgets avanzados en todos los nodos",
+    "tooltip": "Cuando está activado, los widgets avanzados siempre son visibles en todos los nodos sin necesidad de expandirlos individualmente."
   },
   "Comfy_Node_AutoSnapLinkToSlot": {
     "name": "Enlace de ajuste automático a la ranura del nodo",
@@ -470,6 +480,7 @@
     "tooltip": "El punto de control bezier desplazado desde el punto central de reenrutamiento"
   },
   "pysssss_SnapToGrid": {
-    "name": "Siempre ajustar a la cuadrícula"
+    "name": "Siempre ajustar a la cuadrícula",
+    "tooltip": "Cuando está activado, los nodos se alinearán automáticamente a la cuadrícula al moverlos o cambiar su tamaño."
   }
 }

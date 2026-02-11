@@ -31,10 +31,7 @@
     "no-console": [
       "error",
       {
-        "allow": [
-          "warn",
-          "error"
-        ]
+        "allow": ["warn", "error"]
       }
     ],
     "no-control-regex": "off",
@@ -63,16 +60,6 @@
           {
             "name": "primevue/sidebar",
             "message": "Sidebar is deprecated in PrimeVue 4+. Use Drawer instead: import Drawer from 'primevue/drawer'"
-          },
-          {
-            "name": "@/i18n--to-enable",
-            "importNames": [
-              "st",
-              "t",
-              "te",
-              "d"
-            ],
-            "message": "Don't import `@/i18n` directly, prefer `useI18n()`"
           }
         ]
       }
@@ -85,10 +72,7 @@
     "import/export": "error",
     "import/namespace": "error",
     "import/no-duplicates": "error",
-    "import/consistent-type-specifier-style": [
-      "error",
-      "prefer-top-level"
-    ],
+    "import/consistent-type-specifier-style": ["error", "prefer-top-level"],
     "jest/expect-expect": "off",
     "jest/no-conditional-expect": "off",
     "jest/no-disabled-tests": "off",
@@ -117,12 +101,20 @@
   },
   "overrides": [
     {
-      "files": [
-        "**/*.{stories,test,spec}.ts",
-        "**/*.stories.vue"
-      ],
+      "files": ["**/*.{stories,test,spec}.ts", "**/*.stories.vue"],
       "rules": {
         "no-console": "allow"
+      }
+    },
+    {
+      "files": ["browser_tests/**/*.ts"],
+      "rules": {
+        "typescript/no-explicit-any": "error",
+        "no-async-promise-executor": "error",
+        "no-control-regex": "error",
+        "no-useless-rename": "error",
+        "no-unused-private-class-members": "error",
+        "unicorn/no-empty-file": "error"
       }
     }
   ]

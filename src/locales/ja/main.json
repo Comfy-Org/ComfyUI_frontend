@@ -16,12 +16,15 @@
   "assetBrowser": {
     "allCategory": "すべての{category}",
     "allModels": "すべてのモデル",
+    "apiKeyHint": "プライベートまたは制限付きモデルをインポートしますか？{link}。",
+    "apiKeyHintLink": "設定でAPIキーを追加",
     "ariaLabel": {
       "assetCard": "{name} - {type} アセット",
       "loadingAsset": "アセットを読み込み中"
     },
     "assetCollection": "アセットコレクション",
     "assets": "アセット",
+    "baseModel": "ベースモデル",
     "baseModels": "ベースモデル",
     "browseAssets": "アセットを閲覧",
     "byType": "タイプ別",
@@ -50,13 +53,34 @@
       "canImport": "まだインポートされたモデルはありません。「モデルをインポート」をクリックして追加してください。",
       "restricted": "パーソナルモデルはCreator以上のプランでのみ利用可能です。"
     },
+    "errorAccessForbidden": "このリソースへのアクセスは許可されていません。",
+    "errorConnectionRefused": "ソースに接続できません。後でもう一度お試しください。",
+    "errorDownloadCancelled": "ダウンロードがキャンセルされました。",
     "errorFileTooLarge": "ファイルが許可された最大サイズを超えています",
     "errorFormatNotAllowed": "SafeTensor形式のみ許可されています",
+    "errorHttpError": "メタデータの取得中にエラーが発生しました。",
+    "errorInternalError": "予期しないエラーが発生しました。もう一度お試しください。",
+    "errorInvalidHost": "ソースURLのホスト名を解決できませんでした。",
+    "errorInvalidUrl": "URLを入力してください。",
+    "errorInvalidUrlFormat": "URLの形式が無効です。ご確認の上、再度お試しください。",
+    "errorMetadataFetchFailed": "ソースからファイル情報の取得に失敗しました。",
     "errorModelTypeNotSupported": "このモデルタイプはサポートされていません",
+    "errorNetworkError": "ネットワークエラーが発生しました。接続を確認して再度お試しください。",
+    "errorNetworkTimeout": "リクエストがタイムアウトしました。もう一度お試しください。",
+    "errorRateLimited": "リクエストが多すぎます。数分後に再度お試しください。",
+    "errorRequestCancelled": "リクエストがキャンセルされました。",
+    "errorResourceNotFound": "ファイルが見つかりません。URLを確認して再度お試しください。",
+    "errorServiceUnavailable": "サービスは一時的に利用できません。後でもう一度お試しください。",
+    "errorSourceServerError": "ソースサーバーに問題が発生しています。後でもう一度お試しください。",
+    "errorUnauthorized": "続行するにはサインインしてください。",
+    "errorUnauthorizedSource": "このリソースには認証が必要です。設定でAPIトークンを追加してください。",
     "errorUnknown": "予期しないエラーが発生しました",
     "errorUnsafePickleScan": "CivitAIがこのファイルに潜在的な危険なコードを検出しました",
     "errorUnsafeVirusScan": "CivitAIがこのファイルにマルウェアまたは疑わしい内容を検出しました",
+    "errorUnsupportedSource": "このURLはサポートされていません。Hugging FaceとCivitaiのURLのみ使用できます。",
     "errorUploadFailed": "アセットのインポートに失敗しました。もう一度お試しください。",
+    "errorUserTokenAccessDenied": "お使いのAPIトークンにはこのリソースへのアクセス権がありません。トークンの権限を確認してください。",
+    "errorUserTokenInvalid": "保存されているAPIトークンが無効または期限切れです。設定でトークンを更新してください。",
     "failedToCreateNode": "ノードの作成に失敗しました。再試行するか、詳細はコンソールをご確認ください。",
     "fileFormats": "ファイル形式",
     "fileName": "ファイル名",
@@ -67,6 +91,10 @@
     "genericLinkPlaceholder": "ここにリンクを貼り付けてください",
     "importAnother": "別のファイルをインポート",
     "imported": "インポート済み",
+    "invalidAsset": "無効なアセット",
+    "invalidAssetDetail": "選択したアセットを検証できませんでした。もう一度お試しください。",
+    "invalidFilename": "無効なファイル名",
+    "invalidFilenameDetail": "アセットのファイル名を特定できませんでした。もう一度お試しください。",
     "jobId": "ジョブID",
     "loadingModels": "{type}を読み込み中...",
     "maxFileSize": "最大ファイルサイズ：{size}",
@@ -107,6 +135,7 @@
     "modelUploaded": "モデルが正常にインポートされました。",
     "noAssetsFound": "アセットが見つかりません",
     "noModelsInFolder": "このフォルダには{type}がありません",
+    "noResultsCanImport": "検索やフィルターを調整してみてください。\nまた、上の「インポート」ボタンからモデルを追加することもできます。",
     "noValidSourceDetected": "有効なインポート元が検出されませんでした",
     "notSureLeaveAsIs": "分からない場合はそのままにしてください",
     "onlyCivitaiUrlsSupported": "CivitaiのURLのみサポートされています",
@@ -126,6 +155,7 @@
     "selectProjects": "プロジェクトを選択",
     "sortAZ": "A-Z",
     "sortBy": "並び替え",
+    "sortDefault": "デフォルト",
     "sortPopular": "人気",
     "sortRecent": "最新",
     "sortZA": "Z-A",
@@ -176,13 +206,7 @@
       "whitelistInfo": "ホワイトリストに登録されていないサイトについて"
     },
     "deleteAccount": {
-      "cancel": "キャンセル",
-      "confirm": "アカウントを削除",
-      "confirmMessage": "本当にアカウントを削除しますか？この操作は元に戻せず、すべてのデータが完全に削除されます。",
-      "confirmTitle": "アカウントを削除",
-      "deleteAccount": "アカウントを削除",
-      "success": "アカウントが削除されました",
-      "successDetail": "アカウントは正常に削除されました。"
+      "contactSupport": "アカウントを削除するには、{email} までご連絡ください"
     },
     "errors": {
       "auth/cancelled-popup-request": "サインインがキャンセルされました。もう一度お試しください。",
@@ -267,6 +291,16 @@
       "signUpWithGoogle": "Googleでサインアップ",
       "title": "アカウントを作成する"
     }
+  },
+  "billingOperation": {
+    "subscriptionFailed": "サブスクリプションの更新に失敗しました",
+    "subscriptionProcessing": "お支払い処理中 — ワークスペースを設定しています…",
+    "subscriptionSuccess": "サブスクリプションが正常に更新されました",
+    "subscriptionTimeout": "サブスクリプションの確認がタイムアウトしました",
+    "topupFailed": "チャージに失敗しました",
+    "topupProcessing": "お支払い処理中 — クレジットを追加しています…",
+    "topupSuccess": "クレジットが正常に追加されました",
+    "topupTimeout": "チャージの確認がタイムアウトしました"
   },
   "boundingBox": {
     "height": "高さ",
@@ -548,6 +582,7 @@
       "needMore": "さらに必要ですか？",
       "purchaseError": "購入に失敗しました",
       "purchaseErrorDetail": "クレジットの購入に失敗しました: {error}",
+      "purchaseSuccess": "クレジットが正常に追加されました！",
       "quickPurchase": "クイック購入",
       "seeDetails": "詳細を見る",
       "selectAmount": "金額を選択",
@@ -577,12 +612,20 @@
     "CLIP": "CLIP",
     "CLIP_VISION": "CLIP_VISION",
     "CLIP_VISION_OUTPUT": "CLIP_VISION_OUTPUT",
+    "COLOR": "カラー",
     "COMBO": "コンボ",
     "COMFY_AUTOGROW_V3": "COMFY_AUTOGROW_V3",
     "COMFY_DYNAMICCOMBO_V3": "COMFY_DYNAMICCOMBO_V3",
     "COMFY_MATCHTYPE_V3": "COMFY_MATCHTYPE_V3",
     "CONDITIONING": "条件付け",
     "CONTROL_NET": "コントロールネット",
+    "FILE_3D": "FILE_3D",
+    "FILE_3D_FBX": "FILE_3D_FBX",
+    "FILE_3D_GLB": "FILE_3D_GLB",
+    "FILE_3D_GLTF": "FILE_3D_GLTF",
+    "FILE_3D_OBJ": "FILE_3D_OBJ",
+    "FILE_3D_STL": "FILE_3D_STL",
+    "FILE_3D_USDZ": "FILE_3D_USDZ",
     "FLOAT": "浮動小数点",
     "FLOATS": "浮動小数点数",
     "GEMINI_INPUT_FILES": "GEMINI入力ファイル",
@@ -723,6 +766,7 @@
     "commandProhibited": "コマンド {command} は禁止されています。詳細は管理者にお問い合わせください。",
     "community": "コミュニティ",
     "completed": "完了",
+    "completedWithCheckmark": "完了 ✓",
     "confirm": "確認",
     "confirmed": "確認済み",
     "content": "コンテンツ",
@@ -748,6 +792,7 @@
     "deleteImage": "画像を削除",
     "deprecated": "非推奨",
     "description": "説明",
+    "devOnly": "DEV",
     "devices": "デバイス",
     "disableAll": "すべて無効にする",
     "disableSelected": "選択したものを無効化",
@@ -755,8 +800,10 @@
     "disabling": "無効化",
     "dismiss": "閉じる",
     "download": "ダウンロード",
+    "downloadAudio": "オーディオをダウンロード",
     "downloadImage": "画像をダウンロード",
     "downloadVideo": "ビデオをダウンロード",
+    "downloadWithSize": "ダウンロード（{size}）",
     "downloading": "ダウンロード中",
     "dropYourFileOr": "ファイルをドロップするか",
     "duplicate": "複製",
@@ -772,12 +819,14 @@
     "enabling": "有効化",
     "enterBaseName": "ベース名を入力",
     "enterNewName": "新しい名前を入力",
+    "enterNewNamePrompt": "新しい名前を入力してください：",
     "error": "エラー",
     "errorLoadingImage": "画像の読み込みエラー",
     "errorLoadingVideo": "ビデオの読み込みエラー",
     "experimental": "ベータ",
     "export": "エクスポート",
     "extensionName": "拡張機能名",
+    "extensions": "拡張機能",
     "failed": "失敗",
     "failedToCopyJobId": "ジョブIDのコピーに失敗しました",
     "failedToDownloadImage": "画像のダウンロードに失敗しました",
@@ -816,6 +865,7 @@
     "jobIdCopied": "ジョブIDがクリップボードにコピーされました",
     "keybinding": "キーバインディング",
     "keybindingAlreadyExists": "このキー割り当てはすでに存在します",
+    "keybindings": "キーバインド",
     "learnMore": "詳細を学ぶ",
     "listening": "リスニング中...",
     "liveSamplingPreview": "ライブサンプリングプレビュー",
@@ -927,6 +977,7 @@
     "selectedFile": "選択されたファイル",
     "setAsBackground": "背景として設定",
     "settings": "設定",
+    "shortcutSuffix": "（{shortcut}）",
     "showLeftPanel": "左パネルを表示",
     "showReport": "レポートを表示",
     "showRightPanel": "右パネルを表示",
@@ -960,11 +1011,10 @@
     "videoPreview": "ビデオプレビュー - 矢印キーでビデオを切り替え",
     "viewImageOfTotal": "画像 {index} / {total} を表示",
     "viewVideoOfTotal": "ビデオ {index} / {total} を表示",
-    "vitePreloadErrorMessage": "アプリの新しいバージョンがリリースされました。再読み込みしますか？\n再読み込みしない場合、アプリの一部が正しく動作しない可能性があります。\n再読み込み前に進行状況を保存してから拒否することもできます。",
-    "vitePreloadErrorTitle": "新しいバージョンが利用可能",
     "volume": "音量",
     "warning": "警告",
-    "workflow": "ワークフロー"
+    "workflow": "ワークフロー",
+    "you": "あなた"
   },
   "graphCanvasMenu": {
     "fitView": "ビューに合わせる",
@@ -1029,8 +1079,12 @@
   },
   "imageCrop": {
     "cropPreviewAlt": "切り抜きプレビュー",
+    "custom": "カスタム",
     "loading": "読み込み中...",
-    "noInputImage": "入力画像が接続されていません"
+    "lockRatio": "アスペクト比を固定",
+    "noInputImage": "入力画像が接続されていません",
+    "ratio": "比率",
+    "unlockRatio": "アスペクト比を解除"
   },
   "importFailed": {
     "copyError": "コピーエラー",
@@ -1154,14 +1208,21 @@
     "helpFix": "これを修正するのを助ける"
   },
   "linearMode": {
-    "beta": "ベータ版 - フィードバックを送る",
+    "beta": "アプリモード ベータ版 - フィードバックを送る",
     "downloadAll": "すべてダウンロード",
     "dragAndDropImage": "画像をドラッグ＆ドロップ",
     "graphMode": "グラフモード",
-    "linearMode": "シンプルモード",
+    "linearMode": "アプリモード",
     "rerun": "再実行",
     "reuseParameters": "パラメータを再利用",
-    "runCount": "実行回数："
+    "runCount": "実行回数：",
+    "welcome": {
+      "intro": "ノードグラフを非表示にして、作成に集中できるシンプルなビューです。",
+      "layout": "左側には生成した画像、動画、出力が表示されます。右側には必要なコントロールだけが表示されます。複雑なものはすべて見えません。",
+      "sharing": "共有も簡単です：ワークフローを作成し、アプリモードを開き、タブを右クリックしてエクスポートします。他の人がファイルを開くと、このクリーンなビューで直接起動します。ノードグラフを理解しなくても、強力なワークフローをシンプルなツールとして共有できます。",
+      "title": "アプリモードへようこそ",
+      "widget": "表示する設定を制御したい場合は、トップレベルのノードをサブグラフに変換し、その上のツールボックスでウィジェットプロモーションを使って公開する項目を選択してください。"
+    }
   },
   "load3d": {
     "applyingTexture": "テクスチャを適用中...",
@@ -1261,8 +1322,10 @@
     }
   },
   "manager": {
+    "actions": "アクション",
     "allMissingNodesInstalled": "すべての不足しているノードが正常にインストールされました",
     "applyChanges": "変更を適用",
+    "basicInfo": "基本情報",
     "changingVersion": "バージョンを {from} から {to} に変更",
     "clickToFinishSetup": "クリック",
     "conflicts": {
@@ -1298,6 +1361,28 @@
     "disabledNodesWontUpdate": "無効なノードは更新されません",
     "discoverCommunityContent": "コミュニティが作成したノードパック、拡張機能などを探す...",
     "downloads": "ダウンロード",
+    "emptyState": {
+      "allInstalled": {
+        "message": "まだ拡張機能をインストールしていません。",
+        "title": "拡張機能がインストールされていません"
+      },
+      "conflicting": {
+        "message": "すべての拡張機能は互換性があります。",
+        "title": "競合は検出されませんでした"
+      },
+      "missing": {
+        "message": "必要なノードはすべてインストールされています。",
+        "title": "不足しているノードはありません"
+      },
+      "updateAvailable": {
+        "message": "すべての拡張機能は最新の状態です。",
+        "title": "すべて最新です"
+      },
+      "workflow": {
+        "message": "このワークフローでは拡張ノードが使用されていません。",
+        "title": "ワークフローに拡張機能がありません"
+      }
+    },
     "enablePackToChangeVersion": "このパックを有効にしてバージョンを変更してください",
     "errorConnecting": "Comfy Node Registryへの接続エラー。",
     "extensionsSuccessfullyInstalled": "拡張機能のインストールが完了し、使用可能になりました！",
@@ -1319,18 +1404,31 @@
     "installingDependencies": "依存関係をインストール中...",
     "lastUpdated": "最終更新日",
     "latestVersion": "最新",
+    "legacyManagerSearchTip": "ComfyUI-Managerをお探しですか？ComfyUIを--enable-manager-legacy-uiフラグ付きで起動すると、レガシーマネージャーUIを有効にできます。",
     "legacyManagerUI": "レガシーUIを使用する",
     "legacyManagerUIDescription": "レガシーManager UIを使用するには、--enable-manager-legacy-uiを付けてComfyUIを起動してください",
     "legacyMenuNotAvailable": "このバージョンのComfyUIでは、レガシーマネージャーメニューは利用できません。新しいマネージャーメニューを使用してください。",
     "license": "ライセンス",
     "loadingVersions": "バージョンを読み込んでいます...",
     "mixedSelectionMessage": "混在した選択では一括操作を実行できません",
+    "nav": {
+      "allExtensions": "すべての拡張機能",
+      "allInWorkflow": "{workflowName} 内のすべて",
+      "allInstalled": "すべてインストール済み",
+      "conflicting": "競合",
+      "inWorkflowSection": "ワークフロー内",
+      "installedSection": "インストール済み",
+      "missingNodes": "不足しているノード",
+      "notInstalled": "未インストール",
+      "updatesAvailable": "アップデートあり"
+    },
     "nightlyVersion": "ナイトリー",
     "noDescription": "説明はありません",
     "noNodesFound": "ノードが見つかりません",
     "noNodesFoundDescription": "パックのノードは解析できなかったか、パックがフロントエンドの拡張機能のみでノードがない可能性があります。",
     "noResultsFound": "検索に一致する結果が見つかりませんでした。",
     "nodePack": "ノードパック",
+    "nodePackInfo": "ノードパック情報",
     "notAvailable": "利用不可",
     "packsSelected": "選択したパック",
     "repository": "リポジトリ",
@@ -1338,6 +1436,7 @@
     "restartingBackend": "変更を適用するためにバックエンドを再起動しています...",
     "searchPlaceholder": "検索",
     "selectVersion": "バージョンを選択",
+    "selected": "選択済み",
     "sort": {
       "created": "最新",
       "downloads": "最も人気",
@@ -1574,7 +1673,7 @@
     "Node Library": "ノードライブラリ",
     "Node Links": "ノードリンク",
     "Open": "開く",
-    "Open 3D Viewer (Beta) for Selected Node": "選択したノードの3Dビューア（ベータ版）を開く",
+    "Open 3D Viewer (Beta) for Selected Node": "選択したノードの3Dビューアー（ベータ）を開く",
     "Open Color Picker in MaskEditor": "MaskEditorでカラーピッカーを開く",
     "Open Custom Nodes Folder": "カスタムノードフォルダーを開く",
     "Open DevTools": "開発者ツールを開く",
@@ -1604,15 +1703,17 @@
     "Rotate Right in MaskEditor": "マスクエディタで右に回転",
     "Save": "保存",
     "Save As": "名前を付けて保存",
+    "Set Subgraph Description": "サブグラフの説明を設定",
+    "Set Subgraph Search Aliases": "サブグラフの検索エイリアスを設定",
     "Show Keybindings Dialog": "キーバインドダイアログを表示",
     "Show Model Selector (Dev)": "モデルセレクターを表示（開発用）",
     "Show Settings Dialog": "設定ダイアログを表示",
     "Sign Out": "サインアウト",
+    "Toggle App Mode": "アプリモードを切り替え",
     "Toggle Essential Bottom Panel": "エッセンシャル下部パネルの切り替え",
     "Toggle Logs Bottom Panel": "ログ下部パネルの切り替え",
     "Toggle Queue Panel V2": "キューパネルV2を切り替え",
     "Toggle Search Box": "検索ボックスの切り替え",
-    "Toggle Simple Mode": "シンプルモードを切り替え",
     "Toggle Terminal Bottom Panel": "ターミナル下部パネルの切り替え",
     "Toggle Theme (Dark/Light)": "テーマを切り替え（ダーク/ライト）",
     "Toggle View Controls Bottom Panel": "ビューコントロール下部パネルの切り替え",
@@ -1670,10 +1771,13 @@
     "Bria": "Bria",
     "ByteDance": "ByteDance",
     "Gemini": "Gemini",
+    "Grok": "Grok",
+    "HitPaw": "HitPaw",
     "Ideogram": "Ideogram",
     "Kling": "Kling",
     "LTXV": "LTXV",
     "Luma": "Luma",
+    "Magnific": "Magnific",
     "Meshy": "Meshy",
     "MiniMax": "MiniMax",
     "Moonvalley Marey": "Moonvalley Marey",
@@ -1684,6 +1788,7 @@
     "Runway": "Runway",
     "Sora": "Sora",
     "Stability AI": "Stability AI",
+    "Tencent": "Tencent",
     "Topaz": "Topaz",
     "Tripo": "Tripo",
     "Veo": "Veo",
@@ -1768,6 +1873,16 @@
     "render": "ノードレンダリングエラー",
     "slots": "ノードスロットエラー",
     "widgets": "ノードウィジェットエラー"
+  },
+  "nodeFilters": {
+    "hideDeprecated": "非推奨ノードを非表示",
+    "hideDeprecatedDescription": "明示的に有効化しない限り、非推奨としてマークされたノードを非表示にします",
+    "hideDevOnly": "開発者専用ノードを非表示",
+    "hideDevOnlyDescription": "開発者モードが有効でない限り、開発者専用ノードを非表示にします",
+    "hideExperimental": "実験的ノードを非表示",
+    "hideExperimentalDescription": "明示的に有効化しない限り、実験的としてマークされたノードを非表示にします",
+    "hideSubgraph": "サブグラフノードを一時的に非表示",
+    "hideSubgraphDescription": "ノードライブラリと検索からサブグラフノードを一時的に非表示にします"
   },
   "nodeHelpPage": {
     "documentationPage": "ドキュメントページ",
@@ -1879,6 +1994,7 @@
     "favorites": "お気に入り入力",
     "favoritesNone": "お気に入り入力なし",
     "favoritesNoneDesc": "お気に入りに追加した入力がここに表示されます",
+    "favoritesNoneHint": "パラメータタブで、任意の入力の{moreIcon}をクリックするとここに追加できます",
     "favoritesNoneTooltip": "ウィジェットにスターを付けると、ノードを選択せずにすぐアクセスできます",
     "globalSettings": {
       "canvas": "キャンバス",
@@ -1899,6 +2015,7 @@
     },
     "groupSettings": "グループ設定",
     "groups": "グループ",
+    "hideAdvancedInputsButton": "詳細入力を非表示",
     "hideInput": "入力を非表示",
     "info": "情報",
     "inputs": "入力",
@@ -1922,6 +2039,36 @@
     "title": "ノードが選択されていません | 1件のノードが選択されています | {count}件のノードが選択されています",
     "togglePanel": "プロパティパネルの切り替え",
     "workflowOverview": "ワークフロー概要"
+  },
+  "secrets": {
+    "addSecret": "シークレットを追加",
+    "createdAt": "{date} に作成",
+    "deleteConfirmMessage": "「{name}」を削除してもよろしいですか？この操作は元に戻せません。",
+    "deleteConfirmTitle": "シークレットの削除",
+    "description": "シークレットは暗号化され、APIキーなどの機密データに使用されます。",
+    "descriptionUsage": "ここにトークンを保存すると、対応プロバイダーからプライベートや制限付きモデルのダウンロードが有効になります。",
+    "editSecret": "シークレットを編集",
+    "errors": {
+      "duplicateName": "この名前のシークレットはすでに存在します",
+      "duplicateProvider": "このプロバイダーのシークレットはすでに存在します",
+      "nameRequired": "名前は必須です",
+      "nameTooLong": "名前は255文字以内で入力してください",
+      "providerRequired": "プロバイダーは必須です",
+      "secretValueRequired": "シークレット値は必須です"
+    },
+    "lastUsed": "最終使用日：{date}",
+    "modelProviders": "モデルプロバイダー",
+    "name": "名前",
+    "namePlaceholder": "例：My API Key",
+    "noSecrets": "シークレットが保存されていません。最初のAPIキーを追加して始めましょう。",
+    "provider": "プロバイダー",
+    "providerHint": "任意。プロバイダーを選択するとトークンの自動利用が有効になります。",
+    "secretValue": "シークレット値",
+    "secretValueHint": "この値は暗号化され、再度表示することはできません。",
+    "secretValueHintEdit": "現在の値を保持する場合は空欄のままにしてください。",
+    "secretValuePlaceholder": "APIキーを入力してください",
+    "secretValuePlaceholderEdit": "変更する場合は新しい値を入力",
+    "title": "APIキーとシークレット"
   },
   "selectionToolbox": {
     "Bypass Group Nodes": "グループノードをバイパス",
@@ -2140,6 +2287,7 @@
     "Reroute": "リルート",
     "RerouteBeta": "ルート変更ベータ",
     "Scene": "シーン",
+    "Secrets": "シークレット",
     "Server": "サーバー",
     "Server-Config": "サーバー設定",
     "Settings": "設定",
@@ -2246,6 +2394,7 @@
       "filterBy": "フィルター条件",
       "filterCurrentWorkflow": "現在のワークフロー",
       "filterJobs": "ジョブをフィルター",
+      "inlineTotalLabel": "合計",
       "interruptAll": "すべての実行中ジョブを中断",
       "jobQueue": "ジョブキュー",
       "jobsCompleted": "{count}件のジョブが完了",
@@ -2292,8 +2441,12 @@
   },
   "subgraphStore": {
     "blueprintName": "サブグラフ名",
+    "blueprintNamePrompt": "サブグラフ名：",
+    "cannotDeleteGlobal": "インストール済みのブループリントは削除できません",
     "confirmDelete": "この操作により、ライブラリからサブグラフが完全に削除されます",
     "confirmDeleteTitle": "サブグラフを削除しますか？",
+    "enterDescription": "説明を入力してください",
+    "enterSearchAliases": "検索用エイリアスを入力（カンマ区切り）",
     "hidden": "非表示／ネストされたパラメータ",
     "hideAll": "すべて非表示",
     "loadFailure": "サブグラフの読み込みに失敗しました",
@@ -2304,6 +2457,7 @@
     "publishSuccess": "ノードライブラリに保存されました",
     "publishSuccessMessage": "サブグラフはノードライブラリの「サブグラフブループリント」で見つけることができます",
     "saveBlueprint": "サブグラフをライブラリに保存",
+    "searchAliases": "エイリアスを検索",
     "showAll": "すべて表示",
     "showRecommended": "おすすめウィジェットを表示",
     "shown": "ノード上で表示"
@@ -2319,8 +2473,27 @@
     "beta": "ベータ版",
     "billedMonthly": "毎月請求",
     "billedYearly": "{total} 年間請求",
+    "billingComingSoon": {
+      "message": "チーム向けの請求機能が近日中に追加されます。ワークスペースごとに席数単位でプランに加入できるようになります。今後のアップデートをお待ちください。",
+      "title": "近日公開"
+    },
+    "cancelDialog": {
+      "confirmCancel": "サブスクリプションをキャンセル",
+      "description": "アクセスは{date}まで継続されます。今後請求されることはなく、ワークスペースとクレジットは保持されます。いつでも再購読できます。",
+      "endOfBillingPeriod": "請求期間の終了",
+      "failed": "サブスクリプションのキャンセルに失敗しました",
+      "keepSubscription": "サブスクリプションを維持する",
+      "title": "サブスクリプションのキャンセル"
+    },
     "cancelSubscription": "サブスクリプションをキャンセル",
+    "cancelSuccess": "サブスクリプションが正常にキャンセルされました",
+    "canceled": "キャンセル済み",
+    "canceledCard": {
+      "description": "今後請求されることはありません。{date}まで機能は有効です。",
+      "title": "サブスクリプションはキャンセルされました"
+    },
     "changeTo": "{plan}に変更",
+    "chooseBestPlanWorkspace": "ワークスペースに最適なプランを選択してください",
     "comfyCloud": "Comfy Cloud",
     "comfyCloudLogo": "Comfy Cloud ロゴ",
     "contactOwnerToSubscribe": "サブスクリプションのためにワークスペースのオーナーに連絡してください",
@@ -2331,6 +2504,7 @@
     "currentPlan": "現在のプラン",
     "customLoRAsLabel": "独自のLoRAをインポート",
     "description": "あなたに最適なプランを選択してください",
+    "descriptionWorkspace": "ワークスペースに最適なプランを選択してください",
     "expiresDate": "{date} に期限切れ",
     "gpuLabel": "RTX 6000 Pro（96GB VRAM）",
     "haveQuestions": "ご質問やエンタープライズについてのお問い合わせはこちら",
@@ -2346,14 +2520,20 @@
       "standard": "30分"
     },
     "maxDurationLabel": "各ワークフロー実行の最大時間",
+    "maxMembersLabel": "最大メンバー数",
+    "member": "メンバー",
+    "memberCount": "{count}名のメンバー",
+    "membersLabel": "{count}名までのメンバー",
     "messageSupport": "サポートに連絡",
     "monthly": "月額",
     "monthlyBonusDescription": "月間クレジットボーナス",
     "monthlyCreditsInfo": "これらのクレジットは毎月リフレッシュされ、繰り越しはできません",
     "monthlyCreditsLabel": "月間クレジット",
+    "monthlyCreditsPerMemberLabel": "月間クレジット / メンバー",
     "monthlyCreditsRollover": "これらのクレジットは翌月に繰り越されます",
     "mostPopular": "最も人気",
     "nextBillingCycle": "次の請求サイクル",
+    "nextMonthInvoice": "翌月の請求書",
     "partnerNodesBalance": "\"パートナーノード\" クレジット残高",
     "partnerNodesCredits": "パートナーノードクレジット",
     "partnerNodesDescription": "商用/独自モデルの実行用",
@@ -2361,12 +2541,39 @@
     "plansAndPricing": "プランと価格",
     "prepaidCreditsInfo": "別途購入した有効期限のないクレジット",
     "prepaidDescription": "プリペイドクレジット",
+    "preview": {
+      "addCreditCard": "クレジットカードを追加",
+      "backToAllPlans": "すべてのプランに戻る",
+      "confirm": "確認",
+      "confirmPayment": "お支払いを確認",
+      "confirmPlanChange": "プラン変更を確認",
+      "eachMonthCreditsRefill": "毎月クレジットが補充されます",
+      "ends": "{date}に終了",
+      "hideFeatures": "機能を隠す",
+      "nextPaymentDue": "次回のお支払いは{date}です。いつでもキャンセルできます。",
+      "perMember": "/ メンバー",
+      "privacyPolicy": "プライバシーポリシー",
+      "proratedCharge": "{plan}の按分請求",
+      "proratedRefund": "{plan}の按分返金",
+      "showMoreFeatures": "さらに機能を表示",
+      "starting": "{date}から開始",
+      "startingToday": "本日から開始",
+      "terms": "利用規約",
+      "termsAgreement": "続行することで、Comfy Orgの{terms}および{privacy}に同意したものとみなされます。",
+      "totalDueToday": "本日のお支払い合計"
+    },
     "renewsDate": "{date} に更新",
     "required": {
+      "pollingFailed": "サブスクリプションの有効化に失敗しました",
+      "pollingSuccess": "サブスクリプションが有効化されました！",
+      "pollingTimeout": "サブスクリプションの待機がタイムアウトしました。再読み込みして再試行してください。",
       "subscribe": "購読する",
       "title": "購読する",
       "waitingForSubscription": "新しいタブで購読を完了してください。完了を自動的に検知します！"
     },
+    "resubscribe": "再購読する",
+    "resubscribeSuccess": "サブスクリプションが再開されました",
+    "resubscribeTo": "{plan}を再購読する",
     "subscribeNow": "今すぐ購読",
     "subscribeTo": "{plan}に登録",
     "subscribeToComfyCloud": "Comfy Cloudを購読",
@@ -2395,6 +2602,7 @@
     "upgradePlan": "プランをアップグレード",
     "upgradeTo": "{plan}にアップグレード",
     "usdPerMonth": "USD / 月",
+    "usdPerMonthPerMember": "USD / 月 / メンバー",
     "videoEstimateExplanation": "これらの見積もりは、Wan 2.2 画像から動画テンプレートのデフォルト設定（5秒、640x640、16fps、4ステップサンプリング）に基づいています。",
     "videoEstimateHelp": "このテンプレートの詳細",
     "videoEstimateLabel": "Wan 2.2 画像から動画テンプレートで生成される約5秒動画数",
@@ -2480,6 +2688,9 @@
     "useCaseFilter": "タスク",
     "useCasesSelected": "{count}件のユースケース"
   },
+  "templates": {
+    "logoProviderSeparator": " ＆ "
+  },
   "toastMessages": {
     "cannotCreateSubgraph": "サブグラフを作成できません",
     "couldNotDetermineFileType": "ファイルタイプを判断できませんでした",
@@ -2506,6 +2717,7 @@
     "failedToLoadModel": "3Dモデルの読み込みに失敗しました",
     "failedToPurchaseCredits": "クレジットの購入に失敗しました: {error}",
     "failedToQueue": "キューに追加できませんでした",
+    "failedToSaveDraft": "ワークフロードラフトの保存に失敗しました",
     "failedToToggleCamera": "カメラの切り替えに失敗しました",
     "failedToToggleGrid": "グリッドの切り替えに失敗しました",
     "failedToUpdateBackgroundColor": "背景色の更新に失敗しました",
@@ -2642,10 +2854,14 @@
   },
   "workflowService": {
     "enterFilename": "ファイル名を入力",
+    "enterFilenamePrompt": "ファイル名を入力してください：",
     "exportWorkflow": "ワークフローをエクスポート",
     "saveWorkflow": "ワークフローを保存"
   },
   "workspace": {
+    "addedToWorkspace": "{workspaceName}に追加されました",
+    "inviteAccepted": "招待を承諾しました",
+    "inviteFailed": "招待の承諾に失敗しました",
     "unsavedChanges": {
       "message": "未保存の変更があります。破棄してワークスペースを切り替えますか？",
       "title": "未保存の変更"
@@ -2668,6 +2884,9 @@
       "namePlaceholder": "ワークスペース名を入力",
       "title": "新しいワークスペースを作成"
     },
+    "dashboard": {
+      "placeholder": "ダッシュボードのワークスペース設定"
+    },
     "deleteDialog": {
       "message": "未使用のクレジットや保存されていないアセットは失われます。この操作は元に戻せません。",
       "messageWithName": "「{name}」を削除しますか？未使用のクレジットや保存されていないアセットは失われます。この操作は元に戻せません。",
@@ -2678,10 +2897,49 @@
       "save": "保存",
       "title": "ワークスペースの詳細を編集"
     },
+    "invite": "招待",
+    "inviteLimitReached": "メンバーの上限50人に達しました",
+    "inviteMember": "メンバーを招待",
+    "inviteMemberDialog": {
+      "createLink": "リンクを作成",
+      "linkCopied": "コピーしました",
+      "linkCopyFailed": "コピーに失敗しました",
+      "linkStep": {
+        "copyLink": "リンクをコピー",
+        "done": "完了",
+        "message": "相手のアカウントがこのメールアドレスを使用していることを確認してください。",
+        "title": "このリンクを相手に送信してください"
+      },
+      "message": "共有可能な招待リンクを作成して送信してください",
+      "placeholder": "招待する人のメールアドレスを入力",
+      "title": "このワークスペースに人を招待"
+    },
     "leaveDialog": {
       "leave": "退出",
       "message": "ワークスペースのオーナーに連絡しない限り、再参加できません。",
       "title": "このワークスペースを退出しますか？"
+    },
+    "members": {
+      "actions": {
+        "copyLink": "招待リンクをコピー",
+        "removeMember": "メンバーを削除",
+        "revokeInvite": "招待を取り消す"
+      },
+      "columns": {
+        "expiryDate": "有効期限",
+        "inviteDate": "招待日",
+        "joinDate": "参加日"
+      },
+      "createNewWorkspace": "新しいワークスペースを作成してください。",
+      "membersCount": "{count}/50人のメンバー",
+      "noInvites": "保留中の招待はありません",
+      "noMembers": "メンバーがいません",
+      "pendingInvitesCount": "{count}件の招待保留中",
+      "personalWorkspaceMessage": "現在、個人用ワークスペースには他のメンバーを招待できません。メンバーを追加するには、",
+      "tabs": {
+        "active": "アクティブ",
+        "pendingCount": "保留中（{count}）"
+      }
     },
     "menu": {
       "deleteWorkspace": "ワークスペースを削除",
@@ -2689,14 +2947,42 @@
       "editWorkspace": "ワークスペースの詳細を編集",
       "leaveWorkspace": "ワークスペースを退出"
     },
+    "removeMemberDialog": {
+      "error": "メンバーの削除に失敗しました",
+      "message": "このメンバーはワークスペースから削除されます。使用済みのクレジットは返金されません。",
+      "remove": "メンバーを削除",
+      "success": "メンバーを削除しました",
+      "title": "このメンバーを削除しますか？"
+    },
+    "revokeInviteDialog": {
+      "message": "このメンバーは今後ワークスペースに参加できなくなります。招待リンクは無効になります。",
+      "revoke": "招待を取り消す",
+      "title": "この人の招待を取り消しますか？"
+    },
     "tabs": {
+      "dashboard": "ダッシュボード",
+      "membersCount": "メンバー（{count}）",
       "planCredits": "プランとクレジット"
     },
     "toast": {
       "failedToCreateWorkspace": "ワークスペースの作成に失敗しました",
       "failedToDeleteWorkspace": "ワークスペースの削除に失敗しました",
+      "failedToFetchWorkspaces": "ワークスペースの読み込みに失敗しました",
       "failedToLeaveWorkspace": "ワークスペースの退出に失敗しました",
       "failedToUpdateWorkspace": "ワークスペースの更新に失敗しました",
+      "workspaceCreated": {
+        "message": "プランに加入し、チームメイトを招待して、コラボレーションを始めましょう。",
+        "subscribe": "プランに加入",
+        "title": "ワークスペースを作成しました"
+      },
+      "workspaceDeleted": {
+        "message": "ワークスペースは完全に削除されました。",
+        "title": "ワークスペースを削除しました"
+      },
+      "workspaceLeft": {
+        "message": "ワークスペースから退出しました。",
+        "title": "ワークスペースから退出しました"
+      },
       "workspaceUpdated": {
         "message": "ワークスペースの詳細が保存されました。",
         "title": "ワークスペースが更新されました"
@@ -2706,6 +2992,7 @@
   "workspaceSwitcher": {
     "createWorkspace": "新しいワークスペースを作成",
     "maxWorkspacesReached": "所有できるワークスペースは10個までです。新しく作成するには1つ削除してください。",
+    "personal": "個人用",
     "roleMember": "メンバー",
     "roleOwner": "オーナー",
     "subscribe": "サブスクライブ",

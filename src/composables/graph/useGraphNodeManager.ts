@@ -52,7 +52,7 @@ export interface SafeWidgetData {
   isDOMWidget?: boolean
   label?: string
   nodeType?: string
-  options?: IWidgetOptions<unknown>
+  options?: IWidgetOptions
   spec?: InputSpec
   slotMetadata?: WidgetSlotMetadata
 }
@@ -70,6 +70,7 @@ export interface VueNodeData {
   color?: string
   flags?: {
     collapsed?: boolean
+    ghost?: boolean
     pinned?: boolean
   }
   hasErrors?: boolean
@@ -145,7 +146,7 @@ interface SharedWidgetEnhancements {
   /** Widget label */
   label?: string
   /** Widget options */
-  options?: Record<string, any>
+  options?: IWidgetOptions
 }
 
 /**
@@ -170,7 +171,7 @@ export function getSharedWidgetEnhancements(
         ? 'ring ring-component-node-widget-advanced'
         : undefined,
     label: widget.label,
-    options: widget.options
+    options: widget.options as IWidgetOptions
   }
 }
 
@@ -432,7 +433,7 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
     } else {
       // Not during workflow loading - initialize layout immediately
       // This handles individual node additions during normal operation
-      requestAnimationFrame(initializeVueNodeLayout)
+      initializeVueNodeLayout()
     }
 
     // Call original callback if provided
@@ -523,6 +524,15 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
                 flags: {
                   ...currentData.flags,
                   collapsed: Boolean(propertyEvent.newValue)
+                }
+              })
+              break
+            case 'flags.ghost':
+              vueNodeData.set(nodeId, {
+                ...currentData,
+                flags: {
+                  ...currentData.flags,
+                  ghost: Boolean(propertyEvent.newValue)
                 }
               })
               break

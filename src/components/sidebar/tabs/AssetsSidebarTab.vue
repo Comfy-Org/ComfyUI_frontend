@@ -53,7 +53,7 @@
         :show-generation-time-sort="activeTab === 'output'"
       />
       <div
-        v-if="isQueuePanelV2Enabled"
+        v-if="isQueuePanelV2Enabled && !isInFolderView"
         class="flex items-center justify-between px-2 py-2 2xl:px-4"
       >
         <span class="text-sm text-muted-foreground">
@@ -98,8 +98,11 @@
       <div v-else class="relative size-full" @click="handleEmptySpaceClick">
         <AssetsSidebarListView
           v-if="isListView"
-          :assets="displayAssets"
+          :asset-items="listViewAssetItems"
           :is-selected="isSelected"
+          :selectable-assets="listViewSelectableAssets"
+          :is-stack-expanded="isListViewStackExpanded"
+          :toggle-stack="toggleListViewStack"
           :asset-type="activeTab"
           @select-asset="handleAssetSelect"
           @context-menu="handleAssetContextMenu"
@@ -109,6 +112,7 @@
           v-else
           :assets="displayAssets"
           :is-selected="isSelected"
+          :is-in-folder-view="isInFolderView"
           :asset-type="activeTab"
           :show-output-count="shouldShowOutputCount"
           :get-output-count="getOutputCount"
@@ -201,7 +205,12 @@
 </template>
 
 <script setup lang="ts">
-import { useDebounceFn, useElementHover, useResizeObserver } from '@vueuse/core'
+import {
+  useDebounceFn,
+  useElementHover,
+  useResizeObserver,
+  useStorage
+} from '@vueuse/core'
 import { storeToRefs } from 'pinia'
 import Divider from 'primevue/divider'
 import ProgressSpinner from 'primevue/progressspinner'
@@ -210,7 +219,9 @@ import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import NoResultsPlaceholder from '@/components/common/NoResultsPlaceholder.vue'
-import Load3dViewerContent from '@/components/load3d/Load3dViewerContent.vue'
+// Lazy-loaded to avoid pulling THREE.js into the main bundle
+const Load3dViewerContent = () =>
+  import('@/components/load3d/Load3dViewerContent.vue')
 import AssetsSidebarGridView from '@/components/sidebar/tabs/AssetsSidebarGridView.vue'
 import AssetsSidebarListView from '@/components/sidebar/tabs/AssetsSidebarListView.vue'
 import SidebarTabTemplate from '@/components/sidebar/tabs/SidebarTabTemplate.vue'
@@ -225,24 +236,19 @@ import { useMediaAssets } from '@/platform/assets/composables/media/useMediaAsse
 import { useAssetSelection } from '@/platform/assets/composables/useAssetSelection'
 import { useMediaAssetActions } from '@/platform/assets/composables/useMediaAssetActions'
 import { useMediaAssetFiltering } from '@/platform/assets/composables/useMediaAssetFiltering'
+import { useOutputStacks } from '@/platform/assets/composables/useOutputStacks'
 import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import type { MediaKind } from '@/platform/assets/schemas/mediaAssetSchema'
+import { resolveOutputAssetItems } from '@/platform/assets/utils/outputAssetUtil'
 import { isCloud } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { getJobDetail } from '@/services/jobOutputCache'
 import { useCommandStore } from '@/stores/commandStore'
 import { useDialogStore } from '@/stores/dialogStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { ResultItemImpl, useQueueStore } from '@/stores/queueStore'
 import { formatDuration, getMediaTypeFromFilename } from '@/utils/formatUtil'
 import { cn } from '@/utils/tailwindUtil'
-
-interface JobOutputItem {
-  filename: string
-  subfolder: string
-  type: string
-}
 
 const { t, n } = useI18n()
 const commandStore = useCommandStore()
@@ -255,7 +261,10 @@ const activeTab = ref<'input' | 'output'>('output')
 const folderPromptId = ref<string | null>(null)
 const folderExecutionTime = ref<number | undefined>(undefined)
 const isInFolderView = computed(() => folderPromptId.value !== null)
-const viewMode = ref<'list' | 'grid'>('grid')
+const viewMode = useStorage<'list' | 'grid'>(
+  'Comfy.Assets.Sidebar.ViewMode',
+  'grid'
+)
 const isQueuePanelV2Enabled = computed(() =>
   settingStore.get('Comfy.Queue.QPOV2')
 )
@@ -315,6 +324,7 @@ const {
   hasSelection,
   clearSelection,
   getSelectedAssets,
+  reconcileSelection,
   getOutputCount,
   getTotalOutputCount,
   activate: activateSelection,
@@ -323,7 +333,7 @@ const {
 
 const {
   downloadMultipleAssets,
-  deleteMultipleAssets,
+  deleteAssets,
   addMultipleToWorkflow,
   openMultipleWorkflows,
   exportMultipleWorkflows
@@ -384,7 +394,21 @@ const displayAssets = computed(() => {
   return filteredAssets.value
 })
 
-const selectedAssets = computed(() => getSelectedAssets(displayAssets.value))
+const {
+  assetItems: listViewAssetItems,
+  selectableAssets: listViewSelectableAssets,
+  isStackExpanded: isListViewStackExpanded,
+  toggleStack: toggleListViewStack
+} = useOutputStacks({
+  assets: computed(() => displayAssets.value)
+})
+
+const visibleAssets = computed(() => {
+  if (!isListView.value) return displayAssets.value
+  return listViewSelectableAssets.value
+})
+
+const selectedAssets = computed(() => getSelectedAssets(visibleAssets.value))
 
 const isBulkMode = computed(
   () => hasSelection.value && selectedAssets.value.length > 1
@@ -404,7 +428,10 @@ const showEmptyState = computed(
     activeJobsCount.value === 0
 )
 
-watch(displayAssets, (newAssets) => {
+watch(visibleAssets, (newAssets) => {
+  // Alternative: keep hidden selections and surface them in UI; for now prune
+  // so selection stays consistent with what this view can act on.
+  reconcileSelection(newAssets)
   if (currentGalleryAssetId.value && galleryActiveIndex.value !== -1) {
     const newIndex = newAssets.findIndex(
       (asset) => asset.id === currentGalleryAssetId.value
@@ -422,7 +449,7 @@ watch(galleryActiveIndex, (index) => {
 })
 
 const galleryItems = computed(() => {
-  return displayAssets.value.map((asset) => {
+  return visibleAssets.value.map((asset) => {
     const mediaType = getMediaTypeFromFilename(asset.name)
     const resultItem = new ResultItemImpl({
       filename: asset.name,
@@ -462,9 +489,10 @@ watch(
   { immediate: true }
 )
 
-const handleAssetSelect = (asset: AssetItem) => {
-  const index = displayAssets.value.findIndex((a) => a.id === asset.id)
-  handleAssetClick(asset, index, displayAssets.value)
+function handleAssetSelect(asset: AssetItem, assets?: AssetItem[]) {
+  const assetList = assets ?? visibleAssets.value
+  const index = assetList.findIndex((a) => a.id === asset.id)
+  handleAssetClick(asset, index, assetList)
 }
 
 function handleAssetContextMenu(event: MouseEvent, asset: AssetItem) {
@@ -487,8 +515,9 @@ const handleBulkDownload = (assets: AssetItem[]) => {
 }
 
 const handleBulkDelete = async (assets: AssetItem[]) => {
-  await deleteMultipleAssets(assets)
-  clearSelection()
+  if (await deleteAssets(assets)) {
+    clearSelection()
+  }
 }
 
 const handleClearQueue = async () => {
@@ -516,6 +545,17 @@ const handleBulkExportWorkflow = async (assets: AssetItem[]) => {
   clearSelection()
 }
 
+const handleDownloadSelected = () => {
+  downloadMultipleAssets(selectedAssets.value)
+  clearSelection()
+}
+
+const handleDeleteSelected = async () => {
+  if (await deleteAssets(selectedAssets.value)) {
+    clearSelection()
+  }
+}
+
 const handleZoomClick = (asset: AssetItem) => {
   const mediaType = getMediaTypeFromFilename(asset.name)
 
@@ -537,7 +577,7 @@ const handleZoomClick = (asset: AssetItem) => {
   }
 
   currentGalleryAssetId.value = asset.id
-  const index = displayAssets.value.findIndex((a) => a.id === asset.id)
+  const index = visibleAssets.value.findIndex((a) => a.id === asset.id)
   if (index !== -1) {
     galleryActiveIndex.value = index
   }
@@ -550,7 +590,7 @@ const enterFolderView = async (asset: AssetItem) => {
     return
   }
 
-  const { promptId, allOutputs, executionTimeInSeconds, outputCount } = metadata
+  const { promptId, executionTimeInSeconds } = metadata
 
   if (!promptId) {
     console.warn('Missing required folder view data')
@@ -560,62 +600,21 @@ const enterFolderView = async (asset: AssetItem) => {
   folderPromptId.value = promptId
   folderExecutionTime.value = executionTimeInSeconds
 
-  // Determine which outputs to display
-  let outputsToDisplay = allOutputs ?? []
-
-  // If outputCount indicates more outputs than we have, fetch full outputs
-  const needsFullOutputs =
-    typeof outputCount === 'number' &&
-    outputCount > 1 &&
-    outputsToDisplay.length < outputCount
-
-  if (needsFullOutputs) {
-    try {
-      const jobDetail = await getJobDetail(promptId)
-      if (jobDetail?.outputs) {
-        // Convert job outputs to ResultItemImpl array
-        outputsToDisplay = Object.entries(jobDetail.outputs).flatMap(
-          ([nodeId, nodeOutputs]) =>
-            Object.entries(nodeOutputs).flatMap(([mediaType, items]) =>
-              (items as JobOutputItem[])
-                .map(
-                  (item) =>
-                    new ResultItemImpl({
-                      ...item,
-                      nodeId,
-                      mediaType
-                    })
-                )
-                .filter((r) => r.supportsPreview)
-            )
-        )
-      }
-    } catch (error) {
-      console.error('Failed to fetch job detail for folder view:', error)
-      outputsToDisplay = []
-    }
+  let folderItems: AssetItem[] = []
+  try {
+    folderItems = await resolveOutputAssetItems(metadata, {
+      createdAt: asset.created_at
+    })
+  } catch (error) {
+    console.error('Failed to resolve outputs for folder view:', error)
   }
 
-  if (outputsToDisplay.length === 0) {
+  if (folderItems.length === 0) {
     console.warn('No outputs available for folder view')
     return
   }
 
-  folderAssets.value = outputsToDisplay.map((output) => ({
-    id: `${output.nodeId}-${output.filename}`,
-    name: output.filename,
-    size: 0,
-    created_at: asset.created_at,
-    tags: ['output'],
-    preview_url: output.url,
-    user_metadata: {
-      promptId,
-      nodeId: output.nodeId,
-      subfolder: output.subfolder,
-      executionTimeInSeconds,
-      workflow: metadata.workflow
-    }
-  }))
+  folderAssets.value = folderItems
 }
 
 const exitFolderView = () => {
@@ -662,16 +661,6 @@ const copyJobId = async () => {
       })
     }
   }
-}
-
-const handleDownloadSelected = () => {
-  downloadMultipleAssets(selectedAssets.value)
-  clearSelection()
-}
-
-const handleDeleteSelected = async () => {
-  await deleteMultipleAssets(selectedAssets.value)
-  clearSelection()
 }
 
 const handleApproachEnd = useDebounceFn(async () => {

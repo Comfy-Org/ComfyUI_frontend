@@ -447,43 +447,6 @@
       }
     }
   },
-  "ByteDanceImageEditNode": {
-    "description": "프롬프트 기반으로 ByteDance 모델을 사용하여 이미지 편집",
-    "display_name": "ByteDance 이미지 편집",
-    "inputs": {
-      "control_after_generate": {
-        "name": "생성 후 제어"
-      },
-      "guidance_scale": {
-        "name": "가이던스 스케일",
-        "tooltip": "값이 높을수록 이미지가 프롬프트를 더 밀접하게 따름"
-      },
-      "image": {
-        "name": "이미지",
-        "tooltip": "편집할 기본 이미지"
-      },
-      "model": {
-        "name": "모델"
-      },
-      "prompt": {
-        "name": "프롬프트",
-        "tooltip": "이미지 편집 지시사항"
-      },
-      "seed": {
-        "name": "시드",
-        "tooltip": "생성에 사용할 시드 값"
-      },
-      "watermark": {
-        "name": "워터마크",
-        "tooltip": "이미지에 \"AI 생성\" 워터마크를 추가할지 여부"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
   "ByteDanceImageNode": {
     "description": "프롬프트 기반으로 ByteDance 모델을 사용하여 이미지 생성",
     "display_name": "ByteDance 이미지",
@@ -1303,6 +1266,21 @@
       }
     }
   },
+  "ColorToRGBInt": {
+    "description": "색상을 RGB 정수 값으로 변환합니다.",
+    "display_name": "색상을 RGB 정수로 변환",
+    "inputs": {
+      "color": {
+        "name": "색상"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "rgb_정수",
+        "tooltip": null
+      }
+    }
+  },
   "CombineHooks2": {
     "display_name": "후크 결합 [2]",
     "inputs": {
@@ -2040,6 +2018,20 @@
       }
     }
   },
+  "CreateList": {
+    "display_name": "목록 만들기",
+    "inputs": {
+      "inputs": {
+        "name": "입력값"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "목록",
+        "tooltip": null
+      }
+    }
+  },
   "CreateVideo": {
     "description": "이미지로부터 비디오를 생성합니다.",
     "display_name": "비디오 생성",
@@ -2093,16 +2085,16 @@
       "choice": {
         "name": "선택"
       },
-      "index": {
-      },
-      "option1": {
-      }
+      "index": {},
+      "option1": {}
     },
-    "outputs": {
-      "0": {
+    "outputs": [
+      null,
+      {
+        "name": "INDEX",
         "tooltip": null
       }
-    }
+    ]
   },
   "DiffControlNetLoader": {
     "display_name": "컨트롤넷 모델 로드 (차이)",
@@ -2224,6 +2216,23 @@
     "outputs": {
       "0": {
         "tooltip": "EasyCache가 적용된 모델입니다."
+      }
+    }
+  },
+  "EmptyAceStep1_5LatentAudio": {
+    "display_name": "Empty Ace Step 1.5 Latent Audio",
+    "inputs": {
+      "batch_size": {
+        "name": "배치 크기",
+        "tooltip": "배치 내 latent 이미지의 수입니다."
+      },
+      "seconds": {
+        "name": "초"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -3421,6 +3430,142 @@
       }
     }
   },
+  "GrokImageEditNode": {
+    "description": "텍스트 프롬프트를 기반으로 기존 이미지를 수정합니다",
+    "display_name": "Grok 이미지 편집",
+    "inputs": {
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "image": {
+        "name": "image"
+      },
+      "model": {
+        "name": "model"
+      },
+      "number_of_images": {
+        "name": "이미지 개수",
+        "tooltip": "생성할 편집된 이미지의 수"
+      },
+      "prompt": {
+        "name": "프롬프트",
+        "tooltip": "이미지 생성을 위해 사용되는 텍스트 프롬프트"
+      },
+      "resolution": {
+        "name": "해상도"
+      },
+      "seed": {
+        "name": "시드",
+        "tooltip": "노드가 다시 실행되어야 하는지 결정하는 시드입니다. 실제 결과는 시드와 관계없이 비결정적입니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "GrokImageNode": {
+    "description": "텍스트 프롬프트를 기반으로 Grok을 사용해 이미지를 생성합니다",
+    "display_name": "Grok 이미지",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "종횡비"
+      },
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "model": {
+        "name": "model"
+      },
+      "number_of_images": {
+        "name": "이미지 개수",
+        "tooltip": "생성할 이미지의 수"
+      },
+      "prompt": {
+        "name": "프롬프트",
+        "tooltip": "이미지 생성을 위해 사용되는 텍스트 프롬프트"
+      },
+      "seed": {
+        "name": "시드",
+        "tooltip": "노드가 다시 실행되어야 하는지 결정하는 시드입니다. 실제 결과는 시드와 관계없이 비결정적입니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "GrokVideoEditNode": {
+    "description": "텍스트 프롬프트를 기반으로 기존 비디오를 편집합니다.",
+    "display_name": "Grok 비디오 편집",
+    "inputs": {
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "model": {
+        "name": "model"
+      },
+      "prompt": {
+        "name": "프롬프트",
+        "tooltip": "원하는 비디오에 대한 텍스트 설명입니다."
+      },
+      "seed": {
+        "name": "시드",
+        "tooltip": "노드가 다시 실행되어야 하는지 결정하는 시드입니다. 실제 결과는 시드와 관계없이 비결정적입니다."
+      },
+      "video": {
+        "name": "비디오",
+        "tooltip": "최대 지원 길이는 8.7초, 파일 크기는 50MB입니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "GrokVideoNode": {
+    "description": "프롬프트 또는 이미지를 통해 비디오를 생성합니다",
+    "display_name": "Grok 비디오",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "종횡비",
+        "tooltip": "출력 비디오의 종횡비입니다."
+      },
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "duration": {
+        "name": "길이",
+        "tooltip": "출력 비디오의 길이(초)입니다."
+      },
+      "image": {
+        "name": "image"
+      },
+      "model": {
+        "name": "model"
+      },
+      "prompt": {
+        "name": "프롬프트",
+        "tooltip": "원하는 비디오에 대한 텍스트 설명입니다."
+      },
+      "resolution": {
+        "name": "해상도",
+        "tooltip": "출력 비디오의 해상도입니다."
+      },
+      "seed": {
+        "name": "시드",
+        "tooltip": "노드가 다시 실행되어야 하는지 결정하는 시드입니다. 실제 결과는 시드와 관계없이 비결정적입니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "GrowMask": {
     "display_name": "마스크 확장",
     "inputs": {
@@ -3432,6 +3577,50 @@
       },
       "tapered_corners": {
         "name": "마름모 모서리"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HitPawGeneralImageEnhance": {
+    "description": "저해상도 이미지를 초고해상도로 업스케일하고, 아티팩트와 노이즈를 제거합니다. 최대 출력: 32 메가픽셀.",
+    "display_name": "HitPaw 일반 이미지 향상",
+    "inputs": {
+      "auto_downscale": {
+        "name": "자동 다운스케일",
+        "tooltip": "출력 이미지가 제한을 초과할 경우 입력 이미지를 자동으로 다운스케일합니다."
+      },
+      "image": {
+        "name": "이미지"
+      },
+      "model": {
+        "name": "모델"
+      },
+      "upscale_factor": {
+        "name": "업스케일 배수"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HitPawVideoEnhance": {
+    "description": "저해상도 비디오를 고해상도로 업스케일하고, 아티팩트와 노이즈를 제거합니다. 가격은 비디오 1초당 기준입니다.",
+    "display_name": "HitPaw 비디오 향상",
+    "inputs": {
+      "model": {
+        "name": "모델"
+      },
+      "model_resolution": {
+        "name": "해상도"
+      },
+      "video": {
+        "name": "비디오"
       }
     },
     "outputs": {
@@ -6243,8 +6432,7 @@
   "Load3D": {
     "display_name": "3D 불러오기",
     "inputs": {
-      "clear": {
-      },
+      "clear": "지우기",
       "height": {
         "name": "높이"
       },
@@ -6254,10 +6442,8 @@
       "model_file": {
         "name": "모델 파일"
       },
-      "upload 3d model": {
-      },
-      "upload extra resources": {
-      },
+      "upload 3d model": "3D 모델 업로드",
+      "upload extra resources": "추가 리소스 업로드",
       "width": {
         "name": "너비"
       }
@@ -6346,13 +6532,11 @@
     "description": "입력(input) 폴더 대신 출력(output) 폴더에서 이미지를 로드합니다. 새로 고침 버튼을 클릭하면 노드는 이미지 목록을 업데이트하고 자동으로 첫 번째 이미지를 선택하여 쉬운 반복을 가능하게 합니다.",
     "display_name": "이미지 로드 (출력에서)",
     "inputs": {
-      "Auto-refresh after generation": {
-      },
+      "Auto-refresh after generation": {},
       "image": {
         "name": "이미지"
       },
-      "refresh": {
-      },
+      "refresh": {},
       "upload": {
         "name": "업로드할 파일 선택"
       }
@@ -6451,6 +6635,60 @@
       },
       "1": {
         "tooltip": "수정된 CLIP 모델입니다."
+      }
+    }
+  },
+  "LoraLoaderBypass": {
+    "description": "LoRA를 바이패스 모드로 적용합니다. 일반 LoRA와 달리 모델 가중치를 수정하지 않고, 순전파 과정에서 LoRA 연산을 주입합니다. 학습 시나리오에 유용합니다.",
+    "display_name": "LoRA 불러오기 (바이패스) (디버깅용)",
+    "inputs": {
+      "clip": {
+        "name": "clip",
+        "tooltip": "LoRA가 적용될 CLIP 모델입니다."
+      },
+      "lora_name": {
+        "name": "lora_name",
+        "tooltip": "LoRA의 이름입니다."
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "LoRA가 적용될 디퓨전 모델입니다."
+      },
+      "strength_clip": {
+        "name": "strength_clip",
+        "tooltip": "CLIP 모델을 얼마나 강하게 수정할지 설정합니다. 이 값은 음수도 가능합니다."
+      },
+      "strength_model": {
+        "name": "strength_model",
+        "tooltip": "디퓨전 모델을 얼마나 강하게 수정할지 설정합니다. 이 값은 음수도 가능합니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "수정된 디퓨전 모델입니다."
+      },
+      "1": {
+        "tooltip": "수정된 CLIP 모델입니다."
+      }
+    }
+  },
+  "LoraLoaderBypassModelOnly": {
+    "description": "LoRA를 바이패스 모드로 적용합니다. 일반 LoRA와 달리 모델 가중치를 수정하지 않고, 순전파 과정에서 LoRA 연산을 주입합니다. 학습 시나리오에 유용합니다.",
+    "display_name": "LoRA 불러오기 (바이패스, 모델만) (디버깅용)",
+    "inputs": {
+      "lora_name": {
+        "name": "lora_name"
+      },
+      "model": {
+        "name": "model"
+      },
+      "strength_model": {
+        "name": "strength_model"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "수정된 디퓨전 모델입니다."
       }
     }
   },
@@ -6821,6 +7059,126 @@
       }
     }
   },
+  "MagnificImageRelightNode": {
+    "description": "이미지의 조명을 조정하고, 선택적으로 참조 기반의 조명 전송을 적용합니다.",
+    "display_name": "Magnific 이미지 리라이트",
+    "inputs": {
+      "advanced_settings": {
+        "name": "advanced_settings",
+        "tooltip": "고급 조명 제어를 위한 세부 조정 옵션입니다."
+      },
+      "change_background": {
+        "name": "change_background",
+        "tooltip": "프롬프트/참조에 따라 배경을 수정합니다."
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "리라이트할 이미지입니다."
+      },
+      "interpolate_from_original": {
+        "name": "interpolate_from_original",
+        "tooltip": "생성의 자유도를 제한하여 원본과 더 유사하게 만듭니다."
+      },
+      "light_transfer_strength": {
+        "name": "light_transfer_strength",
+        "tooltip": "조명 전송 적용 강도입니다."
+      },
+      "preserve_details": {
+        "name": "preserve_details",
+        "tooltip": "원본의 질감과 세부 정보를 유지합니다."
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "조명에 대한 설명 가이드입니다. 강조 표기법(1-1.4)을 지원합니다."
+      },
+      "reference_image": {
+        "name": "reference_image",
+        "tooltip": "조명을 전송할 선택적 참조 이미지입니다."
+      },
+      "style": {
+        "name": "style",
+        "tooltip": "스타일 출력 선호도입니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MagnificImageSkinEnhancerNode": {
+    "description": "여러 처리 모드를 지원하는 인물 사진 피부 보정 기능입니다.",
+    "display_name": "Magnific 이미지 피부 보정",
+    "inputs": {
+      "image": {
+        "name": "image",
+        "tooltip": "보정할 인물 사진입니다."
+      },
+      "mode": {
+        "name": "mode",
+        "tooltip": "처리 모드: 창의적(artistic) 보정, 원본 유지(faithful), 타겟 최적화(flexible) 중 선택."
+      },
+      "sharpen": {
+        "name": "sharpen",
+        "tooltip": "선명도 강도 수준입니다."
+      },
+      "smart_grain": {
+        "name": "smart_grain",
+        "tooltip": "스마트 그레인 강도 수준입니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MagnificImageStyleTransferNode": {
+    "description": "참조 이미지의 스타일을 입력 이미지에 전송합니다.",
+    "display_name": "Magnific 이미지 스타일 전송",
+    "inputs": {
+      "engine": {
+        "name": "engine",
+        "tooltip": "처리 엔진 선택입니다."
+      },
+      "fixed_generation": {
+        "name": "fixed_generation",
+        "tooltip": "비활성화 시, 각 생성마다 일정 수준의 무작위성이 도입되어 더 다양한 결과를 얻을 수 있습니다."
+      },
+      "flavor": {
+        "name": "flavor",
+        "tooltip": "스타일 전송의 flavor입니다."
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "스타일 전송을 적용할 이미지입니다."
+      },
+      "portrait_mode": {
+        "name": "portrait_mode",
+        "tooltip": "얼굴 개선을 위한 인물 모드를 활성화합니다."
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "reference_image": {
+        "name": "reference_image",
+        "tooltip": "스타일을 추출할 참조 이미지입니다."
+      },
+      "structure_strength": {
+        "name": "structure_strength",
+        "tooltip": "원본 이미지의 구조를 유지합니다."
+      },
+      "style_strength": {
+        "name": "style_strength",
+        "tooltip": "스타일 강도 비율입니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "Mahiro": {
     "description": "노이즈 제거의 '방향'을 긍정 조건과 부정 조건 차에 의한 것 보다는 긍정 조건 방향으로 더 크게 작동하도록 가이더 동작을 변경합니다.",
     "display_name": "마히로",
@@ -6969,12 +7327,17 @@
         "name": "rig_task_id"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "model_file",
+    "outputs": [
+      null,
+      {
+        "name": "GLB",
+        "tooltip": null
+      },
+      {
+        "name": "FBX",
         "tooltip": null
       }
-    }
+    ]
   },
   "MeshyImageToModelNode": {
     "display_name": "Meshy: 이미지 → 모델",
@@ -7020,16 +7383,18 @@
         "name": "symmetry_mode"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "model_file",
+    "outputs": [
+      null,
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       },
-      "1": {
-        "name": "meshy_task_id",
+      {
+        "name": "FBX",
         "tooltip": null
       }
-    }
+    ]
   },
   "MeshyMultiImageToModelNode": {
     "display_name": "Meshy: 다중 이미지 → 모델",
@@ -7075,16 +7440,18 @@
         "name": "symmetry_mode"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "model_file",
+    "outputs": [
+      null,
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       },
-      "1": {
-        "name": "meshy_task_id",
+      {
+        "name": "FBX",
         "tooltip": null
       }
-    }
+    ]
   },
   "MeshyRefineNode": {
     "description": "이전에 생성된 초안 모델을 다듬습니다.",
@@ -7109,16 +7476,18 @@
         "tooltip": "텍스처링 과정을 안내할 텍스트 프롬프트를 입력하세요. 최대 600자. 'texture_image'와 동시에 사용할 수 없습니다."
       }
     },
-    "outputs": {
-      "0": {
-        "name": "model_file",
+    "outputs": [
+      null,
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       },
-      "1": {
-        "name": "meshy_task_id",
+      {
+        "name": "FBX",
         "tooltip": null
       }
-    }
+    ]
   },
   "MeshyRigModelNode": {
     "description": "표준 포맷으로 리깅된 캐릭터를 제공합니다. 자동 리깅은 텍스처가 없는 메시, 비휴머노이드 자산, 또는 팔다리와 신체 구조가 불분명한 휴머노이드 자산에는 적합하지 않습니다.",
@@ -7136,16 +7505,18 @@
         "tooltip": "모델의 UV 언랩된 기본 색상 텍스처 이미지입니다."
       }
     },
-    "outputs": {
-      "0": {
-        "name": "model_file",
+    "outputs": [
+      null,
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       },
-      "1": {
-        "name": "rig_task_id",
+      {
+        "name": "FBX",
         "tooltip": null
       }
-    }
+    ]
   },
   "MeshyTextToModelNode": {
     "display_name": "Meshy: 텍스트 → 모델",
@@ -7184,16 +7555,18 @@
         "name": "symmetry_mode"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "model_file",
+    "outputs": [
+      null,
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       },
-      "1": {
-        "name": "meshy_task_id",
+      {
+        "name": "FBX",
         "tooltip": null
       }
-    }
+    ]
   },
   "MeshyTextureNode": {
     "display_name": "Meshy: 텍스처 모델",
@@ -7220,16 +7593,18 @@
         "tooltip": "오브젝트의 원하는 텍스처 스타일을 텍스트로 설명하세요. 최대 600자까지 입력할 수 있습니다. 'image_style'과 동시에 사용할 수 없습니다."
       }
     },
-    "outputs": {
-      "0": {
-        "name": "model_file",
+    "outputs": [
+      null,
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       },
-      "1": {
-        "name": "meshy_task_id",
+      {
+        "name": "FBX",
         "tooltip": null
       }
-    }
+    ]
   },
   "MinimaxHailuoVideoNode": {
     "description": "새로운 MiniMax Hailuo-02 모델을 사용하여 프롬프트로 비디오를 생성하며, 선택적으로 시작 프레임을 사용할 수 있습니다.",
@@ -10430,17 +10805,16 @@
         "name": "이미지"
       },
       "model_file": {
-        "name": "모델 파일"
+        "name": "모델 파일",
+        "tooltip": "3D 모델 파일 또는 경로 문자열"
       }
     }
   },
   "PreviewAny": {
     "display_name": "미리보기 아무거나",
     "inputs": {
-      "preview": {
-      },
-      "previewMode": {
-      },
+      "preview": {},
+      "previewMode": {},
       "source": {
         "name": "소스"
       }
@@ -10712,6 +11086,25 @@
     "outputs": {
       "0": {
         "name": "recraft 제어",
+        "tooltip": null
+      }
+    }
+  },
+  "RecraftCreateStyleNode": {
+    "description": "참고 이미지를 사용하여 사용자 지정 스타일을 만듭니다. 스타일 참조로 사용할 이미지를 1~5개 업로드하세요. 모든 이미지의 총 용량은 5MB로 제한됩니다.",
+    "display_name": "Recraft 스타일 생성",
+    "inputs": {
+      "images": {
+        "name": "이미지"
+      },
+      "style": {
+        "name": "스타일",
+        "tooltip": "생성된 이미지의 기본 스타일입니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "style_id",
         "tooltip": null
       }
     }
@@ -11054,6 +11447,23 @@
       }
     }
   },
+  "ReferenceTimbreAudio": {
+    "description": "이 노드는 timbre(ace step 1.5용) 기준 오디오를 설정합니다.",
+    "display_name": "ReferenceTimbreAudio",
+    "inputs": {
+      "conditioning": {
+        "name": "컨디셔닝"
+      },
+      "latent": {
+        "name": "latent"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "RegexExtract": {
     "display_name": "정규식 추출",
     "inputs": {
@@ -11382,12 +11792,13 @@
         "name": "시드"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "3D 모델 경로",
+    "outputs": [
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       }
-    }
+    ]
   },
   "Rodin3D_Gen2": {
     "description": "Rodin API를 사용하여 3D 에셋 생성",
@@ -11409,12 +11820,13 @@
         "name": "TAPose"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "3D 모델 경로",
+    "outputs": [
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       }
-    }
+    ]
   },
   "Rodin3D_Regular": {
     "description": "Rodin API를 사용하여 3D 에셋 생성",
@@ -11433,12 +11845,13 @@
         "name": "시드"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "3D 모델 경로",
+    "outputs": [
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       }
-    }
+    ]
   },
   "Rodin3D_Sketch": {
     "description": "Rodin API를 사용하여 3D 에셋 생성",
@@ -11451,12 +11864,13 @@
         "name": "시드"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "3D 모델 경로",
+    "outputs": [
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       }
-    }
+    ]
   },
   "Rodin3D_Smooth": {
     "description": "Rodin API를 사용하여 3D 에셋 생성",
@@ -11475,12 +11889,13 @@
         "name": "시드"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "3D 모델 경로",
+    "outputs": [
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       }
-    }
+    ]
   },
   "RunwayFirstLastFrameNode": {
     "description": "첫 번째와 마지막 키프레임을 업로드하고 프롬프트를 작성하여 비디오를 생성합니다. 마지막 프레임이 첫 번째 프레임과 완전히 다른 경우와 같은 복잡한 전환은 10초의 긴 지속 시간을 사용하는 것이 좋습니다. 이렇게 하면 두 입력 사이를 부드럽게 전환할 수 있는 시간이 더 주어집니다. 시작하기 전에 입력 선택이 생성 성공을 보장할 수 있도록 다음 모범 사례를 검토하세요: https://help.runwayml.com/hc/en-us/articles/34170748696595-Creating-with-Keyframes-on-Gen-3.",
@@ -12211,7 +12626,8 @@
         "name": "이미지"
       },
       "mesh": {
-        "name": "메시"
+        "name": "메시",
+        "tooltip": "저장할 메시 또는 GLB 파일"
       }
     }
   },
@@ -13428,6 +13844,94 @@
       }
     }
   },
+  "TencentImageToModelNode": {
+    "display_name": "Hunyuan3D: 이미지 → 모델 (Pro)",
+    "inputs": {
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "face_count": {
+        "name": "면 개수"
+      },
+      "generate_type": {
+        "name": "생성 유형"
+      },
+      "generate_type_pbr": {
+        "name": "PBR"
+      },
+      "image": {
+        "name": "이미지"
+      },
+      "image_back": {
+        "name": "뒷면 이미지"
+      },
+      "image_left": {
+        "name": "왼쪽 이미지"
+      },
+      "image_right": {
+        "name": "오른쪽 이미지"
+      },
+      "model": {
+        "name": "모델",
+        "tooltip": "`3.1` 모델에서는 LowPoly 옵션을 사용할 수 없습니다."
+      },
+      "seed": {
+        "name": "시드",
+        "tooltip": "시드는 노드가 다시 실행될지 여부를 제어합니다. 시드와 관계없이 결과는 비결정적입니다."
+      }
+    },
+    "outputs": [
+      null,
+      {
+        "name": "GLB",
+        "tooltip": null
+      },
+      {
+        "name": "OBJ",
+        "tooltip": null
+      }
+    ]
+  },
+  "TencentTextToModelNode": {
+    "display_name": "Hunyuan3D: 텍스트 → 모델 (Pro)",
+    "inputs": {
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "face_count": {
+        "name": "면 개수"
+      },
+      "generate_type": {
+        "name": "생성 유형"
+      },
+      "generate_type_pbr": {
+        "name": "PBR"
+      },
+      "model": {
+        "name": "모델",
+        "tooltip": "`3.1` 모델에서는 LowPoly 옵션을 사용할 수 없습니다."
+      },
+      "prompt": {
+        "name": "프롬프트",
+        "tooltip": "최대 1024자까지 지원합니다."
+      },
+      "seed": {
+        "name": "시드",
+        "tooltip": "시드는 노드가 다시 실행될지 여부를 제어합니다. 시드와 관계없이 결과는 비결정적입니다."
+      }
+    },
+    "outputs": [
+      null,
+      {
+        "name": "GLB",
+        "tooltip": null
+      },
+      {
+        "name": "OBJ",
+        "tooltip": null
+      }
+    ]
+  },
   "TextEncodeAceStepAudio": {
     "display_name": "TextEncodeAceStepAudio",
     "inputs": {
@@ -13442,6 +13946,62 @@
       },
       "tags": {
         "name": "태그"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "TextEncodeAceStepAudio1_5": {
+    "display_name": "TextEncodeAceStepAudio1.5",
+    "inputs": {
+      "bpm": {
+        "name": "BPM"
+      },
+      "cfg_scale": {
+        "name": "cfg_scale"
+      },
+      "clip": {
+        "name": "clip"
+      },
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "duration": {
+        "name": "길이"
+      },
+      "generate_audio_codes": {
+        "name": "오디오 코드 생성",
+        "tooltip": "오디오 코드를 생성하는 LLM을 활성화합니다. 느릴 수 있지만 생성된 오디오의 품질이 향상됩니다. 모델에 오디오 참조를 제공하는 경우 이 옵션을 끄세요."
+      },
+      "keyscale": {
+        "name": "조성"
+      },
+      "language": {
+        "name": "언어"
+      },
+      "lyrics": {
+        "name": "가사"
+      },
+      "seed": {
+        "name": "시드"
+      },
+      "tags": {
+        "name": "태그"
+      },
+      "temperature": {
+        "name": "temperature"
+      },
+      "timesignature": {
+        "name": "박자"
+      },
+      "top_k": {
+        "name": "top_k"
+      },
+      "top_p": {
+        "name": "top_p"
       }
     },
     "outputs": {
@@ -13762,6 +14322,10 @@
         "name": "bucket_mode",
         "tooltip": "해상도 버킷 모드를 활성화합니다. 활성화 시, ResolutionBucket 노드에서 미리 버킷 처리된 latent를 기대합니다."
       },
+      "bypass_mode": {
+        "name": "bypass_mode",
+        "tooltip": "학습을 위한 바이패스 모드를 활성화합니다. 활성화 시, 어댑터가 가중치 수정 대신 forward hook을 통해 적용됩니다. 가중치를 직접 수정할 수 없는 양자화된 모델에 유용합니다."
+      },
       "control_after_generate": {
         "name": "생성 후 제어"
       },
@@ -14001,16 +14565,14 @@
         "name": "텍스처 시드"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "모델 파일",
-        "tooltip": null
-      },
-      "1": {
-        "name": "모델 작업 ID",
+    "outputs": [
+      null,
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       }
-    }
+    ]
   },
   "TripoMultiviewToModelNode": {
     "display_name": "Tripo: 다중 뷰에서 모델 생성",
@@ -14062,16 +14624,14 @@
         "name": "텍스처 시드"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "모델 파일",
-        "tooltip": null
-      },
-      "1": {
-        "name": "모델 작업 ID",
+    "outputs": [
+      null,
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       }
-    }
+    ]
   },
   "TripoRefineNode": {
     "description": "v1.4 Tripo 모델로 생성된 드래프트 모델만 정제합니다.",
@@ -14082,16 +14642,14 @@
         "tooltip": "v1.4 Tripo 모델이어야 합니다"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "모델 파일",
-        "tooltip": null
-      },
-      "1": {
-        "name": "모델 작업 ID",
+    "outputs": [
+      null,
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       }
-    }
+    ]
   },
   "TripoRetargetNode": {
     "display_name": "Tripo: 리깅된 모델 리타겟",
@@ -14103,16 +14661,14 @@
         "name": "원본 모델 작업 ID"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "모델 파일",
-        "tooltip": null
-      },
-      "1": {
-        "name": "리타겟 작업 ID",
+    "outputs": [
+      null,
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       }
-    }
+    ]
   },
   "TripoRigNode": {
     "display_name": "Tripo: 모델 리깅",
@@ -14121,16 +14677,14 @@
         "name": "원본 모델 작업 ID"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "모델 파일",
-        "tooltip": null
-      },
-      "1": {
-        "name": "리깅 작업 ID",
+    "outputs": [
+      null,
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       }
-    }
+    ]
   },
   "TripoTextToModelNode": {
     "display_name": "Tripo: 텍스트에서 모델 생성",
@@ -14175,16 +14729,14 @@
         "name": "텍스처 시드"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "모델 파일",
-        "tooltip": null
-      },
-      "1": {
-        "name": "모델 작업 ID",
+    "outputs": [
+      null,
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       }
-    }
+    ]
   },
   "TripoTextureNode": {
     "display_name": "Tripo: 텍스처 모델",
@@ -14208,16 +14760,14 @@
         "name": "텍스처 시드"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "모델 파일",
-        "tooltip": null
-      },
-      "1": {
-        "name": "모델 작업 ID",
+    "outputs": [
+      null,
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       }
-    }
+    ]
   },
   "TruncateText": {
     "display_name": "텍스트 자르기",
@@ -14375,6 +14925,28 @@
     "inputs": {
       "samples": {
         "name": "잠재 오디오"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "VAEDecodeAudioTiled": {
+    "display_name": "VAE 오디오 디코드 (타일)",
+    "inputs": {
+      "overlap": {
+        "name": "오버랩"
+      },
+      "samples": {
+        "name": "샘플"
+      },
+      "tile_size": {
+        "name": "타일 크기"
       },
       "vae": {
         "name": "vae"
@@ -14881,6 +15453,119 @@
       }
     }
   },
+  "Vidu3ImageToVideoNode": {
+    "description": "이미지와 선택적 프롬프트로부터 비디오를 생성합니다.",
+    "display_name": "Vidu Q3 이미지-비디오 생성",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "생성된 비디오의 시작 프레임으로 사용할 이미지입니다."
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "비디오 생성을 위해 사용할 모델입니다."
+      },
+      "model_audio": {
+        "name": "audio"
+      },
+      "model_duration": {
+        "name": "duration"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "비디오 생성을 위한 선택적 텍스트 프롬프트 (최대 2000자)."
+      },
+      "seed": {
+        "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Vidu3TextToVideoNode": {
+    "description": "텍스트 프롬프트로부터 비디오를 생성합니다.",
+    "display_name": "Vidu Q3 텍스트-비디오 생성",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "비디오 생성을 위해 사용할 모델입니다."
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_audio": {
+        "name": "audio"
+      },
+      "model_duration": {
+        "name": "duration"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "비디오 생성을 위한 텍스트 설명 (최대 2000자)."
+      },
+      "seed": {
+        "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ViduExtendVideoNode": {
+    "description": "기존 비디오에 추가 프레임을 생성하여 확장합니다.",
+    "display_name": "Vidu 비디오 확장",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "end_frame": {
+        "name": "end_frame"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "비디오 확장을 위해 사용할 모델입니다."
+      },
+      "model_duration": {
+        "name": "duration"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "확장된 비디오를 위한 선택적 텍스트 프롬프트 (최대 2000자)."
+      },
+      "seed": {
+        "name": "seed"
+      },
+      "video": {
+        "name": "video",
+        "tooltip": "확장할 원본 비디오입니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ViduImageToVideoNode": {
     "description": "이미지와 선택적 프롬프트로부터 비디오 생성",
     "display_name": "Vidu 이미지 비디오 생성",
@@ -14915,6 +15600,49 @@
       "seed": {
         "name": "seed",
         "tooltip": "비디오 생성을 위한 시드(0은 랜덤)"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ViduMultiFrameVideoNode": {
+    "description": "여러 키프레임 전환이 포함된 비디오를 생성합니다.",
+    "display_name": "Vidu 다중 프레임 비디오 생성",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "frames": {
+        "name": "frames",
+        "tooltip": "키프레임 전환 수 (2-9)."
+      },
+      "frames_duration1": {
+        "name": "duration1"
+      },
+      "frames_duration2": {
+        "name": "duration2"
+      },
+      "frames_prompt1": {
+        "name": "prompt1"
+      },
+      "frames_prompt2": {
+        "name": "prompt2"
+      },
+      "model": {
+        "name": "model"
+      },
+      "resolution": {
+        "name": "resolution"
+      },
+      "seed": {
+        "name": "seed"
+      },
+      "start_image": {
+        "name": "start_image",
+        "tooltip": "시작 프레임 이미지입니다. 종횡비는 1:4에서 4:1 사이여야 합니다."
       }
     },
     "outputs": {
@@ -16366,8 +17094,7 @@
       "image": {
         "name": "이미지"
       },
-      "waiting for camera___": {
-      },
+      "waiting for camera___": {},
       "width": {
         "name": "너비"
       }

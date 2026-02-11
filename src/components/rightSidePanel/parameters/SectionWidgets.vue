@@ -14,6 +14,8 @@ import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 
 import PropertiesAccordionItem from '../layout/PropertiesAccordionItem.vue'
+import { HideLayoutFieldKey } from '@/types/widgetTypes'
+
 import { GetNodeParentGroupKey } from '../shared'
 import WidgetItem from './WidgetItem.vue'
 
@@ -52,7 +54,7 @@ const rootElement = ref<HTMLElement>()
 const widgets = shallowRef(widgetsProp)
 watchEffect(() => (widgets.value = widgetsProp))
 
-provide('hideLayoutField', true)
+provide(HideLayoutFieldKey, true)
 
 const canvasStore = useCanvasStore()
 const { t } = useI18n()
@@ -116,6 +118,15 @@ function handleLocateNode() {
   }
 }
 
+function handleWidgetValueUpdate(
+  widget: IBaseWidget,
+  newValue: string | number | boolean | object
+) {
+  widget.value = newValue
+  widget.callback?.(newValue)
+  canvasStore.canvas?.setDirty(true, true)
+}
+
 defineExpose({
   widgetsContainer,
   rootElement
@@ -177,6 +188,7 @@ defineExpose({
             :show-node-name="showNodeName"
             :parents="parents"
             :is-shown-on-parents="isWidgetShownOnParents(node, widget)"
+            @update:widget-value="handleWidgetValueUpdate(widget, $event)"
           />
         </TransitionGroup>
       </div>

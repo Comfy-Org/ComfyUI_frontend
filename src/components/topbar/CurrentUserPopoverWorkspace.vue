@@ -36,15 +36,6 @@
         <span class="truncate text-sm text-base-foreground">{{
           workspaceName
         }}</span>
-        <div
-          v-if="workspaceTierName"
-          class="shrink-0 rounded bg-secondary-background-hover px-1.5 py-0.5 text-xs"
-        >
-          {{ workspaceTierName }}
-        </div>
-        <span v-else class="shrink-0 text-xs text-muted-foreground">
-          {{ $t('workspaceSwitcher.subscribe') }}
-        </span>
       </div>
       <i class="pi pi-chevron-down shrink-0 text-sm text-muted-foreground" />
     </div>
@@ -92,15 +83,31 @@
         >
           {{ $t('subscription.addCredits') }}
         </Button>
-        <!-- Unsubscribed: Show Subscribe button (disabled until billing is ready) -->
+        <!-- Unsubscribed: Show Subscribe button -->
         <SubscribeButton
-          v-else
-          disabled
+          v-else-if="isPersonalWorkspace"
           :fluid="false"
-          :label="$t('workspaceSwitcher.subscribe')"
+          :label="
+            isCancelled
+              ? $t('subscription.resubscribe')
+              : $t('workspaceSwitcher.subscribe')
+          "
           size="sm"
           variant="gradient"
         />
+        <!-- Non-personal workspace: Show pricing table -->
+        <Button
+          v-else
+          variant="primary"
+          size="sm"
+          @click="handleOpenPlansAndPricing"
+        >
+          {{
+            isCancelled
+              ? $t('subscription.resubscribe')
+              : $t('workspaceSwitcher.subscribe')
+          }}
+        </Button>
       </div>
 
       <Divider class="mx-0 my-2" />
@@ -197,19 +204,19 @@ import { storeToRefs } from 'pinia'
 import Divider from 'primevue/divider'
 import Popover from 'primevue/popover'
 import Skeleton from 'primevue/skeleton'
-import { computed, onMounted, ref } from 'vue'
+import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import { formatCreditsFromCents } from '@/base/credits/comfyCredits'
 import UserAvatar from '@/components/common/UserAvatar.vue'
 import WorkspaceProfilePic from '@/components/common/WorkspaceProfilePic.vue'
 import WorkspaceSwitcherPopover from '@/components/topbar/WorkspaceSwitcherPopover.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
-import { useFirebaseAuthActions } from '@/composables/auth/useFirebaseAuthActions'
+
 import { useExternalLink } from '@/composables/useExternalLink'
+import { useBillingContext } from '@/composables/billing/useBillingContext'
 import SubscribeButton from '@/platform/cloud/subscription/components/SubscribeButton.vue'
-import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
-import { useSubscriptionCredits } from '@/platform/cloud/subscription/composables/useSubscriptionCredits'
 import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
@@ -219,10 +226,10 @@ import { useDialogService } from '@/services/dialogService'
 
 const workspaceStore = useTeamWorkspaceStore()
 const {
+  initState,
   workspaceName,
   isInPersonalWorkspace: isPersonalWorkspace,
-  isWorkspaceSubscribed,
-  subscriptionPlan
+  isWorkspaceSubscribed
 } = storeToRefs(workspaceStore)
 const { workspaceRole } = useWorkspaceUI()
 const workspaceSwitcherPopover = ref<InstanceType<typeof Popover> | null>(null)
@@ -235,29 +242,30 @@ const { buildDocsUrl, docsPaths } = useExternalLink()
 
 const { userDisplayName, userEmail, userPhotoUrl, handleSignOut } =
   useCurrentUser()
-const authActions = useFirebaseAuthActions()
 const dialogService = useDialogService()
-const { isActiveSubscription } = useSubscription()
-const { totalCredits, isLoadingBalance } = useSubscriptionCredits()
+const { isActiveSubscription, subscription, balance, isLoading, fetchBalance } =
+  useBillingContext()
+
+const isCancelled = computed(() => subscription.value?.isCancelled ?? false)
 const subscriptionDialog = useSubscriptionDialog()
-const { t } = useI18n()
 
-const displayedCredits = computed(() =>
-  isWorkspaceSubscribed.value ? totalCredits.value : '0'
-)
+const { locale } = useI18n()
+const isLoadingBalance = isLoading
 
-// Workspace subscription tier name (not user tier)
-const workspaceTierName = computed(() => {
-  if (!isWorkspaceSubscribed.value) return null
-  if (!subscriptionPlan.value) return null
-  // Convert plan to display name
-  if (subscriptionPlan.value === 'PRO_MONTHLY')
-    return t('subscription.tiers.pro.name')
-  if (subscriptionPlan.value === 'PRO_YEARLY')
-    return t('subscription.tierNameYearly', {
-      name: t('subscription.tiers.pro.name')
-    })
-  return null
+const displayedCredits = computed(() => {
+  if (initState.value !== 'ready') return ''
+
+  // API field is named _micros but contains cents (naming inconsistency)
+  const cents =
+    balance.value?.effectiveBalanceMicros ?? balance.value?.amountMicros ?? 0
+  return formatCreditsFromCents({
+    cents,
+    locale: locale.value,
+    numberOptions: {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 2
+    }
+  })
 })
 
 const canUpgrade = computed(() => {
@@ -331,7 +339,9 @@ const toggleWorkspaceSwitcher = (event: MouseEvent) => {
   workspaceSwitcherPopover.value?.toggle(event)
 }
 
-onMounted(() => {
-  void authActions.fetchBalance()
-})
+const refreshBalance = () => {
+  void fetchBalance()
+}
+
+defineExpose({ refreshBalance })
 </script>

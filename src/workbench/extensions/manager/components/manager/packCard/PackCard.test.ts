@@ -1,6 +1,5 @@
+import { createTestingPinia } from '@pinia/testing'
 import { mount } from '@vue/test-utils'
-import { createPinia, setActivePinia } from 'pinia'
-import Card from 'primevue/card'
 import ProgressSpinner from 'primevue/progressspinner'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -16,6 +15,7 @@ const translateMock = vi.hoisted(() =>
   )
 )
 const dateMock = vi.hoisted(() => vi.fn(() => '2024. 1. 1.'))
+const storageMap = vi.hoisted(() => new Map<string, unknown>())
 
 // Mock dependencies
 vi.mock('vue-i18n', () => ({
@@ -46,16 +46,17 @@ vi.mock('@/stores/workspace/colorPaletteStore', () => ({
   }))
 }))
 
-vi.mock('@vueuse/core', async () => {
-  const { ref } = await import('vue')
-  return {
-    whenever: vi.fn(),
-    useStorage: vi.fn((_key, defaultValue) => {
-      return ref(defaultValue)
-    }),
-    createSharedComposable: vi.fn((fn) => fn)
-  }
-})
+vi.mock('@vueuse/core', () => ({
+  whenever: vi.fn(),
+  useStorage: vi.fn((key: string, defaultValue: unknown) => {
+    if (!storageMap.has(key)) storageMap.set(key, defaultValue)
+    return storageMap.get(key)
+  }),
+  createSharedComposable: vi.fn((fn) => {
+    let cached: ReturnType<typeof fn>
+    return (...args: Parameters<typeof fn>) => (cached ??= fn(...args))
+  })
+}))
 
 vi.mock('@/config', () => ({
   default: {
@@ -73,12 +74,9 @@ vi.mock('@/stores/systemStatsStore', () => ({
 }))
 
 describe('PackCard', () => {
-  let pinia: ReturnType<typeof createPinia>
-
   beforeEach(() => {
     vi.clearAllMocks()
-    pinia = createPinia()
-    setActivePinia(pinia)
+    storageMap.clear()
   })
 
   const createWrapper = (props: {
@@ -88,9 +86,8 @@ describe('PackCard', () => {
     const wrapper = mount(PackCard, {
       props,
       global: {
-        plugins: [pinia],
+        plugins: [createTestingPinia({ stubActions: false })],
         components: {
-          Card,
           ProgressSpinner
         },
         stubs: {
@@ -121,7 +118,7 @@ describe('PackCard', () => {
     it('should render package card with basic information', () => {
       const wrapper = createWrapper({ nodePack: mockNodePack })
 
-      expect(wrapper.find('.p-card').exists()).toBe(true)
+      expect(wrapper.exists()).toBe(true)
       expect(wrapper.text()).toContain('Test Package')
       expect(wrapper.text()).toContain('Test package description')
       expect(wrapper.text()).toContain('Test Author')
@@ -133,22 +130,22 @@ describe('PackCard', () => {
       expect(wrapper.text()).toContain('2024. 1. 1.')
     })
 
-    it('should apply selected class when isSelected is true', () => {
+    it('should apply selected ring when isSelected is true', () => {
       const wrapper = createWrapper({
         nodePack: mockNodePack,
         isSelected: true
       })
 
-      expect(wrapper.find('.selected-card').exists()).toBe(true)
+      expect(wrapper.find('.ring-3').exists()).toBe(true)
     })
 
-    it('should not apply selected class when isSelected is false', () => {
+    it('should not apply selected ring when isSelected is false', () => {
       const wrapper = createWrapper({
         nodePack: mockNodePack,
         isSelected: false
       })
 
-      expect(wrapper.find('.selected-card').exists()).toBe(false)
+      expect(wrapper.find('.ring-3').exists()).toBe(false)
     })
   })
 
@@ -157,7 +154,7 @@ describe('PackCard', () => {
       const wrapper = createWrapper({ nodePack: mockNodePack })
 
       expect(wrapper.exists()).toBe(true)
-      expect(wrapper.find('.p-card').exists()).toBe(true)
+      expect(wrapper.find('.rounded-lg').exists()).toBe(true)
     })
   })
 
