@@ -2834,6 +2834,9 @@
       }
     }
   },
+  "vueNodesSlot": {
+    "iterative": "(Iterative)"
+  },
   "vueNodesBanner": {
     "title": "Introducing Nodes 2.0",
     "desc": "– More flexible workflows, powerful new widgets, built for extensibility",
