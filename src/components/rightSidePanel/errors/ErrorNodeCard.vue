@@ -1,31 +1,3 @@
-<script setup lang="ts">
-import { useI18n } from 'vue-i18n'
-
-import Button from '@/components/ui/button/Button.vue'
-import { cn } from '@/utils/tailwindUtil'
-
-import type { ErrorCardData, ErrorItem } from './types'
-
-const { card, showNodeIdBadge = false } = defineProps<{
-  card: ErrorCardData
-  showNodeIdBadge?: boolean
-}>()
-
-const emit = defineEmits<{
-  locateNode: [nodeId: string]
-  enterSubgraph: [nodeId: string]
-  copyToClipboard: [text: string]
-}>()
-
-const { t } = useI18n()
-
-function handleCopyError(error: ErrorItem) {
-  emit(
-    'copyToClipboard',
-    [error.message, error.details].filter(Boolean).join('\n\n')
-  )
-}
-</script>
 
 <template>
   <div class="overflow-hidden">
@@ -108,3 +80,32 @@ function handleCopyError(error: ErrorItem) {
     </div>
   </div>
 </template>
+
+<script setup lang="ts">
+import { useI18n } from 'vue-i18n'
+
+import Button from '@/components/ui/button/Button.vue'
+import { cn } from '@/utils/tailwindUtil'
+
+import type { ErrorCardData, ErrorItem } from './types'
+
+const { card, showNodeIdBadge = false } = defineProps<{
+  card: ErrorCardData
+  showNodeIdBadge?: boolean
+}>()
+
+const emit = defineEmits<{
+  locateNode: [nodeId: string]
+  enterSubgraph: [nodeId: string]
+  copyToClipboard: [text: string]
+}>()
+
+const { t } = useI18n()
+
+function handleCopyError(error: ErrorItem) {
+  emit(
+    'copyToClipboard',
+    [error.message, error.details].filter(Boolean).join('\n\n')
+  )
+}
+</script>
