@@ -9,13 +9,13 @@
           <span class="text-base font-semibold text-base-foreground">
             <template v-if="activeView === 'active'">
               {{
-                isSingleSeatPlan || isPersonalWorkspace
-                  ? $t('workspacePanel.members.memberCountSimple', {
-                      count: isPersonalWorkspace ? 1 : members.length
-                    })
-                  : $t('workspacePanel.members.membersCount', {
-                      count: members.length
-                    })
+                $t('workspacePanel.members.membersCount', {
+                  count:
+                    isSingleSeatPlan || isPersonalWorkspace
+                      ? 1
+                      : members.length,
+                  maxSeats: maxSeats
+                })
               }}
             </template>
             <template v-else-if="permissions.canViewPendingInvites">
@@ -372,10 +372,7 @@ import UserAvatar from '@/components/common/UserAvatar.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
-import {
-  getTierFeatures,
-  TIER_TO_KEY
-} from '@/platform/cloud/subscription/constants/tierPricing'
+import { TIER_TO_KEY } from '@/platform/cloud/subscription/constants/tierPricing'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import type {
   PendingInvite,
@@ -401,17 +398,26 @@ const {
 } = storeToRefs(workspaceStore)
 const { copyInviteLink } = workspaceStore
 const { permissions, uiConfig } = useWorkspaceUI()
-const { isActiveSubscription, subscription, showSubscriptionDialog } =
-  useBillingContext()
+const {
+  isActiveSubscription,
+  subscription,
+  showSubscriptionDialog,
+  getMaxSeats
+} = useBillingContext()
+
+const maxSeats = computed(() => {
+  if (isPersonalWorkspace.value) return 1
+  const tier = subscription.value?.tier
+  if (!tier) return 1
+  const tierKey = TIER_TO_KEY[tier]
+  if (!tierKey) return 1
+  return getMaxSeats(tierKey)
+})
 
 const isSingleSeatPlan = computed(() => {
   if (isPersonalWorkspace.value) return false
   if (!isActiveSubscription.value) return true
-  const tier = subscription.value?.tier
-  if (!tier) return true
-  const tierKey = TIER_TO_KEY[tier]
-  if (!tierKey) return true
-  return getTierFeatures(tierKey).maxMembers <= 1
+  return maxSeats.value <= 1
 })
 
 const searchQuery = ref('')

@@ -2264,7 +2264,7 @@
       "placeholder": "Dashboard workspace settings"
     },
     "members": {
-      "membersCount": "{count}/50 Members",
+      "membersCount": "{count}/{maxSeats} Members",
       "pendingInvitesCount": "{count} pending invite | {count} pending invites",
       "tabs": {
         "active": "Active",
@@ -2280,7 +2280,6 @@
         "revokeInvite": "Revoke invite",
         "removeMember": "Remove member"
       },
-      "memberCountSimple": "{count} Member | {count} Members",
       "upsellBannerSubscribe": "Subscribe to the Creator plan or above to invite team members to this workspace.",
       "upsellBannerUpgrade": "Upgrade to the Creator plan or above to invite additional team members.",
       "viewPlans": "View plans",
@@ -2976,8 +2975,9 @@
       "message": "You have unsaved changes. Do you want to discard them and switch workspaces?"
     },
     "inviteAccepted": "Invite Accepted",
-    "addedToWorkspace": "You have been added to {workspaceName}",
-    "inviteFailed": "Failed to Accept Invite"
+    "addedToWorkspace": "You have been added to:",
+    "inviteFailed": "Failed to Accept Invite",
+    "viewWorkspace": "View workspace"
   },
   "workspaceAuth": {
     "errors": {

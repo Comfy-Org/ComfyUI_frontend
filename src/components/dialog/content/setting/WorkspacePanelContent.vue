@@ -134,10 +134,7 @@ import MembersPanelContent from '@/components/dialog/content/setting/MembersPane
 import Button from '@/components/ui/button/Button.vue'
 import { buttonVariants } from '@/components/ui/button/button.variants'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
-import {
-  getTierFeatures,
-  TIER_TO_KEY
-} from '@/platform/cloud/subscription/constants/tierPricing'
+import { TIER_TO_KEY } from '@/platform/cloud/subscription/constants/tierPricing'
 import SubscriptionPanelContentWorkspace from '@/platform/cloud/subscription/components/SubscriptionPanelContentWorkspace.vue'
 import { cn } from '@/utils/tailwindUtil'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
@@ -156,7 +153,7 @@ const {
   showInviteMemberUpsellDialog,
   showEditWorkspaceDialog
 } = useDialogService()
-const { isActiveSubscription, subscription } = useBillingContext()
+const { isActiveSubscription, subscription, getMaxSeats } = useBillingContext()
 
 const isSingleSeatPlan = computed(() => {
   if (!isActiveSubscription.value) return true
@@ -164,7 +161,7 @@ const isSingleSeatPlan = computed(() => {
   if (!tier) return true
   const tierKey = TIER_TO_KEY[tier]
   if (!tierKey) return true
-  return getTierFeatures(tierKey).maxMembers <= 1
+  return getMaxSeats(tierKey) <= 1
 })
 const workspaceStore = useTeamWorkspaceStore()
 const {
