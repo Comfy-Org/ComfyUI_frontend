@@ -555,7 +555,7 @@ export class ComfyApp {
         try {
           workspace.spinner = true
           if (fileMaybe instanceof File) {
-              await this.handleFile(fileMaybe, 'file_drop')
+            await this.handleFile(fileMaybe, 'file_drop')
           }
 
           if (fileMaybe instanceof FileList) {
@@ -1575,7 +1575,6 @@ export class ComfyApp {
     this.showErrorOnFileLoad(file)
   }
 
-
   /**
    * Loads multiple files, connects to a batch node, and selects them
    * @param {FileList} fileList
@@ -1602,19 +1601,19 @@ export class ComfyApp {
    */
   positionBatchNodes(nodes: LGraphNode[], batchNode: LGraphNode): void {
     const [x, y, width] = nodes[0].getBounding()
-    batchNode.pos = [ x + width + 100, y + 30 ]
+    batchNode.pos = [x + width + 100, y + 30]
 
     // Retrieving Node Height is inconsistent
-    let height = 0;
+    let height = 0
     if (nodes[0].type === 'LoadImage') {
       height = 344
     }
 
     nodes.forEach((node, index) => {
       if (index > 0) {
-        node.pos = [ x, y + (height * index) + (25 * (index + 1)) ]
+        node.pos = [x, y + height * index + 25 * (index + 1)]
       }
-    });
+    })
 
     this.canvas.graph?.change()
   }
