@@ -6,7 +6,13 @@ import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
 import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import type { BaseWidget } from '@/lib/litegraph/src/widgets/BaseWidget'
+import { toConcreteWidget } from '@/lib/litegraph/src/widgets/widgetMap'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
+
+vi.mock('@/lib/litegraph/src/widgets/widgetMap', () => ({
+  toConcreteWidget: vi.fn(() => null)
+}))
 
 function createMockSubgraphNode(
   subgraphNodes: Record<string, LGraphNode> = {}
@@ -225,6 +231,24 @@ describe('PromotedWidgetSlot', () => {
     })
   })
 
+  describe('type and options accessors', () => {
+    it('defines type as an accessor on the instance, not the prototype', () => {
+      const subNode = createMockSubgraphNode()
+      const slot = new PromotedWidgetSlot(subNode, '5', 'seed')
+      const descriptor = Object.getOwnPropertyDescriptor(slot, 'type')
+      expect(descriptor).toBeDefined()
+      expect(descriptor!.get).toBeDefined()
+    })
+
+    it('defines options as an accessor on the instance, not the prototype', () => {
+      const subNode = createMockSubgraphNode()
+      const slot = new PromotedWidgetSlot(subNode, '5', 'seed')
+      const descriptor = Object.getOwnPropertyDescriptor(slot, 'options')
+      expect(descriptor).toBeDefined()
+      expect(descriptor!.get).toBeDefined()
+    })
+  })
+
   describe('options', () => {
     it('delegates to interior widget options', () => {
       const interiorWidget = createMockWidget({
@@ -252,11 +276,8 @@ describe('PromotedWidgetSlot', () => {
   })
 
   describe('drawWidget', () => {
-    it('draws disconnected placeholder when node is missing', () => {
-      const subNode = createMockSubgraphNode()
-      const slot = new PromotedWidgetSlot(subNode, '5', 'seed')
-
-      const ctx = {
+    function createMockCtx() {
+      return {
         save: vi.fn(),
         restore: vi.fn(),
         beginPath: vi.fn(),
@@ -272,14 +293,50 @@ describe('PromotedWidgetSlot', () => {
         font: '',
         globalAlpha: 1
       } as unknown as CanvasRenderingContext2D
+    }
 
+    it('uses drawTruncatingText for disconnected placeholder', () => {
+      const subNode = createMockSubgraphNode()
+      const slot = new PromotedWidgetSlot(subNode, '5', 'seed')
+      const spy = vi.spyOn(
+        slot as unknown as { drawTruncatingText: (...args: unknown[]) => void },
+        'drawTruncatingText'
+      )
+
+      const ctx = createMockCtx()
       slot.drawWidget(ctx, { width: 200, showText: true })
 
-      expect(ctx.fillText).toHaveBeenCalledWith(
-        'Disconnected',
-        expect.any(Number),
-        expect.any(Number)
-      )
+      expect(spy).toHaveBeenCalled()
+    })
+
+    it('restores concrete widget y/last_y even when drawWidget throws', () => {
+      const interiorWidget = createMockWidget({ type: 'number' })
+      const interiorNode = {
+        id: '5',
+        widgets: [interiorWidget]
+      } as unknown as LGraphNode
+      const subNode = createMockSubgraphNode({ '5': interiorNode })
+      const slot = new PromotedWidgetSlot(subNode, '5', 'seed')
+      slot.y = 100
+      slot.last_y = 90
+
+      const concreteWidget = {
+        y: 10,
+        last_y: 5,
+        drawWidget: vi.fn(() => {
+          throw new Error('render failure')
+        })
+      } as unknown as BaseWidget<IBaseWidget>
+
+      vi.mocked(toConcreteWidget).mockReturnValueOnce(concreteWidget)
+
+      const ctx = createMockCtx()
+      expect(() =>
+        slot.drawWidget(ctx, { width: 200, showText: true })
+      ).toThrow('render failure')
+
+      expect(concreteWidget.y).toBe(10)
+      expect(concreteWidget.last_y).toBe(5)
     })
   })
 
@@ -352,15 +409,19 @@ describe('PromotedWidgetSlot', () => {
         promoted: true
       })
 
-      const subNode = createMockSubgraphNode()
+      const interiorNode = {
+        id: '5',
+        widgets: [createMockWidget()]
+      } as unknown as LGraphNode
+      const subNode = createMockSubgraphNode({ '5': interiorNode })
       const slot = new PromotedWidgetSlot(subNode, '5', 'seed')
       expect(slot._displayValue).toBe('42')
     })
 
-    it('returns empty string when value is null', () => {
+    it('returns Disconnected when interior node is missing', () => {
       const subNode = createMockSubgraphNode()
       const slot = new PromotedWidgetSlot(subNode, '5', 'seed')
-      expect(slot._displayValue).toBe('')
+      expect(slot._displayValue).toBe('Disconnected')
     })
 
     it('returns empty string when computedDisabled', () => {

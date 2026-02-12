@@ -57,10 +57,18 @@ export class PromotedWidgetSlot
     this.subgraphNode = subgraphNode
 
     // BaseWidget constructor assigns `this.type` and `this.options` as own
-    // data properties, which shadow our prototype getters. Delete them so
-    // our getters are used.
-    delete (this as Record<string, unknown>).type
-    delete (this as Record<string, unknown>).options
+    // data properties. Override them with instance-level accessors that
+    // delegate to the resolved interior widget.
+    Object.defineProperty(this, 'type', {
+      get: () => this.resolvedType,
+      configurable: true,
+      enumerable: true
+    })
+    Object.defineProperty(this, 'options', {
+      get: () => this.resolvedOptions,
+      configurable: true,
+      enumerable: true
+    })
 
     this.callback = (value, canvas, _node, pos, e) => {
       const resolved = this.resolve()
@@ -134,6 +142,7 @@ export class PromotedWidgetSlot
 
   override get _displayValue(): string {
     if (this.computedDisabled) return ''
+    if (!this.resolve()) return 'Disconnected'
     const v = this.value
     return v != null ? String(v) : ''
   }
@@ -151,9 +160,12 @@ export class PromotedWidgetSlot
       const origLastY = concrete.last_y
       concrete.y = this.y
       concrete.last_y = this.last_y
-      concrete.drawWidget(ctx, options)
-      concrete.y = origY
-      concrete.last_y = origLastY
+      try {
+        concrete.drawWidget(ctx, options)
+      } finally {
+        concrete.y = origY
+        concrete.last_y = origLastY
+      }
     } else {
       this.drawWidgetShape(ctx, options)
       if (options.showText !== false) {
@@ -169,18 +181,18 @@ export class PromotedWidgetSlot
 
   private drawDisconnectedPlaceholder(
     ctx: CanvasRenderingContext2D,
-    { width, showText }: DrawWidgetOptions
+    options: DrawWidgetOptions
   ): void {
-    ctx.save()
-    this.drawWidgetShape(ctx, { width, showText })
-    if (showText) {
+    this.drawWidgetShape(ctx, options)
+    if (options.showText !== false) {
       ctx.fillStyle = LiteGraph.WIDGET_DISABLED_TEXT_COLOR
-      ctx.font = '11px monospace'
-      ctx.textAlign = 'center'
-      ctx.textBaseline = 'middle'
-      ctx.fillText('Disconnected', width / 2, this.y + this.height / 2)
+      this.drawTruncatingText({
+        ctx,
+        ...options,
+        leftPadding: 0,
+        rightPadding: 0
+      })
     }
-    ctx.restore()
   }
 
   onClick(options: WidgetEventOptions): void {
@@ -191,21 +203,3 @@ export class PromotedWidgetSlot
     concrete?.onClick(options)
   }
 }
-
-// Install dynamic getters via defineProperty on the prototype.
-// This avoids the TS2611 error (can't override a property with an accessor).
-Object.defineProperty(PromotedWidgetSlot.prototype, 'type', {
-  get(this: PromotedWidgetSlot) {
-    return this.resolvedType
-  },
-  configurable: true,
-  enumerable: true
-})
-
-Object.defineProperty(PromotedWidgetSlot.prototype, 'options', {
-  get(this: PromotedWidgetSlot) {
-    return this.resolvedOptions
-  },
-  configurable: true,
-  enumerable: true
-})

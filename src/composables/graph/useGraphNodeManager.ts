@@ -6,7 +6,7 @@ import { reactiveComputed } from '@vueuse/core'
 import { reactive, shallowReactive } from 'vue'
 
 import { useChainCallback } from '@/composables/functional/useChainCallback'
-import { getPromotionList } from '@/core/graph/subgraph/promotionList'
+
 import type {
   INodeInputSlot,
   INodeOutputSlot
@@ -18,7 +18,6 @@ import type { NodeId } from '@/renderer/core/layout/types'
 import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { isDOMWidget } from '@/scripts/domWidget'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
-import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import type { WidgetValue, SafeControlWidget } from '@/types/simplifiedWidget'
 import { normalizeControlOption } from '@/types/simplifiedWidget'
 
@@ -198,7 +197,7 @@ function safeWidgetMapper(
     try {
       // Get shared enhancements (controlWidget, spec, nodeType)
       const sourceNodeId =
-        'sourceNodeId' in widget ? (widget.sourceNodeId as string) : undefined
+        'sourceNodeId' in widget ? String(widget.sourceNodeId) : undefined
       const sharedEnhancements = getSharedWidgetEnhancements(
         node,
         widget,
@@ -283,59 +282,7 @@ export function extractVueNodeData(node: LGraphNode): VueNodeData {
         linked: input.link != null
       })
     })
-    const widgets =
-      node.widgets?.map(safeWidgetMapper(node, slotMetadata)) ?? []
-
-    // For SubgraphNodes, append promoted widget entries from the promotion list
-    if (node.isSubgraphNode()) {
-      const widgetValueStore = useWidgetValueStore()
-      const promotionList = getPromotionList(node)
-      // Track already-mapped widget names to avoid duplicates during transition
-      const seen = new Set(widgets.map((w) => w.name))
-
-      for (const [nodeId, widgetName] of promotionList) {
-        if (nodeId === '-1') continue // native widgets already in widgets[]
-        const key = `${nodeId}: ${widgetName}`
-        if (seen.has(key)) continue // already present (from legacy ProxyWidget)
-        seen.add(key)
-
-        const resolved = widgetValueStore.resolvePromotedWidget(
-          node.subgraph,
-          nodeId,
-          widgetName
-        )
-        if (resolved) {
-          const subgraphId = node.subgraph.id
-          const sharedEnhancements = getSharedWidgetEnhancements(
-            node,
-            resolved.widget,
-            nodeId
-          )
-          const callback = (v: unknown) => {
-            const value = normalizeWidgetValue(v)
-            resolved.widget.value = value ?? undefined
-            resolved.widget.callback?.(value, app.canvas, resolved.node)
-            resolved.node.widgets?.forEach((w) => w.triggerDraw?.())
-          }
-          widgets.push({
-            nodeId: `${subgraphId}:${nodeId}`,
-            name: widgetName,
-            type: resolved.widget.type,
-            ...sharedEnhancements,
-            callback
-          })
-        } else {
-          // Disconnected — interior node/widget no longer exists
-          widgets.push({
-            name: key,
-            type: 'text',
-            nodeType: undefined
-          })
-        }
-      }
-    }
-
-    return widgets
+    return node.widgets?.map(safeWidgetMapper(node, slotMetadata)) ?? []
   })
 
   const nodeType =
