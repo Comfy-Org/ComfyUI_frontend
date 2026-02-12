@@ -1,9 +1,11 @@
 import { describe, expect, it } from 'vitest'
 
+import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
+
 import { getPromotionList } from './promotionList'
 
-function mockSubgraphNode(proxyWidgets?: unknown) {
-  return { properties: { proxyWidgets } } as any
+function mockSubgraphNode(proxyWidgets?: unknown): SubgraphNode {
+  return { properties: { proxyWidgets } } as unknown as SubgraphNode
 }
 
 describe('getPromotionList', () => {
