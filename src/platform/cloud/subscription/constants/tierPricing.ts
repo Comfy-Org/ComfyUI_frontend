@@ -11,6 +11,13 @@ export const TIER_TO_KEY: Record<SubscriptionTier, TierKey> = {
   FOUNDERS_EDITION: 'founder'
 }
 
+export const KEY_TO_TIER: Record<TierKey, SubscriptionTier> = {
+  standard: 'STANDARD',
+  creator: 'CREATOR',
+  pro: 'PRO',
+  founder: 'FOUNDERS_EDITION'
+}
+
 export interface TierPricing {
   monthly: number
   yearly: number
