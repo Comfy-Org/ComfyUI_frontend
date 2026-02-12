@@ -1,6 +1,7 @@
 <template>
   <SidebarTabTemplate
     :title="isInFolderView ? '' : $t('sideToolbar.mediaAssets.title')"
+    v-bind="$attrs"
   >
     <template #alt-title>
       <div
@@ -257,6 +258,8 @@ const { activeJobsCount } = storeToRefs(queueStore)
 const executionStore = useExecutionStore()
 const settingStore = useSettingStore()
 
+const emit = defineEmits<{ assetSelected: [asset: AssetItem] }>()
+
 const activeTab = ref<'input' | 'output'>('output')
 const folderPromptId = ref<string | null>(null)
 const folderExecutionTime = ref<number | undefined>(undefined)
@@ -492,6 +495,7 @@ watch(
 function handleAssetSelect(asset: AssetItem, assets?: AssetItem[]) {
   const assetList = assets ?? visibleAssets.value
   const index = assetList.findIndex((a) => a.id === asset.id)
+  emit('assetSelected', asset)
   handleAssetClick(asset, index, assetList)
 }
 

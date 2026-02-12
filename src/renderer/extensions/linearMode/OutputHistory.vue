@@ -11,6 +11,7 @@ import type { MaybeRef } from 'vue'
 import ModeToggle from '@/components/sidebar/ModeToggle.vue'
 import SidebarIcon from '@/components/sidebar/SidebarIcon.vue'
 import SidebarTemplatesButton from '@/components/sidebar/SidebarTemplatesButton.vue'
+import AssetsSidebarTab from '@/components/sidebar/tabs/AssetsSidebarTab.vue'
 import WorkflowsSidebarTab from '@/components/sidebar/tabs/WorkflowsSidebarTab.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useProgressBarBackground } from '@/composables/useProgressBarBackground'
@@ -62,10 +63,12 @@ defineExpose({ onWheel })
 
 const selectedIndex = ref<[number, number]>([-1, 0])
 
+const assetPanelSelection = ref<AssetItem>()
+
 function doEmit() {
   const [index] = selectedIndex.value
   emit('updateSelection', [
-    outputs.media.value[index],
+    assetPanelSelection.value ?? outputs.media.value[index],
     selectedOutput.value,
     selectedIndex.value[0] <= 0
   ])
@@ -130,7 +133,7 @@ function allOutputs(item?: AssetItem): MaybeRef<ResultItemImpl[]> {
   if (
     user_metadata.allOutputs &&
     user_metadata.outputCount &&
-    user_metadata.outputCount < user_metadata.allOutputs.length
+    user_metadata.outputCount <= user_metadata.allOutputs.length
   )
     return user_metadata.allOutputs
 
@@ -146,6 +149,9 @@ function allOutputs(item?: AssetItem): MaybeRef<ResultItemImpl[]> {
 }
 
 const selectedOutput = computed(() => {
+  if (assetPanelSelection.value) {
+    return toValue(allOutputs(assetPanelSelection.value))[0]
+  }
   const [index, key] = selectedIndex.value
   if (index < 0) return undefined
 
@@ -277,6 +283,11 @@ useEventListener(document.body, 'keydown', (e: KeyboardEvent) => {
     </div>
     <div class="border-border-subtle md:border-r" />
     <WorkflowsSidebarTab v-if="displayWorkflows" class="min-w-50 grow-1" />
+    <AssetsSidebarTab
+      v-else-if="!mobile"
+      class="min-w-75"
+      @asset-selected="assetPanelSelection = $event"
+    />
     <article
       v-else
       ref="outputsRef"
