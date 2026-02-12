@@ -221,6 +221,48 @@ describe('PromotedWidgetSlot', () => {
       expect(interiorWidget.label).toBeUndefined()
     })
 
+    it('updates the interior node input label when setting label', () => {
+      const interiorWidget = createMockWidget()
+      const interiorInput = {
+        name: 'seed',
+        widget: { name: 'seed' },
+        label: undefined
+      }
+      const interiorNode = {
+        id: '5',
+        widgets: [interiorWidget],
+        inputs: [interiorInput]
+      } as unknown as LGraphNode
+
+      const subNode = createMockSubgraphNode({ '5': interiorNode })
+      const slot = new PromotedWidgetSlot(subNode, '5', 'seed')
+      slot.label = 'Renamed'
+
+      expect(interiorWidget.label).toBe('Renamed')
+      expect(interiorInput.label).toBe('Renamed')
+    })
+
+    it('clears the interior node input label when label is set to undefined', () => {
+      const interiorWidget = createMockWidget()
+      const interiorInput = {
+        name: 'seed',
+        widget: { name: 'seed' },
+        label: 'Old'
+      }
+      const interiorNode = {
+        id: '5',
+        widgets: [interiorWidget],
+        inputs: [interiorInput]
+      } as unknown as LGraphNode
+
+      const subNode = createMockSubgraphNode({ '5': interiorNode })
+      const slot = new PromotedWidgetSlot(subNode, '5', 'seed')
+      slot.label = undefined
+
+      expect(interiorWidget.label).toBeUndefined()
+      expect(interiorInput.label).toBeUndefined()
+    })
+
     it('does not throw when setting label while disconnected', () => {
       const subNode = createMockSubgraphNode()
       const slot = new PromotedWidgetSlot(subNode, '5', 'seed')
@@ -238,6 +280,23 @@ describe('PromotedWidgetSlot', () => {
       const descriptor = Object.getOwnPropertyDescriptor(slot, 'type')
       expect(descriptor).toBeDefined()
       expect(descriptor!.get).toBeDefined()
+    })
+
+    it('type accessor returns resolved value even if BaseWidget data property existed', () => {
+      const interiorWidget = createMockWidget({ type: 'slider' })
+      const interiorNode = {
+        id: '5',
+        widgets: [interiorWidget]
+      } as unknown as LGraphNode
+
+      const subNode = createMockSubgraphNode({ '5': interiorNode })
+      const slot = new PromotedWidgetSlot(subNode, '5', 'seed')
+
+      // Verify no own data property for 'type' exists (only accessor)
+      const descriptor = Object.getOwnPropertyDescriptor(slot, 'type')
+      expect(descriptor?.value).toBeUndefined()
+      expect(descriptor?.get).toBeDefined()
+      expect(slot.type).toBe('slider')
     })
 
     it('defines options as an accessor on the instance, not the prototype', () => {
@@ -291,7 +350,8 @@ describe('PromotedWidgetSlot', () => {
         fillStyle: '',
         strokeStyle: '',
         font: '',
-        globalAlpha: 1
+        globalAlpha: 1,
+        translate: vi.fn()
       } as unknown as CanvasRenderingContext2D
     }
 
@@ -309,7 +369,42 @@ describe('PromotedWidgetSlot', () => {
       expect(spy).toHaveBeenCalled()
     })
 
-    it('restores concrete widget y/last_y even when drawWidget throws', () => {
+    it('does not mutate concrete widget y/last_y during rendering', () => {
+      const interiorWidget = createMockWidget({ type: 'number' })
+      const interiorNode = {
+        id: '5',
+        widgets: [interiorWidget]
+      } as unknown as LGraphNode
+      const subNode = createMockSubgraphNode({ '5': interiorNode })
+      const slot = new PromotedWidgetSlot(subNode, '5', 'seed')
+      slot.y = 100
+      slot.last_y = 90
+
+      const originalY = 10
+      const originalLastY = 5
+
+      const concreteWidget = {
+        y: originalY,
+        last_y: originalLastY,
+        drawWidget: vi.fn()
+      } as unknown as BaseWidget<IBaseWidget>
+
+      vi.mocked(toConcreteWidget).mockReturnValueOnce(concreteWidget)
+
+      const ctx = createMockCtx()
+      slot.drawWidget(ctx, { width: 200, showText: true })
+
+      // y/last_y should never have been mutated
+      expect(concreteWidget.y).toBe(originalY)
+      expect(concreteWidget.last_y).toBe(originalLastY)
+
+      // ctx.translate should be used instead of mutating widget state
+      expect(ctx.save).toHaveBeenCalled()
+      expect(ctx.translate).toHaveBeenCalledWith(0, slot.y - originalY)
+      expect(ctx.restore).toHaveBeenCalled()
+    })
+
+    it('does not mutate concrete widget y/last_y even when drawWidget throws', () => {
       const interiorWidget = createMockWidget({ type: 'number' })
       const interiorNode = {
         id: '5',
@@ -335,6 +430,7 @@ describe('PromotedWidgetSlot', () => {
         slot.drawWidget(ctx, { width: 200, showText: true })
       ).toThrow('render failure')
 
+      // Widget state was never mutated — ctx.translate is used instead
       expect(concreteWidget.y).toBe(10)
       expect(concreteWidget.last_y).toBe(5)
     })

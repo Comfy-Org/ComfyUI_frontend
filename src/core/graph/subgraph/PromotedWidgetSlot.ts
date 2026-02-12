@@ -127,8 +127,14 @@ export class PromotedWidgetSlot
 
   override set label(v: string | undefined) {
     const resolved = this.resolve()
-    if (resolved) {
-      resolved.widget.label = v
+    if (!resolved) return
+
+    resolved.widget.label = v
+    const input = resolved.node.inputs?.find(
+      (inp) => inp.widget?.name === this.sourceWidgetName
+    )
+    if (input) {
+      input.label = v
     }
   }
 
@@ -156,16 +162,10 @@ export class PromotedWidgetSlot
 
     const concrete = toConcreteWidget(resolved.widget, resolved.node, false)
     if (concrete) {
-      const origY = concrete.y
-      const origLastY = concrete.last_y
-      concrete.y = this.y
-      concrete.last_y = this.last_y
-      try {
-        concrete.drawWidget(ctx, options)
-      } finally {
-        concrete.y = origY
-        concrete.last_y = origLastY
-      }
+      ctx.save()
+      ctx.translate(0, this.y - concrete.y)
+      concrete.drawWidget(ctx, options)
+      ctx.restore()
     } else {
       this.drawWidgetShape(ctx, options)
       if (options.showText !== false) {
