@@ -8,8 +8,10 @@
  * Supports different element types (nodes, slots, widgets, etc.) with
  * customizable data attributes and update handlers.
  */
-import { getCurrentInstance, onMounted, onUnmounted, toValue } from 'vue'
+import { getCurrentInstance, onMounted, onUnmounted, toValue, watch } from 'vue'
 import type { MaybeRefOrGetter } from 'vue'
+
+import { useDocumentVisibility } from '@vueuse/core'
 
 import { useSharedCanvasPositionConversion } from '@/composables/element/useCanvasPositionConversion'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
@@ -61,10 +63,10 @@ const trackingConfigs: Map<string, ElementTrackingConfig> = new Map([
 
 // Elements whose ResizeObserver fired while the tab was hidden
 const deferredElements = new Set<HTMLElement>()
+const visibility = useDocumentVisibility()
 
-document.addEventListener('visibilitychange', () => {
-  if (document.visibilityState !== 'visible' || deferredElements.size === 0)
-    return
+watch(visibility, (state) => {
+  if (state !== 'visible' || deferredElements.size === 0) return
 
   // Re-observe deferred elements to trigger fresh measurements
   for (const element of deferredElements) {
@@ -80,7 +82,7 @@ const resizeObserver = new ResizeObserver((entries) => {
   if (useCanvasStore().linearMode) return
 
   // Skip measurements when tab is hidden — bounding rects are unreliable
-  if (document.visibilityState === 'hidden') {
+  if (visibility.value === 'hidden') {
     for (const entry of entries) {
       if (entry.target instanceof HTMLElement) {
         deferredElements.add(entry.target)
