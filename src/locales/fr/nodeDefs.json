@@ -7347,6 +7347,88 @@
       }
     }
   },
+  "MagnificImageUpscalerCreativeNode": {
+    "description": "Amélioration guidée par prompt, stylisation et agrandissement 2x/4x/8x/16x. Sortie maximale : 25,3 mégapixels.",
+    "display_name": "Magnific Agrandissement d’Image (Créatif)",
+    "inputs": {
+      "auto_downscale": {
+        "name": "réduction automatique",
+        "tooltip": "Réduit automatiquement l’image d’entrée si la sortie dépasse la limite maximale de pixels."
+      },
+      "creativity": {
+        "name": "créativité"
+      },
+      "engine": {
+        "name": "moteur"
+      },
+      "fractality": {
+        "name": "fractalité",
+        "tooltip": "La force du prompt et la complexité par pixel carré."
+      },
+      "hdr": {
+        "name": "hdr",
+        "tooltip": "Le niveau de définition et de détail."
+      },
+      "image": {
+        "name": "image"
+      },
+      "optimized_for": {
+        "name": "optimisé pour"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "resemblance": {
+        "name": "ressemblance",
+        "tooltip": "Le niveau de ressemblance avec l’image originale."
+      },
+      "scale_factor": {
+        "name": "facteur d’agrandissement"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MagnificImageUpscalerPreciseV2Node": {
+    "description": "Agrandissement haute fidélité avec contrôle précis de la netteté, du grain et du détail. Sortie maximale : 10060×10060 pixels.",
+    "display_name": "Magnific Agrandissement d’Image (Précis V2)",
+    "inputs": {
+      "auto_downscale": {
+        "name": "réduction automatique",
+        "tooltip": "Réduit automatiquement l’image d’entrée si la sortie dépasse la résolution maximale."
+      },
+      "flavor": {
+        "name": "style",
+        "tooltip": "Style de traitement : sublime pour un usage général, photo pour les photographies, photo_denoiser pour les photos bruitées."
+      },
+      "image": {
+        "name": "image"
+      },
+      "scale_factor": {
+        "name": "facteur d’agrandissement"
+      },
+      "sharpen": {
+        "name": "netteté",
+        "tooltip": "Intensité de la netteté de l’image. Des valeurs plus élevées augmentent la définition des contours et la clarté."
+      },
+      "smart_grain": {
+        "name": "grain intelligent",
+        "tooltip": "Amélioration intelligente du grain/de la texture pour éviter un rendu trop lisse ou artificiel."
+      },
+      "ultra_detail": {
+        "name": "ultra-détail",
+        "tooltip": "Contrôle les détails fins, les textures et les micro-détails ajoutés lors de l’agrandissement."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "Mahiro": {
     "description": "Modifiez le guidage pour qu'il se concentre davantage sur la 'direction' de l'invite positive plutôt que sur la différence avec l'invite négative.",
     "display_name": "Mahiro est si mignonne qu'elle mérite une meilleure fonction de guidage!! (。・ω・。)",
@@ -10981,8 +11063,13 @@
   "PreviewAny": {
     "display_name": "Aperçu de n'importe quel",
     "inputs": {
-      "preview": {},
       "previewMode": {},
+      "preview_markdown": {
+        "name": "Aperçu"
+      },
+      "preview_text": {
+        "name": "Aperçu"
+      },
       "source": {
         "name": "source"
       }
@@ -14152,6 +14239,9 @@
       },
       "lyrics": {
         "name": "paroles"
+      },
+      "min_p": {
+        "name": "min_p"
       },
       "seed": {
         "name": "graine"

@@ -7369,6 +7369,88 @@
       }
     }
   },
+  "MagnificImageUpscalerCreativeNode": {
+    "display_name": "Magnific Image Upscale (Creative)",
+    "description": "Prompt‑guided enhancement, stylization, and 2x/4x/8x/16x upscaling. Maximum output: 25.3 megapixels.",
+    "inputs": {
+      "image": {
+        "name": "image"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "scale_factor": {
+        "name": "scale_factor"
+      },
+      "optimized_for": {
+        "name": "optimized_for"
+      },
+      "creativity": {
+        "name": "creativity"
+      },
+      "hdr": {
+        "name": "hdr",
+        "tooltip": "The level of definition and detail."
+      },
+      "resemblance": {
+        "name": "resemblance",
+        "tooltip": "The level of resemblance to the original image."
+      },
+      "fractality": {
+        "name": "fractality",
+        "tooltip": "The strength of the prompt and intricacy per square pixel."
+      },
+      "engine": {
+        "name": "engine"
+      },
+      "auto_downscale": {
+        "name": "auto_downscale",
+        "tooltip": "Automatically downscale input image if output would exceed maximum pixel limit."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MagnificImageUpscalerPreciseV2Node": {
+    "display_name": "Magnific Image Upscale (Precise V2)",
+    "description": "High-fidelity upscaling with fine control over sharpness, grain, and detail. Maximum output: 10060×10060 pixels.",
+    "inputs": {
+      "image": {
+        "name": "image"
+      },
+      "scale_factor": {
+        "name": "scale_factor"
+      },
+      "flavor": {
+        "name": "flavor",
+        "tooltip": "Processing style: sublime for general use, photo for photographs, photo_denoiser for noisy photos."
+      },
+      "sharpen": {
+        "name": "sharpen",
+        "tooltip": "Image sharpness intensity. Higher values increase edge definition and clarity."
+      },
+      "smart_grain": {
+        "name": "smart_grain",
+        "tooltip": "Intelligent grain/texture enhancement to prevent the image from looking too smooth or artificial."
+      },
+      "ultra_detail": {
+        "name": "ultra_detail",
+        "tooltip": "Controls fine detail, textures, and micro-details added during upscaling."
+      },
+      "auto_downscale": {
+        "name": "auto_downscale",
+        "tooltip": "Automatically downscale input image if output would exceed maximum resolution."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "Mahiro": {
     "display_name": "Mahiro CFG",
     "description": "Modify the guidance to scale more on the 'direction' of the positive prompt rather than the difference between the negative prompt.",
@@ -11045,7 +11127,12 @@
       "source": {
         "name": "source"
       },
-      "preview": {},
+      "preview_markdown": {
+        "name": "Preview"
+      },
+      "preview_text": {
+        "name": "Preview"
+      },
       "previewMode": {}
     }
   },
@@ -14260,6 +14347,9 @@
       },
       "top_k": {
         "name": "top_k"
+      },
+      "min_p": {
+        "name": "min_p"
       },
       "control_after_generate": {
         "name": "control after generate"

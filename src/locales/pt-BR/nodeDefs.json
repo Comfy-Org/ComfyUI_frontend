@@ -7349,6 +7349,88 @@
       }
     }
   },
+  "MagnificImageUpscalerCreativeNode": {
+    "description": "Aprimoramento guiado por prompt, estilização e upscaling em 2x/4x/8x/16x. Saída máxima: 25,3 megapixels.",
+    "display_name": "Magnific Image Upscale (Criativo)",
+    "inputs": {
+      "auto_downscale": {
+        "name": "redução automática",
+        "tooltip": "Reduz automaticamente a imagem de entrada se a saída exceder o limite máximo de pixels."
+      },
+      "creativity": {
+        "name": "criatividade"
+      },
+      "engine": {
+        "name": "engine"
+      },
+      "fractality": {
+        "name": "fractalidade",
+        "tooltip": "A força do prompt e complexidade por pixel quadrado."
+      },
+      "hdr": {
+        "name": "hdr",
+        "tooltip": "O nível de definição e detalhe."
+      },
+      "image": {
+        "name": "imagem"
+      },
+      "optimized_for": {
+        "name": "otimizado para"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "resemblance": {
+        "name": "semelhança",
+        "tooltip": "O nível de semelhança com a imagem original."
+      },
+      "scale_factor": {
+        "name": "fator de escala"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MagnificImageUpscalerPreciseV2Node": {
+    "description": "Upscaling de alta fidelidade com controle refinado de nitidez, granulação e detalhes. Saída máxima: 10060×10060 pixels.",
+    "display_name": "Magnific Image Upscale (Preciso V2)",
+    "inputs": {
+      "auto_downscale": {
+        "name": "redução automática",
+        "tooltip": "Reduz automaticamente a imagem de entrada se a saída exceder a resolução máxima."
+      },
+      "flavor": {
+        "name": "estilo",
+        "tooltip": "Estilo de processamento: sublime para uso geral, photo para fotografias, photo_denoiser para fotos com ruído."
+      },
+      "image": {
+        "name": "imagem"
+      },
+      "scale_factor": {
+        "name": "fator de escala"
+      },
+      "sharpen": {
+        "name": "nitidez",
+        "tooltip": "Intensidade da nitidez da imagem. Valores mais altos aumentam a definição das bordas e a clareza."
+      },
+      "smart_grain": {
+        "name": "granulação inteligente",
+        "tooltip": "Aprimoramento inteligente de granulação/textura para evitar que a imagem fique muito lisa ou artificial."
+      },
+      "ultra_detail": {
+        "name": "ultra detalhe",
+        "tooltip": "Controla detalhes finos, texturas e microdetalhes adicionados durante o upscaling."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "Mahiro": {
     "description": "Modifica a orientação para escalar mais na 'direção' do prompt positivo do que na diferença entre o prompt negativo.",
     "display_name": "Mahiro CFG",
@@ -10983,8 +11065,13 @@
   "PreviewAny": {
     "display_name": "Pré-visualizar como Texto",
     "inputs": {
-      "preview": {},
       "previewMode": {},
+      "preview_markdown": {
+        "name": "Pré-visualização"
+      },
+      "preview_text": {
+        "name": "Pré-visualização"
+      },
       "source": {
         "name": "source"
       }
@@ -14165,6 +14252,9 @@
       },
       "lyrics": {
         "name": "letra"
+      },
+      "min_p": {
+        "name": "min_p"
       },
       "seed": {
         "name": "semente"

@@ -820,6 +820,7 @@
     "enterBaseName": "Temel adı girin",
     "enterNewName": "Yeni adı girin",
     "enterNewNamePrompt": "Yeni adı girin:",
+    "enterSubgraph": "Alt Ağ Grafiğine Gir",
     "error": "Hata",
     "errorLoadingImage": "Görüntü yüklenirken hata",
     "errorLoadingVideo": "Video yüklenirken hata",
@@ -2871,7 +2872,8 @@
     "unsavedChanges": {
       "message": "Kaydedilmemiş değişiklikleriniz var. Bunları iptal edip çalışma alanlarını değiştirmek istiyor musunuz?",
       "title": "Kaydedilmemiş Değişiklikler"
-    }
+    },
+    "viewWorkspace": "Çalışma alanını görüntüle"
   },
   "workspaceAuth": {
     "errors": {
@@ -2920,6 +2922,14 @@
       "placeholder": "Kişinin e-posta adresini girin",
       "title": "Bu çalışma alanına birini davet et"
     },
+    "inviteUpsellDialog": {
+      "messageNotSubscribed": "Bu çalışma alanına ekip üyeleri eklemek için Creator planına veya daha üstüne ihtiyacınız var. Standart plan yalnızca tek kişilik (sahip) destekler.",
+      "messageSingleSeat": "Standart plan, çalışma alanı sahibi için bir koltuk içerir. Ek üyeler davet etmek için Creator planına veya daha üstüne yükselterek birden fazla koltuğun kilidini açabilirsiniz.",
+      "titleNotSubscribed": "Üye davet etmek için abonelik gereklidir",
+      "titleSingleSeat": "Mevcut planınız tek kişilik destekliyor",
+      "upgradeToCreator": "Creator'a Yükselt",
+      "viewPlans": "Planları Görüntüle"
+    },
     "leaveDialog": {
       "leave": "Ayrıl",
       "message": "Çalışma alanı sahibiyle iletişime geçmedikçe tekrar katılamazsınız.",
@@ -2945,7 +2955,10 @@
       "tabs": {
         "active": "Aktif",
         "pendingCount": "Bekliyor ({count})"
-      }
+      },
+      "upsellBannerSubscribe": "Bu çalışma alanına ekip üyeleri davet etmek için Creator planına veya daha üstüne abone olun.",
+      "upsellBannerUpgrade": "Ek ekip üyeleri davet etmek için Creator planına veya daha üstüne yükseltin.",
+      "viewPlans": "Planları Görüntüle"
     },
     "menu": {
       "deleteWorkspace": "Çalışma Alanını Sil",

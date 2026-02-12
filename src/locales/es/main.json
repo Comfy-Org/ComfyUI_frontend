@@ -820,6 +820,7 @@
     "enterBaseName": "Introduce el nombre base",
     "enterNewName": "Introduce el nuevo nombre",
     "enterNewNamePrompt": "Introduce un nuevo nombre:",
+    "enterSubgraph": "Entrar en subgrafo",
     "error": "Error",
     "errorLoadingImage": "Error al cargar imagen",
     "errorLoadingVideo": "Error al cargar video",
@@ -2871,7 +2872,8 @@
     "unsavedChanges": {
       "message": "Tienes cambios no guardados. ¿Quieres descartarlos y cambiar de espacio de trabajo?",
       "title": "Cambios no guardados"
-    }
+    },
+    "viewWorkspace": "Ver espacio de trabajo"
   },
   "workspaceAuth": {
     "errors": {
@@ -2920,6 +2922,14 @@
       "placeholder": "Introduce el correo electrónico de la persona",
       "title": "Invitar a una persona a este espacio de trabajo"
     },
+    "inviteUpsellDialog": {
+      "messageNotSubscribed": "Para agregar miembros del equipo a este espacio de trabajo, necesitas un plan Creator o superior. El plan Standard solo admite un usuario (el propietario).",
+      "messageSingleSeat": "El plan Standard incluye un asiento para el propietario del espacio de trabajo. Para invitar a miembros adicionales, mejora al plan Creator o superior para desbloquear múltiples asientos.",
+      "titleNotSubscribed": "Se requiere una suscripción para invitar miembros",
+      "titleSingleSeat": "Tu plan actual admite un solo usuario",
+      "upgradeToCreator": "Mejorar a Creator",
+      "viewPlans": "Ver planes"
+    },
     "leaveDialog": {
       "leave": "Abandonar",
       "message": "No podrás unirte de nuevo a menos que contactes al propietario del espacio de trabajo.",
@@ -2945,7 +2955,10 @@
       "tabs": {
         "active": "Activo",
         "pendingCount": "Pendientes ({count})"
-      }
+      },
+      "upsellBannerSubscribe": "Suscríbete al plan Creator o superior para invitar a miembros del equipo a este espacio de trabajo.",
+      "upsellBannerUpgrade": "Mejora al plan Creator o superior para invitar a miembros adicionales del equipo.",
+      "viewPlans": "Ver planes"
     },
     "menu": {
       "deleteWorkspace": "Eliminar espacio de trabajo",

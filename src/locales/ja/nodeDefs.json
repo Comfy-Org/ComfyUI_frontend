@@ -7347,6 +7347,88 @@
       }
     }
   },
+  "MagnificImageUpscalerCreativeNode": {
+    "description": "プロンプトによる強化、スタイライズ、2x/4x/8x/16xのアップスケーリング。最大出力：25.3メガピクセル。",
+    "display_name": "Magnific画像アップスケール（クリエイティブ）",
+    "inputs": {
+      "auto_downscale": {
+        "name": "自動ダウンスケール",
+        "tooltip": "出力が最大ピクセル数を超える場合、入力画像を自動的にダウンスケールします。"
+      },
+      "creativity": {
+        "name": "クリエイティビティ"
+      },
+      "engine": {
+        "name": "エンジン"
+      },
+      "fractality": {
+        "name": "フラクタリティ",
+        "tooltip": "プロンプトの強さとピクセルごとの複雑さ。"
+      },
+      "hdr": {
+        "name": "HDR",
+        "tooltip": "定義とディテールのレベル。"
+      },
+      "image": {
+        "name": "画像"
+      },
+      "optimized_for": {
+        "name": "最適化対象"
+      },
+      "prompt": {
+        "name": "プロンプト"
+      },
+      "resemblance": {
+        "name": "類似度",
+        "tooltip": "元画像との類似度のレベル。"
+      },
+      "scale_factor": {
+        "name": "拡大倍率"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MagnificImageUpscalerPreciseV2Node": {
+    "description": "シャープネス、グレイン、ディテールを細かく制御できる高忠実度アップスケーリング。最大出力：10060×10060ピクセル。",
+    "display_name": "Magnific画像アップスケール（精密V2）",
+    "inputs": {
+      "auto_downscale": {
+        "name": "自動ダウンスケール",
+        "tooltip": "出力が最大解像度を超える場合、入力画像を自動的にダウンスケールします。"
+      },
+      "flavor": {
+        "name": "フレーバー",
+        "tooltip": "処理スタイル：一般用途はsublime、写真にはphoto、ノイズの多い写真にはphoto_denoiser。"
+      },
+      "image": {
+        "name": "画像"
+      },
+      "scale_factor": {
+        "name": "拡大倍率"
+      },
+      "sharpen": {
+        "name": "シャープネス",
+        "tooltip": "画像のシャープネス強度。値が高いほどエッジの定義と明瞭さが増します。"
+      },
+      "smart_grain": {
+        "name": "スマートグレイン",
+        "tooltip": "画像が滑らかすぎたり人工的に見えないようにするインテリジェントなグレイン／テクスチャ強調。"
+      },
+      "ultra_detail": {
+        "name": "ウルトラディテール",
+        "tooltip": "アップスケーリング時に追加される微細なディテールやテクスチャ、マイクロディテールを制御します。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "Mahiro": {
     "description": "ネガティブなプロンプトとの差ではなく、ポジティブなプロンプトの「方向」によりスケールするようにガイダンスを修正します。",
     "display_name": "Mahiroはとても可愛いので、より良いガイダンス機能が必要です!! (。・ω・。)",
@@ -10981,8 +11063,13 @@
   "PreviewAny": {
     "display_name": "プレビュー任意",
     "inputs": {
-      "preview": {},
       "previewMode": {},
+      "preview_markdown": {
+        "name": "プレビュー"
+      },
+      "preview_text": {
+        "name": "プレビュー"
+      },
       "source": {
         "name": "ソース"
       }
@@ -14152,6 +14239,9 @@
       },
       "lyrics": {
         "name": "歌詞"
+      },
+      "min_p": {
+        "name": "最小p"
       },
       "seed": {
         "name": "シード"

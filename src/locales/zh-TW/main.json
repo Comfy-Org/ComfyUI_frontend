@@ -820,6 +820,7 @@
     "enterBaseName": "輸入基礎名稱",
     "enterNewName": "輸入新名稱",
     "enterNewNamePrompt": "輸入新名稱：",
+    "enterSubgraph": "進入子圖",
     "error": "錯誤",
     "errorLoadingImage": "載入圖片時發生錯誤",
     "errorLoadingVideo": "載入影片時發生錯誤",
@@ -2871,7 +2872,8 @@
     "unsavedChanges": {
       "message": "您有未儲存的變更。是否要捨棄這些變更並切換工作區？",
       "title": "未儲存的變更"
-    }
+    },
+    "viewWorkspace": "檢視工作區"
   },
   "workspaceAuth": {
     "errors": {
@@ -2920,6 +2922,14 @@
       "placeholder": "輸入對方的電子郵件",
       "title": "邀請他人加入此工作區"
     },
+    "inviteUpsellDialog": {
+      "messageNotSubscribed": "如需新增團隊成員至此工作區，請升級至 Creator 方案或更高級別。Standard 方案僅支援單一席次（擁有者）。",
+      "messageSingleSeat": "Standard 方案僅包含一個工作區擁有者席次。如需邀請更多成員，請升級至 Creator 方案或更高級別以解鎖多席次功能。",
+      "titleNotSubscribed": "邀請成員需要訂閱方案",
+      "titleSingleSeat": "您目前的方案僅支援單一席次",
+      "upgradeToCreator": "升級至 Creator",
+      "viewPlans": "查看方案"
+    },
     "leaveDialog": {
       "leave": "離開",
       "message": "除非聯絡工作區擁有者，否則您將無法再次加入。",
@@ -2945,7 +2955,10 @@
       "tabs": {
         "active": "已啟用",
         "pendingCount": "待處理 ({count})"
-      }
+      },
+      "upsellBannerSubscribe": "訂閱 Creator 方案或更高級別，即可邀請團隊成員加入此工作區。",
+      "upsellBannerUpgrade": "升級至 Creator 方案或更高級別，即可邀請更多團隊成員。",
+      "viewPlans": "查看方案"
     },
     "menu": {
       "deleteWorkspace": "刪除工作區",

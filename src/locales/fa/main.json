@@ -820,6 +820,7 @@
     "enterBaseName": "نام پایه را وارد کنید",
     "enterNewName": "نام جدید را وارد کنید",
     "enterNewNamePrompt": "نام جدید را وارد کنید:",
+    "enterSubgraph": "ورود به زیرگراف",
     "error": "خطا",
     "errorLoadingImage": "خطا در بارگذاری تصویر",
     "errorLoadingVideo": "خطا در بارگذاری ویدیو",
@@ -2882,7 +2883,8 @@
     "unsavedChanges": {
       "message": "شما تغییرات ذخیره‌نشده دارید. آیا می‌خواهید آن‌ها را رها کرده و فضای کاری را تغییر دهید؟",
       "title": "تغییرات ذخیره‌نشده"
-    }
+    },
+    "viewWorkspace": "مشاهده ورک‌اسپیس"
   },
   "workspaceAuth": {
     "errors": {
@@ -2931,6 +2933,14 @@
       "placeholder": "ایمیل شخص را وارد کنید",
       "title": "دعوت یک نفر به این فضای کاری"
     },
+    "inviteUpsellDialog": {
+      "messageNotSubscribed": "برای افزودن اعضای تیم به این ورک‌اسپیس، باید پلن Creator یا بالاتر را تهیه کنید. پلن Standard فقط یک کاربر (مالک) را پشتیبانی می‌کند.",
+      "messageSingleSeat": "پلن Standard فقط یک صندلی برای مالک ورک‌اسپیس دارد. برای دعوت اعضای بیشتر، پلن خود را به Creator یا بالاتر ارتقاء دهید تا امکان افزودن چندین کاربر فعال شود.",
+      "titleNotSubscribed": "برای دعوت اعضا نیاز به اشتراک است",
+      "titleSingleSeat": "پلن فعلی شما فقط یک کاربر را پشتیبانی می‌کند",
+      "upgradeToCreator": "ارتقاء به Creator",
+      "viewPlans": "مشاهده پلن‌ها"
+    },
     "leaveDialog": {
       "leave": "خروج",
       "message": "تا زمانی که با مالک محیط کاری تماس نگیرید، امکان پیوستن مجدد نخواهید داشت.",
@@ -2956,7 +2966,10 @@
       "tabs": {
         "active": "فعال",
         "pendingCount": "در انتظار ({count})"
-      }
+      },
+      "upsellBannerSubscribe": "برای دعوت اعضای تیم به این ورک‌اسپیس، به پلن Creator یا بالاتر اشتراک تهیه کنید.",
+      "upsellBannerUpgrade": "برای دعوت اعضای بیشتر به تیم، پلن خود را به Creator یا بالاتر ارتقاء دهید.",
+      "viewPlans": "مشاهده پلن‌ها"
     },
     "menu": {
       "deleteWorkspace": "حذف محیط کاری",

@@ -7349,6 +7349,88 @@
       }
     }
   },
+  "MagnificImageUpscalerCreativeNode": {
+    "description": "基于提示词的增强、风格化，以及 2x/4x/8x/16x 放大。最大输出：25.3 百万像素。",
+    "display_name": "Magnific 图像放大（创意）",
+    "inputs": {
+      "auto_downscale": {
+        "name": "自动缩小",
+        "tooltip": "如果输出超过最大像素限制，则自动缩小输入图像。"
+      },
+      "creativity": {
+        "name": "创意度"
+      },
+      "engine": {
+        "name": "引擎"
+      },
+      "fractality": {
+        "name": "复杂度",
+        "tooltip": "每平方像素的提示词强度和复杂度。"
+      },
+      "hdr": {
+        "name": "高动态范围",
+        "tooltip": "清晰度和细节级别。"
+      },
+      "image": {
+        "name": "图像"
+      },
+      "optimized_for": {
+        "name": "优化目标"
+      },
+      "prompt": {
+        "name": "提示词"
+      },
+      "resemblance": {
+        "name": "相似度",
+        "tooltip": "与原始图像的相似程度。"
+      },
+      "scale_factor": {
+        "name": "放大倍数"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MagnificImageUpscalerPreciseV2Node": {
+    "description": "高保真放大，精细控制锐度、颗粒感和细节。最大输出：10060×10060 像素。",
+    "display_name": "Magnific 图像放大（精确 V2）",
+    "inputs": {
+      "auto_downscale": {
+        "name": "自动缩小",
+        "tooltip": "如果输出超过最大分辨率，则自动缩小输入图像。"
+      },
+      "flavor": {
+        "name": "处理风格",
+        "tooltip": "处理风格：sublime 适用于通用，photo 适用于照片，photo_denoiser 适用于有噪点的照片。"
+      },
+      "image": {
+        "name": "图像"
+      },
+      "scale_factor": {
+        "name": "放大倍数"
+      },
+      "sharpen": {
+        "name": "锐度",
+        "tooltip": "图像锐度强度。数值越高，边缘越清晰。"
+      },
+      "smart_grain": {
+        "name": "智能颗粒",
+        "tooltip": "智能增强颗粒/纹理，防止图像过于平滑或不自然。"
+      },
+      "ultra_detail": {
+        "name": "超细节",
+        "tooltip": "控制放大过程中添加的精细细节、纹理和微观细节。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "Mahiro": {
     "description": "修改引导以更多地侧重于正面条件提示的'方向'，而不是负面条件提示之间的差异。",
     "display_name": "真寻太可爱了，她应该有个更好的引导功能！！(。・ω・。)",
@@ -10983,8 +11065,13 @@
   "PreviewAny": {
     "display_name": "预览任意",
     "inputs": {
-      "preview": {},
       "previewMode": {},
+      "preview_markdown": {
+        "name": "预览"
+      },
+      "preview_text": {
+        "name": "预览"
+      },
       "source": {
         "name": "源"
       }
@@ -14165,6 +14252,9 @@
       },
       "lyrics": {
         "name": "歌词"
+      },
+      "min_p": {
+        "name": "最小 p"
       },
       "seed": {
         "name": "种子"
