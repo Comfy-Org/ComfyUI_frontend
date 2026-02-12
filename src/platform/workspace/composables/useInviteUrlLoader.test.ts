@@ -132,7 +132,8 @@ describe('useInviteUrlLoader', () => {
         summary: 'Invite Accepted',
         detail: {
           text: 'You have been added to Test Workspace',
-          workspaceId: 'ws-123'
+          workspaceId: 'ws-123',
+          workspaceName: 'Test Workspace'
         },
         group: 'invite-accepted',
         closable: true
