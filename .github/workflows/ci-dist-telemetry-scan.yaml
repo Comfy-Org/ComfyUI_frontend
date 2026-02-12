@@ -62,7 +62,6 @@ jobs:
           if rg --no-ignore -n \
             -g '*.html' \
             -g '*.js' \
-            -g '!*.map' \
             -e '(?i)mixpanel\.init' \
             -e '(?i)mixpanel\.identify' \
             -e 'MixpanelTelemetryProvider' \
