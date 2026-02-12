@@ -141,18 +141,23 @@ describe('PromotedWidgetSlot', () => {
       expect(slot.value).toBeUndefined()
     })
 
-    it('writes value to interior widget', () => {
-      const interiorWidget = createMockWidget()
-      const interiorNode = {
-        id: '5',
-        widgets: [interiorWidget]
-      } as unknown as LGraphNode
+    it('writes value to WidgetValueStore', () => {
+      const store = useWidgetValueStore()
+      const state = store.registerWidget({
+        nodeId: '5',
+        name: 'seed',
+        type: 'number',
+        value: 42,
+        options: {},
+        disabled: false,
+        promoted: true
+      })
 
-      const subNode = createMockSubgraphNode({ '5': interiorNode })
+      const subNode = createMockSubgraphNode()
       const slot = new PromotedWidgetSlot(subNode, '5', 'seed')
       slot.value = 99999
 
-      expect(interiorWidget.value).toBe(99999)
+      expect(state.value).toBe(99999)
     })
   })
 
@@ -192,37 +197,56 @@ describe('PromotedWidgetSlot', () => {
       expect(slot.label).toBe('5: seed')
     })
 
-    it('writes label to interior widget', () => {
-      const interiorWidget = createMockWidget()
-      const interiorNode = {
-        id: '5',
-        widgets: [interiorWidget]
-      } as unknown as LGraphNode
+    it('writes label to WidgetValueStore', () => {
+      const store = useWidgetValueStore()
+      const state = store.registerWidget({
+        nodeId: '5',
+        name: 'seed',
+        type: 'number',
+        value: 42,
+        options: {},
+        disabled: false,
+        promoted: true
+      })
 
-      const subNode = createMockSubgraphNode({ '5': interiorNode })
+      const subNode = createMockSubgraphNode()
       const slot = new PromotedWidgetSlot(subNode, '5', 'seed')
       slot.label = 'Renamed'
 
-      expect(interiorWidget.label).toBe('Renamed')
+      expect(state.label).toBe('Renamed')
     })
 
-    it('clears label on interior widget when set to undefined', () => {
-      const interiorWidget = createMockWidget()
-      interiorWidget.label = 'Old Label'
-      const interiorNode = {
-        id: '5',
-        widgets: [interiorWidget]
-      } as unknown as LGraphNode
+    it('clears label in WidgetValueStore when set to undefined', () => {
+      const store = useWidgetValueStore()
+      const state = store.registerWidget({
+        nodeId: '5',
+        name: 'seed',
+        type: 'number',
+        value: 42,
+        options: {},
+        label: 'Old Label',
+        disabled: false,
+        promoted: true
+      })
 
-      const subNode = createMockSubgraphNode({ '5': interiorNode })
+      const subNode = createMockSubgraphNode()
       const slot = new PromotedWidgetSlot(subNode, '5', 'seed')
       slot.label = undefined
 
-      expect(interiorWidget.label).toBeUndefined()
+      expect(state.label).toBeUndefined()
     })
 
     it('updates the interior node input label when setting label', () => {
-      const interiorWidget = createMockWidget()
+      const store = useWidgetValueStore()
+      const state = store.registerWidget({
+        nodeId: '5',
+        name: 'seed',
+        type: 'number',
+        value: 42,
+        options: {},
+        disabled: false,
+        promoted: true
+      })
       const interiorInput = {
         name: 'seed',
         widget: { name: 'seed' },
@@ -230,7 +254,7 @@ describe('PromotedWidgetSlot', () => {
       }
       const interiorNode = {
         id: '5',
-        widgets: [interiorWidget],
+        widgets: [createMockWidget()],
         inputs: [interiorInput]
       } as unknown as LGraphNode
 
@@ -238,12 +262,22 @@ describe('PromotedWidgetSlot', () => {
       const slot = new PromotedWidgetSlot(subNode, '5', 'seed')
       slot.label = 'Renamed'
 
-      expect(interiorWidget.label).toBe('Renamed')
+      expect(state.label).toBe('Renamed')
       expect(interiorInput.label).toBe('Renamed')
     })
 
     it('clears the interior node input label when label is set to undefined', () => {
-      const interiorWidget = createMockWidget()
+      const store = useWidgetValueStore()
+      const state = store.registerWidget({
+        nodeId: '5',
+        name: 'seed',
+        type: 'number',
+        value: 42,
+        options: {},
+        label: 'Old',
+        disabled: false,
+        promoted: true
+      })
       const interiorInput = {
         name: 'seed',
         widget: { name: 'seed' },
@@ -251,7 +285,7 @@ describe('PromotedWidgetSlot', () => {
       }
       const interiorNode = {
         id: '5',
-        widgets: [interiorWidget],
+        widgets: [createMockWidget()],
         inputs: [interiorInput]
       } as unknown as LGraphNode
 
@@ -259,7 +293,7 @@ describe('PromotedWidgetSlot', () => {
       const slot = new PromotedWidgetSlot(subNode, '5', 'seed')
       slot.label = undefined
 
-      expect(interiorWidget.label).toBeUndefined()
+      expect(state.label).toBeUndefined()
       expect(interiorInput.label).toBeUndefined()
     })
 

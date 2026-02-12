@@ -110,10 +110,14 @@ export class PromotedWidgetSlot
   }
 
   override set value(v: WidgetValue) {
-    const resolved = this.resolve()
-    if (resolved) {
-      resolved.widget.value = v
-    }
+    const store = useWidgetValueStore()
+    const state = store.getWidget(
+      stripGraphPrefix(this.sourceNodeId),
+      this.sourceWidgetName
+    )
+    if (!state) return
+
+    state.value = v
   }
 
   override get label(): string | undefined {
@@ -126,16 +130,23 @@ export class PromotedWidgetSlot
   }
 
   override set label(v: string | undefined) {
-    const resolved = this.resolve()
-    if (!resolved) return
+    const store = useWidgetValueStore()
+    const state = store.getWidget(
+      stripGraphPrefix(this.sourceNodeId),
+      this.sourceWidgetName
+    )
+    if (!state) return
 
-    resolved.widget.label = v
-    const input = resolved.node.inputs?.find(
+    state.label = v
+
+    // Also sync the label on the corresponding input slot
+    const resolved = this.resolve()
+    const input = resolved?.node.inputs?.find(
       (inp) => inp.widget?.name === this.sourceWidgetName
     )
-    if (input) {
-      input.label = v
-    }
+    if (!input) return
+
+    input.label = v
   }
 
   override get promoted(): boolean {
