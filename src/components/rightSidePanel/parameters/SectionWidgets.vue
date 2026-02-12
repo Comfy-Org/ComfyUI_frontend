@@ -64,16 +64,6 @@ const executionStore = useExecutionStore()
 const rightSidePanelStore = useRightSidePanelStore()
 const { t } = useI18n()
 
-const nodeHasError = computed(() => {
-  // Only show error indicator in workflow overview (nothing selected on canvas)
-  if (canvasStore.selectedItems.length > 0 || !targetNode.value) return false
-  return executionStore.errorNodeIds.has(String(targetNode.value.id))
-})
-
-function navigateToErrorTab() {
-  rightSidePanelStore.openPanel('errors')
-}
-
 const getNodeParentGroup = inject(GetNodeParentGroupKey, null)
 
 function isWidgetShownOnParents(
@@ -115,6 +105,11 @@ const targetNode = computed<LGraphNode | null>(() => {
   return allSameNode ? widgets.value[0].node : null
 })
 
+const nodeHasError = computed(() => {
+  if (canvasStore.selectedItems.length > 0 || !targetNode.value) return false
+  return executionStore.errorNodeIds.has(String(targetNode.value.id))
+})
+
 const parentGroup = computed<LGraphGroup | null>(() => {
   if (!targetNode.value || !getNodeParentGroup) return null
   return getNodeParentGroup(targetNode.value)
@@ -131,6 +126,12 @@ function handleLocateNode() {
   if (graphNode) {
     canvasStore.canvas.animateToBounds(graphNode.boundingRect)
   }
+}
+
+function navigateToErrorTab() {
+  if (!targetNode.value) return
+  rightSidePanelStore.focusedErrorNodeId = String(targetNode.value.id)
+  rightSidePanelStore.openPanel('errors')
 }
 
 function handleWidgetValueUpdate(

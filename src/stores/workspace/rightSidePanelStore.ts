@@ -34,6 +34,7 @@ export const useRightSidePanelStore = defineStore('rightSidePanel', () => {
   const activeTab = ref<RightSidePanelTab>('parameters')
   const isEditingSubgraph = computed(() => activeTab.value === 'subgraph')
   const focusedSection = ref<RightSidePanelSection | null>(null)
+  const focusedErrorNodeId = ref<string | null>(null)
   const searchQuery = ref('')
 
   // Auto-close panel when switching to legacy menu mode
@@ -81,6 +82,7 @@ export const useRightSidePanelStore = defineStore('rightSidePanel', () => {
     activeTab,
     isEditingSubgraph,
     focusedSection,
+    focusedErrorNodeId,
     searchQuery,
     openPanel,
     closePanel,

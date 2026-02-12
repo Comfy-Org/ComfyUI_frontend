@@ -97,12 +97,13 @@
 </template>
 
 <script setup lang="ts">
-import { computed, nextTick, reactive, ref } from 'vue'
+import { computed, nextTick, reactive, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { useExecutionStore } from '@/stores/executionStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCommandStore } from '@/stores/commandStore'
+import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import { app } from '@/scripts/app'
 import { Subgraph } from '@/lib/litegraph/src/litegraph'
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
@@ -126,6 +127,7 @@ const executionStore = useExecutionStore()
 const canvasStore = useCanvasStore()
 const { t } = useI18n()
 const { copyToClipboard: globalCopy } = useCopyToClipboard()
+const rightSidePanelStore = useRightSidePanelStore()
 
 const searchQuery = ref('')
 const settingStore = useSettingStore()
@@ -267,6 +269,23 @@ const filteredGroups = computed<ErrorGroup[]>(() => {
 })
 
 const collapseState = reactive<Record<string, boolean>>({})
+
+watch(
+  () => rightSidePanelStore.focusedErrorNodeId,
+  (graphNodeId) => {
+    if (!graphNodeId) return
+    for (const group of filteredGroups.value) {
+      const hasMatch = group.cards.some((card) => {
+        if (!card.nodeId) return false
+        const graphNode = getNodeByExecutionId(app.rootGraph, card.nodeId)
+        return graphNode && String(graphNode.id) === graphNodeId
+      })
+      collapseState[group.title] = !hasMatch
+    }
+    rightSidePanelStore.focusedErrorNodeId = null
+  },
+  { immediate: true }
+)
 
 async function copyToClipboard(text: string) {
   try {
