@@ -375,7 +375,8 @@ const {
   plans: apiPlans,
   currentPlanSlug,
   fetchPlans,
-  subscription
+  subscription,
+  getMaxSeats
 } = useBillingContext()
 
 const isCancelled = computed(() => subscription.value?.isCancelled ?? false)
@@ -403,11 +404,6 @@ function getPriceFromApi(tier: PricingTierConfig): number | null {
   if (!plan) return null
   const price = plan.price_cents / 100
   return currentBillingCycle.value === 'yearly' ? price / 12 : price
-}
-
-function getMaxSeatsFromApi(tier: PricingTierConfig): number | null {
-  const plan = getApiPlanForTier(tier.key, 'monthly')
-  return plan ? plan.max_seats : null
 }
 
 const currentTierKey = computed<TierKey | null>(() =>
@@ -494,8 +490,7 @@ const getAnnualTotal = (tier: PricingTierConfig): number => {
   return plan ? plan.price_cents / 100 : tier.pricing.yearly * 12
 }
 
-const getMaxMembers = (tier: PricingTierConfig): number =>
-  getMaxSeatsFromApi(tier) ?? tier.maxMembers
+const getMaxMembers = (tier: PricingTierConfig): number => getMaxSeats(tier.key)
 
 const getMonthlyCreditsPerMember = (tier: PricingTierConfig): number =>
   tier.pricing.credits
