@@ -3472,7 +3472,11 @@
     "inviteAccepted": "Convite aceito",
     "inviteFailed": "Falha ao aceitar convite",
     "switchFailed": "Falha ao alternar o workspace. Por favor, tente novamente.",
-    "viewWorkspace": "Ver workspace"
+    "viewWorkspace": "Ver workspace",
+    "unsavedChanges": {
+      "message": "Você tem alterações não salvas. Deseja descartá-las e trocar de espaço de trabalho?",
+      "title": "Alterações não salvas"
+    }
   },
   "workspaceAuth": {
     "errors": {

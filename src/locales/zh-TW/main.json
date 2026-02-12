@@ -3460,7 +3460,11 @@
     "inviteAccepted": "已接受邀請",
     "inviteFailed": "接受邀請失敗",
     "switchFailed": "切換工作區失敗。請再試一次。",
-    "viewWorkspace": "檢視工作區"
+    "viewWorkspace": "檢視工作區",
+    "unsavedChanges": {
+      "message": "您有未儲存的變更。是否要捨棄這些變更並切換工作區？",
+      "title": "未儲存的變更"
+    }
   },
   "workspaceAuth": {
     "errors": {

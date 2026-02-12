@@ -3472,7 +3472,11 @@
     "inviteAccepted": "دعوت پذیرفته شد",
     "inviteFailed": "پذیرش دعوت ناموفق بود",
     "switchFailed": "تغییر ورک‌اسپیس ناموفق بود. لطفاً دوباره تلاش کنید.",
-    "viewWorkspace": "مشاهده workspace"
+    "viewWorkspace": "مشاهده workspace",
+    "unsavedChanges": {
+      "message": "شما تغییرات ذخیره‌نشده دارید. آیا می‌خواهید آن‌ها را رها کرده و فضای کاری را تغییر دهید؟",
+      "title": "تغییرات ذخیره‌نشده"
+    }
   },
   "workspaceAuth": {
     "errors": {

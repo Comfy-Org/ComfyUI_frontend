@@ -3460,7 +3460,11 @@
     "inviteAccepted": "초대 수락됨",
     "inviteFailed": "초대 수락에 실패했습니다",
     "switchFailed": "워크스페이스 전환에 실패했습니다. 다시 시도해 주세요.",
-    "viewWorkspace": "워크스페이스 보기"
+    "viewWorkspace": "워크스페이스 보기",
+    "unsavedChanges": {
+      "message": "저장되지 않은 변경 사항이 있습니다. 변경 사항을 취소하고 워크스페이스를 전환하시겠습니까?",
+      "title": "저장되지 않은 변경 사항"
+    }
   },
   "workspaceAuth": {
     "errors": {

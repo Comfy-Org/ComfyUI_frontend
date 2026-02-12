@@ -3460,7 +3460,11 @@
     "inviteAccepted": "تم قبول الدعوة",
     "inviteFailed": "فشل في قبول الدعوة",
     "switchFailed": "فشل في تبديل مساحة العمل. يرجى المحاولة مرة أخرى.",
-    "viewWorkspace": "عرض مساحة العمل"
+    "viewWorkspace": "عرض مساحة العمل",
+    "unsavedChanges": {
+      "message": "لديك تغييرات غير محفوظة. هل تريد تجاهلها والانتقال إلى مساحة عمل أخرى؟",
+      "title": "تغييرات غير محفوظة"
+    }
   },
   "workspaceAuth": {
     "errors": {

@@ -3460,7 +3460,11 @@
     "inviteAccepted": "Invitation acceptée",
     "inviteFailed": "Échec de l'acceptation de l'invitation",
     "switchFailed": "Échec du changement d’espace de travail. Veuillez réessayer.",
-    "viewWorkspace": "Voir l’espace de travail"
+    "viewWorkspace": "Voir l’espace de travail",
+    "unsavedChanges": {
+      "message": "Vous avez des modifications non enregistrées. Voulez-vous les abandonner et changer d’espace de travail ?",
+      "title": "Modifications non enregistrées"
+    }
   },
   "workspaceAuth": {
     "errors": {

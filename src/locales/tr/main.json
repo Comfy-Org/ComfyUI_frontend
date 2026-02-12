@@ -3460,7 +3460,11 @@
     "inviteAccepted": "Davet kabul edildi",
     "inviteFailed": "Davet kabul edilemedi",
     "switchFailed": "Çalışma alanı değiştirilemedi. Lütfen tekrar deneyin.",
-    "viewWorkspace": "Çalışma alanını görüntüle"
+    "viewWorkspace": "Çalışma alanını görüntüle",
+    "unsavedChanges": {
+      "message": "Kaydedilmemiş değişiklikleriniz var. Bunları iptal edip çalışma alanlarını değiştirmek istiyor musunuz?",
+      "title": "Kaydedilmemiş Değişiklikler"
+    }
   },
   "workspaceAuth": {
     "errors": {

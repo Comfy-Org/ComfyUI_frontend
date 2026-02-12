@@ -3460,7 +3460,11 @@
     "inviteAccepted": "招待を承諾しました",
     "inviteFailed": "招待の承諾に失敗しました",
     "switchFailed": "ワークスペースの切り替えに失敗しました。もう一度お試しください。",
-    "viewWorkspace": "ワークスペースを見る"
+    "viewWorkspace": "ワークスペースを見る",
+    "unsavedChanges": {
+      "message": "未保存の変更があります。破棄してワークスペースを切り替えますか？",
+      "title": "未保存の変更"
+    }
   },
   "workspaceAuth": {
     "errors": {
