@@ -1,24 +1,49 @@
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import type { Plan } from '@/platform/workspace/api/workspaceApi'
+
 import { useBillingContext } from './useBillingContext'
 
-vi.mock('@/platform/workspace/stores/teamWorkspaceStore', () => {
-  const isInPersonalWorkspace = { value: true }
-  const activeWorkspace = { value: { id: 'personal-123', type: 'personal' } }
+const { mockTeamWorkspacesEnabled, mockIsPersonal, mockPlans } = vi.hoisted(
+  () => ({
+    mockTeamWorkspacesEnabled: { value: false },
+    mockIsPersonal: { value: true },
+    mockPlans: { value: [] as Plan[] }
+  })
+)
+
+vi.mock('@vueuse/core', async (importOriginal) => {
+  const original = await importOriginal()
   return {
-    useTeamWorkspaceStore: () => ({
-      isInPersonalWorkspace: isInPersonalWorkspace.value,
-      activeWorkspace: activeWorkspace.value,
-      _setPersonalWorkspace: (value: boolean) => {
-        isInPersonalWorkspace.value = value
-        activeWorkspace.value = value
-          ? { id: 'personal-123', type: 'personal' }
-          : { id: 'team-456', type: 'team' }
-      }
-    })
+    ...(original as Record<string, unknown>),
+    createSharedComposable: (fn: (...args: unknown[]) => unknown) => fn
   }
 })
+
+vi.mock('@/composables/useFeatureFlags', () => ({
+  useFeatureFlags: () => ({
+    flags: {
+      get teamWorkspacesEnabled() {
+        return mockTeamWorkspacesEnabled.value
+      }
+    }
+  })
+}))
+
+vi.mock('@/platform/workspace/stores/teamWorkspaceStore', () => ({
+  useTeamWorkspaceStore: () => ({
+    get isInPersonalWorkspace() {
+      return mockIsPersonal.value
+    },
+    get activeWorkspace() {
+      return mockIsPersonal.value
+        ? { id: 'personal-123', type: 'personal' }
+        : { id: 'team-456', type: 'team' }
+    },
+    updateActiveWorkspace: vi.fn()
+  })
+}))
 
 vi.mock('@/platform/cloud/subscription/composables/useSubscription', () => ({
   useSubscription: () => ({
@@ -52,20 +77,18 @@ vi.mock('@/stores/firebaseAuthStore', () => ({
   })
 }))
 
-vi.mock('@/platform/cloud/subscription/composables/useBillingPlans', () => {
-  const plans = { value: [] }
-  const currentPlanSlug = { value: null }
-  return {
-    useBillingPlans: () => ({
-      plans,
-      currentPlanSlug,
-      isLoading: { value: false },
-      error: { value: null },
-      fetchPlans: vi.fn().mockResolvedValue(undefined),
-      getPlanBySlug: vi.fn().mockReturnValue(null)
-    })
-  }
-})
+vi.mock('@/platform/cloud/subscription/composables/useBillingPlans', () => ({
+  useBillingPlans: () => ({
+    get plans() {
+      return mockPlans
+    },
+    currentPlanSlug: { value: null },
+    isLoading: { value: false },
+    error: { value: null },
+    fetchPlans: vi.fn().mockResolvedValue(undefined),
+    getPlanBySlug: vi.fn().mockReturnValue(null)
+  })
+}))
 
 vi.mock('@/platform/workspace/api/workspaceApi', () => ({
   workspaceApi: {
@@ -88,6 +111,9 @@ describe('useBillingContext', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
     vi.clearAllMocks()
+    mockTeamWorkspacesEnabled.value = false
+    mockIsPersonal.value = true
+    mockPlans.value = []
   })
 
   it('returns legacy type for personal workspace', () => {
@@ -160,5 +186,52 @@ describe('useBillingContext', () => {
   it('exposes showSubscriptionDialog action', () => {
     const { showSubscriptionDialog } = useBillingContext()
     expect(() => showSubscriptionDialog()).not.toThrow()
+  })
+
+  describe('getMaxSeats', () => {
+    it('returns 1 for personal workspaces regardless of tier', () => {
+      const { getMaxSeats } = useBillingContext()
+      expect(getMaxSeats('standard')).toBe(1)
+      expect(getMaxSeats('creator')).toBe(1)
+      expect(getMaxSeats('pro')).toBe(1)
+      expect(getMaxSeats('founder')).toBe(1)
+    })
+
+    it('falls back to hardcoded values when no API plans available', () => {
+      mockTeamWorkspacesEnabled.value = true
+      mockIsPersonal.value = false
+
+      const { getMaxSeats } = useBillingContext()
+      expect(getMaxSeats('standard')).toBe(1)
+      expect(getMaxSeats('creator')).toBe(5)
+      expect(getMaxSeats('pro')).toBe(20)
+      expect(getMaxSeats('founder')).toBe(1)
+    })
+
+    it('prefers API max_seats when plans are loaded', () => {
+      mockTeamWorkspacesEnabled.value = true
+      mockIsPersonal.value = false
+      mockPlans.value = [
+        {
+          slug: 'pro-monthly',
+          tier: 'PRO',
+          duration: 'MONTHLY',
+          price_cents: 10000,
+          credits_cents: 2110000,
+          max_seats: 50,
+          availability: { available: true },
+          seat_summary: {
+            seat_count: 1,
+            total_cost_cents: 10000,
+            total_credits_cents: 2110000
+          }
+        }
+      ]
+
+      const { getMaxSeats } = useBillingContext()
+      expect(getMaxSeats('pro')).toBe(50)
+      // Tiers without API plans still fall back to hardcoded values
+      expect(getMaxSeats('creator')).toBe(5)
+    })
   })
 })

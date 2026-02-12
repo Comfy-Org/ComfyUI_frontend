@@ -239,15 +239,6 @@ interface CreateTopupResponse {
   amount_cents: number
 }
 
-interface TopupStatusResponse {
-  topup_id: string
-  status: TopupStatus
-  amount_cents: number
-  error_message?: string
-  created_at: string
-  completed_at?: string
-}
-
 type BillingOpStatus = 'pending' | 'succeeded' | 'failed'
 
 export interface BillingOpStatusResponse {
@@ -693,23 +684,6 @@ export const workspaceApi = {
           amount_cents: amountCents,
           idempotency_key: idempotencyKey
         } satisfies CreateTopupRequest,
-        { headers }
-      )
-      return response.data
-    } catch (err) {
-      handleAxiosError(err)
-    }
-  },
-
-  /**
-   * Get top-up status
-   * GET /api/billing/topup/:id
-   */
-  async getTopupStatus(topupId: string): Promise<TopupStatusResponse> {
-    const headers = await getAuthHeaderOrThrow()
-    try {
-      const response = await workspaceApiClient.get<TopupStatusResponse>(
-        api.apiURL(`/billing/topup/${topupId}`),
         { headers }
       )
       return response.data

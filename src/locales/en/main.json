@@ -2117,7 +2117,7 @@
     "subscribeNow": "Subscribe Now",
     "subscribeToComfyCloud": "Subscribe to Comfy Cloud",
     "workspaceNotSubscribed": "This workspace is not on a subscription",
-    "subscriptionRequiredMessage": "A subscription is required for members to run workflows on Cloud",
+    "subscriptionRequiredMessage": "A subscription is required for members to run workflows on Cloud and invite members",
     "contactOwnerToSubscribe": "Contact the workspace owner to subscribe",
     "description": "Choose the best plan for you",
     "descriptionWorkspace": "Choose the best plan for your workspace",
@@ -2206,7 +2206,7 @@
       "placeholder": "Dashboard workspace settings"
     },
     "members": {
-      "membersCount": "{count}/50 Members",
+      "membersCount": "{count}/{maxSeats} Members",
       "pendingInvitesCount": "{count} pending invite | {count} pending invites",
       "tabs": {
         "active": "Active",
@@ -2222,6 +2222,9 @@
         "revokeInvite": "Revoke invite",
         "removeMember": "Remove member"
       },
+      "upsellBannerSubscribe": "Subscribe to the Creator plan or above to invite team members to this workspace.",
+      "upsellBannerUpgrade": "Upgrade to the Creator plan or above to invite additional team members.",
+      "viewPlans": "View plans",
       "noInvites": "No pending invites",
       "noMembers": "No members",
       "personalWorkspaceMessage": "You can't invite other members to your personal workspace right now. To add members to a workspace,",
@@ -2259,6 +2262,14 @@
       "title": "Uninvite this person?",
       "message": "This member won't be able to join your workspace anymore. Their invite link will be invalidated.",
       "revoke": "Uninvite"
+    },
+    "inviteUpsellDialog": {
+      "titleNotSubscribed": "A subscription is required to invite members",
+      "titleSingleSeat": "Your current plan supports a single seat",
+      "messageNotSubscribed": "To add team members to this workspace, you need a Creator plan or above. The Standard plan supports only a single seat (the owner).",
+      "messageSingleSeat": "The Standard plan includes one seat for the workspace owner. To invite additional members, upgrade to the Creator plan or above to unlock multiple seats.",
+      "viewPlans": "View Plans",
+      "upgradeToCreator": "Upgrade to Creator"
     },
     "inviteMemberDialog": {
       "title": "Invite a person to this workspace",
@@ -2888,8 +2899,9 @@
       "message": "You have unsaved changes. Do you want to discard them and switch workspaces?"
     },
     "inviteAccepted": "Invite Accepted",
-    "addedToWorkspace": "You have been added to {workspaceName}",
-    "inviteFailed": "Failed to Accept Invite"
+    "addedToWorkspace": "You have been added to:",
+    "inviteFailed": "Failed to Accept Invite",
+    "viewWorkspace": "View workspace"
   },
   "workspaceAuth": {
     "errors": {
