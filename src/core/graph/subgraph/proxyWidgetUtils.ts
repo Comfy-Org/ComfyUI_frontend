@@ -1,9 +1,6 @@
 import { parseProxyWidgets } from '@/core/schemas/proxyWidget'
 import type { ProxyWidgetsProperty } from '@/core/schemas/proxyWidget'
-import {
-  isProxyWidget,
-  isDisconnectedWidget
-} from '@/core/graph/subgraph/proxyWidget'
+import { getPromotionList } from '@/core/graph/subgraph/promotionList'
 import { t } from '@/i18n'
 import type {
   IContextMenuValue,
@@ -13,6 +10,7 @@ import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets.ts'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { useLitegraphService } from '@/services/litegraphService'
 import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
 
@@ -58,7 +56,7 @@ export function demoteWidget(
 }
 
 function getWidgetName(w: IBaseWidget): string {
-  return isProxyWidget(w) ? w._overlay.widgetName : w.name
+  return w.name
 }
 
 export function matchesWidgetItem([nodeId, widgetName]: [string, string]) {
@@ -181,8 +179,10 @@ export function promoteRecommendedWidgets(subgraphNode: SubgraphNode) {
 }
 
 export function pruneDisconnected(subgraphNode: SubgraphNode) {
-  subgraphNode.properties.proxyWidgets = subgraphNode.widgets
-    .filter(isProxyWidget)
-    .filter((w) => !isDisconnectedWidget(w))
-    .map((w) => [w._overlay.nodeId, w._overlay.widgetName])
+  const { resolvePromotedWidget } = useWidgetValueStore()
+  const promotionList = getPromotionList(subgraphNode)
+  subgraphNode.properties.proxyWidgets = promotionList.filter(
+    ([nodeId, widgetName]) =>
+      resolvePromotedWidget(subgraphNode.subgraph, nodeId, widgetName) !== null
+  )
 }

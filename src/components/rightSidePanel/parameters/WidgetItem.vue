@@ -92,7 +92,7 @@ const displayLabel = customRef((track, trigger) => {
 
       const trimmedLabel = newValue.trim()
 
-      const success = renameWidget(widget, node, trimmedLabel, parents)
+      const success = renameWidget(widget, node, trimmedLabel)
 
       if (success) {
         canvasStore.canvas?.setDirty(true)

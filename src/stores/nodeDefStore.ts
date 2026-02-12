@@ -4,7 +4,7 @@ import { defineStore } from 'pinia'
 import { computed, ref, watchEffect } from 'vue'
 
 import { t } from '@/i18n'
-import { isProxyWidget } from '@/core/graph/subgraph/proxyWidget'
+import { getPromotionList } from '@/core/graph/subgraph/promotionList'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { transformNodeDefV1ToV2 } from '@/schemas/nodeDef/migration'
@@ -397,18 +397,29 @@ export const useNodeDefStore = defineStore('nodeDef', () => {
     if (!node.isSubgraphNode()) {
       const nodeDef = fromLGraphNode(node)
       if (!nodeDef) return undefined
-
       return nodeDef.inputs[widgetName]
     }
+
+    // For subgraph nodes, find the interior node via the promotion list
+    const entry = getPromotionList(node).find(
+      ([, name]) => name === widgetName
+    )
+    if (entry) {
+      const [nodeId] = entry
+      const subNode = node.subgraph.getNodeById(nodeId)
+      if (!subNode) return undefined
+      return getInputSpecForWidget(subNode, widgetName)
+    }
+
+    // Also check slot-promoted widgets (System 1) in node.widgets
     const widget = node.widgets?.find((w) => w.name === widgetName)
-    //TODO: resolve spec for linked
-    if (!widget || !isProxyWidget(widget)) return undefined
+    if (widget) {
+      const nodeDef = fromLGraphNode(node)
+      if (!nodeDef) return undefined
+      return nodeDef.inputs[widgetName]
+    }
 
-    const { nodeId, widgetName: subWidgetName } = widget._overlay
-    const subNode = node.subgraph.getNodeById(nodeId)
-    if (!subNode) return undefined
-
-    return getInputSpecForWidget(subNode, subWidgetName)
+    return undefined
   }
 
   /**
