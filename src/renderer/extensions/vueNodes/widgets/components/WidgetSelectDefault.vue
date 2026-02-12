@@ -61,7 +61,7 @@ function resolveValues(values: unknown): string[] {
 
 const modelValue = defineModel<string | undefined>({
   default(props: Props) {
-    const values: unknown = props.widget.options?.values
+    const values = props.widget.options?.values
     const resolved = typeof values === 'function' ? values() : values
     return Array.isArray(resolved) ? (resolved[0] ?? '') : ''
   }
