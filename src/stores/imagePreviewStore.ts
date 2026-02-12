@@ -365,7 +365,7 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
     outputs: Record<string, ExecutedWsMessage['output']>
   ) {
     app.nodeOutputs = outputs
-    nodeOutputs.value = outputs
+    nodeOutputs.value = { ...outputs }
   }
 
   function updateNodeImages(node: LGraphNode) {
