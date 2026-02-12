@@ -61,7 +61,7 @@ export function useFeatureFlags() {
     get onboardingSurveyEnabled() {
       return (
         remoteConfig.value.onboarding_survey_enabled ??
-        api.getServerFeature(ServerFeatureFlag.ONBOARDING_SURVEY_ENABLED, true)
+        api.getServerFeature(ServerFeatureFlag.ONBOARDING_SURVEY_ENABLED, false)
       )
     },
     get linearToggleEnabled() {
