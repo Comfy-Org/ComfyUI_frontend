@@ -70,6 +70,7 @@ async function uploadFile(
           api.apiURL(getResourceURL(...splitFilePath(path)))
         )
 
+        audioWidget.value = path
         // Manually trigger the callback to update VueNodes
         audioWidget.callback?.(path)
       }
