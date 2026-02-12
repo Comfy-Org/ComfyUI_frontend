@@ -401,9 +401,7 @@ export const useNodeDefStore = defineStore('nodeDef', () => {
     }
 
     // For subgraph nodes, find the interior node via the promotion list
-    const entry = getPromotionList(node).find(
-      ([, name]) => name === widgetName
-    )
+    const entry = getPromotionList(node).find(([, name]) => name === widgetName)
     if (entry) {
       const [nodeId] = entry
       const subNode = node.subgraph.getNodeById(nodeId)
