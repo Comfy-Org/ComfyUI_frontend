@@ -14,6 +14,7 @@ interface WorkspacePermissions {
   canLeaveWorkspace: boolean
   canAccessWorkspaceMenu: boolean
   canManageSubscription: boolean
+  canTopUp: boolean
 }
 
 /** UI configuration for workspace role */
@@ -44,7 +45,8 @@ function getPermissions(
       canRemoveMembers: false,
       canLeaveWorkspace: false,
       canAccessWorkspaceMenu: false,
-      canManageSubscription: true
+      canManageSubscription: true,
+      canTopUp: true
     }
   }
 
@@ -57,7 +59,8 @@ function getPermissions(
       canRemoveMembers: true,
       canLeaveWorkspace: true,
       canAccessWorkspaceMenu: true,
-      canManageSubscription: true
+      canManageSubscription: true,
+      canTopUp: true
     }
   }
 
@@ -70,7 +73,8 @@ function getPermissions(
     canRemoveMembers: false,
     canLeaveWorkspace: true,
     canAccessWorkspaceMenu: true,
-    canManageSubscription: false
+    canManageSubscription: false,
+    canTopUp: false
   }
 }
 

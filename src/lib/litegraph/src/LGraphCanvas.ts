@@ -5060,7 +5060,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
     octx.save()
 
-    const scale = window.devicePixelRatio
+    const scale = overlayCanvas.width / (overlayCanvas.clientWidth || 1)
     octx.setTransform(scale, 0, 0, scale, 0, 0)
 
     this.ds.toCanvasContext(octx)

@@ -47,10 +47,14 @@
               ? { value: inviteTooltip, showDelay: 0 }
               : { value: $t('workspacePanel.inviteMember'), showDelay: 300 }
           "
-          variant="muted-textonly"
-          size="icon"
-          :disabled="isInviteLimitReached"
-          :class="isInviteLimitReached && 'opacity-50 cursor-not-allowed'"
+          variant="secondary"
+          size="lg"
+          :disabled="!isSingleSeatPlan && isInviteLimitReached"
+          :class="
+            !isSingleSeatPlan &&
+            isInviteLimitReached &&
+            'opacity-50 cursor-not-allowed'
+          "
           :aria-label="$t('workspacePanel.inviteMember')"
           @click="handleInviteMember"
         >
@@ -119,6 +123,8 @@ import { TabsContent, TabsList, TabsRoot, TabsTrigger } from 'reka-ui'
 import WorkspaceProfilePic from '@/components/common/WorkspaceProfilePic.vue'
 import MembersPanelContent from '@/components/dialog/content/setting/MembersPanelContent.vue'
 import Button from '@/components/ui/button/Button.vue'
+import { useBillingContext } from '@/composables/billing/useBillingContext'
+import { TIER_TO_KEY } from '@/platform/cloud/subscription/constants/tierPricing'
 import SubscriptionPanelContentWorkspace from '@/platform/cloud/subscription/components/SubscriptionPanelContentWorkspace.vue'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
@@ -141,8 +147,19 @@ const {
   showLeaveWorkspaceDialog,
   showDeleteWorkspaceDialog,
   showInviteMemberDialog,
+  showInviteMemberUpsellDialog,
   showEditWorkspaceDialog
 } = useDialogService()
+const { isActiveSubscription, subscription, getMaxSeats } = useBillingContext()
+
+const isSingleSeatPlan = computed(() => {
+  if (!isActiveSubscription.value) return true
+  const tier = subscription.value?.tier
+  if (!tier) return true
+  const tierKey = TIER_TO_KEY[tier]
+  if (!tierKey) return true
+  return getMaxSeats(tierKey) <= 1
+})
 const workspaceStore = useTeamWorkspaceStore()
 const { workspaceName, members, isInviteLimitReached, isWorkspaceSubscribed } =
   storeToRefs(workspaceStore)
@@ -180,11 +197,16 @@ const deleteTooltip = computed(() => {
 })
 
 const inviteTooltip = computed(() => {
+  if (isSingleSeatPlan.value) return null
   if (!isInviteLimitReached.value) return null
   return t('workspacePanel.inviteLimitReached')
 })
 
 function handleInviteMember() {
+  if (isSingleSeatPlan.value) {
+    showInviteMemberUpsellDialog()
+    return
+  }
   if (isInviteLimitReached.value) return
   showInviteMemberDialog()
 }

@@ -88,10 +88,13 @@
                 </div>
                 <div class="flex items-baseline gap-1 font-inter font-semibold">
                   <span class="text-2xl">${{ tierPrice }}</span>
-                  <span class="text-base"
-                    >{{ $t('subscription.perMonth') }} /
-                    {{ $t('subscription.member') }}</span
-                  >
+                  <span class="text-base">
+                    {{
+                      isInPersonalWorkspace
+                        ? $t('subscription.usdPerMonth')
+                        : $t('subscription.usdPerMonthPerMember')
+                    }}
+                  </span>
                 </div>
                 <div
                   v-if="isActiveSubscription"
@@ -172,16 +175,11 @@
           </div>
         </div>
 
-        <div class="flex flex-col lg:flex-row gap-6 pt-9">
-          <div class="flex flex-col shrink-0">
-            <div class="flex flex-col gap-3">
+        <div class="flex flex-col lg:flex-row lg:items-stretch gap-6 pt-6">
+          <div class="flex flex-col">
+            <div class="flex flex-col gap-3 h-full">
               <div
-                :class="
-                  cn(
-                    'relative flex flex-col gap-6 rounded-2xl p-5',
-                    'bg-modal-panel-background'
-                  )
-                "
+                class="relative flex flex-col gap-6 rounded-2xl p-5 bg-secondary-background justify-between h-full"
               >
                 <Button
                   variant="muted-textonly"
@@ -246,9 +244,15 @@
                   </tbody>
                 </table>
 
-                <div class="flex items-center justify-between">
+                <div
+                  v-if="
+                    isActiveSubscription &&
+                    !showZeroState &&
+                    permissions.canTopUp
+                  "
+                  class="flex items-center justify-between"
+                >
                   <Button
-                    v-if="isActiveSubscription && !showZeroState"
                     variant="secondary"
                     class="p-2 min-h-8 rounded-lg text-sm font-normal text-text-primary bg-interface-menu-component-surface-selected"
                     @click="handleAddApiCredits"
@@ -296,7 +300,11 @@
 
       <!-- Members invoice card -->
       <div
-        v-if="isActiveSubscription && !isInPersonalWorkspace"
+        v-if="
+          isActiveSubscription &&
+          !isInPersonalWorkspace &&
+          permissions.canManageSubscription
+        "
         class="mt-6 flex gap-1 rounded-2xl border border-interface-stroke p-6 justify-between items-center text-sm"
       >
         <div class="flex flex-col gap-2">
@@ -319,7 +327,10 @@
       </div>
 
       <!-- View More Details - Outside main content -->
-      <div class="flex items-center gap-2 py-6">
+      <div
+        v-if="permissions.canManageSubscription"
+        class="flex items-center gap-2 py-6"
+      >
         <i class="pi pi-external-link text-muted"></i>
         <a
           href="https://www.comfy.org/cloud/pricing"
@@ -351,7 +362,6 @@ import { useSubscriptionActions } from '@/platform/cloud/subscription/composable
 import { useSubscriptionCredits } from '@/platform/cloud/subscription/composables/useSubscriptionCredits'
 import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
 import { useDialogService } from '@/services/dialogService'
-import type { TierKey } from '@/platform/cloud/subscription/constants/tierPricing'
 import {
   DEFAULT_TIER_KEY,
   TIER_TO_KEY,
@@ -366,7 +376,7 @@ import { cn } from '@/utils/tailwindUtil'
 const workspaceStore = useTeamWorkspaceStore()
 const { isWorkspaceSubscribed, isInPersonalWorkspace, members } =
   storeToRefs(workspaceStore)
-const { permissions, workspaceRole } = useWorkspaceUI()
+const { permissions } = useWorkspaceUI()
 const { t, n } = useI18n()
 const toast = useToast()
 
@@ -380,7 +390,7 @@ const {
   manageSubscription,
   fetchStatus,
   fetchBalance,
-  plans: apiPlans
+  getMaxSeats
 } = useBillingContext()
 
 const { showCancelSubscriptionDialog } = useDialogService()
@@ -421,7 +431,7 @@ const isCancelled = computed(
 // Show subscribe prompt to owners without active subscription
 // Don't show if subscription is cancelled (still active until end date)
 const showSubscribePrompt = computed(() => {
-  if (workspaceRole.value !== 'owner') return false
+  if (!permissions.value.canManageSubscription) return false
   if (isCancelled.value) return false
   if (isInPersonalWorkspace.value) return !isActiveSubscription.value
   return !isWorkspaceSubscribed.value
@@ -503,23 +513,6 @@ const tierPrice = computed(() =>
 const memberCount = computed(() => members.value.length)
 const nextMonthInvoice = computed(() => memberCount.value * tierPrice.value)
 
-function getApiPlanForTier(tierKey: TierKey, duration: 'monthly' | 'yearly') {
-  const apiDuration = duration === 'yearly' ? 'ANNUAL' : 'MONTHLY'
-  const apiTier = tierKey.toUpperCase()
-  return apiPlans.value.find(
-    (p) => p.tier === apiTier && p.duration === apiDuration
-  )
-}
-
-function getMaxSeatsFromApi(tierKey: TierKey): number | null {
-  const plan = getApiPlanForTier(tierKey, 'monthly')
-  return plan ? plan.max_seats : null
-}
-
-function getMaxMembers(tierKey: TierKey): number {
-  return getMaxSeatsFromApi(tierKey) ?? getTierFeatures(tierKey).maxMembers
-}
-
 const refillsDate = computed(() => {
   if (!subscription.value?.renewalDate) return ''
   const date = new Date(subscription.value.renewalDate)
@@ -563,13 +556,18 @@ interface Benefit {
 const tierBenefits = computed((): Benefit[] => {
   const key = tierKey.value
 
-  const benefits: Benefit[] = [
-    {
+  const benefits: Benefit[] = []
+
+  if (!isInPersonalWorkspace.value) {
+    benefits.push({
       key: 'members',
       type: 'icon',
-      label: t('subscription.membersLabel', { count: getMaxMembers(key) }),
+      label: t('subscription.membersLabel', { count: getMaxSeats(key) }),
       icon: 'pi pi-user'
-    },
+    })
+  }
+
+  benefits.push(
     {
       key: 'maxDuration',
       type: 'metric',
@@ -586,7 +584,7 @@ const tierBenefits = computed((): Benefit[] => {
       type: 'feature',
       label: t('subscription.addCreditsLabel')
     }
-  ]
+  )
 
   if (getTierFeatures(key).customLoRAs) {
     benefits.push({

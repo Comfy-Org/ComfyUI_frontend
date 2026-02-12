@@ -59,5 +59,7 @@ const filteredProps = computed(() =>
 const displayName = computed(() => widget.label || widget.name)
 const id = useId()
 
-const isReadOnly = computed(() => widget.options?.read_only ?? false)
+const isReadOnly = computed(
+  () => widget.options?.read_only ?? widget.options?.disabled ?? false
+)
 </script>
