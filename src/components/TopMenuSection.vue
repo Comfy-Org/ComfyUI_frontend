@@ -39,7 +39,7 @@
             :class="
               cn(
                 'actionbar-container relative pointer-events-auto flex gap-2 h-12 items-center rounded-lg border bg-comfy-menu-bg px-2 shadow-interface',
-                hasPromptError
+                hasAnyError
                   ? 'border-destructive-background-hover'
                   : 'border-interface-stroke'
               )
@@ -250,7 +250,7 @@ const shouldShowRedDot = computed((): boolean => {
   return releaseRedDot || shouldShowConflictRedDot.value
 })
 
-const { hasAnyError: hasPromptError } = storeToRefs(executionStore)
+const { hasAnyError } = storeToRefs(executionStore)
 
 // Right side panel toggle
 const { isOpen: isRightSidePanelOpen } = storeToRefs(rightSidePanelStore)

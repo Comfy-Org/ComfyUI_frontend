@@ -2949,9 +2949,8 @@
         "desc": "The workflow data sent to the server is empty. This may be an unexpected system error."
       }
     },
-    "errorHelpPrefix": "For more help, ",
+    "errorHelp": "For more help, {github} or {support}",
     "errorHelpGithub": "submit a GitHub issue",
-    "errorHelpOr": " or ",
     "errorHelpSupport": "contact our support"
   },
   "help": {

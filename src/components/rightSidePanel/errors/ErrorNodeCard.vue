@@ -1,28 +1,16 @@
 <script setup lang="ts">
-/**
- * ErrorNodeCard.vue
- *
- * Displays a single error card within the error tab.
- * Contains the node header (ID badge, title, action buttons)
- * and the list of errors (message, traceback, copy button).
- */
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
 import { cn } from '@/utils/tailwindUtil'
 
-import type { ErrorCardData } from './types'
+import type { ErrorCardData, ErrorItem } from './types'
 
 const { card, showNodeIdBadge = false } = defineProps<{
   card: ErrorCardData
   showNodeIdBadge?: boolean
 }>()
 
-/**
- * @event locateNode - Pans the canvas to center on the node with the given ID.
- * @event enterSubgraph - Opens the subgraph that contains the specified node.
- * @event copyToClipboard - Copies the provided error text to the system clipboard.
- */
 const emit = defineEmits<{
   locateNode: [nodeId: string]
   enterSubgraph: [nodeId: string]
@@ -30,6 +18,13 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useI18n()
+
+function handleCopyError(error: ErrorItem) {
+  emit(
+    'copyToClipboard',
+    [error.message, error.details].filter(Boolean).join('\n\n')
+  )
+}
 </script>
 
 <template>
@@ -53,7 +48,7 @@ const { t } = useI18n()
         variant="secondary"
         size="sm"
         class="rounded-lg text-sm shrink-0"
-        @click.stop="emit('enterSubgraph', card.nodeId!)"
+        @click.stop="emit('enterSubgraph', card.nodeId ?? '')"
       >
         {{ t('rightSidePanel.enterSubgraph') }}
       </Button>
@@ -94,7 +89,7 @@ const { t } = useI18n()
           "
         >
           <p
-            class="m-0 text-[11px] text-muted-foreground break-words whitespace-pre-wrap font-mono leading-relaxed"
+            class="m-0 text-xs text-muted-foreground break-words whitespace-pre-wrap font-mono leading-relaxed"
           >
             {{ error.details }}
           </p>
@@ -104,12 +99,7 @@ const { t } = useI18n()
           variant="secondary"
           size="sm"
           class="w-full justify-center gap-2 h-8 text-[11px]"
-          @click="
-            emit(
-              'copyToClipboard',
-              [error.message, error.details].filter(Boolean).join('\n\n')
-            )
-          "
+          @click="handleCopyError(error)"
         >
           <i class="icon-[lucide--copy] size-3.5" />
           {{ t('g.copy') }}

@@ -14,9 +14,7 @@ import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
-import { getNodeByExecutionId } from '@/utils/graphTraversalUtil'
 import { cn } from '@/utils/tailwindUtil'
-import { app } from '@/scripts/app'
 
 import PropertiesAccordionItem from '../layout/PropertiesAccordionItem.vue'
 import { HideLayoutFieldKey } from '@/types/widgetTypes'
@@ -66,35 +64,12 @@ const executionStore = useExecutionStore()
 const rightSidePanelStore = useRightSidePanelStore()
 const { t } = useI18n()
 
-/**
- * Checks whether the current node has errors from lastNodeErrors or lastExecutionError.
- * Uses execution ID mapping to match graph node IDs.
- */
 const nodeHasError = computed(() => {
   // Only show error indicator in workflow overview (nothing selected on canvas)
-  if (canvasStore.selectedItems.length > 0) return false
-  if (!targetNode.value) return false
-  const nodeId = targetNode.value.id
-
-  // Check lastNodeErrors (validation errors from 400 Bad Request)
-  if (executionStore.lastNodeErrors) {
-    for (const executionId of Object.keys(executionStore.lastNodeErrors)) {
-      const graphNode = getNodeByExecutionId(app.rootGraph, executionId)
-      if (graphNode && String(graphNode.id) === String(nodeId)) return true
-    }
-  }
-
-  // Check lastExecutionError (runtime WebSocket error)
-  if (executionStore.lastExecutionError) {
-    const execNodeId = String(executionStore.lastExecutionError.node_id)
-    const graphNode = getNodeByExecutionId(app.rootGraph, execNodeId)
-    if (graphNode && String(graphNode.id) === String(nodeId)) return true
-  }
-
-  return false
+  if (canvasStore.selectedItems.length > 0 || !targetNode.value) return false
+  return executionStore.errorNodeIds.has(String(targetNode.value.id))
 })
 
-/** Switches the right side panel to the global Errors tab. */
 function navigateToErrorTab() {
   rightSidePanelStore.openPanel('errors')
 }
@@ -189,7 +164,12 @@ defineExpose({
               class="icon-[lucide--octagon-alert] size-4 shrink-0 text-destructive-background-hover"
             />
             <span
-              :class="cn('truncate', nodeHasError && 'text-destructive-background-hover')"
+              :class="
+                cn(
+                  'truncate',
+                  nodeHasError && 'text-destructive-background-hover'
+                )
+              "
             >
               <slot name="label">
                 {{ displayLabel }}

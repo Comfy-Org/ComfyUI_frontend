@@ -47,6 +47,13 @@ interface QueuedPrompt {
   workflow?: ComfyWorkflow
 }
 
+/** Prompt-level errors without node IDs (e.g. invalid_prompt, prompt_no_outputs) */
+interface PromptError {
+  type: string
+  message: string
+  details: string
+}
+
 const subgraphNodeIdToSubgraph = (id: string, graph: LGraph | Subgraph) => {
   const node = graph.getNodeById(id)
   if (node?.isSubgraphNode()) return node.subgraph
@@ -102,13 +109,6 @@ function executionIdToNodeLocatorId(
   if (!subgraphs) return undefined
   const nodeLocatorId = createNodeLocatorId(subgraphs.at(-1)!.id, localNodeId)
   return nodeLocatorId
-}
-
-/** Prompt-level errors without node IDs (e.g. invalid_prompt, prompt_no_outputs) */
-interface PromptError {
-  type: string
-  message: string
-  details: string
 }
 
 export const useExecutionStore = defineStore('execution', () => {
@@ -650,13 +650,43 @@ export const useExecutionStore = defineStore('execution', () => {
     }
   })
 
+  /** Whether a runtime execution error is present */
+  const hasExecutionError = computed(() => !!lastExecutionError.value)
+
+  /** Whether a prompt-level error is present (e.g. invalid_prompt, prompt_no_outputs) */
+  const hasPromptError = computed(() => !!lastPromptError.value)
+
+  /** Whether any node validation errors are present */
+  const hasNodeError = computed(
+    () => !!lastNodeErrors.value && Object.keys(lastNodeErrors.value).length > 0
+  )
+
   /** Whether any error (node validation, runtime execution, or prompt-level) is present */
   const hasAnyError = computed(
-    () =>
-      !!lastExecutionError.value ||
-      !!lastPromptError.value ||
-      (!!lastNodeErrors.value && Object.keys(lastNodeErrors.value).length > 0)
+    () => hasExecutionError.value || hasPromptError.value || hasNodeError.value
   )
+
+  /** Pre-computed Set of graph node IDs (as strings) that have errors. */
+  const errorNodeIds = computed<Set<string>>(() => {
+    const ids = new Set<string>()
+
+    // Node validation errors (400 Bad Request)
+    if (lastNodeErrors.value) {
+      for (const executionId of Object.keys(lastNodeErrors.value)) {
+        const graphNode = getNodeByExecutionId(app.rootGraph, executionId)
+        if (graphNode) ids.add(String(graphNode.id))
+      }
+    }
+
+    // Runtime execution error (WebSocket)
+    if (lastExecutionError.value) {
+      const execNodeId = String(lastExecutionError.value.node_id)
+      const graphNode = getNodeByExecutionId(app.rootGraph, execNodeId)
+      if (graphNode) ids.add(String(graphNode.id))
+    }
+
+    return ids
+  })
 
   return {
     isIdle,
@@ -698,6 +728,7 @@ export const useExecutionStore = defineStore('execution', () => {
     promptIdToWorkflowId,
     // Node error lookup helpers
     getNodeErrors,
-    slotHasError
+    slotHasError,
+    errorNodeIds
   }
 })

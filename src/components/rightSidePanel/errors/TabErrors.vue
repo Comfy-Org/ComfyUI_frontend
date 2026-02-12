@@ -1,11 +1,4 @@
 <script setup lang="ts">
-/**
- * TabErrors.vue
- *
- * This component displays all errors (prompt-level, node-specific, and runtime execution errors)
- * in a unified, searchable, and grouped view within the Right Side Panel.
- */
-
 import { computed, nextTick, reactive, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -46,31 +39,15 @@ const showNodeIdBadge = computed(
     NodeBadgeMode.None
 )
 
-// ─── Helpers ────────────────────────────────────────────────────────────────
-
-/**
- * Resolves the display title for a node given its execution ID.
- * @param nodeId The execution ID of the node.
- */
 function resolveNodeTitle(nodeId: string): string {
   const graphNode = getNodeByExecutionId(app.rootGraph, nodeId)
   return graphNode?.title || ''
 }
 
-/**
- * Checks if a given node ID belongs to a subgraph (contains a colon).
- * @param nodeId The ID to check.
- */
 function isSubgraphId(nodeId: string): boolean {
   return nodeId.includes(':')
 }
 
-// ─── Normalisation ──────────────────────────────────────────────────────────
-
-/**
- * Aggregates and normalises errors from executionStore into a hierarchy of groups and cards.
- * Organizes by: Group (class_type) -> Card (nodeId) -> Errors (list of items).
- */
 const errorGroups = computed<ErrorGroup[]>(() => {
   const groupsMap = new Map<
     string,
@@ -167,10 +144,6 @@ const errorGroups = computed<ErrorGroup[]>(() => {
     })
 })
 
-/**
- * Filtered version of errorGroups based on the searchQuery.
- * Searches across category names, node titles, IDs, and error messages.
- */
 const filteredGroups = computed<ErrorGroup[]>(() => {
   const query = searchQuery.value.trim().toLowerCase()
   if (!query) return errorGroups.value
@@ -197,8 +170,6 @@ const filteredGroups = computed<ErrorGroup[]>(() => {
 
 const collapseState = reactive<Record<string, boolean>>({})
 
-// ─── Actions ────────────────────────────────────────────────────────────────
-
 async function copyToClipboard(text: string) {
   try {
     await globalCopy(text)
@@ -207,16 +178,8 @@ async function copyToClipboard(text: string) {
   }
 }
 
-/**
- * Navigates the canvas to a specific graph or subgraph.
- *
- * NOTE: requestAnimationFrame is called twice consecutively to ensure the canvas
- * has completed its internal coordinate adjustments and DOM updates before
- * we attempt to center or focus on a specific node bounding box. This is
- * required due to the asynchronous nature of LiteGraph's subgraph switching.
- *
- * @param targetGraph The graph to navigate to.
- */
+// Double RAF is needed to wait for LiteGraph's internal canvas frame cycle
+// after subgraph switching before we can focus on a node bounding box.
 async function navigateToGraph(targetGraph: LGraph) {
   const canvas = canvasStore.canvas
   if (!canvas) return
@@ -238,11 +201,6 @@ async function navigateToGraph(targetGraph: LGraph) {
   }
 }
 
-/**
- * Locates a specific node on the canvas and focuses on it.
- * Navigates to the appropriate subgraph if necessary.
- * @param nodeId The execution ID of the node to locate.
- */
 async function locateNode(nodeId: string) {
   if (!canvasStore.canvas) return
 
@@ -253,10 +211,6 @@ async function locateNode(nodeId: string) {
   canvasStore.canvas?.animateToBounds(graphNode.boundingRect)
 }
 
-/**
- * Enters the subgraph associated with a node.
- * @param nodeId The execution ID of the node.
- */
 async function enterSubgraph(nodeId: string) {
   if (!canvasStore.canvas) return
 
@@ -267,15 +221,9 @@ async function enterSubgraph(nodeId: string) {
   useLitegraphService().fitView()
 }
 
-// ─── Help Links ─────────────────────────────────────────────────────────────
-
 const REPO_OWNER = 'comfyanonymous'
 const REPO_NAME = 'ComfyUI'
 
-/**
- * Open GitHub issues search filtered by the current errors.
- * Uses the same URL pattern as the existing FindIssueButton component.
- */
 function openGitHubIssues() {
   useTelemetry()?.trackUiButtonClicked({
     button_id: 'error_tab_github_issues_clicked'
@@ -284,9 +232,6 @@ function openGitHubIssues() {
   window.open(url, '_blank', 'noopener,noreferrer')
 }
 
-/**
- * Open contact support flow using the existing Comfy.ContactSupport command.
- */
 async function contactSupport() {
   useTelemetry()?.trackHelpResourceClicked({
     resource_type: 'help_feedback',
@@ -365,26 +310,32 @@ async function contactSupport() {
 
     <!-- Fixed Footer: Help Links -->
     <div class="shrink-0 border-t border-interface-stroke px-4 py-4 min-w-0">
-      <p class="m-0 text-sm text-muted-foreground leading-tight break-words">
-        {{ t('rightSidePanel.errorHelpPrefix') }}
-        <Button
-          variant="textonly"
-          size="unset"
-          class="inline underline text-inherit text-sm whitespace-nowrap"
-          @click="openGitHubIssues"
-        >
-          {{ t('rightSidePanel.errorHelpGithub') }}
-        </Button>
-        {{ t('rightSidePanel.errorHelpOr') }}
-        <Button
-          variant="textonly"
-          size="unset"
-          class="inline underline text-inherit text-sm whitespace-nowrap"
-          @click="contactSupport"
-        >
-          {{ t('rightSidePanel.errorHelpSupport') }}
-        </Button>.
-      </p>
+      <i18n-t
+        keypath="rightSidePanel.errorHelp"
+        tag="p"
+        class="m-0 text-sm text-muted-foreground leading-tight break-words"
+      >
+        <template #github>
+          <Button
+            variant="textonly"
+            size="unset"
+            class="inline underline text-inherit text-sm whitespace-nowrap"
+            @click="openGitHubIssues"
+          >
+            {{ t('rightSidePanel.errorHelpGithub') }}
+          </Button>
+        </template>
+        <template #support>
+          <Button
+            variant="textonly"
+            size="unset"
+            class="inline underline text-inherit text-sm whitespace-nowrap"
+            @click="contactSupport"
+          >
+            {{ t('rightSidePanel.errorHelpSupport') }}
+          </Button>
+        </template>
+      </i18n-t>
     </div>
   </div>
 </template>
