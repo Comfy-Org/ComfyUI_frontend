@@ -67,6 +67,7 @@ export class ToInputFromIoNodeLink implements RenderLink {
       if (inputNode && input)
         this.node._disconnectNodeInput(inputNode, input, existingLink)
       events.dispatch('input-moved', this)
+      fromSlot.events.dispatch('input-disconnected', { input: fromSlot })
     } else {
       // Creating a new link
       events.dispatch('link-created', newLink)
@@ -140,9 +141,17 @@ export class ToInputFromIoNodeLink implements RenderLink {
   }
   disconnect(): boolean {
     if (!this.existingLink) return false
-    const { input, inputNode } = this.existingLink.resolve(this.network)
+    const { input, inputNode, subgraphInput } = this.existingLink.resolve(
+      this.network
+    )
     if (!inputNode || !input) return false
     this.node._disconnectNodeInput(inputNode, input, this.existingLink)
+
+    if (subgraphInput)
+      subgraphInput.events.dispatch('input-disconnected', {
+        input: subgraphInput
+      })
+
     return true
   }
 }

@@ -200,7 +200,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     subgraphInput.events.addEventListener(
       'input-connected',
       (e) => {
-        input.shape = e.detail.input.shape
+        input.shape = this.getSlotShape(subgraphInput, e.detail.input)
         if (input._widget) return
 
         const widget = subgraphInput._widget
@@ -217,6 +217,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     subgraphInput.events.addEventListener(
       'input-disconnected',
       () => {
+        input.shape = this.getSlotShape(subgraphInput)
         // If the input is connected to more than one widget, don't remove the widget
         const connectedWidgets = subgraphInput.getConnectedWidgets()
         if (connectedWidgets.length > 0) return
@@ -244,17 +245,12 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     this.inputs.length = 0
     this.inputs.push(
       ...this.subgraph.inputNode.slots.map((slot) => {
-        const shapes = slot.linkIds.map(
-          (id) => this.subgraph.links[id]?.resolve(this.subgraph)?.input?.shape
-        )
         return new NodeInputSlot(
           {
             name: slot.name,
             localized_name: slot.localized_name,
             label: slot.label,
-            shape: shapes.every((shape) => shape === shapes[0])
-              ? shapes[0]
-              : undefined,
+            shape: this.getSlotShape(slot),
             type: slot.type,
             link: null
           },
@@ -655,5 +651,12 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     //pollution of rootGraph.subgraphs
 
     return clone
+  }
+  getSlotShape(slot: SubgraphInput, extraInput?: INodeInputSlot) {
+    const shapes = slot.linkIds.map(
+      (id) => this.subgraph.links[id]?.resolve(this.subgraph)?.input?.shape
+    )
+    if (extraInput) shapes.push(extraInput.shape)
+    return shapes.every((shape) => shape === shapes[0]) ? shapes[0] : undefined
   }
 }
