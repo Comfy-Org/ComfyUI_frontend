@@ -1,160 +1,153 @@
-# GitHub Pages Deployment
+# Branch Status Pages
 
-This document describes the GitHub Pages deployment setup for ComfyUI Frontend development tools.
+This directory contains the source for the branch status pages that aggregate development tools and test reports.
 
-## Overview
+## Deployment
 
-The project automatically deploys the following development tools to GitHub Pages on every merge to the `main` branch:
+The branch status pages are automatically deployed to **Vercel** on every push to any branch.
 
-- **Storybook** - Interactive component library and design system documentation
-- **Nx Dependency Graph** - Visual representation of project dependencies
-- **Test Coverage Reports** - Code coverage from Vitest unit tests
-- **Vitest Results** - Interactive test results and reports
-- **Knip Report** - Unused code and dependency analysis
+### Architecture
 
-## Accessing the Tools
-
-Once deployed, all tools are accessible from a single landing page at:
 ```
-https://comfy-org.github.io/ComfyUI_frontend/
+Push to Branch
+  ↓
+  ├─→ GitHub Actions (runs tests, deploys artifacts)
+  │     ├─→ Storybook → Cloudflare Pages
+  │     ├─→ E2E Tests → GitHub Actions Artifacts
+  │     └─→ Vitest → GitHub Actions Artifacts
+  │
+  └─→ Vercel (auto-triggered)
+        ↓
+        Runs: pnpm pages:build:branch-status
+        ↓
+        1. Fetches test results from deployed sources
+        2. Builds status pages
+        3. Deploys automatically
 ```
 
-## Primary Use Case: Storybook for Design Team
+### URLs
 
-The primary motivation for this deployment is to provide the design team with a consistent, bookmarkable URL to reference the latest component system state. Instead of sharing PR-specific Storybook builds, the design team can always access the latest approved components from the main branch.
+- **Production** (main branch): `https://comfyui-frontend-reports.vercel.app`
+- **Preview** (PR branches): `https://<branch>-comfyui-frontend-reports.vercel.app`
 
-## Deployment Workflow
+## What's Included
 
-The deployment is managed by the `.github/workflows/release-pages.yml` workflow, which:
+The branch status page aggregates:
 
-1. **Triggers on**:
-   - Push to `main` branch
-   - Manual workflow dispatch
+1. **Storybook** - Component library documentation
+2. **Nx Dependency Graph** - Project structure visualization
+3. **Playwright Reports** - E2E test results
+4. **Vitest Reports** - Unit test results
+5. **Coverage Report** - Code coverage metrics
+6. **Knip Report** - Unused code and dependency analysis
 
-2. **Build Process**:
-   - Installs dependencies with pnpm
-   - Runs `scripts/build-pages.sh` to generate Storybook, Nx dependency graph, Vitest reports, coverage, and Knip analysis
-   - Creates a landing page with links to all tools
+## How It Works
 
-3. **Deployment**:
-   - Uses GitHub Pages deploy action
-   - Deploys to `gh-pages` branch
-   - Available at the GitHub Pages URL
+### Artifact Fetching
 
-## Workflow Details
+The `scripts/fetch-branch-artifacts.sh` script fetches test results from:
 
-### Build Steps
+- **Storybook**: Deployed to Cloudflare Pages (fetches URL from PR comments)
+- **E2E/Vitest**: Downloaded from GitHub Actions artifacts using `gh` CLI
+- **Knip**: Generated fresh during build (fast)
 
-The build script handles optional tooling gracefully—if an individual tool fails to build, the remainder of the deployment still proceeds and the failure is logged as a warning.
+### Graceful Fallbacks
 
-#### Storybook (Required)
+If artifacts aren't available yet (CI still running), the build script creates placeholder pages with loading indicators. This allows Vercel to deploy immediately without waiting for all CI to complete.
+
+## Local Development
+
 ```bash
-pnpm build-storybook --output-dir dist/storybook
+# Develop the index page
+pnpm pages:dev
+
+# Build without fetching artifacts (uses local builds)
+pnpm pages:build
+
+# Build with artifact fetching (simulates Vercel)
+pnpm pages:build:branch-status
 ```
 
-#### Nx Graph (Optional)
-```bash
-pnpm nx graph --file=dist/nx-graph/index.html
-```
+## Environment Variables (Vercel)
 
-#### Test Coverage (Optional)
-```bash
-pnpm exec vitest --run --coverage --coverage.reporter=html
-```
+Configure these in Vercel project settings:
 
-#### Vitest Results (Optional)
-```bash
-pnpm exec vitest --run --reporter=html --outputFile dist/vitest-ui/index.html
-```
+- `GITHUB_TOKEN` - For fetching artifacts via GitHub API (required)
+- `CLOUDFLARE_ACCOUNT_ID` - For Cloudflare API (optional)
+- `CLOUDFLARE_API_TOKEN` - For Cloudflare API (optional)
 
-#### Knip Report (Optional)
-```bash
-pnpm knip --reporter json
-```
+## Files
 
-### Permissions
+- **index.html** - Main landing page with links to all reports
+- **vite.config.ts** - Vite configuration for building the static site
+- **knip.html** - Wrapper for displaying Knip markdown report
+- **playwright-reports.html** - Wrapper for E2E test reports
 
-The workflow requires the following permissions:
-```yaml
-permissions:
-  contents: read
-  pages: write
-  id-token: write
-```
+## Adding New Reports
 
-## Manual Deployment
+To add a new report to the status page:
 
-You can manually trigger a deployment from the GitHub Actions tab:
-
-1. Go to Actions → Deploy to GitHub Pages
-2. Click "Run workflow"
-3. Select the `main` branch
-4. Click "Run workflow"
+1. Update `scripts/fetch-branch-artifacts.sh` to fetch the new artifact
+2. Update `scripts/build-pages.sh` to process and copy it
+3. Add a link in `index.html`
+4. Optionally create a wrapper HTML file for custom styling
 
 ## Troubleshooting
 
-### Storybook Build Fails
+### Artifacts not appearing
 
-If the Storybook build fails:
-1. Check that all Storybook stories are syntactically correct
-2. Verify that all components can be imported
-3. Run `pnpm build-storybook` locally to reproduce the issue
+- Check Vercel build logs for fetch errors
+- Verify `GITHUB_TOKEN` is set in Vercel environment
+- Ensure GitHub Actions workflows completed successfully
+- Artifacts may not be available for old commits (7-day retention)
 
-### Other Tools Fail
+### Slow builds
 
-Since all tools except Storybook are marked with `continue-on-error: true`, they will not prevent deployment. If a tool consistently fails:
+- Artifact fetching is designed to be fast (<30s)
+- If builds are slow, check network connectivity to GitHub/Cloudflare
+- Consider skipping slow-to-generate reports (like coverage)
 
-1. Check the GitHub Actions logs for the specific error
-2. Test the build command locally
-3. Consider adjusting the build command in the workflow
+### Storybook redirect not working
 
-### GitHub Pages Not Updating
+- Verify Cloudflare Pages deployment succeeded
+- Check PR comments for correct Storybook URL
+- Fallback: Storybook will show placeholder page
 
-If changes aren't reflected on the live site:
+## CI Integration
 
-1. Check the workflow run in the Actions tab
-2. Verify that the deployment step succeeded
-3. GitHub Pages can take a few minutes to update
-4. Clear your browser cache or try an incognito window
+No GitHub Actions workflow is needed for Vercel deployments. Vercel automatically:
 
-## Maintenance
+1. Detects new commits via GitHub webhook
+2. Triggers build with `pnpm pages:build:branch-status`
+3. Deploys to branch-specific URL
+4. Comments on PR with deployment URL
 
-### Adding New Tools
+## Migration Notes
 
-To add a new development tool to the deployment:
+This replaces the previous GitHub Pages deployment approach which:
+- ❌ Required complex artifact passing between GitHub Actions and Vercel
+- ❌ Had to wait for all CI to complete before deploying
+- ❌ Was prone to failure due to artifact extraction issues
 
-1. Add a new build step in `.github/workflows/release-pages.yml`
-2. Ensure the output goes to a subdirectory of `dist/`
-3. Add `continue-on-error: true` if the tool is optional
-4. Update the landing page `dist/index.html` with a link to the new tool
+The new Vercel-native approach:
+- ✅ Deploys immediately on every push
+- ✅ Fetches artifacts on-demand during build
+- ✅ Shows placeholders for pending CI
+- ✅ Simpler, more reliable architecture
 
-### Removing Tools
+## Primary Use Case: Development Team
 
-To remove a tool from deployment:
+This deployment provides:
 
-1. Remove the build step from the workflow
-2. Remove the corresponding link from the landing page
-
-## Cost Considerations
-
-GitHub Pages is free for public repositories and includes:
-- 1 GB storage
-- 100 GB bandwidth per month
-- 10 builds per hour
-
-This should be more than sufficient for the development tools deployment.
-
-## Security
-
-The deployment only includes static, built artifacts:
-- No source code is directly exposed
-- No secrets or credentials are included
-- All content is publicly accessible (appropriate for public repo)
+1. **For Design Team**: Consistent, bookmarkable URL to reference the latest component system state
+2. **For Developers**: Quick access to test results and coverage for any branch
+3. **For PR Reviews**: Easy verification of Storybook changes and test results
 
 ## Related Documentation
 
-- [GitHub Pages Documentation](https://docs.github.com/en/pages)
+- [Vercel Documentation](https://vercel.com/docs)
 - [Storybook Documentation](https://storybook.js.org/docs)
 - [Nx Documentation](https://nx.dev)
 - [Vitest Documentation](https://vitest.dev)
 - [Knip Documentation](https://knip.dev)
+- [Playwright Documentation](https://playwright.dev)

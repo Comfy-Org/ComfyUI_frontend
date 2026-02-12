@@ -97,4 +97,7 @@ vitest.config.*.timestamp*
 /.pages/*/**/*
 /.pages-dist/
 
+# Fetched artifacts for Vercel builds
+/.page/
+
 .vercel

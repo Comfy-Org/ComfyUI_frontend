@@ -1,0 +1,19 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "buildCommand": "pnpm pages:build:branch-status",
+  "outputDirectory": ".pages/dist",
+  "installCommand": "pnpm install --frozen-lockfile",
+  "framework": null,
+  "devCommand": "pnpm pages:dev",
+  "git": {
+    "deploymentEnabled": {
+      "main": true,
+      "*": true
+    }
+  },
+  "github": {
+    "enabled": true,
+    "autoAlias": true,
+    "silent": false
+  }
+}
