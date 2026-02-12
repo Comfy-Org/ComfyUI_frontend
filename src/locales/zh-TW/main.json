@@ -820,6 +820,7 @@
     "enterBaseName": "輸入基礎名稱",
     "enterNewName": "輸入新名稱",
     "enterNewNamePrompt": "輸入新名稱：",
+    "enterSubgraph": "進入子圖",
     "error": "錯誤",
     "errorLoadingImage": "載入圖片時發生錯誤",
     "errorLoadingVideo": "載入影片時發生錯誤",

@@ -820,6 +820,7 @@
     "enterBaseName": "Introduce el nombre base",
     "enterNewName": "Introduce el nuevo nombre",
     "enterNewNamePrompt": "Introduce un nuevo nombre:",
+    "enterSubgraph": "Entrar en subgrafo",
     "error": "Error",
     "errorLoadingImage": "Error al cargar imagen",
     "errorLoadingVideo": "Error al cargar video",

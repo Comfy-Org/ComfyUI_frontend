@@ -820,6 +820,7 @@
     "enterBaseName": "نام پایه را وارد کنید",
     "enterNewName": "نام جدید را وارد کنید",
     "enterNewNamePrompt": "نام جدید را وارد کنید:",
+    "enterSubgraph": "ورود به زیرگراف",
     "error": "خطا",
     "errorLoadingImage": "خطا در بارگذاری تصویر",
     "errorLoadingVideo": "خطا در بارگذاری ویدیو",

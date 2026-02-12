@@ -7347,6 +7347,88 @@
       }
     }
   },
+  "MagnificImageUpscalerCreativeNode": {
+    "description": "Prompt rehberliğinde geliştirme, stilizasyon ve 2x/4x/8x/16x büyütme. Maksimum çıktı: 25,3 megapiksel.",
+    "display_name": "Magnific Görüntü Büyütme (Yaratıcı)",
+    "inputs": {
+      "auto_downscale": {
+        "name": "otomatik_küçültme",
+        "tooltip": "Çıktı maksimum piksel sınırını aşarsa giriş görüntüsünü otomatik olarak küçült."
+      },
+      "creativity": {
+        "name": "yaratıcılık"
+      },
+      "engine": {
+        "name": "motor"
+      },
+      "fractality": {
+        "name": "fraktalite",
+        "tooltip": "Prompt gücü ve piksel başına karmaşıklık."
+      },
+      "hdr": {
+        "name": "hdr",
+        "tooltip": "Tanım ve detay seviyesi."
+      },
+      "image": {
+        "name": "görüntü"
+      },
+      "optimized_for": {
+        "name": "için_optimize_edildi"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "resemblance": {
+        "name": "benzerlik",
+        "tooltip": "Orijinal görüntüye benzerlik seviyesi."
+      },
+      "scale_factor": {
+        "name": "ölçek_faktörü"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MagnificImageUpscalerPreciseV2Node": {
+    "description": "Keskinlik, gren ve detay üzerinde hassas kontrol ile yüksek doğrulukta büyütme. Maksimum çıktı: 10060×10060 piksel.",
+    "display_name": "Magnific Görüntü Büyütme (Hassas V2)",
+    "inputs": {
+      "auto_downscale": {
+        "name": "otomatik_küçültme",
+        "tooltip": "Çıktı maksimum çözünürlüğü aşarsa giriş görüntüsünü otomatik olarak küçült."
+      },
+      "flavor": {
+        "name": "stil",
+        "tooltip": "İşleme stili: genel kullanım için sublime, fotoğraflar için photo, gürültülü fotoğraflar için photo_denoiser."
+      },
+      "image": {
+        "name": "görüntü"
+      },
+      "scale_factor": {
+        "name": "ölçek_faktörü"
+      },
+      "sharpen": {
+        "name": "keskinleştirme",
+        "tooltip": "Görüntü keskinliği yoğunluğu. Yüksek değerler kenar tanımını ve netliği artırır."
+      },
+      "smart_grain": {
+        "name": "akıllı_gren",
+        "tooltip": "Görüntünün çok pürüzsüz veya yapay görünmesini önlemek için akıllı gren/doku artırımı."
+      },
+      "ultra_detail": {
+        "name": "ultra_detay",
+        "tooltip": "Büyütme sırasında eklenen ince detayları, dokuları ve mikro detayları kontrol eder."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "Mahiro": {
     "description": "Rehberliği, negatif istem arasındaki farktan ziyade pozitif istemin 'yönüne' daha fazla ölçeklenecek şekilde değiştirin.",
     "display_name": "Mahiro o kadar sevimli ki daha iyi bir rehberlik fonksiyonunu hak ediyor!! (。・ω・。)",
@@ -10981,8 +11063,13 @@
   "PreviewAny": {
     "display_name": "Herhangi Bir Şeyi Önizle",
     "inputs": {
-      "preview": {},
       "previewMode": {},
+      "preview_markdown": {
+        "name": "Önizleme"
+      },
+      "preview_text": {
+        "name": "Önizleme"
+      },
       "source": {
         "name": "kaynak"
       }

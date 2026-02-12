@@ -820,6 +820,7 @@
     "enterBaseName": "أدخل الاسم الأساسي",
     "enterNewName": "أدخل الاسم الجديد",
     "enterNewNamePrompt": "أدخل اسمًا جديدًا:",
+    "enterSubgraph": "دخول الرسم البياني الفرعي",
     "error": "خطأ",
     "errorLoadingImage": "حدث خطأ أثناء تحميل الصورة",
     "errorLoadingVideo": "حدث خطأ أثناء تحميل الفيديو",

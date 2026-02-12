@@ -820,6 +820,7 @@
     "enterBaseName": "기본 이름 입력",
     "enterNewName": "새 이름 입력",
     "enterNewNamePrompt": "새 이름을 입력하세요:",
+    "enterSubgraph": "서브그래프 진입",
     "error": "오류",
     "errorLoadingImage": "이미지 로드 오류",
     "errorLoadingVideo": "비디오 로드 오류",
