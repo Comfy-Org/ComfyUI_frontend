@@ -2,8 +2,12 @@ import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it } from 'vitest'
 
+import type { LGraph } from '@/lib/litegraph/src/LGraph'
+import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+
 import type { WidgetState } from './widgetValueStore'
-import { useWidgetValueStore } from './widgetValueStore'
+import { stripGraphPrefix, useWidgetValueStore } from './widgetValueStore'
 
 function widget<T>(
   nodeId: string,
@@ -15,6 +19,22 @@ function widget<T>(
   > = {}
 ): WidgetState<T> {
   return { nodeId, name, type, value, options: {}, ...extra }
+}
+
+function mockWidget(name: string, type = 'number'): IBaseWidget {
+  return { name, type } as IBaseWidget
+}
+
+function mockNode(id: string, widgets: IBaseWidget[] = []): LGraphNode {
+  return { id, widgets } as unknown as LGraphNode
+}
+
+function mockSubgraph(nodes: LGraphNode[]): LGraph {
+  const nodeMap = new Map(nodes.map((n) => [String(n.id), n]))
+  return {
+    getNodeById: (id: string | number | null | undefined) =>
+      id != null ? (nodeMap.get(String(id)) ?? null) : null
+  } as unknown as LGraph
 }
 
 describe('useWidgetValueStore', () => {
@@ -150,6 +170,95 @@ describe('useWidgetValueStore', () => {
 
       state.label = undefined
       expect(store.getWidget('node-1', 'seed')?.label).toBeUndefined()
+    })
+  })
+
+  describe('resolvePromotedWidget', () => {
+    it('returns null for missing node', () => {
+      const store = useWidgetValueStore()
+      const subgraph = mockSubgraph([])
+
+      expect(store.resolvePromotedWidget(subgraph, '99', 'seed')).toBeNull()
+    })
+
+    it('returns null for missing widget on existing node', () => {
+      const store = useWidgetValueStore()
+      const node = mockNode('42', [mockWidget('steps')])
+      const subgraph = mockSubgraph([node])
+      store.registerWidget(widget('42', 'steps', 'number', 20))
+
+      expect(store.resolvePromotedWidget(subgraph, '42', 'seed')).toBeNull()
+    })
+
+    it('returns null when widget exists on node but not in store', () => {
+      const store = useWidgetValueStore()
+      const w = mockWidget('seed')
+      const node = mockNode('42', [w])
+      const subgraph = mockSubgraph([node])
+
+      expect(store.resolvePromotedWidget(subgraph, '42', 'seed')).toBeNull()
+    })
+
+    it('returns correct state, widget, and node for registered widget', () => {
+      const store = useWidgetValueStore()
+      const w = mockWidget('seed')
+      const node = mockNode('42', [w])
+      const subgraph = mockSubgraph([node])
+      const registeredState = store.registerWidget(
+        widget('42', 'seed', 'number', 12345)
+      )
+
+      const result = store.resolvePromotedWidget(subgraph, '42', 'seed')
+
+      expect(result).not.toBeNull()
+      expect(result!.state).toBe(registeredState)
+      expect(result!.widget).toBe(w)
+      expect(result!.node).toBe(node)
+    })
+
+    it('state.value matches the store value (same reference)', () => {
+      const store = useWidgetValueStore()
+      const w = mockWidget('seed')
+      const node = mockNode('42', [w])
+      const subgraph = mockSubgraph([node])
+      store.registerWidget(widget('42', 'seed', 'number', 100))
+
+      const result = store.resolvePromotedWidget(subgraph, '42', 'seed')
+      expect(result!.state.value).toBe(100)
+
+      result!.state.value = 200
+      expect(store.getWidget('42', 'seed')?.value).toBe(200)
+    })
+
+    it('handles stripGraphPrefix for scoped node IDs', () => {
+      const store = useWidgetValueStore()
+      const w = mockWidget('cfg')
+      const node = mockNode('7', [w])
+      const subgraph = mockSubgraph([node])
+      store.registerWidget(widget('7', 'cfg', 'number', 7.5))
+
+      // nodeId passed as bare '7' resolves to store key '7:cfg'
+      const result = store.resolvePromotedWidget(subgraph, '7', 'cfg')
+      expect(result).not.toBeNull()
+      expect(result!.state.value).toBe(7.5)
+    })
+  })
+
+  describe('stripGraphPrefix', () => {
+    it('strips single prefix', () => {
+      expect(stripGraphPrefix('graph1:42')).toBe('42')
+    })
+
+    it('strips multiple prefixes', () => {
+      expect(stripGraphPrefix('graph1:subgraph2:42')).toBe('42')
+    })
+
+    it('returns bare id unchanged', () => {
+      expect(stripGraphPrefix('42')).toBe('42')
+    })
+
+    it('handles numeric input', () => {
+      expect(stripGraphPrefix(42 as unknown as string)).toBe('42')
     })
   })
 })

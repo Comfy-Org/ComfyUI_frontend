@@ -1,7 +1,8 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 
-import type { NodeId } from '@/lib/litegraph/src/LGraphNode'
+import type { LGraph } from '@/lib/litegraph/src/LGraph'
+import type { LGraphNode, NodeId } from '@/lib/litegraph/src/LGraphNode'
 import type {
   IBaseWidget,
   IWidgetOptions
@@ -69,9 +70,27 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     return widgetStates.value.get(makeKey(nodeId, widgetName))
   }
 
+  function resolvePromotedWidget(
+    subgraph: LGraph,
+    nodeId: NodeId,
+    widgetName: string
+  ): { state: WidgetState; widget: IBaseWidget; node: LGraphNode } | null {
+    const node = subgraph.getNodeById(nodeId)
+    if (!node) return null
+
+    const widget = node.widgets?.find((w) => w.name === widgetName)
+    if (!widget) return null
+
+    const state = getWidget(stripGraphPrefix(nodeId), widgetName)
+    if (!state) return null
+
+    return { state, widget, node }
+  }
+
   return {
     registerWidget,
     getWidget,
-    getNodeWidgets
+    getNodeWidgets,
+    resolvePromotedWidget
   }
 })
