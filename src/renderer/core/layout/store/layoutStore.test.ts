@@ -412,7 +412,7 @@ describe('layoutStore CRDT operations', () => {
     }
   })
 
-  it.each([
+  it.for([
     { type: 'input' as const, isInput: true },
     { type: 'output' as const, isInput: false }
   ])(
