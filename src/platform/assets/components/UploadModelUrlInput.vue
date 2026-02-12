@@ -86,15 +86,15 @@ import { computed } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
-import { useDialogService } from '@/services/dialogService'
+import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
 
 const { flags } = useFeatureFlags()
-const dialogService = useDialogService()
+const settingsDialog = useSettingsDialog()
 
 const showSecretsHint = computed(() => flags.userSecretsEnabled)
 
 function openSecretsSettings() {
-  dialogService.showSettingsDialog('secrets')
+  settingsDialog.show('secrets')
 }
 
 const props = defineProps<{

@@ -7347,6 +7347,88 @@
       }
     }
   },
+  "MagnificImageUpscalerCreativeNode": {
+    "description": "Mejora guiada por prompt, estilización y aumento de escala 2x/4x/8x/16x. Salida máxima: 25,3 megapíxeles.",
+    "display_name": "Magnific Image Upscale (Creativo)",
+    "inputs": {
+      "auto_downscale": {
+        "name": "reducción_automática",
+        "tooltip": "Reducir automáticamente la imagen de entrada si la salida supera el límite máximo de píxeles."
+      },
+      "creativity": {
+        "name": "creatividad"
+      },
+      "engine": {
+        "name": "motor"
+      },
+      "fractality": {
+        "name": "fractalidad",
+        "tooltip": "La fuerza del prompt y la complejidad por píxel cuadrado."
+      },
+      "hdr": {
+        "name": "hdr",
+        "tooltip": "El nivel de definición y detalle."
+      },
+      "image": {
+        "name": "imagen"
+      },
+      "optimized_for": {
+        "name": "optimizado_para"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "resemblance": {
+        "name": "semejanza",
+        "tooltip": "El nivel de semejanza con la imagen original."
+      },
+      "scale_factor": {
+        "name": "factor_de_escala"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MagnificImageUpscalerPreciseV2Node": {
+    "description": "Aumento de escala de alta fidelidad con control fino sobre nitidez, grano y detalle. Salida máxima: 10060×10060 píxeles.",
+    "display_name": "Magnific Image Upscale (Preciso V2)",
+    "inputs": {
+      "auto_downscale": {
+        "name": "reducción_automática",
+        "tooltip": "Reducir automáticamente la imagen de entrada si la salida supera la resolución máxima."
+      },
+      "flavor": {
+        "name": "estilo",
+        "tooltip": "Estilo de procesamiento: sublime para uso general, photo para fotografías, photo_denoiser para fotos con ruido."
+      },
+      "image": {
+        "name": "imagen"
+      },
+      "scale_factor": {
+        "name": "factor_de_escala"
+      },
+      "sharpen": {
+        "name": "nitidez",
+        "tooltip": "Intensidad de la nitidez de la imagen. Valores más altos aumentan la definición de los bordes y la claridad."
+      },
+      "smart_grain": {
+        "name": "grano_inteligente",
+        "tooltip": "Mejora inteligente del grano/textura para evitar que la imagen se vea demasiado suave o artificial."
+      },
+      "ultra_detail": {
+        "name": "ultra_detalle",
+        "tooltip": "Controla los detalles finos, texturas y microdetalles añadidos durante el aumento de escala."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "Mahiro": {
     "description": "Modifica la guía para escalar más en la 'dirección' del indicador positivo en lugar de la diferencia entre el indicador negativo.",
     "display_name": "¡Mahiro es tan linda que merece una mejor función de guía!! (。・ω・。)",
@@ -10981,8 +11063,13 @@
   "PreviewAny": {
     "display_name": "Vista previa de cualquier",
     "inputs": {
-      "preview": {},
       "previewMode": {},
+      "preview_markdown": {
+        "name": "Vista previa"
+      },
+      "preview_text": {
+        "name": "Vista previa"
+      },
       "source": {
         "name": "fuente"
       }

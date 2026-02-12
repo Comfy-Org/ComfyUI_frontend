@@ -820,6 +820,7 @@
     "enterBaseName": "Temel adı girin",
     "enterNewName": "Yeni adı girin",
     "enterNewNamePrompt": "Yeni adı girin:",
+    "enterSubgraph": "Alt Grafiğe Gir",
     "error": "Hata",
     "errorLoadingImage": "Görüntü yüklenirken hata",
     "errorLoadingVideo": "Video yüklenirken hata",
