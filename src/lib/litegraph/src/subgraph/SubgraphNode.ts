@@ -764,7 +764,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
       'input-connected',
       (e) => {
         this._invalidatePromotedViewsCache()
-        input.shape = e.detail.input.shape
+        input.shape = this.getSlotShape(subgraphInput, e.detail.input)
         if (!e.detail.widget || !e.detail.node) return
 
         // `SubgraphInput.connect()` dispatches before appending to `linkIds`,
@@ -807,6 +807,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
       'input-disconnected',
       () => {
         this._invalidatePromotedViewsCache()
+        input.shape = this.getSlotShape(subgraphInput)
 
         // If links remain, rebind to the current representative.
         const connectedWidgets = subgraphInput.getConnectedWidgets()
@@ -895,19 +896,14 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
 
     this.inputs.length = 0
     this.inputs.push(
-      ...this.subgraph.inputNode.slots.map((slot) => {
-        const shapes = slot.linkIds.map(
-          (id) => this.subgraph.links[id]?.resolve(this.subgraph)?.input?.shape
-        )
-        return Object.assign(
+      ...this.subgraph.inputNode.slots.map((slot) =>
+        Object.assign(
           new NodeInputSlot(
             {
               name: slot.name,
               localized_name: slot.localized_name,
               label: slot.label,
-              shape: shapes.every((shape) => shape === shapes[0])
-                ? shapes[0]
-                : undefined,
+              shape: this.getSlotShape(slot),
               type: slot.type,
               link: null
             },
@@ -917,7 +913,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
             _subgraphSlot: slot
           }
         )
-      })
+      )
     )
 
     this.outputs.length = 0
@@ -1487,5 +1483,12 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     //pollution of rootGraph.subgraphs
 
     return clone
+  }
+  getSlotShape(slot: SubgraphInput, extraInput?: INodeInputSlot) {
+    const shapes = slot.linkIds.map(
+      (id) => this.subgraph.links[id]?.resolve(this.subgraph)?.input?.shape
+    )
+    if (extraInput) shapes.push(extraInput.shape)
+    return shapes.every((shape) => shape === shapes[0]) ? shapes[0] : undefined
   }
 }
