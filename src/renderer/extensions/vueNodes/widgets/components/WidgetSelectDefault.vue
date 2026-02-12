@@ -53,7 +53,7 @@ const props = defineProps<Props>()
 
 const modelValue = defineModel<string | undefined>({
   default(props: Props) {
-    return props.widget.options?.values?.[0] || ''
+    return props.widget.options?.values?.[0] ?? ''
   }
 })
 

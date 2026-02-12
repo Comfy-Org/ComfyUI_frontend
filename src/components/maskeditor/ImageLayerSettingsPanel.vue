@@ -131,12 +131,12 @@
 
 <script setup lang="ts">
 import { computed, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import { useCanvasManager } from '@/composables/maskeditor/useCanvasManager'
 import type { useToolManager } from '@/composables/maskeditor/useToolManager'
 import type { ImageLayer } from '@/extensions/core/maskeditor/types'
 import { MaskBlendMode, Tools } from '@/extensions/core/maskeditor/types'
-import { t } from '@/i18n'
 import { useMaskEditorStore } from '@/stores/maskEditorStore'
 
 import SliderControl from './controls/SliderControl.vue'
@@ -145,6 +145,7 @@ const { toolManager } = defineProps<{
   toolManager?: ReturnType<typeof useToolManager>
 }>()
 
+const { t } = useI18n()
 const store = useMaskEditorStore()
 const canvasManager = useCanvasManager()
 

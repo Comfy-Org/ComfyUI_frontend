@@ -4,6 +4,7 @@ import { computed, provide, ref, toRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { useTransformCompatOverlayProps } from '@/composables/useTransformCompatOverlayProps'
+import { SUPPORTED_EXTENSIONS_ACCEPT } from '@/extensions/core/load3d/constants'
 import { useAssetFilterOptions } from '@/platform/assets/composables/useAssetFilterOptions'
 import {
   filterItemByBaseModels,
@@ -44,6 +45,7 @@ interface Props {
   assetKind?: AssetKind
   allowUpload?: boolean
   uploadFolder?: ResultItemType
+  uploadSubfolder?: string
   isAssetMode?: boolean
   defaultLayoutMode?: LayoutMode
 }
@@ -57,7 +59,7 @@ provide(
 
 const modelValue = defineModel<string | undefined>({
   default(props: Props) {
-    return props.widget.options?.values?.[0] || ''
+    return props.widget.options?.values?.[0] ?? ''
   }
 })
 
@@ -73,7 +75,8 @@ const combinedProps = computed(() => ({
 }))
 
 const getAssetData = () => {
-  const nodeType = props.widget.options?.nodeType ?? props.nodeType
+  const nodeType: string | undefined =
+    props.widget.options?.nodeType ?? props.nodeType
   if (props.isAssetMode && nodeType) {
     return useAssetWidgetData(toRef(nodeType))
   }
@@ -134,15 +137,15 @@ const inputItems = computed<FormDropdownItem[]>(() => {
     return []
   }
 
-  return values.map((value: string, index: number) => ({
+  return values.map((value, index) => ({
     id: `input-${index}`,
-    preview_url: getMediaUrl(value, 'input'),
-    name: value,
-    label: getDisplayLabel(value)
+    preview_url: getMediaUrl(String(value), 'input'),
+    name: String(value),
+    label: getDisplayLabel(String(value))
   }))
 })
 const outputItems = computed<FormDropdownItem[]>(() => {
-  if (!['image', 'video'].includes(props.assetKind ?? '')) return []
+  if (!['image', 'video', 'mesh'].includes(props.assetKind ?? '')) return []
 
   const outputs = new Set<string>()
 
@@ -151,7 +154,8 @@ const outputItems = computed<FormDropdownItem[]>(() => {
     task.flatOutputs.forEach((output) => {
       const isTargetType =
         (props.assetKind === 'image' && output.mediaType === 'images') ||
-        (props.assetKind === 'video' && output.mediaType === 'video')
+        (props.assetKind === 'video' && output.mediaType === 'video') ||
+        (props.assetKind === 'mesh' && output.is3D)
 
       if (output.type === 'output' && isTargetType) {
         const path = output.subfolder
@@ -291,6 +295,8 @@ const mediaPlaceholder = computed(() => {
       return t('widgets.uploadSelect.placeholderVideo')
     case 'audio':
       return t('widgets.uploadSelect.placeholderAudio')
+    case 'mesh':
+      return t('widgets.uploadSelect.placeholderMesh')
     case 'model':
       return t('widgets.uploadSelect.placeholderModel')
     case 'unknown':
@@ -315,6 +321,8 @@ const acceptTypes = computed(() => {
       return 'video/*'
     case 'audio':
       return 'audio/*'
+    case 'mesh':
+      return SUPPORTED_EXTENSIONS_ACCEPT
     default:
       return undefined // model or unknown
   }
@@ -364,6 +372,8 @@ const uploadFile = async (
   const body = new FormData()
   body.append('image', file)
   if (isPasted) body.append('subfolder', 'pasted')
+  else if (props.uploadSubfolder)
+    body.append('subfolder', props.uploadSubfolder)
   if (formFields.type) body.append('type', formFields.type)
 
   const resp = await api.fetchApi('/upload/image', {

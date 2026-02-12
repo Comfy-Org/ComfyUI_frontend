@@ -127,6 +127,13 @@ vi.mock('@/platform/cloud/subscription/composables/useSubscription', () => ({
   }))
 }))
 
+vi.mock('@/composables/billing/useBillingContext', () => ({
+  useBillingContext: vi.fn(() => ({
+    isActiveSubscription: { value: true },
+    showSubscriptionDialog: vi.fn()
+  }))
+}))
+
 describe('useCoreCommands', () => {
   const createMockNode = (id: number, comfyClass: string): LGraphNode => {
     const baseNode = createMockLGraphNode({ id })
@@ -190,6 +197,7 @@ describe('useCoreCommands', () => {
       addSetting: vi.fn(),
       load: vi.fn(),
       set: vi.fn(),
+      setMany: vi.fn(),
       exists: vi.fn(),
       getDefaultValue: vi.fn(),
       isReady: true,

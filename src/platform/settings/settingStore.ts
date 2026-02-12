@@ -46,7 +46,7 @@ function onChange(
 }
 
 export const useSettingStore = defineStore('setting', () => {
-  const settingValues = ref<Record<string, any>>({})
+  const settingValues = ref<Partial<Settings>>({})
   const settingsById = ref<Record<string, SettingParams>>({})
 
   const {
@@ -87,8 +87,30 @@ export const useSettingStore = defineStore('setting', () => {
    * @param key - The key of the setting to check.
    * @returns Whether the setting exists.
    */
-  function exists(key: string) {
+  function exists<K extends keyof Settings>(key: K) {
     return settingValues.value[key] !== undefined
+  }
+
+  /**
+   * Apply a setting value locally: clone, migrate, fire onChange, and
+   * update the in-memory store. Returns the migrated value, or
+   * `undefined` when the value is unchanged and was skipped.
+   */
+  function applySettingLocally<K extends keyof Settings>(
+    key: K,
+    value: Settings[K]
+  ): Settings[K] | undefined {
+    const clonedValue = _.cloneDeep(value)
+    const newValue = tryMigrateDeprecatedValue(
+      settingsById.value[key],
+      clonedValue
+    )
+    const oldValue = get(key)
+    if (newValue === oldValue) return undefined
+
+    onChange(settingsById.value[key], newValue, oldValue)
+    settingValues.value[key] = newValue
+    return newValue as Settings[K]
   }
 
   /**
@@ -97,18 +119,31 @@ export const useSettingStore = defineStore('setting', () => {
    * @param value - The value to set.
    */
   async function set<K extends keyof Settings>(key: K, value: Settings[K]) {
-    // Clone the incoming value to prevent external mutations
-    const clonedValue = _.cloneDeep(value)
-    const newValue = tryMigrateDeprecatedValue(
-      settingsById.value[key],
-      clonedValue
-    )
-    const oldValue = get(key)
-    if (newValue === oldValue) return
+    const applied = applySettingLocally(key, value)
+    if (applied === undefined) return
+    await api.storeSetting(key, applied)
+  }
 
-    onChange(settingsById.value[key], newValue, oldValue)
-    settingValues.value[key] = newValue
-    await api.storeSetting(key, newValue)
+  /**
+   * Set multiple setting values in a single API call.
+   * @param settings - A partial settings object with key-value pairs to set.
+   */
+  async function setMany(settings: Partial<Settings>) {
+    const updatedSettings: Partial<Settings> = {}
+
+    for (const key of Object.keys(settings) as (keyof Settings)[]) {
+      const applied = applySettingLocally(
+        key,
+        settings[key] as Settings[typeof key]
+      )
+      if (applied !== undefined) {
+        updatedSettings[key] = applied
+      }
+    }
+
+    if (Object.keys(updatedSettings).length > 0) {
+      await api.storeSettings(updatedSettings)
+    }
   }
 
   /**
@@ -118,7 +153,7 @@ export const useSettingStore = defineStore('setting', () => {
    */
   function get<K extends keyof Settings>(key: K): Settings[K] {
     // Clone the value when returning to prevent external mutations
-    return _.cloneDeep(settingValues.value[key] ?? getDefaultValue(key))
+    return _.cloneDeep(settingValues.value[key] ?? getDefaultValue(key)!)
   }
 
   /**
@@ -271,6 +306,7 @@ export const useSettingStore = defineStore('setting', () => {
     load,
     addSetting,
     set,
+    setMany,
     get,
     exists,
     getDefaultValue

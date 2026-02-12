@@ -1,12 +1,13 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
-import { t } from '@/i18n'
 import { useKeybindingStore } from '@/platform/keybindings/keybindingStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCommandStore } from '@/stores/commandStore'
 
+const { t } = useI18n()
 const canvasStore = useCanvasStore()
 const keybindingStore = useKeybindingStore()
 

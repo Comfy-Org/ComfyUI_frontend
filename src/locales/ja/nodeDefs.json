@@ -2018,6 +2018,20 @@
       }
     }
   },
+  "CreateList": {
+    "display_name": "リストを作成",
+    "inputs": {
+      "inputs": {
+        "name": "入力"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "リスト",
+        "tooltip": null
+      }
+    }
+  },
   "CreateVideo": {
     "description": "画像から動画を作成します。",
     "display_name": "動画を作成",
@@ -6418,9 +6432,7 @@
   "Load3D": {
     "display_name": "3Dを読み込む",
     "inputs": {
-      "clear": {
-        "": "クリア"
-      },
+      "clear": "クリア",
       "height": {
         "name": "高さ"
       },
@@ -6430,12 +6442,8 @@
       "model_file": {
         "name": "モデルファイル"
       },
-      "upload 3d model": {
-        "": "3Dモデルをアップロード"
-      },
-      "upload extra resources": {
-        "": "追加リソースをアップロード"
-      },
+      "upload 3d model": "3Dモデルをアップロード",
+      "upload extra resources": "追加リソースをアップロード",
       "width": {
         "name": "幅"
       }
@@ -10793,6 +10801,9 @@
       "camera_info": {
         "name": "カメラ情報"
       },
+      "image": {
+        "name": "画像"
+      },
       "model_file": {
         "name": "モデルファイル",
         "tooltip": "3Dモデルファイルまたはパス文字列"
@@ -12611,6 +12622,9 @@
       "filename_prefix": {
         "name": "ファイル名のプレフィックス"
       },
+      "image": {
+        "name": "画像"
+      },
       "mesh": {
         "name": "メッシュ",
         "tooltip": "保存するメッシュまたはGLBファイル"
@@ -13946,6 +13960,9 @@
       "bpm": {
         "name": "BPM"
       },
+      "cfg_scale": {
+        "name": "cfgスケール"
+      },
       "clip": {
         "name": "clip"
       },
@@ -13954,6 +13971,10 @@
       },
       "duration": {
         "name": "長さ"
+      },
+      "generate_audio_codes": {
+        "name": "オーディオコードを生成",
+        "tooltip": "オーディオコードを生成するLLMを有効にします。これにより生成されるオーディオの品質が向上しますが、処理が遅くなる場合があります。モデルにオーディオリファレンスを与える場合はオフにしてください。"
       },
       "keyscale": {
         "name": "キー"
@@ -13970,8 +13991,17 @@
       "tags": {
         "name": "タグ"
       },
+      "temperature": {
+        "name": "温度"
+      },
       "timesignature": {
         "name": "拍子"
+      },
+      "top_k": {
+        "name": "top_k"
+      },
+      "top_p": {
+        "name": "top_p"
       }
     },
     "outputs": {
@@ -14895,6 +14925,28 @@
     "inputs": {
       "samples": {
         "name": "サンプル"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "VAEDecodeAudioTiled": {
+    "display_name": "VAEデコードオーディオ（タイル）",
+    "inputs": {
+      "overlap": {
+        "name": "オーバーラップ"
+      },
+      "samples": {
+        "name": "サンプル"
+      },
+      "tile_size": {
+        "name": "タイルサイズ"
       },
       "vae": {
         "name": "vae"

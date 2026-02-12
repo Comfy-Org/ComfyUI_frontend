@@ -22,7 +22,8 @@ function mockSettingStore(enabled: boolean) {
         return enabled
       }
       return false
-    })
+    }),
+    load: vi.fn().mockResolvedValue(undefined)
   })
 }
 
@@ -225,6 +226,16 @@ describe('useNodeReplacementStore', () => {
       expect(store.isLoaded).toBe(false)
 
       consoleErrorSpy.mockRestore()
+    })
+
+    it('should not fetch when feature is disabled', async () => {
+      vi.mocked(fetchNodeReplacements).mockResolvedValue({})
+      store = createStore(false)
+
+      await store.load()
+
+      expect(fetchNodeReplacements).not.toHaveBeenCalled()
+      expect(store.isLoaded).toBe(false)
     })
 
     it('should not re-fetch when called twice', async () => {

@@ -151,6 +151,51 @@
     },
     "tooltip": "Tuvaldeki düğümler arasındaki bağlantı çizgilerinin görünümünü ve görünürlüğünü kontrol eder."
   },
+  "Comfy_Load3D_3DViewerEnable": {
+    "name": "3D Görüntüleyiciyi Etkinleştir (Beta)",
+    "tooltip": "Seçili düğümler için 3D Görüntüleyiciyi (Beta) etkinleştirir. Bu özellik, tam boyutlu 3D görüntüleyicide 3D modelleri doğrudan görselleştirmenize ve etkileşimde bulunmanıza olanak tanır."
+  },
+  "Comfy_Load3D_BackgroundColor": {
+    "name": "Başlangıç Arka Plan Rengi",
+    "tooltip": "3D sahnenin varsayılan arka plan rengini kontrol eder. Bu ayar, yeni bir 3D bileşeni oluşturulduğunda arka planın nasıl görüneceğini belirler, ancak oluşturulduktan sonra her bileşen için ayrı ayrı ayarlanabilir."
+  },
+  "Comfy_Load3D_CameraType": {
+    "name": "Başlangıç Kamera Tipi",
+    "options": {
+      "orthographic": "ortografik",
+      "perspective": "perspektif"
+    },
+    "tooltip": "Yeni bir 3D bileşeni oluşturulduğunda kameranın varsayılan olarak perspektif mi yoksa ortografik mi olacağını kontrol eder. Bu varsayılan ayar, oluşturulduktan sonra her bileşen için ayrı ayrı değiştirilebilir."
+  },
+  "Comfy_Load3D_LightAdjustmentIncrement": {
+    "name": "Işık Ayar Artışı",
+    "tooltip": "3D sahnelerde ışık yoğunluğunu ayarlarken artış miktarını kontrol eder. Daha küçük bir adım değeri, ışık ayarlarında daha hassas kontrol sağlar; daha büyük bir değer ise her ayarda daha belirgin değişiklikler oluşturur."
+  },
+  "Comfy_Load3D_LightIntensity": {
+    "name": "Başlangıç Işık Yoğunluğu",
+    "tooltip": "3D sahnedeki ışıkların varsayılan parlaklık seviyesini ayarlar. Bu değer, yeni bir 3D bileşeni oluşturulduğunda nesnelerin ne kadar aydınlatılacağını belirler, ancak oluşturulduktan sonra her bileşen için ayrı ayrı ayarlanabilir."
+  },
+  "Comfy_Load3D_LightIntensityMaximum": {
+    "name": "Maksimum Işık Yoğunluğu",
+    "tooltip": "3D sahneler için izin verilen maksimum ışık yoğunluğu değerini ayarlar. Bu, herhangi bir 3D bileşende ışık ayarlanırken belirlenebilecek en yüksek parlaklık sınırını tanımlar."
+  },
+  "Comfy_Load3D_LightIntensityMinimum": {
+    "name": "Minimum Işık Yoğunluğu",
+    "tooltip": "3D sahneler için izin verilen minimum ışık yoğunluğu değerini ayarlar. Bu, herhangi bir 3D bileşende ışık ayarlanırken belirlenebilecek en düşük parlaklık sınırını tanımlar."
+  },
+  "Comfy_Load3D_PLYEngine": {
+    "name": "PLY Motoru",
+    "options": {
+      "fastply": "fastply",
+      "sparkjs": "sparkjs",
+      "threejs": "threejs"
+    },
+    "tooltip": "PLY dosyalarını yüklemek için motoru seçin. \"threejs\" yerel Three.js PLYLoader'ı kullanır (ağ PLY dosyaları için en iyisi). \"fastply\" ASCII nokta bulutu PLY dosyaları için optimize edilmiş bir yükleyici kullanır. \"sparkjs\" ise 3D Gaussian Splatting PLY dosyaları için Spark.js kullanır."
+  },
+  "Comfy_Load3D_ShowGrid": {
+    "name": "Başlangıç Izgara Görünürlüğü",
+    "tooltip": "Yeni bir 3D bileşeni oluşturulduğunda ızgaranın varsayılan olarak görünüp görünmeyeceğini kontrol eder. Bu varsayılan ayar, oluşturulduktan sonra her bileşen için ayrı ayrı değiştirilebilir."
+  },
   "Comfy_Locale": {
     "name": "Dil"
   },

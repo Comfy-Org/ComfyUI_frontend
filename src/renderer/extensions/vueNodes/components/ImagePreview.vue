@@ -1,7 +1,7 @@
 <template>
   <div
     v-if="imageUrls.length > 0"
-    class="image-preview group relative flex size-full min-h-16 min-w-16 flex-col px-2 justify-center"
+    class="image-preview group relative flex size-full min-h-55 min-w-16 flex-col px-2 justify-center"
     @keydown="handleKeyDown"
   >
     <!-- Image Wrapper -->
@@ -43,7 +43,7 @@
         ref="currentImageEl"
         :src="currentImageUrl"
         :alt="imageAltText"
-        class="block size-full object-contain pointer-events-none"
+        class="block size-full object-contain pointer-events-none contain-size"
         @load="handleImageLoad"
         @error="handleImageError"
       />

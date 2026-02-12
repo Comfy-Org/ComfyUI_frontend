@@ -134,6 +134,25 @@ vi.mock('@/stores/executionStore', () => ({
   }
 }))
 
+let jobPreviewStoreMock: {
+  previewsByPromptId: Record<string, string>
+  isPreviewEnabled: boolean
+}
+const ensureJobPreviewStore = () => {
+  if (!jobPreviewStoreMock) {
+    jobPreviewStoreMock = reactive({
+      previewsByPromptId: {} as Record<string, string>,
+      isPreviewEnabled: true
+    })
+  }
+  return jobPreviewStoreMock
+}
+vi.mock('@/stores/jobPreviewStore', () => ({
+  useJobPreviewStore: () => {
+    return ensureJobPreviewStore()
+  }
+}))
+
 let workflowStoreMock: {
   activeWorkflow: null | { activeState?: { id?: string } }
 }
@@ -185,6 +204,10 @@ const resetStores = () => {
   const executionStore = ensureExecutionStore()
   executionStore.activePromptId = null
   executionStore.executingNode = null
+
+  const jobPreviewStore = ensureJobPreviewStore()
+  jobPreviewStore.previewsByPromptId = {}
+  jobPreviewStore.isPreviewEnabled = true
 
   const workflowStore = ensureWorkflowStore()
   workflowStore.activeWorkflow = null
@@ -435,6 +458,44 @@ describe('useJobList', () => {
     expect(otherJob.progressCurrentPercent).toBeUndefined()
     expect(otherJob.runningNodeName).toBeUndefined()
     expect(otherJob.computeHours).toBeCloseTo(1)
+  })
+
+  it('assigns preview urls for running jobs when previews enabled', async () => {
+    queueStoreMock.runningTasks = [
+      createTask({
+        promptId: 'live-preview',
+        queueIndex: 1,
+        mockState: 'running'
+      })
+    ]
+    jobPreviewStoreMock.previewsByPromptId = {
+      'live-preview': 'blob:preview-url'
+    }
+    jobPreviewStoreMock.isPreviewEnabled = true
+
+    const { jobItems } = initComposable()
+    await flush()
+
+    expect(jobItems.value[0].iconImageUrl).toBe('blob:preview-url')
+  })
+
+  it('omits preview urls when previews are disabled', async () => {
+    queueStoreMock.runningTasks = [
+      createTask({
+        promptId: 'disabled-preview',
+        queueIndex: 1,
+        mockState: 'running'
+      })
+    ]
+    jobPreviewStoreMock.previewsByPromptId = {
+      'disabled-preview': 'blob:preview-url'
+    }
+    jobPreviewStoreMock.isPreviewEnabled = false
+
+    const { jobItems } = initComposable()
+    await flush()
+
+    expect(jobItems.value[0].iconImageUrl).toBeUndefined()
   })
 
   it('derives current node name from execution store fallbacks', async () => {

@@ -47,7 +47,7 @@ export const useComputedWithWidgetWatch = (
   const { widgetNames, triggerCanvasRedraw = false } = options
 
   // Create a reactive trigger based on widget values
-  const widgetValues = ref<Record<string, any>>({})
+  const widgetValues = ref<Record<string, unknown>>({})
 
   // Initialize widget observers
   if (node.widgets) {
@@ -56,7 +56,7 @@ export const useComputedWithWidgetWatch = (
       : node.widgets
 
     // Initialize current values
-    const currentValues: Record<string, any> = {}
+    const currentValues: Record<string, unknown> = {}
     widgetsToObserve.forEach((widget) => {
       currentValues[widget.name] = widget.value
     })

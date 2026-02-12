@@ -35,6 +35,9 @@
   "Comfy-Desktop_Restart": {
     "label": "Yeniden Başlat"
   },
+  "Comfy_3DViewer_Open3DViewer": {
+    "label": "Seçili Düğüm için 3D Görüntüleyiciyi Aç (Beta)"
+  },
   "Comfy_BrowseModelAssets": {
     "label": "Deneysel: Model Varlıklarını Gözat"
   },
@@ -313,6 +316,12 @@
   },
   "Workspace_ToggleBottomPanel": {
     "label": "Alt Paneli Aç/Kapat"
+  },
+  "Workspace_ToggleBottomPanelTab_command-terminal": {
+    "label": "Terminal Alt Panelini Aç/Kapat"
+  },
+  "Workspace_ToggleBottomPanelTab_logs-terminal": {
+    "label": "Kayıtlar Alt Panelini Aç/Kapat"
   },
   "Workspace_ToggleBottomPanelTab_shortcuts-essentials": {
     "label": "Temel Alt Paneli Aç/Kapat"

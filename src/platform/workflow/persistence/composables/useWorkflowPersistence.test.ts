@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type * as I18n from 'vue-i18n'
 
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import type { WorkflowDraftSnapshot } from '@/platform/workflow/persistence/base/draftCache'
 import { useWorkflowPersistence } from '@/platform/workflow/persistence/composables/useWorkflowPersistence'
 import { useWorkflowDraftStore } from '@/platform/workflow/persistence/stores/workflowDraftStore'
 import { defaultGraphJSON } from '@/scripts/defaultGraph'
@@ -191,7 +192,7 @@ describe('useWorkflowPersistence', () => {
 
     const drafts = JSON.parse(
       localStorage.getItem('Comfy.Workflow.Drafts') ?? '{}'
-    ) as Record<string, any>
+    ) as Record<string, WorkflowDraftSnapshot>
 
     expect(Object.keys(drafts).length).toBe(32)
     expect(drafts['workflows/Draft0.json']).toBeUndefined()

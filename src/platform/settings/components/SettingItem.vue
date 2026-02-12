@@ -40,6 +40,7 @@ const props = defineProps<{
 }>()
 
 const { t } = useI18n()
+
 function translateOptions(options: (SettingOption | string)[]) {
   if (typeof options === 'function') {
     // @ts-expect-error: Audit and deprecate usage of legacy options type:

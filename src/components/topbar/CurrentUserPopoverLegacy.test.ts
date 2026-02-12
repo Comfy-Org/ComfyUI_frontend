@@ -7,7 +7,7 @@ import { createI18n } from 'vue-i18n'
 import { formatCreditsFromCents } from '@/base/credits/comfyCredits'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
-import CurrentUserPopover from './CurrentUserPopover.vue'
+import CurrentUserPopoverLegacy from './CurrentUserPopoverLegacy.vue'
 
 // Mock all firebase modules
 vi.mock('firebase/app', () => ({
@@ -172,7 +172,7 @@ vi.mock('@/platform/cloud/subscription/components/SubscribeButton.vue', () => ({
   }
 }))
 
-describe('CurrentUserPopover', () => {
+describe('CurrentUserPopoverLegacy', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     mockAuthStoreState.balance = {
@@ -190,7 +190,7 @@ describe('CurrentUserPopover', () => {
       messages: { en: enMessages }
     })
 
-    return mount(CurrentUserPopover, {
+    return mount(CurrentUserPopoverLegacy, {
       global: {
         plugins: [i18n],
         stubs: {

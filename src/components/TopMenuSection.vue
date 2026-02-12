@@ -19,12 +19,14 @@
             <Button
               v-tooltip.bottom="customNodesManagerTooltipConfig"
               variant="secondary"
-              size="icon"
-              :aria-label="t('menu.customNodesManager')"
+              :aria-label="t('menu.manageExtensions')"
               class="relative"
               @click="openCustomNodeManager"
             >
-              <i class="icon-[lucide--puzzle] size-4" />
+              <i class="icon-[comfy--extensions-blocks] size-4" />
+              <span class="not-md:hidden">
+                {{ t('menu.manageExtensions') }}
+              </span>
               <span
                 v-if="shouldShowRedDot"
                 class="absolute top-0.5 right-1 size-2 rounded-full bg-red-500"
@@ -151,7 +153,7 @@ import { useQueueStore, useQueueUIStore } from '@/stores/queueStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
-import { isElectron } from '@/utils/envUtil'
+import { isDesktop } from '@/platform/distribution/types'
 import { useConflictAcknowledgment } from '@/workbench/extensions/manager/composables/useConflictAcknowledgment'
 import { useManagerState } from '@/workbench/extensions/manager/composables/useManagerState'
 import { ManagerTab } from '@/workbench/extensions/manager/types/comfyManagerTypes'
@@ -161,7 +163,6 @@ const workspaceStore = useWorkspaceStore()
 const rightSidePanelStore = useRightSidePanelStore()
 const managerState = useManagerState()
 const { isLoggedIn } = useCurrentUser()
-const isDesktop = isElectron()
 const { t, n } = useI18n()
 const { toastErrorHandler } = useErrorHandling()
 const commandStore = useCommandStore()
@@ -220,7 +221,7 @@ const queueHistoryTooltipConfig = computed(() =>
   buildTooltipConfig(t('sideToolbar.queueProgressOverlay.viewJobHistory'))
 )
 const customNodesManagerTooltipConfig = computed(() =>
-  buildTooltipConfig(t('menu.customNodesManager'))
+  buildTooltipConfig(t('menu.manageExtensions'))
 )
 const queueContextMenu = ref<InstanceType<typeof ContextMenu> | null>(null)
 const queueContextMenuItems = computed<MenuItem[]>(() => [

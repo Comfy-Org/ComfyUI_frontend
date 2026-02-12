@@ -298,7 +298,10 @@ test.describe('Settings', () => {
     await input.press('Alt+n')
 
     const requestPromise = comfyPage.page.waitForRequest(
-      '**/api/settings/Comfy.Keybinding.NewBindings'
+      (req) =>
+        req.url().includes('/api/settings') &&
+        !req.url().includes('/api/settings/') &&
+        req.method() === 'POST'
     )
 
     // Save keybinding

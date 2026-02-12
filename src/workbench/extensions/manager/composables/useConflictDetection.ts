@@ -19,6 +19,7 @@ import type {
   ConflictDetail,
   ConflictDetectionResponse,
   ConflictDetectionResult,
+  ImportFailureMap,
   Node,
   NodeRequirements,
   SystemEnvironment
@@ -336,7 +337,7 @@ export function useConflictDetection() {
    * Gets installed packages and checks each one for import failures using bulk API.
    * @returns Promise that resolves to import failure data
    */
-  async function fetchImportFailInfo(): Promise<Record<string, any>> {
+  async function fetchImportFailInfo(): Promise<ImportFailureMap> {
     try {
       const comfyManagerService = useComfyManagerService()
 
@@ -362,7 +363,7 @@ export function useConflictDetection() {
 
       if (bulkResult) {
         // Filter out null values (packages without import failures)
-        const importFailures: Record<string, any> = {}
+        const importFailures: ImportFailureMap = {}
 
         Object.entries(bulkResult).forEach(([packageId, failInfo]) => {
           if (failInfo !== null) {
@@ -389,10 +390,7 @@ export function useConflictDetection() {
    * @returns Array of conflict detection results for failed imports
    */
   function detectImportFailConflicts(
-    importFailInfo: Record<
-      string,
-      { error?: string; traceback?: string } | null
-    >
+    importFailInfo: ImportFailureMap
   ): ConflictDetectionResult[] {
     const results: ConflictDetectionResult[] = []
     if (!importFailInfo || typeof importFailInfo !== 'object') {

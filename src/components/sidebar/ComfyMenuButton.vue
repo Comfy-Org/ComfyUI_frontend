@@ -230,7 +230,7 @@ const extraMenuItems = computed(() => [
   {
     key: 'manage-extensions',
     label: t('menu.manageExtensions'),
-    icon: 'icon-[lucide--puzzle]',
+    icon: 'icon-[comfy--extensions-blocks]',
     command: showManageExtensions
   }
 ])
