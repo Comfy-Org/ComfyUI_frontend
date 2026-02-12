@@ -50,6 +50,7 @@ import { useCoreCommands } from '@/composables/useCoreCommands'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { useProgressFavicon } from '@/composables/useProgressFavicon'
 import { SERVER_CONFIG_ITEMS } from '@/constants/serverConfig'
+import type { ServerConfig, ServerConfigValue } from '@/constants/serverConfig'
 import { i18n, loadLocale } from '@/i18n'
 import ModelImportProgressDialog from '@/platform/assets/components/ModelImportProgressDialog.vue'
 import { isCloud, isDesktop } from '@/platform/distribution/types'
@@ -344,7 +345,7 @@ const onGraphReady = () => {
 
     // Load server config
     wrapWithErrorHandling(useServerConfigStore().loadServerConfig)(
-      SERVER_CONFIG_ITEMS,
+      SERVER_CONFIG_ITEMS as ServerConfig<ServerConfigValue>[],
       settingStore.get('Comfy.Server.ServerConfigValues')
     )
 

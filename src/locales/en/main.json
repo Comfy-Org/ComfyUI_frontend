@@ -68,6 +68,7 @@
     "icon": "Icon",
     "color": "Color",
     "error": "Error",
+    "enterSubgraph": "Enter Subgraph",
     "resizeFromBottomRight": "Resize from bottom-right corner",
     "resizeFromTopRight": "Resize from top-right corner",
     "resizeFromBottomLeft": "Resize from bottom-left corner",
@@ -2833,6 +2834,9 @@
         "Close": "Close"
       }
     }
+  },
+  "vueNodesSlot": {
+    "iterative": "(Iterative)"
   },
   "vueNodesBanner": {
     "title": "Introducing Nodes 2.0",

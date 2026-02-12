@@ -55,63 +55,61 @@
       />
     </Popover>
 
-    <!-- Credits Section (PERSONAL and OWNER only) -->
-    <template v-if="showCreditsSection">
-      <div class="flex items-center gap-2 px-4 py-2">
-        <i class="icon-[lucide--component] text-sm text-amber-400" />
-        <Skeleton
-          v-if="isLoadingBalance"
-          width="4rem"
-          height="1.25rem"
-          class="w-full"
-        />
-        <span v-else class="text-base font-semibold text-base-foreground">{{
-          displayedCredits
-        }}</span>
-        <i
-          v-tooltip="{ value: $t('credits.unified.tooltip'), showDelay: 300 }"
-          class="icon-[lucide--circle-help] mr-auto cursor-help text-base text-muted-foreground"
-        />
-        <!-- Subscribed: Show Add Credits button -->
-        <Button
-          v-if="isActiveSubscription && isWorkspaceSubscribed"
-          variant="secondary"
-          size="sm"
-          class="text-base-foreground"
-          data-testid="add-credits-button"
-          @click="handleTopUp"
-        >
-          {{ $t('subscription.addCredits') }}
-        </Button>
-        <!-- Unsubscribed: Show Subscribe button -->
-        <SubscribeButton
-          v-else-if="isPersonalWorkspace"
-          :fluid="false"
-          :label="
-            isCancelled
-              ? $t('subscription.resubscribe')
-              : $t('workspaceSwitcher.subscribe')
-          "
-          size="sm"
-          variant="gradient"
-        />
-        <!-- Non-personal workspace: Show pricing table -->
-        <Button
-          v-else
-          variant="primary"
-          size="sm"
-          @click="handleOpenPlansAndPricing"
-        >
-          {{
-            isCancelled
-              ? $t('subscription.resubscribe')
-              : $t('workspaceSwitcher.subscribe')
-          }}
-        </Button>
-      </div>
+    <!-- Credits Section -->
 
-      <Divider class="mx-0 my-2" />
-    </template>
+    <div class="flex items-center gap-2 px-4 py-2">
+      <i class="icon-[lucide--component] text-sm text-amber-400" />
+      <Skeleton
+        v-if="isLoadingBalance"
+        width="4rem"
+        height="1.25rem"
+        class="w-full"
+      />
+      <span v-else class="text-base font-semibold text-base-foreground">{{
+        displayedCredits
+      }}</span>
+      <i
+        v-tooltip="{ value: $t('credits.unified.tooltip'), showDelay: 300 }"
+        class="icon-[lucide--circle-help] mr-auto cursor-help text-base text-muted-foreground"
+      />
+      <!-- Add Credits (subscribed + personal or workspace owner only) -->
+      <Button
+        v-if="isActiveSubscription && permissions.canTopUp"
+        variant="secondary"
+        size="sm"
+        class="text-base-foreground"
+        data-testid="add-credits-button"
+        @click="handleTopUp"
+      >
+        {{ $t('subscription.addCredits') }}
+      </Button>
+      <!-- Subscribe/Resubscribe (only when not subscribed or cancelled) -->
+      <SubscribeButton
+        v-if="showSubscribeAction && isPersonalWorkspace"
+        :fluid="false"
+        :label="
+          isCancelled
+            ? $t('subscription.resubscribe')
+            : $t('workspaceSwitcher.subscribe')
+        "
+        size="sm"
+        variant="gradient"
+      />
+      <Button
+        v-if="showSubscribeAction && !isPersonalWorkspace"
+        variant="primary"
+        size="sm"
+        @click="handleOpenPlansAndPricing"
+      >
+        {{
+          isCancelled
+            ? $t('subscription.resubscribe')
+            : $t('workspaceSwitcher.subscribe')
+        }}
+      </Button>
+    </div>
+
+    <Divider class="mx-0 my-2" />
 
     <!-- Plans & Pricing (PERSONAL and OWNER only) -->
     <div
@@ -228,10 +226,9 @@ const workspaceStore = useTeamWorkspaceStore()
 const {
   initState,
   workspaceName,
-  isInPersonalWorkspace: isPersonalWorkspace,
-  isWorkspaceSubscribed
+  isInPersonalWorkspace: isPersonalWorkspace
 } = storeToRefs(workspaceStore)
-const { workspaceRole } = useWorkspaceUI()
+const { permissions } = useWorkspaceUI()
 const workspaceSwitcherPopover = ref<InstanceType<typeof Popover> | null>(null)
 
 const emit = defineEmits<{
@@ -275,13 +272,15 @@ const canUpgrade = computed(() => {
 })
 
 const showPlansAndPricing = computed(
-  () => isPersonalWorkspace.value || workspaceRole.value === 'owner'
+  () => permissions.value.canManageSubscription
 )
 const showManagePlan = computed(
-  () => showPlansAndPricing.value && isActiveSubscription.value
+  () => permissions.value.canManageSubscription && isActiveSubscription.value
 )
-const showCreditsSection = computed(
-  () => isPersonalWorkspace.value || workspaceRole.value === 'owner'
+const showSubscribeAction = computed(
+  () =>
+    permissions.value.canManageSubscription &&
+    (!isActiveSubscription.value || isCancelled.value)
 )
 
 const handleOpenUserSettings = () => {

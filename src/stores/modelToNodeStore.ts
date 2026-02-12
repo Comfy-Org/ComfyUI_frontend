@@ -104,7 +104,8 @@ export const useModelToNodeStore = defineStore('modelToNode', () => {
    * @param modelType The name of the model type to get the node provider for.
    * @returns The node provider for the given model type name.
    */
-  function getNodeProvider(modelType: string): ModelNodeProvider | undefined {
+  function getNodeProvider(modelType: unknown): ModelNodeProvider | undefined {
+    if (typeof modelType !== 'string') return undefined
     registerDefaults()
     return findProvidersWithFallback(modelType)?.[0]
   }
@@ -115,7 +116,8 @@ export const useModelToNodeStore = defineStore('modelToNode', () => {
    * @param modelType The name of the model type to get the node providers for.
    * @returns The list of all valid node providers for the given model type name.
    */
-  function getAllNodeProviders(modelType: string): ModelNodeProvider[] {
+  function getAllNodeProviders(modelType: unknown): ModelNodeProvider[] {
+    if (typeof modelType !== 'string') return []
     registerDefaults()
     return findProvidersWithFallback(modelType) ?? []
   }

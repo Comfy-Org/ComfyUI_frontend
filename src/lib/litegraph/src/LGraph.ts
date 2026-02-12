@@ -4,6 +4,7 @@ import {
   SUBGRAPH_INPUT_ID,
   SUBGRAPH_OUTPUT_ID
 } from '@/lib/litegraph/src/constants'
+import { isNodeBindable } from '@/lib/litegraph/src/utils/type'
 import type { UUID } from '@/lib/litegraph/src/utils/uuid'
 import { createUuidv4, zeroUuid } from '@/lib/litegraph/src/utils/uuid'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
@@ -89,12 +90,13 @@ export interface LGraphState {
   lastRerouteId: number
 }
 
-type ParamsArray<
-  T extends Record<any, any>,
-  K extends MethodNames<T>
-> = Parameters<T[K]>[1] extends undefined
-  ? Parameters<T[K]> | Parameters<T[K]>[0]
-  : Parameters<T[K]>
+type ParamsArray<T, K extends MethodNames<T>> = Parameters<
+  Extract<T[K], (...args: never[]) => unknown>
+>[1] extends undefined
+  ?
+      | Parameters<Extract<T[K], (...args: never[]) => unknown>>
+      | Parameters<Extract<T[K], (...args: never[]) => unknown>>[0]
+  : Parameters<Extract<T[K], (...args: never[]) => unknown>>
 
 /** Configuration used by {@link LGraph} `config`. */
 export interface LGraphConfig {
@@ -158,7 +160,6 @@ export class LGraph
 
   static STATUS_STOPPED = 1
   static STATUS_RUNNING = 2
-  static deduplicateSubgraphIds = false
 
   /** List of LGraph properties that are manually handled by {@link LGraph.configure}. */
   static readonly ConfigureProperties = new Set([
@@ -895,7 +896,7 @@ export class LGraph
    * @deprecated Use options object instead
    */
   add(
-    node: LGraphNode | LGraphGroup,
+    node: LGraphNode | LGraphGroup | null,
     skipComputeOrder?: boolean
   ): LGraphNode | null | undefined
   add(
@@ -960,6 +961,14 @@ export class LGraph
     // Set ghost flag before registration so VueNodeData picks it up
     if (opts.ghost) {
       node.flags.ghost = true
+    }
+
+    // Register all widgets with the WidgetValueStore now that node has a valid ID.
+    // Widgets added before the node was in the graph deferred their setNodeId call.
+    if (node.widgets) {
+      for (const widget of node.widgets) {
+        if (isNodeBindable(widget)) widget.setNodeId(node.id)
+      }
     }
 
     node.graph = this
@@ -2437,7 +2446,7 @@ export class LGraph
           this.subgraphs.get(subgraph.id)?.configure(subgraph)
       }
 
-      if (this.isRootGraph && LGraph.deduplicateSubgraphIds) {
+      if (this.isRootGraph) {
         const reservedNodeIds = nodesData
           ?.map((n) => n.id)
           .filter((id): id is number => typeof id === 'number')

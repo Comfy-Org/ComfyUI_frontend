@@ -11,7 +11,10 @@ import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { app } from '@/scripts/app'
 import type { ComfyWidgetConstructorV2 } from '@/scripts/widgets'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
 
+// TODO: This widget manually syncs with widgetValueStore via getValue/setValue.
+// Consolidate with useStringWidget into shared helpers (domWidgetHelpers.ts).
 function addMarkdownWidget(
   node: LGraphNode,
   name: string,
@@ -36,6 +39,8 @@ function addMarkdownWidget(
     editable: false
   })
 
+  const widgetStore = useWidgetValueStore()
+
   const inputEl = editor.options.element as HTMLElement
   inputEl.classList.add('comfy-markdown')
   const textarea = document.createElement('textarea')
@@ -43,15 +48,27 @@ function addMarkdownWidget(
 
   const widget = node.addDOMWidget(name, 'MARKDOWN', inputEl, {
     getValue(): string {
-      return textarea.value
+      return (
+        (widgetStore.getWidget(node.id, name)?.value as string) ??
+        textarea.value
+      )
     },
     setValue(v: string) {
       textarea.value = v
       editor.commands.setContent(v)
+      const widgetState = widgetStore.getWidget(node.id, name)
+      if (widgetState) widgetState.value = v
     }
   })
-  widget.inputEl = inputEl
+  widget.element = inputEl
   widget.options.minNodeSize = [400, 200]
+
+  inputEl.addEventListener('input', (event) => {
+    if (event.target instanceof HTMLTextAreaElement) {
+      widget.value = event.target.value
+    }
+    widget.callback?.(widget.value)
+  })
 
   inputEl.addEventListener('dblclick', () => {
     inputEl.classList.add('editing')

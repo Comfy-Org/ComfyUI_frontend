@@ -1740,7 +1740,9 @@
   "missingModelsDialog": {
     "doNotAskAgain": "不要再顯示此訊息",
     "missingModels": "缺少模型",
-    "missingModelsMessage": "載入圖形時，找不到以下模型"
+    "missingModelsMessage": "載入圖形時，找不到以下模型",
+    "reEnableInSettings": "請在{link}中重新啟用",
+    "reEnableInSettingsLink": "設定"
   },
   "missingNodes": {
     "cloud": {
@@ -2807,6 +2809,9 @@
   "vueNodesMigrationMainMenu": {
     "message": "隨時可從主選單切換回 Nodes 2.0。"
   },
+  "vueNodesSlot": {
+    "iterative": "（反覆運算）"
+  },
   "welcome": {
     "getStarted": "開始使用",
     "title": "歡迎使用 ComfyUI"
@@ -2827,6 +2832,7 @@
       "placeholder": "選擇...",
       "placeholderAudio": "選擇音訊...",
       "placeholderImage": "選擇圖片...",
+      "placeholderMesh": "選擇網格...",
       "placeholderModel": "選擇模型...",
       "placeholderUnknown": "選擇媒體...",
       "placeholderVideo": "選擇影片..."
