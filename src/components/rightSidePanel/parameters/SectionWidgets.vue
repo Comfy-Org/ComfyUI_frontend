@@ -3,7 +3,6 @@ import { computed, inject, provide, ref, shallowRef, watchEffect } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
-import { isProxyWidget } from '@/core/graph/subgraph/proxyWidget'
 import { parseProxyWidgets } from '@/core/schemas/proxyWidget'
 import type {
   LGraphGroup,
@@ -67,17 +66,6 @@ function isWidgetShownOnParents(
 ): boolean {
   if (!parents.length) return false
   const proxyWidgets = parseProxyWidgets(parents[0].properties.proxyWidgets)
-
-  // For proxy widgets (already promoted), check using overlay information
-  if (isProxyWidget(widget)) {
-    return proxyWidgets.some(
-      ([nodeId, widgetName]) =>
-        widget._overlay.nodeId == nodeId &&
-        widget._overlay.widgetName === widgetName
-    )
-  }
-
-  // For regular widgets (not yet promoted), check using node ID and widget name
   return proxyWidgets.some(
     ([nodeId, widgetName]) =>
       widgetNode.id == nodeId && widget.name === widgetName

@@ -15,7 +15,6 @@ import {
 } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { isProxyWidget } from '@/core/graph/subgraph/proxyWidget'
 import { parseProxyWidgets } from '@/core/schemas/proxyWidget'
 import type { ProxyWidgetsProperty } from '@/core/schemas/proxyWidget'
 import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
@@ -82,26 +81,20 @@ watch(
 
 const widgetsList = computed((): NodeWidgetsList => {
   const proxyWidgetsOrder = proxyWidgets.value
-  const { widgets = [] } = node
 
-  // Map proxyWidgets to actual proxy widgets in the correct order
   const result: NodeWidgetsList = []
   for (const [nodeId, widgetName] of proxyWidgetsOrder) {
-    // Find the proxy widget that matches this nodeId and widgetName
-    const widget = widgets.find((w) => {
-      // Check if this is a proxy widget with _overlay
-      if (isProxyWidget(w)) {
-        return (
-          String(w._overlay.nodeId) === nodeId &&
-          w._overlay.widgetName === widgetName
-        )
-      }
-      // For non-proxy widgets (like linked widgets), match by name
-      return w.name === widgetName
-    })
-    if (widget) {
-      result.push({ node, widget })
+    if (nodeId === '-1') {
+      // Native widget on the SubgraphNode itself
+      const widget = node.widgets?.find((w) => w.name === widgetName)
+      if (widget) result.push({ node, widget })
+      continue
     }
+    // Resolve the interior node and widget from the subgraph
+    const interiorNode = node.subgraph.getNodeById(nodeId)
+    if (!interiorNode) continue
+    const widget = interiorNode.widgets?.find((w) => w.name === widgetName)
+    if (widget) result.push({ node: interiorNode, widget })
   }
   return result
 })
