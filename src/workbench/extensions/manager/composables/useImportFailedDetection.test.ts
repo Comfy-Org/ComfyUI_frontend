@@ -3,15 +3,15 @@ import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, ref } from 'vue'
 
-import * as dialogService from '@/services/dialogService'
 import { useImportFailedDetection } from '@/workbench/extensions/manager/composables/useImportFailedDetection'
+import * as importFailedNodeDialog from '@/workbench/extensions/manager/composables/useImportFailedNodeDialog'
 import * as comfyManagerStore from '@/workbench/extensions/manager/stores/comfyManagerStore'
 import * as conflictDetectionStore from '@/workbench/extensions/manager/stores/conflictDetectionStore'
 
 // Mock the stores and services
 vi.mock('@/workbench/extensions/manager/stores/comfyManagerStore')
 vi.mock('@/workbench/extensions/manager/stores/conflictDetectionStore')
-vi.mock('@/services/dialogService')
+vi.mock('@/workbench/extensions/manager/composables/useImportFailedNodeDialog')
 vi.mock('vue-i18n', async () => {
   const actual = await vi.importActual('vue-i18n')
   return {
@@ -29,7 +29,9 @@ describe('useImportFailedDetection', () => {
   let mockConflictDetectionStore: ReturnType<
     typeof conflictDetectionStore.useConflictDetectionStore
   >
-  let mockDialogService: ReturnType<typeof dialogService.useDialogService>
+  let mockImportFailedNodeDialog: ReturnType<
+    typeof importFailedNodeDialog.useImportFailedNodeDialog
+  >
 
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
@@ -44,10 +46,11 @@ describe('useImportFailedDetection', () => {
       typeof conflictDetectionStore.useConflictDetectionStore
     >
 
-    mockDialogService = {
-      showErrorDialog: vi.fn(),
-      showImportFailedNodeDialog: vi.fn()
-    } as unknown as ReturnType<typeof dialogService.useDialogService>
+    mockImportFailedNodeDialog = {
+      show: vi.fn()
+    } as unknown as ReturnType<
+      typeof importFailedNodeDialog.useImportFailedNodeDialog
+    >
 
     vi.mocked(comfyManagerStore.useComfyManagerStore).mockReturnValue(
       mockComfyManagerStore
@@ -55,7 +58,9 @@ describe('useImportFailedDetection', () => {
     vi.mocked(conflictDetectionStore.useConflictDetectionStore).mockReturnValue(
       mockConflictDetectionStore
     )
-    vi.mocked(dialogService.useDialogService).mockReturnValue(mockDialogService)
+    vi.mocked(importFailedNodeDialog.useImportFailedNodeDialog).mockReturnValue(
+      mockImportFailedNodeDialog
+    )
   })
 
   it('should return false for importFailed when package is not installed', () => {
@@ -228,7 +233,7 @@ describe('useImportFailedDetection', () => {
 
     showImportFailedDialog()
 
-    expect(mockDialogService.showImportFailedNodeDialog).toHaveBeenCalledWith({
+    expect(mockImportFailedNodeDialog.show).toHaveBeenCalledWith({
       conflictedPackages: expect.arrayContaining([
         expect.objectContaining({
           package_id: 'test-package',
