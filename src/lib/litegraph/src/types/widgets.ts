@@ -376,6 +376,9 @@ export interface IBaseWidget<
    */
   promoted?: boolean
 
+  /** Whether this widget is a PromotedWidgetSlot (a lightweight proxy for an interior widget). */
+  isPromotedSlot?: boolean
+
   tooltip?: string
 
   // TODO: Confirm this format

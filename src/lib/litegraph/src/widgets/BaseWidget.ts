@@ -55,6 +55,9 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
   /** Minimum gap between label and value */
   static labelValueGap = 5
 
+  /** Whether this widget is a promoted slot (overridden in PromotedWidgetSlot). */
+  readonly isPromotedSlot: boolean = false
+
   declare computedHeight?: number
   declare serialize?: boolean
   computeLayoutSize?(node: LGraphNode): {

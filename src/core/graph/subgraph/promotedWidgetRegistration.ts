@@ -57,17 +57,22 @@ const onConfigure = function (
     set: (property: NodeProperty) => {
       const parsed = parseProxyWidgets(property)
 
-      // Remove existing PromotedWidgetSlot instances
+      // Snapshot native widgets before filtering so we can restore them
+      const nativeWidgets = this.widgets.filter(
+        (w) => !(w instanceof PromotedWidgetSlot)
+      )
+
+      // Remove existing PromotedWidgetSlot instances and native widgets
+      // that will be re-ordered by the parsed list
       this.widgets = this.widgets.filter((w) => {
         if (w instanceof PromotedWidgetSlot) return false
-        const widgetName = w.name
-        return !parsed.some(([, name]) => widgetName === name)
+        return !parsed.some(([, name]) => w.name === name)
       })
 
       // Create new PromotedWidgetSlot for each promoted entry
       const newSlots: IBaseWidget[] = parsed.flatMap(([nodeId, widgetName]) => {
         if (nodeId === '-1') {
-          const widget = this.widgets.find((w) => w.name === widgetName)
+          const widget = nativeWidgets.find((w) => w.name === widgetName)
           return widget ? [widget] : []
         }
         return [

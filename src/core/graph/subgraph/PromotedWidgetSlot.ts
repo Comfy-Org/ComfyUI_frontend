@@ -30,6 +30,7 @@ export class PromotedWidgetSlot
   extends BaseWidget<IBaseWidget>
   implements IBaseWidget
 {
+  override readonly isPromotedSlot = true
   readonly sourceNodeId: NodeId
   readonly sourceWidgetName: string
   private readonly subgraphNode: SubgraphNode

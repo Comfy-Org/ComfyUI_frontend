@@ -562,7 +562,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
 
     // Clean up all promoted widgets (skip PromotedWidgetSlot instances)
     for (const widget of this.widgets) {
-      if ('sourceNodeId' in widget) continue
+      if (widget.isPromotedSlot) continue
       this.subgraph.events.dispatch('widget-demoted', {
         widget,
         subgraphNode: this
