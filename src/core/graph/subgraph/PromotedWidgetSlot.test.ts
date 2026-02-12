@@ -187,6 +187,32 @@ describe('PromotedWidgetSlot', () => {
     })
   })
 
+  describe('options', () => {
+    it('delegates to interior widget options', () => {
+      const interiorWidget = createMockWidget({
+        options: { step: 10, min: 0, max: 100 }
+      })
+      const interiorNode = {
+        id: '5',
+        widgets: [interiorWidget]
+      } as unknown as LGraphNode
+
+      const subNode = createMockSubgraphNode({ '5': interiorNode })
+      const slot = new PromotedWidgetSlot(subNode, '5', 'seed')
+
+      expect(slot.options.step).toBe(10)
+      expect(slot.options.min).toBe(0)
+      expect(slot.options.max).toBe(100)
+    })
+
+    it('returns empty object when disconnected', () => {
+      const subNode = createMockSubgraphNode()
+      const slot = new PromotedWidgetSlot(subNode, '5', 'seed')
+
+      expect(slot.options).toEqual({})
+    })
+  })
+
   describe('drawWidget', () => {
     it('draws disconnected placeholder when node is missing', () => {
       const subNode = createMockSubgraphNode()

@@ -58,9 +58,11 @@ export class PromotedWidgetSlot
     this.sourceWidgetName = sourceWidgetName
     this.subgraphNode = subgraphNode
 
-    // BaseWidget constructor assigns `this.type` as an own data property,
-    // which shadows our prototype getter. Delete it so our getter is used.
+    // BaseWidget constructor assigns `this.type` and `this.options` as own
+    // data properties, which shadow our prototype getters. Delete them so
+    // our getters are used.
     delete (this as Record<string, unknown>).type
+    delete (this as Record<string, unknown>).options
   }
 
   private resolve(): {
@@ -80,6 +82,10 @@ export class PromotedWidgetSlot
    */
   get resolvedType(): string {
     return this.resolve()?.widget.type ?? 'button'
+  }
+
+  get resolvedOptions(): IBaseWidget['options'] {
+    return this.resolve()?.widget.options ?? {}
   }
 
   override get value(): WidgetValue {
@@ -187,11 +193,19 @@ export class PromotedWidgetSlot
   }
 }
 
-// Install the dynamic `type` getter via defineProperty on the prototype.
+// Install dynamic getters via defineProperty on the prototype.
 // This avoids the TS2611 error (can't override a property with an accessor).
 Object.defineProperty(PromotedWidgetSlot.prototype, 'type', {
   get(this: PromotedWidgetSlot) {
     return this.resolvedType
+  },
+  configurable: true,
+  enumerable: true
+})
+
+Object.defineProperty(PromotedWidgetSlot.prototype, 'options', {
+  get(this: PromotedWidgetSlot) {
+    return this.resolvedOptions
   },
   configurable: true,
   enumerable: true
