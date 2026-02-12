@@ -372,7 +372,7 @@ export interface IBaseWidget<
    * This property is automatically computed on graph change
    * and should not be changed.
    * Promoted widgets have a colored border
-   * @see /core/graph/subgraph/proxyWidget.registerProxyWidgets
+   * @see /core/graph/subgraph/promotedWidgetRegistration.registerPromotedWidgetSlots
    */
   promoted?: boolean
 
