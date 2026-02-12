@@ -1,9 +1,6 @@
 import type { LGraphNode, NodeId } from '@/lib/litegraph/src/LGraphNode'
-import type { Point } from '@/lib/litegraph/src/interfaces'
-import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
-import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import type {
   DrawWidgetOptions,
@@ -63,6 +60,12 @@ export class PromotedWidgetSlot
     // our getters are used.
     delete (this as Record<string, unknown>).type
     delete (this as Record<string, unknown>).options
+
+    this.callback = (value, canvas, _node, pos, e) => {
+      const resolved = this.resolve()
+      if (!resolved) return
+      resolved.widget.callback?.(value, canvas, resolved.node, pos, e)
+    }
   }
 
   private resolve(): {
@@ -111,6 +114,13 @@ export class PromotedWidgetSlot
       this.sourceWidgetName
     )
     return state?.label ?? this.name
+  }
+
+  override set label(v: string | undefined) {
+    const resolved = this.resolve()
+    if (resolved) {
+      resolved.widget.label = v
+    }
   }
 
   override get promoted(): boolean {
@@ -178,18 +188,6 @@ export class PromotedWidgetSlot
 
     const concrete = toConcreteWidget(resolved.widget, resolved.node, false)
     concrete?.onClick(options)
-  }
-
-  override callback(
-    value: WidgetValue,
-    canvas?: LGraphCanvas,
-    _node?: LGraphNode,
-    pos?: Point,
-    e?: CanvasPointerEvent
-  ): void {
-    const resolved = this.resolve()
-    if (!resolved) return
-    resolved.widget.callback?.(value, canvas, resolved.node, pos, e)
   }
 }
 

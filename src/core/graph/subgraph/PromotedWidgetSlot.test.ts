@@ -185,6 +185,44 @@ describe('PromotedWidgetSlot', () => {
       const slot = new PromotedWidgetSlot(subNode, '5', 'seed')
       expect(slot.label).toBe('5: seed')
     })
+
+    it('writes label to interior widget', () => {
+      const interiorWidget = createMockWidget()
+      const interiorNode = {
+        id: '5',
+        widgets: [interiorWidget]
+      } as unknown as LGraphNode
+
+      const subNode = createMockSubgraphNode({ '5': interiorNode })
+      const slot = new PromotedWidgetSlot(subNode, '5', 'seed')
+      slot.label = 'Renamed'
+
+      expect(interiorWidget.label).toBe('Renamed')
+    })
+
+    it('clears label on interior widget when set to undefined', () => {
+      const interiorWidget = createMockWidget()
+      interiorWidget.label = 'Old Label'
+      const interiorNode = {
+        id: '5',
+        widgets: [interiorWidget]
+      } as unknown as LGraphNode
+
+      const subNode = createMockSubgraphNode({ '5': interiorNode })
+      const slot = new PromotedWidgetSlot(subNode, '5', 'seed')
+      slot.label = undefined
+
+      expect(interiorWidget.label).toBeUndefined()
+    })
+
+    it('does not throw when setting label while disconnected', () => {
+      const subNode = createMockSubgraphNode()
+      const slot = new PromotedWidgetSlot(subNode, '5', 'seed')
+
+      expect(() => {
+        slot.label = 'Renamed'
+      }).not.toThrow()
+    })
   })
 
   describe('options', () => {
@@ -257,6 +295,47 @@ describe('PromotedWidgetSlot', () => {
           canvas: {} as never
         })
       ).not.toThrow()
+    })
+  })
+
+  describe('callback', () => {
+    it('delegates to interior widget callback', () => {
+      const interiorCallback = vi.fn()
+      const interiorWidget = createMockWidget({ callback: interiorCallback })
+      const interiorNode = {
+        id: '5',
+        widgets: [interiorWidget]
+      } as unknown as LGraphNode
+
+      const subNode = createMockSubgraphNode({ '5': interiorNode })
+      const slot = new PromotedWidgetSlot(subNode, '5', 'seed')
+      slot.callback?.(42)
+
+      expect(interiorCallback).toHaveBeenCalledWith(
+        42,
+        undefined,
+        interiorNode,
+        undefined,
+        undefined
+      )
+    })
+
+    it('does not throw when disconnected', () => {
+      const subNode = createMockSubgraphNode()
+      const slot = new PromotedWidgetSlot(subNode, '5', 'seed')
+
+      expect(() => slot.callback?.(42)).not.toThrow()
+    })
+
+    it('can be reassigned as a property', () => {
+      const subNode = createMockSubgraphNode()
+      const slot = new PromotedWidgetSlot(subNode, '5', 'seed')
+      const customCallback = vi.fn()
+
+      slot.callback = customCallback
+      slot.callback?.(99)
+
+      expect(customCallback).toHaveBeenCalledWith(99)
     })
   })
 

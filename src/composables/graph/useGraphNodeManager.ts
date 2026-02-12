@@ -197,7 +197,13 @@ function safeWidgetMapper(
   return function (widget) {
     try {
       // Get shared enhancements (controlWidget, spec, nodeType)
-      const sharedEnhancements = getSharedWidgetEnhancements(node, widget)
+      const sourceNodeId =
+        'sourceNodeId' in widget ? (widget.sourceNodeId as string) : undefined
+      const sharedEnhancements = getSharedWidgetEnhancements(
+        node,
+        widget,
+        sourceNodeId
+      )
       const slotInfo = slotMetadata.get(widget.name)
 
       // Wrapper callback specific to Nodes 2.0 rendering

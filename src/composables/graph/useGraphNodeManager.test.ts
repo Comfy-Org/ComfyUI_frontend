@@ -3,8 +3,12 @@ import { createTestingPinia } from '@pinia/testing'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, nextTick, watch } from 'vue'
 
-import { useGraphNodeManager } from '@/composables/graph/useGraphNodeManager'
+import {
+  getSharedWidgetEnhancements,
+  useGraphNodeManager
+} from '@/composables/graph/useGraphNodeManager'
 import { BaseWidget, LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { NodeSlotType } from '@/lib/litegraph/src/types/globalEnums'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 
@@ -72,5 +76,40 @@ describe('Node Reactivity', () => {
 
     expect(onValueChange).toHaveBeenCalledTimes(1)
     expect(widgetValue.value).toBe(99)
+  })
+})
+
+describe('getSharedWidgetEnhancements', () => {
+  beforeEach(() => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
+  })
+
+  it('returns nodeType when sourceNodeId is provided for a subgraph node', () => {
+    const subgraph = new LGraph()
+    const interiorNode = new LGraphNode('KSampler', 'KSampler')
+    subgraph.add(interiorNode)
+
+    const subgraphNode = new LGraphNode('graph/subgraph')
+    ;(subgraphNode as unknown as { subgraph: LGraph }).subgraph = subgraph
+    vi.spyOn(subgraphNode, 'isSubgraphNode').mockReturnValue(true)
+
+    const widget = { name: 'seed', type: 'number', value: 0 } as IBaseWidget
+    const result = getSharedWidgetEnhancements(
+      subgraphNode,
+      widget,
+      String(interiorNode.id)
+    )
+
+    expect(result.nodeType).toBe('KSampler')
+  })
+
+  it('returns undefined nodeType when sourceNodeId is omitted', () => {
+    const subgraphNode = new LGraphNode('graph/subgraph')
+    vi.spyOn(subgraphNode, 'isSubgraphNode').mockReturnValue(true)
+
+    const widget = { name: 'seed', type: 'number', value: 0 } as IBaseWidget
+    const result = getSharedWidgetEnhancements(subgraphNode, widget)
+
+    expect(result.nodeType).toBeUndefined()
   })
 })
