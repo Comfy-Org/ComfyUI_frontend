@@ -34,10 +34,13 @@ jobs:
 
       - name: Build project
         run: pnpm build
+        env:
+          DISTRIBUTION: localhost
 
-      - name: Scan dist for telemetry references
+      - name: Scan dist for GTM telemetry references
         run: |
           set -euo pipefail
+          echo '🔍 Scanning for Google Tag Manager references...'
           if rg --no-ignore -n \
             -g '*.html' \
             -g '*.js' \
@@ -46,7 +49,34 @@ jobs:
             -e '(?i)googletagmanager\.com/gtm\.js\\?id=' \
             -e '(?i)googletagmanager\.com/ns\.html\\?id=' \
             dist; then
-            echo 'Telemetry references found in dist assets.'
+            echo '❌ ERROR: Google Tag Manager references found in dist assets!'
+            echo 'GTM must be properly tree-shaken from OSS builds.'
             exit 1
           fi
-          echo 'No telemetry references found in dist assets.'
+          echo '✅ No GTM references found'
+
+      - name: Scan dist for Mixpanel telemetry references
+        run: |
+          set -euo pipefail
+          echo '🔍 Scanning for Mixpanel references...'
+          if rg --no-ignore -n \
+            -g '*.html' \
+            -g '*.js' \
+            -g '!*.map' \
+            -e '(?i)mixpanel\.init' \
+            -e '(?i)mixpanel\.identify' \
+            -e 'MixpanelTelemetryProvider' \
+            -e 'mp\.comfy\.org' \
+            -e 'mixpanel-browser' \
+            -e '(?i)mixpanel\.track\(' \
+            dist; then
+            echo '❌ ERROR: Mixpanel references found in dist assets!'
+            echo 'Mixpanel must be properly tree-shaken from OSS builds.'
+            echo ''
+            echo 'To fix this:'
+            echo '1. Use the TelemetryProvider pattern (see src/platform/telemetry/)'
+            echo '2. Call telemetry via useTelemetry() hook'
+            echo '3. Use conditional dynamic imports behind isCloud checks'
+            exit 1
+          fi
+          echo '✅ No Mixpanel references found'
