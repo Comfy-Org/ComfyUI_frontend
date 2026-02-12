@@ -62,7 +62,6 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
@@ -77,9 +76,7 @@ const { t } = useI18n()
 const handleDownloadClick = () => {
   window.open('https://www.comfy.org/download', '_blank')
 }
-
-// Dynamically import fonts CSS to prevent bundling in OSS builds
-onMounted(() => {
-  import('../assets/css/fonts.css')
-})
 </script>
+<style>
+@import '../assets/css/fonts.css';
+</style>
