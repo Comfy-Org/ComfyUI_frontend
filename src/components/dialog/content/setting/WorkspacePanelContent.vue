@@ -134,7 +134,7 @@ import { cn } from '@/utils/tailwindUtil'
 const tabTriggerBase =
   'flex items-center justify-center shrink-0 px-2.5 py-2 text-sm rounded-lg cursor-pointer transition-all duration-200 outline-hidden border-none'
 const tabTriggerActive =
-  'bg-interface-menu-component-surface-hovered text-text-primary text-bold'
+  'bg-interface-menu-component-surface-hovered text-text-primary font-bold'
 const tabTriggerInactive =
   'bg-transparent text-text-secondary hover:bg-button-hover-surface focus:bg-button-hover-surface'
 
