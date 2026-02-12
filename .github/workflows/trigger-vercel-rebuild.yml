@@ -1,0 +1,134 @@
+name: Trigger Vercel Rebuild
+
+# Trigger when all important CI workflows complete
+on:
+  workflow_run:
+    workflows:
+      - "Storybook and Chromatic CI"
+      - "Tests CI"
+    types:
+      - completed
+    branches-ignore:
+      - main
+
+jobs:
+  check-and-trigger:
+    name: Trigger Vercel Rebuild
+    runs-on: ubuntu-latest
+    # Only run on PRs and only on success
+    if: |
+      github.event.workflow_run.event == 'pull_request' &&
+      github.event.workflow_run.conclusion == 'success'
+
+    steps:
+      - name: Get PR branch
+        id: pr
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { data: pullRequests } = await github.rest.pulls.list({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              head: `${context.repo.owner}:${context.payload.workflow_run.head_branch}`,
+              state: 'open'
+            });
+
+            if (pullRequests.length === 0) {
+              console.log('No open PR found for this branch');
+              return null;
+            }
+
+            return pullRequests[0].number;
+
+      - name: Check all required workflows completed
+        id: check
+        uses: actions/github-script@v7
+        with:
+          script: |
+            if (!${{ steps.pr.outputs.result }}) {
+              console.log('No PR found, skipping');
+              return false;
+            }
+
+            const requiredWorkflows = [
+              'Storybook and Chromatic CI',
+              'Tests CI'
+            ];
+
+            const { data: workflowRuns } = await github.rest.actions.listWorkflowRunsForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              branch: context.payload.workflow_run.head_branch,
+              per_page: 100
+            });
+
+            // Get the latest run for each required workflow
+            const latestRuns = {};
+            for (const run of workflowRuns.workflow_runs) {
+              const workflowName = run.name;
+              if (requiredWorkflows.includes(workflowName)) {
+                if (!latestRuns[workflowName] || run.created_at > latestRuns[workflowName].created_at) {
+                  latestRuns[workflowName] = run;
+                }
+              }
+            }
+
+            // Check if all required workflows have completed successfully
+            const allComplete = requiredWorkflows.every(name => {
+              const run = latestRuns[name];
+              return run && run.conclusion === 'success';
+            });
+
+            console.log('Workflow status:');
+            requiredWorkflows.forEach(name => {
+              const run = latestRuns[name];
+              console.log(`  ${name}: ${run ? run.conclusion : 'not found'}`);
+            });
+
+            console.log(`All workflows complete: ${allComplete}`);
+            return allComplete;
+
+      - name: Trigger Vercel Deploy Hook
+        if: steps.check.outputs.result == 'true'
+        run: |
+          echo "🚀 All CI workflows completed successfully"
+          echo "📦 Triggering Vercel rebuild with fresh artifacts..."
+
+          curl -X POST "${{ secrets.VERCEL_DEPLOY_HOOK_URL }}" \
+            -H "Content-Type: application/json" \
+            -d '{
+              "ref": "${{ github.event.workflow_run.head_branch }}",
+              "reason": "All CI workflows completed"
+            }'
+
+          echo "✅ Vercel rebuild triggered"
+
+      - name: Comment on PR
+        if: steps.check.outputs.result == 'true' && steps.pr.outputs.result
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const prNumber = ${{ steps.pr.outputs.result }};
+            const branch = '${{ github.event.workflow_run.head_branch }}';
+
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: prNumber,
+              body: `🔄 **Vercel Rebuild Triggered**
+
+All CI workflows completed successfully. Vercel is rebuilding with fresh artifacts:
+- ✅ Storybook
+- ✅ E2E Test Reports
+- ✅ Vitest Reports
+
+Your branch status page will update shortly with the latest test results.
+
+Preview URL: \`https://${branch}-comfyui-frontend-reports.vercel.app\`
+              `
+            });
+
+      - name: Skip rebuild
+        if: steps.check.outputs.result != 'true'
+        run: |
+          echo "⏭️ Skipping Vercel rebuild - not all workflows complete yet"
