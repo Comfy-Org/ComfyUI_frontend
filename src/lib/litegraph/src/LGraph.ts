@@ -896,7 +896,7 @@ export class LGraph
    * @deprecated Use options object instead
    */
   add(
-    node: LGraphNode | LGraphGroup,
+    node: LGraphNode | LGraphGroup | null,
     skipComputeOrder?: boolean
   ): LGraphNode | null | undefined
   add(
