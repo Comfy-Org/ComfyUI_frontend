@@ -826,7 +826,7 @@ test.describe('Subgraph Operations', { tag: ['@slow', '@subgraph'] }, () => {
 
       // Open settings dialog using hotkey
       await comfyPage.page.keyboard.press('Control+,')
-      await comfyPage.page.waitForSelector('.settings-container', {
+      await comfyPage.page.waitForSelector('[data-testid="settings-dialog"]', {
         state: 'visible'
       })
 
@@ -836,7 +836,7 @@ test.describe('Subgraph Operations', { tag: ['@slow', '@subgraph'] }, () => {
 
       // Dialog should be closed
       await expect(
-        comfyPage.page.locator('.settings-container')
+        comfyPage.page.locator('[data-testid="settings-dialog"]')
       ).not.toBeVisible()
 
       // Should still be in subgraph

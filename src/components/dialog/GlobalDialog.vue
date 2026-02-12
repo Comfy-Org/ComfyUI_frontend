@@ -4,12 +4,7 @@
     v-for="item in dialogStore.dialogStack"
     :key="item.key"
     v-model:visible="item.visible"
-    :class="[
-      'global-dialog',
-      item.key === 'global-settings' && teamWorkspacesEnabled
-        ? 'settings-dialog-workspace'
-        : ''
-    ]"
+    class="global-dialog"
     v-bind="item.dialogComponentProps"
     :pt="getDialogPt(item)"
     :aria-labelledby="item.key"

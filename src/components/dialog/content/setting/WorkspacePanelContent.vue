@@ -1,6 +1,6 @@
 <template>
   <div class="flex h-full w-full flex-col">
-    <div class="pb-8 flex items-center gap-4">
+    <header class="mb-8 flex items-center gap-4">
       <WorkspaceProfilePic
         class="size-12 !text-3xl"
         :workspace-name="workspaceName"
@@ -8,44 +8,38 @@
       <h1 class="text-3xl text-base-foreground">
         {{ workspaceName }}
       </h1>
-    </div>
-    <Tabs unstyled :value="activeTab" @update:value="setActiveTab">
+    </header>
+    <TabsRoot v-model="activeTab">
       <div class="flex w-full items-center">
-        <TabList unstyled class="flex w-full gap-2">
-          <Tab
+        <TabsList class="flex items-center gap-2 pb-1">
+          <TabsTrigger
             value="plan"
             :class="
               cn(
-                buttonVariants({
-                  variant: activeTab === 'plan' ? 'secondary' : 'textonly',
-                  size: 'md'
-                }),
-                activeTab === 'plan' && 'text-base-foreground no-underline'
+                tabTriggerBase,
+                activeTab === 'plan' ? tabTriggerActive : tabTriggerInactive
               )
             "
           >
             {{ $t('workspacePanel.tabs.planCredits') }}
-          </Tab>
-          <Tab
+          </TabsTrigger>
+          <TabsTrigger
             value="members"
             :class="
               cn(
-                buttonVariants({
-                  variant: activeTab === 'members' ? 'secondary' : 'textonly',
-                  size: 'md'
-                }),
-                activeTab === 'members' && 'text-base-foreground no-underline',
-                'ml-2'
+                tabTriggerBase,
+                activeTab === 'members' ? tabTriggerActive : tabTriggerInactive
               )
             "
           >
             {{
               $t('workspacePanel.tabs.membersCount', {
-                count: isInPersonalWorkspace ? 1 : members.length
+                count: members.length
               })
             }}
-          </Tab>
-        </TabList>
+          </TabsTrigger>
+        </TabsList>
+
         <Button
           v-if="permissions.canInviteMembers"
           v-tooltip="
@@ -64,15 +58,13 @@
           :aria-label="$t('workspacePanel.inviteMember')"
           @click="handleInviteMember"
         >
-          {{ $t('workspacePanel.invite') }}
-          <i class="pi pi-plus ml-1 text-sm" />
+          <i class="pi pi-plus text-sm" />
         </Button>
         <template v-if="permissions.canAccessWorkspaceMenu">
           <Button
             v-tooltip="{ value: $t('g.moreOptions'), showDelay: 300 }"
-            class="ml-2"
-            variant="secondary"
-            size="lg"
+            variant="muted-textonly"
+            size="icon"
             :aria-label="$t('g.moreOptions')"
             @click="menu?.toggle($event)"
           >
@@ -80,17 +72,21 @@
           </Button>
           <Menu ref="menu" :model="menuItems" :popup="true">
             <template #item="{ item }">
-              <div
+              <button
                 v-tooltip="
                   item.disabled && deleteTooltip
                     ? { value: deleteTooltip, showDelay: 0 }
                     : null
                 "
-                :class="[
-                  'flex items-center gap-2 px-3 py-2',
-                  item.class,
-                  item.disabled ? 'pointer-events-auto' : 'cursor-pointer'
-                ]"
+                type="button"
+                :disabled="!!item.disabled"
+                :class="
+                  cn(
+                    'flex w-full items-center gap-2 px-3 py-2 bg-transparent border-none cursor-pointer',
+                    item.class,
+                    item.disabled && 'pointer-events-auto cursor-not-allowed'
+                  )
+                "
                 @click="
                   item.command?.({
                     originalEvent: $event,
@@ -100,46 +96,47 @@
               >
                 <i :class="item.icon" />
                 <span>{{ item.label }}</span>
-              </div>
+              </button>
             </template>
           </Menu>
         </template>
       </div>
 
-      <TabPanels unstyled>
-        <TabPanel value="plan">
-          <SubscriptionPanelContentWorkspace />
-        </TabPanel>
-        <TabPanel value="members">
-          <MembersPanelContent :key="workspaceRole" />
-        </TabPanel>
-      </TabPanels>
-    </Tabs>
+      <TabsContent value="plan" class="mt-4">
+        <SubscriptionPanelContentWorkspace />
+      </TabsContent>
+      <TabsContent value="members" class="mt-4">
+        <MembersPanelContent :key="workspaceRole" />
+      </TabsContent>
+    </TabsRoot>
   </div>
 </template>
 
 <script setup lang="ts">
 import { storeToRefs } from 'pinia'
 import Menu from 'primevue/menu'
-import Tab from 'primevue/tab'
-import TabList from 'primevue/tablist'
-import TabPanel from 'primevue/tabpanel'
-import TabPanels from 'primevue/tabpanels'
-import Tabs from 'primevue/tabs'
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+
+import { TabsContent, TabsList, TabsRoot, TabsTrigger } from 'reka-ui'
 
 import WorkspaceProfilePic from '@/components/common/WorkspaceProfilePic.vue'
 import MembersPanelContent from '@/components/dialog/content/setting/MembersPanelContent.vue'
 import Button from '@/components/ui/button/Button.vue'
-import { buttonVariants } from '@/components/ui/button/button.variants'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { TIER_TO_KEY } from '@/platform/cloud/subscription/constants/tierPricing'
 import SubscriptionPanelContentWorkspace from '@/platform/cloud/subscription/components/SubscriptionPanelContentWorkspace.vue'
-import { cn } from '@/utils/tailwindUtil'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useDialogService } from '@/services/dialogService'
+import { cn } from '@/utils/tailwindUtil'
+
+const tabTriggerBase =
+  'flex items-center justify-center shrink-0 px-2.5 py-2 text-sm rounded-lg cursor-pointer transition-all duration-200 outline-hidden border-none'
+const tabTriggerActive =
+  'bg-interface-menu-component-surface-hovered text-text-primary font-bold'
+const tabTriggerInactive =
+  'bg-transparent text-text-secondary hover:bg-button-hover-surface focus:bg-button-hover-surface'
 
 const { defaultTab = 'plan' } = defineProps<{
   defaultTab?: string
@@ -164,16 +161,12 @@ const isSingleSeatPlan = computed(() => {
   return getMaxSeats(tierKey) <= 1
 })
 const workspaceStore = useTeamWorkspaceStore()
-const {
-  workspaceName,
-  members,
-  isInviteLimitReached,
-  isWorkspaceSubscribed,
-  isInPersonalWorkspace
-} = storeToRefs(workspaceStore)
+const { workspaceName, members, isInviteLimitReached, isWorkspaceSubscribed } =
+  storeToRefs(workspaceStore)
 const { fetchMembers, fetchPendingInvites } = workspaceStore
-const { activeTab, setActiveTab, workspaceRole, permissions, uiConfig } =
-  useWorkspaceUI()
+
+const { workspaceRole, permissions, uiConfig } = useWorkspaceUI()
+const activeTab = ref(defaultTab)
 
 const menu = ref<InstanceType<typeof Menu> | null>(null)
 
@@ -253,7 +246,6 @@ const menuItems = computed(() => {
 })
 
 onMounted(() => {
-  setActiveTab(defaultTab)
   fetchMembers()
   fetchPendingInvites()
 })

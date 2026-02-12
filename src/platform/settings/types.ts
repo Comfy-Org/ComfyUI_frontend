@@ -64,3 +64,14 @@ export interface ISettingGroup {
   label: string
   settings: SettingParams[]
 }
+
+export type SettingPanelType =
+  | 'about'
+  | 'credits'
+  | 'extension'
+  | 'keybinding'
+  | 'secrets'
+  | 'server-config'
+  | 'subscription'
+  | 'user'
+  | 'workspace'

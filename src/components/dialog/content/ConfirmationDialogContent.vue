@@ -116,7 +116,7 @@ import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { useDialogService } from '@/services/dialogService'
+import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
 import type { ConfirmationDialogType } from '@/services/dialogService'
 import { useDialogStore } from '@/stores/dialogStore'
 
@@ -134,10 +134,7 @@ const onCancel = () => useDialogStore().closeDialog()
 
 function openBlueprintOverwriteSetting() {
   useDialogStore().closeDialog()
-  void useDialogService().showSettingsDialog(
-    undefined,
-    'Comfy.Workflow.WarnBlueprintOverwrite'
-  )
+  useSettingsDialog().show(undefined, 'Comfy.Workflow.WarnBlueprintOverwrite')
 }
 
 const doNotAskAgain = ref(false)
