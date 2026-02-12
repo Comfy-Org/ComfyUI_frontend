@@ -1,9 +1,13 @@
-# Description: Builds Storybook and runs visual regression testing via Chromatic, deploys previews to Cloudflare Pages
-name: 'CI: Tests Storybook'
+name: Storybook and Chromatic CI
+
+# - [Automate Chromatic with GitHub Actions • Chromatic docs]( https://www.chromatic.com/docs/github-actions/ )
 
 on:
   workflow_dispatch: # Allow manual triggering
   pull_request:
+    branches: [main, sno-deploy-ghpage]
+  push:
+    branches: [sno-deploy-ghpage]
 
 jobs:
   # Post starting comment for non-forked PRs
@@ -14,7 +18,7 @@ jobs:
       pull-requests: write
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v5
 
       - name: Post starting comment
         env:
@@ -30,16 +34,40 @@ jobs:
   # Build Storybook for all PRs (free Cloudflare deployment)
   storybook-build:
     runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request'
+    if: github.event_name == 'pull_request' || github.event_name == 'push'
     outputs:
       conclusion: ${{ steps.job-status.outputs.conclusion }}
       workflow-url: ${{ steps.workflow-url.outputs.url }}
     steps:
       - name: Checkout code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v5
 
-      - name: Setup frontend
-        uses: ./.github/actions/setup-frontend
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+
+      - name: Cache tool outputs
+        uses: actions/cache@v4
+        with:
+          path: |
+            .cache
+            storybook-static
+            tsconfig.tsbuildinfo
+          key: storybook-cache-${{ runner.os }}-${{ hashFiles('**/pnpm-lock.yaml') }}-${{ hashFiles('src/**/*.{ts,vue,js}', '*.config.*', '.storybook/**/*') }}
+          restore-keys: |
+            storybook-cache-${{ runner.os }}-${{ hashFiles('**/pnpm-lock.yaml') }}-
+            storybook-cache-${{ runner.os }}-
+            storybook-tools-cache-${{ runner.os }}-
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
 
       - name: Build Storybook
         run: pnpm build-storybook
@@ -58,7 +86,7 @@ jobs:
 
       - name: Upload Storybook build
         if: success() && github.event.pull_request.head.repo.fork == false
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v4
         with:
           name: storybook-static
           path: storybook-static/
@@ -75,16 +103,40 @@ jobs:
       chromatic-storybook-url: ${{ steps.chromatic.outputs.storybookUrl }}
     steps:
       - name: Checkout code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v5
         with:
           fetch-depth: 0 # Required for Chromatic baseline
 
-      - name: Setup frontend
-        uses: ./.github/actions/setup-frontend
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+
+      - name: Cache tool outputs
+        uses: actions/cache@v4
+        with:
+          path: |
+            .cache
+            storybook-static
+            tsconfig.tsbuildinfo
+          key: storybook-cache-${{ runner.os }}-${{ hashFiles('**/pnpm-lock.yaml') }}-${{ hashFiles('src/**/*.{ts,vue,js}', '*.config.*', '.storybook/**/*') }}
+          restore-keys: |
+            storybook-cache-${{ runner.os }}-${{ hashFiles('**/pnpm-lock.yaml') }}-
+            storybook-cache-${{ runner.os }}-
+            storybook-tools-cache-${{ runner.os }}-
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
 
       - name: Build Storybook and run Chromatic
         id: chromatic
-        uses: chromaui/action@07791f8243f4cb2698bf4d00426baf4b2d1cb7e0 # v13.3.5
+        uses: chromaui/action@latest
         with:
           projectToken: ${{ secrets.CHROMATIC_PROJECT_TOKEN }}
           buildScriptName: build-storybook
@@ -114,11 +166,11 @@ jobs:
       contents: read
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v5
 
       - name: Download Storybook build
         if: needs.storybook-build.outputs.conclusion == 'success'
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v4
         with:
           name: storybook-static
           path: storybook-static
@@ -148,7 +200,7 @@ jobs:
       pull-requests: write
     steps:
       - name: Update comment with Chromatic URLs
-        uses: actions/github-script@v8
+        uses: actions/github-script@v7
         with:
           script: |
             const buildUrl = '${{ needs.chromatic-deployment.outputs.chromatic-build-url }}';

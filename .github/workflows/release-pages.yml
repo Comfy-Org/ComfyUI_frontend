@@ -1,0 +1,186 @@
+name: Deploy to GitHub Pages
+description: Build and deploy to GitHub Pages and Vercel on successful completion of tests and builds
+
+on:
+  # Triggers when any of these workflows complete on main branch
+  # Runs ONCE per workflow completion (e.g., if "Vitest Tests" completes, this workflow runs once)
+  workflow_run:
+    workflows: ['Storybook and Chromatic CI', 'Vitest Tests', 'Tests CI']
+    types: [completed]
+  # Allow direct pushes to the debug branch to kick off the full pipeline
+  push:
+    branches: [sno-deploy-ghpage]
+  # Keep manual trigger for debugging
+  workflow_dispatch:
+
+jobs:
+  incremental-build:
+    runs-on: ubuntu-latest
+    # Only run if the triggering workflow succeeded (or manual dispatch/push)
+    if: github.event_name == 'workflow_dispatch' || github.event_name == 'push' || github.event.workflow_run.conclusion == 'success'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: '24'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Cache build artifacts
+        uses: actions/cache@v4
+        with:
+          path: |
+            .pages
+            storybook-static
+            coverage
+          key: build-cache-${{ github.ref_name }}-${{ github.run_id }}-${{ hashFiles('pnpm-lock.yaml', 'package.json') }}
+          restore-keys: |
+            build-cache-${{ github.ref_name }}-
+            build-cache-main-
+
+      - name: Download Storybook artifact (source run)
+        id: fetch_storybook_trigger
+        continue-on-error: true
+        if: github.event_name == 'workflow_run' && github.event.workflow_run.name == 'Storybook and Chromatic CI'
+        uses: dawidd6/action-download-artifact@v6
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          workflow: storybook-and-chromatic-ci.yaml
+          name: storybook-static
+          run_id: ${{ github.event.workflow_run.id }}
+          path: storybook-static
+
+      - name: Download Storybook artifact (latest successful run on main)
+        continue-on-error: true
+        if: steps.fetch_storybook_trigger.outcome != 'success'
+        uses: dawidd6/action-download-artifact@v6
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          workflow: storybook-and-chromatic-ci.yaml
+          name: storybook-static
+          branch: main
+          workflow_conclusion: success
+          path: storybook-static
+
+      - name: Download Vitest reports (source run)
+        id: fetch_vitest_trigger
+        continue-on-error: true
+        if: github.event_name == 'workflow_run' && github.event.workflow_run.name == 'Vitest Tests'
+        uses: dawidd6/action-download-artifact@v6
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          workflow: vitest-tests.yaml
+          name: vitest-reports
+          run_id: ${{ github.event.workflow_run.id }}
+          path: ./.pages/vitest-reports
+
+      - name: Download Vitest reports (latest successful run on main)
+        continue-on-error: true
+        if: steps.fetch_vitest_trigger.outcome != 'success'
+        uses: dawidd6/action-download-artifact@v6
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          workflow: vitest-tests.yaml
+          name: vitest-reports
+          branch: main
+          workflow_conclusion: success
+          path: ./.pages/vitest-reports
+
+      - name: Download Playwright E2E reports (source run)
+        id: fetch_playwright_trigger
+        continue-on-error: true
+        if: github.event_name == 'workflow_run' && github.event.workflow_run.name == 'Tests CI'
+        uses: dawidd6/action-download-artifact@v6
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          workflow: ci-tests-e2e.yaml
+          name_is_regexp: true
+          name: playwright-report-.*
+          run_id: ${{ github.event.workflow_run.id }}
+          path: ./playwright-reports-temp
+
+      - name: Download Playwright E2E reports (latest successful run on main)
+        continue-on-error: true
+        if: steps.fetch_playwright_trigger.outcome != 'success'
+        uses: dawidd6/action-download-artifact@v6
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          workflow: ci-tests-e2e.yaml
+          name_is_regexp: true
+          name: playwright-report-.*
+          branch: main
+          workflow_conclusion: success
+          path: ./playwright-reports-temp
+
+      - name: Organize Playwright reports by browser
+        if: always()
+        run: |
+          mkdir -p ./.pages/playwright-reports
+
+          # Move each browser report to its own directory
+          if [ -d "./playwright-reports-temp" ]; then
+            for dir in ./playwright-reports-temp/playwright-report-*; do
+              if [ -d "$dir" ]; then
+                browser_name=$(basename "$dir" | sed 's/playwright-report-//')
+                mkdir -p "./.pages/playwright-reports/${browser_name}"
+                cp -r "$dir"/* "./.pages/playwright-reports/${browser_name}/"
+              fi
+            done
+          fi
+
+      - name: Build static assets (with artifact reuse)
+        run: ./scripts/build-pages.sh
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v4
+
+      - name: Upload built pages as cache
+        uses: actions/upload-pages-artifact@v4
+        with:
+          name: built-pages
+          path: '.pages'
+
+  deploy-vercel-app:
+    runs-on: ubuntu-latest
+    needs: incremental-build
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      - name: download built pages
+        uses: actions/download-artifact@v4
+        with:
+          name: built-pages
+          path: ./artifact
+
+      - name: Extract artifact
+        run: |
+          mkdir -p ./.pages
+          cd ./artifact
+          tar -xf artifact.tar -C ../.pages
+
+      # debug ls of ./.pages
+      - name: List ./.pages contents
+        run: ls -la ./.pages
+
+      - name: Deploy to Vercel
+        uses: amondnet/vercel-action@v20
+        with:
+          vercel-token: ${{ secrets.VERCEL_TOKEN }}
+          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
+          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
+          working-directory: .pages
+          vercel-args: ${{ github.ref_name == 'main' && '--prod' || '' }}
+          github-comment: true
+          alias-domains: |
+            ${{ github.ref_name }}-comfyui-frontend-reports.vercel.app
