@@ -44,6 +44,10 @@ export class SettingDialog extends BaseDialog {
     return this.root.locator('nav').getByRole('button')
   }
 
+  category(name: string) {
+    return this.root.locator('nav').getByRole('button', { name })
+  }
+
   get contentArea() {
     return this.root.getByRole('main')
   }

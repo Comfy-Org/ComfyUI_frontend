@@ -414,7 +414,7 @@ export const useDialogService = () => {
     const layoutDefaultProps: DialogComponentProps = {
       headless: true,
       modal: true,
-      closable: false,
+      closable: true,
       pt: {
         root: {
           class: 'rounded-2xl overflow-hidden'
