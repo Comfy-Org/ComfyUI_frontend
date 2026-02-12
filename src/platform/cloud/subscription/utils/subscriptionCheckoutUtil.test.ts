@@ -22,6 +22,10 @@ const {
     ga_client_id: 'ga-client-id',
     ga_session_id: 'ga-session-id',
     ga_session_number: 'ga-session-number',
+    im_ref: 'impact-click-123',
+    utm_source: 'impact',
+    utm_medium: 'affiliate',
+    utm_campaign: 'spring-launch',
     gclid: 'gclid-123',
     gbraid: 'gbraid-456',
     wbraid: 'wbraid-789'
@@ -54,6 +58,14 @@ vi.mock('@/platform/telemetry/utils/checkoutAttribution', () => ({
 
 global.fetch = vi.fn()
 
+type Distribution = 'desktop' | 'localhost' | 'cloud'
+
+const setDistribution = (distribution: Distribution) => {
+  ;(
+    globalThis as typeof globalThis & { __DISTRIBUTION__: Distribution }
+  ).__DISTRIBUTION__ = distribution
+}
+
 function createDeferred<T>() {
   let resolve: (value: T) => void = () => {}
   const promise = new Promise<T>((res) => {
@@ -65,6 +77,7 @@ function createDeferred<T>() {
 
 describe('performSubscriptionCheckout', () => {
   beforeEach(() => {
+    setDistribution('cloud')
     vi.clearAllMocks()
     mockIsCloud.value = true
     mockUserId.value = 'user-123'
@@ -72,6 +85,7 @@ describe('performSubscriptionCheckout', () => {
 
   afterEach(() => {
     vi.restoreAllMocks()
+    setDistribution('localhost')
   })
 
   it('tracks begin_checkout with user id and tier metadata', async () => {
@@ -93,6 +107,10 @@ describe('performSubscriptionCheckout', () => {
       ga_client_id: 'ga-client-id',
       ga_session_id: 'ga-session-id',
       ga_session_number: 'ga-session-number',
+      im_ref: 'impact-click-123',
+      utm_source: 'impact',
+      utm_medium: 'affiliate',
+      utm_campaign: 'spring-launch',
       gclid: 'gclid-123',
       gbraid: 'gbraid-456',
       wbraid: 'wbraid-789'
@@ -107,12 +125,51 @@ describe('performSubscriptionCheckout', () => {
           ga_client_id: 'ga-client-id',
           ga_session_id: 'ga-session-id',
           ga_session_number: 'ga-session-number',
+          im_ref: 'impact-click-123',
+          utm_source: 'impact',
+          utm_medium: 'affiliate',
+          utm_campaign: 'spring-launch',
           gclid: 'gclid-123',
           gbraid: 'gbraid-456',
           wbraid: 'wbraid-789'
         })
       })
     )
+    expect(openSpy).toHaveBeenCalledWith(checkoutUrl, '_blank')
+  })
+
+  it('continues checkout when attribution collection fails', async () => {
+    const checkoutUrl = 'https://checkout.stripe.com/test'
+    const openSpy = vi.spyOn(window, 'open').mockImplementation(() => null)
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+
+    mockGetCheckoutAttribution.mockRejectedValueOnce(
+      new Error('Attribution failed')
+    )
+    vi.mocked(global.fetch).mockResolvedValue({
+      ok: true,
+      json: async () => ({ checkout_url: checkoutUrl })
+    } as Response)
+
+    await performSubscriptionCheckout('pro', 'monthly', true)
+
+    expect(warnSpy).toHaveBeenCalledWith(
+      '[SubscriptionCheckout] Failed to collect checkout attribution',
+      expect.any(Error)
+    )
+    expect(global.fetch).toHaveBeenCalledWith(
+      expect.stringContaining('/customers/cloud-subscription-checkout/pro'),
+      expect.objectContaining({
+        method: 'POST',
+        body: JSON.stringify({})
+      })
+    )
+    expect(mockTelemetry.trackBeginCheckout).toHaveBeenCalledWith({
+      user_id: 'user-123',
+      tier: 'pro',
+      cycle: 'monthly',
+      checkout_type: 'new'
+    })
     expect(openSpy).toHaveBeenCalledWith(checkoutUrl, '_blank')
   })
 

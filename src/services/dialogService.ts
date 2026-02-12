@@ -40,10 +40,6 @@ const lazyUpdatePasswordContent = () =>
   import('@/components/dialog/content/UpdatePasswordContent.vue')
 const lazyComfyOrgHeader = () =>
   import('@/components/dialog/header/ComfyOrgHeader.vue')
-const lazySettingDialogHeader = () =>
-  import('@/components/dialog/header/SettingDialogHeader.vue')
-const lazySettingDialogContent = () =>
-  import('@/platform/settings/components/SettingDialogContent.vue')
 const lazyImportFailedNodeContent = () =>
   import('@/workbench/extensions/manager/components/manager/ImportFailedNodeContent.vue')
 const lazyImportFailedNodeHeader = () =>
@@ -125,55 +121,6 @@ export const useDialogService = () => {
       key: 'global-missing-models-warning',
       component: MissingModelsWarning,
       props
-    })
-  }
-
-  async function showSettingsDialog(
-    panel?:
-      | 'about'
-      | 'keybinding'
-      | 'extension'
-      | 'server-config'
-      | 'user'
-      | 'credits'
-      | 'subscription'
-      | 'workspace'
-      | 'secrets'
-  ) {
-    const [
-      { default: SettingDialogHeader },
-      { default: SettingDialogContent }
-    ] = await Promise.all([
-      lazySettingDialogHeader(),
-      lazySettingDialogContent()
-    ])
-
-    const props = panel ? { props: { defaultPanel: panel } } : undefined
-
-    dialogStore.showDialog({
-      key: 'global-settings',
-      headerComponent: SettingDialogHeader,
-      component: SettingDialogContent,
-      ...props
-    })
-  }
-
-  async function showAboutDialog() {
-    const [
-      { default: SettingDialogHeader },
-      { default: SettingDialogContent }
-    ] = await Promise.all([
-      lazySettingDialogHeader(),
-      lazySettingDialogContent()
-    ])
-
-    dialogStore.showDialog({
-      key: 'global-settings',
-      headerComponent: SettingDialogHeader,
-      component: SettingDialogContent,
-      props: {
-        defaultPanel: 'about'
-      }
     })
   }
 
@@ -467,7 +414,7 @@ export const useDialogService = () => {
     const layoutDefaultProps: DialogComponentProps = {
       headless: true,
       modal: true,
-      closable: false,
+      closable: true,
       pt: {
         root: {
           class: 'rounded-2xl overflow-hidden'
@@ -702,6 +649,22 @@ export const useDialogService = () => {
     })
   }
 
+  async function showInviteMemberUpsellDialog() {
+    const { default: component } =
+      await import('@/components/dialog/content/workspace/InviteMemberUpsellDialogContent.vue')
+    return dialogStore.showDialog({
+      key: 'invite-member-upsell',
+      component,
+      dialogComponentProps: {
+        ...workspaceDialogPt,
+        pt: {
+          ...workspaceDialogPt.pt,
+          root: { class: 'rounded-2xl max-w-[512px] w-full' }
+        }
+      }
+    })
+  }
+
   async function showRevokeInviteDialog(inviteId: string) {
     const { default: component } =
       await import('@/components/dialog/content/workspace/RevokeInviteDialogContent.vue')
@@ -751,8 +714,6 @@ export const useDialogService = () => {
   return {
     showLoadWorkflowWarning,
     showMissingModelsWarning,
-    showSettingsDialog,
-    showAboutDialog,
     showExecutionErrorDialog,
     showApiNodesSignInDialog,
     showSignInDialog,
@@ -773,6 +734,7 @@ export const useDialogService = () => {
     showRemoveMemberDialog,
     showRevokeInviteDialog,
     showInviteMemberDialog,
+    showInviteMemberUpsellDialog,
     showBillingComingSoonDialog,
     showCancelSubscriptionDialog
   }

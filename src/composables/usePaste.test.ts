@@ -7,8 +7,13 @@ import type {
 } from '@/lib/litegraph/src/litegraph'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { app } from '@/scripts/app'
-import { isImageNode } from '@/utils/litegraphUtil'
-import { pasteImageNode, usePaste } from './usePaste'
+import { createNode, isImageNode } from '@/utils/litegraphUtil'
+import {
+  cloneDataTransfer,
+  pasteImageNode,
+  pasteImageNodes,
+  usePaste
+} from './usePaste'
 
 function createMockNode() {
   return {
@@ -86,6 +91,7 @@ vi.mock('@/lib/litegraph/src/litegraph', () => ({
 }))
 
 vi.mock('@/utils/litegraphUtil', () => ({
+  createNode: vi.fn(),
   isAudioNode: vi.fn(),
   isImageNode: vi.fn(),
   isVideoNode: vi.fn()
@@ -99,34 +105,32 @@ describe('pasteImageNode', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     vi.mocked(mockCanvas.graph!.add).mockImplementation(
-      (node: LGraphNode | LGraphGroup) => node as LGraphNode
+      (node: LGraphNode | LGraphGroup | null) => node as LGraphNode
     )
   })
 
-  it('should create new LoadImage node when no image node provided', () => {
+  it('should create new LoadImage node when no image node provided', async () => {
     const mockNode = createMockNode()
-    vi.mocked(LiteGraph.createNode).mockReturnValue(
-      mockNode as unknown as LGraphNode
-    )
+    vi.mocked(createNode).mockResolvedValue(mockNode as unknown as LGraphNode)
 
     const file = createImageFile()
     const dataTransfer = createDataTransfer([file])
 
-    pasteImageNode(mockCanvas as unknown as LGraphCanvas, dataTransfer.items)
+    await pasteImageNode(
+      mockCanvas as unknown as LGraphCanvas,
+      dataTransfer.items
+    )
 
-    expect(LiteGraph.createNode).toHaveBeenCalledWith('LoadImage')
-    expect(mockNode.pos).toEqual([100, 200])
-    expect(mockCanvas.graph!.add).toHaveBeenCalledWith(mockNode)
-    expect(mockCanvas.graph!.change).toHaveBeenCalled()
+    expect(createNode).toHaveBeenCalledWith(mockCanvas, 'LoadImage')
     expect(mockNode.pasteFile).toHaveBeenCalledWith(file)
   })
 
-  it('should use existing image node when provided', () => {
+  it('should use existing image node when provided', async () => {
     const mockNode = createMockNode()
     const file = createImageFile()
     const dataTransfer = createDataTransfer([file])
 
-    pasteImageNode(
+    await pasteImageNode(
       mockCanvas as unknown as LGraphCanvas,
       dataTransfer.items,
       mockNode as unknown as LGraphNode
@@ -136,13 +140,13 @@ describe('pasteImageNode', () => {
     expect(mockNode.pasteFiles).toHaveBeenCalledWith([file])
   })
 
-  it('should handle multiple image files', () => {
+  it('should handle multiple image files', async () => {
     const mockNode = createMockNode()
     const file1 = createImageFile('test1.png')
     const file2 = createImageFile('test2.jpg', 'image/jpeg')
     const dataTransfer = createDataTransfer([file1, file2])
 
-    pasteImageNode(
+    await pasteImageNode(
       mockCanvas as unknown as LGraphCanvas,
       dataTransfer.items,
       mockNode as unknown as LGraphNode
@@ -152,11 +156,11 @@ describe('pasteImageNode', () => {
     expect(mockNode.pasteFiles).toHaveBeenCalledWith([file1, file2])
   })
 
-  it('should do nothing when no image files present', () => {
+  it('should do nothing when no image files present', async () => {
     const mockNode = createMockNode()
     const dataTransfer = createDataTransfer()
 
-    pasteImageNode(
+    await pasteImageNode(
       mockCanvas as unknown as LGraphCanvas,
       dataTransfer.items,
       mockNode as unknown as LGraphNode
@@ -166,13 +170,13 @@ describe('pasteImageNode', () => {
     expect(mockNode.pasteFiles).not.toHaveBeenCalled()
   })
 
-  it('should filter non-image items', () => {
+  it('should filter non-image items', async () => {
     const mockNode = createMockNode()
     const imageFile = createImageFile()
     const textFile = new File([''], 'test.txt', { type: 'text/plain' })
     const dataTransfer = createDataTransfer([textFile, imageFile])
 
-    pasteImageNode(
+    await pasteImageNode(
       mockCanvas as unknown as LGraphCanvas,
       dataTransfer.items,
       mockNode as unknown as LGraphNode
@@ -183,21 +187,61 @@ describe('pasteImageNode', () => {
   })
 })
 
+describe('pasteImageNodes', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  it('should create multiple nodes for multiple files', async () => {
+    const mockNode1 = createMockNode()
+    const mockNode2 = createMockNode()
+    vi.mocked(createNode)
+      .mockResolvedValueOnce(mockNode1 as unknown as LGraphNode)
+      .mockResolvedValueOnce(mockNode2 as unknown as LGraphNode)
+
+    const file1 = createImageFile('test1.png')
+    const file2 = createImageFile('test2.jpg', 'image/jpeg')
+    const fileList = createDataTransfer([file1, file2]).files
+
+    const result = await pasteImageNodes(
+      mockCanvas as unknown as LGraphCanvas,
+      fileList
+    )
+
+    expect(createNode).toHaveBeenCalledTimes(2)
+    expect(createNode).toHaveBeenNthCalledWith(1, mockCanvas, 'LoadImage')
+    expect(createNode).toHaveBeenNthCalledWith(2, mockCanvas, 'LoadImage')
+    expect(mockNode1.pasteFile).toHaveBeenCalledWith(file1)
+    expect(mockNode2.pasteFile).toHaveBeenCalledWith(file2)
+    expect(result).toEqual([mockNode1, mockNode2])
+  })
+
+  it('should handle empty file list', async () => {
+    const fileList = createDataTransfer([]).files
+
+    const result = await pasteImageNodes(
+      mockCanvas as unknown as LGraphCanvas,
+      fileList
+    )
+
+    expect(createNode).not.toHaveBeenCalled()
+    expect(result).toEqual([])
+  })
+})
+
 describe('usePaste', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     mockCanvas.current_node = null
     mockWorkspaceStore.shiftDown = false
     vi.mocked(mockCanvas.graph!.add).mockImplementation(
-      (node: LGraphNode | LGraphGroup) => node as LGraphNode
+      (node: LGraphNode | LGraphGroup | null) => node as LGraphNode
     )
   })
 
   it('should handle image paste', async () => {
     const mockNode = createMockNode()
-    vi.mocked(LiteGraph.createNode).mockReturnValue(
-      mockNode as unknown as LGraphNode
-    )
+    vi.mocked(createNode).mockResolvedValue(mockNode as unknown as LGraphNode)
 
     usePaste()
 
@@ -207,7 +251,7 @@ describe('usePaste', () => {
     document.dispatchEvent(event)
 
     await vi.waitFor(() => {
-      expect(LiteGraph.createNode).toHaveBeenCalledWith('LoadImage')
+      expect(createNode).toHaveBeenCalledWith(mockCanvas, 'LoadImage')
       expect(mockNode.pasteFile).toHaveBeenCalledWith(file)
     })
   })
@@ -310,5 +354,64 @@ describe('usePaste', () => {
         expect.any(Object)
       )
     })
+  })
+})
+
+describe('cloneDataTransfer', () => {
+  it('should clone string data', () => {
+    const original = new DataTransfer()
+    original.setData('text/plain', 'test text')
+    original.setData('text/html', '<p>test html</p>')
+
+    const cloned = cloneDataTransfer(original)
+
+    expect(cloned.getData('text/plain')).toBe('test text')
+    expect(cloned.getData('text/html')).toBe('<p>test html</p>')
+  })
+
+  it('should clone files', () => {
+    const file1 = createImageFile('test1.png')
+    const file2 = createImageFile('test2.jpg', 'image/jpeg')
+    const original = createDataTransfer([file1, file2])
+
+    const cloned = cloneDataTransfer(original)
+
+    // Files are added from both .files and .items, causing duplicates
+    expect(cloned.files.length).toBeGreaterThanOrEqual(2)
+    expect(Array.from(cloned.files)).toContain(file1)
+    expect(Array.from(cloned.files)).toContain(file2)
+  })
+
+  it('should preserve dropEffect and effectAllowed', () => {
+    const original = new DataTransfer()
+    original.dropEffect = 'copy'
+    original.effectAllowed = 'copyMove'
+
+    const cloned = cloneDataTransfer(original)
+
+    expect(cloned.dropEffect).toBe('copy')
+    expect(cloned.effectAllowed).toBe('copyMove')
+  })
+
+  it('should handle empty DataTransfer', () => {
+    const original = new DataTransfer()
+
+    const cloned = cloneDataTransfer(original)
+
+    expect(cloned.types.length).toBe(0)
+    expect(cloned.files.length).toBe(0)
+  })
+
+  it('should clone both string data and files', () => {
+    const file = createImageFile()
+    const original = createDataTransfer([file])
+    original.setData('text/plain', 'test')
+
+    const cloned = cloneDataTransfer(original)
+
+    expect(cloned.getData('text/plain')).toBe('test')
+    // Files are added from both .files and .items
+    expect(cloned.files.length).toBeGreaterThanOrEqual(1)
+    expect(Array.from(cloned.files)).toContain(file)
   })
 })

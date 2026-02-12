@@ -23,9 +23,7 @@ export class SettingDialog extends BaseDialog {
    * @param value - The value to set
    */
   async setStringSetting(id: string, value: string) {
-    const settingInputDiv = this.page.locator(
-      `div.settings-container div[id="${id}"]`
-    )
+    const settingInputDiv = this.root.locator(`div[id="${id}"]`)
     await settingInputDiv.locator('input').fill(value)
   }
 
@@ -34,16 +32,31 @@ export class SettingDialog extends BaseDialog {
    * @param id - The id of the setting
    */
   async toggleBooleanSetting(id: string) {
-    const settingInputDiv = this.page.locator(
-      `div.settings-container div[id="${id}"]`
-    )
+    const settingInputDiv = this.root.locator(`div[id="${id}"]`)
     await settingInputDiv.locator('input').click()
   }
 
+  get searchBox() {
+    return this.root.getByPlaceholder(/Search/)
+  }
+
+  get categories() {
+    return this.root.locator('nav').getByRole('button')
+  }
+
+  category(name: string) {
+    return this.root.locator('nav').getByRole('button', { name })
+  }
+
+  get contentArea() {
+    return this.root.getByRole('main')
+  }
+
   async goToAboutPanel() {
-    await this.page.getByTestId(TestIds.dialogs.settingsTabAbout).click()
-    await this.page
-      .getByTestId(TestIds.dialogs.about)
-      .waitFor({ state: 'visible' })
+    const aboutButton = this.root.locator('nav').getByRole('button', {
+      name: 'About'
+    })
+    await aboutButton.click()
+    await this.page.waitForSelector('.about-container')
   }
 }
