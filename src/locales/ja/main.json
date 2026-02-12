@@ -820,6 +820,7 @@
     "enterBaseName": "ベース名を入力",
     "enterNewName": "新しい名前を入力",
     "enterNewNamePrompt": "新しい名前を入力してください：",
+    "enterSubgraph": "サブグラフに入る",
     "error": "エラー",
     "errorLoadingImage": "画像の読み込みエラー",
     "errorLoadingVideo": "ビデオの読み込みエラー",
@@ -2871,7 +2872,8 @@
     "unsavedChanges": {
       "message": "未保存の変更があります。破棄してワークスペースを切り替えますか？",
       "title": "未保存の変更"
-    }
+    },
+    "viewWorkspace": "ワークスペースを見る"
   },
   "workspaceAuth": {
     "errors": {
@@ -2920,6 +2922,14 @@
       "placeholder": "招待する人のメールアドレスを入力",
       "title": "このワークスペースに人を招待"
     },
+    "inviteUpsellDialog": {
+      "messageNotSubscribed": "このワークスペースにチームメンバーを追加するには、Creatorプラン以上が必要です。Standardプランはオーナー1名のみ対応しています。",
+      "messageSingleSeat": "Standardプランにはワークスペースオーナー用の1席のみ含まれています。追加メンバーを招待するには、Creatorプラン以上にアップグレードして複数席を有効にしてください。",
+      "titleNotSubscribed": "メンバーを招待するにはサブスクリプションが必要です",
+      "titleSingleSeat": "現在のプランは1名のみ対応しています",
+      "upgradeToCreator": "Creatorにアップグレード",
+      "viewPlans": "プランを見る"
+    },
     "leaveDialog": {
       "leave": "退出",
       "message": "ワークスペースのオーナーに連絡しない限り、再参加できません。",
@@ -2945,7 +2955,10 @@
       "tabs": {
         "active": "アクティブ",
         "pendingCount": "保留中（{count}）"
-      }
+      },
+      "upsellBannerSubscribe": "このワークスペースにチームメンバーを招待するには、Creatorプラン以上にご加入ください。",
+      "upsellBannerUpgrade": "追加のチームメンバーを招待するには、Creatorプラン以上にアップグレードしてください。",
+      "viewPlans": "プランを見る"
     },
     "menu": {
       "deleteWorkspace": "ワークスペースを削除",

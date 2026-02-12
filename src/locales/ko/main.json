@@ -820,6 +820,7 @@
     "enterBaseName": "기본 이름 입력",
     "enterNewName": "새 이름 입력",
     "enterNewNamePrompt": "새 이름을 입력하세요:",
+    "enterSubgraph": "서브그래프 진입",
     "error": "오류",
     "errorLoadingImage": "이미지 로드 오류",
     "errorLoadingVideo": "비디오 로드 오류",
@@ -2871,7 +2872,8 @@
     "unsavedChanges": {
       "message": "저장되지 않은 변경 사항이 있습니다. 변경 사항을 취소하고 워크스페이스를 전환하시겠습니까?",
       "title": "저장되지 않은 변경 사항"
-    }
+    },
+    "viewWorkspace": "워크스페이스 보기"
   },
   "workspaceAuth": {
     "errors": {
@@ -2920,6 +2922,14 @@
       "placeholder": "이메일을 입력하세요",
       "title": "이 워크스페이스에 사람 초대"
     },
+    "inviteUpsellDialog": {
+      "messageNotSubscribed": "이 워크스페이스에 팀원을 추가하려면 Creator 플랜 이상이 필요합니다. Standard 플랜은 오직 한 명(소유자)만 지원합니다.",
+      "messageSingleSeat": "Standard 플랜은 워크스페이스 소유자 1인 좌석만 포함합니다. 추가 멤버를 초대하려면 Creator 플랜 이상으로 업그레이드하여 다중 좌석을 활성화하세요.",
+      "titleNotSubscribed": "멤버 초대를 위해 구독이 필요합니다",
+      "titleSingleSeat": "현재 플랜은 1인 좌석만 지원합니다",
+      "upgradeToCreator": "Creator로 업그레이드",
+      "viewPlans": "플랜 보기"
+    },
     "leaveDialog": {
       "leave": "나가기",
       "message": "워크스페이스 소유자에게 연락하지 않으면 다시 참여할 수 없습니다.",
@@ -2945,7 +2955,10 @@
       "tabs": {
         "active": "활성",
         "pendingCount": "대기 중 ({count})"
-      }
+      },
+      "upsellBannerSubscribe": "팀원을 이 워크스페이스에 초대하려면 Creator 플랜 이상을 구독하세요.",
+      "upsellBannerUpgrade": "추가 팀원을 초대하려면 Creator 플랜 이상으로 업그레이드하세요.",
+      "viewPlans": "플랜 보기"
     },
     "menu": {
       "deleteWorkspace": "워크스페이스 삭제",

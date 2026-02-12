@@ -820,6 +820,7 @@
     "enterBaseName": "Digite o nome base",
     "enterNewName": "Digite o novo nome",
     "enterNewNamePrompt": "Digite o novo nome:",
+    "enterSubgraph": "Entrar no Subgrafo",
     "error": "Erro",
     "errorLoadingImage": "Erro ao carregar imagem",
     "errorLoadingVideo": "Erro ao carregar vídeo",
@@ -2882,7 +2883,8 @@
     "unsavedChanges": {
       "message": "Você tem alterações não salvas. Deseja descartá-las e trocar de espaço de trabalho?",
       "title": "Alterações não salvas"
-    }
+    },
+    "viewWorkspace": "Ver workspace"
   },
   "workspaceAuth": {
     "errors": {
@@ -2931,6 +2933,14 @@
       "placeholder": "Digite o e-mail da pessoa",
       "title": "Convidar uma pessoa para este workspace"
     },
+    "inviteUpsellDialog": {
+      "messageNotSubscribed": "Para adicionar membros a este workspace, você precisa de um plano Creator ou superior. O plano Standard suporta apenas um usuário (o proprietário).",
+      "messageSingleSeat": "O plano Standard inclui um assento para o proprietário do workspace. Para convidar membros adicionais, faça upgrade para o plano Creator ou superior para liberar múltiplos assentos.",
+      "titleNotSubscribed": "É necessária uma assinatura para convidar membros",
+      "titleSingleSeat": "Seu plano atual suporta apenas um usuário",
+      "upgradeToCreator": "Fazer upgrade para Creator",
+      "viewPlans": "Ver planos"
+    },
     "leaveDialog": {
       "leave": "Sair",
       "message": "Você não poderá entrar novamente a menos que entre em contato com o proprietário do espaço de trabalho.",
@@ -2956,7 +2966,10 @@
       "tabs": {
         "active": "Ativo",
         "pendingCount": "Pendente ({count})"
-      }
+      },
+      "upsellBannerSubscribe": "Assine o plano Creator ou superior para convidar membros para este workspace.",
+      "upsellBannerUpgrade": "Faça upgrade para o plano Creator ou superior para convidar membros adicionais para este workspace.",
+      "viewPlans": "Ver planos"
     },
     "menu": {
       "deleteWorkspace": "Excluir espaço de trabalho",

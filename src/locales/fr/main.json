@@ -820,6 +820,7 @@
     "enterBaseName": "Entrez le nom de base",
     "enterNewName": "Entrez le nouveau nom",
     "enterNewNamePrompt": "Entrez le nouveau nom :",
+    "enterSubgraph": "Entrer dans le sous-graphe",
     "error": "Erreur",
     "errorLoadingImage": "Erreur lors du chargement de l'image",
     "errorLoadingVideo": "Erreur lors du chargement de la vidéo",
@@ -2871,7 +2872,8 @@
     "unsavedChanges": {
       "message": "Vous avez des modifications non enregistrées. Voulez-vous les abandonner et changer d’espace de travail ?",
       "title": "Modifications non enregistrées"
-    }
+    },
+    "viewWorkspace": "Voir l'espace de travail"
   },
   "workspaceAuth": {
     "errors": {
@@ -2920,6 +2922,14 @@
       "placeholder": "Entrez l'email de la personne",
       "title": "Inviter une personne dans cet espace de travail"
     },
+    "inviteUpsellDialog": {
+      "messageNotSubscribed": "Pour ajouter des membres à cet espace de travail, vous devez disposer d'un forfait Creator ou supérieur. Le forfait Standard ne prend en charge qu'un seul utilisateur (le propriétaire).",
+      "messageSingleSeat": "Le forfait Standard inclut une place pour le propriétaire de l'espace de travail. Pour inviter d'autres membres, passez au forfait Creator ou supérieur pour débloquer plusieurs places.",
+      "titleNotSubscribed": "Un abonnement est requis pour inviter des membres",
+      "titleSingleSeat": "Votre forfait actuel ne prend en charge qu'un seul utilisateur",
+      "upgradeToCreator": "Passer à Creator",
+      "viewPlans": "Voir les forfaits"
+    },
     "leaveDialog": {
       "leave": "Quitter",
       "message": "Vous ne pourrez pas le rejoindre à nouveau sans contacter le propriétaire de l’espace de travail.",
@@ -2945,7 +2955,10 @@
       "tabs": {
         "active": "Actif",
         "pendingCount": "En attente ({count})"
-      }
+      },
+      "upsellBannerSubscribe": "Abonnez-vous au forfait Creator ou supérieur pour inviter des membres à cet espace de travail.",
+      "upsellBannerUpgrade": "Passez au forfait Creator ou supérieur pour inviter des membres supplémentaires.",
+      "viewPlans": "Voir les forfaits"
     },
     "menu": {
       "deleteWorkspace": "Supprimer l’espace de travail",

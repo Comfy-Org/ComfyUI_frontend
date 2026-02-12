@@ -7347,6 +7347,88 @@
       }
     }
   },
+  "MagnificImageUpscalerCreativeNode": {
+    "description": "프롬프트 기반 향상, 스타일화, 그리고 2x/4x/8x/16x 업스케일링. 최대 출력: 25.3 메가픽셀.",
+    "display_name": "Magnific 이미지 업스케일 (Creative)",
+    "inputs": {
+      "auto_downscale": {
+        "name": "auto_downscale",
+        "tooltip": "출력 이미지가 최대 픽셀 제한을 초과할 경우 입력 이미지를 자동으로 다운스케일합니다."
+      },
+      "creativity": {
+        "name": "creativity"
+      },
+      "engine": {
+        "name": "engine"
+      },
+      "fractality": {
+        "name": "fractality",
+        "tooltip": "프롬프트의 강도와 픽셀당 복잡성."
+      },
+      "hdr": {
+        "name": "hdr",
+        "tooltip": "정의도와 디테일 수준."
+      },
+      "image": {
+        "name": "image"
+      },
+      "optimized_for": {
+        "name": "optimized_for"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "resemblance": {
+        "name": "resemblance",
+        "tooltip": "원본 이미지와의 유사도 수준."
+      },
+      "scale_factor": {
+        "name": "scale_factor"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MagnificImageUpscalerPreciseV2Node": {
+    "description": "선명도, 그레인, 디테일을 세밀하게 제어하는 고충실도 업스케일링. 최대 출력: 10060×10060 픽셀.",
+    "display_name": "Magnific 이미지 업스케일 (Precise V2)",
+    "inputs": {
+      "auto_downscale": {
+        "name": "auto_downscale",
+        "tooltip": "출력 이미지가 최대 해상도를 초과할 경우 입력 이미지를 자동으로 다운스케일합니다."
+      },
+      "flavor": {
+        "name": "flavor",
+        "tooltip": "처리 스타일: 일반용 sublime, 사진용 photo, 노이즈 사진용 photo_denoiser."
+      },
+      "image": {
+        "name": "image"
+      },
+      "scale_factor": {
+        "name": "scale_factor"
+      },
+      "sharpen": {
+        "name": "sharpen",
+        "tooltip": "이미지 선명도 강도. 값이 높을수록 엣지 정의와 선명도가 증가합니다."
+      },
+      "smart_grain": {
+        "name": "smart_grain",
+        "tooltip": "이미지가 너무 부드럽거나 인공적으로 보이지 않도록 하는 지능형 그레인/텍스처 강화."
+      },
+      "ultra_detail": {
+        "name": "ultra_detail",
+        "tooltip": "업스케일링 중 추가되는 미세 디테일, 텍스처, 마이크로 디테일을 제어합니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "Mahiro": {
     "description": "노이즈 제거의 '방향'을 긍정 조건과 부정 조건 차에 의한 것 보다는 긍정 조건 방향으로 더 크게 작동하도록 가이더 동작을 변경합니다.",
     "display_name": "마히로",
@@ -10981,8 +11063,13 @@
   "PreviewAny": {
     "display_name": "미리보기 아무거나",
     "inputs": {
-      "preview": {},
       "previewMode": {},
+      "preview_markdown": {
+        "name": "미리보기"
+      },
+      "preview_text": {
+        "name": "미리보기"
+      },
       "source": {
         "name": "소스"
       }
@@ -14152,6 +14239,9 @@
       },
       "lyrics": {
         "name": "가사"
+      },
+      "min_p": {
+        "name": "min_p"
       },
       "seed": {
         "name": "시드"
