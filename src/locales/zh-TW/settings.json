@@ -104,6 +104,10 @@
   "Comfy_Graph_CtrlShiftZoom": {
     "name": "啟用快速縮放快捷鍵（Ctrl + Shift + 拖曳）"
   },
+  "Comfy_Graph_DeduplicateSubgraphNodeIds": {
+    "name": "去重子圖節點 ID",
+    "tooltip": "載入工作流程時，自動重新分配子圖中重複的節點 ID。"
+  },
   "Comfy_Graph_LinkMarkers": {
     "name": "連結中點標記",
     "options": {

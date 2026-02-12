@@ -820,6 +820,7 @@
     "enterBaseName": "Temel adı girin",
     "enterNewName": "Yeni adı girin",
     "enterNewNamePrompt": "Yeni adı girin:",
+    "enterSubgraph": "Alt Grafiğe Gir",
     "error": "Hata",
     "errorLoadingImage": "Görüntü yüklenirken hata",
     "errorLoadingVideo": "Video yüklenirken hata",
@@ -1740,7 +1741,9 @@
   "missingModelsDialog": {
     "doNotAskAgain": "Bunu bir daha gösterme",
     "missingModels": "Eksik Modeller",
-    "missingModelsMessage": "Grafik yüklenirken aşağıdaki modeller bulunamadı"
+    "missingModelsMessage": "Grafik yüklenirken aşağıdaki modeller bulunamadı",
+    "reEnableInSettings": "{link} içinde tekrar etkinleştir",
+    "reEnableInSettingsLink": "Ayarlar"
   },
   "missingNodes": {
     "cloud": {
@@ -2807,6 +2810,9 @@
   "vueNodesMigrationMainMenu": {
     "message": "Ana menüden istediğiniz zaman Nodes 2.0'a geri dönebilirsiniz."
   },
+  "vueNodesSlot": {
+    "iterative": "(Yinelemeli)"
+  },
   "welcome": {
     "getStarted": "Başlayın",
     "title": "ComfyUI'ye Hoş Geldiniz"
@@ -2827,6 +2833,7 @@
       "placeholder": "Seç...",
       "placeholderAudio": "Ses seç...",
       "placeholderImage": "Görsel seç...",
+      "placeholderMesh": "Ağ seç...",
       "placeholderModel": "Model seç...",
       "placeholderUnknown": "Medya seç...",
       "placeholderVideo": "Video seç..."

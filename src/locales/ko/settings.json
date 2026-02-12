@@ -104,6 +104,10 @@
   "Comfy_Graph_CtrlShiftZoom": {
     "name": "빠른 확대/축소 단축키 활성화 (Ctrl + Shift + 드래그)"
   },
+  "Comfy_Graph_DeduplicateSubgraphNodeIds": {
+    "name": "서브그래프 노드 ID 중복 제거",
+    "tooltip": "워크플로우를 불러올 때 서브그래프 내 중복된 노드 ID를 자동으로 재할당합니다."
+  },
   "Comfy_Graph_LinkMarkers": {
     "name": "링크 중간점 마커",
     "options": {

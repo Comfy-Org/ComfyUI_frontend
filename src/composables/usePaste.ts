@@ -6,8 +6,40 @@ import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/w
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { app } from '@/scripts/app'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
-import { isAudioNode, isImageNode, isVideoNode } from '@/utils/litegraphUtil'
+import {
+  createNode,
+  isAudioNode,
+  isImageNode,
+  isVideoNode
+} from '@/utils/litegraphUtil'
 import { shouldIgnoreCopyPaste } from '@/workbench/eventHelpers'
+
+export function cloneDataTransfer(original: DataTransfer): DataTransfer {
+  const persistent = new DataTransfer()
+
+  // Copy string data
+  for (const type of original.types) {
+    const data = original.getData(type)
+    if (data) {
+      persistent.setData(type, data)
+    }
+  }
+
+  for (const item of original.items) {
+    if (item.kind === 'file') {
+      const file = item.getAsFile()
+      if (file) {
+        persistent.items.add(file)
+      }
+    }
+  }
+
+  // Preserve dropEffect and effectAllowed
+  persistent.dropEffect = original.dropEffect
+  persistent.effectAllowed = original.effectAllowed
+
+  return persistent
+}
 
 function pasteClipboardItems(data: DataTransfer): boolean {
   const rawData = data.getData('text/html')
@@ -48,27 +80,37 @@ function pasteItemsOnNode(
   )
 }
 
-export function pasteImageNode(
+export async function pasteImageNode(
   canvas: LGraphCanvas,
   items: DataTransferItemList,
   imageNode: LGraphNode | null = null
-): void {
-  const {
-    graph,
-    graph_mouse: [posX, posY]
-  } = canvas
-
+): Promise<LGraphNode | null> {
+  // No image node selected: add a new one
   if (!imageNode) {
-    // No image node selected: add a new one
-    const newNode = LiteGraph.createNode('LoadImage')
-    if (newNode) {
-      newNode.pos = [posX, posY]
-      imageNode = graph?.add(newNode) ?? null
-    }
-    graph?.change()
+    imageNode = await createNode(canvas, 'LoadImage')
   }
 
   pasteItemsOnNode(items, imageNode, 'image')
+  return imageNode
+}
+
+export async function pasteImageNodes(
+  canvas: LGraphCanvas,
+  fileList: FileList
+): Promise<LGraphNode[]> {
+  const nodes: LGraphNode[] = []
+
+  for (const file of fileList) {
+    const transfer = new DataTransfer()
+    transfer.items.add(file)
+    const imageNode = await pasteImageNode(canvas, transfer.items)
+
+    if (imageNode) {
+      nodes.push(imageNode)
+    }
+  }
+
+  return nodes
 }
 
 /**
@@ -93,6 +135,7 @@ export const usePaste = () => {
     const { graph } = canvas
     let data: DataTransfer | string | null = e.clipboardData
     if (!data) throw new Error('No clipboard data on clipboard event')
+    data = cloneDataTransfer(data)
 
     const { items } = data
 
@@ -114,7 +157,7 @@ export const usePaste = () => {
     // Look for image paste data
     for (const item of items) {
       if (item.type.startsWith('image/')) {
-        pasteImageNode(canvas as LGraphCanvas, items, imageNode)
+        await pasteImageNode(canvas as LGraphCanvas, items, imageNode)
         return
       } else if (item.type.startsWith('video/')) {
         if (!videoNode) {
