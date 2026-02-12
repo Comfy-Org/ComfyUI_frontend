@@ -3,6 +3,7 @@ import type { FlattenedItem } from 'reka-ui'
 import { ref } from 'vue'
 import { describe, expect, it, vi } from 'vitest'
 
+import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 import type { RenderedTreeExplorerNode } from '@/types/treeExplorerTypes'
 import { InjectKeyContextMenuNode } from '@/types/treeExplorerTypes'
 
@@ -34,7 +35,7 @@ describe('TreeExplorerV2Node', () => {
   function createMockItem(
     type: 'node' | 'folder',
     overrides: Record<string, unknown> = {}
-  ): FlattenedItem<RenderedTreeExplorerNode> {
+  ): FlattenedItem<RenderedTreeExplorerNode<ComfyNodeDefImpl>> {
     const value = {
       key: 'test-key',
       label: 'Test Label',
@@ -42,7 +43,7 @@ describe('TreeExplorerV2Node', () => {
       icon: 'pi pi-folder',
       totalLeaves: 5,
       ...overrides
-    } as RenderedTreeExplorerNode
+    } as RenderedTreeExplorerNode<ComfyNodeDefImpl>
     return {
       _id: 'test-id',
       index: 0,

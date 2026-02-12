@@ -26,12 +26,56 @@ const shortenNodeName = (name: string) => {
     .replace(/(-ComfyUI|_ComfyUI|-Comfy|_Comfy)$/, '')
 }
 
-export const getNodeSource = (python_module?: string): NodeSource => {
+// TODO: Remove this mock list once object_info returns is_essentials field
+const ESSENTIALS_NODE_NAMES = new Set([
+  'LoadImage',
+  'SaveImage',
+  'LoadVideo',
+  'SaveVideo',
+  'Load3D',
+  'SaveGLB',
+  'CLIPTextEncode',
+  'ImageBatch',
+  'ImageCrop',
+  'ImageScale',
+  'ImageRotate',
+  'ImageBlur',
+  'ImageInvert',
+  'Canny',
+  'RecraftRemoveBackgroundNode',
+  'GetVideoComponents',
+  'LoraLoader',
+  'KlingLipSyncAudioToVideoNode',
+  'OpenAIChatNode',
+  'TencentTextToModelNode',
+  'TencentImageToModelNode',
+  'LoadAudio',
+  'SaveAudio',
+  'StabilityTextToAudio'
+])
+
+export const getNodeSource = (
+  python_module?: string,
+  is_essentials?: boolean,
+  name?: string
+): NodeSource => {
+  const isEssential = is_essentials || (name && ESSENTIALS_NODE_NAMES.has(name))
   if (!python_module) {
     return UNKNOWN_NODE_SOURCE
   }
   const modules = python_module.split('.')
-  if (['nodes', 'comfy_extras', 'comfy_api_nodes'].includes(modules[0])) {
+  if (isEssential) {
+    const moduleName = modules[1] ?? modules[0] ?? 'essentials'
+    const displayName = shortenNodeName(moduleName.split('@')[0])
+    return {
+      type: NodeSourceType.Essentials,
+      className: 'comfy-essentials',
+      displayText: displayName,
+      badgeText: displayName
+    }
+  } else if (
+    ['nodes', 'comfy_extras', 'comfy_api_nodes'].includes(modules[0])
+  ) {
     return {
       type: NodeSourceType.Core,
       className: 'comfy-core',
@@ -47,22 +91,11 @@ export const getNodeSource = (python_module?: string): NodeSource => {
     }
   } else if (modules[0] === 'custom_nodes') {
     const moduleName = modules[1]
-    // Custom nodes installed via ComfyNodeRegistry will be in the format of
-    // custom_nodes.<custom node name>@<version>
     const customNodeName = moduleName.split('@')[0]
     const displayName = shortenNodeName(customNodeName)
     return {
       type: NodeSourceType.CustomNodes,
       className: 'comfy-custom-nodes',
-      displayText: displayName,
-      badgeText: displayName
-    }
-  } else if (modules[0] === 'essentials') {
-    const moduleName = modules[1] ?? 'essentials'
-    const displayName = shortenNodeName(moduleName.split('@')[0])
-    return {
-      type: NodeSourceType.Essentials,
-      className: 'comfy-essentials',
       displayText: displayName,
       badgeText: displayName
     }

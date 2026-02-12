@@ -83,6 +83,8 @@ export class ComfyNodeDefImpl
    * or old names after renaming a node.
    */
   readonly search_aliases?: string[]
+  /** Indicates if the node is part of the Essentials tab */
+  readonly is_essentials?: boolean
 
   // V2 fields
   readonly inputs: Record<string, InputSpecV2>
@@ -154,6 +156,7 @@ export class ComfyNodeDefImpl
     this.output_tooltips = obj.output_tooltips
     this.input_order = obj.input_order
     this.price_badge = obj.price_badge
+    this.is_essentials = obj.is_essentials ?? false
 
     // Initialize V2 fields
     const defV2 = transformNodeDefV1ToV2(obj)
@@ -162,7 +165,11 @@ export class ComfyNodeDefImpl
     this.hidden = defV2.hidden
 
     // Initialize node source
-    this.nodeSource = getNodeSource(obj.python_module)
+    this.nodeSource = getNodeSource(
+      obj.python_module,
+      this.is_essentials,
+      this.name
+    )
   }
 
   get nodePath(): string {

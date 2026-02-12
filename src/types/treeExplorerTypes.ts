@@ -95,5 +95,5 @@ export const InjectKeyExpandedKeys: InjectionKey<
 > = Symbol()
 
 export const InjectKeyContextMenuNode: InjectionKey<
-  Ref<RenderedTreeExplorerNode | null>
+  Ref<RenderedTreeExplorerNode<ComfyNodeDefImpl> | null>
 > = Symbol()

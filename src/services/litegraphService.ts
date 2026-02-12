@@ -844,7 +844,7 @@ export const useLitegraphService = () => {
   function addNodeOnGraph(
     nodeDef: ComfyNodeDefV1 | ComfyNodeDefV2,
     options: Record<string, unknown> & { pos?: Point } = {}
-  ): LGraphNode {
+  ): LGraphNode | null {
     options.pos ??= getCanvasCenter()
 
     if (nodeDef.name.startsWith(useSubgraphStore().typePrefix)) {
@@ -873,9 +873,9 @@ export const useLitegraphService = () => {
     )
 
     const graph = useWorkflowStore().activeSubgraph ?? app.graph
+    if (!graph) return null
 
     graph.add(node)
-    // @ts-expect-error fixme ts strict error
     return node
   }
 

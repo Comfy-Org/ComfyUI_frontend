@@ -15,9 +15,11 @@
         :text-content="(item) => item.value.label ?? ''"
       >
         <TreeExplorerV2Node
-          :item="item as FlattenedItem<RenderedTreeExplorerNode>"
+          :item="
+            item as FlattenedItem<RenderedTreeExplorerNode<ComfyNodeDefImpl>>
+          "
           @node-click="
-            (node: RenderedTreeExplorerNode, e: MouseEvent) =>
+            (node: RenderedTreeExplorerNode<ComfyNodeDefImpl>, e: MouseEvent) =>
               emit('nodeClick', node, e)
           "
         >
@@ -67,13 +69,14 @@ import {
 import { computed, provide, ref } from 'vue'
 
 import { useNodeBookmarkStore } from '@/stores/nodeBookmarkStore'
+import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 import type { RenderedTreeExplorerNode } from '@/types/treeExplorerTypes'
 import { InjectKeyContextMenuNode } from '@/types/treeExplorerTypes'
 
 import TreeExplorerV2Node from './TreeExplorerV2Node.vue'
 
 const { showContextMenu = false } = defineProps<{
-  root: RenderedTreeExplorerNode
+  root: RenderedTreeExplorerNode<ComfyNodeDefImpl>
   showContextMenu?: boolean
 }>()
 
@@ -82,11 +85,16 @@ const expandedKeys = defineModel<string[]>('expandedKeys', {
 })
 
 const emit = defineEmits<{
-  nodeClick: [node: RenderedTreeExplorerNode, event: MouseEvent]
-  addToFavorites: [node: RenderedTreeExplorerNode]
+  nodeClick: [
+    node: RenderedTreeExplorerNode<ComfyNodeDefImpl>,
+    event: MouseEvent
+  ]
+  addToFavorites: [node: RenderedTreeExplorerNode<ComfyNodeDefImpl>]
 }>()
 
-const contextMenuNode = ref<RenderedTreeExplorerNode | null>(null)
+const contextMenuNode = ref<RenderedTreeExplorerNode<ComfyNodeDefImpl> | null>(
+  null
+)
 provide(InjectKeyContextMenuNode, contextMenuNode)
 
 const nodeBookmarkStore = useNodeBookmarkStore()

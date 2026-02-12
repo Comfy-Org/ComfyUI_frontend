@@ -131,10 +131,19 @@ class NodeOrganizationService {
         const essentialNodes = nodes.filter(
           (nodeDef) => nodeDef.nodeSource.type === NodeSourceType.Essentials
         )
+        const essentialsPathExtractor = (nodeDef: ComfyNodeDefImpl) => {
+          const category = nodeDef.category || ''
+          const categoryParts = category ? category.split('/') : []
+          // Remove 'essentials' from the first level
+          if (categoryParts[0] === 'essentials') {
+            categoryParts.shift()
+          }
+          return [...categoryParts, nodeDef.name]
+        }
         return [
           {
             tree: buildNodeDefTree(essentialNodes, {
-              pathExtractor: categoryPathExtractor
+              pathExtractor: essentialsPathExtractor
             })
           }
         ]
