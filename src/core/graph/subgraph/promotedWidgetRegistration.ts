@@ -10,8 +10,6 @@ import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 
 /**
  * Registers the promoted widget system using PromotedWidgetSlot instances.
- * Replaces the legacy registerProxyWidgets which used JavaScript Proxy objects.
- *
  * Sets up:
  * - `subgraph-opened` event: syncs `promoted` flags on interior widgets
  * - `subgraph-converted` event: auto-promotes recommended widgets
@@ -42,7 +40,7 @@ const onConfigure = function (
   serialisedNode: ISerialisedNode
 ) {
   if (!this.isSubgraphNode())
-    throw new Error("Can't add proxyWidgets to non-subgraphNode")
+    throw new Error("Can't add promoted widgets to non-subgraphNode")
 
   const canvasStore = useCanvasStore()
   this.properties.proxyWidgets ??= []
