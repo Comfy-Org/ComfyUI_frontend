@@ -104,6 +104,10 @@
   "Comfy_Graph_CtrlShiftZoom": {
     "name": "Activer le raccourci de zoom rapide (Ctrl + Shift + Glisser)"
   },
+  "Comfy_Graph_DeduplicateSubgraphNodeIds": {
+    "name": "Dédupliquer les identifiants de nœuds de sous-graphe",
+    "tooltip": "Réattribue automatiquement les identifiants de nœuds dupliqués dans les sous-graphes lors du chargement d’un flux de travail."
+  },
   "Comfy_Graph_LinkMarkers": {
     "name": "Marqueurs de point médian du lien",
     "options": {

@@ -46,8 +46,9 @@ vi.mock('@/platform/settings/settingStore', () => {
     return null
   })
   const set = vi.fn()
+  const setMany = vi.fn()
   return {
-    useSettingStore: () => ({ get, set })
+    useSettingStore: () => ({ get, set, setMany })
   }
 })
 
@@ -534,18 +535,11 @@ describe('useReleaseStore', () => {
       const settingStore = useSettingStore()
       await store.handleSkipRelease('1.2.0')
 
-      expect(settingStore.set).toHaveBeenCalledWith(
-        'Comfy.Release.Version',
-        '1.2.0'
-      )
-      expect(settingStore.set).toHaveBeenCalledWith(
-        'Comfy.Release.Status',
-        'skipped'
-      )
-      expect(settingStore.set).toHaveBeenCalledWith(
-        'Comfy.Release.Timestamp',
-        expect.any(Number)
-      )
+      expect(settingStore.setMany).toHaveBeenCalledWith({
+        'Comfy.Release.Version': '1.2.0',
+        'Comfy.Release.Status': 'skipped',
+        'Comfy.Release.Timestamp': expect.any(Number)
+      })
     })
 
     it('should handle show changelog', async () => {
@@ -554,18 +548,11 @@ describe('useReleaseStore', () => {
       const settingStore = useSettingStore()
       await store.handleShowChangelog('1.2.0')
 
-      expect(settingStore.set).toHaveBeenCalledWith(
-        'Comfy.Release.Version',
-        '1.2.0'
-      )
-      expect(settingStore.set).toHaveBeenCalledWith(
-        'Comfy.Release.Status',
-        'changelog seen'
-      )
-      expect(settingStore.set).toHaveBeenCalledWith(
-        'Comfy.Release.Timestamp',
-        expect.any(Number)
-      )
+      expect(settingStore.setMany).toHaveBeenCalledWith({
+        'Comfy.Release.Version': '1.2.0',
+        'Comfy.Release.Status': 'changelog seen',
+        'Comfy.Release.Timestamp': expect.any(Number)
+      })
     })
 
     it('should handle whats new seen', async () => {
@@ -574,18 +561,11 @@ describe('useReleaseStore', () => {
       const settingStore = useSettingStore()
       await store.handleWhatsNewSeen('1.2.0')
 
-      expect(settingStore.set).toHaveBeenCalledWith(
-        'Comfy.Release.Version',
-        '1.2.0'
-      )
-      expect(settingStore.set).toHaveBeenCalledWith(
-        'Comfy.Release.Status',
-        "what's new seen"
-      )
-      expect(settingStore.set).toHaveBeenCalledWith(
-        'Comfy.Release.Timestamp',
-        expect.any(Number)
-      )
+      expect(settingStore.setMany).toHaveBeenCalledWith({
+        'Comfy.Release.Version': '1.2.0',
+        'Comfy.Release.Status': "what's new seen",
+        'Comfy.Release.Timestamp': expect.any(Number)
+      })
     })
   })
 

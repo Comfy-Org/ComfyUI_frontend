@@ -1740,7 +1740,9 @@
   "missingModelsDialog": {
     "doNotAskAgain": "عدم العرض مرة أخرى",
     "missingModels": "نماذج مفقودة",
-    "missingModelsMessage": "عند تحميل الرسم البياني، لم يتم العثور على النماذج التالية"
+    "missingModelsMessage": "عند تحميل الرسم البياني، لم يتم العثور على النماذج التالية",
+    "reEnableInSettings": "إعادة التفعيل في {link}",
+    "reEnableInSettingsLink": "الإعدادات"
   },
   "missingNodes": {
     "cloud": {
@@ -2807,6 +2809,9 @@
   "vueNodesMigrationMainMenu": {
     "message": "يمكنك العودة إلى Nodes 2.0 في أي وقت من القائمة الرئيسية."
   },
+  "vueNodesSlot": {
+    "iterative": "(تكراري)"
+  },
   "welcome": {
     "getStarted": "ابدأ الآن",
     "title": "مرحباً بك في ComfyUI"
@@ -2827,6 +2832,7 @@
       "placeholder": "اختر...",
       "placeholderAudio": "اختر صوت...",
       "placeholderImage": "اختر صورة...",
+      "placeholderMesh": "اختر شبكة...",
       "placeholderModel": "اختر نموذج...",
       "placeholderUnknown": "اختر وسائط...",
       "placeholderVideo": "اختر فيديو..."

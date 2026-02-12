@@ -104,6 +104,10 @@
   "Comfy_Graph_CtrlShiftZoom": {
     "name": "Hızlı yakınlaştırma kısayolunu etkinleştir (Ctrl + Shift + Sürükle)"
   },
+  "Comfy_Graph_DeduplicateSubgraphNodeIds": {
+    "name": "Alt grafik düğüm kimliklerini çoğaltmayı önle",
+    "tooltip": "Bir iş akışı yüklenirken alt grafiklerdeki yinelenen düğüm kimliklerini otomatik olarak yeniden ata."
+  },
   "Comfy_Graph_LinkMarkers": {
     "name": "Bağlantı orta nokta işaretçileri",
     "options": {

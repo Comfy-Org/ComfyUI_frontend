@@ -1740,7 +1740,9 @@
   "missingModelsDialog": {
     "doNotAskAgain": "دیگر نمایش داده نشود",
     "missingModels": "مدل‌های مفقود",
-    "missingModelsMessage": "هنگام بارگذاری گراف، مدل‌های زیر یافت نشدند"
+    "missingModelsMessage": "هنگام بارگذاری گراف، مدل‌های زیر یافت نشدند",
+    "reEnableInSettings": "فعال‌سازی مجدد در {link}",
+    "reEnableInSettingsLink": "تنظیمات"
   },
   "missingNodes": {
     "cloud": {
@@ -2818,6 +2820,9 @@
   "vueNodesMigrationMainMenu": {
     "message": "در هر زمان می‌توانید از منوی اصلی به Nodes 2.0 بازگردید."
   },
+  "vueNodesSlot": {
+    "iterative": "(تکراری)"
+  },
   "welcome": {
     "getStarted": "شروع کنید",
     "title": "به ComfyUI خوش آمدید"
@@ -2838,6 +2843,7 @@
       "placeholder": "انتخاب...",
       "placeholderAudio": "انتخاب صوت...",
       "placeholderImage": "انتخاب تصویر...",
+      "placeholderMesh": "مش را انتخاب کنید...",
       "placeholderModel": "انتخاب مدل...",
       "placeholderUnknown": "انتخاب رسانه...",
       "placeholderVideo": "انتخاب ویدیو..."

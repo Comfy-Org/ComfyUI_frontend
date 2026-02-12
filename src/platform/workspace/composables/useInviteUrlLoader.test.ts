@@ -130,8 +130,13 @@ describe('useInviteUrlLoader', () => {
       expect(mockToastAdd).toHaveBeenCalledWith({
         severity: 'success',
         summary: 'Invite Accepted',
-        detail: 'You have been added to Test Workspace',
-        life: 5000
+        detail: {
+          text: 'You have been added to Test Workspace',
+          workspaceId: 'ws-123',
+          workspaceName: 'Test Workspace'
+        },
+        group: 'invite-accepted',
+        closable: true
       })
     })
 

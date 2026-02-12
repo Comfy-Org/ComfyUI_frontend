@@ -334,6 +334,24 @@ describe('WidgetSelect Value Binding', () => {
       expect(dropdown.props('allowUpload')).toBe(false)
     })
 
+    it('uses dropdown variant for mesh uploads via spec', () => {
+      const spec: ComboInputSpec = {
+        type: 'COMBO',
+        name: 'model_file',
+        mesh_upload: true,
+        upload_subfolder: '3d'
+      }
+      const widget = createMockWidget('model.glb', {}, undefined, spec)
+      const wrapper = mountComponent(widget, 'model.glb')
+      const dropdown = wrapper.findComponent(WidgetSelectDropdown)
+
+      expect(dropdown.exists()).toBe(true)
+      expect(dropdown.props('assetKind')).toBe('mesh')
+      expect(dropdown.props('allowUpload')).toBe(true)
+      expect(dropdown.props('uploadFolder')).toBe('input')
+      expect(dropdown.props('uploadSubfolder')).toBe('3d')
+    })
+
     it('keeps default select when no spec or media hints are present', () => {
       const widget = createMockWidget('plain', {
         values: ['plain', 'text']

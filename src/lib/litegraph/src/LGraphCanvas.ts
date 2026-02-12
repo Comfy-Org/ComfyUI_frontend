@@ -5060,7 +5060,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
     octx.save()
 
-    const scale = window.devicePixelRatio
+    const scale = overlayCanvas.width / (overlayCanvas.clientWidth || 1)
     octx.setTransform(scale, 0, 0, scale, 0, 0)
 
     this.ds.toCanvasContext(octx)
@@ -8347,7 +8347,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
           callback: LGraphCanvas.onMenuNodeCollapse
         })
       }
-      if (node.widgets?.some((w) => w.advanced)) {
+      if (node.hasAdvancedWidgets()) {
         options.push({
           content: node.showAdvanced ? 'Hide Advanced' : 'Show Advanced',
           callback: LGraphCanvas.onMenuToggleAdvanced

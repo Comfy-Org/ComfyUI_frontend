@@ -5024,6 +5024,46 @@
       }
     }
   },
+  "KlingFirstLastFrameNode": {
+    "description": "Kling V3 ile ilk ve son kareleri kullanarak video oluşturun.",
+    "display_name": "Kling 3.0 İlk-Son-Kareden Videoya",
+    "inputs": {
+      "control_after_generate": {
+        "name": "oluşturduktan sonra kontrol et"
+      },
+      "duration": {
+        "name": "süre"
+      },
+      "end_frame": {
+        "name": "son_kare"
+      },
+      "first_frame": {
+        "name": "ilk_kare"
+      },
+      "generate_audio": {
+        "name": "ses_oluştur"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Model ve oluşturma ayarları."
+      },
+      "model_resolution": {
+        "name": "çözünürlük"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed, düğümün tekrar çalıştırılıp çalıştırılmayacağını kontrol eder; seed ne olursa olsun sonuçlar deterministik değildir."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "KlingImage2VideoNode": {
     "display_name": "Kling Görüntüden Videoya",
     "inputs": {
@@ -5076,6 +5116,9 @@
       "aspect_ratio": {
         "name": "en_boy_oranı"
       },
+      "control_after_generate": {
+        "name": "oluşturduktan sonra kontrol et"
+      },
       "human_fidelity": {
         "name": "insan_sadakati",
         "tooltip": "Konu referans benzerliği"
@@ -5104,6 +5147,10 @@
       "prompt": {
         "name": "istem",
         "tooltip": "Pozitif metin istemi"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed, düğümün tekrar çalıştırılıp çalıştırılmayacağını kontrol eder; seed ne olursa olsun sonuçlar deterministik değildir."
       }
     },
     "outputs": {
@@ -5236,6 +5283,9 @@
     "description": "Mevcut bir videoyu Kling'in en son modeliyle düzenleyin.",
     "display_name": "Kling Omni Video Düzenle (Pro)",
     "inputs": {
+      "control_after_generate": {
+        "name": "oluşturduktan sonra kontrol et"
+      },
       "keep_original_sound": {
         "name": "orijinal_sesi_koru"
       },
@@ -5253,6 +5303,10 @@
       "resolution": {
         "name": "çözünürlük"
       },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed, düğümün tekrar çalıştırılıp çalıştırılmayacağını kontrol eder; seed ne olursa olsun sonuçlar deterministik değildir."
+      },
       "video": {
         "name": "video",
         "tooltip": "Düzenlenecek video. Çıktı video uzunluğu aynı olacaktır."
@@ -5268,6 +5322,9 @@
     "description": "Başlangıç karesi, isteğe bağlı bir bitiş karesi veya referans görselleri ile en yeni Kling modeli kullanılır.",
     "display_name": "Kling Omni İlk-Son-Kare'den Videoya (Pro)",
     "inputs": {
+      "control_after_generate": {
+        "name": "oluşturduktan sonra kontrol et"
+      },
       "duration": {
         "name": "duration"
       },
@@ -5277,6 +5334,10 @@
       },
       "first_frame": {
         "name": "first_frame"
+      },
+      "generate_audio": {
+        "name": "ses_oluştur",
+        "tooltip": "Video için ses oluşturun. Sadece kling-v3-omni için desteklenir."
       },
       "model_name": {
         "name": "model_name"
@@ -5291,6 +5352,14 @@
       },
       "resolution": {
         "name": "resolution"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed, düğümün tekrar çalıştırılıp çalıştırılmayacağını kontrol eder; seed ne olursa olsun sonuçlar deterministik değildir."
+      },
+      "storyboards": {
+        "name": "hikaye_tahtaları",
+        "tooltip": "Bireysel promptlar ve sürelerle bir dizi video segmenti oluşturun. Sadece kling-v3-omni için desteklenir."
       }
     },
     "outputs": {
@@ -5306,6 +5375,9 @@
       "aspect_ratio": {
         "name": "aspect_ratio"
       },
+      "control_after_generate": {
+        "name": "oluşturduktan sonra kontrol et"
+      },
       "model_name": {
         "name": "model_name"
       },
@@ -5319,6 +5391,14 @@
       },
       "resolution": {
         "name": "resolution"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed, düğümün tekrar çalıştırılıp çalıştırılmayacağını kontrol eder; seed ne olursa olsun sonuçlar deterministik değildir."
+      },
+      "series_amount": {
+        "name": "seri_sayısı",
+        "tooltip": "Bir dizi görsel oluşturun. kling-image-o1 için desteklenmez."
       }
     },
     "outputs": {
@@ -5334,8 +5414,15 @@
       "aspect_ratio": {
         "name": "aspect_ratio"
       },
+      "control_after_generate": {
+        "name": "oluşturduktan sonra kontrol et"
+      },
       "duration": {
         "name": "duration"
+      },
+      "generate_audio": {
+        "name": "ses_oluştur",
+        "tooltip": "Video için ses oluşturun. Sadece kling-v3-omni için desteklenir."
       },
       "model_name": {
         "name": "model_name"
@@ -5350,6 +5437,14 @@
       },
       "resolution": {
         "name": "resolution"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed, düğümün tekrar çalıştırılıp çalıştırılmayacağını kontrol eder; seed ne olursa olsun sonuçlar deterministik değildir."
+      },
+      "storyboards": {
+        "name": "hikaye_tahtaları",
+        "tooltip": "Bireysel promptlar ve sürelerle bir dizi video segmenti oluşturun. Sadece kling-v3-omni için desteklenir."
       }
     },
     "outputs": {
@@ -5365,8 +5460,14 @@
       "aspect_ratio": {
         "name": "aspect_ratio"
       },
+      "control_after_generate": {
+        "name": "oluşturduktan sonra kontrol et"
+      },
       "duration": {
         "name": "duration"
+      },
+      "generate_audio": {
+        "name": "ses_oluştur"
       },
       "model_name": {
         "name": "model_name"
@@ -5377,6 +5478,14 @@
       },
       "resolution": {
         "name": "resolution"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed, düğümün tekrar çalıştırılıp çalıştırılmayacağını kontrol eder; seed ne olursa olsun sonuçlar deterministik değildir."
+      },
+      "storyboards": {
+        "name": "hikaye_tahtaları",
+        "tooltip": "Bireysel promptlar ve sürelerle bir dizi video segmenti oluşturun. o1 modeli için dikkate alınmaz."
       }
     },
     "outputs": {
@@ -5391,6 +5500,9 @@
     "inputs": {
       "aspect_ratio": {
         "name": "aspect_ratio"
+      },
+      "control_after_generate": {
+        "name": "oluşturduktan sonra kontrol et"
       },
       "duration": {
         "name": "duration"
@@ -5415,6 +5527,10 @@
       },
       "resolution": {
         "name": "resolution"
+      },
+      "seed": {
+        "name": "tohum",
+        "tooltip": "Tohum, düğümün yeniden çalıştırılıp çalıştırılmayacağını kontrol eder; sonuçlar tohumdan bağımsız olarak belirlenemezdir."
       }
     },
     "outputs": {
@@ -5596,6 +5712,54 @@
       },
       "2": {
         "name": "süre",
+        "tooltip": null
+      }
+    }
+  },
+  "KlingVideoNode": {
+    "description": "Kling V3 ile videolar oluşturun. Metinden videoya ve isteğe bağlı storyboard çoklu istem ve ses üretimiyle görüntüden videoya destekler.",
+    "display_name": "Kling 3.0 Video",
+    "inputs": {
+      "control_after_generate": {
+        "name": "oluşturduktan sonra kontrol et"
+      },
+      "generate_audio": {
+        "name": "ses oluştur"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Model ve üretim ayarları."
+      },
+      "model_aspect_ratio": {
+        "name": "en boy oranı"
+      },
+      "model_resolution": {
+        "name": "çözünürlük"
+      },
+      "multi_shot": {
+        "name": "çoklu çekim",
+        "tooltip": "Her biri ayrı istem ve süreye sahip bir dizi video segmenti oluşturun."
+      },
+      "multi_shot_duration": {
+        "name": "süre"
+      },
+      "multi_shot_negative_prompt": {
+        "name": "negatif istem"
+      },
+      "multi_shot_prompt": {
+        "name": "istem"
+      },
+      "seed": {
+        "name": "tohum",
+        "tooltip": "Tohum, düğümün yeniden çalıştırılıp çalıştırılmayacağını kontrol eder; sonuçlar tohumdan bağımsız olarak belirlenemezdir."
+      },
+      "start_frame": {
+        "name": "başlangıç karesi",
+        "tooltip": "İsteğe bağlı başlangıç kare görüntüsü. Bağlandığında, görüntüden videoya moduna geçer."
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -6715,6 +6879,10 @@
   "LoraModelLoader": {
     "display_name": "LoRA Modeli Yükle",
     "inputs": {
+      "bypass": {
+        "name": "bypass",
+        "tooltip": "Etkinleştirildiğinde, LoRA'yı temel model ağırlıklarını değiştirmeden bypass modunda uygular. Eğitim sırasında ve model ağırlıkları dışa aktarıldığında kullanışlıdır."
+      },
       "lora": {
         "name": "lora",
         "tooltip": "Difüzyon modeline uygulanacak LoRA modeli."
@@ -14326,6 +14494,10 @@
         "name": "bypass_mode",
         "tooltip": "Eğitim için bypass modunu etkinleştir. Etkinleştirildiğinde, adapter'lar ağırlık değişikliği yerine forward hook'lar ile uygulanır. Ağırlıkların doğrudan değiştirilemediği quantized modeller için kullanışlıdır."
       },
+      "checkpoint_depth": {
+        "name": "checkpoint_depth",
+        "tooltip": "Gradyan kontrol noktası derinlik seviyesi."
+      },
       "control_after_generate": {
         "name": "oluşturduktan sonra kontrol et"
       },
@@ -14360,6 +14532,10 @@
       "model": {
         "name": "model",
         "tooltip": "LoRA'nın eğitileceği model."
+      },
+      "offloading": {
+        "name": "offloading",
+        "tooltip": "Gradyan kontrol noktası derinlik seviyesi."
       },
       "optimizer": {
         "name": "optimize_edici",
@@ -15263,6 +15439,31 @@
       "seed": {
         "name": "tohum",
         "tooltip": "Video oluşturma için tohum (rastgele için 0)"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Video Slice": {
+    "display_name": "Video Dilimle",
+    "inputs": {
+      "duration": {
+        "name": "süre",
+        "tooltip": "Süre (saniye cinsinden) veya sınırsız süre için 0"
+      },
+      "start_time": {
+        "name": "başlangıç zamanı",
+        "tooltip": "Başlangıç zamanı (saniye cinsinden)"
+      },
+      "strict_duration": {
+        "name": "kesin süre",
+        "tooltip": "Doğruysa, belirtilen süre mümkün değilse bir hata oluşur."
+      },
+      "video": {
+        "name": "video"
       }
     },
     "outputs": {
