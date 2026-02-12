@@ -3,12 +3,12 @@ import _ from 'es-toolkit/compat'
 import type {
   ColorOption,
   LGraph,
-  LGraphCanvas,
+  LGraphCanvas
 } from '@/lib/litegraph/src/litegraph'
-import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import {
   LGraphGroup,
   LGraphNode,
+  LiteGraph,
   Reroute,
   isColorable
 } from '@/lib/litegraph/src/litegraph'
@@ -45,12 +45,15 @@ export async function createNode(
     return null
   }
 
-  const { graph, graph_mouse: [ posX, posY ] } = canvas
+  const {
+    graph,
+    graph_mouse: [posX, posY]
+  } = canvas
   const newNode = LiteGraph.createNode(name)
-  await new Promise(r => setTimeout(r, 0))
+  await new Promise((r) => setTimeout(r, 0))
 
   if (newNode && graph) {
-    newNode.pos = [ posX, posY ]
+    newNode.pos = [posX, posY]
     const addedNode = graph.add(newNode) ?? null
 
     if (addedNode) graph.change()
