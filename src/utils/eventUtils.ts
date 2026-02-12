@@ -24,3 +24,7 @@ export async function extractFilesFromDragEvent(
   const blob = await response.blob()
   return [new File([blob], uri, { type: blob.type })]
 }
+
+export function hasImageType({ type }: File): boolean {
+  return type.startsWith('image')
+}

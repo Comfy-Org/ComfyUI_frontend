@@ -1,33 +1,29 @@
 <template>
-  <PanelTemplate value="Extension" class="extension-panel">
-    <template #header>
-      <SearchBox
-        v-model="filters['global'].value"
-        :placeholder="
-          $t('g.searchPlaceholder', { subject: $t('g.extensions') })
-        "
-      />
-      <Message
-        v-if="hasChanges"
-        severity="info"
-        pt:text="w-full"
-        class="max-h-96 overflow-y-auto"
-      >
-        <ul>
-          <li v-for="ext in changedExtensions" :key="ext.name">
-            <span>
-              {{ extensionStore.isExtensionEnabled(ext.name) ? '[-]' : '[+]' }}
-            </span>
-            {{ ext.name }}
-          </li>
-        </ul>
-        <div class="flex justify-end">
-          <Button variant="destructive" @click="applyChanges">
-            {{ $t('g.reloadToApplyChanges') }}
-          </Button>
-        </div>
-      </Message>
-    </template>
+  <div class="extension-panel flex flex-col gap-2">
+    <SearchBox
+      v-model="filters['global'].value"
+      :placeholder="$t('g.searchPlaceholder', { subject: $t('g.extensions') })"
+    />
+    <Message
+      v-if="hasChanges"
+      severity="info"
+      pt:text="w-full"
+      class="max-h-96 overflow-y-auto"
+    >
+      <ul>
+        <li v-for="ext in changedExtensions" :key="ext.name">
+          <span>
+            {{ extensionStore.isExtensionEnabled(ext.name) ? '[-]' : '[+]' }}
+          </span>
+          {{ ext.name }}
+        </li>
+      </ul>
+      <div class="flex justify-end">
+        <Button variant="destructive" @click="applyChanges">
+          {{ $t('g.reloadToApplyChanges') }}
+        </Button>
+      </div>
+    </Message>
     <div class="mb-3 flex gap-2">
       <SelectButton
         v-model="filterType"
@@ -81,7 +77,7 @@
         </template>
       </Column>
     </DataTable>
-  </PanelTemplate>
+  </div>
 </template>
 
 <script setup lang="ts">
@@ -97,7 +93,6 @@ import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import SearchBox from '@/components/common/SearchBox.vue'
-import PanelTemplate from '@/components/dialog/content/setting/PanelTemplate.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useExtensionStore } from '@/stores/extensionStore'

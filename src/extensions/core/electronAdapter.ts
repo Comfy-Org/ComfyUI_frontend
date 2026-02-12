@@ -19,7 +19,7 @@ import { electronAPI as getElectronAPI } from '@/utils/envUtil'
   const toastStore = useToastStore()
   const { staticUrls, buildDocsUrl } = useExternalLink()
 
-  const onChangeRestartApp = (newValue: string, oldValue: string) => {
+  const onChangeRestartApp = (newValue: unknown, oldValue: unknown) => {
     // Add a delay to allow changes to take effect before restarting.
     if (oldValue !== undefined && newValue !== oldValue) {
       electronAPI.restartApp('Restart ComfyUI to apply changes.', 1500)

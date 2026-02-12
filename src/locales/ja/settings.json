@@ -104,6 +104,10 @@
   "Comfy_Graph_CtrlShiftZoom": {
     "name": "ファストズームショートカットを有効にする（Ctrl + Shift + ドラッグ）"
   },
+  "Comfy_Graph_DeduplicateSubgraphNodeIds": {
+    "name": "サブグラフノードIDの重複排除",
+    "tooltip": "ワークフローを読み込む際に、サブグラフ内の重複したノードIDを自動的に再割り当てします。"
+  },
   "Comfy_Graph_LinkMarkers": {
     "name": "リンク中点マーカー",
     "options": {

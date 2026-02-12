@@ -104,6 +104,10 @@
   "Comfy_Graph_CtrlShiftZoom": {
     "name": "Enable fast-zoom shortcut (Ctrl + Shift + Drag)"
   },
+  "Comfy_Graph_DeduplicateSubgraphNodeIds": {
+    "name": "Deduplicate subgraph node IDs",
+    "tooltip": "Automatically reassign duplicate node IDs in subgraphs when loading a workflow."
+  },
   "Comfy_Graph_LinkMarkers": {
     "name": "Link midpoint markers",
     "options": {

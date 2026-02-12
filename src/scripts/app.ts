@@ -62,6 +62,7 @@ import { useExecutionStore } from '@/stores/executionStore'
 import { useExtensionStore } from '@/stores/extensionStore'
 import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
 import { useNodeOutputStore } from '@/stores/imagePreviewStore'
+import { useJobPreviewStore } from '@/stores/jobPreviewStore'
 import { KeyComboImpl } from '@/platform/keybindings/keyCombo'
 import { useKeybindingStore } from '@/platform/keybindings/keybindingStore'
 import { useModelStore } from '@/stores/modelStore'
@@ -84,9 +85,14 @@ import {
 } from '@/utils/graphTraversalUtil'
 import {
   executeWidgetsCallback,
+  createNode,
   fixLinkInputSlots,
   isImageNode
 } from '@/utils/litegraphUtil'
+import {
+  createSharedObjectUrl,
+  releaseSharedObjectUrl
+} from '@/utils/objectUrlUtil'
 import {
   findLegacyRerouteNodes,
   noNativeReroutes
@@ -102,9 +108,9 @@ import { ComfyAppMenu } from './ui/menu/index'
 import { clone } from './utils'
 import { type ComfyWidgetConstructor } from './widgets'
 import { ensureCorrectLayoutScale } from '@/renderer/extensions/vueNodes/layout/ensureCorrectLayoutScale'
-import { extractFilesFromDragEvent } from '@/utils/eventUtils'
+import { extractFilesFromDragEvent, hasImageType } from '@/utils/eventUtils'
 import { getWorkflowDataFromFile } from '@/scripts/metadata/parser'
-import { pasteImageNode } from '@/composables/usePaste'
+import { pasteImageNode, pasteImageNodes } from '@/composables/usePaste'
 
 export const ANIM_PREVIEW_WIDGET = '$$comfy_animation_preview'
 
@@ -549,10 +555,14 @@ export class ComfyApp {
         const workspace = useWorkspaceStore()
         try {
           workspace.spinner = true
-          for (const file of files) {
-            await this.handleFile(file, 'file_drop', {
-              deferWarnings: true
-            })
+          if (files.length > 1 && files.every(hasImageType)) {
+            await this.handleFileList(files)
+          } else {
+            for (const file of files) {
+              await this.handleFile(file, 'file_drop', {
+                deferWarnings: true
+              })
+            }
           }
         } finally {
           workspace.spinner = false
@@ -707,12 +717,13 @@ export class ComfyApp {
 
     api.addEventListener('b_preview_with_metadata', ({ detail }) => {
       // Enhanced preview with explicit node context
-      const { blob, displayNodeId } = detail
+      const { blob, displayNodeId, promptId } = detail
       const { setNodePreviewsByExecutionId, revokePreviewsByExecutionId } =
         useNodeOutputStore()
+      const blobUrl = createSharedObjectUrl(blob)
+      useJobPreviewStore().setPreviewUrl(promptId, blobUrl)
       // Ensure clean up if `executing` event is missed.
       revokePreviewsByExecutionId(displayNodeId)
-      const blobUrl = URL.createObjectURL(blob)
       // Preview cleanup is handled in progress_state event to support multiple concurrent previews
       const nodeParents = displayNodeId.split(':')
       for (let i = 1; i <= nodeParents.length; i++) {
@@ -720,6 +731,7 @@ export class ComfyApp {
           blobUrl
         ])
       }
+      releaseSharedObjectUrl(blobUrl)
     })
 
     api.init()
@@ -952,20 +964,25 @@ export class ComfyApp {
   }
 
   async getNodeDefs(): Promise<Record<string, ComfyNodeDefV1>> {
-    const translateNodeDef = (def: ComfyNodeDefV1): ComfyNodeDefV1 => ({
-      ...def,
-      display_name: st(
-        `nodeDefs.${def.name}.display_name`,
-        def.display_name ?? def.name
-      ),
-      description: def.description
-        ? st(`nodeDefs.${def.name}.description`, def.description)
-        : '',
-      category: def.category
-        .split('/')
-        .map((category: string) => st(`nodeCategories.${category}`, category))
-        .join('/')
-    })
+    const translateNodeDef = (def: ComfyNodeDefV1): ComfyNodeDefV1 => {
+      // Use object info display_name as fallback before using name
+      const objectInfoDisplayName = def.display_name || def.name
+
+      return {
+        ...def,
+        display_name: st(
+          `nodeDefs.${def.name}.display_name`,
+          objectInfoDisplayName
+        ),
+        description: def.description
+          ? st(`nodeDefs.${def.name}.description`, def.description)
+          : '',
+        category: def.category
+          .split('/')
+          .map((category: string) => st(`nodeCategories.${category}`, category))
+          .join('/')
+      }
+    }
 
     return _.mapValues(await api.getNodeDefs(), (def) => translateNodeDef(def))
   }
@@ -1392,11 +1409,14 @@ export class ComfyApp {
           'Comfy.Execution.PreviewMethod'
         )
 
+        const isPartialExecution = !!queueNodeIds?.length
         for (let i = 0; i < batchCount; i++) {
           // Allow widgets to run callbacks before a prompt has been queued
           // e.g. random seed before every gen
           forEachNode(this.rootGraph, (node) => {
-            for (const widget of node.widgets ?? []) widget.beforeQueued?.()
+            for (const widget of node.widgets ?? []) {
+              widget.beforeQueued?.({ isPartialExecution })
+            }
           })
 
           const p = await this.graphToPrompt(this.rootGraph)
@@ -1452,7 +1472,9 @@ export class ComfyApp {
 
           // Allow widgets to run callbacks after a prompt has been queued
           // e.g. random seed after every gen
-          executeWidgetsCallback(queuedNodes, 'afterQueued')
+          executeWidgetsCallback(queuedNodes, 'afterQueued', {
+            isPartialExecution
+          })
           this.canvas.draw(true, true)
           await this.ui.queue.update()
         }
@@ -1485,7 +1507,8 @@ export class ComfyApp {
       if (file.type.startsWith('image')) {
         const transfer = new DataTransfer()
         transfer.items.add(file)
-        pasteImageNode(this.canvas, transfer.items)
+        const imageNode = await createNode(this.canvas, 'LoadImage')
+        await pasteImageNode(this.canvas, transfer.items, imageNode)
         return
       }
 
@@ -1563,6 +1586,49 @@ export class ComfyApp {
     }
 
     this.showErrorOnFileLoad(file)
+  }
+
+  /**
+   * Loads multiple files, connects to a batch node, and selects them
+   * @param {FileList} fileList
+   */
+  async handleFileList(fileList: File[]) {
+    if (fileList[0].type.startsWith('image')) {
+      const imageNodes = await pasteImageNodes(this.canvas, fileList)
+      const batchImagesNode = await createNode(this.canvas, 'BatchImagesNode')
+      if (!batchImagesNode) return
+
+      this.positionBatchNodes(imageNodes, batchImagesNode)
+      this.canvas.selectItems([...imageNodes, batchImagesNode])
+
+      Array.from(imageNodes).forEach((imageNode, index) => {
+        imageNode.connect(0, batchImagesNode, index)
+      })
+    }
+  }
+
+  /**
+   * Positions batched nodes in drag and drop
+   * @param nodes
+   * @param batchNode
+   */
+  positionBatchNodes(nodes: LGraphNode[], batchNode: LGraphNode): void {
+    const [x, y, width] = nodes[0].getBounding()
+    batchNode.pos = [x + width + 100, y + 30]
+
+    // Retrieving Node Height is inconsistent
+    let height = 0
+    if (nodes[0].type === 'LoadImage') {
+      height = 344
+    }
+
+    nodes.forEach((node, index) => {
+      if (index > 0) {
+        node.pos = [x, y + height * index + 25 * (index + 1)]
+      }
+    })
+
+    this.canvas.graph?.change()
   }
 
   // @deprecated

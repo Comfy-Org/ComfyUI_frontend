@@ -152,6 +152,7 @@ import { useSubscription } from '@/platform/cloud/subscription/composables/useSu
 import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
+import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
 import { useDialogService } from '@/services/dialogService'
 import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
 
@@ -165,6 +166,7 @@ const { userDisplayName, userEmail, userPhotoUrl, handleSignOut } =
   useCurrentUser()
 const authActions = useFirebaseAuthActions()
 const authStore = useFirebaseAuthStore()
+const settingsDialog = useSettingsDialog()
 const dialogService = useDialogService()
 const {
   isActiveSubscription,
@@ -198,7 +200,7 @@ const canUpgrade = computed(() => {
 })
 
 const handleOpenUserSettings = () => {
-  dialogService.showSettingsDialog('user')
+  settingsDialog.show('user')
   emit('close')
 }
 
@@ -209,9 +211,9 @@ const handleOpenPlansAndPricing = () => {
 
 const handleOpenPlanAndCreditsSettings = () => {
   if (isCloud) {
-    dialogService.showSettingsDialog('subscription')
+    settingsDialog.show('subscription')
   } else {
-    dialogService.showSettingsDialog('credits')
+    settingsDialog.show('credits')
   }
 
   emit('close')
