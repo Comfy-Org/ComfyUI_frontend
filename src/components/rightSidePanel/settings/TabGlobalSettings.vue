@@ -11,7 +11,7 @@ import type { LinkRenderType } from '@/lib/litegraph/src/types/globalEnums'
 import { LinkMarkerShape } from '@/lib/litegraph/src/types/globalEnums'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { WidgetInputBaseClass } from '@/renderer/extensions/vueNodes/widgets/components/layout'
-import { useDialogService } from '@/services/dialogService'
+import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
 import { cn } from '@/utils/tailwindUtil'
 
 import PropertiesAccordionItem from '../layout/PropertiesAccordionItem.vue'
@@ -20,7 +20,7 @@ import LayoutField from './LayoutField.vue'
 
 const { t } = useI18n()
 const settingStore = useSettingStore()
-const dialogService = useDialogService()
+const settingsDialog = useSettingsDialog()
 
 // NODES settings
 const showAdvancedParameters = computed({
@@ -92,7 +92,7 @@ function updateGridSpacingFromInput(value: number | null | undefined) {
 }
 
 function openFullSettings() {
-  dialogService.showSettingsDialog()
+  settingsDialog.show()
 }
 </script>
 

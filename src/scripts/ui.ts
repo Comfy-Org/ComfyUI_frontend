@@ -1,7 +1,7 @@
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { WORKFLOW_ACCEPT_STRING } from '@/platform/workflow/core/types/formats'
 import { type StatusWsMessageStatus } from '@/schemas/apiSchema'
-import { useDialogService } from '@/services/dialogService'
+import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
 import { isCloud } from '@/platform/distribution/types'
 import { extractWorkflow } from '@/platform/remote/comfyui/jobs/fetchJobs'
 import type { JobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
@@ -464,7 +464,7 @@ export class ComfyUI {
               $el('button.comfy-settings-btn', {
                 textContent: '⚙️',
                 onclick: () => {
-                  useDialogService().showSettingsDialog()
+                  useSettingsDialog().show()
                 }
               }),
               $el('button.comfy-close-menu-btn', {

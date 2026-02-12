@@ -33,9 +33,11 @@ vi.mock('@/i18n', () => ({
   t: (key: string) => key
 }))
 
-vi.mock('@/services/dialogService', () => ({
-  useDialogService: () => ({
-    showSettingsDialog: vi.fn()
+vi.mock('@/platform/settings/composables/useSettingsDialog', () => ({
+  useSettingsDialog: () => ({
+    show: vi.fn(),
+    hide: vi.fn(),
+    showAbout: vi.fn()
   })
 }))
 

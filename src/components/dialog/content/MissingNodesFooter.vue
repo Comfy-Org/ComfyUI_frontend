@@ -80,7 +80,7 @@ import Button from '@/components/ui/button/Button.vue'
 import { isCloud } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useToastStore } from '@/platform/updates/common/toastStore'
-import { useDialogService } from '@/services/dialogService'
+import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
 import { useDialogStore } from '@/stores/dialogStore'
 import PackInstallButton from '@/workbench/extensions/manager/components/manager/button/PackInstallButton.vue'
 import { useMissingNodes } from '@/workbench/extensions/manager/composables/nodePack/useMissingNodes'
@@ -103,10 +103,7 @@ const handleGotItClick = () => {
 
 function openShowMissingNodesSetting() {
   dialogStore.closeDialog({ key: 'global-missing-nodes' })
-  void useDialogService().showSettingsDialog(
-    undefined,
-    'Comfy.Workflow.ShowMissingNodesWarning'
-  )
+  useSettingsDialog().show(undefined, 'Comfy.Workflow.ShowMissingNodesWarning')
 }
 
 const { missingNodePacks, isLoading, error } = useMissingNodes()
