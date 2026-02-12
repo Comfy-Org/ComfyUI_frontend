@@ -87,6 +87,47 @@ describe('imagePreviewStore setNodeOutputsByExecutionId with merge', () => {
   })
 })
 
+describe('imagePreviewStore restoreOutputs', () => {
+  beforeEach(() => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
+    vi.clearAllMocks()
+    app.nodeOutputs = {}
+    app.nodePreviewImages = {}
+  })
+
+  it('should keep reactivity after restoreOutputs followed by setNodeOutputsByExecutionId', () => {
+    const store = useNodeOutputStore()
+
+    // Simulate execution: set outputs for node "4" (e.g., PreviewImage)
+    const executionOutput = createMockOutputs([
+      { filename: 'ComfyUI_00001.png', subfolder: '', type: 'temp' }
+    ])
+    const savedOutputs: Record<string, ExecutedWsMessage['output']> = {
+      '4': executionOutput
+    }
+
+    // Simulate undo: restoreOutputs makes app.nodeOutputs and the ref
+    // share the same underlying object if not handled correctly.
+    store.restoreOutputs(savedOutputs)
+
+    expect(store.nodeOutputs['4']).toStrictEqual(executionOutput)
+    expect(store.nodeOutputs['3']).toBeUndefined()
+
+    // Simulate widget callback setting outputs for node "3" (e.g., LoadImage)
+    const widgetOutput = createMockOutputs([
+      { filename: 'example.png', subfolder: '', type: 'input' }
+    ])
+    store.setNodeOutputsByExecutionId('3', widgetOutput)
+
+    // The reactive store must reflect the new output.
+    // Before the fix, the raw write to app.nodeOutputs would mutate the
+    // proxy's target before the proxy write, causing Vue to skip the
+    // reactivity update.
+    expect(store.nodeOutputs['3']).toStrictEqual(widgetOutput)
+    expect(app.nodeOutputs['3']).toStrictEqual(widgetOutput)
+  })
+})
+
 describe('imagePreviewStore getPreviewParam', () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
