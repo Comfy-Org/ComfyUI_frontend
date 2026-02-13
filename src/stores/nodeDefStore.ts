@@ -22,7 +22,11 @@ import type {
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { NodeSearchService } from '@/services/nodeSearchService'
 import { useSubgraphStore } from '@/stores/subgraphStore'
-import { NodeSourceType, getNodeSource } from '@/types/nodeSource'
+import {
+  NodeSourceType,
+  getEssentialsCategory,
+  getNodeSource
+} from '@/types/nodeSource'
 import type { NodeSource } from '@/types/nodeSource'
 import type { TreeNode } from '@/types/treeExplorerTypes'
 import type { FuseSearchable, SearchAuxScore } from '@/utils/fuseUtil'
@@ -83,8 +87,8 @@ export class ComfyNodeDefImpl
    * or old names after renaming a node.
    */
   readonly search_aliases?: string[]
-  /** Indicates if the node is part of the Essentials tab */
-  readonly is_essentials?: boolean
+  /** Category for the Essentials tab. If set, the node appears in Essentials. */
+  readonly essentials_category?: string
 
   // V2 fields
   readonly inputs: Record<string, InputSpecV2>
@@ -156,7 +160,11 @@ export class ComfyNodeDefImpl
     this.output_tooltips = obj.output_tooltips
     this.input_order = obj.input_order
     this.price_badge = obj.price_badge
-    this.is_essentials = obj.is_essentials ?? false
+    // Resolve essentials_category from API or fallback to mock data
+    this.essentials_category = getEssentialsCategory(
+      obj.name,
+      obj.essentials_category
+    )
 
     // Initialize V2 fields
     const defV2 = transformNodeDefV1ToV2(obj)
@@ -167,7 +175,7 @@ export class ComfyNodeDefImpl
     // Initialize node source
     this.nodeSource = getNodeSource(
       obj.python_module,
-      this.is_essentials,
+      this.essentials_category,
       this.name
     )
   }

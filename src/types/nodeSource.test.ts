@@ -74,14 +74,8 @@ describe('getNodeSource', () => {
   })
 
   describe('essentials nodes', () => {
-    it('should identify essentials nodes when is_essentials flag is true', () => {
-      const result = getNodeSource('nodes.some_module', true)
-      expect(result.type).toBe(NodeSourceType.Essentials)
-      expect(result.className).toBe('comfy-essentials')
-    })
-
-    it('should identify essentials nodes by name from hardcoded list', () => {
-      const result = getNodeSource('nodes.some_module', false, 'LoadImage')
+    it('should identify essentials nodes when essentials_category is set', () => {
+      const result = getNodeSource('nodes.some_module', 'Image')
       expect(result.type).toBe(NodeSourceType.Essentials)
       expect(result.className).toBe('comfy-essentials')
     })
@@ -89,7 +83,7 @@ describe('getNodeSource', () => {
     it('should identify essentials nodes from custom_nodes module', () => {
       const result = getNodeSource(
         'custom_nodes.ComfyUI-Example@1.0.0',
-        true,
+        'Video',
         'SomeNode'
       )
       expect(result.type).toBe(NodeSourceType.Essentials)
@@ -97,13 +91,18 @@ describe('getNodeSource', () => {
       expect(result.displayText).toBe('Example')
     })
 
-    it('should not identify non-essentials nodes as essentials', () => {
-      const result = getNodeSource('nodes.some_module', false, 'UnknownNode')
+    it('should not identify nodes without essentials_category as essentials', () => {
+      // Use a node name not in the mock list
+      const result = getNodeSource(
+        'nodes.some_module',
+        undefined,
+        'UnknownNode'
+      )
       expect(result.type).toBe(NodeSourceType.Core)
     })
 
-    it('should prioritize is_essentials flag over name lookup', () => {
-      const result = getNodeSource('custom_nodes.MyExtension', true, 'MyNode')
+    it('should identify nodes from mock list as essentials', () => {
+      const result = getNodeSource('nodes.some_module', undefined, 'LoadImage')
       expect(result.type).toBe(NodeSourceType.Essentials)
     })
   })

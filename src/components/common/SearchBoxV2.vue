@@ -1,5 +1,5 @@
 <template>
-  <div class="flex flex-col gap-2">
+  <div class="flex flex-col gap-2 flex-auto">
     <ComboboxRoot :ignore-filter="true" :open="false">
       <ComboboxAnchor
         :class="

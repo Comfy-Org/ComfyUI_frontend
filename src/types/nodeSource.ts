@@ -26,45 +26,70 @@ const shortenNodeName = (name: string) => {
     .replace(/(-ComfyUI|_ComfyUI|-Comfy|_Comfy)$/, '')
 }
 
-// TODO: Remove this mock list once object_info returns is_essentials field
-const ESSENTIALS_NODE_NAMES = new Set([
-  'LoadImage',
-  'SaveImage',
-  'LoadVideo',
-  'SaveVideo',
-  'Load3D',
-  'SaveGLB',
-  'CLIPTextEncode',
-  'ImageBatch',
-  'ImageCrop',
-  'ImageScale',
-  'ImageRotate',
-  'ImageBlur',
-  'ImageInvert',
-  'Canny',
-  'RecraftRemoveBackgroundNode',
-  'GetVideoComponents',
-  'LoraLoader',
-  'KlingLipSyncAudioToVideoNode',
-  'OpenAIChatNode',
-  'TencentTextToModelNode',
-  'TencentImageToModelNode',
-  'LoadAudio',
-  'SaveAudio',
-  'StabilityTextToAudio'
-])
+// TODO: Remove this mock mapping once object_info/global_subgraphs returns essentials_category
+const ESSENTIALS_CATEGORY_MOCK: Record<string, string> = {
+  // basic
+  LoadImage: 'basic',
+  SaveImage: 'basic',
+  LoadVideo: 'basic',
+  SaveVideo: 'basic',
+  Load3D: 'basic',
+  SaveGLB: 'basic',
+  CLIPTextEncode: 'basic',
+  // image tools
+  ImageBatch: 'image tools',
+  ImageCrop: 'image tools',
+  ImageScale: 'image tools',
+  ImageRotate: 'image tools',
+  ImageBlur: 'image tools',
+  ImageInvert: 'image tools',
+  Canny: 'image tools',
+  RecraftRemoveBackgroundNode: 'image tools',
+  // video tools
+  GetVideoComponents: 'video tools',
+  // image gen
+  LoraLoader: 'image gen',
+  // video gen
+  'SubgraphBlueprint.pose_to_video_ltx_2_0': 'video gen',
+  'SubgraphBlueprint.canny_to_video_ltx_2_0': 'video gen',
+  KlingLipSyncAudioToVideoNode: 'video gen',
+  // text gen
+  OpenAIChatNode: 'text gen',
+  // 3d
+  TencentTextToModelNode: '3D',
+  TencentImageToModelNode: '3D',
+  // audio
+  LoadAudio: 'audio',
+  SaveAudio: 'audio',
+  StabilityTextToAudio: 'audio'
+}
+
+/**
+ * Get the essentials category for a node, falling back to mock data if not provided.
+ */
+export function getEssentialsCategory(
+  name?: string,
+  essentials_category?: string
+): string | undefined {
+  return (
+    essentials_category ?? (name ? ESSENTIALS_CATEGORY_MOCK[name] : undefined)
+  )
+}
 
 export const getNodeSource = (
   python_module?: string,
-  is_essentials?: boolean,
+  essentials_category?: string,
   name?: string
 ): NodeSource => {
-  const isEssential = is_essentials || (name && ESSENTIALS_NODE_NAMES.has(name))
+  const resolvedEssentialsCategory = getEssentialsCategory(
+    name,
+    essentials_category
+  )
   if (!python_module) {
     return UNKNOWN_NODE_SOURCE
   }
   const modules = python_module.split('.')
-  if (isEssential) {
+  if (resolvedEssentialsCategory) {
     const moduleName = modules[1] ?? modules[0] ?? 'essentials'
     const displayName = shortenNodeName(moduleName.split('@')[0])
     return {

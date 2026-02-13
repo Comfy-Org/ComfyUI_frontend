@@ -289,8 +289,8 @@ export const zComfyNodeDef = z.object({
    * and input connectivity.
    */
   price_badge: zPriceBadge.optional(),
-  /** Indicates if the node is part of the Essentials tab */
-  is_essentials: z.boolean().optional()
+  /** Category for the Essentials tab. If set, the node appears in Essentials. */
+  essentials_category: z.string().optional()
 })
 
 export const zAutogrowOptions = z.object({

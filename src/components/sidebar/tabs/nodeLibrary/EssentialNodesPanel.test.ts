@@ -49,7 +49,7 @@ describe('EssentialNodesPanel', () => {
     return {
       key: `folder-${name}`,
       label: name,
-      icon: 'icon-[ph--folder-fill]',
+      icon: 'icon-[lucide--folder]',
       type: 'folder',
       totalLeaves: children.length,
       children

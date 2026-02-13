@@ -16,7 +16,7 @@
 @source inline("icon-[comfy--{ai-model,bfl,bria,bytedance,credits,extensions-blocks,file-output,gemini,grok,hitpaw,ideogram,image-ai-edit,kling,ltxv,luma,magnific,mask,meshy,minimax,moonvalley-marey,node,openai,pin,pixverse,play,recraft,rodin,runway,sora,stability-ai,template,tencent,topaz,tripo,veo,vidu,wan,wavespeed,workflow}]");
 
 /* Safelist dynamic comfy icons for essential nodes (kebab-case of node names) */
-@source inline("icon-[comfy--{load-image,save-image,load-video,save-video,load-3-d,save-glb,image-batch,image-crop,image-scale,image-rotate,image-blur,image-invert,canny,recraft-remove-background-node,kling-lip-sync-audio-to-video-node,load-audio,save-audio,stability-text-to-audio,lora-loader,clip-text-encode,get-video-components,tencent-text-to-model-node,tencent-image-to-model-node,open-ai-chat-node}]");
+@source inline("icon-[comfy--{load-image,save-image,load-video,save-video,load-3-d,save-glb,image-batch,image-crop,image-scale,image-rotate,image-blur,image-invert,canny,recraft-remove-background-node,kling-lip-sync-audio-to-video-node,load-audio,save-audio,stability-text-to-audio,lora-loader,clip-text-encode,get-video-components,tencent-text-to-model-node,tencent-image-to-model-node,open-ai-chat-node,subgraph-blueprint-canny-to-video-ltx-2-0,subgraph-blueprint-pose-to-video-ltx-2-0}]");
 
 @custom-variant touch (@media (hover: none));
 

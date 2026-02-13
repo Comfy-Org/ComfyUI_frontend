@@ -1,5 +1,5 @@
 <template>
-  <TabsContent value="essentials" class="min-h-0 flex-1 overflow-y-auto px-2">
+  <TabsContent value="essentials" class="min-h-0 flex-1 overflow-y-auto px-3">
     <div class="flex flex-col gap-2">
       <CollapsibleRoot
         v-for="folder in folders"
@@ -8,7 +8,7 @@
         class="rounded-lg"
       >
         <CollapsibleTrigger
-          class="group flex w-full items-center justify-between border-0 bg-transparent p-4 text-sm font-semibold text-neutral-200 cursor-pointer"
+          class="group flex w-full items-center justify-between border-0 bg-transparent py-4 px-0 text-sm font-semibold text-neutral-200 cursor-pointer"
         >
           <span class="capitalize">{{ folder.label }}</span>
           <i
@@ -23,7 +23,7 @@
         <CollapsibleContent
           class="overflow-hidden data-[state=closed]:animate-collapsible-up data-[state=open]:animate-collapsible-down"
         >
-          <div class="grid grid-cols-3 gap-3 pb-2">
+          <div class="grid grid-cols-3 gap-3">
             <EssentialNodeCard
               v-for="node in folder.children"
               :key="node.key"
