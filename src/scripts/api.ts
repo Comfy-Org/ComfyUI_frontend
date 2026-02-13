@@ -138,6 +138,9 @@ interface FrontendApiCalls {
   reconnected: never
 }
 
+export type PromptQueueingEventPayload = FrontendApiCalls['promptQueueing']
+export type PromptQueuedEventPayload = FrontendApiCalls['promptQueued']
+
 /** Dictionary of calls originating from ComfyUI core */
 interface BackendApiCalls {
   progress: ProgressWsMessage

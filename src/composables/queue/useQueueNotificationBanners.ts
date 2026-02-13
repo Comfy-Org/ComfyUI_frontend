@@ -2,6 +2,10 @@ import { useEventListener } from '@vueuse/core'
 import { computed, onUnmounted, ref, watch } from 'vue'
 
 import { api } from '@/scripts/api'
+import type {
+  PromptQueuedEventPayload,
+  PromptQueueingEventPayload
+} from '@/scripts/api'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useQueueStore } from '@/stores/queueStore'
 import { jobStateFromTask } from '@/utils/queueUtil'
@@ -9,14 +13,10 @@ import { jobStateFromTask } from '@/utils/queueUtil'
 const BANNER_DISMISS_DELAY_MS = 4000
 const MAX_COMPLETION_THUMBNAILS = 3
 
-type QueueQueuedPendingNotification = {
-  type: 'queuedPending'
-  count: number
-  requestId?: number
-}
+type QueueQueuedNotificationType = 'queuedPending' | 'queued'
 
 type QueueQueuedNotification = {
-  type: 'queued'
+  type: QueueQueuedNotificationType
   count: number
   requestId?: number
 }
@@ -34,19 +34,9 @@ type QueueFailedNotification = {
 }
 
 export type QueueNotificationBanner =
-  | QueueQueuedPendingNotification
   | QueueQueuedNotification
   | QueueCompletedNotification
   | QueueFailedNotification
-
-type PromptQueueingEventPayload = {
-  requestId?: number
-  batchCount?: number
-}
-type PromptQueuedEventPayload = {
-  requestId?: number
-  batchCount?: number
-}
 
 const sanitizeCount = (value: number | undefined) => {
   if (value === undefined || Number.isNaN(value) || value <= 0) {
@@ -104,35 +94,19 @@ export const useQueueNotificationBanners = () => {
     showNextNotification()
   }
 
-  const toQueuedNotification = (
+  const toQueueLifecycleNotification = (
+    type: QueueQueuedNotificationType,
     count: number,
     requestId?: number
   ): QueueQueuedNotification => {
     if (requestId === undefined) {
       return {
-        type: 'queued',
+        type,
         count
       }
     }
     return {
-      type: 'queued',
-      count,
-      requestId
-    }
-  }
-
-  const toQueuedPendingNotification = (
-    count: number,
-    requestId?: number
-  ): QueueQueuedPendingNotification => {
-    if (requestId === undefined) {
-      return {
-        type: 'queuedPending',
-        count
-      }
-    }
-    return {
-      type: 'queuedPending',
+      type,
       count,
       requestId
     }
@@ -161,7 +135,11 @@ export const useQueueNotificationBanners = () => {
       (requestId === undefined ||
         activeNotification.value.requestId === requestId)
     ) {
-      activeNotification.value = toQueuedNotification(count, requestId)
+      activeNotification.value = toQueueLifecycleNotification(
+        'queued',
+        count,
+        requestId
+      )
       return true
     }
 
@@ -185,7 +163,11 @@ export const useQueueNotificationBanners = () => {
 
     pendingNotifications.value = [
       ...pendingNotifications.value.slice(0, pendingIndex),
-      toQueuedNotification(count, queuedPendingNotification.requestId),
+      toQueueLifecycleNotification(
+        'queued',
+        count,
+        queuedPendingNotification.requestId
+      ),
       ...pendingNotifications.value.slice(pendingIndex + 1)
     ]
 
@@ -195,7 +177,9 @@ export const useQueueNotificationBanners = () => {
   const handlePromptQueueing = (event: Event) => {
     const payload = (event as CustomEvent<PromptQueueingEventPayload>).detail
     const count = sanitizeCount(payload?.batchCount)
-    queueNotification(toQueuedPendingNotification(count, payload?.requestId))
+    queueNotification(
+      toQueueLifecycleNotification('queuedPending', count, payload?.requestId)
+    )
   }
 
   const handlePromptQueued = (event: Event) => {
@@ -203,7 +187,9 @@ export const useQueueNotificationBanners = () => {
     const count = sanitizeCount(payload?.batchCount)
     const handled = convertQueuedPendingToQueued(payload?.requestId, count)
     if (!handled) {
-      queueNotification(toQueuedNotification(count, payload?.requestId))
+      queueNotification(
+        toQueueLifecycleNotification('queued', count, payload?.requestId)
+      )
     }
   }
 
