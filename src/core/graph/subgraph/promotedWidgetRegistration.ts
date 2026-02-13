@@ -64,7 +64,11 @@ function syncPromotedWidgets(
   )
 
   // Remove existing PromotedWidgetSlot instances and native widgets
-  // that will be re-ordered by the parsed list
+  // that will be re-ordered by the parsed list.
+  // Dispose DOM adapters on slots being removed.
+  for (const w of widgets) {
+    if (w instanceof PromotedWidgetSlot) w.disposeDomAdapter()
+  }
   node.widgets = widgets.filter((w) => {
     if (w instanceof PromotedWidgetSlot) return false
     return !parsed.some(([, name]) => w.name === name)

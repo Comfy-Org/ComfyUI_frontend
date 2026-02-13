@@ -43,7 +43,7 @@ export class SpatialIndexManager {
    * Insert a node into the spatial index
    */
   insert(nodeId: NodeId, bounds: Bounds): void {
-    this.quadTree.insert(nodeId, bounds, nodeId)
+    this.quadTree.insert(String(nodeId), bounds, nodeId)
     this.invalidateCache()
   }
 
@@ -51,7 +51,7 @@ export class SpatialIndexManager {
    * Update a node's bounds in the spatial index
    */
   update(nodeId: NodeId, bounds: Bounds): void {
-    this.quadTree.update(nodeId, bounds)
+    this.quadTree.update(String(nodeId), bounds)
     this.invalidateCache()
   }
 
@@ -61,7 +61,7 @@ export class SpatialIndexManager {
    */
   batchUpdate(updates: Array<{ nodeId: NodeId; bounds: Bounds }>): void {
     for (const { nodeId, bounds } of updates) {
-      this.quadTree.update(nodeId, bounds)
+      this.quadTree.update(String(nodeId), bounds)
     }
     this.invalidateCache()
   }
@@ -70,7 +70,7 @@ export class SpatialIndexManager {
    * Remove a node from the spatial index
    */
   remove(nodeId: NodeId): void {
-    this.quadTree.remove(nodeId)
+    this.quadTree.remove(String(nodeId))
     this.invalidateCache()
   }
 

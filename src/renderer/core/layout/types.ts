@@ -7,6 +7,8 @@
 import type { NodeId } from '@/lib/litegraph/src/LGraphNode'
 import type { ComputedRef, Ref } from 'vue'
 
+export type { NodeId }
+
 // Enum for layout source types
 export enum LayoutSource {
   Canvas = 'canvas',

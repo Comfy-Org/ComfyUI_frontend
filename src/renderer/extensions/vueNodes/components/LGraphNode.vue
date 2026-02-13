@@ -283,11 +283,11 @@ const { handleNodeCollapse, handleNodeTitleUpdate, handleNodeRightClick } =
   useNodeEventHandlers()
 const { bringNodeToFront } = useNodeZIndex()
 
-useVueElementTracking(() => nodeData.id, 'node')
+useVueElementTracking(() => String(nodeData.id), 'node')
 
 const { selectedNodeIds } = storeToRefs(useCanvasStore())
 const isSelected = computed(() => {
-  return selectedNodeIds.value.has(nodeData.id)
+  return selectedNodeIds.value.has(String(nodeData.id))
 })
 
 const nodeLocatorId = computed(() => getLocatorIdFromNodeData(nodeData))
@@ -343,8 +343,10 @@ onErrorCaptured((error) => {
   return false // Prevent error propagation
 })
 
-const { position, size, zIndex } = useNodeLayout(() => nodeData.id)
-const { pointerHandlers } = useNodePointerInteractions(() => nodeData.id)
+const { position, size, zIndex } = useNodeLayout(() => String(nodeData.id))
+const { pointerHandlers } = useNodePointerInteractions(() =>
+  String(nodeData.id)
+)
 const { onPointerdown, ...remainingPointerHandlers } = pointerHandlers
 const { startDrag } = useNodeDrag()
 const badges = usePartitionedBadges(nodeData)
@@ -487,7 +489,7 @@ const hasCustomContent = computed(() => {
 const progressClasses = 'h-2 bg-primary-500 transition-all duration-300'
 
 const { latestPreviewUrl, shouldShowPreviewImg } = useNodePreviewState(
-  () => nodeData.id,
+  () => String(nodeData.id),
   {
     isCollapsed
   }

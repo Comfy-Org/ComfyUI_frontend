@@ -32,7 +32,7 @@ function useNodeEventHandlersIndividual() {
 
     if (!canvasStore.canvas || !nodeManager.value) return
 
-    const node = nodeManager.value.getNode(nodeId)
+    const node = nodeManager.value.getNode(String(nodeId))
     if (!node) return
 
     const multiSelect = isMultiSelectKey(event)
@@ -69,7 +69,7 @@ function useNodeEventHandlersIndividual() {
 
     if (!nodeManager.value) return
 
-    const node = nodeManager.value.getNode(nodeId)
+    const node = nodeManager.value.getNode(String(nodeId))
     if (!node) return
 
     // Use LiteGraph's collapse method if the state needs to change
@@ -88,7 +88,7 @@ function useNodeEventHandlersIndividual() {
 
     if (!nodeManager.value) return
 
-    const node = nodeManager.value.getNode(nodeId)
+    const node = nodeManager.value.getNode(String(nodeId))
     if (!node) return
 
     // Update the node title in LiteGraph for persistence
@@ -104,7 +104,7 @@ function useNodeEventHandlersIndividual() {
 
     if (!canvasStore.canvas || !nodeManager.value) return
 
-    const node = nodeManager.value.getNode(nodeId)
+    const node = nodeManager.value.getNode(String(nodeId))
     if (!node) return
 
     // Prevent default context menu
@@ -127,7 +127,7 @@ function useNodeEventHandlersIndividual() {
 
     if (!canvasStore.canvas || !nodeManager.value) return
 
-    const node = nodeManager.value.getNode(nodeId)
+    const node = nodeManager.value.getNode(String(nodeId))
     if (!node) return
 
     if (!multiSelect) {

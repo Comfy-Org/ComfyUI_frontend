@@ -8,10 +8,15 @@ import type {
 } from '@/lib/litegraph/src/widgets/BaseWidget'
 import { BaseWidget } from '@/lib/litegraph/src/widgets/BaseWidget'
 import { toConcreteWidget } from '@/lib/litegraph/src/widgets/widgetMap'
+import type { BaseDOMWidget } from '@/scripts/domWidget'
+import { isDOMWidget, isComponentWidget } from '@/scripts/domWidget'
+import { useDomWidgetStore } from '@/stores/domWidgetStore'
 import {
   stripGraphPrefix,
   useWidgetValueStore
 } from '@/stores/widgetValueStore'
+
+import { PromotedDomWidgetAdapter } from './PromotedDomWidgetAdapter'
 
 type WidgetValue = IBaseWidget['value']
 
@@ -34,6 +39,13 @@ export class PromotedWidgetSlot
   readonly sourceNodeId: NodeId
   readonly sourceWidgetName: string
   private readonly subgraphNode: SubgraphNode
+
+  /**
+   * When the interior widget is a DOM widget, this adapter is registered in
+   * `domWidgetStore` so that `DomWidgets.vue` positions the DOM element on the
+   * SubgraphNode rather than the interior node.
+   */
+  private domAdapter?: PromotedDomWidgetAdapter<object | string>
 
   constructor(
     subgraphNode: SubgraphNode,
@@ -74,6 +86,46 @@ export class PromotedWidgetSlot
       const resolved = this.resolve()
       if (!resolved) return
       resolved.widget.callback?.(value, canvas, resolved.node, pos, e)
+    }
+
+    this.syncDomAdapter()
+    this.syncLayoutSize()
+  }
+
+  /**
+   * Delegates to the interior widget's `computeLayoutSize` so that
+   * `_arrangeWidgets` treats this slot as a growable widget (e.g. textarea)
+   * and allocates the correct height on the SubgraphNode.
+   *
+   * Assigned dynamically in the constructor via `syncLayoutSize` because
+   * `computeLayoutSize` is an optional method on the base class — it must
+   * either exist or not exist, not return `undefined`.
+   */
+  declare computeLayoutSize?: (node: LGraphNode) => {
+    minHeight: number
+    maxHeight?: number
+    minWidth: number
+    maxWidth?: number
+  }
+
+  /**
+   * Copies `computeLayoutSize` from the interior widget when it has one
+   * (e.g. textarea / DOM widgets), so `_arrangeWidgets` allocates the
+   * correct growable height on the SubgraphNode.
+   */
+  private syncLayoutSize(): void {
+    let resolved: ReturnType<PromotedWidgetSlot['resolve']>
+    try {
+      resolved = this.resolve()
+    } catch {
+      return
+    }
+
+    const interiorWidget = resolved?.widget
+    if (interiorWidget?.computeLayoutSize) {
+      this.computeLayoutSize = (node) => interiorWidget.computeLayoutSize!(node)
+    } else {
+      this.computeLayoutSize = undefined
     }
   }
 
@@ -164,7 +216,77 @@ export class PromotedWidgetSlot
     return v != null ? String(v) : ''
   }
 
+  /**
+   * Creates or removes the DOM adapter based on whether the resolved interior
+   * widget is a DOM widget. Call after construction and whenever the interior
+   * widget might change (e.g. reconnection).
+   *
+   * Only one of {adapter, interior widget} is active in `domWidgetStore` at a
+   * time.  The adapter is registered and the interior is deactivated, so
+   * `DomWidgets.vue` never mounts two `DomWidget.vue` instances for the same
+   * `HTMLElement`.
+   */
+  syncDomAdapter(): void {
+    // resolve() may fail during construction if the subgraph is not yet
+    // fully wired (e.g. in tests or during deserialization).
+    let resolved: ReturnType<PromotedWidgetSlot['resolve']>
+    try {
+      resolved = this.resolve()
+    } catch {
+      return
+    }
+    if (!resolved) return
+
+    const interiorWidget = resolved.widget
+
+    const isDom =
+      isDOMWidget(interiorWidget) || isComponentWidget(interiorWidget)
+
+    if (isDom && !this.domAdapter) {
+      const domWidget = interiorWidget as BaseDOMWidget<object | string>
+      const adapter = new PromotedDomWidgetAdapter(
+        domWidget,
+        this.subgraphNode,
+        this
+      )
+      this.domAdapter = adapter
+
+      const store = useDomWidgetStore()
+      // The adapter satisfies BaseDOMWidget but TypeScript cannot verify
+      // the IBaseWidget symbol index signature on plain classes.
+      // Start invisible — `updateWidgets()` will set `visible: true` on the
+      // first canvas draw when the SubgraphNode is in the current graph.
+      // This prevents a race where both adapter and interior DomWidget.vue
+      // instances try to mount the same HTMLElement during `onMounted`.
+      store.registerWidget(
+        adapter as unknown as BaseDOMWidget<object | string>,
+        { visible: false }
+      )
+    } else if (!isDom && this.domAdapter) {
+      this.disposeDomAdapter()
+    }
+  }
+
+  /**
+   * Removes the DOM adapter from the store.
+   */
+  disposeDomAdapter(): void {
+    if (!this.domAdapter) return
+
+    useDomWidgetStore().unregisterWidget(this.domAdapter.id)
+    this.domAdapter = undefined
+  }
+
   drawWidget(ctx: CanvasRenderingContext2D, options: DrawWidgetOptions): void {
+    // Lazily create the DOM adapter if it wasn't ready at construction time.
+    // During deserialization the interior widget may not exist yet when the
+    // PromotedWidgetSlot constructor runs, so syncDomAdapter() is retried here
+    // on every draw until it succeeds.
+    if (!this.domAdapter) {
+      this.syncDomAdapter()
+      this.syncLayoutSize()
+    }
+
     const resolved = this.resolve()
     if (!resolved) {
       this.drawDisconnectedPlaceholder(ctx, options)

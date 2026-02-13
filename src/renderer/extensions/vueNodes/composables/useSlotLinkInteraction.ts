@@ -355,7 +355,7 @@ export function useSlotLinkInteraction({
 
       if (slotCandidate) {
         const key = getSlotKey(
-          slotCandidate.layout.nodeId,
+          String(slotCandidate.layout.nodeId),
           slotCandidate.layout.index,
           slotCandidate.layout.type === 'input'
         )
@@ -363,7 +363,7 @@ export function useSlotLinkInteraction({
       }
       if (nodeCandidate && !slotCandidate?.compatible) {
         const key = getSlotKey(
-          nodeCandidate.layout.nodeId,
+          String(nodeCandidate.layout.nodeId),
           nodeCandidate.layout.index,
           nodeCandidate.layout.type === 'input'
         )
@@ -374,7 +374,7 @@ export function useSlotLinkInteraction({
     const newCandidate = candidate?.compatible ? candidate : null
     const newCandidateKey = newCandidate
       ? getSlotKey(
-          newCandidate.layout.nodeId,
+          String(newCandidate.layout.nodeId),
           newCandidate.layout.index,
           newCandidate.layout.type === 'input'
         )

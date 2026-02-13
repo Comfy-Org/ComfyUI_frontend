@@ -849,6 +849,8 @@ export class ComfyApp {
             .map((w) => [w.id, w])
         )
 
+        const newGraphNodeSet = new Set(newGraph.nodes)
+
         for (const [
           widgetId,
           widgetState
@@ -856,6 +858,10 @@ export class ComfyApp {
           if (widgetId in activeWidgets) {
             widgetState.active = true
             widgetState.widget = activeWidgets[widgetId]
+          } else if (newGraphNodeSet.has(widgetState.widget.node)) {
+            // Adapter widgets (e.g. PromotedDomWidgetAdapter) are not in any
+            // node's widgets array but their host node IS in the graph.
+            widgetState.active = true
           } else {
             widgetState.active = false
           }

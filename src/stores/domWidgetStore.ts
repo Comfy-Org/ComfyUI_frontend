@@ -30,11 +30,12 @@ export const useDomWidgetStore = defineStore('domWidget', () => {
 
   // Register a widget with the store
   const registerWidget = <V extends object | string>(
-    widget: BaseDOMWidget<V>
+    widget: BaseDOMWidget<V>,
+    options?: { visible?: boolean }
   ) => {
     widgetStates.value.set(widget.id, {
       widget: markRaw(widget) as unknown as Raw<BaseDOMWidget<object | string>>,
-      visible: true,
+      visible: options?.visible ?? true,
       readonly: false,
       zIndex: 0,
       pos: [0, 0],
