@@ -1,11 +1,17 @@
 import { describe, expect, it } from 'vitest'
 
+import type { ProxyWidgetsProperty } from '@/core/schemas/proxyWidget'
+import type { NodeProperty } from '@/lib/litegraph/src/LGraphNode'
 import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 
 import { getPromotionList } from './promotionList'
 
-function mockSubgraphNode(proxyWidgets?: unknown): SubgraphNode {
-  return { properties: { proxyWidgets } } as unknown as SubgraphNode
+function mockSubgraphNode(proxyWidgets?: NodeProperty) {
+  return {
+    properties: { proxyWidgets }
+  } satisfies Partial<
+    Omit<SubgraphNode, 'constructor'>
+  > as unknown as SubgraphNode
 }
 
 describe('getPromotionList', () => {
@@ -23,13 +29,13 @@ describe('getPromotionList', () => {
     const entries = [
       ['42', 'seed'],
       ['7', 'steps']
-    ]
+    ] satisfies ProxyWidgetsProperty
     const node = mockSubgraphNode(entries)
     expect(getPromotionList(node)).toEqual(entries)
   })
 
   it('handles string-serialized proxyWidgets (JSON)', () => {
-    const entries = [['42', 'seed']]
+    const entries = [['42', 'seed']] satisfies ProxyWidgetsProperty
     const node = mockSubgraphNode(JSON.stringify(entries))
     expect(getPromotionList(node)).toEqual(entries)
   })

@@ -61,6 +61,30 @@ vi.mock('@/services/myService', () => ({
 }))
 ```
 
+### Partial object mocks with `satisfies`
+
+When mocking a class instance with only the properties your test needs, use
+`satisfies Partial<Omit<T, 'constructor'>> as unknown as T`. This validates
+the mock's shape against the real type while allowing the incomplete cast.
+
+The `Omit<..., 'constructor'>` is needed because class types expose a
+`constructor` property whose type (`LGraphNodeConstructor`, etc.) conflicts
+with the plain object's `Function` constructor.
+
+```typescript
+// ✅ Shape-checked partial mock
+function mockSubgraphNode(proxyWidgets?: NodeProperty) {
+  return {
+    properties: { proxyWidgets }
+  } satisfies Partial<Omit<SubgraphNode, 'constructor'>> as unknown as SubgraphNode
+}
+
+// ❌ Unchecked — typos and shape mismatches slip through
+function mockSubgraphNode(proxyWidgets?: unknown): SubgraphNode {
+  return { properties: { proxyWidgets } } as unknown as SubgraphNode
+}
+```
+
 ### Configure mocks in tests
 
 ```typescript
