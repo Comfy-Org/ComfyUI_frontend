@@ -195,7 +195,7 @@ async function customSearcher(
       :is-open
       :placeholder="placeholderText"
       :items
-      :display-items="displayItems"
+      :display-items
       :max-selectable
       :selected
       :uploadable
