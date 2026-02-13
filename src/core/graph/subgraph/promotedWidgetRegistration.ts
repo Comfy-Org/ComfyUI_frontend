@@ -1,7 +1,7 @@
 import { PromotedWidgetSlot } from '@/core/graph/subgraph/PromotedWidgetSlot'
 import { promoteRecommendedWidgets } from '@/core/graph/subgraph/proxyWidgetUtils'
 import { parseProxyWidgets } from '@/core/schemas/proxyWidget'
-import type { NodeProperty } from '@/lib/litegraph/src/LGraphNode'
+import type { NodeId, NodeProperty } from '@/lib/litegraph/src/LGraphNode'
 import type { LGraphCanvas, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import type { ISerialisedNode } from '@/lib/litegraph/src/types/serialisation'
@@ -50,21 +50,62 @@ export function registerPromotedWidgetSlots(canvas: LGraphCanvas) {
  * This replaces the previous side-effecting property setter pattern where
  * assigning to `properties.proxyWidgets` would trigger widget reconstruction.
  */
+function slotKey(nodeId: NodeId, widgetName: string): string {
+  return `${nodeId}:${widgetName}`
+}
+
+/**
+ * Resolves a legacy `-1` proxy entry to the actual interior node/widget
+ * by following the subgraph input wiring.
+ */
+function resolveLegacyEntry(
+  subgraphNode: SubgraphNode,
+  widgetName: string
+): [string, string] | null {
+  const subgraph = subgraphNode.subgraph
+  const inputSlot = subgraph?.inputNode?.slots.find(
+    (s) => s.name === widgetName
+  )
+  if (!inputSlot || !subgraph) return null
+
+  const linkId = inputSlot.linkIds[0]
+  const link = linkId != null ? subgraph.getLink(linkId) : undefined
+  if (!link) return null
+
+  const resolved = link.resolve(subgraph)
+  const inputWidgetName = resolved.input?.widget?.name
+  if (!resolved.inputNode || !inputWidgetName) return null
+
+  return [String(resolved.inputNode.id), inputWidgetName]
+}
+
+/**
+ * Reconciles the promoted widget slots on a subgraph node based on
+ * a serialized proxy widgets list.
+ *
+ * Reuses existing PromotedWidgetSlot instances when possible to preserve
+ * transient state (focus, DOM adapter, active input). Only creates new
+ * slots for entries that don't have an existing match, and disposes
+ * slots that are no longer needed.
+ */
 function syncPromotedWidgets(
   node: LGraphNode & { isSubgraphNode(): boolean },
   property: NodeProperty
 ): void {
   const canvasStore = useCanvasStore()
   const parsed = parseProxyWidgets(property)
-
+  const subgraphNode = node as SubgraphNode
   const widgets = node.widgets ?? []
 
-  // Dispose DOM adapters on existing PromotedWidgetSlots being removed.
+  // Index existing PromotedWidgetSlots by key for O(1) lookup
+  const existingSlots = new Map<string, PromotedWidgetSlot>()
   for (const w of widgets) {
-    if (w instanceof PromotedWidgetSlot) w.disposeDomAdapter()
+    if (w instanceof PromotedWidgetSlot) {
+      existingSlots.set(slotKey(w.sourceNodeId, w.sourceWidgetName), w)
+    }
   }
 
-  // Collect stubs created by _setWidget() during configure.
+  // Collect stubs created by _setWidget() during configure
   const stubs = widgets.filter(
     (
       w
@@ -74,64 +115,73 @@ function syncPromotedWidgets(
       'sourceWidgetName' in w
   )
 
-  // Remove all promoted widgets (both PromotedWidgetSlots and stubs)
-  node.widgets = widgets.filter(
-    (w) =>
-      !(w instanceof PromotedWidgetSlot) &&
-      !(stubs as IBaseWidget[]).includes(w)
-  )
+  // Build the desired promoted slot list, reusing existing instances
+  const desired = new Set<string>()
+  const orderedSlots: IBaseWidget[] = []
 
-  const subgraphNode = node as SubgraphNode
-  const covered = new Set<string>()
-
-  const newSlots: IBaseWidget[] = parsed.flatMap(([nodeId, widgetName]) => {
+  for (const [nodeId, widgetName] of parsed) {
     let resolvedNodeId = nodeId
     let resolvedWidgetName = widgetName
 
-    // Legacy `-1` entries: resolve via subgraph input wiring
     if (nodeId === '-1') {
-      const subgraph = subgraphNode.subgraph
-      const inputSlot = subgraph?.inputNode?.slots.find(
-        (s) => s.name === widgetName
-      )
-      if (!inputSlot || !subgraph) return []
-
-      const linkId = inputSlot.linkIds[0]
-      const link = linkId != null ? subgraph.getLink(linkId) : undefined
-      if (!link) return []
-
-      const resolved = link.resolve(subgraph)
-      const inputWidgetName = resolved.input?.widget?.name
-      if (!resolved.inputNode || !inputWidgetName) return []
-
-      resolvedNodeId = String(resolved.inputNode.id)
-      resolvedWidgetName = inputWidgetName
+      const resolved = resolveLegacyEntry(subgraphNode, widgetName)
+      if (!resolved) continue
+      ;[resolvedNodeId, resolvedWidgetName] = resolved
     }
 
-    covered.add(`${resolvedNodeId}:${resolvedWidgetName}`)
-    return [
-      new PromotedWidgetSlot(subgraphNode, resolvedNodeId, resolvedWidgetName)
-    ]
-  })
+    const key = slotKey(resolvedNodeId, resolvedWidgetName)
+    if (desired.has(key)) continue
+    desired.add(key)
 
-  // Add PromotedWidgetSlots for stubs not in the parsed list
-  // (e.g. old workflows that didn't serialize slot-promoted entries)
-  for (const stub of stubs) {
-    const key = `${stub.sourceNodeId}:${stub.sourceWidgetName}`
-    if (covered.has(key)) continue
-    newSlots.unshift(
-      new PromotedWidgetSlot(
-        subgraphNode,
-        stub.sourceNodeId,
-        stub.sourceWidgetName
+    const existing = existingSlots.get(key)
+    if (existing) {
+      orderedSlots.push(existing)
+    } else {
+      orderedSlots.push(
+        new PromotedWidgetSlot(subgraphNode, resolvedNodeId, resolvedWidgetName)
       )
-    )
+    }
   }
 
-  node.widgets.push(...newSlots)
+  // Promote stubs not covered by the parsed list
+  // (e.g. old workflows that didn't serialize slot-promoted entries)
+  for (const stub of stubs) {
+    const key = slotKey(stub.sourceNodeId, stub.sourceWidgetName)
+    if (desired.has(key)) continue
+    desired.add(key)
 
-  // Update input._widget references to point to the new PromotedWidgetSlots
-  // instead of the stubs they replaced.
+    const existing = existingSlots.get(key)
+    if (existing) {
+      orderedSlots.unshift(existing)
+    } else {
+      orderedSlots.unshift(
+        new PromotedWidgetSlot(
+          subgraphNode,
+          stub.sourceNodeId,
+          stub.sourceWidgetName
+        )
+      )
+    }
+  }
+
+  // Dispose DOM adapters only on slots that are being removed
+  for (const [key, slot] of existingSlots) {
+    if (!desired.has(key)) {
+      slot.disposeDomAdapter()
+    }
+  }
+
+  // Rebuild widgets array: non-promoted widgets in original order, then promoted slots
+  node.widgets = widgets
+    .filter(
+      (w) =>
+        !(w instanceof PromotedWidgetSlot) &&
+        !(stubs as IBaseWidget[]).includes(w)
+    )
+    .concat(orderedSlots)
+
+  // Update input._widget references to point to PromotedWidgetSlots
+  // instead of stubs they replaced.
   for (const input of subgraphNode.inputs) {
     const oldWidget = input._widget
     if (
@@ -143,7 +193,7 @@ function syncPromotedWidgets(
 
     const sid = String(oldWidget.sourceNodeId)
     const swn = String(oldWidget.sourceWidgetName)
-    const replacement = newSlots.find(
+    const replacement = orderedSlots.find(
       (w) =>
         w instanceof PromotedWidgetSlot &&
         w.sourceNodeId === sid &&
@@ -180,6 +230,10 @@ const onConfigure = function (
       }),
     set: (value: NodeProperty) => syncPromotedWidgets(this, value)
   })
+
+  this.refreshPromotedWidgets = () => {
+    this.properties.proxyWidgets = this.properties.proxyWidgets
+  }
 
   if (serialisedNode.properties?.proxyWidgets) {
     syncPromotedWidgets(this, serialisedNode.properties.proxyWidgets)

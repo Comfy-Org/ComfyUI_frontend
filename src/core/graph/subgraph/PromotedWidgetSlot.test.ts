@@ -549,6 +549,18 @@ describe('PromotedWidgetSlot', () => {
     })
   })
 
+  describe('dispose', () => {
+    it('calls disposeDomAdapter', () => {
+      const subNode = createMockSubgraphNode()
+      const slot = new PromotedWidgetSlot(subNode, '5', 'seed')
+      const spy = vi.spyOn(slot, 'disposeDomAdapter')
+
+      slot.dispose()
+
+      expect(spy).toHaveBeenCalled()
+    })
+  })
+
   describe('_displayValue', () => {
     it('returns string representation of value', () => {
       const store = useWidgetValueStore()

@@ -243,6 +243,14 @@ export class PromotedWidgetSlot extends BaseWidget<IBaseWidget> {
     this.domAdapter = undefined
   }
 
+  /**
+   * Cleans up all resources held by this slot.
+   * Called when the SubgraphNode is removed from the graph.
+   */
+  dispose(): void {
+    this.disposeDomAdapter()
+  }
+
   drawWidget(ctx: CanvasRenderingContext2D, options: DrawWidgetOptions): void {
     // Lazily create the DOM adapter if it wasn't ready at construction time.
     // During deserialization the interior widget may not exist yet when the

@@ -408,17 +408,10 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     input._widget = stub
 
     // Trigger promoted widget slot sync for live connections.
-    // During configure, the proxyWidgets setter isn't defined yet (no-op).
-    // After configure, re-assigning triggers syncPromotedWidgets which
-    // replaces this stub with a proper PromotedWidgetSlot and patches
-    // input._widget references.
-    const desc = Object.getOwnPropertyDescriptor(
-      this.properties,
-      'proxyWidgets'
-    )
-    if (desc?.set) {
-      this.properties.proxyWidgets = this.properties.proxyWidgets
-    }
+    // During configure, refreshPromotedWidgets is a no-op.
+    // After configure, it triggers syncPromotedWidgets which
+    // replaces this stub with a proper PromotedWidgetSlot.
+    this.refreshPromotedWidgets()
   }
 
   /**
@@ -561,6 +554,15 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     super.removeWidgetByName(name)
   }
 
+  /**
+   * Hook for the promoted widget system to sync promoted widget slots.
+   * Overridden per-instance by promotedWidgetRegistration.ts after configure.
+   * @internal
+   */
+  refreshPromotedWidgets(): void {
+    // No-op by default. Overridden by promotedWidgetRegistration.
+  }
+
   override ensureWidgetRemoved(widget: IBaseWidget): void {
     if (this.widgets.includes(widget)) {
       this.subgraph.events.dispatch('widget-demoted', {
@@ -581,6 +583,10 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
         widget,
         subgraphNode: this
       })
+      // Dispose promoted widget slots (cleans up DOM adapters)
+      if ('dispose' in widget && typeof widget.dispose === 'function') {
+        widget.dispose()
+      }
     }
 
     for (const input of this.inputs) {
@@ -651,9 +657,8 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
   }
   override clone() {
     const clone = super.clone()
-    // force reasign so domWidgets reset ownership
-
-    this.properties.proxyWidgets = this.properties.proxyWidgets
+    // Sync promoted widgets so DOM adapters reset ownership
+    this.refreshPromotedWidgets()
 
     //TODO: Consider deep cloning subgraphs here.
     //It's the safest place to prevent creation of linked subgraphs

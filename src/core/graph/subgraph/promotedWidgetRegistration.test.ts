@@ -146,5 +146,71 @@ describe('registerPromotedWidgetSlots', () => {
       expect(node.widgets[0].name).toBe('steps')
       expect(node.widgets[0]).toBe(nativeWidget)
     })
+
+    it('reuses existing PromotedWidgetSlot instances on re-sync', () => {
+      const canvas = createMockCanvas()
+      registerPromotedWidgetSlots(canvas)
+
+      const node = createMockSubgraphNode()
+      const serialisedNode = {
+        properties: {}
+      } as ISerialisedNode
+
+      SubgraphNode.prototype.onConfigure!.call(node, serialisedNode)
+
+      // First sync: create a slot
+      node.properties.proxyWidgets = [['42', 'seed']]
+      const firstSlot = node.widgets.find(
+        (w) => w instanceof PromotedWidgetSlot
+      )
+      expect(firstSlot).toBeDefined()
+
+      // Second sync with same entry: should reuse the same instance
+      node.properties.proxyWidgets = [['42', 'seed']]
+      const secondSlot = node.widgets.find(
+        (w) => w instanceof PromotedWidgetSlot
+      )
+      expect(secondSlot).toBe(firstSlot)
+    })
+
+    it('disposes only removed slots during reconciliation', () => {
+      const canvas = createMockCanvas()
+      registerPromotedWidgetSlots(canvas)
+
+      const node = createMockSubgraphNode()
+      const serialisedNode = {
+        properties: {}
+      } as ISerialisedNode
+
+      SubgraphNode.prototype.onConfigure!.call(node, serialisedNode)
+
+      // Create two slots
+      node.properties.proxyWidgets = [
+        ['42', 'seed'],
+        ['43', 'steps']
+      ]
+      const slots = node.widgets.filter(
+        (w) => w instanceof PromotedWidgetSlot
+      ) as PromotedWidgetSlot[]
+      expect(slots).toHaveLength(2)
+
+      const disposeSpy0 = vi.spyOn(slots[0], 'disposeDomAdapter')
+      const disposeSpy1 = vi.spyOn(slots[1], 'disposeDomAdapter')
+
+      // Remove only the second slot
+      node.properties.proxyWidgets = [['42', 'seed']]
+
+      // First slot should NOT have been disposed (reused)
+      expect(disposeSpy0).not.toHaveBeenCalled()
+      // Second slot should have been disposed (removed)
+      expect(disposeSpy1).toHaveBeenCalled()
+
+      // Only one promoted slot remains
+      const remaining = node.widgets.filter(
+        (w) => w instanceof PromotedWidgetSlot
+      )
+      expect(remaining).toHaveLength(1)
+      expect(remaining[0]).toBe(slots[0])
+    })
   })
 })
