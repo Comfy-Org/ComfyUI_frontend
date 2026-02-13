@@ -259,10 +259,12 @@ export class PromotedWidgetSlot extends BaseWidget<IBaseWidget> {
       : null
 
     if (concrete) {
-      // Suppress promoted border: the purple outline should only appear on
-      // the source node inside the subgraph, not on the SubgraphNode.
+      // Suppress promoted border and disabled state: the purple outline and
+      // linked-disabled flag should only apply on the source node inside the
+      // subgraph, not on the SubgraphNode.
       const wasPromoted = concrete.promoted
       concrete.promoted = false
+      concrete.computedDisabled = false
 
       concrete.computedHeight = this.computedHeight
       ctx.save()

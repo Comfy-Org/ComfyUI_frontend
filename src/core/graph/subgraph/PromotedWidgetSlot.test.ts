@@ -400,6 +400,32 @@ describe('PromotedWidgetSlot', () => {
       expect(spy).toHaveBeenCalled()
     })
 
+    it('clears computedDisabled on concrete widget before drawing', () => {
+      const interiorWidget = createMockWidget({ type: 'number' })
+      const interiorNode = {
+        id: '5',
+        widgets: [interiorWidget]
+      } as unknown as LGraphNode
+      const subNode = createMockSubgraphNode({ '5': interiorNode })
+      const slot = new PromotedWidgetSlot(subNode, '5', 'seed')
+
+      const concreteWidget = {
+        y: 0,
+        computedDisabled: true,
+        promoted: true,
+        drawWidget: vi.fn(function (this: { computedDisabled?: boolean }) {
+          expect(this.computedDisabled).toBe(false)
+        })
+      } as unknown as BaseWidget<IBaseWidget>
+
+      vi.mocked(toConcreteWidget).mockReturnValueOnce(concreteWidget)
+
+      const ctx = createMockCtx()
+      slot.drawWidget(ctx, { width: 200, showText: true })
+
+      expect(concreteWidget.drawWidget).toHaveBeenCalled()
+    })
+
     it('does not mutate concrete widget y/last_y during rendering', () => {
       const interiorWidget = createMockWidget({ type: 'number' })
       const interiorNode = {
