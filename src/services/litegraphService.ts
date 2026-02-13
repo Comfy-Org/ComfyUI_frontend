@@ -19,6 +19,7 @@ import {
   createBounds
 } from '@/lib/litegraph/src/litegraph'
 import type {
+  GraphAddOptions,
   IContextMenuValue,
   Point,
   Subgraph
@@ -843,7 +844,8 @@ export const useLitegraphService = () => {
 
   function addNodeOnGraph(
     nodeDef: ComfyNodeDefV1 | ComfyNodeDefV2,
-    options: Record<string, unknown> & { pos?: Point } = {}
+    options: Record<string, unknown> & { pos?: Point } = {},
+    addOptions?: GraphAddOptions
   ): LGraphNode | null {
     options.pos ??= getCanvasCenter()
 
@@ -873,9 +875,9 @@ export const useLitegraphService = () => {
     )
 
     const graph = useWorkflowStore().activeSubgraph ?? app.graph
-    if (!graph) return null
+    if (!graph || !node) return null
 
-    graph.add(node)
+    graph.add(node, addOptions)
     return node
   }
 

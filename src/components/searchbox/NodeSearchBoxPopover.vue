@@ -6,10 +6,14 @@
       :dismissable-mask="dismissable"
       :pt="{
         root: {
-          class: 'invisible-dialog-root',
-          role: 'search'
+          class: useSearchBoxV2
+            ? 'w-4/5 min-w-[32rem] max-w-[56rem] border-0 bg-transparent mt-[10vh] max-md:w-[95%] max-md:min-w-0'
+            : 'invisible-dialog-root',
+          style: useSearchBoxV2 ? 'overflow: visible' : undefined
         },
-        mask: { class: 'node-search-box-dialog-mask' },
+        mask: {
+          class: useSearchBoxV2 ? 'items-start' : 'node-search-box-dialog-mask'
+        },
         transition: {
           enterFromClass: 'opacity-0 scale-75',
           // 100ms is the duration of the transition in the dialog component
@@ -21,7 +25,25 @@
       @hide="clearFilters"
     >
       <template #container>
+        <div v-if="useSearchBoxV2" role="search" class="relative">
+          <NodeSearchContent
+            :filters="nodeFilters"
+            @add-filter="addFilter"
+            @remove-filter="removeFilter"
+            @add-node="addNode"
+            @hover-node="hoveredNodeDef = $event"
+          />
+          <NodePreviewCard
+            v-if="hoveredNodeDef && enableNodePreview"
+            :key="hoveredNodeDef.name"
+            :node-def="hoveredNodeDef"
+            :width="208"
+            show-category-path
+            class="absolute top-0 left-full ml-3"
+          />
+        </div>
         <NodeSearchBox
+          v-else
           :filters="nodeFilters"
           @add-filter="addFilter"
           @remove-filter="removeFilter"
@@ -33,7 +55,7 @@
 </template>
 
 <script setup lang="ts">
-import { useEventListener } from '@vueuse/core'
+import { useEventListener, useWindowSize } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
 import Dialog from 'primevue/dialog'
 import { computed, ref, toRaw, watch, watchEffect } from 'vue'
@@ -52,6 +74,9 @@ import { useSearchBoxStore } from '@/stores/workspace/searchBoxStore'
 import { LinkReleaseTriggerAction } from '@/types/searchBoxTypes'
 import type { FuseFilterWithValue } from '@/utils/fuseUtil'
 
+import NodePreviewCard from '@/components/node/NodePreviewCard.vue'
+
+import NodeSearchContent from './v2/NodeSearchContent.vue'
 import NodeSearchBox from './NodeSearchBox.vue'
 
 let triggerEvent: CanvasPointerEvent | null = null
@@ -62,8 +87,17 @@ const settingStore = useSettingStore()
 const searchBoxStore = useSearchBoxStore()
 const litegraphService = useLitegraphService()
 
-const { visible, newSearchBoxEnabled } = storeToRefs(searchBoxStore)
+const { visible, newSearchBoxEnabled, useSearchBoxV2 } =
+  storeToRefs(searchBoxStore)
 const dismissable = ref(true)
+const hoveredNodeDef = ref<ComfyNodeDefImpl | null>(null)
+const { width: windowWidth } = useWindowSize()
+const enableNodePreview = computed(
+  () =>
+    useSearchBoxV2.value &&
+    settingStore.get('Comfy.NodeSearchBoxImpl.NodePreview') &&
+    windowWidth.value >= 1320
+)
 function getNewNodeLocation(): Point {
   return triggerEvent
     ? [triggerEvent.canvasX, triggerEvent.canvasY]
@@ -74,9 +108,7 @@ function addFilter(filter: FuseFilterWithValue<ComfyNodeDefImpl, string>) {
   const isDuplicate = nodeFilters.value.some(
     (f) => f.filterDef.id === filter.filterDef.id && f.value === filter.value
   )
-  if (!isDuplicate) {
-    nodeFilters.value.push(filter)
-  }
+  if (!isDuplicate) nodeFilters.value.push(filter)
 }
 function removeFilter(filter: FuseFilterWithValue<ComfyNodeDefImpl, string>) {
   nodeFilters.value = nodeFilters.value.filter(
@@ -85,16 +117,19 @@ function removeFilter(filter: FuseFilterWithValue<ComfyNodeDefImpl, string>) {
 }
 function clearFilters() {
   nodeFilters.value = []
+  hoveredNodeDef.value = null
 }
 function closeDialog() {
   visible.value = false
 }
 const canvasStore = useCanvasStore()
 
-function addNode(nodeDef: ComfyNodeDefImpl) {
-  const node = litegraphService.addNodeOnGraph(nodeDef, {
-    pos: getNewNodeLocation()
-  })
+function addNode(nodeDef: ComfyNodeDefImpl, dragEvent?: MouseEvent) {
+  const node = litegraphService.addNodeOnGraph(
+    nodeDef,
+    { pos: getNewNodeLocation() },
+    { ghost: useSearchBoxV2.value, dragEvent }
+  )
   if (!node) return
 
   if (disconnectOnReset && triggerEvent) {

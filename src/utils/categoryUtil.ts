@@ -87,6 +87,14 @@ const PROVIDER_COLORS: Record<string, string | [string, string]> = {
 }
 
 /**
+ * Extracts the provider name from a node category path.
+ * e.g. "api/image/BFL" -> "BFL"
+ */
+export function getProviderName(category: string): string {
+  return category.split('/').at(-1) ?? ''
+}
+
+/**
  * Returns the icon class for an API node provider (e.g., BFL, OpenAI, Stability AI)
  * @param providerName - The provider name from the node category
  * @returns The icon class string (e.g., 'icon-[comfy--bfl]')

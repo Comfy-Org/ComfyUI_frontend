@@ -10,6 +10,7 @@
 //   - async evaluation + cache,
 //   - reactive tick to update UI when async evaluation completes.
 
+import { memoize } from 'es-toolkit'
 import { readonly, ref } from 'vue'
 import type { Ref } from 'vue'
 import { CREDITS_PER_USD, formatCredits } from '@/base/credits/comfyCredits'
@@ -715,57 +716,59 @@ function extractDefaultFromSpec(spec: unknown[]): unknown {
 
 /**
  * Evaluate pricing for a node definition using default widget values.
- * Used for NodePreviewCard where no LGraphNode instance exists.
+ * Used for NodePricingBadge where no LGraphNode instance exists.
+ * Results are memoized by node name since they are deterministic.
  */
-export async function evaluateNodeDefPricing(
-  nodeDef: ComfyNodeDef
-): Promise<string> {
-  const priceBadge = nodeDef.price_badge
-  if (!priceBadge?.expr) return ''
+export const evaluateNodeDefPricing = memoize(
+  async (nodeDef: ComfyNodeDef): Promise<string> => {
+    const priceBadge = nodeDef.price_badge
+    if (!priceBadge?.expr) return ''
 
-  // Reuse compiled expression cache
-  const rule = getCompiledRuleForNodeType(nodeDef.name, priceBadge)
-  if (!rule?._compiled) return ''
+    // Reuse compiled expression cache
+    const rule = getCompiledRuleForNodeType(nodeDef.name, priceBadge)
+    if (!rule?._compiled) return ''
 
-  try {
-    // Merge all inputs for lookup
-    const allInputs = {
-      ...(nodeDef.input?.required ?? {}),
-      ...(nodeDef.input?.optional ?? {})
-    }
-
-    // Build widgets context using depends_on.widgets (matches buildJsonataContext)
-    const widgets: Record<string, NormalizedWidgetValue> = {}
-    for (const dep of priceBadge.depends_on?.widgets ?? []) {
-      const spec = allInputs[dep.name]
-      let rawValue: unknown = null
-      if (Array.isArray(spec)) {
-        rawValue = extractDefaultFromSpec(spec)
-      } else if (dep.type.toUpperCase() === 'COMBO') {
-        // For dynamic COMBO widgets without input spec, use a common default
-        // that works with most pricing expressions (e.g., resolution selectors)
-        rawValue = 'original'
+    try {
+      // Merge all inputs for lookup
+      const allInputs = {
+        ...(nodeDef.input?.required ?? {}),
+        ...(nodeDef.input?.optional ?? {})
       }
-      widgets[dep.name] = normalizeWidgetValue(rawValue, dep.type)
-    }
 
-    // Build inputs context: assume all inputs are disconnected in preview
-    const inputs: Record<string, { connected: boolean }> = {}
-    for (const name of priceBadge.depends_on?.inputs ?? []) {
-      inputs[name] = { connected: false }
-    }
+      // Build widgets context using depends_on.widgets (matches buildJsonataContext)
+      const widgets: Record<string, NormalizedWidgetValue> = {}
+      for (const dep of priceBadge.depends_on?.widgets ?? []) {
+        const spec = allInputs[dep.name]
+        let rawValue: unknown = null
+        if (Array.isArray(spec)) {
+          rawValue = extractDefaultFromSpec(spec)
+        } else if (dep.type.toUpperCase() === 'COMBO') {
+          // For dynamic COMBO widgets without input spec, use a common default
+          // that works with most pricing expressions (e.g., resolution selectors)
+          rawValue = 'original'
+        }
+        widgets[dep.name] = normalizeWidgetValue(rawValue, dep.type)
+      }
 
-    // Build inputGroups context: assume 0 connected inputs in preview
-    const inputGroups: Record<string, number> = {}
-    for (const groupName of priceBadge.depends_on?.input_groups ?? []) {
-      inputGroups[groupName] = 0
-    }
+      // Build inputs context: assume all inputs are disconnected in preview
+      const inputs: Record<string, { connected: boolean }> = {}
+      for (const name of priceBadge.depends_on?.inputs ?? []) {
+        inputs[name] = { connected: false }
+      }
 
-    const context: JsonataEvalContext = { widgets, inputs, inputGroups }
-    const result = await rule._compiled.evaluate(context)
-    return formatPricingResult(result, { valueOnly: true })
-  } catch (e) {
-    console.error('[evaluateNodeDefPricing] error:', e)
-    return ''
-  }
-}
+      // Build inputGroups context: assume 0 connected inputs in preview
+      const inputGroups: Record<string, number> = {}
+      for (const groupName of priceBadge.depends_on?.input_groups ?? []) {
+        inputGroups[groupName] = 0
+      }
+
+      const context: JsonataEvalContext = { widgets, inputs, inputGroups }
+      const result = await rule._compiled.evaluate(context)
+      return formatPricingResult(result, { valueOnly: true })
+    } catch (e) {
+      console.error('[evaluateNodeDefPricing] error:', e)
+      return ''
+    }
+  },
+  { getCacheKey: (nodeDef: ComfyNodeDef) => nodeDef.name }
+)

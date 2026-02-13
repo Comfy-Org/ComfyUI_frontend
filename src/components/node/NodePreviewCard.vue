@@ -15,24 +15,18 @@
         {{ nodeDef.display_name }}
       </h3>
 
-      <!-- Badges -->
-      <div
-        v-if="nodeDef.api_node && (creditsLabel || categoryLabel)"
-        class="flex flex-wrap gap-2"
+      <!-- Category Path -->
+      <p
+        v-if="showCategoryPath && nodeDef.category"
+        class="text-xs text-neutral-400 -mt-1"
       >
-        <BadgePill
-          v-show="nodeDef.api_node && creditsLabel"
-          :text="creditsLabel"
-          icon="icon-[comfy--credits]"
-          border-style="#f59e0b"
-          filled
-        />
-        <BadgePill
-          v-show="nodeDef.api_node && categoryLabel"
-          :text="categoryLabel"
-          :icon="getProviderIcon(categoryLabel ?? '')"
-          :border-style="getProviderBorderStyle(categoryLabel ?? '')"
-        />
+        {{ nodeDef.category.replaceAll('/', ' > ') }}
+      </p>
+
+      <!-- Badges -->
+      <div class="flex flex-wrap gap-2 empty:hidden">
+        <NodePricingBadge :node-def="nodeDef" />
+        <NodeProviderBadge :node-def="nodeDef" />
       </div>
 
       <!-- Description -->
@@ -98,19 +92,23 @@
 
 <script setup lang="ts">
 import { useResizeObserver } from '@vueuse/core'
-import { computed, onMounted, ref } from 'vue'
+import { computed, ref } from 'vue'
 
-import { evaluateNodeDefPricing } from '@/composables/node/useNodePricing'
-import BadgePill from '@/components/common/BadgePill.vue'
-import { getProviderBorderStyle, getProviderIcon } from '@/utils/categoryUtil'
+import NodePricingBadge from '@/components/node/NodePricingBadge.vue'
+import NodeProviderBadge from '@/components/node/NodeProviderBadge.vue'
 import LGraphNodePreview from '@/renderer/extensions/vueNodes/components/LGraphNodePreview.vue'
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 
 const SCALE_FACTOR = 0.5
 
-const { nodeDef, showInputsAndOutputs = true } = defineProps<{
+const {
+  nodeDef,
+  showInputsAndOutputs = true,
+  showCategoryPath = false
+} = defineProps<{
   nodeDef: ComfyNodeDefImpl
   showInputsAndOutputs?: boolean
+  showCategoryPath?: boolean
 }>()
 
 const previewContainerRef = ref<HTMLElement>()
@@ -121,23 +119,6 @@ useResizeObserver(previewWrapperRef, (entries) => {
   if (entry && previewContainerRef.value) {
     const scaledHeight = entry.contentRect.height * SCALE_FACTOR
     previewContainerRef.value.style.height = `${scaledHeight + 24}px`
-  }
-})
-
-const categoryLabel = computed(() => {
-  if (!nodeDef.category) return ''
-  return nodeDef.category.split('/').at(-1) ?? ''
-})
-
-const creditsLabel = ref('')
-
-onMounted(async () => {
-  if (nodeDef.api_node) {
-    try {
-      creditsLabel.value = await evaluateNodeDefPricing(nodeDef)
-    } catch {
-      creditsLabel.value = ''
-    }
   }
 })
 
