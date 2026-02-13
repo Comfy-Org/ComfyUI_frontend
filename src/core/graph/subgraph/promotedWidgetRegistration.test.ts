@@ -14,31 +14,25 @@ vi.mock('@/core/graph/subgraph/proxyWidgetUtils', () => ({
 }))
 
 function createMockCanvas() {
-  const listeners = new Map<string, EventListener[]>()
-  const canvasElement = {
-    addEventListener: vi.fn((type: string, handler: EventListener) => {
-      if (!listeners.has(type)) listeners.set(type, [])
-      listeners.get(type)!.push(handler)
-    })
-  }
   return {
-    canvas: canvasElement,
-    setDirty: vi.fn(),
-    _listeners: listeners
+    canvas: { addEventListener: vi.fn() },
+    setDirty: vi.fn()
   } as unknown as LGraphCanvas
 }
 
-function createMockSubgraphNode(
-  widgets: IBaseWidget[] = []
-): SubgraphNode & { properties: Record<string, unknown> } {
-  return {
-    isSubgraphNode: () => true,
+function createMockSubgraphNode(widgets: IBaseWidget[] = []): SubgraphNode {
+  const base = {
     widgets,
     inputs: [],
     properties: { proxyWidgets: [] },
     _setConcreteSlots: vi.fn(),
     arrange: vi.fn()
-  } as unknown as SubgraphNode & { properties: Record<string, unknown> }
+  } satisfies Partial<Omit<SubgraphNode, 'constructor' | 'isSubgraphNode'>>
+
+  return {
+    ...base,
+    isSubgraphNode: () => true
+  } as unknown as SubgraphNode
 }
 
 describe('registerPromotedWidgetSlots', () => {
@@ -57,12 +51,12 @@ describe('registerPromotedWidgetSlots', () => {
         value: 20,
         options: {},
         y: 0
-      } as unknown as IBaseWidget
+      } satisfies Partial<IBaseWidget> as unknown as IBaseWidget
       const node = createMockSubgraphNode([nativeWidget])
 
       const serialisedNode = {
         properties: {}
-      } as ISerialisedNode
+      } satisfies Partial<ISerialisedNode> as unknown as ISerialisedNode
 
       SubgraphNode.prototype.onConfigure!.call(node, serialisedNode)
 
@@ -100,12 +94,12 @@ describe('registerPromotedWidgetSlots', () => {
         value: 20,
         options: {},
         y: 0
-      } as unknown as IBaseWidget
+      } satisfies Partial<IBaseWidget> as unknown as IBaseWidget
 
       const node = createMockSubgraphNode([nativeWidget])
       const serialisedNode = {
         properties: {}
-      } as ISerialisedNode
+      } satisfies Partial<ISerialisedNode> as unknown as ISerialisedNode
 
       SubgraphNode.prototype.onConfigure!.call(node, serialisedNode)
 
@@ -129,12 +123,12 @@ describe('registerPromotedWidgetSlots', () => {
         value: 20,
         options: {},
         y: 0
-      } as unknown as IBaseWidget
+      } satisfies Partial<IBaseWidget> as unknown as IBaseWidget
 
       const node = createMockSubgraphNode([nativeWidget])
       const serialisedNode = {
         properties: {}
-      } as ISerialisedNode
+      } satisfies Partial<ISerialisedNode> as unknown as ISerialisedNode
 
       SubgraphNode.prototype.onConfigure!.call(node, serialisedNode)
 
@@ -154,7 +148,7 @@ describe('registerPromotedWidgetSlots', () => {
       const node = createMockSubgraphNode()
       const serialisedNode = {
         properties: {}
-      } as ISerialisedNode
+      } satisfies Partial<ISerialisedNode> as unknown as ISerialisedNode
 
       SubgraphNode.prototype.onConfigure!.call(node, serialisedNode)
 
@@ -180,7 +174,7 @@ describe('registerPromotedWidgetSlots', () => {
       const node = createMockSubgraphNode()
       const serialisedNode = {
         properties: {}
-      } as ISerialisedNode
+      } satisfies Partial<ISerialisedNode> as unknown as ISerialisedNode
 
       SubgraphNode.prototype.onConfigure!.call(node, serialisedNode)
 
