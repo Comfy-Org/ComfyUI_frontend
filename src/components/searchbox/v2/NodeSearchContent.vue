@@ -74,7 +74,7 @@
             :node-def="node"
             :current-query="searchQuery"
             show-description
-            show-source-badge
+            :show-source-badge="selectedCategory !== 'essentials'"
             :hide-bookmark-icon="selectedCategory === 'favorites'"
           />
         </div>
@@ -208,10 +208,15 @@ const displayedResults = computed<ComfyNodeDefImpl[]>(() => {
       results = allNodes.filter((n) => nodeBookmarkStore.isBookmarked(n))
       break
     case 'essentials':
-      return []
+      results = allNodes.filter(
+        (n) => n.nodeSource.type === NodeSourceType.Essentials
+      )
+      break
     case 'custom':
       results = allNodes.filter(
-        (n) => n.nodeSource.type !== NodeSourceType.Core
+        (n) =>
+          n.nodeSource.type !== NodeSourceType.Core &&
+          n.nodeSource.type !== NodeSourceType.Essentials
       )
       break
     default:

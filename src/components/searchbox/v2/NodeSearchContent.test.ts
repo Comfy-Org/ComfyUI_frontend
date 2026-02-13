@@ -163,6 +163,29 @@ describe('NodeSearchContent', () => {
       expect(items[0].text()).toContain('Custom Node')
     })
 
+    it('should show only essential nodes when Essentials is selected', async () => {
+      useNodeDefStore().updateNodeDefs([
+        createMockNodeDef({
+          name: 'EssentialNode',
+          display_name: 'Essential Node',
+          essentials_category: 'basic'
+        }),
+        createMockNodeDef({
+          name: 'RegularNode',
+          display_name: 'Regular Node'
+        })
+      ])
+      await nextTick()
+
+      const wrapper = await createWrapper()
+      await wrapper.find('[data-testid="category-essentials"]').trigger('click')
+      await nextTick()
+
+      const items = getNodeItems(wrapper)
+      expect(items).toHaveLength(1)
+      expect(items[0].text()).toContain('Essential Node')
+    })
+
     it('should include subcategory nodes when parent category is selected', async () => {
       useNodeDefStore().updateNodeDefs([
         createMockNodeDef({
