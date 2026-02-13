@@ -1,4 +1,4 @@
-import { computed, onUnmounted, ref, watch } from 'vue'
+import { computed, nextTick, onUnmounted, ref, watch } from 'vue'
 
 import { api } from '@/scripts/api'
 import type {
@@ -52,12 +52,23 @@ export const useQueueNotificationBanners = () => {
   const activeNotification = ref<QueueNotificationBanner | null>(null)
   const dismissTimer = ref<number | null>(null)
   const lastActiveStartTs = ref<number | null>(null)
+  let stopIdleHistoryWatch: (() => void) | null = null
+  let idleCompletionScheduleToken = 0
   const isQueueActive = computed(
     () =>
       queueStore.pendingTasks.length > 0 ||
       queueStore.runningTasks.length > 0 ||
       !executionStore.isIdle
   )
+
+  const clearIdleCompletionHooks = () => {
+    idleCompletionScheduleToken++
+    if (!stopIdleHistoryWatch) {
+      return
+    }
+    stopIdleHistoryWatch()
+    stopIdleHistoryWatch = null
+  }
 
   const clearDismissTimer = () => {
     if (dismissTimer.value === null) {
@@ -208,7 +219,7 @@ export const useQueueNotificationBanners = () => {
     })
 
     if (!finishedTasks.length) {
-      return
+      return false
     }
 
     let completedCount = 0
@@ -235,17 +246,55 @@ export const useQueueNotificationBanners = () => {
     if (failedCount > 0) {
       queueNotification(toFailedNotification(failedCount))
     }
+
+    return completedCount > 0 || failedCount > 0
+  }
+
+  const scheduleIdleCompletionBatchNotifications = () => {
+    clearIdleCompletionHooks()
+    const scheduleToken = idleCompletionScheduleToken
+    const startTsSnapshot = lastActiveStartTs.value
+
+    const isStillSameIdleWindow = () =>
+      scheduleToken === idleCompletionScheduleToken &&
+      !isQueueActive.value &&
+      lastActiveStartTs.value === startTsSnapshot
+
+    stopIdleHistoryWatch = watch(
+      () => queueStore.historyTasks,
+      () => {
+        if (!isStillSameIdleWindow()) {
+          clearIdleCompletionHooks()
+          return
+        }
+        queueCompletionBatchNotifications()
+        clearIdleCompletionHooks()
+      }
+    )
+
+    void nextTick(() => {
+      if (!isStillSameIdleWindow()) {
+        clearIdleCompletionHooks()
+        return
+      }
+
+      const hasShownNotifications = queueCompletionBatchNotifications()
+      if (hasShownNotifications) {
+        clearIdleCompletionHooks()
+      }
+    })
   }
 
   watch(
     isQueueActive,
     (active, prev) => {
       if (!prev && active) {
+        clearIdleCompletionHooks()
         lastActiveStartTs.value = Date.now()
         return
       }
       if (prev && !active) {
-        queueCompletionBatchNotifications()
+        scheduleIdleCompletionBatchNotifications()
       }
     },
     { immediate: true }
@@ -254,6 +303,7 @@ export const useQueueNotificationBanners = () => {
   onUnmounted(() => {
     api.removeEventListener('promptQueueing', handlePromptQueueing)
     api.removeEventListener('promptQueued', handlePromptQueued)
+    clearIdleCompletionHooks()
     clearDismissTimer()
     pendingNotifications.value = []
     activeNotification.value = null

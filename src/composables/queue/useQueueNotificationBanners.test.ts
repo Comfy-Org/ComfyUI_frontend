@@ -230,6 +230,47 @@ describe(useQueueNotificationBanners, () => {
     }
   })
 
+  it('shows one completion notification when history updates after queue becomes idle', async () => {
+    const { wrapper, composable } = mountComposable()
+
+    try {
+      vi.setSystemTime(4_000)
+      executionStore().isIdle = false
+      await nextTick()
+
+      vi.setSystemTime(4_100)
+      executionStore().isIdle = true
+      queueStore().historyTasks = []
+      await nextTick()
+
+      expect(composable.currentNotification.value).toBeNull()
+
+      queueStore().historyTasks = [
+        createTask({
+          ts: 4_050,
+          previewUrl: 'https://example.com/race-preview.png'
+        })
+      ]
+      await nextTick()
+
+      expect(composable.currentNotification.value).toEqual({
+        type: 'completed',
+        count: 1,
+        thumbnailUrls: ['https://example.com/race-preview.png']
+      })
+
+      await vi.advanceTimersByTimeAsync(4000)
+      await nextTick()
+      expect(composable.currentNotification.value).toBeNull()
+
+      await vi.advanceTimersByTimeAsync(4000)
+      await nextTick()
+      expect(composable.currentNotification.value).toBeNull()
+    } finally {
+      wrapper.unmount()
+    }
+  })
+
   it('queues both completed and failed notifications for mixed batches', async () => {
     const { wrapper, composable } = mountComposable()
 
