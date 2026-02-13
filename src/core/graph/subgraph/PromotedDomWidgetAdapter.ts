@@ -45,6 +45,7 @@ export function createPromotedDomWidgetAdapter<V extends object | string>(
           return hostNode
         case 'promoted':
         case 'serialize':
+        case 'computedDisabled':
           return false
         case 'innerWidget':
           return target

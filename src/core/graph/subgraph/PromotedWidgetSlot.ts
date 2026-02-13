@@ -78,6 +78,16 @@ export class PromotedWidgetSlot extends BaseWidget<IBaseWidget> {
       enumerable: true
     })
 
+    // The SubgraphNode's input slots are internally linked, which causes
+    // `updateComputedDisabled()` to set `computedDisabled = true` on all
+    // matching widgets.  The promoted slot should always remain interactive.
+    Object.defineProperty(this, 'computedDisabled', {
+      get: () => false,
+      set: () => {},
+      configurable: true,
+      enumerable: true
+    })
+
     this.callback = (value, canvas, _node, pos, e) => {
       const resolved = this.resolve()
       if (!resolved) return

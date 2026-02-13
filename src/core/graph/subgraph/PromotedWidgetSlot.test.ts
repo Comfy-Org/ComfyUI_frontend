@@ -551,22 +551,11 @@ describe('PromotedWidgetSlot', () => {
       expect(slot._displayValue).toBe('Disconnected')
     })
 
-    it('returns empty string when computedDisabled', () => {
-      const store = useWidgetValueStore()
-      store.registerWidget({
-        nodeId: '5',
-        name: 'seed',
-        type: 'number',
-        value: 42,
-        options: {},
-        disabled: false,
-        promoted: true
-      })
-
+    it('is never computedDisabled (promoted slots stay interactive)', () => {
       const subNode = createMockSubgraphNode()
       const slot = new PromotedWidgetSlot(subNode, '5', 'seed')
       slot.computedDisabled = true
-      expect(slot._displayValue).toBe('')
+      expect(slot.computedDisabled).toBe(false)
     })
   })
 })
