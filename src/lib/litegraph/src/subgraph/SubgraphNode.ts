@@ -114,7 +114,8 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
       'removing-input',
       (e) => {
         const widget = e.detail.input._widget
-        if (widget) this.ensureWidgetRemoved(widget)
+        if (widget && this.widgets.includes(widget))
+          this.ensureWidgetRemoved(widget)
 
         this.removeInput(e.detail.index)
         this.setDirtyCanvas(true, true)
