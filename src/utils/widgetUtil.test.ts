@@ -2,6 +2,7 @@ import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it } from 'vitest'
 
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import type { INodeInputSlot } from '@/lib/litegraph/src/interfaces'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 
 import { renameWidget } from './widgetUtil'
@@ -19,16 +20,12 @@ function createMockWidget(overrides: Partial<IBaseWidget> = {}): IBaseWidget {
 
 function createMockNode(
   widgets: IBaseWidget[] = [],
-  inputs: Array<{
-    name: string
-    widget?: { name: string }
-    label?: string
-  }> = []
+  inputs: INodeInputSlot[] = []
 ): LGraphNode {
   return {
     widgets,
     inputs
-  } as unknown as LGraphNode
+  } satisfies Partial<Omit<LGraphNode, 'constructor'>> as unknown as LGraphNode
 }
 
 describe('renameWidget', () => {
@@ -57,9 +54,10 @@ describe('renameWidget', () => {
     const widget = createMockWidget()
     const input = {
       name: 'seed',
+      link: null,
       widget: { name: 'seed' },
       label: undefined as string | undefined
-    }
+    } satisfies Partial<INodeInputSlot> as INodeInputSlot
     const node = createMockNode([widget], [input])
 
     renameWidget(widget, node, 'Renamed')
