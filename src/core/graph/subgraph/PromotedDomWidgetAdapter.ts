@@ -86,7 +86,7 @@ export class PromotedDomWidgetAdapter<
   }
 
   get promoted(): boolean {
-    return true
+    return false
   }
 
   get margin(): number {

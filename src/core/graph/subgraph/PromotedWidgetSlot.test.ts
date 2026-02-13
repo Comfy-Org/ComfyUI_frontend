@@ -60,10 +60,10 @@ describe('PromotedWidgetSlot', () => {
     expect(slot.sourceWidgetName).toBe('seed')
   })
 
-  it('is always promoted', () => {
+  it('is not promoted (purple border only shows on source node)', () => {
     const subNode = createMockSubgraphNode()
     const slot = new PromotedWidgetSlot(subNode, '5', 'seed')
-    expect(slot.promoted).toBe(true)
+    expect(slot.promoted).toBe(false)
   })
 
   it('has serialize set to false', () => {

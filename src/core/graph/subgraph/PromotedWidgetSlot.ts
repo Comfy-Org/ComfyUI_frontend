@@ -202,11 +202,7 @@ export class PromotedWidgetSlot
   }
 
   override get promoted(): boolean {
-    return true
-  }
-
-  override get outline_color(): string {
-    return LiteGraph.WIDGET_PROMOTED_OUTLINE_COLOR
+    return false
   }
 
   override get _displayValue(): string {
@@ -295,11 +291,18 @@ export class PromotedWidgetSlot
 
     const concrete = toConcreteWidget(resolved.widget, resolved.node, false)
     if (concrete) {
+      // Suppress promoted border: the purple outline should only appear on
+      // the source node inside the subgraph, not on the SubgraphNode.
+      const wasPromoted = concrete.promoted
+      concrete.promoted = false
+
       concrete.computedHeight = this.computedHeight
       ctx.save()
       ctx.translate(0, this.y - concrete.y)
       concrete.drawWidget(ctx, options)
       ctx.restore()
+
+      concrete.promoted = wasPromoted
     } else {
       this.drawWidgetShape(ctx, options)
       if (options.showText !== false) {
