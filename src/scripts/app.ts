@@ -1382,6 +1382,7 @@ export class ComfyApp {
     const comfyOrgAuthToken = await useFirebaseAuthStore().getAuthToken()
     const comfyOrgApiKey = useApiKeyAuthStore().getApiKey()
 
+    const promptIds = []
     try {
       while (this.queueItems.length) {
         const { number, batchCount, queueNodeIds } = this.queueItems.pop()!
@@ -1413,6 +1414,7 @@ export class ComfyApp {
             } else {
               try {
                 if (res.prompt_id) {
+                  promptIds.push(res.prompt_id)
                   executionStore.storePrompt({
                     id: res.prompt_id,
                     nodes: Object.keys(p.output),
@@ -1457,7 +1459,7 @@ export class ComfyApp {
     } finally {
       this.processingQueue = false
     }
-    api.dispatchCustomEvent('promptQueued', { number, batchCount })
+    api.dispatchCustomEvent('promptQueued', { number, batchCount, promptIds })
     return !executionStore.lastNodeErrors
   }
 
