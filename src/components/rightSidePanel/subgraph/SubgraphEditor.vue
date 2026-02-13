@@ -164,20 +164,23 @@ function showAll() {
   widgets.push(...toAdd)
   proxyWidgets.value = widgets
 }
+function getSlotPromotedKeys(node: SubgraphNode): Set<string> {
+  return new Set(
+    node.subgraph.inputNode.slots
+      .flatMap((slot) => slot.linkIds)
+      .flatMap((linkId) => {
+        const link = node.subgraph.getLink(linkId)
+        if (!link) return []
+        const { inputNode, input } = link.resolve(node.subgraph)
+        if (!inputNode || !input?.widget?.name) return []
+        return [`${inputNode.id}:${input.widget.name}`]
+      })
+  )
+}
 function hideAll() {
   const node = activeNode.value
   if (!node) return
-  // Slot-promoted widgets (exposed via SubgraphInput links) can't be hidden
-  const slotPromoted = new Set<string>()
-  for (const slot of node.subgraph.inputNode.slots) {
-    for (const linkId of slot.linkIds) {
-      const link = node.subgraph.getLink(linkId)
-      if (!link) continue
-      const { inputNode, input } = link.resolve(node.subgraph)
-      if (!inputNode || !input?.widget?.name) continue
-      slotPromoted.add(`${inputNode.id}:${input.widget.name}`)
-    }
-  }
+  const slotPromoted = getSlotPromotedKeys(node)
   proxyWidgets.value = proxyWidgets.value.filter(
     (propertyItem) =>
       !filteredActive.value.some(matchesWidgetItem(propertyItem)) ||

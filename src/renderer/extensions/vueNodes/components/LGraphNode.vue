@@ -233,6 +233,7 @@ import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteracti
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import NodeBadges from '@/renderer/extensions/vueNodes/components/NodeBadges.vue'
 import { LayoutSource } from '@/renderer/core/layout/types'
+import type { NodeId } from '@/renderer/core/layout/types'
 import SlotConnectionDot from '@/renderer/extensions/vueNodes/components/SlotConnectionDot.vue'
 import { useNodeEventHandlers } from '@/renderer/extensions/vueNodes/composables/useNodeEventHandlers'
 import { useNodePointerInteractions } from '@/renderer/extensions/vueNodes/composables/useNodePointerInteractions'
@@ -399,7 +400,7 @@ function initSizeStyles() {
  */
 function handleLayoutChange(change: {
   source: LayoutSource
-  nodeIds: string[]
+  nodeIds: NodeId[]
 }) {
   // Only handle Canvas or External source (extensions calling setSize)
   if (

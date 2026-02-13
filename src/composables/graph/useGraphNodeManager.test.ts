@@ -8,6 +8,10 @@ import {
   useGraphNodeManager
 } from '@/composables/graph/useGraphNodeManager'
 import { BaseWidget, LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import {
+  createTestSubgraph,
+  createTestSubgraphNode
+} from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { NodeSlotType } from '@/lib/litegraph/src/types/globalEnums'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
@@ -85,13 +89,11 @@ describe('getSharedWidgetEnhancements', () => {
   })
 
   it('returns nodeType when sourceNodeId is provided for a subgraph node', () => {
-    const subgraph = new LGraph()
+    const subgraph = createTestSubgraph()
     const interiorNode = new LGraphNode('KSampler', 'KSampler')
     subgraph.add(interiorNode)
 
-    const subgraphNode = new LGraphNode('graph/subgraph')
-    ;(subgraphNode as unknown as { subgraph: LGraph }).subgraph = subgraph
-    vi.spyOn(subgraphNode, 'isSubgraphNode').mockReturnValue(true)
+    const subgraphNode = createTestSubgraphNode(subgraph)
 
     const widget = { name: 'seed', type: 'number', value: 0 } as IBaseWidget
     const result = getSharedWidgetEnhancements(
@@ -104,8 +106,8 @@ describe('getSharedWidgetEnhancements', () => {
   })
 
   it('returns undefined nodeType when sourceNodeId is omitted', () => {
-    const subgraphNode = new LGraphNode('graph/subgraph')
-    vi.spyOn(subgraphNode, 'isSubgraphNode').mockReturnValue(true)
+    const subgraph = createTestSubgraph()
+    const subgraphNode = createTestSubgraphNode(subgraph)
 
     const widget = { name: 'seed', type: 'number', value: 0 } as IBaseWidget
     const result = getSharedWidgetEnhancements(subgraphNode, widget)

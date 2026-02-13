@@ -121,7 +121,7 @@ function getControlWidget(widget: IBaseWidget): SafeControlWidget | undefined {
   }
 }
 
-function getNodeType(node: LGraphNode, sourceNodeId?: string) {
+function getNodeType(node: LGraphNode, sourceNodeId?: NodeId) {
   if (!node.isSubgraphNode() || !sourceNodeId) return undefined
   const subNode = node.subgraph.getNodeById(sourceNodeId)
   return subNode?.type
@@ -147,7 +147,7 @@ interface SharedWidgetEnhancements {
 export function getSharedWidgetEnhancements(
   node: LGraphNode,
   widget: IBaseWidget,
-  sourceNodeId?: string
+  sourceNodeId?: NodeId
 ): SharedWidgetEnhancements {
   const nodeDefStore = useNodeDefStore()
 
@@ -196,16 +196,16 @@ function safeWidgetMapper(
   return function (widget) {
     try {
       // Get shared enhancements (controlWidget, spec, nodeType)
-      const sourceNodeId =
-        'sourceNodeId' in widget ? String(widget.sourceNodeId) : undefined
-      const sourceWidgetName =
+      const nodeId =
+        'sourceNodeId' in widget ? String(widget.sourceNodeId) : node.id
+      const widgetName =
         'sourceWidgetName' in widget
           ? String(widget.sourceWidgetName)
-          : undefined
+          : widget.name
       const sharedEnhancements = getSharedWidgetEnhancements(
         node,
         widget,
-        sourceNodeId
+        nodeId
       )
       const slotInfo = slotMetadata.get(widget.name)
 
@@ -232,8 +232,8 @@ function safeWidgetMapper(
         : undefined
 
       return {
-        nodeId: sourceNodeId ?? node.id,
-        name: sourceWidgetName ?? widget.name,
+        nodeId,
+        name: widgetName,
         type: widget.type,
         ...sharedEnhancements,
         callback,
