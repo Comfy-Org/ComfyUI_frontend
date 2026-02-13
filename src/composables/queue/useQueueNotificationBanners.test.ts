@@ -24,6 +24,7 @@ type MockTask = {
 
 vi.mock('@/stores/queueStore', () => {
   const state = reactive({
+    pendingTasks: [] as MockTask[],
     runningTasks: [] as MockTask[],
     historyTasks: [] as MockTask[]
   })
@@ -58,12 +59,14 @@ const mountComposable = () => {
 describe('useQueueNotificationBanners', () => {
   const queueStore = () =>
     useQueueStore() as {
+      pendingTasks: MockTask[]
       runningTasks: MockTask[]
       historyTasks: MockTask[]
     }
   const executionStore = () => useExecutionStore() as { isIdle: boolean }
 
   const resetState = () => {
+    queueStore().pendingTasks = []
     queueStore().runningTasks = []
     queueStore().historyTasks = []
     executionStore().isIdle = true
@@ -263,7 +266,7 @@ describe('useQueueNotificationBanners', () => {
     }
   })
 
-  it('uses up to three completion thumbnails for notification icon previews', async () => {
+  it('uses up to two completion thumbnails for notification icon previews', async () => {
     const { wrapper, composable } = mountComposable()
 
     try {
@@ -295,8 +298,7 @@ describe('useQueueNotificationBanners', () => {
         count: 4,
         thumbnailUrls: [
           'https://example.com/preview-1.png',
-          'https://example.com/preview-2.png',
-          'https://example.com/preview-3.png'
+          'https://example.com/preview-2.png'
         ]
       })
     } finally {

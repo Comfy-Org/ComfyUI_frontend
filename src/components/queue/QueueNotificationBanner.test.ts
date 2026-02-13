@@ -112,7 +112,7 @@ describe('QueueNotificationBanner', () => {
     )
   })
 
-  it('caps completion thumbnail previews at three', () => {
+  it('caps completion thumbnail previews at two', () => {
     const wrapper = mountComponent({
       type: 'completed',
       count: 4,
@@ -125,15 +125,12 @@ describe('QueueNotificationBanner', () => {
     })
 
     const images = wrapper.findAll('img')
-    expect(images.length).toBe(3)
+    expect(images.length).toBe(2)
     expect(images[0].attributes('src')).toBe(
       'https://example.com/preview-1.png'
     )
     expect(images[1].attributes('src')).toBe(
       'https://example.com/preview-2.png'
-    )
-    expect(images[2].attributes('src')).toBe(
-      'https://example.com/preview-3.png'
     )
   })
 })
