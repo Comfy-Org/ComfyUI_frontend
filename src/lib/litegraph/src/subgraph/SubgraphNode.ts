@@ -636,6 +636,10 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     return nodes
   }
 
+  override removeWidget(widget: IBaseWidget): void {
+    this.ensureWidgetRemoved(widget)
+  }
+
   override removeWidgetByName(name: string): void {
     const widget = this.widgets.find((w) => w.name === name)
     if (widget) this.ensureWidgetRemoved(widget)

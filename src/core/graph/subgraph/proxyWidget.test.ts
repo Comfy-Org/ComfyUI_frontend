@@ -153,4 +153,86 @@ describe('Subgraph proxyWidgets', () => {
       ['1', 'stringWidget']
     ])
   })
+
+  test('removeWidget removes from promotion list and view cache', () => {
+    const [subgraphNode, innerNodes] = setupSubgraph(1)
+    innerNodes[0].addWidget('text', 'widgetA', 'a', () => {})
+    innerNodes[0].addWidget('text', 'widgetB', 'b', () => {})
+    subgraphNode.properties.proxyWidgets = [
+      ['1', 'widgetA'],
+      ['1', 'widgetB']
+    ]
+    expect(subgraphNode.widgets).toHaveLength(2)
+
+    const widgetToRemove = subgraphNode.widgets[0]
+    subgraphNode.removeWidget(widgetToRemove)
+
+    expect(subgraphNode.widgets).toHaveLength(1)
+    expect(subgraphNode.widgets[0].name).toBe('widgetB')
+    expect(subgraphNode.properties.proxyWidgets).toStrictEqual([
+      ['1', 'widgetB']
+    ])
+  })
+
+  test('removeWidgetByName removes from promotion list', () => {
+    const [subgraphNode, innerNodes] = setupSubgraph(1)
+    innerNodes[0].addWidget('text', 'widgetA', 'a', () => {})
+    innerNodes[0].addWidget('text', 'widgetB', 'b', () => {})
+    subgraphNode.properties.proxyWidgets = [
+      ['1', 'widgetA'],
+      ['1', 'widgetB']
+    ]
+
+    subgraphNode.removeWidgetByName('widgetA')
+
+    expect(subgraphNode.widgets).toHaveLength(1)
+    expect(subgraphNode.widgets[0].name).toBe('widgetB')
+  })
+
+  test('removeWidget cleans up input references', () => {
+    const [subgraphNode, innerNodes] = setupSubgraph(1)
+    innerNodes[0].addWidget('text', 'stringWidget', 'value', () => {})
+    subgraphNode.properties.proxyWidgets = [['1', 'stringWidget']]
+
+    const view = subgraphNode.widgets[0]
+    // Simulate an input referencing the widget
+    subgraphNode.addInput('stringWidget', '*')
+    const input = subgraphNode.inputs[subgraphNode.inputs.length - 1]
+    input._widget = view
+
+    subgraphNode.removeWidget(view)
+
+    expect(input._widget).toBeUndefined()
+    expect(subgraphNode.widgets).toHaveLength(0)
+  })
+
+  test('serialize does not produce widgets_values for promoted views', () => {
+    const [subgraphNode, innerNodes] = setupSubgraph(1)
+    innerNodes[0].addWidget('text', 'stringWidget', 'value', () => {})
+    subgraphNode.properties.proxyWidgets = [['1', 'stringWidget']]
+    expect(subgraphNode.widgets).toHaveLength(1)
+
+    const serialized = subgraphNode.serialize()
+
+    // SubgraphNode doesn't set serialize_widgets, so widgets_values is absent.
+    // Even if it were set, views have serialize: false and would be skipped.
+    expect(serialized.widgets_values).toBeUndefined()
+  })
+
+  test('serialize preserves proxyWidgets in properties', () => {
+    const [subgraphNode, innerNodes] = setupSubgraph(1)
+    innerNodes[0].addWidget('text', 'widgetA', 'a', () => {})
+    innerNodes[0].addWidget('text', 'widgetB', 'b', () => {})
+    subgraphNode.properties.proxyWidgets = [
+      ['1', 'widgetA'],
+      ['1', 'widgetB']
+    ]
+
+    const serialized = subgraphNode.serialize()
+
+    expect(serialized.properties?.proxyWidgets).toStrictEqual([
+      ['1', 'widgetA'],
+      ['1', 'widgetB']
+    ])
+  })
 })
