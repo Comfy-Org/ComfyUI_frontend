@@ -16,25 +16,20 @@ import {
   useWidgetValueStore
 } from '@/stores/widgetValueStore'
 
-import { PromotedDomWidgetAdapter } from './PromotedDomWidgetAdapter'
+import { createPromotedDomWidgetAdapter } from './PromotedDomWidgetAdapter'
 
 type WidgetValue = IBaseWidget['value']
 
 /**
  * A lightweight widget slot for canvas rendering of promoted subgraph widgets.
  *
- * Unlike the old ProxyWidget (a JavaScript Proxy), this is a plain class that
- * implements IBaseWidget. It owns positional state (y, last_y, width) and
- * delegates value/type/drawing to the resolved interior widget via the
- * WidgetValueStore.
+ * Owns positional state (y, last_y, width) and delegates value/type/drawing
+ * to the resolved interior widget via the WidgetValueStore.
  *
  * When the interior node/widget no longer exists (disconnected state),
  * it renders a "Disconnected" placeholder.
  */
-export class PromotedWidgetSlot
-  extends BaseWidget<IBaseWidget>
-  implements IBaseWidget
-{
+export class PromotedWidgetSlot extends BaseWidget<IBaseWidget> {
   override readonly isPromotedSlot = true
   readonly sourceNodeId: NodeId
   readonly sourceWidgetName: string
@@ -45,7 +40,7 @@ export class PromotedWidgetSlot
    * `domWidgetStore` so that `DomWidgets.vue` positions the DOM element on the
    * SubgraphNode rather than the interior node.
    */
-  private domAdapter?: PromotedDomWidgetAdapter<object | string>
+  private domAdapter?: BaseDOMWidget<object | string>
 
   constructor(
     subgraphNode: SubgraphNode,
@@ -72,12 +67,12 @@ export class PromotedWidgetSlot
     // data properties. Override them with instance-level accessors that
     // delegate to the resolved interior widget.
     Object.defineProperty(this, 'type', {
-      get: () => this.resolvedType,
+      get: () => this.resolve()?.widget.type ?? 'button',
       configurable: true,
       enumerable: true
     })
     Object.defineProperty(this, 'options', {
-      get: () => this.resolvedOptions,
+      get: () => this.resolve()?.widget.options ?? {},
       configurable: true,
       enumerable: true
     })
@@ -89,7 +84,6 @@ export class PromotedWidgetSlot
     }
 
     this.syncDomAdapter()
-    this.syncLayoutSize()
   }
 
   /**
@@ -114,14 +108,7 @@ export class PromotedWidgetSlot
    * correct growable height on the SubgraphNode.
    */
   private syncLayoutSize(): void {
-    let resolved: ReturnType<PromotedWidgetSlot['resolve']>
-    try {
-      resolved = this.resolve()
-    } catch {
-      return
-    }
-
-    const interiorWidget = resolved?.widget
+    const interiorWidget = this.resolve()?.widget
     if (interiorWidget?.computeLayoutSize) {
       this.computeLayoutSize = (node) => interiorWidget.computeLayoutSize!(node)
     } else {
@@ -133,60 +120,43 @@ export class PromotedWidgetSlot
     node: LGraphNode
     widget: IBaseWidget
   } | null {
-    const node = this.subgraphNode.subgraph.getNodeById(this.sourceNodeId)
-    if (!node) return null
-    const widget = node.widgets?.find((w) => w.name === this.sourceWidgetName)
-    if (!widget) return null
-    return { node, widget }
+    try {
+      const node = this.subgraphNode.subgraph.getNodeById(this.sourceNodeId)
+      if (!node) return null
+      const widget = node.widgets?.find((w) => w.name === this.sourceWidgetName)
+      if (!widget) return null
+      return { node, widget }
+    } catch {
+      // May fail during construction if the subgraph is not yet fully wired
+      // (e.g. in tests or during deserialization).
+      return null
+    }
   }
 
-  /**
-   * Resolves to the interior widget's type, or 'button' if disconnected.
-   * Uses defineProperty to dynamically override the `type` field set by BaseWidget.
-   */
-  get resolvedType(): string {
-    return this.resolve()?.widget.type ?? 'button'
-  }
-
-  get resolvedOptions(): IBaseWidget['options'] {
-    return this.resolve()?.widget.options ?? {}
+  private get widgetState() {
+    return useWidgetValueStore().getWidget(
+      stripGraphPrefix(this.sourceNodeId),
+      this.sourceWidgetName
+    )
   }
 
   override get value(): WidgetValue {
-    const store = useWidgetValueStore()
-    const state = store.getWidget(
-      stripGraphPrefix(this.sourceNodeId),
-      this.sourceWidgetName
-    )
-    return state?.value as WidgetValue
+    return this.widgetState?.value as WidgetValue
   }
 
   override set value(v: WidgetValue) {
-    const store = useWidgetValueStore()
-    const state = store.getWidget(
-      stripGraphPrefix(this.sourceNodeId),
-      this.sourceWidgetName
-    )
+    const state = this.widgetState
     if (!state) return
 
     state.value = v
   }
 
   override get label(): string | undefined {
-    const store = useWidgetValueStore()
-    const state = store.getWidget(
-      stripGraphPrefix(this.sourceNodeId),
-      this.sourceWidgetName
-    )
-    return state?.label ?? this.name
+    return this.widgetState?.label ?? this.name
   }
 
   override set label(v: string | undefined) {
-    const store = useWidgetValueStore()
-    const state = store.getWidget(
-      stripGraphPrefix(this.sourceNodeId),
-      this.sourceWidgetName
-    )
+    const state = this.widgetState
     if (!state) return
 
     state.label = v
@@ -223,24 +193,16 @@ export class PromotedWidgetSlot
    * `HTMLElement`.
    */
   syncDomAdapter(): void {
-    // resolve() may fail during construction if the subgraph is not yet
-    // fully wired (e.g. in tests or during deserialization).
-    let resolved: ReturnType<PromotedWidgetSlot['resolve']>
-    try {
-      resolved = this.resolve()
-    } catch {
-      return
-    }
+    const resolved = this.resolve()
     if (!resolved) return
 
     const interiorWidget = resolved.widget
-
     const isDom =
       isDOMWidget(interiorWidget) || isComponentWidget(interiorWidget)
 
     if (isDom && !this.domAdapter) {
       const domWidget = interiorWidget as BaseDOMWidget<object | string>
-      const adapter = new PromotedDomWidgetAdapter(
+      const adapter = createPromotedDomWidgetAdapter(
         domWidget,
         this.subgraphNode,
         this
@@ -248,19 +210,16 @@ export class PromotedWidgetSlot
       this.domAdapter = adapter
 
       const store = useDomWidgetStore()
-      // The adapter satisfies BaseDOMWidget but TypeScript cannot verify
-      // the IBaseWidget symbol index signature on plain classes.
       // Start invisible — `updateWidgets()` will set `visible: true` on the
       // first canvas draw when the SubgraphNode is in the current graph.
       // This prevents a race where both adapter and interior DomWidget.vue
       // instances try to mount the same HTMLElement during `onMounted`.
-      store.registerWidget(
-        adapter as unknown as BaseDOMWidget<object | string>,
-        { visible: false }
-      )
+      store.registerWidget(adapter, { visible: false })
     } else if (!isDom && this.domAdapter) {
       this.disposeDomAdapter()
     }
+
+    this.syncLayoutSize()
   }
 
   /**
@@ -280,16 +239,14 @@ export class PromotedWidgetSlot
     // on every draw until it succeeds.
     if (!this.domAdapter) {
       this.syncDomAdapter()
-      this.syncLayoutSize()
     }
 
     const resolved = this.resolve()
-    if (!resolved) {
-      this.drawDisconnectedPlaceholder(ctx, options)
-      return
-    }
 
-    const concrete = toConcreteWidget(resolved.widget, resolved.node, false)
+    const concrete = resolved
+      ? toConcreteWidget(resolved.widget, resolved.node, false)
+      : null
+
     if (concrete) {
       // Suppress promoted border: the purple outline should only appear on
       // the source node inside the subgraph, not on the SubgraphNode.
@@ -306,6 +263,7 @@ export class PromotedWidgetSlot
     } else {
       this.drawWidgetShape(ctx, options)
       if (options.showText !== false) {
+        if (!resolved) ctx.fillStyle = LiteGraph.WIDGET_DISABLED_TEXT_COLOR
         this.drawTruncatingText({
           ctx,
           ...options,
@@ -313,22 +271,6 @@ export class PromotedWidgetSlot
           rightPadding: 0
         })
       }
-    }
-  }
-
-  private drawDisconnectedPlaceholder(
-    ctx: CanvasRenderingContext2D,
-    options: DrawWidgetOptions
-  ): void {
-    this.drawWidgetShape(ctx, options)
-    if (options.showText !== false) {
-      ctx.fillStyle = LiteGraph.WIDGET_DISABLED_TEXT_COLOR
-      this.drawTruncatingText({
-        ctx,
-        ...options,
-        leftPadding: 0,
-        rightPadding: 0
-      })
     }
   }
 

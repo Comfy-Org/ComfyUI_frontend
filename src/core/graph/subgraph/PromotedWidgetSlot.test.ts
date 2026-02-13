@@ -84,7 +84,6 @@ describe('PromotedWidgetSlot', () => {
       const slot = new PromotedWidgetSlot(subNode, '5', 'seed')
 
       expect(slot.type).toBe('number')
-      expect(slot.resolvedType).toBe('number')
     })
 
     it('returns button type when interior node is missing', () => {
@@ -92,7 +91,6 @@ describe('PromotedWidgetSlot', () => {
       const slot = new PromotedWidgetSlot(subNode, '5', 'seed')
 
       expect(slot.type).toBe('button')
-      expect(slot.resolvedType).toBe('button')
     })
 
     it('returns button type when interior widget is missing', () => {
@@ -105,7 +103,6 @@ describe('PromotedWidgetSlot', () => {
       const slot = new PromotedWidgetSlot(subNode, '5', 'seed')
 
       expect(slot.type).toBe('button')
-      expect(slot.resolvedType).toBe('button')
     })
   })
 
