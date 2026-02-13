@@ -14240,6 +14240,9 @@
       "lyrics": {
         "name": "가사"
       },
+      "min_p": {
+        "name": "min_p"
+      },
       "seed": {
         "name": "시드"
       },

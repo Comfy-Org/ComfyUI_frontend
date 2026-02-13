@@ -14348,6 +14348,9 @@
       "top_k": {
         "name": "top_k"
       },
+      "min_p": {
+        "name": "min_p"
+      },
       "control_after_generate": {
         "name": "control after generate"
       }
