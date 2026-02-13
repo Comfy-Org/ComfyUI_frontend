@@ -1,6 +1,6 @@
 <template>
   <div class="inline-flex overflow-hidden rounded-lg bg-secondary-background">
-    <div class="flex items-center gap-2 p-1">
+    <div class="flex items-center gap-2 p-1 pr-2">
       <div
         :class="
           cn(
