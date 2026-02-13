@@ -4,16 +4,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import TextTicker from './TextTicker.vue'
 
-function mockOverflow(
-  el: HTMLElement,
-  { scrollWidth, clientWidth }: { scrollWidth: number; clientWidth: number }
-) {
+function mockScrollWidth(el: HTMLElement, scrollWidth: number) {
   Object.defineProperty(el, 'scrollWidth', {
     value: scrollWidth,
-    configurable: true
-  })
-  Object.defineProperty(el, 'clientWidth', {
-    value: clientWidth,
     configurable: true
   })
 }
@@ -22,6 +15,7 @@ describe('TextTicker', () => {
   let rafCallbacks: ((time: number) => void)[]
 
   beforeEach(() => {
+    vi.useFakeTimers()
     rafCallbacks = []
     vi.spyOn(window, 'requestAnimationFrame').mockImplementation((cb) => {
       rafCallbacks.push(cb)
@@ -31,6 +25,7 @@ describe('TextTicker', () => {
   })
 
   afterEach(() => {
+    vi.useRealTimers()
     vi.restoreAllMocks()
   })
 
@@ -41,25 +36,48 @@ describe('TextTicker', () => {
     expect(wrapper.text()).toBe('Hello World')
   })
 
-  it('scrolls on hover when content overflows', async () => {
+  it('scrolls on hover after delay', async () => {
     const wrapper = mount(TextTicker, {
       slots: { default: 'Very long text that overflows' },
       props: { speed: 100 }
     })
 
     const el = wrapper.element as HTMLElement
-    mockOverflow(el, { scrollWidth: 300, clientWidth: 100 })
+    mockScrollWidth(el, 300)
 
-    // Allow useElementHover to set up listeners after mount
     await nextTick()
     await wrapper.trigger('mouseenter')
     await nextTick()
 
+    expect(rafCallbacks.length).toBe(0)
+
+    vi.advanceTimersByTime(350)
+    await nextTick()
     expect(rafCallbacks.length).toBeGreaterThan(0)
 
-    // Simulate animation frame - should set scrollLeft
     rafCallbacks[0](performance.now() + 500)
     expect(el.scrollLeft).toBeGreaterThan(0)
+  })
+
+  it('cancels delayed scroll on mouse leave before delay elapses', async () => {
+    const wrapper = mount(TextTicker, {
+      slots: { default: 'Very long text that overflows' },
+      props: { speed: 100 }
+    })
+
+    mockScrollWidth(wrapper.element as HTMLElement, 300)
+
+    await nextTick()
+    await wrapper.trigger('mouseenter')
+    await nextTick()
+
+    vi.advanceTimersByTime(200)
+    await wrapper.trigger('mouseleave')
+    await nextTick()
+
+    vi.advanceTimersByTime(350)
+    await nextTick()
+    expect(rafCallbacks.length).toBe(0)
   })
 
   it('resets scroll position on mouse leave', async () => {
@@ -69,10 +87,12 @@ describe('TextTicker', () => {
     })
 
     const el = wrapper.element as HTMLElement
-    mockOverflow(el, { scrollWidth: 300, clientWidth: 100 })
+    mockScrollWidth(el, 300)
 
     await nextTick()
     await wrapper.trigger('mouseenter')
+    await nextTick()
+    vi.advanceTimersByTime(350)
     await nextTick()
 
     rafCallbacks[0](performance.now() + 500)
@@ -89,11 +109,10 @@ describe('TextTicker', () => {
       slots: { default: 'Short' }
     })
 
-    const el = wrapper.element as HTMLElement
-    mockOverflow(el, { scrollWidth: 50, clientWidth: 100 })
-
     await nextTick()
     await wrapper.trigger('mouseenter')
+    await nextTick()
+    vi.advanceTimersByTime(350)
     await nextTick()
 
     expect(rafCallbacks.length).toBe(0)

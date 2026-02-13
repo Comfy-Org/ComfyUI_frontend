@@ -10,50 +10,52 @@
 </template>
 
 <script setup lang="ts">
-import { useElementHover } from '@vueuse/core'
-import { onBeforeUnmount, ref, watch } from 'vue'
+import { useElementHover, useElementSize, useRafFn } from '@vueuse/core'
+import { ref, watch } from 'vue'
 
 import { cn } from '@/utils/tailwindUtil'
 
-const { speed = 80 } = defineProps<{
+const { speed = 70 } = defineProps<{
   /** Scroll speed in pixels per second */
   speed?: number
 }>()
 
 const containerRef = ref<HTMLElement | null>(null)
-const isHovered = useElementHover(containerRef)
+const isHovered = useElementHover(containerRef, { delayEnter: 350 })
+const { width: containerWidth } = useElementSize(containerRef)
 const isScrolling = ref(false)
-let animationId: number | null = null
+let scrollStartTime = 0
+let overflowAmount = 0
+
+const { pause, resume } = useRafFn(
+  ({ timestamp }) => {
+    const el = containerRef.value
+    if (!el || overflowAmount <= 0) return pause()
+
+    const elapsed = timestamp - scrollStartTime
+    const duration = (overflowAmount / speed) * 1000
+    const progress = Math.min(elapsed / duration, 1)
+    el.scrollLeft = overflowAmount * progress
+
+    if (progress >= 1) pause()
+  },
+  { immediate: false }
+)
 
 function startScroll() {
   const el = containerRef.value
   if (!el) return
 
-  const overflow = el.scrollWidth - el.clientWidth
-  if (overflow <= 0) return
+  overflowAmount = el.scrollWidth - containerWidth.value
+  if (overflowAmount <= 0) return
 
   isScrolling.value = true
-  const duration = (overflow / speed) * 1000
-  const startTime = performance.now()
-
-  function animate(currentTime: number) {
-    const elapsed = currentTime - startTime
-    const progress = Math.min(elapsed / duration, 1)
-    el!.scrollLeft = overflow * progress
-
-    if (progress < 1) {
-      animationId = requestAnimationFrame(animate)
-    }
-  }
-
-  animationId = requestAnimationFrame(animate)
+  scrollStartTime = performance.now()
+  resume()
 }
 
 function stopScroll() {
-  if (animationId !== null) {
-    cancelAnimationFrame(animationId)
-    animationId = null
-  }
+  pause()
   if (containerRef.value) {
     containerRef.value.scrollLeft = 0
   }
@@ -64,6 +66,4 @@ watch(isHovered, (hovered) => {
   if (hovered) startScroll()
   else stopScroll()
 })
-
-onBeforeUnmount(stopScroll)
 </script>
