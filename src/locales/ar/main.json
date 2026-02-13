@@ -2872,7 +2872,8 @@
     "unsavedChanges": {
       "message": "لديك تغييرات غير محفوظة. هل تريد تجاهلها والانتقال إلى مساحة عمل أخرى؟",
       "title": "تغييرات غير محفوظة"
-    }
+    },
+    "viewWorkspace": "عرض مساحة العمل"
   },
   "workspaceAuth": {
     "errors": {
@@ -2921,6 +2922,14 @@
       "placeholder": "أدخل بريد الشخص الإلكتروني",
       "title": "دعوة شخص إلى هذه المساحة"
     },
+    "inviteUpsellDialog": {
+      "messageNotSubscribed": "لإضافة أعضاء فريق إلى مساحة العمل هذه، تحتاج إلى خطة Creator أو أعلى. خطة Standard تدعم مقعدًا واحدًا فقط (المالك).",
+      "messageSingleSeat": "خطة Standard تتضمن مقعدًا واحدًا فقط لمالك مساحة العمل. لدعوة أعضاء إضافيين، قم بالترقية إلى خطة Creator أو أعلى لتفعيل المقاعد المتعددة.",
+      "titleNotSubscribed": "الاشتراك مطلوب لدعوة الأعضاء",
+      "titleSingleSeat": "خطتك الحالية تدعم مقعدًا واحدًا فقط",
+      "upgradeToCreator": "الترقية إلى Creator",
+      "viewPlans": "عرض الخطط"
+    },
     "leaveDialog": {
       "leave": "مغادرة",
       "message": "لن تتمكن من الانضمام مرة أخرى إلا إذا تواصلت مع مالك مساحة العمل.",
@@ -2946,7 +2955,10 @@
       "tabs": {
         "active": "نشط",
         "pendingCount": "معلق ({count})"
-      }
+      },
+      "upsellBannerSubscribe": "اشترك في خطة Creator أو أعلى لدعوة أعضاء الفريق إلى مساحة العمل هذه.",
+      "upsellBannerUpgrade": "قم بالترقية إلى خطة Creator أو أعلى لدعوة أعضاء فريق إضافيين.",
+      "viewPlans": "عرض الخطط"
     },
     "menu": {
       "deleteWorkspace": "حذف مساحة العمل",

@@ -2883,7 +2883,8 @@
     "unsavedChanges": {
       "message": "شما تغییرات ذخیره‌نشده دارید. آیا می‌خواهید آن‌ها را رها کرده و فضای کاری را تغییر دهید؟",
       "title": "تغییرات ذخیره‌نشده"
-    }
+    },
+    "viewWorkspace": "مشاهده workspace"
   },
   "workspaceAuth": {
     "errors": {
@@ -2932,6 +2933,14 @@
       "placeholder": "ایمیل شخص را وارد کنید",
       "title": "دعوت یک نفر به این فضای کاری"
     },
+    "inviteUpsellDialog": {
+      "messageNotSubscribed": "برای افزودن اعضای تیم به این workspace، به پلن Creator یا بالاتر نیاز دارید. پلن Standard فقط یک نفر (مالک) را پشتیبانی می‌کند.",
+      "messageSingleSeat": "پلن Standard فقط یک صندلی برای مالک workspace دارد. برای دعوت اعضای بیشتر، به پلن Creator یا بالاتر ارتقا دهید تا امکان افزودن چندین نفر فعال شود.",
+      "titleNotSubscribed": "برای دعوت اعضا نیاز به اشتراک دارید",
+      "titleSingleSeat": "پلن فعلی شما فقط یک نفر را پشتیبانی می‌کند",
+      "upgradeToCreator": "ارتقا به Creator",
+      "viewPlans": "مشاهده پلن‌ها"
+    },
     "leaveDialog": {
       "leave": "خروج",
       "message": "تا زمانی که با مالک محیط کاری تماس نگیرید، امکان پیوستن مجدد نخواهید داشت.",
@@ -2957,7 +2966,10 @@
       "tabs": {
         "active": "فعال",
         "pendingCount": "در انتظار ({count})"
-      }
+      },
+      "upsellBannerSubscribe": "برای دعوت اعضای تیم به این workspace، به پلن Creator یا بالاتر اشتراک تهیه کنید.",
+      "upsellBannerUpgrade": "برای دعوت اعضای بیشتر به این workspace، به پلن Creator یا بالاتر ارتقا دهید.",
+      "viewPlans": "مشاهده پلن‌ها"
     },
     "menu": {
       "deleteWorkspace": "حذف محیط کاری",
