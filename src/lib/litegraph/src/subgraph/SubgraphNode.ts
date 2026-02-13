@@ -29,9 +29,6 @@ import type {
 } from '@/lib/litegraph/src/types/serialisation'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import type { UUID } from '@/lib/litegraph/src/utils/uuid'
-import { BaseWidget } from '@/lib/litegraph/src/widgets/BaseWidget'
-import { AssetWidget } from '@/lib/litegraph/src/widgets/AssetWidget'
-
 import { createPromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetView'
 import type { PromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetView'
 import { parseProxyWidgets } from '@/core/schemas/proxyWidget'
@@ -206,8 +203,14 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
           const linkId = subgraphInput.linkIds[0]
           const { inputNode, input } = subgraph.links[linkId].resolve(subgraph)
           const widget = inputNode?.widgets?.find?.((w) => w.name == name)
-          if (widget)
-            this._setWidget(subgraphInput, existingInput, widget, input?.widget)
+          if (widget && inputNode)
+            this._setWidget(
+              subgraphInput,
+              existingInput,
+              widget,
+              input?.widget,
+              inputNode
+            )
           return
         }
         const input = this.addInput(name, type)
@@ -319,7 +322,13 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
         if (!widget) return
 
         const widgetLocator = e.detail.input.widget
-        this._setWidget(subgraphInput, input, widget, widgetLocator)
+        this._setWidget(
+          subgraphInput,
+          input,
+          widget,
+          widgetLocator,
+          e.detail.node
+        )
       },
       { signal }
     )
@@ -442,7 +451,13 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
         const widget = inputNode.getWidgetFromSlot(targetInput)
         if (!widget) continue
 
-        this._setWidget(subgraphInput, input, widget, targetInput.widget)
+        this._setWidget(
+          subgraphInput,
+          input,
+          widget,
+          targetInput.widget,
+          inputNode
+        )
         break
       }
     }
@@ -451,69 +466,30 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
   private _setWidget(
     subgraphInput: Readonly<SubgraphInput>,
     input: INodeInputSlot,
-    widget: Readonly<IBaseWidget>,
-    inputWidget: IWidgetLocator | undefined
+    _widget: Readonly<IBaseWidget>,
+    inputWidget: IWidgetLocator | undefined,
+    interiorNode: LGraphNode
   ) {
-    // Use the first matching widget
-    const promotedWidget =
-      widget instanceof BaseWidget
-        ? widget.createCopyForNode(this)
-        : { ...widget, node: this }
-    if (widget instanceof AssetWidget)
-      promotedWidget.options.nodeType ??= widget.node.type
+    // Add to promotion list — assigns a new array, invalidating the memoizer
+    const nodeId = String(interiorNode.id)
+    const widgetName = _widget.name
+    const list = this._getPromotionList()
+    if (!list.some(([n, w]) => n === nodeId && w === widgetName)) {
+      this.properties.proxyWidgets = [...list, [nodeId, widgetName]]
+    }
 
-    Object.assign(promotedWidget, {
-      get name() {
-        return subgraphInput.name
-      },
-      set name(value) {
-        console.warn(
-          'Promoted widget: setting name is not allowed',
-          this,
-          value
-        )
-      },
-      get localized_name() {
-        return subgraphInput.localized_name
-      },
-      set localized_name(value) {
-        console.warn(
-          'Promoted widget: setting localized_name is not allowed',
-          this,
-          value
-        )
-      },
-      get label() {
-        return subgraphInput.label
-      },
-      set label(value) {
-        console.warn(
-          'Promoted widget: setting label is not allowed',
-          this,
-          value
-        )
-      },
-      get tooltip() {
-        // Preserve the original widget's tooltip for promoted widgets
-        return widget.tooltip
-      },
-      set tooltip(value) {
-        console.warn(
-          'Promoted widget: setting tooltip is not allowed',
-          this,
-          value
-        )
-      }
-    })
-
-    const widgetCount = this.inputs.filter((i) => i.widget).length
-    this.widgets.splice(widgetCount, 0, promotedWidget)
-
-    // Dispatch widget-promoted event
-    this.subgraph.events.dispatch('widget-promoted', {
-      widget: promotedWidget,
-      subgraphNode: this
-    })
+    // Create/retrieve the view from cache
+    const key = `${nodeId}:${widgetName}`
+    let view = this._viewCache.get(key)
+    if (!view) {
+      view = createPromotedWidgetView(
+        this,
+        nodeId,
+        widgetName,
+        subgraphInput.name
+      )
+      this._viewCache.set(key, view)
+    }
 
     // NOTE: This code creates linked chains of prototypes for passing across
     // multiple levels of subgraphs. As part of this, it intentionally avoids
@@ -522,7 +498,13 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     input.widget.name = subgraphInput.name
     if (inputWidget) Object.setPrototypeOf(input.widget, inputWidget)
 
-    input._widget = promotedWidget
+    input._widget = view
+
+    // Dispatch widget-promoted event
+    this.subgraph.events.dispatch('widget-promoted', {
+      widget: view,
+      subgraphNode: this
+    })
   }
 
   /**
