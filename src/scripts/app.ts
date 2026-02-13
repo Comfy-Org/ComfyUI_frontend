@@ -1405,86 +1405,87 @@ export class ComfyApp {
       while (this.queueItems.length) {
         const { number, batchCount, queueNodeIds, requestId } =
           this.queueItems.pop()!
-        try {
-          const previewMethod = useSettingStore().get(
-            'Comfy.Execution.PreviewMethod'
-          )
+        let queuedCount = 0
+        const previewMethod = useSettingStore().get(
+          'Comfy.Execution.PreviewMethod'
+        )
 
-          const isPartialExecution = !!queueNodeIds?.length
-          for (let i = 0; i < batchCount; i++) {
-            // Allow widgets to run callbacks before a prompt has been queued
-            // e.g. random seed before every gen
-            forEachNode(this.rootGraph, (node) => {
-              for (const widget of node.widgets ?? []) {
-                widget.beforeQueued?.({ isPartialExecution })
-              }
-            })
-
-            const p = await this.graphToPrompt(this.rootGraph)
-            const queuedNodes = collectAllNodes(this.rootGraph)
-            try {
-              api.authToken = comfyOrgAuthToken
-              api.apiKey = comfyOrgApiKey ?? undefined
-              const res = await api.queuePrompt(number, p, {
-                partialExecutionTargets: queueNodeIds,
-                previewMethod
-              })
-              delete api.authToken
-              delete api.apiKey
-              executionStore.lastNodeErrors = res.node_errors ?? null
-              if (executionStore.lastNodeErrors?.length) {
-                this.canvas.draw(true, true)
-              } else {
-                try {
-                  if (res.prompt_id) {
-                    executionStore.storePrompt({
-                      id: res.prompt_id,
-                      nodes: Object.keys(p.output),
-                      workflow: useWorkspaceStore().workflow
-                        .activeWorkflow as ComfyWorkflow
-                    })
-                  }
-                } catch (error) {}
-              }
-            } catch (error: unknown) {
-              if (
-                error instanceof PromptExecutionError &&
-                typeof error.response.error === 'object' &&
-                error.response.error?.type === 'missing_node_type'
-              ) {
-                const extraInfo = (error.response.error.extra_info ??
-                  {}) as MissingNodeTypeExtraInfo
-                const missingNodeType =
-                  createMissingNodeTypeFromError(extraInfo)
-                this.showMissingNodesError([missingNodeType])
-              } else {
-                useDialogService().showErrorDialog(error, {
-                  title: t('errorDialog.promptExecutionError'),
-                  reportType: 'promptExecutionError'
-                })
-              }
-              console.error(error)
-
-              if (error instanceof PromptExecutionError) {
-                executionStore.lastNodeErrors =
-                  error.response.node_errors ?? null
-                this.canvas.draw(true, true)
-              }
-              break
+        const isPartialExecution = !!queueNodeIds?.length
+        for (let i = 0; i < batchCount; i++) {
+          // Allow widgets to run callbacks before a prompt has been queued
+          // e.g. random seed before every gen
+          forEachNode(this.rootGraph, (node) => {
+            for (const widget of node.widgets ?? []) {
+              widget.beforeQueued?.({ isPartialExecution })
             }
+          })
 
-            // Allow widgets to run callbacks after a prompt has been queued
-            // e.g. random seed after every gen
-            executeWidgetsCallback(queuedNodes, 'afterQueued', {
-              isPartialExecution
+          const p = await this.graphToPrompt(this.rootGraph)
+          const queuedNodes = collectAllNodes(this.rootGraph)
+          try {
+            api.authToken = comfyOrgAuthToken
+            api.apiKey = comfyOrgApiKey ?? undefined
+            const res = await api.queuePrompt(number, p, {
+              partialExecutionTargets: queueNodeIds,
+              previewMethod
             })
-            this.canvas.draw(true, true)
-            await this.ui.queue.update()
+            delete api.authToken
+            delete api.apiKey
+            executionStore.lastNodeErrors = res.node_errors ?? null
+            if (executionStore.lastNodeErrors?.length) {
+              this.canvas.draw(true, true)
+            } else {
+              try {
+                if (res.prompt_id) {
+                  executionStore.storePrompt({
+                    id: res.prompt_id,
+                    nodes: Object.keys(p.output),
+                    workflow: useWorkspaceStore().workflow
+                      .activeWorkflow as ComfyWorkflow
+                  })
+                }
+              } catch (error) {}
+            }
+          } catch (error: unknown) {
+            if (
+              error instanceof PromptExecutionError &&
+              typeof error.response.error === 'object' &&
+              error.response.error?.type === 'missing_node_type'
+            ) {
+              const extraInfo = (error.response.error.extra_info ??
+                {}) as MissingNodeTypeExtraInfo
+              const missingNodeType = createMissingNodeTypeFromError(extraInfo)
+              this.showMissingNodesError([missingNodeType])
+            } else {
+              useDialogService().showErrorDialog(error, {
+                title: t('errorDialog.promptExecutionError'),
+                reportType: 'promptExecutionError'
+              })
+            }
+            console.error(error)
+
+            if (error instanceof PromptExecutionError) {
+              executionStore.lastNodeErrors = error.response.node_errors ?? null
+              this.canvas.draw(true, true)
+            }
+            break
           }
-        } finally {
+
+          queuedCount++
+
+          // Allow widgets to run callbacks after a prompt has been queued
+          // e.g. random seed after every gen
+          executeWidgetsCallback(queuedNodes, 'afterQueued', {
+            isPartialExecution
+          })
+          this.canvas.draw(true, true)
+          await this.ui.queue.update()
+        }
+
+        if (queuedCount > 0) {
           api.dispatchCustomEvent('promptQueued', {
             number,
-            batchCount,
+            batchCount: queuedCount,
             requestId
           })
         }
