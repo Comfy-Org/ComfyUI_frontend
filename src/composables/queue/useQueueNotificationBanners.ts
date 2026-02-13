@@ -1,11 +1,7 @@
 import { useEventListener } from '@vueuse/core'
 import { computed, onUnmounted, ref, watch } from 'vue'
 
-import { queueSignalBus } from '@/services/queue/queueSignalBus'
-import type {
-  QueueQueuedSignal,
-  QueueQueueingSignal
-} from '@/services/queue/queueSignalBus'
+import { api } from '@/scripts/api'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useQueueStore } from '@/stores/queueStore'
 import { jobStateFromTask } from '@/utils/queueUtil'
@@ -42,6 +38,15 @@ export type QueueNotificationBanner =
   | QueueQueuedNotification
   | QueueCompletedNotification
   | QueueFailedNotification
+
+type PromptQueueingEventPayload = {
+  requestId?: number
+  batchCount?: number
+}
+type PromptQueuedEventPayload = {
+  requestId?: number
+  batchCount?: number
+}
 
 const sanitizeCount = (value: number | undefined) => {
   if (value === undefined || Number.isNaN(value) || value <= 0) {
@@ -188,13 +193,13 @@ export const useQueueNotificationBanners = () => {
   }
 
   const handlePromptQueueing = (event: Event) => {
-    const payload = (event as CustomEvent<QueueQueueingSignal>).detail
+    const payload = (event as CustomEvent<PromptQueueingEventPayload>).detail
     const count = sanitizeCount(payload?.batchCount)
     queueNotification(toQueuedPendingNotification(count, payload?.requestId))
   }
 
   const handlePromptQueued = (event: Event) => {
-    const payload = (event as CustomEvent<QueueQueuedSignal>).detail
+    const payload = (event as CustomEvent<PromptQueuedEventPayload>).detail
     const count = sanitizeCount(payload?.batchCount)
     const handled = convertQueuedPendingToQueued(payload?.requestId, count)
     if (!handled) {
@@ -202,8 +207,8 @@ export const useQueueNotificationBanners = () => {
     }
   }
 
-  useEventListener(queueSignalBus, 'queueing', handlePromptQueueing)
-  useEventListener(queueSignalBus, 'queued', handlePromptQueued)
+  useEventListener(api, 'promptQueueing', handlePromptQueueing)
+  useEventListener(api, 'promptQueued', handlePromptQueued)
 
   const queueCompletionBatchNotifications = () => {
     const startTs = lastActiveStartTs.value ?? 0

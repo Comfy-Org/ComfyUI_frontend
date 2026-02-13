@@ -53,7 +53,6 @@ import { useDialogService } from '@/services/dialogService'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useExtensionService } from '@/services/extensionService'
 import { useLitegraphService } from '@/services/litegraphService'
-import { queueSignalBus } from '@/services/queue/queueSignalBus'
 import { useSubgraphService } from '@/services/subgraphService'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import { useCommandStore } from '@/stores/commandStore'
@@ -1384,10 +1383,9 @@ export class ComfyApp {
   ): Promise<boolean> {
     const requestId = this.nextQueueRequestId++
     this.queueItems.push({ number, batchCount, queueNodeIds, requestId })
-    queueSignalBus.emit('queueing', {
+    api.dispatchCustomEvent('promptQueueing', {
       requestId,
-      batchCount,
-      number
+      batchCount
     })
 
     // Only have one action process the items so each one gets a unique seed correctly
@@ -1491,7 +1489,7 @@ export class ComfyApp {
       this.processingQueue = false
     }
     if (lastQueuedRequest) {
-      queueSignalBus.emit('queued', {
+      api.dispatchCustomEvent('promptQueued', {
         number: lastQueuedRequest.number,
         batchCount: lastQueuedRequest.batchCount,
         requestId: lastQueuedRequest.requestId

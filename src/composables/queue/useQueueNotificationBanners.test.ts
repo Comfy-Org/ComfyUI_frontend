@@ -3,9 +3,15 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, reactive } from 'vue'
 
 import { useQueueNotificationBanners } from '@/composables/queue/useQueueNotificationBanners'
-import { queueSignalBus } from '@/services/queue/queueSignalBus'
+import { api } from '@/scripts/api'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useQueueStore } from '@/stores/queueStore'
+
+const mockApi = vi.hoisted(() => new EventTarget())
+
+vi.mock('@/scripts/api', () => ({
+  api: mockApi
+}))
 
 type MockTask = {
   displayStatus: 'Completed' | 'Failed' | 'Cancelled' | 'Running' | 'Pending'
@@ -126,7 +132,9 @@ describe('useQueueNotificationBanners', () => {
     const { wrapper, composable } = mountComposable()
 
     try {
-      queueSignalBus.emit('queued', { batchCount: 4 })
+      ;(api as unknown as EventTarget).dispatchEvent(
+        new CustomEvent('promptQueued', { detail: { batchCount: 4 } })
+      )
       await nextTick()
 
       expect(composable.currentNotification.value).toEqual({
@@ -146,7 +154,11 @@ describe('useQueueNotificationBanners', () => {
     const { wrapper, composable } = mountComposable()
 
     try {
-      queueSignalBus.emit('queueing', { requestId: 1, batchCount: 2 })
+      ;(api as unknown as EventTarget).dispatchEvent(
+        new CustomEvent('promptQueueing', {
+          detail: { requestId: 1, batchCount: 2 }
+        })
+      )
       await nextTick()
 
       expect(composable.currentNotification.value).toEqual({
@@ -155,7 +167,11 @@ describe('useQueueNotificationBanners', () => {
         requestId: 1
       })
 
-      queueSignalBus.emit('queued', { requestId: 1, batchCount: 2 })
+      ;(api as unknown as EventTarget).dispatchEvent(
+        new CustomEvent('promptQueued', {
+          detail: { requestId: 1, batchCount: 2 }
+        })
+      )
       await nextTick()
 
       expect(composable.currentNotification.value).toEqual({
@@ -172,7 +188,9 @@ describe('useQueueNotificationBanners', () => {
     const { wrapper, composable } = mountComposable()
 
     try {
-      queueSignalBus.emit('queued', { batchCount: 0 })
+      ;(api as unknown as EventTarget).dispatchEvent(
+        new CustomEvent('promptQueued', { detail: { batchCount: 0 } })
+      )
       await nextTick()
 
       expect(composable.currentNotification.value).toEqual({

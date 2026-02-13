@@ -10,7 +10,6 @@ import {
 } from '@/platform/workflow/management/stores/workflowStore'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import type { ExecutedWsMessage } from '@/schemas/apiSchema'
-import { queueSignalBus } from '@/services/queue/queueSignalBus'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useNodeOutputStore } from '@/stores/imagePreviewStore'
 import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
@@ -282,7 +281,7 @@ export class ChangeTracker {
     })
 
     // Handle prompt queue event for dynamic widget changes
-    queueSignalBus.addEventListener('queued', () => {
+    api.addEventListener('promptQueued', () => {
       logger.debug('checkState on promptQueued')
       checkState()
     })
