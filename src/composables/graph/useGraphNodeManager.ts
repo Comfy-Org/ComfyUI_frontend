@@ -263,15 +263,40 @@ export function extractVueNodeData(node: LGraphNode): VueNodeData {
   // Extract safe widget data
   const slotMetadata = new Map<string, WidgetSlotMetadata>()
 
+  const existingWidgetsDescriptor = Object.getOwnPropertyDescriptor(
+    node,
+    'widgets'
+  )
   const reactiveWidgets = shallowReactive<IBaseWidget[]>(node.widgets ?? [])
-  Object.defineProperty(node, 'widgets', {
-    get() {
-      return reactiveWidgets
-    },
-    set(v) {
-      reactiveWidgets.splice(0, reactiveWidgets.length, ...v)
-    }
-  })
+  if (existingWidgetsDescriptor?.get) {
+    // Node has a custom widgets getter (e.g. SubgraphNode's synthetic getter).
+    // Preserve it but sync results into a reactive array for Vue.
+    const originalGetter = existingWidgetsDescriptor.get
+    Object.defineProperty(node, 'widgets', {
+      get() {
+        const current: IBaseWidget[] = originalGetter.call(node) ?? []
+        if (
+          current.length !== reactiveWidgets.length ||
+          current.some((w, i) => w !== reactiveWidgets[i])
+        ) {
+          reactiveWidgets.splice(0, reactiveWidgets.length, ...current)
+        }
+        return reactiveWidgets
+      },
+      set: existingWidgetsDescriptor.set ?? (() => {}),
+      configurable: true,
+      enumerable: true
+    })
+  } else {
+    Object.defineProperty(node, 'widgets', {
+      get() {
+        return reactiveWidgets
+      },
+      set(v) {
+        reactiveWidgets.splice(0, reactiveWidgets.length, ...v)
+      }
+    })
+  }
   const reactiveInputs = shallowReactive<INodeInputSlot[]>(node.inputs ?? [])
   Object.defineProperty(node, 'inputs', {
     get() {
