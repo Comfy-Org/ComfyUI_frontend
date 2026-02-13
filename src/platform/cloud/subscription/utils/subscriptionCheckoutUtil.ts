@@ -1,6 +1,6 @@
 import { storeToRefs } from 'pinia'
 
-import { getComfyApiBaseUrl } from '@/config/comfyApi'
+import { getCustomerApiBaseUrl } from '@/config/comfyApi'
 import { t } from '@/i18n'
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
@@ -73,7 +73,7 @@ export async function performSubscriptionCheckout(
   const checkoutPayload = { ...checkoutAttribution }
 
   const response = await fetch(
-    `${getComfyApiBaseUrl()}/customers/cloud-subscription-checkout/${checkoutTier}`,
+    `${getCustomerApiBaseUrl()}/customers/cloud-subscription-checkout/${checkoutTier}`,
     {
       method: 'POST',
       headers: { ...authHeader, 'Content-Type': 'application/json' },

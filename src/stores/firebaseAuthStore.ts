@@ -20,7 +20,7 @@ import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 import { useFirebaseAuth } from 'vuefire'
 
-import { getComfyApiBaseUrl } from '@/config/comfyApi'
+import { getCustomerApiBaseUrl } from '@/config/comfyApi'
 import { t } from '@/i18n'
 import { WORKSPACE_STORAGE_KEYS } from '@/platform/auth/workspace/workspaceConstants'
 import { isCloud } from '@/platform/distribution/types'
@@ -78,7 +78,7 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
    */
   const lastTokenUserId = ref<string | null>(null)
 
-  const buildApiUrl = (path: string) => `${getComfyApiBaseUrl()}${path}`
+  const buildApiUrl = (path: string) => `${getCustomerApiBaseUrl()}${path}`
 
   // Providers
   const googleProvider = new GoogleAuthProvider()
