@@ -64,7 +64,7 @@ import FileDownload from '@/components/common/FileDownload.vue'
 import NoResultsPlaceholder from '@/components/common/NoResultsPlaceholder.vue'
 import { isDesktop } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { useDialogService } from '@/services/dialogService'
+import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
 import { useDialogStore } from '@/stores/dialogStore'
 
 // TODO: Read this from server internal API rather than hardcoding here
@@ -105,10 +105,7 @@ const doNotAskAgain = ref(false)
 
 function openShowMissingModelsSetting() {
   useDialogStore().closeDialog({ key: 'global-missing-models-warning' })
-  void useDialogService().showSettingsDialog(
-    undefined,
-    'Comfy.Workflow.ShowMissingModelsWarning'
-  )
+  useSettingsDialog().show(undefined, 'Comfy.Workflow.ShowMissingModelsWarning')
 }
 
 const modelDownloads = ref<Record<string, ModelInfo>>({})

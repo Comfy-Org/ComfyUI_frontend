@@ -820,6 +820,7 @@
     "enterBaseName": "Введите базовое имя",
     "enterNewName": "Введите новое имя",
     "enterNewNamePrompt": "Введите новое имя:",
+    "enterSubgraph": "Войти в подграф",
     "error": "Ошибка",
     "errorLoadingImage": "Ошибка загрузки изображения",
     "errorLoadingVideo": "Ошибка загрузки видео",

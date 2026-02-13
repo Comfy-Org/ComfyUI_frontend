@@ -152,7 +152,6 @@ import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { buildTooltipConfig } from '@/composables/useTooltipConfig'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { useReleaseStore } from '@/platform/updates/common/releaseStore'
 import { app } from '@/scripts/app'
 import { useCommandStore } from '@/stores/commandStore'
 import { useExecutionStore } from '@/stores/executionStore'
@@ -181,8 +180,6 @@ const sidebarTabStore = useSidebarTabStore()
 const { activeJobsCount } = storeToRefs(queueStore)
 const { isOverlayExpanded: isQueueOverlayExpanded } = storeToRefs(queueUIStore)
 const { activeSidebarTabId } = storeToRefs(sidebarTabStore)
-const releaseStore = useReleaseStore()
-const { shouldShowRedDot: showReleaseRedDot } = storeToRefs(releaseStore)
 const { shouldShowRedDot: shouldShowConflictRedDot } =
   useConflictAcknowledgment()
 const isTopMenuHovered = ref(false)
@@ -244,10 +241,8 @@ const queueContextMenuItems = computed<MenuItem[]>(() => [
   }
 ])
 
-// Use either release red dot or conflict red dot
 const shouldShowRedDot = computed((): boolean => {
-  const releaseRedDot = showReleaseRedDot.value
-  return releaseRedDot || shouldShowConflictRedDot.value
+  return shouldShowConflictRedDot.value
 })
 
 const { hasAnyError } = storeToRefs(executionStore)

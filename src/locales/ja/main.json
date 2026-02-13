@@ -820,6 +820,7 @@
     "enterBaseName": "ベース名を入力",
     "enterNewName": "新しい名前を入力",
     "enterNewNamePrompt": "新しい名前を入力してください：",
+    "enterSubgraph": "サブグラフに入る",
     "error": "エラー",
     "errorLoadingImage": "画像の読み込みエラー",
     "errorLoadingVideo": "ビデオの読み込みエラー",

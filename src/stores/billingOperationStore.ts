@@ -6,7 +6,7 @@ import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { t } from '@/i18n'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
-import { useDialogService } from '@/services/dialogService'
+import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
 import { useDialogStore } from '@/stores/dialogStore'
 
 const INITIAL_INTERVAL_MS = 1000
@@ -143,7 +143,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     const dialogStore = useDialogStore()
     dialogStore.closeDialog({ key: 'subscription-required' })
     dialogStore.closeDialog({ key: 'top-up-credits' })
-    void useDialogService().showSettingsDialog('workspace')
+    useSettingsDialog().show('workspace')
 
     const toastStore = useToastStore()
     const messageKey =

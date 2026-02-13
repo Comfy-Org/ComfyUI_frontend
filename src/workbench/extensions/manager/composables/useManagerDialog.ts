@@ -20,11 +20,6 @@ export function useManagerDialog() {
       props: {
         onClose: hide,
         initialTab
-      },
-      dialogComponentProps: {
-        pt: {
-          content: { class: '!px-0 overflow-hidden h-full !py-0' }
-        }
       }
     })
   }
