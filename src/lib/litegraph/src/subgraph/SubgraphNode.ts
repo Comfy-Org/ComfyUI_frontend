@@ -32,6 +32,10 @@ import type { UUID } from '@/lib/litegraph/src/utils/uuid'
 import { BaseWidget } from '@/lib/litegraph/src/widgets/BaseWidget'
 import { AssetWidget } from '@/lib/litegraph/src/widgets/AssetWidget'
 
+import { createPromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetView'
+import type { PromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetView'
+import { parseProxyWidgets } from '@/core/schemas/proxyWidget'
+
 import { ExecutableNodeDTO } from './ExecutableNodeDTO'
 import type { ExecutableLGraphNode, ExecutionId } from './ExecutableNodeDTO'
 import type { SubgraphInput } from './SubgraphInput'
@@ -64,7 +68,108 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     return true
   }
 
-  override widgets: IBaseWidget[] = []
+  private _viewCache = new Map<string, PromotedWidgetView>()
+  private _proxyWidgetsRaw?: unknown
+  private _promotionList: Array<[string, string]> = []
+
+  // Declared as accessor via Object.defineProperty in constructor.
+  // TypeScript doesn't allow overriding a property with get/set syntax,
+  // so we use declare + defineProperty instead.
+  declare widgets: IBaseWidget[]
+
+  private _getPromotionList(): Array<[string, string]> {
+    const raw = this.properties?.proxyWidgets
+    if (raw === undefined || raw === null) {
+      this._proxyWidgetsRaw = raw
+      this._promotionList = []
+      return this._promotionList
+    }
+    if (raw !== this._proxyWidgetsRaw) {
+      this._proxyWidgetsRaw = raw
+      this._promotionList = parseProxyWidgets(raw)
+    }
+    return this._promotionList
+  }
+
+  private _getPromotedViews(): PromotedWidgetView[] {
+    const list = this._getPromotionList()
+    const views: PromotedWidgetView[] = []
+    const seenKeys = new Set<string>()
+    let hadLegacyEntries = false
+
+    for (const [nodeId, widgetName] of list) {
+      let resolvedId = nodeId
+      let resolvedName = widgetName
+      if (nodeId === '-1') {
+        const resolved = this._resolveLegacyEntry(widgetName)
+        if (!resolved) continue
+        ;[resolvedId, resolvedName] = resolved
+        hadLegacyEntries = true
+      }
+
+      const key = `${resolvedId}:${resolvedName}`
+      if (seenKeys.has(key)) continue
+      seenKeys.add(key)
+
+      let view = this._viewCache.get(key)
+      if (!view) {
+        view = createPromotedWidgetView(this, resolvedId, resolvedName)
+        this._viewCache.set(key, view)
+      }
+      views.push(view)
+    }
+
+    // Clean up stale cache entries
+    for (const key of this._viewCache.keys()) {
+      if (!seenKeys.has(key)) this._viewCache.delete(key)
+    }
+
+    // Migrate -1 entries: write resolved list back so legacy format doesn't persist
+    if (hadLegacyEntries) {
+      const resolved: Array<[string, string]> = views.map((v) => [
+        v.sourceNodeId,
+        v.sourceWidgetName
+      ])
+      this.properties.proxyWidgets = resolved
+      this._proxyWidgetsRaw = resolved
+      this._promotionList = resolved
+    }
+
+    return views
+  }
+
+  private _resolveLegacyEntry(
+    widgetName: string
+  ): [string, string] | undefined {
+    // Legacy -1 entries use the slot name as the widget name.
+    // Find the input with that name, then trace to the connected interior widget.
+    const input = this.inputs.find((i) => i.name === widgetName)
+    if (!input?._widget) return undefined
+
+    const widget = input._widget
+    if ('sourceNodeId' in widget && 'sourceWidgetName' in widget) {
+      return [widget.sourceNodeId as string, widget.sourceWidgetName as string]
+    }
+
+    // Fallback: find via subgraph input slot connection
+    const subgraphInput = this.subgraph.inputNode.slots.find(
+      (slot) => slot.name === widgetName
+    )
+    if (!subgraphInput) return undefined
+
+    for (const linkId of subgraphInput.linkIds) {
+      const link = this.subgraph.getLink(linkId)
+      if (!link) continue
+      const { inputNode } = link.resolve(this.subgraph)
+      if (!inputNode) continue
+      const targetInput = inputNode.inputs.find((inp) => inp.link === linkId)
+      if (!targetInput) continue
+      const w = inputNode.getWidgetFromSlot(targetInput)
+      if (w) return [String(inputNode.id), w.name]
+    }
+
+    return undefined
+  }
 
   /** Manages lifecycle of all subgraph event listeners */
   private _eventAbortController = new AbortController()
@@ -78,6 +183,14 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
   ) {
     super(subgraph.name, subgraph.id)
     this.graph = graph
+
+    // Synthetic widgets getter — SubgraphNodes have no native widgets.
+    Object.defineProperty(this, 'widgets', {
+      get: () => this._getPromotedViews(),
+      set: () => {},
+      configurable: true,
+      enumerable: true
+    })
 
     // Update this node when the subgraph input / output slots are changed
     const subgraphEvents = this.subgraph.events
@@ -276,8 +389,14 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
   }
 
   override _internalConfigureAfterSlots() {
-    // Reset widgets
-    this.widgets.length = 0
+    // Ensure proxyWidgets is initialized so it serializes
+    this.properties.proxyWidgets ??= []
+
+    // Clear view cache — forces re-creation on next getter access.
+    // Do NOT clear properties.proxyWidgets — it was already populated
+    // from serialized data by super.configure(info) before this runs.
+    this._viewCache.clear()
+    this._proxyWidgetsRaw = undefined
 
     // Check all inputs for connected widgets
     for (const input of this.inputs) {

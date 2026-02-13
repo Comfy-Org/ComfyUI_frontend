@@ -4,7 +4,6 @@ import { beforeEach, describe, expect, test, vi } from 'vitest'
 
 import { registerProxyWidgets } from '@/core/graph/subgraph/proxyWidget'
 import { promoteWidget } from '@/core/graph/subgraph/proxyWidgetUtils'
-import { parseProxyWidgets } from '@/core/schemas/proxyWidget'
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { LGraphCanvas, SubgraphNode } from '@/lib/litegraph/src/litegraph'
 
@@ -67,23 +66,30 @@ describe('Subgraph proxyWidgets', () => {
       ['2', 'stringWidget']
     ]
     expect(subgraphNode.widgets.length).toBe(2)
-    expect(subgraphNode.widgets[0].name).not.toEqual(
-      subgraphNode.widgets[1].name
-    )
-  })
-  test('Will serialize existing widgets', () => {
-    const [subgraphNode, innerNodes] = setupSubgraph(1)
-    innerNodes[0].addWidget('text', 'istringWidget', 'value', () => {})
-    subgraphNode.addWidget('text', 'stringWidget', 'value', () => {})
-
-    const proxyWidgets = parseProxyWidgets(subgraphNode.properties.proxyWidgets)
-    proxyWidgets.push(['1', 'istringWidget'])
-    subgraphNode.properties.proxyWidgets = proxyWidgets
-
-    expect(subgraphNode.widgets.length).toBe(2)
+    // Both views share the widget name; they're distinguished by sourceNodeId
     expect(subgraphNode.widgets[0].name).toBe('stringWidget')
-    subgraphNode.properties.proxyWidgets = [proxyWidgets[1], proxyWidgets[0]]
-    expect(subgraphNode.widgets[0].name).toBe('1: istringWidget')
+    expect(subgraphNode.widgets[1].name).toBe('stringWidget')
+  })
+  test('Will reflect proxyWidgets order changes', () => {
+    const [subgraphNode, innerNodes] = setupSubgraph(1)
+    innerNodes[0].addWidget('text', 'widgetA', 'value', () => {})
+    innerNodes[0].addWidget('text', 'widgetB', 'value', () => {})
+
+    subgraphNode.properties.proxyWidgets = [
+      ['1', 'widgetA'],
+      ['1', 'widgetB']
+    ]
+    expect(subgraphNode.widgets.length).toBe(2)
+    expect(subgraphNode.widgets[0].name).toBe('widgetA')
+    expect(subgraphNode.widgets[1].name).toBe('widgetB')
+
+    // Reorder
+    subgraphNode.properties.proxyWidgets = [
+      ['1', 'widgetB'],
+      ['1', 'widgetA']
+    ]
+    expect(subgraphNode.widgets[0].name).toBe('widgetB')
+    expect(subgraphNode.widgets[1].name).toBe('widgetA')
   })
   test('Will mirror changes to value', () => {
     const [subgraphNode, innerNodes] = setupSubgraph(1)
@@ -111,19 +117,22 @@ describe('Subgraph proxyWidgets', () => {
     expect(innerNodes[0].widgets[0].last_y).toBe(11)
     expect(innerNodes[0].widgets[0].computedHeight).toBe(12)
   })
-  test('Can detach and re-attach widgets', () => {
+  test('Renders placeholder when interior widget is detached', () => {
     const [subgraphNode, innerNodes] = setupSubgraph(1)
     innerNodes[0].addWidget('text', 'stringWidget', 'value', () => {})
     subgraphNode.properties.proxyWidgets = [['1', 'stringWidget']]
     if (!innerNodes[0].widgets) throw new Error('node has no widgets')
-    expect(subgraphNode.widgets[0].value).toBe('value')
-    const poppedWidget = innerNodes[0].widgets.pop()
-    //simulate new draw frame
-    subgraphNode.widgets[0].computedHeight = 10
-    expect(subgraphNode.widgets[0].value).toBe(undefined)
-    innerNodes[0].widgets.push(poppedWidget!)
-    subgraphNode.widgets[0].computedHeight = 10
-    expect(subgraphNode.widgets[0].value).toBe('value')
+
+    // View resolves the interior widget's type
+    expect(subgraphNode.widgets[0].type).toBe('text')
+
+    // Remove interior widget — view falls back to disconnected state
+    innerNodes[0].widgets.pop()
+    expect(subgraphNode.widgets[0].type).toBe('button')
+
+    // Re-add — view resolves again
+    innerNodes[0].addWidget('text', 'stringWidget', 'value', () => {})
+    expect(subgraphNode.widgets[0].type).toBe('text')
   })
   test('Prevents duplicate promotion', () => {
     const [subgraphNode, innerNodes] = setupSubgraph(1)
