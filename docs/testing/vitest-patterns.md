@@ -76,7 +76,9 @@ with the plain object's `Function` constructor.
 function mockSubgraphNode(proxyWidgets?: NodeProperty) {
   return {
     properties: { proxyWidgets }
-  } satisfies Partial<Omit<SubgraphNode, 'constructor'>> as unknown as SubgraphNode
+  } satisfies Partial<
+    Omit<SubgraphNode, 'constructor'>
+  > as unknown as SubgraphNode
 }
 
 // ❌ Unchecked — typos and shape mismatches slip through
