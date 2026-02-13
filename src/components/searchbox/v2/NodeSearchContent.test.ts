@@ -47,8 +47,7 @@ describe('NodeSearchContent', () => {
               'showSourceBadge',
               'hideBookmarkIcon'
             ]
-          },
-          NodeSearchFilterChip: true
+          }
         }
       }
     })
@@ -408,8 +407,69 @@ describe('NodeSearchContent', () => {
       })
 
       expect(
-        wrapper.findAllComponents({ name: 'NodeSearchFilterChip' }).length
+        wrapper.findAll('[data-testid="filter-chip"]').length
       ).toBeGreaterThan(0)
+    })
+  })
+
+  describe('chip removal', () => {
+    function createFilters(count: number) {
+      const types = ['IMAGE', 'LATENT', 'MODEL']
+      useNodeDefStore().updateNodeDefs(
+        types.slice(0, count).map((type) =>
+          createMockNodeDef({
+            name: `${type}Node`,
+            display_name: `${type} Node`,
+            input: {
+              required: { [type.toLowerCase()]: [type, {}] }
+            }
+          })
+        )
+      )
+      return types.slice(0, count).map((type) => ({
+        filterDef: useNodeDefStore().nodeSearchService.inputTypeFilter,
+        value: type
+      }))
+    }
+
+    it('should emit removeFilter on backspace', async () => {
+      const filters = createFilters(1)
+      const wrapper = await createWrapper({ filters })
+
+      const input = wrapper.find('input[type="text"]')
+      await input.trigger('keydown', { key: 'Backspace' })
+      await nextTick()
+      await input.trigger('keydown', { key: 'Backspace' })
+      await nextTick()
+
+      expect(wrapper.emitted('removeFilter')).toHaveLength(1)
+      expect(wrapper.emitted('removeFilter')![0][0]).toMatchObject({
+        value: 'IMAGE'
+      })
+    })
+
+    it('should not interact with chips when no filters exist', async () => {
+      const wrapper = await createWrapper({ filters: [] })
+
+      const input = wrapper.find('input[type="text"]')
+      await input.trigger('keydown', { key: 'Backspace' })
+      await nextTick()
+
+      expect(wrapper.emitted('removeFilter')).toBeUndefined()
+    })
+
+    it('should remove chip when clicking its delete button', async () => {
+      const filters = createFilters(1)
+      const wrapper = await createWrapper({ filters })
+
+      const deleteBtn = wrapper.find('[data-testid="chip-delete"]')
+      await deleteBtn.trigger('click')
+      await nextTick()
+
+      expect(wrapper.emitted('removeFilter')).toHaveLength(1)
+      expect(wrapper.emitted('removeFilter')![0][0]).toMatchObject({
+        value: 'IMAGE'
+      })
     })
   })
 
@@ -612,6 +672,21 @@ describe('NodeSearchContent', () => {
       await enterFilterMode(wrapper)
 
       expect((input.element as HTMLInputElement).value).toBe('')
+    })
+
+    it('should exit filter mode when cancel button is clicked', async () => {
+      setupNodesWithTypes()
+      const wrapper = await createWrapper()
+      await enterFilterMode(wrapper)
+
+      expect(hasSidebar(wrapper)).toBe(false)
+
+      const cancelBtn = wrapper.find('[data-testid="cancel-filter"]')
+      await cancelBtn.trigger('click')
+      await nextTick()
+      await nextTick()
+
+      expect(hasSidebar(wrapper)).toBe(true)
     })
   })
 })

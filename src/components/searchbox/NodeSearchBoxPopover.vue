@@ -37,7 +37,6 @@
             v-if="hoveredNodeDef && enableNodePreview"
             :key="hoveredNodeDef.name"
             :node-def="hoveredNodeDef"
-            :width="208"
             show-category-path
             class="absolute top-0 left-full ml-3"
           />

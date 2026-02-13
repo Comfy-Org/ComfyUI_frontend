@@ -4,55 +4,22 @@
     class="flex max-h-[50vh] min-h-[400px] w-full flex-col overflow-hidden rounded-lg bg-base-background"
   >
     <!-- Search input row -->
-    <div class="px-4 py-3">
-      <div
-        class="flex cursor-text flex-wrap items-center gap-2 rounded-lg bg-secondary-background px-4 py-3"
-        @click="inputRef?.focus()"
-      >
-        <!-- Active filter label (filter selection mode) -->
-        <span
-          v-if="activeFilter"
-          class="shrink-0 rounded bg-highlight px-2 py-1 -my-1 text-sm opacity-80 text-foreground"
-        >
-          {{ activeFilter.label }}:
-        </span>
-        <!-- Applied filter chips -->
-        <template v-if="!activeFilter">
-          <NodeSearchFilterChip
-            v-for="filter in filters"
-            :key="filter.filterDef.id"
-            :label="t(`g.${filter.filterDef.id}`)"
-            :text="filter.value"
-            :type-color="
-              filter.filterDef.id === 'input' ||
-              filter.filterDef.id === 'output'
-                ? getTypeColor(filter.value)
-                : undefined
-            "
-            @remove="emit('removeFilter', filter)"
-          />
-        </template>
-        <input
-          ref="inputRef"
-          v-model="inputValue"
-          type="text"
-          role="combobox"
-          aria-autocomplete="list"
-          :aria-expanded="true"
-          :aria-controls="activeFilter ? 'filter-options-list' : 'results-list'"
-          :aria-label="inputPlaceholder"
-          :placeholder="inputPlaceholder"
-          class="h-6 min-w-[min(300px,80vw)] flex-1 border-none bg-transparent text-foreground text-[14px] outline-none placeholder:text-muted-foreground"
-          @keydown.down.prevent="onKeyDown"
-          @keydown.up.prevent="onKeyUp"
-          @keydown.enter.prevent="onKeyEnter"
-        />
-      </div>
-    </div>
+    <NodeSearchInput
+      ref="searchInputRef"
+      v-model:search-query="searchQuery"
+      v-model:filter-query="filterQuery"
+      :filters="filters"
+      :active-filter="activeFilter"
+      @remove-filter="emit('removeFilter', $event)"
+      @cancel-filter="cancelFilter"
+      @navigate-down="onKeyDown"
+      @navigate-up="onKeyUp"
+      @select-current="onKeyEnter"
+    />
 
     <!-- Filter header row -->
     <div class="flex items-center">
-      <div class="w-40 shrink-0 px-3 py-2 text-sm text-muted-foreground">
+      <div class="shrink-0 px-3 py-2 text-sm text-muted-foreground">
         {{ $t('g.filterBy') }}
       </div>
       <NodeSearchFilterBar
@@ -68,7 +35,7 @@
       <NodeSearchCategorySidebar
         v-if="!activeFilter"
         v-model:selected-category="sidebarCategory"
-        class="w-40 shrink-0"
+        class="w-52 shrink-0"
       />
 
       <!-- Filter options list (filter selection mode) -->
@@ -96,11 +63,11 @@
           :aria-selected="index === selectedIndex"
           :class="
             cn(
-              'cursor-pointer px-4 py-2',
-              index === selectedIndex && 'bg-highlight'
+              'flex cursor-pointer items-center px-4 h-14',
+              index === selectedIndex && 'bg-secondary-background-hover'
             )
           "
-          @click="onAddNode(node, $event)"
+          @click="emit('addNode', node, $event)"
           @mouseenter="selectedIndex = index"
         >
           <NodeSearchListItem
@@ -123,16 +90,14 @@
 </template>
 
 <script setup lang="ts">
-import { computed, nextTick, onMounted, ref, watch, watchEffect } from 'vue'
-import { useI18n } from 'vue-i18n'
+import { computed, nextTick, ref, watch, watchEffect } from 'vue'
 
 import type { FilterChip } from '@/components/searchbox/v2/NodeSearchFilterBar.vue'
 import NodeSearchFilterBar from '@/components/searchbox/v2/NodeSearchFilterBar.vue'
 import NodeSearchCategorySidebar from '@/components/searchbox/v2/NodeSearchCategorySidebar.vue'
-import NodeSearchFilterChip from '@/components/searchbox/v2/NodeSearchFilterChip.vue'
 import NodeSearchFilterPanel from '@/components/searchbox/v2/NodeSearchFilterPanel.vue'
+import NodeSearchInput from '@/components/searchbox/v2/NodeSearchInput.vue'
 import NodeSearchListItem from '@/components/searchbox/v2/NodeSearchListItem.vue'
-import { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
 import { useNodeBookmarkStore } from '@/stores/nodeBookmarkStore'
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 import { useNodeDefStore, useNodeFrequencyStore } from '@/stores/nodeDefStore'
@@ -151,17 +116,12 @@ const emit = defineEmits<{
   hoverNode: [nodeDef: ComfyNodeDefImpl | null]
 }>()
 
-function getTypeColor(typeName: string): string | undefined {
-  return LGraphCanvas.link_type_colors[typeName]
-}
-
-const { t } = useI18n()
 const nodeDefStore = useNodeDefStore()
 const nodeFrequencyStore = useNodeFrequencyStore()
 const nodeBookmarkStore = useNodeBookmarkStore()
 
 const dialogRef = ref<HTMLElement>()
-const inputRef = ref<HTMLInputElement>()
+const searchInputRef = ref<InstanceType<typeof NodeSearchInput>>()
 const filterPanelRef = ref<InstanceType<typeof NodeSearchFilterPanel>>()
 
 const searchQuery = ref('')
@@ -171,23 +131,6 @@ const selectedIndex = ref(0)
 // Filter selection mode
 const activeFilter = ref<FilterChip | null>(null)
 const filterQuery = ref('')
-
-const inputValue = computed({
-  get: () => (activeFilter.value ? filterQuery.value : searchQuery.value),
-  set: (value: string) => {
-    if (activeFilter.value) {
-      filterQuery.value = value
-    } else {
-      searchQuery.value = value
-    }
-  }
-})
-
-const inputPlaceholder = computed(() =>
-  activeFilter.value
-    ? t('g.filterByType', { type: activeFilter.value.label.toLowerCase() })
-    : t('g.addNode')
-)
 
 function lockDialogHeight() {
   if (dialogRef.value) {
@@ -209,7 +152,7 @@ function onSelectFilterChip(chip: FilterChip) {
   lockDialogHeight()
   activeFilter.value = chip
   filterQuery.value = ''
-  nextTick(() => inputRef.value?.focus())
+  nextTick(() => searchInputRef.value?.focus())
 }
 
 function onFilterApply(value: string) {
@@ -218,14 +161,14 @@ function onFilterApply(value: string) {
   activeFilter.value = null
   filterQuery.value = ''
   unlockDialogHeight()
-  nextTick(() => inputRef.value?.focus())
+  nextTick(() => searchInputRef.value?.focus())
 }
 
 function cancelFilter() {
   activeFilter.value = null
   filterQuery.value = ''
   unlockDialogHeight()
-  nextTick(() => inputRef.value?.focus())
+  nextTick(() => searchInputRef.value?.focus())
 }
 
 // Node search
@@ -334,17 +277,6 @@ function navigateResults(direction: number) {
 
 function selectCurrentResult() {
   const node = displayedResults.value[selectedIndex.value]
-  if (node) {
-    onAddNode(node)
-  }
+  if (node) emit('addNode', node)
 }
-
-function onAddNode(nodeDef: ComfyNodeDefImpl, event?: MouseEvent) {
-  emit('addNode', nodeDef, event)
-}
-
-onMounted(async () => {
-  await nextTick()
-  inputRef.value?.focus()
-})
 </script>

@@ -3,13 +3,13 @@
     type="button"
     :data-testid="`category-${node.key}`"
     :aria-current="selectedCategory === node.key || undefined"
-    :style="{ paddingLeft: `${0.75 + depth * 0.75}rem` }"
+    :style="{ paddingLeft: `${0.75 + depth * 1.25}rem` }"
     :class="
       cn(
         'w-full cursor-pointer rounded border-none bg-transparent py-2.5 pr-3 text-left text-sm transition-colors',
         selectedCategory === node.key
-          ? 'bg-highlight font-semibold text-foreground'
-          : 'text-muted-foreground hover:bg-highlight hover:text-foreground'
+          ? CATEGORY_SELECTED_CLASS
+          : CATEGORY_UNSELECTED_CLASS
       )
     "
     @click="$emit('select', node.key)"
@@ -17,12 +17,13 @@
     {{ node.label }}
   </button>
   <template v-if="isExpanded && node.children?.length">
-    <CategoryTreeNode
+    <NodeSearchCategoryTreeNode
       v-for="child in node.children"
       :key="child.key"
       :node="child"
       :depth="depth + 1"
       :selected-category="selectedCategory"
+      :selected-collapsed="selectedCollapsed"
       @select="$emit('select', $event)"
     />
   </template>
@@ -34,6 +35,11 @@ export interface CategoryNode {
   label: string
   children?: CategoryNode[]
 }
+
+export const CATEGORY_SELECTED_CLASS =
+  'bg-secondary-background-hover font-semibold text-foreground'
+export const CATEGORY_UNSELECTED_CLASS =
+  'text-muted-foreground hover:bg-secondary-background-hover hover:text-foreground'
 </script>
 
 <script setup lang="ts">
@@ -44,19 +50,21 @@ import { cn } from '@/utils/tailwindUtil'
 const {
   node,
   depth = 0,
-  selectedCategory
+  selectedCategory,
+  selectedCollapsed = false
 } = defineProps<{
   node: CategoryNode
   depth?: number
   selectedCategory: string
+  selectedCollapsed?: boolean
 }>()
 
 defineEmits<{
   select: [key: string]
 }>()
 
-const isExpanded = computed(
-  () =>
-    selectedCategory === node.key || selectedCategory.startsWith(node.key + '/')
-)
+const isExpanded = computed(() => {
+  if (selectedCategory === node.key) return !selectedCollapsed
+  return selectedCategory.startsWith(node.key + '/')
+})
 </script>

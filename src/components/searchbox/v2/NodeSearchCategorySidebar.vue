@@ -3,12 +3,27 @@
     <!-- Preset categories -->
     <div class="flex flex-col px-1">
       <button
-        v-for="preset in presetCategories"
+        v-for="preset in topCategories"
         :key="preset.id"
         type="button"
         :data-testid="`category-${preset.id}`"
         :aria-current="selectedCategory === preset.id || undefined"
-        :class="cn(categoryBtnClass(preset.id), preset.class)"
+        :class="categoryBtnClass(preset.id)"
+        @click="selectCategory(preset.id)"
+      >
+        {{ preset.label }}
+      </button>
+    </div>
+
+    <!-- Source categories -->
+    <div class="my-2 flex flex-col border-y border-border-subtle px-1 py-2">
+      <button
+        v-for="preset in sourceCategories"
+        :key="preset.id"
+        type="button"
+        :data-testid="`category-${preset.id}`"
+        :aria-current="selectedCategory === preset.id || undefined"
+        :class="categoryBtnClass(preset.id)"
         @click="selectCategory(preset.id)"
       >
         {{ preset.label }}
@@ -16,12 +31,13 @@
     </div>
 
     <!-- Category tree -->
-    <div class="mt-3 flex flex-col px-1">
-      <CategoryTreeNode
+    <div class="flex flex-col px-1">
+      <NodeSearchCategoryTreeNode
         v-for="category in categoryTree"
         :key="category.key"
         :node="category"
         :selected-category="selectedCategory"
+        :selected-collapsed="selectedCollapsed"
         @select="selectCategory"
       />
     </div>
@@ -29,11 +45,14 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import CategoryTreeNode from '@/components/searchbox/v2/CategoryTreeNode.vue'
-import type { CategoryNode } from '@/components/searchbox/v2/CategoryTreeNode.vue'
+import NodeSearchCategoryTreeNode, {
+  CATEGORY_SELECTED_CLASS,
+  CATEGORY_UNSELECTED_CLASS
+} from '@/components/searchbox/v2/NodeSearchCategoryTreeNode.vue'
+import type { CategoryNode } from '@/components/searchbox/v2/NodeSearchCategoryTreeNode.vue'
 import { nodeOrganizationService } from '@/services/nodeOrganizationService'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import type { TreeNode } from '@/types/treeExplorerTypes'
@@ -46,10 +65,13 @@ const selectedCategory = defineModel<string>('selectedCategory', {
 const { t } = useI18n()
 const nodeDefStore = useNodeDefStore()
 
-const presetCategories = computed(() => [
+const topCategories = computed(() => [
   { id: 'most-relevant', label: t('g.mostRelevant') },
-  { id: 'favorites', label: t('g.favorites') },
-  { id: 'essentials', label: t('g.essentials'), class: 'mt-3' },
+  { id: 'favorites', label: t('g.favorites') }
+])
+
+const sourceCategories = computed(() => [
+  { id: 'essentials', label: t('g.essentials') },
   { id: 'custom', label: t('g.custom') }
 ])
 
@@ -77,17 +99,23 @@ const categoryTree = computed<CategoryNode[]>(() => {
     .map(mapNode)
 })
 
-function categoryBtnClass(id: string, padding = 'px-3') {
+function categoryBtnClass(id: string) {
   return cn(
-    'cursor-pointer border-none bg-transparent rounded py-2.5 text-left text-sm transition-colors',
-    padding,
+    'cursor-pointer border-none bg-transparent rounded px-3 py-2.5 text-left text-sm transition-colors',
     selectedCategory.value === id
-      ? 'bg-highlight font-semibold text-foreground'
-      : 'text-muted-foreground hover:bg-highlight hover:text-foreground'
+      ? CATEGORY_SELECTED_CLASS
+      : CATEGORY_UNSELECTED_CLASS
   )
 }
 
+const selectedCollapsed = ref(false)
+
 function selectCategory(categoryId: string) {
-  selectedCategory.value = categoryId
+  if (selectedCategory.value === categoryId) {
+    selectedCollapsed.value = !selectedCollapsed.value
+  } else {
+    selectedCollapsed.value = false
+    selectedCategory.value = categoryId
+  }
 }
 </script>

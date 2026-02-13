@@ -15,14 +15,14 @@
       :class="
         cn(
           'cursor-pointer px-6 py-1.5',
-          index === selectedIndex && 'bg-highlight'
+          index === selectedIndex && 'bg-secondary-background-hover'
         )
       "
       @click="emit('apply', option)"
       @mouseenter="selectedIndex = index"
     >
       <span class="text-base font-semibold text-foreground">
-        <span class="text-2xl mr-1" :style="{ color: getTypeColor(option) }"
+        <span class="text-2xl mr-1" :style="{ color: getLinkTypeColor(option) }"
           >&bull;</span
         >
         {{ option }}
@@ -41,7 +41,7 @@
 import { computed, nextTick, ref, watch } from 'vue'
 
 import type { FilterChip } from '@/components/searchbox/v2/NodeSearchFilterBar.vue'
-import { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
+import { getLinkTypeColor } from '@/utils/litegraphUtil'
 import { cn } from '@/utils/tailwindUtil'
 
 const { chip } = defineProps<{
@@ -68,10 +68,6 @@ const options = computed(() => {
 watch(query, () => {
   selectedIndex.value = 0
 })
-
-function getTypeColor(typeName: string): string | undefined {
-  return LGraphCanvas.link_type_colors[typeName]
-}
 
 function navigate(direction: number) {
   const newIndex = selectedIndex.value + direction
