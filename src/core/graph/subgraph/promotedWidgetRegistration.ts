@@ -29,6 +29,7 @@ export function registerPromotedWidgetSlots(canvas: LGraphCanvas) {
     const proxyWidgets = parseProxyWidgets(fromNode.properties.proxyWidgets)
     for (const node of subgraph.nodes) {
       for (const widget of node.widgets ?? []) {
+        if (widget instanceof PromotedWidgetSlot) continue
         widget.promoted = proxyWidgets.some(
           ([n, w]) => node.id == n && widget.name == w
         )
