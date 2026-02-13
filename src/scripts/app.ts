@@ -53,6 +53,7 @@ import { useDialogService } from '@/services/dialogService'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useExtensionService } from '@/services/extensionService'
 import { useLitegraphService } from '@/services/litegraphService'
+import { queueSignalBus } from '@/services/queue/queueSignalBus'
 import { useSubgraphService } from '@/services/subgraphService'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import { useCommandStore } from '@/stores/commandStore'
@@ -146,8 +147,10 @@ export class ComfyApp {
   private queueItems: {
     number: number
     batchCount: number
+    requestId: number
     queueNodeIds?: NodeExecutionId[]
   }[] = []
+  private nextQueueRequestId = 1
   /**
    * If the queue is currently being processed
    */
@@ -1379,7 +1382,13 @@ export class ComfyApp {
     batchCount: number = 1,
     queueNodeIds?: NodeExecutionId[]
   ): Promise<boolean> {
-    this.queueItems.push({ number, batchCount, queueNodeIds })
+    const requestId = this.nextQueueRequestId++
+    this.queueItems.push({ number, batchCount, queueNodeIds, requestId })
+    queueSignalBus.emit('queueing', {
+      requestId,
+      batchCount,
+      number
+    })
 
     // Only have one action process the items so each one gets a unique seed correctly
     if (this.processingQueue) {
@@ -1393,10 +1402,17 @@ export class ComfyApp {
     // Get auth token for backend nodes - uses workspace token if enabled, otherwise Firebase token
     const comfyOrgAuthToken = await useFirebaseAuthStore().getAuthToken()
     const comfyOrgApiKey = useApiKeyAuthStore().getApiKey()
+    let lastQueuedRequest: {
+      number: number
+      batchCount: number
+      requestId: number
+    } | null = null
 
     try {
       while (this.queueItems.length) {
-        const { number, batchCount, queueNodeIds } = this.queueItems.pop()!
+        const { number, batchCount, queueNodeIds, requestId } =
+          this.queueItems.pop()!
+        lastQueuedRequest = { number, batchCount, requestId }
         const previewMethod = useSettingStore().get(
           'Comfy.Execution.PreviewMethod'
         )
@@ -1474,7 +1490,13 @@ export class ComfyApp {
     } finally {
       this.processingQueue = false
     }
-    api.dispatchCustomEvent('promptQueued', { number, batchCount })
+    if (lastQueuedRequest) {
+      queueSignalBus.emit('queued', {
+        number: lastQueuedRequest.number,
+        batchCount: lastQueuedRequest.batchCount,
+        requestId: lastQueuedRequest.requestId
+      })
+    }
     return !executionStore.lastNodeErrors
   }
 

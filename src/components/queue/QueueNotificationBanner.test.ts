@@ -11,7 +11,8 @@ const i18n = createI18n({
   messages: {
     en: {
       queue: {
-        jobAddedToQueue: 'Job added to queue'
+        jobAddedToQueue: 'Job added to queue',
+        jobQueueing: 'Job queueing'
       },
       sideToolbar: {
         queueProgressOverlay: {
@@ -57,6 +58,17 @@ describe('QueueNotificationBanner', () => {
     expect(wrapper.html()).toContain('icon-[lucide--check]')
   })
 
+  it('renders queued pending message with spinner icon', () => {
+    const wrapper = mountComponent({
+      type: 'queuedPending',
+      count: 1
+    })
+
+    expect(wrapper.text()).toContain('Job queueing')
+    expect(wrapper.html()).toContain('icon-[lucide--loader-circle]')
+    expect(wrapper.html()).toContain('animate-spin')
+  })
+
   it('renders failed message and alert icon', () => {
     const wrapper = mountComponent({
       type: 'failed',
@@ -71,12 +83,57 @@ describe('QueueNotificationBanner', () => {
     const wrapper = mountComponent({
       type: 'completed',
       count: 3,
-      thumbnailUrl: 'https://example.com/preview.png'
+      thumbnailUrls: ['https://example.com/preview.png']
     })
 
     expect(wrapper.text()).toContain('3 jobs completed')
     const image = wrapper.get('img')
     expect(image.attributes('src')).toBe('https://example.com/preview.png')
     expect(image.attributes('alt')).toBe('Preview')
+  })
+
+  it('renders two completion thumbnail previews', () => {
+    const wrapper = mountComponent({
+      type: 'completed',
+      count: 4,
+      thumbnailUrls: [
+        'https://example.com/preview-1.png',
+        'https://example.com/preview-2.png'
+      ]
+    })
+
+    const images = wrapper.findAll('img')
+    expect(images.length).toBe(2)
+    expect(images[0].attributes('src')).toBe(
+      'https://example.com/preview-1.png'
+    )
+    expect(images[1].attributes('src')).toBe(
+      'https://example.com/preview-2.png'
+    )
+  })
+
+  it('caps completion thumbnail previews at three', () => {
+    const wrapper = mountComponent({
+      type: 'completed',
+      count: 4,
+      thumbnailUrls: [
+        'https://example.com/preview-1.png',
+        'https://example.com/preview-2.png',
+        'https://example.com/preview-3.png',
+        'https://example.com/preview-4.png'
+      ]
+    })
+
+    const images = wrapper.findAll('img')
+    expect(images.length).toBe(3)
+    expect(images[0].attributes('src')).toBe(
+      'https://example.com/preview-1.png'
+    )
+    expect(images[1].attributes('src')).toBe(
+      'https://example.com/preview-2.png'
+    )
+    expect(images[2].attributes('src')).toBe(
+      'https://example.com/preview-3.png'
+    )
   })
 })

@@ -131,7 +131,6 @@ interface QueuePromptOptions {
 /** Dictionary of Frontend-generated API calls */
 interface FrontendApiCalls {
   graphChanged: ComfyWorkflowJSON
-  promptQueued: { number: number; batchCount: number }
   graphCleared: never
   reconnecting: never
   reconnected: never
@@ -165,6 +164,7 @@ interface BackendApiCalls {
   progress_state: ProgressStateWsMessage
   feature_flags: FeatureFlagsWsMessage
   asset_download: AssetDownloadWsMessage
+  promptQueued: { number: number; batchCount: number; requestId?: number }
 }
 
 /** Dictionary of all api calls */

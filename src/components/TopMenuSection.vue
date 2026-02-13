@@ -105,19 +105,24 @@
       </div>
     </div>
 
-    <div>
+    <div class="flex flex-col items-end gap-1">
       <Teleport
-        v-if="queueNotificationBannerTarget"
-        :to="queueNotificationBannerTarget"
+        v-if="inlineProgressSummaryTarget"
+        :to="inlineProgressSummaryTarget"
       >
         <div
           class="pointer-events-none absolute left-0 right-0 top-full mt-1 flex justify-end pr-1"
         >
-          <QueueNotificationBannerHost />
+          <QueueInlineProgressSummary :hidden="isQueueOverlayExpanded" />
         </div>
       </Teleport>
+      <QueueInlineProgressSummary
+        v-else-if="shouldShowInlineProgressSummary && !isActionbarFloating"
+        class="pr-1"
+        :hidden="isQueueOverlayExpanded"
+      />
       <QueueNotificationBannerHost
-        v-else-if="shouldShowQueueNotificationBanners && !isActionbarFloating"
+        v-if="shouldShowQueueNotificationBanners"
         class="pr-1"
       />
     </div>
@@ -134,6 +139,7 @@ import { useI18n } from 'vue-i18n'
 
 import ComfyActionbar from '@/components/actionbar/ComfyActionbar.vue'
 import SubgraphBreadcrumb from '@/components/breadcrumb/SubgraphBreadcrumb.vue'
+import QueueInlineProgressSummary from '@/components/queue/QueueInlineProgressSummary.vue'
 import QueueNotificationBannerHost from '@/components/queue/QueueNotificationBannerHost.vue'
 import QueueProgressOverlay from '@/components/queue/QueueProgressOverlay.vue'
 import ActionBarButtons from '@/components/topbar/ActionBarButtons.vue'
@@ -200,15 +206,18 @@ const isQueuePanelV2Enabled = computed(() =>
 const isQueueProgressOverlayEnabled = computed(
   () => !isQueuePanelV2Enabled.value
 )
-const shouldShowQueueNotificationBanners = computed(
+const shouldShowInlineProgressSummary = computed(
   () => isQueuePanelV2Enabled.value && isActionbarEnabled.value
+)
+const shouldShowQueueNotificationBanners = computed(
+  () => isActionbarEnabled.value
 )
 const progressTarget = ref<HTMLElement | null>(null)
 function updateProgressTarget(target: HTMLElement | null) {
   progressTarget.value = target
 }
-const queueNotificationBannerTarget = computed(() => {
-  if (!shouldShowQueueNotificationBanners.value || !isActionbarFloating.value) {
+const inlineProgressSummaryTarget = computed(() => {
+  if (!shouldShowInlineProgressSummary.value || !isActionbarFloating.value) {
     return null
   }
   return progressTarget.value
