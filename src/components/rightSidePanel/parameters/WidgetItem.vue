@@ -4,7 +4,7 @@ import { useI18n } from 'vue-i18n'
 
 import EditableText from '@/components/common/EditableText.vue'
 import { getSharedWidgetEnhancements } from '@/composables/graph/useGraphNodeManager'
-import { isProxyWidget } from '@/core/graph/subgraph/proxyWidget'
+import type { PromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetView'
 import { st } from '@/i18n'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
@@ -16,7 +16,6 @@ import {
   shouldExpand
 } from '@/renderer/extensions/vueNodes/widgets/registry/widgetRegistry'
 import { useFavoritedWidgetsStore } from '@/stores/workspace/favoritedWidgetsStore'
-import { getNodeByExecutionId } from '@/utils/graphTraversalUtil'
 import { resolveNodeDisplayName } from '@/utils/nodeTitleUtil'
 import { cn } from '@/utils/tailwindUtil'
 import { renameWidget } from '@/utils/widgetUtil'
@@ -64,9 +63,9 @@ const enhancedWidget = computed(() => {
 
 const sourceNodeName = computed((): string | null => {
   let sourceNode: LGraphNode | null = node
-  if (isProxyWidget(widget)) {
-    const { graph, nodeId } = widget._overlay
-    sourceNode = getNodeByExecutionId(graph, nodeId)
+  if ('sourceNodeId' in widget && node.isSubgraphNode()) {
+    const view = widget as PromotedWidgetView
+    sourceNode = node.subgraph.getNodeById(view.sourceNodeId) ?? null
   }
   if (!sourceNode) return null
   const fallbackNodeTitle = t('rightSidePanel.fallbackNodeTitle')

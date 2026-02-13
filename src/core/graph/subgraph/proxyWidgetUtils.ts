@@ -1,9 +1,5 @@
 import { parseProxyWidgets } from '@/core/schemas/proxyWidget'
 import type { ProxyWidgetsProperty } from '@/core/schemas/proxyWidget'
-import {
-  isProxyWidget,
-  isDisconnectedWidget
-} from '@/core/graph/subgraph/proxyWidget'
 import { t } from '@/i18n'
 import type {
   IContextMenuValue,
@@ -58,7 +54,9 @@ export function demoteWidget(
 }
 
 function getWidgetName(w: IBaseWidget): string {
-  return isProxyWidget(w) ? w._overlay.widgetName : w.name
+  return 'sourceWidgetName' in w
+    ? (w as { sourceWidgetName: string }).sourceWidgetName
+    : w.name
 }
 
 export function matchesWidgetItem([nodeId, widgetName]: [string, string]) {
@@ -181,8 +179,20 @@ export function promoteRecommendedWidgets(subgraphNode: SubgraphNode) {
 }
 
 export function pruneDisconnected(subgraphNode: SubgraphNode) {
+  const subgraph = subgraphNode.subgraph
   subgraphNode.properties.proxyWidgets = subgraphNode.widgets
-    .filter(isProxyWidget)
-    .filter((w) => !isDisconnectedWidget(w))
-    .map((w) => [w._overlay.nodeId, w._overlay.widgetName])
+    .filter(
+      (
+        w
+      ): w is IBaseWidget & {
+        sourceNodeId: string
+        sourceWidgetName: string
+      } => 'sourceNodeId' in w
+    )
+    .filter((w) => {
+      const node = subgraph.getNodeById(w.sourceNodeId)
+      if (!node) return false
+      return node.widgets?.some((iw) => iw.name === w.sourceWidgetName) ?? false
+    })
+    .map((w) => [w.sourceNodeId, w.sourceWidgetName])
 }

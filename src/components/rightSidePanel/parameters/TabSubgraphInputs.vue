@@ -15,7 +15,7 @@ import {
 } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { isProxyWidget } from '@/core/graph/subgraph/proxyWidget'
+import type { PromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetView'
 import { parseProxyWidgets } from '@/core/schemas/proxyWidget'
 import type { ProxyWidgetsProperty } from '@/core/schemas/proxyWidget'
 import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
@@ -89,14 +89,13 @@ const widgetsList = computed((): NodeWidgetsList => {
   for (const [nodeId, widgetName] of proxyWidgetsOrder) {
     // Find the proxy widget that matches this nodeId and widgetName
     const widget = widgets.find((w) => {
-      // Check if this is a proxy widget with _overlay
-      if (isProxyWidget(w)) {
+      if ('sourceNodeId' in w) {
+        const view = w as PromotedWidgetView
         return (
-          String(w._overlay.nodeId) === nodeId &&
-          w._overlay.widgetName === widgetName
+          String(view.sourceNodeId) === nodeId &&
+          view.sourceWidgetName === widgetName
         )
       }
-      // For non-proxy widgets (like linked widgets), match by name
       return w.name === widgetName
     })
     if (widget) {

@@ -1,38 +1,20 @@
 import { promoteRecommendedWidgets } from '@/core/graph/subgraph/proxyWidgetUtils'
-import { parseProxyWidgets } from '@/core/schemas/proxyWidget'
-import type {
-  LGraph,
-  LGraphCanvas,
-  LGraphNode
-} from '@/lib/litegraph/src/litegraph'
-import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets.ts'
-import { disconnectedWidget } from '@/lib/litegraph/src/widgets/DisconnectedWidget'
-
-type Overlay = Partial<IBaseWidget> & {
-  graph: LGraph
-  nodeId: string
-  widgetName: string
-  isProxyWidget: boolean
-  node?: LGraphNode
-}
-
-type ProxyWidget = IBaseWidget & { _overlay: Overlay }
-export function isProxyWidget(w: IBaseWidget): w is ProxyWidget {
-  return (w as { _overlay?: Overlay })?._overlay?.isProxyWidget ?? false
-}
-export function isDisconnectedWidget(w: ProxyWidget) {
-  return w instanceof disconnectedWidget.constructor
-}
+import type { PromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetView'
+import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 
 export function registerProxyWidgets(canvas: LGraphCanvas) {
   canvas.canvas.addEventListener<'subgraph-opened'>('subgraph-opened', (e) => {
     const { subgraph, fromNode } = e.detail
-    const proxyWidgets = parseProxyWidgets(fromNode.properties.proxyWidgets)
+    // TODO: Derive `promoted` reactively via a Pinia store instead of
+    // imperatively setting it on subgraph open.
+    const promotedEntries = new Set(
+      fromNode.widgets
+        .filter((w): w is PromotedWidgetView => 'sourceNodeId' in w)
+        .map((w) => `${w.sourceNodeId}:${w.sourceWidgetName}`)
+    )
     for (const node of subgraph.nodes) {
       for (const widget of node.widgets ?? []) {
-        widget.promoted = proxyWidgets.some(
-          ([n, w]) => node.id == n && widget.name == w
-        )
+        widget.promoted = promotedEntries.has(`${node.id}:${widget.name}`)
       }
     }
   })

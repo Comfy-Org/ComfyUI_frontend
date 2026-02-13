@@ -4,7 +4,7 @@ import { defineStore } from 'pinia'
 import { computed, ref, watchEffect } from 'vue'
 
 import { t } from '@/i18n'
-import { isProxyWidget } from '@/core/graph/subgraph/proxyWidget'
+import type { PromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetView'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { transformNodeDefV1ToV2 } from '@/schemas/nodeDef/migration'
@@ -401,14 +401,13 @@ export const useNodeDefStore = defineStore('nodeDef', () => {
       return nodeDef.inputs[widgetName]
     }
     const widget = node.widgets?.find((w) => w.name === widgetName)
-    //TODO: resolve spec for linked
-    if (!widget || !isProxyWidget(widget)) return undefined
+    if (!widget || !('sourceNodeId' in widget)) return undefined
 
-    const { nodeId, widgetName: subWidgetName } = widget._overlay
-    const subNode = node.subgraph.getNodeById(nodeId)
+    const view = widget as PromotedWidgetView
+    const subNode = node.subgraph.getNodeById(view.sourceNodeId)
     if (!subNode) return undefined
 
-    return getInputSpecForWidget(subNode, subWidgetName)
+    return getInputSpecForWidget(subNode, view.sourceWidgetName)
   }
 
   /**

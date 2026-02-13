@@ -6,7 +6,6 @@ import { reactiveComputed } from '@vueuse/core'
 import { reactive, shallowReactive } from 'vue'
 
 import { useChainCallback } from '@/composables/functional/useChainCallback'
-import { isProxyWidget } from '@/core/graph/subgraph/proxyWidget'
 import type {
   INodeInputSlot,
   INodeOutputSlot
@@ -122,8 +121,10 @@ function getControlWidget(widget: IBaseWidget): SafeControlWidget | undefined {
 }
 
 function getNodeType(node: LGraphNode, widget: IBaseWidget) {
-  if (!node.isSubgraphNode() || !isProxyWidget(widget)) return undefined
-  const subNode = node.subgraph.getNodeById(widget._overlay.nodeId)
+  if (!node.isSubgraphNode() || !('sourceNodeId' in widget)) return undefined
+  const subNode = node.subgraph.getNodeById(
+    (widget as { sourceNodeId: string }).sourceNodeId
+  )
   return subNode?.type
 }
 
@@ -221,14 +222,16 @@ function safeWidgetMapper(
         : undefined
       const subgraphId = node.isSubgraphNode() && node.subgraph.id
 
-      const localId = isProxyWidget(widget)
-        ? widget._overlay?.nodeId
-        : undefined
+      const localId =
+        'sourceNodeId' in widget
+          ? (widget as { sourceNodeId: string }).sourceNodeId
+          : undefined
       const nodeId =
         subgraphId && localId ? `${subgraphId}:${localId}` : undefined
-      const name = isProxyWidget(widget)
-        ? widget._overlay.widgetName
-        : widget.name
+      const name =
+        'sourceWidgetName' in widget
+          ? (widget as { sourceWidgetName: string }).sourceWidgetName
+          : widget.name
 
       return {
         nodeId,

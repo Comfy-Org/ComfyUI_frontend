@@ -638,37 +638,41 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
 
   override removeWidgetByName(name: string): void {
     const widget = this.widgets.find((w) => w.name === name)
-    if (widget) {
-      this.subgraph.events.dispatch('widget-demoted', {
-        widget,
-        subgraphNode: this
-      })
-    }
-    super.removeWidgetByName(name)
+    if (widget) this.ensureWidgetRemoved(widget)
   }
 
   override ensureWidgetRemoved(widget: IBaseWidget): void {
-    if (this.widgets.includes(widget)) {
-      this.subgraph.events.dispatch('widget-demoted', {
-        widget,
-        subgraphNode: this
-      })
+    if ('sourceNodeId' in widget) {
+      const view = widget as PromotedWidgetView
+      const list = this._getPromotionList()
+      this.properties.proxyWidgets = list.filter(
+        ([n, w]) => !(n == view.sourceNodeId && w == view.sourceWidgetName)
+      )
+      this._viewCache.delete(`${view.sourceNodeId}:${view.sourceWidgetName}`)
     }
-    super.ensureWidgetRemoved(widget)
+    for (const input of this.inputs) {
+      if (input._widget === widget) {
+        input._widget = undefined
+        input.widget = undefined
+      }
+    }
+    this.subgraph.events.dispatch('widget-demoted', {
+      widget,
+      subgraphNode: this
+    })
   }
 
   override onRemoved(): void {
-    // Clean up all subgraph event listeners
     this._eventAbortController.abort()
 
-    // Clean up all promoted widgets
     for (const widget of this.widgets) {
-      if ('isProxyWidget' in widget && widget.isProxyWidget) continue
       this.subgraph.events.dispatch('widget-demoted', {
         widget,
         subgraphNode: this
       })
     }
+
+    this._viewCache.clear()
 
     for (const input of this.inputs) {
       if (
