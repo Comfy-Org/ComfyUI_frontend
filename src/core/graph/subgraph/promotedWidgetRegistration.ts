@@ -63,9 +63,8 @@ function syncPromotedWidgets(
     if (w instanceof PromotedWidgetSlot) w.disposeDomAdapter()
   }
 
-  // Collect slot-promoted copies created by _setWidget() during configure.
-  // These have sourceNodeId/sourceWidgetName set via Object.defineProperties.
-  const copies = widgets.filter(
+  // Collect stubs created by _setWidget() during configure.
+  const stubs = widgets.filter(
     (
       w
     ): w is IBaseWidget & { sourceNodeId: string; sourceWidgetName: string } =>
@@ -74,54 +73,83 @@ function syncPromotedWidgets(
       'sourceWidgetName' in w
   )
 
-  // Remove all promoted widgets (both PromotedWidgetSlots and copies)
+  // Remove all promoted widgets (both PromotedWidgetSlots and stubs)
   node.widgets = widgets.filter(
     (w) =>
       !(w instanceof PromotedWidgetSlot) &&
-      !(copies as IBaseWidget[]).includes(w)
+      !(stubs as IBaseWidget[]).includes(w)
   )
 
-  // Track which source widgets are covered by the parsed list
+  const subgraphNode = node as SubgraphNode
   const covered = new Set<string>()
 
-  // Create PromotedWidgetSlots for all parsed entries.
-  // Legacy `-1` entries are resolved to real IDs via the copies.
   const newSlots: IBaseWidget[] = parsed.flatMap(([nodeId, widgetName]) => {
     let resolvedNodeId = nodeId
     let resolvedWidgetName = widgetName
 
+    // Legacy `-1` entries: resolve via subgraph input wiring
     if (nodeId === '-1') {
-      const copy = copies.find((w) => w.name === widgetName)
-      if (!copy) return []
-      resolvedNodeId = copy.sourceNodeId
-      resolvedWidgetName = copy.sourceWidgetName
+      const subgraph = subgraphNode.subgraph
+      const inputSlot = subgraph?.inputNode?.slots.find(
+        (s) => s.name === widgetName
+      )
+      if (!inputSlot || !subgraph) return []
+
+      const linkId = inputSlot.linkIds[0]
+      const link = linkId != null ? subgraph.getLink(linkId) : undefined
+      if (!link) return []
+
+      const resolved = link.resolve(subgraph)
+      const inputWidgetName = resolved.input?.widget?.name
+      if (!resolved.inputNode || !inputWidgetName) return []
+
+      resolvedNodeId = String(resolved.inputNode.id)
+      resolvedWidgetName = inputWidgetName
     }
 
     covered.add(`${resolvedNodeId}:${resolvedWidgetName}`)
     return [
-      new PromotedWidgetSlot(
-        node as SubgraphNode,
-        resolvedNodeId,
-        resolvedWidgetName
-      )
+      new PromotedWidgetSlot(subgraphNode, resolvedNodeId, resolvedWidgetName)
     ]
   })
 
-  // Add PromotedWidgetSlots for any copies not in the parsed list
+  // Add PromotedWidgetSlots for stubs not in the parsed list
   // (e.g. old workflows that didn't serialize slot-promoted entries)
-  for (const copy of copies) {
-    const key = `${copy.sourceNodeId}:${copy.sourceWidgetName}`
+  for (const stub of stubs) {
+    const key = `${stub.sourceNodeId}:${stub.sourceWidgetName}`
     if (covered.has(key)) continue
     newSlots.unshift(
       new PromotedWidgetSlot(
-        node as SubgraphNode,
-        copy.sourceNodeId,
-        copy.sourceWidgetName
+        subgraphNode,
+        stub.sourceNodeId,
+        stub.sourceWidgetName
       )
     )
   }
 
   node.widgets.push(...newSlots)
+
+  // Update input._widget references to point to the new PromotedWidgetSlots
+  // instead of the stubs they replaced.
+  for (const input of subgraphNode.inputs) {
+    const oldWidget = input._widget
+    if (
+      !oldWidget ||
+      !('sourceNodeId' in oldWidget) ||
+      !('sourceWidgetName' in oldWidget)
+    )
+      continue
+
+    const sid = String(oldWidget.sourceNodeId)
+    const swn = String(oldWidget.sourceWidgetName)
+    const replacement = newSlots.find(
+      (w) =>
+        w instanceof PromotedWidgetSlot &&
+        w.sourceNodeId === sid &&
+        w.sourceWidgetName === swn
+    )
+    if (replacement) input._widget = replacement
+  }
 
   canvasStore.canvas?.setDirty(true, true)
   node._setConcreteSlots()

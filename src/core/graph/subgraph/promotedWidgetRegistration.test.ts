@@ -34,6 +34,7 @@ function createMockSubgraphNode(
   return {
     isSubgraphNode: () => true,
     widgets,
+    inputs: [],
     properties: { proxyWidgets: [] },
     _setConcreteSlots: vi.fn(),
     arrange: vi.fn()

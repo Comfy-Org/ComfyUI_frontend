@@ -45,9 +45,10 @@ export class PromotedWidgetSlot extends BaseWidget<IBaseWidget> {
   constructor(
     subgraphNode: SubgraphNode,
     sourceNodeId: NodeId,
-    sourceWidgetName: string
+    sourceWidgetName: string,
+    slotName?: string
   ) {
-    const name = `${sourceNodeId}: ${sourceWidgetName}`
+    const name = slotName ?? `${sourceNodeId}: ${sourceWidgetName}`
     super(
       {
         name,

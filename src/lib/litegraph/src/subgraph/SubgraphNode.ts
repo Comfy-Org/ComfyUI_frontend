@@ -29,8 +29,6 @@ import type {
 } from '@/lib/litegraph/src/types/serialisation'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import type { UUID } from '@/lib/litegraph/src/utils/uuid'
-import { BaseWidget } from '@/lib/litegraph/src/widgets/BaseWidget'
-import { AssetWidget } from '@/lib/litegraph/src/widgets/AssetWidget'
 
 import { ExecutableNodeDTO } from './ExecutableNodeDTO'
 import type { ExecutableLGraphNode, ExecutionId } from './ExecutableNodeDTO'
@@ -354,40 +352,19 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     inputWidget: IWidgetLocator | undefined,
     interiorNode: LGraphNode
   ) {
-    // Use the first matching widget
-    const promotedWidget =
-      widget instanceof BaseWidget
-        ? widget.createCopyForNode(this)
-        : { ...widget, node: this }
-    if (widget instanceof AssetWidget)
-      promotedWidget.options.nodeType ??= widget.node.type
-
-    // Delegate value to the interior widget so both the SubgraphNode copy
-    // and the interior widget share the same store entry.
-    // Object.defineProperty is required — Object.assign invokes getters
-    // and copies the result as a data property.
     const sourceWidget = widget as IBaseWidget
-    Object.defineProperties(promotedWidget, {
-      sourceNodeId: {
-        value: String(interiorNode.id),
-        configurable: true,
-        enumerable: true
-      },
-      sourceWidgetName: {
-        value: sourceWidget.name,
-        configurable: true,
-        enumerable: true
-      },
+    const stub: IBaseWidget = Object.create(null)
+
+    Object.defineProperties(stub, {
+      sourceNodeId: { value: String(interiorNode.id), enumerable: true },
+      sourceWidgetName: { value: sourceWidget.name, enumerable: true },
+      node: { value: this, enumerable: true },
       name: {
         get: () => subgraphInput.name,
-        set() {},
-        configurable: true,
         enumerable: true
       },
-      localized_name: {
-        get: () => subgraphInput.localized_name,
-        set() {},
-        configurable: true,
+      type: {
+        get: () => sourceWidget.type,
         enumerable: true
       },
       value: {
@@ -395,29 +372,29 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
         set: (v) => {
           sourceWidget.value = v
         },
-        configurable: true,
+        enumerable: true
+      },
+      options: {
+        get: () => sourceWidget.options,
         enumerable: true
       },
       label: {
         get: () => subgraphInput.label,
         set() {},
-        configurable: true,
         enumerable: true
       },
       tooltip: {
         get: () => widget.tooltip,
-        set() {},
-        configurable: true,
         enumerable: true
       }
     })
 
     const widgetCount = this.inputs.filter((i) => i.widget).length
-    this.widgets.splice(widgetCount, 0, promotedWidget)
+    this.widgets.splice(widgetCount, 0, stub)
 
     // Dispatch widget-promoted event
     this.subgraph.events.dispatch('widget-promoted', {
-      widget: promotedWidget,
+      widget: stub,
       subgraphNode: this
     })
 
@@ -428,7 +405,20 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     input.widget.name = subgraphInput.name
     if (inputWidget) Object.setPrototypeOf(input.widget, inputWidget)
 
-    input._widget = promotedWidget
+    input._widget = stub
+
+    // Trigger promoted widget slot sync for live connections.
+    // During configure, the proxyWidgets setter isn't defined yet (no-op).
+    // After configure, re-assigning triggers syncPromotedWidgets which
+    // replaces this stub with a proper PromotedWidgetSlot and patches
+    // input._widget references.
+    const desc = Object.getOwnPropertyDescriptor(
+      this.properties,
+      'proxyWidgets'
+    )
+    if (desc?.set) {
+      this.properties.proxyWidgets = this.properties.proxyWidgets
+    }
   }
 
   /**
@@ -585,9 +575,8 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     // Clean up all subgraph event listeners
     this._eventAbortController.abort()
 
-    // Clean up all promoted widgets (skip PromotedWidgetSlot instances)
+    // Dispatch widget-demoted for all widgets so listeners can clean up
     for (const widget of this.widgets) {
-      if (widget.isPromotedSlot) continue
       this.subgraph.events.dispatch('widget-demoted', {
         widget,
         subgraphNode: this
