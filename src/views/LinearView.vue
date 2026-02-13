@@ -7,9 +7,10 @@ import {
 } from '@vueuse/core'
 import Splitter from 'primevue/splitter'
 import SplitterPanel from 'primevue/splitterpanel'
-import { ref, useTemplateRef } from 'vue'
+import { computed, ref, useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import ExtensionSlot from '@/components/common/ExtensionSlot.vue'
 import ModeToggle from '@/components/sidebar/ModeToggle.vue'
 import SideToolbar from '@/components/sidebar/SideToolbar.vue'
 import TopbarBadges from '@/components/topbar/TopbarBadges.vue'
@@ -22,12 +23,16 @@ import LinearPreview from '@/renderer/extensions/linearMode/LinearPreview.vue'
 import MobileMenu from '@/renderer/extensions/linearMode/MobileMenu.vue'
 import { useNodeOutputStore } from '@/stores/imagePreviewStore'
 import type { ResultItemImpl } from '@/stores/queueStore'
+import { useWorkspaceStore } from '@/stores/workspaceStore'
 
 const { t } = useI18n()
 const nodeOutputStore = useNodeOutputStore()
 const settingStore = useSettingStore()
+const workspaceStore = useWorkspaceStore()
 
 const mobileDisplay = useBreakpoints(breakpointsTailwind).smaller('md')
+
+const activeTab = computed(() => workspaceStore.sidebarTab.activeSidebarTab)
 
 const hasPreview = ref(false)
 whenever(
@@ -83,7 +88,7 @@ const linearWorkflowRef = useTemplateRef('linearWorkflowRef')
     <Splitter
       v-else
       class="h-[calc(100%-38px)] w-full bg-comfy-menu-secondary-bg"
-      :pt="{ gutter: { class: 'bg-transparent w-4 -mx-3' } }"
+      :pt="{ gutter: { class: 'bg-transparent w-4 -mx-1' } }"
       @resizestart="({ originalEvent }) => originalEvent.preventDefault()"
     >
       <SplitterPanel
@@ -91,16 +96,19 @@ const linearWorkflowRef = useTemplateRef('linearWorkflowRef')
         :size="1"
         class="min-w-min outline-none"
       >
-        <SideToolbar
+        <div
           v-if="settingStore.get('Comfy.Sidebar.Location') === 'left'"
-        />
+          class="flex h-full border-border-subtle border-r"
+        >
+          <SideToolbar />
+          <ExtensionSlot v-if="activeTab" :extension="activeTab" />
+        </div>
         <LinearControls
           v-else
           ref="linearWorkflowRef"
           :toast-to="unrefElement(bottomLeftRef) ?? undefined"
           :notes-to="unrefElement(topLeftRef) ?? undefined"
         />
-        <div />
       </SplitterPanel>
       <SplitterPanel
         id="linearCenterPanel"
@@ -124,7 +132,6 @@ const linearWorkflowRef = useTemplateRef('linearWorkflowRef')
         <div
           class="absolute z-20 bottom-4 right-4 text-base-foreground flex items-center gap-4"
         >
-          <div v-text="t('linearMode.beta')" />
           <TypeformPopoverButton
             data-tf-widget="gmVqFi8l"
             :align="
@@ -146,8 +153,10 @@ const linearWorkflowRef = useTemplateRef('linearWorkflowRef')
           :toast-to="unrefElement(bottomRightRef) ?? undefined"
           :notes-to="unrefElement(topRightRef) ?? undefined"
         />
-        <SideToolbar v-else />
-        <div />
+        <div v-else class="flex h-full border-border-subtle border-l">
+          <ExtensionSlot v-if="activeTab" :extension="activeTab" />
+          <SideToolbar class="border-border-subtle border-l" />
+        </div>
       </SplitterPanel>
     </Splitter>
   </div>
