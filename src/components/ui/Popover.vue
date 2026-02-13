@@ -51,13 +51,15 @@ defineProps<{
                 :class="
                   cn(
                     'flex flex-row gap-4 p-2 rounded-sm my-1',
-                    item.command &&
-                      'cursor-pointer hover:bg-secondary-background-hover'
+                    item.disabled
+                      ? 'opacity-50 pointer-events-none'
+                      : item.command &&
+                          'cursor-pointer hover:bg-secondary-background-hover'
                   )
                 "
                 @click="
                   (e) => {
-                    if (!item.command) return
+                    if (!item.command || item.disabled) return
                     item.command({ originalEvent: e, item })
                     close()
                   }
