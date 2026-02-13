@@ -258,6 +258,30 @@ describe('WidgetToggleSwitch Value Binding', () => {
       expect(wrapper.findComponent({ name: 'ToggleSwitch' }).exists()).toBe(
         false
       )
+      expect(wrapper.text()).not.toContain('true')
+    })
+
+    it('disables ToggleGroup when read_only option is set', () => {
+      const widget = createMockWidget(false, {
+        on: 'yes',
+        off: 'no',
+        read_only: true
+      })
+      const wrapper = mountComponent(widget, false)
+
+      const toggleGroup = wrapper.findComponent({ name: 'ToggleGroupRoot' })
+      expect(toggleGroup.props('disabled')).toBe(true)
+    })
+
+    it('does not emit when clicking already-selected option', async () => {
+      const widget = createMockWidget(false, { on: 'yes', off: 'no' })
+      const wrapper = mountComponent(widget, false)
+
+      const buttons = wrapper.findAll('button')
+      const offButton = buttons.find((b) => b.text() === 'no')
+      await offButton!.trigger('click')
+
+      expect(wrapper.emitted('update:modelValue')).toBeUndefined()
     })
   })
 })

@@ -2,12 +2,15 @@
 import type { ToggleGroupItemProps } from 'reka-ui'
 import { ToggleGroupItem, useForwardProps } from 'reka-ui'
 import type { HTMLAttributes } from 'vue'
-import { computed, inject } from 'vue'
+import { computed, inject, ref } from 'vue'
 
 import { cn } from '@/utils/tailwindUtil'
 
 import type { ToggleGroupItemVariants } from './toggleGroup.variants'
-import { toggleGroupItemVariants } from './toggleGroup.variants'
+import {
+  toggleGroupItemVariants,
+  toggleGroupVariantKey
+} from './toggleGroup.variants'
 
 interface Props extends ToggleGroupItemProps {
   class?: HTMLAttributes['class']
@@ -22,15 +25,13 @@ const {
   ...restProps
 } = defineProps<Props>()
 
-const contextVariant = inject<ToggleGroupItemVariants['variant']>(
-  'toggleGroupVariant',
-  'default'
+const contextVariant = inject(toggleGroupVariantKey, ref('default'))
+
+const forwardedProps = useForwardProps(restProps)
+
+const resolvedVariant = computed(
+  () => variant ?? contextVariant.value ?? 'default'
 )
-
-const delegatedProps = computed(() => restProps)
-const forwardedProps = useForwardProps(delegatedProps)
-
-const resolvedVariant = computed(() => variant ?? contextVariant ?? 'default')
 </script>
 
 <template>

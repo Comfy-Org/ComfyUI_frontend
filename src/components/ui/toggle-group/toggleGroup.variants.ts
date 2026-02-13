@@ -1,5 +1,11 @@
+import type { InjectionKey, Ref } from 'vue'
+
 import type { VariantProps } from 'cva'
 import { cva } from 'cva'
+
+export const toggleGroupVariantKey: InjectionKey<
+  Ref<ToggleGroupItemVariants['variant']>
+> = Symbol('toggleGroupVariant')
 
 export const toggleGroupVariants = cva({
   base: 'flex items-center justify-center gap-1',
@@ -36,4 +42,6 @@ export const toggleGroupItemVariants = cva({
 })
 
 export type ToggleGroupVariants = VariantProps<typeof toggleGroupVariants>
-export type ToggleGroupItemVariants = VariantProps<typeof toggleGroupItemVariants>
+export type ToggleGroupItemVariants = VariantProps<
+  typeof toggleGroupItemVariants
+>

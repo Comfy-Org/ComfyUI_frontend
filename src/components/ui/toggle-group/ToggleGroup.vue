@@ -2,27 +2,35 @@
 import type { ToggleGroupRootEmits, ToggleGroupRootProps } from 'reka-ui'
 import { ToggleGroupRoot, useForwardPropsEmits } from 'reka-ui'
 import type { HTMLAttributes } from 'vue'
-import { computed, provide } from 'vue'
+import { provide, toRef } from 'vue'
 
 import { cn } from '@/utils/tailwindUtil'
 
 import type { ToggleGroupVariants } from './toggleGroup.variants'
-import { toggleGroupVariants } from './toggleGroup.variants'
+import {
+  toggleGroupVariantKey,
+  toggleGroupVariants
+} from './toggleGroup.variants'
 
 interface Props extends ToggleGroupRootProps {
   class?: HTMLAttributes['class']
   variant?: ToggleGroupVariants['variant']
 }
 
-const { class: className, variant = 'default', ...restProps } = defineProps<Props>()
+const {
+  class: className,
+  variant = 'default',
+  ...restProps
+} = defineProps<Props>()
 
 const emits = defineEmits<ToggleGroupRootEmits>()
 
-const delegatedProps = computed(() => restProps)
+const forwarded = useForwardPropsEmits(restProps, emits)
 
-const forwarded = useForwardPropsEmits(delegatedProps, emits)
-
-provide('toggleGroupVariant', variant)
+provide(
+  toggleGroupVariantKey,
+  toRef(() => variant)
+)
 </script>
 
 <template>
