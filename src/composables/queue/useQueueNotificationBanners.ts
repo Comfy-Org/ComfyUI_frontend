@@ -54,7 +54,10 @@ export const useQueueNotificationBanners = () => {
   const dismissTimer = ref<number | null>(null)
   const lastActiveStartTs = ref<number | null>(null)
   const isQueueActive = computed(
-    () => queueStore.runningTasks.length > 0 || !executionStore.isIdle
+    () =>
+      queueStore.pendingTasks.length > 0 ||
+      queueStore.runningTasks.length > 0 ||
+      !executionStore.isIdle
   )
 
   const clearDismissTimer = () => {
