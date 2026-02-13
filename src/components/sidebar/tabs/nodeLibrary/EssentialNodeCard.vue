@@ -2,7 +2,7 @@
   <div
     :class="
       cn(
-        'flex flex-col items-center justify-center gap-2 p-4 rounded-xl cursor-pointer select-none transition-colors duration-150',
+        'flex flex-col items-center justify-center p-4 rounded-xl cursor-pointer select-none transition-colors duration-150',
         'bg-neutral-800 hover:bg-neutral-700',
         'aspect-square'
       )
@@ -16,16 +16,16 @@
     @mouseleave="handleMouseLeave"
   >
     <div class="flex flex-1 items-center justify-center">
-      <i :class="cn(nodeIcon, 'size-12 text-neutral-400')" />
+      <i :class="cn(nodeIcon, 'size-10 text-neutral-400')" />
     </div>
     <span
-      class="shrink-0 text-xs font-medium text-center text-neutral-200 line-clamp-1 leading-tight"
+      class="shrink-0 h-8 text-xs font-medium text-center text-neutral-200 line-clamp-2 leading-4"
     >
       {{ nodeDef?.display_name }}
     </span>
   </div>
 
-  <Teleport v-if="showPreview" to="#node-library-node-preview-container-v2">
+  <Teleport v-if="showPreview" to="body">
     <div
       :ref="(el) => (previewRef = el as HTMLElement)"
       :style="nodePreviewStyle"

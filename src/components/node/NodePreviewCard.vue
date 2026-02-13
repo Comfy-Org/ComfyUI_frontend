@@ -1,10 +1,9 @@
 <template>
   <div
-    class="flex w-44 flex-col overflow-hidden rounded-2xl bg-(--base-background)"
+    class="flex w-50 flex-col overflow-hidden rounded-2xl bg-(--base-background)"
   >
-    <!-- Node Preview: LGraphNodePreview is 350px wide, scale to fit 144px (w-44 - p-4*2) -->
-    <div ref="previewContainerRef" class="overflow-hidden p-4">
-      <div ref="previewWrapperRef" class="origin-top-left scale-[0.41]">
+    <div ref="previewContainerRef" class="overflow-hidden p-3">
+      <div ref="previewWrapperRef" class="origin-top-left scale-50">
         <LGraphNodePreview :node-def="nodeDef" position="relative" />
       </div>
     </div>
@@ -12,7 +11,7 @@
     <!-- Content Section -->
     <div class="flex flex-col gap-2 p-3 pt-1">
       <!-- Title -->
-      <h3 class="text-xs font-bold text-foreground m-0">
+      <h3 class="text-xs font-semibold text-foreground m-0">
         {{ nodeDef.display_name }}
       </h3>
 
@@ -36,7 +35,7 @@
       <!-- Description -->
       <p
         v-if="nodeDef.description"
-        class="line-clamp-2 text-xxs leading-relaxed text-muted-foreground m-0"
+        class="line-clamp-2 text-[11px] font-normal leading-relaxed text-muted-foreground m-0"
       >
         {{ nodeDef.description }}
       </p>
@@ -54,10 +53,12 @@
         <div
           v-for="input in inputs"
           :key="input.name"
-          class="flex items-center justify-between text-xxs"
+          class="flex items-center justify-between gap-2 text-xxs"
         >
-          <span class="text-foreground">{{ input.name }}</span>
-          <span class="text-muted-foreground">{{ input.type }}</span>
+          <span class="shrink-0 text-foreground">{{ input.name }}</span>
+          <span class="min-w-0 truncate text-muted-foreground">{{
+            input.type
+          }}</span>
         </div>
       </div>
 
@@ -71,10 +72,12 @@
         <div
           v-for="output in outputs"
           :key="output.name"
-          class="flex items-center justify-between text-xxs"
+          class="flex items-center justify-between gap-2 text-xxs"
         >
-          <span class="text-foreground">{{ output.name }}</span>
-          <span class="text-muted-foreground">{{ output.type }}</span>
+          <span class="shrink-0 text-foreground">{{ output.name }}</span>
+          <span class="min-w-0 truncate text-muted-foreground">{{
+            output.type
+          }}</span>
         </div>
       </div>
     </div>
@@ -91,7 +94,7 @@ import { getProviderBorderStyle, getProviderIcon } from '@/utils/categoryUtil'
 import LGraphNodePreview from '@/renderer/extensions/vueNodes/components/LGraphNodePreview.vue'
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 
-const SCALE_FACTOR = 0.41
+const SCALE_FACTOR = 0.5
 
 const { nodeDef } = defineProps<{
   nodeDef: ComfyNodeDefImpl
@@ -104,7 +107,7 @@ useResizeObserver(previewWrapperRef, (entries) => {
   const entry = entries[0]
   if (entry && previewContainerRef.value) {
     const scaledHeight = entry.contentRect.height * SCALE_FACTOR
-    previewContainerRef.value.style.height = `${scaledHeight + 32}px`
+    previewContainerRef.value.style.height = `${scaledHeight + 24}px`
   }
 })
 

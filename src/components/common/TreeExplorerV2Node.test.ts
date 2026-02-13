@@ -21,13 +21,11 @@ vi.mock('@/components/node/NodePreviewCard.vue', () => ({
 
 const mockStartDrag = vi.fn()
 const mockHandleNativeDrop = vi.fn()
-const mockCancelDrag = vi.fn()
 
 vi.mock('@/composables/node/useNodeDragToCanvas', () => ({
   useNodeDragToCanvas: () => ({
     startDrag: mockStartDrag,
-    handleNativeDrop: mockHandleNativeDrop,
-    cancelDrag: mockCancelDrag
+    handleNativeDrop: mockHandleNativeDrop
   })
 }))
 
@@ -202,10 +200,10 @@ describe('TreeExplorerV2Node', () => {
 
     it('renders folder icon for folder type', () => {
       const { wrapper } = mountComponent({
-        item: createMockItem('folder', { icon: 'icon-[ph--folder-fill]' })
+        item: createMockItem('folder', { icon: 'icon-[lucide--folder]' })
       })
 
-      expect(wrapper.find('i.icon-\\[ph--folder-fill\\]').exists()).toBe(true)
+      expect(wrapper.find('i.icon-\\[lucide--folder\\]').exists()).toBe(true)
     })
 
     it('renders label text', () => {
@@ -276,7 +274,7 @@ describe('TreeExplorerV2Node', () => {
       expect(mockStartDrag).not.toHaveBeenCalled()
     })
 
-    it('calls handleNativeDrop on dragend with valid drop', async () => {
+    it('calls handleNativeDrop on dragend with drop coordinates', async () => {
       const mockData = { name: 'TestNode' }
       const { wrapper } = mountComponent({
         item: createMockItem('node', { data: mockData })
@@ -289,9 +287,6 @@ describe('TreeExplorerV2Node', () => {
       const dragEndEvent = new DragEvent('dragend', { bubbles: true })
       Object.defineProperty(dragEndEvent, 'clientX', { value: 100 })
       Object.defineProperty(dragEndEvent, 'clientY', { value: 200 })
-      Object.defineProperty(dragEndEvent, 'dataTransfer', {
-        value: { dropEffect: 'copy' }
-      })
 
       await nodeDiv.element.dispatchEvent(dragEndEvent)
       await wrapper.vm.$nextTick()
@@ -299,7 +294,7 @@ describe('TreeExplorerV2Node', () => {
       expect(mockHandleNativeDrop).toHaveBeenCalledWith(100, 200)
     })
 
-    it('calls cancelDrag on dragend with cancelled drop', async () => {
+    it('calls handleNativeDrop regardless of dropEffect', async () => {
       const mockData = { name: 'TestNode' }
       const { wrapper } = mountComponent({
         item: createMockItem('node', { data: mockData })
@@ -308,10 +303,11 @@ describe('TreeExplorerV2Node', () => {
       const nodeDiv = wrapper.find('div.group\\/tree-node')
 
       await nodeDiv.trigger('dragstart')
+      mockHandleNativeDrop.mockClear()
 
       const dragEndEvent = new DragEvent('dragend', { bubbles: true })
-      Object.defineProperty(dragEndEvent, 'clientX', { value: 100 })
-      Object.defineProperty(dragEndEvent, 'clientY', { value: 200 })
+      Object.defineProperty(dragEndEvent, 'clientX', { value: 300 })
+      Object.defineProperty(dragEndEvent, 'clientY', { value: 400 })
       Object.defineProperty(dragEndEvent, 'dataTransfer', {
         value: { dropEffect: 'none' }
       })
@@ -319,8 +315,7 @@ describe('TreeExplorerV2Node', () => {
       await nodeDiv.element.dispatchEvent(dragEndEvent)
       await wrapper.vm.$nextTick()
 
-      expect(mockCancelDrag).toHaveBeenCalled()
-      expect(mockHandleNativeDrop).not.toHaveBeenCalled()
+      expect(mockHandleNativeDrop).toHaveBeenCalledWith(300, 400)
     })
   })
 })

@@ -15,8 +15,7 @@ vi.mock('@/platform/settings/settingStore', () => ({
 vi.mock('@/composables/node/useNodeDragToCanvas', () => ({
   useNodeDragToCanvas: () => ({
     startDrag: vi.fn(),
-    handleNativeDrop: vi.fn(),
-    cancelDrag: vi.fn()
+    handleNativeDrop: vi.fn()
   })
 }))
 

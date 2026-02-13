@@ -7,13 +7,11 @@ import { useNodePreviewAndDrag } from './useNodePreviewAndDrag'
 
 const mockStartDrag = vi.fn()
 const mockHandleNativeDrop = vi.fn()
-const mockCancelDrag = vi.fn()
 
 vi.mock('@/composables/node/useNodeDragToCanvas', () => ({
   useNodeDragToCanvas: () => ({
     startDrag: mockStartDrag,
-    handleNativeDrop: mockHandleNativeDrop,
-    cancelDrag: mockCancelDrag
+    handleNativeDrop: mockHandleNativeDrop
   })
 }))
 
@@ -143,14 +141,13 @@ describe('useNodePreviewAndDrag', () => {
   })
 
   describe('handleDragEnd', () => {
-    it('should call handleNativeDrop when drop effect is not none', () => {
+    it('should call handleNativeDrop with drop coordinates', () => {
       const nodeDef = ref<ComfyNodeDefImpl | undefined>(mockNodeDef)
       const result = useNodePreviewAndDrag(nodeDef)
 
       result.isDragging.value = true
 
       const mockEvent = {
-        dataTransfer: { dropEffect: 'copy' },
         clientX: 100,
         clientY: 200
       } as unknown as DragEvent
@@ -159,10 +156,9 @@ describe('useNodePreviewAndDrag', () => {
 
       expect(result.isDragging.value).toBe(false)
       expect(mockHandleNativeDrop).toHaveBeenCalledWith(100, 200)
-      expect(mockCancelDrag).not.toHaveBeenCalled()
     })
 
-    it('should call cancelDrag when drop effect is none', () => {
+    it('should always call handleNativeDrop regardless of dropEffect', () => {
       const nodeDef = ref<ComfyNodeDefImpl | undefined>(mockNodeDef)
       const result = useNodePreviewAndDrag(nodeDef)
 
@@ -170,15 +166,14 @@ describe('useNodePreviewAndDrag', () => {
 
       const mockEvent = {
         dataTransfer: { dropEffect: 'none' },
-        clientX: 100,
-        clientY: 200
+        clientX: 300,
+        clientY: 400
       } as unknown as DragEvent
 
       result.handleDragEnd(mockEvent)
 
       expect(result.isDragging.value).toBe(false)
-      expect(mockCancelDrag).toHaveBeenCalled()
-      expect(mockHandleNativeDrop).not.toHaveBeenCalled()
+      expect(mockHandleNativeDrop).toHaveBeenCalledWith(300, 400)
     })
   })
 })

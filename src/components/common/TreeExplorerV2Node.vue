@@ -8,7 +8,7 @@
     <!-- Node with context menu -->
     <ContextMenuTrigger v-if="item.value.type === 'node'" as-child>
       <div
-        :class="cn(ROW_CLASS, isSelected && 'bg-highlight')"
+        :class="cn(ROW_CLASS, isSelected && 'bg-comfy-input')"
         :style="rowStyle"
         draggable="true"
         @click.stop="handleClick($event, handleToggle, handleSelect)"
@@ -30,7 +30,7 @@
     <!-- Folder -->
     <div
       v-else
-      :class="cn(ROW_CLASS, isSelected && 'bg-highlight')"
+      :class="cn(ROW_CLASS, isSelected && 'bg-comfy-input')"
       :style="rowStyle"
       @click.stop="handleClick($event, handleToggle, handleSelect)"
     >
@@ -56,7 +56,7 @@
 
   <Teleport
     v-if="showPreview && item.value.type === 'node' && item.value.data"
-    to="#node-library-node-preview-container-v2"
+    to="body"
   >
     <div
       :ref="(el) => (previewRef = el as HTMLElement)"
@@ -80,7 +80,7 @@ import type { RenderedTreeExplorerNode } from '@/types/treeExplorerTypes'
 import { cn } from '@/utils/tailwindUtil'
 
 const ROW_CLASS =
-  'group/tree-node flex w-full cursor-pointer select-none items-center gap-3 overflow-hidden py-2 outline-none hover:bg-highlight'
+  'group/tree-node flex cursor-pointer select-none items-center gap-3 overflow-hidden py-2 outline-none hover:bg-comfy-input mx-2 rounded'
 
 const { item } = defineProps<{
   item: FlattenedItem<RenderedTreeExplorerNode<ComfyNodeDefImpl>>
@@ -108,7 +108,7 @@ const {
 } = useNodePreviewAndDrag(nodeDef)
 
 const rowStyle = computed(() => ({
-  paddingLeft: `${16 + (item.level - 1) * 24}px`
+  paddingLeft: `${8 + (item.level - 1) * 24}px`
 }))
 
 function handleClick(
