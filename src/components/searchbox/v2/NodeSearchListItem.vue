@@ -2,7 +2,7 @@
   <div
     class="option-container flex w-full cursor-pointer items-center justify-between overflow-hidden"
   >
-    <div class="flex flex-col gap-0.5">
+    <div class="flex flex-col gap-0.5 overflow-hidden">
       <div class="font-semibold text-foreground flex items-center gap-2">
         <span v-if="isBookmarked && !hideBookmarkIcon">
           <i class="pi pi-bookmark-fill mr-1 text-sm" />
@@ -32,9 +32,9 @@
         >
           {{ nodeDef.nodeSource.displayText }}
         </span>
-        <span v-if="nodeDef.description" class="truncate">
+        <TextTicker v-if="nodeDef.description">
           {{ nodeDef.description }}
-        </span>
+        </TextTicker>
       </div>
       <div
         v-else-if="showCategory"
@@ -81,6 +81,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
+import TextTicker from '@/components/common/TextTicker.vue'
 import NodePricingBadge from '@/components/node/NodePricingBadge.vue'
 import NodeProviderBadge from '@/components/node/NodeProviderBadge.vue'
 import { useSettingStore } from '@/platform/settings/settingStore'
