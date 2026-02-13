@@ -65,7 +65,7 @@
     </div>
 
     <!-- Fixed Footer: Help Links -->
-    <div class="shrink-0 border-t border-interface-stroke px-4 py-4 min-w-0">
+    <div class="shrink-0 border-t border-interface-stroke p-4 min-w-0">
       <i18n-t
         keypath="rightSidePanel.errorHelp"
         tag="p"
