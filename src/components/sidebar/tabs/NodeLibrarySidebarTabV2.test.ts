@@ -31,8 +31,10 @@ vi.mock('@/composables/node/useNodeDragToCanvas', () => ({
 
 vi.mock('@/services/nodeOrganizationService', () => ({
   DEFAULT_TAB_ID: 'essentials',
+  DEFAULT_SORTING_ID: 'alphabetical',
   nodeOrganizationService: {
-    organizeNodesByTab: vi.fn(() => [])
+    organizeNodesByTab: vi.fn(() => []),
+    getSortingStrategies: vi.fn(() => [])
   }
 }))
 
