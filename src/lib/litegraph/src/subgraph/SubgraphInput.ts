@@ -90,6 +90,7 @@ export class SubgraphInput extends SubgraphSlot {
       this._widget ??= inputWidget
       this.events.dispatch('input-connected', {
         input: slot,
+        node,
         widget: inputWidget
       })
     }

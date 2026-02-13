@@ -211,19 +211,12 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
         const widget = subgraphInput._widget
         if (!widget) return
 
-        const widgetLocator = e.detail.input.widget
-        // Resolve the interior node from the subgraph input's link
-        const linkId = subgraphInput.linkIds[0]
-        const link = linkId != null ? this.subgraph.getLink(linkId) : undefined
-        const interiorNode = link?.resolve(this.subgraph).inputNode
-        if (!interiorNode) return
-
         this._setWidget(
           subgraphInput,
           input,
           widget,
-          widgetLocator,
-          interiorNode
+          e.detail.input.widget,
+          e.detail.node
         )
       },
       { signal }
@@ -236,7 +229,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
         const connectedWidgets = subgraphInput.getConnectedWidgets()
         if (connectedWidgets.length > 0) return
 
-        this.removeWidgetByName(input.name)
+        if (input._widget) this.ensureWidgetRemoved(input._widget)
 
         delete input.pos
         delete input.widget
