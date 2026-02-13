@@ -11,7 +11,7 @@ import { useQueueStore } from '@/stores/queueStore'
 import { jobStateFromTask } from '@/utils/queueUtil'
 
 const BANNER_DISMISS_DELAY_MS = 4000
-const MAX_COMPLETION_THUMBNAILS = 3
+const MAX_COMPLETION_THUMBNAILS = 2
 
 type QueueQueuedNotificationType = 'queuedPending' | 'queued'
 

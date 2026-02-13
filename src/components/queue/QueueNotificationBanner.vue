@@ -76,7 +76,7 @@ const thumbnailUrls = computed(() => {
       ? [notification.thumbnailUrl]
       : []
   }
-  return notification.thumbnailUrls?.slice(0, 3) ?? []
+  return notification.thumbnailUrls?.slice(0, 2) ?? []
 })
 
 const showThumbnails = computed(() => {
