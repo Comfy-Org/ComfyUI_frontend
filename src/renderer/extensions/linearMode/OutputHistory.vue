@@ -224,7 +224,7 @@ useEventListener(document.body, 'keydown', (e: KeyboardEvent) => {
   <article
     ref="outputsRef"
     data-testid="linear-outputs"
-    class="h-24 p-3 overflow-x-auto overflow-y-clip border-node-component-border flex items-center contain-size mx-30"
+    class="h-24 p-3 overflow-x-auto overflow-y-clip border-node-component-border flex items-center contain-size md:mx-15"
   >
     <section
       v-if="
