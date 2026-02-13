@@ -1,4 +1,3 @@
-import { useEventListener } from '@vueuse/core'
 import { computed, onUnmounted, ref, watch } from 'vue'
 
 import { api } from '@/scripts/api'
@@ -177,16 +176,18 @@ export const useQueueNotificationBanners = () => {
     return true
   }
 
-  const handlePromptQueueing = (event: Event) => {
-    const payload = (event as CustomEvent<PromptQueueingEventPayload>).detail
+  const handlePromptQueueing = (
+    event: CustomEvent<PromptQueueingEventPayload>
+  ) => {
+    const payload = event.detail
     const count = sanitizeCount(payload?.batchCount)
     queueNotification(
       toQueueLifecycleNotification('queuedPending', count, payload?.requestId)
     )
   }
 
-  const handlePromptQueued = (event: Event) => {
-    const payload = (event as CustomEvent<PromptQueuedEventPayload>).detail
+  const handlePromptQueued = (event: CustomEvent<PromptQueuedEventPayload>) => {
+    const payload = event.detail
     const count = sanitizeCount(payload?.batchCount)
     const handled = convertQueuedPendingToQueued(payload?.requestId, count)
     if (!handled) {
@@ -196,8 +197,8 @@ export const useQueueNotificationBanners = () => {
     }
   }
 
-  useEventListener(api, 'promptQueueing', handlePromptQueueing)
-  useEventListener(api, 'promptQueued', handlePromptQueued)
+  api.addEventListener('promptQueueing', handlePromptQueueing)
+  api.addEventListener('promptQueued', handlePromptQueued)
 
   const queueCompletionBatchNotifications = () => {
     const startTs = lastActiveStartTs.value ?? 0
@@ -251,6 +252,8 @@ export const useQueueNotificationBanners = () => {
   )
 
   onUnmounted(() => {
+    api.removeEventListener('promptQueueing', handlePromptQueueing)
+    api.removeEventListener('promptQueued', handlePromptQueued)
     clearDismissTimer()
     pendingNotifications.value = []
     activeNotification.value = null
