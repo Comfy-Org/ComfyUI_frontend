@@ -162,33 +162,40 @@
         </template>
       </button>
     </Button>
-    <!-- Resize handle (bottom-right only) -->
-    <div
-      v-if="!isCollapsed && nodeData.resizable !== false"
-      role="button"
-      :aria-label="t('g.resizeFromBottomRight')"
-      :class="
-        cn(
-          baseResizeHandleClasses,
-          '-right-1 -bottom-1 cursor-se-resize group-hover/node:opacity-100'
-        )
-      "
-      @pointerdown.stop="handleResizePointerDown"
-    >
-      <svg
-        xmlns="http://www.w3.org/2000/svg"
-        viewBox="0 0 12 12"
-        class="w-2/5 h-2/5 top-1 left-1 absolute"
+    <template v-if="!isCollapsed && nodeData.resizable !== false">
+      <div
+        v-for="handle in RESIZE_HANDLES"
+        :key="handle.corner"
+        role="button"
+        :aria-label="t(handle.i18nKey)"
+        :class="
+          cn(
+            baseResizeHandleClasses,
+            handle.positionClasses,
+            handle.cursorClass,
+            'group-hover/node:opacity-100'
+          )
+        "
+        @pointerdown.stop="handleResizePointerDown($event, handle.corner)"
       >
-        <path
-          d="M11 1L1 11M11 6L6 11"
-          stroke="var(--color-muted-foreground)"
-          stroke-width="0.975"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-        />
-      </svg>
-    </div>
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          viewBox="0 0 12 12"
+          :class="cn('w-2/5 h-2/5 absolute', handle.svgPositionClasses)"
+          :style="
+            handle.svgTransform ? { transform: handle.svgTransform } : undefined
+          "
+        >
+          <path
+            d="M11 1L1 11M11 6L6 11"
+            stroke="var(--color-muted-foreground)"
+            stroke-width="0.975"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+        </svg>
+      </div>
+    </template>
   </div>
 </template>
 
@@ -249,6 +256,10 @@ import {
 } from '@/utils/graphTraversalUtil'
 import { cn } from '@/utils/tailwindUtil'
 
+import type { CompassCorners } from '@/lib/litegraph/src/interfaces'
+import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
+
+import { RESIZE_HANDLES } from '../interactions/resize/resizeHandleConfig'
 import { useNodeResize } from '../interactions/resize/useNodeResize'
 import LivePreview from './LivePreview.vue'
 import NodeContent from './NodeContent.vue'
@@ -423,6 +434,7 @@ const baseResizeHandleClasses =
   'absolute h-5 w-5 opacity-0 pointer-events-auto focus-visible:outline focus-visible:outline-2 focus-visible:outline-white/40'
 
 const MIN_NODE_WIDTH = 225
+const mutations = useLayoutMutations()
 
 const { startResize } = useNodeResize((result, element) => {
   if (isCollapsed.value) return
@@ -433,14 +445,23 @@ const { startResize } = useNodeResize((result, element) => {
   // Apply size directly to DOM element - ResizeObserver will pick this up
   element.style.setProperty('--node-width', `${clampedWidth}px`)
   element.style.setProperty('--node-height', `${result.size.height}px`)
+
+  // Update position for non-SE corner resizing
+  if (result.position) {
+    mutations.setSource(LayoutSource.Vue)
+    mutations.moveNode(nodeData.id, result.position)
+  }
 })
 
-const handleResizePointerDown = (event: PointerEvent) => {
+const handleResizePointerDown = (
+  event: PointerEvent,
+  corner: CompassCorners
+) => {
   if (event.button !== 0) return
   if (!shouldHandleNodePointerEvents.value) return
   if (nodeData.flags?.pinned) return
   if (nodeData.resizable === false) return
-  startResize(event)
+  startResize(event, corner)
 }
 
 watch(isCollapsed, (collapsed) => {
