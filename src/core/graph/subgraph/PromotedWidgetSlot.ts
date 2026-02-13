@@ -295,6 +295,7 @@ export class PromotedWidgetSlot
 
     const concrete = toConcreteWidget(resolved.widget, resolved.node, false)
     if (concrete) {
+      concrete.computedHeight = this.computedHeight
       ctx.save()
       ctx.translate(0, this.y - concrete.y)
       concrete.drawWidget(ctx, options)
