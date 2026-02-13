@@ -56,7 +56,7 @@ const mountComposable = () => {
   return { wrapper, composable: composable! }
 }
 
-describe('useQueueNotificationBanners', () => {
+describe(useQueueNotificationBanners, () => {
   const queueStore = () =>
     useQueueStore() as {
       pendingTasks: MockTask[]

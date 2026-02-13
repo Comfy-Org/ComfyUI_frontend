@@ -37,7 +37,7 @@ const mountComponent = (notification: QueueNotificationBannerItem) =>
     }
   })
 
-describe('QueueNotificationBanner', () => {
+describe(QueueNotificationBanner, () => {
   it('renders singular queued message without count prefix', () => {
     const wrapper = mountComponent({
       type: 'queued',

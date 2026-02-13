@@ -7,6 +7,7 @@ import type { Component } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import TopMenuSection from '@/components/TopMenuSection.vue'
+import QueueNotificationBannerHost from '@/components/queue/QueueNotificationBannerHost.vue'
 import CurrentUserButton from '@/components/topbar/CurrentUserButton.vue'
 import LoginButton from '@/components/topbar/LoginButton.vue'
 import type {
@@ -351,7 +352,7 @@ describe('TopMenuSection', () => {
     })
   })
 
-  describe('queue notification banners', () => {
+  describe(QueueNotificationBannerHost, () => {
     const configureSettings = (
       pinia: ReturnType<typeof createTestingPinia>,
       qpoV2Enabled: boolean
