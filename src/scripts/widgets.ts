@@ -9,6 +9,9 @@ import { useSettingStore } from '@/platform/settings/settingStore'
 import { dynamicWidgets } from '@/core/graph/widgets/dynamicWidgets'
 import { useBooleanWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useBooleanWidget'
 import { useBoundingBoxWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useBoundingBoxWidget'
+import { useColorBalanceWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useColorBalanceWidget'
+import { useColorCorrectWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useColorCorrectWidget'
+import { useColorCurvesWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useColorCurvesWidget'
 import { useChartWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useChartWidget'
 import { useColorWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useColorWidget'
 import { useComboWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useComboWidget'
@@ -303,6 +306,9 @@ export const ComfyWidgets = {
   COLOR: transformWidgetConstructorV2ToV1(useColorWidget()),
   IMAGECOMPARE: transformWidgetConstructorV2ToV1(useImageCompareWidget()),
   BOUNDING_BOX: transformWidgetConstructorV2ToV1(useBoundingBoxWidget()),
+  COLOR_CORRECT: transformWidgetConstructorV2ToV1(useColorCorrectWidget()),
+  COLOR_BALANCE: transformWidgetConstructorV2ToV1(useColorBalanceWidget()),
+  COLOR_CURVES: transformWidgetConstructorV2ToV1(useColorCurvesWidget()),
   CHART: transformWidgetConstructorV2ToV1(useChartWidget()),
   GALLERIA: transformWidgetConstructorV2ToV1(useGalleriaWidget()),
   TEXTAREA: transformWidgetConstructorV2ToV1(useTextareaWidget()),

@@ -1824,6 +1824,38 @@
     "width": "Width",
     "height": "Height"
   },
+  "colorCurves": {
+    "noInputImage": "No input image connected",
+    "reset": "Reset All",
+    "rgb": "RGB",
+    "red": "Red",
+    "green": "Green",
+    "blue": "Blue"
+  },
+  "colorBalance": {
+    "loading": "Loading...",
+    "noInputImage": "No input image connected",
+    "previewAlt": "Color balance preview",
+    "reset": "Reset All",
+    "shadows": "Shadows",
+    "midtones": "Midtones",
+    "highlights": "Highlights",
+    "cyanRed": "Cyan / Red",
+    "magentaGreen": "Magenta / Green",
+    "yellowBlue": "Yellow / Blue"
+  },
+  "colorCorrect": {
+    "loading": "Loading...",
+    "noInputImage": "No input image connected",
+    "previewAlt": "Color correction preview",
+    "reset": "Reset All",
+    "temperature": "Temperature",
+    "hue": "Hue",
+    "brightness": "Brightness",
+    "contrast": "Contrast",
+    "saturation": "Saturation",
+    "gamma": "Gamma"
+  },
   "toastMessages": {
     "nothingToQueue": "Nothing to queue",
     "pleaseSelectOutputNodes": "Please select output nodes",

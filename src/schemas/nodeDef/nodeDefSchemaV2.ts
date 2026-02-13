@@ -126,6 +126,57 @@ const zTextareaInputSpec = zBaseInputOptions.extend({
     .optional()
 })
 
+const zColorCorrectInputSpec = zBaseInputOptions.extend({
+  type: z.literal('COLOR_CORRECT'),
+  name: z.string(),
+  isOptional: z.boolean().optional(),
+  default: z
+    .object({
+      temperature: z.number(),
+      hue: z.number(),
+      brightness: z.number(),
+      contrast: z.number(),
+      saturation: z.number(),
+      gamma: z.number()
+    })
+    .optional()
+})
+
+const zColorBalanceInputSpec = zBaseInputOptions.extend({
+  type: z.literal('COLOR_BALANCE'),
+  name: z.string(),
+  isOptional: z.boolean().optional(),
+  default: z
+    .object({
+      shadows_red: z.number(),
+      shadows_green: z.number(),
+      shadows_blue: z.number(),
+      midtones_red: z.number(),
+      midtones_green: z.number(),
+      midtones_blue: z.number(),
+      highlights_red: z.number(),
+      highlights_green: z.number(),
+      highlights_blue: z.number()
+    })
+    .optional()
+})
+
+const zCurvePoint = z.tuple([z.number(), z.number()])
+
+const zColorCurvesInputSpec = zBaseInputOptions.extend({
+  type: z.literal('COLOR_CURVES'),
+  name: z.string(),
+  isOptional: z.boolean().optional(),
+  default: z
+    .object({
+      rgb: z.array(zCurvePoint),
+      red: z.array(zCurvePoint),
+      green: z.array(zCurvePoint),
+      blue: z.array(zCurvePoint)
+    })
+    .optional()
+})
+
 const zCustomInputSpec = zBaseInputOptions.extend({
   type: z.string(),
   name: z.string(),
@@ -142,6 +193,9 @@ const zInputSpec = z.union([
   zImageInputSpec,
   zImageCompareInputSpec,
   zBoundingBoxInputSpec,
+  zColorCorrectInputSpec,
+  zColorBalanceInputSpec,
+  zColorCurvesInputSpec,
   zMarkdownInputSpec,
   zChartInputSpec,
   zGalleriaInputSpec,
@@ -187,6 +241,9 @@ export type ComboInputSpec = z.infer<typeof zComboInputSpec>
 export type ColorInputSpec = z.infer<typeof zColorInputSpec>
 export type ImageCompareInputSpec = z.infer<typeof zImageCompareInputSpec>
 export type BoundingBoxInputSpec = z.infer<typeof zBoundingBoxInputSpec>
+export type ColorCorrectInputSpec = z.infer<typeof zColorCorrectInputSpec>
+export type ColorBalanceInputSpec = z.infer<typeof zColorBalanceInputSpec>
+export type ColorCurvesInputSpec = z.infer<typeof zColorCurvesInputSpec>
 export type ChartInputSpec = z.infer<typeof zChartInputSpec>
 export type GalleriaInputSpec = z.infer<typeof zGalleriaInputSpec>
 export type TextareaInputSpec = z.infer<typeof zTextareaInputSpec>

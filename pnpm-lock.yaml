@@ -93,6 +93,9 @@ catalogs:
     '@tailwindcss/vite':
       specifier: ^4.1.12
       version: 4.1.12
+    '@types/d3-shape':
+      specifier: ^3.1.8
+      version: 3.1.8
     '@types/fs-extra':
       specifier: ^11.0.4
       version: 11.0.4
@@ -141,6 +144,9 @@ catalogs:
     cva:
       specifier: 1.0.0-beta.4
       version: 1.0.0-beta.4
+    d3-shape:
+      specifier: ^3.2.0
+      version: 3.2.0
     dotenv:
       specifier: ^16.4.5
       version: 16.6.1
@@ -428,6 +434,9 @@ importers:
       cva:
         specifier: 'catalog:'
         version: 1.0.0-beta.4(typescript@5.9.3)
+      d3-shape:
+        specifier: 'catalog:'
+        version: 3.2.0
       dompurify:
         specifier: ^3.2.5
         version: 3.2.5
@@ -558,6 +567,9 @@ importers:
       '@tailwindcss/vite':
         specifier: 'catalog:'
         version: 4.1.12(vite@8.0.0-beta.13(@types/node@24.10.4)(esbuild@0.27.1)(jiti@2.6.1)(terser@5.39.2)(tsx@4.19.4)(yaml@2.8.2))
+      '@types/d3-shape':
+        specifier: 'catalog:'
+        version: 3.1.8
       '@types/fs-extra':
         specifier: 'catalog:'
         version: 11.0.4
@@ -2803,7 +2815,7 @@ packages:
   '@primevue/themes@4.2.5':
     resolution: {integrity: sha512-8F7yA36xYIKtNuAuyBdZZEks/bKDwlhH5WjpqGGB0FdwfAEoBYsynQ5sdqcT2Lb/NsajHmS5lc++Ttlvr1g1Lw==}
     engines: {node: '>=12.11.0'}
-    deprecated: 'Deprecated. This package is no longer maintained. Please migrate to @primeuix/themes: https://www.npmjs.com/package/@primeuix/themes'
+    deprecated: This package is deprecated. Use @primeuix/themes instead.
 
   '@protobufjs/aspromise@1.1.2':
     resolution: {integrity: sha512-j+gKExEuLmKwvz3OgROXtrJ2UG2x8Ch2YZUxahh+s1F2HZ+wAceUNLkvy6zKCPVRkU++ZWQrdxsUeQXmcg4uoQ==}
@@ -3537,6 +3549,12 @@ packages:
 
   '@types/css-font-loading-module@0.0.7':
     resolution: {integrity: sha512-nl09VhutdjINdWyXxHWN/w9zlNCfr60JUqJbd24YXUuCwgeL0TpFSdElCwb6cxfB6ybE19Gjj4g0jsgkXxKv1Q==}
+
+  '@types/d3-path@3.1.1':
+    resolution: {integrity: sha512-VMZBYyQvbGmWyWVea0EHs/BwLgxc+MKi1zLDCONksozI4YJMcTt8ZEuIR4Sb1MMTE8MMW49v0IwI5+b7RmfWlg==}
+
+  '@types/d3-shape@3.1.8':
+    resolution: {integrity: sha512-lae0iWfcDeR7qt7rA88BNiqdvPS5pFVPpo5OfjElwNaT2yyekbM0C9vK+yqBqEmHr6lDkRnYNoTBYlAgJa7a4w==}
 
   '@types/debug@4.1.12':
     resolution: {integrity: sha512-vIChWdVG3LG1SMxEvI/AK+FWJthlrqlTu7fbrlywTkkaONwk/UAGaULXRlf8vkzFBLVm0zkMdCquhL5aOjhXPQ==}
@@ -4771,6 +4789,14 @@ packages:
     peerDependenciesMeta:
       typescript:
         optional: true
+
+  d3-path@3.1.0:
+    resolution: {integrity: sha512-p3KP5HCf/bvjBSSKuXid6Zqijx7wIfNW+J/maPs+iwR35at5JCbLUT0LzF1cnjbCHWhqzQTIN2Jpe8pRebIEFQ==}
+    engines: {node: '>=12'}
+
+  d3-shape@3.2.0:
+    resolution: {integrity: sha512-SaLBuwGm3MOViRq2ABk3eLoxwZELpH6zhl3FbAoJ7Vm1gofKx6El1Ib5z23NUEhF9AsGl7y+dzLe5Cw2AArGTA==}
+    engines: {node: '>=12'}
 
   data-urls@6.0.0:
     resolution: {integrity: sha512-BnBS08aLUM+DKamupXs3w2tJJoqU+AkaE/+6vQxi/G/DPmIZFJJp9Dkb1kM03AZx8ADehDUZgsNxju3mPXZYIA==}
@@ -11561,6 +11587,12 @@ snapshots:
 
   '@types/css-font-loading-module@0.0.7': {}
 
+  '@types/d3-path@3.1.1': {}
+
+  '@types/d3-shape@3.1.8':
+    dependencies:
+      '@types/d3-path': 3.1.1
+
   '@types/debug@4.1.12':
     dependencies:
       '@types/ms': 2.1.0
@@ -12987,6 +13019,12 @@ snapshots:
       clsx: 2.1.1
     optionalDependencies:
       typescript: 5.9.3
+
+  d3-path@3.1.0: {}
+
+  d3-shape@3.2.0:
+    dependencies:
+      d3-path: 3.1.0
 
   data-urls@6.0.0:
     dependencies:

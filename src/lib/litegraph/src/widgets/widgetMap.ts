@@ -12,6 +12,9 @@ import { AssetWidget } from './AssetWidget'
 import { BaseWidget } from './BaseWidget'
 import { BooleanWidget } from './BooleanWidget'
 import { BoundingBoxWidget } from './BoundingBoxWidget'
+import { ColorBalanceWidget } from './ColorBalanceWidget'
+import { ColorCorrectWidget } from './ColorCorrectWidget'
+import { ColorCurvesWidget } from './ColorCurvesWidget'
 import { ButtonWidget } from './ButtonWidget'
 import { ChartWidget } from './ChartWidget'
 import { ColorWidget } from './ColorWidget'
@@ -54,6 +57,9 @@ export type WidgetTypeMap = {
   asset: AssetWidget
   imagecrop: ImageCropWidget
   boundingbox: BoundingBoxWidget
+  colorcorrect: ColorCorrectWidget
+  colorbalance: ColorBalanceWidget
+  colorcurves: ColorCurvesWidget
   [key: string]: BaseWidget
 }
 
@@ -128,6 +134,12 @@ export function toConcreteWidget<TWidget extends IWidget | IBaseWidget>(
       return toClass(ImageCropWidget, narrowedWidget, node)
     case 'boundingbox':
       return toClass(BoundingBoxWidget, narrowedWidget, node)
+    case 'colorcorrect':
+      return toClass(ColorCorrectWidget, narrowedWidget, node)
+    case 'colorbalance':
+      return toClass(ColorBalanceWidget, narrowedWidget, node)
+    case 'colorcurves':
+      return toClass(ColorCurvesWidget, narrowedWidget, node)
     default: {
       if (wrapLegacyWidgets) return toClass(LegacyWidget, widget, node)
     }

@@ -109,6 +109,9 @@ export type IWidget =
   | IAssetWidget
   | IImageCropWidget
   | IBoundingBoxWidget
+  | IColorCorrectWidget
+  | IColorBalanceWidget
+  | IColorCurvesWidget
 
 export interface IBooleanWidget extends IBaseWidget<boolean, 'toggle'> {
   type: 'toggle'
@@ -290,6 +293,63 @@ export interface IImageCropWidget extends IBaseWidget<Bounds, 'imagecrop'> {
 export interface IBoundingBoxWidget extends IBaseWidget<Bounds, 'boundingbox'> {
   type: 'boundingbox'
   value: Bounds
+}
+
+export interface ColorCorrectSettings {
+  temperature: number
+  hue: number
+  brightness: number
+  contrast: number
+  saturation: number
+  gamma: number
+}
+
+/** Color correction widget for adjusting image parameters */
+export interface IColorCorrectWidget extends IBaseWidget<
+  ColorCorrectSettings,
+  'colorcorrect'
+> {
+  type: 'colorcorrect'
+  value: ColorCorrectSettings
+}
+
+export interface ColorBalanceSettings {
+  shadows_red: number
+  shadows_green: number
+  shadows_blue: number
+  midtones_red: number
+  midtones_green: number
+  midtones_blue: number
+  highlights_red: number
+  highlights_green: number
+  highlights_blue: number
+}
+
+/** Color balance widget for adjusting RGB channels per tonal range */
+export interface IColorBalanceWidget extends IBaseWidget<
+  ColorBalanceSettings,
+  'colorbalance'
+> {
+  type: 'colorbalance'
+  value: ColorBalanceSettings
+}
+
+export type CurvePoint = [x: number, y: number]
+
+export interface ColorCurvesSettings {
+  rgb: CurvePoint[]
+  red: CurvePoint[]
+  green: CurvePoint[]
+  blue: CurvePoint[]
+}
+
+/** Color curves widget for per-channel tone curve adjustment */
+export interface IColorCurvesWidget extends IBaseWidget<
+  ColorCurvesSettings,
+  'colorcurves'
+> {
+  type: 'colorcurves'
+  value: ColorCurvesSettings
 }
 
 /**
