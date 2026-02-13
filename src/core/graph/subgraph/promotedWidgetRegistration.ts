@@ -1,7 +1,7 @@
 import { PromotedWidgetSlot } from '@/core/graph/subgraph/PromotedWidgetSlot'
 import { promoteRecommendedWidgets } from '@/core/graph/subgraph/proxyWidgetUtils'
 import { parseProxyWidgets } from '@/core/schemas/proxyWidget'
-import type { NodeProperty } from '@/lib/litegraph/src/LGraphNode'
+import type { NodeId, NodeProperty } from '@/lib/litegraph/src/LGraphNode'
 import type { LGraphCanvas, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import type { ISerialisedNode } from '@/lib/litegraph/src/types/serialisation'
@@ -74,19 +74,55 @@ function syncPromotedWidgets(
     return !parsed.some(([, name]) => w.name === name)
   })
 
-  // Create new PromotedWidgetSlot for each promoted entry
+  // Create PromotedWidgetSlot for each promoted entry.
+  // For '-1' (slot-promoted) entries, resolve the interior source via
+  // subgraph input links so they use the same delegation as context-menu
+  // promoted widgets.
+  const subgraphNode = node as SubgraphNode
   const newSlots: IBaseWidget[] = parsed.flatMap(([nodeId, widgetName]) => {
     if (nodeId === '-1') {
+      const source = resolveSlotPromotedSource(subgraphNode, widgetName)
+      if (source)
+        return [new PromotedWidgetSlot(subgraphNode, source[0], source[1])]
       const widget = nativeWidgets.find((w) => w.name === widgetName)
       return widget ? [widget] : []
     }
-    return [new PromotedWidgetSlot(node as SubgraphNode, nodeId, widgetName)]
+    return [new PromotedWidgetSlot(subgraphNode, nodeId, widgetName)]
   })
   node.widgets.push(...newSlots)
 
   canvasStore.canvas?.setDirty(true, true)
   node._setConcreteSlots()
   node.arrange()
+}
+
+/**
+ * Follows the subgraph input slot's link chain to find the interior
+ * node ID and widget name for a slot-promoted widget.
+ */
+function resolveSlotPromotedSource(
+  subgraphNode: SubgraphNode,
+  slotName: string
+): [NodeId, string] | null {
+  const subgraphInput = subgraphNode.subgraph.inputNode.slots.find(
+    (slot) => slot.name === slotName
+  )
+  if (!subgraphInput) return null
+
+  for (const linkId of subgraphInput.linkIds) {
+    const link = subgraphNode.subgraph.getLink(linkId)
+    if (!link) continue
+
+    const { inputNode } = link.resolve(subgraphNode.subgraph)
+    if (!inputNode) continue
+
+    const targetInput = inputNode.inputs.find((inp) => inp.link === linkId)
+    if (!targetInput) continue
+
+    const widget = inputNode.getWidgetFromSlot(targetInput)
+    if (widget) return [String(inputNode.id) as NodeId, widget.name]
+  }
+  return null
 }
 
 const originalOnConfigure = SubgraphNode.prototype.onConfigure
