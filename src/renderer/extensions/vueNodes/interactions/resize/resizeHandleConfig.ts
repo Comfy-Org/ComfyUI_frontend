@@ -1,12 +1,12 @@
 import type { CompassCorners } from '@/lib/litegraph/src/interfaces'
 
 interface ResizeHandle {
-  corner: CompassCorners
-  positionClasses: string
-  cursorClass: string
-  i18nKey: string
-  svgPositionClasses: string
-  svgTransform: string
+  readonly corner: CompassCorners
+  readonly positionClasses: string
+  readonly cursorClass: string
+  readonly i18nKey: string
+  readonly svgPositionClasses: string
+  readonly svgTransform: string
 }
 
 export const RESIZE_HANDLES: ResizeHandle[] = [
@@ -42,4 +42,4 @@ export const RESIZE_HANDLES: ResizeHandle[] = [
     svgPositionClasses: 'bottom-1 right-1',
     svgTransform: 'scale(-1, -1)'
   }
-]
+] as const
