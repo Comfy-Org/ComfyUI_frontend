@@ -14,7 +14,6 @@ import type {
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { LayoutSource } from '@/renderer/core/layout/types'
-import type { NodeId } from '@/renderer/core/layout/types'
 import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { isDOMWidget } from '@/scripts/domWidget'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
@@ -27,7 +26,8 @@ import type {
   LGraphNode,
   LGraphTriggerAction,
   LGraphTriggerEvent,
-  LGraphTriggerParam
+  LGraphTriggerParam,
+  NodeId
 } from '@/lib/litegraph/src/litegraph'
 import type { TitleMode } from '@/lib/litegraph/src/types/globalEnums'
 import { NodeSlotType } from '@/lib/litegraph/src/types/globalEnums'
@@ -198,6 +198,10 @@ function safeWidgetMapper(
       // Get shared enhancements (controlWidget, spec, nodeType)
       const sourceNodeId =
         'sourceNodeId' in widget ? String(widget.sourceNodeId) : undefined
+      const sourceWidgetName =
+        'sourceWidgetName' in widget
+          ? String(widget.sourceWidgetName)
+          : undefined
       const sharedEnhancements = getSharedWidgetEnhancements(
         node,
         widget,
@@ -226,8 +230,10 @@ function safeWidgetMapper(
             read_only: widget.options.read_only
           }
         : undefined
+
       return {
-        name: widget.name,
+        nodeId: sourceNodeId ?? node.id,
+        name: sourceWidgetName ?? widget.name,
         type: widget.type,
         ...sharedEnhancements,
         callback,

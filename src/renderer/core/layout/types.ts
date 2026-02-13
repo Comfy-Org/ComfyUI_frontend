@@ -4,6 +4,7 @@
  * This file contains all type definitions for the layout system
  * that manages node positions, bounds, spatial data, and operations.
  */
+import type { NodeId } from '@/lib/litegraph/src/LGraphNode'
 import type { ComputedRef, Ref } from 'vue'
 
 // Enum for layout source types
@@ -37,7 +38,6 @@ export interface NodeBoundsUpdate {
   bounds: Bounds
 }
 
-export type NodeId = string
 export type LinkId = number
 export type RerouteId = number
 
