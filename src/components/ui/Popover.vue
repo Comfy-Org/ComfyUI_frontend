@@ -15,7 +15,12 @@ defineOptions({
 })
 
 defineProps<{
-  entries?: { label: string; action?: () => void; icon?: string }[][]
+  entries?: {
+    label?: string
+    command?: () => void
+    icon?: string
+    separator?: boolean
+  }[]
   icon?: string
   to?: string | HTMLElement
 }>()
@@ -40,25 +45,27 @@ defineProps<{
       >
         <slot>
           <div class="flex flex-col p-1">
-            <section
-              v-for="(entryGroup, index) in entries ?? []"
-              :key="index"
-              class="flex flex-col border-b-2 last:border-none border-border-subtle"
+            <template
+              v-for="{ label, command, icon, separator } in entries ?? []"
+              :key="label"
             >
               <div
-                v-for="{ label, action, icon } in entryGroup"
-                :key="label"
+                v-if="separator"
+                class="border-b w-full border-border-subtle"
+              />
+              <div
+                v-else
                 :class="
                   cn(
                     'flex flex-row gap-4 p-2 rounded-sm my-1',
-                    action &&
+                    command &&
                       'cursor-pointer hover:bg-secondary-background-hover'
                   )
                 "
                 @click="
                   () => {
-                    if (!action) return
-                    action()
+                    if (!command) return
+                    command()
                     close()
                   }
                 "
@@ -66,7 +73,7 @@ defineProps<{
                 <i v-if="icon" :class="icon" />
                 {{ label }}
               </div>
-            </section>
+            </template>
           </div>
         </slot>
         <PopoverArrow class="fill-base-background stroke-border-subtle" />

@@ -15,12 +15,16 @@ import ModeToggle from '@/components/sidebar/ModeToggle.vue'
 import SideToolbar from '@/components/sidebar/SideToolbar.vue'
 import TopbarBadges from '@/components/topbar/TopbarBadges.vue'
 import WorkflowTabs from '@/components/topbar/WorkflowTabs.vue'
+import Button from '@/components/ui/button/Button.vue'
+import Popover from '@/components/ui/Popover.vue'
 import TypeformPopoverButton from '@/components/ui/TypeformPopoverButton.vue'
+import { useWorkflowActionsMenu } from '@/composables/useWorkflowActionsMenu'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import LinearControls from '@/renderer/extensions/linearMode/LinearControls.vue'
 import LinearPreview from '@/renderer/extensions/linearMode/LinearPreview.vue'
 import MobileMenu from '@/renderer/extensions/linearMode/MobileMenu.vue'
+import { useCommandStore } from '@/stores/commandStore'
 import { useNodeOutputStore } from '@/stores/imagePreviewStore'
 import type { ResultItemImpl } from '@/stores/queueStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
@@ -43,6 +47,10 @@ whenever(
 const selectedItem = ref<AssetItem>()
 const selectedOutput = ref<ResultItemImpl>()
 const canShowPreview = ref(true)
+const { menuItems } = useWorkflowActionsMenu(
+  () => useCommandStore().execute('Comfy.RenameWorkflow'),
+  { isRoot: true }
+)
 
 const topLeftRef = useTemplateRef('topLeftRef')
 const topRightRef = useTemplateRef('topRightRef')
@@ -125,7 +133,15 @@ const linearWorkflowRef = useTemplateRef('linearWorkflowRef')
           :selected-item
           :selected-output
         />
-        <div ref="topLeftRef" class="absolute z-21 top-4 left-4" />
+        <div ref="topLeftRef" class="absolute z-21 top-4 left-4">
+          <Popover :entries="menuItems" align="start">
+            <template #button>
+              <Button size="icon" variant="textonly">
+                <i class="icon-[lucide--menu]" />
+              </Button>
+            </template>
+          </Popover>
+        </div>
         <div ref="topRightRef" class="absolute z-21 top-4 right-4" />
         <div ref="bottomLeftRef" class="absolute z-20 bottom-4 left-4" />
         <div ref="bottomRightRef" class="absolute z-20 bottom-24 right-4" />

@@ -137,20 +137,17 @@ async function rerun(e: Event) {
       </Button>
       <Popover
         :entries="[
-          [
-            {
-              icon: 'icon-[lucide--download]',
-              label: t('linearMode.downloadAll'),
-              action: () => downloadAsset(selectedItem!)
-            }
-          ],
-          [
-            {
-              icon: 'icon-[lucide--trash-2]',
-              label: t('queue.jobMenu.deleteAsset'),
-              action: () => mediaActions.deleteAssets(selectedItem!)
-            }
-          ]
+          {
+            icon: 'icon-[lucide--download]',
+            label: t('linearMode.downloadAll'),
+            command: () => downloadAsset(selectedItem!)
+          },
+          { separator: true },
+          {
+            icon: 'icon-[lucide--trash-2]',
+            label: t('queue.jobMenu.deleteAsset'),
+            command: () => mediaActions.deleteAssets(selectedItem!)
+          }
         ]"
       />
     </div>

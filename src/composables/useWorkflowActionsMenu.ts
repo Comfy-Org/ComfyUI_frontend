@@ -43,13 +43,13 @@ export function useWorkflowActionsMenu(
     await workflowService.openWorkflow(wf)
   }
 
-  const menuItems = computed<MenuItem[]>(() => {
+  const menuItems = computed(() => {
     const workflow = targetWorkflow.value
     const isBlueprint = workflow
       ? subgraphStore.isSubgraphBlueprint(workflow)
       : false
 
-    const items: MenuItem[] = []
+    const items: (MenuItem & { command?: () => void; label?: string })[] = []
 
     const addItem = (
       label: string,
