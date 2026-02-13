@@ -11,6 +11,7 @@ import { ref, useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import ModeToggle from '@/components/sidebar/ModeToggle.vue'
+import SideToolbar from '@/components/sidebar/SideToolbar.vue'
 import TopbarBadges from '@/components/topbar/TopbarBadges.vue'
 import WorkflowTabs from '@/components/topbar/WorkflowTabs.vue'
 import TypeformPopoverButton from '@/components/ui/TypeformPopoverButton.vue'
@@ -19,7 +20,6 @@ import { useSettingStore } from '@/platform/settings/settingStore'
 import LinearControls from '@/renderer/extensions/linearMode/LinearControls.vue'
 import LinearPreview from '@/renderer/extensions/linearMode/LinearPreview.vue'
 import MobileMenu from '@/renderer/extensions/linearMode/MobileMenu.vue'
-import OutputHistory from '@/renderer/extensions/linearMode/OutputHistory.vue'
 import { useNodeOutputStore } from '@/stores/imagePreviewStore'
 import type { ResultItemImpl } from '@/stores/queueStore'
 
@@ -38,7 +38,6 @@ whenever(
 const selectedItem = ref<AssetItem>()
 const selectedOutput = ref<ResultItemImpl>()
 const canShowPreview = ref(true)
-const outputHistoryRef = useTemplateRef('outputHistoryRef')
 
 const topLeftRef = useTemplateRef('topLeftRef')
 const topRightRef = useTemplateRef('topRightRef')
@@ -47,10 +46,7 @@ const bottomRightRef = useTemplateRef('bottomRightRef')
 const linearWorkflowRef = useTemplateRef('linearWorkflowRef')
 </script>
 <template>
-  <div
-    class="absolute w-full h-full"
-    @wheel.capture="(e: WheelEvent) => outputHistoryRef?.onWheel(e)"
-  >
+  <div class="absolute w-full h-full">
     <div class="workflow-tabs-container pointer-events-auto h-9.5 w-full">
       <div class="flex h-full items-center">
         <WorkflowTabs />
@@ -75,18 +71,6 @@ const linearWorkflowRef = useTemplateRef('linearWorkflowRef')
           mobile
         />
       </div>
-      <OutputHistory
-        ref="outputHistoryRef"
-        mobile
-        @update-selection="
-          ([item, output, canShow]) => {
-            selectedItem = item
-            selectedOutput = output
-            canShowPreview = canShow
-            hasPreview = false
-          }
-        "
-      />
       <LinearControls ref="linearWorkflowRef" mobile />
       <div class="text-base-foreground flex items-center gap-4">
         <div class="border-r border-border-subtle mr-auto">
@@ -107,18 +91,8 @@ const linearWorkflowRef = useTemplateRef('linearWorkflowRef')
         :size="1"
         class="min-w-min outline-none"
       >
-        <OutputHistory
+        <SideToolbar
           v-if="settingStore.get('Comfy.Sidebar.Location') === 'left'"
-          ref="outputHistoryRef"
-          :scroll-reset-button-to="unrefElement(bottomLeftRef) ?? undefined"
-          @update-selection="
-            ([item, output, canShow]) => {
-              selectedItem = item
-              selectedOutput = output
-              canShowPreview = canShow
-              hasPreview = false
-            }
-          "
         />
         <LinearControls
           v-else
@@ -172,19 +146,7 @@ const linearWorkflowRef = useTemplateRef('linearWorkflowRef')
           :toast-to="unrefElement(bottomRightRef) ?? undefined"
           :notes-to="unrefElement(topRightRef) ?? undefined"
         />
-        <OutputHistory
-          v-else
-          ref="outputHistoryRef"
-          :scroll-reset-button-to="unrefElement(bottomRightRef) ?? undefined"
-          @update-selection="
-            ([item, output, canShow]) => {
-              selectedItem = item
-              selectedOutput = output
-              canShowPreview = canShow
-              hasPreview = false
-            }
-          "
-        />
+        <SideToolbar v-else />
         <div />
       </SplitterPanel>
     </Splitter>

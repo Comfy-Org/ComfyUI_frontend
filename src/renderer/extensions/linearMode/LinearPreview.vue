@@ -12,6 +12,7 @@ import { useWorkflowStore } from '@/platform/workflow/management/stores/workflow
 import { extractWorkflowFromAsset } from '@/platform/workflow/utils/workflowExtractionUtil'
 import ImagePreview from '@/renderer/extensions/linearMode/ImagePreview.vue'
 import LinearWelcome from '@/renderer/extensions/linearMode/LinearWelcome.vue'
+import OutputHistory from '@/renderer/extensions/linearMode/OutputHistory.vue'
 // Lazy-loaded to avoid pulling THREE.js into the main bundle
 const Preview3d = () => import('@/renderer/extensions/linearMode/Preview3d.vue')
 import VideoPreview from '@/renderer/extensions/linearMode/VideoPreview.vue'
@@ -180,4 +181,5 @@ async function rerun(e: Event) {
     :model-url="selectedOutput!.url"
   />
   <LinearWelcome v-else />
+  <OutputHistory />
 </template>
