@@ -47,7 +47,7 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
       tier: status.subscription_tier ?? null,
       duration: status.subscription_duration ?? null,
       planSlug: status.plan_slug ?? null,
-      renewalDate: null, // Workspace billing uses cancel_at for end date
+      renewalDate: status.renewal_date ?? null,
       endDate: status.cancel_at ?? null,
       isCancelled: status.subscription_status === 'canceled',
       hasFunds: status.has_funds

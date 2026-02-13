@@ -1,6 +1,7 @@
 import { computed } from 'vue'
 
-import { electronAPI, isElectron } from '@/utils/envUtil'
+import { isDesktop } from '@/platform/distribution/types'
+import { electronAPI } from '@/utils/envUtil'
 import { i18n } from '@/i18n'
 
 /**
@@ -30,7 +31,7 @@ export function useExternalLink() {
   })
 
   const platform = computed(() => {
-    if (!isElectron()) {
+    if (!isDesktop) {
       return null
     }
 

@@ -17,7 +17,7 @@ vi.mock('es-toolkit/compat', async () => {
   const actual = await vi.importActual('es-toolkit/compat')
   return {
     ...actual,
-    debounce: <T extends (...args: any[]) => any>(fn: T) => fn
+    debounce: <T extends (...args: unknown[]) => unknown>(fn: T) => fn
   }
 })
 
@@ -61,7 +61,10 @@ describe('PackEnableToggle', () => {
   const mountComponent = ({
     props = {},
     installedPacks = {}
-  }: Record<string, any> = {}): VueWrapper => {
+  }: {
+    props?: Record<string, unknown>
+    installedPacks?: Record<string, unknown>
+  } = {}): VueWrapper => {
     const i18n = createI18n({
       legacy: false,
       locale: 'en',
@@ -73,7 +76,9 @@ describe('PackEnableToggle', () => {
       enablePack: mockEnablePack,
       disablePack: mockDisablePack,
       installedPacks
-    } as any)
+    } as Partial<ReturnType<typeof useComfyManagerStore>> as ReturnType<
+      typeof useComfyManagerStore
+    >)
 
     return mount(PackEnableToggle, {
       props: {

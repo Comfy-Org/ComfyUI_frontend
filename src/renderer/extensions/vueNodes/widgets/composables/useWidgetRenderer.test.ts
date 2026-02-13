@@ -123,7 +123,7 @@ describe('widgetRegistry', () => {
     })
 
     it('should return false for widgets without a type', () => {
-      const widget = { options: {} }
+      const widget = {}
       expect(shouldRenderAsVue(widget)).toBe(false)
     })
 
@@ -136,7 +136,7 @@ describe('widgetRegistry', () => {
     it('should respect options while checking type', () => {
       const widget: Partial<SafeWidgetData> = {
         type: 'text',
-        options: { precision: 5 }
+        options: { canvasOnly: false }
       }
       expect(shouldRenderAsVue(widget)).toBe(true)
     })

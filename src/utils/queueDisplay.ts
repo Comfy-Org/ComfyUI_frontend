@@ -11,6 +11,7 @@ export type BuildJobDisplayCtx = {
   totalPercent?: number
   currentNodePercent?: number
   currentNodeName?: string
+  showAddedHint?: boolean
   /** Whether the app is running in cloud distribution */
   isCloud?: boolean
 }
@@ -64,6 +65,14 @@ export const buildJobDisplay = (
   ctx: BuildJobDisplayCtx
 ): JobDisplay => {
   if (state === 'pending') {
+    if (ctx.showAddedHint) {
+      return {
+        iconName: 'icon-[lucide--check]',
+        primary: ctx.t('queue.jobAddedToQueue'),
+        secondary: buildQueuedTime(task, ctx.locale, ctx.formatClockTimeFn),
+        showClear: true
+      }
+    }
     return {
       iconName: iconForJobState(state),
       primary: ctx.t('queue.inQueue'),

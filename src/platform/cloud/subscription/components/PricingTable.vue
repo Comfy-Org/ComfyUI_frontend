@@ -243,6 +243,7 @@
 
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
+import { storeToRefs } from 'pinia'
 import Popover from 'primevue/popover'
 import SelectButton from 'primevue/selectbutton'
 import type { ToggleButtonPassThroughMethodOptions } from 'primevue/togglebutton'
@@ -266,7 +267,7 @@ import { isPlanDowngrade } from '@/platform/cloud/subscription/utils/subscriptio
 import type { BillingCycle } from '@/platform/cloud/subscription/utils/subscriptionTierRank'
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
-import { getCheckoutAttribution } from '@/platform/telemetry/utils/checkoutAttribution'
+import type { CheckoutAttributionMetadata } from '@/platform/telemetry/types'
 import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
 import type { components } from '@/types/comfyRegistryTypes'
 
@@ -278,6 +279,19 @@ const getCheckoutTier = (
   tierKey: CheckoutTierKey,
   billingCycle: BillingCycle
 ): CheckoutTier => (billingCycle === 'yearly' ? `${tierKey}-yearly` : tierKey)
+
+const getCheckoutAttributionForCloud =
+  async (): Promise<CheckoutAttributionMetadata> => {
+    // eslint-disable-next-line no-undef
+    if (__DISTRIBUTION__ !== 'cloud') {
+      return {}
+    }
+
+    const { getCheckoutAttribution } =
+      await import('@/platform/telemetry/utils/checkoutAttribution')
+
+    return getCheckoutAttribution()
+  }
 
 interface BillingCycleOption {
   label: string
@@ -333,7 +347,7 @@ const tiers: PricingTierConfig[] = [
 const { isActiveSubscription, subscriptionTier, isYearlySubscription } =
   useSubscription()
 const telemetry = useTelemetry()
-const { userId } = useFirebaseAuthStore()
+const { userId } = storeToRefs(useFirebaseAuthStore())
 const { accessBillingPortal, reportError } = useFirebaseAuthActions()
 const { wrapWithErrorHandlingAsync } = useErrorHandling()
 
@@ -414,10 +428,10 @@ const handleSubscribe = wrapWithErrorHandlingAsync(
 
     try {
       if (isActiveSubscription.value) {
-        const checkoutAttribution = getCheckoutAttribution()
-        if (userId) {
+        const checkoutAttribution = await getCheckoutAttributionForCloud()
+        if (userId.value) {
           telemetry?.trackBeginCheckout({
-            user_id: userId,
+            user_id: userId.value,
             tier: tierKey,
             cycle: currentBillingCycle.value,
             checkout_type: 'change',

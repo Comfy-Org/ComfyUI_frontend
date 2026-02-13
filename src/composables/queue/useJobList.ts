@@ -1,5 +1,5 @@
 import { orderBy } from 'es-toolkit/array'
-import { computed, ref, watch } from 'vue'
+import { computed, onUnmounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { useQueueProgress } from '@/composables/queue/useQueueProgress'
@@ -7,6 +7,7 @@ import { st } from '@/i18n'
 import { isCloud } from '@/platform/distribution/types'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useExecutionStore } from '@/stores/executionStore'
+import { useJobPreviewStore } from '@/stores/jobPreviewStore'
 import { useQueueStore } from '@/stores/queueStore'
 import type { TaskItemImpl } from '@/stores/queueStore'
 import type { JobState } from '@/types/queue'
@@ -53,7 +54,13 @@ export type JobGroup = {
   items: JobListItem[]
 }
 
+const ADDED_HINT_DURATION_MS = 3000
 const relativeTimeFormatterCache = new Map<string, Intl.RelativeTimeFormat>()
+const taskIdToKey = (id: string | number | undefined) => {
+  if (id === null || id === undefined) return null
+  const key = String(id)
+  return key.length ? key : null
+}
 
 /**
  * Returns localized Today/Yesterday (capitalized) or localized Mon DD.
@@ -90,7 +97,78 @@ export function useJobList() {
   const { t, locale } = useI18n()
   const queueStore = useQueueStore()
   const executionStore = useExecutionStore()
+  const jobPreviewStore = useJobPreviewStore()
   const workflowStore = useWorkflowStore()
+
+  const seenPendingIds = ref<Set<string>>(new Set())
+  const recentlyAddedPendingIds = ref<Set<string>>(new Set())
+  const addedHintTimeouts = new Map<string, ReturnType<typeof setTimeout>>()
+
+  const clearAddedHintTimeout = (id: string) => {
+    const timeoutId = addedHintTimeouts.get(id)
+    if (timeoutId !== undefined) {
+      clearTimeout(timeoutId)
+      addedHintTimeouts.delete(id)
+    }
+  }
+
+  const scheduleAddedHintExpiry = (id: string) => {
+    clearAddedHintTimeout(id)
+    const timeoutId = setTimeout(() => {
+      addedHintTimeouts.delete(id)
+      const updated = new Set(recentlyAddedPendingIds.value)
+      if (updated.delete(id)) {
+        recentlyAddedPendingIds.value = updated
+      }
+    }, ADDED_HINT_DURATION_MS)
+    addedHintTimeouts.set(id, timeoutId)
+  }
+
+  watch(
+    () =>
+      queueStore.pendingTasks
+        .map((task) => taskIdToKey(task.promptId))
+        .filter((id): id is string => !!id),
+    (pendingIds) => {
+      const pendingSet = new Set(pendingIds)
+      const nextAdded = new Set(recentlyAddedPendingIds.value)
+      const nextSeen = new Set(seenPendingIds.value)
+
+      pendingIds.forEach((id) => {
+        if (!nextSeen.has(id)) {
+          nextSeen.add(id)
+          nextAdded.add(id)
+          scheduleAddedHintExpiry(id)
+        }
+      })
+
+      for (const id of Array.from(nextSeen)) {
+        if (!pendingSet.has(id)) {
+          nextSeen.delete(id)
+          nextAdded.delete(id)
+          clearAddedHintTimeout(id)
+        }
+      }
+
+      recentlyAddedPendingIds.value = nextAdded
+      seenPendingIds.value = nextSeen
+    },
+    { immediate: true }
+  )
+
+  const shouldShowAddedHint = (task: TaskItemImpl, state: JobState) => {
+    if (state !== 'pending') return false
+    const id = taskIdToKey(task.promptId)
+    if (!id) return false
+    return recentlyAddedPendingIds.value.has(id)
+  }
+
+  onUnmounted(() => {
+    addedHintTimeouts.forEach((timeoutId) => clearTimeout(timeoutId))
+    addedHintTimeouts.clear()
+    seenPendingIds.value = new Set<string>()
+    recentlyAddedPendingIds.value = new Set<string>()
+  })
 
   const { totalPercent, currentNodePercent } = useQueueProgress()
 
@@ -179,6 +257,12 @@ export function useJobList() {
       const isActive =
         String(task.promptId ?? '') ===
         String(executionStore.activePromptId ?? '')
+      const showAddedHint = shouldShowAddedHint(task, state)
+      const promptKey = taskIdToKey(task.promptId)
+      const promptPreviewUrl =
+        state === 'running' && jobPreviewStore.isPreviewEnabled && promptKey
+          ? jobPreviewStore.previewsByPromptId[promptKey]
+          : undefined
 
       const display = buildJobDisplay(task, state, {
         t,
@@ -188,6 +272,7 @@ export function useJobList() {
         totalPercent: isActive ? totalPercent.value : undefined,
         currentNodePercent: isActive ? currentNodePercent.value : undefined,
         currentNodeName: isActive ? currentNodeName.value : undefined,
+        showAddedHint,
         isCloud
       })
 
@@ -197,7 +282,7 @@ export function useJobList() {
         meta: display.secondary,
         state,
         iconName: display.iconName,
-        iconImageUrl: display.iconImageUrl,
+        iconImageUrl: promptPreviewUrl ?? display.iconImageUrl,
         showClear: display.showClear,
         taskRef: task,
         progressTotalPercent:

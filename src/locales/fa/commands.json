@@ -35,6 +35,9 @@
   "Comfy-Desktop_Restart": {
     "label": "راه‌اندازی مجدد"
   },
+  "Comfy_3DViewer_Open3DViewer": {
+    "label": "نمایشگر سه‌بعدی (بتا) را برای نود انتخاب‌شده باز کنید"
+  },
   "Comfy_BrowseModelAssets": {
     "label": "آزمایشی: مرور Model Assets"
   },
@@ -313,6 +316,12 @@
   },
   "Workspace_ToggleBottomPanel": {
     "label": "تغییر پنل پایین"
+  },
+  "Workspace_ToggleBottomPanelTab_command-terminal": {
+    "label": "نمایش/مخفی‌کردن پنل پایینی ترمینال"
+  },
+  "Workspace_ToggleBottomPanelTab_logs-terminal": {
+    "label": "نمایش/مخفی‌کردن پنل پایینی گزارش‌ها"
   },
   "Workspace_ToggleBottomPanelTab_shortcuts-essentials": {
     "label": "تغییر پنل ضروریات پایین"

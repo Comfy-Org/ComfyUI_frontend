@@ -144,7 +144,6 @@ import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { buildTooltipConfig } from '@/composables/useTooltipConfig'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { useReleaseStore } from '@/platform/updates/common/releaseStore'
 import { app } from '@/scripts/app'
 import { useCommandStore } from '@/stores/commandStore'
 import { useExecutionStore } from '@/stores/executionStore'
@@ -152,7 +151,7 @@ import { useQueueStore, useQueueUIStore } from '@/stores/queueStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
-import { isElectron } from '@/utils/envUtil'
+import { isDesktop } from '@/platform/distribution/types'
 import { useConflictAcknowledgment } from '@/workbench/extensions/manager/composables/useConflictAcknowledgment'
 import { useManagerState } from '@/workbench/extensions/manager/composables/useManagerState'
 import { ManagerTab } from '@/workbench/extensions/manager/types/comfyManagerTypes'
@@ -162,7 +161,6 @@ const workspaceStore = useWorkspaceStore()
 const rightSidePanelStore = useRightSidePanelStore()
 const managerState = useManagerState()
 const { isLoggedIn } = useCurrentUser()
-const isDesktop = isElectron()
 const { t, n } = useI18n()
 const { toastErrorHandler } = useErrorHandling()
 const commandStore = useCommandStore()
@@ -173,8 +171,6 @@ const sidebarTabStore = useSidebarTabStore()
 const { activeJobsCount } = storeToRefs(queueStore)
 const { isOverlayExpanded: isQueueOverlayExpanded } = storeToRefs(queueUIStore)
 const { activeSidebarTabId } = storeToRefs(sidebarTabStore)
-const releaseStore = useReleaseStore()
-const { shouldShowRedDot: showReleaseRedDot } = storeToRefs(releaseStore)
 const { shouldShowRedDot: shouldShowConflictRedDot } =
   useConflictAcknowledgment()
 const isTopMenuHovered = ref(false)
@@ -236,10 +232,8 @@ const queueContextMenuItems = computed<MenuItem[]>(() => [
   }
 ])
 
-// Use either release red dot or conflict red dot
 const shouldShowRedDot = computed((): boolean => {
-  const releaseRedDot = showReleaseRedDot.value
-  return releaseRedDot || shouldShowConflictRedDot.value
+  return shouldShowConflictRedDot.value
 })
 
 // Right side panel toggle

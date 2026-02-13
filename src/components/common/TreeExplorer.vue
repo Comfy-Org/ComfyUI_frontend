@@ -12,9 +12,9 @@
       nodeContent: ({ context }) => ({
         class: 'group/tree-node',
         onClick: (e: MouseEvent) =>
-          onNodeContentClick(e, context.node as RenderedTreeExplorerNode),
+          onNodeContentClick(e, context.node as RenderedTreeExplorerNode<T>),
         onContextmenu: (e: MouseEvent) =>
-          handleContextMenu(e, context.node as RenderedTreeExplorerNode)
+          handleContextMenu(e, context.node as RenderedTreeExplorerNode<T>)
       }),
       nodeToggleButton: () => ({
         onClick: (e: MouseEvent) => {
@@ -36,15 +36,11 @@
   </Tree>
   <ContextMenu ref="menu" :model="menuItems" />
 </template>
-<script setup lang="ts">
-defineOptions({
-  inheritAttrs: false
-})
-
+<script setup lang="ts" generic="T">
 import ContextMenu from 'primevue/contextmenu'
 import type { MenuItem, MenuItemCommandEvent } from 'primevue/menuitem'
 import Tree from 'primevue/tree'
-import { computed, provide, ref } from 'vue'
+import { computed, provide, ref, shallowRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import TreeExplorerTreeNode from '@/components/common/TreeExplorerTreeNode.vue'
@@ -60,6 +56,10 @@ import type {
 } from '@/types/treeExplorerTypes'
 import { combineTrees, findNodeByKey } from '@/utils/treeUtil'
 
+defineOptions({
+  inheritAttrs: false
+})
+
 const expandedKeys = defineModel<Record<string, boolean>>('expandedKeys', {
   required: true
 })
@@ -69,13 +69,13 @@ const selectionKeys = defineModel<Record<string, boolean>>('selectionKeys')
 const storeSelectionKeys = selectionKeys.value !== undefined
 
 const props = defineProps<{
-  root: TreeExplorerNode
+  root: TreeExplorerNode<T>
   class?: string
 }>()
 const emit = defineEmits<{
-  (e: 'nodeClick', node: RenderedTreeExplorerNode, event: MouseEvent): void
-  (e: 'nodeDelete', node: RenderedTreeExplorerNode): void
-  (e: 'contextMenu', node: RenderedTreeExplorerNode, event: MouseEvent): void
+  (e: 'nodeClick', node: RenderedTreeExplorerNode<T>, event: MouseEvent): void
+  (e: 'nodeDelete', node: RenderedTreeExplorerNode<T>): void
+  (e: 'contextMenu', node: RenderedTreeExplorerNode<T>, event: MouseEvent): void
 }>()
 
 const {
@@ -83,19 +83,19 @@ const {
   getAddFolderMenuItem,
   handleFolderCreation,
   addFolderCommand
-} = useTreeFolderOperations(
-  /* expandNode */ (node: TreeExplorerNode) => {
+} = useTreeFolderOperations<T>(
+  /* expandNode */ (node: TreeExplorerNode<T>) => {
     expandedKeys.value[node.key] = true
   }
 )
 
-const renderedRoot = computed<RenderedTreeExplorerNode>(() => {
+const renderedRoot = computed<RenderedTreeExplorerNode<T>>(() => {
   const renderedRoot = fillNodeInfo(props.root)
   return newFolderNode.value
     ? combineTrees(renderedRoot, newFolderNode.value)
     : renderedRoot
 })
-const getTreeNodeIcon = (node: TreeExplorerNode) => {
+const getTreeNodeIcon = (node: TreeExplorerNode<T>) => {
   if (node.getIcon) {
     const icon = node.getIcon()
     if (icon) {
@@ -111,7 +111,9 @@ const getTreeNodeIcon = (node: TreeExplorerNode) => {
   const isExpanded = expandedKeys.value?.[node.key] ?? false
   return isExpanded ? 'pi pi-folder-open' : 'pi pi-folder'
 }
-const fillNodeInfo = (node: TreeExplorerNode): RenderedTreeExplorerNode => {
+const fillNodeInfo = (
+  node: TreeExplorerNode<T>
+): RenderedTreeExplorerNode<T> => {
   const children = node.children?.map(fillNodeInfo) ?? []
   const totalLeaves = node.leaf
     ? 1
@@ -128,7 +130,7 @@ const fillNodeInfo = (node: TreeExplorerNode): RenderedTreeExplorerNode => {
 }
 const onNodeContentClick = async (
   e: MouseEvent,
-  node: RenderedTreeExplorerNode
+  node: RenderedTreeExplorerNode<T>
 ) => {
   if (!storeSelectionKeys) {
     selectionKeys.value = {}
@@ -139,20 +141,22 @@ const onNodeContentClick = async (
   emit('nodeClick', node, e)
 }
 const menu = ref<InstanceType<typeof ContextMenu> | null>(null)
-const menuTargetNode = ref<RenderedTreeExplorerNode | null>(null)
+const menuTargetNode = shallowRef<RenderedTreeExplorerNode<T> | null>(null)
 const extraMenuItems = computed(() => {
-  return menuTargetNode.value?.contextMenuItems
-    ? typeof menuTargetNode.value.contextMenuItems === 'function'
-      ? menuTargetNode.value.contextMenuItems(menuTargetNode.value)
-      : menuTargetNode.value.contextMenuItems
+  const node = menuTargetNode.value
+  return node?.contextMenuItems
+    ? typeof node.contextMenuItems === 'function'
+      ? node.contextMenuItems(node)
+      : node.contextMenuItems
     : []
 })
-const renameEditingNode = ref<RenderedTreeExplorerNode | null>(null)
+const renameEditingNode = shallowRef<RenderedTreeExplorerNode<T> | null>(null)
 const errorHandling = useErrorHandling()
 const handleNodeLabelEdit = async (
-  node: RenderedTreeExplorerNode,
+  n: RenderedTreeExplorerNode,
   newName: string
 ) => {
+  const node = n as RenderedTreeExplorerNode<T>
   await errorHandling.wrapWithErrorHandlingAsync(
     async () => {
       if (node.key === newFolderNode.value?.key) {
@@ -170,35 +174,36 @@ const handleNodeLabelEdit = async (
 provide(InjectKeyHandleEditLabelFunction, handleNodeLabelEdit)
 
 const { t } = useI18n()
-const renameCommand = (node: RenderedTreeExplorerNode) => {
+const renameCommand = (node: RenderedTreeExplorerNode<T>) => {
   renameEditingNode.value = node
 }
-const deleteCommand = async (node: RenderedTreeExplorerNode) => {
+const deleteCommand = async (node: RenderedTreeExplorerNode<T>) => {
   await node.handleDelete?.()
   emit('nodeDelete', node)
 }
-const menuItems = computed<MenuItem[]>(() =>
-  [
-    getAddFolderMenuItem(menuTargetNode.value),
+const menuItems = computed<MenuItem[]>(() => {
+  const node = menuTargetNode.value
+  return [
+    getAddFolderMenuItem(node),
     {
       label: t('g.rename'),
       icon: 'pi pi-file-edit',
       command: () => {
-        if (menuTargetNode.value) {
-          renameCommand(menuTargetNode.value)
+        if (node) {
+          renameCommand(node)
         }
       },
-      visible: menuTargetNode.value?.handleRename !== undefined
+      visible: node?.handleRename !== undefined
     },
     {
       label: t('g.delete'),
       icon: 'pi pi-trash',
       command: async () => {
-        if (menuTargetNode.value) {
-          await deleteCommand(menuTargetNode.value)
+        if (node) {
+          await deleteCommand(node)
         }
       },
-      visible: menuTargetNode.value?.handleDelete !== undefined,
+      visible: node?.handleDelete !== undefined,
       isAsync: true // The delete command can be async
     },
     ...extraMenuItems.value
@@ -210,9 +215,12 @@ const menuItems = computed<MenuItem[]>(() =>
         })
       : undefined
   }))
-)
+})
 
-const handleContextMenu = (e: MouseEvent, node: RenderedTreeExplorerNode) => {
+const handleContextMenu = (
+  e: MouseEvent,
+  node: RenderedTreeExplorerNode<T>
+) => {
   menuTargetNode.value = node
   emit('contextMenu', node, e)
   if (menuItems.value.filter((item) => item.visible).length > 0) {
@@ -224,15 +232,13 @@ const wrapCommandWithErrorHandler = (
   command: (event: MenuItemCommandEvent) => void,
   { isAsync = false }: { isAsync: boolean }
 ) => {
+  const node = menuTargetNode.value
   return isAsync
     ? errorHandling.wrapWithErrorHandlingAsync(
         command as (event: MenuItemCommandEvent) => Promise<void>,
-        menuTargetNode.value?.handleError
+        node?.handleError
       )
-    : errorHandling.wrapWithErrorHandling(
-        command,
-        menuTargetNode.value?.handleError
-      )
+    : errorHandling.wrapWithErrorHandling(command, node?.handleError)
 }
 
 defineExpose({
