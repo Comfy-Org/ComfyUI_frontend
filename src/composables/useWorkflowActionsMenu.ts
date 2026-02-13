@@ -3,6 +3,7 @@ import type { ComputedRef, Ref } from 'vue'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import {
@@ -10,6 +11,7 @@ import {
   useWorkflowStore
 } from '@/platform/workflow/management/stores/workflowStore'
 import { useCommandStore } from '@/stores/commandStore'
+import { useMenuItemStore } from '@/stores/menuItemStore'
 import { useSubgraphStore } from '@/stores/subgraphStore'
 
 interface WorkflowActionsMenuOptions {
@@ -32,6 +34,8 @@ export function useWorkflowActionsMenu(
   const bookmarkStore = useWorkflowBookmarkStore()
   const commandStore = useCommandStore()
   const subgraphStore = useSubgraphStore()
+  const menuItemStore = useMenuItemStore()
+  const { flags } = useFeatureFlags()
 
   const targetWorkflow = computed(
     () => workflow?.value ?? workflowStore.activeWorkflow
@@ -57,12 +61,18 @@ export function useWorkflowActionsMenu(
       command: () => void,
       visible = true,
       disabled = false,
-      separator = false
+      separator = false,
+      badge = false
     ) => {
       if (!visible) return
       if (separator) items.push({ separator: true })
-      items.push({ label, icon, command, disabled })
+      const item: MenuItem = { label, icon, command, disabled }
+      if (badge) item.badge = t('contextMenu.newBadge')
+      items.push(item)
     }
+
+    const showAppModeItems =
+      isRoot && (menuItemStore.hasSeenLinear || flags.linearToggleEnabled)
 
     addItem(
       t('g.rename'),
@@ -84,6 +94,21 @@ export function useWorkflowActionsMenu(
         }
       },
       isRoot && !isBlueprint
+    )
+
+    addItem(
+      bookmarkStore.isBookmarked(workflow?.path ?? '')
+        ? t('tabMenu.removeFromBookmarks')
+        : t('tabMenu.addToBookmarks'),
+      'pi pi-bookmark' +
+        (bookmarkStore.isBookmarked(workflow?.path ?? '') ? '-fill' : ''),
+      async () => {
+        if (workflow?.path) {
+          await bookmarkStore.toggleBookmarked(workflow.path)
+        }
+      },
+      isRoot,
+      workflow?.isTemporary ?? false
     )
 
     addItem(
@@ -109,18 +134,27 @@ export function useWorkflowActionsMenu(
     )
 
     addItem(
-      bookmarkStore.isBookmarked(workflow?.path ?? '')
-        ? t('tabMenu.removeFromBookmarks')
-        : t('tabMenu.addToBookmarks'),
-      'pi pi-bookmark' +
-        (bookmarkStore.isBookmarked(workflow?.path ?? '') ? '-fill' : ''),
+      t('breadcrumbsMenu.switchModes'),
+      'icon-[lucide--repeat]',
       async () => {
-        if (workflow?.path) {
-          await bookmarkStore.toggleBookmarked(workflow.path)
-        }
+        await commandStore.execute('Comfy.ToggleLinear', {
+          metadata: { source: 'breadcrumb_menu' }
+        })
       },
-      isRoot,
-      workflow?.isTemporary ?? false
+      showAppModeItems,
+      false,
+      true,
+      true
+    )
+
+    addItem(
+      t('breadcrumbsMenu.editApp'),
+      'icon-[lucide--square-pen]',
+      () => {},
+      showAppModeItems,
+      true,
+      false,
+      true
     )
 
     addItem(
@@ -130,7 +164,9 @@ export function useWorkflowActionsMenu(
         await ensureWorkflowActive(workflow)
         await commandStore.execute('Comfy.ExportWorkflow')
       },
-      isRoot
+      isRoot,
+      false,
+      true
     )
 
     addItem(

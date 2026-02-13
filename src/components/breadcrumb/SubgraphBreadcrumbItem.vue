@@ -37,7 +37,21 @@
         class: 'py-2'
       }
     }"
-  />
+  >
+    <template #item="{ item, props: itemProps }">
+      <a v-bind="itemProps.action" class="flex items-center gap-2">
+        <i v-if="item.icon" :class="item.icon" />
+        <span class="flex-1">{{ item.label }}</span>
+        <BadgePill
+          v-if="item.badge"
+          :text="item.badge"
+          border-style="var(--color-highlight)"
+          filled="var(--color-highlight)"
+          text-color="var(--base-foreground)"
+        />
+      </a>
+    </template>
+  </Menu>
   <InputText
     v-if="isEditing"
     ref="itemInputRef"
@@ -59,6 +73,7 @@ import Tag from 'primevue/tag'
 import { computed, nextTick, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import BadgePill from '@/components/common/BadgePill.vue'
 import { useWorkflowActionsMenu } from '@/composables/useWorkflowActionsMenu'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import {

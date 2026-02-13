@@ -81,9 +81,19 @@
       <LoginButton v-else-if="isDesktop" class="p-1" />
     </div>
     <ContextMenu ref="menu" :model="contextMenuItems">
-      <template #itemicon="{ item }">
-        <OverlayIcon v-if="item.overlayIcon" v-bind="item.overlayIcon" />
-        <i v-else-if="item.icon" :class="item.icon" />
+      <template #item="{ item, props: itemProps }">
+        <a v-bind="itemProps.action" class="flex items-center gap-2">
+          <OverlayIcon v-if="item.overlayIcon" v-bind="item.overlayIcon" />
+          <i v-else-if="item.icon" :class="item.icon" />
+          <span class="flex-1">{{ item.label }}</span>
+          <BadgePill
+            v-if="item.badge"
+            :text="item.badge"
+            border-style="var(--color-highlight)"
+            filled="var(--color-highlight)"
+            text-color="var(--base-foreground)"
+          />
+        </a>
       </template>
     </ContextMenu>
     <div v-if="isDesktop" class="window-actions-spacer app-drag shrink-0" />
@@ -99,6 +109,7 @@ import { computed, nextTick, onUpdated, ref, watch } from 'vue'
 import type { WatchStopHandle } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import BadgePill from '@/components/common/BadgePill.vue'
 import OverlayIcon from '@/components/common/OverlayIcon.vue'
 import type { OverlayIconProps } from '@/components/common/OverlayIcon.vue'
 import CurrentUserButton from '@/components/topbar/CurrentUserButton.vue'

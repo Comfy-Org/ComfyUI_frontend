@@ -14,16 +14,17 @@ import { computed } from 'vue'
 
 import { cn } from '@/utils/tailwindUtil'
 
-const { borderStyle, filled } = defineProps<{
+const { borderStyle, filled, textColor } = defineProps<{
   text?: string
   icon?: string
   iconClass?: string
   borderStyle?: string
-  filled?: boolean
+  filled?: boolean | string
+  textColor?: string
 }>()
 
 const textColorClass = computed(() =>
-  borderStyle && filled ? '' : 'text-foreground'
+  textColor || (borderStyle && filled) ? '' : 'text-foreground'
 )
 
 const customStyle = computed(() => {
@@ -44,11 +45,14 @@ const customStyle = computed(() => {
   if (filled) {
     return {
       borderColor: borderStyle,
-      backgroundColor: `${borderStyle}33`,
-      color: borderStyle
+      backgroundColor: typeof filled === 'string' ? filled : `${borderStyle}33`,
+      ...(textColor ? { color: textColor } : { color: borderStyle })
     }
   }
 
-  return { borderColor: borderStyle }
+  return {
+    borderColor: borderStyle,
+    ...(textColor ? { color: textColor } : {})
+  }
 })
 </script>

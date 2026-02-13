@@ -8,6 +8,7 @@ import {
   PopoverTrigger
 } from 'reka-ui'
 
+import BadgePill from '@/components/common/BadgePill.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { cn } from '@/utils/tailwindUtil'
 
@@ -56,11 +57,11 @@ const {
                 v-else
                 :class="
                   cn(
-                    'flex flex-row gap-4 p-2 rounded-sm my-1',
-                    item.disabled
-                      ? 'opacity-50 pointer-events-none'
-                      : item.command &&
-                          'cursor-pointer hover:bg-secondary-background-hover'
+                    'flex flex-row items-center gap-4 p-2 rounded-sm my-1',
+                    item.disabled && 'opacity-50 pointer-events-none',
+                    item.command &&
+                      !item.disabled &&
+                      'cursor-pointer hover:bg-secondary-background-hover'
                   )
                 "
                 @click="
@@ -72,7 +73,14 @@ const {
                 "
               >
                 <i v-if="item.icon" :class="item.icon" />
-                {{ item.label }}
+                <span class="flex-1">{{ item.label }}</span>
+                <BadgePill
+                  v-if="item.badge"
+                  :text="item.badge"
+                  border-style="var(--color-highlight)"
+                  filled="var(--color-highlight)"
+                  text-color="var(--base-foreground)"
+                />
               </div>
             </template>
           </div>
