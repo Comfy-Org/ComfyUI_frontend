@@ -72,11 +72,16 @@ function resolveLegacyEntry(
   const link = linkId != null ? subgraph.getLink(linkId) : undefined
   if (!link) return null
 
-  const resolved = link.resolve(subgraph)
-  const inputWidgetName = resolved.input?.widget?.name
-  if (!resolved.inputNode || !inputWidgetName) return null
+  const inputNode = subgraph.getNodeById(link.target_id) ?? undefined
+  if (!inputNode) return null
 
-  return [String(resolved.inputNode.id), inputWidgetName]
+  // Find input by link ID rather than target_slot, since target_slot
+  // can be unreliable in compressed workflows.
+  const targetInput = inputNode.inputs?.find((inp) => inp.link === linkId)
+  const inputWidgetName = targetInput?.widget?.name
+  if (!inputWidgetName) return null
+
+  return [String(inputNode.id), inputWidgetName]
 }
 
 /**
