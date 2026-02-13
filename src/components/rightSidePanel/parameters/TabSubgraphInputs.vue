@@ -84,13 +84,6 @@ const widgetsList = computed((): NodeWidgetsList => {
 
   const result: NodeWidgetsList = []
   for (const [nodeId, widgetName] of proxyWidgetsOrder) {
-    if (nodeId === '-1') {
-      // Native widget on the SubgraphNode itself
-      const widget = node.widgets?.find((w) => w.name === widgetName)
-      if (widget) result.push({ node, widget })
-      continue
-    }
-    // Resolve the interior node and widget from the subgraph
     const interiorNode = node.subgraph.getNodeById(nodeId)
     if (!interiorNode) continue
     const widget = interiorNode.widgets?.find((w) => w.name === widgetName)

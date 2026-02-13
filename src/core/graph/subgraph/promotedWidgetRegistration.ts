@@ -56,32 +56,71 @@ function syncPromotedWidgets(
   const canvasStore = useCanvasStore()
   const parsed = parseProxyWidgets(property)
 
-  // Snapshot native widgets before filtering so we can restore them
   const widgets = node.widgets ?? []
 
-  const nativeWidgets = widgets.filter(
-    (w) => !(w instanceof PromotedWidgetSlot)
-  )
-
-  // Remove existing PromotedWidgetSlot instances and native widgets
-  // that will be re-ordered by the parsed list.
-  // Dispose DOM adapters on slots being removed.
+  // Dispose DOM adapters on existing PromotedWidgetSlots being removed.
   for (const w of widgets) {
     if (w instanceof PromotedWidgetSlot) w.disposeDomAdapter()
   }
-  node.widgets = widgets.filter((w) => {
-    if (w instanceof PromotedWidgetSlot) return false
-    return !parsed.some(([, name]) => w.name === name)
+
+  // Collect slot-promoted copies created by _setWidget() during configure.
+  // These have sourceNodeId/sourceWidgetName set via Object.defineProperties.
+  const copies = widgets.filter(
+    (
+      w
+    ): w is IBaseWidget & { sourceNodeId: string; sourceWidgetName: string } =>
+      !(w instanceof PromotedWidgetSlot) &&
+      'sourceNodeId' in w &&
+      'sourceWidgetName' in w
+  )
+
+  // Remove all promoted widgets (both PromotedWidgetSlots and copies)
+  node.widgets = widgets.filter(
+    (w) =>
+      !(w instanceof PromotedWidgetSlot) &&
+      !(copies as IBaseWidget[]).includes(w)
+  )
+
+  // Track which source widgets are covered by the parsed list
+  const covered = new Set<string>()
+
+  // Create PromotedWidgetSlots for all parsed entries.
+  // Legacy `-1` entries are resolved to real IDs via the copies.
+  const newSlots: IBaseWidget[] = parsed.flatMap(([nodeId, widgetName]) => {
+    let resolvedNodeId = nodeId
+    let resolvedWidgetName = widgetName
+
+    if (nodeId === '-1') {
+      const copy = copies.find((w) => w.name === widgetName)
+      if (!copy) return []
+      resolvedNodeId = copy.sourceNodeId
+      resolvedWidgetName = copy.sourceWidgetName
+    }
+
+    covered.add(`${resolvedNodeId}:${resolvedWidgetName}`)
+    return [
+      new PromotedWidgetSlot(
+        node as SubgraphNode,
+        resolvedNodeId,
+        resolvedWidgetName
+      )
+    ]
   })
 
-  // Create new PromotedWidgetSlot for each promoted entry
-  const newSlots: IBaseWidget[] = parsed.flatMap(([nodeId, widgetName]) => {
-    if (nodeId === '-1') {
-      const widget = nativeWidgets.find((w) => w.name === widgetName)
-      return widget ? [widget] : []
-    }
-    return [new PromotedWidgetSlot(node as SubgraphNode, nodeId, widgetName)]
-  })
+  // Add PromotedWidgetSlots for any copies not in the parsed list
+  // (e.g. old workflows that didn't serialize slot-promoted entries)
+  for (const copy of copies) {
+    const key = `${copy.sourceNodeId}:${copy.sourceWidgetName}`
+    if (covered.has(key)) continue
+    newSlots.unshift(
+      new PromotedWidgetSlot(
+        node as SubgraphNode,
+        copy.sourceNodeId,
+        copy.sourceWidgetName
+      )
+    )
+  }
+
   node.widgets.push(...newSlots)
 
   canvasStore.canvas?.setDirty(true, true)
@@ -103,21 +142,17 @@ const onConfigure = function (
 
   Object.defineProperty(this.properties, 'proxyWidgets', {
     get: () =>
-      this.widgets.map((w) =>
-        w instanceof PromotedWidgetSlot
-          ? [w.sourceNodeId, w.sourceWidgetName]
-          : ['-1', w.name]
-      ),
+      this.widgets.map((w) => {
+        if (w instanceof PromotedWidgetSlot)
+          return [w.sourceNodeId, w.sourceWidgetName]
+        if ('sourceNodeId' in w && 'sourceWidgetName' in w)
+          return [String(w.sourceNodeId), String(w.sourceWidgetName)]
+        return ['-1', w.name]
+      }),
     set: (value: NodeProperty) => syncPromotedWidgets(this, value)
   })
 
   if (serialisedNode.properties?.proxyWidgets) {
     syncPromotedWidgets(this, serialisedNode.properties.proxyWidgets)
-    const parsed = parseProxyWidgets(serialisedNode.properties.proxyWidgets)
-    serialisedNode.widgets_values?.forEach((v, index) => {
-      if (parsed[index]?.[0] !== '-1') return
-      const widget = this.widgets.find((w) => w.name == parsed[index][1])
-      if (v !== null && widget) widget.value = v
-    })
   }
 }

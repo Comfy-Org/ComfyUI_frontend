@@ -70,11 +70,6 @@ const activeWidgets = computed<WidgetItem[]>({
     if (!activeNode.value) return []
     const node = activeNode.value
     function mapWidgets([id, name]: [string, string]): WidgetItem[] {
-      if (id === '-1') {
-        const widget = node.widgets.find((w) => w.name === name)
-        if (!widget) return []
-        return [[{ id: -1, title: '(Linked)', type: '' }, widget]]
-      }
       const wNode = node.subgraph._nodes_by_id[id]
       if (!wNode?.widgets) return []
       const widget = wNode.widgets.find((w) => w.name === name)
@@ -172,10 +167,21 @@ function showAll() {
 function hideAll() {
   const node = activeNode.value
   if (!node) return
+  // Slot-promoted widgets (exposed via SubgraphInput links) can't be hidden
+  const slotPromoted = new Set<string>()
+  for (const slot of node.subgraph.inputNode.slots) {
+    for (const linkId of slot.linkIds) {
+      const link = node.subgraph.getLink(linkId)
+      if (!link) continue
+      const { inputNode, input } = link.resolve(node.subgraph)
+      if (!inputNode || !input?.widget?.name) continue
+      slotPromoted.add(`${inputNode.id}:${input.widget.name}`)
+    }
+  }
   proxyWidgets.value = proxyWidgets.value.filter(
     (propertyItem) =>
       !filteredActive.value.some(matchesWidgetItem(propertyItem)) ||
-      propertyItem[0] === '-1'
+      slotPromoted.has(`${propertyItem[0]}:${propertyItem[1]}`)
   )
 }
 function showRecommended() {

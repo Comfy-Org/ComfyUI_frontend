@@ -93,8 +93,14 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
           const linkId = subgraphInput.linkIds[0]
           const { inputNode, input } = subgraph.links[linkId].resolve(subgraph)
           const widget = inputNode?.widgets?.find?.((w) => w.name == name)
-          if (widget)
-            this._setWidget(subgraphInput, existingInput, widget, input?.widget)
+          if (widget && inputNode)
+            this._setWidget(
+              subgraphInput,
+              existingInput,
+              widget,
+              input?.widget,
+              inputNode
+            )
           return
         }
         const input = this.addInput(name, type)
@@ -206,7 +212,19 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
         if (!widget) return
 
         const widgetLocator = e.detail.input.widget
-        this._setWidget(subgraphInput, input, widget, widgetLocator)
+        // Resolve the interior node from the subgraph input's link
+        const linkId = subgraphInput.linkIds[0]
+        const link = linkId != null ? this.subgraph.getLink(linkId) : undefined
+        const interiorNode = link?.resolve(this.subgraph).inputNode
+        if (!interiorNode) return
+
+        this._setWidget(
+          subgraphInput,
+          input,
+          widget,
+          widgetLocator,
+          interiorNode
+        )
       },
       { signal }
     )
@@ -323,7 +341,13 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
         const widget = inputNode.getWidgetFromSlot(targetInput)
         if (!widget) continue
 
-        this._setWidget(subgraphInput, input, widget, targetInput.widget)
+        this._setWidget(
+          subgraphInput,
+          input,
+          widget,
+          targetInput.widget,
+          inputNode
+        )
         break
       }
     }
@@ -333,7 +357,8 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     subgraphInput: Readonly<SubgraphInput>,
     input: INodeInputSlot,
     widget: Readonly<IBaseWidget>,
-    inputWidget: IWidgetLocator | undefined
+    inputWidget: IWidgetLocator | undefined,
+    interiorNode: LGraphNode
   ) {
     // Use the first matching widget
     const promotedWidget =
@@ -349,6 +374,16 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     // and copies the result as a data property.
     const sourceWidget = widget as IBaseWidget
     Object.defineProperties(promotedWidget, {
+      sourceNodeId: {
+        value: String(interiorNode.id),
+        configurable: true,
+        enumerable: true
+      },
+      sourceWidgetName: {
+        value: sourceWidget.name,
+        configurable: true,
+        enumerable: true
+      },
       name: {
         get: () => subgraphInput.name,
         set() {},
