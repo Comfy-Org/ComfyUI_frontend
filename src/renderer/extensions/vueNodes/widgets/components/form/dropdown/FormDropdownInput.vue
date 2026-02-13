@@ -10,6 +10,8 @@ interface Props {
   isOpen?: boolean
   placeholder?: string
   items: FormDropdownItem[]
+  /** Items used for display in the input field. Falls back to items if not provided. */
+  displayItems?: FormDropdownItem[]
   selected: Set<string>
   maxSelectable: number
   uploadable: boolean
@@ -28,7 +30,8 @@ const emit = defineEmits<{
 }>()
 
 const selectedItems = computed(() => {
-  return props.items.filter((item) => props.selected.has(item.id))
+  const itemsToSearch = props.displayItems ?? props.items
+  return itemsToSearch.filter((item) => props.selected.has(item.id))
 })
 
 const theButtonStyle = computed(() =>
