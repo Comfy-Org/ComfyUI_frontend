@@ -79,17 +79,29 @@ function syncPromotedWidgets(
   // subgraph input links so they use the same delegation as context-menu
   // promoted widgets.
   const subgraphNode = node as SubgraphNode
+  // Map from slot name → PromotedWidgetSlot for syncing input._widget refs
+  const slotsByName = new Map<string, PromotedWidgetSlot>()
   const newSlots: IBaseWidget[] = parsed.flatMap(([nodeId, widgetName]) => {
     if (nodeId === '-1') {
       const source = resolveSlotPromotedSource(subgraphNode, widgetName)
-      if (source)
-        return [new PromotedWidgetSlot(subgraphNode, source[0], source[1])]
+      if (source) {
+        const slot = new PromotedWidgetSlot(subgraphNode, source[0], source[1])
+        slotsByName.set(widgetName, slot)
+        return [slot]
+      }
       const widget = nativeWidgets.find((w) => w.name === widgetName)
       return widget ? [widget] : []
     }
     return [new PromotedWidgetSlot(subgraphNode, nodeId, widgetName)]
   })
   node.widgets.push(...newSlots)
+
+  // Sync input._widget references so litegraph lifecycle events
+  // (removal, renaming) target the new PromotedWidgetSlot instances.
+  for (const input of subgraphNode.inputs) {
+    const slot = slotsByName.get(input.name)
+    if (slot) input._widget = slot
+  }
 
   canvasStore.canvas?.setDirty(true, true)
   node._setConcreteSlots()
@@ -150,10 +162,14 @@ const onConfigure = function (
   if (serialisedNode.properties?.proxyWidgets) {
     syncPromotedWidgets(this, serialisedNode.properties.proxyWidgets)
     const parsed = parseProxyWidgets(serialisedNode.properties.proxyWidgets)
+    const subNode = this as SubgraphNode
     serialisedNode.widgets_values?.forEach((v, index) => {
-      if (parsed[index]?.[0] !== '-1') return
-      const widget = this.widgets.find((w) => w.name == parsed[index][1])
-      if (v !== null && widget) widget.value = v
+      if (parsed[index]?.[0] !== '-1' || v === null) return
+      const slotName = parsed[index][1]
+      const widget =
+        this.widgets.find((w) => w.name === slotName) ??
+        subNode.inputs.find((inp) => inp.name === slotName)?._widget
+      if (widget) widget.value = v
     })
   }
 }
