@@ -1,6 +1,5 @@
-import { parseProxyWidgets } from '@/core/schemas/proxyWidget'
 import type { ProxyWidgetsProperty } from '@/core/schemas/proxyWidget'
-import { getPromotionList } from '@/core/graph/subgraph/promotionList'
+import { parseProxyWidgets } from '@/core/schemas/proxyWidget'
 import { t } from '@/i18n'
 import type {
   IContextMenuValue,
@@ -180,7 +179,7 @@ export function promoteRecommendedWidgets(subgraphNode: SubgraphNode) {
 
 export function pruneDisconnected(subgraphNode: SubgraphNode) {
   const { resolvePromotedWidget } = useWidgetValueStore()
-  const promotionList = getPromotionList(subgraphNode)
+  const promotionList = parseProxyWidgets(subgraphNode.properties.proxyWidgets)
   subgraphNode.properties.proxyWidgets = promotionList.filter(
     ([nodeId, widgetName]) =>
       resolvePromotedWidget(subgraphNode.subgraph, nodeId, widgetName) !== null

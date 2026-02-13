@@ -9,6 +9,7 @@ export type ProxyWidgetsProperty = z.infer<typeof proxyWidgetsPropertySchema>
 export function parseProxyWidgets(
   property: NodeProperty | undefined
 ): ProxyWidgetsProperty {
+  if (property == null) return []
   if (typeof property === 'string') property = JSON.parse(property)
   const result = proxyWidgetsPropertySchema.safeParse(
     typeof property === 'string' ? JSON.parse(property) : property

@@ -4,7 +4,7 @@ import { defineStore } from 'pinia'
 import { computed, ref, watchEffect } from 'vue'
 
 import { t } from '@/i18n'
-import { getPromotionList } from '@/core/graph/subgraph/promotionList'
+import { parseProxyWidgets } from '@/core/schemas/proxyWidget'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { transformNodeDefV1ToV2 } from '@/schemas/nodeDef/migration'
@@ -401,7 +401,9 @@ export const useNodeDefStore = defineStore('nodeDef', () => {
     }
 
     // For subgraph nodes, find the interior node via the promotion list
-    const entry = getPromotionList(node).find(([, name]) => name === widgetName)
+    const entry = parseProxyWidgets(node.properties.proxyWidgets).find(
+      ([, name]) => name === widgetName
+    )
     if (entry) {
       const [nodeId] = entry
       const subNode = node.subgraph.getNodeById(nodeId)
