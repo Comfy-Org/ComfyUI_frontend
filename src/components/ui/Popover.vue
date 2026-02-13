@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import type { MenuItem } from 'primevue/menuitem'
 import {
   PopoverArrow,
   PopoverContent,
@@ -15,12 +16,7 @@ defineOptions({
 })
 
 defineProps<{
-  entries?: {
-    label?: string
-    command?: () => void
-    icon?: string
-    separator?: boolean
-  }[]
+  entries?: MenuItem[]
   icon?: string
   to?: string | HTMLElement
 }>()
@@ -45,12 +41,9 @@ defineProps<{
       >
         <slot>
           <div class="flex flex-col p-1">
-            <template
-              v-for="{ label, command, icon, separator } in entries ?? []"
-              :key="label"
-            >
+            <template v-for="item in entries ?? []" :key="item.label">
               <div
-                v-if="separator"
+                v-if="item.separator"
                 class="border-b w-full border-border-subtle"
               />
               <div
@@ -58,20 +51,20 @@ defineProps<{
                 :class="
                   cn(
                     'flex flex-row gap-4 p-2 rounded-sm my-1',
-                    command &&
+                    item.command &&
                       'cursor-pointer hover:bg-secondary-background-hover'
                   )
                 "
                 @click="
-                  () => {
-                    if (!command) return
-                    command()
+                  (e) => {
+                    if (!item.command) return
+                    item.command({ originalEvent: e, item })
                     close()
                   }
                 "
               >
-                <i v-if="icon" :class="icon" />
-                {{ label }}
+                <i v-if="item.icon" :class="item.icon" />
+                {{ item.label }}
               </div>
             </template>
           </div>
