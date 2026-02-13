@@ -158,7 +158,7 @@ describe('BaseWidget store integration', () => {
       expect(state?.promoted).toBe(false)
       expect(state?.label).toBeUndefined()
 
-      expect(widget.hidden).toBeUndefined()
+      expect(widget.hidden).toBe(false)
       expect(widget.advanced).toBeUndefined()
     })
 

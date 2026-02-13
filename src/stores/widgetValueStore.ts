@@ -33,6 +33,7 @@ export interface WidgetState<
   | 'type'
   | 'value'
   | 'options'
+  | 'hidden'
   | 'label'
   | 'serialize'
   | 'disabled'

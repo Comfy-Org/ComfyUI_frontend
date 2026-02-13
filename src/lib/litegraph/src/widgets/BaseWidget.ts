@@ -93,7 +93,13 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
     this._state.label = value
   }
 
-  hidden?: boolean
+  get hidden(): boolean | undefined {
+    return this._state.hidden
+  }
+  set hidden(value: boolean | undefined) {
+    this._state.hidden = value ?? false
+  }
+
   advanced?: boolean
 
   get disabled(): boolean | undefined {
@@ -182,6 +188,7 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
       displayValue,
       // @ts-expect-error Prevent naming conflicts with custom nodes.
       labelBaseline,
+      hidden,
       label,
       disabled,
       promoted,
@@ -196,6 +203,7 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
       name: this.name,
       type: this.type as TWidgetType,
       value,
+      hidden: hidden ?? false,
       label,
       disabled: disabled ?? false,
       promoted: promoted ?? false,
