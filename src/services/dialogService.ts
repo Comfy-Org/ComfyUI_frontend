@@ -711,6 +711,22 @@ export const useDialogService = () => {
     })
   }
 
+  async function showInviteMemberUpsellDialog() {
+    const { default: component } =
+      await import('@/components/dialog/content/workspace/InviteMemberUpsellDialogContent.vue')
+    return dialogStore.showDialog({
+      key: 'invite-member-upsell',
+      component,
+      dialogComponentProps: {
+        ...workspaceDialogPt,
+        pt: {
+          ...workspaceDialogPt.pt,
+          root: { class: 'rounded-2xl max-w-[512px] w-full' }
+        }
+      }
+    })
+  }
+
   async function showRevokeInviteDialog(inviteId: string) {
     const { default: component } =
       await import('@/components/dialog/content/workspace/RevokeInviteDialogContent.vue')
@@ -782,6 +798,7 @@ export const useDialogService = () => {
     showRemoveMemberDialog,
     showRevokeInviteDialog,
     showInviteMemberDialog,
+    showInviteMemberUpsellDialog,
     showBillingComingSoonDialog,
     showCancelSubscriptionDialog
   }
