@@ -343,47 +343,43 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     if (widget instanceof AssetWidget)
       promotedWidget.options.nodeType ??= widget.node.type
 
-    Object.assign(promotedWidget, {
-      get name() {
-        return subgraphInput.name
+    // Delegate value to the interior widget so both the SubgraphNode copy
+    // and the interior widget share the same store entry.
+    // Object.defineProperty is required — Object.assign invokes getters
+    // and copies the result as a data property.
+    const sourceWidget = widget as IBaseWidget
+    Object.defineProperties(promotedWidget, {
+      name: {
+        get: () => subgraphInput.name,
+        set() {},
+        configurable: true,
+        enumerable: true
       },
-      set name(value) {
-        console.warn(
-          'Promoted widget: setting name is not allowed',
-          this,
-          value
-        )
+      localized_name: {
+        get: () => subgraphInput.localized_name,
+        set() {},
+        configurable: true,
+        enumerable: true
       },
-      get localized_name() {
-        return subgraphInput.localized_name
+      value: {
+        get: () => sourceWidget.value,
+        set: (v) => {
+          sourceWidget.value = v
+        },
+        configurable: true,
+        enumerable: true
       },
-      set localized_name(value) {
-        console.warn(
-          'Promoted widget: setting localized_name is not allowed',
-          this,
-          value
-        )
+      label: {
+        get: () => subgraphInput.label,
+        set() {},
+        configurable: true,
+        enumerable: true
       },
-      get label() {
-        return subgraphInput.label
-      },
-      set label(value) {
-        console.warn(
-          'Promoted widget: setting label is not allowed',
-          this,
-          value
-        )
-      },
-      get tooltip() {
-        // Preserve the original widget's tooltip for promoted widgets
-        return widget.tooltip
-      },
-      set tooltip(value) {
-        console.warn(
-          'Promoted widget: setting tooltip is not allowed',
-          this,
-          value
-        )
+      tooltip: {
+        get: () => widget.tooltip,
+        set() {},
+        configurable: true,
+        enumerable: true
       }
     })
 
