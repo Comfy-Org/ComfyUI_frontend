@@ -14727,7 +14727,7 @@
       },
       "offloading": {
         "name": "offloading",
-        "tooltip": "Depth level for gradient checkpointing."
+        "tooltip": "Offload the Model to RAM. Requires Bypass Mode."
       },
       "existing_lora": {
         "name": "existing_lora",

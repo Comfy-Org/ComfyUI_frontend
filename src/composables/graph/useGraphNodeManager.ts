@@ -54,8 +54,6 @@ export interface SafeWidgetData {
   hasLayoutSize?: boolean
   /** Whether widget is a DOM widget */
   isDOMWidget?: boolean
-  /** Node type (for subgraph promoted widgets) */
-  nodeType?: string
   /**
    * Widget options needed for render decisions.
    * Note: Most metadata should be accessed via widgetValueStore.getWidget().
@@ -147,14 +145,6 @@ function getControlWidget(widget: IBaseWidget): SafeControlWidget | undefined {
   }
 }
 
-function getNodeType(node: LGraphNode, widget: IBaseWidget) {
-  if (!node.isSubgraphNode() || !('sourceNodeId' in widget)) return undefined
-  const subNode = node.subgraph.getNodeById(
-    (widget as { sourceNodeId: string }).sourceNodeId
-  )
-  return subNode?.type
-}
-
 /**
  * Shared widget enhancements used by both safeWidgetMapper and Right Side Panel
  */
@@ -163,8 +153,6 @@ interface SharedWidgetEnhancements {
   controlWidget?: SafeControlWidget
   /** Input specification from node definition */
   spec?: InputSpec
-  /** Node type (for subgraph promoted widgets) */
-  nodeType?: string
 }
 
 /**
@@ -180,8 +168,7 @@ export function getSharedWidgetEnhancements(
 
   return {
     controlWidget: getControlWidget(widget),
-    spec: nodeDefStore.getInputSpecForWidget(node, widget.name),
-    nodeType: getNodeType(node, widget)
+    spec: nodeDefStore.getInputSpecForWidget(node, widget.name)
   }
 }
 
