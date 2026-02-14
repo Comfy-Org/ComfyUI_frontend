@@ -320,11 +320,15 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
         const widget = subgraphInput._widget
         if (!widget) return
 
-        // If this widget is already promoted, unpromote it first
+        // If this widget is already promoted, demote it first
         // so it transitions cleanly to being linked via SubgraphInput.
-        const nodeId = String(e.detail.node.id)
-        const existingView = this._viewCache.get(`${nodeId}:${widget.name}`)
-        if (existingView) this.ensureWidgetRemoved(existingView)
+        if (widget.promoted) {
+          const nodeId = String(e.detail.node.id)
+          this.properties.proxyWidgets = this._getPromotionList().filter(
+            ([n, w]) => !(n === nodeId && w === widget.name)
+          )
+          widget.promoted = false
+        }
 
         const widgetLocator = e.detail.input.widget
         this._setWidget(
@@ -345,7 +349,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
         const connectedWidgets = subgraphInput.getConnectedWidgets()
         if (connectedWidgets.length > 0) return
 
-        this.removeWidgetByName(input.name)
+        if (input._widget) this.ensureWidgetRemoved(input._widget)
 
         delete input.pos
         delete input.widget
