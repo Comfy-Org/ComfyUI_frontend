@@ -28,7 +28,7 @@ const props = defineProps<{
 
 const containerRef = ref<HTMLElement | null>(null)
 
-const handleWheel = (event: WheelEvent) => {
+function handleWheel(event: WheelEvent) {
   const container = containerRef.value
   if (!container) return
 
@@ -42,8 +42,9 @@ const handleWheel = (event: WheelEvent) => {
   const isScrollingUp = event.deltaY < 0
   const isScrollingDown = event.deltaY > 0
 
-  const isAtTop = scrollTop === 0
-  const isAtBottom = scrollTop + clientHeight >= scrollHeight
+  const scrollTolerance = 1
+  const isAtTop = Math.abs(scrollTop) <= scrollTolerance
+  const isAtBottom = scrollTop + clientHeight >= scrollHeight - scrollTolerance
 
   // Only stop propagation if we're scrolling within the widget's bounds
   if ((isScrollingUp && !isAtTop) || (isScrollingDown && !isAtBottom)) {
