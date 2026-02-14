@@ -15,6 +15,7 @@ import type {
   PageViewMetadata,
   PageVisibilityMetadata,
   SettingChangedMetadata,
+  SignupPageMetadata,
   SurveyResponses,
   TabCountMetadata,
   TelemetryDispatcher,
@@ -53,8 +54,12 @@ export class TelemetryRegistry implements TelemetryDispatcher {
     })
   }
 
-  trackSignupOpened(): void {
-    this.dispatch((provider) => provider.trackSignupOpened?.())
+  trackSignupOpened(metadata?: SignupPageMetadata): void {
+    this.dispatch((provider) => provider.trackSignupOpened?.(metadata))
+  }
+
+  trackLoginOpened(metadata?: SignupPageMetadata): void {
+    this.dispatch((provider) => provider.trackLoginOpened?.(metadata))
   }
 
   trackAuth(metadata: AuthMetadata): void {

@@ -272,7 +272,7 @@ import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
 import type { components } from '@/types/comfyRegistryTypes'
 
 type SubscriptionTier = components['schemas']['SubscriptionTier']
-type CheckoutTierKey = Exclude<TierKey, 'founder'>
+type CheckoutTierKey = Exclude<TierKey, 'free' | 'founder'>
 type CheckoutTier = CheckoutTierKey | `${CheckoutTierKey}-yearly`
 
 const getCheckoutTier = (

@@ -274,8 +274,9 @@ export const useDialogService = () => {
   async function showTopUpCreditsDialog(options?: {
     isInsufficientCredits?: boolean
   }) {
-    const { isActiveSubscription, type } = useBillingContext()
-    if (!isActiveSubscription.value) return
+    const { isActiveSubscription, subscription, type } = useBillingContext()
+    if (!isActiveSubscription.value || subscription.value?.tier === 'FREE')
+      return
 
     const component =
       type.value === 'workspace'

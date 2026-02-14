@@ -27,6 +27,7 @@ const selectedTierKey = ref<TierKey | null>(null)
 const tierDisplayName = computed(() => {
   if (!selectedTierKey.value) return ''
   const names: Record<TierKey, string> = {
+    free: t('subscription.tiers.free.name'),
     standard: t('subscription.tiers.standard.name'),
     creator: t('subscription.tiers.creator.name'),
     pro: t('subscription.tiers.pro.name'),

@@ -105,9 +105,18 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
   // Set persistence to localStorage (works in both browser and Electron)
   void setPersistence(auth, browserLocalPersistence)
 
+  const HAS_ACCOUNT_KEY = 'comfy:hasAccount'
+
   onAuthStateChanged(auth, (user) => {
     currentUser.value = user
     isInitialized.value = true
+    if (user) {
+      try {
+        localStorage.setItem(HAS_ACCOUNT_KEY, '1')
+      } catch {
+        // Ignore localStorage errors (e.g., in private browsing mode)
+      }
+    }
     if (user === null) {
       lastTokenUserId.value = null
 
