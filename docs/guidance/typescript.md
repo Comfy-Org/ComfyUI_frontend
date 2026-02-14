@@ -44,7 +44,9 @@ Extract type guards and their associated interfaces into **leaf modules** — fi
 // ✅ myTypes.ts — leaf module (only type imports)
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 
-export interface MyView extends IBaseWidget { /* ... */ }
+export interface MyView extends IBaseWidget {
+  /* ... */
+}
 export function isMyView(w: IBaseWidget): w is MyView {
   return 'myProp' in w
 }
