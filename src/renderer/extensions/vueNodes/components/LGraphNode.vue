@@ -11,7 +11,9 @@
       cn(
         'group/node bg-node-component-header-surface lg-node absolute text-sm',
         'contain-style contain-layout w-(--node-width)',
-        !isRerouteNode && 'min-w-[225px] min-h-(--node-height)',
+        isRerouteNode
+          ? 'h-(--node-height)'
+          : 'min-w-[225px] min-h-(--node-height)',
         shapeClass,
         'touch-none flex flex-col',
         'border-1 border-solid border-component-node-border',

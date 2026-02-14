@@ -249,6 +249,14 @@ describe('LGraphNode', () => {
       expect(regularHasMinWidth).toBe(true)
     })
 
+    it('should use fixed height for reroute nodes', () => {
+      const wrapper = mountLGraphNode({ nodeData: mockRerouteNodeData })
+      const hasFixedHeight = wrapper
+        .classes()
+        .some((c) => c.startsWith('h-'))
+      expect(hasFixedHeight).toBe(true)
+    })
+
     it('should not render resize handle for reroute nodes', () => {
       const wrapper = mountLGraphNode({ nodeData: mockRerouteNodeData })
       expect(wrapper.find('[role="button"][aria-label]').exists()).toBe(false)
