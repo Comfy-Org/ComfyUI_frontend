@@ -18,6 +18,8 @@ import type {
   ModelFolder,
   TagsOperationResult
 } from '@/platform/assets/schemas/assetSchema'
+import { isCloud } from '@/platform/distribution/types'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { api } from '@/scripts/api'
 import { useModelToNodeStore } from '@/stores/modelToNodeStore'
 
@@ -296,6 +298,24 @@ function createAssetService() {
     return (
       useModelToNodeStore().getRegisteredNodeTypes()[nodeType] === widgetName
     )
+  }
+
+  /**
+   * Checks if the asset browser should be used for a given node input.
+   * Combines the cloud environment check, user setting, and eligibility check.
+   *
+   * @param nodeType - The ComfyUI node comfyClass
+   * @param widgetName - The name of the widget to check
+   * @returns true if this input should use the asset browser
+   */
+  function shouldUseAssetBrowser(
+    nodeType: string | undefined,
+    widgetName: string
+  ): boolean {
+    if (!isCloud) return false
+    const settingStore = useSettingStore()
+    const isUsingAssetAPI = settingStore.get('Comfy.Assets.UseAssetAPI')
+    return isUsingAssetAPI && isAssetBrowserEligible(nodeType, widgetName)
   }
 
   /**
@@ -733,6 +753,7 @@ function createAssetService() {
     getAssetModelFolders,
     getAssetModels,
     isAssetBrowserEligible,
+    shouldUseAssetBrowser,
     getAssetsForNodeType,
     getAssetDetails,
     getAssetsByTag,

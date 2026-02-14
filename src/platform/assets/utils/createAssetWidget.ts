@@ -64,12 +64,7 @@ export function createAssetWidget(
         const validatedAsset = assetItemSchema.safeParse(asset)
 
         if (!validatedAsset.success) {
-          console.error(
-            'Invalid asset item:',
-            validatedAsset.error.errors,
-            'Received:',
-            asset
-          )
+          console.error('Invalid asset item:', validatedAsset.error.errors)
           toastStore.add({
             severity: 'error',
             summary: t('assetBrowser.invalidAsset'),

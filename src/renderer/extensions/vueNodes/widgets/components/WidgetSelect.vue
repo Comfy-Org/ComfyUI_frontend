@@ -112,17 +112,12 @@ const specDescriptor = computed<{
 })
 
 const isAssetMode = computed(() => {
-  if (isCloud) {
-    const settingStore = useSettingStore()
-    const isUsingAssetAPI = settingStore.get('Comfy.Assets.UseAssetAPI')
-    const isEligible =
-      assetService.isAssetBrowserEligible(props.nodeType, props.widget.name) ||
-      props.widget.type === 'asset'
-
-    return isUsingAssetAPI && isEligible
-  }
-
-  return false
+  if (!isCloud) return false
+  if (!useSettingStore().get('Comfy.Assets.UseAssetAPI')) return false
+  return (
+    assetService.isAssetBrowserEligible(props.nodeType, props.widget.name) ||
+    props.widget.type === 'asset'
+  )
 })
 
 const assetKind = computed(() => specDescriptor.value.kind)
