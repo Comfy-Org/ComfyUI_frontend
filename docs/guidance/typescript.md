@@ -36,6 +36,23 @@ When you must handle uncertain types, prefer these approaches in order:
 - Don't expose internal implementation types (e.g., Pinia store internals)
 - Reactive refs (`ComputedRef<T>`) should be unwrapped before exposing
 
+## Avoiding Circular Dependencies
+
+Extract type guards and their associated interfaces into **leaf modules** — files with only `import type` statements. This keeps them safe to import from anywhere without pulling in heavy transitive dependencies.
+
+```typescript
+// ✅ myTypes.ts — leaf module (only type imports)
+import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+
+export interface MyView extends IBaseWidget { /* ... */ }
+export function isMyView(w: IBaseWidget): w is MyView {
+  return 'myProp' in w
+}
+
+// ❌ myView.ts — heavy module (runtime imports from stores, utils, etc.)
+//    Importing the type guard from here drags in the entire dependency tree.
+```
+
 ## Utility Libraries
 
 - Use `es-toolkit` for utility functions (not lodash)

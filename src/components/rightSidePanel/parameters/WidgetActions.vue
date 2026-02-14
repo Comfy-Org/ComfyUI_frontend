@@ -4,7 +4,7 @@ import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import MoreButton from '@/components/button/MoreButton.vue'
-import { isPromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetView'
+import { isPromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetTypes'
 import {
   demoteWidget,
   promoteWidget

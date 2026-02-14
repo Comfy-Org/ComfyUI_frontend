@@ -3,7 +3,7 @@ import { computed, inject, provide, ref, shallowRef, watchEffect } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
-import { isPromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetView'
+import { isPromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetTypes'
 import { usePromotionStore } from '@/stores/promotionStore'
 import type {
   LGraphGroup,

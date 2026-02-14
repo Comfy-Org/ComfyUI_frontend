@@ -6,7 +6,7 @@ import { reactiveComputed } from '@vueuse/core'
 import { reactive, shallowReactive } from 'vue'
 
 import { useChainCallback } from '@/composables/functional/useChainCallback'
-import { isPromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetView'
+import { isPromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetTypes'
 import type {
   INodeInputSlot,
   INodeOutputSlot

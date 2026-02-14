@@ -4,7 +4,7 @@ import { useI18n } from 'vue-i18n'
 
 import EditableText from '@/components/common/EditableText.vue'
 import { getSharedWidgetEnhancements } from '@/composables/graph/useGraphNodeManager'
-import { isPromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetView'
+import { isPromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetTypes'
 import { st } from '@/i18n'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'

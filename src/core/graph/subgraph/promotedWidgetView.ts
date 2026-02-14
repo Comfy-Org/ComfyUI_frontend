@@ -11,17 +11,10 @@ import {
   useWidgetValueStore
 } from '@/stores/widgetValueStore'
 
-export interface PromotedWidgetView extends IBaseWidget {
-  readonly node: SubgraphNode
-  readonly sourceNodeId: string
-  readonly sourceWidgetName: string
-}
+import type { PromotedWidgetView } from './promotedWidgetTypes'
 
-export function isPromotedWidgetView(
-  widget: IBaseWidget
-): widget is PromotedWidgetView {
-  return 'sourceNodeId' in widget && 'sourceWidgetName' in widget
-}
+export type { PromotedWidgetView } from './promotedWidgetTypes'
+export { isPromotedWidgetView } from './promotedWidgetTypes'
 
 function resolve(
   subgraphNode: SubgraphNode,

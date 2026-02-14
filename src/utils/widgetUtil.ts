@@ -1,4 +1,4 @@
-import { isPromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetView'
+import { isPromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetTypes'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'

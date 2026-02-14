@@ -1,4 +1,4 @@
-import { isPromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetView'
+import { isPromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetTypes'
 import { t } from '@/i18n'
 import type {
   IContextMenuValue,
