@@ -1,7 +1,5 @@
 <template>
-  <section
-    class="m-2 mt-4 flex flex-col gap-6 whitespace-pre-wrap break-words"
-  >
+  <section class="m-2 mt-4 flex flex-col gap-6 whitespace-pre-wrap break-words">
     <div>
       <span>{{ message }}</span>
       <ul v-if="itemList?.length" class="m-0 mt-2 flex flex-col gap-2 pl-4">
