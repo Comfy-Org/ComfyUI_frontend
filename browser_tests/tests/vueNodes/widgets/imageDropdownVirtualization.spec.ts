@@ -37,9 +37,7 @@ test.describe('Image Dropdown Virtualization', { tag: '@widget' }, () => {
     await dropdownButton.waitFor({ state: 'visible' })
     await dropdownButton.click()
 
-    const virtualGridItems = comfyPage.page.locator(
-      '[data-virtual-grid-item]'
-    )
+    const virtualGridItems = comfyPage.page.locator('[data-virtual-grid-item]')
     await expect(virtualGridItems.first()).toBeVisible()
 
     const renderedCount = await virtualGridItems.count()
