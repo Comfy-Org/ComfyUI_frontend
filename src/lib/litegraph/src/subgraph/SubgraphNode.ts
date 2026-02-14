@@ -151,7 +151,12 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     // Synthetic widgets getter — SubgraphNodes have no native widgets.
     Object.defineProperty(this, 'widgets', {
       get: () => this._getPromotedViews(),
-      set: () => {},
+      set: () => {
+        if (import.meta.env.DEV)
+          console.warn(
+            'Cannot manually set widgets on SubgraphNode; use the promotion system.'
+          )
+      },
       configurable: true,
       enumerable: true
     })
