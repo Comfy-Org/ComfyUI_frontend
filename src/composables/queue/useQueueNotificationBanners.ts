@@ -23,7 +23,6 @@ type QueueQueuedNotification = {
 type QueueCompletedNotification = {
   type: 'completed'
   count: number
-  thumbnailUrl?: string
   thumbnailUrls?: string[]
 }
 
