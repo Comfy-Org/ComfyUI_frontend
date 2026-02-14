@@ -251,9 +251,7 @@ describe('LGraphNode', () => {
 
     it('should use fixed height for reroute nodes', () => {
       const wrapper = mountLGraphNode({ nodeData: mockRerouteNodeData })
-      const hasFixedHeight = wrapper
-        .classes()
-        .some((c) => c.startsWith('h-'))
+      const hasFixedHeight = wrapper.classes().some((c) => c.startsWith('h-'))
       expect(hasFixedHeight).toBe(true)
     })
 
