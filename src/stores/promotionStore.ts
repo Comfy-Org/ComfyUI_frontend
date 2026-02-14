@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { computed, ref } from 'vue'
+import { ref } from 'vue'
 
 import type { NodeId } from '@/lib/litegraph/src/LGraphNode'
 
@@ -10,15 +10,30 @@ interface PromotionEntry {
 
 export const usePromotionStore = defineStore('promotion', () => {
   const promotions = ref(new Map<NodeId, PromotionEntry[]>())
+  const _refCounts = new Map<string, number>()
 
-  const allPromotedKeys = computed(
-    () =>
-      new Set(
-        [...promotions.value.values()].flatMap((entries) =>
-          entries.map((e) => `${e.interiorNodeId}:${e.widgetName}`)
-        )
-      )
-  )
+  function _makeKey(interiorNodeId: string, widgetName: string): string {
+    return `${interiorNodeId}:${widgetName}`
+  }
+
+  function _incrementKeys(entries: PromotionEntry[]): void {
+    for (const e of entries) {
+      const key = _makeKey(e.interiorNodeId, e.widgetName)
+      _refCounts.set(key, (_refCounts.get(key) ?? 0) + 1)
+    }
+  }
+
+  function _decrementKeys(entries: PromotionEntry[]): void {
+    for (const e of entries) {
+      const key = _makeKey(e.interiorNodeId, e.widgetName)
+      const count = (_refCounts.get(key) ?? 1) - 1
+      if (count <= 0) {
+        _refCounts.delete(key)
+      } else {
+        _refCounts.set(key, count)
+      }
+    }
+  }
 
   function getPromotions(subgraphNodeId: NodeId): PromotionEntry[] {
     return promotions.value.get(subgraphNodeId) ?? []
@@ -38,13 +53,17 @@ export const usePromotionStore = defineStore('promotion', () => {
     interiorNodeId: string,
     widgetName: string
   ): boolean {
-    return allPromotedKeys.value.has(`${interiorNodeId}:${widgetName}`)
+    return (_refCounts.get(_makeKey(interiorNodeId, widgetName)) ?? 0) > 0
   }
 
   function setPromotions(
     subgraphNodeId: NodeId,
     entries: PromotionEntry[]
   ): void {
+    const oldEntries = promotions.value.get(subgraphNodeId) ?? []
+    _decrementKeys(oldEntries)
+    _incrementKeys(entries)
+
     if (entries.length === 0) {
       promotions.value.delete(subgraphNodeId)
     } else {

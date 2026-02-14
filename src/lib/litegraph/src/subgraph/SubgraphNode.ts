@@ -68,6 +68,8 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
   }
 
   private _viewCache = new Map<string, PromotedWidgetView>()
+  private _cachedWidgets: PromotedWidgetView[] | null = null
+  private _cachedEntriesSnapshot: string | null = null
 
   // Declared as accessor via Object.defineProperty in constructor.
   // TypeScript doesn't allow overriding a property with get/set syntax,
@@ -77,6 +79,10 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
   private _getPromotedViews(): PromotedWidgetView[] {
     const store = usePromotionStore()
     const entries = store.getPromotions(this.id)
+
+    const snapshot = JSON.stringify(entries)
+    if (this._cachedWidgets && snapshot === this._cachedEntriesSnapshot)
+      return this._cachedWidgets
 
     const views: PromotedWidgetView[] = []
     const seenKeys = new Set<string>()
@@ -99,6 +105,8 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
       if (!seenKeys.has(key)) this._viewCache.delete(key)
     }
 
+    this._cachedWidgets = views
+    this._cachedEntriesSnapshot = snapshot
     return views
   }
 
@@ -382,6 +390,8 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     // Do NOT clear properties.proxyWidgets — it was already populated
     // from serialized data by super.configure(info) before this runs.
     this._viewCache.clear()
+    this._cachedWidgets = null
+    this._cachedEntriesSnapshot = null
 
     // Hydrate the store from serialized properties.proxyWidgets
     const raw = parseProxyWidgets(this.properties.proxyWidgets)
@@ -669,6 +679,8 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
         view.sourceWidgetName
       )
       this._viewCache.delete(`${view.sourceNodeId}:${view.sourceWidgetName}`)
+      this._cachedWidgets = null
+      this._cachedEntriesSnapshot = null
     }
     for (const input of this.inputs) {
       if (input._widget === widget) {
@@ -697,6 +709,8 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
 
     usePromotionStore().setPromotions(this.id, [])
     this._viewCache.clear()
+    this._cachedWidgets = null
+    this._cachedEntriesSnapshot = null
 
     for (const input of this.inputs) {
       if (

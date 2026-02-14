@@ -187,6 +187,53 @@ describe('usePromotionStore', () => {
     })
   })
 
+  describe('ref-counted isPromotedByAny', () => {
+    const nodeA = 1 as NodeId
+    const nodeB = 2 as NodeId
+
+    it('tracks across setPromotions calls', () => {
+      store.setPromotions(nodeA, [{ interiorNodeId: '10', widgetName: 'seed' }])
+      expect(store.isPromotedByAny('10', 'seed')).toBe(true)
+
+      store.setPromotions(nodeB, [{ interiorNodeId: '10', widgetName: 'seed' }])
+      expect(store.isPromotedByAny('10', 'seed')).toBe(true)
+
+      // Remove from A — still promoted by B
+      store.setPromotions(nodeA, [])
+      expect(store.isPromotedByAny('10', 'seed')).toBe(true)
+
+      // Remove from B — now gone
+      store.setPromotions(nodeB, [])
+      expect(store.isPromotedByAny('10', 'seed')).toBe(false)
+    })
+
+    it('handles replacement via setPromotions correctly', () => {
+      store.setPromotions(nodeA, [
+        { interiorNodeId: '10', widgetName: 'seed' },
+        { interiorNodeId: '11', widgetName: 'steps' }
+      ])
+      expect(store.isPromotedByAny('10', 'seed')).toBe(true)
+      expect(store.isPromotedByAny('11', 'steps')).toBe(true)
+
+      // Replace with different entries
+      store.setPromotions(nodeA, [
+        { interiorNodeId: '11', widgetName: 'steps' },
+        { interiorNodeId: '12', widgetName: 'cfg' }
+      ])
+      expect(store.isPromotedByAny('10', 'seed')).toBe(false)
+      expect(store.isPromotedByAny('11', 'steps')).toBe(true)
+      expect(store.isPromotedByAny('12', 'cfg')).toBe(true)
+    })
+
+    it('stays consistent through movePromotion', () => {
+      store.promote(nodeA, '10', 'seed')
+      store.promote(nodeA, '11', 'steps')
+      store.movePromotion(nodeA, 0, 1)
+      expect(store.isPromotedByAny('10', 'seed')).toBe(true)
+      expect(store.isPromotedByAny('11', 'steps')).toBe(true)
+    })
+  })
+
   describe('multi-node isolation', () => {
     const nodeA = 1 as NodeId
     const nodeB = 2 as NodeId

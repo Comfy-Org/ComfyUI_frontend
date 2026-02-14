@@ -350,6 +350,58 @@ describe('SubgraphNode.widgets getter', () => {
   })
 })
 
+describe('widgets getter caching', () => {
+  beforeEach(() => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
+  })
+
+  test('returns same array reference when promotions unchanged', () => {
+    const [subgraphNode, innerNodes] = setupSubgraph(1)
+    innerNodes[0].addWidget('text', 'widgetA', 'a', () => {})
+    setPromotions(subgraphNode, [['1', 'widgetA']])
+
+    const result1 = subgraphNode.widgets
+    const result2 = subgraphNode.widgets
+    expect(result1).toBe(result2)
+  })
+
+  test('returns new array after promotion change', () => {
+    const [subgraphNode, innerNodes] = setupSubgraph(1)
+    innerNodes[0].addWidget('text', 'widgetA', 'a', () => {})
+    innerNodes[0].addWidget('text', 'widgetB', 'b', () => {})
+    setPromotions(subgraphNode, [['1', 'widgetA']])
+
+    const result1 = subgraphNode.widgets
+
+    setPromotions(subgraphNode, [
+      ['1', 'widgetA'],
+      ['1', 'widgetB']
+    ])
+    const result2 = subgraphNode.widgets
+
+    expect(result1).not.toBe(result2)
+    expect(result2).toHaveLength(2)
+  })
+
+  test('invalidates cache on removeWidget', () => {
+    const [subgraphNode, innerNodes] = setupSubgraph(1)
+    innerNodes[0].addWidget('text', 'widgetA', 'a', () => {})
+    innerNodes[0].addWidget('text', 'widgetB', 'b', () => {})
+    setPromotions(subgraphNode, [
+      ['1', 'widgetA'],
+      ['1', 'widgetB']
+    ])
+
+    const result1 = subgraphNode.widgets
+    expect(result1).toHaveLength(2)
+
+    subgraphNode.removeWidget(result1[0])
+    const result2 = subgraphNode.widgets
+    expect(result2).toHaveLength(1)
+    expect(result1).not.toBe(result2)
+  })
+})
+
 describe('promote/demote cycle', () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))

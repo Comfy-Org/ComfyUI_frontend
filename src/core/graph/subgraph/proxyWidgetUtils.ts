@@ -155,11 +155,9 @@ export function promoteRecommendedWidgets(subgraphNode: SubgraphNode) {
   const filteredWidgets: WidgetItem[] = interiorNodes
     .flatMap(nodeWidgets)
     .filter(isRecommendedWidget)
-  const entries = filteredWidgets.map(([n, w]) => ({
-    interiorNodeId: String(n.id),
-    widgetName: getWidgetName(w)
-  }))
-  store.setPromotions(subgraphNode.id, entries)
+  for (const [n, w] of filteredWidgets) {
+    store.promote(subgraphNode.id, String(n.id), getWidgetName(w))
+  }
   subgraphNode.computeSize(subgraphNode.size)
 }
 
