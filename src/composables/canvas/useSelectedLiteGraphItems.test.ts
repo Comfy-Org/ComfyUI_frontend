@@ -20,16 +20,15 @@ vi.mock('@/scripts/app', () => ({
 }))
 
 // Mock the litegraph module
-vi.mock('@/lib/litegraph/src/litegraph', () => ({
-  Reroute: class Reroute {
-    constructor() {}
-  },
-  LGraphEventMode: {
-    ALWAYS: 0,
-    NEVER: 2,
-    BYPASS: 4
+vi.mock('@/lib/litegraph/src/litegraph', async (importOriginal) => {
+  const actual = (await importOriginal()) as Record<string, unknown>
+  return {
+    ...actual,
+    Reroute: class Reroute {
+      constructor() {}
+    }
   }
-}))
+})
 
 // Mock Positionable objects
 
