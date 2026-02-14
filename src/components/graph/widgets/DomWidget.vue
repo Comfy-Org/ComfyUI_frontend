@@ -147,8 +147,17 @@ onMounted(() => {
     widget.options.selectOn ?? ['focus', 'click'],
     () => {
       const lgCanvas = canvasStore.canvas
-      lgCanvas?.selectNode(widgetState.widget.node)
-      lgCanvas?.bringToFront(widgetState.widget.node)
+      if (!lgCanvas) return
+
+      const override = widgetState.positionOverride
+      const overrideInGraph =
+        override && lgCanvas.graph?.getNodeById(override.node.id)
+      const ownerNode = overrideInGraph
+        ? override.node
+        : widgetState.widget.node
+
+      lgCanvas.selectNode(ownerNode)
+      lgCanvas.bringToFront(ownerNode)
     }
   )
 })

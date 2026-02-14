@@ -105,8 +105,13 @@ export function createPromotedWidgetView(
         return state?.value
       },
       set: (v: unknown) => {
-        const state = useWidgetValueStore().getWidget(bareNodeId, widgetName)
-        if (state) state.value = v
+        const resolved = resolve(subgraphNode, nodeId, widgetName)
+        if (resolved) {
+          resolved.widget.value = v as IBaseWidget['value']
+        } else {
+          const state = useWidgetValueStore().getWidget(bareNodeId, widgetName)
+          if (state) state.value = v
+        }
       },
       enumerable: true
     },

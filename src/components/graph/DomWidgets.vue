@@ -51,7 +51,7 @@ const updateWidgets = () => {
     const posNode = useOverride ? override.node : widget.node
     const posWidget = useOverride ? override.widget : widget
 
-    const isInCorrectGraph = !!currentGraph?.getNodeById(posNode.id)
+    const isInCorrectGraph = posNode.graph === currentGraph
     const nodeVisible = lgCanvas.isNodeVisible(posNode)
 
     widgetState.visible =
