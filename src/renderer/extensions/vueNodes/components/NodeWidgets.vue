@@ -200,14 +200,14 @@ const processedWidgets = computed((): ProcessedWidget[] => {
       ? { ...storeOptions, disabled: true }
       : storeOptions
 
-    const borderStyle = promotionStore.isPromotedByAny(
-      String(bareWidgetId),
-      widget.name
-    )
-      ? 'ring ring-component-node-widget-promoted'
-      : widget.options?.advanced
-        ? 'ring ring-component-node-widget-advanced'
-        : undefined
+    const isPromotedView = !!widget.nodeId
+    const borderStyle =
+      !isPromotedView &&
+      promotionStore.isPromotedByAny(String(bareWidgetId), widget.name)
+        ? 'ring ring-component-node-widget-promoted'
+        : widget.options?.advanced
+          ? 'ring ring-component-node-widget-advanced'
+          : undefined
 
     const simplified: SimplifiedWidget = {
       name: widget.name,

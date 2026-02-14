@@ -194,8 +194,18 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
     }
   }
 
+  /**
+   * When true, suppresses the promoted outline color. Set temporarily
+   * by PromotedWidgetView.draw() so the projected copy on the
+   * SubgraphNode does not show the promoted border.
+   */
+  _suppressPromotedOutline = false
+
   get outline_color() {
-    if (usePromotionStore().isPromotedByAny(String(this.node.id), this.name))
+    if (
+      !this._suppressPromotedOutline &&
+      usePromotionStore().isPromotedByAny(String(this.node.id), this.name)
+    )
       return LiteGraph.WIDGET_PROMOTED_OUTLINE_COLOR
     return this.advanced
       ? LiteGraph.WIDGET_ADVANCED_OUTLINE_COLOR

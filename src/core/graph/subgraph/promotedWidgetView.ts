@@ -157,10 +157,11 @@ export function createPromotedWidgetView(
 
     const concrete = toConcreteWidget(resolved.widget, resolved.node, false)
     if (concrete) {
-      // Temporarily set the concrete widget's y to this view's y for drawing
       const originalY = concrete.y
       concrete.y = view.y
+      concrete._suppressPromotedOutline = true
       concrete.drawWidget(ctx, { width: widget_width, showText: !lowQuality })
+      concrete._suppressPromotedOutline = false
       concrete.y = originalY
     }
   }
