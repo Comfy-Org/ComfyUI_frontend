@@ -293,10 +293,9 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
 
         // If this widget is already promoted, demote it first
         // so it transitions cleanly to being linked via SubgraphInput.
-        if (widget.promoted) {
-          const nodeId = String(e.detail.node.id)
+        const nodeId = String(e.detail.node.id)
+        if (usePromotionStore().isPromoted(this.id, nodeId, widget.name)) {
           usePromotionStore().demote(this.id, nodeId, widget.name)
-          widget.promoted = false
         }
 
         const widgetLocator = e.detail.input.widget

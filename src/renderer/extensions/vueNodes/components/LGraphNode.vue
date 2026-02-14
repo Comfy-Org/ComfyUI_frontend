@@ -247,6 +247,7 @@ import { nonWidgetedInputs } from '@/renderer/extensions/vueNodes/utils/nodeData
 import { applyLightThemeColor } from '@/renderer/extensions/vueNodes/utils/nodeStyleUtils'
 import { app } from '@/scripts/app'
 import { useExecutionStore } from '@/stores/executionStore'
+import { usePromotionStore } from '@/stores/promotionStore'
 import { useNodeOutputStore } from '@/stores/imagePreviewStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import { isTransparent } from '@/utils/colorUtil'
@@ -293,6 +294,7 @@ const isSelected = computed(() => {
 const nodeLocatorId = computed(() => getLocatorIdFromNodeData(nodeData))
 const { executing, progress } = useNodeExecutionState(nodeLocatorId)
 const executionStore = useExecutionStore()
+const promotionStore = usePromotionStore()
 const hasExecutionError = computed(
   () => executionStore.lastExecutionErrorNodeId === nodeData.id
 )
@@ -600,8 +602,13 @@ const showAdvancedInputsButton = computed(() => {
   // For subgraph nodes: check for unpromoted widgets
   if (node instanceof SubgraphNode) {
     const interiorNodes = node.subgraph.nodes
-    const allInteriorWidgets = interiorNodes.flatMap((n) => n.widgets ?? [])
-    return allInteriorWidgets.some((w) => !w.computedDisabled && !w.promoted)
+    return interiorNodes.some((n) =>
+      (n.widgets ?? []).some(
+        (w) =>
+          !w.computedDisabled &&
+          !promotionStore.isPromotedByAny(String(n.id), w.name)
+      )
+    )
   }
 
   // For regular nodes: show button if there are advanced widgets and they're currently hidden

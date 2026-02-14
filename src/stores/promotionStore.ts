@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 
 import type { NodeId } from '@/lib/litegraph/src/LGraphNode'
 
@@ -10,6 +10,15 @@ interface PromotionEntry {
 
 export const usePromotionStore = defineStore('promotion', () => {
   const promotions = ref(new Map<NodeId, PromotionEntry[]>())
+
+  const allPromotedKeys = computed(
+    () =>
+      new Set(
+        [...promotions.value.values()].flatMap((entries) =>
+          entries.map((e) => `${e.interiorNodeId}:${e.widgetName}`)
+        )
+      )
+  )
 
   function getPromotions(subgraphNodeId: NodeId): PromotionEntry[] {
     return promotions.value.get(subgraphNodeId) ?? []
@@ -23,6 +32,13 @@ export const usePromotionStore = defineStore('promotion', () => {
     return getPromotions(subgraphNodeId).some(
       (e) => e.interiorNodeId === interiorNodeId && e.widgetName === widgetName
     )
+  }
+
+  function isPromotedByAny(
+    interiorNodeId: string,
+    widgetName: string
+  ): boolean {
+    return allPromotedKeys.value.has(`${interiorNodeId}:${widgetName}`)
   }
 
   function setPromotions(
@@ -82,6 +98,7 @@ export const usePromotionStore = defineStore('promotion', () => {
   return {
     getPromotions,
     isPromoted,
+    isPromotedByAny,
     setPromotions,
     promote,
     demote,

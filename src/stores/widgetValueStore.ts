@@ -28,14 +28,7 @@ export interface WidgetState<
   TOptions extends IWidgetOptions = IWidgetOptions
 > extends Pick<
   IBaseWidget<TValue, TType, TOptions>,
-  | 'name'
-  | 'type'
-  | 'value'
-  | 'options'
-  | 'label'
-  | 'serialize'
-  | 'disabled'
-  | 'promoted'
+  'name' | 'type' | 'value' | 'options' | 'label' | 'serialize' | 'disabled'
 > {
   nodeId: NodeId
 }

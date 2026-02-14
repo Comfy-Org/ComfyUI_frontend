@@ -13,6 +13,7 @@ import type {
 } from '@/lib/litegraph/src/types/widgets'
 import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
+import { usePromotionStore } from '@/stores/promotionStore'
 import { generateUUID } from '@/utils/formatUtil'
 
 export interface BaseDOMWidget<
@@ -177,7 +178,10 @@ abstract class BaseDOMWidgetImpl<V extends object | string>
       )
       ctx.fill()
       ctx.fillStyle = originalFillStyle
-    } else if (this.promoted && this.isVisible()) {
+    } else if (
+      usePromotionStore().isPromotedByAny(String(this.node.id), this.name) &&
+      this.isVisible()
+    ) {
       ctx.save()
       const adjustedMargin = this.margin - 1
       ctx.beginPath()

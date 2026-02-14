@@ -102,6 +102,7 @@ import {
   useWidgetValueStore
 } from '@/stores/widgetValueStore'
 import { useExecutionStore } from '@/stores/executionStore'
+import { usePromotionStore } from '@/stores/promotionStore'
 import type { SimplifiedWidget, WidgetValue } from '@/types/simplifiedWidget'
 import { cn } from '@/utils/tailwindUtil'
 
@@ -117,6 +118,7 @@ const { shouldHandleNodePointerEvents, forwardEventToCanvas } =
   useCanvasInteractions()
 const { bringNodeToFront } = useNodeZIndex()
 const executionStore = useExecutionStore()
+const promotionStore = usePromotionStore()
 
 function handleWidgetPointerEvent(event: PointerEvent) {
   if (shouldHandleNodePointerEvents.value) return
@@ -198,13 +200,14 @@ const processedWidgets = computed((): ProcessedWidget[] => {
       ? { ...storeOptions, disabled: true }
       : storeOptions
 
-    // Derive border style from store metadata
-    const borderStyle =
-      widgetState?.promoted && String(widgetState?.nodeId) === String(nodeId)
-        ? 'ring ring-component-node-widget-promoted'
-        : widget.options?.advanced
-          ? 'ring ring-component-node-widget-advanced'
-          : undefined
+    const borderStyle = promotionStore.isPromotedByAny(
+      String(bareWidgetId),
+      widget.name
+    )
+      ? 'ring ring-component-node-widget-promoted'
+      : widget.options?.advanced
+        ? 'ring ring-component-node-widget-advanced'
+        : undefined
 
     const simplified: SimplifiedWidget = {
       name: widget.name,

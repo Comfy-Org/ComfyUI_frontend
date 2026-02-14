@@ -104,14 +104,6 @@ describe('createPromotedWidgetView', () => {
     expect(view.serialize).toBe(false)
   })
 
-  test('promoted is false and setter is a no-op', () => {
-    const [subgraphNode] = setupSubgraph()
-    const view = createPromotedWidgetView(subgraphNode, '1', 'myWidget')
-    expect(view.promoted).toBe(false)
-    view.promoted = true
-    expect(view.promoted).toBe(false)
-  })
-
   test('computedDisabled is false and setter is a no-op', () => {
     const [subgraphNode] = setupSubgraph()
     const view = createPromotedWidgetView(subgraphNode, '1', 'myWidget')

@@ -32,7 +32,6 @@ export function promoteWidget(
   for (const parent of parents) {
     store.promote(parent.id, nodeId, widgetName)
   }
-  widget.promoted = true
 }
 
 export function demoteWidget(
@@ -46,7 +45,6 @@ export function demoteWidget(
   for (const parent of parents) {
     store.demote(parent.id, nodeId, widgetName)
   }
-  widget.promoted = false
 }
 
 function getParentNodes(): SubgraphNode[] {

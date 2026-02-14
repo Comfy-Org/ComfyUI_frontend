@@ -65,7 +65,6 @@ describe('useWidgetValueStore', () => {
       expect(state.type).toBe('number')
       expect(state.value).toBe(12345)
       expect(state.disabled).toBeUndefined()
-      expect(state.promoted).toBeUndefined()
       expect(state.serialize).toBeUndefined()
       expect(state.options).toEqual({})
     })
@@ -76,7 +75,6 @@ describe('useWidgetValueStore', () => {
         widget('node-1', 'prompt', 'string', 'test', {
           label: 'Prompt Text',
           disabled: true,
-          promoted: true,
           serialize: false,
           options: { multiline: true }
         })
@@ -84,7 +82,6 @@ describe('useWidgetValueStore', () => {
 
       expect(state.label).toBe('Prompt Text')
       expect(state.disabled).toBe(true)
-      expect(state.promoted).toBe(true)
       expect(state.serialize).toBe(false)
       expect(state.options).toEqual({ multiline: true })
     })
@@ -127,16 +124,6 @@ describe('useWidgetValueStore', () => {
 
       state.disabled = true
       expect(store.getWidget('node-1', 'seed')?.disabled).toBe(true)
-    })
-
-    it('promoted can be set directly via getWidget', () => {
-      const store = useWidgetValueStore()
-      const state = store.registerWidget(
-        widget('node-1', 'seed', 'number', 100)
-      )
-
-      state.promoted = true
-      expect(store.getWidget('node-1', 'seed')?.promoted).toBe(true)
     })
 
     it('label can be set directly via getWidget', () => {

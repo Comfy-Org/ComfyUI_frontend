@@ -46,6 +46,46 @@ describe('usePromotionStore', () => {
     })
   })
 
+  describe('isPromotedByAny', () => {
+    const nodeA = 1 as NodeId
+    const nodeB = 2 as NodeId
+
+    it('returns false when nothing is promoted', () => {
+      expect(store.isPromotedByAny('10', 'seed')).toBe(false)
+    })
+
+    it('returns true when promoted by one parent', () => {
+      store.promote(nodeA, '10', 'seed')
+      expect(store.isPromotedByAny('10', 'seed')).toBe(true)
+    })
+
+    it('returns true when promoted by multiple parents', () => {
+      store.promote(nodeA, '10', 'seed')
+      store.promote(nodeB, '10', 'seed')
+      expect(store.isPromotedByAny('10', 'seed')).toBe(true)
+    })
+
+    it('returns false after demoting from all parents', () => {
+      store.promote(nodeA, '10', 'seed')
+      store.promote(nodeB, '10', 'seed')
+      store.demote(nodeA, '10', 'seed')
+      store.demote(nodeB, '10', 'seed')
+      expect(store.isPromotedByAny('10', 'seed')).toBe(false)
+    })
+
+    it('returns true when still promoted by one parent after partial demote', () => {
+      store.promote(nodeA, '10', 'seed')
+      store.promote(nodeB, '10', 'seed')
+      store.demote(nodeA, '10', 'seed')
+      expect(store.isPromotedByAny('10', 'seed')).toBe(true)
+    })
+
+    it('returns false for different widget on same node', () => {
+      store.promote(nodeA, '10', 'seed')
+      expect(store.isPromotedByAny('10', 'steps')).toBe(false)
+    })
+  })
+
   describe('setPromotions', () => {
     it('replaces existing entries', () => {
       store.promote(nodeId, '10', 'seed')

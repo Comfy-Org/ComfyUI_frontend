@@ -72,11 +72,6 @@ export function createPromotedWidgetView(
       enumerable: true
     },
     serialize: { value: false, enumerable: true },
-    promoted: {
-      get: () => false,
-      set: () => {},
-      enumerable: true
-    },
     computedDisabled: {
       get: () => false,
       set: () => {},

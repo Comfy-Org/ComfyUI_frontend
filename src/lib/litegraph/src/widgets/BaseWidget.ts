@@ -16,6 +16,7 @@ import type {
   NodeBindable,
   TWidgetType
 } from '@/lib/litegraph/src/types/widgets'
+import { usePromotionStore } from '@/stores/promotionStore'
 import type { WidgetState } from '@/stores/widgetValueStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 
@@ -100,12 +101,6 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
     this._state.disabled = value ?? false
   }
 
-  get promoted(): boolean | undefined {
-    return this._state.promoted
-  }
-  set promoted(value: boolean | undefined) {
-    this._state.promoted = value ?? false
-  }
   element?: HTMLElement
   callback?(
     value: TWidget['value'],
@@ -181,7 +176,6 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
       labelBaseline,
       label,
       disabled,
-      promoted,
       value,
       linkedWidgets,
       ...safeValues
@@ -195,14 +189,14 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
       value,
       label,
       disabled: disabled ?? false,
-      promoted: promoted ?? false,
       serialize: this.serialize,
       options: this.options
     }
   }
 
   get outline_color() {
-    if (this.promoted) return LiteGraph.WIDGET_PROMOTED_OUTLINE_COLOR
+    if (usePromotionStore().isPromotedByAny(String(this.node.id), this.name))
+      return LiteGraph.WIDGET_PROMOTED_OUTLINE_COLOR
     return this.advanced
       ? LiteGraph.WIDGET_ADVANCED_OUTLINE_COLOR
       : LiteGraph.WIDGET_OUTLINE_COLOR
