@@ -6,7 +6,6 @@ import { reactiveComputed } from '@vueuse/core'
 import { customRef, reactive, shallowReactive } from 'vue'
 
 import { useChainCallback } from '@/composables/functional/useChainCallback'
-import { isProxyWidget } from '@/core/graph/subgraph/proxyWidget'
 import type {
   INodeInputSlot,
   INodeOutputSlot
@@ -51,7 +50,6 @@ export interface SafeWidgetData {
   hasLayoutSize?: boolean
   isDOMWidget?: boolean
   label?: string
-  nodeType?: string
   options?: IWidgetOptions
   spec?: InputSpec
   slotMetadata?: WidgetSlotMetadata
@@ -123,12 +121,6 @@ function getControlWidget(widget: IBaseWidget): SafeControlWidget | undefined {
   }
 }
 
-function getNodeType(node: LGraphNode, widget: IBaseWidget) {
-  if (!node.isSubgraphNode() || !isProxyWidget(widget)) return undefined
-  const subNode = node.subgraph.getNodeById(widget._overlay.nodeId)
-  return subNode?.type
-}
-
 /**
  * Shared widget enhancements used by both safeWidgetMapper and Right Side Panel
  */
@@ -139,8 +131,6 @@ interface SharedWidgetEnhancements {
   controlWidget?: SafeControlWidget
   /** Input specification from node definition */
   spec?: InputSpec
-  /** Node type (for subgraph promoted widgets) */
-  nodeType?: string
   /** Border style for promoted/advanced widgets */
   borderStyle?: string
   /** Widget label */
@@ -164,7 +154,6 @@ export function getSharedWidgetEnhancements(
     value: useReactiveWidgetValue(widget),
     controlWidget: getControlWidget(widget),
     spec: nodeDefStore.getInputSpecForWidget(node, widget.name),
-    nodeType: getNodeType(node, widget),
     borderStyle: widget.promoted
       ? 'ring ring-component-node-widget-promoted'
       : widget.advanced
