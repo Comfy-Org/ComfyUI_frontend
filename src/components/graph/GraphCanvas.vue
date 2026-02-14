@@ -117,6 +117,7 @@ import {
 } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import { isMiddlePointerInput } from '@/base/pointerUtils'
 import LiteGraphCanvasSplitterOverlay from '@/components/LiteGraphCanvasSplitterOverlay.vue'
 import TopMenuSection from '@/components/TopMenuSection.vue'
 import BottomPanel from '@/components/bottomPanel/BottomPanel.vue'
@@ -157,7 +158,6 @@ import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteracti
 import TransformPane from '@/renderer/core/layout/transform/TransformPane.vue'
 import MiniMap from '@/renderer/extensions/minimap/MiniMap.vue'
 import LGraphNode from '@/renderer/extensions/vueNodes/components/LGraphNode.vue'
-import { forwardMiddlePointerIfNeeded } from '@/renderer/extensions/vueNodes/composables/useNodePointerInteractions'
 import { UnauthorizedError } from '@/scripts/api'
 import { app as comfyApp } from '@/scripts/app'
 import { ChangeTracker } from '@/scripts/changeTracker'
@@ -546,8 +546,12 @@ onUnmounted(() => {
   vueNodeLifecycle.cleanup()
 })
 function forwardPanEvent(e: PointerEvent) {
-  if (shouldIgnoreCopyPaste(e.target) && document.activeElement === e.target)
+  if (
+    (shouldIgnoreCopyPaste(e.target) && document.activeElement === e.target) ||
+    !isMiddlePointerInput(e)
+  )
     return
-  forwardMiddlePointerIfNeeded(e)
+
+  canvasInteractions.forwardEventToCanvas(e)
 }
 </script>

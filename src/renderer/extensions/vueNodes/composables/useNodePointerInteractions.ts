@@ -9,23 +9,22 @@ import { useNodeEventHandlers } from '@/renderer/extensions/vueNodes/composables
 import { isMultiSelectKey } from '@/renderer/extensions/vueNodes/utils/selectionUtils'
 import { useNodeDrag } from '@/renderer/extensions/vueNodes/layout/useNodeDrag'
 
-const { forwardEventToCanvas, shouldHandleNodePointerEvents } =
-  useCanvasInteractions()
-
-export const forwardMiddlePointerIfNeeded = (event: PointerEvent) => {
-  if (!isMiddlePointerInput(event)) return false
-  forwardEventToCanvas(event)
-  return true
-}
-
 export function useNodePointerInteractions(
   nodeIdRef: MaybeRefOrGetter<string>
 ) {
   const { startDrag, endDrag, handleDrag } = useNodeDrag()
   // Use canvas interactions for proper wheel event handling and pointer event capture control
+  const { forwardEventToCanvas, shouldHandleNodePointerEvents } =
+    useCanvasInteractions()
   const { handleNodeSelect, toggleNodeSelectionAfterPointerUp } =
     useNodeEventHandlers()
   const { nodeManager } = useVueNodeLifecycle()
+
+  const forwardMiddlePointerIfNeeded = (event: PointerEvent) => {
+    if (!isMiddlePointerInput(event)) return false
+    forwardEventToCanvas(event)
+    return true
+  }
 
   let hasDraggingStarted = false
 
