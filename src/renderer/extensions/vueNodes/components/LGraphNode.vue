@@ -134,7 +134,7 @@
     >
       <button
         v-if="hasAnyError"
-        @click.stop="useRightSidePanelStore().openPanel('error')"
+        @click.stop="useRightSidePanelStore().openPanel('errors')"
       >
         <span>{{ t('g.error') }}</span>
         <i class="icon-[lucide--info] size-4" />

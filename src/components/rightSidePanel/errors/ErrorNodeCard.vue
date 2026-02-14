@@ -1,11 +1,13 @@
-
 <template>
   <div class="overflow-hidden">
-    <!-- Card Header (Node ID & Actions) -->
-    <div v-if="card.nodeId" class="flex flex-wrap items-center gap-2 py-2">
+    <!-- Card Header -->
+    <div
+      v-if="card.nodeId && !compact"
+      class="flex flex-wrap items-center gap-2 py-2"
+    >
       <span
         v-if="showNodeIdBadge"
-        class="shrink-0 rounded-md bg-secondary-background-selected px-2 py-0.5 text-[10px] font-mono text-muted-foreground font-bold"
+        class="shrink-0 rounded-md bg-secondary-background-selected px-2 py-0.5 text-xs font-mono text-muted-foreground font-bold"
       >
         #{{ card.nodeId }}
       </span>
@@ -20,7 +22,7 @@
         variant="secondary"
         size="sm"
         class="rounded-lg text-sm shrink-0"
-        @click.stop="emit('enterSubgraph', card.nodeId ?? '')"
+        @click.stop="handleEnterSubgraph"
       >
         {{ t('rightSidePanel.enterSubgraph') }}
       </Button>
@@ -28,7 +30,7 @@
         variant="textonly"
         size="icon-sm"
         class="size-7 text-muted-foreground hover:text-base-foreground shrink-0"
-        @click.stop="emit('locateNode', card.nodeId!)"
+        @click.stop="handleLocateNode"
       >
         <i class="icon-[lucide--locate] size-3.5" />
       </Button>
@@ -44,7 +46,7 @@
       >
         <!-- Error Message -->
         <p
-          v-if="error.message"
+          v-if="error.message && !compact"
           class="m-0 text-sm break-words whitespace-pre-wrap leading-relaxed px-0.5"
         >
           {{ error.message }}
@@ -70,7 +72,7 @@
         <Button
           variant="secondary"
           size="sm"
-          class="w-full justify-center gap-2 h-8 text-[11px]"
+          class="w-full justify-center gap-2 h-8 text-xs"
           @click="handleCopyError(error)"
         >
           <i class="icon-[lucide--copy] size-3.5" />
@@ -89,9 +91,15 @@ import { cn } from '@/utils/tailwindUtil'
 
 import type { ErrorCardData, ErrorItem } from './types'
 
-const { card, showNodeIdBadge = false } = defineProps<{
+const {
+  card,
+  showNodeIdBadge = false,
+  compact = false
+} = defineProps<{
   card: ErrorCardData
   showNodeIdBadge?: boolean
+  /** Hide card header and error message (used in single-node selection mode) */
+  compact?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -101,6 +109,16 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useI18n()
+
+function handleLocateNode() {
+  if (card.nodeId) {
+    emit('locateNode', card.nodeId)
+  }
+}
+
+function handleEnterSubgraph() {
+  emit('enterSubgraph', card.nodeId ?? '')
+}
 
 function handleCopyError(error: ErrorItem) {
   emit(
