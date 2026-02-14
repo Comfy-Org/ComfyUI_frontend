@@ -105,7 +105,10 @@ export function createAssetWidget(
     })
   }
 
-  const options: IWidgetAssetOptions = { openModal }
+  const options: IWidgetAssetOptions = {
+    openModal,
+    nodeType: nodeTypeForBrowser
+  }
 
   return node.addWidget('asset', widgetName, displayLabel, () => {}, options)
 }
