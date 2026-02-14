@@ -156,10 +156,7 @@ function setDraggableState() {
       this.draggableItem as HTMLElement
     )
 
-    const entries = [...promotionEntries.value]
-    const [entry] = entries.splice(oldPosition, 1)
-    entries.splice(newPosition, 0, entry)
-    promotionStore.setPromotions(node.id, entries)
+    promotionStore.movePromotion(node.id, oldPosition, newPosition)
     canvasStore.canvas?.setDirty(true, true)
   }
 }

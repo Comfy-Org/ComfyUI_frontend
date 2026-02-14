@@ -5,6 +5,7 @@ import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import Button from '@/components/ui/button/Button.vue'
 import {
   demoteWidget,
+  getWidgetName,
   isRecommendedWidget,
   promoteWidget,
   pruneDisconnected
@@ -12,7 +13,6 @@ import {
 import type { WidgetItem } from '@/core/graph/subgraph/proxyWidgetUtils'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
-import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import FormSearchInput from '@/renderer/extensions/vueNodes/widgets/components/form/FormSearchInput.vue'
 import { DraggableList } from '@/scripts/ui/draggableList'
@@ -29,12 +29,6 @@ const { searchQuery } = storeToRefs(rightSidePanelStore)
 
 const draggableList = ref<DraggableList | undefined>(undefined)
 const draggableItems = ref()
-
-function getWidgetName(w: IBaseWidget): string {
-  return 'sourceWidgetName' in w
-    ? (w as { sourceWidgetName: string }).sourceWidgetName
-    : w.name
-}
 
 const promotionEntries = computed(() => {
   const node = activeNode.value
@@ -136,7 +130,7 @@ function toKey(item: WidgetItem) {
 }
 function nodeWidgets(n: LGraphNode): WidgetItem[] {
   if (!n.widgets) return []
-  return n.widgets.map((w: IBaseWidget) => [n, w])
+  return n.widgets.map((w) => [n, w])
 }
 function demote([node, widget]: WidgetItem) {
   const subgraphNode = activeNode.value

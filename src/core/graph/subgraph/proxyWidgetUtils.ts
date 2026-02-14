@@ -15,7 +15,7 @@ type PartialNode = Pick<LGraphNode, 'title' | 'id' | 'type'>
 
 export type WidgetItem = [PartialNode, IBaseWidget]
 
-function getWidgetName(w: IBaseWidget): string {
+export function getWidgetName(w: IBaseWidget): string {
   return 'sourceWidgetName' in w
     ? (w as { sourceWidgetName: string }).sourceWidgetName
     : w.name

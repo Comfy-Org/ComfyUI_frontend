@@ -67,21 +67,21 @@ function isWidgetShownOnParents(
   widgetNode: LGraphNode,
   widget: IBaseWidget
 ): boolean {
-  if (!parents.length) return false
-  const parent = parents[0]
-  if ('sourceNodeId' in widget) {
-    const view = widget as PromotedWidgetView
+  return parents.some((parent) => {
+    if ('sourceNodeId' in widget) {
+      const view = widget as PromotedWidgetView
+      return promotionStore.isPromoted(
+        parent.id,
+        view.sourceNodeId,
+        view.sourceWidgetName
+      )
+    }
     return promotionStore.isPromoted(
       parent.id,
-      view.sourceNodeId,
-      view.sourceWidgetName
+      String(widgetNode.id),
+      widget.name
     )
-  }
-  return promotionStore.isPromoted(
-    parent.id,
-    String(widgetNode.id),
-    widget.name
-  )
+  })
 }
 
 const isEmpty = computed(() => widgets.value.length === 0)

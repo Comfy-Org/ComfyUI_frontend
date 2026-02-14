@@ -61,11 +61,30 @@ export const usePromotionStore = defineStore('promotion', () => {
     )
   }
 
+  function movePromotion(
+    subgraphNodeId: NodeId,
+    fromIndex: number,
+    toIndex: number
+  ): void {
+    const entries = [...getPromotions(subgraphNodeId)]
+    if (
+      fromIndex < 0 ||
+      fromIndex >= entries.length ||
+      toIndex < 0 ||
+      toIndex >= entries.length
+    )
+      return
+    const [entry] = entries.splice(fromIndex, 1)
+    entries.splice(toIndex, 0, entry)
+    setPromotions(subgraphNodeId, entries)
+  }
+
   return {
     getPromotions,
     isPromoted,
     setPromotions,
     promote,
-    demote
+    demote,
+    movePromotion
   }
 })

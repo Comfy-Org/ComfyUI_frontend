@@ -115,6 +115,38 @@ describe('usePromotionStore', () => {
     })
   })
 
+  describe('movePromotion', () => {
+    it('moves an entry from one index to another', () => {
+      store.promote(nodeId, '10', 'seed')
+      store.promote(nodeId, '11', 'steps')
+      store.promote(nodeId, '12', 'cfg')
+      store.movePromotion(nodeId, 0, 2)
+      expect(store.getPromotions(nodeId)).toEqual([
+        { interiorNodeId: '11', widgetName: 'steps' },
+        { interiorNodeId: '12', widgetName: 'cfg' },
+        { interiorNodeId: '10', widgetName: 'seed' }
+      ])
+    })
+
+    it('is a no-op for out-of-bounds indices', () => {
+      store.promote(nodeId, '10', 'seed')
+      store.movePromotion(nodeId, 0, 5)
+      expect(store.getPromotions(nodeId)).toEqual([
+        { interiorNodeId: '10', widgetName: 'seed' }
+      ])
+    })
+
+    it('is a no-op when fromIndex equals toIndex', () => {
+      store.promote(nodeId, '10', 'seed')
+      store.promote(nodeId, '11', 'steps')
+      store.movePromotion(nodeId, 1, 1)
+      expect(store.getPromotions(nodeId)).toEqual([
+        { interiorNodeId: '10', widgetName: 'seed' },
+        { interiorNodeId: '11', widgetName: 'steps' }
+      ])
+    })
+  })
+
   describe('multi-node isolation', () => {
     const nodeA = 1 as NodeId
     const nodeB = 2 as NodeId
