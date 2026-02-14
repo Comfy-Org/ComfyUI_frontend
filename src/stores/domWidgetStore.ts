@@ -10,7 +10,7 @@ import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import type { BaseDOMWidget } from '@/scripts/domWidget'
 
-export interface PositionOverride {
+interface PositionOverride {
   node: Raw<LGraphNode>
   widget: IBaseWidget
 }
