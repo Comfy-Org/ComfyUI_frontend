@@ -36,10 +36,9 @@ const updateWidgets = () => {
     // Use position override only when the override node (SubgraphNode) is
     // in the current graph. When the user enters the subgraph, the override
     // node is no longer visible — fall back to the widget's own node.
-    // Use getNodeById for identity check (avoids reactive proxy mismatch).
+    // Use graph reference equality (IDs are not unique across graphs).
     const override = widgetState.positionOverride
-    const useOverride =
-      !!override && !!currentGraph?.getNodeById(override.node.id)
+    const useOverride = !!override && currentGraph === override.node.graph
 
     // Early exit for non-visible widgets.
     // When a position override is active (widget promoted to SubgraphNode),

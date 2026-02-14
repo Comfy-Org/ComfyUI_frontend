@@ -79,11 +79,17 @@ export const useDomWidgetStore = defineStore('domWidget', () => {
     override: PositionOverride
   ) => {
     const state = widgetStates.value.get(widgetId)
-    if (state) {
-      state.positionOverride = {
-        node: markRaw(override.node),
-        widget: override.widget
-      }
+    if (!state) return
+    const current = state.positionOverride
+    if (
+      current &&
+      current.node === override.node &&
+      current.widget === override.widget
+    )
+      return
+    state.positionOverride = {
+      node: markRaw(override.node),
+      widget: override.widget
     }
   }
 
