@@ -2,19 +2,14 @@ import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 
-import { registerProxyWidgets } from '@/core/graph/subgraph/proxyWidget'
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import type { LGraphCanvas, SubgraphNode } from '@/lib/litegraph/src/litegraph'
+import type { SubgraphNode } from '@/lib/litegraph/src/litegraph'
 import { usePromotionStore } from '@/stores/promotionStore'
 
 import {
   createTestSubgraph,
   createTestSubgraphNode
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
-
-const canvasEl: Partial<HTMLCanvasElement> = { addEventListener() {} }
-const canvas: Partial<LGraphCanvas> = { canvas: canvasEl as HTMLCanvasElement }
-registerProxyWidgets(canvas as LGraphCanvas)
 
 vi.mock('@/renderer/core/canvas/canvasStore', () => ({
   useCanvasStore: () => ({})

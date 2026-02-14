@@ -7,7 +7,7 @@ import { shallowRef } from 'vue'
 import { useCanvasPositionConversion } from '@/composables/element/useCanvasPositionConversion'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { flushScheduledSlotLayoutSync } from '@/renderer/extensions/vueNodes/composables/useSlotElementTracking'
-import { registerProxyWidgets } from '@/core/graph/subgraph/proxyWidget'
+
 import { st, t } from '@/i18n'
 import type { IContextMenuValue } from '@/lib/litegraph/src/interfaces'
 import {
@@ -878,8 +878,6 @@ export class ComfyApp {
         }
       }
     )
-
-    registerProxyWidgets(this.canvas)
 
     this.rootGraph.start()
 
