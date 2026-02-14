@@ -4,7 +4,7 @@ import { defineStore } from 'pinia'
 import { computed, ref, watchEffect } from 'vue'
 
 import { t } from '@/i18n'
-import type { PromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetView'
+import { isPromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetView'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { transformNodeDefV1ToV2 } from '@/schemas/nodeDef/migration'
@@ -401,13 +401,12 @@ export const useNodeDefStore = defineStore('nodeDef', () => {
       return nodeDef.inputs[widgetName]
     }
     const widget = node.widgets?.find((w) => w.name === widgetName)
-    if (!widget || !('sourceNodeId' in widget)) return undefined
+    if (!widget || !isPromotedWidgetView(widget)) return undefined
 
-    const view = widget as PromotedWidgetView
-    const subNode = node.subgraph.getNodeById(view.sourceNodeId)
+    const subNode = node.subgraph.getNodeById(widget.sourceNodeId)
     if (!subNode) return undefined
 
-    return getInputSpecForWidget(subNode, view.sourceWidgetName)
+    return getInputSpecForWidget(subNode, widget.sourceWidgetName)
   }
 
   /**

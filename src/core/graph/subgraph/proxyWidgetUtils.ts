@@ -1,3 +1,4 @@
+import { isPromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetView'
 import { t } from '@/i18n'
 import type {
   IContextMenuValue,
@@ -16,9 +17,7 @@ type PartialNode = Pick<LGraphNode, 'title' | 'id' | 'type'>
 export type WidgetItem = [PartialNode, IBaseWidget]
 
 export function getWidgetName(w: IBaseWidget): string {
-  return 'sourceWidgetName' in w
-    ? (w as { sourceWidgetName: string }).sourceWidgetName
-    : w.name
+  return isPromotedWidgetView(w) ? w.sourceWidgetName : w.name
 }
 
 export function promoteWidget(

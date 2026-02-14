@@ -4,7 +4,7 @@ import { useI18n } from 'vue-i18n'
 
 import EditableText from '@/components/common/EditableText.vue'
 import { getSharedWidgetEnhancements } from '@/composables/graph/useGraphNodeManager'
-import type { PromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetView'
+import { isPromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetView'
 import { st } from '@/i18n'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
@@ -63,9 +63,8 @@ const enhancedWidget = computed(() => {
 
 const sourceNodeName = computed((): string | null => {
   let sourceNode: LGraphNode | null = node
-  if ('sourceNodeId' in widget && node.isSubgraphNode()) {
-    const view = widget as PromotedWidgetView
-    sourceNode = node.subgraph.getNodeById(view.sourceNodeId) ?? null
+  if (isPromotedWidgetView(widget) && node.isSubgraphNode()) {
+    sourceNode = node.subgraph.getNodeById(widget.sourceNodeId) ?? null
   }
   if (!sourceNode) return null
   const fallbackNodeTitle = t('rightSidePanel.fallbackNodeTitle')

@@ -6,7 +6,7 @@ import { reactiveComputed } from '@vueuse/core'
 import { reactive, shallowReactive } from 'vue'
 
 import { useChainCallback } from '@/composables/functional/useChainCallback'
-import type { PromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetView'
+import { isPromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetView'
 import type {
   INodeInputSlot,
   INodeOutputSlot
@@ -106,17 +106,6 @@ export interface GraphNodeManager {
 
   // Lifecycle methods
   cleanup(): void
-}
-
-/**
- * Checks if a widget is a PromotedWidgetView whose interior widget is a
- * DOM/component widget. Used so the Vue renderer skips rendering its own
- * widget component on top of the DOM element.
- */
-function isPromotedWidgetView(
-  widget: IBaseWidget
-): widget is PromotedWidgetView {
-  return 'sourceNodeId' in widget && 'sourceWidgetName' in widget
 }
 
 function isPromotedDOMWidget(widget: IBaseWidget): boolean {
@@ -236,16 +225,14 @@ function safeWidgetMapper(
         : undefined
       const subgraphId = node.isSubgraphNode() && node.subgraph.id
 
-      const localId =
-        'sourceNodeId' in widget
-          ? (widget as { sourceNodeId: string }).sourceNodeId
-          : undefined
+      const localId = isPromotedWidgetView(widget)
+        ? widget.sourceNodeId
+        : undefined
       const nodeId =
         subgraphId && localId ? `${subgraphId}:${localId}` : undefined
-      const name =
-        'sourceWidgetName' in widget
-          ? (widget as { sourceWidgetName: string }).sourceWidgetName
-          : widget.name
+      const name = isPromotedWidgetView(widget)
+        ? widget.sourceWidgetName
+        : widget.name
 
       return {
         nodeId,

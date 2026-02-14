@@ -3,7 +3,7 @@ import { computed, inject, provide, ref, shallowRef, watchEffect } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
-import type { PromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetView'
+import { isPromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetView'
 import { usePromotionStore } from '@/stores/promotionStore'
 import type {
   LGraphGroup,
@@ -68,12 +68,11 @@ function isWidgetShownOnParents(
   widget: IBaseWidget
 ): boolean {
   return parents.some((parent) => {
-    if ('sourceNodeId' in widget) {
-      const view = widget as PromotedWidgetView
+    if (isPromotedWidgetView(widget)) {
       return promotionStore.isPromoted(
         parent.id,
-        view.sourceNodeId,
-        view.sourceWidgetName
+        widget.sourceNodeId,
+        widget.sourceWidgetName
       )
     }
     return promotionStore.isPromoted(

@@ -29,7 +29,10 @@ import type {
 } from '@/lib/litegraph/src/types/serialisation'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import type { UUID } from '@/lib/litegraph/src/utils/uuid'
-import { createPromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetView'
+import {
+  createPromotedWidgetView,
+  isPromotedWidgetView
+} from '@/core/graph/subgraph/promotedWidgetView'
 import type { PromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetView'
 import { parseProxyWidgets } from '@/core/schemas/proxyWidget'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
@@ -119,8 +122,8 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     if (!input?._widget) return undefined
 
     const widget = input._widget
-    if ('sourceNodeId' in widget && 'sourceWidgetName' in widget) {
-      return [widget.sourceNodeId as string, widget.sourceWidgetName as string]
+    if (isPromotedWidgetView(widget)) {
+      return [widget.sourceNodeId, widget.sourceWidgetName]
     }
 
     // Fallback: find via subgraph input slot connection
@@ -670,15 +673,16 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
   }
 
   override ensureWidgetRemoved(widget: IBaseWidget): void {
-    if ('sourceNodeId' in widget) {
-      const view = widget as PromotedWidgetView
-      this._clearDomOverrideForView(view)
+    if (isPromotedWidgetView(widget)) {
+      this._clearDomOverrideForView(widget)
       usePromotionStore().demote(
         this.id,
-        view.sourceNodeId,
-        view.sourceWidgetName
+        widget.sourceNodeId,
+        widget.sourceWidgetName
       )
-      this._viewCache.delete(`${view.sourceNodeId}:${view.sourceWidgetName}`)
+      this._viewCache.delete(
+        `${widget.sourceNodeId}:${widget.sourceWidgetName}`
+      )
       this._cachedWidgets = null
       this._cachedEntriesSnapshot = null
     }
@@ -698,8 +702,8 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     this._eventAbortController.abort()
 
     for (const widget of this.widgets) {
-      if ('sourceNodeId' in widget) {
-        this._clearDomOverrideForView(widget as PromotedWidgetView)
+      if (isPromotedWidgetView(widget)) {
+        this._clearDomOverrideForView(widget)
       }
       this.subgraph.events.dispatch('widget-demoted', {
         widget,

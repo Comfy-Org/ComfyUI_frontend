@@ -4,7 +4,7 @@ import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import MoreButton from '@/components/button/MoreButton.vue'
-import type { PromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetView'
+import { isPromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetView'
 import {
   demoteWidget,
   promoteWidget
@@ -58,10 +58,9 @@ async function handleRename() {
 function handleHideInput() {
   if (!parents?.length) return
 
-  if ('sourceNodeId' in widget) {
-    const view = widget as PromotedWidgetView
+  if (isPromotedWidgetView(widget)) {
     const subgraph = parents[0].subgraph
-    const interiorNode = subgraph.getNodeById(view.sourceNodeId)
+    const interiorNode = subgraph.getNodeById(widget.sourceNodeId)
 
     if (!interiorNode) {
       console.error('Could not find interior node for promoted widget')
@@ -69,7 +68,7 @@ function handleHideInput() {
     }
 
     const originalWidget = interiorNode.widgets?.find(
-      (w) => w.name === view.sourceWidgetName
+      (w) => w.name === widget.sourceWidgetName
     )
 
     if (!originalWidget) {

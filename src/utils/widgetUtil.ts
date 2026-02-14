@@ -1,4 +1,4 @@
-import type { PromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetView'
+import { isPromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetView'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
@@ -19,8 +19,8 @@ export function renameWidget(
   newLabel: string,
   parents?: SubgraphNode[]
 ): boolean {
-  if ('sourceNodeId' in widget && parents?.length) {
-    const view = widget as PromotedWidgetView
+  if (isPromotedWidgetView(widget) && parents?.length) {
+    const view = widget
     const subgraph = parents[0].subgraph
     if (!subgraph) {
       console.error('Could not find subgraph for promoted widget')
