@@ -1,4 +1,6 @@
-import { describe, expect, it } from 'vitest'
+import { createTestingPinia } from '@pinia/testing'
+import { setActivePinia } from 'pinia'
+import { beforeEach, describe, expect, it } from 'vitest'
 
 import type { Subgraph } from '@/lib/litegraph/src/litegraph'
 import {
@@ -228,6 +230,10 @@ describe('Graph Clearing and Callbacks', () => {
 })
 
 describe('Subgraph Definition Garbage Collection', () => {
+  beforeEach(() => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
+  })
+
   function createSubgraphWithNodes(rootGraph: LGraph, nodeCount: number) {
     const subgraph = rootGraph.createSubgraph(createTestSubgraphData())
 
