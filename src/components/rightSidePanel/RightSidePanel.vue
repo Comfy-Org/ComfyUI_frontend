@@ -105,7 +105,10 @@ const selectedNodeErrors = computed(() =>
 
 const tabs = computed<RightSidePanelTabList>(() => {
   const list: RightSidePanelTabList = []
-  if (selectedNodeErrors.value.length) {
+  if (
+    selectedNodeErrors.value.length &&
+    settingStore.get('Comfy.RightSidePanel.ShowErrorsTab')
+  ) {
     list.push({
       label: () => t('g.error'),
       value: 'error',
@@ -113,7 +116,11 @@ const tabs = computed<RightSidePanelTabList>(() => {
     })
   }
 
-  if (hasAnyError.value && !hasSelection.value) {
+  if (
+    hasAnyError.value &&
+    !hasSelection.value &&
+    settingStore.get('Comfy.RightSidePanel.ShowErrorsTab')
+  ) {
     list.push({
       label: () => t('rightSidePanel.errors'),
       value: 'errors',

@@ -709,8 +709,10 @@ export class ComfyApp {
       } else {
         useDialogService().showExecutionErrorDialog(detail)
       }
-      this.canvas.deselectAll()
-      useRightSidePanelStore().openPanel('errors')
+      if (useSettingStore().get('Comfy.RightSidePanel.ShowErrorsTab')) {
+        this.canvas.deselectAll()
+        useRightSidePanelStore().openPanel('errors')
+      }
       this.canvas.draw(true, true)
     })
 
@@ -1490,7 +1492,9 @@ export class ComfyApp {
               // Clear selection and open the error panel so the user can immediately
               // see the error details without extra clicks.
               this.canvas.deselectAll()
-              useRightSidePanelStore().openPanel('errors')
+              if (useSettingStore().get('Comfy.RightSidePanel.ShowErrorsTab')) {
+                useRightSidePanelStore().openPanel('errors')
+              }
               this.canvas.draw(true, true)
             }
             break
