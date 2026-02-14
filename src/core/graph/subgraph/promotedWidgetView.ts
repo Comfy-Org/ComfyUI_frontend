@@ -36,7 +36,7 @@ export function createPromotedWidgetView(
 ): PromotedWidgetView {
   const bareNodeId = stripGraphPrefix(nodeId as NodeId)
 
-  const view: PromotedWidgetView = Object.create(null)
+  const view = {} as PromotedWidgetView
 
   // Identity — own data properties
   Object.defineProperties(view, {

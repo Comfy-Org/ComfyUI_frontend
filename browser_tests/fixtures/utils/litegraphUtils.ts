@@ -458,13 +458,15 @@ export class NodeReference {
     const nodePos = await this.getPosition()
     const nodeSize = await this.getSize()
 
-    // Click the enter_subgraph title button (top-right of title bar).
-    // This is more reliable than dblclick on the node body because
-    // promoted DOM widgets can overlay the body and intercept events.
-    const buttonPos = {
-      x: nodePos.x + nodeSize.width - 15,
-      y: nodePos.y - titleHeight / 2
-    }
+    // Try multiple positions to avoid DOM widget interference
+    const clickPositions = [
+      { x: nodePos.x + nodeSize.width / 2, y: nodePos.y + titleHeight + 5 },
+      {
+        x: nodePos.x + nodeSize.width / 2,
+        y: nodePos.y + nodeSize.height / 2
+      },
+      { x: nodePos.x + 20, y: nodePos.y + titleHeight + 5 }
+    ]
 
     const checkIsInSubgraph = async () => {
       return this.comfyPage.page.evaluate(() => {
@@ -474,13 +476,20 @@ export class NodeReference {
     }
 
     await expect(async () => {
-      await this.comfyPage.canvas.click({
-        position: buttonPos,
-        force: true
-      })
-      await this.comfyPage.nextFrame()
+      for (const position of clickPositions) {
+        // Clear any selection first
+        await this.comfyPage.canvas.click({
+          position: { x: 250, y: 250 },
+          force: true
+        })
+        await this.comfyPage.nextFrame()
 
-      if (await checkIsInSubgraph()) return
+        // Double-click to enter subgraph
+        await this.comfyPage.canvas.dblclick({ position, force: true })
+        await this.comfyPage.nextFrame()
+
+        if (await checkIsInSubgraph()) return
+      }
       throw new Error('Not in subgraph yet')
     }).toPass({ timeout: 5000, intervals: [100, 200, 500] })
   }

@@ -69,6 +69,8 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
   private _viewCache = new Map<string, PromotedWidgetView>()
   private _proxyWidgetsRaw?: unknown
   private _promotionList: Array<[string, string]> = []
+  private _viewsCached: PromotedWidgetView[] = []
+  private _viewsCacheDirty = true
 
   // Declared as accessor via Object.defineProperty in constructor.
   // TypeScript doesn't allow overriding a property with get/set syntax,
@@ -80,17 +82,21 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     if (raw === undefined || raw === null) {
       this._proxyWidgetsRaw = raw
       this._promotionList = []
+      this._viewsCacheDirty = true
       return this._promotionList
     }
     if (raw !== this._proxyWidgetsRaw) {
       this._proxyWidgetsRaw = raw
       this._promotionList = parseProxyWidgets(raw)
+      this._viewsCacheDirty = true
     }
     return this._promotionList
   }
 
   private _getPromotedViews(): PromotedWidgetView[] {
     const list = this._getPromotionList()
+    if (!this._viewsCacheDirty) return this._viewsCached
+
     const views: PromotedWidgetView[] = []
     const seenKeys = new Set<string>()
     let hadLegacyEntries = false
@@ -133,6 +139,8 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
       this._promotionList = resolved
     }
 
+    this._viewsCached = views
+    this._viewsCacheDirty = false
     return views
   }
 
