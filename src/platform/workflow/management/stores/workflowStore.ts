@@ -463,11 +463,9 @@ export const useWorkflowStore = defineStore('workflow', () => {
     openWorkflowPaths.value = openWorkflowPaths.value.filter(
       (path) => path !== workflow.path
     )
+    useWorkflowDraftStore().removeDraft(workflow.path)
     if (workflow.isTemporary) {
-      // Clear thumbnail when temporary workflow is closed
       clearThumbnail(workflow.key)
-      // Clear draft when unsaved workflow tab is closed
-      useWorkflowDraftStore().removeDraft(workflow.path)
       delete workflowLookup.value[workflow.path]
     } else {
       workflow.unload()
