@@ -45,8 +45,29 @@ jobs:
             -e '(?i)\bgtm\.js\b' \
             -e '(?i)googletagmanager\.com/gtm\.js\\?id=' \
             -e '(?i)googletagmanager\.com/ns\.html\\?id=' \
+            -e 'mixpanel-browser' \
+            -e '(?i)api\.mixpanel\.com' \
+            -e '(?i)cdn\.mxpnl\.com' \
+            -e '(?i)mixpanel\.init' \
+            -e '(?i)mixpanel\.track' \
+            -e '(?i)mixpanel\.identify' \
+            -e '(?i)mixpanel\.people' \
+            -e '(?i)impactcdn\.com' \
+            -e 'A6951770-3747-434a-9ac7-4e582e67d91f1' \
             dist; then
-            echo 'Telemetry references found in dist assets.'
+            echo '❌ Telemetry references found in dist assets.'
+            echo ''
+            echo 'This CI check scans for telemetry libraries that should not be included in OSS builds:'
+            echo '  - Google Tag Manager (GTM)'
+            echo '  - Mixpanel'
+            echo '  - Impact Analytics'
+            echo ''
+            echo 'If you see this error:'
+            echo '  1. Check your build configuration to ensure telemetry code is properly excluded'
+            echo '  2. Verify conditional imports are working correctly'
+            echo '  3. Review the matched lines above to identify the source'
+            echo ''
+            echo 'For context, see PR #8311 which accidentally shipped GTM code to OSS builds.'
             exit 1
           fi
-          echo 'No telemetry references found in dist assets.'
+          echo '✅ No telemetry references found in dist assets.'
