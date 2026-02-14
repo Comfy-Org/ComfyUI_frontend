@@ -165,7 +165,9 @@ export const CORE_SETTINGS: SettingParams[] = [
     defaultsByInstallVersion: {
       '1.25.0': 'legacy'
     },
-    onChange: async (newValue: string, oldValue?: string) => {
+    onChange: async (val: unknown, old?: unknown) => {
+      const newValue = val as string
+      const oldValue = old as string | undefined
       if (!oldValue) return
       const settingStore = useSettingStore()
 
@@ -194,7 +196,8 @@ export const CORE_SETTINGS: SettingParams[] = [
       { value: 'select', text: 'Select' }
     ],
     versionAdded: '1.27.4',
-    onChange: async (newValue: string) => {
+    onChange: async (val: unknown) => {
+      const newValue = val as string
       const settingStore = useSettingStore()
 
       const navigationMode = settingStore.get('Comfy.Canvas.NavigationMode')
@@ -223,7 +226,8 @@ export const CORE_SETTINGS: SettingParams[] = [
       { value: 'zoom', text: 'Zoom in/out' }
     ],
     versionAdded: '1.27.4',
-    onChange: async (newValue: string) => {
+    onChange: async (val: unknown) => {
+      const newValue = val as string
       const settingStore = useSettingStore()
 
       const navigationMode = settingStore.get('Comfy.Canvas.NavigationMode')
@@ -569,7 +573,8 @@ export const CORE_SETTINGS: SettingParams[] = [
     type: 'combo',
     options: ['Disabled', 'Top'],
     tooltip: 'Enable the redesigned top menu bar.',
-    migrateDeprecatedValue: (value: string) => {
+    migrateDeprecatedValue: (val: unknown) => {
+      const value = val as string
       // Floating is now supported by dragging the docked actionbar off.
       if (value === 'Floating') {
         return 'Top'
@@ -585,7 +590,8 @@ export const CORE_SETTINGS: SettingParams[] = [
     type: 'combo',
     options: ['Sidebar', 'Topbar'],
     defaultValue: 'Topbar',
-    migrateDeprecatedValue: (value: string) => {
+    migrateDeprecatedValue: (val: unknown) => {
+      const value = val as string
       if (value === 'Topbar (2nd-row)') {
         return 'Topbar'
       }
@@ -615,9 +621,8 @@ export const CORE_SETTINGS: SettingParams[] = [
     defaultValue: [] as Keybinding[],
     versionAdded: '1.3.7',
     versionModified: '1.7.3',
-    migrateDeprecatedValue: (
-      value: (Keybinding & { targetSelector?: string })[]
-    ) => {
+    migrateDeprecatedValue: (val: unknown) => {
+      const value = val as (Keybinding & { targetSelector?: string })[]
       return value.map((keybinding) => {
         if (keybinding.targetSelector === '#graph-canvas') {
           keybinding.targetElementId = 'graph-canvas-container'
@@ -886,7 +891,8 @@ export const CORE_SETTINGS: SettingParams[] = [
     type: 'hidden',
     defaultValue: 'dark',
     versionModified: '1.6.7',
-    migrateDeprecatedValue(value: string) {
+    migrateDeprecatedValue(val: unknown) {
+      const value = val as string
       // Legacy custom palettes were prefixed with 'custom_'
       return value.startsWith('custom_') ? value.replace('custom_', '') : value
     }

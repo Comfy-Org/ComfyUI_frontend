@@ -1,5 +1,6 @@
 import type { ComputedRef, Ref } from 'vue'
 
+import type { TierKey } from '@/platform/cloud/subscription/constants/tierPricing'
 import type {
   Plan,
   PreviewSubscribeResponse,
@@ -73,4 +74,5 @@ export interface BillingState {
 
 export interface BillingContext extends BillingState, BillingActions {
   type: ComputedRef<BillingType>
+  getMaxSeats: (tierKey: TierKey) => number
 }

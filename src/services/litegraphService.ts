@@ -880,7 +880,6 @@ export const useLitegraphService = () => {
 
     const graph = useWorkflowStore().activeSubgraph ?? app.graph
 
-    // @ts-expect-error fixme ts strict error
     graph.add(node)
     // @ts-expect-error fixme ts strict error
     return node
