@@ -38,7 +38,7 @@ export type QueueNotificationBanner =
   | QueueFailedNotification
 
 const sanitizeCount = (value: number | undefined) => {
-  if (value === undefined || Number.isNaN(value) || value <= 0) {
+  if (!(typeof value === 'number' && value > 0)) {
     return 1
   }
   return Math.floor(value)
