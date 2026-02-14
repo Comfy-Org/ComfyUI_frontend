@@ -33,6 +33,7 @@ import { createPromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetVi
 import type { PromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetView'
 import { parseProxyWidgets } from '@/core/schemas/proxyWidget'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
+import { usePromotionStore } from '@/stores/promotionStore'
 
 import { ExecutableNodeDTO } from './ExecutableNodeDTO'
 import type { ExecutableLGraphNode, ExecutionId } from './ExecutableNodeDTO'
@@ -67,57 +68,27 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
   }
 
   private _viewCache = new Map<string, PromotedWidgetView>()
-  private _proxyWidgetsRaw?: unknown
-  private _promotionList: Array<[string, string]> = []
-  private _viewsCached: PromotedWidgetView[] = []
-  private _viewsCacheDirty = true
 
   // Declared as accessor via Object.defineProperty in constructor.
   // TypeScript doesn't allow overriding a property with get/set syntax,
   // so we use declare + defineProperty instead.
   declare widgets: IBaseWidget[]
 
-  private _getPromotionList(): Array<[string, string]> {
-    const raw = this.properties?.proxyWidgets
-    if (raw === undefined || raw === null) {
-      this._proxyWidgetsRaw = raw
-      this._promotionList = []
-      this._viewsCacheDirty = true
-      return this._promotionList
-    }
-    if (raw !== this._proxyWidgetsRaw) {
-      this._proxyWidgetsRaw = raw
-      this._promotionList = parseProxyWidgets(raw)
-      this._viewsCacheDirty = true
-    }
-    return this._promotionList
-  }
-
   private _getPromotedViews(): PromotedWidgetView[] {
-    const list = this._getPromotionList()
-    if (!this._viewsCacheDirty) return this._viewsCached
+    const store = usePromotionStore()
+    const entries = store.getPromotions(this.id)
 
     const views: PromotedWidgetView[] = []
     const seenKeys = new Set<string>()
-    let hadLegacyEntries = false
 
-    for (const [nodeId, widgetName] of list) {
-      let resolvedId = nodeId
-      let resolvedName = widgetName
-      if (nodeId === '-1') {
-        const resolved = this._resolveLegacyEntry(widgetName)
-        if (!resolved) continue
-        ;[resolvedId, resolvedName] = resolved
-        hadLegacyEntries = true
-      }
-
-      const key = `${resolvedId}:${resolvedName}`
+    for (const { interiorNodeId, widgetName } of entries) {
+      const key = `${interiorNodeId}:${widgetName}`
       if (seenKeys.has(key)) continue
       seenKeys.add(key)
 
       let view = this._viewCache.get(key)
       if (!view) {
-        view = createPromotedWidgetView(this, resolvedId, resolvedName)
+        view = createPromotedWidgetView(this, interiorNodeId, widgetName)
         this._viewCache.set(key, view)
       }
       views.push(view)
@@ -128,19 +99,6 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
       if (!seenKeys.has(key)) this._viewCache.delete(key)
     }
 
-    // Migrate -1 entries: write resolved list back so legacy format doesn't persist
-    if (hadLegacyEntries) {
-      const resolved: Array<[string, string]> = views.map((v) => [
-        v.sourceNodeId,
-        v.sourceWidgetName
-      ])
-      this.properties.proxyWidgets = resolved
-      this._proxyWidgetsRaw = resolved
-      this._promotionList = resolved
-    }
-
-    this._viewsCached = views
-    this._viewsCacheDirty = false
     return views
   }
 
@@ -332,9 +290,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
         // so it transitions cleanly to being linked via SubgraphInput.
         if (widget.promoted) {
           const nodeId = String(e.detail.node.id)
-          this.properties.proxyWidgets = this._getPromotionList().filter(
-            ([n, w]) => !(n === nodeId && w === widget.name)
-          )
+          usePromotionStore().demote(this.id, nodeId, widget.name)
           widget.promoted = false
         }
 
@@ -422,7 +378,30 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     // Do NOT clear properties.proxyWidgets — it was already populated
     // from serialized data by super.configure(info) before this runs.
     this._viewCache.clear()
-    this._proxyWidgetsRaw = undefined
+
+    // Hydrate the store from serialized properties.proxyWidgets
+    const raw = parseProxyWidgets(this.properties.proxyWidgets)
+    const store = usePromotionStore()
+    const entries = raw
+      .map(([nodeId, widgetName]) => {
+        if (nodeId === '-1') {
+          const resolved = this._resolveLegacyEntry(widgetName)
+          if (resolved)
+            return { interiorNodeId: resolved[0], widgetName: resolved[1] }
+          return null
+        }
+        return { interiorNodeId: nodeId, widgetName }
+      })
+      .filter((e): e is NonNullable<typeof e> => e !== null)
+    store.setPromotions(this.id, entries)
+
+    // Write back resolved entries so legacy -1 format doesn't persist
+    if (raw.some(([id]) => id === '-1')) {
+      this.properties.proxyWidgets = entries.map((e) => [
+        e.interiorNodeId,
+        e.widgetName
+      ])
+    }
 
     // Check all inputs for connected widgets
     for (const input of this.inputs) {
@@ -487,13 +466,11 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     inputWidget: IWidgetLocator | undefined,
     interiorNode: LGraphNode
   ) {
-    // Add to promotion list — assigns a new array, invalidating the memoizer
     const nodeId = String(interiorNode.id)
     const widgetName = _widget.name
-    const list = this._getPromotionList()
-    if (!list.some(([n, w]) => n === nodeId && w === widgetName)) {
-      this.properties.proxyWidgets = [...list, [nodeId, widgetName]]
-    }
+
+    // Add to promotion store
+    usePromotionStore().promote(this.id, nodeId, widgetName)
 
     // Create/retrieve the view from cache
     const key = `${nodeId}:${widgetName}`
@@ -682,9 +659,10 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     if ('sourceNodeId' in widget) {
       const view = widget as PromotedWidgetView
       this._clearDomOverrideForView(view)
-      const list = this._getPromotionList()
-      this.properties.proxyWidgets = list.filter(
-        ([n, w]) => !(n == view.sourceNodeId && w == view.sourceWidgetName)
+      usePromotionStore().demote(
+        this.id,
+        view.sourceNodeId,
+        view.sourceWidgetName
       )
       this._viewCache.delete(`${view.sourceNodeId}:${view.sourceWidgetName}`)
     }
@@ -713,6 +691,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
       })
     }
 
+    usePromotionStore().setPromotions(this.id, [])
     this._viewCache.clear()
 
     for (const input of this.inputs) {
@@ -772,7 +751,13 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
       }
     }
 
-    // Call parent serialize method
+    // Write promotion store state back to properties for serialization
+    const entries = usePromotionStore().getPromotions(this.id)
+    this.properties.proxyWidgets = entries.map((e) => [
+      e.interiorNodeId,
+      e.widgetName
+    ])
+
     return super.serialize()
   }
   override clone() {

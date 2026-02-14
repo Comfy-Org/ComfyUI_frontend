@@ -4,7 +4,7 @@ import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
 import type { PromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetView'
-import { parseProxyWidgets } from '@/core/schemas/proxyWidget'
+import { usePromotionStore } from '@/stores/promotionStore'
 import type {
   LGraphGroup,
   LGraphNode,
@@ -61,25 +61,26 @@ const { t } = useI18n()
 
 const getNodeParentGroup = inject(GetNodeParentGroupKey, null)
 
+const promotionStore = usePromotionStore()
+
 function isWidgetShownOnParents(
   widgetNode: LGraphNode,
   widget: IBaseWidget
 ): boolean {
   if (!parents.length) return false
-  const proxyWidgets = parseProxyWidgets(parents[0].properties.proxyWidgets)
-
+  const parent = parents[0]
   if ('sourceNodeId' in widget) {
     const view = widget as PromotedWidgetView
-    return proxyWidgets.some(
-      ([nodeId, widgetName]) =>
-        view.sourceNodeId == nodeId && view.sourceWidgetName === widgetName
+    return promotionStore.isPromoted(
+      parent.id,
+      view.sourceNodeId,
+      view.sourceWidgetName
     )
   }
-
-  // For regular widgets (not yet promoted), check using node ID and widget name
-  return proxyWidgets.some(
-    ([nodeId, widgetName]) =>
-      widgetNode.id == nodeId && widget.name === widgetName
+  return promotionStore.isPromoted(
+    parent.id,
+    String(widgetNode.id),
+    widget.name
   )
 }
 

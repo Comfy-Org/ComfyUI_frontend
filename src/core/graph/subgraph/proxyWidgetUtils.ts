@@ -1,5 +1,3 @@
-import { parseProxyWidgets } from '@/core/schemas/proxyWidget'
-import type { ProxyWidgetsProperty } from '@/core/schemas/proxyWidget'
 import { t } from '@/i18n'
 import type {
   IContextMenuValue,
@@ -10,31 +8,29 @@ import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets.ts'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useLitegraphService } from '@/services/litegraphService'
+import { usePromotionStore } from '@/stores/promotionStore'
 import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
 
 type PartialNode = Pick<LGraphNode, 'title' | 'id' | 'type'>
 
 export type WidgetItem = [PartialNode, IBaseWidget]
 
-function getProxyWidgets(node: SubgraphNode) {
-  return parseProxyWidgets(node.properties.proxyWidgets)
+function getWidgetName(w: IBaseWidget): string {
+  return 'sourceWidgetName' in w
+    ? (w as { sourceWidgetName: string }).sourceWidgetName
+    : w.name
 }
+
 export function promoteWidget(
   node: PartialNode,
   widget: IBaseWidget,
   parents: SubgraphNode[]
 ) {
+  const store = usePromotionStore()
+  const nodeId = String(node.id)
+  const widgetName = getWidgetName(widget)
   for (const parent of parents) {
-    const existingProxyWidgets = getProxyWidgets(parent)
-    // Prevent duplicate promotion
-    if (existingProxyWidgets.some(matchesPropertyItem([node, widget]))) {
-      continue
-    }
-    const proxyWidgets = [
-      ...existingProxyWidgets,
-      widgetItemToProperty([node, widget])
-    ]
-    parent.properties.proxyWidgets = proxyWidgets
+    store.promote(parent.id, nodeId, widgetName)
   }
   widget.promoted = true
 }
@@ -44,38 +40,16 @@ export function demoteWidget(
   widget: IBaseWidget,
   parents: SubgraphNode[]
 ) {
+  const store = usePromotionStore()
+  const nodeId = String(node.id)
+  const widgetName = getWidgetName(widget)
   for (const parent of parents) {
-    const proxyWidgets = getProxyWidgets(parent).filter(
-      (widgetItem) => !matchesPropertyItem([node, widget])(widgetItem)
-    )
-    parent.properties.proxyWidgets = proxyWidgets
+    store.demote(parent.id, nodeId, widgetName)
   }
   widget.promoted = false
 }
 
-function getWidgetName(w: IBaseWidget): string {
-  return 'sourceWidgetName' in w
-    ? (w as { sourceWidgetName: string }).sourceWidgetName
-    : w.name
-}
-
-export function matchesWidgetItem([nodeId, widgetName]: [string, string]) {
-  return ([n, w]: WidgetItem) =>
-    n.id == nodeId && getWidgetName(w) === widgetName
-}
-export function matchesPropertyItem([n, w]: WidgetItem) {
-  return ([nodeId, widgetName]: [string, string]) =>
-    n.id == nodeId && getWidgetName(w) === widgetName
-}
-export function widgetItemToProperty([n, w]: WidgetItem): [string, string] {
-  return [`${n.id}`, getWidgetName(w)]
-}
-
 function getParentNodes(): SubgraphNode[] {
-  //NOTE: support for determining parents of a subgraph is limited
-  //This function will require rework to properly support linked subgraphs
-  //Either by including actual parents in the navigation stack,
-  //or by adding a new event for parent listeners to collect from
   const { navigationStack } = useSubgraphNavigationStore()
   const subgraph = navigationStack.at(-1)
   if (!subgraph) {
@@ -99,9 +73,12 @@ export function addWidgetPromotionOptions(
   widget: IBaseWidget,
   node: LGraphNode
 ) {
+  const store = usePromotionStore()
   const parents = getParentNodes()
+  const nodeId = String(node.id)
+  const widgetName = getWidgetName(widget)
   const promotableParents = parents.filter(
-    (s) => !getProxyWidgets(s).some(matchesPropertyItem([node, widget]))
+    (s) => !store.isPromoted(s.id, nodeId, widgetName)
   )
   if (promotableParents.length > 0)
     options.unshift({
@@ -121,6 +98,7 @@ export function addWidgetPromotionOptions(
     })
   }
 }
+
 export function tryToggleWidgetPromotion() {
   const canvas = useCanvasStore().getCanvas()
   const [x, y] = canvas.graph_mouse
@@ -129,13 +107,17 @@ export function tryToggleWidgetPromotion() {
   const widget = node.getWidgetOnPos(x, y, true)
   const parents = getParentNodes()
   if (!parents.length || !widget) return
+  const store = usePromotionStore()
+  const nodeId = String(node.id)
+  const widgetName = getWidgetName(widget)
   const promotableParents = parents.filter(
-    (s) => !getProxyWidgets(s).some(matchesPropertyItem([node, widget]))
+    (s) => !store.isPromoted(s.id, nodeId, widgetName)
   )
   if (promotableParents.length > 0)
     promoteWidget(node, widget, promotableParents)
   else demoteWidget(node, widget, parents)
 }
+
 const recommendedNodes = [
   'CLIPTextEncode',
   'LoadImage',
@@ -143,6 +125,7 @@ const recommendedNodes = [
   'PreviewImage'
 ]
 const recommendedWidgetNames = ['seed']
+
 export function isRecommendedWidget([node, widget]: WidgetItem) {
   return (
     !widget.computedDisabled &&
@@ -154,7 +137,9 @@ export function isRecommendedWidget([node, widget]: WidgetItem) {
 function nodeWidgets(n: LGraphNode): WidgetItem[] {
   return n.widgets?.map((w: IBaseWidget) => [n, w]) ?? []
 }
+
 export function promoteRecommendedWidgets(subgraphNode: SubgraphNode) {
+  const store = usePromotionStore()
   const { updatePreviews } = useLitegraphService()
   const interiorNodes = subgraphNode.subgraph.nodes
   for (const node of interiorNodes) {
@@ -163,8 +148,8 @@ export function promoteRecommendedWidgets(subgraphNode: SubgraphNode) {
       updatePreviews(node)
       const widget = node.widgets?.find((w) => w.name.startsWith('$$'))
       if (!widget) return
-      const pw = getProxyWidgets(subgraphNode)
-      if (pw.some(matchesPropertyItem([node, widget]))) return
+      if (store.isPromoted(subgraphNode.id, String(node.id), widget.name))
+        return
       promoteWidget(node, widget, [subgraphNode])
     }
     requestAnimationFrame(() => updatePreviews(node, checkWidgets))
@@ -172,27 +157,21 @@ export function promoteRecommendedWidgets(subgraphNode: SubgraphNode) {
   const filteredWidgets: WidgetItem[] = interiorNodes
     .flatMap(nodeWidgets)
     .filter(isRecommendedWidget)
-  const proxyWidgets: ProxyWidgetsProperty =
-    filteredWidgets.map(widgetItemToProperty)
-  subgraphNode.properties.proxyWidgets = proxyWidgets
+  const entries = filteredWidgets.map(([n, w]) => ({
+    interiorNodeId: String(n.id),
+    widgetName: getWidgetName(w)
+  }))
+  store.setPromotions(subgraphNode.id, entries)
   subgraphNode.computeSize(subgraphNode.size)
 }
 
 export function pruneDisconnected(subgraphNode: SubgraphNode) {
+  const store = usePromotionStore()
   const subgraph = subgraphNode.subgraph
-  subgraphNode.properties.proxyWidgets = subgraphNode.widgets
-    .filter(
-      (
-        w
-      ): w is IBaseWidget & {
-        sourceNodeId: string
-        sourceWidgetName: string
-      } => 'sourceNodeId' in w
-    )
-    .filter((w) => {
-      const node = subgraph.getNodeById(w.sourceNodeId)
-      if (!node) return false
-      return node.widgets?.some((iw) => iw.name === w.sourceWidgetName) ?? false
-    })
-    .map((w) => [w.sourceNodeId, w.sourceWidgetName])
+  const validEntries = store.getPromotions(subgraphNode.id).filter((entry) => {
+    const node = subgraph.getNodeById(entry.interiorNodeId)
+    if (!node) return false
+    return node.widgets?.some((iw) => iw.name === entry.widgetName) ?? false
+  })
+  store.setPromotions(subgraphNode.id, validEntries)
 }

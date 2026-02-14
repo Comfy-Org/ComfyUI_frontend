@@ -1,28 +1,15 @@
 <script setup lang="ts">
 import { storeToRefs } from 'pinia'
-import {
-  computed,
-  customRef,
-  onBeforeUnmount,
-  onMounted,
-  ref,
-  triggerRef,
-  watch
-} from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
 import {
   demoteWidget,
   isRecommendedWidget,
-  matchesPropertyItem,
-  matchesWidgetItem,
   promoteWidget,
-  pruneDisconnected,
-  widgetItemToProperty
+  pruneDisconnected
 } from '@/core/graph/subgraph/proxyWidgetUtils'
 import type { WidgetItem } from '@/core/graph/subgraph/proxyWidgetUtils'
-import { parseProxyWidgets } from '@/core/schemas/proxyWidget'
-import type { ProxyWidgetsProperty } from '@/core/schemas/proxyWidget'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
@@ -30,34 +17,30 @@ import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import FormSearchInput from '@/renderer/extensions/vueNodes/widgets/components/form/FormSearchInput.vue'
 import { DraggableList } from '@/scripts/ui/draggableList'
 import { useLitegraphService } from '@/services/litegraphService'
+import { usePromotionStore } from '@/stores/promotionStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 
 import SubgraphNodeWidget from './SubgraphNodeWidget.vue'
 
 const canvasStore = useCanvasStore()
+const promotionStore = usePromotionStore()
 const rightSidePanelStore = useRightSidePanelStore()
 const { searchQuery } = storeToRefs(rightSidePanelStore)
 
 const draggableList = ref<DraggableList | undefined>(undefined)
 const draggableItems = ref()
-const proxyWidgets = customRef<ProxyWidgetsProperty>((track, trigger) => ({
-  get() {
-    track()
-    const node = activeNode.value
-    if (!node) return []
-    return parseProxyWidgets(node.properties.proxyWidgets)
-  },
-  set(value?: ProxyWidgetsProperty) {
-    trigger()
-    const node = activeNode.value
-    if (!value) return
-    if (!node) {
-      console.error('Attempted to toggle widgets with no node selected')
-      return
-    }
-    node.properties.proxyWidgets = value
-  }
-}))
+
+function getWidgetName(w: IBaseWidget): string {
+  return 'sourceWidgetName' in w
+    ? (w as { sourceWidgetName: string }).sourceWidgetName
+    : w.name
+}
+
+const promotionEntries = computed(() => {
+  const node = activeNode.value
+  if (!node) return []
+  return promotionStore.getPromotions(node.id)
+})
 
 const activeNode = computed(() => {
   const node = canvasStore.selectedItems[0]
@@ -67,21 +50,22 @@ const activeNode = computed(() => {
 
 const activeWidgets = computed<WidgetItem[]>({
   get() {
-    if (!activeNode.value) return []
     const node = activeNode.value
-    function mapWidgets([id, name]: [string, string]): WidgetItem[] {
-      if (id === '-1') {
-        const widget = node.widgets.find((w) => w.name === name)
+    if (!node) return []
+    return promotionEntries.value.flatMap(
+      ({ interiorNodeId, widgetName }): WidgetItem[] => {
+        if (interiorNodeId === '-1') {
+          const widget = node.widgets.find((w) => w.name === widgetName)
+          if (!widget) return []
+          return [[{ id: -1, title: '(Linked)', type: '' }, widget]]
+        }
+        const wNode = node.subgraph._nodes_by_id[interiorNodeId]
+        if (!wNode?.widgets) return []
+        const widget = wNode.widgets.find((w) => w.name === widgetName)
         if (!widget) return []
-        return [[{ id: -1, title: '(Linked)', type: '' }, widget]]
+        return [[wNode, widget]]
       }
-      const wNode = node.subgraph._nodes_by_id[id]
-      if (!wNode?.widgets) return []
-      const widget = wNode.widgets.find((w) => w.name === name)
-      if (!widget) return []
-      return [[wNode, widget]]
-    }
-    return proxyWidgets.value.flatMap(mapWidgets)
+    )
   },
   set(value: WidgetItem[]) {
     const node = activeNode.value
@@ -89,7 +73,13 @@ const activeWidgets = computed<WidgetItem[]>({
       console.error('Attempted to toggle widgets with no node selected')
       return
     }
-    proxyWidgets.value = value.map(widgetItemToProperty)
+    promotionStore.setPromotions(
+      node.id,
+      value.map(([n, w]) => ({
+        interiorNodeId: String(n.id),
+        widgetName: getWidgetName(w)
+      }))
+    )
   }
 })
 
@@ -110,9 +100,9 @@ const interiorWidgets = computed<WidgetItem[]>(() => {
 const candidateWidgets = computed<WidgetItem[]>(() => {
   const node = activeNode.value
   if (!node) return []
-  const widgets = proxyWidgets.value
   return interiorWidgets.value.filter(
-    (widgetItem: WidgetItem) => !widgets.some(matchesPropertyItem(widgetItem))
+    ([n, w]: WidgetItem) =>
+      !promotionStore.isPromoted(node.id, String(n.id), w.name)
   )
 })
 const filteredCandidates = computed<WidgetItem[]>(() => {
@@ -150,42 +140,37 @@ function nodeWidgets(n: LGraphNode): WidgetItem[] {
 }
 function demote([node, widget]: WidgetItem) {
   const subgraphNode = activeNode.value
-  if (!subgraphNode) return []
+  if (!subgraphNode) return
   demoteWidget(node, widget, [subgraphNode])
-  triggerRef(proxyWidgets)
+  promotionStore.demote(subgraphNode.id, String(node.id), getWidgetName(widget))
 }
 function promote([node, widget]: WidgetItem) {
   const subgraphNode = activeNode.value
-  if (!subgraphNode) return []
+  if (!subgraphNode) return
   promoteWidget(node, widget, [subgraphNode])
-  triggerRef(proxyWidgets)
+  promotionStore.promote(subgraphNode.id, String(node.id), widget.name)
 }
 function showAll() {
   const node = activeNode.value
   if (!node) return
-  const widgets = proxyWidgets.value
-  const toAdd: ProxyWidgetsProperty =
-    filteredCandidates.value.map(widgetItemToProperty)
-  widgets.push(...toAdd)
-  proxyWidgets.value = widgets
+  for (const [n, w] of filteredCandidates.value) {
+    promotionStore.promote(node.id, String(n.id), w.name)
+  }
 }
 function hideAll() {
   const node = activeNode.value
   if (!node) return
-  proxyWidgets.value = proxyWidgets.value.filter(
-    (propertyItem) =>
-      !filteredActive.value.some(matchesWidgetItem(propertyItem)) ||
-      propertyItem[0] === '-1'
-  )
+  for (const [n, w] of filteredActive.value) {
+    if (String(n.id) === '-1') continue
+    promotionStore.demote(node.id, String(n.id), getWidgetName(w))
+  }
 }
 function showRecommended() {
   const node = activeNode.value
   if (!node) return
-  const widgets = proxyWidgets.value
-  const toAdd: ProxyWidgetsProperty =
-    recommendedWidgets.value.map(widgetItemToProperty)
-  widgets.push(...toAdd)
-  proxyWidgets.value = widgets
+  for (const [n, w] of recommendedWidgets.value) {
+    promotionStore.promote(node.id, String(n.id), w.name)
+  }
 }
 
 function setDraggableState() {

@@ -1,20 +1,18 @@
 import { promoteRecommendedWidgets } from '@/core/graph/subgraph/proxyWidgetUtils'
-import type { PromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetView'
 import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
+import { usePromotionStore } from '@/stores/promotionStore'
 
 export function registerProxyWidgets(canvas: LGraphCanvas) {
   canvas.canvas.addEventListener<'subgraph-opened'>('subgraph-opened', (e) => {
     const { subgraph, fromNode } = e.detail
-    // TODO: Derive `promoted` reactively via a Pinia store instead of
-    // imperatively setting it on subgraph open.
-    const promotedEntries = new Set(
-      fromNode.widgets
-        .filter((w): w is PromotedWidgetView => 'sourceNodeId' in w)
-        .map((w) => `${w.sourceNodeId}:${w.sourceWidgetName}`)
-    )
+    const store = usePromotionStore()
     for (const node of subgraph.nodes) {
       for (const widget of node.widgets ?? []) {
-        widget.promoted = promotedEntries.has(`${node.id}:${widget.name}`)
+        widget.promoted = store.isPromoted(
+          fromNode.id,
+          String(node.id),
+          widget.name
+        )
       }
     }
   })
