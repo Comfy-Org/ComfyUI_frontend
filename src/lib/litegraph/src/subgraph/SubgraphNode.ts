@@ -317,10 +317,14 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     subgraphInput.events.addEventListener(
       'input-connected',
       (e) => {
-        if (input._widget) return
-
         const widget = subgraphInput._widget
         if (!widget) return
+
+        // If this widget is already promoted, unpromote it first
+        // so it transitions cleanly to being linked via SubgraphInput.
+        const nodeId = String(e.detail.node.id)
+        const existingView = this._viewCache.get(`${nodeId}:${widget.name}`)
+        if (existingView) this.ensureWidgetRemoved(existingView)
 
         const widgetLocator = e.detail.input.widget
         this._setWidget(
@@ -740,25 +744,19 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
    * This ensures nested subgraph widget values are preserved when saving.
    */
   override serialize(): ISerialisedNode {
-    // Sync widget values to subgraph definition before serialization
-    for (let i = 0; i < this.widgets.length; i++) {
-      const widget = this.widgets[i]
-      const input = this.inputs.find((inp) => inp.name === widget.name)
+    // Sync widget values to subgraph definition before serialization.
+    // Only sync for inputs that are linked to a promoted widget via _widget.
+    for (const input of this.inputs) {
+      if (!input._widget) continue
 
-      if (input) {
-        const subgraphInput = this.subgraph.inputNode.slots.find(
-          (slot) => slot.name === input.name
-        )
+      const subgraphInput = this.subgraph.inputNode.slots.find(
+        (slot) => slot.name === input.name
+      )
+      if (!subgraphInput) continue
 
-        if (subgraphInput) {
-          // Find all widgets connected to this subgraph input
-          const connectedWidgets = subgraphInput.getConnectedWidgets()
-
-          // Update the value of all connected widgets
-          for (const connectedWidget of connectedWidgets) {
-            connectedWidget.value = widget.value
-          }
-        }
+      const connectedWidgets = subgraphInput.getConnectedWidgets()
+      for (const connectedWidget of connectedWidgets) {
+        connectedWidget.value = input._widget.value
       }
     }
 
