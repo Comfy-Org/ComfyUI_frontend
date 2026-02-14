@@ -433,6 +433,7 @@ const zSettings = z.object({
   'LiteGraph.Pointer.TrackpadGestures': z.boolean(),
   'Comfy.VersionCompatibility.DisableWarnings': z.boolean(),
   'Comfy.RightSidePanel.IsOpen': z.boolean(),
+  'Comfy.RightSidePanel.ShowErrorsTab': z.boolean(),
   'Comfy.Node.AlwaysShowAdvancedWidgets': z.boolean()
 })
 

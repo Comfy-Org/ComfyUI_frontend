@@ -135,7 +135,7 @@
     >
       <button
         v-if="hasAnyError"
-        @click.stop="useRightSidePanelStore().openPanel('errors')"
+        @click.stop="settingStore.get('Comfy.RightSidePanel.ShowErrorsTab') && useRightSidePanelStore().openPanel('errors')"
       >
         <span>{{ t('g.error') }}</span>
         <i class="icon-[lucide--info] size-4" />

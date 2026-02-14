@@ -11,6 +11,7 @@ import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { cn } from '@/utils/tailwindUtil'
 import { isGroupNode } from '@/utils/executableGroupNodeDto'
 
@@ -152,6 +153,7 @@ function handleLocateNode() {
 
 function navigateToErrorTab() {
   if (!targetNode.value) return
+  if (!useSettingStore().get('Comfy.RightSidePanel.ShowErrorsTab')) return
   rightSidePanelStore.focusedErrorNodeId = String(targetNode.value.id)
   rightSidePanelStore.openPanel('errors')
 }
