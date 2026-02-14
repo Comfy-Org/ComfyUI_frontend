@@ -6,7 +6,14 @@ import { computed, markRaw, ref } from 'vue'
 import type { Raw } from 'vue'
 
 import type { PositionConfig } from '@/composables/element/useAbsolutePosition'
+import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import type { BaseDOMWidget } from '@/scripts/domWidget'
+
+export interface PositionOverride {
+  node: Raw<LGraphNode>
+  widget: IBaseWidget
+}
 
 export interface DomWidgetState extends PositionConfig {
   // Raw widget instance
@@ -16,6 +23,8 @@ export interface DomWidgetState extends PositionConfig {
   zIndex: number
   /** If the widget belongs to the current graph/subgraph. */
   active: boolean
+  /** Override positioning to render on a different node (e.g. SubgraphNode). */
+  positionOverride?: PositionOverride
 }
 
 export const useDomWidgetStore = defineStore('domWidget', () => {
@@ -65,6 +74,24 @@ export const useDomWidgetStore = defineStore('domWidget', () => {
     state.widget = widget
   }
 
+  const setPositionOverride = (
+    widgetId: string,
+    override: PositionOverride
+  ) => {
+    const state = widgetStates.value.get(widgetId)
+    if (state) {
+      state.positionOverride = {
+        node: markRaw(override.node),
+        widget: override.widget
+      }
+    }
+  }
+
+  const clearPositionOverride = (widgetId: string) => {
+    const state = widgetStates.value.get(widgetId)
+    if (state) state.positionOverride = undefined
+  }
+
   const clear = () => {
     widgetStates.value.clear()
   }
@@ -78,6 +105,8 @@ export const useDomWidgetStore = defineStore('domWidget', () => {
     activateWidget,
     deactivateWidget,
     setWidget,
+    setPositionOverride,
+    clearPositionOverride,
     clear
   }
 })

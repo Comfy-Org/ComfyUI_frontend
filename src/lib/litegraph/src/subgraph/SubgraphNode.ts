@@ -32,6 +32,7 @@ import type { UUID } from '@/lib/litegraph/src/utils/uuid'
 import { createPromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetView'
 import type { PromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetView'
 import { parseProxyWidgets } from '@/core/schemas/proxyWidget'
+import { useDomWidgetStore } from '@/stores/domWidgetStore'
 
 import { ExecutableNodeDTO } from './ExecutableNodeDTO'
 import type { ExecutableLGraphNode, ExecutionId } from './ExecutableNodeDTO'
@@ -636,6 +637,22 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     return nodes
   }
 
+  /** Clear the DOM position override for a promoted view's interior widget. */
+  private _clearDomOverrideForView(view: PromotedWidgetView): void {
+    const node = this.subgraph.getNodeById(view.sourceNodeId)
+    if (!node) return
+    const interiorWidget = node.widgets?.find(
+      (w: IBaseWidget) => w.name === view.sourceWidgetName
+    )
+    if (
+      interiorWidget &&
+      'id' in interiorWidget &&
+      ('element' in interiorWidget || 'component' in interiorWidget)
+    ) {
+      useDomWidgetStore().clearPositionOverride(interiorWidget.id as string)
+    }
+  }
+
   override removeWidget(widget: IBaseWidget): void {
     this.ensureWidgetRemoved(widget)
   }
@@ -648,6 +665,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
   override ensureWidgetRemoved(widget: IBaseWidget): void {
     if ('sourceNodeId' in widget) {
       const view = widget as PromotedWidgetView
+      this._clearDomOverrideForView(view)
       const list = this._getPromotionList()
       this.properties.proxyWidgets = list.filter(
         ([n, w]) => !(n == view.sourceNodeId && w == view.sourceWidgetName)
@@ -670,6 +688,9 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     this._eventAbortController.abort()
 
     for (const widget of this.widgets) {
+      if ('sourceNodeId' in widget) {
+        this._clearDomOverrideForView(widget as PromotedWidgetView)
+      }
       this.subgraph.events.dispatch('widget-demoted', {
         widget,
         subgraphNode: this

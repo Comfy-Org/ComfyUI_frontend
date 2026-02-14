@@ -7,8 +7,8 @@ import { beforeEach, describe, expect, test, vi } from 'vitest'
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { SubgraphNode } from '@/lib/litegraph/src/litegraph'
 
-import { createPromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetView';
-import type { PromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetView';
+import { createPromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetView'
+import type { PromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetView'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 
 import {
@@ -19,8 +19,13 @@ import {
 vi.mock('@/renderer/core/canvas/canvasStore', () => ({
   useCanvasStore: () => ({})
 }))
+const mockDomWidgetStore = {
+  widgetStates: new Map(),
+  setPositionOverride: vi.fn(),
+  clearPositionOverride: vi.fn()
+}
 vi.mock('@/stores/domWidgetStore', () => ({
-  useDomWidgetStore: () => ({ widgetStates: new Map() })
+  useDomWidgetStore: () => mockDomWidgetStore
 }))
 vi.mock('@/services/litegraphService', () => ({
   useLitegraphService: () => ({ updatePreviews: () => ({}) })
@@ -449,5 +454,127 @@ describe('disconnected state', () => {
     const [subgraphNode] = setupSubgraph()
     subgraphNode.properties.proxyWidgets = [['999', 'ghost']]
     expect(subgraphNode.widgets[0].tooltip).toBeUndefined()
+  })
+})
+
+function createFakeCanvasContext() {
+  return new Proxy({} as CanvasRenderingContext2D, {
+    get: () => vi.fn(() => ({ width: 10 }))
+  })
+}
+
+describe('DOM widget promotion', () => {
+  beforeEach(() => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
+    vi.clearAllMocks()
+  })
+
+  function createMockDOMWidget(node: LGraphNode, name: string) {
+    const widget = node.addWidget('text', name, 'val', () => {})
+    // Add 'element' and 'id' to make it a BaseDOMWidget
+    Object.defineProperties(widget, {
+      element: { value: document.createElement('div'), enumerable: true },
+      id: { value: `dom-widget-${name}`, enumerable: true }
+    })
+    return widget
+  }
+
+  function createMockComponentWidget(node: LGraphNode, name: string) {
+    const widget = node.addWidget('custom', name, 'val', () => {})
+    Object.defineProperties(widget, {
+      component: { value: {}, enumerable: true },
+      id: { value: `comp-widget-${name}`, enumerable: true }
+    })
+    return widget
+  }
+
+  test('draw registers position override for DOM widgets', () => {
+    const [subgraphNode, innerNodes] = setupSubgraph(1)
+    createMockDOMWidget(innerNodes[0], 'textarea')
+    subgraphNode.properties.proxyWidgets = [['1', 'textarea']]
+
+    const view = subgraphNode.widgets[0]
+    view.draw!(createFakeCanvasContext(), subgraphNode, 200, 0, 30)
+
+    expect(mockDomWidgetStore.setPositionOverride).toHaveBeenCalledWith(
+      'dom-widget-textarea',
+      { node: subgraphNode, widget: view }
+    )
+  })
+
+  test('draw registers position override for component widgets', () => {
+    const [subgraphNode, innerNodes] = setupSubgraph(1)
+    createMockComponentWidget(innerNodes[0], 'compWidget')
+    subgraphNode.properties.proxyWidgets = [['1', 'compWidget']]
+
+    const view = subgraphNode.widgets[0]
+    view.draw!(createFakeCanvasContext(), subgraphNode, 200, 0, 30)
+
+    expect(mockDomWidgetStore.setPositionOverride).toHaveBeenCalledWith(
+      'comp-widget-compWidget',
+      { node: subgraphNode, widget: view }
+    )
+  })
+
+  test('draw does not register override for non-DOM widgets', () => {
+    const [subgraphNode, innerNodes] = setupSubgraph(1)
+    innerNodes[0].addWidget('text', 'textWidget', 'val', () => {})
+    subgraphNode.properties.proxyWidgets = [['1', 'textWidget']]
+
+    const view = subgraphNode.widgets[0]
+    view.draw!(createFakeCanvasContext(), subgraphNode, 200, 0, 30, true)
+
+    expect(mockDomWidgetStore.setPositionOverride).not.toHaveBeenCalled()
+  })
+
+  test('computeLayoutSize delegates to interior DOM widget', () => {
+    const [subgraphNode, innerNodes] = setupSubgraph(1)
+    const domWidget = createMockDOMWidget(innerNodes[0], 'textarea')
+    domWidget.computeLayoutSize = vi.fn(() => ({
+      minHeight: 100,
+      maxHeight: 300,
+      minWidth: 0
+    }))
+    subgraphNode.properties.proxyWidgets = [['1', 'textarea']]
+
+    const view = subgraphNode.widgets[0]
+    const result = view.computeLayoutSize!(subgraphNode)
+
+    expect(result).toEqual({ minHeight: 100, maxHeight: 300, minWidth: 0 })
+  })
+
+  test('demoting clears position override for DOM widget', () => {
+    const [subgraphNode, innerNodes] = setupSubgraph(1)
+    createMockDOMWidget(innerNodes[0], 'textarea')
+    subgraphNode.properties.proxyWidgets = [['1', 'textarea']]
+
+    const view = subgraphNode.widgets[0]
+    subgraphNode.removeWidget(view)
+
+    expect(mockDomWidgetStore.clearPositionOverride).toHaveBeenCalledWith(
+      'dom-widget-textarea'
+    )
+  })
+
+  test('onRemoved clears position overrides for all promoted DOM widgets', () => {
+    const [subgraphNode, innerNodes] = setupSubgraph(1)
+    createMockDOMWidget(innerNodes[0], 'widgetA')
+    createMockDOMWidget(innerNodes[0], 'widgetB')
+    subgraphNode.properties.proxyWidgets = [
+      ['1', 'widgetA'],
+      ['1', 'widgetB']
+    ]
+
+    // Access widgets to populate cache
+    expect(subgraphNode.widgets).toHaveLength(2)
+
+    subgraphNode.onRemoved()
+
+    expect(mockDomWidgetStore.clearPositionOverride).toHaveBeenCalledWith(
+      'dom-widget-widgetA'
+    )
+    expect(mockDomWidgetStore.clearPositionOverride).toHaveBeenCalledWith(
+      'dom-widget-widgetB'
+    )
   })
 })

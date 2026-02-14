@@ -33,30 +33,44 @@ const updateWidgets = () => {
   for (const widgetState of widgetStates.value) {
     const widget = widgetState.widget
 
-    // Early exit for non-visible widgets
-    if (!widget.isVisible() || !widgetState.active) {
+    // Use position override only when the override node (SubgraphNode) is
+    // in the current graph. When the user enters the subgraph, the override
+    // node is no longer visible — fall back to the widget's own node.
+    // Use getNodeById for identity check (avoids reactive proxy mismatch).
+    const override = widgetState.positionOverride
+    const useOverride =
+      !!override && !!currentGraph?.getNodeById(override.node.id)
+
+    // Early exit for non-visible widgets.
+    // When a position override is active (widget promoted to SubgraphNode),
+    // the interior widget's `active` flag is false (its node is in the
+    // subgraph, not the current graph) — bypass that check.
+    if (!widget.isVisible() || (!widgetState.active && !useOverride)) {
       widgetState.visible = false
       continue
     }
+    const posNode = useOverride ? override.node : widget.node
+    const posWidget = useOverride ? override.widget : widget
 
-    // Check if the widget's node is in the current graph
-    const node = widget.node
-    const isInCorrectGraph = currentGraph?.nodes.includes(node)
+    const isInCorrectGraph = !!currentGraph?.getNodeById(posNode.id)
+    const nodeVisible = lgCanvas.isNodeVisible(posNode)
 
     widgetState.visible =
-      !!isInCorrectGraph &&
-      lgCanvas.isNodeVisible(node) &&
+      isInCorrectGraph &&
+      nodeVisible &&
       !(widget.options.hideOnZoom && lowQuality)
 
-    if (widgetState.visible && node) {
+    if (widgetState.visible) {
       const margin = widget.margin
-      widgetState.pos = [node.pos[0] + margin, node.pos[1] + margin + widget.y]
-      widgetState.size = [
-        (widget.width ?? node.width) - margin * 2,
-        (widget.computedHeight ?? 50) - margin * 2
+      widgetState.pos = [
+        posNode.pos[0] + margin,
+        posNode.pos[1] + margin + posWidget.y
       ]
-      // TODO: optimize this logic as it's O(n), where n is the number of nodes
-      widgetState.zIndex = lgCanvas.graph?.nodes.indexOf(node) ?? -1
+      widgetState.size = [
+        (posWidget.width ?? posNode.width) - margin * 2,
+        (posWidget.computedHeight ?? 50) - margin * 2
+      ]
+      widgetState.zIndex = posNode.order ?? -1
       widgetState.readonly = lgCanvas.read_only
     }
   }

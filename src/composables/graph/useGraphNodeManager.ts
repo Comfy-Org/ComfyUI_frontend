@@ -6,6 +6,7 @@ import { reactiveComputed } from '@vueuse/core'
 import { reactive, shallowReactive } from 'vue'
 
 import { useChainCallback } from '@/composables/functional/useChainCallback'
+import type { PromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetView'
 import type {
   INodeInputSlot,
   INodeOutputSlot
@@ -107,6 +108,32 @@ export interface GraphNodeManager {
 
   // Lifecycle methods
   cleanup(): void
+}
+
+/**
+ * Checks if a widget is a PromotedWidgetView whose interior widget is a
+ * DOM/component widget. Used so the Vue renderer skips rendering its own
+ * widget component on top of the DOM element.
+ */
+function isPromotedWidgetView(
+  widget: IBaseWidget
+): widget is PromotedWidgetView {
+  return 'sourceNodeId' in widget && 'sourceWidgetName' in widget
+}
+
+function isPromotedDOMWidget(widget: IBaseWidget): boolean {
+  if (!isPromotedWidgetView(widget)) return false
+  if (!widget.node.isSubgraphNode()) return false
+  const innerNode = widget.node.subgraph.getNodeById(widget.sourceNodeId)
+  if (!innerNode) return false
+  const innerWidget = innerNode.widgets?.find(
+    (iw) => iw.name === widget.sourceWidgetName
+  )
+  if (!innerWidget) return false
+  return (
+    ('element' in innerWidget && !!innerWidget.element) ||
+    ('component' in innerWidget && !!innerWidget.component)
+  )
 }
 
 function getControlWidget(widget: IBaseWidget): SafeControlWidget | undefined {
@@ -240,7 +267,7 @@ function safeWidgetMapper(
         ...sharedEnhancements,
         callback,
         hasLayoutSize: typeof widget.computeLayoutSize === 'function',
-        isDOMWidget: isDOMWidget(widget),
+        isDOMWidget: isDOMWidget(widget) || isPromotedDOMWidget(widget),
         options,
         slotMetadata: slotInfo
       }
