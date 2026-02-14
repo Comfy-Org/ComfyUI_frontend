@@ -706,11 +706,14 @@ export class ComfyApp {
           'Payment Required: Please add credits to your account to use this node.'
         )
       ) {
-        const { isActiveSubscription } = useBillingContext()
-        if (isActiveSubscription.value) {
+        const { isActiveSubscription, subscription, showSubscriptionDialog } =
+          useBillingContext()
+        if (isActiveSubscription.value && subscription.value?.tier !== 'FREE') {
           useDialogService().showTopUpCreditsDialog({
             isInsufficientCredits: true
           })
+        } else {
+          showSubscriptionDialog()
         }
       } else if (useSettingStore().get('Comfy.RightSidePanel.ShowErrorsTab')) {
         useExecutionStore().showErrorOverlay()

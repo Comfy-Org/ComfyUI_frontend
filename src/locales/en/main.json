@@ -1993,7 +1993,12 @@
       "failed": "Login failed",
       "insecureContextWarning": "This connection is insecure (HTTP) - your credentials may be intercepted by attackers if you proceed to login.",
       "questionsContactPrefix": "Questions? Contact us at",
-      "noAssociatedUser": "There is no Comfy user associated with the provided API key"
+      "noAssociatedUser": "There is no Comfy user associated with the provided API key",
+      "useEmailInstead": "Use email instead",
+      "freeTierBadge": "Eligible for Free Tier",
+      "freeTierDescription": "Sign up with Google to get {credits} free credits every month. No card needed.",
+      "freeTierDescriptionGeneric": "Sign up with Google and get free credits every month. No card needed.",
+      "backToSocialLogin": "Sign up with Google or Github instead"
     },
     "signup": {
       "title": "Create an account",
@@ -2007,7 +2012,8 @@
       "signUpWithGoogle": "Sign up with Google",
       "signUpWithGithub": "Sign up with Github",
       "regionRestrictionChina": "In accordance with local regulatory requirements, our services are temporarily unavailable to users located in China.",
-      "personalDataConsentLabel": "I agree to the processing of my personal data."
+      "personalDataConsentLabel": "I agree to the processing of my personal data.",
+      "emailNotEligibleForFreeTier": "Email sign-up is not eligible for Free Tier."
     },
     "signOut": {
       "signOut": "Log Out",
@@ -2202,6 +2208,9 @@
     },
     "yearlyDiscount": "20% DISCOUNT",
     "tiers": {
+      "free": {
+        "name": "Free"
+      },
       "founder": {
         "name": "Founder's Edition"
       },

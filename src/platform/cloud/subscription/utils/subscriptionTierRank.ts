@@ -2,7 +2,7 @@ import type { TierKey } from '@/platform/cloud/subscription/constants/tierPricin
 
 export type BillingCycle = 'monthly' | 'yearly'
 
-type RankedTierKey = Exclude<TierKey, 'founder'>
+type RankedTierKey = Exclude<TierKey, 'founder' | 'free'>
 type RankedPlanKey = `${BillingCycle}-${RankedTierKey}`
 
 interface PlanDescriptor {
@@ -28,7 +28,7 @@ const toRankedPlanKey = (
   tierKey: TierKey,
   billingCycle: BillingCycle
 ): RankedPlanKey | null => {
-  if (tierKey === 'founder') return null
+  if (tierKey === 'founder' || tierKey === 'free') return null
   return `${billingCycle}-${tierKey}` as RankedPlanKey
 }
 

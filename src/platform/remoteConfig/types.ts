@@ -43,4 +43,5 @@ export type RemoteConfig = {
   linear_toggle_enabled?: boolean
   team_workspaces_enabled?: boolean
   user_secrets_enabled?: boolean
+  free_tier_credits?: number
 }

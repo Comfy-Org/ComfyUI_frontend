@@ -31,6 +31,7 @@ import type {
   PageVisibilityMetadata,
   RunButtonProperties,
   SettingChangedMetadata,
+  SignupPageMetadata,
   SurveyResponses,
   TabCountMetadata,
   TelemetryEventName,
@@ -206,8 +207,12 @@ export class MixpanelTelemetryProvider implements TelemetryProvider {
     )
   }
 
-  trackSignupOpened(): void {
-    this.trackEvent(TelemetryEvents.USER_SIGN_UP_OPENED)
+  trackSignupOpened(metadata?: SignupPageMetadata): void {
+    this.trackEvent(TelemetryEvents.USER_SIGN_UP_OPENED, metadata)
+  }
+
+  trackLoginOpened(metadata?: SignupPageMetadata): void {
+    this.trackEvent(TelemetryEvents.USER_LOGIN_OPENED, metadata)
   }
 
   trackAuth(metadata: AuthMetadata): void {

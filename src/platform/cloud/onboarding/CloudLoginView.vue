@@ -20,36 +20,72 @@
         {{ t('auth.login.insecureContextWarning') }}
       </Message>
 
-      <!-- Form -->
-      <CloudSignInForm :auth-error="authError" @submit="signInWithEmail" />
-
-      <!-- Divider -->
-      <Divider align="center" layout="horizontal" class="my-8">
-        <span class="text-muted">{{ t('auth.login.orContinueWith') }}</span>
-      </Divider>
-
-      <!-- Social Login Buttons -->
-      <div class="flex flex-col gap-6">
-        <Button
-          type="button"
-          class="h-10 bg-[#2d2e32]"
-          variant="secondary"
-          @click="signInWithGoogle"
+      <template v-if="!showEmailForm">
+        <p
+          v-if="showFreeTierBadge"
+          class="mb-4 text-center text-xs text-muted-foreground"
         >
-          <i class="pi pi-google mr-2"></i>
-          {{ t('auth.login.loginWithGoogle') }}
-        </Button>
+          {{
+            freeTierCredits
+              ? t('auth.login.freeTierDescription', {
+                  credits: freeTierCredits
+                })
+              : t('auth.login.freeTierDescriptionGeneric')
+          }}
+        </p>
 
-        <Button
-          type="button"
-          class="h-10 bg-[#2d2e32]"
-          variant="secondary"
-          @click="signInWithGithub"
-        >
-          <i class="pi pi-github mr-2"></i>
-          {{ t('auth.login.loginWithGithub') }}
-        </Button>
-      </div>
+        <!-- OAuth Buttons (primary) -->
+        <div class="flex flex-col gap-4">
+          <div class="relative">
+            <Button type="button" class="h-10 w-full" @click="signInWithGoogle">
+              <i class="pi pi-google mr-2"></i>
+              {{ t('auth.login.loginWithGoogle') }}
+            </Button>
+            <span
+              v-if="showFreeTierBadge"
+              class="absolute -top-2.5 -right-2.5 rounded-full bg-yellow-400 px-2 py-0.5 text-[10px] font-bold whitespace-nowrap text-gray-900"
+            >
+              {{ t('auth.login.freeTierBadge') }}
+            </span>
+          </div>
+
+          <Button
+            type="button"
+            class="h-10 bg-[#2d2e32]"
+            variant="secondary"
+            @click="signInWithGithub"
+          >
+            <i class="pi pi-github mr-2"></i>
+            {{ t('auth.login.loginWithGithub') }}
+          </Button>
+        </div>
+
+        <div class="mt-6 text-center">
+          <button
+            class="cursor-pointer border-none bg-transparent text-sm text-muted-foreground underline hover:text-base-foreground"
+            @click="onShowEmailForm"
+          >
+            {{ t('auth.login.useEmailInstead') }}
+          </button>
+        </div>
+      </template>
+
+      <template v-else>
+        <Message severity="warn" class="mb-4">
+          {{ t('auth.signup.emailNotEligibleForFreeTier') }}
+        </Message>
+
+        <CloudSignInForm :auth-error="authError" @submit="signInWithEmail" />
+
+        <div class="mt-4 text-center">
+          <button
+            class="cursor-pointer border-none bg-transparent text-sm text-muted-foreground underline hover:text-base-foreground"
+            @click="onBackToSocialLogin"
+          >
+            {{ t('auth.login.backToSocialLogin') }}
+          </button>
+        </div>
+      </template>
 
       <!-- Terms & Contact -->
       <p class="mt-5 text-sm text-gray-600">
@@ -75,9 +111,8 @@
 </template>
 
 <script setup lang="ts">
-import Divider from 'primevue/divider'
 import Message from 'primevue/message'
-import { ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 
@@ -85,6 +120,9 @@ import Button from '@/components/ui/button/Button.vue'
 import { useFirebaseAuthActions } from '@/composables/auth/useFirebaseAuthActions'
 import CloudSignInForm from '@/platform/cloud/onboarding/components/CloudSignInForm.vue'
 import { getSafePreviousFullPath } from '@/platform/cloud/onboarding/utils/previousFullPath'
+import { isCloud } from '@/platform/distribution/types'
+import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
+import { useTelemetry } from '@/platform/telemetry'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import type { SignInData } from '@/schemas/signInSchema'
 
@@ -94,7 +132,21 @@ const route = useRoute()
 const authActions = useFirebaseAuthActions()
 const isSecureContext = globalThis.isSecureContext
 const authError = ref('')
+const showEmailForm = ref(false)
+const freeTierCredits = computed(() => remoteConfig.value.free_tier_credits)
+const showFreeTierBadge = !localStorage.getItem('comfy:hasAccount')
 const toastStore = useToastStore()
+const telemetry = useTelemetry()
+
+const onShowEmailForm = () => {
+  showEmailForm.value = true
+  telemetry?.trackUiButtonClicked({ button_id: 'login_use_email_instead' })
+}
+
+const onBackToSocialLogin = () => {
+  showEmailForm.value = false
+  telemetry?.trackUiButtonClicked({ button_id: 'login_back_to_social_login' })
+}
 
 const navigateToSignup = async () => {
   await router.push({ name: 'cloud-signup', query: route.query })
@@ -136,4 +188,10 @@ const signInWithEmail = async (values: SignInData) => {
     await onSuccess()
   }
 }
+
+onMounted(() => {
+  if (isCloud) {
+    telemetry?.trackLoginOpened({ free_tier_badge_shown: showFreeTierBadge })
+  }
+})
 </script>

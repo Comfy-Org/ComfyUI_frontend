@@ -77,6 +77,8 @@ function useSubscriptionInternal() {
     () => subscriptionStatus.value?.subscription_tier ?? null
   )
 
+  const isFreeTier = computed(() => subscriptionTier.value === 'FREE')
+
   const subscriptionDuration = computed(
     () => subscriptionStatus.value?.subscription_duration ?? null
   )
@@ -278,6 +280,7 @@ function useSubscriptionInternal() {
     formattedRenewalDate,
     formattedEndDate,
     subscriptionTier,
+    isFreeTier,
     subscriptionDuration,
     isYearlySubscription,
     subscriptionTierName,

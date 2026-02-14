@@ -27,6 +27,14 @@ export interface AuthMetadata {
   utm_source?: string
   utm_medium?: string
   utm_campaign?: string
+  free_tier_badge_shown?: boolean
+}
+
+/**
+ * Metadata for signup/login page opened events
+ */
+export interface SignupPageMetadata {
+  free_tier_badge_shown?: boolean
 }
 
 /**
@@ -311,7 +319,8 @@ export interface BeginCheckoutMetadata
  */
 export interface TelemetryProvider {
   // Authentication flow events
-  trackSignupOpened?(): void
+  trackSignupOpened?(metadata?: SignupPageMetadata): void
+  trackLoginOpened?(metadata?: SignupPageMetadata): void
   trackAuth?(metadata: AuthMetadata): void
   trackUserLoggedIn?(): void
 
@@ -402,6 +411,7 @@ export type TelemetryDispatcher = Required<TelemetryProvider>
 export const TelemetryEvents = {
   // Authentication Flow
   USER_SIGN_UP_OPENED: 'app:user_sign_up_opened',
+  USER_LOGIN_OPENED: 'app:user_login_opened',
   USER_AUTH_COMPLETED: 'app:user_auth_completed',
   USER_LOGGED_IN: 'app:user_logged_in',
 
@@ -507,3 +517,4 @@ export type TelemetryEventProperties =
   | HelpCenterClosedMetadata
   | WorkflowCreatedMetadata
   | EnterLinearMetadata
+  | SignupPageMetadata
