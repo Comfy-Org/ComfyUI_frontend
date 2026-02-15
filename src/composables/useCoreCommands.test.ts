@@ -197,6 +197,7 @@ describe('useCoreCommands', () => {
       addSetting: vi.fn(),
       load: vi.fn(),
       set: vi.fn(),
+      setMany: vi.fn(),
       exists: vi.fn(),
       getDefaultValue: vi.fn(),
       isReady: true,

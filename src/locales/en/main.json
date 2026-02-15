@@ -68,6 +68,7 @@
     "icon": "Icon",
     "color": "Color",
     "error": "Error",
+    "enterSubgraph": "Enter Subgraph",
     "resizeFromBottomRight": "Resize from bottom-right corner",
     "resizeFromTopRight": "Resize from top-right corner",
     "resizeFromBottomLeft": "Resize from bottom-left corner",
@@ -93,6 +94,8 @@
     "openNewIssue": "Open New Issue",
     "showReport": "Show Report",
     "imageFailedToLoad": "Image failed to load",
+    "imageDoesNotExist": "Image does not exist",
+    "unknownFile": "Unknown file",
     "reconnecting": "Reconnecting",
     "reconnected": "Reconnected",
     "delete": "Delete",
@@ -815,8 +818,11 @@
       "viewJobHistory": "View active jobs (right-click to clear queue)",
       "noActiveJobs": "No active jobs",
       "stubClipTextEncode": "CLIP Text Encode:",
+      "jobCompleted": "Job completed",
+      "jobFailed": "Job failed",
       "jobsCompleted": "{count} job completed | {count} jobs completed",
       "jobsFailed": "{count} job failed | {count} jobs failed",
+      "jobsAddedToQueue": "{count} job added to queue | {count} jobs added to queue",
       "cancelJobTooltip": "Cancel job",
       "clearQueueTooltip": "Clear queue",
       "clearHistoryDialogTitle": "Clear your job queue history?",
@@ -897,7 +903,7 @@
     "theme": "Theme",
     "dark": "Dark",
     "light": "Light",
-    "manageExtensions": "Manage Extensions",
+    "manageExtensions": "Extensions",
     "customNodesManager": "Custom Nodes Manager",
     "settings": "Settings",
     "help": "Help",
@@ -1101,7 +1107,7 @@
     "theme": "Theme",
     "dark": "Dark",
     "light": "Light",
-    "manageExtensions": "Manage Extensions",
+    "manageExtensions": "Extensions",
     "settings": "Settings",
     "help": "Help",
     "queue": "Queue Panel"
@@ -1110,6 +1116,7 @@
     "initializingAlmostReady": "Initializing - Almost ready",
     "inQueue": "In queue...",
     "jobAddedToQueue": "Job added to queue",
+    "jobQueueing": "Job queueing",
     "completedIn": "Finished in {duration}",
     "jobMenu": {
       "openAsWorkflowNewTab": "Open as workflow in new tab",
@@ -1691,6 +1698,8 @@
   },
   "missingModelsDialog": {
     "doNotAskAgain": "Don't show this again",
+    "reEnableInSettings": "Re-enable in {link}",
+    "reEnableInSettingsLink": "Settings",
     "missingModels": "Missing Models",
     "missingModelsMessage": "When loading the graph, the following models were not found"
   },
@@ -1801,7 +1810,7 @@
     },
     "openIn3DViewer": "Open in 3D Viewer",
     "dropToLoad": "Drop 3D model to load",
-    "unsupportedFileType": "Unsupported file type (supports .gltf, .glb, .obj, .fbx, .stl)",
+    "unsupportedFileType": "Unsupported file type (supports .gltf, .glb, .obj, .fbx, .stl, .ply, .spz, .splat, .ksplat)",
     "uploadingModel": "Uploading 3D model..."
   },
   "imageCrop": {
@@ -2173,7 +2182,7 @@
     "subscribeNow": "Subscribe Now",
     "subscribeToComfyCloud": "Subscribe to Comfy Cloud",
     "workspaceNotSubscribed": "This workspace is not on a subscription",
-    "subscriptionRequiredMessage": "A subscription is required for members to run workflows on Cloud",
+    "subscriptionRequiredMessage": "A subscription is required for members to run workflows on Cloud and invite members",
     "contactOwnerToSubscribe": "Contact the workspace owner to subscribe",
     "description": "Choose the best plan for you",
     "descriptionWorkspace": "Choose the best plan for your workspace",
@@ -2261,7 +2270,7 @@
       "placeholder": "Dashboard workspace settings"
     },
     "members": {
-      "membersCount": "{count}/50 Members",
+      "membersCount": "{count}/{maxSeats} Members",
       "pendingInvitesCount": "{count} pending invite | {count} pending invites",
       "tabs": {
         "active": "Active",
@@ -2277,6 +2286,9 @@
         "revokeInvite": "Revoke invite",
         "removeMember": "Remove member"
       },
+      "upsellBannerSubscribe": "Subscribe to the Creator plan or above to invite team members to this workspace.",
+      "upsellBannerUpgrade": "Upgrade to the Creator plan or above to invite additional team members.",
+      "viewPlans": "View plans",
       "noInvites": "No pending invites",
       "noMembers": "No members",
       "personalWorkspaceMessage": "You can't invite other members to your personal workspace right now. To add members to a workspace,",
@@ -2314,6 +2326,14 @@
       "title": "Uninvite this person?",
       "message": "This member won't be able to join your workspace anymore. Their invite link will be invalidated.",
       "revoke": "Uninvite"
+    },
+    "inviteUpsellDialog": {
+      "titleNotSubscribed": "A subscription is required to invite members",
+      "titleSingleSeat": "Your current plan supports a single seat",
+      "messageNotSubscribed": "To add team members to this workspace, you need a Creator plan or above. The Standard plan supports only a single seat (the owner).",
+      "messageSingleSeat": "The Standard plan includes one seat for the workspace owner. To invite additional members, upgrade to the Creator plan or above to unlock multiple seats.",
+      "viewPlans": "View Plans",
+      "upgradeToCreator": "Upgrade to Creator"
     },
     "inviteMemberDialog": {
       "title": "Invite a person to this workspace",
@@ -2387,6 +2407,7 @@
       "placeholderImage": "Select image...",
       "placeholderAudio": "Select audio...",
       "placeholderVideo": "Select video...",
+      "placeholderMesh": "Select mesh...",
       "placeholderModel": "Select model...",
       "placeholderUnknown": "Select media..."
     },
@@ -2831,6 +2852,9 @@
       }
     }
   },
+  "vueNodesSlot": {
+    "iterative": "(Iterative)"
+  },
   "vueNodesBanner": {
     "title": "Introducing Nodes 2.0",
     "desc": "– More flexible workflows, powerful new widgets, built for extensibility",
@@ -2976,8 +3000,9 @@
       "message": "You have unsaved changes. Do you want to discard them and switch workspaces?"
     },
     "inviteAccepted": "Invite Accepted",
-    "addedToWorkspace": "You have been added to {workspaceName}",
-    "inviteFailed": "Failed to Accept Invite"
+    "addedToWorkspace": "You have been added to:",
+    "inviteFailed": "Failed to Accept Invite",
+    "viewWorkspace": "View workspace"
   },
   "workspaceAuth": {
     "errors": {

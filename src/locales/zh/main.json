@@ -820,6 +820,7 @@
     "enterBaseName": "输入基础名称",
     "enterNewName": "输入新名称",
     "enterNewNamePrompt": "输入新名称：",
+    "enterSubgraph": "进入子图",
     "error": "错误",
     "errorLoadingImage": "图片加载出错",
     "errorLoadingVideo": "视频加载出错",
@@ -846,6 +847,7 @@
     "hideLeftPanel": "隐藏左侧面板",
     "hideRightPanel": "隐藏右侧面板",
     "icon": "图标",
+    "imageDoesNotExist": "图像不存在",
     "imageFailedToLoad": "图像加载失败",
     "imagePreview": "图片预览 - 使用方向键切换图片",
     "imageUrl": "图片网址",
@@ -995,6 +997,7 @@
     "title": "标题",
     "triggerPhrase": "触发短语",
     "unknownError": "未知错误",
+    "unknownFile": "未知文件",
     "untitled": "无标题",
     "update": "更新",
     "updateAvailable": "有更新可用",
@@ -1740,7 +1743,9 @@
   "missingModelsDialog": {
     "doNotAskAgain": "不再显示此消息",
     "missingModels": "缺少模型",
-    "missingModelsMessage": "加载工作流时，未找到以下模型"
+    "missingModelsMessage": "加载工作流时，未找到以下模型",
+    "reEnableInSettings": "可在{link}中重新启用",
+    "reEnableInSettingsLink": "设置"
   },
   "missingNodes": {
     "cloud": {
@@ -2818,6 +2823,9 @@
   "vueNodesMigrationMainMenu": {
     "message": "在主菜单中随时切换回 Nodes 2.0"
   },
+  "vueNodesSlot": {
+    "iterative": "（迭代）"
+  },
   "welcome": {
     "getStarted": "开始使用",
     "title": "欢迎使用 ComfyUI"
@@ -2838,6 +2846,7 @@
       "placeholder": "请选择...",
       "placeholderAudio": "请选择音频...",
       "placeholderImage": "请选择图片...",
+      "placeholderMesh": "选择网格...",
       "placeholderModel": "请选择模型...",
       "placeholderUnknown": "请选择媒体...",
       "placeholderVideo": "请选择视频..."
@@ -2876,7 +2885,8 @@
     "unsavedChanges": {
       "message": "您有未保存的更改。是否要放弃这些更改并切换工作区？",
       "title": "未保存的更改"
-    }
+    },
+    "viewWorkspace": "查看工作区"
   },
   "workspaceAuth": {
     "errors": {
@@ -2925,6 +2935,14 @@
       "placeholder": "输入对方邮箱",
       "title": "邀请他人加入此工作区"
     },
+    "inviteUpsellDialog": {
+      "messageNotSubscribed": "如需添加团队成员到此工作区，您需要订阅 Creator 及以上套餐。Standard 套餐仅支持单人席位（所有者）。",
+      "messageSingleSeat": "Standard 套餐仅包含一个工作区所有者席位。如需邀请更多成员，请升级到 Creator 及以上套餐以解锁多席位功能。",
+      "titleNotSubscribed": "邀请成员需要订阅套餐",
+      "titleSingleSeat": "您当前的套餐仅支持单人席位",
+      "upgradeToCreator": "升级到 Creator",
+      "viewPlans": "查看套餐"
+    },
     "leaveDialog": {
       "leave": "离开",
       "message": "除非联系工作区所有者，否则您将无法重新加入。",
@@ -2950,7 +2968,10 @@
       "tabs": {
         "active": "已激活",
         "pendingCount": "待处理（{count}）"
-      }
+      },
+      "upsellBannerSubscribe": "订阅 Creator 及以上套餐以邀请团队成员加入此工作区。",
+      "upsellBannerUpgrade": "升级到 Creator 及以上套餐以邀请更多团队成员。",
+      "viewPlans": "查看套餐"
     },
     "menu": {
       "deleteWorkspace": "删除工作区",

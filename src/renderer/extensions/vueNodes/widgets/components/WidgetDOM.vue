@@ -34,5 +34,11 @@ onMounted(() => {
 whenever(() => !canvasStore.linearMode, mountWidgetElement)
 </script>
 <template>
-  <div ref="domEl" @pointerdown.stop @pointermove.stop @pointerup.stop />
+  <div
+    ref="domEl"
+    class="flex flex-col [&>*]:flex-1"
+    @pointerdown.stop
+    @pointermove.stop
+    @pointerup.stop
+  />
 </template>

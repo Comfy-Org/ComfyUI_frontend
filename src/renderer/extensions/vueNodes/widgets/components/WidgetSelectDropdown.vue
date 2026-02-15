@@ -4,6 +4,7 @@ import { computed, provide, ref, toRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { useTransformCompatOverlayProps } from '@/composables/useTransformCompatOverlayProps'
+import { SUPPORTED_EXTENSIONS_ACCEPT } from '@/extensions/core/load3d/constants'
 import { useAssetFilterOptions } from '@/platform/assets/composables/useAssetFilterOptions'
 import {
   filterItemByBaseModels,
@@ -44,6 +45,7 @@ interface Props {
   assetKind?: AssetKind
   allowUpload?: boolean
   uploadFolder?: ResultItemType
+  uploadSubfolder?: string
   isAssetMode?: boolean
   defaultLayoutMode?: LayoutMode
 }
@@ -57,7 +59,8 @@ provide(
 
 const modelValue = defineModel<string | undefined>({
   default(props: Props) {
-    return props.widget.options?.values?.[0] ?? ''
+    const values = props.widget.options?.values
+    return (Array.isArray(values) ? values[0] : undefined) ?? ''
   }
 })
 
@@ -143,7 +146,7 @@ const inputItems = computed<FormDropdownItem[]>(() => {
   }))
 })
 const outputItems = computed<FormDropdownItem[]>(() => {
-  if (!['image', 'video'].includes(props.assetKind ?? '')) return []
+  if (!['image', 'video', 'mesh'].includes(props.assetKind ?? '')) return []
 
   const outputs = new Set<string>()
 
@@ -152,7 +155,8 @@ const outputItems = computed<FormDropdownItem[]>(() => {
     task.flatOutputs.forEach((output) => {
       const isTargetType =
         (props.assetKind === 'image' && output.mediaType === 'images') ||
-        (props.assetKind === 'video' && output.mediaType === 'video')
+        (props.assetKind === 'video' && output.mediaType === 'video') ||
+        (props.assetKind === 'mesh' && output.is3D)
 
       if (output.type === 'output' && isTargetType) {
         const path = output.subfolder
@@ -250,9 +254,8 @@ const baseModelFilteredAssetItems = computed<FormDropdownItem[]>(() =>
 
 const allItems = computed<FormDropdownItem[]>(() => {
   if (props.isAssetMode && assetData) {
-    if (missingValueItem.value) {
-      return [missingValueItem.value, ...baseModelFilteredAssetItems.value]
-    }
+    // Cloud assets not in user's library shouldn't appear as search results (COM-14333).
+    // Unlike local mode, cloud users can't access files they don't own.
     return baseModelFilteredAssetItems.value
   }
   return [
@@ -278,6 +281,17 @@ const dropdownItems = computed<FormDropdownItem[]>(() => {
   }
 })
 
+/**
+ * Items used for display in the input field. In cloud mode, includes
+ * missing items so users can see their selected value even if not in library.
+ */
+const displayItems = computed<FormDropdownItem[]>(() => {
+  if (props.isAssetMode && assetData && missingValueItem.value) {
+    return [missingValueItem.value, ...baseModelFilteredAssetItems.value]
+  }
+  return dropdownItems.value
+})
+
 const mediaPlaceholder = computed(() => {
   const options = props.widget.options
 
@@ -292,6 +306,8 @@ const mediaPlaceholder = computed(() => {
       return t('widgets.uploadSelect.placeholderVideo')
     case 'audio':
       return t('widgets.uploadSelect.placeholderAudio')
+    case 'mesh':
+      return t('widgets.uploadSelect.placeholderMesh')
     case 'model':
       return t('widgets.uploadSelect.placeholderModel')
     case 'unknown':
@@ -316,6 +332,8 @@ const acceptTypes = computed(() => {
       return 'video/*'
     case 'audio':
       return 'audio/*'
+    case 'mesh':
+      return SUPPORTED_EXTENSIONS_ACCEPT
     default:
       return undefined // model or unknown
   }
@@ -324,18 +342,20 @@ const acceptTypes = computed(() => {
 const layoutMode = ref<LayoutMode>(props.defaultLayoutMode ?? 'grid')
 
 watch(
-  [modelValue, dropdownItems],
-  ([currentValue, _dropdownItems]) => {
+  [modelValue, displayItems],
+  ([currentValue]) => {
     if (currentValue === undefined) {
       selectedSet.value.clear()
       return
     }
 
-    const item = dropdownItems.value.find((item) => item.name === currentValue)
-    if (item) {
+    const item = displayItems.value.find((item) => item.name === currentValue)
+    if (!item) {
       selectedSet.value.clear()
-      selectedSet.value.add(item.id)
+      return
     }
+    selectedSet.value.clear()
+    selectedSet.value.add(item.id)
   },
   { immediate: true }
 )
@@ -365,6 +385,8 @@ const uploadFile = async (
   const body = new FormData()
   body.append('image', file)
   if (isPasted) body.append('subfolder', 'pasted')
+  else if (props.uploadSubfolder)
+    body.append('subfolder', props.uploadSubfolder)
   if (formFields.type) body.append('type', formFields.type)
 
   const resp = await api.fetchApi('/upload/image', {
@@ -451,6 +473,7 @@ function getMediaUrl(
       v-model:ownership-selected="ownershipSelected"
       v-model:base-model-selected="baseModelSelected"
       :items="dropdownItems"
+      :display-items="displayItems"
       :placeholder="mediaPlaceholder"
       :multiple="false"
       :uploadable

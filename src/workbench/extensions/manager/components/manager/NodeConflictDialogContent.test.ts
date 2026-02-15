@@ -6,7 +6,23 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, ref } from 'vue'
 
 import NodeConflictDialogContent from '@/workbench/extensions/manager/components/manager/NodeConflictDialogContent.vue'
-import type { ConflictDetectionResult } from '@/workbench/extensions/manager/types/conflictDetectionTypes'
+import type {
+  ConflictDetail,
+  ConflictDetectionResult
+} from '@/workbench/extensions/manager/types/conflictDetectionTypes'
+
+// Type for component VM
+interface NodeConflictDialogVM {
+  importFailedExpanded: boolean
+  conflictsExpanded: boolean
+  extensionsExpanded: boolean
+  allConflictDetails: ConflictDetail[]
+  importFailedConflicts: string[]
+}
+
+function getVM(wrapper: ReturnType<typeof mount>): NodeConflictDialogVM {
+  return wrapper.vm as Partial<NodeConflictDialogVM> as NodeConflictDialogVM
+}
 
 // Mock getConflictMessage utility
 vi.mock('@/utils/conflictMessageUtil', () => ({
@@ -288,25 +304,28 @@ describe('NodeConflictDialogContent', () => {
       await importFailedHeader.trigger('click')
 
       // Verify import failed panel is open
-      expect((wrapper.vm as any).importFailedExpanded).toBe(true)
-      expect((wrapper.vm as any).conflictsExpanded).toBe(false)
-      expect((wrapper.vm as any).extensionsExpanded).toBe(false)
+      const vm1 = getVM(wrapper)
+      expect(vm1.importFailedExpanded).toBe(true)
+      expect(vm1.conflictsExpanded).toBe(false)
+      expect(vm1.extensionsExpanded).toBe(false)
 
       // Open conflicts panel
       await conflictsHeader.trigger('click')
 
       // Verify conflicts panel is open and others are closed
-      expect((wrapper.vm as any).importFailedExpanded).toBe(false)
-      expect((wrapper.vm as any).conflictsExpanded).toBe(true)
-      expect((wrapper.vm as any).extensionsExpanded).toBe(false)
+      const vm2 = getVM(wrapper)
+      expect(vm2.importFailedExpanded).toBe(false)
+      expect(vm2.conflictsExpanded).toBe(true)
+      expect(vm2.extensionsExpanded).toBe(false)
 
       // Open extensions panel
       await extensionsHeader.trigger('click')
 
       // Verify extensions panel is open and others are closed
-      expect((wrapper.vm as any).importFailedExpanded).toBe(false)
-      expect((wrapper.vm as any).conflictsExpanded).toBe(false)
-      expect((wrapper.vm as any).extensionsExpanded).toBe(true)
+      const vm3 = getVM(wrapper)
+      expect(vm3.importFailedExpanded).toBe(false)
+      expect(vm3.conflictsExpanded).toBe(false)
+      expect(vm3.extensionsExpanded).toBe(true)
     })
   })
 
@@ -451,10 +470,12 @@ describe('NodeConflictDialogContent', () => {
       const wrapper = createWrapper()
 
       // Verify that import_failed conflicts are filtered out from main conflicts
-      const vm = wrapper.vm as any
+      const vm = getVM(wrapper)
       expect(vm.allConflictDetails).toHaveLength(3) // Should not include import_failed
       expect(
-        vm.allConflictDetails.every((c: any) => c.type !== 'import_failed')
+        vm.allConflictDetails.every(
+          (c: ConflictDetail) => c.type !== 'import_failed'
+        )
       ).toBe(true)
     })
 
@@ -463,7 +484,7 @@ describe('NodeConflictDialogContent', () => {
       const wrapper = createWrapper()
 
       // Verify that only import_failed packages are extracted
-      const vm = wrapper.vm as any
+      const vm = getVM(wrapper)
       expect(vm.importFailedConflicts).toHaveLength(1)
       expect(vm.importFailedConflicts[0]).toBe('Test Package 3')
     })

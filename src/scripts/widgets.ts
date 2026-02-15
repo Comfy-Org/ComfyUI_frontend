@@ -273,8 +273,8 @@ export function addValueControlWidgets(
     }
   }
 
-  valueControl.beforeQueued = () => {
-    if (controlValueRunBefore()) {
+  valueControl.beforeQueued = ({ isPartialExecution } = {}) => {
+    if (!isPartialExecution && controlValueRunBefore()) {
       // Don't run on first execution
       if (valueControl[HAS_EXECUTED]) {
         applyWidgetControl()
@@ -283,8 +283,8 @@ export function addValueControlWidgets(
     valueControl[HAS_EXECUTED] = true
   }
 
-  valueControl.afterQueued = () => {
-    if (!controlValueRunBefore()) {
+  valueControl.afterQueued = ({ isPartialExecution } = {}) => {
+    if (!isPartialExecution && !controlValueRunBefore()) {
       applyWidgetControl()
     }
   }

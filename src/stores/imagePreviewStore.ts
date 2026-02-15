@@ -144,7 +144,7 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
       if (existingOutput && outputs) {
         for (const k in outputs) {
           const existingValue = existingOutput[k]
-          const newValue = (outputs as Record<NodeLocatorId, any>)[k]
+          const newValue = (outputs as Record<NodeLocatorId, unknown>)[k]
 
           if (Array.isArray(existingValue) && Array.isArray(newValue)) {
             existingOutput[k] = existingValue.concat(newValue)
@@ -152,7 +152,7 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
             existingOutput[k] = newValue
           }
         }
-        nodeOutputs.value[nodeLocatorId] = existingOutput
+        nodeOutputs.value[nodeLocatorId] = { ...existingOutput }
         return
       }
     }
@@ -365,7 +365,7 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
     outputs: Record<string, ExecutedWsMessage['output']>
   ) {
     app.nodeOutputs = outputs
-    nodeOutputs.value = outputs
+    nodeOutputs.value = { ...outputs }
   }
 
   function updateNodeImages(node: LGraphNode) {

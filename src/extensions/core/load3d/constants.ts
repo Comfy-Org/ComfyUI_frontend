@@ -14,3 +14,5 @@ export const SUPPORTED_EXTENSIONS = new Set([
   '.ply',
   '.ksplat'
 ])
+
+export const SUPPORTED_EXTENSIONS_ACCEPT = [...SUPPORTED_EXTENSIONS].join(',')

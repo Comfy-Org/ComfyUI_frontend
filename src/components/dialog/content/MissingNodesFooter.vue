@@ -1,45 +1,74 @@
 <template>
-  <!-- Cloud mode: Learn More + Got It buttons -->
-  <div
-    v-if="isCloud"
-    class="flex w-full items-center justify-between gap-2 py-2 px-4"
-  >
-    <Button
-      variant="textonly"
-      size="sm"
-      as="a"
-      href="https://www.comfy.org/cloud"
-      target="_blank"
-      rel="noopener noreferrer"
-    >
-      <i class="icon-[lucide--info]"></i>
-      <span>{{ $t('missingNodes.cloud.learnMore') }}</span>
-    </Button>
-    <Button variant="secondary" size="md" @click="handleSkipClick">{{
-      $t('missingNodes.cloud.gotIt')
-    }}</Button>
-  </div>
+  <div class="flex w-full flex-col gap-2 py-2 px-4">
+    <div class="flex flex-col gap-1 text-sm text-muted-foreground">
+      <div class="flex items-center gap-1">
+        <input
+          id="doNotAskAgainNodes"
+          v-model="doNotAskAgain"
+          type="checkbox"
+          class="h-4 w-4 cursor-pointer"
+        />
+        <label for="doNotAskAgainNodes">{{
+          $t('missingModelsDialog.doNotAskAgain')
+        }}</label>
+      </div>
+      <i18n-t
+        v-if="doNotAskAgain"
+        keypath="missingModelsDialog.reEnableInSettings"
+        tag="span"
+        class="text-sm text-muted-foreground ml-6"
+      >
+        <template #link>
+          <Button
+            variant="textonly"
+            class="underline cursor-pointer p-0 text-sm text-muted-foreground hover:bg-transparent"
+            @click="openShowMissingNodesSetting"
+          >
+            {{ $t('missingModelsDialog.reEnableInSettingsLink') }}
+          </Button>
+        </template>
+      </i18n-t>
+    </div>
 
-  <!-- OSS mode: Skip + Install Missing Nodes -->
-  <div v-else-if="showManagerButtons" class="flex justify-end gap-2 py-2 px-4">
-    <Button variant="textonly" size="md" @click="handleSkipClick">
-      {{ $t('nodeReplacement.skipForNow') }}
-    </Button>
-    <PackInstallButton
-      v-if="showInstallAllButton && hasNonReplaceableNodes"
-      type="secondary"
-      size="md"
-      :disabled="
-        isLoading || !!error || missingNodePacks.length === 0 || isInstalling
-      "
-      :is-loading="isLoading"
-      :node-packs="missingNodePacks"
-      :label="
-        isLoading
-          ? $t('manager.gettingInfo')
-          : $t('nodeReplacement.installMissingNodes')
-      "
-    />
+    <!-- Cloud mode: Learn More + Got It buttons -->
+    <div v-if="isCloud" class="flex w-full items-center justify-between gap-2">
+      <Button
+        variant="textonly"
+        size="sm"
+        as="a"
+        href="https://www.comfy.org/cloud"
+        target="_blank"
+        rel="noopener noreferrer"
+      >
+        <i class="icon-[lucide--info]"></i>
+        <span>{{ $t('missingNodes.cloud.learnMore') }}</span>
+      </Button>
+      <Button variant="secondary" size="md" @click="handleGotItClick">{{
+        $t('missingNodes.cloud.gotIt')
+      }}</Button>
+    </div>
+
+    <!-- OSS mode: Open Manager + Install All buttons -->
+    <div v-else-if="showManagerButtons" class="flex justify-end gap-1">
+      <Button variant="textonly" @click="openManager">{{
+        $t('g.openManager')
+      }}</Button>
+      <PackInstallButton
+        v-if="showInstallAllButton"
+        type="secondary"
+        size="md"
+        :disabled="
+          isLoading || !!error || missingNodePacks.length === 0 || isInstalling
+        "
+        :is-loading="isLoading"
+        :node-packs="missingNodePacks"
+        :label="
+          isLoading
+            ? $t('manager.gettingInfo')
+            : $t('manager.installAllMissingNodes')
+        "
+      />
+    </div>
   </div>
 </template>
 
@@ -49,7 +78,9 @@ import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
 import { isCloud } from '@/platform/distribution/types'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
 import { useDialogStore } from '@/stores/dialogStore'
 import type { MissingNodeType } from '@/types/comfy'
 import PackInstallButton from '@/workbench/extensions/manager/components/manager/button/PackInstallButton.vue'
@@ -64,8 +95,19 @@ const { missingNodeTypes } = defineProps<{
 const dialogStore = useDialogStore()
 const { t } = useI18n()
 
-const handleSkipClick = () => {
+const doNotAskAgain = ref(false)
+
+watch(doNotAskAgain, (value) => {
+  void useSettingStore().set('Comfy.Workflow.ShowMissingNodesWarning', !value)
+})
+
+const handleGotItClick = () => {
   dialogStore.closeDialog({ key: 'global-missing-nodes' })
+}
+
+function openShowMissingNodesSetting() {
+  dialogStore.closeDialog({ key: 'global-missing-nodes' })
+  useSettingsDialog().show(undefined, 'Comfy.Workflow.ShowMissingNodesWarning')
 }
 
 const { missingNodePacks, isLoading, error } = useMissingNodes()

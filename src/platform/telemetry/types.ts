@@ -281,18 +281,28 @@ export interface PageViewMetadata {
   [key: string]: unknown
 }
 
-export interface BeginCheckoutMetadata extends Record<string, unknown> {
+export interface CheckoutAttributionMetadata {
+  ga_client_id?: string
+  ga_session_id?: string
+  ga_session_number?: string
+  im_ref?: string
+  utm_source?: string
+  utm_medium?: string
+  utm_campaign?: string
+  utm_term?: string
+  utm_content?: string
+  gclid?: string
+  gbraid?: string
+  wbraid?: string
+}
+
+export interface BeginCheckoutMetadata
+  extends Record<string, unknown>, CheckoutAttributionMetadata {
   user_id: string
   tier: TierKey
   cycle: BillingCycle
   checkout_type: 'new' | 'change'
   previous_tier?: TierKey
-  ga_client_id?: string
-  ga_session_id?: string
-  ga_session_number?: string
-  gclid?: string
-  gbraid?: string
-  wbraid?: string
 }
 
 /**

@@ -53,7 +53,9 @@ describe('useWorkspaceSwitch', () => {
       id: 'workspace-1',
       name: 'Test Workspace',
       type: 'personal',
-      role: 'owner'
+      role: 'owner',
+      created_at: '2026-01-01T00:00:00Z',
+      joined_at: '2026-01-01T00:00:00Z'
     }
     mockModifiedWorkflows.length = 0
   })

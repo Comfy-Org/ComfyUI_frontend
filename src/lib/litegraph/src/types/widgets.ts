@@ -1,10 +1,19 @@
 import type { Bounds } from '@/renderer/core/layout/types'
 
 import type { CanvasColour, Point, RequiredProps, Size } from '../interfaces'
-import type { CanvasPointer, LGraphCanvas, LGraphNode } from '../litegraph'
+import type {
+  CanvasPointer,
+  LGraphCanvas,
+  LGraphNode,
+  NodeId
+} from '../litegraph'
 import type { CanvasPointerEvent } from './events'
 
-export interface IWidgetOptions<TValues = unknown[]> {
+export interface NodeBindable {
+  setNodeId(nodeId: NodeId): void
+}
+
+export interface IWidgetOptions<TValues = unknown> {
   on?: string
   off?: string
   max?: number
@@ -301,7 +310,7 @@ export type TWidgetValue = IWidget['value']
 export interface IBaseWidget<
   TValue = boolean | number | string | object | undefined,
   TType extends string = string,
-  TOptions extends IWidgetOptions<unknown> = IWidgetOptions<unknown>
+  TOptions extends IWidgetOptions = IWidgetOptions
 > {
   [symbol: symbol]: boolean
 

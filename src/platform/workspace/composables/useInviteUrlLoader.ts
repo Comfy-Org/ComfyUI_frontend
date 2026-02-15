@@ -81,12 +81,17 @@ export function useInviteUrlLoader() {
       toast.add({
         severity: 'success',
         summary: t('workspace.inviteAccepted'),
-        detail: t(
-          'workspace.addedToWorkspace',
-          { workspaceName: result.workspaceName },
-          { escapeParameter: false }
-        ),
-        life: 5000
+        detail: {
+          text: t(
+            'workspace.addedToWorkspace',
+            { workspaceName: result.workspaceName },
+            { escapeParameter: false }
+          ),
+          workspaceName: result.workspaceName,
+          workspaceId: result.workspaceId
+        },
+        group: 'invite-accepted',
+        closable: true
       })
     } catch (error) {
       toast.add({

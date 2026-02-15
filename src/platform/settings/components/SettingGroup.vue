@@ -9,6 +9,7 @@
     <div
       v-for="setting in group.settings.filter((s) => !s.deprecated)"
       :key="setting.id"
+      :data-setting-id="setting.id"
       class="setting-item mb-4"
     >
       <SettingItem :setting="setting" />
