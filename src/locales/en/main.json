@@ -2953,7 +2953,9 @@
     "nodesNoneDesc": "NO NODES",
     "fallbackGroupTitle": "Group",
     "fallbackNodeTitle": "Node",
-    "hideAdvancedInputsButton": "Hide advanced inputs"
+    "hideAdvancedInputsButton": "Hide advanced inputs",
+    "resetToDefault": "Reset to default",
+    "resetAllParameters": "Reset all parameters"
   },
   "help": {
     "recentReleases": "Recent releases",
