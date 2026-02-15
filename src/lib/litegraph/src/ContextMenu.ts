@@ -278,11 +278,13 @@ export class ContextMenu<TValue = unknown> {
       if (typeof value === 'string') {
         element.textContent = label
       } else {
-        const text = value?.title ?? label
-        if (value?.content !== undefined && value.content !== text) {
-          element.innerHTML = sanitizeMenuHTML(value.content)
+        // Use innerHTML for content that contains HTML tags, textContent otherwise
+        const hasHtmlContent =
+          value?.content !== undefined && /<[a-z][\s\S]*>/i.test(value.content)
+        if (hasHtmlContent) {
+          element.innerHTML = sanitizeMenuHTML(value.content!)
         } else {
-          element.textContent = text
+          element.textContent = value?.title ?? label
         }
 
         if (value.disabled) {
