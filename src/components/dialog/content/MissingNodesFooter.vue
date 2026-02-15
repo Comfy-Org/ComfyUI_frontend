@@ -54,7 +54,7 @@
         $t('g.openManager')
       }}</Button>
       <PackInstallButton
-        v-if="showInstallAllButton"
+        v-if="showInstallAllButton && hasNonReplaceableNodes"
         type="secondary"
         size="md"
         :disabled="
@@ -82,10 +82,15 @@ import { useSettingStore } from '@/platform/settings/settingStore'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
 import { useDialogStore } from '@/stores/dialogStore'
+import type { MissingNodeType } from '@/types/comfy'
 import PackInstallButton from '@/workbench/extensions/manager/components/manager/button/PackInstallButton.vue'
 import { useMissingNodes } from '@/workbench/extensions/manager/composables/nodePack/useMissingNodes'
 import { useManagerState } from '@/workbench/extensions/manager/composables/useManagerState'
 import { useComfyManagerStore } from '@/workbench/extensions/manager/stores/comfyManagerStore'
+
+const { missingNodeTypes } = defineProps<{
+  missingNodeTypes?: MissingNodeType[]
+}>()
 
 const dialogStore = useDialogStore()
 const { t } = useI18n()
@@ -127,6 +132,14 @@ const showManagerButtons = computed(() => {
 const showInstallAllButton = computed(() => {
   return managerState.shouldShowInstallButton.value
 })
+
+const hasNonReplaceableNodes = computed(
+  () =>
+    missingNodeTypes?.some(
+      (n) =>
+        typeof n === 'string' || (typeof n === 'object' && !n.isReplaceable)
+    ) ?? false
+)
 
 // Track whether missingNodePacks was ever non-empty (i.e. there were packs to install)
 const hadMissingPacks = ref(false)
