@@ -49,6 +49,8 @@ export function usePainter(nodeId: string, options: UsePainterOptions) {
   let strokeProcessor: StrokeProcessor | null = null
   let lastPoint: Point | null = null
 
+  let cachedRect: DOMRect | null = null
+
   let strokeCanvas: HTMLCanvasElement | null = null
   let strokeCtx: CanvasRenderingContext2D | null = null
 
@@ -174,10 +176,15 @@ export function usePainter(nodeId: string, options: UsePainterOptions) {
     )
   }
 
+  function cacheCanvasRect() {
+    const el = canvasEl.value
+    if (el) cachedRect = el.getBoundingClientRect()
+  }
+
   function getCanvasPoint(e: PointerEvent): Point | null {
     const el = canvasEl.value
     if (!el) return null
-    const rect = el.getBoundingClientRect()
+    const rect = cachedRect ?? el.getBoundingClientRect()
     return {
       x: ((e.clientX - rect.left) / rect.width) * el.width,
       y: ((e.clientY - rect.top) / rect.height) * el.height
@@ -398,6 +405,7 @@ export function usePainter(nodeId: string, options: UsePainterOptions) {
     isDrawing = false
     strokeProcessor = null
     lastPoint = null
+    cachedRect = null
   }
 
   function resizeCanvas() {
@@ -436,6 +444,7 @@ export function usePainter(nodeId: string, options: UsePainterOptions) {
   function handlePointerDown(e: PointerEvent) {
     if (e.button !== 0) return
     ;(e.target as HTMLElement).setPointerCapture(e.pointerId)
+    cacheCanvasRect()
     updateCursorPos(e)
     startStroke(e)
   }
