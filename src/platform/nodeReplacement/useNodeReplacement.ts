@@ -10,11 +10,7 @@ import { app, sanitizeNodeName } from '@/scripts/app'
 import type { MissingNodeType } from '@/types/comfy'
 import { collectAllNodes } from '@/utils/graphTraversalUtil'
 
-/**
- * Match a placeholder node to a selected missing node type.
- * Placeholder nodes have sanitized type strings, so we compare
- * against the sanitized version of the original type.
- */
+/** Compares sanitized type strings to match placeholder → missing node type. */
 function findMatchingType(
   node: LGraphNode,
   selectedTypes: MissingNodeType[]
@@ -27,10 +23,6 @@ function findMatchingType(
   return undefined
 }
 
-/**
- * Transfer an input connection from an old node slot to a new node slot.
- * Updates the link's target to point at the new node's input.
- */
 function transferInputConnection(
   oldNode: LGraphNode,
   oldInputName: string,
@@ -52,12 +44,9 @@ function transferInputConnection(
   link.target_id = newNode.id
   link.target_slot = newSlotIdx
   newNode.inputs[newSlotIdx].link = linkId
+  oldNode.inputs[oldSlotIdx].link = null
 }
 
-/**
- * Transfer all output connections from an old node's output slot
- * to a new node's output slot.
- */
 function transferOutputConnections(
   oldNode: LGraphNode,
   oldOutputIdx: number,
@@ -76,12 +65,10 @@ function transferOutputConnections(
     link.origin_slot = newOutputIdx
   }
   newNode.outputs[newOutputIdx].links = [...oldLinks]
+  oldNode.outputs[oldOutputIdx].links = []
 }
 
-/**
- * Transfer a widget value from old serialized data to a new node's widget
- * using old_widget_ids as the name→index lookup for positional widget values.
- */
+/** Uses old_widget_ids as name→index lookup into widgets_values. */
 function transferWidgetValue(
   serialized: ISerialisedNode,
   oldWidgetIds: string[] | null,
@@ -104,9 +91,6 @@ function transferWidgetValue(
   }
 }
 
-/**
- * Set a fixed value on a new node's widget.
- */
 function applySetValue(
   newNode: LGraphNode,
   inputName: string,
@@ -119,38 +103,49 @@ function applySetValue(
   }
 }
 
-/**
- * Check if a new_id uses dot-notation (e.g. "images.image0", "resize_type.multiplier").
- * These represent Autogrow or DynamicCombo sub-inputs that require special handling.
- */
 function isDotNotation(id: string): boolean {
   return id.includes('.')
 }
 
-/**
- * Replace a node using configure+copy (for simple replacements with no mapping).
- */
-function replaceSimple(
-  node: LGraphNode,
-  newNode: LGraphNode,
-  newType: string,
-  nodeGraph: LGraph,
-  idx: number
-): void {
-  nodeGraph._nodes[idx] = newNode
-  newNode.configure(node.serialize())
-  newNode.type = newType
-  newNode.has_errors = false
-  delete newNode.last_serialization
-  newNode.graph = nodeGraph
-  nodeGraph._nodes_by_id[newNode.id] = newNode
-  if (node.inputs) newNode.inputs = [...node.inputs]
-  if (node.outputs) newNode.outputs = [...node.outputs]
+/** Auto-generates identity mapping by name for same-structure replacements without backend mapping. */
+function generateDefaultMapping(
+  serialized: ISerialisedNode,
+  newNode: LGraphNode
+): Pick<
+  NodeReplacement,
+  'input_mapping' | 'output_mapping' | 'old_widget_ids'
+> {
+  const oldInputNames = new Set(serialized.inputs?.map((i) => i.name) ?? [])
+
+  const inputMapping: { old_id: string; new_id: string }[] = []
+  for (const newInput of newNode.inputs ?? []) {
+    if (oldInputNames.has(newInput.name)) {
+      inputMapping.push({ old_id: newInput.name, new_id: newInput.name })
+    }
+  }
+
+  const oldWidgetIds = (newNode.widgets ?? []).map((w) => w.name)
+  for (const widget of newNode.widgets ?? []) {
+    if (!oldInputNames.has(widget.name)) {
+      inputMapping.push({ old_id: widget.name, new_id: widget.name })
+    }
+  }
+
+  const outputMapping: { old_idx: number; new_idx: number }[] = []
+  for (const [oldIdx, oldOutput] of (serialized.outputs ?? []).entries()) {
+    const newIdx = newNode.outputs?.findIndex((o) => o.name === oldOutput.name)
+    if (newIdx != null && newIdx !== -1) {
+      outputMapping.push({ old_idx: oldIdx, new_idx: newIdx })
+    }
+  }
+
+  return {
+    input_mapping: inputMapping.length > 0 ? inputMapping : null,
+    output_mapping: outputMapping.length > 0 ? outputMapping : null,
+    old_widget_ids: oldWidgetIds.length > 0 ? oldWidgetIds : null
+  }
 }
 
-/**
- * Replace a node using input/output mapping for accurate connection remapping.
- */
 function replaceWithMapping(
   node: LGraphNode,
   newNode: LGraphNode,
@@ -158,7 +153,6 @@ function replaceWithMapping(
   nodeGraph: LGraph,
   idx: number
 ): void {
-  // Copy identity and layout from old node
   newNode.id = node.id
   newNode.pos = [...node.pos]
   newNode.size = [...node.size]
@@ -166,34 +160,24 @@ function replaceWithMapping(
   newNode.mode = node.mode
   if (node.flags) newNode.flags = { ...node.flags }
 
-  // Register in graph
   nodeGraph._nodes[idx] = newNode
   newNode.graph = nodeGraph
   nodeGraph._nodes_by_id[newNode.id] = newNode
 
   const serialized = node.last_serialization ?? node.serialize()
 
-  // Preserve user-defined title and properties
   if (serialized.title != null) newNode.title = serialized.title
   if (serialized.properties) {
     newNode.properties = { ...serialized.properties }
+    if ('Node name for S&R' in newNode.properties) {
+      newNode.properties['Node name for S&R'] = replacement.new_node_id
+    }
   }
 
-  // Apply input mapping
   if (replacement.input_mapping) {
     for (const inputMap of replacement.input_mapping) {
       if ('old_id' in inputMap) {
-        // Skip dot-notation inputs (Autogrow/DynamicCombo) - backend handles these
-        if (isDotNotation(inputMap.new_id)) {
-          transferWidgetValue(
-            serialized,
-            replacement.old_widget_ids,
-            inputMap.old_id,
-            newNode,
-            inputMap.new_id
-          )
-          continue
-        }
+        if (isDotNotation(inputMap.new_id)) continue // Autogrow/DynamicCombo
         transferInputConnection(
           node,
           inputMap.old_id,
@@ -216,7 +200,6 @@ function replaceWithMapping(
     }
   }
 
-  // Apply output mapping
   if (replacement.output_mapping) {
     for (const outMap of replacement.output_mapping) {
       transferOutputConnections(
@@ -235,20 +218,10 @@ function replaceWithMapping(
 export function useNodeReplacement() {
   const toastStore = useToastStore()
 
-  /**
-   * Replace selected missing nodes in-place on the graph.
-   * For nodes with input/output mapping, connections and widget values
-   * are remapped accurately. For simple replacements (no mapping),
-   * the existing configure+copy approach is used.
-   *
-   * @param selectedTypes Missing node types selected for replacement
-   * @returns Array of original type names that were successfully replaced
-   */
   function replaceNodesInPlace(selectedTypes: MissingNodeType[]): string[] {
     const replacedTypes: string[] = []
     const graph = app.rootGraph
 
-    // Track change for undo support
     const changeTracker =
       useWorkflowStore().activeWorkflow?.changeTracker ?? null
     changeTracker?.beforeChange()
@@ -277,11 +250,16 @@ export function useNodeReplacement() {
           replacement.input_mapping != null ||
           replacement.output_mapping != null
 
-        if (hasMapping) {
-          replaceWithMapping(node, newNode, replacement, nodeGraph, idx)
-        } else {
-          replaceSimple(node, newNode, replacement.new_node_id, nodeGraph, idx)
-        }
+        const effectiveReplacement = hasMapping
+          ? replacement
+          : {
+              ...replacement,
+              ...generateDefaultMapping(
+                node.last_serialization ?? node.serialize(),
+                newNode
+              )
+            }
+        replaceWithMapping(node, newNode, effectiveReplacement, nodeGraph, idx)
 
         if (!replacedTypes.includes(match.type)) {
           replacedTypes.push(match.type)

@@ -167,7 +167,7 @@
 
         <!-- Non-replaceable nodes list -->
         <div
-          class="flex flex-col rounded-lg bg-secondary-background scrollbar-custom"
+          class="flex flex-col overflow-y-auto rounded-lg bg-secondary-background scrollbar-custom"
         >
           <div
             v-for="node in nonReplaceableNodes"
@@ -237,7 +237,7 @@ import type { MissingNodeType } from '@/types/comfy'
 import { cn } from '@/utils/tailwindUtil'
 import { useMissingNodes } from '@/workbench/extensions/manager/composables/nodePack/useMissingNodes'
 
-const props = defineProps<{
+const { missingNodeTypes } = defineProps<{
   missingNodeTypes: MissingNodeType[]
 }>()
 
@@ -257,7 +257,7 @@ const replacedTypes = ref<Set<string>>(new Set())
 
 const uniqueNodes = computed<ProcessedNode[]>(() => {
   const seenTypes = new Set<string>()
-  return props.missingNodeTypes
+  return missingNodeTypes
     .filter((node) => {
       const type = typeof node === 'object' ? node.type : node
       if (seenTypes.has(type)) return false
@@ -296,7 +296,7 @@ const selectedTypes = ref(new Set(pendingNodes.value.map((n) => n.label)))
 const isAllSelected = computed(
   () =>
     pendingNodes.value.length > 0 &&
-    selectedTypes.value.size === pendingNodes.value.length
+    pendingNodes.value.every((n) => selectedTypes.value.has(n.label))
 )
 
 const isSomeSelected = computed(
@@ -323,7 +323,7 @@ function toggleSelectAll() {
 }
 
 function handleReplaceSelected() {
-  const selected = props.missingNodeTypes.filter((node) => {
+  const selected = missingNodeTypes.filter((node) => {
     const type = typeof node === 'object' ? node.type : node
     return selectedTypes.value.has(type)
   })

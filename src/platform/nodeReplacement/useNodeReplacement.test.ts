@@ -15,7 +15,7 @@ vi.mock('@/lib/litegraph/src/litegraph', () => ({
 
 vi.mock('@/scripts/app', () => ({
   app: { rootGraph: null },
-  sanitizeNodeName: (name: string) => name.replace(/[^\w]/g, '')
+  sanitizeNodeName: (name: string) => name.replace(/[&<>"'`=]/g, '')
 }))
 
 vi.mock('@/utils/graphTraversalUtil', () => ({
@@ -103,6 +103,8 @@ function createPlaceholderNode(
       flags: {},
       order: 0,
       mode: 0,
+      inputs: inputs.map((i) => ({ ...i, type: 'IMAGE' })),
+      outputs: outputs.map((o) => ({ ...o, type: 'IMAGE' })),
       widgets_values: []
     },
     inputs: inputs.map((i) => ({ ...i, type: 'IMAGE' })),
@@ -174,7 +176,7 @@ describe('useNodeReplacement', () => {
       expect(result).toEqual([])
     })
 
-    it('should use simple replacement when no mapping exists', () => {
+    it('should use default mapping when no explicit mapping exists', () => {
       const placeholder = createPlaceholderNode(1, 'Load3DAnimation')
       const graph = createMockGraph([placeholder])
       placeholder.graph = graph
@@ -197,8 +199,8 @@ describe('useNodeReplacement', () => {
       ])
 
       expect(result).toEqual(['Load3DAnimation'])
-      expect(newNode.configure).toHaveBeenCalled()
-      expect(newNode.type).toBe('Load3D')
+      expect(newNode.configure).not.toHaveBeenCalled()
+      expect(newNode.id).toBe(1)
       expect(newNode.has_errors).toBe(false)
     })
 
@@ -392,7 +394,7 @@ describe('useNodeReplacement', () => {
         [],
         []
       )
-      // Note: sanitizeNodeName('ConditioningAverage ') removes trailing space
+      // sanitizeNodeName strips & from type names (HTML entity chars)
       placeholder2.type = 'ConditioningAverage'
 
       const graph = createMockGraph([placeholder1, placeholder2])
@@ -417,9 +419,9 @@ describe('useNodeReplacement', () => {
           input_mapping: null,
           output_mapping: null
         }),
-        makeMissingNodeType('ConditioningAverage ', {
+        makeMissingNodeType('ConditioningAverage&', {
           new_node_id: 'ConditioningAverage',
-          old_node_id: 'ConditioningAverage ',
+          old_node_id: 'ConditioningAverage&',
           old_widget_ids: null,
           input_mapping: null,
           output_mapping: null
@@ -428,7 +430,7 @@ describe('useNodeReplacement', () => {
 
       expect(result).toHaveLength(2)
       expect(result).toContain('Load3DAnimation')
-      expect(result).toContain('ConditioningAverage ')
+      expect(result).toContain('ConditioningAverage&')
     })
 
     it('should copy position and identity for mapped replacements', () => {
@@ -471,6 +473,153 @@ describe('useNodeReplacement', () => {
       expect(newNode.pos).toEqual([300, 400])
       expect(newNode.size).toEqual([250, 150])
       expect(graph._nodes[0]).toBe(newNode)
+    })
+
+    it('should transfer all widget values for ImageScaleBy with real workflow data', () => {
+      const placeholder = createPlaceholderNode(
+        12,
+        'ImageScaleBy',
+        [{ name: 'image', link: 2 }],
+        [{ name: 'IMAGE', links: [3, 4] }]
+      )
+      // Real workflow data: widgets_values: ["lanczos", 2.0]
+      placeholder.last_serialization!.widgets_values = ['lanczos', 2.0]
+
+      const graph = createMockGraph([placeholder])
+      placeholder.graph = graph
+      Object.assign(app, { rootGraph: graph })
+
+      vi.mocked(collectAllNodes).mockReturnValue([placeholder])
+
+      const newNode = createNewNode(
+        [{ name: 'input', link: null }],
+        [],
+        [
+          { name: 'resize_type', value: '' },
+          { name: 'scale_method', value: '' }
+        ]
+      )
+      vi.mocked(LiteGraph.createNode).mockReturnValue(newNode)
+
+      const { replaceNodesInPlace } = useNodeReplacement()
+      replaceNodesInPlace([
+        makeMissingNodeType('ImageScaleBy', {
+          new_node_id: 'ResizeImageMaskNode',
+          old_node_id: 'ImageScaleBy',
+          old_widget_ids: ['upscale_method', 'scale_by'],
+          input_mapping: [
+            { new_id: 'input', old_id: 'image' },
+            { new_id: 'resize_type', set_value: 'scale by multiplier' },
+            { new_id: 'resize_type.multiplier', old_id: 'scale_by' },
+            { new_id: 'scale_method', old_id: 'upscale_method' }
+          ],
+          output_mapping: null
+        })
+      ])
+
+      // set_value should be applied
+      expect(newNode.widgets![0].value).toBe('scale by multiplier')
+      // upscale_method (idx 0, value "lanczos") → scale_method widget
+      expect(newNode.widgets![1].value).toBe('lanczos')
+    })
+
+    it('should transfer widget value for ResizeImagesByLongerEdge with real workflow data', () => {
+      const link = createMockLink(1, 5, 0, 8, 0)
+      const placeholder = createPlaceholderNode(
+        8,
+        'ResizeImagesByLongerEdge',
+        [{ name: 'images', link: 1 }],
+        [{ name: 'IMAGE', links: [2] }]
+      )
+      // Real workflow data: widgets_values: [1024]
+      placeholder.last_serialization!.widgets_values = [1024]
+
+      const graph = createMockGraph([placeholder], [link])
+      placeholder.graph = graph
+      Object.assign(app, { rootGraph: graph })
+
+      vi.mocked(collectAllNodes).mockReturnValue([placeholder])
+
+      const newNode = createNewNode(
+        [
+          { name: 'image', link: null },
+          { name: 'largest_size', link: null }
+        ],
+        [{ name: 'IMAGE', links: null }],
+        [
+          { name: 'largest_size', value: 0 },
+          { name: 'upscale_method', value: '' }
+        ]
+      )
+      vi.mocked(LiteGraph.createNode).mockReturnValue(newNode)
+
+      const { replaceNodesInPlace } = useNodeReplacement()
+      replaceNodesInPlace([
+        makeMissingNodeType('ResizeImagesByLongerEdge', {
+          new_node_id: 'ImageScaleToMaxDimension',
+          old_node_id: 'ResizeImagesByLongerEdge',
+          old_widget_ids: ['longer_edge'],
+          input_mapping: [
+            { new_id: 'image', old_id: 'images' },
+            { new_id: 'largest_size', old_id: 'longer_edge' },
+            { new_id: 'upscale_method', set_value: 'lanczos' }
+          ],
+          output_mapping: [{ new_idx: 0, old_idx: 0 }]
+        })
+      ])
+
+      // longer_edge (idx 0, value 1024) → largest_size widget
+      expect(newNode.widgets![0].value).toBe(1024)
+      // set_value "lanczos" → upscale_method widget
+      expect(newNode.widgets![1].value).toBe('lanczos')
+    })
+
+    it('should transfer ConditioningAverage widget value with real workflow data', () => {
+      const link = createMockLink(4, 7, 0, 13, 0)
+      // sanitizeNodeName doesn't strip spaces, so placeholder keeps trailing space
+      const placeholder = createPlaceholderNode(
+        13,
+        'ConditioningAverage ',
+        [
+          { name: 'conditioning_to', link: 4 },
+          { name: 'conditioning_from', link: null }
+        ],
+        [{ name: 'CONDITIONING', links: [6] }]
+      )
+      placeholder.last_serialization!.widgets_values = [0.75]
+
+      const graph = createMockGraph([placeholder], [link])
+      placeholder.graph = graph
+      Object.assign(app, { rootGraph: graph })
+
+      vi.mocked(collectAllNodes).mockReturnValue([placeholder])
+
+      const newNode = createNewNode(
+        [
+          { name: 'conditioning_to', link: null },
+          { name: 'conditioning_from', link: null }
+        ],
+        [{ name: 'CONDITIONING', links: null }],
+        [{ name: 'conditioning_average', value: 0 }]
+      )
+      vi.mocked(LiteGraph.createNode).mockReturnValue(newNode)
+
+      const { replaceNodesInPlace } = useNodeReplacement()
+      replaceNodesInPlace([
+        makeMissingNodeType('ConditioningAverage ', {
+          new_node_id: 'ConditioningAverage',
+          old_node_id: 'ConditioningAverage ',
+          old_widget_ids: null,
+          input_mapping: null,
+          output_mapping: null
+        })
+      ])
+
+      // Default mapping transfers connections and widget values by name
+      expect(newNode.id).toBe(13)
+      expect(newNode.inputs[0].link).toBe(4)
+      expect(newNode.outputs[0].links).toEqual([6])
+      expect(newNode.widgets![0].value).toBe(0.75)
     })
 
     it('should skip dot-notation input connections but still transfer widget values', () => {

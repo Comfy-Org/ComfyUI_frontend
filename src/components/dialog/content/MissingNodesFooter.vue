@@ -60,7 +60,7 @@
 
     <!-- OSS mode: Manager buttons -->
     <div v-else-if="showManagerButtons" class="flex justify-end gap-1">
-      <Button variant="textonly" @click="openManager">{{
+      <Button variant="textonly" @click="handleOpenManager">{{
         $t('g.openManager')
       }}</Button>
       <PackInstallButton
@@ -97,6 +97,7 @@ import PackInstallButton from '@/workbench/extensions/manager/components/manager
 import { useMissingNodes } from '@/workbench/extensions/manager/composables/nodePack/useMissingNodes'
 import { useManagerState } from '@/workbench/extensions/manager/composables/useManagerState'
 import { useComfyManagerStore } from '@/workbench/extensions/manager/stores/comfyManagerStore'
+import { ManagerTab } from '@/workbench/extensions/manager/types/comfyManagerTypes'
 
 const { missingNodeTypes } = defineProps<{
   missingNodeTypes?: MissingNodeType[]
@@ -123,7 +124,12 @@ function openShowMissingNodesSetting() {
 const { missingNodePacks, isLoading, error } = useMissingNodes()
 const comfyManagerStore = useComfyManagerStore()
 const managerState = useManagerState()
-const { openManager } = managerState
+function handleOpenManager() {
+  managerState.openManager({
+    initialTab: ManagerTab.Missing,
+    showToastOnLegacyError: true
+  })
+}
 
 // Check if any of the missing packs are currently being installed
 const isInstalling = computed(() => {
