@@ -62,8 +62,11 @@ export class ComfyWorkflow extends UserFile {
   > {
     const { useWorkflowDraftStore } =
       await import('@/platform/workflow/persistence/stores/workflowDraftStore')
+    const { useSettingStore } = await import('@/platform/settings/settingStore')
     const draftStore = useWorkflowDraftStore()
-    let draft = !force ? draftStore.getDraft(this.path) : undefined
+    const persistEnabled = useSettingStore().get('Comfy.Workflow.Persist')
+    let draft =
+      !force && persistEnabled ? draftStore.getDraft(this.path) : undefined
     let draftState: ComfyWorkflowJSON | null = null
     let draftContent: string | null = null
 

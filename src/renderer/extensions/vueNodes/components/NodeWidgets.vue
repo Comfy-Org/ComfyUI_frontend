@@ -214,7 +214,6 @@ const processedWidgets = computed((): ProcessedWidget[] => {
       callback: widget.callback,
       controlWidget: widget.controlWidget,
       label: widgetState?.label,
-      nodeType: widget.nodeType,
       options: widgetOptions,
       spec: widget.spec
     }

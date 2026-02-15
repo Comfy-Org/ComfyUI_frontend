@@ -69,7 +69,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, nextTick, provide, ref, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, provide, ref, watch } from 'vue'
 
 import SearchBox from '@/components/common/SearchBox.vue'
 import CurrentUserMessage from '@/components/dialog/content/setting/CurrentUserMessage.vue'
@@ -182,6 +182,31 @@ const searchResults = computed<ISettingGroup[]>(() => {
   return getSearchResults(category)
 })
 
+// Scroll to and highlight the target setting once the correct category renders.
+if (scrollToSettingId) {
+  const stopScrollWatch = watch(
+    activeCategoryKey,
+    () => {
+      void nextTick(() => {
+        const el = document.querySelector(
+          `[data-setting-id="${CSS.escape(scrollToSettingId)}"]`
+        )
+        if (!el) return
+        stopScrollWatch()
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+        el.classList.add('setting-highlight')
+        el.addEventListener(
+          'animationend',
+          () => el.classList.remove('setting-highlight'),
+          { once: true }
+        )
+      })
+    },
+    { immediate: true }
+  )
+  onBeforeUnmount(stopScrollWatch)
+}
+
 watch(activeCategoryKey, (newKey, oldKey) => {
   if (!newKey && !inSearch.value) {
     activeCategoryKey.value = oldKey
@@ -198,3 +223,25 @@ watch(activeCategoryKey, (newKey, oldKey) => {
   }
 })
 </script>
+
+<style>
+@media (prefers-reduced-motion: no-preference) {
+  .setting-highlight {
+    animation: setting-highlight-pulse 1.5s ease-in-out;
+  }
+}
+
+@keyframes setting-highlight-pulse {
+  0%,
+  100% {
+    background-color: transparent;
+  }
+  30% {
+    background-color: color-mix(
+      in srgb,
+      var(--p-primary-color) 15%,
+      transparent
+    );
+  }
+}
+</style>
