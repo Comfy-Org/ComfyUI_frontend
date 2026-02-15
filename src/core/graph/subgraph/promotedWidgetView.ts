@@ -158,9 +158,11 @@ export function createPromotedWidgetView(
     if (concrete) {
       const originalY = concrete.y
       concrete.y = view.y
-      concrete._suppressPromotedOutline = true
-      concrete.drawWidget(ctx, { width: widget_width, showText: !lowQuality })
-      concrete._suppressPromotedOutline = false
+      concrete.drawWidget(ctx, {
+        width: widget_width,
+        showText: !lowQuality,
+        suppressPromotedOutline: true
+      })
       concrete.y = originalY
     }
   }

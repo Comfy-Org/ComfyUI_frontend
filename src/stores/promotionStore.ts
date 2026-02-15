@@ -10,7 +10,7 @@ interface PromotionEntry {
 
 export const usePromotionStore = defineStore('promotion', () => {
   const promotions = ref(new Map<NodeId, PromotionEntry[]>())
-  const _refCounts = new Map<string, number>()
+  const _refCounts = ref(new Map<string, number>())
 
   function _makeKey(interiorNodeId: string, widgetName: string): string {
     return `${interiorNodeId}:${widgetName}`
@@ -19,18 +19,18 @@ export const usePromotionStore = defineStore('promotion', () => {
   function _incrementKeys(entries: PromotionEntry[]): void {
     for (const e of entries) {
       const key = _makeKey(e.interiorNodeId, e.widgetName)
-      _refCounts.set(key, (_refCounts.get(key) ?? 0) + 1)
+      _refCounts.value.set(key, (_refCounts.value.get(key) ?? 0) + 1)
     }
   }
 
   function _decrementKeys(entries: PromotionEntry[]): void {
     for (const e of entries) {
       const key = _makeKey(e.interiorNodeId, e.widgetName)
-      const count = (_refCounts.get(key) ?? 1) - 1
+      const count = (_refCounts.value.get(key) ?? 1) - 1
       if (count <= 0) {
-        _refCounts.delete(key)
+        _refCounts.value.delete(key)
       } else {
-        _refCounts.set(key, count)
+        _refCounts.value.set(key, count)
       }
     }
   }
@@ -53,7 +53,7 @@ export const usePromotionStore = defineStore('promotion', () => {
     interiorNodeId: string,
     widgetName: string
   ): boolean {
-    return (_refCounts.get(_makeKey(interiorNodeId, widgetName)) ?? 0) > 0
+    return (_refCounts.value.get(_makeKey(interiorNodeId, widgetName)) ?? 0) > 0
   }
 
   function setPromotions(

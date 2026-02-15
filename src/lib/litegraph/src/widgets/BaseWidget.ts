@@ -25,6 +25,8 @@ export interface DrawWidgetOptions {
   width: number
   /** Synonym for "low quality". */
   showText?: boolean
+  /** When true, suppresses the promoted outline color (e.g. for projected copies on SubgraphNode). */
+  suppressPromotedOutline?: boolean
 }
 
 interface DrawTruncatingTextOptions extends DrawWidgetOptions {
@@ -194,22 +196,19 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
     }
   }
 
-  /**
-   * When true, suppresses the promoted outline color. Set temporarily
-   * by PromotedWidgetView.draw() so the projected copy on the
-   * SubgraphNode does not show the promoted border.
-   */
-  _suppressPromotedOutline = false
-
-  get outline_color() {
+  getOutlineColor(suppressPromotedOutline = false) {
     if (
-      !this._suppressPromotedOutline &&
+      !suppressPromotedOutline &&
       usePromotionStore().isPromotedByAny(String(this.node.id), this.name)
     )
       return LiteGraph.WIDGET_PROMOTED_OUTLINE_COLOR
     return this.advanced
       ? LiteGraph.WIDGET_ADVANCED_OUTLINE_COLOR
       : LiteGraph.WIDGET_OUTLINE_COLOR
+  }
+
+  get outline_color() {
+    return this.getOutlineColor()
   }
 
   get background_color() {
@@ -266,13 +265,13 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
    */
   protected drawWidgetShape(
     ctx: CanvasRenderingContext2D,
-    { width, showText }: DrawWidgetOptions
+    { width, showText, suppressPromotedOutline }: DrawWidgetOptions
   ): void {
     const { height, y } = this
     const { margin } = BaseWidget
 
     ctx.textAlign = 'left'
-    ctx.strokeStyle = this.outline_color
+    ctx.strokeStyle = this.getOutlineColor(suppressPromotedOutline)
     ctx.fillStyle = this.background_color
     ctx.beginPath()
 
@@ -293,7 +292,7 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
    */
   protected drawVueOnlyWarning(
     ctx: CanvasRenderingContext2D,
-    { width }: DrawWidgetOptions,
+    { width, suppressPromotedOutline }: DrawWidgetOptions,
     label: string
   ): void {
     const { y, height } = this
@@ -303,7 +302,7 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
     ctx.fillStyle = this.background_color
     ctx.fillRect(15, y, width - 30, height)
 
-    ctx.strokeStyle = this.outline_color
+    ctx.strokeStyle = this.getOutlineColor(suppressPromotedOutline)
     ctx.strokeRect(15, y, width - 30, height)
 
     ctx.fillStyle = this.text_color

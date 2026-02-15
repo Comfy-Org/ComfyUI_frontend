@@ -23,7 +23,7 @@ export class MarkdownWidget
     ctx.fillStyle = this.background_color
     ctx.fillRect(15, y, width - 30, height)
 
-    ctx.strokeStyle = this.outline_color
+    ctx.strokeStyle = this.getOutlineColor(options.suppressPromotedOutline)
     ctx.strokeRect(15, y, width - 30, height)
 
     ctx.fillStyle = this.text_color
