@@ -75,11 +75,10 @@ const executionStore = useExecutionStore()
 const rightSidePanelStore = useRightSidePanelStore()
 
 const groupedErrors = computed<ErrorEntry[]>(() => {
-  const messages = new Map<string, number>()
+  const messages = new Set<string>()
 
   if (executionStore.lastPromptError) {
-    const msg = executionStore.lastPromptError.message
-    messages.set(msg, (messages.get(msg) ?? 0) + 1)
+    messages.add(executionStore.lastPromptError.message)
   }
 
   if (executionStore.lastNodeErrors) {
@@ -87,18 +86,17 @@ const groupedErrors = computed<ErrorEntry[]>(() => {
       executionStore.lastNodeErrors
     ) as NodeError[]) {
       for (const err of nodeError.errors) {
-        messages.set(err.message, (messages.get(err.message) ?? 0) + 1)
+        messages.add(err.message)
       }
     }
   }
 
   if (executionStore.lastExecutionError) {
     const e = executionStore.lastExecutionError
-    const msg = `${e.exception_type}: ${e.exception_message}`
-    messages.set(msg, (messages.get(msg) ?? 0) + 1)
+    messages.add(`${e.exception_type}: ${e.exception_message}`)
   }
 
-  return Array.from(messages.entries()).map(([message]) => ({ message }))
+  return Array.from(messages).map((message) => ({ message }))
 })
 
 const totalErrorCount = computed(() => groupedErrors.value.length)

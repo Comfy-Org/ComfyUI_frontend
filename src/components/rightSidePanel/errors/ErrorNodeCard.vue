@@ -118,7 +118,9 @@ function handleLocateNode() {
 }
 
 function handleEnterSubgraph() {
-  emit('enterSubgraph', card.nodeId ?? '')
+  if (card.nodeId) {
+    emit('enterSubgraph', card.nodeId)
+  }
 }
 
 function handleCopyError(error: ErrorItem) {

@@ -48,7 +48,7 @@ interface QueuedPrompt {
 }
 
 /** Prompt-level errors without node IDs (e.g. invalid_prompt, prompt_no_outputs) */
-interface PromptError {
+export interface PromptError {
   type: string
   message: string
   details: string
@@ -670,6 +670,7 @@ export const useExecutionStore = defineStore('execution', () => {
   const errorNodeIds = computed<Set<string>>(() => {
     const ids = new Set<string>()
 
+    // Node validation errors (400 Bad Request)
     if (lastNodeErrors.value) {
       for (const executionId of Object.keys(lastNodeErrors.value)) {
         const graphNode = getNodeByExecutionId(app.rootGraph, executionId)
@@ -677,6 +678,7 @@ export const useExecutionStore = defineStore('execution', () => {
       }
     }
 
+    // Runtime execution error (WebSocket)
     if (lastExecutionError.value) {
       const execNodeId = String(lastExecutionError.value.node_id)
       const graphNode = getNodeByExecutionId(app.rootGraph, execNodeId)

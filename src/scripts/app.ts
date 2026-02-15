@@ -1490,7 +1490,7 @@ export class ComfyApp {
               }
 
               if (useSettingStore().get('Comfy.RightSidePanel.ShowErrorsTab')) {
-                useExecutionStore().showErrorOverlay()
+                executionStore.showErrorOverlay()
               }
               this.canvas.draw(true, true)
             }
