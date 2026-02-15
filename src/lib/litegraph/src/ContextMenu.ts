@@ -218,11 +218,11 @@ export class ContextMenu<TValue = unknown> {
     if (value === null) {
       element.classList.add('separator')
     } else {
-      const innerHtml = name === null ? '' : String(name)
+      const label = name === null ? '' : String(name)
       if (typeof value === 'string') {
-        element.innerHTML = innerHtml
+        element.textContent = label
       } else {
-        element.innerHTML = value?.title ?? innerHtml
+        element.textContent = value?.title ?? label
 
         if (value.disabled) {
           disabled = true
