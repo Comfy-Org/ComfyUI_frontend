@@ -3,10 +3,13 @@ import type {
   LGraphNode,
   Subgraph
 } from '@/lib/litegraph/src/litegraph'
+import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import type { NodeExecutionId, NodeLocatorId } from '@/types/nodeIdentification'
 import { parseNodeLocatorId } from '@/types/nodeIdentification'
 
 import { isSubgraphIoNode } from './typeGuardUtil'
+
+type WorkflowNode = ComfyWorkflowJSON['nodes'][number]
 
 interface NodeWithId {
   id: string | number
@@ -578,4 +581,20 @@ function findPartialExecutionPathToGraph(
     if (subpath !== undefined) return node.id + ':' + subpath
   }
   return undefined
+}
+
+/**
+ * Collect nodes from a raw workflow JSON, optionally filtering.
+ * Unlike graph-based helpers, this works with unserialized workflow data.
+ *
+ * @param workflow - The raw workflow JSON
+ * @param filter - Optional filter predicate
+ * @returns Filtered array of workflow nodes
+ */
+export function collectWorkflowNodes(
+  workflow: ComfyWorkflowJSON,
+  filter?: (node: WorkflowNode) => boolean
+): WorkflowNode[] {
+  const nodes = workflow.nodes ?? []
+  return filter ? nodes.filter(filter) : [...nodes]
 }
