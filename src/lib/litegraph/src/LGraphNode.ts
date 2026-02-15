@@ -965,8 +965,12 @@ export class LGraphNode
       o.widgets_values = []
       for (const [i, widget] of widgets.entries()) {
         if (widget.serialize === false) continue
-        // @ts-expect-error #595 No-null
-        o.widgets_values[i] = widget ? widget.value : null
+        const val = widget?.value
+        // Ensure object values are plain (not reactive proxies) for structuredClone compatibility.
+        o.widgets_values[i] =
+          val != null && typeof val === 'object'
+            ? JSON.parse(JSON.stringify(val))
+            : (val ?? null)
       }
     }
 
