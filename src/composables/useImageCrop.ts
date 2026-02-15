@@ -569,7 +569,10 @@ export function useImageCrop(nodeId: NodeId, options: UseImageCropOptions) {
 
   const initialize = () => {
     if (nodeId != null) {
-      node.value = app.rootGraph?.getNodeById(nodeId) || null
+      node.value =
+        app.canvas?.graph?.getNodeById(nodeId) ||
+        app.rootGraph?.getNodeById(nodeId) ||
+        null
     }
 
     updateImageUrl()
