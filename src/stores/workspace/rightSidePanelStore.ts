@@ -10,6 +10,7 @@ export type RightSidePanelTab =
   | 'info'
   | 'subgraph'
   | 'errors'
+  | 'app'
 
 type RightSidePanelSection = 'advanced-inputs' | string
 
