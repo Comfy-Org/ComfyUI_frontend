@@ -85,6 +85,24 @@ describe('imagePreviewStore setNodeOutputsByExecutionId with merge', () => {
     )
     expect(store.nodeOutputs[executionId]?.images).toHaveLength(2)
   })
+
+  it('should create a new object reference on merge so Vue detects the change', () => {
+    const store = useNodeOutputStore()
+    const executionId = '1'
+
+    const initialOutput = createMockOutputs([{ filename: 'a.png' }])
+    store.setNodeOutputsByExecutionId(executionId, initialOutput)
+
+    const refBefore = store.nodeOutputs[executionId]
+
+    const newOutput = createMockOutputs([{ filename: 'b.png' }])
+    store.setNodeOutputsByExecutionId(executionId, newOutput, { merge: true })
+
+    const refAfter = store.nodeOutputs[executionId]
+
+    expect(refAfter).not.toBe(refBefore)
+    expect(refAfter?.images).toHaveLength(2)
+  })
 })
 
 describe('imagePreviewStore getPreviewParam', () => {
