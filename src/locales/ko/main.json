@@ -1980,6 +1980,7 @@
       "removeJob": "작업 제거",
       "reportError": "오류 신고"
     },
+    "jobQueueing": "작업 대기 중",
     "toggleJobHistory": "작업 기록 전환"
   },
   "releaseToast": {
@@ -2401,7 +2402,10 @@
       "filterJobs": "작업 필터",
       "inlineTotalLabel": "총계",
       "interruptAll": "모든 실행 중인 작업 중단",
+      "jobCompleted": "작업 완료됨",
+      "jobFailed": "작업 실패",
       "jobQueue": "작업 대기열",
+      "jobsAddedToQueue": "{count}개 작업이 대기열에 추가됨 | {count}개 작업이 대기열에 추가됨",
       "jobsCompleted": "{count}개 작업 완료",
       "jobsFailed": "{count}개 작업 실패",
       "moreOptions": "더 많은 옵션",

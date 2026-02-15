@@ -1980,6 +1980,7 @@
       "removeJob": "Удалить задачу",
       "reportError": "Сообщить об ошибке"
     },
+    "jobQueueing": "Задача ставится в очередь",
     "toggleJobHistory": "Показать/скрыть историю задач"
   },
   "releaseToast": {
@@ -2401,7 +2402,10 @@
       "filterJobs": "Фильтровать задания",
       "inlineTotalLabel": "Всего",
       "interruptAll": "Остановить все выполняющиеся задания",
+      "jobCompleted": "Задача выполнена",
+      "jobFailed": "Задача не выполнена",
       "jobQueue": "Очередь заданий",
+      "jobsAddedToQueue": "{count} задача добавлена в очередь | {count} задач добавлено в очередь",
       "jobsCompleted": "{count} задание завершено | {count} задания завершено | {count} заданий завершено",
       "jobsFailed": "{count} задание не выполнено | {count} задания не выполнено | {count} заданий не выполнено",
       "moreOptions": "Больше опций",
