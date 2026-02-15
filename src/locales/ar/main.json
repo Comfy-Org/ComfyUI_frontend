@@ -1980,6 +1980,7 @@
       "removeJob": "إزالة المهمة",
       "reportError": "الإبلاغ عن خطأ"
     },
+    "jobQueueing": "جارٍ إضافة العمل إلى قائمة الانتظار",
     "toggleJobHistory": "تبديل سجل المهام"
   },
   "releaseToast": {
@@ -2401,7 +2402,10 @@
       "filterJobs": "تصفية المهام",
       "inlineTotalLabel": "الإجمالي",
       "interruptAll": "إيقاف جميع المهام الجارية",
+      "jobCompleted": "اكتمل العمل",
+      "jobFailed": "فشل العمل",
       "jobQueue": "قائمة المهام",
+      "jobsAddedToQueue": "{count} مهمة أُضيفت إلى قائمة الانتظار | {count} مهام أُضيفت إلى قائمة الانتظار",
       "jobsCompleted": "{count} مهمة مكتملة | {count} مهام مكتملة",
       "jobsFailed": "{count} مهمة فشلت | {count} مهام فشلت",
       "moreOptions": "خيارات إضافية",

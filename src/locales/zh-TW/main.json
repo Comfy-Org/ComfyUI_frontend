@@ -1980,6 +1980,7 @@
       "removeJob": "移除工作",
       "reportError": "回報錯誤"
     },
+    "jobQueueing": "任務排入佇列中",
     "toggleJobHistory": "切換工作歷史"
   },
   "releaseToast": {
@@ -2401,7 +2402,10 @@
       "filterJobs": "篩選作業",
       "inlineTotalLabel": "總計",
       "interruptAll": "中斷所有執行中作業",
+      "jobCompleted": "任務已完成",
+      "jobFailed": "任務失敗",
       "jobQueue": "作業佇列",
+      "jobsAddedToQueue": "{count} 個任務已加入佇列",
       "jobsCompleted": "{count} 個作業已完成",
       "jobsFailed": "{count} 個作業失敗",
       "moreOptions": "更多選項",

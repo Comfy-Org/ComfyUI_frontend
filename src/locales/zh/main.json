@@ -1980,6 +1980,7 @@
       "removeJob": "移除任务",
       "reportError": "反馈报错"
     },
+    "jobQueueing": "作业排队中",
     "toggleJobHistory": "切换任务历史"
   },
   "releaseToast": {
@@ -2412,7 +2413,10 @@
       "filterJobs": "筛选任务",
       "inlineTotalLabel": "总计",
       "interruptAll": "中断全部正在运行的任务",
+      "jobCompleted": "作业已完成",
+      "jobFailed": "作业失败",
       "jobQueue": "任务队列",
+      "jobsAddedToQueue": "{count} 个作业已加入队列",
       "jobsCompleted": "{count} 任务完成 | {count} 任务完成",
       "jobsFailed": "{count} 任务失败 | {count} 任务失败",
       "moreOptions": "更多设置",

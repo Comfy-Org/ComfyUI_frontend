@@ -1980,6 +1980,7 @@
       "removeJob": "حذف کار",
       "reportError": "گزارش خطا"
     },
+    "jobQueueing": "در حال صف‌بندی کار",
     "toggleJobHistory": "نمایش/مخفی‌سازی تاریخچه کارها"
   },
   "releaseToast": {
@@ -2412,7 +2413,10 @@
       "filterJobs": "فیلتر کارها",
       "inlineTotalLabel": "کل",
       "interruptAll": "توقف همه کارهای در حال اجرا",
+      "jobCompleted": "کار با موفقیت انجام شد",
+      "jobFailed": "کار ناموفق بود",
       "jobQueue": "صف کار",
+      "jobsAddedToQueue": "{count} کار به صف افزوده شد | {count} کار به صف افزوده شدند",
       "jobsCompleted": "{count} کار تکمیل شد",
       "jobsFailed": "{count} کار ناموفق بود",
       "moreOptions": "گزینه‌های بیشتر",
