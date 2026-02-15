@@ -2971,7 +2971,9 @@
     "errorHelp": "For more help, {github} or {support}",
     "errorHelpGithub": "submit a GitHub issue",
     "errorHelpSupport": "contact our support",
-    "contactSupportFailed": "Unable to open contact support. Please try again later."
+    "contactSupportFailed": "Unable to open contact support. Please try again later.",
+    "resetToDefault": "Reset to default",
+    "resetAllParameters": "Reset all parameters"
   },
   "errorOverlay": {
     "errorCount": "{count} ERRORS | {count} ERROR | {count} ERRORS",
