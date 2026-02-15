@@ -16,6 +16,9 @@ import { useExecutionStore } from '@/stores/executionStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { cn } from '@/utils/tailwindUtil'
+import { useNodeDefStore } from '@/stores/nodeDefStore'
+import { getWidgetDefaultValue } from '@/utils/widgetUtil'
+import type { WidgetValue } from '@/utils/widgetUtil'
 
 import PropertiesAccordionItem from '../layout/PropertiesAccordionItem.vue'
 import { HideLayoutFieldKey } from '@/types/widgetTypes'
@@ -63,6 +66,7 @@ provide(HideLayoutFieldKey, true)
 const canvasStore = useCanvasStore()
 const executionStore = useExecutionStore()
 const rightSidePanelStore = useRightSidePanelStore()
+const nodeDefStore = useNodeDefStore()
 const { t } = useI18n()
 
 const getNodeParentGroup = inject(GetNodeParentGroupKey, null)
@@ -136,13 +140,29 @@ function navigateToErrorTab() {
   rightSidePanelStore.openPanel('errors')
 }
 
-function handleWidgetValueUpdate(
-  widget: IBaseWidget,
-  newValue: string | number | boolean | object
-) {
-  widget.value = newValue
-  widget.callback?.(newValue)
+function writeWidgetValue(widget: IBaseWidget, value: WidgetValue) {
+  widget.value = value
+  widget.callback?.(value)
   canvasStore.canvas?.setDirty(true, true)
+}
+
+function handleResetAllWidgets() {
+  for (const { widget, node: widgetNode } of widgetsProp) {
+    const spec = nodeDefStore.getInputSpecForWidget(widgetNode, widget.name)
+    const defaultValue = getWidgetDefaultValue(spec)
+    if (defaultValue !== undefined) {
+      writeWidgetValue(widget, defaultValue)
+    }
+  }
+}
+
+function handleWidgetValueUpdate(widget: IBaseWidget, newValue: WidgetValue) {
+  if (newValue === undefined) return
+  writeWidgetValue(widget, newValue)
+}
+
+function handleWidgetReset(widget: IBaseWidget, newValue: WidgetValue) {
+  writeWidgetValue(widget, newValue)
 }
 
 defineExpose({
@@ -196,6 +216,17 @@ defineExpose({
             {{ t('rightSidePanel.seeError') }}
           </Button>
           <Button
+            v-if="!isEmpty"
+            variant="textonly"
+            size="icon-sm"
+            class="subbutton shrink-0 size-8 cursor-pointer text-muted-foreground hover:text-base-foreground"
+            :title="t('rightSidePanel.resetAllParameters')"
+            :aria-label="t('rightSidePanel.resetAllParameters')"
+            @click.stop="handleResetAllWidgets"
+          >
+            <i class="icon-[lucide--rotate-ccw] size-4" />
+          </Button>
+          <Button
             v-if="canShowLocateButton"
             variant="textonly"
             size="icon-sm"
@@ -227,6 +258,7 @@ defineExpose({
             :parents="parents"
             :is-shown-on-parents="isWidgetShownOnParents(node, widget)"
             @update:widget-value="handleWidgetValueUpdate(widget, $event)"
+            @reset-to-default="handleWidgetReset(widget, $event)"
           />
         </TransitionGroup>
       </div>

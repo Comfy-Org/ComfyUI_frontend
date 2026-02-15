@@ -818,8 +818,11 @@
       "viewJobHistory": "View active jobs (right-click to clear queue)",
       "noActiveJobs": "No active jobs",
       "stubClipTextEncode": "CLIP Text Encode:",
+      "jobCompleted": "Job completed",
+      "jobFailed": "Job failed",
       "jobsCompleted": "{count} job completed | {count} jobs completed",
       "jobsFailed": "{count} job failed | {count} jobs failed",
+      "jobsAddedToQueue": "{count} job added to queue | {count} jobs added to queue",
       "cancelJobTooltip": "Cancel job",
       "clearQueueTooltip": "Clear queue",
       "clearHistoryDialogTitle": "Clear your job queue history?",
@@ -1113,6 +1116,7 @@
     "initializingAlmostReady": "Initializing - Almost ready",
     "inQueue": "In queue...",
     "jobAddedToQueue": "Job added to queue",
+    "jobQueueing": "Job queueing",
     "completedIn": "Finished in {duration}",
     "jobMenu": {
       "openAsWorkflowNewTab": "Open as workflow in new tab",
@@ -2964,7 +2968,9 @@
     },
     "errorHelp": "For more help, {github} or {support}",
     "errorHelpGithub": "submit a GitHub issue",
-    "errorHelpSupport": "contact our support"
+    "errorHelpSupport": "contact our support",
+    "resetToDefault": "Reset to default",
+    "resetAllParameters": "Reset all parameters"
   },
   "help": {
     "recentReleases": "Recent releases",
