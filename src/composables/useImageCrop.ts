@@ -236,17 +236,6 @@ export function useImageCrop(nodeId: NodeId, options: UseImageCropOptions) {
     height: `${cropHeight.value * scaleFactor.value}px`
   }))
 
-  const cropImageStyle = computed(() => {
-    if (!imageUrl.value) return {}
-
-    return {
-      backgroundImage: `url(${imageUrl.value})`,
-      backgroundSize: `${displayedWidth.value}px ${displayedHeight.value}px`,
-      backgroundPosition: `-${cropX.value * scaleFactor.value}px -${cropY.value * scaleFactor.value}px`,
-      backgroundRepeat: 'no-repeat'
-    }
-  })
-
   interface ResizeHandle {
     direction: ResizeDirection
     class: string
@@ -595,7 +584,6 @@ export function useImageCrop(nodeId: NodeId, options: UseImageCropOptions) {
     isLockEnabled,
 
     cropBoxStyle,
-    cropImageStyle,
     resizeHandles,
 
     handleImageLoad,
