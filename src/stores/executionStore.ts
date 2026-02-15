@@ -670,7 +670,6 @@ export const useExecutionStore = defineStore('execution', () => {
   const errorNodeIds = computed<Set<string>>(() => {
     const ids = new Set<string>()
 
-    // Node validation errors (400 Bad Request)
     if (lastNodeErrors.value) {
       for (const executionId of Object.keys(lastNodeErrors.value)) {
         const graphNode = getNodeByExecutionId(app.rootGraph, executionId)
@@ -678,7 +677,6 @@ export const useExecutionStore = defineStore('execution', () => {
       }
     }
 
-    // Runtime execution error (WebSocket)
     if (lastExecutionError.value) {
       const execNodeId = String(lastExecutionError.value.node_id)
       const graphNode = getNodeByExecutionId(app.rootGraph, execNodeId)
@@ -687,6 +685,16 @@ export const useExecutionStore = defineStore('execution', () => {
 
     return ids
   })
+
+  const isErrorOverlayOpen = ref(false)
+
+  function showErrorOverlay() {
+    isErrorOverlayOpen.value = true
+  }
+
+  function dismissErrorOverlay() {
+    isErrorOverlayOpen.value = false
+  }
 
   return {
     isIdle,
@@ -729,6 +737,9 @@ export const useExecutionStore = defineStore('execution', () => {
     // Node error lookup helpers
     getNodeErrors,
     slotHasError,
-    errorNodeIds
+    errorNodeIds,
+    isErrorOverlayOpen,
+    showErrorOverlay,
+    dismissErrorOverlay
   }
 })

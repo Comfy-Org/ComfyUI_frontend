@@ -69,7 +69,6 @@ import { SYSTEM_NODE_DEFS, useNodeDefStore } from '@/stores/nodeDefStore'
 import { useNodeReplacementStore } from '@/platform/nodeReplacement/nodeReplacementStore'
 import { useSubgraphStore } from '@/stores/subgraphStore'
 import { useWidgetStore } from '@/stores/widgetStore'
-import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import type { ComfyExtension, MissingNodeType } from '@/types/comfy'
 import type { ExtensionManager } from '@/types/extensionTypes'
@@ -707,12 +706,7 @@ export class ComfyApp {
           })
         }
       } else if (useSettingStore().get('Comfy.RightSidePanel.ShowErrorsTab')) {
-        useToastStore().add({
-          severity: 'error',
-          summary: t('g.error'),
-          detail: t('rightSidePanel.executionErrorOccurred'),
-          life: 5000
-        })
+        useExecutionStore().showErrorOverlay()
       } else {
         useDialogService().showExecutionErrorDialog(detail)
       }
@@ -1495,8 +1489,7 @@ export class ComfyApp {
               }
 
               if (useSettingStore().get('Comfy.RightSidePanel.ShowErrorsTab')) {
-                this.canvas.deselectAll()
-                useRightSidePanelStore().openPanel('errors')
+                useExecutionStore().showErrorOverlay()
               }
               this.canvas.draw(true, true)
             }

@@ -2967,6 +2967,10 @@
     "errorHelpGithub": "submit a GitHub issue",
     "errorHelpSupport": "contact our support"
   },
+  "errorOverlay": {
+    "errorCount": "{count} ERRORS | {count} ERROR | {count} ERRORS",
+    "seeErrors": "See Errors"
+  },
   "help": {
     "recentReleases": "Recent releases",
     "helpCenterMenu": "Help Center Menu"

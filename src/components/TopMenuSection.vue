@@ -104,6 +104,7 @@
             </Button>
           </div>
         </div>
+        <ErrorOverlay />
         <QueueProgressOverlay
           v-if="isQueueProgressOverlayEnabled"
           v-model:expanded="isQueueOverlayExpanded"
@@ -143,6 +144,7 @@ import { useI18n } from 'vue-i18n'
 import ComfyActionbar from '@/components/actionbar/ComfyActionbar.vue'
 import SubgraphBreadcrumb from '@/components/breadcrumb/SubgraphBreadcrumb.vue'
 import QueueInlineProgressSummary from '@/components/queue/QueueInlineProgressSummary.vue'
+import ErrorOverlay from '@/components/error/ErrorOverlay.vue'
 import QueueProgressOverlay from '@/components/queue/QueueProgressOverlay.vue'
 import ActionBarButtons from '@/components/topbar/ActionBarButtons.vue'
 import CurrentUserButton from '@/components/topbar/CurrentUserButton.vue'
