@@ -321,10 +321,11 @@ const handleKeyDown = (event: KeyboardEvent) => {
 }
 
 const getImageFilename = (url: string): string => {
+  if (!url) return t('g.imageDoesNotExist')
   try {
-    return new URL(url).searchParams.get('filename') || 'Unknown file'
+    return new URL(url).searchParams.get('filename') || t('g.unknownFile')
   } catch {
-    return 'Invalid URL'
+    return t('g.imageDoesNotExist')
   }
 }
 </script>

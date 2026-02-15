@@ -146,8 +146,10 @@ export class ComfyApp {
   private queueItems: {
     number: number
     batchCount: number
+    requestId: number
     queueNodeIds?: NodeExecutionId[]
   }[] = []
+  private nextQueueRequestId = 1
   /**
    * If the queue is currently being processed
    */
@@ -1382,7 +1384,12 @@ export class ComfyApp {
     batchCount: number = 1,
     queueNodeIds?: NodeExecutionId[]
   ): Promise<boolean> {
-    this.queueItems.push({ number, batchCount, queueNodeIds })
+    const requestId = this.nextQueueRequestId++
+    this.queueItems.push({ number, batchCount, queueNodeIds, requestId })
+    api.dispatchCustomEvent('promptQueueing', {
+      requestId,
+      batchCount
+    })
 
     // Only have one action process the items so each one gets a unique seed correctly
     if (this.processingQueue) {
@@ -1399,7 +1406,9 @@ export class ComfyApp {
 
     try {
       while (this.queueItems.length) {
-        const { number, batchCount, queueNodeIds } = this.queueItems.pop()!
+        const { number, batchCount, queueNodeIds, requestId } =
+          this.queueItems.pop()!
+        let queuedCount = 0
         const previewMethod = useSettingStore().get(
           'Comfy.Execution.PreviewMethod'
         )
@@ -1465,6 +1474,8 @@ export class ComfyApp {
             break
           }
 
+          queuedCount++
+
           // Allow widgets to run callbacks after a prompt has been queued
           // e.g. random seed after every gen
           executeWidgetsCallback(queuedNodes, 'afterQueued', {
@@ -1473,11 +1484,18 @@ export class ComfyApp {
           this.canvas.draw(true, true)
           await this.ui.queue.update()
         }
+
+        if (queuedCount > 0) {
+          api.dispatchCustomEvent('promptQueued', {
+            number,
+            batchCount: queuedCount,
+            requestId
+          })
+        }
       }
     } finally {
       this.processingQueue = false
     }
-    api.dispatchCustomEvent('promptQueued', { number, batchCount })
     return !executionStore.lastNodeErrors
   }
 

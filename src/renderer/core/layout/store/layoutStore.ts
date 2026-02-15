@@ -151,6 +151,10 @@ class LayoutStoreImpl implements LayoutStore {
     return this._pendingSlotSync
   }
 
+  get hasSlotLayouts(): boolean {
+    return this.slotLayouts.size > 0
+  }
+
   setPendingSlotSync(value: boolean): void {
     this._pendingSlotSync = value
   }
@@ -508,23 +512,6 @@ class LayoutStoreImpl implements LayoutStore {
   deleteSlotLayout(key: string): void {
     const deleted = this.slotLayouts.delete(key)
     if (deleted) {
-      // Remove from spatial index
-      this.slotSpatialIndex.remove(key)
-    }
-  }
-
-  /**
-   * Delete all slot layouts for a node
-   */
-  deleteNodeSlotLayouts(nodeId: NodeId): void {
-    const keysToDelete: string[] = []
-    for (const [key, layout] of this.slotLayouts) {
-      if (layout.nodeId === nodeId) {
-        keysToDelete.push(key)
-      }
-    }
-    for (const key of keysToDelete) {
-      this.slotLayouts.delete(key)
       // Remove from spatial index
       this.slotSpatialIndex.remove(key)
     }
@@ -1117,13 +1104,10 @@ class LayoutStoreImpl implements LayoutStore {
     // During undo/redo, Vue components may still hold references to the old ref.
     // If we delete the trigger, Vue won't be notified when the node is re-created.
     // The trigger will be called in finalizeOperation to notify Vue of the change.
-
+    // We also intentionally do NOT delete slot layouts here for the same reason,
+    // and cleanup is handled by onUnmounted in useSlotElementTracking.
     // Remove from spatial index
     this.spatialIndex.remove(operation.nodeId)
-
-    // Clean up associated slot layouts
-    this.deleteNodeSlotLayouts(operation.nodeId)
-
     // Clean up associated links
     const linksToDelete = this.findLinksConnectedToNode(operation.nodeId)
 

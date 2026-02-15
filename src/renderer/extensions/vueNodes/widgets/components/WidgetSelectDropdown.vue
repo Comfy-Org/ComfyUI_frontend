@@ -254,9 +254,8 @@ const baseModelFilteredAssetItems = computed<FormDropdownItem[]>(() =>
 
 const allItems = computed<FormDropdownItem[]>(() => {
   if (props.isAssetMode && assetData) {
-    if (missingValueItem.value) {
-      return [missingValueItem.value, ...baseModelFilteredAssetItems.value]
-    }
+    // Cloud assets not in user's library shouldn't appear as search results (COM-14333).
+    // Unlike local mode, cloud users can't access files they don't own.
     return baseModelFilteredAssetItems.value
   }
   return [
@@ -280,6 +279,17 @@ const dropdownItems = computed<FormDropdownItem[]>(() => {
     default:
       return allItems.value
   }
+})
+
+/**
+ * Items used for display in the input field. In cloud mode, includes
+ * missing items so users can see their selected value even if not in library.
+ */
+const displayItems = computed<FormDropdownItem[]>(() => {
+  if (props.isAssetMode && assetData && missingValueItem.value) {
+    return [missingValueItem.value, ...baseModelFilteredAssetItems.value]
+  }
+  return dropdownItems.value
 })
 
 const mediaPlaceholder = computed(() => {
@@ -332,18 +342,20 @@ const acceptTypes = computed(() => {
 const layoutMode = ref<LayoutMode>(props.defaultLayoutMode ?? 'grid')
 
 watch(
-  [modelValue, dropdownItems],
-  ([currentValue, _dropdownItems]) => {
+  [modelValue, displayItems],
+  ([currentValue]) => {
     if (currentValue === undefined) {
       selectedSet.value.clear()
       return
     }
 
-    const item = dropdownItems.value.find((item) => item.name === currentValue)
-    if (item) {
+    const item = displayItems.value.find((item) => item.name === currentValue)
+    if (!item) {
       selectedSet.value.clear()
-      selectedSet.value.add(item.id)
+      return
     }
+    selectedSet.value.clear()
+    selectedSet.value.add(item.id)
   },
   { immediate: true }
 )
@@ -461,6 +473,7 @@ function getMediaUrl(
       v-model:ownership-selected="ownershipSelected"
       v-model:base-model-selected="baseModelSelected"
       :items="dropdownItems"
+      :display-items="displayItems"
       :placeholder="mediaPlaceholder"
       :multiple="false"
       :uploadable
