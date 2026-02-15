@@ -31,19 +31,10 @@
             v-tooltip.top="$t('nodeReplacement.replaceWarning')"
             variant="primary"
             size="md"
-            :disabled="selectedTypes.size === 0 || isReplacing"
+            :disabled="selectedTypes.size === 0"
             @click="handleReplaceSelected"
           >
-            <i
-              :class="
-                cn(
-                  'mr-1.5 h-4 w-4',
-                  isReplacing
-                    ? 'icon-[lucide--loader-circle] animate-spin'
-                    : 'icon-[lucide--refresh-cw]'
-                )
-              "
-            />
+            <i class="icon-[lucide--refresh-cw] mr-1.5 h-4 w-4" />
             {{
               $t('nodeReplacement.replaceSelected', {
                 count: selectedTypes.size
@@ -261,7 +252,6 @@ interface ProcessedNode {
 }
 
 const replacedTypes = ref<Set<string>>(new Set())
-const isReplacing = ref(false)
 
 const uniqueNodes = computed<ProcessedNode[]>(() => {
   const seenTypes = new Set<string>()
@@ -336,7 +326,6 @@ function handleReplaceSelected() {
     return selectedTypes.value.has(type)
   })
 
-  isReplacing.value = true
   const result = replaceNodesInPlace(selected)
   const nextReplaced = new Set(replacedTypes.value)
   const nextSelected = new Set(selectedTypes.value)
@@ -346,7 +335,6 @@ function handleReplaceSelected() {
   }
   replacedTypes.value = nextReplaced
   selectedTypes.value = nextSelected
-  isReplacing.value = false
 
   // Auto-close when all replaceable nodes replaced and no non-replaceable remain
   const allReplaced = replaceableNodes.value.every((n) =>

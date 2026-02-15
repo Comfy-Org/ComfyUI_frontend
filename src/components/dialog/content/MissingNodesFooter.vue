@@ -30,8 +30,18 @@
       </i18n-t>
     </div>
 
+    <!-- All nodes replaceable: Skip button (cloud + OSS) -->
+    <div v-if="!hasNonReplaceableNodes" class="flex justify-end gap-1">
+      <Button variant="secondary" size="md" @click="handleGotItClick">
+        {{ $t('nodeReplacement.skipForNow') }}
+      </Button>
+    </div>
+
     <!-- Cloud mode: Learn More + Got It buttons -->
-    <div v-if="isCloud" class="flex w-full items-center justify-between gap-2">
+    <div
+      v-else-if="isCloud"
+      class="flex w-full items-center justify-between gap-2"
+    >
       <Button
         variant="textonly"
         size="sm"
@@ -48,13 +58,13 @@
       }}</Button>
     </div>
 
-    <!-- OSS mode: Open Manager + Install All buttons -->
+    <!-- OSS mode: Manager buttons -->
     <div v-else-if="showManagerButtons" class="flex justify-end gap-1">
       <Button variant="textonly" @click="openManager">{{
         $t('g.openManager')
       }}</Button>
       <PackInstallButton
-        v-if="showInstallAllButton && hasNonReplaceableNodes"
+        v-if="showInstallAllButton"
         type="secondary"
         size="md"
         :disabled="
