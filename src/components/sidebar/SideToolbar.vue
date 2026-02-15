@@ -20,6 +20,7 @@
     >
       <div ref="topToolbarRef" :class="groupClasses">
         <ComfyMenuButton />
+        <SidebarTemplatesButton :is-small="isSmall" />
         <SidebarIcon
           v-for="tab in tabs"
           :key="tab.id"
@@ -33,7 +34,6 @@
           :class="tab.id + '-tab-button'"
           @click="onTabClick(tab)"
         />
-        <SidebarTemplatesButton />
       </div>
 
       <div ref="bottomToolbarRef" class="mt-auto" :class="groupClasses">
@@ -66,6 +66,7 @@ import ModeToggle from '@/components/sidebar/ModeToggle.vue'
 import SidebarBottomPanelToggleButton from '@/components/sidebar/SidebarBottomPanelToggleButton.vue'
 import SidebarSettingsButton from '@/components/sidebar/SidebarSettingsButton.vue'
 import SidebarShortcutsToggleButton from '@/components/sidebar/SidebarShortcutsToggleButton.vue'
+import SidebarTemplatesButton from '@/components/sidebar/SidebarTemplatesButton.vue'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { isCloud } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
@@ -82,7 +83,6 @@ import { cn } from '@/utils/tailwindUtil'
 import SidebarHelpCenterIcon from './SidebarHelpCenterIcon.vue'
 import SidebarIcon from './SidebarIcon.vue'
 import SidebarLogoutIcon from './SidebarLogoutIcon.vue'
-import SidebarTemplatesButton from './SidebarTemplatesButton.vue'
 
 const { t } = useI18n()
 const workspaceStore = useWorkspaceStore()

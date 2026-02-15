@@ -22,6 +22,15 @@ export const useSidebarTabStore = defineStore('sidebarTab', () => {
     )
   })
 
+  const FULL_PAGE_TAB_IDS: string[] = []
+
+  const isFullPageTabActive = computed(() => {
+    return (
+      activeSidebarTabId.value !== null &&
+      FULL_PAGE_TAB_IDS.includes(activeSidebarTabId.value)
+    )
+  })
+
   const toggleSidebarTab = (tabId: string) => {
     activeSidebarTabId.value = activeSidebarTabId.value === tabId ? null : tabId
   }
@@ -131,6 +140,7 @@ export const useSidebarTabStore = defineStore('sidebarTab', () => {
     sidebarTabs,
     activeSidebarTabId,
     activeSidebarTab,
+    isFullPageTabActive,
     toggleSidebarTab,
     registerSidebarTab,
     unregisterSidebarTab,

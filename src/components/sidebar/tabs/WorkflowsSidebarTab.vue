@@ -120,6 +120,8 @@
             icon="pi pi-folder"
             :title="$t('g.empty')"
             :message="$t('g.noWorkflowsFound')"
+            :button-label="$t('sideToolbar.browseTemplates')"
+            @action="openTemplates"
           />
         </div>
       </div>
@@ -159,6 +161,7 @@ import {
   useWorkflowBookmarkStore,
   useWorkflowStore
 } from '@/platform/workflow/management/stores/workflowStore'
+import { useWorkflowTemplateSelectorDialog } from '@/composables/useWorkflowTemplateSelectorDialog'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import type { TreeExplorerNode, TreeNode } from '@/types/treeExplorerTypes'
 import { appendJsonExt } from '@/utils/formatUtil'
@@ -307,6 +310,12 @@ const selectionKeys = computed(() => ({
 }))
 
 const workflowBookmarkStore = useWorkflowBookmarkStore()
+const { show } = useWorkflowTemplateSelectorDialog()
+
+function openTemplates() {
+  show('sidebar')
+}
+
 onMounted(async () => {
   searchBoxRef.value?.focus()
   await workflowBookmarkStore.loadBookmarks()

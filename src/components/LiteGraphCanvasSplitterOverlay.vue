@@ -2,7 +2,7 @@
   <div
     class="w-full h-full absolute top-0 left-0 z-999 pointer-events-none flex flex-col"
   >
-    <slot name="workflow-tabs" />
+    <slot v-if="shouldShowWorkflowTabs" name="workflow-tabs" />
 
     <div
       class="pointer-events-none flex flex-1 overflow-hidden"
@@ -25,7 +25,9 @@
         <!-- First panel: sidebar when left, properties when right -->
         <SplitterPanel
           v-if="
-            !focusMode && (sidebarLocation === 'left' || rightSidePanelVisible)
+            !focusMode &&
+            !isFullPageOverlayActive &&
+            (sidebarLocation === 'left' || anyRightPanelVisible)
           "
           :class="
             sidebarLocation === 'left'
@@ -55,9 +57,22 @@
 
         <!-- Main panel (always present) -->
         <SplitterPanel :size="80" class="flex flex-col">
-          <slot name="topmenu" :sidebar-panel-visible />
+          <slot
+            v-if="!isFullPageOverlayActive"
+            name="topmenu"
+            :sidebar-panel-visible
+          />
+
+          <!-- Full page content (replaces graph canvas when active) -->
+          <div
+            v-if="isFullPageOverlayActive"
+            class="pointer-events-auto flex-1 overflow-hidden bg-comfy-menu-bg"
+          >
+            <slot name="full-page-content" />
+          </div>
 
           <Splitter
+            v-else
             class="bg-transparent pointer-events-none border-none splitter-overlay-bottom mr-1 mb-1 ml-1 flex-1"
             layout="vertical"
             :pt:gutter="
@@ -85,7 +100,9 @@
         <!-- Last panel: properties when left, sidebar when right -->
         <SplitterPanel
           v-if="
-            !focusMode && (sidebarLocation === 'right' || rightSidePanelVisible)
+            !focusMode &&
+            !isFullPageOverlayActive &&
+            (sidebarLocation === 'right' || anyRightPanelVisible)
           "
           :class="
             sidebarLocation === 'right'
@@ -125,7 +142,9 @@ import { useI18n } from 'vue-i18n'
 
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useBottomPanelStore } from '@/stores/workspace/bottomPanelStore'
+import { useHomePanelStore } from '@/stores/workspace/homePanelStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
+import { useSharePanelStore } from '@/stores/workspace/sharePanelStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 
@@ -144,11 +163,25 @@ const unifiedWidth = computed(() =>
 
 const { focusMode } = storeToRefs(workspaceStore)
 
-const { activeSidebarTabId, activeSidebarTab } = storeToRefs(sidebarTabStore)
+const { activeSidebarTabId, activeSidebarTab, isFullPageTabActive } =
+  storeToRefs(sidebarTabStore)
 const { bottomPanelVisible } = storeToRefs(useBottomPanelStore())
 const { isOpen: rightSidePanelVisible } = storeToRefs(rightSidePanelStore)
+const { isOpen: homePanelOpen } = storeToRefs(useHomePanelStore())
+const sharePanelStore = useSharePanelStore()
+const { isOpen: sharePanelVisible } = storeToRefs(sharePanelStore)
+
+const anyRightPanelVisible = computed(
+  () => rightSidePanelVisible.value || sharePanelVisible.value
+)
 
 const sidebarPanelVisible = computed(() => activeSidebarTab.value !== null)
+const isFullPageOverlayActive = computed(
+  () => isFullPageTabActive.value || homePanelOpen.value
+)
+const shouldShowWorkflowTabs = computed(
+  () => !isFullPageTabActive.value || homePanelOpen.value
+)
 
 const sidebarStateKey = computed(() => {
   return unifiedWidth.value
@@ -169,7 +202,7 @@ function onResizestart({ originalEvent: event }: SplitterResizeStartEvent) {
  * to recalculate the width and panel order
  */
 const splitterRefreshKey = computed(() => {
-  return `main-splitter${rightSidePanelVisible.value ? '-with-right-panel' : ''}-${sidebarLocation.value}`
+  return `main-splitter${anyRightPanelVisible.value ? '-with-right-panel' : ''}-${sidebarLocation.value}`
 })
 
 const firstPanelStyle = computed(() => {
