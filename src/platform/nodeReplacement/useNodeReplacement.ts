@@ -98,7 +98,10 @@ function transferWidgetValue(
   if (oldValue === undefined) return
 
   const newWidget = newNode.widgets?.find((w) => w.name === newInputName)
-  if (newWidget) newWidget.value = oldValue
+  if (newWidget) {
+    newWidget.value = oldValue
+    newWidget.callback?.(oldValue)
+  }
 }
 
 /**
@@ -110,7 +113,10 @@ function applySetValue(
   value: unknown
 ): void {
   const widget = newNode.widgets?.find((w) => w.name === inputName)
-  if (widget) widget.value = value as TWidgetValue
+  if (widget) {
+    widget.value = value as TWidgetValue
+    widget.callback?.(widget.value)
+  }
 }
 
 /**
@@ -166,6 +172,12 @@ function replaceWithMapping(
   nodeGraph._nodes_by_id[newNode.id] = newNode
 
   const serialized = node.last_serialization ?? node.serialize()
+
+  // Preserve user-defined title and properties
+  if (serialized.title != null) newNode.title = serialized.title
+  if (serialized.properties) {
+    newNode.properties = { ...serialized.properties }
+  }
 
   // Apply input mapping
   if (replacement.input_mapping) {
@@ -241,54 +253,57 @@ export function useNodeReplacement() {
       useWorkflowStore().activeWorkflow?.changeTracker ?? null
     changeTracker?.beforeChange()
 
-    const placeholders = collectAllNodes(
-      graph,
-      (n) => !!n.has_errors && !!n.last_serialization
-    )
+    try {
+      const placeholders = collectAllNodes(
+        graph,
+        (n) => !!n.has_errors && !!n.last_serialization
+      )
 
-    for (const node of placeholders) {
-      const match = findMatchingType(node, selectedTypes)
-      if (!match?.replacement) continue
+      for (const node of placeholders) {
+        const match = findMatchingType(node, selectedTypes)
+        if (!match?.replacement) continue
 
-      const replacement = match.replacement
-      const nodeGraph = node.graph
-      if (!nodeGraph) continue
+        const replacement = match.replacement
+        const nodeGraph = node.graph
+        if (!nodeGraph) continue
 
-      const idx = nodeGraph._nodes.indexOf(node)
-      if (idx === -1) continue
+        const idx = nodeGraph._nodes.indexOf(node)
+        if (idx === -1) continue
 
-      const newNode = LiteGraph.createNode(replacement.new_node_id)
-      if (!newNode) continue
+        const newNode = LiteGraph.createNode(replacement.new_node_id)
+        if (!newNode) continue
 
-      const hasMapping =
-        replacement.input_mapping != null || replacement.output_mapping != null
+        const hasMapping =
+          replacement.input_mapping != null ||
+          replacement.output_mapping != null
 
-      if (hasMapping) {
-        replaceWithMapping(node, newNode, replacement, nodeGraph, idx)
-      } else {
-        replaceSimple(node, newNode, replacement.new_node_id, nodeGraph, idx)
+        if (hasMapping) {
+          replaceWithMapping(node, newNode, replacement, nodeGraph, idx)
+        } else {
+          replaceSimple(node, newNode, replacement.new_node_id, nodeGraph, idx)
+        }
+
+        if (!replacedTypes.includes(match.type)) {
+          replacedTypes.push(match.type)
+        }
       }
 
-      if (!replacedTypes.includes(match.type)) {
-        replacedTypes.push(match.type)
+      if (replacedTypes.length > 0) {
+        graph.updateExecutionOrder()
+        graph.setDirtyCanvas(true, true)
+
+        toastStore.add({
+          severity: 'success',
+          summary: t('g.success'),
+          detail: t('nodeReplacement.replacedAllNodes', {
+            count: replacedTypes.length
+          }),
+          life: 3000
+        })
       }
+    } finally {
+      changeTracker?.afterChange()
     }
-
-    if (replacedTypes.length > 0) {
-      graph.updateExecutionOrder()
-      graph.setDirtyCanvas(true, true)
-
-      toastStore.add({
-        severity: 'success',
-        summary: t('g.success'),
-        detail: t('nodeReplacement.replacedAllNodes', {
-          count: replacedTypes.length
-        }),
-        life: 3000
-      })
-    }
-
-    changeTracker?.afterChange()
 
     return replacedTypes
   }
