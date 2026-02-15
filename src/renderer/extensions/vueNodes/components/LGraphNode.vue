@@ -567,7 +567,8 @@ const nodeMedia = computed(() => {
   const newOutputs = nodeOutputs.nodeOutputs[nodeOutputLocatorId.value]
   const node = lgraphNode.value
 
-  if (!node || !newOutputs?.images?.length) return undefined
+  if (!node || !newOutputs?.images?.length || node.hideOutputImages)
+    return undefined
 
   const urls = nodeOutputs.getNodeImageUrls(node)
   if (!urls?.length) return undefined
