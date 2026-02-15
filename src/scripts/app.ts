@@ -706,12 +706,15 @@ export class ComfyApp {
             isInsufficientCredits: true
           })
         }
+      } else if (useSettingStore().get('Comfy.RightSidePanel.ShowErrorsTab')) {
+        useToastStore().add({
+          severity: 'error',
+          summary: t('g.error'),
+          detail: t('rightSidePanel.executionErrorOccurred'),
+          life: 5000
+        })
       } else {
         useDialogService().showExecutionErrorDialog(detail)
-      }
-      if (useSettingStore().get('Comfy.RightSidePanel.ShowErrorsTab')) {
-        this.canvas.deselectAll()
-        useRightSidePanelStore().openPanel('errors')
       }
       this.canvas.draw(true, true)
     })
@@ -1454,7 +1457,9 @@ export class ComfyApp {
                 {}) as MissingNodeTypeExtraInfo
               const missingNodeType = createMissingNodeTypeFromError(extraInfo)
               this.showMissingNodesError([missingNodeType])
-            } else {
+            } else if (
+              !useSettingStore().get('Comfy.RightSidePanel.ShowErrorsTab')
+            ) {
               useDialogService().showErrorDialog(error, {
                 title: t('errorDialog.promptExecutionError'),
                 reportType: 'promptExecutionError'
@@ -1489,10 +1494,8 @@ export class ComfyApp {
                 }
               }
 
-              // Clear selection and open the error panel so the user can immediately
-              // see the error details without extra clicks.
-              this.canvas.deselectAll()
               if (useSettingStore().get('Comfy.RightSidePanel.ShowErrorsTab')) {
+                this.canvas.deselectAll()
                 useRightSidePanelStore().openPanel('errors')
               }
               this.canvas.draw(true, true)

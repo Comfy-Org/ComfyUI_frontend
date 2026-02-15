@@ -2952,6 +2952,7 @@
     "hideAdvancedInputsButton": "Hide advanced inputs",
     "errors": "Errors",
     "noErrors": "No errors",
+    "executionErrorOccurred": "An error occurred during execution. Check the Errors tab for details.",
     "enterSubgraph": "Enter subgraph",
     "seeError": "See Error",
     "promptErrors": {
