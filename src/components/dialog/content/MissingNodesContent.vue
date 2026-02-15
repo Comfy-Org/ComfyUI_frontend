@@ -104,6 +104,8 @@
             role="checkbox"
             :aria-checked="
               replacedTypes.has(node.label) || selectedTypes.has(node.label)
+                ? 'true'
+                : 'false'
             "
             @click="toggleNode(node.label)"
             @keydown.enter.prevent="toggleNode(node.label)"
