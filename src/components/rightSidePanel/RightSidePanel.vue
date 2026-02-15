@@ -20,6 +20,7 @@ import type { RightSidePanelTab } from '@/stores/workspace/rightSidePanelStore'
 import { resolveNodeDisplayName } from '@/utils/nodeTitleUtil'
 import { cn } from '@/utils/tailwindUtil'
 
+import TabApp from './TabApp.vue'
 import TabError from './TabError.vue'
 import TabInfo from './info/TabInfo.vue'
 import TabGlobalParameters from './parameters/TabGlobalParameters.vue'
@@ -109,6 +110,10 @@ const tabs = computed<RightSidePanelTabList>(() => {
       icon: 'icon-[lucide--octagon-alert] bg-node-stroke-error ml-1'
     })
   }
+  list.push({
+    label: () => 'app',
+    value: 'app'
+  })
 
   list.push({
     label: () =>
@@ -298,6 +303,7 @@ function handleProxyWidgetsUpdate(value: ProxyWidgetsProperty) {
     <!-- Panel Content -->
     <div class="scrollbar-thin flex-1 overflow-y-auto">
       <template v-if="!hasSelection">
+        <TabApp v-if="activeTab === 'app'" />
         <TabGlobalParameters v-if="activeTab === 'parameters'" />
         <TabNodes v-else-if="activeTab === 'nodes'" />
         <TabGlobalSettings v-else-if="activeTab === 'settings'" />
