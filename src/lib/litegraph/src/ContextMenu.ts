@@ -1,3 +1,5 @@
+import DOMPurify from 'dompurify'
+
 import type {
   ContextMenuDivElement,
   IContextMenuOptions,
@@ -5,7 +7,7 @@ import type {
 } from './interfaces'
 import { LiteGraph } from './litegraph'
 
-const ALLOWED_TAGS = new Set(['span', 'b', 'i', 'em', 'strong'])
+const ALLOWED_TAGS = ['span', 'b', 'i', 'em', 'strong']
 const ALLOWED_STYLE_PROPS = new Set([
   'display',
   'color',
@@ -14,51 +16,27 @@ const ALLOWED_STYLE_PROPS = new Set([
   'border-left'
 ])
 
-function sanitizeMenuHTML(html: string): string {
-  const doc = new DOMParser().parseFromString(html, 'text/html')
-  sanitizeNode(doc.body)
-  return doc.body.innerHTML
-}
-
-function sanitizeNode(node: Node): void {
-  const toRemove: Node[] = []
-  for (const child of node.childNodes) {
-    if (child.nodeType === Node.ELEMENT_NODE) {
-      const el = child as Element
-      if (!ALLOWED_TAGS.has(el.tagName.toLowerCase())) {
-        toRemove.push(child)
-        continue
-      }
-      // Strip all attributes except safe style properties
-      const attrs = [...el.attributes]
-      for (const attr of attrs) {
-        if (attr.name === 'style') {
-          el.setAttribute('style', sanitizeStyle(attr.value))
-        } else {
-          el.removeAttribute(attr.name)
-        }
-      }
-      sanitizeNode(child)
-    } else if (child.nodeType === Node.TEXT_NODE) {
-      // Text nodes are always safe
-    } else {
-      toRemove.push(child)
-    }
+DOMPurify.addHook('uponSanitizeAttribute', (_node, data) => {
+  if (data.attrName === 'style') {
+    const sanitizedStyle = data.attrValue
+      .split(';')
+      .map((s) => s.trim())
+      .filter((s) => {
+        const colonIdx = s.indexOf(':')
+        if (colonIdx === -1) return false
+        const prop = s.slice(0, colonIdx).trim().toLowerCase()
+        return ALLOWED_STYLE_PROPS.has(prop)
+      })
+      .join('; ')
+    data.attrValue = sanitizedStyle
   }
-  for (const child of toRemove) node.removeChild(child)
-}
+})
 
-function sanitizeStyle(style: string): string {
-  return style
-    .split(';')
-    .map((s) => s.trim())
-    .filter((s) => {
-      const colonIdx = s.indexOf(':')
-      if (colonIdx === -1) return false
-      const prop = s.slice(0, colonIdx).trim().toLowerCase()
-      return ALLOWED_STYLE_PROPS.has(prop)
-    })
-    .join('; ')
+function sanitizeMenuHTML(html: string): string {
+  return DOMPurify.sanitize(html, {
+    ALLOWED_TAGS,
+    ALLOWED_ATTR: ['style']
+  })
 }
 
 // TODO: Replace this pattern with something more modern.
