@@ -113,7 +113,7 @@
       </div>
     </div>
 
-    <div>
+    <div class="flex flex-col items-end gap-1">
       <Teleport
         v-if="inlineProgressSummaryTarget"
         :to="inlineProgressSummaryTarget"
@@ -128,6 +128,10 @@
         v-else-if="shouldShowInlineProgressSummary && !isActionbarFloating"
         class="pr-1"
         :hidden="isQueueOverlayExpanded"
+      />
+      <QueueNotificationBannerHost
+        v-if="shouldShowQueueNotificationBanners"
+        class="pr-1"
       />
     </div>
   </div>
@@ -144,8 +148,9 @@ import { useI18n } from 'vue-i18n'
 import ComfyActionbar from '@/components/actionbar/ComfyActionbar.vue'
 import SubgraphBreadcrumb from '@/components/breadcrumb/SubgraphBreadcrumb.vue'
 import QueueInlineProgressSummary from '@/components/queue/QueueInlineProgressSummary.vue'
-import ErrorOverlay from '@/components/error/ErrorOverlay.vue'
+import QueueNotificationBannerHost from '@/components/queue/QueueNotificationBannerHost.vue'
 import QueueProgressOverlay from '@/components/queue/QueueProgressOverlay.vue'
+import ErrorOverlay from '@/components/error/ErrorOverlay.vue'
 import ActionBarButtons from '@/components/topbar/ActionBarButtons.vue'
 import CurrentUserButton from '@/components/topbar/CurrentUserButton.vue'
 import LoginButton from '@/components/topbar/LoginButton.vue'
@@ -213,6 +218,9 @@ const isQueueProgressOverlayEnabled = computed(
 )
 const shouldShowInlineProgressSummary = computed(
   () => isQueuePanelV2Enabled.value && isActionbarEnabled.value
+)
+const shouldShowQueueNotificationBanners = computed(
+  () => isActionbarEnabled.value
 )
 const progressTarget = ref<HTMLElement | null>(null)
 function updateProgressTarget(target: HTMLElement | null) {
