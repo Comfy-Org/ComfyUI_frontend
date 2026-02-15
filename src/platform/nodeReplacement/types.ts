@@ -1,17 +1,14 @@
-interface InputAssignOldId {
-  assign_type: 'old_id'
+interface InputMapOldId {
+  new_id: string
   old_id: string
 }
 
-interface InputAssignSetValue {
-  assign_type: 'set_value'
-  value: unknown
+interface InputMapSetValue {
+  new_id: string
+  set_value: unknown
 }
 
-interface InputMap {
-  new_id: string
-  assign: InputAssignOldId | InputAssignSetValue
-}
+type InputMap = InputMapOldId | InputMapSetValue
 
 interface OutputMap {
   new_idx: number
