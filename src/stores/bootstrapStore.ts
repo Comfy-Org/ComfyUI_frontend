@@ -2,7 +2,6 @@ import { until, useAsyncState } from '@vueuse/core'
 import { defineStore, storeToRefs } from 'pinia'
 
 import { isCloud } from '@/platform/distribution/types'
-import { useNodeReplacementStore } from '@/platform/nodeReplacement/nodeReplacementStore'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { api } from '@/scripts/api'
@@ -34,7 +33,6 @@ export const useBootstrapStore = defineStore('bootstrap', () => {
     storesLoaded = true
     void settingStore.load()
     void workflowStore.loadWorkflows()
-    void useNodeReplacementStore().load()
   }
 
   async function startStoreBootstrap() {
