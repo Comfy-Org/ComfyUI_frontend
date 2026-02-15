@@ -14240,6 +14240,9 @@
       "lyrics": {
         "name": "текст песни"
       },
+      "min_p": {
+        "name": "min_p"
+      },
       "seed": {
         "name": "seed"
       },

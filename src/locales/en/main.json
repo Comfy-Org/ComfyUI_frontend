@@ -94,6 +94,8 @@
     "openNewIssue": "Open New Issue",
     "showReport": "Show Report",
     "imageFailedToLoad": "Image failed to load",
+    "imageDoesNotExist": "Image does not exist",
+    "unknownFile": "Unknown file",
     "reconnecting": "Reconnecting",
     "reconnected": "Reconnected",
     "delete": "Delete",
