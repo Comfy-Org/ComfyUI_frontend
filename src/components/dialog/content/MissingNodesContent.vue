@@ -232,7 +232,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, ref } from 'vue'
 
 import MissingCoreNodesMessage from '@/components/dialog/content/MissingCoreNodesMessage.vue'
 import Button from '@/components/ui/button/Button.vue'
@@ -299,16 +299,7 @@ const nonReplaceableNodes = computed(() =>
 )
 
 // Selection state - all pending nodes selected by default
-const selectedTypes = ref<Set<string>>(new Set<string>())
-
-// Initialize selection when pendingNodes changes
-watch(
-  pendingNodes,
-  (nodes) => {
-    selectedTypes.value = new Set(nodes.map((n) => n.label))
-  },
-  { immediate: true }
-)
+const selectedTypes = ref(new Set(pendingNodes.value.map((n) => n.label)))
 
 const isAllSelected = computed(
   () =>
