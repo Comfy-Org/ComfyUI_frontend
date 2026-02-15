@@ -114,6 +114,7 @@ import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
 import { useExternalLink } from '@/composables/useExternalLink'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
+import { useToastStore } from '@/platform/updates/common/toastStore'
 import { NodeBadgeMode } from '@/types/nodeSource'
 import { isLGraphNode } from '@/utils/litegraphUtil'
 import { isGroupNode } from '@/utils/executableGroupNodeDto'
@@ -520,6 +521,11 @@ async function contactSupport() {
     is_external: true,
     source: 'error_dialog'
   })
-  await useCommandStore().execute('Comfy.ContactSupport')
+  try {
+    await useCommandStore().execute('Comfy.ContactSupport')
+  } catch (error) {
+    console.error(error)
+    useToastStore().addAlert(t('rightSidePanel.contactSupportFailed'))
+  }
 }
 </script>

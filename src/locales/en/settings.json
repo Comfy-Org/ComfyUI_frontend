@@ -349,11 +349,7 @@
   "Comfy_QueueButton_BatchCountLimit": {
     "name": "Batch count limit",
     "tooltip": "The maximum number of tasks added to the queue at one button click"
-  },
-  "Comfy_RightSidePanel_ShowErrorsTab": {
-    "name": "Show errors tab in side panel",
-    "tooltip": "When enabled, an errors tab is displayed in the right side panel to show workflow execution errors at a glance."
-  },
+  },  
   "Comfy_Sidebar_Location": {
     "name": "Sidebar location",
     "options": {

@@ -30,6 +30,7 @@
         variant="textonly"
         size="icon-sm"
         class="size-7 text-muted-foreground hover:text-base-foreground shrink-0"
+        :aria-label="t('rightSidePanel.locateNode')"
         @click.stop="handleLocateNode"
       >
         <i class="icon-[lucide--locate] size-3.5" />

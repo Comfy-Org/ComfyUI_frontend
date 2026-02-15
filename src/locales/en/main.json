@@ -1349,6 +1349,7 @@
     "Execution": "Execution",
     "PLY": "PLY",
     "Workspace": "Workspace",
+    "Error System": "Error System",
     "Other": "Other",
     "Secrets": "Secrets"
   },
@@ -2965,7 +2966,8 @@
     },
     "errorHelp": "For more help, {github} or {support}",
     "errorHelpGithub": "submit a GitHub issue",
-    "errorHelpSupport": "contact our support"
+    "errorHelpSupport": "contact our support",
+    "contactSupportFailed": "Unable to open contact support. Please try again later."
   },
   "errorOverlay": {
     "errorCount": "{count} ERRORS | {count} ERROR | {count} ERRORS",

@@ -1452,7 +1452,8 @@ export class ComfyApp {
               const missingNodeType = createMissingNodeTypeFromError(extraInfo)
               this.showMissingNodesError([missingNodeType])
             } else if (
-              !useSettingStore().get('Comfy.RightSidePanel.ShowErrorsTab')
+              !useSettingStore().get('Comfy.RightSidePanel.ShowErrorsTab') ||
+              !(error instanceof PromptExecutionError)
             ) {
               useDialogService().showErrorDialog(error, {
                 title: t('errorDialog.promptExecutionError'),
