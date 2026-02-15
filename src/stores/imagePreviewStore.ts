@@ -152,7 +152,7 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
             existingOutput[k] = newValue
           }
         }
-        nodeOutputs.value[nodeLocatorId] = existingOutput
+        nodeOutputs.value[nodeLocatorId] = { ...existingOutput }
         return
       }
     }
