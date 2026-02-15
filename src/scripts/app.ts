@@ -1513,7 +1513,9 @@ export class ComfyApp {
   async handleFile(file: File, openSource?: WorkflowOpenSource) {
     const fileName = file.name.replace(/\.\w+$/, '') // Strip file extension
     const workflowData = await getWorkflowDataFromFile(file)
-    if (_.isEmpty(workflowData)) {
+    const { workflow, prompt, parameters, templates } = workflowData ?? {}
+
+    if (!(workflow || prompt || parameters || templates)) {
       if (file.type.startsWith('image')) {
         const transfer = new DataTransfer()
         transfer.items.add(file)
@@ -1525,8 +1527,6 @@ export class ComfyApp {
       this.showErrorOnFileLoad(file)
       return
     }
-
-    const { workflow, prompt, parameters, templates } = workflowData
 
     if (
       templates &&
