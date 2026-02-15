@@ -1,5 +1,6 @@
-import { useEventListener, useResizeObserver } from '@vueuse/core'
+import { until, useEventListener, useResizeObserver } from '@vueuse/core'
 import _ from 'es-toolkit/compat'
+import { storeToRefs } from 'pinia'
 import type { ToastMessageOptions } from 'primevue/toast'
 import { reactive, unref } from 'vue'
 import { shallowRef } from 'vue'
@@ -795,7 +796,6 @@ export class ComfyApp {
     await useWorkspaceStore().workflow.syncWorkflows()
     //Doesn't need to block. Blueprints will load async
     void useSubgraphStore().fetchSubgraphs()
-    await useNodeReplacementStore().load()
     await useExtensionService().loadExtensions()
 
     this.addProcessKeyHandler()
@@ -1149,6 +1149,10 @@ export class ComfyApp {
     const embeddedModels: ModelFile[] = []
 
     const nodeReplacementStore = useNodeReplacementStore()
+    const { isLoaded } = storeToRefs(nodeReplacementStore)
+    if (nodeReplacementStore.isEnabled) {
+      await until(isLoaded).toBe(true)
+    }
 
     const collectMissingNodesAndModels = (
       nodes: ComfyWorkflowJSON['nodes'],
