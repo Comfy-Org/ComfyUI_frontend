@@ -315,6 +315,7 @@ const zSettings = z.object({
   'Comfy.Group.DoubleClickTitleToEdit': z.boolean(),
   'Comfy.GroupSelectedNodes.Padding': z.number(),
   'Comfy.Locale': z.string(),
+  'Comfy.NodeLibrary.NewDesign': z.boolean(),
   'Comfy.NodeLibrary.Bookmarks': z.array(z.string()),
   'Comfy.NodeLibrary.Bookmarks.V2': z.array(z.string()),
   'Comfy.NodeLibrary.BookmarksCustomization': z.record(

@@ -312,6 +312,13 @@ export const CORE_SETTINGS: SettingParams[] = [
     }
   },
   // Bookmarks are stored in the settings store.
+  {
+    id: 'Comfy.NodeLibrary.NewDesign',
+    name: 'Use new node library design',
+    type: 'boolean',
+    defaultValue: false,
+    experimental: true
+  },
   // Bookmarks are in format of category/display_name. e.g. "conditioning/CLIPTextEncode"
   {
     id: 'Comfy.NodeLibrary.Bookmarks',

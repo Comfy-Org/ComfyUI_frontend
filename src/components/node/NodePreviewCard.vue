@@ -1,6 +1,6 @@
 <template>
   <div
-    class="flex w-50 flex-col overflow-hidden rounded-2xl bg-(--base-background)"
+    class="flex w-50 flex-col overflow-hidden rounded-2xl bg-(--base-background) border border-(--border-default)"
   >
     <div ref="previewContainerRef" class="overflow-hidden p-3">
       <div ref="previewWrapperRef" class="origin-top-left scale-50">
@@ -35,16 +35,16 @@
       <!-- Description -->
       <p
         v-if="nodeDef.description"
-        class="line-clamp-2 text-[11px] font-normal leading-relaxed text-muted-foreground m-0"
+        class="text-[11px] font-normal leading-relaxed text-muted-foreground m-0"
       >
         {{ nodeDef.description }}
       </p>
 
       <!-- Divider -->
-      <div class="border-t border-border-default" />
+      <div v-if="(inputs.length > 0 || outputs.length > 0) && showInputsAndOutputs" class="border-t border-border-default" />
 
       <!-- Inputs Section -->
-      <div v-if="inputs.length > 0" class="flex flex-col gap-1">
+      <div v-if="inputs.length > 0 && showInputsAndOutputs" class="flex flex-col gap-1">
         <h4
           class="text-xxs font-semibold uppercase tracking-wide text-muted-foreground m-0"
         >
@@ -63,7 +63,7 @@
       </div>
 
       <!-- Outputs Section -->
-      <div v-if="outputs.length > 0" class="flex flex-col gap-1">
+      <div v-if="outputs.length > 0 && showInputsAndOutputs" class="flex flex-col gap-1">
         <h4
           class="text-xxs font-semibold uppercase tracking-wide text-muted-foreground m-0"
         >
@@ -96,8 +96,9 @@ import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 
 const SCALE_FACTOR = 0.5
 
-const { nodeDef } = defineProps<{
+const { nodeDef, showInputsAndOutputs = true } = defineProps<{
   nodeDef: ComfyNodeDefImpl
+  showInputsAndOutputs?: boolean
 }>()
 
 const previewContainerRef = ref<HTMLElement>()

@@ -16,7 +16,7 @@ const DEFAULT_ICON = 'pi pi-sort'
 
 export const DEFAULT_GROUPING_ID = 'category' as const
 export const DEFAULT_SORTING_ID = 'original' as const
-export const DEFAULT_TAB_ID = 'essentials' as const
+export const DEFAULT_TAB_ID = 'all' as const
 
 class NodeOrganizationService {
   private readonly groupingStrategies: NodeGroupingStrategy[] = [
@@ -132,17 +132,36 @@ class NodeOrganizationService {
           (nodeDef) => nodeDef.essentials_category !== undefined
         )
         const essentialsPathExtractor = (nodeDef: ComfyNodeDefImpl) => {
-          // Use essentials_category as the folder (flat, no hierarchy)
           const folder = nodeDef.essentials_category || ''
           return folder ? [folder, nodeDef.name] : [nodeDef.name]
         }
-        return [
-          {
-            tree: buildNodeDefTree(essentialNodes, {
-              pathExtractor: essentialsPathExtractor
-            })
-          }
+        const tree = buildNodeDefTree(essentialNodes, {
+          pathExtractor: essentialsPathExtractor
+        })
+        const folderOrder = [
+          'basic',
+          'text generation',
+          'image generation',
+          'video generation',
+          'image tools',
+          'video tools',
+          'audio',
+          '3D'
         ]
+        if (tree.children) {
+          const len = folderOrder.length
+          const originalIndex = new Map(
+            tree.children.map((child, i) => [child, i])
+          )
+          tree.children.sort((a, b) => {
+            const ai = folderOrder.indexOf(a.label ?? '')
+            const bi = folderOrder.indexOf(b.label ?? '')
+            const orderA = ai === -1 ? len + originalIndex.get(a)! : ai
+            const orderB = bi === -1 ? len + originalIndex.get(b)! : bi
+            return orderA - orderB
+          })
+        }
+        return [{ tree }]
       }
       case 'custom': {
         const customNodes = nodes.filter(

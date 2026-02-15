@@ -48,13 +48,13 @@ const ESSENTIALS_CATEGORY_MOCK: Record<string, string> = {
   // video tools
   GetVideoComponents: 'video tools',
   // image gen
-  LoraLoader: 'image gen',
+  LoraLoader: 'image generation',
   // video gen
-  'SubgraphBlueprint.pose_to_video_ltx_2_0': 'video gen',
-  'SubgraphBlueprint.canny_to_video_ltx_2_0': 'video gen',
-  KlingLipSyncAudioToVideoNode: 'video gen',
+  'SubgraphBlueprint.pose_to_video_ltx_2_0': 'video generation',
+  'SubgraphBlueprint.canny_to_video_ltx_2_0': 'video generation',
+  KlingLipSyncAudioToVideoNode: 'video generation',
   // text gen
-  OpenAIChatNode: 'text gen',
+  OpenAIChatNode: 'text generation',
   // 3d
   TencentTextToModelNode: '3D',
   TencentImageToModelNode: '3D',

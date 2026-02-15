@@ -143,10 +143,20 @@ const selectedTab = useLocalStorage<TabId>(
   DEFAULT_TAB_ID
 )
 
-const sortOrder = useLocalStorage<SortingStrategyId>(
-  'Comfy.NodeLibrary.SortBy',
-  DEFAULT_SORTING_ID
+const sortOrderByTab = useLocalStorage<Record<TabId, SortingStrategyId>>(
+  'Comfy.NodeLibrary.SortByTab',
+  {
+    essentials: DEFAULT_SORTING_ID,
+    all: DEFAULT_SORTING_ID,
+    custom: 'alphabetical'
+  }
 )
+const sortOrder = computed({
+  get: () => sortOrderByTab.value[selectedTab.value],
+  set: (value) => {
+    sortOrderByTab.value = { ...sortOrderByTab.value, [selectedTab.value]: value }
+  }
+})
 
 const sortingOptions = computed(() =>
   nodeOrganizationService.getSortingStrategies().map((strategy) => ({

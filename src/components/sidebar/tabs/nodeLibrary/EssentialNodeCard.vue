@@ -2,8 +2,8 @@
   <div
     :class="
       cn(
-        'flex flex-col items-center justify-center p-4 rounded-xl cursor-pointer select-none transition-colors duration-150',
-        'bg-neutral-800 hover:bg-neutral-700',
+        'flex flex-col items-center justify-center py-4 px-2 rounded-2xl cursor-pointer select-none transition-colors duration-150 box-content',
+        'bg-component-node-background hover:bg-secondary-background-hover border border-component-node-border',
         'aspect-square'
       )
     "
@@ -16,10 +16,10 @@
     @mouseleave="handleMouseLeave"
   >
     <div class="flex flex-1 items-center justify-center">
-      <i :class="cn(nodeIcon, 'size-10 text-neutral-400')" />
+      <i :class="cn(nodeIcon, 'size-14 text-muted-foreground')" />
     </div>
     <span
-      class="shrink-0 h-8 text-xs font-medium text-center text-neutral-200 line-clamp-2 leading-4"
+      class="shrink-0 h-8 text-sm font-bold text-center text-foreground line-clamp-2 leading-4"
     >
       {{ nodeDef?.display_name }}
     </span>
@@ -30,16 +30,17 @@
       :ref="(el) => (previewRef = el as HTMLElement)"
       :style="nodePreviewStyle"
     >
-      <NodePreviewCard :node-def="nodeDef!" />
+      <NodePreviewCard :node-def="nodeDef!" :show-inputs-and-outputs="false" />
     </div>
   </Teleport>
 </template>
 
 <script setup lang="ts">
 import { kebabCase } from 'es-toolkit/string'
-import { computed } from 'vue'
+import { computed, inject } from 'vue'
 
 import NodePreviewCard from '@/components/node/NodePreviewCard.vue'
+import { SidebarContainerKey } from '@/components/sidebar/tabs/SidebarTabTemplate.vue'
 import { useNodePreviewAndDrag } from '@/composables/node/useNodePreviewAndDrag'
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 import type { RenderedTreeExplorerNode } from '@/types/treeExplorerTypes'
@@ -55,6 +56,8 @@ const emit = defineEmits<{
 
 const nodeDef = computed(() => props.node.data)
 
+const panelRef = inject(SidebarContainerKey, undefined)
+
 const {
   previewRef,
   showPreview,
@@ -63,7 +66,7 @@ const {
   handleMouseLeave,
   handleDragStart,
   handleDragEnd
-} = useNodePreviewAndDrag(nodeDef)
+} = useNodePreviewAndDrag(nodeDef, { panelRef })
 
 const nodeIcon = computed(() => {
   const nodeName = nodeDef.value?.name

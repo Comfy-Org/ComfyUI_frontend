@@ -4,8 +4,9 @@
       <CollapsibleRoot
         v-for="folder in folders"
         :key="folder.key"
-        v-model:open="folderStates[folder.key]"
         class="rounded-lg"
+        :open="expandedKeys.includes(folder.key)"
+        @update:open="toggleFolder(folder.key, $event)"
       >
         <CollapsibleTrigger
           class="group flex w-full items-center justify-between border-0 bg-transparent py-4 px-0 text-sm font-semibold text-neutral-200 cursor-pointer"
@@ -15,7 +16,7 @@
             :class="
               cn(
                 'icon-[lucide--chevron-up] size-4 text-neutral-400 transition-transform duration-200',
-                !folderStates[folder.key] && '-rotate-180'
+                !expandedKeys.includes(folder.key) && '-rotate-180'
               )
             "
           />
@@ -23,7 +24,7 @@
         <CollapsibleContent
           class="overflow-hidden data-[state=closed]:animate-collapsible-up data-[state=open]:animate-collapsible-down"
         >
-          <div class="grid grid-cols-3 gap-3">
+          <div class="grid grid-cols-[repeat(auto-fill,minmax(5rem,1fr))] gap-3">
             <EssentialNodeCard
               v-for="node in folder.children"
               :key="node.key"
@@ -44,7 +45,7 @@ import {
   CollapsibleTrigger,
   TabsContent
 } from 'reka-ui'
-import { computed, reactive, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 import type { RenderedTreeExplorerNode } from '@/types/treeExplorerTypes'
@@ -81,37 +82,20 @@ const folders = computed(() => {
   }))
 })
 
-const folderStates = reactive<Record<string, boolean>>({})
+function toggleFolder(key: string, open: boolean) {
+  if (open) {
+    expandedKeys.value = [...expandedKeys.value, key]
+  } else {
+    expandedKeys.value = expandedKeys.value.filter((k) => k !== key)
+  }
+}
 
-watch(
-  expandedKeys,
-  (keys, oldKeys) => {
-    const isInitial = oldKeys === undefined
-    for (let i = 0; i < folders.value.length; i++) {
-      const folder = folders.value[i]
-      if (isInitial && keys.length === 0) {
-        folderStates[folder.key] = i < 2
-      } else {
-        folderStates[folder.key] = keys.includes(folder.key)
-      }
-    }
-  },
-  { immediate: true }
-)
+const hasAutoExpanded = ref(false)
 
-watch(
-  folderStates,
-  (states) => {
-    const newKeys = Object.entries(states)
-      .filter(([, isOpen]) => isOpen)
-      .map(([key]) => key)
-    if (
-      JSON.stringify(newKeys.sort()) !==
-      JSON.stringify([...expandedKeys.value].sort())
-    ) {
-      expandedKeys.value = newKeys
-    }
-  },
-  { deep: true }
-)
+watch(folders, (value) => {
+  if (!hasAutoExpanded.value && value.length > 0) {
+    hasAutoExpanded.value = true
+    expandedKeys.value = value.map((folder) => folder.key)
+  }
+})
 </script>

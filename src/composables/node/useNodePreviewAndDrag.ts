@@ -5,11 +5,12 @@ import { useNodeDragToCanvas } from '@/composables/node/useNodeDragToCanvas'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 
-const PREVIEW_WIDTH = 176
+const PREVIEW_WIDTH = 200
 const PREVIEW_MARGIN = 16
 
 export function useNodePreviewAndDrag(
-  nodeDef: Ref<ComfyNodeDefImpl | undefined>
+  nodeDef: Ref<ComfyNodeDefImpl | undefined>,
+  options?: { panelRef?: Ref<HTMLElement | null> }
 ) {
   const { startDrag, handleNativeDrop } = useNodeDragToCanvas()
   const settingStore = useSettingStore()
@@ -55,7 +56,8 @@ export function useNodePreviewAndDrag(
 
     const target = e.currentTarget as HTMLElement
     const rect = target.getBoundingClientRect()
-    const { left, viewportHeight } = calculatePreviewPosition(rect)
+    const horizontalRect = options?.panelRef?.value?.getBoundingClientRect() ?? rect
+    const { left, viewportHeight } = calculatePreviewPosition(horizontalRect)
 
     let top = rect.top
 
