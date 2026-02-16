@@ -4,7 +4,7 @@ import { computed, readonly } from 'vue'
 import { t } from '@/i18n'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { api } from '@/scripts/api'
-import { useDialogService } from '@/services/dialogService'
+import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
 import { useCommandStore } from '@/stores/commandStore'
 import { useSystemStatsStore } from '@/stores/systemStatsStore'
 import { useManagerDialog } from '@/workbench/extensions/manager/composables/useManagerDialog'
@@ -148,12 +148,12 @@ export function useManagerState() {
     isLegacyOnly?: boolean
   }): Promise<void> => {
     const state = managerUIState.value
-    const dialogService = useDialogService()
+    const settingsDialog = useSettingsDialog()
     const commandStore = useCommandStore()
 
     switch (state) {
       case ManagerUIState.DISABLED:
-        void dialogService.showSettingsDialog('extension')
+        settingsDialog.show('extension')
         break
 
       case ManagerUIState.LEGACY_UI: {
@@ -173,7 +173,7 @@ export function useManagerState() {
           }
           // Fallback to extensions panel if not showing toast
           if (options?.showToastOnLegacyError === false) {
-            void dialogService.showSettingsDialog('extension')
+            settingsDialog.show('extension')
           }
         }
         break

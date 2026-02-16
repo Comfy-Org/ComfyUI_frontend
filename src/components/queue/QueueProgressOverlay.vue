@@ -44,12 +44,6 @@
         @clear-queued="cancelQueuedWorkflows"
         @view-all-jobs="viewAllJobs"
       />
-
-      <QueueOverlayEmpty
-        v-else-if="completionSummary"
-        :summary="completionSummary"
-        @summary-click="onSummaryClick"
-      />
     </div>
   </div>
 
@@ -64,11 +58,9 @@ import { computed, nextTick, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import QueueOverlayActive from '@/components/queue/QueueOverlayActive.vue'
-import QueueOverlayEmpty from '@/components/queue/QueueOverlayEmpty.vue'
 import QueueOverlayExpanded from '@/components/queue/QueueOverlayExpanded.vue'
 import QueueClearHistoryDialog from '@/components/queue/dialogs/QueueClearHistoryDialog.vue'
 import ResultGallery from '@/components/sidebar/tabs/queue/ResultGallery.vue'
-import { useCompletionSummary } from '@/composables/queue/useCompletionSummary'
 import { useJobList } from '@/composables/queue/useJobList'
 import type { JobListItem } from '@/composables/queue/useJobList'
 import { useQueueProgress } from '@/composables/queue/useQueueProgress'
@@ -84,7 +76,7 @@ import { useExecutionStore } from '@/stores/executionStore'
 import { useQueueStore } from '@/stores/queueStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 
-type OverlayState = 'hidden' | 'empty' | 'active' | 'expanded'
+type OverlayState = 'hidden' | 'active' | 'expanded'
 
 const props = withDefaults(
   defineProps<{
@@ -130,9 +122,6 @@ const isExpanded = computed({
   }
 })
 
-const { summary: completionSummary, clearSummary } = useCompletionSummary()
-const hasCompletionSummary = computed(() => completionSummary.value !== null)
-
 const runningCount = computed(() => queueStore.runningTasks.length)
 const queuedCount = computed(() => queueStore.pendingTasks.length)
 const isExecuting = computed(() => !executionStore.isIdle)
@@ -142,14 +131,12 @@ const activeJobsCount = computed(() => runningCount.value + queuedCount.value)
 const overlayState = computed<OverlayState>(() => {
   if (isExpanded.value) return 'expanded'
   if (hasActiveJob.value) return 'active'
-  if (hasCompletionSummary.value) return 'empty'
   return 'hidden'
 })
 
 const showBackground = computed(
   () =>
     overlayState.value === 'expanded' ||
-    overlayState.value === 'empty' ||
     (overlayState.value === 'active' && isOverlayHovered.value)
 )
 
@@ -230,17 +217,8 @@ const setExpanded = (expanded: boolean) => {
   isExpanded.value = expanded
 }
 
-const openExpandedFromEmpty = () => {
-  setExpanded(true)
-}
-
 const viewAllJobs = () => {
   setExpanded(true)
-}
-
-const onSummaryClick = () => {
-  openExpandedFromEmpty()
-  clearSummary()
 }
 
 const openAssetsSidebar = () => {

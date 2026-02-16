@@ -146,8 +146,10 @@ export class ComfyApp {
   private queueItems: {
     number: number
     batchCount: number
+    requestId: number
     queueNodeIds?: NodeExecutionId[]
   }[] = []
+  private nextQueueRequestId = 1
   /**
    * If the queue is currently being processed
    */
@@ -793,7 +795,7 @@ export class ComfyApp {
     await useWorkspaceStore().workflow.syncWorkflows()
     //Doesn't need to block. Blueprints will load async
     void useSubgraphStore().fetchSubgraphs()
-    void useNodeReplacementStore().load()
+    await useNodeReplacementStore().load()
     await useExtensionService().loadExtensions()
 
     this.addProcessKeyHandler()
@@ -1146,6 +1148,8 @@ export class ComfyApp {
 
     const embeddedModels: ModelFile[] = []
 
+    const nodeReplacementStore = useNodeReplacementStore()
+
     const collectMissingNodesAndModels = (
       nodes: ComfyWorkflowJSON['nodes'],
       path: string = ''
@@ -1158,25 +1162,27 @@ export class ComfyApp {
         return
       }
       for (let n of nodes) {
-        // Patch T2IAdapterLoader to ControlNetLoader since they are the same node now
-        if (n.type == 'T2IAdapterLoader') n.type = 'ControlNetLoader'
-        if (n.type == 'ConditioningAverage ') n.type = 'ConditioningAverage' //typo fix
-        if (n.type == 'SDV_img2vid_Conditioning')
-          n.type = 'SVD_img2vid_Conditioning' //typo fix
-        if (n.type == 'Load3DAnimation') n.type = 'Load3D' // Animation node merged into Load3D
-        if (n.type == 'Preview3DAnimation') n.type = 'Preview3D' // Animation node merged into Load3D
+        // When node replacement is disabled, fall back to hardcoded patches
+        if (!nodeReplacementStore.isEnabled) {
+          if (n.type == 'T2IAdapterLoader') n.type = 'ControlNetLoader'
+          if (n.type == 'ConditioningAverage ') n.type = 'ConditioningAverage'
+          if (n.type == 'SDV_img2vid_Conditioning')
+            n.type = 'SVD_img2vid_Conditioning'
+          if (n.type == 'Load3DAnimation') n.type = 'Load3D'
+          if (n.type == 'Preview3DAnimation') n.type = 'Preview3D'
+        }
 
         // Find missing node types
         if (!(n.type in LiteGraph.registered_node_types)) {
-          // Include context about subgraph location if applicable
-          if (path) {
-            missingNodeTypes.push({
-              type: n.type,
-              hint: `in subgraph '${path}'`
-            })
-          } else {
-            missingNodeTypes.push(n.type)
-          }
+          const replacement = nodeReplacementStore.getReplacementFor(n.type)
+
+          missingNodeTypes.push({
+            type: n.type,
+            ...(path && { hint: `in subgraph '${path}'` }),
+            isReplaceable: replacement !== null,
+            replacement: replacement ?? undefined
+          })
+
           n.type = sanitizeNodeName(n.type)
         }
 
@@ -1379,7 +1385,12 @@ export class ComfyApp {
     batchCount: number = 1,
     queueNodeIds?: NodeExecutionId[]
   ): Promise<boolean> {
-    this.queueItems.push({ number, batchCount, queueNodeIds })
+    const requestId = this.nextQueueRequestId++
+    this.queueItems.push({ number, batchCount, queueNodeIds, requestId })
+    api.dispatchCustomEvent('promptQueueing', {
+      requestId,
+      batchCount
+    })
 
     // Only have one action process the items so each one gets a unique seed correctly
     if (this.processingQueue) {
@@ -1396,7 +1407,9 @@ export class ComfyApp {
 
     try {
       while (this.queueItems.length) {
-        const { number, batchCount, queueNodeIds } = this.queueItems.pop()!
+        const { number, batchCount, queueNodeIds, requestId } =
+          this.queueItems.pop()!
+        let queuedCount = 0
         const previewMethod = useSettingStore().get(
           'Comfy.Execution.PreviewMethod'
         )
@@ -1462,6 +1475,8 @@ export class ComfyApp {
             break
           }
 
+          queuedCount++
+
           // Allow widgets to run callbacks after a prompt has been queued
           // e.g. random seed after every gen
           executeWidgetsCallback(queuedNodes, 'afterQueued', {
@@ -1470,11 +1485,18 @@ export class ComfyApp {
           this.canvas.draw(true, true)
           await this.ui.queue.update()
         }
+
+        if (queuedCount > 0) {
+          api.dispatchCustomEvent('promptQueued', {
+            number,
+            batchCount: queuedCount,
+            requestId
+          })
+        }
       }
     } finally {
       this.processingQueue = false
     }
-    api.dispatchCustomEvent('promptQueued', { number, batchCount })
     return !executionStore.lastNodeErrors
   }
 
@@ -1491,7 +1513,9 @@ export class ComfyApp {
   async handleFile(file: File, openSource?: WorkflowOpenSource) {
     const fileName = file.name.replace(/\.\w+$/, '') // Strip file extension
     const workflowData = await getWorkflowDataFromFile(file)
-    if (_.isEmpty(workflowData)) {
+    const { workflow, prompt, parameters, templates } = workflowData ?? {}
+
+    if (!(workflow || prompt || parameters || templates)) {
       if (file.type.startsWith('image')) {
         const transfer = new DataTransfer()
         transfer.items.add(file)
@@ -1503,8 +1527,6 @@ export class ComfyApp {
       this.showErrorOnFileLoad(file)
       return
     }
-
-    const { workflow, prompt, parameters, templates } = workflowData
 
     if (
       templates &&

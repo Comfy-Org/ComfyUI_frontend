@@ -88,10 +88,13 @@
                 </div>
                 <div class="flex items-baseline gap-1 font-inter font-semibold">
                   <span class="text-2xl">${{ tierPrice }}</span>
-                  <span class="text-base"
-                    >{{ $t('subscription.perMonth') }} /
-                    {{ $t('subscription.member') }}</span
-                  >
+                  <span class="text-base">
+                    {{
+                      isInPersonalWorkspace
+                        ? $t('subscription.usdPerMonth')
+                        : $t('subscription.usdPerMonthPerMember')
+                    }}
+                  </span>
                 </div>
                 <div
                   v-if="isActiveSubscription"
@@ -176,7 +179,7 @@
           <div class="flex flex-col">
             <div class="flex flex-col gap-3 h-full">
               <div
-                class="relative flex flex-col gap-6 rounded-2xl p-5 bg-modal-panel-background justify-between h-full"
+                class="relative flex flex-col gap-6 rounded-2xl p-5 bg-secondary-background justify-between h-full"
               >
                 <Button
                   variant="muted-textonly"
@@ -359,7 +362,6 @@ import { useSubscriptionActions } from '@/platform/cloud/subscription/composable
 import { useSubscriptionCredits } from '@/platform/cloud/subscription/composables/useSubscriptionCredits'
 import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
 import { useDialogService } from '@/services/dialogService'
-import type { TierKey } from '@/platform/cloud/subscription/constants/tierPricing'
 import {
   DEFAULT_TIER_KEY,
   TIER_TO_KEY,
@@ -388,7 +390,7 @@ const {
   manageSubscription,
   fetchStatus,
   fetchBalance,
-  plans: apiPlans
+  getMaxSeats
 } = useBillingContext()
 
 const { showCancelSubscriptionDialog } = useDialogService()
@@ -511,23 +513,6 @@ const tierPrice = computed(() =>
 const memberCount = computed(() => members.value.length)
 const nextMonthInvoice = computed(() => memberCount.value * tierPrice.value)
 
-function getApiPlanForTier(tierKey: TierKey, duration: 'monthly' | 'yearly') {
-  const apiDuration = duration === 'yearly' ? 'ANNUAL' : 'MONTHLY'
-  const apiTier = tierKey.toUpperCase()
-  return apiPlans.value.find(
-    (p) => p.tier === apiTier && p.duration === apiDuration
-  )
-}
-
-function getMaxSeatsFromApi(tierKey: TierKey): number | null {
-  const plan = getApiPlanForTier(tierKey, 'monthly')
-  return plan ? plan.max_seats : null
-}
-
-function getMaxMembers(tierKey: TierKey): number {
-  return getMaxSeatsFromApi(tierKey) ?? getTierFeatures(tierKey).maxMembers
-}
-
 const refillsDate = computed(() => {
   if (!subscription.value?.renewalDate) return ''
   const date = new Date(subscription.value.renewalDate)
@@ -571,13 +556,18 @@ interface Benefit {
 const tierBenefits = computed((): Benefit[] => {
   const key = tierKey.value
 
-  const benefits: Benefit[] = [
-    {
+  const benefits: Benefit[] = []
+
+  if (!isInPersonalWorkspace.value) {
+    benefits.push({
       key: 'members',
       type: 'icon',
-      label: t('subscription.membersLabel', { count: getMaxMembers(key) }),
+      label: t('subscription.membersLabel', { count: getMaxSeats(key) }),
       icon: 'pi pi-user'
-    },
+    })
+  }
+
+  benefits.push(
     {
       key: 'maxDuration',
       type: 'metric',
@@ -594,7 +584,7 @@ const tierBenefits = computed((): Benefit[] => {
       type: 'feature',
       label: t('subscription.addCreditsLabel')
     }
-  ]
+  )
 
   if (getTierFeatures(key).customLoRAs) {
     benefits.push({

@@ -353,15 +353,6 @@
         "name": "denetleme",
         "tooltip": "Denetleme ayarları"
       },
-      "moderation_prompt_content_moderation": {
-        "name": "istem_içeriği_denetleme"
-      },
-      "moderation_visual_input_moderation": {
-        "name": "görsel_girdi_denetleme"
-      },
-      "moderation_visual_output_moderation": {
-        "name": "görsel_çıktı_denetleme"
-      },
       "negative_prompt": {
         "name": "negatif_istem"
       },
@@ -386,6 +377,56 @@
       },
       "1": {
         "name": "yapılandırılmış_istem",
+        "tooltip": null
+      }
+    }
+  },
+  "BriaRemoveImageBackground": {
+    "description": "Bria RMBG 2.0 kullanarak bir görselin arka planını kaldırın.",
+    "display_name": "Bria Görsel Arka Planı Kaldır",
+    "inputs": {
+      "control_after_generate": {
+        "name": "oluşturduktan sonra kontrol et"
+      },
+      "image": {
+        "name": "görsel"
+      },
+      "moderation": {
+        "name": "moderasyon",
+        "tooltip": "Moderasyon ayarları"
+      },
+      "seed": {
+        "name": "tohum",
+        "tooltip": "Tohum, düğümün tekrar çalıştırılıp çalıştırılmayacağını kontrol eder; sonuçlar tohumdan bağımsız olarak deterministik değildir."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "BriaRemoveVideoBackground": {
+    "description": "Bria kullanarak bir videonun arka planını kaldırın.",
+    "display_name": "Bria Video Arka Planı Kaldır",
+    "inputs": {
+      "background_color": {
+        "name": "arka plan rengi",
+        "tooltip": "Çıktı video için arka plan rengi."
+      },
+      "control_after_generate": {
+        "name": "oluşturduktan sonra kontrol et"
+      },
+      "seed": {
+        "name": "tohum",
+        "tooltip": "Tohum, düğümün tekrar çalıştırılıp çalıştırılmayacağını kontrol eder; sonuçlar tohumdan bağımsız olarak deterministik değildir."
+      },
+      "video": {
+        "name": "video"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -7347,6 +7388,88 @@
       }
     }
   },
+  "MagnificImageUpscalerCreativeNode": {
+    "description": "Prompt rehberliğinde geliştirme, stilizasyon ve 2x/4x/8x/16x büyütme. Maksimum çıktı: 25,3 megapiksel.",
+    "display_name": "Magnific Görüntü Büyütme (Yaratıcı)",
+    "inputs": {
+      "auto_downscale": {
+        "name": "otomatik_küçültme",
+        "tooltip": "Çıktı maksimum piksel sınırını aşarsa giriş görüntüsünü otomatik olarak küçült."
+      },
+      "creativity": {
+        "name": "yaratıcılık"
+      },
+      "engine": {
+        "name": "motor"
+      },
+      "fractality": {
+        "name": "fraktalite",
+        "tooltip": "Prompt gücü ve piksel başına karmaşıklık."
+      },
+      "hdr": {
+        "name": "hdr",
+        "tooltip": "Tanım ve detay seviyesi."
+      },
+      "image": {
+        "name": "görüntü"
+      },
+      "optimized_for": {
+        "name": "için_optimize_edildi"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "resemblance": {
+        "name": "benzerlik",
+        "tooltip": "Orijinal görüntüye benzerlik seviyesi."
+      },
+      "scale_factor": {
+        "name": "ölçek_faktörü"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MagnificImageUpscalerPreciseV2Node": {
+    "description": "Keskinlik, gren ve detay üzerinde hassas kontrol ile yüksek doğrulukta büyütme. Maksimum çıktı: 10060×10060 piksel.",
+    "display_name": "Magnific Görüntü Büyütme (Hassas V2)",
+    "inputs": {
+      "auto_downscale": {
+        "name": "otomatik_küçültme",
+        "tooltip": "Çıktı maksimum çözünürlüğü aşarsa giriş görüntüsünü otomatik olarak küçült."
+      },
+      "flavor": {
+        "name": "stil",
+        "tooltip": "İşleme stili: genel kullanım için sublime, fotoğraflar için photo, gürültülü fotoğraflar için photo_denoiser."
+      },
+      "image": {
+        "name": "görüntü"
+      },
+      "scale_factor": {
+        "name": "ölçek_faktörü"
+      },
+      "sharpen": {
+        "name": "keskinleştirme",
+        "tooltip": "Görüntü keskinliği yoğunluğu. Yüksek değerler kenar tanımını ve netliği artırır."
+      },
+      "smart_grain": {
+        "name": "akıllı_gren",
+        "tooltip": "Görüntünün çok pürüzsüz veya yapay görünmesini önlemek için akıllı gren/doku artırımı."
+      },
+      "ultra_detail": {
+        "name": "ultra_detay",
+        "tooltip": "Büyütme sırasında eklenen ince detayları, dokuları ve mikro detayları kontrol eder."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "Mahiro": {
     "description": "Rehberliği, negatif istem arasındaki farktan ziyade pozitif istemin 'yönüne' daha fazla ölçeklenecek şekilde değiştirin.",
     "display_name": "Mahiro o kadar sevimli ki daha iyi bir rehberlik fonksiyonunu hak ediyor!! (。・ω・。)",
@@ -10981,8 +11104,13 @@
   "PreviewAny": {
     "display_name": "Herhangi Bir Şeyi Önizle",
     "inputs": {
-      "preview": {},
       "previewMode": {},
+      "preview_markdown": {
+        "name": "Önizleme"
+      },
+      "preview_text": {
+        "name": "Önizleme"
+      },
       "source": {
         "name": "kaynak"
       }
@@ -14012,6 +14140,29 @@
       }
     }
   },
+  "Tencent3DPartNode": {
+    "description": "Model yapısına göre otomatik olarak bileşen tanımlama ve oluşturma işlemlerini gerçekleştirir.",
+    "display_name": "Hunyuan3D: 3D Parça",
+    "inputs": {
+      "control_after_generate": {
+        "name": "oluşturduktan sonra kontrol et"
+      },
+      "model_3d": {
+        "name": "model_3d",
+        "tooltip": "FBX formatında 3D model. Model 30000'den az yüzeye sahip olmalıdır."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed, düğümün tekrar çalıştırılıp çalıştırılmayacağını kontrol eder; seed ne olursa olsun sonuçlar deterministik değildir."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "FBX",
+        "tooltip": null
+      }
+    }
+  },
   "TencentImageToModelNode": {
     "display_name": "Hunyuan3D: Görsel(ler)den Modele (Pro)",
     "inputs": {
@@ -14152,6 +14303,9 @@
       },
       "lyrics": {
         "name": "şarkı sözleri"
+      },
+      "min_p": {
+        "name": "min_p"
       },
       "seed": {
         "name": "tohum"

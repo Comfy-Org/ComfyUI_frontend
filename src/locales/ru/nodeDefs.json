@@ -353,15 +353,6 @@
         "name": "модерация",
         "tooltip": "Настройки модерации"
       },
-      "moderation_prompt_content_moderation": {
-        "name": "модерация_контента_промпта"
-      },
-      "moderation_visual_input_moderation": {
-        "name": "модерация_визуального_входа"
-      },
-      "moderation_visual_output_moderation": {
-        "name": "модерация_визуального_выхода"
-      },
       "negative_prompt": {
         "name": "негативный_промпт"
       },
@@ -386,6 +377,56 @@
       },
       "1": {
         "name": "структурированный_промпт",
+        "tooltip": null
+      }
+    }
+  },
+  "BriaRemoveImageBackground": {
+    "description": "Удалите фон с изображения с помощью Bria RMBG 2.0.",
+    "display_name": "Bria Удалить фон изображения",
+    "inputs": {
+      "control_after_generate": {
+        "name": "контроль после генерации"
+      },
+      "image": {
+        "name": "изображение"
+      },
+      "moderation": {
+        "name": "модерация",
+        "tooltip": "Настройки модерации"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed определяет, должен ли узел выполняться повторно; результаты всегда недетерминированы независимо от seed."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "BriaRemoveVideoBackground": {
+    "description": "Удалите фон с видео с помощью Bria.",
+    "display_name": "Bria Удалить фон видео",
+    "inputs": {
+      "background_color": {
+        "name": "цвет фона",
+        "tooltip": "Цвет фона для выходного видео."
+      },
+      "control_after_generate": {
+        "name": "контроль после генерации"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed определяет, должен ли узел выполняться повторно; результаты всегда недетерминированы независимо от seed."
+      },
+      "video": {
+        "name": "видео"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -7347,6 +7388,88 @@
       }
     }
   },
+  "MagnificImageUpscalerCreativeNode": {
+    "description": "Улучшение по подсказке, стилизация и увеличение в 2x/4x/8x/16x. Максимальный выход: 25,3 мегапикселя.",
+    "display_name": "Magnific Image Upscale (Creative)",
+    "inputs": {
+      "auto_downscale": {
+        "name": "автоматическое уменьшение",
+        "tooltip": "Автоматически уменьшать входное изображение, если выход превышает максимальный лимит пикселей."
+      },
+      "creativity": {
+        "name": "креативность"
+      },
+      "engine": {
+        "name": "движок"
+      },
+      "fractality": {
+        "name": "фрактальность",
+        "tooltip": "Сила промпта и сложность на квадратный пиксель."
+      },
+      "hdr": {
+        "name": "HDR",
+        "tooltip": "Уровень чёткости и детализации."
+      },
+      "image": {
+        "name": "изображение"
+      },
+      "optimized_for": {
+        "name": "оптимизировано для"
+      },
+      "prompt": {
+        "name": "промпт"
+      },
+      "resemblance": {
+        "name": "сходство",
+        "tooltip": "Степень сходства с оригинальным изображением."
+      },
+      "scale_factor": {
+        "name": "коэффициент увеличения"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MagnificImageUpscalerPreciseV2Node": {
+    "description": "Высокоточное увеличение с тонкой настройкой резкости, зернистости и детализации. Максимальный выход: 10060×10060 пикселей.",
+    "display_name": "Magnific Image Upscale (Precise V2)",
+    "inputs": {
+      "auto_downscale": {
+        "name": "автоматическое уменьшение",
+        "tooltip": "Автоматически уменьшать входное изображение, если выход превышает максимальное разрешение."
+      },
+      "flavor": {
+        "name": "стиль обработки",
+        "tooltip": "Стиль обработки: sublime — для общего использования, photo — для фотографий, photo_denoiser — для шумных фото."
+      },
+      "image": {
+        "name": "изображение"
+      },
+      "scale_factor": {
+        "name": "коэффициент увеличения"
+      },
+      "sharpen": {
+        "name": "резкость",
+        "tooltip": "Интенсивность резкости изображения. Более высокие значения увеличивают чёткость и контрастность краёв."
+      },
+      "smart_grain": {
+        "name": "умная зернистость",
+        "tooltip": "Интеллектуальное усиление текстуры/зернистости, чтобы изображение не выглядело слишком гладким или искусственным."
+      },
+      "ultra_detail": {
+        "name": "ультра-детализация",
+        "tooltip": "Управляет добавлением мелких деталей, текстур и микродеталей при увеличении."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "Mahiro": {
     "description": "Измените руководство, чтобы оно больше масштабировалось в «направлении» положительной подсказки, а не разницы между отрицательной подсказкой.",
     "display_name": "Mahiro настолько мила, что заслуживает лучшей функции руководства!! (。・ω・。)",
@@ -10981,8 +11104,13 @@
   "PreviewAny": {
     "display_name": "Предпросмотр любого",
     "inputs": {
-      "preview": {},
       "previewMode": {},
+      "preview_markdown": {
+        "name": "Предпросмотр"
+      },
+      "preview_text": {
+        "name": "Предпросмотр"
+      },
       "source": {
         "name": "источник"
       }
@@ -14012,6 +14140,29 @@
       }
     }
   },
+  "Tencent3DPartNode": {
+    "description": "Автоматически выполняет идентификацию и генерацию компонентов на основе структуры модели.",
+    "display_name": "Hunyuan3D: 3D Part",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model_3d": {
+        "name": "model_3d",
+        "tooltip": "3D-модель в формате FBX. Модель должна содержать менее 30000 граней."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed управляет необходимостью повторного запуска узла; результаты не являются детерминированными независимо от seed."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "FBX",
+        "tooltip": null
+      }
+    }
+  },
   "TencentImageToModelNode": {
     "display_name": "Hunyuan3D: Изображение(я) в модель (Pro)",
     "inputs": {
@@ -14152,6 +14303,9 @@
       },
       "lyrics": {
         "name": "текст песни"
+      },
+      "min_p": {
+        "name": "min_p"
       },
       "seed": {
         "name": "seed"

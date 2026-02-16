@@ -94,8 +94,11 @@
     "openNewIssue": "Open New Issue",
     "showReport": "Show Report",
     "imageFailedToLoad": "Image failed to load",
+    "imageDoesNotExist": "Image does not exist",
+    "unknownFile": "Unknown file",
     "reconnecting": "Reconnecting",
     "reconnected": "Reconnected",
+    "disconnectedFromBackend": "Disconnected from backend. Check if the server is running.",
     "delete": "Delete",
     "rename": "Rename",
     "save": "Save",
@@ -816,8 +819,11 @@
       "viewJobHistory": "View active jobs (right-click to clear queue)",
       "noActiveJobs": "No active jobs",
       "stubClipTextEncode": "CLIP Text Encode:",
+      "jobCompleted": "Job completed",
+      "jobFailed": "Job failed",
       "jobsCompleted": "{count} job completed | {count} jobs completed",
       "jobsFailed": "{count} job failed | {count} jobs failed",
+      "jobsAddedToQueue": "{count} job added to queue | {count} jobs added to queue",
       "cancelJobTooltip": "Cancel job",
       "clearQueueTooltip": "Clear queue",
       "clearHistoryDialogTitle": "Clear your job queue history?",
@@ -898,7 +904,7 @@
     "theme": "Theme",
     "dark": "Dark",
     "light": "Light",
-    "manageExtensions": "Manage Extensions",
+    "manageExtensions": "Extensions",
     "customNodesManager": "Custom Nodes Manager",
     "settings": "Settings",
     "help": "Help",
@@ -1102,7 +1108,7 @@
     "theme": "Theme",
     "dark": "Dark",
     "light": "Light",
-    "manageExtensions": "Manage Extensions",
+    "manageExtensions": "Extensions",
     "settings": "Settings",
     "help": "Help",
     "queue": "Queue Panel"
@@ -1111,6 +1117,7 @@
     "initializingAlmostReady": "Initializing - Almost ready",
     "inQueue": "In queue...",
     "jobAddedToQueue": "Job added to queue",
+    "jobQueueing": "Job queueing",
     "completedIn": "Finished in {duration}",
     "jobMenu": {
       "openAsWorkflowNewTab": "Open as workflow in new tab",
@@ -2040,7 +2047,7 @@
       "howManyCredits": "How many credits would you like to add?",
       "usdAmount": "${amount}",
       "videosEstimate": "~{count} videos*",
-      "templateNote": "*Generated with Wan Fun Control template",
+      "templateNote": "*Generated with Wan 2.2 Image-to-Video template",
       "buy": "Buy",
       "purchaseSuccess": "Credits added successfully!",
       "purchaseError": "Purchase Failed",
@@ -2145,7 +2152,7 @@
     "messageSupport": "Message support",
     "invoiceHistory": "Invoice history",
     "benefits": {
-      "benefit1": "$10 in monthly credits for Partner Nodes — top up when needed",
+      "benefit1": "Monthly credits for Partner Nodes — top up when needed",
       "benefit2": "Up to 30 min runtime per job"
     },
     "yearlyDiscount": "20% DISCOUNT",
@@ -2176,7 +2183,7 @@
     "subscribeNow": "Subscribe Now",
     "subscribeToComfyCloud": "Subscribe to Comfy Cloud",
     "workspaceNotSubscribed": "This workspace is not on a subscription",
-    "subscriptionRequiredMessage": "A subscription is required for members to run workflows on Cloud",
+    "subscriptionRequiredMessage": "A subscription is required for members to run workflows on Cloud and invite members",
     "contactOwnerToSubscribe": "Contact the workspace owner to subscribe",
     "description": "Choose the best plan for you",
     "descriptionWorkspace": "Choose the best plan for your workspace",
@@ -2203,7 +2210,7 @@
     "customLoRAsLabel": "Import your own LoRAs",
     "videoEstimateLabel": "Approx. amount of 5s videos generated with Wan 2.2 Image-to-Video template",
     "videoEstimateHelp": "More details on this template",
-    "videoEstimateExplanation": "These estimates are based on the Wan 2.2 Image-to-Video template using default settings (5 seconds, 640x640, 16fps, 4-step sampling).",
+    "videoEstimateExplanation": "These estimates are based on the Wan 2.2 Image-to-Video template using default settings (5 sec, 16fps, 640x640, 4-step sampling).",
     "videoEstimateTryTemplate": "Try this template",
     "videoTemplateBasedCredits": "Videos generated with Wan 2.2 Image to Video",
     "upgradePlan": "Upgrade Plan",
@@ -2264,7 +2271,7 @@
       "placeholder": "Dashboard workspace settings"
     },
     "members": {
-      "membersCount": "{count}/50 Members",
+      "membersCount": "{count}/{maxSeats} Members",
       "pendingInvitesCount": "{count} pending invite | {count} pending invites",
       "tabs": {
         "active": "Active",
@@ -2280,6 +2287,9 @@
         "revokeInvite": "Revoke invite",
         "removeMember": "Remove member"
       },
+      "upsellBannerSubscribe": "Subscribe to the Creator plan or above to invite team members to this workspace.",
+      "upsellBannerUpgrade": "Upgrade to the Creator plan or above to invite additional team members.",
+      "viewPlans": "View plans",
       "noInvites": "No pending invites",
       "noMembers": "No members",
       "personalWorkspaceMessage": "You can't invite other members to your personal workspace right now. To add members to a workspace,",
@@ -2317,6 +2327,14 @@
       "title": "Uninvite this person?",
       "message": "This member won't be able to join your workspace anymore. Their invite link will be invalidated.",
       "revoke": "Uninvite"
+    },
+    "inviteUpsellDialog": {
+      "titleNotSubscribed": "A subscription is required to invite members",
+      "titleSingleSeat": "Your current plan supports a single seat",
+      "messageNotSubscribed": "To add team members to this workspace, you need a Creator plan or above. The Standard plan supports only a single seat (the owner).",
+      "messageSingleSeat": "The Standard plan includes one seat for the workspace owner. To invite additional members, upgrade to the Creator plan or above to unlock multiple seats.",
+      "viewPlans": "View Plans",
+      "upgradeToCreator": "Upgrade to Creator"
     },
     "inviteMemberDialog": {
       "title": "Invite a person to this workspace",
@@ -2936,7 +2954,9 @@
     "nodesNoneDesc": "NO NODES",
     "fallbackGroupTitle": "Group",
     "fallbackNodeTitle": "Node",
-    "hideAdvancedInputsButton": "Hide advanced inputs"
+    "hideAdvancedInputsButton": "Hide advanced inputs",
+    "resetToDefault": "Reset to default",
+    "resetAllParameters": "Reset all parameters"
   },
   "help": {
     "recentReleases": "Recent releases",
@@ -2964,8 +2984,9 @@
       "message": "You have unsaved changes. Do you want to discard them and switch workspaces?"
     },
     "inviteAccepted": "Invite Accepted",
-    "addedToWorkspace": "You have been added to {workspaceName}",
-    "inviteFailed": "Failed to Accept Invite"
+    "addedToWorkspace": "You have been added to:",
+    "inviteFailed": "Failed to Accept Invite",
+    "viewWorkspace": "View workspace"
   },
   "workspaceAuth": {
     "errors": {

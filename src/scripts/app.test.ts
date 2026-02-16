@@ -196,5 +196,25 @@ describe('ComfyApp', () => {
         mockNode
       )
     })
+
+    it('should handle image files with non-workflow metadata by creating LoadImage node', async () => {
+      vi.mocked(getWorkflowDataFromFile).mockResolvedValue({
+        Software: 'gnome-screenshot'
+      })
+
+      const mockNode = createMockNode()
+      vi.mocked(createNode).mockResolvedValue(mockNode)
+
+      const imageFile = createTestFile('screenshot.png', 'image/png')
+
+      await app.handleFile(imageFile)
+
+      expect(createNode).toHaveBeenCalledWith(mockCanvas, 'LoadImage')
+      expect(pasteImageNode).toHaveBeenCalledWith(
+        mockCanvas,
+        expect.any(DataTransferItemList),
+        mockNode
+      )
+    })
   })
 })

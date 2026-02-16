@@ -353,15 +353,6 @@
         "name": "moderação",
         "tooltip": "Configurações de moderação"
       },
-      "moderation_prompt_content_moderation": {
-        "name": "moderação_do_conteúdo_do_prompt"
-      },
-      "moderation_visual_input_moderation": {
-        "name": "moderação_da_entrada_visual"
-      },
-      "moderation_visual_output_moderation": {
-        "name": "moderação_da_saida_visual"
-      },
       "negative_prompt": {
         "name": "prompt_negativo"
       },
@@ -386,6 +377,56 @@
       },
       "1": {
         "name": "prompt_estruturado",
+        "tooltip": null
+      }
+    }
+  },
+  "BriaRemoveImageBackground": {
+    "description": "Remove o fundo de uma imagem usando Bria RMBG 2.0.",
+    "display_name": "Bria Remover Fundo da Imagem",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controlar após gerar"
+      },
+      "image": {
+        "name": "imagem"
+      },
+      "moderation": {
+        "name": "moderação",
+        "tooltip": "Configurações de moderação"
+      },
+      "seed": {
+        "name": "semente",
+        "tooltip": "A semente controla se o nó deve ser executado novamente; os resultados são não determinísticos independentemente da semente."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "BriaRemoveVideoBackground": {
+    "description": "Remove o fundo de um vídeo usando Bria.",
+    "display_name": "Bria Remover Fundo do Vídeo",
+    "inputs": {
+      "background_color": {
+        "name": "cor de fundo",
+        "tooltip": "Cor de fundo para o vídeo de saída."
+      },
+      "control_after_generate": {
+        "name": "controlar após gerar"
+      },
+      "seed": {
+        "name": "semente",
+        "tooltip": "A semente controla se o nó deve ser executado novamente; os resultados são não determinísticos independentemente da semente."
+      },
+      "video": {
+        "name": "vídeo"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -7349,6 +7390,88 @@
       }
     }
   },
+  "MagnificImageUpscalerCreativeNode": {
+    "description": "Aprimoramento guiado por prompt, estilização e upscaling em 2x/4x/8x/16x. Saída máxima: 25,3 megapixels.",
+    "display_name": "Magnific Image Upscale (Criativo)",
+    "inputs": {
+      "auto_downscale": {
+        "name": "redução automática",
+        "tooltip": "Reduz automaticamente a imagem de entrada se a saída exceder o limite máximo de pixels."
+      },
+      "creativity": {
+        "name": "criatividade"
+      },
+      "engine": {
+        "name": "engine"
+      },
+      "fractality": {
+        "name": "fractalidade",
+        "tooltip": "A força do prompt e complexidade por pixel quadrado."
+      },
+      "hdr": {
+        "name": "hdr",
+        "tooltip": "O nível de definição e detalhe."
+      },
+      "image": {
+        "name": "imagem"
+      },
+      "optimized_for": {
+        "name": "otimizado para"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "resemblance": {
+        "name": "semelhança",
+        "tooltip": "O nível de semelhança com a imagem original."
+      },
+      "scale_factor": {
+        "name": "fator de escala"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MagnificImageUpscalerPreciseV2Node": {
+    "description": "Upscaling de alta fidelidade com controle refinado de nitidez, granulação e detalhes. Saída máxima: 10060×10060 pixels.",
+    "display_name": "Magnific Image Upscale (Preciso V2)",
+    "inputs": {
+      "auto_downscale": {
+        "name": "redução automática",
+        "tooltip": "Reduz automaticamente a imagem de entrada se a saída exceder a resolução máxima."
+      },
+      "flavor": {
+        "name": "estilo",
+        "tooltip": "Estilo de processamento: sublime para uso geral, photo para fotografias, photo_denoiser para fotos com ruído."
+      },
+      "image": {
+        "name": "imagem"
+      },
+      "scale_factor": {
+        "name": "fator de escala"
+      },
+      "sharpen": {
+        "name": "nitidez",
+        "tooltip": "Intensidade da nitidez da imagem. Valores mais altos aumentam a definição das bordas e a clareza."
+      },
+      "smart_grain": {
+        "name": "granulação inteligente",
+        "tooltip": "Aprimoramento inteligente de granulação/textura para evitar que a imagem fique muito lisa ou artificial."
+      },
+      "ultra_detail": {
+        "name": "ultra detalhe",
+        "tooltip": "Controla detalhes finos, texturas e microdetalhes adicionados durante o upscaling."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "Mahiro": {
     "description": "Modifica a orientação para escalar mais na 'direção' do prompt positivo do que na diferença entre o prompt negativo.",
     "display_name": "Mahiro CFG",
@@ -10983,8 +11106,13 @@
   "PreviewAny": {
     "display_name": "Pré-visualizar como Texto",
     "inputs": {
-      "preview": {},
       "previewMode": {},
+      "preview_markdown": {
+        "name": "Pré-visualização"
+      },
+      "preview_text": {
+        "name": "Pré-visualização"
+      },
       "source": {
         "name": "source"
       }
@@ -14025,6 +14153,29 @@
       }
     }
   },
+  "Tencent3DPartNode": {
+    "description": "Realiza automaticamente a identificação e geração de componentes com base na estrutura do modelo.",
+    "display_name": "Hunyuan3D: Parte 3D",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controlar após gerar"
+      },
+      "model_3d": {
+        "name": "modelo_3d",
+        "tooltip": "Modelo 3D no formato FBX. O modelo deve ter menos de 30.000 faces."
+      },
+      "seed": {
+        "name": "semente",
+        "tooltip": "A semente controla se o nó deve ser executado novamente; os resultados são não determinísticos independentemente da semente."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "FBX",
+        "tooltip": null
+      }
+    }
+  },
   "TencentImageToModelNode": {
     "display_name": "Hunyuan3D: Imagem(ns) para Modelo (Pro)",
     "inputs": {
@@ -14165,6 +14316,9 @@
       },
       "lyrics": {
         "name": "letra"
+      },
+      "min_p": {
+        "name": "min_p"
       },
       "seed": {
         "name": "semente"

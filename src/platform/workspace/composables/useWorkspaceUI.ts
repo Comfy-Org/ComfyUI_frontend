@@ -1,4 +1,4 @@
-import { computed, ref } from 'vue'
+import { computed } from 'vue'
 import { createSharedComposable } from '@vueuse/core'
 
 import type { WorkspaceRole, WorkspaceType } from '../api/workspaceApi'
@@ -137,13 +137,6 @@ function getUIConfig(
 function useWorkspaceUIInternal() {
   const store = useTeamWorkspaceStore()
 
-  // Tab management (shared UI state)
-  const activeTab = ref<string>('plan')
-
-  function setActiveTab(tab: string | number) {
-    activeTab.value = String(tab)
-  }
-
   const workspaceType = computed<WorkspaceType>(
     () => store.activeWorkspace?.type ?? 'personal'
   )
@@ -161,10 +154,6 @@ function useWorkspaceUIInternal() {
   )
 
   return {
-    // Tab management
-    activeTab: computed(() => activeTab.value),
-    setActiveTab,
-
     // Permissions and config
     permissions,
     uiConfig,

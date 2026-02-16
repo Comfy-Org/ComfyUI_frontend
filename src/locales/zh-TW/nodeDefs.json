@@ -353,15 +353,6 @@
         "name": "審核",
         "tooltip": "審核設定"
       },
-      "moderation_prompt_content_moderation": {
-        "name": "提示詞內容審核"
-      },
-      "moderation_visual_input_moderation": {
-        "name": "輸入圖像審核"
-      },
-      "moderation_visual_output_moderation": {
-        "name": "輸出圖像審核"
-      },
       "negative_prompt": {
         "name": "負面提示詞"
       },
@@ -386,6 +377,56 @@
       },
       "1": {
         "name": "結構化提示詞",
+        "tooltip": null
+      }
+    }
+  },
+  "BriaRemoveImageBackground": {
+    "description": "使用 Bria RMBG 2.0 移除影像的背景。",
+    "display_name": "Bria 移除影像背景",
+    "inputs": {
+      "control_after_generate": {
+        "name": "產生後控制"
+      },
+      "image": {
+        "name": "影像"
+      },
+      "moderation": {
+        "name": "審核",
+        "tooltip": "審核設定"
+      },
+      "seed": {
+        "name": "種子",
+        "tooltip": "種子控制此節點是否重新執行；無論種子為何，結果皆為非決定性。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "BriaRemoveVideoBackground": {
+    "description": "使用 Bria 移除影片的背景。",
+    "display_name": "Bria 移除影片背景",
+    "inputs": {
+      "background_color": {
+        "name": "背景顏色",
+        "tooltip": "輸出影片的背景顏色。"
+      },
+      "control_after_generate": {
+        "name": "產生後控制"
+      },
+      "seed": {
+        "name": "種子",
+        "tooltip": "種子控制此節點是否重新執行；無論種子為何，結果皆為非決定性。"
+      },
+      "video": {
+        "name": "影片"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -7347,6 +7388,88 @@
       }
     }
   },
+  "MagnificImageUpscalerCreativeNode": {
+    "description": "基於提示詞的增強、風格化，以及 2x/4x/8x/16x 放大。最大輸出：25.3 百萬像素。",
+    "display_name": "Magnific 影像放大（創意）",
+    "inputs": {
+      "auto_downscale": {
+        "name": "自動降尺寸",
+        "tooltip": "若輸出超過最大像素限制，自動縮小輸入影像。"
+      },
+      "creativity": {
+        "name": "創意"
+      },
+      "engine": {
+        "name": "引擎"
+      },
+      "fractality": {
+        "name": "複雜度",
+        "tooltip": "每平方像素的提示詞強度與細緻度。"
+      },
+      "hdr": {
+        "name": "HDR",
+        "tooltip": "細節與解析度的等級。"
+      },
+      "image": {
+        "name": "影像"
+      },
+      "optimized_for": {
+        "name": "最佳化目標"
+      },
+      "prompt": {
+        "name": "提示詞"
+      },
+      "resemblance": {
+        "name": "相似度",
+        "tooltip": "與原始影像的相似程度。"
+      },
+      "scale_factor": {
+        "name": "放大倍率"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MagnificImageUpscalerPreciseV2Node": {
+    "description": "高保真放大，細緻控制銳利度、顆粒感與細節。最大輸出：10060×10060 像素。",
+    "display_name": "Magnific 影像放大（精確 V2）",
+    "inputs": {
+      "auto_downscale": {
+        "name": "自動降尺寸",
+        "tooltip": "若輸出超過最大解析度，自動縮小輸入影像。"
+      },
+      "flavor": {
+        "name": "處理風格",
+        "tooltip": "處理風格：sublime 適用於一般用途，photo 適用於照片，photo_denoiser 適用於雜訊照片。"
+      },
+      "image": {
+        "name": "影像"
+      },
+      "scale_factor": {
+        "name": "放大倍率"
+      },
+      "sharpen": {
+        "name": "銳利度",
+        "tooltip": "影像銳利度強度。數值越高，邊緣越清晰。"
+      },
+      "smart_grain": {
+        "name": "智慧顆粒",
+        "tooltip": "智慧增強顆粒/紋理，避免影像過於平滑或不自然。"
+      },
+      "ultra_detail": {
+        "name": "極致細節",
+        "tooltip": "控制放大時新增的細節、紋理與微細節。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "Mahiro": {
     "description": "修改引導方式，讓其更著重於正向提示詞的「方向性」而非正負提示詞之間的差異。",
     "display_name": "Mahiro 太可愛了，應該要有更好的引導功能!! (。・ω・。)",
@@ -10981,8 +11104,13 @@
   "PreviewAny": {
     "display_name": "預覽任意",
     "inputs": {
-      "preview": {},
       "previewMode": {},
+      "preview_markdown": {
+        "name": "預覽"
+      },
+      "preview_text": {
+        "name": "預覽"
+      },
       "source": {
         "name": "來源"
       }
@@ -14012,6 +14140,29 @@
       }
     }
   },
+  "Tencent3DPartNode": {
+    "description": "根據模型結構自動進行元件識別與生成。",
+    "display_name": "Hunyuan3D：3D零件",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "model_3d": {
+        "name": "model_3d",
+        "tooltip": "FBX 格式的 3D 模型。模型面數應少於 30000。"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed 控制此節點是否重新執行；無論 seed 為何，結果皆為非確定性。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "FBX",
+        "tooltip": null
+      }
+    }
+  },
   "TencentImageToModelNode": {
     "display_name": "Hunyuan3D：圖片轉模型（專業版）",
     "inputs": {
@@ -14152,6 +14303,9 @@
       },
       "lyrics": {
         "name": "歌詞"
+      },
+      "min_p": {
+        "name": "最小 p 值"
       },
       "seed": {
         "name": "種子"

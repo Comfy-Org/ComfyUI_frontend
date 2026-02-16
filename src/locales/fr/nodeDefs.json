@@ -353,15 +353,6 @@
         "name": "modération",
         "tooltip": "Paramètres de modération"
       },
-      "moderation_prompt_content_moderation": {
-        "name": "modération_du_contenu_de_l'invite"
-      },
-      "moderation_visual_input_moderation": {
-        "name": "modération_de_l'entrée_visuelle"
-      },
-      "moderation_visual_output_moderation": {
-        "name": "modération_de_la_sortie_visuelle"
-      },
       "negative_prompt": {
         "name": "invite négative"
       },
@@ -386,6 +377,56 @@
       },
       "1": {
         "name": "invite structurée",
+        "tooltip": null
+      }
+    }
+  },
+  "BriaRemoveImageBackground": {
+    "description": "Supprimez l’arrière-plan d’une image avec Bria RMBG 2.0.",
+    "display_name": "Bria Remove Image Background",
+    "inputs": {
+      "control_after_generate": {
+        "name": "contrôle après génération"
+      },
+      "image": {
+        "name": "image"
+      },
+      "moderation": {
+        "name": "modération",
+        "tooltip": "Paramètres de modération"
+      },
+      "seed": {
+        "name": "graine",
+        "tooltip": "La graine contrôle si le nœud doit être relancé ; les résultats sont non déterministes quel que soit la graine."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "BriaRemoveVideoBackground": {
+    "description": "Supprimez l’arrière-plan d’une vidéo avec Bria.",
+    "display_name": "Bria Remove Video Background",
+    "inputs": {
+      "background_color": {
+        "name": "couleur d’arrière-plan",
+        "tooltip": "Couleur d’arrière-plan pour la vidéo de sortie."
+      },
+      "control_after_generate": {
+        "name": "contrôle après génération"
+      },
+      "seed": {
+        "name": "graine",
+        "tooltip": "La graine contrôle si le nœud doit être relancé ; les résultats sont non déterministes quel que soit la graine."
+      },
+      "video": {
+        "name": "vidéo"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -7347,6 +7388,88 @@
       }
     }
   },
+  "MagnificImageUpscalerCreativeNode": {
+    "description": "Amélioration guidée par prompt, stylisation et agrandissement 2x/4x/8x/16x. Sortie maximale : 25,3 mégapixels.",
+    "display_name": "Magnific Image Upscale (Creative)",
+    "inputs": {
+      "auto_downscale": {
+        "name": "réduction automatique",
+        "tooltip": "Réduit automatiquement l’image d’entrée si la sortie dépasse la limite maximale de pixels."
+      },
+      "creativity": {
+        "name": "créativité"
+      },
+      "engine": {
+        "name": "moteur"
+      },
+      "fractality": {
+        "name": "fractalité",
+        "tooltip": "La force du prompt et la complexité par pixel carré."
+      },
+      "hdr": {
+        "name": "hdr",
+        "tooltip": "Le niveau de définition et de détail."
+      },
+      "image": {
+        "name": "image"
+      },
+      "optimized_for": {
+        "name": "optimisé pour"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "resemblance": {
+        "name": "ressemblance",
+        "tooltip": "Le niveau de ressemblance avec l’image originale."
+      },
+      "scale_factor": {
+        "name": "facteur d’agrandissement"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MagnificImageUpscalerPreciseV2Node": {
+    "description": "Agrandissement haute fidélité avec contrôle précis de la netteté, du grain et des détails. Sortie maximale : 10060×10060 pixels.",
+    "display_name": "Magnific Image Upscale (Precise V2)",
+    "inputs": {
+      "auto_downscale": {
+        "name": "réduction automatique",
+        "tooltip": "Réduit automatiquement l’image d’entrée si la sortie dépasse la résolution maximale."
+      },
+      "flavor": {
+        "name": "style",
+        "tooltip": "Style de traitement : sublime pour un usage général, photo pour les photographies, photo_denoiser pour les photos bruitées."
+      },
+      "image": {
+        "name": "image"
+      },
+      "scale_factor": {
+        "name": "facteur d’agrandissement"
+      },
+      "sharpen": {
+        "name": "netteté",
+        "tooltip": "Intensité de la netteté de l’image. Des valeurs plus élevées augmentent la définition des contours et la clarté."
+      },
+      "smart_grain": {
+        "name": "grain intelligent",
+        "tooltip": "Amélioration intelligente du grain/de la texture pour éviter que l’image ne paraisse trop lisse ou artificielle."
+      },
+      "ultra_detail": {
+        "name": "ultra-détail",
+        "tooltip": "Contrôle les détails fins, les textures et les micro-détails ajoutés lors de l’agrandissement."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "Mahiro": {
     "description": "Modifiez le guidage pour qu'il se concentre davantage sur la 'direction' de l'invite positive plutôt que sur la différence avec l'invite négative.",
     "display_name": "Mahiro est si mignonne qu'elle mérite une meilleure fonction de guidage!! (。・ω・。)",
@@ -10981,8 +11104,13 @@
   "PreviewAny": {
     "display_name": "Aperçu de n'importe quel",
     "inputs": {
-      "preview": {},
       "previewMode": {},
+      "preview_markdown": {
+        "name": "Aperçu"
+      },
+      "preview_text": {
+        "name": "Aperçu"
+      },
       "source": {
         "name": "source"
       }
@@ -14012,6 +14140,29 @@
       }
     }
   },
+  "Tencent3DPartNode": {
+    "description": "Identifie et génère automatiquement des composants en fonction de la structure du modèle.",
+    "display_name": "Hunyuan3D : Partie 3D",
+    "inputs": {
+      "control_after_generate": {
+        "name": "contrôler après génération"
+      },
+      "model_3d": {
+        "name": "modèle_3d",
+        "tooltip": "Modèle 3D au format FBX. Le modèle doit comporter moins de 30 000 faces."
+      },
+      "seed": {
+        "name": "graine",
+        "tooltip": "La graine contrôle si le nœud doit être relancé ; les résultats restent non déterministes quel que soit la graine."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "FBX",
+        "tooltip": null
+      }
+    }
+  },
   "TencentImageToModelNode": {
     "display_name": "Hunyuan3D : Image(s) vers Modèle (Pro)",
     "inputs": {
@@ -14152,6 +14303,9 @@
       },
       "lyrics": {
         "name": "paroles"
+      },
+      "min_p": {
+        "name": "min_p"
       },
       "seed": {
         "name": "graine"

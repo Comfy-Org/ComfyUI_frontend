@@ -1,6 +1,7 @@
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { nextTick } from 'vue'
 import type * as I18n from 'vue-i18n'
 
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
@@ -10,14 +11,24 @@ import { useWorkflowDraftStore } from '@/platform/workflow/persistence/stores/wo
 import { defaultGraphJSON } from '@/scripts/defaultGraph'
 import { setStorageValue } from '@/scripts/utils'
 
-vi.mock('@/platform/settings/settingStore', () => ({
-  useSettingStore: vi.fn(() => ({
-    get: vi.fn((key: string) =>
-      key === 'Comfy.Workflow.Persist' ? true : undefined
-    ),
-    set: vi.fn()
-  }))
+const settingMocks = vi.hoisted(() => ({
+  persistRef: null as { value: boolean } | null
 }))
+
+vi.mock('@/platform/settings/settingStore', async () => {
+  const { ref } = await import('vue')
+  settingMocks.persistRef = ref(true)
+  return {
+    useSettingStore: vi.fn(() => ({
+      get: vi.fn((key: string) => {
+        if (key === 'Comfy.Workflow.Persist')
+          return settingMocks.persistRef!.value
+        return undefined
+      }),
+      set: vi.fn()
+    }))
+  }
+})
 
 const mockToastAdd = vi.fn()
 vi.mock('primevue', () => ({
@@ -114,6 +125,7 @@ describe('useWorkflowPersistence', () => {
     localStorage.clear()
     sessionStorage.clear()
     vi.clearAllMocks()
+    settingMocks.persistRef!.value = true
     mockToastAdd.mockClear()
     useWorkflowDraftStore().reset()
     mocks.state.graphChangedHandler = null
@@ -252,5 +264,26 @@ describe('useWorkflowPersistence', () => {
         detail: expect.any(String)
       })
     )
+  })
+
+  it('clears all drafts when Persist is switched from true to false', async () => {
+    const workflowStore = useWorkflowStore()
+    const draftStore = useWorkflowDraftStore()
+    const workflow = workflowStore.createTemporary('ClearDraft.json')
+    await workflowStore.openWorkflow(workflow)
+
+    useWorkflowPersistence()
+    expect(mocks.state.graphChangedHandler).toBeTypeOf('function')
+
+    mocks.state.currentGraph = { title: 'Draft to clear' }
+    mocks.state.graphChangedHandler!()
+    await vi.advanceTimersByTimeAsync(800)
+
+    expect(draftStore.getDraft('workflows/ClearDraft.json')).toBeDefined()
+
+    settingMocks.persistRef!.value = false
+    await nextTick()
+
+    expect(draftStore.getDraft('workflows/ClearDraft.json')).toBeUndefined()
   })
 })
