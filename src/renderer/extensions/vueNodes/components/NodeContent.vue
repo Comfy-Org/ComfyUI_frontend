@@ -11,6 +11,11 @@
         :node-id="nodeId"
         class="mt-2"
       />
+      <AudioPreview
+        v-else-if="hasMedia && media?.type === 'audio'"
+        :audio-urls="media.urls"
+        class="mt-2"
+      />
       <ImagePreview
         v-else-if="hasMedia && media?.type === 'image'"
         :image-urls="media.urls"
@@ -29,12 +34,13 @@ import { useErrorHandling } from '@/composables/useErrorHandling'
 import { st } from '@/i18n'
 
 import VideoPreview from '../VideoPreview.vue'
+import AudioPreview from './AudioPreview.vue'
 import ImagePreview from './ImagePreview.vue'
 
 interface NodeContentProps {
   nodeData?: VueNodeData
   media?: {
-    type: 'image' | 'video'
+    type: 'image' | 'video' | 'audio'
     urls: string[]
   }
 }

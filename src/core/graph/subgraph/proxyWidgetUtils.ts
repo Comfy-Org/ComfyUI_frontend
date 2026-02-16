@@ -20,6 +20,25 @@ export function getWidgetName(w: IBaseWidget): string {
   return isPromotedWidgetView(w) ? w.sourceWidgetName : w.name
 }
 
+/** Known non-$$ preview widget types added by core or popular extensions. */
+const PREVIEW_WIDGET_TYPES = new Set(['preview', 'video', 'audioUI'])
+
+/**
+ * Returns true for pseudo-widgets that display media previews and should
+ * be auto-promoted when their node is inside a subgraph.
+ * Matches the core `$$` convention as well as custom-node patterns
+ * (e.g. VHS `videopreview` with type `"preview"`).
+ */
+export function isPreviewPseudoWidget(widget: IBaseWidget): boolean {
+  if (widget.name.startsWith('$$')) return true
+  // Custom nodes may set serialize on the widget or in options
+  if (widget.serialize !== false && widget.options?.serialize !== false)
+    return false
+  if (typeof widget.type === 'string' && PREVIEW_WIDGET_TYPES.has(widget.type))
+    return true
+  return false
+}
+
 export function promoteWidget(
   node: PartialNode,
   widget: IBaseWidget,
@@ -141,15 +160,24 @@ export function promoteRecommendedWidgets(subgraphNode: SubgraphNode) {
   const interiorNodes = subgraphNode.subgraph.nodes
   for (const node of interiorNodes) {
     node.updateComputedDisabled()
-    function checkWidgets() {
-      updatePreviews(node)
-      const widget = node.widgets?.find((w) => w.name.startsWith('$$'))
+    function promotePreviewWidget() {
+      const widget = node.widgets?.find(isPreviewPseudoWidget)
       if (!widget) return
       if (store.isPromoted(subgraphNode.id, String(node.id), widget.name))
         return
       promoteWidget(node, widget, [subgraphNode])
     }
-    requestAnimationFrame(() => updatePreviews(node, checkWidgets))
+    // Promote preview widgets that already exist (e.g. custom node DOM widgets
+    // like VHS videopreview that are created in onNodeCreated).
+    promotePreviewWidget()
+    // Also schedule a deferred check: core $$ widgets are created lazily by
+    // updatePreviews when node outputs are first loaded.
+    requestAnimationFrame(() =>
+      updatePreviews(node, () => {
+        updatePreviews(node)
+        promotePreviewWidget()
+      })
+    )
   }
   const filteredWidgets: WidgetItem[] = interiorNodes
     .flatMap(nodeWidgets)

@@ -9,7 +9,7 @@ import { createNodeLocatorId } from '@/types/nodeIdentification'
 
 interface PromotedPreview {
   interiorNodeId: string
-  type: 'image' | 'video'
+  type: 'image' | 'video' | 'audio'
   urls: string[]
 }
 
@@ -52,7 +52,12 @@ export function usePromotedPreviews(
       const urls = nodeOutputStore.getNodeImageUrls(interiorNode)
       if (!urls?.length) continue
 
-      const type = interiorNode.previewMediaType === 'video' ? 'video' : 'image'
+      const type =
+        interiorNode.previewMediaType === 'video'
+          ? 'video'
+          : interiorNode.previewMediaType === 'audio'
+            ? 'audio'
+            : 'image'
 
       previews.push({ interiorNodeId: entry.interiorNodeId, type, urls })
     }

@@ -6,7 +6,10 @@ import { useSubgraphOperations } from '@/composables/graph/useSubgraphOperations
 import { useNodeAnimatedImage } from '@/composables/node/useNodeAnimatedImage'
 import { useNodeCanvasImagePreview } from '@/composables/node/useNodeCanvasImagePreview'
 import { useNodeImage, useNodeVideo } from '@/composables/node/useNodeImage'
-import { addWidgetPromotionOptions } from '@/core/graph/subgraph/proxyWidgetUtils'
+import {
+  addWidgetPromotionOptions,
+  isPreviewPseudoWidget
+} from '@/core/graph/subgraph/proxyWidgetUtils'
 import { applyDynamicInputs } from '@/core/graph/widgets/dynamicWidgets'
 import { st, t } from '@/i18n'
 import {
@@ -803,11 +806,18 @@ export const useLitegraphService = () => {
 
       if (this instanceof SubgraphNode) {
         const promotionStore = usePromotionStore()
-        const entries = promotionStore.getPromotions(this.id)
+        const entries = promotionStore.getPromotions(this.id) ?? []
         const parentGraph = this.graph
-        const pseudoEntries = entries.filter((e) =>
-          e.widgetName.startsWith('$$')
-        )
+        const pseudoEntries = entries.filter((e) => {
+          const interiorNode = this.subgraph.getNodeById(e.interiorNodeId)
+          if (!interiorNode) return false
+          const widget = interiorNode.widgets?.find(
+            (w: IBaseWidget) => w.name === e.widgetName
+          )
+          return widget
+            ? isPreviewPseudoWidget(widget)
+            : e.widgetName && e.widgetName.startsWith('$$')
+        })
         for (const entry of pseudoEntries) {
           const interiorNode = this.subgraph.getNodeById(entry.interiorNodeId)
           if (!interiorNode) continue

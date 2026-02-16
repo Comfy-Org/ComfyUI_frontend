@@ -125,6 +125,24 @@ describe('usePromotedPreviews', () => {
     expect(promotedPreviews.value[0].type).toBe('video')
   })
 
+  it('returns audio type when interior node has audio previewMediaType', () => {
+    const setup = createSetup()
+    addInteriorNode(setup, { id: 10, previewMediaType: 'audio' })
+    usePromotionStore().promote(
+      setup.subgraphNode.id,
+      '10',
+      '$$canvas-image-preview'
+    )
+
+    seedOutputs(setup.subgraph.id, [10])
+    vi.mocked(useNodeOutputStore().getNodeImageUrls).mockReturnValue([
+      '/view?filename=output.mp3'
+    ])
+
+    const { promotedPreviews } = usePromotedPreviews(() => setup.subgraphNode)
+    expect(promotedPreviews.value[0].type).toBe('audio')
+  })
+
   it('returns separate entries for multiple promoted $$ widgets', () => {
     const setup = createSetup()
     const node10 = addInteriorNode(setup, {
