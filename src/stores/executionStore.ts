@@ -669,6 +669,7 @@ export const useExecutionStore = defineStore('execution', () => {
   /** Pre-computed Set of graph node IDs (as strings) that have errors. */
   const errorNodeIds = computed<Set<string>>(() => {
     const ids = new Set<string>()
+    if (!app.rootGraph) return ids
 
     // Node validation errors (400 Bad Request)
     if (lastNodeErrors.value) {

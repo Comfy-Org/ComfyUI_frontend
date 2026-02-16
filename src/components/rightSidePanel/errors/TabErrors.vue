@@ -259,6 +259,7 @@ function regroupByErrorMessage(
       const msgKey = error.message
       if (!messageMap.has(msgKey)) {
         messageMap.set(msgKey, { priority: 1, cards: new Map() })
+        // Priority is unused in single-node mode (sorted by title only); hardcoded to satisfy ErrorGroup type
       }
       const msgGroup = messageMap.get(msgKey)
       if (!msgGroup) continue
