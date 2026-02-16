@@ -1,14 +1,17 @@
 <script setup lang="ts">
-import { useElementBounding, useEventListener } from '@vueuse/core'
-import { computed, reactive, toValue } from 'vue'
+import { useEventListener } from '@vueuse/core'
+import { computed, reactive, ref, toValue } from 'vue'
 import type { MaybeRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import DraggableList from '@/components/common/DraggableList.vue'
+import { useChainCallback } from '@/composables/functional/useChainCallback'
 import type { LGraphNode, NodeId } from '@/lib/litegraph/src/LGraphNode'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useHoveredStore } from '@/stores/hoveredStore'
+import { cn } from '@/utils/tailwindUtil'
 
 const canvasStore = useCanvasStore()
 const hoveredStore = useHoveredStore()
@@ -16,8 +19,8 @@ const settingStore = useSettingStore()
 const { t } = useI18n()
 
 type BoundStyle = { top: string; left: string; width: string; height: string }
-const selectedInputs = reactive<Record<string, MaybeRef<BoundStyle>>>({})
-const selectedOutputs = reactive<Record<string, MaybeRef<BoundStyle>>>({})
+const selectedInputs = reactive<[string, MaybeRef<BoundStyle>][]>([])
+const selectedOutputs = reactive<[string, MaybeRef<BoundStyle>][]>([])
 
 function hoveredKey() {
   return `Hovered: ${hoveredStore.hoveredNodeId}-${hoveredStore.hoveredWidgetName}`
@@ -51,14 +54,24 @@ function getHovered():
   return [node, node.getWidgetOnPos(x, y, false)]
 }
 
+//FIXME: unregistration :(
+const updateDisp = ref(0)
+const { ds } = canvasStore.getCanvas()
+ds.onChanged = useChainCallback(ds.onChanged, () =>
+  requestAnimationFrame(() => updateDisp.value++)
+)
+
 function elementPosition(e: HTMLElement) {
-  const bounding = useElementBounding(e)
-  return computed(() => ({
-    width: `${bounding.width.value}px`,
-    height: `${bounding.height.value}px`,
-    left: `${bounding.left.value}px`,
-    top: `${bounding.top.value}px`
-  }))
+  return computed(() => {
+    void updateDisp.value
+    const bounding = e.getBoundingClientRect()
+    return {
+      width: `${bounding.width}px`,
+      height: `${bounding.height}px`,
+      left: `${bounding.left}px`,
+      top: `${bounding.top}px`
+    }
+  })
 }
 function getBounding(nodeId: NodeId, widgetName?: string) {
   if (settingStore.get('Comfy.VueNodes.Enabled')) {
@@ -103,15 +116,17 @@ useEventListener(
       const key = `${node.id}: ${node.title}`
       if (!node.constructor.nodeData?.output_node) return
       const bounding = getBounding(node.id)
-      if (!(key in selectedOutputs) && bounding) selectedOutputs[key] = bounding
-      else delete selectedOutputs[key]
+      const keyIndex = selectedOutputs.findIndex(([k]) => k === key)
+      if (keyIndex === -1 && bounding) selectedOutputs.push([key, bounding])
+      else selectedOutputs.splice(keyIndex, 1)
       return
     }
 
     const key = `${node.id}: ${widget.name}`
     const bounding = getBounding(node.id, widget.name)
-    if (!(key in selectedInputs) && bounding) selectedInputs[key] = bounding
-    else delete selectedInputs[key]
+    const keyIndex = selectedInputs.findIndex(([k]) => k === key)
+    if (keyIndex === -1 && bounding) selectedInputs.push([key, bounding])
+    else selectedInputs.splice(keyIndex, 1)
   },
   { capture: true }
 )
@@ -124,25 +139,47 @@ useEventListener(
   </div>
   <div class="h-5" />
   {{ t('[PH]Inputs:') }}
-  <div v-for="(_, key) in selectedInputs" :key v-text="key" />
+  <DraggableList v-slot="{ class: dragClass }" v-model="selectedInputs">
+    <div
+      v-for="[key] in selectedInputs"
+      :key
+      :class="cn(dragClass, 'bg-blue-400/20 p-2 rounded-lg')"
+      v-text="key"
+    />
+  </DraggableList>
   <div class="h-5" />
   {{ t('[PH]Outputs:') }}
-  <div v-for="(_, key) in selectedOutputs" :key v-text="key" />
+  <DraggableList v-slot="{ class: dragClass }" v-model="selectedOutputs">
+    <div
+      v-for="[key] in selectedOutputs"
+      :key
+      :class="cn(dragClass, 'bg-orange-400/20 p-2 rounded-lg')"
+      v-text="key"
+    />
+  </DraggableList>
 
   <Teleport to="body">
     <div class="absolute w-full h-full pointer-events-none">
       <div
-        v-for="(style, key) in selectedInputs"
+        v-for="[key, style] in selectedInputs"
         :key
         :style="toValue(style)"
         class="fixed bg-blue-400/50 rounded-lg"
       />
       <div
-        v-for="(style, key) in selectedOutputs"
+        v-for="[key, style] in selectedOutputs"
         :key
         :style="toValue(style)"
-        class="fixed bg-orange-400/50 rounded-lg"
-      />
+        class="fixed bg-orange-400/50 rounded-2xl"
+      >
+        <div
+          class="absolute top-0 right-0 bg-red-400"
+          :style="{
+            width: 0.2 * canvasStore.appScalePercentage + 'px',
+            height: 0.2 * canvasStore.appScalePercentage + 'px'
+          }"
+        />
+      </div>
     </div>
   </Teleport>
 </template>
