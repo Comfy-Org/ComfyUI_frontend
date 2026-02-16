@@ -6,8 +6,8 @@
         showDelay: 600
       }"
       class="comfyui-queue-button"
-      :label="String(activeQueueModeMenuItem?.label ?? '')"
-      severity="primary"
+      :label="queueButtonLabel"
+      :severity="queueButtonSeverity"
       size="small"
       :model="queueModeMenuItems"
       data-testid="queue-button"
@@ -48,7 +48,7 @@ import { useTelemetry } from '@/platform/telemetry'
 import { app } from '@/scripts/app'
 import { useCommandStore } from '@/stores/commandStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
-import { useQueueSettingsStore } from '@/stores/queueStore'
+import { useQueueSettingsStore, useQueueStore } from '@/stores/queueStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { graphHasMissingNodes } from '@/workbench/extensions/manager/utils/graphHasMissingNodes'
 
@@ -56,6 +56,7 @@ import BatchCountEdit from '../BatchCountEdit.vue'
 
 const workspaceStore = useWorkspaceStore()
 const { mode: queueMode, batchCount } = storeToRefs(useQueueSettingsStore())
+const { activeJobsCount } = storeToRefs(useQueueStore())
 
 const nodeDefStore = useNodeDefStore()
 const hasMissingNodes = computed(() =>
@@ -112,7 +113,24 @@ const queueModeMenuItems = computed(() =>
   Object.values(queueModeMenuItemLookup.value)
 )
 
+const isInstantAutoQueueActive = computed(
+  () => queueMode.value === 'instant' && activeJobsCount.value > 0
+)
+
+const queueButtonLabel = computed(() =>
+  isInstantAutoQueueActive.value
+    ? t('menu.stopRunInstant')
+    : String(activeQueueModeMenuItem.value?.label ?? '')
+)
+
+const queueButtonSeverity = computed(() =>
+  isInstantAutoQueueActive.value ? 'danger' : 'primary'
+)
+
 const iconClass = computed(() => {
+  if (isInstantAutoQueueActive.value) {
+    return 'icon-[lucide--square]'
+  }
   if (hasMissingNodes.value) {
     return 'icon-[lucide--triangle-alert]'
   }
@@ -132,6 +150,9 @@ const iconClass = computed(() => {
 })
 
 const queueButtonTooltip = computed(() => {
+  if (isInstantAutoQueueActive.value) {
+    return t('menu.stopRunInstantTooltip')
+  }
   if (hasMissingNodes.value) {
     return t('menu.runWorkflowDisabled')
   }
@@ -143,6 +164,12 @@ const queueButtonTooltip = computed(() => {
 
 const commandStore = useCommandStore()
 const queuePrompt = async (e: Event) => {
+  if (isInstantAutoQueueActive.value) {
+    queueMode.value = 'disabled'
+    await commandStore.execute('Comfy.Interrupt')
+    return
+  }
+
   const isShiftPressed = 'shiftKey' in e && e.shiftKey
   const commandId = isShiftPressed
     ? 'Comfy.QueuePromptFront'
