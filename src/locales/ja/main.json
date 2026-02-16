@@ -1980,6 +1980,7 @@
       "removeJob": "ジョブを削除",
       "reportError": "エラーを報告"
     },
+    "jobQueueing": "ジョブをキューに追加中",
     "toggleJobHistory": "ジョブ履歴を切り替え"
   },
   "releaseToast": {
@@ -2401,7 +2402,10 @@
       "filterJobs": "ジョブをフィルター",
       "inlineTotalLabel": "合計",
       "interruptAll": "すべての実行中ジョブを中断",
+      "jobCompleted": "ジョブが完了しました",
+      "jobFailed": "ジョブが失敗しました",
       "jobQueue": "ジョブキュー",
+      "jobsAddedToQueue": "{count} 件のジョブがキューに追加されました",
       "jobsCompleted": "{count}件のジョブが完了",
       "jobsFailed": "{count}件のジョブが失敗",
       "moreOptions": "その他のオプション",

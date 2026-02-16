@@ -1980,6 +1980,7 @@
       "removeJob": "İşi kaldır",
       "reportError": "Hata bildir"
     },
+    "jobQueueing": "İşlem kuyruğa alınıyor",
     "toggleJobHistory": "İş Geçmişini Aç/Kapat"
   },
   "releaseToast": {
@@ -2401,7 +2402,10 @@
       "filterJobs": "İşleri filtrele",
       "inlineTotalLabel": "Toplam",
       "interruptAll": "Tüm çalışan işleri durdur",
+      "jobCompleted": "İşlem tamamlandı",
+      "jobFailed": "İşlem başarısız oldu",
       "jobQueue": "İş Kuyruğu",
+      "jobsAddedToQueue": "{count} işlem kuyruğa eklendi | {count} işlem kuyruğa eklendi",
       "jobsCompleted": "{count} iş tamamlandı | {count} iş tamamlandı",
       "jobsFailed": "{count} iş başarısız oldu | {count} iş başarısız oldu",
       "moreOptions": "Daha fazla seçenek",
