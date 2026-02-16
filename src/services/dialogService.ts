@@ -5,7 +5,7 @@ import ConfirmationDialogContent from '@/components/dialog/content/ConfirmationD
 import ErrorDialogContent from '@/components/dialog/content/ErrorDialogContent.vue'
 import PromptDialogContent from '@/components/dialog/content/PromptDialogContent.vue'
 import TopUpCreditsDialogContentLegacy from '@/components/dialog/content/TopUpCreditsDialogContentLegacy.vue'
-import TopUpCreditsDialogContentWorkspace from '@/components/dialog/content/TopUpCreditsDialogContentWorkspace.vue'
+import TopUpCreditsDialogContentWorkspace from '@/platform/workspace/components/TopUpCreditsDialogContentWorkspace.vue'
 import { t } from '@/i18n'
 import { useTelemetry } from '@/platform/telemetry'
 import { isCloud } from '@/platform/distribution/types'
