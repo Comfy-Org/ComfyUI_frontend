@@ -532,7 +532,6 @@
     "Horizontal": "Horizontal",
     "Vertical": "Vertical",
     "new": "new",
-    "newBadge": "New",
     "deprecated": "deprecated",
     "Extensions": "Extensions"
   },
@@ -2502,8 +2501,9 @@
   },
   "breadcrumbsMenu": {
     "duplicate": "Duplicate",
-    "switchModes": "Switch modes",
-    "editApp": "Edit App",
+    "enterAppMode": "Enter app mode",
+    "exitAppMode": "Exit app mode",
+    "workflowActions": "Workflow actions",
     "clearWorkflow": "Clear Workflow",
     "deleteWorkflow": "Delete Workflow",
     "deleteBlueprint": "Delete Blueprint",

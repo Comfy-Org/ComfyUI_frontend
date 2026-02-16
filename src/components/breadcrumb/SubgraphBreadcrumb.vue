@@ -1,6 +1,6 @@
 <template>
   <div
-    class="subgraph-breadcrumb flex w-auto drop-shadow-[var(--interface-panel-drop-shadow)]"
+    class="subgraph-breadcrumb flex w-auto drop-shadow-[var(--interface-panel-drop-shadow)] items-center"
     :class="{
       'subgraph-breadcrumb-collapse': collapseTabs,
       'subgraph-breadcrumb-overflow': overflowingTabs
@@ -13,17 +13,10 @@
       '--p-breadcrumb-icon-width': `${ICON_WIDTH}px`
     }"
   >
-    <Button
-      class="context-menu-button pointer-events-auto h-8 w-8 shrink-0 border border-transparent bg-transparent p-0 transition-all hover:rounded-lg hover:border-interface-stroke hover:bg-comfy-menu-bg"
-      icon="pi pi-bars"
-      text
-      severity="secondary"
-      size="small"
-      @click="handleMenuClick"
-    />
+    <WorkflowActionsDropdown source="breadcrumb_subgraph_menu_selected" />
     <Button
       v-if="isInSubgraph"
-      class="back-button pointer-events-auto h-8 w-8 shrink-0 border border-transparent bg-transparent p-0 transition-all hover:rounded-lg hover:border-interface-stroke hover:bg-comfy-menu-bg"
+      class="back-button pointer-events-auto h-8 w-8 shrink-0 border border-transparent bg-transparent p-0 ml-1.5 transition-all hover:rounded-lg hover:border-interface-stroke hover:bg-comfy-menu-bg"
       text
       severity="secondary"
       size="small"
@@ -41,7 +34,6 @@
     >
       <template #item="{ item }">
         <SubgraphBreadcrumbItem
-          :ref="(el) => setItemRef(item, el)"
           :item="item"
           :is-active="item.key === activeItemKey"
         />
@@ -60,6 +52,7 @@ import type { MenuItem } from 'primevue/menuitem'
 import { computed, onUpdated, ref, watch } from 'vue'
 
 import SubgraphBreadcrumbItem from '@/components/breadcrumb/SubgraphBreadcrumbItem.vue'
+import WorkflowActionsDropdown from '@/components/common/WorkflowActionsDropdown.vue'
 import { useOverflowObserver } from '@/composables/element/useOverflowObserver'
 import { useTelemetry } from '@/platform/telemetry'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
@@ -77,12 +70,6 @@ const ICON_WIDTH = 20
 const workflowStore = useWorkflowStore()
 const navigationStore = useSubgraphNavigationStore()
 const breadcrumbRef = ref<InstanceType<typeof Breadcrumb>>()
-const rootItemRef = ref<InstanceType<typeof SubgraphBreadcrumbItem>>()
-const setItemRef = (item: MenuItem, el: unknown) => {
-  if (item.key === 'root') {
-    rootItemRef.value = el as InstanceType<typeof SubgraphBreadcrumbItem>
-  }
-}
 const workflowName = computed(() => workflowStore.activeWorkflow?.filename)
 const isBlueprint = computed(() =>
   useSubgraphStore().isSubgraphBlueprint(workflowStore.activeWorkflow)
@@ -135,13 +122,6 @@ const items = computed(() => {
 })
 
 const activeItemKey = computed(() => items.value.at(-1)?.key)
-
-const handleMenuClick = (event: MouseEvent) => {
-  useTelemetry()?.trackUiButtonClicked({
-    button_id: 'breadcrumb_subgraph_menu_selected'
-  })
-  rootItemRef.value?.toggleMenu(event)
-}
 
 const handleBackClick = () => {
   void useCommandStore().execute('Comfy.Graph.ExitSubgraph')
