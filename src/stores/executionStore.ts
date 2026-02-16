@@ -59,9 +59,7 @@ interface CloudValidationError {
   node_errors?: Record<NodeId, NodeError>
 }
 
-function isCloudValidationError(
-  value: unknown
-): value is CloudValidationError {
+function isCloudValidationError(value: unknown): value is CloudValidationError {
   return (
     value !== null &&
     typeof value === 'object' &&
@@ -444,7 +442,9 @@ export const useExecutionStore = defineStore('execution', () => {
     resetExecutionState(e.detail.prompt_id)
   }
 
-  function handleCloudValidationError(detail: ExecutionErrorWsMessage): boolean {
+  function handleCloudValidationError(
+    detail: ExecutionErrorWsMessage
+  ): boolean {
     const extracted = tryExtractValidationError(detail.exception_message)
     if (!extracted) return false
 
@@ -724,16 +724,20 @@ export const useExecutionStore = defineStore('execution', () => {
     () => hasExecutionError.value || hasPromptError.value || hasNodeError.value
   )
 
-  /** Pre-computed Set of graph node IDs (as strings) that have errors. */
+  /** Pre-computed Set of graph node IDs (as strings) that have errors in the current graph scope. */
   const errorNodeIds = computed<Set<string>>(() => {
     const ids = new Set<string>()
     if (!app.rootGraph) return ids
+
+    const activeGraph = canvasStore.currentGraph
 
     // Node validation errors (400 Bad Request)
     if (lastNodeErrors.value) {
       for (const executionId of Object.keys(lastNodeErrors.value)) {
         const graphNode = getNodeByExecutionId(app.rootGraph, executionId)
-        if (graphNode) ids.add(String(graphNode.id))
+        if (graphNode && graphNode.graph === activeGraph) {
+          ids.add(String(graphNode.id))
+        }
       }
     }
 
@@ -741,7 +745,9 @@ export const useExecutionStore = defineStore('execution', () => {
     if (lastExecutionError.value) {
       const execNodeId = String(lastExecutionError.value.node_id)
       const graphNode = getNodeByExecutionId(app.rootGraph, execNodeId)
-      if (graphNode) ids.add(String(graphNode.id))
+      if (graphNode && graphNode.graph === activeGraph) {
+        ids.add(String(graphNode.id))
+      }
     }
 
     return ids
