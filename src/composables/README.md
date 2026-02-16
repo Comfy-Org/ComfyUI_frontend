@@ -85,7 +85,7 @@ The following diagram shows how composables fit into the application architectur
 
 ## Composable Categories
 
-The following tables list ALL composables in the system as of 2026-01-30:
+The following tables list ALL composables in the system as of 2026-02-16:
 
 ### Auth
 
@@ -96,15 +96,35 @@ Composables for authentication and user management:
 | `useCurrentUser`         | Provides access to the current user information |
 | `useFirebaseAuthActions` | Handles Firebase authentication operations      |
 
+### Billing
+
+Composables for billing and subscription management:
+
+| Composable            | Description                          |
+| --------------------- | ------------------------------------ |
+| `useBillingContext`   | Provides billing context and state   |
+| `useLegacyBilling`    | Handles legacy billing functionality |
+| `useWorkspaceBilling` | Manages workspace billing operations |
+
 ### Bottom Panel Tabs
 
 Composables for terminal and bottom panel functionality:
 
-| Composable          | Description                              |
-| ------------------- | ---------------------------------------- |
-| `useTerminal`       | Core terminal functionality              |
-| `useTerminalBuffer` | Manages terminal output buffer           |
-| `useTerminalTabs`   | Handles multiple terminal tab management |
+| Composable               | Description                              |
+| ------------------------ | ---------------------------------------- |
+| `useCommandSubcategories` | Manages command subcategories           |
+| `useShortcutsTab`        | Handles shortcuts tab functionality      |
+| `useTerminal`            | Core terminal functionality              |
+| `useTerminalTabs`        | Handles multiple terminal tab management |
+
+### Canvas
+
+Composables for canvas and graph selection:
+
+| Composable                    | Description                                  |
+| ----------------------------- | -------------------------------------------- |
+| `useSelectedLiteGraphItems`   | Manages selected items on LiteGraph canvas   |
+| `useSelectionToolboxPosition` | Handles selection toolbox positioning        |
 
 ### Element
 
@@ -125,36 +145,48 @@ Utility composables for common patterns:
 | ------------------ | ---------------------------------- |
 | `useChainCallback` | Chains multiple callbacks together |
 
-### Manager
+### Graph
 
-Composables for ComfyUI Manager integration (located in
-`@/workbench/extensions/manager/composables`):
+Composables for graph and node operations:
 
-| Composable                   | Description                                 |
-| ---------------------------- | ------------------------------------------- |
-| `useManagerStatePersistence` | Persists manager UI state                   |
-| `useManagerState`            | Determines availability of manager UI modes |
-| `useManagerQueue`            | Handles manager task queue state            |
-| `useConflictAcknowledgment`  | Tracks conflict dismissal state             |
-| `useConflictDetection`       | Orchestrates conflict detection workflow    |
-| `useImportFailedDetection`   | Handles import-failed conflict dialogs      |
-| `useRegistrySearch`          | Manages registry search UI state            |
+| Composable                 | Description                                 |
+| -------------------------- | ------------------------------------------- |
+| `useCanvasRefresh`         | Handles canvas refresh operations           |
+| `useFrameNodes`            | Manages node framing functionality          |
+| `useGraphHierarchy`        | Handles graph hierarchy operations          |
+| `useGraphNodeManager`      | Manages graph node lifecycle                |
+| `useGroupMenuOptions`      | Provides group-specific menu options        |
+| `useImageMenuOptions`      | Provides image-specific menu options        |
+| `useMoreOptionsMenu`       | Handles more options menu                   |
+| `useNodeArrangement`       | Manages node arrangement on canvas          |
+| `useNodeCustomization`     | Handles node customization                  |
+| `useNodeMenuOptions`       | Provides node-specific menu options         |
+| `useSelectedNodeActions`   | Manages actions for selected nodes          |
+| `useSelectionMenuOptions`  | Provides selection-specific menu options    |
+| `useSelectionOperations`   | Handles selection operations                |
+| `useSelectionState`        | Manages selection state                     |
+| `useSubgraphOperations`    | Handles subgraph operations                 |
+| `useVueNodeLifecycle`      | Manages Vue node lifecycle integration      |
 
-#### Node Pack
+### Mask Editor
 
-Node package helpers live under
-`@/workbench/extensions/manager/composables/nodePack`:
+Composables for mask editing functionality:
 
-| Composable                | Description                               |
-| ------------------------- | ----------------------------------------- |
-| `useInstalledPacks`       | Manages installed node packages           |
-| `useMissingNodes`         | Detects and handles missing nodes         |
-| `useNodePacks`            | Core node package functionality           |
-| `usePackUpdateStatus`     | Tracks package update availability        |
-| `usePacksSelection`       | Provides selection helpers for pack lists |
-| `usePacksStatus`          | Aggregates status across multiple packs   |
-| `useUpdateAvailableNodes` | Detects available updates for nodes       |
-| `useWorkflowPacks`        | Manages packages used in workflows        |
+| Composable              | Description                            |
+| ----------------------- | -------------------------------------- |
+| `useBrushDrawing`       | Handles brush drawing operations       |
+| `useCanvasHistory`      | Manages canvas history and undo/redo   |
+| `useCanvasManager`      | Core canvas management                 |
+| `useCanvasTools`        | Manages canvas tools                   |
+| `useCanvasTransform`    | Handles canvas transformations         |
+| `useCoordinateTransform`| Transforms coordinates                 |
+| `useImageLoader`        | Loads images into mask editor          |
+| `useKeyboard`           | Handles keyboard interactions          |
+| `useMaskEditor`         | Core mask editor functionality         |
+| `useMaskEditorLoader`   | Loads mask editor state                |
+| `useMaskEditorSaver`    | Saves mask editor state                |
+| `usePanAndZoom`         | Handles pan and zoom operations        |
+| `useToolManager`        | Manages mask editor tools              |
 
 ### Node
 
@@ -172,16 +204,21 @@ Composables for node-specific functionality:
 | `useNodePaste`              | Manages paste operations for nodes         |
 | `useNodePricing`            | Handles pricing display for nodes          |
 | `useNodeProgressText`       | Displays progress text in nodes            |
+| `usePriceBadge`             | Manages price badge display                |
 | `useWatchWidget`            | Watches widget value changes               |
 
-### Settings
+### Queue
 
-Composables for settings management:
+Composables for queue and execution management:
 
-| Composable         | Description                                |
-| ------------------ | ------------------------------------------ |
-| `useSettingSearch` | Provides search functionality for settings |
-| `useSettingUI`     | Manages settings UI interactions           |
+| Composable                      | Description                                |
+| ------------------------------- | ------------------------------------------ |
+| `useJobActions`                 | Manages job actions                        |
+| `useJobList`                    | Handles job list functionality             |
+| `useJobMenu`                    | Provides job menu operations               |
+| `useQueueNotificationBanners`   | Manages queue notification banners         |
+| `useQueueProgress`              | Tracks queue progress                      |
+| `useResultGallery`              | Manages result gallery display             |
 
 ### Sidebar Tabs
 
@@ -189,9 +226,9 @@ Composables for sidebar functionality:
 
 | Composable                  | Description                           |
 | --------------------------- | ------------------------------------- |
+| `useAssetsSidebarTab`       | Manages the assets sidebar tab        |
 | `useModelLibrarySidebarTab` | Manages the model library sidebar tab |
 | `useNodeLibrarySidebarTab`  | Manages the node library sidebar tab  |
-| `useWorkflowsSidebarTab`    | Manages the workflows sidebar tab     |
 
 ### Tree
 
@@ -201,54 +238,51 @@ Composables for tree structure operations:
 | ------------------------- | --------------------------------------- |
 | `useTreeFolderOperations` | Handles folder operations in tree views |
 
-### Widgets
-
-Composables for widget functionality:
-
-| Composable              | Description                             |
-| ----------------------- | --------------------------------------- |
-| `useBooleanWidget`      | Manages boolean widget interactions     |
-| `useComboWidget`        | Manages combo box widget interactions   |
-| `useFloatWidget`        | Manages float input widget interactions |
-| `useImagePreviewWidget` | Manages image preview widget            |
-| `useImageUploadWidget`  | Handles image upload widget             |
-| `useIntWidget`          | Manages integer input widget            |
-| `useMarkdownWidget`     | Handles markdown display widget         |
-| `useProgressTextWidget` | Manages progress text widget            |
-| `useRemoteWidget`       | Handles remote widget connections       |
-| `useStringWidget`       | Manages string input widget             |
 
 ### Root-level Composables
 
 General-purpose composables:
 
-| Composable                  | Description                                               |
-| --------------------------- | --------------------------------------------------------- |
-| `useBrowserTabTitle`        | Manages browser tab title updates                         |
-| `useCachedRequest`          | Provides request caching functionality                    |
-| `useCanvasDrop`             | Handles drop operations on canvas                         |
-| `useCivitaiModel`           | Integrates with Civitai model API                         |
-| `useContextMenuTranslation` | Handles context menu translations                         |
-| `useCopy`                   | Provides copy functionality                               |
-| `useCopyToClipboard`        | Manages clipboard operations                              |
-| `useCoreCommands`           | Provides core command functionality                       |
-| `useDownload`               | Handles file download operations                          |
-| `useErrorHandling`          | Centralized error handling                                |
-| `useGlobalLitegraph`        | Access to global LiteGraph instance                       |
-| `useLitegraphSettings`      | Manages LiteGraph configuration                           |
-| `useManagerQueue`           | Handles manager queue operations                          |
-| `usePaste`                  | Provides paste functionality                              |
-| `usePragmaticDragAndDrop`   | Integrates Atlassian's drag-and-drop library              |
-| `useProgressFavicon`        | Updates favicon with progress indicator                   |
-| `useRefreshableSelection`   | Manages refreshable selections                            |
-| `useRegistrySearch`         | Searches the ComfyUI registry                             |
-| `useServerLogs`             | Manages server log display                                |
-| `useTemplateWorkflows`      | Manages template workflow loading, selection, and display |
-| `useTreeExpansion`          | Handles tree node expansion state                         |
-| `useValueTransform`         | Transforms values between formats                         |
-| `useWorkflowAutoSave`       | Handles automatic workflow saving                         |
-| `useWorkflowPersistence`    | Manages workflow persistence                              |
-| `useWorkflowValidation`     | Validates workflow integrity                              |
+| Composable                         | Description                                               |
+| ---------------------------------- | --------------------------------------------------------- |
+| `useBrowserTabTitle`               | Manages browser tab title updates                         |
+| `useCachedRequest`                 | Provides request caching functionality                    |
+| `useCanvasDrop`                    | Handles drop operations on canvas                         |
+| `useCivitaiModel`                  | Integrates with Civitai model API                         |
+| `useContextMenuTranslation`        | Handles context menu translations                         |
+| `useCopy`                          | Provides copy functionality                               |
+| `useCopyToClipboard`               | Manages clipboard operations                              |
+| `useCoreCommands`                  | Provides core command functionality                       |
+| `useDownload`                      | Handles file download operations                          |
+| `useErrorHandling`                 | Centralized error handling                                |
+| `useExternalLink`                  | Handles external link operations                          |
+| `useFeatureFlags`                  | Manages feature flag checks                               |
+| `useGlobalLitegraph`               | Access to global LiteGraph instance                       |
+| `useHelpCenter`                    | Manages help center functionality                         |
+| `useImageCrop`                     | Handles image cropping operations                         |
+| `useIntersectionObserver`          | Provides intersection observer functionality              |
+| `useLazyPagination`                | Manages lazy-loaded paginated lists                       |
+| `useLoad3d`                        | Handles 3D model loading                                  |
+| `useLoad3dDrag`                    | Manages 3D model drag operations                          |
+| `useLoad3dViewer`                  | Provides 3D model viewer functionality                    |
+| `useModelSelectorDialog`           | Manages model selector dialog                             |
+| `useNodeHelpContent`               | Provides node help content                                |
+| `usePaste`                         | Provides paste functionality                              |
+| `usePopoverSizing`                 | Manages popover sizing                                    |
+| `usePragmaticDragAndDrop`          | Integrates Atlassian's drag-and-drop library              |
+| `useProgressBarBackground`         | Manages progress bar background styling                   |
+| `useProgressFavicon`               | Updates favicon with progress indicator                   |
+| `useRefreshableSelection`          | Manages refreshable selections                            |
+| `useServerLogs`                    | Manages server log display                                |
+| `useTemplateFiltering`             | Provides template filtering functionality                 |
+| `useTooltipConfig`                 | Manages tooltip configuration                             |
+| `useTransformCompatOverlayProps`   | Transforms compat overlay props                           |
+| `useTreeExpansion`                 | Handles tree node expansion state                         |
+| `useValueTransform`                | Transforms values between formats                         |
+| `useVueFeatureFlags`               | Vue-specific feature flag integration                     |
+| `useWorkflowActionsMenu`           | Manages workflow actions menu                             |
+| `useWorkflowTemplateSelectorDialog`| Manages workflow template selector dialog                 |
+| `useZoomControls`                  | Handles zoom control operations                           |
 
 ## Usage Guidelines
 
