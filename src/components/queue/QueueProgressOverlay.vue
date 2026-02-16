@@ -92,7 +92,7 @@ const emit = defineEmits<{
   (e: 'update:expanded', value: boolean): void
 }>()
 
-const { t } = useI18n()
+const { t, n } = useI18n()
 const queueStore = useQueueStore()
 const commandStore = useCommandStore()
 const executionStore = useExecutionStore()
@@ -126,7 +126,6 @@ const runningCount = computed(() => queueStore.runningTasks.length)
 const queuedCount = computed(() => queueStore.pendingTasks.length)
 const isExecuting = computed(() => !executionStore.isIdle)
 const hasActiveJob = computed(() => runningCount.value > 0 || isExecuting.value)
-const activeJobsCount = computed(() => runningCount.value + queuedCount.value)
 
 const overlayState = computed<OverlayState>(() => {
   if (isExpanded.value) return 'expanded'
@@ -156,9 +155,26 @@ const bottomRowClass = computed(
         : 'opacity-0 pointer-events-none'
     }`
 )
+const runningJobsLabel = computed(() =>
+  t(
+    'sideToolbar.queueProgressOverlay.runningJobsLabel',
+    { count: n(runningCount.value) },
+    runningCount.value
+  )
+)
+const queuedJobsLabel = computed(() =>
+  t(
+    'sideToolbar.queueProgressOverlay.queuedJobsLabel',
+    { count: n(queuedCount.value) },
+    queuedCount.value
+  )
+)
 const headerTitle = computed(() =>
   hasActiveJob.value
-    ? `${activeJobsCount.value} ${t('sideToolbar.queueProgressOverlay.activeJobsSuffix')}`
+    ? t('sideToolbar.queueProgressOverlay.runningQueuedSummary', {
+        running: runningJobsLabel.value,
+        queued: queuedJobsLabel.value
+      })
     : t('sideToolbar.queueProgressOverlay.jobQueue')
 )
 
