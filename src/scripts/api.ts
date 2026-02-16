@@ -172,7 +172,7 @@ interface BackendApiCalls {
 }
 
 /** Dictionary of all api calls */
-interface ApiCalls extends BackendApiCalls, FrontendApiCalls {}
+interface ApiCalls extends BackendApiCalls, FrontendApiCalls { }
 
 /** Used to create a discriminating union on type value. */
 interface ApiMessage<T extends keyof ApiCalls> {
@@ -180,7 +180,7 @@ interface ApiMessage<T extends keyof ApiCalls> {
   data: ApiCalls[T]
 }
 
-export class UnauthorizedError extends Error {}
+export class UnauthorizedError extends Error { }
 
 /** Ensures workers get a fair shake. */
 type Unionize<T> = T[keyof T]
@@ -206,10 +206,10 @@ type AsCustomEvents<T> = {
 /** Handles differing event and API signatures. */
 type ApiToEventType<T = ApiCalls> = {
   [K in keyof T]: K extends 'status'
-    ? StatusWsMessageStatus
-    : K extends 'executing'
-      ? NodeId
-      : T[K]
+  ? StatusWsMessageStatus
+  : K extends 'executing'
+  ? NodeId
+  : T[K]
 }
 
 /** Dictionary of types used in the detail for a custom event */
@@ -241,6 +241,24 @@ export type GlobalSubgraphData = {
     search_aliases?: string[]
   }
   data: string | Promise<string>
+}
+
+export interface MissingModelDownloadItem {
+  name: string
+  directory: string
+  url: string
+}
+
+export interface MissingModelDownloadResult extends MissingModelDownloadItem {
+  status: 'downloaded' | 'skipped_existing' | 'failed' | 'blocked'
+  error?: string
+}
+
+export interface MissingModelDownloadResponse {
+  downloaded: number
+  skipped: number
+  failed: number
+  results: MissingModelDownloadResult[]
 }
 
 function addHeaderEntry(headers: HeadersInit, key: string, value: string) {
@@ -808,8 +826,8 @@ export class ComfyApi extends EventTarget {
         extra_pnginfo: { workflow },
         ...(options?.previewMethod &&
           options.previewMethod !== 'default' && {
-            preview_method: options.previewMethod
-          })
+          preview_method: options.previewMethod
+        })
       }
     }
 
@@ -860,6 +878,21 @@ export class ComfyApi extends EventTarget {
       return []
     }
     return await res.json()
+  }
+
+  /**
+   * Downloads the missing models in the specified folder
+   * @param {MissingModelDownloadItem} models The list of models to download
+   * @returns The models successfully download, skipped, or failed
+   */
+  async downloadMissingModels(
+    models: MissingModelDownloadItem[]
+  ): Promise<MissingModelDownloadResponse> {
+    const response = await axios.post(
+      this.apiURL('/experiment/models/download_missing'),
+      { models }
+    )
+    return response.data
   }
 
   /**
@@ -1091,11 +1124,11 @@ export class ComfyApi extends EventTarget {
       throwOnError?: boolean
       full_info?: boolean
     } = {
-      overwrite: true,
-      stringify: true,
-      throwOnError: true,
-      full_info: false
-    }
+        overwrite: true,
+        stringify: true,
+        throwOnError: true,
+        full_info: false
+      }
   ): Promise<Response> {
     const resp = await this.fetchApi(
       `/userdata/${encodeURIComponent(file)}?overwrite=${options.overwrite}&full_info=${options.full_info}`,

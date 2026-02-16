@@ -34,6 +34,17 @@
       </template>
     </i18n-t>
   </div>
+  <div class="mb-2 flex justify-end">
+    <Button
+      variant="secondary"
+      size="sm"
+      :loading="isBulkDownloading"
+      :disabled="downloadableModels.length === 0 || isBulkDownloading"
+      @click="downloadAllMissingModels"
+    >
+      {{ t('missingModelsDialog.downloadAll') }}
+    </Button>
+  </div>
   <ListBox :options="missingModels" class="comfy-missing-models">
     <template #option="{ option }">
       <Suspense v-if="isDesktop">
@@ -65,6 +76,8 @@ import NoResultsPlaceholder from '@/components/common/NoResultsPlaceholder.vue'
 import { isDesktop } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
+import { useToastStore } from '@/platform/updates/common/toastStore'
+import { api, type MissingModelDownloadItem } from '@/scripts/api'
 import { useDialogStore } from '@/stores/dialogStore'
 
 // TODO: Read this from server internal API rather than hardcoding here
@@ -102,6 +115,7 @@ const props = defineProps<{
 const { t } = useI18n()
 
 const doNotAskAgain = ref(false)
+const isBulkDownloading = ref(false)
 
 function openShowMissingModelsSetting() {
   useDialogStore().closeDialog({ key: 'global-missing-models-warning' })
@@ -114,6 +128,8 @@ const missingModels = computed(() => {
     const paths = props.paths[model.directory]
     if (model.directory_invalid || !paths) {
       return {
+        name: model.name,
+        directory: model.directory,
         label: `${model.directory} / ${model.name}`,
         url: model.url,
         error: 'Invalid directory specified (does this require custom nodes?)'
@@ -133,6 +149,8 @@ const missingModels = computed(() => {
     if (!whiteListedUrls.has(model.url)) {
       if (!allowedSources.some((source) => model.url.startsWith(source))) {
         return {
+          name: model.name,
+          directory: model.directory,
           label: `${model.directory} / ${model.name}`,
           url: model.url,
           error: `Download not allowed from source '${model.url}', only allowed from '${allowedSources.join("', '")}'`
@@ -140,6 +158,8 @@ const missingModels = computed(() => {
       }
       if (!allowedSuffixes.some((suffix) => model.name.endsWith(suffix))) {
         return {
+          name: model.name,
+          directory: model.directory,
           label: `${model.directory} / ${model.name}`,
           url: model.url,
           error: `Only allowed suffixes are: '${allowedSuffixes.join("', '")}'`
@@ -154,11 +174,59 @@ const missingModels = computed(() => {
       progress: downloadInfo.progress,
       error: downloadInfo.error,
       name: model.name,
+      directory: model.directory,
       paths: paths,
       folderPath: downloadInfo.folder_path
     }
   })
 })
+
+const downloadableModels = computed<MissingModelDownloadItem[]>(() => {
+  return missingModels.value
+    .filter((model) => !model.error)
+    .map((model) => ({
+      name: model.name,
+      directory: model.directory,
+      url: model.url
+    }))
+})
+
+async function downloadAllMissingModels() {
+  if (!downloadableModels.value.length || isBulkDownloading.value) {
+    return
+  }
+
+  isBulkDownloading.value = true
+  try {
+    const result = await api.downloadMissingModels(downloadableModels.value)
+    const severity =
+      result.failed > 0
+        ? result.downloaded + result.skipped > 0
+          ? 'warn'
+          : 'error'
+        : 'success'
+
+    useToastStore().add({
+      severity,
+      summary: t('missingModelsDialog.downloadAll'),
+      detail: t('missingModelsDialog.downloadAllResult', {
+        downloaded: result.downloaded,
+        skipped: result.skipped,
+        failed: result.failed
+      }),
+      life: 6000
+    })
+  } catch {
+    useToastStore().add({
+      severity: 'error',
+      summary: t('missingModelsDialog.downloadAll'),
+      detail: t('missingModelsDialog.downloadAllRequestFailed'),
+      life: 5000
+    })
+  } finally {
+    isBulkDownloading.value = false
+  }
+}
 
 onBeforeUnmount(async () => {
   if (doNotAskAgain.value) {
