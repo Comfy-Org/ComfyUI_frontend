@@ -60,7 +60,7 @@
                     ? isQueueOverlayExpanded
                     : undefined
               "
-              class="px-3"
+              class="relative px-3"
               data-testid="queue-overlay-toggle"
               @click="toggleQueueOverlay"
               @contextmenu.stop.prevent="showQueueContextMenu"
@@ -68,6 +68,12 @@
               <span class="text-sm font-normal tabular-nums">
                 {{ activeJobsLabel }}
               </span>
+              <StatusBadge
+                v-if="activeJobsCount > 0"
+                data-testid="active-jobs-indicator"
+                variant="dot"
+                class="pointer-events-none absolute -top-0.5 -right-0.5 animate-pulse bg-blue-100"
+              />
               <span class="sr-only">
                 {{
                   isQueuePanelV2Enabled
@@ -139,6 +145,7 @@ import { useI18n } from 'vue-i18n'
 
 import ComfyActionbar from '@/components/actionbar/ComfyActionbar.vue'
 import SubgraphBreadcrumb from '@/components/breadcrumb/SubgraphBreadcrumb.vue'
+import StatusBadge from '@/components/common/StatusBadge.vue'
 import QueueInlineProgressSummary from '@/components/queue/QueueInlineProgressSummary.vue'
 import QueueNotificationBannerHost from '@/components/queue/QueueNotificationBannerHost.vue'
 import QueueProgressOverlay from '@/components/queue/QueueProgressOverlay.vue'

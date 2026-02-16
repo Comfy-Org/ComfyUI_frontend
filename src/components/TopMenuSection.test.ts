@@ -215,6 +215,17 @@ describe('TopMenuSection', () => {
 
     const queueButton = wrapper.find('[data-testid="queue-overlay-toggle"]')
     expect(queueButton.text()).toContain('3 active')
+    expect(wrapper.find('[data-testid="active-jobs-indicator"]').exists()).toBe(
+      true
+    )
+  })
+
+  it('hides the active jobs indicator when no jobs are active', () => {
+    const wrapper = createWrapper()
+
+    expect(wrapper.find('[data-testid="active-jobs-indicator"]').exists()).toBe(
+      false
+    )
   })
 
   it('hides queue progress overlay when QPO V2 is enabled', async () => {
