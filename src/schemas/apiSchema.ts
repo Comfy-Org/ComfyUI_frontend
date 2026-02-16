@@ -88,7 +88,10 @@ const zExecutionWsMessageBase = z.object({
   timestamp: z.number().int()
 })
 
-const zExecutionStartWsMessage = zExecutionWsMessageBase
+const zExecutionStartWsMessage = zExecutionWsMessageBase.extend({
+  outputs_to_execute: z.array(zNodeId).optional(),
+  executed_node_ids: z.array(zNodeId).optional()
+})
 const zExecutionSuccessWsMessage = zExecutionWsMessageBase
 const zExecutionCachedWsMessage = zExecutionWsMessageBase.extend({
   nodes: z.array(zNodeId)

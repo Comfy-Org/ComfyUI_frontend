@@ -289,6 +289,23 @@ export const useExecutionStore = defineStore('execution', () => {
     lastExecutionError.value = null
     activePromptId.value = e.detail.prompt_id
     queuedPrompts.value[activePromptId.value] ??= { nodes: {} }
+
+    const outputsToExecute = e.detail.outputs_to_execute
+    if (outputsToExecute?.length) {
+      const qp = queuedPrompts.value[activePromptId.value]
+      for (const nodeId of outputsToExecute) {
+        qp.nodes[nodeId] ??= false
+      }
+    }
+
+    const executedNodeIds = e.detail.executed_node_ids
+    if (executedNodeIds?.length) {
+      const qp = queuedPrompts.value[activePromptId.value]
+      for (const nodeId of executedNodeIds) {
+        qp.nodes[nodeId] = true
+      }
+    }
+
     clearInitializationByPromptId(activePromptId.value)
   }
 
