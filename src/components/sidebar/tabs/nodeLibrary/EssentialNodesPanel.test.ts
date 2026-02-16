@@ -1,5 +1,5 @@
-import { mount } from '@vue/test-utils'
-import { nextTick } from 'vue'
+import { flushPromises, mount } from '@vue/test-utils'
+import { nextTick, ref } from 'vue'
 import { describe, expect, it, vi } from 'vitest'
 
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
@@ -84,11 +84,15 @@ describe('EssentialNodesPanel', () => {
     root = createMockRoot(),
     expandedKeys: string[] = []
   ) {
-    return mount(EssentialNodesPanel, {
-      props: {
-        root,
-        expandedKeys
-      },
+    const WrapperComponent = {
+      template: `<EssentialNodesPanel :root="root" v-model:expandedKeys="keys" />`,
+      components: { EssentialNodesPanel },
+      setup() {
+        const keys = ref(expandedKeys)
+        return { root, keys }
+      }
+    }
+    return mount(WrapperComponent, {
       global: {
         stubs: {
           Teleport: true,
@@ -131,6 +135,8 @@ describe('EssentialNodesPanel', () => {
   describe('default expansion', () => {
     it('should expand first two folders by default when expandedKeys is empty', async () => {
       const wrapper = mountComponent(createMockRoot(), [])
+      await nextTick()
+      await flushPromises()
       await nextTick()
 
       const roots = wrapper.findAll('.collapsible-root')
@@ -181,6 +187,8 @@ describe('EssentialNodesPanel', () => {
       }
 
       const wrapper = mountComponent(root, [])
+      await nextTick()
+      await flushPromises()
       await nextTick()
 
       const roots = wrapper.findAll('.collapsible-root')

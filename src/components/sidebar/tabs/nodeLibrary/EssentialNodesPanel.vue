@@ -24,7 +24,9 @@
         <CollapsibleContent
           class="overflow-hidden data-[state=closed]:animate-collapsible-up data-[state=open]:animate-collapsible-down"
         >
-          <div class="grid grid-cols-[repeat(auto-fill,minmax(5rem,1fr))] gap-3">
+          <div
+            class="grid grid-cols-[repeat(auto-fill,minmax(5rem,1fr))] gap-3"
+          >
             <EssentialNodeCard
               v-for="node in folder.children"
               :key="node.key"
@@ -92,10 +94,16 @@ function toggleFolder(key: string, open: boolean) {
 
 const hasAutoExpanded = ref(false)
 
-watch(folders, (value) => {
-  if (!hasAutoExpanded.value && value.length > 0) {
-    hasAutoExpanded.value = true
-    expandedKeys.value = value.map((folder) => folder.key)
-  }
-})
+watch(
+  folders,
+  (value) => {
+    if (!hasAutoExpanded.value && value.length > 0) {
+      hasAutoExpanded.value = true
+      if (expandedKeys.value.length === 0) {
+        expandedKeys.value = value.slice(0, 2).map((folder) => folder.key)
+      }
+    }
+  },
+  { immediate: true }
+)
 </script>
