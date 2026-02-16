@@ -112,9 +112,9 @@ import { storeToRefs } from 'pinia'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import WorkspaceProfilePic from '@/components/common/WorkspaceProfilePic.vue'
+import WorkspaceProfilePic from '@/platform/workspace/components/WorkspaceProfilePic.vue'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
-import { useWorkspaceSwitch } from '@/platform/auth/workspace/useWorkspaceSwitch'
+import { useWorkspaceSwitch } from '@/platform/workspace/composables/useWorkspaceSwitch'
 import type {
   SubscriptionTier,
   WorkspaceRole,

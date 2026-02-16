@@ -80,7 +80,7 @@ import { isCloud } from '@/platform/distribution/types'
 
 const SubscriptionPanelContentWorkspace = defineAsyncComponent(
   () =>
-    import('@/platform/cloud/subscription/components/SubscriptionPanelContentWorkspace.vue')
+    import('@/platform/workspace/components/SubscriptionPanelContentWorkspace.vue')
 )
 
 const { flags } = useFeatureFlags()
