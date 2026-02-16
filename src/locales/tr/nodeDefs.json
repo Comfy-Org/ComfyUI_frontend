@@ -353,15 +353,6 @@
         "name": "denetleme",
         "tooltip": "Denetleme ayarları"
       },
-      "moderation_prompt_content_moderation": {
-        "name": "istem_içeriği_denetleme"
-      },
-      "moderation_visual_input_moderation": {
-        "name": "görsel_girdi_denetleme"
-      },
-      "moderation_visual_output_moderation": {
-        "name": "görsel_çıktı_denetleme"
-      },
       "negative_prompt": {
         "name": "negatif_istem"
       },
@@ -386,6 +377,56 @@
       },
       "1": {
         "name": "yapılandırılmış_istem",
+        "tooltip": null
+      }
+    }
+  },
+  "BriaRemoveImageBackground": {
+    "description": "Bria RMBG 2.0 kullanarak bir görselin arka planını kaldırın.",
+    "display_name": "Bria Görsel Arka Planı Kaldır",
+    "inputs": {
+      "control_after_generate": {
+        "name": "oluşturduktan sonra kontrol et"
+      },
+      "image": {
+        "name": "görsel"
+      },
+      "moderation": {
+        "name": "moderasyon",
+        "tooltip": "Moderasyon ayarları"
+      },
+      "seed": {
+        "name": "tohum",
+        "tooltip": "Tohum, düğümün tekrar çalıştırılıp çalıştırılmayacağını kontrol eder; sonuçlar tohumdan bağımsız olarak deterministik değildir."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "BriaRemoveVideoBackground": {
+    "description": "Bria kullanarak bir videonun arka planını kaldırın.",
+    "display_name": "Bria Video Arka Planı Kaldır",
+    "inputs": {
+      "background_color": {
+        "name": "arka plan rengi",
+        "tooltip": "Çıktı video için arka plan rengi."
+      },
+      "control_after_generate": {
+        "name": "oluşturduktan sonra kontrol et"
+      },
+      "seed": {
+        "name": "tohum",
+        "tooltip": "Tohum, düğümün tekrar çalıştırılıp çalıştırılmayacağını kontrol eder; sonuçlar tohumdan bağımsız olarak deterministik değildir."
+      },
+      "video": {
+        "name": "video"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -14095,6 +14136,29 @@
     "outputs": {
       "0": {
         "name": "yama_uygulanmış_model",
+        "tooltip": null
+      }
+    }
+  },
+  "Tencent3DPartNode": {
+    "description": "Model yapısına göre otomatik olarak bileşen tanımlama ve oluşturma işlemlerini gerçekleştirir.",
+    "display_name": "Hunyuan3D: 3D Parça",
+    "inputs": {
+      "control_after_generate": {
+        "name": "oluşturduktan sonra kontrol et"
+      },
+      "model_3d": {
+        "name": "model_3d",
+        "tooltip": "FBX formatında 3D model. Model 30000'den az yüzeye sahip olmalıdır."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed, düğümün tekrar çalıştırılıp çalıştırılmayacağını kontrol eder; seed ne olursa olsun sonuçlar deterministik değildir."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "FBX",
         "tooltip": null
       }
     }

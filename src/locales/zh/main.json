@@ -798,6 +798,7 @@
     "disableSelected": "禁用选中项",
     "disableThirdParty": "禁用第三方",
     "disabling": "禁用中",
+    "disconnectedFromBackend": "已与后端断开连接。请检查服务器是否正在运行。",
     "dismiss": "关闭",
     "download": "下载",
     "downloadAudio": "下载音频",
@@ -1980,6 +1981,7 @@
       "removeJob": "移除任务",
       "reportError": "反馈报错"
     },
+    "jobQueueing": "作业排队中",
     "toggleJobHistory": "切换任务历史"
   },
   "releaseToast": {
@@ -2038,6 +2040,8 @@
     "pinned": "顶固",
     "properties": "属性",
     "removeFavorite": "取消收藏",
+    "resetAllParameters": "重置所有参数",
+    "resetToDefault": "重置为默认值",
     "settings": "设置",
     "showAdvancedInputsButton": "显示高级输入",
     "showInput": "显示输入",
@@ -2412,7 +2416,10 @@
       "filterJobs": "筛选任务",
       "inlineTotalLabel": "总计",
       "interruptAll": "中断全部正在运行的任务",
+      "jobCompleted": "作业已完成",
+      "jobFailed": "作业失败",
       "jobQueue": "任务队列",
+      "jobsAddedToQueue": "{count} 个作业已加入队列",
       "jobsCompleted": "{count} 任务完成 | {count} 任务完成",
       "jobsFailed": "{count} 任务失败 | {count} 任务失败",
       "moreOptions": "更多设置",

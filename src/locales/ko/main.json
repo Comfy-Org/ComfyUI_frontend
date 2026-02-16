@@ -798,6 +798,7 @@
     "disableSelected": "선택 항목 비활성화",
     "disableThirdParty": "서드파티 비활성화",
     "disabling": "비활성화 중",
+    "disconnectedFromBackend": "백엔드와의 연결이 끊어졌습니다. 서버가 실행 중인지 확인하세요.",
     "dismiss": "닫기",
     "download": "다운로드",
     "downloadAudio": "오디오 다운로드",
@@ -1980,6 +1981,7 @@
       "removeJob": "작업 제거",
       "reportError": "오류 신고"
     },
+    "jobQueueing": "작업 대기 중",
     "toggleJobHistory": "작업 기록 전환"
   },
   "releaseToast": {
@@ -2038,6 +2040,8 @@
     "pinned": "고정됨",
     "properties": "속성",
     "removeFavorite": "즐겨찾기 해제",
+    "resetAllParameters": "모든 매개변수 재설정",
+    "resetToDefault": "기본값으로 재설정",
     "settings": "설정",
     "showAdvancedInputsButton": "고급 입력 표시",
     "showInput": "입력 표시",
@@ -2401,7 +2405,10 @@
       "filterJobs": "작업 필터",
       "inlineTotalLabel": "총계",
       "interruptAll": "모든 실행 중인 작업 중단",
+      "jobCompleted": "작업 완료됨",
+      "jobFailed": "작업 실패",
       "jobQueue": "작업 대기열",
+      "jobsAddedToQueue": "{count}개 작업이 대기열에 추가됨 | {count}개 작업이 대기열에 추가됨",
       "jobsCompleted": "{count}개 작업 완료",
       "jobsFailed": "{count}개 작업 실패",
       "moreOptions": "더 많은 옵션",

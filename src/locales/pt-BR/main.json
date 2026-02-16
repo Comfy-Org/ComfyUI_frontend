@@ -798,6 +798,7 @@
     "disableSelected": "Desativar selecionados",
     "disableThirdParty": "Desativar terceiros",
     "disabling": "Desativando {id}",
+    "disconnectedFromBackend": "Desconectado do backend. Verifique se o servidor está em execução.",
     "dismiss": "Dispensar",
     "download": "Baixar",
     "downloadAudio": "Baixar áudio",
@@ -1980,6 +1981,7 @@
       "removeJob": "Remover tarefa",
       "reportError": "Reportar erro"
     },
+    "jobQueueing": "Tarefa em fila",
     "toggleJobHistory": "Alternar histórico de tarefas"
   },
   "releaseToast": {
@@ -2038,6 +2040,8 @@
     "pinned": "Fixado",
     "properties": "Propriedades",
     "removeFavorite": "Desfavoritar",
+    "resetAllParameters": "Redefinir todos os parâmetros",
+    "resetToDefault": "Restaurar para o padrão",
     "settings": "Configurações",
     "showAdvancedInputsButton": "Mostrar entradas avançadas",
     "showInput": "Mostrar entrada",
@@ -2412,7 +2416,10 @@
       "filterJobs": "Filtrar trabalhos",
       "inlineTotalLabel": "Total",
       "interruptAll": "Interromper todos os trabalhos em execução",
+      "jobCompleted": "Tarefa concluída",
+      "jobFailed": "Tarefa falhou",
       "jobQueue": "Fila de trabalhos",
+      "jobsAddedToQueue": "{count} tarefa adicionada à fila | {count} tarefas adicionadas à fila",
       "jobsCompleted": "{count} trabalho concluído | {count} trabalhos concluídos",
       "jobsFailed": "{count} trabalho falhou | {count} trabalhos falharam",
       "moreOptions": "Mais opções",

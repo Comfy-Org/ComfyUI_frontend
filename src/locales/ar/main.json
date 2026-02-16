@@ -798,6 +798,7 @@
     "disableSelected": "تعطيل المحدد",
     "disableThirdParty": "تعطيل الطرف الثالث",
     "disabling": "جارٍ التعطيل",
+    "disconnectedFromBackend": "تم قطع الاتصال بالخادم الخلفي. يرجى التحقق مما إذا كان الخادم يعمل.",
     "dismiss": "تجاهل",
     "download": "تنزيل",
     "downloadAudio": "تنزيل الصوت",
@@ -1980,6 +1981,7 @@
       "removeJob": "إزالة المهمة",
       "reportError": "الإبلاغ عن خطأ"
     },
+    "jobQueueing": "جارٍ إضافة العمل إلى قائمة الانتظار",
     "toggleJobHistory": "تبديل سجل المهام"
   },
   "releaseToast": {
@@ -2038,6 +2040,8 @@
     "pinned": "مثبت",
     "properties": "الخصائص",
     "removeFavorite": "إزالة من المفضلة",
+    "resetAllParameters": "إعادة تعيين جميع المعلمات",
+    "resetToDefault": "إعادة التعيين إلى الافتراضي",
     "settings": "الإعدادات",
     "showAdvancedInputsButton": "إظهار المدخلات المتقدمة",
     "showInput": "إظهار المدخل",
@@ -2401,7 +2405,10 @@
       "filterJobs": "تصفية المهام",
       "inlineTotalLabel": "الإجمالي",
       "interruptAll": "إيقاف جميع المهام الجارية",
+      "jobCompleted": "اكتمل العمل",
+      "jobFailed": "فشل العمل",
       "jobQueue": "قائمة المهام",
+      "jobsAddedToQueue": "{count} مهمة أُضيفت إلى قائمة الانتظار | {count} مهام أُضيفت إلى قائمة الانتظار",
       "jobsCompleted": "{count} مهمة مكتملة | {count} مهام مكتملة",
       "jobsFailed": "{count} مهمة فشلت | {count} مهام فشلت",
       "moreOptions": "خيارات إضافية",

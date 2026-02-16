@@ -798,6 +798,7 @@
     "disableSelected": "Deshabilitar seleccionados",
     "disableThirdParty": "Deshabilitar terceros",
     "disabling": "Deshabilitando",
+    "disconnectedFromBackend": "Desconectado del backend. Verifica si el servidor está en funcionamiento.",
     "dismiss": "Descartar",
     "download": "Descargar",
     "downloadAudio": "Descargar audio",
@@ -1980,6 +1981,7 @@
       "removeJob": "Quitar trabajo",
       "reportError": "Reportar error"
     },
+    "jobQueueing": "Encolando trabajo",
     "toggleJobHistory": "Alternar historial de trabajos"
   },
   "releaseToast": {
@@ -2038,6 +2040,8 @@
     "pinned": "Fijado",
     "properties": "Propiedades",
     "removeFavorite": "Quitar de favoritos",
+    "resetAllParameters": "Restablecer todos los parámetros",
+    "resetToDefault": "Restablecer a los valores predeterminados",
     "settings": "Configuración",
     "showAdvancedInputsButton": "Mostrar entradas avanzadas",
     "showInput": "Mostrar entrada",
@@ -2401,7 +2405,10 @@
       "filterJobs": "Filtrar trabajos",
       "inlineTotalLabel": "Total",
       "interruptAll": "Interrumpir todos los trabajos en ejecución",
+      "jobCompleted": "Trabajo completado",
+      "jobFailed": "Trabajo fallido",
       "jobQueue": "Cola de trabajos",
+      "jobsAddedToQueue": "{count} trabajo añadido a la cola | {count} trabajos añadidos a la cola",
       "jobsCompleted": "{count} trabajo completado | {count} trabajos completados",
       "jobsFailed": "{count} trabajo fallido | {count} trabajos fallidos",
       "moreOptions": "Más opciones",

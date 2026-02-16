@@ -798,6 +798,7 @@
     "disableSelected": "停用所選",
     "disableThirdParty": "停用第三方",
     "disabling": "停用中",
+    "disconnectedFromBackend": "已與後端斷線。請檢查伺服器是否正在運行。",
     "dismiss": "關閉",
     "download": "下載",
     "downloadAudio": "下載音訊",
@@ -1980,6 +1981,7 @@
       "removeJob": "移除工作",
       "reportError": "回報錯誤"
     },
+    "jobQueueing": "任務排入佇列中",
     "toggleJobHistory": "切換工作歷史"
   },
   "releaseToast": {
@@ -2038,6 +2040,8 @@
     "pinned": "已釘選",
     "properties": "屬性",
     "removeFavorite": "取消收藏",
+    "resetAllParameters": "重設所有參數",
+    "resetToDefault": "重設為預設值",
     "settings": "設定",
     "showAdvancedInputsButton": "顯示進階輸入",
     "showInput": "顯示輸入",
@@ -2401,7 +2405,10 @@
       "filterJobs": "篩選作業",
       "inlineTotalLabel": "總計",
       "interruptAll": "中斷所有執行中作業",
+      "jobCompleted": "任務已完成",
+      "jobFailed": "任務失敗",
       "jobQueue": "作業佇列",
+      "jobsAddedToQueue": "{count} 個任務已加入佇列",
       "jobsCompleted": "{count} 個作業已完成",
       "jobsFailed": "{count} 個作業失敗",
       "moreOptions": "更多選項",

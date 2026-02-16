@@ -798,6 +798,7 @@
     "disableSelected": "選択したものを無効化",
     "disableThirdParty": "サードパーティを無効化",
     "disabling": "無効化",
+    "disconnectedFromBackend": "バックエンドから切断されました。サーバーが稼働しているか確認してください。",
     "dismiss": "閉じる",
     "download": "ダウンロード",
     "downloadAudio": "オーディオをダウンロード",
@@ -1980,6 +1981,7 @@
       "removeJob": "ジョブを削除",
       "reportError": "エラーを報告"
     },
+    "jobQueueing": "ジョブをキューに追加中",
     "toggleJobHistory": "ジョブ履歴を切り替え"
   },
   "releaseToast": {
@@ -2038,6 +2040,8 @@
     "pinned": "ピン留め",
     "properties": "プロパティ",
     "removeFavorite": "お気に入りを解除",
+    "resetAllParameters": "すべてのパラメータをリセット",
+    "resetToDefault": "デフォルトにリセット",
     "settings": "設定",
     "showAdvancedInputsButton": "詳細入力を表示",
     "showInput": "入力を表示",
@@ -2401,7 +2405,10 @@
       "filterJobs": "ジョブをフィルター",
       "inlineTotalLabel": "合計",
       "interruptAll": "すべての実行中ジョブを中断",
+      "jobCompleted": "ジョブが完了しました",
+      "jobFailed": "ジョブが失敗しました",
       "jobQueue": "ジョブキュー",
+      "jobsAddedToQueue": "{count} 件のジョブがキューに追加されました",
       "jobsCompleted": "{count}件のジョブが完了",
       "jobsFailed": "{count}件のジョブが失敗",
       "moreOptions": "その他のオプション",

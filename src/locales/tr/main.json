@@ -798,6 +798,7 @@
     "disableSelected": "Seçilenleri Devre Dışı Bırak",
     "disableThirdParty": "Üçüncü Tarafı Devre Dışı Bırak",
     "disabling": "{id} devre dışı bırakılıyor",
+    "disconnectedFromBackend": "Sunucu ile bağlantı kesildi. Sunucunun çalışıp çalışmadığını kontrol edin.",
     "dismiss": "Kapat",
     "download": "İndir",
     "downloadAudio": "Sesi indir",
@@ -1980,6 +1981,7 @@
       "removeJob": "İşi kaldır",
       "reportError": "Hata bildir"
     },
+    "jobQueueing": "İşlem kuyruğa alınıyor",
     "toggleJobHistory": "İş Geçmişini Aç/Kapat"
   },
   "releaseToast": {
@@ -2038,6 +2040,8 @@
     "pinned": "Sabitlendi",
     "properties": "Özellikler",
     "removeFavorite": "Favorilerden Kaldır",
+    "resetAllParameters": "Tüm parametreleri sıfırla",
+    "resetToDefault": "Varsayılanlara sıfırla",
     "settings": "Ayarlar",
     "showAdvancedInputsButton": "Gelişmiş girdileri göster",
     "showInput": "Girdiyi göster",
@@ -2401,7 +2405,10 @@
       "filterJobs": "İşleri filtrele",
       "inlineTotalLabel": "Toplam",
       "interruptAll": "Tüm çalışan işleri durdur",
+      "jobCompleted": "İşlem tamamlandı",
+      "jobFailed": "İşlem başarısız oldu",
       "jobQueue": "İş Kuyruğu",
+      "jobsAddedToQueue": "{count} işlem kuyruğa eklendi | {count} işlem kuyruğa eklendi",
       "jobsCompleted": "{count} iş tamamlandı | {count} iş tamamlandı",
       "jobsFailed": "{count} iş başarısız oldu | {count} iş başarısız oldu",
       "moreOptions": "Daha fazla seçenek",
