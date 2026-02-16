@@ -54,6 +54,35 @@ interface PromptError {
   details: string
 }
 
+interface CloudValidationError {
+  error?: { type?: string; message?: string; details?: string } | string
+  node_errors?: Record<NodeId, NodeError>
+}
+
+function isCloudValidationError(
+  value: unknown
+): value is CloudValidationError {
+  return (
+    value !== null &&
+    typeof value === 'object' &&
+    ('error' in value || 'node_errors' in value)
+  )
+}
+
+function tryExtractValidationError(
+  exceptionMessage: string
+): CloudValidationError | null {
+  const jsonStart = exceptionMessage.indexOf('{')
+  if (jsonStart === -1) return null
+
+  try {
+    const parsed: unknown = JSON.parse(exceptionMessage.substring(jsonStart))
+    return isCloudValidationError(parsed) ? parsed : null
+  } catch {
+    return null
+  }
+}
+
 const subgraphNodeIdToSubgraph = (id: string, graph: LGraph | Subgraph) => {
   const node = graph.getNodeById(id)
   if (node?.isSubgraphNode()) return node.subgraph
@@ -397,7 +426,6 @@ export const useExecutionStore = defineStore('execution', () => {
   }
 
   function handleExecutionError(e: CustomEvent<ExecutionErrorWsMessage>) {
-    lastExecutionError.value = e.detail
     if (isCloud) {
       useTelemetry()?.trackExecutionError({
         jobId: e.detail.prompt_id,
@@ -405,9 +433,39 @@ export const useExecutionStore = defineStore('execution', () => {
         nodeType: e.detail.node_type,
         error: e.detail.exception_message
       })
+
+      // Cloud wraps validation errors (400) in exception_message as embedded JSON.
+      if (handleCloudValidationError(e.detail)) return
     }
+
+    // OSS path / Cloud fallback (real runtime errors)
+    lastExecutionError.value = e.detail
     clearInitializationByPromptId(e.detail.prompt_id)
     resetExecutionState(e.detail.prompt_id)
+  }
+
+  function handleCloudValidationError(detail: ExecutionErrorWsMessage): boolean {
+    const extracted = tryExtractValidationError(detail.exception_message)
+    if (!extracted) return false
+
+    const { error, node_errors } = extracted
+    const hasNodeErrors = node_errors && Object.keys(node_errors).length > 0
+
+    if (hasNodeErrors) {
+      lastNodeErrors.value = node_errors
+    } else if (error && typeof error === 'object') {
+      lastPromptError.value = {
+        type: error.type ?? 'error',
+        message: error.message ?? '',
+        details: error.details ?? ''
+      }
+    } else if (typeof error === 'string') {
+      lastPromptError.value = { type: 'error', message: error, details: '' }
+    }
+
+    clearInitializationByPromptId(detail.prompt_id)
+    resetExecutionState(detail.prompt_id)
+    return true
   }
 
   /**
