@@ -246,9 +246,9 @@ General-purpose composables:
 | `useTemplateWorkflows`      | Manages template workflow loading, selection, and display |
 | `useTreeExpansion`          | Handles tree node expansion state                         |
 
-| `useWorkflowAutoSave`       | Handles automatic workflow saving                         |
-| `useWorkflowPersistence`    | Manages workflow persistence                              |
-| `useWorkflowValidation`     | Validates workflow integrity                              |
+| `useWorkflowAutoSave` | Handles automatic workflow saving |
+| `useWorkflowPersistence` | Manages workflow persistence |
+| `useWorkflowValidation` | Validates workflow integrity |
 
 ## Usage Guidelines
 
