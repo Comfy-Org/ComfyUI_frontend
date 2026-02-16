@@ -353,15 +353,6 @@
         "name": "الإشراف",
         "tooltip": "إعدادات الإشراف"
       },
-      "moderation_prompt_content_moderation": {
-        "name": "إشراف محتوى التوجيه"
-      },
-      "moderation_visual_input_moderation": {
-        "name": "إشراف الإدخال البصري"
-      },
-      "moderation_visual_output_moderation": {
-        "name": "إشراف الإخراج البصري"
-      },
       "negative_prompt": {
         "name": "توجيه سلبي"
       },
@@ -386,6 +377,56 @@
       },
       "1": {
         "name": "توجيه منظم",
+        "tooltip": null
+      }
+    }
+  },
+  "BriaRemoveImageBackground": {
+    "description": "إزالة الخلفية من صورة باستخدام Bria RMBG 2.0.",
+    "display_name": "Bria إزالة خلفية الصورة",
+    "inputs": {
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "image": {
+        "name": "صورة"
+      },
+      "moderation": {
+        "name": "الإشراف",
+        "tooltip": "إعدادات الإشراف"
+      },
+      "seed": {
+        "name": "البذرة",
+        "tooltip": "تتحكم البذرة فيما إذا كان يجب إعادة تشغيل العقدة؛ النتائج غير حتمية بغض النظر عن البذرة."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "BriaRemoveVideoBackground": {
+    "description": "إزالة الخلفية من فيديو باستخدام Bria.",
+    "display_name": "Bria إزالة خلفية الفيديو",
+    "inputs": {
+      "background_color": {
+        "name": "لون الخلفية",
+        "tooltip": "لون الخلفية للفيديو الناتج."
+      },
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "seed": {
+        "name": "البذرة",
+        "tooltip": "تتحكم البذرة فيما إذا كان يجب إعادة تشغيل العقدة؛ النتائج غير حتمية بغض النظر عن البذرة."
+      },
+      "video": {
+        "name": "فيديو"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }

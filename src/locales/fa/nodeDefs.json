@@ -353,15 +353,6 @@
         "name": "تنظیمات نظارت",
         "tooltip": "تنظیمات نظارت"
       },
-      "moderation_prompt_content_moderation": {
-        "name": "نظارت بر محتوای پرامپت"
-      },
-      "moderation_visual_input_moderation": {
-        "name": "نظارت بر ورودی تصویری"
-      },
-      "moderation_visual_output_moderation": {
-        "name": "نظارت بر خروجی تصویری"
-      },
       "negative_prompt": {
         "name": "پرامپت منفی"
       },
@@ -386,6 +377,56 @@
       },
       "1": {
         "name": "پرامپت ساختاریافته",
+        "tooltip": null
+      }
+    }
+  },
+  "BriaRemoveImageBackground": {
+    "description": "حذف پس‌زمینه از یک تصویر با استفاده از Bria RMBG ۲.۰.",
+    "display_name": "حذف پس‌زمینه تصویر Bria",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "image": {
+        "name": "تصویر"
+      },
+      "moderation": {
+        "name": "مدیریت محتوا",
+        "tooltip": "تنظیمات مدیریت محتوا"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "seed تعیین می‌کند که node باید دوباره اجرا شود یا خیر؛ نتایج صرف‌نظر از seed غیرقطعی هستند."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "BriaRemoveVideoBackground": {
+    "description": "حذف پس‌زمینه از یک ویدیو با استفاده از Bria.",
+    "display_name": "حذف پس‌زمینه ویدیو Bria",
+    "inputs": {
+      "background_color": {
+        "name": "رنگ پس‌زمینه",
+        "tooltip": "رنگ پس‌زمینه برای ویدیوی خروجی."
+      },
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "seed تعیین می‌کند که node باید دوباره اجرا شود یا خیر؛ نتایج صرف‌نظر از seed غیرقطعی هستند."
+      },
+      "video": {
+        "name": "ویدیو"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }

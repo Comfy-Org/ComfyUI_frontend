@@ -798,6 +798,7 @@
     "disableSelected": "選択したものを無効化",
     "disableThirdParty": "サードパーティを無効化",
     "disabling": "無効化",
+    "disconnectedFromBackend": "バックエンドから切断されました。サーバーが稼働しているか確認してください。",
     "dismiss": "閉じる",
     "download": "ダウンロード",
     "downloadAudio": "オーディオをダウンロード",

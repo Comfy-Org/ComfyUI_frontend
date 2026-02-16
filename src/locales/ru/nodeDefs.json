@@ -353,15 +353,6 @@
         "name": "модерация",
         "tooltip": "Настройки модерации"
       },
-      "moderation_prompt_content_moderation": {
-        "name": "модерация_контента_промпта"
-      },
-      "moderation_visual_input_moderation": {
-        "name": "модерация_визуального_входа"
-      },
-      "moderation_visual_output_moderation": {
-        "name": "модерация_визуального_выхода"
-      },
       "negative_prompt": {
         "name": "негативный_промпт"
       },
@@ -386,6 +377,56 @@
       },
       "1": {
         "name": "структурированный_промпт",
+        "tooltip": null
+      }
+    }
+  },
+  "BriaRemoveImageBackground": {
+    "description": "Удалите фон с изображения с помощью Bria RMBG 2.0.",
+    "display_name": "Bria Удалить фон изображения",
+    "inputs": {
+      "control_after_generate": {
+        "name": "контроль после генерации"
+      },
+      "image": {
+        "name": "изображение"
+      },
+      "moderation": {
+        "name": "модерация",
+        "tooltip": "Настройки модерации"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed определяет, должен ли узел выполняться повторно; результаты всегда недетерминированы независимо от seed."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "BriaRemoveVideoBackground": {
+    "description": "Удалите фон с видео с помощью Bria.",
+    "display_name": "Bria Удалить фон видео",
+    "inputs": {
+      "background_color": {
+        "name": "цвет фона",
+        "tooltip": "Цвет фона для выходного видео."
+      },
+      "control_after_generate": {
+        "name": "контроль после генерации"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed определяет, должен ли узел выполняться повторно; результаты всегда недетерминированы независимо от seed."
+      },
+      "video": {
+        "name": "видео"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }

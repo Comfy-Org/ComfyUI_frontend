@@ -798,6 +798,7 @@
     "disableSelected": "Seçilenleri Devre Dışı Bırak",
     "disableThirdParty": "Üçüncü Tarafı Devre Dışı Bırak",
     "disabling": "{id} devre dışı bırakılıyor",
+    "disconnectedFromBackend": "Sunucu ile bağlantı kesildi. Sunucunun çalışıp çalışmadığını kontrol edin.",
     "dismiss": "Kapat",
     "download": "İndir",
     "downloadAudio": "Sesi indir",

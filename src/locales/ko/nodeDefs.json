@@ -353,15 +353,6 @@
         "name": "모더레이션",
         "tooltip": "모더레이션 설정"
       },
-      "moderation_prompt_content_moderation": {
-        "name": "프롬프트 콘텐츠 모더레이션"
-      },
-      "moderation_visual_input_moderation": {
-        "name": "비주얼 입력 모더레이션"
-      },
-      "moderation_visual_output_moderation": {
-        "name": "비주얼 출력 모더레이션"
-      },
       "negative_prompt": {
         "name": "네거티브 프롬프트"
       },
@@ -386,6 +377,56 @@
       },
       "1": {
         "name": "구조화된 프롬프트",
+        "tooltip": null
+      }
+    }
+  },
+  "BriaRemoveImageBackground": {
+    "description": "Bria RMBG 2.0을 사용하여 이미지에서 배경을 제거합니다.",
+    "display_name": "Bria 이미지 배경 제거",
+    "inputs": {
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "image": {
+        "name": "image"
+      },
+      "moderation": {
+        "name": "moderation",
+        "tooltip": "모더레이션 설정"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "시드는 노드가 다시 실행될지 여부를 제어합니다. 시드와 관계없이 결과는 비결정적입니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "BriaRemoveVideoBackground": {
+    "description": "Bria를 사용하여 비디오에서 배경을 제거합니다.",
+    "display_name": "Bria 비디오 배경 제거",
+    "inputs": {
+      "background_color": {
+        "name": "background_color",
+        "tooltip": "출력 비디오의 배경색입니다."
+      },
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "시드는 노드가 다시 실행될지 여부를 제어합니다. 시드와 관계없이 결과는 비결정적입니다."
+      },
+      "video": {
+        "name": "video"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }

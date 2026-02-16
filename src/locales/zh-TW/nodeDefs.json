@@ -353,15 +353,6 @@
         "name": "審核",
         "tooltip": "審核設定"
       },
-      "moderation_prompt_content_moderation": {
-        "name": "提示詞內容審核"
-      },
-      "moderation_visual_input_moderation": {
-        "name": "輸入圖像審核"
-      },
-      "moderation_visual_output_moderation": {
-        "name": "輸出圖像審核"
-      },
       "negative_prompt": {
         "name": "負面提示詞"
       },
@@ -386,6 +377,56 @@
       },
       "1": {
         "name": "結構化提示詞",
+        "tooltip": null
+      }
+    }
+  },
+  "BriaRemoveImageBackground": {
+    "description": "使用 Bria RMBG 2.0 移除影像的背景。",
+    "display_name": "Bria 移除影像背景",
+    "inputs": {
+      "control_after_generate": {
+        "name": "產生後控制"
+      },
+      "image": {
+        "name": "影像"
+      },
+      "moderation": {
+        "name": "審核",
+        "tooltip": "審核設定"
+      },
+      "seed": {
+        "name": "種子",
+        "tooltip": "種子控制此節點是否重新執行；無論種子為何，結果皆為非決定性。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "BriaRemoveVideoBackground": {
+    "description": "使用 Bria 移除影片的背景。",
+    "display_name": "Bria 移除影片背景",
+    "inputs": {
+      "background_color": {
+        "name": "背景顏色",
+        "tooltip": "輸出影片的背景顏色。"
+      },
+      "control_after_generate": {
+        "name": "產生後控制"
+      },
+      "seed": {
+        "name": "種子",
+        "tooltip": "種子控制此節點是否重新執行；無論種子為何，結果皆為非決定性。"
+      },
+      "video": {
+        "name": "影片"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }

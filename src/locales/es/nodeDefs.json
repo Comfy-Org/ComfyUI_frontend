@@ -353,15 +353,6 @@
         "name": "moderación",
         "tooltip": "Configuración de moderación"
       },
-      "moderation_prompt_content_moderation": {
-        "name": "moderación_de_contenido_de_instrucción"
-      },
-      "moderation_visual_input_moderation": {
-        "name": "moderación_visual_de_entrada"
-      },
-      "moderation_visual_output_moderation": {
-        "name": "moderación_visual_de_salida"
-      },
       "negative_prompt": {
         "name": "instrucción_negativa"
       },
@@ -386,6 +377,56 @@
       },
       "1": {
         "name": "instrucción_estructurada",
+        "tooltip": null
+      }
+    }
+  },
+  "BriaRemoveImageBackground": {
+    "description": "Quita el fondo de una imagen usando Bria RMBG 2.0.",
+    "display_name": "Bria Quitar Fondo de Imagen",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controlar después de generar"
+      },
+      "image": {
+        "name": "imagen"
+      },
+      "moderation": {
+        "name": "moderación",
+        "tooltip": "Configuración de moderación"
+      },
+      "seed": {
+        "name": "semilla",
+        "tooltip": "La semilla controla si el nodo debe ejecutarse de nuevo; los resultados son no deterministas independientemente de la semilla."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "BriaRemoveVideoBackground": {
+    "description": "Quita el fondo de un video usando Bria.",
+    "display_name": "Bria Quitar Fondo de Video",
+    "inputs": {
+      "background_color": {
+        "name": "color de fondo",
+        "tooltip": "Color de fondo para el video de salida."
+      },
+      "control_after_generate": {
+        "name": "controlar después de generar"
+      },
+      "seed": {
+        "name": "semilla",
+        "tooltip": "La semilla controla si el nodo debe ejecutarse de nuevo; los resultados son no deterministas independientemente de la semilla."
+      },
+      "video": {
+        "name": "video"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }

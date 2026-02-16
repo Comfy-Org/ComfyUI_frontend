@@ -798,6 +798,7 @@
     "disableSelected": "Отключить выбранное",
     "disableThirdParty": "Отключить сторонние",
     "disabling": "Отключение",
+    "disconnectedFromBackend": "Отключено от сервера. Проверьте, запущен ли сервер.",
     "dismiss": "Закрыть",
     "download": "Скачать",
     "downloadAudio": "Скачать аудио",

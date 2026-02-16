@@ -798,6 +798,7 @@
     "disableSelected": "Désactiver la sélection",
     "disableThirdParty": "Désactiver les tiers",
     "disabling": "Désactivation",
+    "disconnectedFromBackend": "Déconnecté du backend. Vérifiez si le serveur est en cours d’exécution.",
     "dismiss": "Fermer",
     "download": "Télécharger",
     "downloadAudio": "Télécharger l'audio",

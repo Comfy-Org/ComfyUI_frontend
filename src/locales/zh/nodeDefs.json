@@ -353,15 +353,6 @@
         "name": "moderation",
         "tooltip": "内容审核设置"
       },
-      "moderation_prompt_content_moderation": {
-        "name": "prompt_content_moderation"
-      },
-      "moderation_visual_input_moderation": {
-        "name": "visual_input_moderation"
-      },
-      "moderation_visual_output_moderation": {
-        "name": "visual_output_moderation"
-      },
       "negative_prompt": {
         "name": "negative_prompt"
       },
@@ -386,6 +377,56 @@
       },
       "1": {
         "name": "structured_prompt",
+        "tooltip": null
+      }
+    }
+  },
+  "BriaRemoveImageBackground": {
+    "description": "使用 Bria RMBG 2.0 移除图像的背景。",
+    "display_name": "Bria 移除图像背景",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "image": {
+        "name": "图像"
+      },
+      "moderation": {
+        "name": "内容审核",
+        "tooltip": "内容审核设置"
+      },
+      "seed": {
+        "name": "种子",
+        "tooltip": "种子控制节点是否重新运行；无论种子如何，结果都是非确定性的。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "BriaRemoveVideoBackground": {
+    "description": "使用 Bria 移除视频的背景。",
+    "display_name": "Bria 移除视频背景",
+    "inputs": {
+      "background_color": {
+        "name": "背景颜色",
+        "tooltip": "输出视频的背景颜色。"
+      },
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "seed": {
+        "name": "种子",
+        "tooltip": "种子控制节点是否重新运行；无论种子如何，结果都是非确定性的。"
+      },
+      "video": {
+        "name": "视频"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }

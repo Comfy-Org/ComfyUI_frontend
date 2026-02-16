@@ -798,6 +798,7 @@
     "disableSelected": "تعطيل المحدد",
     "disableThirdParty": "تعطيل الطرف الثالث",
     "disabling": "جارٍ التعطيل",
+    "disconnectedFromBackend": "تم قطع الاتصال بالخادم الخلفي. يرجى التحقق مما إذا كان الخادم يعمل.",
     "dismiss": "تجاهل",
     "download": "تنزيل",
     "downloadAudio": "تنزيل الصوت",

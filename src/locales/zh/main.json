@@ -798,6 +798,7 @@
     "disableSelected": "禁用选中项",
     "disableThirdParty": "禁用第三方",
     "disabling": "禁用中",
+    "disconnectedFromBackend": "已与后端断开连接。请检查服务器是否正在运行。",
     "dismiss": "关闭",
     "download": "下载",
     "downloadAudio": "下载音频",

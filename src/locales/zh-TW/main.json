@@ -798,6 +798,7 @@
     "disableSelected": "停用所選",
     "disableThirdParty": "停用第三方",
     "disabling": "停用中",
+    "disconnectedFromBackend": "已與後端斷線。請檢查伺服器是否正在運行。",
     "dismiss": "關閉",
     "download": "下載",
     "downloadAudio": "下載音訊",

@@ -798,6 +798,7 @@
     "disableSelected": "선택 항목 비활성화",
     "disableThirdParty": "서드파티 비활성화",
     "disabling": "비활성화 중",
+    "disconnectedFromBackend": "백엔드와의 연결이 끊어졌습니다. 서버가 실행 중인지 확인하세요.",
     "dismiss": "닫기",
     "download": "다운로드",
     "downloadAudio": "오디오 다운로드",
