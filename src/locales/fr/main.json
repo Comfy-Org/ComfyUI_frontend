@@ -1980,6 +1980,7 @@
       "removeJob": "Retirer la tâche",
       "reportError": "Signaler une erreur"
     },
+    "jobQueueing": "Mise en file d’attente de la tâche",
     "toggleJobHistory": "Afficher/Masquer l'historique des tâches"
   },
   "releaseToast": {
@@ -2401,7 +2402,10 @@
       "filterJobs": "Filtrer les travaux",
       "inlineTotalLabel": "Total",
       "interruptAll": "Interrompre tous les travaux en cours",
+      "jobCompleted": "Tâche terminée",
+      "jobFailed": "Échec de la tâche",
       "jobQueue": "File d’attente des travaux",
+      "jobsAddedToQueue": "{count} tâche ajoutée à la file d’attente | {count} tâches ajoutées à la file d’attente",
       "jobsCompleted": "{count} travail terminé | {count} travaux terminés",
       "jobsFailed": "{count} travail échoué | {count} travaux échoués",
       "moreOptions": "Plus d’options",
