@@ -14112,6 +14112,29 @@
       }
     }
   },
+  "Tencent3DPartNode": {
+    "description": "شناسایی و تولید خودکار اجزا بر اساس ساختار مدل را انجام می‌دهد.",
+    "display_name": "Hunyuan3D: بخش سه‌بعدی",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "model_3d": {
+        "name": "مدل سه‌بعدی",
+        "tooltip": "مدل سه‌بعدی با فرمت FBX. مدل باید کمتر از ۳۰۰۰۰ وجه داشته باشد."
+      },
+      "seed": {
+        "name": "بذر",
+        "tooltip": "بذر تعیین می‌کند که آیا node باید دوباره اجرا شود؛ نتایج صرف‌نظر از بذر، غیرقطعی هستند."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "FBX",
+        "tooltip": null
+      }
+    }
+  },
   "TencentImageToModelNode": {
     "display_name": "Hunyuan3D: تبدیل تصویر(ها) به مدل (پیشرفته)",
     "inputs": {

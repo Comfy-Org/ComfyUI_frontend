@@ -14112,6 +14112,29 @@
       }
     }
   },
+  "Tencent3DPartNode": {
+    "description": "根据模型结构自动进行组件识别与生成。",
+    "display_name": "Hunyuan3D：3D部件",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "model_3d": {
+        "name": "model_3d",
+        "tooltip": "FBX格式的3D模型。模型面数应少于30000。"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed用于控制节点是否重新运行；无论seed如何，结果都是非确定性的。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "FBX",
+        "tooltip": null
+      }
+    }
+  },
   "TencentImageToModelNode": {
     "display_name": "Hunyuan3D：图像转模型（专业版）",
     "inputs": {

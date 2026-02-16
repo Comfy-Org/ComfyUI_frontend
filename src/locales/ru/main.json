@@ -2039,6 +2039,8 @@
     "pinned": "Закреплено",
     "properties": "Свойства",
     "removeFavorite": "Убрать из избранного",
+    "resetAllParameters": "Сбросить все параметры",
+    "resetToDefault": "Сбросить по умолчанию",
     "settings": "Настройки",
     "showAdvancedInputsButton": "Показать расширенные входные данные",
     "showInput": "Показать вход",

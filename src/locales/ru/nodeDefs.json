@@ -14099,6 +14099,29 @@
       }
     }
   },
+  "Tencent3DPartNode": {
+    "description": "Автоматически выполняет идентификацию и генерацию компонентов на основе структуры модели.",
+    "display_name": "Hunyuan3D: 3D Part",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model_3d": {
+        "name": "model_3d",
+        "tooltip": "3D-модель в формате FBX. Модель должна содержать менее 30000 граней."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed управляет необходимостью повторного запуска узла; результаты не являются детерминированными независимо от seed."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "FBX",
+        "tooltip": null
+      }
+    }
+  },
   "TencentImageToModelNode": {
     "display_name": "Hunyuan3D: Изображение(я) в модель (Pro)",
     "inputs": {

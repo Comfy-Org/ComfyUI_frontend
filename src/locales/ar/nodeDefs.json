@@ -14099,6 +14099,29 @@
       }
     }
   },
+  "Tencent3DPartNode": {
+    "description": "تنفيذ التعرف على المكونات وتوليدها تلقائيًا بناءً على هيكل النموذج.",
+    "display_name": "Hunyuan3D: جزء ثلاثي الأبعاد",
+    "inputs": {
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "model_3d": {
+        "name": "نموذج_ثلاثي_الأبعاد",
+        "tooltip": "نموذج ثلاثي الأبعاد بصيغة FBX. يجب أن يحتوي النموذج على أقل من ٣٠٠٠٠ وجه."
+      },
+      "seed": {
+        "name": "البذرة",
+        "tooltip": "تتحكم البذرة فيما إذا كان يجب إعادة تشغيل العقدة؛ النتائج غير حتمية بغض النظر عن البذرة."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "FBX",
+        "tooltip": null
+      }
+    }
+  },
   "TencentImageToModelNode": {
     "display_name": "Hunyuan3D: من صورة إلى نموذج (احترافي)",
     "inputs": {

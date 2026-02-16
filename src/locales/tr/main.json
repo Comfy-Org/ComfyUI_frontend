@@ -2039,6 +2039,8 @@
     "pinned": "Sabitlendi",
     "properties": "Özellikler",
     "removeFavorite": "Favorilerden Kaldır",
+    "resetAllParameters": "Tüm parametreleri sıfırla",
+    "resetToDefault": "Varsayılanlara sıfırla",
     "settings": "Ayarlar",
     "showAdvancedInputsButton": "Gelişmiş girdileri göster",
     "showInput": "Girdiyi göster",

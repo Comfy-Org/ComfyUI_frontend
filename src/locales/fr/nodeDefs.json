@@ -14099,6 +14099,29 @@
       }
     }
   },
+  "Tencent3DPartNode": {
+    "description": "Identifie et génère automatiquement des composants en fonction de la structure du modèle.",
+    "display_name": "Hunyuan3D : Partie 3D",
+    "inputs": {
+      "control_after_generate": {
+        "name": "contrôler après génération"
+      },
+      "model_3d": {
+        "name": "modèle_3d",
+        "tooltip": "Modèle 3D au format FBX. Le modèle doit comporter moins de 30 000 faces."
+      },
+      "seed": {
+        "name": "graine",
+        "tooltip": "La graine contrôle si le nœud doit être relancé ; les résultats restent non déterministes quel que soit la graine."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "FBX",
+        "tooltip": null
+      }
+    }
+  },
   "TencentImageToModelNode": {
     "display_name": "Hunyuan3D : Image(s) vers Modèle (Pro)",
     "inputs": {

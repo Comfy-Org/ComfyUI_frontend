@@ -14099,6 +14099,29 @@
       }
     }
   },
+  "Tencent3DPartNode": {
+    "description": "根據模型結構自動進行元件識別與生成。",
+    "display_name": "Hunyuan3D：3D零件",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "model_3d": {
+        "name": "model_3d",
+        "tooltip": "FBX 格式的 3D 模型。模型面數應少於 30000。"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed 控制此節點是否重新執行；無論 seed 為何，結果皆為非確定性。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "FBX",
+        "tooltip": null
+      }
+    }
+  },
   "TencentImageToModelNode": {
     "display_name": "Hunyuan3D：圖片轉模型（專業版）",
     "inputs": {

@@ -2039,6 +2039,8 @@
     "pinned": "Épinglé",
     "properties": "Propriétés",
     "removeFavorite": "Retirer des favoris",
+    "resetAllParameters": "Réinitialiser tous les paramètres",
+    "resetToDefault": "Réinitialiser par défaut",
     "settings": "Paramètres",
     "showAdvancedInputsButton": "Afficher les entrées avancées",
     "showInput": "Afficher l’entrée",

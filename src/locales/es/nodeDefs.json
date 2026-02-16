@@ -14099,6 +14099,29 @@
       }
     }
   },
+  "Tencent3DPartNode": {
+    "description": "Realiza automáticamente la identificación y generación de componentes según la estructura del modelo.",
+    "display_name": "Hunyuan3D: Parte 3D",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controlar después de generar"
+      },
+      "model_3d": {
+        "name": "modelo_3d",
+        "tooltip": "Modelo 3D en formato FBX. El modelo debe tener menos de 30,000 caras."
+      },
+      "seed": {
+        "name": "semilla",
+        "tooltip": "La semilla controla si el nodo debe volver a ejecutarse; los resultados son no deterministas independientemente de la semilla."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "FBX",
+        "tooltip": null
+      }
+    }
+  },
   "TencentImageToModelNode": {
     "display_name": "Hunyuan3D: Imagen(es) a Modelo (Pro)",
     "inputs": {

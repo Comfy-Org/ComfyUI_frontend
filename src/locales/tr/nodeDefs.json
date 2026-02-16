@@ -14099,6 +14099,29 @@
       }
     }
   },
+  "Tencent3DPartNode": {
+    "description": "Model yapısına göre otomatik olarak bileşen tanımlama ve oluşturma işlemlerini gerçekleştirir.",
+    "display_name": "Hunyuan3D: 3D Parça",
+    "inputs": {
+      "control_after_generate": {
+        "name": "oluşturduktan sonra kontrol et"
+      },
+      "model_3d": {
+        "name": "model_3d",
+        "tooltip": "FBX formatında 3D model. Model 30000'den az yüzeye sahip olmalıdır."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed, düğümün tekrar çalıştırılıp çalıştırılmayacağını kontrol eder; seed ne olursa olsun sonuçlar deterministik değildir."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "FBX",
+        "tooltip": null
+      }
+    }
+  },
   "TencentImageToModelNode": {
     "display_name": "Hunyuan3D: Görsel(ler)den Modele (Pro)",
     "inputs": {

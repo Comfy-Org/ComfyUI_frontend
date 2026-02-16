@@ -2039,6 +2039,8 @@
     "pinned": "مثبت",
     "properties": "الخصائص",
     "removeFavorite": "إزالة من المفضلة",
+    "resetAllParameters": "إعادة تعيين جميع المعلمات",
+    "resetToDefault": "إعادة التعيين إلى الافتراضي",
     "settings": "الإعدادات",
     "showAdvancedInputsButton": "إظهار المدخلات المتقدمة",
     "showInput": "إظهار المدخل",

@@ -14186,8 +14186,31 @@
       }
     }
   },
+  "Tencent3DPartNode": {
+    "display_name": "Hunyuan3D: 3D Part",
+    "description": "Automatically perform component identification and generation based on the model structure.",
+    "inputs": {
+      "model_3d": {
+        "name": "model_3d",
+        "tooltip": "3D model in FBX format. Model should have less than 30000 faces."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed controls whether the node should re-run; results are non-deterministic regardless of seed."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "FBX",
+        "tooltip": null
+      }
+    }
+  },
   "TencentImageToModelNode": {
-    "display_name": "Hunyuan3D: Image(s) to Model (Pro)",
+    "display_name": "Hunyuan3D: Image(s) to Model",
     "inputs": {
       "model": {
         "name": "model",
@@ -14238,7 +14261,7 @@
     }
   },
   "TencentTextToModelNode": {
-    "display_name": "Hunyuan3D: Text to Model (Pro)",
+    "display_name": "Hunyuan3D: Text to Model",
     "inputs": {
       "model": {
         "name": "model",

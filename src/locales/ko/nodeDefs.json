@@ -14099,6 +14099,29 @@
       }
     }
   },
+  "Tencent3DPartNode": {
+    "description": "모델 구조를 기반으로 자동으로 부품 식별 및 생성을 수행합니다.",
+    "display_name": "Hunyuan3D: 3D 파트",
+    "inputs": {
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "model_3d": {
+        "name": "model_3d",
+        "tooltip": "FBX 형식의 3D 모델입니다. 모델의 면 개수는 30,000개 미만이어야 합니다."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "시드는 노드가 다시 실행될지 여부를 제어합니다. 시드와 관계없이 결과는 비결정적입니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "FBX",
+        "tooltip": null
+      }
+    }
+  },
   "TencentImageToModelNode": {
     "display_name": "Hunyuan3D: 이미지 → 모델 (Pro)",
     "inputs": {

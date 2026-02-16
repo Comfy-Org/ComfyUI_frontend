@@ -2039,6 +2039,8 @@
     "pinned": "顶固",
     "properties": "属性",
     "removeFavorite": "取消收藏",
+    "resetAllParameters": "重置所有参数",
+    "resetToDefault": "重置为默认值",
     "settings": "设置",
     "showAdvancedInputsButton": "显示高级输入",
     "showInput": "显示输入",

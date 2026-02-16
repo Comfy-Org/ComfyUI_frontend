@@ -14099,6 +14099,29 @@
       }
     }
   },
+  "Tencent3DPartNode": {
+    "description": "モデル構造に基づいて自動的にコンポーネントの識別と生成を行います。",
+    "display_name": "Hunyuan3D：3Dパーツ",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後の制御"
+      },
+      "model_3d": {
+        "name": "3Dモデル",
+        "tooltip": "FBX形式の3Dモデル。モデルの面数は30,000未満である必要があります。"
+      },
+      "seed": {
+        "name": "シード",
+        "tooltip": "シードはノードを再実行するかどうかを制御します。シードに関係なく結果は非決定的です。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "FBX",
+        "tooltip": null
+      }
+    }
+  },
   "TencentImageToModelNode": {
     "display_name": "Hunyuan3D: 画像からモデルへ (Pro)",
     "inputs": {

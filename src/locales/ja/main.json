@@ -2039,6 +2039,8 @@
     "pinned": "ピン留め",
     "properties": "プロパティ",
     "removeFavorite": "お気に入りを解除",
+    "resetAllParameters": "すべてのパラメータをリセット",
+    "resetToDefault": "デフォルトにリセット",
     "settings": "設定",
     "showAdvancedInputsButton": "詳細入力を表示",
     "showInput": "入力を表示",
