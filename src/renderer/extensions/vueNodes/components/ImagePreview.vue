@@ -7,7 +7,7 @@
     <!-- Image Wrapper -->
     <div
       ref="imageWrapperEl"
-      class="h-full w-full overflow-hidden rounded-[5px] bg-muted-background relative"
+      class="min-h-0 flex-1 w-full overflow-hidden rounded-[5px] bg-muted-background relative"
       tabindex="0"
       role="img"
       :aria-label="$t('g.imagePreview')"
@@ -43,7 +43,7 @@
         ref="currentImageEl"
         :src="currentImageUrl"
         :alt="imageAltText"
-        class="block size-full object-contain pointer-events-none contain-size"
+        class="absolute inset-0 block size-full object-contain pointer-events-none"
         @load="handleImageLoad"
         @error="handleImageError"
       />

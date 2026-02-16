@@ -1,5 +1,6 @@
 import type { LGraphNode, NodeId } from '@/lib/litegraph/src/LGraphNode'
 import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
+import type { CanvasPointer } from '@/lib/litegraph/src/CanvasPointer'
 import type { Point } from '@/lib/litegraph/src/interfaces'
 import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
@@ -104,13 +105,8 @@ export function createPromotedWidgetView(
         return state?.value
       },
       set: (v: unknown) => {
-        const resolved = resolve(subgraphNode, nodeId, widgetName)
-        if (resolved) {
-          resolved.widget.value = v as IBaseWidget['value']
-        } else {
-          const state = useWidgetValueStore().getWidget(bareNodeId, widgetName)
-          if (state) state.value = v
-        }
+        const state = useWidgetValueStore().getWidget(bareNodeId, widgetName)
+        if (state) state.value = v
       },
       enumerable: true
     },
@@ -156,14 +152,27 @@ export function createPromotedWidgetView(
 
     const concrete = toConcreteWidget(resolved.widget, resolved.node, false)
     if (concrete) {
+      const interiorNode = resolved.node
       const originalY = concrete.y
+      const originalComputedHeight = concrete.computedHeight
+      const originalPos = interiorNode.pos
+      const originalWidth = interiorNode.size[0]
+
       concrete.y = view.y
+      concrete.computedHeight = view.computedHeight
+      interiorNode.pos = subgraphNode.pos
+      interiorNode.size[0] = subgraphNode.size[0]
+
       concrete.drawWidget(ctx, {
         width: widget_width,
         showText: !lowQuality,
         suppressPromotedOutline: true
       })
+
       concrete.y = originalY
+      concrete.computedHeight = originalComputedHeight
+      interiorNode.pos = originalPos
+      interiorNode.size[0] = originalWidth
     }
   }
 
@@ -180,6 +189,44 @@ export function createPromotedWidgetView(
     enumerable: true,
     configurable: true
   })
+
+  // Interaction — resolve interior widget and delegate pointer events.
+  // Without this, processWidgetClick wraps the PromotedWidgetView POJO
+  // via toConcreteWidget, creating a throwaway widget whose value writes
+  // never propagate to the store or interior widget.
+  view.onPointerDown = function (
+    pointer: CanvasPointer,
+    _node: LGraphNode,
+    canvas: LGraphCanvas
+  ): boolean {
+    const resolved = resolve(subgraphNode, nodeId, widgetName)
+    if (!resolved) return false
+
+    const interior = resolved.widget
+    if (typeof interior.onPointerDown === 'function') {
+      const handled = interior.onPointerDown(pointer, subgraphNode, canvas)
+      if (handled) return true
+    }
+
+    const concrete = toConcreteWidget(interior, subgraphNode, false)
+    if (concrete) {
+      pointer.onClick = () =>
+        concrete.onClick({
+          e: pointer.eDown!,
+          node: subgraphNode,
+          canvas
+        })
+      pointer.onDrag = (eMove) =>
+        concrete.onDrag?.({
+          e: eMove,
+          node: subgraphNode,
+          canvas
+        })
+      return true
+    }
+
+    return false
+  }
 
   // Callback forwarding
   view.callback = function (

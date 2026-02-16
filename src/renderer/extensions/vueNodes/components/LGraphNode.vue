@@ -111,8 +111,18 @@
 
         <NodeWidgets v-if="nodeData.widgets?.length" :node-data="nodeData" />
 
-        <div v-if="hasCustomContent" class="min-h-0 flex-1 flex">
-          <NodeContent :node-data="nodeData" :media="nodeMedia" />
+        <div v-if="hasCustomContent" class="min-h-0 flex-1 flex flex-col">
+          <NodeContent
+            v-if="nodeMedia"
+            :node-data="nodeData"
+            :media="nodeMedia"
+          />
+          <NodeContent
+            v-for="preview in promotedPreviews"
+            :key="preview.interiorNodeId"
+            :node-data="nodeData"
+            :media="preview"
+          />
         </div>
         <!-- Live mid-execution preview images -->
         <LivePreview
@@ -247,6 +257,7 @@ import { nonWidgetedInputs } from '@/renderer/extensions/vueNodes/utils/nodeData
 import { applyLightThemeColor } from '@/renderer/extensions/vueNodes/utils/nodeStyleUtils'
 import { app } from '@/scripts/app'
 import { useExecutionStore } from '@/stores/executionStore'
+import { usePromotedPreviews } from '@/composables/node/usePromotedPreviews'
 import { usePromotionStore } from '@/stores/promotionStore'
 import { useNodeOutputStore } from '@/stores/imagePreviewStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
@@ -481,7 +492,7 @@ watch(isCollapsed, (collapsed) => {
 
 // Check if node has custom content (like image/video outputs)
 const hasCustomContent = computed(() => {
-  // Show custom content if node has media outputs
+  if (promotedPreviews.value.length > 0) return true
   return !!nodeMedia.value && nodeMedia.value.urls.length > 0
 })
 
@@ -594,6 +605,10 @@ const lgraphNode = computed(() => {
   const locatorId = getLocatorIdFromNodeData(nodeData)
   return getNodeByLocatorId(app.rootGraph, locatorId)
 })
+
+// TODO: Surface subgraph info more cleanly in VueNodeData instead of
+// reaching through lgraphNode for promoted preview resolution.
+const { promotedPreviews } = usePromotedPreviews(lgraphNode)
 
 const showAdvancedInputsButton = computed(() => {
   const node = lgraphNode.value

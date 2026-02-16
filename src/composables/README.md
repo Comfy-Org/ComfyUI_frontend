@@ -245,7 +245,7 @@ General-purpose composables:
 | `useServerLogs`             | Manages server log display                                |
 | `useTemplateWorkflows`      | Manages template workflow loading, selection, and display |
 | `useTreeExpansion`          | Handles tree node expansion state                         |
-| `useValueTransform`         | Transforms values between formats                         |
+
 | `useWorkflowAutoSave`       | Handles automatic workflow saving                         |
 | `useWorkflowPersistence`    | Manages workflow persistence                              |
 | `useWorkflowValidation`     | Validates workflow integrity                              |

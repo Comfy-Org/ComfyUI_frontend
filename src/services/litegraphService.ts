@@ -50,6 +50,7 @@ import { useDomWidgetStore } from '@/stores/domWidgetStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useNodeOutputStore } from '@/stores/imagePreviewStore'
 import { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
+import { usePromotionStore } from '@/stores/promotionStore'
 import { useSubgraphStore } from '@/stores/subgraphStore'
 import { useFavoritedWidgetsStore } from '@/stores/workspace/favoritedWidgetsStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
@@ -799,6 +800,22 @@ export const useLitegraphService = () => {
     }
     node.prototype.onDrawBackground = function () {
       updatePreviews(this)
+
+      if (this instanceof SubgraphNode) {
+        const promotionStore = usePromotionStore()
+        const entries = promotionStore.getPromotions(this.id)
+        const parentGraph = this.graph
+        const pseudoEntries = entries.filter((e) =>
+          e.widgetName.startsWith('$$')
+        )
+        for (const entry of pseudoEntries) {
+          const interiorNode = this.subgraph.getNodeById(entry.interiorNodeId)
+          if (!interiorNode) continue
+          updatePreviews(interiorNode, () => {
+            parentGraph?.setDirtyCanvas(true)
+          })
+        }
+      }
     }
   }
 
