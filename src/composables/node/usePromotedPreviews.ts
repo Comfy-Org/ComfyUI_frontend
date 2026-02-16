@@ -7,7 +7,7 @@ import { useNodeOutputStore } from '@/stores/imagePreviewStore'
 import { usePromotionStore } from '@/stores/promotionStore'
 import { createNodeLocatorId } from '@/types/nodeIdentification'
 
-export interface PromotedPreview {
+interface PromotedPreview {
   interiorNodeId: string
   type: 'image' | 'video'
   urls: string[]
