@@ -4,16 +4,16 @@ import { computed } from 'vue'
 
 export const useHoveredStore = defineStore('hovered', () => {
   const { x, y } = useMouse({ type: 'client' })
-  const { element } = useElementByPoint({ x, y })
+  const { element } = useElementByPoint({ x, y, multiple: true })
 
   const hoveredWidgetName = computed(() => {
-    const widgetEl = element.value?.closest('.lg-node-widget')
+    const widgetEl = element.value?.find((e) => e.matches('.lg-node-widget'))
     if (!(widgetEl instanceof HTMLElement)) return
 
     return widgetEl.dataset.widgetName
   })
   const hoveredNodeId = computed(() => {
-    const nodeEl = element.value?.closest('.lg-node')
+    const nodeEl = element.value?.find((e) => e.matches('.lg-node'))
     if (!(nodeEl instanceof HTMLElement)) return
 
     return nodeEl.dataset.nodeId
