@@ -81,7 +81,11 @@ function getBounding(nodeId: NodeId, widgetName?: string) {
   }
 }
 
-function handleDown(e: PointerEvent) {
+function handleDown(e: MouseEvent) {
+  const [node] = getHovered() ?? []
+  if (!node || e.button > 0) canvasInteractions.forwardEventToCanvas(e)
+}
+function handleClick(e: MouseEvent) {
   const [node, widget] = getHovered() ?? []
   if (!node) return canvasInteractions.forwardEventToCanvas(e)
 
@@ -132,10 +136,15 @@ function handleDown(e: PointerEvent) {
 
   <Teleport to="body">
     <div
-      class="absolute w-full h-full"
+      :class="
+        cn(
+          'absolute w-full h-full',
+          getHovered() ? 'cursor-pointer' : 'cursor-grab'
+        )
+      "
       @pointerdown="handleDown"
-      @pointerup="canvasInteractions.forwardEventToCanvas"
-      @pointermove="canvasInteractions.forwardEventToCanvas"
+      @click="handleClick"
+      @wheel="canvasInteractions.forwardEventToCanvas"
     >
       <div
         v-for="[key, style] in selectedInputs"
