@@ -4,7 +4,7 @@ import { readonly, computed, ref } from 'vue'
 export type AppMode = 'graph' | 'app' | 'builder:select' | 'builder:arrange'
 
 export const useAppModeStore = defineStore('appMode', () => {
-  const mode = ref<AppMode>('graph')
+  const mode = ref<AppMode>('builder:select')
   const builderSaving = ref(false)
   const hasOutputs = ref(true)
 
