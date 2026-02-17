@@ -1,7 +1,7 @@
 <template>
   <div
     ref="containerRef"
-    class="workflow-tabs-container flex h-full max-w-full flex-auto flex-row overflow-hidden"
+    class="workflow-tabs-container flex h-(--workflow-tabs-height) max-w-full flex-auto flex-row overflow-hidden"
     :class="{ 'workflow-tabs-container-desktop': isDesktop }"
   >
     <Button
