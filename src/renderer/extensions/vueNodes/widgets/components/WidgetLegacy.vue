@@ -3,6 +3,7 @@ import { useResizeObserver } from '@vueuse/core'
 import { onBeforeUnmount, onMounted, ref, watch } from 'vue'
 
 import { useChainCallback } from '@/composables/functional/useChainCallback'
+import { isPromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetTypes'
 import { CanvasPointer } from '@/lib/litegraph/src/CanvasPointer'
 import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
@@ -14,6 +15,7 @@ import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 
 const props = defineProps<{
   widget: SimplifiedWidget<void>
+  nodeId: string
 }>()
 
 const canvasEl = ref()
@@ -25,14 +27,36 @@ let widgetInstance: IBaseWidget | undefined
 let pointer: CanvasPointer | undefined
 const scaleFactor = 2
 
+function findLegacyWidget():
+  | {
+      node: LGraphNode
+      widget: IBaseWidget
+    }
+  | undefined {
+  const hostNode = canvas?.graph?.getNodeById(props.nodeId) ?? undefined
+  if (!hostNode) return undefined
+  const widget = hostNode.widgets?.find((w) => w.name === props.widget.name)
+  if (!widget) return undefined
+
+  // Promoted legacy widget: resolve through subgraph to interior widget
+  if (isPromotedWidgetView(widget) && hostNode.isSubgraphNode()) {
+    const innerNode = hostNode.subgraph.getNodeById(widget.sourceNodeId)
+    if (!innerNode) return undefined
+    const innerWidget = innerNode.widgets?.find(
+      (w) => w.name === widget.sourceWidgetName
+    )
+    if (innerWidget) return { node: innerNode, widget: innerWidget }
+    return undefined
+  }
+
+  return { node: hostNode, widget }
+}
+
 onMounted(() => {
-  node =
-    canvas?.graph?.getNodeById(
-      canvasEl.value.parentElement.attributes['node-id'].value
-    ) ?? undefined
-  if (!node) return
-  widgetInstance = node.widgets?.find((w) => w.name === props.widget.name)
-  if (!widgetInstance) return
+  const resolved = findLegacyWidget()
+  if (!resolved) return
+  node = resolved.node
+  widgetInstance = resolved.widget
   canvasEl.value.width *= scaleFactor
   if (!widgetInstance.triggerDraw)
     widgetInstance.callback = useChainCallback(
