@@ -1,8 +1,8 @@
 <template>
   <div
-    class="flex h-12 items-center justify-between gap-2 border-b border-interface-stroke px-2"
+    class="flex h-12 items-center gap-2 border-b border-interface-stroke px-2"
   >
-    <div class="px-2 text-[14px] font-normal text-text-primary">
+    <div class="min-w-0 flex-1 px-2 text-[14px] font-normal text-text-primary">
       <span>{{ headerTitle }}</span>
       <span
         v-if="showConcurrentIndicator"
@@ -16,6 +16,25 @@
           }}</span>
         </span>
       </span>
+    </div>
+    <div
+      class="inline-flex h-6 items-center gap-2 text-[12px] leading-none text-text-primary"
+    >
+      <span class="opacity-90">
+        <span class="font-bold">{{ queuedCount }}</span>
+        <span class="ml-1">{{
+          t('sideToolbar.queueProgressOverlay.queuedSuffix')
+        }}</span>
+      </span>
+      <Button
+        v-if="queuedCount > 0"
+        variant="destructive"
+        size="icon"
+        :aria-label="t('sideToolbar.queueProgressOverlay.clearQueued')"
+        @click="$emit('clearQueued')"
+      >
+        <i class="icon-[lucide--list-x] size-4" />
+      </Button>
     </div>
     <div v-if="!isCloud" class="flex items-center gap-1">
       <Button
@@ -78,10 +97,12 @@ defineProps<{
   headerTitle: string
   showConcurrentIndicator: boolean
   concurrentWorkflowCount: number
+  queuedCount: number
 }>()
 
 const emit = defineEmits<{
   (e: 'clearHistory'): void
+  (e: 'clearQueued'): void
 }>()
 
 const { t } = useI18n()
