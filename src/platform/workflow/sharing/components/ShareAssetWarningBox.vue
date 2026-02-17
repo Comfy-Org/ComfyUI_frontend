@@ -1,8 +1,8 @@
 <template>
-  <div class="rounded-lg border border-amber-500/50 bg-amber-500/10 p-4">
+  <div class="rounded-lg border border-amber-500/50 p-4">
     <div class="flex items-start gap-2">
       <i
-        class="icon-[lucide--triangle-alert] mt-0.5 size-4 shrink-0 text-amber-500"
+        class="icon-[lucide--circle-alert] mt-0.5 size-4 shrink-0 text-amber-500"
       />
       <p class="m-0 text-xs text-muted-foreground">
         {{ $t('shareWorkflow.assetWarningTitle') }}
@@ -12,7 +12,7 @@
     <div v-if="assets.length > 0" class="mt-3">
       <CollapsibleRoot v-model:open="assetsOpen">
         <CollapsibleTrigger
-          class="flex w-full cursor-pointer items-center gap-1 border-none bg-transparent p-0 text-xs font-medium text-base-foreground"
+          class="flex w-full cursor-pointer items-center gap-1 border-none bg-transparent p-0 text-xs font-medium text-muted-foreground"
         >
           <i
             :class="
@@ -65,7 +65,7 @@
       </CollapsibleRoot>
     </div>
 
-    <label class="mt-3 flex cursor-pointer items-start gap-2">
+    <label class="mt-3 flex cursor-pointer items-center gap-2">
       <input
         type="checkbox"
         :checked="acknowledged"
@@ -77,7 +77,7 @@
           )
         "
       />
-      <span class="text-xs text-muted-foreground">
+      <span class="text-xs text-base-foreground font-bold">
         {{ $t('shareWorkflow.acknowledgeCheckbox') }}
       </span>
     </label>
