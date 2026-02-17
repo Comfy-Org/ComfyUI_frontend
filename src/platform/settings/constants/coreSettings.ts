@@ -1196,9 +1196,9 @@ export const CORE_SETTINGS: SettingParams[] = [
   {
     id: 'Comfy.NodeReplacement.Enabled',
     category: ['Comfy', 'Workflow', 'NodeReplacement'],
-    name: 'Enable automatic node replacement',
+    name: 'Enable node replacement suggestions',
     tooltip:
-      'When enabled, missing nodes can be automatically replaced with their newer equivalents if a replacement mapping exists.',
+      'When enabled, missing nodes with known replacements will be shown as replaceable in the missing nodes dialog, allowing you to review and apply replacements.',
     type: 'boolean',
     defaultValue: false,
     experimental: true,
