@@ -30,8 +30,18 @@
       </i18n-t>
     </div>
 
+    <!-- All nodes replaceable: Skip button (cloud + OSS) -->
+    <div v-if="!hasNonReplaceableNodes" class="flex justify-end gap-1">
+      <Button variant="secondary" size="md" @click="handleGotItClick">
+        {{ $t('nodeReplacement.skipForNow') }}
+      </Button>
+    </div>
+
     <!-- Cloud mode: Learn More + Got It buttons -->
-    <div v-if="isCloud" class="flex w-full items-center justify-between gap-2">
+    <div
+      v-else-if="isCloud"
+      class="flex w-full items-center justify-between gap-2"
+    >
       <Button
         variant="textonly"
         size="sm"
@@ -48,9 +58,9 @@
       }}</Button>
     </div>
 
-    <!-- OSS mode: Open Manager + Install All buttons -->
+    <!-- OSS mode: Manager buttons -->
     <div v-else-if="showManagerButtons" class="flex justify-end gap-1">
-      <Button variant="textonly" @click="openManager">{{
+      <Button variant="textonly" @click="handleOpenManager">{{
         $t('g.openManager')
       }}</Button>
       <PackInstallButton
@@ -82,11 +92,16 @@ import { useSettingStore } from '@/platform/settings/settingStore'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useDialogService } from '@/services/dialogService'
 import { useDialogStore } from '@/stores/dialogStore'
+import type { MissingNodeType } from '@/types/comfy'
 import PackInstallButton from '@/workbench/extensions/manager/components/manager/button/PackInstallButton.vue'
 import { useMissingNodes } from '@/workbench/extensions/manager/composables/nodePack/useMissingNodes'
 import { useManagerState } from '@/workbench/extensions/manager/composables/useManagerState'
 import { useComfyManagerStore } from '@/workbench/extensions/manager/stores/comfyManagerStore'
 import { ManagerTab } from '@/workbench/extensions/manager/types/comfyManagerTypes'
+
+const { missingNodeTypes } = defineProps<{
+  missingNodeTypes?: MissingNodeType[]
+}>()
 
 const dialogStore = useDialogStore()
 const { t } = useI18n()
@@ -112,6 +127,12 @@ function openShowMissingNodesSetting() {
 const { missingNodePacks, isLoading, error } = useMissingNodes()
 const comfyManagerStore = useComfyManagerStore()
 const managerState = useManagerState()
+function handleOpenManager() {
+  managerState.openManager({
+    initialTab: ManagerTab.Missing,
+    showToastOnLegacyError: true
+  })
+}
 
 // Check if any of the missing packs are currently being installed
 const isInstalling = computed(() => {
@@ -131,15 +152,29 @@ const showInstallAllButton = computed(() => {
   return managerState.shouldShowInstallButton.value
 })
 
-const openManager = async () => {
-  await managerState.openManager({
-    initialTab: ManagerTab.Missing,
-    showToastOnLegacyError: true
-  })
-}
+const hasNonReplaceableNodes = computed(
+  () =>
+    missingNodeTypes?.some(
+      (n) =>
+        typeof n === 'string' || (typeof n === 'object' && !n.isReplaceable)
+    ) ?? false
+)
 
-// Computed to check if all missing nodes have been installed
+// Track whether missingNodePacks was ever non-empty (i.e. there were packs to install)
+const hadMissingPacks = ref(false)
+
+watch(
+  missingNodePacks,
+  (packs) => {
+    if (packs && packs.length > 0) hadMissingPacks.value = true
+  },
+  { immediate: true }
+)
+
+// Only consider "all installed" when packs transitioned from non-empty to empty
+// (actual installation happened). Replaceable-only case is handled by Content auto-close.
 const allMissingNodesInstalled = computed(() => {
+  if (!hadMissingPacks.value) return false
   return (
     !isLoading.value &&
     !isInstalling.value &&
