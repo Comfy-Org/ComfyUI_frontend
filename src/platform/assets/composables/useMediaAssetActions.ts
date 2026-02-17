@@ -96,7 +96,12 @@ export function useMediaAssetActions() {
   const downloadMultipleAssets = (assets: AssetItem[]) => {
     if (!assets || assets.length === 0) return
 
-    if (isCloud && assets.length > 1) {
+    const hasMultiOutputJobs = assets.some((a) => {
+      const count = getOutputAssetMetadata(a.user_metadata)?.outputCount
+      return typeof count === 'number' && count > 1
+    })
+
+    if (isCloud && (assets.length > 1 || hasMultiOutputJobs)) {
       void downloadMultipleAssetsAsZip(assets)
       return
     }
