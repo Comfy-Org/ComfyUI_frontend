@@ -1,11 +1,10 @@
 <script setup lang="ts">
 import { useElementBounding } from '@vueuse/core'
-import { computed, reactive, ref, toValue } from 'vue'
+import { computed, reactive, toValue } from 'vue'
 import type { MaybeRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import DraggableList from '@/components/common/DraggableList.vue'
-import { useChainCallback } from '@/composables/functional/useChainCallback'
 import type { LGraphNode, NodeId } from '@/lib/litegraph/src/LGraphNode'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { useSettingStore } from '@/platform/settings/settingStore'
@@ -20,20 +19,16 @@ const canvasStore = useCanvasStore()
 const hoveredStore = useHoveredStore()
 const settingStore = useSettingStore()
 const { t } = useI18n()
+const canvas = canvasStore.getCanvas()
 
 type BoundStyle = { top: string; left: string; width: string; height: string }
-const selectedInputs = reactive<[string, MaybeRef<BoundStyle>][]>([])
-const selectedOutputs = reactive<[string, MaybeRef<BoundStyle>][]>([])
-
-function hoveredKey() {
-  return `Hovered: ${hoveredStore.hoveredNodeId}-${hoveredStore.hoveredWidgetName}`
-}
+const selectedInputs = reactive<[NodeId, MaybeRef<BoundStyle>][]>([])
+const selectedOutputs = reactive<[NodeId, string][]>([])
 
 function getHovered():
   | undefined
   | [LGraphNode, undefined]
   | [LGraphNode, IBaseWidget] {
-  const canvas = canvasStore.getCanvas()
   const { graph } = canvas
   if (!canvas || !graph) return
 
@@ -47,22 +42,14 @@ function getHovered():
     return [node, widget]
   }
   const [x, y] = canvas.graph_mouse
-  const node = graph.getNodeOnPos(x, y, graph.nodes)
+  const node = graph.getNodeOnPos(x, y)
   if (!node) return
 
   return [node, node.getWidgetOnPos(x, y, false)]
 }
 
-//FIXME: unregistration :(
-const updateDisp = ref(0)
-const { ds } = canvasStore.getCanvas()
-ds.onChanged = useChainCallback(ds.onChanged, () =>
-  requestAnimationFrame(() => updateDisp.value++)
-)
-
 function elementPosition(e: HTMLElement) {
   const bounding = useElementBounding(e)
-  const canvas = canvasStore.getCanvas()
   return computed(() => ({
     width: `${bounding.width.value / canvas.ds.scale}px`,
     height: `${bounding.height.value / canvas.ds.scale}px`,
@@ -90,13 +77,12 @@ function handleClick(e: MouseEvent) {
   if (!node) return canvasInteractions.forwardEventToCanvas(e)
 
   if (!widget) {
-    const key = `${node.id}: ${node.title}`
+    const title = `${node.id}: ${node.title}`
     if (!node.constructor.nodeData?.output_node)
       return canvasInteractions.forwardEventToCanvas(e)
-    const bounding = getBounding(node.id)
-    const keyIndex = selectedOutputs.findIndex(([k]) => k === key)
-    if (keyIndex === -1 && bounding) selectedOutputs.push([key, bounding])
-    else selectedOutputs.splice(keyIndex, 1)
+    const index = selectedOutputs.findIndex(([id]) => id === node.id)
+    if (index === -1) selectedOutputs.push([node.id, title])
+    else selectedOutputs.splice(index, 1)
     return
   }
 
@@ -106,13 +92,20 @@ function handleClick(e: MouseEvent) {
   if (keyIndex === -1 && bounding) selectedInputs.push([key, bounding])
   else selectedInputs.splice(keyIndex, 1)
 }
+
+function nodeToDisplayTuple(
+  n: LGraphNode
+): [NodeId, MaybeRef<BoundStyle> | undefined, boolean] {
+  return [n.id, getBounding(n.id), selectedOutputs.some(([id]) => n.id === id)]
+}
+
+const outputNodes = computed(() =>
+  canvas
+    .graph!.nodes.filter((n) => n.constructor.nodeData?.output_node)
+    .map(nodeToDisplayTuple)
+)
 </script>
 <template>
-  <div class="m-4">
-    {{
-      hoveredStore.hoveredWidgetName ? hoveredKey() : t('[PH]Nothing selected')
-    }}
-  </div>
   <div class="h-5" />
   {{ t('[PH]Inputs:') }}
   <DraggableList v-slot="{ dragClass }" v-model="selectedInputs">
@@ -127,7 +120,7 @@ function handleClick(e: MouseEvent) {
   {{ t('[PH]Outputs:') }}
   <DraggableList v-slot="{ dragClass }" v-model="selectedOutputs">
     <div
-      v-for="([key], index) in selectedOutputs"
+      v-for="([key, title], index) in selectedOutputs"
       :key
       :class="
         cn(
@@ -136,7 +129,7 @@ function handleClick(e: MouseEvent) {
           index === 0 && 'ring-warning-background ring-2'
         )
       "
-      v-text="key"
+      v-text="title"
     />
   </DraggableList>
 
@@ -160,12 +153,17 @@ function handleClick(e: MouseEvent) {
         class="fixed bg-primary-background/30 rounded-lg"
       />
       <div
-        v-for="[key, style] in selectedOutputs"
+        v-for="[key, style, isSelected] in outputNodes"
         :key
         :style="toValue(style)"
-        class="fixed ring-warning-background ring-5 rounded-2xl"
+        :class="
+          cn(
+            'fixed ring-warning-background ring-5 rounded-2xl',
+            !isSelected && 'opacity-50'
+          )
+        "
       >
-        <div class="absolute top-0 right-0 size-8">
+        <div v-if="isSelected" class="absolute top-0 right-0 size-8">
           <div
             class="absolute -top-1/2 -right-1/2 size-full p-2 bg-warning-background rounded-lg"
           >
