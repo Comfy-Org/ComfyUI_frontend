@@ -24,6 +24,7 @@ import './rerouteNode'
 import './saveImageExtraOutput'
 // saveMesh is loaded on-demand with load3d (see load3dLazy.ts)
 import './selectionBorder'
+import '@/platform/workflow/sharing/shareWorkflowTopbarButton'
 import './simpleTouchSupport'
 import './slotDefaults'
 import './uploadAudio'

@@ -2852,7 +2852,31 @@
   "actionbar": {
     "dockToTop": "Dock to top",
     "feedback": "Feedback",
-    "feedbackTooltip": "Feedback"
+    "feedbackTooltip": "Feedback",
+    "share": "Share",
+    "shareTooltip": "Share workflow"
+  },
+  "shareWorkflow": {
+    "publishTitle": "Publish workflow",
+    "publishDescription": "Publishing this workflow will make it accessible to anyone with the link. The following assets and models used in this workflow will be included.",
+    "publishButton": "Publish workflow",
+    "publishing": "Publishing...",
+    "successTitle": "Workflow successfully published!",
+    "successDescription": "Anyone with this link can view and use this workflow. If you make changes to this workflow, you can republish to update the shared version.",
+    "hasChangesTitle": "Share workflow",
+    "hasChangesDescription": "You have made changes since this workflow was last published.",
+    "republishButton": "Publish updates",
+    "republishing": "Publishing...",
+    "publishedOn": "Published on {date}",
+    "copyLink": "Copy",
+    "linkCopied": "Copied!",
+    "assetWarningTitle": "This workflow includes the following assets and models that will be made public:",
+    "assetsLabel": "Assets ({count})",
+    "modelsLabel": "Models ({count})",
+    "acknowledgeCheckbox": "I understand these assets will be published and made public",
+    "comfyHubTitle": "Upload to ComfyHub",
+    "comfyHubDescription": "Share your workflow with the ComfyUI community on ComfyHub.",
+    "comfyHubButton": "Upload to ComfyHub"
   },
   "desktopDialogs": {
     "": {
