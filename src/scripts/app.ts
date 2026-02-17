@@ -112,7 +112,7 @@ import { pasteImageNode } from '@/composables/usePaste'
 
 export const ANIM_PREVIEW_WIDGET = '$$comfy_animation_preview'
 
-function sanitizeNodeName(string: string) {
+export function sanitizeNodeName(string: string) {
   let entityMap = {
     '&': '',
     '<': '',
@@ -1148,16 +1148,6 @@ export class ComfyApp {
         return
       }
       for (let n of nodes) {
-        // When node replacement is disabled, fall back to hardcoded patches
-        if (!nodeReplacementStore.isEnabled) {
-          if (n.type == 'T2IAdapterLoader') n.type = 'ControlNetLoader'
-          if (n.type == 'ConditioningAverage ') n.type = 'ConditioningAverage'
-          if (n.type == 'SDV_img2vid_Conditioning')
-            n.type = 'SVD_img2vid_Conditioning'
-          if (n.type == 'Load3DAnimation') n.type = 'Load3D'
-          if (n.type == 'Preview3DAnimation') n.type = 'Preview3D'
-        }
-
         // Find missing node types
         if (!(n.type in LiteGraph.registered_node_types)) {
           const replacement = nodeReplacementStore.getReplacementFor(n.type)
