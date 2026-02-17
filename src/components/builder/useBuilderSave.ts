@@ -20,7 +20,7 @@ export function useBuilderSave() {
   const dialogStore = useDialogStore()
 
   watch(
-    () => appModeStore.builderSaving,
+    () => appModeStore.isBuilderSaving,
     (saving) => {
       if (saving) void onBuilderSave()
     }
@@ -40,7 +40,7 @@ export function useBuilderSave() {
       try {
         workflow.changeTracker?.checkState()
         await workflowService.saveWorkflow(workflow)
-        showSuccessDialog(workflow.filename, appModeStore.view === 'app')
+        showSuccessDialog(workflow.filename, appModeStore.isAppMode)
       } catch {
         resetSaving()
       }
@@ -93,7 +93,7 @@ export function useBuilderSave() {
         workflowName,
         savedAsApp,
         onViewApp: () => {
-          appModeStore.view = 'app'
+          appModeStore.setMode('app')
           closeSuccessDialog()
         },
         onClose: closeSuccessDialog
@@ -114,6 +114,6 @@ export function useBuilderSave() {
   }
 
   function resetSaving() {
-    appModeStore.builderSaving = false
+    appModeStore.setBuilderSaving(false)
   }
 }
