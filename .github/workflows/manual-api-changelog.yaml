@@ -1,0 +1,255 @@
+name: Manual API Changelog Generation
+
+on:
+  workflow_dispatch:
+    inputs:
+      from_version:
+        description: 'Previous version (e.g., 1.29.0 or v1.29.0)'
+        required: true
+        type: string
+      to_version:
+        description: 'Current version (e.g., 1.30.2 or v1.30.2)'
+        required: true
+        type: string
+      create_pr:
+        description: 'Create a pull request with the changelog'
+        required: false
+        type: boolean
+        default: false
+
+concurrency:
+  group: manual-api-changelog-${{ github.run_id }}
+  cancel-in-progress: false
+
+jobs:
+  generate_changelog:
+    name: Generate API Changelog
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0 # Fetch all history for comparing versions
+
+      - name: Validate version inputs
+        id: validate_versions
+        run: |
+          # Normalize version strings (remove 'v' prefix if present)
+          FROM_VERSION="${{ github.event.inputs.from_version }}"
+          TO_VERSION="${{ github.event.inputs.to_version }}"
+
+          FROM_VERSION=${FROM_VERSION#v}
+          TO_VERSION=${TO_VERSION#v}
+
+          # Validate version format (semantic versioning)
+          if ! [[ "$FROM_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Error: Invalid from_version format: $FROM_VERSION"
+            echo "Expected format: X.Y.Z (e.g., 1.29.0)"
+            exit 1
+          fi
+
+          if ! [[ "$TO_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Error: Invalid to_version format: $TO_VERSION"
+            echo "Expected format: X.Y.Z (e.g., 1.30.2)"
+            exit 1
+          fi
+
+          # Check if tags exist
+          if ! git rev-parse "v$FROM_VERSION" >/dev/null 2>&1; then
+            echo "Error: Tag v$FROM_VERSION does not exist"
+            exit 1
+          fi
+
+          if ! git rev-parse "v$TO_VERSION" >/dev/null 2>&1; then
+            echo "Error: Tag v$TO_VERSION does not exist"
+            exit 1
+          fi
+
+          echo "from_version=$FROM_VERSION" >> $GITHUB_OUTPUT
+          echo "to_version=$TO_VERSION" >> $GITHUB_OUTPUT
+          echo "from_tag=v$FROM_VERSION" >> $GITHUB_OUTPUT
+          echo "to_tag=v$TO_VERSION" >> $GITHUB_OUTPUT
+
+          echo "✅ Validated versions: v$FROM_VERSION → v$TO_VERSION"
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: 'lts/*'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+        env:
+          PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1'
+
+      - name: Create snapshots directory
+        run: mkdir -p .api-snapshots
+
+      - name: Preserve scripts
+        run: |
+          # Copy scripts to temporary location
+          mkdir -p /tmp/api-changelog-scripts
+          cp scripts/snapshot-api.ts scripts/compare-api-snapshots.ts /tmp/api-changelog-scripts/
+
+      - name: Build and snapshot TO version
+        run: |
+          echo "Building types for v${{ steps.validate_versions.outputs.to_version }}"
+          git checkout ${{ steps.validate_versions.outputs.to_tag }}
+
+          # Restore scripts
+          mkdir -p scripts
+          cp /tmp/api-changelog-scripts/*.ts scripts/
+
+          pnpm install --frozen-lockfile
+          pnpm build:types
+
+          # Generate snapshot
+          node --loader tsx scripts/snapshot-api.ts dist/index.d.ts > /tmp/api-snapshots-to.json
+
+          echo "✅ Created snapshot for v${{ steps.validate_versions.outputs.to_version }}"
+
+      - name: Build and snapshot FROM version
+        run: |
+          echo "Building types for v${{ steps.validate_versions.outputs.from_version }}"
+          git checkout ${{ steps.validate_versions.outputs.from_tag }}
+
+          # Restore scripts
+          mkdir -p scripts
+          cp /tmp/api-changelog-scripts/*.ts scripts/
+
+          pnpm install --frozen-lockfile
+          pnpm build:types
+
+          # Generate snapshot
+          node --loader tsx scripts/snapshot-api.ts dist/index.d.ts > /tmp/api-snapshots-from.json
+
+          echo "✅ Created snapshot for v${{ steps.validate_versions.outputs.from_version }}"
+
+      - name: Return to original branch
+        run: |
+          git checkout ${{ github.ref_name }}
+
+          # Restore scripts
+          mkdir -p scripts
+          cp /tmp/api-changelog-scripts/*.ts scripts/
+
+          # Copy snapshots to working directory
+          cp /tmp/api-snapshots-from.json .api-snapshots/from.json
+          cp /tmp/api-snapshots-to.json .api-snapshots/to.json
+
+      - name: Compare API snapshots and generate changelog
+        id: generate_changelog
+        run: |
+          # Get git ref for TO version
+          GIT_REF=$(git rev-parse ${{ steps.validate_versions.outputs.to_tag }})
+
+          # Run the comparison script
+          CHANGELOG_OUTPUT=$(node --loader tsx scripts/compare-api-snapshots.ts \
+            .api-snapshots/from.json \
+            .api-snapshots/to.json \
+            ${{ steps.validate_versions.outputs.from_version }} \
+            ${{ steps.validate_versions.outputs.to_version }} \
+            Comfy-Org \
+            ComfyUI_frontend \
+            "$GIT_REF")
+
+          # Save changelog to file for artifact
+          echo "$CHANGELOG_OUTPUT" > .api-snapshots/CHANGELOG-${{ steps.validate_versions.outputs.from_version }}-to-${{ steps.validate_versions.outputs.to_version }}.md
+
+          # Also output to step summary
+          echo "## 📊 Generated API Changelog" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "$CHANGELOG_OUTPUT" >> $GITHUB_STEP_SUMMARY
+
+          # Check if changelog is empty or just header
+          if [ $(echo "$CHANGELOG_OUTPUT" | wc -l) -lt 5 ]; then
+            echo "has_changes=false" >> $GITHUB_OUTPUT
+            echo "⚠️ No significant API changes detected" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "has_changes=true" >> $GITHUB_OUTPUT
+            echo "✅ API changes detected and documented" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          echo "✅ Changelog generated successfully"
+
+      - name: Upload changelog artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: api-changelog-v${{ steps.validate_versions.outputs.from_version }}-to-v${{ steps.validate_versions.outputs.to_version }}
+          path: |
+            .api-snapshots/CHANGELOG-*.md
+            .api-snapshots/from.json
+            .api-snapshots/to.json
+          retention-days: 90
+
+      - name: Create Pull Request
+        if: github.event.inputs.create_pr == 'true' && steps.generate_changelog.outputs.has_changes == 'true'
+        uses: peter-evans/create-pull-request@271a8d0340265f705b14b6d32b9829c1cb33d45e
+        with:
+          token: ${{ secrets.PR_GH_TOKEN }}
+          commit-message: '[docs] Update API changelog for v${{ steps.validate_versions.outputs.from_version }} → v${{ steps.validate_versions.outputs.to_version }}'
+          title: '[docs] API Changelog: v${{ steps.validate_versions.outputs.from_version }} → v${{ steps.validate_versions.outputs.to_version }}'
+          body: |
+            ## API Changelog Update (Manual)
+
+            This PR documents public API changes between v${{ steps.validate_versions.outputs.from_version }} and v${{ steps.validate_versions.outputs.to_version }}.
+
+            The changelog has been manually generated by comparing TypeScript type definitions between versions.
+
+            ### Version Comparison
+            - **From:** v${{ steps.validate_versions.outputs.from_version }}
+            - **To:** v${{ steps.validate_versions.outputs.to_version }}
+            - **Requested by:** @${{ github.actor }}
+            - **Workflow run:** ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+
+            ### Review Instructions
+            - Review the changes in `docs/API-CHANGELOG.md`
+            - Verify accuracy of breaking changes
+            - Add any additional context or migration notes if needed
+            - Merge when ready to publish changelog
+
+            ### Artifacts
+            The full changelog and snapshots are available as workflow artifacts for 90 days.
+
+            ---
+            🤖 Generated with [Claude Code](https://claude.com/claude-code)
+          branch: api-changelog-manual-${{ steps.validate_versions.outputs.from_version }}-to-${{ steps.validate_versions.outputs.to_version }}
+          base: ${{ github.ref_name }}
+          labels: documentation
+          delete-branch: true
+          draft: true
+          add-paths: |
+            docs/API-CHANGELOG.md
+
+      - name: Summary
+        run: |
+          echo "## 🎉 Workflow Complete" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **From version:** v${{ steps.validate_versions.outputs.from_version }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **To version:** v${{ steps.validate_versions.outputs.to_version }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Changes detected:** ${{ steps.generate_changelog.outputs.has_changes }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Create PR:** ${{ github.event.inputs.create_pr }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 📦 Artifact" >> $GITHUB_STEP_SUMMARY
+          echo "The generated changelog and API snapshots have been uploaded as artifacts." >> $GITHUB_STEP_SUMMARY
+          echo "Retention: 90 days" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          if [ "${{ github.event.inputs.create_pr }}" == "true" ] && [ "${{ steps.generate_changelog.outputs.has_changes }}" == "true" ]; then
+            echo "### 🔀 Pull Request" >> $GITHUB_STEP_SUMMARY
+            echo "A draft pull request has been created with the changelog updates." >> $GITHUB_STEP_SUMMARY
+          elif [ "${{ github.event.inputs.create_pr }}" == "true" ]; then
+            echo "### ℹ️ No PR Created" >> $GITHUB_STEP_SUMMARY
+            echo "No significant changes were detected, so no PR was created." >> $GITHUB_STEP_SUMMARY
+          else
+            echo "### ℹ️ PR Creation Skipped" >> $GITHUB_STEP_SUMMARY
+            echo "Pull request creation was not requested. Enable 'Create PR' option to automatically create a PR." >> $GITHUB_STEP_SUMMARY
+          fi

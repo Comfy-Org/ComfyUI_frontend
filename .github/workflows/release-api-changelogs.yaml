@@ -1,0 +1,203 @@
+name: Release API Changelogs
+
+on:
+  workflow_run:
+    workflows: ['Release NPM Types']
+    types:
+      - completed
+  push:
+    branches:
+      - sno-api-changelog
+
+concurrency:
+  group: release-api-changelogs-${{ github.workflow }}
+  cancel-in-progress: false
+
+jobs:
+  generate_changelog:
+    name: Generate API Changelog
+    runs-on: ubuntu-latest
+    # Only run on successful completion of the Release NPM Types workflow or on push to sno-api-changelog
+    if: ${{ github.event_name == 'push' || github.event.workflow_run.conclusion == 'success' }}
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0 # Fetch all history for comparing versions
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: 'lts/*'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+        env:
+          PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1'
+
+      - name: Get current version
+        id: current_version
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Current version: $VERSION"
+
+      - name: Get previous version
+        id: previous_version
+        run: |
+          # Get the two most recent version tags sorted
+          CURRENT_VERSION="${{ steps.current_version.outputs.version }}"
+          TAGS=$(git tag --sort=-v:refname | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | head -2)
+
+          # Find the previous version tag (skip current if it exists)
+          PREVIOUS_TAG=""
+          for tag in $TAGS; do
+            TAG_VERSION=${tag#v}
+            if [ "$TAG_VERSION" != "$CURRENT_VERSION" ]; then
+              PREVIOUS_TAG=$tag
+              break
+            fi
+          done
+
+          if [ -z "$PREVIOUS_TAG" ]; then
+            echo "No previous version found, this may be the first release"
+            echo "version=" >> $GITHUB_OUTPUT
+            echo "tag=" >> $GITHUB_OUTPUT
+          else
+            echo "version=${PREVIOUS_TAG#v}" >> $GITHUB_OUTPUT
+            echo "tag=$PREVIOUS_TAG" >> $GITHUB_OUTPUT
+            echo "Previous version: ${PREVIOUS_TAG#v}"
+          fi
+
+      - name: Build current types
+        run: pnpm build:types
+
+      - name: Snapshot current API
+        id: current_snapshot
+        run: |
+          # Create snapshots directory
+          mkdir -p .api-snapshots
+
+          # Generate snapshot of current types
+          node --loader tsx scripts/snapshot-api.ts dist/index.d.ts > .api-snapshots/current.json
+
+          echo "Current API snapshot created"
+
+      - name: Preserve scripts for previous version
+        if: steps.previous_version.outputs.tag != ''
+        run: |
+          # Copy scripts to temporary location to use with previous version
+          mkdir -p /tmp/api-changelog-scripts
+          cp scripts/snapshot-api.ts scripts/compare-api-snapshots.ts /tmp/api-changelog-scripts/
+
+      - name: Checkout previous version
+        if: steps.previous_version.outputs.tag != ''
+        run: |
+          # Stash current changes
+          git stash
+
+          # Checkout previous version
+          git checkout ${{ steps.previous_version.outputs.tag }}
+
+          # Restore scripts
+          mkdir -p scripts
+          cp /tmp/api-changelog-scripts/*.ts scripts/
+
+      - name: Build previous types
+        if: steps.previous_version.outputs.tag != ''
+        run: |
+          pnpm install --frozen-lockfile
+          pnpm build:types
+
+      - name: Snapshot previous API
+        if: steps.previous_version.outputs.tag != ''
+        run: |
+          # Generate snapshot of previous types
+          node --loader tsx scripts/snapshot-api.ts dist/index.d.ts > .api-snapshots/previous.json
+
+          echo "Previous API snapshot created"
+
+      - name: Return to current version
+        if: steps.previous_version.outputs.tag != ''
+        run: |
+          # Remove copied scripts to avoid conflicts
+          rm -f scripts/snapshot-api.ts scripts/compare-api-snapshots.ts
+
+          git checkout -
+          git stash pop || true
+
+      - name: Compare API snapshots and generate changelog
+        id: generate_changelog
+        run: |
+          # Create docs directory if it doesn't exist
+          mkdir -p docs
+
+          # Get current git ref (commit SHA)
+          GIT_REF=$(git rev-parse HEAD)
+
+          # Run the comparison script
+          if [ -f .api-snapshots/previous.json ]; then
+            node --loader tsx scripts/compare-api-snapshots.ts \
+              .api-snapshots/previous.json \
+              .api-snapshots/current.json \
+              ${{ steps.previous_version.outputs.version }} \
+              ${{ steps.current_version.outputs.version }} \
+              Comfy-Org \
+              ComfyUI_frontend \
+              "$GIT_REF" \
+              >> docs/API-CHANGELOG.md
+          else
+            # First release - just document the initial API surface
+            echo "## v${{ steps.current_version.outputs.version }} ($(date +%Y-%m-%d))" >> docs/API-CHANGELOG.md
+            echo "" >> docs/API-CHANGELOG.md
+            echo "Initial API release." >> docs/API-CHANGELOG.md
+            echo "" >> docs/API-CHANGELOG.md
+          fi
+
+          # Check if there are any changes
+          if git diff --quiet docs/API-CHANGELOG.md; then
+            echo "has_changes=false" >> $GITHUB_OUTPUT
+            echo "No API changes detected"
+          else
+            echo "has_changes=true" >> $GITHUB_OUTPUT
+            echo "API changes detected"
+          fi
+
+      - name: Create Pull Request
+        if: steps.generate_changelog.outputs.has_changes == 'true'
+        uses: peter-evans/create-pull-request@271a8d0340265f705b14b6d32b9829c1cb33d45e
+        with:
+          token: ${{ secrets.PR_GH_TOKEN }}
+          commit-message: '[docs] Update API changelog for v${{ steps.current_version.outputs.version }}'
+          title: '[docs] API Changelog for v${{ steps.current_version.outputs.version }}'
+          body: |
+            ## API Changelog Update
+
+            This PR documents public API changes between v${{ steps.previous_version.outputs.version }} and v${{ steps.current_version.outputs.version }}.
+
+            The changelog has been automatically generated by comparing TypeScript type definitions between versions.
+
+            ### Review Instructions
+            - Review the changes in `docs/API-CHANGELOG.md`
+            - Verify accuracy of breaking changes
+            - Add any additional context or migration notes if needed
+            - Merge when ready to publish changelog
+
+            ---
+            🤖 Generated with [Claude Code](https://claude.com/claude-code)
+          branch: api-changelog-v${{ steps.current_version.outputs.version }}
+          base: ${{ github.event_name == 'push' && github.ref_name || 'main' }}
+          labels: documentation
+          delete-branch: true
+          draft: true
+          add-paths: |
+            docs/API-CHANGELOG.md
