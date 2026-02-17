@@ -3,6 +3,7 @@ import type { NodeReplacement, NodeReplacementResponse } from './types'
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 
+import { api } from '@/scripts/api'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { fetchNodeReplacements } from './nodeReplacementService'
 
@@ -16,6 +17,8 @@ export const useNodeReplacementStore = defineStore('nodeReplacement', () => {
 
   async function load() {
     if (!isEnabled.value || isLoaded.value) return
+    if (!api.serverSupportsFeature('node_replacements')) return
+
     try {
       replacements.value = await fetchNodeReplacements()
       isLoaded.value = true
