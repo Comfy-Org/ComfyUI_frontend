@@ -9,23 +9,12 @@
       @clear-queued="$emit('clearQueued')"
     />
 
-    <div class="px-3">
-      <Button
-        class="w-full gap-1 justify-center"
-        variant="secondary"
-        size="sm"
-        @click="$emit('showAssets')"
-      >
-        <i class="icon-[comfy--image-ai-edit] size-4" />
-        <span>{{ t('sideToolbar.queueProgressOverlay.showAssets') }}</span>
-      </Button>
-    </div>
-
     <JobFiltersBar
       :selected-job-tab="selectedJobTab"
       :selected-workflow-filter="selectedWorkflowFilter"
       :selected-sort-mode="selectedSortMode"
       :has-failed-jobs="hasFailedJobs"
+      @show-assets="$emit('showAssets')"
       @update:selected-job-tab="$emit('update:selectedJobTab', $event)"
       @update:selected-workflow-filter="
         $emit('update:selectedWorkflowFilter', $event)
@@ -53,9 +42,7 @@
 
 <script setup lang="ts">
 import { ref } from 'vue'
-import { useI18n } from 'vue-i18n'
 
-import Button from '@/components/ui/button/Button.vue'
 import type {
   JobGroup,
   JobListItem,
@@ -93,8 +80,6 @@ const emit = defineEmits<{
   (e: 'deleteItem', item: JobListItem): void
   (e: 'viewItem', item: JobListItem): void
 }>()
-
-const { t } = useI18n()
 
 const currentMenuItem = ref<JobListItem | null>(null)
 const jobContextMenuRef = ref<InstanceType<typeof JobContextMenu> | null>(null)
