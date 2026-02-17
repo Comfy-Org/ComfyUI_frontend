@@ -51,6 +51,7 @@
               ref="legacyCommandsContainerRef"
               class="[&:not(:has(*>*:not(:empty)))]:hidden"
             ></div>
+
             <ComfyActionbar
               :top-menu-container="actionbarContainerRef"
               :queue-overlay-expanded="isQueueOverlayExpanded"
@@ -61,6 +62,17 @@
               class="shrink-0"
             />
             <LoginButton v-else-if="isDesktop && !isIntegratedTabBar" />
+            <Button
+              v-if="isCloud"
+              v-tooltip.bottom="shareTooltipConfig"
+              variant="secondary"
+              :aria-label="t('actionbar.shareTooltip')"
+              @click="openShareDialog"
+            >
+              <span class="not-md:hidden">
+                {{ t('actionbar.share') }}
+              </span>
+            </Button>
             <Button
               v-if="!isRightSidePanelOpen"
               v-tooltip.bottom="rightSidePanelTooltipConfig"
@@ -133,7 +145,7 @@ import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useQueueUIStore } from '@/stores/queueStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
-import { isDesktop } from '@/platform/distribution/types'
+import { isCloud, isDesktop } from '@/platform/distribution/types'
 import { useConflictAcknowledgment } from '@/workbench/extensions/manager/composables/useConflictAcknowledgment'
 import { useManagerState } from '@/workbench/extensions/manager/composables/useManagerState'
 import { ManagerTab } from '@/workbench/extensions/manager/types/comfyManagerTypes'
@@ -192,6 +204,9 @@ const shouldHideInlineProgressSummary = computed(
 const customNodesManagerTooltipConfig = computed(() =>
   buildTooltipConfig(t('menu.manageExtensions'))
 )
+const shareTooltipConfig = computed(() =>
+  buildTooltipConfig(t('actionbar.shareTooltip'))
+)
 
 const shouldShowRedDot = computed((): boolean => {
   return shouldShowConflictRedDot.value
@@ -213,6 +228,13 @@ onMounted(() => {
     legacyCommandsContainerRef.value.appendChild(app.menu.element)
   }
 })
+
+const openShareDialog = async () => {
+  const { useShareDialog } =
+    await import('@/platform/workflow/sharing/composables/useShareDialog')
+  useShareDialog().show()
+}
+
 
 const openCustomNodeManager = async () => {
   try {

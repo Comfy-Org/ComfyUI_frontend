@@ -36,6 +36,7 @@
           {{ $t('shareWorkflow.publishDescription') }}
         </p>
         <ShareAssetWarningBox
+          v-if="requiresAcknowledgment"
           v-model:acknowledged="acknowledged"
           :assets="assets"
           :models="models"
@@ -43,7 +44,7 @@
         <Button
           variant="primary"
           size="lg"
-          :disabled="!acknowledged"
+          :disabled="requiresAcknowledgment && !acknowledged"
           :loading="isPublishing"
           @click="handlePublish"
         >
@@ -78,6 +79,7 @@
           {{ $t('shareWorkflow.hasChangesDescription') }}
         </p>
         <ShareAssetWarningBox
+          v-if="requiresAcknowledgment"
           v-model:acknowledged="acknowledged"
           :assets="assets"
           :models="models"
@@ -85,7 +87,7 @@
         <Button
           variant="primary"
           size="lg"
-          :disabled="!acknowledged"
+          :disabled="requiresAcknowledgment && !acknowledged"
           :loading="isPublishing"
           @click="handlePublish"
         >
@@ -137,6 +139,10 @@ const isPublishing = ref(false)
 const acknowledged = ref(false)
 const assets = ref<WorkflowAsset[]>([])
 const models = ref<WorkflowModel[]>([])
+
+const requiresAcknowledgment = computed(
+  () => assets.value.length > 0 || models.value.length > 0
+)
 
 const HEADER_TITLES: Record<DialogState, string> = {
   unsaved: 'shareWorkflow.unsavedTitle',

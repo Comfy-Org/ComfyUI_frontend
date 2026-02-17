@@ -27,6 +27,14 @@ vi.mock('@/platform/workflow/core/services/workflowService', () => ({
   })
 }))
 
+const mockShareServiceData = vi.hoisted(() => ({
+  assets: [{ name: 'test.png', thumbnailUrl: null }] as {
+    name: string
+    thumbnailUrl: string | null
+  }[],
+  models: [{ name: 'model.safetensors' }] as { name: string }[]
+}))
+
 vi.mock('@/platform/workflow/sharing/services/workflowShareService', () => ({
   useWorkflowShareService: () => ({
     getPublishStatus: () => ({
@@ -40,8 +48,8 @@ vi.mock('@/platform/workflow/sharing/services/workflowShareService', () => ({
         shareUrl: 'https://comfy.org/shared/test-123',
         publishedAt: new Date('2026-01-15')
       }),
-    getWorkflowAssets: () => [{ name: 'test.png', thumbnailUrl: null }],
-    getWorkflowModels: () => [{ name: 'model.safetensors' }]
+    getWorkflowAssets: () => mockShareServiceData.assets,
+    getWorkflowModels: () => mockShareServiceData.models
   })
 }))
 
@@ -91,6 +99,8 @@ describe('ShareWorkflowDialogContent', () => {
       isModified: false,
       lastModified: 1000
     }
+    mockShareServiceData.assets = [{ name: 'test.png', thumbnailUrl: null }]
+    mockShareServiceData.models = [{ name: 'model.safetensors' }]
   })
 
   function createWrapper() {
@@ -152,6 +162,22 @@ describe('ShareWorkflowDialogContent', () => {
     const checkbox = wrapper.find('input[type="checkbox"]')
     await checkbox.setValue(true)
     await nextTick()
+
+    const publishButton = wrapper
+      .findAll('button')
+      .find((b) => b.text().includes('Publish workflow'))
+
+    expect(publishButton?.attributes('disabled')).toBeUndefined()
+  })
+
+  it('enables publish button without acknowledgment when no assets or models', async () => {
+    mockShareServiceData.assets = []
+    mockShareServiceData.models = []
+    const wrapper = createWrapper()
+    await nextTick()
+
+    const checkbox = wrapper.find('input[type="checkbox"]')
+    expect(checkbox.exists()).toBe(false)
 
     const publishButton = wrapper
       .findAll('button')
