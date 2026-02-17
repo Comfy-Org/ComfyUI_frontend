@@ -24,6 +24,7 @@ import { useTelemetry } from '@/platform/telemetry'
 import type { WorkflowOpenSource } from '@/platform/telemetry/types'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
+import type { PendingWarnings } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowValidation } from '@/platform/workflow/validation/composables/useWorkflowValidation'
 import {
@@ -107,7 +108,7 @@ import { ComfyAppMenu } from './ui/menu/index'
 import { clone } from './utils'
 import { type ComfyWidgetConstructor } from './widgets'
 import { ensureCorrectLayoutScale } from '@/renderer/extensions/vueNodes/layout/ensureCorrectLayoutScale'
-import { extractFileFromDragEvent } from '@/utils/eventUtils'
+import { extractFilesFromDragEvent, hasImageType } from '@/utils/eventUtils'
 import { getWorkflowDataFromFile } from '@/scripts/metadata/parser'
 import { pasteImageNode, pasteImageNodes } from '@/composables/usePaste'
 
@@ -550,22 +551,25 @@ export class ComfyApp {
         // If you drag multiple files it will call it multiple times with the same file
         if (await n?.onDragDrop?.(event)) return
 
-        const fileMaybe = await extractFileFromDragEvent(event)
-        if (!fileMaybe) return
+        const files = await extractFilesFromDragEvent(event)
+        if (files.length === 0) return
 
         const workspace = useWorkspaceStore()
         try {
           workspace.spinner = true
-          if (fileMaybe instanceof File) {
-            await this.handleFile(fileMaybe, 'file_drop')
-          }
-
-          if (fileMaybe instanceof FileList) {
-            await this.handleFileList(fileMaybe)
+          if (files.length > 1 && files.every(hasImageType)) {
+            await this.handleFileList(files)
+          } else {
+            for (const file of files) {
+              await this.handleFile(file, 'file_drop', {
+                deferWarnings: true
+              })
+            }
           }
         } finally {
           workspace.spinner = false
         }
+        useWorkflowService().showPendingWarnings()
       } catch (error: unknown) {
         useToastStore().addAlert(t('toastMessages.dropFileError', { error }))
       }
@@ -1063,18 +1067,6 @@ export class ComfyApp {
     }
   }
 
-  private showMissingModelsError(
-    missingModels: ModelFile[],
-    paths: Record<string, string[]>
-  ): void {
-    if (useSettingStore().get('Comfy.Workflow.ShowMissingModelsWarning')) {
-      useDialogService().showMissingModelsWarning({
-        missingModels,
-        paths
-      })
-    }
-  }
-
   async loadGraphData(
     graphData?: ComfyWorkflowJSON,
     clean: boolean = true,
@@ -1085,13 +1077,15 @@ export class ComfyApp {
       showMissingModelsDialog?: boolean
       checkForRerouteMigration?: boolean
       openSource?: WorkflowOpenSource
+      deferWarnings?: boolean
     } = {}
   ) {
     const {
       showMissingNodesDialog = true,
       showMissingModelsDialog = true,
       checkForRerouteMigration = false,
-      openSource
+      openSource,
+      deferWarnings = false
     } = options
     useWorkflowService().beforeLoadNewGraph()
 
@@ -1334,13 +1328,6 @@ export class ComfyApp {
       useExtensionService().invokeExtensions('loadedGraphNode', node)
     })
 
-    if (missingNodeTypes.length && showMissingNodesDialog) {
-      this.showMissingNodesError(missingNodeTypes)
-    }
-    if (missingModels.length && showMissingModelsDialog) {
-      const paths = await api.getFolderPaths()
-      this.showMissingModelsError(missingModels, paths)
-    }
     await useExtensionService().invokeExtensionsAsync(
       'afterConfigureGraph',
       missingNodeTypes
@@ -1359,6 +1346,27 @@ export class ComfyApp {
       workflow,
       this.rootGraph.serialize() as unknown as ComfyWorkflowJSON
     )
+
+    // Store pending warnings on the workflow for deferred display
+    const activeWf = useWorkspaceStore().workflow.activeWorkflow
+    if (activeWf) {
+      const warnings: PendingWarnings = {}
+      if (missingNodeTypes.length && showMissingNodesDialog) {
+        warnings.missingNodeTypes = missingNodeTypes
+      }
+      if (missingModels.length && showMissingModelsDialog) {
+        const paths = await api.getFolderPaths()
+        warnings.missingModels = { missingModels: missingModels, paths }
+      }
+      if (warnings.missingNodeTypes || warnings.missingModels) {
+        activeWf.pendingWarnings = warnings
+      }
+    }
+
+    if (!deferWarnings) {
+      useWorkflowService().showPendingWarnings()
+    }
+
     requestAnimationFrame(() => {
       this.canvas.setDirty(true, true)
     })
@@ -1500,7 +1508,11 @@ export class ComfyApp {
    * Loads workflow data from the specified file
    * @param {File} file
    */
-  async handleFile(file: File, openSource?: WorkflowOpenSource) {
+  async handleFile(
+    file: File,
+    openSource?: WorkflowOpenSource,
+    options?: { deferWarnings?: boolean }
+  ) {
     const fileName = file.name.replace(/\.\w+$/, '') // Strip file extension
     const workflowData = await getWorkflowDataFromFile(file)
     const { workflow, prompt, parameters, templates } = workflowData ?? {}
@@ -1543,7 +1555,8 @@ export class ComfyApp {
           !Array.isArray(workflowObj)
         ) {
           await this.loadGraphData(workflowObj, true, true, fileName, {
-            openSource
+            openSource,
+            deferWarnings: options?.deferWarnings
           })
           return
         } else {
@@ -1591,7 +1604,7 @@ export class ComfyApp {
    * Loads multiple files, connects to a batch node, and selects them
    * @param {FileList} fileList
    */
-  async handleFileList(fileList: FileList) {
+  async handleFileList(fileList: File[]) {
     if (fileList[0].type.startsWith('image')) {
       const imageNodes = await pasteImageNodes(this.canvas, fileList)
       const batchImagesNode = await createNode(this.canvas, 'BatchImagesNode')
