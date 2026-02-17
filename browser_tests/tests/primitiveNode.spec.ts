@@ -68,4 +68,43 @@ test.describe('Primitive Node', { tag: ['@screenshot', '@node'] }, () => {
     const missingNodesWarning = comfyPage.page.locator('.comfy-missing-nodes')
     await expect(missingNodesWarning).toBeVisible()
   })
+
+  // https://github.com/Comfy-Org/ComfyUI_frontend/issues/1757
+  test('Preserves control_after_generate value on copy paste', async ({
+    comfyPage
+  }) => {
+    await comfyPage.workflow.loadWorkflow(
+      'primitive/primitive_node_control_increment'
+    )
+
+    // Verify the PrimitiveNode (id=1) has control_after_generate = "increment"
+    const originalValue = await comfyPage.page.evaluate(() => {
+      const node = window.app!.canvas.graph!.getNodeById(1)
+      if (!node?.widgets) throw new Error('PrimitiveNode widgets not found')
+      const controlWidget = node.widgets.find(
+        (w) => w.options?.serialize === false && w.options?.canvasOnly
+      )
+      return controlWidget?.value
+    })
+    expect(originalValue).toBe('increment')
+
+    // Copy all nodes and paste programmatically
+    const pastedValue = await comfyPage.page.evaluate(() => {
+      const canvas = window.app!.canvas
+      canvas.selectItems()
+      canvas.copyToClipboard()
+      canvas.pasteFromClipboard()
+
+      const graph = canvas.graph!
+      const pastedPrimitive = graph._nodes.find(
+        (n) => n.type === 'PrimitiveNode' && n.id !== 1
+      )
+      if (!pastedPrimitive?.widgets) return null
+      const controlWidget = pastedPrimitive.widgets.find(
+        (w) => w.options?.serialize === false && w.options?.canvasOnly
+      )
+      return controlWidget?.value ?? null
+    })
+    expect(pastedValue).toBe('increment')
+  })
 })
