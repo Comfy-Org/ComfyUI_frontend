@@ -90,10 +90,21 @@ export const useWorkflowService = () => {
   /**
    * Save a workflow as a new file
    * @param workflow The workflow to save
+   * @param options.filename Pre-supplied filename (skips the prompt dialog)
+   * @param options.openAsApp If set, updates linearMode extra before saving
    */
-  const saveWorkflowAs = async (workflow: ComfyWorkflow) => {
-    const newFilename = await workflow.promptSave()
-    if (!newFilename) return
+  const saveWorkflowAs = async (
+    workflow: ComfyWorkflow,
+    options: { filename?: string; openAsApp?: boolean } = {}
+  ): Promise<boolean> => {
+    const newFilename = options.filename ?? (await workflow.promptSave())
+    if (!newFilename) return false
+
+    if (options.openAsApp !== undefined) {
+      app.rootGraph.extra ??= {}
+      app.rootGraph.extra.linearMode = options.openAsApp
+      workflow.changeTracker?.checkState()
+    }
 
     const newPath = workflow.directory + '/' + appendJsonExt(newFilename)
     const existingWorkflow = workflowStore.getWorkflowByPath(newPath)
@@ -106,14 +117,14 @@ export const useWorkflowService = () => {
         itemList: [newPath]
       })
 
-      if (res !== true) return
+      if (res !== true) return false
 
       if (existingWorkflow.path === workflow.path) {
         await saveWorkflow(workflow)
-        return
+        return true
       }
       const deleted = await deleteWorkflow(existingWorkflow, true)
-      if (!deleted) return
+      if (!deleted) return false
     }
 
     if (workflow.isTemporary) {
@@ -124,6 +135,7 @@ export const useWorkflowService = () => {
       await openWorkflow(tempWorkflow)
       await workflowStore.saveWorkflow(tempWorkflow)
     }
+    return true
   }
 
   /**
