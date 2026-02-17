@@ -28,16 +28,16 @@ function toggle() {
         aria-live="polite"
         :class="
           cn(
-            'fixed inset-x-0 bottom-6 z-9999 mx-auto max-w-3xl overflow-hidden rounded-lg border border-border-default bg-base-background shadow-lg min-w-0 w-min transition-all duration-300',
-            isExpanded && 'w-4/5'
+            'fixed inset-x-0 bottom-6 z-9999 mx-auto max-w-3xl overflow-hidden rounded-lg border border-border-default bg-base-background shadow-lg min-w-0 w-min transition-all duration-300'
+            // isExpanded && 'w-4/5'
           )
         "
       >
         <div
           :class="
             cn(
-              'overflow-hidden transition-all duration-300',
-              isExpanded ? 'max-h-[400px]' : 'max-h-0'
+              'overflow-hidden transition-all duration-300 min-w-0',
+              isExpanded ? 'w-[max(400px,40vw)] max-h-100' : 'w-0 max-h-0'
             )
           "
         >

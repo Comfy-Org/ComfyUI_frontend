@@ -28,6 +28,27 @@ const currentJobName = computed(() => {
 const completedCount = computed(() => assetExportStore.finishedExports.length)
 const totalCount = computed(() => exportJobs.value.length)
 
+const footerLabel = computed(() => {
+  if (isInProgress.value) return currentJobName.value
+  if (failedJobs.value.length > 0)
+    return t('exportToast.exportFailed', { count: failedJobs.value.length })
+  return t('exportToast.allExportsCompleted')
+})
+
+const footerIconClass = computed(() => {
+  if (isInProgress.value)
+    return 'icon-[lucide--loader-circle] animate-spin text-muted-foreground'
+  if (failedJobs.value.length > 0)
+    return 'icon-[lucide--circle-alert] text-destructive-background'
+  return 'icon-[lucide--check-circle] text-jade-600'
+})
+
+const tooltipConfig = computed(() => ({
+  value: footerLabel.value,
+  disabled: isExpanded.value,
+  pt: { root: { class: 'z-10000!' } }
+}))
+
 function progressPercent(job: AssetExport): number {
   return Math.round(job.progress * 100)
 }
@@ -74,7 +95,7 @@ function closeDialog() {
               </span>
             </div>
 
-            <div class="flex flex-shrink-0 items-center gap-2">
+            <div class="flex items-center gap-2">
               <template v-if="job.status === 'failed'">
                 <i
                   class="icon-[lucide--circle-alert] size-4 text-destructive-background"
@@ -129,38 +150,31 @@ function closeDialog() {
         class="flex flex-1 min-w-0 h-12 items-center justify-between gap-2 border-t border-border-default px-4"
       >
         <div class="flex min-w-0 flex-1 items-center gap-2 text-sm">
-          <template v-if="isInProgress">
-            <i
-              class="icon-[lucide--loader-circle] size-4 flex-shrink-0 animate-spin text-muted-foreground"
-            />
-            <span
-              class="min-w-0 flex-1 truncate font-bold text-base-foreground"
-            >
-              {{ currentJobName }}
-            </span>
-          </template>
-          <template v-else-if="failedJobs.length > 0">
-            <i
-              class="icon-[lucide--circle-alert] size-4 flex-shrink-0 text-destructive-background"
-            />
-            <span class="min-w-0 truncate font-bold text-base-foreground">
-              {{ t('exportToast.exportFailed', { count: failedJobs.length }) }}
-            </span>
-          </template>
-          <template v-else>
-            <i
-              class="icon-[lucide--check-circle] size-4 flex-shrink-0 text-jade-600"
-            />
-            <span class="min-w-0 truncate font-bold text-base-foreground">
-              {{ t('exportToast.allExportsCompleted') }}
-            </span>
-          </template>
+          <i
+            v-tooltip.top="tooltipConfig"
+            :class="cn('size-4 shrink-0', footerIconClass)"
+          />
+          <span
+            :class="
+              cn(
+                'truncate font-bold text-base-foreground transition-all duration-300 overflow-hidden',
+                isExpanded ? 'min-w-0 flex-1' : 'w-0'
+              )
+            "
+          >
+            {{ footerLabel }}
+          </span>
         </div>
 
-        <div class="flex flex-shrink-0 items-center gap-2">
+        <div class="flex items-center gap-2">
           <span
             v-if="isInProgress"
-            class="whitespace-nowrap text-sm text-muted-foreground"
+            :class="
+              cn(
+                'text-sm text-muted-foreground transition-all duration-300 overflow-hidden',
+                isExpanded ? 'whitespace-nowrap' : 'w-0'
+              )
+            "
           >
             {{
               t('progressToast.progressCount', {
