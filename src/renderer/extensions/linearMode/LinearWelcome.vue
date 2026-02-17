@@ -17,15 +17,23 @@ const { t } = useI18n()
           t('g.experimental')
         }}</sup>
       </h2>
-      <p class="text-base text-muted-foreground">
-        {{ t('linearMode.welcome.intro') }}
-      </p>
     </div>
 
     <div class="flex flex-col gap-3 text-xs text-muted-foreground/70 max-w-md">
-      <p>{{ t('linearMode.welcome.layout') }}</p>
-      <p>{{ t('linearMode.welcome.sharing') }}</p>
-      <p>{{ t('linearMode.welcome.widget') }}</p>
+      <p class="mt-0">{{ t('linearMode.welcome.message') }}</p>
+      <p class="mt-0">{{ t('linearMode.welcome.controls') }}</p>
+      <p class="mt-0">{{ t('linearMode.welcome.sharing') }}</p>
+      <p class="mt-0 text-base-foreground">
+        <i18n-t keypath="linearMode.welcome.getStarted" tag="span">
+          <template #runButton>
+            <span
+              class="inline-flex items-center px-3.5 py-0.5 mx-0.5 rounded bg-primary-background text-base-foreground text-xxs font-medium cursor-default"
+            >
+              {{ t('menu.run') }}
+            </span>
+          </template>
+        </i18n-t>
+      </p>
     </div>
   </div>
 </template>
