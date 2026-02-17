@@ -1,7 +1,5 @@
-import type { BuilderStep } from '@/stores/appModeStore'
-
-export interface BuilderToolbarStep {
-  id: BuilderStep | 'save'
+export interface BuilderToolbarStep<T extends string = string> {
+  id: T
   title: string
   subtitle: string
   icon: string

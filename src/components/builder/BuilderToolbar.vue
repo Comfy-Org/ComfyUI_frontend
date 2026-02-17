@@ -20,7 +20,7 @@
             )
           "
           :aria-current="activeStep === step.id ? 'step' : undefined"
-          @click="appModeStore.builderStep = step.id as BuilderStep"
+          @click="appModeStore.setMode(step.id)"
         >
           <StepBadge :step :index :model-value="activeStep" />
           <StepLabel :step />
@@ -32,8 +32,8 @@
       <!-- Save -->
       <ConnectOutputPopover
         v-if="!appModeStore.hasOutputs"
-        :is-select-active="activeStep === 'select'"
-        @switch="appModeStore.builderStep = 'select'"
+        :is-select-active="activeStep === 'builder:select'"
+        @switch="appModeStore.setMode('builder:select')"
       >
         <button :class="cn(stepClasses, 'opacity-30 bg-transparent')">
           <StepBadge :step="saveStep" :index="2" :model-value="activeStep" />
@@ -50,7 +50,7 @@
               : 'hover:bg-secondary-background bg-transparent'
           )
         "
-        @click="appModeStore.builderSaving = true"
+        @click="appModeStore.setBuilderSaving(true)"
       >
         <StepBadge :step="saveStep" :index="2" :model-value="activeStep" />
         <StepLabel :step="saveStep" />
@@ -63,8 +63,8 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import type { BuilderStep } from '@/stores/appModeStore'
 import { useAppModeStore } from '@/stores/appModeStore'
+import type { AppMode } from '@/stores/appModeStore'
 import { cn } from '@/utils/tailwindUtil'
 
 import ConnectOutputPopover from './ConnectOutputPopover.vue'
@@ -76,27 +76,27 @@ const { t } = useI18n()
 const appModeStore = useAppModeStore()
 
 const activeStep = computed(() =>
-  appModeStore.builderSaving ? 'save' : appModeStore.builderStep
+  appModeStore.isBuilderSaving ? 'save' : appModeStore.mode
 )
 
 const stepClasses =
   'inline-flex h-14 min-h-8 cursor-pointer items-center gap-3 rounded-lg py-2 pr-4 pl-2 transition-colors border-none'
 
-const selectStep: BuilderToolbarStep = {
-  id: 'select',
+const selectStep: BuilderToolbarStep<AppMode> = {
+  id: 'builder:select',
   title: t('builderToolbar.select'),
   subtitle: t('builderToolbar.selectDescription'),
   icon: 'icon-[lucide--mouse-pointer-click]'
 }
 
-const arrangeStep: BuilderToolbarStep = {
-  id: 'arrange',
+const arrangeStep: BuilderToolbarStep<AppMode> = {
+  id: 'builder:arrange',
   title: t('builderToolbar.arrange'),
   subtitle: t('builderToolbar.arrangeDescription'),
   icon: 'icon-[lucide--layout-panel-left]'
 }
 
-const saveStep: BuilderToolbarStep = {
+const saveStep: BuilderToolbarStep<'save'> = {
   id: 'save',
   title: t('builderToolbar.save'),
   subtitle: t('builderToolbar.saveDescription'),

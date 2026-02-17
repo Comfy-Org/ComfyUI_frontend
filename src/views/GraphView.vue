@@ -13,7 +13,7 @@
       <GraphCanvas @ready="onGraphReady" />
     </div>
     <LinearView v-if="linearMode" />
-    <BuilderToolbar v-if="appModeStore.builderMode" />
+    <BuilderToolbar v-if="appModeStore.isBuilderMode" />
   </div>
 
   <GlobalToast />
