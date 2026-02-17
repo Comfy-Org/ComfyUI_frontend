@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useElementBounding } from '@vueuse/core'
 import { computed, reactive, ref, toValue } from 'vue'
 import type { MaybeRef } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -10,6 +11,7 @@ import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
+import TransformPane from '@/renderer/core/layout/transform/TransformPane.vue'
 import { useHoveredStore } from '@/stores/hoveredStore'
 import { cn } from '@/utils/tailwindUtil'
 
@@ -59,16 +61,14 @@ ds.onChanged = useChainCallback(ds.onChanged, () =>
 )
 
 function elementPosition(e: HTMLElement) {
-  return computed(() => {
-    void updateDisp.value
-    const bounding = e.getBoundingClientRect()
-    return {
-      width: `${bounding.width}px`,
-      height: `${bounding.height}px`,
-      left: `${bounding.left}px`,
-      top: `${bounding.top}px`
-    }
-  })
+  const bounding = useElementBounding(e)
+  const canvas = canvasStore.getCanvas()
+  return computed(() => ({
+    width: `${bounding.width.value / canvas.ds.scale}px`,
+    height: `${bounding.height.value / canvas.ds.scale}px`,
+    left: `${bounding.left.value / canvas.ds.scale - canvas.ds.offset[0]}px`,
+    top: `${bounding.top.value / canvas.ds.scale - canvas.ds.offset[1]}px`
+  }))
 }
 function getBounding(nodeId: NodeId, widgetName?: string) {
   if (settingStore.get('Comfy.VueNodes.Enabled')) {
@@ -141,13 +141,14 @@ function handleClick(e: MouseEvent) {
   </DraggableList>
 
   <Teleport to="body">
-    <div
+    <TransformPane
       :class="
         cn(
-          'absolute w-full h-full',
+          'absolute w-full h-full pointer-events-auto!',
           getHovered() ? 'cursor-pointer' : 'cursor-grab'
         )
       "
+      :canvas="canvasStore.getCanvas()"
       @pointerdown="handleDown"
       @click="handleClick"
       @wheel="canvasInteractions.forwardEventToCanvas"
@@ -164,13 +165,7 @@ function handleClick(e: MouseEvent) {
         :style="toValue(style)"
         class="fixed ring-warning-background ring-5 rounded-2xl"
       >
-        <div
-          class="absolute top-0 right-0"
-          :style="{
-            width: 0.2 * canvasStore.appScalePercentage + 'px',
-            height: 0.2 * canvasStore.appScalePercentage + 'px'
-          }"
-        >
+        <div class="absolute top-0 right-0 size-10">
           <div
             class="absolute -top-1/2 -right-1/2 size-full bg-warning-background rounded-sm"
           >
@@ -178,6 +173,6 @@ function handleClick(e: MouseEvent) {
           </div>
         </div>
       </div>
-    </div>
+    </TransformPane>
   </Teleport>
 </template>
