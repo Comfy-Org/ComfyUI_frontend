@@ -21,8 +21,7 @@ const isAssetsActive = computed(
 )
 
 function enterBuilderMode() {
-  useAppModeStore().builderStep = 'select'
-  useAppModeStore().builderMode = true
+  useAppModeStore().setMode('builder:select')
 }
 
 function openAssets() {
