@@ -81,6 +81,14 @@ describe('QueueProgressOverlay', () => {
     )
   })
 
+  it('shows only running label when queued count is zero', () => {
+    const wrapper = mountComponent([createTask('running-1', 'in_progress')], [])
+
+    expect(wrapper.get('[data-testid="expanded-title"]').text()).toBe(
+      '1 running'
+    )
+  })
+
   it('shows job queue title when there are no active jobs', () => {
     const wrapper = mountComponent([], [])
 

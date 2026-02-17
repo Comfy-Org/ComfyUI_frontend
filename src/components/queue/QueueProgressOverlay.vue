@@ -165,14 +165,24 @@ const queuedJobsLabel = computed(() =>
     count: n(queuedCount.value)
   })
 )
-const headerTitle = computed(() =>
-  hasActiveJob.value
-    ? t('sideToolbar.queueProgressOverlay.runningQueuedSummary', {
-        running: runningJobsLabel.value,
-        queued: queuedJobsLabel.value
-      })
-    : t('sideToolbar.queueProgressOverlay.jobQueue')
-)
+const headerTitle = computed(() => {
+  if (!hasActiveJob.value) {
+    return t('sideToolbar.queueProgressOverlay.jobQueue')
+  }
+
+  if (queuedCount.value === 0) {
+    return runningJobsLabel.value
+  }
+
+  if (runningCount.value === 0) {
+    return queuedJobsLabel.value
+  }
+
+  return t('sideToolbar.queueProgressOverlay.runningQueuedSummary', {
+    running: runningJobsLabel.value,
+    queued: queuedJobsLabel.value
+  })
+})
 
 const concurrentWorkflowCount = computed(
   () => executionStore.runningWorkflowCount
