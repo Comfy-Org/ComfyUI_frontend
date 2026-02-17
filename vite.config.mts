@@ -12,7 +12,7 @@ import Icons from 'unplugin-icons/vite'
 import Components from 'unplugin-vue-components/vite'
 import typegpuPlugin from 'unplugin-typegpu/vite'
 import { defineConfig } from 'vitest/config'
-import type { ProxyOptions } from 'vite'
+import type { IndexHtmlTransformContext, ProxyOptions } from 'vite'
 import { createHtmlPlugin } from 'vite-plugin-html'
 import vueDevTools from 'vite-plugin-vue-devtools'
 
@@ -379,6 +379,34 @@ export default defineConfig({
       directoryAsNamespace: true
     }),
 
+    // Inject chunk import map into HTML for stable vendor hashes
+    ...(!IS_DEV
+      ? [
+          {
+            name: 'inject-chunk-import-map',
+            enforce: 'post' as const,
+            transformIndexHtml: {
+              order: 'post' as const,
+              handler(_html: string, ctx: IndexHtmlTransformContext) {
+                const bundle = ctx.bundle
+                if (!bundle) return
+                const asset = bundle['importmap.json']
+                if (!asset || asset.type !== 'asset') return
+                delete bundle['importmap.json']
+                return [
+                  {
+                    tag: 'script',
+                    attrs: { type: 'importmap' },
+                    children: String(asset.source),
+                    injectTo: 'head-prepend' as const
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      : []),
+
     // Bundle analyzer - generates dist/stats.html after build
     // Only enabled when ANALYZE_BUNDLE=true
     ...(ANALYZE_BUNDLE
@@ -445,6 +473,14 @@ export default defineConfig({
       }
     },
     rolldownOptions: {
+      experimental: !IS_DEV
+        ? {
+            chunkImportMap: {
+              baseUrl: DISTRIBUTION === 'cloud' ? '/' : '',
+              fileName: 'importmap.json'
+            }
+          }
+        : undefined,
       treeshake: {
         manualPureFunctions: [
           'console.clear',
