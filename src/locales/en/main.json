@@ -2988,7 +2988,9 @@
     "exportStarted": "Preparing ZIP download...",
     "exportCompleted": "ZIP download ready",
     "exportFailedSingle": "Failed to create ZIP export",
-    "downloadExport": "Download export"
+    "downloadExport": "Download export",
+    "downloadFailed": "Failed to download \"{name}\"",
+    "retryDownload": "Retry download"
   },
   "workspace": {
     "unsavedChanges": {

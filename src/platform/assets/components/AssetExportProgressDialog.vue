@@ -101,6 +101,21 @@ function closeDialog() {
                   class="icon-[lucide--circle-alert] size-4 text-destructive-background"
                 />
               </template>
+              <template v-else-if="job.status === 'completed' && job.downloadError">
+                <span class="text-xs text-destructive-background truncate max-w-32">
+                  {{ job.downloadError }}
+                </span>
+                <Button
+                  variant="muted-textonly"
+                  size="icon"
+                  :aria-label="t('exportToast.retryDownload')"
+                  @click.stop="assetExportStore.triggerDownload(job, true)"
+                >
+                  <i
+                    class="icon-[lucide--rotate-ccw] size-4 text-destructive-background"
+                  />
+                </Button>
+              </template>
               <template v-else-if="job.status === 'completed'">
                 <Button
                   variant="muted-textonly"

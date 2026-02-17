@@ -3,9 +3,11 @@ import { defineStore } from 'pinia'
 import { computed, ref, watch } from 'vue'
 
 import { assetService } from '@/platform/assets/services/assetService'
+import { useToastStore } from '@/platform/updates/common/toastStore'
 import { taskService } from '@/platform/tasks/services/taskService'
 import type { AssetExportWsMessage } from '@/schemas/apiSchema'
 import { api } from '@/scripts/api'
+import { t } from '@/i18n'
 
 export interface AssetExport {
   taskId: string
@@ -18,6 +20,7 @@ export interface AssetExport {
   progress: number
   status: 'created' | 'running' | 'completed' | 'failed'
   error?: string
+  downloadError?: string
   lastUpdate: number
   downloadTriggered: boolean
 }
@@ -65,6 +68,7 @@ export const useAssetExportStore = defineStore('assetExport', () => {
     exp.downloadTriggered = true
 
     try {
+      exp.downloadError = undefined
       const { url } = await assetService.getExportDownloadUrl(exp.exportName)
       const link = document.createElement('a')
       link.href = url
@@ -76,8 +80,18 @@ export const useAssetExportStore = defineStore('assetExport', () => {
       link.click()
       document.body.removeChild(link)
     } catch (error) {
-      console.error('Failed to download export ZIP:', error)
+      const message =
+        error instanceof Error ? error.message : String(error)
+      exp.downloadError = message
       exp.downloadTriggered = false
+
+      useToastStore().add({
+        severity: 'error',
+        summary: t('exportToast.downloadFailed', {
+          name: exp.exportName
+        }),
+        detail: message,
+      })
     }
   }
 
@@ -136,8 +150,9 @@ export const useAssetExportStore = defineStore('assetExport', () => {
                 assets_total:
                   (result?.assets_total as number) ?? exp.assetsTotal,
                 assets_attempted:
-                  (result?.assets_succeeded as number) ?? exp.assetsAttempted,
-                assets_failed: 0,
+                  (result?.assets_attempted as number) ?? exp.assetsAttempted,
+                assets_failed:
+                  (result?.assets_failed as number) ?? exp.assetsFailed,
                 bytes_total: exp.bytesTotal,
                 bytes_processed: exp.bytesTotal,
                 progress: task.status === 'completed' ? 1 : exp.progress,
