@@ -8,6 +8,7 @@ import { useWorkflowTemplateSelectorDialog } from '@/composables/useWorkflowTemp
 import { useCommandStore } from '@/stores/commandStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { cn } from '@/utils/tailwindUtil'
+import { useAppModeStore } from '@/stores/appModeStore'
 
 const { t } = useI18n()
 const commandStore = useCommandStore()
@@ -20,7 +21,7 @@ const isAssetsActive = computed(
 )
 
 function enterBuilderMode() {
-  alert('enter builder mode')
+  useAppModeStore().builderMode = true
 }
 
 function openAssets() {
