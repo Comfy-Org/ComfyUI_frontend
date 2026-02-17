@@ -150,23 +150,6 @@ export function useWorkflowActionsMenu(
     })
 
     addItem({
-      label: isLinearMode
-        ? t('breadcrumbsMenu.exitAppMode')
-        : t('breadcrumbsMenu.enterAppMode'),
-      icon: isLinearMode
-        ? 'icon-[comfy--workflow]'
-        : 'icon-[lucide--panels-top-left]',
-      command: async () => {
-        await commandStore.execute('Comfy.ToggleLinear', {
-          metadata: { source: 'breadcrumb_menu' }
-        })
-      },
-      visible: showAppModeItems,
-      prependSeparator: true,
-      isNew: !isLinearMode
-    })
-
-    addItem({
       label: t('menuLabels.Export'),
       icon: 'pi pi-download',
       command: async () => {
@@ -185,6 +168,23 @@ export function useWorkflowActionsMenu(
         await commandStore.execute('Comfy.ExportWorkflowAPI')
       },
       visible: isRoot
+    })
+
+    addItem({
+      label: isLinearMode
+        ? t('breadcrumbsMenu.exitAppMode')
+        : t('breadcrumbsMenu.enterAppMode'),
+      icon: isLinearMode
+        ? 'icon-[comfy--workflow]'
+        : 'icon-[lucide--panels-top-left]',
+      command: async () => {
+        await commandStore.execute('Comfy.ToggleLinear', {
+          metadata: { source: 'breadcrumb_menu' }
+        })
+      },
+      visible: showAppModeItems,
+      prependSeparator: true,
+      isNew: !isLinearMode
     })
 
     addItem({

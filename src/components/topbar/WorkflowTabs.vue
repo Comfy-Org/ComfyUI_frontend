@@ -1,125 +1,108 @@
 <template>
-  <ContextMenuRoot v-model:open="contextMenuOpen">
-    <div
-      ref="containerRef"
-      class="workflow-tabs-container flex h-full max-w-full flex-auto flex-row overflow-hidden"
-      :class="{ 'workflow-tabs-container-desktop': isDesktop }"
+  <div
+    ref="containerRef"
+    class="workflow-tabs-container flex h-full max-w-full flex-auto flex-row overflow-hidden"
+    :class="{ 'workflow-tabs-container-desktop': isDesktop }"
+  >
+    <Button
+      v-if="showOverflowArrows"
+      variant="muted-textonly"
+      size="icon"
+      class="overflow-arrow overflow-arrow-left h-full w-auto aspect-square"
+      :aria-label="$t('g.scrollLeft')"
+      :disabled="!leftArrowEnabled"
+      @mousedown="whileMouseDown($event, () => scroll(-1))"
     >
-      <Button
-        v-if="showOverflowArrows"
-        variant="muted-textonly"
-        size="icon"
-        class="overflow-arrow overflow-arrow-left h-full w-auto aspect-square"
-        :aria-label="$t('g.scrollLeft')"
-        :disabled="!leftArrowEnabled"
-        @mousedown="whileMouseDown($event, () => scroll(-1))"
+      <i class="icon-[lucide--chevron-left] size-full" />
+    </Button>
+    <ScrollPanel
+      class="no-drag overflow-hidden"
+      :pt:content="{
+        class: 'p-0 w-full flex',
+        onwheel: handleWheel
+      }"
+      pt:bar-x="h-1"
+    >
+      <SelectButton
+        class="workflow-tabs bg-transparent"
+        :class="props.class"
+        :model-value="selectedWorkflow"
+        :options="options"
+        option-label="label"
+        data-key="value"
+        @update:model-value="onWorkflowChange"
       >
-        <i class="icon-[lucide--chevron-left] size-full" />
-      </Button>
-      <ScrollPanel
-        class="no-drag overflow-hidden"
-        :pt:content="{
-          class: 'p-0 w-full flex',
-          onwheel: handleWheel
-        }"
-        pt:bar-x="h-1"
-      >
-        <SelectButton
-          class="workflow-tabs bg-transparent"
-          :class="props.class"
-          :model-value="selectedWorkflow"
-          :options="options"
-          option-label="label"
-          data-key="value"
-          @update:model-value="onWorkflowChange"
-        >
-          <template #option="{ option }">
-            <ContextMenuTrigger as-child>
-              <WorkflowTab
-                :workflow-option="option"
-                @contextmenu="rightClickedTab = option"
-                @click.middle="onCloseWorkflow(option)"
-              />
-            </ContextMenuTrigger>
-          </template>
-        </SelectButton>
-      </ScrollPanel>
-      <Button
-        v-if="showOverflowArrows"
-        variant="muted-textonly"
-        size="icon"
-        class="overflow-arrow overflow-arrow-right h-full w-auto aspect-square"
-        :aria-label="$t('g.scrollRight')"
-        :disabled="!rightArrowEnabled"
-        @mousedown="whileMouseDown($event, () => scroll(1))"
-      >
-        <i class="icon-[lucide--chevron-right] size-full" />
-      </Button>
-      <WorkflowOverflowMenu
-        v-if="showOverflowArrows"
-        :workflows="workflowStore.openWorkflows"
-        :active-workflow="workflowStore.activeWorkflow"
+        <template #option="{ option, index }">
+          <WorkflowTab
+            :workflow-option="option"
+            :is-first="index === 0"
+            :is-last="index === options.length - 1"
+            @click.middle="onCloseWorkflow(option)"
+            @close-to-left="closeWorkflows(options.slice(0, index))"
+            @close-to-right="closeWorkflows(options.slice(index + 1))"
+            @close-others="
+              closeWorkflows([
+                ...options.slice(index + 1),
+                ...options.slice(0, index)
+              ])
+            "
+          />
+        </template>
+      </SelectButton>
+    </ScrollPanel>
+    <Button
+      v-if="showOverflowArrows"
+      variant="muted-textonly"
+      size="icon"
+      class="overflow-arrow overflow-arrow-right h-full w-auto aspect-square"
+      :aria-label="$t('g.scrollRight')"
+      :disabled="!rightArrowEnabled"
+      @mousedown="whileMouseDown($event, () => scroll(1))"
+    >
+      <i class="icon-[lucide--chevron-right] size-full" />
+    </Button>
+    <WorkflowOverflowMenu
+      v-if="showOverflowArrows"
+      :workflows="workflowStore.openWorkflows"
+      :active-workflow="workflowStore.activeWorkflow"
+    />
+    <Button
+      v-tooltip="{
+        value: $t('sideToolbar.newBlankWorkflow'),
+        showDelay: 300
+      }"
+      class="new-blank-workflow-button no-drag shrink-0 rounded-none h-full w-auto aspect-square"
+      variant="muted-textonly"
+      size="icon"
+      :aria-label="$t('sideToolbar.newBlankWorkflow')"
+      @click="() => commandStore.execute('Comfy.NewBlankWorkflow')"
+    >
+      <i class="pi pi-plus" />
+    </Button>
+    <div
+      v-if="isIntegratedTabBar"
+      class="ml-auto flex shrink-0 items-center gap-2 px-2"
+    >
+      <TopMenuHelpButton />
+      <CurrentUserButton
+        v-if="isLoggedIn"
+        :show-arrow="false"
+        compact
+        class="shrink-0 p-1"
       />
-      <Button
-        v-tooltip="{
-          value: $t('sideToolbar.newBlankWorkflow'),
-          showDelay: 300
-        }"
-        class="new-blank-workflow-button no-drag shrink-0 rounded-none h-full w-auto aspect-square"
-        variant="muted-textonly"
-        size="icon"
-        :aria-label="$t('sideToolbar.newBlankWorkflow')"
-        @click="() => commandStore.execute('Comfy.NewBlankWorkflow')"
-      >
-        <i class="pi pi-plus" />
-      </Button>
-      <div
-        v-if="isIntegratedTabBar"
-        class="ml-auto flex shrink-0 items-center gap-2 px-2"
-      >
-        <TopMenuHelpButton />
-        <CurrentUserButton
-          v-if="isLoggedIn"
-          :show-arrow="false"
-          compact
-          class="shrink-0 p-1"
-        />
-        <LoginButton v-else-if="isDesktop" class="p-1" />
-      </div>
-      <div v-if="isDesktop" class="window-actions-spacer app-drag shrink-0" />
+      <LoginButton v-else-if="isDesktop" class="p-1" />
     </div>
-    <ContextMenuPortal>
-      <ContextMenuContent
-        v-if="contextMenuItems.length"
-        class="z-1000 rounded-lg px-2 py-3 min-w-56 bg-base-background shadow-interface border border-border-subtle"
-      >
-        <WorkflowActionsList
-          :items="contextMenuItems"
-          :item-component="ContextMenuItem"
-          :separator-component="ContextMenuSeparator"
-        />
-      </ContextMenuContent>
-    </ContextMenuPortal>
-  </ContextMenuRoot>
+    <div v-if="isDesktop" class="window-actions-spacer app-drag shrink-0" />
+  </div>
 </template>
 
 <script setup lang="ts">
 import { useScroll } from '@vueuse/core'
 import ScrollPanel from 'primevue/scrollpanel'
 import SelectButton from 'primevue/selectbutton'
-import {
-  ContextMenuContent,
-  ContextMenuItem,
-  ContextMenuPortal,
-  ContextMenuRoot,
-  ContextMenuSeparator,
-  ContextMenuTrigger
-} from 'reka-ui'
 import { computed, nextTick, onUpdated, ref, watch } from 'vue'
 import type { WatchStopHandle } from 'vue'
-import { useI18n } from 'vue-i18n'
 
-import WorkflowActionsList from '@/components/common/WorkflowActionsList.vue'
 import CurrentUserButton from '@/components/topbar/CurrentUserButton.vue'
 import LoginButton from '@/components/topbar/LoginButton.vue'
 import TopMenuHelpButton from '@/components/topbar/TopMenuHelpButton.vue'
@@ -127,8 +110,6 @@ import WorkflowTab from '@/components/topbar/WorkflowTab.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useOverflowObserver } from '@/composables/element/useOverflowObserver'
-import { useWorkflowActionsMenu } from '@/composables/useWorkflowActionsMenu'
-import type { WorkflowMenuItem } from '@/types/workflowMenuItem'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
@@ -149,7 +130,6 @@ const props = defineProps<{
   class?: string
 }>()
 
-const { t } = useI18n()
 const settingStore = useSettingStore()
 const workspaceStore = useWorkspaceStore()
 const workflowStore = useWorkflowStore()
@@ -161,11 +141,6 @@ const isIntegratedTabBar = computed(
   () => settingStore.get('Comfy.UI.TabBarLayout') === 'Integrated'
 )
 
-const rightClickedTab = ref<WorkflowOption | undefined>()
-const contextMenuOpen = ref(false)
-watch(contextMenuOpen, (open) => {
-  if (!open) rightClickedTab.value = undefined
-})
 const containerRef = ref<HTMLElement | null>(null)
 const showOverflowArrows = ref(false)
 const leftArrowEnabled = ref(false)
@@ -214,73 +189,6 @@ const closeWorkflows = async (options: WorkflowOption[]) => {
 const onCloseWorkflow = async (option: WorkflowOption) => {
   await closeWorkflows([option])
 }
-
-const rightClickedWorkflow = computed(
-  () => rightClickedTab.value?.workflow ?? null
-)
-
-const { menuItems: baseMenuItems } = useWorkflowActionsMenu(
-  () => commandStore.execute('Comfy.RenameWorkflow'),
-  {
-    includeDelete: false,
-    workflow: rightClickedWorkflow
-  }
-)
-
-const contextMenuItems = computed<WorkflowMenuItem[]>(() => {
-  const tab = rightClickedTab.value
-  if (!tab) return []
-  const index = options.value.findIndex((v) => v.workflow === tab.workflow)
-
-  return [
-    ...baseMenuItems.value,
-    {
-      label: t('tabMenu.closeTab'),
-      icon: 'pi pi-times',
-      command: () => onCloseWorkflow(tab)
-    },
-    {
-      label: t('tabMenu.closeTabsToLeft'),
-      overlayIcon: {
-        mainIcon: 'pi pi-times',
-        subIcon: 'pi pi-arrow-left',
-        positionX: 'right',
-        positionY: 'bottom',
-        subIconScale: 0.5
-      },
-      command: () => closeWorkflows(options.value.slice(0, index)),
-      disabled: index <= 0
-    },
-    {
-      label: t('tabMenu.closeTabsToRight'),
-      overlayIcon: {
-        mainIcon: 'pi pi-times',
-        subIcon: 'pi pi-arrow-right',
-        positionX: 'right',
-        positionY: 'bottom',
-        subIconScale: 0.5
-      },
-      command: () => closeWorkflows(options.value.slice(index + 1)),
-      disabled: index === options.value.length - 1
-    },
-    {
-      label: t('tabMenu.closeOtherTabs'),
-      overlayIcon: {
-        mainIcon: 'pi pi-times',
-        subIcon: 'pi pi-arrows-h',
-        positionX: 'right',
-        positionY: 'bottom',
-        subIconScale: 0.5
-      },
-      command: () =>
-        closeWorkflows([
-          ...options.value.slice(index + 1),
-          ...options.value.slice(0, index)
-        ]),
-      disabled: options.value.length <= 1
-    }
-  ]
-})
 
 // Horizontal scroll on wheel
 const handleWheel = (event: WheelEvent) => {

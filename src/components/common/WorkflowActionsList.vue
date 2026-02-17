@@ -23,7 +23,7 @@ const {
     <component
       :is="separatorComponent"
       v-if="item.separator"
-      class="border-b w-full border-border-subtle"
+      class="border-b w-full border-border-subtle my-1"
     />
     <component
       :is="itemComponent"
