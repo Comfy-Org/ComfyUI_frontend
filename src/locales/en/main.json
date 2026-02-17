@@ -2866,7 +2866,7 @@
     "publishedOn": "Published on {date}",
     "copyLink": "Copy",
     "linkCopied": "Copied!",
-    "assetWarningTitle": "This workflow includes the following assets and models that will be made public:",
+    "assetWarningTitle": "Your workflow has {count} asset uploaded by you. Publishing your workflow will make these assets available to anyone once the workflow is published. | Your workflow has {count} assets uploaded by you. Publishing your workflow will make these assets available to anyone once the workflow is published.",
     "assetsLabel": "Assets ({count})",
     "modelsLabel": "Models ({count})",
     "acknowledgeCheckbox": "I understand these assets will be published and made public",
