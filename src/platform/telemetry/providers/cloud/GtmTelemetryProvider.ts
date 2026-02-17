@@ -22,13 +22,21 @@ export class GtmTelemetryProvider implements TelemetryProvider {
     if (typeof window === 'undefined') return
 
     const gtmId = window.__CONFIG__?.gtm_container_id
-    if (!gtmId) {
+    if (gtmId) {
+      this.initializeGtm(gtmId)
+    } else {
       if (import.meta.env.MODE === 'development') {
         console.warn('[GTM] No GTM ID configured, skipping initialization')
       }
-      return
     }
 
+    const measurementId = window.__CONFIG__?.ga_measurement_id
+    if (measurementId) {
+      this.bootstrapGtag(measurementId)
+    }
+  }
+
+  private initializeGtm(gtmId: string): void {
     window.dataLayer = window.dataLayer || []
 
     window.dataLayer.push({
@@ -42,6 +50,36 @@ export class GtmTelemetryProvider implements TelemetryProvider {
     document.head.insertBefore(script, document.head.firstChild)
 
     this.initialized = true
+  }
+
+  private bootstrapGtag(measurementId: string): void {
+    window.dataLayer = window.dataLayer || []
+
+    if (typeof window.gtag !== 'function') {
+      function gtag(...args: unknown[]) {
+        window.dataLayer?.push(args)
+      }
+
+      window.gtag = gtag
+    }
+
+    const gtagScriptSrc = `https://www.googletagmanager.com/gtag/js?id=${measurementId}`
+    const existingGtagScript = document.querySelector(
+      `script[src="${gtagScriptSrc}"]`
+    )
+
+    if (!existingGtagScript) {
+      const script = document.createElement('script')
+      script.async = true
+      script.src = gtagScriptSrc
+      document.head.insertBefore(script, document.head.firstChild)
+    }
+
+    const gtag = window.gtag
+    if (typeof gtag !== 'function') return
+
+    gtag('js', new Date())
+    gtag('config', measurementId, { send_page_view: false })
   }
 
   private pushEvent(event: string, properties?: Record<string, unknown>): void {
