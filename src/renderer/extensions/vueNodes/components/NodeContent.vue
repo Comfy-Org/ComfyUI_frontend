@@ -2,25 +2,25 @@
   <div v-if="renderError" class="node-error p-2 text-sm text-red-500">
     {{ st('nodeErrors.content', 'Node Content Error') }}
   </div>
-  <div v-else class="lg-node-content flex grow flex-col">
+  <div v-else class="lg-node-content flex grow flex-col flex-auto">
     <!-- Default slot for custom content -->
     <slot>
       <VideoPreview
         v-if="hasMedia && media?.type === 'video'"
         :image-urls="media.urls"
         :node-id="nodeId"
-        class="mt-2"
+        class="mt-2 flex-auto"
       />
       <AudioPreview
         v-else-if="hasMedia && media?.type === 'audio'"
         :audio-urls="media.urls"
-        class="mt-2"
+        class="mt-2 flex-auto"
       />
       <ImagePreview
         v-else-if="hasMedia && media?.type === 'image'"
         :image-urls="media.urls"
         :node-id="nodeId"
-        class="mt-2"
+        class="mt-2 flex-auto"
       />
     </slot>
   </div>

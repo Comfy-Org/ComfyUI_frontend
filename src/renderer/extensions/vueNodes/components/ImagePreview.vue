@@ -7,7 +7,7 @@
     <!-- Image Wrapper -->
     <div
       ref="imageWrapperEl"
-      class="min-h-0 flex-1 w-full overflow-hidden rounded-[5px] bg-muted-background relative"
+      class="min-h-0 flex-1 flex w-full overflow-hidden rounded-[5px] bg-muted-background relative"
       tabindex="0"
       role="img"
       :aria-label="$t('g.imagePreview')"
@@ -21,7 +21,7 @@
       <div
         v-if="imageError"
         role="alert"
-        class="flex size-full flex-col items-center justify-center bg-muted-background text-center text-base-foreground py-8"
+        class="flex flex-1 self-center size-full flex-col items-center justify-around bg-muted-background text-center text-base-foreground py-8"
       >
         <i
           class="mb-2 icon-[lucide--image-off] h-12 w-12 text-base-foreground"
