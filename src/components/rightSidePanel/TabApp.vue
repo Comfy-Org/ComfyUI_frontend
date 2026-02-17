@@ -119,7 +119,7 @@ function handleClick(e: MouseEvent) {
     <div
       v-for="[key] in selectedInputs"
       :key
-      :class="cn(dragClass, 'bg-blue-400/20 p-2 rounded-lg')"
+      :class="cn(dragClass, 'bg-primary-background/30 p-2 my-2 rounded-lg')"
       v-text="key"
     />
   </DraggableList>
@@ -127,9 +127,15 @@ function handleClick(e: MouseEvent) {
   {{ t('[PH]Outputs:') }}
   <DraggableList v-slot="{ dragClass }" v-model="selectedOutputs">
     <div
-      v-for="[key] in selectedOutputs"
+      v-for="([key], index) in selectedOutputs"
       :key
-      :class="cn(dragClass, 'bg-orange-400/20 p-2 rounded-lg')"
+      :class="
+        cn(
+          dragClass,
+          'bg-warning-background/40 p-2 my-2 rounded-lg',
+          index === 0 && 'ring-warning-background ring-2'
+        )
+      "
       v-text="key"
     />
   </DraggableList>
@@ -150,21 +156,27 @@ function handleClick(e: MouseEvent) {
         v-for="[key, style] in selectedInputs"
         :key
         :style="toValue(style)"
-        class="fixed bg-blue-400/50 rounded-lg"
+        class="fixed bg-primary-background/30 rounded-lg"
       />
       <div
         v-for="[key, style] in selectedOutputs"
         :key
         :style="toValue(style)"
-        class="fixed bg-orange-400/50 rounded-2xl"
+        class="fixed ring-warning-background ring-5 rounded-2xl"
       >
         <div
-          class="absolute top-0 right-0 bg-red-400"
+          class="absolute top-0 right-0"
           :style="{
             width: 0.2 * canvasStore.appScalePercentage + 'px',
             height: 0.2 * canvasStore.appScalePercentage + 'px'
           }"
-        />
+        >
+          <div
+            class="absolute -top-1/2 -right-1/2 size-full bg-warning-background rounded-sm"
+          >
+            <i class="icon-[lucide--check] bg-text-foreground size-full" />
+          </div>
+        </div>
       </div>
     </div>
   </Teleport>
