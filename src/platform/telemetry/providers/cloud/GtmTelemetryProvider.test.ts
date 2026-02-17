@@ -42,8 +42,8 @@ describe('GtmTelemetryProvider', () => {
     expect(gtagScript).not.toBeNull()
     expect(typeof window.gtag).toBe('function')
     expect(dataLayer).toHaveLength(2)
-    expect((dataLayer[0] as unknown[])[0]).toBe('js')
-    expect(dataLayer[1]).toEqual([
+    expect(Array.from(dataLayer[0] as IArguments)[0]).toBe('js')
+    expect(Array.from(dataLayer[1] as IArguments)).toEqual([
       'config',
       'G-TEST123',
       {

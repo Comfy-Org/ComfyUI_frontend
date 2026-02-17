@@ -56,11 +56,13 @@ export class GtmTelemetryProvider implements TelemetryProvider {
     window.dataLayer = window.dataLayer || []
 
     if (typeof window.gtag !== 'function') {
-      function gtag(...args: unknown[]) {
-        window.dataLayer?.push(args)
+      function gtag() {
+        // gtag queue shape is dataLayer.push(arguments)
+        // eslint-disable-next-line prefer-rest-params
+        ;(window.dataLayer as unknown[] | undefined)?.push(arguments)
       }
 
-      window.gtag = gtag
+      window.gtag = gtag as Window['gtag']
     }
 
     const gtagScriptSrc = `https://www.googletagmanager.com/gtag/js?id=${measurementId}`
