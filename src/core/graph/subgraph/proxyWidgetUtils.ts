@@ -45,7 +45,9 @@ export function promoteWidget(
   parents: SubgraphNode[]
 ) {
   const store = usePromotionStore()
-  const nodeId = String(node.id)
+  const nodeId = String(
+    isPromotedWidgetView(widget) ? widget.sourceNodeId : node.id
+  )
   const widgetName = getWidgetName(widget)
   for (const parent of parents) {
     store.promote(parent.id, nodeId, widgetName)
@@ -58,7 +60,9 @@ export function demoteWidget(
   parents: SubgraphNode[]
 ) {
   const store = usePromotionStore()
-  const nodeId = String(node.id)
+  const nodeId = String(
+    isPromotedWidgetView(widget) ? widget.sourceNodeId : node.id
+  )
   const widgetName = getWidgetName(widget)
   for (const parent of parents) {
     store.demote(parent.id, nodeId, widgetName)

@@ -1,5 +1,6 @@
 <template>
   <div
+    data-testid="subgraph-breadcrumb"
     class="subgraph-breadcrumb flex w-auto drop-shadow-[var(--interface-panel-drop-shadow)]"
     :class="{
       'subgraph-breadcrumb-collapse': collapseTabs,

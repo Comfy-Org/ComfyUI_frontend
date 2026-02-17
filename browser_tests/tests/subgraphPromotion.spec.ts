@@ -1,12 +1,8 @@
 import { expect } from '@playwright/test'
 
 import { comfyPageFixture as test } from '../fixtures/ComfyPage'
+import { TestIds } from '../fixtures/selectors'
 import { fitToViewInstant } from '../helpers/fitToView'
-
-const SELECTORS = {
-  domWidget: '.comfy-multiline-input',
-  breadcrumb: '.subgraph-breadcrumb'
-} as const
 
 /**
  * Query a SubgraphNode's promoted widget names via its `properties.proxyWidgets`
@@ -134,7 +130,9 @@ test.describe(
         await comfyPage.nextFrame()
 
         // The subgraph node (id 11) should have a text widget promoted
-        const textarea = comfyPage.page.locator(SELECTORS.domWidget)
+        const textarea = comfyPage.page.getByTestId(
+          TestIds.widgets.domWidgetTextarea
+        )
         await expect(textarea).toBeVisible()
         await expect(textarea).toHaveCount(1)
       })
@@ -147,7 +145,9 @@ test.describe(
         )
         await comfyPage.nextFrame()
 
-        const textareas = comfyPage.page.locator(SELECTORS.domWidget)
+        const textareas = comfyPage.page.getByTestId(
+          TestIds.widgets.domWidgetTextarea
+        )
         await expect(textareas.first()).toBeVisible()
         const count = await textareas.count()
         expect(count).toBeGreaterThan(1)
@@ -228,7 +228,9 @@ test.describe(
         const testContent = 'promoted-value-sync-test'
 
         // Type into the promoted textarea on the SubgraphNode
-        const textarea = comfyPage.page.locator(SELECTORS.domWidget)
+        const textarea = comfyPage.page.getByTestId(
+          TestIds.widgets.domWidgetTextarea
+        )
         await textarea.fill(testContent)
         await comfyPage.nextFrame()
 
@@ -237,7 +239,9 @@ test.describe(
         await subgraphNode.navigateIntoSubgraph()
 
         // Interior CLIPTextEncode textarea should have the same value
-        const interiorTextarea = comfyPage.page.locator(SELECTORS.domWidget)
+        const interiorTextarea = comfyPage.page.getByTestId(
+          TestIds.widgets.domWidgetTextarea
+        )
         await expect(interiorTextarea).toHaveValue(testContent)
       })
 
@@ -256,7 +260,9 @@ test.describe(
         await subgraphNode.navigateIntoSubgraph()
 
         // Type into the interior CLIPTextEncode textarea
-        const interiorTextarea = comfyPage.page.locator(SELECTORS.domWidget)
+        const interiorTextarea = comfyPage.page.getByTestId(
+          TestIds.widgets.domWidgetTextarea
+        )
         await interiorTextarea.fill(testContent)
         await comfyPage.nextFrame()
 
@@ -265,7 +271,9 @@ test.describe(
         await comfyPage.nextFrame()
 
         // Promoted textarea on SubgraphNode should have the same value
-        const promotedTextarea = comfyPage.page.locator(SELECTORS.domWidget)
+        const promotedTextarea = comfyPage.page.getByTestId(
+          TestIds.widgets.domWidgetTextarea
+        )
         await expect(promotedTextarea).toHaveValue(testContent)
       })
 
@@ -280,7 +288,9 @@ test.describe(
         const testContent = 'persistence-through-navigation'
 
         // Set value on promoted widget
-        const textarea = comfyPage.page.locator(SELECTORS.domWidget)
+        const textarea = comfyPage.page.getByTestId(
+          TestIds.widgets.domWidgetTextarea
+        )
         await textarea.fill(testContent)
 
         const subgraphNode = await comfyPage.nodeOps.getNodeRefById('11')
@@ -288,13 +298,17 @@ test.describe(
         // Navigate in and out multiple times
         for (let i = 0; i < 3; i++) {
           await subgraphNode.navigateIntoSubgraph()
-          const interiorTextarea = comfyPage.page.locator(SELECTORS.domWidget)
+          const interiorTextarea = comfyPage.page.getByTestId(
+            TestIds.widgets.domWidgetTextarea
+          )
           await expect(interiorTextarea).toHaveValue(testContent)
 
           await comfyPage.page.keyboard.press('Escape')
           await comfyPage.nextFrame()
 
-          const promotedTextarea = comfyPage.page.locator(SELECTORS.domWidget)
+          const promotedTextarea = comfyPage.page.getByTestId(
+            TestIds.widgets.domWidgetTextarea
+          )
           await expect(promotedTextarea).toHaveValue(testContent)
         }
       })
@@ -335,18 +349,17 @@ test.describe(
           .locator('.litemenu-entry')
           .filter({ hasText: /Promote Widget/ })
 
-        if (await promoteEntry.isVisible()) {
-          await promoteEntry.click()
-          await comfyPage.nextFrame()
+        await expect(promoteEntry).toBeVisible()
+        await promoteEntry.click()
+        await comfyPage.nextFrame()
 
-          // Navigate back to parent
-          await comfyPage.page.keyboard.press('Escape')
-          await comfyPage.nextFrame()
+        // Navigate back to parent
+        await comfyPage.page.keyboard.press('Escape')
+        await comfyPage.nextFrame()
 
-          // SubgraphNode should now have the promoted widget
-          const widgetCount = await getWidgetCount(comfyPage, '2')
-          expect(widgetCount).toBeGreaterThan(0)
-        }
+        // SubgraphNode should now have the promoted widget
+        const widgetCount = await getWidgetCount(comfyPage, '2')
+        expect(widgetCount).toBeGreaterThan(0)
       })
 
       test('Can un-promote a widget from inside a subgraph', async ({
@@ -381,18 +394,17 @@ test.describe(
           .locator('.litemenu-entry')
           .filter({ hasText: /Un-Promote Widget/ })
 
-        if (await unpromoteEntry.isVisible()) {
-          await unpromoteEntry.click()
-          await comfyPage.nextFrame()
+        await expect(unpromoteEntry).toBeVisible()
+        await unpromoteEntry.click()
+        await comfyPage.nextFrame()
 
-          // Navigate back
-          await comfyPage.page.keyboard.press('Escape')
-          await comfyPage.nextFrame()
+        // Navigate back
+        await comfyPage.page.keyboard.press('Escape')
+        await comfyPage.nextFrame()
 
-          // SubgraphNode should have fewer widgets
-          const finalWidgetCount = await getWidgetCount(comfyPage, '11')
-          expect(finalWidgetCount).toBeLessThan(initialWidgetCount)
-        }
+        // SubgraphNode should have fewer widgets
+        const finalWidgetCount = await getWidgetCount(comfyPage, '11')
+        expect(finalWidgetCount).toBeLessThan(initialWidgetCount)
       })
     })
 
@@ -504,10 +516,9 @@ test.describe(
         await comfyPage.nextFrame()
 
         // Navigate back via breadcrumb
-        await comfyPage.page.waitForSelector(SELECTORS.breadcrumb, {
-          state: 'visible',
-          timeout: 5000
-        })
+        await comfyPage.page
+          .getByTestId(TestIds.breadcrumb.subgraph)
+          .waitFor({ state: 'visible', timeout: 5000 })
         const homeBreadcrumb = comfyPage.page.getByRole('link', {
           name: 'subgraph-with-promoted-text-widget'
         })
@@ -517,7 +528,9 @@ test.describe(
 
         // Widget count should be reduced
         const finalWidgetCount = await comfyPage.page.evaluate(() => {
-          return window.app!.canvas.graph!.nodes[0].widgets?.length || 0
+          return (
+            window.app!.canvas.graph!.getNodeById('11')?.widgets?.length || 0
+          )
         })
         expect(finalWidgetCount).toBeLessThan(initialWidgetCount)
       })

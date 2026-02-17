@@ -119,7 +119,7 @@
           />
           <NodeContent
             v-for="preview in promotedPreviews"
-            :key="preview.interiorNodeId"
+            :key="`${preview.interiorNodeId}-${preview.widgetName}`"
             :node-data="nodeData"
             :media="preview"
           />

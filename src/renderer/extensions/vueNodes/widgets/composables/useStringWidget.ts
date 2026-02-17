@@ -18,6 +18,7 @@ function addMultilineWidget(
   const widgetStore = useWidgetValueStore()
   const inputEl = document.createElement('textarea')
   inputEl.className = 'comfy-multiline-input'
+  inputEl.dataset.testid = 'dom-widget-textarea'
   inputEl.value = opts.defaultVal
   inputEl.placeholder = opts.placeholder || name
   inputEl.spellcheck = useSettingStore().get('Comfy.TextareaWidget.Spellcheck')

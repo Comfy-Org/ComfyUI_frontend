@@ -14,9 +14,14 @@ import { createNodeLocatorId } from '@/types/nodeIdentification'
 
 import { usePromotedPreviews } from './usePromotedPreviews'
 
+const { nodeOutputs, getNodeImageUrls } = vi.hoisted(() => {
+  return {
+    nodeOutputs: reactive<Record<string, unknown>>({}),
+    getNodeImageUrls: vi.fn()
+  }
+})
+
 vi.mock('@/stores/imagePreviewStore', () => {
-  const nodeOutputs = reactive<Record<string, unknown>>({})
-  const getNodeImageUrls = vi.fn()
   return {
     useNodeOutputStore: () => ({
       nodeOutputs,

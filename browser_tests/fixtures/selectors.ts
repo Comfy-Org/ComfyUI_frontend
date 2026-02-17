@@ -46,7 +46,11 @@ export const TestIds = {
   widgets: {
     decrement: 'decrement',
     increment: 'increment',
+    domWidgetTextarea: 'dom-widget-textarea',
     subgraphEnterButton: 'subgraph-enter-button'
+  },
+  breadcrumb: {
+    subgraph: 'subgraph-breadcrumb'
   },
   templates: {
     content: 'template-workflows-content',
@@ -70,6 +74,7 @@ export type TestIdValue =
   | (typeof TestIds.propertiesPanel)[keyof typeof TestIds.propertiesPanel]
   | (typeof TestIds.node)[keyof typeof TestIds.node]
   | (typeof TestIds.widgets)[keyof typeof TestIds.widgets]
+  | (typeof TestIds.breadcrumb)[keyof typeof TestIds.breadcrumb]
   | Exclude<
       (typeof TestIds.templates)[keyof typeof TestIds.templates],
       (id: string) => string

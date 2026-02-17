@@ -17,8 +17,11 @@ const ACCEPTED_VIDEO_TYPES = 'video/webm,video/mp4'
 const isImageFile = (file: File) => file.type.startsWith('image/')
 const isVideoFile = (file: File) => file.type.startsWith('video/')
 
-const findFileComboWidget = (node: LGraphNode, inputName: string) =>
-  node.widgets!.find((w) => w.name === inputName) as IComboWidget
+const findFileComboWidget = (
+  node: LGraphNode,
+  inputName: string
+): IComboWidget | undefined =>
+  node.widgets?.find((w): w is IComboWidget => w.name === inputName)
 
 export const useImageUploadWidget = () => {
   const widgetConstructor: ComfyWidgetConstructor = (
@@ -44,6 +47,9 @@ export const useImageUploadWidget = () => {
 
     const fileFilter = isVideo ? isVideoFile : isImageFile
     const fileComboWidget = findFileComboWidget(node, imageInputName)
+    if (!fileComboWidget) {
+      throw new Error(`Widget "${imageInputName}" not found on node`)
+    }
     const formatPath = (value: string) =>
       createAnnotatedPath(value, { rootFolder: image_folder })
 
@@ -55,7 +61,9 @@ export const useImageUploadWidget = () => {
       folder,
       onUploadComplete: (output) => {
         const annotated = output.map(formatPath)
-        annotated.forEach((path) => addToComboValues(fileComboWidget, path))
+        annotated.forEach((path) => {
+          addToComboValues(fileComboWidget, path)
+        })
 
         const newValue = allow_batch ? annotated : annotated[0]
 

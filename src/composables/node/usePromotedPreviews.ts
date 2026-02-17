@@ -9,6 +9,7 @@ import { createNodeLocatorId } from '@/types/nodeIdentification'
 
 interface PromotedPreview {
   interiorNodeId: string
+  widgetName: string
   type: 'image' | 'video' | 'audio'
   urls: string[]
 }
@@ -59,7 +60,12 @@ export function usePromotedPreviews(
             ? 'audio'
             : 'image'
 
-      previews.push({ interiorNodeId: entry.interiorNodeId, type, urls })
+      previews.push({
+        interiorNodeId: entry.interiorNodeId,
+        widgetName: entry.widgetName,
+        type,
+        urls
+      })
     }
 
     return previews
