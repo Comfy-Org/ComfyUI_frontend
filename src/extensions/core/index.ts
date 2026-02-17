@@ -33,7 +33,6 @@ import './widgetInputs'
 
 // Cloud-only extensions - tree-shaken in OSS builds
 if (isCloud) {
-  await import('@/platform/workflow/sharing/shareWorkflowTopbarButton')
   await import('./cloudRemoteConfig')
   await import('./cloudBadges')
   await import('./cloudSessionCookie')
