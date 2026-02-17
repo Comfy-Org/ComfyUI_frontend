@@ -52,7 +52,7 @@ onBeforeUnmount(() => {
 <template>
   <div ref="draggableItems" class="pb-2 px-2 space-y-0.5 mt-0.5">
     <slot
-      class="draggable-item drag-handle cursor-grab [&.is-draggable]:cursor-grabbing"
+      drag-class="draggable-item drag-handle cursor-grab [&.is-draggable]:cursor-grabbing"
     />
   </div>
 </template>
