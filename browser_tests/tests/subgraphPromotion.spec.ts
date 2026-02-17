@@ -1,6 +1,7 @@
 import { expect } from '@playwright/test'
 
 import { comfyPageFixture as test } from '../fixtures/ComfyPage'
+import { fitToViewInstant } from '../helpers/fitToView'
 
 const SELECTORS = {
   domWidget: '.comfy-multiline-input',
@@ -63,6 +64,7 @@ test.describe(
 
         // Select just the KSampler node (id 3) which has a "seed" widget
         const ksampler = await comfyPage.nodeOps.getNodeRefById('3')
+        await ksampler.click('title')
         const subgraphNode = await ksampler.convertToSubgraph()
         await comfyPage.nextFrame()
 
@@ -87,6 +89,7 @@ test.describe(
 
         // Select the positive CLIPTextEncode node (id 6)
         const clipNode = await comfyPage.nodeOps.getNodeRefById('6')
+        await clipNode.click('title')
         const subgraphNode = await clipNode.convertToSubgraph()
         await comfyPage.nextFrame()
 
@@ -103,9 +106,11 @@ test.describe(
         comfyPage
       }) => {
         await comfyPage.workflow.loadWorkflow('default')
+        await fitToViewInstant(comfyPage)
 
         // Select the SaveImage node (id 9 in default workflow)
         const saveNode = await comfyPage.nodeOps.getNodeRefById('9')
+        await saveNode.click('title')
         const subgraphNode = await saveNode.convertToSubgraph()
         await comfyPage.nextFrame()
 
@@ -411,9 +416,11 @@ test.describe(
         comfyPage
       }) => {
         await comfyPage.workflow.loadWorkflow('default')
+        await fitToViewInstant(comfyPage)
 
         // Select SaveImage (id 9)
         const saveNode = await comfyPage.nodeOps.getNodeRefById('9')
+        await saveNode.click('title')
         const subgraphNode = await saveNode.convertToSubgraph()
         await comfyPage.nextFrame()
 
