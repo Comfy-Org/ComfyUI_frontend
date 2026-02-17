@@ -4,12 +4,14 @@
       :header-title="headerTitle"
       :show-concurrent-indicator="showConcurrentIndicator"
       :concurrent-workflow-count="concurrentWorkflowCount"
+      :queued-count="queuedCount"
       @clear-history="$emit('clearHistory')"
+      @clear-queued="$emit('clearQueued')"
     />
 
-    <div class="flex items-center justify-between px-3">
+    <div class="px-3">
       <Button
-        class="grow gap-1 justify-center"
+        class="w-full gap-1 justify-center"
         variant="secondary"
         size="sm"
         @click="$emit('showAssets')"
@@ -17,26 +19,6 @@
         <i class="icon-[comfy--image-ai-edit] size-4" />
         <span>{{ t('sideToolbar.queueProgressOverlay.showAssets') }}</span>
       </Button>
-      <div class="ml-4 inline-flex items-center">
-        <div
-          class="inline-flex h-6 items-center text-[12px] leading-none text-text-primary opacity-90"
-        >
-          <span class="font-bold">{{ queuedCount }}</span>
-          <span class="ml-1">{{
-            t('sideToolbar.queueProgressOverlay.queuedSuffix')
-          }}</span>
-        </div>
-        <Button
-          v-if="queuedCount > 0"
-          class="ml-2"
-          variant="destructive"
-          size="icon"
-          :aria-label="t('sideToolbar.queueProgressOverlay.clearQueued')"
-          @click="$emit('clearQueued')"
-        >
-          <i class="icon-[lucide--list-x] size-4" />
-        </Button>
-      </div>
     </div>
 
     <JobFiltersBar
