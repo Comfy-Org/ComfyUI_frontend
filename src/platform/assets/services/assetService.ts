@@ -39,6 +39,7 @@ interface AssetExportOptions {
     | 'prepend_job_id'
     | 'preserve'
     | 'asset_id'
+  job_asset_name_filters?: Record<string, string[]>
 }
 
 /**

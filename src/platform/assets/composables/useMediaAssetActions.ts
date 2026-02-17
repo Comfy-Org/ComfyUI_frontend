@@ -138,6 +138,7 @@ export function useMediaAssetActions() {
     try {
       const jobIds: string[] = []
       const assetIds: string[] = []
+      const jobAssetNameFilters: Record<string, string[]> = {}
 
       for (const asset of assets) {
         if (getAssetType(asset) === 'output') {
@@ -145,6 +146,14 @@ export function useMediaAssetActions() {
           const promptId = metadata?.promptId || asset.id
           if (!jobIds.includes(promptId)) {
             jobIds.push(promptId)
+          }
+          if (metadata?.promptId && asset.name) {
+            if (!jobAssetNameFilters[metadata.promptId]) {
+              jobAssetNameFilters[metadata.promptId] = []
+            }
+            if (!jobAssetNameFilters[metadata.promptId].includes(asset.name)) {
+              jobAssetNameFilters[metadata.promptId].push(asset.name)
+            }
           }
         } else {
           assetIds.push(asset.id)
@@ -154,6 +163,9 @@ export function useMediaAssetActions() {
       const result = await assetService.createAssetExport({
         ...(jobIds.length > 0 ? { job_ids: jobIds } : {}),
         ...(assetIds.length > 0 ? { asset_ids: assetIds } : {}),
+        ...(Object.keys(jobAssetNameFilters).length > 0
+          ? { job_asset_name_filters: jobAssetNameFilters }
+          : {}),
         naming_strategy: 'preserve'
       })
 
