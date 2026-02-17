@@ -156,18 +156,14 @@ const bottomRowClass = computed(
     }`
 )
 const runningJobsLabel = computed(() =>
-  t(
-    'sideToolbar.queueProgressOverlay.runningJobsLabel',
-    { count: n(runningCount.value) },
-    runningCount.value
-  )
+  t('sideToolbar.queueProgressOverlay.runningJobsLabel', {
+    count: n(runningCount.value)
+  })
 )
 const queuedJobsLabel = computed(() =>
-  t(
-    'sideToolbar.queueProgressOverlay.queuedJobsLabel',
-    { count: n(queuedCount.value) },
-    queuedCount.value
-  )
+  t('sideToolbar.queueProgressOverlay.queuedJobsLabel', {
+    count: n(queuedCount.value)
+  })
 )
 const headerTitle = computed(() =>
   hasActiveJob.value

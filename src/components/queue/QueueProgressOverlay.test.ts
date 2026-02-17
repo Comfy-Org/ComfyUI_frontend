@@ -42,9 +42,9 @@ const i18n = createI18n({
       },
       sideToolbar: {
         queueProgressOverlay: {
-          runningJobsLabel: '{count} running job | {count} running jobs',
-          queuedJobsLabel: '{count} queued job | {count} queued jobs',
-          runningQueuedSummary: '{running} / {queued}',
+          runningJobsLabel: '{count} running',
+          queuedJobsLabel: '{count} queued',
+          runningQueuedSummary: '{running}, {queued}',
           jobQueue: 'Job queue'
         }
       }
@@ -92,7 +92,7 @@ const mountComponent = (
 }
 
 describe('QueueProgressOverlay', () => {
-  it('shows expanded header with pluralized running and queued labels', () => {
+  it('shows expanded header with running and queued labels', () => {
     const wrapper = mountComponent(
       [
         createTask('running-1', 'in_progress'),
@@ -102,7 +102,7 @@ describe('QueueProgressOverlay', () => {
     )
 
     expect(wrapper.get('[data-testid="expanded-title"]').text()).toBe(
-      '2 running jobs / 1 queued job'
+      '2 running, 1 queued'
     )
   })
 
