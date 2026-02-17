@@ -1,0 +1,164 @@
+import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+
+import { useWorkflowShareService } from '@/platform/workflow/sharing/services/workflowShareService'
+
+const mockRootGraph = vi.hoisted(() => ({
+  nodes: [] as Partial<LGraphNode>[]
+}))
+
+vi.mock('@/scripts/app', () => ({
+  app: {
+    get rootGraph() {
+      return mockRootGraph
+    }
+  }
+}))
+
+vi.mock('@/stores/modelToNodeStore', () => ({
+  useModelToNodeStore: () => ({
+    getRegisteredNodeTypes: () => ({
+      CheckpointLoaderSimple: 'ckpt_name',
+      LoraLoader: 'lora_name'
+    })
+  })
+}))
+
+function createMockNode(
+  type: string,
+  widgets: { name: string; value: unknown }[] = []
+): Partial<LGraphNode> {
+  return {
+    type,
+    widgets: widgets as LGraphNode['widgets'],
+    isSubgraphNode: () => false
+  } as Partial<LGraphNode>
+}
+
+describe('useWorkflowShareService', () => {
+  beforeEach(() => {
+    vi.restoreAllMocks()
+    mockRootGraph.nodes = []
+  })
+
+  it('returns unpublished status for unknown workflow', () => {
+    const service = useWorkflowShareService()
+    const status = service.getPublishStatus('unknown-id')
+
+    expect(status.isPublished).toBe(false)
+    expect(status.shareUrl).toBeNull()
+    expect(status.publishedAt).toBeNull()
+    expect(status.hasChangesSincePublish).toBe(false)
+  })
+
+  it('publishes a workflow and returns a share URL', async () => {
+    vi.useFakeTimers()
+    const service = useWorkflowShareService()
+
+    const publishPromise = service.publishWorkflow('test-workflow')
+    await vi.advanceTimersByTimeAsync(800)
+    const result = await publishPromise
+
+    expect(result.shareUrl).toContain('test-workflow')
+    expect(result.publishedAt).toBeInstanceOf(Date)
+
+    vi.useRealTimers()
+  })
+
+  it('reports published status after publishing', async () => {
+    vi.useFakeTimers()
+    const service = useWorkflowShareService()
+
+    const publishPromise = service.publishWorkflow('wf-1')
+    await vi.advanceTimersByTimeAsync(800)
+    await publishPromise
+
+    const status = service.getPublishStatus('wf-1')
+    expect(status.isPublished).toBe(true)
+    expect(status.shareUrl).toBeTruthy()
+    expect(status.publishedAt).toBeInstanceOf(Date)
+    expect(status.hasChangesSincePublish).toBe(false)
+
+    vi.useRealTimers()
+  })
+
+  it('detects changes after publish', async () => {
+    vi.useFakeTimers()
+    const service = useWorkflowShareService()
+
+    const publishPromise = service.publishWorkflow('wf-2')
+    await vi.advanceTimersByTimeAsync(800)
+    await publishPromise
+
+    service.markWorkflowChanged('wf-2')
+    const status = service.getPublishStatus('wf-2')
+
+    expect(status.hasChangesSincePublish).toBe(true)
+
+    vi.useRealTimers()
+  })
+
+  it('returns empty assets when graph has no asset nodes', () => {
+    mockRootGraph.nodes = [
+      createMockNode('KSampler', [{ name: 'seed', value: 42 }])
+    ] as LGraphNode[]
+
+    const service = useWorkflowShareService()
+    expect(service.getWorkflowAssets()).toEqual([])
+  })
+
+  it('extracts assets from LoadImage nodes', () => {
+    mockRootGraph.nodes = [
+      createMockNode('LoadImage', [{ name: 'image', value: 'photo.png' }]),
+      createMockNode('LoadAudio', [{ name: 'audio', value: 'clip.wav' }])
+    ] as LGraphNode[]
+
+    const service = useWorkflowShareService()
+    const assets = service.getWorkflowAssets()
+
+    expect(assets).toEqual([
+      { name: 'photo.png', thumbnailUrl: null },
+      { name: 'clip.wav', thumbnailUrl: null }
+    ])
+  })
+
+  it('skips asset nodes with empty widget values', () => {
+    mockRootGraph.nodes = [
+      createMockNode('LoadImage', [{ name: 'image', value: '' }]),
+      createMockNode('LoadImage', [{ name: 'image', value: 'real.png' }])
+    ] as LGraphNode[]
+
+    const service = useWorkflowShareService()
+    expect(service.getWorkflowAssets()).toEqual([
+      { name: 'real.png', thumbnailUrl: null }
+    ])
+  })
+
+  it('returns empty models when graph has no model loaders', () => {
+    mockRootGraph.nodes = [
+      createMockNode('LoadImage', [{ name: 'image', value: 'photo.png' }])
+    ] as LGraphNode[]
+
+    const service = useWorkflowShareService()
+    expect(service.getWorkflowModels()).toEqual([])
+  })
+
+  it('extracts models from registered loader nodes', () => {
+    mockRootGraph.nodes = [
+      createMockNode('CheckpointLoaderSimple', [
+        { name: 'ckpt_name', value: 'v1-5-pruned.safetensors' }
+      ]),
+      createMockNode('LoraLoader', [
+        { name: 'lora_name', value: 'detail_tweaker.safetensors' }
+      ])
+    ] as LGraphNode[]
+
+    const service = useWorkflowShareService()
+    const models = service.getWorkflowModels()
+
+    expect(models).toEqual([
+      { name: 'v1-5-pruned.safetensors' },
+      { name: 'detail_tweaker.safetensors' }
+    ])
+  })
+})
