@@ -462,6 +462,8 @@ export const useExecutionStore = defineStore('execution', () => {
       }
     } else if (typeof error === 'string') {
       lastPromptError.value = { type: 'error', message: error, details: '' }
+    } else {
+      return false
     }
 
     clearInitializationByPromptId(detail.prompt_id)
