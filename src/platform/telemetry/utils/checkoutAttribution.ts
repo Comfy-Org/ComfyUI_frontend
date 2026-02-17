@@ -9,6 +9,13 @@ type GaIdentity = {
   session_number?: string
 }
 
+const GA_IDENTITY_FIELDS = [
+  'client_id',
+  'session_id',
+  'session_number'
+] as const satisfies ReadonlyArray<GtagGetFieldName>
+type GaIdentityField = GtagGetFieldName
+
 const ATTRIBUTION_QUERY_KEYS = [
   'im_ref',
   'utm_source',
@@ -23,6 +30,7 @@ const ATTRIBUTION_QUERY_KEYS = [
 type AttributionQueryKey = (typeof ATTRIBUTION_QUERY_KEYS)[number]
 const ATTRIBUTION_STORAGE_KEY = 'comfy_checkout_attribution'
 const GENERATE_CLICK_ID_TIMEOUT_MS = 300
+const GET_GA_IDENTITY_TIMEOUT_MS = 300
 
 function readStoredAttribution(): Partial<Record<AttributionQueryKey, string>> {
   if (typeof window === 'undefined') return {}
@@ -93,19 +101,53 @@ function hasAttributionChanges(
 }
 
 function asNonEmptyString(value: unknown): string | undefined {
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return String(value)
+  }
+
   return typeof value === 'string' && value.length > 0 ? value : undefined
 }
 
-function getGaIdentity(): GaIdentity | undefined {
-  if (typeof window === 'undefined') return undefined
+async function getGaIdentityField(
+  measurementId: string,
+  fieldName: GaIdentityField
+): Promise<string | undefined> {
+  if (typeof window === 'undefined' || typeof window.gtag !== 'function') {
+    return undefined
+  }
+  const gtag = window.gtag
 
-  const identity = window.__ga_identity__
-  if (!isPlainObject(identity)) return undefined
+  return withTimeout(
+    () =>
+      new Promise<string | undefined>((resolve) => {
+        gtag('get', measurementId, fieldName, (value) => {
+          resolve(asNonEmptyString(value))
+        })
+      }),
+    GET_GA_IDENTITY_TIMEOUT_MS
+  ).catch(() => undefined)
+}
+
+async function getGaIdentity(): Promise<GaIdentity | undefined> {
+  const measurementId = asNonEmptyString(window.__CONFIG__?.ga_measurement_id)
+  if (!measurementId) {
+    return undefined
+  }
+
+  const [clientId, sessionId, sessionNumber] = await Promise.all(
+    GA_IDENTITY_FIELDS.map((fieldName) =>
+      getGaIdentityField(measurementId, fieldName)
+    )
+  )
+
+  if (!clientId && !sessionId && !sessionNumber) {
+    return undefined
+  }
 
   return {
-    client_id: asNonEmptyString(identity.client_id),
-    session_id: asNonEmptyString(identity.session_id),
-    session_number: asNonEmptyString(identity.session_number)
+    client_id: clientId,
+    session_id: sessionId,
+    session_number: sessionNumber
   }
 }
 
@@ -170,7 +212,7 @@ export async function getCheckoutAttribution(): Promise<CheckoutAttributionMetad
     persistAttribution(attribution)
   }
 
-  const gaIdentity = getGaIdentity()
+  const gaIdentity = await getGaIdentity()
 
   return {
     ...attribution,
