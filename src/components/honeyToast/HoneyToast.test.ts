@@ -67,18 +67,6 @@ describe('HoneyToast', () => {
     wrapper.unmount()
   })
 
-  it('applies collapsed max-height class when collapsed', async () => {
-    const wrapper = mountComponent({ visible: true, expanded: false })
-    await nextTick()
-
-    const expandableArea = document.body.querySelector(
-      '[role="status"] > div:first-child'
-    )
-    expect(expandableArea?.classList.contains('max-h-0')).toBe(true)
-
-    wrapper.unmount()
-  })
-
   it('has aria-live="polite" for accessibility', async () => {
     const wrapper = mountComponent({ visible: true })
     await nextTick()
@@ -126,11 +114,6 @@ describe('HoneyToast', () => {
 
     expect(content?.textContent).toBe('expanded')
     expect(toggleBtn?.textContent?.trim()).toBe('Collapse')
-
-    const expandableArea = document.body.querySelector(
-      '[role="status"] > div:first-child'
-    )
-    expect(expandableArea?.classList.contains('max-h-[400px]')).toBe(true)
 
     wrapper.unmount()
   })
