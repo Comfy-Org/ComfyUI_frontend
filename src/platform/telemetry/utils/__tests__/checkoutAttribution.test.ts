@@ -9,17 +9,37 @@ describe('getCheckoutAttribution', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     window.localStorage.clear()
-    window.__ga_identity__ = undefined
+    window.__CONFIG__ = {
+      ...window.__CONFIG__,
+      ga_measurement_id: undefined
+    }
+    window.gtag = undefined
     window.ire = undefined
     window.history.pushState({}, '', '/')
   })
 
   it('reads GA identity and URL attribution, and prefers generated click id', async () => {
-    window.__ga_identity__ = {
-      client_id: '123.456',
-      session_id: '1700000000',
-      session_number: '2'
+    window.__CONFIG__ = {
+      ...window.__CONFIG__,
+      ga_measurement_id: 'G-TEST123'
     }
+    const gtagSpy = vi.fn(
+      (
+        _command: 'get',
+        _targetId: string,
+        fieldName: GtagGetFieldName,
+        callback: (value: GtagGetFieldValueMap[GtagGetFieldName]) => void
+      ) => {
+        const valueByField = {
+          client_id: '123.456',
+          session_id: '1700000000',
+          session_number: '2'
+        }
+        callback(valueByField[fieldName])
+      }
+    )
+    window.gtag = gtagSpy as unknown as Window['gtag']
+
     window.history.pushState(
       {},
       '',
@@ -46,6 +66,61 @@ describe('getCheckoutAttribution', () => {
     })
     expect(mockIreCall).toHaveBeenCalledWith(
       'generateClickId',
+      expect.any(Function)
+    )
+    expect(gtagSpy).toHaveBeenCalledWith(
+      'get',
+      'G-TEST123',
+      'client_id',
+      expect.any(Function)
+    )
+    expect(gtagSpy).toHaveBeenCalledWith(
+      'get',
+      'G-TEST123',
+      'session_id',
+      expect.any(Function)
+    )
+    expect(gtagSpy).toHaveBeenCalledWith(
+      'get',
+      'G-TEST123',
+      'session_number',
+      expect.any(Function)
+    )
+  })
+
+  it('stringifies numeric GA values from gtag', async () => {
+    window.__CONFIG__ = {
+      ...window.__CONFIG__,
+      ga_measurement_id: 'G-TEST123'
+    }
+    const gtagSpy = vi.fn(
+      (
+        _command: 'get',
+        _targetId: string,
+        fieldName: GtagGetFieldName,
+        callback: (value: GtagGetFieldValueMap[GtagGetFieldName]) => void
+      ) => {
+        const valueByField = {
+          client_id: '123.456',
+          session_id: 1700000000,
+          session_number: 2
+        }
+        callback(valueByField[fieldName])
+      }
+    )
+    window.gtag = gtagSpy as unknown as Window['gtag']
+
+    const attribution = await getCheckoutAttribution()
+
+    expect(attribution).toMatchObject({
+      ga_client_id: '123.456',
+      ga_session_id: '1700000000',
+      ga_session_number: '2'
+    })
+    expect(gtagSpy).toHaveBeenCalledWith(
+      'get',
+      'G-TEST123',
+      'session_number',
       expect.any(Function)
     )
   })
