@@ -3,6 +3,7 @@ import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type {
   INodeInputSlot,
   INodeOutputSlot,
+  ISerialisedNode,
   ISlotType,
   LLink
 } from '@/lib/litegraph/src/litegraph'
@@ -28,6 +29,12 @@ import { CONFIG, GET_CONFIG } from '@/services/litegraphService'
 import { mergeInputSpec } from '@/utils/nodeDefUtil'
 import { applyTextReplacements } from '@/utils/searchAndReplace'
 
+import {
+  getControlAfterGenerateWidget,
+  isPrimitiveControlAfterGenerateValue,
+  primitiveControlAfterGeneratePropertyKey
+} from './primitiveControlValue'
+
 const replacePropertyName = 'Run widget replace on values'
 export class PrimitiveNode extends LGraphNode {
   controlValues?: TWidgetValue[]
@@ -42,6 +49,17 @@ export class PrimitiveNode extends LGraphNode {
     if (!this.properties || !(replacePropertyName in this.properties)) {
       this.addProperty(replacePropertyName, false, 'boolean')
     }
+  }
+
+  override onSerialize(serializedNode: ISerialisedNode) {
+    const controlWidget = getControlAfterGenerateWidget(this.widgets)
+    if (!controlWidget) return
+
+    const value = controlWidget.value
+    if (!isPrimitiveControlAfterGenerateValue(value)) return
+
+    serializedNode.properties ??= {}
+    serializedNode.properties[primitiveControlAfterGeneratePropertyKey] = value
   }
 
   override applyToGraph(extraLinks: LLink[] = []) {
@@ -268,7 +286,9 @@ export class PrimitiveNode extends LGraphNode {
       !inputData?.[1]?.control_after_generate &&
       (widget.type === 'number' || widget.type === 'combo')
     ) {
-      let control_value = this.widgets_values?.[1]
+      let control_value =
+        this.properties?.[primitiveControlAfterGeneratePropertyKey] ??
+        this.widgets_values?.[1]
       if (!control_value) {
         control_value = 'fixed'
       }
