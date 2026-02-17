@@ -323,6 +323,7 @@ export const useExecutionStore = defineStore('execution', () => {
   function handleExecutionStart(e: CustomEvent<ExecutionStartWsMessage>) {
     lastExecutionError.value = null
     lastPromptError.value = null
+    isErrorOverlayOpen.value = false
     activePromptId.value = e.detail.prompt_id
     queuedPrompts.value[activePromptId.value] ??= { nodes: {} }
     clearInitializationByPromptId(activePromptId.value)
