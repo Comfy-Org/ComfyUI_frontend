@@ -3,7 +3,7 @@ import type { NodeReplacement, NodeReplacementResponse } from './types'
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 
-import { api } from '@/scripts/api'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { fetchNodeReplacements } from './nodeReplacementService'
 
@@ -15,9 +15,11 @@ export const useNodeReplacementStore = defineStore('nodeReplacement', () => {
     settingStore.get('Comfy.NodeReplacement.Enabled')
   )
 
+  const { flags } = useFeatureFlags()
+
   async function load() {
     if (!isEnabled.value || isLoaded.value) return
-    if (!api.serverSupportsFeature('node_replacements')) return
+    if (!flags.nodeReplacementsEnabled) return
 
     try {
       replacements.value = await fetchNodeReplacements()
