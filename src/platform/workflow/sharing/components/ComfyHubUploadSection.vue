@@ -1,12 +1,12 @@
 <template>
-  <div class="border-t border-border-default px-6 py-4">
+  <div class="border-t border-border-default p-4">
     <h3 class="m-0 text-sm font-medium text-base-foreground">
       {{ $t('shareWorkflow.comfyHubTitle') }}
     </h3>
     <p class="mt-1 text-xs text-muted-foreground">
       {{ $t('shareWorkflow.comfyHubDescription') }}
     </p>
-    <Button variant="secondary" size="md" class="mt-3" @click="openComfyHub">
+    <Button variant="inverted" size="lg" class="w-full" @click="openComfyHub">
       {{ $t('shareWorkflow.comfyHubButton') }}
     </Button>
   </div>

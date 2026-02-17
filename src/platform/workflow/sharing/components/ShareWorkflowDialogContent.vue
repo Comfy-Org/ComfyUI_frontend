@@ -4,7 +4,7 @@
   >
     <!-- Header -->
     <div
-      class="flex h-12 items-center justify-between border-b border-border-default px-6"
+      class="flex h-12 items-center justify-between border-b border-border-default px-4"
     >
       <h2 class="m-0 text-sm font-medium text-base-foreground">
         {{ headerTitle }}
@@ -19,7 +19,17 @@
     </div>
 
     <!-- Body -->
-    <div class="flex flex-col gap-4 px-6 py-4">
+    <div class="flex flex-col gap-4 p-4">
+      <!-- Unsaved state -->
+      <template v-if="dialogState === 'unsaved'">
+        <p class="m-0 text-xs text-muted-foreground">
+          {{ $t('shareWorkflow.unsavedDescription') }}
+        </p>
+        <Button variant="primary" size="lg" @click="handleSave">
+          {{ $t('shareWorkflow.saveButton') }}
+        </Button>
+      </template>
+
       <!-- Unpublished state -->
       <template v-if="dialogState === 'unpublished'">
         <p class="m-0 text-xs text-muted-foreground">
@@ -106,18 +116,21 @@ import type {
   WorkflowModel
 } from '@/platform/workflow/sharing/types/shareTypes'
 import { useWorkflowShareService } from '@/platform/workflow/sharing/services/workflowShareService'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 
-const { onClose, workflowId = 'current-workflow' } = defineProps<{
+const { onClose } = defineProps<{
   onClose: () => void
-  workflowId?: string
 }>()
 
 const { t, locale } = useI18n()
 const shareService = useWorkflowShareService()
+const workflowStore = useWorkflowStore()
+const workflowService = useWorkflowService()
 
-type DialogState = 'unpublished' | 'justPublished' | 'hasChanges'
+type DialogState = 'unsaved' | 'unpublished' | 'justPublished' | 'hasChanges'
 
-const dialogState = ref<DialogState>('unpublished')
+const dialogState = ref<DialogState>('unsaved')
 const shareUrl = ref<string | null>(null)
 const publishedAt = ref<Date | null>(null)
 const isPublishing = ref(false)
@@ -126,6 +139,7 @@ const assets = ref<WorkflowAsset[]>([])
 const models = ref<WorkflowModel[]>([])
 
 const HEADER_TITLES: Record<DialogState, string> = {
+  unsaved: 'shareWorkflow.unsavedTitle',
   unpublished: 'shareWorkflow.publishTitle',
   justPublished: 'shareWorkflow.successTitle',
   hasChanges: 'shareWorkflow.hasChangesTitle'
@@ -142,24 +156,57 @@ const formattedDate = computed(() => {
   })
 })
 
-onMounted(() => {
-  assets.value = shareService.getWorkflowAssets()
-  models.value = shareService.getWorkflowModels()
+function refreshDialogState() {
+  const workflow = workflowStore.activeWorkflow
+  if (!workflow || workflow.isTemporary || workflow.isModified) {
+    dialogState.value = 'unsaved'
+    return
+  }
 
-  const status = shareService.getPublishStatus(workflowId)
+  const status = shareService.getPublishStatus(
+    workflow.path,
+    workflow.lastModified
+  )
   if (status.isPublished) {
     shareUrl.value = status.shareUrl
     publishedAt.value = status.publishedAt
     dialogState.value = status.hasChangesSincePublish
       ? 'hasChanges'
       : 'justPublished'
+  } else {
+    dialogState.value = 'unpublished'
   }
+}
+
+onMounted(() => {
+  assets.value = shareService.getWorkflowAssets()
+  models.value = shareService.getWorkflowModels()
+  refreshDialogState()
 })
 
+async function handleSave() {
+  const workflow = workflowStore.activeWorkflow
+  if (!workflow) return
+
+  if (workflow.isTemporary) {
+    await workflowService.saveWorkflowAs(workflow)
+  } else {
+    await workflowService.saveWorkflow(workflow)
+  }
+
+  refreshDialogState()
+}
+
 async function handlePublish() {
+  const workflow = workflowStore.activeWorkflow
+  if (!workflow) return
+
   isPublishing.value = true
   try {
-    const result = await shareService.publishWorkflow(workflowId)
+    const result = await shareService.publishWorkflow(
+      workflow.path,
+      workflow.lastModified
+    )
     shareUrl.value = result.shareUrl
     publishedAt.value = result.publishedAt
     dialogState.value = 'justPublished'
