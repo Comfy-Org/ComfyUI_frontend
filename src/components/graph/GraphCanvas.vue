@@ -21,7 +21,7 @@
         </div>
       </div>
     </template>
-    <template v-if="showUI" #side-toolbar>
+    <template v-if="showUI && !appModeStore.isBuilderMode" #side-toolbar>
       <SideToolbar />
     </template>
     <template v-if="showUI" #side-bar-panel>
@@ -31,19 +31,27 @@
         <ExtensionSlot v-if="activeSidebarTab" :extension="activeSidebarTab" />
       </div>
     </template>
-    <template v-if="showUI" #topmenu>
+    <template v-if="showUI && !appModeStore.isBuilderMode" #topmenu>
       <TopMenuSection />
     </template>
     <template v-if="showUI" #bottom-panel>
       <BottomPanel />
     </template>
     <template v-if="showUI" #right-side-panel>
-      <NodePropertiesPanel />
+      <NodePropertiesPanel v-if="!appModeStore.isBuilderMode" />
     </template>
     <template #graph-canvas-panel>
-      <GraphCanvasMenu v-if="canvasMenuEnabled" class="pointer-events-auto" />
+      <GraphCanvasMenu
+        v-if="canvasMenuEnabled && !appModeStore.isBuilderMode"
+        class="pointer-events-auto"
+      />
       <MiniMap
-        v-if="comfyAppReady && minimapEnabled && betaMenuEnabled"
+        v-if="
+          comfyAppReady &&
+          minimapEnabled &&
+          betaMenuEnabled &&
+          !appModeStore.isBuilderMode
+        "
         class="pointer-events-auto"
       />
     </template>
@@ -173,6 +181,7 @@ import { useExecutionStore } from '@/stores/executionStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import { useSearchBoxStore } from '@/stores/workspace/searchBoxStore'
+import { useAppModeStore } from '@/stores/appModeStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { isNativeWindow } from '@/utils/envUtil'
 import { forEachNode } from '@/utils/graphTraversalUtil'
@@ -193,6 +202,7 @@ const nodeSearchboxPopoverRef = shallowRef<InstanceType<
 const settingStore = useSettingStore()
 const nodeDefStore = useNodeDefStore()
 const workspaceStore = useWorkspaceStore()
+const appModeStore = useAppModeStore()
 const canvasStore = useCanvasStore()
 const workflowStore = useWorkflowStore()
 const executionStore = useExecutionStore()
