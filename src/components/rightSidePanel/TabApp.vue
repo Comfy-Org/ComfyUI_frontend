@@ -6,6 +6,7 @@ import { useI18n } from 'vue-i18n'
 
 import DraggableList from '@/components/common/DraggableList.vue'
 import type { LGraphNode, NodeId } from '@/lib/litegraph/src/LGraphNode'
+import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
@@ -19,16 +20,15 @@ const canvasStore = useCanvasStore()
 const hoveredStore = useHoveredStore()
 const settingStore = useSettingStore()
 const { t } = useI18n()
-const canvas = canvasStore.getCanvas()
+const canvas: LGraphCanvas = canvasStore.getCanvas()
 
 type BoundStyle = { top: string; left: string; width: string; height: string }
 const selectedInputs = reactive<[NodeId, MaybeRef<BoundStyle>][]>([])
 const selectedOutputs = reactive<[NodeId, string][]>([])
 
-function getHovered():
-  | undefined
-  | [LGraphNode, undefined]
-  | [LGraphNode, IBaseWidget] {
+function getHovered(
+  e?: MouseEvent
+): undefined | [LGraphNode, undefined] | [LGraphNode, IBaseWidget] {
   const { graph } = canvas
   if (!canvas || !graph) return
 
@@ -41,11 +41,13 @@ function getHovered():
     )
     return [node, widget]
   }
-  const [x, y] = canvas.graph_mouse
-  const node = graph.getNodeOnPos(x, y)
+  if (!e) return
+
+  canvas.adjustMouseEvent(e)
+  const node = graph.getNodeOnPos(e.canvasX, e.canvasY)
   if (!node) return
 
-  return [node, node.getWidgetOnPos(x, y, false)]
+  return [node, node.getWidgetOnPos(e.canvasX, e.canvasY, false)]
 }
 
 function elementPosition(e: HTMLElement) {
@@ -66,14 +68,33 @@ function getBounding(nodeId: NodeId, widgetName?: string) {
     )
     return element instanceof HTMLElement ? elementPosition(element) : undefined
   }
+  const node = canvas.graph?.getNodeById(nodeId)
+  if (!node) return
+
+  if (!widgetName)
+    return {
+      width: `${node.size[0]}px`,
+      height: `${node.size[1] + 30}px`,
+      left: `${node.pos[0]}px`,
+      top: `${node.pos[1] - 30}px`
+    }
+  const widget = node.widgets?.find((w) => w.name === widgetName)
+  if (!widget) return
+
+  return {
+    width: `${node.size[0] - 30}px`,
+    height: `${(widget.computedHeight ?? 24) - 4}px`,
+    left: `${node.pos[0] + 15}px`,
+    top: `${node.pos[1] + widget.y}px`
+  }
 }
 
 function handleDown(e: MouseEvent) {
-  const [node] = getHovered() ?? []
+  const [node] = getHovered(e) ?? []
   if (!node || e.button > 0) canvasInteractions.forwardEventToCanvas(e)
 }
 function handleClick(e: MouseEvent) {
-  const [node, widget] = getHovered() ?? []
+  const [node, widget] = getHovered(e) ?? []
   if (!node) return canvasInteractions.forwardEventToCanvas(e)
 
   if (!widget) {
