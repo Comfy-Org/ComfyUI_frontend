@@ -26,12 +26,7 @@ function toggle() {
         v-if="visible"
         role="status"
         aria-live="polite"
-        :class="
-          cn(
-            'fixed inset-x-0 bottom-6 z-9999 mx-auto max-w-3xl overflow-hidden rounded-lg border border-border-default bg-base-background shadow-lg min-w-0 w-min transition-all duration-300'
-            // isExpanded && 'w-4/5'
-          )
-        "
+        class="fixed inset-x-0 bottom-6 z-9999 mx-auto max-w-3xl overflow-hidden rounded-lg border border-border-default bg-base-background shadow-lg min-w-0 w-min transition-all duration-300"
       >
         <div
           :class="
