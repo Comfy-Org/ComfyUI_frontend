@@ -14,12 +14,8 @@ import { createNodeLocatorId } from '@/types/nodeIdentification'
 
 import { usePromotedPreviews } from './usePromotedPreviews'
 
-const { nodeOutputs, getNodeImageUrls } = vi.hoisted(() => {
-  return {
-    nodeOutputs: reactive<Record<string, unknown>>({}),
-    getNodeImageUrls: vi.fn()
-  }
-})
+const getNodeImageUrls = vi.fn()
+const nodeOutputs = reactive<Record<string, unknown>>({})
 
 vi.mock('@/stores/imagePreviewStore', () => {
   return {
@@ -108,7 +104,12 @@ describe('usePromotedPreviews', () => {
 
     const { promotedPreviews } = usePromotedPreviews(() => setup.subgraphNode)
     expect(promotedPreviews.value).toEqual([
-      { interiorNodeId: '10', type: 'image', urls: mockUrls }
+      {
+        interiorNodeId: '10',
+        widgetName: '$$canvas-image-preview',
+        type: 'image',
+        urls: mockUrls
+      }
     ])
   })
 
