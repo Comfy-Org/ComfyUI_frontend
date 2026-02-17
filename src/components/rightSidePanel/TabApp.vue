@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { useEventListener } from '@vueuse/core'
 import { computed, reactive, ref, toValue } from 'vue'
 import type { MaybeRef } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -10,9 +9,11 @@ import type { LGraphNode, NodeId } from '@/lib/litegraph/src/LGraphNode'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
 import { useHoveredStore } from '@/stores/hoveredStore'
 import { cn } from '@/utils/tailwindUtil'
 
+const canvasInteractions = useCanvasInteractions()
 const canvasStore = useCanvasStore()
 const hoveredStore = useHoveredStore()
 const settingStore = useSettingStore()
@@ -26,10 +27,6 @@ function hoveredKey() {
   return `Hovered: ${hoveredStore.hoveredNodeId}-${hoveredStore.hoveredWidgetName}`
 }
 
-const eventTarget = [
-  document.getElementById('graph-canvas')!,
-  document.querySelector('[data-testid="transform-pane"]')!
-]
 function getHovered():
   | undefined
   | [LGraphNode, undefined]
@@ -84,52 +81,27 @@ function getBounding(nodeId: NodeId, widgetName?: string) {
   }
 }
 
-useEventListener(
-  eventTarget,
-  'pointerdown',
-  (e) => {
-    e.preventDefault()
-    e.stopPropagation()
-  },
-  { capture: true }
-)
-useEventListener(
-  eventTarget,
-  'pointerup',
-  (e) => {
-    e.preventDefault()
-    e.stopPropagation()
-  },
-  { capture: true }
-)
-useEventListener(
-  eventTarget,
-  'click',
-  (e) => {
-    e.preventDefault()
-    e.stopPropagation()
+function handleDown(e: PointerEvent) {
+  const [node, widget] = getHovered() ?? []
+  if (!node) return canvasInteractions.forwardEventToCanvas(e)
 
-    const [node, widget] = getHovered() ?? []
-    if (!node) return
+  if (!widget) {
+    const key = `${node.id}: ${node.title}`
+    if (!node.constructor.nodeData?.output_node)
+      return canvasInteractions.forwardEventToCanvas(e)
+    const bounding = getBounding(node.id)
+    const keyIndex = selectedOutputs.findIndex(([k]) => k === key)
+    if (keyIndex === -1 && bounding) selectedOutputs.push([key, bounding])
+    else selectedOutputs.splice(keyIndex, 1)
+    return
+  }
 
-    if (!widget) {
-      const key = `${node.id}: ${node.title}`
-      if (!node.constructor.nodeData?.output_node) return
-      const bounding = getBounding(node.id)
-      const keyIndex = selectedOutputs.findIndex(([k]) => k === key)
-      if (keyIndex === -1 && bounding) selectedOutputs.push([key, bounding])
-      else selectedOutputs.splice(keyIndex, 1)
-      return
-    }
-
-    const key = `${node.id}: ${widget.name}`
-    const bounding = getBounding(node.id, widget.name)
-    const keyIndex = selectedInputs.findIndex(([k]) => k === key)
-    if (keyIndex === -1 && bounding) selectedInputs.push([key, bounding])
-    else selectedInputs.splice(keyIndex, 1)
-  },
-  { capture: true }
-)
+  const key = `${node.id}: ${widget.name}`
+  const bounding = getBounding(node.id, widget.name)
+  const keyIndex = selectedInputs.findIndex(([k]) => k === key)
+  if (keyIndex === -1 && bounding) selectedInputs.push([key, bounding])
+  else selectedInputs.splice(keyIndex, 1)
+}
 </script>
 <template>
   <div class="m-4">
@@ -159,7 +131,12 @@ useEventListener(
   </DraggableList>
 
   <Teleport to="body">
-    <div class="absolute w-full h-full pointer-events-none">
+    <div
+      class="absolute w-full h-full"
+      @pointerdown="handleDown"
+      @pointerup="canvasInteractions.forwardEventToCanvas"
+      @pointermove="canvasInteractions.forwardEventToCanvas"
+    >
       <div
         v-for="[key, style] in selectedInputs"
         :key
