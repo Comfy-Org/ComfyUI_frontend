@@ -724,6 +724,23 @@ export const useExecutionStore = defineStore('execution', () => {
     () => hasExecutionError.value || hasPromptError.value || hasNodeError.value
   )
 
+  /** Total count of all individual errors */
+  const totalErrorCount = computed(() => {
+    let count = 0
+    if (lastPromptError.value) {
+      count += 1
+    }
+    if (lastNodeErrors.value) {
+      for (const nodeError of Object.values(lastNodeErrors.value)) {
+        count += nodeError.errors.length
+      }
+    }
+    if (lastExecutionError.value) {
+      count += 1
+    }
+    return count
+  })
+
   /** Pre-computed Set of graph node IDs (as strings) that have errors in the current graph scope. */
   const errorNodeIds = computed<Set<string>>(() => {
     const ids = new Set<string>()
@@ -772,6 +789,7 @@ export const useExecutionStore = defineStore('execution', () => {
     lastExecutionError,
     lastPromptError,
     hasAnyError,
+    totalErrorCount,
     lastExecutionErrorNodeId,
     executingNodeId,
     executingNodeIds,

@@ -64,6 +64,7 @@ import Button from '@/components/ui/button/Button.vue'
 import type { NodeError } from '@/schemas/apiSchema'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { cn } from '@/utils/tailwindUtil'
 
 interface ErrorEntry {
@@ -73,6 +74,7 @@ interface ErrorEntry {
 const { t } = useI18n()
 const executionStore = useExecutionStore()
 const rightSidePanelStore = useRightSidePanelStore()
+const canvasStore = useCanvasStore()
 
 const groupedErrors = computed<ErrorEntry[]>(() => {
   const messages = new Set<string>()
@@ -99,7 +101,7 @@ const groupedErrors = computed<ErrorEntry[]>(() => {
   return Array.from(messages).map((message) => ({ message }))
 })
 
-const totalErrorCount = computed(() => groupedErrors.value.length)
+const totalErrorCount = computed(() => executionStore.totalErrorCount)
 
 const errorCountLabel = computed(() =>
   t(
@@ -118,6 +120,11 @@ function dismiss() {
 }
 
 function seeErrors() {
+  if (canvasStore.canvas) {
+    canvasStore.canvas.deselectAll()
+    canvasStore.updateSelectedItems()
+  }
+
   rightSidePanelStore.openPanel('errors')
   executionStore.dismissErrorOverlay()
 }
