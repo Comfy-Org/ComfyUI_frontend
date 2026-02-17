@@ -94,8 +94,7 @@ export const useAssetExportStore = defineStore('assetExport', () => {
     }
   }
 
-  function handleAssetExport(e: CustomEvent<AssetExportWsMessage>) {
-    const data = e.detail
+  function handleAssetExport(data: AssetExportWsMessage) {
     const existing = exports.value.get(data.task_id)
 
     if (
@@ -141,25 +140,20 @@ export const useAssetExportStore = defineStore('assetExport', () => {
 
         if (task.status === 'completed' || task.status === 'failed') {
           const result = task.result as Record<string, unknown> | undefined
-          handleAssetExport(
-            new CustomEvent('asset_export', {
-              detail: {
-                task_id: exp.taskId,
-                export_name: (result?.export_name as string) ?? exp.exportName,
-                assets_total:
-                  (result?.assets_total as number) ?? exp.assetsTotal,
-                assets_attempted:
-                  (result?.assets_attempted as number) ?? exp.assetsAttempted,
-                assets_failed:
-                  (result?.assets_failed as number) ?? exp.assetsFailed,
-                bytes_total: exp.bytesTotal,
-                bytes_processed: exp.bytesTotal,
-                progress: task.status === 'completed' ? 1 : exp.progress,
-                status: task.status as 'completed' | 'failed',
-                error: task.error_message ?? (result?.error as string)
-              }
-            })
-          )
+          handleAssetExport({
+            task_id: exp.taskId,
+            export_name: (result?.export_name as string) ?? exp.exportName,
+            assets_total: (result?.assets_total as number) ?? exp.assetsTotal,
+            assets_attempted:
+              (result?.assets_attempted as number) ?? exp.assetsAttempted,
+            assets_failed:
+              (result?.assets_failed as number) ?? exp.assetsFailed,
+            bytes_total: exp.bytesTotal,
+            bytes_processed: exp.bytesTotal,
+            progress: task.status === 'completed' ? 1 : exp.progress,
+            status: task.status as 'completed' | 'failed',
+            error: task.error_message ?? (result?.error as string)
+          })
         }
       } catch {
         // Task not ready or not found
@@ -184,7 +178,7 @@ export const useAssetExportStore = defineStore('assetExport', () => {
     { immediate: true }
   )
 
-  api.addEventListener('asset_export', handleAssetExport)
+  api.addEventListener('asset_export', (e) => handleAssetExport(e.detail))
 
   function clearFinishedExports() {
     for (const exp of finishedExports.value) {
