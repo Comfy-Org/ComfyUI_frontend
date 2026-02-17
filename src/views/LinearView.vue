@@ -134,7 +134,7 @@ const linearWorkflowRef = useTemplateRef('linearWorkflowRef')
           :selected-item
           :selected-output
         />
-        <div ref="topLeftRef" class="absolute z-21 top-1.5 left-0">
+        <div ref="topLeftRef" class="absolute z-21 top-1 left-1">
           <AppModeToolbar />
         </div>
         <div ref="topRightRef" class="absolute z-21 top-4 right-4" />
