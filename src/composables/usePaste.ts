@@ -96,7 +96,7 @@ export async function pasteImageNode(
 
 export async function pasteImageNodes(
   canvas: LGraphCanvas,
-  fileList: FileList
+  fileList: File[]
 ): Promise<LGraphNode[]> {
   const nodes: LGraphNode[] = []
 
