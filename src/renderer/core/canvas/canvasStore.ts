@@ -43,9 +43,9 @@ export const useCanvasStore = defineStore('canvas', () => {
   const appScalePercentage = ref(100)
 
   const linearMode = computed({
-    get: () => useAppModeStore().isApp,
+    get: () => useAppModeStore().isAppMode,
     set: (val: boolean) => {
-      useAppModeStore().view = val ? 'app' : 'graph'
+      useAppModeStore().setMode(val ? 'app' : 'graph')
     }
   })
 

@@ -1,26 +1,30 @@
 import { defineStore } from 'pinia'
-import { computed, ref } from 'vue'
+import { readonly, computed, ref } from 'vue'
 
-export type AppView = 'graph' | 'app'
-export type BuilderStep = 'select' | 'arrange'
+export type AppMode = 'graph' | 'app' | 'builder:select' | 'builder:arrange'
 
 export const useAppModeStore = defineStore('appMode', () => {
-  const view = ref<AppView>('graph')
-  const builderStep = ref<BuilderStep>('select')
-  const builderMode = ref(false)
+  const mode = ref<AppMode>('graph')
   const builderSaving = ref(false)
-  const hasOutputs = ref(false)
 
-  const isApp = computed(() => view.value === 'app')
-  const isGraph = computed(() => view.value === 'graph')
+  const isBuilderMode = computed(
+    () => mode.value === 'builder:select' || mode.value === 'builder:arrange'
+  )
+  const isAppMode = computed(() => mode.value === 'app')
+  const isGraphMode = computed(() => mode.value === 'graph')
+  const isBuilderSaving = computed(
+    () => builderSaving.value && isBuilderMode.value
+  )
 
   return {
-    view,
-    builderStep,
-    builderMode,
-    builderSaving,
-    hasOutputs,
-    isApp,
-    isGraph
+    mode: readonly(mode),
+    isBuilderMode,
+    isAppMode,
+    isGraphMode,
+    isBuilderSaving,
+    setMode: (newMode: AppMode) => {
+      if (newMode === mode.value) return
+      mode.value = newMode
+    }
   }
 })
