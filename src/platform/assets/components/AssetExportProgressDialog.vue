@@ -126,7 +126,7 @@ function closeDialog() {
 
     <template #footer="{ toggle }">
       <div
-        class="flex h-12 items-center justify-between gap-2 border-t border-border-default px-4"
+        class="flex flex-1 min-w-0 h-12 items-center justify-between gap-2 border-t border-border-default px-4"
       >
         <div class="flex min-w-0 flex-1 items-center gap-2 text-sm">
           <template v-if="isInProgress">
