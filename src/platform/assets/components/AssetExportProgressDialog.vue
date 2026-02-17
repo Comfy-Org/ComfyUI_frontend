@@ -101,8 +101,12 @@ function closeDialog() {
                   class="icon-[lucide--circle-alert] size-4 text-destructive-background"
                 />
               </template>
-              <template v-else-if="job.status === 'completed' && job.downloadError">
-                <span class="text-xs text-destructive-background truncate max-w-32">
+              <template
+                v-else-if="job.status === 'completed' && job.downloadError"
+              >
+                <span
+                  class="text-xs text-destructive-background truncate max-w-32"
+                >
                   {{ job.downloadError }}
                 </span>
                 <Button

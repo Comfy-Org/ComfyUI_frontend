@@ -80,8 +80,7 @@ export const useAssetExportStore = defineStore('assetExport', () => {
       link.click()
       document.body.removeChild(link)
     } catch (error) {
-      const message =
-        error instanceof Error ? error.message : String(error)
+      const message = error instanceof Error ? error.message : String(error)
       exp.downloadError = message
       exp.downloadTriggered = false
 
@@ -90,7 +89,7 @@ export const useAssetExportStore = defineStore('assetExport', () => {
         summary: t('exportToast.downloadFailed', {
           name: exp.exportName
         }),
-        detail: message,
+        detail: message
       })
     }
   }
