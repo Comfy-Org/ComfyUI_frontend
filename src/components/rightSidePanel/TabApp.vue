@@ -165,9 +165,9 @@ function handleClick(e: MouseEvent) {
         :style="toValue(style)"
         class="fixed ring-warning-background ring-5 rounded-2xl"
       >
-        <div class="absolute top-0 right-0 size-10">
+        <div class="absolute top-0 right-0 size-8">
           <div
-            class="absolute -top-1/2 -right-1/2 size-full bg-warning-background rounded-sm"
+            class="absolute -top-1/2 -right-1/2 size-full p-2 bg-warning-background rounded-lg"
           >
             <i class="icon-[lucide--check] bg-text-foreground size-full" />
           </div>
