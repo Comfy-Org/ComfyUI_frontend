@@ -747,13 +747,14 @@ export const useExecutionStore = defineStore('execution', () => {
     const ids = new Set<string>()
     if (!app.rootGraph) return ids
 
-    const activeGraph = canvasStore.currentGraph
+    // Fall back to rootGraph when currentGraph hasn't been initialized yet
+    const activeGraph = canvasStore.currentGraph ?? app.rootGraph
 
     // Node validation errors (400 Bad Request)
     if (lastNodeErrors.value) {
       for (const executionId of Object.keys(lastNodeErrors.value)) {
         const graphNode = getNodeByExecutionId(app.rootGraph, executionId)
-        if (graphNode && graphNode.graph === activeGraph) {
+        if (graphNode?.graph === activeGraph) {
           ids.add(String(graphNode.id))
         }
       }
@@ -763,7 +764,7 @@ export const useExecutionStore = defineStore('execution', () => {
     if (lastExecutionError.value) {
       const execNodeId = String(lastExecutionError.value.node_id)
       const graphNode = getNodeByExecutionId(app.rootGraph, execNodeId)
-      if (graphNode && graphNode.graph === activeGraph) {
+      if (graphNode?.graph === activeGraph) {
         ids.add(String(graphNode.id))
       }
     }
