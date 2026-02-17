@@ -11,12 +11,13 @@ export class BooleanWidget
 
   override drawWidget(
     ctx: CanvasRenderingContext2D,
-    { width, showText = true }: DrawWidgetOptions
+    options: DrawWidgetOptions
   ) {
+    const { width, showText = true } = options
     const { height, y } = this
     const { margin } = BaseWidget
 
-    this.drawWidgetShape(ctx, { width, showText })
+    this.drawWidgetShape(ctx, options)
 
     ctx.fillStyle = this.value ? '#89A' : '#333'
     ctx.beginPath()

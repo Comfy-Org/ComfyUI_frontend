@@ -36,12 +36,13 @@ export class AssetWidget
 
   override drawWidget(
     ctx: CanvasRenderingContext2D,
-    { width, showText = true }: DrawWidgetOptions
+    options: DrawWidgetOptions
   ) {
+    const { width, showText = true } = options
     // Store original context attributes
     const { fillStyle, strokeStyle, textAlign } = ctx
 
-    this.drawWidgetShape(ctx, { width, showText })
+    this.drawWidgetShape(ctx, options)
 
     if (showText) {
       this.drawTruncatingText({ ctx, width, leftPadding: 0, rightPadding: 0 })
