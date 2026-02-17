@@ -139,7 +139,7 @@ useEventListener(
   </div>
   <div class="h-5" />
   {{ t('[PH]Inputs:') }}
-  <DraggableList v-slot="{ class: dragClass }" v-model="selectedInputs">
+  <DraggableList v-slot="{ dragClass }" v-model="selectedInputs">
     <div
       v-for="[key] in selectedInputs"
       :key
@@ -149,7 +149,7 @@ useEventListener(
   </DraggableList>
   <div class="h-5" />
   {{ t('[PH]Outputs:') }}
-  <DraggableList v-slot="{ class: dragClass }" v-model="selectedOutputs">
+  <DraggableList v-slot="{ dragClass }" v-model="selectedOutputs">
     <div
       v-for="[key] in selectedOutputs"
       :key
