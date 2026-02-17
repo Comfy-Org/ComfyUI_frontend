@@ -159,16 +159,21 @@ const outputNodes = computed(() =>
         :class="
           cn(
             'fixed ring-warning-background ring-5 rounded-2xl',
-            !isSelected && 'opacity-50'
+            !isSelected && 'ring-warning-background/50'
           )
         "
       >
-        <div v-if="isSelected" class="absolute top-0 right-0 size-8">
+        <div class="absolute top-0 right-0 size-8">
           <div
+            v-if="isSelected"
             class="absolute -top-1/2 -right-1/2 size-full p-2 bg-warning-background rounded-lg"
           >
             <i class="icon-[lucide--check] bg-text-foreground size-full" />
           </div>
+          <div
+            v-else
+            class="absolute -top-1/2 -right-1/2 size-full ring-warning-background/50 ring-4 ring-inset bg-component-node-background rounded-lg"
+          />
         </div>
       </div>
     </TransformPane>
