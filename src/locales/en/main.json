@@ -2501,6 +2501,10 @@
     "later": "Later",
     "noReleaseNotes": "No release notes available."
   },
+  "appModeToolbar": {
+    "appBuilder": "App builder",
+    "apps": "Apps"
+  },
   "breadcrumbsMenu": {
     "duplicate": "Duplicate",
     "enterAppMode": "Enter app mode",
