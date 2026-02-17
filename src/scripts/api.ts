@@ -35,6 +35,7 @@ import type {
   FeatureFlagsWsMessage,
   LogsRawResponse,
   LogsWsMessage,
+  MissingModelDownloadWsMessage,
   NotificationWsMessage,
   PreviewMethod,
   ProgressStateWsMessage,
@@ -169,6 +170,7 @@ interface BackendApiCalls {
   progress_state: ProgressStateWsMessage
   feature_flags: FeatureFlagsWsMessage
   asset_download: AssetDownloadWsMessage
+  missing_model_download: MissingModelDownloadWsMessage
 }
 
 /** Dictionary of all api calls */
@@ -250,15 +252,20 @@ export interface MissingModelDownloadItem {
 }
 
 export interface MissingModelDownloadResult extends MissingModelDownloadItem {
-  status: 'downloaded' | 'skipped_existing' | 'failed' | 'blocked'
+  status: 'downloaded' | 'skipped_existing' | 'failed' | 'blocked' | 'canceled'
   error?: string
 }
 
 export interface MissingModelDownloadResponse {
   downloaded: number
   skipped: number
+  canceled?: number
   failed: number
   results: MissingModelDownloadResult[]
+}
+
+export interface MissingModelDownloadOptions {
+  batchId?: string
 }
 
 function addHeaderEntry(headers: HeadersInit, key: string, value: string) {
@@ -697,6 +704,7 @@ export class ComfyApi extends EventTarget {
             case 'execution_success':
             case 'progress':
             case 'progress_state':
+            case 'missing_model_download':
             case 'executed':
             case 'graphChanged':
             case 'promptQueued':
@@ -886,13 +894,39 @@ export class ComfyApi extends EventTarget {
    * @returns The models successfully download, skipped, or failed
    */
   async downloadMissingModels(
-    models: MissingModelDownloadItem[]
+    models: MissingModelDownloadItem[],
+    options?: MissingModelDownloadOptions
   ): Promise<MissingModelDownloadResponse> {
-    const response = await axios.post(
-      this.apiURL('/experiment/models/download_missing'),
-      { models }
+    const response = await this.fetchApi('/experiment/models/download_missing', {
+      method: 'POST',
+      body: JSON.stringify({
+        models,
+        client_id: this.clientId ?? '',
+        batch_id: options?.batchId
+      }),
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    }
     )
-    return response.data
+    return response.json()
+  }
+
+  async cancelMissingModelDownload(
+    taskId: string,
+    options?: MissingModelDownloadOptions
+  ): Promise<void> {
+    await this.fetchApi('/experiment/models/download_missing/cancel', {
+      method: "POST",
+      body: JSON.stringify({
+        task_id: taskId,
+        client_id: this.clientId ?? '',
+        batch_id: options?.batchId
+      }),
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    })
   }
 
   /**
