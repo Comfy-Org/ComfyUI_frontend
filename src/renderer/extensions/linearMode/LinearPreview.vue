@@ -13,6 +13,7 @@ import { useWorkflowStore } from '@/platform/workflow/management/stores/workflow
 import { extractWorkflowFromAsset } from '@/platform/workflow/utils/workflowExtractionUtil'
 import ImagePreview from '@/renderer/extensions/linearMode/ImagePreview.vue'
 import LinearWelcome from '@/renderer/extensions/linearMode/LinearWelcome.vue'
+import LinearArrange from '@/renderer/extensions/linearMode/LinearArrange.vue'
 import OutputHistory from '@/renderer/extensions/linearMode/OutputHistory.vue'
 // Lazy-loaded to avoid pulling THREE.js into the main bundle
 const Preview3d = () => import('@/renderer/extensions/linearMode/Preview3d.vue')
@@ -28,11 +29,11 @@ import type { ResultItemImpl } from '@/stores/queueStore'
 import { formatDuration } from '@/utils/dateTimeUtil'
 import { collectAllNodes } from '@/utils/graphTraversalUtil'
 import { executeWidgetsCallback } from '@/utils/litegraphUtil'
-
+import { useAppModeStore } from '@/stores/appModeStore'
 const { t, d } = useI18n()
 const mediaActions = useMediaAssetActions()
 const nodeOutputStore = useNodeOutputStore()
-
+const appModeStore = useAppModeStore()
 const { runButtonClick } = defineProps<{
   runButtonClick?: (e: Event) => void
   mobile?: boolean
@@ -190,6 +191,7 @@ async function rerun(e: Event) {
     v-else-if="getMediaType(selectedOutput) === '3d'"
     :model-url="selectedOutput!.url"
   />
+  <LinearArrange v-else-if="appModeStore.mode === 'builder:arrange'" />
   <LinearWelcome v-else />
   <OutputHistory
     @update-selection="
