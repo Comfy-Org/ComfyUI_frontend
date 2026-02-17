@@ -1,10 +1,10 @@
 import { createTestingPinia } from '@pinia/testing'
 import { mount } from '@vue/test-utils'
-import { describe, expect, it, vi } from 'vitest'
-import { createI18n } from 'vue-i18n'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent } from 'vue'
 
 import QueueProgressOverlay from '@/components/queue/QueueProgressOverlay.vue'
+import { i18n } from '@/i18n'
 import type { JobStatus } from '@/platform/remote/comfyui/jobs/jobTypes'
 import { TaskItemImpl, useQueueStore } from '@/stores/queueStore'
 
@@ -21,35 +21,6 @@ const QueueOverlayExpandedStub = defineComponent({
     }
   },
   template: '<div data-testid="expanded-title">{{ headerTitle }}</div>'
-})
-
-const i18n = createI18n({
-  legacy: false,
-  locale: 'en',
-  messages: {
-    en: {
-      g: {
-        emDash: '-',
-        untitled: 'Untitled',
-        disconnectedFromBackend: 'Disconnected',
-        unknownError: 'Unknown error',
-        error: 'Error'
-      },
-      queue: {
-        jobList: {
-          undated: 'Undated'
-        }
-      },
-      sideToolbar: {
-        queueProgressOverlay: {
-          runningJobsLabel: '{count} running',
-          queuedJobsLabel: '{count} queued',
-          runningQueuedSummary: '{running}, {queued}',
-          jobQueue: 'Job queue'
-        }
-      }
-    }
-  }
 })
 
 function createTask(id: string, status: JobStatus): TaskItemImpl {
@@ -92,6 +63,10 @@ const mountComponent = (
 }
 
 describe('QueueProgressOverlay', () => {
+  beforeEach(() => {
+    i18n.global.locale.value = 'en'
+  })
+
   it('shows expanded header with running and queued labels', () => {
     const wrapper = mountComponent(
       [
@@ -110,7 +85,7 @@ describe('QueueProgressOverlay', () => {
     const wrapper = mountComponent([], [])
 
     expect(wrapper.get('[data-testid="expanded-title"]').text()).toBe(
-      'Job queue'
+      'Job Queue'
     )
   })
 })
