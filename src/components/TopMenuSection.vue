@@ -72,7 +72,7 @@
                 v-if="activeJobsCount > 0"
                 data-testid="active-jobs-indicator"
                 variant="dot"
-                class="pointer-events-none absolute -top-0.5 -right-0.5 animate-pulse bg-blue-100"
+                class="pointer-events-none absolute -top-0.5 -right-0.5 animate-pulse"
               />
               <span class="sr-only">
                 {{
