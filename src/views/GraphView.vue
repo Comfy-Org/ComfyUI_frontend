@@ -13,7 +13,7 @@
       <GraphCanvas @ready="onGraphReady" />
     </div>
     <LinearView v-if="linearMode" />
-    <BuilderToolbar model-value="select" />
+    <BuilderToolbar v-if="appModeStore.builderMode" />
   </div>
 
   <GlobalToast />
@@ -69,6 +69,7 @@ import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { setupAutoQueueHandler } from '@/services/autoQueueService'
 import { useKeybindingService } from '@/platform/keybindings/keybindingService'
+import { useAppModeStore } from '@/stores/appModeStore'
 import { useAssetsStore } from '@/stores/assetsStore'
 import { useCommandStore } from '@/stores/commandStore'
 import { useExecutionStore } from '@/stores/executionStore'
@@ -102,6 +103,7 @@ const queueStore = useQueueStore()
 const assetsStore = useAssetsStore()
 const versionCompatibilityStore = useVersionCompatibilityStore()
 const graphCanvasContainerRef = ref<HTMLDivElement | null>(null)
+const appModeStore = useAppModeStore()
 const { linearMode } = storeToRefs(useCanvasStore())
 
 const telemetry = useTelemetry()

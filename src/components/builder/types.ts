@@ -1,7 +1,8 @@
+import type { BuilderStep } from '@/stores/appModeStore'
+
 export interface BuilderToolbarStep {
-  id: string
+  id: BuilderStep | 'save'
   title: string
   subtitle: string
   icon: string
-  disabled?: boolean
 }
