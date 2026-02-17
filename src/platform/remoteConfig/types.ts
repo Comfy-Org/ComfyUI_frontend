@@ -27,6 +27,7 @@ type FirebaseRuntimeConfig = {
  */
 export type RemoteConfig = {
   gtm_container_id?: string
+  ga_measurement_id?: string
   mixpanel_token?: string
   subscription_required?: boolean
   server_health_alert?: ServerHealthAlert
