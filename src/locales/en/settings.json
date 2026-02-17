@@ -285,8 +285,8 @@
     "name": "Show API node pricing badge"
   },
   "Comfy_NodeReplacement_Enabled": {
-    "name": "Enable automatic node replacement",
-    "tooltip": "When enabled, missing nodes can be automatically replaced with their newer equivalents if a replacement mapping exists."
+    "name": "Enable node replacement suggestions",
+    "tooltip": "When enabled, missing nodes with known replacements will be shown as replaceable in the missing nodes dialog, allowing you to review and apply replacements."
   },
   "Comfy_NodeSearchBoxImpl": {
     "name": "Node search box implementation",

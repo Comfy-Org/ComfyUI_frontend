@@ -3,7 +3,19 @@ import { markRaw } from 'vue'
 import { t } from '@/i18n'
 import type { ChangeTracker } from '@/scripts/changeTracker'
 import { UserFile } from '@/stores/userFileStore'
-import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
+import type {
+  ComfyWorkflowJSON,
+  ModelFile
+} from '@/platform/workflow/validation/schemas/workflowSchema'
+import type { MissingNodeType } from '@/types/comfy'
+
+export interface PendingWarnings {
+  missingNodeTypes?: MissingNodeType[]
+  missingModels?: {
+    missingModels: ModelFile[]
+    paths: Record<string, string[]>
+  }
+}
 
 export class ComfyWorkflow extends UserFile {
   static readonly basePath: string = 'workflows/'
@@ -17,6 +29,10 @@ export class ComfyWorkflow extends UserFile {
    * Whether the workflow has been modified comparing to the initial state.
    */
   _isModified: boolean = false
+  /**
+   * Warnings deferred from load time, shown when the workflow is first focused.
+   */
+  pendingWarnings: PendingWarnings | null = null
 
   /**
    * @param options The path, modified, and size of the workflow.
