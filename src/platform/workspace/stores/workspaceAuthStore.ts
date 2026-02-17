@@ -7,11 +7,11 @@ import { t } from '@/i18n'
 import {
   TOKEN_REFRESH_BUFFER_MS,
   WORKSPACE_STORAGE_KEYS
-} from '@/platform/auth/workspace/workspaceConstants'
+} from '@/platform/workspace/workspaceConstants'
 import { api } from '@/scripts/api'
 import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
 import type { AuthHeader } from '@/types/authTypes'
-import type { WorkspaceWithRole } from '@/platform/auth/workspace/workspaceTypes'
+import type { WorkspaceWithRole } from '@/platform/workspace/workspaceTypes'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 
 const WorkspaceWithRoleSchema = z.object({

@@ -22,7 +22,7 @@ import { useFirebaseAuth } from 'vuefire'
 
 import { getComfyApiBaseUrl } from '@/config/comfyApi'
 import { t } from '@/i18n'
-import { WORKSPACE_STORAGE_KEYS } from '@/platform/auth/workspace/workspaceConstants'
+import { WORKSPACE_STORAGE_KEYS } from '@/platform/workspace/workspaceConstants'
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
 import { useDialogService } from '@/services/dialogService'
