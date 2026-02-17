@@ -4,9 +4,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   useWorkspaceAuthStore,
   WorkspaceAuthError
-} from '@/stores/workspaceAuthStore'
+} from '@/platform/workspace/stores/workspaceAuthStore'
 
-import { WORKSPACE_STORAGE_KEYS } from './workspaceConstants'
+import { WORKSPACE_STORAGE_KEYS } from '@/platform/workspace/workspaceConstants'
 
 const mockGetIdToken = vi.fn()
 
