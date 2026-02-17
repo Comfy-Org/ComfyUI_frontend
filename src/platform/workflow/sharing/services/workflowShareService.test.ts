@@ -43,7 +43,7 @@ describe('useWorkflowShareService', () => {
 
   it('returns unpublished status for unknown workflow', () => {
     const service = useWorkflowShareService()
-    const status = service.getPublishStatus('unknown-id')
+    const status = service.getPublishStatus('unknown-id', 1000)
 
     expect(status.isPublished).toBe(false)
     expect(status.shareUrl).toBeNull()
@@ -55,7 +55,7 @@ describe('useWorkflowShareService', () => {
     vi.useFakeTimers()
     const service = useWorkflowShareService()
 
-    const publishPromise = service.publishWorkflow('test-workflow')
+    const publishPromise = service.publishWorkflow('test-workflow', 1000)
     await vi.advanceTimersByTimeAsync(800)
     const result = await publishPromise
 
@@ -69,11 +69,12 @@ describe('useWorkflowShareService', () => {
     vi.useFakeTimers()
     const service = useWorkflowShareService()
 
-    const publishPromise = service.publishWorkflow('wf-1')
+    const savedAt = 1000
+    const publishPromise = service.publishWorkflow('wf-1', savedAt)
     await vi.advanceTimersByTimeAsync(800)
     await publishPromise
 
-    const status = service.getPublishStatus('wf-1')
+    const status = service.getPublishStatus('wf-1', savedAt)
     expect(status.isPublished).toBe(true)
     expect(status.shareUrl).toBeTruthy()
     expect(status.publishedAt).toBeInstanceOf(Date)
@@ -82,18 +83,33 @@ describe('useWorkflowShareService', () => {
     vi.useRealTimers()
   })
 
-  it('detects changes after publish', async () => {
+  it('detects changes when workflow was saved after publish', async () => {
     vi.useFakeTimers()
     const service = useWorkflowShareService()
 
-    const publishPromise = service.publishWorkflow('wf-2')
+    const savedAtPublish = 1000
+    const publishPromise = service.publishWorkflow('wf-2', savedAtPublish)
     await vi.advanceTimersByTimeAsync(800)
     await publishPromise
 
-    service.markWorkflowChanged('wf-2')
-    const status = service.getPublishStatus('wf-2')
-
+    const savedAfterEdit = 2000
+    const status = service.getPublishStatus('wf-2', savedAfterEdit)
     expect(status.hasChangesSincePublish).toBe(true)
+
+    vi.useRealTimers()
+  })
+
+  it('reports no changes when workflow has not been saved since publish', async () => {
+    vi.useFakeTimers()
+    const service = useWorkflowShareService()
+
+    const savedAt = 1000
+    const publishPromise = service.publishWorkflow('wf-3', savedAt)
+    await vi.advanceTimersByTimeAsync(800)
+    await publishPromise
+
+    const status = service.getPublishStatus('wf-3', savedAt)
+    expect(status.hasChangesSincePublish).toBe(false)
 
     vi.useRealTimers()
   })

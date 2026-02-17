@@ -1,26 +1,47 @@
 import { mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { nextTick } from 'vue'
+import { nextTick, reactive } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import ShareWorkflowDialogContent from '@/platform/workflow/sharing/components/ShareWorkflowDialogContent.vue'
 
+const mockWorkflowStore = reactive<{
+  activeWorkflow: {
+    path: string
+    isTemporary: boolean
+    isModified: boolean
+    lastModified: number
+  } | null
+}>({
+  activeWorkflow: null
+})
+
+vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
+  useWorkflowStore: () => mockWorkflowStore
+}))
+
+vi.mock('@/platform/workflow/core/services/workflowService', () => ({
+  useWorkflowService: () => ({
+    saveWorkflow: vi.fn(),
+    saveWorkflowAs: vi.fn()
+  })
+}))
+
 vi.mock('@/platform/workflow/sharing/services/workflowShareService', () => ({
   useWorkflowShareService: () => ({
-    getPublishStatus: vi.fn().mockReturnValue({
+    getPublishStatus: () => ({
       isPublished: false,
       shareUrl: null,
       publishedAt: null,
       hasChangesSincePublish: false
     }),
-    publishWorkflow: vi.fn().mockResolvedValue({
-      shareUrl: 'https://comfy.org/shared/test-123',
-      publishedAt: new Date('2026-01-15')
-    }),
-    getWorkflowAssets: vi
-      .fn()
-      .mockReturnValue([{ name: 'test.png', thumbnailUrl: null }]),
-    getWorkflowModels: vi.fn().mockReturnValue([{ name: 'model.safetensors' }])
+    publishWorkflow: () =>
+      Promise.resolve({
+        shareUrl: 'https://comfy.org/shared/test-123',
+        publishedAt: new Date('2026-01-15')
+      }),
+    getWorkflowAssets: () => [{ name: 'test.png', thumbnailUrl: null }],
+    getWorkflowModels: () => [{ name: 'model.safetensors' }]
   })
 }))
 
@@ -31,6 +52,9 @@ const i18n = createI18n({
     en: {
       g: { close: 'Close' },
       shareWorkflow: {
+        unsavedTitle: 'Save workflow first',
+        unsavedDescription: 'You must save your workflow before sharing.',
+        saveButton: 'Save workflow',
         publishTitle: 'Publish workflow',
         publishDescription: 'Publishing this workflow...',
         publishButton: 'Publish workflow',
@@ -61,6 +85,12 @@ describe('ShareWorkflowDialogContent', () => {
 
   beforeEach(() => {
     vi.clearAllMocks()
+    mockWorkflowStore.activeWorkflow = {
+      path: 'workflows/test.json',
+      isTemporary: false,
+      isModified: false,
+      lastModified: 1000
+    }
   })
 
   function createWrapper() {
@@ -72,15 +102,41 @@ describe('ShareWorkflowDialogContent', () => {
     })
   }
 
-  it('renders in unpublished state by default', () => {
+  it('renders in unsaved state when workflow is modified', () => {
+    mockWorkflowStore.activeWorkflow = {
+      path: 'workflows/test.json',
+      isTemporary: false,
+      isModified: true,
+      lastModified: 1000
+    }
     const wrapper = createWrapper()
 
-    expect(wrapper.text()).toContain('Publish workflow')
-    expect(wrapper.find('button').exists()).toBe(true)
+    expect(wrapper.text()).toContain('Save workflow first')
+    expect(wrapper.text()).toContain('Save workflow')
   })
 
-  it('disables publish button when acknowledgment is unchecked', () => {
+  it('renders in unsaved state when workflow is temporary', () => {
+    mockWorkflowStore.activeWorkflow = {
+      path: 'workflows/test.json',
+      isTemporary: true,
+      isModified: false,
+      lastModified: 1000
+    }
     const wrapper = createWrapper()
+
+    expect(wrapper.text()).toContain('Save workflow first')
+  })
+
+  it('renders in unpublished state when workflow is saved', async () => {
+    const wrapper = createWrapper()
+    await nextTick()
+
+    expect(wrapper.text()).toContain('Publish workflow')
+  })
+
+  it('disables publish button when acknowledgment is unchecked', async () => {
+    const wrapper = createWrapper()
+    await nextTick()
 
     const publishButton = wrapper
       .findAll('button')
@@ -91,6 +147,7 @@ describe('ShareWorkflowDialogContent', () => {
 
   it('enables publish button when acknowledgment is checked', async () => {
     const wrapper = createWrapper()
+    await nextTick()
 
     const checkbox = wrapper.find('input[type="checkbox"]')
     await checkbox.setValue(true)

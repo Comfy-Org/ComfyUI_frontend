@@ -17,40 +17,31 @@ const ASSET_NODE_WIDGETS: Record<string, string> = {
 interface PublishRecord {
   shareUrl: string
   publishedAt: Date
-  publishedVersion: number
+  savedAt: number
 }
 
 const publishedWorkflows = new Map<string, PublishRecord>()
-const workflowVersions = new Map<string, number>()
-
-function getWorkflowVersion(workflowId: string): number {
-  return workflowVersions.get(workflowId) ?? 0
-}
-
-function bumpWorkflowVersion(workflowId: string): void {
-  workflowVersions.set(workflowId, getWorkflowVersion(workflowId) + 1)
-}
 
 export function useWorkflowShareService() {
   async function publishWorkflow(
-    workflowId: string
+    workflowPath: string,
+    savedAt: number
   ): Promise<WorkflowPublishResult> {
     await new Promise((resolve) => setTimeout(resolve, 800))
 
-    const shareUrl = `https://comfy.org/shared/${workflowId}-${Date.now().toString(36)}`
+    const shareUrl = `https://comfy.org/shared/${workflowPath}-${Date.now().toString(36)}`
     const publishedAt = new Date()
 
-    publishedWorkflows.set(workflowId, {
-      shareUrl,
-      publishedAt,
-      publishedVersion: getWorkflowVersion(workflowId)
-    })
+    publishedWorkflows.set(workflowPath, { shareUrl, publishedAt, savedAt })
 
     return { shareUrl, publishedAt }
   }
 
-  function getPublishStatus(workflowId: string): WorkflowPublishStatus {
-    const record = publishedWorkflows.get(workflowId)
+  function getPublishStatus(
+    workflowPath: string,
+    currentSavedAt: number
+  ): WorkflowPublishStatus {
+    const record = publishedWorkflows.get(workflowPath)
     if (!record) {
       return {
         isPublished: false,
@@ -64,13 +55,8 @@ export function useWorkflowShareService() {
       isPublished: true,
       shareUrl: record.shareUrl,
       publishedAt: record.publishedAt,
-      hasChangesSincePublish:
-        getWorkflowVersion(workflowId) > record.publishedVersion
+      hasChangesSincePublish: currentSavedAt > record.savedAt
     }
-  }
-
-  function markWorkflowChanged(workflowId: string): void {
-    bumpWorkflowVersion(workflowId)
   }
 
   function getWorkflowAssets(): WorkflowAsset[] {
@@ -110,7 +96,6 @@ export function useWorkflowShareService() {
   return {
     publishWorkflow,
     getPublishStatus,
-    markWorkflowChanged,
     getWorkflowAssets,
     getWorkflowModels
   }

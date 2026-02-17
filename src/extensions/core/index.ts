@@ -24,7 +24,6 @@ import './rerouteNode'
 import './saveImageExtraOutput'
 // saveMesh is loaded on-demand with load3d (see load3dLazy.ts)
 import './selectionBorder'
-import '@/platform/workflow/sharing/shareWorkflowTopbarButton'
 import './simpleTouchSupport'
 import './slotDefaults'
 import './uploadAudio'
@@ -34,6 +33,7 @@ import './widgetInputs'
 
 // Cloud-only extensions - tree-shaken in OSS builds
 if (isCloud) {
+  await import('@/platform/workflow/sharing/shareWorkflowTopbarButton')
   await import('./cloudRemoteConfig')
   await import('./cloudBadges')
   await import('./cloudSessionCookie')
