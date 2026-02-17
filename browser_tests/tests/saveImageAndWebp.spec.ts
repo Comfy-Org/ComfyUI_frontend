@@ -34,7 +34,9 @@ test.describe(
         timeout: 30000
       })
 
-      await comfyPage.attachScreenshot('save-image-and-webm-preview.png')
+      await expect(comfyPage.page).toHaveScreenshot(
+        'save-image-and-webm-preview.png'
+      )
     })
   }
 )
