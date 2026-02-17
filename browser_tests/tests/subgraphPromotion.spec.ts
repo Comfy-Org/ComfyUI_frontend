@@ -332,10 +332,6 @@ test.describe(
 
         // Right-click on the KSampler's "steps" widget (index 2) to promote it
         const stepsWidget = await ksampler.getWidget(2)
-        await stepsWidget.click()
-        await comfyPage.nextFrame()
-
-        // Right-click the widget to open context menu
         const widgetPos = await stepsWidget.getPosition()
         await comfyPage.canvas.click({
           position: widgetPos,
@@ -365,26 +361,49 @@ test.describe(
       test('Can un-promote a widget from inside a subgraph', async ({
         comfyPage
       }) => {
-        await comfyPage.workflow.loadWorkflow(
-          'subgraphs/subgraph-with-promoted-text-widget'
-        )
+        await comfyPage.workflow.loadWorkflow('subgraphs/basic-subgraph')
 
-        // Verify we start with a promoted widget
-        const initialWidgetCount = await getWidgetCount(comfyPage, '11')
-        expect(initialWidgetCount).toBeGreaterThan(0)
-
-        // Navigate into subgraph
-        const subgraphNode = await comfyPage.nodeOps.getNodeRefById('11')
+        // First promote a canvas-rendered widget (KSampler "steps")
+        const subgraphNode = await comfyPage.nodeOps.getNodeRefById('2')
         await subgraphNode.navigateIntoSubgraph()
 
-        // Right-click on the CLIPTextEncode (id 10) text widget area
-        // The text widget should show "Un-Promote Widget" since it's promoted
-        const clipNode = await comfyPage.nodeOps.getNodeRefById('10')
-        const textWidget = await clipNode.getWidget(0)
-        const widgetPos = await textWidget.getPosition()
+        const ksampler = await comfyPage.nodeOps.getNodeRefById('1')
+        const stepsWidget = await ksampler.getWidget(2)
+        const widgetPos = await stepsWidget.getPosition()
 
         await comfyPage.canvas.click({
           position: widgetPos,
+          button: 'right',
+          force: true
+        })
+        await comfyPage.nextFrame()
+
+        const promoteEntry = comfyPage.page
+          .locator('.litemenu-entry')
+          .filter({ hasText: /Promote Widget/ })
+        await expect(promoteEntry).toBeVisible()
+        await promoteEntry.click()
+        await comfyPage.nextFrame()
+
+        // Navigate back and verify promotion took effect
+        await comfyPage.page.keyboard.press('Escape')
+        await comfyPage.nextFrame()
+        await fitToViewInstant(comfyPage)
+        await comfyPage.nextFrame()
+
+        const initialWidgetCount = await getWidgetCount(comfyPage, '2')
+        expect(initialWidgetCount).toBeGreaterThan(0)
+
+        // Navigate back in and un-promote
+        const subgraphNode2 = await comfyPage.nodeOps.getNodeRefById('2')
+        await subgraphNode2.navigateIntoSubgraph()
+        const stepsWidget2 = await (
+          await comfyPage.nodeOps.getNodeRefById('1')
+        ).getWidget(2)
+        const widgetPos2 = await stepsWidget2.getPosition()
+
+        await comfyPage.canvas.click({
+          position: widgetPos2,
           button: 'right',
           force: true
         })
@@ -398,12 +417,12 @@ test.describe(
         await unpromoteEntry.click()
         await comfyPage.nextFrame()
 
-        // Navigate back
+        // Navigate back to parent
         await comfyPage.page.keyboard.press('Escape')
         await comfyPage.nextFrame()
 
         // SubgraphNode should have fewer widgets
-        const finalWidgetCount = await getWidgetCount(comfyPage, '11')
+        const finalWidgetCount = await getWidgetCount(comfyPage, '2')
         expect(finalWidgetCount).toBeLessThan(initialWidgetCount)
       })
     })
