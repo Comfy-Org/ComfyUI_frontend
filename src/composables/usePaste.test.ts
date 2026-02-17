@@ -201,11 +201,10 @@ describe('pasteImageNodes', () => {
 
     const file1 = createImageFile('test1.png')
     const file2 = createImageFile('test2.jpg', 'image/jpeg')
-    const fileList = createDataTransfer([file1, file2]).files
 
     const result = await pasteImageNodes(
       mockCanvas as unknown as LGraphCanvas,
-      fileList
+      [file1, file2]
     )
 
     expect(createNode).toHaveBeenCalledTimes(2)
@@ -217,11 +216,9 @@ describe('pasteImageNodes', () => {
   })
 
   it('should handle empty file list', async () => {
-    const fileList = createDataTransfer([]).files
-
     const result = await pasteImageNodes(
       mockCanvas as unknown as LGraphCanvas,
-      fileList
+      []
     )
 
     expect(createNode).not.toHaveBeenCalled()

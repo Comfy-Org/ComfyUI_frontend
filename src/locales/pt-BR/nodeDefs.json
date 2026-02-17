@@ -353,15 +353,6 @@
         "name": "moderação",
         "tooltip": "Configurações de moderação"
       },
-      "moderation_prompt_content_moderation": {
-        "name": "moderação_do_conteúdo_do_prompt"
-      },
-      "moderation_visual_input_moderation": {
-        "name": "moderação_da_entrada_visual"
-      },
-      "moderation_visual_output_moderation": {
-        "name": "moderação_da_saida_visual"
-      },
       "negative_prompt": {
         "name": "prompt_negativo"
       },
@@ -386,6 +377,56 @@
       },
       "1": {
         "name": "prompt_estruturado",
+        "tooltip": null
+      }
+    }
+  },
+  "BriaRemoveImageBackground": {
+    "description": "Remove o fundo de uma imagem usando Bria RMBG 2.0.",
+    "display_name": "Bria Remover Fundo da Imagem",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controlar após gerar"
+      },
+      "image": {
+        "name": "imagem"
+      },
+      "moderation": {
+        "name": "moderação",
+        "tooltip": "Configurações de moderação"
+      },
+      "seed": {
+        "name": "semente",
+        "tooltip": "A semente controla se o nó deve ser executado novamente; os resultados são não determinísticos independentemente da semente."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "BriaRemoveVideoBackground": {
+    "description": "Remove o fundo de um vídeo usando Bria.",
+    "display_name": "Bria Remover Fundo do Vídeo",
+    "inputs": {
+      "background_color": {
+        "name": "cor de fundo",
+        "tooltip": "Cor de fundo para o vídeo de saída."
+      },
+      "control_after_generate": {
+        "name": "controlar após gerar"
+      },
+      "seed": {
+        "name": "semente",
+        "tooltip": "A semente controla se o nó deve ser executado novamente; os resultados são não determinísticos independentemente da semente."
+      },
+      "video": {
+        "name": "vídeo"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -14108,6 +14149,29 @@
     "outputs": {
       "0": {
         "name": "patched_model",
+        "tooltip": null
+      }
+    }
+  },
+  "Tencent3DPartNode": {
+    "description": "Realiza automaticamente a identificação e geração de componentes com base na estrutura do modelo.",
+    "display_name": "Hunyuan3D: Parte 3D",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controlar após gerar"
+      },
+      "model_3d": {
+        "name": "modelo_3d",
+        "tooltip": "Modelo 3D no formato FBX. O modelo deve ter menos de 30.000 faces."
+      },
+      "seed": {
+        "name": "semente",
+        "tooltip": "A semente controla se o nó deve ser executado novamente; os resultados são não determinísticos independentemente da semente."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "FBX",
         "tooltip": null
       }
     }

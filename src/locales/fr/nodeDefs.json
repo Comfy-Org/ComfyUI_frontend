@@ -353,15 +353,6 @@
         "name": "modération",
         "tooltip": "Paramètres de modération"
       },
-      "moderation_prompt_content_moderation": {
-        "name": "modération_du_contenu_de_l'invite"
-      },
-      "moderation_visual_input_moderation": {
-        "name": "modération_de_l'entrée_visuelle"
-      },
-      "moderation_visual_output_moderation": {
-        "name": "modération_de_la_sortie_visuelle"
-      },
       "negative_prompt": {
         "name": "invite négative"
       },
@@ -386,6 +377,56 @@
       },
       "1": {
         "name": "invite structurée",
+        "tooltip": null
+      }
+    }
+  },
+  "BriaRemoveImageBackground": {
+    "description": "Supprimez l’arrière-plan d’une image avec Bria RMBG 2.0.",
+    "display_name": "Bria Remove Image Background",
+    "inputs": {
+      "control_after_generate": {
+        "name": "contrôle après génération"
+      },
+      "image": {
+        "name": "image"
+      },
+      "moderation": {
+        "name": "modération",
+        "tooltip": "Paramètres de modération"
+      },
+      "seed": {
+        "name": "graine",
+        "tooltip": "La graine contrôle si le nœud doit être relancé ; les résultats sont non déterministes quel que soit la graine."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "BriaRemoveVideoBackground": {
+    "description": "Supprimez l’arrière-plan d’une vidéo avec Bria.",
+    "display_name": "Bria Remove Video Background",
+    "inputs": {
+      "background_color": {
+        "name": "couleur d’arrière-plan",
+        "tooltip": "Couleur d’arrière-plan pour la vidéo de sortie."
+      },
+      "control_after_generate": {
+        "name": "contrôle après génération"
+      },
+      "seed": {
+        "name": "graine",
+        "tooltip": "La graine contrôle si le nœud doit être relancé ; les résultats sont non déterministes quel que soit la graine."
+      },
+      "video": {
+        "name": "vidéo"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -14095,6 +14136,29 @@
     "outputs": {
       "0": {
         "name": "modèle_corrigé",
+        "tooltip": null
+      }
+    }
+  },
+  "Tencent3DPartNode": {
+    "description": "Identifie et génère automatiquement des composants en fonction de la structure du modèle.",
+    "display_name": "Hunyuan3D : Partie 3D",
+    "inputs": {
+      "control_after_generate": {
+        "name": "contrôler après génération"
+      },
+      "model_3d": {
+        "name": "modèle_3d",
+        "tooltip": "Modèle 3D au format FBX. Le modèle doit comporter moins de 30 000 faces."
+      },
+      "seed": {
+        "name": "graine",
+        "tooltip": "La graine contrôle si le nœud doit être relancé ; les résultats restent non déterministes quel que soit la graine."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "FBX",
         "tooltip": null
       }
     }

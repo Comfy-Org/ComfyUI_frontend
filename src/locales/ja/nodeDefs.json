@@ -353,15 +353,6 @@
         "name": "モデレーション",
         "tooltip": "モデレーション設定"
       },
-      "moderation_prompt_content_moderation": {
-        "name": "プロンプト内容モデレーション"
-      },
-      "moderation_visual_input_moderation": {
-        "name": "入力画像モデレーション"
-      },
-      "moderation_visual_output_moderation": {
-        "name": "出力画像モデレーション"
-      },
       "negative_prompt": {
         "name": "ネガティブプロンプト"
       },
@@ -386,6 +377,56 @@
       },
       "1": {
         "name": "構造化プロンプト",
+        "tooltip": null
+      }
+    }
+  },
+  "BriaRemoveImageBackground": {
+    "description": "Bria RMBG 2.0 を使用して画像の背景を除去します。",
+    "display_name": "Bria 画像背景除去",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後の制御"
+      },
+      "image": {
+        "name": "画像"
+      },
+      "moderation": {
+        "name": "モデレーション",
+        "tooltip": "モデレーション設定"
+      },
+      "seed": {
+        "name": "シード",
+        "tooltip": "シードはノードを再実行するかどうかを制御します。シードに関わらず結果は非決定的です。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "BriaRemoveVideoBackground": {
+    "description": "Bria を使用して動画の背景を除去します。",
+    "display_name": "Bria 動画背景除去",
+    "inputs": {
+      "background_color": {
+        "name": "背景色",
+        "tooltip": "出力動画の背景色。"
+      },
+      "control_after_generate": {
+        "name": "生成後の制御"
+      },
+      "seed": {
+        "name": "シード",
+        "tooltip": "シードはノードを再実行するかどうかを制御します。シードに関わらず結果は非決定的です。"
+      },
+      "video": {
+        "name": "動画"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -14095,6 +14136,29 @@
     "outputs": {
       "0": {
         "name": "パッチ適用済みモデル",
+        "tooltip": null
+      }
+    }
+  },
+  "Tencent3DPartNode": {
+    "description": "モデル構造に基づいて自動的にコンポーネントの識別と生成を行います。",
+    "display_name": "Hunyuan3D：3Dパーツ",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後の制御"
+      },
+      "model_3d": {
+        "name": "3Dモデル",
+        "tooltip": "FBX形式の3Dモデル。モデルの面数は30,000未満である必要があります。"
+      },
+      "seed": {
+        "name": "シード",
+        "tooltip": "シードはノードを再実行するかどうかを制御します。シードに関係なく結果は非決定的です。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "FBX",
         "tooltip": null
       }
     }
