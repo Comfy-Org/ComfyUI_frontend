@@ -3159,7 +3159,7 @@
     "arrange": "Preview",
     "arrangeDescription": "Review app layout",
     "save": "Save",
-    "saveDescription": "Preview and publish app",
+    "saveDescription": "Save and finish",
     "connectOutput": "Connect an output",
     "connectOutputBody1": "Your app needs at least one output to be connected before it can be saved.",
     "connectOutputBody2": "Switch to the 'Select' step and click on output nodes to add them here.",
