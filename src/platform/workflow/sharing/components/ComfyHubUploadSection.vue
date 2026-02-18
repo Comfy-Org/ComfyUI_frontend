@@ -1,9 +1,9 @@
 <template>
-  <div class="border-t border-border-default p-4">
+  <div class="border-t border-border-default p-4 flex flex-col gap-4">
     <h3 class="m-0 text-sm font-medium text-base-foreground">
       {{ $t('shareWorkflow.comfyHubTitle') }}
     </h3>
-    <p class="mt-1 text-xs text-muted-foreground">
+    <p class="whitespace-pre-line text-xs text-muted-foreground m-0">
       {{ $t('shareWorkflow.comfyHubDescription') }}
     </p>
     <Button variant="inverted" size="lg" class="w-full" @click="openComfyHub">

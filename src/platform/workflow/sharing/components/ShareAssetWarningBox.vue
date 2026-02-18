@@ -1,24 +1,18 @@
 <template>
-  <div class="rounded-lg border border-amber-500/50 p-4">
+  <div class="rounded-lg">
     <div class="flex items-start gap-2">
       <i
-        class="icon-[lucide--circle-alert] mt-0.5 size-4 shrink-0 text-amber-500"
+        class="icon-[lucide--circle-alert] size-4 shrink-0 text-warning-background"
       />
       <p class="m-0 text-xs text-muted-foreground">
-        {{
-          $t(
-            'shareWorkflow.assetWarningTitle',
-            { count: totalAssetCount },
-            totalAssetCount
-          )
-        }}
+        {{ $t('shareWorkflow.publishDescription') }}
       </p>
     </div>
 
     <div v-if="assets.length > 0" class="mt-3">
       <CollapsibleRoot v-model:open="assetsOpen">
         <CollapsibleTrigger
-          class="flex w-full cursor-pointer items-center gap-1 border-none bg-transparent p-0 text-xs font-medium text-muted-foreground"
+          class="flex w-full cursor-pointer items-center gap-1 border-none bg-transparent p-0 text-sm font-medium text-muted-foreground"
         >
           <i
             :class="
@@ -48,7 +42,7 @@
     <div v-if="models.length > 0" class="mt-2">
       <CollapsibleRoot v-model:open="modelsOpen">
         <CollapsibleTrigger
-          class="flex w-full cursor-pointer items-center gap-1 border-none bg-transparent p-0 text-xs font-medium text-muted-foreground"
+          class="flex w-full cursor-pointer items-center gap-1 border-none bg-transparent p-0 text-sm font-medium text-muted-foreground"
         >
           <i
             :class="
@@ -100,7 +94,7 @@ import {
   CollapsibleRoot,
   CollapsibleTrigger
 } from 'reka-ui'
-import { computed, ref } from 'vue'
+import { ref } from 'vue'
 
 import type {
   WorkflowAsset,
@@ -113,8 +107,6 @@ const { assets, models } = defineProps<{
   models: WorkflowModel[]
   acknowledged: boolean
 }>()
-
-const totalAssetCount = computed(() => assets.length + models.length)
 
 defineEmits<{
   'update:acknowledged': [value: boolean]
