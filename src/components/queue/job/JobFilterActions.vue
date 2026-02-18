@@ -103,7 +103,7 @@
         variant="secondary"
         size="icon"
         :aria-label="t('sideToolbar.queueProgressOverlay.showAssetsPanel')"
-        @click="$emit('showAssets')"
+        @click="emit('showAssets')"
       >
         <i class="icon-[comfy--image-ai-edit] size-4" />
       </Button>
@@ -125,22 +125,24 @@ import { buildTooltipConfig } from '@/composables/useTooltipConfig'
 const {
   hideShowAssetsAction = false,
   showSearch = false,
-  searchQuery = '',
   searchPlaceholder
 } = defineProps<{
-  selectedWorkflowFilter: 'all' | 'current'
-  selectedSortMode: JobSortMode
   hideShowAssetsAction?: boolean
   showSearch?: boolean
-  searchQuery?: string
   searchPlaceholder?: string
 }>()
 
+const selectedWorkflowFilter = defineModel<'all' | 'current'>(
+  'selectedWorkflowFilter',
+  { required: true }
+)
+const selectedSortMode = defineModel<JobSortMode>('selectedSortMode', {
+  required: true
+})
+const searchQuery = defineModel<string>('searchQuery', { default: '' })
+
 const emit = defineEmits<{
   (e: 'showAssets'): void
-  (e: 'update:selectedWorkflowFilter', value: 'all' | 'current'): void
-  (e: 'update:selectedSortMode', value: JobSortMode): void
-  (e: 'update:searchQuery', value: string): void
 }>()
 
 const { t } = useI18n()
@@ -160,7 +162,7 @@ const searchPlaceholderText = computed(
 )
 
 const selectWorkflowFilter = (value: 'all' | 'current') => {
-  emit('update:selectedWorkflowFilter', value)
+  selectedWorkflowFilter.value = value
 }
 
 const onSelectWorkflowFilter = (
@@ -172,7 +174,7 @@ const onSelectWorkflowFilter = (
 }
 
 const selectSortMode = (value: JobSortMode) => {
-  emit('update:selectedSortMode', value)
+  selectedSortMode.value = value
 }
 
 const onSelectSortMode = (value: JobSortMode, close: () => void) => {
@@ -181,7 +183,7 @@ const onSelectSortMode = (value: JobSortMode, close: () => void) => {
 }
 
 const onSearchQueryUpdate = (value: string | undefined) => {
-  emit('update:searchQuery', value ?? '')
+  searchQuery.value = value ?? ''
 }
 
 const sortLabel = (mode: JobSortMode) => {
