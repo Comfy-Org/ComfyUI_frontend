@@ -138,7 +138,7 @@
     </div>
 
     <!-- ComfyHub section -->
-    <ComfyHubUploadSection />
+    <ComfyHubUploadSection v-if="flags.comfyHubUploadEnabled" />
   </div>
 </template>
 
@@ -157,6 +157,7 @@ import type { WorkflowPublishResult } from '@/platform/workflow/sharing/types/sh
 import { useWorkflowShareService } from '@/platform/workflow/sharing/services/workflowShareService'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { appendJsonExt } from '@/utils/formatUtil'
 
 const { onClose } = defineProps<{
@@ -165,6 +166,7 @@ const { onClose } = defineProps<{
 
 const { t, locale } = useI18n()
 const toast = useToast()
+const { flags } = useFeatureFlags()
 const shareService = useWorkflowShareService()
 const workflowStore = useWorkflowStore()
 const workflowService = useWorkflowService()
