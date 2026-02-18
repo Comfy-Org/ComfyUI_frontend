@@ -32,14 +32,11 @@
 
       <!-- Unpublished state -->
       <template v-if="dialogState === 'unpublished'">
-        <p class="m-0 text-xs text-muted-foreground">
-          {{ $t('shareWorkflow.publishDescription') }}
-        </p>
         <ShareAssetWarningBox
           v-if="requiresAcknowledgment"
           v-model:acknowledged="acknowledged"
-          :assets="assets"
-          :models="models"
+          :assets
+          :models
         />
         <Button
           variant="primary"
