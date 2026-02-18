@@ -14,7 +14,7 @@
           :class="
             cn(
               stepClasses,
-              activeStep === step.id && 'bg-[#253236]',
+              activeStep === step.id && 'bg-interface-builder-mode-background',
               activeStep !== step.id &&
                 'hover:bg-secondary-background bg-transparent'
             )
@@ -46,7 +46,7 @@
           cn(
             stepClasses,
             activeStep === 'save'
-              ? 'bg-[#253236]'
+              ? 'bg-interface-builder-mode-background'
               : 'hover:bg-secondary-background bg-transparent'
           )
         "
