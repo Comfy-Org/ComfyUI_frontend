@@ -277,7 +277,13 @@ const zExtra = z
     reroutes: z.array(zReroute).optional(),
     workflowRendererVersion: zRendererType.optional(),
     BlueprintDescription: z.string().optional(),
-    BlueprintSearchAliases: z.array(z.string()).optional()
+    BlueprintSearchAliases: z.array(z.string()).optional(),
+    linearData: z
+      .object({
+        inputs: z.array(z.tuple([zNodeId, z.string()])).optional(),
+        outputs: z.array(zNodeId).optional()
+      })
+      .optional()
   })
   .passthrough()
 
