@@ -15,7 +15,7 @@ export const useQueueClearHistoryDialog = () => {
         dismissableMask: true,
         pt: {
           root: {
-            class: 'max-w-[360px] w-auto bg-transparent border-none shadow-none'
+            class: 'max-w-90 w-auto bg-transparent border-none shadow-none'
           },
           content: {
             class: 'bg-transparent',
