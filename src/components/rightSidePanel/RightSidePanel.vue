@@ -41,7 +41,7 @@ const rightSidePanelStore = useRightSidePanelStore()
 const settingStore = useSettingStore()
 const { t } = useI18n()
 
-const { hasAnyError } = storeToRefs(executionStore)
+const { hasAnyError, allErrorExecutionIds } = storeToRefs(executionStore)
 
 const { findParentGroup } = useGraphHierarchy()
 
@@ -96,17 +96,6 @@ type RightSidePanelTabList = Array<{
   icon?: string
 }>
 
-const allErrorIds = computed<string[]>(() => {
-  const ids: string[] = []
-  if (executionStore.lastNodeErrors) {
-    ids.push(...Object.keys(executionStore.lastNodeErrors))
-  }
-  if (executionStore.lastExecutionError) {
-    ids.push(String(executionStore.lastExecutionError.node_id))
-  }
-  return ids
-})
-
 const hasDirectNodeError = computed(() =>
   selectedNodes.value.some((node) =>
     executionStore.activeGraphErrorNodeIds.has(String(node.id))
@@ -114,11 +103,10 @@ const hasDirectNodeError = computed(() =>
 )
 
 const hasContainerInternalError = computed(() => {
-  if (allErrorIds.value.length === 0) return false
+  if (allErrorExecutionIds.value.length === 0) return false
   return selectedNodes.value.some((node) => {
     if (!(node instanceof SubgraphNode || isGroupNode(node))) return false
-    const prefix = `${node.id}:`
-    return allErrorIds.value.some((execId) => execId.startsWith(prefix))
+    return executionStore.hasInternalErrorForNode(node.id)
   })
 })
 

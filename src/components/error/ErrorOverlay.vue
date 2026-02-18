@@ -30,14 +30,14 @@
         <div class="px-4 pb-3">
           <ul class="m-0 flex list-none flex-col gap-1.5 p-0">
             <li
-              v-for="(entry, idx) in groupedErrors"
+              v-for="(message, idx) in groupedErrorMessages"
               :key="idx"
               class="flex items-baseline gap-2 text-sm leading-snug text-muted-foreground"
             >
               <span
                 class="mt-1.5 size-1 shrink-0 rounded-full bg-muted-foreground"
               />
-              <span>{{ entry.message }}</span>
+              <span>{{ message }}</span>
             </li>
           </ul>
         </div>
@@ -57,51 +57,24 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { storeToRefs } from 'pinia'
 
 import Button from '@/components/ui/button/Button.vue'
-import type { NodeError } from '@/schemas/apiSchema'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { useErrorGroups } from '@/components/rightSidePanel/errors/useErrorGroups'
 import { cn } from '@/utils/tailwindUtil'
-
-interface ErrorEntry {
-  message: string
-}
 
 const { t } = useI18n()
 const executionStore = useExecutionStore()
 const rightSidePanelStore = useRightSidePanelStore()
 const canvasStore = useCanvasStore()
 
-const groupedErrors = computed<ErrorEntry[]>(() => {
-  const messages = new Set<string>()
-
-  if (executionStore.lastPromptError) {
-    messages.add(executionStore.lastPromptError.message)
-  }
-
-  if (executionStore.lastNodeErrors) {
-    for (const nodeError of Object.values(
-      executionStore.lastNodeErrors
-    ) as NodeError[]) {
-      for (const err of nodeError.errors) {
-        messages.add(err.message)
-      }
-    }
-  }
-
-  if (executionStore.lastExecutionError) {
-    const e = executionStore.lastExecutionError
-    messages.add(`${e.exception_type}: ${e.exception_message}`)
-  }
-
-  return Array.from(messages).map((message) => ({ message }))
-})
-
-const totalErrorCount = computed(() => executionStore.totalErrorCount)
+const { totalErrorCount, isErrorOverlayOpen } = storeToRefs(executionStore)
+const { groupedErrorMessages } = useErrorGroups(ref(''), t)
 
 const errorCountLabel = computed(() =>
   t(
@@ -112,7 +85,7 @@ const errorCountLabel = computed(() =>
 )
 
 const isVisible = computed(
-  () => executionStore.isErrorOverlayOpen && totalErrorCount.value > 0
+  () => isErrorOverlayOpen.value && totalErrorCount.value > 0
 )
 
 function dismiss() {

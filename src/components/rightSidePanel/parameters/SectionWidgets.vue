@@ -119,16 +119,7 @@ const hasContainerInternalError = computed(() => {
     targetNode.value instanceof SubgraphNode || isGroupNode(targetNode.value)
   if (!isContainer) return false
 
-  const errorIds: string[] = []
-  if (executionStore.lastNodeErrors) {
-    errorIds.push(...Object.keys(executionStore.lastNodeErrors))
-  }
-  if (executionStore.lastExecutionError) {
-    errorIds.push(String(executionStore.lastExecutionError.node_id))
-  }
-
-  const prefix = `${targetNode.value.id}:`
-  return errorIds.some((execId) => execId.startsWith(prefix))
+  return executionStore.hasInternalErrorForNode(targetNode.value.id)
 })
 
 const nodeHasError = computed(() => {

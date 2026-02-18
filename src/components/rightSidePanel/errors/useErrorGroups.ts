@@ -223,13 +223,7 @@ export function useErrorGroups(
 
   const errorNodeCache = computed(() => {
     const map = new Map<string, LGraphNode>()
-    const allExecutionIds = [
-      ...Object.keys(executionStore.lastNodeErrors ?? {}),
-      ...(executionStore.lastExecutionError
-        ? [String(executionStore.lastExecutionError.node_id)]
-        : [])
-    ]
-    for (const execId of allExecutionIds) {
+    for (const execId of executionStore.allErrorExecutionIds) {
       const node = getNodeByExecutionId(app.rootGraph, execId)
       if (node) map.set(execId, node)
     }
@@ -255,9 +249,10 @@ export function useErrorGroups(
     nodeId: string,
     classType: string,
     idPrefix: string,
-    errors: ErrorItem[]
+    errors: ErrorItem[],
+    filterBySelection = false
   ) {
-    if (!isErrorInSelection(nodeId)) return
+    if (filterBySelection && !isErrorInSelection(nodeId)) return
     const groupKey = isSingleNodeSelected.value ? SINGLE_GROUP_KEY : classType
     const cards = getOrCreateGroup(groupsMap, groupKey, 1)
     if (!cards.has(nodeId)) {
@@ -289,7 +284,10 @@ export function useErrorGroups(
     })
   }
 
-  function processNodeErrors(groupsMap: Map<string, GroupEntry>) {
+  function processNodeErrors(
+    groupsMap: Map<string, GroupEntry>,
+    filterBySelection = false
+  ) {
     if (!executionStore.lastNodeErrors) return
 
     for (const [nodeId, nodeError] of Object.entries(
@@ -303,30 +301,51 @@ export function useErrorGroups(
         nodeError.errors.map((e) => ({
           message: e.message,
           details: e.details ?? undefined
-        }))
+        })),
+        filterBySelection
       )
     }
   }
 
-  function processExecutionError(groupsMap: Map<string, GroupEntry>) {
+  function processExecutionError(
+    groupsMap: Map<string, GroupEntry>,
+    filterBySelection = false
+  ) {
     if (!executionStore.lastExecutionError) return
 
     const e = executionStore.lastExecutionError
-    addNodeErrorToGroup(groupsMap, String(e.node_id), e.node_type, 'exec', [
-      {
-        message: `${e.exception_type}: ${e.exception_message}`,
-        details: e.traceback.join('\n'),
-        isRuntimeError: true
-      }
-    ])
+    addNodeErrorToGroup(
+      groupsMap,
+      String(e.node_id),
+      e.node_type,
+      'exec',
+      [
+        {
+          message: `${e.exception_type}: ${e.exception_message}`,
+          details: e.traceback.join('\n'),
+          isRuntimeError: true
+        }
+      ],
+      filterBySelection
+    )
   }
 
-  const errorGroups = computed<ErrorGroup[]>(() => {
+  const allErrorGroups = computed<ErrorGroup[]>(() => {
     const groupsMap = new Map<string, GroupEntry>()
 
     processPromptError(groupsMap)
     processNodeErrors(groupsMap)
     processExecutionError(groupsMap)
+
+    return toSortedGroups(groupsMap)
+  })
+
+  const tabErrorGroups = computed<ErrorGroup[]>(() => {
+    const groupsMap = new Map<string, GroupEntry>()
+
+    processPromptError(groupsMap)
+    processNodeErrors(groupsMap, true)
+    processExecutionError(groupsMap, true)
 
     return isSingleNodeSelected.value
       ? toSortedGroups(regroupByErrorMessage(groupsMap))
@@ -335,7 +354,19 @@ export function useErrorGroups(
 
   const filteredGroups = computed<ErrorGroup[]>(() => {
     const query = searchQuery.value.trim()
-    return searchErrorGroups(errorGroups.value, query)
+    return searchErrorGroups(tabErrorGroups.value, query)
+  })
+  
+  const groupedErrorMessages = computed<string[]>(() => {
+    const messages = new Set<string>()
+    for (const group of allErrorGroups.value) {
+      for (const card of group.cards) {
+        for (const err of card.errors) {
+          messages.add(err.message)
+        }
+      }
+    }
+    return Array.from(messages)
   })
 
   /**
@@ -363,10 +394,12 @@ export function useErrorGroups(
   })
 
   return {
-    errorGroups,
+    allErrorGroups,
+    tabErrorGroups,
     filteredGroups,
     collapseState,
     isSingleNodeSelected,
-    errorNodeCache
+    errorNodeCache,
+    groupedErrorMessages
   }
 }

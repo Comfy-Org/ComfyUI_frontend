@@ -740,6 +740,17 @@ export const useExecutionStore = defineStore('execution', () => {
     () => hasExecutionError.value || hasPromptError.value || hasNodeError.value
   )
 
+  const allErrorExecutionIds = computed<string[]>(() => {
+    const ids: string[] = []
+    if (lastNodeErrors.value) {
+      ids.push(...Object.keys(lastNodeErrors.value))
+    }
+    if (lastExecutionError.value) {
+      ids.push(String(lastExecutionError.value.node_id))
+    }
+    return ids
+  })
+
   /** Total count of all individual errors */
   const totalErrorCount = computed(() => {
     let count = 0
@@ -785,6 +796,12 @@ export const useExecutionStore = defineStore('execution', () => {
     return ids
   })
 
+
+  function hasInternalErrorForNode(nodeId: string | number): boolean {
+    const prefix = `${nodeId}:`
+    return allErrorExecutionIds.value.some((id) => id.startsWith(prefix))
+  }
+
   const isErrorOverlayOpen = ref(false)
 
   function showErrorOverlay() {
@@ -804,6 +821,7 @@ export const useExecutionStore = defineStore('execution', () => {
     lastExecutionError,
     lastPromptError,
     hasAnyError,
+    allErrorExecutionIds,
     totalErrorCount,
     lastExecutionErrorNodeId,
     executingNodeId,
@@ -837,6 +855,7 @@ export const useExecutionStore = defineStore('execution', () => {
     // Node error lookup helpers
     getNodeErrors,
     slotHasError,
+    hasInternalErrorForNode,
     activeGraphErrorNodeIds,
     isErrorOverlayOpen,
     showErrorOverlay,
