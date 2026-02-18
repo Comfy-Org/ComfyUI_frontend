@@ -128,7 +128,7 @@ describe('useSidebarTabStore', () => {
   it('prepends the job history tab when QPO V2 is toggled on', async () => {
     const qpoV2Enabled = ref(false)
     mockGetSetting.mockImplementation(
-      (key: string) => key === 'Comfy.Queue.QPOV2' && qpoV2Enabled.value
+      (key: string) => key === 'Comfy.Queue.QPOV2' ? qpoV2Enabled.value : undefined
     )
 
     const store = useSidebarTabStore()
