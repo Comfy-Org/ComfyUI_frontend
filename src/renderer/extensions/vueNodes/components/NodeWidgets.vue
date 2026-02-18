@@ -29,6 +29,7 @@
         v-if="!widget.hidden && (!widget.advanced || showAdvanced)"
         class="lg-node-widget group col-span-full grid grid-cols-subgrid items-stretch"
         :data-widget-name="widget.name"
+        :data-widget-node-id="widget.nodeId"
       >
         <!-- Widget Input Slot Dot -->
         <div
@@ -165,6 +166,7 @@ interface ProcessedWidget {
   updateHandler: (value: WidgetValue) => void
   value: WidgetValue
   vueComponent: Component
+  nodeId?: string
   slotMetadata?: WidgetSlotMetadata
 }
 
@@ -237,6 +239,7 @@ const processedWidgets = computed((): ProcessedWidget[] => {
         ) ?? false,
       hidden: widget.options?.hidden ?? false,
       name: widget.name,
+      nodeId: widget.nodeId,
       type: widget.type,
       vueComponent,
       simplified,

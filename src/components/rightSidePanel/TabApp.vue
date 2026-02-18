@@ -9,6 +9,7 @@ import DraggableList from '@/components/common/DraggableList.vue'
 import IoItem from '@/components/rightSidePanel/app/IoItem.vue'
 import PropertiesAccordionItem from '@/components/rightSidePanel/layout/PropertiesAccordionItem.vue'
 import Button from '@/components/ui/button/Button.vue'
+import { isProxyWidget } from '@/core/graph/subgraph/proxyWidget'
 import type { LGraphNode, NodeId } from '@/lib/litegraph/src/LGraphNode'
 import type { INodeInputSlot } from '@/lib/litegraph/src/interfaces'
 import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
@@ -19,6 +20,7 @@ import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteracti
 import TransformPane from '@/renderer/core/layout/transform/TransformPane.vue'
 import { useDialogService } from '@/services/dialogService'
 import { useHoveredStore } from '@/stores/hoveredStore'
+import { findPartialExecutionPathToGraph } from '@/utils/graphTraversalUtil'
 import { cn } from '@/utils/tailwindUtil'
 
 type BoundStyle = { top: string; left: string; width: string; height: string }
@@ -67,9 +69,26 @@ function getHovered(
     const node = graph.getNodeById(hoveredStore.hoveredNodeId)
     if (!node) return
 
-    const widget = node.widgets?.find(
-      (w) => w.name === hoveredStore.hoveredWidgetName
-    )
+    const hoveredWidget = hoveredStore.hoveredWidgetName
+    if (!Array.isArray(hoveredWidget)) {
+      const widget = node.widgets?.find(
+        (w) => w.name === hoveredStore.hoveredWidgetName
+      )
+      return [node, widget]
+    }
+    const rootGraph = canvas.graph?.rootGraph
+    if (!rootGraph) return
+
+    const [locator, subNode] = hoveredWidget[1]?.split(':') ?? []
+    const subgraph = rootGraph.subgraphs.get(locator ?? '')
+    if (!subgraph) return
+
+    const path = findPartialExecutionPathToGraph(subgraph, rootGraph)
+    if (!path || !hoveredWidget[0]) return
+
+    const spacedPath = [...path.split(':'), subNode].slice(1).join(': ')
+    const targetName = `${spacedPath}: ${hoveredWidget[0]}`
+    const widget = node.widgets?.find((w) => w.name === targetName)
     return [node, widget]
   }
   if (!e) return
@@ -138,7 +157,10 @@ function handleClick(e: MouseEvent) {
   }
 
   const key = `${node.id}: ${widget.name}`
-  const bounding = getBounding(node.id, widget.name)
+  const dataWidgetName = isProxyWidget(widget)
+    ? widget._overlay.widgetName
+    : widget.name
+  const bounding = getBounding(node.id, dataWidgetName)
   const keyIndex = selectedInputs.findIndex(([k]) => k === key)
   const input = node.inputs.find((i) => i.widget?.name === widget.name)
   const rename = input && (() => renameWidget(widget, input, key))
