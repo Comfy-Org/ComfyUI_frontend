@@ -17,10 +17,11 @@ import { getMediaTypeFromFilename } from '@comfyorg/shared-frontend-utils/format
  * detectNodeTypeFromFilename('image.png') // { nodeType: 'LoadImage', widgetName: 'image' }
  * detectNodeTypeFromFilename('video.mp4') // { nodeType: 'LoadVideo', widgetName: 'file' }
  * detectNodeTypeFromFilename('audio.mp3') // { nodeType: 'LoadAudio', widgetName: 'audio' }
+ * detectNodeTypeFromFilename('model.glb') // { nodeType: 'Load3D', widgetName: 'model_file' }
  */
 export function detectNodeTypeFromFilename(filename: string): {
-  nodeType: 'LoadImage' | 'LoadVideo' | 'LoadAudio' | null
-  widgetName: 'image' | 'file' | 'audio' | null
+  nodeType: 'LoadImage' | 'LoadVideo' | 'LoadAudio' | 'Load3D' | null
+  widgetName: 'image' | 'file' | 'audio' | 'model_file' | null
 } {
   const mediaType = getMediaTypeFromFilename(filename)
 
@@ -31,8 +32,10 @@ export function detectNodeTypeFromFilename(filename: string): {
       return { nodeType: 'LoadVideo', widgetName: 'file' }
     case 'audio':
       return { nodeType: 'LoadAudio', widgetName: 'audio' }
+    case '3D':
+      return { nodeType: 'Load3D', widgetName: 'model_file' }
     default:
-      // 3D and other types don't have loader nodes
+      // Other unsupported media types don't have loader nodes
       return { nodeType: null, widgetName: null }
   }
 }

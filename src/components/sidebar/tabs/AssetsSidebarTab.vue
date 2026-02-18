@@ -164,7 +164,6 @@
     ref="contextMenuRef"
     :asset="contextMenuAsset"
     :asset-type="contextMenuAssetType"
-    :file-kind="contextMenuFileKind"
     :show-delete-button="shouldShowDeleteButton"
     :selected-assets="selectedAssets"
     :is-bulk-mode="isBulkMode"
@@ -213,7 +212,6 @@ import { useMediaAssetFiltering } from '@/platform/assets/composables/useMediaAs
 import { useOutputStacks } from '@/platform/assets/composables/useOutputStacks'
 import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
-import type { MediaKind } from '@/platform/assets/schemas/mediaAssetSchema'
 import { resolveOutputAssetItems } from '@/platform/assets/utils/outputAssetUtil'
 import { isCloud } from '@/platform/distribution/types'
 import { useDialogStore } from '@/stores/dialogStore'
@@ -245,10 +243,6 @@ const shouldShowDeleteButton = computed(() => {
 
 const contextMenuAssetType = computed(() =>
   contextMenuAsset.value ? getAssetType(contextMenuAsset.value.tags) : 'input'
-)
-
-const contextMenuFileKind = computed<MediaKind>(() =>
-  getMediaTypeFromFilename(contextMenuAsset.value?.name ?? '')
 )
 
 const shouldShowOutputCount = (item: AssetItem): boolean => {
