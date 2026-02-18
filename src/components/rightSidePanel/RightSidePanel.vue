@@ -21,7 +21,7 @@ import { resolveNodeDisplayName } from '@/utils/nodeTitleUtil'
 import { cn } from '@/utils/tailwindUtil'
 import { isGroupNode } from '@/utils/executableGroupNodeDto'
 
-import TabApp from './TabApp.vue'
+import AppBuilder from './app/AppBuilder.vue'
 import TabInfo from './info/TabInfo.vue'
 import TabGlobalParameters from './parameters/TabGlobalParameters.vue'
 import TabNodes from './parameters/TabNodes.vue'
@@ -47,7 +47,8 @@ const { hasAnyError, allErrorExecutionIds } = storeToRefs(executionStore)
 const { findParentGroup } = useGraphHierarchy()
 
 const { selectedItems: directlySelectedItems } = storeToRefs(canvasStore)
-const { activeTab, isEditingSubgraph } = storeToRefs(rightSidePanelStore)
+const { activeTab, isEditingSubgraph, inAppBuilder } =
+  storeToRefs(rightSidePanelStore)
 
 const sidebarLocation = computed<'left' | 'right'>(() =>
   settingStore.get('Comfy.Sidebar.Location')
@@ -129,10 +130,6 @@ const tabs = computed<RightSidePanelTabList>(() => {
       icon: 'icon-[lucide--octagon-alert] bg-node-stroke-error ml-1'
     })
   }
-  list.push({
-    label: () => 'app',
-    value: 'app'
-  })
 
   list.push({
     label: () =>
@@ -243,7 +240,9 @@ function handleProxyWidgetsUpdate(value: ProxyWidgetsProperty) {
 </script>
 
 <template>
+  <AppBuilder v-if="inAppBuilder" />
   <div
+    v-else
     data-testid="properties-panel"
     class="flex size-full flex-col bg-comfy-menu-bg"
   >
@@ -323,7 +322,6 @@ function handleProxyWidgetsUpdate(value: ProxyWidgetsProperty) {
     <div class="scrollbar-thin flex-1 overflow-y-auto">
       <TabErrors v-if="activeTab === 'errors'" />
       <template v-else-if="!hasSelection">
-        <TabApp v-if="activeTab === 'app'" />
         <TabGlobalParameters v-if="activeTab === 'parameters'" />
         <TabNodes v-else-if="activeTab === 'nodes'" />
         <TabGlobalSettings v-else-if="activeTab === 'settings'" />
