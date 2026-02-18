@@ -24,7 +24,8 @@ export enum ServerFeatureFlag {
   USER_SECRETS_ENABLED = 'user_secrets_enabled',
   NODE_REPLACEMENTS = 'node_replacements',
   NODE_LIBRARY_ESSENTIALS_ENABLED = 'node_library_essentials_enabled',
-  WORKFLOW_SHARING_ENABLED = 'workflow_sharing_enabled'
+  WORKFLOW_SHARING_ENABLED = 'workflow_sharing_enabled',
+  COMFYHUB_UPLOAD_ENABLED = 'comfyhub_upload_enabled'
 }
 
 /**
@@ -135,7 +136,13 @@ export function useFeatureFlags() {
     get workflowSharingEnabled() {
       return (
         remoteConfig.value.workflow_sharing_enabled ??
-        api.getServerFeature(ServerFeatureFlag.WORKFLOW_SHARING_ENABLED, false)
+        api.getServerFeature(ServerFeatureFlag.WORKFLOW_SHARING_ENABLED, true)
+      )
+    },
+    get comfyHubUploadEnabled() {
+      return (
+        remoteConfig.value.comfyhub_upload_enabled ??
+        api.getServerFeature(ServerFeatureFlag.COMFYHUB_UPLOAD_ENABLED, true)
       )
     }
   })
