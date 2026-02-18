@@ -124,11 +124,16 @@ export function useWorkflowShareService() {
       })
     )
 
-    await Promise.all(
+    const settledResults = await Promise.allSettled(
       [...nodeTypesInGraph].map((nodeType) =>
         assetsStore.updateModelsForNodeType(nodeType)
       )
     )
+    for (const result of settledResults) {
+      if (result.status === 'rejected') {
+        console.error('Failed to update models for node type:', result.reason)
+      }
+    }
 
     const results = mapAllNodes(graph, (node) => {
       const nodeType = node.type ?? ''
