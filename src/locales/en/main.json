@@ -2949,7 +2949,9 @@
       "connectAtLeastOne": "Connect {atLeastOne} output node so users can see results after running.",
       "atLeastOne": "at least one",
       "outputExamples": "Examples: 'Save Image' or 'Save Video'",
-      "switchToSelectButton": "Switch to Select"
+      "switchToSelectButton": "Switch to Select",
+      "outputs": "Outputs",
+      "resultsLabel": "Results generated from the selected output node(s) will be shown here after running this app"
     }
   },
   "missingNodes": {
