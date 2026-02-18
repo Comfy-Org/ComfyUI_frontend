@@ -147,7 +147,7 @@ defineExpose({ runButtonClick })
 </script>
 <template>
   <div
-    v-if="!appModeStore.isBuilderMode"
+    v-if="!appModeStore.isBuilderMode && appModeStore.hasOutputs"
     class="flex flex-col min-w-80 md:h-full"
   >
     <section
