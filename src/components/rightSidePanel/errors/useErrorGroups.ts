@@ -356,7 +356,7 @@ export function useErrorGroups(
     const query = searchQuery.value.trim()
     return searchErrorGroups(tabErrorGroups.value, query)
   })
-  
+
   const groupedErrorMessages = computed<string[]>(() => {
     const messages = new Set<string>()
     for (const group of allErrorGroups.value) {
@@ -378,7 +378,7 @@ export function useErrorGroups(
   function expandFocusedErrorGroup(graphNodeId: string | null) {
     if (!graphNodeId) return
     const prefix = `${graphNodeId}:`
-    for (const group of filteredGroups.value) {
+    for (const group of allErrorGroups.value) {
       const hasMatch = group.cards.some(
         (card) =>
           card.graphNodeId === graphNodeId ||

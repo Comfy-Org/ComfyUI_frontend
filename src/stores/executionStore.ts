@@ -796,7 +796,6 @@ export const useExecutionStore = defineStore('execution', () => {
     return ids
   })
 
-
   function hasInternalErrorForNode(nodeId: string | number): boolean {
     const prefix = `${nodeId}:`
     return allErrorExecutionIds.value.some((id) => id.startsWith(prefix))
