@@ -78,8 +78,8 @@
         <ShareAssetWarningBox
           v-if="requiresAcknowledgment"
           v-model:acknowledged="acknowledged"
-          :assets="assets"
-          :models="models"
+          :assets
+          :models
         />
         <Button
           variant="primary"
