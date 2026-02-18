@@ -34,10 +34,7 @@
               class="w-full justify-between"
               variant="textonly"
               size="sm"
-              @click="
-                selectWorkflowFilter('all')
-                close()
-              "
+              @click="onSelectWorkflowFilter('all', close)"
             >
               <span>{{
                 t('sideToolbar.queueProgressOverlay.filterAllWorkflows')
@@ -51,10 +48,7 @@
             <Button
               class="w-full justify-between"
               variant="textonly"
-              @click="
-                selectWorkflowFilter('current')
-                close()
-              "
+              @click="onSelectWorkflowFilter('current', close)"
             >
               <span>{{
                 t('sideToolbar.queueProgressOverlay.filterCurrentWorkflow')
@@ -91,10 +85,7 @@
                 class="w-full justify-between"
                 variant="textonly"
                 size="sm"
-                @click="
-                  selectSortMode(mode)
-                  close()
-                "
+                @click="onSelectSortMode(mode, close)"
               >
                 <span>{{ sortLabel(mode) }}</span>
                 <i
@@ -176,8 +167,21 @@ const selectWorkflowFilter = (value: 'all' | 'current') => {
   emit('update:selectedWorkflowFilter', value)
 }
 
+const onSelectWorkflowFilter = (
+  value: 'all' | 'current',
+  close: () => void
+) => {
+  selectWorkflowFilter(value)
+  close()
+}
+
 const selectSortMode = (value: JobSortMode) => {
   emit('update:selectedSortMode', value)
+}
+
+const onSelectSortMode = (value: JobSortMode, close: () => void) => {
+  selectSortMode(value)
+  close()
 }
 
 const onSearchQueryUpdate = (value: string | undefined) => {
