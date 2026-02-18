@@ -353,15 +353,6 @@
         "name": "モデレーション",
         "tooltip": "モデレーション設定"
       },
-      "moderation_prompt_content_moderation": {
-        "name": "プロンプト内容モデレーション"
-      },
-      "moderation_visual_input_moderation": {
-        "name": "入力画像モデレーション"
-      },
-      "moderation_visual_output_moderation": {
-        "name": "出力画像モデレーション"
-      },
       "negative_prompt": {
         "name": "ネガティブプロンプト"
       },
@@ -386,6 +377,56 @@
       },
       "1": {
         "name": "構造化プロンプト",
+        "tooltip": null
+      }
+    }
+  },
+  "BriaRemoveImageBackground": {
+    "description": "Bria RMBG 2.0 を使用して画像の背景を除去します。",
+    "display_name": "Bria 画像背景除去",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後の制御"
+      },
+      "image": {
+        "name": "画像"
+      },
+      "moderation": {
+        "name": "モデレーション",
+        "tooltip": "モデレーション設定"
+      },
+      "seed": {
+        "name": "シード",
+        "tooltip": "シードはノードを再実行するかどうかを制御します。シードに関わらず結果は非決定的です。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "BriaRemoveVideoBackground": {
+    "description": "Bria を使用して動画の背景を除去します。",
+    "display_name": "Bria 動画背景除去",
+    "inputs": {
+      "background_color": {
+        "name": "背景色",
+        "tooltip": "出力動画の背景色。"
+      },
+      "control_after_generate": {
+        "name": "生成後の制御"
+      },
+      "seed": {
+        "name": "シード",
+        "tooltip": "シードはノードを再実行するかどうかを制御します。シードに関わらず結果は非決定的です。"
+      },
+      "video": {
+        "name": "動画"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -10297,6 +10338,32 @@
       }
     }
   },
+  "NAGuidance": {
+    "description": "モデルに正規化アテンションガイダンスを適用し、distilled/schnellモデルでネガティブプロンプトを有効にします。",
+    "display_name": "正規化アテンションガイダンス",
+    "inputs": {
+      "model": {
+        "name": "model",
+        "tooltip": "NAGを適用するモデル。"
+      },
+      "nag_alpha": {
+        "name": "nag_alpha",
+        "tooltip": "正規化アテンションのブレンド係数。1.0は完全な置換、0.0は効果なし。"
+      },
+      "nag_scale": {
+        "name": "nag_scale",
+        "tooltip": "ガイダンスのスケール係数。値が高いほどネガティブプロンプトからさらに離れます。"
+      },
+      "nag_tau": {
+        "name": "nag_tau"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "NAGが有効化されたパッチ済みモデル。"
+      }
+    }
+  },
   "NormalizeImages": {
     "display_name": "画像を正規化",
     "inputs": {
@@ -11663,6 +11730,88 @@
       },
       "substyle": {
         "name": "サブスタイル"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "RecraftV4TextToImageNode": {
+    "description": "Recraft V4またはV4 Proモデルを使用して画像を生成します。",
+    "display_name": "Recraft V4 テキストから画像生成",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後のコントロール"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "生成に使用するモデル。"
+      },
+      "model_size": {
+        "name": "サイズ"
+      },
+      "n": {
+        "name": "n",
+        "tooltip": "生成する画像の枚数。"
+      },
+      "negative_prompt": {
+        "name": "negative_prompt",
+        "tooltip": "画像に含めたくない要素のテキスト説明（任意）。"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "画像生成用のプロンプト。最大10,000文字。"
+      },
+      "recraft_controls": {
+        "name": "recraft_controls",
+        "tooltip": "Recraft Controlsノードによる追加の生成コントロール（任意）。"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "ノードを再実行するかどうかを決定するシード値。実際の結果はシードに関係なく非決定的です。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "RecraftV4TextToVectorNode": {
+    "description": "Recraft V4またはV4 Proモデルを使用してSVGを生成します。",
+    "display_name": "Recraft V4 テキストからベクター生成",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後のコントロール"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "生成に使用するモデル。"
+      },
+      "model_size": {
+        "name": "サイズ"
+      },
+      "n": {
+        "name": "n",
+        "tooltip": "生成する画像の枚数。"
+      },
+      "negative_prompt": {
+        "name": "negative_prompt",
+        "tooltip": "画像に含めたくない要素のテキスト説明（任意）。"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "画像生成用のプロンプト。最大10,000文字。"
+      },
+      "recraft_controls": {
+        "name": "recraft_controls",
+        "tooltip": "Recraft Controlsノードによる追加の生成コントロール（任意）。"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "ノードを再実行するかどうかを決定するシード値。実際の結果はシードに関係なく非決定的です。"
       }
     },
     "outputs": {
@@ -14099,6 +14248,29 @@
       }
     }
   },
+  "Tencent3DPartNode": {
+    "description": "モデル構造に基づいて自動的にコンポーネントの識別と生成を行います。",
+    "display_name": "Hunyuan3D：3Dパーツ",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後の制御"
+      },
+      "model_3d": {
+        "name": "3Dモデル",
+        "tooltip": "FBX形式の3Dモデル。モデルの面数は30,000未満である必要があります。"
+      },
+      "seed": {
+        "name": "シード",
+        "tooltip": "シードはノードを再実行するかどうかを制御します。シードに関係なく結果は非決定的です。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "FBX",
+        "tooltip": null
+      }
+    }
+  },
   "TencentImageToModelNode": {
     "display_name": "Hunyuan3D: 画像からモデルへ (Pro)",
     "inputs": {
@@ -15771,6 +15943,46 @@
       "prompt": {
         "name": "プロンプト",
         "tooltip": "動画生成用のオプションのテキストプロンプト（最大2000文字）。"
+      },
+      "seed": {
+        "name": "シード"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Vidu3StartEndToVideoNode": {
+    "description": "開始フレーム、終了フレーム、およびプロンプトから動画を生成します。",
+    "display_name": "Vidu Q3 開始/終了フレームからの動画生成",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後のコントロール"
+      },
+      "end_frame": {
+        "name": "終了フレーム"
+      },
+      "first_frame": {
+        "name": "開始フレーム"
+      },
+      "model": {
+        "name": "モデル",
+        "tooltip": "動画生成に使用するモデル。"
+      },
+      "model_audio": {
+        "name": "オーディオ"
+      },
+      "model_duration": {
+        "name": "再生時間"
+      },
+      "model_resolution": {
+        "name": "解像度"
+      },
+      "prompt": {
+        "name": "プロンプト",
+        "tooltip": "プロンプトの説明（最大2000文字）。"
       },
       "seed": {
         "name": "シード"

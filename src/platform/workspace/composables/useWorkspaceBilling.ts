@@ -16,7 +16,7 @@ import type {
   BillingActions,
   BillingState,
   SubscriptionInfo
-} from './types'
+} from '../../../composables/billing/types'
 
 /**
  * Adapter for workspace-scoped billing via /billing/* endpoints.

@@ -353,15 +353,6 @@
         "name": "moderation",
         "tooltip": "内容审核设置"
       },
-      "moderation_prompt_content_moderation": {
-        "name": "prompt_content_moderation"
-      },
-      "moderation_visual_input_moderation": {
-        "name": "visual_input_moderation"
-      },
-      "moderation_visual_output_moderation": {
-        "name": "visual_output_moderation"
-      },
       "negative_prompt": {
         "name": "negative_prompt"
       },
@@ -386,6 +377,56 @@
       },
       "1": {
         "name": "structured_prompt",
+        "tooltip": null
+      }
+    }
+  },
+  "BriaRemoveImageBackground": {
+    "description": "使用 Bria RMBG 2.0 移除图像的背景。",
+    "display_name": "Bria 移除图像背景",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "image": {
+        "name": "图像"
+      },
+      "moderation": {
+        "name": "内容审核",
+        "tooltip": "内容审核设置"
+      },
+      "seed": {
+        "name": "种子",
+        "tooltip": "种子控制节点是否重新运行；无论种子如何，结果都是非确定性的。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "BriaRemoveVideoBackground": {
+    "description": "使用 Bria 移除视频的背景。",
+    "display_name": "Bria 移除视频背景",
+    "inputs": {
+      "background_color": {
+        "name": "背景颜色",
+        "tooltip": "输出视频的背景颜色。"
+      },
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "seed": {
+        "name": "种子",
+        "tooltip": "种子控制节点是否重新运行；无论种子如何，结果都是非确定性的。"
+      },
+      "video": {
+        "name": "视频"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -10299,6 +10340,32 @@
       }
     }
   },
+  "NAGuidance": {
+    "description": "对模型应用归一化注意力引导，使蒸馏/快速模型支持负向提示。",
+    "display_name": "归一化注意力引导",
+    "inputs": {
+      "model": {
+        "name": "model",
+        "tooltip": "要应用NAG的模型。"
+      },
+      "nag_alpha": {
+        "name": "nag_alpha",
+        "tooltip": "归一化注意力的混合因子。1.0为完全替换，0.0为无效果。"
+      },
+      "nag_scale": {
+        "name": "nag_scale",
+        "tooltip": "引导缩放因子。数值越大，越远离负向提示。"
+      },
+      "nag_tau": {
+        "name": "nag_tau"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "已启用NAG的修补模型。"
+      }
+    }
+  },
   "NormalizeImages": {
     "display_name": "规格化图像",
     "inputs": {
@@ -11665,6 +11732,88 @@
       },
       "substyle": {
         "name": "子风格"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "RecraftV4TextToImageNode": {
+    "description": "使用Recraft V4或V4 Pro模型生成图像。",
+    "display_name": "Recraft V4 文本转图像",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "用于生成的模型。"
+      },
+      "model_size": {
+        "name": "size"
+      },
+      "n": {
+        "name": "n",
+        "tooltip": "要生成的图像数量。"
+      },
+      "negative_prompt": {
+        "name": "negative_prompt",
+        "tooltip": "可选的图像中不希望出现元素的文本描述。"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "用于图像生成的提示词。最多10,000个字符。"
+      },
+      "recraft_controls": {
+        "name": "recraft_controls",
+        "tooltip": "通过Recraft Controls节点对生成过程的可选附加控制。"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "用于决定节点是否重新运行的种子；无论种子如何，实际结果都是非确定性的。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "RecraftV4TextToVectorNode": {
+    "description": "使用Recraft V4或V4 Pro模型生成SVG。",
+    "display_name": "Recraft V4 文本转矢量",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "用于生成的模型。"
+      },
+      "model_size": {
+        "name": "size"
+      },
+      "n": {
+        "name": "n",
+        "tooltip": "要生成的图像数量。"
+      },
+      "negative_prompt": {
+        "name": "negative_prompt",
+        "tooltip": "可选的图像中不希望出现元素的文本描述。"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "用于图像生成的提示词。最多10,000个字符。"
+      },
+      "recraft_controls": {
+        "name": "recraft_controls",
+        "tooltip": "通过Recraft Controls节点对生成过程的可选附加控制。"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "用于决定节点是否重新运行的种子；无论种子如何，实际结果都是非确定性的。"
       }
     },
     "outputs": {
@@ -14112,6 +14261,29 @@
       }
     }
   },
+  "Tencent3DPartNode": {
+    "description": "根据模型结构自动进行组件识别与生成。",
+    "display_name": "Hunyuan3D：3D部件",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "model_3d": {
+        "name": "model_3d",
+        "tooltip": "FBX格式的3D模型。模型面数应少于30000。"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed用于控制节点是否重新运行；无论seed如何，结果都是非确定性的。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "FBX",
+        "tooltip": null
+      }
+    }
+  },
   "TencentImageToModelNode": {
     "display_name": "Hunyuan3D：图像转模型（专业版）",
     "inputs": {
@@ -15787,6 +15959,46 @@
       },
       "seed": {
         "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Vidu3StartEndToVideoNode": {
+    "description": "根据起始帧、结束帧和提示词生成视频。",
+    "display_name": "Vidu Q3 起始/结束帧到视频生成",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "end_frame": {
+        "name": "结束帧"
+      },
+      "first_frame": {
+        "name": "起始帧"
+      },
+      "model": {
+        "name": "模型",
+        "tooltip": "用于视频生成的模型。"
+      },
+      "model_audio": {
+        "name": "音频"
+      },
+      "model_duration": {
+        "name": "时长"
+      },
+      "model_resolution": {
+        "name": "分辨率"
+      },
+      "prompt": {
+        "name": "提示词",
+        "tooltip": "提示描述（最多2000字符）。"
+      },
+      "seed": {
+        "name": "种子"
       }
     },
     "outputs": {

@@ -369,15 +369,6 @@
       },
       "control_after_generate": {
         "name": "control after generate"
-      },
-      "moderation_prompt_content_moderation": {
-        "name": "prompt_content_moderation"
-      },
-      "moderation_visual_input_moderation": {
-        "name": "visual_input_moderation"
-      },
-      "moderation_visual_output_moderation": {
-        "name": "visual_output_moderation"
       }
     },
     "outputs": {
@@ -386,6 +377,56 @@
       },
       "1": {
         "name": "structured_prompt",
+        "tooltip": null
+      }
+    }
+  },
+  "BriaRemoveImageBackground": {
+    "display_name": "Bria Remove Image Background",
+    "description": "Remove the background from an image using Bria RMBG 2.0.",
+    "inputs": {
+      "image": {
+        "name": "image"
+      },
+      "moderation": {
+        "name": "moderation",
+        "tooltip": "Moderation settings"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed controls whether the node should re-run; results are non-deterministic regardless of seed."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "BriaRemoveVideoBackground": {
+    "display_name": "Bria Remove Video Background",
+    "description": "Remove the background from a video using Bria. ",
+    "inputs": {
+      "video": {
+        "name": "video"
+      },
+      "background_color": {
+        "name": "background_color",
+        "tooltip": "Background color for the output video."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed controls whether the node should re-run; results are non-deterministic regardless of seed."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -10358,6 +10399,32 @@
       }
     }
   },
+  "NAGuidance": {
+    "display_name": "Normalized Attention Guidance",
+    "description": "Applies Normalized Attention Guidance to models, enabling negative prompts on distilled/schnell models.",
+    "inputs": {
+      "model": {
+        "name": "model",
+        "tooltip": "The model to apply NAG to."
+      },
+      "nag_scale": {
+        "name": "nag_scale",
+        "tooltip": "The guidance scale factor. Higher values push further from the negative prompt."
+      },
+      "nag_alpha": {
+        "name": "nag_alpha",
+        "tooltip": "Blending factor for the normalized attention. 1.0 is full replacement, 0.0 is no effect."
+      },
+      "nag_tau": {
+        "name": "nag_tau"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "The patched model with NAG enabled."
+      }
+    }
+  },
   "NormalizeImages": {
     "display_name": "Normalize Images",
     "inputs": {
@@ -11606,7 +11673,7 @@
   },
   "RecraftStyleV3InfiniteStyleLibrary": {
     "display_name": "Recraft Style - Infinite Style Library",
-    "description": "Select style based on preexisting UUID from Recraft's Infinite Style Library.",
+    "description": "Choose style based on preexisting UUID from Recraft's Infinite Style Library.",
     "inputs": {
       "style_id": {
         "name": "style_id",
@@ -11724,6 +11791,88 @@
       },
       "control_after_generate": {
         "name": "control after generate"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "RecraftV4TextToImageNode": {
+    "display_name": "Recraft V4 Text to Image",
+    "description": "Generates images using Recraft V4 or V4 Pro models.",
+    "inputs": {
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Prompt for the image generation. Maximum 10,000 characters."
+      },
+      "negative_prompt": {
+        "name": "negative_prompt",
+        "tooltip": "An optional text description of undesired elements on an image."
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "The model to use for generation."
+      },
+      "n": {
+        "name": "n",
+        "tooltip": "The number of images to generate."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed to determine if node should re-run; actual results are nondeterministic regardless of seed."
+      },
+      "recraft_controls": {
+        "name": "recraft_controls",
+        "tooltip": "Optional additional controls over the generation via the Recraft Controls node."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model_size": {
+        "name": "size"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "RecraftV4TextToVectorNode": {
+    "display_name": "Recraft V4 Text to Vector",
+    "description": "Generates SVG using Recraft V4 or V4 Pro models.",
+    "inputs": {
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Prompt for the image generation. Maximum 10,000 characters."
+      },
+      "negative_prompt": {
+        "name": "negative_prompt",
+        "tooltip": "An optional text description of undesired elements on an image."
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "The model to use for generation."
+      },
+      "n": {
+        "name": "n",
+        "tooltip": "The number of images to generate."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed to determine if node should re-run; actual results are nondeterministic regardless of seed."
+      },
+      "recraft_controls": {
+        "name": "recraft_controls",
+        "tooltip": "Optional additional controls over the generation via the Recraft Controls node."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model_size": {
+        "name": "size"
       }
     },
     "outputs": {
@@ -14186,8 +14335,31 @@
       }
     }
   },
+  "Tencent3DPartNode": {
+    "display_name": "Hunyuan3D: 3D Part",
+    "description": "Automatically perform component identification and generation based on the model structure.",
+    "inputs": {
+      "model_3d": {
+        "name": "model_3d",
+        "tooltip": "3D model in FBX format. Model should have less than 30000 faces."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed controls whether the node should re-run; results are non-deterministic regardless of seed."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "FBX",
+        "tooltip": null
+      }
+    }
+  },
   "TencentImageToModelNode": {
-    "display_name": "Hunyuan3D: Image(s) to Model (Pro)",
+    "display_name": "Hunyuan3D: Image(s) to Model",
     "inputs": {
       "model": {
         "name": "model",
@@ -14238,7 +14410,7 @@
     }
   },
   "TencentTextToModelNode": {
-    "display_name": "Hunyuan3D: Text to Model (Pro)",
+    "display_name": "Hunyuan3D: Text to Model",
     "inputs": {
       "model": {
         "name": "model",
@@ -15897,6 +16069,46 @@
       "prompt": {
         "name": "prompt",
         "tooltip": "An optional text prompt for video generation (max 2000 characters)."
+      },
+      "seed": {
+        "name": "seed"
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model_audio": {
+        "name": "audio"
+      },
+      "model_duration": {
+        "name": "duration"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Vidu3StartEndToVideoNode": {
+    "display_name": "Vidu Q3 Start/End Frame-to-Video Generation",
+    "description": "Generate a video from a start frame, an end frame, and a prompt.",
+    "inputs": {
+      "model": {
+        "name": "model",
+        "tooltip": "Model to use for video generation."
+      },
+      "first_frame": {
+        "name": "first_frame"
+      },
+      "end_frame": {
+        "name": "end_frame"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Prompt description (max 2000 characters)."
       },
       "seed": {
         "name": "seed"

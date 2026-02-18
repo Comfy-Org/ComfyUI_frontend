@@ -353,15 +353,6 @@
         "name": "denetleme",
         "tooltip": "Denetleme ayarları"
       },
-      "moderation_prompt_content_moderation": {
-        "name": "istem_içeriği_denetleme"
-      },
-      "moderation_visual_input_moderation": {
-        "name": "görsel_girdi_denetleme"
-      },
-      "moderation_visual_output_moderation": {
-        "name": "görsel_çıktı_denetleme"
-      },
       "negative_prompt": {
         "name": "negatif_istem"
       },
@@ -386,6 +377,56 @@
       },
       "1": {
         "name": "yapılandırılmış_istem",
+        "tooltip": null
+      }
+    }
+  },
+  "BriaRemoveImageBackground": {
+    "description": "Bria RMBG 2.0 kullanarak bir görselin arka planını kaldırın.",
+    "display_name": "Bria Görsel Arka Planı Kaldır",
+    "inputs": {
+      "control_after_generate": {
+        "name": "oluşturduktan sonra kontrol et"
+      },
+      "image": {
+        "name": "görsel"
+      },
+      "moderation": {
+        "name": "moderasyon",
+        "tooltip": "Moderasyon ayarları"
+      },
+      "seed": {
+        "name": "tohum",
+        "tooltip": "Tohum, düğümün tekrar çalıştırılıp çalıştırılmayacağını kontrol eder; sonuçlar tohumdan bağımsız olarak deterministik değildir."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "BriaRemoveVideoBackground": {
+    "description": "Bria kullanarak bir videonun arka planını kaldırın.",
+    "display_name": "Bria Video Arka Planı Kaldır",
+    "inputs": {
+      "background_color": {
+        "name": "arka plan rengi",
+        "tooltip": "Çıktı video için arka plan rengi."
+      },
+      "control_after_generate": {
+        "name": "oluşturduktan sonra kontrol et"
+      },
+      "seed": {
+        "name": "tohum",
+        "tooltip": "Tohum, düğümün tekrar çalıştırılıp çalıştırılmayacağını kontrol eder; sonuçlar tohumdan bağımsız olarak deterministik değildir."
+      },
+      "video": {
+        "name": "video"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -10297,6 +10338,32 @@
       }
     }
   },
+  "NAGuidance": {
+    "description": "Modellere Normalize Edilmiş Dikkat Yönlendirmesi uygular, distilled/schnell modellerde negatif istemlere olanak tanır.",
+    "display_name": "Normalize Edilmiş Dikkat Yönlendirmesi",
+    "inputs": {
+      "model": {
+        "name": "model",
+        "tooltip": "NAG uygulanacak model."
+      },
+      "nag_alpha": {
+        "name": "nag_alpha",
+        "tooltip": "Normalize edilmiş dikkat için karıştırma faktörü. 1.0 tam değişim, 0.0 hiçbir etki yok."
+      },
+      "nag_scale": {
+        "name": "nag_scale",
+        "tooltip": "Yönlendirme ölçek faktörü. Daha yüksek değerler, negatif istemden daha fazla uzaklaştırır."
+      },
+      "nag_tau": {
+        "name": "nag_tau"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "NAG etkinleştirilmiş yamalı model."
+      }
+    }
+  },
   "NormalizeImages": {
     "display_name": "Görüntüleri Normalleştir",
     "inputs": {
@@ -11663,6 +11730,88 @@
       },
       "substyle": {
         "name": "alt_stil"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "RecraftV4TextToImageNode": {
+    "description": "Recraft V4 veya V4 Pro modelleriyle görseller üretir.",
+    "display_name": "Recraft V4 Metinden Görsele",
+    "inputs": {
+      "control_after_generate": {
+        "name": "üretimden sonra kontrol"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Üretim için kullanılacak model."
+      },
+      "model_size": {
+        "name": "boyut"
+      },
+      "n": {
+        "name": "n",
+        "tooltip": "Üretilecek görsel sayısı."
+      },
+      "negative_prompt": {
+        "name": "negative_prompt",
+        "tooltip": "Bir görselde istenmeyen ögelerin isteğe bağlı metin açıklaması."
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Görsel üretimi için istem. En fazla 10.000 karakter."
+      },
+      "recraft_controls": {
+        "name": "recraft_controls",
+        "tooltip": "Recraft Controls düğümüyle üretim üzerinde isteğe bağlı ek kontroller."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Düğümün tekrar çalıştırılıp çalıştırılmayacağını belirleyen tohum; tohuma bakılmaksızın gerçek sonuçlar deterministik değildir."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "RecraftV4TextToVectorNode": {
+    "description": "Recraft V4 veya V4 Pro modelleriyle SVG üretir.",
+    "display_name": "Recraft V4 Metinden Vektöre",
+    "inputs": {
+      "control_after_generate": {
+        "name": "üretimden sonra kontrol"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Üretim için kullanılacak model."
+      },
+      "model_size": {
+        "name": "boyut"
+      },
+      "n": {
+        "name": "n",
+        "tooltip": "Üretilecek görsel sayısı."
+      },
+      "negative_prompt": {
+        "name": "negative_prompt",
+        "tooltip": "Bir görselde istenmeyen ögelerin isteğe bağlı metin açıklaması."
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Görsel üretimi için istem. En fazla 10.000 karakter."
+      },
+      "recraft_controls": {
+        "name": "recraft_controls",
+        "tooltip": "Recraft Controls düğümüyle üretim üzerinde isteğe bağlı ek kontroller."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Düğümün tekrar çalıştırılıp çalıştırılmayacağını belirleyen tohum; tohuma bakılmaksızın gerçek sonuçlar deterministik değildir."
       }
     },
     "outputs": {
@@ -14099,6 +14248,29 @@
       }
     }
   },
+  "Tencent3DPartNode": {
+    "description": "Model yapısına göre otomatik olarak bileşen tanımlama ve oluşturma işlemlerini gerçekleştirir.",
+    "display_name": "Hunyuan3D: 3D Parça",
+    "inputs": {
+      "control_after_generate": {
+        "name": "oluşturduktan sonra kontrol et"
+      },
+      "model_3d": {
+        "name": "model_3d",
+        "tooltip": "FBX formatında 3D model. Model 30000'den az yüzeye sahip olmalıdır."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed, düğümün tekrar çalıştırılıp çalıştırılmayacağını kontrol eder; seed ne olursa olsun sonuçlar deterministik değildir."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "FBX",
+        "tooltip": null
+      }
+    }
+  },
   "TencentImageToModelNode": {
     "display_name": "Hunyuan3D: Görsel(ler)den Modele (Pro)",
     "inputs": {
@@ -15774,6 +15946,46 @@
       },
       "seed": {
         "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Vidu3StartEndToVideoNode": {
+    "description": "Bir başlangıç karesi, bir bitiş karesi ve bir komut istemi ile video oluşturun.",
+    "display_name": "Vidu Q3 Başlangıç/Bitiş Kareden Videoya Oluşturma",
+    "inputs": {
+      "control_after_generate": {
+        "name": "oluşturduktan sonra kontrol et"
+      },
+      "end_frame": {
+        "name": "bitiş karesi"
+      },
+      "first_frame": {
+        "name": "ilk kare"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Video oluşturmak için kullanılacak model."
+      },
+      "model_audio": {
+        "name": "ses"
+      },
+      "model_duration": {
+        "name": "süre"
+      },
+      "model_resolution": {
+        "name": "çözünürlük"
+      },
+      "prompt": {
+        "name": "komut istemi",
+        "tooltip": "Komut istemi açıklaması (en fazla 2000 karakter)."
+      },
+      "seed": {
+        "name": "tohum"
       }
     },
     "outputs": {

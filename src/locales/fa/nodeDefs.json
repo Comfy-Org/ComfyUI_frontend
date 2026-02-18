@@ -353,15 +353,6 @@
         "name": "تنظیمات نظارت",
         "tooltip": "تنظیمات نظارت"
       },
-      "moderation_prompt_content_moderation": {
-        "name": "نظارت بر محتوای پرامپت"
-      },
-      "moderation_visual_input_moderation": {
-        "name": "نظارت بر ورودی تصویری"
-      },
-      "moderation_visual_output_moderation": {
-        "name": "نظارت بر خروجی تصویری"
-      },
       "negative_prompt": {
         "name": "پرامپت منفی"
       },
@@ -386,6 +377,56 @@
       },
       "1": {
         "name": "پرامپت ساختاریافته",
+        "tooltip": null
+      }
+    }
+  },
+  "BriaRemoveImageBackground": {
+    "description": "حذف پس‌زمینه از یک تصویر با استفاده از Bria RMBG ۲.۰.",
+    "display_name": "حذف پس‌زمینه تصویر Bria",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "image": {
+        "name": "تصویر"
+      },
+      "moderation": {
+        "name": "مدیریت محتوا",
+        "tooltip": "تنظیمات مدیریت محتوا"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "seed تعیین می‌کند که node باید دوباره اجرا شود یا خیر؛ نتایج صرف‌نظر از seed غیرقطعی هستند."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "BriaRemoveVideoBackground": {
+    "description": "حذف پس‌زمینه از یک ویدیو با استفاده از Bria.",
+    "display_name": "حذف پس‌زمینه ویدیو Bria",
+    "inputs": {
+      "background_color": {
+        "name": "رنگ پس‌زمینه",
+        "tooltip": "رنگ پس‌زمینه برای ویدیوی خروجی."
+      },
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "seed تعیین می‌کند که node باید دوباره اجرا شود یا خیر؛ نتایج صرف‌نظر از seed غیرقطعی هستند."
+      },
+      "video": {
+        "name": "ویدیو"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -10299,6 +10340,32 @@
       }
     }
   },
+  "NAGuidance": {
+    "description": "راهنمای توجه نرمال‌سازی‌شده را به مدل‌ها اعمال می‌کند و امکان استفاده از پرامپت منفی را در مدل‌های distilled/schnell فراهم می‌سازد.",
+    "display_name": "راهنمای توجه نرمال‌سازی‌شده",
+    "inputs": {
+      "model": {
+        "name": "مدل",
+        "tooltip": "مدلی که NAG بر روی آن اعمال می‌شود."
+      },
+      "nag_alpha": {
+        "name": "ضریب ترکیب",
+        "tooltip": "ضریب ترکیب برای توجه نرمال‌سازی‌شده. مقدار ۱.۰ به معنای جایگزینی کامل و ۰.۰ بدون تأثیر است."
+      },
+      "nag_scale": {
+        "name": "مقیاس راهنما",
+        "tooltip": "ضریب مقیاس راهنما. مقادیر بالاتر فاصله بیشتری از پرامپت منفی ایجاد می‌کند."
+      },
+      "nag_tau": {
+        "name": "تاو"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "مدل اصلاح‌شده با فعال‌سازی NAG."
+      }
+    }
+  },
   "NormalizeImages": {
     "display_name": "نرمال‌سازی تصاویر",
     "inputs": {
@@ -11665,6 +11732,88 @@
       },
       "substyle": {
         "name": "زیرسبک"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "RecraftV4TextToImageNode": {
+    "description": "تولید تصویر با استفاده از مدل‌های Recraft V4 یا V4 Pro.",
+    "display_name": "تبدیل متن به تصویر Recraft V4",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "model": {
+        "name": "مدل",
+        "tooltip": "مدل مورد استفاده برای تولید."
+      },
+      "model_size": {
+        "name": "اندازه"
+      },
+      "n": {
+        "name": "تعداد",
+        "tooltip": "تعداد تصاویر تولیدی."
+      },
+      "negative_prompt": {
+        "name": "پرامپت منفی",
+        "tooltip": "توضیح متنی اختیاری برای عناصر نامطلوب در تصویر."
+      },
+      "prompt": {
+        "name": "پرامپت",
+        "tooltip": "پرامپت برای تولید تصویر. حداکثر ۱۰٬۰۰۰ کاراکتر."
+      },
+      "recraft_controls": {
+        "name": "کنترل‌های Recraft",
+        "tooltip": "کنترل‌های اختیاری بیشتر بر تولید از طریق node کنترل‌های Recraft."
+      },
+      "seed": {
+        "name": "بذر",
+        "tooltip": "بذر برای تعیین اجرای مجدد node؛ نتایج واقعی صرف‌نظر از بذر غیرقطعی هستند."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "RecraftV4TextToVectorNode": {
+    "description": "تولید SVG با استفاده از مدل‌های Recraft V4 یا V4 Pro.",
+    "display_name": "تبدیل متن به وکتور Recraft V4",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "model": {
+        "name": "مدل",
+        "tooltip": "مدل مورد استفاده برای تولید."
+      },
+      "model_size": {
+        "name": "اندازه"
+      },
+      "n": {
+        "name": "تعداد",
+        "tooltip": "تعداد تصاویر تولیدی."
+      },
+      "negative_prompt": {
+        "name": "پرامپت منفی",
+        "tooltip": "توضیح متنی اختیاری برای عناصر نامطلوب در تصویر."
+      },
+      "prompt": {
+        "name": "پرامپت",
+        "tooltip": "پرامپت برای تولید تصویر. حداکثر ۱۰٬۰۰۰ کاراکتر."
+      },
+      "recraft_controls": {
+        "name": "کنترل‌های Recraft",
+        "tooltip": "کنترل‌های اختیاری بیشتر بر تولید از طریق node کنترل‌های Recraft."
+      },
+      "seed": {
+        "name": "بذر",
+        "tooltip": "بذر برای تعیین اجرای مجدد node؛ نتایج واقعی صرف‌نظر از بذر غیرقطعی هستند."
       }
     },
     "outputs": {
@@ -14112,6 +14261,29 @@
       }
     }
   },
+  "Tencent3DPartNode": {
+    "description": "شناسایی و تولید خودکار اجزا بر اساس ساختار مدل را انجام می‌دهد.",
+    "display_name": "Hunyuan3D: بخش سه‌بعدی",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "model_3d": {
+        "name": "مدل سه‌بعدی",
+        "tooltip": "مدل سه‌بعدی با فرمت FBX. مدل باید کمتر از ۳۰۰۰۰ وجه داشته باشد."
+      },
+      "seed": {
+        "name": "بذر",
+        "tooltip": "بذر تعیین می‌کند که آیا node باید دوباره اجرا شود؛ نتایج صرف‌نظر از بذر، غیرقطعی هستند."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "FBX",
+        "tooltip": null
+      }
+    }
+  },
   "TencentImageToModelNode": {
     "display_name": "Hunyuan3D: تبدیل تصویر(ها) به مدل (پیشرفته)",
     "inputs": {
@@ -15787,6 +15959,46 @@
       },
       "seed": {
         "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Vidu3StartEndToVideoNode": {
+    "description": "تولید یک ویدیو از یک فریم آغازین، یک فریم پایانی و یک پرامپت.",
+    "display_name": "تولید ویدیو از فریم آغازین/پایانی Vidu Q3",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "end_frame": {
+        "name": "فریم پایانی"
+      },
+      "first_frame": {
+        "name": "فریم آغازین"
+      },
+      "model": {
+        "name": "مدل",
+        "tooltip": "مدلی که برای تولید ویدیو استفاده می‌شود."
+      },
+      "model_audio": {
+        "name": "صدا"
+      },
+      "model_duration": {
+        "name": "مدت زمان"
+      },
+      "model_resolution": {
+        "name": "وضوح"
+      },
+      "prompt": {
+        "name": "پرامپت",
+        "tooltip": "توضیح پرامپت (حداکثر ۲۰۰۰ کاراکتر)."
+      },
+      "seed": {
+        "name": "بذر"
       }
     },
     "outputs": {

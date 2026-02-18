@@ -353,15 +353,6 @@
         "name": "moderação",
         "tooltip": "Configurações de moderação"
       },
-      "moderation_prompt_content_moderation": {
-        "name": "moderação_do_conteúdo_do_prompt"
-      },
-      "moderation_visual_input_moderation": {
-        "name": "moderação_da_entrada_visual"
-      },
-      "moderation_visual_output_moderation": {
-        "name": "moderação_da_saida_visual"
-      },
       "negative_prompt": {
         "name": "prompt_negativo"
       },
@@ -386,6 +377,56 @@
       },
       "1": {
         "name": "prompt_estruturado",
+        "tooltip": null
+      }
+    }
+  },
+  "BriaRemoveImageBackground": {
+    "description": "Remove o fundo de uma imagem usando Bria RMBG 2.0.",
+    "display_name": "Bria Remover Fundo da Imagem",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controlar após gerar"
+      },
+      "image": {
+        "name": "imagem"
+      },
+      "moderation": {
+        "name": "moderação",
+        "tooltip": "Configurações de moderação"
+      },
+      "seed": {
+        "name": "semente",
+        "tooltip": "A semente controla se o nó deve ser executado novamente; os resultados são não determinísticos independentemente da semente."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "BriaRemoveVideoBackground": {
+    "description": "Remove o fundo de um vídeo usando Bria.",
+    "display_name": "Bria Remover Fundo do Vídeo",
+    "inputs": {
+      "background_color": {
+        "name": "cor de fundo",
+        "tooltip": "Cor de fundo para o vídeo de saída."
+      },
+      "control_after_generate": {
+        "name": "controlar após gerar"
+      },
+      "seed": {
+        "name": "semente",
+        "tooltip": "A semente controla se o nó deve ser executado novamente; os resultados são não determinísticos independentemente da semente."
+      },
+      "video": {
+        "name": "vídeo"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -10299,6 +10340,32 @@
       }
     }
   },
+  "NAGuidance": {
+    "description": "Aplica Orientação de Atenção Normalizada aos modelos, permitindo prompts negativos em modelos distilled/schnell.",
+    "display_name": "Orientação de Atenção Normalizada",
+    "inputs": {
+      "model": {
+        "name": "modelo",
+        "tooltip": "O modelo ao qual aplicar o NAG."
+      },
+      "nag_alpha": {
+        "name": "nag_alpha",
+        "tooltip": "Fator de mesclagem para a atenção normalizada. 1.0 é substituição total, 0.0 não tem efeito."
+      },
+      "nag_scale": {
+        "name": "escala_nag",
+        "tooltip": "O fator de escala da orientação. Valores mais altos afastam mais do prompt negativo."
+      },
+      "nag_tau": {
+        "name": "nag_tau"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "O modelo modificado com NAG ativado."
+      }
+    }
+  },
   "NormalizeImages": {
     "display_name": "Normalizar Imagens",
     "inputs": {
@@ -11665,6 +11732,88 @@
       },
       "substyle": {
         "name": "substyle"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "RecraftV4TextToImageNode": {
+    "description": "Gera imagens usando os modelos Recraft V4 ou V4 Pro.",
+    "display_name": "Recraft V4 Texto para Imagem",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controle após gerar"
+      },
+      "model": {
+        "name": "modelo",
+        "tooltip": "O modelo a ser usado para geração."
+      },
+      "model_size": {
+        "name": "tamanho"
+      },
+      "n": {
+        "name": "n",
+        "tooltip": "O número de imagens a serem geradas."
+      },
+      "negative_prompt": {
+        "name": "prompt_negativo",
+        "tooltip": "Uma descrição opcional em texto de elementos indesejados em uma imagem."
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Prompt para a geração da imagem. Máximo de 10.000 caracteres."
+      },
+      "recraft_controls": {
+        "name": "recraft_controls",
+        "tooltip": "Controles adicionais opcionais sobre a geração via o nó Recraft Controls."
+      },
+      "seed": {
+        "name": "semente",
+        "tooltip": "Semente para determinar se o nó deve ser executado novamente; os resultados reais são não determinísticos independentemente da semente."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "RecraftV4TextToVectorNode": {
+    "description": "Gera SVG usando os modelos Recraft V4 ou V4 Pro.",
+    "display_name": "Recraft V4 Texto para Vetor",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controle após gerar"
+      },
+      "model": {
+        "name": "modelo",
+        "tooltip": "O modelo a ser usado para geração."
+      },
+      "model_size": {
+        "name": "tamanho"
+      },
+      "n": {
+        "name": "n",
+        "tooltip": "O número de imagens a serem geradas."
+      },
+      "negative_prompt": {
+        "name": "prompt_negativo",
+        "tooltip": "Uma descrição opcional em texto de elementos indesejados em uma imagem."
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Prompt para a geração da imagem. Máximo de 10.000 caracteres."
+      },
+      "recraft_controls": {
+        "name": "recraft_controls",
+        "tooltip": "Controles adicionais opcionais sobre a geração via o nó Recraft Controls."
+      },
+      "seed": {
+        "name": "semente",
+        "tooltip": "Semente para determinar se o nó deve ser executado novamente; os resultados reais são não determinísticos independentemente da semente."
       }
     },
     "outputs": {
@@ -14112,6 +14261,29 @@
       }
     }
   },
+  "Tencent3DPartNode": {
+    "description": "Realiza automaticamente a identificação e geração de componentes com base na estrutura do modelo.",
+    "display_name": "Hunyuan3D: Parte 3D",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controlar após gerar"
+      },
+      "model_3d": {
+        "name": "modelo_3d",
+        "tooltip": "Modelo 3D no formato FBX. O modelo deve ter menos de 30.000 faces."
+      },
+      "seed": {
+        "name": "semente",
+        "tooltip": "A semente controla se o nó deve ser executado novamente; os resultados são não determinísticos independentemente da semente."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "FBX",
+        "tooltip": null
+      }
+    }
+  },
   "TencentImageToModelNode": {
     "display_name": "Hunyuan3D: Imagem(ns) para Modelo (Pro)",
     "inputs": {
@@ -15784,6 +15956,46 @@
       "prompt": {
         "name": "prompt",
         "tooltip": "Um prompt de texto opcional para geração de vídeo (máx. 2000 caracteres)."
+      },
+      "seed": {
+        "name": "semente"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Vidu3StartEndToVideoNode": {
+    "description": "Gere um vídeo a partir de um quadro inicial, um quadro final e um prompt.",
+    "display_name": "Geração de Vídeo Quadro Inicial/Final Vidu Q3",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controle após gerar"
+      },
+      "end_frame": {
+        "name": "quadro final"
+      },
+      "first_frame": {
+        "name": "quadro inicial"
+      },
+      "model": {
+        "name": "modelo",
+        "tooltip": "Modelo a ser usado para geração de vídeo."
+      },
+      "model_audio": {
+        "name": "áudio"
+      },
+      "model_duration": {
+        "name": "duração"
+      },
+      "model_resolution": {
+        "name": "resolução"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Descrição do prompt (máx. 2000 caracteres)."
       },
       "seed": {
         "name": "semente"

@@ -353,15 +353,6 @@
         "name": "модерация",
         "tooltip": "Настройки модерации"
       },
-      "moderation_prompt_content_moderation": {
-        "name": "модерация_контента_промпта"
-      },
-      "moderation_visual_input_moderation": {
-        "name": "модерация_визуального_входа"
-      },
-      "moderation_visual_output_moderation": {
-        "name": "модерация_визуального_выхода"
-      },
       "negative_prompt": {
         "name": "негативный_промпт"
       },
@@ -386,6 +377,56 @@
       },
       "1": {
         "name": "структурированный_промпт",
+        "tooltip": null
+      }
+    }
+  },
+  "BriaRemoveImageBackground": {
+    "description": "Удалите фон с изображения с помощью Bria RMBG 2.0.",
+    "display_name": "Bria Удалить фон изображения",
+    "inputs": {
+      "control_after_generate": {
+        "name": "контроль после генерации"
+      },
+      "image": {
+        "name": "изображение"
+      },
+      "moderation": {
+        "name": "модерация",
+        "tooltip": "Настройки модерации"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed определяет, должен ли узел выполняться повторно; результаты всегда недетерминированы независимо от seed."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "BriaRemoveVideoBackground": {
+    "description": "Удалите фон с видео с помощью Bria.",
+    "display_name": "Bria Удалить фон видео",
+    "inputs": {
+      "background_color": {
+        "name": "цвет фона",
+        "tooltip": "Цвет фона для выходного видео."
+      },
+      "control_after_generate": {
+        "name": "контроль после генерации"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed определяет, должен ли узел выполняться повторно; результаты всегда недетерминированы независимо от seed."
+      },
+      "video": {
+        "name": "видео"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -10297,6 +10338,32 @@
       }
     }
   },
+  "NAGuidance": {
+    "description": "Применяет нормализованное управление вниманием к моделям, позволяя использовать негативные подсказки на distilled/schnell моделях.",
+    "display_name": "Нормализованное управление вниманием",
+    "inputs": {
+      "model": {
+        "name": "model",
+        "tooltip": "Модель, к которой применяется NAG."
+      },
+      "nag_alpha": {
+        "name": "nag_alpha",
+        "tooltip": "Коэффициент смешивания для нормализованного внимания. 1.0 — полная замена, 0.0 — без эффекта."
+      },
+      "nag_scale": {
+        "name": "nag_scale",
+        "tooltip": "Коэффициент масштаба управления. Более высокие значения сильнее отдаляют от негативной подсказки."
+      },
+      "nag_tau": {
+        "name": "nag_tau"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "Патченная модель с включённым NAG."
+      }
+    }
+  },
   "NormalizeImages": {
     "display_name": "Нормализовать изображения",
     "inputs": {
@@ -11663,6 +11730,88 @@
       },
       "substyle": {
         "name": "substyle"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "RecraftV4TextToImageNode": {
+    "description": "Генерирует изображения с помощью моделей Recraft V4 или V4 Pro.",
+    "display_name": "Recraft V4: текст в изображение",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Модель, используемая для генерации."
+      },
+      "model_size": {
+        "name": "size"
+      },
+      "n": {
+        "name": "n",
+        "tooltip": "Количество изображений для генерации."
+      },
+      "negative_prompt": {
+        "name": "negative_prompt",
+        "tooltip": "Необязательное текстовое описание нежелательных элементов на изображении."
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Подсказка для генерации изображения. Максимум 10 000 символов."
+      },
+      "recraft_controls": {
+        "name": "recraft_controls",
+        "tooltip": "Необязательные дополнительные параметры управления генерацией через узел Recraft Controls."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Сид для определения необходимости повторного запуска узла; фактические результаты не детерминированы независимо от сида."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "RecraftV4TextToVectorNode": {
+    "description": "Генерирует SVG с помощью моделей Recraft V4 или V4 Pro.",
+    "display_name": "Recraft V4: текст в вектор",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Модель, используемая для генерации."
+      },
+      "model_size": {
+        "name": "size"
+      },
+      "n": {
+        "name": "n",
+        "tooltip": "Количество изображений для генерации."
+      },
+      "negative_prompt": {
+        "name": "negative_prompt",
+        "tooltip": "Необязательное текстовое описание нежелательных элементов на изображении."
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Подсказка для генерации изображения. Максимум 10 000 символов."
+      },
+      "recraft_controls": {
+        "name": "recraft_controls",
+        "tooltip": "Необязательные дополнительные параметры управления генерацией через узел Recraft Controls."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Сид для определения необходимости повторного запуска узла; фактические результаты не детерминированы независимо от сида."
       }
     },
     "outputs": {
@@ -14099,6 +14248,29 @@
       }
     }
   },
+  "Tencent3DPartNode": {
+    "description": "Автоматически выполняет идентификацию и генерацию компонентов на основе структуры модели.",
+    "display_name": "Hunyuan3D: 3D Part",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model_3d": {
+        "name": "model_3d",
+        "tooltip": "3D-модель в формате FBX. Модель должна содержать менее 30000 граней."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed управляет необходимостью повторного запуска узла; результаты не являются детерминированными независимо от seed."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "FBX",
+        "tooltip": null
+      }
+    }
+  },
   "TencentImageToModelNode": {
     "display_name": "Hunyuan3D: Изображение(я) в модель (Pro)",
     "inputs": {
@@ -15771,6 +15943,46 @@
       "prompt": {
         "name": "prompt",
         "tooltip": "Необязательная текстовая подсказка для генерации видео (максимум 2000 символов)."
+      },
+      "seed": {
+        "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Vidu3StartEndToVideoNode": {
+    "description": "Создайте видео, используя начальный кадр, конечный кадр и текстовый запрос.",
+    "display_name": "Vidu Q3 Генерация видео по начальному и конечному кадрам",
+    "inputs": {
+      "control_after_generate": {
+        "name": "контроль после генерации"
+      },
+      "end_frame": {
+        "name": "конечный кадр"
+      },
+      "first_frame": {
+        "name": "начальный кадр"
+      },
+      "model": {
+        "name": "модель",
+        "tooltip": "Модель для генерации видео."
+      },
+      "model_audio": {
+        "name": "аудио"
+      },
+      "model_duration": {
+        "name": "длительность"
+      },
+      "model_resolution": {
+        "name": "разрешение"
+      },
+      "prompt": {
+        "name": "промпт",
+        "tooltip": "Описание промпта (максимум 2000 символов)."
       },
       "seed": {
         "name": "seed"

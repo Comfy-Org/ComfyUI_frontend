@@ -85,11 +85,7 @@ describe('ComfyApp', () => {
 
       const file1 = createTestFile('test1.png', 'image/png')
       const file2 = createTestFile('test2.jpg', 'image/jpeg')
-      const dataTransfer = new DataTransfer()
-      dataTransfer.items.add(file1)
-      dataTransfer.items.add(file2)
-
-      const { files } = dataTransfer
+      const files = [file1, file2]
 
       await app.handleFileList(files)
 
@@ -110,26 +106,21 @@ describe('ComfyApp', () => {
       vi.mocked(createNode).mockResolvedValue(null)
 
       const file = createTestFile('test.png', 'image/png')
-      const dataTransfer = new DataTransfer()
-      dataTransfer.items.add(file)
 
-      await app.handleFileList(dataTransfer.files)
+      await app.handleFileList([file])
 
       expect(mockCanvas.selectItems).not.toHaveBeenCalled()
       expect(mockNode1.connect).not.toHaveBeenCalled()
     })
 
     it('should handle empty file list', async () => {
-      const dataTransfer = new DataTransfer()
-      await expect(app.handleFileList(dataTransfer.files)).rejects.toThrow()
+      await expect(app.handleFileList([])).rejects.toThrow()
     })
 
     it('should not process unsupported file types', async () => {
       const invalidFile = createTestFile('test.pdf', 'application/pdf')
-      const dataTransfer = new DataTransfer()
-      dataTransfer.items.add(invalidFile)
 
-      await app.handleFileList(dataTransfer.files)
+      await app.handleFileList([invalidFile])
 
       expect(pasteImageNodes).not.toHaveBeenCalled()
       expect(createNode).not.toHaveBeenCalled()
@@ -186,6 +177,26 @@ describe('ComfyApp', () => {
       vi.mocked(createNode).mockResolvedValue(mockNode)
 
       const imageFile = createTestFile('test.png', 'image/png')
+
+      await app.handleFile(imageFile)
+
+      expect(createNode).toHaveBeenCalledWith(mockCanvas, 'LoadImage')
+      expect(pasteImageNode).toHaveBeenCalledWith(
+        mockCanvas,
+        expect.any(DataTransferItemList),
+        mockNode
+      )
+    })
+
+    it('should handle image files with non-workflow metadata by creating LoadImage node', async () => {
+      vi.mocked(getWorkflowDataFromFile).mockResolvedValue({
+        Software: 'gnome-screenshot'
+      })
+
+      const mockNode = createMockNode()
+      vi.mocked(createNode).mockResolvedValue(mockNode)
+
+      const imageFile = createTestFile('screenshot.png', 'image/png')
 
       await app.handleFile(imageFile)
 

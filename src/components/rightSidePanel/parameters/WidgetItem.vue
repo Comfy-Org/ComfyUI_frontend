@@ -19,6 +19,7 @@ import { useFavoritedWidgetsStore } from '@/stores/workspace/favoritedWidgetsSto
 import { resolveNodeDisplayName } from '@/utils/nodeTitleUtil'
 import { cn } from '@/utils/tailwindUtil'
 import { renameWidget } from '@/utils/widgetUtil'
+import type { WidgetValue } from '@/utils/widgetUtil'
 
 import WidgetActions from './WidgetActions.vue'
 
@@ -41,7 +42,8 @@ const {
 }>()
 
 const emit = defineEmits<{
-  'update:widgetValue': [value: string | number | boolean | object]
+  'update:widgetValue': [value: WidgetValue]
+  resetToDefault: [value: WidgetValue]
 }>()
 
 const { t } = useI18n()
@@ -82,7 +84,7 @@ const favoriteNode = computed(() =>
 
 const widgetValue = computed({
   get: () => widget.value,
-  set: (newValue: string | number | boolean | object) => {
+  set: (newValue: WidgetValue) => {
     emit('update:widgetValue', newValue)
   }
 })
@@ -152,6 +154,7 @@ const displayLabel = customRef((track, trigger) => {
           :node="node"
           :parents="parents"
           :is-shown-on-parents="isShownOnParents"
+          @reset-to-default="emit('resetToDefault', $event)"
         />
       </div>
     </div>

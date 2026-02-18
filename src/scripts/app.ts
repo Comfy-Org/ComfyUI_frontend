@@ -24,6 +24,7 @@ import { useTelemetry } from '@/platform/telemetry'
 import type { WorkflowOpenSource } from '@/platform/telemetry/types'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
+import type { PendingWarnings } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowValidation } from '@/platform/workflow/validation/composables/useWorkflowValidation'
 import {
@@ -69,6 +70,7 @@ import { SYSTEM_NODE_DEFS, useNodeDefStore } from '@/stores/nodeDefStore'
 import { useNodeReplacementStore } from '@/platform/nodeReplacement/nodeReplacementStore'
 import { useSubgraphStore } from '@/stores/subgraphStore'
 import { useWidgetStore } from '@/stores/widgetStore'
+import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import type { ComfyExtension, MissingNodeType } from '@/types/comfy'
 import type { ExtensionManager } from '@/types/extensionTypes'
@@ -107,13 +109,13 @@ import { ComfyAppMenu } from './ui/menu/index'
 import { clone } from './utils'
 import { type ComfyWidgetConstructor } from './widgets'
 import { ensureCorrectLayoutScale } from '@/renderer/extensions/vueNodes/layout/ensureCorrectLayoutScale'
-import { extractFileFromDragEvent } from '@/utils/eventUtils'
+import { extractFilesFromDragEvent, hasImageType } from '@/utils/eventUtils'
 import { getWorkflowDataFromFile } from '@/scripts/metadata/parser'
 import { pasteImageNode, pasteImageNodes } from '@/composables/usePaste'
 
 export const ANIM_PREVIEW_WIDGET = '$$comfy_animation_preview'
 
-function sanitizeNodeName(string: string) {
+export function sanitizeNodeName(string: string) {
   let entityMap = {
     '&': '',
     '<': '',
@@ -550,22 +552,25 @@ export class ComfyApp {
         // If you drag multiple files it will call it multiple times with the same file
         if (await n?.onDragDrop?.(event)) return
 
-        const fileMaybe = await extractFileFromDragEvent(event)
-        if (!fileMaybe) return
+        const files = await extractFilesFromDragEvent(event)
+        if (files.length === 0) return
 
         const workspace = useWorkspaceStore()
         try {
           workspace.spinner = true
-          if (fileMaybe instanceof File) {
-            await this.handleFile(fileMaybe, 'file_drop')
-          }
-
-          if (fileMaybe instanceof FileList) {
-            await this.handleFileList(fileMaybe)
+          if (files.length > 1 && files.every(hasImageType)) {
+            await this.handleFileList(files)
+          } else {
+            for (const file of files) {
+              await this.handleFile(file, 'file_drop', {
+                deferWarnings: true
+              })
+            }
           }
         } finally {
           workspace.spinner = false
         }
+        useWorkflowService().showPendingWarnings()
       } catch (error: unknown) {
         useToastStore().addAlert(t('toastMessages.dropFileError', { error }))
       }
@@ -710,6 +715,10 @@ export class ComfyApp {
       } else {
         useDialogService().showExecutionErrorDialog(detail)
       }
+      if (useSettingStore().get('Comfy.RightSidePanel.ShowErrorsTab')) {
+        this.canvas.deselectAll()
+        useRightSidePanelStore().openPanel('errors')
+      }
       this.canvas.draw(true, true)
     })
 
@@ -795,7 +804,7 @@ export class ComfyApp {
     await useWorkspaceStore().workflow.syncWorkflows()
     //Doesn't need to block. Blueprints will load async
     void useSubgraphStore().fetchSubgraphs()
-    void useNodeReplacementStore().load()
+    await useNodeReplacementStore().load()
     await useExtensionService().loadExtensions()
 
     this.addProcessKeyHandler()
@@ -1061,18 +1070,6 @@ export class ComfyApp {
     }
   }
 
-  private showMissingModelsError(
-    missingModels: ModelFile[],
-    paths: Record<string, string[]>
-  ): void {
-    if (useSettingStore().get('Comfy.Workflow.ShowMissingModelsWarning')) {
-      useDialogService().showMissingModelsWarning({
-        missingModels,
-        paths
-      })
-    }
-  }
-
   async loadGraphData(
     graphData?: ComfyWorkflowJSON,
     clean: boolean = true,
@@ -1083,13 +1080,15 @@ export class ComfyApp {
       showMissingModelsDialog?: boolean
       checkForRerouteMigration?: boolean
       openSource?: WorkflowOpenSource
+      deferWarnings?: boolean
     } = {}
   ) {
     const {
       showMissingNodesDialog = true,
       showMissingModelsDialog = true,
       checkForRerouteMigration = false,
-      openSource
+      openSource,
+      deferWarnings = false
     } = options
     useWorkflowService().beforeLoadNewGraph()
 
@@ -1146,6 +1145,8 @@ export class ComfyApp {
 
     const embeddedModels: ModelFile[] = []
 
+    const nodeReplacementStore = useNodeReplacementStore()
+
     const collectMissingNodesAndModels = (
       nodes: ComfyWorkflowJSON['nodes'],
       path: string = ''
@@ -1158,25 +1159,17 @@ export class ComfyApp {
         return
       }
       for (let n of nodes) {
-        // Patch T2IAdapterLoader to ControlNetLoader since they are the same node now
-        if (n.type == 'T2IAdapterLoader') n.type = 'ControlNetLoader'
-        if (n.type == 'ConditioningAverage ') n.type = 'ConditioningAverage' //typo fix
-        if (n.type == 'SDV_img2vid_Conditioning')
-          n.type = 'SVD_img2vid_Conditioning' //typo fix
-        if (n.type == 'Load3DAnimation') n.type = 'Load3D' // Animation node merged into Load3D
-        if (n.type == 'Preview3DAnimation') n.type = 'Preview3D' // Animation node merged into Load3D
-
         // Find missing node types
         if (!(n.type in LiteGraph.registered_node_types)) {
-          // Include context about subgraph location if applicable
-          if (path) {
-            missingNodeTypes.push({
-              type: n.type,
-              hint: `in subgraph '${path}'`
-            })
-          } else {
-            missingNodeTypes.push(n.type)
-          }
+          const replacement = nodeReplacementStore.getReplacementFor(n.type)
+
+          missingNodeTypes.push({
+            type: n.type,
+            ...(path && { hint: `in subgraph '${path}'` }),
+            isReplaceable: replacement !== null,
+            replacement: replacement ?? undefined
+          })
+
           n.type = sanitizeNodeName(n.type)
         }
 
@@ -1338,13 +1331,6 @@ export class ComfyApp {
       useExtensionService().invokeExtensions('loadedGraphNode', node)
     })
 
-    if (missingNodeTypes.length && showMissingNodesDialog) {
-      this.showMissingNodesError(missingNodeTypes)
-    }
-    if (missingModels.length && showMissingModelsDialog) {
-      const paths = await api.getFolderPaths()
-      this.showMissingModelsError(missingModels, paths)
-    }
     await useExtensionService().invokeExtensionsAsync(
       'afterConfigureGraph',
       missingNodeTypes
@@ -1363,6 +1349,27 @@ export class ComfyApp {
       workflow,
       this.rootGraph.serialize() as unknown as ComfyWorkflowJSON
     )
+
+    // Store pending warnings on the workflow for deferred display
+    const activeWf = useWorkspaceStore().workflow.activeWorkflow
+    if (activeWf) {
+      const warnings: PendingWarnings = {}
+      if (missingNodeTypes.length && showMissingNodesDialog) {
+        warnings.missingNodeTypes = missingNodeTypes
+      }
+      if (missingModels.length && showMissingModelsDialog) {
+        const paths = await api.getFolderPaths()
+        warnings.missingModels = { missingModels: missingModels, paths }
+      }
+      if (warnings.missingNodeTypes || warnings.missingModels) {
+        activeWf.pendingWarnings = warnings
+      }
+    }
+
+    if (!deferWarnings) {
+      useWorkflowService().showPendingWarnings()
+    }
+
     requestAnimationFrame(() => {
       this.canvas.setDirty(true, true)
     })
@@ -1394,6 +1401,8 @@ export class ComfyApp {
     this.processingQueue = true
     const executionStore = useExecutionStore()
     executionStore.lastNodeErrors = null
+    executionStore.lastExecutionError = null
+    executionStore.lastPromptError = null
 
     // Get auth token for backend nodes - uses workspace token if enabled, otherwise Firebase token
     const comfyOrgAuthToken = await useFirebaseAuthStore().getAuthToken()
@@ -1464,6 +1473,37 @@ export class ComfyApp {
 
             if (error instanceof PromptExecutionError) {
               executionStore.lastNodeErrors = error.response.node_errors ?? null
+
+              // Store prompt-level error separately only when no node-specific errors exist,
+              // because node errors already carry the full context. Prompt-level errors
+              // (e.g. prompt_no_outputs, no_prompt) lack node IDs and need their own path.
+              const nodeErrors = error.response.node_errors
+              const hasNodeErrors =
+                nodeErrors && Object.keys(nodeErrors).length > 0
+
+              if (!hasNodeErrors) {
+                const respError = error.response.error
+                if (respError && typeof respError === 'object') {
+                  executionStore.lastPromptError = {
+                    type: respError.type,
+                    message: respError.message,
+                    details: respError.details ?? ''
+                  }
+                } else if (typeof respError === 'string') {
+                  executionStore.lastPromptError = {
+                    type: 'error',
+                    message: respError,
+                    details: ''
+                  }
+                }
+              }
+
+              // Clear selection and open the error panel so the user can immediately
+              // see the error details without extra clicks.
+              if (useSettingStore().get('Comfy.RightSidePanel.ShowErrorsTab')) {
+                this.canvas.deselectAll()
+                useRightSidePanelStore().openPanel('errors')
+              }
               this.canvas.draw(true, true)
             }
             break
@@ -1504,10 +1544,16 @@ export class ComfyApp {
    * Loads workflow data from the specified file
    * @param {File} file
    */
-  async handleFile(file: File, openSource?: WorkflowOpenSource) {
+  async handleFile(
+    file: File,
+    openSource?: WorkflowOpenSource,
+    options?: { deferWarnings?: boolean }
+  ) {
     const fileName = file.name.replace(/\.\w+$/, '') // Strip file extension
     const workflowData = await getWorkflowDataFromFile(file)
-    if (_.isEmpty(workflowData)) {
+    const { workflow, prompt, parameters, templates } = workflowData ?? {}
+
+    if (!(workflow || prompt || parameters || templates)) {
       if (file.type.startsWith('image')) {
         const transfer = new DataTransfer()
         transfer.items.add(file)
@@ -1519,8 +1565,6 @@ export class ComfyApp {
       this.showErrorOnFileLoad(file)
       return
     }
-
-    const { workflow, prompt, parameters, templates } = workflowData
 
     if (
       templates &&
@@ -1547,7 +1591,8 @@ export class ComfyApp {
           !Array.isArray(workflowObj)
         ) {
           await this.loadGraphData(workflowObj, true, true, fileName, {
-            openSource
+            openSource,
+            deferWarnings: options?.deferWarnings
           })
           return
         } else {
@@ -1595,7 +1640,7 @@ export class ComfyApp {
    * Loads multiple files, connects to a batch node, and selects them
    * @param {FileList} fileList
    */
-  async handleFileList(fileList: FileList) {
+  async handleFileList(fileList: File[]) {
     if (fileList[0].type.startsWith('image')) {
       const imageNodes = await pasteImageNodes(this.canvas, fileList)
       const batchImagesNode = await createNode(this.canvas, 'BatchImagesNode')
@@ -1836,6 +1881,7 @@ export class ComfyApp {
     const executionStore = useExecutionStore()
     executionStore.lastNodeErrors = null
     executionStore.lastExecutionError = null
+    executionStore.lastPromptError = null
 
     useDomWidgetStore().clear()
 
