@@ -40,7 +40,8 @@ const zModelFile = z.object({
   url: z.string().url(),
   hash: z.string().optional(),
   hash_type: z.string().optional(),
-  directory: z.string()
+  directory: z.string(),
+  directory_invalid: z.boolean().optional()
 })
 
 const zGraphState = z

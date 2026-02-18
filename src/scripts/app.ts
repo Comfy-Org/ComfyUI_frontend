@@ -1205,7 +1205,7 @@ export class ComfyApp {
 
     const getModelKey = (model: ModelFile) => model.url || model.hash
     const validModels = embeddedModels.filter(getModelKey)
-    const uniqueModels = _.uniqBy(validModels, getModelKey)
+    const uniqueModels: ModelFile[] = _.uniqBy(validModels, getModelKey)
 
     let folderPaths: Record<string, string[]> | undefined
     if (
@@ -1220,9 +1220,7 @@ export class ComfyApp {
       folderPaths = paths
       for (const m of uniqueModels) {
         const modelFolder = await modelStore.getLoadedModelFolder(m.directory)
-        if (!modelFolder && !folderPaths?.[m.directory])
-          (m as ModelFile & { directory_invalid?: boolean }).directory_invalid =
-            true
+        m.directory_invalid = !modelFolder && !folderPaths?.[m.directory]
 
         const modelsAvailable = modelFolder?.models
         const modelExists =
