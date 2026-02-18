@@ -5,6 +5,9 @@ import type { MaybeRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import DraggableList from '@/components/common/DraggableList.vue'
+import IoItem from '@/components/rightSidePanel/app/IoItem.vue'
+import PropertiesAccordionItem from '@/components/rightSidePanel/layout/PropertiesAccordionItem.vue'
+import Button from '@/components/ui/button/Button.vue'
 import type { LGraphNode, NodeId } from '@/lib/litegraph/src/LGraphNode'
 import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
@@ -15,6 +18,8 @@ import TransformPane from '@/renderer/core/layout/transform/TransformPane.vue'
 import { useHoveredStore } from '@/stores/hoveredStore'
 import { cn } from '@/utils/tailwindUtil'
 
+type BoundStyle = { top: string; left: string; width: string; height: string }
+
 const canvasInteractions = useCanvasInteractions()
 const canvasStore = useCanvasStore()
 const hoveredStore = useHoveredStore()
@@ -22,8 +27,7 @@ const settingStore = useSettingStore()
 const { t } = useI18n()
 const canvas: LGraphCanvas = canvasStore.getCanvas()
 
-type BoundStyle = { top: string; left: string; width: string; height: string }
-const selectedInputs = reactive<[NodeId, MaybeRef<BoundStyle>][]>([])
+const selectedInputs = reactive<[string, MaybeRef<BoundStyle>][]>([])
 const selectedOutputs = reactive<[NodeId, string][]>([])
 
 function getHovered(
@@ -127,32 +131,100 @@ const outputNodes = computed(() =>
 )
 </script>
 <template>
-  <div class="h-5" />
-  {{ t('[PH]Inputs:') }}
-  <DraggableList v-slot="{ dragClass }" v-model="selectedInputs">
+  <div class="flex font-bold p-2 border-border-subtle border-b">
+    {{ t('[ph]App builder mode') }}
+    <Button class="ml-auto">
+      {{ t('[ph]Exit builder') }}
+    </Button>
+  </div>
+  <PropertiesAccordionItem
+    :label="t('nodeHelpPage.inputs')"
+    enable-empty-state
+    :disabled="!selectedInputs.length"
+    class="border-border-subtle border-b"
+  >
+    <template #empty>
+      <div class="w-full p-4 text-muted-foreground">
+        <div
+          v-text="t('[ph]Click on node parameters to add them here as inputs')"
+        />
+        <div
+          class="text-base-foreground"
+          v-text="t('[ph]No inputs added yet')"
+        />
+        <div
+          v-text="
+            t(
+              '[ph]Users will interact and adjust these to generate their outputs.'
+            )
+          "
+        />
+        <div v-text="t('[ph]Examples: “Load image”, “Text prompt”, “Steps”')" />
+      </div>
+    </template>
     <div
-      v-for="[key] in selectedInputs"
-      :key
-      :class="cn(dragClass, 'bg-primary-background/30 p-2 my-2 rounded-lg')"
-      v-text="key"
+      class="w-full p-4 pt-2 text-muted-foreground"
+      v-text="t('[ph]Click on node parameters to add them here as inputs')"
     />
-  </DraggableList>
-  <div class="h-5" />
-  {{ t('[PH]Outputs:') }}
-  <DraggableList v-slot="{ dragClass }" v-model="selectedOutputs">
+    <DraggableList v-slot="{ dragClass }" v-model="selectedInputs">
+      <IoItem
+        v-for="[key] in selectedInputs"
+        :key
+        :class="cn(dragClass, 'bg-primary-background/30 p-2 my-2 rounded-lg')"
+        :title="key"
+        sub-title="nodename"
+        :rename="() => console.log('rename')"
+        :remove="() => console.log('remove')"
+      />
+    </DraggableList>
+  </PropertiesAccordionItem>
+  <PropertiesAccordionItem
+    :label="t('nodeHelpPage.outputs')"
+    enable-empty-state
+    :disabled="!selectedOutputs.length"
+  >
+    <template #empty>
+      <div class="w-full p-4 text-muted-foreground">
+        <div
+          v-text="
+            t(
+              '[ph]Click on output nodes to add them here. These will be the generated results.'
+            )
+          "
+        />
+        <div
+          class="text-base-foreground"
+          v-text="t('[ph]No outputs nodes added yet')"
+        />
+        <div
+          v-text="
+            t(
+              '[ph]Connect at least one output node so users can see results after running.'
+            )
+          "
+        />
+        <div v-text="t('[ph]Examples: “Save Image” or “Save Video”')" />
+      </div>
+    </template>
     <div
-      v-for="([key, title], index) in selectedOutputs"
-      :key
-      :class="
-        cn(
-          dragClass,
-          'bg-warning-background/40 p-2 my-2 rounded-lg',
-          index === 0 && 'ring-warning-background ring-2'
-        )
-      "
-      v-text="title"
+      class="w-full p-4 pt-2 text-muted-foreground"
+      v-text="t('[ph]Click on node parameters to add them here as inputs')"
     />
-  </DraggableList>
+    <DraggableList v-slot="{ dragClass }" v-model="selectedOutputs">
+      <div
+        v-for="([key, title], index) in selectedOutputs"
+        :key
+        :class="
+          cn(
+            dragClass,
+            'bg-warning-background/40 p-2 my-2 rounded-lg',
+            index === 0 && 'ring-warning-background ring-2'
+          )
+        "
+        v-text="title"
+      />
+    </DraggableList>
+  </PropertiesAccordionItem>
 
   <Teleport to="body">
     <TransformPane
