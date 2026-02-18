@@ -40,7 +40,7 @@ import { until } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
 import type { MenuItem } from 'primevue/menuitem'
 import SplitButton from 'primevue/splitbutton'
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
@@ -118,18 +118,27 @@ const isInstantAutoQueueActive = computed(
   () => queueMode.value === 'instant' && activeJobsCount.value > 0
 )
 
+const isStoppingInstant = ref(false)
+const showStopInstantPresentation = computed(
+  () =>
+    isInstantAutoQueueActive.value ||
+    (isStoppingInstant.value &&
+      queueMode.value === 'disabled' &&
+      activeJobsCount.value > 0)
+)
+
 const queueButtonLabel = computed(() =>
-  isInstantAutoQueueActive.value
+  showStopInstantPresentation.value
     ? t('menu.stopRunInstant')
     : String(activeQueueModeMenuItem.value?.label ?? '')
 )
 
 const queueButtonSeverity = computed(() =>
-  isInstantAutoQueueActive.value ? 'danger' : 'primary'
+  showStopInstantPresentation.value ? 'danger' : 'primary'
 )
 
 const iconClass = computed(() => {
-  if (isInstantAutoQueueActive.value) {
+  if (showStopInstantPresentation.value) {
     return 'icon-[lucide--square]'
   }
   if (hasMissingNodes.value) {
@@ -151,7 +160,7 @@ const iconClass = computed(() => {
 })
 
 const queueButtonTooltip = computed(() => {
-  if (isInstantAutoQueueActive.value) {
+  if (showStopInstantPresentation.value) {
     return t('menu.stopRunInstantTooltip')
   }
   if (hasMissingNodes.value) {
@@ -165,16 +174,21 @@ const queueButtonTooltip = computed(() => {
 
 const commandStore = useCommandStore()
 const queuePrompt = async (e: Event) => {
-  if (isInstantAutoQueueActive.value) {
-    queueMode.value = 'disabled'
-    await commandStore.execute('Comfy.Interrupt')
+  if (showStopInstantPresentation.value) {
+    isStoppingInstant.value = true
+    try {
+      queueMode.value = 'disabled'
+      await commandStore.execute('Comfy.Interrupt')
 
-    if (activeJobsCount.value > 0) {
-      await until(activeJobsCount).toBe(0, { timeout: 5000 })
-    }
+      if (activeJobsCount.value > 0) {
+        await until(activeJobsCount).toBe(0, { timeout: 5000 })
+      }
 
-    if (queueMode.value === 'disabled' && activeJobsCount.value === 0) {
-      queueMode.value = 'instant'
+      if (queueMode.value === 'disabled' && activeJobsCount.value === 0) {
+        queueMode.value = 'instant'
+      }
+    } finally {
+      isStoppingInstant.value = false
     }
     return
   }

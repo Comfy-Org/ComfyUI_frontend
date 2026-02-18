@@ -162,6 +162,12 @@ describe('ComfyQueueButton', () => {
     await nextTick()
 
     expect(queueSettingsStore.mode).toBe('disabled')
+    const splitButtonWhileStopping = wrapper.get('[data-testid="queue-button"]')
+    expect(splitButtonWhileStopping.attributes('data-label')).toBe(
+      'Stop Run (Instant)'
+    )
+    expect(splitButtonWhileStopping.attributes('data-severity')).toBe('danger')
+    expect(wrapper.find('.icon-\\[lucide--square\\]').exists()).toBe(true)
 
     queueStore.runningTasks = []
     await nextTick()
