@@ -22,7 +22,7 @@ export function useImportFailedNodeDialog() {
       dialogComponentProps?: Omit<DialogComponentProps, 'pt'>
     } = {}
   ) {
-    const { dialogComponentProps, conflictedPackages } = options
+    const { dialogComponentProps, conflictedPackages = [] } = options
 
     showSmallLayoutDialog({
       key: DIALOG_KEY,
@@ -31,10 +31,10 @@ export function useImportFailedNodeDialog() {
       component: ImportFailedNodeContent,
       dialogComponentProps,
       props: {
-        conflictedPackages: conflictedPackages ?? []
+        conflictedPackages
       },
       footerProps: {
-        conflictedPackages: conflictedPackages ?? []
+        conflictedPackages
       }
     })
   }

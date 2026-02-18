@@ -52,7 +52,6 @@ import {
 } from '@/scripts/domWidget'
 import { useDialogService } from '@/services/dialogService'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
-import { useMissingModelsDialog } from '@/composables/useMissingModelsDialog'
 import { useMissingNodesDialog } from '@/composables/useMissingNodesDialog'
 import { useExtensionService } from '@/services/extensionService'
 import { useLitegraphService } from '@/services/litegraphService'
