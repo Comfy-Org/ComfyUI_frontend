@@ -139,7 +139,7 @@ const tabs = computed<RightSidePanelTabList>(() => {
       value: 'errors',
       icon: 'icon-[lucide--octagon-alert] bg-node-stroke-error ml-1'
     })
-  }
+  }  
 
   list.push({
     label: () =>

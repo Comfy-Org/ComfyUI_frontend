@@ -71,11 +71,6 @@ const thumbnailUrls = computed(() => {
   if (notification.type !== 'completed') {
     return []
   }
-  if (typeof notification.thumbnailUrl === 'string') {
-    return notification.thumbnailUrl.length > 0
-      ? [notification.thumbnailUrl]
-      : []
-  }
   return notification.thumbnailUrls?.slice(0, 2) ?? []
 })
 
