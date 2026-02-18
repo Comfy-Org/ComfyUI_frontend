@@ -106,7 +106,7 @@ test.describe('Templates', { tag: ['@slow', '@workflow'] }, () => {
     await comfyPage.setup({ clearStorage: true })
 
     // Expect the templates dialog to be shown
-    expect(await comfyPage.templates.content.isVisible()).toBe(true)
+    await expect(comfyPage.templates.content).toBeVisible()
   })
 
   test('Uses proper locale files for templates', async ({ comfyPage }) => {

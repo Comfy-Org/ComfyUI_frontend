@@ -86,6 +86,16 @@ describe('Comfy.Workflow.AutoSave onChange', () => {
     (s) => s.id === 'Comfy.Workflow.AutoSave'
   )!
 
+  async function triggerAutoSaveOff() {
+    await settingStore.set('Comfy.Workflow.AutoSave', 'after delay')
+    await settingStore.set('Comfy.Workflow.AutoSave', 'off')
+  }
+
+  function getFooterProps() {
+    const dialog = dialogStore.dialogStack[0]
+    return dialog.footerProps as Record<string, (() => void) | undefined>
+  }
+
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
     settingStore = useSettingStore()
@@ -97,51 +107,36 @@ describe('Comfy.Workflow.AutoSave onChange', () => {
   })
 
   it('should show confirm dialog when setting AutoSave to off while Persist is enabled', async () => {
-    await settingStore.set('Comfy.Workflow.AutoSave', 'after delay')
-    await settingStore.set('Comfy.Workflow.AutoSave', 'off')
+    await triggerAutoSaveOff()
 
     expect(dialogStore.dialogStack).toHaveLength(1)
   })
 
   it('should not show dialog when Persist is already disabled', async () => {
     await settingStore.set('Comfy.Workflow.Persist', false)
-    await settingStore.set('Comfy.Workflow.AutoSave', 'after delay')
-    await settingStore.set('Comfy.Workflow.AutoSave', 'off')
+    await triggerAutoSaveOff()
 
     expect(dialogStore.dialogStack).toHaveLength(0)
   })
 
   it('should disable Persist when user confirms', async () => {
-    await settingStore.set('Comfy.Workflow.AutoSave', 'after delay')
-    await settingStore.set('Comfy.Workflow.AutoSave', 'off')
+    await triggerAutoSaveOff()
 
-    const dialog = dialogStore.dialogStack[0]
-    const footerProps = dialog.footerProps as {
-      onConfirm: () => void
-      onCancel: () => void
-    }
-    footerProps.onConfirm()
+    getFooterProps().onConfirm!()
 
     expect(settingStore.get('Comfy.Workflow.Persist')).toBe(false)
   })
 
   it('should keep Persist when user clicks secondary action', async () => {
-    await settingStore.set('Comfy.Workflow.AutoSave', 'after delay')
-    await settingStore.set('Comfy.Workflow.AutoSave', 'off')
+    await triggerAutoSaveOff()
 
-    const dialog = dialogStore.dialogStack[0]
-    const footerProps = dialog.footerProps as {
-      onConfirm: () => void
-      onCancel: () => void
-    }
-    footerProps.onCancel()
+    getFooterProps().onCancel!()
 
     expect(settingStore.get('Comfy.Workflow.Persist')).toBe(true)
   })
 
   it('should disable Persist when dialog is dismissed', async () => {
-    await settingStore.set('Comfy.Workflow.AutoSave', 'after delay')
-    await settingStore.set('Comfy.Workflow.AutoSave', 'off')
+    await triggerAutoSaveOff()
 
     const dialog = dialogStore.dialogStack[0]
     dialog.dialogComponentProps.onClose?.()

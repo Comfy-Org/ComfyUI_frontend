@@ -142,7 +142,10 @@ export function useWorkflowPersistence() {
   }
 
   const initializeWorkflow = async () => {
-    if (!workflowPersistenceEnabled.value) return
+    if (!workflowPersistenceEnabled.value) {
+      await loadDefaultWorkflow()
+      return
+    }
 
     try {
       const restored = await loadPreviousWorkflowFromStorage()
