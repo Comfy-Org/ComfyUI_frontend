@@ -743,6 +743,10 @@
       "filterText": "Text"
     },
     "backToAssets": "Back to all assets",
+    "folderView": {
+      "errorSummary": "Failed to load outputs",
+      "errorDetail": "Could not retrieve outputs for this job. Please try again."
+    },
     "searchAssets": "Search Assets",
     "labels": {
       "queue": "Queue",
