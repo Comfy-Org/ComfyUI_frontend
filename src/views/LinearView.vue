@@ -24,11 +24,13 @@ import MobileMenu from '@/renderer/extensions/linearMode/MobileMenu.vue'
 import { useNodeOutputStore } from '@/stores/imagePreviewStore'
 import type { ResultItemImpl } from '@/stores/queueStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
+import { useAppModeStore } from '@/stores/appModeStore'
 
 const { t } = useI18n()
 const nodeOutputStore = useNodeOutputStore()
 const settingStore = useSettingStore()
 const workspaceStore = useWorkspaceStore()
+const appModeStore = useAppModeStore()
 
 const mobileDisplay = useBreakpoints(breakpointsTailwind).smaller('md')
 
@@ -135,7 +137,7 @@ const linearWorkflowRef = useTemplateRef('linearWorkflowRef')
           :selected-output
         />
         <div ref="topLeftRef" class="absolute z-21 top-1 left-1">
-          <AppModeToolbar />
+          <AppModeToolbar v-if="!appModeStore.isBuilderMode" />
         </div>
         <div ref="topRightRef" class="absolute z-21 top-4 right-4" />
         <div ref="bottomLeftRef" class="absolute z-20 bottom-4 left-4" />
