@@ -19,24 +19,59 @@
     </div>
 
     <!-- Body -->
-    <div class="flex flex-col gap-4 p-4">
+    <div v-auto-animate class="flex flex-col gap-4 p-4">
+      <!-- Loading state -->
+      <template v-if="dialogState === 'loading'">
+        <div class="h-3 w-4/5 animate-pulse rounded bg-muted-foreground/20" />
+        <div class="h-3 w-3/5 animate-pulse rounded bg-muted-foreground/20" />
+        <div class="h-10 w-full animate-pulse rounded bg-muted-foreground/20" />
+      </template>
+
       <!-- Unsaved state -->
       <template v-if="dialogState === 'unsaved'">
         <p class="m-0 text-xs text-muted-foreground">
           {{ $t('shareWorkflow.unsavedDescription') }}
         </p>
-        <Button variant="primary" size="lg" @click="handleSave">
-          {{ $t('shareWorkflow.saveButton') }}
+        <label v-if="isTemporary" class="flex flex-col gap-1">
+          <span class="text-xs font-medium text-muted-foreground">
+            {{ $t('shareWorkflow.workflowNameLabel') }}
+          </span>
+          <input
+            ref="nameInputRef"
+            v-model="workflowName"
+            type="text"
+            :disabled="isSaving"
+            class="rounded-lg border border-border-default bg-secondary-background px-3 py-2 text-sm text-base-foreground outline-none focus:border-secondary-foreground disabled:opacity-50"
+            @keydown.enter="() => handleSave()"
+          />
+        </label>
+        <Button
+          variant="primary"
+          size="lg"
+          :loading="isSaving"
+          @click="handleSave"
+        >
+          {{
+            isSaving
+              ? $t('shareWorkflow.saving')
+              : $t('shareWorkflow.saveButton')
+          }}
         </Button>
       </template>
 
       <!-- Unpublished state -->
       <template v-if="dialogState === 'unpublished'">
+        <p
+          v-if="isLoadingAssets"
+          class="m-0 text-xs italic text-muted-foreground"
+        >
+          {{ $t('shareWorkflow.checkingAssets') }}
+        </p>
         <ShareAssetWarningBox
-          v-if="requiresAcknowledgment"
+          v-else-if="requiresAcknowledgment"
           v-model:acknowledged="acknowledged"
-          :assets
-          :models
+          :assets="assetInfo.assets"
+          :models="assetInfo.models"
         />
         <Button
           variant="primary"
@@ -54,10 +89,13 @@
       </template>
 
       <!-- Just published state -->
-      <template v-if="dialogState === 'justPublished' && shareUrl">
-        <ShareUrlCopyField :url="shareUrl" />
+      <template v-if="dialogState === 'justPublished' && publishResult">
+        <ShareUrlCopyField :url="publishResult.shareUrl" />
         <div class="flex flex-col gap-1">
-          <p v-if="publishedAt" class="m-0 text-xs text-muted-foreground">
+          <p
+            v-if="publishResult.publishedAt"
+            class="m-0 text-xs text-muted-foreground"
+          >
             {{ $t('shareWorkflow.publishedOn', { date: formattedDate }) }}
           </p>
           <p class="m-0 text-xs text-muted-foreground">
@@ -67,21 +105,30 @@
       </template>
 
       <!-- Has changes state -->
-      <template v-if="dialogState === 'hasChanges' && shareUrl">
-        <ShareUrlCopyField :url="shareUrl" />
+      <template v-if="dialogState === 'hasChanges' && publishResult">
+        <ShareUrlCopyField :url="publishResult.shareUrl" />
         <div class="flex flex-col gap-1">
-          <p v-if="publishedAt" class="m-0 text-xs text-muted-foreground">
+          <p
+            v-if="publishResult.publishedAt"
+            class="m-0 text-xs text-muted-foreground"
+          >
             {{ $t('shareWorkflow.publishedOn', { date: formattedDate }) }}
           </p>
           <p class="m-0 text-xs text-muted-foreground">
             {{ $t('shareWorkflow.hasChangesDescription') }}
           </p>
         </div>
+        <p
+          v-if="isLoadingAssets"
+          class="m-0 text-xs italic text-muted-foreground"
+        >
+          {{ $t('shareWorkflow.checkingAssets') }}
+        </p>
         <ShareAssetWarningBox
-          v-if="requiresAcknowledgment"
+          v-else-if="requiresAcknowledgment"
           v-model:acknowledged="acknowledged"
-          :assets
-          :models
+          :assets="assetInfo.assets"
+          :models="assetInfo.models"
         />
         <Button
           variant="primary"
@@ -105,21 +152,21 @@
 </template>
 
 <script setup lang="ts">
+import { vAutoAnimate } from '@formkit/auto-animate/vue'
+import { useAsyncState } from '@vueuse/core'
 import { useToast } from 'primevue/usetoast'
-import { computed, onMounted, ref } from 'vue'
+import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import ComfyHubUploadSection from '@/platform/workflow/sharing/components/ComfyHubUploadSection.vue'
 import ShareAssetWarningBox from '@/platform/workflow/sharing/components/ShareAssetWarningBox.vue'
 import ShareUrlCopyField from '@/platform/workflow/sharing/components/ShareUrlCopyField.vue'
 import Button from '@/components/ui/button/Button.vue'
-import type {
-  WorkflowAsset,
-  WorkflowModel
-} from '@/platform/workflow/sharing/types/shareTypes'
+import type { WorkflowPublishResult } from '@/platform/workflow/sharing/types/shareTypes'
 import { useWorkflowShareService } from '@/platform/workflow/sharing/services/workflowShareService'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
+import { appendJsonExt } from '@/utils/formatUtil'
 
 const { onClose } = defineProps<{
   onClose: () => void
@@ -131,21 +178,48 @@ const shareService = useWorkflowShareService()
 const workflowStore = useWorkflowStore()
 const workflowService = useWorkflowService()
 
-type DialogState = 'unsaved' | 'unpublished' | 'justPublished' | 'hasChanges'
+type DialogState =
+  | 'loading'
+  | 'unsaved'
+  | 'unpublished'
+  | 'justPublished'
+  | 'hasChanges'
 
-const dialogState = ref<DialogState>('unsaved')
-const shareUrl = ref<string | null>(null)
-const publishedAt = ref<Date | null>(null)
-const isPublishing = ref(false)
+const dialogState = ref<DialogState>('loading')
 const acknowledged = ref(false)
-const assets = ref<WorkflowAsset[]>([])
-const models = ref<WorkflowModel[]>([])
+const workflowName = ref('')
+const nameInputRef = ref<HTMLInputElement | null>(null)
+
+const isTemporary = computed(
+  () => workflowStore.activeWorkflow?.isTemporary ?? false
+)
+
+watch(dialogState, async (state) => {
+  if (state === 'unsaved' && isTemporary.value) {
+    await nextTick()
+    nameInputRef.value?.focus()
+    nameInputRef.value?.select()
+  }
+})
+
+const {
+  state: assetInfo,
+  isLoading: isLoadingAssets,
+  execute: reloadAssets
+} = useAsyncState(
+  async () => ({
+    assets: shareService.getWorkflowAssets(),
+    models: await shareService.getWorkflowModels()
+  }),
+  { assets: [], models: [] }
+)
 
 const requiresAcknowledgment = computed(
-  () => assets.value.length > 0 || models.value.length > 0
+  () => assetInfo.value.assets.length > 0 || assetInfo.value.models.length > 0
 )
 
 const HEADER_TITLES: Record<DialogState, string> = {
+  loading: 'shareWorkflow.loadingTitle',
   unsaved: 'shareWorkflow.unsavedTitle',
   unpublished: 'shareWorkflow.publishTitle',
   justPublished: 'shareWorkflow.successTitle',
@@ -155,8 +229,8 @@ const HEADER_TITLES: Record<DialogState, string> = {
 const headerTitle = computed(() => t(HEADER_TITLES[dialogState.value]))
 
 const formattedDate = computed(() => {
-  if (!publishedAt.value) return ''
-  return publishedAt.value.toLocaleDateString(locale.value, {
+  if (!publishResult.value) return ''
+  return publishResult.value.publishedAt.toLocaleDateString(locale.value, {
     year: 'numeric',
     month: 'long',
     day: 'numeric'
@@ -167,6 +241,9 @@ function refreshDialogState() {
   const workflow = workflowStore.activeWorkflow
   if (!workflow || workflow.isTemporary || workflow.isModified) {
     dialogState.value = 'unsaved'
+    if (workflow) {
+      workflowName.value = workflow.filename
+    }
     return
   }
 
@@ -174,9 +251,11 @@ function refreshDialogState() {
     workflow.path,
     workflow.lastModified
   )
-  if (status.isPublished) {
-    shareUrl.value = status.shareUrl
-    publishedAt.value = status.publishedAt
+  if (status.isPublished && status.shareUrl && status.publishedAt) {
+    publishResult.value = {
+      shareUrl: status.shareUrl,
+      publishedAt: status.publishedAt
+    }
     dialogState.value = status.hasChangesSincePublish
       ? 'hasChanges'
       : 'justPublished'
@@ -185,60 +264,86 @@ function refreshDialogState() {
   }
 }
 
-onMounted(async () => {
-  assets.value = shareService.getWorkflowAssets()
-  models.value = await shareService.getWorkflowModels()
+onMounted(() => {
   refreshDialogState()
 })
 
-async function handleSave() {
-  const workflow = workflowStore.activeWorkflow
-  if (!workflow) return
+const { isLoading: isSaving, execute: handleSave } = useAsyncState(
+  async () => {
+    const workflow = workflowStore.activeWorkflow
+    if (!workflow) return
 
-  try {
     if (workflow.isTemporary) {
-      await workflowService.saveWorkflowAs(workflow)
+      const name = workflowName.value.trim()
+      if (!name) return
+      const newPath = workflow.directory + '/' + appendJsonExt(name)
+      await workflowService.renameWorkflow(workflow, newPath)
+      await workflowStore.saveWorkflow(workflow)
     } else {
       await workflowService.saveWorkflow(workflow)
     }
-  } catch (error) {
-    console.error('Failed to save workflow:', error)
-    toast.add({
-      severity: 'error',
-      summary: t('g.error'),
-      detail: t('g.error'),
-      life: 5000
-    })
-    return
+
+    acknowledged.value = false
+    reloadAssets()
+
+    const status = shareService.getPublishStatus(
+      workflow.path,
+      workflow.lastModified
+    )
+    if (status.isPublished && status.shareUrl && status.publishedAt) {
+      publishResult.value = {
+        shareUrl: status.shareUrl,
+        publishedAt: status.publishedAt
+      }
+      dialogState.value = 'hasChanges'
+    } else {
+      dialogState.value = 'unpublished'
+    }
+  },
+  undefined,
+  {
+    immediate: false,
+    onError: (error) => {
+      console.error('Failed to save workflow:', error)
+      toast.add({
+        severity: 'error',
+        summary: t('g.error'),
+        detail: t('g.error'),
+        life: 5000
+      })
+    }
   }
+)
 
-  refreshDialogState()
-}
+const {
+  state: publishResult,
+  isLoading: isPublishing,
+  execute: handlePublish
+} = useAsyncState(
+  async (): Promise<WorkflowPublishResult | null> => {
+    const workflow = workflowStore.activeWorkflow
+    if (!workflow) return null
 
-async function handlePublish() {
-  const workflow = workflowStore.activeWorkflow
-  if (!workflow) return
-
-  isPublishing.value = true
-  try {
     const result = await shareService.publishWorkflow(
       workflow.path,
       workflow.lastModified
     )
-    shareUrl.value = result.shareUrl
-    publishedAt.value = result.publishedAt
     dialogState.value = 'justPublished'
     acknowledged.value = false
-  } catch (error) {
-    console.error('Failed to publish workflow:', error)
-    toast.add({
-      severity: 'error',
-      summary: t('g.error'),
-      detail: error instanceof Error ? error.message : t('g.error'),
-      life: 5000
-    })
-  } finally {
-    isPublishing.value = false
+    return result
+  },
+  null,
+  {
+    immediate: false,
+    onError: (error) => {
+      console.error('Failed to publish workflow:', error)
+      toast.add({
+        severity: 'error',
+        summary: t('g.error'),
+        detail: error instanceof Error ? error.message : t('g.error'),
+        life: 5000
+      })
+    }
   }
-}
+)
 </script>
