@@ -1898,6 +1898,25 @@
     "outputs": "Salidas",
     "type": "Tipo"
   },
+  "nodeReplacement": {
+    "compatibleAlternatives": "Alternativas compatibles",
+    "installMissingNodes": "Instalar nodos faltantes",
+    "installationRequired": "Instalación requerida",
+    "instructionMessage": "Debes instalar estos nodos o reemplazarlos por alternativas instaladas para ejecutar el flujo de trabajo. Los nodos faltantes están resaltados en {red} en el lienzo. Algunos nodos no se pueden intercambiar y deben instalarse mediante el Administrador de Nodos.",
+    "notReplaceable": "Instalación requerida",
+    "openNodeManager": "Abrir Administrador de Nodos",
+    "quickFixAvailable": "Solución rápida disponible",
+    "redHighlight": "rojo",
+    "replaceFailed": "Error al reemplazar nodos",
+    "replaceSelected": "Reemplazar seleccionados ({count})",
+    "replaceWarning": "Esto modificará permanentemente el flujo de trabajo. Guarda una copia primero si no estás seguro.",
+    "replaceable": "Reemplazable",
+    "replaced": "Reemplazado",
+    "replacedAllNodes": "Reemplazados {count} tipo(s) de nodo",
+    "replacedNode": "Nodo reemplazado: {nodeType}",
+    "selectAll": "Seleccionar todo",
+    "skipForNow": "Omitir por ahora"
+  },
   "nodeTemplates": {
     "enterName": "Introduzca el nombre",
     "saveAsTemplate": "Guardar como plantilla"
@@ -2414,8 +2433,11 @@
       "moreOptions": "Más opciones",
       "noActiveJobs": "No hay trabajos activos",
       "preview": "Vista previa",
+      "queuedJobsLabel": "{count} en cola",
       "queuedSuffix": "en cola",
       "running": "en ejecución",
+      "runningJobsLabel": "{count} en ejecución",
+      "runningQueuedSummary": "{running}, {queued}",
       "showAssets": "Mostrar recursos",
       "showAssetsPanel": "Mostrar panel de recursos",
       "sortBy": "Ordenar por",

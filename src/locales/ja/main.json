@@ -1898,6 +1898,25 @@
     "outputs": "出力",
     "type": "タイプ"
   },
+  "nodeReplacement": {
+    "compatibleAlternatives": "互換性のある代替案",
+    "installMissingNodes": "不足ノードをインストール",
+    "installationRequired": "インストールが必要",
+    "instructionMessage": "ワークフローを実行するには、これらのノードをインストールするか、インストール済みの代替ノードに置き換える必要があります。足りないノードはキャンバス上で{red}でハイライトされています。一部のノードは置き換えできず、Node Managerからインストールする必要があります。",
+    "notReplaceable": "インストールが必要",
+    "openNodeManager": "Node Managerを開く",
+    "quickFixAvailable": "クイック修正可能",
+    "redHighlight": "赤",
+    "replaceFailed": "ノードの置き換えに失敗しました",
+    "replaceSelected": "選択したものを置き換え ({count})",
+    "replaceWarning": "この操作はワークフローを永久に変更します。心配な場合は、先にコピーを保存してください。",
+    "replaceable": "置き換え可能",
+    "replaced": "置き換え済み",
+    "replacedAllNodes": "{count} 種類のノードを置き換えました",
+    "replacedNode": "置き換えたノード: {nodeType}",
+    "selectAll": "すべて選択",
+    "skipForNow": "今はスキップ"
+  },
   "nodeTemplates": {
     "enterName": "名前を入力",
     "saveAsTemplate": "テンプレートとして保存"
@@ -2414,8 +2433,11 @@
       "moreOptions": "その他のオプション",
       "noActiveJobs": "アクティブなジョブはありません",
       "preview": "プレビュー",
+      "queuedJobsLabel": "{count} キュー中",
       "queuedSuffix": "キュー済み",
       "running": "実行中",
+      "runningJobsLabel": "{count} 実行中",
+      "runningQueuedSummary": "{running} 実行中、{queued} キュー中",
       "showAssets": "アセットを表示",
       "showAssetsPanel": "アセットパネルを表示",
       "sortBy": "並べ替え条件",

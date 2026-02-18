@@ -1898,6 +1898,25 @@
     "outputs": "Sorties",
     "type": "Type"
   },
+  "nodeReplacement": {
+    "compatibleAlternatives": "Alternatives compatibles",
+    "installMissingNodes": "Installer les nœuds manquants",
+    "installationRequired": "Installation requise",
+    "instructionMessage": "Vous devez installer ces nœuds ou les remplacer par des alternatives installées pour exécuter le workflow. Les nœuds manquants sont surlignés en {red} sur le canevas. Certains nœuds ne peuvent pas être remplacés et doivent être installés via le Gestionnaire de nœuds.",
+    "notReplaceable": "Installation requise",
+    "openNodeManager": "Ouvrir le Gestionnaire de nœuds",
+    "quickFixAvailable": "Correction rapide disponible",
+    "redHighlight": "rouge",
+    "replaceFailed": "Échec du remplacement des nœuds",
+    "replaceSelected": "Remplacer la sélection ({count})",
+    "replaceWarning": "Cela modifiera définitivement le workflow. Sauvegardez une copie si vous n’êtes pas sûr.",
+    "replaceable": "Remplaçable",
+    "replaced": "Remplacé",
+    "replacedAllNodes": "{count} type(s) de nœud remplacé(s)",
+    "replacedNode": "Nœud remplacé : {nodeType}",
+    "selectAll": "Tout sélectionner",
+    "skipForNow": "Ignorer pour l’instant"
+  },
   "nodeTemplates": {
     "enterName": "Entrez le nom",
     "saveAsTemplate": "Enregistrer comme modèle"
@@ -2414,8 +2433,11 @@
       "moreOptions": "Plus d’options",
       "noActiveJobs": "Aucun travail actif",
       "preview": "Aperçu",
+      "queuedJobsLabel": "{count} en file d’attente",
       "queuedSuffix": "en file d’attente",
       "running": "en cours",
+      "runningJobsLabel": "{count} en cours",
+      "runningQueuedSummary": "{running} en cours, {queued} en file",
       "showAssets": "Afficher les ressources",
       "showAssetsPanel": "Afficher le panneau des ressources",
       "sortBy": "Trier par",

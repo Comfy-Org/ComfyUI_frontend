@@ -1898,6 +1898,25 @@
     "outputs": "輸出",
     "type": "類型"
   },
+  "nodeReplacement": {
+    "compatibleAlternatives": "相容替代方案",
+    "installMissingNodes": "安裝缺少的節點",
+    "installationRequired": "需要安裝",
+    "instructionMessage": "您必須安裝這些節點，或以已安裝的替代方案進行替換，才能執行工作流程。缺少的節點會在畫布上以{red}標示。有些節點無法替換，必須透過節點管理器安裝。",
+    "notReplaceable": "需要安裝",
+    "openNodeManager": "開啟節點管理器",
+    "quickFixAvailable": "可用快速修復",
+    "redHighlight": "紅色",
+    "replaceFailed": "替換節點失敗",
+    "replaceSelected": "替換所選 ({count})",
+    "replaceWarning": "這將永久修改工作流程。如有疑慮，請先儲存副本。",
+    "replaceable": "可替換",
+    "replaced": "已替換",
+    "replacedAllNodes": "已替換 {count} 種節點類型",
+    "replacedNode": "已替換節點：{nodeType}",
+    "selectAll": "全選",
+    "skipForNow": "暫時略過"
+  },
   "nodeTemplates": {
     "enterName": "輸入名稱",
     "saveAsTemplate": "儲存為範本"
@@ -2414,8 +2433,11 @@
       "moreOptions": "更多選項",
       "noActiveJobs": "沒有執行中作業",
       "preview": "預覽",
+      "queuedJobsLabel": "{count} 已排隊",
       "queuedSuffix": "已排入佇列",
       "running": "執行中",
+      "runningJobsLabel": "{count} 執行中",
+      "runningQueuedSummary": "{running} 執行中, {queued} 已排隊",
       "showAssets": "顯示資產",
       "showAssetsPanel": "顯示資產面板",
       "sortBy": "排序依據",

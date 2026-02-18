@@ -1898,6 +1898,25 @@
     "outputs": "Çıktılar",
     "type": "Tür"
   },
+  "nodeReplacement": {
+    "compatibleAlternatives": "Uyumlu Alternatifler",
+    "installMissingNodes": "Eksik Düğümleri Yükle",
+    "installationRequired": "Kurulum Gerekli",
+    "instructionMessage": "İş akışını çalıştırmak için bu düğümleri yüklemeli veya yüklü alternatiflerle değiştirmelisiniz. Eksik düğümler tuvalde {red} ile vurgulanır. Bazı düğümler değiştirilemez ve Node Manager üzerinden yüklenmelidir.",
+    "notReplaceable": "Kurulum Gerekli",
+    "openNodeManager": "Node Manager'ı Aç",
+    "quickFixAvailable": "Hızlı Düzeltme Mevcut",
+    "redHighlight": "kırmızı",
+    "replaceFailed": "Düğümler değiştirilemedi",
+    "replaceSelected": "Seçilenleri Değiştir ({count})",
+    "replaceWarning": "Bu işlem iş akışını kalıcı olarak değiştirecek. Emin değilseniz önce bir kopyasını kaydedin.",
+    "replaceable": "Değiştirilebilir",
+    "replaced": "Değiştirildi",
+    "replacedAllNodes": "{count} düğüm türü değiştirildi",
+    "replacedNode": "Değiştirilen düğüm: {nodeType}",
+    "selectAll": "Tümünü Seç",
+    "skipForNow": "Şimdilik Atla"
+  },
   "nodeTemplates": {
     "enterName": "İsim girin",
     "saveAsTemplate": "Şablon olarak kaydet"
@@ -2414,8 +2433,11 @@
       "moreOptions": "Daha fazla seçenek",
       "noActiveJobs": "Aktif iş yok",
       "preview": "Önizleme",
+      "queuedJobsLabel": "{count} kuyruğa alındı",
       "queuedSuffix": "kuyrukta",
       "running": "çalışıyor",
+      "runningJobsLabel": "{count} çalışıyor",
+      "runningQueuedSummary": "{running}, {queued}",
       "showAssets": "Varlıkları göster",
       "showAssetsPanel": "Varlık panelini göster",
       "sortBy": "Sırala",
