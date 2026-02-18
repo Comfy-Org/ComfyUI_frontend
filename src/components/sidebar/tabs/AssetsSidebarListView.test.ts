@@ -1,6 +1,9 @@
 import { mount } from '@vue/test-utils'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { ref } from 'vue'
+import { defineComponent } from 'vue'
+import { describe, expect, it, vi } from 'vitest'
+
+import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import type { OutputStackListItem } from '@/platform/assets/composables/useOutputStacks'
 
 import AssetsSidebarListView from './AssetsSidebarListView.vue'
 
@@ -10,141 +13,62 @@ vi.mock('vue-i18n', () => ({
   })
 }))
 
-vi.mock('@/composables/queue/useJobActions', () => ({
-  useJobActions: () => ({
-    cancelAction: { variant: 'ghost', label: 'Cancel', icon: 'pi pi-times' },
-    canCancelJob: ref(false),
-    runCancelJob: vi.fn()
-  })
-}))
-
-const mockJobItems = ref<
-  Array<{
-    id: string
-    title: string
-    meta: string
-    state: string
-    createTime?: number
-  }>
->([])
-
-vi.mock('@/composables/queue/useJobList', () => ({
-  useJobList: () => ({
-    jobItems: mockJobItems
-  })
-}))
-
 vi.mock('@/stores/assetsStore', () => ({
   useAssetsStore: () => ({
     isAssetDeleting: () => false
   })
 }))
 
-vi.mock('@/platform/settings/settingStore', () => ({
-  useSettingStore: () => ({
-    get: (key: string) => key === 'Comfy.Queue.QPOV2'
+const VirtualGridStub = defineComponent({
+  name: 'VirtualGrid',
+  props: {
+    items: {
+      type: Array,
+      default: () => []
+    }
+  },
+  template:
+    '<div><slot v-for="item in items" :key="item.key" name="item" :item="item" /></div>'
+})
+
+const buildAsset = (id: string, name: string): AssetItem => ({
+  id,
+  name,
+  tags: []
+})
+
+const buildOutputItem = (asset: AssetItem): OutputStackListItem => ({
+  key: `asset-${asset.id}`,
+  asset
+})
+
+const mountListView = (assetItems: OutputStackListItem[] = []) =>
+  mount(AssetsSidebarListView, {
+    props: {
+      assetItems,
+      selectableAssets: [],
+      isSelected: () => false,
+      isStackExpanded: () => false,
+      toggleStack: async () => {},
+      assetType: 'output'
+    },
+    global: {
+      stubs: {
+        VirtualGrid: VirtualGridStub
+      }
+    }
   })
-}))
-
-vi.mock('@/utils/queueUtil', () => ({
-  isActiveJobState: (state: string) =>
-    state === 'pending' || state === 'running'
-}))
-
-vi.mock('@/utils/queueDisplay', () => ({
-  iconForJobState: () => 'pi pi-spinner'
-}))
-
-vi.mock('@/platform/assets/schemas/assetMetadataSchema', () => ({
-  getOutputAssetMetadata: () => undefined
-}))
-
-vi.mock('@/platform/assets/utils/mediaIconUtil', () => ({
-  iconForMediaType: () => 'pi pi-file'
-}))
-
-vi.mock('@/utils/formatUtil', () => ({
-  formatDuration: (d: number) => `${d}s`,
-  formatSize: (s: number) => `${s}B`,
-  getMediaTypeFromFilename: () => 'image',
-  truncateFilename: (name: string) => name
-}))
 
 describe('AssetsSidebarListView', () => {
-  beforeEach(() => {
-    vi.clearAllMocks()
-    mockJobItems.value = []
+  it('shows generated assets header when there are assets', () => {
+    const wrapper = mountListView([buildOutputItem(buildAsset('a1', 'x.png'))])
+
+    expect(wrapper.text()).toContain('sideToolbar.generatedAssetsHeader')
   })
 
-  const defaultProps = {
-    assetItems: [],
-    selectableAssets: [],
-    isSelected: () => false,
-    isStackExpanded: () => false,
-    toggleStack: async () => {}
-  }
+  it('does not show assets header when there are no assets', () => {
+    const wrapper = mountListView([])
 
-  it('displays active jobs in oldest-first order (FIFO)', () => {
-    mockJobItems.value = [
-      {
-        id: 'newest',
-        title: 'Newest Job',
-        meta: '',
-        state: 'pending',
-        createTime: 3000
-      },
-      {
-        id: 'middle',
-        title: 'Middle Job',
-        meta: '',
-        state: 'running',
-        createTime: 2000
-      },
-      {
-        id: 'oldest',
-        title: 'Oldest Job',
-        meta: '',
-        state: 'pending',
-        createTime: 1000
-      }
-    ]
-
-    const wrapper = mount(AssetsSidebarListView, {
-      props: defaultProps,
-      shallow: true
-    })
-
-    const jobListItems = wrapper.findAllComponents({ name: 'AssetsListItem' })
-    expect(jobListItems).toHaveLength(3)
-
-    const displayedTitles = jobListItems.map((item) =>
-      item.props('primaryText')
-    )
-    expect(displayedTitles).toEqual(['Oldest Job', 'Middle Job', 'Newest Job'])
-  })
-
-  it('excludes completed and failed jobs from active jobs section', () => {
-    mockJobItems.value = [
-      { id: 'pending', title: 'Pending', meta: '', state: 'pending' },
-      { id: 'completed', title: 'Completed', meta: '', state: 'completed' },
-      { id: 'failed', title: 'Failed', meta: '', state: 'failed' },
-      { id: 'running', title: 'Running', meta: '', state: 'running' }
-    ]
-
-    const wrapper = mount(AssetsSidebarListView, {
-      props: defaultProps,
-      shallow: true
-    })
-
-    const jobListItems = wrapper.findAllComponents({ name: 'AssetsListItem' })
-    expect(jobListItems).toHaveLength(2)
-
-    const displayedTitles = jobListItems.map((item) =>
-      item.props('primaryText')
-    )
-    expect(displayedTitles).toContain('Running')
-    expect(displayedTitles).toContain('Pending')
-    expect(displayedTitles).not.toContain('Completed')
-    expect(displayedTitles).not.toContain('Failed')
+    expect(wrapper.text()).not.toContain('sideToolbar.generatedAssetsHeader')
   })
 })

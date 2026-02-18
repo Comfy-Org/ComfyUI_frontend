@@ -17,28 +17,128 @@
         @update:selected-workflow-filter="onSelectedWorkflowFilterUpdate"
         @update:selected-sort-mode="onSelectedSortModeUpdate"
       />
+      <div
+        class="flex items-center justify-between px-3 pb-1 text-[12px] leading-none text-text-primary"
+      >
+        <span class="text-text-secondary">{{ activeQueueSummary }}</span>
+        <div class="flex items-center gap-2">
+          <span class="text-xs text-base-foreground">
+            {{ t('sideToolbar.queueProgressOverlay.clearQueueTooltip') }}
+          </span>
+          <Button
+            variant="destructive"
+            size="icon"
+            :aria-label="
+              t('sideToolbar.queueProgressOverlay.clearQueueTooltip')
+            "
+            :disabled="queuedCount === 0"
+            @click="clearQueuedWorkflows"
+          >
+            <i class="icon-[lucide--list-x] size-4" />
+          </Button>
+        </div>
+      </div>
     </template>
     <template #body>
-      <div class="h-full" />
+      <JobAssetsList
+        :displayed-job-groups="displayedJobGroups"
+        @cancel-item="onCancelItem"
+        @delete-item="onDeleteItem"
+        @view-item="onViewItem"
+        @menu="onMenuItem"
+      />
+      <JobContextMenu
+        ref="jobContextMenuRef"
+        :entries="jobMenuEntries"
+        @action="onJobMenuAction"
+      />
+      <ResultGallery
+        v-model:active-index="galleryActiveIndex"
+        :all-gallery-items="galleryItems"
+      />
     </template>
   </SidebarTabTemplate>
 </template>
 
 <script setup lang="ts">
+import { computed, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
+
+import JobAssetsList from '@/components/queue/job/JobAssetsList.vue'
+import JobContextMenu from '@/components/queue/job/JobContextMenu.vue'
 import JobFiltersBar from '@/components/queue/job/JobFiltersBar.vue'
 import JobHistoryActionsMenu from '@/components/queue/JobHistoryActionsMenu.vue'
+import type { MenuEntry } from '@/composables/queue/useJobMenu'
+import { useJobMenu } from '@/composables/queue/useJobMenu'
 import { useJobList } from '@/composables/queue/useJobList'
-import type { JobSortMode, JobTab } from '@/composables/queue/useJobList'
+import type {
+  JobListItem,
+  JobSortMode,
+  JobTab
+} from '@/composables/queue/useJobList'
 import { useQueueClearHistoryDialog } from '@/composables/queue/useQueueClearHistoryDialog'
+import { useResultGallery } from '@/composables/queue/useResultGallery'
+import { useErrorHandling } from '@/composables/useErrorHandling'
 import SidebarTabTemplate from '@/components/sidebar/tabs/SidebarTabTemplate.vue'
+import ResultGallery from '@/components/sidebar/tabs/queue/ResultGallery.vue'
+import Button from '@/components/ui/button/Button.vue'
+import { useCommandStore } from '@/stores/commandStore'
+import { useExecutionStore } from '@/stores/executionStore'
+import { useQueueStore } from '@/stores/queueStore'
 
+const { t, n } = useI18n()
+const commandStore = useCommandStore()
+const executionStore = useExecutionStore()
+const queueStore = useQueueStore()
 const { showQueueClearHistoryDialog } = useQueueClearHistoryDialog()
+const { wrapWithErrorHandlingAsync } = useErrorHandling()
 const {
   selectedJobTab,
   selectedWorkflowFilter,
   selectedSortMode,
-  hasFailedJobs
+  hasFailedJobs,
+  filteredTasks,
+  groupedJobItems
 } = useJobList()
+
+const displayedJobGroups = computed(() => groupedJobItems.value)
+const runningCount = computed(() => queueStore.runningTasks.length)
+const queuedCount = computed(() => queueStore.pendingTasks.length)
+
+const runningJobsLabel = computed(() =>
+  t('sideToolbar.queueProgressOverlay.runningJobsLabel', {
+    count: n(runningCount.value)
+  })
+)
+const queuedJobsLabel = computed(() =>
+  t('sideToolbar.queueProgressOverlay.queuedJobsLabel', {
+    count: n(queuedCount.value)
+  })
+)
+const activeQueueSummary = computed(() => {
+  if (runningCount.value === 0 && queuedCount.value === 0) {
+    return t('sideToolbar.queueProgressOverlay.noActiveJobs')
+  }
+  if (queuedCount.value === 0) {
+    return runningJobsLabel.value
+  }
+  if (runningCount.value === 0) {
+    return queuedJobsLabel.value
+  }
+  return t('sideToolbar.queueProgressOverlay.runningQueuedSummary', {
+    running: runningJobsLabel.value,
+    queued: queuedJobsLabel.value
+  })
+})
+
+const clearQueuedWorkflows = wrapWithErrorHandlingAsync(async () => {
+  const pendingPromptIds = queueStore.pendingTasks
+    .map((task) => task.promptId)
+    .filter((id): id is string => typeof id === 'string' && id.length > 0)
+
+  await commandStore.execute('Comfy.ClearPendingTasks')
+  executionStore.clearInitializationByPromptIds(pendingPromptIds)
+})
 
 const onSelectedJobTabUpdate = (value: JobTab) => {
   selectedJobTab.value = value
@@ -50,5 +150,47 @@ const onSelectedWorkflowFilterUpdate = (value: 'all' | 'current') => {
 
 const onSelectedSortModeUpdate = (value: JobSortMode) => {
   selectedSortMode.value = value
+}
+
+const {
+  galleryActiveIndex,
+  galleryItems,
+  onViewItem: openResultGallery
+} = useResultGallery(() => filteredTasks.value)
+
+const onViewItem = wrapWithErrorHandlingAsync(async (item: JobListItem) => {
+  await openResultGallery(item)
+})
+
+const onInspectAsset = (item: JobListItem) => {
+  void onViewItem(item)
+}
+
+const currentMenuItem = ref<JobListItem | null>(null)
+const jobContextMenuRef = ref<InstanceType<typeof JobContextMenu> | null>(null)
+
+const { jobMenuEntries, cancelJob } = useJobMenu(
+  () => currentMenuItem.value,
+  onInspectAsset
+)
+
+const onCancelItem = wrapWithErrorHandlingAsync(async (item: JobListItem) => {
+  await cancelJob(item)
+})
+
+const onDeleteItem = wrapWithErrorHandlingAsync(async (item: JobListItem) => {
+  if (!item.taskRef) return
+  await queueStore.delete(item.taskRef)
+})
+
+const onMenuItem = (item: JobListItem, event: Event) => {
+  currentMenuItem.value = item
+  jobContextMenuRef.value?.open(event)
+}
+
+const onJobMenuAction = async (entry: MenuEntry) => {
+  if (entry.kind === 'divider') return
+  if (entry.onClick) await entry.onClick()
+  jobContextMenuRef.value?.hide()
 }
 </script>
