@@ -35,7 +35,11 @@ const selectedInputs = reactive<
 >([])
 const selectedOutputs = reactive<[NodeId, string][]>([])
 
-async function renameWidget(widget: IBaseWidget, input: INodeInputSlot) {
+async function renameWidget(
+  widget: IBaseWidget,
+  input: INodeInputSlot,
+  key: string
+) {
   const newLabel = await useDialogService().prompt({
     title: t('g.rename'),
     message: t('g.enterNewNamePrompt'),
@@ -47,6 +51,10 @@ async function renameWidget(widget: IBaseWidget, input: INodeInputSlot) {
   input.label = newLabel || undefined
   widget.callback?.(widget.value)
   useCanvasStore().canvas?.setDirty(true)
+  const inputTuple = selectedInputs.find(([k]) => k === key)
+  if (!inputTuple) return
+
+  inputTuple[1] = newLabel
 }
 
 function getHovered(
@@ -133,9 +141,15 @@ function handleClick(e: MouseEvent) {
   const bounding = getBounding(node.id, widget.name)
   const keyIndex = selectedInputs.findIndex(([k]) => k === key)
   const input = node.inputs.find((i) => i.widget?.name === widget.name)
-  const rename = input && (() => renameWidget(widget, input))
+  const rename = input && (() => renameWidget(widget, input, key))
   if (keyIndex === -1 && bounding)
-    selectedInputs.push([key, widget.name, node.title, rename, bounding])
+    selectedInputs.push([
+      key,
+      widget.label ?? widget.name,
+      node.title,
+      rename,
+      bounding
+    ])
   else selectedInputs.splice(keyIndex, 1)
 }
 
