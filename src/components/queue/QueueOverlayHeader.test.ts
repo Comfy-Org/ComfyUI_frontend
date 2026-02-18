@@ -1,23 +1,23 @@
 import { mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
-import { defineComponent } from 'vue'
+import { defineComponent, h } from 'vue'
 
-const popoverToggleSpy = vi.fn()
-const popoverHideSpy = vi.fn()
+const popoverCloseSpy = vi.fn()
 
-vi.mock('primevue/popover', () => {
+vi.mock('@/components/ui/Popover.vue', () => {
   const PopoverStub = defineComponent({
     name: 'Popover',
-    setup(_, { slots, expose }) {
-      const toggle = (event: Event) => {
-        popoverToggleSpy(event)
-      }
-      const hide = () => {
-        popoverHideSpy()
-      }
-      expose({ toggle, hide })
-      return () => slots.default?.()
+    setup(_, { slots }) {
+      return () =>
+        h('div', [
+          slots.button?.(),
+          slots.default?.({
+            close: () => {
+              popoverCloseSpy()
+            }
+          })
+        ])
     }
   })
   return { default: PopoverStub }
@@ -80,8 +80,7 @@ const mountHeader = (props = {}) =>
 
 describe('QueueOverlayHeader', () => {
   beforeEach(() => {
-    popoverToggleSpy.mockClear()
-    popoverHideSpy.mockClear()
+    popoverCloseSpy.mockClear()
     mockSetSetting.mockClear()
   })
 
@@ -121,29 +120,26 @@ describe('QueueOverlayHeader', () => {
     )
   })
 
-  it('toggles popover and emits clear history', async () => {
+  it('emits clear history from the menu', async () => {
     const spy = vi.spyOn(tooltipConfig, 'buildTooltipConfig')
 
     const wrapper = mountHeader()
 
-    const moreButton = wrapper.get('button[aria-label="More options"]')
-    await moreButton.trigger('click')
-    expect(popoverToggleSpy).toHaveBeenCalledTimes(1)
+    expect(wrapper.find('button[aria-label="More options"]').exists()).toBe(
+      true
+    )
     expect(spy).toHaveBeenCalledWith('More')
 
     const clearHistoryButton = wrapper.get(
       '[data-testid="clear-history-action"]'
     )
     await clearHistoryButton.trigger('click')
-    expect(popoverHideSpy).toHaveBeenCalledTimes(1)
+    expect(popoverCloseSpy).toHaveBeenCalledTimes(1)
     expect(wrapper.emitted('clearHistory')).toHaveLength(1)
   })
 
   it('toggles docked job history setting from the menu', async () => {
     const wrapper = mountHeader()
-
-    const moreButton = wrapper.get('button[aria-label="More options"]')
-    await moreButton.trigger('click')
 
     const dockedJobHistoryButton = wrapper.get(
       '[data-testid="docked-job-history-action"]'
