@@ -24,7 +24,20 @@ const appModeStore = useAppModeStore()
       <p class="mt-0">{{ t('linearMode.welcome.controls') }}</p>
       <p class="mt-0">{{ t('linearMode.welcome.sharing') }}</p>
     </div>
-    <div class="flex flex-row gap-2">
+    <div v-if="appModeStore.hasOutputs" class="flex flex-row gap-2 text-[14px]">
+      <p class="mt-0 text-base-foreground">
+        <i18n-t keypath="linearMode.welcome.getStarted" tag="span">
+          <template #runButton>
+            <span
+              class="inline-flex items-center px-3.5 py-0.5 mx-0.5 transform -translate-y-0.5 rounded bg-primary-background text-base-foreground text-xxs font-medium cursor-default"
+            >
+              {{ t('menu.run') }}
+            </span>
+          </template>
+        </i18n-t>
+      </p>
+    </div>
+    <div v-else class="flex flex-row gap-2">
       <Button
         variant="textonly"
         size="lg"

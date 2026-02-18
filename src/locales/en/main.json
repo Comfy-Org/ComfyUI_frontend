@@ -2935,7 +2935,7 @@
       "message": "A simplified view that hides the node graph so you can focus on creating.",
       "controls": "Your outputs appear at the bottom, your controls are on the right. Everything else stays out of the way.",
       "sharing": "Share your workflow as a simple tool anyone can use. Export it from the tab menu and when others open it, they'll see App Mode. No node graph knowledge needed.",
-      "getStarted": "Adjust any defined inputs on the right and hit {runButton} to get started.",
+      "getStarted": "Click {runButton} to get started.",
       "backToWorkflow": "Back to workflow",
       "buildApp": "Build app"
     },
