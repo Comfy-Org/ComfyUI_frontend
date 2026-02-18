@@ -20,7 +20,8 @@ export enum ServerFeatureFlag {
   ONBOARDING_SURVEY_ENABLED = 'onboarding_survey_enabled',
   LINEAR_TOGGLE_ENABLED = 'linear_toggle_enabled',
   TEAM_WORKSPACES_ENABLED = 'team_workspaces_enabled',
-  USER_SECRETS_ENABLED = 'user_secrets_enabled'
+  USER_SECRETS_ENABLED = 'user_secrets_enabled',
+  WORKFLOW_SHARING_ENABLED = 'workflow_sharing_enabled'
 }
 
 /**
@@ -95,6 +96,12 @@ export function useFeatureFlags() {
       return (
         remoteConfig.value.user_secrets_enabled ??
         api.getServerFeature(ServerFeatureFlag.USER_SECRETS_ENABLED, false)
+      )
+    },
+    get workflowSharingEnabled() {
+      return (
+        remoteConfig.value.workflow_sharing_enabled ??
+        api.getServerFeature(ServerFeatureFlag.WORKFLOW_SHARING_ENABLED, false)
       )
     }
   })
