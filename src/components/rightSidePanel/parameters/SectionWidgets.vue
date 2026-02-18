@@ -110,7 +110,7 @@ const targetNode = computed<LGraphNode | null>(() => {
 
 const hasDirectError = computed(() => {
   if (!targetNode.value) return false
-  return executionStore.errorNodeIds.has(String(targetNode.value.id))
+  return executionStore.activeGraphErrorNodeIds.has(String(targetNode.value.id))
 })
 
 const hasContainerInternalError = computed(() => {

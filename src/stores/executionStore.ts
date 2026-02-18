@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import { computed, ref, watch } from 'vue'
+import { isEmpty } from 'es-toolkit/compat'
 
 import { useNodeProgressText } from '@/composables/node/useNodeProgressText'
 import type { LGraph, Subgraph } from '@/lib/litegraph/src/litegraph'
@@ -25,7 +26,8 @@ import type {
   NotificationWsMessage,
   ProgressStateWsMessage,
   ProgressTextWsMessage,
-  ProgressWsMessage
+  ProgressWsMessage,
+  PromptError
 } from '@/schemas/apiSchema'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
@@ -47,12 +49,8 @@ interface QueuedPrompt {
   workflow?: ComfyWorkflow
 }
 
-/** Prompt-level errors without node IDs (e.g. invalid_prompt, prompt_no_outputs) */
-interface PromptError {
-  type: string
-  message: string
-  details: string
-}
+
+
 
 interface CloudValidationError {
   error?: { type?: string; message?: string; details?: string } | string
@@ -532,6 +530,7 @@ export const useExecutionStore = defineStore('execution', () => {
     }
     activePromptId.value = null
     _executingNodeProgress.value = null
+    lastPromptError.value = null
   }
 
   function getNodeIdIfExecuting(nodeId: string | number) {
@@ -719,7 +718,7 @@ export const useExecutionStore = defineStore('execution', () => {
 
   /** Whether any node validation errors are present */
   const hasNodeError = computed(
-    () => !!lastNodeErrors.value && Object.keys(lastNodeErrors.value).length > 0
+    () => !!lastNodeErrors.value && !isEmpty(lastNodeErrors.value)
   )
 
   /** Whether any error (node validation, runtime execution, or prompt-level) is present */
@@ -745,14 +744,13 @@ export const useExecutionStore = defineStore('execution', () => {
   })
 
   /** Pre-computed Set of graph node IDs (as strings) that have errors in the current graph scope. */
-  const errorNodeIds = computed<Set<string>>(() => {
+  const activeGraphErrorNodeIds = computed<Set<string>>(() => {
     const ids = new Set<string>()
     if (!app.rootGraph) return ids
 
     // Fall back to rootGraph when currentGraph hasn't been initialized yet
     const activeGraph = canvasStore.currentGraph ?? app.rootGraph
 
-    // Node validation errors (400 Bad Request)
     if (lastNodeErrors.value) {
       for (const executionId of Object.keys(lastNodeErrors.value)) {
         const graphNode = getNodeByExecutionId(app.rootGraph, executionId)
@@ -762,7 +760,6 @@ export const useExecutionStore = defineStore('execution', () => {
       }
     }
 
-    // Runtime execution error (WebSocket)
     if (lastExecutionError.value) {
       const execNodeId = String(lastExecutionError.value.node_id)
       const graphNode = getNodeByExecutionId(app.rootGraph, execNodeId)
@@ -826,7 +823,7 @@ export const useExecutionStore = defineStore('execution', () => {
     // Node error lookup helpers
     getNodeErrors,
     slotHasError,
-    errorNodeIds,
+    activeGraphErrorNodeIds,
     isErrorOverlayOpen,
     showErrorOverlay,
     dismissErrorOverlay

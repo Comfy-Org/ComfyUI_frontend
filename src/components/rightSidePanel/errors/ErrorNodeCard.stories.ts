@@ -28,8 +28,6 @@ const meta: Meta<typeof ErrorNodeCard> = {
 export default meta
 type Story = StoryObj<typeof meta>
 
-// ─── Sample Data ────────────────────────────────────────────────────────────
-
 const singleErrorCard: ErrorCardData = {
   id: 'node-10',
   title: 'CLIPTextEncode',
@@ -107,8 +105,6 @@ const promptOnlyCard: ErrorCardData = {
   ]
 }
 
-// ─── Stories: Badge Visibility ──────────────────────────────────────────────
-
 /** Single validation error with node ID badge visible */
 export const WithNodeIdBadge: Story = {
   args: {
@@ -125,8 +121,6 @@ export const WithoutNodeIdBadge: Story = {
   }
 }
 
-// ─── Stories: Subgraph Button ───────────────────────────────────────────────
-
 /** Subgraph node error — shows "Enter subgraph" button */
 export const WithEnterSubgraphButton: Story = {
   args: {
@@ -142,8 +136,6 @@ export const WithoutEnterSubgraphButton: Story = {
     showNodeIdBadge: true
   }
 }
-
-// ─── Stories: Error Variants ────────────────────────────────────────────────
 
 /** Multiple validation errors on one node */
 export const MultipleErrors: Story = {

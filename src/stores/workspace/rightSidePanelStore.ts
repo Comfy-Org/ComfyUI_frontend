@@ -33,6 +33,11 @@ export const useRightSidePanelStore = defineStore('rightSidePanel', () => {
   const activeTab = ref<RightSidePanelTab>('parameters')
   const isEditingSubgraph = computed(() => activeTab.value === 'subgraph')
   const focusedSection = ref<RightSidePanelSection | null>(null)
+  /**
+   * Graph node ID to focus in the errors tab.
+   * Set by SectionWidgets when the user clicks "See Error", consumed and
+   * cleared by TabErrors after expanding the relevant error group.
+   */
   const focusedErrorNodeId = ref<string | null>(null)
   const searchQuery = ref('')
 

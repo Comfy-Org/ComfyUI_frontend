@@ -9,9 +9,12 @@ import type {
 import type { ISerialisedGraph } from '@/lib/litegraph/src/types/serialisation'
 import type { IWidget } from '@/lib/litegraph/src/types/widgets'
 import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
+import type { ExecutedWsMessage } from '@/schemas/apiSchema'
 import {
   compressWidgetInputSlots,
   createNode,
+  isAnimatedOutput,
+  isVideoOutput,
   migrateWidgetsValues
 } from '@/utils/litegraphUtil'
 
@@ -196,6 +199,106 @@ describe('migrateWidgetsValues', () => {
 
     const result = migrateWidgetsValues(inputDefs, widgets, widgetValues)
     expect(result).toEqual([42, 'fixed'])
+  })
+})
+
+function createOutput(
+  overrides: Partial<ExecutedWsMessage['output']> = {}
+): ExecutedWsMessage['output'] {
+  return { ...overrides }
+}
+
+describe('isAnimatedOutput', () => {
+  it('returns false for undefined output', () => {
+    expect(isAnimatedOutput(undefined)).toBe(false)
+  })
+
+  it('returns false when animated array is missing', () => {
+    expect(isAnimatedOutput(createOutput())).toBe(false)
+  })
+
+  it('returns false when all animated values are false', () => {
+    expect(isAnimatedOutput(createOutput({ animated: [false, false] }))).toBe(
+      false
+    )
+  })
+
+  it('returns true when any animated value is true', () => {
+    expect(isAnimatedOutput(createOutput({ animated: [false, true] }))).toBe(
+      true
+    )
+  })
+})
+
+describe('isVideoOutput', () => {
+  it('returns false for non-animated output', () => {
+    expect(
+      isVideoOutput(
+        createOutput({
+          animated: [false],
+          images: [{ filename: 'video.webm' }]
+        })
+      )
+    ).toBe(false)
+  })
+
+  it('returns false for animated webp output', () => {
+    expect(
+      isVideoOutput(
+        createOutput({
+          animated: [true],
+          images: [{ filename: 'anim.webp' }]
+        })
+      )
+    ).toBe(false)
+  })
+
+  it('returns false for animated png output', () => {
+    expect(
+      isVideoOutput(
+        createOutput({
+          animated: [true],
+          images: [{ filename: 'anim.png' }]
+        })
+      )
+    ).toBe(false)
+  })
+
+  it('returns true for animated webm output', () => {
+    expect(
+      isVideoOutput(
+        createOutput({
+          animated: [true],
+          images: [{ filename: 'output.webm' }]
+        })
+      )
+    ).toBe(true)
+  })
+
+  it('returns true for animated mp4 output', () => {
+    expect(
+      isVideoOutput(
+        createOutput({
+          animated: [true],
+          images: [{ filename: 'output.mp4' }]
+        })
+      )
+    ).toBe(true)
+  })
+
+  it('returns true for animated output with no images array', () => {
+    expect(isVideoOutput(createOutput({ animated: [true] }))).toBe(true)
+  })
+
+  it('does not false-positive on filenames containing webp as substring', () => {
+    expect(
+      isVideoOutput(
+        createOutput({
+          animated: [true],
+          images: [{ filename: 'my_webp_file.mp4' }]
+        })
+      )
+    ).toBe(true)
   })
 })
 

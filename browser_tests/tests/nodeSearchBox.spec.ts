@@ -215,6 +215,14 @@ test.describe('Node search box', { tag: '@node' }, () => {
       await expectFilterChips(comfyPage, ['MODEL', 'CLIP'])
     })
 
+    test('Does not add duplicate filter with same type and value', async ({
+      comfyPage
+    }) => {
+      await comfyPage.searchBox.addFilter('MODEL', 'Input Type')
+      await comfyPage.searchBox.addFilter('MODEL', 'Input Type')
+      await expectFilterChips(comfyPage, ['MODEL'])
+    })
+
     test('Can remove filter', async ({ comfyPage }) => {
       await comfyPage.searchBox.addFilter('MODEL', 'Input Type')
       await comfyPage.searchBox.removeFilter(0)

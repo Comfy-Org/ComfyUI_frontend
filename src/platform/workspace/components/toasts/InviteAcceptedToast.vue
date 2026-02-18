@@ -29,7 +29,7 @@ import Toast from 'primevue/toast'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
-import { useWorkspaceSwitch } from '@/platform/auth/workspace/useWorkspaceSwitch'
+import { useWorkspaceSwitch } from '@/platform/workspace/composables/useWorkspaceSwitch'
 
 const { t } = useI18n()
 const toast = useToast()

@@ -109,7 +109,7 @@ const allErrorIds = computed<string[]>(() => {
 
 const hasDirectNodeError = computed(() =>
   selectedNodes.value.some((node) =>
-    executionStore.errorNodeIds.has(String(node.id))
+    executionStore.activeGraphErrorNodeIds.has(String(node.id))
   )
 )
 
