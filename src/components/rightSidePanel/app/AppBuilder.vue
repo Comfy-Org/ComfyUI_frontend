@@ -34,16 +34,32 @@ const workflowStore = useWorkflowStore()
 const { t } = useI18n()
 const canvas: LGraphCanvas = canvasStore.getCanvas()
 
-const selectedInputs = reactive<
-  {
-    nodeId: NodeId
-    widgetName: string
-    label: string
-    subLabel: string
-    rename?: () => void
-  }[]
->([])
-const selectedOutputs = reactive<[NodeId, string][]>([])
+const selectedInputs = reactive<[NodeId, string][]>([])
+const selectedOutputs = reactive<NodeId[]>([])
+const inputsWithState = computed(() =>
+  selectedInputs.map(([nodeId, widgetName]) => {
+    const node = canvas.graph?.getNodeById(nodeId)
+    const widget = node?.widgets?.find((w) => w.name === widgetName)
+    if (!node || !widget) return { nodeId, widgetName }
+
+    const input = node.inputs.find((i) => i.widget?.name === widget.name)
+    const rename = input && (() => renameWidget(widget, input))
+
+    return {
+      nodeId,
+      widgetName,
+      label: widget.label,
+      subLabel: node.title,
+      rename
+    }
+  })
+)
+const outputsWithState = computed<[NodeId, string][]>(() =>
+  selectedOutputs.map((nodeId) => [
+    nodeId,
+    canvas.graph?.getNodeById(nodeId)?.title ?? String(nodeId)
+  ])
+)
 
 whenever(
   () => workflowStore.activeWorkflow,
@@ -145,32 +161,23 @@ function handleClick(e: MouseEvent) {
   if (!widget) {
     if (!node.constructor.nodeData?.output_node)
       return canvasInteractions.forwardEventToCanvas(e)
-    const index = selectedOutputs.findIndex(([id]) => id === node.id)
-    if (index === -1) selectedOutputs.push([node.id, node.title])
+    const index = selectedOutputs.findIndex((id) => id === node.id)
+    if (index === -1) selectedOutputs.push(node.id)
     else selectedOutputs.splice(index, 1)
     return
   }
 
   const index = selectedInputs.findIndex(
-    ({ nodeId, widgetName }) => node.id === nodeId && widget.name === widgetName
+    ([nodeId, widgetName]) => node.id === nodeId && widget.name === widgetName
   )
-  const input = node.inputs.find((i) => i.widget?.name === widget.name)
-  const rename = input && (() => renameWidget(widget, input))
-  if (index === -1)
-    selectedInputs.push({
-      nodeId: node.id,
-      widgetName: widget.name,
-      label: widget.label ?? widget.name,
-      subLabel: node.title,
-      rename
-    })
+  if (index === -1) selectedInputs.push([node.id, widget.name])
   else selectedInputs.splice(index, 1)
 }
 
 function nodeToDisplayTuple(
   n: LGraphNode
 ): [NodeId, MaybeRef<BoundStyle> | undefined, boolean] {
-  return [n.id, getBounding(n.id), selectedOutputs.some(([id]) => n.id === id)]
+  return [n.id, getBounding(n.id), selectedOutputs.some((id) => n.id === id)]
 }
 
 const renderedOutputs = computed(() => {
@@ -181,7 +188,7 @@ const renderedOutputs = computed(() => {
 })
 const renderedInputs = computed<[string, MaybeRef<BoundStyle> | undefined][]>(
   () =>
-    selectedInputs.map(({ nodeId, widgetName }) => [
+    selectedInputs.map(([nodeId, widgetName]) => [
       `${nodeId}: ${widgetName}`,
       getBounding(nodeId, widgetName)
     ])
@@ -231,18 +238,17 @@ const renderedInputs = computed<[string, MaybeRef<BoundStyle> | undefined][]>(
           label,
           subLabel,
           rename
-        } in selectedInputs"
+        } in inputsWithState"
         :key="`${nodeId}: ${widgetName}`"
         :class="cn(dragClass, 'bg-primary-background/30 p-2 my-2 rounded-lg')"
-        :title="label"
+        :title="label ?? widgetName"
         :sub-title="subLabel"
         :rename
         :remove="
           () =>
             remove(
               selectedInputs,
-              ({ nodeId: id, widgetName: name }) =>
-                nodeId === id && widgetName === name
+              ([id, name]) => nodeId === id && widgetName === name
             )
         "
       />
@@ -282,7 +288,7 @@ const renderedInputs = computed<[string, MaybeRef<BoundStyle> | undefined][]>(
     />
     <DraggableList v-slot="{ dragClass }" v-model="selectedOutputs">
       <IoItem
-        v-for="([key, title], index) in selectedOutputs"
+        v-for="([key, title], index) in outputsWithState"
         :key
         :class="
           cn(
@@ -293,7 +299,7 @@ const renderedInputs = computed<[string, MaybeRef<BoundStyle> | undefined][]>(
         "
         :title
         :sub-title="String(key)"
-        :remove="() => remove(selectedOutputs, ([k]) => k === key)"
+        :remove="() => remove(selectedOutputs, (k) => k === key)"
       />
     </DraggableList>
   </PropertiesAccordionItem>
