@@ -26,17 +26,30 @@
       }"
     >
       <div
-        class="flex flex-col items-stretch rounded-lg border border-interface-stroke bg-interface-panel-surface px-2 py-3 font-inter"
+        class="flex flex-col items-stretch rounded-lg border border-interface-stroke bg-interface-panel-surface p-2 font-inter"
       >
         <Button
-          class="w-full justify-start"
+          class="h-auto min-h-0 w-full items-start justify-start whitespace-normal py-2"
           variant="textonly"
           size="sm"
           :aria-label="t('sideToolbar.queueProgressOverlay.clearHistory')"
           @click="onClearHistoryFromMenu"
         >
-          <i class="icon-[lucide--file-x-2] size-4 text-muted" />
-          <span>{{ t('sideToolbar.queueProgressOverlay.clearHistory') }}</span>
+          <i
+            class="icon-[lucide--trash-2] size-4 shrink-0 self-center text-destructive-background"
+          />
+          <span
+            class="flex flex-col items-start break-words text-left leading-tight"
+          >
+            <span class="text-sm font-light">
+              {{ t('sideToolbar.queueProgressOverlay.clearHistory') }}
+            </span>
+            <span class="text-xs text-text-secondary font-light">
+              {{
+                t('sideToolbar.queueProgressOverlay.clearHistoryMenuAssetsNote')
+              }}
+            </span>
+          </span>
         </Button>
       </div>
     </Popover>
