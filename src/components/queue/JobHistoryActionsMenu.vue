@@ -29,7 +29,25 @@
         class="flex flex-col items-stretch rounded-lg border border-interface-stroke bg-interface-panel-surface p-2 font-inter"
       >
         <Button
-          class="h-auto min-h-0 w-full items-start justify-start whitespace-normal py-2"
+          class="w-full justify-between text-sm font-light"
+          variant="textonly"
+          size="sm"
+          :aria-label="t('sideToolbar.queueProgressOverlay.dockedJobHistory')"
+          @click="onToggleDockedJobHistory"
+        >
+          <span class="flex items-center gap-2">
+            <i
+              class="icon-[lucide--panel-left-close] size-4 text-text-secondary"
+            />
+            <span>{{
+              t('sideToolbar.queueProgressOverlay.dockedJobHistory')
+            }}</span>
+          </span>
+          <i v-if="isQueuePanelV2Enabled" class="icon-[lucide--check] size-4" />
+        </Button>
+        <div class="my-1 border-t border-interface-stroke" />
+        <Button
+          class="h-auto min-h-0 w-full items-start justify-start whitespace-normal"
           variant="textonly"
           size="sm"
           :aria-label="t('sideToolbar.queueProgressOverlay.clearHistory')"
@@ -64,15 +82,20 @@ import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
 import { buildTooltipConfig } from '@/composables/useTooltipConfig'
+import { useSettingStore } from '@/platform/settings/settingStore'
 
 const emit = defineEmits<{
   (e: 'clearHistory'): void
 }>()
 
 const { t } = useI18n()
+const settingStore = useSettingStore()
 
 const morePopoverRef = ref<PopoverMethods | null>(null)
 const moreTooltipConfig = computed(() => buildTooltipConfig(t('g.more')))
+const isQueuePanelV2Enabled = computed(() =>
+  settingStore.get('Comfy.Queue.QPOV2')
+)
 
 const onMoreClick = (event: MouseEvent) => {
   morePopoverRef.value?.toggle(event)
@@ -81,5 +104,9 @@ const onMoreClick = (event: MouseEvent) => {
 const onClearHistoryFromMenu = () => {
   morePopoverRef.value?.hide()
   emit('clearHistory')
+}
+
+const onToggleDockedJobHistory = async () => {
+  await settingStore.set('Comfy.Queue.QPOV2', !isQueuePanelV2Enabled.value)
 }
 </script>

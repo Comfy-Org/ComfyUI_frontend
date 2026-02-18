@@ -1,5 +1,5 @@
 import { mount } from '@vue/test-utils'
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 import { defineComponent } from 'vue'
 
@@ -23,6 +23,18 @@ vi.mock('primevue/popover', () => {
   return { default: PopoverStub }
 })
 
+const mockGetSetting = vi.fn((key: string) =>
+  key === 'Comfy.Queue.QPOV2' ? true : undefined
+)
+const mockSetSetting = vi.fn()
+
+vi.mock('@/platform/settings/settingStore', () => ({
+  useSettingStore: () => ({
+    get: mockGetSetting,
+    set: mockSetSetting
+  })
+}))
+
 import QueueOverlayHeader from './QueueOverlayHeader.vue'
 import * as tooltipConfig from '@/composables/useTooltipConfig'
 
@@ -43,7 +55,8 @@ const i18n = createI18n({
           queuedSuffix: 'queued',
           clearQueued: 'Clear queued',
           moreOptions: 'More options',
-          clearHistory: 'Clear history'
+          clearHistory: 'Clear history',
+          dockedJobHistory: 'Docked Job History'
         }
       }
     }
@@ -66,6 +79,12 @@ const mountHeader = (props = {}) =>
   })
 
 describe('QueueOverlayHeader', () => {
+  beforeEach(() => {
+    popoverToggleSpy.mockClear()
+    popoverHideSpy.mockClear()
+    mockSetSetting.mockClear()
+  })
+
   it('renders header title and concurrent indicator when enabled', () => {
     const wrapper = mountHeader({ concurrentWorkflowCount: 3 })
 
@@ -116,5 +135,20 @@ describe('QueueOverlayHeader', () => {
     await clearHistoryButton.trigger('click')
     expect(popoverHideSpy).toHaveBeenCalledTimes(1)
     expect(wrapper.emitted('clearHistory')).toHaveLength(1)
+  })
+
+  it('toggles docked job history setting from the menu', async () => {
+    const wrapper = mountHeader()
+
+    const moreButton = wrapper.get('button[aria-label="More options"]')
+    await moreButton.trigger('click')
+
+    const dockedJobHistoryButton = wrapper.get(
+      'button[aria-label="Docked Job History"]'
+    )
+    await dockedJobHistoryButton.trigger('click')
+
+    expect(mockSetSetting).toHaveBeenCalledTimes(1)
+    expect(mockSetSetting).toHaveBeenCalledWith('Comfy.Queue.QPOV2', false)
   })
 })

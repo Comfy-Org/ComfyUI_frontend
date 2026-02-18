@@ -805,6 +805,7 @@
       "queuedSuffix": "queued",
       "clearQueued": "Clear queued",
       "clearHistory": "Clear job history",
+      "dockedJobHistory": "Docked Job History",
       "clearHistoryMenuAssetsNote": "Media assets won't be deleted.",
       "filterJobs": "Filter jobs",
       "filterBy": "Filter by",
