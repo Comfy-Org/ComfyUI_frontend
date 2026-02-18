@@ -11,6 +11,21 @@ const appModeStore = useAppModeStore()
   <div
     v-if="appModeStore.hasOutputs"
     role="article"
+    data-testid="arrange-preview"
+    class="flex flex-col items-center justify-center h-full w-3/4 gap-6 p-8 mx-auto"
+  >
+    <div
+      class="border-warning-background border-2 border-dashed rounded-2xl w-full h-4/5 flex items-center justify-center flex-col p-12"
+    >
+      <p class="text-base-foreground font-bold mb-0">
+        {{ t('linearMode.arrange.outputs') }}
+      </p>
+      <p>{{ t('linearMode.arrange.resultsLabel') }}</p>
+    </div>
+  </div>
+  <div
+    v-else
+    role="article"
     data-testid="arrange-no-outputs"
     class="flex flex-col items-center justify-center h-full gap-6 p-8 w-lg mx-auto text-center"
   >
