@@ -1202,9 +1202,9 @@ export const CORE_SETTINGS: SettingParams[] = [
   {
     id: 'Comfy.NodeReplacement.Enabled',
     category: ['Comfy', 'Workflow', 'NodeReplacement'],
-    name: 'Enable automatic node replacement',
+    name: 'Enable node replacement suggestions',
     tooltip:
-      'When enabled, missing nodes can be automatically replaced with their newer equivalents if a replacement mapping exists.',
+      'When enabled, missing nodes with known replacements will be shown as replaceable in the missing nodes dialog, allowing you to review and apply replacements.',
     type: 'boolean',
     defaultValue: false,
     experimental: true,
@@ -1219,6 +1219,17 @@ export const CORE_SETTINGS: SettingParams[] = [
     type: 'boolean',
     deprecated: true,
     defaultValue: true,
+    experimental: true,
+    versionAdded: '1.40.0'
+  },
+  {
+    id: 'Comfy.RightSidePanel.ShowErrorsTab',
+    category: ['Comfy', 'Error System'],
+    name: 'Show errors tab in side panel',
+    tooltip:
+      'When enabled, an errors tab is displayed in the right side panel to show workflow execution errors at a glance.',
+    type: 'boolean',
+    defaultValue: false,
     experimental: true,
     versionAdded: '1.40.0'
   }

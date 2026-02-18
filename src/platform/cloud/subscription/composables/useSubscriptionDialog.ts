@@ -23,7 +23,7 @@ export const useSubscriptionDialog = () => {
     const component = useWorkspaceVariant
       ? defineAsyncComponent(
           () =>
-            import('@/platform/cloud/subscription/components/SubscriptionRequiredDialogContentWorkspace.vue')
+            import('@/platform/workspace/components/SubscriptionRequiredDialogContentWorkspace.vue')
         )
       : defineAsyncComponent(
           () =>

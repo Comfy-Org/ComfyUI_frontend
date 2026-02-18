@@ -135,7 +135,10 @@
     >
       <button
         v-if="hasAnyError"
-        @click.stop="useRightSidePanelStore().openPanel('error')"
+        @click.stop="
+          settingStore.get('Comfy.RightSidePanel.ShowErrorsTab') &&
+          useRightSidePanelStore().openPanel('error')
+        "
       >
         <span>{{ t('g.error') }}</span>
         <i class="icon-[lucide--info] size-4" />
@@ -250,6 +253,7 @@ import { useExecutionStore } from '@/stores/executionStore'
 import { useNodeOutputStore } from '@/stores/imagePreviewStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import { isTransparent } from '@/utils/colorUtil'
+import { isVideoOutput } from '@/utils/litegraphUtil'
 import {
   getLocatorIdFromNodeData,
   getNodeByLocatorId
@@ -663,6 +667,7 @@ const nodeMedia = computed(() => {
   if (!urls?.length) return undefined
 
   const type =
+    isVideoOutput(newOutputs) ||
     node.previewMediaType === 'video' ||
     (!node.previewMediaType && hasVideoInput.value)
       ? 'video'

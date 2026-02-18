@@ -74,7 +74,7 @@ import type { TierKey } from '@/platform/cloud/subscription/constants/tierPricin
 import type { BillingCycle } from '@/platform/cloud/subscription/utils/subscriptionTierRank'
 import type { PreviewSubscribeResponse } from '@/platform/workspace/api/workspaceApi'
 import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
-import { useBillingOperationStore } from '@/stores/billingOperationStore'
+import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
 
 import PricingTableWorkspace from './PricingTableWorkspace.vue'
 import SubscriptionAddPaymentPreviewWorkspace from './SubscriptionAddPaymentPreviewWorkspace.vue'

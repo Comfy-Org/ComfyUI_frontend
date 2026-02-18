@@ -814,6 +814,9 @@
       "activeJobs": "{count} active job | {count} active jobs",
       "activeJobsShort": "{count} active | {count} active",
       "activeJobsSuffix": "active jobs",
+      "runningJobsLabel": "{count} running",
+      "queuedJobsLabel": "{count} queued",
+      "runningQueuedSummary": "{running}, {queued}",
       "jobQueue": "Job Queue",
       "expandCollapsedQueue": "Expand job queue",
       "viewJobHistory": "View active jobs (right-click to clear queue)",
@@ -2901,6 +2904,25 @@
       "replacementInstruction": "Install these nodes to run this workflow, or replace them with installed alternatives. Missing nodes are highlighted in red on the canvas."
     }
   },
+  "nodeReplacement": {
+    "quickFixAvailable": "Quick Fix Available",
+    "installationRequired": "Installation Required",
+    "compatibleAlternatives": "Compatible Alternatives",
+    "replaceable": "Replaceable",
+    "replaced": "Replaced",
+    "notReplaceable": "Install Required",
+    "selectAll": "Select All",
+    "replaceSelected": "Replace Selected ({count})",
+    "replacedNode": "Replaced node: {nodeType}",
+    "replacedAllNodes": "Replaced {count} node type(s)",
+    "replaceFailed": "Failed to replace nodes",
+    "instructionMessage": "You must install these nodes or replace them with installed alternatives to run the workflow. Missing nodes are highlighted in {red} on the canvas. Some nodes cannot be swapped and must be installed via Node Manager.",
+    "redHighlight": "red",
+    "openNodeManager": "Open Node Manager",
+    "skipForNow": "Skip for Now",
+    "installMissingNodes": "Install Missing Nodes",
+    "replaceWarning": "This will permanently modify the workflow. Save a copy first if unsure."
+  },
   "rightSidePanel": {
     "togglePanel": "Toggle properties panel",
     "noSelection": "Select a node to see its properties and info.",
@@ -2956,6 +2978,21 @@
     "fallbackGroupTitle": "Group",
     "fallbackNodeTitle": "Node",
     "hideAdvancedInputsButton": "Hide advanced inputs",
+    "errors": "Errors",
+    "noErrors": "No errors",
+    "enterSubgraph": "Enter subgraph",
+    "seeError": "See Error",
+    "promptErrors": {
+      "prompt_no_outputs": {
+        "desc": "The workflow does not contain any output nodes (e.g. Save Image, Preview Image) to produce a result."
+      },
+      "no_prompt": {
+        "desc": "The workflow data sent to the server is empty. This may be an unexpected system error."
+      }
+    },
+    "errorHelp": "For more help, {github} or {support}",
+    "errorHelpGithub": "submit a GitHub issue",
+    "errorHelpSupport": "contact our support",
     "resetToDefault": "Reset to default",
     "resetAllParameters": "Reset all parameters"
   },

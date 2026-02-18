@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { useWorkspaceSwitch } from '@/platform/auth/workspace/useWorkspaceSwitch'
+import { useWorkspaceSwitch } from '@/platform/workspace/composables/useWorkspaceSwitch'
 import type { WorkspaceWithRole } from '@/platform/workspace/api/workspaceApi'
 
 const mockSwitchWorkspace = vi.hoisted(() => vi.fn())

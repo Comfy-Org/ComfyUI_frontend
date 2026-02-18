@@ -1,10 +1,10 @@
 import { defineStore } from 'pinia'
 import { computed, ref, shallowRef } from 'vue'
 
-import { WORKSPACE_STORAGE_KEYS } from '@/platform/auth/workspace/workspaceConstants'
+import { WORKSPACE_STORAGE_KEYS } from '@/platform/workspace/workspaceConstants'
 import { clearPreservedQuery } from '@/platform/navigation/preservedQueryManager'
 import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQueryNamespaces'
-import { useWorkspaceAuthStore } from '@/stores/workspaceAuthStore'
+import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
 
 import type {
   ListMembersParams,
