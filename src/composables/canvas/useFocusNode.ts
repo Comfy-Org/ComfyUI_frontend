@@ -2,8 +2,7 @@ import { nextTick } from 'vue'
 
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { app } from '@/scripts/app'
-import { Subgraph } from '@/lib/litegraph/src/litegraph'
-import type { LGraph } from '@/lib/litegraph/src/litegraph'
+import type { LGraph, Subgraph } from '@/lib/litegraph/src/litegraph'
 import { getNodeByExecutionId } from '@/utils/graphTraversalUtil'
 import { useLitegraphService } from '@/services/litegraphService'
 
@@ -13,10 +12,9 @@ async function navigateToGraph(targetGraph: LGraph) {
   if (!canvas) return
 
   if (canvas.graph !== targetGraph) {
-    canvas.subgraph =
-      !targetGraph.isRootGraph && targetGraph instanceof Subgraph
-        ? targetGraph
-        : undefined
+    canvas.subgraph = targetGraph.isRootGraph
+      ? undefined
+      : (targetGraph as Subgraph)
     canvas.setGraph(targetGraph)
 
     await nextTick()

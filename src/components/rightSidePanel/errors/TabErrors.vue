@@ -57,7 +57,7 @@
               :show-node-id-badge="showNodeIdBadge"
               @locate-node="focusNode"
               @enter-subgraph="enterSubgraph"
-              @copy-to-clipboard="handleCopyToClipboard"
+              @copy-to-clipboard="copyToClipboard"
             />
           </div>
         </PropertiesAccordionItem>
@@ -104,6 +104,7 @@ import { useCommandStore } from '@/stores/commandStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
 import { useFocusNode } from '@/composables/canvas/useFocusNode'
+import { useExternalLink } from '@/composables/useExternalLink'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
 import { NodeBadgeMode } from '@/types/nodeSource'
@@ -117,6 +118,7 @@ import { useErrorGroups } from './useErrorGroups'
 const { t } = useI18n()
 const { copyToClipboard } = useCopyToClipboard()
 const { focusNode, enterSubgraph } = useFocusNode()
+const { staticUrls } = useExternalLink()
 const rightSidePanelStore = useRightSidePanelStore()
 
 const searchQuery = ref('')
@@ -147,23 +149,11 @@ watch(
   { immediate: true }
 )
 
-async function handleCopyToClipboard(text: string) {
-  try {
-    await copyToClipboard(text)
-  } catch (err) {
-    console.error('Failed to copy error details to clipboard:', err)
-  }
-}
-
 function openGitHubIssues() {
   useTelemetry()?.trackUiButtonClicked({
     button_id: 'error_tab_github_issues_clicked'
   })
-  window.open(
-    'https://github.com/comfyanonymous/ComfyUI/issues',
-    '_blank',
-    'noopener,noreferrer'
-  )
+  window.open(staticUrls.githubIssues, '_blank', 'noopener,noreferrer')
 }
 
 async function contactSupport() {
