@@ -1705,7 +1705,10 @@
     "reEnableInSettings": "Re-enable in {link}",
     "reEnableInSettingsLink": "Settings",
     "missingModels": "Missing Models",
-    "missingModelsMessage": "When loading the graph, the following models were not found"
+    "missingModelsMessage": "When loading the graph, the following models were not found",
+    "downloadAll": "Download all models",
+    "downloadAllResult": "Models downloaded successfully: {downloaded}, skipped: {skipped}, failed: {failed}",
+    "downloadAllRequestFailed": "Failed to download missing models."
   },
   "versionMismatchWarning": {
     "title": "Version Compatibility Warning",

@@ -148,6 +148,24 @@ const zAssetDownloadWsMessage = z.object({
   error: z.string().optional()
 })
 
+const zMissingModelDownloadWsMessage = z.object({
+  batch_id: z.string(),
+  task_id: z.string(),
+  name: z.string(),
+  directory: z.string(),
+  url: z.string(),
+  bytes_downloaded: z.number(),
+  status: z.enum([
+    'running',
+    'completed',
+    'failed',
+    'skipped_existing',
+    'blocked',
+    'canceled'
+  ]),
+  error: z.string().optional()
+})
+
 export type StatusWsMessageStatus = z.infer<typeof zStatusWsMessageStatus>
 export type StatusWsMessage = z.infer<typeof zStatusWsMessage>
 export type ProgressWsMessage = z.infer<typeof zProgressWsMessage>
@@ -168,6 +186,9 @@ export type NodeProgressState = z.infer<typeof zNodeProgressState>
 export type ProgressStateWsMessage = z.infer<typeof zProgressStateWsMessage>
 export type FeatureFlagsWsMessage = z.infer<typeof zFeatureFlagsWsMessage>
 export type AssetDownloadWsMessage = z.infer<typeof zAssetDownloadWsMessage>
+export type MissingModelDownloadWsMessage = z.infer<
+  typeof zMissingModelDownloadWsMessage
+>
 // End of ws messages
 
 export type NotificationWsMessage = z.infer<typeof zNotificationWsMessage>
