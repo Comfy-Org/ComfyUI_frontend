@@ -1,9 +1,9 @@
-<script setup lang="ts">
+<script setup lang="ts" generic="T">
 import { onBeforeUnmount, ref, useTemplateRef, watchEffect } from 'vue'
 
 import { DraggableList } from '@/scripts/ui/draggableList'
 
-const modelValue = defineModel<unknown[]>({ required: true })
+const modelValue = defineModel<T[]>({ required: true })
 const draggableList = ref<DraggableList>()
 const draggableItems = useTemplateRef('draggableItems')
 
@@ -42,6 +42,7 @@ watchEffect(() => {
     const itemList = modelValue.value
     const [item] = itemList.splice(oldPosition, 1)
     itemList.splice(newPosition, 0, item)
+    modelValue.value = [...itemList]
   }
 })
 
