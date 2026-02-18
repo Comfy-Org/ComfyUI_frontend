@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { remove } from 'es-toolkit'
 import { useElementBounding, whenever } from '@vueuse/core'
-import { computed, reactive, toValue } from 'vue'
+import { computed, ref, toValue } from 'vue'
 import type { MaybeRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -35,10 +35,10 @@ const workflowStore = useWorkflowStore()
 const { t } = useI18n()
 const canvas: LGraphCanvas = canvasStore.getCanvas()
 
-const selectedInputs = reactive<[NodeId, string][]>([])
-const selectedOutputs = reactive<NodeId[]>([])
+const selectedInputs = ref<[NodeId, string][]>([])
+const selectedOutputs = ref<NodeId[]>([])
 const inputsWithState = computed(() =>
-  selectedInputs.map(([nodeId, widgetName]) => {
+  selectedInputs.value.map(([nodeId, widgetName]) => {
     const node = app.rootGraph.getNodeById(nodeId)
     const widget = node?.widgets?.find((w) => w.name === widgetName)
     if (!node || !widget) return { nodeId, widgetName }
@@ -56,7 +56,7 @@ const inputsWithState = computed(() =>
   })
 )
 const outputsWithState = computed<[NodeId, string][]>(() =>
-  selectedOutputs.map((nodeId) => [
+  selectedOutputs.value.map((nodeId) => [
     nodeId,
     app.rootGraph.getNodeById(nodeId)?.title ?? String(nodeId)
   ])
@@ -68,10 +68,8 @@ whenever(
     workflow.changeTracker.reset()
 
     const { activeState } = workflow.changeTracker
-    const newInputs = activeState.extra?.linearData?.inputs ?? []
-    selectedInputs.splice(0, selectedInputs.length, ...newInputs)
-    const newOutputs = activeState.extra?.linearData?.outputs ?? []
-    selectedOutputs.splice(0, selectedOutputs.length, ...newOutputs)
+    selectedInputs.value = activeState.extra?.linearData?.inputs ?? []
+    selectedOutputs.value = activeState.extra?.linearData?.outputs ?? []
   }
 )
 
@@ -166,33 +164,37 @@ function handleClick(e: MouseEvent) {
   if (!widget) {
     if (!node.constructor.nodeData?.output_node)
       return canvasInteractions.forwardEventToCanvas(e)
-    const index = selectedOutputs.findIndex((id) => id === node.id)
-    if (index === -1) selectedOutputs.push(node.id)
-    else selectedOutputs.splice(index, 1)
+    const index = selectedOutputs.value.findIndex((id) => id === node.id)
+    if (index === -1) selectedOutputs.value.push(node.id)
+    else selectedOutputs.value.splice(index, 1)
     app.rootGraph.extra.linearData ??= {}
     //FIXME type here is only on ComfyWorkflowJson, not an active graph
     ;(app.rootGraph.extra.linearData! as { outputs?: unknown }).outputs = [
-      ...selectedOutputs
+      ...selectedOutputs.value
     ]
     return
   }
 
-  const index = selectedInputs.findIndex(
+  const index = selectedInputs.value.findIndex(
     ([nodeId, widgetName]) => node.id === nodeId && widget.name === widgetName
   )
-  if (index === -1) selectedInputs.push([node.id, widget.name])
-  else selectedInputs.splice(index, 1)
+  if (index === -1) selectedInputs.value.push([node.id, widget.name])
+  else selectedInputs.value.splice(index, 1)
 
   app.rootGraph.extra.linearData ??= {}
   ;(app.rootGraph.extra.linearData! as { inputs?: unknown }).inputs = [
-    ...selectedInputs
+    ...selectedInputs.value
   ]
 }
 
 function nodeToDisplayTuple(
   n: LGraphNode
 ): [NodeId, MaybeRef<BoundStyle> | undefined, boolean] {
-  return [n.id, getBounding(n.id), selectedOutputs.some((id) => n.id === id)]
+  return [
+    n.id,
+    getBounding(n.id),
+    selectedOutputs.value.some((id) => n.id === id)
+  ]
 }
 
 const renderedOutputs = computed(() => {
@@ -203,7 +205,7 @@ const renderedOutputs = computed(() => {
 })
 const renderedInputs = computed<[string, MaybeRef<BoundStyle> | undefined][]>(
   () =>
-    selectedInputs.map(([nodeId, widgetName]) => [
+    selectedInputs.value.map(([nodeId, widgetName]) => [
       `${nodeId}: ${widgetName}`,
       getBounding(nodeId, widgetName)
     ])
