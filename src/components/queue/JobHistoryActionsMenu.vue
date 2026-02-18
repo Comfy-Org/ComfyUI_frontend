@@ -32,7 +32,6 @@
           class="w-full justify-between text-sm font-light"
           variant="textonly"
           size="sm"
-          :aria-label="t('sideToolbar.queueProgressOverlay.dockedJobHistory')"
           @click="onToggleDockedJobHistory"
         >
           <span class="flex items-center gap-2">
@@ -50,7 +49,6 @@
           class="h-auto min-h-0 w-full items-start justify-start whitespace-normal"
           variant="textonly"
           size="sm"
-          :aria-label="t('sideToolbar.queueProgressOverlay.clearHistory')"
           @click="onClearHistoryFromMenu"
         >
           <i
