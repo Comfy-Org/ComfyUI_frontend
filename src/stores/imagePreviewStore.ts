@@ -14,7 +14,7 @@ import { app } from '@/scripts/app'
 import { useExecutionStore } from '@/stores/executionStore'
 import type { NodeLocatorId } from '@/types/nodeIdentification'
 import { parseFilePath } from '@/utils/formatUtil'
-import { isVideoNode } from '@/utils/litegraphUtil'
+import { isAnimatedOutput, isVideoNode } from '@/utils/litegraphUtil'
 import {
   releaseSharedObjectUrl,
   retainSharedObjectUrl
@@ -83,7 +83,7 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
     outputs: ExecutedWsMessage['output']
   ): boolean => {
     // If animated webp/png or video outputs, return false
-    if (node.animatedImages || isVideoNode(node)) return false
+    if (isAnimatedOutput(outputs) || isVideoNode(node)) return false
 
     // If no images, return false
     if (!outputs?.images?.length) return false

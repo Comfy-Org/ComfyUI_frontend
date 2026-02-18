@@ -9,6 +9,7 @@ import { useNodeOutputStore } from '@/stores/imagePreviewStore'
 import * as litegraphUtil from '@/utils/litegraphUtil'
 
 vi.mock('@/utils/litegraphUtil', () => ({
+  isAnimatedOutput: vi.fn(),
   isVideoNode: vi.fn()
 }))
 
@@ -150,13 +151,14 @@ describe('imagePreviewStore getPreviewParam', () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
     vi.clearAllMocks()
+    vi.mocked(litegraphUtil.isAnimatedOutput).mockReturnValue(false)
     vi.mocked(litegraphUtil.isVideoNode).mockReturnValue(false)
   })
 
-  it('should return empty string if node.animatedImages is true', () => {
+  it('should return empty string if output is animated', () => {
     const store = useNodeOutputStore()
-    // @ts-expect-error `animatedImages` property is not typed
-    const node = createMockNode({ animatedImages: true })
+    vi.mocked(litegraphUtil.isAnimatedOutput).mockReturnValue(true)
+    const node = createMockNode()
     const outputs = createMockOutputs([{ filename: 'img.png' }])
     expect(store.getPreviewParam(node, outputs)).toBe('')
     expect(vi.mocked(app).getPreviewFormatParam).not.toHaveBeenCalled()
