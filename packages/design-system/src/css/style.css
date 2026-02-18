@@ -17,27 +17,6 @@
 @theme {
   --shadow-interface: var(--interface-panel-box-shadow);
 
-  --animate-collapsible-slide-down: collapsible-slide-down 200ms ease-out;
-  --animate-collapsible-slide-up: collapsible-slide-up 200ms ease-out;
-
-  @keyframes collapsible-slide-down {
-    from {
-      height: 0;
-    }
-    to {
-      height: var(--reka-collapsible-content-height);
-    }
-  }
-
-  @keyframes collapsible-slide-up {
-    from {
-      height: var(--reka-collapsible-content-height);
-    }
-    to {
-      height: 0;
-    }
-  }
-
   --text-xxs: 0.625rem;
   --text-xxs--line-height: calc(1 / 0.625);
 
