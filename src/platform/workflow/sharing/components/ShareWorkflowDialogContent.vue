@@ -105,19 +105,10 @@
       </template>
 
       <!-- Has changes state -->
-      <template v-if="dialogState === 'hasChanges' && publishResult">
-        <ShareUrlCopyField :url="publishResult.shareUrl" />
-        <div class="flex flex-col gap-1">
-          <p
-            v-if="publishResult.publishedAt"
-            class="m-0 text-xs text-muted-foreground"
-          >
-            {{ $t('shareWorkflow.publishedOn', { date: formattedDate }) }}
-          </p>
-          <p class="m-0 text-xs text-muted-foreground">
-            {{ $t('shareWorkflow.hasChangesDescription') }}
-          </p>
-        </div>
+      <template v-if="dialogState === 'hasChanges'">
+        <p class="m-0 text-xs text-muted-foreground">
+          {{ $t('shareWorkflow.hasChangesDescription') }}
+        </p>
         <p
           v-if="isLoadingAssets"
           class="m-0 text-xs italic text-muted-foreground"
