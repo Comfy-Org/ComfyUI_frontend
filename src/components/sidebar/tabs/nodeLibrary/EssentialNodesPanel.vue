@@ -9,13 +9,13 @@
         @update:open="toggleFolder(folder.key, $event)"
       >
         <CollapsibleTrigger
-          class="group flex w-full items-center justify-between border-0 bg-transparent py-4 px-0 text-sm font-semibold text-neutral-200 cursor-pointer"
+          class="group flex w-full cursor-pointer items-center justify-between border-0 bg-transparent py-3 text-xs font-medium tracking-wide text-muted-foreground h-8 box-content"
         >
-          <span class="capitalize">{{ folder.label }}</span>
+          <span class="uppercase">{{ folder.label }}</span>
           <i
             :class="
               cn(
-                'icon-[lucide--chevron-up] size-4 text-neutral-400 transition-transform duration-200',
+                'icon-[lucide--chevron-up] size-4 transition-transform duration-200',
                 !expandedKeys.includes(folder.key) && '-rotate-180'
               )
             "
@@ -100,7 +100,7 @@ watch(
     if (!hasAutoExpanded.value && value.length > 0) {
       hasAutoExpanded.value = true
       if (expandedKeys.value.length === 0) {
-        expandedKeys.value = value.slice(0, 2).map((folder) => folder.key)
+        expandedKeys.value = value.map((folder) => folder.key)
       }
     }
   },

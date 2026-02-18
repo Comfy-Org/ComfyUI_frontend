@@ -16,7 +16,10 @@
       </h3>
 
       <!-- Badges -->
-      <div class="flex flex-wrap gap-2">
+      <div
+        v-if="nodeDef.api_node && (creditsLabel || categoryLabel)"
+        class="flex flex-wrap gap-2"
+      >
         <BadgePill
           v-show="nodeDef.api_node && creditsLabel"
           :text="creditsLabel"
@@ -35,16 +38,22 @@
       <!-- Description -->
       <p
         v-if="nodeDef.description"
-        class="text-[11px] font-normal leading-relaxed text-muted-foreground m-0"
+        class="text-[11px] font-normal leading-normal text-muted-foreground m-0"
       >
         {{ nodeDef.description }}
       </p>
 
       <!-- Divider -->
-      <div v-if="(inputs.length > 0 || outputs.length > 0) && showInputsAndOutputs" class="border-t border-border-default" />
+      <div
+        v-if="(inputs.length > 0 || outputs.length > 0) && showInputsAndOutputs"
+        class="border-t border-border-default"
+      />
 
       <!-- Inputs Section -->
-      <div v-if="inputs.length > 0 && showInputsAndOutputs" class="flex flex-col gap-1">
+      <div
+        v-if="inputs.length > 0 && showInputsAndOutputs"
+        class="flex flex-col gap-1"
+      >
         <h4
           class="text-xxs font-semibold uppercase tracking-wide text-muted-foreground m-0"
         >
@@ -63,7 +72,10 @@
       </div>
 
       <!-- Outputs Section -->
-      <div v-if="outputs.length > 0 && showInputsAndOutputs" class="flex flex-col gap-1">
+      <div
+        v-if="outputs.length > 0 && showInputsAndOutputs"
+        class="flex flex-col gap-1"
+      >
         <h4
           class="text-xxs font-semibold uppercase tracking-wide text-muted-foreground m-0"
         >

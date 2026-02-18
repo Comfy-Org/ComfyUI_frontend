@@ -28,14 +28,14 @@ const shortenNodeName = (name: string) => {
 
 // TODO: Remove this mock mapping once object_info/global_subgraphs returns essentials_category
 const ESSENTIALS_CATEGORY_MOCK: Record<string, string> = {
-  // basic
-  LoadImage: 'basic',
-  SaveImage: 'basic',
-  LoadVideo: 'basic',
-  SaveVideo: 'basic',
-  Load3D: 'basic',
-  SaveGLB: 'basic',
-  CLIPTextEncode: 'basic',
+  // basics
+  LoadImage: 'basics',
+  SaveImage: 'basics',
+  LoadVideo: 'basics',
+  SaveVideo: 'basics',
+  Load3D: 'basics',
+  SaveGLB: 'basics',
+  CLIPTextEncode: 'basics',
   // image tools
   ImageBatch: 'image tools',
   ImageCrop: 'image tools',

@@ -139,7 +139,7 @@ class NodeOrganizationService {
           pathExtractor: essentialsPathExtractor
         })
         const folderOrder = [
-          'basic',
+          'basics',
           'text generation',
           'image generation',
           'video generation',
