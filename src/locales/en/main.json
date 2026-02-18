@@ -1567,6 +1567,7 @@
     "MiniMax": "MiniMax",
     "model_specific": "model_specific",
     "Moonvalley Marey": "Moonvalley Marey",
+    "": "",
     "OpenAI": "OpenAI",
     "Sora": "Sora",
     "cond pair": "cond pair",
@@ -1591,7 +1592,6 @@
     "Tripo": "Tripo",
     "Veo": "Veo",
     "Vidu": "Vidu",
-    "": "",
     "camera": "camera",
     "Wan": "Wan",
     "WaveSpeed": "WaveSpeed",
@@ -2977,6 +2977,21 @@
     "fallbackGroupTitle": "Group",
     "fallbackNodeTitle": "Node",
     "hideAdvancedInputsButton": "Hide advanced inputs",
+    "errors": "Errors",
+    "noErrors": "No errors",
+    "enterSubgraph": "Enter subgraph",
+    "seeError": "See Error",
+    "promptErrors": {
+      "prompt_no_outputs": {
+        "desc": "The workflow does not contain any output nodes (e.g. Save Image, Preview Image) to produce a result."
+      },
+      "no_prompt": {
+        "desc": "The workflow data sent to the server is empty. This may be an unexpected system error."
+      }
+    },
+    "errorHelp": "For more help, {github} or {support}",
+    "errorHelpGithub": "submit a GitHub issue",
+    "errorHelpSupport": "contact our support",
     "resetToDefault": "Reset to default",
     "resetAllParameters": "Reset all parameters"
   },

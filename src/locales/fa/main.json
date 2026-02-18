@@ -1898,6 +1898,25 @@
     "outputs": "خروجی‌ها",
     "type": "نوع"
   },
+  "nodeReplacement": {
+    "compatibleAlternatives": "گزینه‌های سازگار",
+    "installMissingNodes": "نصب نودهای مفقود",
+    "installationRequired": "نصب مورد نیاز است",
+    "instructionMessage": "برای اجرای workflow باید این نودها را نصب یا با گزینه‌های نصب‌شده جایگزین کنید. نودهای مفقود با رنگ {red} روی بوم مشخص شده‌اند. برخی نودها قابل تعویض نیستند و باید از طریق Node Manager نصب شوند.",
+    "notReplaceable": "نیاز به نصب",
+    "openNodeManager": "باز کردن Node Manager",
+    "quickFixAvailable": "رفع سریع در دسترس است",
+    "redHighlight": "قرمز",
+    "replaceFailed": "جایگزینی نودها ناموفق بود",
+    "replaceSelected": "جایگزینی انتخاب‌شده‌ها ({count})",
+    "replaceWarning": "این کار workflow را به طور دائمی تغییر می‌دهد. اگر مطمئن نیستید، ابتدا یک نسخه ذخیره کنید.",
+    "replaceable": "قابل جایگزینی",
+    "replaced": "جایگزین شد",
+    "replacedAllNodes": "{count} نوع نود جایگزین شد",
+    "replacedNode": "نود جایگزین شد: {nodeType}",
+    "selectAll": "انتخاب همه",
+    "skipForNow": "فعلاً رد شود"
+  },
   "nodeTemplates": {
     "enterName": "نام را وارد کنید",
     "saveAsTemplate": "ذخیره به عنوان قالب"
@@ -2425,8 +2444,11 @@
       "moreOptions": "گزینه‌های بیشتر",
       "noActiveJobs": "کار فعالی وجود ندارد",
       "preview": "پیش‌نمایش",
+      "queuedJobsLabel": "{count} در صف",
       "queuedSuffix": "در صف",
       "running": "در حال اجرا",
+      "runningJobsLabel": "{count} در حال اجرا",
+      "runningQueuedSummary": "{running}، {queued}",
       "showAssets": "نمایش دارایی‌ها",
       "showAssetsPanel": "نمایش پنل دارایی‌ها",
       "sortBy": "مرتب‌سازی بر اساس",

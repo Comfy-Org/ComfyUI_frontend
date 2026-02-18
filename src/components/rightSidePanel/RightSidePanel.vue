@@ -33,12 +33,15 @@ import {
   useFlatAndCategorizeSelectedItems
 } from './shared'
 import SubgraphEditor from './subgraph/SubgraphEditor.vue'
+import TabErrors from './errors/TabErrors.vue'
 
 const canvasStore = useCanvasStore()
 const executionStore = useExecutionStore()
 const rightSidePanelStore = useRightSidePanelStore()
 const settingStore = useSettingStore()
 const { t } = useI18n()
+
+const { hasAnyError } = storeToRefs(executionStore)
 
 const { findParentGroup } = useGraphHierarchy()
 
@@ -102,10 +105,25 @@ const selectedNodeErrors = computed(() =>
 
 const tabs = computed<RightSidePanelTabList>(() => {
   const list: RightSidePanelTabList = []
-  if (selectedNodeErrors.value.length) {
+  if (
+    selectedNodeErrors.value.length &&
+    settingStore.get('Comfy.RightSidePanel.ShowErrorsTab')
+  ) {
     list.push({
       label: () => t('g.error'),
       value: 'error',
+      icon: 'icon-[lucide--octagon-alert] bg-node-stroke-error ml-1'
+    })
+  }
+
+  if (
+    hasAnyError.value &&
+    !hasSelection.value &&
+    settingStore.get('Comfy.RightSidePanel.ShowErrorsTab')
+  ) {
+    list.push({
+      label: () => t('rightSidePanel.errors'),
+      value: 'errors',
       icon: 'icon-[lucide--octagon-alert] bg-node-stroke-error ml-1'
     })
   }
@@ -298,7 +316,8 @@ function handleProxyWidgetsUpdate(value: ProxyWidgetsProperty) {
     <!-- Panel Content -->
     <div class="scrollbar-thin flex-1 overflow-y-auto">
       <template v-if="!hasSelection">
-        <TabGlobalParameters v-if="activeTab === 'parameters'" />
+        <TabErrors v-if="activeTab === 'errors'" />
+        <TabGlobalParameters v-else-if="activeTab === 'parameters'" />
         <TabNodes v-else-if="activeTab === 'nodes'" />
         <TabGlobalSettings v-else-if="activeTab === 'settings'" />
       </template>

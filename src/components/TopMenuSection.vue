@@ -36,7 +36,14 @@
 
           <div
             ref="actionbarContainerRef"
-            class="actionbar-container relative pointer-events-auto flex gap-2 h-12 items-center rounded-lg border border-interface-stroke bg-comfy-menu-bg px-2 shadow-interface"
+            :class="
+              cn(
+                'actionbar-container relative pointer-events-auto flex gap-2 h-12 items-center rounded-lg border bg-comfy-menu-bg px-2 shadow-interface',
+                hasAnyError
+                  ? 'border-destructive-background-hover'
+                  : 'border-interface-stroke'
+              )
+            "
           >
             <ActionBarButtons />
             <!-- Support for legacy topbar elements attached by custom scripts, hidden if no elements present -->
@@ -168,6 +175,7 @@ import { isDesktop } from '@/platform/distribution/types'
 import { useConflictAcknowledgment } from '@/workbench/extensions/manager/composables/useConflictAcknowledgment'
 import { useManagerState } from '@/workbench/extensions/manager/composables/useManagerState'
 import { ManagerTab } from '@/workbench/extensions/manager/types/comfyManagerTypes'
+import { cn } from '@/utils/tailwindUtil'
 
 const settingStore = useSettingStore()
 const workspaceStore = useWorkspaceStore()
@@ -251,6 +259,8 @@ const queueContextMenuItems = computed<MenuItem[]>(() => [
 const shouldShowRedDot = computed((): boolean => {
   return shouldShowConflictRedDot.value
 })
+
+const { hasAnyError } = storeToRefs(executionStore)
 
 // Right side panel toggle
 const { isOpen: isRightSidePanelOpen } = storeToRefs(rightSidePanelStore)

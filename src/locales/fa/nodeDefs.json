@@ -10340,6 +10340,32 @@
       }
     }
   },
+  "NAGuidance": {
+    "description": "راهنمای توجه نرمال‌سازی‌شده را به مدل‌ها اعمال می‌کند و امکان استفاده از پرامپت منفی را در مدل‌های distilled/schnell فراهم می‌سازد.",
+    "display_name": "راهنمای توجه نرمال‌سازی‌شده",
+    "inputs": {
+      "model": {
+        "name": "مدل",
+        "tooltip": "مدلی که NAG بر روی آن اعمال می‌شود."
+      },
+      "nag_alpha": {
+        "name": "ضریب ترکیب",
+        "tooltip": "ضریب ترکیب برای توجه نرمال‌سازی‌شده. مقدار ۱.۰ به معنای جایگزینی کامل و ۰.۰ بدون تأثیر است."
+      },
+      "nag_scale": {
+        "name": "مقیاس راهنما",
+        "tooltip": "ضریب مقیاس راهنما. مقادیر بالاتر فاصله بیشتری از پرامپت منفی ایجاد می‌کند."
+      },
+      "nag_tau": {
+        "name": "تاو"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "مدل اصلاح‌شده با فعال‌سازی NAG."
+      }
+    }
+  },
   "NormalizeImages": {
     "display_name": "نرمال‌سازی تصاویر",
     "inputs": {
@@ -11706,6 +11732,88 @@
       },
       "substyle": {
         "name": "زیرسبک"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "RecraftV4TextToImageNode": {
+    "description": "تولید تصویر با استفاده از مدل‌های Recraft V4 یا V4 Pro.",
+    "display_name": "تبدیل متن به تصویر Recraft V4",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "model": {
+        "name": "مدل",
+        "tooltip": "مدل مورد استفاده برای تولید."
+      },
+      "model_size": {
+        "name": "اندازه"
+      },
+      "n": {
+        "name": "تعداد",
+        "tooltip": "تعداد تصاویر تولیدی."
+      },
+      "negative_prompt": {
+        "name": "پرامپت منفی",
+        "tooltip": "توضیح متنی اختیاری برای عناصر نامطلوب در تصویر."
+      },
+      "prompt": {
+        "name": "پرامپت",
+        "tooltip": "پرامپت برای تولید تصویر. حداکثر ۱۰٬۰۰۰ کاراکتر."
+      },
+      "recraft_controls": {
+        "name": "کنترل‌های Recraft",
+        "tooltip": "کنترل‌های اختیاری بیشتر بر تولید از طریق node کنترل‌های Recraft."
+      },
+      "seed": {
+        "name": "بذر",
+        "tooltip": "بذر برای تعیین اجرای مجدد node؛ نتایج واقعی صرف‌نظر از بذر غیرقطعی هستند."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "RecraftV4TextToVectorNode": {
+    "description": "تولید SVG با استفاده از مدل‌های Recraft V4 یا V4 Pro.",
+    "display_name": "تبدیل متن به وکتور Recraft V4",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "model": {
+        "name": "مدل",
+        "tooltip": "مدل مورد استفاده برای تولید."
+      },
+      "model_size": {
+        "name": "اندازه"
+      },
+      "n": {
+        "name": "تعداد",
+        "tooltip": "تعداد تصاویر تولیدی."
+      },
+      "negative_prompt": {
+        "name": "پرامپت منفی",
+        "tooltip": "توضیح متنی اختیاری برای عناصر نامطلوب در تصویر."
+      },
+      "prompt": {
+        "name": "پرامپت",
+        "tooltip": "پرامپت برای تولید تصویر. حداکثر ۱۰٬۰۰۰ کاراکتر."
+      },
+      "recraft_controls": {
+        "name": "کنترل‌های Recraft",
+        "tooltip": "کنترل‌های اختیاری بیشتر بر تولید از طریق node کنترل‌های Recraft."
+      },
+      "seed": {
+        "name": "بذر",
+        "tooltip": "بذر برای تعیین اجرای مجدد node؛ نتایج واقعی صرف‌نظر از بذر غیرقطعی هستند."
       }
     },
     "outputs": {
@@ -15851,6 +15959,46 @@
       },
       "seed": {
         "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Vidu3StartEndToVideoNode": {
+    "description": "تولید یک ویدیو از یک فریم آغازین، یک فریم پایانی و یک پرامپت.",
+    "display_name": "تولید ویدیو از فریم آغازین/پایانی Vidu Q3",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "end_frame": {
+        "name": "فریم پایانی"
+      },
+      "first_frame": {
+        "name": "فریم آغازین"
+      },
+      "model": {
+        "name": "مدل",
+        "tooltip": "مدلی که برای تولید ویدیو استفاده می‌شود."
+      },
+      "model_audio": {
+        "name": "صدا"
+      },
+      "model_duration": {
+        "name": "مدت زمان"
+      },
+      "model_resolution": {
+        "name": "وضوح"
+      },
+      "prompt": {
+        "name": "پرامپت",
+        "tooltip": "توضیح پرامپت (حداکثر ۲۰۰۰ کاراکتر)."
+      },
+      "seed": {
+        "name": "بذر"
       }
     },
     "outputs": {

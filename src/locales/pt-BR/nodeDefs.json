@@ -10340,6 +10340,32 @@
       }
     }
   },
+  "NAGuidance": {
+    "description": "Aplica Orientação de Atenção Normalizada aos modelos, permitindo prompts negativos em modelos distilled/schnell.",
+    "display_name": "Orientação de Atenção Normalizada",
+    "inputs": {
+      "model": {
+        "name": "modelo",
+        "tooltip": "O modelo ao qual aplicar o NAG."
+      },
+      "nag_alpha": {
+        "name": "nag_alpha",
+        "tooltip": "Fator de mesclagem para a atenção normalizada. 1.0 é substituição total, 0.0 não tem efeito."
+      },
+      "nag_scale": {
+        "name": "escala_nag",
+        "tooltip": "O fator de escala da orientação. Valores mais altos afastam mais do prompt negativo."
+      },
+      "nag_tau": {
+        "name": "nag_tau"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "O modelo modificado com NAG ativado."
+      }
+    }
+  },
   "NormalizeImages": {
     "display_name": "Normalizar Imagens",
     "inputs": {
@@ -11706,6 +11732,88 @@
       },
       "substyle": {
         "name": "substyle"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "RecraftV4TextToImageNode": {
+    "description": "Gera imagens usando os modelos Recraft V4 ou V4 Pro.",
+    "display_name": "Recraft V4 Texto para Imagem",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controle após gerar"
+      },
+      "model": {
+        "name": "modelo",
+        "tooltip": "O modelo a ser usado para geração."
+      },
+      "model_size": {
+        "name": "tamanho"
+      },
+      "n": {
+        "name": "n",
+        "tooltip": "O número de imagens a serem geradas."
+      },
+      "negative_prompt": {
+        "name": "prompt_negativo",
+        "tooltip": "Uma descrição opcional em texto de elementos indesejados em uma imagem."
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Prompt para a geração da imagem. Máximo de 10.000 caracteres."
+      },
+      "recraft_controls": {
+        "name": "recraft_controls",
+        "tooltip": "Controles adicionais opcionais sobre a geração via o nó Recraft Controls."
+      },
+      "seed": {
+        "name": "semente",
+        "tooltip": "Semente para determinar se o nó deve ser executado novamente; os resultados reais são não determinísticos independentemente da semente."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "RecraftV4TextToVectorNode": {
+    "description": "Gera SVG usando os modelos Recraft V4 ou V4 Pro.",
+    "display_name": "Recraft V4 Texto para Vetor",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controle após gerar"
+      },
+      "model": {
+        "name": "modelo",
+        "tooltip": "O modelo a ser usado para geração."
+      },
+      "model_size": {
+        "name": "tamanho"
+      },
+      "n": {
+        "name": "n",
+        "tooltip": "O número de imagens a serem geradas."
+      },
+      "negative_prompt": {
+        "name": "prompt_negativo",
+        "tooltip": "Uma descrição opcional em texto de elementos indesejados em uma imagem."
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Prompt para a geração da imagem. Máximo de 10.000 caracteres."
+      },
+      "recraft_controls": {
+        "name": "recraft_controls",
+        "tooltip": "Controles adicionais opcionais sobre a geração via o nó Recraft Controls."
+      },
+      "seed": {
+        "name": "semente",
+        "tooltip": "Semente para determinar se o nó deve ser executado novamente; os resultados reais são não determinísticos independentemente da semente."
       }
     },
     "outputs": {
@@ -15848,6 +15956,46 @@
       "prompt": {
         "name": "prompt",
         "tooltip": "Um prompt de texto opcional para geração de vídeo (máx. 2000 caracteres)."
+      },
+      "seed": {
+        "name": "semente"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Vidu3StartEndToVideoNode": {
+    "description": "Gere um vídeo a partir de um quadro inicial, um quadro final e um prompt.",
+    "display_name": "Geração de Vídeo Quadro Inicial/Final Vidu Q3",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controle após gerar"
+      },
+      "end_frame": {
+        "name": "quadro final"
+      },
+      "first_frame": {
+        "name": "quadro inicial"
+      },
+      "model": {
+        "name": "modelo",
+        "tooltip": "Modelo a ser usado para geração de vídeo."
+      },
+      "model_audio": {
+        "name": "áudio"
+      },
+      "model_duration": {
+        "name": "duração"
+      },
+      "model_resolution": {
+        "name": "resolução"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Descrição do prompt (máx. 2000 caracteres)."
       },
       "seed": {
         "name": "semente"

@@ -1898,6 +1898,25 @@
     "outputs": "المُخرجات",
     "type": "النوع"
   },
+  "nodeReplacement": {
+    "compatibleAlternatives": "بدائل متوافقة",
+    "installMissingNodes": "تثبيت العقد المفقودة",
+    "installationRequired": "التثبيت مطلوب",
+    "instructionMessage": "يجب عليك تثبيت هذه العقد أو استبدالها ببدائل مثبتة لتشغيل سير العمل. العقد المفقودة مميزة باللون {red} على اللوحة. بعض العقد لا يمكن استبدالها ويجب تثبيتها عبر مدير العقد.",
+    "notReplaceable": "التثبيت مطلوب",
+    "openNodeManager": "فتح مدير العقد",
+    "quickFixAvailable": "إصلاح سريع متاح",
+    "redHighlight": "أحمر",
+    "replaceFailed": "فشل في استبدال العقد",
+    "replaceSelected": "استبدال المحدد ({count})",
+    "replaceWarning": "سيؤدي هذا إلى تعديل سير العمل بشكل دائم. احفظ نسخة أولاً إذا لم تكن متأكدًا.",
+    "replaceable": "قابل للاستبدال",
+    "replaced": "تم الاستبدال",
+    "replacedAllNodes": "تم استبدال {count} نوع/أنواع من العقد",
+    "replacedNode": "تم استبدال العقدة: {nodeType}",
+    "selectAll": "تحديد الكل",
+    "skipForNow": "تخطي الآن"
+  },
   "nodeTemplates": {
     "enterName": "أدخل الاسم",
     "saveAsTemplate": "حفظ كقالب"
@@ -2414,8 +2433,11 @@
       "moreOptions": "خيارات إضافية",
       "noActiveJobs": "لا توجد مهام نشطة",
       "preview": "معاينة",
+      "queuedJobsLabel": "{count} في الانتظار",
       "queuedSuffix": "في الانتظار",
       "running": "قيد التشغيل",
+      "runningJobsLabel": "{count} قيد التشغيل",
+      "runningQueuedSummary": "{running} قيد التشغيل، {queued} في الانتظار",
       "showAssets": "عرض الأصول",
       "showAssetsPanel": "عرض لوحة الأصول",
       "sortBy": "ترتيب حسب",
