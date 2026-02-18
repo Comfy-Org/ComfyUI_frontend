@@ -18,6 +18,7 @@ import {
   containsCentre,
   containsRect,
   createBounds,
+  isInRect,
   isInRectangle,
   isPointInRect,
   snapPoint
@@ -241,8 +242,21 @@ export class LGraphGroup implements Positionable, IPinnable, IColorable {
     return this.pinned ? false : snapPoint(this.pos, snapTo)
   }
 
-  recomputeInsideNodes(): void {
+  /**
+   * Recomputes which items (nodes, reroutes, nested groups) are inside this group.
+   * Recursively processes nested groups to ensure their children are also computed.
+   * @param maxDepth Maximum recursion depth for nested groups. Use 1 to skip nested group computation.
+   * @param visited Set of already visited group IDs to prevent redundant computation.
+   */
+  recomputeInsideNodes(
+    maxDepth: number = 100,
+    visited: Set<number> = new Set()
+  ): void {
     if (!this.graph) throw new NullGraphError()
+    if (maxDepth <= 0 || visited.has(this.id)) return
+
+    visited.add(this.id)
+
     const { nodes, reroutes, groups } = this.graph
     const children = this._children
     this._nodes.length = 0
@@ -261,10 +275,16 @@ export class LGraphGroup implements Positionable, IPinnable, IColorable {
       if (isPointInRect(reroute.pos, this._bounding)) children.add(reroute)
     }
 
-    // Move groups we wholly contain
+    // Move groups we wholly contain and recursively compute their children
+    const containedGroups: LGraphGroup[] = []
     for (const group of groups) {
-      if (containsRect(this._bounding, group._bounding)) children.add(group)
+      if (group !== this && containsRect(this._bounding, group._bounding)) {
+        children.add(group)
+        containedGroups.push(group)
+      }
     }
+    for (const group of containedGroups)
+      group.recomputeInsideNodes(maxDepth - 1, visited)
 
     groups.sort((a, b) => {
       if (a === this) {
@@ -351,6 +371,8 @@ export class LGraphGroup implements Positionable, IPinnable, IColorable {
     )
   }
 
-  isPointInside = LGraphNode.prototype.isPointInside
+  isPointInside(x: number, y: number): boolean {
+    return isInRect(x, y, this.boundingRect)
+  }
   setDirtyCanvas = LGraphNode.prototype.setDirtyCanvas
 }

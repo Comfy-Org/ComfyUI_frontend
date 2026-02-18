@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import { computed, ref, watch } from 'vue'
+import { isEmpty } from 'es-toolkit/compat'
 
 import { useNodeProgressText } from '@/composables/node/useNodeProgressText'
 import type { LGraph, Subgraph } from '@/lib/litegraph/src/litegraph'
@@ -25,11 +26,13 @@ import type {
   NotificationWsMessage,
   ProgressStateWsMessage,
   ProgressTextWsMessage,
-  ProgressWsMessage
+  ProgressWsMessage,
+  PromptError
 } from '@/schemas/apiSchema'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { useNodeOutputStore } from '@/stores/imagePreviewStore'
+import { useJobPreviewStore } from '@/stores/jobPreviewStore'
 import type { NodeLocatorId } from '@/types/nodeIdentification'
 import { createNodeLocatorId } from '@/types/nodeIdentification'
 import { forEachNode, getNodeByExecutionId } from '@/utils/graphTraversalUtil'
@@ -112,6 +115,7 @@ export const useExecutionStore = defineStore('execution', () => {
   const queuedPrompts = ref<Record<NodeId, QueuedPrompt>>({})
   const lastNodeErrors = ref<Record<NodeId, NodeError> | null>(null)
   const lastExecutionError = ref<ExecutionErrorWsMessage | null>(null)
+  const lastPromptError = ref<PromptError | null>(null)
   // This is the progress of all nodes in the currently executing workflow
   const nodeProgressStates = ref<Record<string, NodeProgressState>>({})
   const nodeProgressStatesByPrompt = ref<
@@ -286,6 +290,7 @@ export const useExecutionStore = defineStore('execution', () => {
 
   function handleExecutionStart(e: CustomEvent<ExecutionStartWsMessage>) {
     lastExecutionError.value = null
+    lastPromptError.value = null
     activePromptId.value = e.detail.prompt_id
     queuedPrompts.value[activePromptId.value] ??= { nodes: {} }
     clearInitializationByPromptId(activePromptId.value)
@@ -425,6 +430,18 @@ export const useExecutionStore = defineStore('execution', () => {
     initializingPromptIds.value = next
   }
 
+  function clearInitializationByPromptIds(promptIds: string[]) {
+    if (!promptIds.length) return
+    const current = initializingPromptIds.value
+    const toRemove = promptIds.filter((id) => current.has(id))
+    if (!toRemove.length) return
+    const next = new Set(current)
+    for (const id of toRemove) {
+      next.delete(id)
+    }
+    initializingPromptIds.value = next
+  }
+
   function isPromptInitializing(
     promptId: string | number | undefined
   ): boolean {
@@ -442,12 +459,14 @@ export const useExecutionStore = defineStore('execution', () => {
       const map = { ...nodeProgressStatesByPrompt.value }
       delete map[promptId]
       nodeProgressStatesByPrompt.value = map
+      useJobPreviewStore().clearPreview(promptId)
     }
     if (activePromptId.value) {
       delete queuedPrompts.value[activePromptId.value]
     }
     activePromptId.value = null
     _executingNodeProgress.value = null
+    lastPromptError.value = null
   }
 
   function getNodeIdIfExecuting(nodeId: string | number) {
@@ -627,6 +646,49 @@ export const useExecutionStore = defineStore('execution', () => {
     }
   })
 
+  /** Whether a runtime execution error is present */
+  const hasExecutionError = computed(() => !!lastExecutionError.value)
+
+  /** Whether a prompt-level error is present (e.g. invalid_prompt, prompt_no_outputs) */
+  const hasPromptError = computed(() => !!lastPromptError.value)
+
+  /** Whether any node validation errors are present */
+  const hasNodeError = computed(
+    () => !!lastNodeErrors.value && !isEmpty(lastNodeErrors.value)
+  )
+
+  /** Whether any error (node validation, runtime execution, or prompt-level) is present */
+  const hasAnyError = computed(
+    () => hasExecutionError.value || hasPromptError.value || hasNodeError.value
+  )
+
+  /** Pre-computed Set of graph node IDs (as strings) that have errors. */
+  const activeGraphErrorNodeIds = computed<Set<string>>(() => {
+    const ids = new Set<string>()
+    if (!app.rootGraph) return ids
+
+    const activeGraph = useCanvasStore().currentGraph ?? app.rootGraph
+
+    if (lastNodeErrors.value) {
+      for (const executionId of Object.keys(lastNodeErrors.value)) {
+        const graphNode = getNodeByExecutionId(app.rootGraph, executionId)
+        if (graphNode?.graph === activeGraph) {
+          ids.add(String(graphNode.id))
+        }
+      }
+    }
+
+    if (lastExecutionError.value) {
+      const execNodeId = String(lastExecutionError.value.node_id)
+      const graphNode = getNodeByExecutionId(app.rootGraph, execNodeId)
+      if (graphNode?.graph === activeGraph) {
+        ids.add(String(graphNode.id))
+      }
+    }
+
+    return ids
+  })
+
   return {
     isIdle,
     clientId,
@@ -634,6 +696,8 @@ export const useExecutionStore = defineStore('execution', () => {
     queuedPrompts,
     lastNodeErrors,
     lastExecutionError,
+    lastPromptError,
+    hasAnyError,
     lastExecutionErrorNodeId,
     executingNodeId,
     executingNodeIds,
@@ -650,6 +714,8 @@ export const useExecutionStore = defineStore('execution', () => {
     runningWorkflowCount,
     initializingPromptIds,
     isPromptInitializing,
+    clearInitializationByPromptId,
+    clearInitializationByPromptIds,
     bindExecutionEvents,
     unbindExecutionEvents,
     storePrompt,
@@ -663,6 +729,7 @@ export const useExecutionStore = defineStore('execution', () => {
     promptIdToWorkflowId,
     // Node error lookup helpers
     getNodeErrors,
-    slotHasError
+    slotHasError,
+    activeGraphErrorNodeIds
   }
 })

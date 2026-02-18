@@ -1,6 +1,6 @@
 <template>
   <!-- Help Center Popup positioned within canvas area -->
-  <Teleport to="#graph-canvas-container">
+  <Teleport to="body">
     <div
       v-if="isHelpCenterVisible"
       class="help-center-popup"

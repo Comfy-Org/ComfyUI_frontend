@@ -4,6 +4,7 @@ import Load3D from '@/components/load3d/Load3D.vue'
 import { useLoad3d } from '@/composables/useLoad3d'
 import { createExportMenuItems } from '@/extensions/core/load3d/exportMenuHelper'
 import Load3DConfiguration from '@/extensions/core/load3d/Load3DConfiguration'
+import Load3dUtils from '@/extensions/core/load3d/Load3dUtils'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { IContextMenuValue } from '@/lib/litegraph/src/interfaces'
 import type { NodeOutputWith, ResultItem } from '@/schemas/apiSchema'
@@ -94,6 +95,17 @@ useExtensionService().registerExtension({
           const config = new Load3DConfiguration(load3d, node.properties)
 
           const loadFolder = fileInfo.type as 'input' | 'output'
+
+          const onModelLoaded = () => {
+            load3d.removeEventListener('modelLoadingEnd', onModelLoaded)
+            void Load3dUtils.generateThumbnailIfNeeded(
+              load3d,
+              filePath,
+              loadFolder
+            )
+          }
+          load3d.addEventListener('modelLoadingEnd', onModelLoaded)
+
           config.configureForSaveMesh(loadFolder, filePath)
         }
       })

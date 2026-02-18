@@ -11,17 +11,34 @@ vi.mock('@/stores/comfyRegistryStore', () => ({
 describe('useComfyRegistrySearchProvider', () => {
   const mockSearchCall = vi.fn()
   const mockSearchClear = vi.fn()
+  const mockListAllPacksCall = vi.fn()
+  const mockListAllPacksClear = vi.fn()
+
+  const createMockStore = (
+    params: Partial<ReturnType<typeof useComfyRegistryStore>> = {}
+  ) => {
+    return {
+      search: {
+        call: mockSearchCall,
+        clear: mockSearchClear,
+        cancel: vi.fn()
+      },
+      listAllPacks: {
+        call: mockListAllPacksCall,
+        clear: mockListAllPacksClear,
+        cancel: vi.fn()
+      },
+      ...params
+    } as Partial<ReturnType<typeof useComfyRegistryStore>> as ReturnType<
+      typeof useComfyRegistryStore
+    >
+  }
 
   beforeEach(() => {
     vi.clearAllMocks()
 
     // Setup store mock
-    vi.mocked(useComfyRegistryStore).mockReturnValue({
-      search: {
-        call: mockSearchCall,
-        clear: mockSearchClear
-      }
-    } as any)
+    vi.mocked(useComfyRegistryStore).mockReturnValue(createMockStore())
   })
 
   describe('searchPacks', () => {
@@ -111,14 +128,85 @@ describe('useComfyRegistrySearchProvider', () => {
       expect(result.nodePacks).toEqual([])
       expect(result.querySuggestions).toEqual([])
     })
+
+    it('should use listAllPacks for empty query', async () => {
+      const mockResults = {
+        nodes: [
+          { id: '1', name: 'Pack 1' },
+          { id: '2', name: 'Pack 2' }
+        ]
+      }
+      mockListAllPacksCall.mockResolvedValue(mockResults)
+
+      const provider = useComfyRegistrySearchProvider()
+      const result = await provider.searchPacks('', {
+        pageSize: 20,
+        pageNumber: 0
+      })
+
+      expect(mockListAllPacksCall).toHaveBeenCalledWith({
+        limit: 20,
+        page: 1
+      })
+      expect(mockSearchCall).not.toHaveBeenCalled()
+      expect(result.nodePacks).toEqual(mockResults.nodes)
+      expect(result.querySuggestions).toEqual([])
+    })
+
+    it('should use listAllPacks for whitespace-only query', async () => {
+      const mockResults = {
+        nodes: [{ id: '1', name: 'Pack 1' }]
+      }
+      mockListAllPacksCall.mockResolvedValue(mockResults)
+
+      const provider = useComfyRegistrySearchProvider()
+      const result = await provider.searchPacks('   ', {
+        pageSize: 10,
+        pageNumber: 0
+      })
+
+      expect(mockListAllPacksCall).toHaveBeenCalledWith({
+        limit: 10,
+        page: 1
+      })
+      expect(mockSearchCall).not.toHaveBeenCalled()
+      expect(result.nodePacks).toEqual(mockResults.nodes)
+    })
+
+    it('should handle empty results from listAllPacks', async () => {
+      mockListAllPacksCall.mockResolvedValue({ nodes: [] })
+
+      const provider = useComfyRegistrySearchProvider()
+      const result = await provider.searchPacks('', {
+        pageSize: 10,
+        pageNumber: 0
+      })
+
+      expect(result.nodePacks).toEqual([])
+      expect(result.querySuggestions).toEqual([])
+    })
+
+    it('should handle null results from listAllPacks', async () => {
+      mockListAllPacksCall.mockResolvedValue(null)
+
+      const provider = useComfyRegistrySearchProvider()
+      const result = await provider.searchPacks('', {
+        pageSize: 10,
+        pageNumber: 0
+      })
+
+      expect(result.nodePacks).toEqual([])
+      expect(result.querySuggestions).toEqual([])
+    })
   })
 
   describe('clearSearchCache', () => {
-    it('should delegate to store search.clear', () => {
+    it('should clear both search and listAllPacks caches', () => {
       const provider = useComfyRegistrySearchProvider()
       provider.clearSearchCache()
 
       expect(mockSearchClear).toHaveBeenCalled()
+      expect(mockListAllPacksClear).toHaveBeenCalled()
     })
   })
 

@@ -38,8 +38,20 @@ describe('searchWidgets', () => {
 
     expect(searchWidgets(widgets, 'width')).toHaveLength(1)
     expect(searchWidgets(widgets, 'slider')).toHaveLength(1)
-    expect(searchWidgets(widgets, 'high')).toHaveLength(1)
     expect(searchWidgets(widgets, 'image')).toHaveLength(1)
+  })
+
+  it('should support fuzzy matching (e.g., "high" matches both "height" and value "high")', () => {
+    const widgets = [
+      createWidget('width', 'number', '100', 'Size Control'),
+      createWidget('height', 'slider', '200', 'Image Height'),
+      createWidget('quality', 'text', 'high', 'Quality')
+    ]
+
+    const results = searchWidgets(widgets, 'high')
+    expect(results).toHaveLength(2)
+    expect(results.some((r) => r.widget.name === 'height')).toBe(true)
+    expect(results.some((r) => r.widget.name === 'quality')).toBe(true)
   })
 
   it('should handle multiple search words', () => {
@@ -126,7 +138,6 @@ describe('flatAndCategorizeSelectedItems', () => {
     expect(result.nodes).toEqual([testNode1])
     expect(result.groups).toEqual([testGroup1, testGroup2])
     expect(result.nodeToParentGroup.get(testNode1)).toBe(testGroup2)
-    expect(result.nodeToParentGroup.has(testGroup2 as any)).toBe(false)
   })
 
   it('should handle mixed selection of nodes and groups', () => {

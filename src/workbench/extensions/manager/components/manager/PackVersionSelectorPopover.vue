@@ -25,6 +25,7 @@
       v-model="selectedVersion"
       option-label="label"
       option-value="value"
+      option-disabled="isInstalled"
       :options="processedVersionOptions"
       :highlight-on-select="false"
       class="max-h-[50vh] w-full rounded-md border-none shadow-none"
@@ -71,7 +72,7 @@
       <Button
         variant="secondary"
         class="rounded-lg bg-secondary-background px-4 py-2.5 text-sm text-base-foreground"
-        :disabled="isQueueing"
+        :disabled="isInstallDisabled"
         @click="handleSubmit"
       >
         {{ $t('g.install') }}
@@ -136,8 +137,10 @@ const managerStore = useComfyManagerStore()
 const { checkNodeCompatibility } = useConflictDetection()
 
 const isQueueing = ref(false)
-
 const selectedVersion = ref<string>(SelectedVersionValues.LATEST)
+const isInstallDisabled = computed(
+  () => isQueueing.value || isVersionInstalled(selectedVersion.value)
+)
 onMounted(() => {
   const initialVersion =
     getInitialSelectedVersion() ?? SelectedVersionValues.LATEST
@@ -299,16 +302,25 @@ const isOptionSelected = (optionValue: string) => {
   }
   return false
 }
-// Checks if an option is selected, treating 'latest' as an alias for the actual latest version number.
+const isVersionInstalled = (version: string) => {
+  const installed = nodePack.id
+    ? managerStore.getInstalledPackVersion(nodePack.id)
+    : undefined
+  if (!installed) return false
+  if (version === 'latest')
+    return installed === nodePack.latest_version?.version
+  return version === installed
+}
+
 const processedVersionOptions = computed(() => {
   return versionOptions.value.map((option) => {
     const compatibility = getVersionCompatibility(option.value)
-    const isSelected = isOptionSelected(option.value)
     return {
       ...option,
       hasConflict: compatibility.hasConflict,
       conflictMessage: compatibility.conflictMessage,
-      isSelected: isSelected
+      isSelected: isOptionSelected(option.value),
+      isInstalled: isVersionInstalled(option.value)
     }
   })
 })

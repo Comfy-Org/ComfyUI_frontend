@@ -1,9 +1,6 @@
 <template>
   <div class="flex justify-end gap-2 w-full">
-    <div
-      v-if="currentStep === 1 && flags.huggingfaceModelImportEnabled"
-      class="mr-auto flex items-center gap-2"
-    >
+    <div v-if="currentStep === 1" class="mr-auto flex items-center gap-2">
       <i class="icon-[lucide--circle-question-mark] text-muted-foreground" />
       <Button
         variant="muted-textonly"
@@ -22,17 +19,6 @@
         {{ $t('assetBrowser.providerHuggingFace') }}
       </Button>
     </div>
-    <Button
-      v-else-if="currentStep === 1"
-      variant="muted-textonly"
-      size="lg"
-      class="mr-auto underline"
-      data-attr="upload-model-step1-help-link"
-      @click="showCivitaiHelp = true"
-    >
-      <i class="icon-[lucide--circle-question-mark]" />
-      <span>{{ $t('assetBrowser.uploadModelHowDoIFindThis') }}</span>
-    </Button>
     <Button
       v-if="currentStep === 1"
       variant="muted-textonly"
@@ -124,10 +110,7 @@
 import { ref } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
-import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import VideoHelpDialog from '@/platform/assets/components/VideoHelpDialog.vue'
-
-const { flags } = useFeatureFlags()
 
 const showCivitaiHelp = ref(false)
 const showHuggingFaceHelp = ref(false)

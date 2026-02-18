@@ -20,10 +20,10 @@
 
 ```typescript
 // ✅ Correct - barrel import
-import { LGraph, Subgraph, SubgraphNode } from "@/lib/litegraph/src/litegraph"
+import { LGraph, Subgraph, SubgraphNode } from '@/lib/litegraph/src/litegraph'
 
 // ❌ Wrong - causes circular dependency
-import { LGraph } from "@/lib/litegraph/src/LGraph"
+import { LGraph } from '@/lib/litegraph/src/LGraph'
 ```
 
 **Root cause**: `LGraph` ↔ `Subgraph` circular dependency (Subgraph extends LGraph, LGraph creates Subgraph instances).
@@ -31,7 +31,10 @@ import { LGraph } from "@/lib/litegraph/src/LGraph"
 ## Test Helpers
 
 ```typescript
-import { createTestSubgraph, createTestSubgraphNode } from "./fixtures/subgraphHelpers"
+import {
+  createTestSubgraph,
+  createTestSubgraphNode
+} from './__fixtures__/subgraphHelpers'
 
 function createTestSetup() {
   const subgraph = createTestSubgraph()

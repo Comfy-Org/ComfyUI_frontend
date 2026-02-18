@@ -1,4 +1,5 @@
-import { createPinia, setActivePinia } from 'pinia'
+import { createTestingPinia } from '@pinia/testing'
+import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useBottomPanelStore } from '@/stores/workspace/bottomPanelStore'
@@ -47,13 +48,17 @@ vi.mock('@/stores/commandStore', () => ({
   })
 }))
 
-vi.mock('@/utils/envUtil', () => ({
-  isElectron: () => false
+const mockData = vi.hoisted(() => ({ isDesktop: false }))
+
+vi.mock('@/platform/distribution/types', () => ({
+  get isDesktop() {
+    return mockData.isDesktop
+  }
 }))
 
 describe('useBottomPanelStore', () => {
   beforeEach(() => {
-    setActivePinia(createPinia())
+    setActivePinia(createTestingPinia({ stubActions: false }))
   })
 
   it('should initialize with empty panels', () => {

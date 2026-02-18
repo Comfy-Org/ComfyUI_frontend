@@ -1,4 +1,5 @@
-import { createPinia, setActivePinia } from 'pinia'
+import { createTestingPinia } from '@pinia/testing'
+import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it } from 'vitest'
 
 import { useConflictDetectionStore } from '@/workbench/extensions/manager/stores/conflictDetectionStore'
@@ -6,7 +7,7 @@ import type { ConflictDetectionResult } from '@/workbench/extensions/manager/typ
 
 describe('useConflictDetectionStore', () => {
   beforeEach(() => {
-    setActivePinia(createPinia())
+    setActivePinia(createTestingPinia({ stubActions: false }))
   })
 
   const mockConflictedPackages: ConflictDetectionResult[] = [

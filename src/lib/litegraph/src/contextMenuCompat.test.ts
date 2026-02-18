@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { legacyMenuCompat } from '@/lib/litegraph/src/contextMenuCompat'
 import type { IContextMenuValue } from '@/lib/litegraph/src/litegraph'
 import { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
+import { createMockCanvas } from '@/utils/__tests__/litegraphTestUtils'
 
 describe('contextMenuCompat', () => {
   let originalGetCanvasMenuOptions: typeof LGraphCanvas.prototype.getCanvasMenuOptions
@@ -13,11 +14,11 @@ describe('contextMenuCompat', () => {
     originalGetCanvasMenuOptions = LGraphCanvas.prototype.getCanvasMenuOptions
 
     // Create mock canvas
-    mockCanvas = {
+    mockCanvas = createMockCanvas({
       constructor: {
         prototype: LGraphCanvas.prototype
-      }
-    } as unknown as LGraphCanvas
+      } as typeof LGraphCanvas
+    } as Partial<LGraphCanvas>)
 
     // Clear console warnings
     vi.spyOn(console, 'warn').mockImplementation(() => {})
@@ -54,11 +55,12 @@ describe('contextMenuCompat', () => {
 
       // Simulate extension monkey-patching
       const original = LGraphCanvas.prototype.getCanvasMenuOptions
-      LGraphCanvas.prototype.getCanvasMenuOptions = function (...args: any[]) {
-        const items = (original as any).apply(this, args)
-        items.push({ content: 'Custom Item', callback: () => {} })
-        return items
-      }
+      LGraphCanvas.prototype.getCanvasMenuOptions =
+        function (): (IContextMenuValue | null)[] {
+          const items = original.call(this)
+          items.push({ content: 'Custom Item', callback: () => {} })
+          return items
+        }
 
       // Should have logged a warning with extension name
       expect(warnSpy).toHaveBeenCalledWith(
@@ -83,8 +85,10 @@ describe('contextMenuCompat', () => {
       legacyMenuCompat.install(LGraphCanvas.prototype, methodName)
       legacyMenuCompat.setCurrentExtension('test.extension')
 
-      const patchFunction = function (this: LGraphCanvas, ...args: any[]) {
-        const items = (originalGetCanvasMenuOptions as any).apply(this, args)
+      const patchFunction = function (
+        this: LGraphCanvas
+      ): (IContextMenuValue | null)[] {
+        const items = originalGetCanvasMenuOptions.call(this)
         items.push({ content: 'Custom', callback: () => {} })
         return items
       }
@@ -190,6 +194,42 @@ describe('contextMenuCompat', () => {
         expect.stringContaining('Failed to extract legacy items'),
         expect.any(Error)
       )
+    })
+
+    it('should handle multiple items with undefined content correctly', () => {
+      // Setup base method with items that have undefined content
+      LGraphCanvas.prototype.getCanvasMenuOptions = function () {
+        return [
+          { content: undefined, title: 'Separator 1' },
+          { content: undefined, title: 'Separator 2' },
+          { content: 'Item 1', callback: () => {} }
+        ]
+      }
+
+      legacyMenuCompat.install(LGraphCanvas.prototype, 'getCanvasMenuOptions')
+
+      // Monkey-patch to add an item with undefined content
+      const original = LGraphCanvas.prototype.getCanvasMenuOptions
+      LGraphCanvas.prototype.getCanvasMenuOptions =
+        function (): (IContextMenuValue | null)[] {
+          const items = original.apply(this)
+          items.push({ content: undefined, title: 'Separator 3' })
+          return items
+        }
+
+      // Extract legacy items
+      const legacyItems = legacyMenuCompat.extractLegacyItems(
+        'getCanvasMenuOptions',
+        mockCanvas
+      )
+
+      // Should extract only the newly added item with undefined content
+      // (not collapse with existing undefined content items)
+      expect(legacyItems).toHaveLength(1)
+      expect(legacyItems[0]).toMatchObject({
+        content: undefined,
+        title: 'Separator 3'
+      })
     })
   })
 

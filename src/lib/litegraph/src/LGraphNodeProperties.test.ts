@@ -1,22 +1,25 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it } from 'vitest'
 
 import { LGraphNodeProperties } from '@/lib/litegraph/src/LGraphNodeProperties'
+import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import {
+  createMockLGraph,
+  createMockLGraphNode
+} from '@/utils/__tests__/litegraphTestUtils'
 
 describe('LGraphNodeProperties', () => {
-  let mockNode: any
-  let mockGraph: any
+  let mockNode: LGraphNode
+  let mockGraph: LGraph
 
   beforeEach(() => {
-    mockGraph = {
-      trigger: vi.fn()
-    }
+    mockGraph = createMockLGraph()
 
-    mockNode = {
+    mockNode = createMockLGraphNode({
       id: 123,
       title: 'Test Node',
       flags: {},
       graph: mockGraph
-    }
+    })
   })
 
   describe('property tracking', () => {

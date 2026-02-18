@@ -5,10 +5,7 @@
     {
       "id": 4,
       "type": "CheckpointLoaderSimple",
-      "pos": [
-        0,
-        92
-      ],
+      "pos": [0, 92],
       "size": {
         "0": 315,
         "1": 98
@@ -26,10 +23,7 @@
         {
           "name": "CLIP",
           "type": "CLIP",
-          "links": [
-            3,
-            5
-          ],
+          "links": [3, 5],
           "slot_index": 1
         },
         {
@@ -42,17 +36,12 @@
       "properties": {
         "Node name for S&R": "CheckpointLoaderSimple"
       },
-      "widgets_values": [
-        "3Guofeng3_v32Light.safetensors"
-      ]
+      "widgets_values": ["3Guofeng3_v32Light.safetensors"]
     },
     {
       "id": 6,
       "type": "CLIPTextEncode",
-      "pos": [
-        460,
-        92
-      ],
+      "pos": [460, 92],
       "size": {
         "0": 422.84503173828125,
         "1": 164.31304931640625
@@ -85,10 +74,7 @@
     {
       "id": 7,
       "type": "CLIPTextEncode",
-      "pos": [
-        460,
-        368
-      ],
+      "pos": [460, 368],
       "size": {
         "0": 425.27801513671875,
         "1": 180.6060791015625
@@ -114,17 +100,12 @@
       "properties": {
         "Node name for S&R": "CLIPTextEncode"
       },
-      "widgets_values": [
-        "text, watermark"
-      ]
+      "widgets_values": ["text, watermark"]
     },
     {
       "id": 10,
       "type": "CheckpointLoaderSimple",
-      "pos": [
-        0,
-        276
-      ],
+      "pos": [0, 276],
       "size": {
         "0": 315,
         "1": 98
@@ -155,38 +136,19 @@
       "properties": {
         "Node name for S&R": "CheckpointLoaderSimple"
       },
-      "widgets_values": [
-        "3Guofeng3_v32Light.safetensors"
-      ]
+      "widgets_values": ["3Guofeng3_v32Light.safetensors"]
     }
   ],
   "links": [
-    [
-      3,
-      4,
-      1,
-      6,
-      0,
-      "CLIP"
-    ],
-    [
-      5,
-      4,
-      1,
-      7,
-      0,
-      "CLIP"
-    ]
+    [3, 4, 1, 6, 0, "CLIP"],
+    [5, 4, 1, 7, 0, "CLIP"]
   ],
   "groups": [],
   "config": {},
   "extra": {
     "ds": {
       "scale": 1,
-      "offset": [
-        0,
-        0
-      ]
+      "offset": [0, 0]
     }
   },
   "version": 0.4

@@ -8,14 +8,19 @@ import Tab from '@/components/tab/Tab.vue'
 import TabList from '@/components/tab/TabList.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useGraphHierarchy } from '@/composables/graph/useGraphHierarchy'
+import type { ProxyWidgetsProperty } from '@/core/schemas/proxyWidget'
+import { st } from '@/i18n'
 import { SubgraphNode } from '@/lib/litegraph/src/litegraph'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { useExecutionStore } from '@/stores/executionStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import type { RightSidePanelTab } from '@/stores/workspace/rightSidePanelStore'
+import { resolveNodeDisplayName } from '@/utils/nodeTitleUtil'
 import { cn } from '@/utils/tailwindUtil'
 
+import TabError from './TabError.vue'
 import TabInfo from './info/TabInfo.vue'
 import TabGlobalParameters from './parameters/TabGlobalParameters.vue'
 import TabNodes from './parameters/TabNodes.vue'
@@ -28,11 +33,16 @@ import {
   useFlatAndCategorizeSelectedItems
 } from './shared'
 import SubgraphEditor from './subgraph/SubgraphEditor.vue'
+import TabErrors from './errors/TabErrors.vue'
 
 const canvasStore = useCanvasStore()
+const executionStore = useExecutionStore()
 const rightSidePanelStore = useRightSidePanelStore()
 const settingStore = useSettingStore()
 const { t } = useI18n()
+
+const { hasAnyError } = storeToRefs(executionStore)
+
 const { findParentGroup } = useGraphHierarchy()
 
 const { selectedItems: directlySelectedItems } = storeToRefs(canvasStore)
@@ -83,10 +93,40 @@ function closePanel() {
 type RightSidePanelTabList = Array<{
   label: () => string
   value: RightSidePanelTab
+  icon?: string
 }>
+
+//FIXME all errors if nothing selected?
+const selectedNodeErrors = computed(() =>
+  selectedNodes.value
+    .map((node) => executionStore.getNodeErrors(`${node.id}`))
+    .filter((nodeError) => !!nodeError)
+)
 
 const tabs = computed<RightSidePanelTabList>(() => {
   const list: RightSidePanelTabList = []
+  if (
+    selectedNodeErrors.value.length &&
+    settingStore.get('Comfy.RightSidePanel.ShowErrorsTab')
+  ) {
+    list.push({
+      label: () => t('g.error'),
+      value: 'error',
+      icon: 'icon-[lucide--octagon-alert] bg-node-stroke-error ml-1'
+    })
+  }
+
+  if (
+    hasAnyError.value &&
+    !hasSelection.value &&
+    settingStore.get('Comfy.RightSidePanel.ShowErrorsTab')
+  ) {
+    list.push({
+      label: () => t('rightSidePanel.errors'),
+      value: 'errors',
+      icon: 'icon-[lucide--octagon-alert] bg-node-stroke-error ml-1'
+    })
+  }
 
   list.push({
     label: () =>
@@ -146,9 +186,12 @@ function resolveTitle() {
       return groups[0].title || t('rightSidePanel.fallbackGroupTitle')
     }
     if (nodes.length === 1) {
-      return (
-        nodes[0].title || nodes[0].type || t('rightSidePanel.fallbackNodeTitle')
-      )
+      const fallbackNodeTitle = t('rightSidePanel.fallbackNodeTitle')
+      return resolveNodeDisplayName(nodes[0], {
+        emptyLabel: fallbackNodeTitle,
+        untitledLabel: fallbackNodeTitle,
+        st
+      })
     }
   }
   return t('rightSidePanel.title', { count: items.length })
@@ -184,6 +227,12 @@ function handleTitleEdit(newTitle: string) {
 
 function handleTitleCancel() {
   isEditing.value = false
+}
+
+function handleProxyWidgetsUpdate(value: ProxyWidgetsProperty) {
+  if (!selectedSingleNode.value) return
+  ;(selectedSingleNode.value as SubgraphNode).properties.proxyWidgets = value
+  canvasStore.canvas?.setDirty(true, true)
 }
 </script>
 
@@ -258,6 +307,7 @@ function handleTitleCancel() {
             :value="tab.value"
           >
             {{ tab.label() }}
+            <i v-if="tab.icon" :class="cn(tab.icon, 'size-4')" />
           </Tab>
         </TabList>
       </nav>
@@ -266,7 +316,8 @@ function handleTitleCancel() {
     <!-- Panel Content -->
     <div class="scrollbar-thin flex-1 overflow-y-auto">
       <template v-if="!hasSelection">
-        <TabGlobalParameters v-if="activeTab === 'parameters'" />
+        <TabErrors v-if="activeTab === 'errors'" />
+        <TabGlobalParameters v-else-if="activeTab === 'parameters'" />
         <TabNodes v-else-if="activeTab === 'nodes'" />
         <TabGlobalSettings v-else-if="activeTab === 'settings'" />
       </template>
@@ -275,9 +326,11 @@ function handleTitleCancel() {
         :node="selectedSingleNode"
       />
       <template v-else>
+        <TabError v-if="activeTab === 'error'" :errors="selectedNodeErrors" />
         <TabSubgraphInputs
           v-if="activeTab === 'parameters' && isSingleSubgraphNode"
           :node="selectedSingleNode as SubgraphNode"
+          @update:proxy-widgets="handleProxyWidgetsUpdate"
         />
         <TabNormalInputs
           v-else-if="activeTab === 'parameters'"

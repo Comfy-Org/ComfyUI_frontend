@@ -65,15 +65,7 @@
       "properties": {
         "Node name for S&R": "KSampler"
       },
-      "widgets_values": [
-        0,
-        "randomize",
-        20,
-        8,
-        "euler",
-        "normal",
-        1
-      ]
+      "widgets_values": [0, "randomize", 20, 8, "euler", "normal", 1]
     },
     {
       "id": 1,
@@ -90,10 +82,7 @@
         "8": 0,
         "9": 0
       },
-      "size": [
-        446.96645387135936,
-        108.34243389566905
-      ],
+      "size": [446.96645387135936, 108.34243389566905],
       "flags": {},
       "order": 0,
       "mode": 0,
@@ -102,9 +91,7 @@
         {
           "name": "INT",
           "type": "INT",
-          "links": [
-            1
-          ],
+          "links": [1],
           "slot_index": 0,
           "widget": {
             "name": "steps"
@@ -114,31 +101,16 @@
       "properties": {
         "Run widget replace on values": false
       },
-      "widgets_values": [
-        20,
-        "fixed"
-      ]
+      "widgets_values": [20, "fixed"]
     }
   ],
-  "links": [
-    [
-      1,
-      1,
-      0,
-      2,
-      4,
-      "INT"
-    ]
-  ],
+  "links": [[1, 1, 0, 2, 4, "INT"]],
   "groups": [],
   "config": {},
   "extra": {
     "ds": {
       "scale": 1,
-      "offset": [
-        0,
-        0
-      ]
+      "offset": [0, 0]
     }
   },
   "version": 0.4

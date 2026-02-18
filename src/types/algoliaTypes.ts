@@ -72,7 +72,7 @@ export interface NodesIndexSuggestion {
     exact_nb_hits: number
     facets: {
       exact_matches: Record<string, number>
-      analytics: Record<string, any>
+      analytics: Record<string, unknown>
     }
   }
   objectID: RegistryNodePack['id']

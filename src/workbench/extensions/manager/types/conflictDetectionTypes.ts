@@ -78,3 +78,16 @@ export interface ConflictDetectionResponse {
   results: ConflictDetectionResult[]
   detected_system_environment?: Partial<SystemEnvironment>
 }
+
+/**
+ * Detailed information about a Python import failure
+ */
+interface ImportFailureDetail {
+  error?: string
+  traceback?: string
+}
+
+/**
+ * Map of package IDs to their import failure information
+ */
+export type ImportFailureMap = Record<string, ImportFailureDetail | null>

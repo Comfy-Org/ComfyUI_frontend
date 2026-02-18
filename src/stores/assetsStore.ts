@@ -1,13 +1,14 @@
 import { useAsyncState, whenever } from '@vueuse/core'
-import { isEqual } from 'es-toolkit'
+import { difference } from 'es-toolkit'
 import { defineStore } from 'pinia'
-import { computed, shallowReactive, ref } from 'vue'
+import { computed, reactive, ref, shallowReactive } from 'vue'
 import {
   mapInputFileToAssetItem,
   mapTaskOutputToAssetItem
 } from '@/platform/assets/composables/media/assetMappers'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { assetService } from '@/platform/assets/services/assetService'
+import type { PaginationOptions } from '@/platform/assets/services/assetService'
 import { isCloud } from '@/platform/distribution/types'
 import type { JobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
 import { api } from '@/scripts/api'
@@ -78,7 +79,8 @@ function mapHistoryToAssets(historyItems: JobListItem[]): AssetItem[] {
 
   return assetItems.sort(
     (a, b) =>
-      new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+      new Date(b.created_at ?? 0).getTime() -
+      new Date(a.created_at ?? 0).getTime()
   )
 }
 
@@ -88,6 +90,21 @@ const MAX_HISTORY_ITEMS = 1000 // Maximum items to keep in memory
 export const useAssetsStore = defineStore('assets', () => {
   const assetDownloadStore = useAssetDownloadStore()
   const modelToNodeStore = useModelToNodeStore()
+
+  // Track assets currently being deleted (for loading overlay)
+  const deletingAssetIds = shallowReactive(new Set<string>())
+
+  const setAssetDeleting = (assetId: string, isDeleting: boolean) => {
+    if (isDeleting) {
+      deletingAssetIds.add(assetId)
+    } else {
+      deletingAssetIds.delete(assetId)
+    }
+  }
+
+  const isAssetDeleting = (assetId: string): boolean => {
+    return deletingAssetIds.has(assetId)
+  }
 
   // Pagination state
   const historyOffset = ref(0)
@@ -145,9 +162,9 @@ export const useAssetsStore = defineStore('assets', () => {
         loadedIds.add(asset.id)
 
         // Find insertion index to maintain sorted order (newest first)
-        const assetTime = new Date(asset.created_at).getTime()
+        const assetTime = new Date(asset.created_at ?? 0).getTime()
         const insertIndex = allHistoryItems.value.findIndex(
-          (item) => new Date(item.created_at).getTime() < assetTime
+          (item) => new Date(item.created_at ?? 0).getTime() < assetTime
         )
 
         if (insertIndex === -1) {
@@ -251,118 +268,386 @@ export const useAssetsStore = defineStore('assets', () => {
     return inputAssetsByFilename.value.get(filename)?.name ?? filename
   }
 
+  const MODEL_BATCH_SIZE = 500
+
+  interface ModelPaginationState {
+    assets: Map<string, AssetItem>
+    offset: number
+    hasMore: boolean
+    isLoading: boolean
+    error?: Error
+  }
+
   /**
-   * Model assets cached by node type (e.g., 'CheckpointLoaderSimple', 'LoraLoader')
-   * Used by multiple loader nodes to avoid duplicate fetches
+   * Model assets cached by category (e.g., 'checkpoints', 'loras')
+   * Multiple node types sharing the same category share the same cache entry.
+   * Public API accepts nodeType for backwards compatibility but translates
+   * to category internally using modelToNodeStore.getCategoryForNodeType().
    * Cloud-only feature - empty Maps in desktop builds
    */
   const getModelState = () => {
     if (isCloud) {
-      const modelAssetsByNodeType = shallowReactive(
-        new Map<string, AssetItem[]>()
-      )
-      const modelLoadingByNodeType = shallowReactive(new Map<string, boolean>())
-      const modelErrorByNodeType = shallowReactive(
-        new Map<string, Error | null>()
-      )
+      const modelStateByCategory = ref(new Map<string, ModelPaginationState>())
 
-      const stateByNodeType = shallowReactive(
-        new Map<string, ReturnType<typeof useAsyncState<AssetItem[]>>>()
-      )
+      const assetsArrayCache = new Map<
+        string,
+        { source: Map<string, AssetItem>; array: AssetItem[] }
+      >()
+
+      const pendingRequestByCategory = new Map<string, ModelPaginationState>()
+
+      function createState(
+        existingAssets?: Map<string, AssetItem>
+      ): ModelPaginationState {
+        const assets = new Map(existingAssets)
+        return reactive({
+          assets,
+          offset: 0,
+          hasMore: true,
+          isLoading: true
+        })
+      }
+
+      function isStale(category: string, state: ModelPaginationState): boolean {
+        const committed = modelStateByCategory.value.get(category)
+        const pending = pendingRequestByCategory.get(category)
+        return committed !== state && pending !== state
+      }
+
+      const EMPTY_ASSETS: AssetItem[] = []
 
       /**
-       * Internal helper to fetch and cache assets with a given key and fetcher
+       * Resolve a key to a category. Handles both nodeType and tag:xxx formats.
+       * @param key Either a nodeType (e.g., 'CheckpointLoaderSimple') or tag key (e.g., 'tag:models')
+       * @returns The category or undefined if not resolvable
        */
-      async function updateModelsForKey(
-        key: string,
-        fetcher: () => Promise<AssetItem[]>
-      ): Promise<AssetItem[]> {
-        if (!stateByNodeType.has(key)) {
-          stateByNodeType.set(
-            key,
-            useAsyncState(fetcher, [], {
-              immediate: false,
-              resetOnExecute: false,
-              onError: (err) => {
-                console.error(`Error fetching model assets for ${key}:`, err)
-              }
-            })
-          )
+      function resolveCategory(key: string): string | undefined {
+        if (key.startsWith('tag:')) {
+          return key
         }
-
-        const state = stateByNodeType.get(key)!
-
-        modelLoadingByNodeType.set(key, true)
-        modelErrorByNodeType.set(key, null)
-
-        try {
-          await state.execute()
-        } finally {
-          modelLoadingByNodeType.set(key, state.isLoading.value)
-        }
-
-        const assets = state.state.value
-        const existingAssets = modelAssetsByNodeType.get(key)
-
-        if (!isEqual(existingAssets, assets)) {
-          modelAssetsByNodeType.set(key, assets)
-        }
-
-        modelErrorByNodeType.set(
-          key,
-          state.error.value instanceof Error ? state.error.value : null
-        )
-
-        return assets
+        return modelToNodeStore.getCategoryForNodeType(key)
       }
 
       /**
-       * Fetch and cache model assets for a specific node type
-       * @param nodeType The node type to fetch assets for (e.g., 'CheckpointLoaderSimple')
-       * @returns Promise resolving to the fetched assets
+       * Get assets by nodeType or tag key.
+       * Translates nodeType to category internally for cache lookup.
+       * @param key Either a nodeType (e.g., 'CheckpointLoaderSimple') or tag key (e.g., 'tag:models')
        */
-      async function updateModelsForNodeType(
-        nodeType: string
-      ): Promise<AssetItem[]> {
-        return updateModelsForKey(nodeType, () =>
-          assetService.getAssetsForNodeType(nodeType)
+      function getAssets(key: string): AssetItem[] {
+        const category = resolveCategory(key)
+        if (!category) return EMPTY_ASSETS
+
+        const state = modelStateByCategory.value.get(category)
+        const assetsMap = state?.assets
+        if (!assetsMap) return EMPTY_ASSETS
+
+        const cached = assetsArrayCache.get(category)
+        if (cached && cached.source === assetsMap) {
+          return cached.array
+        }
+
+        const array = Array.from(assetsMap.values())
+        assetsArrayCache.set(category, { source: assetsMap, array })
+        return array
+      }
+
+      function isLoading(key: string): boolean {
+        const category = resolveCategory(key)
+        if (!category) return false
+        return modelStateByCategory.value.get(category)?.isLoading ?? false
+      }
+
+      function getError(key: string): Error | undefined {
+        const category = resolveCategory(key)
+        if (!category) return undefined
+        return modelStateByCategory.value.get(category)?.error
+      }
+
+      function hasMore(key: string): boolean {
+        const category = resolveCategory(key)
+        if (!category) return false
+        return modelStateByCategory.value.get(category)?.hasMore ?? false
+      }
+
+      function hasAssetKey(key: string): boolean {
+        const category = resolveCategory(key)
+        if (!category) return false
+        return modelStateByCategory.value.has(category)
+      }
+
+      /**
+       * Internal helper to fetch and cache assets for a category.
+       * Loads first batch immediately, then progressively loads remaining batches.
+       * Keeps existing data visible until new data is successfully fetched.
+       *
+       * Concurrent calls for the same category are short-circuited: if a request
+       * is already in progress (tracked via pendingRequestByCategory), subsequent
+       * calls return immediately to avoid redundant work.
+       */
+      async function updateModelsForCategory(
+        category: string,
+        fetcher: (options: PaginationOptions) => Promise<AssetItem[]>
+      ): Promise<void> {
+        // Short-circuit if a request for this category is already in progress
+        if (pendingRequestByCategory.has(category)) {
+          return
+        }
+
+        const existingState = modelStateByCategory.value.get(category)
+        const state = createState(existingState?.assets)
+
+        const seenIds = new Set<string>()
+
+        const hasExistingData = modelStateByCategory.value.has(category)
+        if (hasExistingData) {
+          pendingRequestByCategory.set(category, state)
+        } else {
+          // Also track in pending map for initial loads to prevent concurrent calls
+          pendingRequestByCategory.set(category, state)
+          modelStateByCategory.value.set(category, state)
+        }
+
+        async function loadBatches(): Promise<void> {
+          while (state.hasMore) {
+            try {
+              const newAssets = await fetcher({
+                limit: MODEL_BATCH_SIZE,
+                offset: state.offset
+              })
+
+              if (isStale(category, state)) return
+
+              const isFirstBatch = state.offset === 0
+              if (isFirstBatch) {
+                assetsArrayCache.delete(category)
+                if (hasExistingData) {
+                  pendingRequestByCategory.delete(category)
+                  modelStateByCategory.value.set(category, state)
+                }
+              }
+
+              // Merge new assets into existing map and track seen IDs
+              for (const asset of newAssets) {
+                seenIds.add(asset.id)
+                state.assets.set(asset.id, asset)
+              }
+              state.assets = new Map(state.assets)
+
+              state.offset += newAssets.length
+              state.hasMore = newAssets.length === MODEL_BATCH_SIZE
+
+              if (isFirstBatch) {
+                state.isLoading = false
+              }
+
+              if (state.hasMore) {
+                await new Promise((resolve) => setTimeout(resolve, 50))
+              }
+            } catch (err) {
+              if (isStale(category, state)) return
+              console.error(`Error loading batch for ${category}:`, err)
+
+              state.error = err instanceof Error ? err : new Error(String(err))
+              state.hasMore = false
+              state.isLoading = false
+              pendingRequestByCategory.delete(category)
+
+              return
+            }
+          }
+
+          const staleIds = [...state.assets.keys()].filter(
+            (id) => !seenIds.has(id)
+          )
+          for (const id of staleIds) {
+            state.assets.delete(id)
+          }
+          assetsArrayCache.delete(category)
+          pendingRequestByCategory.delete(category)
+        }
+
+        await loadBatches()
+      }
+
+      /**
+       * Fetch and cache model assets for a specific node type.
+       * Translates nodeType to category internally - multiple node types
+       * sharing the same category will share the same cache entry.
+       * @param nodeType The node type to fetch assets for (e.g., 'CheckpointLoaderSimple')
+       */
+      async function updateModelsForNodeType(nodeType: string): Promise<void> {
+        const category = modelToNodeStore.getCategoryForNodeType(nodeType)
+        if (!category) return
+
+        // Use category as cache key but fetch using nodeType for API compatibility
+        await updateModelsForCategory(category, (opts) =>
+          assetService.getAssetsForNodeType(nodeType, opts)
         )
       }
 
       /**
        * Fetch and cache model assets for a specific tag
        * @param tag The tag to fetch assets for (e.g., 'models')
-       * @returns Promise resolving to the fetched assets
        */
-      async function updateModelsForTag(tag: string): Promise<AssetItem[]> {
-        const key = `tag:${tag}`
-        return updateModelsForKey(key, () => assetService.getAssetsByTag(tag))
+      async function updateModelsForTag(tag: string): Promise<void> {
+        const category = `tag:${tag}`
+        await updateModelsForCategory(category, (opts) =>
+          assetService.getAssetsByTag(tag, true, opts)
+        )
+      }
+
+      /**
+       * Invalidate the cache for a specific category.
+       * Forces a refetch on next access.
+       * @param category The category to invalidate (e.g., 'checkpoints', 'loras')
+       */
+      function invalidateCategory(category: string): void {
+        modelStateByCategory.value.delete(category)
+        assetsArrayCache.delete(category)
+        pendingRequestByCategory.delete(category)
+      }
+
+      /**
+       * Optimistically update an asset in the cache
+       * @param assetId The asset ID to update
+       * @param updates Partial asset data to merge
+       * @param cacheKey Optional cache key to target (nodeType or 'tag:xxx')
+       */
+      function updateAssetInCache(
+        assetId: string,
+        updates: Partial<AssetItem>,
+        cacheKey?: string
+      ) {
+        const category = cacheKey ? resolveCategory(cacheKey) : undefined
+        if (cacheKey && !category) return
+
+        const categoriesToCheck = category
+          ? [category]
+          : Array.from(modelStateByCategory.value.keys())
+
+        for (const cat of categoriesToCheck) {
+          const state = modelStateByCategory.value.get(cat)
+          if (!state?.assets) continue
+
+          const existingAsset = state.assets.get(assetId)
+          if (existingAsset) {
+            const updatedAsset = { ...existingAsset, ...updates }
+            state.assets.set(assetId, updatedAsset)
+            assetsArrayCache.delete(cat)
+            if (cacheKey) return
+          }
+        }
+      }
+
+      /**
+       * Update asset metadata with optimistic cache update
+       * @param asset The asset to update
+       * @param userMetadata The user_metadata to save
+       * @param cacheKey Optional cache key to target for optimistic update
+       */
+      async function updateAssetMetadata(
+        asset: AssetItem,
+        userMetadata: Record<string, unknown>,
+        cacheKey?: string
+      ) {
+        const originalMetadata = asset.user_metadata
+        updateAssetInCache(asset.id, { user_metadata: userMetadata }, cacheKey)
+
+        try {
+          const updatedAsset = await assetService.updateAsset(asset.id, {
+            user_metadata: userMetadata
+          })
+          updateAssetInCache(asset.id, updatedAsset, cacheKey)
+        } catch (error) {
+          console.error('Failed to update asset metadata:', error)
+          updateAssetInCache(
+            asset.id,
+            { user_metadata: originalMetadata },
+            cacheKey
+          )
+        }
+      }
+
+      /**
+       * Update asset tags using add/remove endpoints
+       * @param asset The asset to update (used to read current tags)
+       * @param newTags The desired tags array
+       * @param cacheKey Optional cache key to target for optimistic update
+       */
+      async function updateAssetTags(
+        asset: AssetItem,
+        newTags: string[],
+        cacheKey?: string
+      ) {
+        const originalTags = asset.tags
+        const tagsToAdd = difference(newTags, originalTags)
+        const tagsToRemove = difference(originalTags, newTags)
+
+        if (tagsToAdd.length === 0 && tagsToRemove.length === 0) return
+
+        updateAssetInCache(asset.id, { tags: newTags }, cacheKey)
+
+        try {
+          const removeResult =
+            tagsToRemove.length > 0
+              ? await assetService.removeAssetTags(asset.id, tagsToRemove)
+              : undefined
+
+          const addResult =
+            tagsToAdd.length > 0
+              ? await assetService.addAssetTags(asset.id, tagsToAdd)
+              : undefined
+
+          const finalTags = (addResult ?? removeResult)?.total_tags
+          if (finalTags) {
+            updateAssetInCache(asset.id, { tags: finalTags }, cacheKey)
+          }
+        } catch (error) {
+          console.error('Failed to update asset tags:', error)
+          updateAssetInCache(asset.id, { tags: originalTags }, cacheKey)
+        }
       }
 
       return {
-        modelAssetsByNodeType,
-        modelLoadingByNodeType,
-        modelErrorByNodeType,
+        getAssets,
+        isLoading,
+        getError,
+        hasMore,
+        hasAssetKey,
         updateModelsForNodeType,
-        updateModelsForTag
+        updateModelsForTag,
+        invalidateCategory,
+        updateAssetMetadata,
+        updateAssetTags
       }
     }
 
+    const emptyAssets: AssetItem[] = []
     return {
-      modelAssetsByNodeType: shallowReactive(new Map<string, AssetItem[]>()),
-      modelLoadingByNodeType: shallowReactive(new Map<string, boolean>()),
-      modelErrorByNodeType: shallowReactive(new Map<string, Error | null>()),
-      updateModelsForNodeType: async () => [],
-      updateModelsForTag: async () => []
+      getAssets: () => emptyAssets,
+      isLoading: () => false,
+      getError: () => undefined,
+      hasMore: () => false,
+      hasAssetKey: () => false,
+      updateModelsForNodeType: async () => {},
+      invalidateCategory: () => {},
+      updateModelsForTag: async () => {},
+      updateAssetMetadata: async () => {},
+      updateAssetTags: async () => {}
     }
   }
 
   const {
-    modelAssetsByNodeType,
-    modelLoadingByNodeType,
-    modelErrorByNodeType,
+    getAssets,
+    isLoading: isModelLoading,
+    getError,
+    hasMore,
+    hasAssetKey,
     updateModelsForNodeType,
-    updateModelsForTag
+    updateModelsForTag,
+    invalidateCategory,
+    updateAssetMetadata,
+    updateAssetTags
   } = getModelState()
 
   // Watch for completed downloads and refresh model caches
@@ -413,6 +698,11 @@ export const useAssetsStore = defineStore('assets', () => {
     hasMoreHistory,
     isLoadingMore,
 
+    // Deletion tracking
+    deletingAssetIds,
+    setAssetDeleting,
+    isAssetDeleting,
+
     // Actions
     updateInputs,
     updateHistory,
@@ -422,11 +712,18 @@ export const useAssetsStore = defineStore('assets', () => {
     inputAssetsByFilename,
     getInputName,
 
-    // Model assets
-    modelAssetsByNodeType,
-    modelLoadingByNodeType,
-    modelErrorByNodeType,
+    // Model assets - accessors
+    getAssets,
+    isModelLoading,
+    getError,
+    hasMore,
+    hasAssetKey,
+
+    // Model assets - actions
     updateModelsForNodeType,
-    updateModelsForTag
+    updateModelsForTag,
+    invalidateCategory,
+    updateAssetMetadata,
+    updateAssetTags
   }
 })

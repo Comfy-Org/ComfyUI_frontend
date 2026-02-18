@@ -22,15 +22,16 @@
     </div>
     <div class="option-badges">
       <Tag
-        v-if="nodeDef.experimental"
-        :value="$t('g.experimental')"
-        severity="primary"
-      />
-      <Tag
         v-if="nodeDef.deprecated"
         :value="$t('g.deprecated')"
         severity="danger"
       />
+      <Tag
+        v-if="nodeDef.experimental"
+        :value="$t('g.experimental')"
+        severity="primary"
+      />
+      <Tag v-if="nodeDef.dev_only" :value="$t('g.devOnly')" severity="info" />
       <Tag
         v-if="showNodeFrequency && nodeFrequency > 0"
         :value="formatNumberWithSuffix(nodeFrequency, { roundToInt: true })"

@@ -8,6 +8,7 @@ import {
   startTopupTracking as startTopupUtil
 } from '@/platform/telemetry/topupTracker'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import type { AuditLog } from '@/services/customerEventsService'
 import { useWorkflowTemplatesStore } from '@/platform/workflow/templates/repositories/workflowTemplatesStore'
 import { app } from '@/scripts/app'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
@@ -17,6 +18,7 @@ import { reduceAllNodes } from '@/utils/graphTraversalUtil'
 import type {
   AuthMetadata,
   CreditTopupMetadata,
+  EnterLinearMetadata,
   ExecutionContext,
   ExecutionTriggerSource,
   ExecutionErrorMetadata,
@@ -260,7 +262,7 @@ export class MixpanelTelemetryProvider implements TelemetryProvider {
     startTopupUtil()
   }
 
-  checkForCompletedTopup(events: any[] | undefined | null): boolean {
+  checkForCompletedTopup(events: AuditLog[] | undefined | null): boolean {
     return checkTopupUtil(events)
   }
 
@@ -352,6 +354,10 @@ export class MixpanelTelemetryProvider implements TelemetryProvider {
 
   trackWorkflowOpened(metadata: WorkflowImportMetadata): void {
     this.trackEvent(TelemetryEvents.WORKFLOW_OPENED, metadata)
+  }
+
+  trackEnterLinear(metadata: EnterLinearMetadata): void {
+    this.trackEvent(TelemetryEvents.ENTER_LINEAR_MODE, metadata)
   }
 
   trackPageVisibilityChanged(metadata: PageVisibilityMetadata): void {

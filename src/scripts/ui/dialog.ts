@@ -4,13 +4,12 @@ export class ComfyDialog<
   T extends HTMLElement = HTMLElement
 > extends EventTarget {
   element: T
-  // @ts-expect-error fixme ts strict error
-  textElement: HTMLElement
-  #buttons: HTMLButtonElement[] | null
+  textElement!: HTMLElement
+  private _buttons: HTMLButtonElement[] | null
 
-  constructor(type = 'div', buttons = null) {
+  constructor(type = 'div', buttons: HTMLButtonElement[] | null = null) {
     super()
-    this.#buttons = buttons
+    this._buttons = buttons
     this.element = $el(type + '.comfy-modal', { parent: document.body }, [
       $el('div.comfy-modal-content', [
         $el('p', { $: (p) => (this.textElement = p) }),
@@ -21,7 +20,7 @@ export class ComfyDialog<
 
   createButtons() {
     return (
-      this.#buttons ?? [
+      this._buttons ?? [
         $el('button', {
           type: 'button',
           textContent: 'Close',
@@ -35,8 +34,7 @@ export class ComfyDialog<
     this.element.style.display = 'none'
   }
 
-  // @ts-expect-error fixme ts strict error
-  show(html) {
+  show(html: string | HTMLElement | HTMLElement[]): void {
     if (typeof html === 'string') {
       this.textElement.innerHTML = html
     } else {

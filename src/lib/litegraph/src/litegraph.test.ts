@@ -1,11 +1,14 @@
 import { clamp } from 'es-toolkit/compat'
-import { beforeEach, describe, expect, vi } from 'vitest'
+import { describe, expect } from 'vitest'
 
 import {
   LiteGraphGlobal,
   LGraphCanvas,
-  LiteGraph
+  LiteGraph,
+  LGraph
 } from '@/lib/litegraph/src/litegraph'
+
+import { LGraph as DirectLGraph } from '@/lib/litegraph/src/LGraph'
 
 import { test } from './__fixtures__/testExtensions'
 
@@ -27,22 +30,9 @@ describe('Litegraph module', () => {
 })
 
 describe('Import order dependency', () => {
-  beforeEach(() => {
-    vi.resetModules()
-  })
-
-  test('Imports without error when entry point is imported first', async ({
-    expect
-  }) => {
-    async function importNormally() {
-      const entryPointImport = await import('@/lib/litegraph/src/litegraph')
-      const directImport = await import('@/lib/litegraph/src/LGraph')
-
-      // Sanity check that imports were cleared.
-      expect(Object.is(LiteGraph, entryPointImport.LiteGraph)).toBe(false)
-      expect(Object.is(LiteGraph.LGraph, directImport.LGraph)).toBe(false)
-    }
-
-    await expect(importNormally()).resolves.toBeUndefined()
+  test('Imports reference the same types', ({ expect }) => {
+    // Both imports should reference the same LGraph class
+    expect(LiteGraph.LGraph).toBe(DirectLGraph)
+    expect(LiteGraph.LGraph).toBe(LGraph)
   })
 })

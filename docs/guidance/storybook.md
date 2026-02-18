@@ -8,6 +8,7 @@ globs:
 ## File Placement
 
 Place `*.stories.ts` files alongside their components:
+
 ```
 src/components/MyComponent/
 ├── MyComponent.vue
@@ -30,13 +31,16 @@ export default meta
 type Story = StoryObj<typeof meta>
 
 export const Default: Story = {
-  args: { /* props */ }
+  args: {
+    /* props */
+  }
 }
 ```
 
 ## Required Story Variants
 
 Include when applicable:
+
 - **Default** - Minimal props
 - **WithData** - Realistic data
 - **Loading** - Loading state

@@ -13,7 +13,7 @@ Proposed
 [Most of the context is in here](https://github.com/Comfy-Org/ComfyUI_frontend/issues/4661)
 
 TL;DR: As we're merging more subprojects like litegraph, devtools, and soon a fork of PrimeVue,
- a monorepo structure will help a lot with code sharing and organization.
+a monorepo structure will help a lot with code sharing and organization.
 
 For more information on Monorepos, check out [monorepo.tools](https://monorepo.tools/)
 
@@ -37,7 +37,7 @@ There's a [whole list here](https://monorepo.tools/#tools-review) if you're inte
 
 - Adding new projects with shared dependencies becomes really easy
 - Makes the process of forking and customizing projects more structured, if not strictly easier
-- It *could* speed up the build and development process (not guaranteed)
+- It _could_ speed up the build and development process (not guaranteed)
 - It would let us cleanly organize and release packages like `comfyui-frontend-types`
 
 ### Negative

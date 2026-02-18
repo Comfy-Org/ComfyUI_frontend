@@ -30,7 +30,7 @@ export class ComfyNodeSearchFilterSelectionPanel {
   async addFilter(filterValue: string, filterType: string) {
     await this.selectFilterType(filterType)
     await this.selectFilterValue(filterValue)
-    await this.page.locator('button:has-text("Add")').click()
+    await this.page.getByRole('button', { name: 'Add', exact: true }).click()
   }
 }
 
@@ -79,5 +79,12 @@ export class ComfyNodeSearchBox {
 
   async removeFilter(index: number) {
     await this.filterChips.nth(index).locator('.p-chip-remove-icon').click()
+  }
+
+  /**
+   * Returns a locator for a search result containing the specified text.
+   */
+  findResult(text: string): Locator {
+    return this.dropdown.locator('li').filter({ hasText: text })
   }
 }

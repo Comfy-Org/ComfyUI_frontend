@@ -1,4 +1,5 @@
-import { createPinia, setActivePinia } from 'pinia'
+import { createTestingPinia } from '@pinia/testing'
+import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { defineComponent } from 'vue'
 
@@ -11,7 +12,7 @@ const MockComponent = defineComponent({
 
 describe('dialogStore', () => {
   beforeEach(() => {
-    setActivePinia(createPinia())
+    setActivePinia(createTestingPinia({ stubActions: false }))
   })
 
   describe('priority system', () => {

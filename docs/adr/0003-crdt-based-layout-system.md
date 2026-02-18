@@ -24,7 +24,7 @@ The existing system allows each node to directly mutate its position within Lite
 
 5. **Inefficient Change Detection**: While LiteGraph provides some events, many operations require polling via changeTracker.ts. The current undo/redo system performs expensive diffs on every interaction rather than using reactive push/pull signals, creating performance bottlenecks and blocking efficient animations and viewport culling.
 
-   This represents a fundamental architectural limitation: diff-based systems scale O(n) with graph complexity (traverse entire structure to detect changes), while signal-based reactive systems scale O(1) with actual changes (data mutations automatically notify subscribers). Modern frameworks (Vue 3, Angular signals, SolidJS) have moved to reactive approaches for precisely this performance reason. 
+   This represents a fundamental architectural limitation: diff-based systems scale O(n) with graph complexity (traverse entire structure to detect changes), while signal-based reactive systems scale O(1) with actual changes (data mutations automatically notify subscribers). Modern frameworks (Vue 3, Angular signals, SolidJS) have moved to reactive approaches for precisely this performance reason.
 
 ### Business Context
 
@@ -53,12 +53,14 @@ This provides single source of truth, predictable state updates, and natural sys
 ### Core Architecture
 
 1. **Centralized Layout Store**: A Yjs CRDT maintains all spatial data in a single authoritative store:
+
    ```typescript
    // Instead of: node.position = {x, y}
-   layoutStore.moveNode(nodeId, {x, y})
+   layoutStore.moveNode(nodeId, { x, y })
    ```
 
 2. **Command Pattern**: All spatial mutations flow through explicit commands:
+
    ```
    User Input → Commands → Layout Store → Observer Notifications → Renderers
    ```
@@ -74,12 +76,14 @@ This provides single source of truth, predictable state updates, and natural sys
 ### Implementation Strategy
 
 **Phase 1: Parallel System**
+
 - Build CRDT layout store alongside existing system
 - Layout store initially mirrors LiteGraph changes via observers
 - Gradually migrate user interactions to use command interface
 - Maintain full backward compatibility
 
 **Phase 2: Inversion of Control**
+
 - CRDT store becomes single source of truth
 - LiteGraph receives position updates via reactive subscriptions
 - Enable alternative renderers and advanced features
@@ -89,17 +93,20 @@ This provides single source of truth, predictable state updates, and natural sys
 This combination provides both architectural and technical benefits:
 
 **Centralized State Benefits:**
+
 - **Single Source of Truth**: All layout data managed in one place, eliminating conflicts
 - **System Decoupling**: Rendering, interaction, and layout systems operate independently
 - **Predictable Updates**: Clear data flow makes debugging and testing easier
 - **Extensibility**: Easy to add new layout behaviors without modifying existing systems
 
 **CRDT Benefits:**
+
 - **Conflict Resolution**: Automatic merging eliminates position conflicts between systems
 - **Collaboration-Ready**: Built-in support for multi-user editing
 - **Eventual Consistency**: Guaranteed convergence to same state across all clients
 
 **Yjs-Specific Benefits:**
+
 - **Event-Driven**: Native observer pattern removes need for polling
 - **Selective Updates**: Only changed nodes trigger system updates
 - **Fine-Grained Changes**: Efficient delta synchronization
@@ -109,7 +116,7 @@ This combination provides both architectural and technical benefits:
 ### Positive
 
 - **Eliminates Polling**: Observer pattern removes O(n) graph traversals, improving performance
-- **System Modularity**: Independent systems can be developed, tested, and optimized separately  
+- **System Modularity**: Independent systems can be developed, tested, and optimized separately
 - **Renderer Flexibility**: Easy to add WebGL, DOM accessibility, or hybrid rendering systems
 - **Rich Interactions**: Command pattern enables robust undo/redo, macros, and interaction history
 - **Collaboration-Ready**: CRDT foundation enables real-time multi-user editing
@@ -140,9 +147,10 @@ This centralized state + CRDT architecture follows patterns from modern collabor
 **CRDT in Collaboration**: Tools like Figma, Linear, and Notion use similar approaches for real-time collaboration, demonstrating the effectiveness of separating authoritative data from presentation logic.
 
 **Future Capabilities**: This foundation enables advanced features that would be difficult with the current architecture:
+
 - Macro recording and workflow automation
 - Programmatic layout optimization and constraints
-- API-driven workflow construction  
+- API-driven workflow construction
 - Multiple simultaneous renderers (canvas + accessibility DOM)
 - Real-time collaborative editing
 - Advanced spatial features (physics, animations, auto-layout)

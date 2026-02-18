@@ -206,6 +206,60 @@ describe('WidgetMarkdown Dual Mode Display', () => {
       expect(clickSpy).not.toHaveBeenCalled()
       expect(keydownSpy).not.toHaveBeenCalled()
     })
+
+    describe('Pointer Event Propagation', () => {
+      it('stops pointerdown propagation to prevent node drag during text selection', async () => {
+        const widget = createMockWidget('# Test')
+        const wrapper = mountComponent(widget, '# Test')
+
+        await clickToEdit(wrapper)
+
+        const textarea = wrapper.find('textarea')
+        expect(textarea.exists()).toBe(true)
+
+        const parentPointerdownHandler = vi.fn()
+        const wrapperEl = wrapper.element as HTMLElement
+        wrapperEl.addEventListener('pointerdown', parentPointerdownHandler)
+
+        await textarea.trigger('pointerdown')
+
+        expect(parentPointerdownHandler).not.toHaveBeenCalled()
+      })
+
+      it('stops pointermove propagation during text selection', async () => {
+        const widget = createMockWidget('# Test')
+        const wrapper = mountComponent(widget, '# Test')
+
+        await clickToEdit(wrapper)
+
+        const textarea = wrapper.find('textarea')
+
+        const parentPointermoveHandler = vi.fn()
+        const wrapperEl = wrapper.element as HTMLElement
+        wrapperEl.addEventListener('pointermove', parentPointermoveHandler)
+
+        await textarea.trigger('pointermove')
+
+        expect(parentPointermoveHandler).not.toHaveBeenCalled()
+      })
+
+      it('stops pointerup propagation after text selection', async () => {
+        const widget = createMockWidget('# Test')
+        const wrapper = mountComponent(widget, '# Test')
+
+        await clickToEdit(wrapper)
+
+        const textarea = wrapper.find('textarea')
+
+        const parentPointerupHandler = vi.fn()
+        const wrapperEl = wrapper.element as HTMLElement
+        wrapperEl.addEventListener('pointerup', parentPointerupHandler)
+
+        await textarea.trigger('pointerup')
+
+        expect(parentPointerupHandler).not.toHaveBeenCalled()
+      })
+    })
   })
 
   describe('Value Updates', () => {

@@ -6,6 +6,7 @@
       <i class="pi pi-download text-muted"></i>
       <span>{{ formattedDownloads }}</span>
     </div>
+    <div v-else></div>
     <PackInstallButton
       v-if="!isInstalled"
       :node-packs="[nodePack]"

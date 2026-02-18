@@ -1,64 +1,67 @@
 <template>
-  <div v-if="nodePacks?.length" class="flex h-full flex-col">
-    <div class="flex-1 overflow-auto p-6">
-      <InfoPanelHeader :node-packs>
-        <template #thumbnail>
-          <PackIconStacked :node-packs="nodePacks" />
-        </template>
-        <template #title>
-          <div class="mt-5">
-            <span class="mr-2 inline-block text-base text-blue-500">{{
-              nodePacks.length
-            }}</span>
-            <span class="text-base">{{ $t('manager.packsSelected') }}</span>
-          </div>
-        </template>
-        <template #install-button>
-          <!-- Mixed: Don't show any button -->
-          <div v-if="isMixed" class="text-sm text-neutral-500">
-            {{ $t('manager.mixedSelectionMessage') }}
-          </div>
-          <!-- All installed: Show update (if nightly) and uninstall buttons -->
-          <div
-            v-else-if="isAllInstalled"
-            class="flex w-full justify-center gap-2"
-          >
-            <Button
-              v-if="hasNightlyPacks"
-              v-tooltip.top="$t('manager.tryUpdateTooltip')"
-              variant="textonly"
-              size="md"
-              :disabled="isUpdatingSelected"
-              @click="updateSelectedNightlyPacks"
-            >
-              <DotSpinner v-if="isUpdatingSelected" duration="1s" :size="16" />
-              <span>{{ updateSelectedLabel }}</span>
-            </Button>
-            <PackUninstallButton size="md" :node-packs="installedPacks" />
-          </div>
-          <!-- None installed: Show install button -->
-          <PackInstallButton
-            v-else-if="isNoneInstalled"
+  <div
+    v-if="nodePacks?.length"
+    class="flex h-full flex-col overflow-y-auto scrollbar-custom"
+  >
+    <PropertiesAccordionItem :class="accordionClass">
+      <template #label>
+        <span class="text-xs uppercase font-inter">
+          {{ t('manager.actions') }}
+        </span>
+      </template>
+      <div class="flex flex-col gap-1 px-4">
+        <!-- Mixed: Don't show any button -->
+        <div v-if="isMixed" class="text-sm text-neutral-500">
+          {{ $t('manager.mixedSelectionMessage') }}
+        </div>
+        <!-- All installed: Show update (if nightly) and uninstall buttons -->
+        <template v-else-if="isAllInstalled">
+          <Button
+            v-if="hasNightlyPacks"
+            v-tooltip.top="$t('manager.tryUpdateTooltip')"
+            variant="textonly"
             size="md"
-            :node-packs="notInstalledPacks"
-            :has-conflict="hasConflicts"
-            :conflict-info="conflictInfo"
-          />
+            :disabled="isUpdatingSelected"
+            @click="updateSelectedNightlyPacks"
+          >
+            <DotSpinner v-if="isUpdatingSelected" duration="1s" :size="16" />
+            <span>{{ updateSelectedLabel }}</span>
+          </Button>
+          <PackUninstallButton size="md" :node-packs="installedPacks" />
         </template>
-      </InfoPanelHeader>
-      <div class="mb-6">
-        <MetadataRow :label="$t('g.status')">
-          <PackStatusMessage
-            :status-type="overallStatus"
-            :has-compatibility-issues="hasConflicts"
-          />
-        </MetadataRow>
-        <MetadataRow
-          :label="$t('manager.totalNodes')"
-          :value="totalNodesCount"
+        <!-- None installed: Show install button -->
+        <PackInstallButton
+          v-else-if="isNoneInstalled"
+          size="md"
+          :node-packs="notInstalledPacks"
+          :has-conflict="hasConflicts"
+          :conflict-info="conflictInfo"
         />
       </div>
-    </div>
+    </PropertiesAccordionItem>
+
+    <PropertiesAccordionItem :class="accordionClass">
+      <template #label>
+        <span class="text-xs uppercase font-inter">
+          {{ t('manager.basicInfo') }}
+        </span>
+      </template>
+      <ModelInfoField :label="t('manager.selected')">
+        <span>
+          <span class="font-bold text-blue-500">{{ nodePacks.length }}</span>
+          {{ t('manager.packsSelected') }}
+        </span>
+      </ModelInfoField>
+      <ModelInfoField :label="t('g.status')">
+        <PackStatusMessage
+          :status-type="overallStatus"
+          :has-compatibility-issues="hasConflicts"
+        />
+      </ModelInfoField>
+      <ModelInfoField :label="t('manager.totalNodes')">
+        <span class="text-muted-foreground">{{ totalNodesCount }}</span>
+      </ModelInfoField>
+    </PropertiesAccordionItem>
   </div>
   <div v-else class="mx-8 mt-4 flex-1 overflow-hidden text-sm">
     {{ $t('manager.infoPanelEmpty') }}
@@ -71,15 +74,15 @@ import { computed, onUnmounted, provide, ref, toRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import DotSpinner from '@/components/common/DotSpinner.vue'
+import PropertiesAccordionItem from '@/components/rightSidePanel/layout/PropertiesAccordionItem.vue'
 import Button from '@/components/ui/button/Button.vue'
+import ModelInfoField from '@/platform/assets/components/modelInfo/ModelInfoField.vue'
 import { useComfyRegistryStore } from '@/stores/comfyRegistryStore'
 import type { components } from '@/types/comfyRegistryTypes'
+import { cn } from '@/utils/tailwindUtil'
 import PackStatusMessage from '@/workbench/extensions/manager/components/manager/PackStatusMessage.vue'
 import PackInstallButton from '@/workbench/extensions/manager/components/manager/button/PackInstallButton.vue'
 import PackUninstallButton from '@/workbench/extensions/manager/components/manager/button/PackUninstallButton.vue'
-import InfoPanelHeader from '@/workbench/extensions/manager/components/manager/infoPanel/InfoPanelHeader.vue'
-import MetadataRow from '@/workbench/extensions/manager/components/manager/infoPanel/MetadataRow.vue'
-import PackIconStacked from '@/workbench/extensions/manager/components/manager/packIcon/PackIconStacked.vue'
 import { usePacksSelection } from '@/workbench/extensions/manager/composables/nodePack/usePacksSelection'
 import { usePacksStatus } from '@/workbench/extensions/manager/composables/nodePack/usePacksStatus'
 import { useConflictDetection } from '@/workbench/extensions/manager/composables/useConflictDetection'
@@ -92,6 +95,11 @@ const { nodePacks } = defineProps<{
 }>()
 
 const { t } = useI18n()
+
+const accordionClass = cn(
+  'bg-modal-panel-background border-t border-border-default'
+)
+
 const managerStore = useComfyManagerStore()
 const nodePacksRef = toRef(() => nodePacks)
 

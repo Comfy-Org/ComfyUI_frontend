@@ -4,6 +4,7 @@ import { nextTick, ref } from 'vue'
 import type { IFuseOptions } from 'fuse.js'
 
 import type { TemplateInfo } from '@/platform/workflow/templates/types/template'
+import { useTemplateFiltering } from '@/composables/useTemplateFiltering'
 
 const defaultSettingStore = {
   get: vi.fn((key: string) => {
@@ -49,9 +50,6 @@ vi.mock('@/scripts/api', () => ({
     getFuseOptions: mockGetFuseOptions
   }
 }))
-
-const { useTemplateFiltering } =
-  await import('@/composables/useTemplateFiltering')
 
 describe('useTemplateFiltering', () => {
   beforeEach(() => {
@@ -393,6 +391,89 @@ describe('useTemplateFiltering', () => {
 
       expect(filteredTemplates.value.length).toBeGreaterThan(0)
       expect(mockGetFuseOptions).toHaveBeenCalledTimes(1)
+    })
+  })
+
+  describe('Scope-aware filtering', () => {
+    it('filters out inactive models when scope changes', () => {
+      // Start with image templates only
+      const templates = ref<TemplateInfo[]>([
+        {
+          name: 'flux-template',
+          description: 'Flux model template',
+          models: ['Flux', 'Dall-E'],
+          mediaType: 'image',
+          mediaSubtype: 'png'
+        }
+      ])
+
+      const currentScope = ref('image')
+
+      const {
+        selectedModels,
+        activeModels,
+        inactiveModels,
+        filteredTemplates
+      } = useTemplateFiltering(templates, currentScope)
+
+      // Select models from both image and video domains
+      selectedModels.value = ['Flux', 'Luma']
+
+      // In image scope, only Flux should be active because Luma doesn't exist in any image template
+      expect(activeModels.value).toEqual(['Flux'])
+      expect(inactiveModels.value).toEqual(['Luma'])
+      expect(filteredTemplates.value).toHaveLength(1)
+      expect(filteredTemplates.value[0].name).toBe('flux-template')
+
+      // Switch to video scope with only video templates
+      currentScope.value = 'video'
+      templates.value = [
+        {
+          name: 'luma-template',
+          description: 'Luma video template',
+          models: ['Luma', 'Runway'],
+          mediaType: 'video',
+          mediaSubtype: 'mp4'
+        }
+      ]
+
+      // In video scope, only Luma should be active because Flux doesn't exist in any video template
+      expect(activeModels.value).toEqual(['Luma'])
+      expect(inactiveModels.value).toEqual(['Flux'])
+      expect(filteredTemplates.value).toHaveLength(1)
+      expect(filteredTemplates.value[0].name).toBe('luma-template')
+    })
+
+    it('maintains selected filters across scope changes', () => {
+      const templates = ref<TemplateInfo[]>([
+        {
+          name: 'template1',
+          description: 'Template 1',
+          models: ['Model1'],
+          mediaType: 'image',
+          mediaSubtype: 'png'
+        }
+      ])
+
+      const currentScope = ref('image')
+      const { selectedModels, activeModels } = useTemplateFiltering(
+        templates,
+        currentScope
+      )
+
+      // Select a model
+      selectedModels.value = ['Model1', 'Model2']
+
+      // Model1 is active, Model2 is not available
+      expect(activeModels.value).toEqual(['Model1'])
+      expect(selectedModels.value).toEqual(['Model1', 'Model2'])
+
+      // Change scope - selected models should persist
+      currentScope.value = 'video'
+      templates.value = []
+
+      expect(selectedModels.value).toEqual(['Model1', 'Model2'])
+      expect(activeModels.value).toEqual([])
     })
   })
 })

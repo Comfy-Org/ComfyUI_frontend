@@ -5,6 +5,7 @@
     :label="$t('menu.help')"
     :tooltip="$t('sideToolbar.helpCenter')"
     :icon-badge="shouldShowRedDot ? '•' : ''"
+    badge-class="-top-1 -right-1 min-w-2 w-2 h-2 p-0 rounded-full text-[0px] bg-[#ff3b30]"
     :is-small="isSmall"
     @click="toggleHelpCenter"
   />
@@ -21,24 +22,3 @@ defineProps<{
 
 const { shouldShowRedDot, toggleHelpCenter } = useHelpCenter()
 </script>
-
-<style scoped>
-:deep(.p-badge) {
-  background: #ff3b30;
-  color: #ff3b30;
-  min-width: 8px;
-  height: 8px;
-  padding: 0;
-  border-radius: 9999px;
-  font-size: 0;
-  margin-top: 4px;
-  margin-right: 4px;
-  border: none;
-  outline: none;
-  box-shadow: none;
-}
-
-:deep(.p-badge.p-badge-dot) {
-  width: 8px !important;
-}
-</style>

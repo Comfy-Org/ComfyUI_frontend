@@ -1,5 +1,6 @@
 import type { Locator, Page } from '@playwright/test'
-import { expect } from '@playwright/test'
+
+import type { WorkspaceStore } from '../../types/globals'
 
 export class Topbar {
   private readonly menuLocator: Locator
@@ -57,7 +58,7 @@ export class Topbar {
 
   async closeWorkflowTab(tabName: string) {
     const tab = this.getWorkflowTab(tabName)
-    await tab.locator('.close-button').click({ force: true })
+    await tab.getByRole('button', { name: 'Close' }).click({ force: true })
   }
 
   getSaveDialog(): Locator {
@@ -86,7 +87,7 @@ export class Topbar {
 
     // Wait for workflow service to finish saving
     await this.page.waitForFunction(
-      () => !window['app'].extensionManager.workflow.isBusy,
+      () => !(window.app!.extensionManager as WorkspaceStore).workflow.isBusy,
       undefined,
       { timeout: 3000 }
     )
@@ -122,7 +123,7 @@ export class Topbar {
    */
   async closeTopbarMenu() {
     await this.page.locator('body').click({ position: { x: 300, y: 10 } })
-    await expect(this.menuLocator).not.toBeVisible()
+    await this.menuLocator.waitFor({ state: 'hidden' })
   }
 
   /**

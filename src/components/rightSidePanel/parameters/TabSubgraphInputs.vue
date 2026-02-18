@@ -32,6 +32,10 @@ const { node } = defineProps<{
   node: SubgraphNode
 }>()
 
+const emit = defineEmits<{
+  'update:proxyWidgets': [value: ProxyWidgetsProperty]
+}>()
+
 const { t } = useI18n()
 const canvasStore = useCanvasStore()
 const rightSidePanelStore = useRightSidePanelStore()
@@ -51,8 +55,7 @@ const proxyWidgets = customRef<ProxyWidgetsProperty>((track, trigger) => ({
   set(value?: ProxyWidgetsProperty) {
     trigger()
     if (!value) return
-    // eslint-disable-next-line vue/no-mutating-props
-    node.properties.proxyWidgets = value
+    emit('update:proxyWidgets', value)
   }
 }))
 

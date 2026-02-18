@@ -14,7 +14,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
       # Setup playwright environment
       - name: Setup ComfyUI Server (and start)
         uses: ./.github/actions/setup-comfyui-server
@@ -40,11 +40,11 @@ jobs:
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
       - name: Create Pull Request
-        uses: peter-evans/create-pull-request@271a8d0340265f705b14b6d32b9829c1cb33d45e
+        uses: peter-evans/create-pull-request@c0f553fe549906ede9cf27b5156039d195d2ece0 # v8.1.0
         with:
           token: ${{ secrets.PR_GH_TOKEN }}
-          commit-message: "Update locales for node definitions"
-          title: "Update locales for node definitions"
+          commit-message: 'Update locales for node definitions'
+          title: 'Update locales for node definitions'
           body: |
             Automated PR to update locales for node definitions
 

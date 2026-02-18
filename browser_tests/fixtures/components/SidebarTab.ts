@@ -1,5 +1,8 @@
 import type { Locator, Page } from '@playwright/test'
 
+import type { WorkspaceStore } from '../../types/globals'
+import { TestIds } from '../selectors'
+
 class SidebarTab {
   constructor(
     public readonly page: Page,
@@ -31,16 +34,16 @@ class SidebarTab {
 }
 
 export class NodeLibrarySidebarTab extends SidebarTab {
-  constructor(public readonly page: Page) {
+  constructor(public override readonly page: Page) {
     super(page, 'node-library')
   }
 
   get nodeLibrarySearchBoxInput() {
-    return this.page.locator('.node-lib-search-box input[type="text"]')
+    return this.page.getByPlaceholder('Search Nodes...')
   }
 
   get nodeLibraryTree() {
-    return this.page.locator('.node-lib-tree-explorer')
+    return this.page.getByTestId(TestIds.sidebar.nodeLibrary)
   }
 
   get nodePreview() {
@@ -55,12 +58,12 @@ export class NodeLibrarySidebarTab extends SidebarTab {
     return this.tabContainer.locator('.new-folder-button')
   }
 
-  async open() {
+  override async open() {
     await super.open()
     await this.nodeLibraryTree.waitFor({ state: 'visible' })
   }
 
-  async close() {
+  override async close() {
     if (!this.tabButton.isVisible()) {
       return
     }
@@ -69,30 +72,40 @@ export class NodeLibrarySidebarTab extends SidebarTab {
     await this.nodeLibraryTree.waitFor({ state: 'hidden' })
   }
 
-  folderSelector(folderName: string) {
-    return `.p-tree-node-content:has(> .tree-explorer-node-label:has(.tree-folder .node-label:has-text("${folderName}")))`
-  }
-
   getFolder(folderName: string) {
-    return this.page.locator(this.folderSelector(folderName))
-  }
-
-  nodeSelector(nodeName: string) {
-    return `.p-tree-node-content:has(> .tree-explorer-node-label:has(.tree-leaf .node-label:has-text("${nodeName}")))`
+    return this.page.locator(
+      `[data-testid="node-tree-folder"][data-folder-name="${folderName}"]`
+    )
   }
 
   getNode(nodeName: string) {
-    return this.page.locator(this.nodeSelector(nodeName))
+    return this.page.locator(
+      `[data-testid="node-tree-leaf"][data-node-name="${nodeName}"]`
+    )
+  }
+
+  nodeSelector(nodeName: string): string {
+    return `[data-testid="node-tree-leaf"][data-node-name="${nodeName}"]`
+  }
+
+  folderSelector(folderName: string): string {
+    return `[data-testid="node-tree-folder"][data-folder-name="${folderName}"]`
+  }
+
+  getNodeInFolder(nodeName: string, folderName: string) {
+    return this.getFolder(folderName)
+      .locator('xpath=ancestor::li')
+      .locator(`[data-testid="node-tree-leaf"][data-node-name="${nodeName}"]`)
   }
 }
 
 export class WorkflowsSidebarTab extends SidebarTab {
-  constructor(public readonly page: Page) {
+  constructor(public override readonly page: Page) {
     super(page, 'workflows')
   }
 
   get root() {
-    return this.page.locator('.workflows-sidebar-tab')
+    return this.page.getByTestId(TestIds.sidebar.workflows)
   }
 
   async getOpenedWorkflowNames() {
@@ -140,7 +153,9 @@ export class WorkflowsSidebarTab extends SidebarTab {
 
     // Wait for workflow service to finish renaming
     await this.page.waitForFunction(
-      () => !window['app']?.extensionManager?.workflow?.isBusy,
+      () =>
+        !(window.app?.extensionManager as WorkspaceStore | undefined)?.workflow
+          ?.isBusy,
       undefined,
       { timeout: 3000 }
     )

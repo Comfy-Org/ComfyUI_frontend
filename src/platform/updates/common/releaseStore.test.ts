@@ -1,16 +1,99 @@
-import { createPinia, setActivePinia } from 'pinia'
-import { compare, valid } from 'semver'
+import { until } from '@vueuse/core'
+import { setActivePinia } from 'pinia'
+import { compare } from 'semver'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { ref } from 'vue'
 
+import type { ReleaseNote } from '@/platform/updates/common/releaseService'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { useReleaseStore } from '@/platform/updates/common/releaseStore'
+import { useReleaseService } from '@/platform/updates/common/releaseService'
+import { useSystemStatsStore } from '@/stores/systemStatsStore'
+import { createTestingPinia } from '@pinia/testing'
+import type { SystemStats } from '@/types'
 
 // Mock the dependencies
-vi.mock('semver')
-vi.mock('@/utils/envUtil')
-vi.mock('@/platform/distribution/types', () => ({ isCloud: false }))
-vi.mock('@/platform/updates/common/releaseService')
-vi.mock('@/platform/settings/settingStore')
-vi.mock('@/stores/systemStatsStore')
+vi.mock('semver', () => ({
+  compare: vi.fn(),
+  valid: vi.fn(() => '1.0.0')
+}))
+
+const mockData = vi.hoisted(() => ({ isDesktop: true }))
+
+vi.mock('@/platform/distribution/types', () => ({
+  get isDesktop() {
+    return mockData.isDesktop
+  },
+  isCloud: false
+}))
+
+vi.mock('@/platform/updates/common/releaseService', () => {
+  const getReleases = vi.fn()
+  const isLoading = ref(false)
+  const error = ref<string | null>(null)
+  return {
+    useReleaseService: () => ({
+      getReleases,
+      isLoading,
+      error
+    })
+  }
+})
+
+vi.mock('@/platform/settings/settingStore', () => {
+  const get = vi.fn((key: string) => {
+    if (key === 'Comfy.Notification.ShowVersionUpdates') return true
+    return null
+  })
+  const set = vi.fn()
+  const setMany = vi.fn()
+  return {
+    useSettingStore: () => ({ get, set, setMany })
+  }
+})
+
+const mockSystemStatsState = vi.hoisted(() => ({
+  systemStats: {
+    system: {
+      comfyui_version: '1.0.0',
+      argv: []
+    }
+  } satisfies {
+    system: Partial<SystemStats['system']>
+  },
+  isInitialized: true,
+  reset() {
+    this.systemStats = {
+      system: {
+        comfyui_version: '1.0.0',
+        argv: []
+      } satisfies Partial<SystemStats['system']>
+    }
+    this.isInitialized = true
+  }
+}))
+vi.mock('@/stores/systemStatsStore', () => {
+  const refetchSystemStats = vi.fn()
+  const getFormFactor = vi.fn(() => 'git-windows')
+  return {
+    useSystemStatsStore: () => ({
+      get systemStats() {
+        return mockSystemStatsState.systemStats
+      },
+      set systemStats(val) {
+        mockSystemStatsState.systemStats = val
+      },
+      get isInitialized() {
+        return mockSystemStatsState.isInitialized
+      },
+      set isInitialized(val) {
+        mockSystemStatsState.isInitialized = val
+      },
+      refetchSystemStats,
+      getFormFactor
+    })
+  }
+})
 vi.mock('@vueuse/core', () => ({
   until: vi.fn(() => Promise.resolve()),
   useStorage: vi.fn(() => ({ value: {} })),
@@ -18,11 +101,6 @@ vi.mock('@vueuse/core', () => ({
 }))
 
 describe('useReleaseStore', () => {
-  let store: ReturnType<typeof useReleaseStore>
-  let mockReleaseService: any
-  let mockSettingStore: any
-  let mockSystemStatsStore: any
-
   const mockRelease = {
     id: 1,
     project: 'comfyui' as const,
@@ -32,59 +110,16 @@ describe('useReleaseStore', () => {
     attention: 'high' as const
   }
 
-  beforeEach(async () => {
-    setActivePinia(createPinia())
+  beforeEach(() => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
 
-    // Reset all mocks
-    vi.clearAllMocks()
-
-    // Setup mock services
-    mockReleaseService = {
-      getReleases: vi.fn(),
-      isLoading: { value: false },
-      error: { value: null }
-    }
-
-    mockSettingStore = {
-      get: vi.fn(),
-      set: vi.fn()
-    }
-
-    mockSystemStatsStore = {
-      systemStats: {
-        system: {
-          comfyui_version: '1.0.0'
-        }
-      },
-      isInitialized: true,
-      refetchSystemStats: vi.fn(),
-      getFormFactor: vi.fn(() => 'git-windows')
-    }
-
-    // Setup mock implementations
-    const { useReleaseService } =
-      await import('@/platform/updates/common/releaseService')
-    const { useSettingStore } = await import('@/platform/settings/settingStore')
-    const { useSystemStatsStore } = await import('@/stores/systemStatsStore')
-    const { isElectron } = await import('@/utils/envUtil')
-
-    vi.mocked(useReleaseService).mockReturnValue(mockReleaseService)
-    vi.mocked(useSettingStore).mockReturnValue(mockSettingStore)
-    vi.mocked(useSystemStatsStore).mockReturnValue(mockSystemStatsStore)
-    vi.mocked(isElectron).mockReturnValue(true)
-    vi.mocked(valid).mockReturnValue('1.0.0')
-
-    // Default showVersionUpdates to true
-    mockSettingStore.get.mockImplementation((key: string) => {
-      if (key === 'Comfy.Notification.ShowVersionUpdates') return true
-      return null
-    })
-
-    store = useReleaseStore()
+    vi.resetAllMocks()
+    mockSystemStatsState.reset()
   })
 
   describe('initial state', () => {
     it('should initialize with default state', () => {
+      const store = useReleaseStore()
       expect(store.releases).toEqual([])
       expect(store.isLoading).toBe(false)
       expect(store.error).toBeNull()
@@ -93,6 +128,7 @@ describe('useReleaseStore', () => {
 
   describe('computed properties', () => {
     it('should return most recent release', () => {
+      const store = useReleaseStore()
       const olderRelease = {
         ...mockRelease,
         id: 2,
@@ -105,6 +141,7 @@ describe('useReleaseStore', () => {
     })
 
     it('should return 3 most recent releases', () => {
+      const store = useReleaseStore()
       const releases = [
         mockRelease,
         { ...mockRelease, id: 2, version: '1.1.0' },
@@ -117,6 +154,7 @@ describe('useReleaseStore', () => {
     })
 
     it('should show update button (shouldShowUpdateButton)', () => {
+      const store = useReleaseStore()
       vi.mocked(compare).mockReturnValue(1) // newer version available
 
       store.releases = [mockRelease]
@@ -124,6 +162,7 @@ describe('useReleaseStore', () => {
     })
 
     it('should not show update button when no new version', () => {
+      const store = useReleaseStore()
       vi.mocked(compare).mockReturnValue(-1) // current version is newer
 
       store.releases = [mockRelease]
@@ -132,19 +171,17 @@ describe('useReleaseStore', () => {
   })
 
   describe('showVersionUpdates setting', () => {
-    beforeEach(async () => {
-      store.releases = [mockRelease]
-    })
-
     describe('when notifications are enabled', () => {
-      beforeEach(async () => {
-        mockSettingStore.get.mockImplementation((key: string) => {
+      beforeEach(() => {
+        const settingStore = useSettingStore()
+        vi.mocked(settingStore.get).mockImplementation((key: string) => {
           if (key === 'Comfy.Notification.ShowVersionUpdates') return true
           return null
         })
       })
 
       it('should show toast for medium/high attention releases', () => {
+        const store = useReleaseStore()
         vi.mocked(compare).mockReturnValue(1)
         store.releases = [mockRelease]
 
@@ -152,6 +189,7 @@ describe('useReleaseStore', () => {
       })
 
       it('should not show toast for low attention releases', () => {
+        const store = useReleaseStore()
         vi.mocked(compare).mockReturnValue(1)
 
         const lowAttentionRelease = {
@@ -165,13 +203,18 @@ describe('useReleaseStore', () => {
       })
 
       it('should show red dot for new versions', () => {
+        const store = useReleaseStore()
+        store.releases = [mockRelease]
         vi.mocked(compare).mockReturnValue(1)
 
         expect(store.shouldShowRedDot).toBe(true)
       })
 
       it('should show popup for latest version', () => {
-        mockSystemStatsStore.systemStats.system.comfyui_version = '1.2.0'
+        const store = useReleaseStore()
+        store.releases = [mockRelease]
+        const systemStatsStore = useSystemStatsStore()
+        systemStatsStore.systemStats!.system.comfyui_version = '1.2.0'
 
         vi.mocked(compare).mockReturnValue(0)
 
@@ -179,11 +222,13 @@ describe('useReleaseStore', () => {
       })
 
       it('should fetch releases during initialization', async () => {
-        mockReleaseService.getReleases.mockResolvedValue([mockRelease])
+        const store = useReleaseStore()
+        const releaseService = useReleaseService()
+        vi.mocked(releaseService.getReleases).mockResolvedValue([mockRelease])
 
         await store.initialize()
 
-        expect(mockReleaseService.getReleases).toHaveBeenCalledWith({
+        expect(releaseService.getReleases).toHaveBeenCalledWith({
           project: 'comfyui',
           current_version: '1.0.0',
           form_factor: 'git-windows',
@@ -193,27 +238,35 @@ describe('useReleaseStore', () => {
     })
 
     describe('when notifications are disabled', () => {
-      beforeEach(async () => {
-        mockSettingStore.get.mockImplementation((key: string) => {
+      beforeEach(() => {
+        const settingStore = useSettingStore()
+        vi.mocked(settingStore.get).mockImplementation((key: string) => {
           if (key === 'Comfy.Notification.ShowVersionUpdates') return false
           return null
         })
       })
 
       it('should not show toast even with new version available', () => {
+        const store = useReleaseStore()
+        store.releases = [mockRelease]
         vi.mocked(compare).mockReturnValue(1)
 
         expect(store.shouldShowToast).toBe(false)
       })
 
       it('should not show red dot even with new version available', () => {
+        const store = useReleaseStore()
+        store.releases = [mockRelease]
         vi.mocked(compare).mockReturnValue(1)
 
         expect(store.shouldShowRedDot).toBe(false)
       })
 
       it('should not show popup even for latest version', () => {
-        mockSystemStatsStore.systemStats.system.comfyui_version = '1.2.0'
+        const store = useReleaseStore()
+        store.releases = [mockRelease]
+        const systemStatsStore = useSystemStatsStore()
+        systemStatsStore.systemStats!.system.comfyui_version = '1.2.0'
 
         vi.mocked(compare).mockReturnValue(0)
 
@@ -221,15 +274,19 @@ describe('useReleaseStore', () => {
       })
 
       it('should skip fetching releases during initialization', async () => {
+        const store = useReleaseStore()
+        const releaseService = useReleaseService()
         await store.initialize()
 
-        expect(mockReleaseService.getReleases).not.toHaveBeenCalled()
+        expect(releaseService.getReleases).not.toHaveBeenCalled()
       })
 
       it('should not fetch releases when calling fetchReleases directly', async () => {
+        const store = useReleaseStore()
+        const releaseService = useReleaseService()
         await store.fetchReleases()
 
-        expect(mockReleaseService.getReleases).not.toHaveBeenCalled()
+        expect(releaseService.getReleases).not.toHaveBeenCalled()
         expect(store.isLoading).toBe(false)
       })
     })
@@ -237,11 +294,13 @@ describe('useReleaseStore', () => {
 
   describe('release initialization', () => {
     it('should fetch releases successfully', async () => {
-      mockReleaseService.getReleases.mockResolvedValue([mockRelease])
+      const store = useReleaseStore()
+      const releaseService = useReleaseService()
+      vi.mocked(releaseService.getReleases).mockResolvedValue([mockRelease])
 
       await store.initialize()
 
-      expect(mockReleaseService.getReleases).toHaveBeenCalledWith({
+      expect(releaseService.getReleases).toHaveBeenCalledWith({
         project: 'comfyui',
         current_version: '1.0.0',
         form_factor: 'git-windows',
@@ -251,12 +310,15 @@ describe('useReleaseStore', () => {
     })
 
     it('should include form_factor in API call', async () => {
-      mockSystemStatsStore.getFormFactor.mockReturnValue('desktop-mac')
-      mockReleaseService.getReleases.mockResolvedValue([mockRelease])
+      const store = useReleaseStore()
+      const releaseService = useReleaseService()
+      const systemStatsStore = useSystemStatsStore()
+      vi.mocked(systemStatsStore.getFormFactor).mockReturnValue('desktop-mac')
+      vi.mocked(releaseService.getReleases).mockResolvedValue([mockRelease])
 
       await store.initialize()
 
-      expect(mockReleaseService.getReleases).toHaveBeenCalledWith({
+      expect(releaseService.getReleases).toHaveBeenCalledWith({
         project: 'comfyui',
         current_version: '1.0.0',
         form_factor: 'desktop-mac',
@@ -265,16 +327,22 @@ describe('useReleaseStore', () => {
     })
 
     it('should skip fetching when --disable-api-nodes is present', async () => {
-      mockSystemStatsStore.systemStats.system.argv = ['--disable-api-nodes']
+      const store = useReleaseStore()
+      const releaseService = useReleaseService()
+      const systemStatsStore = useSystemStatsStore()
+      systemStatsStore.systemStats!.system.argv = ['--disable-api-nodes']
 
       await store.initialize()
 
-      expect(mockReleaseService.getReleases).not.toHaveBeenCalled()
+      expect(releaseService.getReleases).not.toHaveBeenCalled()
       expect(store.isLoading).toBe(false)
     })
 
     it('should skip fetching when --disable-api-nodes is one of multiple args', async () => {
-      mockSystemStatsStore.systemStats.system.argv = [
+      const store = useReleaseStore()
+      const releaseService = useReleaseService()
+      const systemStatsStore = useSystemStatsStore()
+      systemStatsStore.systemStats!.system.argv = [
         '--port',
         '8080',
         '--disable-api-nodes',
@@ -283,37 +351,46 @@ describe('useReleaseStore', () => {
 
       await store.initialize()
 
-      expect(mockReleaseService.getReleases).not.toHaveBeenCalled()
+      expect(releaseService.getReleases).not.toHaveBeenCalled()
       expect(store.isLoading).toBe(false)
     })
 
     it('should fetch normally when --disable-api-nodes is not present', async () => {
-      mockSystemStatsStore.systemStats.system.argv = [
+      const store = useReleaseStore()
+      const releaseService = useReleaseService()
+      const systemStatsStore = useSystemStatsStore()
+      systemStatsStore.systemStats!.system.argv = [
         '--port',
         '8080',
         '--verbose'
       ]
-      mockReleaseService.getReleases.mockResolvedValue([mockRelease])
+      vi.mocked(releaseService.getReleases).mockResolvedValue([mockRelease])
 
       await store.initialize()
 
-      expect(mockReleaseService.getReleases).toHaveBeenCalled()
+      expect(releaseService.getReleases).toHaveBeenCalled()
       expect(store.releases).toEqual([mockRelease])
     })
 
     it('should fetch normally when argv is undefined', async () => {
-      mockSystemStatsStore.systemStats.system.argv = undefined
-      mockReleaseService.getReleases.mockResolvedValue([mockRelease])
+      const store = useReleaseStore()
+      const releaseService = useReleaseService()
+      const systemStatsStore = useSystemStatsStore()
+      // TODO: Consider deleting this test since the types have to be violated for it to be relevant
+      delete (systemStatsStore.systemStats!.system as { argv?: string[] }).argv
+      vi.mocked(releaseService.getReleases).mockResolvedValue([mockRelease])
 
       await store.initialize()
 
-      expect(mockReleaseService.getReleases).toHaveBeenCalled()
+      expect(releaseService.getReleases).toHaveBeenCalled()
       expect(store.releases).toEqual([mockRelease])
     })
 
     it('should handle API errors gracefully', async () => {
-      mockReleaseService.getReleases.mockResolvedValue(null)
-      mockReleaseService.error.value = 'API Error'
+      const store = useReleaseStore()
+      const releaseService = useReleaseService()
+      vi.mocked(releaseService.getReleases).mockResolvedValue(null)
+      releaseService.error.value = 'API Error'
 
       await store.initialize()
 
@@ -322,7 +399,9 @@ describe('useReleaseStore', () => {
     })
 
     it('should handle non-Error objects', async () => {
-      mockReleaseService.getReleases.mockRejectedValue('String error')
+      const store = useReleaseStore()
+      const releaseService = useReleaseService()
+      vi.mocked(releaseService.getReleases).mockRejectedValue('String error')
 
       await store.initialize()
 
@@ -330,12 +409,14 @@ describe('useReleaseStore', () => {
     })
 
     it('should set loading state correctly', async () => {
-      let resolvePromise: (value: any) => void
-      const promise = new Promise((resolve) => {
+      const store = useReleaseStore()
+      const releaseService = useReleaseService()
+      let resolvePromise: (value: ReleaseNote[] | null) => void
+      const promise = new Promise<ReleaseNote[] | null>((resolve) => {
         resolvePromise = resolve
       })
 
-      mockReleaseService.getReleases.mockReturnValue(promise)
+      vi.mocked(releaseService.getReleases).mockReturnValue(promise)
 
       const initPromise = store.initialize()
       expect(store.isLoading).toBe(true)
@@ -347,19 +428,23 @@ describe('useReleaseStore', () => {
     })
 
     it('should fetch system stats if not available', async () => {
-      const { until } = await import('@vueuse/core')
-      mockSystemStatsStore.systemStats = null
-      mockSystemStatsStore.isInitialized = false
-      mockReleaseService.getReleases.mockResolvedValue([mockRelease])
+      const store = useReleaseStore()
+      const releaseService = useReleaseService()
+      const systemStatsStore = useSystemStatsStore()
+      systemStatsStore.systemStats = null
+      systemStatsStore.isInitialized = false
+      vi.mocked(releaseService.getReleases).mockResolvedValue([mockRelease])
 
       await store.initialize()
 
-      expect(until).toHaveBeenCalled()
-      expect(mockReleaseService.getReleases).toHaveBeenCalled()
+      expect(vi.mocked(until)).toHaveBeenCalled()
+      expect(releaseService.getReleases).toHaveBeenCalled()
     })
 
     it('should not set loading state when notifications disabled', async () => {
-      mockSettingStore.get.mockImplementation((key: string) => {
+      const store = useReleaseStore()
+      const settingStore = useSettingStore()
+      vi.mocked(settingStore.get).mockImplementation((key: string) => {
         if (key === 'Comfy.Notification.ShowVersionUpdates') return false
         return null
       })
@@ -372,16 +457,22 @@ describe('useReleaseStore', () => {
 
   describe('--disable-api-nodes argument handling', () => {
     it('should skip fetchReleases when --disable-api-nodes is present', async () => {
-      mockSystemStatsStore.systemStats.system.argv = ['--disable-api-nodes']
+      const store = useReleaseStore()
+      const releaseService = useReleaseService()
+      const systemStatsStore = useSystemStatsStore()
+      systemStatsStore.systemStats!.system.argv = ['--disable-api-nodes']
 
       await store.fetchReleases()
 
-      expect(mockReleaseService.getReleases).not.toHaveBeenCalled()
+      expect(releaseService.getReleases).not.toHaveBeenCalled()
       expect(store.isLoading).toBe(false)
     })
 
     it('should skip fetchReleases when --disable-api-nodes is among other args', async () => {
-      mockSystemStatsStore.systemStats.system.argv = [
+      const store = useReleaseStore()
+      const releaseService = useReleaseService()
+      const systemStatsStore = useSystemStatsStore()
+      systemStatsStore.systemStats!.system.argv = [
         '--port',
         '8080',
         '--disable-api-nodes',
@@ -390,105 +481,99 @@ describe('useReleaseStore', () => {
 
       await store.fetchReleases()
 
-      expect(mockReleaseService.getReleases).not.toHaveBeenCalled()
+      expect(releaseService.getReleases).not.toHaveBeenCalled()
       expect(store.isLoading).toBe(false)
     })
 
     it('should proceed with fetchReleases when --disable-api-nodes is not present', async () => {
-      mockSystemStatsStore.systemStats.system.argv = [
+      const store = useReleaseStore()
+      const releaseService = useReleaseService()
+      const systemStatsStore = useSystemStatsStore()
+      systemStatsStore.systemStats!.system.argv = [
         '--port',
         '8080',
         '--verbose'
       ]
-      mockReleaseService.getReleases.mockResolvedValue([mockRelease])
+      vi.mocked(releaseService.getReleases).mockResolvedValue([mockRelease])
 
       await store.fetchReleases()
 
-      expect(mockReleaseService.getReleases).toHaveBeenCalled()
+      expect(releaseService.getReleases).toHaveBeenCalled()
     })
 
-    it('should proceed with fetchReleases when argv is null', async () => {
-      mockSystemStatsStore.systemStats.system.argv = null
-      mockReleaseService.getReleases.mockResolvedValue([mockRelease])
+    it('should proceed with fetchReleases when argv is undefined', async () => {
+      const store = useReleaseStore()
+      const releaseService = useReleaseService()
+      const systemStatsStore = useSystemStatsStore()
+      delete (systemStatsStore.systemStats!.system as { argv?: string[] }).argv
+      vi.mocked(releaseService.getReleases).mockResolvedValue([mockRelease])
 
       await store.fetchReleases()
 
-      expect(mockReleaseService.getReleases).toHaveBeenCalled()
+      expect(releaseService.getReleases).toHaveBeenCalled()
     })
 
     it('should proceed with fetchReleases when system stats are not available', async () => {
-      const { until } = await import('@vueuse/core')
-      mockSystemStatsStore.systemStats = null
-      mockSystemStatsStore.isInitialized = false
-      mockReleaseService.getReleases.mockResolvedValue([mockRelease])
+      const store = useReleaseStore()
+      const releaseService = useReleaseService()
+      const systemStatsStore = useSystemStatsStore()
+      systemStatsStore.systemStats = null
+      systemStatsStore.isInitialized = false
+      vi.mocked(releaseService.getReleases).mockResolvedValue([mockRelease])
 
       await store.fetchReleases()
 
       expect(until).toHaveBeenCalled()
-      expect(mockReleaseService.getReleases).toHaveBeenCalled()
+      expect(releaseService.getReleases).toHaveBeenCalled()
     })
   })
 
   describe('action handlers', () => {
-    beforeEach(async () => {
-      store.releases = [mockRelease]
-    })
-
     it('should handle skip release', async () => {
+      const store = useReleaseStore()
+      store.releases = [mockRelease]
+      const settingStore = useSettingStore()
       await store.handleSkipRelease('1.2.0')
 
-      expect(mockSettingStore.set).toHaveBeenCalledWith(
-        'Comfy.Release.Version',
-        '1.2.0'
-      )
-      expect(mockSettingStore.set).toHaveBeenCalledWith(
-        'Comfy.Release.Status',
-        'skipped'
-      )
-      expect(mockSettingStore.set).toHaveBeenCalledWith(
-        'Comfy.Release.Timestamp',
-        expect.any(Number)
-      )
+      expect(settingStore.setMany).toHaveBeenCalledWith({
+        'Comfy.Release.Version': '1.2.0',
+        'Comfy.Release.Status': 'skipped',
+        'Comfy.Release.Timestamp': expect.any(Number)
+      })
     })
 
     it('should handle show changelog', async () => {
+      const store = useReleaseStore()
+      store.releases = [mockRelease]
+      const settingStore = useSettingStore()
       await store.handleShowChangelog('1.2.0')
 
-      expect(mockSettingStore.set).toHaveBeenCalledWith(
-        'Comfy.Release.Version',
-        '1.2.0'
-      )
-      expect(mockSettingStore.set).toHaveBeenCalledWith(
-        'Comfy.Release.Status',
-        'changelog seen'
-      )
-      expect(mockSettingStore.set).toHaveBeenCalledWith(
-        'Comfy.Release.Timestamp',
-        expect.any(Number)
-      )
+      expect(settingStore.setMany).toHaveBeenCalledWith({
+        'Comfy.Release.Version': '1.2.0',
+        'Comfy.Release.Status': 'changelog seen',
+        'Comfy.Release.Timestamp': expect.any(Number)
+      })
     })
 
     it('should handle whats new seen', async () => {
+      const store = useReleaseStore()
+      store.releases = [mockRelease]
+      const settingStore = useSettingStore()
       await store.handleWhatsNewSeen('1.2.0')
 
-      expect(mockSettingStore.set).toHaveBeenCalledWith(
-        'Comfy.Release.Version',
-        '1.2.0'
-      )
-      expect(mockSettingStore.set).toHaveBeenCalledWith(
-        'Comfy.Release.Status',
-        "what's new seen"
-      )
-      expect(mockSettingStore.set).toHaveBeenCalledWith(
-        'Comfy.Release.Timestamp',
-        expect.any(Number)
-      )
+      expect(settingStore.setMany).toHaveBeenCalledWith({
+        'Comfy.Release.Version': '1.2.0',
+        'Comfy.Release.Status': "what's new seen",
+        'Comfy.Release.Timestamp': expect.any(Number)
+      })
     })
   })
 
   describe('popup visibility', () => {
     it('should show toast for medium/high attention releases', () => {
-      mockSettingStore.get.mockImplementation((key: string) => {
+      const store = useReleaseStore()
+      const settingStore = useSettingStore()
+      vi.mocked(settingStore.get).mockImplementation((key: string) => {
         if (key === 'Comfy.Release.Version') return null
         if (key === 'Comfy.Release.Status') return null
         if (key === 'Comfy.Notification.ShowVersionUpdates') return true
@@ -503,8 +588,10 @@ describe('useReleaseStore', () => {
     })
 
     it('should show red dot for new versions', () => {
+      const store = useReleaseStore()
+      const settingStore = useSettingStore()
       vi.mocked(compare).mockReturnValue(1)
-      mockSettingStore.get.mockImplementation((key: string) => {
+      vi.mocked(settingStore.get).mockImplementation((key: string) => {
         if (key === 'Comfy.Notification.ShowVersionUpdates') return true
         return null
       })
@@ -515,8 +602,11 @@ describe('useReleaseStore', () => {
     })
 
     it('should show popup for latest version', () => {
-      mockSystemStatsStore.systemStats.system.comfyui_version = '1.2.0' // Same as release
-      mockSettingStore.get.mockImplementation((key: string) => {
+      const store = useReleaseStore()
+      const systemStatsStore = useSystemStatsStore()
+      const settingStore = useSettingStore()
+      systemStatsStore.systemStats!.system.comfyui_version = '1.2.0' // Same as release
+      vi.mocked(settingStore.get).mockImplementation((key: string) => {
         if (key === 'Comfy.Notification.ShowVersionUpdates') return true
         return null
       })
@@ -531,8 +621,11 @@ describe('useReleaseStore', () => {
 
   describe('edge cases', () => {
     it('should handle missing system stats gracefully', async () => {
-      mockSystemStatsStore.systemStats = null
-      mockSettingStore.get.mockImplementation((key: string) => {
+      const store = useReleaseStore()
+      const systemStatsStore = useSystemStatsStore()
+      const settingStore = useSettingStore()
+      systemStatsStore.systemStats = null
+      vi.mocked(settingStore.get).mockImplementation((key: string) => {
         if (key === 'Comfy.Notification.ShowVersionUpdates') return false
         return null
       })
@@ -540,11 +633,13 @@ describe('useReleaseStore', () => {
       await store.initialize()
 
       // Should not fetch system stats when notifications disabled
-      expect(mockSystemStatsStore.refetchSystemStats).not.toHaveBeenCalled()
+      expect(systemStatsStore.refetchSystemStats).not.toHaveBeenCalled()
     })
 
     it('should handle concurrent fetchReleases calls', async () => {
-      mockReleaseService.getReleases.mockImplementation(
+      const store = useReleaseStore()
+      const releaseService = useReleaseService()
+      vi.mocked(releaseService.getReleases).mockImplementation(
         () =>
           new Promise((resolve) =>
             setTimeout(() => resolve([mockRelease]), 100)
@@ -558,41 +653,37 @@ describe('useReleaseStore', () => {
       await Promise.all([promise1, promise2])
 
       // Should only call API once due to loading check
-      expect(mockReleaseService.getReleases).toHaveBeenCalledTimes(1)
+      expect(releaseService.getReleases).toHaveBeenCalledTimes(1)
     })
   })
 
-  describe('isElectron environment checks', () => {
-    beforeEach(async () => {
-      // Set up a new version available
-      store.releases = [mockRelease]
-      mockSettingStore.get.mockImplementation((key: string) => {
-        if (key === 'Comfy.Notification.ShowVersionUpdates') return true
-        return null
-      })
-    })
-
-    describe('when running in Electron (desktop)', () => {
-      beforeEach(async () => {
-        const { isElectron } = await import('@/utils/envUtil')
-        vi.mocked(isElectron).mockReturnValue(true)
+  describe('isDesktop environment checks', () => {
+    describe('when running on desktop', () => {
+      beforeEach(() => {
+        mockData.isDesktop = true
       })
 
       it('should show toast when conditions are met', () => {
-        vi.mocked(compare).mockReturnValue(1)
+        const store = useReleaseStore()
         store.releases = [mockRelease]
+        vi.mocked(compare).mockReturnValue(1)
 
         expect(store.shouldShowToast).toBe(true)
       })
 
       it('should show red dot when new version available', () => {
+        const store = useReleaseStore()
+        store.releases = [mockRelease]
         vi.mocked(compare).mockReturnValue(1)
 
         expect(store.shouldShowRedDot).toBe(true)
       })
 
       it('should show popup for latest version', () => {
-        mockSystemStatsStore.systemStats.system.comfyui_version = '1.2.0'
+        const store = useReleaseStore()
+        store.releases = [mockRelease]
+        const systemStatsStore = useSystemStatsStore()
+        systemStatsStore.systemStats!.system.comfyui_version = '1.2.0'
 
         vi.mocked(compare).mockReturnValue(0)
 
@@ -600,13 +691,13 @@ describe('useReleaseStore', () => {
       })
     })
 
-    describe('when NOT running in Electron (web)', () => {
-      beforeEach(async () => {
-        const { isElectron } = await import('@/utils/envUtil')
-        vi.mocked(isElectron).mockReturnValue(false)
+    describe('when NOT running on desktop (web)', () => {
+      beforeEach(() => {
+        mockData.isDesktop = false
       })
 
       it('should NOT show toast even when all other conditions are met', () => {
+        const store = useReleaseStore()
         vi.mocked(compare).mockReturnValue(1)
 
         // Set up all conditions that would normally show toast
@@ -616,12 +707,15 @@ describe('useReleaseStore', () => {
       })
 
       it('should NOT show red dot even when new version available', () => {
+        const store = useReleaseStore()
+        store.releases = [mockRelease]
         vi.mocked(compare).mockReturnValue(1)
 
         expect(store.shouldShowRedDot).toBe(false)
       })
 
       it('should NOT show toast regardless of attention level', () => {
+        const store = useReleaseStore()
         vi.mocked(compare).mockReturnValue(1)
 
         // Test with high attention releases
@@ -641,6 +735,7 @@ describe('useReleaseStore', () => {
       })
 
       it('should NOT show red dot even with high attention release', () => {
+        const store = useReleaseStore()
         vi.mocked(compare).mockReturnValue(1)
 
         store.releases = [{ ...mockRelease, attention: 'high' as const }]
@@ -649,7 +744,10 @@ describe('useReleaseStore', () => {
       })
 
       it('should NOT show popup even for latest version', () => {
-        mockSystemStatsStore.systemStats.system.comfyui_version = '1.2.0'
+        const store = useReleaseStore()
+        store.releases = [mockRelease]
+        const systemStatsStore = useSystemStatsStore()
+        systemStatsStore.systemStats!.system.comfyui_version = '1.2.0'
 
         vi.mocked(compare).mockReturnValue(0)
 

@@ -2,25 +2,28 @@ import type { ComputedRef, InjectionKey } from 'vue'
 
 import type { AssetKind } from '@/types/widgetTypes'
 
-export type OptionId = string | number | symbol
-export type SelectedKey = OptionId
-
-export interface DropdownItem {
-  id: SelectedKey
-  mediaSrc: string // URL for image, video, or other media
+/**
+ * Minimal interface for items in FormDropdown.
+ * Both AssetItem (from cloud API) and local file items satisfy this contract.
+ */
+export interface FormDropdownItem {
+  id: string
+  /** Display name shown in the dropdown */
   name: string
+  /** Original/alternate label (e.g., original filename) */
   label?: string
-  metadata: string
-}
-export interface SortOption {
-  id: OptionId
-  name: string
-  sorter: (ctx: { items: readonly DropdownItem[] }) => DropdownItem[]
+  /** Preview image/video URL */
+  preview_url?: string
+  /** Whether the item is immutable (public model) - used for ownership filtering */
+  is_immutable?: boolean
+  /** Base models this item is compatible with - used for base model filtering */
+  base_models?: string[]
 }
 
-export interface FilterOption {
-  id: OptionId
+export interface SortOption<TId extends string = string> {
+  id: TId
   name: string
+  sorter: (ctx: { items: readonly FormDropdownItem[] }) => FormDropdownItem[]
 }
 
 export type LayoutMode = 'list' | 'grid' | 'list-small'

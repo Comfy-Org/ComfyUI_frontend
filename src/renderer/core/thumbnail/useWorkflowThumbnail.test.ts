@@ -3,6 +3,9 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { createGraphThumbnail } from '@/renderer/core/thumbnail/graphThumbnailRenderer'
+import { useWorkflowThumbnail } from '@/renderer/core/thumbnail/useWorkflowThumbnail'
+import { api } from '@/scripts/api'
 
 vi.mock('@/renderer/core/thumbnail/graphThumbnailRenderer', () => ({
   createGraphThumbnail: vi.fn()
@@ -18,12 +21,6 @@ vi.mock('@/scripts/api', () => ({
     apiURL: vi.fn((path: string) => `/api${path}`)
   }
 }))
-
-const { useWorkflowThumbnail } =
-  await import('@/renderer/core/thumbnail/useWorkflowThumbnail')
-const { createGraphThumbnail } =
-  await import('@/renderer/core/thumbnail/graphThumbnailRenderer')
-const { api } = await import('@/scripts/api')
 
 describe('useWorkflowThumbnail', () => {
   let workflowStore: ReturnType<typeof useWorkflowStore>

@@ -1,4 +1,5 @@
-import { createPinia, setActivePinia } from 'pinia'
+import { createTestingPinia } from '@pinia/testing'
+import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it } from 'vitest'
 
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
@@ -9,7 +10,7 @@ describe('useNodeDefStore', () => {
   let store: ReturnType<typeof useNodeDefStore>
 
   beforeEach(() => {
-    setActivePinia(createPinia())
+    setActivePinia(createTestingPinia({ stubActions: false }))
     store = useNodeDefStore()
   })
 

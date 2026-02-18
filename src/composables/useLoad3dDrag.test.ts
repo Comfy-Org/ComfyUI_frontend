@@ -2,7 +2,9 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 
 import { useLoad3dDrag } from '@/composables/useLoad3dDrag'
+import { SUPPORTED_EXTENSIONS } from '@/extensions/core/load3d/constants'
 import { useToastStore } from '@/platform/updates/common/toastStore'
+import { createMockFileList } from '@/utils/__tests__/litegraphTestUtils'
 
 vi.mock('@/platform/updates/common/toastStore', () => ({
   useToastStore: vi.fn()
@@ -19,22 +21,22 @@ function createMockDragEvent(
   const files = options.files || []
   const types = options.hasFiles ? ['Files'] : []
 
-  const dataTransfer = {
+  const dataTransfer: Partial<DataTransfer> = {
     types,
-    files,
+    files: createMockFileList(files),
     dropEffect: 'none' as DataTransfer['dropEffect']
   }
 
-  const event = {
+  const event: Partial<DragEvent> = {
     type,
-    dataTransfer
-  } as unknown as DragEvent
+    dataTransfer: dataTransfer as DataTransfer
+  }
 
-  return event
+  return event as DragEvent
 }
 
 describe('useLoad3dDrag', () => {
-  let mockToastStore: any
+  let mockToastStore: ReturnType<typeof useToastStore>
   let mockOnModelDrop: (file: File) => void | Promise<void>
 
   beforeEach(() => {
@@ -42,7 +44,9 @@ describe('useLoad3dDrag', () => {
 
     mockToastStore = {
       addAlert: vi.fn()
-    }
+    } as Partial<ReturnType<typeof useToastStore>> as ReturnType<
+      typeof useToastStore
+    >
     vi.mocked(useToastStore).mockReturnValue(mockToastStore)
 
     mockOnModelDrop = vi.fn()
@@ -196,7 +200,7 @@ describe('useLoad3dDrag', () => {
         onModelDrop: mockOnModelDrop
       })
 
-      const extensions = ['.gltf', '.glb', '.obj', '.fbx', '.stl']
+      const extensions = [...SUPPORTED_EXTENSIONS]
 
       for (const ext of extensions) {
         vi.mocked(mockOnModelDrop).mockClear()

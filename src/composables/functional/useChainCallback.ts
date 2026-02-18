@@ -1,35 +1,25 @@
 /**
- * Shorthand for {@link Parameters} of optional callbacks.
- *
- * @example
- * ```ts
- * const { onClick } = CustomClass.prototype
- * CustomClass.prototype.onClick = function (...args: CallbackParams<typeof onClick>) {
- *   const r = onClick?.apply(this, args)
- *   // ...
- *   return r
- * }
- * ```
- */
-export type CallbackParams<T extends ((...args: any) => any) | undefined> =
-  Parameters<Exclude<T, undefined>>
-
-/**
  * Chain multiple callbacks together.
  *
  * @param originalCallback - The original callback to chain.
  * @param callbacks - The callbacks to chain.
  * @returns A new callback that chains the original callback with the callbacks.
  */
-export const useChainCallback = <
-  O,
-  T extends (this: O, ...args: any[]) => void
->(
+export function useChainCallback<O, T>(
   originalCallback: T | undefined,
-  ...callbacks: ((this: O, ...args: Parameters<T>) => void)[]
-) => {
-  return function (this: O, ...args: Parameters<T>) {
-    originalCallback?.call(this, ...args)
-    for (const callback of callbacks) callback.call(this, ...args)
-  }
+  ...callbacks: NonNullable<T> extends (this: O, ...args: infer P) => unknown
+    ? ((this: O, ...args: P) => void)[]
+    : never
+) {
+  type Args = NonNullable<T> extends (...args: infer P) => unknown ? P : never
+  type Ret = NonNullable<T> extends (...args: unknown[]) => infer R ? R : never
+
+  return function (this: O, ...args: Args) {
+    if (typeof originalCallback === 'function') {
+      ;(originalCallback as (this: O, ...args: Args) => Ret).call(this, ...args)
+    }
+    for (const callback of callbacks) {
+      callback.call(this, ...args)
+    }
+  } as (this: O, ...args: Args) => Ret
 }

@@ -3,7 +3,7 @@
  * Provides event-driven reactivity with performance optimizations
  */
 import { reactiveComputed } from '@vueuse/core'
-import { customRef, reactive, shallowReactive } from 'vue'
+import { reactive, shallowReactive } from 'vue'
 
 import { useChainCallback } from '@/composables/functional/useChainCallback'
 import { isProxyWidget } from '@/core/graph/subgraph/proxyWidget'
@@ -11,10 +11,7 @@ import type {
   INodeInputSlot,
   INodeOutputSlot
 } from '@/lib/litegraph/src/interfaces'
-import type {
-  IBaseWidget,
-  IWidgetOptions
-} from '@/lib/litegraph/src/types/widgets'
+import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { LayoutSource } from '@/renderer/core/layout/types'
 import type { NodeId } from '@/renderer/core/layout/types'
@@ -41,19 +38,35 @@ export interface WidgetSlotMetadata {
   linked: boolean
 }
 
+/**
+ * Minimal render-specific widget data extracted from LiteGraph widgets.
+ * Value and metadata (label, hidden, disabled, etc.) are accessed via widgetValueStore.
+ */
 export interface SafeWidgetData {
+  nodeId?: NodeId
   name: string
   type: string
-  value: WidgetValue
-  borderStyle?: string
+  /** Callback to invoke when widget value changes (wraps LiteGraph callback + triggerDraw) */
   callback?: ((value: unknown) => void) | undefined
+  /** Control widget for seed randomization/increment/decrement */
   controlWidget?: SafeControlWidget
+  /** Whether widget has custom layout size computation */
   hasLayoutSize?: boolean
+  /** Whether widget is a DOM widget */
   isDOMWidget?: boolean
-  label?: string
-  nodeType?: string
-  options?: IWidgetOptions<unknown>
+  /**
+   * Widget options needed for render decisions.
+   * Note: Most metadata should be accessed via widgetValueStore.getWidget().
+   */
+  options?: {
+    canvasOnly?: boolean
+    advanced?: boolean
+    hidden?: boolean
+    read_only?: boolean
+  }
+  /** Input specification from node definition */
   spec?: InputSpec
+  /** Input slot metadata (index and link status) */
   slotMetadata?: WidgetSlotMetadata
 }
 
@@ -70,6 +83,7 @@ export interface VueNodeData {
   color?: string
   flags?: {
     collapsed?: boolean
+    ghost?: boolean
     pinned?: boolean
   }
   hasErrors?: boolean
@@ -77,6 +91,7 @@ export interface VueNodeData {
   outputs?: INodeOutputSlot[]
   resizable?: boolean
   shape?: number
+  showAdvanced?: boolean
   subgraphId?: string | null
   titleMode?: TitleMode
   widgets?: SafeWidgetData[]
@@ -93,23 +108,6 @@ export interface GraphNodeManager {
   cleanup(): void
 }
 
-function widgetWithVueTrack(
-  widget: IBaseWidget
-): asserts widget is IBaseWidget & { vueTrack: () => void } {
-  if (widget.vueTrack) return
-
-  customRef((track, trigger) => {
-    widget.callback = useChainCallback(widget.callback, trigger)
-    widget.vueTrack = track
-    return { get() {}, set() {} }
-  })
-}
-function useReactiveWidgetValue(widget: IBaseWidget) {
-  widgetWithVueTrack(widget)
-  widget.vueTrack()
-  return widget.value
-}
-
 function getControlWidget(widget: IBaseWidget): SafeControlWidget | undefined {
   const cagWidget = widget.linkedWidgets?.find(
     (w) => w.name == 'control_after_generate'
@@ -121,36 +119,20 @@ function getControlWidget(widget: IBaseWidget): SafeControlWidget | undefined {
   }
 }
 
-function getNodeType(node: LGraphNode, widget: IBaseWidget) {
-  if (!node.isSubgraphNode() || !isProxyWidget(widget)) return undefined
-  const subNode = node.subgraph.getNodeById(widget._overlay.nodeId)
-  return subNode?.type
-}
-
 /**
  * Shared widget enhancements used by both safeWidgetMapper and Right Side Panel
  */
 interface SharedWidgetEnhancements {
-  /** Reactive widget value that updates when the widget changes */
-  value: WidgetValue
   /** Control widget for seed randomization/increment/decrement */
   controlWidget?: SafeControlWidget
   /** Input specification from node definition */
   spec?: InputSpec
-  /** Node type (for subgraph promoted widgets) */
-  nodeType?: string
-  /** Border style for promoted/advanced widgets */
-  borderStyle?: string
-  /** Widget label */
-  label?: string
-  /** Widget options */
-  options?: Record<string, any>
 }
 
 /**
  * Extracts common widget enhancements shared across different rendering contexts.
- * This function centralizes the logic for extracting metadata and reactive values
- * from widgets, ensuring consistency between Nodes 2.0 and Right Side Panel.
+ * This function centralizes the logic for extracting metadata from widgets.
+ * Note: Value and metadata (label, options, hidden, etc.) are accessed via widgetValueStore.
  */
 export function getSharedWidgetEnhancements(
   node: LGraphNode,
@@ -159,17 +141,8 @@ export function getSharedWidgetEnhancements(
   const nodeDefStore = useNodeDefStore()
 
   return {
-    value: useReactiveWidgetValue(widget),
     controlWidget: getControlWidget(widget),
-    spec: nodeDefStore.getInputSpecForWidget(node, widget.name),
-    nodeType: getNodeType(node, widget),
-    borderStyle: widget.promoted
-      ? 'ring ring-component-node-widget-promoted'
-      : widget.advanced
-        ? 'ring ring-component-node-widget-advanced'
-        : undefined,
-    label: widget.label,
-    options: widget.options
+    spec: nodeDefStore.getInputSpecForWidget(node, widget.name)
   }
 }
 
@@ -210,7 +183,7 @@ function safeWidgetMapper(
 ): (widget: IBaseWidget) => SafeWidgetData {
   return function (widget) {
     try {
-      // Get shared enhancements used by both Nodes 2.0 and Right Side Panel
+      // Get shared enhancements (controlWidget, spec, nodeType)
       const sharedEnhancements = getSharedWidgetEnhancements(node, widget)
       const slotInfo = slotMetadata.get(widget.name)
 
@@ -226,20 +199,41 @@ function safeWidgetMapper(
         node.widgets?.forEach((w) => w.triggerDraw?.())
       }
 
+      // Extract only render-critical options (canvasOnly, advanced, read_only)
+      const options = widget.options
+        ? {
+            canvasOnly: widget.options.canvasOnly,
+            advanced: widget.advanced,
+            hidden: widget.options.hidden,
+            read_only: widget.options.read_only
+          }
+        : undefined
+      const subgraphId = node.isSubgraphNode() && node.subgraph.id
+
+      const localId = isProxyWidget(widget)
+        ? widget._overlay?.nodeId
+        : undefined
+      const nodeId =
+        subgraphId && localId ? `${subgraphId}:${localId}` : undefined
+      const name = isProxyWidget(widget)
+        ? widget._overlay.widgetName
+        : widget.name
+
       return {
-        name: widget.name,
+        nodeId,
+        name,
         type: widget.type,
         ...sharedEnhancements,
         callback,
         hasLayoutSize: typeof widget.computeLayoutSize === 'function',
         isDOMWidget: isDOMWidget(widget),
+        options,
         slotMetadata: slotInfo
       }
     } catch (error) {
       return {
         name: widget.name || 'unknown',
-        type: widget.type || 'text',
-        value: undefined
+        type: widget.type || 'text'
       }
     }
   }
@@ -314,7 +308,8 @@ export function extractVueNodeData(node: LGraphNode): VueNodeData {
     color: node.color || undefined,
     bgcolor: node.bgcolor || undefined,
     resizable: node.resizable,
-    shape: node.shape
+    shape: node.shape,
+    showAdvanced: node.showAdvanced
   }
 }
 
@@ -398,6 +393,9 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
     vueNodeData.set(id, extractVueNodeData(node))
 
     const initializeVueNodeLayout = () => {
+      // Check if the node was removed mid-sequence
+      if (!nodeRefs.has(id)) return
+
       // Extract actual positions after configure() has potentially updated them
       const nodePosition = { x: node.pos[0], y: node.pos[1] }
       const nodeSize = { width: node.size[0], height: node.size[1] }
@@ -521,6 +519,15 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
                 }
               })
               break
+            case 'flags.ghost':
+              vueNodeData.set(nodeId, {
+                ...currentData,
+                flags: {
+                  ...currentData.flags,
+                  ghost: Boolean(propertyEvent.newValue)
+                }
+              })
+              break
             case 'flags.pinned':
               vueNodeData.set(nodeId, {
                 ...currentData,
@@ -565,6 +572,13 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
                     ? propertyEvent.newValue
                     : undefined
               })
+              break
+            case 'showAdvanced':
+              vueNodeData.set(nodeId, {
+                ...currentData,
+                showAdvanced: Boolean(propertyEvent.newValue)
+              })
+              break
           }
         }
       },

@@ -7,14 +7,8 @@
     {
       "id": 11,
       "type": "422723e8-4bf6-438c-823f-881ca81acead",
-      "pos": [
-        400,
-        300
-      ],
-      "size": [
-        210,
-        168
-      ],
+      "pos": [400, 300],
+      "size": [210, 168],
       "flags": {},
       "order": 0,
       "mode": 0,
@@ -47,9 +41,7 @@
       ],
       "outputs": [],
       "properties": {},
-      "widgets_values": [
-        ""
-      ]
+      "widgets_values": [""]
     }
   ],
   "links": [],
@@ -70,30 +62,18 @@
         "name": "New Subgraph",
         "inputNode": {
           "id": -10,
-          "bounding": [
-            481.59912109375,
-            379.13336181640625,
-            120,
-            160
-          ]
+          "bounding": [481.59912109375, 379.13336181640625, 120, 160]
         },
         "outputNode": {
           "id": -20,
-          "bounding": [
-            1121.59912109375,
-            379.13336181640625,
-            120,
-            40
-          ]
+          "bounding": [1121.59912109375, 379.13336181640625, 120, 40]
         },
         "inputs": [
           {
             "id": "0f07c10e-5705-4764-9b24-b69606c6dbcc",
             "name": "text",
             "type": "STRING",
-            "linkIds": [
-              10
-            ],
+            "linkIds": [10],
             "pos": {
               "0": 581.59912109375,
               "1": 399.13336181640625
@@ -103,9 +83,7 @@
             "id": "214a5060-24dd-4299-ab78-8027dc5b9c59",
             "name": "clip",
             "type": "CLIP",
-            "linkIds": [
-              11
-            ],
+            "linkIds": [11],
             "pos": {
               "0": 581.59912109375,
               "1": 419.13336181640625
@@ -115,9 +93,7 @@
             "id": "8ab94c5d-e7df-433c-9177-482a32340552",
             "name": "model",
             "type": "MODEL",
-            "linkIds": [
-              12
-            ],
+            "linkIds": [12],
             "pos": {
               "0": 581.59912109375,
               "1": 439.13336181640625
@@ -127,9 +103,7 @@
             "id": "8a4cd719-8c67-473b-9b44-ac0582d02641",
             "name": "positive",
             "type": "CONDITIONING",
-            "linkIds": [
-              13
-            ],
+            "linkIds": [13],
             "pos": {
               "0": 581.59912109375,
               "1": 459.13336181640625
@@ -139,9 +113,7 @@
             "id": "a78d6b3a-ad40-4300-b0a5-2cdbdb8dc135",
             "name": "negative",
             "type": "CONDITIONING",
-            "linkIds": [
-              14
-            ],
+            "linkIds": [14],
             "pos": {
               "0": 581.59912109375,
               "1": 479.13336181640625
@@ -151,9 +123,7 @@
             "id": "4c7abe0c-902d-49ef-a5b0-cbf02b50b693",
             "name": "latent_image",
             "type": "LATENT",
-            "linkIds": [
-              15
-            ],
+            "linkIds": [15],
             "pos": {
               "0": 581.59912109375,
               "1": 499.13336181640625
@@ -166,14 +136,8 @@
           {
             "id": 10,
             "type": "CLIPTextEncode",
-            "pos": [
-              661.59912109375,
-              314.13336181640625
-            ],
-            "size": [
-              400,
-              200
-            ],
+            "pos": [661.59912109375, 314.13336181640625],
+            "size": [400, 200],
             "flags": {},
             "order": 1,
             "mode": 0,
@@ -205,21 +169,13 @@
             "properties": {
               "Node name for S&R": "CLIPTextEncode"
             },
-            "widgets_values": [
-              ""
-            ]
+            "widgets_values": [""]
           },
           {
             "id": 11,
             "type": "KSampler",
-            "pos": [
-              674.1234741210938,
-              570.5839233398438
-            ],
-            "size": [
-              270,
-              262
-            ],
+            "pos": [674.1234741210938, 570.5839233398438],
+            "size": [270, 262],
             "flags": {},
             "order": 0,
             "mode": 0,
@@ -260,15 +216,7 @@
             "properties": {
               "Node name for S&R": "KSampler"
             },
-            "widgets_values": [
-              0,
-              "randomize",
-              20,
-              8,
-              "euler",
-              "simple",
-              1
-            ]
+            "widgets_values": [0, "randomize", 20, 8, "euler", "simple", 1]
           }
         ],
         "groups": [],
@@ -330,10 +278,7 @@
   "extra": {
     "ds": {
       "scale": 0.9581355200690549,
-      "offset": [
-        258.6405769416877,
-        147.17927927927929
-      ]
+      "offset": [258.6405769416877, 147.17927927927929]
     },
     "frontendVersion": "1.24.1"
   },

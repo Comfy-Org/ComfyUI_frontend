@@ -7,14 +7,8 @@
     {
       "id": 4,
       "type": "KSampler",
-      "pos": [
-        867.4669799804688,
-        347.22369384765625
-      ],
-      "size": [
-        315,
-        262
-      ],
+      "pos": [867.4669799804688, 347.22369384765625],
+      "size": [315, 262],
       "flags": {},
       "order": 1,
       "mode": 0,
@@ -58,27 +52,13 @@
       "properties": {
         "Node name for S&R": "KSampler"
       },
-      "widgets_values": [
-        0,
-        "randomize",
-        20,
-        8,
-        "euler",
-        "normal",
-        1
-      ]
+      "widgets_values": [0, "randomize", 20, 8, "euler", "normal", 1]
     },
     {
       "id": 5,
       "type": "PrimitiveInt",
-      "pos": [
-        443.0852355957031,
-        441.131591796875
-      ],
-      "size": [
-        315,
-        82
-      ],
+      "pos": [443.0852355957031, 441.131591796875],
+      "size": [315, 82],
       "flags": {},
       "order": 0,
       "mode": 0,
@@ -87,39 +67,22 @@
         {
           "name": "INT",
           "type": "INT",
-          "links": [
-            3
-          ]
+          "links": [3]
         }
       ],
       "properties": {
         "Node name for S&R": "PrimitiveInt"
       },
-      "widgets_values": [
-        0,
-        "randomize"
-      ]
+      "widgets_values": [0, "randomize"]
     }
   ],
-  "links": [
-    [
-      3,
-      5,
-      0,
-      4,
-      5,
-      "INT"
-    ]
-  ],
+  "links": [[3, 5, 0, 4, 5, "INT"]],
   "groups": [],
   "config": {},
   "extra": {
     "ds": {
       "scale": 1.9487171000000016,
-      "offset": [
-        -325.57196748514497,
-        -168.13150517966463
-      ]
+      "offset": [-325.57196748514497, -168.13150517966463]
     }
   },
   "version": 0.4

@@ -65,7 +65,7 @@ const zImageCompareInputSpec = zBaseInputOptions.extend({
 })
 
 const zBoundingBoxInputSpec = zBaseInputOptions.extend({
-  type: z.literal('BOUNDINGBOX'),
+  type: z.literal('BOUNDING_BOX'),
   name: z.string(),
   isOptional: z.boolean().optional(),
   component: z.enum(['ImageCrop']).optional(),
@@ -174,6 +174,7 @@ export const zComfyNodeDef = z.object({
   python_module: z.string(),
   deprecated: z.boolean().optional(),
   experimental: z.boolean().optional(),
+  dev_only: z.boolean().optional(),
   api_node: z.boolean().optional()
 })
 

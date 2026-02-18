@@ -1,4 +1,5 @@
-import { createPinia, setActivePinia } from 'pinia'
+import { createTestingPinia } from '@pinia/testing'
+import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
@@ -9,6 +10,7 @@ import { useNodeOutputStore } from '@/stores/imagePreviewStore'
 import * as litegraphUtil from '@/utils/litegraphUtil'
 
 vi.mock('@/utils/litegraphUtil', () => ({
+  isAnimatedOutput: vi.fn(),
   isVideoNode: vi.fn()
 }))
 
@@ -19,7 +21,9 @@ vi.mock('@/scripts/app', () => ({
     getPreviewFormatParam: vi.fn(() => '&format=test_webp'),
     rootGraph: {
       getNodeById: (...args: unknown[]) => mockGetNodeById(...args)
-    }
+    },
+    nodeOutputs: {} as Record<string, unknown>,
+    nodePreviewImages: {} as Record<string, string[]>
   }
 }))
 
@@ -34,14 +38,130 @@ const createMockOutputs = (
   images?: ExecutedWsMessage['output']['images']
 ): ExecutedWsMessage['output'] => ({ images })
 
+vi.mock('@/stores/executionStore', () => ({
+  useExecutionStore: vi.fn(() => ({
+    executionIdToNodeLocatorId: vi.fn((id: string) => id)
+  }))
+}))
+
+vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
+  useWorkflowStore: vi.fn(() => ({
+    nodeIdToNodeLocatorId: vi.fn((id: string | number) => String(id)),
+    nodeToNodeLocatorId: vi.fn((node: { id: number }) => String(node.id))
+  }))
+}))
+
+describe('imagePreviewStore setNodeOutputsByExecutionId with merge', () => {
+  beforeEach(() => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
+    vi.clearAllMocks()
+    app.nodeOutputs = {}
+    app.nodePreviewImages = {}
+  })
+
+  it('should update reactive nodeOutputs.value when merging outputs', () => {
+    const store = useNodeOutputStore()
+    const executionId = '1'
+
+    const initialOutput = createMockOutputs([{ filename: 'a.png' }])
+    store.setNodeOutputsByExecutionId(executionId, initialOutput)
+
+    expect(app.nodeOutputs[executionId]?.images).toHaveLength(1)
+    expect(store.nodeOutputs[executionId]?.images).toHaveLength(1)
+
+    const newOutput = createMockOutputs([{ filename: 'b.png' }])
+    store.setNodeOutputsByExecutionId(executionId, newOutput, { merge: true })
+
+    expect(app.nodeOutputs[executionId]?.images).toHaveLength(2)
+    expect(store.nodeOutputs[executionId]?.images).toHaveLength(2)
+  })
+
+  it('should assign to reactive ref after merge for Vue reactivity', () => {
+    const store = useNodeOutputStore()
+    const executionId = '1'
+
+    const initialOutput = createMockOutputs([{ filename: 'a.png' }])
+    store.setNodeOutputsByExecutionId(executionId, initialOutput)
+
+    const newOutput = createMockOutputs([{ filename: 'b.png' }])
+
+    store.setNodeOutputsByExecutionId(executionId, newOutput, { merge: true })
+
+    expect(store.nodeOutputs[executionId]).toStrictEqual(
+      app.nodeOutputs[executionId]
+    )
+    expect(store.nodeOutputs[executionId]?.images).toHaveLength(2)
+  })
+
+  it('should create a new object reference on merge so Vue detects the change', () => {
+    const store = useNodeOutputStore()
+    const executionId = '1'
+
+    const initialOutput = createMockOutputs([{ filename: 'a.png' }])
+    store.setNodeOutputsByExecutionId(executionId, initialOutput)
+
+    const refBefore = store.nodeOutputs[executionId]
+
+    const newOutput = createMockOutputs([{ filename: 'b.png' }])
+    store.setNodeOutputsByExecutionId(executionId, newOutput, { merge: true })
+
+    const refAfter = store.nodeOutputs[executionId]
+
+    expect(refAfter).not.toBe(refBefore)
+    expect(refAfter?.images).toHaveLength(2)
+  })
+})
+
+describe('imagePreviewStore restoreOutputs', () => {
+  beforeEach(() => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
+    vi.clearAllMocks()
+    app.nodeOutputs = {}
+    app.nodePreviewImages = {}
+  })
+
+  it('should keep reactivity after restoreOutputs followed by setNodeOutputsByExecutionId', () => {
+    const store = useNodeOutputStore()
+
+    // Simulate execution: set outputs for node "4" (e.g., PreviewImage)
+    const executionOutput = createMockOutputs([
+      { filename: 'ComfyUI_00001.png', subfolder: '', type: 'temp' }
+    ])
+    const savedOutputs: Record<string, ExecutedWsMessage['output']> = {
+      '4': executionOutput
+    }
+
+    // Simulate undo: restoreOutputs makes app.nodeOutputs and the ref
+    // share the same underlying object if not handled correctly.
+    store.restoreOutputs(savedOutputs)
+
+    expect(store.nodeOutputs['4']).toStrictEqual(executionOutput)
+    expect(store.nodeOutputs['3']).toBeUndefined()
+
+    // Simulate widget callback setting outputs for node "3" (e.g., LoadImage)
+    const widgetOutput = createMockOutputs([
+      { filename: 'example.png', subfolder: '', type: 'input' }
+    ])
+    store.setNodeOutputsByExecutionId('3', widgetOutput)
+
+    // The reactive store must reflect the new output.
+    // Before the fix, the raw write to app.nodeOutputs would mutate the
+    // proxy's target before the proxy write, causing Vue to skip the
+    // reactivity update.
+    expect(store.nodeOutputs['3']).toStrictEqual(widgetOutput)
+    expect(app.nodeOutputs['3']).toStrictEqual(widgetOutput)
+  })
+})
+
 describe('imagePreviewStore getPreviewParam', () => {
   beforeEach(() => {
-    setActivePinia(createPinia())
+    setActivePinia(createTestingPinia({ stubActions: false }))
     vi.clearAllMocks()
+    vi.mocked(litegraphUtil.isAnimatedOutput).mockReturnValue(false)
     vi.mocked(litegraphUtil.isVideoNode).mockReturnValue(false)
   })
 
-  it('should return empty string if node.animatedImages is true', () => {
+  it('should return empty string if output is animated', () => {
     const store = useNodeOutputStore()
     const node = createMockNode({ animatedImages: true })
     const outputs = createMockOutputs([{ filename: 'img.png' }])

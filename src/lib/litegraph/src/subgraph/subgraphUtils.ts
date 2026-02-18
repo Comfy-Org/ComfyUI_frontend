@@ -4,6 +4,7 @@ import { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { LLink } from '@/lib/litegraph/src/LLink'
 import type { ResolvedConnection } from '@/lib/litegraph/src/LLink'
 import { Reroute } from '@/lib/litegraph/src/Reroute'
+import type { RerouteId } from '@/lib/litegraph/src/Reroute'
 import {
   SUBGRAPH_INPUT_ID,
   SUBGRAPH_OUTPUT_ID
@@ -259,10 +260,29 @@ export function groupResolvedByOutput(
 
   return groupedByOutput
 }
+function mapReroutes(
+  link: SerialisableLLink,
+  reroutes: Map<RerouteId, Reroute>
+) {
+  let child: SerialisableLLink | Reroute = link
+  let nextReroute =
+    child.parentId === undefined ? undefined : reroutes.get(child.parentId)
+
+  while (child.parentId !== undefined && nextReroute) {
+    child = nextReroute
+    nextReroute =
+      child.parentId === undefined ? undefined : reroutes.get(child.parentId)
+  }
+
+  const lastId = child.parentId
+  child.parentId = undefined
+  return lastId
+}
 
 export function mapSubgraphInputsAndLinks(
   resolvedInputLinks: ResolvedConnection[],
-  links: SerialisableLLink[]
+  links: SerialisableLLink[],
+  reroutes: Map<RerouteId, Reroute>
 ): SubgraphIO[] {
   // Group matching links
   const groupedByOutput = groupResolvedByOutput(resolvedInputLinks)
@@ -279,8 +299,10 @@ export function mapSubgraphInputsAndLinks(
       if (!input) continue
 
       const linkData = link.asSerialisable()
+      link.parentId = mapReroutes(link, reroutes)
       linkData.origin_id = SUBGRAPH_INPUT_ID
       linkData.origin_slot = inputs.length
+
       links.push(linkData)
       inputLinks.push(linkData)
     }
@@ -340,7 +362,8 @@ export function mapSubgraphInputsAndLinks(
  */
 export function mapSubgraphOutputsAndLinks(
   resolvedOutputLinks: ResolvedConnection[],
-  links: SerialisableLLink[]
+  links: SerialisableLLink[],
+  reroutes: Map<RerouteId, Reroute>
 ): SubgraphIO[] {
   // Group matching links
   const groupedByOutput = groupResolvedByOutput(resolvedOutputLinks)
@@ -355,10 +378,11 @@ export function mapSubgraphOutputsAndLinks(
       const { link, output } = resolved
       if (!output) continue
 
-      // Link
       const linkData = link.asSerialisable()
+      linkData.parentId = mapReroutes(link, reroutes)
       linkData.target_id = SUBGRAPH_OUTPUT_ID
       linkData.target_slot = outputs.length
+
       links.push(linkData)
       outputLinks.push(linkData)
     }

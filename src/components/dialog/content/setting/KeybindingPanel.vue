@@ -1,11 +1,9 @@
 <template>
-  <PanelTemplate value="Keybinding" class="keybinding-panel">
-    <template #header>
-      <SearchBox
-        v-model="filters['global'].value"
-        :placeholder="$t('g.searchKeybindings') + '...'"
-      />
-    </template>
+  <div class="keybinding-panel flex flex-col gap-2">
+    <SearchBox
+      v-model="filters['global'].value"
+      :placeholder="$t('g.searchPlaceholder', { subject: $t('g.keybindings') })"
+    />
 
     <DataTable
       v-model:selection="selectedCommandData"
@@ -133,7 +131,7 @@
       <i class="pi pi-replay" />
       {{ $t('g.resetAll') }}
     </Button>
-  </PanelTemplate>
+  </div>
 </template>
 
 <script setup lang="ts">
@@ -150,16 +148,13 @@ import { useI18n } from 'vue-i18n'
 
 import SearchBox from '@/components/common/SearchBox.vue'
 import Button from '@/components/ui/button/Button.vue'
-import { useKeybindingService } from '@/services/keybindingService'
+import { KeyComboImpl } from '@/platform/keybindings/keyCombo'
+import { KeybindingImpl } from '@/platform/keybindings/keybinding'
+import { useKeybindingService } from '@/platform/keybindings/keybindingService'
+import { useKeybindingStore } from '@/platform/keybindings/keybindingStore'
 import { useCommandStore } from '@/stores/commandStore'
-import {
-  KeyComboImpl,
-  KeybindingImpl,
-  useKeybindingStore
-} from '@/stores/keybindingStore'
 import { normalizeI18nKey } from '@/utils/formatUtil'
 
-import PanelTemplate from './PanelTemplate.vue'
 import KeyComboDisplay from './keybinding/KeyComboDisplay.vue'
 
 const filters = ref({
@@ -265,18 +260,15 @@ function cancelEdit() {
 }
 
 async function saveKeybinding() {
-  if (currentEditingCommand.value && newBindingKeyCombo.value) {
-    const updated = keybindingStore.updateKeybindingOnCommand(
-      new KeybindingImpl({
-        commandId: currentEditingCommand.value.id,
-        combo: newBindingKeyCombo.value
-      })
-    )
-    if (updated) {
-      await keybindingService.persistUserKeybindings()
-    }
-  }
+  const commandId = currentEditingCommand.value?.id
+  const combo = newBindingKeyCombo.value
   cancelEdit()
+  if (!combo || commandId == undefined) return
+
+  const updated = keybindingStore.updateKeybindingOnCommand(
+    new KeybindingImpl({ commandId, combo })
+  )
+  if (updated) await keybindingService.persistUserKeybindings()
 }
 
 async function resetKeybinding(commandData: ICommandData) {

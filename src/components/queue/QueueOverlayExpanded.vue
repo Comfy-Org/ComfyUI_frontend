@@ -4,46 +4,17 @@
       :header-title="headerTitle"
       :show-concurrent-indicator="showConcurrentIndicator"
       :concurrent-workflow-count="concurrentWorkflowCount"
+      :queued-count="queuedCount"
       @clear-history="$emit('clearHistory')"
+      @clear-queued="$emit('clearQueued')"
     />
-
-    <div class="flex items-center justify-between px-3">
-      <Button
-        class="grow gap-1 justify-center"
-        variant="secondary"
-        size="sm"
-        @click="$emit('showAssets')"
-      >
-        <i class="icon-[comfy--image-ai-edit] size-4" />
-        <span>{{ t('sideToolbar.queueProgressOverlay.showAssets') }}</span>
-      </Button>
-      <div class="ml-4 inline-flex items-center">
-        <div
-          class="inline-flex h-6 items-center text-[12px] leading-none text-text-primary opacity-90"
-        >
-          <span class="font-bold">{{ queuedCount }}</span>
-          <span class="ml-1">{{
-            t('sideToolbar.queueProgressOverlay.queuedSuffix')
-          }}</span>
-        </div>
-        <Button
-          v-if="queuedCount > 0"
-          class="ml-2"
-          variant="destructive"
-          size="icon"
-          :aria-label="t('sideToolbar.queueProgressOverlay.clearQueued')"
-          @click="$emit('clearQueued')"
-        >
-          <i class="icon-[lucide--list-x] size-4" />
-        </Button>
-      </div>
-    </div>
 
     <JobFiltersBar
       :selected-job-tab="selectedJobTab"
       :selected-workflow-filter="selectedWorkflowFilter"
       :selected-sort-mode="selectedSortMode"
       :has-failed-jobs="hasFailedJobs"
+      @show-assets="$emit('showAssets')"
       @update:selected-job-tab="$emit('update:selectedJobTab', $event)"
       @update:selected-workflow-filter="
         $emit('update:selectedWorkflowFilter', $event)
@@ -71,9 +42,7 @@
 
 <script setup lang="ts">
 import { ref } from 'vue'
-import { useI18n } from 'vue-i18n'
 
-import Button from '@/components/ui/button/Button.vue'
 import type {
   JobGroup,
   JobListItem,
@@ -111,8 +80,6 @@ const emit = defineEmits<{
   (e: 'deleteItem', item: JobListItem): void
   (e: 'viewItem', item: JobListItem): void
 }>()
-
-const { t } = useI18n()
 
 const currentMenuItem = ref<JobListItem | null>(null)
 const jobContextMenuRef = ref<InstanceType<typeof JobContextMenu> | null>(null)

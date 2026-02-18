@@ -89,8 +89,9 @@
           <SearchBox
             ref="searchBoxRef"
             v-model:model-value="searchQuery"
+            data-testid="node-library-search"
             class="node-lib-search-box"
-            :placeholder="$t('g.searchNodes') + '...'"
+            :placeholder="$t('g.searchPlaceholder', { subject: $t('g.nodes') })"
             filter-icon="pi pi-filter"
             :filters
             @search="handleSearch"
@@ -117,9 +118,13 @@
           />
           <TreeExplorer
             v-model:expanded-keys="expandedKeys"
+            data-testid="node-library-tree"
             class="node-lib-tree-explorer"
             :root="renderedRoot"
           >
+            <template #folder="{ node }">
+              <NodeTreeFolder :node="node" />
+            </template>
             <template #node="{ node }">
               <NodeTreeLeaf :node="node" :open-node-help="openHelp" />
             </template>
@@ -156,6 +161,7 @@ import NodePreview from '@/components/node/NodePreview.vue'
 import NodeSearchFilter from '@/components/searchbox/NodeSearchFilter.vue'
 import SidebarTabTemplate from '@/components/sidebar/tabs/SidebarTabTemplate.vue'
 import NodeHelpPage from '@/components/sidebar/tabs/nodeLibrary/NodeHelpPage.vue'
+import NodeTreeFolder from '@/components/sidebar/tabs/nodeLibrary/NodeTreeFolder.vue'
 import NodeTreeLeaf from '@/components/sidebar/tabs/nodeLibrary/NodeTreeLeaf.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useTreeExpansion } from '@/composables/useTreeExpansion'

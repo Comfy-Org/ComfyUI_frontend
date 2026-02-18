@@ -5,7 +5,9 @@
   .list-scale-move,
   .list-scale-enter-active,
   .list-scale-leave-active {
-    transition: opacity 150ms ease, transform 150ms ease;
+    transition:
+      opacity 150ms ease,
+      transform 150ms ease;
   }
 
   .list-scale-enter-from,

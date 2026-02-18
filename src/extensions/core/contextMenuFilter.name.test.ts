@@ -1,6 +1,10 @@
 import { describe, expect, it, vi } from 'vitest'
 
 import { legacyMenuCompat } from '@/lib/litegraph/src/contextMenuCompat'
+import type {
+  IContextMenuValue,
+  LGraphNode
+} from '@/lib/litegraph/src/litegraph'
 import { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 
 /**
@@ -18,11 +22,12 @@ describe('Context Menu Extension Name in Warnings', () => {
 
     // Extension monkey-patches the method
     const original = LGraphCanvas.prototype.getCanvasMenuOptions
-    LGraphCanvas.prototype.getCanvasMenuOptions = function (...args: any[]) {
-      const items = (original as any).apply(this, args)
-      items.push({ content: 'My Custom Menu Item', callback: () => {} })
-      return items
-    }
+    LGraphCanvas.prototype.getCanvasMenuOptions =
+      function (): (IContextMenuValue | null)[] {
+        const items = original.call(this)
+        items.push({ content: 'My Custom Menu Item', callback: () => {} })
+        return items
+      }
 
     // Clear extension (happens after setup completes)
     legacyMenuCompat.setCurrentExtension(null)
@@ -49,8 +54,8 @@ describe('Context Menu Extension Name in Warnings', () => {
 
     // Extension monkey-patches the method
     const original = LGraphCanvas.prototype.getNodeMenuOptions
-    LGraphCanvas.prototype.getNodeMenuOptions = function (...args: any[]) {
-      const items = (original as any).apply(this, args)
+    LGraphCanvas.prototype.getNodeMenuOptions = function (node: LGraphNode) {
+      const items = original.call(this, node)
       items.push({ content: 'My Node Menu Item', callback: () => {} })
       return items
     }

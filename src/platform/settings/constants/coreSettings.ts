@@ -3,7 +3,7 @@ import { isCloud } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import type { SettingParams } from '@/platform/settings/types'
 import type { ColorPalettes } from '@/schemas/colorPaletteSchema'
-import type { Keybinding } from '@/schemas/keyBindingSchema'
+import type { Keybinding } from '@/platform/keybindings/types'
 import { NodeBadgeMode } from '@/types/nodeSource'
 import { LinkReleaseTriggerAction } from '@/types/searchBoxTypes'
 import { breakpointsTailwind } from '@vueuse/core'
@@ -165,18 +165,22 @@ export const CORE_SETTINGS: SettingParams[] = [
     defaultsByInstallVersion: {
       '1.25.0': 'legacy'
     },
-    onChange: async (newValue: string, oldValue?: string) => {
+    onChange: async (val: unknown, old?: unknown) => {
+      const newValue = val as string
+      const oldValue = old as string | undefined
       if (!oldValue) return
       const settingStore = useSettingStore()
 
       if (newValue === 'standard') {
-        // Update related settings to match standard mode - select + panning
-        await settingStore.set('Comfy.Canvas.LeftMouseClickBehavior', 'select')
-        await settingStore.set('Comfy.Canvas.MouseWheelScroll', 'panning')
+        await settingStore.setMany({
+          'Comfy.Canvas.LeftMouseClickBehavior': 'select',
+          'Comfy.Canvas.MouseWheelScroll': 'panning'
+        })
       } else if (newValue === 'legacy') {
-        // Update related settings to match legacy mode - panning + zoom
-        await settingStore.set('Comfy.Canvas.LeftMouseClickBehavior', 'panning')
-        await settingStore.set('Comfy.Canvas.MouseWheelScroll', 'zoom')
+        await settingStore.setMany({
+          'Comfy.Canvas.LeftMouseClickBehavior': 'panning',
+          'Comfy.Canvas.MouseWheelScroll': 'zoom'
+        })
       }
     }
   },
@@ -192,7 +196,8 @@ export const CORE_SETTINGS: SettingParams[] = [
       { value: 'select', text: 'Select' }
     ],
     versionAdded: '1.27.4',
-    onChange: async (newValue: string) => {
+    onChange: async (val: unknown) => {
+      const newValue = val as string
       const settingStore = useSettingStore()
 
       const navigationMode = settingStore.get('Comfy.Canvas.NavigationMode')
@@ -221,7 +226,8 @@ export const CORE_SETTINGS: SettingParams[] = [
       { value: 'zoom', text: 'Zoom in/out' }
     ],
     versionAdded: '1.27.4',
-    onChange: async (newValue: string) => {
+    onChange: async (val: unknown) => {
+      const newValue = val as string
       const settingStore = useSettingStore()
 
       const navigationMode = settingStore.get('Comfy.Canvas.NavigationMode')
@@ -567,7 +573,8 @@ export const CORE_SETTINGS: SettingParams[] = [
     type: 'combo',
     options: ['Disabled', 'Top'],
     tooltip: 'Enable the redesigned top menu bar.',
-    migrateDeprecatedValue: (value: string) => {
+    migrateDeprecatedValue: (val: unknown) => {
+      const value = val as string
       // Floating is now supported by dragging the docked actionbar off.
       if (value === 'Floating') {
         return 'Top'
@@ -583,7 +590,8 @@ export const CORE_SETTINGS: SettingParams[] = [
     type: 'combo',
     options: ['Sidebar', 'Topbar'],
     defaultValue: 'Topbar',
-    migrateDeprecatedValue: (value: string) => {
+    migrateDeprecatedValue: (val: unknown) => {
+      const value = val as string
       if (value === 'Topbar (2nd-row)') {
         return 'Topbar'
       }
@@ -603,7 +611,7 @@ export const CORE_SETTINGS: SettingParams[] = [
     tooltip:
       'The maximum number of tasks added to the queue at one button click',
     type: 'number',
-    defaultValue: isCloud ? 4 : 100,
+    defaultValue: isCloud ? 32 : 100,
     versionAdded: '1.3.5'
   },
   {
@@ -613,9 +621,8 @@ export const CORE_SETTINGS: SettingParams[] = [
     defaultValue: [] as Keybinding[],
     versionAdded: '1.3.7',
     versionModified: '1.7.3',
-    migrateDeprecatedValue: (
-      value: (Keybinding & { targetSelector?: string })[]
-    ) => {
+    migrateDeprecatedValue: (val: unknown) => {
+      const value = val as (Keybinding & { targetSelector?: string })[]
       return value.map((keybinding) => {
         if (keybinding.targetSelector === '#graph-canvas') {
           keybinding.targetElementId = 'graph-canvas-container'
@@ -642,6 +649,8 @@ export const CORE_SETTINGS: SettingParams[] = [
     id: 'Comfy.LinkRenderMode',
     category: ['LiteGraph', 'Graph', 'LinkRenderMode'],
     name: 'Link Render Mode',
+    tooltip:
+      'Controls the appearance and visibility of connection links between nodes on the canvas.',
     defaultValue: 2,
     type: 'combo',
     options: [
@@ -793,6 +802,8 @@ export const CORE_SETTINGS: SettingParams[] = [
     id: 'pysssss.SnapToGrid',
     category: ['LiteGraph', 'Canvas', 'AlwaysSnapToGrid'],
     name: 'Always snap to grid',
+    tooltip:
+      'When enabled, nodes will automatically align to the grid when moved or resized.',
     type: 'boolean',
     defaultValue: false,
     versionAdded: '1.3.13'
@@ -880,7 +891,8 @@ export const CORE_SETTINGS: SettingParams[] = [
     type: 'hidden',
     defaultValue: 'dark',
     versionModified: '1.6.7',
-    migrateDeprecatedValue(value: string) {
+    migrateDeprecatedValue(val: unknown) {
+      const value = val as string
       // Legacy custom palettes were prefixed with 'custom_'
       return value.startsWith('custom_') ? value.replace('custom_', '') : value
     }
@@ -960,6 +972,8 @@ export const CORE_SETTINGS: SettingParams[] = [
     id: 'Comfy.Canvas.SelectionToolbox',
     category: ['LiteGraph', 'Canvas', 'SelectionToolbox'],
     name: 'Show selection toolbox',
+    tooltip:
+      'Display a floating toolbar when nodes are selected, providing quick access to common actions.',
     type: 'boolean',
     defaultValue: true,
     versionAdded: '1.10.5'
@@ -1172,7 +1186,51 @@ export const CORE_SETTINGS: SettingParams[] = [
     type: 'boolean',
     tooltip:
       'Replaces the floating job queue panel with an equivalent job queue embedded in the Assets side panel. You can disable this to return to the floating panel layout.',
-    defaultValue: true,
+    defaultValue: false,
     experimental: true
+  },
+  {
+    id: 'Comfy.Node.AlwaysShowAdvancedWidgets',
+    category: ['LiteGraph', 'Node Widget', 'AlwaysShowAdvancedWidgets'],
+    name: 'Always show advanced widgets on all nodes',
+    tooltip:
+      'When enabled, advanced widgets are always visible on all nodes without needing to expand them individually.',
+    type: 'boolean',
+    defaultValue: false,
+    versionAdded: '1.39.0'
+  },
+  {
+    id: 'Comfy.NodeReplacement.Enabled',
+    category: ['Comfy', 'Workflow', 'NodeReplacement'],
+    name: 'Enable node replacement suggestions',
+    tooltip:
+      'When enabled, missing nodes with known replacements will be shown as replaceable in the missing nodes dialog, allowing you to review and apply replacements.',
+    type: 'boolean',
+    defaultValue: false,
+    experimental: true,
+    versionAdded: '1.40.0'
+  },
+  {
+    id: 'Comfy.Graph.DeduplicateSubgraphNodeIds',
+    category: ['Comfy', 'Graph', 'Subgraph'],
+    name: 'Deduplicate subgraph node IDs',
+    tooltip:
+      'Automatically reassign duplicate node IDs in subgraphs when loading a workflow.',
+    type: 'boolean',
+    deprecated: true,
+    defaultValue: true,
+    experimental: true,
+    versionAdded: '1.40.0'
+  },
+  {
+    id: 'Comfy.RightSidePanel.ShowErrorsTab',
+    category: ['Comfy', 'Error System'],
+    name: 'Show errors tab in side panel',
+    tooltip:
+      'When enabled, an errors tab is displayed in the right side panel to show workflow execution errors at a glance.',
+    type: 'boolean',
+    defaultValue: false,
+    experimental: true,
+    versionAdded: '1.40.0'
   }
 ]

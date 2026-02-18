@@ -1,6 +1,7 @@
 import { createTestingPinia } from '@pinia/testing'
 import type { VueWrapper } from '@vue/test-utils'
 import { mount } from '@vue/test-utils'
+import type { Mock } from 'vitest'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
@@ -54,8 +55,15 @@ vi.mock('@/composables/bottomPanelTabs/useTerminal', () => ({
 }))
 
 vi.mock('@/utils/envUtil', () => ({
-  isElectron: vi.fn(() => false),
   electronAPI: vi.fn(() => null)
+}))
+
+const mockData = vi.hoisted(() => ({ isDesktop: false }))
+
+vi.mock('@/platform/distribution/types', () => ({
+  get isDesktop() {
+    return mockData.isDesktop
+  }
 }))
 
 // Mock clipboard API
@@ -151,8 +159,8 @@ describe('BaseTerminal', () => {
     // Trigger the selection change callback that was registered during mount
     expect(mockTerminal.onSelectionChange).toHaveBeenCalled()
     // Access the mock calls - TypeScript can't infer the mock structure dynamically
-    const selectionCallback = (mockTerminal.onSelectionChange as any).mock
-      .calls[0][0]
+    const mockCalls = (mockTerminal.onSelectionChange as Mock).mock.calls
+    const selectionCallback = mockCalls[0][0] as () => void
     selectionCallback()
     await nextTick()
 

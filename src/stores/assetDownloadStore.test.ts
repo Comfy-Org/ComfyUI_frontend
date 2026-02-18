@@ -236,4 +236,80 @@ describe('useAssetDownloadStore', () => {
       expect(store.finishedDownloads).toHaveLength(0)
     })
   })
+
+  describe('session download tracking', () => {
+    it('counts unacknowledged completed downloads with asset IDs', () => {
+      const store = useAssetDownloadStore()
+
+      dispatch(
+        createDownloadMessage({
+          status: 'completed',
+          progress: 100,
+          asset_id: 'asset-456'
+        })
+      )
+
+      expect(store.sessionDownloadCount).toBe(1)
+    })
+
+    it('does not count completed downloads without asset IDs', () => {
+      const store = useAssetDownloadStore()
+
+      dispatch(
+        createDownloadMessage({
+          status: 'completed',
+          progress: 100,
+          asset_id: undefined
+        })
+      )
+
+      expect(store.sessionDownloadCount).toBe(0)
+    })
+
+    it('does not count failed downloads', () => {
+      const store = useAssetDownloadStore()
+
+      dispatch(
+        createDownloadMessage({
+          status: 'failed',
+          asset_id: 'asset-456'
+        })
+      )
+
+      expect(store.sessionDownloadCount).toBe(0)
+    })
+
+    it('isDownloadedThisSession returns true for unacknowledged downloads', () => {
+      const store = useAssetDownloadStore()
+
+      dispatch(
+        createDownloadMessage({
+          status: 'completed',
+          progress: 100,
+          asset_id: 'asset-456'
+        })
+      )
+
+      expect(store.isDownloadedThisSession('asset-456')).toBe(true)
+      expect(store.isDownloadedThisSession('other-asset')).toBe(false)
+    })
+
+    it('acknowledgeAsset decrements session count', () => {
+      const store = useAssetDownloadStore()
+
+      dispatch(
+        createDownloadMessage({
+          status: 'completed',
+          progress: 100,
+          asset_id: 'asset-456'
+        })
+      )
+      expect(store.sessionDownloadCount).toBe(1)
+
+      store.acknowledgeAsset('asset-456')
+
+      expect(store.sessionDownloadCount).toBe(0)
+      expect(store.isDownloadedThisSession('asset-456')).toBe(false)
+    })
+  })
 })

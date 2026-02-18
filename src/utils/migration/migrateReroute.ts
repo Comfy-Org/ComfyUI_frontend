@@ -54,7 +54,7 @@ class ConversionContext {
   /** Reroutes that has at least a valid link pass through it */
   validReroutes: Set<Reroute>
 
-  #rerouteIdCounter = 0
+  private _rerouteIdCounter = 0
 
   constructor(public workflow: WorkflowJSON04) {
     this.nodeById = _.keyBy(workflow.nodes.map(_.cloneDeep), 'id')
@@ -76,7 +76,7 @@ class ConversionContext {
       pos: getNodeCenter(node),
       linkIds: []
     }))
-    this.#rerouteIdCounter = reroutes.length + 1
+    this._rerouteIdCounter = reroutes.length + 1
 
     this.rerouteByNodeId = _.keyBy(reroutes, 'nodeId')
     this.rerouteById = _.keyBy(reroutes, 'id')
@@ -88,7 +88,7 @@ class ConversionContext {
   /**
    * Gets the chain of reroute nodes leading to the given node
    */
-  #getRerouteChain(node: RerouteNode): RerouteNode[] {
+  private _getRerouteChain(node: RerouteNode): RerouteNode[] {
     const nodes: RerouteNode[] = []
     let currentNode: RerouteNode = node
     while (currentNode?.type === 'Reroute') {
@@ -106,7 +106,7 @@ class ConversionContext {
     return nodes
   }
 
-  #connectRerouteChain(rerouteNodes: RerouteNode[]): Reroute[] {
+  private _connectRerouteChain(rerouteNodes: RerouteNode[]): Reroute[] {
     const reroutes = rerouteNodes.map((node) => this.rerouteByNodeId[node.id])
     for (const reroute of reroutes) {
       this.validReroutes.add(reroute)
@@ -121,7 +121,7 @@ class ConversionContext {
     return reroutes
   }
 
-  #createNewLink(
+  private _createNewLink(
     startingLink: ComfyLinkObject,
     endingLink: ComfyLinkObject,
     rerouteNodes: RerouteNode[]
@@ -136,7 +136,7 @@ class ConversionContext {
       parentId: reroute.id
     })
 
-    const reroutes = this.#connectRerouteChain(rerouteNodes)
+    const reroutes = this._connectRerouteChain(rerouteNodes)
     for (const reroute of reroutes) {
       reroute.linkIds ??= []
       reroute.linkIds.push(endingLink.id)
@@ -153,11 +153,11 @@ class ConversionContext {
     }
   }
 
-  #createNewInputFloatingLink(
+  private _createNewInputFloatingLink(
     endingLink: ComfyLinkObject,
     rerouteNodes: RerouteNode[]
   ): ComfyLinkObject {
-    const reroutes = this.#connectRerouteChain(rerouteNodes)
+    const reroutes = this._connectRerouteChain(rerouteNodes)
     for (const reroute of reroutes) {
       if (!reroute.linkIds?.length) {
         reroute.floating = {
@@ -166,7 +166,7 @@ class ConversionContext {
       }
     }
     return {
-      id: this.#rerouteIdCounter++,
+      id: this._rerouteIdCounter++,
       origin_id: -1,
       origin_slot: -1,
       target_id: endingLink.target_id,
@@ -176,11 +176,11 @@ class ConversionContext {
     }
   }
 
-  #createNewOutputFloatingLink(
+  private _createNewOutputFloatingLink(
     startingLink: ComfyLinkObject,
     rerouteNodes: RerouteNode[]
   ): ComfyLinkObject {
-    const reroutes = this.#connectRerouteChain(rerouteNodes)
+    const reroutes = this._connectRerouteChain(rerouteNodes)
     for (const reroute of reroutes) {
       if (!reroute.linkIds?.length) {
         reroute.floating = {
@@ -190,7 +190,7 @@ class ConversionContext {
     }
 
     return {
-      id: this.#rerouteIdCounter++,
+      id: this._rerouteIdCounter++,
       origin_id: startingLink.origin_id,
       origin_slot: startingLink.origin_slot,
       target_id: -1,
@@ -200,7 +200,7 @@ class ConversionContext {
     }
   }
 
-  #reconnectLinks(nodes: ComfyNode[], links: ComfyLinkObject[]): void {
+  private _reconnectLinks(nodes: ComfyNode[], links: ComfyLinkObject[]): void {
     // Remove all existing links on sockets
     for (const node of nodes) {
       for (const input of node.inputs ?? []) {
@@ -245,18 +245,18 @@ class ConversionContext {
       const endingRerouteNode = this.nodeById[
         endingLink.origin_id
       ] as RerouteNode
-      const rerouteNodes = this.#getRerouteChain(endingRerouteNode)
+      const rerouteNodes = this._getRerouteChain(endingRerouteNode)
       const startingLink =
         this.linkById[
           rerouteNodes[rerouteNodes.length - 1]?.inputs?.[0]?.link ?? -1
         ]
       if (startingLink) {
         // Valid link found, create a new link
-        links.push(this.#createNewLink(startingLink, endingLink, rerouteNodes))
+        links.push(this._createNewLink(startingLink, endingLink, rerouteNodes))
       } else {
         // Floating link found, create a new floating link
         floatingLinks.push(
-          this.#createNewInputFloatingLink(endingLink, rerouteNodes)
+          this._createNewInputFloatingLink(endingLink, rerouteNodes)
         )
       }
     }
@@ -270,14 +270,14 @@ class ConversionContext {
       })
 
     for (const rerouteNode of floatingEndingRerouteNodes) {
-      const rerouteNodes = this.#getRerouteChain(rerouteNode)
+      const rerouteNodes = this._getRerouteChain(rerouteNode)
       const startingLink =
         this.linkById[
           rerouteNodes[rerouteNodes.length - 1]?.inputs?.[0]?.link ?? -1
         ]
       if (startingLink) {
         floatingLinks.push(
-          this.#createNewOutputFloatingLink(startingLink, rerouteNodes)
+          this._createNewOutputFloatingLink(startingLink, rerouteNodes)
         )
       }
     }
@@ -285,7 +285,7 @@ class ConversionContext {
     const nodes = Object.values(this.nodeById).filter(
       (node) => node.type !== 'Reroute'
     )
-    this.#reconnectLinks(nodes, links)
+    this._reconnectLinks(nodes, links)
 
     return {
       ...this.workflow,

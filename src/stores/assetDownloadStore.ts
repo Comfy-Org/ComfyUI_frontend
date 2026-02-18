@@ -17,6 +17,7 @@ export interface AssetDownload {
   assetId?: string
   error?: string
   modelType?: string
+  acknowledged?: boolean
 }
 
 interface CompletedDownload {
@@ -59,8 +60,28 @@ export const useAssetDownloadStore = defineStore('assetDownload', () => {
       (d) => d.status === 'completed' || d.status === 'failed'
     )
   )
+  const unacknowledgedDownloads = computed(() =>
+    finishedDownloads.value.filter(
+      (d) => d.status === 'completed' && d.assetId && !d.acknowledged
+    )
+  )
+  const sessionDownloadCount = computed(
+    () => unacknowledgedDownloads.value.length
+  )
   const hasActiveDownloads = computed(() => activeDownloads.value.length > 0)
   const hasDownloads = computed(() => downloads.value.size > 0)
+
+  function isDownloadedThisSession(assetId: string): boolean {
+    return unacknowledgedDownloads.value.some((d) => d.assetId === assetId)
+  }
+
+  function acknowledgeAsset(assetId: string) {
+    for (const download of downloads.value.values()) {
+      if (download.assetId === assetId) {
+        download.acknowledged = true
+      }
+    }
+  }
 
   function trackDownload(taskId: string, modelType: string, assetName: string) {
     if (downloads.value.has(taskId)) return
@@ -172,7 +193,10 @@ export const useAssetDownloadStore = defineStore('assetDownload', () => {
     hasDownloads,
     downloadList,
     lastCompletedDownload,
+    sessionDownloadCount,
     trackDownload,
-    clearFinishedDownloads
+    clearFinishedDownloads,
+    isDownloadedThisSession,
+    acknowledgeAsset
   }
 })

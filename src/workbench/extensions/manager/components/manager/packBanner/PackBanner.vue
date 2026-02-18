@@ -1,5 +1,5 @@
 <template>
-  <div class="aspect-7/3 w-full overflow-hidden">
+  <div class="aspect-7/3 w-full overflow-hidden z-0">
     <!-- default banner show -->
     <div v-if="showDefaultBanner" class="h-full w-full">
       <img

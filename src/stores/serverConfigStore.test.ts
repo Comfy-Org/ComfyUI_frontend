@@ -1,7 +1,8 @@
-import { createPinia, setActivePinia } from 'pinia'
+import { createTestingPinia } from '@pinia/testing'
+import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it } from 'vitest'
 
-import type { ServerConfig } from '@/constants/serverConfig'
+import type { ServerConfig, ServerConfigValue } from '@/constants/serverConfig'
 import type { FormItem } from '@/platform/settings/types'
 import { useServerConfigStore } from '@/stores/serverConfigStore'
 
@@ -14,7 +15,7 @@ describe('useServerConfigStore', () => {
   let store: ReturnType<typeof useServerConfigStore>
 
   beforeEach(() => {
-    setActivePinia(createPinia())
+    setActivePinia(createTestingPinia({ stubActions: false }))
     store = useServerConfigStore()
   })
 
@@ -27,7 +28,7 @@ describe('useServerConfigStore', () => {
   })
 
   it('should load server configs with default values', () => {
-    const configs: ServerConfig<any>[] = [
+    const configs: ServerConfig<ServerConfigValue>[] = [
       {
         ...dummyFormItem,
         id: 'test.config1',
@@ -49,7 +50,7 @@ describe('useServerConfigStore', () => {
   })
 
   it('should load server configs with provided values', () => {
-    const configs: ServerConfig<any>[] = [
+    const configs: ServerConfig<ServerConfigValue>[] = [
       {
         ...dummyFormItem,
         id: 'test.config1',
@@ -67,7 +68,7 @@ describe('useServerConfigStore', () => {
   })
 
   it('should organize configs by category', () => {
-    const configs: ServerConfig<any>[] = [
+    const configs: ServerConfig<ServerConfigValue>[] = [
       {
         ...dummyFormItem,
         id: 'test.config1',
@@ -96,7 +97,7 @@ describe('useServerConfigStore', () => {
   })
 
   it('should generate server config values excluding defaults', () => {
-    const configs: ServerConfig<any>[] = [
+    const configs: ServerConfig<ServerConfigValue>[] = [
       {
         ...dummyFormItem,
         id: 'test.config1',
@@ -120,12 +121,12 @@ describe('useServerConfigStore', () => {
   })
 
   it('should generate launch arguments with custom getValue function', () => {
-    const configs: ServerConfig<any>[] = [
+    const configs: ServerConfig<ServerConfigValue>[] = [
       {
         ...dummyFormItem,
         id: 'test.config1',
         defaultValue: 'default1',
-        getValue: (value: string) => ({ customArg: value })
+        getValue: (value: ServerConfigValue) => ({ customArg: value })
       },
       {
         ...dummyFormItem,
@@ -145,7 +146,7 @@ describe('useServerConfigStore', () => {
   })
 
   it('should not include default values in launch arguments', () => {
-    const configs: ServerConfig<any>[] = [
+    const configs: ServerConfig<ServerConfigValue>[] = [
       {
         ...dummyFormItem,
         id: 'test.config1',
@@ -169,7 +170,7 @@ describe('useServerConfigStore', () => {
   })
 
   it('should not include nullish values in launch arguments', () => {
-    const configs: ServerConfig<any>[] = [
+    const configs: ServerConfig<ServerConfigValue>[] = [
       { ...dummyFormItem, id: 'test.config1', defaultValue: 'default1' },
       { ...dummyFormItem, id: 'test.config2', defaultValue: 'default2' },
       { ...dummyFormItem, id: 'test.config3', defaultValue: 'default3' },

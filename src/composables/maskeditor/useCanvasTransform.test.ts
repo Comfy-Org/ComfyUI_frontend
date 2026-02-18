@@ -95,7 +95,7 @@ if (typeof globalThis.ImageData === 'undefined') {
         this.data = new Uint8ClampedArray(dataOrWidth * widthOrHeight * 4)
       }
     }
-  } as unknown as typeof globalThis.ImageData
+  } as typeof ImageData
 }
 
 // Mock ImageBitmap for test environment using safe type casting
@@ -108,7 +108,7 @@ if (typeof globalThis.ImageBitmap === 'undefined') {
       this.height = height
     }
     close() {}
-  } as unknown as typeof globalThis.ImageBitmap
+  } as typeof ImageBitmap
 }
 
 describe('useCanvasTransform', () => {

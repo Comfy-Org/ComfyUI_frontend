@@ -1,7 +1,11 @@
 <template>
   <div
-    class="comfy-vue-side-bar-container group/sidebar-tab flex h-full flex-col"
-    :class="props.class"
+    :class="
+      cn(
+        'comfy-vue-side-bar-container group/sidebar-tab flex h-full flex-col',
+        props.class
+      )
+    "
   >
     <div class="comfy-vue-side-bar-header flex flex-col gap-2">
       <Toolbar
@@ -34,6 +38,8 @@
 <script setup lang="ts">
 import ScrollPanel from 'primevue/scrollpanel'
 import Toolbar from 'primevue/toolbar'
+
+import { cn } from '@/utils/tailwindUtil'
 
 const props = defineProps<{
   title: string

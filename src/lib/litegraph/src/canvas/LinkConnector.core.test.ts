@@ -17,6 +17,10 @@ import {
   LinkDirection
 } from '@/lib/litegraph/src/litegraph'
 import type { ConnectingLink } from '@/lib/litegraph/src/interfaces'
+import {
+  createMockNodeInputSlot,
+  createMockNodeOutputSlot
+} from '@/utils/__tests__/litegraphTestUtils'
 
 interface TestContext {
   network: LinkNetwork & { add(node: LGraphNode): void }
@@ -136,7 +140,7 @@ describe('LinkConnector', () => {
       connector.state.connectingTo = 'input'
 
       expect(() => {
-        connector.moveInputLink(network, { link: 1 } as any)
+        connector.moveInputLink(network, createMockNodeInputSlot({ link: 1 }))
       }).toThrow('Already dragging links.')
     })
   })
@@ -174,7 +178,10 @@ describe('LinkConnector', () => {
       connector.state.connectingTo = 'output'
 
       expect(() => {
-        connector.moveOutputLink(network, { links: [1] } as any)
+        connector.moveOutputLink(
+          network,
+          createMockNodeOutputSlot({ links: [1] })
+        )
       }).toThrow('Already dragging links.')
     })
   })

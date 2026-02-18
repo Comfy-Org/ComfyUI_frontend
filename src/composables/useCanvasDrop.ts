@@ -2,7 +2,7 @@ import type { Ref } from 'vue'
 
 import { useSharedCanvasPositionConversion } from '@/composables/element/useCanvasPositionConversion'
 import { usePragmaticDroppable } from '@/composables/usePragmaticDragAndDrop'
-import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { LGraphNode, Point } from '@/lib/litegraph/src/litegraph'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
@@ -33,7 +33,7 @@ export const useCanvasDrop = (canvasRef: Ref<HTMLCanvasElement | null>) => {
 
         if (node.data instanceof ComfyNodeDefImpl) {
           const nodeDef = node.data
-          const pos = [...basePos]
+          const pos: Point = [...basePos]
           // Add an offset on y to make sure after adding the node, the cursor
           // is on the node (top left corner)
           pos[1] += LiteGraph.NODE_TITLE_HEIGHT

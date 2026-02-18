@@ -1,20 +1,34 @@
+import type { Mock } from 'vitest'
 import { liteClient as algoliasearch } from 'algoliasearch/dist/lite/builds/browser'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
+import type { components } from '@/types/comfyRegistryTypes'
 import { useAlgoliaSearchProvider } from '@/services/providers/algoliaSearchProvider'
 import { SortableAlgoliaField } from '@/workbench/extensions/manager/types/comfyManagerTypes'
 
+type RegistryNodePack = components['schemas']['Node']
+
+type GlobalWithAlgolia = typeof globalThis & {
+  __ALGOLIA_APP_ID__: string
+  __ALGOLIA_API_KEY__: string
+}
+
 // Mock global Algolia constants
-;(global as any).__ALGOLIA_APP_ID__ = 'test-app-id'
-;(global as any).__ALGOLIA_API_KEY__ = 'test-api-key'
+const globalWithAlgolia = globalThis as GlobalWithAlgolia
+globalWithAlgolia.__ALGOLIA_APP_ID__ = 'test-app-id'
+globalWithAlgolia.__ALGOLIA_API_KEY__ = 'test-api-key'
 
 // Mock algoliasearch
 vi.mock('algoliasearch/dist/lite/builds/browser', () => ({
   liteClient: vi.fn()
 }))
 
+interface MockSearchClient {
+  search: Mock
+}
+
 describe('useAlgoliaSearchProvider', () => {
-  let mockSearchClient: any
+  let mockSearchClient: MockSearchClient
 
   beforeEach(() => {
     vi.clearAllMocks()
@@ -24,7 +38,11 @@ describe('useAlgoliaSearchProvider', () => {
       search: vi.fn()
     }
 
-    vi.mocked(algoliasearch).mockReturnValue(mockSearchClient)
+    vi.mocked(algoliasearch).mockReturnValue(
+      mockSearchClient as Partial<
+        ReturnType<typeof algoliasearch>
+      > as ReturnType<typeof algoliasearch>
+    )
   })
 
   afterEach(() => {
@@ -252,7 +270,7 @@ describe('useAlgoliaSearchProvider', () => {
   })
 
   describe('getSortValue', () => {
-    const testPack = {
+    const testPack: Partial<RegistryNodePack> = {
       id: '1',
       name: 'Test Pack',
       downloads: 100,
@@ -279,7 +297,10 @@ describe('useAlgoliaSearchProvider', () => {
 
       const createdTimestamp = new Date('2024-01-01T10:00:00Z').getTime()
       expect(
-        provider.getSortValue(testPack as any, SortableAlgoliaField.Created)
+        provider.getSortValue(
+          testPack as RegistryNodePack,
+          SortableAlgoliaField.Created
+        )
       ).toBe(createdTimestamp)
 
       const updatedTimestamp = new Date('2024-01-15T10:00:00Z').getTime()
@@ -289,23 +310,35 @@ describe('useAlgoliaSearchProvider', () => {
     })
 
     it('should handle missing values', () => {
-      const incompletePack = { id: '1', name: 'Incomplete' }
+      const incompletePack: Partial<RegistryNodePack> = {
+        id: '1',
+        name: 'Incomplete'
+      }
       const provider = useAlgoliaSearchProvider()
 
       expect(
-        provider.getSortValue(incompletePack, SortableAlgoliaField.Downloads)
+        provider.getSortValue(
+          incompletePack as RegistryNodePack,
+          SortableAlgoliaField.Downloads
+        )
       ).toBe(0)
       expect(
-        provider.getSortValue(incompletePack, SortableAlgoliaField.Publisher)
+        provider.getSortValue(
+          incompletePack as RegistryNodePack,
+          SortableAlgoliaField.Publisher
+        )
       ).toBe('')
       expect(
         provider.getSortValue(
-          incompletePack as any,
+          incompletePack as RegistryNodePack,
           SortableAlgoliaField.Created
         )
       ).toBe(0)
       expect(
-        provider.getSortValue(incompletePack, SortableAlgoliaField.Updated)
+        provider.getSortValue(
+          incompletePack as RegistryNodePack,
+          SortableAlgoliaField.Updated
+        )
       ).toBe(0)
     })
   })

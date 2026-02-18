@@ -6,10 +6,12 @@ import { LGraph, LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 import type { Point, SerialisableGraph } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useWorkflowDraftStore } from '@/platform/workflow/persistence/stores/workflowDraftStore'
 import {
   ComfyWorkflow,
   useWorkflowStore
 } from '@/platform/workflow/management/stores/workflowStore'
+import { useTelemetry } from '@/platform/telemetry'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useWorkflowThumbnail } from '@/renderer/core/thumbnail/useWorkflowThumbnail'
@@ -27,12 +29,13 @@ export const useWorkflowService = () => {
   const dialogService = useDialogService()
   const workflowThumbnail = useWorkflowThumbnail()
   const domWidgetStore = useDomWidgetStore()
+  const workflowDraftStore = useWorkflowDraftStore()
 
   async function getFilename(defaultName: string): Promise<string | null> {
     if (settingStore.get('Comfy.PromptFilename')) {
       let filename = await dialogService.prompt({
         title: t('workflowService.exportWorkflow'),
-        message: t('workflowService.enterFilename') + ':',
+        message: t('workflowService.enterFilenamePrompt'),
         defaultValue: defaultName
       })
       if (!filename) return null
@@ -180,9 +183,11 @@ export const useWorkflowService = () => {
       {
         showMissingModelsDialog: loadFromRemote,
         showMissingNodesDialog: loadFromRemote,
-        checkForRerouteMigration: false
+        checkForRerouteMigration: false,
+        deferWarnings: true
       }
     )
+    showPendingWarnings()
   }
 
   /**
@@ -211,6 +216,8 @@ export const useWorkflowService = () => {
         await saveWorkflow(workflow)
       }
     }
+
+    workflowDraftStore.removeDraft(workflow.path)
 
     // If this is the last workflow, create a new default temporary workflow
     if (workflowStore.openWorkflows.length === 1) {
@@ -290,6 +297,27 @@ export const useWorkflowService = () => {
     const activeWorkflow = workflowStore.activeWorkflow
     if (activeWorkflow) {
       activeWorkflow.changeTracker.store()
+      if (settingStore.get('Comfy.Workflow.Persist') && activeWorkflow.path) {
+        const activeState = activeWorkflow.activeState
+        if (activeState) {
+          try {
+            const workflowJson = JSON.stringify(activeState)
+            workflowDraftStore.saveDraft(activeWorkflow.path, {
+              data: workflowJson,
+              updatedAt: Date.now(),
+              name: activeWorkflow.key,
+              isTemporary: activeWorkflow.isTemporary
+            })
+          } catch {
+            toastStore.add({
+              severity: 'error',
+              summary: t('g.error'),
+              detail: t('toastMessages.failedToSaveDraft'),
+              life: 3000
+            })
+          }
+        }
+      }
       // Capture thumbnail before loading new graph
       void workflowThumbnail.storeThumbnail(activeWorkflow)
       domWidgetStore.clear()
@@ -315,8 +343,11 @@ export const useWorkflowService = () => {
     if (
       workflowData.extra?.linearMode !== undefined ||
       !workflowData.nodes.length
-    )
+    ) {
+      if (workflowData.extra?.linearMode && !useCanvasStore().linearMode)
+        useTelemetry()?.trackEnterLinear({ source: 'workflow' })
       useCanvasStore().linearMode = !!workflowData.extra?.linearMode
+    }
 
     if (value === null || typeof value === 'string') {
       const path = value as string | null
@@ -408,6 +439,32 @@ export const useWorkflowService = () => {
     await app.loadGraphData(state, true, true, filename)
   }
 
+  /**
+   * Show and clear any pending warnings (missing nodes/models) stored on the
+   * active workflow. Called after a workflow becomes visible so dialogs don't
+   * overlap with subsequent loads.
+   */
+  function showPendingWarnings(workflow?: ComfyWorkflow | null) {
+    const wf = workflow ?? workflowStore.activeWorkflow
+    if (!wf?.pendingWarnings) return
+
+    const { missingNodeTypes, missingModels } = wf.pendingWarnings
+    wf.pendingWarnings = null
+
+    if (
+      missingNodeTypes?.length &&
+      settingStore.get('Comfy.Workflow.ShowMissingNodesWarning')
+    ) {
+      void dialogService.showLoadWorkflowWarning({ missingNodeTypes })
+    }
+    if (
+      missingModels &&
+      settingStore.get('Comfy.Workflow.ShowMissingModelsWarning')
+    ) {
+      void dialogService.showMissingModelsWarning(missingModels)
+    }
+  }
+
   return {
     exportWorkflow,
     saveWorkflowAs,
@@ -423,6 +480,7 @@ export const useWorkflowService = () => {
     loadNextOpenedWorkflow,
     loadPreviousOpenedWorkflow,
     duplicateWorkflow,
+    showPendingWarnings,
     afterLoadNewGraph,
     beforeLoadNewGraph
   }

@@ -81,7 +81,7 @@ export class DragAndScale {
    * Returns `true` if the current state has changed from the previous state.
    * @returns `true` if the current state has changed from the previous state, otherwise `false`.
    */
-  #stateHasChanged(): boolean {
+  private _stateHasChanged(): boolean {
     const current = this.state
     const previous = this.lastState
 
@@ -95,7 +95,7 @@ export class DragAndScale {
   computeVisibleArea(viewport: Rect | undefined): void {
     const { scale, offset, visible_area } = this
 
-    if (this.#stateHasChanged()) {
+    if (this._stateHasChanged()) {
       this.onChanged?.(scale, offset)
       copyState(this.state, this.lastState)
     }

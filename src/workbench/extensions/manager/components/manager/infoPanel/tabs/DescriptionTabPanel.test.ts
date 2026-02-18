@@ -15,13 +15,6 @@ const i18n = createI18n({
   }
 })
 
-const TRANSLATIONS = {
-  description: 'Description',
-  repository: 'Repository',
-  license: 'License',
-  noDescription: 'No description available'
-}
-
 describe('DescriptionTabPanel', () => {
   const mountComponent = (props: {
     nodePack: Partial<components['schemas']['Node']>
@@ -32,16 +25,6 @@ describe('DescriptionTabPanel', () => {
         plugins: [i18n]
       }
     })
-  }
-
-  const getSectionByTitle = (
-    wrapper: ReturnType<typeof mountComponent>,
-    title: string
-  ) => {
-    const sections = wrapper
-      .findComponent({ name: 'InfoTextSection' })
-      .props('sections')
-    return sections.find((s: any) => s.title === title)
   }
 
   const createNodePack = (
@@ -134,37 +117,36 @@ describe('DescriptionTabPanel', () => {
     licenseTests.forEach((test) => {
       it(test.name, () => {
         const wrapper = mountComponent({ nodePack: test.nodePack })
-        const licenseSection = getSectionByTitle(wrapper, TRANSLATIONS.license)
-        expect(licenseSection).toBeDefined()
-        expect(licenseSection.text).toBe(test.expected.text)
-        expect(licenseSection.isUrl).toBe(test.expected.isUrl)
+        if (test.expected.isUrl) {
+          const link = wrapper
+            .findAll('a')
+            .find((a) => a.text().includes(test.expected.text))
+          expect(link).toBeDefined()
+          expect(link!.attributes('href')).toBe(test.expected.text)
+        } else {
+          expect(wrapper.text()).toContain(test.expected.text)
+        }
       })
     })
   })
 
   describe('description sections', () => {
-    it('shows description section', () => {
+    it('shows description text', () => {
       const wrapper = mountComponent({
         nodePack: createNodePack()
       })
-      const descriptionSection = getSectionByTitle(
-        wrapper,
-        TRANSLATIONS.description
-      )
-      expect(descriptionSection).toBeDefined()
-      expect(descriptionSection.text).toBe('Test description')
+      expect(wrapper.text()).toContain('Test description')
     })
 
-    it('shows repository section when available', () => {
+    it('shows repository link when available', () => {
       const wrapper = mountComponent({
         nodePack: createNodePack({
           repository: 'https://github.com/user/repo'
         })
       })
-      const repoSection = getSectionByTitle(wrapper, TRANSLATIONS.repository)
-      expect(repoSection).toBeDefined()
-      expect(repoSection.text).toBe('https://github.com/user/repo')
-      expect(repoSection.isUrl).toBe(true)
+      const repoLink = wrapper.find('a[href="https://github.com/user/repo"]')
+      expect(repoLink.exists()).toBe(true)
+      expect(repoLink.attributes('target')).toBe('_blank')
     })
 
     it('shows fallback text when description is missing', () => {
@@ -173,7 +155,7 @@ describe('DescriptionTabPanel', () => {
           description: undefined
         }
       })
-      expect(wrapper.find('p').text()).toBe(TRANSLATIONS.noDescription)
+      expect(wrapper.text()).toContain('No description available')
     })
   })
 })

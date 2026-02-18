@@ -1,13 +1,23 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import type { LGraph } from '@/lib/litegraph/src/litegraph'
 import { LGraphEventMode } from '@/lib/litegraph/src/litegraph'
-import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { renderMinimapToCanvas } from '@/renderer/extensions/minimap/minimapCanvasRenderer'
 import type { MinimapRenderContext } from '@/renderer/extensions/minimap/types'
-import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import { adjustColor } from '@/utils/colorUtil'
+import {
+  createMockLGraph,
+  createMockLGraphNode,
+  createMockLinks,
+  createMockLLink,
+  createMockNodeOutputSlot
+} from '@/utils/__tests__/litegraphTestUtils'
 
-vi.mock('@/stores/workspace/colorPaletteStore')
+const mockUseColorPaletteStore = vi.hoisted(() => vi.fn())
+vi.mock('@/stores/workspace/colorPaletteStore', () => ({
+  useColorPaletteStore: mockUseColorPaletteStore
+}))
+
 vi.mock('@/utils/colorUtil', () => ({
   adjustColor: vi.fn((color: string) => color + '_adjusted')
 }))
@@ -33,15 +43,15 @@ describe('minimapCanvasRenderer', () => {
       fillStyle: '',
       strokeStyle: '',
       lineWidth: 1
-    } as any
+    } as Partial<CanvasRenderingContext2D> as CanvasRenderingContext2D
 
     mockCanvas = {
       getContext: vi.fn().mockReturnValue(mockContext)
-    } as any
+    } as Partial<HTMLCanvasElement> as HTMLCanvasElement
 
-    mockGraph = {
+    mockGraph = createMockLGraph({
       _nodes: [
-        {
+        createMockLGraphNode({
           id: '1',
           pos: [100, 100],
           size: [150, 80],
@@ -49,8 +59,8 @@ describe('minimapCanvasRenderer', () => {
           mode: LGraphEventMode.ALWAYS,
           has_errors: false,
           outputs: []
-        },
-        {
+        }),
+        createMockLGraphNode({
           id: '2',
           pos: [300, 200],
           size: [120, 60],
@@ -58,16 +68,21 @@ describe('minimapCanvasRenderer', () => {
           mode: LGraphEventMode.BYPASS,
           has_errors: true,
           outputs: []
-        }
-      ] as unknown as LGraphNode[],
+        })
+      ],
       _groups: [],
-      links: {},
+      links: {} as typeof mockGraph.links,
       getNodeById: vi.fn()
-    } as any
+    })
 
-    vi.mocked(useColorPaletteStore).mockReturnValue({
-      completedActivePalette: { light_theme: false }
-    } as any)
+    mockUseColorPaletteStore.mockReturnValue({
+      completedActivePalette: {
+        id: 'test',
+        name: 'Test Palette',
+        colors: {},
+        light_theme: false
+      }
+    })
   })
 
   it('should clear canvas and render nodes', () => {
@@ -203,7 +218,9 @@ describe('minimapCanvasRenderer', () => {
         size: [400, 300],
         color: '#0000FF'
       }
-    ] as any
+    ] as Partial<
+      (typeof mockGraph._groups)[number]
+    >[] as typeof mockGraph._groups
 
     const context: MinimapRenderContext = {
       bounds: { minX: 0, minY: 0, width: 500, height: 400 },
@@ -233,17 +250,17 @@ describe('minimapCanvasRenderer', () => {
     }
 
     mockGraph._nodes[0].outputs = [
-      {
-        links: [1]
-      }
-    ] as any
+      createMockNodeOutputSlot({
+        name: 'output',
+        type: 'number',
+        links: [1],
+        boundingRect: new Float64Array([0, 0, 10, 10])
+      })
+    ]
 
-    // Create a hybrid Map/Object for links as LiteGraph expects
-    const linksMap = new Map([[1, { id: 1, target_id: 2 }]])
-    const links = Object.assign(linksMap, {
-      1: { id: 1, target_id: 2 }
-    })
-    mockGraph.links = links as any
+    mockGraph.links = createMockLinks([
+      createMockLLink({ id: 1, target_id: 2, origin_slot: 0, target_slot: 0 })
+    ])
 
     mockGraph.getNodeById = vi.fn().mockReturnValue(targetNode)
 
@@ -275,9 +292,14 @@ describe('minimapCanvasRenderer', () => {
   })
 
   it('should handle light theme colors', () => {
-    vi.mocked(useColorPaletteStore).mockReturnValue({
-      completedActivePalette: { light_theme: true }
-    } as any)
+    mockUseColorPaletteStore.mockReturnValue({
+      completedActivePalette: {
+        id: 'test',
+        name: 'Test Palette',
+        colors: {},
+        light_theme: true
+      }
+    })
 
     const context: MinimapRenderContext = {
       bounds: { minX: 0, minY: 0, width: 500, height: 400 },

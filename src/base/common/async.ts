@@ -14,6 +14,7 @@ interface IdleDeadline {
 interface IDisposable {
   dispose(): void
 }
+type GlobalWindow = typeof globalThis
 
 /**
  * Internal implementation function that handles the actual scheduling logic.
@@ -21,7 +22,7 @@ interface IDisposable {
  * or fall back to setTimeout-based implementation.
  */
 let _runWhenIdle: (
-  targetWindow: any,
+  targetWindow: GlobalWindow,
   callback: (idle: IdleDeadline) => void,
   timeout?: number
 ) => IDisposable
@@ -37,7 +38,7 @@ export let runWhenGlobalIdle: (
 
   // Self-invoking function to set up the idle callback implementation
 ;(function () {
-  const safeGlobal: any = globalThis
+  const safeGlobal: GlobalWindow = globalThis as GlobalWindow
 
   if (
     typeof safeGlobal.requestIdleCallback !== 'function' ||

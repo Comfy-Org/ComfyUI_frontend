@@ -54,9 +54,9 @@ export class ComfyPopup extends EventTarget {
     this.open = prop(this, 'open', false, (v, o) => {
       if (v === o) return
       if (v) {
-        this.#show()
+        this._show()
       } else {
-        this.#hide()
+        this._hide()
       }
     })
   }
@@ -65,24 +65,24 @@ export class ComfyPopup extends EventTarget {
     this.open = !this.open
   }
 
-  #hide() {
+  private _hide() {
     this.element.classList.remove('open')
     window.removeEventListener('resize', this.update)
-    window.removeEventListener('click', this.#clickHandler, { capture: true })
-    window.removeEventListener('keydown', this.#escHandler, { capture: true })
+    window.removeEventListener('click', this._clickHandler, { capture: true })
+    window.removeEventListener('keydown', this._escHandler, { capture: true })
 
     this.dispatchEvent(new CustomEvent('close'))
     this.dispatchEvent(new CustomEvent('change'))
   }
 
-  #show() {
+  private _show() {
     this.element.classList.add('open')
     this.update()
 
     window.addEventListener('resize', this.update)
-    window.addEventListener('click', this.#clickHandler, { capture: true })
+    window.addEventListener('click', this._clickHandler, { capture: true })
     if (this.closeOnEscape) {
-      window.addEventListener('keydown', this.#escHandler, { capture: true })
+      window.addEventListener('keydown', this._escHandler, { capture: true })
     }
 
     this.dispatchEvent(new CustomEvent('open'))
@@ -90,7 +90,7 @@ export class ComfyPopup extends EventTarget {
   }
 
   // @ts-expect-error fixme ts strict error
-  #escHandler = (e) => {
+  private _escHandler = (e) => {
     if (e.key === 'Escape') {
       this.open = false
       e.preventDefault()
@@ -99,7 +99,7 @@ export class ComfyPopup extends EventTarget {
   }
 
   // @ts-expect-error fixme ts strict error
-  #clickHandler = (e) => {
+  private _clickHandler = (e) => {
     /** @type {any} */
     const target = e.target
     if (

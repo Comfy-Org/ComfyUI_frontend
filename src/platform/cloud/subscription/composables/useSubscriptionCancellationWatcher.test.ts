@@ -4,12 +4,12 @@ import type { EffectScope } from 'vue'
 
 import type { CloudSubscriptionStatusResponse } from '@/platform/cloud/subscription/composables/useSubscription'
 import { useSubscriptionCancellationWatcher } from '@/platform/cloud/subscription/composables/useSubscriptionCancellationWatcher'
-import type { TelemetryProvider } from '@/platform/telemetry/types'
+import type { TelemetryDispatcher } from '@/platform/telemetry/types'
 
 describe('useSubscriptionCancellationWatcher', () => {
   const trackMonthlySubscriptionCancelled = vi.fn()
   const telemetryMock: Pick<
-    TelemetryProvider,
+    TelemetryDispatcher,
     'trackMonthlySubscriptionCancelled'
   > = {
     trackMonthlySubscriptionCancelled

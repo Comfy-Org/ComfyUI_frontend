@@ -7,7 +7,7 @@ global.fetch = vi.fn()
 global.URL = {
   createObjectURL: vi.fn(() => 'blob:mock-url'),
   revokeObjectURL: vi.fn()
-} as any
+} as Partial<typeof URL> as typeof URL
 
 describe('mediaCacheService', () => {
   describe('URL reference counting', () => {

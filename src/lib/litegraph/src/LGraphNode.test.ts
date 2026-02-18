@@ -1,3 +1,5 @@
+import { createTestingPinia } from '@pinia/testing'
+import { setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, vi } from 'vitest'
 
 import type {
@@ -14,6 +16,11 @@ import {
 } from '@/lib/litegraph/src/litegraph'
 
 import { test } from './__fixtures__/testExtensions'
+import { createMockLGraphNodeWithArrayBoundingRect } from '@/utils/__tests__/litegraphTestUtils'
+
+interface NodeConstructorWithSlotOffset {
+  slot_start_y?: number
+}
 
 function getMockISerialisedNode(
   data: Partial<ISerialisedNode>
@@ -37,6 +44,7 @@ describe('LGraphNode', () => {
   let origLiteGraph: typeof LiteGraph
 
   beforeEach(() => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
     origLiteGraph = Object.assign({}, LiteGraph)
     // @ts-expect-error Intended: Force remove an otherwise readonly non-optional property
     delete origLiteGraph.Classes
@@ -131,6 +139,13 @@ describe('LGraphNode', () => {
     node.configure(getMockISerialisedNode({ id: 1 }))
     expect(node.id).toEqual(1)
     expect(node.outputs.length).toEqual(1)
+  })
+  test('should not allow configuring id to -1', () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('TestNode')
+    graph.add(node)
+    node.configure(getMockISerialisedNode({ id: -1 }))
+    expect(node.id).not.toBe(-1)
   })
 
   describe('Disconnect I/O Slots', () => {
@@ -297,16 +312,10 @@ describe('LGraphNode', () => {
 
   describe('getInputPos and getOutputPos', () => {
     test('should handle collapsed nodes correctly', () => {
-      const node = new LGraphNode('TestNode') as unknown as Omit<
-        LGraphNode,
-        'boundingRect'
-      > & { boundingRect: Float64Array }
+      const node = createMockLGraphNodeWithArrayBoundingRect('TestNode')
       node.pos = [100, 100]
       node.size = [100, 100]
-      node.boundingRect[0] = 100
-      node.boundingRect[1] = 100
-      node.boundingRect[2] = 100
-      node.boundingRect[3] = 100
+      node.updateArea()
       node.configure(
         getMockISerialisedNode({
           id: 1,
@@ -366,16 +375,10 @@ describe('LGraphNode', () => {
     })
 
     test('should detect input slots correctly', () => {
-      const node = new LGraphNode('TestNode') as unknown as Omit<
-        LGraphNode,
-        'boundingRect'
-      > & { boundingRect: Float64Array }
+      const node = createMockLGraphNodeWithArrayBoundingRect('TestNode')
       node.pos = [100, 100]
       node.size = [100, 100]
-      node.boundingRect[0] = 100
-      node.boundingRect[1] = 100
-      node.boundingRect[2] = 200
-      node.boundingRect[3] = 200
+      node.updateArea()
       node.configure(
         getMockISerialisedNode({
           id: 1,
@@ -398,16 +401,10 @@ describe('LGraphNode', () => {
     })
 
     test('should detect output slots correctly', () => {
-      const node = new LGraphNode('TestNode') as unknown as Omit<
-        LGraphNode,
-        'boundingRect'
-      > & { boundingRect: Float64Array }
+      const node = createMockLGraphNodeWithArrayBoundingRect('TestNode')
       node.pos = [100, 100]
       node.size = [100, 100]
-      node.boundingRect[0] = 100
-      node.boundingRect[1] = 100
-      node.boundingRect[2] = 200
-      node.boundingRect[3] = 200
+      node.updateArea()
       node.configure(
         getMockISerialisedNode({
           id: 1,
@@ -431,16 +428,10 @@ describe('LGraphNode', () => {
     })
 
     test('should prioritize input slots over output slots', () => {
-      const node = new LGraphNode('TestNode') as unknown as Omit<
-        LGraphNode,
-        'boundingRect'
-      > & { boundingRect: Float64Array }
+      const node = createMockLGraphNodeWithArrayBoundingRect('TestNode')
       node.pos = [100, 100]
       node.size = [100, 100]
-      node.boundingRect[0] = 100
-      node.boundingRect[1] = 100
-      node.boundingRect[2] = 200
-      node.boundingRect[3] = 200
+      node.updateArea()
       node.configure(
         getMockISerialisedNode({
           id: 1,
@@ -632,7 +623,8 @@ describe('LGraphNode', () => {
       }
       node.inputs = [inputSlot, inputSlot2]
       const slotIndex = 0
-      const nodeOffsetY = (node.constructor as any).slot_start_y || 0
+      const nodeOffsetY =
+        (node.constructor as NodeConstructorWithSlotOffset).slot_start_y || 0
       const expectedY =
         200 + (slotIndex + 0.7) * LiteGraph.NODE_SLOT_HEIGHT + nodeOffsetY
       const expectedX = 100 + LiteGraph.NODE_SLOT_HEIGHT * 0.5
@@ -644,7 +636,7 @@ describe('LGraphNode', () => {
     })
 
     test('should return default vertical position including slot_start_y when defined', () => {
-      ;(node.constructor as any).slot_start_y = 25
+      ;(node.constructor as NodeConstructorWithSlotOffset).slot_start_y = 25
       node.flags.collapsed = false
       node.inputs = [inputSlot]
       const slotIndex = 0
@@ -653,7 +645,7 @@ describe('LGraphNode', () => {
         200 + (slotIndex + 0.7) * LiteGraph.NODE_SLOT_HEIGHT + nodeOffsetY
       const expectedX = 100 + LiteGraph.NODE_SLOT_HEIGHT * 0.5
       expect(node.getInputSlotPos(inputSlot)).toEqual([expectedX, expectedY])
-      delete (node.constructor as any).slot_start_y
+      delete (node.constructor as NodeConstructorWithSlotOffset).slot_start_y
     })
     test('should not overwrite onMouseDown prototype', () => {
       expect(Object.prototype.hasOwnProperty.call(node, 'onMouseDown')).toEqual(

@@ -11,11 +11,13 @@ Accepted
 ComfyUI's frontend architecture currently depends on a forked version of litegraph.js maintained as a separate package (@comfyorg/litegraph). This separation has created several architectural and operational challenges:
 
 **Architectural Issues:**
+
 - The current split creates a distributed monolith where both packages handle rendering, user interactions, and data models without clear separation of responsibilities
 - Both frontend and litegraph manipulate the same data structures, forcing tight coupling across the frontend's data model, views, and business logic
 - The lack of clear boundaries prevents implementation of modern architectural patterns like MVC or event-sourcing
 
 **Operational Issues:**
+
 - ComfyUI is the only known user of the @comfyorg/litegraph fork
 - Managing separate repositories significantly slows developer velocity due to coordination overhead
 - Version mismatches between frontend and litegraph cause recurring issues
@@ -23,6 +25,7 @@ ComfyUI's frontend architecture currently depends on a forked version of litegra
 
 **Future Requirements:**
 The following planned features are blocked by the current architecture:
+
 - Multiplayer collaboration requiring CRDT-based state management
 - Cloud-based backend support
 - Alternative rendering backends
@@ -34,6 +37,7 @@ The following planned features are blocked by the current architecture:
 We will merge litegraph.js directly into the ComfyUI frontend repository using git subtree to preserve the complete commit history.
 
 The merge will:
+
 1. Move litegraph source to `src/lib/litegraph/`
 2. Update all import paths from `@comfyorg/litegraph` to `@/lib/litegraph`
 3. Remove the npm dependency on `@comfyorg/litegraph`

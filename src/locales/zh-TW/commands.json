@@ -266,6 +266,12 @@
   "Comfy_ShowSettingsDialog": {
     "label": "顯示設定對話框"
   },
+  "Comfy_Subgraph_SetDescription": {
+    "label": "設定子圖描述"
+  },
+  "Comfy_Subgraph_SetSearchAliases": {
+    "label": "設定子圖搜尋別名"
+  },
   "Comfy_ToggleAssetAPI": {
     "label": "實驗性：啟用 AssetAPI"
   },

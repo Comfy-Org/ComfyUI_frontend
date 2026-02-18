@@ -23,6 +23,11 @@ const showInput = computed(() => isEditing.value || isEmpty)
 const { forwardRef, currentElement } = useForwardExpose()
 const registerFocus = inject(tagsInputFocusKey, undefined)
 
+function handleEscape() {
+  currentElement.value?.blur()
+  isEditing.value = false
+}
+
 onMounted(() => {
   registerFocus?.(() => currentElement.value?.focus())
 })
@@ -44,5 +49,6 @@ onUnmounted(() => {
         className
       )
     "
+    @keydown.escape.stop="handleEscape"
   />
 </template>

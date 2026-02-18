@@ -77,6 +77,9 @@
       pcOptionCheckbox: {
         root: { class: 'hidden' },
         style: { display: 'none' }
+      },
+      emptyMessage: {
+        class: 'px-3 pb-4 text-sm text-muted-foreground'
       }
     }"
     :aria-label="label || t('g.multiSelectDropdown')"

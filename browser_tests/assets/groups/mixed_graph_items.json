@@ -48,15 +48,7 @@
       "properties": {
         "Node name for S&R": "KSampler"
       },
-      "widgets_values": [
-        0,
-        "randomize",
-        20,
-        8,
-        "euler",
-        "normal",
-        1
-      ]
+      "widgets_values": [0, "randomize", 20, 8, "euler", "normal", 1]
     },
     {
       "id": 3,
@@ -104,15 +96,7 @@
       "properties": {
         "Node name for S&R": "KSampler"
       },
-      "widgets_values": [
-        0,
-        "randomize",
-        20,
-        8,
-        "euler",
-        "normal",
-        1
-      ]
+      "widgets_values": [0, "randomize", 20, 8, "euler", "normal", 1]
     },
     {
       "id": 1,
@@ -160,15 +144,7 @@
       "properties": {
         "Node name for S&R": "KSampler"
       },
-      "widgets_values": [
-        0,
-        "randomize",
-        20,
-        8,
-        "euler",
-        "normal",
-        1
-      ]
+      "widgets_values": [0, "randomize", 20, 8, "euler", "normal", 1]
     }
   ],
   "links": [],
@@ -177,10 +153,7 @@
       "id": 0,
       "title": "Group",
       "bounding": [
-        406.9701232910156,
-        59.079444885253906,
-        335,
-        345.6000061035156
+        406.9701232910156, 59.079444885253906, 335, 345.6000061035156
       ],
       "color": "#3f789e",
       "font_size": 24,
@@ -190,10 +163,7 @@
       "id": 3,
       "title": "Group Parent",
       "bounding": [
-        796.9703979492188,
-        14.796443939208984,
-        355,
-        399.20001220703125
+        796.9703979492188, 14.796443939208984, 355, 399.20001220703125
       ],
       "color": "#3f789e",
       "font_size": 24,
@@ -203,10 +173,7 @@
       "id": 2,
       "title": "Group Child",
       "bounding": [
-        806.9703979492188,
-        58.39643096923828,
-        335,
-        345.6000061035156
+        806.9703979492188, 58.39643096923828, 335, 345.6000061035156
       ],
       "color": "#3f789e",
       "font_size": 24,
@@ -217,10 +184,7 @@
   "extra": {
     "ds": {
       "scale": 1,
-      "offset": [
-        0,
-        0
-      ]
+      "offset": [0, 0]
     }
   },
   "version": 0.4

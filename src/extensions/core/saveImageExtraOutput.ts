@@ -21,7 +21,7 @@ const saveNodeTypes = new Set([
 
 app.registerExtension({
   name: 'Comfy.SaveImageExtraOutput',
-  async beforeRegisterNodeDef(nodeType, nodeData, app) {
+  async beforeRegisterNodeDef(nodeType, nodeData) {
     if (saveNodeTypes.has(nodeData.name)) {
       const onNodeCreated = nodeType.prototype.onNodeCreated
       // When the SaveImage node is created we want to override the serialization of the output name widget to run our S&R

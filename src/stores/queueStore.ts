@@ -31,6 +31,13 @@ enum TaskItemDisplayStatus {
   Cancelled = 'Cancelled'
 }
 
+interface ResultItemInit extends ResultItem {
+  nodeId: NodeId
+  mediaType: string
+  format?: string
+  frame_rate?: number
+}
+
 export class ResultItemImpl {
   filename: string
   subfolder: string
@@ -44,7 +51,7 @@ export class ResultItemImpl {
   format?: string
   frame_rate?: number
 
-  constructor(obj: Record<string, any>) {
+  constructor(obj: ResultItemInit) {
     this.filename = obj.filename ?? ''
     this.subfolder = obj.subfolder ?? ''
     this.type = obj.type ?? ''
@@ -475,6 +482,9 @@ export const useQueueStore = defineStore('queue', () => {
   const maxHistoryItems = ref(64)
   const isLoading = ref(false)
 
+  // Scoped per-store instance; incremented to dedupe concurrent update() calls
+  let updateRequestId = 0
+
   const tasks = computed<TaskItemImpl[]>(
     () =>
       [
@@ -493,14 +503,20 @@ export const useQueueStore = defineStore('queue', () => {
   )
 
   const hasPendingTasks = computed<boolean>(() => pendingTasks.value.length > 0)
+  const activeJobsCount = computed(
+    () => pendingTasks.value.length + runningTasks.value.length
+  )
 
   const update = async () => {
+    const requestId = ++updateRequestId
     isLoading.value = true
     try {
       const [queue, history] = await Promise.all([
         api.getQueue(),
         api.getHistory(maxHistoryItems.value)
       ])
+
+      if (requestId !== updateRequestId) return
 
       // API returns pre-sorted data (sort_by=create_time&order=desc)
       runningTasks.value = queue.Running.map((job) => new TaskItemImpl(job))
@@ -542,7 +558,12 @@ export const useQueueStore = defineStore('queue', () => {
         return existing
       })
     } finally {
-      isLoading.value = false
+      // Only clear loading if this is the latest request.
+      // A stale request completing (success or error) should not touch loading state
+      // since a newer request is responsible for it.
+      if (requestId === updateRequestId) {
+        isLoading.value = false
+      }
     }
   }
 
@@ -572,6 +593,7 @@ export const useQueueStore = defineStore('queue', () => {
     flatTasks,
     lastHistoryQueueIndex,
     hasPendingTasks,
+    activeJobsCount,
 
     update,
     clear,

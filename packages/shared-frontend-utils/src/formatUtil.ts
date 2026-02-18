@@ -537,7 +537,9 @@ export function truncateFilename(
  * @param filename The filename to analyze
  * @returns The media type: 'image', 'video', 'audio', or '3D'
  */
-export function getMediaTypeFromFilename(filename: string): MediaType {
+export function getMediaTypeFromFilename(
+  filename: string | null | undefined
+): MediaType {
   if (!filename) return 'image'
   const ext = filename.split('.').pop()?.toLowerCase()
   if (!ext) return 'image'

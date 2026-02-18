@@ -64,12 +64,7 @@
   "groups": [
     {
       "title": "Group",
-      "bounding": [
-        0,
-        0,
-        335,
-        346
-      ],
+      "bounding": [0, 0, 335, 346],
       "color": "#3f789e",
       "font_size": 24
     }
@@ -78,10 +73,7 @@
   "extra": {
     "ds": {
       "scale": 1,
-      "offset": [
-        0,
-        0
-      ]
+      "offset": [0, 0]
     }
   },
   "version": 0.4

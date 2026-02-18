@@ -15,7 +15,7 @@ const STORAGE_KEYS = {
 /**
  * Interface for conflict acknowledgment state
  */
-interface ConflictAcknowledgmentState {
+export interface ConflictAcknowledgmentState {
   modal_dismissed: boolean
   red_dot_dismissed: boolean
   warning_banner_dismissed: boolean

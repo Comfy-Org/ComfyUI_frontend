@@ -1,4 +1,5 @@
-import { createPinia, setActivePinia } from 'pinia'
+import { createTestingPinia } from '@pinia/testing'
+import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { assetService } from '@/platform/assets/services/assetService'
@@ -89,7 +90,7 @@ describe('useModelStore', () => {
   let store: ReturnType<typeof useModelStore>
 
   beforeEach(async () => {
-    setActivePinia(createPinia())
+    setActivePinia(createTestingPinia({ stubActions: false }))
     vi.resetAllMocks()
   })
 

@@ -5,14 +5,8 @@
     {
       "id": 10,
       "type": "LoadImage",
-      "pos": [
-        50,
-        50
-      ],
-      "size": [
-        315,
-        314
-      ],
+      "pos": [50, 50],
+      "size": [315, 314],
       "flags": {},
       "order": 0,
       "mode": 0,
@@ -32,10 +26,7 @@
       "properties": {
         "Node name for S&R": "LoadImage"
       },
-      "widgets_values": [
-        "example.png",
-        "image"
-      ]
+      "widgets_values": ["example.png", "image"]
     }
   ],
   "links": [],

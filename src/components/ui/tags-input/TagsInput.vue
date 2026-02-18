@@ -71,7 +71,7 @@ onClickOutside(rootEl, () => {
     <i
       v-if="!disabled && !isEditing"
       aria-hidden="true"
-      class="icon-[lucide--square-pen] absolute bottom-2 right-2 size-4 text-muted-foreground"
+      class="icon-[lucide--square-pen] absolute bottom-2 right-2 size-4 text-muted-foreground transition-opacity opacity-0 group-hover:opacity-100"
     />
   </TagsInputRoot>
 </template>

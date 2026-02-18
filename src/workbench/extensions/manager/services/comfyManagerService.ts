@@ -156,7 +156,7 @@ export const useComfyManagerService = () => {
   const getImportFailInfo = async (signal?: AbortSignal) => {
     const errorContext = 'Fetching import failure information'
 
-    return executeRequest<any>(
+    return executeRequest<Record<string, unknown>>(
       () => managerApiClient.get(ManagerRoute.IMPORT_FAIL_INFO, { signal }),
       { errorContext }
     )

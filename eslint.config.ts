@@ -4,9 +4,7 @@ import pluginI18n from '@intlify/eslint-plugin-vue-i18n'
 import { createTypeScriptImportResolver } from 'eslint-import-resolver-typescript'
 import { importX } from 'eslint-plugin-import-x'
 import oxlint from 'eslint-plugin-oxlint'
-// WORKAROUND: eslint-plugin-prettier causes segfault on Node.js 24 + Windows
-// See: https://github.com/nodejs/node/issues/58690
-// Prettier is still run separately in lint-staged, so this is safe to disable
+// eslint-config-prettier disables ESLint rules that conflict with formatters (oxfmt)
 import eslintConfigPrettier from 'eslint-config-prettier'
 import { configs as storybookConfigs } from 'eslint-plugin-storybook'
 import unusedImports from 'eslint-plugin-unused-imports'
@@ -111,7 +109,7 @@ export default defineConfig([
   tseslintConfigs.recommended,
   // Difference in typecheck on CI vs Local
   pluginVue.configs['flat/recommended'],
-  // Use eslint-config-prettier instead of eslint-plugin-prettier to avoid Node 24 segfault
+  // Disables ESLint rules that conflict with formatters
   eslintConfigPrettier,
   // @ts-expect-error Type incompatibility between storybook plugin and ESLint config types
   storybookConfigs['flat/recommended'],
@@ -243,6 +241,20 @@ export default defineConfig([
     }
   },
   {
+    files: ['**/*.test.ts'],
+    rules: {
+      'no-restricted-properties': [
+        'error',
+        {
+          object: 'vi',
+          property: 'doMock',
+          message:
+            'Use vi.mock() with vi.hoisted() instead of vi.doMock(). See docs/testing/vitest-patterns.md'
+        }
+      ]
+    }
+  },
+  {
     files: ['scripts/**/*.js'],
     languageOptions: {
       globals: {
@@ -266,6 +278,47 @@ export default defineConfig([
       'import-x/namespace': 'off',
       'import-x/no-duplicates': 'off',
       'import-x/consistent-type-specifier-style': 'off'
+    }
+  },
+
+  // i18n import enforcement
+  // Vue components must use the useI18n() composable, not the global t/d/st/te
+  {
+    files: ['**/*.vue'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          paths: [
+            {
+              name: '@/i18n',
+              importNames: ['t', 'd', 'te'],
+              message:
+                "In Vue components, use `const { t } = useI18n()` instead of importing from '@/i18n'."
+            }
+          ]
+        }
+      ]
+    }
+  },
+  // Non-composable .ts files must use the global t/d/te, not useI18n()
+  {
+    files: ['**/*.ts'],
+    ignores: ['**/use[A-Z]*.ts', '**/*.test.ts', 'src/i18n.ts'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          paths: [
+            {
+              name: 'vue-i18n',
+              importNames: ['useI18n'],
+              message:
+                "useI18n() requires Vue setup context. Use `import { t } from '@/i18n'` instead."
+            }
+          ]
+        }
+      ]
     }
   }
 ])

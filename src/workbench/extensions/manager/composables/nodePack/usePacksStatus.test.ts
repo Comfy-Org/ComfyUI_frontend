@@ -1,4 +1,5 @@
-import { createPinia, setActivePinia } from 'pinia'
+import { createTestingPinia } from '@pinia/testing'
+import { setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 
@@ -48,7 +49,7 @@ describe('usePacksStatus', () => {
 
   beforeEach(() => {
     vi.clearAllMocks()
-    setActivePinia(createPinia())
+    setActivePinia(createTestingPinia({ stubActions: false }))
     conflictDetectionStore = useConflictDetectionStore()
   })
 
@@ -107,7 +108,7 @@ describe('usePacksStatus', () => {
 
     it('should handle packs without ids', () => {
       const nodePacks = ref<NodePack[]>([
-        { ...createMockPack('pack1'), id: undefined as any },
+        { ...createMockPack('pack1'), id: undefined },
         createMockPack('pack2')
       ])
 

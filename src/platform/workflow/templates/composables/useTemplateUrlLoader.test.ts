@@ -18,7 +18,7 @@ const preservedQueryMocks = vi.hoisted(() => ({
 }))
 
 // Mock vue-router
-let mockQueryParams: Record<string, string | undefined> = {}
+let mockQueryParams: Record<string, string | string[] | undefined> = {}
 const mockRouterReplace = vi.fn()
 
 vi.mock('vue-router', () => ({
@@ -60,10 +60,10 @@ vi.mock('primevue/usetoast', () => ({
 // Mock i18n
 vi.mock('vue-i18n', () => ({
   useI18n: () => ({
-    t: vi.fn((key: string, params?: any) => {
+    t: vi.fn((key: string, params?: unknown) => {
       if (key === 'g.error') return 'Error'
       if (key === 'templateWorkflows.error.templateNotFound') {
-        return `Template "${params?.templateName}" not found`
+        return `Template "${(params as { templateName?: string })?.templateName}" not found`
       }
       if (key === 'g.errorLoadingTemplate') return 'Failed to load template'
       return key
@@ -152,7 +152,7 @@ describe('useTemplateUrlLoader', () => {
 
   it('handles array query params correctly', () => {
     // Vue Router can return string[] for duplicate params
-    mockQueryParams = { template: ['first', 'second'] as any }
+    mockQueryParams = { template: ['first', 'second'] }
 
     const { loadTemplateFromUrl } = useTemplateUrlLoader()
     void loadTemplateFromUrl()
@@ -333,7 +333,7 @@ describe('useTemplateUrlLoader', () => {
     // Vue Router can return string[] for duplicate params
     mockQueryParams = {
       template: 'flux_simple',
-      mode: ['linear', 'graph'] as any
+      mode: ['linear', 'graph']
     }
 
     const { loadTemplateFromUrl } = useTemplateUrlLoader()

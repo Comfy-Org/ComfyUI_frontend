@@ -254,7 +254,10 @@ type KeysOfType<T, Match> = Exclude<
 >
 
 /** The names of all (optional) methods and functions in T */
-export type MethodNames<T> = KeysOfType<T, ((...args: any) => any) | undefined>
+export type MethodNames<T> = KeysOfType<
+  T,
+  ((...args: unknown[]) => unknown) | undefined
+>
 export interface NewNodePosition {
   node: LGraphNode
   newPos: {
@@ -329,6 +332,8 @@ export interface INodeFlags {
   collapsed?: boolean
   /** Configuration setting for {@link LGraphNode.connectInputToOutput} */
   keepAllLinksOnBypass?: boolean
+  /** Node is in ghost placement mode (semi-transparent, following cursor) */
+  ghost?: boolean
 }
 
 /**
@@ -458,28 +463,6 @@ export interface ISubgraphInput extends INodeInputSlot {
   _listenerController?: AbortController
   _subgraphSlot: SubgraphInput
 }
-
-/**
- * Shorthand for {@link Parameters} of optional callbacks.
- * @example
- * ```ts
- * const { onClick } = CustomClass.prototype
- * CustomClass.prototype.onClick = function (...args: CallbackParams<typeof onClick>) {
- *   const r = onClick?.apply(this, args)
- *   // ...
- *   return r
- * }
- * ```
- */
-export type CallbackParams<T extends ((...args: any) => any) | undefined> =
-  Parameters<Exclude<T, undefined>>
-
-/**
- * Shorthand for {@link ReturnType} of optional callbacks.
- * @see {@link CallbackParams}
- */
-export type CallbackReturn<T extends ((...args: any) => any) | undefined> =
-  ReturnType<Exclude<T, undefined>>
 
 /**
  * An object that can be hovered over.

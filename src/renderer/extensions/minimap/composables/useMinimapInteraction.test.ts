@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
+import type { Ref } from 'vue'
 
 import { useMinimapInteraction } from '@/renderer/extensions/minimap/composables/useMinimapInteraction'
 import type { MinimapCanvas } from '@/renderer/extensions/minimap/types'
@@ -19,7 +20,7 @@ describe('useMinimapInteraction', () => {
         width: 250,
         height: 200
       })
-    } as any
+    } as Partial<HTMLDivElement> as HTMLDivElement
 
     mockCanvas = {
       ds: {
@@ -27,7 +28,7 @@ describe('useMinimapInteraction', () => {
         offset: [0, 0]
       },
       setDirty: vi.fn()
-    } as any
+    } as Partial<MinimapCanvas> as MinimapCanvas
 
     centerViewOnMock = vi.fn<(worldX: number, worldY: number) => void>()
   })
@@ -36,7 +37,7 @@ describe('useMinimapInteraction', () => {
     const containerRef = ref(mockContainer)
     const boundsRef = ref({ minX: 0, minY: 0, width: 500, height: 400 })
     const scaleRef = ref(0.5)
-    const canvasRef = ref(mockCanvas as any)
+    const canvasRef = ref(mockCanvas) as Ref<MinimapCanvas | null>
 
     const interaction = useMinimapInteraction(
       containerRef,
@@ -61,7 +62,7 @@ describe('useMinimapInteraction', () => {
     const containerRef = ref(mockContainer)
     const boundsRef = ref({ minX: 0, minY: 0, width: 500, height: 400 })
     const scaleRef = ref(0.5)
-    const canvasRef = ref(mockCanvas as any)
+    const canvasRef = ref(mockCanvas) as Ref<MinimapCanvas | null>
 
     const interaction = useMinimapInteraction(
       containerRef,
@@ -89,7 +90,7 @@ describe('useMinimapInteraction', () => {
     const containerRef = ref(mockContainer)
     const boundsRef = ref({ minX: 0, minY: 0, width: 500, height: 400 })
     const scaleRef = ref(0.5)
-    const canvasRef = ref(mockCanvas as any)
+    const canvasRef = ref(mockCanvas) as Ref<MinimapCanvas | null>
 
     const interaction = useMinimapInteraction(
       containerRef,
@@ -117,7 +118,7 @@ describe('useMinimapInteraction', () => {
     const containerRef = ref(mockContainer)
     const boundsRef = ref({ minX: 0, minY: 0, width: 500, height: 400 })
     const scaleRef = ref(0.5)
-    const canvasRef = ref(mockCanvas as any)
+    const canvasRef = ref(mockCanvas) as Ref<MinimapCanvas | null>
 
     const interaction = useMinimapInteraction(
       containerRef,
@@ -163,7 +164,7 @@ describe('useMinimapInteraction', () => {
     const containerRef = ref(mockContainer)
     const boundsRef = ref({ minX: 0, minY: 0, width: 500, height: 400 })
     const scaleRef = ref(0.5)
-    const canvasRef = ref(mockCanvas as any)
+    const canvasRef = ref(mockCanvas) as Ref<MinimapCanvas | null>
 
     const interaction = useMinimapInteraction(
       containerRef,
@@ -189,7 +190,7 @@ describe('useMinimapInteraction', () => {
     const containerRef = ref(mockContainer)
     const boundsRef = ref({ minX: 0, minY: 0, width: 500, height: 400 })
     const scaleRef = ref(0.5)
-    const canvasRef = ref(mockCanvas as any)
+    const canvasRef = ref(mockCanvas) as Ref<MinimapCanvas | null>
 
     const interaction = useMinimapInteraction(
       containerRef,
@@ -220,7 +221,7 @@ describe('useMinimapInteraction', () => {
     const containerRef = ref(mockContainer)
     const boundsRef = ref({ minX: 0, minY: 0, width: 500, height: 400 })
     const scaleRef = ref(0.5)
-    const canvasRef = ref(mockCanvas as any)
+    const canvasRef = ref(mockCanvas) as Ref<MinimapCanvas | null>
 
     const interaction = useMinimapInteraction(
       containerRef,
@@ -250,7 +251,7 @@ describe('useMinimapInteraction', () => {
     const containerRef = ref(mockContainer)
     const boundsRef = ref({ minX: 0, minY: 0, width: 500, height: 400 })
     const scaleRef = ref(0.5)
-    const canvasRef = ref(mockCanvas as any)
+    const canvasRef = ref(mockCanvas) as Ref<MinimapCanvas | null>
 
     const interaction = useMinimapInteraction(
       containerRef,
@@ -283,7 +284,7 @@ describe('useMinimapInteraction', () => {
     const containerRef = ref<HTMLDivElement | null>(null)
     const boundsRef = ref({ minX: 0, minY: 0, width: 500, height: 400 })
     const scaleRef = ref(0.5)
-    const canvasRef = ref(mockCanvas as any)
+    const canvasRef = ref(mockCanvas) as Ref<MinimapCanvas | null>
 
     const interaction = useMinimapInteraction(
       containerRef,
@@ -306,7 +307,7 @@ describe('useMinimapInteraction', () => {
     const containerRef = ref(mockContainer)
     const boundsRef = ref({ minX: 0, minY: 0, width: 500, height: 400 })
     const scaleRef = ref(0.5)
-    const canvasRef = ref(null as any)
+    const canvasRef = ref(null) as Ref<MinimapCanvas | null>
 
     const interaction = useMinimapInteraction(
       containerRef,

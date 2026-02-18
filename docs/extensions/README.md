@@ -11,7 +11,6 @@ Extensions are the primary way to add functionality to ComfyUI. They can be cust
   - How extensions load (backend vs frontend)
   - Why extensions don't work in dev server
   - Development workarounds and best practices
-  
 - **[Core Extensions Reference](./core.md)** - Detailed reference for core extensions:
   - Complete list of all core extensions
   - Extension architecture principles

@@ -1,6 +1,6 @@
 import type { VueWrapper } from '@vue/test-utils'
 import { mount } from '@vue/test-utils'
-import { createPinia } from 'pinia'
+import { createTestingPinia } from '@pinia/testing'
 import Button from '@/components/ui/button/Button.vue'
 import PrimeVue from 'primevue/config'
 import Listbox from 'primevue/listbox'
@@ -16,6 +16,14 @@ import enMessages from '@/locales/en/main.json' with { type: 'json' }
 // SelectedVersion is now using direct strings instead of enum
 
 import PackVersionSelectorPopover from './PackVersionSelectorPopover.vue'
+
+interface PackVersionSelectorVM {
+  getVersionCompatibility: (version: string) => unknown
+}
+
+function getVM(wrapper: VueWrapper): PackVersionSelectorVM {
+  return wrapper.vm as Partial<PackVersionSelectorVM> as PackVersionSelectorVM
+}
 
 // Default mock versions for reference
 const defaultMockVersions = [
@@ -55,6 +63,8 @@ const mockNodePack = {
 const mockGetPackVersions = vi.fn()
 const mockInstallPack = vi.fn().mockResolvedValue(undefined)
 const mockCheckNodeCompatibility = vi.fn()
+const mockIsPackInstalled = vi.fn(() => false)
+const mockGetInstalledPackVersion = vi.fn(() => undefined)
 
 // Mock the registry service
 vi.mock('@/services/comfyRegistryService', () => ({
@@ -70,8 +80,8 @@ vi.mock('@/workbench/extensions/manager/stores/comfyManagerStore', () => ({
       call: mockInstallPack,
       clear: vi.fn()
     },
-    isPackInstalled: vi.fn(() => false),
-    getInstalledPackVersion: vi.fn(() => undefined)
+    isPackInstalled: mockIsPackInstalled,
+    getInstalledPackVersion: mockGetInstalledPackVersion
   }))
 }))
 
@@ -98,11 +108,13 @@ describe('PackVersionSelectorPopover', () => {
     mockCheckNodeCompatibility
       .mockReset()
       .mockReturnValue({ hasConflict: false, conflicts: [] })
+    mockIsPackInstalled.mockReset().mockReturnValue(false)
+    mockGetInstalledPackVersion.mockReset().mockReturnValue(undefined)
   })
 
   const mountComponent = ({
     props = {}
-  }: Record<string, any> = {}): VueWrapper => {
+  }: { props?: Record<string, unknown> } = {}): VueWrapper => {
     const i18n = createI18n({
       legacy: false,
       locale: 'en',
@@ -115,7 +127,7 @@ describe('PackVersionSelectorPopover', () => {
         ...props
       },
       global: {
-        plugins: [PrimeVue, createPinia(), i18n],
+        plugins: [PrimeVue, createTestingPinia({ stubActions: false }), i18n],
         components: {
           Listbox,
           VerifiedIcon,
@@ -477,7 +489,7 @@ describe('PackVersionSelectorPopover', () => {
       mockCheckNodeCompatibility.mockClear()
 
       // Trigger compatibility check by accessing getVersionCompatibility
-      const vm = wrapper.vm as any
+      const vm = getVM(wrapper)
       vm.getVersionCompatibility('1.0.0')
 
       // Verify that checkNodeCompatibility was called with correct data
@@ -565,7 +577,7 @@ describe('PackVersionSelectorPopover', () => {
       })
       await waitForPromises()
 
-      const vm = wrapper.vm as any
+      const vm = getVM(wrapper)
 
       // Clear previous calls from component mounting/rendering
       mockCheckNodeCompatibility.mockClear()

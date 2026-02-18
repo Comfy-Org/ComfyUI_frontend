@@ -5,6 +5,7 @@
 ComfyUI frontend uses a comprehensive settings system for user preferences with support for dynamic defaults, version-based rollouts, and environment-aware configuration.
 
 ### Settings Architecture
+
 - Settings are defined as `SettingParams` in `src/constants/coreSettings.ts`
 - Registered at app startup, loaded/saved via `useSettingStore` (Pinia)
 - Persisted per user via backend `/settings` endpoint
@@ -45,6 +46,7 @@ await newUserService().initializeIfNewUser(settingStore)
 ## Dynamic and Environment-Based Defaults
 
 ### Computed Defaults
+
 You can compute defaults dynamically using function defaults that access runtime context:
 
 ```typescript
@@ -65,14 +67,15 @@ You can compute defaults dynamically using function defaults that access runtime
 ```
 
 ### Version-Based Defaults
+
 You can vary defaults by installed frontend version using `defaultsByInstallVersion`:
 
 ```typescript
 // From src/stores/settingStore.ts:129-150
-function getVersionedDefaultValue<K extends keyof Settings, TValue = Settings[K]>(
-  key: K, 
-  param: SettingParams<TValue> | undefined
-): TValue | null {
+function getVersionedDefaultValue<
+  K extends keyof Settings,
+  TValue = Settings[K]
+>(key: K, param: SettingParams<TValue> | undefined): TValue | null {
   const defaultsByInstallVersion = param?.defaultsByInstallVersion
   if (defaultsByInstallVersion && key !== 'Comfy.InstalledVersion') {
     const installedVersion = get('Comfy.InstalledVersion')
@@ -166,15 +169,13 @@ The initial installed version is captured for new users to ensure versioned defa
 
 ```typescript
 // From src/services/newUserService.ts:49-53
-await settingStore.set(
-  'Comfy.InstalledVersion',
-  __COMFYUI_FRONTEND_VERSION__
-)
+await settingStore.set('Comfy.InstalledVersion', __COMFYUI_FRONTEND_VERSION__)
 ```
 
 ## Practical Patterns for Environment-Based Defaults
 
 ### Dynamic Default Patterns
+
 ```typescript
 // Device-based default
 {
@@ -199,6 +200,7 @@ await settingStore.set(
 ```
 
 ### Version-Based Rollout Pattern
+
 ```typescript
 {
   id: 'Comfy.Example.NewFeature',
@@ -214,6 +216,7 @@ await settingStore.set(
 ## Settings Persistence and Access
 
 ### API Interaction
+
 Values are stored per user via the backend. The store writes through API and falls back to defaults when not set:
 
 ```typescript
@@ -224,6 +227,7 @@ await api.storeSetting(key, newValue)
 ```
 
 ### Usage in Components
+
 ```typescript
 const settingStore = useSettingStore()
 
@@ -234,7 +238,6 @@ const value = settingStore.get('Comfy.SomeSetting')
 await settingStore.set('Comfy.SomeSetting', newValue)
 ```
 
-
 ## Advanced Settings Features
 
 ### Migration and Backward Compatibility
@@ -243,10 +246,7 @@ Settings support migration from deprecated values:
 
 ```typescript
 // From src/stores/settingStore.ts:68-69, 172-175
-const newValue = tryMigrateDeprecatedValue(
-  settingsById.value[key],
-  clonedValue
-)
+const newValue = tryMigrateDeprecatedValue(settingsById.value[key], clonedValue)
 
 // Migration happens during addSetting for existing values:
 if (settingValues.value[setting.id] !== undefined) {
@@ -263,8 +263,8 @@ Settings can define onChange callbacks that receive the setting definition, new 
 
 ```typescript
 // From src/stores/settingStore.ts:73, 177
-onChange(settingsById.value[key], newValue, oldValue)  // During set()
-onChange(setting, get(setting.id), undefined)         // During addSetting()
+onChange(settingsById.value[key], newValue, oldValue) // During set()
+onChange(setting, get(setting.id), undefined) // During addSetting()
 ```
 
 ### Settings UI and Categories

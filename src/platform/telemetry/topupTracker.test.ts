@@ -1,6 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type * as TopupTrackerModule from '@/platform/telemetry/topupTracker'
+import {
+  startTopupTracking,
+  checkForCompletedTopup,
+  clearTopupTracking
+} from '@/platform/telemetry/topupTracker'
 import type { AuditLog } from '@/services/customerEventsService'
 
 // Mock localStorage
@@ -25,19 +29,15 @@ vi.mock('@/platform/telemetry', () => ({
 }))
 
 describe('topupTracker', () => {
-  let topupTracker: typeof TopupTrackerModule
-
-  beforeEach(async () => {
+  beforeEach(() => {
     vi.clearAllMocks()
-    // Dynamically import to ensure fresh module state
-    topupTracker = await import('@/platform/telemetry/topupTracker')
   })
 
   describe('startTopupTracking', () => {
     it('should save current timestamp to localStorage', () => {
       const beforeTimestamp = Date.now()
 
-      topupTracker.startTopupTracking()
+      startTopupTracking()
 
       expect(mockLocalStorage.setItem).toHaveBeenCalledWith(
         'pending_topup_timestamp',
@@ -57,7 +57,7 @@ describe('topupTracker', () => {
     it('should return false if no pending topup exists', () => {
       mockLocalStorage.getItem.mockReturnValue(null)
 
-      const result = topupTracker.checkForCompletedTopup([])
+      const result = checkForCompletedTopup([])
 
       expect(result).toBe(false)
       expect(mockTelemetry.trackApiCreditTopupSucceeded).not.toHaveBeenCalled()
@@ -66,7 +66,7 @@ describe('topupTracker', () => {
     it('should return false if events array is empty', () => {
       mockLocalStorage.getItem.mockReturnValue(Date.now().toString())
 
-      const result = topupTracker.checkForCompletedTopup([])
+      const result = checkForCompletedTopup([])
 
       expect(result).toBe(false)
       expect(mockTelemetry.trackApiCreditTopupSucceeded).not.toHaveBeenCalled()
@@ -75,7 +75,7 @@ describe('topupTracker', () => {
     it('should return false if events array is null', () => {
       mockLocalStorage.getItem.mockReturnValue(Date.now().toString())
 
-      const result = topupTracker.checkForCompletedTopup(null)
+      const result = checkForCompletedTopup(null)
 
       expect(result).toBe(false)
       expect(mockTelemetry.trackApiCreditTopupSucceeded).not.toHaveBeenCalled()
@@ -94,7 +94,7 @@ describe('topupTracker', () => {
         }
       ]
 
-      const result = topupTracker.checkForCompletedTopup(events)
+      const result = checkForCompletedTopup(events)
 
       expect(result).toBe(false)
       expect(mockLocalStorage.removeItem).toHaveBeenCalledWith(
@@ -122,7 +122,7 @@ describe('topupTracker', () => {
         }
       ]
 
-      const result = topupTracker.checkForCompletedTopup(events)
+      const result = checkForCompletedTopup(events)
 
       expect(result).toBe(true)
       expect(mockTelemetry.trackApiCreditTopupSucceeded).toHaveBeenCalledOnce()
@@ -144,7 +144,7 @@ describe('topupTracker', () => {
         }
       ]
 
-      const result = topupTracker.checkForCompletedTopup(events)
+      const result = checkForCompletedTopup(events)
 
       expect(result).toBe(false)
       expect(mockTelemetry.trackApiCreditTopupSucceeded).not.toHaveBeenCalled()
@@ -164,7 +164,7 @@ describe('topupTracker', () => {
         }
       ]
 
-      const result = topupTracker.checkForCompletedTopup(events)
+      const result = checkForCompletedTopup(events)
 
       expect(result).toBe(false)
       expect(mockTelemetry.trackApiCreditTopupSucceeded).not.toHaveBeenCalled()
@@ -189,7 +189,7 @@ describe('topupTracker', () => {
         }
       ]
 
-      const result = topupTracker.checkForCompletedTopup(events)
+      const result = checkForCompletedTopup(events)
 
       expect(result).toBe(false)
       expect(mockTelemetry.trackApiCreditTopupSucceeded).not.toHaveBeenCalled()
@@ -198,7 +198,7 @@ describe('topupTracker', () => {
 
   describe('clearTopupTracking', () => {
     it('should remove pending topup from localStorage', () => {
-      topupTracker.clearTopupTracking()
+      clearTopupTracking()
 
       expect(mockLocalStorage.removeItem).toHaveBeenCalledWith(
         'pending_topup_timestamp'

@@ -3,7 +3,7 @@ import { expect } from '@playwright/test'
 import { comfyPageFixture as test } from '../fixtures/ComfyPage'
 
 test.beforeEach(async ({ comfyPage }) => {
-  await comfyPage.setSetting('Comfy.UseNewMenu', 'Disabled')
+  await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Disabled')
 })
 
 function listenForEvent(): Promise<Event> {
@@ -14,10 +14,10 @@ function listenForEvent(): Promise<Event> {
   })
 }
 
-test.describe('Canvas Event', () => {
+test.describe('Canvas Event', { tag: '@canvas' }, () => {
   test('Emit litegraph:canvas empty-release', async ({ comfyPage }) => {
     const eventPromise = comfyPage.page.evaluate(listenForEvent)
-    const disconnectPromise = comfyPage.disconnectEdge()
+    const disconnectPromise = comfyPage.canvasOps.disconnectEdge()
     const event = await eventPromise
     await disconnectPromise
 
@@ -29,7 +29,7 @@ test.describe('Canvas Event', () => {
 
   test('Emit litegraph:canvas empty-double-click', async ({ comfyPage }) => {
     const eventPromise = comfyPage.page.evaluate(listenForEvent)
-    const doubleClickPromise = comfyPage.doubleClickCanvas()
+    const doubleClickPromise = comfyPage.canvasOps.doubleClick()
     const event = await eventPromise
     await doubleClickPromise
 

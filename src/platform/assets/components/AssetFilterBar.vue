@@ -28,11 +28,11 @@
       />
 
       <SingleSelect
-        v-if="hasMutableAssets"
+        v-if="showOwnershipFilter"
         v-model="ownership"
         :label="$t('assetBrowser.ownership')"
         :options="ownershipOptions"
-        class="min-w-42"
+        class="min-w-32"
         data-component-id="asset-filter-ownership"
         @update:model-value="handleFilterChange"
       />
@@ -57,58 +57,42 @@
 
 <script setup lang="ts">
 import { computed, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import MultiSelect from '@/components/input/MultiSelect.vue'
 import SingleSelect from '@/components/input/SingleSelect.vue'
 import type { SelectOption } from '@/components/input/types'
-import { t } from '@/i18n'
-import type { OwnershipOption } from '@/platform/assets/composables/useAssetBrowser'
 import { useAssetFilterOptions } from '@/platform/assets/composables/useAssetFilterOptions'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import type {
+  AssetFilterState,
+  AssetSortOption,
+  OwnershipOption
+} from '@/platform/assets/types/filterTypes'
 
-const SORT_OPTIONS = [
-  { name: t('assetBrowser.sortRecent'), value: 'recent' },
-  { name: t('assetBrowser.sortAZ'), value: 'name-asc' },
-  { name: t('assetBrowser.sortZA'), value: 'name-desc' }
-] as const
+const { t } = useI18n()
 
-type SortOption = (typeof SORT_OPTIONS)[number]['value']
+const sortOptions = computed(() => [
+  { name: t('assetBrowser.sortRecent'), value: 'recent' as const },
+  { name: t('assetBrowser.sortAZ'), value: 'name-asc' as const },
+  { name: t('assetBrowser.sortZA'), value: 'name-desc' as const }
+])
 
-const sortOptions = [...SORT_OPTIONS]
-
-const ownershipOptions = [
-  { name: t('assetBrowser.ownershipAll'), value: 'all' },
-  { name: t('assetBrowser.ownershipMyModels'), value: 'my-models' },
-  { name: t('assetBrowser.ownershipPublicModels'), value: 'public-models' }
-]
-
-export interface FilterState {
-  fileFormats: string[]
-  baseModels: string[]
-  sortBy: string
-  ownership: OwnershipOption
-}
-
-const { assets = [], allAssets = [] } = defineProps<{
+const { assets = [], showOwnershipFilter = false } = defineProps<{
   assets?: AssetItem[]
-  allAssets?: AssetItem[]
+  showOwnershipFilter?: boolean
 }>()
 
 const fileFormats = ref<SelectOption[]>([])
 const baseModels = ref<SelectOption[]>([])
-const sortBy = ref<SortOption>('recent')
+const sortBy = ref<AssetSortOption>('recent')
 const ownership = ref<OwnershipOption>('all')
 
-const { availableFileFormats, availableBaseModels } =
-  useAssetFilterOptions(assets)
-
-const hasMutableAssets = computed(() => {
-  const assetsToCheck = allAssets.length ? allAssets : assets
-  return assetsToCheck.some((asset) => asset.is_immutable === false)
-})
+const { availableFileFormats, availableBaseModels, ownershipOptions } =
+  useAssetFilterOptions(() => assets)
 
 const emit = defineEmits<{
-  filterChange: [filters: FilterState]
+  filterChange: [filters: AssetFilterState]
 }>()
 
 function handleFilterChange() {

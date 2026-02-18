@@ -79,11 +79,12 @@
 
 <script setup lang="ts">
 import Checkbox from 'primevue/checkbox'
+import type { CSSProperties } from 'vue'
 
 import type { MinimapSettingsKey } from '@/renderer/extensions/minimap/types'
 
 defineProps<{
-  panelStyles: any
+  panelStyles: CSSProperties
   nodeColors: boolean
   showLinks: boolean
   showGroups: boolean

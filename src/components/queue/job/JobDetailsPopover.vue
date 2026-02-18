@@ -296,7 +296,7 @@ const extraRows = computed<DetailRow[]>(() => {
     ]
   }
   if (jobState.value === 'completed') {
-    const task = taskForJob.value as any
+    const task = taskForJob.value
     const endTs: number | undefined = task?.executionEndTimestamp
     const execMs: number | undefined = task?.executionTime
     const generatedOnValue = endTs ? formatClockTime(endTs, locale.value) : ''
@@ -321,7 +321,7 @@ const extraRows = computed<DetailRow[]>(() => {
     return rows
   }
   if (jobState.value === 'failed') {
-    const task = taskForJob.value as any
+    const task = taskForJob.value
     const execMs: number | undefined = task?.executionTime
     const failedAfterValue =
       execMs !== undefined ? formatElapsedTime(execMs) : ''

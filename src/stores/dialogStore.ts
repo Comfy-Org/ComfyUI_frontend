@@ -37,7 +37,7 @@ interface CustomDialogComponentProps {
 export type DialogComponentProps = ComponentAttrs<typeof GlobalDialog> &
   CustomDialogComponentProps
 
-interface DialogInstance<
+export interface DialogInstance<
   H extends Component = Component,
   B extends Component = Component,
   F extends Component = Component

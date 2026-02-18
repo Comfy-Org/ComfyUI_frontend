@@ -8,17 +8,19 @@ vi.mock('@/platform/distribution/types', () => ({
   isCloud: true
 }))
 
-const mockModelAssetsByNodeType = new Map<string, AssetItem[]>()
-const mockModelLoadingByNodeType = new Map<string, boolean>()
-const mockModelErrorByNodeType = new Map<string, Error | null>()
+const mockAssetsByKey = new Map<string, AssetItem[]>()
+const mockLoadingByKey = new Map<string, boolean>()
+const mockErrorByKey = new Map<string, Error | undefined>()
+const mockInitializedKeys = new Set<string>()
 const mockUpdateModelsForNodeType = vi.fn()
 const mockGetCategoryForNodeType = vi.fn()
 
 vi.mock('@/stores/assetsStore', () => ({
   useAssetsStore: () => ({
-    modelAssetsByNodeType: mockModelAssetsByNodeType,
-    modelLoadingByNodeType: mockModelLoadingByNodeType,
-    modelErrorByNodeType: mockModelErrorByNodeType,
+    getAssets: (key: string) => mockAssetsByKey.get(key) ?? [],
+    isModelLoading: (key: string) => mockLoadingByKey.get(key) ?? false,
+    getError: (key: string) => mockErrorByKey.get(key),
+    hasAssetKey: (key: string) => mockInitializedKeys.has(key),
     updateModelsForNodeType: mockUpdateModelsForNodeType
   })
 }))
@@ -32,9 +34,10 @@ vi.mock('@/stores/modelToNodeStore', () => ({
 describe('useAssetWidgetData (cloud mode, isCloud=true)', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    mockModelAssetsByNodeType.clear()
-    mockModelLoadingByNodeType.clear()
-    mockModelErrorByNodeType.clear()
+    mockAssetsByKey.clear()
+    mockLoadingByKey.clear()
+    mockErrorByKey.clear()
+    mockInitializedKeys.clear()
     mockGetCategoryForNodeType.mockReturnValue(undefined)
 
     mockUpdateModelsForNodeType.mockImplementation(
@@ -61,7 +64,7 @@ describe('useAssetWidgetData (cloud mode, isCloud=true)', () => {
     }
   })
 
-  it('fetches assets and transforms to dropdown items', async () => {
+  it('fetches assets for a given node type', async () => {
     const mockAssets: AssetItem[] = [
       createMockAsset(
         'asset-1',
@@ -76,15 +79,15 @@ describe('useAssetWidgetData (cloud mode, isCloud=true)', () => {
 
     mockUpdateModelsForNodeType.mockImplementation(
       async (_nodeType: string): Promise<AssetItem[]> => {
-        mockModelAssetsByNodeType.set(_nodeType, mockAssets)
-        mockModelLoadingByNodeType.set(_nodeType, false)
+        mockInitializedKeys.add(_nodeType)
+        mockAssetsByKey.set(_nodeType, mockAssets)
+        mockLoadingByKey.set(_nodeType, false)
         return mockAssets
       }
     )
 
     const nodeType = ref('CheckpointLoaderSimple')
-    const { category, assets, dropdownItems, isLoading } =
-      useAssetWidgetData(nodeType)
+    const { category, assets, isLoading } = useAssetWidgetData(nodeType)
 
     await nextTick()
     await vi.waitFor(() => !isLoading.value)
@@ -94,13 +97,10 @@ describe('useAssetWidgetData (cloud mode, isCloud=true)', () => {
     )
     expect(category.value).toBe('checkpoints')
     expect(assets.value).toEqual(mockAssets)
-
-    expect(dropdownItems.value).toHaveLength(2)
-    const item = dropdownItems.value[0]
-    expect(item.id).toBe('asset-1')
-    expect(item.name).toBe('models/beautiful_model.safetensors')
-    expect(item.label).toBe('Beautiful Model')
-    expect(item.mediaSrc).toBe('/api/preview/asset-1')
+    expect(assets.value).toHaveLength(2)
+    expect(assets.value[0].id).toBe('asset-1')
+    expect(assets.value[0].name).toBe('Beautiful Model')
+    expect(assets.value[0].preview_url).toBe('/api/preview/asset-1')
   })
 
   it('handles API errors gracefully', async () => {
@@ -108,9 +108,10 @@ describe('useAssetWidgetData (cloud mode, isCloud=true)', () => {
 
     mockUpdateModelsForNodeType.mockImplementation(
       async (_nodeType: string): Promise<AssetItem[]> => {
-        mockModelErrorByNodeType.set(_nodeType, mockError)
-        mockModelAssetsByNodeType.set(_nodeType, [])
-        mockModelLoadingByNodeType.set(_nodeType, false)
+        mockInitializedKeys.add(_nodeType)
+        mockErrorByKey.set(_nodeType, mockError)
+        mockAssetsByKey.set(_nodeType, [])
+        mockLoadingByKey.set(_nodeType, false)
         return []
       }
     )
@@ -130,8 +131,9 @@ describe('useAssetWidgetData (cloud mode, isCloud=true)', () => {
 
     mockUpdateModelsForNodeType.mockImplementation(
       async (_nodeType: string): Promise<AssetItem[]> => {
-        mockModelAssetsByNodeType.set(_nodeType, [])
-        mockModelLoadingByNodeType.set(_nodeType, false)
+        mockInitializedKeys.add(_nodeType)
+        mockAssetsByKey.set(_nodeType, [])
+        mockLoadingByKey.set(_nodeType, false)
         return []
       }
     )
@@ -154,8 +156,9 @@ describe('useAssetWidgetData (cloud mode, isCloud=true)', () => {
       mockGetCategoryForNodeType.mockReturnValue('checkpoints')
       mockUpdateModelsForNodeType.mockImplementation(
         async (_nodeType: string): Promise<AssetItem[]> => {
-          mockModelAssetsByNodeType.set(_nodeType, mockAssets)
-          mockModelLoadingByNodeType.set(_nodeType, false)
+          mockInitializedKeys.add(_nodeType)
+          mockAssetsByKey.set(_nodeType, mockAssets)
+          mockLoadingByKey.set(_nodeType, false)
           return mockAssets
         }
       )
@@ -182,8 +185,9 @@ describe('useAssetWidgetData (cloud mode, isCloud=true)', () => {
       mockGetCategoryForNodeType.mockReturnValue('loras')
       mockUpdateModelsForNodeType.mockImplementation(
         async (_nodeType: string): Promise<AssetItem[]> => {
-          mockModelAssetsByNodeType.set(_nodeType, mockAssets)
-          mockModelLoadingByNodeType.set(_nodeType, false)
+          mockInitializedKeys.add(_nodeType)
+          mockAssetsByKey.set(_nodeType, mockAssets)
+          mockLoadingByKey.set(_nodeType, false)
           return mockAssets
         }
       )
@@ -209,8 +213,9 @@ describe('useAssetWidgetData (cloud mode, isCloud=true)', () => {
       mockGetCategoryForNodeType.mockReturnValue('checkpoints')
       mockUpdateModelsForNodeType.mockImplementation(
         async (_nodeType: string): Promise<AssetItem[]> => {
-          mockModelAssetsByNodeType.set(_nodeType, mockAssets)
-          mockModelLoadingByNodeType.set(_nodeType, false)
+          mockInitializedKeys.add(_nodeType)
+          mockAssetsByKey.set(_nodeType, mockAssets)
+          mockLoadingByKey.set(_nodeType, false)
           return mockAssets
         }
       )
@@ -229,7 +234,7 @@ describe('useAssetWidgetData (cloud mode, isCloud=true)', () => {
     })
 
     it('handles undefined node type gracefully', async () => {
-      const { category, assets, dropdownItems, isLoading, error } =
+      const { category, assets, isLoading, error } =
         useAssetWidgetData(undefined)
 
       await nextTick()
@@ -237,7 +242,6 @@ describe('useAssetWidgetData (cloud mode, isCloud=true)', () => {
       expect(mockUpdateModelsForNodeType).not.toHaveBeenCalled()
       expect(category.value).toBeUndefined()
       expect(assets.value).toEqual([])
-      expect(dropdownItems.value).toEqual([])
       expect(isLoading.value).toBe(false)
       expect(error.value).toBeNull()
     })

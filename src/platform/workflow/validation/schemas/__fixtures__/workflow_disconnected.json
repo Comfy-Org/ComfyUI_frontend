@@ -5,10 +5,7 @@
     {
       "id": 7,
       "type": "CLIPTextEncode",
-      "pos": [
-        413,
-        389
-      ],
+      "pos": [413, 389],
       "size": {
         "0": 425.27801513671875,
         "1": 180.6060791015625
@@ -34,17 +31,12 @@
       "properties": {
         "Node name for S&R": "CLIPTextEncode"
       },
-      "widgets_values": [
-        "text, watermark"
-      ]
+      "widgets_values": ["text, watermark"]
     },
     {
       "id": 6,
       "type": "CLIPTextEncode",
-      "pos": [
-        406.3210576748693,
-        165.8590597338342
-      ],
+      "pos": [406.3210576748693, 165.8590597338342],
       "size": {
         "0": 422.84503173828125,
         "1": 164.31304931640625
@@ -63,9 +55,7 @@
         {
           "name": "CONDITIONING",
           "type": "CONDITIONING",
-          "links": [
-            4
-          ],
+          "links": [4],
           "slot_index": 0
         }
       ],
@@ -79,10 +69,7 @@
     {
       "id": 5,
       "type": "EmptyLatentImage",
-      "pos": [
-        473,
-        609
-      ],
+      "pos": [473, 609],
       "size": {
         "0": 315,
         "1": 106
@@ -94,28 +81,19 @@
         {
           "name": "LATENT",
           "type": "LATENT",
-          "links": [
-            2
-          ],
+          "links": [2],
           "slot_index": 0
         }
       ],
       "properties": {
         "Node name for S&R": "EmptyLatentImage"
       },
-      "widgets_values": [
-        512,
-        512,
-        1
-      ]
+      "widgets_values": [512, 512, 1]
     },
     {
       "id": 9,
       "type": "SaveImage",
-      "pos": [
-        1451,
-        189
-      ],
+      "pos": [1451, 189],
       "size": {
         "0": 210,
         "1": 58
@@ -133,17 +111,12 @@
       "properties": {
         "Node name for S&R": "SaveImage"
       },
-      "widgets_values": [
-        "ComfyUI"
-      ]
+      "widgets_values": ["ComfyUI"]
     },
     {
       "id": 4,
       "type": "CheckpointLoaderSimple",
-      "pos": [
-        26,
-        474
-      ],
+      "pos": [26, 474],
       "size": {
         "0": 315,
         "1": 98
@@ -155,43 +128,31 @@
         {
           "name": "MODEL",
           "type": "MODEL",
-          "links": [
-            1
-          ],
+          "links": [1],
           "slot_index": 0
         },
         {
           "name": "CLIP",
           "type": "CLIP",
-          "links": [
-            3,
-            5
-          ],
+          "links": [3, 5],
           "slot_index": 1
         },
         {
           "name": "VAE",
           "type": "VAE",
-          "links": [
-            8
-          ],
+          "links": [8],
           "slot_index": 2
         }
       ],
       "properties": {
         "Node name for S&R": "CheckpointLoaderSimple"
       },
-      "widgets_values": [
-        "3Guofeng3_v32Light.safetensors"
-      ]
+      "widgets_values": ["3Guofeng3_v32Light.safetensors"]
     },
     {
       "id": 3,
       "type": "KSampler",
-      "pos": [
-        863,
-        186
-      ],
+      "pos": [863, 186],
       "size": {
         "0": 315,
         "1": 262
@@ -245,10 +206,7 @@
     {
       "id": 8,
       "type": "VAEDecode",
-      "pos": [
-        1209,
-        188
-      ],
+      "pos": [1209, 188],
       "size": {
         "0": 210,
         "1": 46
@@ -272,9 +230,7 @@
         {
           "name": "IMAGE",
           "type": "IMAGE",
-          "links": [
-            9
-          ],
+          "links": [9],
           "slot_index": 0
         }
       ],
@@ -284,72 +240,18 @@
     }
   ],
   "links": [
-    [
-      1,
-      4,
-      0,
-      3,
-      0,
-      "MODEL"
-    ],
-    [
-      2,
-      5,
-      0,
-      3,
-      3,
-      "LATENT"
-    ],
-    [
-      3,
-      4,
-      1,
-      6,
-      0,
-      "CLIP"
-    ],
-    [
-      4,
-      6,
-      0,
-      3,
-      1,
-      "CONDITIONING"
-    ],
-    [
-      5,
-      4,
-      1,
-      7,
-      0,
-      "CLIP"
-    ],
-    [
-      8,
-      4,
-      2,
-      8,
-      1,
-      "VAE"
-    ],
-    [
-      9,
-      8,
-      0,
-      9,
-      0,
-      "IMAGE"
-    ]
+    [1, 4, 0, 3, 0, "MODEL"],
+    [2, 5, 0, 3, 3, "LATENT"],
+    [3, 4, 1, 6, 0, "CLIP"],
+    [4, 6, 0, 3, 1, "CONDITIONING"],
+    [5, 4, 1, 7, 0, "CLIP"],
+    [8, 4, 2, 8, 1, "VAE"],
+    [9, 8, 0, 9, 0, "IMAGE"]
   ],
   "groups": [
     {
       "title": "Group",
-      "bounding": [
-        489,
-        95,
-        140,
-        80
-      ],
+      "bounding": [489, 95, 140, 80],
       "color": "#3f789e",
       "font_size": 24,
       "locked": false
@@ -359,10 +261,7 @@
   "extra": {
     "ds": {
       "scale": 1.3513057093104008,
-      "offset": [
-        127.07026983402625,
-        138.77779138162384
-      ]
+      "offset": [127.07026983402625, 138.77779138162384]
     }
   },
   "version": 0.4

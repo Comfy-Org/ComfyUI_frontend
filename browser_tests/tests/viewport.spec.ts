@@ -2,11 +2,13 @@ import { expect } from '@playwright/test'
 
 import { comfyPageFixture as test } from '../fixtures/ComfyPage'
 
-test.describe('Viewport', () => {
+test.describe('Viewport', { tag: ['@screenshot', '@smoke', '@canvas'] }, () => {
   test('Fits view to nodes when saved viewport position is offscreen', async ({
     comfyPage
   }) => {
-    await comfyPage.loadWorkflow('viewport/default-viewport-saved-offscreen')
+    await comfyPage.workflow.loadWorkflow(
+      'viewport/default-viewport-saved-offscreen'
+    )
 
     // Wait a few frames for rendering to stabilize
     for (let i = 0; i < 5; i++) {

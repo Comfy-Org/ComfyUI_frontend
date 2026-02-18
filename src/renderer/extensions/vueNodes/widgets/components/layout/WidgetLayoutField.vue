@@ -1,7 +1,6 @@
 <script setup lang="ts">
-import { inject } from 'vue'
-
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
+import { useHideLayoutField } from '@/types/widgetTypes'
 import { cn } from '@/utils/tailwindUtil'
 
 defineProps<{
@@ -11,7 +10,7 @@ defineProps<{
   >
 }>()
 
-const hideLayoutField = inject<boolean>('hideLayoutField', false)
+const hideLayoutField = useHideLayoutField()
 </script>
 
 <template>

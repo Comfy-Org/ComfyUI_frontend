@@ -11,7 +11,7 @@ This guide covers patterns and examples for unit testing utilities, composables,
 5. [Mocking Utility Functions](#mocking-utility-functions)
 6. [Testing with Debounce and Throttle](#testing-with-debounce-and-throttle)
 7. [Mocking Node Definitions](#mocking-node-definitions)
-
+8. [Mocking Composables with Reactive State](#mocking-composables-with-reactive-state)
 
 ## Testing Vue Composables with Reactivity
 
@@ -37,16 +37,18 @@ describe('useServerLogs', () => {
 
     // Simulate log event handler being called
     const mockHandler = vi.mocked(useEventListener).mock.calls[0][2]
-    mockHandler(new CustomEvent('logs', {
-      detail: {
-        type: 'logs',
-        entries: [{ m: 'Log message' }]
-      }
-    }))
-    
+    mockHandler(
+      new CustomEvent('logs', {
+        detail: {
+          type: 'logs',
+          entries: [{ m: 'Log message' }]
+        }
+      })
+    )
+
     // Must wait for Vue reactivity to update
     await nextTick()
-    
+
     expect(logs.value).toEqual(['Log message'])
   })
 })
@@ -72,12 +74,12 @@ describe('LGraph', () => {
   it('should serialize graph nodes', async () => {
     // Register node type
     LiteGraph.registerNodeType('dummy', DummyNode)
-    
+
     // Create graph with nodes
     const graph = new LGraph()
     const node = new DummyNode()
     graph.add(node)
-    
+
     // Test serialization
     const result = graph.serialize()
     expect(result.nodes).toHaveLength(1)
@@ -99,18 +101,18 @@ import { defaultGraph } from '@/scripts/defaultGraph'
 describe('workflow validation', () => {
   it('should validate default workflow', async () => {
     const validWorkflow = JSON.parse(JSON.stringify(defaultGraph))
-    
+
     // Validate workflow
     const result = await validateComfyWorkflow(validWorkflow)
     expect(result).not.toBeNull()
   })
-  
+
   it('should handle position format conversion', async () => {
     const workflow = JSON.parse(JSON.stringify(defaultGraph))
-    
+
     // Legacy position format as object
     workflow.nodes[0].pos = { '0': 100, '1': 200 }
-    
+
     // Should convert to array format
     const result = await validateComfyWorkflow(workflow)
     expect(result.nodes[0].pos).toEqual([100, 200])
@@ -139,7 +141,7 @@ vi.mock('@/scripts/api', () => ({
 it('should subscribe to logs API', () => {
   // Call function that uses the API
   startListening()
-  
+
   // Verify API was called correctly
   expect(api.subscribeLogs).toHaveBeenCalledWith(true)
 })
@@ -167,9 +169,9 @@ describe('Function using debounce', () => {
   it('calls debounced function immediately in tests', () => {
     const mockFn = vi.fn()
     const debouncedFn = debounce(mockFn, 1000)
-    
+
     debouncedFn()
-    
+
     // No need to wait - our mock makes it execute immediately
     expect(mockFn).toHaveBeenCalled()
   })
@@ -190,25 +192,25 @@ describe('debounced function', () => {
   })
 
   afterEach(() => {
-    vi.useRealTimers() 
+    vi.useRealTimers()
   })
 
   it('should debounce function calls', () => {
     const mockFn = vi.fn()
     const debouncedFn = debounce(mockFn, 1000)
-    
+
     // Call multiple times
     debouncedFn()
     debouncedFn()
     debouncedFn()
-    
+
     // Function not called yet (debounced)
     expect(mockFn).not.toHaveBeenCalled()
-    
+
     // Advance time just before debounce period
     vi.advanceTimersByTime(999)
     expect(mockFn).not.toHaveBeenCalled()
-    
+
     // Advance to debounce completion
     vi.advanceTimersByTime(1)
     expect(mockFn).toHaveBeenCalledTimes(1)
@@ -223,7 +225,10 @@ Creating mock node definitions for testing:
 ```typescript
 // Example from: tests-ui/tests/apiTypes.test.ts
 import { describe, expect, it } from 'vitest'
-import { type ComfyNodeDef, validateComfyNodeDef } from '@/schemas/nodeDefSchema'
+import {
+  type ComfyNodeDef,
+  validateComfyNodeDef
+} from '@/schemas/nodeDefSchema'
 
 // Create a complete mock node definition
 const EXAMPLE_NODE_DEF: ComfyNodeDef = {
@@ -248,4 +253,80 @@ const EXAMPLE_NODE_DEF: ComfyNodeDef = {
 it('should validate node definition', () => {
   expect(validateComfyNodeDef(EXAMPLE_NODE_DEF)).not.toBeNull()
 })
+```
+
+## Mocking Composables with Reactive State
+
+When mocking composables that return reactive refs, define the mock implementation inline in `vi.mock()`'s factory function. This ensures stable singleton instances across all test invocations.
+
+### Rules
+
+1. **Define mocks in the factory function** — Create `vi.fn()` and `ref()` instances directly inside `vi.mock()`, not in `beforeEach`
+2. **Use singleton pattern** — The factory runs once; all calls to the composable return the same mock object
+3. **Access mocks per-test** — Call the composable directly in each test to get the singleton instance rather than storing in a shared variable
+4. **Wrap in `vi.mocked()` for type safety** — Use `vi.mocked(service.method).mockResolvedValue(...)` when configuring
+5. **Rely on `vi.resetAllMocks()`** — Resets call counts without recreating instances; ref values may need manual reset if mutated
+
+### Pattern
+
+```typescript
+// Example from: src/platform/updates/common/releaseStore.test.ts
+import { ref } from 'vue'
+
+vi.mock('@/path/to/composable', () => {
+  const doSomething = vi.fn()
+  const isLoading = ref(false)
+  const error = ref<string | null>(null)
+  return {
+    useMyComposable: () => ({
+      doSomething,
+      isLoading,
+      error
+    })
+  }
+})
+
+describe('MyStore', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  it('should call the composable method', async () => {
+    const service = useMyComposable()
+    vi.mocked(service.doSomething).mockResolvedValue({ data: 'test' })
+
+    await store.initialize()
+
+    expect(service.doSomething).toHaveBeenCalledWith(expectedArgs)
+  })
+
+  it('should handle errors from the composable', async () => {
+    const service = useMyComposable()
+    vi.mocked(service.doSomething).mockResolvedValue(null)
+    service.error.value = 'Something went wrong'
+
+    await store.initialize()
+
+    expect(store.error).toBe('Something went wrong')
+  })
+})
+```
+
+### Anti-patterns
+
+```typescript
+// ❌ Don't configure mock return values in beforeEach with shared variable
+let mockService: { doSomething: Mock }
+beforeEach(() => {
+  mockService = { doSomething: vi.fn() }
+  vi.mocked(useMyComposable).mockReturnValue(mockService)
+})
+
+// ❌ Don't auto-mock then override — reactive refs won't work correctly
+vi.mock('@/path/to/composable')
+vi.mocked(useMyComposable).mockReturnValue({ isLoading: ref(false) })
+```
+
+```
+
 ```

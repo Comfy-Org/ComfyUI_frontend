@@ -1,3 +1,4 @@
+import type { ReadOnlyRect } from '@/lib/litegraph/src/interfaces'
 import { LGraphIcon } from './LGraphIcon'
 import type { LGraphIconOptions } from './LGraphIcon'
 
@@ -15,6 +16,7 @@ export interface LGraphBadgeOptions {
   height?: number
   cornerRadius?: number
   iconOptions?: LGraphIconOptions
+  onClick?: (e: MouseEvent) => void
   xOffset?: number
   yOffset?: number
 }
@@ -28,8 +30,14 @@ export class LGraphBadge {
   height: number
   cornerRadius: number
   icon?: LGraphIcon
+  onClick?: (e: MouseEvent) => void
   xOffset: number
   yOffset: number
+
+  readonly _boundingRect: [number, number, number, number] = [0, 0, 0, 0]
+  get boundingRect(): ReadOnlyRect {
+    return this._boundingRect
+  }
 
   constructor({
     text,
@@ -40,6 +48,7 @@ export class LGraphBadge {
     height = 20,
     cornerRadius = 5,
     iconOptions,
+    onClick,
     xOffset = 0,
     yOffset = 0
   }: LGraphBadgeOptions) {
@@ -53,6 +62,7 @@ export class LGraphBadge {
     if (iconOptions) {
       this.icon = new LGraphIcon(iconOptions)
     }
+    this.onClick = onClick
     this.xOffset = xOffset
     this.yOffset = yOffset
   }
@@ -90,6 +100,8 @@ export class LGraphBadge {
     ctx.font = `${this.fontSize}px sans-serif`
     const badgeWidth = this.getWidth(ctx)
     const badgeX = 0
+
+    this._boundingRect.splice(0, 4, x, y, badgeWidth, this.height)
 
     // Draw badge background
     ctx.fillStyle = this.bgColor

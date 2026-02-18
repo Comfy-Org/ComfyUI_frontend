@@ -42,9 +42,7 @@
         {
           "name": "LATENT",
           "type": "LATENT",
-          "links": [
-            7
-          ],
+          "links": [7],
           "slot_index": 0
         }
       ],
@@ -82,35 +80,26 @@
         {
           "name": "MODEL",
           "type": "MODEL",
-          "links": [
-            1
-          ],
+          "links": [1],
           "slot_index": 0
         },
         {
           "name": "CLIP",
           "type": "CLIP",
-          "links": [
-            3,
-            5
-          ],
+          "links": [3, 5],
           "slot_index": 1
         },
         {
           "name": "VAE",
           "type": "VAE",
-          "links": [
-            8
-          ],
+          "links": [8],
           "slot_index": 2
         }
       ],
       "properties": {
         "Node name for S&R": "CheckpointLoaderSimple"
       },
-      "widgets_values": [
-        "Stable-diffusion/v1-5-pruned-emaonly.safetensors"
-      ],
+      "widgets_values": ["Stable-diffusion/v1-5-pruned-emaonly.safetensors"],
       "color": "#322",
       "bgcolor": "#533"
     },
@@ -133,20 +122,14 @@
         {
           "name": "LATENT",
           "type": "LATENT",
-          "links": [
-            2
-          ],
+          "links": [2],
           "slot_index": 0
         }
       ],
       "properties": {
         "Node name for S&R": "EmptyLatentImage"
       },
-      "widgets_values": [
-        512,
-        512,
-        1
-      ],
+      "widgets_values": [512, 512, 1],
       "color": "#323",
       "bgcolor": "#535"
     },
@@ -175,9 +158,7 @@
         {
           "name": "CONDITIONING",
           "type": "CONDITIONING",
-          "links": [
-            4
-          ],
+          "links": [4],
           "slot_index": 0
         }
       ],
@@ -215,18 +196,14 @@
         {
           "name": "CONDITIONING",
           "type": "CONDITIONING",
-          "links": [
-            6
-          ],
+          "links": [6],
           "slot_index": 0
         }
       ],
       "properties": {
         "Node name for S&R": "CLIPTextEncode"
       },
-      "widgets_values": [
-        "text, watermark"
-      ],
+      "widgets_values": ["text, watermark"],
       "color": "#323",
       "bgcolor": "#535"
     },
@@ -260,9 +237,7 @@
         {
           "name": "IMAGE",
           "type": "IMAGE",
-          "links": [
-            9
-          ],
+          "links": [9],
           "slot_index": 0
         }
       ],
@@ -280,10 +255,7 @@
         "0": 857,
         "1": 611
       },
-      "size": [
-        214.2000732421875,
-        59.4000244140625
-      ],
+      "size": [214.2000732421875, 59.4000244140625],
       "flags": {},
       "order": 9,
       "mode": 0,
@@ -296,9 +268,7 @@
       ],
       "outputs": [],
       "properties": {},
-      "widgets_values": [
-        "ComfyUI"
-      ]
+      "widgets_values": ["ComfyUI"]
     },
     {
       "id": 10,
@@ -335,9 +305,7 @@
       "properties": {
         "Node name for S&R": "CheckpointLoaderSimple"
       },
-      "widgets_values": [
-        "Stable-diffusion/v1-5-pruned-emaonly.safetensors"
-      ],
+      "widgets_values": ["Stable-diffusion/v1-5-pruned-emaonly.safetensors"],
       "color": "#332922",
       "bgcolor": "#593930"
     },
@@ -376,9 +344,7 @@
       "properties": {
         "Node name for S&R": "CheckpointLoaderSimple"
       },
-      "widgets_values": [
-        "Stable-diffusion/v1-5-pruned-emaonly.safetensors"
-      ],
+      "widgets_values": ["Stable-diffusion/v1-5-pruned-emaonly.safetensors"],
       "color": "#223",
       "bgcolor": "#335"
     },
@@ -413,89 +379,21 @@
       "properties": {
         "Node name for S&R": "ImageScale"
       },
-      "widgets_values": [
-        "nearest-exact",
-        512,
-        512,
-        "disabled"
-      ],
+      "widgets_values": ["nearest-exact", 512, 512, "disabled"],
       "color": "#2a363b",
       "bgcolor": "#3f5159"
     }
   ],
   "links": [
-    [
-      1,
-      4,
-      0,
-      3,
-      0,
-      "MODEL"
-    ],
-    [
-      2,
-      5,
-      0,
-      3,
-      3,
-      "LATENT"
-    ],
-    [
-      3,
-      4,
-      1,
-      6,
-      0,
-      "CLIP"
-    ],
-    [
-      4,
-      6,
-      0,
-      3,
-      1,
-      "CONDITIONING"
-    ],
-    [
-      5,
-      4,
-      1,
-      7,
-      0,
-      "CLIP"
-    ],
-    [
-      6,
-      7,
-      0,
-      3,
-      2,
-      "CONDITIONING"
-    ],
-    [
-      7,
-      3,
-      0,
-      8,
-      0,
-      "LATENT"
-    ],
-    [
-      8,
-      4,
-      2,
-      8,
-      1,
-      "VAE"
-    ],
-    [
-      9,
-      8,
-      0,
-      9,
-      0,
-      "IMAGE"
-    ]
+    [1, 4, 0, 3, 0, "MODEL"],
+    [2, 5, 0, 3, 3, "LATENT"],
+    [3, 4, 1, 6, 0, "CLIP"],
+    [4, 6, 0, 3, 1, "CONDITIONING"],
+    [5, 4, 1, 7, 0, "CLIP"],
+    [6, 7, 0, 3, 2, "CONDITIONING"],
+    [7, 3, 0, 8, 0, "LATENT"],
+    [8, 4, 2, 8, 1, "VAE"],
+    [9, 8, 0, 9, 0, "IMAGE"]
   ],
   "groups": [],
   "config": {},

@@ -9,10 +9,7 @@
         "0": 449,
         "1": 204
       },
-      "size": [
-        340.20001220703125,
-        166
-      ],
+      "size": [340.20001220703125, 166],
       "flags": {},
       "order": 1,
       "mode": 0,
@@ -61,11 +58,7 @@
       "properties": {
         "Node name for S&R": "ControlNetApplyAdvanced"
       },
-      "widgets_values": [
-        1,
-        0,
-        1
-      ]
+      "widgets_values": [1, 0, 1]
     },
     {
       "id": 2,
@@ -74,10 +67,7 @@
         "0": 177,
         "1": 265
       },
-      "size": [
-        210,
-        82
-      ],
+      "size": [210, 82],
       "flags": {},
       "order": 0,
       "mode": 0,
@@ -86,9 +76,7 @@
         {
           "name": "FLOAT",
           "type": "FLOAT",
-          "links": [
-            1
-          ],
+          "links": [1],
           "widget": {
             "name": "strength"
           }
@@ -97,22 +85,10 @@
       "properties": {
         "Run widget replace on values": false
       },
-      "widgets_values": [
-        1,
-        "fixed"
-      ]
+      "widgets_values": [1, "fixed"]
     }
   ],
-  "links": [
-    [
-      1,
-      2,
-      0,
-      1,
-      4,
-      "FLOAT"
-    ]
-  ],
+  "links": [[1, 2, 0, 1, 4, "FLOAT"]],
   "groups": [],
   "config": {},
   "extra": {

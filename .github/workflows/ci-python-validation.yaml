@@ -1,5 +1,5 @@
 # Description: Validates Python code in tools/devtools directory
-name: "CI: Python Validation"
+name: 'CI: Python Validation'
 
 on:
   pull_request:
@@ -16,10 +16,10 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: '3.11'
 

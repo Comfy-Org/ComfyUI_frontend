@@ -18,7 +18,8 @@ Basic setup for testing Pinia stores:
 
 ```typescript
 // Example from: tests-ui/tests/store/workflowStore.test.ts
-import { createPinia, setActivePinia } from 'pinia'
+import { createTestingPinia } from '@pinia/testing'
+import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useWorkflowStore } from '@/domains/workflow/ui/stores/workflowStore'
@@ -27,12 +28,12 @@ describe('useWorkflowStore', () => {
   let store: ReturnType<typeof useWorkflowStore>
 
   beforeEach(() => {
-    // Create a fresh pinia and activate it for each test
-    setActivePinia(createPinia())
-    
+    // Create a fresh testing pinia and activate it for each test
+    setActivePinia(createTestingPinia({ stubActions: false }))
+
     // Initialize the store
     store = useWorkflowStore()
-    
+
     // Clear any mocks
     vi.clearAllMocks()
   })
@@ -119,18 +120,21 @@ describe('getters', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
     store = useModelStore()
-    
+
     // Set up test data
     store.models = {
       checkpoints: [
-        { name: 'model1.safetensors', path: 'models/checkpoints/model1.safetensors' },
+        {
+          name: 'model1.safetensors',
+          path: 'models/checkpoints/model1.safetensors'
+        },
         { name: 'model2.ckpt', path: 'models/checkpoints/model2.ckpt' }
       ],
       loras: [
         { name: 'lora1.safetensors', path: 'models/loras/lora1.safetensors' }
       ]
     }
-    
+
     // Mock API
     vi.mocked(api.getModelInfo).mockImplementation(async (modelName) => {
       if (modelName.includes('model1')) {

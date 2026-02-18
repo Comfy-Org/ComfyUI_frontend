@@ -1,17 +1,13 @@
 <template>
-  <div class="flex flex-col gap-4 text-sm">
+  <div class="flex flex-col gap-1 text-sm">
     <template v-if="mappedNodeDefs?.length">
-      <div
-        v-for="nodeDef in mappedNodeDefs"
-        :key="createNodeDefKey(nodeDef)"
-        class="rounded-lg border p-4"
-      >
-        <div class="[zoom:0.6]">
-          <NodePreview
-            :node-def="nodeDef"
-            position="relative"
-            class="min-w-full! text-[.625rem]!"
-          />
+      <div class="flex flex-col gap-2">
+        <div
+          v-for="nodeDef in mappedNodeDefs"
+          :key="createNodeDefKey(nodeDef)"
+          class="scale-75"
+        >
+          <NodePreview :node-def="nodeDef" class="min-w-full!" />
         </div>
       </div>
     </template>

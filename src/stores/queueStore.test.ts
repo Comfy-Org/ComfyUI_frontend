@@ -1,4 +1,5 @@
-import { createPinia, setActivePinia } from 'pinia'
+import { createTestingPinia } from '@pinia/testing'
+import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { JobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
@@ -37,12 +38,19 @@ function createHistoryJob(createTime: number, id: string): JobListItem {
 
 const createTaskOutput = (
   nodeId: string = 'node-1',
-  images: any[] = []
+  images: {
+    type?: 'output' | 'input' | 'temp'
+    filename?: string
+    subfolder?: string
+  }[] = []
 ): TaskOutput => ({
   [nodeId]: {
     images
   }
 })
+
+type QueueResponse = { Running: JobListItem[]; Pending: JobListItem[] }
+type QueueResolver = (value: QueueResponse) => void
 
 // Mock API
 vi.mock('@/scripts/api', () => ({
@@ -240,7 +248,7 @@ describe('useQueueStore', () => {
   let store: ReturnType<typeof useQueueStore>
 
   beforeEach(() => {
-    setActivePinia(createPinia())
+    setActivePinia(createTestingPinia({ stubActions: false }))
     store = useQueueStore()
     vi.clearAllMocks()
   })
@@ -489,7 +497,7 @@ describe('useQueueStore', () => {
     it('should recreate TaskItemImpl when outputs_count changes', async () => {
       // Initial load without outputs_count
       const jobWithoutOutputsCount = createHistoryJob(10, 'job-1')
-      delete (jobWithoutOutputsCount as any).outputs_count
+      delete jobWithoutOutputsCount.outputs_count
 
       mockGetQueue.mockResolvedValue({ Running: [], Pending: [] })
       mockGetHistory.mockResolvedValue([jobWithoutOutputsCount])
@@ -795,6 +803,108 @@ describe('useQueueStore', () => {
 
       expect(mockGetQueue).toHaveBeenCalled()
       expect(mockGetHistory).toHaveBeenCalled()
+    })
+  })
+
+  describe('update deduplication', () => {
+    it('should discard stale responses when newer request completes first', async () => {
+      let resolveFirst: QueueResolver
+      let resolveSecond: QueueResolver
+
+      const firstQueuePromise = new Promise<QueueResponse>((resolve) => {
+        resolveFirst = resolve
+      })
+      const secondQueuePromise = new Promise<QueueResponse>((resolve) => {
+        resolveSecond = resolve
+      })
+
+      mockGetHistory.mockResolvedValue([])
+
+      mockGetQueue
+        .mockReturnValueOnce(firstQueuePromise)
+        .mockReturnValueOnce(secondQueuePromise)
+
+      const firstUpdate = store.update()
+      const secondUpdate = store.update()
+
+      resolveSecond!({ Running: [], Pending: [createPendingJob(2, 'new-job')] })
+      await secondUpdate
+
+      expect(store.pendingTasks).toHaveLength(1)
+      expect(store.pendingTasks[0].promptId).toBe('new-job')
+
+      resolveFirst!({
+        Running: [],
+        Pending: [createPendingJob(1, 'stale-job')]
+      })
+      await firstUpdate
+
+      expect(store.pendingTasks).toHaveLength(1)
+      expect(store.pendingTasks[0].promptId).toBe('new-job')
+    })
+
+    it('should set isLoading to false only for the latest request', async () => {
+      let resolveFirst: QueueResolver
+      let resolveSecond: QueueResolver
+
+      const firstQueuePromise = new Promise<QueueResponse>((resolve) => {
+        resolveFirst = resolve
+      })
+      const secondQueuePromise = new Promise<QueueResponse>((resolve) => {
+        resolveSecond = resolve
+      })
+
+      mockGetHistory.mockResolvedValue([])
+
+      mockGetQueue
+        .mockReturnValueOnce(firstQueuePromise)
+        .mockReturnValueOnce(secondQueuePromise)
+
+      const firstUpdate = store.update()
+      expect(store.isLoading).toBe(true)
+
+      const secondUpdate = store.update()
+      expect(store.isLoading).toBe(true)
+
+      resolveSecond!({ Running: [], Pending: [] })
+      await secondUpdate
+
+      expect(store.isLoading).toBe(false)
+
+      resolveFirst!({ Running: [], Pending: [] })
+      await firstUpdate
+
+      expect(store.isLoading).toBe(false)
+    })
+
+    it('should handle stale request failure without affecting latest state', async () => {
+      let resolveSecond: QueueResolver
+
+      const secondQueuePromise = new Promise<QueueResponse>((resolve) => {
+        resolveSecond = resolve
+      })
+
+      mockGetHistory.mockResolvedValue([])
+
+      mockGetQueue
+        .mockRejectedValueOnce(new Error('stale network error'))
+        .mockReturnValueOnce(secondQueuePromise)
+
+      const firstUpdate = store.update()
+      const secondUpdate = store.update()
+
+      resolveSecond!({ Running: [], Pending: [createPendingJob(2, 'new-job')] })
+      await secondUpdate
+
+      expect(store.pendingTasks).toHaveLength(1)
+      expect(store.pendingTasks[0].promptId).toBe('new-job')
+      expect(store.isLoading).toBe(false)
+
+      await expect(firstUpdate).rejects.toThrow('stale network error')
+
+      expect(store.pendingTasks).toHaveLength(1)
+      expect(store.pendingTasks[0].promptId).toBe('new-job')
+      expect(store.isLoading).toBe(false)
     })
   })
 })

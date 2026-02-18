@@ -8,6 +8,17 @@ import {
   getSettingInfo,
   useSettingStore
 } from '@/platform/settings/settingStore'
+import type { SettingTreeNode } from '@/platform/settings/settingStore'
+
+// Test-specific type for mock settings
+interface MockSettingParams {
+  id: string
+  name: string
+  type: string
+  defaultValue: unknown
+  category?: string[]
+  deprecated?: boolean
+}
 
 // Mock dependencies
 vi.mock('@/i18n', () => ({
@@ -20,8 +31,8 @@ vi.mock('@/platform/settings/settingStore', () => ({
 }))
 
 describe('useSettingSearch', () => {
-  let mockSettingStore: any
-  let mockSettings: any
+  let mockSettingStore: ReturnType<typeof useSettingStore>
+  let mockSettings: Record<string, MockSettingParams>
 
   beforeEach(() => {
     setActivePinia(createPinia())
@@ -70,11 +81,11 @@ describe('useSettingSearch', () => {
     // Mock setting store
     mockSettingStore = {
       settingsById: mockSettings
-    }
+    } as ReturnType<typeof useSettingStore>
     vi.mocked(useSettingStore).mockReturnValue(mockSettingStore)
 
     // Mock getSettingInfo function
-    vi.mocked(getSettingInfo).mockImplementation((setting: any) => {
+    vi.mocked(getSettingInfo).mockImplementation((setting) => {
       const parts = setting.category || setting.id.split('.')
       return {
         category: parts[0] ?? 'Other',
@@ -301,8 +312,8 @@ describe('useSettingSearch', () => {
       const search = useSettingSearch()
       search.filteredSettingIds.value = ['Category.Setting1', 'Other.Setting3']
 
-      const activeCategory = { label: 'Category' } as any
-      const results = search.getSearchResults(activeCategory)
+      const activeCategory: Partial<SettingTreeNode> = { label: 'Category' }
+      const results = search.getSearchResults(activeCategory as SettingTreeNode)
 
       expect(results).toEqual([
         {

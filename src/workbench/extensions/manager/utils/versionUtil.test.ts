@@ -1,15 +1,16 @@
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
   checkVersionCompatibility,
   getFrontendVersion
 } from '@/workbench/extensions/manager/utils/versionUtil'
 
-// Mock config module
+const mockConfig = vi.hoisted((): { app_version: string | undefined } => ({
+  app_version: '1.24.0-1'
+}))
+
 vi.mock('@/config', () => ({
-  default: {
-    app_version: '1.24.0-1'
-  }
+  default: mockConfig
 }))
 
 describe('versionUtil', () => {
@@ -26,7 +27,7 @@ describe('versionUtil', () => {
     it('should return null when current version is null', () => {
       const result = checkVersionCompatibility(
         'comfyui_version',
-        null as any,
+        null!,
         '>=1.0.0'
       )
       expect(result).toBeNull()
@@ -50,7 +51,7 @@ describe('versionUtil', () => {
       const result = checkVersionCompatibility(
         'comfyui_version',
         '1.0.0',
-        null as any
+        null!
       )
       expect(result).toBeNull()
     })
@@ -266,79 +267,40 @@ describe('versionUtil', () => {
   })
 
   describe('getFrontendVersion', () => {
+    let originalEnv: string | undefined
+
+    beforeEach(() => {
+      originalEnv = import.meta.env.VITE_APP_VERSION
+      mockConfig.app_version = '1.24.0-1'
+    })
+
+    afterEach(() => {
+      if (originalEnv !== undefined) {
+        import.meta.env.VITE_APP_VERSION = originalEnv
+      } else {
+        delete import.meta.env.VITE_APP_VERSION
+      }
+    })
+
     it('should return app_version from config when available', () => {
       const version = getFrontendVersion()
       expect(version).toBe('1.24.0-1')
     })
 
-    it('should fallback to VITE_APP_VERSION when app_version is not available', async () => {
-      // Save original environment
-      const originalEnv = import.meta.env.VITE_APP_VERSION
-
-      // Mock config without app_version
-      vi.doMock('@/config', () => ({
-        default: {}
-      }))
-
-      // Set VITE_APP_VERSION
+    it('should fallback to VITE_APP_VERSION when app_version is not available', () => {
+      mockConfig.app_version = undefined
       import.meta.env.VITE_APP_VERSION = '2.0.0'
 
-      // Clear module cache to force re-import
-      vi.resetModules()
-
-      // Import fresh module
-      const versionUtil =
-        await import('@/workbench/extensions/manager/utils/versionUtil')
-
-      const version = versionUtil.getFrontendVersion()
+      const version = getFrontendVersion()
       expect(version).toBe('2.0.0')
-
-      // Restore original env
-      import.meta.env.VITE_APP_VERSION = originalEnv
-
-      // Reset mocks for next test
-      vi.resetModules()
-      vi.doMock('@/config', () => ({
-        default: {
-          app_version: '1.24.0-1'
-        }
-      }))
     })
 
-    it('should return undefined when no version is available', async () => {
-      // Save original environment
-      const originalEnv = import.meta.env.VITE_APP_VERSION
-
-      // Mock config without app_version
-      vi.doMock('@/config', () => ({
-        default: {}
-      }))
-
-      // Clear VITE_APP_VERSION
+    it('should return undefined when no version is available', () => {
+      mockConfig.app_version = undefined
       delete import.meta.env.VITE_APP_VERSION
 
-      // Clear module cache to force re-import
-      vi.resetModules()
-
-      // Import fresh module
-      const versionUtil =
-        await import('@/workbench/extensions/manager/utils/versionUtil')
-
-      const version = versionUtil.getFrontendVersion()
+      const version = getFrontendVersion()
       expect(version).toBeUndefined()
-
-      // Restore original env
-      if (originalEnv !== undefined) {
-        import.meta.env.VITE_APP_VERSION = originalEnv
-      }
-
-      // Reset mocks for next test
-      vi.resetModules()
-      vi.doMock('@/config', () => ({
-        default: {
-          app_version: '1.24.0-1'
-        }
-      }))
     })
   })
 })

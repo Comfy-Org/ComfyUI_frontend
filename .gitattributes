@@ -1,16 +1,5 @@
-# Default
-* text=auto
-
-# Force TS to LF to make the unixy scripts not break on Windows
-*.cjs text eol=lf
-*.js text eol=lf
-*.json text eol=lf
-*.mjs text eol=lf
-*.mts text eol=lf
-*.snap text eol=lf
-*.ts text eol=lf
-*.vue text eol=lf
-*.yaml text eol=lf
+# Force all text files to use LF line endings
+* text=auto eol=lf
 
 # Generated files
 packages/registry-types/src/comfyRegistryTypes.ts linguist-generated=true

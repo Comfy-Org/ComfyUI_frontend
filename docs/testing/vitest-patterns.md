@@ -30,13 +30,17 @@ describe('MyStore', () => {
 
 **Why `stubActions: false`?** By default, testing pinia stubs all actions. Set to `false` when testing actual store behavior.
 
+## i18n in Component Tests
+
+Use real `createI18n` with empty messages instead of mocking `vue-i18n`. See `SearchBox.test.ts` for example.
+
 ## Mock Patterns
 
 ### Reset all mocks at once
 
 ```typescript
 beforeEach(() => {
-  vi.resetAllMocks()  // Not individual mock.mockReset() calls
+  vi.resetAllMocks() // Not individual mock.mockReset() calls
 })
 ```
 
@@ -75,9 +79,9 @@ When a store registers event listeners at module load time:
 
 ```typescript
 function getEventHandler() {
-  const call = vi.mocked(api.addEventListener).mock.calls.find(
-    ([event]) => event === 'my_event'
-  )
+  const call = vi
+    .mocked(api.addEventListener)
+    .mock.calls.find(([event]) => event === 'my_event')
   return call?.[1] as (e: CustomEvent<MyEventType>) => void
 }
 

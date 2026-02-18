@@ -1,6 +1,6 @@
 <template>
   <Button
-    variant="secondary"
+    variant="primary"
     :size
     :disabled="isLoading || isInstalling"
     @click="installAllPacks"
@@ -14,6 +14,7 @@
       duration="1s"
       :size="size === 'sm' ? 12 : 16"
     />
+    <i v-else class="icon-[lucide--download]" />
     <span>{{ computedLabel }}</span>
   </Button>
 </template>

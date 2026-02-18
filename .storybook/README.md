@@ -12,16 +12,17 @@ Storybook is a frontend workshop for building UI components and pages in isolati
 
 ## Storybook vs Other Testing Tools
 
-| Tool | Purpose | Use Case |
-|------|---------|----------|
-| **Storybook** | Component isolation & documentation | Developing, testing, and showcasing individual UI components |
-| **Playwright** | End-to-end testing | Full user workflow testing across multiple pages |
-| **Vitest** | Unit testing | Testing business logic, utilities, and component behavior |
-| **Vue Testing Library** | Component testing | Testing component interactions and DOM output |
+| Tool                    | Purpose                             | Use Case                                                     |
+| ----------------------- | ----------------------------------- | ------------------------------------------------------------ |
+| **Storybook**           | Component isolation & documentation | Developing, testing, and showcasing individual UI components |
+| **Playwright**          | End-to-end testing                  | Full user workflow testing across multiple pages             |
+| **Vitest**              | Unit testing                        | Testing business logic, utilities, and component behavior    |
+| **Vue Testing Library** | Component testing                   | Testing component interactions and DOM output                |
 
 ### When to Use Storybook
 
 **✅ Use Storybook for:**
+
 - Developing new UI components in isolation
 - Creating component documentation and examples
 - Testing different component states and props
@@ -30,6 +31,7 @@ Storybook is a frontend workshop for building UI components and pages in isolati
 - Building a component library or design system
 
 **❌ Don't use Storybook for:**
+
 - Testing complex user workflows (use Playwright)
 - Testing business logic (use Vitest)
 - Integration testing between components (use Vue Testing Library)
@@ -96,6 +98,7 @@ export const WithVariant: Story = {
 ## ComfyUI Storybook Guidelines
 
 ### Scope – When to Create Stories
+
 - **PrimeVue components**:  
   No need to create stories. Just refer to the official PrimeVue documentation.
 - **Custom shared components (design system components)**:  
@@ -104,6 +107,7 @@ export const WithVariant: Story = {
   Do not create stories. Only the underlying pure UI components should be included in Storybook.
 
 ### Maintenance Philosophy
+
 - Stories are lightweight and generally stable.  
   Once created, they rarely need updates unless:
   - The design changes
@@ -111,10 +115,12 @@ export const WithVariant: Story = {
 - For existing usage patterns, simply copy real code examples into Storybook to create stories.
 
 ### File Placement
-- Keep `*.stories.ts` files at the **same level as the component** (similar to test files).  
+
+- Keep `*.stories.ts` files at the **same level as the component** (similar to test files).
 - This makes it easier to check usage examples without navigating to another directory.
 
 ### Developer/Designer Workflow
+
 - **UI vs Container**: Separate pure UI components from container components.  
   Only UI components should live in Storybook.
 - **Communication Tool**: Storybook is not just about code quality—it enables designers and developers to see:
@@ -126,9 +132,10 @@ export const WithVariant: Story = {
   → Only create a story for the base UI button, not for the wrapper.
 
 ### Suggested Workflow
-1. Use PrimeVue docs for standard components  
-2. Use Storybook for **shared/custom components** that define our design system  
-3. Keep story files alongside components  
+
+1. Use PrimeVue docs for standard components
+2. Use Storybook for **shared/custom components** that define our design system
+3. Keep story files alongside components
 4. When in doubt, focus on components reused across the app or those that need to be showcased to designers
 
 ### Best Practices
@@ -211,13 +218,12 @@ This Storybook setup includes:
 
 ## Icon Usage in Storybook
 
-In this project, only the `<i class="icon-[lucide--folder]" />` syntax from unplugin-icons is supported in Storybook.  
+In this project, only the `<i class="icon-[lucide--folder]" />` syntax from unplugin-icons is supported in Storybook.
 
 **Example:**
 
 ```vue
-<script setup lang="ts">
-</script>
+<script setup lang="ts"></script>
 
 <template>
   <i class="icon-[lucide--trophy] text-neutral size-4" />
@@ -226,4 +232,3 @@ In this project, only the `<i class="icon-[lucide--folder]" />` syntax from unpl
 ```
 
 This approach ensures icons render correctly in Storybook and remain consistent with the rest of the app.
-

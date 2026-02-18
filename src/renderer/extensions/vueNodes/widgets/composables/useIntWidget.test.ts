@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import type { INumericWidget } from '@/lib/litegraph/src/types/widgets'
 import { _for_testing } from '@/renderer/extensions/vueNodes/widgets/composables/useIntWidget'
 
 vi.mock('@/scripts/widgets', () => ({
@@ -16,14 +17,17 @@ const { onValueChange } = _for_testing
 
 describe('useIntWidget', () => {
   describe('onValueChange', () => {
-    let widget: any
+    let widget: INumericWidget
 
     beforeEach(() => {
       // Reset the widget before each test
       widget = {
+        type: 'number',
+        name: 'test_widget',
+        y: 0,
         options: {},
         value: 0
-      }
+      } as Partial<INumericWidget> as INumericWidget
     })
 
     it('should round values based on step size', () => {

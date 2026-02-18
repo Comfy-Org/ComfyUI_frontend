@@ -75,7 +75,7 @@ if (typeof globalThis.ImageBitmap === 'undefined') {
       this.height = height
     }
     close() {}
-  } as unknown as typeof globalThis.ImageBitmap
+  } as typeof ImageBitmap
 }
 
 describe('useCanvasHistory', () => {

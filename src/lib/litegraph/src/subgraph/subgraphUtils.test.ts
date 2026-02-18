@@ -68,7 +68,7 @@ describe.skip('subgraphUtils', () => {
   describe.skip('findUsedSubgraphIds', () => {
     it('should handle graph with no subgraphs', () => {
       const graph = new LGraph()
-      const registry = new Map<UUID, any>()
+      const registry = new Map<UUID, LGraph>()
 
       const result = findUsedSubgraphIds(graph, registry)
       expect(result.size).toBe(0)
@@ -87,7 +87,7 @@ describe.skip('subgraphUtils', () => {
       const node2 = createTestSubgraphNode(subgraph2)
       subgraph1.add(node2)
 
-      const registry = new Map<UUID, any>([
+      const registry = new Map<UUID, LGraph>([
         [subgraph1.id, subgraph1],
         [subgraph2.id, subgraph2]
       ])
@@ -115,7 +115,7 @@ describe.skip('subgraphUtils', () => {
       const node3 = createTestSubgraphNode(subgraph1, { id: 3 })
       subgraph2.add(node3)
 
-      const registry = new Map<UUID, any>([
+      const registry = new Map<UUID, LGraph>([
         [subgraph1.id, subgraph1],
         [subgraph2.id, subgraph2]
       ])
@@ -139,7 +139,7 @@ describe.skip('subgraphUtils', () => {
       rootGraph.add(node2)
 
       // Only register subgraph1
-      const registry = new Map<UUID, any>([[subgraph1.id, subgraph1]])
+      const registry = new Map<UUID, LGraph>([[subgraph1.id, subgraph1]])
 
       const result = findUsedSubgraphIds(rootGraph, registry)
       expect(result.size).toBe(2)

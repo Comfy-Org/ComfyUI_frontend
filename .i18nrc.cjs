@@ -1,7 +1,7 @@
 // This file is intentionally kept in CommonJS format (.cjs)
 // to resolve compatibility issues with dependencies that require CommonJS.
 // Do not convert this file to ESModule format unless all dependencies support it.
-const { defineConfig } = require('@lobehub/i18n-cli');
+const { defineConfig } = require('@lobehub/i18n-cli')
 
 module.exports = defineConfig({
   modelName: 'gpt-4.1',
@@ -10,7 +10,19 @@ module.exports = defineConfig({
   entry: 'src/locales/en',
   entryLocale: 'en',
   output: 'src/locales',
-  outputLocales: ['zh', 'zh-TW', 'ru', 'ja', 'ko', 'fr', 'es', 'ar', 'tr', 'pt-BR', 'fa'],
+  outputLocales: [
+    'zh',
+    'zh-TW',
+    'ru',
+    'ja',
+    'ko',
+    'fr',
+    'es',
+    'ar',
+    'tr',
+    'pt-BR',
+    'fa'
+  ],
   reference: `Special names to keep untranslated: flux, photomaker, clip, vae, cfg, stable audio, stable cascade, stable zero, controlnet, lora, HiDream, Civitai, Hugging Face.
   'latent' is the short form of 'latent space'.
   'mask' is in the context of image processing.
@@ -26,4 +38,4 @@ module.exports = defineConfig({
   - Use Arabic-Indic numerals (۰-۹) for numbers where appropriate.
   - Maintain consistency with terminology used in Persian software and design applications.
   `
-});
+})

@@ -1,5 +1,5 @@
 # Description: Runs shellcheck on tracked shell scripts when they change
-name: "CI: Shell Validation"
+name: 'CI: Shell Validation'
 
 on:
   push:

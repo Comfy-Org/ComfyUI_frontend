@@ -26,7 +26,7 @@ import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
-import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
+import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
 
@@ -40,7 +40,7 @@ const buttonLabel = computed(() =>
     : t('subscription.subscribeToRun')
 )
 
-const { showSubscriptionDialog } = useSubscription()
+const { showSubscriptionDialog } = useBillingContext()
 
 const handleSubscribeToRun = () => {
   if (isCloud) {

@@ -9,8 +9,8 @@ vi.mock('@/services/providers/algoliaSearchProvider')
 vi.mock('@/services/providers/registrySearchProvider')
 
 describe('useRegistrySearchGateway', () => {
-  let consoleWarnSpy: any
-  let consoleInfoSpy: any
+  let consoleWarnSpy: ReturnType<typeof vi.spyOn>
+  let consoleInfoSpy: ReturnType<typeof vi.spyOn>
 
   beforeEach(() => {
     vi.clearAllMocks()

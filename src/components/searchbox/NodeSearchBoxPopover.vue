@@ -71,7 +71,12 @@ function getNewNodeLocation(): Point {
 }
 const nodeFilters = ref<FuseFilterWithValue<ComfyNodeDefImpl, string>[]>([])
 function addFilter(filter: FuseFilterWithValue<ComfyNodeDefImpl, string>) {
-  nodeFilters.value.push(filter)
+  const isDuplicate = nodeFilters.value.some(
+    (f) => f.filterDef.id === filter.filterDef.id && f.value === filter.value
+  )
+  if (!isDuplicate) {
+    nodeFilters.value.push(filter)
+  }
 }
 function removeFilter(filter: FuseFilterWithValue<ComfyNodeDefImpl, string>) {
   nodeFilters.value = nodeFilters.value.filter(
