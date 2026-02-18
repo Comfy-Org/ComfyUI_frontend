@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { remove } from 'es-toolkit'
 import { useElementBounding } from '@vueuse/core'
 import { computed, reactive, toValue } from 'vue'
 import type { MaybeRef } from 'vue'
@@ -9,12 +10,14 @@ import IoItem from '@/components/rightSidePanel/app/IoItem.vue'
 import PropertiesAccordionItem from '@/components/rightSidePanel/layout/PropertiesAccordionItem.vue'
 import Button from '@/components/ui/button/Button.vue'
 import type { LGraphNode, NodeId } from '@/lib/litegraph/src/LGraphNode'
+import type { INodeInputSlot } from '@/lib/litegraph/src/interfaces'
 import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
 import TransformPane from '@/renderer/core/layout/transform/TransformPane.vue'
+import { useDialogService } from '@/services/dialogService'
 import { useHoveredStore } from '@/stores/hoveredStore'
 import { cn } from '@/utils/tailwindUtil'
 
@@ -27,8 +30,24 @@ const settingStore = useSettingStore()
 const { t } = useI18n()
 const canvas: LGraphCanvas = canvasStore.getCanvas()
 
-const selectedInputs = reactive<[string, MaybeRef<BoundStyle>][]>([])
+const selectedInputs = reactive<
+  [string, string, string, (() => void) | undefined, MaybeRef<BoundStyle>][]
+>([])
 const selectedOutputs = reactive<[NodeId, string][]>([])
+
+async function renameWidget(widget: IBaseWidget, input: INodeInputSlot) {
+  const newLabel = await useDialogService().prompt({
+    title: t('g.rename'),
+    message: t('g.enterNewNamePrompt'),
+    defaultValue: widget.label,
+    placeholder: widget.name
+  })
+  if (newLabel === null) return
+  widget.label = newLabel || undefined
+  input.label = newLabel || undefined
+  widget.callback?.(widget.value)
+  useCanvasStore().canvas?.setDirty(true)
+}
 
 function getHovered(
   e?: MouseEvent
@@ -102,11 +121,10 @@ function handleClick(e: MouseEvent) {
   if (!node) return canvasInteractions.forwardEventToCanvas(e)
 
   if (!widget) {
-    const title = `${node.id}: ${node.title}`
     if (!node.constructor.nodeData?.output_node)
       return canvasInteractions.forwardEventToCanvas(e)
     const index = selectedOutputs.findIndex(([id]) => id === node.id)
-    if (index === -1) selectedOutputs.push([node.id, title])
+    if (index === -1) selectedOutputs.push([node.id, node.title])
     else selectedOutputs.splice(index, 1)
     return
   }
@@ -114,7 +132,10 @@ function handleClick(e: MouseEvent) {
   const key = `${node.id}: ${widget.name}`
   const bounding = getBounding(node.id, widget.name)
   const keyIndex = selectedInputs.findIndex(([k]) => k === key)
-  if (keyIndex === -1 && bounding) selectedInputs.push([key, bounding])
+  const input = node.inputs.find((i) => i.widget?.name === widget.name)
+  const rename = input && (() => renameWidget(widget, input))
+  if (keyIndex === -1 && bounding)
+    selectedInputs.push([key, widget.name, node.title, rename, bounding])
   else selectedInputs.splice(keyIndex, 1)
 }
 
@@ -144,7 +165,7 @@ const outputNodes = computed(() =>
     class="border-border-subtle border-b"
   >
     <template #empty>
-      <div class="w-full p-4 text-muted-foreground">
+      <div class="w-full p-4 text-muted-foreground gap-2 flex flex-col">
         <div
           v-text="t('[ph]Click on node parameters to add them here as inputs')"
         />
@@ -168,13 +189,13 @@ const outputNodes = computed(() =>
     />
     <DraggableList v-slot="{ dragClass }" v-model="selectedInputs">
       <IoItem
-        v-for="[key] in selectedInputs"
+        v-for="[key, title, subTitle, rename] in selectedInputs"
         :key
         :class="cn(dragClass, 'bg-primary-background/30 p-2 my-2 rounded-lg')"
-        :title="key"
-        sub-title="nodename"
-        :rename="() => console.log('rename')"
-        :remove="() => console.log('remove')"
+        :title
+        :sub-title
+        :rename
+        :remove="() => remove(selectedInputs, ([k]) => k === key)"
       />
     </DraggableList>
   </PropertiesAccordionItem>
@@ -184,7 +205,7 @@ const outputNodes = computed(() =>
     :disabled="!selectedOutputs.length"
   >
     <template #empty>
-      <div class="w-full p-4 text-muted-foreground">
+      <div class="w-full p-4 text-muted-foreground gap-2 flex flex-col">
         <div
           v-text="
             t(
@@ -211,7 +232,7 @@ const outputNodes = computed(() =>
       v-text="t('[ph]Click on node parameters to add them here as inputs')"
     />
     <DraggableList v-slot="{ dragClass }" v-model="selectedOutputs">
-      <div
+      <IoItem
         v-for="([key, title], index) in selectedOutputs"
         :key
         :class="
@@ -221,7 +242,9 @@ const outputNodes = computed(() =>
             index === 0 && 'ring-warning-background ring-2'
           )
         "
-        v-text="title"
+        :title
+        :sub-title="String(key)"
+        :remove="() => remove(selectedOutputs, ([k]) => k === key)"
       />
     </DraggableList>
   </PropertiesAccordionItem>
@@ -240,7 +263,7 @@ const outputNodes = computed(() =>
       @wheel="canvasInteractions.forwardEventToCanvas"
     >
       <div
-        v-for="[key, style] in selectedInputs"
+        v-for="[key, , , , style] in selectedInputs"
         :key
         :style="toValue(style)"
         class="fixed bg-primary-background/30 rounded-lg"
