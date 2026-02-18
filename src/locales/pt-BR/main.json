@@ -1898,6 +1898,25 @@
     "outputs": "Saídas",
     "type": "Tipo"
   },
+  "nodeReplacement": {
+    "compatibleAlternatives": "Alternativas Compatíveis",
+    "installMissingNodes": "Instalar Nós Ausentes",
+    "installationRequired": "Instalação Necessária",
+    "instructionMessage": "Você deve instalar esses nós ou substituí-los por alternativas já instaladas para executar o fluxo de trabalho. Nós ausentes estão destacados em {red} na tela. Alguns nós não podem ser trocados e devem ser instalados pelo Gerenciador de Nós.",
+    "notReplaceable": "Instalação Necessária",
+    "openNodeManager": "Abrir Gerenciador de Nós",
+    "quickFixAvailable": "Correção Rápida Disponível",
+    "redHighlight": "vermelho",
+    "replaceFailed": "Falha ao substituir nós",
+    "replaceSelected": "Substituir Selecionados ({count})",
+    "replaceWarning": "Isso modificará permanentemente o fluxo de trabalho. Salve uma cópia antes se não tiver certeza.",
+    "replaceable": "Substituível",
+    "replaced": "Substituído",
+    "replacedAllNodes": "Substituídos {count} tipo(s) de nó",
+    "replacedNode": "Nó substituído: {nodeType}",
+    "selectAll": "Selecionar Tudo",
+    "skipForNow": "Pular por enquanto"
+  },
   "nodeTemplates": {
     "enterName": "Digite o nome",
     "saveAsTemplate": "Salvar como modelo"
@@ -2425,8 +2444,11 @@
       "moreOptions": "Mais opções",
       "noActiveJobs": "Nenhum trabalho ativo",
       "preview": "Pré-visualização",
+      "queuedJobsLabel": "{count} na fila",
       "queuedSuffix": "na fila",
       "running": "executando",
+      "runningJobsLabel": "{count} em execução",
+      "runningQueuedSummary": "{running} em execução, {queued} na fila",
       "showAssets": "Mostrar ativos",
       "showAssetsPanel": "Mostrar painel de ativos",
       "sortBy": "Ordenar por",
