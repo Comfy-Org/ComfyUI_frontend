@@ -1221,5 +1221,16 @@ export const CORE_SETTINGS: SettingParams[] = [
     defaultValue: true,
     experimental: true,
     versionAdded: '1.40.0'
+  },
+  {
+    id: 'Comfy.RightSidePanel.ShowErrorsTab',
+    category: ['Comfy', 'Error System'],
+    name: 'Show errors tab in side panel',
+    tooltip:
+      'When enabled, an errors tab is displayed in the right side panel to show workflow execution errors at a glance.',
+    type: 'boolean',
+    defaultValue: false,
+    experimental: true,
+    versionAdded: '1.40.0'
   }
 ]

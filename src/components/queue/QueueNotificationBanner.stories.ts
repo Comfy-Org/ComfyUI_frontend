@@ -52,7 +52,7 @@ export const Completed: Story = {
   args: args({
     type: 'completed',
     count: 1,
-    thumbnailUrl: thumbnail('4dabf7')
+    thumbnailUrls: [thumbnail('4dabf7')]
   })
 }
 
@@ -97,7 +97,7 @@ export const Gallery: Story = {
       const completed = args({
         type: 'completed',
         count: 1,
-        thumbnailUrl: thumbnail('ff6b6b')
+        thumbnailUrls: [thumbnail('ff6b6b')]
       })
       const completedMultiple = args({
         type: 'completed',

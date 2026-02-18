@@ -18,7 +18,7 @@ import type {
   SubscriptionInfo
 } from './types'
 import { useLegacyBilling } from './useLegacyBilling'
-import { useWorkspaceBilling } from './useWorkspaceBilling'
+import { useWorkspaceBilling } from '@/platform/workspace/composables/useWorkspaceBilling'
 
 /**
  * Unified billing context that automatically switches between legacy (user-scoped)
