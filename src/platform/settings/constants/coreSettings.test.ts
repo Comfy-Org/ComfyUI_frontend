@@ -24,10 +24,64 @@ vi.mock('@/scripts/app', () => ({
   }
 }))
 
+describe('Comfy.Workflow.Persist defaultsByInstallVersion', () => {
+  let settingStore: ReturnType<typeof useSettingStore>
+
+  const persistSetting = CORE_SETTINGS.find(
+    (s) => s.id === 'Comfy.Workflow.Persist'
+  )!
+
+  beforeEach(() => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
+    settingStore = useSettingStore()
+    vi.clearAllMocks()
+  })
+
+  it('should have defaultValue true', () => {
+    expect(persistSetting.defaultValue).toBe(true)
+  })
+
+  it('should have defaultsByInstallVersion entry for 1.40.7', () => {
+    expect(persistSetting.defaultsByInstallVersion).toEqual({
+      '1.40.7': false
+    })
+  })
+
+  it('should default to true for existing users with no installed version', () => {
+    settingStore.addSetting(persistSetting)
+
+    expect(settingStore.get('Comfy.Workflow.Persist')).toBe(true)
+  })
+
+  it('should default to true for existing users with older installed version', () => {
+    settingStore.settingValues['Comfy.InstalledVersion'] = '1.30.0'
+    settingStore.addSetting(persistSetting)
+
+    expect(settingStore.get('Comfy.Workflow.Persist')).toBe(true)
+  })
+
+  it('should default to false for fresh installs on 1.40.7', () => {
+    settingStore.settingValues['Comfy.InstalledVersion'] = '1.40.7'
+    settingStore.addSetting(persistSetting)
+
+    expect(settingStore.get('Comfy.Workflow.Persist')).toBe(false)
+  })
+
+  it('should default to false for fresh installs on versions after 1.40.7', () => {
+    settingStore.settingValues['Comfy.InstalledVersion'] = '1.50.0'
+    settingStore.addSetting(persistSetting)
+
+    expect(settingStore.get('Comfy.Workflow.Persist')).toBe(false)
+  })
+})
+
 describe('Comfy.Workflow.AutoSave onChange', () => {
   let settingStore: ReturnType<typeof useSettingStore>
   let dialogStore: ReturnType<typeof useDialogStore>
 
+  const persistSetting = CORE_SETTINGS.find(
+    (s) => s.id === 'Comfy.Workflow.Persist'
+  )!
   const autoSaveSetting = CORE_SETTINGS.find(
     (s) => s.id === 'Comfy.Workflow.AutoSave'
   )!
@@ -38,12 +92,7 @@ describe('Comfy.Workflow.AutoSave onChange', () => {
     dialogStore = useDialogStore()
     vi.clearAllMocks()
 
-    settingStore.addSetting({
-      id: 'Comfy.Workflow.Persist',
-      name: 'Persist workflow state and restore on page (re)load',
-      type: 'boolean',
-      defaultValue: true
-    })
+    settingStore.addSetting(persistSetting)
     settingStore.addSetting(autoSaveSetting)
   })
 

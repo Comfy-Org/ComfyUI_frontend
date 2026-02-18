@@ -183,7 +183,7 @@ export const useSettingStore = defineStore('setting', () => {
 
     const versionedDefault = getVersionedDefaultValue(key, param)
 
-    if (versionedDefault) {
+    if (versionedDefault !== null) {
       return versionedDefault
     }
 

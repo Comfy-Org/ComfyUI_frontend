@@ -1063,6 +1063,7 @@ export const CORE_SETTINGS: SettingParams[] = [
       const settingStore = useSettingStore()
       if (!settingStore.get('Comfy.Workflow.Persist')) return
 
+      const dialogStore = useDialogStore()
       let keepPersist = false
       const dialog = showConfirmDialog({
         headerProps: {
@@ -1077,11 +1078,11 @@ export const CORE_SETTINGS: SettingParams[] = [
             'bg-primary-background hover:bg-primary-background-hover',
           cancelText: t('autoSaveOffPersistWarning.keepPersist'),
           onConfirm: () => {
-            useDialogStore().closeDialog(dialog)
+            dialogStore.closeDialog(dialog)
           },
           onCancel: () => {
             keepPersist = true
-            useDialogStore().closeDialog(dialog)
+            dialogStore.closeDialog(dialog)
           }
         }
       })
