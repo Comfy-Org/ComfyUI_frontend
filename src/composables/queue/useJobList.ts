@@ -1,3 +1,4 @@
+import { refDebounced } from '@vueuse/core'
 import { orderBy } from 'es-toolkit/array'
 import { computed, onUnmounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -197,6 +198,8 @@ export function useJobList() {
   const selectedJobTab = ref<JobTab>('All')
   const selectedWorkflowFilter = ref<'all' | 'current'>('all')
   const selectedSortMode = ref<JobSortMode>('mostRecent')
+  const searchQuery = ref('')
+  const debouncedSearchQuery = refDebounced(searchQuery, 150)
 
   const mostRecentTimestamp = (task: TaskItemImpl) => task.createTime ?? 0
 
@@ -248,8 +251,12 @@ export function useJobList() {
     return entries
   })
 
+  const normalizedSearchQuery = computed(() =>
+    debouncedSearchQuery.value.trim().toLocaleLowerCase()
+  )
+
   const filteredTasks = computed<TaskItemImpl[]>(() =>
-    filteredTaskEntries.value.map(({ task }) => task)
+    searchableTaskEntries.value.map(({ task }) => task)
   )
 
   const jobItems = computed<JobListItem[]>(() => {
@@ -308,11 +315,31 @@ export function useJobList() {
     return m
   })
 
+  const searchableTaskEntries = computed<TaskWithState[]>(() => {
+    if (!normalizedSearchQuery.value) return filteredTaskEntries.value
+
+    return filteredTaskEntries.value.filter(({ task }) => {
+      const taskId = String(task.promptId ?? '').toLocaleLowerCase()
+      const item = jobItemById.value.get(String(task.promptId))
+      if (!item) {
+        return taskId.includes(normalizedSearchQuery.value)
+      }
+
+      const title = item.title.toLocaleLowerCase()
+      const meta = item.meta.toLocaleLowerCase()
+      return (
+        title.includes(normalizedSearchQuery.value) ||
+        meta.includes(normalizedSearchQuery.value) ||
+        taskId.includes(normalizedSearchQuery.value)
+      )
+    })
+  })
+
   const groupedJobItems = computed<JobGroup[]>(() => {
     const groups: JobGroup[] = []
     const index = new Map<string, number>()
     const localeValue = locale.value
-    for (const { task, state } of filteredTaskEntries.value) {
+    for (const { task, state } of searchableTaskEntries.value) {
       let ts: number | undefined
       if (state === 'completed' || state === 'failed') {
         ts = task.executionEndTimestamp
@@ -357,6 +384,7 @@ export function useJobList() {
     selectedJobTab,
     selectedWorkflowFilter,
     selectedSortMode,
+    searchQuery,
     hasFailedJobs,
     // data sources
     allTasksSorted,

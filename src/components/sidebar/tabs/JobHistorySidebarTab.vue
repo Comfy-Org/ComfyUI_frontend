@@ -6,17 +6,27 @@
       </div>
     </template>
     <template #header>
-      <JobFiltersBar
-        class="pb-1"
-        :selected-job-tab="selectedJobTab"
-        :selected-workflow-filter="selectedWorkflowFilter"
-        :selected-sort-mode="selectedSortMode"
-        :has-failed-jobs="hasFailedJobs"
-        :hide-show-assets-action="true"
-        @update:selected-job-tab="onSelectedJobTabUpdate"
-        @update:selected-workflow-filter="onSelectedWorkflowFilterUpdate"
-        @update:selected-sort-mode="onSelectedSortModeUpdate"
-      />
+      <div class="flex flex-col gap-2 pb-1">
+        <div class="px-3 py-2">
+          <JobFilterTabs
+            :selected-job-tab="selectedJobTab"
+            :has-failed-jobs="hasFailedJobs"
+            @update:selected-job-tab="onSelectedJobTabUpdate"
+          />
+        </div>
+        <JobFilterActions
+          class="px-3"
+          :selected-workflow-filter="selectedWorkflowFilter"
+          :selected-sort-mode="selectedSortMode"
+          :hide-show-assets-action="true"
+          :show-search="true"
+          :search-query="searchQuery"
+          :search-placeholder="t('sideToolbar.queueProgressOverlay.searchJobs')"
+          @update:selected-workflow-filter="onSelectedWorkflowFilterUpdate"
+          @update:selected-sort-mode="onSelectedSortModeUpdate"
+          @update:search-query="onSearchQueryUpdate"
+        />
+      </div>
       <div
         class="flex items-center justify-between px-3 pb-1 text-[12px] leading-none text-text-primary"
       >
@@ -64,9 +74,10 @@
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import JobFilterActions from '@/components/queue/job/JobFilterActions.vue'
+import JobFilterTabs from '@/components/queue/job/JobFilterTabs.vue'
 import JobAssetsList from '@/components/queue/job/JobAssetsList.vue'
 import JobContextMenu from '@/components/queue/job/JobContextMenu.vue'
-import JobFiltersBar from '@/components/queue/job/JobFiltersBar.vue'
 import JobHistoryActionsMenu from '@/components/queue/JobHistoryActionsMenu.vue'
 import type { MenuEntry } from '@/composables/queue/useJobMenu'
 import { useJobMenu } from '@/composables/queue/useJobMenu'
@@ -96,6 +107,7 @@ const {
   selectedJobTab,
   selectedWorkflowFilter,
   selectedSortMode,
+  searchQuery,
   hasFailedJobs,
   filteredTasks,
   groupedJobItems
@@ -150,6 +162,10 @@ const onSelectedWorkflowFilterUpdate = (value: 'all' | 'current') => {
 
 const onSelectedSortModeUpdate = (value: JobSortMode) => {
   selectedSortMode.value = value
+}
+
+const onSearchQueryUpdate = (value: string) => {
+  searchQuery.value = value
 }
 
 const {

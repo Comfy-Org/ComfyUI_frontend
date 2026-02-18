@@ -811,6 +811,7 @@
       "filterBy": "Filter by",
       "filterAllWorkflows": "All workflows",
       "filterCurrentWorkflow": "Current workflow",
+      "searchJobs": "Search...",
       "sortJobs": "Sort jobs",
       "sortBy": "Sort by",
       "activeJobs": "{count} active job | {count} active jobs",
