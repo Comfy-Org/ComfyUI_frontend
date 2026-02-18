@@ -23,7 +23,8 @@ export enum ServerFeatureFlag {
   TEAM_WORKSPACES_ENABLED = 'team_workspaces_enabled',
   USER_SECRETS_ENABLED = 'user_secrets_enabled',
   NODE_REPLACEMENTS = 'node_replacements',
-  NODE_LIBRARY_ESSENTIALS_ENABLED = 'node_library_essentials_enabled'
+  NODE_LIBRARY_ESSENTIALS_ENABLED = 'node_library_essentials_enabled',
+  WORKFLOW_SHARING_ENABLED = 'workflow_sharing_enabled'
 }
 
 /**
@@ -129,6 +130,12 @@ export function useFeatureFlags() {
           ServerFeatureFlag.NODE_LIBRARY_ESSENTIALS_ENABLED,
           false
         )
+      )
+    },
+    get workflowSharingEnabled() {
+      return (
+        remoteConfig.value.workflow_sharing_enabled ??
+        api.getServerFeature(ServerFeatureFlag.WORKFLOW_SHARING_ENABLED, false)
       )
     }
   })
