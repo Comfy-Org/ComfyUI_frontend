@@ -1,5 +1,6 @@
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
+import { nextTick, ref } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
@@ -122,5 +123,27 @@ describe('useSidebarTabStore', () => {
       'workflows'
     ])
     expect(mockRegisterCommand).toHaveBeenCalledTimes(4)
+  })
+
+  it('prepends the job history tab when QPO V2 is toggled on', async () => {
+    const qpoV2Enabled = ref(false)
+    mockGetSetting.mockImplementation(
+      (key: string) => key === 'Comfy.Queue.QPOV2' && qpoV2Enabled.value
+    )
+
+    const store = useSidebarTabStore()
+    store.registerCoreSidebarTabs()
+
+    qpoV2Enabled.value = true
+    await nextTick()
+
+    expect(store.sidebarTabs.map((tab) => tab.id)).toEqual([
+      'job-history',
+      'assets',
+      'node-library',
+      'model-library',
+      'workflows'
+    ])
+    expect(mockRegisterCommand).toHaveBeenCalledTimes(5)
   })
 })

@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 
 import { useAssetsSidebarTab } from '@/composables/sidebarTabs/useAssetsSidebarTab'
 import { useJobHistorySidebarTab } from '@/composables/sidebarTabs/useJobHistorySidebarTab'
@@ -27,8 +27,13 @@ export const useSidebarTabStore = defineStore('sidebarTab', () => {
     activeSidebarTabId.value = activeSidebarTabId.value === tabId ? null : tabId
   }
 
-  const registerSidebarTab = (tab: SidebarTabExtension) => {
-    sidebarTabs.value = [...sidebarTabs.value, tab]
+  const registerSidebarTab = (
+    tab: SidebarTabExtension,
+    options?: { prepend?: boolean }
+  ) => {
+    sidebarTabs.value = options?.prepend
+      ? [tab, ...sidebarTabs.value]
+      : [...sidebarTabs.value, tab]
 
     // Generate label in format "Toggle X Sidebar"
     const labelFunction = () => {
@@ -97,6 +102,9 @@ export const useSidebarTabStore = defineStore('sidebarTab', () => {
       const newSidebarTabs = [...sidebarTabs.value]
       newSidebarTabs.splice(index, 1)
       sidebarTabs.value = newSidebarTabs
+      if (activeSidebarTabId.value === id) {
+        activeSidebarTabId.value = null
+      }
     }
   }
 
@@ -105,10 +113,24 @@ export const useSidebarTabStore = defineStore('sidebarTab', () => {
    */
   const registerCoreSidebarTabs = () => {
     const settingStore = useSettingStore()
-
-    if (settingStore.get('Comfy.Queue.QPOV2')) {
-      registerSidebarTab(useJobHistorySidebarTab())
+    const jobHistoryTabId = 'job-history'
+    const syncJobHistoryTab = (enabled: boolean) => {
+      const hasJobHistoryTab = sidebarTabs.value.some(
+        (tab) => tab.id === jobHistoryTabId
+      )
+      if (enabled && !hasJobHistoryTab) {
+        registerSidebarTab(useJobHistorySidebarTab(), { prepend: true })
+      } else if (!enabled && hasJobHistoryTab) {
+        unregisterSidebarTab(jobHistoryTabId)
+      }
     }
+
+    syncJobHistoryTab(settingStore.get('Comfy.Queue.QPOV2'))
+    watch(
+      () => settingStore.get('Comfy.Queue.QPOV2'),
+      (enabled) => syncJobHistoryTab(enabled)
+    )
+
     registerSidebarTab(useAssetsSidebarTab())
     registerSidebarTab(useNodeLibrarySidebarTab())
     registerSidebarTab(useModelLibrarySidebarTab())
