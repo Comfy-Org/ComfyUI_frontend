@@ -207,8 +207,8 @@ import { useI18n } from 'vue-i18n'
 
 import { formatCreditsFromCents } from '@/base/credits/comfyCredits'
 import UserAvatar from '@/components/common/UserAvatar.vue'
-import WorkspaceProfilePic from '@/components/common/WorkspaceProfilePic.vue'
-import WorkspaceSwitcherPopover from '@/components/topbar/WorkspaceSwitcherPopover.vue'
+import WorkspaceProfilePic from '@/platform/workspace/components/WorkspaceProfilePic.vue'
+import WorkspaceSwitcherPopover from '@/platform/workspace/components/WorkspaceSwitcherPopover.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 
