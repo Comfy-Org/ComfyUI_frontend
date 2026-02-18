@@ -29,6 +29,7 @@
         class="flex flex-col items-stretch rounded-lg border border-interface-stroke bg-interface-panel-surface p-2 font-inter"
       >
         <Button
+          data-testid="docked-job-history-action"
           class="w-full justify-between text-sm font-light"
           variant="textonly"
           size="sm"
@@ -46,6 +47,7 @@
         </Button>
         <div class="my-1 border-t border-interface-stroke" />
         <Button
+          data-testid="clear-history-action"
           class="h-auto min-h-0 w-full items-start justify-start whitespace-normal"
           variant="textonly"
           size="sm"

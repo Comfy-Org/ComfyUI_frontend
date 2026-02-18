@@ -131,7 +131,9 @@ describe('QueueOverlayHeader', () => {
     expect(popoverToggleSpy).toHaveBeenCalledTimes(1)
     expect(spy).toHaveBeenCalledWith('More')
 
-    const clearHistoryButton = wrapper.get('button[aria-label="Clear history"]')
+    const clearHistoryButton = wrapper.get(
+      '[data-testid="clear-history-action"]'
+    )
     await clearHistoryButton.trigger('click')
     expect(popoverHideSpy).toHaveBeenCalledTimes(1)
     expect(wrapper.emitted('clearHistory')).toHaveLength(1)
@@ -144,7 +146,7 @@ describe('QueueOverlayHeader', () => {
     await moreButton.trigger('click')
 
     const dockedJobHistoryButton = wrapper.get(
-      'button[aria-label="Docked Job History"]'
+      '[data-testid="docked-job-history-action"]'
     )
     await dockedJobHistoryButton.trigger('click')
 
