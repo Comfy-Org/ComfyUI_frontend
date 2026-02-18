@@ -31,7 +31,7 @@
             <Button
               class="w-full justify-between"
               variant="textonly"
-              size="sm"
+              size="md"
               @click="onSelectWorkflowFilter('all', close)"
             >
               <span>{{
@@ -46,6 +46,7 @@
             <Button
               class="w-full justify-between"
               variant="textonly"
+              size="md"
               @click="onSelectWorkflowFilter('current', close)"
             >
               <span>{{
@@ -80,7 +81,7 @@
               <Button
                 class="w-full justify-between"
                 variant="textonly"
-                size="sm"
+                size="md"
                 @click="onSelectSortMode(mode, close)"
               >
                 <span>{{ sortLabel(mode) }}</span>
