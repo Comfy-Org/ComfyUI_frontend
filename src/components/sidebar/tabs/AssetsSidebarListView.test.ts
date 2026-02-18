@@ -31,11 +31,12 @@ const VirtualGridStub = defineComponent({
     '<div><slot v-for="item in items" :key="item.key" name="item" :item="item" /></div>'
 })
 
-const buildAsset = (id: string, name: string): AssetItem => ({
-  id,
-  name,
-  tags: []
-})
+const buildAsset = (id: string, name: string): AssetItem =>
+  ({
+    id,
+    name,
+    tags: []
+  }) satisfies AssetItem
 
 const buildOutputItem = (asset: AssetItem): OutputStackListItem => ({
   key: `asset-${asset.id}`,
