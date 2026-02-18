@@ -45,6 +45,8 @@ export interface SimplifiedWidget<
   /** Display name of the widget */
   name: string
 
+  nodeWidgetName?: string
+
   /** Widget type identifier (e.g., 'STRING', 'INT', 'COMBO') */
   type: string
 

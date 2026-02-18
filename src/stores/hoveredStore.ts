@@ -10,9 +10,6 @@ export const useHoveredStore = defineStore('hovered', () => {
     const widgetEl = element.value?.find((e) => e.matches('.lg-node-widget'))
     if (!(widgetEl instanceof HTMLElement)) return
 
-    const nodeId = widgetEl.dataset.widgetNodeId
-    if (nodeId) return [widgetEl.dataset.widgetName, nodeId]
-
     return widgetEl.dataset.widgetName
   })
   const hoveredNodeId = computed(() => {

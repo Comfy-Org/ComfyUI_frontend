@@ -649,7 +649,7 @@ export function getExecutionIdsForSelectedNodes(
   })
 }
 
-export function findPartialExecutionPathToGraph(
+function findPartialExecutionPathToGraph(
   target: LGraph,
   root: LGraph
 ): string | undefined {

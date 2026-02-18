@@ -28,8 +28,7 @@
       <div
         v-if="!widget.hidden && (!widget.advanced || showAdvanced)"
         class="lg-node-widget group col-span-full grid grid-cols-subgrid items-stretch"
-        :data-widget-name="widget.name"
-        :data-widget-node-id="widget.nodeId"
+        :data-widget-name="widget.nodeWidgetName ?? widget.name"
       >
         <!-- Widget Input Slot Dot -->
         <div
@@ -160,13 +159,13 @@ interface ProcessedWidget {
   hasError: boolean
   hidden: boolean
   name: string
+  nodeWidgetName?: string
   simplified: SimplifiedWidget
   tooltipConfig: TooltipOptions
   type: string
   updateHandler: (value: WidgetValue) => void
   value: WidgetValue
   vueComponent: Component
-  nodeId?: string
   slotMetadata?: WidgetSlotMetadata
 }
 
@@ -239,7 +238,7 @@ const processedWidgets = computed((): ProcessedWidget[] => {
         ) ?? false,
       hidden: widget.options?.hidden ?? false,
       name: widget.name,
-      nodeId: widget.nodeId,
+      nodeWidgetName: widget.nodeWidgetName,
       type: widget.type,
       vueComponent,
       simplified,
