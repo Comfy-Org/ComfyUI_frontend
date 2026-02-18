@@ -1,27 +1,22 @@
 <script setup lang="ts">
-import { useMounted, watchDebounced } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
 import {
   computed,
   customRef,
   nextTick,
-  onBeforeUnmount,
-  onMounted,
   ref,
   shallowRef,
-  triggerRef,
   useTemplateRef,
   watch
 } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import DraggableList from '@/components/common/DraggableList.vue'
 import { isProxyWidget } from '@/core/graph/subgraph/proxyWidget'
 import { parseProxyWidgets } from '@/core/schemas/proxyWidget'
 import type { ProxyWidgetsProperty } from '@/core/schemas/proxyWidget'
 import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
-import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import FormSearchInput from '@/renderer/extensions/vueNodes/widgets/components/form/FormSearchInput.vue'
-import { DraggableList } from '@/scripts/ui/draggableList'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 
 import { searchWidgets } from '../shared'
@@ -37,13 +32,10 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useI18n()
-const canvasStore = useCanvasStore()
 const rightSidePanelStore = useRightSidePanelStore()
 const { focusedSection, searchQuery } = storeToRefs(rightSidePanelStore)
 
 const advancedInputsCollapsed = ref(true)
-const draggableList = ref<DraggableList | undefined>(undefined)
-const sectionWidgetsRef = useTemplateRef('sectionWidgetsRef')
 const advancedInputsSectionRef = useTemplateRef('advancedInputsSectionRef')
 
 // Use customRef to track proxyWidgets changes
@@ -137,66 +129,6 @@ async function searcher(query: string) {
   searchedWidgetsList.value = searchWidgets(widgetsList.value, query)
 }
 
-const isMounted = useMounted()
-
-function setDraggableState() {
-  if (!isMounted.value) return
-
-  draggableList.value?.dispose()
-  const container = sectionWidgetsRef.value?.widgetsContainer
-  if (isSearching.value || !container?.children?.length) return
-
-  draggableList.value = new DraggableList(container, '.draggable-item')
-
-  draggableList.value.applyNewItemsOrder = function () {
-    const reorderedItems: HTMLElement[] = []
-
-    let oldPosition = -1
-    this.getAllItems().forEach((item, index) => {
-      if (item === this.draggableItem) {
-        oldPosition = index
-        return
-      }
-      if (!this.isItemToggled(item)) {
-        reorderedItems[index] = item
-        return
-      }
-      const newIndex = this.isItemAbove(item) ? index + 1 : index - 1
-      reorderedItems[newIndex] = item
-    })
-
-    if (oldPosition === -1) {
-      console.error('[TabSubgraphInputs] draggableItem not found in items')
-      return
-    }
-
-    for (let index = 0; index < this.getAllItems().length; index++) {
-      const item = reorderedItems[index]
-      if (typeof item === 'undefined') {
-        reorderedItems[index] = this.draggableItem as HTMLElement
-      }
-    }
-
-    const newPosition = reorderedItems.indexOf(
-      this.draggableItem as HTMLElement
-    )
-
-    // Update proxyWidgets order
-    const pw = proxyWidgets.value
-    const [w] = pw.splice(oldPosition, 1)
-    pw.splice(newPosition, 0, w)
-    proxyWidgets.value = pw
-    canvasStore.canvas?.setDirty(true, true)
-    triggerRef(proxyWidgets)
-  }
-}
-
-watchDebounced(searchedWidgetsList, () => setDraggableState(), {
-  debounce: 100
-})
-onMounted(() => setDraggableState())
-onBeforeUnmount(() => draggableList.value?.dispose())
-
 const label = computed(() => {
   return searchedWidgetsList.value.length !== 0
     ? t('rightSidePanel.inputs')
@@ -212,28 +144,28 @@ const label = computed(() => {
       :update-key="widgetsList"
     />
   </div>
-  <SectionWidgets
-    ref="sectionWidgetsRef"
-    :node
-    :label
-    :parents
-    :widgets="searchedWidgetsList"
-    :is-draggable="!isSearching"
-    :enable-empty-state="isSearching"
-    :tooltip="
-      isSearching || searchedWidgetsList.length
-        ? ''
-        : t('rightSidePanel.inputsNoneTooltip')
-    "
-    class="border-b border-interface-stroke"
-    @update:collapse="nextTick(setDraggableState)"
-  >
-    <template #empty>
-      <div class="text-sm text-muted-foreground px-4 text-center pt-5 pb-15">
-        {{ t('rightSidePanel.noneSearchDesc') }}
-      </div>
-    </template>
-  </SectionWidgets>
+  <DraggableList v-model="proxyWidgets">
+    <SectionWidgets
+      :node
+      :label
+      :parents
+      :widgets="searchedWidgetsList"
+      :is-draggable="!isSearching"
+      :enable-empty-state="isSearching"
+      :tooltip="
+        isSearching || searchedWidgetsList.length
+          ? ''
+          : t('rightSidePanel.inputsNoneTooltip')
+      "
+      class="border-b border-interface-stroke"
+    >
+      <template #empty>
+        <div class="text-sm text-muted-foreground px-4 text-center pt-5 pb-15">
+          {{ t('rightSidePanel.noneSearchDesc') }}
+        </div>
+      </template>
+    </SectionWidgets>
+  </DraggableList>
   <SectionWidgets
     v-if="advancedInputsWidgets.length > 0"
     ref="advancedInputsSectionRef"
