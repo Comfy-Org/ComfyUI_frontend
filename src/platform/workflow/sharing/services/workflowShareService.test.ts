@@ -1,3 +1,4 @@
+import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -6,6 +7,10 @@ import { useWorkflowShareService } from '@/platform/workflow/sharing/services/wo
 const mockRootGraph = vi.hoisted(() => ({
   nodes: [] as Partial<LGraphNode>[]
 }))
+
+const mockAssetsByNodeType = vi.hoisted(
+  () => new Map<string, Partial<AssetItem>[]>()
+)
 
 vi.mock('@/scripts/app', () => ({
   app: {
@@ -24,6 +29,13 @@ vi.mock('@/stores/modelToNodeStore', () => ({
   })
 }))
 
+vi.mock('@/stores/assetsStore', () => ({
+  useAssetsStore: () => ({
+    getAssets: (nodeType: string) => mockAssetsByNodeType.get(nodeType) ?? [],
+    updateModelsForNodeType: vi.fn()
+  })
+}))
+
 function createMockNode(
   type: string,
   widgets: { name: string; value: unknown }[] = []
@@ -39,6 +51,7 @@ describe('useWorkflowShareService', () => {
   beforeEach(() => {
     vi.restoreAllMocks()
     mockRootGraph.nodes = []
+    mockAssetsByNodeType.clear()
   })
 
   it('returns unpublished status for unknown workflow', () => {
@@ -150,16 +163,16 @@ describe('useWorkflowShareService', () => {
     ])
   })
 
-  it('returns empty models when graph has no model loaders', () => {
+  it('returns empty models when graph has no model loaders', async () => {
     mockRootGraph.nodes = [
       createMockNode('LoadImage', [{ name: 'image', value: 'photo.png' }])
     ] as LGraphNode[]
 
     const service = useWorkflowShareService()
-    expect(service.getWorkflowModels()).toEqual([])
+    expect(await service.getWorkflowModels()).toEqual([])
   })
 
-  it('extracts models from registered loader nodes', () => {
+  it('extracts models from registered loader nodes', async () => {
     mockRootGraph.nodes = [
       createMockNode('CheckpointLoaderSimple', [
         { name: 'ckpt_name', value: 'v1-5-pruned.safetensors' }
@@ -170,11 +183,47 @@ describe('useWorkflowShareService', () => {
     ] as LGraphNode[]
 
     const service = useWorkflowShareService()
-    const models = service.getWorkflowModels()
+    const models = await service.getWorkflowModels()
 
     expect(models).toEqual([
       { name: 'v1-5-pruned.safetensors' },
       { name: 'detail_tweaker.safetensors' }
     ])
+  })
+
+  it('excludes public (immutable) models from results', async () => {
+    mockRootGraph.nodes = [
+      createMockNode('CheckpointLoaderSimple', [
+        { name: 'ckpt_name', value: 'public-model.safetensors' }
+      ]),
+      createMockNode('LoraLoader', [
+        { name: 'lora_name', value: 'my-lora.safetensors' }
+      ])
+    ] as LGraphNode[]
+
+    mockAssetsByNodeType.set('CheckpointLoaderSimple', [
+      { name: 'public-model.safetensors', is_immutable: true }
+    ])
+    mockAssetsByNodeType.set('LoraLoader', [
+      { name: 'my-lora.safetensors', is_immutable: false }
+    ])
+
+    const service = useWorkflowShareService()
+    const models = await service.getWorkflowModels()
+
+    expect(models).toEqual([{ name: 'my-lora.safetensors' }])
+  })
+
+  it('includes models not found in assets cache', async () => {
+    mockRootGraph.nodes = [
+      createMockNode('CheckpointLoaderSimple', [
+        { name: 'ckpt_name', value: 'uncached-model.safetensors' }
+      ])
+    ] as LGraphNode[]
+
+    const service = useWorkflowShareService()
+    const models = await service.getWorkflowModels()
+
+    expect(models).toEqual([{ name: 'uncached-model.safetensors' }])
   })
 })

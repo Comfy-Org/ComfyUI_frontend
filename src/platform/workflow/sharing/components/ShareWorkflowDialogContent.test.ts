@@ -1,4 +1,4 @@
-import { mount } from '@vue/test-utils'
+import { flushPromises, mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, reactive } from 'vue'
 import { createI18n } from 'vue-i18n'
@@ -49,7 +49,7 @@ vi.mock('@/platform/workflow/sharing/services/workflowShareService', () => ({
         publishedAt: new Date('2026-01-15')
       }),
     getWorkflowAssets: () => mockShareServiceData.assets,
-    getWorkflowModels: () => mockShareServiceData.models
+    getWorkflowModels: () => Promise.resolve(mockShareServiceData.models)
   })
 }))
 
@@ -139,14 +139,14 @@ describe('ShareWorkflowDialogContent', () => {
 
   it('renders in unpublished state when workflow is saved', async () => {
     const wrapper = createWrapper()
-    await nextTick()
+    await flushPromises()
 
     expect(wrapper.text()).toContain('Publish workflow')
   })
 
   it('disables publish button when acknowledgment is unchecked', async () => {
     const wrapper = createWrapper()
-    await nextTick()
+    await flushPromises()
 
     const publishButton = wrapper
       .findAll('button')
@@ -157,7 +157,7 @@ describe('ShareWorkflowDialogContent', () => {
 
   it('enables publish button when acknowledgment is checked', async () => {
     const wrapper = createWrapper()
-    await nextTick()
+    await flushPromises()
 
     const checkbox = wrapper.find('input[type="checkbox"]')
     await checkbox.setValue(true)
@@ -174,7 +174,7 @@ describe('ShareWorkflowDialogContent', () => {
     mockShareServiceData.assets = []
     mockShareServiceData.models = []
     const wrapper = createWrapper()
-    await nextTick()
+    await flushPromises()
 
     const checkbox = wrapper.find('input[type="checkbox"]')
     expect(checkbox.exists()).toBe(false)
