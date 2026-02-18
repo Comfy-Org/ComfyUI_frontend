@@ -1,10 +1,17 @@
 import { createPinia, setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useResultGallery } from '@/composables/queue/useResultGallery'
 import type { JobListItem as JobListViewItem } from '@/composables/queue/useJobList'
 import type { JobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
 import { ResultItemImpl, TaskItemImpl } from '@/stores/queueStore'
+
+const showDialogMock = vi.fn()
+vi.mock('@/stores/dialogStore', () => ({
+  useDialogStore: () => ({
+    showDialog: showDialogMock
+  })
+}))
 
 const createResultItem = (
   url: string,
@@ -61,6 +68,7 @@ const createJobViewItem = (
 describe('useResultGallery', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
+    showDialogMock.mockReset()
   })
 
   it('collects only previewable outputs and preserves their order', async () => {
@@ -167,5 +175,28 @@ describe('useResultGallery', () => {
 
     expect(galleryItems.value).toEqual(fullOutputs)
     expect(galleryActiveIndex.value).toBe(0)
+  })
+
+  it('opens standalone 3D viewer for 3D preview outputs', async () => {
+    const previewOutput = createResultItem('model.glb')
+    Object.defineProperty(previewOutput, 'is3D', { get: () => true })
+    const task = createTask(previewOutput)
+
+    const { galleryItems, galleryActiveIndex, onViewItem } = useResultGallery(
+      () => [task]
+    )
+
+    await onViewItem(createJobViewItem('job-3d', task))
+
+    expect(showDialogMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        key: 'queue-asset-3d-viewer',
+        title: 'model.glb',
+        props: expect.objectContaining({ modelUrl: 'model.glb' }),
+        dialogComponentProps: expect.objectContaining({ maximizable: true })
+      })
+    )
+    expect(galleryItems.value).toEqual([])
+    expect(galleryActiveIndex.value).toBe(-1)
   })
 })

@@ -122,8 +122,9 @@ export function useJobMenu(
     const result: ResultItemImpl | undefined = item.taskRef?.previewOutput
     if (!result) return
 
-    let nodeType: 'LoadImage' | 'LoadVideo' | 'LoadAudio' | null = null
-    let widgetName: 'image' | 'file' | 'audio' | null = null
+    let nodeType: 'LoadImage' | 'LoadVideo' | 'LoadAudio' | 'Load3D' | null =
+      null
+    let widgetName: 'image' | 'file' | 'audio' | 'model_file' | null = null
     if (result.isImage) {
       nodeType = 'LoadImage'
       widgetName = 'image'
@@ -133,6 +134,9 @@ export function useJobMenu(
     } else if (result.isAudio) {
       nodeType = 'LoadAudio'
       widgetName = 'audio'
+    } else if (result.is3D) {
+      nodeType = 'Load3D'
+      widgetName = 'model_file'
     }
     if (!nodeType || !widgetName) return
 

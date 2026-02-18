@@ -207,7 +207,8 @@ describe('useJobMenu', () => {
     nodeDefStoreMock.nodeDefsByName = {
       LoadImage: { name: 'LoadImage' },
       LoadVideo: { name: 'LoadVideo' },
-      LoadAudio: { name: 'LoadAudio' }
+      LoadAudio: { name: 'LoadAudio' },
+      Load3D: { name: 'Load3D' }
     }
     // Default: no workflow available via lazy loading
     getJobWorkflowMock.mockResolvedValue(undefined)
@@ -415,6 +416,12 @@ describe('useJobMenu', () => {
       flags: { isAudio: true },
       expectedNode: 'LoadAudio',
       widget: 'audio'
+    },
+    {
+      label: '3D',
+      flags: { is3D: true },
+      expectedNode: 'Load3D',
+      widget: 'model_file'
     }
   ] as const
 
