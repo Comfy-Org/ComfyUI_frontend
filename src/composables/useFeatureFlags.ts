@@ -21,7 +21,8 @@ export enum ServerFeatureFlag {
   LINEAR_TOGGLE_ENABLED = 'linear_toggle_enabled',
   TEAM_WORKSPACES_ENABLED = 'team_workspaces_enabled',
   USER_SECRETS_ENABLED = 'user_secrets_enabled',
-  NODE_REPLACEMENTS = 'node_replacements'
+  NODE_REPLACEMENTS = 'node_replacements',
+  WORKFLOW_SHARING_ENABLED = 'workflow_sharing_enabled'
 }
 
 /**
@@ -100,6 +101,12 @@ export function useFeatureFlags() {
     },
     get nodeReplacementsEnabled() {
       return api.getServerFeature(ServerFeatureFlag.NODE_REPLACEMENTS, false)
+    },
+    get workflowSharingEnabled() {
+      return (
+        remoteConfig.value.workflow_sharing_enabled ??
+        api.getServerFeature(ServerFeatureFlag.WORKFLOW_SHARING_ENABLED, false)
+      )
     }
   })
 

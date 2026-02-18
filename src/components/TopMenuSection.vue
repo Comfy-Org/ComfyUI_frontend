@@ -100,7 +100,7 @@
             />
             <LoginButton v-else-if="isDesktop && !isIntegratedTabBar" />
             <Button
-              v-if="isCloud"
+              v-if="isCloud && flags.workflowSharingEnabled"
               v-tooltip.bottom="shareTooltipConfig"
               variant="secondary"
               :aria-label="t('actionbar.shareTooltip')"
@@ -184,6 +184,7 @@ import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { isCloud, isDesktop } from '@/platform/distribution/types'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useConflictAcknowledgment } from '@/workbench/extensions/manager/composables/useConflictAcknowledgment'
 import { useManagerState } from '@/workbench/extensions/manager/composables/useManagerState'
 import { ManagerTab } from '@/workbench/extensions/manager/types/comfyManagerTypes'
@@ -193,6 +194,7 @@ const settingStore = useSettingStore()
 const workspaceStore = useWorkspaceStore()
 const rightSidePanelStore = useRightSidePanelStore()
 const managerState = useManagerState()
+const { flags } = useFeatureFlags()
 const { isLoggedIn } = useCurrentUser()
 const { t, n } = useI18n()
 const { toastErrorHandler } = useErrorHandling()
