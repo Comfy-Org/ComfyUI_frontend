@@ -1,72 +1,50 @@
 <template>
-  <div class="rounded-lg">
-    <div class="flex items-start gap-2">
+  <div class="rounded-lg flex flex-col gap-2">
+    <div class="flex items-start gap-2 my-0">
       <i
-        class="icon-[lucide--circle-alert] size-4 shrink-0 text-warning-background"
+        class="icon-[lucide--circle-alert] my-auto size-4 shrink-0 text-warning-background"
       />
       <p class="m-0 text-xs text-muted-foreground">
         {{ $t('shareWorkflow.publishDescription') }}
       </p>
     </div>
 
-    <div v-if="assets.length > 0" class="mt-3">
-      <CollapsibleRoot v-model:open="assetsOpen">
-        <CollapsibleTrigger
-          class="flex w-full cursor-pointer items-center gap-1 border-none bg-transparent p-0 text-sm font-medium text-muted-foreground"
+    <div v-if="assets.length > 0" class="flex flex-col gap-2 my-0">
+      <p class="m-0 px-2 pb-1 pt-3 text-sm text-muted-foreground">
+        {{ $t('shareWorkflow.assetsLabel', { count: assets.length }) }}
+      </p>
+      <div
+        class="max-h-[101px] overflow-y-auto rounded-lg border border-border-subtle bg-secondary-background py-2"
+      >
+        <div
+          v-for="asset in assets"
+          :key="asset.name"
+          class="flex items-center gap-2 px-2 py-3"
         >
-          <i
-            :class="
-              cn(
-                'icon-[lucide--chevron-right] size-3.5 transition-transform',
-                assetsOpen && 'rotate-90'
-              )
-            "
-          />
-          {{ $t('shareWorkflow.assetsLabel', { count: assets.length }) }}
-        </CollapsibleTrigger>
-        <CollapsibleContent
-          class="overflow-hidden data-[state=closed]:animate-collapsible-slide-up data-[state=open]:animate-collapsible-slide-down mt-2 flex flex-col gap-1.5 pl-5"
-        >
-          <div
-            v-for="asset in assets"
-            :key="asset.name"
-            class="flex items-center gap-2 text-xs text-muted-foreground"
-          >
-            <i class="icon-[lucide--file] size-3.5 shrink-0" />
-            <span class="truncate">{{ asset.name }}</span>
-          </div>
-        </CollapsibleContent>
-      </CollapsibleRoot>
+          <span class="truncate text-sm text-base-foreground">
+            {{ asset.name }}
+          </span>
+        </div>
+      </div>
     </div>
 
-    <div v-if="models.length > 0" class="mt-2">
-      <CollapsibleRoot v-model:open="modelsOpen">
-        <CollapsibleTrigger
-          class="flex w-full cursor-pointer items-center gap-1 border-none bg-transparent p-0 text-sm font-medium text-muted-foreground"
+    <div v-if="models.length > 0" class="flex flex-col gap-2 my-0">
+      <p class="m-0 px-2 pb-1 pt-3 text-sm text-muted-foreground">
+        {{ $t('shareWorkflow.modelsLabel', { count: models.length }) }}
+      </p>
+      <div
+        class="max-h-[101px] overflow-y-auto rounded-lg border border-border-subtle bg-secondary-background py-2"
+      >
+        <div
+          v-for="model in models"
+          :key="model.name"
+          class="flex items-center px-2 py-1"
         >
-          <i
-            :class="
-              cn(
-                'icon-[lucide--chevron-right] size-3.5 transition-transform',
-                modelsOpen && 'rotate-90'
-              )
-            "
-          />
-          {{ $t('shareWorkflow.modelsLabel', { count: models.length }) }}
-        </CollapsibleTrigger>
-        <CollapsibleContent
-          class="overflow-hidden data-[state=closed]:animate-collapsible-slide-up data-[state=open]:animate-collapsible-slide-down mt-2 flex flex-col gap-1.5 pl-5"
-        >
-          <div
-            v-for="model in models"
-            :key="model.name"
-            class="flex items-center gap-2 text-xs text-muted-foreground"
-          >
-            <i class="icon-[lucide--box] size-3.5 shrink-0" />
-            <span class="truncate">{{ model.name }}</span>
-          </div>
-        </CollapsibleContent>
-      </CollapsibleRoot>
+          <span class="truncate text-sm text-base-foreground">
+            {{ model.name }}
+          </span>
+        </div>
+      </div>
     </div>
 
     <label class="mt-3 flex cursor-pointer items-center gap-2">
@@ -89,18 +67,10 @@
 </template>
 
 <script setup lang="ts">
-import {
-  CollapsibleContent,
-  CollapsibleRoot,
-  CollapsibleTrigger
-} from 'reka-ui'
-import { ref } from 'vue'
-
 import type {
   WorkflowAsset,
   WorkflowModel
 } from '@/platform/workflow/sharing/types/shareTypes'
-import { cn } from '@/utils/tailwindUtil'
 
 const { assets, models } = defineProps<{
   assets: WorkflowAsset[]
@@ -111,7 +81,4 @@ const { assets, models } = defineProps<{
 defineEmits<{
   'update:acknowledged': [value: boolean]
 }>()
-
-const assetsOpen = ref(false)
-const modelsOpen = ref(false)
 </script>
