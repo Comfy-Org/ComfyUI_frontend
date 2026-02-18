@@ -317,6 +317,7 @@ export const useExecutionStore = defineStore('execution', () => {
   function handleExecutionStart(e: CustomEvent<ExecutionStartWsMessage>) {
     lastExecutionError.value = null
     lastPromptError.value = null
+    lastNodeErrors.value = null
     isErrorOverlayOpen.value = false
     activePromptId.value = e.detail.prompt_id
     queuedPrompts.value[activePromptId.value] ??= { nodes: {} }
@@ -756,7 +757,10 @@ export const useExecutionStore = defineStore('execution', () => {
       ids.push(...Object.keys(lastNodeErrors.value))
     }
     if (lastExecutionError.value) {
-      ids.push(String(lastExecutionError.value.node_id))
+      const nodeId = lastExecutionError.value.node_id
+      if (nodeId !== null && nodeId !== undefined) {
+        ids.push(String(nodeId))
+      }
     }
     return ids
   })
