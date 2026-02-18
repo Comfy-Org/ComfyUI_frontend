@@ -2857,9 +2857,12 @@
     "shareTooltip": "Share workflow"
   },
   "shareWorkflow": {
+    "loadingTitle": "Share workflow",
     "unsavedTitle": "Save workflow first",
     "unsavedDescription": "You must save your workflow before sharing. Save it now to continue.",
     "saveButton": "Save workflow",
+    "saving": "Saving...",
+    "workflowNameLabel": "Workflow name",
     "publishTitle": "Publish workflow",
     "publishDescription": "When you create a link for your workflow, you will share these assets along with your workflow",
     "publishButton": "Publish workflow",
@@ -2875,6 +2878,7 @@
     "linkCopied": "Copied!",
     "assetsLabel": "Asset ({count}) | Assets ({count})",
     "modelsLabel": "Model ({count}) | Models ({count})",
+    "checkingAssets": "Checking asset visibility…",
     "acknowledgeCheckbox": "I understand these assets will be published and made public",
     "comfyHubTitle": "Upload to ComfyHub",
     "comfyHubDescription": "ComfyHub is ComfyUI's official community hub.\nYour workflow will have a public page viewable by all.",
