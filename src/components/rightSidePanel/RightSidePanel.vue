@@ -141,18 +141,6 @@ const tabs = computed<RightSidePanelTabList>(() => {
     })
   }
 
-  if (
-    hasAnyError.value &&
-    !hasSelection.value &&
-    settingStore.get('Comfy.RightSidePanel.ShowErrorsTab')
-  ) {
-    list.push({
-      label: () => t('rightSidePanel.errors'),
-      value: 'errors',
-      icon: 'icon-[lucide--octagon-alert] bg-node-stroke-error ml-1'
-    })
-  }
-
   list.push({
     label: () =>
       flattedItems.value.length > 1
