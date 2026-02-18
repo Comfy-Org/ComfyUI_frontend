@@ -184,9 +184,9 @@ function refreshDialogState() {
   }
 }
 
-onMounted(() => {
+onMounted(async () => {
   assets.value = shareService.getWorkflowAssets()
-  models.value = shareService.getWorkflowModels()
+  models.value = await shareService.getWorkflowModels()
   refreshDialogState()
 })
 

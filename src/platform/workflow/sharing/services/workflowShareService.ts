@@ -5,6 +5,7 @@ import type {
   WorkflowPublishStatus
 } from '@/platform/workflow/sharing/types/shareTypes'
 import { app } from '@/scripts/app'
+import { useAssetsStore } from '@/stores/assetsStore'
 import { useModelToNodeStore } from '@/stores/modelToNodeStore'
 import { mapAllNodes } from '@/utils/graphTraversalUtil'
 
@@ -63,7 +64,7 @@ export function useWorkflowShareService() {
     const graph = app.rootGraph
     if (!graph) return []
 
-    return mapAllNodes(graph, (node) => {
+    const results = mapAllNodes(graph, (node) => {
       const widgetName = ASSET_NODE_WIDGETS[node.type ?? '']
       if (!widgetName) return undefined
 
@@ -73,24 +74,47 @@ export function useWorkflowShareService() {
 
       return { name: value, thumbnailUrl: null } satisfies WorkflowAsset
     })
+
+    return results
   }
 
-  function getWorkflowModels(): WorkflowModel[] {
+  async function getWorkflowModels(): Promise<WorkflowModel[]> {
     const graph = app.rootGraph
     if (!graph) return []
 
     const registeredTypes = useModelToNodeStore().getRegisteredNodeTypes()
+    const assetsStore = useAssetsStore()
 
-    return mapAllNodes(graph, (node) => {
-      const widgetKey = registeredTypes[node.type ?? '']
+    const nodeTypesInGraph = new Set(
+      mapAllNodes(graph, (node) => {
+        const nodeType = node.type ?? ''
+        return registeredTypes[nodeType] ? nodeType : undefined
+      })
+    )
+
+    await Promise.all(
+      [...nodeTypesInGraph].map((nodeType) =>
+        assetsStore.updateModelsForNodeType(nodeType)
+      )
+    )
+
+    const results = mapAllNodes(graph, (node) => {
+      const nodeType = node.type ?? ''
+      const widgetKey = registeredTypes[nodeType]
       if (!widgetKey) return undefined
 
       const widget = node.widgets?.find((w) => w.name === widgetKey)
       const value = widget?.value
       if (typeof value !== 'string' || !value.trim()) return undefined
 
+      const cachedAssets = assetsStore.getAssets(nodeType)
+      const matchingAsset = cachedAssets.find((a) => a.name === value)
+      if (matchingAsset?.is_immutable) return undefined
+
       return { name: value } satisfies WorkflowModel
     })
+
+    return results
   }
 
   return {
