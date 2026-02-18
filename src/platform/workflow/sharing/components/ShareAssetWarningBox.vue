@@ -15,7 +15,7 @@
       class="flex flex-col gap-2 my-0"
     >
       <p class="m-0 px-2 pb-1 pt-3 text-sm text-muted-foreground">
-        {{ $t(section.labelKey, { count: section.items.length }) }}
+        {{ $t(section.labelKey, section.items.length) }}
       </p>
       <div
         class="max-h-[101px] overflow-y-auto rounded-lg border border-border-subtle bg-secondary-background py-2"
