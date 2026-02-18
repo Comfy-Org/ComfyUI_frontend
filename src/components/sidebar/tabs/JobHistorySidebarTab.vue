@@ -180,9 +180,9 @@ const onMenuItem = (item: JobListItem, event: Event) => {
   jobContextMenuRef.value?.open(event)
 }
 
-const onJobMenuAction = async (entry: MenuEntry) => {
+const onJobMenuAction = wrapWithErrorHandlingAsync(async (entry: MenuEntry) => {
   if (entry.kind === 'divider') return
   if (entry.onClick) await entry.onClick()
   jobContextMenuRef.value?.hide()
-}
+})
 </script>
