@@ -326,7 +326,7 @@ describe('useCoreCommands', () => {
 
       findCommand('Comfy.Canvas.CopySelected').function()
 
-      expect(app.canvas.copyToClipboard).toHaveBeenCalled()
+      expect(app.canvas.copyToClipboard).toHaveBeenCalledWith()
     })
 
     it('should not copy when no items are selected', () => {
@@ -338,13 +338,14 @@ describe('useCoreCommands', () => {
     it('should paste from clipboard', () => {
       findCommand('Comfy.Canvas.PasteFromClipboard').function()
 
-      expect(app.canvas.pasteFromClipboard).toHaveBeenCalled()
+      expect(app.canvas.pasteFromClipboard).toHaveBeenCalledWith()
     })
 
     it('should select all items', () => {
       findCommand('Comfy.Canvas.SelectAll').function()
 
-      expect(app.canvas.selectItems).toHaveBeenCalled()
+      // No arguments means "select all items on canvas"
+      expect(app.canvas.selectItems).toHaveBeenCalledWith()
     })
   })
 
