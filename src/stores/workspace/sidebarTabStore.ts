@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 
 import { useAssetsSidebarTab } from '@/composables/sidebarTabs/useAssetsSidebarTab'
+import { useJobHistorySidebarTab } from '@/composables/sidebarTabs/useJobHistorySidebarTab'
 import { useModelLibrarySidebarTab } from '@/composables/sidebarTabs/useModelLibrarySidebarTab'
 import { useNodeLibrarySidebarTab } from '@/composables/sidebarTabs/useNodeLibrarySidebarTab'
 import { t, te } from '@/i18n'
@@ -45,7 +46,8 @@ export const useSidebarTabStore = defineStore('sidebarTab', () => {
         'node-library': 'sideToolbar.nodeLibrary',
         'model-library': 'sideToolbar.modelLibrary',
         workflows: 'sideToolbar.workflows',
-        assets: 'sideToolbar.assets'
+        assets: 'sideToolbar.assets',
+        'job-history': 'queue.jobHistory'
       }
 
       const key = menubarLabelKeys[tab.id]
@@ -103,6 +105,7 @@ export const useSidebarTabStore = defineStore('sidebarTab', () => {
    */
   const registerCoreSidebarTabs = () => {
     registerSidebarTab(useAssetsSidebarTab())
+    registerSidebarTab(useJobHistorySidebarTab())
     registerSidebarTab(useNodeLibrarySidebarTab())
     registerSidebarTab(useModelLibrarySidebarTab())
     registerSidebarTab(useWorkflowsSidebarTab())
