@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import { computed, ref, watch } from 'vue'
+import { isEmpty } from 'es-toolkit/compat'
 
 import { useNodeProgressText } from '@/composables/node/useNodeProgressText'
 import type { LGraph, Subgraph } from '@/lib/litegraph/src/litegraph'
@@ -25,7 +26,8 @@ import type {
   NotificationWsMessage,
   ProgressStateWsMessage,
   ProgressTextWsMessage,
-  ProgressWsMessage
+  ProgressWsMessage,
+  PromptError
 } from '@/schemas/apiSchema'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
@@ -45,13 +47,6 @@ interface QueuedPrompt {
    * The workflow that is queued to be executed
    */
   workflow?: ComfyWorkflow
-}
-
-/** Prompt-level errors without node IDs (e.g. invalid_prompt, prompt_no_outputs) */
-interface PromptError {
-  type: string
-  message: string
-  details: string
 }
 
 const subgraphNodeIdToSubgraph = (id: string, graph: LGraph | Subgraph) => {
@@ -471,6 +466,7 @@ export const useExecutionStore = defineStore('execution', () => {
     }
     activePromptId.value = null
     _executingNodeProgress.value = null
+    lastPromptError.value = null
   }
 
   function getNodeIdIfExecuting(nodeId: string | number) {
@@ -658,7 +654,7 @@ export const useExecutionStore = defineStore('execution', () => {
 
   /** Whether any node validation errors are present */
   const hasNodeError = computed(
-    () => !!lastNodeErrors.value && Object.keys(lastNodeErrors.value).length > 0
+    () => !!lastNodeErrors.value && !isEmpty(lastNodeErrors.value)
   )
 
   /** Whether any error (node validation, runtime execution, or prompt-level) is present */
@@ -667,22 +663,27 @@ export const useExecutionStore = defineStore('execution', () => {
   )
 
   /** Pre-computed Set of graph node IDs (as strings) that have errors. */
-  const errorNodeIds = computed<Set<string>>(() => {
+  const activeGraphErrorNodeIds = computed<Set<string>>(() => {
     const ids = new Set<string>()
+    if (!app.rootGraph) return ids
 
-    // Node validation errors (400 Bad Request)
+    const activeGraph = useCanvasStore().currentGraph ?? app.rootGraph
+
     if (lastNodeErrors.value) {
       for (const executionId of Object.keys(lastNodeErrors.value)) {
         const graphNode = getNodeByExecutionId(app.rootGraph, executionId)
-        if (graphNode) ids.add(String(graphNode.id))
+        if (graphNode?.graph === activeGraph) {
+          ids.add(String(graphNode.id))
+        }
       }
     }
 
-    // Runtime execution error (WebSocket)
     if (lastExecutionError.value) {
       const execNodeId = String(lastExecutionError.value.node_id)
       const graphNode = getNodeByExecutionId(app.rootGraph, execNodeId)
-      if (graphNode) ids.add(String(graphNode.id))
+      if (graphNode?.graph === activeGraph) {
+        ids.add(String(graphNode.id))
+      }
     }
 
     return ids
@@ -729,6 +730,6 @@ export const useExecutionStore = defineStore('execution', () => {
     // Node error lookup helpers
     getNodeErrors,
     slotHasError,
-    errorNodeIds
+    activeGraphErrorNodeIds
   }
 })

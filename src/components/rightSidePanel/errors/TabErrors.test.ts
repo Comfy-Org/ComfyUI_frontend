@@ -162,23 +162,32 @@ describe('TabErrors.vue', () => {
   })
 
   it('filters errors based on search query', async () => {
+    const { getNodeByExecutionId } = await import('@/utils/graphTraversalUtil')
+    vi.mocked(getNodeByExecutionId).mockReturnValue(null)
+
     const wrapper = mountComponent({
       execution: {
         lastNodeErrors: {
-          '1': { class_type: 'GroupA', errors: [{ message: 'Apple' }] },
-          '2': { class_type: 'GroupB', errors: [{ message: 'Banana' }] }
+          '1': {
+            class_type: 'CLIPTextEncode',
+            errors: [{ message: 'Missing text input' }]
+          },
+          '2': {
+            class_type: 'KSampler',
+            errors: [{ message: 'Out of memory' }]
+          }
         }
       }
     })
 
-    expect(wrapper.text()).toContain('GroupA')
-    expect(wrapper.text()).toContain('GroupB')
+    expect(wrapper.text()).toContain('CLIPTextEncode')
+    expect(wrapper.text()).toContain('KSampler')
 
     const searchInput = wrapper.find('input')
-    await searchInput.setValue('Apple')
+    await searchInput.setValue('Missing text input')
 
-    expect(wrapper.text()).toContain('GroupA')
-    expect(wrapper.text()).not.toContain('GroupB')
+    expect(wrapper.text()).toContain('CLIPTextEncode')
+    expect(wrapper.text()).not.toContain('KSampler')
   })
 
   it('calls copyToClipboard when copy button is clicked', async () => {

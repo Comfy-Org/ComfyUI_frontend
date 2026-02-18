@@ -1,4 +1,3 @@
-
 <template>
   <div class="overflow-hidden">
     <!-- Card Header (Node ID & Actions) -->
@@ -28,7 +27,7 @@
         variant="textonly"
         size="icon-sm"
         class="size-7 text-muted-foreground hover:text-base-foreground shrink-0"
-        @click.stop="emit('locateNode', card.nodeId!)"
+        @click.stop="emit('locateNode', card.nodeId ?? '')"
       >
         <i class="icon-[lucide--locate] size-3.5" />
       </Button>

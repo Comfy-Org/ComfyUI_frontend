@@ -9,6 +9,7 @@ export interface ErrorCardData {
   title: string
   nodeId?: string
   nodeTitle?: string
+  graphNodeId?: string
   isSubgraphNode?: boolean
   errors: ErrorItem[]
 }

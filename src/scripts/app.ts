@@ -1502,8 +1502,8 @@ export class ComfyApp {
 
               // Clear selection and open the error panel so the user can immediately
               // see the error details without extra clicks.
-              this.canvas.deselectAll()
               if (useSettingStore().get('Comfy.RightSidePanel.ShowErrorsTab')) {
+                this.canvas.deselectAll()
                 useRightSidePanelStore().openPanel('errors')
               }
               this.canvas.draw(true, true)

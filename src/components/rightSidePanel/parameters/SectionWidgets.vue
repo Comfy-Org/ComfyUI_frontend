@@ -112,7 +112,7 @@ const targetNode = computed<LGraphNode | null>(() => {
 
 const nodeHasError = computed(() => {
   if (canvasStore.selectedItems.length > 0 || !targetNode.value) return false
-  return executionStore.errorNodeIds.has(String(targetNode.value.id))
+  return executionStore.activeGraphErrorNodeIds.has(String(targetNode.value.id))
 })
 
 const parentGroup = computed<LGraphGroup | null>(() => {
