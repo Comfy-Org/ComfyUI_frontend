@@ -34,7 +34,7 @@ const entries = computed(() => {
 <template>
   <div class="p-2 my-2 rounded-lg flex items-center-safe">
     <span class="mr-auto" v-text="title" />
-    <span class="text-muted-foreground" v-text="subTitle" />
+    <span class="text-muted-foreground mr-2" v-text="subTitle" />
     <Popover :entries>
       <template #button>
         <Button variant="muted-textonly">
