@@ -70,6 +70,7 @@ import { SYSTEM_NODE_DEFS, useNodeDefStore } from '@/stores/nodeDefStore'
 import { useNodeReplacementStore } from '@/platform/nodeReplacement/nodeReplacementStore'
 import { useSubgraphStore } from '@/stores/subgraphStore'
 import { useWidgetStore } from '@/stores/widgetStore'
+import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import type { ComfyExtension, MissingNodeType } from '@/types/comfy'
 import type { ExtensionManager } from '@/types/extensionTypes'
@@ -713,6 +714,10 @@ export class ComfyApp {
         }
       } else {
         useDialogService().showExecutionErrorDialog(detail)
+      }
+      if (useSettingStore().get('Comfy.RightSidePanel.ShowErrorsTab')) {
+        this.canvas.deselectAll()
+        useRightSidePanelStore().openPanel('errors')
       }
       this.canvas.draw(true, true)
     })
@@ -1398,6 +1403,8 @@ export class ComfyApp {
     this.processingQueue = true
     const executionStore = useExecutionStore()
     executionStore.lastNodeErrors = null
+    executionStore.lastExecutionError = null
+    executionStore.lastPromptError = null
 
     // Get auth token for backend nodes - uses workspace token if enabled, otherwise Firebase token
     const comfyOrgAuthToken = await useFirebaseAuthStore().getAuthToken()
@@ -1468,6 +1475,37 @@ export class ComfyApp {
 
             if (error instanceof PromptExecutionError) {
               executionStore.lastNodeErrors = error.response.node_errors ?? null
+
+              // Store prompt-level error separately only when no node-specific errors exist,
+              // because node errors already carry the full context. Prompt-level errors
+              // (e.g. prompt_no_outputs, no_prompt) lack node IDs and need their own path.
+              const nodeErrors = error.response.node_errors
+              const hasNodeErrors =
+                nodeErrors && Object.keys(nodeErrors).length > 0
+
+              if (!hasNodeErrors) {
+                const respError = error.response.error
+                if (respError && typeof respError === 'object') {
+                  executionStore.lastPromptError = {
+                    type: respError.type,
+                    message: respError.message,
+                    details: respError.details ?? ''
+                  }
+                } else if (typeof respError === 'string') {
+                  executionStore.lastPromptError = {
+                    type: 'error',
+                    message: respError,
+                    details: ''
+                  }
+                }
+              }
+
+              // Clear selection and open the error panel so the user can immediately
+              // see the error details without extra clicks.
+              if (useSettingStore().get('Comfy.RightSidePanel.ShowErrorsTab')) {
+                this.canvas.deselectAll()
+                useRightSidePanelStore().openPanel('errors')
+              }
               this.canvas.draw(true, true)
             }
             break
@@ -1845,6 +1883,7 @@ export class ComfyApp {
     const executionStore = useExecutionStore()
     executionStore.lastNodeErrors = null
     executionStore.lastExecutionError = null
+    executionStore.lastPromptError = null
 
     useDomWidgetStore().clear()
 
