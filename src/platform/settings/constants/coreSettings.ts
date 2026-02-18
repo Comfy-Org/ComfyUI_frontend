@@ -7,6 +7,9 @@ import type { Keybinding } from '@/platform/keybindings/types'
 import { NodeBadgeMode } from '@/types/nodeSource'
 import { LinkReleaseTriggerAction } from '@/types/searchBoxTypes'
 import { breakpointsTailwind } from '@vueuse/core'
+import { showConfirmDialog } from '@/components/dialog/confirm/confirmDialog'
+import { useDialogStore } from '@/stores/dialogStore'
+import { t } from '@/i18n'
 
 /**
  * Core settings are essential configuration parameters required for ComfyUI's basic functionality.
@@ -1053,13 +1056,47 @@ export const CORE_SETTINGS: SettingParams[] = [
     type: 'combo',
     options: ['off', 'after delay'], // Room for other options like on focus change, tab change, window change
     defaultValue: 'off', // Popular request by users (https://github.com/Comfy-Org/ComfyUI_frontend/issues/1584#issuecomment-2536610154)
-    versionAdded: '1.16.0'
+    versionAdded: '1.16.0',
+    onChange: (val: unknown, old?: unknown) => {
+      if (val !== 'off' || old === undefined) return
+
+      const settingStore = useSettingStore()
+      if (!settingStore.get('Comfy.Workflow.Persist')) return
+
+      let keepPersist = false
+      const dialog = showConfirmDialog({
+        headerProps: {
+          title: t('autoSaveOffPersistWarning.title')
+        },
+        props: {
+          promptText: t('autoSaveOffPersistWarning.body')
+        },
+        footerProps: {
+          confirmText: t('autoSaveOffPersistWarning.confirm'),
+          confirmClass:
+            'bg-primary-background hover:bg-primary-background-hover',
+          cancelText: t('autoSaveOffPersistWarning.keepPersist'),
+          onConfirm: () => {
+            useDialogStore().closeDialog(dialog)
+          },
+          onCancel: () => {
+            keepPersist = true
+            useDialogStore().closeDialog(dialog)
+          }
+        }
+      })
+      dialog.dialogComponentProps.onClose = () => {
+        if (!keepPersist) {
+          void settingStore.set('Comfy.Workflow.Persist', false)
+        }
+      }
+    }
   },
   {
     id: 'Comfy.Workflow.Persist',
     name: 'Persist workflow state and restore on page (re)load',
     type: 'boolean',
-    defaultValue: true,
+    defaultValue: false,
     versionAdded: '1.16.1'
   },
   {

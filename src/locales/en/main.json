@@ -3079,5 +3079,11 @@
       "duplicateName": "A secret with this name already exists",
       "duplicateProvider": "A secret for this provider already exists"
     }
+  },
+  "autoSaveOffPersistWarning": {
+    "title": "Disable Persist?",
+    "body": "Turning off Auto Save will also disable workflow persistence. Your workflow state will no longer be restored on page reload.",
+    "confirm": "Disable Persist",
+    "keepPersist": "Keep Persist"
   }
 }
