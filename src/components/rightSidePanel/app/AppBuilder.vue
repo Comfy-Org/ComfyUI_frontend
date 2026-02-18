@@ -210,10 +210,10 @@ const renderedInputs = computed<[string, MaybeRef<BoundStyle> | undefined][]>(
 )
 </script>
 <template>
-  <div class="flex font-bold p-2 border-border-subtle border-b">
-    {{ t('[ph]App builder mode') }}
+  <div class="flex font-bold p-2 border-border-subtle border-b items-center">
+    {{ t('linearMode.builder.title') }}
     <Button class="ml-auto" @click="rightSidePanelStore.inAppBuilder = false">
-      {{ t('[ph]Exit builder') }}
+      {{ t('linearMode.builder.exit') }}
     </Button>
   </div>
   <PropertiesAccordionItem
@@ -224,26 +224,18 @@ const renderedInputs = computed<[string, MaybeRef<BoundStyle> | undefined][]>(
   >
     <template #empty>
       <div class="w-full p-4 text-muted-foreground gap-2 flex flex-col">
-        <div
-          v-text="t('[ph]Click on node parameters to add them here as inputs')"
-        />
+        <div v-text="t('linearMode.builder.promptAddInputs')" />
         <div
           class="text-base-foreground"
-          v-text="t('[ph]No inputs added yet')"
+          v-text="t('linearMode.builder.noInputs')"
         />
-        <div
-          v-text="
-            t(
-              '[ph]Users will interact and adjust these to generate their outputs.'
-            )
-          "
-        />
-        <div v-text="t('[ph]Examples: “Load image”, “Text prompt”, “Steps”')" />
+        <div v-text="t('linearMode.builder.inputsDesc')" />
+        <div v-text="t('linearMode.builder.inputsExample')" />
       </div>
     </template>
     <div
       class="w-full p-4 pt-2 text-muted-foreground"
-      v-text="t('[ph]Click on node parameters to add them here as inputs')"
+      v-text="t('linearMode.builder.promptAddInputs')"
     />
     <DraggableList v-slot="{ dragClass }" v-model="selectedInputs">
       <IoItem
@@ -276,30 +268,18 @@ const renderedInputs = computed<[string, MaybeRef<BoundStyle> | undefined][]>(
   >
     <template #empty>
       <div class="w-full p-4 text-muted-foreground gap-2 flex flex-col">
-        <div
-          v-text="
-            t(
-              '[ph]Click on output nodes to add them here. These will be the generated results.'
-            )
-          "
-        />
+        <div v-text="t('linearMode.builder.promptAddOutputs')" />
         <div
           class="text-base-foreground"
-          v-text="t('[ph]No outputs nodes added yet')"
+          v-text="t('linearMode.builder.noOutputs')"
         />
-        <div
-          v-text="
-            t(
-              '[ph]Connect at least one output node so users can see results after running.'
-            )
-          "
-        />
-        <div v-text="t('[ph]Examples: “Save Image” or “Save Video”')" />
+        <div v-text="t('linearMode.builder.outputsDesc')" />
+        <div v-text="t('linearMode.builder.outputsExample')" />
       </div>
     </template>
     <div
       class="w-full p-4 pt-2 text-muted-foreground"
-      v-text="t('[ph]Click on node parameters to add them here as inputs')"
+      v-text="t('linearMode.builder.promptAddOutputs')"
     />
     <DraggableList v-slot="{ dragClass }" v-model="selectedOutputs">
       <IoItem
