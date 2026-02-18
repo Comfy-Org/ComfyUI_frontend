@@ -56,25 +56,27 @@
       <!-- Just published state -->
       <template v-if="dialogState === 'justPublished' && shareUrl">
         <ShareUrlCopyField :url="shareUrl" />
-        <p class="m-0 text-xs text-muted-foreground">
-          <span v-if="publishedAt">
+        <div class="flex flex-col gap-1">
+          <p v-if="publishedAt" class="m-0 text-xs text-muted-foreground">
             {{ $t('shareWorkflow.publishedOn', { date: formattedDate }) }}
-          </span>
-          <br />
-          {{ $t('shareWorkflow.successDescription') }}
-        </p>
+          </p>
+          <p class="m-0 text-xs text-muted-foreground">
+            {{ $t('shareWorkflow.successDescription') }}
+          </p>
+        </div>
       </template>
 
       <!-- Has changes state -->
       <template v-if="dialogState === 'hasChanges' && shareUrl">
         <ShareUrlCopyField :url="shareUrl" />
-        <p class="m-0 text-xs text-muted-foreground">
-          <span v-if="publishedAt">
+        <div class="flex flex-col gap-1">
+          <p v-if="publishedAt" class="m-0 text-xs text-muted-foreground">
             {{ $t('shareWorkflow.publishedOn', { date: formattedDate }) }}
-          </span>
-          <br />
-          {{ $t('shareWorkflow.hasChangesDescription') }}
-        </p>
+          </p>
+          <p class="m-0 text-xs text-muted-foreground">
+            {{ $t('shareWorkflow.hasChangesDescription') }}
+          </p>
+        </div>
         <ShareAssetWarningBox
           v-if="requiresAcknowledgment"
           v-model:acknowledged="acknowledged"
@@ -103,6 +105,7 @@
 </template>
 
 <script setup lang="ts">
+import { useToast } from 'primevue/usetoast'
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -123,6 +126,7 @@ const { onClose } = defineProps<{
 }>()
 
 const { t, locale } = useI18n()
+const toast = useToast()
 const shareService = useWorkflowShareService()
 const workflowStore = useWorkflowStore()
 const workflowService = useWorkflowService()
@@ -191,10 +195,21 @@ async function handleSave() {
   const workflow = workflowStore.activeWorkflow
   if (!workflow) return
 
-  if (workflow.isTemporary) {
-    await workflowService.saveWorkflowAs(workflow)
-  } else {
-    await workflowService.saveWorkflow(workflow)
+  try {
+    if (workflow.isTemporary) {
+      await workflowService.saveWorkflowAs(workflow)
+    } else {
+      await workflowService.saveWorkflow(workflow)
+    }
+  } catch (error) {
+    console.error('Failed to save workflow:', error)
+    toast.add({
+      severity: 'error',
+      summary: t('g.error'),
+      detail: t('g.error'),
+      life: 5000
+    })
+    return
   }
 
   refreshDialogState()
@@ -214,6 +229,14 @@ async function handlePublish() {
     publishedAt.value = result.publishedAt
     dialogState.value = 'justPublished'
     acknowledged.value = false
+  } catch (error) {
+    console.error('Failed to publish workflow:', error)
+    toast.add({
+      severity: 'error',
+      summary: t('g.error'),
+      detail: error instanceof Error ? error.message : t('g.error'),
+      life: 5000
+    })
   } finally {
     isPublishing.value = false
   }
