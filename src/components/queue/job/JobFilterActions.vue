@@ -11,7 +11,7 @@
       class="flex shrink-0 items-center gap-2"
       :class="{ 'ml-2': !showSearch }"
     >
-      <Popover :show-arrow="false" side-offset="4">
+      <Popover :show-arrow="false">
         <template #button>
           <Button
             v-tooltip.top="filterTooltipConfig"
@@ -27,9 +27,7 @@
           </Button>
         </template>
         <template #default="{ close }">
-          <div
-            class="flex min-w-[12rem] flex-col items-stretch rounded-lg border border-interface-stroke bg-interface-panel-surface px-2 py-3"
-          >
+          <div class="flex min-w-[12rem] flex-col items-stretch">
             <Button
               class="w-full justify-between"
               variant="textonly"
@@ -61,7 +59,7 @@
           </div>
         </template>
       </Popover>
-      <Popover :show-arrow="false" side-offset="4">
+      <Popover :show-arrow="false">
         <template #button>
           <Button
             v-tooltip.top="sortTooltipConfig"
@@ -77,9 +75,7 @@
           </Button>
         </template>
         <template #default="{ close }">
-          <div
-            class="flex min-w-[12rem] flex-col items-stretch rounded-lg border border-interface-stroke bg-interface-panel-surface px-2 py-3"
-          >
+          <div class="flex min-w-[12rem] flex-col items-stretch">
             <template v-for="(mode, index) in jobSortModes" :key="mode">
               <Button
                 class="w-full justify-between"
