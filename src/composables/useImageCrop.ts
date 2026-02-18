@@ -155,11 +155,18 @@ export function useImageCrop(nodeId: NodeId, options: UseImageCropOptions) {
   const getInputImageUrl = (): string | null => {
     if (!node.value) return null
 
-    const inputNode = node.value.getInputNode(0)
+    let sourceNode = node.value.getInputNode(0)
+    if (!sourceNode) return null
 
-    if (!inputNode) return null
+    if (sourceNode.isSubgraphNode()) {
+      const link = node.value.getInputLink(0)
+      if (!link) return null
+      const resolved = sourceNode.resolveSubgraphOutputLink(link.origin_slot)
+      sourceNode = resolved?.outputNode ?? null
+      if (!sourceNode) return null
+    }
 
-    const urls = nodeOutputStore.getNodeImageUrls(inputNode)
+    const urls = nodeOutputStore.getNodeImageUrls(sourceNode)
 
     if (urls?.length) {
       return urls[0]
@@ -562,7 +569,10 @@ export function useImageCrop(nodeId: NodeId, options: UseImageCropOptions) {
 
   const initialize = () => {
     if (nodeId != null) {
-      node.value = app.rootGraph?.getNodeById(nodeId) || null
+      node.value =
+        app.canvas?.graph?.getNodeById(nodeId) ||
+        app.rootGraph?.getNodeById(nodeId) ||
+        null
     }
 
     updateImageUrl()
