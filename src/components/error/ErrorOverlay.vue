@@ -4,10 +4,7 @@
     enter-from-class="-translate-y-3 opacity-0"
     enter-to-class="translate-y-0 opacity-100"
   >
-    <div
-      v-if="isVisible"
-      :class="cn('flex justify-end w-full pointer-events-none')"
-    >
+    <div v-if="isVisible" class="flex justify-end w-full pointer-events-none">
       <div
         class="pointer-events-auto flex w-80 min-w-72 flex-col overflow-hidden rounded-lg border border-interface-stroke bg-comfy-menu-bg shadow-interface transition-colors duration-200 ease-in-out"
       >
@@ -66,7 +63,6 @@ import { useExecutionStore } from '@/stores/executionStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useErrorGroups } from '@/components/rightSidePanel/errors/useErrorGroups'
-import { cn } from '@/utils/tailwindUtil'
 
 const { t } = useI18n()
 const executionStore = useExecutionStore()

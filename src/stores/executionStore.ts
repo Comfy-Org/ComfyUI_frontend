@@ -464,22 +464,29 @@ export const useExecutionStore = defineStore('execution', () => {
     const { error, node_errors } = extracted
     const hasNodeErrors = node_errors && Object.keys(node_errors).length > 0
 
-    if (hasNodeErrors) {
-      lastNodeErrors.value = node_errors
-    } else if (error && typeof error === 'object') {
-      lastPromptError.value = {
-        type: error.type ?? 'error',
-        message: error.message ?? '',
-        details: error.details ?? ''
+    let promptError = null
+    if (!hasNodeErrors) {
+      if (error && typeof error === 'object') {
+        promptError = {
+          type: error.type ?? 'error',
+          message: error.message ?? '',
+          details: error.details ?? ''
+        }
+      } else if (typeof error === 'string') {
+        promptError = { type: 'error', message: error, details: '' }
+      } else {
+        return false
       }
-    } else if (typeof error === 'string') {
-      lastPromptError.value = { type: 'error', message: error, details: '' }
-    } else {
-      return false
     }
 
     clearInitializationByPromptId(detail.prompt_id)
     resetExecutionState(detail.prompt_id)
+
+    if (hasNodeErrors) {
+      lastNodeErrors.value = node_errors
+    } else if (promptError) {
+      lastPromptError.value = promptError
+    }
     return true
   }
 
