@@ -1,6 +1,5 @@
 import { defineStore } from 'pinia'
 import { computed, ref, watch } from 'vue'
-import { isEmpty } from 'es-toolkit/compat'
 
 import { useNodeProgressText } from '@/composables/node/useNodeProgressText'
 import type { LGraph, Subgraph } from '@/lib/litegraph/src/litegraph'
@@ -443,13 +442,17 @@ export const useExecutionStore = defineStore('execution', () => {
   }
 
   function handleServiceLevelError(detail: ExecutionErrorWsMessage): boolean {
-    if (!isEmpty(detail.node_id)) return false
+    const nodeId = detail.node_id
+    if (nodeId !== null && nodeId !== undefined && String(nodeId) !== '')
+      return false
 
     clearInitializationByPromptId(detail.prompt_id)
     resetExecutionState(detail.prompt_id)
     lastPromptError.value = {
       type: detail.exception_type ?? 'error',
-      message: `${detail.exception_type}: ${detail.exception_message}`,
+      message: detail.exception_type
+        ? `${detail.exception_type}: ${detail.exception_message}`
+        : (detail.exception_message ?? ''),
       details: detail.traceback?.join('\n') ?? ''
     }
     return true
@@ -739,7 +742,7 @@ export const useExecutionStore = defineStore('execution', () => {
 
   /** Whether any node validation errors are present */
   const hasNodeError = computed(
-    () => !!lastNodeErrors.value && !isEmpty(lastNodeErrors.value)
+    () => !!lastNodeErrors.value && Object.keys(lastNodeErrors.value).length > 0
   )
 
   /** Whether any error (node validation, runtime execution, or prompt-level) is present */
