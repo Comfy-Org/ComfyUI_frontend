@@ -406,6 +406,7 @@ const skeletonCount = computed(() =>
 const {
   state: folderAssets,
   isLoading: folderLoading,
+  error: folderError,
   execute: loadFolderAssets
 } = useAsyncState(
   (metadata: OutputAssetMetadata, options: { createdAt?: string } = {}) =>
@@ -450,9 +451,13 @@ const isBulkMode = computed(
   () => hasSelection.value && selectedAssets.value.length > 1
 )
 
+const isFolderLoading = computed(
+  () => isInFolderView.value && folderLoading.value
+)
+
 const showLoadingState = computed(
   () =>
-    (loading.value || folderLoading.value) &&
+    (loading.value || isFolderLoading.value) &&
     displayAssets.value.length === 0 &&
     activeJobsCount.value === 0
 )
@@ -460,7 +465,7 @@ const showLoadingState = computed(
 const showEmptyState = computed(
   () =>
     !loading.value &&
-    !folderLoading.value &&
+    !isFolderLoading.value &&
     displayAssets.value.length === 0 &&
     activeJobsCount.value === 0
 )
@@ -639,6 +644,16 @@ const enterFolderView = async (asset: AssetItem) => {
   expectedFolderCount.value = metadata.outputCount ?? 0
 
   await loadFolderAssets(0, metadata, { createdAt: asset.created_at })
+
+  if (folderError.value) {
+    toast.add({
+      severity: 'error',
+      summary: t('sideToolbar.folderView.errorSummary'),
+      detail: t('sideToolbar.folderView.errorDetail'),
+      life: 5000
+    })
+    exitFolderView()
+  }
 }
 
 const exitFolderView = () => {
