@@ -10,7 +10,6 @@ export type RightSidePanelTab =
   | 'info'
   | 'subgraph'
   | 'errors'
-  | 'app'
 
 type RightSidePanelSection = 'advanced-inputs' | string
 
@@ -32,6 +31,7 @@ export const useRightSidePanelStore = defineStore('rightSidePanel', () => {
       settingStore.set('Comfy.RightSidePanel.IsOpen', value)
   })
   const activeTab = ref<RightSidePanelTab>('parameters')
+  const inAppBuilder = ref(true)
   const isEditingSubgraph = computed(() => activeTab.value === 'subgraph')
   const focusedSection = ref<RightSidePanelSection | null>(null)
   /**
@@ -93,6 +93,7 @@ export const useRightSidePanelStore = defineStore('rightSidePanel', () => {
     closePanel,
     togglePanel,
     focusSection,
-    clearFocusedSection
+    clearFocusedSection,
+    inAppBuilder
   }
 })

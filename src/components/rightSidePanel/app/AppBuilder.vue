@@ -19,6 +19,7 @@ import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteracti
 import TransformPane from '@/renderer/core/layout/transform/TransformPane.vue'
 import { useDialogService } from '@/services/dialogService'
 import { useHoveredStore } from '@/stores/hoveredStore'
+import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import { cn } from '@/utils/tailwindUtil'
 
 type BoundStyle = { top: string; left: string; width: string; height: string }
@@ -26,6 +27,7 @@ type BoundStyle = { top: string; left: string; width: string; height: string }
 const canvasInteractions = useCanvasInteractions()
 const canvasStore = useCanvasStore()
 const hoveredStore = useHoveredStore()
+const rightSidePanelStore = useRightSidePanelStore()
 const settingStore = useSettingStore()
 const { t } = useI18n()
 const canvas: LGraphCanvas = canvasStore.getCanvas()
@@ -168,7 +170,7 @@ const outputNodes = computed(() =>
 <template>
   <div class="flex font-bold p-2 border-border-subtle border-b">
     {{ t('[ph]App builder mode') }}
-    <Button class="ml-auto">
+    <Button class="ml-auto" @click="rightSidePanelStore.inAppBuilder = false">
       {{ t('[ph]Exit builder') }}
     </Button>
   </div>
