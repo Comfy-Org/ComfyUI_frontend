@@ -5,7 +5,7 @@
       :key="group.key"
       class="flex flex-col gap-2"
     >
-      <div class="text-[12px] leading-none text-text-secondary">
+      <div class="text-xs leading-none text-text-secondary">
         {{ group.label }}
       </div>
       <AssetsListItem

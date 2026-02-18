@@ -24,7 +24,7 @@
         />
       </div>
       <div
-        class="flex items-center justify-between px-3 pb-1 text-[12px] leading-none text-text-primary"
+        class="flex items-center justify-between px-3 pb-1 text-xs leading-none text-text-primary"
       >
         <span class="text-text-secondary">{{ activeQueueSummary }}</span>
         <div class="flex items-center gap-2">
