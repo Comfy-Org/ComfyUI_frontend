@@ -29,7 +29,8 @@ export function setupAutoQueueHandler() {
       internalCount = queueCountStore.count
       if (!internalCount && !app.lastExecutionError) {
         if (
-          queueSettingsStore.mode === 'instant' ||
+          (queueSettingsStore.mode === 'instant' &&
+            queueSettingsStore.instantAutoQueueActive) ||
           (queueSettingsStore.mode === 'change' && graphHasChanged)
         ) {
           graphHasChanged = false

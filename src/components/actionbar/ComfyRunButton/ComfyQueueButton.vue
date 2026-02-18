@@ -36,11 +36,10 @@
 </template>
 
 <script setup lang="ts">
-import { until } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
 import type { MenuItem } from 'primevue/menuitem'
 import SplitButton from 'primevue/splitbutton'
-import { computed, ref } from 'vue'
+import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
@@ -56,7 +55,11 @@ import { graphHasMissingNodes } from '@/workbench/extensions/manager/utils/graph
 import BatchCountEdit from '../BatchCountEdit.vue'
 
 const workspaceStore = useWorkspaceStore()
-const { mode: queueMode, batchCount } = storeToRefs(useQueueSettingsStore())
+const {
+  mode: queueMode,
+  batchCount,
+  instantAutoQueueActive
+} = storeToRefs(useQueueSettingsStore())
 const { activeJobsCount } = storeToRefs(useQueueStore())
 
 const nodeDefStore = useNodeDefStore()
@@ -73,6 +76,7 @@ const queueModeMenuItemLookup = computed(() => {
       tooltip: t('menu.disabledTooltip'),
       command: () => {
         queueMode.value = 'disabled'
+        instantAutoQueueActive.value = false
       }
     },
     change: {
@@ -84,6 +88,7 @@ const queueModeMenuItemLookup = computed(() => {
           button_id: 'queue_mode_option_run_on_change_selected'
         })
         queueMode.value = 'change'
+        instantAutoQueueActive.value = false
       }
     }
   }
@@ -97,6 +102,7 @@ const queueModeMenuItemLookup = computed(() => {
           button_id: 'queue_mode_option_run_instant_selected'
         })
         queueMode.value = 'instant'
+        instantAutoQueueActive.value = false
       }
     }
   }
@@ -114,31 +120,25 @@ const queueModeMenuItems = computed(() =>
   Object.values(queueModeMenuItemLookup.value)
 )
 
-const isInstantAutoQueueActive = computed(
-  () => queueMode.value === 'instant' && activeJobsCount.value > 0
-)
-
-const isStoppingInstant = ref(false)
-const showStopInstantPresentation = computed(
+const isStopInstantAction = computed(
   () =>
-    isInstantAutoQueueActive.value ||
-    (isStoppingInstant.value &&
-      queueMode.value === 'disabled' &&
-      activeJobsCount.value > 0)
+    queueMode.value === 'instant' &&
+    instantAutoQueueActive.value &&
+    activeJobsCount.value > 0
 )
 
 const queueButtonLabel = computed(() =>
-  showStopInstantPresentation.value
+  isStopInstantAction.value
     ? t('menu.stopRunInstant')
     : String(activeQueueModeMenuItem.value?.label ?? '')
 )
 
 const queueButtonSeverity = computed(() =>
-  showStopInstantPresentation.value ? 'danger' : 'primary'
+  isStopInstantAction.value ? 'danger' : 'primary'
 )
 
 const iconClass = computed(() => {
-  if (showStopInstantPresentation.value) {
+  if (isStopInstantAction.value) {
     return 'icon-[lucide--square]'
   }
   if (hasMissingNodes.value) {
@@ -160,7 +160,7 @@ const iconClass = computed(() => {
 })
 
 const queueButtonTooltip = computed(() => {
-  if (showStopInstantPresentation.value) {
+  if (isStopInstantAction.value) {
     return t('menu.stopRunInstantTooltip')
   }
   if (hasMissingNodes.value) {
@@ -174,22 +174,9 @@ const queueButtonTooltip = computed(() => {
 
 const commandStore = useCommandStore()
 const queuePrompt = async (e: Event) => {
-  if (showStopInstantPresentation.value) {
-    isStoppingInstant.value = true
-    try {
-      queueMode.value = 'disabled'
-      await commandStore.execute('Comfy.Interrupt')
-
-      if (activeJobsCount.value > 0) {
-        await until(activeJobsCount).toBe(0, { timeout: 5000 })
-      }
-
-      if (queueMode.value === 'disabled' && activeJobsCount.value === 0) {
-        queueMode.value = 'instant'
-      }
-    } finally {
-      isStoppingInstant.value = false
-    }
+  if (isStopInstantAction.value) {
+    instantAutoQueueActive.value = false
+    await commandStore.execute('Comfy.Interrupt')
     return
   }
 
@@ -197,6 +184,10 @@ const queuePrompt = async (e: Event) => {
   const commandId = isShiftPressed
     ? 'Comfy.QueuePromptFront'
     : 'Comfy.QueuePrompt'
+
+  if (queueMode.value === 'instant') {
+    instantAutoQueueActive.value = true
+  }
 
   if (batchCount.value > 1) {
     useTelemetry()?.trackUiButtonClicked({

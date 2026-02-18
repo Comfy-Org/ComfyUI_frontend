@@ -136,6 +136,7 @@ describe('ComfyQueueButton', () => {
     const queueStore = useQueueStore()
 
     queueSettingsStore.mode = 'instant'
+    queueSettingsStore.instantAutoQueueActive = true
     queueStore.runningTasks = [createTask('run-1', 'in_progress')]
     await nextTick()
 
@@ -146,13 +147,14 @@ describe('ComfyQueueButton', () => {
     expect(wrapper.find('.icon-\\[lucide--square\\]').exists()).toBe(true)
   })
 
-  it('stops active instant mode and restores the run instant action when jobs clear', async () => {
+  it('stops active instant mode while keeping instant selected when jobs clear', async () => {
     const wrapper = createWrapper()
     const queueSettingsStore = useQueueSettingsStore()
     const queueStore = useQueueStore()
     const commandStore = useCommandStore()
 
     queueSettingsStore.mode = 'instant'
+    queueSettingsStore.instantAutoQueueActive = true
     queueStore.runningTasks = [createTask('run-1', 'in_progress')]
     await nextTick()
 
@@ -161,13 +163,14 @@ describe('ComfyQueueButton', () => {
       .trigger('click')
     await nextTick()
 
-    expect(queueSettingsStore.mode).toBe('disabled')
+    expect(queueSettingsStore.mode).toBe('instant')
+    expect(queueSettingsStore.instantAutoQueueActive).toBe(false)
     const splitButtonWhileStopping = wrapper.get('[data-testid="queue-button"]')
     expect(splitButtonWhileStopping.attributes('data-label')).toBe(
-      'Stop Run (Instant)'
+      'Run (Instant)'
     )
-    expect(splitButtonWhileStopping.attributes('data-severity')).toBe('danger')
-    expect(wrapper.find('.icon-\\[lucide--square\\]').exists()).toBe(true)
+    expect(splitButtonWhileStopping.attributes('data-severity')).toBe('primary')
+    expect(wrapper.find('.icon-\\[lucide--fast-forward\\]').exists()).toBe(true)
 
     queueStore.runningTasks = []
     await nextTick()
@@ -182,38 +185,30 @@ describe('ComfyQueueButton', () => {
 
     const splitButton = wrapper.get('[data-testid="queue-button"]')
     expect(queueSettingsStore.mode).toBe('instant')
+    expect(queueSettingsStore.instantAutoQueueActive).toBe(false)
     expect(splitButton.attributes('data-label')).toBe('Run (Instant)')
     expect(splitButton.attributes('data-severity')).toBe('primary')
     expect(wrapper.find('.icon-\\[lucide--fast-forward\\]').exists()).toBe(true)
   })
 
-  it('keeps instant mode disabled when interrupt wait times out', async () => {
-    vi.useFakeTimers()
-    try {
-      const wrapper = createWrapper()
-      const queueSettingsStore = useQueueSettingsStore()
-      const queueStore = useQueueStore()
-      const commandStore = useCommandStore()
+  it('activates instant auto queue when queueing again', async () => {
+    const wrapper = createWrapper()
+    const queueSettingsStore = useQueueSettingsStore()
+    const commandStore = useCommandStore()
 
-      queueSettingsStore.mode = 'instant'
-      queueStore.runningTasks = [createTask('run-1', 'in_progress')]
-      await nextTick()
+    queueSettingsStore.mode = 'instant'
+    queueSettingsStore.instantAutoQueueActive = false
+    await nextTick()
 
-      const clickPromise = wrapper
-        .get('[data-testid="queue-button"]')
-        .trigger('click')
-      await nextTick()
+    await wrapper.get('[data-testid="queue-button"]').trigger('click')
+    await nextTick()
 
-      expect(queueSettingsStore.mode).toBe('disabled')
-
-      await vi.advanceTimersByTimeAsync(5000)
-      await clickPromise
-      await nextTick()
-
-      expect(commandStore.execute).toHaveBeenCalledWith('Comfy.Interrupt')
-      expect(queueSettingsStore.mode).toBe('disabled')
-    } finally {
-      vi.useRealTimers()
-    }
+    expect(queueSettingsStore.instantAutoQueueActive).toBe(true)
+    expect(commandStore.execute).toHaveBeenCalledWith('Comfy.QueuePrompt', {
+      metadata: {
+        subscribe_to_run: false,
+        trigger_source: 'button'
+      }
+    })
   })
 })
