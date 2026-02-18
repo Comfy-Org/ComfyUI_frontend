@@ -9,22 +9,18 @@
       <div class="flex flex-col gap-2 pb-1">
         <div class="px-3 py-2">
           <JobFilterTabs
-            :selected-job-tab="selectedJobTab"
+            v-model:selected-job-tab="selectedJobTab"
             :has-failed-jobs="hasFailedJobs"
-            @update:selected-job-tab="onSelectedJobTabUpdate"
           />
         </div>
         <JobFilterActions
+          v-model:selected-workflow-filter="selectedWorkflowFilter"
+          v-model:selected-sort-mode="selectedSortMode"
+          v-model:search-query="searchQuery"
           class="px-3"
-          :selected-workflow-filter="selectedWorkflowFilter"
-          :selected-sort-mode="selectedSortMode"
           :hide-show-assets-action="true"
           :show-search="true"
-          :search-query="searchQuery"
           :search-placeholder="t('sideToolbar.queueProgressOverlay.searchJobs')"
-          @update:selected-workflow-filter="onSelectedWorkflowFilterUpdate"
-          @update:selected-sort-mode="onSelectedSortModeUpdate"
-          @update:search-query="onSearchQueryUpdate"
         />
       </div>
       <div
@@ -82,11 +78,7 @@ import JobHistoryActionsMenu from '@/components/queue/JobHistoryActionsMenu.vue'
 import type { MenuEntry } from '@/composables/queue/useJobMenu'
 import { useJobMenu } from '@/composables/queue/useJobMenu'
 import { useJobList } from '@/composables/queue/useJobList'
-import type {
-  JobListItem,
-  JobSortMode,
-  JobTab
-} from '@/composables/queue/useJobList'
+import type { JobListItem } from '@/composables/queue/useJobList'
 import { useQueueClearHistoryDialog } from '@/composables/queue/useQueueClearHistoryDialog'
 import { useResultGallery } from '@/composables/queue/useResultGallery'
 import { useErrorHandling } from '@/composables/useErrorHandling'
@@ -151,22 +143,6 @@ const clearQueuedWorkflows = wrapWithErrorHandlingAsync(async () => {
   await commandStore.execute('Comfy.ClearPendingTasks')
   executionStore.clearInitializationByPromptIds(pendingPromptIds)
 })
-
-const onSelectedJobTabUpdate = (value: JobTab) => {
-  selectedJobTab.value = value
-}
-
-const onSelectedWorkflowFilterUpdate = (value: 'all' | 'current') => {
-  selectedWorkflowFilter.value = value
-}
-
-const onSelectedSortModeUpdate = (value: JobSortMode) => {
-  selectedSortMode.value = value
-}
-
-const onSearchQueryUpdate = (value: string) => {
-  searchQuery.value = value
-}
 
 const {
   galleryActiveIndex,
