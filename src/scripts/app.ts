@@ -1318,18 +1318,18 @@ export class ComfyApp {
               }
             }
           }
-          if (reset_invalid_values) {
-            if (widget.type == 'combo') {
-              const values = widget.options.values as
-                | (string | number | boolean)[]
-                | undefined
-              if (
-                values &&
-                values.length > 0 &&
-                !values.includes(widget.value as string | number | boolean)
-              ) {
-                widget.value = values[0]
-              }
+          if (widget.type == 'combo') {
+            const values = widget.options.values as
+              | (string | number | boolean)[]
+              | undefined
+            if (
+              values &&
+              values.length > 0 &&
+              (widget.value == null ||
+                (reset_invalid_values &&
+                  !values.includes(widget.value as string | number | boolean)))
+            ) {
+              widget.value = values[0]
             }
           }
         }
