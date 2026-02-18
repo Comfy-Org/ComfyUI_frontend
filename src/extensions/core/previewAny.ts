@@ -3,6 +3,8 @@ Preview Any - original implement from
 https://github.com/rgthree/rgthree-comfy/blob/main/py/display_any.py
 upstream requested in https://github.com/Kosinkadink/rfcs/blob/main/rfcs/0000-corenodes.md#preview-nodes
  */
+import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import { app } from '@/scripts/app'
 import { type DOMWidget } from '@/scripts/domWidget'
 import { ComfyWidgets } from '@/scripts/widgets'
@@ -10,7 +12,10 @@ import { useExtensionService } from '@/services/extensionService'
 
 useExtensionService().registerExtension({
   name: 'Comfy.PreviewAny',
-  async beforeRegisterNodeDef(nodeType, nodeData) {
+  async beforeRegisterNodeDef(
+    nodeType: typeof LGraphNode,
+    nodeData: ComfyNodeDef
+  ) {
     if (nodeData.name === 'PreviewAny') {
       const onNodeCreated = nodeType.prototype.onNodeCreated
 

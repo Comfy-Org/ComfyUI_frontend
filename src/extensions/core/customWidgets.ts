@@ -4,6 +4,7 @@ import { useChainCallback } from '@/composables/functional/useChainCallback'
 import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
 import { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { LLink } from '@/lib/litegraph/src/litegraph'
+import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import { app } from '@/scripts/app'
 
 function applyToGraph(this: LGraphNode, extraLinks: LLink[] = []) {
@@ -190,7 +191,7 @@ function onCustomFloatCreated(this: LGraphNode) {
 
 app.registerExtension({
   name: 'Comfy.CustomWidgets',
-  beforeRegisterNodeDef(nodeType, nodeData) {
+  beforeRegisterNodeDef(nodeType: typeof LGraphNode, nodeData: ComfyNodeDef) {
     if (nodeData?.name === 'CustomCombo')
       nodeType.prototype.onNodeCreated = useChainCallback(
         nodeType.prototype.onNodeCreated,
