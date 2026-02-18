@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { remove } from 'es-toolkit'
-import { useElementBounding } from '@vueuse/core'
+import { useElementBounding, whenever } from '@vueuse/core'
 import { computed, reactive, toValue } from 'vue'
 import type { MaybeRef } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -14,6 +14,7 @@ import type { INodeInputSlot } from '@/lib/litegraph/src/interfaces'
 import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
 import TransformPane from '@/renderer/core/layout/transform/TransformPane.vue'
@@ -29,19 +30,31 @@ const canvasStore = useCanvasStore()
 const hoveredStore = useHoveredStore()
 const rightSidePanelStore = useRightSidePanelStore()
 const settingStore = useSettingStore()
+const workflowStore = useWorkflowStore()
 const { t } = useI18n()
 const canvas: LGraphCanvas = canvasStore.getCanvas()
 
 const selectedInputs = reactive<
-  [string, string, string, (() => void) | undefined, MaybeRef<BoundStyle>][]
+  {
+    nodeId: NodeId
+    widgetName: string
+    label: string
+    subLabel: string
+    rename?: () => void
+  }[]
 >([])
 const selectedOutputs = reactive<[NodeId, string][]>([])
 
-async function renameWidget(
-  widget: IBaseWidget,
-  input: INodeInputSlot,
-  key: string
-) {
+whenever(
+  () => workflowStore.activeWorkflow,
+  (workflow) => {
+    workflow.changeTracker.reset()
+    selectedInputs.length = 0
+    selectedOutputs.length = 0
+  }
+)
+
+async function renameWidget(widget: IBaseWidget, input: INodeInputSlot) {
   const newLabel = await useDialogService().prompt({
     title: t('g.rename'),
     message: t('g.enterNewNamePrompt'),
@@ -53,10 +66,6 @@ async function renameWidget(
   input.label = newLabel || undefined
   widget.callback?.(widget.value)
   useCanvasStore().canvas?.setDirty(true)
-  const inputTuple = selectedInputs.find(([k]) => k === key)
-  if (!inputTuple) return
-
-  inputTuple[1] = newLabel
 }
 
 function getHovered(
@@ -142,20 +151,20 @@ function handleClick(e: MouseEvent) {
     return
   }
 
-  const key = `${node.id}: ${widget.name}`
-  const bounding = getBounding(node.id, widget.name)
-  const keyIndex = selectedInputs.findIndex(([k]) => k === key)
+  const index = selectedInputs.findIndex(
+    ({ nodeId, widgetName }) => node.id === nodeId && widget.name === widgetName
+  )
   const input = node.inputs.find((i) => i.widget?.name === widget.name)
-  const rename = input && (() => renameWidget(widget, input, key))
-  if (keyIndex === -1 && bounding)
-    selectedInputs.push([
-      key,
-      widget.label ?? widget.name,
-      node.title,
-      rename,
-      bounding
-    ])
-  else selectedInputs.splice(keyIndex, 1)
+  const rename = input && (() => renameWidget(widget, input))
+  if (index === -1)
+    selectedInputs.push({
+      nodeId: node.id,
+      widgetName: widget.name,
+      label: widget.label ?? widget.name,
+      subLabel: node.title,
+      rename
+    })
+  else selectedInputs.splice(index, 1)
 }
 
 function nodeToDisplayTuple(
@@ -164,10 +173,18 @@ function nodeToDisplayTuple(
   return [n.id, getBounding(n.id), selectedOutputs.some(([id]) => n.id === id)]
 }
 
-const outputNodes = computed(() =>
-  canvas
+const renderedOutputs = computed(() => {
+  void workflowStore.activeWorkflow
+  return canvas
     .graph!.nodes.filter((n) => n.constructor.nodeData?.output_node)
     .map(nodeToDisplayTuple)
+})
+const renderedInputs = computed<[string, MaybeRef<BoundStyle> | undefined][]>(
+  () =>
+    selectedInputs.map(({ nodeId, widgetName }) => [
+      `${nodeId}: ${widgetName}`,
+      getBounding(nodeId, widgetName)
+    ])
 )
 </script>
 <template>
@@ -208,13 +225,26 @@ const outputNodes = computed(() =>
     />
     <DraggableList v-slot="{ dragClass }" v-model="selectedInputs">
       <IoItem
-        v-for="[key, title, subTitle, rename] in selectedInputs"
-        :key
+        v-for="{
+          nodeId,
+          widgetName,
+          label,
+          subLabel,
+          rename
+        } in selectedInputs"
+        :key="`${nodeId}: ${widgetName}`"
         :class="cn(dragClass, 'bg-primary-background/30 p-2 my-2 rounded-lg')"
-        :title
-        :sub-title
+        :title="label"
+        :sub-title="subLabel"
         :rename
-        :remove="() => remove(selectedInputs, ([k]) => k === key)"
+        :remove="
+          () =>
+            remove(
+              selectedInputs,
+              ({ nodeId: id, widgetName: name }) =>
+                nodeId === id && widgetName === name
+            )
+        "
       />
     </DraggableList>
   </PropertiesAccordionItem>
@@ -282,13 +312,13 @@ const outputNodes = computed(() =>
       @wheel="canvasInteractions.forwardEventToCanvas"
     >
       <div
-        v-for="[key, , , , style] in selectedInputs"
+        v-for="[key, style] in renderedInputs"
         :key
         :style="toValue(style)"
         class="fixed bg-primary-background/30 rounded-lg"
       />
       <div
-        v-for="[key, style, isSelected] in outputNodes"
+        v-for="[key, style, isSelected] in renderedOutputs"
         :key
         :style="toValue(style)"
         :class="
