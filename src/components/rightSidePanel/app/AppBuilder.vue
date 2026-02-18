@@ -18,6 +18,7 @@ import { useWorkflowStore } from '@/platform/workflow/management/stores/workflow
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
 import TransformPane from '@/renderer/core/layout/transform/TransformPane.vue'
+import { app } from '@/scripts/app'
 import { useDialogService } from '@/services/dialogService'
 import { useHoveredStore } from '@/stores/hoveredStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
@@ -38,7 +39,7 @@ const selectedInputs = reactive<[NodeId, string][]>([])
 const selectedOutputs = reactive<NodeId[]>([])
 const inputsWithState = computed(() =>
   selectedInputs.map(([nodeId, widgetName]) => {
-    const node = canvas.graph?.getNodeById(nodeId)
+    const node = app.rootGraph.getNodeById(nodeId)
     const widget = node?.widgets?.find((w) => w.name === widgetName)
     if (!node || !widget) return { nodeId, widgetName }
 
@@ -57,7 +58,7 @@ const inputsWithState = computed(() =>
 const outputsWithState = computed<[NodeId, string][]>(() =>
   selectedOutputs.map((nodeId) => [
     nodeId,
-    canvas.graph?.getNodeById(nodeId)?.title ?? String(nodeId)
+    app.rootGraph.getNodeById(nodeId)?.title ?? String(nodeId)
   ])
 )
 
@@ -65,8 +66,12 @@ whenever(
   () => workflowStore.activeWorkflow,
   (workflow) => {
     workflow.changeTracker.reset()
-    selectedInputs.length = 0
-    selectedOutputs.length = 0
+
+    const { activeState } = workflow.changeTracker
+    const newInputs = activeState.extra?.linearData?.inputs ?? []
+    selectedInputs.splice(0, selectedInputs.length, ...newInputs)
+    const newOutputs = activeState.extra?.linearData?.outputs ?? []
+    selectedOutputs.splice(0, selectedOutputs.length, ...newOutputs)
   }
 )
 
@@ -129,7 +134,7 @@ function getBounding(nodeId: NodeId, widgetName?: string) {
       ? elementPosition(element, mleft)
       : undefined
   }
-  const node = canvas.graph?.getNodeById(nodeId)
+  const node = app.rootGraph.getNodeById(nodeId)
   if (!node) return
 
   if (!widgetName)
@@ -164,6 +169,11 @@ function handleClick(e: MouseEvent) {
     const index = selectedOutputs.findIndex((id) => id === node.id)
     if (index === -1) selectedOutputs.push(node.id)
     else selectedOutputs.splice(index, 1)
+    app.rootGraph.extra.linearData ??= {}
+    //FIXME type here is only on ComfyWorkflowJson, not an active graph
+    ;(app.rootGraph.extra.linearData! as { outputs?: unknown }).outputs = [
+      ...selectedOutputs
+    ]
     return
   }
 
@@ -172,6 +182,11 @@ function handleClick(e: MouseEvent) {
   )
   if (index === -1) selectedInputs.push([node.id, widget.name])
   else selectedInputs.splice(index, 1)
+
+  app.rootGraph.extra.linearData ??= {}
+  ;(app.rootGraph.extra.linearData! as { inputs?: unknown }).inputs = [
+    ...selectedInputs
+  ]
 }
 
 function nodeToDisplayTuple(
