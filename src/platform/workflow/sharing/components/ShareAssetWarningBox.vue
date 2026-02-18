@@ -30,7 +30,9 @@
           />
           {{ $t('shareWorkflow.assetsLabel', { count: assets.length }) }}
         </CollapsibleTrigger>
-        <CollapsibleContent class="mt-2 flex flex-col gap-1.5 pl-5">
+        <CollapsibleContent
+          class="overflow-hidden data-[state=closed]:animate-collapsible-slide-up data-[state=open]:animate-collapsible-slide-down mt-2 flex flex-col gap-1.5 pl-5"
+        >
           <div
             v-for="asset in assets"
             :key="asset.name"
@@ -58,7 +60,9 @@
           />
           {{ $t('shareWorkflow.modelsLabel', { count: models.length }) }}
         </CollapsibleTrigger>
-        <CollapsibleContent class="mt-2 flex flex-col gap-1.5 pl-5">
+        <CollapsibleContent
+          class="overflow-hidden data-[state=closed]:animate-collapsible-slide-up data-[state=open]:animate-collapsible-slide-down mt-2 flex flex-col gap-1.5 pl-5"
+        >
           <div
             v-for="model in models"
             :key="model.name"
