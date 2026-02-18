@@ -133,7 +133,7 @@ describe('EssentialNodesPanel', () => {
   })
 
   describe('default expansion', () => {
-    it('should expand first two folders by default when expandedKeys is empty', async () => {
+    it('should expand all folders by default when expandedKeys is empty', async () => {
       const wrapper = mountComponent(createMockRoot(), [])
       await nextTick()
       await flushPromises()
@@ -142,7 +142,7 @@ describe('EssentialNodesPanel', () => {
       const roots = wrapper.findAll('.collapsible-root')
       expect(roots[0].attributes('data-state')).toBe('open')
       expect(roots[1].attributes('data-state')).toBe('open')
-      expect(roots[2].attributes('data-state')).toBe('closed')
+      expect(roots[2].attributes('data-state')).toBe('open')
     })
 
     it('should respect provided expandedKeys', async () => {
