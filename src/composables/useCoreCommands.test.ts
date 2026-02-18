@@ -23,7 +23,13 @@ vi.mock('vue-i18n', async () => {
 
 vi.mock('@/scripts/app', () => {
   const mockGraphClear = vi.fn()
-  const mockCanvas = { subgraph: undefined }
+  const mockCanvas = {
+    subgraph: undefined,
+    selectedItems: new Set(),
+    copyToClipboard: vi.fn(),
+    pasteFromClipboard: vi.fn(),
+    selectItems: vi.fn()
+  }
 
   return {
     app: {
@@ -105,7 +111,8 @@ vi.mock('@/stores/subgraphStore', () => ({
 
 vi.mock('@/renderer/core/canvas/canvasStore', () => ({
   useCanvasStore: vi.fn(() => ({
-    getCanvas: () => app.canvas
+    getCanvas: () => app.canvas,
+    canvas: app.canvas
   })),
   useTitleEditorStore: vi.fn(() => ({
     titleEditorTarget: null
@@ -297,6 +304,47 @@ describe('useCoreCommands', () => {
       expect(app.clean).not.toHaveBeenCalled()
       expect(app.rootGraph.clear).not.toHaveBeenCalled()
       expect(api.dispatchCustomEvent).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('Canvas clipboard commands', () => {
+    function findCommand(id: string) {
+      return useCoreCommands().find((cmd) => cmd.id === id)!
+    }
+
+    beforeEach(() => {
+      app.canvas.selectedItems = new Set()
+      vi.mocked(app.canvas.copyToClipboard).mockClear()
+      vi.mocked(app.canvas.pasteFromClipboard).mockClear()
+      vi.mocked(app.canvas.selectItems).mockClear()
+    })
+
+    it('should copy selected items when selection exists', () => {
+      app.canvas.selectedItems = new Set([
+        {}
+      ]) as typeof app.canvas.selectedItems
+
+      findCommand('Comfy.Canvas.CopySelected').function()
+
+      expect(app.canvas.copyToClipboard).toHaveBeenCalled()
+    })
+
+    it('should not copy when no items are selected', () => {
+      findCommand('Comfy.Canvas.CopySelected').function()
+
+      expect(app.canvas.copyToClipboard).not.toHaveBeenCalled()
+    })
+
+    it('should paste from clipboard', () => {
+      findCommand('Comfy.Canvas.PasteFromClipboard').function()
+
+      expect(app.canvas.pasteFromClipboard).toHaveBeenCalled()
+    })
+
+    it('should select all items', () => {
+      findCommand('Comfy.Canvas.SelectAll').function()
+
+      expect(app.canvas.selectItems).toHaveBeenCalled()
     })
   })
 
