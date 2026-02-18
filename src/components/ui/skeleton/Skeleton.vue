@@ -9,5 +9,7 @@ const { class: className } = defineProps<{
 </script>
 
 <template>
-  <div :class="cn('animate-pulse rounded-md bg-primary/10', className)" />
+  <div
+    :class="cn('animate-pulse rounded-md bg-secondary-background', className)"
+  />
 </template>
