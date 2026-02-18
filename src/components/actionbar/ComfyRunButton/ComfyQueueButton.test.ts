@@ -180,4 +180,34 @@ describe('ComfyQueueButton', () => {
     expect(splitButton.attributes('data-severity')).toBe('primary')
     expect(wrapper.find('.icon-\\[lucide--fast-forward\\]').exists()).toBe(true)
   })
+
+  it('keeps instant mode disabled when interrupt wait times out', async () => {
+    vi.useFakeTimers()
+    try {
+      const wrapper = createWrapper()
+      const queueSettingsStore = useQueueSettingsStore()
+      const queueStore = useQueueStore()
+      const commandStore = useCommandStore()
+
+      queueSettingsStore.mode = 'instant'
+      queueStore.runningTasks = [createTask('run-1', 'in_progress')]
+      await nextTick()
+
+      const clickPromise = wrapper
+        .get('[data-testid="queue-button"]')
+        .trigger('click')
+      await nextTick()
+
+      expect(queueSettingsStore.mode).toBe('disabled')
+
+      await vi.advanceTimersByTimeAsync(5000)
+      await clickPromise
+      await nextTick()
+
+      expect(commandStore.execute).toHaveBeenCalledWith('Comfy.Interrupt')
+      expect(queueSettingsStore.mode).toBe('disabled')
+    } finally {
+      vi.useRealTimers()
+    }
+  })
 })

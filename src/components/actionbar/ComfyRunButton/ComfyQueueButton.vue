@@ -173,7 +173,7 @@ const queuePrompt = async (e: Event) => {
       await until(activeJobsCount).toBe(0, { timeout: 5000 })
     }
 
-    if (queueMode.value === 'disabled') {
+    if (queueMode.value === 'disabled' && activeJobsCount.value === 0) {
       queueMode.value = 'instant'
     }
     return
