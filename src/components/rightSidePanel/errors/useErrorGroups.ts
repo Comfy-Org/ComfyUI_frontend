@@ -20,13 +20,14 @@ import {
   parseNodeExecutionId
 } from '@/types/nodeIdentification'
 
+const PROMPT_CARD_ID = '__prompt__'
+const SINGLE_GROUP_KEY = '__single__'
+const KNOWN_PROMPT_ERROR_TYPES = new Set(['prompt_no_outputs', 'no_prompt'])
+
 interface GroupEntry {
   priority: number
   cards: Map<string, ErrorCardData>
 }
-
-const PROMPT_CARD_ID = '__prompt__'
-const SINGLE_GROUP_KEY = '__single__'
 
 interface ErrorSearchItem {
   groupIndex: number
@@ -36,8 +37,6 @@ interface ErrorSearchItem {
   searchableMessage: string
   searchableDetails: string
 }
-
-const KNOWN_PROMPT_ERROR_TYPES = new Set(['prompt_no_outputs', 'no_prompt'])
 
 /**
  * Resolve display info for a node by its execution ID.

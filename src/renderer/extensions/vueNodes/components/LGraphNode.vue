@@ -307,7 +307,7 @@ const hasAnyError = computed((): boolean => {
   )
 })
 
-const showErrorsTabEnabled = computed(() => 
+const showErrorsTabEnabled = computed(() =>
   settingStore.get('Comfy.RightSidePanel.ShowErrorsTab')
 )
 

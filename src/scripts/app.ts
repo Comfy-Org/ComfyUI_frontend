@@ -70,6 +70,7 @@ import { SYSTEM_NODE_DEFS, useNodeDefStore } from '@/stores/nodeDefStore'
 import { useNodeReplacementStore } from '@/platform/nodeReplacement/nodeReplacementStore'
 import { useSubgraphStore } from '@/stores/subgraphStore'
 import { useWidgetStore } from '@/stores/widgetStore'
+import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import type { ComfyExtension, MissingNodeType } from '@/types/comfy'
 import type { ExtensionManager } from '@/types/extensionTypes'
@@ -715,6 +716,10 @@ export class ComfyApp {
         useExecutionStore().showErrorOverlay()
       } else {
         useDialogService().showExecutionErrorDialog(detail)
+      }
+      if (useSettingStore().get('Comfy.RightSidePanel.ShowErrorsTab')) {
+        this.canvas.deselectAll()
+        useRightSidePanelStore().openPanel('errors')
       }
       this.canvas.draw(true, true)
     })
