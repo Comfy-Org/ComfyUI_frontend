@@ -2,7 +2,11 @@ import { nextTick } from 'vue'
 
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { app } from '@/scripts/app'
-import type { LGraph, LGraphNode, Subgraph } from '@/lib/litegraph/src/litegraph'
+import type {
+  LGraph,
+  LGraphNode,
+  Subgraph
+} from '@/lib/litegraph/src/litegraph'
 import { getNodeByExecutionId } from '@/utils/graphTraversalUtil'
 import { isGroupNode } from '@/utils/executableGroupNodeDto'
 import { useLitegraphService } from '@/services/litegraphService'

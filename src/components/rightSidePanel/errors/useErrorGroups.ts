@@ -1,10 +1,11 @@
-import { computed } from 'vue'
+import { computed, reactive, watch } from 'vue'
 import type { Ref } from 'vue'
 import Fuse from 'fuse.js'
 import type { IFuseOptions } from 'fuse.js'
 
 import { useExecutionStore } from '@/stores/executionStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import { app } from '@/scripts/app'
 import { SubgraphNode } from '@/lib/litegraph/src/litegraph'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
@@ -13,7 +14,7 @@ import { resolveNodeDisplayName } from '@/utils/nodeTitleUtil'
 import { isLGraphNode } from '@/utils/litegraphUtil'
 import { isGroupNode } from '@/utils/executableGroupNodeDto'
 import { st } from '@/i18n'
-import type { ErrorCardData, ErrorGroup } from './types'
+import type { ErrorCardData, ErrorGroup, ErrorItem } from './types'
 import {
   isNodeExecutionId,
   parseNodeExecutionId
@@ -23,6 +24,9 @@ interface GroupEntry {
   priority: number
   cards: Map<string, ErrorCardData>
 }
+
+const PROMPT_CARD_ID = '__prompt__'
+const SINGLE_GROUP_KEY = '__single__'
 
 interface ErrorSearchItem {
   groupIndex: number
@@ -35,13 +39,13 @@ interface ErrorSearchItem {
 
 const KNOWN_PROMPT_ERROR_TYPES = new Set(['prompt_no_outputs', 'no_prompt'])
 
-function resolveNodeInfo(nodeId: string): {
-  title: string
-  graphNodeId: string | undefined
-} {
+/**
+ * Resolve display info for a node by its execution ID.
+ * For group node internals, resolves the parent group node's title instead.
+ */
+function resolveNodeInfo(nodeId: string) {
   const graphNode = getNodeByExecutionId(app.rootGraph, nodeId)
 
-  // For group node internals, resolve the parent group node's title instead
   const parts = parseNodeExecutionId(nodeId)
   const parentId = parts && parts.length > 1 ? String(parts[0]) : null
   const parentNode = parentId
@@ -51,13 +55,14 @@ function resolveNodeInfo(nodeId: string): {
 
   return {
     title: isParentGroupNode
-      ? (parentNode?.title || '')
+      ? parentNode?.title || ''
       : resolveNodeDisplayName(graphNode, {
           emptyLabel: '',
           untitledLabel: '',
           st
         }),
-    graphNodeId: graphNode ? String(graphNode.id) : undefined
+    graphNodeId: graphNode ? String(graphNode.id) : undefined,
+    isParentGroupNode
   }
 }
 
@@ -74,190 +79,56 @@ function getOrCreateGroup(
   return entry.cards
 }
 
-function processPromptError(
-  groupsMap: Map<string, GroupEntry>,
-  executionStore: ReturnType<typeof useExecutionStore>,
-  selectedNodeIds: Set<string> | null,
-  t: (key: string) => string
-) {
-  // Prompt errors are only shown when no nodes are selected
-  if (selectedNodeIds || !executionStore.lastPromptError) return
-
-  const error = executionStore.lastPromptError
-  const groupTitle = error.message
-  const cards = getOrCreateGroup(groupsMap, groupTitle, 0)
-  const isKnown = KNOWN_PROMPT_ERROR_TYPES.has(error.type)
-
-  cards.set('__prompt__', {
-    id: '__prompt__',
-    title: groupTitle,
-    errors: [
-      {
-        message: isKnown
-          ? t(`rightSidePanel.promptErrors.${error.type}.desc`)
-          : error.message
-      }
-    ]
-  })
-}
-
-function isNodeSelected(
-  executionNodeId: string,
-  selectedNodeIds: Set<string> | null,
-  selectedContainerIds: Set<string>,
-  executionIdMap: Map<string, LGraphNode>
-): boolean {
-  if (!selectedNodeIds) return true
-
-  const graphNode = executionIdMap.get(executionNodeId)
-  if (graphNode && selectedNodeIds.has(String(graphNode.id))) return true
-
-  for (const containerId of selectedContainerIds) {
-    if (executionNodeId.startsWith(`${containerId}:`)) return true
-  }
-
-  return false
-}
-
-function processNodeErrors(
-  groupsMap: Map<string, GroupEntry>,
-  executionStore: ReturnType<typeof useExecutionStore>,
-  singleMode: boolean,
-  selectedNodeIds: Set<string> | null,
-  selectedContainerIds: Set<string>,
-  executionIdMap: Map<string, LGraphNode>
-) {
-  if (!executionStore.lastNodeErrors) return
-
-  for (const [nodeId, nodeError] of Object.entries(
-    executionStore.lastNodeErrors
-  )) {
-    if (
-      !isNodeSelected(
-        nodeId,
-        selectedNodeIds,
-        selectedContainerIds,
-        executionIdMap
-      )
-    )
-      continue
-
-    const groupKey = singleMode ? '__single__' : nodeError.class_type
-    const cards = getOrCreateGroup(groupsMap, groupKey, 1)
-    if (!cards.has(nodeId)) {
-      const nodeInfo = resolveNodeInfo(nodeId)
-      const parts = parseNodeExecutionId(nodeId)
-      const parentId = parts && parts.length > 1 ? String(parts[0]) : null
-      const parentNode = parentId
-        ? app.rootGraph.getNodeById(Number(parentId))
-        : null
-      const isParentGroupNode = parentNode ? isGroupNode(parentNode) : false
-
-      cards.set(nodeId, {
-        id: `node-${nodeId}`,
-        title: nodeError.class_type,
-        nodeId,
-        nodeTitle: nodeInfo.title,
-        graphNodeId: nodeInfo.graphNodeId,
-        isSubgraphNode: isNodeExecutionId(nodeId) && !isParentGroupNode,
-        errors: []
-      })
-    }
-    const card = cards.get(nodeId)
-    if (!card) continue
-    card.errors.push(
-      ...nodeError.errors.map((e) => ({
-        message: e.message,
-        details: e.details ?? undefined
-      }))
-    )
+function createErrorCard(
+  nodeId: string,
+  classType: string,
+  idPrefix: string
+): ErrorCardData {
+  const nodeInfo = resolveNodeInfo(nodeId)
+  return {
+    id: `${idPrefix}-${nodeId}`,
+    title: classType,
+    nodeId,
+    nodeTitle: nodeInfo.title,
+    graphNodeId: nodeInfo.graphNodeId,
+    isSubgraphNode: isNodeExecutionId(nodeId) && !nodeInfo.isParentGroupNode,
+    errors: []
   }
 }
 
-function processExecutionError(
-  groupsMap: Map<string, GroupEntry>,
-  executionStore: ReturnType<typeof useExecutionStore>,
-  singleMode: boolean,
-  selectedNodeIds: Set<string> | null,
-  selectedContainerIds: Set<string>,
-  executionIdMap: Map<string, LGraphNode>
-) {
-  if (!executionStore.lastExecutionError) return
-
-  const e = executionStore.lastExecutionError
-  const nodeId = String(e.node_id)
-
-  if (
-    !isNodeSelected(
-      nodeId,
-      selectedNodeIds,
-      selectedContainerIds,
-      executionIdMap
-    )
-  )
-    return
-
-  const groupKey = singleMode ? '__single__' : e.node_type
-  const cards = getOrCreateGroup(groupsMap, groupKey, 1)
-
-  if (!cards.has(nodeId)) {
-    const nodeInfo = resolveNodeInfo(nodeId)
-    const parts = parseNodeExecutionId(nodeId)
-    const parentId = parts && parts.length > 1 ? String(parts[0]) : null
-    const parentNode = parentId
-      ? app.rootGraph.getNodeById(Number(parentId))
-      : null
-    const isParentGroupNode = parentNode ? isGroupNode(parentNode) : false
-
-    cards.set(nodeId, {
-      id: `exec-${nodeId}`,
-      title: e.node_type,
-      nodeId,
-      nodeTitle: nodeInfo.title,
-      graphNodeId: nodeInfo.graphNodeId,
-      isSubgraphNode: isNodeExecutionId(nodeId) && !isParentGroupNode,
-      errors: []
-    })
-  }
-  const card = cards.get(nodeId)
-  if (!card) return
-  card.errors.push({
-    message: `${e.exception_type}: ${e.exception_message}`,
-    details: e.traceback.join('\n'),
-    isRuntimeError: true
-  })
-}
-
+/**
+ * In single-node mode, regroup cards by error message instead of class_type.
+ * This lets the user see "what kinds of errors this node has" at a glance.
+ */
 function regroupByErrorMessage(
   groupsMap: Map<string, GroupEntry>
-): ErrorGroup[] {
+): Map<string, GroupEntry> {
   const allCards = Array.from(groupsMap.values()).flatMap((g) =>
     Array.from(g.cards.values())
   )
+
+  const cardErrorPairs = allCards.flatMap((card) =>
+    card.errors.map((error) => ({ card, error }))
+  )
+
   const messageMap = new Map<string, GroupEntry>()
-  for (const card of allCards) {
-    for (const error of card.errors) {
-      const msgKey = error.message
-      if (!messageMap.has(msgKey)) {
-        messageMap.set(msgKey, { priority: 1, cards: new Map() })
-      }
-      const msgGroup = messageMap.get(msgKey)
-      if (!msgGroup) continue
-      if (!msgGroup.cards.has(card.id)) {
-        msgGroup.cards.set(card.id, { ...card, errors: [] })
-      }
-      const targetCard = msgGroup.cards.get(card.id)
-      if (targetCard) targetCard.errors.push(error)
-    }
+  for (const { card, error } of cardErrorPairs) {
+    addCardErrorToGroup(messageMap, card, error)
   }
 
-  return Array.from(messageMap.entries())
-    .map(([title, groupData]) => ({
-      title,
-      cards: Array.from(groupData.cards.values()),
-      priority: groupData.priority
-    }))
-    .sort((a, b) => a.title.localeCompare(b.title))
+  return messageMap
+}
+
+function addCardErrorToGroup(
+  messageMap: Map<string, GroupEntry>,
+  card: ErrorCardData,
+  error: ErrorItem
+) {
+  const group = getOrCreateGroup(messageMap, error.message, 1)
+  if (!group.has(card.id)) {
+    group.set(card.id, { ...card, errors: [] })
+  }
+  group.get(card.id)?.errors.push(error)
 }
 
 function toSortedGroups(groupsMap: Map<string, GroupEntry>): ErrorGroup[] {
@@ -273,49 +144,14 @@ function toSortedGroups(groupsMap: Map<string, GroupEntry>): ErrorGroup[] {
     })
 }
 
-function buildErrorGroups(
-  executionStore: ReturnType<typeof useExecutionStore>,
-  singleMode: boolean,
-  selectedNodeIds: Set<string> | null,
-  selectedContainerIds: Set<string>,
-  executionIdMap: Map<string, LGraphNode>,
-  t: (key: string) => string
-): ErrorGroup[] {
-  const groupsMap = new Map<string, GroupEntry>()
-
-  processPromptError(groupsMap, executionStore, selectedNodeIds, t)
-  processNodeErrors(
-    groupsMap,
-    executionStore,
-    singleMode,
-    selectedNodeIds,
-    selectedContainerIds,
-    executionIdMap
-  )
-  processExecutionError(
-    groupsMap,
-    executionStore,
-    singleMode,
-    selectedNodeIds,
-    selectedContainerIds,
-    executionIdMap
-  )
-
-  if (singleMode) {
-    return regroupByErrorMessage(groupsMap)
-  }
-
-  return toSortedGroups(groupsMap)
-}
-
-function searchErrorGroups(groups: ErrorGroup[], query: string): ErrorGroup[] {
+function searchErrorGroups(groups: ErrorGroup[], query: string) {
   if (!query) return groups
 
   const searchableList: ErrorSearchItem[] = []
   for (let gi = 0; gi < groups.length; gi++) {
-    const group = groups[gi]!
+    const group = groups[gi]
     for (let ci = 0; ci < group.cards.length; ci++) {
-      const card = group.cards[ci]!
+      const card = group.cards[ci]
       searchableList.push({
         groupIndex: gi,
         cardIndex: ci,
@@ -358,34 +194,35 @@ export function useErrorGroups(
 ) {
   const executionStore = useExecutionStore()
   const canvasStore = useCanvasStore()
+  const rightSidePanelStore = useRightSidePanelStore()
+  const collapseState = reactive<Record<string, boolean>>({})
 
-  const selectedGraphNodeIds = computed<Set<string> | null>(() => {
+  const selectedNodeInfo = computed(() => {
     const items = canvasStore.selectedItems
-    if (items.length === 0) return null
-    const nodes = items.filter(isLGraphNode)
-    if (nodes.length === 0) return null
-    return new Set(nodes.map((n) => String(n.id)))
-  })
+    const nodeIds = new Set<string>()
+    const containerIds = new Set<string>()
 
-  const selectedContainerNodeIds = computed<Set<string>>(() => {
-    const items = canvasStore.selectedItems
-    const ids = new Set<string>()
     for (const item of items) {
       if (!isLGraphNode(item)) continue
+      nodeIds.add(String(item.id))
       if (item instanceof SubgraphNode || isGroupNode(item)) {
-        ids.add(String(item.id))
+        containerIds.add(String(item.id))
       }
     }
-    return ids
+
+    return {
+      nodeIds: nodeIds.size > 0 ? nodeIds : null,
+      containerIds
+    }
   })
 
   const isSingleNodeSelected = computed(
     () =>
-      selectedGraphNodeIds.value?.size === 1 &&
-      selectedContainerNodeIds.value.size === 0
+      selectedNodeInfo.value.nodeIds?.size === 1 &&
+      selectedNodeInfo.value.containerIds.size === 0
   )
 
-  const executionIdToGraphNodeMap = computed(() => {
+  const errorNodeCache = computed(() => {
     const map = new Map<string, LGraphNode>()
     const allExecutionIds = [
       ...Object.keys(executionStore.lastNodeErrors ?? {}),
@@ -400,26 +237,137 @@ export function useErrorGroups(
     return map
   })
 
-  const errorGroups = computed<ErrorGroup[]>(() =>
-    buildErrorGroups(
-      executionStore,
-      isSingleNodeSelected.value,
-      selectedGraphNodeIds.value,
-      selectedContainerNodeIds.value,
-      executionIdToGraphNodeMap.value,
-      t
-    )
-  )
+  function isErrorInSelection(executionNodeId: string): boolean {
+    const nodeIds = selectedNodeInfo.value.nodeIds
+    if (!nodeIds) return true
+
+    const graphNode = errorNodeCache.value.get(executionNodeId)
+    if (graphNode && nodeIds.has(String(graphNode.id))) return true
+
+    for (const containerId of selectedNodeInfo.value.containerIds) {
+      if (executionNodeId.startsWith(`${containerId}:`)) return true
+    }
+
+    return false
+  }
+
+  function addNodeErrorToGroup(
+    groupsMap: Map<string, GroupEntry>,
+    nodeId: string,
+    classType: string,
+    idPrefix: string,
+    errors: ErrorItem[]
+  ) {
+    if (!isErrorInSelection(nodeId)) return
+    const groupKey = isSingleNodeSelected.value ? SINGLE_GROUP_KEY : classType
+    const cards = getOrCreateGroup(groupsMap, groupKey, 1)
+    if (!cards.has(nodeId)) {
+      cards.set(nodeId, createErrorCard(nodeId, classType, idPrefix))
+    }
+    cards.get(nodeId)?.errors.push(...errors)
+  }
+
+  function processPromptError(groupsMap: Map<string, GroupEntry>) {
+    if (selectedNodeInfo.value.nodeIds || !executionStore.lastPromptError)
+      return
+
+    const error = executionStore.lastPromptError
+    const groupTitle = error.message
+    const cards = getOrCreateGroup(groupsMap, groupTitle, 0)
+    const isKnown = KNOWN_PROMPT_ERROR_TYPES.has(error.type)
+
+    // Prompt errors are not tied to a node, so they bypass addNodeErrorToGroup.
+    cards.set(PROMPT_CARD_ID, {
+      id: PROMPT_CARD_ID,
+      title: groupTitle,
+      errors: [
+        {
+          message: isKnown
+            ? t(`rightSidePanel.promptErrors.${error.type}.desc`)
+            : error.message
+        }
+      ]
+    })
+  }
+
+  function processNodeErrors(groupsMap: Map<string, GroupEntry>) {
+    if (!executionStore.lastNodeErrors) return
+
+    for (const [nodeId, nodeError] of Object.entries(
+      executionStore.lastNodeErrors
+    )) {
+      addNodeErrorToGroup(
+        groupsMap,
+        nodeId,
+        nodeError.class_type,
+        'node',
+        nodeError.errors.map((e) => ({
+          message: e.message,
+          details: e.details ?? undefined
+        }))
+      )
+    }
+  }
+
+  function processExecutionError(groupsMap: Map<string, GroupEntry>) {
+    if (!executionStore.lastExecutionError) return
+
+    const e = executionStore.lastExecutionError
+    addNodeErrorToGroup(groupsMap, String(e.node_id), e.node_type, 'exec', [
+      {
+        message: `${e.exception_type}: ${e.exception_message}`,
+        details: e.traceback.join('\n'),
+        isRuntimeError: true
+      }
+    ])
+  }
+
+  const errorGroups = computed<ErrorGroup[]>(() => {
+    const groupsMap = new Map<string, GroupEntry>()
+
+    processPromptError(groupsMap)
+    processNodeErrors(groupsMap)
+    processExecutionError(groupsMap)
+
+    return isSingleNodeSelected.value
+      ? toSortedGroups(regroupByErrorMessage(groupsMap))
+      : toSortedGroups(groupsMap)
+  })
 
   const filteredGroups = computed<ErrorGroup[]>(() => {
     const query = searchQuery.value.trim()
     return searchErrorGroups(errorGroups.value, query)
   })
 
+  /**
+   * When an external trigger (e.g. "See Error" button in SectionWidgets)
+   * sets focusedErrorNodeId, expand only the group containing the target
+   * node and collapse all others so the user sees the relevant errors
+   * immediately.
+   */
+  function expandFocusedErrorGroup(graphNodeId: string | null) {
+    if (!graphNodeId) return
+    const prefix = `${graphNodeId}:`
+    for (const group of filteredGroups.value) {
+      const hasMatch = group.cards.some(
+        (card) =>
+          card.graphNodeId === graphNodeId ||
+          (card.nodeId?.startsWith(prefix) ?? false)
+      )
+      collapseState[group.title] = !hasMatch
+    }
+    rightSidePanelStore.focusedErrorNodeId = null
+  }
+
+  watch(() => rightSidePanelStore.focusedErrorNodeId, expandFocusedErrorGroup, {
+    immediate: true
+  })
+
   return {
     errorGroups,
     filteredGroups,
+    collapseState,
     isSingleNodeSelected,
-    executionIdToGraphNodeMap
+    errorNodeCache
   }
 }

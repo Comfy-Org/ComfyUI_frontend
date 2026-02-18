@@ -49,9 +49,6 @@ interface QueuedPrompt {
   workflow?: ComfyWorkflow
 }
 
-
-
-
 interface CloudValidationError {
   error?: { type?: string; message?: string; details?: string } | string
   node_errors?: Record<NodeId, NodeError>

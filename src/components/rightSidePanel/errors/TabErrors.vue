@@ -98,11 +98,10 @@
 </template>
 
 <script setup lang="ts">
-import { computed, reactive, ref, watch } from 'vue'
+import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { useCommandStore } from '@/stores/commandStore'
-import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
 import { useFocusNode } from '@/composables/canvas/useFocusNode'
 import { useExternalLink } from '@/composables/useExternalLink'
@@ -121,11 +120,9 @@ const { t } = useI18n()
 const { copyToClipboard } = useCopyToClipboard()
 const { focusNode, enterSubgraph } = useFocusNode()
 const { staticUrls } = useExternalLink()
-const rightSidePanelStore = useRightSidePanelStore()
 const settingStore = useSettingStore()
 
 const searchQuery = ref('')
-const collapseState = reactive<Record<string, boolean>>({})
 
 const showNodeIdBadge = computed(
   () =>
@@ -133,36 +130,15 @@ const showNodeIdBadge = computed(
     NodeBadgeMode.None
 )
 
-const {
-  filteredGroups,
-  isSingleNodeSelected,
-  executionIdToGraphNodeMap
-} = useErrorGroups(searchQuery, t)
-
-watch(
-  () => rightSidePanelStore.focusedErrorNodeId,
-  (graphNodeId) => {
-    if (!graphNodeId) return
-    const prefix = `${graphNodeId}:`
-    for (const group of filteredGroups.value) {
-      const hasMatch = group.cards.some(
-        (card) =>
-          card.graphNodeId === graphNodeId ||
-          (card.nodeId?.startsWith(prefix) ?? false)
-      )
-      collapseState[group.title] = !hasMatch
-    }
-    rightSidePanelStore.focusedErrorNodeId = null
-  },
-  { immediate: true }
-)
+const { filteredGroups, collapseState, isSingleNodeSelected, errorNodeCache } =
+  useErrorGroups(searchQuery, t)
 
 function handleLocateNode(nodeId: string) {
-  focusNode(nodeId, executionIdToGraphNodeMap.value)
+  focusNode(nodeId, errorNodeCache.value)
 }
 
 function handleEnterSubgraph(nodeId: string) {
-  enterSubgraph(nodeId, executionIdToGraphNodeMap.value)
+  enterSubgraph(nodeId, errorNodeCache.value)
 }
 
 function openGitHubIssues() {
