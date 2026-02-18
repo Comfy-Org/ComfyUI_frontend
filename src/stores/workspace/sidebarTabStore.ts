@@ -106,10 +106,10 @@ export const useSidebarTabStore = defineStore('sidebarTab', () => {
   const registerCoreSidebarTabs = () => {
     const settingStore = useSettingStore()
 
-    registerSidebarTab(useAssetsSidebarTab())
     if (settingStore.get('Comfy.Queue.QPOV2')) {
       registerSidebarTab(useJobHistorySidebarTab())
     }
+    registerSidebarTab(useAssetsSidebarTab())
     registerSidebarTab(useNodeLibrarySidebarTab())
     registerSidebarTab(useModelLibrarySidebarTab())
     registerSidebarTab(useWorkflowsSidebarTab())

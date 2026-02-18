@@ -102,8 +102,8 @@ describe('useSidebarTabStore', () => {
     store.registerCoreSidebarTabs()
 
     expect(store.sidebarTabs.map((tab) => tab.id)).toEqual([
-      'assets',
       'job-history',
+      'assets',
       'node-library',
       'model-library',
       'workflows'
