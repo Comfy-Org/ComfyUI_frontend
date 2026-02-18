@@ -10338,6 +10338,32 @@
       }
     }
   },
+  "NAGuidance": {
+    "description": "對模型應用標準化注意力引導，讓蒸餾／schnell 模型支援負面提示。",
+    "display_name": "標準化注意力引導",
+    "inputs": {
+      "model": {
+        "name": "model",
+        "tooltip": "要套用 NAG 的模型。"
+      },
+      "nag_alpha": {
+        "name": "nag_alpha",
+        "tooltip": "標準化注意力的混合係數。1.0 為完全取代，0.0 則無效果。"
+      },
+      "nag_scale": {
+        "name": "nag_scale",
+        "tooltip": "引導強度係數。數值越高，越遠離負面提示。"
+      },
+      "nag_tau": {
+        "name": "nag_tau"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "已啟用 NAG 的修補模型。"
+      }
+    }
+  },
   "NormalizeImages": {
     "display_name": "標準化圖片",
     "inputs": {
@@ -11704,6 +11730,88 @@
       },
       "substyle": {
         "name": "子風格"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "RecraftV4TextToImageNode": {
+    "description": "使用 Recraft V4 或 V4 Pro 模型產生圖像。",
+    "display_name": "Recraft V4 文字轉圖像",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "用於生成的模型。"
+      },
+      "model_size": {
+        "name": "size"
+      },
+      "n": {
+        "name": "n",
+        "tooltip": "要生成的圖像數量。"
+      },
+      "negative_prompt": {
+        "name": "negative_prompt",
+        "tooltip": "可選的圖像中不希望出現元素的文字描述。"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "圖像生成提示語。最多 10,000 字元。"
+      },
+      "recraft_controls": {
+        "name": "recraft_controls",
+        "tooltip": "可選，透過 Recraft Controls 節點進行額外生成控制。"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "決定節點是否重新執行的種子值；實際結果無論種子如何都不保證可重現。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "RecraftV4TextToVectorNode": {
+    "description": "使用 Recraft V4 或 V4 Pro 模型產生 SVG。",
+    "display_name": "Recraft V4 文字轉向量圖",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "用於生成的模型。"
+      },
+      "model_size": {
+        "name": "size"
+      },
+      "n": {
+        "name": "n",
+        "tooltip": "要生成的圖像數量。"
+      },
+      "negative_prompt": {
+        "name": "negative_prompt",
+        "tooltip": "可選的圖像中不希望出現元素的文字描述。"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "圖像生成提示語。最多 10,000 字元。"
+      },
+      "recraft_controls": {
+        "name": "recraft_controls",
+        "tooltip": "可選，透過 Recraft Controls 節點進行額外生成控制。"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "決定節點是否重新執行的種子值；實際結果無論種子如何都不保證可重現。"
       }
     },
     "outputs": {
@@ -15838,6 +15946,46 @@
       },
       "seed": {
         "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Vidu3StartEndToVideoNode": {
+    "description": "根據起始影格、結束影格與提示詞生成影片。",
+    "display_name": "Vidu Q3 起始/結束影格轉影片生成",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "end_frame": {
+        "name": "結束影格"
+      },
+      "first_frame": {
+        "name": "起始影格"
+      },
+      "model": {
+        "name": "模型",
+        "tooltip": "用於影片生成的模型。"
+      },
+      "model_audio": {
+        "name": "音訊"
+      },
+      "model_duration": {
+        "name": "時長"
+      },
+      "model_resolution": {
+        "name": "解析度"
+      },
+      "prompt": {
+        "name": "提示詞",
+        "tooltip": "提示描述（最多 2000 字元）。"
+      },
+      "seed": {
+        "name": "隨機種子"
       }
     },
     "outputs": {

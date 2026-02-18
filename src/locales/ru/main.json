@@ -1898,6 +1898,25 @@
     "outputs": "Выходы",
     "type": "Тип"
   },
+  "nodeReplacement": {
+    "compatibleAlternatives": "Совместимые альтернативы",
+    "installMissingNodes": "Установить отсутствующие узлы",
+    "installationRequired": "Требуется установка",
+    "instructionMessage": "Вам необходимо установить эти узлы или заменить их установленными альтернативами, чтобы запустить рабочий процесс. Отсутствующие узлы выделены {red} на холсте. Некоторые узлы нельзя заменить, их нужно установить через Менеджер узлов.",
+    "notReplaceable": "Требуется установка",
+    "openNodeManager": "Открыть Менеджер узлов",
+    "quickFixAvailable": "Доступно быстрое исправление",
+    "redHighlight": "красным",
+    "replaceFailed": "Не удалось заменить узлы",
+    "replaceSelected": "Заменить выбранные ({count})",
+    "replaceWarning": "Это действие навсегда изменит рабочий процесс. Сохраните копию, если не уверены.",
+    "replaceable": "Можно заменить",
+    "replaced": "Заменено",
+    "replacedAllNodes": "Заменено {count} типов(а) узлов",
+    "replacedNode": "Заменённый узел: {nodeType}",
+    "selectAll": "Выбрать все",
+    "skipForNow": "Пропустить сейчас"
+  },
   "nodeTemplates": {
     "enterName": "Введите название",
     "saveAsTemplate": "Сохранить как шаблон"
@@ -2414,8 +2433,11 @@
       "moreOptions": "Больше опций",
       "noActiveJobs": "Нет активных заданий",
       "preview": "Предпросмотр",
+      "queuedJobsLabel": "{count} в очереди",
       "queuedSuffix": "в очереди",
       "running": "выполняется",
+      "runningJobsLabel": "{count} выполняется",
+      "runningQueuedSummary": "{running}, {queued}",
       "showAssets": "Показать ассеты",
       "showAssetsPanel": "Показать панель ассетов",
       "sortBy": "Сортировать по",
