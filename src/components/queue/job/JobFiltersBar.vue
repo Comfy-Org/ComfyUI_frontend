@@ -128,6 +128,7 @@
         </div>
       </Popover>
       <Button
+        v-if="showAssetsAction"
         v-tooltip.top="showAssetsTooltipConfig"
         variant="secondary"
         size="icon"
@@ -156,6 +157,7 @@ const props = defineProps<{
   selectedWorkflowFilter: 'all' | 'current'
   selectedSortMode: JobSortMode
   hasFailedJobs: boolean
+  hideShowAssetsAction?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -181,6 +183,8 @@ const showAssetsTooltipConfig = computed(() =>
 
 // This can be removed when cloud implements /jobs and we switch to it.
 const showWorkflowFilter = !isCloud
+
+const showAssetsAction = computed(() => !props.hideShowAssetsAction)
 
 const visibleJobTabs = computed(() =>
   props.hasFailedJobs ? jobTabs : jobTabs.filter((tab) => tab !== 'Failed')
