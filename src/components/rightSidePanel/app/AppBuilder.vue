@@ -83,12 +83,12 @@ function getHovered(
   return [node, node.getWidgetOnPos(e.canvasX, e.canvasY, false)]
 }
 
-function elementPosition(e: HTMLElement) {
+function elementPosition(e: HTMLElement, mleft: number = 0) {
   const bounding = useElementBounding(e)
   return computed(() => ({
-    width: `${bounding.width.value / canvas.ds.scale}px`,
+    width: `${bounding.width.value / canvas.ds.scale - mleft}px`,
     height: `${bounding.height.value / canvas.ds.scale}px`,
-    left: `${bounding.left.value / canvas.ds.scale - canvas.ds.offset[0]}px`,
+    left: `${bounding.left.value / canvas.ds.scale - canvas.ds.offset[0] + mleft}px`,
     top: `${bounding.top.value / canvas.ds.scale - canvas.ds.offset[1]}px`
   }))
 }
@@ -99,7 +99,10 @@ function getBounding(nodeId: NodeId, widgetName?: string) {
         ? `[data-node-id="${nodeId}"] [data-widget-name="${widgetName}"`
         : `[data-node-id="${nodeId}"]`
     )
-    return element instanceof HTMLElement ? elementPosition(element) : undefined
+    const mleft = widgetName ? 12 : 0
+    return element instanceof HTMLElement
+      ? elementPosition(element, mleft)
+      : undefined
   }
   const node = canvas.graph?.getNodeById(nodeId)
   if (!node) return
