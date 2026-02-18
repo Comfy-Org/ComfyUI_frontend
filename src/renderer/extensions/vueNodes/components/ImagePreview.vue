@@ -141,6 +141,7 @@ interface ImagePreviewProps {
 const props = defineProps<ImagePreviewProps>()
 
 const { t } = useI18n()
+const maskEditor = useMaskEditor()
 const nodeOutputStore = useNodeOutputStore()
 
 const actionButtonClass =
@@ -223,7 +224,7 @@ const handleEditMask = () => {
   if (!props.nodeId) return
   const node = app.rootGraph?.getNodeById(Number(props.nodeId))
   if (!node) return
-  useMaskEditor().openMaskEditor(node)
+  maskEditor.openMaskEditor(node)
 }
 
 const handleDownload = () => {

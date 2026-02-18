@@ -32,7 +32,7 @@ const createMockNode = (overrides: Record<string, unknown> = {}): LGraphNode =>
     id: 1,
     type: 'TestNode',
     ...overrides
-  }) as LGraphNode
+  }) as unknown as LGraphNode
 
 const createMockOutputs = (
   images?: ExecutedWsMessage['output']['images']
@@ -163,7 +163,8 @@ describe('imagePreviewStore getPreviewParam', () => {
 
   it('should return empty string if output is animated', () => {
     const store = useNodeOutputStore()
-    const node = createMockNode({ animatedImages: true })
+    vi.mocked(litegraphUtil.isAnimatedOutput).mockReturnValue(true)
+    const node = createMockNode()
     const outputs = createMockOutputs([{ filename: 'img.png' }])
     expect(store.getPreviewParam(node, outputs)).toBe('')
     expect(vi.mocked(app).getPreviewFormatParam).not.toHaveBeenCalled()
@@ -224,7 +225,7 @@ describe('imagePreviewStore getPreviewParam', () => {
 
 describe('imagePreviewStore syncLegacyNodeImgs', () => {
   beforeEach(() => {
-    setActivePinia(createPinia())
+    setActivePinia(createTestingPinia({ stubActions: false }))
     vi.clearAllMocks()
     LiteGraph.vueNodesMode = false
   })
