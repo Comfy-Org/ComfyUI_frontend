@@ -2,9 +2,15 @@ import { nextTick } from 'vue'
 
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { app } from '@/scripts/app'
-import type { LGraph, Subgraph } from '@/lib/litegraph/src/litegraph'
+import type {
+  LGraph,
+  LGraphNode,
+  Subgraph
+} from '@/lib/litegraph/src/litegraph'
 import { getNodeByExecutionId } from '@/utils/graphTraversalUtil'
+import { isGroupNode } from '@/utils/executableGroupNodeDto'
 import { useLitegraphService } from '@/services/litegraphService'
+import { parseNodeExecutionId } from '@/types/nodeIdentification'
 
 async function navigateToGraph(targetGraph: LGraph) {
   const canvasStore = useCanvasStore()
@@ -29,20 +35,44 @@ async function navigateToGraph(targetGraph: LGraph) {
 export function useFocusNode() {
   const canvasStore = useCanvasStore()
 
-  async function focusNode(nodeId: string) {
+  /* Locate and focus a node on the canvas by its execution ID. */
+  async function focusNode(
+    nodeId: string,
+    executionIdMap?: Map<string, LGraphNode>
+  ) {
     if (!canvasStore.canvas) return
 
-    const graphNode = getNodeByExecutionId(app.rootGraph, nodeId)
+    // For group node internals, locate the parent group node instead
+    const parts = parseNodeExecutionId(nodeId)
+    const parentId = parts && parts.length > 1 ? String(parts[0]) : null
+    const parentNode = parentId
+      ? app.rootGraph.getNodeById(Number(parentId))
+      : null
+
+    if (parentNode && isGroupNode(parentNode) && parentNode.graph) {
+      await navigateToGraph(parentNode.graph as LGraph)
+      canvasStore.canvas?.animateToBounds(parentNode.boundingRect)
+      return
+    }
+
+    const graphNode = executionIdMap
+      ? executionIdMap.get(nodeId)
+      : getNodeByExecutionId(app.rootGraph, nodeId)
     if (!graphNode?.graph) return
 
     await navigateToGraph(graphNode.graph as LGraph)
     canvasStore.canvas?.animateToBounds(graphNode.boundingRect)
   }
 
-  async function enterSubgraph(nodeId: string) {
+  async function enterSubgraph(
+    nodeId: string,
+    executionIdMap?: Map<string, LGraphNode>
+  ) {
     if (!canvasStore.canvas) return
 
-    const graphNode = getNodeByExecutionId(app.rootGraph, nodeId)
+    const graphNode = executionIdMap
+      ? executionIdMap.get(nodeId)
+      : getNodeByExecutionId(app.rootGraph, nodeId)
     if (!graphNode?.graph) return
 
     await navigateToGraph(graphNode.graph as LGraph)

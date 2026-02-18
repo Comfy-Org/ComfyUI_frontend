@@ -55,8 +55,9 @@
               :key="card.id"
               :card="card"
               :show-node-id-badge="showNodeIdBadge"
-              @locate-node="focusNode"
-              @enter-subgraph="enterSubgraph"
+              :compact="isSingleNodeSelected"
+              @locate-node="handleLocateNode"
+              @enter-subgraph="handleEnterSubgraph"
               @copy-to-clipboard="copyToClipboard"
             />
           </div>
@@ -97,16 +98,16 @@
 </template>
 
 <script setup lang="ts">
-import { computed, reactive, ref, watch } from 'vue'
+import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { useCommandStore } from '@/stores/commandStore'
-import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
 import { useFocusNode } from '@/composables/canvas/useFocusNode'
 import { useExternalLink } from '@/composables/useExternalLink'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
+import { useToastStore } from '@/platform/updates/common/toastStore'
 import { NodeBadgeMode } from '@/types/nodeSource'
 
 import PropertiesAccordionItem from '../layout/PropertiesAccordionItem.vue'
@@ -119,10 +120,9 @@ const { t } = useI18n()
 const { copyToClipboard } = useCopyToClipboard()
 const { focusNode, enterSubgraph } = useFocusNode()
 const { staticUrls } = useExternalLink()
-const rightSidePanelStore = useRightSidePanelStore()
+const settingStore = useSettingStore()
 
 const searchQuery = ref('')
-const settingStore = useSettingStore()
 
 const showNodeIdBadge = computed(
   () =>
@@ -130,24 +130,16 @@ const showNodeIdBadge = computed(
     NodeBadgeMode.None
 )
 
-const { filteredGroups } = useErrorGroups(searchQuery, t)
+const { filteredGroups, collapseState, isSingleNodeSelected, errorNodeCache } =
+  useErrorGroups(searchQuery, t)
 
-const collapseState = reactive<Record<string, boolean>>({})
+function handleLocateNode(nodeId: string) {
+  focusNode(nodeId, errorNodeCache.value)
+}
 
-watch(
-  () => rightSidePanelStore.focusedErrorNodeId,
-  (graphNodeId) => {
-    if (!graphNodeId) return
-    for (const group of filteredGroups.value) {
-      const hasMatch = group.cards.some(
-        (card) => card.graphNodeId === graphNodeId
-      )
-      collapseState[group.title] = !hasMatch
-    }
-    rightSidePanelStore.focusedErrorNodeId = null
-  },
-  { immediate: true }
-)
+function handleEnterSubgraph(nodeId: string) {
+  enterSubgraph(nodeId, errorNodeCache.value)
+}
 
 function openGitHubIssues() {
   useTelemetry()?.trackUiButtonClicked({
@@ -162,6 +154,11 @@ async function contactSupport() {
     is_external: true,
     source: 'error_dialog'
   })
-  await useCommandStore().execute('Comfy.ContactSupport')
+  try {
+    await useCommandStore().execute('Comfy.ContactSupport')
+  } catch (error) {
+    console.error(error)
+    useToastStore().addAlert(t('rightSidePanel.contactSupportFailed'))
+  }
 }
 </script>

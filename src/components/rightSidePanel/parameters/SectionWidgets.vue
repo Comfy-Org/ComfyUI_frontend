@@ -5,17 +5,15 @@ import { useI18n } from 'vue-i18n'
 import Button from '@/components/ui/button/Button.vue'
 import { isProxyWidget } from '@/core/graph/subgraph/proxyWidget'
 import { parseProxyWidgets } from '@/core/schemas/proxyWidget'
-import type {
-  LGraphGroup,
-  LGraphNode,
-  SubgraphNode
-} from '@/lib/litegraph/src/litegraph'
+import type { LGraphGroup, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { SubgraphNode } from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { cn } from '@/utils/tailwindUtil'
+import { isGroupNode } from '@/utils/executableGroupNodeDto'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { getWidgetDefaultValue } from '@/utils/widgetUtil'
 import type { WidgetValue } from '@/utils/widgetUtil'
@@ -110,9 +108,33 @@ const targetNode = computed<LGraphNode | null>(() => {
   return allSameNode ? widgets.value[0].node : null
 })
 
-const nodeHasError = computed(() => {
-  if (canvasStore.selectedItems.length > 0 || !targetNode.value) return false
+const hasDirectError = computed(() => {
+  if (!targetNode.value) return false
   return executionStore.activeGraphErrorNodeIds.has(String(targetNode.value.id))
+})
+
+const hasContainerInternalError = computed(() => {
+  if (!targetNode.value) return false
+  const isContainer =
+    targetNode.value instanceof SubgraphNode || isGroupNode(targetNode.value)
+  if (!isContainer) return false
+
+  const errorIds: string[] = []
+  if (executionStore.lastNodeErrors) {
+    errorIds.push(...Object.keys(executionStore.lastNodeErrors))
+  }
+  if (executionStore.lastExecutionError) {
+    errorIds.push(String(executionStore.lastExecutionError.node_id))
+  }
+
+  const prefix = `${targetNode.value.id}:`
+  return errorIds.some((execId) => execId.startsWith(prefix))
+})
+
+const nodeHasError = computed(() => {
+  if (!targetNode.value) return false
+  if (canvasStore.selectedItems.length === 1) return false
+  return hasDirectError.value || hasContainerInternalError.value
 })
 
 const parentGroup = computed<LGraphGroup | null>(() => {
