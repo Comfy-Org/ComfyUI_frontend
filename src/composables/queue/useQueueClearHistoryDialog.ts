@@ -18,7 +18,8 @@ export const useQueueClearHistoryDialog = () => {
             class: 'max-w-[360px] w-auto bg-transparent border-none shadow-none'
           },
           content: {
-            class: '!p-0 bg-transparent'
+            class: 'bg-transparent',
+            style: 'padding: 0'
           }
         }
       }
