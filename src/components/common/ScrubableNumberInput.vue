@@ -6,6 +6,8 @@
     <slot name="background" />
     <Button
       v-if="!hideButtons"
+      :aria-label="t('g.ariaLabel.decrement')"
+      data-testid="decrement"
       class="h-full w-8 rounded-r-none hover:bg-base-foreground/20 disabled:opacity-30"
       variant="muted-textonly"
       :disabled="!canDecrement"
@@ -49,6 +51,8 @@
     <slot />
     <Button
       v-if="!hideButtons"
+      :aria-label="t('g.ariaLabel.increment')"
+      data-testid="increment"
       class="h-full w-8 rounded-l-none hover:bg-base-foreground/20 disabled:opacity-30"
       variant="muted-textonly"
       :disabled="!canIncrement"
@@ -63,6 +67,7 @@
 <script setup lang="ts">
 import { onClickOutside } from '@vueuse/core'
 import { computed, ref, useTemplateRef } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
 import { cn } from '@/utils/tailwindUtil'
@@ -86,6 +91,7 @@ const {
   inputAttrs?: Record<string, unknown>
 }>()
 
+const { t } = useI18n()
 const modelValue = defineModel<number>({ default: 0 })
 
 const container = useTemplateRef<HTMLDivElement>('container')
@@ -115,7 +121,12 @@ const hasDragged = ref(false)
 
 function handleBlur(e: Event) {
   const target = e.target as HTMLInputElement
-  const parsed = parseValue ? parseValue(target.value) : Number(target.value)
+  const raw = target.value.trim()
+  const parsed = parseValue
+    ? parseValue(raw)
+    : raw === ''
+      ? undefined
+      : Number(raw)
   if (parsed != null && !isNaN(parsed)) {
     modelValue.value = clamp(parsed)
   } else {
@@ -139,11 +150,10 @@ function handlePointerMove(e: PointerEvent) {
   dragDelta.value += e.movementX
   const steps = (dragDelta.value / 10) | 0
   if (steps === 0) return
+  hasDragged.value = true
   const unclipped = modelValue.value + steps * step
   dragDelta.value %= 10
-  const clamped = clamp(unclipped)
-  if (clamped !== modelValue.value) hasDragged.value = true
-  modelValue.value = clamped
+  modelValue.value = clamp(unclipped)
 }
 
 function handlePointerUp() {
