@@ -5,6 +5,7 @@ import type {
   LGraph,
   LGraphCanvas
 } from '@/lib/litegraph/src/litegraph'
+import type { ExecutedWsMessage } from '@/schemas/apiSchema'
 import {
   LGraphGroup,
   LGraphNode,
@@ -75,6 +76,32 @@ export function isImageNode(node: LGraphNode | undefined): node is ImageNode {
 export function isVideoNode(node: LGraphNode | undefined): node is VideoNode {
   if (!node) return false
   return node.previewMediaType === 'video' || !!node.videoContainer
+}
+
+/**
+ * Check if output data indicates animated content (animated webp/png or video).
+ */
+export function isAnimatedOutput(
+  output: ExecutedWsMessage['output'] | undefined
+): boolean {
+  return !!output?.animated?.find(Boolean)
+}
+
+/**
+ * Check if output data indicates video content (animated but not webp/png).
+ */
+export function isVideoOutput(
+  output: ExecutedWsMessage['output'] | undefined
+): boolean {
+  if (!isAnimatedOutput(output)) return false
+
+  const isAnimatedWebp = output?.images?.some((img) =>
+    img.filename?.endsWith('.webp')
+  )
+  const isAnimatedPng = output?.images?.some((img) =>
+    img.filename?.endsWith('.png')
+  )
+  return !isAnimatedWebp && !isAnimatedPng
 }
 
 export function isAudioNode(node: LGraphNode | undefined): boolean {

@@ -162,7 +162,7 @@ import { useTelemetry } from '@/platform/telemetry'
 import { clearTopupTracking } from '@/platform/telemetry/topupTracker'
 import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
-import { useBillingOperationStore } from '@/stores/billingOperationStore'
+import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
 import { useDialogStore } from '@/stores/dialogStore'
 import { cn } from '@/utils/tailwindUtil'
 
