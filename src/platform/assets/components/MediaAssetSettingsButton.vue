@@ -1,7 +1,7 @@
 <template>
   <div class="relative inline-flex items-center">
     <Button variant="secondary" size="icon" @click="toggle">
-      <i class="icon-[lucide--arrow-up-down]" />
+      <i class="icon-[lucide--settings-2]" />
     </Button>
 
     <Popover
@@ -13,8 +13,6 @@
       :close-on-escape="true"
       unstyled
       :pt="pt"
-      @show="$emit('menuOpened')"
-      @hide="$emit('menuClosed')"
     >
       <div class="flex min-w-42 flex-col gap-2 p-2">
         <slot :close="hide" />
@@ -32,16 +30,11 @@ import { cn } from '@/utils/tailwindUtil'
 
 const popover = ref<InstanceType<typeof Popover>>()
 
-defineEmits<{
-  menuOpened: []
-  menuClosed: []
-}>()
-
-const toggle = (event: Event) => {
+function toggle(event: Event) {
   popover.value?.toggle(event)
 }
 
-const hide = () => {
+function hide() {
   popover.value?.hide()
 }
 
