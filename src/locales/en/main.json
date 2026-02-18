@@ -2942,7 +2942,14 @@
     "appModeToolbar": {
       "appBuilder": "App builder",
       "apps": "Apps"
-
+    },
+    "arrange": {
+      "noOutputs": "No outputs added yet",
+      "switchToSelect": "Switch to the 'Select' step and click on output nodes to add them here.",
+      "connectAtLeastOne": "Connect {atLeastOne} output node so users can see results after running.",
+      "atLeastOne": "at least one",
+      "outputExamples": "Examples: 'Save Image' or 'Save Video'",
+      "switchToSelectButton": "Switch to Select"
     }
   },
   "missingNodes": {
