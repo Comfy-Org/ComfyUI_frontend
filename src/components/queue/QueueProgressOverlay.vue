@@ -22,7 +22,7 @@
         :queued-count="queuedCount"
         :displayed-job-groups="displayedJobGroups"
         :has-failed-jobs="hasFailedJobs"
-        @show-assets="openAssetsSidebar"
+        @show-assets="toggleAssetsSidebar"
         @clear-history="onClearHistoryFromMenu"
         @clear-queued="cancelQueuedWorkflows"
         @cancel-item="onCancelItem"
@@ -240,6 +240,10 @@ const setExpanded = (expanded: boolean) => {
 
 const viewAllJobs = () => {
   setExpanded(true)
+}
+
+const toggleAssetsSidebar = () => {
+  sidebarTabStore.toggleSidebarTab('assets')
 }
 
 const openAssetsSidebar = () => {
