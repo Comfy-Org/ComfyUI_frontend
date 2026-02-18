@@ -11,7 +11,8 @@ const i18n = createI18n({
   messages: {
     en: {
       shareWorkflow: {
-        assetWarningTitle: 'This workflow includes...',
+        publishDescription:
+          'When you create a link for your workflow, you will share these assets along with your workflow',
         assetsLabel: 'Assets ({count})',
         modelsLabel: 'Models ({count})',
         acknowledgeCheckbox: 'I understand these assets...'
@@ -41,7 +42,7 @@ describe('ShareAssetWarningBox', () => {
 
   it('renders warning text', () => {
     const wrapper = createWrapper()
-    expect(wrapper.text()).toContain('This workflow includes')
+    expect(wrapper.text()).toContain('you will share these assets')
   })
 
   it('renders asset and model collapsible sections', () => {
@@ -62,15 +63,8 @@ describe('ShareAssetWarningBox', () => {
     expect(wrapper.emitted('update:acknowledged')![0]).toEqual([true])
   })
 
-  it('expands assets section when trigger is clicked', async () => {
+  it('displays asset names in the assets section', () => {
     const wrapper = createWrapper()
-
-    const assetsTrigger = wrapper
-      .findAll('button')
-      .find((b) => b.text().includes('Assets'))
-
-    await assetsTrigger?.trigger('click')
-    await nextTick()
 
     expect(wrapper.text()).toContain('image.png')
   })
