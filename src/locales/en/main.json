@@ -3019,6 +3019,7 @@
   "exportToast": {
     "exportingAssets": "Exporting Assets",
     "preparingExport": "Preparing export...",
+    "exportError": "Export failed",
     "exportFailed": "{count} export failed | {count} export failed | {count} exports failed",
     "allExportsCompleted": "All exports completed",
     "noExportsInQueue": "No {filter} exports in queue",

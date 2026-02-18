@@ -25,6 +25,11 @@ const currentJobName = computed(() => {
   return activeJob?.exportName || t('exportToast.preparingExport')
 })
 
+function jobDisplayName(job: AssetExport): string {
+  if (job.status === 'failed') return job.error || t('exportToast.exportError')
+  return job.exportName || t('exportToast.preparingExport')
+}
+
 const completedCount = computed(() => assetExportStore.finishedExports.length)
 const totalCount = computed(() => exportJobs.value.length)
 
@@ -83,15 +88,23 @@ function closeDialog() {
             "
           >
             <div class="min-w-0 flex-1">
-              <span class="block truncate text-sm text-base-foreground">
-                {{ job.exportName || t('exportToast.preparingExport') }}
+              <span
+                :class="
+                  cn(
+                    'block truncate text-sm',
+                    job.status === 'failed'
+                      ? 'text-destructive-background'
+                      : 'text-base-foreground'
+                  )
+                "
+              >
+                {{ jobDisplayName(job) }}
               </span>
               <span
                 v-if="job.assetsTotal > 0"
                 class="text-xs text-muted-foreground"
               >
                 {{ job.assetsAttempted }}/{{ job.assetsTotal }}
-                {{ t('progressToast.filter.all').toLowerCase() }}
               </span>
             </div>
 
