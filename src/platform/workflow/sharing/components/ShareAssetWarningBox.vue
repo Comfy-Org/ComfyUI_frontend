@@ -9,39 +9,24 @@
       </p>
     </div>
 
-    <div v-if="assets.length > 0" class="flex flex-col gap-2 my-0">
+    <div
+      v-for="section in sections"
+      :key="section.labelKey"
+      class="flex flex-col gap-2 my-0"
+    >
       <p class="m-0 px-2 pb-1 pt-3 text-sm text-muted-foreground">
-        {{ $t('shareWorkflow.assetsLabel', { count: assets.length }) }}
+        {{ $t(section.labelKey, { count: section.items.length }) }}
       </p>
       <div
         class="max-h-[101px] overflow-y-auto rounded-lg border border-border-subtle bg-secondary-background py-2"
       >
         <div
-          v-for="asset in assets"
-          :key="asset.name"
-          class="flex items-center gap-2 px-2 py-3"
+          v-for="item in section.items"
+          :key="item.name"
+          class="flex items-center gap-2 p-2"
         >
           <span class="truncate text-sm text-base-foreground">
-            {{ asset.name }}
-          </span>
-        </div>
-      </div>
-    </div>
-
-    <div v-if="models.length > 0" class="flex flex-col gap-2 my-0">
-      <p class="m-0 px-2 pb-1 pt-3 text-sm text-muted-foreground">
-        {{ $t('shareWorkflow.modelsLabel', { count: models.length }) }}
-      </p>
-      <div
-        class="max-h-[101px] overflow-y-auto rounded-lg border border-border-subtle bg-secondary-background py-2"
-      >
-        <div
-          v-for="model in models"
-          :key="model.name"
-          class="flex items-center px-2 py-1"
-        >
-          <span class="truncate text-sm text-base-foreground">
-            {{ model.name }}
+            {{ item.name }}
           </span>
         </div>
       </div>
@@ -67,6 +52,8 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue'
+
 import type {
   WorkflowAsset,
   WorkflowModel
@@ -81,4 +68,11 @@ const { assets, models } = defineProps<{
 defineEmits<{
   'update:acknowledged': [value: boolean]
 }>()
+
+const sections = computed(() =>
+  [
+    { labelKey: 'shareWorkflow.assetsLabel', items: assets },
+    { labelKey: 'shareWorkflow.modelsLabel', items: models }
+  ].filter((s) => s.items.length > 0)
+)
 </script>

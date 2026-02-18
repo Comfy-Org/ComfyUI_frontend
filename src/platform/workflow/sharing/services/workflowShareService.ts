@@ -4,15 +4,45 @@ import type {
   WorkflowPublishResult,
   WorkflowPublishStatus
 } from '@/platform/workflow/sharing/types/shareTypes'
+import type { ComboInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { app } from '@/scripts/app'
 import { useAssetsStore } from '@/stores/assetsStore'
 import { useModelToNodeStore } from '@/stores/modelToNodeStore'
+import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { mapAllNodes } from '@/utils/graphTraversalUtil'
 
-const ASSET_NODE_WIDGETS: Record<string, string> = {
-  LoadImage: 'image',
-  LoadVideo: 'video',
-  LoadAudio: 'audio'
+const UPLOAD_FLAGS = [
+  'image_upload',
+  'animated_image_upload',
+  'video_upload',
+  'audio_upload'
+] as const
+
+function isMediaUploadCombo(input: { type: string }): input is ComboInputSpec {
+  if (input.type !== 'COMBO') return false
+  const combo = input as ComboInputSpec
+  return UPLOAD_FLAGS.some((flag) => combo[flag] === true)
+}
+
+/**
+ * Builds a map of node type name → widget name for nodes that have
+ * media upload combo inputs (image, video, audio).
+ * Dynamically queries node definitions instead of hardcoding node names.
+ */
+function getAssetNodeWidgets(): Record<string, string> {
+  const { nodeDefsByName } = useNodeDefStore()
+  const result: Record<string, string> = {}
+
+  for (const [nodeTypeName, nodeDef] of Object.entries(nodeDefsByName)) {
+    for (const [widgetName, inputSpec] of Object.entries(nodeDef.inputs)) {
+      if (isMediaUploadCombo(inputSpec)) {
+        result[nodeTypeName] = widgetName
+        break
+      }
+    }
+  }
+
+  return result
 }
 
 interface PublishRecord {
@@ -64,8 +94,10 @@ export function useWorkflowShareService() {
     const graph = app.rootGraph
     if (!graph) return []
 
+    const assetNodeWidgets = getAssetNodeWidgets()
+
     const results = mapAllNodes(graph, (node) => {
-      const widgetName = ASSET_NODE_WIDGETS[node.type ?? '']
+      const widgetName = assetNodeWidgets[node.type ?? '']
       if (!widgetName) return undefined
 
       const widget = node.widgets?.find((w) => w.name === widgetName)
