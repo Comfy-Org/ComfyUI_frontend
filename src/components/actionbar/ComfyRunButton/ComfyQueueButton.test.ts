@@ -146,7 +146,7 @@ describe('ComfyQueueButton', () => {
     expect(wrapper.find('.icon-\\[lucide--square\\]').exists()).toBe(true)
   })
 
-  it('stops instant mode instead of queueing a new prompt when clicked in stop state', async () => {
+  it('stops active instant mode and restores the run instant action when jobs clear', async () => {
     const wrapper = createWrapper()
     const queueSettingsStore = useQueueSettingsStore()
     const queueStore = useQueueStore()
@@ -156,13 +156,28 @@ describe('ComfyQueueButton', () => {
     queueStore.runningTasks = [createTask('run-1', 'in_progress')]
     await nextTick()
 
-    await wrapper.get('[data-testid="queue-button"]').trigger('click')
+    const clickPromise = wrapper
+      .get('[data-testid="queue-button"]')
+      .trigger('click')
+    await nextTick()
+
+    expect(queueSettingsStore.mode).toBe('disabled')
+
+    queueStore.runningTasks = []
+    await nextTick()
+    await clickPromise
+    await nextTick()
 
     expect(commandStore.execute).toHaveBeenCalledWith('Comfy.Interrupt')
     expect(commandStore.execute).not.toHaveBeenCalledWith(
       'Comfy.QueuePrompt',
       expect.anything()
     )
-    expect(queueSettingsStore.mode).toBe('disabled')
+
+    const splitButton = wrapper.get('[data-testid="queue-button"]')
+    expect(queueSettingsStore.mode).toBe('instant')
+    expect(splitButton.attributes('data-label')).toBe('Run (Instant)')
+    expect(splitButton.attributes('data-severity')).toBe('primary')
+    expect(wrapper.find('.icon-\\[lucide--fast-forward\\]').exists()).toBe(true)
   })
 })

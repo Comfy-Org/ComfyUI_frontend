@@ -36,6 +36,7 @@
 </template>
 
 <script setup lang="ts">
+import { until } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
 import type { MenuItem } from 'primevue/menuitem'
 import SplitButton from 'primevue/splitbutton'
@@ -167,6 +168,14 @@ const queuePrompt = async (e: Event) => {
   if (isInstantAutoQueueActive.value) {
     queueMode.value = 'disabled'
     await commandStore.execute('Comfy.Interrupt')
+
+    if (activeJobsCount.value > 0) {
+      await until(activeJobsCount).toBe(0, { timeout: 5000 })
+    }
+
+    if (queueMode.value === 'disabled') {
+      queueMode.value = 'instant'
+    }
     return
   }
 
