@@ -11,7 +11,7 @@ const i18n = createI18n({
   messages: {
     en: {
       shareWorkflow: {
-        publishDescription:
+        createLinkDescription:
           'When you create a link for your workflow, you will share these assets along with your workflow',
         assetsLabel: 'Assets ({count})',
         modelsLabel: 'Models ({count})',

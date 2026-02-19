@@ -20,6 +20,35 @@ vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
   useWorkflowStore: () => mockWorkflowStore
 }))
 
+vi.mock('primevue/usetoast', () => ({
+  useToast: () => ({
+    add: vi.fn()
+  })
+}))
+
+vi.mock('@formkit/auto-animate/vue', () => ({
+  vAutoAnimate: {}
+}))
+
+const mockFlags = vi.hoisted(() => ({
+  comfyHubUploadEnabled: false
+}))
+
+vi.mock('@/composables/useFeatureFlags', () => ({
+  useFeatureFlags: () => ({
+    flags: mockFlags
+  })
+}))
+
+vi.mock(
+  '@/platform/workflow/sharing/composables/useComfyHubPublishDialog',
+  () => ({
+    useComfyHubPublishDialog: () => ({
+      show: vi.fn()
+    })
+  })
+)
+
 vi.mock('@/platform/workflow/core/services/workflowService', () => ({
   useWorkflowService: () => ({
     saveWorkflow: vi.fn(),
@@ -60,23 +89,25 @@ const i18n = createI18n({
     en: {
       g: { close: 'Close' },
       shareWorkflow: {
+        loadingTitle: 'Loading...',
         unsavedTitle: 'Save workflow first',
         unsavedDescription: 'You must save your workflow before sharing.',
+        workflowNameLabel: 'Workflow name',
+        saving: 'Saving...',
         saveButton: 'Save workflow',
-        publishTitle: 'Publish workflow',
-        publishDescription: 'Publishing this workflow...',
-        publishButton: 'Publish workflow',
-        publishing: 'Publishing...',
+        createLinkTitle: 'Create shareable link',
+        createLinkButton: 'Create link',
+        creatingLink: 'Creating link...',
+        checkingAssets: 'Checking assets...',
+        createLinkDescription:
+          'When you create a link, you will share these assets',
         successTitle: 'Workflow successfully published!',
         successDescription: 'Anyone with this link...',
         hasChangesTitle: 'Share workflow',
         hasChangesDescription: 'You have made changes...',
-        republishButton: 'Publish updates',
-        republishing: 'Publishing...',
+        updateLinkButton: 'Update link',
+        updatingLink: 'Updating link...',
         publishedOn: 'Published on {date}',
-        copyLink: 'Copy',
-        linkCopied: 'Copied!',
-        assetWarningTitle: 'This workflow includes...',
         assetsLabel: 'Assets ({count})',
         modelsLabel: 'Models ({count})',
         acknowledgeCheckbox: 'I understand these assets...',
@@ -107,12 +138,18 @@ describe('ShareWorkflowDialogContent', () => {
     return mount(ShareWorkflowDialogContent, {
       props: { onClose },
       global: {
-        plugins: [i18n]
+        plugins: [i18n],
+        stubs: {
+          Input: {
+            template: '<input v-bind="$attrs" />',
+            methods: { focus() {}, select() {} }
+          }
+        }
       }
     })
   }
 
-  it('renders in unsaved state when workflow is modified', () => {
+  it('renders in unsaved state when workflow is modified', async () => {
     mockWorkflowStore.activeWorkflow = {
       path: 'workflows/test.json',
       isTemporary: false,
@@ -120,12 +157,13 @@ describe('ShareWorkflowDialogContent', () => {
       lastModified: 1000
     }
     const wrapper = createWrapper()
+    await flushPromises()
 
     expect(wrapper.text()).toContain('Save workflow first')
     expect(wrapper.text()).toContain('Save workflow')
   })
 
-  it('renders in unsaved state when workflow is temporary', () => {
+  it('renders in unsaved state when workflow is temporary', async () => {
     mockWorkflowStore.activeWorkflow = {
       path: 'workflows/test.json',
       isTemporary: true,
@@ -133,6 +171,7 @@ describe('ShareWorkflowDialogContent', () => {
       lastModified: 1000
     }
     const wrapper = createWrapper()
+    await flushPromises()
 
     expect(wrapper.text()).toContain('Save workflow first')
   })
@@ -141,7 +180,7 @@ describe('ShareWorkflowDialogContent', () => {
     const wrapper = createWrapper()
     await flushPromises()
 
-    expect(wrapper.text()).toContain('Publish workflow')
+    expect(wrapper.text()).toContain('Create link')
   })
 
   it('disables publish button when acknowledgment is unchecked', async () => {
@@ -150,7 +189,7 @@ describe('ShareWorkflowDialogContent', () => {
 
     const publishButton = wrapper
       .findAll('button')
-      .find((b) => b.text().includes('Publish workflow'))
+      .find((b) => b.text().includes('Create link'))
 
     expect(publishButton?.attributes('disabled')).toBeDefined()
   })
@@ -165,7 +204,7 @@ describe('ShareWorkflowDialogContent', () => {
 
     const publishButton = wrapper
       .findAll('button')
-      .find((b) => b.text().includes('Publish workflow'))
+      .find((b) => b.text().includes('Create link'))
 
     expect(publishButton?.attributes('disabled')).toBeUndefined()
   })
@@ -181,13 +220,14 @@ describe('ShareWorkflowDialogContent', () => {
 
     const publishButton = wrapper
       .findAll('button')
-      .find((b) => b.text().includes('Publish workflow'))
+      .find((b) => b.text().includes('Create link'))
 
     expect(publishButton?.attributes('disabled')).toBeUndefined()
   })
 
   it('calls onClose when close button is clicked', async () => {
     const wrapper = createWrapper()
+    await flushPromises()
 
     const closeButton = wrapper.find('[aria-label="Close"]')
     await closeButton.trigger('click')
@@ -195,9 +235,12 @@ describe('ShareWorkflowDialogContent', () => {
     expect(onClose).toHaveBeenCalled()
   })
 
-  it('renders ComfyHub upload section', () => {
+  it('renders ComfyHub upload section', async () => {
+    mockFlags.comfyHubUploadEnabled = true
     const wrapper = createWrapper()
+    await flushPromises()
 
     expect(wrapper.text()).toContain('Upload to ComfyHub')
+    mockFlags.comfyHubUploadEnabled = false
   })
 })
