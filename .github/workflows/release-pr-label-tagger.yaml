@@ -1,0 +1,223 @@
+---
+name: Release PR Label Tagger
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: 'Release tag to process (e.g. core/v1.40.0)'
+        required: true
+        type: string
+
+jobs:
+  label-prs:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+      issues: write
+
+    steps:
+      - name: Tag PRs with release label
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const isManual = context.eventName === 'workflow_dispatch'
+
+            const releaseTag = isManual
+              ? context.payload.inputs.release_tag
+              : context.payload.release.tag_name
+
+            const branch = isManual
+              ? null
+              : context.payload.release.target_commitish
+
+            core.info(`Processing release tag: ${releaseTag}`)
+            core.info(`Target branch: ${branch ?? '(manual trigger, will be derived from tag)'}`)
+
+            // Determine label from branch or tag prefix
+            function getLabelForBranch(branchName) {
+              if (branchName?.startsWith('core/')) return 'released:core'
+              if (branchName?.startsWith('cloud/')) return 'released:cloud'
+              return null
+            }
+
+            function getLabelForTag(tag) {
+              if (tag?.startsWith('core/')) return 'released:core'
+              if (tag?.startsWith('cloud/')) return 'released:cloud'
+              return null
+            }
+
+            const label = getLabelForBranch(branch) ?? getLabelForTag(releaseTag)
+            if (!label) {
+              core.notice(
+                `Skipping: branch '${branch}' / tag '${releaseTag}' does not match core/ or cloud/ pattern`
+              )
+              return
+            }
+
+            core.info(`Will apply label: ${label}`)
+
+            // Determine branch prefix for finding the previous release
+            const branchPrefix = label === 'released:core' ? 'core/' : 'cloud/'
+
+            // Ensure the label exists in the repo
+            const labelColors = {
+              'released:core': '0075ca',
+              'released:cloud': 'e4e669',
+            }
+
+            try {
+              await github.rest.issues.getLabel({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                name: label,
+              })
+              core.info(`Label '${label}' already exists`)
+            } catch (err) {
+              if (err.status === 404) {
+                await github.rest.issues.createLabel({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  name: label,
+                  color: labelColors[label],
+                })
+                core.info(`Created label '${label}'`)
+              } else {
+                throw err
+              }
+            }
+
+            // Find the previous release on the same branch prefix
+            async function findPreviousReleaseTag(currentTag) {
+              const releases = await github.paginate(
+                github.rest.repos.listReleases,
+                {
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  per_page: 100,
+                }
+              )
+
+              // Filter releases that match the same prefix and are not the current one
+              const samePrefix = releases.filter(
+                (r) =>
+                  r.tag_name !== currentTag &&
+                  r.tag_name.startsWith(branchPrefix)
+              )
+
+              if (samePrefix.length === 0) return null
+
+              // Sort by published_at descending and pick the most recent before current
+              const currentRelease = releases.find((r) => r.tag_name === currentTag)
+              const currentDate = currentRelease?.published_at
+                ? new Date(currentRelease.published_at)
+                : new Date()
+
+              const previous = samePrefix
+                .filter((r) => r.published_at && new Date(r.published_at) < currentDate)
+                .sort((a, b) => new Date(b.published_at) - new Date(a.published_at))
+
+              return previous[0]?.tag_name ?? null
+            }
+
+            const previousTag = await findPreviousReleaseTag(releaseTag)
+            core.info(
+              previousTag
+                ? `Previous release tag: ${previousTag}`
+                : 'No previous release found; will use all commits reachable from this tag'
+            )
+
+            // Compare commits between previous and current tag
+            let commits
+            if (previousTag) {
+              const comparison = await github.rest.repos.compareCommitsWithBasehead({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                basehead: `${previousTag}...${releaseTag}`,
+              })
+              commits = comparison.data.commits
+              core.info(`Found ${commits.length} commits between ${previousTag} and ${releaseTag}`)
+            } else {
+              // No previous release: get commits on this tag up to a reasonable depth
+              const { data: tagCommit } = await github.rest.repos.getCommit({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                ref: releaseTag,
+              })
+              commits = [tagCommit]
+              core.info(`No previous release; processing single HEAD commit ${tagCommit.sha}`)
+            }
+
+            // Collect unique PR numbers from associated pull requests
+            const prNumbers = new Set()
+            for (const commit of commits) {
+              const { data: prs } =
+                await github.rest.repos.listPullRequestsAssociatedWithCommit({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  commit_sha: commit.sha,
+                })
+              for (const pr of prs) {
+                if (pr.merged_at) prNumbers.add(pr.number)
+              }
+            }
+
+            core.info(`Found ${prNumbers.size} merged PRs associated with these commits`)
+
+            const labeled = []
+            const skipped = []
+
+            for (const prNumber of prNumbers) {
+              const { data: pr } = await github.rest.pulls.get({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                pull_number: prNumber,
+              })
+
+              const alreadyLabeled = pr.labels.some((l) => l.name === label)
+              if (alreadyLabeled) {
+                skipped.push(`#${prNumber}`)
+                continue
+              }
+
+              await github.rest.issues.addLabels({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: prNumber,
+                labels: [label],
+              })
+
+              labeled.push(`#${prNumber} ${pr.title}`)
+              core.info(`Labeled PR #${prNumber}: ${pr.title}`)
+            }
+
+            // Write job summary
+            const summaryLines = [
+              `## Release PR Label Tagger`,
+              ``,
+              `**Release tag:** \`${releaseTag}\``,
+              `**Label applied:** \`${label}\``,
+              `**Previous release:** ${previousTag ? `\`${previousTag}\`` : '_none_'}`,
+              ``,
+            ]
+
+            if (labeled.length > 0) {
+              summaryLines.push(`### Labeled PRs (${labeled.length})`)
+              summaryLines.push(...labeled.map((entry) => `- ${entry}`))
+              summaryLines.push(``)
+            }
+
+            if (skipped.length > 0) {
+              summaryLines.push(`### Skipped (already labeled): ${skipped.join(', ')}`)
+              summaryLines.push(``)
+            }
+
+            if (labeled.length === 0 && skipped.length === 0) {
+              summaryLines.push(`_No PRs found to label._`)
+            }
+
+            await core.summary.addRaw(summaryLines.join('\n')).write()
