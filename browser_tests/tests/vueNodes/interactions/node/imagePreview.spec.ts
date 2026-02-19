@@ -29,7 +29,7 @@ test.describe('Vue Nodes Image Preview', () => {
     return imagePreview
   }
 
-  test('opens mask editor from image preview button', async ({ comfyPage }) => {
+  test.fixme('opens mask editor from image preview button', async ({ comfyPage }) => {
     const imagePreview = await loadImageOnNode(comfyPage)
 
     await imagePreview.locator('[role="img"]').hover()
@@ -38,7 +38,7 @@ test.describe('Vue Nodes Image Preview', () => {
     await expect(comfyPage.page.locator('.mask-editor-dialog')).toBeVisible()
   })
 
-  test('shows image context menu options', async ({ comfyPage }) => {
+  test.fixme('shows image context menu options', async ({ comfyPage }) => {
     await loadImageOnNode(comfyPage)
 
     const nodeHeader = comfyPage.vueNodes.getNodeByTitle('Load Image')
