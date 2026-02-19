@@ -87,16 +87,14 @@ vi.mock(
 describe('useSidebarTabStore', () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
-    mockGetSetting.mockImplementation(
-      (key: string) => key === 'Comfy.Queue.QPOV2' && false
-    )
+    mockGetSetting.mockReset()
     mockRegisterCommand.mockClear()
     mockRegisterCommands.mockClear()
   })
 
   it('registers the job history tab when QPO V2 is enabled', () => {
-    mockGetSetting.mockImplementation(
-      (key: string) => key === 'Comfy.Queue.QPOV2'
+    mockGetSetting.mockImplementation((key: string) =>
+      key === 'Comfy.Queue.QPOV2' ? true : undefined
     )
 
     const store = useSidebarTabStore()
