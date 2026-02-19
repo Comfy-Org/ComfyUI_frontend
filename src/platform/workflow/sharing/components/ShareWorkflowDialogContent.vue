@@ -36,12 +36,10 @@
           <span class="text-xs font-medium text-muted-foreground">
             {{ $t('shareWorkflow.workflowNameLabel') }}
           </span>
-          <input
+          <Input
             ref="nameInputRef"
             v-model="workflowName"
-            type="text"
             :disabled="isSaving"
-            class="rounded-lg border border-border-default bg-secondary-background px-3 py-2 text-sm text-base-foreground outline-none focus:border-secondary-foreground disabled:opacity-50"
             @keydown.enter="() => handleSave()"
           />
         </label>
@@ -153,6 +151,7 @@ import ComfyHubUploadSection from '@/platform/workflow/sharing/components/ComfyH
 import ShareAssetWarningBox from '@/platform/workflow/sharing/components/ShareAssetWarningBox.vue'
 import ShareUrlCopyField from '@/platform/workflow/sharing/components/ShareUrlCopyField.vue'
 import Button from '@/components/ui/button/Button.vue'
+import Input from '@/components/ui/input/Input.vue'
 import type { WorkflowPublishResult } from '@/platform/workflow/sharing/types/shareTypes'
 import { useWorkflowShareService } from '@/platform/workflow/sharing/services/workflowShareService'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'

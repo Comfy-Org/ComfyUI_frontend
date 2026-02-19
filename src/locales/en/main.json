@@ -2877,6 +2877,31 @@
     "comfyHubDescription": "ComfyHub is ComfyUI's official community hub.\nYour workflow will have a public page viewable by all.",
     "comfyHubButton": "Upload to ComfyHub"
   },
+  "comfyHubPublish": {
+    "title": "Publish to ComfyHub",
+    "editCreatorProfile": "Edit your creator profile",
+    "stepDescribe": "Describe your workflow",
+    "stepExamples": "Add output examples",
+    "stepFinish": "Finish publishing",
+    "workflowName": "Workflow name",
+    "workflowNamePlaceholder": "Tip: enter a descriptive name that's easy to search",
+    "workflowDescription": "Workflow description",
+    "workflowDescriptionPlaceholder": "What makes your workflow exciting and special? Be specific so people knows what to expect.",
+    "tags": "Tags",
+    "tagsPlaceholder": "Enter tags that match your workflow to help people find it e.g #nanobanana, #anime or #faceswap",
+    "thumbnailType": "Thumbnail type",
+    "thumbnailImage": "Image",
+    "thumbnailVideo": "Video",
+    "thumbnailImageComparison": "Image comparison",
+    "uploadThumbnail": "Upload thumbnail",
+    "uploadThumbnailPrompt": "Click to browse or drag an image",
+    "uploadThumbnailHint": "16:9 preferred, 1080p max",
+    "back": "Back",
+    "next": "Next",
+    "publishButton": "Publish to ComfyHub",
+    "examplesPlaceholder": "Output examples will be configured here.",
+    "finishPlaceholder": "Review and confirm your workflow publication."
+  },
   "desktopDialogs": {
     "": {
       "title": "Invalid Dialog",
