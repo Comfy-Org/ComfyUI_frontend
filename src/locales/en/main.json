@@ -2895,6 +2895,7 @@
     "workflowDescriptionPlaceholder": "What makes your workflow exciting and special? Be specific so people knows what to expect.",
     "tags": "Tags",
     "tagsPlaceholder": "Enter tags that match your workflow to help people find it e.g #nanobanana, #anime or #faceswap",
+    "suggestedTags": "Suggested tags",
     "thumbnailType": "Thumbnail type",
     "thumbnailImage": "Image",
     "thumbnailVideo": "Video",
