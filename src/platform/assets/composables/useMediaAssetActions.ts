@@ -20,6 +20,8 @@ import { createAnnotatedPath } from '@/utils/createAnnotatedPath'
 import { detectNodeTypeFromFilename } from '@/utils/loaderNodeUtil'
 import { isResultItemType } from '@/utils/typeGuardUtil'
 
+import { useAssetExportStore } from '@/stores/assetExportStore'
+
 import type { AssetItem } from '../schemas/assetSchema'
 import { MediaAssetKey } from '../schemas/mediaAssetSchema'
 import { assetService } from '../services/assetService'
@@ -73,7 +75,7 @@ export function useMediaAssetActions() {
       toast.add({
         severity: 'success',
         summary: t('g.success'),
-        detail: t('mediaAsset.selection.downloadsStarted', { count: 1 }),
+        detail: t('mediaAsset.selection.downloadsStarted', 1),
         life: 2000
       })
     } catch (error) {
@@ -87,16 +89,26 @@ export function useMediaAssetActions() {
   }
 
   /**
-   * Download multiple assets at once
-   * @param assets Array of assets to download
+   * Download multiple assets at once.
+   * In cloud mode with 2+ assets, creates a ZIP export via the backend.
+   * Falls back to individual downloads in OSS mode or for single assets.
    */
   const downloadMultipleAssets = (assets: AssetItem[]) => {
     if (!assets || assets.length === 0) return
 
+    const hasMultiOutputJobs = assets.some((a) => {
+      const count = getOutputAssetMetadata(a.user_metadata)?.outputCount
+      return typeof count === 'number' && count > 1
+    })
+
+    if (isCloud && (assets.length > 1 || hasMultiOutputJobs)) {
+      void downloadMultipleAssetsAsZip(assets)
+      return
+    }
+
     try {
       assets.forEach((asset) => {
         const filename = asset.name
-        // Prefer preview_url (already includes subfolder) with getAssetUrl as fallback
         const downloadUrl = asset.preview_url || getAssetUrl(asset)
         downloadFile(downloadUrl, filename)
       })
@@ -104,9 +116,7 @@ export function useMediaAssetActions() {
       toast.add({
         severity: 'success',
         summary: t('g.success'),
-        detail: t('mediaAsset.selection.downloadsStarted', {
-          count: assets.length
-        }),
+        detail: t('mediaAsset.selection.downloadsStarted', assets.length),
         life: 2000
       })
     } catch (error) {
@@ -115,6 +125,62 @@ export function useMediaAssetActions() {
         severity: 'error',
         summary: t('g.error'),
         detail: t('g.failedToDownloadImage'),
+        life: 3000
+      })
+    }
+  }
+
+  async function downloadMultipleAssetsAsZip(assets: AssetItem[]) {
+    const assetExportStore = useAssetExportStore()
+
+    try {
+      const jobIds: string[] = []
+      const assetIds: string[] = []
+      const jobAssetNameFilters: Record<string, string[]> = {}
+
+      for (const asset of assets) {
+        if (getAssetType(asset) === 'output') {
+          const metadata = getOutputAssetMetadata(asset.user_metadata)
+          const promptId = metadata?.promptId || asset.id
+          if (!jobIds.includes(promptId)) {
+            jobIds.push(promptId)
+          }
+          if (metadata?.promptId && asset.name) {
+            if (!jobAssetNameFilters[metadata.promptId]) {
+              jobAssetNameFilters[metadata.promptId] = []
+            }
+            if (!jobAssetNameFilters[metadata.promptId].includes(asset.name)) {
+              jobAssetNameFilters[metadata.promptId].push(asset.name)
+            }
+          }
+        } else {
+          assetIds.push(asset.id)
+        }
+      }
+
+      const result = await assetService.createAssetExport({
+        ...(jobIds.length > 0 ? { job_ids: jobIds } : {}),
+        ...(assetIds.length > 0 ? { asset_ids: assetIds } : {}),
+        ...(Object.keys(jobAssetNameFilters).length > 0
+          ? { job_asset_name_filters: jobAssetNameFilters }
+          : {}),
+        naming_strategy: 'preserve'
+      })
+
+      assetExportStore.trackExport(result.task_id)
+
+      toast.add({
+        severity: 'info',
+        summary: t('exportToast.exportStarted'),
+        detail: t('mediaAsset.selection.exportStarted', assets.length),
+        life: 3000
+      })
+    } catch (error) {
+      console.error('Failed to create asset export:', error)
+      toast.add({
+        severity: 'error',
+        summary: t('g.error'),
+        detail: t('exportToast.exportFailedSingle'),
         life: 3000
       })
     }
@@ -580,9 +646,10 @@ export function useMediaAssetActions() {
                   summary: t('g.success'),
                   detail: isSingle
                     ? t('mediaAsset.assetDeletedSuccessfully')
-                    : t('mediaAsset.selection.assetsDeletedSuccessfully', {
-                        count: succeeded
-                      }),
+                    : t(
+                        'mediaAsset.selection.assetsDeletedSuccessfully',
+                        succeeded
+                      ),
                   life: 2000
                 })
               } else if (succeeded === 0) {
