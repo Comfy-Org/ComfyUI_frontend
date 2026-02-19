@@ -29,7 +29,9 @@ test.describe('Vue Nodes Image Preview', () => {
     return imagePreview
   }
 
-  test.fixme('opens mask editor from image preview button', async ({ comfyPage }) => {
+  test.fixme('opens mask editor from image preview button', async ({
+    comfyPage
+  }) => {
     const imagePreview = await loadImageOnNode(comfyPage)
 
     await imagePreview.locator('[role="img"]').hover()
