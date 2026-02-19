@@ -5,7 +5,7 @@
         class="icon-[lucide--circle-alert] my-auto size-4 shrink-0 text-warning-background"
       />
       <p class="m-0 text-xs text-muted-foreground">
-        {{ $t('shareWorkflow.publishDescription') }}
+        {{ $t('shareWorkflow.createLinkDescription') }}
       </p>
     </div>
 

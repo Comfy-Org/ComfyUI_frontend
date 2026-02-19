@@ -72,7 +72,7 @@
                 ? (el) => (compareContainerRef = el as HTMLElement)
                 : undefined
             "
-            class="relative h-15 w-1/2 overflow-hidden rounded-sm"
+            class="relative aspect-square w-1/2 overflow-hidden rounded-sm"
           >
             <img
               :src="option.image"
@@ -104,7 +104,7 @@
     </div>
 
     <!-- Upload thumbnail -->
-    <div class="flex min-h-0 flex-1 flex-col gap-2">
+    <div class="flex min-h-0 flex-1 shrink flex-col gap-2">
       <span class="text-sm text-muted-foreground">
         {{ $t('comfyHubPublish.uploadThumbnail') }}
       </span>
@@ -119,12 +119,21 @@
           class="hidden"
           @change="handleFileSelect"
         />
-        <span class="text-sm text-muted-foreground">
-          {{ $t('comfyHubPublish.uploadThumbnailPrompt') }}
-        </span>
-        <span class="text-xs text-muted-foreground">
-          {{ $t('comfyHubPublish.uploadThumbnailHint') }}
-        </span>
+        <template v-if="thumbnailPreviewUrl">
+          <img
+            :src="thumbnailPreviewUrl"
+            :alt="$t('comfyHubPublish.thumbnailPreview')"
+            class="max-h-full max-w-full object-contain"
+          />
+        </template>
+        <template v-else>
+          <span class="text-sm text-muted-foreground">
+            {{ $t('comfyHubPublish.uploadThumbnailPrompt') }}
+          </span>
+          <span class="text-xs text-muted-foreground">
+            {{ $t('comfyHubPublish.uploadThumbnailHint') }}
+          </span>
+        </template>
       </label>
     </div>
   </div>
@@ -141,7 +150,7 @@ import Textarea from '@/components/ui/textarea/Textarea.vue'
 import type { ThumbnailType } from '@/platform/workflow/sharing/types/comfyHubTypes'
 import { cn } from '@/utils/tailwindUtil'
 import { useMouseInElement } from '@vueuse/core'
-import { ref, watch } from 'vue'
+import { onBeforeUnmount, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 defineProps<{
@@ -180,6 +189,14 @@ const thumbnailOptions = [
   }
 ]
 
+const thumbnailPreviewUrl = ref<string | null>(null)
+
+onBeforeUnmount(() => {
+  if (thumbnailPreviewUrl.value) {
+    URL.revokeObjectURL(thumbnailPreviewUrl.value)
+  }
+})
+
 const compareSliderPosition = ref(50)
 const compareContainerRef = ref<HTMLElement | null>(null)
 const { elementX, elementWidth, isOutside } =
@@ -191,18 +208,26 @@ watch([elementX, elementWidth, isOutside], ([x, width, outside]) => {
   }
 })
 
+function setThumbnailPreview(file: File) {
+  if (thumbnailPreviewUrl.value) {
+    URL.revokeObjectURL(thumbnailPreviewUrl.value)
+  }
+  thumbnailPreviewUrl.value = URL.createObjectURL(file)
+  emit('update:thumbnailFile', file)
+}
+
 function handleFileSelect(event: Event) {
   const input = event.target as HTMLInputElement
   const file = input.files?.[0]
   if (file) {
-    emit('update:thumbnailFile', file)
+    setThumbnailPreview(file)
   }
 }
 
 function handleFileDrop(event: DragEvent) {
   const file = event.dataTransfer?.files?.[0]
   if (file?.type.startsWith('image/')) {
-    emit('update:thumbnailFile', file)
+    setThumbnailPreview(file)
   }
 }
 </script>
