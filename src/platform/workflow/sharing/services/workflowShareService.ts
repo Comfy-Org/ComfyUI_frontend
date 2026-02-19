@@ -1,10 +1,14 @@
 import type {
-  WorkflowAsset,
-  WorkflowModel,
   WorkflowPublishResult,
   WorkflowPublishStatus
 } from '@/platform/workflow/sharing/types/shareTypes'
+import type {
+  ShareableAssetsResponse,
+  WorkflowAsset,
+  WorkflowModel
+} from '@/schemas/apiSchema'
 import type { ComboInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
+import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { useAssetsStore } from '@/stores/assetsStore'
 import { useModelToNodeStore } from '@/stores/modelToNodeStore'
@@ -24,11 +28,6 @@ function isMediaUploadCombo(input: { type: string }): input is ComboInputSpec {
   return UPLOAD_FLAGS.some((flag) => combo[flag] === true)
 }
 
-/**
- * Builds a map of node type name → widget name for nodes that have
- * media upload combo inputs (image, video, audio).
- * Dynamically queries node definitions instead of hardcoding node names.
- */
 function getAssetNodeWidgets(): Record<string, string> {
   const { nodeDefsByName } = useNodeDefStore()
   const result: Record<string, string> = {}
@@ -43,6 +42,66 @@ function getAssetNodeWidgets(): Record<string, string> {
   }
 
   return result
+}
+
+function getWorkflowAssetsFromGraph(): WorkflowAsset[] {
+  const graph = app.rootGraph
+  if (!graph) return []
+
+  const assetNodeWidgets = getAssetNodeWidgets()
+
+  return mapAllNodes(graph, (node) => {
+    const widgetName = assetNodeWidgets[node.type ?? '']
+    if (!widgetName) return undefined
+
+    const widget = node.widgets?.find((w) => w.name === widgetName)
+    const value = widget?.value
+    if (typeof value !== 'string' || !value.trim()) return undefined
+
+    return { name: value, thumbnailUrl: null } satisfies WorkflowAsset
+  })
+}
+
+async function getWorkflowModelsFromGraph(): Promise<WorkflowModel[]> {
+  const graph = app.rootGraph
+  if (!graph) return []
+
+  const registeredTypes = useModelToNodeStore().getRegisteredNodeTypes()
+  const assetsStore = useAssetsStore()
+
+  const nodeTypesInGraph = new Set(
+    mapAllNodes(graph, (node) => {
+      const nodeType = node.type ?? ''
+      return registeredTypes[nodeType] ? nodeType : undefined
+    })
+  )
+
+  const settledResults = await Promise.allSettled(
+    [...nodeTypesInGraph].map((nodeType) =>
+      assetsStore.updateModelsForNodeType(nodeType)
+    )
+  )
+  for (const result of settledResults) {
+    if (result.status === 'rejected') {
+      console.error('Failed to update models for node type:', result.reason)
+    }
+  }
+
+  return mapAllNodes(graph, (node) => {
+    const nodeType = node.type ?? ''
+    const widgetKey = registeredTypes[nodeType]
+    if (!widgetKey) return undefined
+
+    const widget = node.widgets?.find((w) => w.name === widgetKey)
+    const value = widget?.value
+    if (typeof value !== 'string' || !value.trim()) return undefined
+
+    const cachedAssets = assetsStore.getAssets(nodeType)
+    const matchingAsset = cachedAssets.find((a) => a.name === value)
+    if (matchingAsset?.is_immutable) return undefined
+
+    return { name: value } satisfies WorkflowModel
+  })
 }
 
 interface PublishRecord {
@@ -90,74 +149,31 @@ export function useWorkflowShareService() {
     }
   }
 
-  function getWorkflowAssets(): WorkflowAsset[] {
+  async function getShareableAssets(
+    onRefine?: (result: ShareableAssetsResponse) => void
+  ): Promise<ShareableAssetsResponse> {
     const graph = app.rootGraph
-    if (!graph) return []
+    if (!graph) return { assets: [], models: [] }
 
-    const assetNodeWidgets = getAssetNodeWidgets()
+    const backendCall = app
+      .graphToPrompt(graph)
+      .then(({ output }) => api.getShareableAssets(output))
+      .then((result) => onRefine?.(result))
+      .catch(() => {})
 
-    const results = mapAllNodes(graph, (node) => {
-      const widgetName = assetNodeWidgets[node.type ?? '']
-      if (!widgetName) return undefined
+    const [assets, models] = await Promise.all([
+      getWorkflowAssetsFromGraph(),
+      getWorkflowModelsFromGraph()
+    ])
 
-      const widget = node.widgets?.find((w) => w.name === widgetName)
-      const value = widget?.value
-      if (typeof value !== 'string' || !value.trim()) return undefined
+    if (!onRefine) await backendCall
 
-      return { name: value, thumbnailUrl: null } satisfies WorkflowAsset
-    })
-
-    return results
-  }
-
-  async function getWorkflowModels(): Promise<WorkflowModel[]> {
-    const graph = app.rootGraph
-    if (!graph) return []
-
-    const registeredTypes = useModelToNodeStore().getRegisteredNodeTypes()
-    const assetsStore = useAssetsStore()
-
-    const nodeTypesInGraph = new Set(
-      mapAllNodes(graph, (node) => {
-        const nodeType = node.type ?? ''
-        return registeredTypes[nodeType] ? nodeType : undefined
-      })
-    )
-
-    const settledResults = await Promise.allSettled(
-      [...nodeTypesInGraph].map((nodeType) =>
-        assetsStore.updateModelsForNodeType(nodeType)
-      )
-    )
-    for (const result of settledResults) {
-      if (result.status === 'rejected') {
-        console.error('Failed to update models for node type:', result.reason)
-      }
-    }
-
-    const results = mapAllNodes(graph, (node) => {
-      const nodeType = node.type ?? ''
-      const widgetKey = registeredTypes[nodeType]
-      if (!widgetKey) return undefined
-
-      const widget = node.widgets?.find((w) => w.name === widgetKey)
-      const value = widget?.value
-      if (typeof value !== 'string' || !value.trim()) return undefined
-
-      const cachedAssets = assetsStore.getAssets(nodeType)
-      const matchingAsset = cachedAssets.find((a) => a.name === value)
-      if (matchingAsset?.is_immutable) return undefined
-
-      return { name: value } satisfies WorkflowModel
-    })
-
-    return results
+    return { assets, models }
   }
 
   return {
     publishWorkflow,
     getPublishStatus,
-    getWorkflowAssets,
-    getWorkflowModels
+    getShareableAssets
   }
 }

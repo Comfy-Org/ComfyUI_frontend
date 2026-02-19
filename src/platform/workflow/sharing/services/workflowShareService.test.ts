@@ -29,11 +29,20 @@ vi.mock('@/stores/nodeDefStore', () => ({
   })
 }))
 
+const mockApp = vi.hoisted(() => ({
+  rootGraph: mockRootGraph as object | null,
+  graphToPrompt: vi.fn()
+}))
+
 vi.mock('@/scripts/app', () => ({
-  app: {
-    get rootGraph() {
-      return mockRootGraph
-    }
+  app: mockApp
+}))
+
+const mockGetShareableAssets = vi.fn()
+
+vi.mock('@/scripts/api', () => ({
+  api: {
+    getShareableAssets: (...args: unknown[]) => mockGetShareableAssets(...args)
   }
 }))
 
@@ -66,9 +75,10 @@ function createMockNode(
 
 describe('useWorkflowShareService', () => {
   beforeEach(() => {
-    vi.restoreAllMocks()
+    vi.resetAllMocks()
     mockRootGraph.nodes = []
     mockAssetsByNodeType.clear()
+    mockApp.rootGraph = mockRootGraph
   })
 
   it('returns unpublished status for unknown workflow', () => {
@@ -144,49 +154,57 @@ describe('useWorkflowShareService', () => {
     vi.useRealTimers()
   })
 
-  it('returns empty assets when graph has no asset nodes', () => {
+  it('returns empty assets when graph has no asset nodes', async () => {
     mockRootGraph.nodes = [
       createMockNode('KSampler', [{ name: 'seed', value: 42 }])
     ] as LGraphNode[]
+    mockApp.graphToPrompt.mockRejectedValue(new Error('fail'))
 
     const service = useWorkflowShareService()
-    expect(service.getWorkflowAssets()).toEqual([])
+    const result = await service.getShareableAssets()
+
+    expect(result.assets).toEqual([])
   })
 
-  it('extracts assets from LoadImage nodes', () => {
+  it('extracts assets from LoadImage nodes', async () => {
     mockRootGraph.nodes = [
       createMockNode('LoadImage', [{ name: 'image', value: 'photo.png' }]),
       createMockNode('LoadAudio', [{ name: 'audio', value: 'clip.wav' }])
     ] as LGraphNode[]
+    mockApp.graphToPrompt.mockRejectedValue(new Error('fail'))
 
     const service = useWorkflowShareService()
-    const assets = service.getWorkflowAssets()
+    const result = await service.getShareableAssets()
 
-    expect(assets).toEqual([
+    expect(result.assets).toEqual([
       { name: 'photo.png', thumbnailUrl: null },
       { name: 'clip.wav', thumbnailUrl: null }
     ])
   })
 
-  it('skips asset nodes with empty widget values', () => {
+  it('skips asset nodes with empty widget values', async () => {
     mockRootGraph.nodes = [
       createMockNode('LoadImage', [{ name: 'image', value: '' }]),
       createMockNode('LoadImage', [{ name: 'image', value: 'real.png' }])
     ] as LGraphNode[]
+    mockApp.graphToPrompt.mockRejectedValue(new Error('fail'))
 
     const service = useWorkflowShareService()
-    expect(service.getWorkflowAssets()).toEqual([
-      { name: 'real.png', thumbnailUrl: null }
-    ])
+    const result = await service.getShareableAssets()
+
+    expect(result.assets).toEqual([{ name: 'real.png', thumbnailUrl: null }])
   })
 
   it('returns empty models when graph has no model loaders', async () => {
     mockRootGraph.nodes = [
       createMockNode('LoadImage', [{ name: 'image', value: 'photo.png' }])
     ] as LGraphNode[]
+    mockApp.graphToPrompt.mockRejectedValue(new Error('fail'))
 
     const service = useWorkflowShareService()
-    expect(await service.getWorkflowModels()).toEqual([])
+    const result = await service.getShareableAssets()
+
+    expect(result.models).toEqual([])
   })
 
   it('extracts models from registered loader nodes', async () => {
@@ -198,11 +216,12 @@ describe('useWorkflowShareService', () => {
         { name: 'lora_name', value: 'detail_tweaker.safetensors' }
       ])
     ] as LGraphNode[]
+    mockApp.graphToPrompt.mockRejectedValue(new Error('fail'))
 
     const service = useWorkflowShareService()
-    const models = await service.getWorkflowModels()
+    const result = await service.getShareableAssets()
 
-    expect(models).toEqual([
+    expect(result.models).toEqual([
       { name: 'v1-5-pruned.safetensors' },
       { name: 'detail_tweaker.safetensors' }
     ])
@@ -224,11 +243,12 @@ describe('useWorkflowShareService', () => {
     mockAssetsByNodeType.set('LoraLoader', [
       { name: 'my-lora.safetensors', is_immutable: false }
     ])
+    mockApp.graphToPrompt.mockRejectedValue(new Error('fail'))
 
     const service = useWorkflowShareService()
-    const models = await service.getWorkflowModels()
+    const result = await service.getShareableAssets()
 
-    expect(models).toEqual([{ name: 'my-lora.safetensors' }])
+    expect(result.models).toEqual([{ name: 'my-lora.safetensors' }])
   })
 
   it('includes models not found in assets cache', async () => {
@@ -237,10 +257,68 @@ describe('useWorkflowShareService', () => {
         { name: 'ckpt_name', value: 'uncached-model.safetensors' }
       ])
     ] as LGraphNode[]
+    mockApp.graphToPrompt.mockRejectedValue(new Error('fail'))
 
     const service = useWorkflowShareService()
-    const models = await service.getWorkflowModels()
+    const result = await service.getShareableAssets()
 
-    expect(models).toEqual([{ name: 'uncached-model.safetensors' }])
+    expect(result.models).toEqual([{ name: 'uncached-model.safetensors' }])
+  })
+
+  it('returns empty results when no graph exists', async () => {
+    mockApp.rootGraph = null
+
+    const service = useWorkflowShareService()
+    const result = await service.getShareableAssets()
+
+    expect(result).toEqual({ assets: [], models: [] })
+    expect(mockApp.graphToPrompt).not.toHaveBeenCalled()
+  })
+
+  it('calls onRefine with backend results when API succeeds', async () => {
+    mockRootGraph.nodes = [
+      createMockNode('LoadImage', [{ name: 'image', value: 'photo.png' }])
+    ] as LGraphNode[]
+
+    const backendResult = {
+      assets: [
+        { name: 'photo.png', thumbnailUrl: 'https://example.com/t.jpg' }
+      ],
+      models: []
+    }
+    mockApp.graphToPrompt.mockResolvedValue({ output: { '1': {} } })
+    mockGetShareableAssets.mockResolvedValue(backendResult)
+
+    const onRefine = vi.fn()
+    const service = useWorkflowShareService()
+    const result = await service.getShareableAssets(onRefine)
+
+    await vi.waitFor(() => expect(onRefine).toHaveBeenCalledWith(backendResult))
+
+    expect(result.assets).toEqual([{ name: 'photo.png', thumbnailUrl: null }])
+  })
+
+  it('does not call onRefine when API fails', async () => {
+    mockRootGraph.nodes = [
+      createMockNode('LoadImage', [{ name: 'image', value: 'photo.png' }])
+    ] as LGraphNode[]
+    mockApp.graphToPrompt.mockRejectedValue(new Error('fail'))
+
+    const onRefine = vi.fn()
+    const service = useWorkflowShareService()
+    await service.getShareableAssets(onRefine)
+
+    expect(onRefine).not.toHaveBeenCalled()
+  })
+
+  it('awaits backend call when no onRefine callback is provided', async () => {
+    mockRootGraph.nodes = [] as LGraphNode[]
+    mockApp.graphToPrompt.mockResolvedValue({ output: {} })
+    mockGetShareableAssets.mockResolvedValue({ assets: [], models: [] })
+
+    const service = useWorkflowShareService()
+    await service.getShareableAssets()
+
+    expect(mockGetShareableAssets).toHaveBeenCalledWith({})
   })
 })

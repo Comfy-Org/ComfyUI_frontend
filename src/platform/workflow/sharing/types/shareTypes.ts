@@ -9,12 +9,3 @@ export interface WorkflowPublishStatus {
   publishedAt: Date | null
   hasChangesSincePublish: boolean
 }
-
-export interface WorkflowAsset {
-  name: string
-  thumbnailUrl: string | null
-}
-
-export interface WorkflowModel {
-  name: string
-}
