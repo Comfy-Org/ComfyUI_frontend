@@ -2090,13 +2090,13 @@
       "index": {},
       "option1": {}
     },
-    "outputs": [
-      null,
-      {
+    "outputs": {
+      "0": null,
+      "1": {
         "name": "INDEX",
         "tooltip": null
       }
-    ]
+    }
   },
   "DiffControlNetLoader": {
     "display_name": "بارگذاری مدل ControlNet (diff)",
@@ -6621,18 +6621,18 @@
         "name": "عرض"
       }
     },
-    "outputs": [
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      {
+    "outputs": {
+      "0": null,
+      "1": null,
+      "2": null,
+      "3": null,
+      "4": null,
+      "5": null,
+      "6": {
         "name": "مدل_۳بعدی",
         "tooltip": null
       }
-    ]
+    }
   },
   "LoadAudio": {
     "display_name": "بارگذاری صوت",
@@ -7579,17 +7579,17 @@
         "name": "rig_task_id"
       }
     },
-    "outputs": [
-      null,
-      {
+    "outputs": {
+      "0": null,
+      "1": {
         "name": "GLB",
         "tooltip": null
       },
-      {
+      "2": {
         "name": "FBX",
         "tooltip": null
       }
-    ]
+    }
   },
   "MeshyImageToModelNode": {
     "display_name": "Meshy: تصویر به مدل",
@@ -7635,18 +7635,18 @@
         "name": "symmetry_mode"
       }
     },
-    "outputs": [
-      null,
-      null,
-      {
+    "outputs": {
+      "0": null,
+      "1": null,
+      "2": {
         "name": "GLB",
         "tooltip": null
       },
-      {
+      "3": {
         "name": "FBX",
         "tooltip": null
       }
-    ]
+    }
   },
   "MeshyMultiImageToModelNode": {
     "display_name": "Meshy: چند تصویر به مدل",
@@ -7692,18 +7692,18 @@
         "name": "symmetry_mode"
       }
     },
-    "outputs": [
-      null,
-      null,
-      {
+    "outputs": {
+      "0": null,
+      "1": null,
+      "2": {
         "name": "GLB",
         "tooltip": null
       },
-      {
+      "3": {
         "name": "FBX",
         "tooltip": null
       }
-    ]
+    }
   },
   "MeshyRefineNode": {
     "description": "یک مدل پیش‌نویس ایجادشده قبلی را بهبود دهید.",
@@ -7728,18 +7728,18 @@
         "tooltip": "یک متن راهنما برای هدایت فرایند بافت‌دهی وارد کنید. حداکثر ۶۰۰ کاراکتر. نمی‌توان همزمان با 'texture_image' استفاده کرد."
       }
     },
-    "outputs": [
-      null,
-      null,
-      {
+    "outputs": {
+      "0": null,
+      "1": null,
+      "2": {
         "name": "GLB",
         "tooltip": null
       },
-      {
+      "3": {
         "name": "FBX",
         "tooltip": null
       }
-    ]
+    }
   },
   "MeshyRigModelNode": {
     "description": "یک کاراکتر ریگ‌شده در فرمت‌های استاندارد ارائه می‌دهد. ریگ خودکار در حال حاضر برای مش‌های بدون بافت، دارایی‌های غیرانسان‌نما یا دارایی‌های انسان‌نمایی که ساختار اندام و بدن آن‌ها نامشخص است، مناسب نیست.",
@@ -7757,18 +7757,18 @@
         "tooltip": "تصویر بافت رنگ پایه مدل با UV باز شده."
       }
     },
-    "outputs": [
-      null,
-      null,
-      {
+    "outputs": {
+      "0": null,
+      "1": null,
+      "2": {
         "name": "GLB",
         "tooltip": null
       },
-      {
+      "3": {
         "name": "FBX",
         "tooltip": null
       }
-    ]
+    }
   },
   "MeshyTextToModelNode": {
     "display_name": "Meshy: متن به مدل",
@@ -7807,18 +7807,18 @@
         "name": "symmetry_mode"
       }
     },
-    "outputs": [
-      null,
-      null,
-      {
+    "outputs": {
+      "0": null,
+      "1": null,
+      "2": {
         "name": "GLB",
         "tooltip": null
       },
-      {
+      "3": {
         "name": "FBX",
         "tooltip": null
       }
-    ]
+    }
   },
   "MeshyTextureNode": {
     "display_name": "Meshy: مدل بافت",
@@ -7845,18 +7845,18 @@
         "tooltip": "سبک بافت مورد نظر شیء را با استفاده از متن توصیف کنید. حداکثر ۶۰۰ کاراکتر. نمی‌توان همزمان با 'image_style' استفاده کرد."
       }
     },
-    "outputs": [
-      null,
-      null,
-      {
+    "outputs": {
+      "0": null,
+      "1": null,
+      "2": {
         "name": "GLB",
         "tooltip": null
       },
-      {
+      "3": {
         "name": "FBX",
         "tooltip": null
       }
-    ]
+    }
   },
   "MinimaxHailuoVideoNode": {
     "description": "تولید ویدئو از طریق پرامپت، با امکان استفاده از فریم ابتدایی با مدل جدید MiniMax Hailuo-02.",
@@ -12049,13 +12049,13 @@
         "name": "Seed"
       }
     },
-    "outputs": [
-      null,
-      {
+    "outputs": {
+      "0": null,
+      "1": {
         "name": "GLB",
         "tooltip": null
       }
-    ]
+    }
   },
   "Rodin3D_Gen2": {
     "description": "تولید دارایی‌های سه‌بعدی با استفاده از Rodin API",
@@ -12077,13 +12077,13 @@
         "name": "TAPose"
       }
     },
-    "outputs": [
-      null,
-      {
+    "outputs": {
+      "0": null,
+      "1": {
         "name": "GLB",
         "tooltip": null
       }
-    ]
+    }
   },
   "Rodin3D_Regular": {
     "description": "تولید دارایی‌های سه‌بعدی با استفاده از Rodin API",
@@ -12102,13 +12102,13 @@
         "name": "Seed"
       }
     },
-    "outputs": [
-      null,
-      {
+    "outputs": {
+      "0": null,
+      "1": {
         "name": "GLB",
         "tooltip": null
       }
-    ]
+    }
   },
   "Rodin3D_Sketch": {
     "description": "تولید دارایی‌های سه‌بعدی با استفاده از Rodin API",
@@ -12121,13 +12121,13 @@
         "name": "Seed"
       }
     },
-    "outputs": [
-      null,
-      {
+    "outputs": {
+      "0": null,
+      "1": {
         "name": "GLB",
         "tooltip": null
       }
-    ]
+    }
   },
   "Rodin3D_Smooth": {
     "description": "تولید دارایی‌های سه‌بعدی با استفاده از Rodin API",
@@ -12146,13 +12146,13 @@
         "name": "Seed"
       }
     },
-    "outputs": [
-      null,
-      {
+    "outputs": {
+      "0": null,
+      "1": {
         "name": "GLB",
         "tooltip": null
       }
-    ]
+    }
   },
   "RunwayFirstLastFrameNode": {
     "description": "اولین و آخرین فریم کلیدی را بارگذاری کنید، یک پرامپت بنویسید و ویدیو تولید کنید. انتقال‌های پیچیده‌تر، مانند زمانی که فریم آخر کاملاً با فریم اول متفاوت است، ممکن است از مدت زمان طولانی‌تر ۱۰ ثانیه‌ای بهره‌مند شوند. این کار به تولید اجازه می‌دهد تا زمان بیشتری برای انتقال روان بین دو ورودی داشته باشد. پیش از شروع، این نکات کلیدی را مرور کنید تا مطمئن شوید انتخاب‌های ورودی شما باعث موفقیت تولید خواهد شد: https://help.runwayml.com/hc/en-us/articles/34170748696595-Creating-with-Keyframes-on-Gen-3.",
@@ -14148,17 +14148,17 @@
         "tooltip": "seed تعیین می‌کند که node باید دوباره اجرا شود یا خیر؛ نتایج صرف‌نظر از seed غیرقطعی هستند."
       }
     },
-    "outputs": [
-      null,
-      {
+    "outputs": {
+      "0": null,
+      "1": {
         "name": "GLB",
         "tooltip": null
       },
-      {
+      "2": {
         "name": "OBJ",
         "tooltip": null
       }
-    ]
+    }
   },
   "TencentTextToModelNode": {
     "display_name": "Hunyuan3D: تبدیل متن به مدل (پیشرفته)",
@@ -14188,17 +14188,17 @@
         "tooltip": "seed تعیین می‌کند که node باید دوباره اجرا شود یا خیر؛ نتایج صرف‌نظر از seed غیرقطعی هستند."
       }
     },
-    "outputs": [
-      null,
-      {
+    "outputs": {
+      "0": null,
+      "1": {
         "name": "GLB",
         "tooltip": null
       },
-      {
+      "2": {
         "name": "OBJ",
         "tooltip": null
       }
-    ]
+    }
   },
   "TextEncodeAceStepAudio": {
     "display_name": "TextEncodeAceStepAudio",
@@ -14844,14 +14844,14 @@
         "name": "بذر تکسچر"
       }
     },
-    "outputs": [
-      null,
-      null,
-      {
+    "outputs": {
+      "0": null,
+      "1": null,
+      "2": {
         "name": "GLB",
         "tooltip": null
       }
-    ]
+    }
   },
   "TripoMultiviewToModelNode": {
     "display_name": "Tripo: چندنما به مدل",
@@ -14903,14 +14903,14 @@
         "name": "بذر تکسچر"
       }
     },
-    "outputs": [
-      null,
-      null,
-      {
+    "outputs": {
+      "0": null,
+      "1": null,
+      "2": {
         "name": "GLB",
         "tooltip": null
       }
-    ]
+    }
   },
   "TripoRefineNode": {
     "description": "بهبود یک مدل پیش‌نویس که فقط توسط مدل‌های Tripo نسخه ۱.۴ ایجاد شده است.",
@@ -14921,14 +14921,14 @@
         "tooltip": "باید یک مدل Tripo نسخه ۱.۴ باشد"
       }
     },
-    "outputs": [
-      null,
-      null,
-      {
+    "outputs": {
+      "0": null,
+      "1": null,
+      "2": {
         "name": "GLB",
         "tooltip": null
       }
-    ]
+    }
   },
   "TripoRetargetNode": {
     "display_name": "Tripo: هدف‌گذاری مجدد مدل ریگ‌شده",
@@ -14940,14 +14940,14 @@
         "name": "شناسه وظیفه مدل اصلی"
       }
     },
-    "outputs": [
-      null,
-      null,
-      {
+    "outputs": {
+      "0": null,
+      "1": null,
+      "2": {
         "name": "GLB",
         "tooltip": null
       }
-    ]
+    }
   },
   "TripoRigNode": {
     "display_name": "Tripo: ریگ مدل",
@@ -14956,14 +14956,14 @@
         "name": "شناسه وظیفه مدل اصلی"
       }
     },
-    "outputs": [
-      null,
-      null,
-      {
+    "outputs": {
+      "0": null,
+      "1": null,
+      "2": {
         "name": "GLB",
         "tooltip": null
       }
-    ]
+    }
   },
   "TripoTextToModelNode": {
     "display_name": "Tripo: متن به مدل",
@@ -15008,14 +15008,14 @@
         "name": "بذر تکسچر"
       }
     },
-    "outputs": [
-      null,
-      null,
-      {
+    "outputs": {
+      "0": null,
+      "1": null,
+      "2": {
         "name": "GLB",
         "tooltip": null
       }
-    ]
+    }
   },
   "TripoTextureNode": {
     "display_name": "Tripo: مدل بافت",
@@ -15039,14 +15039,14 @@
         "name": "بذر بافت"
       }
     },
-    "outputs": [
-      null,
-      null,
-      {
+    "outputs": {
+      "0": null,
+      "1": null,
+      "2": {
         "name": "GLB",
         "tooltip": null
       }
-    ]
+    }
   },
   "TruncateText": {
     "display_name": "کوتاه‌سازی متن",

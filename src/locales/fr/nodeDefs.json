@@ -1590,14 +1590,14 @@
         "name": "secondes_total"
       }
     },
-    "outputs": [
-      {
+    "outputs": {
+      "0": {
         "tooltip": null
       },
-      {
+      "1": {
         "tooltip": null
       }
-    ]
+    }
   },
   "ConditioningTimestepsRange": {
     "display_name": "Plage de pas de temps",
@@ -2088,13 +2088,13 @@
       "index": {},
       "option1": {}
     },
-    "outputs": [
-      null,
-      {
+    "outputs": {
+      "0": null,
+      "1": {
         "name": "INDEX",
         "tooltip": null
       }
-    ]
+    }
   },
   "DiffControlNetLoader": {
     "display_name": "Charger le modèle ControlNet (diff)",
@@ -3394,17 +3394,17 @@
         "name": "image"
       }
     },
-    "outputs": [
-      {
+    "outputs": {
+      "0": {
         "tooltip": null
       },
-      {
+      "1": {
         "tooltip": null
       },
-      {
+      "2": {
         "tooltip": null
       }
-    ]
+    }
   },
   "GetVideoComponents": {
     "description": "Extrait tous les composants d'une vidéo : images, audio et fréquence d’images.",
@@ -3636,14 +3636,14 @@
         "name": "sortie_vision_clip"
       }
     },
-    "outputs": [
-      {
+    "outputs": {
+      "0": {
         "tooltip": null
       },
-      {
+      "1": {
         "tooltip": null
       }
-    ]
+    }
   },
   "Hunyuan3Dv2ConditioningMultiView": {
     "display_name": "Hunyuan3Dv2ConditioningMultiView",
@@ -3661,14 +3661,14 @@
         "name": "droite"
       }
     },
-    "outputs": [
-      {
+    "outputs": {
+      "0": {
         "tooltip": null
       },
-      {
+      "1": {
         "tooltip": null
       }
-    ]
+    }
   },
   "HunyuanImageToVideo": {
     "display_name": "HunyuanImageToVideo",
@@ -6612,26 +6612,26 @@
         "name": "largeur"
       }
     },
-    "outputs": [
-      {
+    "outputs": {
+      "0": {
         "tooltip": null
       },
-      {
+      "1": {
         "tooltip": null
       },
-      {
+      "2": {
         "tooltip": null
       },
-      {
+      "3": {
         "tooltip": null
       },
-      {
+      "4": {
         "tooltip": null
       },
-      {
+      "5": {
         "tooltip": null
       }
-    ]
+    }
   },
   "LoadAudio": {
     "display_name": "ChargerAudio",
@@ -6896,11 +6896,11 @@
         "tooltip": "Intensité de modification du modèle de diffusion. Cette valeur peut être négative."
       }
     },
-    "outputs": [
-      {
+    "outputs": {
+      "0": {
         "name": "model"
       }
-    ]
+    }
   },
   "LoraSave": {
     "display_name": "Extraire et Sauvegarder Lora",
@@ -7577,17 +7577,17 @@
         "name": "rig_task_id"
       }
     },
-    "outputs": [
-      null,
-      {
+    "outputs": {
+      "0": null,
+      "1": {
         "name": "GLB",
         "tooltip": null
       },
-      {
+      "2": {
         "name": "FBX",
         "tooltip": null
       }
-    ]
+    }
   },
   "MeshyImageToModelNode": {
     "display_name": "Meshy : Image vers modèle",
@@ -7633,18 +7633,18 @@
         "name": "symmetry_mode"
       }
     },
-    "outputs": [
-      null,
-      null,
-      {
+    "outputs": {
+      "0": null,
+      "1": null,
+      "2": {
         "name": "GLB",
         "tooltip": null
       },
-      {
+      "3": {
         "name": "FBX",
         "tooltip": null
       }
-    ]
+    }
   },
   "MeshyMultiImageToModelNode": {
     "display_name": "Meshy : Multi-image vers modèle",
@@ -7690,18 +7690,18 @@
         "name": "symmetry_mode"
       }
     },
-    "outputs": [
-      null,
-      null,
-      {
+    "outputs": {
+      "0": null,
+      "1": null,
+      "2": {
         "name": "GLB",
         "tooltip": null
       },
-      {
+      "3": {
         "name": "FBX",
         "tooltip": null
       }
-    ]
+    }
   },
   "MeshyRefineNode": {
     "description": "Affinez un modèle brouillon précédemment créé.",
@@ -7726,18 +7726,18 @@
         "tooltip": "Fournissez une invite textuelle pour guider le processus de texturage. Maximum 600 caractères. Ne peut pas être utilisé en même temps que 'texture_image'."
       }
     },
-    "outputs": [
-      null,
-      null,
-      {
+    "outputs": {
+      "0": null,
+      "1": null,
+      "2": {
         "name": "GLB",
         "tooltip": null
       },
-      {
+      "3": {
         "name": "FBX",
         "tooltip": null
       }
-    ]
+    }
   },
   "MeshyRigModelNode": {
     "description": "Fournit un personnage riggé dans des formats standards. L’auto-rigging n’est actuellement pas adapté aux maillages non texturés, aux assets non humanoïdes ou aux assets humanoïdes avec une structure de membres et de corps peu claire.",
@@ -7755,18 +7755,18 @@
         "tooltip": "L’image de texture couleur de base UV-dépliée du modèle."
       }
     },
-    "outputs": [
-      null,
-      null,
-      {
+    "outputs": {
+      "0": null,
+      "1": null,
+      "2": {
         "name": "GLB",
         "tooltip": null
       },
-      {
+      "3": {
         "name": "FBX",
         "tooltip": null
       }
-    ]
+    }
   },
   "MeshyTextToModelNode": {
     "display_name": "Meshy : Texte vers modèle",
@@ -7805,18 +7805,18 @@
         "name": "mode_symétrie"
       }
     },
-    "outputs": [
-      null,
-      null,
-      {
+    "outputs": {
+      "0": null,
+      "1": null,
+      "2": {
         "name": "GLB",
         "tooltip": null
       },
-      {
+      "3": {
         "name": "FBX",
         "tooltip": null
       }
-    ]
+    }
   },
   "MeshyTextureNode": {
     "display_name": "Meshy : Modèle de texture",
@@ -7843,18 +7843,18 @@
         "tooltip": "Décrivez le style de texture souhaité pour l’objet en utilisant du texte. 600 caractères maximum. Ne peut pas être utilisé en même temps que « image_style »."
       }
     },
-    "outputs": [
-      null,
-      null,
-      {
+    "outputs": {
+      "0": null,
+      "1": null,
+      "2": {
         "name": "GLB",
         "tooltip": null
       },
-      {
+      "3": {
         "name": "FBX",
         "tooltip": null
       }
-    ]
+    }
   },
   "MinimaxHailuoVideoNode": {
     "description": "Génère des vidéos à partir d'un prompt, avec option d'image de départ utilisant le nouveau modèle MiniMax Hailuo-02.",
@@ -12047,13 +12047,13 @@
         "name": "Graine"
       }
     },
-    "outputs": [
-      null,
-      {
+    "outputs": {
+      "0": null,
+      "1": {
         "name": "GLB",
         "tooltip": null
       }
-    ]
+    }
   },
   "Rodin3D_Gen2": {
     "description": "Générer des actifs 3D en utilisant l'API Rodin",
@@ -12075,13 +12075,13 @@
         "name": "PoseTAP"
       }
     },
-    "outputs": [
-      null,
-      {
+    "outputs": {
+      "0": null,
+      "1": {
         "name": "GLB",
         "tooltip": null
       }
-    ]
+    }
   },
   "Rodin3D_Regular": {
     "description": "Générer des actifs 3D en utilisant l'API Rodin",
@@ -12100,13 +12100,13 @@
         "name": "Graine"
       }
     },
-    "outputs": [
-      null,
-      {
+    "outputs": {
+      "0": null,
+      "1": {
         "name": "GLB",
         "tooltip": null
       }
-    ]
+    }
   },
   "Rodin3D_Sketch": {
     "description": "Générer des actifs 3D en utilisant l'API Rodin",
@@ -12119,13 +12119,13 @@
         "name": "Graine"
       }
     },
-    "outputs": [
-      null,
-      {
+    "outputs": {
+      "0": null,
+      "1": {
         "name": "GLB",
         "tooltip": null
       }
-    ]
+    }
   },
   "Rodin3D_Smooth": {
     "description": "Générer des ressources 3D avec l'API Rodin",
@@ -12144,13 +12144,13 @@
         "name": "Graine"
       }
     },
-    "outputs": [
-      null,
-      {
+    "outputs": {
+      "0": null,
+      "1": {
         "name": "GLB",
         "tooltip": null
       }
-    ]
+    }
   },
   "RunwayFirstLastFrameNode": {
     "description": "Téléchargez les premières et dernières images clés, rédigez un prompt et générez une vidéo. Les transitions plus complexes, comme lorsque la dernière image est complètement différente de la première, peuvent bénéficier de la durée plus longue de 10s. Cela donnerait à la génération plus de temps pour effectuer une transition fluide entre les deux entrées. Avant de commencer, consultez ces bonnes pratiques pour vous assurer que vos sélections d'entrée permettront à votre génération de réussir : https://help.runwayml.com/hc/en-us/articles/34170748696595-Creating-with-Keyframes-on-Gen-3.",
@@ -12444,14 +12444,14 @@
         "name": "sigmas"
       }
     },
-    "outputs": [
-      {
+    "outputs": {
+      "0": {
         "tooltip": null
       },
-      {
+      "1": {
         "tooltip": null
       }
-    ]
+    }
   },
   "SamplerCustomAdvanced": {
     "display_name": "ÉchantillonneurPersonnaliséAvancé",
@@ -12472,14 +12472,14 @@
         "name": "sigmas"
       }
     },
-    "outputs": [
-      {
+    "outputs": {
+      "0": {
         "tooltip": null
       },
-      {
+      "1": {
         "tooltip": null
       }
-    ]
+    }
   },
   "SamplerDPMAdaptative": {
     "display_name": "SamplerDPMAdaptative",
@@ -12777,11 +12777,11 @@
         "name": "pourcent_échantillonnage"
       }
     },
-    "outputs": [
-      {
+    "outputs": {
+      "0": {
         "tooltip": null
       }
-    ]
+    }
   },
   "SaveAnimatedPNG": {
     "display_name": "EnregistrerPNGAnimé",
@@ -13336,14 +13336,14 @@
         "name": "audio"
       }
     },
-    "outputs": [
-      {
+    "outputs": {
+      "0": {
         "tooltip": null
       },
-      {
+      "1": {
         "tooltip": null
       }
-    ]
+    }
   },
   "SplitImageWithAlpha": {
     "display_name": "Diviser l'image avec Alpha",
@@ -13371,14 +13371,14 @@
         "name": "étape"
       }
     },
-    "outputs": [
-      {
+    "outputs": {
+      "0": {
         "tooltip": null
       },
-      {
+      "1": {
         "tooltip": null
       }
-    ]
+    }
   },
   "SplitSigmasDenoise": {
     "display_name": "SplitSigmasDenoise",
@@ -13390,14 +13390,14 @@
         "name": "sigmas"
       }
     },
-    "outputs": [
-      {
+    "outputs": {
+      "0": {
         "tooltip": null
       },
-      {
+      "1": {
         "tooltip": null
       }
-    ]
+    }
   },
   "StabilityAudioInpaint": {
     "description": "Transforme une partie d'un échantillon audio existant en utilisant des instructions textuelles.",
@@ -14135,17 +14135,17 @@
         "tooltip": "La graine contrôle si le nœud doit être relancé ; les résultats restent non déterministes quelle que soit la graine."
       }
     },
-    "outputs": [
-      null,
-      {
+    "outputs": {
+      "0": null,
+      "1": {
         "name": "GLB",
         "tooltip": null
       },
-      {
+      "2": {
         "name": "OBJ",
         "tooltip": null
       }
-    ]
+    }
   },
   "TencentTextToModelNode": {
     "display_name": "Hunyuan3D : Texte vers Modèle (Pro)",
@@ -14175,17 +14175,17 @@
         "tooltip": "La graine contrôle si le nœud doit être relancé ; les résultats restent non déterministes quelle que soit la graine."
       }
     },
-    "outputs": [
-      null,
-      {
+    "outputs": {
+      "0": null,
+      "1": {
         "name": "GLB",
         "tooltip": null
       },
-      {
+      "2": {
         "name": "OBJ",
         "tooltip": null
       }
-    ]
+    }
   },
   "TextEncodeAceStepAudio": {
     "display_name": "TextEncodeAceStepAudio",
@@ -14652,20 +14652,20 @@
         "tooltip": "Le type de données à utiliser pour l'entraînement."
       }
     },
-    "outputs": [
-      {
+    "outputs": {
+      "0": {
         "tooltip": "Modèle avec LoRA appliqué"
       },
-      {
+      "1": {
         "tooltip": "Poids LoRA"
       },
-      {
+      "2": {
         "tooltip": "Historique de la perte"
       },
-      {
+      "3": {
         "tooltip": "Nombre total d’étapes d’entraînement"
       }
-    ]
+    }
   },
   "TrimAudioDuration": {
     "description": "Tronquer le tenseur audio dans la plage de temps choisie.",
@@ -14831,14 +14831,14 @@
         "name": "graine_texture"
       }
     },
-    "outputs": [
-      null,
-      null,
-      {
+    "outputs": {
+      "0": null,
+      "1": null,
+      "2": {
         "name": "GLB",
         "tooltip": null
       }
-    ]
+    }
   },
   "TripoMultiviewToModelNode": {
     "display_name": "Tripo : Multivue vers Modèle",
@@ -14890,14 +14890,14 @@
         "name": "graine_texture"
       }
     },
-    "outputs": [
-      null,
-      null,
-      {
+    "outputs": {
+      "0": null,
+      "1": null,
+      "2": {
         "name": "GLB",
         "tooltip": null
       }
-    ]
+    }
   },
   "TripoRefineNode": {
     "description": "Affinez un modèle d'ébauche créé uniquement par les modèles Tripo v1.4.",
@@ -14908,14 +14908,14 @@
         "tooltip": "Doit être un modèle Tripo v1.4"
       }
     },
-    "outputs": [
-      null,
-      null,
-      {
+    "outputs": {
+      "0": null,
+      "1": null,
+      "2": {
         "name": "GLB",
         "tooltip": null
       }
-    ]
+    }
   },
   "TripoRetargetNode": {
     "display_name": "Tripo : Modèle squeletté redirigé",
@@ -14927,14 +14927,14 @@
         "name": "ID_tâche_modèle_original"
       }
     },
-    "outputs": [
-      null,
-      null,
-      {
+    "outputs": {
+      "0": null,
+      "1": null,
+      "2": {
         "name": "GLB",
         "tooltip": null
       }
-    ]
+    }
   },
   "TripoRigNode": {
     "display_name": "Tripo : Modèle squeletté",
@@ -14943,14 +14943,14 @@
         "name": "ID_tâche_modèle_original"
       }
     },
-    "outputs": [
-      null,
-      null,
-      {
+    "outputs": {
+      "0": null,
+      "1": null,
+      "2": {
         "name": "GLB",
         "tooltip": null
       }
-    ]
+    }
   },
   "TripoTextToModelNode": {
     "display_name": "Tripo : Texte vers Modèle",
@@ -14995,14 +14995,14 @@
         "name": "texture_graine"
       }
     },
-    "outputs": [
-      null,
-      null,
-      {
+    "outputs": {
+      "0": null,
+      "1": null,
+      "2": {
         "name": "GLB",
         "tooltip": null
       }
-    ]
+    }
   },
   "TripoTextureNode": {
     "display_name": "Tripo : Modèle de texture",
@@ -15026,14 +15026,14 @@
         "name": "texture_graine"
       }
     },
-    "outputs": [
-      null,
-      null,
-      {
+    "outputs": {
+      "0": null,
+      "1": null,
+      "2": {
         "name": "GLB",
         "tooltip": null
       }
-    ]
+    }
   },
   "TruncateText": {
     "display_name": "Tronquer le texte",

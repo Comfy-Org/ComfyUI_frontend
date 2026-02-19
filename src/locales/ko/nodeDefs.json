@@ -1590,14 +1590,14 @@
         "name": "전체(초)"
       }
     },
-    "outputs": [
-      {
+    "outputs": {
+      "0": {
         "tooltip": null
       },
-      {
+      "1": {
         "tooltip": null
       }
-    ]
+    }
   },
   "ConditioningTimestepsRange": {
     "display_name": "조건 (타임스텝 범위)",
@@ -2088,13 +2088,13 @@
       "index": {},
       "option1": {}
     },
-    "outputs": [
-      null,
-      {
+    "outputs": {
+      "0": null,
+      "1": {
         "name": "INDEX",
         "tooltip": null
       }
-    ]
+    }
   },
   "DiffControlNetLoader": {
     "display_name": "컨트롤넷 모델 로드 (차이)",
@@ -3394,17 +3394,17 @@
         "name": "이미지"
       }
     },
-    "outputs": [
-      {
+    "outputs": {
+      "0": {
         "tooltip": null
       },
-      {
+      "1": {
         "tooltip": null
       },
-      {
+      "2": {
         "tooltip": null
       }
-    ]
+    }
   },
   "GetVideoComponents": {
     "description": "비디오에서 모든 컴포넌트(프레임, 오디오, 프레임레이트)를 추출합니다.",
@@ -3636,14 +3636,14 @@
         "name": "clip_vision_output"
       }
     },
-    "outputs": [
-      {
+    "outputs": {
+      "0": {
         "tooltip": null
       },
-      {
+      "1": {
         "tooltip": null
       }
-    ]
+    }
   },
   "Hunyuan3Dv2ConditioningMultiView": {
     "display_name": "Hunyuan3Dv2ConditioningMultiView",
@@ -3661,14 +3661,14 @@
         "name": "오른쪽"
       }
     },
-    "outputs": [
-      {
+    "outputs": {
+      "0": {
         "tooltip": null
       },
-      {
+      "1": {
         "tooltip": null
       }
-    ]
+    }
   },
   "HunyuanImageToVideo": {
     "display_name": "HunyuanImageToVideo",
@@ -6612,26 +6612,26 @@
         "name": "너비"
       }
     },
-    "outputs": [
-      {
+    "outputs": {
+      "0": {
         "tooltip": null
       },
-      {
+      "1": {
         "tooltip": null
       },
-      {
+      "2": {
         "tooltip": null
       },
-      {
+      "3": {
         "tooltip": null
       },
-      {
+      "4": {
         "tooltip": null
       },
-      {
+      "5": {
         "tooltip": null
       }
-    ]
+    }
   },
   "LoadAudio": {
     "display_name": "오디오 로드",
@@ -6896,11 +6896,11 @@
         "tooltip": "디퓨전 모델을 수정하는 강도입니다. 이 값은 음수일 수 있습니다."
       }
     },
-    "outputs": [
-      {
+    "outputs": {
+      "0": {
         "name": "model"
       }
-    ]
+    }
   },
   "LoraSave": {
     "display_name": "LoRA 추출 및 저장",
@@ -7577,17 +7577,17 @@
         "name": "rig_task_id"
       }
     },
-    "outputs": [
-      null,
-      {
+    "outputs": {
+      "0": null,
+      "1": {
         "name": "GLB",
         "tooltip": null
       },
-      {
+      "2": {
         "name": "FBX",
         "tooltip": null
       }
-    ]
+    }
   },
   "MeshyImageToModelNode": {
     "display_name": "Meshy: 이미지 → 모델",
@@ -7633,18 +7633,18 @@
         "name": "symmetry_mode"
       }
     },
-    "outputs": [
-      null,
-      null,
-      {
+    "outputs": {
+      "0": null,
+      "1": null,
+      "2": {
         "name": "GLB",
         "tooltip": null
       },
-      {
+      "3": {
         "name": "FBX",
         "tooltip": null
       }
-    ]
+    }
   },
   "MeshyMultiImageToModelNode": {
     "display_name": "Meshy: 다중 이미지 → 모델",
@@ -7690,18 +7690,18 @@
         "name": "symmetry_mode"
       }
     },
-    "outputs": [
-      null,
-      null,
-      {
+    "outputs": {
+      "0": null,
+      "1": null,
+      "2": {
         "name": "GLB",
         "tooltip": null
       },
-      {
+      "3": {
         "name": "FBX",
         "tooltip": null
       }
-    ]
+    }
   },
   "MeshyRefineNode": {
     "description": "이전에 생성된 초안 모델을 다듬습니다.",
@@ -7726,18 +7726,18 @@
         "tooltip": "텍스처링 과정을 안내할 텍스트 프롬프트를 입력하세요. 최대 600자. 'texture_image'와 동시에 사용할 수 없습니다."
       }
     },
-    "outputs": [
-      null,
-      null,
-      {
+    "outputs": {
+      "0": null,
+      "1": null,
+      "2": {
         "name": "GLB",
         "tooltip": null
       },
-      {
+      "3": {
         "name": "FBX",
         "tooltip": null
       }
-    ]
+    }
   },
   "MeshyRigModelNode": {
     "description": "표준 포맷으로 리깅된 캐릭터를 제공합니다. 자동 리깅은 텍스처가 없는 메시, 비휴머노이드 자산, 또는 팔다리와 신체 구조가 불분명한 휴머노이드 자산에는 적합하지 않습니다.",
@@ -7755,18 +7755,18 @@
         "tooltip": "모델의 UV 언랩된 기본 색상 텍스처 이미지입니다."
       }
     },
-    "outputs": [
-      null,
-      null,
-      {
+    "outputs": {
+      "0": null,
+      "1": null,
+      "2": {
         "name": "GLB",
         "tooltip": null
       },
-      {
+      "3": {
         "name": "FBX",
         "tooltip": null
       }
-    ]
+    }
   },
   "MeshyTextToModelNode": {
     "display_name": "Meshy: 텍스트 → 모델",
@@ -7805,18 +7805,18 @@
         "name": "symmetry_mode"
       }
     },
-    "outputs": [
-      null,
-      null,
-      {
+    "outputs": {
+      "0": null,
+      "1": null,
+      "2": {
         "name": "GLB",
         "tooltip": null
       },
-      {
+      "3": {
         "name": "FBX",
         "tooltip": null
       }
-    ]
+    }
   },
   "MeshyTextureNode": {
     "display_name": "Meshy: 텍스처 모델",
@@ -7843,18 +7843,18 @@
         "tooltip": "오브젝트의 원하는 텍스처 스타일을 텍스트로 설명하세요. 최대 600자까지 입력할 수 있습니다. 'image_style'과 동시에 사용할 수 없습니다."
       }
     },
-    "outputs": [
-      null,
-      null,
-      {
+    "outputs": {
+      "0": null,
+      "1": null,
+      "2": {
         "name": "GLB",
         "tooltip": null
       },
-      {
+      "3": {
         "name": "FBX",
         "tooltip": null
       }
-    ]
+    }
   },
   "MinimaxHailuoVideoNode": {
     "description": "새로운 MiniMax Hailuo-02 모델을 사용하여 프롬프트로 비디오를 생성하며, 선택적으로 시작 프레임을 사용할 수 있습니다.",
@@ -12047,13 +12047,13 @@
         "name": "시드"
       }
     },
-    "outputs": [
-      null,
-      {
+    "outputs": {
+      "0": null,
+      "1": {
         "name": "GLB",
         "tooltip": null
       }
-    ]
+    }
   },
   "Rodin3D_Gen2": {
     "description": "Rodin API를 사용하여 3D 에셋 생성",
@@ -12075,13 +12075,13 @@
         "name": "TAPose"
       }
     },
-    "outputs": [
-      null,
-      {
+    "outputs": {
+      "0": null,
+      "1": {
         "name": "GLB",
         "tooltip": null
       }
-    ]
+    }
   },
   "Rodin3D_Regular": {
     "description": "Rodin API를 사용하여 3D 에셋 생성",
@@ -12100,13 +12100,13 @@
         "name": "시드"
       }
     },
-    "outputs": [
-      null,
-      {
+    "outputs": {
+      "0": null,
+      "1": {
         "name": "GLB",
         "tooltip": null
       }
-    ]
+    }
   },
   "Rodin3D_Sketch": {
     "description": "Rodin API를 사용하여 3D 에셋 생성",
@@ -12119,13 +12119,13 @@
         "name": "시드"
       }
     },
-    "outputs": [
-      null,
-      {
+    "outputs": {
+      "0": null,
+      "1": {
         "name": "GLB",
         "tooltip": null
       }
-    ]
+    }
   },
   "Rodin3D_Smooth": {
     "description": "Rodin API를 사용하여 3D 에셋 생성",
@@ -12144,13 +12144,13 @@
         "name": "시드"
       }
     },
-    "outputs": [
-      null,
-      {
+    "outputs": {
+      "0": null,
+      "1": {
         "name": "GLB",
         "tooltip": null
       }
-    ]
+    }
   },
   "RunwayFirstLastFrameNode": {
     "description": "첫 번째와 마지막 키프레임을 업로드하고 프롬프트를 작성하여 비디오를 생성합니다. 마지막 프레임이 첫 번째 프레임과 완전히 다른 경우와 같은 복잡한 전환은 10초의 긴 지속 시간을 사용하는 것이 좋습니다. 이렇게 하면 두 입력 사이를 부드럽게 전환할 수 있는 시간이 더 주어집니다. 시작하기 전에 입력 선택이 생성 성공을 보장할 수 있도록 다음 모범 사례를 검토하세요: https://help.runwayml.com/hc/en-us/articles/34170748696595-Creating-with-Keyframes-on-Gen-3.",
@@ -12444,14 +12444,14 @@
         "name": "시그마 배열"
       }
     },
-    "outputs": [
-      {
+    "outputs": {
+      "0": {
         "tooltip": null
       },
-      {
+      "1": {
         "tooltip": null
       }
-    ]
+    }
   },
   "SamplerCustomAdvanced": {
     "display_name": "고급 사용자 정의 샘플러",
@@ -12472,14 +12472,14 @@
         "name": "시그마 배열"
       }
     },
-    "outputs": [
-      {
+    "outputs": {
+      "0": {
         "tooltip": null
       },
-      {
+      "1": {
         "tooltip": null
       }
-    ]
+    }
   },
   "SamplerDPMAdaptative": {
     "display_name": "DPMAdaptive 샘플러",
@@ -12777,11 +12777,11 @@
         "name": "샘플링 백분율"
       }
     },
-    "outputs": [
-      {
+    "outputs": {
+      "0": {
         "tooltip": null
       }
-    ]
+    }
   },
   "SaveAnimatedPNG": {
     "display_name": "애니메이션 PNG 저장",
@@ -13336,14 +13336,14 @@
         "name": "오디오"
       }
     },
-    "outputs": [
-      {
+    "outputs": {
+      "0": {
         "tooltip": null
       },
-      {
+      "1": {
         "tooltip": null
       }
-    ]
+    }
   },
   "SplitImageWithAlpha": {
     "display_name": "이미지와 알파채널 분리",
@@ -13371,14 +13371,14 @@
         "name": "분할 스텝"
       }
     },
-    "outputs": [
-      {
+    "outputs": {
+      "0": {
         "tooltip": null
       },
-      {
+      "1": {
         "tooltip": null
       }
-    ]
+    }
   },
   "SplitSigmasDenoise": {
     "display_name": "시그마 배열 분할 (노이즈 제거양)",
@@ -13390,14 +13390,14 @@
         "name": "시그마 배열"
       }
     },
-    "outputs": [
-      {
+    "outputs": {
+      "0": {
         "tooltip": null
       },
-      {
+      "1": {
         "tooltip": null
       }
-    ]
+    }
   },
   "StabilityAudioInpaint": {
     "description": "텍스트 지침을 사용하여 기존 오디오 샘플의 일부를 변환합니다.",
@@ -14135,17 +14135,17 @@
         "tooltip": "시드는 노드가 다시 실행될지 여부를 제어합니다. 시드와 관계없이 결과는 비결정적입니다."
       }
     },
-    "outputs": [
-      null,
-      {
+    "outputs": {
+      "0": null,
+      "1": {
         "name": "GLB",
         "tooltip": null
       },
-      {
+      "2": {
         "name": "OBJ",
         "tooltip": null
       }
-    ]
+    }
   },
   "TencentTextToModelNode": {
     "display_name": "Hunyuan3D: 텍스트 → 모델 (Pro)",
@@ -14175,17 +14175,17 @@
         "tooltip": "시드는 노드가 다시 실행될지 여부를 제어합니다. 시드와 관계없이 결과는 비결정적입니다."
       }
     },
-    "outputs": [
-      null,
-      {
+    "outputs": {
+      "0": null,
+      "1": {
         "name": "GLB",
         "tooltip": null
       },
-      {
+      "2": {
         "name": "OBJ",
         "tooltip": null
       }
-    ]
+    }
   },
   "TextEncodeAceStepAudio": {
     "display_name": "TextEncodeAceStepAudio",
@@ -14652,20 +14652,20 @@
         "tooltip": "훈련에 사용할 데이터 타입입니다."
       }
     },
-    "outputs": [
-      {
+    "outputs": {
+      "0": {
         "tooltip": "LoRA가 적용된 모델"
       },
-      {
+      "1": {
         "tooltip": "LoRA 가중치"
       },
-      {
+      "2": {
         "tooltip": "손실 기록"
       },
-      {
+      "3": {
         "tooltip": "총 학습 스텝"
       }
-    ]
+    }
   },
   "TrimAudioDuration": {
     "description": "오디오 텐서를 선택한 시간 범위로 자릅니다.",
@@ -14831,14 +14831,14 @@
         "name": "텍스처 시드"
       }
     },
-    "outputs": [
-      null,
-      null,
-      {
+    "outputs": {
+      "0": null,
+      "1": null,
+      "2": {
         "name": "GLB",
         "tooltip": null
       }
-    ]
+    }
   },
   "TripoMultiviewToModelNode": {
     "display_name": "Tripo: 다중 뷰에서 모델 생성",
@@ -14890,14 +14890,14 @@
         "name": "텍스처 시드"
       }
     },
-    "outputs": [
-      null,
-      null,
-      {
+    "outputs": {
+      "0": null,
+      "1": null,
+      "2": {
         "name": "GLB",
         "tooltip": null
       }
-    ]
+    }
   },
   "TripoRefineNode": {
     "description": "v1.4 Tripo 모델로 생성된 드래프트 모델만 정제합니다.",
@@ -14908,14 +14908,14 @@
         "tooltip": "v1.4 Tripo 모델이어야 합니다"
       }
     },
-    "outputs": [
-      null,
-      null,
-      {
+    "outputs": {
+      "0": null,
+      "1": null,
+      "2": {
         "name": "GLB",
         "tooltip": null
       }
-    ]
+    }
   },
   "TripoRetargetNode": {
     "display_name": "Tripo: 리깅된 모델 리타겟",
@@ -14927,14 +14927,14 @@
         "name": "원본 모델 작업 ID"
       }
     },
-    "outputs": [
-      null,
-      null,
-      {
+    "outputs": {
+      "0": null,
+      "1": null,
+      "2": {
         "name": "GLB",
         "tooltip": null
       }
-    ]
+    }
   },
   "TripoRigNode": {
     "display_name": "Tripo: 모델 리깅",
@@ -14943,14 +14943,14 @@
         "name": "원본 모델 작업 ID"
       }
     },
-    "outputs": [
-      null,
-      null,
-      {
+    "outputs": {
+      "0": null,
+      "1": null,
+      "2": {
         "name": "GLB",
         "tooltip": null
       }
-    ]
+    }
   },
   "TripoTextToModelNode": {
     "display_name": "Tripo: 텍스트에서 모델 생성",
@@ -14995,14 +14995,14 @@
         "name": "텍스처 시드"
       }
     },
-    "outputs": [
-      null,
-      null,
-      {
+    "outputs": {
+      "0": null,
+      "1": null,
+      "2": {
         "name": "GLB",
         "tooltip": null
       }
-    ]
+    }
   },
   "TripoTextureNode": {
     "display_name": "Tripo: 텍스처 모델",
@@ -15026,14 +15026,14 @@
         "name": "텍스처 시드"
       }
     },
-    "outputs": [
-      null,
-      null,
-      {
+    "outputs": {
+      "0": null,
+      "1": null,
+      "2": {
         "name": "GLB",
         "tooltip": null
       }
-    ]
+    }
   },
   "TruncateText": {
     "display_name": "텍스트 자르기",
