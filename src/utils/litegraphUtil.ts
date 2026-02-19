@@ -1,9 +1,6 @@
 import _ from 'es-toolkit/compat'
 
-import type {
-  ColorOption,
-  LGraph
-} from '@/lib/litegraph/src/litegraph'
+import type { ColorOption, LGraph } from '@/lib/litegraph/src/litegraph'
 import type { ExecutedWsMessage } from '@/schemas/apiSchema'
 import {
   LGraphCanvas,
