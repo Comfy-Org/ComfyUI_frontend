@@ -192,10 +192,10 @@ const {
   isLoading: isLoadingAssets,
   execute: reloadAssets
 } = useAsyncState(
-  async () => ({
-    assets: shareService.getWorkflowAssets(),
-    models: await shareService.getWorkflowModels()
-  }),
+  () =>
+    shareService.getShareableAssets((refined) => {
+      assetInfo.value = refined
+    }),
   { assets: [], models: [] }
 )
 

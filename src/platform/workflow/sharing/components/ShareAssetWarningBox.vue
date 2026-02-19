@@ -54,10 +54,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
-import type {
-  WorkflowAsset,
-  WorkflowModel
-} from '@/platform/workflow/sharing/types/shareTypes'
+import type { WorkflowAsset, WorkflowModel } from '@/schemas/apiSchema'
 
 const { assets, models } = defineProps<{
   assets: WorkflowAsset[]

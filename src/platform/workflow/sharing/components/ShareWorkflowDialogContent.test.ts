@@ -77,8 +77,11 @@ vi.mock('@/platform/workflow/sharing/services/workflowShareService', () => ({
         shareUrl: 'https://comfy.org/shared/test-123',
         publishedAt: new Date('2026-01-15')
       }),
-    getWorkflowAssets: () => mockShareServiceData.assets,
-    getWorkflowModels: () => Promise.resolve(mockShareServiceData.models)
+    getShareableAssets: () =>
+      Promise.resolve({
+        assets: mockShareServiceData.assets,
+        models: mockShareServiceData.models
+      })
   })
 }))
 
