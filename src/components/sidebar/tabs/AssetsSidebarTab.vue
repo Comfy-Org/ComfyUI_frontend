@@ -243,7 +243,11 @@ import { resolveOutputAssetItems } from '@/platform/assets/utils/outputAssetUtil
 import { isCloud } from '@/platform/distribution/types'
 import { useDialogStore } from '@/stores/dialogStore'
 import { ResultItemImpl } from '@/stores/queueStore'
-import { formatDuration, getMediaTypeFromFilename } from '@/utils/formatUtil'
+import {
+  formatDuration,
+  getMediaTypeFromFilename,
+  isPreviewableMediaType
+} from '@/utils/formatUtil'
 import { cn } from '@/utils/tailwindUtil'
 
 const { t } = useI18n()
@@ -404,6 +408,12 @@ const visibleAssets = computed(() => {
   return listViewSelectableAssets.value
 })
 
+const previewableVisibleAssets = computed(() =>
+  visibleAssets.value.filter((asset) =>
+    isPreviewableMediaType(getMediaTypeFromFilename(asset.name))
+  )
+)
+
 const selectedAssets = computed(() => getSelectedAssets(visibleAssets.value))
 
 const isBulkMode = computed(
@@ -429,12 +439,10 @@ watch(visibleAssets, (newAssets) => {
   // so selection stays consistent with what this view can act on.
   reconcileSelection(newAssets)
   if (currentGalleryAssetId.value && galleryActiveIndex.value !== -1) {
-    const newIndex = newAssets.findIndex(
+    const newIndex = previewableVisibleAssets.value.findIndex(
       (asset) => asset.id === currentGalleryAssetId.value
     )
-    if (newIndex !== -1) {
-      galleryActiveIndex.value = newIndex
-    }
+    galleryActiveIndex.value = newIndex
   }
 })
 
@@ -445,7 +453,7 @@ watch(galleryActiveIndex, (index) => {
 })
 
 const galleryItems = computed(() => {
-  return visibleAssets.value.map((asset) => {
+  return previewableVisibleAssets.value.map((asset) => {
     const mediaType = getMediaTypeFromFilename(asset.name)
     const resultItem = new ResultItemImpl({
       filename: asset.name,
@@ -545,6 +553,9 @@ const handleDeleteSelected = async () => {
 
 const handleZoomClick = (asset: AssetItem) => {
   const mediaType = getMediaTypeFromFilename(asset.name)
+  if (!isPreviewableMediaType(mediaType)) {
+    return
+  }
 
   if (mediaType === '3D') {
     const dialogStore = useDialogStore()
@@ -564,7 +575,9 @@ const handleZoomClick = (asset: AssetItem) => {
   }
 
   currentGalleryAssetId.value = asset.id
-  const index = visibleAssets.value.findIndex((a) => a.id === asset.id)
+  const index = previewableVisibleAssets.value.findIndex(
+    (a) => a.id === asset.id
+  )
   if (index !== -1) {
     galleryActiveIndex.value = index
   }

@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest'
 import {
   getMediaTypeFromFilename,
   highlightQuery,
+  isPreviewableMediaType,
   truncateFilename
 } from './formatUtil'
 
@@ -194,6 +195,20 @@ describe('formatUtil', () => {
       expect(result).toBe(
         '<span class="highlight">foo</span> bar <span class="highlight">foo</span>'
       )
+    })
+  })
+
+  describe('isPreviewableMediaType', () => {
+    it('returns true for image/video/audio/3D', () => {
+      expect(isPreviewableMediaType('image')).toBe(true)
+      expect(isPreviewableMediaType('video')).toBe(true)
+      expect(isPreviewableMediaType('audio')).toBe(true)
+      expect(isPreviewableMediaType('3D')).toBe(true)
+    })
+
+    it('returns false for text/other', () => {
+      expect(isPreviewableMediaType('text')).toBe(false)
+      expect(isPreviewableMediaType('other')).toBe(false)
     })
   })
 })
