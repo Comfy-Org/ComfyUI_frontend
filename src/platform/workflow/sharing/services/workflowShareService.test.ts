@@ -12,6 +12,23 @@ const mockAssetsByNodeType = vi.hoisted(
   () => new Map<string, Partial<AssetItem>[]>()
 )
 
+vi.mock('@/stores/nodeDefStore', () => ({
+  useNodeDefStore: () => ({
+    nodeDefsByName: {
+      LoadImage: {
+        inputs: {
+          image: { type: 'COMBO', image_upload: true }
+        }
+      },
+      LoadAudio: {
+        inputs: {
+          audio: { type: 'COMBO', audio_upload: true }
+        }
+      }
+    }
+  })
+}))
+
 vi.mock('@/scripts/app', () => ({
   app: {
     get rootGraph() {
