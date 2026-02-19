@@ -120,7 +120,7 @@ describe('ComfyQueueButton', () => {
     const wrapper = createWrapper()
     const queueSettingsStore = useQueueSettingsStore()
 
-    queueSettingsStore.mode = 'instant'
+    queueSettingsStore.mode = 'instant-idle'
     await nextTick()
 
     const splitButton = wrapper.get('[data-testid="queue-button"]')
@@ -135,8 +135,7 @@ describe('ComfyQueueButton', () => {
     const queueSettingsStore = useQueueSettingsStore()
     const queueStore = useQueueStore()
 
-    queueSettingsStore.mode = 'instant'
-    queueSettingsStore.instantAutoQueueActive = true
+    queueSettingsStore.mode = 'instant-running'
     queueStore.runningTasks = [createTask('run-1', 'in_progress')]
     await nextTick()
 
@@ -153,8 +152,7 @@ describe('ComfyQueueButton', () => {
     const queueStore = useQueueStore()
     const commandStore = useCommandStore()
 
-    queueSettingsStore.mode = 'instant'
-    queueSettingsStore.instantAutoQueueActive = true
+    queueSettingsStore.mode = 'instant-running'
     queueStore.runningTasks = [createTask('run-1', 'in_progress')]
     await nextTick()
 
@@ -163,8 +161,7 @@ describe('ComfyQueueButton', () => {
       .trigger('click')
     await nextTick()
 
-    expect(queueSettingsStore.mode).toBe('instant')
-    expect(queueSettingsStore.instantAutoQueueActive).toBe(false)
+    expect(queueSettingsStore.mode).toBe('instant-idle')
     const splitButtonWhileStopping = wrapper.get('[data-testid="queue-button"]')
     expect(splitButtonWhileStopping.attributes('data-label')).toBe(
       'Run (Instant)'
@@ -184,26 +181,24 @@ describe('ComfyQueueButton', () => {
     )
 
     const splitButton = wrapper.get('[data-testid="queue-button"]')
-    expect(queueSettingsStore.mode).toBe('instant')
-    expect(queueSettingsStore.instantAutoQueueActive).toBe(false)
+    expect(queueSettingsStore.mode).toBe('instant-idle')
     expect(splitButton.attributes('data-label')).toBe('Run (Instant)')
     expect(splitButton.attributes('data-severity')).toBe('primary')
     expect(wrapper.find('.icon-\\[lucide--fast-forward\\]').exists()).toBe(true)
   })
 
-  it('activates instant auto queue when queueing again', async () => {
+  it('activates instant running mode when queueing again', async () => {
     const wrapper = createWrapper()
     const queueSettingsStore = useQueueSettingsStore()
     const commandStore = useCommandStore()
 
-    queueSettingsStore.mode = 'instant'
-    queueSettingsStore.instantAutoQueueActive = false
+    queueSettingsStore.mode = 'instant-idle'
     await nextTick()
 
     await wrapper.get('[data-testid="queue-button"]').trigger('click')
     await nextTick()
 
-    expect(queueSettingsStore.instantAutoQueueActive).toBe(true)
+    expect(queueSettingsStore.mode).toBe('instant-running')
     expect(commandStore.execute).toHaveBeenCalledWith('Comfy.QueuePrompt', {
       metadata: {
         subscribe_to_run: false,

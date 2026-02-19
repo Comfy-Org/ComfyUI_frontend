@@ -22,7 +22,7 @@
             value: item.tooltip,
             showDelay: 600
           }"
-          :variant="item.key === queueMode ? 'primary' : 'secondary'"
+          :variant="item.key === selectedQueueMode ? 'primary' : 'secondary'"
           size="sm"
           class="w-full justify-start"
         >
@@ -48,18 +48,19 @@ import { useTelemetry } from '@/platform/telemetry'
 import { app } from '@/scripts/app'
 import { useCommandStore } from '@/stores/commandStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
-import { useQueueSettingsStore, useQueueStore } from '@/stores/queueStore'
+import {
+  isInstantMode,
+  isInstantRunningMode,
+  useQueueSettingsStore,
+  useQueueStore
+} from '@/stores/queueStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { graphHasMissingNodes } from '@/workbench/extensions/manager/utils/graphHasMissingNodes'
 
 import BatchCountEdit from '../BatchCountEdit.vue'
 
 const workspaceStore = useWorkspaceStore()
-const {
-  mode: queueMode,
-  batchCount,
-  instantAutoQueueActive
-} = storeToRefs(useQueueSettingsStore())
+const { mode: queueMode, batchCount } = storeToRefs(useQueueSettingsStore())
 const { activeJobsCount } = storeToRefs(useQueueStore())
 
 const nodeDefStore = useNodeDefStore()
@@ -68,6 +69,12 @@ const hasMissingNodes = computed(() =>
 )
 
 const { t } = useI18n()
+type QueueModeMenuKey = 'disabled' | 'change' | 'instant-idle'
+
+const selectedQueueMode = computed<QueueModeMenuKey>(() =>
+  isInstantMode(queueMode.value) ? 'instant-idle' : queueMode.value
+)
+
 const queueModeMenuItemLookup = computed(() => {
   const items: Record<string, MenuItem> = {
     disabled: {
@@ -76,7 +83,6 @@ const queueModeMenuItemLookup = computed(() => {
       tooltip: t('menu.disabledTooltip'),
       command: () => {
         queueMode.value = 'disabled'
-        instantAutoQueueActive.value = false
       }
     },
     change: {
@@ -88,21 +94,19 @@ const queueModeMenuItemLookup = computed(() => {
           button_id: 'queue_mode_option_run_on_change_selected'
         })
         queueMode.value = 'change'
-        instantAutoQueueActive.value = false
       }
     }
   }
   if (!isCloud) {
-    items.instant = {
-      key: 'instant',
+    items['instant-idle'] = {
+      key: 'instant-idle',
       label: `${t('menu.run')} (${t('menu.instant')})`,
       tooltip: t('menu.instantTooltip'),
       command: () => {
         useTelemetry()?.trackUiButtonClicked({
           button_id: 'queue_mode_option_run_instant_selected'
         })
-        queueMode.value = 'instant'
-        instantAutoQueueActive.value = false
+        queueMode.value = 'instant-idle'
       }
     }
   }
@@ -112,7 +116,7 @@ const queueModeMenuItemLookup = computed(() => {
 const activeQueueModeMenuItem = computed(() => {
   // Fallback to disabled mode if current mode is not available (e.g., instant mode in cloud)
   return (
-    queueModeMenuItemLookup.value[queueMode.value] ||
+    queueModeMenuItemLookup.value[selectedQueueMode.value] ||
     queueModeMenuItemLookup.value.disabled
   )
 })
@@ -121,10 +125,7 @@ const queueModeMenuItems = computed(() =>
 )
 
 const isStopInstantAction = computed(
-  () =>
-    queueMode.value === 'instant' &&
-    instantAutoQueueActive.value &&
-    activeJobsCount.value > 0
+  () => isInstantRunningMode(queueMode.value) && activeJobsCount.value > 0
 )
 
 const queueButtonLabel = computed(() =>
@@ -150,7 +151,7 @@ const iconClass = computed(() => {
   if (queueMode.value === 'disabled') {
     return 'icon-[lucide--play]'
   }
-  if (queueMode.value === 'instant') {
+  if (isInstantMode(queueMode.value)) {
     return 'icon-[lucide--fast-forward]'
   }
   if (queueMode.value === 'change') {
@@ -175,7 +176,7 @@ const queueButtonTooltip = computed(() => {
 const commandStore = useCommandStore()
 const queuePrompt = async (e: Event) => {
   if (isStopInstantAction.value) {
-    instantAutoQueueActive.value = false
+    queueMode.value = 'instant-idle'
     await commandStore.execute('Comfy.Interrupt')
     return
   }
@@ -185,8 +186,8 @@ const queuePrompt = async (e: Event) => {
     ? 'Comfy.QueuePromptFront'
     : 'Comfy.QueuePrompt'
 
-  if (queueMode.value === 'instant') {
-    instantAutoQueueActive.value = true
+  if (isInstantMode(queueMode.value)) {
+    queueMode.value = 'instant-running'
   }
 
   if (batchCount.value > 1) {
