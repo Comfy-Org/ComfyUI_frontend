@@ -35,12 +35,24 @@
         :icon-class="iconClass"
         :icon-aria-label="iconAriaLabel"
       >
-        <img
-          v-if="previewUrl"
-          :src="previewUrl"
-          :alt="previewAlt"
-          class="size-full object-cover"
-        />
+        <div v-if="previewUrl" class="relative size-full">
+          <template v-if="isVideoPreview">
+            <video
+              :src="previewUrl"
+              preload="metadata"
+              muted
+              playsinline
+              class="pointer-events-none size-full object-cover"
+            />
+            <VideoPlayOverlay size="sm" />
+          </template>
+          <img
+            v-else
+            :src="previewUrl"
+            :alt="previewAlt"
+            class="size-full object-cover"
+          />
+        </div>
         <div v-else class="flex size-full items-center justify-center">
           <i
             aria-hidden="true"
@@ -119,6 +131,8 @@ import { useProgressBarBackground } from '@/composables/useProgressBarBackground
 import Button from '@/components/ui/button/Button.vue'
 import { cn } from '@/utils/tailwindUtil'
 
+import VideoPlayOverlay from './VideoPlayOverlay.vue'
+
 const emit = defineEmits<{
   'stack-toggle': []
 }>()
@@ -130,6 +144,7 @@ const {
   iconAriaLabel,
   iconClass,
   iconWrapperClass,
+  isVideoPreview = false,
   primaryText,
   secondaryText,
   stackCount,
@@ -144,6 +159,7 @@ const {
   iconAriaLabel?: string
   iconClass?: string
   iconWrapperClass?: string
+  isVideoPreview?: boolean
   primaryText?: string
   secondaryText?: string
   stackCount?: number
