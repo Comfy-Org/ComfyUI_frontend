@@ -43,7 +43,7 @@ const zNumericInputOptions = zBaseInputOptions.extend({
   step: z.number().optional(),
   /** Note: Many node authors are using INT/FLOAT to pass list of INT/FLOAT. */
   default: z.union([z.number(), z.array(z.number())]).optional(),
-  display: z.enum(['slider', 'number', 'knob']).optional()
+  display: z.enum(['slider', 'number', 'knob', 'gradientslider']).optional()
 })
 
 export const zIntInputOptions = zNumericInputOptions.extend({
@@ -57,7 +57,10 @@ export const zIntInputOptions = zNumericInputOptions.extend({
 })
 
 export const zFloatInputOptions = zNumericInputOptions.extend({
-  round: z.union([z.number(), z.literal(false)]).optional()
+  round: z.union([z.number(), z.literal(false)]).optional(),
+  gradient_stops: z
+    .array(z.tuple([z.number(), z.number(), z.number(), z.number()]))
+    .optional()
 })
 
 export const zBooleanInputOptions = zBaseInputOptions.extend({

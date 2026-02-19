@@ -6,6 +6,7 @@ import type {
   SimplifiedWidget
 } from '@/types/simplifiedWidget'
 
+import WidgetInputNumberGradientSlider from './WidgetInputNumberGradientSlider.vue'
 import WidgetInputNumberInput from './WidgetInputNumberInput.vue'
 import WidgetInputNumberSlider from './WidgetInputNumberSlider.vue'
 import WidgetWithControl from './WidgetWithControl.vue'
@@ -19,6 +20,13 @@ const modelValue = defineModel<number>({ default: 0 })
 const hasControlAfterGenerate = computed(() => {
   return !!props.widget.controlWidget
 })
+
+const widgetComponent = computed(() => {
+  if (props.widget.type === 'gradientslider')
+    return WidgetInputNumberGradientSlider
+  if (props.widget.type === 'slider') return WidgetInputNumberSlider
+  return WidgetInputNumberInput
+})
 </script>
 
 <template>
@@ -26,18 +34,10 @@ const hasControlAfterGenerate = computed(() => {
     v-if="hasControlAfterGenerate"
     v-model="modelValue"
     :widget="widget as SimplifiedControlWidget<number>"
-    :component="
-      widget.type === 'slider'
-        ? WidgetInputNumberSlider
-        : WidgetInputNumberInput
-    "
+    :component="widgetComponent"
   />
   <component
-    :is="
-      widget.type === 'slider'
-        ? WidgetInputNumberSlider
-        : WidgetInputNumberInput
-    "
+    :is="widgetComponent"
     v-else
     v-model="modelValue"
     :widget="widget"

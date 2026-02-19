@@ -48,6 +48,13 @@ export type SharedIntersection<T1, T2> = {
 
 export type CanvasColour = string | CanvasGradient | CanvasPattern
 
+export type ColorStop = readonly [
+  offset: number,
+  r: number,
+  g: number,
+  b: number
+]
+
 /**
  * Any object that has a {@link boundingRect}.
  */
