@@ -21,7 +21,6 @@ import WidgetInputNumberInput from '@/renderer/extensions/vueNodes/widgets/compo
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { useCommandStore } from '@/stores/commandStore'
-import { useExecutionStore } from '@/stores/executionStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useQueueSettingsStore } from '@/stores/queueStore'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
@@ -30,7 +29,6 @@ import { useAppMode } from '@/composables/useAppMode'
 import { useAppModeStore } from '@/stores/appModeStore'
 const { t } = useI18n()
 const commandStore = useCommandStore()
-const executionStore = useExecutionStore()
 const executionErrorStore = useExecutionErrorStore()
 const { batchCount } = storeToRefs(useQueueSettingsStore())
 const settingStore = useSettingStore()
@@ -180,42 +178,10 @@ defineExpose({ runButtonClick })
   <div
     v-if="!isBuilderMode && hasOutputs"
     class="flex flex-col min-w-80 h-full"
-    v-bind=$attrs"
+    v-bind="$attrs"
   >
     <section
-      v-if="mobile"
-      data-testid="linear-run-button"
-      class="p-4 pb-6 border-t border-node-component-border"
-    >
-      <WidgetInputNumberInput
-        v-model="batchCount"
-        :widget="batchCountWidget"
-        root-class="text-base-foreground grid-cols-[auto_96px]"
-        class="*:[.min-w-0]:w-24"
-      />
-      <SubscribeToRunButton v-if="!isActiveSubscription" class="w-full mt-4" />
-      <div v-else class="flex mt-4 gap-2">
-        <Button
-          variant="primary"
-          class="grow-1"
-          size="lg"
-          @click="runButtonClick"
-        >
-          <i class="icon-[lucide--play]" />
-          {{ t('menu.run') }}
-        </Button>
-        <Button
-          v-if="!executionStore.isIdle"
-          variant="destructive"
-          size="lg"
-          class="w-10 p-2"
-          @click="commandStore.execute('Comfy.Interrupt')"
-        >
-          <i class="icon-[lucide--x]" />
-        </Button>
-      </div>
-    </section>
-    <section
+      v-if="!mobile"
       data-testid="linear-workflow-info"
       class="h-12 border-x border-border-subtle py-2 px-4 gap-2 bg-comfy-menu-bg flex items-center contain-size"
     >
@@ -290,8 +256,62 @@ defineExpose({ runButtonClick })
           </DropZone>
         </template>
       </section>
+      <Teleport
+        v-if="!jobToastTimeout || !jobFinishedQueue"
+        defer
+        :disabled="mobile"
+        :to="toastTo"
+      >
+        <div
+          class="bg-base-foreground md:bg-secondary-background text-base-background md:text-base-foreground rounded-lg flex h-8 p-1 pr-2 gap-2 items-center"
+        >
+          <i
+            v-if="jobFinishedQueue"
+            class="icon-[lucide--check] size-5 md:bg-success-background"
+          />
+          <i v-else class="icon-[lucide--loader-circle] size-4 animate-spin" />
+          <span
+            v-text="
+              jobFinishedQueue ? t('queue.jobAddedToQueue') : t('queue.jobQueueing')
+            "
+          />
+        </div>
+      </Teleport>
       <section
-        v-if="!mobile"
+        v-if="mobile"
+        data-testid="linear-run-button"
+        class="p-4 pb-6 border-t border-node-component-border"
+      >
+        <SubscribeToRunButton
+          v-if="!isActiveSubscription"
+          class="w-full mt-4"
+        />
+        <div v-else class="flex mt-4">
+          <Popover side="top">
+            <template #button>
+              <Button size="lg" variant="inverted" class="-mr-3 pl-3 pr-6">
+                <i class="icon-[lucide--chevron-down]" />
+              </Button>
+            </template>
+            <WidgetInputNumberInput
+              v-model="batchCount"
+              :widget="batchCountWidget"
+              class="*:[.min-w-0]:w-40"
+            />
+          </Popover>
+          <Button
+            variant="primary"
+            class="grow-1"
+            size="lg"
+            @click="runButtonClick"
+          >
+            <i class="icon-[lucide--play]" />
+            {{ t('menu.run') }}
+          </Button>
+        </div>
+      </section>
+      <section
+        v-else
         data-testid="linear-run-button"
         class="p-4 pb-6 border-t border-node-component-border"
       >
@@ -318,24 +338,4 @@ defineExpose({ runButtonClick })
       </section>
     </div>
   </div>
-  <Teleport
-    v-if="(!jobToastTimeout || !jobFinishedQueue) && toastTo"
-    defer
-    :to="toastTo"
-  >
-    <div
-      class="bg-secondary-background text-base-foreground rounded-lg flex h-8 p-1 pr-2 gap-2 items-center"
-    >
-      <i
-        v-if="jobFinishedQueue"
-        class="icon-[lucide--check] size-5 text-muted-foreground"
-      />
-      <i v-else class="icon-[lucide--loader-circle] size-4 animate-spin" />
-      <span
-        v-text="
-          jobFinishedQueue ? t('queue.jobAddedToQueue') : t('queue.jobQueueing')
-        "
-      />
-    </div>
-  </Teleport>
 </template>

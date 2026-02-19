@@ -9,6 +9,7 @@ import AssetsSidebarTab from '@/components/sidebar/tabs/AssetsSidebarTab.vue'
 import CurrentUserButton from '@/components/topbar/CurrentUserButton.vue'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useWorkflowActionsMenu } from '@/composables/useWorkflowActionsMenu'
+import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import LinearControls from '@/renderer/extensions/linearMode/LinearControls.vue'
 import LinearPreview from '@/renderer/extensions/linearMode/LinearPreview.vue'
@@ -30,6 +31,7 @@ const { menuItems } = useWorkflowActionsMenu(
   () => useCommandStore().execute('Comfy.RenameWorkflow'),
   { isRoot: true }
 )
+const workflowService = useWorkflowService()
 const workflowStore = useWorkflowStore()
 
 const activeIndex = ref(2)
@@ -69,7 +71,8 @@ const workflowsEntries = computed(() => {
     label: w.filename,
     icon: w.activeState?.extra?.linearMode
       ? 'icon-[lucide--panels-top-left] bg-primary-background'
-      : undefined
+      : undefined,
+    command: () => workflowService.openWorkflow(w)
   }))
 })
 </script>
@@ -85,7 +88,11 @@ const workflowsEntries = computed(() => {
           </Button>
         </template>
       </Popover>
-      <Popover :entries="workflowsEntries">
+      <Popover
+        :entries="workflowsEntries"
+        class="w-(--reka-popover-content-available-width)"
+        :collision-padding="20"
+      >
         <template #button>
           <!--TODO: Use button here? Probably too much work to destyle-->
           <div
@@ -113,10 +120,10 @@ const workflowsEntries = computed(() => {
         <div
           class="overflow-y-auto contain-size h-full w-screen absolute left-[100vw] top-0"
         >
-          <LinearControls class="*:bg-secondary-background" />
+          <LinearControls class="*:bg-secondary-background" mobile />
         </div>
         <div
-          class="w-screen absolute bg-secondary-background h-full left-[200vw] top-0"
+          class="w-screen absolute bg-secondary-background h-full left-[200vw] top-0 flex flex-col"
         >
           <LinearPreview mobile />
         </div>
