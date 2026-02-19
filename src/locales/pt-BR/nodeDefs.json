@@ -2091,7 +2091,6 @@
       "option1": {}
     },
     "outputs": {
-      "0": null,
       "1": {
         "name": "ÍNDICE",
         "tooltip": null
@@ -6622,12 +6621,6 @@
       }
     },
     "outputs": {
-      "0": null,
-      "1": null,
-      "2": null,
-      "3": null,
-      "4": null,
-      "5": null,
       "6": {
         "name": "model_3d",
         "tooltip": null
@@ -7580,7 +7573,6 @@
       }
     },
     "outputs": {
-      "0": null,
       "1": {
         "name": "GLB",
         "tooltip": null
@@ -7636,8 +7628,6 @@
       }
     },
     "outputs": {
-      "0": null,
-      "1": null,
       "2": {
         "name": "GLB",
         "tooltip": null
@@ -7693,8 +7683,6 @@
       }
     },
     "outputs": {
-      "0": null,
-      "1": null,
       "2": {
         "name": "GLB",
         "tooltip": null
@@ -7729,8 +7717,6 @@
       }
     },
     "outputs": {
-      "0": null,
-      "1": null,
       "2": {
         "name": "GLB",
         "tooltip": null
@@ -7758,8 +7744,6 @@
       }
     },
     "outputs": {
-      "0": null,
-      "1": null,
       "2": {
         "name": "GLB",
         "tooltip": null
@@ -7808,8 +7792,6 @@
       }
     },
     "outputs": {
-      "0": null,
-      "1": null,
       "2": {
         "name": "GLB",
         "tooltip": null
@@ -7846,8 +7828,6 @@
       }
     },
     "outputs": {
-      "0": null,
-      "1": null,
       "2": {
         "name": "GLB",
         "tooltip": null
@@ -12050,7 +12030,6 @@
       }
     },
     "outputs": {
-      "0": null,
       "1": {
         "name": "GLB",
         "tooltip": null
@@ -12078,7 +12057,6 @@
       }
     },
     "outputs": {
-      "0": null,
       "1": {
         "name": "GLB",
         "tooltip": null
@@ -12103,7 +12081,6 @@
       }
     },
     "outputs": {
-      "0": null,
       "1": {
         "name": "GLB",
         "tooltip": null
@@ -12122,7 +12099,6 @@
       }
     },
     "outputs": {
-      "0": null,
       "1": {
         "name": "GLB",
         "tooltip": null
@@ -12147,7 +12123,6 @@
       }
     },
     "outputs": {
-      "0": null,
       "1": {
         "name": "GLB",
         "tooltip": null
@@ -14149,7 +14124,6 @@
       }
     },
     "outputs": {
-      "0": null,
       "1": {
         "name": "GLB",
         "tooltip": null
@@ -14189,7 +14163,6 @@
       }
     },
     "outputs": {
-      "0": null,
       "1": {
         "name": "GLB",
         "tooltip": null
@@ -14845,8 +14818,6 @@
       }
     },
     "outputs": {
-      "0": null,
-      "1": null,
       "2": {
         "name": "GLB",
         "tooltip": null
@@ -14904,8 +14875,6 @@
       }
     },
     "outputs": {
-      "0": null,
-      "1": null,
       "2": {
         "name": "GLB",
         "tooltip": null
@@ -14922,8 +14891,6 @@
       }
     },
     "outputs": {
-      "0": null,
-      "1": null,
       "2": {
         "name": "GLB",
         "tooltip": null
@@ -14941,8 +14908,6 @@
       }
     },
     "outputs": {
-      "0": null,
-      "1": null,
       "2": {
         "name": "GLB",
         "tooltip": null
@@ -14957,8 +14922,6 @@
       }
     },
     "outputs": {
-      "0": null,
-      "1": null,
       "2": {
         "name": "GLB",
         "tooltip": null
@@ -15009,8 +14972,6 @@
       }
     },
     "outputs": {
-      "0": null,
-      "1": null,
       "2": {
         "name": "GLB",
         "tooltip": null
@@ -15040,8 +15001,6 @@
       }
     },
     "outputs": {
-      "0": null,
-      "1": null,
       "2": {
         "name": "GLB",
         "tooltip": null
