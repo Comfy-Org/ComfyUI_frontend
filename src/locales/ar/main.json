@@ -728,9 +728,6 @@
     "noStackTrace": "لا توجد تتبع للمكدس متاحة",
     "promptExecutionError": "فشل تنفيذ الطلب"
   },
-  "errorHelp": "للمزيد من المساعدة، {github} أو {support}",
-  "errorHelpGithub": "إرسال مشكلة على GitHub",
-  "errorHelpSupport": "تواصل مع الدعم الفني",
   "g": {
     "1x": "1x",
     "2x": "2x",
@@ -2020,6 +2017,9 @@
     "bypass": "تجاوز",
     "color": "لون العقدة",
     "enterSubgraph": "دخول الرسم الفرعي",
+    "errorHelp": "للمزيد من المساعدة، {github} أو {support}",
+    "errorHelpGithub": "إرسال مشكلة على GitHub",
+    "errorHelpSupport": "تواصل مع الدعم الفني",
     "errors": "الأخطاء",
     "fallbackGroupTitle": "مجموعة",
     "fallbackNodeTitle": "عقدة",
