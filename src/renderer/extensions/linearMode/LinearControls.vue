@@ -179,7 +179,8 @@ defineExpose({ runButtonClick })
 <template>
   <div
     v-if="!isBuilderMode && hasOutputs"
-    class="flex flex-col min-w-80 md:h-full"
+    class="flex flex-col min-w-80 h-full"
+    v-bind=$attrs"
   >
     <section
       v-if="mobile"
