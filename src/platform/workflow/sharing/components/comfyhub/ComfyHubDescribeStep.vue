@@ -45,6 +45,21 @@
           :placeholder="$t('comfyHubPublish.tagsPlaceholder')"
         />
       </TagsInput>
+      <div v-if="availableSuggestions.length > 0" class="flex flex-col gap-1">
+        <span class="text-xs text-muted-foreground">
+          {{ $t('comfyHubPublish.suggestedTags') }}
+        </span>
+        <div class="flex flex-wrap gap-1.5">
+          <button
+            v-for="tag in availableSuggestions"
+            :key="tag"
+            class="cursor-pointer rounded-full border border-border-default bg-transparent px-2.5 py-0.5 text-xs text-muted-foreground transition-colors hover:bg-muted-background hover:text-base-foreground"
+            @click="addTag(tag)"
+          >
+            + {{ tag }}
+          </button>
+        </div>
+      </div>
     </div>
 
     <!-- Thumbnail type -->
@@ -147,13 +162,14 @@ import TagsInputItem from '@/components/ui/tags-input/TagsInputItem.vue'
 import TagsInputItemDelete from '@/components/ui/tags-input/TagsInputItemDelete.vue'
 import TagsInputItemText from '@/components/ui/tags-input/TagsInputItemText.vue'
 import Textarea from '@/components/ui/textarea/Textarea.vue'
+import { COMFY_HUB_TAG_OPTIONS } from '@/platform/workflow/sharing/constants/comfyHubTags'
 import type { ThumbnailType } from '@/platform/workflow/sharing/types/comfyHubTypes'
 import { cn } from '@/utils/tailwindUtil'
 import { useMouseInElement } from '@vueuse/core'
-import { onBeforeUnmount, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-defineProps<{
+const { tags } = defineProps<{
   name: string
   description: string
   tags: string[]
@@ -169,6 +185,14 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useI18n()
+
+const availableSuggestions = computed(() =>
+  COMFY_HUB_TAG_OPTIONS.filter((tag) => !tags.includes(tag))
+)
+
+function addTag(tag: string) {
+  emit('update:tags', [...tags, tag])
+}
 
 const thumbnailOptions = [
   {
