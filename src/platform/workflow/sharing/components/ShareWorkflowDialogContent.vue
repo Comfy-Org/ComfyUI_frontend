@@ -36,12 +36,10 @@
           <span class="text-xs font-medium text-muted-foreground">
             {{ $t('shareWorkflow.workflowNameLabel') }}
           </span>
-          <input
+          <Input
             ref="nameInputRef"
             v-model="workflowName"
-            type="text"
             :disabled="isSaving"
-            class="rounded-lg border border-border-default bg-secondary-background px-3 py-2 text-sm text-base-foreground outline-none focus:border-secondary-foreground disabled:opacity-50"
             @keydown.enter="() => handleSave()"
           />
         </label>
@@ -59,8 +57,8 @@
         </Button>
       </template>
 
-      <!-- Unpublished state -->
-      <template v-if="dialogState === 'unpublished'">
+      <!-- Ready state -->
+      <template v-if="dialogState === 'ready'">
         <p
           v-if="isLoadingAssets"
           class="m-0 text-xs italic text-muted-foreground"
@@ -76,20 +74,19 @@
         <Button
           variant="primary"
           size="lg"
-          :disabled="requiresAcknowledgment && !acknowledged"
-          :loading="isPublishing"
+          :disabled="isPublishing || (requiresAcknowledgment && !acknowledged)"
           @click="handlePublish"
         >
           {{
             isPublishing
-              ? $t('shareWorkflow.publishing')
-              : $t('shareWorkflow.publishButton')
+              ? $t('shareWorkflow.creatingLink')
+              : $t('shareWorkflow.createLinkButton')
           }}
         </Button>
       </template>
 
-      <!-- Just published state -->
-      <template v-if="dialogState === 'justPublished' && publishResult">
+      <!-- Shared state -->
+      <template v-if="dialogState === 'shared' && publishResult">
         <ShareUrlCopyField :url="publishResult.shareUrl" />
         <div class="flex flex-col gap-1">
           <p
@@ -104,8 +101,8 @@
         </div>
       </template>
 
-      <!-- Has changes state -->
-      <template v-if="dialogState === 'hasChanges'">
+      <!-- Stale state -->
+      <template v-if="dialogState === 'stale'">
         <p class="m-0 text-xs text-muted-foreground">
           {{ $t('shareWorkflow.hasChangesDescription') }}
         </p>
@@ -124,14 +121,13 @@
         <Button
           variant="primary"
           size="lg"
-          :disabled="requiresAcknowledgment && !acknowledged"
-          :loading="isPublishing"
+          :disabled="isPublishing || (requiresAcknowledgment && !acknowledged)"
           @click="handlePublish"
         >
           {{
             isPublishing
-              ? $t('shareWorkflow.republishing')
-              : $t('shareWorkflow.republishButton')
+              ? $t('shareWorkflow.updatingLink')
+              : $t('shareWorkflow.updateLinkButton')
           }}
         </Button>
       </template>
@@ -153,6 +149,7 @@ import ComfyHubUploadSection from '@/platform/workflow/sharing/components/ComfyH
 import ShareAssetWarningBox from '@/platform/workflow/sharing/components/ShareAssetWarningBox.vue'
 import ShareUrlCopyField from '@/platform/workflow/sharing/components/ShareUrlCopyField.vue'
 import Button from '@/components/ui/button/Button.vue'
+import Input from '@/components/ui/input/Input.vue'
 import type { WorkflowPublishResult } from '@/platform/workflow/sharing/types/shareTypes'
 import { useWorkflowShareService } from '@/platform/workflow/sharing/services/workflowShareService'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
@@ -171,12 +168,7 @@ const shareService = useWorkflowShareService()
 const workflowStore = useWorkflowStore()
 const workflowService = useWorkflowService()
 
-type DialogState =
-  | 'loading'
-  | 'unsaved'
-  | 'unpublished'
-  | 'justPublished'
-  | 'hasChanges'
+type DialogState = 'loading' | 'unsaved' | 'ready' | 'shared' | 'stale'
 
 const dialogState = ref<DialogState>('loading')
 const acknowledged = ref(false)
@@ -214,9 +206,9 @@ const requiresAcknowledgment = computed(
 const HEADER_TITLES: Record<DialogState, string> = {
   loading: 'shareWorkflow.loadingTitle',
   unsaved: 'shareWorkflow.unsavedTitle',
-  unpublished: 'shareWorkflow.publishTitle',
-  justPublished: 'shareWorkflow.successTitle',
-  hasChanges: 'shareWorkflow.hasChangesTitle'
+  ready: 'shareWorkflow.createLinkTitle',
+  shared: 'shareWorkflow.successTitle',
+  stale: 'shareWorkflow.hasChangesTitle'
 }
 
 const headerTitle = computed(() => t(HEADER_TITLES[dialogState.value]))
@@ -249,11 +241,9 @@ function refreshDialogState() {
       shareUrl: status.shareUrl,
       publishedAt: status.publishedAt
     }
-    dialogState.value = status.hasChangesSincePublish
-      ? 'hasChanges'
-      : 'justPublished'
+    dialogState.value = status.hasChangesSincePublish ? 'stale' : 'shared'
   } else {
-    dialogState.value = 'unpublished'
+    dialogState.value = 'ready'
   }
 }
 
@@ -288,9 +278,9 @@ const { isLoading: isSaving, execute: handleSave } = useAsyncState(
         shareUrl: status.shareUrl,
         publishedAt: status.publishedAt
       }
-      dialogState.value = 'hasChanges'
+      dialogState.value = 'stale'
     } else {
-      dialogState.value = 'unpublished'
+      dialogState.value = 'ready'
     }
   },
   undefined,
@@ -321,7 +311,7 @@ const {
       workflow.path,
       workflow.lastModified
     )
-    dialogState.value = 'justPublished'
+    dialogState.value = 'shared'
     acknowledged.value = false
     return result
   },

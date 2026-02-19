@@ -1,10 +1,9 @@
 <template>
   <div class="flex items-center gap-2">
-    <input
-      type="text"
+    <Input
       readonly
-      :value="url"
-      class="flex-1 rounded-lg border border-border-default bg-secondary-background px-3 py-2 text-sm text-base-foreground outline-none"
+      :model-value="url"
+      class="flex-1"
       @focus="($event.target as HTMLInputElement).select()"
     />
     <Button variant="secondary" size="md" @click="handleCopy">
@@ -19,6 +18,7 @@
 import { useClipboard } from '@vueuse/core'
 
 import Button from '@/components/ui/button/Button.vue'
+import Input from '@/components/ui/input/Input.vue'
 import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
 
 const { url } = defineProps<{
