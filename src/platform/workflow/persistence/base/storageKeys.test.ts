@@ -1,9 +1,53 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { MAX_DRAFTS, PERSIST_DEBOUNCE_MS } from './draftTypes'
+import type {
+  ActivePathPointer,
+  DraftEntryMeta,
+  DraftIndexV2,
+  DraftPayloadV2,
+  OpenPathsPointer
+} from './draftTypes'
 
 describe('storageKeys', () => {
   beforeEach(() => {
     vi.resetModules()
     sessionStorage.clear()
+  })
+
+  describe('draftTypes', () => {
+    it('defines v2 draft payload shapes', () => {
+      const entry: DraftEntryMeta = {
+        path: 'workflows/test.json',
+        name: 'Test Workflow',
+        isTemporary: false,
+        updatedAt: 1739962610000
+      }
+      const index: DraftIndexV2 = {
+        v: 2,
+        updatedAt: 1739962610000,
+        order: ['draft-key'],
+        entries: { 'draft-key': entry }
+      }
+      const payload: DraftPayloadV2 = {
+        data: '{"nodes":[]}',
+        updatedAt: 1739962610000
+      }
+      const activePath: ActivePathPointer = {
+        workspaceId: 'ws-1',
+        path: 'workflows/test.json'
+      }
+      const openPaths: OpenPathsPointer = {
+        workspaceId: 'ws-1',
+        paths: ['workflows/test.json'],
+        activeIndex: 0
+      }
+
+      expect(index.entries['draft-key']?.name).toBe('Test Workflow')
+      expect(payload.data).toContain('nodes')
+      expect(activePath.workspaceId).toBe(openPaths.workspaceId)
+      expect(MAX_DRAFTS).toBeGreaterThan(0)
+      expect(PERSIST_DEBOUNCE_MS).toBeGreaterThan(0)
+    })
   })
 
   describe('getWorkspaceId', () => {
