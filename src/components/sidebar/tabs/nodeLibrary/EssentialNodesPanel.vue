@@ -1,6 +1,6 @@
 <template>
   <TabsContent value="essentials" class="flex-1 overflow-y-auto px-3 h-full">
-    <div class="flex flex-col gap-2 pb-3">
+    <div class="flex flex-col gap-2 pb-6">
       <CollapsibleRoot
         v-for="folder in folders"
         :key="folder.key"

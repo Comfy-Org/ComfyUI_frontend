@@ -70,17 +70,20 @@
       <!-- Tab content (scrollable) -->
       <TabsRoot v-model="selectedTab" class="h-full">
         <EssentialNodesPanel
+          v-if="selectedTab === 'essentials'"
           v-model:expanded-keys="expandedKeys"
           :root="renderedEssentialRoot"
           @node-click="handleNodeClick"
         />
         <AllNodesPanel
+          v-if="selectedTab === 'all'"
           v-model:expanded-keys="expandedKeys"
           :sections="renderedSections"
           :fill-node-info="fillNodeInfo"
           @node-click="handleNodeClick"
         />
         <CustomNodesPanel
+          v-if="selectedTab === 'custom'"
           v-model:expanded-keys="expandedKeys"
           :sections="renderedCustomSections"
           @node-click="handleNodeClick"

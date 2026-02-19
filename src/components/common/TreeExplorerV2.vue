@@ -7,7 +7,7 @@
       :get-children="
         (item) => (item.children?.length ? item.children : undefined)
       "
-      class="m-0 p-0 pb-3"
+      class="m-0 p-0 pb-6"
     >
       <TreeVirtualizer
         v-slot="{ item }"
