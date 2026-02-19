@@ -181,11 +181,11 @@ function handleResetToDefault() {
         "
       >
         <template v-if="isFavorited">
-          <i class="icon-[lucide--star]" />
+          <i class="icon-[lucide--star] size-4" />
           <span>{{ t('rightSidePanel.removeFavorite') }}</span>
         </template>
         <template v-else>
-          <i class="icon-[lucide--star]" />
+          <i class="icon-[lucide--star] size-4" />
           <span>{{ t('rightSidePanel.addFavorite') }}</span>
         </template>
       </Button>
