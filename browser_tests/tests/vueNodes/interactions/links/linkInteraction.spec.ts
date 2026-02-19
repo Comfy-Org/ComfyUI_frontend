@@ -997,6 +997,10 @@ test.describe('Vue Node Link Interaction', { tag: '@screenshot' }, () => {
         'Comfy.LinkRelease.ActionShift',
         'search box'
       )
+      await comfyPage.settings.setSetting(
+        'Comfy.NodeSearchBoxImpl',
+        'v1 (legacy)'
+      )
 
       const samplerNode = (
         await comfyPage.nodeOps.getNodeRefsByType('KSampler')
@@ -1051,6 +1055,11 @@ test.describe('Vue Node Link Interaction', { tag: '@screenshot' }, () => {
     comfyPage,
     comfyMouse
   }) => {
+    await comfyPage.settings.setSetting(
+      'Comfy.NodeSearchBoxImpl',
+      'v1 (legacy)'
+    )
+
     // Setup workflow with a KSampler node
     await comfyPage.command.executeCommand('Comfy.NewBlankWorkflow')
     await comfyPage.nodeOps.waitForGraphNodes(0)
