@@ -315,7 +315,7 @@ export const CORE_SETTINGS: SettingParams[] = [
   {
     id: 'Comfy.NodeLibrary.NewDesign',
     name: 'Use new node library design',
-    type: 'boolean',
+    type: 'hidden',
     defaultValue: false,
     experimental: true
   },
