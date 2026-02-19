@@ -798,6 +798,7 @@
     "disableSelected": "غیرفعال‌سازی انتخاب‌شده‌ها",
     "disableThirdParty": "غیرفعال‌سازی شخص ثالث",
     "disabling": "در حال غیرفعال‌سازی {id}",
+    "disconnectedFromBackend": "ارتباط با بک‌اند قطع شد. لطفاً بررسی کنید که سرور در حال اجرا باشد.",
     "dismiss": "رد کردن",
     "download": "دانلود",
     "downloadAudio": "دانلود صوت",
@@ -820,6 +821,7 @@
     "enterBaseName": "نام پایه را وارد کنید",
     "enterNewName": "نام جدید را وارد کنید",
     "enterNewNamePrompt": "نام جدید را وارد کنید:",
+    "enterSubgraph": "ورود به زیرگراف",
     "error": "خطا",
     "errorLoadingImage": "خطا در بارگذاری تصویر",
     "errorLoadingVideo": "خطا در بارگذاری ویدیو",
@@ -846,6 +848,7 @@
     "hideLeftPanel": "پنهان کردن پنل چپ",
     "hideRightPanel": "پنهان کردن پنل راست",
     "icon": "آیکون",
+    "imageDoesNotExist": "تصویر وجود ندارد",
     "imageFailedToLoad": "بارگذاری تصویر ناموفق بود",
     "imagePreview": "پیش‌نمایش تصویر - برای جابجایی بین تصاویر از کلیدهای جهت‌دار استفاده کنید",
     "imageUrl": "آدرس تصویر",
@@ -995,6 +998,7 @@
     "title": "عنوان",
     "triggerPhrase": "عبارت trigger",
     "unknownError": "خطای ناشناخته",
+    "unknownFile": "فایل ناشناخته",
     "untitled": "بدون عنوان",
     "update": "به‌روزرسانی",
     "updateAvailable": "به‌روزرسانی موجود است",
@@ -1740,7 +1744,9 @@
   "missingModelsDialog": {
     "doNotAskAgain": "دیگر نمایش داده نشود",
     "missingModels": "مدل‌های مفقود",
-    "missingModelsMessage": "هنگام بارگذاری گراف، مدل‌های زیر یافت نشدند"
+    "missingModelsMessage": "هنگام بارگذاری گراف، مدل‌های زیر یافت نشدند",
+    "reEnableInSettings": "فعال‌سازی مجدد در {link}",
+    "reEnableInSettingsLink": "تنظیمات"
   },
   "missingNodes": {
     "cloud": {
@@ -1892,6 +1898,25 @@
     "outputs": "خروجی‌ها",
     "type": "نوع"
   },
+  "nodeReplacement": {
+    "compatibleAlternatives": "گزینه‌های سازگار",
+    "installMissingNodes": "نصب نودهای مفقود",
+    "installationRequired": "نصب مورد نیاز است",
+    "instructionMessage": "برای اجرای workflow باید این نودها را نصب یا با گزینه‌های نصب‌شده جایگزین کنید. نودهای مفقود با رنگ {red} روی بوم مشخص شده‌اند. برخی نودها قابل تعویض نیستند و باید از طریق Node Manager نصب شوند.",
+    "notReplaceable": "نیاز به نصب",
+    "openNodeManager": "باز کردن Node Manager",
+    "quickFixAvailable": "رفع سریع در دسترس است",
+    "redHighlight": "قرمز",
+    "replaceFailed": "جایگزینی نودها ناموفق بود",
+    "replaceSelected": "جایگزینی انتخاب‌شده‌ها ({count})",
+    "replaceWarning": "این کار workflow را به طور دائمی تغییر می‌دهد. اگر مطمئن نیستید، ابتدا یک نسخه ذخیره کنید.",
+    "replaceable": "قابل جایگزینی",
+    "replaced": "جایگزین شد",
+    "replacedAllNodes": "{count} نوع نود جایگزین شد",
+    "replacedNode": "نود جایگزین شد: {nodeType}",
+    "selectAll": "انتخاب همه",
+    "skipForNow": "فعلاً رد شود"
+  },
   "nodeTemplates": {
     "enterName": "نام را وارد کنید",
     "saveAsTemplate": "ذخیره به عنوان قالب"
@@ -1975,6 +2000,7 @@
       "removeJob": "حذف کار",
       "reportError": "گزارش خطا"
     },
+    "jobQueueing": "در حال صف‌بندی کار",
     "toggleJobHistory": "نمایش/مخفی‌سازی تاریخچه کارها"
   },
   "releaseToast": {
@@ -2033,6 +2059,8 @@
     "pinned": "سنجاق شده",
     "properties": "ویژگی‌ها",
     "removeFavorite": "حذف از علاقه‌مندی‌ها",
+    "resetAllParameters": "بازنشانی همه پارامترها",
+    "resetToDefault": "بازنشانی به پیش‌فرض",
     "settings": "تنظیمات",
     "showAdvancedInputsButton": "نمایش ورودی‌های پیشرفته",
     "showInput": "نمایش ورودی",
@@ -2407,14 +2435,20 @@
       "filterJobs": "فیلتر کارها",
       "inlineTotalLabel": "کل",
       "interruptAll": "توقف همه کارهای در حال اجرا",
+      "jobCompleted": "کار با موفقیت انجام شد",
+      "jobFailed": "کار ناموفق بود",
       "jobQueue": "صف کار",
+      "jobsAddedToQueue": "{count} کار به صف افزوده شد | {count} کار به صف افزوده شدند",
       "jobsCompleted": "{count} کار تکمیل شد",
       "jobsFailed": "{count} کار ناموفق بود",
       "moreOptions": "گزینه‌های بیشتر",
       "noActiveJobs": "کار فعالی وجود ندارد",
       "preview": "پیش‌نمایش",
+      "queuedJobsLabel": "{count} در صف",
       "queuedSuffix": "در صف",
       "running": "در حال اجرا",
+      "runningJobsLabel": "{count} در حال اجرا",
+      "runningQueuedSummary": "{running}، {queued}",
       "showAssets": "نمایش دارایی‌ها",
       "showAssetsPanel": "نمایش پنل دارایی‌ها",
       "sortBy": "مرتب‌سازی بر اساس",
@@ -2818,6 +2852,9 @@
   "vueNodesMigrationMainMenu": {
     "message": "در هر زمان می‌توانید از منوی اصلی به Nodes 2.0 بازگردید."
   },
+  "vueNodesSlot": {
+    "iterative": "(تکراری)"
+  },
   "welcome": {
     "getStarted": "شروع کنید",
     "title": "به ComfyUI خوش آمدید"
@@ -2838,6 +2875,7 @@
       "placeholder": "انتخاب...",
       "placeholderAudio": "انتخاب صوت...",
       "placeholderImage": "انتخاب تصویر...",
+      "placeholderMesh": "مش را انتخاب کنید...",
       "placeholderModel": "انتخاب مدل...",
       "placeholderUnknown": "انتخاب رسانه...",
       "placeholderVideo": "انتخاب ویدیو..."
@@ -2876,7 +2914,8 @@
     "unsavedChanges": {
       "message": "شما تغییرات ذخیره‌نشده دارید. آیا می‌خواهید آن‌ها را رها کرده و فضای کاری را تغییر دهید؟",
       "title": "تغییرات ذخیره‌نشده"
-    }
+    },
+    "viewWorkspace": "مشاهده workspace"
   },
   "workspaceAuth": {
     "errors": {
@@ -2925,6 +2964,14 @@
       "placeholder": "ایمیل شخص را وارد کنید",
       "title": "دعوت یک نفر به این فضای کاری"
     },
+    "inviteUpsellDialog": {
+      "messageNotSubscribed": "برای افزودن اعضای تیم به این workspace، به پلن Creator یا بالاتر نیاز دارید. پلن Standard فقط یک نفر (مالک) را پشتیبانی می‌کند.",
+      "messageSingleSeat": "پلن Standard فقط یک صندلی برای مالک workspace دارد. برای دعوت اعضای بیشتر، به پلن Creator یا بالاتر ارتقا دهید تا امکان افزودن چندین نفر فعال شود.",
+      "titleNotSubscribed": "برای دعوت اعضا نیاز به اشتراک دارید",
+      "titleSingleSeat": "پلن فعلی شما فقط یک نفر را پشتیبانی می‌کند",
+      "upgradeToCreator": "ارتقا به Creator",
+      "viewPlans": "مشاهده پلن‌ها"
+    },
     "leaveDialog": {
       "leave": "خروج",
       "message": "تا زمانی که با مالک محیط کاری تماس نگیرید، امکان پیوستن مجدد نخواهید داشت.",
@@ -2950,7 +2997,10 @@
       "tabs": {
         "active": "فعال",
         "pendingCount": "در انتظار ({count})"
-      }
+      },
+      "upsellBannerSubscribe": "برای دعوت اعضای تیم به این workspace، به پلن Creator یا بالاتر اشتراک تهیه کنید.",
+      "upsellBannerUpgrade": "برای دعوت اعضای بیشتر به این workspace، به پلن Creator یا بالاتر ارتقا دهید.",
+      "viewPlans": "مشاهده پلن‌ها"
     },
     "menu": {
       "deleteWorkspace": "حذف محیط کاری",

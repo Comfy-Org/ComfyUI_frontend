@@ -5,9 +5,33 @@ declare const __ALGOLIA_APP_ID__: string
 declare const __ALGOLIA_API_KEY__: string
 declare const __USE_PROD_CONFIG__: boolean
 
+interface ImpactQueueFunction {
+  (...args: unknown[]): void
+  a?: unknown[][]
+}
+
+type GtagGetFieldName = 'client_id' | 'session_id' | 'session_number'
+
+interface GtagGetFieldValueMap {
+  client_id: string | number | undefined
+  session_id: string | number | undefined
+  session_number: string | number | undefined
+}
+
+interface GtagFunction {
+  <TField extends GtagGetFieldName>(
+    command: 'get',
+    targetId: string,
+    fieldName: TField,
+    callback: (value: GtagGetFieldValueMap[TField]) => void
+  ): void
+  (...args: unknown[]): void
+}
+
 interface Window {
   __CONFIG__: {
     gtm_container_id?: string
+    ga_measurement_id?: string
     mixpanel_token?: string
     require_whitelist?: boolean
     subscription_required?: boolean
@@ -31,12 +55,10 @@ interface Window {
       badge?: string
     }
   }
-  __ga_identity__?: {
-    client_id?: string
-    session_id?: string
-    session_number?: string
-  }
   dataLayer?: Array<Record<string, unknown>>
+  gtag?: GtagFunction
+  ire_o?: string
+  ire?: ImpactQueueFunction
 }
 
 interface Navigator {

@@ -2,6 +2,11 @@ import { computed, ref, shallowRef, toValue, watch } from 'vue'
 import { createSharedComposable } from '@vueuse/core'
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import {
+  KEY_TO_TIER,
+  getTierFeatures
+} from '@/platform/cloud/subscription/constants/tierPricing'
+import type { TierKey } from '@/platform/cloud/subscription/constants/tierPricing'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
 import type {
@@ -13,7 +18,7 @@ import type {
   SubscriptionInfo
 } from './types'
 import { useLegacyBilling } from './useLegacyBilling'
-import { useWorkspaceBilling } from './useWorkspaceBilling'
+import { useWorkspaceBilling } from '@/platform/workspace/composables/useWorkspaceBilling'
 
 /**
  * Unified billing context that automatically switches between legacy (user-scoped)
@@ -114,6 +119,16 @@ function useBillingContextInternal(): BillingContext {
   const isActiveSubscription = computed(() =>
     toValue(activeContext.value.isActiveSubscription)
   )
+
+  function getMaxSeats(tierKey: TierKey): number {
+    if (type.value === 'legacy') return 1
+
+    const apiTier = KEY_TO_TIER[tierKey]
+    const plan = plans.value.find(
+      (p) => p.tier === apiTier && p.duration === 'MONTHLY'
+    )
+    return plan?.max_seats ?? getTierFeatures(tierKey).maxMembers
+  }
 
   // Sync subscription info to workspace store for display in workspace switcher
   // A subscription is considered "subscribed" for workspace purposes if it's active AND not cancelled
@@ -223,6 +238,7 @@ function useBillingContextInternal(): BillingContext {
     isLoading,
     error,
     isActiveSubscription,
+    getMaxSeats,
 
     initialize,
     fetchStatus,

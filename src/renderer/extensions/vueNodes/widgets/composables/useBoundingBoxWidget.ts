@@ -45,7 +45,15 @@ export const useBoundingBoxWidget = (): ComfyWidgetConstructorV2 => {
       widgetType,
       name,
       { ...defaultValue },
-      null,
+      () => {
+        for (let i = 0; i < fields.length; i++) {
+          const field = fields[i]
+          const subWidget = subWidgets[i]
+          if (subWidget) {
+            subWidget.value = widget.value[field]
+          }
+        }
+      },
       {
         serialize: true,
         canvasOnly: false
@@ -57,16 +65,6 @@ export const useBoundingBoxWidget = (): ComfyWidgetConstructorV2 => {
     }
 
     const widget = rawWidget
-
-    widget.callback = () => {
-      for (let i = 0; i < fields.length; i++) {
-        const field = fields[i]
-        const subWidget = subWidgets[i]
-        if (subWidget) {
-          subWidget.value = widget.value[field]
-        }
-      }
-    }
 
     for (const field of fields) {
       const subWidget = node.addWidget(

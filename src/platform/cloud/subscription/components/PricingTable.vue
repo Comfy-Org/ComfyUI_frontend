@@ -226,7 +226,7 @@
           {{ t('subscription.videoEstimateExplanation') }}
         </p>
         <a
-          href="https://cloud.comfy.org/?template=video_wan2_2_14B_fun_camera"
+          href="https://cloud.comfy.org/?template=video_wan2_2_14B_i2v"
           target="_blank"
           rel="noopener noreferrer"
           class="text-sm text-azure-600 hover:text-azure-400 no-underline flex gap-1"
@@ -267,7 +267,7 @@ import { isPlanDowngrade } from '@/platform/cloud/subscription/utils/subscriptio
 import type { BillingCycle } from '@/platform/cloud/subscription/utils/subscriptionTierRank'
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
-import { getCheckoutAttribution } from '@/platform/telemetry/utils/checkoutAttribution'
+import type { CheckoutAttributionMetadata } from '@/platform/telemetry/types'
 import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
 import type { components } from '@/types/comfyRegistryTypes'
 
@@ -279,6 +279,19 @@ const getCheckoutTier = (
   tierKey: CheckoutTierKey,
   billingCycle: BillingCycle
 ): CheckoutTier => (billingCycle === 'yearly' ? `${tierKey}-yearly` : tierKey)
+
+const getCheckoutAttributionForCloud =
+  async (): Promise<CheckoutAttributionMetadata> => {
+    // eslint-disable-next-line no-undef
+    if (__DISTRIBUTION__ !== 'cloud') {
+      return {}
+    }
+
+    const { getCheckoutAttribution } =
+      await import('@/platform/telemetry/utils/checkoutAttribution')
+
+    return getCheckoutAttribution()
+  }
 
 interface BillingCycleOption {
   label: string
@@ -415,7 +428,7 @@ const handleSubscribe = wrapWithErrorHandlingAsync(
 
     try {
       if (isActiveSubscription.value) {
-        const checkoutAttribution = getCheckoutAttribution()
+        const checkoutAttribution = await getCheckoutAttributionForCloud()
         if (userId.value) {
           telemetry?.trackBeginCheckout({
             user_id: userId.value,

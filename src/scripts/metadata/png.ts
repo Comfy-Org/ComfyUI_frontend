@@ -34,7 +34,6 @@ async function decompressZlib(
   return result
 }
 
-/** @knipIgnoreUnusedButUsedByCustomNodes */
 export async function getFromPngBuffer(
   buffer: ArrayBuffer
 ): Promise<Record<string, string>> {

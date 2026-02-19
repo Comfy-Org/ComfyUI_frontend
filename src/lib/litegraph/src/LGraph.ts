@@ -4,6 +4,7 @@ import {
   SUBGRAPH_INPUT_ID,
   SUBGRAPH_OUTPUT_ID
 } from '@/lib/litegraph/src/constants'
+import { isNodeBindable } from '@/lib/litegraph/src/utils/type'
 import type { UUID } from '@/lib/litegraph/src/utils/uuid'
 import { createUuidv4, zeroUuid } from '@/lib/litegraph/src/utils/uuid'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
@@ -89,12 +90,13 @@ export interface LGraphState {
   lastRerouteId: number
 }
 
-type ParamsArray<
-  T extends Record<any, any>,
-  K extends MethodNames<T>
-> = Parameters<T[K]>[1] extends undefined
-  ? Parameters<T[K]> | Parameters<T[K]>[0]
-  : Parameters<T[K]>
+type ParamsArray<T, K extends MethodNames<T>> = Parameters<
+  Extract<T[K], (...args: never[]) => unknown>
+>[1] extends undefined
+  ?
+      | Parameters<Extract<T[K], (...args: never[]) => unknown>>
+      | Parameters<Extract<T[K], (...args: never[]) => unknown>>[0]
+  : Parameters<Extract<T[K], (...args: never[]) => unknown>>
 
 /** Configuration used by {@link LGraph} `config`. */
 export interface LGraphConfig {
@@ -158,7 +160,6 @@ export class LGraph
 
   static STATUS_STOPPED = 1
   static STATUS_RUNNING = 2
-  static deduplicateSubgraphIds = false
 
   /** List of LGraph properties that are manually handled by {@link LGraph.configure}. */
   static readonly ConfigureProperties = new Set([
@@ -775,8 +776,10 @@ export class LGraph
       let max_size = 100
       let y = margin + LiteGraph.NODE_TITLE_HEIGHT
       for (const node of column) {
-        node.pos[0] = layout == LiteGraph.VERTICAL_LAYOUT ? y : x
-        node.pos[1] = layout == LiteGraph.VERTICAL_LAYOUT ? x : y
+        node.setPos(
+          layout == LiteGraph.VERTICAL_LAYOUT ? y : x,
+          layout == LiteGraph.VERTICAL_LAYOUT ? x : y
+        )
         const max_size_index = layout == LiteGraph.VERTICAL_LAYOUT ? 1 : 0
         if (node.size[max_size_index] > max_size) {
           max_size = node.size[max_size_index]
@@ -895,7 +898,7 @@ export class LGraph
    * @deprecated Use options object instead
    */
   add(
-    node: LGraphNode | LGraphGroup,
+    node: LGraphNode | LGraphGroup | null,
     skipComputeOrder?: boolean
   ): LGraphNode | null | undefined
   add(
@@ -960,6 +963,14 @@ export class LGraph
     // Set ghost flag before registration so VueNodeData picks it up
     if (opts.ghost) {
       node.flags.ghost = true
+    }
+
+    // Register all widgets with the WidgetValueStore now that node has a valid ID.
+    // Widgets added before the node was in the graph deferred their setNodeId call.
+    if (node.widgets) {
+      for (const widget of node.widgets) {
+        if (isNodeBindable(widget)) widget.setNodeId(node.id)
+      }
     }
 
     node.graph = this
@@ -1750,7 +1761,10 @@ export class LGraph
     )
 
     //Correct for title height. It's included in bounding box, but not _posSize
-    subgraphNode.pos[1] += LiteGraph.NODE_TITLE_HEIGHT / 2
+    subgraphNode.setPos(
+      subgraphNode.pos[0],
+      subgraphNode.pos[1] + LiteGraph.NODE_TITLE_HEIGHT / 2
+    )
 
     // Add the subgraph node to the graph
     this.add(subgraphNode)
@@ -1917,8 +1931,7 @@ export class LGraph
 
       this.add(node, true)
       node.configure(n_info)
-      node.pos[0] += offsetX
-      node.pos[1] += offsetY
+      node.setPos(node.pos[0] + offsetX, node.pos[1] + offsetY)
       for (const input of node.inputs) {
         input.link = null
       }
@@ -2437,7 +2450,7 @@ export class LGraph
           this.subgraphs.get(subgraph.id)?.configure(subgraph)
       }
 
-      if (this.isRootGraph && LGraph.deduplicateSubgraphIds) {
+      if (this.isRootGraph) {
         const reservedNodeIds = nodesData
           ?.map((n) => n.id)
           .filter((id): id is number => typeof id === 'number')

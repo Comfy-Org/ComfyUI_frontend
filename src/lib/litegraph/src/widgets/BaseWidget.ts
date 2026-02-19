@@ -2,6 +2,7 @@ import { t } from '@/i18n'
 import { drawTextInArea } from '@/lib/litegraph/src/draw'
 import { Rectangle } from '@/lib/litegraph/src/infrastructure/Rectangle'
 import type { Point } from '@/lib/litegraph/src/interfaces'
+import type { NodeId } from '@/lib/litegraph/src/LGraphNode'
 import type {
   CanvasPointer,
   LGraphCanvas,
@@ -10,7 +11,13 @@ import type {
 } from '@/lib/litegraph/src/litegraph'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
-import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import type {
+  IBaseWidget,
+  NodeBindable,
+  TWidgetType
+} from '@/lib/litegraph/src/types/widgets'
+import type { WidgetState } from '@/stores/widgetValueStore'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
 
 export interface DrawWidgetOptions {
   /** The width of the node where this widget will be displayed. */
@@ -34,9 +41,9 @@ export interface WidgetEventOptions {
   canvas: LGraphCanvas
 }
 
-export abstract class BaseWidget<
-  TWidget extends IBaseWidget = IBaseWidget
-> implements IBaseWidget {
+export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
+  implements IBaseWidget, NodeBindable
+{
   /** From node edge to widget edge */
   static margin = 15
   /** From widget edge to tip of arrow button */
@@ -66,17 +73,39 @@ export abstract class BaseWidget<
   linkedWidgets?: IBaseWidget[]
   name: string
   options: TWidget['options']
-  label?: string
   type: TWidget['type']
   y: number = 0
   last_y?: number
   width?: number
-  disabled?: boolean
   computedDisabled?: boolean
+  tooltip?: string
+
+  private _state: Omit<WidgetState, 'nodeId'> &
+    Partial<Pick<WidgetState, 'nodeId'>>
+
+  get label(): string | undefined {
+    return this._state.label
+  }
+  set label(value: string | undefined) {
+    this._state.label = value
+  }
+
   hidden?: boolean
   advanced?: boolean
-  promoted?: boolean
-  tooltip?: string
+
+  get disabled(): boolean | undefined {
+    return this._state.disabled
+  }
+  set disabled(value: boolean | undefined) {
+    this._state.disabled = value ?? false
+  }
+
+  get promoted(): boolean | undefined {
+    return this._state.promoted
+  }
+  set promoted(value: boolean | undefined) {
+    this._state.promoted = value ?? false
+  }
   element?: HTMLElement
   callback?(
     value: TWidget['value'],
@@ -97,13 +126,22 @@ export abstract class BaseWidget<
     canvas: LGraphCanvas
   ): boolean
 
-  private _value?: TWidget['value']
   get value(): TWidget['value'] {
-    return this._value
+    return this._state.value as TWidget['value']
+  }
+  set value(value: TWidget['value']) {
+    this._state.value = value
   }
 
-  set value(value: TWidget['value']) {
-    this._value = value
+  /**
+   * Associates this widget with a node ID and registers it in the WidgetValueStore.
+   * Once set, value reads/writes will be delegated to the store.
+   */
+  setNodeId(nodeId: NodeId): void {
+    this._state = useWidgetValueStore().registerWidget({
+      ...this._state,
+      nodeId
+    })
   }
 
   constructor(widget: TWidget & { node: LGraphNode })
@@ -141,12 +179,26 @@ export abstract class BaseWidget<
       displayValue,
       // @ts-expect-error Prevent naming conflicts with custom nodes.
       labelBaseline,
+      label,
+      disabled,
       promoted,
+      value,
       linkedWidgets,
       ...safeValues
     } = widget
 
     Object.assign(this, safeValues)
+
+    this._state = {
+      name: this.name,
+      type: this.type as TWidgetType,
+      value,
+      label,
+      disabled: disabled ?? false,
+      promoted: promoted ?? false,
+      serialize: this.serialize,
+      options: this.options
+    }
   }
 
   get outline_color() {

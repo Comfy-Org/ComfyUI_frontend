@@ -14,7 +14,7 @@ import { app } from '@/scripts/app'
 import { useExecutionStore } from '@/stores/executionStore'
 import type { NodeLocatorId } from '@/types/nodeIdentification'
 import { parseFilePath } from '@/utils/formatUtil'
-import { isVideoNode } from '@/utils/litegraphUtil'
+import { isAnimatedOutput, isVideoNode } from '@/utils/litegraphUtil'
 import {
   releaseSharedObjectUrl,
   retainSharedObjectUrl
@@ -83,7 +83,7 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
     outputs: ExecutedWsMessage['output']
   ): boolean => {
     // If animated webp/png or video outputs, return false
-    if (node.animatedImages || isVideoNode(node)) return false
+    if (isAnimatedOutput(outputs) || isVideoNode(node)) return false
 
     // If no images, return false
     if (!outputs?.images?.length) return false
@@ -144,7 +144,7 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
       if (existingOutput && outputs) {
         for (const k in outputs) {
           const existingValue = existingOutput[k]
-          const newValue = (outputs as Record<NodeLocatorId, any>)[k]
+          const newValue = (outputs as Record<NodeLocatorId, unknown>)[k]
 
           if (Array.isArray(existingValue) && Array.isArray(newValue)) {
             existingOutput[k] = existingValue.concat(newValue)
@@ -152,7 +152,7 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
             existingOutput[k] = newValue
           }
         }
-        nodeOutputs.value[nodeLocatorId] = existingOutput
+        nodeOutputs.value[nodeLocatorId] = { ...existingOutput }
         return
       }
     }
@@ -365,7 +365,7 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
     outputs: Record<string, ExecutedWsMessage['output']>
   ) {
     app.nodeOutputs = outputs
-    nodeOutputs.value = outputs
+    nodeOutputs.value = { ...outputs }
   }
 
   function updateNodeImages(node: LGraphNode) {

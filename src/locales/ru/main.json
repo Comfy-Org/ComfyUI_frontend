@@ -798,6 +798,7 @@
     "disableSelected": "Отключить выбранное",
     "disableThirdParty": "Отключить сторонние",
     "disabling": "Отключение",
+    "disconnectedFromBackend": "Отключено от сервера. Проверьте, запущен ли сервер.",
     "dismiss": "Закрыть",
     "download": "Скачать",
     "downloadAudio": "Скачать аудио",
@@ -820,6 +821,7 @@
     "enterBaseName": "Введите базовое имя",
     "enterNewName": "Введите новое имя",
     "enterNewNamePrompt": "Введите новое имя:",
+    "enterSubgraph": "Войти в подграф",
     "error": "Ошибка",
     "errorLoadingImage": "Ошибка загрузки изображения",
     "errorLoadingVideo": "Ошибка загрузки видео",
@@ -846,6 +848,7 @@
     "hideLeftPanel": "Скрыть левую панель",
     "hideRightPanel": "Скрыть правую панель",
     "icon": "Иконка",
+    "imageDoesNotExist": "Изображение не существует",
     "imageFailedToLoad": "Не удалось загрузить изображение",
     "imagePreview": "Предварительный просмотр изображения - Используйте клавиши со стрелками для навигации между изображениями",
     "imageUrl": "URL изображения",
@@ -995,6 +998,7 @@
     "title": "Заголовок",
     "triggerPhrase": "Триггерная фраза",
     "unknownError": "Неизвестная ошибка",
+    "unknownFile": "Неизвестный файл",
     "untitled": "Без названия",
     "update": "Обновить",
     "updateAvailable": "Доступно обновление",
@@ -1740,7 +1744,9 @@
   "missingModelsDialog": {
     "doNotAskAgain": "Больше не показывать это",
     "missingModels": "Отсутствующие модели",
-    "missingModelsMessage": "При загрузке графа следующие модели не были найдены"
+    "missingModelsMessage": "При загрузке графа следующие модели не были найдены",
+    "reEnableInSettings": "Включить снова в {link}",
+    "reEnableInSettingsLink": "Настройки"
   },
   "missingNodes": {
     "cloud": {
@@ -1892,6 +1898,25 @@
     "outputs": "Выходы",
     "type": "Тип"
   },
+  "nodeReplacement": {
+    "compatibleAlternatives": "Совместимые альтернативы",
+    "installMissingNodes": "Установить отсутствующие узлы",
+    "installationRequired": "Требуется установка",
+    "instructionMessage": "Вам необходимо установить эти узлы или заменить их установленными альтернативами, чтобы запустить рабочий процесс. Отсутствующие узлы выделены {red} на холсте. Некоторые узлы нельзя заменить, их нужно установить через Менеджер узлов.",
+    "notReplaceable": "Требуется установка",
+    "openNodeManager": "Открыть Менеджер узлов",
+    "quickFixAvailable": "Доступно быстрое исправление",
+    "redHighlight": "красным",
+    "replaceFailed": "Не удалось заменить узлы",
+    "replaceSelected": "Заменить выбранные ({count})",
+    "replaceWarning": "Это действие навсегда изменит рабочий процесс. Сохраните копию, если не уверены.",
+    "replaceable": "Можно заменить",
+    "replaced": "Заменено",
+    "replacedAllNodes": "Заменено {count} типов(а) узлов",
+    "replacedNode": "Заменённый узел: {nodeType}",
+    "selectAll": "Выбрать все",
+    "skipForNow": "Пропустить сейчас"
+  },
   "nodeTemplates": {
     "enterName": "Введите название",
     "saveAsTemplate": "Сохранить как шаблон"
@@ -1975,6 +2000,7 @@
       "removeJob": "Удалить задачу",
       "reportError": "Сообщить об ошибке"
     },
+    "jobQueueing": "Задача ставится в очередь",
     "toggleJobHistory": "Показать/скрыть историю задач"
   },
   "releaseToast": {
@@ -2033,6 +2059,8 @@
     "pinned": "Закреплено",
     "properties": "Свойства",
     "removeFavorite": "Убрать из избранного",
+    "resetAllParameters": "Сбросить все параметры",
+    "resetToDefault": "Сбросить по умолчанию",
     "settings": "Настройки",
     "showAdvancedInputsButton": "Показать расширенные входные данные",
     "showInput": "Показать вход",
@@ -2396,14 +2424,20 @@
       "filterJobs": "Фильтровать задания",
       "inlineTotalLabel": "Всего",
       "interruptAll": "Остановить все выполняющиеся задания",
+      "jobCompleted": "Задача выполнена",
+      "jobFailed": "Задача не выполнена",
       "jobQueue": "Очередь заданий",
+      "jobsAddedToQueue": "{count} задача добавлена в очередь | {count} задач добавлено в очередь",
       "jobsCompleted": "{count} задание завершено | {count} задания завершено | {count} заданий завершено",
       "jobsFailed": "{count} задание не выполнено | {count} задания не выполнено | {count} заданий не выполнено",
       "moreOptions": "Больше опций",
       "noActiveJobs": "Нет активных заданий",
       "preview": "Предпросмотр",
+      "queuedJobsLabel": "{count} в очереди",
       "queuedSuffix": "в очереди",
       "running": "выполняется",
+      "runningJobsLabel": "{count} выполняется",
+      "runningQueuedSummary": "{running}, {queued}",
       "showAssets": "Показать ассеты",
       "showAssetsPanel": "Показать панель ассетов",
       "sortBy": "Сортировать по",
@@ -2807,6 +2841,9 @@
   "vueNodesMigrationMainMenu": {
     "message": "Переключиться обратно на Nodes 2.0 можно в главном меню."
   },
+  "vueNodesSlot": {
+    "iterative": "(Итеративно)"
+  },
   "welcome": {
     "getStarted": "Начать",
     "title": "Добро пожаловать в ComfyUI"
@@ -2827,6 +2864,7 @@
       "placeholder": "Выбрать...",
       "placeholderAudio": "Выбрать аудио...",
       "placeholderImage": "Выбрать изображение...",
+      "placeholderMesh": "Выберите mesh...",
       "placeholderModel": "Выбрать модель...",
       "placeholderUnknown": "Выбрать медиа...",
       "placeholderVideo": "Выбрать видео..."
@@ -2865,7 +2903,8 @@
     "unsavedChanges": {
       "message": "У вас есть несохранённые изменения. Хотите их отменить и переключиться на другое рабочее пространство?",
       "title": "Несохранённые изменения"
-    }
+    },
+    "viewWorkspace": "Просмотреть рабочее пространство"
   },
   "workspaceAuth": {
     "errors": {
@@ -2914,6 +2953,14 @@
       "placeholder": "Введите email человека",
       "title": "Пригласить человека в это рабочее пространство"
     },
+    "inviteUpsellDialog": {
+      "messageNotSubscribed": "Чтобы добавить участников в это рабочее пространство, необходим тариф Creator или выше. Тариф Standard поддерживает только одно место (владельца).",
+      "messageSingleSeat": "Тариф Standard включает одно место для владельца рабочего пространства. Чтобы пригласить дополнительных участников, обновите тариф до Creator или выше для открытия нескольких мест.",
+      "titleNotSubscribed": "Для приглашения участников требуется подписка",
+      "titleSingleSeat": "Ваш текущий тариф поддерживает только одно место",
+      "upgradeToCreator": "Обновить до Creator",
+      "viewPlans": "Посмотреть тарифы"
+    },
     "leaveDialog": {
       "leave": "Покинуть",
       "message": "Вы не сможете присоединиться снова, если не свяжетесь с владельцем рабочего пространства.",
@@ -2939,7 +2986,10 @@
       "tabs": {
         "active": "Активные",
         "pendingCount": "Ожидают ({count})"
-      }
+      },
+      "upsellBannerSubscribe": "Оформите подписку на тариф Creator или выше, чтобы пригласить участников в это рабочее пространство.",
+      "upsellBannerUpgrade": "Обновите тариф до Creator или выше, чтобы пригласить дополнительных участников.",
+      "viewPlans": "Посмотреть тарифы"
     },
     "menu": {
       "deleteWorkspace": "Удалить рабочее пространство",

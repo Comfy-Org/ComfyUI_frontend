@@ -353,15 +353,6 @@
         "name": "모더레이션",
         "tooltip": "모더레이션 설정"
       },
-      "moderation_prompt_content_moderation": {
-        "name": "프롬프트 콘텐츠 모더레이션"
-      },
-      "moderation_visual_input_moderation": {
-        "name": "비주얼 입력 모더레이션"
-      },
-      "moderation_visual_output_moderation": {
-        "name": "비주얼 출력 모더레이션"
-      },
       "negative_prompt": {
         "name": "네거티브 프롬프트"
       },
@@ -386,6 +377,56 @@
       },
       "1": {
         "name": "구조화된 프롬프트",
+        "tooltip": null
+      }
+    }
+  },
+  "BriaRemoveImageBackground": {
+    "description": "Bria RMBG 2.0을 사용하여 이미지에서 배경을 제거합니다.",
+    "display_name": "Bria 이미지 배경 제거",
+    "inputs": {
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "image": {
+        "name": "image"
+      },
+      "moderation": {
+        "name": "moderation",
+        "tooltip": "모더레이션 설정"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "시드는 노드가 다시 실행될지 여부를 제어합니다. 시드와 관계없이 결과는 비결정적입니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "BriaRemoveVideoBackground": {
+    "description": "Bria를 사용하여 비디오에서 배경을 제거합니다.",
+    "display_name": "Bria 비디오 배경 제거",
+    "inputs": {
+      "background_color": {
+        "name": "background_color",
+        "tooltip": "출력 비디오의 배경색입니다."
+      },
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "시드는 노드가 다시 실행될지 여부를 제어합니다. 시드와 관계없이 결과는 비결정적입니다."
+      },
+      "video": {
+        "name": "video"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -5024,6 +5065,46 @@
       }
     }
   },
+  "KlingFirstLastFrameNode": {
+    "description": "Kling V3를 사용하여 첫 프레임과 마지막 프레임으로 비디오를 생성합니다.",
+    "display_name": "Kling 3.0 첫-마지막 프레임에서 비디오 생성",
+    "inputs": {
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "duration": {
+        "name": "지속 시간"
+      },
+      "end_frame": {
+        "name": "마지막 프레임"
+      },
+      "first_frame": {
+        "name": "첫 프레임"
+      },
+      "generate_audio": {
+        "name": "오디오 생성"
+      },
+      "model": {
+        "name": "모델",
+        "tooltip": "모델 및 생성 설정."
+      },
+      "model_resolution": {
+        "name": "해상도"
+      },
+      "prompt": {
+        "name": "프롬프트"
+      },
+      "seed": {
+        "name": "시드",
+        "tooltip": "시드는 노드가 다시 실행될지 여부를 제어합니다. 시드와 관계없이 결과는 비결정적입니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "KlingImage2VideoNode": {
     "display_name": "Kling 비디오 생성 (이미지 → 비디오)",
     "inputs": {
@@ -5076,6 +5157,9 @@
       "aspect_ratio": {
         "name": "종횡비"
       },
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
       "human_fidelity": {
         "name": "사람 충실도",
         "tooltip": "피사체 참조 유사도"
@@ -5104,6 +5188,10 @@
       "prompt": {
         "name": "프롬프트",
         "tooltip": "이미지 생성을 위한 프롬프트"
+      },
+      "seed": {
+        "name": "시드",
+        "tooltip": "시드는 노드가 다시 실행될지 여부를 제어합니다. 시드와 관계없이 결과는 비결정적입니다."
       }
     },
     "outputs": {
@@ -5236,6 +5324,9 @@
     "description": "Kling의 최신 모델로 기존 비디오를 편집합니다.",
     "display_name": "Kling 옴니 비디오 편집 (Pro)",
     "inputs": {
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
       "keep_original_sound": {
         "name": "원본 사운드 유지"
       },
@@ -5253,6 +5344,10 @@
       "resolution": {
         "name": "해상도"
       },
+      "seed": {
+        "name": "시드",
+        "tooltip": "시드는 노드가 다시 실행될지 여부를 제어합니다. 시드와 관계없이 결과는 비결정적입니다."
+      },
       "video": {
         "name": "비디오",
         "tooltip": "편집할 비디오입니다. 출력 비디오 길이는 동일합니다."
@@ -5268,6 +5363,9 @@
     "description": "최신 Kling 모델을 사용하여 시작 프레임, 선택적 종료 프레임 또는 참조 이미지를 사용합니다.",
     "display_name": "Kling Omni 첫-마지막 프레임에서 비디오로 (Pro)",
     "inputs": {
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
       "duration": {
         "name": "지속 시간"
       },
@@ -5277,6 +5375,10 @@
       },
       "first_frame": {
         "name": "시작 프레임"
+      },
+      "generate_audio": {
+        "name": "오디오 생성",
+        "tooltip": "비디오용 오디오를 생성합니다. kling-v3-omni에서만 지원됩니다."
       },
       "model_name": {
         "name": "model_name"
@@ -5291,6 +5393,14 @@
       },
       "resolution": {
         "name": "해상도"
+      },
+      "seed": {
+        "name": "시드",
+        "tooltip": "시드는 노드가 다시 실행될지 여부를 제어합니다. 시드와 관계없이 결과는 비결정적입니다."
+      },
+      "storyboards": {
+        "name": "스토리보드",
+        "tooltip": "각각의 프롬프트와 지속 시간으로 비디오 세그먼트 시리즈를 생성합니다. kling-v3-omni에서만 지원됩니다."
       }
     },
     "outputs": {
@@ -5306,6 +5416,9 @@
       "aspect_ratio": {
         "name": "화면 비율"
       },
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
       "model_name": {
         "name": "model_name"
       },
@@ -5319,6 +5432,14 @@
       },
       "resolution": {
         "name": "해상도"
+      },
+      "seed": {
+        "name": "시드",
+        "tooltip": "시드는 노드가 다시 실행될지 여부를 제어합니다. 시드와 관계없이 결과는 비결정적입니다."
+      },
+      "series_amount": {
+        "name": "시리즈 개수",
+        "tooltip": "이미지 시리즈를 생성합니다. kling-image-o1에서는 지원되지 않습니다."
       }
     },
     "outputs": {
@@ -5334,8 +5455,15 @@
       "aspect_ratio": {
         "name": "화면 비율"
       },
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
       "duration": {
         "name": "지속 시간"
+      },
+      "generate_audio": {
+        "name": "오디오 생성",
+        "tooltip": "비디오용 오디오를 생성합니다. kling-v3-omni에서만 지원됩니다."
       },
       "model_name": {
         "name": "model_name"
@@ -5350,6 +5478,14 @@
       },
       "resolution": {
         "name": "해상도"
+      },
+      "seed": {
+        "name": "시드",
+        "tooltip": "시드는 노드가 다시 실행될지 여부를 제어합니다. 시드와 관계없이 결과는 비결정적입니다."
+      },
+      "storyboards": {
+        "name": "스토리보드",
+        "tooltip": "각각의 프롬프트와 지속 시간으로 비디오 세그먼트 시리즈를 생성합니다. kling-v3-omni에서만 지원됩니다."
       }
     },
     "outputs": {
@@ -5365,8 +5501,14 @@
       "aspect_ratio": {
         "name": "화면 비율"
       },
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
       "duration": {
         "name": "지속 시간"
+      },
+      "generate_audio": {
+        "name": "오디오 생성"
       },
       "model_name": {
         "name": "model_name"
@@ -5377,6 +5519,14 @@
       },
       "resolution": {
         "name": "해상도"
+      },
+      "seed": {
+        "name": "시드",
+        "tooltip": "시드는 노드가 다시 실행될지 여부를 제어합니다. 시드와 관계없이 결과는 비결정적입니다."
+      },
+      "storyboards": {
+        "name": "스토리보드",
+        "tooltip": "각각의 프롬프트와 지속 시간으로 비디오 세그먼트 시리즈를 생성합니다. o1 모델에서는 무시됩니다."
       }
     },
     "outputs": {
@@ -5391,6 +5541,9 @@
     "inputs": {
       "aspect_ratio": {
         "name": "종횡비"
+      },
+      "control_after_generate": {
+        "name": "생성 후 제어"
       },
       "duration": {
         "name": "길이"
@@ -5415,6 +5568,10 @@
       },
       "resolution": {
         "name": "해상도"
+      },
+      "seed": {
+        "name": "시드",
+        "tooltip": "시드는 노드가 다시 실행되어야 하는지 제어합니다. 시드와 관계없이 결과는 비결정적입니다."
       }
     },
     "outputs": {
@@ -5596,6 +5753,54 @@
       },
       "2": {
         "name": "길이",
+        "tooltip": null
+      }
+    }
+  },
+  "KlingVideoNode": {
+    "description": "Kling V3로 비디오를 생성합니다. 텍스트-투-비디오, 이미지-투-비디오, 선택적 스토리보드 멀티 프롬프트 및 오디오 생성을 지원합니다.",
+    "display_name": "Kling 3.0 비디오",
+    "inputs": {
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "generate_audio": {
+        "name": "오디오 생성"
+      },
+      "model": {
+        "name": "모델",
+        "tooltip": "모델 및 생성 설정."
+      },
+      "model_aspect_ratio": {
+        "name": "종횡비"
+      },
+      "model_resolution": {
+        "name": "해상도"
+      },
+      "multi_shot": {
+        "name": "멀티 샷",
+        "tooltip": "각각의 프롬프트와 지속 시간을 가진 비디오 세그먼트 시리즈를 생성합니다."
+      },
+      "multi_shot_duration": {
+        "name": "지속 시간"
+      },
+      "multi_shot_negative_prompt": {
+        "name": "네거티브 프롬프트"
+      },
+      "multi_shot_prompt": {
+        "name": "프롬프트"
+      },
+      "seed": {
+        "name": "시드",
+        "tooltip": "시드는 노드가 다시 실행되어야 하는지 제어합니다. 시드와 관계없이 결과는 비결정적입니다."
+      },
+      "start_frame": {
+        "name": "시작 프레임",
+        "tooltip": "선택적 시작 프레임 이미지입니다. 연결 시 이미지-투-비디오 모드로 전환됩니다."
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -6715,6 +6920,10 @@
   "LoraModelLoader": {
     "display_name": "LoRA 모델 로드",
     "inputs": {
+      "bypass": {
+        "name": "bypass",
+        "tooltip": "활성화하면 LoRA를 바이패스 모드로 적용하여 기본 모델 가중치를 변경하지 않습니다. 학습 시나 모델 가중치 오프로딩 시 유용합니다."
+      },
       "lora": {
         "name": "LoRA",
         "tooltip": "디퓨전 모델에 적용할 LoRA 모델입니다."
@@ -7171,6 +7380,88 @@
       "style_strength": {
         "name": "style_strength",
         "tooltip": "스타일 강도 비율입니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MagnificImageUpscalerCreativeNode": {
+    "description": "프롬프트 기반의 향상, 스타일화, 그리고 2x/4x/8x/16x 업스케일링. 최대 출력: 25.3 메가픽셀.",
+    "display_name": "Magnific 이미지 업스케일 (Creative)",
+    "inputs": {
+      "auto_downscale": {
+        "name": "auto_downscale",
+        "tooltip": "출력 이미지가 최대 픽셀 제한을 초과할 경우 입력 이미지를 자동으로 다운스케일합니다."
+      },
+      "creativity": {
+        "name": "creativity"
+      },
+      "engine": {
+        "name": "engine"
+      },
+      "fractality": {
+        "name": "fractality",
+        "tooltip": "프롬프트의 강도와 픽셀당 복잡성."
+      },
+      "hdr": {
+        "name": "hdr",
+        "tooltip": "정의도와 디테일의 수준."
+      },
+      "image": {
+        "name": "image"
+      },
+      "optimized_for": {
+        "name": "optimized_for"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "resemblance": {
+        "name": "resemblance",
+        "tooltip": "원본 이미지와의 유사도 수준."
+      },
+      "scale_factor": {
+        "name": "scale_factor"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MagnificImageUpscalerPreciseV2Node": {
+    "description": "선명도, 그레인, 디테일을 세밀하게 제어하는 고충실도 업스케일링. 최대 출력: 10060×10060 픽셀.",
+    "display_name": "Magnific 이미지 업스케일 (Precise V2)",
+    "inputs": {
+      "auto_downscale": {
+        "name": "auto_downscale",
+        "tooltip": "출력 이미지가 최대 해상도를 초과할 경우 입력 이미지를 자동으로 다운스케일합니다."
+      },
+      "flavor": {
+        "name": "flavor",
+        "tooltip": "처리 스타일: 일반용 sublime, 사진용 photo, 노이즈 사진용 photo_denoiser."
+      },
+      "image": {
+        "name": "image"
+      },
+      "scale_factor": {
+        "name": "scale_factor"
+      },
+      "sharpen": {
+        "name": "sharpen",
+        "tooltip": "이미지 선명도 강도. 값이 높을수록 엣지 정의와 선명도가 증가합니다."
+      },
+      "smart_grain": {
+        "name": "smart_grain",
+        "tooltip": "이미지가 너무 부드럽거나 인공적으로 보이지 않도록 하는 지능형 그레인/텍스처 강화."
+      },
+      "ultra_detail": {
+        "name": "ultra_detail",
+        "tooltip": "업스케일링 중 추가되는 미세 디테일, 텍스처, 마이크로 디테일을 제어합니다."
       }
     },
     "outputs": {
@@ -10047,6 +10338,32 @@
       }
     }
   },
+  "NAGuidance": {
+    "description": "정규화된 어텐션 가이던스를 모델에 적용하여, distilled/schnell 모델에서 네거티브 프롬프트를 사용할 수 있게 합니다.",
+    "display_name": "정규화된 어텐션 가이던스",
+    "inputs": {
+      "model": {
+        "name": "model",
+        "tooltip": "NAG를 적용할 모델입니다."
+      },
+      "nag_alpha": {
+        "name": "nag_alpha",
+        "tooltip": "정규화된 어텐션의 블렌딩 계수입니다. 1.0은 완전 대체, 0.0은 효과 없음입니다."
+      },
+      "nag_scale": {
+        "name": "nag_scale",
+        "tooltip": "가이던스 스케일 계수입니다. 값이 높을수록 네거티브 프롬프트에서 더 멀어집니다."
+      },
+      "nag_tau": {
+        "name": "nag_tau"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "NAG가 활성화된 패치된 모델입니다."
+      }
+    }
+  },
   "NormalizeImages": {
     "display_name": "이미지 정규화",
     "inputs": {
@@ -10813,8 +11130,13 @@
   "PreviewAny": {
     "display_name": "미리보기 아무거나",
     "inputs": {
-      "preview": {},
       "previewMode": {},
+      "preview_markdown": {
+        "name": "미리보기"
+      },
+      "preview_text": {
+        "name": "미리보기"
+      },
       "source": {
         "name": "소스"
       }
@@ -11408,6 +11730,88 @@
       },
       "substyle": {
         "name": "하위 스타일"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "RecraftV4TextToImageNode": {
+    "description": "Recraft V4 또는 V4 Pro 모델을 사용하여 이미지를 생성합니다.",
+    "display_name": "Recraft V4 텍스트-이미지",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "생성에 사용할 모델입니다."
+      },
+      "model_size": {
+        "name": "size"
+      },
+      "n": {
+        "name": "n",
+        "tooltip": "생성할 이미지의 개수입니다."
+      },
+      "negative_prompt": {
+        "name": "negative_prompt",
+        "tooltip": "이미지에서 원하지 않는 요소에 대한 선택적 텍스트 설명입니다."
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "이미지 생성을 위한 프롬프트입니다. 최대 10,000자까지 입력 가능합니다."
+      },
+      "recraft_controls": {
+        "name": "recraft_controls",
+        "tooltip": "Recraft Controls 노드를 통한 추가 생성 제어(선택 사항)입니다."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "노드가 다시 실행되어야 하는지 결정하는 시드입니다. 실제 결과는 시드와 관계없이 비결정적입니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "RecraftV4TextToVectorNode": {
+    "description": "Recraft V4 또는 V4 Pro 모델을 사용하여 SVG를 생성합니다.",
+    "display_name": "Recraft V4 텍스트-벡터",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "생성에 사용할 모델입니다."
+      },
+      "model_size": {
+        "name": "size"
+      },
+      "n": {
+        "name": "n",
+        "tooltip": "생성할 이미지의 개수입니다."
+      },
+      "negative_prompt": {
+        "name": "negative_prompt",
+        "tooltip": "이미지에서 원하지 않는 요소에 대한 선택적 텍스트 설명입니다."
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "이미지 생성을 위한 프롬프트입니다. 최대 10,000자까지 입력 가능합니다."
+      },
+      "recraft_controls": {
+        "name": "recraft_controls",
+        "tooltip": "Recraft Controls 노드를 통한 추가 생성 제어(선택 사항)입니다."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "노드가 다시 실행되어야 하는지 결정하는 시드입니다. 실제 결과는 시드와 관계없이 비결정적입니다."
       }
     },
     "outputs": {
@@ -13844,6 +14248,29 @@
       }
     }
   },
+  "Tencent3DPartNode": {
+    "description": "모델 구조를 기반으로 자동으로 부품 식별 및 생성을 수행합니다.",
+    "display_name": "Hunyuan3D: 3D 파트",
+    "inputs": {
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "model_3d": {
+        "name": "model_3d",
+        "tooltip": "FBX 형식의 3D 모델입니다. 모델의 면 개수는 30,000개 미만이어야 합니다."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "시드는 노드가 다시 실행될지 여부를 제어합니다. 시드와 관계없이 결과는 비결정적입니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "FBX",
+        "tooltip": null
+      }
+    }
+  },
   "TencentImageToModelNode": {
     "display_name": "Hunyuan3D: 이미지 → 모델 (Pro)",
     "inputs": {
@@ -13984,6 +14411,9 @@
       },
       "lyrics": {
         "name": "가사"
+      },
+      "min_p": {
+        "name": "min_p"
       },
       "seed": {
         "name": "시드"
@@ -14326,6 +14756,10 @@
         "name": "bypass_mode",
         "tooltip": "학습을 위한 바이패스 모드를 활성화합니다. 활성화 시, 어댑터가 가중치 수정 대신 forward hook을 통해 적용됩니다. 가중치를 직접 수정할 수 없는 양자화된 모델에 유용합니다."
       },
+      "checkpoint_depth": {
+        "name": "checkpoint_depth",
+        "tooltip": "그래디언트 체크포인팅의 깊이 수준입니다."
+      },
       "control_after_generate": {
         "name": "생성 후 제어"
       },
@@ -14360,6 +14794,10 @@
       "model": {
         "name": "모델",
         "tooltip": "LoRA를 학습시킬 모델입니다."
+      },
+      "offloading": {
+        "name": "offloading",
+        "tooltip": "그래디언트 체크포인팅의 깊이 수준입니다."
       },
       "optimizer": {
         "name": "옵티마이저",
@@ -15271,6 +15709,31 @@
       }
     }
   },
+  "Video Slice": {
+    "display_name": "비디오 슬라이스",
+    "inputs": {
+      "duration": {
+        "name": "지속 시간",
+        "tooltip": "초 단위 지속 시간, 0은 무제한 지속"
+      },
+      "start_time": {
+        "name": "시작 시간",
+        "tooltip": "초 단위 시작 시간"
+      },
+      "strict_duration": {
+        "name": "엄격한 지속 시간",
+        "tooltip": "True로 설정 시, 지정한 지속 시간이 불가능하면 오류가 발생합니다."
+      },
+      "video": {
+        "name": "비디오"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "VideoLinearCFGGuidance": {
     "display_name": "비디오 선형 CFG 가이드",
     "inputs": {
@@ -15483,6 +15946,46 @@
       },
       "seed": {
         "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Vidu3StartEndToVideoNode": {
+    "description": "시작 프레임, 종료 프레임, 프롬프트를 사용하여 비디오를 생성합니다.",
+    "display_name": "Vidu Q3 시작/종료 프레임-투-비디오 생성",
+    "inputs": {
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "end_frame": {
+        "name": "종료 프레임"
+      },
+      "first_frame": {
+        "name": "시작 프레임"
+      },
+      "model": {
+        "name": "모델",
+        "tooltip": "비디오 생성을 위해 사용할 모델입니다."
+      },
+      "model_audio": {
+        "name": "오디오"
+      },
+      "model_duration": {
+        "name": "길이"
+      },
+      "model_resolution": {
+        "name": "해상도"
+      },
+      "prompt": {
+        "name": "프롬프트",
+        "tooltip": "프롬프트 설명 (최대 2000자)."
+      },
+      "seed": {
+        "name": "시드"
       }
     },
     "outputs": {

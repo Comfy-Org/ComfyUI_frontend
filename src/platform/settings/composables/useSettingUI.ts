@@ -7,12 +7,34 @@ import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useVueFeatureFlags } from '@/composables/useVueFeatureFlags'
 import { isCloud, isDesktop } from '@/platform/distribution/types'
+import {
+  getSettingInfo,
+  useSettingStore
+} from '@/platform/settings/settingStore'
 import type { SettingTreeNode } from '@/platform/settings/settingStore'
-import { useSettingStore } from '@/platform/settings/settingStore'
-import type { SettingParams } from '@/platform/settings/types'
-
+import type { SettingPanelType, SettingParams } from '@/platform/settings/types'
+import type { NavGroupData } from '@/types/navTypes'
 import { normalizeI18nKey } from '@/utils/formatUtil'
 import { buildTree } from '@/utils/treeUtil'
+
+const CATEGORY_ICONS: Record<string, string> = {
+  '3D': 'icon-[lucide--box]',
+  about: 'icon-[lucide--info]',
+  Appearance: 'icon-[lucide--palette]',
+  Comfy: 'icon-[lucide--settings]',
+  credits: 'icon-[lucide--coins]',
+  extension: 'icon-[lucide--puzzle]',
+  keybinding: 'icon-[lucide--keyboard]',
+  LiteGraph: 'icon-[lucide--workflow]',
+  'Mask Editor': 'icon-[lucide--pen-tool]',
+  Other: 'icon-[lucide--ellipsis]',
+  PlanCredits: 'icon-[lucide--credit-card]',
+  secrets: 'icon-[lucide--key-round]',
+  'server-config': 'icon-[lucide--server]',
+  subscription: 'icon-[lucide--credit-card]',
+  user: 'icon-[lucide--user]',
+  workspace: 'icon-[lucide--building-2]'
+}
 
 interface SettingPanelItem {
   node: SettingTreeNode
@@ -21,16 +43,8 @@ interface SettingPanelItem {
 }
 
 export function useSettingUI(
-  defaultPanel?:
-    | 'about'
-    | 'keybinding'
-    | 'extension'
-    | 'server-config'
-    | 'user'
-    | 'credits'
-    | 'subscription'
-    | 'workspace'
-    | 'secrets'
+  defaultPanel?: SettingPanelType,
+  scrollToSettingId?: string
 ) {
   const { t } = useI18n()
   const { isLoggedIn } = useCurrentUser()
@@ -162,7 +176,8 @@ export function useSettingUI(
       children: []
     },
     component: defineAsyncComponent(
-      () => import('@/components/dialog/content/setting/WorkspacePanel.vue')
+      () =>
+        import('@/platform/workspace/components/dialogs/settings/WorkspacePanelContent.vue')
     )
   }
 
@@ -238,12 +253,23 @@ export function useSettingUI(
    * The default category to show when the dialog is opened.
    */
   const defaultCategory = computed<SettingTreeNode>(() => {
-    if (!defaultPanel) return settingCategories.value[0]
-    // Search through all groups in groupedMenuTreeNodes
-    for (const group of groupedMenuTreeNodes.value) {
-      const found = group.children?.find((node) => node.key === defaultPanel)
-      if (found) return found
+    if (defaultPanel) {
+      for (const group of groupedMenuTreeNodes.value) {
+        const found = group.children?.find((node) => node.key === defaultPanel)
+        if (found) return found
+      }
+      return settingCategories.value[0]
     }
+
+    if (scrollToSettingId) {
+      const setting = settingStore.settingsById[scrollToSettingId]
+      if (setting) {
+        const { category } = getSettingInfo(setting)
+        const found = settingCategories.value.find((c) => c.label === category)
+        if (found) return found
+      }
+    }
+
     return settingCategories.value[0]
   })
 
@@ -343,6 +369,36 @@ export function useSettingUI(
       : legacyMenuTreeNodes.value
   )
 
+  const navGroups = computed<NavGroupData[]>(() =>
+    groupedMenuTreeNodes.value.map((group) => ({
+      title:
+        (group as SettingTreeNode & { translatedLabel?: string })
+          .translatedLabel ?? group.label,
+      items: (group.children ?? []).map((child) => ({
+        id: child.key,
+        label:
+          (child as SettingTreeNode & { translatedLabel?: string })
+            .translatedLabel ?? child.label,
+        icon:
+          CATEGORY_ICONS[child.key] ??
+          CATEGORY_ICONS[child.label] ??
+          'icon-[lucide--plug]'
+      }))
+    }))
+  )
+
+  function findCategoryByKey(key: string): SettingTreeNode | null {
+    for (const group of groupedMenuTreeNodes.value) {
+      const found = group.children?.find((node) => node.key === key)
+      if (found) return found
+    }
+    return null
+  }
+
+  function findPanelByKey(key: string): SettingPanelItem | null {
+    return panels.value.find((p) => p.node.key === key) ?? null
+  }
+
   onMounted(() => {
     activeCategory.value = defaultCategory.value
   })
@@ -352,6 +408,10 @@ export function useSettingUI(
     activeCategory,
     defaultCategory,
     groupedMenuTreeNodes,
-    settingCategories
+    settingCategories,
+    navGroups,
+    teamWorkspacesEnabled,
+    findCategoryByKey,
+    findPanelByKey
   }
 }

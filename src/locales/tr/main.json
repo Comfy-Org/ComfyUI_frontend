@@ -798,6 +798,7 @@
     "disableSelected": "Seçilenleri Devre Dışı Bırak",
     "disableThirdParty": "Üçüncü Tarafı Devre Dışı Bırak",
     "disabling": "{id} devre dışı bırakılıyor",
+    "disconnectedFromBackend": "Sunucu ile bağlantı kesildi. Sunucunun çalışıp çalışmadığını kontrol edin.",
     "dismiss": "Kapat",
     "download": "İndir",
     "downloadAudio": "Sesi indir",
@@ -820,6 +821,7 @@
     "enterBaseName": "Temel adı girin",
     "enterNewName": "Yeni adı girin",
     "enterNewNamePrompt": "Yeni adı girin:",
+    "enterSubgraph": "Alt Grafiğe Gir",
     "error": "Hata",
     "errorLoadingImage": "Görüntü yüklenirken hata",
     "errorLoadingVideo": "Video yüklenirken hata",
@@ -846,6 +848,7 @@
     "hideLeftPanel": "Sol paneli gizle",
     "hideRightPanel": "Sağ paneli gizle",
     "icon": "Simge",
+    "imageDoesNotExist": "Görsel mevcut değil",
     "imageFailedToLoad": "Görsel yüklenemedi",
     "imagePreview": "Görüntü önizlemesi - Görüntüler arasında gezinmek için ok tuşlarını kullanın",
     "imageUrl": "Görsel URL'si",
@@ -995,6 +998,7 @@
     "title": "Başlık",
     "triggerPhrase": "Tetikleyici ifade",
     "unknownError": "Bilinmeyen hata",
+    "unknownFile": "Bilinmeyen dosya",
     "untitled": "Başlıksız",
     "update": "Güncelle",
     "updateAvailable": "Güncelleme Mevcut",
@@ -1740,7 +1744,9 @@
   "missingModelsDialog": {
     "doNotAskAgain": "Bunu bir daha gösterme",
     "missingModels": "Eksik Modeller",
-    "missingModelsMessage": "Grafik yüklenirken aşağıdaki modeller bulunamadı"
+    "missingModelsMessage": "Grafik yüklenirken aşağıdaki modeller bulunamadı",
+    "reEnableInSettings": "{link} içinde tekrar etkinleştir",
+    "reEnableInSettingsLink": "Ayarlar"
   },
   "missingNodes": {
     "cloud": {
@@ -1892,6 +1898,25 @@
     "outputs": "Çıktılar",
     "type": "Tür"
   },
+  "nodeReplacement": {
+    "compatibleAlternatives": "Uyumlu Alternatifler",
+    "installMissingNodes": "Eksik Düğümleri Yükle",
+    "installationRequired": "Kurulum Gerekli",
+    "instructionMessage": "İş akışını çalıştırmak için bu düğümleri yüklemeli veya yüklü alternatiflerle değiştirmelisiniz. Eksik düğümler tuvalde {red} ile vurgulanır. Bazı düğümler değiştirilemez ve Node Manager üzerinden yüklenmelidir.",
+    "notReplaceable": "Kurulum Gerekli",
+    "openNodeManager": "Node Manager'ı Aç",
+    "quickFixAvailable": "Hızlı Düzeltme Mevcut",
+    "redHighlight": "kırmızı",
+    "replaceFailed": "Düğümler değiştirilemedi",
+    "replaceSelected": "Seçilenleri Değiştir ({count})",
+    "replaceWarning": "Bu işlem iş akışını kalıcı olarak değiştirecek. Emin değilseniz önce bir kopyasını kaydedin.",
+    "replaceable": "Değiştirilebilir",
+    "replaced": "Değiştirildi",
+    "replacedAllNodes": "{count} düğüm türü değiştirildi",
+    "replacedNode": "Değiştirilen düğüm: {nodeType}",
+    "selectAll": "Tümünü Seç",
+    "skipForNow": "Şimdilik Atla"
+  },
   "nodeTemplates": {
     "enterName": "İsim girin",
     "saveAsTemplate": "Şablon olarak kaydet"
@@ -1975,6 +2000,7 @@
       "removeJob": "İşi kaldır",
       "reportError": "Hata bildir"
     },
+    "jobQueueing": "İşlem kuyruğa alınıyor",
     "toggleJobHistory": "İş Geçmişini Aç/Kapat"
   },
   "releaseToast": {
@@ -2033,6 +2059,8 @@
     "pinned": "Sabitlendi",
     "properties": "Özellikler",
     "removeFavorite": "Favorilerden Kaldır",
+    "resetAllParameters": "Tüm parametreleri sıfırla",
+    "resetToDefault": "Varsayılanlara sıfırla",
     "settings": "Ayarlar",
     "showAdvancedInputsButton": "Gelişmiş girdileri göster",
     "showInput": "Girdiyi göster",
@@ -2396,14 +2424,20 @@
       "filterJobs": "İşleri filtrele",
       "inlineTotalLabel": "Toplam",
       "interruptAll": "Tüm çalışan işleri durdur",
+      "jobCompleted": "İşlem tamamlandı",
+      "jobFailed": "İşlem başarısız oldu",
       "jobQueue": "İş Kuyruğu",
+      "jobsAddedToQueue": "{count} işlem kuyruğa eklendi | {count} işlem kuyruğa eklendi",
       "jobsCompleted": "{count} iş tamamlandı | {count} iş tamamlandı",
       "jobsFailed": "{count} iş başarısız oldu | {count} iş başarısız oldu",
       "moreOptions": "Daha fazla seçenek",
       "noActiveJobs": "Aktif iş yok",
       "preview": "Önizleme",
+      "queuedJobsLabel": "{count} kuyruğa alındı",
       "queuedSuffix": "kuyrukta",
       "running": "çalışıyor",
+      "runningJobsLabel": "{count} çalışıyor",
+      "runningQueuedSummary": "{running}, {queued}",
       "showAssets": "Varlıkları göster",
       "showAssetsPanel": "Varlık panelini göster",
       "sortBy": "Sırala",
@@ -2807,6 +2841,9 @@
   "vueNodesMigrationMainMenu": {
     "message": "Ana menüden istediğiniz zaman Nodes 2.0'a geri dönebilirsiniz."
   },
+  "vueNodesSlot": {
+    "iterative": "(Yinelemeli)"
+  },
   "welcome": {
     "getStarted": "Başlayın",
     "title": "ComfyUI'ye Hoş Geldiniz"
@@ -2827,6 +2864,7 @@
       "placeholder": "Seç...",
       "placeholderAudio": "Ses seç...",
       "placeholderImage": "Görsel seç...",
+      "placeholderMesh": "Ağ seç...",
       "placeholderModel": "Model seç...",
       "placeholderUnknown": "Medya seç...",
       "placeholderVideo": "Video seç..."
@@ -2865,7 +2903,8 @@
     "unsavedChanges": {
       "message": "Kaydedilmemiş değişiklikleriniz var. Bunları iptal edip çalışma alanlarını değiştirmek istiyor musunuz?",
       "title": "Kaydedilmemiş Değişiklikler"
-    }
+    },
+    "viewWorkspace": "Çalışma alanını görüntüle"
   },
   "workspaceAuth": {
     "errors": {
@@ -2914,6 +2953,14 @@
       "placeholder": "Kişinin e-posta adresini girin",
       "title": "Bu çalışma alanına birini davet et"
     },
+    "inviteUpsellDialog": {
+      "messageNotSubscribed": "Bu çalışma alanına ekip üyeleri eklemek için Creator planına veya daha üstüne ihtiyacınız var. Standard plan yalnızca tek kişilik (sahip) destekler.",
+      "messageSingleSeat": "Standard plan, çalışma alanı sahibi için bir koltuk içerir. Ek üyeler davet etmek için Creator planına veya daha üstüne yükselterek birden fazla koltuğun kilidini açın.",
+      "titleNotSubscribed": "Üyeleri davet etmek için abonelik gereklidir",
+      "titleSingleSeat": "Mevcut planınız tek kişilik desteklemektedir",
+      "upgradeToCreator": "Creator'a Yükselt",
+      "viewPlans": "Planları Görüntüle"
+    },
     "leaveDialog": {
       "leave": "Ayrıl",
       "message": "Çalışma alanı sahibiyle iletişime geçmedikçe tekrar katılamazsınız.",
@@ -2939,7 +2986,10 @@
       "tabs": {
         "active": "Aktif",
         "pendingCount": "Bekliyor ({count})"
-      }
+      },
+      "upsellBannerSubscribe": "Bu çalışma alanına ekip üyeleri davet etmek için Creator planına veya daha üstüne abone olun.",
+      "upsellBannerUpgrade": "Ek ekip üyeleri davet etmek için Creator planına veya daha üstüne yükseltin.",
+      "viewPlans": "Planları görüntüle"
     },
     "menu": {
       "deleteWorkspace": "Çalışma Alanını Sil",

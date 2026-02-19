@@ -353,15 +353,6 @@
         "name": "denetleme",
         "tooltip": "Denetleme ayarları"
       },
-      "moderation_prompt_content_moderation": {
-        "name": "istem_içeriği_denetleme"
-      },
-      "moderation_visual_input_moderation": {
-        "name": "görsel_girdi_denetleme"
-      },
-      "moderation_visual_output_moderation": {
-        "name": "görsel_çıktı_denetleme"
-      },
       "negative_prompt": {
         "name": "negatif_istem"
       },
@@ -386,6 +377,56 @@
       },
       "1": {
         "name": "yapılandırılmış_istem",
+        "tooltip": null
+      }
+    }
+  },
+  "BriaRemoveImageBackground": {
+    "description": "Bria RMBG 2.0 kullanarak bir görselin arka planını kaldırın.",
+    "display_name": "Bria Görsel Arka Planı Kaldır",
+    "inputs": {
+      "control_after_generate": {
+        "name": "oluşturduktan sonra kontrol et"
+      },
+      "image": {
+        "name": "görsel"
+      },
+      "moderation": {
+        "name": "moderasyon",
+        "tooltip": "Moderasyon ayarları"
+      },
+      "seed": {
+        "name": "tohum",
+        "tooltip": "Tohum, düğümün tekrar çalıştırılıp çalıştırılmayacağını kontrol eder; sonuçlar tohumdan bağımsız olarak deterministik değildir."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "BriaRemoveVideoBackground": {
+    "description": "Bria kullanarak bir videonun arka planını kaldırın.",
+    "display_name": "Bria Video Arka Planı Kaldır",
+    "inputs": {
+      "background_color": {
+        "name": "arka plan rengi",
+        "tooltip": "Çıktı video için arka plan rengi."
+      },
+      "control_after_generate": {
+        "name": "oluşturduktan sonra kontrol et"
+      },
+      "seed": {
+        "name": "tohum",
+        "tooltip": "Tohum, düğümün tekrar çalıştırılıp çalıştırılmayacağını kontrol eder; sonuçlar tohumdan bağımsız olarak deterministik değildir."
+      },
+      "video": {
+        "name": "video"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -5024,6 +5065,46 @@
       }
     }
   },
+  "KlingFirstLastFrameNode": {
+    "description": "Kling V3 ile ilk ve son kareleri kullanarak video oluşturun.",
+    "display_name": "Kling 3.0 İlk-Son-Kareden Videoya",
+    "inputs": {
+      "control_after_generate": {
+        "name": "oluşturduktan sonra kontrol et"
+      },
+      "duration": {
+        "name": "süre"
+      },
+      "end_frame": {
+        "name": "son_kare"
+      },
+      "first_frame": {
+        "name": "ilk_kare"
+      },
+      "generate_audio": {
+        "name": "ses_oluştur"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Model ve oluşturma ayarları."
+      },
+      "model_resolution": {
+        "name": "çözünürlük"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed, düğümün tekrar çalıştırılıp çalıştırılmayacağını kontrol eder; seed ne olursa olsun sonuçlar deterministik değildir."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "KlingImage2VideoNode": {
     "display_name": "Kling Görüntüden Videoya",
     "inputs": {
@@ -5076,6 +5157,9 @@
       "aspect_ratio": {
         "name": "en_boy_oranı"
       },
+      "control_after_generate": {
+        "name": "oluşturduktan sonra kontrol et"
+      },
       "human_fidelity": {
         "name": "insan_sadakati",
         "tooltip": "Konu referans benzerliği"
@@ -5104,6 +5188,10 @@
       "prompt": {
         "name": "istem",
         "tooltip": "Pozitif metin istemi"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed, düğümün tekrar çalıştırılıp çalıştırılmayacağını kontrol eder; seed ne olursa olsun sonuçlar deterministik değildir."
       }
     },
     "outputs": {
@@ -5236,6 +5324,9 @@
     "description": "Mevcut bir videoyu Kling'in en son modeliyle düzenleyin.",
     "display_name": "Kling Omni Video Düzenle (Pro)",
     "inputs": {
+      "control_after_generate": {
+        "name": "oluşturduktan sonra kontrol et"
+      },
       "keep_original_sound": {
         "name": "orijinal_sesi_koru"
       },
@@ -5253,6 +5344,10 @@
       "resolution": {
         "name": "çözünürlük"
       },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed, düğümün tekrar çalıştırılıp çalıştırılmayacağını kontrol eder; seed ne olursa olsun sonuçlar deterministik değildir."
+      },
       "video": {
         "name": "video",
         "tooltip": "Düzenlenecek video. Çıktı video uzunluğu aynı olacaktır."
@@ -5268,6 +5363,9 @@
     "description": "Başlangıç karesi, isteğe bağlı bir bitiş karesi veya referans görselleri ile en yeni Kling modeli kullanılır.",
     "display_name": "Kling Omni İlk-Son-Kare'den Videoya (Pro)",
     "inputs": {
+      "control_after_generate": {
+        "name": "oluşturduktan sonra kontrol et"
+      },
       "duration": {
         "name": "duration"
       },
@@ -5277,6 +5375,10 @@
       },
       "first_frame": {
         "name": "first_frame"
+      },
+      "generate_audio": {
+        "name": "ses_oluştur",
+        "tooltip": "Video için ses oluşturun. Sadece kling-v3-omni için desteklenir."
       },
       "model_name": {
         "name": "model_name"
@@ -5291,6 +5393,14 @@
       },
       "resolution": {
         "name": "resolution"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed, düğümün tekrar çalıştırılıp çalıştırılmayacağını kontrol eder; seed ne olursa olsun sonuçlar deterministik değildir."
+      },
+      "storyboards": {
+        "name": "hikaye_tahtaları",
+        "tooltip": "Bireysel promptlar ve sürelerle bir dizi video segmenti oluşturun. Sadece kling-v3-omni için desteklenir."
       }
     },
     "outputs": {
@@ -5306,6 +5416,9 @@
       "aspect_ratio": {
         "name": "aspect_ratio"
       },
+      "control_after_generate": {
+        "name": "oluşturduktan sonra kontrol et"
+      },
       "model_name": {
         "name": "model_name"
       },
@@ -5319,6 +5432,14 @@
       },
       "resolution": {
         "name": "resolution"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed, düğümün tekrar çalıştırılıp çalıştırılmayacağını kontrol eder; seed ne olursa olsun sonuçlar deterministik değildir."
+      },
+      "series_amount": {
+        "name": "seri_sayısı",
+        "tooltip": "Bir dizi görsel oluşturun. kling-image-o1 için desteklenmez."
       }
     },
     "outputs": {
@@ -5334,8 +5455,15 @@
       "aspect_ratio": {
         "name": "aspect_ratio"
       },
+      "control_after_generate": {
+        "name": "oluşturduktan sonra kontrol et"
+      },
       "duration": {
         "name": "duration"
+      },
+      "generate_audio": {
+        "name": "ses_oluştur",
+        "tooltip": "Video için ses oluşturun. Sadece kling-v3-omni için desteklenir."
       },
       "model_name": {
         "name": "model_name"
@@ -5350,6 +5478,14 @@
       },
       "resolution": {
         "name": "resolution"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed, düğümün tekrar çalıştırılıp çalıştırılmayacağını kontrol eder; seed ne olursa olsun sonuçlar deterministik değildir."
+      },
+      "storyboards": {
+        "name": "hikaye_tahtaları",
+        "tooltip": "Bireysel promptlar ve sürelerle bir dizi video segmenti oluşturun. Sadece kling-v3-omni için desteklenir."
       }
     },
     "outputs": {
@@ -5365,8 +5501,14 @@
       "aspect_ratio": {
         "name": "aspect_ratio"
       },
+      "control_after_generate": {
+        "name": "oluşturduktan sonra kontrol et"
+      },
       "duration": {
         "name": "duration"
+      },
+      "generate_audio": {
+        "name": "ses_oluştur"
       },
       "model_name": {
         "name": "model_name"
@@ -5377,6 +5519,14 @@
       },
       "resolution": {
         "name": "resolution"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed, düğümün tekrar çalıştırılıp çalıştırılmayacağını kontrol eder; seed ne olursa olsun sonuçlar deterministik değildir."
+      },
+      "storyboards": {
+        "name": "hikaye_tahtaları",
+        "tooltip": "Bireysel promptlar ve sürelerle bir dizi video segmenti oluşturun. o1 modeli için dikkate alınmaz."
       }
     },
     "outputs": {
@@ -5391,6 +5541,9 @@
     "inputs": {
       "aspect_ratio": {
         "name": "aspect_ratio"
+      },
+      "control_after_generate": {
+        "name": "oluşturduktan sonra kontrol et"
       },
       "duration": {
         "name": "duration"
@@ -5415,6 +5568,10 @@
       },
       "resolution": {
         "name": "resolution"
+      },
+      "seed": {
+        "name": "tohum",
+        "tooltip": "Tohum, düğümün yeniden çalıştırılıp çalıştırılmayacağını kontrol eder; sonuçlar tohumdan bağımsız olarak belirlenemezdir."
       }
     },
     "outputs": {
@@ -5596,6 +5753,54 @@
       },
       "2": {
         "name": "süre",
+        "tooltip": null
+      }
+    }
+  },
+  "KlingVideoNode": {
+    "description": "Kling V3 ile videolar oluşturun. Metinden videoya ve isteğe bağlı storyboard çoklu istem ve ses üretimiyle görüntüden videoya destekler.",
+    "display_name": "Kling 3.0 Video",
+    "inputs": {
+      "control_after_generate": {
+        "name": "oluşturduktan sonra kontrol et"
+      },
+      "generate_audio": {
+        "name": "ses oluştur"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Model ve üretim ayarları."
+      },
+      "model_aspect_ratio": {
+        "name": "en boy oranı"
+      },
+      "model_resolution": {
+        "name": "çözünürlük"
+      },
+      "multi_shot": {
+        "name": "çoklu çekim",
+        "tooltip": "Her biri ayrı istem ve süreye sahip bir dizi video segmenti oluşturun."
+      },
+      "multi_shot_duration": {
+        "name": "süre"
+      },
+      "multi_shot_negative_prompt": {
+        "name": "negatif istem"
+      },
+      "multi_shot_prompt": {
+        "name": "istem"
+      },
+      "seed": {
+        "name": "tohum",
+        "tooltip": "Tohum, düğümün yeniden çalıştırılıp çalıştırılmayacağını kontrol eder; sonuçlar tohumdan bağımsız olarak belirlenemezdir."
+      },
+      "start_frame": {
+        "name": "başlangıç karesi",
+        "tooltip": "İsteğe bağlı başlangıç kare görüntüsü. Bağlandığında, görüntüden videoya moduna geçer."
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -6715,6 +6920,10 @@
   "LoraModelLoader": {
     "display_name": "LoRA Modeli Yükle",
     "inputs": {
+      "bypass": {
+        "name": "bypass",
+        "tooltip": "Etkinleştirildiğinde, LoRA'yı temel model ağırlıklarını değiştirmeden bypass modunda uygular. Eğitim sırasında ve model ağırlıkları dışa aktarıldığında kullanışlıdır."
+      },
       "lora": {
         "name": "lora",
         "tooltip": "Difüzyon modeline uygulanacak LoRA modeli."
@@ -7171,6 +7380,88 @@
       "style_strength": {
         "name": "style_strength",
         "tooltip": "Stil gücü yüzdesi."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MagnificImageUpscalerCreativeNode": {
+    "description": "Prompt rehberliğinde geliştirme, stilizasyon ve 2x/4x/8x/16x büyütme. Maksimum çıktı: 25,3 megapiksel.",
+    "display_name": "Magnific Görüntü Büyütme (Yaratıcı)",
+    "inputs": {
+      "auto_downscale": {
+        "name": "otomatik_küçültme",
+        "tooltip": "Çıktı maksimum piksel sınırını aşarsa giriş görüntüsünü otomatik olarak küçült."
+      },
+      "creativity": {
+        "name": "yaratıcılık"
+      },
+      "engine": {
+        "name": "motor"
+      },
+      "fractality": {
+        "name": "fraktalite",
+        "tooltip": "Prompt gücü ve piksel başına karmaşıklık."
+      },
+      "hdr": {
+        "name": "hdr",
+        "tooltip": "Tanım ve detay seviyesi."
+      },
+      "image": {
+        "name": "görüntü"
+      },
+      "optimized_for": {
+        "name": "için_optimize_edildi"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "resemblance": {
+        "name": "benzerlik",
+        "tooltip": "Orijinal görüntüye benzerlik seviyesi."
+      },
+      "scale_factor": {
+        "name": "ölçek_faktörü"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MagnificImageUpscalerPreciseV2Node": {
+    "description": "Keskinlik, gren ve detay üzerinde hassas kontrol ile yüksek doğrulukta büyütme. Maksimum çıktı: 10060×10060 piksel.",
+    "display_name": "Magnific Görüntü Büyütme (Hassas V2)",
+    "inputs": {
+      "auto_downscale": {
+        "name": "otomatik_küçültme",
+        "tooltip": "Çıktı maksimum çözünürlüğü aşarsa giriş görüntüsünü otomatik olarak küçült."
+      },
+      "flavor": {
+        "name": "stil",
+        "tooltip": "İşleme stili: genel kullanım için sublime, fotoğraflar için photo, gürültülü fotoğraflar için photo_denoiser."
+      },
+      "image": {
+        "name": "görüntü"
+      },
+      "scale_factor": {
+        "name": "ölçek_faktörü"
+      },
+      "sharpen": {
+        "name": "keskinleştirme",
+        "tooltip": "Görüntü keskinliği yoğunluğu. Yüksek değerler kenar tanımını ve netliği artırır."
+      },
+      "smart_grain": {
+        "name": "akıllı_gren",
+        "tooltip": "Görüntünün çok pürüzsüz veya yapay görünmesini önlemek için akıllı gren/doku artırımı."
+      },
+      "ultra_detail": {
+        "name": "ultra_detay",
+        "tooltip": "Büyütme sırasında eklenen ince detayları, dokuları ve mikro detayları kontrol eder."
       }
     },
     "outputs": {
@@ -10047,6 +10338,32 @@
       }
     }
   },
+  "NAGuidance": {
+    "description": "Modellere Normalize Edilmiş Dikkat Yönlendirmesi uygular, distilled/schnell modellerde negatif istemlere olanak tanır.",
+    "display_name": "Normalize Edilmiş Dikkat Yönlendirmesi",
+    "inputs": {
+      "model": {
+        "name": "model",
+        "tooltip": "NAG uygulanacak model."
+      },
+      "nag_alpha": {
+        "name": "nag_alpha",
+        "tooltip": "Normalize edilmiş dikkat için karıştırma faktörü. 1.0 tam değişim, 0.0 hiçbir etki yok."
+      },
+      "nag_scale": {
+        "name": "nag_scale",
+        "tooltip": "Yönlendirme ölçek faktörü. Daha yüksek değerler, negatif istemden daha fazla uzaklaştırır."
+      },
+      "nag_tau": {
+        "name": "nag_tau"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "NAG etkinleştirilmiş yamalı model."
+      }
+    }
+  },
   "NormalizeImages": {
     "display_name": "Görüntüleri Normalleştir",
     "inputs": {
@@ -10813,8 +11130,13 @@
   "PreviewAny": {
     "display_name": "Herhangi Bir Şeyi Önizle",
     "inputs": {
-      "preview": {},
       "previewMode": {},
+      "preview_markdown": {
+        "name": "Önizleme"
+      },
+      "preview_text": {
+        "name": "Önizleme"
+      },
       "source": {
         "name": "kaynak"
       }
@@ -11408,6 +11730,88 @@
       },
       "substyle": {
         "name": "alt_stil"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "RecraftV4TextToImageNode": {
+    "description": "Recraft V4 veya V4 Pro modelleriyle görseller üretir.",
+    "display_name": "Recraft V4 Metinden Görsele",
+    "inputs": {
+      "control_after_generate": {
+        "name": "üretimden sonra kontrol"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Üretim için kullanılacak model."
+      },
+      "model_size": {
+        "name": "boyut"
+      },
+      "n": {
+        "name": "n",
+        "tooltip": "Üretilecek görsel sayısı."
+      },
+      "negative_prompt": {
+        "name": "negative_prompt",
+        "tooltip": "Bir görselde istenmeyen ögelerin isteğe bağlı metin açıklaması."
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Görsel üretimi için istem. En fazla 10.000 karakter."
+      },
+      "recraft_controls": {
+        "name": "recraft_controls",
+        "tooltip": "Recraft Controls düğümüyle üretim üzerinde isteğe bağlı ek kontroller."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Düğümün tekrar çalıştırılıp çalıştırılmayacağını belirleyen tohum; tohuma bakılmaksızın gerçek sonuçlar deterministik değildir."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "RecraftV4TextToVectorNode": {
+    "description": "Recraft V4 veya V4 Pro modelleriyle SVG üretir.",
+    "display_name": "Recraft V4 Metinden Vektöre",
+    "inputs": {
+      "control_after_generate": {
+        "name": "üretimden sonra kontrol"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Üretim için kullanılacak model."
+      },
+      "model_size": {
+        "name": "boyut"
+      },
+      "n": {
+        "name": "n",
+        "tooltip": "Üretilecek görsel sayısı."
+      },
+      "negative_prompt": {
+        "name": "negative_prompt",
+        "tooltip": "Bir görselde istenmeyen ögelerin isteğe bağlı metin açıklaması."
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Görsel üretimi için istem. En fazla 10.000 karakter."
+      },
+      "recraft_controls": {
+        "name": "recraft_controls",
+        "tooltip": "Recraft Controls düğümüyle üretim üzerinde isteğe bağlı ek kontroller."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Düğümün tekrar çalıştırılıp çalıştırılmayacağını belirleyen tohum; tohuma bakılmaksızın gerçek sonuçlar deterministik değildir."
       }
     },
     "outputs": {
@@ -13844,6 +14248,29 @@
       }
     }
   },
+  "Tencent3DPartNode": {
+    "description": "Model yapısına göre otomatik olarak bileşen tanımlama ve oluşturma işlemlerini gerçekleştirir.",
+    "display_name": "Hunyuan3D: 3D Parça",
+    "inputs": {
+      "control_after_generate": {
+        "name": "oluşturduktan sonra kontrol et"
+      },
+      "model_3d": {
+        "name": "model_3d",
+        "tooltip": "FBX formatında 3D model. Model 30000'den az yüzeye sahip olmalıdır."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed, düğümün tekrar çalıştırılıp çalıştırılmayacağını kontrol eder; seed ne olursa olsun sonuçlar deterministik değildir."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "FBX",
+        "tooltip": null
+      }
+    }
+  },
   "TencentImageToModelNode": {
     "display_name": "Hunyuan3D: Görsel(ler)den Modele (Pro)",
     "inputs": {
@@ -13984,6 +14411,9 @@
       },
       "lyrics": {
         "name": "şarkı sözleri"
+      },
+      "min_p": {
+        "name": "min_p"
       },
       "seed": {
         "name": "tohum"
@@ -14326,6 +14756,10 @@
         "name": "bypass_mode",
         "tooltip": "Eğitim için bypass modunu etkinleştir. Etkinleştirildiğinde, adapter'lar ağırlık değişikliği yerine forward hook'lar ile uygulanır. Ağırlıkların doğrudan değiştirilemediği quantized modeller için kullanışlıdır."
       },
+      "checkpoint_depth": {
+        "name": "checkpoint_depth",
+        "tooltip": "Gradyan kontrol noktası derinlik seviyesi."
+      },
       "control_after_generate": {
         "name": "oluşturduktan sonra kontrol et"
       },
@@ -14360,6 +14794,10 @@
       "model": {
         "name": "model",
         "tooltip": "LoRA'nın eğitileceği model."
+      },
+      "offloading": {
+        "name": "offloading",
+        "tooltip": "Gradyan kontrol noktası derinlik seviyesi."
       },
       "optimizer": {
         "name": "optimize_edici",
@@ -15271,6 +15709,31 @@
       }
     }
   },
+  "Video Slice": {
+    "display_name": "Video Dilimle",
+    "inputs": {
+      "duration": {
+        "name": "süre",
+        "tooltip": "Süre (saniye cinsinden) veya sınırsız süre için 0"
+      },
+      "start_time": {
+        "name": "başlangıç zamanı",
+        "tooltip": "Başlangıç zamanı (saniye cinsinden)"
+      },
+      "strict_duration": {
+        "name": "kesin süre",
+        "tooltip": "Doğruysa, belirtilen süre mümkün değilse bir hata oluşur."
+      },
+      "video": {
+        "name": "video"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "VideoLinearCFGGuidance": {
     "display_name": "VideoDoğrusalCFGRehberliği",
     "inputs": {
@@ -15483,6 +15946,46 @@
       },
       "seed": {
         "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Vidu3StartEndToVideoNode": {
+    "description": "Bir başlangıç karesi, bir bitiş karesi ve bir komut istemi ile video oluşturun.",
+    "display_name": "Vidu Q3 Başlangıç/Bitiş Kareden Videoya Oluşturma",
+    "inputs": {
+      "control_after_generate": {
+        "name": "oluşturduktan sonra kontrol et"
+      },
+      "end_frame": {
+        "name": "bitiş karesi"
+      },
+      "first_frame": {
+        "name": "ilk kare"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Video oluşturmak için kullanılacak model."
+      },
+      "model_audio": {
+        "name": "ses"
+      },
+      "model_duration": {
+        "name": "süre"
+      },
+      "model_resolution": {
+        "name": "çözünürlük"
+      },
+      "prompt": {
+        "name": "komut istemi",
+        "tooltip": "Komut istemi açıklaması (en fazla 2000 karakter)."
+      },
+      "seed": {
+        "name": "tohum"
       }
     },
     "outputs": {

@@ -131,11 +131,15 @@ interface QueuePromptOptions {
 /** Dictionary of Frontend-generated API calls */
 interface FrontendApiCalls {
   graphChanged: ComfyWorkflowJSON
-  promptQueued: { number: number; batchCount: number; promptIds?: string[] }
+  promptQueueing: { requestId: number; batchCount: number; number?: number }
+  promptQueued: { number: number; batchCount: number; requestId?: number }
   graphCleared: never
   reconnecting: never
   reconnected: never
 }
+
+export type PromptQueueingEventPayload = FrontendApiCalls['promptQueueing']
+export type PromptQueuedEventPayload = FrontendApiCalls['promptQueued']
 
 /** Dictionary of calls originating from ComfyUI core */
 interface BackendApiCalls {

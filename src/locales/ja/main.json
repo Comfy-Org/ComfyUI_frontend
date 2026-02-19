@@ -798,6 +798,7 @@
     "disableSelected": "選択したものを無効化",
     "disableThirdParty": "サードパーティを無効化",
     "disabling": "無効化",
+    "disconnectedFromBackend": "バックエンドから切断されました。サーバーが稼働しているか確認してください。",
     "dismiss": "閉じる",
     "download": "ダウンロード",
     "downloadAudio": "オーディオをダウンロード",
@@ -820,6 +821,7 @@
     "enterBaseName": "ベース名を入力",
     "enterNewName": "新しい名前を入力",
     "enterNewNamePrompt": "新しい名前を入力してください：",
+    "enterSubgraph": "サブグラフに入る",
     "error": "エラー",
     "errorLoadingImage": "画像の読み込みエラー",
     "errorLoadingVideo": "ビデオの読み込みエラー",
@@ -846,6 +848,7 @@
     "hideLeftPanel": "左パネルを非表示",
     "hideRightPanel": "右パネルを非表示",
     "icon": "アイコン",
+    "imageDoesNotExist": "画像が存在しません",
     "imageFailedToLoad": "画像の読み込みに失敗しました",
     "imagePreview": "画像プレビュー - 矢印キーで画像を切り替え",
     "imageUrl": "画像URL",
@@ -995,6 +998,7 @@
     "title": "タイトル",
     "triggerPhrase": "トリガーフレーズ",
     "unknownError": "不明なエラー",
+    "unknownFile": "不明なファイル",
     "untitled": "無題",
     "update": "更新",
     "updateAvailable": "更新が利用可能",
@@ -1740,7 +1744,9 @@
   "missingModelsDialog": {
     "doNotAskAgain": "再度表示しない",
     "missingModels": "モデルが見つかりません",
-    "missingModelsMessage": "グラフを読み込む際に、次のモデルが見つかりませんでした"
+    "missingModelsMessage": "グラフを読み込む際に、次のモデルが見つかりませんでした",
+    "reEnableInSettings": "{link}で再有効化",
+    "reEnableInSettingsLink": "設定"
   },
   "missingNodes": {
     "cloud": {
@@ -1892,6 +1898,25 @@
     "outputs": "出力",
     "type": "タイプ"
   },
+  "nodeReplacement": {
+    "compatibleAlternatives": "互換性のある代替案",
+    "installMissingNodes": "不足ノードをインストール",
+    "installationRequired": "インストールが必要",
+    "instructionMessage": "ワークフローを実行するには、これらのノードをインストールするか、インストール済みの代替ノードに置き換える必要があります。足りないノードはキャンバス上で{red}でハイライトされています。一部のノードは置き換えできず、Node Managerからインストールする必要があります。",
+    "notReplaceable": "インストールが必要",
+    "openNodeManager": "Node Managerを開く",
+    "quickFixAvailable": "クイック修正可能",
+    "redHighlight": "赤",
+    "replaceFailed": "ノードの置き換えに失敗しました",
+    "replaceSelected": "選択したものを置き換え ({count})",
+    "replaceWarning": "この操作はワークフローを永久に変更します。心配な場合は、先にコピーを保存してください。",
+    "replaceable": "置き換え可能",
+    "replaced": "置き換え済み",
+    "replacedAllNodes": "{count} 種類のノードを置き換えました",
+    "replacedNode": "置き換えたノード: {nodeType}",
+    "selectAll": "すべて選択",
+    "skipForNow": "今はスキップ"
+  },
   "nodeTemplates": {
     "enterName": "名前を入力",
     "saveAsTemplate": "テンプレートとして保存"
@@ -1975,6 +2000,7 @@
       "removeJob": "ジョブを削除",
       "reportError": "エラーを報告"
     },
+    "jobQueueing": "ジョブをキューに追加中",
     "toggleJobHistory": "ジョブ履歴を切り替え"
   },
   "releaseToast": {
@@ -2033,6 +2059,8 @@
     "pinned": "ピン留め",
     "properties": "プロパティ",
     "removeFavorite": "お気に入りを解除",
+    "resetAllParameters": "すべてのパラメータをリセット",
+    "resetToDefault": "デフォルトにリセット",
     "settings": "設定",
     "showAdvancedInputsButton": "詳細入力を表示",
     "showInput": "入力を表示",
@@ -2396,14 +2424,20 @@
       "filterJobs": "ジョブをフィルター",
       "inlineTotalLabel": "合計",
       "interruptAll": "すべての実行中ジョブを中断",
+      "jobCompleted": "ジョブが完了しました",
+      "jobFailed": "ジョブが失敗しました",
       "jobQueue": "ジョブキュー",
+      "jobsAddedToQueue": "{count} 件のジョブがキューに追加されました",
       "jobsCompleted": "{count}件のジョブが完了",
       "jobsFailed": "{count}件のジョブが失敗",
       "moreOptions": "その他のオプション",
       "noActiveJobs": "アクティブなジョブはありません",
       "preview": "プレビュー",
+      "queuedJobsLabel": "{count} キュー中",
       "queuedSuffix": "キュー済み",
       "running": "実行中",
+      "runningJobsLabel": "{count} 実行中",
+      "runningQueuedSummary": "{running} 実行中、{queued} キュー中",
       "showAssets": "アセットを表示",
       "showAssetsPanel": "アセットパネルを表示",
       "sortBy": "並べ替え条件",
@@ -2807,6 +2841,9 @@
   "vueNodesMigrationMainMenu": {
     "message": "メインメニューからいつでもNodes 2.0に戻せます。"
   },
+  "vueNodesSlot": {
+    "iterative": "（反復）"
+  },
   "welcome": {
     "getStarted": "はじめる",
     "title": "ComfyUIへようこそ"
@@ -2827,6 +2864,7 @@
       "placeholder": "選択...",
       "placeholderAudio": "音声を選択...",
       "placeholderImage": "画像を選択...",
+      "placeholderMesh": "メッシュを選択...",
       "placeholderModel": "モデルを選択...",
       "placeholderUnknown": "メディアを選択...",
       "placeholderVideo": "動画を選択..."
@@ -2865,7 +2903,8 @@
     "unsavedChanges": {
       "message": "未保存の変更があります。破棄してワークスペースを切り替えますか？",
       "title": "未保存の変更"
-    }
+    },
+    "viewWorkspace": "ワークスペースを見る"
   },
   "workspaceAuth": {
     "errors": {
@@ -2914,6 +2953,14 @@
       "placeholder": "招待する人のメールアドレスを入力",
       "title": "このワークスペースに人を招待"
     },
+    "inviteUpsellDialog": {
+      "messageNotSubscribed": "このワークスペースにチームメンバーを追加するには、Creatorプラン以上が必要です。Standardプランはオーナー1名のみ対応しています。",
+      "messageSingleSeat": "Standardプランにはワークスペースオーナー1名分のシートが含まれています。追加メンバーを招待するには、Creatorプラン以上にアップグレードして複数シートを有効にしてください。",
+      "titleNotSubscribed": "メンバーを招待するにはサブスクリプションが必要です",
+      "titleSingleSeat": "現在のプランは1名のみ対応しています",
+      "upgradeToCreator": "Creatorにアップグレード",
+      "viewPlans": "プランを見る"
+    },
     "leaveDialog": {
       "leave": "退出",
       "message": "ワークスペースのオーナーに連絡しない限り、再参加できません。",
@@ -2939,7 +2986,10 @@
       "tabs": {
         "active": "アクティブ",
         "pendingCount": "保留中（{count}）"
-      }
+      },
+      "upsellBannerSubscribe": "このワークスペースにチームメンバーを招待するには、Creatorプラン以上のご契約が必要です。",
+      "upsellBannerUpgrade": "追加のチームメンバーを招待するには、Creatorプラン以上にアップグレードしてください。",
+      "viewPlans": "プランを見る"
     },
     "menu": {
       "deleteWorkspace": "ワークスペースを削除",

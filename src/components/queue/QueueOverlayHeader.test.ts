@@ -40,6 +40,8 @@ const i18n = createI18n({
       sideToolbar: {
         queueProgressOverlay: {
           running: 'running',
+          queuedSuffix: 'queued',
+          clearQueued: 'Clear queued',
           moreOptions: 'More options',
           clearHistory: 'Clear history'
         }
@@ -54,6 +56,7 @@ const mountHeader = (props = {}) =>
       headerTitle: 'Job queue',
       showConcurrentIndicator: true,
       concurrentWorkflowCount: 2,
+      queuedCount: 3,
       ...props
     },
     global: {
@@ -78,6 +81,25 @@ describe('QueueOverlayHeader', () => {
 
     expect(wrapper.text()).toContain('Job queue')
     expect(wrapper.find('.inline-flex.items-center.gap-1').exists()).toBe(false)
+  })
+
+  it('shows queued summary and emits clear queued', async () => {
+    const wrapper = mountHeader({ queuedCount: 4 })
+
+    expect(wrapper.text()).toContain('4')
+    expect(wrapper.text()).toContain('queued')
+
+    const clearQueuedButton = wrapper.get('button[aria-label="Clear queued"]')
+    await clearQueuedButton.trigger('click')
+    expect(wrapper.emitted('clearQueued')).toHaveLength(1)
+  })
+
+  it('hides clear queued button when queued count is zero', () => {
+    const wrapper = mountHeader({ queuedCount: 0 })
+
+    expect(wrapper.find('button[aria-label="Clear queued"]').exists()).toBe(
+      false
+    )
   })
 
   it('toggles popover and emits clear history', async () => {

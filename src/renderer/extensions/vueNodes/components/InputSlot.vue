@@ -23,7 +23,7 @@
       :class="
         cn(
           '-translate-x-1/2 w-3',
-          hasSlotError &&
+          hasError &&
             'before:ring-2 before:ring-error before:ring-offset-0 before:size-4 before:absolute before:rounded-full before:pointer-events-none'
         )
       "
@@ -40,7 +40,7 @@
         :class="
           cn(
             'truncate text-node-component-slot-text',
-            hasSlotError && 'text-error font-medium'
+            hasError && 'text-error font-medium'
           )
         "
       >
@@ -65,19 +65,19 @@ import { getSlotKey } from '@/renderer/core/layout/slots/slotIdentifier'
 import { useNodeTooltips } from '@/renderer/extensions/vueNodes/composables/useNodeTooltips'
 import { useSlotElementTracking } from '@/renderer/extensions/vueNodes/composables/useSlotElementTracking'
 import { useSlotLinkInteraction } from '@/renderer/extensions/vueNodes/composables/useSlotLinkInteraction'
-import { useExecutionStore } from '@/stores/executionStore'
 import { cn } from '@/utils/tailwindUtil'
 
 import SlotConnectionDot from './SlotConnectionDot.vue'
 
 interface InputSlotProps {
+  slotData: INodeSlot
+  compatible?: boolean
+  connected?: boolean
+  dotOnly?: boolean
+  hasError?: boolean
+  index: number
   nodeType?: string
   nodeId?: string
-  slotData: INodeSlot
-  index: number
-  connected?: boolean
-  compatible?: boolean
-  dotOnly?: boolean
   socketless?: boolean
 }
 
@@ -90,18 +90,6 @@ const hasNoLabel = computed(
     props.slotData.name === ''
 )
 const dotOnly = computed(() => props.dotOnly || hasNoLabel.value)
-
-const executionStore = useExecutionStore()
-
-const hasSlotError = computed(() => {
-  const nodeErrors = executionStore.lastNodeErrors?.[props.nodeId ?? '']
-  if (!nodeErrors) return false
-
-  const slotName = props.slotData.name
-  return nodeErrors.errors.some(
-    (error) => error.extra_info?.input_name === slotName
-  )
-})
 
 const renderError = ref<string | null>(null)
 const { toastErrorHandler } = useErrorHandling()

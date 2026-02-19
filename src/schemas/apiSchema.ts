@@ -204,6 +204,12 @@ const zPromptResponse = z.object({
   error: z.union([z.string(), zError])
 })
 
+const zPromptError = z.object({
+  type: z.string(),
+  message: z.string(),
+  details: z.string()
+})
+
 const zDeviceStats = z.object({
   name: z.string(),
   type: z.string(),
@@ -433,12 +439,14 @@ const zSettings = z.object({
   'LiteGraph.Pointer.TrackpadGestures': z.boolean(),
   'Comfy.VersionCompatibility.DisableWarnings': z.boolean(),
   'Comfy.RightSidePanel.IsOpen': z.boolean(),
+  'Comfy.RightSidePanel.ShowErrorsTab': z.boolean(),
   'Comfy.Node.AlwaysShowAdvancedWidgets': z.boolean()
 })
 
 export type EmbeddingsResponse = z.infer<typeof zEmbeddingsResponse>
 export type ExtensionsResponse = z.infer<typeof zExtensionsResponse>
 export type PromptResponse = z.infer<typeof zPromptResponse>
+export type PromptError = z.infer<typeof zPromptError>
 export type NodeError = z.infer<typeof zNodeError>
 export type Settings = z.infer<typeof zSettings>
 export type DeviceStats = z.infer<typeof zDeviceStats>

@@ -353,15 +353,6 @@
         "name": "modération",
         "tooltip": "Paramètres de modération"
       },
-      "moderation_prompt_content_moderation": {
-        "name": "modération_du_contenu_de_l'invite"
-      },
-      "moderation_visual_input_moderation": {
-        "name": "modération_de_l'entrée_visuelle"
-      },
-      "moderation_visual_output_moderation": {
-        "name": "modération_de_la_sortie_visuelle"
-      },
       "negative_prompt": {
         "name": "invite négative"
       },
@@ -386,6 +377,56 @@
       },
       "1": {
         "name": "invite structurée",
+        "tooltip": null
+      }
+    }
+  },
+  "BriaRemoveImageBackground": {
+    "description": "Supprimez l’arrière-plan d’une image avec Bria RMBG 2.0.",
+    "display_name": "Bria Remove Image Background",
+    "inputs": {
+      "control_after_generate": {
+        "name": "contrôle après génération"
+      },
+      "image": {
+        "name": "image"
+      },
+      "moderation": {
+        "name": "modération",
+        "tooltip": "Paramètres de modération"
+      },
+      "seed": {
+        "name": "graine",
+        "tooltip": "La graine contrôle si le nœud doit être relancé ; les résultats sont non déterministes quel que soit la graine."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "BriaRemoveVideoBackground": {
+    "description": "Supprimez l’arrière-plan d’une vidéo avec Bria.",
+    "display_name": "Bria Remove Video Background",
+    "inputs": {
+      "background_color": {
+        "name": "couleur d’arrière-plan",
+        "tooltip": "Couleur d’arrière-plan pour la vidéo de sortie."
+      },
+      "control_after_generate": {
+        "name": "contrôle après génération"
+      },
+      "seed": {
+        "name": "graine",
+        "tooltip": "La graine contrôle si le nœud doit être relancé ; les résultats sont non déterministes quel que soit la graine."
+      },
+      "video": {
+        "name": "vidéo"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -5024,6 +5065,46 @@
       }
     }
   },
+  "KlingFirstLastFrameNode": {
+    "description": "Générez des vidéos avec Kling V3 en utilisant la première et la dernière image.",
+    "display_name": "Kling 3.0 Première-Dernière-Image en Vidéo",
+    "inputs": {
+      "control_after_generate": {
+        "name": "contrôle après génération"
+      },
+      "duration": {
+        "name": "durée"
+      },
+      "end_frame": {
+        "name": "dernière image"
+      },
+      "first_frame": {
+        "name": "première image"
+      },
+      "generate_audio": {
+        "name": "générer l'audio"
+      },
+      "model": {
+        "name": "modèle",
+        "tooltip": "Paramètres du modèle et de la génération."
+      },
+      "model_resolution": {
+        "name": "résolution"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Le seed contrôle si le nœud doit être relancé ; les résultats sont non déterministes quel que soit le seed."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "KlingImage2VideoNode": {
     "display_name": "Kling Image to Video",
     "inputs": {
@@ -5076,6 +5157,9 @@
       "aspect_ratio": {
         "name": "aspect_ratio"
       },
+      "control_after_generate": {
+        "name": "contrôle après génération"
+      },
       "human_fidelity": {
         "name": "human_fidelity",
         "tooltip": "Similarité de référence du sujet"
@@ -5104,6 +5188,10 @@
       "prompt": {
         "name": "prompt",
         "tooltip": "Invite textuelle positive"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Le seed contrôle si le nœud doit être relancé ; les résultats sont non déterministes quel que soit le seed."
       }
     },
     "outputs": {
@@ -5236,6 +5324,9 @@
     "description": "Éditez une vidéo existante avec le dernier modèle de Kling.",
     "display_name": "Kling Omni Édition Vidéo (Pro)",
     "inputs": {
+      "control_after_generate": {
+        "name": "contrôle après génération"
+      },
       "keep_original_sound": {
         "name": "garder_son_original"
       },
@@ -5253,6 +5344,10 @@
       "resolution": {
         "name": "résolution"
       },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Le seed contrôle si le nœud doit être relancé ; les résultats sont non déterministes quel que soit le seed."
+      },
       "video": {
         "name": "vidéo",
         "tooltip": "Vidéo à éditer. La longueur de la vidéo de sortie sera la même."
@@ -5268,6 +5363,9 @@
     "description": "Utilisez une image de départ, une image de fin optionnelle ou des images de référence avec le dernier modèle Kling.",
     "display_name": "Kling Omni Première-Dernière-Image vers Vidéo (Pro)",
     "inputs": {
+      "control_after_generate": {
+        "name": "contrôle après génération"
+      },
       "duration": {
         "name": "duration"
       },
@@ -5277,6 +5375,10 @@
       },
       "first_frame": {
         "name": "first_frame"
+      },
+      "generate_audio": {
+        "name": "générer l'audio",
+        "tooltip": "Générer l'audio pour la vidéo. Pris en charge uniquement pour kling-v3-omni."
       },
       "model_name": {
         "name": "model_name"
@@ -5291,6 +5393,14 @@
       },
       "resolution": {
         "name": "resolution"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Le seed contrôle si le nœud doit être relancé ; les résultats sont non déterministes quel que soit le seed."
+      },
+      "storyboards": {
+        "name": "storyboards",
+        "tooltip": "Générez une série de segments vidéo avec des prompts et des durées individuelles. Pris en charge uniquement pour kling-v3-omni."
       }
     },
     "outputs": {
@@ -5306,6 +5416,9 @@
       "aspect_ratio": {
         "name": "aspect_ratio"
       },
+      "control_after_generate": {
+        "name": "contrôle après génération"
+      },
       "model_name": {
         "name": "model_name"
       },
@@ -5319,6 +5432,14 @@
       },
       "resolution": {
         "name": "resolution"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Le seed contrôle si le nœud doit être relancé ; les résultats sont non déterministes quel que soit le seed."
+      },
+      "series_amount": {
+        "name": "nombre de séries",
+        "tooltip": "Générez une série d'images. Non pris en charge pour kling-image-o1."
       }
     },
     "outputs": {
@@ -5334,8 +5455,15 @@
       "aspect_ratio": {
         "name": "aspect_ratio"
       },
+      "control_after_generate": {
+        "name": "contrôle après génération"
+      },
       "duration": {
         "name": "duration"
+      },
+      "generate_audio": {
+        "name": "générer l'audio",
+        "tooltip": "Générer l'audio pour la vidéo. Pris en charge uniquement pour kling-v3-omni."
       },
       "model_name": {
         "name": "model_name"
@@ -5350,6 +5478,14 @@
       },
       "resolution": {
         "name": "resolution"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Le seed contrôle si le nœud doit être relancé ; les résultats sont non déterministes quel que soit le seed."
+      },
+      "storyboards": {
+        "name": "storyboards",
+        "tooltip": "Générez une série de segments vidéo avec des prompts et des durées individuelles. Pris en charge uniquement pour kling-v3-omni."
       }
     },
     "outputs": {
@@ -5365,8 +5501,14 @@
       "aspect_ratio": {
         "name": "aspect_ratio"
       },
+      "control_after_generate": {
+        "name": "contrôle après génération"
+      },
       "duration": {
         "name": "duration"
+      },
+      "generate_audio": {
+        "name": "générer l'audio"
       },
       "model_name": {
         "name": "model_name"
@@ -5377,6 +5519,14 @@
       },
       "resolution": {
         "name": "resolution"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Le seed contrôle si le nœud doit être relancé ; les résultats sont non déterministes quel que soit le seed."
+      },
+      "storyboards": {
+        "name": "storyboards",
+        "tooltip": "Générez une série de segments vidéo avec des prompts et des durées individuelles. Ignoré pour le modèle o1."
       }
     },
     "outputs": {
@@ -5391,6 +5541,9 @@
     "inputs": {
       "aspect_ratio": {
         "name": "aspect_ratio"
+      },
+      "control_after_generate": {
+        "name": "contrôle après génération"
       },
       "duration": {
         "name": "duration"
@@ -5415,6 +5568,10 @@
       },
       "resolution": {
         "name": "resolution"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Le seed contrôle si le nœud doit être relancé ; les résultats sont non déterministes quel que soit le seed."
       }
     },
     "outputs": {
@@ -5596,6 +5753,54 @@
       },
       "2": {
         "name": "duration",
+        "tooltip": null
+      }
+    }
+  },
+  "KlingVideoNode": {
+    "description": "Générez des vidéos avec Kling V3. Prend en charge le texte-vers-vidéo et l’image-vers-vidéo avec storyboard multi-invite optionnel et génération audio.",
+    "display_name": "Kling 3.0 Vidéo",
+    "inputs": {
+      "control_after_generate": {
+        "name": "contrôle après génération"
+      },
+      "generate_audio": {
+        "name": "générer audio"
+      },
+      "model": {
+        "name": "modèle",
+        "tooltip": "Paramètres du modèle et de la génération."
+      },
+      "model_aspect_ratio": {
+        "name": "ratio d’aspect"
+      },
+      "model_resolution": {
+        "name": "résolution"
+      },
+      "multi_shot": {
+        "name": "multi_shot",
+        "tooltip": "Générez une série de segments vidéo avec des invites et des durées individuelles."
+      },
+      "multi_shot_duration": {
+        "name": "durée"
+      },
+      "multi_shot_negative_prompt": {
+        "name": "invite_négative"
+      },
+      "multi_shot_prompt": {
+        "name": "invite"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Le seed contrôle si le nœud doit être relancé ; les résultats sont non déterministes quel que soit le seed."
+      },
+      "start_frame": {
+        "name": "image de départ",
+        "tooltip": "Image de départ optionnelle. Lorsqu’elle est connectée, passe en mode image-vers-vidéo."
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -6715,6 +6920,10 @@
   "LoraModelLoader": {
     "display_name": "Charger le modèle LoRA",
     "inputs": {
+      "bypass": {
+        "name": "bypass",
+        "tooltip": "Lorsqu'il est activé, applique LoRA en mode bypass sans modifier les poids du modèle de base. Utile pour l'entraînement et lorsque les poids du modèle sont déchargés."
+      },
       "lora": {
         "name": "lora",
         "tooltip": "Le modèle LoRA à appliquer au modèle de diffusion."
@@ -7171,6 +7380,88 @@
       "style_strength": {
         "name": "style_strength",
         "tooltip": "Pourcentage d'intensité du style."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MagnificImageUpscalerCreativeNode": {
+    "description": "Amélioration guidée par prompt, stylisation et agrandissement 2x/4x/8x/16x. Sortie maximale : 25,3 mégapixels.",
+    "display_name": "Magnific Image Upscale (Creative)",
+    "inputs": {
+      "auto_downscale": {
+        "name": "réduction automatique",
+        "tooltip": "Réduit automatiquement l’image d’entrée si la sortie dépasse la limite maximale de pixels."
+      },
+      "creativity": {
+        "name": "créativité"
+      },
+      "engine": {
+        "name": "moteur"
+      },
+      "fractality": {
+        "name": "fractalité",
+        "tooltip": "La force du prompt et la complexité par pixel carré."
+      },
+      "hdr": {
+        "name": "hdr",
+        "tooltip": "Le niveau de définition et de détail."
+      },
+      "image": {
+        "name": "image"
+      },
+      "optimized_for": {
+        "name": "optimisé pour"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "resemblance": {
+        "name": "ressemblance",
+        "tooltip": "Le niveau de ressemblance avec l’image originale."
+      },
+      "scale_factor": {
+        "name": "facteur d’agrandissement"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MagnificImageUpscalerPreciseV2Node": {
+    "description": "Agrandissement haute fidélité avec contrôle précis de la netteté, du grain et des détails. Sortie maximale : 10060×10060 pixels.",
+    "display_name": "Magnific Image Upscale (Precise V2)",
+    "inputs": {
+      "auto_downscale": {
+        "name": "réduction automatique",
+        "tooltip": "Réduit automatiquement l’image d’entrée si la sortie dépasse la résolution maximale."
+      },
+      "flavor": {
+        "name": "style",
+        "tooltip": "Style de traitement : sublime pour un usage général, photo pour les photographies, photo_denoiser pour les photos bruitées."
+      },
+      "image": {
+        "name": "image"
+      },
+      "scale_factor": {
+        "name": "facteur d’agrandissement"
+      },
+      "sharpen": {
+        "name": "netteté",
+        "tooltip": "Intensité de la netteté de l’image. Des valeurs plus élevées augmentent la définition des contours et la clarté."
+      },
+      "smart_grain": {
+        "name": "grain intelligent",
+        "tooltip": "Amélioration intelligente du grain/de la texture pour éviter que l’image ne paraisse trop lisse ou artificielle."
+      },
+      "ultra_detail": {
+        "name": "ultra-détail",
+        "tooltip": "Contrôle les détails fins, les textures et les micro-détails ajoutés lors de l’agrandissement."
       }
     },
     "outputs": {
@@ -10047,6 +10338,32 @@
       }
     }
   },
+  "NAGuidance": {
+    "description": "Applique le Guidage d’Attention Normalisée aux modèles, permettant l’utilisation de prompts négatifs sur les modèles distilled/schnell.",
+    "display_name": "Guidage d’Attention Normalisée",
+    "inputs": {
+      "model": {
+        "name": "modèle",
+        "tooltip": "Le modèle auquel appliquer NAG."
+      },
+      "nag_alpha": {
+        "name": "alpha_nag",
+        "tooltip": "Facteur de fusion pour l’attention normalisée. 1,0 correspond à un remplacement total, 0,0 à aucun effet."
+      },
+      "nag_scale": {
+        "name": "facteur_nag",
+        "tooltip": "Le facteur d’échelle du guidage. Des valeurs plus élevées éloignent davantage du prompt négatif."
+      },
+      "nag_tau": {
+        "name": "tau_nag"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "Le modèle modifié avec NAG activé."
+      }
+    }
+  },
   "NormalizeImages": {
     "display_name": "Normaliser les images",
     "inputs": {
@@ -10813,8 +11130,13 @@
   "PreviewAny": {
     "display_name": "Aperçu de n'importe quel",
     "inputs": {
-      "preview": {},
       "previewMode": {},
+      "preview_markdown": {
+        "name": "Aperçu"
+      },
+      "preview_text": {
+        "name": "Aperçu"
+      },
       "source": {
         "name": "source"
       }
@@ -11408,6 +11730,88 @@
       },
       "substyle": {
         "name": "sous-style"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "RecraftV4TextToImageNode": {
+    "description": "Génère des images à l’aide des modèles Recraft V4 ou V4 Pro.",
+    "display_name": "Recraft V4 Texte vers Image",
+    "inputs": {
+      "control_after_generate": {
+        "name": "contrôle après génération"
+      },
+      "model": {
+        "name": "modèle",
+        "tooltip": "Le modèle à utiliser pour la génération."
+      },
+      "model_size": {
+        "name": "taille"
+      },
+      "n": {
+        "name": "n",
+        "tooltip": "Nombre d’images à générer."
+      },
+      "negative_prompt": {
+        "name": "prompt_négatif",
+        "tooltip": "Description textuelle optionnelle des éléments indésirables sur une image."
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Prompt pour la génération d’image. Maximum 10 000 caractères."
+      },
+      "recraft_controls": {
+        "name": "recraft_controls",
+        "tooltip": "Contrôles supplémentaires optionnels sur la génération via le nœud Recraft Controls."
+      },
+      "seed": {
+        "name": "graine",
+        "tooltip": "Graine pour déterminer si le nœud doit être relancé ; les résultats réels restent non déterministes quel que soit la graine."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "RecraftV4TextToVectorNode": {
+    "description": "Génère des SVG à l’aide des modèles Recraft V4 ou V4 Pro.",
+    "display_name": "Recraft V4 Texte vers Vectoriel",
+    "inputs": {
+      "control_after_generate": {
+        "name": "contrôle après génération"
+      },
+      "model": {
+        "name": "modèle",
+        "tooltip": "Le modèle à utiliser pour la génération."
+      },
+      "model_size": {
+        "name": "taille"
+      },
+      "n": {
+        "name": "n",
+        "tooltip": "Nombre d’images à générer."
+      },
+      "negative_prompt": {
+        "name": "prompt_négatif",
+        "tooltip": "Description textuelle optionnelle des éléments indésirables sur une image."
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Prompt pour la génération d’image. Maximum 10 000 caractères."
+      },
+      "recraft_controls": {
+        "name": "recraft_controls",
+        "tooltip": "Contrôles supplémentaires optionnels sur la génération via le nœud Recraft Controls."
+      },
+      "seed": {
+        "name": "graine",
+        "tooltip": "Graine pour déterminer si le nœud doit être relancé ; les résultats réels restent non déterministes quel que soit la graine."
       }
     },
     "outputs": {
@@ -13844,6 +14248,29 @@
       }
     }
   },
+  "Tencent3DPartNode": {
+    "description": "Identifie et génère automatiquement des composants en fonction de la structure du modèle.",
+    "display_name": "Hunyuan3D : Partie 3D",
+    "inputs": {
+      "control_after_generate": {
+        "name": "contrôler après génération"
+      },
+      "model_3d": {
+        "name": "modèle_3d",
+        "tooltip": "Modèle 3D au format FBX. Le modèle doit comporter moins de 30 000 faces."
+      },
+      "seed": {
+        "name": "graine",
+        "tooltip": "La graine contrôle si le nœud doit être relancé ; les résultats restent non déterministes quel que soit la graine."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "FBX",
+        "tooltip": null
+      }
+    }
+  },
   "TencentImageToModelNode": {
     "display_name": "Hunyuan3D : Image(s) vers Modèle (Pro)",
     "inputs": {
@@ -13984,6 +14411,9 @@
       },
       "lyrics": {
         "name": "paroles"
+      },
+      "min_p": {
+        "name": "min_p"
       },
       "seed": {
         "name": "graine"
@@ -14326,6 +14756,10 @@
         "name": "bypass_mode",
         "tooltip": "Activer le mode bypass pour l'entraînement. Lorsqu'il est activé, les adaptateurs sont appliqués via des hooks forward au lieu de la modification des poids. Utile pour les modèles quantifiés dont les poids ne peuvent pas être modifiés directement."
       },
+      "checkpoint_depth": {
+        "name": "checkpoint_depth",
+        "tooltip": "Niveau de profondeur pour le gradient checkpointing."
+      },
       "control_after_generate": {
         "name": "contrôle après génération"
       },
@@ -14360,6 +14794,10 @@
       "model": {
         "name": "modèle",
         "tooltip": "Le modèle sur lequel entraîner le LoRA."
+      },
+      "offloading": {
+        "name": "offloading",
+        "tooltip": "Niveau de profondeur pour le gradient checkpointing."
       },
       "optimizer": {
         "name": "optimiseur",
@@ -15271,6 +15709,31 @@
       }
     }
   },
+  "Video Slice": {
+    "display_name": "Découpage Vidéo",
+    "inputs": {
+      "duration": {
+        "name": "durée",
+        "tooltip": "Durée en secondes, ou 0 pour une durée illimitée"
+      },
+      "start_time": {
+        "name": "heure_de_début",
+        "tooltip": "Heure de début en secondes"
+      },
+      "strict_duration": {
+        "name": "durée_stricte",
+        "tooltip": "Si vrai, lorsqu’il n’est pas possible de respecter la durée spécifiée, une erreur sera générée."
+      },
+      "video": {
+        "name": "vidéo"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "VideoLinearCFGGuidance": {
     "display_name": "Guidance VideoLinearCFG",
     "inputs": {
@@ -15480,6 +15943,46 @@
       "prompt": {
         "name": "invite",
         "tooltip": "Une invite textuelle optionnelle pour la génération de vidéo (max. 2000 caractères)."
+      },
+      "seed": {
+        "name": "graine"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Vidu3StartEndToVideoNode": {
+    "description": "Générez une vidéo à partir d'une image de début, d'une image de fin et d'une invite.",
+    "display_name": "Génération vidéo Vidu Q3 à partir d'une image de début/fin",
+    "inputs": {
+      "control_after_generate": {
+        "name": "contrôle après génération"
+      },
+      "end_frame": {
+        "name": "image de fin"
+      },
+      "first_frame": {
+        "name": "image de début"
+      },
+      "model": {
+        "name": "modèle",
+        "tooltip": "Modèle à utiliser pour la génération vidéo."
+      },
+      "model_audio": {
+        "name": "audio"
+      },
+      "model_duration": {
+        "name": "durée"
+      },
+      "model_resolution": {
+        "name": "résolution"
+      },
+      "prompt": {
+        "name": "invite",
+        "tooltip": "Description de l'invite (2000 caractères max)."
       },
       "seed": {
         "name": "graine"

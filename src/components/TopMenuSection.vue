@@ -36,7 +36,14 @@
 
           <div
             ref="actionbarContainerRef"
-            class="actionbar-container relative pointer-events-auto flex gap-2 h-12 items-center rounded-lg border border-interface-stroke bg-comfy-menu-bg px-2 shadow-interface"
+            :class="
+              cn(
+                'actionbar-container relative pointer-events-auto flex gap-2 h-12 items-center rounded-lg border bg-comfy-menu-bg px-2 shadow-interface',
+                hasAnyError
+                  ? 'border-destructive-background-hover'
+                  : 'border-interface-stroke'
+              )
+            "
           >
             <ActionBarButtons />
             <!-- Support for legacy topbar elements attached by custom scripts, hidden if no elements present -->
@@ -60,7 +67,7 @@
                     ? isQueueOverlayExpanded
                     : undefined
               "
-              class="px-3"
+              class="relative px-3"
               data-testid="queue-overlay-toggle"
               @click="toggleQueueOverlay"
               @contextmenu.stop.prevent="showQueueContextMenu"
@@ -68,6 +75,12 @@
               <span class="text-sm font-normal tabular-nums">
                 {{ activeJobsLabel }}
               </span>
+              <StatusBadge
+                v-if="activeJobsCount > 0"
+                data-testid="active-jobs-indicator"
+                variant="dot"
+                class="pointer-events-none absolute -top-0.5 -right-0.5 animate-pulse"
+              />
               <span class="sr-only">
                 {{
                   isQueuePanelV2Enabled
@@ -105,7 +118,7 @@
       </div>
     </div>
 
-    <div>
+    <div class="flex flex-col items-end gap-1">
       <Teleport
         v-if="inlineProgressSummaryTarget"
         :to="inlineProgressSummaryTarget"
@@ -121,6 +134,10 @@
         class="pr-1"
         :hidden="isQueueOverlayExpanded"
       />
+      <QueueNotificationBannerHost
+        v-if="shouldShowQueueNotificationBanners"
+        class="pr-1"
+      />
     </div>
   </div>
 </template>
@@ -135,7 +152,9 @@ import { useI18n } from 'vue-i18n'
 
 import ComfyActionbar from '@/components/actionbar/ComfyActionbar.vue'
 import SubgraphBreadcrumb from '@/components/breadcrumb/SubgraphBreadcrumb.vue'
+import StatusBadge from '@/components/common/StatusBadge.vue'
 import QueueInlineProgressSummary from '@/components/queue/QueueInlineProgressSummary.vue'
+import QueueNotificationBannerHost from '@/components/queue/QueueNotificationBannerHost.vue'
 import QueueProgressOverlay from '@/components/queue/QueueProgressOverlay.vue'
 import ActionBarButtons from '@/components/topbar/ActionBarButtons.vue'
 import CurrentUserButton from '@/components/topbar/CurrentUserButton.vue'
@@ -145,7 +164,6 @@ import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { buildTooltipConfig } from '@/composables/useTooltipConfig'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { useReleaseStore } from '@/platform/updates/common/releaseStore'
 import { app } from '@/scripts/app'
 import { useCommandStore } from '@/stores/commandStore'
 import { useExecutionStore } from '@/stores/executionStore'
@@ -157,6 +175,7 @@ import { isDesktop } from '@/platform/distribution/types'
 import { useConflictAcknowledgment } from '@/workbench/extensions/manager/composables/useConflictAcknowledgment'
 import { useManagerState } from '@/workbench/extensions/manager/composables/useManagerState'
 import { ManagerTab } from '@/workbench/extensions/manager/types/comfyManagerTypes'
+import { cn } from '@/utils/tailwindUtil'
 
 const settingStore = useSettingStore()
 const workspaceStore = useWorkspaceStore()
@@ -173,8 +192,6 @@ const sidebarTabStore = useSidebarTabStore()
 const { activeJobsCount } = storeToRefs(queueStore)
 const { isOverlayExpanded: isQueueOverlayExpanded } = storeToRefs(queueUIStore)
 const { activeSidebarTabId } = storeToRefs(sidebarTabStore)
-const releaseStore = useReleaseStore()
-const { shouldShowRedDot: showReleaseRedDot } = storeToRefs(releaseStore)
 const { shouldShowRedDot: shouldShowConflictRedDot } =
   useConflictAcknowledgment()
 const isTopMenuHovered = ref(false)
@@ -207,6 +224,9 @@ const isQueueProgressOverlayEnabled = computed(
 const shouldShowInlineProgressSummary = computed(
   () => isQueuePanelV2Enabled.value && isActionbarEnabled.value
 )
+const shouldShowQueueNotificationBanners = computed(
+  () => isActionbarEnabled.value
+)
 const progressTarget = ref<HTMLElement | null>(null)
 function updateProgressTarget(target: HTMLElement | null) {
   progressTarget.value = target
@@ -236,11 +256,11 @@ const queueContextMenuItems = computed<MenuItem[]>(() => [
   }
 ])
 
-// Use either release red dot or conflict red dot
 const shouldShowRedDot = computed((): boolean => {
-  const releaseRedDot = showReleaseRedDot.value
-  return releaseRedDot || shouldShowConflictRedDot.value
+  return shouldShowConflictRedDot.value
 })
+
+const { hasAnyError } = storeToRefs(executionStore)
 
 // Right side panel toggle
 const { isOpen: isRightSidePanelOpen } = storeToRefs(rightSidePanelStore)

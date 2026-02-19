@@ -127,6 +127,15 @@
           </template>
         </div>
       </Popover>
+      <Button
+        v-tooltip.top="showAssetsTooltipConfig"
+        variant="secondary"
+        size="icon"
+        :aria-label="t('sideToolbar.queueProgressOverlay.showAssetsPanel')"
+        @click="$emit('showAssets')"
+      >
+        <i class="icon-[comfy--image-ai-edit] size-4" />
+      </Button>
     </div>
   </div>
 </template>
@@ -150,6 +159,7 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
+  (e: 'showAssets'): void
   (e: 'update:selectedJobTab', value: JobTab): void
   (e: 'update:selectedWorkflowFilter', value: 'all' | 'current'): void
   (e: 'update:selectedSortMode', value: JobSortMode): void
@@ -164,6 +174,9 @@ const filterTooltipConfig = computed(() =>
 )
 const sortTooltipConfig = computed(() =>
   buildTooltipConfig(t('sideToolbar.queueProgressOverlay.sortBy'))
+)
+const showAssetsTooltipConfig = computed(() =>
+  buildTooltipConfig(t('sideToolbar.queueProgressOverlay.showAssets'))
 )
 
 // This can be removed when cloud implements /jobs and we switch to it.
