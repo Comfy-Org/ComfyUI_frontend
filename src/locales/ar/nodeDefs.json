@@ -208,6 +208,47 @@
       }
     }
   },
+  "AudioEqualizer3Band": {
+    "display_name": "موازن الصوت (٣ نطاقات)",
+    "inputs": {
+      "audio": {
+        "name": "الصوت"
+      },
+      "high_freq": {
+        "name": "تردد الحدة",
+        "tooltip": "تردد القطع للنطاق العالي"
+      },
+      "high_gain_dB": {
+        "name": "تعزيز الحدة (ديسيبل)",
+        "tooltip": "التحكم في مستوى الترددات العالية (الحدة)"
+      },
+      "low_freq": {
+        "name": "تردد الجهير",
+        "tooltip": "تردد القطع للنطاق المنخفض"
+      },
+      "low_gain_dB": {
+        "name": "تعزيز الجهير (ديسيبل)",
+        "tooltip": "التحكم في مستوى الترددات المنخفضة (الجهير)"
+      },
+      "mid_freq": {
+        "name": "تردد الوسطى",
+        "tooltip": "تردد المركز للنطاق المتوسط"
+      },
+      "mid_gain_dB": {
+        "name": "تعزيز الوسطى (ديسيبل)",
+        "tooltip": "التحكم في مستوى الترددات المتوسطة"
+      },
+      "mid_q": {
+        "name": "عامل Q للوسطى",
+        "tooltip": "معامل Q (عرض النطاق) للترددات المتوسطة"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "AudioMerge": {
     "description": "دمج مسارين صوتيين عن طريق تراكب موجاتهما.",
     "display_name": "دمج الصوت",
@@ -4235,6 +4276,26 @@
       "y": {
         "name": "إحداثي Y"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ImageCropV2": {
+    "display_name": "قص الصورة",
+    "inputs": {
+      "crop_region": {
+        "name": "منطقة القص"
+      },
+      "height": {},
+      "image": {
+        "name": "الصورة"
+      },
+      "width": {},
+      "x": {},
+      "y": {}
     },
     "outputs": {
       "0": {
@@ -11167,6 +11228,28 @@
     "inputs": {
       "value": {
         "name": "القيمة"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PrimitiveBoundingBox": {
+    "display_name": "مربع التحديد",
+    "inputs": {
+      "height": {
+        "name": "الارتفاع"
+      },
+      "width": {
+        "name": "العرض"
+      },
+      "x": {
+        "name": "س"
+      },
+      "y": {
+        "name": "ص"
       }
     },
     "outputs": {

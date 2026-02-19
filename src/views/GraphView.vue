@@ -19,6 +19,7 @@
   <InviteAcceptedToast />
   <RerouteMigrationToast />
   <ModelImportProgressDialog />
+  <AssetExportProgressDialog />
   <ManagerProgressToast />
   <UnloadWindowConfirmDialog v-if="!isDesktop" />
   <MenuHamburger />
@@ -54,6 +55,7 @@ import { useProgressFavicon } from '@/composables/useProgressFavicon'
 import { SERVER_CONFIG_ITEMS } from '@/constants/serverConfig'
 import type { ServerConfig, ServerConfigValue } from '@/constants/serverConfig'
 import { i18n, loadLocale } from '@/i18n'
+import AssetExportProgressDialog from '@/platform/assets/components/AssetExportProgressDialog.vue'
 import ModelImportProgressDialog from '@/platform/assets/components/ModelImportProgressDialog.vue'
 import { isCloud, isDesktop } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
@@ -220,7 +222,7 @@ const onExecutionSuccess = async () => {
   await queueStore.update()
   // Only update assets if the assets sidebar is currently open
   // When sidebar is closed, AssetsSidebarTab.vue will refresh on mount
-  if (sidebarTabStore.activeSidebarTabId === 'assets') {
+  if (sidebarTabStore.activeSidebarTabId === 'assets' || linearMode.value) {
     await assetsStore.updateHistory()
   }
 }

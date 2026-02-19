@@ -99,6 +99,19 @@ vi.mock('@/stores/toastStore', () => ({
 // Mock useDialogService
 vi.mock('@/services/dialogService')
 
+// Mock apiKeyAuthStore
+const mockApiKeyGetAuthHeader = vi.fn().mockReturnValue(null)
+vi.mock('@/stores/apiKeyAuthStore', () => ({
+  useApiKeyAuthStore: () => ({
+    getAuthHeader: mockApiKeyGetAuthHeader,
+    getApiKey: vi.fn(),
+    currentUser: null,
+    isAuthenticated: false,
+    storeApiKey: vi.fn(),
+    clearStoredApiKey: vi.fn()
+  })
+}))
+
 describe('useFirebaseAuthStore', () => {
   let store: ReturnType<typeof useFirebaseAuthStore>
   let authStateCallback: (user: User | null) => void
@@ -164,6 +177,9 @@ describe('useFirebaseAuthStore', () => {
     // Reset and set up getIdToken mock
     mockUser.getIdToken.mockReset()
     mockUser.getIdToken.mockResolvedValue('mock-id-token')
+
+    // Default: no API key auth
+    mockApiKeyGetAuthHeader.mockReturnValue(null)
   })
 
   describe('token refresh events', () => {
@@ -626,6 +642,48 @@ describe('useFirebaseAuthStore', () => {
       )
 
       await expect(store.accessBillingPortal()).rejects.toThrow()
+    })
+  })
+
+  describe('createCustomer', () => {
+    it('should succeed with API key auth when no Firebase user is present', async () => {
+      authStateCallback(null)
+      mockApiKeyGetAuthHeader.mockReturnValue({ 'X-API-KEY': 'test-api-key' })
+
+      const result = await store.createCustomer()
+
+      expect(mockFetch).toHaveBeenCalledWith(
+        expect.stringContaining('/customers'),
+        expect.objectContaining({
+          method: 'POST',
+          headers: expect.objectContaining({
+            'X-API-KEY': 'test-api-key'
+          })
+        })
+      )
+      expect(result).toEqual({ id: 'test-customer-id' })
+    })
+
+    it('should use Firebase token when Firebase user is present', async () => {
+      const result = await store.createCustomer()
+
+      expect(mockFetch).toHaveBeenCalledWith(
+        expect.stringContaining('/customers'),
+        expect.objectContaining({
+          method: 'POST',
+          headers: expect.objectContaining({
+            Authorization: 'Bearer mock-id-token'
+          })
+        })
+      )
+      expect(result).toEqual({ id: 'test-customer-id' })
+    })
+
+    it('should throw when no auth method is available', async () => {
+      authStateCallback(null)
+      mockApiKeyGetAuthHeader.mockReturnValue(null)
+
+      await expect(store.createCustomer()).rejects.toThrow()
     })
   })
 })
