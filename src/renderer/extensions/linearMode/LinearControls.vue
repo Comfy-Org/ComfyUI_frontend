@@ -144,7 +144,7 @@ async function runButtonClick(e: Event) {
 defineExpose({ runButtonClick })
 </script>
 <template>
-  <div class="flex flex-col min-w-80 h-full">
+  <div class="flex flex-col min-w-80 h-full" v-bind="$attrs">
     <section
       v-if="mobile"
       data-testid="linear-run-button"
