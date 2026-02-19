@@ -157,7 +157,7 @@ const zAssetExportWsMessage = z.object({
   bytes_total: z.number(),
   bytes_processed: z.number(),
   progress: z.number(),
-  status: z.enum(['running', 'completed', 'failed']),
+  status: z.enum(['created', 'running', 'completed', 'failed']),
   error: z.string().optional()
 })
 

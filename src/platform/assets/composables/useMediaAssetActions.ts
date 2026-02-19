@@ -75,7 +75,7 @@ export function useMediaAssetActions() {
       toast.add({
         severity: 'success',
         summary: t('g.success'),
-        detail: t('mediaAsset.selection.downloadsStarted', { count: 1 }),
+        detail: t('mediaAsset.selection.downloadsStarted', 1),
         life: 2000
       })
     } catch (error) {
@@ -116,9 +116,7 @@ export function useMediaAssetActions() {
       toast.add({
         severity: 'success',
         summary: t('g.success'),
-        detail: t('mediaAsset.selection.downloadsStarted', {
-          count: assets.length
-        }),
+        detail: t('mediaAsset.selection.downloadsStarted', assets.length),
         life: 2000
       })
     } catch (error) {
@@ -174,9 +172,7 @@ export function useMediaAssetActions() {
       toast.add({
         severity: 'info',
         summary: t('exportToast.exportStarted'),
-        detail: t('mediaAsset.selection.exportStarted', {
-          count: assets.length
-        }),
+        detail: t('mediaAsset.selection.exportStarted', assets.length),
         life: 3000
       })
     } catch (error) {
@@ -650,9 +646,10 @@ export function useMediaAssetActions() {
                   summary: t('g.success'),
                   detail: isSingle
                     ? t('mediaAsset.assetDeletedSuccessfully')
-                    : t('mediaAsset.selection.assetsDeletedSuccessfully', {
-                        count: succeeded
-                      }),
+                    : t(
+                        'mediaAsset.selection.assetsDeletedSuccessfully',
+                        succeeded
+                      ),
                   life: 2000
                 })
               } else if (succeeded === 0) {
