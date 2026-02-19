@@ -16,6 +16,8 @@ function createDefaultFormData(): ComfyHubPublishFormData {
     tags: [],
     thumbnailType: 'image',
     thumbnailFile: null,
+    comparisonBeforeFile: null,
+    comparisonAfterFile: null,
     exampleImages: [],
     selectedExampleIds: []
   }

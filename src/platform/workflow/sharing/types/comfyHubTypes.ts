@@ -12,6 +12,8 @@ export interface ComfyHubPublishFormData {
   tags: string[]
   thumbnailType: ThumbnailType
   thumbnailFile: File | null
+  comparisonBeforeFile: File | null
+  comparisonAfterFile: File | null
   exampleImages: ExampleImage[]
   selectedExampleIds: string[]
 }

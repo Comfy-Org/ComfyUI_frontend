@@ -24,6 +24,12 @@
             @update:description="formData.description = $event"
             @update:thumbnail-type="formData.thumbnailType = $event"
             @update:thumbnail-file="formData.thumbnailFile = $event"
+            @update:comparison-before-file="
+              formData.comparisonBeforeFile = $event
+            "
+            @update:comparison-after-file="
+              formData.comparisonAfterFile = $event
+            "
           />
           <ComfyHubExamplesStep
             v-else-if="currentStep === 'examples'"
