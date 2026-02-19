@@ -42,6 +42,17 @@
         >
           <i class="icon-[lucide--x] size-4" />
         </Button>
+        <Button
+          v-if="showClearPendingTasksButton"
+          v-tooltip.bottom="clearPendingTasksTooltipConfig"
+          variant="destructive"
+          size="icon"
+          :disabled="!hasPendingTasks"
+          :aria-label="$t('menuLabels.Clear Pending Tasks')"
+          @click="() => commandStore.execute('Comfy.ClearPendingTasks')"
+        >
+          <i class="icon-[lucide--list-x] size-4" />
+        </Button>
       </div>
     </Panel>
 
@@ -77,6 +88,7 @@ import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
 import { useCommandStore } from '@/stores/commandStore'
 import { useExecutionStore } from '@/stores/executionStore'
+import { useQueueStore } from '@/stores/queueStore'
 import { cn } from '@/utils/tailwindUtil'
 
 import ComfyRunButton from './ComfyRunButton'
@@ -92,11 +104,15 @@ const emit = defineEmits<{
 
 const settingsStore = useSettingStore()
 const commandStore = useCommandStore()
+const { hasPendingTasks } = storeToRefs(useQueueStore())
 const { t } = useI18n()
 const { isIdle: isExecutionIdle } = storeToRefs(useExecutionStore())
 
 const position = computed(() => settingsStore.get('Comfy.UseNewMenu'))
 const visible = computed(() => position.value !== 'Disabled')
+const showClearPendingTasksButton = computed(() =>
+  settingsStore.get('Comfy.Queue.ShowClearPendingTasksButton')
+)
 const isQueuePanelV2Enabled = computed(() =>
   settingsStore.get('Comfy.Queue.QPOV2')
 )
@@ -320,6 +336,10 @@ const cancelCurrentJob = async () => {
   if (isExecutionIdle.value) return
   await commandStore.execute('Comfy.Interrupt')
 }
+
+const clearPendingTasksTooltipConfig = computed(() =>
+  buildTooltipConfig(t('menuLabels.Clear Pending Tasks'))
+)
 
 const actionbarClass = computed(() =>
   cn(
