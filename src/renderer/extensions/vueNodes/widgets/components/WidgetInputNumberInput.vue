@@ -1,9 +1,8 @@
 <script setup lang="ts">
-import { onClickOutside } from '@vueuse/core'
-import { computed, ref, useTemplateRef } from 'vue'
+import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import Button from '@/components/ui/button/Button.vue'
+import ScrubableNumberInput from '@/components/common/ScrubableNumberInput.vue'
 import { evaluateInput } from '@/lib/litegraph/src/utils/widget'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import { cn } from '@/utils/tailwindUtil'
@@ -20,15 +19,6 @@ const { locale } = useI18n()
 const props = defineProps<{
   widget: SimplifiedWidget<number>
 }>()
-
-const widgetContainer = useTemplateRef<HTMLDivElement>('widgetContainer')
-const inputField = useTemplateRef<HTMLInputElement>('inputField')
-const textEdit = ref(false)
-onClickOutside(widgetContainer, () => {
-  if (textEdit.value) {
-    textEdit.value = false
-  }
-})
 
 function formatNumber(value: number, options?: Intl.NumberFormatOptions) {
   return new Intl.NumberFormat(locale.value, options).format(value)
@@ -49,9 +39,8 @@ function unformatValue(value: string) {
 const modelValue = defineModel<number>({ default: 0 })
 
 const formattedValue = computed(() => {
-  const unformattedValue = dragValue.value ?? modelValue.value
-  if ((unformattedValue as unknown) === '' || !isFinite(unformattedValue))
-    return `${unformattedValue}`
+  const value = modelValue.value
+  if ((value as unknown) === '' || !isFinite(value)) return `${value}`
 
   const options: Intl.NumberFormatOptions = {
     useGrouping: useGrouping.value
@@ -60,20 +49,11 @@ const formattedValue = computed(() => {
     options.minimumFractionDigits = precision.value
     options.maximumFractionDigits = precision.value
   }
-  return formatNumber(unformattedValue, options)
+  return formatNumber(value, options)
 })
 
-function updateValue(e: UIEvent) {
-  const { target } = e
-  if (!(target instanceof HTMLInputElement)) return
-  const parsed = evaluateInput(unformatValue(target.value))
-  if (parsed !== undefined) {
-    const max = filteredProps.value.max ?? Number.MAX_VALUE
-    const min = filteredProps.value.min ?? -Number.MAX_VALUE
-    modelValue.value = Math.min(max, Math.max(min, parsed))
-  } else target.value = formattedValue.value
-
-  textEdit.value = false
+function parseWidgetValue(raw: string): number | undefined {
+  return evaluateInput(unformatValue(raw))
 }
 
 interface NumericWidgetOptions {
@@ -92,15 +72,6 @@ const filteredProps = computed(() => {
 })
 
 const isDisabled = computed(() => props.widget.options?.disabled ?? false)
-
-const canDecrement = computed(() => {
-  const min = filteredProps.value.min ?? -Number.MAX_VALUE
-  return modelValue.value > min && !isDisabled.value
-})
-const canIncrement = computed(() => {
-  const max = filteredProps.value.max ?? Number.MAX_VALUE
-  return modelValue.value < max && !isDisabled.value
-})
 
 // Get the precision value for proper number formatting
 const precision = computed(() => {
@@ -155,42 +126,6 @@ function updateValueBy(delta: number) {
   modelValue.value = Math.min(max, Math.max(min, modelValue.value + delta))
 }
 
-const dragValue = ref<number>()
-const dragDelta = ref(0)
-function handleMouseDown(e: PointerEvent) {
-  if (e.button > 0) return
-  if (isDisabled.value) return
-  const { target } = e
-  if (!(target instanceof HTMLElement)) return
-  target.setPointerCapture(e.pointerId)
-  dragValue.value = modelValue.value
-  dragDelta.value = 0
-}
-function handleMouseMove(e: PointerEvent) {
-  if (dragValue.value === undefined) return
-  dragDelta.value += e.movementX
-  const unclippedValue =
-    dragValue.value + ((dragDelta.value / 10) | 0) * stepValue.value
-  dragDelta.value %= 10
-  const max = filteredProps.value.max ?? Number.MAX_VALUE
-  const min = filteredProps.value.min ?? -Number.MAX_VALUE
-  dragValue.value = Math.min(max, Math.max(min, unclippedValue))
-}
-function handleMouseUp() {
-  const newValue = dragValue.value
-  if (newValue === undefined) return
-
-  if (newValue === modelValue.value) {
-    textEdit.value = true
-    inputField.value?.focus()
-    inputField.value?.setSelectionRange(0, -1)
-  }
-
-  modelValue.value = newValue
-  dragValue.value = undefined
-  dragDelta.value = 0
-}
-
 const buttonTooltip = computed(() => {
   if (buttonsDisabled.value) {
     return 'Increment/decrement disabled: value exceeds JavaScript precision limit (±2^53)'
@@ -207,98 +142,50 @@ const sliderWidth = computed(() => {
     (max - min) / step >= 100
   )
     return 0
-  const value = dragValue.value ?? modelValue.value
-  const ratio = (value - min) / (max - min)
+  const ratio = (modelValue.value - min) / (max - min)
   return (ratio * 100).toFixed(0)
 })
+
+const inputAriaAttrs = computed(() => ({
+  'aria-valuenow': modelValue.value,
+  'aria-valuemin': filteredProps.value.min,
+  'aria-valuemax': filteredProps.value.max,
+  role: 'spinbutton',
+  tabindex: 0
+}))
 </script>
 
 <template>
   <WidgetLayoutField :widget>
-    <div
-      ref="widgetContainer"
+    <ScrubableNumberInput
+      v-model="modelValue"
       v-tooltip="buttonTooltip"
-      v-bind="filteredProps"
       :aria-label="widget.name"
+      :min="filteredProps.min"
+      :max="filteredProps.max"
+      :step="stepValue"
+      :display-value="formattedValue"
+      :disabled="isDisabled"
+      :hide-buttons="buttonsDisabled"
+      :parse-value="parseWidgetValue"
+      :input-attrs="inputAriaAttrs"
       :class="cn(WidgetInputBaseClass, 'grow text-xs flex h-7 relative')"
+      @keydown.up.prevent="updateValueBy(stepValue)"
+      @keydown.down.prevent="updateValueBy(-stepValue)"
+      @keydown.page-up.prevent="updateValueBy(10 * stepValue)"
+      @keydown.page-down.prevent="updateValueBy(-10 * stepValue)"
     >
-      <div
-        class="absolute size-full rounded-lg pointer-events-none overflow-clip"
-      >
+      <template #background>
         <div
-          class="bg-primary-background/15 size-full"
-          :style="{ width: `${sliderWidth}%` }"
-        />
-      </div>
-      <Button
-        v-if="!buttonsDisabled"
-        data-testid="decrement"
-        class="h-full w-8 rounded-r-none hover:bg-base-foreground/20 disabled:opacity-30"
-        variant="muted-textonly"
-        :disabled="!canDecrement"
-        tabindex="-1"
-        @click="modelValue -= stepValue"
-      >
-        <i class="pi pi-minus" />
-      </Button>
-      <div class="relative min-w-[4ch] flex-1 py-1.5 my-0.25">
-        <input
-          ref="inputField"
-          :aria-valuenow="dragValue ?? modelValue"
-          :aria-valuemin="filteredProps.min"
-          :aria-valuemax="filteredProps.max"
-          :class="
-            cn(
-              'bg-transparent border-0 focus:outline-0 p-1 truncate text-sm absolute inset-0'
-            )
-          "
-          inputmode="decimal"
-          :value="formattedValue"
-          role="spinbutton"
-          tabindex="0"
-          :disabled="isDisabled"
-          autocomplete="off"
-          autocorrect="off"
-          spellcheck="false"
-          @blur="updateValue"
-          @keyup.enter="updateValue"
-          @keydown.up.prevent="updateValueBy(stepValue)"
-          @keydown.down.prevent="updateValueBy(-stepValue)"
-          @keydown.page-up.prevent="updateValueBy(10 * stepValue)"
-          @keydown.page-down.prevent="updateValueBy(-10 * stepValue)"
-          @dragstart.prevent
-        />
-        <div
-          :class="
-            cn(
-              'absolute inset-0 z-10 cursor-ew-resize',
-              textEdit && 'hidden pointer-events-none'
-            )
-          "
-          @pointerdown="handleMouseDown"
-          @pointermove="handleMouseMove"
-          @pointerup="handleMouseUp"
-          @pointercancel="
-            () => {
-              dragValue = undefined
-              dragDelta = 0
-            }
-          "
-        />
-      </div>
-
+          class="absolute size-full rounded-lg pointer-events-none overflow-clip"
+        >
+          <div
+            class="bg-primary-background/15 size-full"
+            :style="{ width: `${sliderWidth}%` }"
+          />
+        </div>
+      </template>
       <slot />
-      <Button
-        v-if="!buttonsDisabled"
-        data-testid="increment"
-        class="h-full w-8 rounded-l-none hover:bg-base-foreground/20 disabled:opacity-30"
-        variant="muted-textonly"
-        :disabled="!canIncrement"
-        tabindex="-1"
-        @click="modelValue += stepValue"
-      >
-        <i class="pi pi-plus" />
-      </Button>
-    </div>
+    </ScrubableNumberInput>
   </WidgetLayoutField>
 </template>

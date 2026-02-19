@@ -350,6 +350,10 @@
     "name": "在资源侧边栏中使用统一作业队列",
     "tooltip": "将浮动作业队列面板替换为嵌入资源侧边栏的等效作业队列。您可以禁用此选项以恢复为浮动面板布局。"
   },
+  "Comfy_RightSidePanel_ShowErrorsTab": {
+    "name": "在侧边面板显示错误标签页",
+    "tooltip": "启用后，右侧面板将显示一个错误标签页，可一目了然地查看工作流执行错误。"
+  },
   "Comfy_Sidebar_Location": {
     "name": "侧边栏位置",
     "options": {

@@ -208,6 +208,47 @@
       }
     }
   },
+  "AudioEqualizer3Band": {
+    "display_name": "오디오 이퀄라이저 (3-밴드)",
+    "inputs": {
+      "audio": {
+        "name": "오디오"
+      },
+      "high_freq": {
+        "name": "고역 컷오프 주파수",
+        "tooltip": "고역 셸프의 컷오프 주파수"
+      },
+      "high_gain_dB": {
+        "name": "고역 게인 (dB)",
+        "tooltip": "고주파수 (트레블) 게인"
+      },
+      "low_freq": {
+        "name": "저역 컷오프 주파수",
+        "tooltip": "저역 셸프의 컷오프 주파수"
+      },
+      "low_gain_dB": {
+        "name": "저역 게인 (dB)",
+        "tooltip": "저주파수 (베이스) 게인"
+      },
+      "mid_freq": {
+        "name": "중역 중심 주파수",
+        "tooltip": "중역의 중심 주파수"
+      },
+      "mid_gain_dB": {
+        "name": "중역 게인 (dB)",
+        "tooltip": "중주파수 게인"
+      },
+      "mid_q": {
+        "name": "중역 Q",
+        "tooltip": "중역의 Q 팩터 (대역폭)"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "AudioMerge": {
     "description": "두 오디오 트랙의 파형을 겹쳐서 결합합니다.",
     "display_name": "오디오 병합",
@@ -4235,6 +4276,26 @@
       "y": {
         "name": "y"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ImageCropV2": {
+    "display_name": "이미지 자르기",
+    "inputs": {
+      "crop_region": {
+        "name": "자르기 영역"
+      },
+      "height": {},
+      "image": {
+        "name": "이미지"
+      },
+      "width": {},
+      "x": {},
+      "y": {}
     },
     "outputs": {
       "0": {
@@ -10338,6 +10399,32 @@
       }
     }
   },
+  "NAGuidance": {
+    "description": "정규화된 어텐션 가이던스를 모델에 적용하여, distilled/schnell 모델에서 네거티브 프롬프트를 사용할 수 있게 합니다.",
+    "display_name": "정규화된 어텐션 가이던스",
+    "inputs": {
+      "model": {
+        "name": "model",
+        "tooltip": "NAG를 적용할 모델입니다."
+      },
+      "nag_alpha": {
+        "name": "nag_alpha",
+        "tooltip": "정규화된 어텐션의 블렌딩 계수입니다. 1.0은 완전 대체, 0.0은 효과 없음입니다."
+      },
+      "nag_scale": {
+        "name": "nag_scale",
+        "tooltip": "가이던스 스케일 계수입니다. 값이 높을수록 네거티브 프롬프트에서 더 멀어집니다."
+      },
+      "nag_tau": {
+        "name": "nag_tau"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "NAG가 활성화된 패치된 모델입니다."
+      }
+    }
+  },
   "NormalizeImages": {
     "display_name": "이미지 정규화",
     "inputs": {
@@ -11149,6 +11236,28 @@
       }
     }
   },
+  "PrimitiveBoundingBox": {
+    "display_name": "바운딩 박스",
+    "inputs": {
+      "height": {
+        "name": "높이"
+      },
+      "width": {
+        "name": "너비"
+      },
+      "x": {
+        "name": "x"
+      },
+      "y": {
+        "name": "y"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "PrimitiveFloat": {
     "display_name": "실수",
     "inputs": {
@@ -11704,6 +11813,88 @@
       },
       "substyle": {
         "name": "하위 스타일"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "RecraftV4TextToImageNode": {
+    "description": "Recraft V4 또는 V4 Pro 모델을 사용하여 이미지를 생성합니다.",
+    "display_name": "Recraft V4 텍스트-이미지",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "생성에 사용할 모델입니다."
+      },
+      "model_size": {
+        "name": "size"
+      },
+      "n": {
+        "name": "n",
+        "tooltip": "생성할 이미지의 개수입니다."
+      },
+      "negative_prompt": {
+        "name": "negative_prompt",
+        "tooltip": "이미지에서 원하지 않는 요소에 대한 선택적 텍스트 설명입니다."
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "이미지 생성을 위한 프롬프트입니다. 최대 10,000자까지 입력 가능합니다."
+      },
+      "recraft_controls": {
+        "name": "recraft_controls",
+        "tooltip": "Recraft Controls 노드를 통한 추가 생성 제어(선택 사항)입니다."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "노드가 다시 실행되어야 하는지 결정하는 시드입니다. 실제 결과는 시드와 관계없이 비결정적입니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "RecraftV4TextToVectorNode": {
+    "description": "Recraft V4 또는 V4 Pro 모델을 사용하여 SVG를 생성합니다.",
+    "display_name": "Recraft V4 텍스트-벡터",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "생성에 사용할 모델입니다."
+      },
+      "model_size": {
+        "name": "size"
+      },
+      "n": {
+        "name": "n",
+        "tooltip": "생성할 이미지의 개수입니다."
+      },
+      "negative_prompt": {
+        "name": "negative_prompt",
+        "tooltip": "이미지에서 원하지 않는 요소에 대한 선택적 텍스트 설명입니다."
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "이미지 생성을 위한 프롬프트입니다. 최대 10,000자까지 입력 가능합니다."
+      },
+      "recraft_controls": {
+        "name": "recraft_controls",
+        "tooltip": "Recraft Controls 노드를 통한 추가 생성 제어(선택 사항)입니다."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "노드가 다시 실행되어야 하는지 결정하는 시드입니다. 실제 결과는 시드와 관계없이 비결정적입니다."
       }
     },
     "outputs": {
@@ -15838,6 +16029,46 @@
       },
       "seed": {
         "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Vidu3StartEndToVideoNode": {
+    "description": "시작 프레임, 종료 프레임, 프롬프트를 사용하여 비디오를 생성합니다.",
+    "display_name": "Vidu Q3 시작/종료 프레임-투-비디오 생성",
+    "inputs": {
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "end_frame": {
+        "name": "종료 프레임"
+      },
+      "first_frame": {
+        "name": "시작 프레임"
+      },
+      "model": {
+        "name": "모델",
+        "tooltip": "비디오 생성을 위해 사용할 모델입니다."
+      },
+      "model_audio": {
+        "name": "오디오"
+      },
+      "model_duration": {
+        "name": "길이"
+      },
+      "model_resolution": {
+        "name": "해상도"
+      },
+      "prompt": {
+        "name": "프롬프트",
+        "tooltip": "프롬프트 설명 (최대 2000자)."
+      },
+      "seed": {
+        "name": "시드"
       }
     },
     "outputs": {

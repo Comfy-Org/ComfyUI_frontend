@@ -608,6 +608,7 @@
     "AUDIO_ENCODER_OUTPUT": "خروجی رمزگذار صوت",
     "AUDIO_RECORD": "ضبط صوت",
     "BOOLEAN": "بولی",
+    "BOUNDING_BOX": "BOUNDING_BOX",
     "CAMERA_CONTROL": "کنترل دوربین",
     "CLIP": "clip",
     "CLIP_VISION": "بینایی clip",
@@ -1898,6 +1899,25 @@
     "outputs": "خروجی‌ها",
     "type": "نوع"
   },
+  "nodeReplacement": {
+    "compatibleAlternatives": "گزینه‌های سازگار",
+    "installMissingNodes": "نصب نودهای مفقود",
+    "installationRequired": "نصب مورد نیاز است",
+    "instructionMessage": "برای اجرای workflow باید این نودها را نصب یا با گزینه‌های نصب‌شده جایگزین کنید. نودهای مفقود با رنگ {red} روی بوم مشخص شده‌اند. برخی نودها قابل تعویض نیستند و باید از طریق Node Manager نصب شوند.",
+    "notReplaceable": "نیاز به نصب",
+    "openNodeManager": "باز کردن Node Manager",
+    "quickFixAvailable": "رفع سریع در دسترس است",
+    "redHighlight": "قرمز",
+    "replaceFailed": "جایگزینی نودها ناموفق بود",
+    "replaceSelected": "جایگزینی انتخاب‌شده‌ها ({count})",
+    "replaceWarning": "این کار workflow را به طور دائمی تغییر می‌دهد. اگر مطمئن نیستید، ابتدا یک نسخه ذخیره کنید.",
+    "replaceable": "قابل جایگزینی",
+    "replaced": "جایگزین شد",
+    "replacedAllNodes": "{count} نوع نود جایگزین شد",
+    "replacedNode": "نود جایگزین شد: {nodeType}",
+    "selectAll": "انتخاب همه",
+    "skipForNow": "فعلاً رد شود"
+  },
   "nodeTemplates": {
     "enterName": "نام را وارد کنید",
     "saveAsTemplate": "ذخیره به عنوان قالب"
@@ -1996,6 +2016,11 @@
     "advancedInputs": "ورودی‌های پیشرفته",
     "bypass": "عبور",
     "color": "رنگ نود",
+    "enterSubgraph": "ورود به زیرگراف",
+    "errorHelp": "برای دریافت کمک بیشتر، {github} یا {support}",
+    "errorHelpGithub": "ثبت یک issue در GitHub",
+    "errorHelpSupport": "تماس با پشتیبانی ما",
+    "errors": "خطاها",
     "fallbackGroupTitle": "گروه",
     "fallbackNodeTitle": "node",
     "favorites": "ورودی‌های علاقه‌مندی",
@@ -2030,6 +2055,7 @@
     "inputsNoneTooltip": "این نود ورودی ندارد",
     "locateNode": "یافتن node در canvas",
     "mute": "بی‌صدا",
+    "noErrors": "بدون خطا",
     "noSelection": "یک نود را انتخاب کنید تا ویژگی‌ها و اطلاعات آن نمایش داده شود.",
     "nodeState": "وضعیت نود",
     "nodes": "nodeها",
@@ -2038,10 +2064,19 @@
     "normal": "عادی",
     "parameters": "پارامترها",
     "pinned": "سنجاق شده",
+    "promptErrors": {
+      "no_prompt": {
+        "desc": "داده‌های گردش‌کار ارسال‌شده به سرور خالی است. این ممکن است یک خطای غیرمنتظره سیستمی باشد."
+      },
+      "prompt_no_outputs": {
+        "desc": "گردش‌کار هیچ نود خروجی (مانند Save Image یا Preview Image) برای تولید نتیجه ندارد."
+      }
+    },
     "properties": "ویژگی‌ها",
     "removeFavorite": "حذف از علاقه‌مندی‌ها",
     "resetAllParameters": "بازنشانی همه پارامترها",
     "resetToDefault": "بازنشانی به پیش‌فرض",
+    "seeError": "مشاهده خطا",
     "settings": "تنظیمات",
     "showAdvancedInputsButton": "نمایش ورودی‌های پیشرفته",
     "showInput": "نمایش ورودی",
@@ -2266,6 +2301,7 @@
     "CustomColorPalettes": "پالت‌های رنگ سفارشی",
     "DevMode": "حالت توسعه‌دهنده",
     "EditTokenWeight": "ویرایش وزن توکن",
+    "Error System": "سیستم خطا",
     "Execution": "اجرا",
     "Extension": "افزونه",
     "General": "عمومی",
@@ -2425,8 +2461,11 @@
       "moreOptions": "گزینه‌های بیشتر",
       "noActiveJobs": "کار فعالی وجود ندارد",
       "preview": "پیش‌نمایش",
+      "queuedJobsLabel": "{count} در صف",
       "queuedSuffix": "در صف",
       "running": "در حال اجرا",
+      "runningJobsLabel": "{count} در حال اجرا",
+      "runningQueuedSummary": "{running}، {queued}",
       "showAssets": "نمایش دارایی‌ها",
       "showAssetsPanel": "نمایش پنل دارایی‌ها",
       "sortBy": "مرتب‌سازی بر اساس",

@@ -608,6 +608,7 @@
     "AUDIO_ENCODER_OUTPUT": "SORTIE_ENCODEUR_AUDIO",
     "AUDIO_RECORD": "ENREGISTREMENT_AUDIO",
     "BOOLEAN": "BOOLEAN",
+    "BOUNDING_BOX": "BOÎTE ENGLOBANTE",
     "CAMERA_CONTROL": "Contrôle de la caméra",
     "CLIP": "CLIP",
     "CLIP_VISION": "CLIP_VISION",
@@ -1898,6 +1899,25 @@
     "outputs": "Sorties",
     "type": "Type"
   },
+  "nodeReplacement": {
+    "compatibleAlternatives": "Alternatives compatibles",
+    "installMissingNodes": "Installer les nœuds manquants",
+    "installationRequired": "Installation requise",
+    "instructionMessage": "Vous devez installer ces nœuds ou les remplacer par des alternatives installées pour exécuter le workflow. Les nœuds manquants sont surlignés en {red} sur le canevas. Certains nœuds ne peuvent pas être remplacés et doivent être installés via le Gestionnaire de nœuds.",
+    "notReplaceable": "Installation requise",
+    "openNodeManager": "Ouvrir le Gestionnaire de nœuds",
+    "quickFixAvailable": "Correction rapide disponible",
+    "redHighlight": "rouge",
+    "replaceFailed": "Échec du remplacement des nœuds",
+    "replaceSelected": "Remplacer la sélection ({count})",
+    "replaceWarning": "Cela modifiera définitivement le workflow. Sauvegardez une copie si vous n’êtes pas sûr.",
+    "replaceable": "Remplaçable",
+    "replaced": "Remplacé",
+    "replacedAllNodes": "{count} type(s) de nœud remplacé(s)",
+    "replacedNode": "Nœud remplacé : {nodeType}",
+    "selectAll": "Tout sélectionner",
+    "skipForNow": "Ignorer pour l’instant"
+  },
   "nodeTemplates": {
     "enterName": "Entrez le nom",
     "saveAsTemplate": "Enregistrer comme modèle"
@@ -1996,6 +2016,11 @@
     "advancedInputs": "ENTRÉES AVANCÉES",
     "bypass": "Contourner",
     "color": "Couleur du nœud",
+    "enterSubgraph": "Entrer dans le sous-graphe",
+    "errorHelp": "Pour plus d'aide, {github} ou {support}",
+    "errorHelpGithub": "soumettre un ticket GitHub",
+    "errorHelpSupport": "contacter notre support",
+    "errors": "Erreurs",
     "fallbackGroupTitle": "Groupe",
     "fallbackNodeTitle": "Nœud",
     "favorites": "ENTRÉES FAVORITES",
@@ -2030,6 +2055,7 @@
     "inputsNoneTooltip": "Le nœud n’a pas d’entrées",
     "locateNode": "Localiser le nœud sur le canevas",
     "mute": "Muet",
+    "noErrors": "Aucune erreur",
     "noSelection": "Sélectionnez un nœud pour voir ses propriétés et informations.",
     "nodeState": "État du nœud",
     "nodes": "Nœuds",
@@ -2038,10 +2064,19 @@
     "normal": "Normal",
     "parameters": "Paramètres",
     "pinned": "Épinglé",
+    "promptErrors": {
+      "no_prompt": {
+        "desc": "Les données du flux de travail envoyées au serveur sont vides. Il peut s'agir d'une erreur système inattendue."
+      },
+      "prompt_no_outputs": {
+        "desc": "Le flux de travail ne contient aucun nœud de sortie (par exemple, Enregistrer l'image, Prévisualiser l'image) pour produire un résultat."
+      }
+    },
     "properties": "Propriétés",
     "removeFavorite": "Retirer des favoris",
     "resetAllParameters": "Réinitialiser tous les paramètres",
     "resetToDefault": "Réinitialiser par défaut",
+    "seeError": "Voir l'erreur",
     "settings": "Paramètres",
     "showAdvancedInputsButton": "Afficher les entrées avancées",
     "showInput": "Afficher l’entrée",
@@ -2266,6 +2301,7 @@
     "CustomColorPalettes": "Palettes de Couleurs Personnalisées",
     "DevMode": "Mode Développeur",
     "EditTokenWeight": "Modifier le Poids du Jeton",
+    "Error System": "Système d'erreurs",
     "Execution": "Exécution",
     "Extension": "Extension",
     "General": "Général",
@@ -2414,8 +2450,11 @@
       "moreOptions": "Plus d’options",
       "noActiveJobs": "Aucun travail actif",
       "preview": "Aperçu",
+      "queuedJobsLabel": "{count} en file d’attente",
       "queuedSuffix": "en file d’attente",
       "running": "en cours",
+      "runningJobsLabel": "{count} en cours",
+      "runningQueuedSummary": "{running} en cours, {queued} en file",
       "showAssets": "Afficher les ressources",
       "showAssetsPanel": "Afficher le panneau des ressources",
       "sortBy": "Trier par",

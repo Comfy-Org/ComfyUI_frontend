@@ -10,6 +10,7 @@ import type {
   OwnershipOption
 } from '@/platform/assets/types/filterTypes'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import { useAssetFilterOptions } from '@/platform/assets/composables/useAssetFilterOptions'
 import {
   filterByBaseModels,
   filterByCategory,
@@ -192,6 +193,22 @@ export function useAssetBrowser(
     return assets.value.filter(filterByCategory(selectedCategory.value))
   })
 
+  const { availableFileFormats, availableBaseModels } = useAssetFilterOptions(
+    categoryFilteredAssets
+  )
+
+  const activeFileFormats = computed(() =>
+    filters.value.fileFormats.filter((f) =>
+      availableFileFormats.value.some((opt) => opt.value === f)
+    )
+  )
+
+  const activeBaseModels = computed(() =>
+    filters.value.baseModels.filter((m) =>
+      availableBaseModels.value.some((opt) => opt.value === m)
+    )
+  )
+
   const fuseOptions: UseFuseOptions<AssetItem> = {
     fuseOptions: {
       keys: [
@@ -223,8 +240,8 @@ export function useAssetBrowser(
 
   const filteredAssets = computed(() => {
     const filtered = searchFiltered.value
-      .filter(filterByFileFormats(filters.value.fileFormats))
-      .filter(filterByBaseModels(filters.value.baseModels))
+      .filter(filterByFileFormats(activeFileFormats.value))
+      .filter(filterByBaseModels(activeBaseModels.value))
       .filter(filterByOwnership(selectedOwnership.value))
 
     const sortedAssets = sortAssets(filtered, filters.value.sortBy)

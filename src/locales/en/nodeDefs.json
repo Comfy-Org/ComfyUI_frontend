@@ -208,6 +208,47 @@
       }
     }
   },
+  "AudioEqualizer3Band": {
+    "display_name": "Audio Equalizer (3-Band)",
+    "inputs": {
+      "audio": {
+        "name": "audio"
+      },
+      "low_gain_dB": {
+        "name": "low_gain_dB",
+        "tooltip": "Gain for Low frequencies (Bass)"
+      },
+      "low_freq": {
+        "name": "low_freq",
+        "tooltip": "Cutoff frequency for Low shelf"
+      },
+      "mid_gain_dB": {
+        "name": "mid_gain_dB",
+        "tooltip": "Gain for Mid frequencies"
+      },
+      "mid_freq": {
+        "name": "mid_freq",
+        "tooltip": "Center frequency for Mids"
+      },
+      "mid_q": {
+        "name": "mid_q",
+        "tooltip": "Q factor (bandwidth) for Mids"
+      },
+      "high_gain_dB": {
+        "name": "high_gain_dB",
+        "tooltip": "Gain for High frequencies (Treble)"
+      },
+      "high_freq": {
+        "name": "high_freq",
+        "tooltip": "Cutoff frequency for High shelf"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "AudioMerge": {
     "display_name": "Audio Merge",
     "description": "Combine two audio tracks by overlaying their waveforms.",
@@ -4229,7 +4270,7 @@
     }
   },
   "ImageCrop": {
-    "display_name": "Image Crop",
+    "display_name": "Image Crop (Deprecated)",
     "inputs": {
       "image": {
         "name": "image"
@@ -4246,6 +4287,26 @@
       "y": {
         "name": "y"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ImageCropV2": {
+    "display_name": "Image Crop",
+    "inputs": {
+      "image": {
+        "name": "image"
+      },
+      "crop_region": {
+        "name": "crop_region"
+      },
+      "height": {},
+      "width": {},
+      "x": {},
+      "y": {}
     },
     "outputs": {
       "0": {
@@ -10399,6 +10460,32 @@
       }
     }
   },
+  "NAGuidance": {
+    "display_name": "Normalized Attention Guidance",
+    "description": "Applies Normalized Attention Guidance to models, enabling negative prompts on distilled/schnell models.",
+    "inputs": {
+      "model": {
+        "name": "model",
+        "tooltip": "The model to apply NAG to."
+      },
+      "nag_scale": {
+        "name": "nag_scale",
+        "tooltip": "The guidance scale factor. Higher values push further from the negative prompt."
+      },
+      "nag_alpha": {
+        "name": "nag_alpha",
+        "tooltip": "Blending factor for the normalized attention. 1.0 is full replacement, 0.0 is no effect."
+      },
+      "nag_tau": {
+        "name": "nag_tau"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "The patched model with NAG enabled."
+      }
+    }
+  },
   "NormalizeImages": {
     "display_name": "Normalize Images",
     "inputs": {
@@ -11210,6 +11297,28 @@
       }
     }
   },
+  "PrimitiveBoundingBox": {
+    "display_name": "Bounding Box",
+    "inputs": {
+      "x": {
+        "name": "x"
+      },
+      "y": {
+        "name": "y"
+      },
+      "width": {
+        "name": "width"
+      },
+      "height": {
+        "name": "height"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "PrimitiveFloat": {
     "display_name": "Float",
     "inputs": {
@@ -11647,7 +11756,7 @@
   },
   "RecraftStyleV3InfiniteStyleLibrary": {
     "display_name": "Recraft Style - Infinite Style Library",
-    "description": "Select style based on preexisting UUID from Recraft's Infinite Style Library.",
+    "description": "Choose style based on preexisting UUID from Recraft's Infinite Style Library.",
     "inputs": {
       "style_id": {
         "name": "style_id",
@@ -11765,6 +11874,88 @@
       },
       "control_after_generate": {
         "name": "control after generate"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "RecraftV4TextToImageNode": {
+    "display_name": "Recraft V4 Text to Image",
+    "description": "Generates images using Recraft V4 or V4 Pro models.",
+    "inputs": {
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Prompt for the image generation. Maximum 10,000 characters."
+      },
+      "negative_prompt": {
+        "name": "negative_prompt",
+        "tooltip": "An optional text description of undesired elements on an image."
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "The model to use for generation."
+      },
+      "n": {
+        "name": "n",
+        "tooltip": "The number of images to generate."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed to determine if node should re-run; actual results are nondeterministic regardless of seed."
+      },
+      "recraft_controls": {
+        "name": "recraft_controls",
+        "tooltip": "Optional additional controls over the generation via the Recraft Controls node."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model_size": {
+        "name": "size"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "RecraftV4TextToVectorNode": {
+    "display_name": "Recraft V4 Text to Vector",
+    "description": "Generates SVG using Recraft V4 or V4 Pro models.",
+    "inputs": {
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Prompt for the image generation. Maximum 10,000 characters."
+      },
+      "negative_prompt": {
+        "name": "negative_prompt",
+        "tooltip": "An optional text description of undesired elements on an image."
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "The model to use for generation."
+      },
+      "n": {
+        "name": "n",
+        "tooltip": "The number of images to generate."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed to determine if node should re-run; actual results are nondeterministic regardless of seed."
+      },
+      "recraft_controls": {
+        "name": "recraft_controls",
+        "tooltip": "Optional additional controls over the generation via the Recraft Controls node."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model_size": {
+        "name": "size"
       }
     },
     "outputs": {
@@ -15961,6 +16152,46 @@
       "prompt": {
         "name": "prompt",
         "tooltip": "An optional text prompt for video generation (max 2000 characters)."
+      },
+      "seed": {
+        "name": "seed"
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model_audio": {
+        "name": "audio"
+      },
+      "model_duration": {
+        "name": "duration"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Vidu3StartEndToVideoNode": {
+    "display_name": "Vidu Q3 Start/End Frame-to-Video Generation",
+    "description": "Generate a video from a start frame, an end frame, and a prompt.",
+    "inputs": {
+      "model": {
+        "name": "model",
+        "tooltip": "Model to use for video generation."
+      },
+      "first_frame": {
+        "name": "first_frame"
+      },
+      "end_frame": {
+        "name": "end_frame"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Prompt description (max 2000 characters)."
       },
       "seed": {
         "name": "seed"

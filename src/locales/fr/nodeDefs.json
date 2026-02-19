@@ -208,6 +208,47 @@
       }
     }
   },
+  "AudioEqualizer3Band": {
+    "display_name": "Égaliseur audio (3 bandes)",
+    "inputs": {
+      "audio": {
+        "name": "audio"
+      },
+      "high_freq": {
+        "name": "high_freq",
+        "tooltip": "Fréquence de coupure pour l'étagère haute"
+      },
+      "high_gain_dB": {
+        "name": "high_gain_dB",
+        "tooltip": "Gain pour les hautes fréquences (aigus)"
+      },
+      "low_freq": {
+        "name": "low_freq",
+        "tooltip": "Fréquence de coupure pour l'étagère basse"
+      },
+      "low_gain_dB": {
+        "name": "low_gain_dB",
+        "tooltip": "Gain pour les basses fréquences (basses)"
+      },
+      "mid_freq": {
+        "name": "mid_freq",
+        "tooltip": "Fréquence centrale pour les médiums"
+      },
+      "mid_gain_dB": {
+        "name": "mid_gain_dB",
+        "tooltip": "Gain pour les fréquences moyennes"
+      },
+      "mid_q": {
+        "name": "mid_q",
+        "tooltip": "Facteur Q (bande passante) pour les médiums"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "AudioMerge": {
     "description": "Combine deux pistes audio en superposant leurs formes d'onde.",
     "display_name": "Fusion Audio",
@@ -4235,6 +4276,26 @@
       "y": {
         "name": "y"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ImageCropV2": {
+    "display_name": "Rogner l'image",
+    "inputs": {
+      "crop_region": {
+        "name": "crop_region"
+      },
+      "height": {},
+      "image": {
+        "name": "image"
+      },
+      "width": {},
+      "x": {},
+      "y": {}
     },
     "outputs": {
       "0": {
@@ -10338,6 +10399,32 @@
       }
     }
   },
+  "NAGuidance": {
+    "description": "Applique le Guidage d’Attention Normalisée aux modèles, permettant l’utilisation de prompts négatifs sur les modèles distilled/schnell.",
+    "display_name": "Guidage d’Attention Normalisée",
+    "inputs": {
+      "model": {
+        "name": "modèle",
+        "tooltip": "Le modèle auquel appliquer NAG."
+      },
+      "nag_alpha": {
+        "name": "alpha_nag",
+        "tooltip": "Facteur de fusion pour l’attention normalisée. 1,0 correspond à un remplacement total, 0,0 à aucun effet."
+      },
+      "nag_scale": {
+        "name": "facteur_nag",
+        "tooltip": "Le facteur d’échelle du guidage. Des valeurs plus élevées éloignent davantage du prompt négatif."
+      },
+      "nag_tau": {
+        "name": "tau_nag"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "Le modèle modifié avec NAG activé."
+      }
+    }
+  },
   "NormalizeImages": {
     "display_name": "Normaliser les images",
     "inputs": {
@@ -11149,6 +11236,28 @@
       }
     }
   },
+  "PrimitiveBoundingBox": {
+    "display_name": "Boîte englobante",
+    "inputs": {
+      "height": {
+        "name": "height"
+      },
+      "width": {
+        "name": "width"
+      },
+      "x": {
+        "name": "x"
+      },
+      "y": {
+        "name": "y"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "PrimitiveFloat": {
     "display_name": "Flottant",
     "inputs": {
@@ -11704,6 +11813,88 @@
       },
       "substyle": {
         "name": "sous-style"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "RecraftV4TextToImageNode": {
+    "description": "Génère des images à l’aide des modèles Recraft V4 ou V4 Pro.",
+    "display_name": "Recraft V4 Texte vers Image",
+    "inputs": {
+      "control_after_generate": {
+        "name": "contrôle après génération"
+      },
+      "model": {
+        "name": "modèle",
+        "tooltip": "Le modèle à utiliser pour la génération."
+      },
+      "model_size": {
+        "name": "taille"
+      },
+      "n": {
+        "name": "n",
+        "tooltip": "Nombre d’images à générer."
+      },
+      "negative_prompt": {
+        "name": "prompt_négatif",
+        "tooltip": "Description textuelle optionnelle des éléments indésirables sur une image."
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Prompt pour la génération d’image. Maximum 10 000 caractères."
+      },
+      "recraft_controls": {
+        "name": "recraft_controls",
+        "tooltip": "Contrôles supplémentaires optionnels sur la génération via le nœud Recraft Controls."
+      },
+      "seed": {
+        "name": "graine",
+        "tooltip": "Graine pour déterminer si le nœud doit être relancé ; les résultats réels restent non déterministes quel que soit la graine."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "RecraftV4TextToVectorNode": {
+    "description": "Génère des SVG à l’aide des modèles Recraft V4 ou V4 Pro.",
+    "display_name": "Recraft V4 Texte vers Vectoriel",
+    "inputs": {
+      "control_after_generate": {
+        "name": "contrôle après génération"
+      },
+      "model": {
+        "name": "modèle",
+        "tooltip": "Le modèle à utiliser pour la génération."
+      },
+      "model_size": {
+        "name": "taille"
+      },
+      "n": {
+        "name": "n",
+        "tooltip": "Nombre d’images à générer."
+      },
+      "negative_prompt": {
+        "name": "prompt_négatif",
+        "tooltip": "Description textuelle optionnelle des éléments indésirables sur une image."
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Prompt pour la génération d’image. Maximum 10 000 caractères."
+      },
+      "recraft_controls": {
+        "name": "recraft_controls",
+        "tooltip": "Contrôles supplémentaires optionnels sur la génération via le nœud Recraft Controls."
+      },
+      "seed": {
+        "name": "graine",
+        "tooltip": "Graine pour déterminer si le nœud doit être relancé ; les résultats réels restent non déterministes quel que soit la graine."
       }
     },
     "outputs": {
@@ -15835,6 +16026,46 @@
       "prompt": {
         "name": "invite",
         "tooltip": "Une invite textuelle optionnelle pour la génération de vidéo (max. 2000 caractères)."
+      },
+      "seed": {
+        "name": "graine"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Vidu3StartEndToVideoNode": {
+    "description": "Générez une vidéo à partir d'une image de début, d'une image de fin et d'une invite.",
+    "display_name": "Génération vidéo Vidu Q3 à partir d'une image de début/fin",
+    "inputs": {
+      "control_after_generate": {
+        "name": "contrôle après génération"
+      },
+      "end_frame": {
+        "name": "image de fin"
+      },
+      "first_frame": {
+        "name": "image de début"
+      },
+      "model": {
+        "name": "modèle",
+        "tooltip": "Modèle à utiliser pour la génération vidéo."
+      },
+      "model_audio": {
+        "name": "audio"
+      },
+      "model_duration": {
+        "name": "durée"
+      },
+      "model_resolution": {
+        "name": "résolution"
+      },
+      "prompt": {
+        "name": "invite",
+        "tooltip": "Description de l'invite (2000 caractères max)."
       },
       "seed": {
         "name": "graine"
