@@ -77,8 +77,7 @@ const i18n = createI18n({
         instant: 'Instant',
         instantTooltip: 'Instant tooltip',
         stopRunInstant: 'Stop Run (Instant)',
-        stopRunInstantTooltip:
-          'Stop instant auto queue and cancel the current run',
+        stopRunInstantTooltip: 'Stop running',
         runWorkflow: 'Run workflow',
         runWorkflowFront: 'Run workflow front',
         runWorkflowDisabled: 'Run workflow disabled'
@@ -116,11 +115,13 @@ function createWrapper() {
 }
 
 describe('ComfyQueueButton', () => {
-  it('keeps the run instant presentation while idle', async () => {
+  it('keeps the run instant presentation while idle even with active jobs', async () => {
     const wrapper = createWrapper()
     const queueSettingsStore = useQueueSettingsStore()
+    const queueStore = useQueueStore()
 
     queueSettingsStore.mode = 'instant-idle'
+    queueStore.runningTasks = [createTask('run-1', 'in_progress')]
     await nextTick()
 
     const splitButton = wrapper.get('[data-testid="queue-button"]')
@@ -130,13 +131,11 @@ describe('ComfyQueueButton', () => {
     expect(wrapper.find('.icon-\\[lucide--fast-forward\\]').exists()).toBe(true)
   })
 
-  it('switches to stop presentation for active instant auto queue', async () => {
+  it('switches to stop presentation when instant mode is armed', async () => {
     const wrapper = createWrapper()
     const queueSettingsStore = useQueueSettingsStore()
-    const queueStore = useQueueStore()
 
     queueSettingsStore.mode = 'instant-running'
-    queueStore.runningTasks = [createTask('run-1', 'in_progress')]
     await nextTick()
 
     const splitButton = wrapper.get('[data-testid="queue-button"]')
@@ -146,7 +145,7 @@ describe('ComfyQueueButton', () => {
     expect(wrapper.find('.icon-\\[lucide--square\\]').exists()).toBe(true)
   })
 
-  it('stops active instant mode while keeping instant selected when jobs clear', async () => {
+  it('disarms instant mode without interrupting even when jobs are active', async () => {
     const wrapper = createWrapper()
     const queueSettingsStore = useQueueSettingsStore()
     const queueStore = useQueueStore()
@@ -156,9 +155,7 @@ describe('ComfyQueueButton', () => {
     queueStore.runningTasks = [createTask('run-1', 'in_progress')]
     await nextTick()
 
-    const clickPromise = wrapper
-      .get('[data-testid="queue-button"]')
-      .trigger('click')
+    await wrapper.get('[data-testid="queue-button"]').trigger('click')
     await nextTick()
 
     expect(queueSettingsStore.mode).toBe('instant-idle')
@@ -169,16 +166,7 @@ describe('ComfyQueueButton', () => {
     expect(splitButtonWhileStopping.attributes('data-severity')).toBe('primary')
     expect(wrapper.find('.icon-\\[lucide--fast-forward\\]').exists()).toBe(true)
 
-    queueStore.runningTasks = []
-    await nextTick()
-    await clickPromise
-    await nextTick()
-
-    expect(commandStore.execute).toHaveBeenCalledWith('Comfy.Interrupt')
-    expect(commandStore.execute).not.toHaveBeenCalledWith(
-      'Comfy.QueuePrompt',
-      expect.anything()
-    )
+    expect(commandStore.execute).not.toHaveBeenCalled()
 
     const splitButton = wrapper.get('[data-testid="queue-button"]')
     expect(queueSettingsStore.mode).toBe('instant-idle')

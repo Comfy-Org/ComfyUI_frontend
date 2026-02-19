@@ -51,8 +51,7 @@ import { useNodeDefStore } from '@/stores/nodeDefStore'
 import {
   isInstantMode,
   isInstantRunningMode,
-  useQueueSettingsStore,
-  useQueueStore
+  useQueueSettingsStore
 } from '@/stores/queueStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { graphHasMissingNodes } from '@/workbench/extensions/manager/utils/graphHasMissingNodes'
@@ -61,7 +60,6 @@ import BatchCountEdit from '../BatchCountEdit.vue'
 
 const workspaceStore = useWorkspaceStore()
 const { mode: queueMode, batchCount } = storeToRefs(useQueueSettingsStore())
-const { activeJobsCount } = storeToRefs(useQueueStore())
 
 const nodeDefStore = useNodeDefStore()
 const hasMissingNodes = computed(() =>
@@ -124,8 +122,8 @@ const queueModeMenuItems = computed(() =>
   Object.values(queueModeMenuItemLookup.value)
 )
 
-const isStopInstantAction = computed(
-  () => isInstantRunningMode(queueMode.value) && activeJobsCount.value > 0
+const isStopInstantAction = computed(() =>
+  isInstantRunningMode(queueMode.value)
 )
 
 const queueButtonLabel = computed(() =>
@@ -177,7 +175,6 @@ const commandStore = useCommandStore()
 const queuePrompt = async (e: Event) => {
   if (isStopInstantAction.value) {
     queueMode.value = 'instant-idle'
-    await commandStore.execute('Comfy.Interrupt')
     return
   }
 
