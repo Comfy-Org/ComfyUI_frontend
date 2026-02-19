@@ -823,6 +823,9 @@ importers:
       axios:
         specifier: 'catalog:'
         version: 1.13.2
+      dompurify:
+        specifier: ^3.2.5
+        version: 3.2.5
     devDependencies:
       typescript:
         specifier: 'catalog:'

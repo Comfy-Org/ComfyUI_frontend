@@ -40,7 +40,8 @@ describe('NodeSearchCategorySidebar', () => {
     const btn = wrapper
       .findAll('button')
       .find((b) => (exact ? b.text().trim() === text : b.text().includes(text)))
-    await btn?.trigger('click')
+    expect(btn, `Expected to find a button with text "${text}"`).toBeDefined()
+    await btn!.trigger('click')
     await nextTick()
   }
 

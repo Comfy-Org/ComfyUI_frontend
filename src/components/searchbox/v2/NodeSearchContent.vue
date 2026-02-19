@@ -74,8 +74,8 @@
             :node-def="node"
             :current-query="searchQuery"
             show-description
-            :show-source-badge="selectedCategory !== 'essentials'"
-            :hide-bookmark-icon="selectedCategory === 'favorites'"
+            :show-source-badge="effectiveCategory !== 'essentials'"
+            :hide-bookmark-icon="effectiveCategory === 'favorites'"
           />
         </div>
         <div

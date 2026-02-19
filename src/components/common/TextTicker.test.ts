@@ -11,7 +11,7 @@ function mockScrollWidth(el: HTMLElement, scrollWidth: number) {
   })
 }
 
-describe('TextTicker', () => {
+describe(TextTicker, () => {
   let rafCallbacks: ((time: number) => void)[]
 
   beforeEach(() => {

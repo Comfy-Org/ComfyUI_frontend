@@ -17,7 +17,7 @@ vi.mock('@/platform/settings/settingStore', () => ({
   }))
 }))
 
-describe('NodeSearchFilterBar', () => {
+describe(NodeSearchFilterBar, () => {
   beforeEach(() => {
     setupTestPinia()
     useNodeDefStore().updateNodeDefs([
