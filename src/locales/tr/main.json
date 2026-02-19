@@ -608,6 +608,7 @@
     "AUDIO_ENCODER_OUTPUT": "SES_KODLAYICI_ÇIKIŞI",
     "AUDIO_RECORD": "SES_KAYDI",
     "BOOLEAN": "BOOLEAN",
+    "BOUNDING_BOX": "BOUNDING_BOX",
     "CAMERA_CONTROL": "KAMERA_KONTROL",
     "CLIP": "CLIP",
     "CLIP_VISION": "CLIP_VISION",
@@ -2015,6 +2016,11 @@
     "advancedInputs": "GELİŞMİŞ GİRDİLER",
     "bypass": "Atla",
     "color": "Düğüm rengi",
+    "enterSubgraph": "Alt grafiğe gir",
+    "errorHelp": "Daha fazla yardım için {github} veya {support}",
+    "errorHelpGithub": "bir GitHub sorunu gönderin",
+    "errorHelpSupport": "destek ekibimizle iletişime geçin",
+    "errors": "Hatalar",
     "fallbackGroupTitle": "Grup",
     "fallbackNodeTitle": "Düğüm",
     "favorites": "FAVORİ GİRDİLER",
@@ -2049,6 +2055,7 @@
     "inputsNoneTooltip": "Düğümün girişi yok",
     "locateNode": "Düğümü tuvalde bul",
     "mute": "Sessiz",
+    "noErrors": "Hata yok",
     "noSelection": "Bir düğüm seçerek özelliklerini ve bilgisini görebilirsiniz.",
     "nodeState": "Düğüm durumu",
     "nodes": "Düğümler",
@@ -2057,10 +2064,19 @@
     "normal": "Normal",
     "parameters": "Parametreler",
     "pinned": "Sabitlendi",
+    "promptErrors": {
+      "no_prompt": {
+        "desc": "Sunucuya gönderilen çalışma akışı verisi boş. Bu beklenmeyen bir sistem hatası olabilir."
+      },
+      "prompt_no_outputs": {
+        "desc": "Çalışma akışında sonuç üretecek herhangi bir çıktı düğümü (ör. Görüntüyü Kaydet, Görüntüyü Önizle) bulunmuyor."
+      }
+    },
     "properties": "Özellikler",
     "removeFavorite": "Favorilerden Kaldır",
     "resetAllParameters": "Tüm parametreleri sıfırla",
     "resetToDefault": "Varsayılanlara sıfırla",
+    "seeError": "Hatayı Gör",
     "settings": "Ayarlar",
     "showAdvancedInputsButton": "Gelişmiş girdileri göster",
     "showInput": "Girdiyi göster",
@@ -2285,6 +2301,7 @@
     "CustomColorPalettes": "Özel Renk Paletleri",
     "DevMode": "Geliştirici Modu",
     "EditTokenWeight": "Jeton Ağırlığını Düzenle",
+    "Error System": "Hata Sistemi",
     "Execution": "Yürütme",
     "Extension": "Uzantı",
     "General": "Genel",

@@ -208,6 +208,47 @@
       }
     }
   },
+  "AudioEqualizer3Band": {
+    "display_name": "オーディオイコライザー（3バンド）",
+    "inputs": {
+      "audio": {
+        "name": "audio"
+      },
+      "high_freq": {
+        "name": "high_freq",
+        "tooltip": "高域シェルフのカットオフ周波数"
+      },
+      "high_gain_dB": {
+        "name": "high_gain_dB",
+        "tooltip": "高域（トレブル）のゲイン"
+      },
+      "low_freq": {
+        "name": "low_freq",
+        "tooltip": "低域シェルフのカットオフ周波数"
+      },
+      "low_gain_dB": {
+        "name": "low_gain_dB",
+        "tooltip": "低域（ベース）のゲイン"
+      },
+      "mid_freq": {
+        "name": "mid_freq",
+        "tooltip": "中域の中心周波数"
+      },
+      "mid_gain_dB": {
+        "name": "mid_gain_dB",
+        "tooltip": "中域のゲイン"
+      },
+      "mid_q": {
+        "name": "mid_q",
+        "tooltip": "中域のQファクター（帯域幅）"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "AudioMerge": {
     "description": "2つのオーディオトラックを波形を重ねて結合します。",
     "display_name": "オーディオ結合",
@@ -4235,6 +4276,26 @@
       "y": {
         "name": "y"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ImageCropV2": {
+    "display_name": "画像切り抜き",
+    "inputs": {
+      "crop_region": {
+        "name": "crop_region"
+      },
+      "height": {},
+      "image": {
+        "name": "image"
+      },
+      "width": {},
+      "x": {},
+      "y": {}
     },
     "outputs": {
       "0": {
@@ -11167,6 +11228,28 @@
     "inputs": {
       "value": {
         "name": "値"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PrimitiveBoundingBox": {
+    "display_name": "バウンディングボックス",
+    "inputs": {
+      "height": {
+        "name": "height"
+      },
+      "width": {
+        "name": "width"
+      },
+      "x": {
+        "name": "x"
+      },
+      "y": {
+        "name": "y"
       }
     },
     "outputs": {

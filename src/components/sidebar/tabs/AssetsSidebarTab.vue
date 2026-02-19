@@ -55,8 +55,21 @@
       <Divider type="dashed" class="my-2" />
     </template>
     <template #body>
-      <div v-if="showLoadingState">
-        <ProgressSpinner class="absolute left-1/2 w-[50px] -translate-x-1/2" />
+      <div
+        v-if="showLoadingState"
+        class="grid grid-cols-[repeat(auto-fill,minmax(200px,1fr))] gap-2 px-2"
+      >
+        <div
+          v-for="n in skeletonCount"
+          :key="`skeleton-${n}`"
+          class="flex flex-col gap-2 p-2"
+        >
+          <Skeleton class="aspect-square w-full rounded-lg" />
+          <div class="flex flex-col gap-1">
+            <Skeleton class="h-4 w-3/4" />
+            <Skeleton class="h-3 w-1/2" />
+          </div>
+        </div>
       </div>
       <div v-else-if="showEmptyState">
         <NoResultsPlaceholder
@@ -181,13 +194,13 @@
 
 <script setup lang="ts">
 import {
+  useAsyncState,
   useDebounceFn,
   useElementHover,
   useResizeObserver,
   useStorage
 } from '@vueuse/core'
 import Divider from 'primevue/divider'
-import ProgressSpinner from 'primevue/progressspinner'
 import { useToast } from 'primevue/usetoast'
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -199,6 +212,7 @@ const Load3dViewerContent = () =>
 import AssetsSidebarGridView from '@/components/sidebar/tabs/AssetsSidebarGridView.vue'
 import AssetsSidebarListView from '@/components/sidebar/tabs/AssetsSidebarListView.vue'
 import SidebarTabTemplate from '@/components/sidebar/tabs/SidebarTabTemplate.vue'
+import Skeleton from '@/components/ui/skeleton/Skeleton.vue'
 import ResultGallery from '@/components/sidebar/tabs/queue/ResultGallery.vue'
 import Tab from '@/components/tab/Tab.vue'
 import TabList from '@/components/tab/TabList.vue'
@@ -211,6 +225,7 @@ import { useAssetSelection } from '@/platform/assets/composables/useAssetSelecti
 import { useMediaAssetActions } from '@/platform/assets/composables/useMediaAssetActions'
 import { useMediaAssetFiltering } from '@/platform/assets/composables/useMediaAssetFiltering'
 import { useOutputStacks } from '@/platform/assets/composables/useOutputStacks'
+import type { OutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
 import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import type { MediaKind } from '@/platform/assets/schemas/mediaAssetSchema'
@@ -226,6 +241,7 @@ const { t } = useI18n()
 const activeTab = ref<'input' | 'output'>('output')
 const folderPromptId = ref<string | null>(null)
 const folderExecutionTime = ref<number | undefined>(undefined)
+const expectedFolderCount = ref(0)
 const isInFolderView = computed(() => folderPromptId.value !== null)
 const viewMode = useStorage<'list' | 'grid'>(
   'Comfy.Assets.Sidebar.ViewMode',
@@ -327,7 +343,24 @@ const mediaAssets = computed(() => currentAssets.value.media.value)
 const galleryActiveIndex = ref(-1)
 const currentGalleryAssetId = ref<string | null>(null)
 
-const folderAssets = ref<AssetItem[]>([])
+const DEFAULT_SKELETON_COUNT = 6
+const skeletonCount = computed(() =>
+  expectedFolderCount.value > 0
+    ? expectedFolderCount.value
+    : DEFAULT_SKELETON_COUNT
+)
+
+const {
+  state: folderAssets,
+  isLoading: folderLoading,
+  error: folderError,
+  execute: loadFolderAssets
+} = useAsyncState(
+  (metadata: OutputAssetMetadata, options: { createdAt?: string } = {}) =>
+    resolveOutputAssetItems(metadata, options),
+  [] as AssetItem[],
+  { immediate: false, resetOnExecute: true }
+)
 
 // Base assets before search filtering
 const baseAssets = computed(() => {
@@ -365,12 +398,18 @@ const isBulkMode = computed(
   () => hasSelection.value && selectedAssets.value.length > 1
 )
 
+const isFolderLoading = computed(
+  () => isInFolderView.value && folderLoading.value
+)
+
 const showLoadingState = computed(
-  () => loading.value && displayAssets.value.length === 0
+  () =>
+    (loading.value || isFolderLoading.value) && displayAssets.value.length === 0
 )
 
 const showEmptyState = computed(
-  () => !loading.value && displayAssets.value.length === 0
+  () =>
+    !loading.value && !isFolderLoading.value && displayAssets.value.length === 0
 )
 
 watch(visibleAssets, (newAssets) => {
@@ -534,27 +573,25 @@ const enterFolderView = async (asset: AssetItem) => {
 
   folderPromptId.value = promptId
   folderExecutionTime.value = executionTimeInSeconds
+  expectedFolderCount.value = metadata.outputCount ?? 0
 
-  let folderItems: AssetItem[] = []
-  try {
-    folderItems = await resolveOutputAssetItems(metadata, {
-      createdAt: asset.created_at
+  await loadFolderAssets(0, metadata, { createdAt: asset.created_at })
+
+  if (folderError.value) {
+    toast.add({
+      severity: 'error',
+      summary: t('sideToolbar.folderView.errorSummary'),
+      detail: t('sideToolbar.folderView.errorDetail'),
+      life: 5000
     })
-  } catch (error) {
-    console.error('Failed to resolve outputs for folder view:', error)
+    exitFolderView()
   }
-
-  if (folderItems.length === 0) {
-    console.warn('No outputs available for folder view')
-    return
-  }
-
-  folderAssets.value = folderItems
 }
 
 const exitFolderView = () => {
   folderPromptId.value = null
   folderExecutionTime.value = undefined
+  expectedFolderCount.value = 0
   folderAssets.value = []
   searchQuery.value = ''
 }

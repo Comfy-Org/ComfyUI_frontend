@@ -608,6 +608,7 @@
     "AUDIO_ENCODER_OUTPUT": "オーディオエンコーダ出力",
     "AUDIO_RECORD": "オーディオ録音",
     "BOOLEAN": "ブール",
+    "BOUNDING_BOX": "バウンディングボックス",
     "CAMERA_CONTROL": "カメラコントロール",
     "CLIP": "CLIP",
     "CLIP_VISION": "CLIP_VISION",
@@ -2015,6 +2016,11 @@
     "advancedInputs": "詳細入力",
     "bypass": "バイパス",
     "color": "ノードカラー",
+    "enterSubgraph": "サブグラフに入る",
+    "errorHelp": "詳細なヘルプについては、{github} または {support} をご利用ください",
+    "errorHelpGithub": "GitHub イシューを提出",
+    "errorHelpSupport": "サポートに連絡",
+    "errors": "エラー",
     "fallbackGroupTitle": "グループ",
     "fallbackNodeTitle": "ノード",
     "favorites": "お気に入り入力",
@@ -2049,6 +2055,7 @@
     "inputsNoneTooltip": "このノードには入力がありません",
     "locateNode": "キャンバス上でノードを探す",
     "mute": "ミュート",
+    "noErrors": "エラーなし",
     "noSelection": "ノードを選択すると、そのプロパティと情報が表示されます。",
     "nodeState": "ノードの状態",
     "nodes": "ノード",
@@ -2057,10 +2064,19 @@
     "normal": "ノーマル",
     "parameters": "パラメータ",
     "pinned": "ピン留め",
+    "promptErrors": {
+      "no_prompt": {
+        "desc": "サーバーに送信されたワークフローデータが空です。これは予期しないシステムエラーの可能性があります。"
+      },
+      "prompt_no_outputs": {
+        "desc": "ワークフローに結果を生成する出力ノード（例：画像を保存、画像をプレビュー）が含まれていません。"
+      }
+    },
     "properties": "プロパティ",
     "removeFavorite": "お気に入りを解除",
     "resetAllParameters": "すべてのパラメータをリセット",
     "resetToDefault": "デフォルトにリセット",
+    "seeError": "エラーを見る",
     "settings": "設定",
     "showAdvancedInputsButton": "詳細入力を表示",
     "showInput": "入力を表示",
@@ -2285,6 +2301,7 @@
     "CustomColorPalettes": "カスタムカラーパレット",
     "DevMode": "開発モード",
     "EditTokenWeight": "トークンの重みを編集",
+    "Error System": "エラーシステム",
     "Execution": "実行",
     "Extension": "拡張",
     "General": "一般",

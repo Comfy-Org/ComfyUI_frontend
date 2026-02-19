@@ -608,6 +608,7 @@
     "AUDIO_ENCODER_OUTPUT": "音訊編碼器輸出",
     "AUDIO_RECORD": "音訊錄製",
     "BOOLEAN": "布林值",
+    "BOUNDING_BOX": "邊界框",
     "CAMERA_CONTROL": "攝影機控制",
     "CLIP": "CLIP",
     "CLIP_VISION": "CLIP 視覺",
@@ -2015,6 +2016,11 @@
     "advancedInputs": "進階輸入",
     "bypass": "繞過",
     "color": "節點顏色",
+    "enterSubgraph": "進入子圖",
+    "errorHelp": "如需更多協助，請{github}或{support}",
+    "errorHelpGithub": "提交 GitHub 問題",
+    "errorHelpSupport": "聯絡我們的客服",
+    "errors": "錯誤",
     "fallbackGroupTitle": "群組",
     "fallbackNodeTitle": "節點",
     "favorites": "已收藏輸入",
@@ -2049,6 +2055,7 @@
     "inputsNoneTooltip": "此節點沒有輸入",
     "locateNode": "在畫布上定位節點",
     "mute": "靜音",
+    "noErrors": "沒有錯誤",
     "noSelection": "請選擇節點以檢視其屬性與資訊。",
     "nodeState": "節點狀態",
     "nodes": "節點",
@@ -2057,10 +2064,19 @@
     "normal": "一般",
     "parameters": "參數",
     "pinned": "已釘選",
+    "promptErrors": {
+      "no_prompt": {
+        "desc": "傳送到伺服器的工作流程資料為空。這可能是系統發生了非預期的錯誤。"
+      },
+      "prompt_no_outputs": {
+        "desc": "工作流程中沒有任何輸出節點（例如：儲存圖像、預覽圖像），無法產生結果。"
+      }
+    },
     "properties": "屬性",
     "removeFavorite": "取消收藏",
     "resetAllParameters": "重設所有參數",
     "resetToDefault": "重設為預設值",
+    "seeError": "查看錯誤",
     "settings": "設定",
     "showAdvancedInputsButton": "顯示進階輸入",
     "showInput": "顯示輸入",
@@ -2285,6 +2301,7 @@
     "CustomColorPalettes": "自訂色彩調色盤",
     "DevMode": "開發者模式",
     "EditTokenWeight": "編輯權重",
+    "Error System": "錯誤系統",
     "Execution": "執行",
     "Extension": "擴充功能",
     "General": "一般",

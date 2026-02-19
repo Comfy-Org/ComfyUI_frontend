@@ -3,49 +3,26 @@
     <label class="content-center text-xs text-node-component-slot-text">
       {{ $t('boundingBox.x') }}
     </label>
-    <input
-      v-model.number="x"
-      type="number"
-      :min="0"
-      step="1"
-      class="h-7 rounded-lg border-none bg-component-node-widget-background px-2 text-xs text-component-node-foreground focus:outline-0"
-    />
+    <ScrubableNumberInput v-model="x" :min="0" :step="1" />
     <label class="content-center text-xs text-node-component-slot-text">
       {{ $t('boundingBox.y') }}
     </label>
-    <input
-      v-model.number="y"
-      type="number"
-      :min="0"
-      step="1"
-      class="h-7 rounded-lg border-none bg-component-node-widget-background px-2 text-xs text-component-node-foreground focus:outline-0"
-    />
+    <ScrubableNumberInput v-model="y" :min="0" :step="1" />
     <label class="content-center text-xs text-node-component-slot-text">
       {{ $t('boundingBox.width') }}
     </label>
-    <input
-      v-model.number="width"
-      type="number"
-      :min="1"
-      step="1"
-      class="h-7 rounded-lg border-none bg-component-node-widget-background px-2 text-xs text-component-node-foreground focus:outline-0"
-    />
+    <ScrubableNumberInput v-model="width" :min="1" :step="1" />
     <label class="content-center text-xs text-node-component-slot-text">
       {{ $t('boundingBox.height') }}
     </label>
-    <input
-      v-model.number="height"
-      type="number"
-      :min="1"
-      step="1"
-      class="h-7 rounded-lg border-none bg-component-node-widget-background px-2 text-xs text-component-node-foreground focus:outline-0"
-    />
+    <ScrubableNumberInput v-model="height" :min="1" :step="1" />
   </div>
 </template>
 
 <script setup lang="ts">
 import { computed } from 'vue'
 
+import ScrubableNumberInput from '@/components/common/ScrubableNumberInput.vue'
 import type { Bounds } from '@/renderer/core/layout/types'
 
 const modelValue = defineModel<Bounds>({

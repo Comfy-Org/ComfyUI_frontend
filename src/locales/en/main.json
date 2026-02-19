@@ -743,6 +743,10 @@
       "filterText": "Text"
     },
     "backToAssets": "Back to all assets",
+    "folderView": {
+      "errorSummary": "Failed to load outputs",
+      "errorDetail": "Could not retrieve outputs for this job. Please try again."
+    },
     "searchAssets": "Search Assets",
     "labels": {
       "queue": "Queue",
@@ -1361,7 +1365,8 @@
     "PLY": "PLY",
     "Workspace": "Workspace",
     "Other": "Other",
-    "Secrets": "Secrets"
+    "Secrets": "Secrets",
+    "Error System": "Error System"
   },
   "serverConfigItems": {
     "listen": {
@@ -1607,6 +1612,7 @@
     "AUDIO_ENCODER_OUTPUT": "AUDIO_ENCODER_OUTPUT",
     "AUDIO_RECORD": "AUDIO_RECORD",
     "BOOLEAN": "BOOLEAN",
+    "BOUNDING_BOX": "BOUNDING_BOX",
     "CAMERA_CONTROL": "CAMERA_CONTROL",
     "CLIP": "CLIP",
     "CLIP_VISION": "CLIP_VISION",
@@ -2820,9 +2826,10 @@
       "insertAllAssetsAsNodes": "Insert all assets as nodes",
       "openWorkflowAll": "Open all workflows",
       "exportWorkflowAll": "Export all workflows",
-      "downloadStarted": "Downloading {count} files...",
-      "downloadsStarted": "Started downloading {count} file(s)",
-      "assetsDeletedSuccessfully": "{count} asset(s) deleted successfully",
+      "downloadStarted": "Downloading {count} file... | Downloading {count} files...",
+      "downloadsStarted": "Started downloading {count} file | Started downloading {count} files",
+      "exportStarted": "Preparing ZIP export for {count} file | Preparing ZIP export for {count} files",
+      "assetsDeletedSuccessfully": "{count} asset deleted successfully | {count} assets deleted successfully",
       "failedToDeleteAssets": "Failed to delete selected assets",
       "partialDeleteSuccess": "{succeeded} deleted successfully, {failed} failed",
       "nodesAddedToWorkflow": "{count} node(s) added to workflow",
@@ -3017,6 +3024,20 @@
       "completed": "Completed",
       "failed": "Failed"
     }
+  },
+  "exportToast": {
+    "exportingAssets": "Exporting Assets",
+    "preparingExport": "Preparing export...",
+    "exportError": "Export failed",
+    "exportFailed": "{count} export failed | {count} export failed | {count} exports failed",
+    "allExportsCompleted": "All exports completed",
+    "noExportsInQueue": "No {filter} exports in queue",
+    "exportStarted": "Preparing ZIP download...",
+    "exportCompleted": "ZIP download ready",
+    "exportFailedSingle": "Failed to create ZIP export",
+    "downloadExport": "Download export",
+    "downloadFailed": "Failed to download \"{name}\"",
+    "retryDownload": "Retry download"
   },
   "workspace": {
     "unsavedChanges": {

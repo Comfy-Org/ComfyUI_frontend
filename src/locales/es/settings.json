@@ -350,6 +350,10 @@
     "name": "Usar la cola de trabajos unificada en el panel lateral de Activos",
     "tooltip": "Reemplaza el panel flotante de la cola de trabajos por una cola de trabajos equivalente integrada en el panel lateral de Activos. Puedes desactivar esto para volver al diseño del panel flotante."
   },
+  "Comfy_RightSidePanel_ShowErrorsTab": {
+    "name": "Mostrar pestaña de errores en el panel lateral",
+    "tooltip": "Cuando está activado, se muestra una pestaña de errores en el panel lateral derecho para ver de un vistazo los errores de ejecución del flujo de trabajo."
+  },
   "Comfy_Sidebar_Location": {
     "name": "Ubicación de la barra lateral",
     "options": {
