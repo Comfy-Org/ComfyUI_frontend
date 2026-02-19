@@ -1,5 +1,3 @@
-import { MAX_DRAFTS } from './draftTypes'
-
 export interface WorkflowDraftSnapshot {
   data: string
   updatedAt: number
@@ -12,7 +10,7 @@ export interface DraftCacheState {
   order: string[]
 }
 
-export { MAX_DRAFTS }
+export const MAX_DRAFTS = 32
 
 export const createDraftCacheState = (
   drafts: Record<string, WorkflowDraftSnapshot> = {},
