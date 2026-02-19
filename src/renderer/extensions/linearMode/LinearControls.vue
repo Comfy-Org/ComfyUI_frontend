@@ -216,7 +216,7 @@ defineExpose({ runButtonClick })
     </section>
     <section
       data-testid="linear-workflow-info"
-      class="h-12 border-x border-border-subtle py-2 px-4 gap-2 bg-comfy-menu-bg flex items-center md:contain-size"
+      class="h-12 border-x border-border-subtle py-2 px-4 gap-2 bg-comfy-menu-bg flex items-center contain-size"
     >
       <span
         class="font-bold truncate"
@@ -254,11 +254,11 @@ defineExpose({ runButtonClick })
       <Button v-if="false"> {{ t('menuLabels.publish') }} </Button>
     </section>
     <div
-      class="border gap-2 md:h-full border-[var(--interface-stroke)] bg-comfy-menu-bg flex flex-col px-2"
+      class="border gap-2 h-full border-[var(--interface-stroke)] bg-comfy-menu-bg flex flex-col px-2"
     >
       <section
         data-testid="linear-widgets"
-        class="grow-1 md:overflow-y-auto md:contain-size"
+        class="grow-1 overflow-y-auto contain-size"
       >
         <template
           v-for="(nodeData, index) of appModeStore.selectedInputs.length
