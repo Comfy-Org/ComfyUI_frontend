@@ -56,7 +56,8 @@ export function useNodePreviewAndDrag(
 
     const target = e.currentTarget as HTMLElement
     const rect = target.getBoundingClientRect()
-    const horizontalRect = options?.panelRef?.value?.getBoundingClientRect() ?? rect
+    const horizontalRect =
+      options?.panelRef?.value?.getBoundingClientRect() ?? rect
     const { left, viewportHeight } = calculatePreviewPosition(horizontalRect)
 
     let top = rect.top
