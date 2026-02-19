@@ -19,6 +19,7 @@ import { cn } from '@/utils/tailwindUtil'
 import LinearControls from '@/renderer/extensions/linearMode/LinearControls.vue'
 import LinearPreview from '@/renderer/extensions/linearMode/LinearPreview.vue'
 import LinearProgressBar from '@/renderer/extensions/linearMode/LinearProgressBar.vue'
+import MobileDisplay from '@/renderer/extensions/linearMode/MobileDisplay.vue'
 import MobileMenu from '@/renderer/extensions/linearMode/MobileMenu.vue'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { useAppMode } from '@/composables/useAppMode'
@@ -78,7 +79,8 @@ const bottomRightRef = useTemplateRef('bottomRightRef')
 const linearWorkflowRef = useTemplateRef('linearWorkflowRef')
 </script>
 <template>
-  <div class="absolute w-full h-full">
+  <MobileDisplay v-if="mobileDisplay" />
+  <div v-else class="absolute w-full h-full">
     <div
       class="workflow-tabs-container pointer-events-auto h-(--workflow-tabs-height) w-full border-b border-interface-stroke shadow-interface"
     >
