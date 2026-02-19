@@ -1,13 +1,27 @@
 <template>
-  <div class="_content">
-    <SelectButton
-      v-model="selectedFilter"
-      class="filter-type-select"
-      :options="filters"
-      :allow-empty="false"
-      option-label="name"
-      @change="updateSelectedFilterValue"
-    />
+  <div class="flex flex-col space-y-2">
+    <div
+      class="flex flex-wrap gap-2"
+      role="tablist"
+      :aria-label="$t('sideToolbar.nodeLibraryTab.filterCategory')"
+    >
+      <Button
+        v-for="filterOption in filters"
+        :key="filterOption.id"
+        type="button"
+        size="sm"
+        :variant="
+          selectedFilter?.id === filterOption.id
+            ? 'secondary'
+            : 'muted-textonly'
+        "
+        class="flex-1 justify-center px-3 py-2 text-sm"
+        :aria-pressed="selectedFilter?.id === filterOption.id"
+        @click="selectFilterOption(filterOption)"
+      >
+        {{ filterOption.name }}
+      </Button>
+    </div>
     <Select
       v-model="selectedFilterValue"
       class="filter-value-select"
@@ -16,14 +30,13 @@
       auto-filter-focus
     />
   </div>
-  <div class="_footer">
+  <div class="flex flex-col pt-4 items-end">
     <Button type="button" @click="submit">{{ $t('g.add') }}</Button>
   </div>
 </template>
 
 <script setup lang="ts">
 import Select from 'primevue/select'
-import SelectButton from 'primevue/selectbutton'
 import { computed, onMounted, ref } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
@@ -57,6 +70,16 @@ const updateSelectedFilterValue = () => {
   selectedFilterValue.value = filterValues.value[0]
 }
 
+const selectFilterOption = (
+  filterOption: FuseFilter<ComfyNodeDefImpl, string>
+) => {
+  if (selectedFilter.value?.id === filterOption.id) {
+    return
+  }
+  selectedFilter.value = filterOption
+  updateSelectedFilterValue()
+}
+
 const submit = () => {
   if (!selectedFilter.value) {
     return
@@ -67,15 +90,3 @@ const submit = () => {
   })
 }
 </script>
-
-<style scoped>
-@reference '../../assets/css/style.css';
-
-._content {
-  @apply flex flex-col space-y-2;
-}
-
-._footer {
-  @apply flex flex-col pt-4 items-end;
-}
-</style>
