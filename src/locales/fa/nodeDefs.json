@@ -208,6 +208,47 @@
       }
     }
   },
+  "AudioEqualizer3Band": {
+    "display_name": "اکولایزر صوتی (۳-باند)",
+    "inputs": {
+      "audio": {
+        "name": "audio"
+      },
+      "high_freq": {
+        "name": "high_freq",
+        "tooltip": "فرکانس قطع برای شلف بالا"
+      },
+      "high_gain_dB": {
+        "name": "high_gain_dB",
+        "tooltip": "افزایش برای فرکانس‌های بالا (تریبل)"
+      },
+      "low_freq": {
+        "name": "low_freq",
+        "tooltip": "فرکانس قطع برای شلف پایین"
+      },
+      "low_gain_dB": {
+        "name": "low_gain_dB",
+        "tooltip": "افزایش برای فرکانس‌های پایین (بیس)"
+      },
+      "mid_freq": {
+        "name": "mid_freq",
+        "tooltip": "فرکانس مرکزی برای میانی"
+      },
+      "mid_gain_dB": {
+        "name": "mid_gain_dB",
+        "tooltip": "افزایش برای فرکانس‌های میانی"
+      },
+      "mid_q": {
+        "name": "mid_q",
+        "tooltip": "ضریب Q (پهنای باند) برای میانی"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "AudioMerge": {
     "description": "دو ترک صوتی را با هم ترکیب می‌کند و موج‌های صوتی آن‌ها را روی هم قرار می‌دهد.",
     "display_name": "Audio Merge",
@@ -4244,6 +4285,26 @@
       "y": {
         "name": "مختصات عمودی (y)"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ImageCropV2": {
+    "display_name": "برش تصویر",
+    "inputs": {
+      "crop_region": {
+        "name": "crop_region"
+      },
+      "height": {},
+      "image": {
+        "name": "image"
+      },
+      "width": {},
+      "x": {},
+      "y": {}
     },
     "outputs": {
       "0": {
@@ -11169,6 +11230,28 @@
     "inputs": {
       "value": {
         "name": "مقدار"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PrimitiveBoundingBox": {
+    "display_name": "جعبه مرزی",
+    "inputs": {
+      "height": {
+        "name": "height"
+      },
+      "width": {
+        "name": "width"
+      },
+      "x": {
+        "name": "x"
+      },
+      "y": {
+        "name": "y"
       }
     },
     "outputs": {

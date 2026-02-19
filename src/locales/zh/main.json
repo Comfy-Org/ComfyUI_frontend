@@ -608,6 +608,7 @@
     "AUDIO_ENCODER_OUTPUT": "音频编码器输出",
     "AUDIO_RECORD": "音频录制",
     "BOOLEAN": "布尔",
+    "BOUNDING_BOX": "边界框",
     "CAMERA_CONTROL": "相机控制",
     "CLIP": "CLIP",
     "CLIP_VISION": "CLIP视觉",
@@ -2015,6 +2016,11 @@
     "advancedInputs": "高级输入",
     "bypass": "忽略",
     "color": "节点颜色",
+    "enterSubgraph": "进入子图",
+    "errorHelp": "如需更多帮助，请{github}或{support}",
+    "errorHelpGithub": "提交 GitHub 问题",
+    "errorHelpSupport": "联系我们的支持团队",
+    "errors": "错误",
     "fallbackGroupTitle": "分组",
     "fallbackNodeTitle": "节点",
     "favorites": "已收藏输入",
@@ -2049,6 +2055,7 @@
     "inputsNoneTooltip": "节点没有输入",
     "locateNode": "在画布上定位节点",
     "mute": "禁用",
+    "noErrors": "无错误",
     "noSelection": "选择一个节点查看其属性信息。",
     "nodeState": "节点状态",
     "nodes": "节点",
@@ -2057,10 +2064,19 @@
     "normal": "正常",
     "parameters": "参数",
     "pinned": "顶固",
+    "promptErrors": {
+      "no_prompt": {
+        "desc": "发送到服务器的工作流数据为空。这可能是一个意外的系统错误。"
+      },
+      "prompt_no_outputs": {
+        "desc": "工作流中没有包含任何输出节点（例如：保存图像、预览图像），无法生成结果。"
+      }
+    },
     "properties": "属性",
     "removeFavorite": "取消收藏",
     "resetAllParameters": "重置所有参数",
     "resetToDefault": "重置为默认值",
+    "seeError": "查看错误",
     "settings": "设置",
     "showAdvancedInputsButton": "显示高级输入",
     "showInput": "显示输入",
@@ -2285,6 +2301,7 @@
     "CustomColorPalettes": "自定义色彩主题",
     "DevMode": "开发模式",
     "EditTokenWeight": "编辑令牌权重",
+    "Error System": "错误系统",
     "Execution": "执行",
     "Extension": "扩展",
     "General": "常规",
