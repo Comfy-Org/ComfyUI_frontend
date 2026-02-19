@@ -19,11 +19,9 @@
             v-if="currentStep === 'describe'"
             :name="formData.name"
             :description="formData.description"
-            :tags="formData.tags"
             :thumbnail-type="formData.thumbnailType"
             @update:name="formData.name = $event"
             @update:description="formData.description = $event"
-            @update:tags="formData.tags = $event"
             @update:thumbnail-type="formData.thumbnailType = $event"
             @update:thumbnail-file="formData.thumbnailFile = $event"
           />
@@ -34,7 +32,11 @@
             @update:example-images="formData.exampleImages = $event"
             @update:selected-example-ids="formData.selectedExampleIds = $event"
           />
-          <ComfyHubFinishStep v-else-if="currentStep === 'finish'" />
+          <ComfyHubFinishStep
+            v-else-if="currentStep === 'finish'"
+            :tags="formData.tags"
+            @update:tags="formData.tags = $event"
+          />
         </div>
         <ComfyHubPublishFooter
           :is-first-step="isFirstStep"
