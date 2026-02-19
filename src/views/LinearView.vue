@@ -17,6 +17,7 @@ import { useWorkflowActionsMenu } from '@/composables/useWorkflowActionsMenu'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import LinearControls from '@/renderer/extensions/linearMode/LinearControls.vue'
 import LinearPreview from '@/renderer/extensions/linearMode/LinearPreview.vue'
+import MobileDisplay from '@/renderer/extensions/linearMode/MobileDisplay.vue'
 import MobileMenu from '@/renderer/extensions/linearMode/MobileMenu.vue'
 import { useCommandStore } from '@/stores/commandStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
@@ -41,7 +42,8 @@ const bottomRightRef = useTemplateRef('bottomRightRef')
 const linearWorkflowRef = useTemplateRef('linearWorkflowRef')
 </script>
 <template>
-  <div class="absolute w-full h-full">
+  <MobileDisplay v-if="mobileDisplay" />
+  <div v-else class="absolute w-full h-full">
     <div class="workflow-tabs-container pointer-events-auto h-9.5 w-full">
       <div class="flex h-full items-center">
         <WorkflowTabs />
