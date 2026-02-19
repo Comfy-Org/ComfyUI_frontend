@@ -52,7 +52,8 @@ describe('formatUtil', () => {
         { filename: 'image.jpeg', expected: 'image' },
         { filename: 'animation.gif', expected: 'image' },
         { filename: 'web.webp', expected: 'image' },
-        { filename: 'bitmap.bmp', expected: 'image' }
+        { filename: 'bitmap.bmp', expected: 'image' },
+        { filename: 'modern.avif', expected: 'image' }
       ]
 
       it.for(imageTestCases)(
@@ -92,26 +93,37 @@ describe('formatUtil', () => {
         expect(getMediaTypeFromFilename('scene.fbx')).toBe('3D')
         expect(getMediaTypeFromFilename('asset.gltf')).toBe('3D')
         expect(getMediaTypeFromFilename('binary.glb')).toBe('3D')
+        expect(getMediaTypeFromFilename('apple.usdz')).toBe('3D')
+      })
+    })
+
+    describe('text files', () => {
+      it('should identify text file extensions correctly', () => {
+        expect(getMediaTypeFromFilename('notes.txt')).toBe('text')
+        expect(getMediaTypeFromFilename('readme.md')).toBe('text')
+        expect(getMediaTypeFromFilename('data.json')).toBe('text')
+        expect(getMediaTypeFromFilename('table.csv')).toBe('text')
+        expect(getMediaTypeFromFilename('config.yaml')).toBe('text')
       })
     })
 
     describe('edge cases', () => {
       it('should handle empty strings', () => {
-        expect(getMediaTypeFromFilename('')).toBe('image')
+        expect(getMediaTypeFromFilename('')).toBe('other')
       })
 
       it('should handle files without extensions', () => {
-        expect(getMediaTypeFromFilename('README')).toBe('image')
+        expect(getMediaTypeFromFilename('README')).toBe('other')
       })
 
       it('should handle unknown extensions', () => {
-        expect(getMediaTypeFromFilename('document.pdf')).toBe('image')
-        expect(getMediaTypeFromFilename('data.json')).toBe('image')
+        expect(getMediaTypeFromFilename('document.pdf')).toBe('other')
+        expect(getMediaTypeFromFilename('archive.bin')).toBe('other')
       })
 
       it('should handle files with multiple dots', () => {
         expect(getMediaTypeFromFilename('my.file.name.png')).toBe('image')
-        expect(getMediaTypeFromFilename('archive.tar.gz')).toBe('image')
+        expect(getMediaTypeFromFilename('archive.tar.gz')).toBe('other')
       })
 
       it('should handle paths with directories', () => {
@@ -120,8 +132,8 @@ describe('formatUtil', () => {
       })
 
       it('should handle null and undefined gracefully', () => {
-        expect(getMediaTypeFromFilename(null)).toBe('image')
-        expect(getMediaTypeFromFilename(undefined)).toBe('image')
+        expect(getMediaTypeFromFilename(null)).toBe('other')
+        expect(getMediaTypeFromFilename(undefined)).toBe('other')
       })
 
       it('should handle special characters in filenames', () => {

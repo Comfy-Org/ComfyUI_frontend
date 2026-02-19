@@ -89,4 +89,21 @@ describe('AssetsSidebarListView', () => {
     expect(assetListItem?.props('previewUrl')).toBe('/api/view/clip.mp4')
     expect(assetListItem?.props('isVideoPreview')).toBe(true)
   })
+
+  it('uses icon fallback for text assets even when preview_url exists', () => {
+    const textAsset = {
+      ...buildAsset('text-asset', 'notes.txt'),
+      preview_url: '/api/view/notes.txt',
+      user_metadata: {}
+    } satisfies AssetItem
+
+    const wrapper = mountListView([buildOutputItem(textAsset)])
+
+    const listItems = wrapper.findAllComponents({ name: 'AssetsListItem' })
+    const assetListItem = listItems.at(-1)
+
+    expect(assetListItem).toBeDefined()
+    expect(assetListItem?.props('previewUrl')).toBe('')
+    expect(assetListItem?.props('isVideoPreview')).toBe(false)
+  })
 })

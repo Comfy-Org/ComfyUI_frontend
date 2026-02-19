@@ -486,19 +486,41 @@ export function formatDuration(milliseconds: number): string {
   return parts.join(' ')
 }
 
-const IMAGE_EXTENSIONS = ['png', 'jpg', 'jpeg', 'gif', 'webp', 'bmp'] as const
+const IMAGE_EXTENSIONS = [
+  'png',
+  'jpg',
+  'jpeg',
+  'gif',
+  'webp',
+  'bmp',
+  'avif',
+  'tif',
+  'tiff'
+] as const
 const VIDEO_EXTENSIONS = ['mp4', 'webm', 'mov', 'avi'] as const
 const AUDIO_EXTENSIONS = ['mp3', 'wav', 'ogg', 'flac'] as const
-const THREE_D_EXTENSIONS = ['obj', 'fbx', 'gltf', 'glb'] as const
+const THREE_D_EXTENSIONS = ['obj', 'fbx', 'gltf', 'glb', 'usdz'] as const
+const TEXT_EXTENSIONS = [
+  'txt',
+  'md',
+  'markdown',
+  'json',
+  'csv',
+  'yaml',
+  'yml',
+  'xml',
+  'log'
+] as const
 
-const MEDIA_TYPES = ['image', 'video', 'audio', '3D'] as const
-type MediaType = (typeof MEDIA_TYPES)[number]
+const MEDIA_TYPES = ['image', 'video', 'audio', '3D', 'text', 'other'] as const
+export type MediaType = (typeof MEDIA_TYPES)[number]
 
 // Type guard helper for checking array membership
 type ImageExtension = (typeof IMAGE_EXTENSIONS)[number]
 type VideoExtension = (typeof VIDEO_EXTENSIONS)[number]
 type AudioExtension = (typeof AUDIO_EXTENSIONS)[number]
 type ThreeDExtension = (typeof THREE_D_EXTENSIONS)[number]
+type TextExtension = (typeof TEXT_EXTENSIONS)[number]
 
 /**
  * Truncates a filename while preserving the extension
@@ -535,20 +557,21 @@ export function truncateFilename(
 /**
  * Determines the media type from a filename's extension (singular form)
  * @param filename The filename to analyze
- * @returns The media type: 'image', 'video', 'audio', or '3D'
+ * @returns The media type: 'image', 'video', 'audio', '3D', 'text', or 'other'
  */
 export function getMediaTypeFromFilename(
   filename: string | null | undefined
 ): MediaType {
-  if (!filename) return 'image'
+  if (!filename) return 'other'
   const ext = filename.split('.').pop()?.toLowerCase()
-  if (!ext) return 'image'
+  if (!ext) return 'other'
 
   // Type-safe array includes check using type assertion
   if (IMAGE_EXTENSIONS.includes(ext as ImageExtension)) return 'image'
   if (VIDEO_EXTENSIONS.includes(ext as VideoExtension)) return 'video'
   if (AUDIO_EXTENSIONS.includes(ext as AudioExtension)) return 'audio'
   if (THREE_D_EXTENSIONS.includes(ext as ThreeDExtension)) return '3D'
+  if (TEXT_EXTENSIONS.includes(ext as TextExtension)) return 'text'
 
-  return 'image'
+  return 'other'
 }
