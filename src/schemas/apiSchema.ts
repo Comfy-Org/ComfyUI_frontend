@@ -327,7 +327,11 @@ const zSettings = z.object({
   'Comfy.ModelLibrary.AutoLoadAll': z.boolean(),
   'Comfy.ModelLibrary.NameFormat': z.enum(['filename', 'title']),
   'Comfy.NodeSearchBoxImpl.NodePreview': z.boolean(),
-  'Comfy.NodeSearchBoxImpl': z.enum(['default', 'simple']),
+  'Comfy.NodeSearchBoxImpl': z.enum([
+    'default',
+    'v1 (legacy)',
+    'litegraph (legacy)'
+  ]),
   'Comfy.NodeSearchBoxImpl.ShowCategory': z.boolean(),
   'Comfy.NodeSearchBoxImpl.ShowIdName': z.boolean(),
   'Comfy.NodeSearchBoxImpl.ShowNodeFrequency': z.boolean(),

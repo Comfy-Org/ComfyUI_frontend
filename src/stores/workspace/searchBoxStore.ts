@@ -10,14 +10,12 @@ export const useSearchBoxStore = defineStore('searchBox', () => {
   const settingStore = useSettingStore()
   const { x, y } = useMouse()
 
-  // Feature flag for the new search box V2 with category sidebar
-  const useSearchBoxV2 = ref(
-    typeof window !== 'undefined' &&
-      new URLSearchParams(window.location.search).get('nodeRedesign') === 'true'
+  const useSearchBoxV2 = computed(
+    () => settingStore.get('Comfy.NodeSearchBoxImpl') === 'default'
   )
 
   const newSearchBoxEnabled = computed(
-    () => settingStore.get('Comfy.NodeSearchBoxImpl') === 'default'
+    () => settingStore.get('Comfy.NodeSearchBoxImpl') !== 'litegraph (legacy)'
   )
 
   const popoverRef = shallowRef<InstanceType<

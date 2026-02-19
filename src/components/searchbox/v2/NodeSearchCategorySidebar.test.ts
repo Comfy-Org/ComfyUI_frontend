@@ -46,6 +46,14 @@ describe('NodeSearchCategorySidebar', () => {
 
   describe('preset categories', () => {
     it('should render all preset categories', async () => {
+      useNodeDefStore().updateNodeDefs([
+        createMockNodeDef({
+          name: 'EssentialNode',
+          essentials_category: 'basic'
+        })
+      ])
+      await nextTick()
+
       const wrapper = await createWrapper()
 
       expect(wrapper.text()).toContain('Most relevant')

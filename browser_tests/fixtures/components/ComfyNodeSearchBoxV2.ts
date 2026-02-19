@@ -24,13 +24,6 @@ export class ComfyNodeSearchBoxV2 {
   }
 
   async reload(comfyPage: ComfyPage) {
-    // Temporary until we have a different flag for the new search box
-    await comfyPage.page.goto(comfyPage.url + '?nodeRedesign=true')
-    await comfyPage.canvas.waitFor({ state: 'visible' })
-    await comfyPage.page.waitForFunction(
-      () => window.app && window.app.extensionManager
-    )
-    await comfyPage.page.locator('.p-blockui-mask').waitFor({ state: 'hidden' })
-    await comfyPage.nextFrame()
+    await comfyPage.settings.setSetting('Comfy.NodeSearchBoxImpl', 'default')
   }
 }

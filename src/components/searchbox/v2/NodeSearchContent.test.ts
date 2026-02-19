@@ -163,6 +163,20 @@ describe('NodeSearchContent', () => {
       expect(items[0].text()).toContain('Custom Node')
     })
 
+    it('should hide Essentials category when no essential nodes exist', async () => {
+      useNodeDefStore().updateNodeDefs([
+        createMockNodeDef({
+          name: 'RegularNode',
+          display_name: 'Regular Node'
+        })
+      ])
+
+      const wrapper = await createWrapper()
+      expect(wrapper.find('[data-testid="category-essentials"]').exists()).toBe(
+        false
+      )
+    })
+
     it('should show only essential nodes when Essentials is selected', async () => {
       useNodeDefStore().updateNodeDefs([
         createMockNodeDef({

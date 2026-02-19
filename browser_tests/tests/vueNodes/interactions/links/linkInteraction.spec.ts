@@ -928,7 +928,10 @@ test.describe('Vue Node Link Interaction', { tag: '@screenshot' }, () => {
         'Comfy.LinkRelease.ActionShift',
         'context menu'
       )
-      await comfyPage.settings.setSetting('Comfy.NodeSearchBoxImpl', 'default')
+      await comfyPage.settings.setSetting(
+        'Comfy.NodeSearchBoxImpl',
+        'v1 (legacy)'
+      )
 
       const samplerNode = (
         await comfyPage.nodeOps.getNodeRefsByType('KSampler')

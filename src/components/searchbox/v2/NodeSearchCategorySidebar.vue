@@ -55,6 +55,7 @@ import NodeSearchCategoryTreeNode, {
 import type { CategoryNode } from '@/components/searchbox/v2/NodeSearchCategoryTreeNode.vue'
 import { nodeOrganizationService } from '@/services/nodeOrganizationService'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
+import { NodeSourceType } from '@/types/nodeSource'
 import type { TreeNode } from '@/types/treeExplorerTypes'
 import { cn } from '@/utils/tailwindUtil'
 
@@ -70,10 +71,20 @@ const topCategories = computed(() => [
   { id: 'favorites', label: t('g.favorites') }
 ])
 
-const sourceCategories = computed(() => [
-  { id: 'essentials', label: t('g.essentials') },
-  { id: 'custom', label: t('g.custom') }
-])
+const hasEssentialNodes = computed(() =>
+  nodeDefStore.visibleNodeDefs.some(
+    (n) => n.nodeSource.type === NodeSourceType.Essentials
+  )
+)
+
+const sourceCategories = computed(() => {
+  const categories = []
+  if (hasEssentialNodes.value) {
+    categories.push({ id: 'essentials', label: t('g.essentials') })
+  }
+  categories.push({ id: 'custom', label: t('g.custom') })
+  return categories
+})
 
 const categoryTree = computed<CategoryNode[]>(() => {
   const tree = nodeOrganizationService.organizeNodes(
