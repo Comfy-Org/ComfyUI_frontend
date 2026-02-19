@@ -81,8 +81,7 @@
     <template #body>
       <div
         v-if="showLoadingState"
-        class="grid gap-2 px-2"
-        :style="skeletonGridStyle"
+        class="grid grid-cols-[repeat(auto-fill,minmax(200px,1fr))] gap-2 px-2"
       >
         <div
           v-for="n in skeletonCount"
@@ -393,9 +392,6 @@ const mediaAssets = computed(() => currentAssets.value.media.value)
 const galleryActiveIndex = ref(-1)
 const currentGalleryAssetId = ref<string | null>(null)
 
-const skeletonGridStyle = {
-  gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))'
-}
 const DEFAULT_SKELETON_COUNT = 6
 const skeletonCount = computed(() =>
   expectedFolderCount.value > 0
