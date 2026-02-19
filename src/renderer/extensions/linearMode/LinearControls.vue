@@ -212,7 +212,7 @@ defineExpose({ runButtonClick })
               :node-data
               :class="
                 cn(
-                  'py-3 gap-y-3 **:[.col-span-2]:grid-cols-1 *:has-[textarea]:h-50 rounded-lg',
+                  'py-3 gap-y-3 **:[.col-span-2]:grid-cols-1 *:has-[textarea]:h-50 rounded-lg **:[.h-7]:h-10 **:[.h-7_button.w-8]:w-12',
                   nodeData.hasErrors &&
                     'ring-2 ring-inset ring-node-stroke-error'
                 )
@@ -249,16 +249,16 @@ defineExpose({ runButtonClick })
           class="w-full mt-4"
         />
         <div v-else class="flex mt-4">
-          <Popover side="top">
+          <Popover side="top" @open-auto-focus.prevent>
             <template #button>
-              <Button size="lg" variant="inverted" class="-mr-3 pl-3 pr-6">
+              <Button size="lg" variant="inverted" class="-mr-3 pr-7">
                 <i class="icon-[lucide--chevron-down]" />
               </Button>
             </template>
             <WidgetInputNumberInput
               v-model="batchCount"
               :widget="batchCountWidget"
-              class="*:[.min-w-0]:w-40"
+              class="*:[.min-w-0]:w-40 **:[.h-7]:h-10 **:[.h-7_button.w-8]:w-12"
             />
           </Popover>
           <Button
