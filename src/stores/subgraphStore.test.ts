@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { ComfyNodeDef as ComfyNodeDefV1 } from '@/schemas/nodeDefSchema'
 import type { GlobalSubgraphData } from '@/scripts/api'
 import type { ExportedSubgraph } from '@/lib/litegraph/src/types/serialisation'
+import { TemplateIncludeOnDistributionEnum } from '@/platform/workflow/templates/types/template'
 import { api } from '@/scripts/api'
 import { app as comfyApp } from '@/scripts/app'
 import { useLitegraphService } from '@/services/litegraphService'
@@ -15,6 +16,12 @@ import {
   createTestSubgraphNode
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import { createTestingPinia } from '@pinia/testing'
+
+const mockDistributionTypes = vi.hoisted(() => ({
+  isCloud: false,
+  isDesktop: false
+}))
+vi.mock('@/platform/distribution/types', () => mockDistributionTypes)
 
 // Mock telemetry to break circular dependency (telemetry → workflowStore → app → telemetry)
 vi.mock('@/platform/telemetry', () => ({
@@ -85,6 +92,8 @@ describe('useSubgraphStore', () => {
   }
 
   beforeEach(() => {
+    mockDistributionTypes.isCloud = false
+    mockDistributionTypes.isDesktop = false
     setActivePinia(createTestingPinia({ stubActions: false }))
     store = useSubgraphStore()
     vi.clearAllMocks()
@@ -303,6 +312,86 @@ describe('useSubgraphStore', () => {
       const subgraphExtra = definitions.subgraphs[0]?.extra
       expect(subgraphExtra?.BlueprintDescription).toBeUndefined()
       expect(subgraphExtra?.BlueprintSearchAliases).toBeUndefined()
+    })
+  })
+
+  describe('global blueprint filtering', () => {
+    function globalBlueprint(
+      overrides: Partial<GlobalSubgraphData['info']> = {}
+    ): GlobalSubgraphData {
+      return {
+        name: 'Filtered Blueprint',
+        info: { node_pack: 'test_pack', ...overrides },
+        data: JSON.stringify(mockGraph)
+      }
+    }
+
+    it('should exclude blueprints with requiresCustomNodes on non-cloud', async () => {
+      await mockFetch(
+        {},
+        {
+          bp: globalBlueprint({ requiresCustomNodes: ['custom-node-pack'] })
+        }
+      )
+      expect(store.isGlobalBlueprint('bp')).toBe(false)
+    })
+
+    it('should include blueprints with requiresCustomNodes on cloud', async () => {
+      mockDistributionTypes.isCloud = true
+      await mockFetch(
+        {},
+        {
+          bp: globalBlueprint({ requiresCustomNodes: ['custom-node-pack'] })
+        }
+      )
+      expect(store.isGlobalBlueprint('bp')).toBe(true)
+    })
+
+    it('should include blueprints with empty requiresCustomNodes everywhere', async () => {
+      await mockFetch({}, { bp: globalBlueprint({ requiresCustomNodes: [] }) })
+      expect(store.isGlobalBlueprint('bp')).toBe(true)
+    })
+
+    it('should exclude blueprints whose includeOnDistributions does not match', async () => {
+      await mockFetch(
+        {},
+        {
+          bp: globalBlueprint({
+            includeOnDistributions: [TemplateIncludeOnDistributionEnum.Cloud]
+          })
+        }
+      )
+      expect(store.isGlobalBlueprint('bp')).toBe(false)
+    })
+
+    it('should include blueprints whose includeOnDistributions matches current distribution', async () => {
+      await mockFetch(
+        {},
+        {
+          bp: globalBlueprint({
+            includeOnDistributions: [TemplateIncludeOnDistributionEnum.Local]
+          })
+        }
+      )
+      expect(store.isGlobalBlueprint('bp')).toBe(true)
+    })
+
+    it('should include blueprints on desktop when includeOnDistributions has desktop', async () => {
+      mockDistributionTypes.isDesktop = true
+      await mockFetch(
+        {},
+        {
+          bp: globalBlueprint({
+            includeOnDistributions: [TemplateIncludeOnDistributionEnum.Desktop]
+          })
+        }
+      )
+      expect(store.isGlobalBlueprint('bp')).toBe(true)
+    })
+
+    it('should include blueprints with no filtering fields', async () => {
+      await mockFetch({}, { bp: globalBlueprint() })
+      expect(store.isGlobalBlueprint('bp')).toBe(true)
     })
   })
 })
