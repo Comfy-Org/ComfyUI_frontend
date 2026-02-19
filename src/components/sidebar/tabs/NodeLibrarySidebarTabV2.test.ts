@@ -122,11 +122,11 @@ describe('NodeLibrarySidebarTabV2', () => {
     expect(wrapper.find('[data-testid="search-box"]').exists()).toBe(true)
   })
 
-  it('should render all panel components', () => {
+  it('should render only the selected panel', () => {
     const wrapper = mountComponent()
 
     expect(wrapper.find('[data-testid="essential-panel"]').exists()).toBe(true)
-    expect(wrapper.find('[data-testid="all-panel"]').exists()).toBe(true)
-    expect(wrapper.find('[data-testid="custom-panel"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="all-panel"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="custom-panel"]').exists()).toBe(false)
   })
 })
