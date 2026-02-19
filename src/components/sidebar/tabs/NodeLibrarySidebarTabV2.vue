@@ -1,10 +1,7 @@
 <template>
   <SidebarTabTemplate :title="$t('sideToolbar.nodes')">
     <template #header>
-      <TabsRoot
-        v-model="selectedTab"
-        class="flex flex-col"
-      >
+      <TabsRoot v-model="selectedTab" class="flex flex-col">
         <div class="flex items-center justify-between gap-2 px-2 pb-2 2xl:px-4">
           <SearchBox
             ref="searchBoxRef"
@@ -37,7 +34,7 @@
                     <DropdownMenuItemIndicator class="w-4">
                       <i class="icon-[lucide--check] size-4" />
                     </DropdownMenuItemIndicator>
-                    <span>{{ $t(option.label) }}</span>                  
+                    <span>{{ $t(option.label) }}</span>
                   </DropdownMenuRadioItem>
                 </DropdownMenuRadioGroup>
               </DropdownMenuContent>
@@ -71,10 +68,7 @@
     <template #body>
       <NodeDragPreview />
       <!-- Tab content (scrollable) -->
-      <TabsRoot
-        v-model="selectedTab"
-        class="flex min-h-0 flex-1 flex-col"
-      >
+      <TabsRoot v-model="selectedTab" class="h-full">
         <EssentialNodesPanel
           v-model:expanded-keys="expandedKeys"
           :root="renderedEssentialRoot"
@@ -154,7 +148,10 @@ const sortOrderByTab = useLocalStorage<Record<TabId, SortingStrategyId>>(
 const sortOrder = computed({
   get: () => sortOrderByTab.value[selectedTab.value],
   set: (value) => {
-    sortOrderByTab.value = { ...sortOrderByTab.value, [selectedTab.value]: value }
+    sortOrderByTab.value = {
+      ...sortOrderByTab.value,
+      [selectedTab.value]: value
+    }
   }
 })
 

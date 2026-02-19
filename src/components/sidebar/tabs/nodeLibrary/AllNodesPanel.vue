@@ -1,9 +1,9 @@
 <template>
-  <TabsContent value="all" class="min-h-0 flex-1 overflow-y-auto">
+  <TabsContent value="all" class="flex-1 overflow-y-auto h-full">
     <!-- Favorites section -->
     <template v-if="hasFavorites">
       <h3
-        class="px-4 py-2 text-xs font-medium uppercase tracking-wide text-muted-foreground"
+        class="px-4 py-2 text-xs font-medium uppercase tracking-wide text-muted-foreground mb-0"
       >
         {{ $t('sideToolbar.nodeLibraryTab.sections.favorites') }}
       </h3>
@@ -19,7 +19,7 @@
     <div v-for="(section, index) in sections" :key="section.title ?? index">
       <h3
         v-if="section.title"
-        class="px-4 py-2 text-xs font-medium tracking-wide text-muted-foreground"
+        class="px-4 py-2 text-xs font-medium tracking-wide text-muted-foreground mb-0"
       >
         {{ section.title }}
       </h3>

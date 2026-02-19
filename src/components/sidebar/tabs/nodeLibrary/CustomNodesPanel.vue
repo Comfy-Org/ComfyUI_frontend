@@ -1,10 +1,14 @@
 <template>
-  <TabsContent value="custom" class="min-h-0 flex-1 overflow-y-auto">
-    <div v-for="(section, index) in sections" :key="section.title ?? index">
+  <TabsContent value="custom" class="flex-1 flex flex-col h-full">
+    <div
+      v-for="(section, index) in sections"
+      :key="section.title ?? index"
+      class="flex-1 overflow-y-auto h-full"
+    >
       <!-- Section header -->
       <h3
         v-if="section.title"
-        class="px-4 py-2 text-xs font-medium tracking-wide text-muted-foreground"
+        class="px-4 py-2 text-xs font-medium tracking-wide text-muted-foreground mb-0"
       >
         {{ section.title }}
       </h3>
@@ -16,14 +20,16 @@
         @node-click="(node) => emit('nodeClick', node)"
       />
     </div>
-    <Button
-      variant="secondary"
-      class="justify-start gap-3 ml-4 mt-2 px-4"
-      @click="handleOpenManager"
-    >
-      <i class="icon-[lucide--puzzle] size-5 text-muted-foreground" />
-      {{ $t('g.openManager') }}
-    </Button>
+    <div class="flex-none py-3 border-t border-border-default text-center">
+      <Button
+        variant="secondary"
+        class="justify-start gap-3"
+        @click="handleOpenManager"
+      >
+        <i class="icon-[lucide--blocks] size-5 text-muted-foreground" />
+        {{ $t('g.manageExtensions') }}
+      </Button>
+    </div>
   </TabsContent>
 </template>
 

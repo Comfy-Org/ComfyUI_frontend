@@ -1,6 +1,6 @@
 <template>
-  <TabsContent value="essentials" class="min-h-0 flex-1 overflow-y-auto px-3">
-    <div class="flex flex-col gap-2">
+  <TabsContent value="essentials" class="flex-1 overflow-y-auto px-3 h-full">
+    <div class="flex flex-col gap-2 pb-3">
       <CollapsibleRoot
         v-for="folder in folders"
         :key="folder.key"
@@ -9,7 +9,7 @@
         @update:open="toggleFolder(folder.key, $event)"
       >
         <CollapsibleTrigger
-          class="group flex w-full cursor-pointer items-center justify-between border-0 bg-transparent py-3 text-xs font-medium tracking-wide text-muted-foreground h-8 box-content"
+          class="group flex w-full cursor-pointer items-center justify-between border-0 bg-transparent py-3 px-1 text-xs font-medium tracking-wide text-muted-foreground h-8 box-content"
         >
           <span class="uppercase">{{ folder.label }}</span>
           <i
