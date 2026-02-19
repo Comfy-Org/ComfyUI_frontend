@@ -608,6 +608,7 @@
     "AUDIO_ENCODER_OUTPUT": "مخرجات مُشَفِّر الصوت",
     "AUDIO_RECORD": "تسجيل صوتي",
     "BOOLEAN": "منطقي",
+    "BOUNDING_BOX": "مربع التحديد",
     "CAMERA_CONTROL": "تحكم الكاميرا",
     "CLIP": "CLIP",
     "CLIP_VISION": "رؤية CLIP",
@@ -727,6 +728,9 @@
     "noStackTrace": "لا توجد تتبع للمكدس متاحة",
     "promptExecutionError": "فشل تنفيذ الطلب"
   },
+  "errorHelp": "للمزيد من المساعدة، {github} أو {support}",
+  "errorHelpGithub": "إرسال مشكلة على GitHub",
+  "errorHelpSupport": "تواصل مع الدعم الفني",
   "g": {
     "1x": "1x",
     "2x": "2x",
@@ -2015,6 +2019,8 @@
     "advancedInputs": "مدخلات متقدمة",
     "bypass": "تجاوز",
     "color": "لون العقدة",
+    "enterSubgraph": "دخول الرسم الفرعي",
+    "errors": "الأخطاء",
     "fallbackGroupTitle": "مجموعة",
     "fallbackNodeTitle": "عقدة",
     "favorites": "المدخلات المفضلة",
@@ -2049,6 +2055,7 @@
     "inputsNoneTooltip": "العقدة ليس لديها مدخلات",
     "locateNode": "تحديد موقع العقدة على اللوحة",
     "mute": "كتم",
+    "noErrors": "لا توجد أخطاء",
     "noSelection": "حدد عقدة لعرض خصائصها ومعلوماتها.",
     "nodeState": "حالة العقدة",
     "nodes": "العقد",
@@ -2057,10 +2064,19 @@
     "normal": "عادي",
     "parameters": "المعلمات",
     "pinned": "مثبت",
+    "promptErrors": {
+      "no_prompt": {
+        "desc": "بيانات سير العمل المرسلة إلى الخادم فارغة. قد يكون هذا خطأ غير متوقع في النظام."
+      },
+      "prompt_no_outputs": {
+        "desc": "سير العمل لا يحتوي على أي عقدة إخراج (مثل حفظ الصورة، معاينة الصورة) لإنتاج نتيجة."
+      }
+    },
     "properties": "الخصائص",
     "removeFavorite": "إزالة من المفضلة",
     "resetAllParameters": "إعادة تعيين جميع المعلمات",
     "resetToDefault": "إعادة التعيين إلى الافتراضي",
+    "seeError": "عرض الخطأ",
     "settings": "الإعدادات",
     "showAdvancedInputsButton": "إظهار المدخلات المتقدمة",
     "showInput": "إظهار المدخل",
@@ -2285,6 +2301,7 @@
     "CustomColorPalettes": "لوحات ألوان مخصصة",
     "DevMode": "وضع المطور",
     "EditTokenWeight": "تعديل وزن الرمز",
+    "Error System": "نظام الأخطاء",
     "Execution": "التنفيذ",
     "Extension": "الإضافة",
     "General": "عام",

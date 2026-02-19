@@ -608,6 +608,7 @@
     "AUDIO_ENCODER_OUTPUT": "SAÍDA DO CODIFICADOR DE ÁUDIO",
     "AUDIO_RECORD": "GRAVAÇÃO DE ÁUDIO",
     "BOOLEAN": "BOOLEANO",
+    "BOUNDING_BOX": "BOUNDING_BOX",
     "CAMERA_CONTROL": "CONTROLE DE CÂMERA",
     "CLIP": "clip",
     "CLIP_VISION": "clip visão",
@@ -2015,6 +2016,11 @@
     "advancedInputs": "ENTRADAS AVANÇADAS",
     "bypass": "Ignorar",
     "color": "Cor do nó",
+    "enterSubgraph": "Entrar no subgrafo",
+    "errorHelp": "Para mais ajuda, {github} ou {support}",
+    "errorHelpGithub": "enviar um issue no GitHub",
+    "errorHelpSupport": "contatar nosso suporte",
+    "errors": "Erros",
     "fallbackGroupTitle": "Grupo",
     "fallbackNodeTitle": "Nó",
     "favorites": "ENTRADAS FAVORITAS",
@@ -2049,6 +2055,7 @@
     "inputsNoneTooltip": "O nó não possui entradas",
     "locateNode": "Localizar nó no canvas",
     "mute": "Silenciar",
+    "noErrors": "Sem erros",
     "noSelection": "Selecione um nó para ver suas propriedades e informações.",
     "nodeState": "Estado do nó",
     "nodes": "Nós",
@@ -2057,10 +2064,19 @@
     "normal": "Normal",
     "parameters": "Parâmetros",
     "pinned": "Fixado",
+    "promptErrors": {
+      "no_prompt": {
+        "desc": "Os dados do fluxo de trabalho enviados ao servidor estão vazios. Isso pode ser um erro de sistema inesperado."
+      },
+      "prompt_no_outputs": {
+        "desc": "O fluxo de trabalho não contém nenhum nó de saída (por exemplo, Salvar Imagem, Visualizar Imagem) para produzir um resultado."
+      }
+    },
     "properties": "Propriedades",
     "removeFavorite": "Desfavoritar",
     "resetAllParameters": "Redefinir todos os parâmetros",
     "resetToDefault": "Restaurar para o padrão",
+    "seeError": "Ver erro",
     "settings": "Configurações",
     "showAdvancedInputsButton": "Mostrar entradas avançadas",
     "showInput": "Mostrar entrada",
@@ -2285,6 +2301,7 @@
     "CustomColorPalettes": "Paletas de Cores Personalizadas",
     "DevMode": "Modo Desenvolvedor",
     "EditTokenWeight": "Editar Peso do Token",
+    "Error System": "Sistema de Erros",
     "Execution": "Execução",
     "Extension": "Extensão",
     "General": "Geral",

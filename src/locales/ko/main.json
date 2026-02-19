@@ -608,6 +608,7 @@
     "AUDIO_ENCODER_OUTPUT": "AUDIO_ENCODER_OUTPUT",
     "AUDIO_RECORD": "AUDIO_RECORD",
     "BOOLEAN": "논리값",
+    "BOUNDING_BOX": "BOUNDING_BOX",
     "CAMERA_CONTROL": "카메라 제어",
     "CLIP": "CLIP",
     "CLIP_VISION": "CLIP_VISION",
@@ -2015,6 +2016,11 @@
     "advancedInputs": "고급 입력",
     "bypass": "우회",
     "color": "노드 색상",
+    "enterSubgraph": "서브그래프 진입",
+    "errorHelp": "더 많은 도움이 필요하시면 {github} 또는 {support}를 이용하세요.",
+    "errorHelpGithub": "GitHub 이슈 제출",
+    "errorHelpSupport": "고객 지원팀에 문의",
+    "errors": "오류",
     "fallbackGroupTitle": "그룹",
     "fallbackNodeTitle": "노드",
     "favorites": "즐겨찾는 입력",
@@ -2049,6 +2055,7 @@
     "inputsNoneTooltip": "노드에 입력이 없습니다",
     "locateNode": "캔버스에서 노드 찾기",
     "mute": "음소거",
+    "noErrors": "오류 없음",
     "noSelection": "노드를 선택하면 속성과 정보를 볼 수 있습니다.",
     "nodeState": "노드 상태",
     "nodes": "노드",
@@ -2057,10 +2064,19 @@
     "normal": "일반",
     "parameters": "파라미터",
     "pinned": "고정됨",
+    "promptErrors": {
+      "no_prompt": {
+        "desc": "서버로 전송된 워크플로우 데이터가 비어 있습니다. 이는 예기치 않은 시스템 오류일 수 있습니다."
+      },
+      "prompt_no_outputs": {
+        "desc": "워크플로우에 결과를 생성할 출력 노드(예: 이미지 저장, 이미지 미리보기)가 포함되어 있지 않습니다."
+      }
+    },
     "properties": "속성",
     "removeFavorite": "즐겨찾기 해제",
     "resetAllParameters": "모든 매개변수 재설정",
     "resetToDefault": "기본값으로 재설정",
+    "seeError": "오류 보기",
     "settings": "설정",
     "showAdvancedInputsButton": "고급 입력 표시",
     "showInput": "입력 표시",
@@ -2285,6 +2301,7 @@
     "CustomColorPalettes": "사용자 정의 색상 팔레트",
     "DevMode": "개발자 모드",
     "EditTokenWeight": "토큰 가중치 편집",
+    "Error System": "오류 시스템",
     "Execution": "실행",
     "Extension": "확장",
     "General": "일반",

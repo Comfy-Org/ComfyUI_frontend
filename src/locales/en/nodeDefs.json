@@ -208,6 +208,47 @@
       }
     }
   },
+  "AudioEqualizer3Band": {
+    "display_name": "Audio Equalizer (3-Band)",
+    "inputs": {
+      "audio": {
+        "name": "audio"
+      },
+      "low_gain_dB": {
+        "name": "low_gain_dB",
+        "tooltip": "Gain for Low frequencies (Bass)"
+      },
+      "low_freq": {
+        "name": "low_freq",
+        "tooltip": "Cutoff frequency for Low shelf"
+      },
+      "mid_gain_dB": {
+        "name": "mid_gain_dB",
+        "tooltip": "Gain for Mid frequencies"
+      },
+      "mid_freq": {
+        "name": "mid_freq",
+        "tooltip": "Center frequency for Mids"
+      },
+      "mid_q": {
+        "name": "mid_q",
+        "tooltip": "Q factor (bandwidth) for Mids"
+      },
+      "high_gain_dB": {
+        "name": "high_gain_dB",
+        "tooltip": "Gain for High frequencies (Treble)"
+      },
+      "high_freq": {
+        "name": "high_freq",
+        "tooltip": "Cutoff frequency for High shelf"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "AudioMerge": {
     "display_name": "Audio Merge",
     "description": "Combine two audio tracks by overlaying their waveforms.",
@@ -4229,7 +4270,7 @@
     }
   },
   "ImageCrop": {
-    "display_name": "Image Crop",
+    "display_name": "Image Crop (Deprecated)",
     "inputs": {
       "image": {
         "name": "image"
@@ -4246,6 +4287,26 @@
       "y": {
         "name": "y"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ImageCropV2": {
+    "display_name": "Image Crop",
+    "inputs": {
+      "image": {
+        "name": "image"
+      },
+      "crop_region": {
+        "name": "crop_region"
+      },
+      "height": {},
+      "width": {},
+      "x": {},
+      "y": {}
     },
     "outputs": {
       "0": {
@@ -11228,6 +11289,28 @@
     "inputs": {
       "value": {
         "name": "value"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PrimitiveBoundingBox": {
+    "display_name": "Bounding Box",
+    "inputs": {
+      "x": {
+        "name": "x"
+      },
+      "y": {
+        "name": "y"
+      },
+      "width": {
+        "name": "width"
+      },
+      "height": {
+        "name": "height"
       }
     },
     "outputs": {

@@ -208,6 +208,47 @@
       }
     }
   },
+  "AudioEqualizer3Band": {
+    "display_name": "Ecualizador de Audio (3 Bandas)",
+    "inputs": {
+      "audio": {
+        "name": "audio"
+      },
+      "high_freq": {
+        "name": "high_freq",
+        "tooltip": "Frecuencia de corte para el estante alto"
+      },
+      "high_gain_dB": {
+        "name": "high_gain_dB",
+        "tooltip": "Ganancia para frecuencias altas (Agudos)"
+      },
+      "low_freq": {
+        "name": "low_freq",
+        "tooltip": "Frecuencia de corte para el estante bajo"
+      },
+      "low_gain_dB": {
+        "name": "low_gain_dB",
+        "tooltip": "Ganancia para frecuencias bajas (Bajo)"
+      },
+      "mid_freq": {
+        "name": "mid_freq",
+        "tooltip": "Frecuencia central para medios"
+      },
+      "mid_gain_dB": {
+        "name": "mid_gain_dB",
+        "tooltip": "Ganancia para frecuencias medias"
+      },
+      "mid_q": {
+        "name": "mid_q",
+        "tooltip": "Factor Q (ancho de banda) para medios"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "AudioMerge": {
     "description": "Combina dos pistas de audio superponiendo sus formas de onda.",
     "display_name": "Combinar Audio",
@@ -4235,6 +4276,26 @@
       "y": {
         "name": "y"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ImageCropV2": {
+    "display_name": "Recorte de Imagen",
+    "inputs": {
+      "crop_region": {
+        "name": "crop_region"
+      },
+      "height": {},
+      "image": {
+        "name": "image"
+      },
+      "width": {},
+      "x": {},
+      "y": {}
     },
     "outputs": {
       "0": {
@@ -11167,6 +11228,28 @@
     "inputs": {
       "value": {
         "name": "valor"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PrimitiveBoundingBox": {
+    "display_name": "Caja Delimitadora",
+    "inputs": {
+      "height": {
+        "name": "height"
+      },
+      "width": {
+        "name": "width"
+      },
+      "x": {
+        "name": "x"
+      },
+      "y": {
+        "name": "y"
       }
     },
     "outputs": {
