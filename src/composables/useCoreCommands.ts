@@ -886,35 +886,28 @@ export function useCoreCommands(): ComfyCommand[] {
     },
     {
       id: 'Comfy.Canvas.CopySelected',
-      icon: 'pi pi-copy',
+      icon: 'icon-[lucide--copy]',
       label: 'Copy',
       function: () => {
-        const canvas = canvasStore.canvas
-        if (canvas?.selectedItems?.size) {
-          canvas.copyToClipboard()
+        if (app.canvas.selectedItems?.size) {
+          app.canvas.copyToClipboard()
         }
       }
     },
     {
       id: 'Comfy.Canvas.PasteFromClipboard',
-      icon: 'pi pi-clipboard',
+      icon: 'icon-[lucide--clipboard-paste]',
       label: 'Paste',
       function: () => {
-        const canvas = canvasStore.canvas
-        if (canvas) {
-          canvas.pasteFromClipboard()
-        }
+        app.canvas.pasteFromClipboard()
       }
     },
     {
       id: 'Comfy.Canvas.SelectAll',
-      icon: 'pi pi-check-square',
+      icon: 'icon-[lucide--lasso-select]',
       label: 'Select All',
       function: () => {
-        const canvas = canvasStore.canvas
-        if (canvas) {
-          canvas.selectItems()
-        }
+        app.canvas.selectItems()
       }
     },
     {

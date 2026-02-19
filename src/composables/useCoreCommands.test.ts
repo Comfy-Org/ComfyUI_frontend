@@ -319,30 +319,30 @@ describe('useCoreCommands', () => {
       vi.mocked(app.canvas.selectItems).mockClear()
     })
 
-    it('should copy selected items when selection exists', () => {
+    it('should copy selected items when selection exists', async () => {
       app.canvas.selectedItems = new Set([
         {}
       ]) as typeof app.canvas.selectedItems
 
-      findCommand('Comfy.Canvas.CopySelected').function()
+      await findCommand('Comfy.Canvas.CopySelected').function()
 
       expect(app.canvas.copyToClipboard).toHaveBeenCalledWith()
     })
 
-    it('should not copy when no items are selected', () => {
-      findCommand('Comfy.Canvas.CopySelected').function()
+    it('should not copy when no items are selected', async () => {
+      await findCommand('Comfy.Canvas.CopySelected').function()
 
       expect(app.canvas.copyToClipboard).not.toHaveBeenCalled()
     })
 
-    it('should paste from clipboard', () => {
-      findCommand('Comfy.Canvas.PasteFromClipboard').function()
+    it('should paste from clipboard', async () => {
+      await findCommand('Comfy.Canvas.PasteFromClipboard').function()
 
       expect(app.canvas.pasteFromClipboard).toHaveBeenCalledWith()
     })
 
-    it('should select all items', () => {
-      findCommand('Comfy.Canvas.SelectAll').function()
+    it('should select all items', async () => {
+      await findCommand('Comfy.Canvas.SelectAll').function()
 
       // No arguments means "select all items on canvas"
       expect(app.canvas.selectItems).toHaveBeenCalledWith()
