@@ -40,7 +40,7 @@ vi.mock('@/i18n', () => ({
   st: vi.fn((_key: string, fallback: string) => fallback)
 }))
 
-describe('shouldUseAssetBrowser', () => {
+describe(assetService.shouldUseAssetBrowser, () => {
   beforeEach(() => {
     vi.clearAllMocks()
     mockDistributionState.isCloud = false
