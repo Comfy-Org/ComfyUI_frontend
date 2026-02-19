@@ -292,6 +292,8 @@ export interface IBoundingBoxWidget extends IBaseWidget<Bounds, 'boundingbox'> {
   value: Bounds
 }
 
+export type CurvePoint = [x: number, y: number]
+
 /**
  * Valid widget types.  TS cannot provide easily extensible type safety for this at present.
  * Override linkedWidgets[]
