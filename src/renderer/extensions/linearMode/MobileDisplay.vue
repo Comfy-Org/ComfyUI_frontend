@@ -4,17 +4,20 @@ import { computed, ref, useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
+import AssetsSidebarTab from '@/components/sidebar/tabs/AssetsSidebarTab.vue'
 import LinearControls from '@/renderer/extensions/linearMode/LinearControls.vue'
 import LinearPreview from '@/renderer/extensions/linearMode/LinearPreview.vue'
+import { useQueueStore } from '@/stores/queueStore'
 import { cn } from '@/utils/tailwindUtil'
 
 const tabs = [
-  ['Assets', 'icon-[comfy--image-ai-edit]'],
+  ['Assets', 'icon-[lucide--images]'],
   ['Edit & Run', 'icon-[lucide--play]'],
-  ['Apps', 'icon-[lucide--panels-top-left]']
+  ['Results', 'icon-[comfy--image-ai-edit]']
 ]
 
 const { t } = useI18n()
+const queueStore = useQueueStore()
 
 const activeIndex = ref(0)
 const sliderPaneRef = useTemplateRef('sliderPaneRef')
@@ -59,15 +62,15 @@ function onClick(index: number) {
       "
       :style="{ translate }"
     >
-      <div class="w-screen absolute bg-comfy-menu-bg h-full">
-        <LinearPreview />
-      </div>
+      <AssetsSidebarTab class="h-full w-screen absolute" />
       <div
-        class="overflow-y-auto contain-size h-full w-screen absolute left-[100vw]"
+        class="overflow-y-auto contain-size h-full w-screen absolute left-[100vw] top-0"
       >
         <LinearControls />
       </div>
-      <div class="bg-blue-600 w-screen h-full absolute left-[200vw] z-1" />
+      <div class="w-screen absolute bg-comfy-menu-bg h-full left-[200vw] top-0">
+        <LinearPreview />
+      </div>
     </div>
     <div
       ref="sliderPaneRef"
@@ -83,7 +86,11 @@ function onClick(index: number) {
         <div class="relative size-4">
           <i :class="cn('size-4', icon)" />
           <div
-            v-if="index === 0"
+            v-if="
+              index === 2 &&
+              queueStore.runningTasks.length > 0 &&
+              queueStore.pendingTasks.length > 0
+            "
             class="absolute bg-primary-background size-2 -top-1 -right-1 rounded-full animate-pulse"
           />
         </div>
