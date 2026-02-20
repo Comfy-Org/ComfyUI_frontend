@@ -6,6 +6,7 @@ import type { Ref } from 'vue'
 import { useJobList } from '@/composables/queue/useJobList'
 import type { JobState } from '@/types/queue'
 import type { BuildJobDisplayCtx } from '@/utils/queueDisplay'
+import { buildJobDisplay } from '@/utils/queueDisplay'
 import type { TaskItemImpl } from '@/stores/queueStore'
 
 type TestTask = {
@@ -459,7 +460,7 @@ describe('useJobList', () => {
   it('assigns preview urls for running jobs when previews enabled', async () => {
     queueStoreMock.runningTasks = [
       createTask({
-        promptId: 'live-preview',
+        jobId: 'live-preview',
         queueIndex: 1,
         mockState: 'running'
       })
@@ -478,7 +479,7 @@ describe('useJobList', () => {
   it('omits preview urls when previews are disabled', async () => {
     queueStoreMock.runningTasks = [
       createTask({
-        promptId: 'disabled-preview',
+        jobId: 'disabled-preview',
         queueIndex: 1,
         mockState: 'running'
       })
