@@ -1,13 +1,8 @@
 <script setup lang="ts">
-import {
-  breakpointsTailwind,
-  unrefElement,
-  useBreakpoints,
-  whenever
-} from '@vueuse/core'
+import { breakpointsTailwind, unrefElement, useBreakpoints } from '@vueuse/core'
 import Splitter from 'primevue/splitter'
 import SplitterPanel from 'primevue/splitterpanel'
-import { computed, ref, useTemplateRef } from 'vue'
+import { computed, useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import AppModeToolbar from '@/components/appMode/AppModeToolbar.vue'
@@ -16,18 +11,15 @@ import ModeToggle from '@/components/sidebar/ModeToggle.vue'
 import TopbarBadges from '@/components/topbar/TopbarBadges.vue'
 import WorkflowTabs from '@/components/topbar/WorkflowTabs.vue'
 import TypeformPopoverButton from '@/components/ui/TypeformPopoverButton.vue'
-import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import LinearControls from '@/renderer/extensions/linearMode/LinearControls.vue'
 import LinearPreview from '@/renderer/extensions/linearMode/LinearPreview.vue'
+import LinearProgressBar from '@/renderer/extensions/linearMode/LinearProgressBar.vue'
 import MobileMenu from '@/renderer/extensions/linearMode/MobileMenu.vue'
-import { useNodeOutputStore } from '@/stores/imagePreviewStore'
-import type { ResultItemImpl } from '@/stores/queueStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { useAppModeStore } from '@/stores/appModeStore'
 
 const { t } = useI18n()
-const nodeOutputStore = useNodeOutputStore()
 const settingStore = useSettingStore()
 const workspaceStore = useWorkspaceStore()
 const appModeStore = useAppModeStore()
@@ -44,16 +36,6 @@ const hasLeftPanel = computed(
 const hasRightPanel = computed(
   () => sidebarOnLeft.value || (!sidebarOnLeft.value && activeTab.value)
 )
-
-const hasPreview = ref(false)
-whenever(
-  () => nodeOutputStore.latestPreview[0],
-  () => (hasPreview.value = true)
-)
-
-const selectedItem = ref<AssetItem>()
-const selectedOutput = ref<ResultItemImpl>()
-const canShowPreview = ref(true)
 
 const bottomLeftRef = useTemplateRef('bottomLeftRef')
 const bottomRightRef = useTemplateRef('bottomRightRef')
@@ -72,16 +54,10 @@ const linearWorkflowRef = useTemplateRef('linearWorkflowRef')
       class="justify-center border-border-subtle border-t overflow-y-scroll h-[calc(100%-38px)] bg-comfy-menu-bg"
     >
       <MobileMenu />
+      <LinearProgressBar class="w-full" />
       <div class="flex flex-col text-muted-foreground">
         <LinearPreview
-          :latent-preview="
-            canShowPreview && hasPreview
-              ? nodeOutputStore.latestPreview[0]
-              : undefined
-          "
           :run-button-click="linearWorkflowRef?.runButtonClick"
-          :selected-item
-          :selected-output
           mobile
         />
       </div>
@@ -123,16 +99,10 @@ const linearWorkflowRef = useTemplateRef('linearWorkflowRef')
         :size="98"
         class="flex flex-col min-w-min gap-4 px-10 pt-8 pb-4 relative text-muted-foreground outline-none"
       >
-        <LinearPreview
-          :latent-preview="
-            canShowPreview && hasPreview
-              ? nodeOutputStore.latestPreview[0]
-              : undefined
-          "
-          :run-button-click="linearWorkflowRef?.runButtonClick"
-          :selected-item
-          :selected-output
+        <LinearProgressBar
+          class="absolute top-0 left-0 w-[calc(100%+16px)] z-21"
         />
+        <LinearPreview :run-button-click="linearWorkflowRef?.runButtonClick" />
         <div class="absolute z-21 top-1 left-1">
           <AppModeToolbar v-if="!appModeStore.isBuilderMode" />
         </div>
