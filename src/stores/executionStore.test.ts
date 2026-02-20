@@ -369,13 +369,13 @@ describe('useExecutionStore - Workflow Execution State', () => {
     })
 
     it('should return running state for workflows with active prompts', () => {
-      store.storePrompt({
+      store.storeJob({
         nodes: ['1', '2'],
         id: 'prompt-1',
         workflow: mockWorkflow('wf-1')
       })
 
-      store.nodeProgressStatesByPrompt = {
+      store.nodeProgressStatesByJob = {
         'prompt-1': { '1': mockNodeProgress('running') }
       }
 
@@ -407,13 +407,13 @@ describe('useExecutionStore - Workflow Execution State', () => {
     })
 
     it('should prioritize running over completed/error', () => {
-      store.storePrompt({
+      store.storeJob({
         nodes: ['1', '2'],
         id: 'prompt-2',
         workflow: mockWorkflow('wf-1')
       })
 
-      store.nodeProgressStatesByPrompt = {
+      store.nodeProgressStatesByJob = {
         'prompt-2': { '1': mockNodeProgress('running') }
       }
 
