@@ -28,7 +28,7 @@ export const useAppIOStore = defineStore('appIO', () => {
       ...newVal
     ]
   })
-  whenever(selectedOutputs, (newVal) => {
+  whenever(selectedInputs, (newVal) => {
     app.rootGraph.extra.linearData ??= {}
     ;(app.rootGraph.extra.linearData! as { inputs?: unknown }).inputs = [
       ...newVal
