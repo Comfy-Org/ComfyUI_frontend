@@ -36,11 +36,7 @@ export const CORE_SETTINGS: SettingParams[] = [
     name: 'Node search box implementation',
     type: 'combo',
     options: ['default', 'v1 (legacy)', 'litegraph (legacy)'],
-    defaultValue: 'default',
-    migrateDeprecatedValue: (val: unknown) => {
-      if (val === 'simple') return 'v1 (legacy)'
-      return val as string
-    }
+    defaultValue: 'default'
   },
   {
     id: 'Comfy.LinkRelease.Action',

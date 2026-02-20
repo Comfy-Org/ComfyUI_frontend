@@ -17,7 +17,7 @@ vi.mock('@/platform/settings/settingStore', () => ({
   }))
 }))
 
-describe(NodeSearchCategorySidebar, () => {
+describe('NodeSearchCategorySidebar', () => {
   beforeEach(() => {
     vi.restoreAllMocks()
     setupTestPinia()

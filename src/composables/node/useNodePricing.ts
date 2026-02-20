@@ -496,8 +496,7 @@ const scheduleEvaluation = (
 
       cache.set(node, { sig, label })
     })
-    .catch((e) => {
-      console.debug('[pricing/jsonata] evaluation error:', e)
+    .catch(() => {
       // Cache empty to avoid retry-spam for same signature
       if (desiredSig.get(node) === sig) {
         cache.set(node, { sig, label: '' })
