@@ -23,7 +23,7 @@ export function useCanvasInteractions() {
    * Returns false when canvas is in read-only/panning mode (e.g., space key held for panning).
    */
   const shouldHandleNodePointerEvents = computed(
-    () => !(canvasStore.canvas?.read_only ?? false)
+    () => !canvasStore.isReadOnly
   )
 
   /**
