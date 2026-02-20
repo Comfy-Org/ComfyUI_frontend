@@ -8,6 +8,7 @@
       <div
         role="alert"
         aria-live="assertive"
+        data-testid="error-overlay"
         class="pointer-events-auto flex w-80 min-w-72 flex-col overflow-hidden rounded-lg border border-interface-stroke bg-comfy-menu-bg shadow-interface transition-colors duration-200 ease-in-out"
       >
         <!-- Header -->
