@@ -57,7 +57,7 @@ To use the latest nightly release, add the following command line argument to yo
 
 ## Overlapping Release Cycles
 
-The development of successive minor versions overlaps. For example, while version 1.1 is in feature freeze, development for version 1.2 begins simultaneously. Each feature has approximately 4 weeks from merge to the ComfyUI stable release (2 weeks on main, 2 weeks frozen on RC).
+The development of successive minor versions overlaps. For example, while version 1.1 is in feature freeze, development for version 1.2 begins simultaneously. Each feature has approximately 4 weeks from merge to ComfyUI stable release (2 weeks on main, 2 weeks frozen on RC).
 
 ### Example Release Cycle
 
