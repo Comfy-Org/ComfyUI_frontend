@@ -29,12 +29,12 @@
             <li
               v-for="(message, idx) in groupedErrorMessages"
               :key="idx"
-              class="flex items-baseline gap-2 text-sm leading-snug text-muted-foreground"
+              class="flex items-baseline gap-2 text-sm leading-snug text-muted-foreground min-w-0"
             >
               <span
                 class="mt-1.5 size-1 shrink-0 rounded-full bg-muted-foreground"
               />
-              <span>{{ message }}</span>
+              <span class="break-words line-clamp-3 whitespace-pre-wrap">{{ message }}</span>
             </li>
           </ul>
         </div>
