@@ -155,7 +155,7 @@ const emit = defineEmits<{
 }>()
 
 // Track node selection and emit addNode event
-const onAddNode = (nodeDef: ComfyNodeDefImpl, event?: MouseEvent) => {
+function onAddNode(nodeDef: ComfyNodeDefImpl, event?: MouseEvent) {
   telemetry?.trackNodeSearchResultSelected({
     node_type: nodeDef.name,
     last_query: currentQuery.value
