@@ -552,12 +552,10 @@ export const useQueueStore = defineStore('queue', () => {
         .sort((a, b) => b.create_time - a.create_time)
         .slice(0, toValue(maxHistoryItems))
 
-      const seenWorkflows = new Set<string>()
       const batchResults = new Map<string, WorkflowExecutionResult>()
       for (const job of sortedHistory) {
         const workflowId = job.workflow_id
-        if (!workflowId || seenWorkflows.has(workflowId)) continue
-        seenWorkflows.add(workflowId)
+        if (!workflowId || batchResults.has(workflowId)) continue
         const state =
           job.status === 'failed'
             ? 'error'
