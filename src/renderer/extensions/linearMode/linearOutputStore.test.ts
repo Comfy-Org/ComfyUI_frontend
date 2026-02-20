@@ -8,9 +8,18 @@ import { ResultItemImpl } from '@/stores/queueStore'
 
 const activeJobIdRef = ref<string | null>(null)
 const previewsRef = ref<Record<string, string>>({})
+const isAppModeRef = ref(true)
 
 const { apiTarget } = vi.hoisted(() => ({
   apiTarget: new EventTarget()
+}))
+
+vi.mock('@/stores/appModeStore', () => ({
+  useAppModeStore: () => ({
+    get isAppMode() {
+      return isAppModeRef.value
+    }
+  })
 }))
 
 vi.mock('@/stores/executionStore', () => ({
@@ -71,6 +80,7 @@ describe('linearOutputStore', () => {
     setActivePinia(createPinia())
     activeJobIdRef.value = null
     previewsRef.value = {}
+    isAppModeRef.value = true
   })
 
   afterEach(() => {
@@ -95,15 +105,18 @@ describe('linearOutputStore', () => {
   })
 
   it('transitions to latent on preview', () => {
+    vi.useFakeTimers()
     const store = useLinearOutputStore()
     store.onJobStart('job-1')
 
     const itemId = store.inProgressItems[0].id
     store.onLatentPreview('job-1', 'blob:preview')
+    vi.advanceTimersByTime(16)
 
     expect(store.inProgressItems[0].state).toBe('latent')
     expect(store.inProgressItems[0].latentPreviewUrl).toBe('blob:preview')
     expect(store.selectedId).toBe(`slot:${itemId}`)
+    vi.useRealTimers()
   })
 
   it('ignores latent preview for other jobs', () => {
@@ -259,6 +272,7 @@ describe('linearOutputStore', () => {
   })
 
   it('creates skeleton on-demand when latent arrives after execute', () => {
+    vi.useFakeTimers()
     const store = useLinearOutputStore()
     store.onJobStart('job-1')
     store.onNodeExecuted('job-1', makeExecutedDetail('job-1'))
@@ -270,10 +284,12 @@ describe('linearOutputStore', () => {
 
     // Next node sends latent preview — skeleton created on demand
     store.onLatentPreview('job-1', 'blob:next')
+    vi.advanceTimersByTime(16)
 
     expect(store.inProgressItems[0].state).toBe('latent')
     expect(store.inProgressItems[0].latentPreviewUrl).toBe('blob:next')
     expect(store.inProgressItems).toHaveLength(2)
+    vi.useRealTimers()
   })
 
   it('handles execute without prior skeleton (no latent preview)', () => {
@@ -316,6 +332,7 @@ describe('linearOutputStore', () => {
   })
 
   it('transitions to latent via previewsByPromptId watcher', async () => {
+    vi.useFakeTimers()
     const { nextTick } = await import('vue')
     const store = useLinearOutputStore()
 
@@ -328,9 +345,11 @@ describe('linearOutputStore', () => {
     // Simulate jobPreviewStore update
     previewsRef.value = { 'job-1': 'blob:preview-1' }
     await nextTick()
+    vi.advanceTimersByTime(16)
 
     expect(store.inProgressItems[0].state).toBe('latent')
     expect(store.inProgressItems[0].latentPreviewUrl).toBe('blob:preview-1')
+    vi.useRealTimers()
   })
 
   it('completes previous job on direct job transition', async () => {
@@ -479,5 +498,37 @@ describe('linearOutputStore', () => {
     expect(store.inProgressItems.every((i) => i.state === 'skeleton')).toBe(
       true
     )
+  })
+
+  it('resets state when leaving app mode', async () => {
+    const { nextTick } = await import('vue')
+    const store = useLinearOutputStore()
+
+    store.onJobStart('job-1')
+    store.onNodeExecuted('job-1', makeExecutedDetail('job-1'))
+    store.select('slot:some-id')
+    expect(store.inProgressItems.length).toBeGreaterThan(0)
+
+    isAppModeRef.value = false
+    await nextTick()
+
+    expect(store.inProgressItems).toHaveLength(0)
+    expect(store.selectedId).toBeNull()
+    expect(store.trackedJobId).toBeNull()
+    expect(store.pendingResolve.size).toBe(0)
+  })
+
+  it('ignores execution events when not in app mode', async () => {
+    const { nextTick } = await import('vue')
+    const store = useLinearOutputStore()
+
+    isAppModeRef.value = false
+    await nextTick()
+
+    // Watcher-driven job start should be ignored
+    activeJobIdRef.value = 'job-1'
+    await nextTick()
+
+    expect(store.inProgressItems).toHaveLength(0)
   })
 })
