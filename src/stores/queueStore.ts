@@ -553,16 +553,21 @@ export const useQueueStore = defineStore('queue', () => {
         .slice(0, toValue(maxHistoryItems))
 
       const batchResults = new Map<string, WorkflowExecutionResult>()
+      const seenWorkflows = new Set<string>()
       for (const job of sortedHistory) {
         const workflowId = job.workflow_id
-        if (!workflowId || batchResults.has(workflowId)) continue
+        if (!workflowId || seenWorkflows.has(workflowId)) continue
+        seenWorkflows.add(workflowId)
         const state =
           job.status === 'failed'
             ? 'error'
             : job.status === 'completed'
               ? 'completed'
               : undefined
-        if (!state) continue
+        if (!state) {
+          executionStore.clearWorkflowExecutionResult(workflowId)
+          continue
+        }
         const existing =
           executionStore.lastExecutionResultByWorkflowId.get(workflowId)
         const jobTimestamp = job.create_time * 1000
