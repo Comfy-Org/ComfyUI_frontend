@@ -885,6 +885,32 @@ export function useCoreCommands(): ComfyCommand[] {
       }
     },
     {
+      id: 'Comfy.Canvas.CopySelected',
+      icon: 'icon-[lucide--copy]',
+      label: 'Copy',
+      function: () => {
+        if (app.canvas.selectedItems?.size) {
+          app.canvas.copyToClipboard()
+        }
+      }
+    },
+    {
+      id: 'Comfy.Canvas.PasteFromClipboard',
+      icon: 'icon-[lucide--clipboard-paste]',
+      label: 'Paste',
+      function: () => {
+        app.canvas.pasteFromClipboard()
+      }
+    },
+    {
+      id: 'Comfy.Canvas.SelectAll',
+      icon: 'icon-[lucide--lasso-select]',
+      label: 'Select All',
+      function: () => {
+        app.canvas.selectItems()
+      }
+    },
+    {
       id: 'Comfy.Canvas.DeleteSelectedItems',
       icon: 'pi pi-trash',
       label: 'Delete Selected Items',
