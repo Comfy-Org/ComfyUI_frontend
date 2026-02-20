@@ -73,6 +73,10 @@ function getDialogPt(item: {
 <style>
 @reference '../../assets/css/style.css';
 
+.global-dialog {
+  max-width: calc(100vw - 1rem);
+}
+
 .global-dialog .p-dialog-header {
   @apply p-2 2xl:p-[var(--p-dialog-header-padding)];
   @apply pb-0;

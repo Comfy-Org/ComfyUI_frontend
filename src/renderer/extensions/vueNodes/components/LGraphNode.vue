@@ -144,11 +144,8 @@
       as-child
     >
       <button
-        v-if="hasAnyError"
-        @click.stop="
-          settingStore.get('Comfy.RightSidePanel.ShowErrorsTab') &&
-          useRightSidePanelStore().openPanel('error')
-        "
+        v-if="hasAnyError && showErrorsTabEnabled"
+        @click.stop="useRightSidePanelStore().openPanel('errors')"
       >
         <span>{{ t('g.error') }}</span>
         <i class="icon-[lucide--info] size-4" />
@@ -322,6 +319,10 @@ const hasAnyError = computed((): boolean => {
     (executionStore.lastNodeErrors?.[nodeData.id]?.errors.length ?? 0) > 0
   )
 })
+
+const showErrorsTabEnabled = computed(() =>
+  settingStore.get('Comfy.RightSidePanel.ShowErrorsTab')
+)
 
 const displayHeader = computed(() => nodeData.titleMode !== TitleMode.NO_TITLE)
 

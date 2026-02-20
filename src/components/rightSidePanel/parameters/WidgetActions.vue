@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import { cn } from '@comfyorg/tailwind-utils'
 import { isEqual } from 'es-toolkit'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import MoreButton from '@/components/button/MoreButton.vue'
+import Button from '@/components/ui/button/Button.vue'
 import { isPromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetTypes'
 import {
   demoteWidget,
@@ -122,12 +122,6 @@ function handleResetToDefault() {
   if (!hasDefault.value) return
   emit('resetToDefault', defaultValue.value)
 }
-
-const buttonClasses = cn([
-  'border-none bg-transparent',
-  'w-full flex items-center gap-2 rounded px-3 py-2 text-sm',
-  'cursor-pointer transition-all hover:bg-secondary-background-hover active:scale-95'
-])
 </script>
 
 <template>
@@ -136,8 +130,10 @@ const buttonClasses = cn([
     class="text-muted-foreground bg-transparent hover:text-base-foreground hover:bg-secondary-background-hover active:scale-95 transition-all"
   >
     <template #default="{ close }">
-      <button
-        :class="buttonClasses"
+      <Button
+        variant="textonly"
+        size="unset"
+        class="w-full flex items-center gap-2 rounded px-3 py-2 text-sm transition-all active:scale-95"
         @click="
           () => {
             handleRename()
@@ -147,11 +143,13 @@ const buttonClasses = cn([
       >
         <i class="icon-[lucide--edit] size-4" />
         <span>{{ t('g.rename') }}</span>
-      </button>
+      </Button>
 
-      <button
+      <Button
         v-if="hasParents"
-        :class="buttonClasses"
+        variant="textonly"
+        size="unset"
+        class="w-full flex items-center gap-2 rounded px-3 py-2 text-sm transition-all active:scale-95"
         @click="
           () => {
             if (isShownOnParents) handleHideInput()
@@ -168,10 +166,12 @@ const buttonClasses = cn([
           <i class="icon-[lucide--eye] size-4" />
           <span>{{ t('rightSidePanel.showInput') }}</span>
         </template>
-      </button>
+      </Button>
 
-      <button
-        :class="buttonClasses"
+      <Button
+        variant="textonly"
+        size="unset"
+        class="w-full flex items-center gap-2 rounded px-3 py-2 text-sm transition-all active:scale-95"
         @click="
           () => {
             handleToggleFavorite()
@@ -180,18 +180,20 @@ const buttonClasses = cn([
         "
       >
         <template v-if="isFavorited">
-          <i class="icon-[lucide--star]" />
+          <i class="icon-[lucide--star] size-4" />
           <span>{{ t('rightSidePanel.removeFavorite') }}</span>
         </template>
         <template v-else>
-          <i class="icon-[lucide--star]" />
+          <i class="icon-[lucide--star] size-4" />
           <span>{{ t('rightSidePanel.addFavorite') }}</span>
         </template>
-      </button>
+      </Button>
 
-      <button
+      <Button
         v-if="hasDefault"
-        :class="cn(buttonClasses, isCurrentValueDefault && 'opacity-50')"
+        variant="textonly"
+        size="unset"
+        class="w-full flex items-center gap-2 rounded px-3 py-2 text-sm transition-all active:scale-95"
         :disabled="isCurrentValueDefault"
         @click="
           () => {
@@ -202,7 +204,7 @@ const buttonClasses = cn([
       >
         <i class="icon-[lucide--rotate-ccw] size-4" />
         <span>{{ t('rightSidePanel.resetToDefault') }}</span>
-      </button>
+      </Button>
     </template>
   </MoreButton>
 </template>

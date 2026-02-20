@@ -26,9 +26,9 @@ import { useI18n } from 'vue-i18n'
 import DotSpinner from '@/components/common/DotSpinner.vue'
 import Button from '@/components/ui/button/Button.vue'
 import type { ButtonVariants } from '@/components/ui/button/button.variants'
-import { useDialogService } from '@/services/dialogService'
 import type { components } from '@/types/comfyRegistryTypes'
 import { useConflictDetection } from '@/workbench/extensions/manager/composables/useConflictDetection'
+import { useNodeConflictDialog } from '@/workbench/extensions/manager/composables/useNodeConflictDialog'
 import { useComfyManagerStore } from '@/workbench/extensions/manager/stores/comfyManagerStore'
 import type {
   ConflictDetail,
@@ -55,7 +55,7 @@ const {
 }>()
 
 const managerStore = useComfyManagerStore()
-const { showNodeConflictDialog } = useDialogService()
+const { show: showNodeConflictDialog } = useNodeConflictDialog()
 const { t } = useI18n()
 
 // Check if any of the packs are currently being installed

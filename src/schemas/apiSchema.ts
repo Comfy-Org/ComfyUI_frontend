@@ -8,8 +8,8 @@ import { NodeBadgeMode } from '@/types/nodeSource'
 import { LinkReleaseTriggerAction } from '@/types/searchBoxTypes'
 
 const zNodeType = z.string()
-const zPromptId = z.string()
-export type PromptId = z.infer<typeof zPromptId>
+const zJobId = z.string()
+export type JobId = z.infer<typeof zJobId>
 export const resultItemType = z.enum(['input', 'output', 'temp'])
 export type ResultItemType = z.infer<typeof resultItemType>
 
@@ -52,7 +52,7 @@ const zStatusWsMessage = z.object({
 const zProgressWsMessage = z.object({
   value: z.number().int(),
   max: z.number().int(),
-  prompt_id: zPromptId,
+  prompt_id: zJobId,
   node: zNodeId
 })
 
@@ -61,21 +61,21 @@ const zNodeProgressState = z.object({
   max: z.number(),
   state: z.enum(['pending', 'running', 'finished', 'error']),
   node_id: zNodeId,
-  prompt_id: zPromptId,
+  prompt_id: zJobId,
   display_node_id: zNodeId.optional(),
   parent_node_id: zNodeId.optional(),
   real_node_id: zNodeId.optional()
 })
 
 const zProgressStateWsMessage = z.object({
-  prompt_id: zPromptId,
+  prompt_id: zJobId,
   nodes: z.record(zNodeId, zNodeProgressState)
 })
 
 const zExecutingWsMessage = z.object({
   node: zNodeId,
   display_node: zNodeId,
-  prompt_id: zPromptId
+  prompt_id: zJobId
 })
 
 const zExecutedWsMessage = zExecutingWsMessage.extend({
@@ -84,7 +84,7 @@ const zExecutedWsMessage = zExecutingWsMessage.extend({
 })
 
 const zExecutionWsMessageBase = z.object({
-  prompt_id: zPromptId,
+  prompt_id: zJobId,
   timestamp: z.number().int()
 })
 
@@ -315,6 +315,7 @@ const zSettings = z.object({
   'Comfy.Group.DoubleClickTitleToEdit': z.boolean(),
   'Comfy.GroupSelectedNodes.Padding': z.number(),
   'Comfy.Locale': z.string(),
+  'Comfy.NodeLibrary.NewDesign': z.boolean(),
   'Comfy.NodeLibrary.Bookmarks': z.array(z.string()),
   'Comfy.NodeLibrary.Bookmarks.V2': z.array(z.string()),
   'Comfy.NodeLibrary.BookmarksCustomization': z.record(
@@ -326,7 +327,11 @@ const zSettings = z.object({
   'Comfy.ModelLibrary.AutoLoadAll': z.boolean(),
   'Comfy.ModelLibrary.NameFormat': z.enum(['filename', 'title']),
   'Comfy.NodeSearchBoxImpl.NodePreview': z.boolean(),
-  'Comfy.NodeSearchBoxImpl': z.enum(['default', 'simple']),
+  'Comfy.NodeSearchBoxImpl': z.enum([
+    'default',
+    'v1 (legacy)',
+    'litegraph (legacy)'
+  ]),
   'Comfy.NodeSearchBoxImpl.ShowCategory': z.boolean(),
   'Comfy.NodeSearchBoxImpl.ShowIdName': z.boolean(),
   'Comfy.NodeSearchBoxImpl.ShowNodeFrequency': z.boolean(),

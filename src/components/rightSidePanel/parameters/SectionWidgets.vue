@@ -4,18 +4,16 @@ import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
 import { isPromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetTypes'
+import type { LGraphGroup, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { SubgraphNode } from '@/lib/litegraph/src/litegraph'
 import { usePromotionStore } from '@/stores/promotionStore'
-import type {
-  LGraphGroup,
-  LGraphNode,
-  SubgraphNode
-} from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { cn } from '@/utils/tailwindUtil'
+import { isGroupNode } from '@/utils/executableGroupNodeDto'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { getWidgetDefaultValue } from '@/utils/widgetUtil'
 import type { WidgetValue } from '@/utils/widgetUtil'
@@ -109,9 +107,24 @@ const targetNode = computed<LGraphNode | null>(() => {
   return allSameNode ? widgets.value[0].node : null
 })
 
-const nodeHasError = computed(() => {
-  if (canvasStore.selectedItems.length > 0 || !targetNode.value) return false
+const hasDirectError = computed(() => {
+  if (!targetNode.value) return false
   return executionStore.activeGraphErrorNodeIds.has(String(targetNode.value.id))
+})
+
+const hasContainerInternalError = computed(() => {
+  if (!targetNode.value) return false
+  const isContainer =
+    targetNode.value instanceof SubgraphNode || isGroupNode(targetNode.value)
+  if (!isContainer) return false
+
+  return executionStore.hasInternalErrorForNode(targetNode.value.id)
+})
+
+const nodeHasError = computed(() => {
+  if (!targetNode.value) return false
+  if (canvasStore.selectedItems.length === 1) return false
+  return hasDirectError.value || hasContainerInternalError.value
 })
 
 const parentGroup = computed<LGraphGroup | null>(() => {
@@ -206,7 +219,10 @@ defineExpose({
             </span>
           </span>
           <Button
-            v-if="nodeHasError"
+            v-if="
+              nodeHasError &&
+              useSettingStore().get('Comfy.RightSidePanel.ShowErrorsTab')
+            "
             variant="secondary"
             size="sm"
             class="shrink-0 rounded-lg text-sm"
@@ -216,9 +232,9 @@ defineExpose({
           </Button>
           <Button
             v-if="!isEmpty"
-            variant="textonly"
+            variant="muted-textonly"
             size="icon-sm"
-            class="subbutton shrink-0 size-8 cursor-pointer text-muted-foreground hover:text-base-foreground"
+            class="subbutton shrink-0 size-8 hover:text-base-foreground"
             :title="t('rightSidePanel.resetAllParameters')"
             :aria-label="t('rightSidePanel.resetAllParameters')"
             @click.stop="handleResetAllWidgets"
@@ -227,9 +243,9 @@ defineExpose({
           </Button>
           <Button
             v-if="canShowLocateButton"
-            variant="textonly"
+            variant="muted-textonly"
             size="icon-sm"
-            class="subbutton shrink-0 mr-3 size-8 cursor-pointer text-muted-foreground hover:text-base-foreground"
+            class="subbutton shrink-0 mr-3 size-8 hover:text-base-foreground"
             :title="t('rightSidePanel.locateNode')"
             :aria-label="t('rightSidePanel.locateNode')"
             @click.stop="handleLocateNode"

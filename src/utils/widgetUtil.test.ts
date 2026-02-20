@@ -14,25 +14,18 @@ describe('getWidgetDefaultValue', () => {
     expect(getWidgetDefaultValue(spec)).toBe(42)
   })
 
-  it('returns 0 for INT type without default', () => {
-    const spec = { type: 'INT' } as InputSpec
-    expect(getWidgetDefaultValue(spec)).toBe(0)
-  })
-
-  it('returns 0 for FLOAT type without default', () => {
-    const spec = { type: 'FLOAT' } as InputSpec
-    expect(getWidgetDefaultValue(spec)).toBe(0)
-  })
-
-  it('returns false for BOOLEAN type without default', () => {
-    const spec = { type: 'BOOLEAN' } as InputSpec
-    expect(getWidgetDefaultValue(spec)).toBe(false)
-  })
-
-  it('returns empty string for STRING type without default', () => {
-    const spec = { type: 'STRING' } as InputSpec
-    expect(getWidgetDefaultValue(spec)).toBe('')
-  })
+  it.for([
+    { type: 'INT', expected: 0 },
+    { type: 'FLOAT', expected: 0 },
+    { type: 'BOOLEAN', expected: false },
+    { type: 'STRING', expected: '' }
+  ])(
+    'returns $expected for $type type without default',
+    ({ type, expected }) => {
+      const spec = { type } as InputSpec
+      expect(getWidgetDefaultValue(spec)).toBe(expected)
+    }
+  )
 
   it('returns first option for array options without default', () => {
     const spec = { type: 'COMBO', options: ['a', 'b', 'c'] } as InputSpec

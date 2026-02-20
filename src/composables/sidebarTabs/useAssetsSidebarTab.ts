@@ -22,9 +22,8 @@ export const useAssetsSidebarTab = (): SidebarTabExtension => {
       }
 
       const queueStore = useQueueStore()
-      return queueStore.pendingTasks.length > 0
-        ? queueStore.pendingTasks.length.toString()
-        : null
+      const count = queueStore.activeJobsCount
+      return count > 0 ? count.toString() : null
     }
   }
 }

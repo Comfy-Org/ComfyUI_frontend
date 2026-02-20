@@ -1,3 +1,4 @@
+import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { useExtensionService } from '@/services/extensionService'
 import { processDynamicPrompt } from '@/utils/formatUtil'
 
@@ -6,7 +7,7 @@ import { processDynamicPrompt } from '@/utils/formatUtil'
 
 useExtensionService().registerExtension({
   name: 'Comfy.DynamicPrompts',
-  nodeCreated(node) {
+  nodeCreated(node: LGraphNode) {
     if (node.widgets) {
       // Locate dynamic prompt text widgets
       // Include any widgets with dynamicPrompts set to true, and customtext
