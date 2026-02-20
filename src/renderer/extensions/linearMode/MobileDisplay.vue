@@ -3,18 +3,20 @@ import { usePointerSwipe } from '@vueuse/core'
 import { computed, ref, useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import Button from '@/components/ui/button/Button.vue'
-import Popover from '@/components/ui/Popover.vue'
+import type { Entry } from '@/components/common/DropdownItem.vue'
+import DropdownMenu from '@/components/common/DropdownMenu.vue'
 import AssetsSidebarTab from '@/components/sidebar/tabs/AssetsSidebarTab.vue'
 import CurrentUserButton from '@/components/topbar/CurrentUserButton.vue'
+import Button from '@/components/ui/button/Button.vue'
+import Popover from '@/components/ui/Popover.vue'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
-import { useWorkflowActionsMenu } from '@/composables/useWorkflowActionsMenu'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import LinearControls from '@/renderer/extensions/linearMode/LinearControls.vue'
 import LinearPreview from '@/renderer/extensions/linearMode/LinearPreview.vue'
-import { useCommandStore } from '@/stores/commandStore'
+import { useColorPaletteService } from '@/services/colorPaletteService'
 import { useQueueStore } from '@/stores/queueStore'
+import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import { cn } from '@/utils/tailwindUtil'
 
 const tabs = [
@@ -23,14 +25,11 @@ const tabs = [
   ['Results', 'icon-[comfy--image-ai-edit]']
 ]
 
+const colorPaletteService = useColorPaletteService()
+const colorPaletteStore = useColorPaletteStore()
 const { isLoggedIn } = useCurrentUser()
 const { t } = useI18n()
 const queueStore = useQueueStore()
-//FIXME placeholder
-const { menuItems } = useWorkflowActionsMenu(
-  () => useCommandStore().execute('Comfy.RenameWorkflow'),
-  { isRoot: true }
-)
 const workflowService = useWorkflowService()
 const workflowStore = useWorkflowStore()
 
@@ -75,19 +74,49 @@ const workflowsEntries = computed(() => {
     command: () => workflowService.openWorkflow(w)
   }))
 })
+
+const menuEntries = computed<Entry[]>(() => [
+  { label: 'Apps', icon: 'icon-[lucide--panels-top-left]' },
+  { label: 'Templates', icon: 'icon-[comfy--template]' },
+  { separator: true },
+  {
+    label: 'File',
+    submenu: [
+      { label: 'Rename', icon: 'icon-[lucide--pencil]' },
+      { label: 'Duplicate', icon: 'icon-[lucide--copy]' },
+      { separator: true },
+      { label: 'Save', icon: 'icon-[lucide--save]' },
+      { label: 'Save as', icon: 'icon-[lucide--save]' },
+      { separator: true },
+      { label: 'Export', icon: 'icon-[lucide--download]' },
+      { label: 'Export (API)', icon: 'icon-[lucide--download]' }
+    ]
+  },
+  { label: 'Edit', submenu: [] },
+  { label: 'Enter node graph', icon: 'icon-[comfy--workflow]', new: true },
+  { separator: true },
+  {
+    label: 'Theme',
+    submenu: colorPaletteStore.palettes.map((palette) => ({
+      label: palette.name,
+      icon:
+        colorPaletteStore.activePaletteId === palette.id
+          ? 'icon-[lucide--check]'
+          : '',
+      command: () => colorPaletteService.loadColorPalette(palette.id)
+    }))
+  },
+  { separator: true },
+  { label: 'Settings', icon: 'icon-[lucide--settings]' },
+  { label: 'Help', icon: 'icon-[lucide--circle-question-mark]' }
+])
 </script>
 <template>
   <section class="absolute w-full h-full flex flex-col bg-base-background">
     <header
       class="w-full h-16 px-4 py-3 flex border-border-subtle border-b items-center gap-3"
     >
-      <Popover :entries="menuItems" align="start">
-        <template #button>
-          <Button size="icon">
-            <i class="icon-[lucide--menu]" />
-          </Button>
-        </template>
-      </Popover>
+      <DropdownMenu :entries="menuEntries" />
       <Popover
         :entries="workflowsEntries"
         class="w-(--reka-popover-content-available-width)"
