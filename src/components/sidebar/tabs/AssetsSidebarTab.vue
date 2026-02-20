@@ -284,9 +284,7 @@ const viewMode = useStorage<'list' | 'grid'>(
 const isQueuePanelV2Enabled = computed(() =>
   settingStore.get('Comfy.Queue.QPOV2')
 )
-const isListView = computed(
-  () => isQueuePanelV2Enabled.value && viewMode.value === 'list'
-)
+const isListView = computed(() => viewMode.value === 'list')
 
 const contextMenuRef = ref<InstanceType<typeof MediaAssetContextMenu>>()
 const contextMenuAsset = ref<AssetItem | null>(null)
