@@ -46,7 +46,7 @@ import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 import type { RenderedTreeExplorerNode } from '@/types/treeExplorerTypes'
 import { cn } from '@/utils/tailwindUtil'
 
-const props = defineProps<{
+const { node } = defineProps<{
   node: RenderedTreeExplorerNode<ComfyNodeDefImpl>
 }>()
 
@@ -54,7 +54,7 @@ const emit = defineEmits<{
   click: [node: RenderedTreeExplorerNode<ComfyNodeDefImpl>]
 }>()
 
-const nodeDef = computed(() => props.node.data)
+const nodeDef = computed(() => node.data)
 
 const panelRef = inject(SidebarContainerKey, undefined)
 
@@ -76,6 +76,6 @@ const nodeIcon = computed(() => {
 
 function handleClick() {
   if (!nodeDef.value) return
-  emit('click', props.node)
+  emit('click', node)
 }
 </script>
