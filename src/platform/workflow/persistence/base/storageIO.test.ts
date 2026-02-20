@@ -250,6 +250,35 @@ describe('storageIO', () => {
       const read = readOpenPaths(clientId, workspaceId)
       expect(read).toEqual(exactPointer)
     })
+
+    it('removes stale exact match from wrong workspace and falls back', () => {
+      const clientId = 'my-client'
+
+      // Store pointer for workspace-A under this clientId
+      writeActivePath(clientId, {
+        workspaceId: 'ws-A',
+        path: 'workflows/stale.json'
+      })
+
+      // Store pointer for workspace-B under a different clientId
+      writeActivePath('old-client', {
+        workspaceId: 'ws-B',
+        path: 'workflows/correct.json'
+      })
+
+      // Reading with workspace-B should skip the stale ws-A pointer and find the fallback
+      const result = readActivePath(clientId, 'ws-B')
+      expect(result).toEqual({
+        workspaceId: 'ws-B',
+        path: 'workflows/correct.json'
+      })
+
+      // Stale pointer should have been removed
+      const raw = sessionStorage.getItem(
+        `Comfy.Workflow.ActivePath:${clientId}`
+      )
+      expect(JSON.parse(raw!).workspaceId).toBe('ws-B')
+    })
   })
 
   describe('clearAllV2Storage', () => {

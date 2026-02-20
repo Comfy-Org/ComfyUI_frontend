@@ -30,22 +30,14 @@ export function useWorkflowTabState() {
   /**
    * Gets the active workflow path for the current tab.
    * Returns null if no pointer exists or workspaceId doesn't match.
-   * Falls back to searching for any pointer matching current workspace
-   * when clientId changes after page reload.
    */
   function getActivePath(): string | null {
     const clientId = getClientId()
     const workspaceId = getWorkspaceId()
     if (!clientId) return null
 
-    // Pass workspaceId for fallback search when clientId doesn't match
     const pointer = readActivePath(clientId, workspaceId)
-    if (!pointer) return null
-
-    // Validate workspace - ignore stale pointers from different workspace
-    if (pointer.workspaceId !== workspaceId) return null
-
-    return pointer.path
+    return pointer?.path ?? null
   }
 
   /**
@@ -66,20 +58,14 @@ export function useWorkflowTabState() {
   /**
    * Gets the open workflow paths for the current tab.
    * Returns null if no pointer exists or workspaceId doesn't match.
-   * Falls back to searching for any pointer matching current workspace
-   * when clientId changes after page reload.
    */
   function getOpenPaths(): { paths: string[]; activeIndex: number } | null {
     const clientId = getClientId()
     const workspaceId = getWorkspaceId()
     if (!clientId) return null
 
-    // Pass workspaceId for fallback search when clientId doesn't match
     const pointer = readOpenPaths(clientId, workspaceId)
     if (!pointer) return null
-
-    // Validate workspace - ignore stale pointers from different workspace
-    if (pointer.workspaceId !== workspaceId) return null
 
     return { paths: pointer.paths, activeIndex: pointer.activeIndex }
   }

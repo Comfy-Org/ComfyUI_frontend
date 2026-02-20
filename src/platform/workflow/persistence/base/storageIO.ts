@@ -202,11 +202,15 @@ function findAndMigratePointer<T extends { workspaceId: string }>(
     const json = sessionStorage.getItem(storageKey)
     if (!json) continue
 
-    const pointer = JSON.parse(json) as T
-    if (pointer.workspaceId === targetWorkspaceId) {
-      sessionStorage.setItem(newKey, json)
-      sessionStorage.removeItem(storageKey)
-      return pointer
+    try {
+      const pointer = JSON.parse(json) as T
+      if (pointer.workspaceId === targetWorkspaceId) {
+        sessionStorage.setItem(newKey, json)
+        sessionStorage.removeItem(storageKey)
+        return pointer
+      }
+    } catch {
+      continue
     }
   }
   return null
@@ -214,8 +218,9 @@ function findAndMigratePointer<T extends { workspaceId: string }>(
 
 /**
  * Reads a session pointer by clientId with workspace-based fallback.
- * If the exact clientId key has no entry, searches for any pointer
- * matching the target workspaceId and migrates it to the new key.
+ * Validates workspace on exact match and removes stale cross-workspace pointers.
+ * If no valid entry exists, searches for any pointer matching the target
+ * workspaceId and migrates it to the new key.
  */
 function readSessionPointer<T extends { workspaceId: string }>(
   key: string,
@@ -224,7 +229,14 @@ function readSessionPointer<T extends { workspaceId: string }>(
 ): T | null {
   try {
     const json = sessionStorage.getItem(key)
-    if (json) return JSON.parse(json) as T
+    if (json) {
+      const pointer = JSON.parse(json) as T
+      if (targetWorkspaceId && pointer.workspaceId !== targetWorkspaceId) {
+        sessionStorage.removeItem(key)
+      } else {
+        return pointer
+      }
+    }
 
     if (targetWorkspaceId) {
       return findAndMigratePointer<T>(key, prefix, targetWorkspaceId)
