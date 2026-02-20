@@ -171,7 +171,10 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
           { ...meta, updatedAt: Date.now() },
           MAX_DRAFTS
         )
-        persistIndex(finalIndex)
+        if (!persistIndex(finalIndex)) {
+          deletePayload(workspaceId, draftKey)
+          return false
+        }
         return true
       }
     }
