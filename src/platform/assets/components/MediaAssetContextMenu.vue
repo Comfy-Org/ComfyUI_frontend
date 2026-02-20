@@ -77,6 +77,7 @@ type ContextMenuInstance = ComponentPublicInstance & {
   show: (event: MouseEvent) => void
   hide: () => void
   container?: HTMLElement
+  $el?: HTMLElement
 }
 
 const contextMenu = ref<ContextMenuInstance | null>(null)
@@ -85,12 +86,14 @@ const actions = useMediaAssetActions()
 const { t } = useI18n()
 
 function getOverlayEl(): HTMLElement | null {
-  return contextMenu.value?.container ?? null
+  return contextMenu.value?.container ?? contextMenu.value?.$el ?? null
 }
 
 function dismissIfOutside(event: Event) {
   if (!isVisible.value) return
-  if (getOverlayEl()?.contains(event.target as Node)) return
+  const overlay = getOverlayEl()
+  if (!overlay) return
+  if (overlay.contains(event.target as Node)) return
   hide()
 }
 
