@@ -1,7 +1,7 @@
 <template>
   <div
     ref="workflowTabRef"
-    class="workflow-tab group flex gap-2 p-2"
+    class="workflow-tab group flex items-center gap-2 p-2"
     v-bind="$attrs"
     @mouseenter="handleMouseEnter"
     @mouseleave="handleMouseLeave"
