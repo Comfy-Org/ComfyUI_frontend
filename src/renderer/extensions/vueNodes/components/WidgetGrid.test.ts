@@ -1,10 +1,32 @@
 import { render, screen } from '@testing-library/vue'
 import { defineComponent, markRaw } from 'vue'
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import WidgetGrid from '@/renderer/extensions/vueNodes/components/WidgetGrid.vue'
 import type { WidgetGridItem } from '@/renderer/extensions/vueNodes/types/widgetGrid'
 import { toNodeId } from '@/types/nodeId'
+
+const { mockDragState, resetDragState } = vi.hoisted(() => {
+  const mockDragState = {
+    active: false,
+    candidate: null as {
+      layout: { nodeId: string; index: number; type: string }
+      compatible: boolean
+    } | null
+  }
+
+  return {
+    mockDragState,
+    resetDragState: () => {
+      mockDragState.active = false
+      mockDragState.candidate = null
+    }
+  }
+})
+
+vi.mock('@/renderer/core/canvas/links/slotLinkDragUIState', () => ({
+  useSlotLinkDragUIState: () => ({ state: mockDragState })
+}))
 
 const WidgetStub = markRaw(
   defineComponent({
@@ -47,6 +69,8 @@ function widget(name: string, type: string, index: number): WidgetGridItem {
 }
 
 describe('WidgetGrid', () => {
+  afterEach(resetDragState)
+
   it('renders hidden converted widgets as input sockets without controls', () => {
     render(WidgetGrid, {
       props: {
@@ -106,5 +130,108 @@ describe('WidgetGrid', () => {
       'true'
     )
     expect(screen.getByTestId('app-input')).not.toHaveAttribute('aria-invalid')
+  })
+
+  it('highlights the compatible widget targeted by a link drag', () => {
+    mockDragState.active = true
+    mockDragState.candidate = {
+      layout: { nodeId: '1', index: 0, type: 'input' },
+      compatible: true
+    }
+
+    render(WidgetGrid, {
+      props: {
+        nodeId: toNodeId(1),
+        nodeType: 'TestNode',
+        processedWidgets: [widget('seed', 'number', 0)]
+      },
+      global: {
+        directives: { tooltip: {} },
+        stubs: { AppInput: AppInputStub, InputSlot: InputSlotStub }
+      }
+    })
+
+    expect(screen.getByTestId('node-widget')).toHaveClass(
+      'ring',
+      'ring-component-node-widget-linked'
+    )
+  })
+
+  it.each([
+    ['inactive drag', false, 'input', '1', 0, true],
+    ['incompatible candidate', true, 'input', '1', 0, false],
+    ['output candidate', true, 'output', '1', 0, true],
+    ['different node', true, 'input', '2', 0, true],
+    ['different slot', true, 'input', '1', 1, true]
+  ])(
+    'does not highlight for %s',
+    (_, active, type, nodeId, index, compatible) => {
+      mockDragState.active = active
+      mockDragState.candidate = {
+        layout: { nodeId, index, type },
+        compatible
+      }
+
+      render(WidgetGrid, {
+        props: {
+          nodeId: toNodeId(1),
+          nodeType: 'TestNode',
+          processedWidgets: [widget('seed', 'number', 0)]
+        },
+        global: {
+          directives: { tooltip: {} },
+          stubs: { AppInput: AppInputStub, InputSlot: InputSlotStub }
+        }
+      })
+
+      expect(screen.getByTestId('node-widget')).not.toHaveClass('ring')
+    }
+  )
+
+  it('marks linked widgets when they are not a drag target', () => {
+    const linkedWidget = widget('seed', 'number', 0)
+    linkedWidget.slotMetadata!.linked = true
+
+    render(WidgetGrid, {
+      props: {
+        nodeId: toNodeId(1),
+        nodeType: 'TestNode',
+        processedWidgets: [linkedWidget]
+      },
+      global: {
+        directives: { tooltip: {} },
+        stubs: { AppInput: AppInputStub, InputSlot: InputSlotStub }
+      }
+    })
+
+    expect(screen.getByTestId('node-widget')).toHaveClass(
+      'border-l-2',
+      'border-component-node-widget-linked'
+    )
+  })
+
+  it('prefers drag highlighting over the linked border', () => {
+    const linkedWidget = widget('seed', 'number', 0)
+    linkedWidget.slotMetadata!.linked = true
+    mockDragState.active = true
+    mockDragState.candidate = {
+      layout: { nodeId: '1', index: 0, type: 'input' },
+      compatible: true
+    }
+
+    render(WidgetGrid, {
+      props: {
+        nodeId: toNodeId(1),
+        nodeType: 'TestNode',
+        processedWidgets: [linkedWidget]
+      },
+      global: {
+        directives: { tooltip: {} },
+        stubs: { AppInput: AppInputStub, InputSlot: InputSlotStub }
+      }
+    })
+
+    expect(screen.getByTestId('node-widget')).toHaveClass('ring')
+    expect(screen.getByTestId('node-widget')).not.toHaveClass('border-l-2')
   })
 })

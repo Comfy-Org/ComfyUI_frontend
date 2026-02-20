@@ -15,7 +15,12 @@
         :class="
           cn(
             'group col-span-full grid grid-cols-subgrid items-stretch',
-            !isConvertedWidget(widget) && 'lg-node-widget'
+            !isConvertedWidget(widget) && 'lg-node-widget',
+            isDragHoverTarget(widget) &&
+              'ring ring-component-node-widget-linked',
+            !isDragHoverTarget(widget) &&
+              widget.slotMetadata?.linked &&
+              'border-l-2 border-component-node-widget-linked'
           )
         "
       >
@@ -84,6 +89,7 @@ import type { WidgetGridItem } from '@/renderer/extensions/vueNodes/types/widget
 import { shouldExpand } from '@/renderer/extensions/vueNodes/widgets/registry/widgetRegistry'
 import type { NodeId } from '@/types/nodeId'
 import { cn } from '@comfyorg/tailwind-utils'
+import { useSlotLinkDragUIState } from '@/renderer/core/canvas/links/slotLinkDragUIState'
 
 import InputSlot from './InputSlot.vue'
 
@@ -98,6 +104,19 @@ const isConvertedWidget = (widget: WidgetGridItem) =>
 
 const shouldRenderRow = (widget: WidgetGridItem) =>
   isConvertedWidget(widget) ? !!widget.slotMetadata : widget.visible
+
+const { state: dragState } = useSlotLinkDragUIState()
+
+const isDragHoverTarget = (widget: WidgetGridItem) => {
+  const candidate = dragState.candidate
+  return (
+    dragState.active &&
+    candidate?.compatible === true &&
+    candidate.layout.type === 'input' &&
+    String(candidate.layout.nodeId) === String(nodeId) &&
+    candidate.layout.index === widget.slotMetadata?.index
+  )
+}
 
 const {
   processedWidgets,
