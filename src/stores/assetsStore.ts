@@ -181,7 +181,12 @@ export const useAssetsStore = defineStore('assets', () => {
       for (const asset of newAssets) {
         if (insertAssetSorted(asset)) newCount++
       }
-      prependedSinceLastLoad.value += newCount
+      if (hasMoreHistory.value) {
+        prependedSinceLastLoad.value += newCount
+      } else if (history.length === BATCH_SIZE) {
+        hasMoreHistory.value = true
+        prependedSinceLastLoad.value = 0
+      }
     }
 
     trimToMaxItems()
@@ -192,15 +197,20 @@ export const useAssetsStore = defineStore('assets', () => {
    * Adjusts offset to account for items prepended since the last page load.
    */
   async function fetchHistoryNextPage(): Promise<void> {
-    const adjustedOffset = historyOffset.value + prependedSinceLastLoad.value
+    const driftAtRequest = prependedSinceLastLoad.value
+    const adjustedOffset = historyOffset.value + driftAtRequest
 
     const history = await api.getHistory(BATCH_SIZE, {
       offset: adjustedOffset
     })
     const newAssets = mapHistoryToAssets(history)
 
-    // Reset drift counter only after successful fetch
-    prependedSinceLastLoad.value = 0
+    // Subtract only the drift captured at request time so concurrent
+    // updateHistory() increments during the in-flight fetch are preserved.
+    prependedSinceLastLoad.value = Math.max(
+      0,
+      prependedSinceLastLoad.value - driftAtRequest
+    )
 
     for (const asset of newAssets) {
       insertAssetSorted(asset)
