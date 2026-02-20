@@ -1,6 +1,8 @@
 import type { ComponentAttrs } from 'vue-component-type-helpers'
 
-import MissingModelsWarning from '@/components/dialog/content/MissingModelsWarning.vue'
+import MissingModelsContent from '@/components/dialog/content/MissingModelsContent.vue'
+import MissingModelsFooter from '@/components/dialog/content/MissingModelsFooter.vue'
+import MissingModelsHeader from '@/components/dialog/content/MissingModelsHeader.vue'
 import { useDialogService } from '@/services/dialogService'
 import { useDialogStore } from '@/stores/dialogStore'
 
@@ -14,11 +16,14 @@ export function useMissingModelsDialog() {
     dialogStore.closeDialog({ key: DIALOG_KEY })
   }
 
-  function show(props: ComponentAttrs<typeof MissingModelsWarning>) {
+  function show(props: ComponentAttrs<typeof MissingModelsContent>) {
     showSmallLayoutDialog({
       key: DIALOG_KEY,
-      component: MissingModelsWarning,
-      props
+      headerComponent: MissingModelsHeader,
+      footerComponent: MissingModelsFooter,
+      component: MissingModelsContent,
+      props,
+      footerProps: props
     })
   }
 

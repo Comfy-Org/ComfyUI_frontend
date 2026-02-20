@@ -1727,8 +1727,15 @@
     "doNotAskAgain": "Don't show this again",
     "reEnableInSettings": "Re-enable in {link}",
     "reEnableInSettingsLink": "Settings",
-    "missingModels": "Missing Models",
-    "missingModelsMessage": "When loading the graph, the following models were not found"
+    "title": "This workflow is missing models",
+    "description": "This workflow requires models you haven't downloaded yet.",
+    "totalSize": "Total download size:",
+    "downloadAll": "Download all",
+    "downloadAvailable": "Download available",
+    "gotIt": "Ok, got it",
+    "footerDescription": "Download and place these models in the correct folder.\nNodes with missing models are highlighted red on the canvas.",
+    "customModelsWarning": "Some of these are custom models that we don't recognize.",
+    "customModelsInstruction": "You'll need to find and download them manually. Search for them online (try Civitai or HuggingFace) or contact the original workflow provider."
   },
   "versionMismatchWarning": {
     "title": "Version Compatibility Warning",
