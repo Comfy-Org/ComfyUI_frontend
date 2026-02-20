@@ -7,9 +7,8 @@
       :pt="{
         root: {
           class: useSearchBoxV2
-            ? 'w-4/5 min-w-[32rem] max-w-[56rem] border-0 bg-transparent mt-[10vh] max-md:w-[95%] max-md:min-w-0'
-            : 'invisible-dialog-root',
-          style: useSearchBoxV2 ? 'overflow: visible' : undefined
+            ? 'w-4/5 min-w-[32rem] max-w-[56rem] border-0 bg-transparent mt-[10vh] max-md:w-[95%] max-md:min-w-0 overflow-visible'
+            : 'invisible-dialog-root'
         },
         mask: {
           class: useSearchBoxV2 ? 'items-start' : 'node-search-box-dialog-mask'
@@ -91,11 +90,13 @@ const { visible, newSearchBoxEnabled, useSearchBoxV2 } =
 const dismissable = ref(true)
 const hoveredNodeDef = ref<ComfyNodeDefImpl | null>(null)
 const { width: windowWidth } = useWindowSize()
+// Minimum viewport width for the preview panel to fit beside the dialog
+const MIN_WIDTH_FOR_PREVIEW = 1320
 const enableNodePreview = computed(
   () =>
     useSearchBoxV2.value &&
     settingStore.get('Comfy.NodeSearchBoxImpl.NodePreview') &&
-    windowWidth.value >= 1320
+    windowWidth.value >= MIN_WIDTH_FOR_PREVIEW
 )
 function getNewNodeLocation(): Point {
   return triggerEvent

@@ -18,7 +18,7 @@
       <!-- Category Path -->
       <p
         v-if="showCategoryPath && nodeDef.category"
-        class="text-xs text-neutral-400 -mt-1"
+        class="text-xs text-muted-foreground -mt-1"
       >
         {{ nodeDef.category.replaceAll('/', ' > ') }}
       </p>
@@ -100,6 +100,7 @@ import LGraphNodePreview from '@/renderer/extensions/vueNodes/components/LGraphN
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 
 const SCALE_FACTOR = 0.5
+const PREVIEW_CONTAINER_PADDING_PX = 24 // p-3 top + bottom (12px × 2)
 
 const {
   nodeDef,
@@ -118,7 +119,7 @@ useResizeObserver(previewWrapperRef, (entries) => {
   const entry = entries[0]
   if (entry && previewContainerRef.value) {
     const scaledHeight = entry.contentRect.height * SCALE_FACTOR
-    previewContainerRef.value.style.height = `${scaledHeight + 24}px`
+    previewContainerRef.value.style.height = `${scaledHeight + PREVIEW_CONTAINER_PADDING_PX}px`
   }
 })
 

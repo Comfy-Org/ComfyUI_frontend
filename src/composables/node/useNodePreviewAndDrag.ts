@@ -67,7 +67,8 @@ export function useNodePreviewAndDrag(
       top: `${top}px`,
       left: `${left}px`,
       pointerEvents: 'none',
-      zIndex: 1000
+      zIndex: 1000,
+      opacity: 0
     }
     isHovered.value = true
 
@@ -85,7 +86,8 @@ export function useNodePreviewAndDrag(
 
         nodePreviewStyle.value = {
           ...nodePreviewStyle.value,
-          top: `${top}px`
+          top: `${top}px`,
+          opacity: 1
         }
       }
     })

@@ -19,8 +19,8 @@ vi.mock('@/platform/settings/settingStore', () => ({
 
 describe('NodeSearchCategorySidebar', () => {
   beforeEach(() => {
-    setupTestPinia()
     vi.restoreAllMocks()
+    setupTestPinia()
   })
 
   async function createWrapper(props = {}) {
@@ -194,7 +194,7 @@ describe('NodeSearchCategorySidebar', () => {
       ).toBe('true')
     })
 
-    it('should highlight selected subcategory when expanded', async () => {
+    it('should emit selected subcategory when expanded', async () => {
       useNodeDefStore().updateNodeDefs([
         createMockNodeDef({ name: 'Node1', category: 'sampling' }),
         createMockNodeDef({ name: 'Node2', category: 'sampling/advanced' })

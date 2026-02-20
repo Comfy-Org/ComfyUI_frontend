@@ -19,6 +19,7 @@ vi.mock('@/platform/settings/settingStore', () => ({
 
 describe(NodeSearchFilterBar, () => {
   beforeEach(() => {
+    vi.restoreAllMocks()
     setupTestPinia()
     useNodeDefStore().updateNodeDefs([
       createMockNodeDef({
@@ -27,7 +28,6 @@ describe(NodeSearchFilterBar, () => {
         output: ['IMAGE']
       })
     ])
-    vi.restoreAllMocks()
   })
 
   async function createWrapper(props = {}) {
