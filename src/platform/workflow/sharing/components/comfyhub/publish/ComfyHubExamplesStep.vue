@@ -58,6 +58,8 @@
 </template>
 
 <script setup lang="ts">
+import { v4 as uuidv4 } from 'uuid'
+
 import type { ExampleImage } from '@/platform/workflow/sharing/types/comfyHubTypes'
 import { cn } from '@/utils/tailwindUtil'
 
@@ -96,7 +98,7 @@ function addImages(files: FileList) {
   const newImages: ExampleImage[] = Array.from(files)
     .filter((f) => f.type.startsWith('image/'))
     .map((file) => ({
-      id: `${file.name}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      id: uuidv4(),
       url: URL.createObjectURL(file),
       file
     }))

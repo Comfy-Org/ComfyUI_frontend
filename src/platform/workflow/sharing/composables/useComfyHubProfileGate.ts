@@ -1,5 +1,6 @@
 import { ref } from 'vue'
 
+import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import type { ComfyHubProfile } from '@/schemas/apiSchema'
 import { api } from '@/scripts/api'
@@ -10,17 +11,31 @@ import { useShareDialog } from './useShareDialog'
 
 const PROFILE_GATE_DIALOG_KEY = 'comfyhub-profile-gate'
 
-// Session-cached profile state (module-level singleton)
+// User-scoped, session-cached profile state (module-level singleton)
 const hasProfile = ref<boolean | null>(null)
 const isCheckingProfile = ref(false)
+const cachedUserId = ref<string | null>(null)
 
 export function useComfyHubProfileGate() {
+  const { resolvedUserInfo } = useCurrentUser()
   const { flags } = useFeatureFlags()
   const publishDialog = useComfyHubPublishDialog()
   const shareDialog = useShareDialog()
   const dialogStore = useDialogStore()
 
+  function syncCachedProfileWithCurrentUser(): void {
+    const currentUserId = resolvedUserInfo.value?.id ?? null
+    if (cachedUserId.value === currentUserId) {
+      return
+    }
+
+    hasProfile.value = null
+    cachedUserId.value = currentUserId
+  }
+
   async function checkProfile(): Promise<boolean> {
+    syncCachedProfileWithCurrentUser()
+
     if (hasProfile.value !== null) return hasProfile.value
     isCheckingProfile.value = true
     try {
@@ -42,6 +57,8 @@ export function useComfyHubProfileGate() {
     coverImage?: File
     profilePicture?: File
   }): Promise<ComfyHubProfile> {
+    syncCachedProfileWithCurrentUser()
+
     const formData = new FormData()
     formData.append('username', data.username)
     if (data.name) formData.append('name', data.name)
