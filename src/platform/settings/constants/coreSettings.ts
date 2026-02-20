@@ -1237,7 +1237,7 @@ export const CORE_SETTINGS: SettingParams[] = [
     tooltip:
       'When enabled, an errors tab is displayed in the right side panel to show workflow execution errors at a glance.',
     type: 'boolean',
-    defaultValue: false,
+    defaultValue: true,
     experimental: true,
     versionAdded: '1.40.0'
   }
