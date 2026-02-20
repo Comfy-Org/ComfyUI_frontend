@@ -1,5 +1,5 @@
 <template>
-  <div class="w-[480px] bg-base-background">
+  <div class="w-full bg-base-background">
     <!-- Header -->
     <div
       class="flex h-12 items-center justify-between border-b border-border-default px-4"
@@ -55,7 +55,7 @@
         ref="profileDropRef"
         :class="
           cn(
-            '-mt-15 z-10 flex size-[120px] cursor-pointer flex-col items-center justify-center rounded-full border border-dashed bg-base-background transition-colors',
+            '-mt-15 z-10 flex size-30 cursor-pointer flex-col items-center justify-center rounded-full border border-dashed bg-base-background transition-colors',
             isOverProfileDrop
               ? 'border-muted-foreground'
               : 'border-border-default hover:border-muted-foreground'
