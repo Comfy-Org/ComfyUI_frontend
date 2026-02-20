@@ -10,7 +10,7 @@ catalog:
   '@iconify/json': ^2.2.380
   '@iconify/tailwind4': ^1.2.0
   '@intlify/eslint-plugin-vue-i18n': ^4.1.0
-  '@lobehub/i18n-cli': ^1.25.1
+  '@lobehub/i18n-cli': ^1.26.1
   '@nx/eslint': 22.2.6
   '@nx/playwright': 22.2.6
   '@nx/storybook': 22.2.4
