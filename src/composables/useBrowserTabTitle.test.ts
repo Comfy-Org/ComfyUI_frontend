@@ -17,7 +17,7 @@ const executionStore = reactive<{
   executingNode: unknown
   executingNodeProgress: number
   nodeProgressStates: Record<string, unknown>
-  activePrompt: {
+  activeJob: {
     workflow: {
       changeTracker: {
         activeState: {
@@ -32,7 +32,7 @@ const executionStore = reactive<{
   executingNode: null,
   executingNodeProgress: 0,
   nodeProgressStates: {},
-  activePrompt: null
+  activeJob: null
 })
 vi.mock('@/stores/executionStore', () => ({
   useExecutionStore: () => executionStore
@@ -76,7 +76,7 @@ describe('useBrowserTabTitle', () => {
     executionStore.executingNode = null
     executionStore.executingNodeProgress = 0
     executionStore.nodeProgressStates = {}
-    executionStore.activePrompt = null
+    executionStore.activeJob = null
 
     // reset setting and workflow stores
     vi.mocked(settingStore.get).mockReturnValue('Enabled')
@@ -187,7 +187,7 @@ describe('useBrowserTabTitle', () => {
     executionStore.nodeProgressStates = {
       '1': { state: 'running', value: 5, max: 10, node: '1', prompt_id: 'test' }
     }
-    executionStore.activePrompt = {
+    executionStore.activeJob = {
       workflow: {
         changeTracker: {
           activeState: {

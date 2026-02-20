@@ -43,7 +43,7 @@ export const iconForJobState = (state: JobState): string => {
 
 const buildTitle = (task: TaskItemImpl, t: (k: string) => string): string => {
   const prefix = t('g.job')
-  const shortId = String(task.promptId ?? '').split('-')[0]
+  const shortId = String(task.jobId ?? '').split('-')[0]
   const idx = task.queueIndex
   if (typeof idx === 'number') return `${prefix} #${idx}`
   if (shortId) return `${prefix} ${shortId}`

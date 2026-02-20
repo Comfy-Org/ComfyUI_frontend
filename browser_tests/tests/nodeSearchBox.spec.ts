@@ -18,7 +18,10 @@ test.describe('Node search box', { tag: '@node' }, () => {
       'Comfy.LinkRelease.ActionShift',
       'search box'
     )
-    await comfyPage.settings.setSetting('Comfy.NodeSearchBoxImpl', 'default')
+    await comfyPage.settings.setSetting(
+      'Comfy.NodeSearchBoxImpl',
+      'v1 (legacy)'
+    )
   })
 
   test(`Can trigger on empty canvas double click`, async ({ comfyPage }) => {
@@ -45,7 +48,10 @@ test.describe('Node search box', { tag: '@node' }, () => {
     await comfyPage.setup({ clearStorage: true })
     // Simulate new user with 1.24.1+ installed version
     await comfyPage.settings.setSetting('Comfy.InstalledVersion', '1.24.1')
-    await comfyPage.settings.setSetting('Comfy.NodeSearchBoxImpl', 'default')
+    await comfyPage.settings.setSetting(
+      'Comfy.NodeSearchBoxImpl',
+      'v1 (legacy)'
+    )
     // Don't set LinkRelease settings explicitly to test versioned defaults
 
     await comfyPage.canvasOps.disconnectEdge()
@@ -285,7 +291,10 @@ test.describe('Release context menu', { tag: '@node' }, () => {
       'Comfy.LinkRelease.ActionShift',
       'search box'
     )
-    await comfyPage.settings.setSetting('Comfy.NodeSearchBoxImpl', 'default')
+    await comfyPage.settings.setSetting(
+      'Comfy.NodeSearchBoxImpl',
+      'v1 (legacy)'
+    )
   })
 
   test(
@@ -329,7 +338,10 @@ test.describe('Release context menu', { tag: '@node' }, () => {
     await comfyPage.setup({ clearStorage: true })
     // Simulate existing user with pre-1.24.1 version
     await comfyPage.settings.setSetting('Comfy.InstalledVersion', '1.23.0')
-    await comfyPage.settings.setSetting('Comfy.NodeSearchBoxImpl', 'default')
+    await comfyPage.settings.setSetting(
+      'Comfy.NodeSearchBoxImpl',
+      'v1 (legacy)'
+    )
     // Don't set LinkRelease settings explicitly to test versioned defaults
 
     await comfyPage.canvasOps.disconnectEdge()
@@ -350,7 +362,10 @@ test.describe('Release context menu', { tag: '@node' }, () => {
       'Comfy.LinkRelease.Action',
       'context menu'
     )
-    await comfyPage.settings.setSetting('Comfy.NodeSearchBoxImpl', 'default')
+    await comfyPage.settings.setSetting(
+      'Comfy.NodeSearchBoxImpl',
+      'v1 (legacy)'
+    )
 
     await comfyPage.canvasOps.disconnectEdge()
     // Context menu should appear due to explicit setting, not search box

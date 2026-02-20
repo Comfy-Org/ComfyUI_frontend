@@ -3,6 +3,7 @@ import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { ExecutedWsMessage } from '@/schemas/apiSchema'
 import { app } from '@/scripts/app'
 import { useNodeOutputStore } from '@/stores/imagePreviewStore'
@@ -13,20 +14,25 @@ vi.mock('@/utils/litegraphUtil', () => ({
   isVideoNode: vi.fn()
 }))
 
+const mockGetNodeById = vi.fn()
+
 vi.mock('@/scripts/app', () => ({
   app: {
     getPreviewFormatParam: vi.fn(() => '&format=test_webp'),
+    rootGraph: {
+      getNodeById: (...args: unknown[]) => mockGetNodeById(...args)
+    },
     nodeOutputs: {} as Record<string, unknown>,
     nodePreviewImages: {} as Record<string, string[]>
   }
 }))
 
-const createMockNode = (overrides: Partial<LGraphNode> = {}): LGraphNode =>
+const createMockNode = (overrides: Record<string, unknown> = {}): LGraphNode =>
   ({
     id: 1,
     type: 'TestNode',
     ...overrides
-  }) as LGraphNode
+  }) as unknown as LGraphNode
 
 const createMockOutputs = (
   images?: ExecutedWsMessage['output']['images']
@@ -214,5 +220,91 @@ describe('imagePreviewStore getPreviewParam', () => {
     ])
     expect(store.getPreviewParam(node, outputs)).toBe('&format=test_webp')
     expect(vi.mocked(app).getPreviewFormatParam).toHaveBeenCalledTimes(1)
+  })
+})
+
+describe('imagePreviewStore syncLegacyNodeImgs', () => {
+  beforeEach(() => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
+    vi.clearAllMocks()
+    LiteGraph.vueNodesMode = false
+  })
+
+  it('should not sync when vueNodesMode is disabled', () => {
+    const store = useNodeOutputStore()
+    const mockNode = createMockNode({ id: 1 })
+    const mockImg = document.createElement('img')
+
+    mockGetNodeById.mockReturnValue(mockNode)
+
+    store.syncLegacyNodeImgs(1, mockImg, 0)
+
+    expect(mockNode.imgs).toBeUndefined()
+    expect(mockNode.imageIndex).toBeUndefined()
+  })
+
+  it('should sync node.imgs when vueNodesMode is enabled', () => {
+    LiteGraph.vueNodesMode = true
+    const store = useNodeOutputStore()
+    const mockNode = createMockNode({ id: 1 })
+    const mockImg = document.createElement('img')
+
+    mockGetNodeById.mockReturnValue(mockNode)
+
+    store.syncLegacyNodeImgs(1, mockImg, 0)
+
+    expect(mockNode.imgs).toEqual([mockImg])
+    expect(mockNode.imageIndex).toBe(0)
+  })
+
+  it('should sync with correct activeIndex', () => {
+    LiteGraph.vueNodesMode = true
+    const store = useNodeOutputStore()
+    const mockNode = createMockNode({ id: 42 })
+    const mockImg = document.createElement('img')
+
+    mockGetNodeById.mockReturnValue(mockNode)
+
+    store.syncLegacyNodeImgs(42, mockImg, 3)
+
+    expect(mockNode.imgs).toEqual([mockImg])
+    expect(mockNode.imageIndex).toBe(3)
+  })
+
+  it('should handle string nodeId', () => {
+    LiteGraph.vueNodesMode = true
+    const store = useNodeOutputStore()
+    const mockNode = createMockNode({ id: 123 })
+    const mockImg = document.createElement('img')
+
+    mockGetNodeById.mockReturnValue(mockNode)
+
+    store.syncLegacyNodeImgs('123', mockImg, 0)
+
+    expect(mockGetNodeById).toHaveBeenCalledWith(123)
+    expect(mockNode.imgs).toEqual([mockImg])
+  })
+
+  it('should not throw when node is not found', () => {
+    LiteGraph.vueNodesMode = true
+    const store = useNodeOutputStore()
+    const mockImg = document.createElement('img')
+
+    mockGetNodeById.mockReturnValue(undefined)
+
+    expect(() => store.syncLegacyNodeImgs(999, mockImg, 0)).not.toThrow()
+  })
+
+  it('should default activeIndex to 0', () => {
+    LiteGraph.vueNodesMode = true
+    const store = useNodeOutputStore()
+    const mockNode = createMockNode({ id: 1 })
+    const mockImg = document.createElement('img')
+
+    mockGetNodeById.mockReturnValue(mockNode)
+
+    store.syncLegacyNodeImgs(1, mockImg)
+
+    expect(mockNode.imageIndex).toBe(0)
   })
 })

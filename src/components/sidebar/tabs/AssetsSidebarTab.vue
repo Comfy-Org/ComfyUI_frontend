@@ -9,7 +9,7 @@
       >
         <div class="flex items-center gap-2">
           <span class="font-bold">{{ $t('assetBrowser.jobId') }}:</span>
-          <span class="text-sm">{{ folderPromptId?.substring(0, 8) }}</span>
+          <span class="text-sm">{{ folderJobId?.substring(0, 8) }}</span>
           <button
             class="m-0 cursor-pointer border-0 bg-transparent p-0 outline-0"
             role="button"
@@ -79,8 +79,21 @@
       <Divider v-else type="dashed" class="my-2" />
     </template>
     <template #body>
-      <div v-if="showLoadingState">
-        <ProgressSpinner class="absolute left-1/2 w-[50px] -translate-x-1/2" />
+      <div
+        v-if="showLoadingState"
+        class="grid grid-cols-[repeat(auto-fill,minmax(200px,1fr))] gap-2 px-2"
+      >
+        <div
+          v-for="n in skeletonCount"
+          :key="`skeleton-${n}`"
+          class="flex flex-col gap-2 p-2"
+        >
+          <Skeleton class="aspect-square w-full rounded-lg" />
+          <div class="flex flex-col gap-1">
+            <Skeleton class="h-4 w-3/4" />
+            <Skeleton class="h-3 w-1/2" />
+          </div>
+        </div>
       </div>
       <div v-else-if="showEmptyState">
         <NoResultsPlaceholder
@@ -206,6 +219,7 @@
 
 <script setup lang="ts">
 import {
+  useAsyncState,
   useDebounceFn,
   useElementHover,
   useResizeObserver,
@@ -213,7 +227,6 @@ import {
 } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
 import Divider from 'primevue/divider'
-import ProgressSpinner from 'primevue/progressspinner'
 import { useToast } from 'primevue/usetoast'
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -225,6 +238,7 @@ const Load3dViewerContent = () =>
 import AssetsSidebarGridView from '@/components/sidebar/tabs/AssetsSidebarGridView.vue'
 import AssetsSidebarListView from '@/components/sidebar/tabs/AssetsSidebarListView.vue'
 import SidebarTabTemplate from '@/components/sidebar/tabs/SidebarTabTemplate.vue'
+import Skeleton from '@/components/ui/skeleton/Skeleton.vue'
 import ResultGallery from '@/components/sidebar/tabs/queue/ResultGallery.vue'
 import Tab from '@/components/tab/Tab.vue'
 import TabList from '@/components/tab/TabList.vue'
@@ -237,6 +251,7 @@ import { useAssetSelection } from '@/platform/assets/composables/useAssetSelecti
 import { useMediaAssetActions } from '@/platform/assets/composables/useMediaAssetActions'
 import { useMediaAssetFiltering } from '@/platform/assets/composables/useMediaAssetFiltering'
 import { useOutputStacks } from '@/platform/assets/composables/useOutputStacks'
+import type { OutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
 import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import type { MediaKind } from '@/platform/assets/schemas/mediaAssetSchema'
@@ -258,9 +273,10 @@ const executionStore = useExecutionStore()
 const settingStore = useSettingStore()
 
 const activeTab = ref<'input' | 'output'>('output')
-const folderPromptId = ref<string | null>(null)
+const folderJobId = ref<string | null>(null)
 const folderExecutionTime = ref<number | undefined>(undefined)
-const isInFolderView = computed(() => folderPromptId.value !== null)
+const expectedFolderCount = ref(0)
+const isInFolderView = computed(() => folderJobId.value !== null)
 const viewMode = useStorage<'list' | 'grid'>(
   'Comfy.Assets.Sidebar.ViewMode',
   'grid'
@@ -376,7 +392,24 @@ const mediaAssets = computed(() => currentAssets.value.media.value)
 const galleryActiveIndex = ref(-1)
 const currentGalleryAssetId = ref<string | null>(null)
 
-const folderAssets = ref<AssetItem[]>([])
+const DEFAULT_SKELETON_COUNT = 6
+const skeletonCount = computed(() =>
+  expectedFolderCount.value > 0
+    ? expectedFolderCount.value
+    : DEFAULT_SKELETON_COUNT
+)
+
+const {
+  state: folderAssets,
+  isLoading: folderLoading,
+  error: folderError,
+  execute: loadFolderAssets
+} = useAsyncState(
+  (metadata: OutputAssetMetadata, options: { createdAt?: string } = {}) =>
+    resolveOutputAssetItems(metadata, options),
+  [] as AssetItem[],
+  { immediate: false, resetOnExecute: true }
+)
 
 // Base assets before search filtering
 const baseAssets = computed(() => {
@@ -414,9 +447,13 @@ const isBulkMode = computed(
   () => hasSelection.value && selectedAssets.value.length > 1
 )
 
+const isFolderLoading = computed(
+  () => isInFolderView.value && folderLoading.value
+)
+
 const showLoadingState = computed(
   () =>
-    loading.value &&
+    (loading.value || isFolderLoading.value) &&
     displayAssets.value.length === 0 &&
     activeJobsCount.value === 0
 )
@@ -424,6 +461,7 @@ const showLoadingState = computed(
 const showEmptyState = computed(
   () =>
     !loading.value &&
+    !isFolderLoading.value &&
     displayAssets.value.length === 0 &&
     activeJobsCount.value === 0
 )
@@ -521,13 +559,13 @@ const handleBulkDelete = async (assets: AssetItem[]) => {
 }
 
 const handleClearQueue = async () => {
-  const pendingPromptIds = queueStore.pendingTasks
-    .map((task) => task.promptId)
+  const pendingJobIds = queueStore.pendingTasks
+    .map((task) => task.jobId)
     .filter((id): id is string => typeof id === 'string' && id.length > 0)
 
   await commandStore.execute('Comfy.ClearPendingTasks')
 
-  executionStore.clearInitializationByPromptIds(pendingPromptIds)
+  executionStore.clearInitializationByJobIds(pendingJobIds)
 }
 
 const handleBulkAddToWorkflow = async (assets: AssetItem[]) => {
@@ -590,36 +628,34 @@ const enterFolderView = async (asset: AssetItem) => {
     return
   }
 
-  const { promptId, executionTimeInSeconds } = metadata
+  const { jobId, executionTimeInSeconds } = metadata
 
-  if (!promptId) {
+  if (!jobId) {
     console.warn('Missing required folder view data')
     return
   }
 
-  folderPromptId.value = promptId
+  folderJobId.value = jobId
   folderExecutionTime.value = executionTimeInSeconds
+  expectedFolderCount.value = metadata.outputCount ?? 0
 
-  let folderItems: AssetItem[] = []
-  try {
-    folderItems = await resolveOutputAssetItems(metadata, {
-      createdAt: asset.created_at
+  await loadFolderAssets(0, metadata, { createdAt: asset.created_at })
+
+  if (folderError.value) {
+    toast.add({
+      severity: 'error',
+      summary: t('sideToolbar.folderView.errorSummary'),
+      detail: t('sideToolbar.folderView.errorDetail'),
+      life: 5000
     })
-  } catch (error) {
-    console.error('Failed to resolve outputs for folder view:', error)
+    exitFolderView()
   }
-
-  if (folderItems.length === 0) {
-    console.warn('No outputs available for folder view')
-    return
-  }
-
-  folderAssets.value = folderItems
 }
 
 const exitFolderView = () => {
-  folderPromptId.value = null
+  folderJobId.value = null
   folderExecutionTime.value = undefined
+  expectedFolderCount.value = 0
   folderAssets.value = []
   searchQuery.value = ''
 }
@@ -643,9 +679,9 @@ const handleEmptySpaceClick = () => {
 }
 
 const copyJobId = async () => {
-  if (folderPromptId.value) {
+  if (folderJobId.value) {
     try {
-      await navigator.clipboard.writeText(folderPromptId.value)
+      await navigator.clipboard.writeText(folderJobId.value)
       toast.add({
         severity: 'success',
         summary: t('mediaAsset.jobIdToast.copied'),

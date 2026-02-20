@@ -20,6 +20,7 @@
     "removeImage": "Remove image",
     "removeVideo": "Remove video",
     "removeTag": "Remove tag",
+    "remove": "Remove",
     "chart": "Chart",
     "chartLowercase": "chart",
     "file": "file",
@@ -116,6 +117,7 @@
     "defaultBanner": "default banner",
     "enableOrDisablePack": "Enable or disable pack",
     "openManager": "Open Manager",
+    "manageExtensions": "Manage extensions",
     "graphNavigation": "Graph navigation",
     "dropYourFileOr": "Drop your file or",
     "back": "Back",
@@ -174,6 +176,14 @@
     "capture": "capture",
     "nodes": "Nodes",
     "nodesCount": "{count} nodes | {count} node | {count} nodes",
+    "addNode": "Add a node...",
+    "filterBy": "Filter by:",
+    "filterByType": "Filter by {type}...",
+    "mostRelevant": "Most relevant",
+    "favorites": "Favorites",
+    "essentials": "Essentials",
+    "input": "Input",
+    "output": "Output",
     "community": "Community",
     "all": "All",
     "versionMismatchWarning": "Version Compatibility Warning",
@@ -727,6 +737,7 @@
     "logout": "Logout",
     "queue": "Queue",
     "nodeLibrary": "Node Library",
+    "nodes": "Nodes",
     "workflows": "Workflows",
     "templates": "Templates",
     "assets": "Assets",
@@ -743,6 +754,10 @@
       "filterText": "Text"
     },
     "backToAssets": "Back to all assets",
+    "folderView": {
+      "errorSummary": "Failed to load outputs",
+      "errorDetail": "Could not retrieve outputs for this job. Please try again."
+    },
     "searchAssets": "Search Assets",
     "labels": {
       "queue": "Queue",
@@ -767,6 +782,9 @@
     "openWorkflow": "Open workflow in local file system",
     "newBlankWorkflow": "Create a new blank workflow",
     "nodeLibraryTab": {
+      "essentials": "Essentials",
+      "allNodes": "All nodes",
+      "custom": "Custom",
       "groupBy": "Group By",
       "sortMode": "Sort Mode",
       "resetView": "Reset View to Default",
@@ -783,6 +801,9 @@
         "originalDesc": "Keep original order",
         "alphabetical": "Alphabetical",
         "alphabeticalDesc": "Sort alphabetically within groups"
+      },
+      "sections": {
+        "favorites": "Favorites"
       }
     },
     "modelLibrary": "Model Library",
@@ -897,6 +918,8 @@
     "runWorkflowFront": "Run workflow (Queue at front)",
     "runWorkflowDisabled": "Workflow contains unsupported nodes (highlighted red). Remove these to run the workflow.",
     "run": "Run",
+    "stopRunInstant": "Stop Run (Instant)",
+    "stopRunInstantTooltip": "Stop running",
     "execute": "Execute",
     "interrupt": "Cancel current run",
     "refresh": "Refresh node definitions",
@@ -1358,7 +1381,8 @@
     "PLY": "PLY",
     "Workspace": "Workspace",
     "Other": "Other",
-    "Secrets": "Secrets"
+    "Secrets": "Secrets",
+    "Error System": "Error System"
   },
   "serverConfigItems": {
     "listen": {
@@ -1604,6 +1628,7 @@
     "AUDIO_ENCODER_OUTPUT": "AUDIO_ENCODER_OUTPUT",
     "AUDIO_RECORD": "AUDIO_RECORD",
     "BOOLEAN": "BOOLEAN",
+    "BOUNDING_BOX": "BOUNDING_BOX",
     "CAMERA_CONTROL": "CAMERA_CONTROL",
     "CLIP": "CLIP",
     "CLIP_VISION": "CLIP_VISION",
@@ -2404,6 +2429,10 @@
     "Set Group Nodes to Always": "Set Group Nodes to Always"
   },
   "widgets": {
+    "boolean": {
+      "true": "true",
+      "false": "false"
+    },
     "node2only": "Node 2.0 only",
     "selectModel": "Select model",
     "uploadSelect": {
@@ -2817,9 +2846,10 @@
       "insertAllAssetsAsNodes": "Insert all assets as nodes",
       "openWorkflowAll": "Open all workflows",
       "exportWorkflowAll": "Export all workflows",
-      "downloadStarted": "Downloading {count} files...",
-      "downloadsStarted": "Started downloading {count} file(s)",
-      "assetsDeletedSuccessfully": "{count} asset(s) deleted successfully",
+      "downloadStarted": "Downloading {count} file... | Downloading {count} files...",
+      "downloadsStarted": "Started downloading {count} file | Started downloading {count} files",
+      "exportStarted": "Preparing ZIP export for {count} file | Preparing ZIP export for {count} files",
+      "assetsDeletedSuccessfully": "{count} asset deleted successfully | {count} assets deleted successfully",
       "failedToDeleteAssets": "Failed to delete selected assets",
       "partialDeleteSuccess": "{succeeded} deleted successfully, {failed} failed",
       "nodesAddedToWorkflow": "{count} node(s) added to workflow",
@@ -3014,6 +3044,20 @@
       "completed": "Completed",
       "failed": "Failed"
     }
+  },
+  "exportToast": {
+    "exportingAssets": "Exporting Assets",
+    "preparingExport": "Preparing export...",
+    "exportError": "Export failed",
+    "exportFailed": "{count} export failed | {count} export failed | {count} exports failed",
+    "allExportsCompleted": "All exports completed",
+    "noExportsInQueue": "No {filter} exports in queue",
+    "exportStarted": "Preparing ZIP download...",
+    "exportCompleted": "ZIP download ready",
+    "exportFailedSingle": "Failed to create ZIP export",
+    "downloadExport": "Download export",
+    "downloadFailed": "Failed to download \"{name}\"",
+    "retryDownload": "Retry download"
   },
   "workspace": {
     "unsavedChanges": {

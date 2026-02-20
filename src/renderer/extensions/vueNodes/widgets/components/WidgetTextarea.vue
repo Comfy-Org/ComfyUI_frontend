@@ -16,7 +16,6 @@
       :class="cn(WidgetInputBaseClass, 'size-full text-xs resize-none')"
       :placeholder
       :readonly="isReadOnly"
-      :disabled="isReadOnly"
       fluid
       data-capture-wheel="true"
       @pointerdown.capture.stop

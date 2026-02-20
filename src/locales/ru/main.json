@@ -608,6 +608,7 @@
     "AUDIO_ENCODER_OUTPUT": "ВЫХОД_АУДИО_КОДЕРА",
     "AUDIO_RECORD": "АУДИО_ЗАПИСЬ",
     "BOOLEAN": "БУЛЕВО",
+    "BOUNDING_BOX": "BOUNDING_BOX",
     "CAMERA_CONTROL": "УПРАВЛЕНИЕ_КАМЕРОЙ",
     "CLIP": "CLIP",
     "CLIP_VISION": "CLIP_VISION",
@@ -2015,6 +2016,11 @@
     "advancedInputs": "РАСШИРЕННЫЕ ВХОДНЫЕ ДАННЫЕ",
     "bypass": "Обход",
     "color": "Цвет узла",
+    "enterSubgraph": "Войти в подграф",
+    "errorHelp": "Для получения дополнительной помощи {github} или {support}",
+    "errorHelpGithub": "создайте issue на GitHub",
+    "errorHelpSupport": "свяжитесь с нашей поддержкой",
+    "errors": "Ошибки",
     "fallbackGroupTitle": "Группа",
     "fallbackNodeTitle": "Узел",
     "favorites": "ИЗБРАННЫЕ ВХОДЫ",
@@ -2049,6 +2055,7 @@
     "inputsNoneTooltip": "Узел не имеет входов",
     "locateNode": "Найти узел на холсте",
     "mute": "Отключить",
+    "noErrors": "Ошибок нет",
     "noSelection": "Выберите узел, чтобы увидеть его свойства и информацию.",
     "nodeState": "Состояние узла",
     "nodes": "Узлы",
@@ -2057,10 +2064,19 @@
     "normal": "Обычный",
     "parameters": "Параметры",
     "pinned": "Закреплено",
+    "promptErrors": {
+      "no_prompt": {
+        "desc": "Данные рабочего процесса, отправленные на сервер, пусты. Это может быть неожиданной системной ошибкой."
+      },
+      "prompt_no_outputs": {
+        "desc": "В рабочем процессе отсутствуют выходные узлы (например, Сохранить изображение, Предпросмотр изображения) для получения результата."
+      }
+    },
     "properties": "Свойства",
     "removeFavorite": "Убрать из избранного",
     "resetAllParameters": "Сбросить все параметры",
     "resetToDefault": "Сбросить по умолчанию",
+    "seeError": "Посмотреть ошибку",
     "settings": "Настройки",
     "showAdvancedInputsButton": "Показать расширенные входные данные",
     "showInput": "Показать вход",
@@ -2285,6 +2301,7 @@
     "CustomColorPalettes": "Пользовательские цветовые палитры",
     "DevMode": "Режим разработчика",
     "EditTokenWeight": "Редактировать вес токена",
+    "Error System": "Система ошибок",
     "Execution": "Выполнение",
     "Extension": "Расширение",
     "General": "Общие",

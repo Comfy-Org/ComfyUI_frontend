@@ -208,6 +208,47 @@
       }
     }
   },
+  "AudioEqualizer3Band": {
+    "display_name": "オーディオイコライザー（3バンド）",
+    "inputs": {
+      "audio": {
+        "name": "audio"
+      },
+      "high_freq": {
+        "name": "high_freq",
+        "tooltip": "高域シェルフのカットオフ周波数"
+      },
+      "high_gain_dB": {
+        "name": "high_gain_dB",
+        "tooltip": "高域（トレブル）のゲイン"
+      },
+      "low_freq": {
+        "name": "low_freq",
+        "tooltip": "低域シェルフのカットオフ周波数"
+      },
+      "low_gain_dB": {
+        "name": "low_gain_dB",
+        "tooltip": "低域（ベース）のゲイン"
+      },
+      "mid_freq": {
+        "name": "mid_freq",
+        "tooltip": "中域の中心周波数"
+      },
+      "mid_gain_dB": {
+        "name": "mid_gain_dB",
+        "tooltip": "中域のゲイン"
+      },
+      "mid_q": {
+        "name": "mid_q",
+        "tooltip": "中域のQファクター（帯域幅）"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "AudioMerge": {
     "description": "2つのオーディオトラックを波形を重ねて結合します。",
     "display_name": "オーディオ結合",
@@ -1631,14 +1672,14 @@
         "name": "秒_合計"
       }
     },
-    "outputs": [
-      {
+    "outputs": {
+      "0": {
         "tooltip": null
       },
-      {
+      "1": {
         "tooltip": null
       }
-    ]
+    }
   },
   "ConditioningTimestepsRange": {
     "display_name": "タイムステップ範囲",
@@ -2129,13 +2170,12 @@
       "index": {},
       "option1": {}
     },
-    "outputs": [
-      null,
-      {
+    "outputs": {
+      "1": {
         "name": "インデックス",
         "tooltip": null
       }
-    ]
+    }
   },
   "DiffControlNetLoader": {
     "display_name": "ControlNetモデルを読み込む（diff）",
@@ -3435,17 +3475,17 @@
         "name": "画像"
       }
     },
-    "outputs": [
-      {
+    "outputs": {
+      "0": {
         "tooltip": null
       },
-      {
+      "1": {
         "tooltip": null
       },
-      {
+      "2": {
         "tooltip": null
       }
-    ]
+    }
   },
   "GetVideoComponents": {
     "description": "ビデオからすべてのコンポーネント（フレーム、オーディオ、フレームレート）を抽出します。",
@@ -3677,14 +3717,14 @@
         "name": "clip_vision_output"
       }
     },
-    "outputs": [
-      {
+    "outputs": {
+      "0": {
         "tooltip": null
       },
-      {
+      "1": {
         "tooltip": null
       }
-    ]
+    }
   },
   "Hunyuan3Dv2ConditioningMultiView": {
     "display_name": "Hunyuan3Dv2ConditioningMultiView",
@@ -3702,14 +3742,14 @@
         "name": "右"
       }
     },
-    "outputs": [
-      {
+    "outputs": {
+      "0": {
         "tooltip": null
       },
-      {
+      "1": {
         "tooltip": null
       }
-    ]
+    }
   },
   "HunyuanImageToVideo": {
     "display_name": "HunyuanImageToVideo",
@@ -4235,6 +4275,26 @@
       "y": {
         "name": "y"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ImageCropV2": {
+    "display_name": "画像切り抜き",
+    "inputs": {
+      "crop_region": {
+        "name": "crop_region"
+      },
+      "height": {},
+      "image": {
+        "name": "image"
+      },
+      "width": {},
+      "x": {},
+      "y": {}
     },
     "outputs": {
       "0": {
@@ -6653,26 +6713,26 @@
         "name": "幅"
       }
     },
-    "outputs": [
-      {
+    "outputs": {
+      "0": {
         "tooltip": null
       },
-      {
+      "1": {
         "tooltip": null
       },
-      {
+      "2": {
         "tooltip": null
       },
-      {
+      "3": {
         "tooltip": null
       },
-      {
+      "4": {
         "tooltip": null
       },
-      {
+      "5": {
         "tooltip": null
       }
-    ]
+    }
   },
   "LoadAudio": {
     "display_name": "音声を読み込む",
@@ -6937,11 +6997,11 @@
         "tooltip": "拡散モデルを変更する強度。この値は負の値も可能です。"
       }
     },
-    "outputs": [
-      {
+    "outputs": {
+      "0": {
         "name": "model"
       }
-    ]
+    }
   },
   "LoraSave": {
     "display_name": "LoRAを抽出して保存",
@@ -7618,17 +7678,16 @@
         "name": "rig_task_id"
       }
     },
-    "outputs": [
-      null,
-      {
+    "outputs": {
+      "1": {
         "name": "GLB",
         "tooltip": null
       },
-      {
+      "2": {
         "name": "FBX",
         "tooltip": null
       }
-    ]
+    }
   },
   "MeshyImageToModelNode": {
     "display_name": "Meshy：画像からモデルへ",
@@ -7674,18 +7733,16 @@
         "name": "symmetry_mode"
       }
     },
-    "outputs": [
-      null,
-      null,
-      {
+    "outputs": {
+      "2": {
         "name": "GLB",
         "tooltip": null
       },
-      {
+      "3": {
         "name": "FBX",
         "tooltip": null
       }
-    ]
+    }
   },
   "MeshyMultiImageToModelNode": {
     "display_name": "Meshy：複数画像からモデルへ",
@@ -7731,18 +7788,16 @@
         "name": "symmetry_mode"
       }
     },
-    "outputs": [
-      null,
-      null,
-      {
+    "outputs": {
+      "2": {
         "name": "GLB",
         "tooltip": null
       },
-      {
+      "3": {
         "name": "FBX",
         "tooltip": null
       }
-    ]
+    }
   },
   "MeshyRefineNode": {
     "description": "以前に作成したドラフトモデルをリファインします。",
@@ -7767,18 +7822,16 @@
         "tooltip": "テクスチャリングプロセスをガイドするテキストプロンプトを入力してください。最大600文字。「texture_image」と同時に使用することはできません。"
       }
     },
-    "outputs": [
-      null,
-      null,
-      {
+    "outputs": {
+      "2": {
         "name": "GLB",
         "tooltip": null
       },
-      {
+      "3": {
         "name": "FBX",
         "tooltip": null
       }
-    ]
+    }
   },
   "MeshyRigModelNode": {
     "description": "標準フォーマットでリギング済みキャラクターを提供します。自動リギングは、テクスチャのないメッシュ、非ヒューマノイドアセット、または手足や体の構造が不明瞭なヒューマノイドアセットには適していません。",
@@ -7796,18 +7849,16 @@
         "tooltip": "モデルのUV展開されたベースカラーテクスチャ画像です。"
       }
     },
-    "outputs": [
-      null,
-      null,
-      {
+    "outputs": {
+      "2": {
         "name": "GLB",
         "tooltip": null
       },
-      {
+      "3": {
         "name": "FBX",
         "tooltip": null
       }
-    ]
+    }
   },
   "MeshyTextToModelNode": {
     "display_name": "Meshy：テキストからモデル生成",
@@ -7846,18 +7897,16 @@
         "name": "symmetry_mode"
       }
     },
-    "outputs": [
-      null,
-      null,
-      {
+    "outputs": {
+      "2": {
         "name": "GLB",
         "tooltip": null
       },
-      {
+      "3": {
         "name": "FBX",
         "tooltip": null
       }
-    ]
+    }
   },
   "MeshyTextureNode": {
     "display_name": "Meshy：テクスチャモデル",
@@ -7884,18 +7933,16 @@
         "tooltip": "オブジェクトの希望するテクスチャスタイルをテキストで説明してください。最大600文字。'image_style'と同時に使用することはできません。"
       }
     },
-    "outputs": [
-      null,
-      null,
-      {
+    "outputs": {
+      "2": {
         "name": "GLB",
         "tooltip": null
       },
-      {
+      "3": {
         "name": "FBX",
         "tooltip": null
       }
-    ]
+    }
   },
   "MinimaxHailuoVideoNode": {
     "description": "新しいMiniMax Hailuo-02モデルを使用して、プロンプトから動画を生成します（開始フレームはオプション）。",
@@ -11175,6 +11222,28 @@
       }
     }
   },
+  "PrimitiveBoundingBox": {
+    "display_name": "バウンディングボックス",
+    "inputs": {
+      "height": {
+        "name": "height"
+      },
+      "width": {
+        "name": "width"
+      },
+      "x": {
+        "name": "x"
+      },
+      "y": {
+        "name": "y"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "PrimitiveFloat": {
     "display_name": "浮動小数点数",
     "inputs": {
@@ -12196,13 +12265,12 @@
         "name": "シード"
       }
     },
-    "outputs": [
-      null,
-      {
+    "outputs": {
+      "1": {
         "name": "GLB",
         "tooltip": null
       }
-    ]
+    }
   },
   "Rodin3D_Gen2": {
     "description": "Rodin APIを使用して3Dアセットを生成",
@@ -12224,13 +12292,12 @@
         "name": "TAPose"
       }
     },
-    "outputs": [
-      null,
-      {
+    "outputs": {
+      "1": {
         "name": "GLB",
         "tooltip": null
       }
-    ]
+    }
   },
   "Rodin3D_Regular": {
     "description": "Rodin APIを使用して3Dアセットを生成",
@@ -12249,13 +12316,12 @@
         "name": "シード"
       }
     },
-    "outputs": [
-      null,
-      {
+    "outputs": {
+      "1": {
         "name": "GLB",
         "tooltip": null
       }
-    ]
+    }
   },
   "Rodin3D_Sketch": {
     "description": "Rodin APIを使用して3Dアセットを生成",
@@ -12268,13 +12334,12 @@
         "name": "シード"
       }
     },
-    "outputs": [
-      null,
-      {
+    "outputs": {
+      "1": {
         "name": "GLB",
         "tooltip": null
       }
-    ]
+    }
   },
   "Rodin3D_Smooth": {
     "description": "Rodin APIを使用して3Dアセットを生成",
@@ -12293,13 +12358,12 @@
         "name": "シード"
       }
     },
-    "outputs": [
-      null,
-      {
+    "outputs": {
+      "1": {
         "name": "GLB",
         "tooltip": null
       }
-    ]
+    }
   },
   "RunwayFirstLastFrameNode": {
     "description": "最初と最後のキーフレームをアップロードし、プロンプトを作成して動画を生成します。最後のフレームが最初のフレームと完全に異なる場合など、より複雑な遷移では、長い10秒の期間が効果的です。これにより、2つの入力間を滑らかに遷移するための時間がより多く確保されます。始める前に、これらのベストプラクティスを確認して、入力選択が生成を成功に導くようにしてください: https://help.runwayml.com/hc/en-us/articles/34170748696595-Creating-with-Keyframes-on-Gen-3.",
@@ -12593,14 +12657,14 @@
         "name": "シグマ"
       }
     },
-    "outputs": [
-      {
+    "outputs": {
+      "0": {
         "tooltip": null
       },
-      {
+      "1": {
         "tooltip": null
       }
-    ]
+    }
   },
   "SamplerCustomAdvanced": {
     "display_name": "カスタムサンプラー（高度）",
@@ -12621,14 +12685,14 @@
         "name": "シグマ"
       }
     },
-    "outputs": [
-      {
+    "outputs": {
+      "0": {
         "tooltip": null
       },
-      {
+      "1": {
         "tooltip": null
       }
-    ]
+    }
   },
   "SamplerDPMAdaptative": {
     "display_name": "サンプラーDPM適応",
@@ -12926,11 +12990,11 @@
         "name": "sampling_percent"
       }
     },
-    "outputs": [
-      {
+    "outputs": {
+      "0": {
         "tooltip": null
       }
-    ]
+    }
   },
   "SaveAnimatedPNG": {
     "display_name": "アニメーションPNGを保存",
@@ -13485,14 +13549,14 @@
         "name": "オーディオ"
       }
     },
-    "outputs": [
-      {
+    "outputs": {
+      "0": {
         "tooltip": null
       },
-      {
+      "1": {
         "tooltip": null
       }
-    ]
+    }
   },
   "SplitImageWithAlpha": {
     "display_name": "アルファで画像を分割",
@@ -13520,14 +13584,14 @@
         "name": "ステップ"
       }
     },
-    "outputs": [
-      {
+    "outputs": {
+      "0": {
         "tooltip": null
       },
-      {
+      "1": {
         "tooltip": null
       }
-    ]
+    }
   },
   "SplitSigmasDenoise": {
     "display_name": "シグマを分割してノイズ除去",
@@ -13539,14 +13603,14 @@
         "name": "シグマ"
       }
     },
-    "outputs": [
-      {
+    "outputs": {
+      "0": {
         "tooltip": null
       },
-      {
+      "1": {
         "tooltip": null
       }
-    ]
+    }
   },
   "StabilityAudioInpaint": {
     "description": "テキスト指示を使用して既存のオーディオサンプルの一部を変換します。",
@@ -14307,17 +14371,16 @@
         "tooltip": "シードはノードの再実行を制御しますが、シードに関わらず結果は非決定的です。"
       }
     },
-    "outputs": [
-      null,
-      {
+    "outputs": {
+      "1": {
         "name": "GLB",
         "tooltip": null
       },
-      {
+      "2": {
         "name": "OBJ",
         "tooltip": null
       }
-    ]
+    }
   },
   "TencentTextToModelNode": {
     "display_name": "Hunyuan3D: テキストからモデルへ (Pro)",
@@ -14347,17 +14410,16 @@
         "tooltip": "シードはノードの再実行を制御しますが、シードに関わらず結果は非決定的です。"
       }
     },
-    "outputs": [
-      null,
-      {
+    "outputs": {
+      "1": {
         "name": "GLB",
         "tooltip": null
       },
-      {
+      "2": {
         "name": "OBJ",
         "tooltip": null
       }
-    ]
+    }
   },
   "TextEncodeAceStepAudio": {
     "display_name": "TextEncodeAceStepAudio",
@@ -14824,20 +14886,20 @@
         "tooltip": "トレーニングに使用するデータ型。"
       }
     },
-    "outputs": [
-      {
+    "outputs": {
+      "0": {
         "tooltip": "LoRA適用済みモデル"
       },
-      {
+      "1": {
         "tooltip": "LoRA重み"
       },
-      {
+      "2": {
         "tooltip": "損失履歴"
       },
-      {
+      "3": {
         "tooltip": "総トレーニングステップ数"
       }
-    ]
+    }
   },
   "TrimAudioDuration": {
     "description": "オーディオテンソルを選択した時間範囲でトリミングします。",
@@ -15003,14 +15065,12 @@
         "name": "texture_seed"
       }
     },
-    "outputs": [
-      null,
-      null,
-      {
+    "outputs": {
+      "2": {
         "name": "GLB",
         "tooltip": null
       }
-    ]
+    }
   },
   "TripoMultiviewToModelNode": {
     "display_name": "Tripo: マルチビューからモデル",
@@ -15062,14 +15122,12 @@
         "name": "texture_seed"
       }
     },
-    "outputs": [
-      null,
-      null,
-      {
+    "outputs": {
+      "2": {
         "name": "GLB",
         "tooltip": null
       }
-    ]
+    }
   },
   "TripoRefineNode": {
     "description": "v1.4 Tripoモデルでのみ作成されたドラフトモデルをリファインします。",
@@ -15080,14 +15138,12 @@
         "tooltip": "v1.4 Tripoモデルである必要があります"
       }
     },
-    "outputs": [
-      null,
-      null,
-      {
+    "outputs": {
+      "2": {
         "name": "GLB",
         "tooltip": null
       }
-    ]
+    }
   },
   "TripoRetargetNode": {
     "display_name": "Tripo: リグ付きモデルのリターゲット",
@@ -15099,14 +15155,12 @@
         "name": "original_model_task_id"
       }
     },
-    "outputs": [
-      null,
-      null,
-      {
+    "outputs": {
+      "2": {
         "name": "GLB",
         "tooltip": null
       }
-    ]
+    }
   },
   "TripoRigNode": {
     "display_name": "Tripo: モデルのリグ設定",
@@ -15115,14 +15169,12 @@
         "name": "original_model_task_id"
       }
     },
-    "outputs": [
-      null,
-      null,
-      {
+    "outputs": {
+      "2": {
         "name": "GLB",
         "tooltip": null
       }
-    ]
+    }
   },
   "TripoTextToModelNode": {
     "display_name": "Tripo: テキストからモデル生成",
@@ -15167,14 +15219,12 @@
         "name": "texture_seed"
       }
     },
-    "outputs": [
-      null,
-      null,
-      {
+    "outputs": {
+      "2": {
         "name": "GLB",
         "tooltip": null
       }
-    ]
+    }
   },
   "TripoTextureNode": {
     "display_name": "Tripo: モデルのテクスチャリング",
@@ -15198,14 +15248,12 @@
         "name": "texture_seed"
       }
     },
-    "outputs": [
-      null,
-      null,
-      {
+    "outputs": {
+      "2": {
         "name": "GLB",
         "tooltip": null
       }
-    ]
+    }
   },
   "TruncateText": {
     "display_name": "テキストを切り詰める",

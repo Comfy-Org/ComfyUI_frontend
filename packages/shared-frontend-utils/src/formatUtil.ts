@@ -1,3 +1,4 @@
+import { default as DOMPurify } from 'dompurify'
 import type { operations } from '@comfyorg/registry-types'
 
 export function formatCamelCase(str: string): string {
@@ -32,8 +33,15 @@ export function appendJsonExt(path: string) {
   return path
 }
 
-export function highlightQuery(text: string, query: string) {
+export function highlightQuery(
+  text: string,
+  query: string,
+  sanitize: boolean = true
+) {
   if (!query) return text
+  if (sanitize) {
+    text = DOMPurify.sanitize(text)
+  }
 
   // Escape special regex characters in the query string
   const escapedQuery = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
