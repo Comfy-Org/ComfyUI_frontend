@@ -2918,6 +2918,28 @@
     "maxExamples": "You can select up to {max} examples",
     "finishPlaceholder": "Review and confirm your workflow publication."
   },
+  "comfyHubProfile": {
+    "introTitle": "Introducing ComfyHub",
+    "introDescription": "Publish your workflows, build your portfolio and get discovered by millions of users",
+    "introSubtitle": "To share your workflow on ComfyHub, let's first create your profile.",
+    "createProfileButton": "Create my profile",
+    "modalTitle": "Create your profile on ComfyHub",
+    "uploadCover": "+ Upload a cover",
+    "uploadProfilePicture": "+ Upload a profile picture",
+    "nameLabel": "Your name",
+    "namePlaceholder": "Enter your name here",
+    "usernameLabel": "Your username (required)",
+    "usernamePlaceholder": "@",
+    "descriptionLabel": "Your description",
+    "descriptionPlaceholder": "Tell the community about you, and include your links in here",
+    "createProfile": "Create profile",
+    "creatingProfile": "Creating profile...",
+    "successTitle": "Looking good, {'@'}{username}!",
+    "successProfileUrl": "Your profile page is live at",
+    "successProfileLink": "comfy.com/p/{username}",
+    "successDescription": "You can now upload your workflow to your creator page",
+    "uploadWorkflowButton": "Upload my workflow"
+  },
   "desktopDialogs": {
     "": {
       "title": "Invalid Dialog",
