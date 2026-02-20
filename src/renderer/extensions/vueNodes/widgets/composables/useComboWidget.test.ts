@@ -296,12 +296,24 @@ describe('useComboWidget', () => {
       'a1b2c3d4e5f6789012345678901234567890abcdef1234567890abcdef123456.jpg'
 
     it.each([
-      { nodeClass: 'LoadImage', inputName: 'image' },
-      { nodeClass: 'LoadVideo', inputName: 'video' },
-      { nodeClass: 'LoadAudio', inputName: 'audio' }
+      {
+        nodeClass: 'LoadImage',
+        inputName: 'image',
+        uploadFlag: 'image_upload'
+      },
+      {
+        nodeClass: 'LoadVideo',
+        inputName: 'video',
+        uploadFlag: 'video_upload'
+      },
+      {
+        nodeClass: 'LoadAudio',
+        inputName: 'audio',
+        uploadFlag: 'audio_upload'
+      }
     ])(
       'should create combo widget with getOptionLabel for $nodeClass in cloud',
-      ({ nodeClass, inputName }) => {
+      ({ nodeClass, inputName, uploadFlag }) => {
         mockDistributionState.isCloud = true
 
         const constructor = useComboWidget()
@@ -314,7 +326,8 @@ describe('useComboWidget', () => {
         vi.mocked(mockNode.addWidget).mockReturnValue(mockWidget)
         const inputSpec = createMockInputSpec({
           name: inputName,
-          options: [HASH_FILENAME, HASH_FILENAME_2]
+          options: [HASH_FILENAME, HASH_FILENAME_2],
+          [uploadFlag]: true
         })
 
         const widget = constructor(mockNode, inputSpec)
@@ -347,7 +360,8 @@ describe('useComboWidget', () => {
       vi.mocked(mockNode.addWidget).mockReturnValue(mockWidget)
       const inputSpec = createMockInputSpec({
         name: 'image',
-        options: [HASH_FILENAME]
+        options: [HASH_FILENAME],
+        image_upload: true
       })
 
       constructor(mockNode, inputSpec)
@@ -374,28 +388,92 @@ describe('useComboWidget', () => {
       expect(result).toBe('Beautiful Sunset.png')
     })
 
-    it('should create normal combo widget for non-input nodes in cloud', () => {
+    it('should create input mapping widget for custom node with video_upload flag', () => {
+      mockDistributionState.isCloud = true
+
+      const constructor = useComboWidget()
+      const mockWidget = createMockWidget({
+        type: 'combo',
+        name: 'video'
+      })
+      const mockNode = createMockNode('VHS_LoadVideo')
+      vi.mocked(mockNode.addWidget).mockReturnValue(mockWidget)
+      const inputSpec = createMockInputSpec({
+        name: 'video',
+        options: ['video1.mp4'],
+        video_upload: true
+      })
+
+      constructor(mockNode, inputSpec)
+
+      expect(mockNode.addWidget).toHaveBeenCalledWith(
+        'combo',
+        'video',
+        'video1.mp4',
+        expect.any(Function),
+        expect.objectContaining({
+          values: [],
+          getOptionLabel: expect.any(Function)
+        })
+      )
+    })
+
+    it('should create normal combo widget for combo without upload flags on cloud', () => {
       mockDistributionState.isCloud = true
 
       const constructor = useComboWidget()
       const mockWidget = createMockWidget()
-      const mockNode = createMockNode('SomeOtherNode')
+      const mockNode = createMockNode('SomeNode')
       vi.mocked(mockNode.addWidget).mockReturnValue(mockWidget)
       const inputSpec = createMockInputSpec({
-        name: 'option',
-        options: [HASH_FILENAME, HASH_FILENAME_2]
+        name: 'sampler',
+        options: ['euler', 'ddim']
       })
 
       const widget = constructor(mockNode, inputSpec)
 
       expect(mockNode.addWidget).toHaveBeenCalledWith(
         'combo',
-        'option',
-        HASH_FILENAME,
+        'sampler',
+        'euler',
         expect.any(Function),
-        { values: [HASH_FILENAME, HASH_FILENAME_2] }
+        { values: ['euler', 'ddim'] }
       )
       expect(widget).toBe(mockWidget)
+    })
+
+    it('should filter proxy values by media type', () => {
+      mockDistributionState.isCloud = true
+      mockAssetsStoreState.inputAssets = [
+        createMockAssetItem({
+          id: 'img-1',
+          name: 'photo.png',
+          asset_hash: 'hash-img',
+          mime_type: 'image/png'
+        }),
+        createMockAssetItem({
+          id: 'vid-1',
+          name: 'clip.mp4',
+          asset_hash: 'hash-vid',
+          mime_type: 'video/mp4'
+        })
+      ]
+
+      const constructor = useComboWidget()
+      const mockWidget = createMockWidget({ type: 'combo', name: 'image' })
+      const mockNode = createMockNode('LoadImage')
+      vi.mocked(mockNode.addWidget).mockReturnValue(mockWidget)
+      const inputSpec = createMockInputSpec({
+        name: 'image',
+        options: ['photo.png'],
+        image_upload: true
+      })
+
+      constructor(mockNode, inputSpec)
+
+      const proxyValues = (mockWidget.options as Record<string, unknown>)
+        .values as string[]
+      expect(proxyValues).toEqual(['hash-img'])
     })
 
     it('should create normal combo widget for LoadImage in OSS', () => {
@@ -435,7 +513,8 @@ describe('useComboWidget', () => {
       vi.mocked(mockNode.addWidget).mockReturnValue(mockWidget)
       const inputSpec = createMockInputSpec({
         name: 'image',
-        options: [HASH_FILENAME]
+        options: [HASH_FILENAME],
+        image_upload: true
       })
 
       constructor(mockNode, inputSpec)
@@ -454,7 +533,8 @@ describe('useComboWidget', () => {
       vi.mocked(mockNode.addWidget).mockReturnValue(mockWidget)
       const inputSpec = createMockInputSpec({
         name: 'image',
-        options: [HASH_FILENAME]
+        options: [HASH_FILENAME],
+        image_upload: true
       })
 
       constructor(mockNode, inputSpec)
@@ -479,7 +559,8 @@ describe('useComboWidget', () => {
       vi.mocked(mockNode.addWidget).mockReturnValue(mockWidget)
       const inputSpec = createMockInputSpec({
         name: 'image',
-        options: [HASH_FILENAME]
+        options: [HASH_FILENAME],
+        image_upload: true
       })
 
       constructor(mockNode, inputSpec)

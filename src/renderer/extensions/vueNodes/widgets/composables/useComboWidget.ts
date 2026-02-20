@@ -31,18 +31,19 @@ const getDefaultValue = (inputSpec: ComboInputSpec) => {
   return undefined
 }
 
-// Map node types to expected media types
-const NODE_MEDIA_TYPE_MAP: Record<string, 'image' | 'video' | 'audio'> = {
-  LoadImage: 'image',
-  LoadVideo: 'video',
-  LoadAudio: 'audio'
+function getSpecMediaType(
+  inputSpec: ComboInputSpec
+): 'image' | 'video' | 'audio' | null {
+  if (inputSpec.video_upload) return 'video'
+  if (inputSpec.image_upload || inputSpec.animated_image_upload) return 'image'
+  if (inputSpec.audio_upload) return 'audio'
+  return null
 }
 
-// Map node types to placeholder i18n keys
-const NODE_PLACEHOLDER_MAP: Record<string, string> = {
-  LoadImage: 'widgets.uploadSelect.placeholderImage',
-  LoadVideo: 'widgets.uploadSelect.placeholderVideo',
-  LoadAudio: 'widgets.uploadSelect.placeholderAudio'
+const MEDIA_TYPE_PLACEHOLDER_MAP: Record<string, string> = {
+  image: 'widgets.uploadSelect.placeholderImage',
+  video: 'widgets.uploadSelect.placeholderVideo',
+  audio: 'widgets.uploadSelect.placeholderAudio'
 }
 
 const addMultiSelectWidget = (
@@ -101,7 +102,8 @@ function createAssetBrowserWidget(
 const createInputMappingWidget = (
   node: LGraphNode,
   inputSpec: ComboInputSpec,
-  defaultValue: string | undefined
+  defaultValue: string | undefined,
+  mediaType: 'image' | 'video' | 'audio'
 ): IBaseWidget => {
   const assetsStore = useAssetsStore()
 
@@ -115,7 +117,7 @@ const createInputMappingWidget = (
       getOptionLabel: (value?: string | null) => {
         if (!value) {
           const placeholderKey =
-            NODE_PLACEHOLDER_MAP[node.comfyClass ?? ''] ??
+            MEDIA_TYPE_PLACEHOLDER_MAP[mediaType] ??
             'widgets.uploadSelect.placeholder'
           return t(placeholderKey)
         }
@@ -140,11 +142,7 @@ const createInputMappingWidget = (
         return target[prop as keyof typeof target]
       }
       return assetsStore.inputAssets
-        .filter(
-          (asset) =>
-            getMediaTypeFromFilename(asset.name) ===
-            NODE_MEDIA_TYPE_MAP[node.comfyClass ?? '']
-        )
+        .filter((asset) => getMediaTypeFromFilename(asset.name) === mediaType)
         .map((asset) => asset.asset_hash)
         .filter((hash): hash is string => !!hash)
     }
@@ -188,8 +186,9 @@ const addComboWidget = (
       return createAssetBrowserWidget(node, inputSpec, defaultValue)
     }
 
-    if (NODE_MEDIA_TYPE_MAP[node.comfyClass ?? '']) {
-      return createInputMappingWidget(node, inputSpec, defaultValue)
+    const mediaType = getSpecMediaType(inputSpec)
+    if (mediaType) {
+      return createInputMappingWidget(node, inputSpec, defaultValue, mediaType)
     }
   }
 
