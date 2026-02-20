@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import type { MenuItem } from 'primevue/menuitem'
 import {
   PopoverArrow,
   PopoverContent,
@@ -15,7 +16,7 @@ defineOptions({
 })
 
 defineProps<{
-  entries?: { label: string; action?: () => void; icon?: string }[][]
+  entries?: MenuItem[]
   icon?: string
   to?: string | HTMLElement
 }>()
@@ -40,33 +41,34 @@ defineProps<{
       >
         <slot>
           <div class="flex flex-col p-1">
-            <section
-              v-for="(entryGroup, index) in entries ?? []"
-              :key="index"
-              class="flex flex-col border-b-2 last:border-none border-border-subtle"
-            >
+            <template v-for="item in entries ?? []" :key="item.label">
               <div
-                v-for="{ label, action, icon } in entryGroup"
-                :key="label"
+                v-if="item.separator"
+                class="border-b w-full border-border-subtle"
+              />
+              <div
+                v-else
                 :class="
                   cn(
                     'flex flex-row gap-4 p-2 rounded-sm my-1',
-                    action &&
-                      'cursor-pointer hover:bg-secondary-background-hover'
+                    item.disabled
+                      ? 'opacity-50 pointer-events-none'
+                      : item.command &&
+                          'cursor-pointer hover:bg-secondary-background-hover'
                   )
                 "
                 @click="
-                  () => {
-                    if (!action) return
-                    action()
+                  (e) => {
+                    if (!item.command || item.disabled) return
+                    item.command({ originalEvent: e, item })
                     close()
                   }
                 "
               >
-                <i v-if="icon" :class="icon" />
-                {{ label }}
+                <i v-if="item.icon" :class="item.icon" />
+                {{ item.label }}
               </div>
-            </section>
+            </template>
           </div>
         </slot>
         <PopoverArrow class="fill-base-background stroke-border-subtle" />
