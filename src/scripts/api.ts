@@ -591,15 +591,34 @@ export class ComfyApi extends EventTarget {
 
           let imageMime
           switch (eventType) {
-            case 3:
-              const decoder = new TextDecoder()
-              const data = event.data.slice(4)
-              const nodeIdLength = view.getUint32(4)
+            case 3: {
+              const decoder3 = new TextDecoder()
+              const rawData = event.data.slice(4)
+              const rawView = new DataView(rawData)
+
+              let offset = 0
+              let promptId: string | undefined
+
+              if (this.getClientFeatureFlags()?.supports_progress_text_metadata) {
+                const promptIdLength = rawView.getUint32(offset)
+                offset += 4
+                promptId = decoder3.decode(rawData.slice(offset, offset + promptIdLength))
+                offset += promptIdLength
+              }
+
+              const nodeIdLength = rawView.getUint32(offset)
+              offset += 4
+              const nodeId = decoder3.decode(rawData.slice(offset, offset + nodeIdLength))
+              offset += nodeIdLength
+              const text = decoder3.decode(rawData.slice(offset))
+
               this.dispatchCustomEvent('progress_text', {
-                nodeId: decoder.decode(data.slice(4, 4 + nodeIdLength)),
-                text: decoder.decode(data.slice(4 + nodeIdLength))
+                nodeId,
+                text,
+                ...(promptId !== undefined && { prompt_id: promptId })
               })
               break
+            }
             case 1:
               const imageType = view.getUint32(4)
               const imageData = event.data.slice(8)
