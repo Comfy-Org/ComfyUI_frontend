@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest'
 
-import { getMediaTypeFromFilename, truncateFilename } from './formatUtil'
+import {
+  getMediaTypeFromFilename,
+  highlightQuery,
+  truncateFilename
+} from './formatUtil'
 
 describe('formatUtil', () => {
   describe('truncateFilename', () => {
@@ -140,6 +144,44 @@ describe('formatUtil', () => {
         expect(getMediaTypeFromFilename('video.Mp4')).toBe('video')
         expect(getMediaTypeFromFilename('audio.WaV')).toBe('audio')
       })
+    })
+  })
+
+  describe('highlightQuery', () => {
+    it('should return text unchanged when query is empty', () => {
+      expect(highlightQuery('Hello World', '')).toBe('Hello World')
+    })
+
+    it('should wrap matching text in highlight span', () => {
+      const result = highlightQuery('Hello World', 'World')
+      expect(result).toBe('Hello <span class="highlight">World</span>')
+    })
+
+    it('should be case-insensitive', () => {
+      const result = highlightQuery('Hello World', 'hello')
+      expect(result).toBe('<span class="highlight">Hello</span> World')
+    })
+
+    it('should sanitize text by default', () => {
+      const result = highlightQuery('<script>alert("xss")</script>', 'alert')
+      expect(result).not.toContain('<script>')
+    })
+
+    it('should skip sanitization when sanitize is false', () => {
+      const result = highlightQuery('<b>bold</b>', 'bold', false)
+      expect(result).toContain('<b>')
+    })
+
+    it('should escape special regex characters in query', () => {
+      const result = highlightQuery('price is $10.00', '$10')
+      expect(result).toContain('<span class="highlight">$10</span>')
+    })
+
+    it('should highlight multiple occurrences', () => {
+      const result = highlightQuery('foo bar foo', 'foo')
+      expect(result).toBe(
+        '<span class="highlight">foo</span> bar <span class="highlight">foo</span>'
+      )
     })
   })
 })

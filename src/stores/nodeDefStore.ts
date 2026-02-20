@@ -22,7 +22,11 @@ import type {
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { NodeSearchService } from '@/services/nodeSearchService'
 import { useSubgraphStore } from '@/stores/subgraphStore'
-import { NodeSourceType, getNodeSource } from '@/types/nodeSource'
+import {
+  NodeSourceType,
+  getEssentialsCategory,
+  getNodeSource
+} from '@/types/nodeSource'
 import type { NodeSource } from '@/types/nodeSource'
 import type { TreeNode } from '@/types/treeExplorerTypes'
 import type { FuseSearchable, SearchAuxScore } from '@/utils/fuseUtil'
@@ -39,6 +43,7 @@ export class ComfyNodeDefImpl
    * needs to write to it to assign a node to a custom folder.
    */
   category: string
+  readonly main_category?: string
   readonly python_module: string
   readonly description: string
   readonly help: string
@@ -82,6 +87,8 @@ export class ComfyNodeDefImpl
    * or old names after renaming a node.
    */
   readonly search_aliases?: string[]
+  /** Category for the Essentials tab. If set, the node appears in Essentials. */
+  readonly essentials_category?: string
 
   // V2 fields
   readonly inputs: Record<string, InputSpecV2>
@@ -136,6 +143,7 @@ export class ComfyNodeDefImpl
     this.name = obj.name
     this.display_name = obj.display_name
     this.category = obj.category
+    this.main_category = obj.main_category
     this.python_module = obj.python_module
     this.description = obj.description
     this.help = obj.help ?? ''
@@ -152,6 +160,11 @@ export class ComfyNodeDefImpl
     this.output_tooltips = obj.output_tooltips
     this.input_order = obj.input_order
     this.price_badge = obj.price_badge
+    // Resolve essentials_category from API or fallback to mock data
+    this.essentials_category = getEssentialsCategory(
+      obj.name,
+      obj.essentials_category
+    )
 
     // Initialize V2 fields
     const defV2 = transformNodeDefV1ToV2(obj)
@@ -160,7 +173,11 @@ export class ComfyNodeDefImpl
     this.hidden = defV2.hidden
 
     // Initialize node source
-    this.nodeSource = getNodeSource(obj.python_module)
+    this.nodeSource = getNodeSource(
+      obj.python_module,
+      this.essentials_category,
+      this.name
+    )
   }
 
   get nodePath(): string {

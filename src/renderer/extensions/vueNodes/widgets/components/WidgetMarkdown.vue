@@ -4,6 +4,8 @@
     <div
       class="comfy-markdown-content size-full min-h-[60px] overflow-y-auto rounded-lg text-sm"
       :class="isEditing === false ? 'visible' : 'invisible'"
+      tabindex="0"
+      data-capture-wheel="true"
       v-html="renderedHtml"
     />
 

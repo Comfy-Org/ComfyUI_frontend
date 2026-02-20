@@ -91,4 +91,16 @@ describe(assetService.shouldUseAssetBrowser, () => {
       false
     )
   })
+
+  it('returns false when widget name does not match registered input', () => {
+    mockDistributionState.isCloud = true
+    mockSettingStoreGet.mockReturnValue(true)
+
+    expect(
+      assetService.shouldUseAssetBrowser(
+        'CheckpointLoaderSimple',
+        'wrong_input'
+      )
+    ).toBe(false)
+  })
 })

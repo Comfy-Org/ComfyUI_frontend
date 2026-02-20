@@ -24,8 +24,6 @@
 import { computed } from 'vue'
 
 import { assetService } from '@/platform/assets/services/assetService'
-import { isCloud } from '@/platform/distribution/types'
-import { useSettingStore } from '@/platform/settings/settingStore'
 import WidgetSelectDefault from '@/renderer/extensions/vueNodes/widgets/components/WidgetSelectDefault.vue'
 import WidgetSelectDropdown from '@/renderer/extensions/vueNodes/widgets/components/WidgetSelectDropdown.vue'
 import WidgetWithControl from '@/renderer/extensions/vueNodes/widgets/components/WidgetWithControl.vue'
@@ -111,14 +109,11 @@ const specDescriptor = computed<{
   }
 })
 
-const isAssetMode = computed(() => {
-  if (!isCloud) return false
-  if (!useSettingStore().get('Comfy.Assets.UseAssetAPI')) return false
-  return (
-    assetService.isAssetBrowserEligible(props.nodeType, props.widget.name) ||
+const isAssetMode = computed(
+  () =>
+    assetService.shouldUseAssetBrowser(props.nodeType, props.widget.name) ||
     props.widget.type === 'asset'
-  )
-})
+)
 
 const assetKind = computed(() => specDescriptor.value.kind)
 const isDropdownUIWidget = computed(

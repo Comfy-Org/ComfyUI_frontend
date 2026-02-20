@@ -48,6 +48,7 @@ catalog:
   axios: ^1.8.2
   cross-env: ^10.1.0
   cva: 1.0.0-beta.4
+  dompurify: ^3.3.1
   dotenv: ^16.4.5
   eslint: ^9.39.1
   eslint-config-prettier: ^10.1.8
