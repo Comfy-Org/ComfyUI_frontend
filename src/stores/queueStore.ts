@@ -530,11 +530,17 @@ export const useQueueStore = defineStore('queue', () => {
         }
       })
 
-      const activeJobIds = new Set([
-        ...queue.Running.map((j) => j.id),
-        ...queue.Pending.map((j) => j.id)
-      ])
-      executionStore.reconcileInitializingPrompts(activeJobIds)
+      // Only reconcile when the queue fetch returned data. api.getQueue()
+      // returns empty Running/Pending on transient errors, which would
+      // incorrectly clear all initializing prompts.
+      const queueHasData = queue.Running.length > 0 || queue.Pending.length > 0
+      if (queueHasData) {
+        const activeJobIds = new Set([
+          ...queue.Running.map((j) => j.id),
+          ...queue.Pending.map((j) => j.id)
+        ])
+        executionStore.reconcileInitializingPrompts(activeJobIds)
+      }
 
       // Sort by create_time descending and limit to maxItems
       const sortedHistory = [...history]
