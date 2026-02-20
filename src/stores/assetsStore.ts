@@ -94,7 +94,7 @@ export const useAssetsStore = defineStore('assets', () => {
   // Track assets currently being deleted (for loading overlay)
   const deletingAssetIds = shallowReactive(new Set<string>())
 
-  const setAssetDeleting = (assetId: string, isDeleting: boolean) => {
+  function setAssetDeleting(assetId: string, isDeleting: boolean) {
     if (isDeleting) {
       deletingAssetIds.add(assetId)
     } else {
@@ -102,7 +102,7 @@ export const useAssetsStore = defineStore('assets', () => {
     }
   }
 
-  const isAssetDeleting = (assetId: string): boolean => {
+  function isAssetDeleting(assetId: string): boolean {
     return deletingAssetIds.has(assetId)
   }
 
@@ -110,6 +110,7 @@ export const useAssetsStore = defineStore('assets', () => {
   const historyOffset = ref(0)
   const hasMoreHistory = ref(true)
   const isLoadingMore = ref(false)
+  const prependedSinceLastLoad = ref(0)
 
   const allHistoryItems = ref<AssetItem[]>([])
 
@@ -133,67 +134,82 @@ export const useAssetsStore = defineStore('assets', () => {
   })
 
   /**
-   * Fetch history assets with pagination support
-   * @param loadMore - true for pagination (append), false for initial load (replace)
+   * Insert an asset into the sorted list at the correct position (newest first).
+   * Skips duplicates already tracked in loadedIds.
+   * @returns true if the asset was inserted, false if it was a duplicate.
    */
-  const fetchHistoryAssets = async (loadMore = false): Promise<AssetItem[]> => {
-    // Reset state for initial load
-    if (!loadMore) {
-      historyOffset.value = 0
-      hasMoreHistory.value = true
-      allHistoryItems.value = []
-      loadedIds.clear()
-    }
+  function insertAssetSorted(asset: AssetItem): boolean {
+    if (loadedIds.has(asset.id)) return false
+    loadedIds.add(asset.id)
 
-    // Fetch from server with offset
-    const history = await api.getHistory(BATCH_SIZE, {
-      offset: historyOffset.value
-    })
+    const assetTime = new Date(asset.created_at ?? 0).getTime()
+    const insertIndex = allHistoryItems.value.findIndex(
+      (item) => new Date(item.created_at ?? 0).getTime() < assetTime
+    )
 
-    // Convert JobListItems to AssetItems
-    const newAssets = mapHistoryToAssets(history)
-
-    if (loadMore) {
-      // Filter out duplicates and insert in sorted order
-      for (const asset of newAssets) {
-        if (loadedIds.has(asset.id)) {
-          continue // Skip duplicates
-        }
-        loadedIds.add(asset.id)
-
-        // Find insertion index to maintain sorted order (newest first)
-        const assetTime = new Date(asset.created_at ?? 0).getTime()
-        const insertIndex = allHistoryItems.value.findIndex(
-          (item) => new Date(item.created_at ?? 0).getTime() < assetTime
-        )
-
-        if (insertIndex === -1) {
-          // Asset is oldest, append to end
-          allHistoryItems.value.push(asset)
-        } else {
-          // Insert at the correct position
-          allHistoryItems.value.splice(insertIndex, 0, asset)
-        }
-      }
+    if (insertIndex === -1) {
+      allHistoryItems.value.push(asset)
     } else {
-      // Initial load: replace all
-      allHistoryItems.value = newAssets
-      newAssets.forEach((asset) => loadedIds.add(asset.id))
+      allHistoryItems.value.splice(insertIndex, 0, asset)
     }
+    return true
+  }
 
-    // Update pagination state
-    historyOffset.value += BATCH_SIZE
-    hasMoreHistory.value = history.length === BATCH_SIZE
-
+  function trimToMaxItems() {
     if (allHistoryItems.value.length > MAX_HISTORY_ITEMS) {
-      const removed = allHistoryItems.value.slice(MAX_HISTORY_ITEMS)
-      allHistoryItems.value = allHistoryItems.value.slice(0, MAX_HISTORY_ITEMS)
-
-      // Clean up Set
+      const removed = allHistoryItems.value.splice(MAX_HISTORY_ITEMS)
       removed.forEach((item) => loadedIds.delete(item.id))
     }
+  }
 
-    return allHistoryItems.value
+  /**
+   * Fetch the first page of history. On initial load (empty state), replaces
+   * all items. On subsequent calls, incrementally merges new items without
+   * clearing existing pagination state — fixing the "disappearing assets" bug.
+   */
+  async function fetchHistoryIncremental(): Promise<void> {
+    const history = await api.getHistory(BATCH_SIZE, { offset: 0 })
+    const newAssets = mapHistoryToAssets(history)
+
+    if (allHistoryItems.value.length === 0) {
+      allHistoryItems.value = newAssets
+      newAssets.forEach((asset) => loadedIds.add(asset.id))
+      historyOffset.value = BATCH_SIZE
+      hasMoreHistory.value = history.length === BATCH_SIZE
+    } else {
+      let newCount = 0
+      for (const asset of newAssets) {
+        if (insertAssetSorted(asset)) newCount++
+      }
+      prependedSinceLastLoad.value += newCount
+    }
+
+    trimToMaxItems()
+  }
+
+  /**
+   * Fetch the next page of history for infinite scroll pagination.
+   * Adjusts offset to account for items prepended since the last page load.
+   */
+  async function fetchHistoryNextPage(): Promise<void> {
+    const adjustedOffset = historyOffset.value + prependedSinceLastLoad.value
+
+    const history = await api.getHistory(BATCH_SIZE, {
+      offset: adjustedOffset
+    })
+    const newAssets = mapHistoryToAssets(history)
+
+    // Reset drift counter only after successful fetch
+    prependedSinceLastLoad.value = 0
+
+    for (const asset of newAssets) {
+      insertAssetSorted(asset)
+    }
+
+    historyOffset.value = adjustedOffset + BATCH_SIZE
+    hasMoreHistory.value = history.length === BATCH_SIZE
+
+    trimToMaxItems()
   }
 
   const historyAssets = ref<AssetItem[]>([])
@@ -201,18 +217,19 @@ export const useAssetsStore = defineStore('assets', () => {
   const historyError = ref<unknown>(null)
 
   /**
-   * Initial load of history assets
+   * Load or refresh history assets. On first call, performs a full load.
+   * On subsequent calls (e.g. after job completion), incrementally merges
+   * new items without clearing existing pagination state.
    */
-  const updateHistory = async () => {
+  async function updateHistory() {
     historyLoading.value = true
     historyError.value = null
     try {
-      await fetchHistoryAssets(false)
+      await fetchHistoryIncremental()
       historyAssets.value = allHistoryItems.value
     } catch (err) {
       console.error('Error fetching history assets:', err)
       historyError.value = err
-      // Keep existing data when error occurs
       if (!historyAssets.value.length) {
         historyAssets.value = []
       }
@@ -224,20 +241,18 @@ export const useAssetsStore = defineStore('assets', () => {
   /**
    * Load more history items (infinite scroll)
    */
-  const loadMoreHistory = async () => {
-    // Guard: prevent concurrent loads and check if more items available
+  async function loadMoreHistory() {
     if (!hasMoreHistory.value || isLoadingMore.value) return
 
     isLoadingMore.value = true
     historyError.value = null
 
     try {
-      await fetchHistoryAssets(true)
+      await fetchHistoryNextPage()
       historyAssets.value = allHistoryItems.value
     } catch (err) {
       console.error('Error loading more history:', err)
       historyError.value = err
-      // Keep existing data when error occurs (consistent with updateHistory)
       if (!historyAssets.value.length) {
         historyAssets.value = []
       }
