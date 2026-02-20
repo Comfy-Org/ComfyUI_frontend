@@ -256,7 +256,8 @@
     "name": "Düğüm arama kutusu uygulaması",
     "options": {
       "default": "varsayılan",
-      "litegraph (legacy)": "litegraph (eski)"
+      "litegraph (legacy)": "litegraph (eski)",
+      "v1 (legacy)": "v1 (eski)"
     }
   },
   "Comfy_NodeSearchBoxImpl_NodePreview": {

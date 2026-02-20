@@ -620,6 +620,7 @@
     "COMFY_MATCHTYPE_V3": "COMFY_MATCHTYPE_V3",
     "CONDITIONING": "CONDICIONAMENTO",
     "CONTROL_NET": "controlnet",
+    "ELEVENLABS_VOICE": "ELEVENLABS_VOICE",
     "FILE_3D": "ARQUIVO_3D",
     "FILE_3D_FBX": "ARQUIVO_3D_FBX",
     "FILE_3D_GLB": "ARQUIVO_3D_GLB",
@@ -728,11 +729,26 @@
     "noStackTrace": "Nenhum stacktrace disponível",
     "promptExecutionError": "Falha na execução do prompt"
   },
+  "exportToast": {
+    "allExportsCompleted": "Todas as exportações concluídas",
+    "downloadExport": "Baixar exportação",
+    "downloadFailed": "Falha ao baixar \"{name}\"",
+    "exportCompleted": "Download ZIP pronto",
+    "exportError": "Falha na exportação",
+    "exportFailed": "{count} exportação falhou | {count} exportações falharam",
+    "exportFailedSingle": "Falha ao criar exportação ZIP",
+    "exportStarted": "Preparando download ZIP...",
+    "exportingAssets": "Exportando ativos",
+    "noExportsInQueue": "Nenhuma exportação {filter} na fila",
+    "preparingExport": "Preparando exportação...",
+    "retryDownload": "Tentar baixar novamente"
+  },
   "g": {
     "1x": "1x",
     "2x": "2x",
     "about": "Sobre",
     "add": "Adicionar",
+    "addNode": "Adicionar um nó...",
     "addNodeFilterCondition": "Adicionar condição de filtro de nó",
     "all": "Todos",
     "amount": "Quantidade",
@@ -826,6 +842,7 @@
     "error": "Erro",
     "errorLoadingImage": "Erro ao carregar imagem",
     "errorLoadingVideo": "Erro ao carregar vídeo",
+    "essentials": "Essenciais",
     "experimental": "BETA",
     "export": "Exportar",
     "extensionName": "Nome da extensão",
@@ -834,9 +851,12 @@
     "failedToCopyJobId": "Falha ao copiar o ID da tarefa",
     "failedToDownloadImage": "Falha ao baixar imagem",
     "failedToDownloadVideo": "Falha ao baixar vídeo",
+    "favorites": "Favoritos",
     "feedback": "Feedback",
     "file": "arquivo",
     "filter": "Filtrar",
+    "filterBy": "Filtrar por:",
+    "filterByType": "Filtrar por {type}...",
     "findIssues": "Encontrar problemas",
     "frameNodes": "Enquadrar nós",
     "frontendNewer": "A versão do frontend {frontendVersion} pode não ser compatível com a versão do backend {backendVersion}.",
@@ -857,6 +877,7 @@
     "inProgress": "Em andamento",
     "increment": "Aumentar",
     "info": "Informações do nó",
+    "input": "Entrada",
     "insert": "Inserir",
     "install": "Instalar",
     "installed": "Instalado",
@@ -880,6 +901,7 @@
     "login": "Entrar",
     "logoAlt": "Logo do ComfyUI",
     "logs": "Logs",
+    "manageExtensions": "Gerenciar extensões",
     "markdown": "markdown",
     "micPermissionDenied": "Permissão do microfone negada",
     "migrate": "Migrar",
@@ -887,6 +909,7 @@
     "more": "Mais",
     "moreOptions": "Mais opções",
     "moreWorkflows": "Mais fluxos de trabalho",
+    "mostRelevant": "Mais relevante",
     "multiSelectDropdown": "Menu suspenso de seleção múltipla",
     "name": "Nome",
     "newFolder": "Nova pasta",
@@ -917,6 +940,7 @@
     "openManager": "Abrir gerenciador",
     "openNewIssue": "Abrir novo problema",
     "or": "ou",
+    "output": "Saída",
     "overwrite": "Sobrescrever",
     "playPause": "Reproduzir/Pausar",
     "playRecording": "Reproduzir gravação",
@@ -943,6 +967,7 @@
     },
     "releaseTitle": "Lançamento {package} {version}",
     "reloadToApplyChanges": "Recarregue para aplicar as alterações",
+    "remove": "Remover",
     "removeImage": "Remover imagem",
     "removeTag": "Remover tag",
     "removeVideo": "Remover vídeo",
@@ -1559,6 +1584,7 @@
       "downloadSelectedAll": "Baixar todos",
       "downloadStarted": "Baixando {count} arquivos...",
       "downloadsStarted": "Iniciada a transferência de {count} arquivo(s)",
+      "exportStarted": "Preparando exportação ZIP para {count} arquivo | Preparando exportação ZIP para {count} arquivos",
       "exportWorkflowAll": "Exportar todos os fluxos de trabalho",
       "failedToAddNodes": "Falha ao adicionar nós ao fluxo de trabalho",
       "failedToDeleteAssets": "Falha ao excluir os recursos selecionados",
@@ -1610,6 +1636,8 @@
     "runWorkflowFront": "Executar fluxo de trabalho (Enfileirar na frente)",
     "settings": "Configurações",
     "showMenu": "Mostrar menu",
+    "stopRunInstant": "Parar execução (Instantâneo)",
+    "stopRunInstantTooltip": "Parar execução",
     "theme": "Tema",
     "toggleBottomPanel": "Alternar painel inferior"
   },
@@ -1777,6 +1805,7 @@
     "BFL": "BFL",
     "Bria": "Bria",
     "ByteDance": "ByteDance",
+    "ElevenLabs": "ElevenLabs",
     "Gemini": "Gemini",
     "Grok": "Grok",
     "HitPaw": "HitPaw",
@@ -1859,11 +1888,13 @@
     "scheduling": "agendamento",
     "sd": "sd",
     "sd3": "sd3",
+    "shader": "shader",
     "sigmas": "sigmas",
     "stable_cascade": "stable_cascade",
     "string": "string",
     "style_model": "modelo_de_estilo",
     "text": "texto",
+    "textgen": "textgen",
     "training": "treinamento",
     "transform": "transformar",
     "unet": "unet",
@@ -2376,6 +2407,10 @@
     "backToAssets": "Voltar para todos os ativos",
     "browseTemplates": "Explorar modelos de exemplo",
     "downloads": "Downloads",
+    "folderView": {
+      "errorDetail": "Não foi possível recuperar as saídas para este trabalho. Por favor, tente novamente.",
+      "errorSummary": "Falha ao carregar saídas"
+    },
     "generatedAssetsHeader": "Ativos gerados",
     "helpCenter": "Central de Ajuda",
     "importedAssetsHeader": "Ativos importados",
@@ -2412,6 +2447,9 @@
     "noImportedFiles": "Nenhum arquivo importado encontrado",
     "nodeLibrary": "Biblioteca de nós",
     "nodeLibraryTab": {
+      "allNodes": "Todos os nós",
+      "custom": "Personalizado",
+      "essentials": "Essenciais",
       "groupBy": "Agrupar por",
       "groupStrategies": {
         "category": "Categoria",
@@ -2422,6 +2460,9 @@
         "sourceDesc": "Agrupar por tipo de fonte (Core, Custom, API)"
       },
       "resetView": "Restaurar visualização padrão",
+      "sections": {
+        "favorites": "Favoritos"
+      },
       "sortBy": {
         "alphabetical": "Alfabética",
         "alphabeticalDesc": "Ordenar alfabeticamente dentro dos grupos",
@@ -2430,6 +2471,7 @@
       },
       "sortMode": "Modo de ordenação"
     },
+    "nodes": "Nós",
     "openWorkflow": "Abrir workflow no sistema de arquivos local",
     "queue": "Fila",
     "queueProgressOverlay": {
@@ -2886,6 +2928,10 @@
     "dropPrompt": "Solte seu arquivo ou"
   },
   "widgets": {
+    "boolean": {
+      "false": "falso",
+      "true": "verdadeiro"
+    },
     "node2only": "Apenas Node 2.0",
     "selectModel": "Selecionar modelo",
     "uploadSelect": {

@@ -256,7 +256,8 @@
     "name": "Implementação da caixa de busca de nós",
     "options": {
       "default": "padrão",
-      "litegraph (legacy)": "litegraph (legado)"
+      "litegraph (legacy)": "litegraph (legado)",
+      "v1 (legacy)": "v1 (legado)"
     }
   },
   "Comfy_NodeSearchBoxImpl_NodePreview": {

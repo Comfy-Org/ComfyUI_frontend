@@ -256,7 +256,8 @@
     "name": "节点搜索框",
     "options": {
       "default": "默认",
-      "litegraph (legacy)": "litegraph（旧版）"
+      "litegraph (legacy)": "litegraph（旧版）",
+      "v1 (legacy)": "v1（旧版）"
     }
   },
   "Comfy_NodeSearchBoxImpl_NodePreview": {

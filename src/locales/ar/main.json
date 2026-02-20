@@ -620,6 +620,7 @@
     "COMFY_MATCHTYPE_V3": "COMFY_MATCHTYPE_V3",
     "CONDITIONING": "تكييف",
     "CONTROL_NET": "ControlNet",
+    "ELEVENLABS_VOICE": "ELEVENLABS_VOICE",
     "FILE_3D": "ملف ثلاثي الأبعاد",
     "FILE_3D_FBX": "ملف FBX ثلاثي الأبعاد",
     "FILE_3D_GLB": "ملف GLB ثلاثي الأبعاد",
@@ -728,11 +729,26 @@
     "noStackTrace": "لا توجد تتبع للمكدس متاحة",
     "promptExecutionError": "فشل تنفيذ الطلب"
   },
+  "exportToast": {
+    "allExportsCompleted": "اكتملت جميع عمليات التصدير",
+    "downloadExport": "تحميل التصدير",
+    "downloadFailed": "فشل تحميل \"{name}\"",
+    "exportCompleted": "تحميل ZIP جاهز",
+    "exportError": "فشل التصدير",
+    "exportFailed": "فشل {count} في التصدير | فشل {count} في التصدير | فشل {count} في التصدير",
+    "exportFailedSingle": "فشل في إنشاء تصدير ZIP",
+    "exportStarted": "يتم تجهيز تحميل ZIP...",
+    "exportingAssets": "جاري تصدير العناصر",
+    "noExportsInQueue": "لا يوجد {filter} عمليات تصدير في قائمة الانتظار",
+    "preparingExport": "جاري تجهيز التصدير...",
+    "retryDownload": "إعادة محاولة التحميل"
+  },
   "g": {
     "1x": "1x",
     "2x": "2x",
     "about": "حول",
     "add": "إضافة",
+    "addNode": "إضافة عقدة...",
     "addNodeFilterCondition": "إضافة شرط لتصفية العقد",
     "all": "الكل",
     "amount": "الكمية",
@@ -826,6 +842,7 @@
     "error": "خطأ",
     "errorLoadingImage": "حدث خطأ أثناء تحميل الصورة",
     "errorLoadingVideo": "حدث خطأ أثناء تحميل الفيديو",
+    "essentials": "الأساسيات",
     "experimental": "تجريبي",
     "export": "تصدير",
     "extensionName": "اسم الامتداد",
@@ -834,9 +851,12 @@
     "failedToCopyJobId": "فشل نسخ معرف المهمة",
     "failedToDownloadImage": "فشل في تنزيل الصورة",
     "failedToDownloadVideo": "فشل في تنزيل الفيديو",
+    "favorites": "المفضلة",
     "feedback": "ملاحظات",
     "file": "ملف",
     "filter": "تصفية",
+    "filterBy": "تصفية حسب:",
+    "filterByType": "تصفية حسب {type}...",
     "findIssues": "العثور على مشاكل",
     "frameNodes": "تأطير العقد",
     "frontendNewer": "إصدار الواجهة الأمامية {frontendVersion} قد لا يكون متوافقاً مع الإصدار الخلفي {backendVersion}.",
@@ -857,6 +877,7 @@
     "inProgress": "جارٍ التنفيذ",
     "increment": "زيادة",
     "info": "معلومات العقدة",
+    "input": "إدخال",
     "insert": "إدراج",
     "install": "تثبيت",
     "installed": "مثبت",
@@ -880,6 +901,7 @@
     "login": "تسجيل الدخول",
     "logoAlt": "شعار ComfyUI",
     "logs": "السجلات",
+    "manageExtensions": "إدارة الإضافات",
     "markdown": "ماركداون",
     "micPermissionDenied": "تم رفض إذن الميكروفون",
     "migrate": "ترحيل",
@@ -887,6 +909,7 @@
     "more": "المزيد",
     "moreOptions": "خيارات إضافية",
     "moreWorkflows": "المزيد من سير العمل",
+    "mostRelevant": "الأكثر صلة",
     "multiSelectDropdown": "قائمة منسدلة متعددة الاختيار",
     "name": "الاسم",
     "newFolder": "مجلد جديد",
@@ -917,6 +940,7 @@
     "openManager": "فتح المدير",
     "openNewIssue": "فتح مشكلة جديدة",
     "or": "أو",
+    "output": "إخراج",
     "overwrite": "الكتابة فوق",
     "playPause": "تشغيل/إيقاف مؤقت",
     "playRecording": "تشغيل التسجيل",
@@ -943,6 +967,7 @@
     },
     "releaseTitle": "إصدار {package} {version}",
     "reloadToApplyChanges": "أعد التحميل لتطبيق التغييرات",
+    "remove": "إزالة",
     "removeImage": "إزالة الصورة",
     "removeTag": "إزالة الوسم",
     "removeVideo": "إزالة الفيديو",
@@ -1559,6 +1584,7 @@
       "downloadSelectedAll": "تحميل الكل",
       "downloadStarted": "جاري تحميل {count} ملف(ملفات)...",
       "downloadsStarted": "بدأ تنزيل {count} ملف(ملفات)",
+      "exportStarted": "يتم تجهيز تصدير ZIP لـ {count} ملف | يتم تجهيز تصدير ZIP لـ {count} ملفات",
       "exportWorkflowAll": "تصدير جميع سير العمل",
       "failedToAddNodes": "فشل في إضافة العقد إلى سير العمل",
       "failedToDeleteAssets": "فشل في حذف الأصول المحددة",
@@ -1610,6 +1636,8 @@
     "runWorkflowFront": "تشغيل سير العمل (انتظار في البداية)",
     "settings": "الإعدادات",
     "showMenu": "عرض القائمة",
+    "stopRunInstant": "إيقاف التشغيل (فوري)",
+    "stopRunInstantTooltip": "إيقاف التشغيل",
     "theme": "المظهر",
     "toggleBottomPanel": "تبديل اللوحة السفلية"
   },
@@ -1777,6 +1805,7 @@
     "BFL": "BFL",
     "Bria": "Bria",
     "ByteDance": "بايت دانس",
+    "ElevenLabs": "ElevenLabs",
     "Gemini": "جيميني",
     "Grok": "Grok",
     "HitPaw": "HitPaw",
@@ -1859,11 +1888,13 @@
     "scheduling": "الجدولة",
     "sd": "sd",
     "sd3": "sd3",
+    "shader": "shader",
     "sigmas": "سيجمات",
     "stable_cascade": "سلسلة ثابتة",
     "string": "سلسلة نصية",
     "style_model": "نموذج النمط",
     "text": "نص",
+    "textgen": "textgen",
     "training": "تدريب",
     "transform": "تحويل",
     "unet": "unet",
@@ -2376,6 +2407,10 @@
     "backToAssets": "العودة إلى جميع الأصول",
     "browseTemplates": "تصفح القوالب المثال",
     "downloads": "التنزيلات",
+    "folderView": {
+      "errorDetail": "تعذر استرجاع المخرجات لهذه المهمة. يرجى المحاولة مرة أخرى.",
+      "errorSummary": "فشل في تحميل المخرجات"
+    },
     "generatedAssetsHeader": "الأصول المُولدة",
     "helpCenter": "مركز المساعدة",
     "importedAssetsHeader": "الأصول المستوردة",
@@ -2401,6 +2436,9 @@
     "noImportedFiles": "لم يتم العثور على ملفات مستوردة",
     "nodeLibrary": "مكتبة العقد",
     "nodeLibraryTab": {
+      "allNodes": "جميع العقد",
+      "custom": "مخصص",
+      "essentials": "الأساسيات",
       "groupBy": "التجميع حسب",
       "groupStrategies": {
         "category": "الفئة",
@@ -2411,6 +2449,9 @@
         "sourceDesc": "التجميع حسب نوع المصدر (أساسي، مخصص، API)"
       },
       "resetView": "إعادة تعيين العرض إلى الافتراضي",
+      "sections": {
+        "favorites": "المفضلة"
+      },
       "sortBy": {
         "alphabetical": "أبجدي",
         "alphabeticalDesc": "الفرز أبجدياً داخل المجموعات",
@@ -2419,6 +2460,7 @@
       },
       "sortMode": "طريقة الفرز"
     },
+    "nodes": "العقد",
     "openWorkflow": "فتح سير العمل من نظام الملفات المحلي",
     "queue": "قائمة الانتظار",
     "queueProgressOverlay": {
@@ -2875,6 +2917,10 @@
     "dropPrompt": "أسقط ملفك أو"
   },
   "widgets": {
+    "boolean": {
+      "false": "خطأ",
+      "true": "صحيح"
+    },
     "node2only": "فقط Node 2.0",
     "selectModel": "اختر نموذج",
     "uploadSelect": {

@@ -620,6 +620,7 @@
     "COMFY_MATCHTYPE_V3": "COMFY_MATCHTYPE_V3",
     "CONDITIONING": "条件",
     "CONTROL_NET": "ControlNet",
+    "ELEVENLABS_VOICE": "ELEVENLABS_VOICE",
     "FILE_3D": "FILE_3D",
     "FILE_3D_FBX": "FILE_3D_FBX",
     "FILE_3D_GLB": "FILE_3D_GLB",
@@ -728,11 +729,26 @@
     "noStackTrace": "无可用堆栈跟踪",
     "promptExecutionError": "提示执行失败"
   },
+  "exportToast": {
+    "allExportsCompleted": "全部导出已完成",
+    "downloadExport": "下载导出文件",
+    "downloadFailed": "下载“{name}”失败",
+    "exportCompleted": "ZIP下载已就绪",
+    "exportError": "导出失败",
+    "exportFailed": "{count}个导出失败",
+    "exportFailedSingle": "创建ZIP导出失败",
+    "exportStarted": "正在准备ZIP下载...",
+    "exportingAssets": "正在导出资源",
+    "noExportsInQueue": "队列中无{filter}导出",
+    "preparingExport": "正在准备导出...",
+    "retryDownload": "重试下载"
+  },
   "g": {
     "1x": "1倍",
     "2x": "2倍",
     "about": "关于",
     "add": "添加",
+    "addNode": "添加节点...",
     "addNodeFilterCondition": "添加节点筛选条件",
     "all": "全部",
     "amount": "数量",
@@ -826,6 +842,7 @@
     "error": "错误",
     "errorLoadingImage": "图片加载出错",
     "errorLoadingVideo": "视频加载出错",
+    "essentials": "基础",
     "experimental": "测试版",
     "export": "导出",
     "extensionName": "扩展名称",
@@ -834,9 +851,12 @@
     "failedToCopyJobId": "未能复制队列 ID",
     "failedToDownloadImage": "图片下载失败",
     "failedToDownloadVideo": "视频下载失败",
+    "favorites": "收藏夹",
     "feedback": "反馈",
     "file": "文件",
     "filter": "过滤",
+    "filterBy": "筛选方式：",
+    "filterByType": "按{type}筛选...",
     "findIssues": "查找问题",
     "frameNodes": "框选节点",
     "frontendNewer": "前端版本 {frontendVersion} 可能与后端版本 {backendVersion} 不相容。",
@@ -857,6 +877,7 @@
     "inProgress": "进行中",
     "increment": "增加",
     "info": "节点信息",
+    "input": "输入",
     "insert": "插入",
     "install": "安装",
     "installed": "已安装",
@@ -880,6 +901,7 @@
     "login": "登录",
     "logoAlt": "ComfyUI 标志",
     "logs": "日志",
+    "manageExtensions": "管理扩展",
     "markdown": "markdown",
     "micPermissionDenied": "麦克风权限被拒绝",
     "migrate": "迁移",
@@ -887,6 +909,7 @@
     "more": "更多",
     "moreOptions": "更多选项",
     "moreWorkflows": "更多工作流",
+    "mostRelevant": "最相关",
     "multiSelectDropdown": "多选下拉框",
     "name": "名称",
     "newFolder": "新文件夹",
@@ -917,6 +940,7 @@
     "openManager": "打开管理器",
     "openNewIssue": "打开新问题",
     "or": "或",
+    "output": "输出",
     "overwrite": "覆盖",
     "playPause": "开启/暂停",
     "playRecording": "播放录音",
@@ -943,6 +967,7 @@
     },
     "releaseTitle": "{package} {version} 发布",
     "reloadToApplyChanges": "重新加载以应用更改",
+    "remove": "移除",
     "removeImage": "移除图片",
     "removeTag": "移除标签",
     "removeVideo": "移除视频",
@@ -1559,6 +1584,7 @@
       "downloadSelectedAll": "全部下载",
       "downloadStarted": "正在下载 {count} 个文件...",
       "downloadsStarted": "开始下载 {count} 个文件",
+      "exportStarted": "正在为{count}个文件准备ZIP导出",
       "exportWorkflowAll": "导出所有工作流",
       "failedToAddNodes": "添加节点到工作流失败",
       "failedToDeleteAssets": "未能删除所选资产",
@@ -1610,6 +1636,8 @@
     "runWorkflowFront": "运行工作流（排在前面）",
     "settings": "设定",
     "showMenu": "显示菜单",
+    "stopRunInstant": "立即停止运行",
+    "stopRunInstantTooltip": "停止运行",
     "theme": "主题",
     "toggleBottomPanel": "底部面板"
   },
@@ -1777,6 +1805,7 @@
     "BFL": "BFL",
     "Bria": "Bria",
     "ByteDance": "字节跳动",
+    "ElevenLabs": "ElevenLabs",
     "Gemini": "Gemini",
     "Grok": "Grok",
     "HitPaw": "HitPaw",
@@ -1859,11 +1888,13 @@
     "scheduling": "调度",
     "sd": "sd",
     "sd3": "SD3",
+    "shader": "shader",
     "sigmas": "Sigmas",
     "stable_cascade": "StableCascade",
     "string": "字符串",
     "style_model": "风格模型",
     "text": "文本",
+    "textgen": "textgen",
     "training": "训练",
     "transform": "变换",
     "unet": "U-Net",
@@ -2376,6 +2407,10 @@
     "backToAssets": "返回所有资产",
     "browseTemplates": "浏览示例模板",
     "downloads": "下载",
+    "folderView": {
+      "errorDetail": "无法获取此任务的输出。请重试。",
+      "errorSummary": "加载输出失败"
+    },
     "generatedAssetsHeader": "生成的资源",
     "helpCenter": "帮助中心",
     "importedAssetsHeader": "已导入资源",
@@ -2412,6 +2447,9 @@
     "noImportedFiles": "未找到导入的文件",
     "nodeLibrary": "节点库",
     "nodeLibraryTab": {
+      "allNodes": "全部节点",
+      "custom": "自定义",
+      "essentials": "基础",
       "groupBy": "分组方式",
       "groupStrategies": {
         "category": "类别",
@@ -2422,6 +2460,9 @@
         "sourceDesc": "按来源类型分组（核心，自定义，API）"
       },
       "resetView": "重置视图为默认",
+      "sections": {
+        "favorites": "收藏夹"
+      },
       "sortBy": {
         "alphabetical": "字母顺序",
         "alphabeticalDesc": "在分组内按字母顺序排序",
@@ -2430,6 +2471,7 @@
       },
       "sortMode": "排序模式"
     },
+    "nodes": "节点",
     "openWorkflow": "在本地文件系统中打开工作流",
     "queue": "队列",
     "queueProgressOverlay": {
@@ -2886,6 +2928,10 @@
     "dropPrompt": "将文件拖到此处或"
   },
   "widgets": {
+    "boolean": {
+      "false": "假",
+      "true": "真"
+    },
     "node2only": "仅限 Node 2.0",
     "selectModel": "选择模型",
     "uploadSelect": {

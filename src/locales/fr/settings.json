@@ -256,7 +256,8 @@
     "name": "Implémentation de la boîte de recherche de nœud",
     "options": {
       "default": "par défaut",
-      "litegraph (legacy)": "litegraph (héritage)"
+      "litegraph (legacy)": "litegraph (héritage)",
+      "v1 (legacy)": "v1 (héritage)"
     }
   },
   "Comfy_NodeSearchBoxImpl_NodePreview": {

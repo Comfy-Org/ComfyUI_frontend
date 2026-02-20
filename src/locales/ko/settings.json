@@ -256,7 +256,8 @@
     "name": "노드 검색 상자 구현",
     "options": {
       "default": "기본",
-      "litegraph (legacy)": "litegraph (구버전)"
+      "litegraph (legacy)": "litegraph (구버전)",
+      "v1 (legacy)": "v1 (legacy)"
     }
   },
   "Comfy_NodeSearchBoxImpl_NodePreview": {
