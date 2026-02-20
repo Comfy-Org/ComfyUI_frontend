@@ -175,15 +175,9 @@ async function buildBundleReport() {
  * @returns {string}
  */
 function renderReport(report) {
-  const parts = ['## Bundle Size Report\n']
-
-  parts.push(renderSummary(report))
+  const parts = [renderCompactHeader(report)]
 
   if (report.categories.length > 0) {
-    const glance = renderCategoryGlance(report)
-    if (glance) {
-      parts.push('\n' + glance)
-    }
     parts.push('\n' + renderCategoryDetails(report))
   }
 
@@ -193,6 +187,24 @@ function renderReport(report) {
       .replace(/\n{3,}/g, '\n\n')
       .trimEnd() + '\n'
   )
+}
+
+/**
+ * Render compact single-line header with key metrics
+ * @param {BundleReport} report
+ * @returns {string}
+ */
+function renderCompactHeader(report) {
+  const { overall, hasBaseline } = report
+
+  const gzipSize = prettyBytes(overall.metrics.current.gzip)
+  let header = `## 📦 Bundle: ${gzipSize} gzip`
+
+  if (hasBaseline) {
+    header += ` ${formatDiffIndicator(overall.metrics.diff.gzip)}`
+  }
+
+  return header
 }
 
 /**
@@ -310,7 +322,16 @@ function renderCategoryGlance(report) {
  * @returns {string}
  */
 function renderCategoryDetails(report) {
-  const lines = ['<details>', '<summary>Per-category breakdown</summary>', '']
+  const lines = ['<details>', '<summary>Details</summary>', '']
+
+  lines.push(renderSummary(report))
+  lines.push('')
+
+  const glance = renderCategoryGlance(report)
+  if (glance) {
+    lines.push(glance)
+    lines.push('')
+  }
 
   for (const category of report.categories) {
     lines.push(renderCategoryBlock(category, report.hasBaseline))

@@ -608,6 +608,7 @@
     "AUDIO_ENCODER_OUTPUT": "خروجی رمزگذار صوت",
     "AUDIO_RECORD": "ضبط صوت",
     "BOOLEAN": "بولی",
+    "BOUNDING_BOX": "BOUNDING_BOX",
     "CAMERA_CONTROL": "کنترل دوربین",
     "CLIP": "clip",
     "CLIP_VISION": "بینایی clip",
@@ -2015,6 +2016,11 @@
     "advancedInputs": "ورودی‌های پیشرفته",
     "bypass": "عبور",
     "color": "رنگ نود",
+    "enterSubgraph": "ورود به زیرگراف",
+    "errorHelp": "برای دریافت کمک بیشتر، {github} یا {support}",
+    "errorHelpGithub": "ثبت یک issue در GitHub",
+    "errorHelpSupport": "تماس با پشتیبانی ما",
+    "errors": "خطاها",
     "fallbackGroupTitle": "گروه",
     "fallbackNodeTitle": "node",
     "favorites": "ورودی‌های علاقه‌مندی",
@@ -2049,6 +2055,7 @@
     "inputsNoneTooltip": "این نود ورودی ندارد",
     "locateNode": "یافتن node در canvas",
     "mute": "بی‌صدا",
+    "noErrors": "بدون خطا",
     "noSelection": "یک نود را انتخاب کنید تا ویژگی‌ها و اطلاعات آن نمایش داده شود.",
     "nodeState": "وضعیت نود",
     "nodes": "nodeها",
@@ -2057,10 +2064,19 @@
     "normal": "عادی",
     "parameters": "پارامترها",
     "pinned": "سنجاق شده",
+    "promptErrors": {
+      "no_prompt": {
+        "desc": "داده‌های گردش‌کار ارسال‌شده به سرور خالی است. این ممکن است یک خطای غیرمنتظره سیستمی باشد."
+      },
+      "prompt_no_outputs": {
+        "desc": "گردش‌کار هیچ نود خروجی (مانند Save Image یا Preview Image) برای تولید نتیجه ندارد."
+      }
+    },
     "properties": "ویژگی‌ها",
     "removeFavorite": "حذف از علاقه‌مندی‌ها",
     "resetAllParameters": "بازنشانی همه پارامترها",
     "resetToDefault": "بازنشانی به پیش‌فرض",
+    "seeError": "مشاهده خطا",
     "settings": "تنظیمات",
     "showAdvancedInputsButton": "نمایش ورودی‌های پیشرفته",
     "showInput": "نمایش ورودی",
@@ -2285,6 +2301,7 @@
     "CustomColorPalettes": "پالت‌های رنگ سفارشی",
     "DevMode": "حالت توسعه‌دهنده",
     "EditTokenWeight": "ویرایش وزن توکن",
+    "Error System": "سیستم خطا",
     "Execution": "اجرا",
     "Extension": "افزونه",
     "General": "عمومی",

@@ -1362,7 +1362,8 @@
     "PLY": "PLY",
     "Workspace": "Workspace",
     "Other": "Other",
-    "Secrets": "Secrets"
+    "Secrets": "Secrets",
+    "Error System": "Error System"
   },
   "serverConfigItems": {
     "listen": {
@@ -1608,6 +1609,7 @@
     "AUDIO_ENCODER_OUTPUT": "AUDIO_ENCODER_OUTPUT",
     "AUDIO_RECORD": "AUDIO_RECORD",
     "BOOLEAN": "BOOLEAN",
+    "BOUNDING_BOX": "BOUNDING_BOX",
     "CAMERA_CONTROL": "CAMERA_CONTROL",
     "CLIP": "CLIP",
     "CLIP_VISION": "CLIP_VISION",
@@ -2408,6 +2410,10 @@
     "Set Group Nodes to Always": "Set Group Nodes to Always"
   },
   "widgets": {
+    "boolean": {
+      "true": "true",
+      "false": "false"
+    },
     "node2only": "Node 2.0 only",
     "selectModel": "Select model",
     "uploadSelect": {
