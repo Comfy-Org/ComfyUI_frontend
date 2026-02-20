@@ -275,8 +275,11 @@ export const useDialogService = () => {
     isInsufficientCredits?: boolean
   }) {
     const { isActiveSubscription, subscription, type } = useBillingContext()
-    if (!isActiveSubscription.value || subscription.value?.tier === 'FREE')
+    if (!isActiveSubscription.value || subscription.value?.tier === 'FREE') {
+      // Free tier users can't top up. Give them a clear upgrade CTA instead.
+      await showSubscriptionRequiredDialog({ reason: 'out_of_credits' })
       return
+    }
 
     const component =
       type.value === 'workspace'
@@ -393,15 +396,17 @@ export const useDialogService = () => {
     })
   }
 
-  async function showSubscriptionRequiredDialog() {
-    if (!isCloud || !window.__CONFIG__?.subscription_required) {
+  async function showSubscriptionRequiredDialog(options?: {
+    reason?: 'subscription_required' | 'out_of_credits'
+  }) {
+    if (!isCloud) {
       return
     }
 
     const { useSubscriptionDialog } =
       await import('@/platform/cloud/subscription/composables/useSubscriptionDialog')
     const { show } = useSubscriptionDialog()
-    show()
+    show(options)
   }
 
   // Workspace dialogs - dynamically imported to avoid bundling when feature flag is off

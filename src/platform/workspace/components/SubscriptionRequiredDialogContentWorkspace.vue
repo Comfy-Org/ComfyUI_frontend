@@ -23,6 +23,15 @@
       <i class="pi pi-times text-xl" />
     </Button>
 
+    <div v-if="reason === 'out_of_credits'" class="text-center">
+      <h2 class="text-xl lg:text-2xl text-muted-foreground m-0">
+        {{ $t('credits.topUp.insufficientTitle') }}
+      </h2>
+      <p class="m-0 mt-2 text-sm text-text-secondary">
+        {{ $t('credits.topUp.insufficientMessage') }}
+      </p>
+    </div>
+
     <!-- Pricing Table Step -->
     <PricingTableWorkspace
       v-if="checkoutStep === 'pricing'"
@@ -83,8 +92,9 @@ import SubscriptionTransitionPreviewWorkspace from './SubscriptionTransitionPrev
 type CheckoutStep = 'pricing' | 'preview'
 type CheckoutTierKey = Exclude<TierKey, 'founder'>
 
-const props = defineProps<{
+const { onClose, reason } = defineProps<{
   onClose: () => void
+  reason?: 'subscription_required' | 'out_of_credits'
 }>()
 
 const emit = defineEmits<{
@@ -314,7 +324,7 @@ async function handleResubscribe() {
 }
 
 function handleClose() {
-  props.onClose()
+  onClose()
 }
 </script>
 

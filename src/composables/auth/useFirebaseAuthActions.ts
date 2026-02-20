@@ -95,9 +95,12 @@ export const useFirebaseAuthActions = () => {
   )
 
   const purchaseCredits = wrapWithErrorHandlingAsync(async (amount: number) => {
-    const { isActiveSubscription, subscription } = useBillingContext()
-    if (!isActiveSubscription.value || subscription.value?.tier === 'FREE')
+    const { isActiveSubscription, subscription, showSubscriptionDialog } =
+      useBillingContext()
+    if (!isActiveSubscription.value || subscription.value?.tier === 'FREE') {
+      showSubscriptionDialog()
       return
+    }
 
     const response = await authStore.initiateCreditPurchase({
       amount_micros: usdToMicros(amount),
