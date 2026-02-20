@@ -472,6 +472,16 @@ export type TerminalSize = z.infer<typeof zTerminalSize>
 export type LogEntry = z.infer<typeof zLogEntry>
 export type LogsRawResponse = z.infer<typeof zLogRawResponse>
 
+const zComfyHubProfile = z.object({
+  username: z.string(),
+  name: z.string().optional(),
+  description: z.string().optional(),
+  coverImageUrl: z.string().nullable().optional(),
+  profilePictureUrl: z.string().nullable().optional()
+})
+
+export type ComfyHubProfile = z.infer<typeof zComfyHubProfile>
+
 const zWorkflowAsset = z.object({
   name: z.string(),
   thumbnailUrl: z.string().nullable()
