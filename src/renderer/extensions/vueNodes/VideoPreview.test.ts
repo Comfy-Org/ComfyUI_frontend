@@ -1,9 +1,9 @@
 import { createTestingPinia } from '@pinia/testing'
-import type { VueWrapper } from '@vue/test-utils'
 import { mount } from '@vue/test-utils'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
+import type { ComponentProps } from 'vue-component-type-helpers'
 
 import VideoPreview from '@/renderer/extensions/vueNodes/VideoPreview.vue'
 
@@ -33,18 +33,24 @@ const i18n = createI18n({
 })
 
 describe('VideoPreview', () => {
-  const defaultProps = {
+  const defaultProps: ComponentProps<typeof VideoPreview> = {
     imageUrls: [
       '/api/view?filename=test1.mp4&type=output',
       '/api/view?filename=test2.mp4&type=output'
     ]
   }
 
-  const wrapperRegistry = new Set<VueWrapper>()
+  afterEach(() => {
+    vi.clearAllMocks()
+  })
 
-  const mountVideoPreview = (props = {}) => {
-    const wrapper = mount(VideoPreview, {
-      props: { ...defaultProps, ...props },
+  function mountVideoPreview(
+    props: Partial<ComponentProps<typeof VideoPreview>> = {}
+  ) {
+    return mount(VideoPreview, {
+      props: { ...defaultProps, ...props } as ComponentProps<
+        typeof VideoPreview
+      >,
       global: {
         plugins: [createTestingPinia({ createSpy: vi.fn }), i18n],
         stubs: {
@@ -52,14 +58,7 @@ describe('VideoPreview', () => {
         }
       }
     })
-    wrapperRegistry.add(wrapper)
-    return wrapper
   }
-
-  afterEach(() => {
-    wrapperRegistry.forEach((w) => w.unmount())
-    wrapperRegistry.clear()
-  })
 
   describe('batch cycling with identical URLs', () => {
     it('should not enter persistent loading state when cycling through identical videos', async () => {
