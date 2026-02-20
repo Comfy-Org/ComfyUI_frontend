@@ -19,7 +19,7 @@
       <i :class="cn(nodeIcon, 'size-14 text-muted-foreground')" />
     </div>
     <span
-      class="shrink-0 h-8 text-sm font-bold text-center text-foreground line-clamp-2 leading-4"
+      class="shrink-0 h-8 text-xs font-bold text-center text-foreground line-clamp-2 leading-4"
     >
       {{ nodeDef?.display_name }}
     </span>
