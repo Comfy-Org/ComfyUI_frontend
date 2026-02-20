@@ -20,4 +20,29 @@
     position: absolute;
     width: 100%;
   }
+
+  @keyframes marquee-scroll {
+    0%,
+    20% {
+      transform: translateX(0);
+    }
+    80%,
+    100% {
+      transform: translateX(var(--_marquee-end, 0px));
+    }
+  }
+
+  .marquee-container {
+    container-type: inline-size;
+    mask-image: linear-gradient(to right, black 70%, transparent);
+  }
+
+  .essential-node-card:hover .marquee-container {
+    mask-image: none;
+  }
+
+  .essential-node-card:hover .marquee-text {
+    --_marquee-end: min(calc(-100% + 100cqw), 0px);
+    animation: marquee-scroll 3s linear infinite alternate;
+  }
 }
