@@ -142,8 +142,8 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
     // Try evicting oldest entries until we can write
     let currentIndex = index
     while (currentIndex.order.length > 0) {
-      const oldestKey = currentIndex.order[0]
-      if (oldestKey === draftKey) break // Don't evict the one we're trying to save
+      const oldestKey = currentIndex.order.find((key) => key !== draftKey)
+      if (!oldestKey) break // Only the target draft remains
 
       // Evict oldest
       const oldestEntry = Object.values(currentIndex.entries).find(
@@ -317,15 +317,23 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
     // 3. Legacy fallback: sessionStorage payload (remove after 2026-07-15)
     const clientId = api.initialClientId ?? api.clientId
     if (clientId) {
-      const sessionPayload = sessionStorage.getItem(`workflow:${clientId}`)
-      if (await tryLoadGraph(sessionPayload, workflowName)) {
-        return true
+      try {
+        const sessionPayload = sessionStorage.getItem(`workflow:${clientId}`)
+        if (await tryLoadGraph(sessionPayload, workflowName)) {
+          return true
+        }
+      } catch {
+        // Ignore storage access errors and continue fallback chain
       }
     }
 
     // 4. Legacy fallback: localStorage payload (remove after 2026-07-15)
-    const localPayload = localStorage.getItem('workflow')
-    return await tryLoadGraph(localPayload, workflowName)
+    try {
+      const localPayload = localStorage.getItem('workflow')
+      return await tryLoadGraph(localPayload, workflowName)
+    } catch {
+      return false
+    }
   }
 
   /**
