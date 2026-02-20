@@ -156,11 +156,12 @@ function nodeToDisplayTuple(
   ]
 }
 
-const renderedOutputs = computed(() =>
-  canvas
+const renderedOutputs = computed(() => {
+  void appIOStore.selectedOutputs.length
+  return canvas
     .graph!.nodes.filter((n) => n.constructor.nodeData?.output_node)
     .map(nodeToDisplayTuple)
-)
+})
 const renderedInputs = computed<[string, MaybeRef<BoundStyle> | undefined][]>(
   () =>
     appIOStore.selectedInputs.map(([nodeId, widgetName]) => [
