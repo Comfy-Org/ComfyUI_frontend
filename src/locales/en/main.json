@@ -2927,7 +2927,7 @@
       "inputsDesc": "Users will interact and adjust these to generate their outputs.",
       "inputsExample": "Examples: “Load image”, “Text prompt”, “Steps”",
       "promptAddOutputs": "Click on output nodes to add them here. These will be the generated results.",
-      "noOutputs": "No outputs nodes added yet",
+      "noOutputs": "No output nodes added yet",
       "outputsDesc": "Connect at least one output node so users can see results after running.",
       "outputsExample": "Examples: “Save Image” or “Save Video”"
     }
