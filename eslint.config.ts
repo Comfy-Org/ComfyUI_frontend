@@ -320,5 +320,15 @@ export default defineConfig([
         }
       ]
     }
+  },
+
+  // Storybook-only mock components (__stories__/**/*.vue)
+  // These are not shipped to production and do not require i18n or strict Vue patterns.
+  {
+    files: ['**/__stories__/**/*.vue'],
+    rules: {
+      '@intlify/vue-i18n/no-raw-text': 'off',
+      'vue/no-unused-properties': 'off'
+    }
   }
 ])

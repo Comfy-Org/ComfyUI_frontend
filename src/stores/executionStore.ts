@@ -1,6 +1,5 @@
 import { defineStore } from 'pinia'
 import { computed, ref, watch } from 'vue'
-import { isEmpty } from 'es-toolkit/compat'
 
 import { useNodeProgressText } from '@/composables/node/useNodeProgressText'
 import type { LGraph, Subgraph } from '@/lib/litegraph/src/litegraph'
@@ -47,6 +46,33 @@ interface QueuedPrompt {
    * The workflow that is queued to be executed
    */
   workflow?: ComfyWorkflow
+}
+
+interface CloudValidationError {
+  error?: { type?: string; message?: string; details?: string } | string
+  node_errors?: Record<NodeId, NodeError>
+}
+
+function isCloudValidationError(value: unknown): value is CloudValidationError {
+  return (
+    value !== null &&
+    typeof value === 'object' &&
+    ('error' in value || 'node_errors' in value)
+  )
+}
+
+function tryExtractValidationError(
+  exceptionMessage: string
+): CloudValidationError | null {
+  const jsonStart = exceptionMessage.indexOf('{')
+  if (jsonStart === -1) return null
+
+  try {
+    const parsed: unknown = JSON.parse(exceptionMessage.substring(jsonStart))
+    return isCloudValidationError(parsed) ? parsed : null
+  } catch {
+    return null
+  }
 }
 
 const subgraphNodeIdToSubgraph = (id: string, graph: LGraph | Subgraph) => {
@@ -291,6 +317,8 @@ export const useExecutionStore = defineStore('execution', () => {
   function handleExecutionStart(e: CustomEvent<ExecutionStartWsMessage>) {
     lastExecutionError.value = null
     lastPromptError.value = null
+    lastNodeErrors.value = null
+    isErrorOverlayOpen.value = false
     activePromptId.value = e.detail.prompt_id
     queuedPrompts.value[activePromptId.value] ??= { nodes: {} }
     clearInitializationByPromptId(activePromptId.value)
@@ -392,7 +420,6 @@ export const useExecutionStore = defineStore('execution', () => {
   }
 
   function handleExecutionError(e: CustomEvent<ExecutionErrorWsMessage>) {
-    lastExecutionError.value = e.detail
     if (isCloud) {
       useTelemetry()?.trackExecutionError({
         jobId: e.detail.prompt_id,
@@ -400,9 +427,71 @@ export const useExecutionStore = defineStore('execution', () => {
         nodeType: e.detail.node_type,
         error: e.detail.exception_message
       })
+
+      // Cloud wraps validation errors (400) in exception_message as embedded JSON.
+      if (handleCloudValidationError(e.detail)) return
     }
+
+    // Service-level errors (e.g. "Job has stagnated") have no associated node.
+    // Route them as prompt errors
+    if (handleServiceLevelError(e.detail)) return
+
+    // OSS path / Cloud fallback (real runtime errors)
+    lastExecutionError.value = e.detail
     clearInitializationByPromptId(e.detail.prompt_id)
     resetExecutionState(e.detail.prompt_id)
+  }
+
+  function handleServiceLevelError(detail: ExecutionErrorWsMessage): boolean {
+    const nodeId = detail.node_id
+    if (nodeId !== null && nodeId !== undefined && String(nodeId) !== '')
+      return false
+
+    clearInitializationByPromptId(detail.prompt_id)
+    resetExecutionState(detail.prompt_id)
+    lastPromptError.value = {
+      type: detail.exception_type ?? 'error',
+      message: detail.exception_type
+        ? `${detail.exception_type}: ${detail.exception_message}`
+        : (detail.exception_message ?? ''),
+      details: detail.traceback?.join('\n') ?? ''
+    }
+    return true
+  }
+
+  function handleCloudValidationError(
+    detail: ExecutionErrorWsMessage
+  ): boolean {
+    const extracted = tryExtractValidationError(detail.exception_message)
+    if (!extracted) return false
+
+    const { error, node_errors } = extracted
+    const hasNodeErrors = node_errors && Object.keys(node_errors).length > 0
+
+    let promptError = null
+    if (!hasNodeErrors) {
+      if (error && typeof error === 'object') {
+        promptError = {
+          type: error.type ?? 'error',
+          message: error.message ?? '',
+          details: error.details ?? ''
+        }
+      } else if (typeof error === 'string') {
+        promptError = { type: 'error', message: error, details: '' }
+      } else {
+        return false
+      }
+    }
+
+    clearInitializationByPromptId(detail.prompt_id)
+    resetExecutionState(detail.prompt_id)
+
+    if (hasNodeErrors) {
+      lastNodeErrors.value = node_errors
+    } else if (promptError) {
+      lastPromptError.value = promptError
+    }
+    return true
   }
 
   /**
@@ -654,7 +743,7 @@ export const useExecutionStore = defineStore('execution', () => {
 
   /** Whether any node validation errors are present */
   const hasNodeError = computed(
-    () => !!lastNodeErrors.value && !isEmpty(lastNodeErrors.value)
+    () => !!lastNodeErrors.value && Object.keys(lastNodeErrors.value).length > 0
   )
 
   /** Whether any error (node validation, runtime execution, or prompt-level) is present */
@@ -662,12 +751,44 @@ export const useExecutionStore = defineStore('execution', () => {
     () => hasExecutionError.value || hasPromptError.value || hasNodeError.value
   )
 
-  /** Pre-computed Set of graph node IDs (as strings) that have errors. */
+  const allErrorExecutionIds = computed<string[]>(() => {
+    const ids: string[] = []
+    if (lastNodeErrors.value) {
+      ids.push(...Object.keys(lastNodeErrors.value))
+    }
+    if (lastExecutionError.value) {
+      const nodeId = lastExecutionError.value.node_id
+      if (nodeId !== null && nodeId !== undefined) {
+        ids.push(String(nodeId))
+      }
+    }
+    return ids
+  })
+
+  /** Total count of all individual errors */
+  const totalErrorCount = computed(() => {
+    let count = 0
+    if (lastPromptError.value) {
+      count += 1
+    }
+    if (lastNodeErrors.value) {
+      for (const nodeError of Object.values(lastNodeErrors.value)) {
+        count += nodeError.errors.length
+      }
+    }
+    if (lastExecutionError.value) {
+      count += 1
+    }
+    return count
+  })
+
+  /** Pre-computed Set of graph node IDs (as strings) that have errors in the current graph scope. */
   const activeGraphErrorNodeIds = computed<Set<string>>(() => {
     const ids = new Set<string>()
     if (!app.rootGraph) return ids
 
-    const activeGraph = useCanvasStore().currentGraph ?? app.rootGraph
+    // Fall back to rootGraph when currentGraph hasn't been initialized yet
+    const activeGraph = canvasStore.currentGraph ?? app.rootGraph
 
     if (lastNodeErrors.value) {
       for (const executionId of Object.keys(lastNodeErrors.value)) {
@@ -689,6 +810,21 @@ export const useExecutionStore = defineStore('execution', () => {
     return ids
   })
 
+  function hasInternalErrorForNode(nodeId: string | number): boolean {
+    const prefix = `${nodeId}:`
+    return allErrorExecutionIds.value.some((id) => id.startsWith(prefix))
+  }
+
+  const isErrorOverlayOpen = ref(false)
+
+  function showErrorOverlay() {
+    isErrorOverlayOpen.value = true
+  }
+
+  function dismissErrorOverlay() {
+    isErrorOverlayOpen.value = false
+  }
+
   return {
     isIdle,
     clientId,
@@ -698,6 +834,8 @@ export const useExecutionStore = defineStore('execution', () => {
     lastExecutionError,
     lastPromptError,
     hasAnyError,
+    allErrorExecutionIds,
+    totalErrorCount,
     lastExecutionErrorNodeId,
     executingNodeId,
     executingNodeIds,
@@ -730,6 +868,10 @@ export const useExecutionStore = defineStore('execution', () => {
     // Node error lookup helpers
     getNodeErrors,
     slotHasError,
-    activeGraphErrorNodeIds
+    hasInternalErrorForNode,
+    activeGraphErrorNodeIds,
+    isErrorOverlayOpen,
+    showErrorOverlay,
+    dismissErrorOverlay
   }
 })

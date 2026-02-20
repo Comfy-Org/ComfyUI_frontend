@@ -1361,6 +1361,7 @@
     "Execution": "Execution",
     "PLY": "PLY",
     "Workspace": "Workspace",
+    "Error System": "Error System",
     "Other": "Other",
     "Secrets": "Secrets",
     "Error System": "Error System"
@@ -2986,6 +2987,7 @@
     "hideAdvancedInputsButton": "Hide advanced inputs",
     "errors": "Errors",
     "noErrors": "No errors",
+    "executionErrorOccurred": "An error occurred during execution. Check the Errors tab for details.",
     "enterSubgraph": "Enter subgraph",
     "seeError": "See Error",
     "promptErrors": {
@@ -2999,8 +3001,13 @@
     "errorHelp": "For more help, {github} or {support}",
     "errorHelpGithub": "submit a GitHub issue",
     "errorHelpSupport": "contact our support",
+    "contactSupportFailed": "Unable to open contact support. Please try again later.",
     "resetToDefault": "Reset to default",
     "resetAllParameters": "Reset all parameters"
+  },
+  "errorOverlay": {
+    "errorCount": "{count} ERRORS | {count} ERROR | {count} ERRORS",
+    "seeErrors": "See Errors"
   },
   "help": {
     "recentReleases": "Recent releases",
