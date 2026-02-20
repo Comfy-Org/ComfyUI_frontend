@@ -17,6 +17,8 @@ import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useWorkflowThumbnail } from '@/renderer/core/thumbnail/useWorkflowThumbnail'
 import { app } from '@/scripts/app'
 import { blankGraph, defaultGraph } from '@/scripts/defaultGraph'
+import { useMissingModelsDialog } from '@/composables/useMissingModelsDialog'
+import { useMissingNodesDialog } from '@/composables/useMissingNodesDialog'
 import { useDialogService } from '@/services/dialogService'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
@@ -27,6 +29,8 @@ export const useWorkflowService = () => {
   const workflowStore = useWorkflowStore()
   const toastStore = useToastStore()
   const dialogService = useDialogService()
+  const missingModelsDialog = useMissingModelsDialog()
+  const missingNodesDialog = useMissingNodesDialog()
   const workflowThumbnail = useWorkflowThumbnail()
   const domWidgetStore = useDomWidgetStore()
   const workflowDraftStore = useWorkflowDraftStore()
@@ -455,13 +459,13 @@ export const useWorkflowService = () => {
       missingNodeTypes?.length &&
       settingStore.get('Comfy.Workflow.ShowMissingNodesWarning')
     ) {
-      void dialogService.showLoadWorkflowWarning({ missingNodeTypes })
+      missingNodesDialog.show({ missingNodeTypes })
     }
     if (
       missingModels &&
       settingStore.get('Comfy.Workflow.ShowMissingModelsWarning')
     ) {
-      void dialogService.showMissingModelsWarning(missingModels)
+      missingModelsDialog.show(missingModels)
     }
   }
 

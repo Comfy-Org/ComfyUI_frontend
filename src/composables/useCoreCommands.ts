@@ -312,7 +312,7 @@ export function useCoreCommands(): ComfyCommand[] {
       label: 'Interrupt',
       category: 'essentials' as const,
       function: async () => {
-        await api.interrupt(executionStore.activePromptId)
+        await api.interrupt(executionStore.activeJobId)
         toastStore.add({
           severity: 'info',
           summary: t('g.interrupted'),
@@ -882,6 +882,32 @@ export function useCoreCommands(): ComfyCommand[] {
           source: 'menu'
         })
         window.open(staticUrls.forum, '_blank')
+      }
+    },
+    {
+      id: 'Comfy.Canvas.CopySelected',
+      icon: 'icon-[lucide--copy]',
+      label: 'Copy',
+      function: () => {
+        if (app.canvas.selectedItems?.size) {
+          app.canvas.copyToClipboard()
+        }
+      }
+    },
+    {
+      id: 'Comfy.Canvas.PasteFromClipboard',
+      icon: 'icon-[lucide--clipboard-paste]',
+      label: 'Paste',
+      function: () => {
+        app.canvas.pasteFromClipboard()
+      }
+    },
+    {
+      id: 'Comfy.Canvas.SelectAll',
+      icon: 'icon-[lucide--lasso-select]',
+      label: 'Select All',
+      function: () => {
+        app.canvas.selectItems()
       }
     },
     {

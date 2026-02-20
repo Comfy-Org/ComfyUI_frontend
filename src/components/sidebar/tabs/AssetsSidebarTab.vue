@@ -1,6 +1,7 @@
 <template>
   <SidebarTabTemplate
     :title="isInFolderView ? '' : $t('sideToolbar.mediaAssets.title')"
+    v-bind="$attrs"
   >
     <template #alt-title>
       <div
@@ -9,7 +10,7 @@
       >
         <div class="flex items-center gap-2">
           <span class="font-bold">{{ $t('assetBrowser.jobId') }}:</span>
-          <span class="text-sm">{{ folderPromptId?.substring(0, 8) }}</span>
+          <span class="text-sm">{{ folderJobId?.substring(0, 8) }}</span>
           <button
             class="m-0 cursor-pointer border-0 bg-transparent p-0 outline-0"
             role="button"
@@ -238,11 +239,13 @@ import { cn } from '@/utils/tailwindUtil'
 
 const { t } = useI18n()
 
+const emit = defineEmits<{ assetSelected: [asset: AssetItem] }>()
+
 const activeTab = ref<'input' | 'output'>('output')
-const folderPromptId = ref<string | null>(null)
+const folderJobId = ref<string | null>(null)
 const folderExecutionTime = ref<number | undefined>(undefined)
 const expectedFolderCount = ref(0)
-const isInFolderView = computed(() => folderPromptId.value !== null)
+const isInFolderView = computed(() => folderJobId.value !== null)
 const viewMode = useStorage<'list' | 'grid'>(
   'Comfy.Assets.Sidebar.ViewMode',
   'grid'
@@ -476,6 +479,7 @@ watch(
 function handleAssetSelect(asset: AssetItem, assets?: AssetItem[]) {
   const assetList = assets ?? visibleAssets.value
   const index = assetList.findIndex((a) => a.id === asset.id)
+  emit('assetSelected', asset)
   handleAssetClick(asset, index, assetList)
 }
 
@@ -564,14 +568,14 @@ const enterFolderView = async (asset: AssetItem) => {
     return
   }
 
-  const { promptId, executionTimeInSeconds } = metadata
+  const { jobId, executionTimeInSeconds } = metadata
 
-  if (!promptId) {
+  if (!jobId) {
     console.warn('Missing required folder view data')
     return
   }
 
-  folderPromptId.value = promptId
+  folderJobId.value = jobId
   folderExecutionTime.value = executionTimeInSeconds
   expectedFolderCount.value = metadata.outputCount ?? 0
 
@@ -589,7 +593,7 @@ const enterFolderView = async (asset: AssetItem) => {
 }
 
 const exitFolderView = () => {
-  folderPromptId.value = null
+  folderJobId.value = null
   folderExecutionTime.value = undefined
   expectedFolderCount.value = 0
   folderAssets.value = []
@@ -615,9 +619,9 @@ const handleEmptySpaceClick = () => {
 }
 
 const copyJobId = async () => {
-  if (folderPromptId.value) {
+  if (folderJobId.value) {
     try {
-      await navigator.clipboard.writeText(folderPromptId.value)
+      await navigator.clipboard.writeText(folderJobId.value)
       toast.add({
         severity: 'success',
         summary: t('mediaAsset.jobIdToast.copied'),

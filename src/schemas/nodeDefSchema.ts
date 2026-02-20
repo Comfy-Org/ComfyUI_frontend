@@ -260,6 +260,7 @@ export const zComfyNodeDef = z.object({
   description: z.string(),
   help: z.string().optional(),
   category: z.string(),
+  main_category: z.string().optional(),
   output_node: z.boolean(),
   python_module: z.string(),
   deprecated: z.boolean().optional(),
@@ -287,7 +288,9 @@ export const zComfyNodeDef = z.object({
    * Contains a JSONata expression to calculate pricing based on widget values
    * and input connectivity.
    */
-  price_badge: zPriceBadge.optional()
+  price_badge: zPriceBadge.optional(),
+  /** Category for the Essentials tab. If set, the node appears in Essentials. */
+  essentials_category: z.string().optional()
 })
 
 export const zAutogrowOptions = z.object({

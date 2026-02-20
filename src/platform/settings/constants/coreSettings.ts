@@ -35,7 +35,7 @@ export const CORE_SETTINGS: SettingParams[] = [
     experimental: true,
     name: 'Node search box implementation',
     type: 'combo',
-    options: ['default', 'litegraph (legacy)'],
+    options: ['default', 'v1 (legacy)', 'litegraph (legacy)'],
     defaultValue: 'default'
   },
   {
@@ -72,7 +72,7 @@ export const CORE_SETTINGS: SettingParams[] = [
     id: 'Comfy.NodeSearchBoxImpl.ShowCategory',
     category: ['Comfy', 'Node Search Box', 'ShowCategory'],
     name: 'Show node category in search results',
-    tooltip: 'Only applies to the default implementation',
+    tooltip: 'Only applies to v1 (legacy)',
     type: 'boolean',
     defaultValue: true
   },
@@ -80,7 +80,7 @@ export const CORE_SETTINGS: SettingParams[] = [
     id: 'Comfy.NodeSearchBoxImpl.ShowIdName',
     category: ['Comfy', 'Node Search Box', 'ShowIdName'],
     name: 'Show node id name in search results',
-    tooltip: 'Only applies to the default implementation',
+    tooltip: 'Does not apply to litegraph (legacy)',
     type: 'boolean',
     defaultValue: false
   },
@@ -88,7 +88,7 @@ export const CORE_SETTINGS: SettingParams[] = [
     id: 'Comfy.NodeSearchBoxImpl.ShowNodeFrequency',
     category: ['Comfy', 'Node Search Box', 'ShowNodeFrequency'],
     name: 'Show node frequency in search results',
-    tooltip: 'Only applies to the default implementation',
+    tooltip: 'Only applies to v1 (legacy)',
     type: 'boolean',
     defaultValue: false
   },
@@ -312,6 +312,13 @@ export const CORE_SETTINGS: SettingParams[] = [
     }
   },
   // Bookmarks are stored in the settings store.
+  {
+    id: 'Comfy.NodeLibrary.NewDesign',
+    name: 'Use new node library design',
+    type: 'hidden',
+    defaultValue: false,
+    experimental: true
+  },
   // Bookmarks are in format of category/display_name. e.g. "conditioning/CLIPTextEncode"
   {
     id: 'Comfy.NodeLibrary.Bookmarks',
@@ -1141,6 +1148,7 @@ export const CORE_SETTINGS: SettingParams[] = [
     tooltip:
       'Modern: DOM-based rendering with enhanced interactivity, native browser features, and updated visual design. Classic: Traditional canvas rendering.',
     defaultValue: false,
+    defaultsByInstallVersion: { '1.41.0': isCloud },
     sortOrder: 100,
     experimental: true,
     versionAdded: '1.27.1'
@@ -1229,7 +1237,7 @@ export const CORE_SETTINGS: SettingParams[] = [
     tooltip:
       'When enabled, an errors tab is displayed in the right side panel to show workflow execution errors at a glance.',
     type: 'boolean',
-    defaultValue: false,
+    defaultValue: true,
     experimental: true,
     versionAdded: '1.40.0'
   }

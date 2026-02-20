@@ -203,22 +203,22 @@ const {
 const displayedJobGroups = computed(() => groupedJobItems.value)
 
 const onCancelItem = wrapWithErrorHandlingAsync(async (item: JobListItem) => {
-  const promptId = item.taskRef?.promptId
-  if (!promptId) return
+  const jobId = item.taskRef?.jobId
+  if (!jobId) return
 
   if (item.state === 'running' || item.state === 'initialization') {
     // Running/initializing jobs: interrupt execution
     // Cloud backend uses deleteItem, local uses interrupt
     if (isCloud) {
-      await api.deleteItem('queue', promptId)
+      await api.deleteItem('queue', jobId)
     } else {
-      await api.interrupt(promptId)
+      await api.interrupt(jobId)
     }
-    executionStore.clearInitializationByPromptId(promptId)
+    executionStore.clearInitializationByJobId(jobId)
     await queueStore.update()
   } else if (item.state === 'pending') {
     // Pending jobs: remove from queue
-    await api.deleteItem('queue', promptId)
+    await api.deleteItem('queue', jobId)
     await queueStore.update()
   }
 })
@@ -252,11 +252,11 @@ const openAssetsSidebar = () => {
 
 const focusAssetInSidebar = async (item: JobListItem) => {
   const task = item.taskRef
-  const promptId = task?.promptId
+  const jobId = task?.jobId
   const preview = task?.previewOutput
-  if (!promptId || !preview) return
+  if (!jobId || !preview) return
 
-  const assetId = String(promptId)
+  const assetId = String(jobId)
   openAssetsSidebar()
   await nextTick()
   await assetsStore.updateHistory()
@@ -278,37 +278,37 @@ const inspectJobAsset = wrapWithErrorHandlingAsync(
 )
 
 const cancelQueuedWorkflows = wrapWithErrorHandlingAsync(async () => {
-  // Capture pending promptIds before clearing
-  const pendingPromptIds = queueStore.pendingTasks
-    .map((task) => task.promptId)
+  // Capture pending jobIds before clearing
+  const pendingJobIds = queueStore.pendingTasks
+    .map((task) => task.jobId)
     .filter((id): id is string => typeof id === 'string' && id.length > 0)
 
   await commandStore.execute('Comfy.ClearPendingTasks')
 
-  // Clear initialization state for removed prompts
-  executionStore.clearInitializationByPromptIds(pendingPromptIds)
+  // Clear initialization state for removed jobs
+  executionStore.clearInitializationByJobIds(pendingJobIds)
 })
 
 const interruptAll = wrapWithErrorHandlingAsync(async () => {
   const tasks = queueStore.runningTasks
-  const promptIds = tasks
-    .map((task) => task.promptId)
+  const jobIds = tasks
+    .map((task) => task.jobId)
     .filter((id): id is string => typeof id === 'string' && id.length > 0)
 
-  if (!promptIds.length) return
+  if (!jobIds.length) return
 
   // Cloud backend supports cancelling specific jobs via /queue delete,
   // while /interrupt always targets the "first" job. Use the targeted API
   // on cloud to ensure we cancel the workflow the user clicked.
   if (isCloud) {
-    await Promise.all(promptIds.map((id) => api.deleteItem('queue', id)))
-    executionStore.clearInitializationByPromptIds(promptIds)
+    await Promise.all(jobIds.map((id) => api.deleteItem('queue', id)))
+    executionStore.clearInitializationByJobIds(jobIds)
     await queueStore.update()
     return
   }
 
-  await Promise.all(promptIds.map((id) => api.interrupt(id)))
-  executionStore.clearInitializationByPromptIds(promptIds)
+  await Promise.all(jobIds.map((id) => api.interrupt(id)))
+  executionStore.clearInitializationByJobIds(jobIds)
   await queueStore.update()
 })
 

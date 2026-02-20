@@ -88,7 +88,10 @@ async function uploadFile(
 // present.
 app.registerExtension({
   name: 'Comfy.AudioWidget',
-  async beforeRegisterNodeDef(nodeType, nodeData) {
+  async beforeRegisterNodeDef(
+    nodeType: typeof LGraphNode,
+    nodeData: ComfyNodeDef
+  ) {
     if (
       [
         'LoadAudio',
@@ -179,7 +182,10 @@ app.registerExtension({
 
 app.registerExtension({
   name: 'Comfy.UploadAudio',
-  async beforeRegisterNodeDef(_nodeType, nodeData: ComfyNodeDef) {
+  async beforeRegisterNodeDef(
+    _nodeType: typeof LGraphNode,
+    nodeData: ComfyNodeDef
+  ) {
     if (nodeData?.input?.required?.audio?.[1]?.audio_upload === true) {
       nodeData.input.required.upload = ['AUDIOUPLOAD', {}]
     }
@@ -419,7 +425,7 @@ app.registerExtension({
     }
   },
 
-  async nodeCreated(node) {
+  async nodeCreated(node: LGraphNode) {
     if (node.constructor.comfyClass !== 'RecordAudio') return
 
     await useAudioService().registerWavEncoder()
