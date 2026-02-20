@@ -89,8 +89,6 @@ const nodeDef = computed(() => node.data)
 
 const panelRef = inject(SidebarContainerKey, undefined)
 
-const panelRef = inject(SidebarContainerKey, undefined)
-
 const {
   previewRef,
   showPreview,
