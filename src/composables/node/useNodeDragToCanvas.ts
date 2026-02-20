@@ -80,6 +80,10 @@ function cleanupGlobalListeners() {
   document.removeEventListener('pointermove', updatePosition)
   document.removeEventListener('pointerup', endDrag, true)
   document.removeEventListener('keydown', handleKeydown)
+
+  if (isDragging.value && dragMode.value === 'click') {
+    cancelDrag()
+  }
 }
 
 export function useNodeDragToCanvas() {
