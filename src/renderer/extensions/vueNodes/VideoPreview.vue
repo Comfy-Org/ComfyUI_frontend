@@ -217,11 +217,15 @@ const handleRemove = () => {
 }
 
 const setCurrentIndex = (index: number) => {
+  if (currentIndex.value === index) return
   if (index >= 0 && index < props.imageUrls.length) {
+    const urlChanged = props.imageUrls[index] !== currentVideoUrl.value
     currentIndex.value = index
-    actualDimensions.value = null
-    showLoader.value = true
     videoError.value = false
+    if (urlChanged) {
+      actualDimensions.value = null
+      showLoader.value = true
+    }
   }
 }
 
@@ -246,7 +250,9 @@ const handleFocusOut = (event: FocusEvent) => {
 const getNavigationDotClass = (index: number) => {
   return [
     'w-2 h-2 rounded-full transition-all duration-200 border-0 cursor-pointer',
-    index === currentIndex.value ? 'bg-white' : 'bg-white/50 hover:bg-white/80'
+    index === currentIndex.value
+      ? 'bg-base-foreground'
+      : 'bg-base-foreground/50 hover:bg-base-foreground/80'
   ]
 }
 
