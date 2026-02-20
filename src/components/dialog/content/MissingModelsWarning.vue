@@ -85,7 +85,6 @@ const whiteListedUrls = new Set([
 interface ModelInfo {
   name: string
   directory: string
-  directory_invalid?: boolean
   url: string
   downloading?: boolean
   completed?: boolean
@@ -112,7 +111,7 @@ const modelDownloads = ref<Record<string, ModelInfo>>({})
 const missingModels = computed(() => {
   return props.missingModels.map((model) => {
     const paths = props.paths[model.directory]
-    if (model.directory_invalid || !paths) {
+    if (!paths) {
       return {
         label: `${model.directory} / ${model.name}`,
         url: model.url,

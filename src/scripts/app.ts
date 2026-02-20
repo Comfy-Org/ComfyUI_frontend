@@ -1215,10 +1215,6 @@ export class ComfyApp {
       await modelStore.loadModelFolders()
       for (const m of uniqueModels) {
         const modelFolder = await modelStore.getLoadedModelFolder(m.directory)
-        if (!modelFolder)
-          (m as ModelFile & { directory_invalid?: boolean }).directory_invalid =
-            true
-
         const modelsAvailable = modelFolder?.models
         const modelExists =
           modelsAvailable &&
