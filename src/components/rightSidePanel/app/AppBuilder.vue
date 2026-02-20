@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { remove } from 'es-toolkit'
-import { useElementBounding, whenever } from '@vueuse/core'
+import { whenever } from '@vueuse/core'
 import { computed, ref, toValue } from 'vue'
 import type { MaybeRef } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -20,7 +20,6 @@ import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteracti
 import TransformPane from '@/renderer/core/layout/transform/TransformPane.vue'
 import { app } from '@/scripts/app'
 import { useDialogService } from '@/services/dialogService'
-import { useHoveredStore } from '@/stores/hoveredStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import { cn } from '@/utils/tailwindUtil'
 
@@ -28,7 +27,6 @@ type BoundStyle = { top: string; left: string; width: string; height: string }
 
 const canvasInteractions = useCanvasInteractions()
 const canvasStore = useCanvasStore()
-const hoveredStore = useHoveredStore()
 const rightSidePanelStore = useRightSidePanelStore()
 const settingStore = useSettingStore()
 const workflowStore = useWorkflowStore()
@@ -88,20 +86,12 @@ async function renameWidget(widget: IBaseWidget, input: INodeInputSlot) {
 }
 
 function getHovered(
-  e?: MouseEvent
+  e: MouseEvent
 ): undefined | [LGraphNode, undefined] | [LGraphNode, IBaseWidget] {
   const { graph } = canvas
   if (!canvas || !graph) return
 
-  if (settingStore.get('Comfy.VueNodes.Enabled')) {
-    const node = graph.getNodeById(hoveredStore.hoveredNodeId)
-    if (!node) return
-
-    const widget = node.widgets?.find(
-      (w) => w.name === hoveredStore.hoveredWidgetName
-    )
-    return [node, widget]
-  }
+  if (settingStore.get('Comfy.VueNodes.Enabled')) return undefined
   if (!e) return
 
   canvas.adjustMouseEvent(e)
@@ -111,27 +101,8 @@ function getHovered(
   return [node, node.getWidgetOnPos(e.canvasX, e.canvasY, false)]
 }
 
-function elementPosition(e: HTMLElement, mleft: number = 0) {
-  const bounding = useElementBounding(e)
-  return computed(() => ({
-    width: `${bounding.width.value / canvas.ds.scale - mleft}px`,
-    height: `${bounding.height.value / canvas.ds.scale}px`,
-    left: `${bounding.left.value / canvas.ds.scale - canvas.ds.offset[0] + mleft}px`,
-    top: `${bounding.top.value / canvas.ds.scale - canvas.ds.offset[1]}px`
-  }))
-}
 function getBounding(nodeId: NodeId, widgetName?: string) {
-  if (settingStore.get('Comfy.VueNodes.Enabled')) {
-    const element = document.querySelector(
-      widgetName
-        ? `[data-node-id="${nodeId}"] [data-widget-name="${widgetName}"`
-        : `[data-node-id="${nodeId}"]`
-    )
-    const mleft = widgetName ? 12 : 0
-    return element instanceof HTMLElement
-      ? elementPosition(element, mleft)
-      : undefined
-  }
+  if (settingStore.get('Comfy.VueNodes.Enabled')) return undefined
   const node = app.rootGraph.getNodeById(nodeId)
   if (!node) return
 
@@ -302,48 +273,44 @@ const renderedInputs = computed<[string, MaybeRef<BoundStyle> | undefined][]>(
   </PropertiesAccordionItem>
 
   <Teleport to="body">
-    <TransformPane
-      :class="
-        cn(
-          'absolute w-full h-full pointer-events-auto!',
-          getHovered() ? 'cursor-pointer' : 'cursor-grab'
-        )
-      "
-      :canvas="canvasStore.getCanvas()"
+    <div
+      class="absolute w-full h-full pointer-events-auto"
       @pointerdown="handleDown"
       @click="handleClick"
       @wheel="canvasInteractions.forwardEventToCanvas"
     >
-      <div
-        v-for="[key, style] in renderedInputs"
-        :key
-        :style="toValue(style)"
-        class="fixed bg-primary-background/30 rounded-lg"
-      />
-      <div
-        v-for="[key, style, isSelected] in renderedOutputs"
-        :key
-        :style="toValue(style)"
-        :class="
-          cn(
-            'fixed ring-warning-background ring-5 rounded-2xl',
-            !isSelected && 'ring-warning-background/50'
-          )
-        "
-      >
-        <div class="absolute top-0 right-0 size-8">
-          <div
-            v-if="isSelected"
-            class="absolute -top-1/2 -right-1/2 size-full p-2 bg-warning-background rounded-lg"
-          >
-            <i class="icon-[lucide--check] bg-text-foreground size-full" />
+      <TransformPane :canvas="canvasStore.getCanvas()">
+        <div
+          v-for="[key, style] in renderedInputs"
+          :key
+          :style="toValue(style)"
+          class="fixed bg-primary-background/30 rounded-lg"
+        />
+        <div
+          v-for="[key, style, isSelected] in renderedOutputs"
+          :key
+          :style="toValue(style)"
+          :class="
+            cn(
+              'fixed ring-warning-background ring-5 rounded-2xl',
+              !isSelected && 'ring-warning-background/50'
+            )
+          "
+        >
+          <div class="absolute top-0 right-0 size-8">
+            <div
+              v-if="isSelected"
+              class="absolute -top-1/2 -right-1/2 size-full p-2 bg-warning-background rounded-lg"
+            >
+              <i class="icon-[lucide--check] bg-text-foreground size-full" />
+            </div>
+            <div
+              v-else
+              class="absolute -top-1/2 -right-1/2 size-full ring-warning-background/50 ring-4 ring-inset bg-component-node-background rounded-lg"
+            />
           </div>
-          <div
-            v-else
-            class="absolute -top-1/2 -right-1/2 size-full ring-warning-background/50 ring-4 ring-inset bg-component-node-background rounded-lg"
-          />
         </div>
-      </div>
-    </TransformPane>
+      </TransformPane>
+    </div>
   </Teleport>
 </template>
