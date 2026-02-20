@@ -599,16 +599,22 @@ export class ComfyApi extends EventTarget {
               let offset = 0
               let promptId: string | undefined
 
-              if (this.getClientFeatureFlags()?.supports_progress_text_metadata) {
+              if (
+                this.getClientFeatureFlags()?.supports_progress_text_metadata
+              ) {
                 const promptIdLength = rawView.getUint32(offset)
                 offset += 4
-                promptId = decoder3.decode(rawData.slice(offset, offset + promptIdLength))
+                promptId = decoder3.decode(
+                  rawData.slice(offset, offset + promptIdLength)
+                )
                 offset += promptIdLength
               }
 
               const nodeIdLength = rawView.getUint32(offset)
               offset += 4
-              const nodeId = decoder3.decode(rawData.slice(offset, offset + nodeIdLength))
+              const nodeId = decoder3.decode(
+                rawData.slice(offset, offset + nodeIdLength)
+              )
               offset += nodeIdLength
               const text = decoder3.decode(rawData.slice(offset))
 
