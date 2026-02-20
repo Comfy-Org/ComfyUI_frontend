@@ -721,6 +721,7 @@ export class ComfyApp {
     })
 
     api.addEventListener('b_preview_with_metadata', ({ detail }) => {
+      console.log('b_preview_with_metadata')
       // Enhanced preview with explicit node context
       const { blob, displayNodeId, jobId } = detail
       const { setNodePreviewsByExecutionId, revokePreviewsByExecutionId } =
