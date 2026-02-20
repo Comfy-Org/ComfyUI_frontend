@@ -155,7 +155,7 @@ export const useExecutionStore = defineStore('execution', () => {
     promptId: string,
     state: 'completed' | 'error'
   ) {
-    const wid = promptIdToWorkflowId.value.get(promptId)
+    const wid = jobIdToWorkflowId.value.get(promptId)
     if (!wid) {
       console.warn(
         `[executionStore] No workflow mapping for prompt ${promptId}, execution result '${state}' dropped`
@@ -198,8 +198,8 @@ export const useExecutionStore = defineStore('execution', () => {
       const states = new Map<string, WorkflowExecutionState>()
 
       // Mark running workflows
-      for (const promptId of runningPromptIds.value) {
-        const workflowId = promptIdToWorkflowId.value.get(promptId)
+      for (const jobId of runningJobIds.value) {
+        const workflowId = jobIdToWorkflowId.value.get(jobId)
         if (workflowId) {
           states.set(workflowId, 'running')
         }
@@ -417,16 +417,7 @@ export const useExecutionStore = defineStore('execution', () => {
 
   function handleExecutionSuccess(e: CustomEvent<ExecutionSuccessWsMessage>) {
     const pid = e.detail.prompt_id
-    const wid = promptIdToWorkflowId.value.get(pid)
-    if (wid) {
-      const next = new Map(lastExecutionResultByWorkflowId.value)
-      next.set(wid, {
-        state: 'completed',
-        timestamp: Date.now(),
-        promptId: pid
-      })
-      lastExecutionResultByWorkflowId.value = next
-    }
+    setWorkflowExecutionResult(pid, 'completed')
     if (isCloud && activeJobId.value) {
       useTelemetry()?.trackExecutionSuccess({
         jobId: activeJobId.value
@@ -617,7 +608,7 @@ export const useExecutionStore = defineStore('execution', () => {
       delete map[jobId]
       nodeProgressStatesByJob.value = map
       useJobPreviewStore().clearPreview(jobId)
-      promptIdToWorkflowId.value.delete(jobId)
+      jobIdToWorkflowId.value.delete(jobId)
     }
     if (activeJobId.value) {
       delete queuedJobs.value[activeJobId.value]
