@@ -120,7 +120,11 @@ const workflowsEntries = computed(() => {
         <div
           class="overflow-y-auto contain-size h-full w-screen absolute left-[100vw] top-0"
         >
-          <LinearControls class="*:bg-secondary-background" mobile />
+          <LinearControls
+            class="*:bg-secondary-background"
+            mobile
+            @navigate-assets="activeIndex = 0"
+          />
         </div>
         <div
           class="w-screen absolute bg-secondary-background h-full left-[200vw] top-0 flex flex-col"

@@ -43,6 +43,8 @@ const props = defineProps<{
   mobile?: boolean
 }>()
 
+defineEmits<{ navigateAssets: [] }>()
+
 const jobFinishedQueue = ref(true)
 const { ready: jobToastTimeout, start: resetJobToastTimeout } = useTimeout(
   8000,
@@ -263,18 +265,20 @@ defineExpose({ runButtonClick })
         :to="toastTo"
       >
         <div
-          class="bg-base-foreground md:bg-secondary-background text-base-background md:text-base-foreground rounded-lg flex h-8 p-1 pr-2 gap-2 items-center"
+          class="bg-base-foreground md:bg-secondary-background text-base-background md:text-base-foreground rounded-lg flex h-10 md:h-8 p-1 pr-2 gap-2 items-center"
         >
           <template v-if="jobFinishedQueue">
-            <i class="icon-[lucide--check] size-5 md:bg-success-background" />
-            <span v-text="t('queue.jobAddedToQueue')" />
-            <Button v-if="mobile" variant="inverted" class="ml-auto hidden">
+            <i class="icon-[lucide--check] size-5 not-md:bg-success-background" />
+            <span class="mr-auto" v-text="t('queue.jobAddedToQueue')" />
+            <Button v-if="mobile" variant="inverted"
+              @click="$emit('navigateAssets')"
+              >
               {{ t('View Job') }}
             </Button>
           </template>
           <template v-else>
             <i class="icon-[lucide--loader-circle] size-4 animate-spin" />
-            <span class="mr-auto" v-text="t('queue.jobQueueing')" />
+            <span v-text="t('queue.jobQueueing')" />
           </template>
         </div>
       </Teleport>
