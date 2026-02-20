@@ -35,6 +35,7 @@ import { useJobPreviewStore } from '@/stores/jobPreviewStore'
 import type { NodeLocatorId } from '@/types/nodeIdentification'
 import { createNodeLocatorId } from '@/types/nodeIdentification'
 import { forEachNode, getNodeByExecutionId } from '@/utils/graphTraversalUtil'
+import { classifyCloudValidationError } from '@/utils/executionErrorUtil'
 
 interface QueuedPrompt {
   /**
@@ -46,33 +47,6 @@ interface QueuedPrompt {
    * The workflow that is queued to be executed
    */
   workflow?: ComfyWorkflow
-}
-
-interface CloudValidationError {
-  error?: { type?: string; message?: string; details?: string } | string
-  node_errors?: Record<NodeId, NodeError>
-}
-
-function isCloudValidationError(value: unknown): value is CloudValidationError {
-  return (
-    value !== null &&
-    typeof value === 'object' &&
-    ('error' in value || 'node_errors' in value)
-  )
-}
-
-function tryExtractValidationError(
-  exceptionMessage: string
-): CloudValidationError | null {
-  const jsonStart = exceptionMessage.indexOf('{')
-  if (jsonStart === -1) return null
-
-  try {
-    const parsed: unknown = JSON.parse(exceptionMessage.substring(jsonStart))
-    return isCloudValidationError(parsed) ? parsed : null
-  } catch {
-    return null
-  }
 }
 
 const subgraphNodeIdToSubgraph = (id: string, graph: LGraph | Subgraph) => {
@@ -462,34 +436,16 @@ export const useExecutionStore = defineStore('execution', () => {
   function handleCloudValidationError(
     detail: ExecutionErrorWsMessage
   ): boolean {
-    const extracted = tryExtractValidationError(detail.exception_message)
-    if (!extracted) return false
-
-    const { error, node_errors } = extracted
-    const hasNodeErrors = node_errors && Object.keys(node_errors).length > 0
-
-    let promptError = null
-    if (!hasNodeErrors) {
-      if (error && typeof error === 'object') {
-        promptError = {
-          type: error.type ?? 'error',
-          message: error.message ?? '',
-          details: error.details ?? ''
-        }
-      } else if (typeof error === 'string') {
-        promptError = { type: 'error', message: error, details: '' }
-      } else {
-        return false
-      }
-    }
+    const result = classifyCloudValidationError(detail.exception_message)
+    if (!result) return false
 
     clearInitializationByPromptId(detail.prompt_id)
     resetExecutionState(detail.prompt_id)
 
-    if (hasNodeErrors) {
-      lastNodeErrors.value = node_errors
-    } else if (promptError) {
-      lastPromptError.value = promptError
+    if (result.kind === 'nodeErrors') {
+      lastNodeErrors.value = result.nodeErrors
+    } else {
+      lastPromptError.value = result.promptError
     }
     return true
   }
@@ -772,22 +728,27 @@ export const useExecutionStore = defineStore('execution', () => {
     return ids
   })
 
-  /** Total count of all individual errors */
-  const totalErrorCount = computed(() => {
+  /** Count of prompt-level errors (0 or 1) */
+  const promptErrorCount = computed(() => (lastPromptError.value ? 1 : 0))
+
+  /** Count of all individual node validation errors */
+  const nodeErrorCount = computed(() => {
+    if (!lastNodeErrors.value) return 0
     let count = 0
-    if (lastPromptError.value) {
-      count += 1
-    }
-    if (lastNodeErrors.value) {
-      for (const nodeError of Object.values(lastNodeErrors.value)) {
-        count += nodeError.errors.length
-      }
-    }
-    if (lastExecutionError.value) {
-      count += 1
+    for (const nodeError of Object.values(lastNodeErrors.value)) {
+      count += nodeError.errors.length
     }
     return count
   })
+
+  /** Count of runtime execution errors (0 or 1) */
+  const executionErrorCount = computed(() => (lastExecutionError.value ? 1 : 0))
+
+  /** Total count of all individual errors */
+  const totalErrorCount = computed(
+    () =>
+      promptErrorCount.value + nodeErrorCount.value + executionErrorCount.value
+  )
 
   /** Pre-computed Set of graph node IDs (as strings) that have errors in the current graph scope. */
   const activeGraphErrorNodeIds = computed<Set<string>>(() => {

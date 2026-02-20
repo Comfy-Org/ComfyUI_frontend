@@ -1,32 +1,32 @@
-import { computed, reactive, watch } from 'vue'
+import { computed, reactive } from 'vue'
 import type { Ref } from 'vue'
 import Fuse from 'fuse.js'
 import type { IFuseOptions } from 'fuse.js'
 
 import { useExecutionStore } from '@/stores/executionStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
+
 import { app } from '@/scripts/app'
+import { isCloud } from '@/platform/distribution/types'
 import { SubgraphNode } from '@/lib/litegraph/src/litegraph'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { getNodeByExecutionId } from '@/utils/graphTraversalUtil'
+import {
+  getNodeByExecutionId,
+  getRootParentNode
+} from '@/utils/graphTraversalUtil'
 import { resolveNodeDisplayName } from '@/utils/nodeTitleUtil'
 import { isLGraphNode } from '@/utils/litegraphUtil'
 import { isGroupNode } from '@/utils/executableGroupNodeDto'
 import { st } from '@/i18n'
 import type { ErrorCardData, ErrorGroup, ErrorItem } from './types'
-import {
-  isNodeExecutionId,
-  parseNodeExecutionId
-} from '@/types/nodeIdentification'
+import { isNodeExecutionId } from '@/types/nodeIdentification'
 
 const PROMPT_CARD_ID = '__prompt__'
 const SINGLE_GROUP_KEY = '__single__'
 const KNOWN_PROMPT_ERROR_TYPES = new Set([
   'prompt_no_outputs',
   'no_prompt',
-  'server_error_local',
-  'server_error_cloud'
+  'server_error'
 ])
 
 interface GroupEntry {
@@ -50,11 +50,7 @@ interface ErrorSearchItem {
 function resolveNodeInfo(nodeId: string) {
   const graphNode = getNodeByExecutionId(app.rootGraph, nodeId)
 
-  const parts = parseNodeExecutionId(nodeId)
-  const parentId = parts && parts.length > 1 ? String(parts[0]) : null
-  const parentNode = parentId
-    ? app.rootGraph.getNodeById(Number(parentId))
-    : null
+  const parentNode = getRootParentNode(app.rootGraph, nodeId)
   const isParentGroupNode = parentNode ? isGroupNode(parentNode) : false
 
   return {
@@ -198,7 +194,6 @@ export function useErrorGroups(
 ) {
   const executionStore = useExecutionStore()
   const canvasStore = useCanvasStore()
-  const rightSidePanelStore = useRightSidePanelStore()
   const collapseState = reactive<Record<string, boolean>>({})
 
   const selectedNodeInfo = computed(() => {
@@ -275,15 +270,20 @@ export function useErrorGroups(
     const cards = getOrCreateGroup(groupsMap, groupTitle, 0)
     const isKnown = KNOWN_PROMPT_ERROR_TYPES.has(error.type)
 
+    // For server_error, resolve the i18n key based on the environment
+    let errorTypeKey = error.type
+    if (error.type === 'server_error') {
+      errorTypeKey = isCloud ? 'server_error_cloud' : 'server_error_local'
+    }
+    const i18nKey = `rightSidePanel.promptErrors.${errorTypeKey}.desc`
+
     // Prompt errors are not tied to a node, so they bypass addNodeErrorToGroup.
     cards.set(PROMPT_CARD_ID, {
       id: PROMPT_CARD_ID,
       title: groupTitle,
       errors: [
         {
-          message: isKnown
-            ? t(`rightSidePanel.promptErrors.${error.type}.desc`)
-            : error.message
+          message: isKnown ? t(i18nKey) : error.message
         }
       ]
     })
@@ -372,30 +372,6 @@ export function useErrorGroups(
       }
     }
     return Array.from(messages)
-  })
-
-  /**
-   * When an external trigger (e.g. "See Error" button in SectionWidgets)
-   * sets focusedErrorNodeId, expand only the group containing the target
-   * node and collapse all others so the user sees the relevant errors
-   * immediately.
-   */
-  function expandFocusedErrorGroup(graphNodeId: string | null) {
-    if (!graphNodeId) return
-    const prefix = `${graphNodeId}:`
-    for (const group of allErrorGroups.value) {
-      const hasMatch = group.cards.some(
-        (card) =>
-          card.graphNodeId === graphNodeId ||
-          (card.nodeId?.startsWith(prefix) ?? false)
-      )
-      collapseState[group.title] = !hasMatch
-    }
-    rightSidePanelStore.focusedErrorNodeId = null
-  }
-
-  watch(() => rightSidePanelStore.focusedErrorNodeId, expandFocusedErrorGroup, {
-    immediate: true
   })
 
   return {

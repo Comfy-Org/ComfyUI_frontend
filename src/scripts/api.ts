@@ -837,7 +837,7 @@ export class ComfyApi extends EventTarget {
       } catch {
         errorResponse = {
           error: {
-            type: isCloud ? 'server_error_cloud' : 'server_error_local',
+            type: 'server_error',
             message: `${res.status} ${res.statusText}`,
             details: text
           }

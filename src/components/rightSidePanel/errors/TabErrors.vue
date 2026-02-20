@@ -98,7 +98,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { useCommandStore } from '@/stores/commandStore'
@@ -107,7 +107,7 @@ import { useFocusNode } from '@/composables/canvas/useFocusNode'
 import { useExternalLink } from '@/composables/useExternalLink'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import { NodeBadgeMode } from '@/types/nodeSource'
 
 import PropertiesAccordionItem from '../layout/PropertiesAccordionItem.vue'
@@ -121,6 +121,7 @@ const { copyToClipboard } = useCopyToClipboard()
 const { focusNode, enterSubgraph } = useFocusNode()
 const { staticUrls } = useExternalLink()
 const settingStore = useSettingStore()
+const rightSidePanelStore = useRightSidePanelStore()
 
 const searchQuery = ref('')
 
@@ -130,8 +131,37 @@ const showNodeIdBadge = computed(
     NodeBadgeMode.None
 )
 
-const { filteredGroups, collapseState, isSingleNodeSelected, errorNodeCache } =
-  useErrorGroups(searchQuery, t)
+const {
+  allErrorGroups,
+  filteredGroups,
+  collapseState,
+  isSingleNodeSelected,
+  errorNodeCache
+} = useErrorGroups(searchQuery, t)
+
+/**
+ * When an external trigger (e.g. "See Error" button in SectionWidgets)
+ * sets focusedErrorNodeId, expand only the group containing the target
+ * node and collapse all others so the user sees the relevant errors
+ * immediately.
+ */
+watch(
+  () => rightSidePanelStore.focusedErrorNodeId,
+  (graphNodeId) => {
+    if (!graphNodeId) return
+    const prefix = `${graphNodeId}:`
+    for (const group of allErrorGroups.value) {
+      const hasMatch = group.cards.some(
+        (card) =>
+          card.graphNodeId === graphNodeId ||
+          (card.nodeId?.startsWith(prefix) ?? false)
+      )
+      collapseState[group.title] = !hasMatch
+    }
+    rightSidePanelStore.focusedErrorNodeId = null
+  },
+  { immediate: true }
+)
 
 function handleLocateNode(nodeId: string) {
   focusNode(nodeId, errorNodeCache.value)
@@ -154,11 +184,6 @@ async function contactSupport() {
     is_external: true,
     source: 'error_dialog'
   })
-  try {
-    await useCommandStore().execute('Comfy.ContactSupport')
-  } catch (error) {
-    console.error(error)
-    useToastStore().addAlert(t('rightSidePanel.contactSupportFailed'))
-  }
+  useCommandStore().execute('Comfy.ContactSupport')
 }
 </script>
