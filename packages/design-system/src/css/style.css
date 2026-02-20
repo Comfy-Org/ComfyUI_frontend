@@ -1883,12 +1883,8 @@ audio.comfy-audio.empty-audio-widget {
 /* ===================== Skeleton Shimmer ===================== */
 .skeleton-shimmer {
   background:
-    linear-gradient(
-        135deg,
-        rgba(188, 188, 188, 0.5) 0%,
-        rgba(0, 0, 0, 0.5) 100%
-      )
-      0 0 / 200% 200%,
+    linear-gradient(135deg, rgb(188 188 188 / 0.5) 0%, rgb(0 0 0 / 0.5) 100%) 0
+      0 / 200% 200%,
     #000;
   animation: skeleton-shimmer 2s ease-in-out infinite;
 }
