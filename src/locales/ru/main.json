@@ -608,6 +608,7 @@
     "AUDIO_ENCODER_OUTPUT": "ВЫХОД_АУДИО_КОДЕРА",
     "AUDIO_RECORD": "АУДИО_ЗАПИСЬ",
     "BOOLEAN": "БУЛЕВО",
+    "BOUNDING_BOX": "BOUNDING_BOX",
     "CAMERA_CONTROL": "УПРАВЛЕНИЕ_КАМЕРОЙ",
     "CLIP": "CLIP",
     "CLIP_VISION": "CLIP_VISION",
@@ -1898,6 +1899,25 @@
     "outputs": "Выходы",
     "type": "Тип"
   },
+  "nodeReplacement": {
+    "compatibleAlternatives": "Совместимые альтернативы",
+    "installMissingNodes": "Установить отсутствующие узлы",
+    "installationRequired": "Требуется установка",
+    "instructionMessage": "Вам необходимо установить эти узлы или заменить их установленными альтернативами, чтобы запустить рабочий процесс. Отсутствующие узлы выделены {red} на холсте. Некоторые узлы нельзя заменить, их нужно установить через Менеджер узлов.",
+    "notReplaceable": "Требуется установка",
+    "openNodeManager": "Открыть Менеджер узлов",
+    "quickFixAvailable": "Доступно быстрое исправление",
+    "redHighlight": "красным",
+    "replaceFailed": "Не удалось заменить узлы",
+    "replaceSelected": "Заменить выбранные ({count})",
+    "replaceWarning": "Это действие навсегда изменит рабочий процесс. Сохраните копию, если не уверены.",
+    "replaceable": "Можно заменить",
+    "replaced": "Заменено",
+    "replacedAllNodes": "Заменено {count} типов(а) узлов",
+    "replacedNode": "Заменённый узел: {nodeType}",
+    "selectAll": "Выбрать все",
+    "skipForNow": "Пропустить сейчас"
+  },
   "nodeTemplates": {
     "enterName": "Введите название",
     "saveAsTemplate": "Сохранить как шаблон"
@@ -1996,6 +2016,11 @@
     "advancedInputs": "РАСШИРЕННЫЕ ВХОДНЫЕ ДАННЫЕ",
     "bypass": "Обход",
     "color": "Цвет узла",
+    "enterSubgraph": "Войти в подграф",
+    "errorHelp": "Для получения дополнительной помощи {github} или {support}",
+    "errorHelpGithub": "создайте issue на GitHub",
+    "errorHelpSupport": "свяжитесь с нашей поддержкой",
+    "errors": "Ошибки",
     "fallbackGroupTitle": "Группа",
     "fallbackNodeTitle": "Узел",
     "favorites": "ИЗБРАННЫЕ ВХОДЫ",
@@ -2030,6 +2055,7 @@
     "inputsNoneTooltip": "Узел не имеет входов",
     "locateNode": "Найти узел на холсте",
     "mute": "Отключить",
+    "noErrors": "Ошибок нет",
     "noSelection": "Выберите узел, чтобы увидеть его свойства и информацию.",
     "nodeState": "Состояние узла",
     "nodes": "Узлы",
@@ -2038,10 +2064,19 @@
     "normal": "Обычный",
     "parameters": "Параметры",
     "pinned": "Закреплено",
+    "promptErrors": {
+      "no_prompt": {
+        "desc": "Данные рабочего процесса, отправленные на сервер, пусты. Это может быть неожиданной системной ошибкой."
+      },
+      "prompt_no_outputs": {
+        "desc": "В рабочем процессе отсутствуют выходные узлы (например, Сохранить изображение, Предпросмотр изображения) для получения результата."
+      }
+    },
     "properties": "Свойства",
     "removeFavorite": "Убрать из избранного",
     "resetAllParameters": "Сбросить все параметры",
     "resetToDefault": "Сбросить по умолчанию",
+    "seeError": "Посмотреть ошибку",
     "settings": "Настройки",
     "showAdvancedInputsButton": "Показать расширенные входные данные",
     "showInput": "Показать вход",
@@ -2266,6 +2301,7 @@
     "CustomColorPalettes": "Пользовательские цветовые палитры",
     "DevMode": "Режим разработчика",
     "EditTokenWeight": "Редактировать вес токена",
+    "Error System": "Система ошибок",
     "Execution": "Выполнение",
     "Extension": "Расширение",
     "General": "Общие",
@@ -2414,8 +2450,11 @@
       "moreOptions": "Больше опций",
       "noActiveJobs": "Нет активных заданий",
       "preview": "Предпросмотр",
+      "queuedJobsLabel": "{count} в очереди",
       "queuedSuffix": "в очереди",
       "running": "выполняется",
+      "runningJobsLabel": "{count} выполняется",
+      "runningQueuedSummary": "{running}, {queued}",
       "showAssets": "Показать ассеты",
       "showAssetsPanel": "Показать панель ассетов",
       "sortBy": "Сортировать по",

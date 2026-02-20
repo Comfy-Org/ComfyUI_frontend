@@ -608,6 +608,7 @@
     "AUDIO_ENCODER_OUTPUT": "SAÍDA DO CODIFICADOR DE ÁUDIO",
     "AUDIO_RECORD": "GRAVAÇÃO DE ÁUDIO",
     "BOOLEAN": "BOOLEANO",
+    "BOUNDING_BOX": "BOUNDING_BOX",
     "CAMERA_CONTROL": "CONTROLE DE CÂMERA",
     "CLIP": "clip",
     "CLIP_VISION": "clip visão",
@@ -1898,6 +1899,25 @@
     "outputs": "Saídas",
     "type": "Tipo"
   },
+  "nodeReplacement": {
+    "compatibleAlternatives": "Alternativas Compatíveis",
+    "installMissingNodes": "Instalar Nós Ausentes",
+    "installationRequired": "Instalação Necessária",
+    "instructionMessage": "Você deve instalar esses nós ou substituí-los por alternativas já instaladas para executar o fluxo de trabalho. Nós ausentes estão destacados em {red} na tela. Alguns nós não podem ser trocados e devem ser instalados pelo Gerenciador de Nós.",
+    "notReplaceable": "Instalação Necessária",
+    "openNodeManager": "Abrir Gerenciador de Nós",
+    "quickFixAvailable": "Correção Rápida Disponível",
+    "redHighlight": "vermelho",
+    "replaceFailed": "Falha ao substituir nós",
+    "replaceSelected": "Substituir Selecionados ({count})",
+    "replaceWarning": "Isso modificará permanentemente o fluxo de trabalho. Salve uma cópia antes se não tiver certeza.",
+    "replaceable": "Substituível",
+    "replaced": "Substituído",
+    "replacedAllNodes": "Substituídos {count} tipo(s) de nó",
+    "replacedNode": "Nó substituído: {nodeType}",
+    "selectAll": "Selecionar Tudo",
+    "skipForNow": "Pular por enquanto"
+  },
   "nodeTemplates": {
     "enterName": "Digite o nome",
     "saveAsTemplate": "Salvar como modelo"
@@ -1996,6 +2016,11 @@
     "advancedInputs": "ENTRADAS AVANÇADAS",
     "bypass": "Ignorar",
     "color": "Cor do nó",
+    "enterSubgraph": "Entrar no subgrafo",
+    "errorHelp": "Para mais ajuda, {github} ou {support}",
+    "errorHelpGithub": "enviar um issue no GitHub",
+    "errorHelpSupport": "contatar nosso suporte",
+    "errors": "Erros",
     "fallbackGroupTitle": "Grupo",
     "fallbackNodeTitle": "Nó",
     "favorites": "ENTRADAS FAVORITAS",
@@ -2030,6 +2055,7 @@
     "inputsNoneTooltip": "O nó não possui entradas",
     "locateNode": "Localizar nó no canvas",
     "mute": "Silenciar",
+    "noErrors": "Sem erros",
     "noSelection": "Selecione um nó para ver suas propriedades e informações.",
     "nodeState": "Estado do nó",
     "nodes": "Nós",
@@ -2038,10 +2064,19 @@
     "normal": "Normal",
     "parameters": "Parâmetros",
     "pinned": "Fixado",
+    "promptErrors": {
+      "no_prompt": {
+        "desc": "Os dados do fluxo de trabalho enviados ao servidor estão vazios. Isso pode ser um erro de sistema inesperado."
+      },
+      "prompt_no_outputs": {
+        "desc": "O fluxo de trabalho não contém nenhum nó de saída (por exemplo, Salvar Imagem, Visualizar Imagem) para produzir um resultado."
+      }
+    },
     "properties": "Propriedades",
     "removeFavorite": "Desfavoritar",
     "resetAllParameters": "Redefinir todos os parâmetros",
     "resetToDefault": "Restaurar para o padrão",
+    "seeError": "Ver erro",
     "settings": "Configurações",
     "showAdvancedInputsButton": "Mostrar entradas avançadas",
     "showInput": "Mostrar entrada",
@@ -2266,6 +2301,7 @@
     "CustomColorPalettes": "Paletas de Cores Personalizadas",
     "DevMode": "Modo Desenvolvedor",
     "EditTokenWeight": "Editar Peso do Token",
+    "Error System": "Sistema de Erros",
     "Execution": "Execução",
     "Extension": "Extensão",
     "General": "Geral",
@@ -2425,8 +2461,11 @@
       "moreOptions": "Mais opções",
       "noActiveJobs": "Nenhum trabalho ativo",
       "preview": "Pré-visualização",
+      "queuedJobsLabel": "{count} na fila",
       "queuedSuffix": "na fila",
       "running": "executando",
+      "runningJobsLabel": "{count} em execução",
+      "runningQueuedSummary": "{running} em execução, {queued} na fila",
       "showAssets": "Mostrar ativos",
       "showAssetsPanel": "Mostrar painel de ativos",
       "sortBy": "Ordenar por",

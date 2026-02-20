@@ -608,6 +608,7 @@
     "AUDIO_ENCODER_OUTPUT": "音频编码器输出",
     "AUDIO_RECORD": "音频录制",
     "BOOLEAN": "布尔",
+    "BOUNDING_BOX": "边界框",
     "CAMERA_CONTROL": "相机控制",
     "CLIP": "CLIP",
     "CLIP_VISION": "CLIP视觉",
@@ -1898,6 +1899,25 @@
     "outputs": "输出",
     "type": "类型"
   },
+  "nodeReplacement": {
+    "compatibleAlternatives": "兼容替代项",
+    "installMissingNodes": "安装缺失节点",
+    "installationRequired": "需要安装",
+    "instructionMessage": "您必须安装这些节点或用已安装的替代项替换它们，才能运行工作流。缺失的节点会在画布上以{red}高亮显示。有些节点无法替换，必须通过节点管理器安装。",
+    "notReplaceable": "需要安装",
+    "openNodeManager": "打开节点管理器",
+    "quickFixAvailable": "可用快速修复",
+    "redHighlight": "红色",
+    "replaceFailed": "替换节点失败",
+    "replaceSelected": "替换已选（{count}）",
+    "replaceWarning": "此操作将永久修改工作流。如不确定，请先保存副本。",
+    "replaceable": "可替换",
+    "replaced": "已替换",
+    "replacedAllNodes": "已替换 {count} 种节点类型",
+    "replacedNode": "已替换节点：{nodeType}",
+    "selectAll": "全选",
+    "skipForNow": "暂时跳过"
+  },
   "nodeTemplates": {
     "enterName": "输入名称",
     "saveAsTemplate": "另存为模板"
@@ -1996,6 +2016,11 @@
     "advancedInputs": "高级输入",
     "bypass": "忽略",
     "color": "节点颜色",
+    "enterSubgraph": "进入子图",
+    "errorHelp": "如需更多帮助，请{github}或{support}",
+    "errorHelpGithub": "提交 GitHub 问题",
+    "errorHelpSupport": "联系我们的支持团队",
+    "errors": "错误",
     "fallbackGroupTitle": "分组",
     "fallbackNodeTitle": "节点",
     "favorites": "已收藏输入",
@@ -2030,6 +2055,7 @@
     "inputsNoneTooltip": "节点没有输入",
     "locateNode": "在画布上定位节点",
     "mute": "禁用",
+    "noErrors": "无错误",
     "noSelection": "选择一个节点查看其属性信息。",
     "nodeState": "节点状态",
     "nodes": "节点",
@@ -2038,10 +2064,19 @@
     "normal": "正常",
     "parameters": "参数",
     "pinned": "顶固",
+    "promptErrors": {
+      "no_prompt": {
+        "desc": "发送到服务器的工作流数据为空。这可能是一个意外的系统错误。"
+      },
+      "prompt_no_outputs": {
+        "desc": "工作流中没有包含任何输出节点（例如：保存图像、预览图像），无法生成结果。"
+      }
+    },
     "properties": "属性",
     "removeFavorite": "取消收藏",
     "resetAllParameters": "重置所有参数",
     "resetToDefault": "重置为默认值",
+    "seeError": "查看错误",
     "settings": "设置",
     "showAdvancedInputsButton": "显示高级输入",
     "showInput": "显示输入",
@@ -2266,6 +2301,7 @@
     "CustomColorPalettes": "自定义色彩主题",
     "DevMode": "开发模式",
     "EditTokenWeight": "编辑令牌权重",
+    "Error System": "错误系统",
     "Execution": "执行",
     "Extension": "扩展",
     "General": "常规",
@@ -2425,8 +2461,11 @@
       "moreOptions": "更多设置",
       "noActiveJobs": "无活跃任务",
       "preview": "预览",
+      "queuedJobsLabel": "{count} 个已排队",
       "queuedSuffix": "已执行",
       "running": "运行中",
+      "runningJobsLabel": "{count} 个正在运行",
+      "runningQueuedSummary": "{running}，{queued}",
       "showAssets": "显示资产",
       "showAssetsPanel": "显示资产面板",
       "sortBy": "排序方式",
