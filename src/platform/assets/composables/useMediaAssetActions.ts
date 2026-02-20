@@ -141,16 +141,16 @@ export function useMediaAssetActions() {
       for (const asset of assets) {
         if (getAssetType(asset) === 'output') {
           const metadata = getOutputAssetMetadata(asset.user_metadata)
-          const promptId = metadata?.promptId || asset.id
-          if (!jobIds.includes(promptId)) {
-            jobIds.push(promptId)
+          const jobId = metadata?.jobId || asset.id
+          if (!jobIds.includes(jobId)) {
+            jobIds.push(jobId)
           }
-          if (metadata?.promptId && asset.name) {
-            if (!jobAssetNameFilters[metadata.promptId]) {
-              jobAssetNameFilters[metadata.promptId] = []
+          if (metadata?.jobId && asset.name) {
+            if (!jobAssetNameFilters[metadata.jobId]) {
+              jobAssetNameFilters[metadata.jobId] = []
             }
-            if (!jobAssetNameFilters[metadata.promptId].includes(asset.name)) {
-              jobAssetNameFilters[metadata.promptId].push(asset.name)
+            if (!jobAssetNameFilters[metadata.jobId].includes(asset.name)) {
+              jobAssetNameFilters[metadata.jobId].push(asset.name)
             }
           }
         } else {
