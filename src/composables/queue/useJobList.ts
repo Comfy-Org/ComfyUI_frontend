@@ -257,7 +257,7 @@ export function useJobList() {
       const isActive =
         String(task.jobId ?? '') === String(executionStore.activeJobId ?? '')
       const showAddedHint = shouldShowAddedHint(task, state)
-      const promptKey = taskIdToKey(task.promptId)
+      const promptKey = taskIdToKey(task.jobId)
       const promptPreviewUrl =
         state === 'running' && jobPreviewStore.isPreviewEnabled && promptKey
           ? jobPreviewStore.previewsByPromptId[promptKey]
