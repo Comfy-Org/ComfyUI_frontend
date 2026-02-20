@@ -2,7 +2,7 @@ import { t } from '@/i18n'
 
 import type { ResultItemImpl } from '@/stores/queueStore'
 
-export type StatItem = { content?: string; iconClass?: string }
+type StatItem = { content?: string; iconClass?: string }
 export const mediaTypes: Record<string, StatItem> = {
   '3d': {
     content: t('sideToolbar.mediaAssets.filter3D'),
