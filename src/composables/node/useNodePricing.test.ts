@@ -1,9 +1,16 @@
 import { describe, expect, it } from 'vitest'
 
 import { CREDITS_PER_USD, formatCredits } from '@/base/credits/comfyCredits'
-import { useNodePricing } from '@/composables/node/useNodePricing'
+import {
+  evaluateNodeDefPricing,
+  formatCreditsListValue,
+  formatCreditsRangeValue,
+  formatCreditsValue,
+  formatPricingResult,
+  useNodePricing
+} from '@/composables/node/useNodePricing'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import type { PriceBadge } from '@/schemas/nodeDefSchema'
+import type { ComfyNodeDef, PriceBadge } from '@/schemas/nodeDefSchema'
 import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
 
 // -----------------------------------------------------------------------------
@@ -673,18 +680,19 @@ describe('useNodePricing', () => {
       expect(price).toBe('')
     })
 
-    it('should return empty string for PricingResult missing type field', async () => {
+    it('should handle legacy format without type field', async () => {
       const { getNodeDisplayPrice } = useNodePricing()
       const node = createMockNodeWithPriceBadge(
-        'TestMissingTypeNode',
-        // Returns object without type field
+        'TestLegacyFormatNode',
+        // Returns object without type field (legacy format)
         priceBadge('{"usd":0.05}')
       )
 
       getNodeDisplayPrice(node)
       await new Promise((r) => setTimeout(r, 50))
       const price = getNodeDisplayPrice(node)
-      expect(price).toBe('')
+      // Legacy format {usd: number} is supported
+      expect(price).toBe(creditsLabel(0.05))
     })
 
     it('should return empty string for non-object result', async () => {
@@ -853,5 +861,364 @@ describe('useNodePricing', () => {
         expect(price).toBe('10.6-211 credits/Run')
       })
     })
+  })
+})
+
+// -----------------------------------------------------------------------------
+// formatPricingResult Tests
+// -----------------------------------------------------------------------------
+
+describe('formatPricingResult', () => {
+  describe('type: usd', () => {
+    it('should format usd result', () => {
+      const result = formatPricingResult({ type: 'usd', usd: 0.05 })
+      expect(result).toBe('10.6 credits/Run')
+    })
+
+    it('should return valueOnly format', () => {
+      const result = formatPricingResult(
+        { type: 'usd', usd: 0.05 },
+        { valueOnly: true }
+      )
+      expect(result).toBe('10.6')
+    })
+
+    it('should handle approximate prefix in valueOnly mode', () => {
+      const result = formatPricingResult(
+        { type: 'usd', usd: 0.05, format: { approximate: true } },
+        { valueOnly: true }
+      )
+      expect(result).toBe('~10.6')
+    })
+
+    it('should return empty for null usd', () => {
+      const result = formatPricingResult({ type: 'usd', usd: null as never })
+      expect(result).toBe('')
+    })
+  })
+
+  describe('type: range_usd', () => {
+    it('should format range result', () => {
+      const result = formatPricingResult({
+        type: 'range_usd',
+        min_usd: 0.05,
+        max_usd: 0.1
+      })
+      expect(result).toBe('10.6-21.1 credits/Run')
+    })
+
+    it('should return valueOnly format', () => {
+      const result = formatPricingResult(
+        { type: 'range_usd', min_usd: 0.05, max_usd: 0.1 },
+        { valueOnly: true }
+      )
+      expect(result).toBe('10.6-21.1')
+    })
+
+    it('should collapse range when min equals max', () => {
+      const result = formatPricingResult(
+        { type: 'range_usd', min_usd: 0.05, max_usd: 0.05 },
+        { valueOnly: true }
+      )
+      expect(result).toBe('10.6')
+    })
+  })
+
+  describe('type: list_usd', () => {
+    it('should format list result', () => {
+      const result = formatPricingResult({
+        type: 'list_usd',
+        usd: [0.05, 0.1, 0.15]
+      })
+      expect(result).toMatch(/\d+\.?\d*\/\d+\.?\d*\/\d+\.?\d* credits\/Run/)
+    })
+
+    it('should return valueOnly format', () => {
+      const result = formatPricingResult(
+        { type: 'list_usd', usd: [0.05, 0.1] },
+        { valueOnly: true }
+      )
+      expect(result).toBe('10.6/21.1')
+    })
+  })
+
+  describe('type: text', () => {
+    it('should return text as-is', () => {
+      const result = formatPricingResult({ type: 'text', text: 'Free' })
+      expect(result).toBe('Free')
+    })
+  })
+
+  describe('legacy format', () => {
+    it('should handle {usd: number} without type field', () => {
+      const result = formatPricingResult({ usd: 0.05 })
+      expect(result).toBe('10.6 credits/Run')
+    })
+
+    it('should return valueOnly for legacy format', () => {
+      const result = formatPricingResult({ usd: 0.05 }, { valueOnly: true })
+      expect(result).toBe('10.6')
+    })
+  })
+
+  describe('invalid inputs', () => {
+    it('should return empty for invalid type', () => {
+      const result = formatPricingResult({ type: 'invalid' })
+      expect(result).toBe('')
+    })
+
+    it('should return empty for null', () => {
+      const result = formatPricingResult(null)
+      expect(result).toBe('')
+    })
+
+    it('should return empty for undefined', () => {
+      const result = formatPricingResult(undefined)
+      expect(result).toBe('')
+    })
+  })
+})
+
+// -----------------------------------------------------------------------------
+// formatCreditsValue / Range / List Tests
+// -----------------------------------------------------------------------------
+
+describe('formatCreditsValue', () => {
+  it('should format USD to credits', () => {
+    expect(formatCreditsValue(0.05)).toBe('10.6')
+    expect(formatCreditsValue(1.0)).toBe('211')
+  })
+})
+
+describe('formatCreditsRangeValue', () => {
+  it('should format min-max range', () => {
+    expect(formatCreditsRangeValue(0.05, 0.1)).toBe('10.6-21.1')
+  })
+
+  it('should collapse when min equals max', () => {
+    expect(formatCreditsRangeValue(0.05, 0.05)).toBe('10.6')
+  })
+})
+
+describe('formatCreditsListValue', () => {
+  it('should join values with separator', () => {
+    expect(formatCreditsListValue([0.05, 0.1])).toBe('10.6/21.1')
+  })
+
+  it('should use custom separator', () => {
+    expect(formatCreditsListValue([0.05, 0.1], ' | ')).toBe('10.6 | 21.1')
+  })
+})
+
+// -----------------------------------------------------------------------------
+// evaluateNodeDefPricing Tests
+// -----------------------------------------------------------------------------
+
+describe('evaluateNodeDefPricing', () => {
+  const createMockNodeDef = (
+    overrides: Partial<ComfyNodeDef> = {}
+  ): ComfyNodeDef =>
+    ({
+      name: 'TestNode',
+      display_name: 'Test Node',
+      description: '',
+      category: 'test',
+      input: { required: {}, optional: {} },
+      output: [],
+      output_name: [],
+      output_is_list: [],
+      python_module: 'test',
+      ...overrides
+    }) as ComfyNodeDef
+
+  it('should return empty for node without price_badge', async () => {
+    const nodeDef = createMockNodeDef()
+    const result = await evaluateNodeDefPricing(nodeDef)
+    expect(result).toBe('')
+  })
+
+  it('should evaluate static expression', async () => {
+    const nodeDef = createMockNodeDef({
+      name: 'StaticPriceNode',
+      price_badge: {
+        engine: 'jsonata',
+        expr: '{"type":"usd","usd":0.05}',
+        depends_on: { widgets: [], inputs: [], input_groups: [] }
+      }
+    })
+    const result = await evaluateNodeDefPricing(nodeDef)
+    expect(result).toBe('10.6')
+  })
+
+  it('should use default value from input spec', async () => {
+    const nodeDef = createMockNodeDef({
+      name: 'DefaultValueNode',
+      price_badge: {
+        engine: 'jsonata',
+        expr: '{"type":"usd","usd": widgets.count * 0.01}',
+        depends_on: {
+          widgets: [{ name: 'count', type: 'INT' }],
+          inputs: [],
+          input_groups: []
+        }
+      },
+      input: {
+        required: {
+          count: ['INT', { default: 10 }]
+        }
+      }
+    })
+    const result = await evaluateNodeDefPricing(nodeDef)
+    expect(result).toBe('21.1') // 10 * 0.01 = 0.1 USD = 21.1 credits
+  })
+
+  it('should use first option for COMBO without default', async () => {
+    const nodeDef = createMockNodeDef({
+      name: 'ComboNode',
+      price_badge: {
+        engine: 'jsonata',
+        expr: '(widgets.mode = "pro") ? {"type":"usd","usd":0.10} : {"type":"usd","usd":0.05}',
+        depends_on: {
+          widgets: [{ name: 'mode', type: 'COMBO' }],
+          inputs: [],
+          input_groups: []
+        }
+      },
+      input: {
+        required: {
+          mode: [['standard', 'pro'], {}]
+        }
+      }
+    })
+    const result = await evaluateNodeDefPricing(nodeDef)
+    // First option is "standard", not "pro", so should be 0.05 USD
+    expect(result).toBe('10.6')
+  })
+
+  it('should use "original" as fallback for dynamic COMBO without input', async () => {
+    const nodeDef = createMockNodeDef({
+      name: 'DynamicComboNode',
+      price_badge: {
+        engine: 'jsonata',
+        expr: `(
+          $prices := {"original": 0.05, "720p": 0.03};
+          {"type":"usd","usd": $lookup($prices, widgets.resolution)}
+        )`,
+        depends_on: {
+          widgets: [{ name: 'resolution', type: 'COMBO' }],
+          inputs: [],
+          input_groups: []
+        }
+      },
+      input: {
+        required: {
+          // resolution widget is NOT in inputs (dynamically created)
+        }
+      }
+    })
+    const result = await evaluateNodeDefPricing(nodeDef)
+    // Fallback to "original" = 0.05 USD
+    expect(result).toBe('10.6')
+  })
+
+  it('should handle dynamic combo with options array', async () => {
+    const nodeDef = createMockNodeDef({
+      name: 'DynamicOptionsNode',
+      price_badge: {
+        engine: 'jsonata',
+        expr: '{"type":"usd","usd": widgets.model = "model_a" ? 0.05 : 0.10}',
+        depends_on: {
+          widgets: [{ name: 'model', type: 'COMFY_DYNAMICCOMBO_V3' }],
+          inputs: [],
+          input_groups: []
+        }
+      },
+      input: {
+        required: {
+          model: [
+            'COMFY_DYNAMICCOMBO_V3',
+            { options: [{ key: 'model_a' }, { key: 'model_b' }] }
+          ]
+        }
+      }
+    })
+    const result = await evaluateNodeDefPricing(nodeDef)
+    // First option key is "model_a" = 0.05 USD
+    expect(result).toBe('10.6')
+  })
+
+  it('should assume inputs disconnected in preview', async () => {
+    const nodeDef = createMockNodeDef({
+      name: 'InputConnectedNode',
+      price_badge: {
+        engine: 'jsonata',
+        expr: 'inputs.image.connected ? {"type":"usd","usd":0.10} : {"type":"usd","usd":0.05}',
+        depends_on: {
+          widgets: [],
+          inputs: ['image'],
+          input_groups: []
+        }
+      }
+    })
+    const result = await evaluateNodeDefPricing(nodeDef)
+    // In preview, inputs are assumed disconnected
+    expect(result).toBe('10.6')
+  })
+
+  it('should assume inputGroups have 0 count in preview', async () => {
+    const nodeDef = createMockNodeDef({
+      name: 'InputGroupNode',
+      price_badge: {
+        engine: 'jsonata',
+        expr: '{"type":"usd","usd": 0.05 + inputGroups.videos * 0.02}',
+        depends_on: {
+          widgets: [],
+          inputs: [],
+          input_groups: ['videos']
+        }
+      }
+    })
+    const result = await evaluateNodeDefPricing(nodeDef)
+    // 0.05 + 0 * 0.02 = 0.05 USD
+    expect(result).toBe('10.6')
+  })
+
+  it('should return empty on JSONata error', async () => {
+    const nodeDef = createMockNodeDef({
+      name: 'ErrorNode',
+      price_badge: {
+        engine: 'jsonata',
+        expr: '$lookup(undefined, "key")',
+        depends_on: { widgets: [], inputs: [], input_groups: [] }
+      }
+    })
+    const result = await evaluateNodeDefPricing(nodeDef)
+    expect(result).toBe('')
+  })
+
+  it('should handle range_usd result', async () => {
+    const nodeDef = createMockNodeDef({
+      name: 'RangeNode',
+      price_badge: {
+        engine: 'jsonata',
+        expr: '{"type":"range_usd","min_usd":0.05,"max_usd":0.10}',
+        depends_on: { widgets: [], inputs: [], input_groups: [] }
+      }
+    })
+    const result = await evaluateNodeDefPricing(nodeDef)
+    expect(result).toBe('10.6-21.1')
+  })
+
+  it('should handle approximate format in valueOnly mode', async () => {
+    const nodeDef = createMockNodeDef({
+      name: 'ApproximateNode',
+      price_badge: {
+        engine: 'jsonata',
+        expr: '{"type":"usd","usd":0.05,"format":{"approximate":true}}',
+        depends_on: { widgets: [], inputs: [], input_groups: [] }
+      }
+    })
+    const result = await evaluateNodeDefPricing(nodeDef)
+    expect(result).toBe('~10.6')
   })
 })

@@ -1,9 +1,10 @@
+import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { useExtensionService } from '@/services/extensionService'
 
 useExtensionService().registerExtension({
   name: 'Comfy.ImageCrop',
 
-  async nodeCreated(node) {
+  async nodeCreated(node: LGraphNode) {
     if (node.constructor.comfyClass !== 'ImageCropV2') return
 
     node.hideOutputImages = true
