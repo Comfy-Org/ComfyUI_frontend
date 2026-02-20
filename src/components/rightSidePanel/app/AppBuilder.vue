@@ -33,8 +33,10 @@ const workflowStore = useWorkflowStore()
 const { t } = useI18n()
 const canvas: LGraphCanvas = canvasStore.getCanvas()
 
+const hoveringSelectable = ref(false)
 const selectedInputs = ref<[NodeId, string][]>([])
 const selectedOutputs = ref<NodeId[]>([])
+
 const inputsWithState = computed(() =>
   selectedInputs.value.map(([nodeId, widgetName]) => {
     const node = app.rootGraph.getNodeById(nodeId)
@@ -274,8 +276,14 @@ const renderedInputs = computed<[string, MaybeRef<BoundStyle> | undefined][]>(
 
   <Teleport to="body">
     <div
-      class="absolute w-full h-full pointer-events-auto"
+      :class="
+        cn(
+          'absolute w-full h-full pointer-events-auto',
+          hoveringSelectable ? 'cursor-pointer' : 'cursor-grab'
+        )
+      "
       @pointerdown="handleDown"
+      @pointermove="hoveringSelectable = !!getHovered($event)"
       @click="handleClick"
       @wheel="canvasInteractions.forwardEventToCanvas"
     >
