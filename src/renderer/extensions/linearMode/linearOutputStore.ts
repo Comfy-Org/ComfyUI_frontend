@@ -5,12 +5,12 @@ import { flattenNodeOutput } from '@/renderer/extensions/linearMode/flattenNodeO
 import type { InProgressItem } from '@/renderer/extensions/linearMode/linearModeTypes'
 import type { ExecutedWsMessage } from '@/schemas/apiSchema'
 import { api } from '@/scripts/api'
+import { useAppModeStore } from '@/stores/appModeStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useJobPreviewStore } from '@/stores/jobPreviewStore'
 
-const apiTarget: EventTarget = api
-
 export const useLinearOutputStore = defineStore('linearOutput', () => {
+  const appModeStore = useAppModeStore()
   const executionStore = useExecutionStore()
   const jobPreviewStore = useJobPreviewStore()
 
@@ -196,11 +196,31 @@ export const useLinearOutputStore = defineStore('linearOutput', () => {
     // User is browsing history — don't yank
   }
 
-  // --- Event bindings ---
+  // --- Event bindings (only active in app mode) ---
+
+  function handleExecuted({ detail }: CustomEvent<ExecutedWsMessage>) {
+    const jobId = detail.prompt_id
+    if (jobId !== executionStore.activeJobId) return
+    onNodeExecuted(jobId, detail)
+  }
+
+  function reset() {
+    if (raf) {
+      cancelAnimationFrame(raf)
+      raf = null
+    }
+    inProgressItems.value = []
+    selectedId.value = null
+    isFollowing.value = true
+    trackedJobId.value = null
+    currentSkeletonId.value = null
+    pendingResolve.value = new Set()
+  }
 
   watch(
     () => executionStore.activeJobId,
     (jobId, oldJobId) => {
+      if (!appModeStore.isAppMode) return
       if (oldJobId && oldJobId !== jobId) {
         onJobComplete(oldJobId)
       }
@@ -213,6 +233,7 @@ export const useLinearOutputStore = defineStore('linearOutput', () => {
   watch(
     () => jobPreviewStore.previewsByPromptId,
     (previews) => {
+      if (!appModeStore.isAppMode) return
       const jobId = executionStore.activeJobId
       if (!jobId) return
       const url = previews[jobId]
@@ -221,14 +242,18 @@ export const useLinearOutputStore = defineStore('linearOutput', () => {
     { deep: true }
   )
 
-  function handleExecuted(e: Event) {
-    const detail = (e as CustomEvent<ExecutedWsMessage>).detail
-    const jobId = detail.prompt_id
-    if (jobId !== executionStore.activeJobId) return
-    onNodeExecuted(jobId, detail)
-  }
-
-  apiTarget.addEventListener('executed', handleExecuted)
+  watch(
+    () => appModeStore.isAppMode,
+    (active, wasActive) => {
+      if (active) {
+        api.addEventListener('executed', handleExecuted)
+      } else if (wasActive) {
+        api.removeEventListener('executed', handleExecuted)
+        reset()
+      }
+    },
+    { immediate: true }
+  )
 
   return {
     inProgressItems,
