@@ -130,14 +130,20 @@ export function deletePayloads(workspaceId: string, draftKeys: string[]): void {
  * Gets all draft payload keys for a workspace from localStorage.
  */
 export function getPayloadKeys(workspaceId: string): string[] {
+  if (!storageAvailable) return []
+
   const prefix = `${StorageKeys.prefixes.draftPayload}${workspaceId}:`
   const keys: string[] = []
 
-  for (let i = 0; i < localStorage.length; i++) {
-    const key = localStorage.key(i)
-    if (key?.startsWith(prefix)) {
-      keys.push(key.slice(prefix.length))
+  try {
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i)
+      if (key?.startsWith(prefix)) {
+        keys.push(key.slice(prefix.length))
+      }
     }
+  } catch {
+    return []
   }
 
   return keys
@@ -228,37 +234,45 @@ export function writeOpenPaths(
  * Used during signout to prevent data leakage.
  */
 export function clearAllV2Storage(): void {
+  if (!storageAvailable) return
+
   const prefixes = [
     StorageKeys.prefixes.draftIndex,
     StorageKeys.prefixes.draftPayload
   ]
 
-  // Clear localStorage
-  for (let i = localStorage.length - 1; i >= 0; i--) {
-    const key = localStorage.key(i)
-    if (key && prefixes.some((prefix) => key.startsWith(prefix))) {
-      try {
-        localStorage.removeItem(key)
-      } catch {
-        // Ignore
+  try {
+    for (let i = localStorage.length - 1; i >= 0; i--) {
+      const key = localStorage.key(i)
+      if (key && prefixes.some((prefix) => key.startsWith(prefix))) {
+        try {
+          localStorage.removeItem(key)
+        } catch {
+          // Ignore
+        }
       }
     }
+  } catch {
+    // Ignore
   }
 
-  // Clear sessionStorage pointers
   const sessionPrefixes = [
     StorageKeys.prefixes.activePath,
     StorageKeys.prefixes.openPaths
   ]
 
-  for (let i = sessionStorage.length - 1; i >= 0; i--) {
-    const key = sessionStorage.key(i)
-    if (key && sessionPrefixes.some((prefix) => key.startsWith(prefix))) {
-      try {
-        sessionStorage.removeItem(key)
-      } catch {
-        // Ignore
+  try {
+    for (let i = sessionStorage.length - 1; i >= 0; i--) {
+      const key = sessionStorage.key(i)
+      if (key && sessionPrefixes.some((prefix) => key.startsWith(prefix))) {
+        try {
+          sessionStorage.removeItem(key)
+        } catch {
+          // Ignore
+        }
       }
     }
+  } catch {
+    // Ignore
   }
 }

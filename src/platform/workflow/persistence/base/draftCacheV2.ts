@@ -116,6 +116,7 @@ export function moveEntry(
 
   const oldEntry = index.entries[oldKey]
   if (!oldEntry) return null
+  if (oldKey !== newKey && index.entries[newKey]) return null
 
   const entries = { ...index.entries }
   delete entries[oldKey]

@@ -197,6 +197,28 @@ describe('draftCacheV2', () => {
       expect(result).toBeNull()
     })
 
+    it('returns null when destination path already exists', () => {
+      let index = createEmptyIndex()
+      index = upsertEntry(index, 'workflows/a.json', {
+        name: 'a',
+        isTemporary: true,
+        updatedAt: 1000
+      }).index
+      index = upsertEntry(index, 'workflows/b.json', {
+        name: 'b',
+        isTemporary: true,
+        updatedAt: 2000
+      }).index
+
+      const result = moveEntry(
+        index,
+        'workflows/a.json',
+        'workflows/b.json',
+        'b-renamed'
+      )
+      expect(result).toBeNull()
+    })
+
     it('moves entry to end of order', () => {
       let index = createEmptyIndex()
       index = upsertEntry(index, 'workflows/a.json', {
