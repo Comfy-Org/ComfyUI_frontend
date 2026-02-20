@@ -1,5 +1,5 @@
 import { mount } from '@vue/test-utils'
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 import type { RenderedTreeExplorerNode } from '@/types/treeExplorerTypes'
@@ -12,10 +12,15 @@ vi.mock('@/platform/settings/settingStore', () => ({
   })
 }))
 
+const { mockStartDrag, mockHandleNativeDrop } = vi.hoisted(() => ({
+  mockStartDrag: vi.fn(),
+  mockHandleNativeDrop: vi.fn()
+}))
+
 vi.mock('@/composables/node/useNodeDragToCanvas', () => ({
   useNodeDragToCanvas: () => ({
-    startDrag: vi.fn(),
-    handleNativeDrop: vi.fn()
+    startDrag: mockStartDrag,
+    handleNativeDrop: mockHandleNativeDrop
   })
 }))
 
@@ -24,6 +29,10 @@ vi.mock('@/components/node/NodePreviewCard.vue', () => ({
 }))
 
 describe('EssentialNodeCard', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
   function createMockNode(
     overrides: Partial<ComfyNodeDefImpl> = {}
   ): RenderedTreeExplorerNode<ComfyNodeDefImpl> {
@@ -152,34 +161,44 @@ describe('EssentialNodeCard', () => {
   })
 
   describe('drag and drop', () => {
-    it('should handle dragstart event', async () => {
+    it('should call startDrag on dragstart', async () => {
       const wrapper = mountComponent()
       const card = wrapper.find('div')
 
       await card.trigger('dragstart')
+
+      expect(mockStartDrag).toHaveBeenCalled()
     })
 
-    it('should handle dragend event', async () => {
+    it('should call handleNativeDrop on dragend', async () => {
       const wrapper = mountComponent()
       const card = wrapper.find('div')
 
       await card.trigger('dragend')
+
+      expect(mockHandleNativeDrop).toHaveBeenCalled()
     })
   })
 
   describe('hover preview', () => {
-    it('should handle mouseenter event', async () => {
+    it('should show preview on mouseenter', async () => {
       const wrapper = mountComponent()
       const card = wrapper.find('div')
 
       await card.trigger('mouseenter')
+
+      expect(wrapper.find('teleport-stub').exists()).toBe(true)
     })
 
-    it('should handle mouseleave event', async () => {
+    it('should hide preview after mouseleave', async () => {
       const wrapper = mountComponent()
       const card = wrapper.find('div')
 
+      await card.trigger('mouseenter')
+      expect(wrapper.find('teleport-stub').exists()).toBe(true)
+
       await card.trigger('mouseleave')
+      expect(wrapper.find('teleport-stub').exists()).toBe(false)
     })
   })
 })
