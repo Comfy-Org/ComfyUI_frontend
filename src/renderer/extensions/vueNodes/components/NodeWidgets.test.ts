@@ -1,6 +1,7 @@
 import { createTestingPinia } from '@pinia/testing'
 import { mount } from '@vue/test-utils'
-import { describe, expect, it } from 'vitest'
+import { reactive } from 'vue'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import type {
   SafeWidgetData,
@@ -8,6 +9,32 @@ import type {
 } from '@/composables/graph/useGraphNodeManager'
 
 import NodeWidgets from '@/renderer/extensions/vueNodes/components/NodeWidgets.vue'
+
+const mockDragState = reactive({
+  active: false,
+  pointerId: null as number | null,
+  source: null,
+  pointer: { client: { x: 0, y: 0 }, canvas: { x: 0, y: 0 } },
+  candidate: null as {
+    layout: { nodeId: string; index: number; type: string }
+    compatible: boolean
+  } | null,
+  compatible: new Map<string, boolean>()
+})
+
+vi.mock('@/renderer/core/canvas/links/slotLinkDragUIState', () => ({
+  useSlotLinkDragUIState: () => ({
+    state: mockDragState,
+    beginDrag: vi.fn(),
+    endDrag: vi.fn(),
+    updatePointerPosition: vi.fn(),
+    setCandidate: vi.fn(),
+    getSlotLayout: vi.fn(),
+    setCompatibleMap: vi.fn(),
+    setCompatibleForKey: vi.fn(),
+    clearCompatible: vi.fn()
+  })
+}))
 
 describe('NodeWidgets', () => {
   const createMockWidget = (
@@ -37,6 +64,16 @@ describe('NodeWidgets', () => {
     executing: false,
     inputs: [],
     outputs: []
+  })
+
+  function resetDragState() {
+    mockDragState.active = false
+    mockDragState.candidate = null
+    mockDragState.compatible.clear()
+  }
+
+  afterEach(() => {
+    resetDragState()
   })
 
   const mountComponent = (nodeData?: VueNodeData) => {
@@ -116,5 +153,145 @@ describe('NodeWidgets', () => {
         }
       }
     )
+  })
+
+  describe('drag hover indicator', () => {
+    it('applies ring class when dragging a compatible link over a widget slot', () => {
+      const widget = createMockWidget({
+        slotMetadata: { index: 0, linked: false }
+      })
+      const nodeData = createMockNodeData('TestNode', [widget])
+
+      mockDragState.active = true
+      mockDragState.candidate = {
+        layout: { nodeId: '1', index: 0, type: 'input' },
+        compatible: true
+      }
+
+      const wrapper = mountComponent(nodeData)
+      const widgetEl = wrapper.find('.lg-node-widget')
+      expect(widgetEl.classes()).toContain('ring')
+      expect(widgetEl.classes()).toContain('ring-component-node-widget-linked')
+    })
+
+    it('does not apply ring class when candidate is incompatible', () => {
+      const widget = createMockWidget({
+        slotMetadata: { index: 0, linked: false }
+      })
+      const nodeData = createMockNodeData('TestNode', [widget])
+
+      mockDragState.active = true
+      mockDragState.candidate = {
+        layout: { nodeId: '1', index: 0, type: 'input' },
+        compatible: false
+      }
+
+      const wrapper = mountComponent(nodeData)
+      const widgetEl = wrapper.find('.lg-node-widget')
+      expect(widgetEl.classes()).not.toContain('ring')
+    })
+
+    it('does not apply ring class when candidate targets a different node', () => {
+      const widget = createMockWidget({
+        slotMetadata: { index: 0, linked: false }
+      })
+      const nodeData = createMockNodeData('TestNode', [widget])
+
+      mockDragState.active = true
+      mockDragState.candidate = {
+        layout: { nodeId: '99', index: 0, type: 'input' },
+        compatible: true
+      }
+
+      const wrapper = mountComponent(nodeData)
+      const widgetEl = wrapper.find('.lg-node-widget')
+      expect(widgetEl.classes()).not.toContain('ring')
+    })
+
+    it('does not apply ring class when no drag is active', () => {
+      const widget = createMockWidget({
+        slotMetadata: { index: 0, linked: false }
+      })
+      const nodeData = createMockNodeData('TestNode', [widget])
+      const wrapper = mountComponent(nodeData)
+      const widgetEl = wrapper.find('.lg-node-widget')
+      expect(widgetEl.classes()).not.toContain('ring')
+    })
+
+    it('does not apply ring class when widget has no slotMetadata', () => {
+      const widget = createMockWidget({ slotMetadata: undefined })
+      const nodeData = createMockNodeData('TestNode', [widget])
+
+      mockDragState.active = true
+      mockDragState.candidate = {
+        layout: { nodeId: '1', index: 0, type: 'input' },
+        compatible: true
+      }
+
+      const wrapper = mountComponent(nodeData)
+      const widgetEl = wrapper.find('.lg-node-widget')
+      expect(widgetEl.classes()).not.toContain('ring')
+      expect(widgetEl.classes()).not.toContain('border-l-2')
+    })
+
+    it('does not apply ring class when candidate targets an output slot', () => {
+      const widget = createMockWidget({
+        slotMetadata: { index: 0, linked: false }
+      })
+      const nodeData = createMockNodeData('TestNode', [widget])
+
+      mockDragState.active = true
+      mockDragState.candidate = {
+        layout: { nodeId: '1', index: 0, type: 'output' },
+        compatible: true
+      }
+
+      const wrapper = mountComponent(nodeData)
+      const widgetEl = wrapper.find('.lg-node-widget')
+      expect(widgetEl.classes()).not.toContain('ring')
+    })
+  })
+
+  describe('connected state indicator', () => {
+    it('applies border class when widget slot is linked', () => {
+      const widget = createMockWidget({
+        slotMetadata: { index: 0, linked: true }
+      })
+      const nodeData = createMockNodeData('TestNode', [widget])
+      const wrapper = mountComponent(nodeData)
+      const widgetEl = wrapper.find('.lg-node-widget')
+      expect(widgetEl.classes()).toContain('border-l-2')
+      expect(widgetEl.classes()).toContain(
+        'border-component-node-widget-linked'
+      )
+    })
+
+    it('does not apply border class when widget slot is not linked', () => {
+      const widget = createMockWidget({
+        slotMetadata: { index: 0, linked: false }
+      })
+      const nodeData = createMockNodeData('TestNode', [widget])
+      const wrapper = mountComponent(nodeData)
+      const widgetEl = wrapper.find('.lg-node-widget')
+      expect(widgetEl.classes()).not.toContain('border-l-2')
+    })
+
+    it('prefers drag hover ring over connected border when both apply', () => {
+      const widget = createMockWidget({
+        slotMetadata: { index: 0, linked: true }
+      })
+      const nodeData = createMockNodeData('TestNode', [widget])
+
+      mockDragState.active = true
+      mockDragState.candidate = {
+        layout: { nodeId: '1', index: 0, type: 'input' },
+        compatible: true
+      }
+
+      const wrapper = mountComponent(nodeData)
+      const widgetEl = wrapper.find('.lg-node-widget')
+      expect(widgetEl.classes()).toContain('ring')
+      expect(widgetEl.classes()).not.toContain('border-l-2')
+    })
   })
 })
