@@ -14,7 +14,7 @@
   },
   "dependencies": {
     "axios": "catalog:",
-    "dompurify": "^3.2.5"
+    "dompurify": "catalog:"
   },
   "devDependencies": {
     "typescript": "catalog:"
