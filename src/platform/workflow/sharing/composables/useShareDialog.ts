@@ -18,6 +18,13 @@ export function useShareDialog() {
       component: ShareWorkflowDialogContent,
       props: {
         onClose: hide
+      },
+      dialogComponentProps: {
+        pt: {
+          root: {
+            class: 'rounded-2xl overflow-hidden w-full sm:w-144 max-w-full'
+          }
+        }
       }
     })
   }

@@ -101,7 +101,9 @@ export function useComfyHubProfileGate() {
           dismissableMask: true,
           onClose: () => resolve('cancel'),
           pt: {
-            root: { class: 'rounded-2xl overflow-hidden' },
+            root: {
+              class: 'rounded-2xl overflow-hidden w-full sm:w-144 max-w-full'
+            },
             header: { class: 'p-0! hidden' },
             content: { class: 'p-0! m-0!' }
           }
