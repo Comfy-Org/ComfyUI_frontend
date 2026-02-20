@@ -10,8 +10,12 @@ export const useSearchBoxStore = defineStore('searchBox', () => {
   const settingStore = useSettingStore()
   const { x, y } = useMouse()
 
-  const newSearchBoxEnabled = computed(
+  const useSearchBoxV2 = computed(
     () => settingStore.get('Comfy.NodeSearchBoxImpl') === 'default'
+  )
+
+  const newSearchBoxEnabled = computed(
+    () => settingStore.get('Comfy.NodeSearchBoxImpl') !== 'litegraph (legacy)'
   )
 
   const popoverRef = shallowRef<InstanceType<
@@ -42,6 +46,7 @@ export const useSearchBoxStore = defineStore('searchBox', () => {
   }
 
   return {
+    useSearchBoxV2,
     newSearchBoxEnabled,
     setPopoverRef,
     toggleVisible,

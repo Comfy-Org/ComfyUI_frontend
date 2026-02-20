@@ -233,9 +233,9 @@ defineExpose({
           </Button>
           <Button
             v-if="!isEmpty"
-            variant="textonly"
+            variant="muted-textonly"
             size="icon-sm"
-            class="subbutton shrink-0 size-8 cursor-pointer text-muted-foreground hover:text-base-foreground"
+            class="subbutton shrink-0 size-8 hover:text-base-foreground"
             :title="t('rightSidePanel.resetAllParameters')"
             :aria-label="t('rightSidePanel.resetAllParameters')"
             @click.stop="handleResetAllWidgets"
@@ -244,9 +244,9 @@ defineExpose({
           </Button>
           <Button
             v-if="canShowLocateButton"
-            variant="textonly"
+            variant="muted-textonly"
             size="icon-sm"
-            class="subbutton shrink-0 mr-3 size-8 cursor-pointer text-muted-foreground hover:text-base-foreground"
+            class="subbutton shrink-0 mr-3 size-8 hover:text-base-foreground"
             :title="t('rightSidePanel.locateNode')"
             :aria-label="t('rightSidePanel.locateNode')"
             @click.stop="handleLocateNode"

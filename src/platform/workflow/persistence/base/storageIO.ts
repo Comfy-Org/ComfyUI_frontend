@@ -15,14 +15,34 @@ import { StorageKeys } from './storageKeys'
 /** Flag indicating if storage is available */
 let storageAvailable = true
 
-/** @knipIgnoreUsedByStackedPR Used by workflowPersistenceV2.ts (PR #3) */
 export function isStorageAvailable(): boolean {
   return storageAvailable
 }
 
-/** @knipIgnoreUsedByStackedPR Used by workflowPersistenceV2.ts (PR #3) */
 export function markStorageUnavailable(): void {
   storageAvailable = false
+}
+
+function isQuotaExceeded(error: unknown): boolean {
+  return (
+    error instanceof DOMException &&
+    (error.name === 'QuotaExceededError' ||
+      error.name === 'NS_ERROR_DOM_QUOTA_REACHED' ||
+      error.code === 22 ||
+      error.code === 1014)
+  )
+}
+
+function isValidIndex(value: unknown): value is DraftIndexV2 {
+  if (typeof value !== 'object' || value === null) return false
+  const obj = value as Record<string, unknown>
+  return (
+    obj.v === 2 &&
+    typeof obj.updatedAt === 'number' &&
+    Array.isArray(obj.order) &&
+    typeof obj.entries === 'object' &&
+    obj.entries !== null
+  )
 }
 
 /**
@@ -37,9 +57,9 @@ export function readIndex(workspaceId: string): DraftIndexV2 | null {
     if (!json) return null
 
     const parsed = JSON.parse(json)
-    if (parsed.v !== 2) return null
+    if (!isValidIndex(parsed)) return null
 
-    return parsed as DraftIndexV2
+    return parsed
   } catch {
     return null
   }
@@ -56,9 +76,7 @@ export function writeIndex(workspaceId: string, index: DraftIndexV2): boolean {
     localStorage.setItem(key, JSON.stringify(index))
     return true
   } catch (error) {
-    if (error instanceof DOMException && error.name === 'QuotaExceededError') {
-      return false
-    }
+    if (isQuotaExceeded(error)) return false
     throw error
   }
 }
@@ -98,9 +116,7 @@ export function writePayload(
     localStorage.setItem(key, JSON.stringify(payload))
     return true
   } catch (error) {
-    if (error instanceof DOMException && error.name === 'QuotaExceededError') {
-      return false
-    }
+    if (isQuotaExceeded(error)) return false
     throw error
   }
 }
