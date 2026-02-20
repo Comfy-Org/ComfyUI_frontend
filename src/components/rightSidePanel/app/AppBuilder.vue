@@ -126,11 +126,6 @@ function handleClick(e: MouseEvent) {
     const index = appIOStore.selectedOutputs.findIndex((id) => id === node.id)
     if (index === -1) appIOStore.selectedOutputs.push(node.id)
     else appIOStore.selectedOutputs.splice(index, 1)
-    app.rootGraph.extra.linearData ??= {}
-    //FIXME type here is only on ComfyWorkflowJson, not an active graph
-    ;(app.rootGraph.extra.linearData! as { outputs?: unknown }).outputs = [
-      ...appIOStore.selectedOutputs
-    ]
     return
   }
 
@@ -139,11 +134,6 @@ function handleClick(e: MouseEvent) {
   )
   if (index === -1) appIOStore.selectedInputs.push([node.id, widget.name])
   else appIOStore.selectedInputs.splice(index, 1)
-
-  app.rootGraph.extra.linearData ??= {}
-  ;(app.rootGraph.extra.linearData! as { inputs?: unknown }).inputs = [
-    ...appIOStore.selectedInputs
-  ]
 }
 
 function nodeToDisplayTuple(
