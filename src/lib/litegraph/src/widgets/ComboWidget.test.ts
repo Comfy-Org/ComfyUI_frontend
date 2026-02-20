@@ -1064,7 +1064,8 @@ describe('ComboWidget', () => {
           value: '',
           options: {
             values: [],
-            placeholder: 'No models found in ComfyUI/models/checkpoints folder...'
+            placeholder:
+              'No models found in ComfyUI/models/checkpoints folder...'
           }
         }),
         node
@@ -1082,7 +1083,8 @@ describe('ComboWidget', () => {
           value: 'model.safetensors',
           options: {
             values: ['model.safetensors', 'other.safetensors'],
-            placeholder: 'No models found in ComfyUI/models/checkpoints folder...'
+            placeholder:
+              'No models found in ComfyUI/models/checkpoints folder...'
           }
         }),
         node
