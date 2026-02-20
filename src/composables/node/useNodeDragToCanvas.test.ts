@@ -3,14 +3,20 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 import type { useNodeDragToCanvas as UseNodeDragToCanvasType } from './useNodeDragToCanvas'
 
-const mockAddNodeOnGraph = vi.fn()
-const mockConvertEventToCanvasOffset = vi.fn()
-const mockCanvas = {
-  canvas: {
-    getBoundingClientRect: vi.fn()
-  },
-  convertEventToCanvasOffset: mockConvertEventToCanvasOffset
-}
+const { mockAddNodeOnGraph, mockConvertEventToCanvasOffset, mockCanvas } =
+  vi.hoisted(() => {
+    const mockConvertEventToCanvasOffset = vi.fn()
+    return {
+      mockAddNodeOnGraph: vi.fn(),
+      mockConvertEventToCanvasOffset,
+      mockCanvas: {
+        canvas: {
+          getBoundingClientRect: vi.fn()
+        },
+        convertEventToCanvasOffset: mockConvertEventToCanvasOffset
+      }
+    }
+  })
 
 vi.mock('@/renderer/core/canvas/canvasStore', () => ({
   useCanvasStore: vi.fn(() => ({
@@ -34,7 +40,7 @@ describe('useNodeDragToCanvas', () => {
 
   beforeEach(async () => {
     vi.resetModules()
-    vi.clearAllMocks()
+    vi.resetAllMocks()
 
     const module = await import('./useNodeDragToCanvas')
     useNodeDragToCanvas = module.useNodeDragToCanvas
