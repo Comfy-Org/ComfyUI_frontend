@@ -156,10 +156,11 @@ describe('useComboWidget', () => {
     expect(mockNode.addWidget).toHaveBeenCalledWith(
       'combo',
       'inputName',
-      undefined,
+      '',
       expect.any(Function),
       expect.objectContaining({
-        values: []
+        values: [],
+        placeholder: undefined
       })
     )
     expect(widget).toBe(mockWidget)
