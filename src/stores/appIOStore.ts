@@ -14,8 +14,6 @@ export const useAppIOStore = defineStore('appIO', () => {
   whenever(
     () => workflowStore.activeWorkflow,
     (workflow) => {
-      workflow.changeTracker.reset()
-
       const { activeState } = workflow.changeTracker
       selectedInputs.value = activeState.extra?.linearData?.inputs ?? []
       selectedOutputs.value = activeState.extra?.linearData?.outputs ?? []
