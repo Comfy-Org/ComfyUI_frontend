@@ -477,6 +477,91 @@ describe('assetsStore - Refactored (Option A)', () => {
     })
   })
 
+  describe('Incremental Update', () => {
+    it('should preserve loaded items when updateHistory is called after pagination', async () => {
+      // Use indices 100-299 for page1 so there's room for a "newer" item
+      const page1 = Array.from({ length: 200 }, (_, i) =>
+        createMockJobItem(100 + i)
+      )
+      vi.mocked(api.getHistory).mockResolvedValueOnce(page1)
+      await store.updateHistory()
+
+      const page2 = Array.from({ length: 200 }, (_, i) =>
+        createMockJobItem(300 + i)
+      )
+      vi.mocked(api.getHistory).mockResolvedValueOnce(page2)
+      await store.loadMoreHistory()
+      expect(store.historyAssets).toHaveLength(400)
+
+      // Index 0 → Date.now() - 0ms, which is newer than index 100+
+      const newJob = createMockJobItem(0)
+      const refreshedPage1 = [newJob, ...page1.slice(0, 199)]
+      vi.mocked(api.getHistory).mockResolvedValueOnce(refreshedPage1)
+      await store.updateHistory()
+
+      expect(store.historyAssets).toHaveLength(401)
+      expect(store.historyAssets[0].id).toBe('prompt_0')
+    })
+
+    it('should not duplicate items when updateHistory fetches overlapping data', async () => {
+      const page1 = Array.from({ length: 200 }, (_, i) => createMockJobItem(i))
+      vi.mocked(api.getHistory).mockResolvedValueOnce(page1)
+      await store.updateHistory()
+
+      vi.mocked(api.getHistory).mockResolvedValueOnce([...page1])
+      await store.updateHistory()
+
+      expect(store.historyAssets).toHaveLength(200)
+    })
+
+    it('should adjust offset for loadMore after new items are prepended', async () => {
+      const page1 = Array.from({ length: 200 }, (_, i) => createMockJobItem(i))
+      vi.mocked(api.getHistory).mockResolvedValueOnce(page1)
+      await store.updateHistory()
+
+      const newJobs = Array.from({ length: 5 }, (_, i) =>
+        createMockJobItem(5000 + i)
+      )
+      const refreshedPage1 = [...newJobs, ...page1.slice(0, 195)]
+      vi.mocked(api.getHistory).mockResolvedValueOnce(refreshedPage1)
+      await store.updateHistory()
+
+      const page2 = Array.from({ length: 200 }, (_, i) =>
+        createMockJobItem(200 + i)
+      )
+      vi.mocked(api.getHistory).mockResolvedValueOnce(page2)
+      await store.loadMoreHistory()
+
+      expect(api.getHistory).toHaveBeenLastCalledWith(200, { offset: 205 })
+    })
+
+    it('should preserve drift counter when loadMore fails', async () => {
+      const page1 = Array.from({ length: 200 }, (_, i) => createMockJobItem(i))
+      vi.mocked(api.getHistory).mockResolvedValueOnce(page1)
+      await store.updateHistory()
+
+      const newJobs = Array.from({ length: 3 }, (_, i) =>
+        createMockJobItem(6000 + i)
+      )
+      const refreshedPage1 = [...newJobs, ...page1.slice(0, 197)]
+      vi.mocked(api.getHistory).mockResolvedValueOnce(refreshedPage1)
+      await store.updateHistory()
+
+      // loadMore fails — drift counter should be preserved
+      vi.mocked(api.getHistory).mockRejectedValueOnce(new Error('fail'))
+      await store.loadMoreHistory()
+
+      // Retry loadMore — should still include the drift adjustment
+      const page2 = Array.from({ length: 200 }, (_, i) =>
+        createMockJobItem(200 + i)
+      )
+      vi.mocked(api.getHistory).mockResolvedValueOnce(page2)
+      await store.loadMoreHistory()
+
+      expect(api.getHistory).toHaveBeenLastCalledWith(200, { offset: 203 })
+    })
+  })
+
   describe('jobDetailView Support', () => {
     it('should include outputCount and allOutputs in user_metadata', async () => {
       const mockHistory = Array.from({ length: 5 }, (_, i) =>
