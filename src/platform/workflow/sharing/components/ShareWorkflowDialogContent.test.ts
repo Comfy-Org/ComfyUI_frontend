@@ -49,6 +49,15 @@ vi.mock(
   })
 )
 
+vi.mock(
+  '@/platform/workflow/sharing/composables/useComfyHubProfileGate',
+  () => ({
+    useComfyHubProfileGate: () => ({
+      openPublishWithGate: vi.fn()
+    })
+  })
+)
+
 vi.mock('@/platform/workflow/core/services/workflowService', () => ({
   useWorkflowService: () => ({
     saveWorkflow: vi.fn(),
