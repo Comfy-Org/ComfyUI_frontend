@@ -19,7 +19,6 @@ export function isStorageAvailable(): boolean {
   return storageAvailable
 }
 
-
 export function markStorageUnavailable(): void {
   storageAvailable = false
 }
