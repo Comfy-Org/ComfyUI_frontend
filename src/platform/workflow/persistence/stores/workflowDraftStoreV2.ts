@@ -212,9 +212,13 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
           updatedAt: Date.now()
         })
         if (!written) return
+
+        if (!persistIndex(result.index)) {
+          deletePayload(workspaceId, result.newKey)
+          return
+        }
         deletePayload(workspaceId, result.oldKey)
       }
-      persistIndex(result.index)
     }
   }
 
