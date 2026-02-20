@@ -22,7 +22,12 @@ import {
 
 const PROMPT_CARD_ID = '__prompt__'
 const SINGLE_GROUP_KEY = '__single__'
-const KNOWN_PROMPT_ERROR_TYPES = new Set(['prompt_no_outputs', 'no_prompt'])
+const KNOWN_PROMPT_ERROR_TYPES = new Set([
+  'prompt_no_outputs',
+  'no_prompt',
+  'server_error_local',
+  'server_error_cloud'
+])
 
 interface GroupEntry {
   priority: number

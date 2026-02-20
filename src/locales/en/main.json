@@ -2996,6 +2996,12 @@
       },
       "no_prompt": {
         "desc": "The workflow data sent to the server is empty. This may be an unexpected system error."
+      },
+      "server_error_local": {
+        "desc": "The server encountered an unexpected error. Please check the server logs."
+      },
+      "server_error_cloud": {
+        "desc": "The server encountered an unexpected error. Please try again later."
       }
     },
     "errorHelp": "For more help, {github} or {support}",

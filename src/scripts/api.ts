@@ -830,7 +830,20 @@ export class ComfyApi extends EventTarget {
     })
 
     if (res.status !== 200) {
-      throw new PromptExecutionError(await res.json())
+      const text = await res.text()
+      let errorResponse
+      try {
+        errorResponse = JSON.parse(text)
+      } catch {
+        errorResponse = {
+          error: {
+            type: isCloud ? 'server_error_cloud' : 'server_error_local',
+            message: `${res.status} ${res.statusText}`,
+            details: text
+          }
+        }
+      }
+      throw new PromptExecutionError(errorResponse)
     }
 
     return await res.json()
