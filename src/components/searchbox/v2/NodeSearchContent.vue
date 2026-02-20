@@ -90,7 +90,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, nextTick, ref, watch, watchEffect } from 'vue'
+import { computed, nextTick, ref, watch } from 'vue'
 
 import type { FilterChip } from '@/components/searchbox/v2/NodeSearchFilterBar.vue'
 import NodeSearchFilterBar from '@/components/searchbox/v2/NodeSearchFilterBar.vue'
@@ -222,8 +222,8 @@ const displayedResults = computed<ComfyNodeDefImpl[]>(() => {
     default:
       results = allNodes.filter(
         (n) =>
-          n.category === selectedCategory.value ||
-          n.category.startsWith(selectedCategory.value + '/')
+          n.category === effectiveCategory.value ||
+          n.category.startsWith(effectiveCategory.value + '/')
       )
       break
   }
@@ -235,9 +235,13 @@ const hoveredNodeDef = computed(
   () => displayedResults.value[selectedIndex.value] ?? null
 )
 
-watchEffect(() => {
-  emit('hoverNode', hoveredNodeDef.value)
-})
+watch(
+  hoveredNodeDef,
+  (newVal) => {
+    emit('hoverNode', newVal)
+  },
+  { immediate: true }
+)
 
 watch([selectedCategory, searchQuery, () => filters], () => {
   selectedIndex.value = 0
