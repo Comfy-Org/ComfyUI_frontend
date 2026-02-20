@@ -6,6 +6,10 @@ import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspace
 
 const DIALOG_KEY = 'subscription-required'
 
+export type SubscriptionDialogReason =
+  | 'subscription_required'
+  | 'out_of_credits'
+
 export const useSubscriptionDialog = () => {
   const { flags } = useFeatureFlags()
   const dialogService = useDialogService()
@@ -16,7 +20,7 @@ export const useSubscriptionDialog = () => {
     dialogStore.closeDialog({ key: DIALOG_KEY })
   }
 
-  function show() {
+  function show(options?: { reason?: SubscriptionDialogReason }) {
     const useWorkspaceVariant =
       flags.teamWorkspacesEnabled && !workspaceStore.isInPersonalWorkspace
 
@@ -34,7 +38,8 @@ export const useSubscriptionDialog = () => {
       key: DIALOG_KEY,
       component,
       props: {
-        onClose: hide
+        onClose: hide,
+        reason: options?.reason
       },
       dialogComponentProps: {
         style: 'width: min(1328px, 95vw); max-height: 958px;',
