@@ -45,7 +45,6 @@ export interface WidgetSlotMetadata {
 export interface SafeWidgetData {
   nodeId?: NodeId
   name: string
-  nodeWidgetName?: string
   type: string
   /** Callback to invoke when widget value changes (wraps LiteGraph callback + triggerDraw) */
   callback?: ((value: unknown) => void) | undefined
@@ -223,7 +222,6 @@ function safeWidgetMapper(
       return {
         nodeId,
         name,
-        nodeWidgetName: widget.name,
         type: widget.type,
         ...sharedEnhancements,
         callback,
