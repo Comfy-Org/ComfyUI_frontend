@@ -1205,23 +1205,16 @@ export class ComfyApp {
 
     const getModelKey = (model: ModelFile) => model.url || model.hash
     const validModels = embeddedModels.filter(getModelKey)
-    const uniqueModels: ModelFile[] = _.uniqBy(validModels, getModelKey)
+    const uniqueModels = _.uniqBy(validModels, getModelKey)
 
-    let folderPaths: Record<string, string[]> | undefined
     if (
       uniqueModels.length &&
       useSettingStore().get('Comfy.Workflow.ShowMissingModelsWarning')
     ) {
       const modelStore = useModelStore()
-      const [, paths] = await Promise.all([
-        modelStore.loadModelFolders(),
-        api.getFolderPaths()
-      ])
-      folderPaths = paths
+      await modelStore.loadModelFolders()
       for (const m of uniqueModels) {
         const modelFolder = await modelStore.getLoadedModelFolder(m.directory)
-        m.directory_invalid = !modelFolder && !folderPaths?.[m.directory]
-
         const modelsAvailable = modelFolder?.models
         const modelExists =
           modelsAvailable &&
@@ -1363,7 +1356,7 @@ export class ComfyApp {
         warnings.missingNodeTypes = missingNodeTypes
       }
       if (missingModels.length && showMissingModelsDialog) {
-        const paths = folderPaths ?? (await api.getFolderPaths())
+        const paths = await api.getFolderPaths()
         warnings.missingModels = { missingModels: missingModels, paths }
       }
       if (warnings.missingNodeTypes || warnings.missingModels) {
