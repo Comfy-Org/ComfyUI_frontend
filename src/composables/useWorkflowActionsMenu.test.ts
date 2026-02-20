@@ -187,7 +187,7 @@ describe('useWorkflowActionsMenu', () => {
     const { menuItems } = useWorkflowActionsMenu(vi.fn(), { isRoot: true })
     const labels = menuLabels(menuItems.value)
 
-    expect(labels).toContain('breadcrumbsMenu.goToWorkflowMode')
+    expect(labels).toContain('breadcrumbsMenu.exitAppMode')
     expect(labels).not.toContain('breadcrumbsMenu.enterAppMode')
   })
 
