@@ -570,7 +570,7 @@ export const useQueueStore = defineStore('queue', () => {
         batchResults.set(workflowId, {
           state,
           timestamp: jobTimestamp,
-          promptId: job.id
+          jobId: job.id
         })
       }
       executionStore.batchSetWorkflowExecutionResults(batchResults)

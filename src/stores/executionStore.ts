@@ -52,7 +52,7 @@ interface QueuedJob {
 export type WorkflowExecutionResult = {
   state: 'completed' | 'error'
   timestamp: number
-  promptId?: string
+  jobId?: string
 }
 
 export type WorkflowExecutionState = 'idle' | 'running' | 'completed' | 'error'
@@ -152,29 +152,29 @@ export const useExecutionStore = defineStore('execution', () => {
   }
 
   function setWorkflowExecutionResult(
-    promptId: string,
+    jobId: string,
     state: 'completed' | 'error'
   ) {
-    const wid = jobIdToWorkflowId.value.get(promptId)
+    const wid = jobIdToWorkflowId.value.get(jobId)
     if (!wid) {
       console.warn(
-        `[executionStore] No workflow mapping for prompt ${promptId}, execution result '${state}' dropped`
+        `[executionStore] No workflow mapping for job ${jobId}, execution result '${state}' dropped`
       )
       return
     }
-    setWorkflowExecutionResultByWorkflowId(wid, state, promptId)
+    setWorkflowExecutionResultByWorkflowId(wid, state, jobId)
   }
 
   function setWorkflowExecutionResultByWorkflowId(
     workflowId: string,
     state: 'completed' | 'error',
-    promptId?: string
+    jobId?: string
   ) {
     const next = new Map(lastExecutionResultByWorkflowId.value)
     next.set(workflowId, {
       state,
       timestamp: Date.now(),
-      promptId
+      jobId
     })
     lastExecutionResultByWorkflowId.value = next
   }

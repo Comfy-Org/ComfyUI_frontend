@@ -387,7 +387,7 @@ describe('useExecutionStore - Workflow Execution State', () => {
       next.set('wf-1', {
         state: 'completed',
         timestamp: Date.now(),
-        promptId: 'prompt-1'
+        jobId: 'prompt-1'
       })
       store.lastExecutionResultByWorkflowId = next
 
@@ -399,7 +399,7 @@ describe('useExecutionStore - Workflow Execution State', () => {
       next.set('wf-1', {
         state: 'error',
         timestamp: Date.now(),
-        promptId: 'prompt-1'
+        jobId: 'prompt-1'
       })
       store.lastExecutionResultByWorkflowId = next
 
@@ -421,7 +421,7 @@ describe('useExecutionStore - Workflow Execution State', () => {
       next.set('wf-1', {
         state: 'completed',
         timestamp: Date.now(),
-        promptId: 'prompt-1'
+        jobId: 'prompt-1'
       })
       store.lastExecutionResultByWorkflowId = next
 
@@ -443,7 +443,7 @@ describe('useExecutionStore - Workflow Execution State', () => {
       next.set('wf-1', {
         state: 'completed',
         timestamp: Date.now(),
-        promptId: 'prompt-1'
+        jobId: 'prompt-1'
       })
       store.lastExecutionResultByWorkflowId = next
 
