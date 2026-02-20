@@ -252,7 +252,11 @@ defineExpose({ runButtonClick })
           <Popover side="top" @open-auto-focus.prevent>
             <template #button>
               <Button size="lg" variant="inverted" class="-mr-3 pr-7">
-                <i class="icon-[lucide--chevron-down]" />
+                <i
+                  v-if="batchCount === 1"
+                  class="icon-[lucide--chevron-down]"
+                />
+                <div v-else class="tabular-nums" v-text="`${batchCount}x`" />
               </Button>
             </template>
             <WidgetInputNumberInput
