@@ -7,7 +7,7 @@ type BadgePillProps = ComponentProps<typeof BadgePill>
 
 export type WorkflowMenuItem = WorkflowMenuSeparator | WorkflowMenuAction
 
-export interface WorkflowMenuSeparator {
+interface WorkflowMenuSeparator {
   separator: true
 }
 
