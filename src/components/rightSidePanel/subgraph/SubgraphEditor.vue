@@ -196,7 +196,7 @@ function setDraggableState() {
     '.draggable-item'
   )
   draggableList.value.applyNewItemsOrder = function () {
-    const reorderedItems = []
+    const reorderedItems: HTMLElement[] = []
 
     let oldPosition = -1
     this.getAllItems().forEach((item, index) => {
@@ -212,17 +212,27 @@ function setDraggableState() {
       reorderedItems[newIndex] = item
     })
 
+    if (oldPosition === -1) {
+      console.error('[SubgraphEditor] draggableItem not found in items')
+      return
+    }
+
     for (let index = 0; index < this.getAllItems().length; index++) {
       const item = reorderedItems[index]
       if (typeof item === 'undefined') {
-        reorderedItems[index] = this.draggableItem
+        reorderedItems[index] = this.draggableItem as HTMLElement
       }
     }
-    const newPosition = reorderedItems.indexOf(this.draggableItem)
-    const aw = activeWidgets.value
-    const [w] = aw.splice(oldPosition, 1)
-    aw.splice(newPosition, 0, w)
-    activeWidgets.value = aw
+
+    const newPosition = reorderedItems.indexOf(
+      this.draggableItem as HTMLElement
+    )
+
+    const pw = proxyWidgets.value
+    const [w] = pw.splice(oldPosition, 1)
+    pw.splice(newPosition, 0, w)
+    proxyWidgets.value = pw
+    triggerRef(proxyWidgets)
   }
 }
 watch(filteredActive, () => {
