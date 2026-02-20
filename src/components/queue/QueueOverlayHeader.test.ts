@@ -55,6 +55,7 @@ const i18n = createI18n({
           queuedSuffix: 'queued',
           clearQueued: 'Clear queued',
           clearQueueTooltip: 'Clear queue',
+          clearAllJobsTooltip: 'Cancel all running jobs',
           moreOptions: 'More options',
           clearHistory: 'Clear history',
           dockedJobHistory: 'Docked Job History'

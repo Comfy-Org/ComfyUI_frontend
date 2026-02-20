@@ -24,6 +24,7 @@
         t('sideToolbar.queueProgressOverlay.clearQueueTooltip')
       }}</span>
       <Button
+        v-tooltip.top="clearAllJobsTooltip"
         variant="destructive"
         size="icon"
         :aria-label="t('sideToolbar.queueProgressOverlay.clearQueued')"
@@ -38,10 +39,12 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import JobHistoryActionsMenu from '@/components/queue/JobHistoryActionsMenu.vue'
 import Button from '@/components/ui/button/Button.vue'
+import { buildTooltipConfig } from '@/composables/useTooltipConfig'
 
 defineProps<{
   headerTitle: string
@@ -56,4 +59,7 @@ defineEmits<{
 }>()
 
 const { t } = useI18n()
+const clearAllJobsTooltip = computed(() =>
+  buildTooltipConfig(t('sideToolbar.queueProgressOverlay.clearAllJobsTooltip'))
+)
 </script>
