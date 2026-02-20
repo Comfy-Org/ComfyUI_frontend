@@ -290,12 +290,12 @@ const showQueueContextMenu = (event: MouseEvent) => {
 }
 
 const handleClearQueue = async () => {
-  const pendingPromptIds = queueStore.pendingTasks
-    .map((task) => task.promptId)
+  const pendingJobIds = queueStore.pendingTasks
+    .map((task) => task.jobId)
     .filter((id): id is string => typeof id === 'string' && id.length > 0)
 
   await commandStore.execute('Comfy.ClearPendingTasks')
-  executionStore.clearInitializationByPromptIds(pendingPromptIds)
+  executionStore.clearInitializationByJobIds(pendingJobIds)
 }
 
 const openCustomNodeManager = async () => {

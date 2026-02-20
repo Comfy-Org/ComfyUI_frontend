@@ -132,7 +132,7 @@ describe('useExecutionStore - NodeLocatorId conversions', () => {
   })
 })
 
-describe('useExecutionStore - reconcileInitializingPrompts', () => {
+describe('useExecutionStore - reconcileInitializingJobs', () => {
   let store: ReturnType<typeof useExecutionStore>
 
   beforeEach(() => {
@@ -141,36 +141,36 @@ describe('useExecutionStore - reconcileInitializingPrompts', () => {
     store = useExecutionStore()
   })
 
-  it('should remove prompt IDs not present in active jobs', () => {
-    store.initializingPromptIds = new Set(['job-1', 'job-2', 'job-3'])
+  it('should remove job IDs not present in active jobs', () => {
+    store.initializingJobIds = new Set(['job-1', 'job-2', 'job-3'])
 
-    store.reconcileInitializingPrompts(new Set(['job-1']))
+    store.reconcileInitializingJobs(new Set(['job-1']))
 
-    expect(store.initializingPromptIds).toEqual(new Set(['job-1']))
+    expect(store.initializingJobIds).toEqual(new Set(['job-1']))
   })
 
   it('should be a no-op when all initializing IDs are active', () => {
-    store.initializingPromptIds = new Set(['job-1', 'job-2'])
+    store.initializingJobIds = new Set(['job-1', 'job-2'])
 
-    store.reconcileInitializingPrompts(new Set(['job-1', 'job-2', 'job-3']))
+    store.reconcileInitializingJobs(new Set(['job-1', 'job-2', 'job-3']))
 
-    expect(store.initializingPromptIds).toEqual(new Set(['job-1', 'job-2']))
+    expect(store.initializingJobIds).toEqual(new Set(['job-1', 'job-2']))
   })
 
-  it('should be a no-op when there are no initializing prompts', () => {
-    store.initializingPromptIds = new Set()
+  it('should be a no-op when there are no initializing jobs', () => {
+    store.initializingJobIds = new Set()
 
-    store.reconcileInitializingPrompts(new Set(['job-1']))
+    store.reconcileInitializingJobs(new Set(['job-1']))
 
-    expect(store.initializingPromptIds).toEqual(new Set())
+    expect(store.initializingJobIds).toEqual(new Set())
   })
 
   it('should clear all initializing IDs when no active jobs exist', () => {
-    store.initializingPromptIds = new Set(['job-1', 'job-2'])
+    store.initializingJobIds = new Set(['job-1', 'job-2'])
 
-    store.reconcileInitializingPrompts(new Set())
+    store.reconcileInitializingJobs(new Set())
 
-    expect(store.initializingPromptIds).toEqual(new Set())
+    expect(store.initializingJobIds).toEqual(new Set())
   })
 })
 
