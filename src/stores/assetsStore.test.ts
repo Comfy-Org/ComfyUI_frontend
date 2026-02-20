@@ -560,6 +560,57 @@ describe('assetsStore - Refactored (Option A)', () => {
 
       expect(api.getHistory).toHaveBeenLastCalledWith(200, { offset: 203 })
     })
+
+    it('should re-enable pagination when history grows past one page', async () => {
+      // Initial load with fewer than BATCH_SIZE items — pagination exhausted
+      const smallPage = Array.from({ length: 50 }, (_, i) =>
+        createMockJobItem(i)
+      )
+      vi.mocked(api.getHistory).mockResolvedValueOnce(smallPage)
+      await store.updateHistory()
+      expect(store.hasMoreHistory).toBe(false)
+
+      // Many new jobs arrive — first page is now full (BATCH_SIZE items)
+      const fullPage = Array.from({ length: 200 }, (_, i) =>
+        createMockJobItem(7000 + i)
+      )
+      vi.mocked(api.getHistory).mockResolvedValueOnce(fullPage)
+      await store.updateHistory()
+
+      expect(store.hasMoreHistory).toBe(true)
+    })
+
+    it('should not accumulate drift when pagination is exhausted', async () => {
+      const smallPage = Array.from({ length: 50 }, (_, i) =>
+        createMockJobItem(i)
+      )
+      vi.mocked(api.getHistory).mockResolvedValueOnce(smallPage)
+      await store.updateHistory()
+
+      // Subsequent update with a few new items, still under BATCH_SIZE
+      const newJobs = Array.from({ length: 3 }, (_, i) =>
+        createMockJobItem(8000 + i)
+      )
+      const refreshed = [...newJobs, ...smallPage.slice(0, 47)]
+      vi.mocked(api.getHistory).mockResolvedValueOnce(refreshed)
+      await store.updateHistory()
+
+      // Re-enable pagination with a full page
+      const fullPage = Array.from({ length: 200 }, (_, i) =>
+        createMockJobItem(9000 + i)
+      )
+      vi.mocked(api.getHistory).mockResolvedValueOnce(fullPage)
+      await store.updateHistory()
+
+      // loadMore should use offset 200 (no drift accumulated while exhausted)
+      const page2 = Array.from({ length: 200 }, (_, i) =>
+        createMockJobItem(200 + i)
+      )
+      vi.mocked(api.getHistory).mockResolvedValueOnce(page2)
+      await store.loadMoreHistory()
+
+      expect(api.getHistory).toHaveBeenLastCalledWith(200, { offset: 200 })
+    })
   })
 
   describe('jobDetailView Support', () => {
