@@ -13,6 +13,7 @@ function mockScrollWidth(el: HTMLElement, scrollWidth: number) {
 
 describe(TextTicker, () => {
   let rafCallbacks: ((time: number) => void)[]
+  let wrapper: ReturnType<typeof mount>
 
   beforeEach(() => {
     vi.useFakeTimers()
@@ -25,19 +26,20 @@ describe(TextTicker, () => {
   })
 
   afterEach(() => {
+    wrapper?.unmount()
     vi.useRealTimers()
     vi.restoreAllMocks()
   })
 
   it('renders slot content', () => {
-    const wrapper = mount(TextTicker, {
+    wrapper = mount(TextTicker, {
       slots: { default: 'Hello World' }
     })
     expect(wrapper.text()).toBe('Hello World')
   })
 
   it('scrolls on hover after delay', async () => {
-    const wrapper = mount(TextTicker, {
+    wrapper = mount(TextTicker, {
       slots: { default: 'Very long text that overflows' },
       props: { speed: 100 }
     })
@@ -60,7 +62,7 @@ describe(TextTicker, () => {
   })
 
   it('cancels delayed scroll on mouse leave before delay elapses', async () => {
-    const wrapper = mount(TextTicker, {
+    wrapper = mount(TextTicker, {
       slots: { default: 'Very long text that overflows' },
       props: { speed: 100 }
     })
@@ -81,7 +83,7 @@ describe(TextTicker, () => {
   })
 
   it('resets scroll position on mouse leave', async () => {
-    const wrapper = mount(TextTicker, {
+    wrapper = mount(TextTicker, {
       slots: { default: 'Very long text that overflows' },
       props: { speed: 100 }
     })
@@ -105,7 +107,7 @@ describe(TextTicker, () => {
   })
 
   it('does not scroll when content fits', async () => {
-    const wrapper = mount(TextTicker, {
+    wrapper = mount(TextTicker, {
       slots: { default: 'Short' }
     })
 
