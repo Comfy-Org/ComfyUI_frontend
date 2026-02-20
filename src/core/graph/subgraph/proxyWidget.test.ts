@@ -5,8 +5,8 @@ import { beforeEach, describe, expect, test, vi } from 'vitest'
 import { registerProxyWidgets } from '@/core/graph/subgraph/proxyWidget'
 import { promoteWidget } from '@/core/graph/subgraph/proxyWidgetUtils'
 import { parseProxyWidgets } from '@/core/schemas/proxyWidget'
-import { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import type { LGraphCanvas, SubgraphNode } from '@/lib/litegraph/src/litegraph'
+import { LGraph, LGraphNode, SubgraphNode } from '@/lib/litegraph/src/litegraph'
+import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 
 import {
   createTestSubgraph,
@@ -125,6 +125,59 @@ describe('Subgraph proxyWidgets', () => {
     subgraphNode.widgets[0].computedHeight = 10
     expect(subgraphNode.widgets[0].value).toBe('value')
   })
+  test('Proxy widget label shows widgetName, not "nodeId: widgetName"', () => {
+    const [subgraphNode, innerNodes] = setupSubgraph(1)
+    innerNodes[0].addWidget('text', 'seed', 'value', () => {})
+    subgraphNode.properties.proxyWidgets = [['1', 'seed']]
+
+    const proxyWidget = subgraphNode.widgets[0]
+    expect(proxyWidget.label).toBe('seed')
+    expect(proxyWidget.name).toBe('1: seed')
+  })
+
+  test('Proxy widget label reflects user rename', () => {
+    const [subgraphNode, innerNodes] = setupSubgraph(1)
+    innerNodes[0].addWidget('text', 'seed', 'value', () => {})
+    subgraphNode.properties.proxyWidgets = [['1', 'seed']]
+
+    const proxyWidget = subgraphNode.widgets[0]
+    proxyWidget.label = 'My Custom Seed'
+    expect(proxyWidget.label).toBe('My Custom Seed')
+  })
+
+  test('Proxy widget labels are correct when loaded from serialized data', () => {
+    const subgraph = createTestSubgraph()
+    const innerNode = new LGraphNode('InnerNode')
+    subgraph.add(innerNode)
+    innerNode.addWidget('text', 'seed', 'value', () => {})
+    innerNode.addWidget('text', 'steps', 'value', () => {})
+
+    const parentGraph = new LGraph()
+    const subgraphNode = new SubgraphNode(parentGraph, subgraph, {
+      id: 1,
+      type: subgraph.id,
+      pos: [100, 100],
+      size: [200, 100],
+      inputs: [],
+      outputs: [],
+      properties: {
+        proxyWidgets: [
+          ['1', 'seed'],
+          ['1', 'steps']
+        ]
+      },
+      flags: {},
+      mode: 0,
+      order: 0
+    })
+
+    expect(subgraphNode.widgets).toHaveLength(2)
+    expect(subgraphNode.widgets[0].label).toBe('seed')
+    expect(subgraphNode.widgets[0].name).toBe('1: seed')
+    expect(subgraphNode.widgets[1].label).toBe('steps')
+    expect(subgraphNode.widgets[1].name).toBe('1: steps')
+  })
+
   test('Prevents duplicate promotion', () => {
     const [subgraphNode, innerNodes] = setupSubgraph(1)
     innerNodes[0].addWidget('text', 'stringWidget', 'value', () => {})

@@ -154,7 +154,7 @@ function newProxyWidget(
     computedHeight: undefined,
     isProxyWidget: true,
     last_y: undefined,
-    label: name,
+    label: widgetName,
     name,
     node: subgraphNode,
     onRemove: undefined,
