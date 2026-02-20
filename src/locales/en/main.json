@@ -20,6 +20,7 @@
     "removeImage": "Remove image",
     "removeVideo": "Remove video",
     "removeTag": "Remove tag",
+    "remove": "Remove",
     "chart": "Chart",
     "chartLowercase": "chart",
     "file": "file",
@@ -116,6 +117,7 @@
     "defaultBanner": "default banner",
     "enableOrDisablePack": "Enable or disable pack",
     "openManager": "Open Manager",
+    "manageExtensions": "Manage extensions",
     "graphNavigation": "Graph navigation",
     "dropYourFileOr": "Drop your file or",
     "back": "Back",
@@ -174,6 +176,14 @@
     "capture": "capture",
     "nodes": "Nodes",
     "nodesCount": "{count} nodes | {count} node | {count} nodes",
+    "addNode": "Add a node...",
+    "filterBy": "Filter by:",
+    "filterByType": "Filter by {type}...",
+    "mostRelevant": "Most relevant",
+    "favorites": "Favorites",
+    "essentials": "Essentials",
+    "input": "Input",
+    "output": "Output",
     "community": "Community",
     "all": "All",
     "versionMismatchWarning": "Version Compatibility Warning",
@@ -727,6 +737,7 @@
     "logout": "Logout",
     "queue": "Queue",
     "nodeLibrary": "Node Library",
+    "nodes": "Nodes",
     "workflows": "Workflows",
     "templates": "Templates",
     "assets": "Assets",
@@ -771,6 +782,9 @@
     "openWorkflow": "Open workflow in local file system",
     "newBlankWorkflow": "Create a new blank workflow",
     "nodeLibraryTab": {
+      "essentials": "Essentials",
+      "allNodes": "All nodes",
+      "custom": "Custom",
       "groupBy": "Group By",
       "sortMode": "Sort Mode",
       "resetView": "Reset View to Default",
@@ -787,6 +801,9 @@
         "originalDesc": "Keep original order",
         "alphabetical": "Alphabetical",
         "alphabeticalDesc": "Sort alphabetically within groups"
+      },
+      "sections": {
+        "favorites": "Favorites"
       }
     },
     "modelLibrary": "Model Library",

@@ -243,6 +243,7 @@ export type GlobalSubgraphData = {
     search_aliases?: string[]
   }
   data: string | Promise<string>
+  essentials_category?: string
 }
 
 function addHeaderEntry(headers: HeadersInit, key: string, value: string) {

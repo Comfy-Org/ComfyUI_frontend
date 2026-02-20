@@ -315,6 +315,7 @@ const zSettings = z.object({
   'Comfy.Group.DoubleClickTitleToEdit': z.boolean(),
   'Comfy.GroupSelectedNodes.Padding': z.number(),
   'Comfy.Locale': z.string(),
+  'Comfy.NodeLibrary.NewDesign': z.boolean(),
   'Comfy.NodeLibrary.Bookmarks': z.array(z.string()),
   'Comfy.NodeLibrary.Bookmarks.V2': z.array(z.string()),
   'Comfy.NodeLibrary.BookmarksCustomization': z.record(
@@ -326,7 +327,11 @@ const zSettings = z.object({
   'Comfy.ModelLibrary.AutoLoadAll': z.boolean(),
   'Comfy.ModelLibrary.NameFormat': z.enum(['filename', 'title']),
   'Comfy.NodeSearchBoxImpl.NodePreview': z.boolean(),
-  'Comfy.NodeSearchBoxImpl': z.enum(['default', 'simple']),
+  'Comfy.NodeSearchBoxImpl': z.enum([
+    'default',
+    'v1 (legacy)',
+    'litegraph (legacy)'
+  ]),
   'Comfy.NodeSearchBoxImpl.ShowCategory': z.boolean(),
   'Comfy.NodeSearchBoxImpl.ShowIdName': z.boolean(),
   'Comfy.NodeSearchBoxImpl.ShowNodeFrequency': z.boolean(),

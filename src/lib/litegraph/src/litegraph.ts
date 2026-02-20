@@ -107,7 +107,8 @@ export {
   type GroupNodeConfigEntry,
   type GroupNodeWorkflowData,
   type LGraphTriggerAction,
-  type LGraphTriggerParam
+  type LGraphTriggerParam,
+  type GraphAddOptions
 } from './LGraph'
 export type { LGraphTriggerEvent } from './types/graphTriggers'
 export { BadgePosition, LGraphBadge } from './LGraphBadge'
