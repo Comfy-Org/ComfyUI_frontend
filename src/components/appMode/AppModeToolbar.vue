@@ -13,15 +13,18 @@ import { useAppModeStore } from '@/stores/appModeStore'
 const { t } = useI18n()
 const commandStore = useCommandStore()
 const workspaceStore = useWorkspaceStore()
-
+const appModeStore = useAppModeStore()
 const tooltipOptions = { showDelay: 300, hideDelay: 300 }
 
 const isAssetsActive = computed(
   () => workspaceStore.sidebarTab.activeSidebarTab?.id === 'assets'
 )
+const isWorkflowsActive = computed(
+  () => workspaceStore.sidebarTab.activeSidebarTab?.id === 'workflows'
+)
 
 function enterBuilderMode() {
-  useAppModeStore().setMode('builder:select')
+  appModeStore.setMode('builder:select')
 }
 
 function openAssets() {
@@ -29,7 +32,7 @@ function openAssets() {
 }
 
 function showApps() {
-  alert('show apps')
+  void commandStore.execute('Workspace.ToggleSidebarTab.workflows')
 }
 
 function openTemplates() {
@@ -58,6 +61,7 @@ function openTemplates() {
     </WorkflowActionsDropdown>
 
     <Button
+      v-if="appModeStore.enableAppBuilder"
       v-tooltip.right="{
         value: t('appModeToolbar.appBuilder'),
         ...tooltipOptions
@@ -97,7 +101,9 @@ function openTemplates() {
         variant="textonly"
         size="unset"
         :aria-label="t('appModeToolbar.apps')"
-        class="size-10"
+        :class="
+          cn('size-10', isWorkflowsActive && 'bg-secondary-background-hover')
+        "
         @click="showApps"
       >
         <i class="icon-[lucide--panels-top-left] size-4" />

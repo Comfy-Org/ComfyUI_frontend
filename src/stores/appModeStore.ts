@@ -7,6 +7,7 @@ export const useAppModeStore = defineStore('appMode', () => {
   const mode = ref<AppMode>('graph')
   const builderSaving = ref(false)
   const hasOutputs = ref(true)
+  const enableAppBuilder = ref(false)
 
   const isBuilderMode = computed(
     () => mode.value === 'builder:select' || mode.value === 'builder:arrange'
@@ -23,6 +24,7 @@ export const useAppModeStore = defineStore('appMode', () => {
 
   return {
     mode: readonly(mode),
+    enableAppBuilder: readonly(enableAppBuilder),
     isBuilderMode,
     isAppMode,
     isGraphMode,
