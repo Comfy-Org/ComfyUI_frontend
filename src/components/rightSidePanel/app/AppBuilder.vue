@@ -13,7 +13,6 @@ import type { INodeInputSlot } from '@/lib/litegraph/src/interfaces'
 import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
 import TransformPane from '@/renderer/core/layout/transform/TransformPane.vue'
@@ -30,7 +29,6 @@ const canvasInteractions = useCanvasInteractions()
 const canvasStore = useCanvasStore()
 const rightSidePanelStore = useRightSidePanelStore()
 const settingStore = useSettingStore()
-const workflowStore = useWorkflowStore()
 const { t } = useI18n()
 const canvas: LGraphCanvas = canvasStore.getCanvas()
 
@@ -158,12 +156,11 @@ function nodeToDisplayTuple(
   ]
 }
 
-const renderedOutputs = computed(() => {
-  void workflowStore.activeWorkflow
-  return canvas
+const renderedOutputs = computed(() =>
+  canvas
     .graph!.nodes.filter((n) => n.constructor.nodeData?.output_node)
     .map(nodeToDisplayTuple)
-})
+)
 const renderedInputs = computed<[string, MaybeRef<BoundStyle> | undefined][]>(
   () =>
     appIOStore.selectedInputs.map(([nodeId, widgetName]) => [
