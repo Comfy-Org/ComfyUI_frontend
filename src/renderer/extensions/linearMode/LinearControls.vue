@@ -42,7 +42,7 @@ const props = defineProps<{
 
 const jobFinishedQueue = ref(true)
 const { ready: jobToastTimeout, start: resetJobToastTimeout } = useTimeout(
-  5000,
+  8000,
   { controls: true, immediate: false }
 )
 
@@ -231,12 +231,17 @@ defineExpose({ runButtonClick })
         <div
           class="bg-base-foreground text-base-background rounded-sm flex h-8 p-1 pr-2 gap-2 items-center"
         >
-          <i
-            v-if="jobFinishedQueue"
-            class="icon-[lucide--check] size-5 bg-success-background"
-          />
-          <i v-else class="icon-[lucide--loader-circle] size-4 animate-spin" />
-          <span v-text="t('queue.jobAddedToQueue')" />
+          <template v-if="jobFinishedQueue">
+            <i class="icon-[lucide--check] size-5 bg-success-background" />
+            <span v-text="t('queue.jobAddedToQueue')" />
+            <Button variant="inverted" class="ml-auto hidden">
+              {{ t('View Job') }}
+            </Button>
+          </template>
+          <template v-else>
+            <i class="icon-[lucide--loader-circle] size-4 animate-spin" />
+            <span class="mr-auto" v-text="t('queue.jobQueueing')" />
+          </template>
         </div>
       </Teleport>
       <section
@@ -252,10 +257,7 @@ defineExpose({ runButtonClick })
           <Popover side="top" @open-auto-focus.prevent>
             <template #button>
               <Button size="lg" variant="inverted" class="-mr-3 pr-7">
-                <i
-                  v-if="batchCount === 1"
-                  class="icon-[lucide--chevron-down]"
-                />
+                <i v-if="batchCount == 1" class="icon-[lucide--chevron-down]" />
                 <div v-else class="tabular-nums" v-text="`${batchCount}x`" />
               </Button>
             </template>
