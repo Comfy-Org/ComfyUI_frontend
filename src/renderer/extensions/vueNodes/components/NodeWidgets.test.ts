@@ -1,9 +1,9 @@
 /* eslint-disable testing-library/no-container */
 /* eslint-disable testing-library/no-node-access */
 import { createTestingPinia } from '@pinia/testing'
-import { render } from '@testing-library/vue'
+import { render, screen } from '@testing-library/vue'
 import { setActivePinia } from 'pinia'
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import type { NodeState } from '@/types/nodeState'
 import NodeWidgets from '@/renderer/extensions/vueNodes/components/NodeWidgets.vue'
@@ -16,6 +16,20 @@ import { widgetId } from '@/types/widgetId'
 import type { WidgetId } from '@/types/widgetId'
 
 const GRAPH_ID = 'graph-test'
+
+const { mockDragState, resetDragState } = vi.hoisted(() => {
+  const mockDragState = { active: false }
+  return {
+    mockDragState,
+    resetDragState: () => {
+      mockDragState.active = false
+    }
+  }
+})
+
+vi.mock('@/renderer/core/canvas/links/slotLinkDragUIState', () => ({
+  useSlotLinkDragUIState: () => ({ state: mockDragState })
+}))
 
 vi.mock('@/renderer/core/canvas/canvasStore', () => ({
   useCanvasStore: () => ({
@@ -111,6 +125,8 @@ function renderComponent({
 }
 
 describe('NodeWidgets', () => {
+  afterEach(resetDragState)
+
   describe('node-type prop passing', () => {
     it('passes node type to widget components', () => {
       const id = widgetId(GRAPH_ID, toNodeId(1), 'test_widget')
@@ -266,6 +282,21 @@ describe('NodeWidgets', () => {
     expect(container.querySelector('.widget-stub')).toHaveAttribute(
       'aria-invalid',
       'true'
+    )
+  })
+
+  it('enables widget pointer events while a link drag is active', () => {
+    mockDragState.active = true
+
+    renderComponent({
+      nodeData: createMockNodeData()
+    })
+
+    expect(screen.getByTestId('node-widgets')).toHaveClass(
+      'pointer-events-auto'
+    )
+    expect(screen.getByTestId('node-widgets')).not.toHaveClass(
+      'pointer-events-none'
     )
   })
 })

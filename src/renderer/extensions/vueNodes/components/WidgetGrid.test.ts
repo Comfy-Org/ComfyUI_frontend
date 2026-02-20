@@ -234,4 +234,67 @@ describe('WidgetGrid', () => {
     expect(screen.getByTestId('node-widget')).toHaveClass('ring')
     expect(screen.getByTestId('node-widget')).not.toHaveClass('border-l-2')
   })
+
+  it('shows widget slots while a link drag is active', () => {
+    mockDragState.active = true
+
+    render(WidgetGrid, {
+      props: {
+        nodeId: toNodeId(1),
+        nodeType: 'TestNode',
+        processedWidgets: [widget('seed', 'number', 0)]
+      },
+      global: {
+        directives: { tooltip: {} },
+        stubs: { AppInput: AppInputStub, InputSlot: InputSlotStub }
+      }
+    })
+
+    expect(screen.getByTestId('widget-slot-container')).toHaveClass(
+      'opacity-100'
+    )
+    expect(screen.getByTestId('widget-slot-container')).not.toHaveClass(
+      'opacity-0'
+    )
+  })
+
+  it('hides an unlinked widget slot when no link drag is active', () => {
+    render(WidgetGrid, {
+      props: {
+        nodeId: toNodeId(1),
+        nodeType: 'TestNode',
+        processedWidgets: [widget('seed', 'number', 0)]
+      },
+      global: {
+        directives: { tooltip: {} },
+        stubs: { AppInput: AppInputStub, InputSlot: InputSlotStub }
+      }
+    })
+
+    expect(screen.getByTestId('widget-slot-container')).toHaveClass(
+      'opacity-0',
+      'group-hover:opacity-100'
+    )
+  })
+
+  it('shows a linked widget slot without a link drag', () => {
+    const linkedWidget = widget('seed', 'number', 0)
+    linkedWidget.slotMetadata!.linked = true
+
+    render(WidgetGrid, {
+      props: {
+        nodeId: toNodeId(1),
+        nodeType: 'TestNode',
+        processedWidgets: [linkedWidget]
+      },
+      global: {
+        directives: { tooltip: {} },
+        stubs: { AppInput: AppInputStub, InputSlot: InputSlotStub }
+      }
+    })
+
+    expect(screen.getByTestId('widget-slot-container')).toHaveClass(
+      'opacity-100'
+    )
+  })
 })

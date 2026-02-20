@@ -25,10 +25,13 @@
         "
       >
         <div
+          data-testid="widget-slot-container"
           :class="
             cn(
-              'z-10 flex w-3 items-stretch opacity-0 transition-opacity duration-150 group-hover:opacity-100',
-              widget.slotMetadata?.linked && 'opacity-100'
+              'z-10 flex w-3 items-stretch transition-opacity duration-150',
+              dragState.active || widget.slotMetadata?.linked
+                ? 'opacity-100'
+                : 'opacity-0 group-hover:opacity-100'
             )
           "
         >
