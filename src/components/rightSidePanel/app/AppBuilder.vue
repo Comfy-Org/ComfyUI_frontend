@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { remove } from 'es-toolkit'
-import { whenever } from '@vueuse/core'
 import { computed, ref, toValue } from 'vue'
 import type { MaybeRef } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -20,11 +19,13 @@ import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteracti
 import TransformPane from '@/renderer/core/layout/transform/TransformPane.vue'
 import { app } from '@/scripts/app'
 import { useDialogService } from '@/services/dialogService'
+import { useAppIOStore } from '@/stores/appIOStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import { cn } from '@/utils/tailwindUtil'
 
 type BoundStyle = { top: string; left: string; width: string; height: string }
 
+const appIOStore = useAppIOStore()
 const canvasInteractions = useCanvasInteractions()
 const canvasStore = useCanvasStore()
 const rightSidePanelStore = useRightSidePanelStore()
@@ -34,11 +35,9 @@ const { t } = useI18n()
 const canvas: LGraphCanvas = canvasStore.getCanvas()
 
 const hoveringSelectable = ref(false)
-const selectedInputs = ref<[NodeId, string][]>([])
-const selectedOutputs = ref<NodeId[]>([])
 
 const inputsWithState = computed(() =>
-  selectedInputs.value.map(([nodeId, widgetName]) => {
+  appIOStore.selectedInputs.map(([nodeId, widgetName]) => {
     const node = app.rootGraph.getNodeById(nodeId)
     const widget = node?.widgets?.find((w) => w.name === widgetName)
     if (!node || !widget) return { nodeId, widgetName }
@@ -56,21 +55,10 @@ const inputsWithState = computed(() =>
   })
 )
 const outputsWithState = computed<[NodeId, string][]>(() =>
-  selectedOutputs.value.map((nodeId) => [
+  appIOStore.selectedOutputs.map((nodeId) => [
     nodeId,
     app.rootGraph.getNodeById(nodeId)?.title ?? String(nodeId)
   ])
-)
-
-whenever(
-  () => workflowStore.activeWorkflow,
-  (workflow) => {
-    workflow.changeTracker.reset()
-
-    const { activeState } = workflow.changeTracker
-    selectedInputs.value = activeState.extra?.linearData?.inputs ?? []
-    selectedOutputs.value = activeState.extra?.linearData?.outputs ?? []
-  }
 )
 
 async function renameWidget(widget: IBaseWidget, input: INodeInputSlot) {
@@ -137,26 +125,26 @@ function handleClick(e: MouseEvent) {
   if (!widget) {
     if (!node.constructor.nodeData?.output_node)
       return canvasInteractions.forwardEventToCanvas(e)
-    const index = selectedOutputs.value.findIndex((id) => id === node.id)
-    if (index === -1) selectedOutputs.value.push(node.id)
-    else selectedOutputs.value.splice(index, 1)
+    const index = appIOStore.selectedOutputs.findIndex((id) => id === node.id)
+    if (index === -1) appIOStore.selectedOutputs.push(node.id)
+    else appIOStore.selectedOutputs.splice(index, 1)
     app.rootGraph.extra.linearData ??= {}
     //FIXME type here is only on ComfyWorkflowJson, not an active graph
     ;(app.rootGraph.extra.linearData! as { outputs?: unknown }).outputs = [
-      ...selectedOutputs.value
+      ...appIOStore.selectedOutputs
     ]
     return
   }
 
-  const index = selectedInputs.value.findIndex(
+  const index = appIOStore.selectedInputs.findIndex(
     ([nodeId, widgetName]) => node.id === nodeId && widget.name === widgetName
   )
-  if (index === -1) selectedInputs.value.push([node.id, widget.name])
-  else selectedInputs.value.splice(index, 1)
+  if (index === -1) appIOStore.selectedInputs.push([node.id, widget.name])
+  else appIOStore.selectedInputs.splice(index, 1)
 
   app.rootGraph.extra.linearData ??= {}
   ;(app.rootGraph.extra.linearData! as { inputs?: unknown }).inputs = [
-    ...selectedInputs.value
+    ...appIOStore.selectedInputs
   ]
 }
 
@@ -166,7 +154,7 @@ function nodeToDisplayTuple(
   return [
     n.id,
     getBounding(n.id),
-    selectedOutputs.value.some((id) => n.id === id)
+    appIOStore.selectedOutputs.some((id) => n.id === id)
   ]
 }
 
@@ -178,7 +166,7 @@ const renderedOutputs = computed(() => {
 })
 const renderedInputs = computed<[string, MaybeRef<BoundStyle> | undefined][]>(
   () =>
-    selectedInputs.value.map(([nodeId, widgetName]) => [
+    appIOStore.selectedInputs.map(([nodeId, widgetName]) => [
       `${nodeId}: ${widgetName}`,
       getBounding(nodeId, widgetName)
     ])
@@ -194,7 +182,7 @@ const renderedInputs = computed<[string, MaybeRef<BoundStyle> | undefined][]>(
   <PropertiesAccordionItem
     :label="t('nodeHelpPage.inputs')"
     enable-empty-state
-    :disabled="!selectedInputs.length"
+    :disabled="!appIOStore.selectedInputs.length"
     class="border-border-subtle border-b"
   >
     <template #empty>
@@ -212,7 +200,7 @@ const renderedInputs = computed<[string, MaybeRef<BoundStyle> | undefined][]>(
       class="w-full p-4 pt-2 text-muted-foreground"
       v-text="t('linearMode.builder.promptAddInputs')"
     />
-    <DraggableList v-slot="{ dragClass }" v-model="selectedInputs">
+    <DraggableList v-slot="{ dragClass }" v-model="appIOStore.selectedInputs">
       <IoItem
         v-for="{
           nodeId,
@@ -229,7 +217,7 @@ const renderedInputs = computed<[string, MaybeRef<BoundStyle> | undefined][]>(
         :remove="
           () =>
             remove(
-              selectedInputs,
+              appIOStore.selectedInputs,
               ([id, name]) => nodeId === id && widgetName === name
             )
         "
@@ -239,7 +227,7 @@ const renderedInputs = computed<[string, MaybeRef<BoundStyle> | undefined][]>(
   <PropertiesAccordionItem
     :label="t('nodeHelpPage.outputs')"
     enable-empty-state
-    :disabled="!selectedOutputs.length"
+    :disabled="!appIOStore.selectedOutputs.length"
   >
     <template #empty>
       <div class="w-full p-4 text-muted-foreground gap-2 flex flex-col">
@@ -256,7 +244,7 @@ const renderedInputs = computed<[string, MaybeRef<BoundStyle> | undefined][]>(
       class="w-full p-4 pt-2 text-muted-foreground"
       v-text="t('linearMode.builder.promptAddOutputs')"
     />
-    <DraggableList v-slot="{ dragClass }" v-model="selectedOutputs">
+    <DraggableList v-slot="{ dragClass }" v-model="appIOStore.selectedOutputs">
       <IoItem
         v-for="([key, title], index) in outputsWithState"
         :key
@@ -269,7 +257,7 @@ const renderedInputs = computed<[string, MaybeRef<BoundStyle> | undefined][]>(
         "
         :title
         :sub-title="String(key)"
-        :remove="() => remove(selectedOutputs, (k) => k === key)"
+        :remove="() => remove(appIOStore.selectedOutputs, (k) => k === key)"
       />
     </DraggableList>
   </PropertiesAccordionItem>
