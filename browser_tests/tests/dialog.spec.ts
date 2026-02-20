@@ -61,16 +61,21 @@ test('Does not report warning on undo/redo', async ({ comfyPage }) => {
 })
 
 test.describe('Execution error', () => {
+  test.beforeEach(async ({ comfyPage }) => {
+    await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
+    await comfyPage.setup()
+  })
+
   test('Should display an error message when an execution error occurs', async ({
     comfyPage
   }) => {
     await comfyPage.workflow.loadWorkflow('nodes/execution_error')
-    await comfyPage.queueButton.click()
+    await comfyPage.command.executeCommand('Comfy.QueuePrompt')
     await comfyPage.nextFrame()
 
-    // Wait for the element with the .comfy-execution-error selector to be visible
-    const executionError = comfyPage.page.locator('.comfy-error-report')
-    await expect(executionError).toBeVisible()
+    // Wait for the error overlay to be visible
+    const errorOverlay = comfyPage.page.locator('[data-testid="error-overlay"]')
+    await expect(errorOverlay).toBeVisible()
   })
 })
 
