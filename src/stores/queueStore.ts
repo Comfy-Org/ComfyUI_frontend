@@ -537,6 +537,18 @@ export const useQueueStore = defineStore('queue', () => {
         }
       })
 
+      // Only reconcile when the queue fetch returned data. api.getQueue()
+      // returns empty Running/Pending on transient errors, which would
+      // incorrectly clear all initializing prompts.
+      const queueHasData = queue.Running.length > 0 || queue.Pending.length > 0
+      if (queueHasData) {
+        const activeJobIds = new Set([
+          ...queue.Running.map((j) => j.id),
+          ...queue.Pending.map((j) => j.id)
+        ])
+        executionStore.reconcileInitializingPrompts(activeJobIds)
+      }
+
       // Sort by create_time descending and limit to maxItems
       const sortedHistory = [...history]
         .sort((a, b) => b.create_time - a.create_time)
@@ -615,7 +627,20 @@ export const useQueuePendingTaskCountStore = defineStore(
   }
 )
 
-export type AutoQueueMode = 'disabled' | 'instant' | 'change'
+export type AutoQueueMode =
+  | 'disabled'
+  | 'change'
+  | 'instant-idle'
+  | 'instant-running'
+
+export const isInstantMode = (
+  mode: AutoQueueMode
+): mode is 'instant-idle' | 'instant-running' =>
+  mode === 'instant-idle' || mode === 'instant-running'
+
+export const isInstantRunningMode = (
+  mode: AutoQueueMode
+): mode is 'instant-running' => mode === 'instant-running'
 
 export const useQueueSettingsStore = defineStore('queueSettingsStore', {
   state: () => ({

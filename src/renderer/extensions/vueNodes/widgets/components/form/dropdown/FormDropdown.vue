@@ -18,6 +18,8 @@ import type { FormDropdownItem, LayoutMode, SortOption } from './types'
 
 interface Props {
   items: FormDropdownItem[]
+  /** Items used for display in the input field. Falls back to items if not provided. */
+  displayItems?: FormDropdownItem[]
   placeholder?: string
   /**
    * If true, allows multiple selections. If a number is provided,
@@ -193,6 +195,7 @@ async function customSearcher(
       :is-open
       :placeholder="placeholderText"
       :items
+      :display-items
       :max-selectable
       :selected
       :uploadable

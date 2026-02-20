@@ -608,6 +608,7 @@
     "AUDIO_ENCODER_OUTPUT": "SAÍDA DO CODIFICADOR DE ÁUDIO",
     "AUDIO_RECORD": "GRAVAÇÃO DE ÁUDIO",
     "BOOLEAN": "BOOLEANO",
+    "BOUNDING_BOX": "BOUNDING_BOX",
     "CAMERA_CONTROL": "CONTROLE DE CÂMERA",
     "CLIP": "clip",
     "CLIP_VISION": "clip visão",
@@ -798,6 +799,7 @@
     "disableSelected": "Desativar selecionados",
     "disableThirdParty": "Desativar terceiros",
     "disabling": "Desativando {id}",
+    "disconnectedFromBackend": "Desconectado do backend. Verifique se o servidor está em execução.",
     "dismiss": "Dispensar",
     "download": "Baixar",
     "downloadAudio": "Baixar áudio",
@@ -820,6 +822,7 @@
     "enterBaseName": "Digite o nome base",
     "enterNewName": "Digite o novo nome",
     "enterNewNamePrompt": "Digite o novo nome:",
+    "enterSubgraph": "Entrar no Subgrafo",
     "error": "Erro",
     "errorLoadingImage": "Erro ao carregar imagem",
     "errorLoadingVideo": "Erro ao carregar vídeo",
@@ -846,6 +849,7 @@
     "hideLeftPanel": "Ocultar painel esquerdo",
     "hideRightPanel": "Ocultar painel direito",
     "icon": "Ícone",
+    "imageDoesNotExist": "Imagem não existe",
     "imageFailedToLoad": "Falha ao carregar imagem",
     "imagePreview": "Pré-visualização da imagem - Use as setas para navegar entre as imagens",
     "imageUrl": "URL da imagem",
@@ -995,6 +999,7 @@
     "title": "Título",
     "triggerPhrase": "Frase de gatilho",
     "unknownError": "Erro desconhecido",
+    "unknownFile": "Arquivo desconhecido",
     "untitled": "Sem título",
     "update": "Atualizar",
     "updateAvailable": "Atualização disponível",
@@ -1894,6 +1899,25 @@
     "outputs": "Saídas",
     "type": "Tipo"
   },
+  "nodeReplacement": {
+    "compatibleAlternatives": "Alternativas Compatíveis",
+    "installMissingNodes": "Instalar Nós Ausentes",
+    "installationRequired": "Instalação Necessária",
+    "instructionMessage": "Você deve instalar esses nós ou substituí-los por alternativas já instaladas para executar o fluxo de trabalho. Nós ausentes estão destacados em {red} na tela. Alguns nós não podem ser trocados e devem ser instalados pelo Gerenciador de Nós.",
+    "notReplaceable": "Instalação Necessária",
+    "openNodeManager": "Abrir Gerenciador de Nós",
+    "quickFixAvailable": "Correção Rápida Disponível",
+    "redHighlight": "vermelho",
+    "replaceFailed": "Falha ao substituir nós",
+    "replaceSelected": "Substituir Selecionados ({count})",
+    "replaceWarning": "Isso modificará permanentemente o fluxo de trabalho. Salve uma cópia antes se não tiver certeza.",
+    "replaceable": "Substituível",
+    "replaced": "Substituído",
+    "replacedAllNodes": "Substituídos {count} tipo(s) de nó",
+    "replacedNode": "Nó substituído: {nodeType}",
+    "selectAll": "Selecionar Tudo",
+    "skipForNow": "Pular por enquanto"
+  },
   "nodeTemplates": {
     "enterName": "Digite o nome",
     "saveAsTemplate": "Salvar como modelo"
@@ -1977,6 +2001,7 @@
       "removeJob": "Remover tarefa",
       "reportError": "Reportar erro"
     },
+    "jobQueueing": "Tarefa em fila",
     "toggleJobHistory": "Alternar histórico de tarefas"
   },
   "releaseToast": {
@@ -1991,6 +2016,11 @@
     "advancedInputs": "ENTRADAS AVANÇADAS",
     "bypass": "Ignorar",
     "color": "Cor do nó",
+    "enterSubgraph": "Entrar no subgrafo",
+    "errorHelp": "Para mais ajuda, {github} ou {support}",
+    "errorHelpGithub": "enviar um issue no GitHub",
+    "errorHelpSupport": "contatar nosso suporte",
+    "errors": "Erros",
     "fallbackGroupTitle": "Grupo",
     "fallbackNodeTitle": "Nó",
     "favorites": "ENTRADAS FAVORITAS",
@@ -2025,6 +2055,7 @@
     "inputsNoneTooltip": "O nó não possui entradas",
     "locateNode": "Localizar nó no canvas",
     "mute": "Silenciar",
+    "noErrors": "Sem erros",
     "noSelection": "Selecione um nó para ver suas propriedades e informações.",
     "nodeState": "Estado do nó",
     "nodes": "Nós",
@@ -2033,8 +2064,19 @@
     "normal": "Normal",
     "parameters": "Parâmetros",
     "pinned": "Fixado",
+    "promptErrors": {
+      "no_prompt": {
+        "desc": "Os dados do fluxo de trabalho enviados ao servidor estão vazios. Isso pode ser um erro de sistema inesperado."
+      },
+      "prompt_no_outputs": {
+        "desc": "O fluxo de trabalho não contém nenhum nó de saída (por exemplo, Salvar Imagem, Visualizar Imagem) para produzir um resultado."
+      }
+    },
     "properties": "Propriedades",
     "removeFavorite": "Desfavoritar",
+    "resetAllParameters": "Redefinir todos os parâmetros",
+    "resetToDefault": "Restaurar para o padrão",
+    "seeError": "Ver erro",
     "settings": "Configurações",
     "showAdvancedInputsButton": "Mostrar entradas avançadas",
     "showInput": "Mostrar entrada",
@@ -2259,6 +2301,7 @@
     "CustomColorPalettes": "Paletas de Cores Personalizadas",
     "DevMode": "Modo Desenvolvedor",
     "EditTokenWeight": "Editar Peso do Token",
+    "Error System": "Sistema de Erros",
     "Execution": "Execução",
     "Extension": "Extensão",
     "General": "Geral",
@@ -2409,14 +2452,20 @@
       "filterJobs": "Filtrar trabalhos",
       "inlineTotalLabel": "Total",
       "interruptAll": "Interromper todos os trabalhos em execução",
+      "jobCompleted": "Tarefa concluída",
+      "jobFailed": "Tarefa falhou",
       "jobQueue": "Fila de trabalhos",
+      "jobsAddedToQueue": "{count} tarefa adicionada à fila | {count} tarefas adicionadas à fila",
       "jobsCompleted": "{count} trabalho concluído | {count} trabalhos concluídos",
       "jobsFailed": "{count} trabalho falhou | {count} trabalhos falharam",
       "moreOptions": "Mais opções",
       "noActiveJobs": "Nenhum trabalho ativo",
       "preview": "Pré-visualização",
+      "queuedJobsLabel": "{count} na fila",
       "queuedSuffix": "na fila",
       "running": "executando",
+      "runningJobsLabel": "{count} em execução",
+      "runningQueuedSummary": "{running} em execução, {queued} na fila",
       "showAssets": "Mostrar ativos",
       "showAssetsPanel": "Mostrar painel de ativos",
       "sortBy": "Ordenar por",
@@ -2882,7 +2931,8 @@
     "unsavedChanges": {
       "message": "Você tem alterações não salvas. Deseja descartá-las e trocar de espaço de trabalho?",
       "title": "Alterações não salvas"
-    }
+    },
+    "viewWorkspace": "Ver workspace"
   },
   "workspaceAuth": {
     "errors": {
@@ -2931,6 +2981,14 @@
       "placeholder": "Digite o e-mail da pessoa",
       "title": "Convidar uma pessoa para este workspace"
     },
+    "inviteUpsellDialog": {
+      "messageNotSubscribed": "Para adicionar membros da equipe a este workspace, você precisa do plano Creator ou superior. O plano Standard suporta apenas um usuário (o proprietário).",
+      "messageSingleSeat": "O plano Standard inclui um usuário para o proprietário do workspace. Para convidar membros adicionais, faça upgrade para o plano Creator ou superior para liberar múltiplos usuários.",
+      "titleNotSubscribed": "É necessária uma assinatura para convidar membros",
+      "titleSingleSeat": "Seu plano atual suporta apenas um usuário",
+      "upgradeToCreator": "Fazer upgrade para Creator",
+      "viewPlans": "Ver planos"
+    },
     "leaveDialog": {
       "leave": "Sair",
       "message": "Você não poderá entrar novamente a menos que entre em contato com o proprietário do espaço de trabalho.",
@@ -2956,7 +3014,10 @@
       "tabs": {
         "active": "Ativo",
         "pendingCount": "Pendente ({count})"
-      }
+      },
+      "upsellBannerSubscribe": "Assine o plano Creator ou superior para convidar membros da equipe para este workspace.",
+      "upsellBannerUpgrade": "Faça upgrade para o plano Creator ou superior para convidar membros adicionais da equipe.",
+      "viewPlans": "Ver planos"
     },
     "menu": {
       "deleteWorkspace": "Excluir espaço de trabalho",

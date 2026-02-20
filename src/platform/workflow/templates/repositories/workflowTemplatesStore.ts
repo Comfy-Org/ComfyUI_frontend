@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { computed, ref, shallowRef } from 'vue'
+import { computed, ref, shallowRef, watch } from 'vue'
 
 import { i18n, st } from '@/i18n'
 import { isCloud } from '@/platform/distribution/types'
@@ -472,37 +472,50 @@ export const useWorkflowTemplatesStore = defineStore(
       return items
     })
 
+    async function fetchCoreTemplates() {
+      const locale = i18n.global.locale.value
+      const [coreResult, englishResult, logoIndexResult] = await Promise.all([
+        api.getCoreWorkflowTemplates(locale),
+        isCloud && locale !== 'en'
+          ? api.getCoreWorkflowTemplates('en')
+          : Promise.resolve([]),
+        fetchLogoIndex()
+      ])
+
+      coreTemplates.value = coreResult
+      englishTemplates.value = englishResult
+      logoIndex.value = logoIndexResult
+
+      const coreNames = coreTemplates.value.flatMap((category) =>
+        category.templates.map((template) => template.name)
+      )
+      const customNames = Object.values(customTemplates.value).flat()
+      knownTemplateNames.value = new Set([...coreNames, ...customNames])
+    }
+
     async function loadWorkflowTemplates() {
       try {
         if (!isLoaded.value) {
           customTemplates.value = await api.getWorkflowTemplates()
-          const locale = i18n.global.locale.value
-
-          const [coreResult, englishResult, logoIndexResult] =
-            await Promise.all([
-              api.getCoreWorkflowTemplates(locale),
-              isCloud && locale !== 'en'
-                ? api.getCoreWorkflowTemplates('en')
-                : Promise.resolve([]),
-              fetchLogoIndex()
-            ])
-
-          coreTemplates.value = coreResult
-          englishTemplates.value = englishResult
-          logoIndex.value = logoIndexResult
-
-          const coreNames = coreTemplates.value.flatMap((category) =>
-            category.templates.map((template) => template.name)
-          )
-          const customNames = Object.values(customTemplates.value).flat()
-          knownTemplateNames.value = new Set([...coreNames, ...customNames])
-
+          await fetchCoreTemplates()
           isLoaded.value = true
         }
       } catch (error) {
         console.error('Error fetching workflow templates:', error)
       }
     }
+
+    watch(
+      () => i18n.global.locale.value,
+      async () => {
+        if (!isLoaded.value) return
+        try {
+          await fetchCoreTemplates()
+        } catch (error) {
+          console.error('Error reloading templates for new locale:', error)
+        }
+      }
+    )
 
     async function fetchLogoIndex(): Promise<LogoIndex> {
       try {

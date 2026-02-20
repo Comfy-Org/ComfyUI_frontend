@@ -25,7 +25,7 @@ const mockWorkspaceAuthStore = vi.hoisted(() => ({
   clearWorkspaceContext: vi.fn()
 }))
 
-vi.mock('@/stores/workspaceAuthStore', () => ({
+vi.mock('@/platform/workspace/stores/workspaceAuthStore', () => ({
   useWorkspaceAuthStore: () => mockWorkspaceAuthStore
 }))
 

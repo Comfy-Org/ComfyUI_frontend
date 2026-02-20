@@ -490,6 +490,17 @@ export class LGraphNode
 
     this._pos[0] = value[0]
     this._pos[1] = value[1]
+
+    const mutations = useLayoutMutations()
+    mutations.setSource(LayoutSource.Canvas)
+    mutations.moveNode(String(this.id), { x: value[0], y: value[1] })
+  }
+
+  /**
+   * Set the node position to an absolute location.
+   */
+  setPos(x: number, y: number): void {
+    this.pos = [x, y]
   }
 
   public get size() {
@@ -501,6 +512,13 @@ export class LGraphNode
 
     this._size[0] = value[0]
     this._size[1] = value[1]
+
+    const mutations = useLayoutMutations()
+    mutations.setSource(LayoutSource.Canvas)
+    mutations.resizeNode(String(this.id), {
+      width: value[0],
+      height: value[1]
+    })
   }
 
   /**
@@ -947,8 +965,12 @@ export class LGraphNode
       o.widgets_values = []
       for (const [i, widget] of widgets.entries()) {
         if (widget.serialize === false) continue
-        // @ts-expect-error #595 No-null
-        o.widgets_values[i] = widget ? widget.value : null
+        const val = widget?.value
+        // Ensure object values are plain (not reactive proxies) for structuredClone compatibility.
+        o.widgets_values[i] =
+          val != null && typeof val === 'object'
+            ? JSON.parse(JSON.stringify(val))
+            : (val ?? null)
       }
     }
 
@@ -2032,8 +2054,7 @@ export class LGraphNode
       return
     }
 
-    this.pos[0] += deltaX
-    this.pos[1] += deltaY
+    this.pos = [this._pos[0] + deltaX, this._pos[1] + deltaY]
   }
 
   /**

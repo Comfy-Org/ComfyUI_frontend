@@ -65,7 +65,7 @@ describe('useSearchBoxStore', () => {
 
   describe('when user has legacy search box enabled', () => {
     beforeEach(() => {
-      vi.mocked(mockSettingStore.get).mockReturnValue('legacy')
+      vi.mocked(mockSettingStore.get).mockReturnValue('litegraph (legacy)')
     })
 
     it('should show new search box is disabled', () => {
@@ -104,7 +104,7 @@ describe('useSearchBoxStore', () => {
 
   describe('when user configures popover reference', () => {
     beforeEach(() => {
-      vi.mocked(mockSettingStore.get).mockReturnValue('legacy')
+      vi.mocked(mockSettingStore.get).mockReturnValue('litegraph (legacy)')
     })
 
     it('should enable legacy search when popover is set', () => {

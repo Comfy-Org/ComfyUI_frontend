@@ -14,6 +14,7 @@ import { ComfyTemplates } from '../helpers/templates'
 import { ComfyMouse } from './ComfyMouse'
 import { VueNodeHelpers } from './VueNodeHelpers'
 import { ComfyNodeSearchBox } from './components/ComfyNodeSearchBox'
+import { ComfyNodeSearchBoxV2 } from './components/ComfyNodeSearchBoxV2'
 import { ContextMenu } from './components/ContextMenu'
 import { SettingDialog } from './components/SettingDialog'
 import { BottomPanel } from './components/BottomPanel'
@@ -166,6 +167,7 @@ export class ComfyPage {
 
   // Components
   public readonly searchBox: ComfyNodeSearchBox
+  public readonly searchBoxV2: ComfyNodeSearchBoxV2
   public readonly menu: ComfyMenu
   public readonly actionbar: ComfyActionbar
   public readonly templates: ComfyTemplates
@@ -210,6 +212,7 @@ export class ComfyPage {
     this.workflowUploadInput = page.locator('#comfy-file-input')
 
     this.searchBox = new ComfyNodeSearchBox(page)
+    this.searchBoxV2 = new ComfyNodeSearchBoxV2(page)
     this.menu = new ComfyMenu(page)
     this.actionbar = new ComfyActionbar(page)
     this.templates = new ComfyTemplates(page)

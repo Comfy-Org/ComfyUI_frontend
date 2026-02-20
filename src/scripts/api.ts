@@ -22,6 +22,7 @@ import type {
 } from '@/platform/workflow/validation/schemas/workflowSchema'
 import type {
   AssetDownloadWsMessage,
+  AssetExportWsMessage,
   CustomNodesI18n,
   EmbeddingsResponse,
   ExecutedWsMessage,
@@ -131,11 +132,15 @@ interface QueuePromptOptions {
 /** Dictionary of Frontend-generated API calls */
 interface FrontendApiCalls {
   graphChanged: ComfyWorkflowJSON
-  promptQueued: { number: number; batchCount: number }
+  promptQueueing: { requestId: number; batchCount: number; number?: number }
+  promptQueued: { number: number; batchCount: number; requestId?: number }
   graphCleared: never
   reconnecting: never
   reconnected: never
 }
+
+export type PromptQueueingEventPayload = FrontendApiCalls['promptQueueing']
+export type PromptQueuedEventPayload = FrontendApiCalls['promptQueued']
 
 /** Dictionary of calls originating from ComfyUI core */
 interface BackendApiCalls {
@@ -165,6 +170,7 @@ interface BackendApiCalls {
   progress_state: ProgressStateWsMessage
   feature_flags: FeatureFlagsWsMessage
   asset_download: AssetDownloadWsMessage
+  asset_export: AssetExportWsMessage
 }
 
 /** Dictionary of all api calls */
@@ -237,6 +243,7 @@ export type GlobalSubgraphData = {
     search_aliases?: string[]
   }
   data: string | Promise<string>
+  essentials_category?: string
 }
 
 function addHeaderEntry(headers: HeadersInit, key: string, value: string) {

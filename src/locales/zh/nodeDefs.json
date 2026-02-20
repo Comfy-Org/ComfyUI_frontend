@@ -208,6 +208,47 @@
       }
     }
   },
+  "AudioEqualizer3Band": {
+    "display_name": "音频均衡器（三段）",
+    "inputs": {
+      "audio": {
+        "name": "音频"
+      },
+      "high_freq": {
+        "name": "高频截止",
+        "tooltip": "高频搁架的截止频率"
+      },
+      "high_gain_dB": {
+        "name": "高频增益（dB）",
+        "tooltip": "高频（高音）增益"
+      },
+      "low_freq": {
+        "name": "低频截止",
+        "tooltip": "低频搁架的截止频率"
+      },
+      "low_gain_dB": {
+        "name": "低频增益（dB）",
+        "tooltip": "低频（低音）增益"
+      },
+      "mid_freq": {
+        "name": "中频中心",
+        "tooltip": "中频的中心频率"
+      },
+      "mid_gain_dB": {
+        "name": "中频增益（dB）",
+        "tooltip": "中频增益"
+      },
+      "mid_q": {
+        "name": "中频Q值",
+        "tooltip": "中频的Q因子（带宽）"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "AudioMerge": {
     "description": "叠加 音频1 和 音频2 轨道的波形。",
     "display_name": "音频合并",
@@ -353,15 +394,6 @@
         "name": "moderation",
         "tooltip": "内容审核设置"
       },
-      "moderation_prompt_content_moderation": {
-        "name": "prompt_content_moderation"
-      },
-      "moderation_visual_input_moderation": {
-        "name": "visual_input_moderation"
-      },
-      "moderation_visual_output_moderation": {
-        "name": "visual_output_moderation"
-      },
       "negative_prompt": {
         "name": "negative_prompt"
       },
@@ -386,6 +418,56 @@
       },
       "1": {
         "name": "structured_prompt",
+        "tooltip": null
+      }
+    }
+  },
+  "BriaRemoveImageBackground": {
+    "description": "使用 Bria RMBG 2.0 移除图像的背景。",
+    "display_name": "Bria 移除图像背景",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "image": {
+        "name": "图像"
+      },
+      "moderation": {
+        "name": "内容审核",
+        "tooltip": "内容审核设置"
+      },
+      "seed": {
+        "name": "种子",
+        "tooltip": "种子控制节点是否重新运行；无论种子如何，结果都是非确定性的。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "BriaRemoveVideoBackground": {
+    "description": "使用 Bria 移除视频的背景。",
+    "display_name": "Bria 移除视频背景",
+    "inputs": {
+      "background_color": {
+        "name": "背景颜色",
+        "tooltip": "输出视频的背景颜色。"
+      },
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "seed": {
+        "name": "种子",
+        "tooltip": "种子控制节点是否重新运行；无论种子如何，结果都是非确定性的。"
+      },
+      "video": {
+        "name": "视频"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -2090,13 +2172,12 @@
       "index": {},
       "option1": {}
     },
-    "outputs": [
-      null,
-      {
+    "outputs": {
+      "1": {
         "name": "索引",
         "tooltip": null
       }
-    ]
+    }
   },
   "DiffControlNetLoader": {
     "display_name": "加载ControlNet模型（diff）",
@@ -4203,6 +4284,26 @@
       "y": {
         "name": "y"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ImageCropV2": {
+    "display_name": "图像裁剪",
+    "inputs": {
+      "crop_region": {
+        "name": "裁剪区域"
+      },
+      "height": {},
+      "image": {
+        "name": "图像"
+      },
+      "width": {},
+      "x": {},
+      "y": {}
     },
     "outputs": {
       "0": {
@@ -6621,18 +6722,12 @@
         "name": "宽度"
       }
     },
-    "outputs": [
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      {
+    "outputs": {
+      "6": {
         "name": "model_3d",
         "tooltip": null
       }
-    ]
+    }
   },
   "LoadAudio": {
     "display_name": "加载音频",
@@ -7349,6 +7444,88 @@
       }
     }
   },
+  "MagnificImageUpscalerCreativeNode": {
+    "description": "基于提示词的增强、风格化，以及 2x/4x/8x/16x 放大。最大输出：25.3 百万像素。",
+    "display_name": "Magnific 图像放大（创意）",
+    "inputs": {
+      "auto_downscale": {
+        "name": "自动降采样",
+        "tooltip": "如果输出超过最大像素限制，则自动缩小输入图像。"
+      },
+      "creativity": {
+        "name": "创意"
+      },
+      "engine": {
+        "name": "引擎"
+      },
+      "fractality": {
+        "name": "复杂度",
+        "tooltip": "每平方像素的提示词强度和复杂度。"
+      },
+      "hdr": {
+        "name": "HDR",
+        "tooltip": "清晰度和细节级别。"
+      },
+      "image": {
+        "name": "图像"
+      },
+      "optimized_for": {
+        "name": "优化目标"
+      },
+      "prompt": {
+        "name": "提示词"
+      },
+      "resemblance": {
+        "name": "相似度",
+        "tooltip": "与原始图像的相似程度。"
+      },
+      "scale_factor": {
+        "name": "放大倍数"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MagnificImageUpscalerPreciseV2Node": {
+    "description": "高保真放大，精细控制锐度、颗粒感和细节。最大输出：10060×10060 像素。",
+    "display_name": "Magnific 图像放大（精确 V2）",
+    "inputs": {
+      "auto_downscale": {
+        "name": "自动降采样",
+        "tooltip": "如果输出超过最大分辨率，则自动缩小输入图像。"
+      },
+      "flavor": {
+        "name": "风格",
+        "tooltip": "处理风格：sublime 适用于通用，photo 适用于照片，photo_denoiser 适用于有噪点的照片。"
+      },
+      "image": {
+        "name": "图像"
+      },
+      "scale_factor": {
+        "name": "放大倍数"
+      },
+      "sharpen": {
+        "name": "锐化",
+        "tooltip": "图像锐度强度。数值越高，边缘越清晰。"
+      },
+      "smart_grain": {
+        "name": "智能颗粒",
+        "tooltip": "智能增强颗粒/纹理，防止图像过于平滑或失真。"
+      },
+      "ultra_detail": {
+        "name": "超细节",
+        "tooltip": "控制放大过程中添加的细节、纹理和微观细节。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "Mahiro": {
     "description": "修改引导以更多地侧重于正面条件提示的'方向'，而不是负面条件提示之间的差异。",
     "display_name": "真寻太可爱了，她应该有个更好的引导功能！！(。・ω・。)",
@@ -7497,17 +7674,16 @@
         "name": "rig_task_id"
       }
     },
-    "outputs": [
-      null,
-      {
+    "outputs": {
+      "1": {
         "name": "GLB",
         "tooltip": null
       },
-      {
+      "2": {
         "name": "FBX",
         "tooltip": null
       }
-    ]
+    }
   },
   "MeshyImageToModelNode": {
     "display_name": "Meshy：图像转模型",
@@ -7553,18 +7729,16 @@
         "name": "symmetry_mode"
       }
     },
-    "outputs": [
-      null,
-      null,
-      {
+    "outputs": {
+      "2": {
         "name": "GLB",
         "tooltip": null
       },
-      {
+      "3": {
         "name": "FBX",
         "tooltip": null
       }
-    ]
+    }
   },
   "MeshyMultiImageToModelNode": {
     "display_name": "Meshy：多图像转模型",
@@ -7610,18 +7784,16 @@
         "name": "symmetry_mode"
       }
     },
-    "outputs": [
-      null,
-      null,
-      {
+    "outputs": {
+      "2": {
         "name": "GLB",
         "tooltip": null
       },
-      {
+      "3": {
         "name": "FBX",
         "tooltip": null
       }
-    ]
+    }
   },
   "MeshyRefineNode": {
     "description": "对先前创建的草稿模型进行精细化处理。",
@@ -7646,18 +7818,16 @@
         "tooltip": "提供文本提示以引导材质生成。最多600个字符。不能与'texture_image'同时使用。"
       }
     },
-    "outputs": [
-      null,
-      null,
-      {
+    "outputs": {
+      "2": {
         "name": "GLB",
         "tooltip": null
       },
-      {
+      "3": {
         "name": "FBX",
         "tooltip": null
       }
-    ]
+    }
   },
   "MeshyRigModelNode": {
     "description": "以标准格式提供带骨骼的角色模型。自动骨骼绑定目前不适用于无贴图网格、非类人资产或肢体结构不清晰的类人资产。",
@@ -7675,18 +7845,16 @@
         "tooltip": "模型的UV展开基础色贴图。"
       }
     },
-    "outputs": [
-      null,
-      null,
-      {
+    "outputs": {
+      "2": {
         "name": "GLB",
         "tooltip": null
       },
-      {
+      "3": {
         "name": "FBX",
         "tooltip": null
       }
-    ]
+    }
   },
   "MeshyTextToModelNode": {
     "display_name": "Meshy：文本生成模型",
@@ -7725,18 +7893,16 @@
         "name": "symmetry_mode"
       }
     },
-    "outputs": [
-      null,
-      null,
-      {
+    "outputs": {
+      "2": {
         "name": "GLB",
         "tooltip": null
       },
-      {
+      "3": {
         "name": "FBX",
         "tooltip": null
       }
-    ]
+    }
   },
   "MeshyTextureNode": {
     "display_name": "Meshy：纹理模型",
@@ -7763,18 +7929,16 @@
         "tooltip": "用文本描述你想要的物体纹理风格。最多600个字符。不能与“image_style”同时使用。"
       }
     },
-    "outputs": [
-      null,
-      null,
-      {
+    "outputs": {
+      "2": {
         "name": "GLB",
         "tooltip": null
       },
-      {
+      "3": {
         "name": "FBX",
         "tooltip": null
       }
-    ]
+    }
   },
   "MinimaxHailuoVideoNode": {
     "description": "使用新的 MiniMax Hailuo-02 模型从提示词生成视频，可选择起始帧。",
@@ -10217,6 +10381,32 @@
       }
     }
   },
+  "NAGuidance": {
+    "description": "对模型应用归一化注意力引导，使蒸馏/快速模型支持负向提示。",
+    "display_name": "归一化注意力引导",
+    "inputs": {
+      "model": {
+        "name": "model",
+        "tooltip": "要应用NAG的模型。"
+      },
+      "nag_alpha": {
+        "name": "nag_alpha",
+        "tooltip": "归一化注意力的混合因子。1.0为完全替换，0.0为无效果。"
+      },
+      "nag_scale": {
+        "name": "nag_scale",
+        "tooltip": "引导缩放因子。数值越大，越远离负向提示。"
+      },
+      "nag_tau": {
+        "name": "nag_tau"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "已启用NAG的修补模型。"
+      }
+    }
+  },
   "NormalizeImages": {
     "display_name": "规格化图像",
     "inputs": {
@@ -10983,8 +11173,13 @@
   "PreviewAny": {
     "display_name": "预览任意",
     "inputs": {
-      "preview": {},
       "previewMode": {},
+      "preview_markdown": {
+        "name": "预览"
+      },
+      "preview_text": {
+        "name": "预览"
+      },
       "source": {
         "name": "源"
       }
@@ -11015,6 +11210,28 @@
     "inputs": {
       "value": {
         "name": "值"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PrimitiveBoundingBox": {
+    "display_name": "边界框",
+    "inputs": {
+      "height": {
+        "name": "高度"
+      },
+      "width": {
+        "name": "宽度"
+      },
+      "x": {
+        "name": "x"
+      },
+      "y": {
+        "name": "y"
       }
     },
     "outputs": {
@@ -11586,6 +11803,88 @@
       }
     }
   },
+  "RecraftV4TextToImageNode": {
+    "description": "使用Recraft V4或V4 Pro模型生成图像。",
+    "display_name": "Recraft V4 文本转图像",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "用于生成的模型。"
+      },
+      "model_size": {
+        "name": "size"
+      },
+      "n": {
+        "name": "n",
+        "tooltip": "要生成的图像数量。"
+      },
+      "negative_prompt": {
+        "name": "negative_prompt",
+        "tooltip": "可选的图像中不希望出现元素的文本描述。"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "用于图像生成的提示词。最多10,000个字符。"
+      },
+      "recraft_controls": {
+        "name": "recraft_controls",
+        "tooltip": "通过Recraft Controls节点对生成过程的可选附加控制。"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "用于决定节点是否重新运行的种子；无论种子如何，实际结果都是非确定性的。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "RecraftV4TextToVectorNode": {
+    "description": "使用Recraft V4或V4 Pro模型生成SVG。",
+    "display_name": "Recraft V4 文本转矢量",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "用于生成的模型。"
+      },
+      "model_size": {
+        "name": "size"
+      },
+      "n": {
+        "name": "n",
+        "tooltip": "要生成的图像数量。"
+      },
+      "negative_prompt": {
+        "name": "negative_prompt",
+        "tooltip": "可选的图像中不希望出现元素的文本描述。"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "用于图像生成的提示词。最多10,000个字符。"
+      },
+      "recraft_controls": {
+        "name": "recraft_controls",
+        "tooltip": "通过Recraft Controls节点对生成过程的可选附加控制。"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "用于决定节点是否重新运行的种子；无论种子如何，实际结果都是非确定性的。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "RecraftVectorizeImageNode": {
     "description": "从输入图像同步生成 SVG。",
     "display_name": "Recraft 矢量化图像",
@@ -11962,13 +12261,12 @@
         "name": "种子"
       }
     },
-    "outputs": [
-      null,
-      {
+    "outputs": {
+      "1": {
         "name": "GLB",
         "tooltip": null
       }
-    ]
+    }
   },
   "Rodin3D_Gen2": {
     "description": "使用Rodin API生成3D资源",
@@ -11990,13 +12288,12 @@
         "name": "TAPose"
       }
     },
-    "outputs": [
-      null,
-      {
+    "outputs": {
+      "1": {
         "name": "GLB",
         "tooltip": null
       }
-    ]
+    }
   },
   "Rodin3D_Regular": {
     "description": "使用Rodin API生成3D资源",
@@ -12015,13 +12312,12 @@
         "name": "种子"
       }
     },
-    "outputs": [
-      null,
-      {
+    "outputs": {
+      "1": {
         "name": "GLB",
         "tooltip": null
       }
-    ]
+    }
   },
   "Rodin3D_Sketch": {
     "description": "使用Rodin API生成3D资源",
@@ -12034,13 +12330,12 @@
         "name": "种子"
       }
     },
-    "outputs": [
-      null,
-      {
+    "outputs": {
+      "1": {
         "name": "GLB",
         "tooltip": null
       }
-    ]
+    }
   },
   "Rodin3D_Smooth": {
     "description": "使用Rodin API生成3D资源",
@@ -12059,13 +12354,12 @@
         "name": "种子"
       }
     },
-    "outputs": [
-      null,
-      {
+    "outputs": {
+      "1": {
         "name": "GLB",
         "tooltip": null
       }
-    ]
+    }
   },
   "RunwayFirstLastFrameNode": {
     "description": "上传首尾关键帧，草拟提示词，生成视频。对于更复杂的过渡（例如尾帧与首帧完全不同的情况），较长的10秒时长可能更有利，这能为生成过程提供更多时间在两个输入之间平滑过渡。开始前，请查看这些最佳实践以确保您的输入选择能为生成成功奠定基础：https://help.runwayml.com/hc/en-us/articles/34170748696595-Creating-with-Keyframes-on-Gen-3。",
@@ -14025,6 +14319,29 @@
       }
     }
   },
+  "Tencent3DPartNode": {
+    "description": "根据模型结构自动进行组件识别与生成。",
+    "display_name": "Hunyuan3D：3D部件",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "model_3d": {
+        "name": "model_3d",
+        "tooltip": "FBX格式的3D模型。模型面数应少于30000。"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed用于控制节点是否重新运行；无论seed如何，结果都是非确定性的。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "FBX",
+        "tooltip": null
+      }
+    }
+  },
   "TencentImageToModelNode": {
     "display_name": "Hunyuan3D：图像转模型（专业版）",
     "inputs": {
@@ -14061,17 +14378,16 @@
         "tooltip": "种子控制节点是否重新运行；无论种子如何，结果都是非确定性的。"
       }
     },
-    "outputs": [
-      null,
-      {
+    "outputs": {
+      "1": {
         "name": "GLB",
         "tooltip": null
       },
-      {
+      "2": {
         "name": "OBJ",
         "tooltip": null
       }
-    ]
+    }
   },
   "TencentTextToModelNode": {
     "display_name": "Hunyuan3D：文本转模型（专业版）",
@@ -14101,17 +14417,16 @@
         "tooltip": "种子控制节点是否重新运行；无论种子如何，结果都是非确定性的。"
       }
     },
-    "outputs": [
-      null,
-      {
+    "outputs": {
+      "1": {
         "name": "GLB",
         "tooltip": null
       },
-      {
+      "2": {
         "name": "OBJ",
         "tooltip": null
       }
-    ]
+    }
   },
   "TextEncodeAceStepAudio": {
     "display_name": "文本音频编码（AceStep）",
@@ -14165,6 +14480,9 @@
       },
       "lyrics": {
         "name": "歌词"
+      },
+      "min_p": {
+        "name": "最小 p"
       },
       "seed": {
         "name": "种子"
@@ -14754,14 +15072,12 @@
         "name": "纹理种子"
       }
     },
-    "outputs": [
-      null,
-      null,
-      {
+    "outputs": {
+      "2": {
         "name": "GLB",
         "tooltip": null
       }
-    ]
+    }
   },
   "TripoMultiviewToModelNode": {
     "display_name": "Tripo：多视图转模型",
@@ -14813,14 +15129,12 @@
         "name": "纹理种子"
       }
     },
-    "outputs": [
-      null,
-      null,
-      {
+    "outputs": {
+      "2": {
         "name": "GLB",
         "tooltip": null
       }
-    ]
+    }
   },
   "TripoRefineNode": {
     "description": "仅精修由v1.4 Tripo模型创建的草稿模型。",
@@ -14831,14 +15145,12 @@
         "tooltip": "必须是v1.4 Tripo模型"
       }
     },
-    "outputs": [
-      null,
-      null,
-      {
+    "outputs": {
+      "2": {
         "name": "GLB",
         "tooltip": null
       }
-    ]
+    }
   },
   "TripoRetargetNode": {
     "display_name": "Tripo: 重定向绑定模型",
@@ -14850,14 +15162,12 @@
         "name": "原始模型任务ID"
       }
     },
-    "outputs": [
-      null,
-      null,
-      {
+    "outputs": {
+      "2": {
         "name": "GLB",
         "tooltip": null
       }
-    ]
+    }
   },
   "TripoRigNode": {
     "display_name": "Tripo: 绑定模型",
@@ -14866,14 +15176,12 @@
         "name": "原始模型任务ID"
       }
     },
-    "outputs": [
-      null,
-      null,
-      {
+    "outputs": {
+      "2": {
         "name": "GLB",
         "tooltip": null
       }
-    ]
+    }
   },
   "TripoTextToModelNode": {
     "display_name": "Tripo: 文本转模型",
@@ -14918,14 +15226,12 @@
         "name": "纹理种子"
       }
     },
-    "outputs": [
-      null,
-      null,
-      {
+    "outputs": {
+      "2": {
         "name": "GLB",
         "tooltip": null
       }
-    ]
+    }
   },
   "TripoTextureNode": {
     "display_name": "Tripo: 纹理化模型",
@@ -14949,14 +15255,12 @@
         "name": "纹理种子"
       }
     },
-    "outputs": [
-      null,
-      null,
-      {
+    "outputs": {
+      "2": {
         "name": "GLB",
         "tooltip": null
       }
-    ]
+    }
   },
   "TruncateText": {
     "display_name": "截断文本",
@@ -15697,6 +16001,46 @@
       },
       "seed": {
         "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Vidu3StartEndToVideoNode": {
+    "description": "根据起始帧、结束帧和提示词生成视频。",
+    "display_name": "Vidu Q3 起始/结束帧到视频生成",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "end_frame": {
+        "name": "结束帧"
+      },
+      "first_frame": {
+        "name": "起始帧"
+      },
+      "model": {
+        "name": "模型",
+        "tooltip": "用于视频生成的模型。"
+      },
+      "model_audio": {
+        "name": "音频"
+      },
+      "model_duration": {
+        "name": "时长"
+      },
+      "model_resolution": {
+        "name": "分辨率"
+      },
+      "prompt": {
+        "name": "提示词",
+        "tooltip": "提示描述（最多2000字符）。"
+      },
+      "seed": {
+        "name": "种子"
       }
     },
     "outputs": {

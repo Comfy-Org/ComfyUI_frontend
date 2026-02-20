@@ -608,6 +608,7 @@
     "AUDIO_ENCODER_OUTPUT": "SORTIE_ENCODEUR_AUDIO",
     "AUDIO_RECORD": "ENREGISTREMENT_AUDIO",
     "BOOLEAN": "BOOLEAN",
+    "BOUNDING_BOX": "BOÎTE ENGLOBANTE",
     "CAMERA_CONTROL": "Contrôle de la caméra",
     "CLIP": "CLIP",
     "CLIP_VISION": "CLIP_VISION",
@@ -798,6 +799,7 @@
     "disableSelected": "Désactiver la sélection",
     "disableThirdParty": "Désactiver les tiers",
     "disabling": "Désactivation",
+    "disconnectedFromBackend": "Déconnecté du backend. Vérifiez si le serveur est en cours d’exécution.",
     "dismiss": "Fermer",
     "download": "Télécharger",
     "downloadAudio": "Télécharger l'audio",
@@ -820,6 +822,7 @@
     "enterBaseName": "Entrez le nom de base",
     "enterNewName": "Entrez le nouveau nom",
     "enterNewNamePrompt": "Entrez le nouveau nom :",
+    "enterSubgraph": "Entrer dans le sous-graphe",
     "error": "Erreur",
     "errorLoadingImage": "Erreur lors du chargement de l'image",
     "errorLoadingVideo": "Erreur lors du chargement de la vidéo",
@@ -846,6 +849,7 @@
     "hideLeftPanel": "Masquer le panneau de gauche",
     "hideRightPanel": "Masquer le panneau de droite",
     "icon": "Icône",
+    "imageDoesNotExist": "L’image n’existe pas",
     "imageFailedToLoad": "Échec du chargement de l'image",
     "imagePreview": "Aperçu de l'image - Utilisez les flèches pour naviguer entre les images",
     "imageUrl": "URL de l'image",
@@ -995,6 +999,7 @@
     "title": "Titre",
     "triggerPhrase": "Phrase déclencheuse",
     "unknownError": "Erreur inconnue",
+    "unknownFile": "Fichier inconnu",
     "untitled": "Sans titre",
     "update": "Mettre à jour",
     "updateAvailable": "Mise à jour disponible",
@@ -1894,6 +1899,25 @@
     "outputs": "Sorties",
     "type": "Type"
   },
+  "nodeReplacement": {
+    "compatibleAlternatives": "Alternatives compatibles",
+    "installMissingNodes": "Installer les nœuds manquants",
+    "installationRequired": "Installation requise",
+    "instructionMessage": "Vous devez installer ces nœuds ou les remplacer par des alternatives installées pour exécuter le workflow. Les nœuds manquants sont surlignés en {red} sur le canevas. Certains nœuds ne peuvent pas être remplacés et doivent être installés via le Gestionnaire de nœuds.",
+    "notReplaceable": "Installation requise",
+    "openNodeManager": "Ouvrir le Gestionnaire de nœuds",
+    "quickFixAvailable": "Correction rapide disponible",
+    "redHighlight": "rouge",
+    "replaceFailed": "Échec du remplacement des nœuds",
+    "replaceSelected": "Remplacer la sélection ({count})",
+    "replaceWarning": "Cela modifiera définitivement le workflow. Sauvegardez une copie si vous n’êtes pas sûr.",
+    "replaceable": "Remplaçable",
+    "replaced": "Remplacé",
+    "replacedAllNodes": "{count} type(s) de nœud remplacé(s)",
+    "replacedNode": "Nœud remplacé : {nodeType}",
+    "selectAll": "Tout sélectionner",
+    "skipForNow": "Ignorer pour l’instant"
+  },
   "nodeTemplates": {
     "enterName": "Entrez le nom",
     "saveAsTemplate": "Enregistrer comme modèle"
@@ -1977,6 +2001,7 @@
       "removeJob": "Retirer la tâche",
       "reportError": "Signaler une erreur"
     },
+    "jobQueueing": "Mise en file d’attente de la tâche",
     "toggleJobHistory": "Afficher/Masquer l'historique des tâches"
   },
   "releaseToast": {
@@ -1991,6 +2016,11 @@
     "advancedInputs": "ENTRÉES AVANCÉES",
     "bypass": "Contourner",
     "color": "Couleur du nœud",
+    "enterSubgraph": "Entrer dans le sous-graphe",
+    "errorHelp": "Pour plus d'aide, {github} ou {support}",
+    "errorHelpGithub": "soumettre un ticket GitHub",
+    "errorHelpSupport": "contacter notre support",
+    "errors": "Erreurs",
     "fallbackGroupTitle": "Groupe",
     "fallbackNodeTitle": "Nœud",
     "favorites": "ENTRÉES FAVORITES",
@@ -2025,6 +2055,7 @@
     "inputsNoneTooltip": "Le nœud n’a pas d’entrées",
     "locateNode": "Localiser le nœud sur le canevas",
     "mute": "Muet",
+    "noErrors": "Aucune erreur",
     "noSelection": "Sélectionnez un nœud pour voir ses propriétés et informations.",
     "nodeState": "État du nœud",
     "nodes": "Nœuds",
@@ -2033,8 +2064,19 @@
     "normal": "Normal",
     "parameters": "Paramètres",
     "pinned": "Épinglé",
+    "promptErrors": {
+      "no_prompt": {
+        "desc": "Les données du flux de travail envoyées au serveur sont vides. Il peut s'agir d'une erreur système inattendue."
+      },
+      "prompt_no_outputs": {
+        "desc": "Le flux de travail ne contient aucun nœud de sortie (par exemple, Enregistrer l'image, Prévisualiser l'image) pour produire un résultat."
+      }
+    },
     "properties": "Propriétés",
     "removeFavorite": "Retirer des favoris",
+    "resetAllParameters": "Réinitialiser tous les paramètres",
+    "resetToDefault": "Réinitialiser par défaut",
+    "seeError": "Voir l'erreur",
     "settings": "Paramètres",
     "showAdvancedInputsButton": "Afficher les entrées avancées",
     "showInput": "Afficher l’entrée",
@@ -2259,6 +2301,7 @@
     "CustomColorPalettes": "Palettes de Couleurs Personnalisées",
     "DevMode": "Mode Développeur",
     "EditTokenWeight": "Modifier le Poids du Jeton",
+    "Error System": "Système d'erreurs",
     "Execution": "Exécution",
     "Extension": "Extension",
     "General": "Général",
@@ -2398,14 +2441,20 @@
       "filterJobs": "Filtrer les travaux",
       "inlineTotalLabel": "Total",
       "interruptAll": "Interrompre tous les travaux en cours",
+      "jobCompleted": "Tâche terminée",
+      "jobFailed": "Échec de la tâche",
       "jobQueue": "File d’attente des travaux",
+      "jobsAddedToQueue": "{count} tâche ajoutée à la file d’attente | {count} tâches ajoutées à la file d’attente",
       "jobsCompleted": "{count} travail terminé | {count} travaux terminés",
       "jobsFailed": "{count} travail échoué | {count} travaux échoués",
       "moreOptions": "Plus d’options",
       "noActiveJobs": "Aucun travail actif",
       "preview": "Aperçu",
+      "queuedJobsLabel": "{count} en file d’attente",
       "queuedSuffix": "en file d’attente",
       "running": "en cours",
+      "runningJobsLabel": "{count} en cours",
+      "runningQueuedSummary": "{running} en cours, {queued} en file",
       "showAssets": "Afficher les ressources",
       "showAssetsPanel": "Afficher le panneau des ressources",
       "sortBy": "Trier par",
@@ -2871,7 +2920,8 @@
     "unsavedChanges": {
       "message": "Vous avez des modifications non enregistrées. Voulez-vous les abandonner et changer d’espace de travail ?",
       "title": "Modifications non enregistrées"
-    }
+    },
+    "viewWorkspace": "Voir l’espace de travail"
   },
   "workspaceAuth": {
     "errors": {
@@ -2920,6 +2970,14 @@
       "placeholder": "Entrez l'email de la personne",
       "title": "Inviter une personne dans cet espace de travail"
     },
+    "inviteUpsellDialog": {
+      "messageNotSubscribed": "Pour ajouter des membres à cet espace de travail, vous devez disposer d’un forfait Creator ou supérieur. Le forfait Standard ne prend en charge qu’un seul utilisateur (le propriétaire).",
+      "messageSingleSeat": "Le forfait Standard inclut une place pour le propriétaire de l’espace de travail. Pour inviter d’autres membres, passez au forfait Creator ou supérieur pour débloquer plusieurs places.",
+      "titleNotSubscribed": "Un abonnement est requis pour inviter des membres",
+      "titleSingleSeat": "Votre forfait actuel ne prend en charge qu’un seul utilisateur",
+      "upgradeToCreator": "Passer au forfait Creator",
+      "viewPlans": "Voir les forfaits"
+    },
     "leaveDialog": {
       "leave": "Quitter",
       "message": "Vous ne pourrez pas le rejoindre à nouveau sans contacter le propriétaire de l’espace de travail.",
@@ -2945,7 +3003,10 @@
       "tabs": {
         "active": "Actif",
         "pendingCount": "En attente ({count})"
-      }
+      },
+      "upsellBannerSubscribe": "Abonnez-vous au forfait Creator ou supérieur pour inviter des membres à cet espace de travail.",
+      "upsellBannerUpgrade": "Passez au forfait Creator ou supérieur pour inviter des membres supplémentaires à cet espace de travail.",
+      "viewPlans": "Voir les forfaits"
     },
     "menu": {
       "deleteWorkspace": "Supprimer l’espace de travail",
