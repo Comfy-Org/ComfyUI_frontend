@@ -2172,13 +2172,12 @@
       "index": {},
       "option1": {}
     },
-    "outputs": [
-      null,
-      {
+    "outputs": {
+      "1": {
         "name": "索引",
         "tooltip": null
       }
-    ]
+    }
   },
   "DiffControlNetLoader": {
     "display_name": "加载ControlNet模型（diff）",
@@ -6723,18 +6722,12 @@
         "name": "宽度"
       }
     },
-    "outputs": [
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      {
+    "outputs": {
+      "6": {
         "name": "model_3d",
         "tooltip": null
       }
-    ]
+    }
   },
   "LoadAudio": {
     "display_name": "加载音频",
@@ -7681,17 +7674,16 @@
         "name": "rig_task_id"
       }
     },
-    "outputs": [
-      null,
-      {
+    "outputs": {
+      "1": {
         "name": "GLB",
         "tooltip": null
       },
-      {
+      "2": {
         "name": "FBX",
         "tooltip": null
       }
-    ]
+    }
   },
   "MeshyImageToModelNode": {
     "display_name": "Meshy：图像转模型",
@@ -7737,18 +7729,16 @@
         "name": "symmetry_mode"
       }
     },
-    "outputs": [
-      null,
-      null,
-      {
+    "outputs": {
+      "2": {
         "name": "GLB",
         "tooltip": null
       },
-      {
+      "3": {
         "name": "FBX",
         "tooltip": null
       }
-    ]
+    }
   },
   "MeshyMultiImageToModelNode": {
     "display_name": "Meshy：多图像转模型",
@@ -7794,18 +7784,16 @@
         "name": "symmetry_mode"
       }
     },
-    "outputs": [
-      null,
-      null,
-      {
+    "outputs": {
+      "2": {
         "name": "GLB",
         "tooltip": null
       },
-      {
+      "3": {
         "name": "FBX",
         "tooltip": null
       }
-    ]
+    }
   },
   "MeshyRefineNode": {
     "description": "对先前创建的草稿模型进行精细化处理。",
@@ -7830,18 +7818,16 @@
         "tooltip": "提供文本提示以引导材质生成。最多600个字符。不能与'texture_image'同时使用。"
       }
     },
-    "outputs": [
-      null,
-      null,
-      {
+    "outputs": {
+      "2": {
         "name": "GLB",
         "tooltip": null
       },
-      {
+      "3": {
         "name": "FBX",
         "tooltip": null
       }
-    ]
+    }
   },
   "MeshyRigModelNode": {
     "description": "以标准格式提供带骨骼的角色模型。自动骨骼绑定目前不适用于无贴图网格、非类人资产或肢体结构不清晰的类人资产。",
@@ -7859,18 +7845,16 @@
         "tooltip": "模型的UV展开基础色贴图。"
       }
     },
-    "outputs": [
-      null,
-      null,
-      {
+    "outputs": {
+      "2": {
         "name": "GLB",
         "tooltip": null
       },
-      {
+      "3": {
         "name": "FBX",
         "tooltip": null
       }
-    ]
+    }
   },
   "MeshyTextToModelNode": {
     "display_name": "Meshy：文本生成模型",
@@ -7909,18 +7893,16 @@
         "name": "symmetry_mode"
       }
     },
-    "outputs": [
-      null,
-      null,
-      {
+    "outputs": {
+      "2": {
         "name": "GLB",
         "tooltip": null
       },
-      {
+      "3": {
         "name": "FBX",
         "tooltip": null
       }
-    ]
+    }
   },
   "MeshyTextureNode": {
     "display_name": "Meshy：纹理模型",
@@ -7947,18 +7929,16 @@
         "tooltip": "用文本描述你想要的物体纹理风格。最多600个字符。不能与“image_style”同时使用。"
       }
     },
-    "outputs": [
-      null,
-      null,
-      {
+    "outputs": {
+      "2": {
         "name": "GLB",
         "tooltip": null
       },
-      {
+      "3": {
         "name": "FBX",
         "tooltip": null
       }
-    ]
+    }
   },
   "MinimaxHailuoVideoNode": {
     "description": "使用新的 MiniMax Hailuo-02 模型从提示词生成视频，可选择起始帧。",
@@ -12281,13 +12261,12 @@
         "name": "种子"
       }
     },
-    "outputs": [
-      null,
-      {
+    "outputs": {
+      "1": {
         "name": "GLB",
         "tooltip": null
       }
-    ]
+    }
   },
   "Rodin3D_Gen2": {
     "description": "使用Rodin API生成3D资源",
@@ -12309,13 +12288,12 @@
         "name": "TAPose"
       }
     },
-    "outputs": [
-      null,
-      {
+    "outputs": {
+      "1": {
         "name": "GLB",
         "tooltip": null
       }
-    ]
+    }
   },
   "Rodin3D_Regular": {
     "description": "使用Rodin API生成3D资源",
@@ -12334,13 +12312,12 @@
         "name": "种子"
       }
     },
-    "outputs": [
-      null,
-      {
+    "outputs": {
+      "1": {
         "name": "GLB",
         "tooltip": null
       }
-    ]
+    }
   },
   "Rodin3D_Sketch": {
     "description": "使用Rodin API生成3D资源",
@@ -12353,13 +12330,12 @@
         "name": "种子"
       }
     },
-    "outputs": [
-      null,
-      {
+    "outputs": {
+      "1": {
         "name": "GLB",
         "tooltip": null
       }
-    ]
+    }
   },
   "Rodin3D_Smooth": {
     "description": "使用Rodin API生成3D资源",
@@ -12378,13 +12354,12 @@
         "name": "种子"
       }
     },
-    "outputs": [
-      null,
-      {
+    "outputs": {
+      "1": {
         "name": "GLB",
         "tooltip": null
       }
-    ]
+    }
   },
   "RunwayFirstLastFrameNode": {
     "description": "上传首尾关键帧，草拟提示词，生成视频。对于更复杂的过渡（例如尾帧与首帧完全不同的情况），较长的10秒时长可能更有利，这能为生成过程提供更多时间在两个输入之间平滑过渡。开始前，请查看这些最佳实践以确保您的输入选择能为生成成功奠定基础：https://help.runwayml.com/hc/en-us/articles/34170748696595-Creating-with-Keyframes-on-Gen-3。",
@@ -14403,17 +14378,16 @@
         "tooltip": "种子控制节点是否重新运行；无论种子如何，结果都是非确定性的。"
       }
     },
-    "outputs": [
-      null,
-      {
+    "outputs": {
+      "1": {
         "name": "GLB",
         "tooltip": null
       },
-      {
+      "2": {
         "name": "OBJ",
         "tooltip": null
       }
-    ]
+    }
   },
   "TencentTextToModelNode": {
     "display_name": "Hunyuan3D：文本转模型（专业版）",
@@ -14443,17 +14417,16 @@
         "tooltip": "种子控制节点是否重新运行；无论种子如何，结果都是非确定性的。"
       }
     },
-    "outputs": [
-      null,
-      {
+    "outputs": {
+      "1": {
         "name": "GLB",
         "tooltip": null
       },
-      {
+      "2": {
         "name": "OBJ",
         "tooltip": null
       }
-    ]
+    }
   },
   "TextEncodeAceStepAudio": {
     "display_name": "文本音频编码（AceStep）",
@@ -15099,14 +15072,12 @@
         "name": "纹理种子"
       }
     },
-    "outputs": [
-      null,
-      null,
-      {
+    "outputs": {
+      "2": {
         "name": "GLB",
         "tooltip": null
       }
-    ]
+    }
   },
   "TripoMultiviewToModelNode": {
     "display_name": "Tripo：多视图转模型",
@@ -15158,14 +15129,12 @@
         "name": "纹理种子"
       }
     },
-    "outputs": [
-      null,
-      null,
-      {
+    "outputs": {
+      "2": {
         "name": "GLB",
         "tooltip": null
       }
-    ]
+    }
   },
   "TripoRefineNode": {
     "description": "仅精修由v1.4 Tripo模型创建的草稿模型。",
@@ -15176,14 +15145,12 @@
         "tooltip": "必须是v1.4 Tripo模型"
       }
     },
-    "outputs": [
-      null,
-      null,
-      {
+    "outputs": {
+      "2": {
         "name": "GLB",
         "tooltip": null
       }
-    ]
+    }
   },
   "TripoRetargetNode": {
     "display_name": "Tripo: 重定向绑定模型",
@@ -15195,14 +15162,12 @@
         "name": "原始模型任务ID"
       }
     },
-    "outputs": [
-      null,
-      null,
-      {
+    "outputs": {
+      "2": {
         "name": "GLB",
         "tooltip": null
       }
-    ]
+    }
   },
   "TripoRigNode": {
     "display_name": "Tripo: 绑定模型",
@@ -15211,14 +15176,12 @@
         "name": "原始模型任务ID"
       }
     },
-    "outputs": [
-      null,
-      null,
-      {
+    "outputs": {
+      "2": {
         "name": "GLB",
         "tooltip": null
       }
-    ]
+    }
   },
   "TripoTextToModelNode": {
     "display_name": "Tripo: 文本转模型",
@@ -15263,14 +15226,12 @@
         "name": "纹理种子"
       }
     },
-    "outputs": [
-      null,
-      null,
-      {
+    "outputs": {
+      "2": {
         "name": "GLB",
         "tooltip": null
       }
-    ]
+    }
   },
   "TripoTextureNode": {
     "display_name": "Tripo: 纹理化模型",
@@ -15294,14 +15255,12 @@
         "name": "纹理种子"
       }
     },
-    "outputs": [
-      null,
-      null,
-      {
+    "outputs": {
+      "2": {
         "name": "GLB",
         "tooltip": null
       }
-    ]
+    }
   },
   "TruncateText": {
     "display_name": "截断文本",

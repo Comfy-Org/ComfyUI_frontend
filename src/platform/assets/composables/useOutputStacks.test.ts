@@ -40,7 +40,7 @@ function createAsset(overrides: Partial<AssetItem> = {}): AssetItem {
     tags: [],
     created_at: '2025-01-01T00:00:00.000Z',
     user_metadata: {
-      promptId: 'prompt-1',
+      jobId: 'job-1',
       nodeId: 'node-1',
       subfolder: 'outputs'
     },
@@ -74,7 +74,7 @@ describe('useOutputStacks', () => {
     await toggleStack(parent)
 
     expect(mocks.resolveOutputAssetItems).toHaveBeenCalledWith(
-      expect.objectContaining({ promptId: 'prompt-1' }),
+      expect.objectContaining({ jobId: 'job-1' }),
       {
         createdAt: parent.created_at,
         excludeOutputKey: 'node-1-outputs-parent.png'
