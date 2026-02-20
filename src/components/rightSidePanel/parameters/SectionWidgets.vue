@@ -220,7 +220,7 @@ defineExpose({
             </span>
           </span>
           <Button
-            v-if="nodeHasError"
+            v-if="nodeHasError && useSettingStore().get('Comfy.RightSidePanel.ShowErrorsTab')"
             variant="secondary"
             size="sm"
             class="shrink-0 rounded-lg text-sm"
