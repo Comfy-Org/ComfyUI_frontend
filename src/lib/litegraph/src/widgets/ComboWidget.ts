@@ -38,10 +38,12 @@ export class ComboWidget
     const { values: rawValues, placeholder } = this.options
     const resolvedValues =
       typeof rawValues === 'function' ? rawValues(this, this.node) : rawValues
-    const valuesArray = toArray(resolvedValues)
 
-    if (valuesArray.length === 0 && placeholder) {
-      return placeholder
+    if (resolvedValues) {
+      const valuesArray = toArray(resolvedValues)
+      if (valuesArray.length === 0 && placeholder) {
+        return placeholder
+      }
     }
 
     const getOptionLabel = this.options.getOptionLabel

@@ -82,10 +82,7 @@ const invalid = computed(
   () => !!modelValue.value && !selectOptions.value.includes(modelValue.value)
 )
 
-const hasEmptyOptions = computed(() => selectOptions.value.length === 0)
-
 const combinedProps = computed(() => {
-  // Extract placeholder to handle it separately based on empty/invalid state
   const { placeholder: _, ...filteredOptions } = filterWidgetProps(
     widget.options,
     PANEL_EXCLUDED_PROPS
@@ -95,7 +92,7 @@ const combinedProps = computed(() => {
     ...transformCompatProps.value
   }
 
-  if (hasEmptyOptions.value && widget.options?.placeholder) {
+  if (selectOptions.value.length === 0 && widget.options?.placeholder) {
     return { ...baseProps, placeholder: widget.options.placeholder }
   }
 
