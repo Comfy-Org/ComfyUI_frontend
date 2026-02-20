@@ -14,11 +14,11 @@
 
 <script setup lang="ts">
 import Button from '@/components/ui/button/Button.vue'
-import { useComfyHubPublishDialog } from '@/platform/workflow/sharing/composables/useComfyHubPublishDialog'
+import { useComfyHubProfileGate } from '@/platform/workflow/sharing/composables/useComfyHubProfileGate'
 
-const { show } = useComfyHubPublishDialog()
+const { openPublishWithGate } = useComfyHubProfileGate()
 
 function openPublish() {
-  show()
+  openPublishWithGate()
 }
 </script>

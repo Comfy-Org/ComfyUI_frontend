@@ -60,11 +60,11 @@
 import { provide } from 'vue'
 
 import BaseModalLayout from '@/components/widget/layout/BaseModalLayout.vue'
-import ComfyHubDescribeStep from '@/platform/workflow/sharing/components/comfyhub/ComfyHubDescribeStep.vue'
-import ComfyHubExamplesStep from '@/platform/workflow/sharing/components/comfyhub/ComfyHubExamplesStep.vue'
-import ComfyHubFinishStep from '@/platform/workflow/sharing/components/comfyhub/ComfyHubFinishStep.vue'
-import ComfyHubPublishFooter from '@/platform/workflow/sharing/components/comfyhub/ComfyHubPublishFooter.vue'
-import ComfyHubPublishNav from '@/platform/workflow/sharing/components/comfyhub/ComfyHubPublishNav.vue'
+import ComfyHubDescribeStep from './ComfyHubDescribeStep.vue'
+import ComfyHubExamplesStep from './ComfyHubExamplesStep.vue'
+import ComfyHubFinishStep from './ComfyHubFinishStep.vue'
+import ComfyHubPublishFooter from './ComfyHubPublishFooter.vue'
+import ComfyHubPublishNav from './ComfyHubPublishNav.vue'
 import { useComfyHubPublishWizard } from '@/platform/workflow/sharing/composables/useComfyHubPublishWizard'
 import { OnCloseKey } from '@/types/widgetTypes'
 

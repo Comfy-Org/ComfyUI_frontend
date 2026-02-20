@@ -1,4 +1,4 @@
-import ComfyHubPublishDialog from '@/platform/workflow/sharing/components/comfyhub/ComfyHubPublishDialog.vue'
+import ComfyHubPublishDialog from '@/platform/workflow/sharing/components/comfyhub/publish/ComfyHubPublishDialog.vue'
 import { useDialogService } from '@/services/dialogService'
 import { useDialogStore } from '@/stores/dialogStore'
 
