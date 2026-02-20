@@ -188,7 +188,9 @@ export function useWorkflowPersistenceV2() {
     () => workflowStore.activeWorkflow?.key,
     (activeWorkflowKey) => {
       if (!activeWorkflowKey) return
-      // Persist immediately on workflow switch (not debounced)
+      // Flush any pending persistence from the previous workflow
+      debouncedPersist.flush()
+      // Persist the new workflow immediately
       persistCurrentWorkflow()
     }
   )

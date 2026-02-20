@@ -74,7 +74,7 @@ export function migrateV1toV2(workspaceId: string = getWorkspaceId()): number {
   const v1Data = readV1Drafts(workspaceId)
   if (!v1Data) {
     // No V1 data to migrate - create empty V2 index
-    writeIndex(workspaceId, createEmptyIndex())
+    if (!writeIndex(workspaceId, createEmptyIndex())) return -1
     return 0
   }
 

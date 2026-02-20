@@ -186,48 +186,69 @@ export function deleteOrphanPayloads(
 }
 
 /**
- * Reads the active path pointer from sessionStorage.
- * If no pointer exists for the given clientId, searches for any pointer
- * matching the target workspaceId (handles clientId changes after reload).
- * When found via fallback, migrates the pointer to the new clientId key.
+ * Searches sessionStorage for a pointer matching the target workspaceId
+ * when the exact clientId key has no entry (e.g. clientId changed after reload).
+ * Migrates the found pointer to the new clientId key.
  */
-export function readActivePath(
-  clientId: string,
-  targetWorkspaceId?: string
-): ActivePathPointer | null {
-  try {
-    // Try exact clientId match first
-    const key = StorageKeys.activePath(clientId)
-    const json = sessionStorage.getItem(key)
-    if (json) {
-      return JSON.parse(json) as ActivePathPointer
-    }
+function findAndMigratePointer<T extends { workspaceId: string }>(
+  newKey: string,
+  prefix: string,
+  targetWorkspaceId: string
+): T | null {
+  for (let i = 0; i < sessionStorage.length; i++) {
+    const storageKey = sessionStorage.key(i)
+    if (!storageKey?.startsWith(prefix) || storageKey === newKey) continue
 
-    // Fallback: search for any pointer matching the target workspace
-    // This handles the case where clientId changed after page reload
+    const json = sessionStorage.getItem(storageKey)
+    if (!json) continue
+
+    const pointer = JSON.parse(json) as T
+    if (pointer.workspaceId === targetWorkspaceId) {
+      sessionStorage.setItem(newKey, json)
+      sessionStorage.removeItem(storageKey)
+      return pointer
+    }
+  }
+  return null
+}
+
+/**
+ * Reads a session pointer by clientId with workspace-based fallback.
+ * If the exact clientId key has no entry, searches for any pointer
+ * matching the target workspaceId and migrates it to the new key.
+ */
+function readSessionPointer<T extends { workspaceId: string }>(
+  key: string,
+  prefix: string,
+  targetWorkspaceId?: string
+): T | null {
+  try {
+    const json = sessionStorage.getItem(key)
+    if (json) return JSON.parse(json) as T
+
     if (targetWorkspaceId) {
-      const prefix = StorageKeys.prefixes.activePath
-      for (let i = 0; i < sessionStorage.length; i++) {
-        const storageKey = sessionStorage.key(i)
-        if (storageKey?.startsWith(prefix) && storageKey !== key) {
-          const pointerJson = sessionStorage.getItem(storageKey)
-          if (pointerJson) {
-            const pointer = JSON.parse(pointerJson) as ActivePathPointer
-            if (pointer.workspaceId === targetWorkspaceId) {
-              // Migrate to new clientId key and clean up old key
-              sessionStorage.setItem(key, pointerJson)
-              sessionStorage.removeItem(storageKey)
-              return pointer
-            }
-          }
-        }
-      }
+      return findAndMigratePointer<T>(key, prefix, targetWorkspaceId)
     }
 
     return null
   } catch {
     return null
   }
+}
+
+/**
+ * Reads the active path pointer from sessionStorage.
+ * Falls back to workspace-based search when clientId changes after reload.
+ */
+export function readActivePath(
+  clientId: string,
+  targetWorkspaceId?: string
+): ActivePathPointer | null {
+  return readSessionPointer<ActivePathPointer>(
+    StorageKeys.activePath(clientId),
+    StorageKeys.prefixes.activePath,
+    targetWorkspaceId
+  )
 }
 
 /**
@@ -247,47 +268,17 @@ export function writeActivePath(
 
 /**
  * Reads the open paths pointer from sessionStorage.
- * If no pointer exists for the given clientId, searches for any pointer
- * matching the target workspaceId (handles clientId changes after reload).
- * When found via fallback, migrates the pointer to the new clientId key.
+ * Falls back to workspace-based search when clientId changes after reload.
  */
 export function readOpenPaths(
   clientId: string,
   targetWorkspaceId?: string
 ): OpenPathsPointer | null {
-  try {
-    // Try exact clientId match first
-    const key = StorageKeys.openPaths(clientId)
-    const json = sessionStorage.getItem(key)
-    if (json) {
-      return JSON.parse(json) as OpenPathsPointer
-    }
-
-    // Fallback: search for any pointer matching the target workspace
-    // This handles the case where clientId changed after page reload
-    if (targetWorkspaceId) {
-      const prefix = StorageKeys.prefixes.openPaths
-      for (let i = 0; i < sessionStorage.length; i++) {
-        const storageKey = sessionStorage.key(i)
-        if (storageKey?.startsWith(prefix) && storageKey !== key) {
-          const pointerJson = sessionStorage.getItem(storageKey)
-          if (pointerJson) {
-            const pointer = JSON.parse(pointerJson) as OpenPathsPointer
-            if (pointer.workspaceId === targetWorkspaceId) {
-              // Migrate to new clientId key and clean up old key
-              sessionStorage.setItem(key, pointerJson)
-              sessionStorage.removeItem(storageKey)
-              return pointer
-            }
-          }
-        }
-      }
-    }
-
-    return null
-  } catch {
-    return null
-  }
+  return readSessionPointer<OpenPathsPointer>(
+    StorageKeys.openPaths(clientId),
+    StorageKeys.prefixes.openPaths,
+    targetWorkspaceId
+  )
 }
 
 /**

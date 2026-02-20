@@ -733,10 +733,25 @@ test.describe('Load workflow', { tag: '@screenshot' }, () => {
     await expect(comfyPage.canvas).toHaveScreenshot(
       'single_ksampler_modified.png'
     )
-    // Wait for V2 persistence debounce (512ms) to save the modified workflow
-    await comfyPage.page.evaluate(
-      () => new Promise((resolve) => setTimeout(resolve, 600))
-    )
+    // Wait for V2 persistence debounce to save the modified workflow
+    const start = Date.now()
+    await comfyPage.page.waitForFunction((since) => {
+      for (let i = 0; i < window.localStorage.length; i++) {
+        const key = window.localStorage.key(i)
+        if (!key?.startsWith('Comfy.Workflow.DraftIndex.v2:')) continue
+        const json = window.localStorage.getItem(key)
+        if (!json) continue
+        try {
+          const index = JSON.parse(json)
+          if (typeof index.updatedAt === 'number' && index.updatedAt >= since) {
+            return true
+          }
+        } catch {
+          // ignore
+        }
+      }
+      return false
+    }, start)
     await comfyPage.setup({ clearStorage: false })
     await expect(comfyPage.canvas).toHaveScreenshot(
       'single_ksampler_modified.png'
