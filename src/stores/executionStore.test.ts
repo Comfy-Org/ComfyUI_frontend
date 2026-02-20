@@ -1,7 +1,5 @@
-import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-
 import { app } from '@/scripts/app'
 import { useExecutionStore } from '@/stores/executionStore'
 
@@ -11,6 +9,8 @@ const mockNodeIdToNodeLocatorId = vi.fn()
 const mockNodeLocatorIdToNodeExecutionId = vi.fn()
 
 import type * as WorkflowStoreModule from '@/platform/workflow/management/stores/workflowStore'
+import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
+import { createTestingPinia } from '@pinia/testing'
 
 // Mock the workflowStore
 vi.mock('@/platform/workflow/management/stores/workflowStore', async () => {
@@ -72,12 +72,11 @@ describe('useExecutionStore - NodeLocatorId conversions', () => {
         nodes: []
       }
 
-      const mockNode = {
+      const mockNode = createMockLGraphNode({
         id: 123,
         isSubgraphNode: () => true,
         subgraph: mockSubgraph
-      } as any
-
+      })
       // Mock app.rootGraph.getNodeById to return the mock node
       vi.mocked(app.rootGraph.getNodeById).mockReturnValue(mockNode)
 
@@ -133,6 +132,48 @@ describe('useExecutionStore - NodeLocatorId conversions', () => {
   })
 })
 
+describe('useExecutionStore - reconcileInitializingJobs', () => {
+  let store: ReturnType<typeof useExecutionStore>
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    setActivePinia(createTestingPinia({ stubActions: false }))
+    store = useExecutionStore()
+  })
+
+  it('should remove job IDs not present in active jobs', () => {
+    store.initializingJobIds = new Set(['job-1', 'job-2', 'job-3'])
+
+    store.reconcileInitializingJobs(new Set(['job-1']))
+
+    expect(store.initializingJobIds).toEqual(new Set(['job-1']))
+  })
+
+  it('should be a no-op when all initializing IDs are active', () => {
+    store.initializingJobIds = new Set(['job-1', 'job-2'])
+
+    store.reconcileInitializingJobs(new Set(['job-1', 'job-2', 'job-3']))
+
+    expect(store.initializingJobIds).toEqual(new Set(['job-1', 'job-2']))
+  })
+
+  it('should be a no-op when there are no initializing jobs', () => {
+    store.initializingJobIds = new Set()
+
+    store.reconcileInitializingJobs(new Set(['job-1']))
+
+    expect(store.initializingJobIds).toEqual(new Set())
+  })
+
+  it('should clear all initializing IDs when no active jobs exist', () => {
+    store.initializingJobIds = new Set(['job-1', 'job-2'])
+
+    store.reconcileInitializingJobs(new Set())
+
+    expect(store.initializingJobIds).toEqual(new Set())
+  })
+})
+
 describe('useExecutionStore - Node Error Lookups', () => {
   let store: ReturnType<typeof useExecutionStore>
 
@@ -178,11 +219,11 @@ describe('useExecutionStore - Node Error Lookups', () => {
         nodes: []
       }
 
-      const mockNode = {
+      const mockNode = createMockLGraphNode({
         id: 123,
         isSubgraphNode: () => true,
         subgraph: mockSubgraph
-      } as any
+      })
 
       vi.mocked(app.rootGraph.getNodeById).mockReturnValue(mockNode)
 

@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { computed, ref, watch } from 'vue'
 import _ from 'es-toolkit/compat'
+import type { TgpuRoot } from 'typegpu'
 
 import {
   BrushShape,
@@ -71,7 +72,7 @@ export const useMaskEditorStore = defineStore('maskEditor', () => {
 
   const canvasHistory = useCanvasHistory(20)
 
-  const tgpuRoot = ref<any>(null)
+  const tgpuRoot = ref<TgpuRoot | null>(null)
 
   const colorInput = ref<HTMLInputElement | null>(null)
 

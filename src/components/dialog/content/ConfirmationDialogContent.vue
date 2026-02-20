@@ -1,34 +1,55 @@
 <template>
-  <section class="prompt-dialog-content m-2 mt-4 flex flex-col gap-6">
-    <span>{{ message }}</span>
-    <ul v-if="itemList?.length" class="m-0 flex flex-col gap-2 pl-4">
-      <li v-for="item of itemList" :key="item">
-        {{ item }}
-      </li>
-    </ul>
-    <Message
-      v-if="hint"
-      icon="pi pi-info-circle"
-      severity="secondary"
-      size="small"
-      variant="simple"
-    >
-      {{ hint }}
-    </Message>
-    <div class="flex justify-end gap-4">
+  <section class="m-2 mt-4 flex flex-col gap-6 whitespace-pre-wrap break-words">
+    <div>
+      <span>{{ message }}</span>
+      <ul v-if="itemList?.length" class="m-0 mt-2 flex flex-col gap-2 pl-4">
+        <li v-for="item of itemList" :key="item">
+          {{ item }}
+        </li>
+      </ul>
+      <Message
+        v-if="hint"
+        class="mt-2"
+        icon="pi pi-info-circle"
+        severity="secondary"
+        size="small"
+        variant="simple"
+      >
+        {{ hint }}
+      </Message>
+    </div>
+    <div class="flex shrink-0 flex-wrap justify-end gap-4">
       <div
         v-if="type === 'overwriteBlueprint'"
-        class="flex justify-start gap-4"
+        class="flex flex-col justify-start gap-1"
       >
-        <Checkbox
-          v-model="doNotAskAgain"
-          class="flex justify-start gap-4"
-          input-id="doNotAskAgain"
-          binary
-        />
-        <label for="doNotAskAgain" severity="secondary">{{
-          t('missingModelsDialog.doNotAskAgain')
-        }}</label>
+        <div class="flex gap-4">
+          <input
+            id="doNotAskAgain"
+            v-model="doNotAskAgain"
+            type="checkbox"
+            class="h-4 w-4 cursor-pointer"
+          />
+          <label for="doNotAskAgain">{{
+            t('missingModelsDialog.doNotAskAgain')
+          }}</label>
+        </div>
+        <i18n-t
+          v-if="doNotAskAgain"
+          keypath="missingModelsDialog.reEnableInSettings"
+          tag="span"
+          class="text-sm text-muted-foreground ml-8"
+        >
+          <template #link>
+            <Button
+              variant="textonly"
+              class="underline cursor-pointer p-0 text-sm text-muted-foreground hover:bg-transparent"
+              @click="openBlueprintOverwriteSetting"
+            >
+              {{ t('missingModelsDialog.reEnableInSettingsLink') }}
+            </Button>
+          </template>
+        </i18n-t>
       </div>
 
       <Button
@@ -92,13 +113,13 @@
 </template>
 
 <script setup lang="ts">
-import Checkbox from 'primevue/checkbox'
 import Message from 'primevue/message'
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
 import type { ConfirmationDialogType } from '@/services/dialogService'
 import { useDialogStore } from '@/stores/dialogStore'
 
@@ -114,6 +135,11 @@ const { t } = useI18n()
 
 const onCancel = () => useDialogStore().closeDialog()
 
+function openBlueprintOverwriteSetting() {
+  useDialogStore().closeDialog()
+  useSettingsDialog().show(undefined, 'Comfy.Workflow.WarnBlueprintOverwrite')
+}
+
 const doNotAskAgain = ref(false)
 
 const onDeny = () => {
@@ -128,9 +154,3 @@ const onConfirm = () => {
   useDialogStore().closeDialog()
 }
 </script>
-
-<style lang="css" scoped>
-.prompt-dialog-content {
-  white-space: pre-wrap;
-}
-</style>

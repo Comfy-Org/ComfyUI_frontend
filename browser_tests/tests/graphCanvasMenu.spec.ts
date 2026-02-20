@@ -1,34 +1,37 @@
 import { expect } from '@playwright/test'
 
 import { comfyPageFixture as test } from '../fixtures/ComfyPage'
+import { TestIds } from '../fixtures/selectors'
 
 test.beforeEach(async ({ comfyPage }) => {
-  await comfyPage.setSetting('Comfy.UseNewMenu', 'Disabled')
+  await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Disabled')
 })
 
 test.describe('Graph Canvas Menu', { tag: ['@screenshot', '@canvas'] }, () => {
   test.beforeEach(async ({ comfyPage }) => {
     // Set link render mode to spline to make sure it's not affected by other tests'
     // side effects.
-    await comfyPage.setSetting('Comfy.LinkRenderMode', 2)
+    await comfyPage.settings.setSetting('Comfy.LinkRenderMode', 2)
     // Enable canvas menu for all tests
-    await comfyPage.setSetting('Comfy.Graph.CanvasMenu', true)
+    await comfyPage.settings.setSetting('Comfy.Graph.CanvasMenu', true)
   })
 
   test(
     'Can toggle link visibility',
     { tag: '@screenshot' },
     async ({ comfyPage }) => {
-      const button = comfyPage.page.getByTestId('toggle-link-visibility-button')
+      const button = comfyPage.page.getByTestId(
+        TestIds.canvas.toggleLinkVisibilityButton
+      )
       await button.click()
       await comfyPage.nextFrame()
       await expect(comfyPage.canvas).toHaveScreenshot(
         'canvas-with-hidden-links.png'
       )
       const hiddenLinkRenderMode = await comfyPage.page.evaluate(() => {
-        return window['LiteGraph'].HIDDEN_LINK
+        return window.LiteGraph!.HIDDEN_LINK
       })
-      expect(await comfyPage.getSetting('Comfy.LinkRenderMode')).toBe(
+      expect(await comfyPage.settings.getSetting('Comfy.LinkRenderMode')).toBe(
         hiddenLinkRenderMode
       )
 
@@ -37,16 +40,18 @@ test.describe('Graph Canvas Menu', { tag: ['@screenshot', '@canvas'] }, () => {
       await expect(comfyPage.canvas).toHaveScreenshot(
         'canvas-with-visible-links.png'
       )
-      expect(await comfyPage.getSetting('Comfy.LinkRenderMode')).not.toBe(
-        hiddenLinkRenderMode
-      )
+      expect(
+        await comfyPage.settings.getSetting('Comfy.LinkRenderMode')
+      ).not.toBe(hiddenLinkRenderMode)
     }
   )
 
   test('Toggle minimap button is clickable and has correct test id', async ({
     comfyPage
   }) => {
-    const minimapButton = comfyPage.page.getByTestId('toggle-minimap-button')
+    const minimapButton = comfyPage.page.getByTestId(
+      TestIds.canvas.toggleMinimapButton
+    )
     await expect(minimapButton).toBeVisible()
     await expect(minimapButton).toBeEnabled()
 

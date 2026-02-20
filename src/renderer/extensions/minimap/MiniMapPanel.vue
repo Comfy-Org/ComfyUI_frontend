@@ -1,6 +1,11 @@
 <template>
   <div
-    class="minimap-panel mr-2 flex flex-col gap-2 bg-comfy-menu-bg p-3 text-sm shadow-interface"
+    :class="
+      cn(
+        'minimap-panel flex flex-col gap-2 bg-comfy-menu-bg p-3 text-sm shadow-interface',
+        isMobile ? 'mb-2' : 'mr-2'
+      )
+    "
     :style="panelStyles"
   >
     <div class="flex items-center gap-2">
@@ -79,16 +84,19 @@
 
 <script setup lang="ts">
 import Checkbox from 'primevue/checkbox'
+import type { CSSProperties, Ref } from 'vue'
 
 import type { MinimapSettingsKey } from '@/renderer/extensions/minimap/types'
+import { cn } from '@/utils/tailwindUtil'
 
 defineProps<{
-  panelStyles: any
+  panelStyles: CSSProperties
   nodeColors: boolean
   showLinks: boolean
   showGroups: boolean
   renderBypass: boolean
   renderError: boolean
+  isMobile: Ref<boolean> | boolean
 }>()
 
 defineEmits<{

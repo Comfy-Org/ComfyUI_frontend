@@ -36,7 +36,7 @@
     "label": "재시작"
   },
   "Comfy_3DViewer_Open3DViewer": {
-    "label": "선택한 노드에 대해 3D 뷰어(베타) 열기"
+    "label": "선택한 노드의 3D 뷰어(베타) 열기"
   },
   "Comfy_BrowseModelAssets": {
     "label": "실험적: 모델 에셋 탐색"
@@ -266,6 +266,12 @@
   "Comfy_ShowSettingsDialog": {
     "label": "설정 대화상자 보기"
   },
+  "Comfy_Subgraph_SetDescription": {
+    "label": "서브그래프 설명 설정"
+  },
+  "Comfy_Subgraph_SetSearchAliases": {
+    "label": "서브그래프 검색 별칭 설정"
+  },
   "Comfy_ToggleAssetAPI": {
     "label": "실험적: AssetAPI 활성화"
   },
@@ -312,10 +318,10 @@
     "label": "하단 패널 토글"
   },
   "Workspace_ToggleBottomPanelTab_command-terminal": {
-    "label": "터미널 하단 패널 토글"
+    "label": "터미널 하단 패널 전환"
   },
   "Workspace_ToggleBottomPanelTab_logs-terminal": {
-    "label": "로그 하단 패널 토글"
+    "label": "로그 하단 패널 전환"
   },
   "Workspace_ToggleBottomPanelTab_shortcuts-essentials": {
     "label": "필수 하단 패널 전환"

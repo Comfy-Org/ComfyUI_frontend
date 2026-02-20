@@ -139,7 +139,7 @@ const copyJobId = () => void copyToClipboard(jobIdValue.value)
 const taskForJob = computed(() => {
   const pid = props.jobId
   const findIn = (arr: TaskItemImpl[]) =>
-    arr.find((t) => String(t.promptId ?? '') === String(pid))
+    arr.find((t) => String(t.jobId ?? '') === String(pid))
   return (
     findIn(queueStore.pendingTasks) ||
     findIn(queueStore.runningTasks) ||
@@ -151,9 +151,7 @@ const taskForJob = computed(() => {
 const jobState = computed(() => {
   const task = taskForJob.value
   if (!task) return null
-  const isInitializing = executionStore.isPromptInitializing(
-    String(task?.promptId)
-  )
+  const isInitializing = executionStore.isJobInitializing(String(task?.jobId))
   return jobStateFromTask(task, isInitializing)
 })
 
@@ -296,7 +294,7 @@ const extraRows = computed<DetailRow[]>(() => {
     ]
   }
   if (jobState.value === 'completed') {
-    const task = taskForJob.value as any
+    const task = taskForJob.value
     const endTs: number | undefined = task?.executionEndTimestamp
     const execMs: number | undefined = task?.executionTime
     const generatedOnValue = endTs ? formatClockTime(endTs, locale.value) : ''
@@ -321,7 +319,7 @@ const extraRows = computed<DetailRow[]>(() => {
     return rows
   }
   if (jobState.value === 'failed') {
-    const task = taskForJob.value as any
+    const task = taskForJob.value
     const execMs: number | undefined = task?.executionTime
     const failedAfterValue =
       execMs !== undefined ? formatElapsedTime(execMs) : ''

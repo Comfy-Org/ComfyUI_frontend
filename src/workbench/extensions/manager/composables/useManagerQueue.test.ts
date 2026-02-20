@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import type { Ref } from 'vue'
 import { ref } from 'vue'
 
 import { useManagerQueue } from '@/workbench/extensions/manager/composables/useManagerQueue'
@@ -22,9 +23,11 @@ type ManagerTaskHistory = Record<
 type ManagerTaskQueue = components['schemas']['TaskStateMessage']
 
 describe('useManagerQueue', () => {
-  let taskHistory: any
-  let taskQueue: any
-  let installedPacks: any
+  let taskHistory: Ref<ManagerTaskHistory>
+  let taskQueue: Ref<ManagerTaskQueue>
+  let installedPacks: Ref<
+    Record<string, components['schemas']['ManagerPackInstalled']>
+  >
 
   const createManagerQueue = () => {
     taskHistory = ref<ManagerTaskHistory>({})
@@ -67,14 +70,28 @@ describe('useManagerQueue', () => {
         {
           ui_id: 'task1',
           client_id: 'test-client-id',
-          task_name: 'Installing pack1'
+          kind: 'install',
+          params: {
+            id: 'pack1',
+            version: '1.0.0',
+            selected_version: '1.0.0',
+            mode: 'remote' as const,
+            channel: 'default' as const
+          }
         }
       ]
       taskQueue.value.pending_queue = [
         {
           ui_id: 'task2',
           client_id: 'test-client-id',
-          task_name: 'Installing pack2'
+          kind: 'install',
+          params: {
+            id: 'pack2',
+            version: '1.0.0',
+            selected_version: '1.0.0',
+            mode: 'remote' as const,
+            channel: 'default' as const
+          }
         }
       ]
 
@@ -101,12 +118,18 @@ describe('useManagerQueue', () => {
         task1: {
           ui_id: 'task1',
           client_id: 'test-client-id',
-          status: { status_str: 'success', completed: true }
+          kind: 'install',
+          timestamp: '2024-01-01T00:00:00Z',
+          result: 'success',
+          status: { status_str: 'success', completed: true, messages: [] }
         },
         task2: {
           ui_id: 'task2',
           client_id: 'test-client-id',
-          status: { status_str: 'success', completed: true }
+          kind: 'install',
+          timestamp: '2024-01-01T00:00:00Z',
+          result: 'success',
+          status: { status_str: 'success', completed: true, messages: [] }
         }
       }
 
@@ -198,12 +221,12 @@ describe('useManagerQueue', () => {
     it('handles empty installed_packs gracefully', () => {
       const queue = createManagerQueue()
 
-      const mockState: any = {
+      const mockState = {
         history: {},
         running_queue: [],
         pending_queue: [],
-        installed_packs: undefined
-      }
+        installed_packs: undefined!
+      } satisfies Partial<ManagerTaskQueue> as ManagerTaskQueue
 
       // Just call the function - if it throws, the test will fail automatically
       queue.updateTaskState(mockState)

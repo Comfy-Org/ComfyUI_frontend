@@ -158,7 +158,15 @@ const hasMultipleVideos = computed(() => props.imageUrls.length > 1)
 // Watch for URL changes and reset state
 watch(
   () => props.imageUrls,
-  (newUrls) => {
+  (newUrls, oldUrls) => {
+    // Only reset state if URLs actually changed (not just array reference)
+    const urlsChanged =
+      !oldUrls ||
+      newUrls.length !== oldUrls.length ||
+      newUrls.some((url, i) => url !== oldUrls[i])
+
+    if (!urlsChanged) return
+
     // Reset current index if it's out of bounds
     if (currentIndex.value >= newUrls.length) {
       currentIndex.value = 0
@@ -169,7 +177,7 @@ watch(
     videoError.value = false
     showLoader.value = newUrls.length > 0
   },
-  { deep: true, immediate: true }
+  { immediate: true }
 )
 
 // Event handlers

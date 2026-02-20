@@ -25,24 +25,24 @@ export class LGraphNodeProperties {
   node: LGraphNode
 
   /** Set of property paths that have been instrumented */
-  #instrumentedPaths = new Set<string>()
+  private _instrumentedPaths = new Set<string>()
 
   constructor(node: LGraphNode) {
     this.node = node
 
-    this.#setupInstrumentation()
+    this._setupInstrumentation()
   }
 
   /**
    * Sets up property instrumentation for all tracked properties
    */
-  #setupInstrumentation(): void {
+  private _setupInstrumentation(): void {
     for (const path of DEFAULT_TRACKED_PROPERTIES) {
-      this.#instrumentProperty(path)
+      this._instrumentProperty(path)
     }
   }
 
-  #resolveTargetObject(parts: string[]): {
+  private _resolveTargetObject(parts: string[]): {
     targetObject: Record<string, unknown>
     propertyName: string
   } {
@@ -73,14 +73,14 @@ export class LGraphNodeProperties {
   /**
    * Instruments a single property to track changes
    */
-  #instrumentProperty(path: string): void {
+  private _instrumentProperty(path: string): void {
     const parts = path.split('.')
 
     if (parts.length > 1) {
-      this.#ensureNestedPath(path)
+      this._ensureNestedPath(path)
     }
 
-    const { targetObject, propertyName } = this.#resolveTargetObject(parts)
+    const { targetObject, propertyName } = this._resolveTargetObject(parts)
 
     const hasProperty = Object.prototype.hasOwnProperty.call(
       targetObject,
@@ -96,7 +96,7 @@ export class LGraphNodeProperties {
         set: (newValue: unknown) => {
           const oldValue = value
           value = newValue
-          this.#emitPropertyChange(path, oldValue, newValue)
+          this._emitPropertyChange(path, oldValue, newValue)
 
           // Update enumerable: true for non-undefined values, false for undefined
           const shouldBeEnumerable = newValue !== undefined
@@ -121,24 +121,24 @@ export class LGraphNodeProperties {
       Object.defineProperty(
         targetObject,
         propertyName,
-        this.#createInstrumentedDescriptor(path, currentValue)
+        this._createInstrumentedDescriptor(path, currentValue)
       )
     }
 
-    this.#instrumentedPaths.add(path)
+    this._instrumentedPaths.add(path)
   }
 
   /**
    * Creates a property descriptor that emits change events
    */
-  #createInstrumentedDescriptor(
+  private _createInstrumentedDescriptor(
     propertyPath: string,
     initialValue: unknown
   ): PropertyDescriptor {
-    return this.#createInstrumentedDescriptorTyped(propertyPath, initialValue)
+    return this._createInstrumentedDescriptorTyped(propertyPath, initialValue)
   }
 
-  #createInstrumentedDescriptorTyped<TValue>(
+  private _createInstrumentedDescriptorTyped<TValue>(
     propertyPath: string,
     initialValue: TValue
   ): PropertyDescriptor {
@@ -149,7 +149,7 @@ export class LGraphNodeProperties {
       set: (newValue: TValue) => {
         const oldValue = value
         value = newValue
-        this.#emitPropertyChange(propertyPath, oldValue, newValue)
+        this._emitPropertyChange(propertyPath, oldValue, newValue)
       },
       enumerable: true,
       configurable: true
@@ -159,15 +159,15 @@ export class LGraphNodeProperties {
   /**
    * Emits a property change event if the node is connected to a graph
    */
-  #emitPropertyChange(
+  private _emitPropertyChange(
     propertyPath: string,
     oldValue: unknown,
     newValue: unknown
   ): void {
-    this.#emitPropertyChangeTyped(propertyPath, oldValue, newValue)
+    this._emitPropertyChangeTyped(propertyPath, oldValue, newValue)
   }
 
-  #emitPropertyChangeTyped<TValue>(
+  private _emitPropertyChangeTyped<TValue>(
     propertyPath: string,
     oldValue: TValue,
     newValue: TValue
@@ -183,7 +183,7 @@ export class LGraphNodeProperties {
   /**
    * Ensures parent objects exist for nested properties
    */
-  #ensureNestedPath(path: string): void {
+  private _ensureNestedPath(path: string): void {
     const parts = path.split('.')
     // LGraphNode supports dynamic property access at runtime
     let current: Record<string, unknown> = this.node as unknown as Record<
@@ -208,7 +208,7 @@ export class LGraphNodeProperties {
    * Checks if a property is being tracked
    */
   isTracked(path: string): boolean {
-    return this.#instrumentedPaths.has(path)
+    return this._instrumentedPaths.has(path)
   }
 
   /**

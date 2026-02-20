@@ -4,13 +4,15 @@ import { computed } from 'vue'
 import { cn } from '@/utils/tailwindUtil'
 
 import { WidgetInputBaseClass } from '../../layout'
-import type { DropdownItem, SelectedKey } from './types'
+import type { FormDropdownItem } from './types'
 
 interface Props {
   isOpen?: boolean
   placeholder?: string
-  items: DropdownItem[]
-  selected: Set<SelectedKey>
+  items: FormDropdownItem[]
+  /** Items used for display in the input field. Falls back to items if not provided. */
+  displayItems?: FormDropdownItem[]
+  selected: Set<string>
   maxSelectable: number
   uploadable: boolean
   disabled: boolean
@@ -28,7 +30,8 @@ const emit = defineEmits<{
 }>()
 
 const selectedItems = computed(() => {
-  return props.items.filter((item) => props.selected.has(item.id))
+  const itemsToSearch = props.displayItems ?? props.items
+  return itemsToSearch.filter((item) => props.selected.has(item.id))
 })
 
 const theButtonStyle = computed(() =>
@@ -50,7 +53,6 @@ const theButtonStyle = computed(() =>
       })
     "
   >
-    <!-- Dropdown -->
     <button
       :class="
         cn(
@@ -82,7 +84,6 @@ const theButtonStyle = computed(() =>
         "
       />
     </button>
-    <!-- Open File -->
     <label
       v-if="uploadable"
       :class="

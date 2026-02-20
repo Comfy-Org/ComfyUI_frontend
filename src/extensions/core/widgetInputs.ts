@@ -12,17 +12,19 @@ import type {
   IBaseWidget,
   TWidgetValue
 } from '@/lib/litegraph/src/types/widgets'
-import type { InputSpec } from '@/schemas/nodeDefSchema'
+import { assetService } from '@/platform/assets/services/assetService'
+import { createAssetWidget } from '@/platform/assets/utils/createAssetWidget'
+import type { ComfyNodeDef, InputSpec } from '@/schemas/nodeDefSchema'
 import { app } from '@/scripts/app'
 import {
   ComfyWidgets,
   addValueControlWidgets,
   isValidWidgetType
 } from '@/scripts/widgets'
+import { isPrimitiveNode } from '@/renderer/utils/nodeTypeGuards'
 import { CONFIG, GET_CONFIG } from '@/services/litegraphService'
 import { mergeInputSpec } from '@/utils/nodeDefUtil'
 import { applyTextReplacements } from '@/utils/searchAndReplace'
-import { isPrimitiveNode } from '@/renderer/utils/nodeTypeGuards'
 
 const replacePropertyName = 'Run widget replace on values'
 export class PrimitiveNode extends LGraphNode {
@@ -103,20 +105,20 @@ export class PrimitiveNode extends LGraphNode {
 
   override onAfterGraphConfigured() {
     if (this.outputs[0].links?.length && !this.widgets?.length) {
-      this.#onFirstConnection()
+      this._onFirstConnection()
 
       // Populate widget values from config data
       if (this.widgets && this.widgets_values) {
         for (let i = 0; i < this.widgets_values.length; i++) {
           const w = this.widgets[i]
           if (w) {
-            w.value = this.widgets_values[i] as any
+            w.value = this.widgets_values[i]
           }
         }
       }
 
       // Merge values if required
-      this.#mergeWidgetConfig()
+      this._mergeWidgetConfig()
     }
   }
 
@@ -133,11 +135,11 @@ export class PrimitiveNode extends LGraphNode {
     const links = this.outputs[0].links
     if (connected) {
       if (links?.length && !this.widgets?.length) {
-        this.#onFirstConnection()
+        this._onFirstConnection()
       }
     } else {
       // We may have removed a link that caused the constraints to change
-      this.#mergeWidgetConfig()
+      this._mergeWidgetConfig()
 
       if (!links?.length) {
         this.onLastDisconnect()
@@ -159,7 +161,7 @@ export class PrimitiveNode extends LGraphNode {
     }
 
     if (this.outputs[slot].links?.length) {
-      const valid = this.#isValidConnection(input)
+      const valid = this._isValidConnection(input)
       if (valid) {
         // On connect of additional outputs, copy our value to their widget
         this.applyToGraph([{ target_id: target_node.id, target_slot } as LLink])
@@ -170,7 +172,7 @@ export class PrimitiveNode extends LGraphNode {
     return true
   }
 
-  #onFirstConnection(recreating?: boolean) {
+  private _onFirstConnection(recreating?: boolean) {
     // First connection can fire before the graph is ready on initial load so random things can be missing
     if (!this.outputs[0].links || !this.graph) {
       this.onLastDisconnect()
@@ -204,7 +206,7 @@ export class PrimitiveNode extends LGraphNode {
     this.outputs[0].name = type
     this.outputs[0].widget = widget
 
-    this.#createWidget(
+    this._createWidget(
       widget[CONFIG] ?? config,
       theirNode,
       widget.name,
@@ -213,7 +215,7 @@ export class PrimitiveNode extends LGraphNode {
     )
   }
 
-  #createWidget(
+  private _createWidget(
     inputData: InputSpec,
     node: LGraphNode,
     widgetName: string,
@@ -228,6 +230,18 @@ export class PrimitiveNode extends LGraphNode {
     // Store current size as addWidget resizes the node
     const [oldWidth, oldHeight] = this.size
     let widget: IBaseWidget
+
+    if (
+      type === 'COMBO' &&
+      assetService.shouldUseAssetBrowser(node.comfyClass, widgetName)
+    ) {
+      widget = this._createAssetWidget(node, widgetName, inputData)
+      const theirWidget = node.widgets?.find((w) => w.name === widgetName)
+      if (theirWidget) widget.value = theirWidget.value
+      this._finalizeWidget(widget, oldWidth, oldHeight, recreating)
+      return
+    }
+
     if (isValidWidgetType(type)) {
       widget = (ComfyWidgets[type](this, 'value', inputData, app) || {}).widget
     } else {
@@ -277,20 +291,50 @@ export class PrimitiveNode extends LGraphNode {
       }
     }
 
-    // When our value changes, update other widgets to reflect our changes
-    // e.g. so LoadImage shows correct image
+    this._finalizeWidget(widget, oldWidth, oldHeight, recreating)
+  }
+
+  private _createAssetWidget(
+    targetNode: LGraphNode,
+    targetInputName: string,
+    inputData: InputSpec
+  ): IBaseWidget {
+    const defaultValue = inputData[1]?.default as string | undefined
+    return createAssetWidget({
+      node: this,
+      widgetName: 'value',
+      nodeTypeForBrowser: targetNode.comfyClass ?? '',
+      inputNameForBrowser: targetInputName,
+      defaultValue,
+      onValueChange: (widget, newValue, oldValue) => {
+        widget.callback?.(
+          widget.value,
+          app.canvas,
+          this,
+          app.canvas.graph_mouse,
+          {} as CanvasPointerEvent
+        )
+        this.onWidgetChanged?.(widget.name, newValue, oldValue, widget)
+      }
+    })
+  }
+
+  private _finalizeWidget(
+    widget: IBaseWidget,
+    oldWidth: number,
+    oldHeight: number,
+    recreating: boolean
+  ) {
     widget.callback = useChainCallback(widget.callback, () => {
       this.applyToGraph()
     })
 
-    // Use the biggest dimensions in case the widgets caused the node to grow
     this.setSize([
       Math.max(this.size[0], oldWidth),
       Math.max(this.size[1], oldHeight)
     ])
 
     if (!recreating) {
-      // Grow our node more if required
       const sz = this.computeSize()
       if (this.size[0] < sz[0]) {
         this.size[0] = sz[0]
@@ -307,8 +351,8 @@ export class PrimitiveNode extends LGraphNode {
 
   recreateWidget() {
     const values = this.widgets?.map((w) => w.value)
-    this.#removeWidgets()
-    this.#onFirstConnection(true)
+    this._removeWidgets()
+    this._onFirstConnection(true)
     if (values?.length && this.widgets) {
       for (let i = 0; i < this.widgets.length; i++)
         this.widgets[i].value = values[i]
@@ -316,7 +360,7 @@ export class PrimitiveNode extends LGraphNode {
     return this.widgets?.[0]
   }
 
-  #mergeWidgetConfig() {
+  private _mergeWidgetConfig() {
     // Merge widget configs if the node has multiple outputs
     const output = this.outputs[0]
     const links = output.links ?? []
@@ -348,11 +392,11 @@ export class PrimitiveNode extends LGraphNode {
       const theirInput = theirNode.inputs[link.target_slot]
 
       // Call is valid connection so it can merge the configs when validating
-      this.#isValidConnection(theirInput, hasConfig)
+      this._isValidConnection(theirInput, hasConfig)
     }
   }
 
-  #isValidConnection(input: INodeInputSlot, forceUpdate?: boolean) {
+  private _isValidConnection(input: INodeInputSlot, forceUpdate?: boolean) {
     // Only allow connections where the configs match
     const output = this.outputs?.[0]
     const config2 = (input.widget?.[GET_CONFIG] as () => InputSpec)?.()
@@ -367,7 +411,7 @@ export class PrimitiveNode extends LGraphNode {
     )
   }
 
-  #removeWidgets() {
+  private _removeWidgets() {
     if (this.widgets) {
       // Allow widgets to cleanup
       for (const w of this.widgets) {
@@ -398,7 +442,7 @@ export class PrimitiveNode extends LGraphNode {
     this.outputs[0].name = 'connect to widget input'
     delete this.outputs[0].widget
 
-    this.#removeWidgets()
+    this._removeWidgets()
   }
 }
 
@@ -511,7 +555,10 @@ export function mergeIfValid(
 
 app.registerExtension({
   name: 'Comfy.WidgetInputs',
-  async beforeRegisterNodeDef(nodeType, _nodeData) {
+  async beforeRegisterNodeDef(
+    nodeType: typeof LGraphNode,
+    _nodeData: ComfyNodeDef
+  ) {
     // @ts-expect-error adding extra property
     nodeType.prototype.convertWidgetToInput = function (this: LGraphNode) {
       console.warn(

@@ -27,18 +27,30 @@ export function useCanvasInteractions() {
   )
 
   /**
+   * Returns true if the wheel event target is inside an element that should
+   * capture wheel events AND that element (or a descendant) currently has focus.
+   *
+   * This allows two-finger panning to continue over inputs until the user has
+   * actively focused the widget, at which point the widget can consume scroll.
+   */
+  const wheelCapturedByFocusedElement = (event: WheelEvent): boolean => {
+    const target = event.target as HTMLElement | null
+    const captureElement = target?.closest('[data-capture-wheel="true"]')
+    const active = document.activeElement as Element | null
+
+    return !!(captureElement && active && captureElement.contains(active))
+  }
+
+  const shouldForwardWheelEvent = (event: WheelEvent): boolean =>
+    !wheelCapturedByFocusedElement(event) ||
+    (isStandardNavMode.value && (event.ctrlKey || event.metaKey))
+
+  /**
    * Handles wheel events from UI components that should be forwarded to canvas
    * when appropriate (e.g., Ctrl+wheel for zoom in standard mode)
    */
   const handleWheel = (event: WheelEvent) => {
-    // Check if the wheel event is from an element that wants to capture wheel events
-    const target = event.target as HTMLElement
-    const captureElement = target?.closest('[data-capture-wheel="true"]')
-
-    if (captureElement) {
-      // Element wants to capture wheel events, don't forward to canvas
-      return
-    }
+    if (!shouldForwardWheelEvent(event)) return
 
     // In standard mode, Ctrl+wheel should go to canvas for zoom
     if (isStandardNavMode.value && (event.ctrlKey || event.metaKey)) {
@@ -87,14 +99,8 @@ export function useCanvasInteractions() {
   const forwardEventToCanvas = (
     event: WheelEvent | PointerEvent | MouseEvent
   ) => {
-    // Check if the wheel event is from an element that wants to capture wheel events
-    const target = event.target as HTMLElement
-    const captureElement = target?.closest('[data-capture-wheel="true"]')
-
-    if (captureElement) {
-      // Element wants to capture wheel events, don't forward to canvas
-      return
-    }
+    // Honor wheel capture only when the element is focused
+    if (event instanceof WheelEvent && !shouldForwardWheelEvent(event)) return
 
     const canvasEl = app.canvas?.canvas
     if (!canvasEl) return

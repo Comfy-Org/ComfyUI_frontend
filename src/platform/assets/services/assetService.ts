@@ -18,6 +18,8 @@ import type {
   ModelFolder,
   TagsOperationResult
 } from '@/platform/assets/schemas/assetSchema'
+import { isCloud } from '@/platform/distribution/types'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { api } from '@/scripts/api'
 import { useModelToNodeStore } from '@/stores/modelToNodeStore'
 
@@ -31,11 +33,23 @@ interface AssetRequestOptions extends PaginationOptions {
   includePublic?: boolean
 }
 
+interface AssetExportOptions {
+  job_ids?: string[]
+  asset_ids?: string[]
+  naming_strategy?:
+    | 'group_by_job_id'
+    | 'prepend_job_id'
+    | 'preserve'
+    | 'asset_id'
+  job_asset_name_filters?: Record<string, string[]>
+}
+
 /**
  * Maps CivitAI validation error codes to localized error messages
  */
 function getLocalizedErrorMessage(errorCode: string): string {
   const errorMessages: Record<string, string> = {
+    // Validation errors
     FILE_TOO_LARGE: st('assetBrowser.errorFileTooLarge', 'File too large'),
     FORMAT_NOT_ALLOWED: st(
       'assetBrowser.errorFormatNotAllowed',
@@ -52,6 +66,95 @@ function getLocalizedErrorMessage(errorCode: string): string {
     MODEL_TYPE_NOT_SUPPORTED: st(
       'assetBrowser.errorModelTypeNotSupported',
       'Model type not supported'
+    ),
+
+    // HTTP 400 - Bad Request
+    INVALID_URL: st('assetBrowser.errorInvalidUrl', 'Please provide a URL.'),
+    INVALID_URL_FORMAT: st(
+      'assetBrowser.errorInvalidUrlFormat',
+      'The URL format is invalid. Please check and try again.'
+    ),
+    UNSUPPORTED_SOURCE: st(
+      'assetBrowser.errorUnsupportedSource',
+      'This URL is not supported. Only Hugging Face and Civitai URLs are allowed.'
+    ),
+
+    // HTTP 401 - Unauthorized
+    UNAUTHORIZED: st(
+      'assetBrowser.errorUnauthorized',
+      'Please sign in to continue.'
+    ),
+
+    // HTTP 422 - External Source Errors
+    USER_TOKEN_INVALID: st(
+      'assetBrowser.errorUserTokenInvalid',
+      'Your stored API token is invalid or expired. Please update your token in settings.'
+    ),
+    USER_TOKEN_ACCESS_DENIED: st(
+      'assetBrowser.errorUserTokenAccessDenied',
+      'Your API token does not have access to this resource. Please check your token permissions.'
+    ),
+    UNAUTHORIZED_SOURCE: st(
+      'assetBrowser.errorUnauthorizedSource',
+      'This resource requires authentication. Please add your API token in settings.'
+    ),
+    ACCESS_FORBIDDEN: st(
+      'assetBrowser.errorAccessForbidden',
+      'Access to this resource is forbidden.'
+    ),
+    RESOURCE_NOT_FOUND: st(
+      'assetBrowser.errorResourceNotFound',
+      'The file was not found. Please check the URL and try again.'
+    ),
+    RATE_LIMITED: st(
+      'assetBrowser.errorRateLimited',
+      'Too many requests. Please try again in a few minutes.'
+    ),
+    SOURCE_SERVER_ERROR: st(
+      'assetBrowser.errorSourceServerError',
+      'The source server is experiencing issues. Please try again later.'
+    ),
+    NETWORK_TIMEOUT: st(
+      'assetBrowser.errorNetworkTimeout',
+      'Request timed out. Please try again.'
+    ),
+    CONNECTION_REFUSED: st(
+      'assetBrowser.errorConnectionRefused',
+      'Unable to connect to the source. Please try again later.'
+    ),
+    INVALID_HOST: st(
+      'assetBrowser.errorInvalidHost',
+      'The source URL hostname could not be resolved.'
+    ),
+    NETWORK_ERROR: st(
+      'assetBrowser.errorNetworkError',
+      'A network error occurred. Please check your connection and try again.'
+    ),
+    REQUEST_CANCELLED: st(
+      'assetBrowser.errorRequestCancelled',
+      'Request was cancelled.'
+    ),
+    DOWNLOAD_CANCELLED: st(
+      'assetBrowser.errorDownloadCancelled',
+      'Download was cancelled.'
+    ),
+    METADATA_FETCH_FAILED: st(
+      'assetBrowser.errorMetadataFetchFailed',
+      'Failed to fetch file information from the source.'
+    ),
+    HTTP_ERROR: st(
+      'assetBrowser.errorHttpError',
+      'An error occurred while fetching metadata.'
+    ),
+
+    // HTTP 500 - Internal Server Errors
+    SERVICE_UNAVAILABLE: st(
+      'assetBrowser.errorServiceUnavailable',
+      'Service temporarily unavailable. Please try again later.'
+    ),
+    INTERNAL_ERROR: st(
+      'assetBrowser.errorInternalError',
+      'An unexpected error occurred. Please try again.'
     )
   }
   return (
@@ -63,6 +166,7 @@ function getLocalizedErrorMessage(errorCode: string): string {
 
 const ASSETS_ENDPOINT = '/assets'
 const ASSETS_DOWNLOAD_ENDPOINT = '/assets/download'
+const ASSETS_EXPORT_ENDPOINT = '/assets/export'
 const EXPERIMENTAL_WARNING = `EXPERIMENTAL: If you are seeing this please make sure "Comfy.Assets.UseAssetAPI" is set to "false" in your ComfyUI Settings.\n`
 const DEFAULT_LIMIT = 500
 
@@ -194,6 +298,29 @@ function createAssetService() {
     return (
       useModelToNodeStore().getRegisteredNodeTypes()[nodeType] === widgetName
     )
+  }
+
+  /**
+   * Checks if the asset API is enabled (cloud environment + user setting).
+   */
+  function isAssetAPIEnabled(): boolean {
+    if (!isCloud) return false
+    return !!useSettingStore().get('Comfy.Assets.UseAssetAPI')
+  }
+
+  /**
+   * Checks if the asset browser should be used for a given node input.
+   * Combines the cloud environment check, user setting, and eligibility check.
+   *
+   * @param nodeType - The ComfyUI node comfyClass
+   * @param widgetName - The name of the widget to check
+   * @returns true if this input should use the asset browser
+   */
+  function shouldUseAssetBrowser(
+    nodeType: string | undefined,
+    widgetName: string
+  ): boolean {
+    return isAssetAPIEnabled() && isAssetBrowserEligible(nodeType, widgetName)
   }
 
   /**
@@ -397,7 +524,7 @@ function createAssetService() {
     url: string
     name: string
     tags?: string[]
-    user_metadata?: Record<string, any>
+    user_metadata?: Record<string, unknown>
     preview_id?: string
   }): Promise<AssetItem & { created_new: boolean }> {
     const res = await api.fetchApi(ASSETS_ENDPOINT, {
@@ -435,7 +562,7 @@ function createAssetService() {
     data: string
     name: string
     tags?: string[]
-    user_metadata?: Record<string, any>
+    user_metadata?: Record<string, unknown>
   }): Promise<AssetItem & { created_new: boolean }> {
     // Validate that data is a data URL
     if (!params.data || !params.data.startsWith('data:')) {
@@ -599,10 +726,40 @@ function createAssetService() {
     return result.data
   }
 
+  async function createAssetExport(
+    params: AssetExportOptions
+  ): Promise<{ task_id: string; status: string; message?: string }> {
+    const res = await api.fetchApi(ASSETS_EXPORT_ENDPOINT, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(params)
+    })
+
+    if (!res.ok) {
+      throw new Error(`Failed to create asset export: ${res.status}`)
+    }
+
+    return await res.json()
+  }
+
+  async function getExportDownloadUrl(
+    exportName: string
+  ): Promise<{ url: string; expires_at?: string }> {
+    const res = await api.fetchApi(`/assets/exports/${exportName}`)
+
+    if (!res.ok) {
+      throw new Error(`Failed to get export download URL: ${res.status}`)
+    }
+
+    return await res.json()
+  }
+
   return {
     getAssetModelFolders,
     getAssetModels,
+    isAssetAPIEnabled,
     isAssetBrowserEligible,
+    shouldUseAssetBrowser,
     getAssetsForNodeType,
     getAssetDetails,
     getAssetsByTag,
@@ -613,7 +770,9 @@ function createAssetService() {
     getAssetMetadata,
     uploadAssetFromUrl,
     uploadAssetFromBase64,
-    uploadAssetAsync
+    uploadAssetAsync,
+    createAssetExport,
+    getExportDownloadUrl
   }
 }
 

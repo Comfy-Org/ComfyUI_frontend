@@ -44,6 +44,7 @@ const CORE_MENU_ITEMS = new Set([
   // Structure operations
   'Convert to Subgraph',
   'Frame selection',
+  'Frame Nodes',
   'Minimize Node',
   'Expand',
   'Collapse',
@@ -103,7 +104,8 @@ function isDuplicateItem(label: string, existingItems: MenuOption[]): boolean {
     shape: ['shape', 'shapes'],
     pin: ['pin', 'unpin'],
     delete: ['remove', 'delete'],
-    duplicate: ['clone', 'duplicate']
+    duplicate: ['clone', 'duplicate'],
+    frame: ['frame selection', 'frame nodes']
   }
 
   return existingItems.some((item) => {
@@ -226,6 +228,7 @@ const MENU_ORDER: string[] = [
   // Section 3: Structure operations
   'Convert to Subgraph',
   'Frame selection',
+  'Frame Nodes',
   'Minimize Node',
   'Expand',
   'Collapse',

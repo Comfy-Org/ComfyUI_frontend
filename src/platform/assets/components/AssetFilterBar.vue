@@ -9,7 +9,7 @@
     >
       <MultiSelect
         v-if="availableFileFormats.length > 0"
-        v-model="fileFormats"
+        v-model="activeFileFormatObjects"
         :label="$t('assetBrowser.fileFormats')"
         :options="availableFileFormats"
         class="min-w-32"
@@ -19,11 +19,21 @@
 
       <MultiSelect
         v-if="availableBaseModels.length > 0"
-        v-model="baseModels"
+        v-model="activeBaseModelObjects"
         :label="$t('assetBrowser.baseModels')"
         :options="availableBaseModels"
         class="min-w-32"
         data-component-id="asset-filter-base-models"
+        @update:model-value="handleFilterChange"
+      />
+
+      <SingleSelect
+        v-if="showOwnershipFilter"
+        v-model="ownership"
+        :label="$t('assetBrowser.ownership')"
+        :options="ownershipOptions"
+        class="min-w-32"
+        data-component-id="asset-filter-ownership"
         @update:model-value="handleFilterChange"
       />
     </div>
@@ -54,10 +64,13 @@ import SingleSelect from '@/components/input/SingleSelect.vue'
 import type { SelectOption } from '@/components/input/types'
 import { useAssetFilterOptions } from '@/platform/assets/composables/useAssetFilterOptions'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import type {
+  AssetFilterState,
+  AssetSortOption,
+  OwnershipOption
+} from '@/platform/assets/types/filterTypes'
 
 const { t } = useI18n()
-
-type SortOption = 'recent' | 'name-asc' | 'name-desc'
 
 const sortOptions = computed(() => [
   { name: t('assetBrowser.sortRecent'), value: 'recent' as const },
@@ -65,33 +78,52 @@ const sortOptions = computed(() => [
   { name: t('assetBrowser.sortZA'), value: 'name-desc' as const }
 ])
 
-export interface FilterState {
-  fileFormats: string[]
-  baseModels: string[]
-  sortBy: SortOption
-}
-
-const { assets = [] } = defineProps<{
+const { assets = [], showOwnershipFilter = false } = defineProps<{
   assets?: AssetItem[]
+  showOwnershipFilter?: boolean
 }>()
 
-const fileFormats = ref<SelectOption[]>([])
-const baseModels = ref<SelectOption[]>([])
-const sortBy = ref<SortOption>('recent')
+const selectedFileFormats = ref<SelectOption[]>([])
+const selectedBaseModels = ref<SelectOption[]>([])
+const sortBy = ref<AssetSortOption>('recent')
+const ownership = ref<OwnershipOption>('all')
 
-const { availableFileFormats, availableBaseModels } = useAssetFilterOptions(
-  () => assets
-)
+const { availableFileFormats, availableBaseModels, ownershipOptions } =
+  useAssetFilterOptions(() => assets)
+
+// Only show selected items that exist in the current scope
+const activeFileFormatObjects = computed({
+  get() {
+    return selectedFileFormats.value.filter((opt) =>
+      availableFileFormats.value.some((a) => a.value === opt.value)
+    )
+  },
+  set(value: SelectOption[]) {
+    selectedFileFormats.value = value
+  }
+})
+
+const activeBaseModelObjects = computed({
+  get() {
+    return selectedBaseModels.value.filter((opt) =>
+      availableBaseModels.value.some((a) => a.value === opt.value)
+    )
+  },
+  set(value: SelectOption[]) {
+    selectedBaseModels.value = value
+  }
+})
 
 const emit = defineEmits<{
-  filterChange: [filters: FilterState]
+  filterChange: [filters: AssetFilterState]
 }>()
 
 function handleFilterChange() {
   emit('filterChange', {
-    fileFormats: fileFormats.value.map((option: SelectOption) => option.value),
-    baseModels: baseModels.value.map((option: SelectOption) => option.value),
-    sortBy: sortBy.value
+    fileFormats: activeFileFormatObjects.value.map((opt) => opt.value),
+    baseModels: activeBaseModelObjects.value.map((opt) => opt.value),
+    sortBy: sortBy.value,
+    ownership: ownership.value
   })
 }
 </script>

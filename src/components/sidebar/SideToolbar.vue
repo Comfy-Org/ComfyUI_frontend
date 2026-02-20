@@ -1,6 +1,7 @@
 <template>
   <nav
     ref="sideToolbarRef"
+    data-testid="side-toolbar"
     class="side-tool-bar-container flex h-full flex-col items-center bg-transparent [.floating-sidebar]:-mr-2"
     :class="{
       'small-sidebar': isSmall,
@@ -57,6 +58,7 @@
 import { useResizeObserver } from '@vueuse/core'
 import { debounce } from 'es-toolkit/compat'
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import HelpCenterPopups from '@/components/helpcenter/HelpCenterPopups.vue'
 import ComfyMenuButton from '@/components/sidebar/ComfyMenuButton.vue'
@@ -70,7 +72,7 @@ import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCommandStore } from '@/stores/commandStore'
-import { useKeybindingStore } from '@/stores/keybindingStore'
+import { useKeybindingStore } from '@/platform/keybindings/keybindingStore'
 import { useMenuItemStore } from '@/stores/menuItemStore'
 import { useUserStore } from '@/stores/userStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
@@ -82,6 +84,7 @@ import SidebarIcon from './SidebarIcon.vue'
 import SidebarLogoutIcon from './SidebarLogoutIcon.vue'
 import SidebarTemplatesButton from './SidebarTemplatesButton.vue'
 
+const { t } = useI18n()
 const workspaceStore = useWorkspaceStore()
 const settingStore = useSettingStore()
 const userStore = useUserStore()
@@ -150,10 +153,10 @@ const onTabClick = async (item: SidebarTabExtension) => {
 
 const keybindingStore = useKeybindingStore()
 const getTabTooltipSuffix = (tab: SidebarTabExtension) => {
-  const keybinding = keybindingStore.getKeybindingByCommandId(
-    `Workspace.ToggleSidebarTab.${tab.id}`
-  )
-  return keybinding ? ` (${keybinding.combo.toString()})` : ''
+  const shortcut = keybindingStore
+    .getKeybindingByCommandId(`Workspace.ToggleSidebarTab.${tab.id}`)
+    ?.combo.toString()
+  return shortcut ? t('g.shortcutSuffix', { shortcut }) : ''
 }
 
 const isOverflowing = ref(false)

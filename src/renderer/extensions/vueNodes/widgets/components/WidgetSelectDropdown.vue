@@ -1,17 +1,30 @@
 <script setup lang="ts">
 import { capitalize } from 'es-toolkit'
 import { computed, provide, ref, toRef, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import { useTransformCompatOverlayProps } from '@/composables/useTransformCompatOverlayProps'
-import { t } from '@/i18n'
+import { SUPPORTED_EXTENSIONS_ACCEPT } from '@/extensions/core/load3d/constants'
+import { useAssetFilterOptions } from '@/platform/assets/composables/useAssetFilterOptions'
+import {
+  filterItemByBaseModels,
+  filterItemByOwnership
+} from '@/platform/assets/utils/assetFilterUtils'
+import {
+  getAssetBaseModels,
+  getAssetDisplayName,
+  getAssetFilename
+} from '@/platform/assets/utils/assetMetadataUtils'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import FormDropdown from '@/renderer/extensions/vueNodes/widgets/components/form/dropdown/FormDropdown.vue'
+import type {
+  FilterOption,
+  OwnershipOption
+} from '@/platform/assets/types/filterTypes'
 import { AssetKindKey } from '@/renderer/extensions/vueNodes/widgets/components/form/dropdown/types'
 import type {
-  DropdownItem,
-  FilterOption,
-  LayoutMode,
-  SelectedKey
+  FormDropdownItem,
+  LayoutMode
 } from '@/renderer/extensions/vueNodes/widgets/components/form/dropdown/types'
 import WidgetLayoutField from '@/renderer/extensions/vueNodes/widgets/components/layout/WidgetLayoutField.vue'
 import { useAssetWidgetData } from '@/renderer/extensions/vueNodes/widgets/composables/useAssetWidgetData'
@@ -32,6 +45,7 @@ interface Props {
   assetKind?: AssetKind
   allowUpload?: boolean
   uploadFolder?: ResultItemType
+  uploadSubfolder?: string
   isAssetMode?: boolean
   defaultLayoutMode?: LayoutMode
 }
@@ -45,10 +59,12 @@ provide(
 
 const modelValue = defineModel<string | undefined>({
   default(props: Props) {
-    return props.widget.options?.values?.[0] || ''
+    const values = props.widget.options?.values
+    return (Array.isArray(values) ? values[0] : undefined) ?? ''
   }
 })
 
+const { t } = useI18n()
 const toastStore = useToastStore()
 const queueStore = useQueueStore()
 
@@ -60,7 +76,8 @@ const combinedProps = computed(() => ({
 }))
 
 const getAssetData = () => {
-  const nodeType = props.widget.options?.nodeType ?? props.nodeType
+  const nodeType: string | undefined =
+    props.widget.options?.nodeType ?? props.nodeType
   if (props.isAssetMode && nodeType) {
     return useAssetWidgetData(toRef(nodeType))
   }
@@ -72,16 +89,30 @@ const filterSelected = ref('all')
 const filterOptions = computed<FilterOption[]>(() => {
   if (props.isAssetMode) {
     const categoryName = assetData?.category.value ?? 'All'
-    return [{ id: 'all', name: capitalize(categoryName) }]
+    return [{ name: capitalize(categoryName), value: 'all' }]
   }
   return [
-    { id: 'all', name: 'All' },
-    { id: 'inputs', name: 'Inputs' },
-    { id: 'outputs', name: 'Outputs' }
+    { name: 'All', value: 'all' },
+    { name: 'Inputs', value: 'inputs' },
+    { name: 'Outputs', value: 'outputs' }
   ]
 })
 
-const selectedSet = ref<Set<SelectedKey>>(new Set())
+const ownershipSelected = ref<OwnershipOption>('all')
+const showOwnershipFilter = computed(() => props.isAssetMode)
+
+const { ownershipOptions, availableBaseModels } = useAssetFilterOptions(
+  () => assetData?.assets.value ?? []
+)
+
+const baseModelSelected = ref<Set<string>>(new Set())
+const showBaseModelFilter = computed(() => props.isAssetMode)
+const baseModelOptions = computed<FilterOption[]>(() => {
+  if (!props.isAssetMode || !assetData) return []
+  return availableBaseModels.value
+})
+
+const selectedSet = ref<Set<string>>(new Set())
 
 /**
  * Transforms a value using getOptionLabel if available.
@@ -100,23 +131,22 @@ function getDisplayLabel(value: string): string {
   }
 }
 
-const inputItems = computed<DropdownItem[]>(() => {
+const inputItems = computed<FormDropdownItem[]>(() => {
   const values = props.widget.options?.values || []
 
   if (!Array.isArray(values)) {
     return []
   }
 
-  return values.map((value: string, index: number) => ({
+  return values.map((value, index) => ({
     id: `input-${index}`,
-    mediaSrc: getMediaUrl(value, 'input'),
-    name: value,
-    label: getDisplayLabel(value),
-    metadata: ''
+    preview_url: getMediaUrl(String(value), 'input'),
+    name: String(value),
+    label: getDisplayLabel(String(value))
   }))
 })
-const outputItems = computed<DropdownItem[]>(() => {
-  if (!['image', 'video'].includes(props.assetKind ?? '')) return []
+const outputItems = computed<FormDropdownItem[]>(() => {
+  if (!['image', 'video', 'mesh'].includes(props.assetKind ?? '')) return []
 
   const outputs = new Set<string>()
 
@@ -125,7 +155,8 @@ const outputItems = computed<DropdownItem[]>(() => {
     task.flatOutputs.forEach((output) => {
       const isTargetType =
         (props.assetKind === 'image' && output.mediaType === 'images') ||
-        (props.assetKind === 'video' && output.mediaType === 'video')
+        (props.assetKind === 'video' && output.mediaType === 'video') ||
+        (props.assetKind === 'mesh' && output.is3D)
 
       if (output.type === 'output' && isTargetType) {
         const path = output.subfolder
@@ -140,10 +171,9 @@ const outputItems = computed<DropdownItem[]>(() => {
 
   return Array.from(outputs).map((output) => ({
     id: `output-${output}`,
-    mediaSrc: getMediaUrl(output.replace(' [output]', ''), 'output'),
+    preview_url: getMediaUrl(output.replace(' [output]', ''), 'output'),
     name: output,
-    label: getDisplayLabel(output),
-    metadata: ''
+    label: getDisplayLabel(output)
   }))
 })
 
@@ -153,23 +183,22 @@ const outputItems = computed<DropdownItem[]>(() => {
  * where the saved value may not exist in the current server environment.
  * Works for both local mode (inputItems/outputItems) and cloud mode (assetData).
  */
-const missingValueItem = computed<DropdownItem | undefined>(() => {
+const missingValueItem = computed<FormDropdownItem | undefined>(() => {
   const currentValue = modelValue.value
   if (!currentValue) return undefined
 
   // Check in cloud mode assets
   if (props.isAssetMode && assetData) {
-    const existsInAssets = assetData.dropdownItems.value.some(
-      (item) => item.name === currentValue
+    const existsInAssets = assetData.assets.value.some(
+      (asset) => getAssetFilename(asset) === currentValue
     )
     if (existsInAssets) return undefined
 
     return {
       id: `missing-${currentValue}`,
-      mediaSrc: '',
+      preview_url: '',
       name: currentValue,
-      label: getDisplayLabel(currentValue),
-      metadata: ''
+      label: getDisplayLabel(currentValue)
     }
   }
 
@@ -190,20 +219,44 @@ const missingValueItem = computed<DropdownItem | undefined>(() => {
 
   return {
     id: `missing-${currentValue}`,
-    mediaSrc: getMediaUrl(strippedValue, isOutput ? 'output' : 'input'),
+    preview_url: getMediaUrl(strippedValue, isOutput ? 'output' : 'input'),
     name: currentValue,
-    label: getDisplayLabel(currentValue),
-    metadata: ''
+    label: getDisplayLabel(currentValue)
   }
 })
 
-const allItems = computed<DropdownItem[]>(() => {
+/**
+ * Transforms AssetItem[] to FormDropdownItem[] for cloud mode.
+ * Uses getAssetFilename for display name, asset.name for label.
+ */
+const assetItems = computed<FormDropdownItem[]>(() => {
+  if (!props.isAssetMode || !assetData) return []
+  return assetData.assets.value.map((asset) => ({
+    id: asset.id,
+    name: getAssetFilename(asset),
+    label: getAssetDisplayName(asset),
+    preview_url: asset.preview_url,
+    is_immutable: asset.is_immutable,
+    base_models: getAssetBaseModels(asset)
+  }))
+})
+
+const ownershipFilteredAssetItems = computed<FormDropdownItem[]>(() =>
+  filterItemByOwnership(assetItems.value, ownershipSelected.value)
+)
+
+const baseModelFilteredAssetItems = computed<FormDropdownItem[]>(() =>
+  filterItemByBaseModels(
+    ownershipFilteredAssetItems.value,
+    baseModelSelected.value
+  )
+)
+
+const allItems = computed<FormDropdownItem[]>(() => {
   if (props.isAssetMode && assetData) {
-    const items = assetData.dropdownItems.value
-    if (missingValueItem.value) {
-      return [missingValueItem.value, ...items]
-    }
-    return items
+    // Cloud assets not in user's library shouldn't appear as search results (COM-14333).
+    // Unlike local mode, cloud users can't access files they don't own.
+    return baseModelFilteredAssetItems.value
   }
   return [
     ...(missingValueItem.value ? [missingValueItem.value] : []),
@@ -212,7 +265,7 @@ const allItems = computed<DropdownItem[]>(() => {
   ]
 })
 
-const dropdownItems = computed<DropdownItem[]>(() => {
+const dropdownItems = computed<FormDropdownItem[]>(() => {
   if (props.isAssetMode) {
     return allItems.value
   }
@@ -226,6 +279,17 @@ const dropdownItems = computed<DropdownItem[]>(() => {
     default:
       return allItems.value
   }
+})
+
+/**
+ * Items used for display in the input field. In cloud mode, includes
+ * missing items so users can see their selected value even if not in library.
+ */
+const displayItems = computed<FormDropdownItem[]>(() => {
+  if (props.isAssetMode && assetData && missingValueItem.value) {
+    return [missingValueItem.value, ...baseModelFilteredAssetItems.value]
+  }
+  return dropdownItems.value
 })
 
 const mediaPlaceholder = computed(() => {
@@ -242,6 +306,8 @@ const mediaPlaceholder = computed(() => {
       return t('widgets.uploadSelect.placeholderVideo')
     case 'audio':
       return t('widgets.uploadSelect.placeholderAudio')
+    case 'mesh':
+      return t('widgets.uploadSelect.placeholderMesh')
     case 'model':
       return t('widgets.uploadSelect.placeholderModel')
     case 'unknown':
@@ -266,6 +332,8 @@ const acceptTypes = computed(() => {
       return 'video/*'
     case 'audio':
       return 'audio/*'
+    case 'mesh':
+      return SUPPORTED_EXTENSIONS_ACCEPT
     default:
       return undefined // model or unknown
   }
@@ -274,24 +342,26 @@ const acceptTypes = computed(() => {
 const layoutMode = ref<LayoutMode>(props.defaultLayoutMode ?? 'grid')
 
 watch(
-  [modelValue, dropdownItems],
-  ([currentValue, _dropdownItems]) => {
+  [modelValue, displayItems],
+  ([currentValue]) => {
     if (currentValue === undefined) {
       selectedSet.value.clear()
       return
     }
 
-    const item = dropdownItems.value.find((item) => item.name === currentValue)
-    if (item) {
+    const item = displayItems.value.find((item) => item.name === currentValue)
+    if (!item) {
       selectedSet.value.clear()
-      selectedSet.value.add(item.id)
+      return
     }
+    selectedSet.value.clear()
+    selectedSet.value.add(item.id)
   },
   { immediate: true }
 )
 
-function updateSelectedItems(selectedItems: Set<SelectedKey>) {
-  let id: SelectedKey | undefined = undefined
+function updateSelectedItems(selectedItems: Set<string>) {
+  let id: string | undefined = undefined
   if (selectedItems.size > 0) {
     id = selectedItems.values().next().value!
   }
@@ -307,7 +377,6 @@ function updateSelectedItems(selectedItems: Set<SelectedKey>) {
   modelValue.value = name
 }
 
-// Upload file function (copied from useNodeImageUpload.ts)
 const uploadFile = async (
   file: File,
   isPasted: boolean = false,
@@ -316,6 +385,8 @@ const uploadFile = async (
   const body = new FormData()
   body.append('image', file)
   if (isPasted) body.append('subfolder', 'pasted')
+  else if (props.uploadSubfolder)
+    body.append('subfolder', props.uploadSubfolder)
   if (formFields.type) body.append('type', formFields.type)
 
   const resp = await api.fetchApi('/upload/image', {
@@ -339,7 +410,6 @@ const uploadFile = async (
   return data.subfolder ? `${data.subfolder}/${data.name}` : data.name
 }
 
-// Handle multiple file uploads
 const uploadFiles = async (files: File[]): Promise<string[]> => {
   const folder = props.uploadFolder ?? 'input'
   const uploadPromises = files.map((file) =>
@@ -363,9 +433,9 @@ async function handleFilesUpdate(files: File[]) {
 
     // 2. Update widget options to include new files
     // This simulates what addToComboValues does but for SimplifiedWidget
-    if (props.widget.options?.values) {
+    const values = props.widget.options?.values
+    if (Array.isArray(values)) {
       uploadedPaths.forEach((path) => {
-        const values = props.widget.options!.values as string[]
         if (!values.includes(path)) {
           values.push(path)
         }
@@ -400,12 +470,19 @@ function getMediaUrl(
       v-model:selected="selectedSet"
       v-model:filter-selected="filterSelected"
       v-model:layout-mode="layoutMode"
+      v-model:ownership-selected="ownershipSelected"
+      v-model:base-model-selected="baseModelSelected"
       :items="dropdownItems"
+      :display-items="displayItems"
       :placeholder="mediaPlaceholder"
       :multiple="false"
-      :uploadable="uploadable"
+      :uploadable
       :accept="acceptTypes"
-      :filter-options="filterOptions"
+      :filter-options
+      :show-ownership-filter
+      :ownership-options
+      :show-base-model-filter
+      :base-model-options
       v-bind="combinedProps"
       class="w-full"
       @update:selected="updateSelectedItems"

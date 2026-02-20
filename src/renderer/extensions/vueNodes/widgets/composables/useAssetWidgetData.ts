@@ -1,9 +1,8 @@
 import { computed, toValue, watch } from 'vue'
 import type { MaybeRefOrGetter } from 'vue'
 
-import { isCloud } from '@/platform/distribution/types'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
-import type { DropdownItem } from '@/renderer/extensions/vueNodes/widgets/components/form/dropdown/types'
+import { isCloud } from '@/platform/distribution/types'
 import { useAssetsStore } from '@/stores/assetsStore'
 import { useModelToNodeStore } from '@/stores/modelToNodeStore'
 
@@ -47,17 +46,6 @@ export function useAssetWidgetData(
       return resolvedType ? (assetsStore.getError(resolvedType) ?? null) : null
     })
 
-    const dropdownItems = computed<DropdownItem[]>(() => {
-      return (assets.value ?? []).map((asset) => ({
-        id: asset.id,
-        name:
-          (asset.user_metadata?.filename as string | undefined) ?? asset.name,
-        label: asset.name,
-        mediaSrc: asset.preview_url ?? '',
-        metadata: ''
-      }))
-    })
-
     watch(
       () => toValue(nodeType),
       async (currentNodeType) => {
@@ -78,7 +66,6 @@ export function useAssetWidgetData(
     return {
       category,
       assets,
-      dropdownItems,
       isLoading,
       error
     }
@@ -86,8 +73,7 @@ export function useAssetWidgetData(
 
   return {
     category: computed(() => undefined),
-    assets: computed(() => []),
-    dropdownItems: computed(() => []),
+    assets: computed<AssetItem[]>(() => []),
     isLoading: computed(() => false),
     error: computed(() => null)
   }

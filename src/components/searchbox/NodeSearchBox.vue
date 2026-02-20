@@ -5,7 +5,7 @@
     <div
       v-if="enableNodePreview && hoveredSuggestion"
       class="comfy-vue-node-preview-container absolute top-[50px] left-[-375px] z-50 cursor-pointer"
-      @mousedown.stop="onAddNode(hoveredSuggestion!)"
+      @mousedown.stop="onAddNode(hoveredSuggestion!, $event)"
     >
       <NodePreview
         :key="hoveredSuggestion?.name || ''"
@@ -118,7 +118,9 @@ const suggestions = ref<ComfyNodeDefImpl[]>([])
 const hoveredSuggestion = ref<ComfyNodeDefImpl | null>(null)
 const currentQuery = ref('')
 const placeholder = computed(() => {
-  return filters.length === 0 ? t('g.searchNodes') + '...' : ''
+  return filters.length === 0
+    ? t('g.searchPlaceholder', { subject: t('g.nodes') })
+    : ''
 })
 
 const nodeDefStore = useNodeDefStore()
@@ -146,15 +148,19 @@ const search = (query: string) => {
   debouncedTrackSearch(query)
 }
 
-const emit = defineEmits(['addFilter', 'removeFilter', 'addNode'])
+const emit = defineEmits<{
+  addFilter: [filter: FuseFilterWithValue<ComfyNodeDefImpl, string>]
+  removeFilter: [filter: FuseFilterWithValue<ComfyNodeDefImpl, string>]
+  addNode: [nodeDef: ComfyNodeDefImpl, dragEvent?: MouseEvent]
+}>()
 
 // Track node selection and emit addNode event
-const onAddNode = (nodeDef: ComfyNodeDefImpl) => {
+function onAddNode(nodeDef: ComfyNodeDefImpl, event?: MouseEvent) {
   telemetry?.trackNodeSearchResultSelected({
     node_type: nodeDef.name,
     last_query: currentQuery.value
   })
-  emit('addNode', nodeDef)
+  emit('addNode', nodeDef, event)
 }
 
 let inputElement: HTMLInputElement | null = null

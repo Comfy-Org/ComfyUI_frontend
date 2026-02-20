@@ -6,7 +6,7 @@ type DialogAction<T> = string | { value?: T; text: string }
 export class ComfyAsyncDialog<
   T = string | null
 > extends ComfyDialog<HTMLDialogElement> {
-  #resolve: (value: T | null) => void = () => {}
+  private _resolve: (value: T | null) => void = () => {}
 
   constructor(actions?: Array<DialogAction<T>>) {
     super(
@@ -30,7 +30,7 @@ export class ComfyAsyncDialog<
     super.show(html)
 
     return new Promise((resolve) => {
-      this.#resolve = resolve
+      this._resolve = resolve
     })
   }
 
@@ -43,12 +43,12 @@ export class ComfyAsyncDialog<
     this.element.showModal()
 
     return new Promise((resolve) => {
-      this.#resolve = resolve
+      this._resolve = resolve
     })
   }
 
   override close(result: T | null = null) {
-    this.#resolve(result)
+    this._resolve(result)
     this.element.close()
     super.close()
   }

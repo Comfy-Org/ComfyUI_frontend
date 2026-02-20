@@ -275,7 +275,9 @@ const zExtra = z
     frontendVersion: z.string().optional(),
     linkExtensions: z.array(zComfyLinkExtension).optional(),
     reroutes: z.array(zReroute).optional(),
-    workflowRendererVersion: zRendererType.optional()
+    workflowRendererVersion: zRendererType.optional(),
+    BlueprintDescription: z.string().optional(),
+    BlueprintSearchAliases: z.array(z.string()).optional()
   })
   .passthrough()
 
@@ -395,6 +397,10 @@ interface SubgraphDefinitionBase<
   revision: number
   name: string
   category?: string
+  /** Custom metadata for the subgraph (description, searchAliases, etc.) */
+  extra?: T extends ComfyWorkflow1BaseInput
+    ? z.input<typeof zExtra> | null
+    : z.output<typeof zExtra> | null
 
   inputNode: T extends ComfyWorkflow1BaseInput
     ? z.input<typeof zExportedSubgraphIONode>

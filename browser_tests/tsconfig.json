@@ -5,7 +5,13 @@
     "noEmit": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
-    "resolveJsonModule": true
+    "resolveJsonModule": true,
+    "types": ["vite/client"]
   },
-  "include": ["**/*.ts"]
+  "include": [
+    "**/*.ts",
+    "../src/types/**/*.d.ts",
+    "../global.d.ts",
+    "types/**/*.d.ts"
+  ]
 }

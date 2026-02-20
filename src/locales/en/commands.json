@@ -266,6 +266,12 @@
   "Comfy_ShowSettingsDialog": {
     "label": "Show Settings Dialog"
   },
+  "Comfy_Subgraph_SetDescription": {
+    "label": "Set Subgraph Description"
+  },
+  "Comfy_Subgraph_SetSearchAliases": {
+    "label": "Set Subgraph Search Aliases"
+  },
   "Comfy_ToggleAssetAPI": {
     "label": "Experimental: Enable AssetAPI"
   },
@@ -276,7 +282,7 @@
     "label": "Help Center"
   },
   "Comfy_ToggleLinear": {
-    "label": "Toggle Simple Mode"
+    "label": "Toggle App Mode"
   },
   "Comfy_ToggleQPOV2": {
     "label": "Toggle Queue Panel V2"

@@ -144,18 +144,7 @@ Litegraph has no runtime dependencies. The build tooling has been tested on Node
 
 ## Releasing
 
-Use GitHub actions to release normal versions.
-
-1. Run the `Release a New Version` action, selecting the version increment type
-1. Merge the resolution PR
-1. A GitHub release is automatically published on merge
-
-### Pre-release
-
-The action directly translates `Version increment type` to the pnpm version command. `Pre-release ID (suffix)` is the option for the `--preid` argument.
-
-e.g. Use `prerelease` increment type to automatically bump the patch version and create a pre-release version. Subsequent runs of prerelease will update the prerelease version only.
-Use `patch` when ready to remove the pre-release suffix.
+This library is embedded via git subtree in ComfyUI_frontend. Releases are managed through the parent repository's release process.
 
 ## Contributors
 

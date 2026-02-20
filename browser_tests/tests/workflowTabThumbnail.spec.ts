@@ -5,8 +5,11 @@ import type { ComfyPage } from '../fixtures/ComfyPage'
 
 test.describe('Workflow Tab Thumbnails', { tag: '@workflow' }, () => {
   test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.setSetting('Comfy.UseNewMenu', 'Top')
-    await comfyPage.setSetting('Comfy.Workflow.WorkflowTabsPosition', 'Topbar')
+    await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
+    await comfyPage.settings.setSetting(
+      'Comfy.Workflow.WorkflowTabsPosition',
+      'Topbar'
+    )
     await comfyPage.setup()
   })
 
@@ -90,9 +93,9 @@ test.describe('Workflow Tab Thumbnails', { tag: '@workflow' }, () => {
       canvasArea!.x + canvasArea!.width - 100,
       100
     )
-    await comfyPage.delay(300) // Wait for the popover to hide
+    await expect(comfyPage.page.locator('.workflow-popover-fade')).toBeHidden()
 
-    await comfyPage.rightClickCanvas(200, 200)
+    await comfyPage.canvasOps.rightClick(200, 200)
     await comfyPage.page.getByText('Add Node').click()
     await comfyPage.nextFrame()
     await comfyPage.page.getByText(category).click()

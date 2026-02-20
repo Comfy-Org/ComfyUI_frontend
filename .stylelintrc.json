@@ -52,14 +52,15 @@
           "reference",
           "plugin",
           "custom-variant",
-          "utility"
+          "utility",
+          "source"
         ]
       }
     ],
     "function-no-unknown": [
       true,
       {
-        "ignoreFunctions": ["theme", "v-bind"]
+        "ignoreFunctions": ["theme", "v-bind", "from-folder", "from-json"]
       }
     ]
   },

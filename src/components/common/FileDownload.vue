@@ -27,7 +27,7 @@
         :title="props.url"
         @click="download.triggerBrowserDownload"
       >
-        {{ $t('g.download') + ' (' + fileSize + ')' }}
+        {{ $t('g.downloadWithSize', { size: fileSize }) }}
       </Button>
     </div>
     <div>

@@ -7,6 +7,7 @@ import type {
   LGraphNode
 } from '@/lib/litegraph/src/litegraph'
 import { ExecutableGroupNodeChildDTO } from '@/utils/executableGroupNodeChildDTO'
+import { createMockLGraphNode } from './__tests__/litegraphTestUtils'
 
 describe('ExecutableGroupNodeChildDTO', () => {
   let mockNode: LGraphNode
@@ -16,18 +17,18 @@ describe('ExecutableGroupNodeChildDTO', () => {
 
   beforeEach(() => {
     // Create mock nodes
-    mockNode = {
+    mockNode = createMockLGraphNode({
       id: '3', // Simple node ID for most tests
       graph: {},
       getInputNode: vi.fn(),
       getInputLink: vi.fn(),
       inputs: []
-    } as any
+    })
 
-    mockInputNode = {
+    mockInputNode = createMockLGraphNode({
       id: '1',
       graph: {}
-    } as any
+    })
 
     // Create the nodesByExecutionId map
     mockNodesByExecutionId = new Map()
@@ -38,7 +39,7 @@ describe('ExecutableGroupNodeChildDTO', () => {
   describe('resolveInput', () => {
     it('should resolve input from external node (node outside the group)', () => {
       // Setup: Group node child with ID '10:3'
-      const groupNodeChild = {
+      const groupNodeChild = createMockLGraphNode({
         id: '10:3',
         graph: {},
         getInputNode: vi.fn().mockReturnValue(mockInputNode),
@@ -46,7 +47,7 @@ describe('ExecutableGroupNodeChildDTO', () => {
           origin_slot: 0
         }),
         inputs: []
-      } as any
+      })
 
       // External node with ID '1'
       const externalNodeDto = {
@@ -75,19 +76,19 @@ describe('ExecutableGroupNodeChildDTO', () => {
 
     it('should resolve input from internal node (node inside the same group)', () => {
       // Setup: Group node child with ID '10:3'
-      const groupNodeChild = {
+      const groupNodeChild = createMockLGraphNode({
         id: '10:3',
         graph: {},
         getInputNode: vi.fn(),
         getInputLink: vi.fn(),
         inputs: []
-      } as any
+      })
 
       // Internal node with ID '10:2'
-      const internalInputNode = {
+      const internalInputNode = createMockLGraphNode({
         id: '10:2',
         graph: {}
-      } as LGraphNode
+      })
 
       const internalNodeDto = {
         id: '2',
@@ -97,10 +98,10 @@ describe('ExecutableGroupNodeChildDTO', () => {
       // Internal nodes are stored with just their index
       mockNodesByExecutionId.set('2', internalNodeDto)
 
-      groupNodeChild.getInputNode.mockReturnValue(internalInputNode)
-      groupNodeChild.getInputLink.mockReturnValue({
+      vi.mocked(groupNodeChild.getInputNode).mockReturnValue(internalInputNode)
+      vi.mocked(groupNodeChild.getInputLink).mockReturnValue({
         origin_slot: 1
-      })
+      } as ReturnType<LGraphNode['getInputLink']>)
 
       const dto = new ExecutableGroupNodeChildDTO(
         groupNodeChild,
@@ -172,7 +173,7 @@ describe('ExecutableGroupNodeChildDTO', () => {
 
     it('should throw error for group nodes inside subgraphs (unsupported)', () => {
       // Setup: Group node child inside a subgraph (execution ID has more than 2 segments)
-      const nestedGroupNode = {
+      const nestedGroupNode = createMockLGraphNode({
         id: '1:2:3', // subgraph:groupnode:innernode
         graph: {},
         getInputNode: vi.fn().mockReturnValue(mockInputNode),
@@ -180,7 +181,7 @@ describe('ExecutableGroupNodeChildDTO', () => {
           origin_slot: 0
         }),
         inputs: []
-      } as any
+      })
 
       // Create DTO with deeply nested path to simulate group node inside subgraph
       const dto = new ExecutableGroupNodeChildDTO(

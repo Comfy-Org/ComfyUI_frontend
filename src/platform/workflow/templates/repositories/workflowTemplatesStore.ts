@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { computed, ref, shallowRef } from 'vue'
+import { computed, ref, shallowRef, watch } from 'vue'
 
 import { i18n, st } from '@/i18n'
 import { isCloud } from '@/platform/distribution/types'
@@ -8,6 +8,8 @@ import type { NavGroupData, NavItemData } from '@/types/navTypes'
 import { generateCategoryId, getCategoryIcon } from '@/utils/categoryUtil'
 import { normalizeI18nKey } from '@/utils/formatUtil'
 
+import { zLogoIndex } from '../schemas/templateSchema'
+import type { LogoIndex } from '../schemas/templateSchema'
 import type {
   TemplateGroup,
   TemplateInfo,
@@ -31,6 +33,7 @@ export const useWorkflowTemplatesStore = defineStore(
     const customTemplates = shallowRef<{ [moduleName: string]: string[] }>({})
     const coreTemplates = shallowRef<WorkflowTemplates[]>([])
     const englishTemplates = shallowRef<WorkflowTemplates[]>([])
+    const logoIndex = shallowRef<LogoIndex>({})
     const isLoaded = ref(false)
     const knownTemplateNames = ref(new Set<string>())
 
@@ -469,33 +472,79 @@ export const useWorkflowTemplatesStore = defineStore(
       return items
     })
 
+    async function fetchCoreTemplates() {
+      const locale = i18n.global.locale.value
+      const [coreResult, englishResult, logoIndexResult] = await Promise.all([
+        api.getCoreWorkflowTemplates(locale),
+        isCloud && locale !== 'en'
+          ? api.getCoreWorkflowTemplates('en')
+          : Promise.resolve([]),
+        fetchLogoIndex()
+      ])
+
+      coreTemplates.value = coreResult
+      englishTemplates.value = englishResult
+      logoIndex.value = logoIndexResult
+
+      const coreNames = coreTemplates.value.flatMap((category) =>
+        category.templates.map((template) => template.name)
+      )
+      const customNames = Object.values(customTemplates.value).flat()
+      knownTemplateNames.value = new Set([...coreNames, ...customNames])
+    }
+
     async function loadWorkflowTemplates() {
       try {
         if (!isLoaded.value) {
           customTemplates.value = await api.getWorkflowTemplates()
-          const locale = i18n.global.locale.value
-
-          const [coreResult, englishResult] = await Promise.all([
-            api.getCoreWorkflowTemplates(locale),
-            isCloud && locale !== 'en'
-              ? api.getCoreWorkflowTemplates('en')
-              : Promise.resolve([])
-          ])
-
-          coreTemplates.value = coreResult
-          englishTemplates.value = englishResult
-
-          const coreNames = coreTemplates.value.flatMap((category) =>
-            category.templates.map((template) => template.name)
-          )
-          const customNames = Object.values(customTemplates.value).flat()
-          knownTemplateNames.value = new Set([...coreNames, ...customNames])
-
+          await fetchCoreTemplates()
           isLoaded.value = true
         }
       } catch (error) {
         console.error('Error fetching workflow templates:', error)
       }
+    }
+
+    watch(
+      () => i18n.global.locale.value,
+      async () => {
+        if (!isLoaded.value) return
+        try {
+          await fetchCoreTemplates()
+        } catch (error) {
+          console.error('Error reloading templates for new locale:', error)
+        }
+      }
+    )
+
+    async function fetchLogoIndex(): Promise<LogoIndex> {
+      try {
+        const response = await fetch(api.fileURL('/templates/index_logo.json'))
+        const contentType = response.headers.get('content-type')
+        if (!contentType?.includes('application/json')) return {}
+        const data = await response.json()
+        const result = zLogoIndex.safeParse(data)
+        return result.success ? result.data : {}
+      } catch {
+        return {}
+      }
+    }
+
+    function getLogoUrl(provider: string): string {
+      const logoPath = logoIndex.value[provider]
+      if (!logoPath) return ''
+
+      // Validate path to prevent directory traversal and ensure safe file extensions
+      const safePathPattern = /^[a-zA-Z0-9_\-./]+\.(png|jpg|jpeg|svg|webp)$/i
+      if (
+        !safePathPattern.test(logoPath) ||
+        logoPath.includes('..') ||
+        logoPath.startsWith('/')
+      ) {
+        return ''
+      }
+
+      return api.fileURL(`/templates/${logoPath}`)
     }
 
     function getEnglishMetadata(templateName: string): {
@@ -534,7 +583,8 @@ export const useWorkflowTemplatesStore = defineStore(
       loadWorkflowTemplates,
       knownTemplateNames,
       getTemplateByName,
-      getEnglishMetadata
+      getEnglishMetadata,
+      getLogoUrl
     }
   }
 )

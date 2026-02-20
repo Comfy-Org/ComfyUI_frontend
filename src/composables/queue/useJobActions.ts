@@ -6,7 +6,7 @@ import { useErrorHandling } from '@/composables/useErrorHandling'
 import type { JobListItem } from '@/composables/queue/useJobList'
 import { useJobMenu } from '@/composables/queue/useJobMenu'
 import type { TaskItemImpl } from '@/stores/queueStore'
-import type { JobState } from '@/types/queue'
+import { isActiveJobState } from '@/utils/queueUtil'
 
 export type JobAction = {
   icon: string
@@ -33,8 +33,6 @@ export function useJobActions(
     variant: 'destructive'
   }
 
-  const cancellableStates: JobState[] = ['pending', 'initialization', 'running']
-
   const jobRef = computed(() => toValue(job) ?? null)
 
   const canCancelJob = computed(() => {
@@ -43,10 +41,7 @@ export function useJobActions(
       return false
     }
 
-    return (
-      currentJob.showClear !== false &&
-      cancellableStates.includes(currentJob.state)
-    )
+    return currentJob.showClear !== false && isActiveJobState(currentJob.state)
   })
 
   const canDeleteJob = computed(() => {

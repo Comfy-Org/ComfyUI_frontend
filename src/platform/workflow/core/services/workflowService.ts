@@ -17,6 +17,8 @@ import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useWorkflowThumbnail } from '@/renderer/core/thumbnail/useWorkflowThumbnail'
 import { app } from '@/scripts/app'
 import { blankGraph, defaultGraph } from '@/scripts/defaultGraph'
+import { useMissingModelsDialog } from '@/composables/useMissingModelsDialog'
+import { useMissingNodesDialog } from '@/composables/useMissingNodesDialog'
 import { useDialogService } from '@/services/dialogService'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
@@ -27,6 +29,8 @@ export const useWorkflowService = () => {
   const workflowStore = useWorkflowStore()
   const toastStore = useToastStore()
   const dialogService = useDialogService()
+  const missingModelsDialog = useMissingModelsDialog()
+  const missingNodesDialog = useMissingNodesDialog()
   const workflowThumbnail = useWorkflowThumbnail()
   const domWidgetStore = useDomWidgetStore()
   const workflowDraftStore = useWorkflowDraftStore()
@@ -35,7 +39,7 @@ export const useWorkflowService = () => {
     if (settingStore.get('Comfy.PromptFilename')) {
       let filename = await dialogService.prompt({
         title: t('workflowService.exportWorkflow'),
-        message: t('workflowService.enterFilename') + ':',
+        message: t('workflowService.enterFilenamePrompt'),
         defaultValue: defaultName
       })
       if (!filename) return null
@@ -183,9 +187,11 @@ export const useWorkflowService = () => {
       {
         showMissingModelsDialog: loadFromRemote,
         showMissingNodesDialog: loadFromRemote,
-        checkForRerouteMigration: false
+        checkForRerouteMigration: false,
+        deferWarnings: true
       }
     )
+    showPendingWarnings()
   }
 
   /**
@@ -214,6 +220,8 @@ export const useWorkflowService = () => {
         await saveWorkflow(workflow)
       }
     }
+
+    workflowDraftStore.removeDraft(workflow.path)
 
     // If this is the last workflow, create a new default temporary workflow
     if (workflowStore.openWorkflows.length === 1) {
@@ -435,6 +443,32 @@ export const useWorkflowService = () => {
     await app.loadGraphData(state, true, true, filename)
   }
 
+  /**
+   * Show and clear any pending warnings (missing nodes/models) stored on the
+   * active workflow. Called after a workflow becomes visible so dialogs don't
+   * overlap with subsequent loads.
+   */
+  function showPendingWarnings(workflow?: ComfyWorkflow | null) {
+    const wf = workflow ?? workflowStore.activeWorkflow
+    if (!wf?.pendingWarnings) return
+
+    const { missingNodeTypes, missingModels } = wf.pendingWarnings
+    wf.pendingWarnings = null
+
+    if (
+      missingNodeTypes?.length &&
+      settingStore.get('Comfy.Workflow.ShowMissingNodesWarning')
+    ) {
+      missingNodesDialog.show({ missingNodeTypes })
+    }
+    if (
+      missingModels &&
+      settingStore.get('Comfy.Workflow.ShowMissingModelsWarning')
+    ) {
+      missingModelsDialog.show(missingModels)
+    }
+  }
+
   return {
     exportWorkflow,
     saveWorkflowAs,
@@ -450,6 +484,7 @@ export const useWorkflowService = () => {
     loadNextOpenedWorkflow,
     loadPreviousOpenedWorkflow,
     duplicateWorkflow,
+    showPendingWarnings,
     afterLoadNewGraph,
     beforeLoadNewGraph
   }

@@ -2,6 +2,7 @@ import { z } from 'zod'
 import { fromZodError } from 'zod-validation-error'
 
 import { resultItemType } from '@/schemas/apiSchema'
+import { CONTROL_OPTIONS } from '@/types/simplifiedWidget'
 
 const zComboOption = z.union([z.string(), z.number()])
 const zRemoteWidgetConfig = z.object({
@@ -50,7 +51,9 @@ export const zIntInputOptions = zNumericInputOptions.extend({
    * If true, a linked widget will be added to the node to select the mode
    * of `control_after_generate`.
    */
-  control_after_generate: z.boolean().optional()
+  control_after_generate: z
+    .union([z.boolean(), z.enum(CONTROL_OPTIONS)])
+    .optional()
 })
 
 export const zFloatInputOptions = zNumericInputOptions.extend({
@@ -74,12 +77,16 @@ export const zStringInputOptions = zBaseInputOptions.extend({
 })
 
 export const zComboInputOptions = zBaseInputOptions.extend({
-  control_after_generate: z.boolean().optional(),
+  control_after_generate: z
+    .union([z.boolean(), z.enum(CONTROL_OPTIONS)])
+    .optional(),
   image_upload: z.boolean().optional(),
   image_folder: resultItemType.optional(),
   allow_batch: z.boolean().optional(),
   video_upload: z.boolean().optional(),
   audio_upload: z.boolean().optional(),
+  mesh_upload: z.boolean().optional(),
+  upload_subfolder: z.string().optional(),
   animated_image_upload: z.boolean().optional(),
   options: z.array(zComboOption).optional(),
   remote: zRemoteWidgetConfig.optional(),
@@ -253,6 +260,7 @@ export const zComfyNodeDef = z.object({
   description: z.string(),
   help: z.string().optional(),
   category: z.string(),
+  main_category: z.string().optional(),
   output_node: z.boolean(),
   python_module: z.string(),
   deprecated: z.boolean().optional(),
@@ -280,7 +288,9 @@ export const zComfyNodeDef = z.object({
    * Contains a JSONata expression to calculate pricing based on widget values
    * and input connectivity.
    */
-  price_badge: zPriceBadge.optional()
+  price_badge: zPriceBadge.optional(),
+  /** Category for the Essentials tab. If set, the node appears in Essentials. */
+  essentials_category: z.string().optional()
 })
 
 export const zAutogrowOptions = z.object({

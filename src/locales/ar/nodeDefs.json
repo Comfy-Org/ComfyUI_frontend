@@ -208,6 +208,47 @@
       }
     }
   },
+  "AudioEqualizer3Band": {
+    "display_name": "موازن الصوت (٣ نطاقات)",
+    "inputs": {
+      "audio": {
+        "name": "الصوت"
+      },
+      "high_freq": {
+        "name": "تردد الحدة",
+        "tooltip": "تردد القطع للنطاق العالي"
+      },
+      "high_gain_dB": {
+        "name": "تعزيز الحدة (ديسيبل)",
+        "tooltip": "التحكم في مستوى الترددات العالية (الحدة)"
+      },
+      "low_freq": {
+        "name": "تردد الجهير",
+        "tooltip": "تردد القطع للنطاق المنخفض"
+      },
+      "low_gain_dB": {
+        "name": "تعزيز الجهير (ديسيبل)",
+        "tooltip": "التحكم في مستوى الترددات المنخفضة (الجهير)"
+      },
+      "mid_freq": {
+        "name": "تردد الوسطى",
+        "tooltip": "تردد المركز للنطاق المتوسط"
+      },
+      "mid_gain_dB": {
+        "name": "تعزيز الوسطى (ديسيبل)",
+        "tooltip": "التحكم في مستوى الترددات المتوسطة"
+      },
+      "mid_q": {
+        "name": "عامل Q للوسطى",
+        "tooltip": "معامل Q (عرض النطاق) للترددات المتوسطة"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "AudioMerge": {
     "description": "دمج مسارين صوتيين عن طريق تراكب موجاتهما.",
     "display_name": "دمج الصوت",
@@ -353,15 +394,6 @@
         "name": "الإشراف",
         "tooltip": "إعدادات الإشراف"
       },
-      "moderation_prompt_content_moderation": {
-        "name": "إشراف محتوى التوجيه"
-      },
-      "moderation_visual_input_moderation": {
-        "name": "إشراف الإدخال البصري"
-      },
-      "moderation_visual_output_moderation": {
-        "name": "إشراف الإخراج البصري"
-      },
       "negative_prompt": {
         "name": "توجيه سلبي"
       },
@@ -386,6 +418,56 @@
       },
       "1": {
         "name": "توجيه منظم",
+        "tooltip": null
+      }
+    }
+  },
+  "BriaRemoveImageBackground": {
+    "description": "إزالة الخلفية من صورة باستخدام Bria RMBG 2.0.",
+    "display_name": "Bria إزالة خلفية الصورة",
+    "inputs": {
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "image": {
+        "name": "صورة"
+      },
+      "moderation": {
+        "name": "الإشراف",
+        "tooltip": "إعدادات الإشراف"
+      },
+      "seed": {
+        "name": "البذرة",
+        "tooltip": "تتحكم البذرة فيما إذا كان يجب إعادة تشغيل العقدة؛ النتائج غير حتمية بغض النظر عن البذرة."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "BriaRemoveVideoBackground": {
+    "description": "إزالة الخلفية من فيديو باستخدام Bria.",
+    "display_name": "Bria إزالة خلفية الفيديو",
+    "inputs": {
+      "background_color": {
+        "name": "لون الخلفية",
+        "tooltip": "لون الخلفية للفيديو الناتج."
+      },
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "seed": {
+        "name": "البذرة",
+        "tooltip": "تتحكم البذرة فيما إذا كان يجب إعادة تشغيل العقدة؛ النتائج غير حتمية بغض النظر عن البذرة."
+      },
+      "video": {
+        "name": "فيديو"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -1266,6 +1348,21 @@
       }
     }
   },
+  "ColorToRGBInt": {
+    "description": "تحويل لون إلى قيمة عددية لنظام RGB.",
+    "display_name": "تحويل اللون إلى قيمة RGB عددية",
+    "inputs": {
+      "color": {
+        "name": "اللون"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "قيمة RGB عددية",
+        "tooltip": null
+      }
+    }
+  },
   "CombineHooks2": {
     "display_name": "دمج الخطافات [2]",
     "inputs": {
@@ -1575,14 +1672,14 @@
         "name": "إجمالي الثواني"
       }
     },
-    "outputs": [
-      {
+    "outputs": {
+      "0": {
         "tooltip": null
       },
-      {
+      "1": {
         "tooltip": null
       }
-    ]
+    }
   },
   "ConditioningTimestepsRange": {
     "display_name": "نطاق الخطوات الزمنية",
@@ -2003,6 +2100,20 @@
       }
     }
   },
+  "CreateList": {
+    "display_name": "إنشاء قائمة",
+    "inputs": {
+      "inputs": {
+        "name": "المدخلات"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "قائمة",
+        "tooltip": null
+      }
+    }
+  },
   "CreateVideo": {
     "description": "إنشاء فيديو من الصور.",
     "display_name": "إنشاء فيديو",
@@ -2059,13 +2170,12 @@
       "index": {},
       "option1": {}
     },
-    "outputs": [
-      null,
-      {
+    "outputs": {
+      "1": {
         "name": "الفهرس",
         "tooltip": null
       }
-    ]
+    }
   },
   "DiffControlNetLoader": {
     "display_name": "تحميل نموذج ControlNet (فرق)",
@@ -2187,6 +2297,23 @@
     "outputs": {
       "0": {
         "tooltip": "النموذج مع ذاكرة التخزين المؤقت السهلة."
+      }
+    }
+  },
+  "EmptyAceStep1_5LatentAudio": {
+    "display_name": "Empty Ace Step 1.5 Latent Audio",
+    "inputs": {
+      "batch_size": {
+        "name": "حجم الدفعة",
+        "tooltip": "عدد صور latent في الدفعة."
+      },
+      "seconds": {
+        "name": "ثواني"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -3348,17 +3475,17 @@
         "name": "صورة"
       }
     },
-    "outputs": [
-      {
+    "outputs": {
+      "0": {
         "tooltip": null
       },
-      {
+      "1": {
         "tooltip": null
       },
-      {
+      "2": {
         "tooltip": null
       }
-    ]
+    }
   },
   "GetVideoComponents": {
     "description": "يستخرج جميع المكونات من الفيديو: الإطارات، الصوت، ومعدل الإطارات.",
@@ -3539,6 +3666,50 @@
       }
     }
   },
+  "HitPawGeneralImageEnhance": {
+    "description": "تكبير الصور منخفضة الدقة إلى دقة فائقة، إزالة الشوائب والضوضاء. الحد الأقصى للإخراج: ٣٢ ميغابيكسل.",
+    "display_name": "تحسين الصورة العام من HitPaw",
+    "inputs": {
+      "auto_downscale": {
+        "name": "تصغير تلقائي",
+        "tooltip": "تصغير الصورة المدخلة تلقائياً إذا تجاوز الإخراج الحد المسموح."
+      },
+      "image": {
+        "name": "الصورة"
+      },
+      "model": {
+        "name": "النموذج"
+      },
+      "upscale_factor": {
+        "name": "عامل التكبير"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HitPawVideoEnhance": {
+    "description": "تكبير مقاطع الفيديو منخفضة الدقة إلى دقة عالية، إزالة الشوائب والضوضاء. الأسعار لكل ثانية من الفيديو.",
+    "display_name": "تحسين الفيديو العام من HitPaw",
+    "inputs": {
+      "model": {
+        "name": "النموذج"
+      },
+      "model_resolution": {
+        "name": "الدقة"
+      },
+      "video": {
+        "name": "الفيديو"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "Hunyuan3Dv2Conditioning": {
     "display_name": "Hunyuan3Dv2التكييف",
     "inputs": {
@@ -3546,14 +3717,14 @@
         "name": "مخرج_clip_الرؤية"
       }
     },
-    "outputs": [
-      {
+    "outputs": {
+      "0": {
         "tooltip": null
       },
-      {
+      "1": {
         "tooltip": null
       }
-    ]
+    }
   },
   "Hunyuan3Dv2ConditioningMultiView": {
     "display_name": "Hunyuan3Dv2التكييف متعدد الرؤى",
@@ -3571,14 +3742,14 @@
         "name": "الأيمن"
       }
     },
-    "outputs": [
-      {
+    "outputs": {
+      "0": {
         "tooltip": null
       },
-      {
+      "1": {
         "tooltip": null
       }
-    ]
+    }
   },
   "HunyuanImageToVideo": {
     "display_name": "Hunyuan صورة إلى فيديو",
@@ -4104,6 +4275,26 @@
       "y": {
         "name": "إحداثي Y"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ImageCropV2": {
+    "display_name": "قص الصورة",
+    "inputs": {
+      "crop_region": {
+        "name": "منطقة القص"
+      },
+      "height": {},
+      "image": {
+        "name": "الصورة"
+      },
+      "width": {},
+      "x": {},
+      "y": {}
     },
     "outputs": {
       "0": {
@@ -4934,6 +5125,46 @@
       }
     }
   },
+  "KlingFirstLastFrameNode": {
+    "description": "إنشاء مقاطع فيديو باستخدام Kling V3 من خلال الإطارين الأول والأخير.",
+    "display_name": "Kling 3.0 الإطار الأول والأخير إلى فيديو",
+    "inputs": {
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "duration": {
+        "name": "المدة"
+      },
+      "end_frame": {
+        "name": "الإطار الأخير"
+      },
+      "first_frame": {
+        "name": "الإطار الأول"
+      },
+      "generate_audio": {
+        "name": "توليد الصوت"
+      },
+      "model": {
+        "name": "النموذج",
+        "tooltip": "إعدادات النموذج والتوليد."
+      },
+      "model_resolution": {
+        "name": "الدقة"
+      },
+      "prompt": {
+        "name": "الوصف"
+      },
+      "seed": {
+        "name": "البذرة",
+        "tooltip": "البذرة تتحكم في ما إذا كان يجب إعادة تشغيل العقدة؛ النتائج غير حتمية بغض النظر عن البذرة."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "KlingImage2VideoNode": {
     "display_name": "كليغ صورة إلى فيديو",
     "inputs": {
@@ -4986,6 +5217,9 @@
       "aspect_ratio": {
         "name": "نسبة العرض إلى الارتفاع"
       },
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
       "human_fidelity": {
         "name": "تشابه الموضوع",
         "tooltip": "تشابه المرجع للموضوع البشري"
@@ -5014,6 +5248,10 @@
       "prompt": {
         "name": "نص التوجيه الإيجابي",
         "tooltip": "نص التوجيه الإيجابي"
+      },
+      "seed": {
+        "name": "البذرة",
+        "tooltip": "البذرة تتحكم في ما إذا كان يجب إعادة تشغيل العقدة؛ النتائج غير حتمية بغض النظر عن البذرة."
       }
     },
     "outputs": {
@@ -5146,6 +5384,9 @@
     "description": "حرر فيديو موجود باستخدام أحدث نموذج من Kling.",
     "display_name": "تحرير فيديو Kling Omni (احترافي)",
     "inputs": {
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
       "keep_original_sound": {
         "name": "الاحتفاظ بالصوت الأصلي"
       },
@@ -5163,6 +5404,10 @@
       "resolution": {
         "name": "الدقة"
       },
+      "seed": {
+        "name": "البذرة",
+        "tooltip": "البذرة تتحكم في ما إذا كان يجب إعادة تشغيل العقدة؛ النتائج غير حتمية بغض النظر عن البذرة."
+      },
       "video": {
         "name": "فيديو",
         "tooltip": "الفيديو للتحرير. سيكون طول الفيديو الناتج هو نفسه."
@@ -5178,6 +5423,9 @@
     "description": "استخدم إطار بداية، وإطار نهاية اختياري، أو صور مرجعية مع أحدث نموذج من Kling.",
     "display_name": "Kling Omni من الإطار الأول إلى الأخير إلى فيديو (احترافي)",
     "inputs": {
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
       "duration": {
         "name": "duration"
       },
@@ -5187,6 +5435,10 @@
       },
       "first_frame": {
         "name": "first_frame"
+      },
+      "generate_audio": {
+        "name": "توليد الصوت",
+        "tooltip": "توليد صوت للفيديو. مدعوم فقط لـ kling-v3-omni."
       },
       "model_name": {
         "name": "model_name"
@@ -5201,6 +5453,14 @@
       },
       "resolution": {
         "name": "resolution"
+      },
+      "seed": {
+        "name": "البذرة",
+        "tooltip": "البذرة تتحكم في ما إذا كان يجب إعادة تشغيل العقدة؛ النتائج غير حتمية بغض النظر عن البذرة."
+      },
+      "storyboards": {
+        "name": "لوحات القصة",
+        "tooltip": "إنشاء سلسلة من مقاطع الفيديو مع أوصاف ومدد فردية. مدعوم فقط لـ kling-v3-omni."
       }
     },
     "outputs": {
@@ -5216,6 +5476,9 @@
       "aspect_ratio": {
         "name": "aspect_ratio"
       },
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
       "model_name": {
         "name": "model_name"
       },
@@ -5229,6 +5492,14 @@
       },
       "resolution": {
         "name": "resolution"
+      },
+      "seed": {
+        "name": "البذرة",
+        "tooltip": "البذرة تتحكم في ما إذا كان يجب إعادة تشغيل العقدة؛ النتائج غير حتمية بغض النظر عن البذرة."
+      },
+      "series_amount": {
+        "name": "عدد السلاسل",
+        "tooltip": "إنشاء سلسلة من الصور. غير مدعوم لـ kling-image-o1."
       }
     },
     "outputs": {
@@ -5244,8 +5515,15 @@
       "aspect_ratio": {
         "name": "aspect_ratio"
       },
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
       "duration": {
         "name": "duration"
+      },
+      "generate_audio": {
+        "name": "توليد الصوت",
+        "tooltip": "توليد صوت للفيديو. مدعوم فقط لـ kling-v3-omni."
       },
       "model_name": {
         "name": "model_name"
@@ -5260,6 +5538,14 @@
       },
       "resolution": {
         "name": "resolution"
+      },
+      "seed": {
+        "name": "البذرة",
+        "tooltip": "البذرة تتحكم في ما إذا كان يجب إعادة تشغيل العقدة؛ النتائج غير حتمية بغض النظر عن البذرة."
+      },
+      "storyboards": {
+        "name": "لوحات القصة",
+        "tooltip": "إنشاء سلسلة من مقاطع الفيديو مع أوصاف ومدد فردية. مدعوم فقط لـ kling-v3-omni."
       }
     },
     "outputs": {
@@ -5275,8 +5561,14 @@
       "aspect_ratio": {
         "name": "aspect_ratio"
       },
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
       "duration": {
         "name": "duration"
+      },
+      "generate_audio": {
+        "name": "توليد الصوت"
       },
       "model_name": {
         "name": "model_name"
@@ -5287,6 +5579,14 @@
       },
       "resolution": {
         "name": "resolution"
+      },
+      "seed": {
+        "name": "البذرة",
+        "tooltip": "البذرة تتحكم في ما إذا كان يجب إعادة تشغيل العقدة؛ النتائج غير حتمية بغض النظر عن البذرة."
+      },
+      "storyboards": {
+        "name": "لوحات القصة",
+        "tooltip": "إنشاء سلسلة من مقاطع الفيديو مع أوصاف ومدد فردية. يتم تجاهلها لنموذج o1."
       }
     },
     "outputs": {
@@ -5301,6 +5601,9 @@
     "inputs": {
       "aspect_ratio": {
         "name": "aspect_ratio"
+      },
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
       },
       "duration": {
         "name": "duration"
@@ -5325,6 +5628,10 @@
       },
       "resolution": {
         "name": "resolution"
+      },
+      "seed": {
+        "name": "البذرة",
+        "tooltip": "تتحكم البذرة فيما إذا كان يجب إعادة تشغيل العقدة؛ النتائج غير حتمية بغض النظر عن البذرة."
       }
     },
     "outputs": {
@@ -5506,6 +5813,54 @@
       },
       "2": {
         "name": "duration",
+        "tooltip": null
+      }
+    }
+  },
+  "KlingVideoNode": {
+    "description": "إنشاء مقاطع فيديو باستخدام Kling V3. يدعم التحويل من نص إلى فيديو ومن صورة إلى فيديو مع إمكانية استخدام لوحة قصة متعددة التعليمات وخيار توليد الصوت.",
+    "display_name": "Kling 3.0 فيديو",
+    "inputs": {
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "generate_audio": {
+        "name": "توليد الصوت"
+      },
+      "model": {
+        "name": "النموذج",
+        "tooltip": "إعدادات النموذج والتوليد."
+      },
+      "model_aspect_ratio": {
+        "name": "نسبة العرض إلى الارتفاع"
+      },
+      "model_resolution": {
+        "name": "الدقة"
+      },
+      "multi_shot": {
+        "name": "متعدد اللقطات",
+        "tooltip": "إنشاء سلسلة من مقاطع الفيديو مع تعليمات ومدة زمنية منفصلة لكل مقطع."
+      },
+      "multi_shot_duration": {
+        "name": "المدة"
+      },
+      "multi_shot_negative_prompt": {
+        "name": "تعليمة سلبية"
+      },
+      "multi_shot_prompt": {
+        "name": "تعليمة"
+      },
+      "seed": {
+        "name": "البذرة",
+        "tooltip": "تتحكم البذرة فيما إذا كان يجب إعادة تشغيل العقدة؛ النتائج غير حتمية بغض النظر عن البذرة."
+      },
+      "start_frame": {
+        "name": "الإطار الابتدائي",
+        "tooltip": "صورة الإطار الابتدائي (اختياري). عند التوصيل، يتحول إلى وضع صورة إلى فيديو."
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -6342,7 +6697,7 @@
   "Load3D": {
     "display_name": "تحميل ثلاثي الأبعاد",
     "inputs": {
-      "clear": {},
+      "clear": "مسح",
       "height": {
         "name": "الارتفاع"
       },
@@ -6352,32 +6707,32 @@
       "model_file": {
         "name": "ملف النموذج"
       },
-      "upload 3d model": {},
-      "upload extra resources": {},
+      "upload 3d model": "رفع نموذج ثلاثي الأبعاد",
+      "upload extra resources": "رفع موارد إضافية",
       "width": {
         "name": "العرض"
       }
     },
-    "outputs": [
-      {
+    "outputs": {
+      "0": {
         "tooltip": null
       },
-      {
+      "1": {
         "tooltip": null
       },
-      {
+      "2": {
         "tooltip": null
       },
-      {
+      "3": {
         "tooltip": null
       },
-      {
+      "4": {
         "tooltip": null
       },
-      {
+      "5": {
         "tooltip": null
       }
-    ]
+    }
   },
   "LoadAudio": {
     "display_name": "تحميل الصوت",
@@ -6625,6 +6980,10 @@
   "LoraModelLoader": {
     "display_name": "تحميل نموذج LoRA",
     "inputs": {
+      "bypass": {
+        "name": "تجاوز",
+        "tooltip": "عند التفعيل، يتم تطبيق LoRA في وضع التجاوز دون تعديل أوزان النموذج الأساسي. مفيد أثناء التدريب وعند تفريغ أوزان النموذج."
+      },
       "lora": {
         "name": "lora",
         "tooltip": "نموذج LoRA لتطبيقه على نموذج الانتشار."
@@ -6638,11 +6997,11 @@
         "tooltip": "مدى قوة تعديل نموذج الانتشار. يمكن أن تكون هذه القيمة سالبة."
       }
     },
-    "outputs": [
-      {
+    "outputs": {
+      "0": {
         "name": "model"
       }
-    ]
+    }
   },
   "LoraSave": {
     "display_name": "استخراج وحفظ LoRA",
@@ -7089,6 +7448,88 @@
       }
     }
   },
+  "MagnificImageUpscalerCreativeNode": {
+    "description": "تحسين وتجميل موجه بالنص وتكبير ٢×/٤×/٨×/١٦×. الحد الأقصى للإخراج: ٢٥٫٣ ميغابيكسل.",
+    "display_name": "تكبير الصور Magnific (إبداعي)",
+    "inputs": {
+      "auto_downscale": {
+        "name": "تصغير تلقائي",
+        "tooltip": "تصغير الصورة تلقائيًا إذا تجاوز الإخراج الحد الأقصى للبكسل."
+      },
+      "creativity": {
+        "name": "الإبداع"
+      },
+      "engine": {
+        "name": "المحرك"
+      },
+      "fractality": {
+        "name": "التفصيلية",
+        "tooltip": "قوة النص التوجيهي والتعقيد لكل بكسل مربع."
+      },
+      "hdr": {
+        "name": "النطاق الديناميكي العالي (HDR)",
+        "tooltip": "مستوى الوضوح والتفاصيل."
+      },
+      "image": {
+        "name": "صورة"
+      },
+      "optimized_for": {
+        "name": "محسّن لـ"
+      },
+      "prompt": {
+        "name": "النص التوجيهي"
+      },
+      "resemblance": {
+        "name": "التشابه",
+        "tooltip": "مستوى التشابه مع الصورة الأصلية."
+      },
+      "scale_factor": {
+        "name": "عامل التكبير"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MagnificImageUpscalerPreciseV2Node": {
+    "description": "تكبير عالي الدقة مع تحكم دقيق في الحدة، الحبيبات، والتفاصيل. الحد الأقصى للإخراج: ١٠٠٦٠×١٠٠٦٠ بكسل.",
+    "display_name": "تكبير الصور Magnific (دقيق V2)",
+    "inputs": {
+      "auto_downscale": {
+        "name": "تصغير تلقائي",
+        "tooltip": "تصغير الصورة تلقائيًا إذا تجاوز الإخراج الحد الأقصى للدقة."
+      },
+      "flavor": {
+        "name": "النمط",
+        "tooltip": "أسلوب المعالجة: sublime للاستخدام العام، photo للصور الفوتوغرافية، photo_denoiser للصور الضوضائية."
+      },
+      "image": {
+        "name": "صورة"
+      },
+      "scale_factor": {
+        "name": "عامل التكبير"
+      },
+      "sharpen": {
+        "name": "الحدة",
+        "tooltip": "شدة وضوح الصورة. القيم الأعلى تزيد من وضوح الحواف والوضوح العام."
+      },
+      "smart_grain": {
+        "name": "تحسين الحبيبات الذكي",
+        "tooltip": "تعزيز ذكي للحبيبات/الملمس لمنع الصورة من أن تبدو ناعمة أو اصطناعية بشكل مفرط."
+      },
+      "ultra_detail": {
+        "name": "تفاصيل فائقة",
+        "tooltip": "التحكم في التفاصيل الدقيقة، والملمس، والتفاصيل الصغيرة المضافة أثناء التكبير."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "Mahiro": {
     "description": "تعديل التوجيه للتركيز أكثر على 'اتجاه' النص الإيجابي بدلاً من الفرق بين النص السلبي.",
     "display_name": "ماهيرو لطيفة جداً وتستحق دالة توجيه أفضل!! (。・ω・。)",
@@ -7238,8 +7679,12 @@
       }
     },
     "outputs": {
-      "0": {
-        "name": "model_file",
+      "1": {
+        "name": "GLB",
+        "tooltip": null
+      },
+      "2": {
+        "name": "FBX",
         "tooltip": null
       }
     }
@@ -7289,12 +7734,12 @@
       }
     },
     "outputs": {
-      "0": {
-        "name": "model_file",
+      "2": {
+        "name": "GLB",
         "tooltip": null
       },
-      "1": {
-        "name": "meshy_task_id",
+      "3": {
+        "name": "FBX",
         "tooltip": null
       }
     }
@@ -7344,12 +7789,12 @@
       }
     },
     "outputs": {
-      "0": {
-        "name": "model_file",
+      "2": {
+        "name": "GLB",
         "tooltip": null
       },
-      "1": {
-        "name": "meshy_task_id",
+      "3": {
+        "name": "FBX",
         "tooltip": null
       }
     }
@@ -7378,12 +7823,12 @@
       }
     },
     "outputs": {
-      "0": {
-        "name": "model_file",
+      "2": {
+        "name": "GLB",
         "tooltip": null
       },
-      "1": {
-        "name": "meshy_task_id",
+      "3": {
+        "name": "FBX",
         "tooltip": null
       }
     }
@@ -7405,12 +7850,12 @@
       }
     },
     "outputs": {
-      "0": {
-        "name": "model_file",
+      "2": {
+        "name": "GLB",
         "tooltip": null
       },
-      "1": {
-        "name": "rig_task_id",
+      "3": {
+        "name": "FBX",
         "tooltip": null
       }
     }
@@ -7453,12 +7898,12 @@
       }
     },
     "outputs": {
-      "0": {
-        "name": "model_file",
+      "2": {
+        "name": "GLB",
         "tooltip": null
       },
-      "1": {
-        "name": "meshy_task_id",
+      "3": {
+        "name": "FBX",
         "tooltip": null
       }
     }
@@ -7489,12 +7934,12 @@
       }
     },
     "outputs": {
-      "0": {
-        "name": "ملف النموذج",
+      "2": {
+        "name": "GLB",
         "tooltip": null
       },
-      "1": {
-        "name": "معرّف مهمة Meshy",
+      "3": {
+        "name": "FBX",
         "tooltip": null
       }
     }
@@ -9940,6 +10385,32 @@
       }
     }
   },
+  "NAGuidance": {
+    "description": "يطبق توجيه الانتباه المعياري على النماذج، مما يتيح استخدام المطالبات السلبية على النماذج المقطرة/schnell.",
+    "display_name": "توجيه الانتباه المعياري",
+    "inputs": {
+      "model": {
+        "name": "النموذج",
+        "tooltip": "النموذج الذي سيتم تطبيق NAG عليه."
+      },
+      "nag_alpha": {
+        "name": "معامل المزج",
+        "tooltip": "معامل المزج للانتباه المعياري. القيمة 1.0 تعني استبدال كامل، 0.0 تعني عدم وجود تأثير."
+      },
+      "nag_scale": {
+        "name": "عامل مقياس التوجيه",
+        "tooltip": "عامل مقياس التوجيه. القيم الأعلى تدفع أبعد عن المطالبة السلبية."
+      },
+      "nag_tau": {
+        "name": "nag_tau"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "النموذج المعدل مع تفعيل NAG."
+      }
+    }
+  },
   "NormalizeImages": {
     "display_name": "تطبيع الصور",
     "inputs": {
@@ -10695,18 +11166,24 @@
         "name": "معلومات الكاميرا"
       },
       "image": {
-        "name": "الصورة"
+        "name": "صورة"
       },
       "model_file": {
-        "name": "ملف النموذج"
+        "name": "ملف النموذج",
+        "tooltip": "ملف النموذج ثلاثي الأبعاد أو مسار الملف"
       }
     }
   },
   "PreviewAny": {
     "display_name": "معاينة أي",
     "inputs": {
-      "preview": {},
       "previewMode": {},
+      "preview_markdown": {
+        "name": "معاينة"
+      },
+      "preview_text": {
+        "name": "معاينة"
+      },
       "source": {
         "name": "المصدر"
       }
@@ -10737,6 +11214,28 @@
     "inputs": {
       "value": {
         "name": "القيمة"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PrimitiveBoundingBox": {
+    "display_name": "مربع التحديد",
+    "inputs": {
+      "height": {
+        "name": "الارتفاع"
+      },
+      "width": {
+        "name": "العرض"
+      },
+      "x": {
+        "name": "س"
+      },
+      "y": {
+        "name": "ص"
       }
     },
     "outputs": {
@@ -10978,6 +11477,25 @@
     "outputs": {
       "0": {
         "name": "عناصر تحكم إعادة الصياغة",
+        "tooltip": null
+      }
+    }
+  },
+  "RecraftCreateStyleNode": {
+    "description": "أنشئ نمطًا مخصصًا من صور مرجعية. قم برفع ١ إلى ٥ صور لاستخدامها كمرجع للنمط. الحجم الإجمالي لجميع الصور محدود بـ ٥ ميجابايت.",
+    "display_name": "إنشاء نمط مخصص Recraft",
+    "inputs": {
+      "images": {
+        "name": "الصور"
+      },
+      "style": {
+        "name": "النمط",
+        "tooltip": "النمط الأساسي للصور المُولدة."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "معرّف النمط",
         "tooltip": null
       }
     }
@@ -11289,6 +11807,88 @@
       }
     }
   },
+  "RecraftV4TextToImageNode": {
+    "description": "ينتج صورًا باستخدام نماذج Recraft V4 أو V4 Pro.",
+    "display_name": "Recraft V4 تحويل النص إلى صورة",
+    "inputs": {
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "model": {
+        "name": "النموذج",
+        "tooltip": "النموذج المستخدم في التوليد."
+      },
+      "model_size": {
+        "name": "الحجم"
+      },
+      "n": {
+        "name": "عدد الصور",
+        "tooltip": "عدد الصور المراد إنشاؤها."
+      },
+      "negative_prompt": {
+        "name": "المطالبة السلبية",
+        "tooltip": "وصف نصي اختياري للعناصر غير المرغوب فيها في الصورة."
+      },
+      "prompt": {
+        "name": "المطالبة",
+        "tooltip": "المطالبة لإنشاء الصورة. الحد الأقصى ١٠٬٠٠٠ حرف."
+      },
+      "recraft_controls": {
+        "name": "عناصر تحكم Recraft",
+        "tooltip": "عناصر تحكم إضافية اختيارية في التوليد عبر عقدة عناصر تحكم Recraft."
+      },
+      "seed": {
+        "name": "البذرة",
+        "tooltip": "بذرة لتحديد ما إذا كان يجب إعادة تشغيل العقدة؛ النتائج الفعلية غير حتمية بغض النظر عن البذرة."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "RecraftV4TextToVectorNode": {
+    "description": "ينتج SVG باستخدام نماذج Recraft V4 أو V4 Pro.",
+    "display_name": "Recraft V4 تحويل النص إلى متجه",
+    "inputs": {
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "model": {
+        "name": "النموذج",
+        "tooltip": "النموذج المستخدم في التوليد."
+      },
+      "model_size": {
+        "name": "الحجم"
+      },
+      "n": {
+        "name": "عدد الصور",
+        "tooltip": "عدد الصور المراد إنشاؤها."
+      },
+      "negative_prompt": {
+        "name": "المطالبة السلبية",
+        "tooltip": "وصف نصي اختياري للعناصر غير المرغوب فيها في الصورة."
+      },
+      "prompt": {
+        "name": "المطالبة",
+        "tooltip": "المطالبة لإنشاء الصورة. الحد الأقصى ١٠٬٠٠٠ حرف."
+      },
+      "recraft_controls": {
+        "name": "عناصر تحكم Recraft",
+        "tooltip": "عناصر تحكم إضافية اختيارية في التوليد عبر عقدة عناصر تحكم Recraft."
+      },
+      "seed": {
+        "name": "البذرة",
+        "tooltip": "بذرة لتحديد ما إذا كان يجب إعادة تشغيل العقدة؛ النتائج الفعلية غير حتمية بغض النظر عن البذرة."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "RecraftVectorizeImageNode": {
     "description": "ينشئ SVG بشكل متزامن من صورة إدخال.",
     "display_name": "إعادة صياغة تحويل الصورة إلى متجه",
@@ -11312,6 +11912,23 @@
       },
       "latent": {
         "name": "كامن"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ReferenceTimbreAudio": {
+    "description": "تحدد هذه العقدة الصوت المرجعي للـ timbre (لـ ace step 1.5)",
+    "display_name": "ReferenceTimbreAudio",
+    "inputs": {
+      "conditioning": {
+        "name": "تهيئة"
+      },
+      "latent": {
+        "name": "latent"
       }
     },
     "outputs": {
@@ -11649,8 +12266,8 @@
       }
     },
     "outputs": {
-      "0": {
-        "name": "مسار_النموذج_ثلاثي_الأبعاد",
+      "1": {
+        "name": "GLB",
         "tooltip": null
       }
     }
@@ -11676,8 +12293,8 @@
       }
     },
     "outputs": {
-      "0": {
-        "name": "مسار النموذج ثلاثي الأبعاد",
+      "1": {
+        "name": "GLB",
         "tooltip": null
       }
     }
@@ -11700,8 +12317,8 @@
       }
     },
     "outputs": {
-      "0": {
-        "name": "مسار النموذج ثلاثي الأبعاد",
+      "1": {
+        "name": "GLB",
         "tooltip": null
       }
     }
@@ -11718,8 +12335,8 @@
       }
     },
     "outputs": {
-      "0": {
-        "name": "مسار النموذج ثلاثي الأبعاد",
+      "1": {
+        "name": "GLB",
         "tooltip": null
       }
     }
@@ -11742,8 +12359,8 @@
       }
     },
     "outputs": {
-      "0": {
-        "name": "مسار النموذج ثلاثي الأبعاد",
+      "1": {
+        "name": "GLB",
         "tooltip": null
       }
     }
@@ -12040,14 +12657,14 @@
         "name": "سيغما"
       }
     },
-    "outputs": [
-      {
+    "outputs": {
+      "0": {
         "tooltip": null
       },
-      {
+      "1": {
         "tooltip": null
       }
-    ]
+    }
   },
   "SamplerCustomAdvanced": {
     "display_name": "المُعين المخصص المتقدم",
@@ -12068,14 +12685,14 @@
         "name": "سيغما"
       }
     },
-    "outputs": [
-      {
+    "outputs": {
+      "0": {
         "tooltip": null
       },
-      {
+      "1": {
         "tooltip": null
       }
-    ]
+    }
   },
   "SamplerDPMAdaptative": {
     "display_name": "المُعين DPM التكيفي",
@@ -12373,11 +12990,11 @@
         "name": "نسبة أخذ العينات"
       }
     },
-    "outputs": [
-      {
+    "outputs": {
+      "0": {
         "tooltip": null
       }
-    ]
+    }
   },
   "SaveAnimatedPNG": {
     "display_name": "حفظ PNG متحرك",
@@ -12474,10 +13091,11 @@
         "name": "بادئة اسم الملف"
       },
       "image": {
-        "name": "الصورة"
+        "name": "صورة"
       },
       "mesh": {
-        "name": "الشبكة"
+        "name": "الشبكة",
+        "tooltip": "شبكة أو ملف GLB للحفظ"
       }
     }
   },
@@ -12931,14 +13549,14 @@
         "name": "صوت"
       }
     },
-    "outputs": [
-      {
+    "outputs": {
+      "0": {
         "tooltip": null
       },
-      {
+      "1": {
         "tooltip": null
       }
-    ]
+    }
   },
   "SplitImageWithAlpha": {
     "display_name": "فصل الصورة مع ألفا",
@@ -12966,14 +13584,14 @@
         "name": "الخطوة"
       }
     },
-    "outputs": [
-      {
+    "outputs": {
+      "0": {
         "tooltip": null
       },
-      {
+      "1": {
         "tooltip": null
       }
-    ]
+    }
   },
   "SplitSigmasDenoise": {
     "display_name": "فصل Sigmas إزالة التشويش",
@@ -12985,14 +13603,14 @@
         "name": "Sigmas"
       }
     },
-    "outputs": [
-      {
+    "outputs": {
+      "0": {
         "tooltip": null
       },
-      {
+      "1": {
         "tooltip": null
       }
-    ]
+    }
   },
   "StabilityAudioInpaint": {
     "description": "يحول جزءًا من عينة الصوت الحالية باستخدام تعليمات نصية.",
@@ -13694,6 +14312,29 @@
       }
     }
   },
+  "Tencent3DPartNode": {
+    "description": "تنفيذ التعرف على المكونات وتوليدها تلقائيًا بناءً على هيكل النموذج.",
+    "display_name": "Hunyuan3D: جزء ثلاثي الأبعاد",
+    "inputs": {
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "model_3d": {
+        "name": "نموذج_ثلاثي_الأبعاد",
+        "tooltip": "نموذج ثلاثي الأبعاد بصيغة FBX. يجب أن يحتوي النموذج على أقل من ٣٠٠٠٠ وجه."
+      },
+      "seed": {
+        "name": "البذرة",
+        "tooltip": "تتحكم البذرة فيما إذا كان يجب إعادة تشغيل العقدة؛ النتائج غير حتمية بغض النظر عن البذرة."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "FBX",
+        "tooltip": null
+      }
+    }
+  },
   "TencentImageToModelNode": {
     "display_name": "Hunyuan3D: من صورة إلى نموذج (احترافي)",
     "inputs": {
@@ -13731,8 +14372,12 @@
       }
     },
     "outputs": {
-      "0": {
-        "name": "ملف النموذج",
+      "1": {
+        "name": "GLB",
+        "tooltip": null
+      },
+      "2": {
+        "name": "OBJ",
         "tooltip": null
       }
     }
@@ -13766,8 +14411,12 @@
       }
     },
     "outputs": {
-      "0": {
-        "name": "ملف النموذج",
+      "1": {
+        "name": "GLB",
+        "tooltip": null
+      },
+      "2": {
+        "name": "OBJ",
         "tooltip": null
       }
     }
@@ -13786,6 +14435,65 @@
       },
       "tags": {
         "name": "علامات"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "TextEncodeAceStepAudio1_5": {
+    "display_name": "TextEncodeAceStepAudio1.5",
+    "inputs": {
+      "bpm": {
+        "name": "الإيقاع (BPM)"
+      },
+      "cfg_scale": {
+        "name": "cfg_scale"
+      },
+      "clip": {
+        "name": "clip"
+      },
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "duration": {
+        "name": "المدة"
+      },
+      "generate_audio_codes": {
+        "name": "توليد رموز الصوت",
+        "tooltip": "تفعيل نموذج اللغة الكبير (LLM) الذي يولد رموز الصوت. قد يكون بطيئًا لكنه سيزيد من جودة الصوت الناتج. قم بإيقاف هذا الخيار إذا كنت تقدم مرجعًا صوتيًا للنموذج."
+      },
+      "keyscale": {
+        "name": "المقام الموسيقي"
+      },
+      "language": {
+        "name": "اللغة"
+      },
+      "lyrics": {
+        "name": "كلمات الأغنية"
+      },
+      "min_p": {
+        "name": "الحد الأدنى p"
+      },
+      "seed": {
+        "name": "البذرة"
+      },
+      "tags": {
+        "name": "الوسوم"
+      },
+      "temperature": {
+        "name": "درجة الحرارة"
+      },
+      "timesignature": {
+        "name": "توقيع الإيقاع"
+      },
+      "top_k": {
+        "name": "top_k"
+      },
+      "top_p": {
+        "name": "top_p"
       }
     },
     "outputs": {
@@ -14110,6 +14818,10 @@
         "name": "bypass_mode",
         "tooltip": "تفعيل وضع التجاوز أثناء التدريب. عند التفعيل، يتم تطبيق المحولات عبر forward hooks بدلاً من تعديل الأوزان. مفيد للنماذج المحوّلة حيث لا يمكن تعديل الأوزان مباشرة."
       },
+      "checkpoint_depth": {
+        "name": "عمق نقطة الحفظ",
+        "tooltip": "مستوى العمق لتسجيل نقاط التحقق من التدرج."
+      },
       "control_after_generate": {
         "name": "التحكم بعد التوليد"
       },
@@ -14145,6 +14857,10 @@
         "name": "نموذج",
         "tooltip": "النموذج الذي سيتم تدريب LoRA عليه."
       },
+      "offloading": {
+        "name": "تفريغ",
+        "tooltip": "مستوى العمق لتسجيل نقاط التحقق من التدرج."
+      },
       "optimizer": {
         "name": "المحسن",
         "tooltip": "المحسن المستخدم في التدريب."
@@ -14170,20 +14886,20 @@
         "tooltip": "نوع البيانات المستخدم في التدريب."
       }
     },
-    "outputs": [
-      {
+    "outputs": {
+      "0": {
         "tooltip": "نموذج مع LoRA مطبق"
       },
-      {
+      "1": {
         "tooltip": "أوزان LoRA"
       },
-      {
+      "2": {
         "tooltip": "سجل الخسارة"
       },
-      {
+      "3": {
         "tooltip": "إجمالي خطوات التدريب"
       }
-    ]
+    }
   },
   "TrimAudioDuration": {
     "description": "قص موتر الصوت إلى النطاق الزمني المختار.",
@@ -14350,12 +15066,8 @@
       }
     },
     "outputs": {
-      "0": {
-        "name": "ملف النموذج",
-        "tooltip": null
-      },
-      "1": {
-        "name": "model task_id",
+      "2": {
+        "name": "GLB",
         "tooltip": null
       }
     }
@@ -14411,12 +15123,8 @@
       }
     },
     "outputs": {
-      "0": {
-        "name": "ملف_النموذج",
-        "tooltip": null
-      },
-      "1": {
-        "name": "معرف_مهمة_النموذج",
+      "2": {
+        "name": "GLB",
         "tooltip": null
       }
     }
@@ -14431,12 +15139,8 @@
       }
     },
     "outputs": {
-      "0": {
-        "name": "ملف_النموذج",
-        "tooltip": null
-      },
-      "1": {
-        "name": "معرف_مهمة_النموذج",
+      "2": {
+        "name": "GLB",
         "tooltip": null
       }
     }
@@ -14452,12 +15156,8 @@
       }
     },
     "outputs": {
-      "0": {
-        "name": "ملف_النموذج",
-        "tooltip": null
-      },
-      "1": {
-        "name": "معرف_مهمة_إعادة_التوجيه",
+      "2": {
+        "name": "GLB",
         "tooltip": null
       }
     }
@@ -14470,12 +15170,8 @@
       }
     },
     "outputs": {
-      "0": {
-        "name": "ملف_النموذج",
-        "tooltip": null
-      },
-      "1": {
-        "name": "معرف_مهمة_التجهيز",
+      "2": {
+        "name": "GLB",
         "tooltip": null
       }
     }
@@ -14524,12 +15220,8 @@
       }
     },
     "outputs": {
-      "0": {
-        "name": "ملف_النموذج",
-        "tooltip": null
-      },
-      "1": {
-        "name": "معرف_مهمة_النموذج",
+      "2": {
+        "name": "GLB",
         "tooltip": null
       }
     }
@@ -14557,12 +15249,8 @@
       }
     },
     "outputs": {
-      "0": {
-        "name": "ملف_النموذج",
-        "tooltip": null
-      },
-      "1": {
-        "name": "معرف_مهمة_النموذج",
+      "2": {
+        "name": "GLB",
         "tooltip": null
       }
     }
@@ -14723,6 +15411,28 @@
     "inputs": {
       "samples": {
         "name": "عينات"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "VAEDecodeAudioTiled": {
+    "display_name": "فك ترميز الصوت بواسطة VAE (مجزأ)",
+    "inputs": {
+      "overlap": {
+        "name": "تداخل"
+      },
+      "samples": {
+        "name": "عينات"
+      },
+      "tile_size": {
+        "name": "حجم التجزئة"
       },
       "vae": {
         "name": "vae"
@@ -15047,6 +15757,31 @@
       }
     }
   },
+  "Video Slice": {
+    "display_name": "تقطيع الفيديو",
+    "inputs": {
+      "duration": {
+        "name": "المدة",
+        "tooltip": "المدة بالثواني، أو 0 لمدة غير محدودة"
+      },
+      "start_time": {
+        "name": "وقت البدء",
+        "tooltip": "وقت البدء بالثواني"
+      },
+      "strict_duration": {
+        "name": "مدة صارمة",
+        "tooltip": "إذا كانت القيمة صحيحة، سيتم رفع خطأ عند عدم إمكانية تحقيق المدة المحددة."
+      },
+      "video": {
+        "name": "الفيديو"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "VideoLinearCFGGuidance": {
     "display_name": "توجيه VideoLinearCFG",
     "inputs": {
@@ -15229,6 +15964,159 @@
       }
     }
   },
+  "Vidu3ImageToVideoNode": {
+    "description": "إنشاء فيديو من صورة ونص اختياري.",
+    "display_name": "توليد فيديو من صورة Vidu Q3",
+    "inputs": {
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "image": {
+        "name": "الصورة",
+        "tooltip": "صورة تُستخدم كإطار بداية للفيديو المُنتج."
+      },
+      "model": {
+        "name": "النموذج",
+        "tooltip": "النموذج المستخدم لتوليد الفيديو."
+      },
+      "model_audio": {
+        "name": "الصوت"
+      },
+      "model_duration": {
+        "name": "المدة"
+      },
+      "model_resolution": {
+        "name": "الدقة"
+      },
+      "prompt": {
+        "name": "النص",
+        "tooltip": "نص اختياري لتوليد الفيديو (بحد أقصى ٢٠٠٠ حرف)."
+      },
+      "seed": {
+        "name": "البذرة"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Vidu3StartEndToVideoNode": {
+    "description": "إنشاء فيديو من إطار بداية، إطار نهاية، ونص توجيهي.",
+    "display_name": "توليد فيديو من إطار البداية/النهاية باستخدام Vidu Q3",
+    "inputs": {
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "end_frame": {
+        "name": "إطار النهاية"
+      },
+      "first_frame": {
+        "name": "إطار البداية"
+      },
+      "model": {
+        "name": "النموذج",
+        "tooltip": "النموذج المستخدم لتوليد الفيديو."
+      },
+      "model_audio": {
+        "name": "الصوت"
+      },
+      "model_duration": {
+        "name": "المدة"
+      },
+      "model_resolution": {
+        "name": "الدقة"
+      },
+      "prompt": {
+        "name": "النص التوجيهي",
+        "tooltip": "وصف النص التوجيهي (بحد أقصى ٢٠٠٠ حرف)."
+      },
+      "seed": {
+        "name": "البذرة"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Vidu3TextToVideoNode": {
+    "description": "إنشاء فيديو من نص.",
+    "display_name": "توليد فيديو من نص Vidu Q3",
+    "inputs": {
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "model": {
+        "name": "النموذج",
+        "tooltip": "النموذج المستخدم لتوليد الفيديو."
+      },
+      "model_aspect_ratio": {
+        "name": "نسبة العرض إلى الارتفاع"
+      },
+      "model_audio": {
+        "name": "الصوت"
+      },
+      "model_duration": {
+        "name": "المدة"
+      },
+      "model_resolution": {
+        "name": "الدقة"
+      },
+      "prompt": {
+        "name": "النص",
+        "tooltip": "وصف نصي لتوليد الفيديو، بحد أقصى ٢٠٠٠ حرف."
+      },
+      "seed": {
+        "name": "البذرة"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ViduExtendVideoNode": {
+    "description": "تمديد فيديو موجود بإضافة إطارات جديدة.",
+    "display_name": "تمديد فيديو Vidu",
+    "inputs": {
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "end_frame": {
+        "name": "الإطار النهائي"
+      },
+      "model": {
+        "name": "النموذج",
+        "tooltip": "النموذج المستخدم لتمديد الفيديو."
+      },
+      "model_duration": {
+        "name": "المدة"
+      },
+      "model_resolution": {
+        "name": "الدقة"
+      },
+      "prompt": {
+        "name": "النص",
+        "tooltip": "نص اختياري للفيديو الممدد (بحد أقصى ٢٠٠٠ حرف)."
+      },
+      "seed": {
+        "name": "البذرة"
+      },
+      "video": {
+        "name": "الفيديو",
+        "tooltip": "الفيديو المصدر للتمديد."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ViduImageToVideoNode": {
     "description": "إنشاء فيديو من صورة ونص اختياري",
     "display_name": "إنشاء الفيديو من الصورة باستخدام Vidu",
@@ -15263,6 +16151,49 @@
       "seed": {
         "name": "البذرة",
         "tooltip": "البذرة لتوليد الفيديو (0 للعشوائية)"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ViduMultiFrameVideoNode": {
+    "description": "إنشاء فيديو بانتقالات بين إطارات رئيسية متعددة.",
+    "display_name": "توليد فيديو متعدد الإطارات Vidu",
+    "inputs": {
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "frames": {
+        "name": "الإطارات",
+        "tooltip": "عدد انتقالات الإطارات الرئيسية (٢-٩)."
+      },
+      "frames_duration1": {
+        "name": "المدة١"
+      },
+      "frames_duration2": {
+        "name": "المدة٢"
+      },
+      "frames_prompt1": {
+        "name": "النص١"
+      },
+      "frames_prompt2": {
+        "name": "النص٢"
+      },
+      "model": {
+        "name": "النموذج"
+      },
+      "resolution": {
+        "name": "الدقة"
+      },
+      "seed": {
+        "name": "البذرة"
+      },
+      "start_image": {
+        "name": "الصورة الابتدائية",
+        "tooltip": "صورة الإطار الأول. يجب أن تكون نسبة العرض إلى الارتفاع بين ١:٤ و٤:١."
       }
     },
     "outputs": {

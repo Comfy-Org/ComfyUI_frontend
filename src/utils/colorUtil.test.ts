@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 
+import type { ColorAdjustOptions } from '@/utils/colorUtil'
 import {
   adjustColor,
   hexToRgb,
@@ -22,13 +23,16 @@ interface ColorTestCase {
 type ColorFormat = 'hex' | 'rgb' | 'rgba' | 'hsl' | 'hsla'
 
 vi.mock('es-toolkit/compat', () => ({
-  memoize: (fn: any) => fn
+  memoize: <T extends (...args: unknown[]) => unknown>(fn: T) => fn
 }))
 
 const targetOpacity = 0.5
 const targetLightness = 0.5
 
-const assertColorVariationsMatch = (variations: string[], adjustment: any) => {
+const assertColorVariationsMatch = (
+  variations: string[],
+  adjustment: ColorAdjustOptions
+) => {
   for (let i = 0; i < variations.length - 1; i++) {
     expect(adjustColor(variations[i], adjustment)).toBe(
       adjustColor(variations[i + 1], adjustment)

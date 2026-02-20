@@ -30,7 +30,7 @@
           v-model="searchQuery"
           :autofocus="true"
           size="lg"
-          :placeholder="$t('g.searchPlaceholder')"
+          :placeholder="$t('g.searchPlaceholder', { subject: '' })"
           class="max-w-96"
         />
         <Button
@@ -51,6 +51,7 @@
     <template #contentFilter>
       <AssetFilterBar
         :assets="categoryFilteredAssets"
+        :show-ownership-filter
         @filter-change="updateFilters"
         @click.self="focusedAsset = null"
       />
@@ -125,19 +126,16 @@ const emit = defineEmits<{
 
 provide(OnCloseKey, props.onClose ?? (() => {}))
 
-// Compute the cache key based on nodeType or assetType
 const cacheKey = computed(() => {
   if (props.nodeType) return props.nodeType
   if (props.assetType) return `tag:${props.assetType}`
   return ''
 })
 
-// Read directly from store cache - reactive to any store updates
 const fetchedAssets = computed(() => assetStore.getAssets(cacheKey.value))
 
 const isStoreLoading = computed(() => assetStore.isModelLoading(cacheKey.value))
 
-// Only show loading spinner when loading AND no cached data
 const isLoading = computed(
   () => isStoreLoading.value && fetchedAssets.value.length === 0
 )
@@ -150,10 +148,8 @@ async function refreshAssets(): Promise<void> {
   }
 }
 
-// Trigger background refresh on mount
 void refreshAssets()
 
-// Eagerly fetch model types so they're available when ModelInfoPanel loads
 const { fetchModelTypes } = useModelTypes()
 void fetchModelTypes()
 
@@ -209,6 +205,12 @@ const displayTitle = computed(() => {
 const shouldShowLeftPanel = computed(() => {
   return props.showLeftPanel ?? true
 })
+
+const showOwnershipFilter = computed(
+  () =>
+    !shouldShowLeftPanel.value ||
+    (selectedNavItem.value !== 'all' && selectedNavItem.value !== 'imported')
+)
 
 const emptyMessage = computed(() => {
   if (!isImportedSelected.value) {

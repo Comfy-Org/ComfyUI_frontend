@@ -1,12 +1,28 @@
 import { FirebaseError } from 'firebase/app'
+import type { User, UserCredential } from 'firebase/auth'
 import * as firebaseAuth from 'firebase/auth'
-import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
+import type { Mock } from 'vitest'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import * as vuefire from 'vuefire'
 
 import { useDialogService } from '@/services/dialogService'
 import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
+import { createTestingPinia } from '@pinia/testing'
+
+// Hoisted mocks for dynamic imports
+const { mockDistributionTypes } = vi.hoisted(() => ({
+  mockDistributionTypes: {
+    isCloud: true,
+    isDesktop: true
+  }
+}))
+
+type MockUser = Omit<User, 'getIdToken'> & {
+  getIdToken: Mock
+}
+
+type MockAuth = Record<string, unknown>
 
 // Mock fetch
 const mockFetch = vi.fn()
@@ -83,54 +99,55 @@ vi.mock('@/stores/toastStore', () => ({
 // Mock useDialogService
 vi.mock('@/services/dialogService')
 
-const mockDistributionTypes = vi.hoisted(() => ({
-  isCloud: false,
-  isDesktop: false
-}))
-
-vi.mock('@/platform/distribution/types', () => mockDistributionTypes)
-
-const mockApiKeyStore = vi.hoisted(() => ({
-  getAuthHeader: vi.fn().mockReturnValue(null)
-}))
-
+// Mock apiKeyAuthStore
+const mockApiKeyGetAuthHeader = vi.fn().mockReturnValue(null)
 vi.mock('@/stores/apiKeyAuthStore', () => ({
-  useApiKeyAuthStore: () => mockApiKeyStore
+  useApiKeyAuthStore: () => ({
+    getAuthHeader: mockApiKeyGetAuthHeader,
+    getApiKey: vi.fn(),
+    currentUser: null,
+    isAuthenticated: false,
+    storeApiKey: vi.fn(),
+    clearStoredApiKey: vi.fn()
+  })
 }))
 
 describe('useFirebaseAuthStore', () => {
   let store: ReturnType<typeof useFirebaseAuthStore>
-  let authStateCallback: (user: any) => void
-  let idTokenCallback: (user: any) => void
+  let authStateCallback: (user: User | null) => void
+  let idTokenCallback: (user: User | null) => void
 
-  const mockAuth = {
+  const mockAuth: MockAuth = {
     /* mock Auth object */
   }
 
-  const mockUser = {
+  const mockUser: MockUser = {
     uid: 'test-user-id',
     email: 'test@example.com',
     getIdToken: vi.fn().mockResolvedValue('mock-id-token')
-  }
+  } as Partial<User> as MockUser
 
   beforeEach(() => {
     vi.resetAllMocks()
 
     // Setup dialog service mock
     vi.mocked(useDialogService, { partial: true }).mockReturnValue({
-      showSettingsDialog: vi.fn(),
       showErrorDialog: vi.fn()
     })
 
     // Mock useFirebaseAuth to return our mock auth object
-    vi.mocked(vuefire.useFirebaseAuth).mockReturnValue(mockAuth as any)
+    vi.mocked(vuefire.useFirebaseAuth).mockReturnValue(
+      mockAuth as Partial<
+        ReturnType<typeof vuefire.useFirebaseAuth>
+      > as ReturnType<typeof vuefire.useFirebaseAuth>
+    )
 
     // Mock onAuthStateChanged to capture the callback and simulate initial auth state
     vi.mocked(firebaseAuth.onAuthStateChanged).mockImplementation(
       (_, callback) => {
-        authStateCallback = callback as (user: any) => void
+        authStateCallback = callback as (user: User | null) => void
         // Call the callback with our mock user
-        ;(callback as (user: any) => void)(mockUser)
+        ;(callback as (user: User | null) => void)(mockUser)
         // Return an unsubscribe function
         return vi.fn()
       }
@@ -160,24 +177,32 @@ describe('useFirebaseAuthStore', () => {
     // Reset and set up getIdToken mock
     mockUser.getIdToken.mockReset()
     mockUser.getIdToken.mockResolvedValue('mock-id-token')
+
+    // Default: no API key auth
+    mockApiKeyGetAuthHeader.mockReturnValue(null)
   })
 
   describe('token refresh events', () => {
-    beforeEach(() => {
-      mockDistributionTypes.isCloud = true
-      mockDistributionTypes.isDesktop = true
+    beforeEach(async () => {
+      vi.resetModules()
+      vi.mock('@/platform/distribution/types', () => mockDistributionTypes)
 
       vi.mocked(firebaseAuth.onIdTokenChanged).mockImplementation(
         (_auth, callback) => {
-          idTokenCallback = callback as (user: any) => void
+          idTokenCallback = callback as (user: User | null) => void
           return vi.fn()
         }
       )
 
-      vi.mocked(vuefire.useFirebaseAuth).mockReturnValue(mockAuth as any)
+      vi.mocked(vuefire.useFirebaseAuth).mockReturnValue(
+        mockAuth as Partial<
+          ReturnType<typeof vuefire.useFirebaseAuth>
+        > as ReturnType<typeof vuefire.useFirebaseAuth>
+      )
 
       setActivePinia(createTestingPinia({ stubActions: false }))
-      store = useFirebaseAuthStore()
+      const storeModule = await import('@/stores/firebaseAuthStore')
+      store = storeModule.useFirebaseAuthStore()
     })
 
     it("should not increment tokenRefreshTrigger on the user's first ID token event", () => {
@@ -192,14 +217,14 @@ describe('useFirebaseAuthStore', () => {
     })
 
     it('should not increment when ID token event is for a different user UID', () => {
-      const otherUser = { uid: 'other-user-id' }
+      const otherUser = { uid: 'other-user-id' } as Partial<User> as User
       idTokenCallback?.(mockUser)
       idTokenCallback?.(otherUser)
       expect(store.tokenRefreshTrigger).toBe(0)
     })
 
     it('should increment after switching to a new UID and receiving a second event for that UID', () => {
-      const otherUser = { uid: 'other-user-id' }
+      const otherUser = { uid: 'other-user-id' } as Partial<User> as User
       idTokenCallback?.(mockUser)
       idTokenCallback?.(otherUser)
       idTokenCallback?.(otherUser)
@@ -238,7 +263,7 @@ describe('useFirebaseAuthStore', () => {
     // Now, succeed on next attempt
     vi.mocked(firebaseAuth.signInWithEmailAndPassword).mockResolvedValueOnce({
       user: mockUser
-    } as any)
+    } as Partial<UserCredential> as UserCredential)
 
     await store.login('test@example.com', 'correct-password')
   })
@@ -247,7 +272,7 @@ describe('useFirebaseAuthStore', () => {
     it('should login with valid credentials', async () => {
       const mockUserCredential = { user: mockUser }
       vi.mocked(firebaseAuth.signInWithEmailAndPassword).mockResolvedValue(
-        mockUserCredential as any
+        mockUserCredential as Partial<UserCredential> as UserCredential
       )
 
       const result = await store.login('test@example.com', 'password')
@@ -283,7 +308,7 @@ describe('useFirebaseAuthStore', () => {
       // Set up multiple login promises
       const mockUserCredential = { user: mockUser }
       vi.mocked(firebaseAuth.signInWithEmailAndPassword).mockResolvedValue(
-        mockUserCredential as any
+        mockUserCredential as Partial<UserCredential> as UserCredential
       )
 
       const loginPromise1 = store.login('user1@example.com', 'password1')
@@ -301,7 +326,7 @@ describe('useFirebaseAuthStore', () => {
     it('should register a new user', async () => {
       const mockUserCredential = { user: mockUser }
       vi.mocked(firebaseAuth.createUserWithEmailAndPassword).mockResolvedValue(
-        mockUserCredential as any
+        mockUserCredential as Partial<UserCredential> as UserCredential
       )
 
       const result = await store.register('new@example.com', 'password')
@@ -378,7 +403,7 @@ describe('useFirebaseAuthStore', () => {
       // Setup mock for login
       const mockUserCredential = { user: mockUser }
       vi.mocked(firebaseAuth.signInWithEmailAndPassword).mockResolvedValue(
-        mockUserCredential as any
+        mockUserCredential as Partial<UserCredential> as UserCredential
       )
 
       // Login
@@ -454,9 +479,6 @@ describe('useFirebaseAuthStore', () => {
       // This test reproduces the issue where getAuthHeader fails due to network errors
       // when Firebase Auth tries to refresh tokens offline
 
-      // Configure mockApiKeyStore to return null (no API key fallback)
-      mockApiKeyStore.getAuthHeader.mockReturnValue(null)
-
       // Setup user with network error on token refresh
       mockUser.getIdToken.mockReset()
       const networkError = new FirebaseError(
@@ -475,7 +497,7 @@ describe('useFirebaseAuthStore', () => {
       it('should sign in with Google', async () => {
         const mockUserCredential = { user: mockUser }
         vi.mocked(firebaseAuth.signInWithPopup).mockResolvedValue(
-          mockUserCredential as any
+          mockUserCredential as Partial<UserCredential> as UserCredential
         )
 
         const result = await store.loginWithGoogle()
@@ -508,7 +530,7 @@ describe('useFirebaseAuthStore', () => {
       it('should sign in with Github', async () => {
         const mockUserCredential = { user: mockUser }
         vi.mocked(firebaseAuth.signInWithPopup).mockResolvedValue(
-          mockUserCredential as any
+          mockUserCredential as Partial<UserCredential> as UserCredential
         )
 
         const result = await store.loginWithGithub()
@@ -540,7 +562,7 @@ describe('useFirebaseAuthStore', () => {
     it('should handle concurrent social login attempts correctly', async () => {
       const mockUserCredential = { user: mockUser }
       vi.mocked(firebaseAuth.signInWithPopup).mockResolvedValue(
-        mockUserCredential as any
+        mockUserCredential as Partial<UserCredential> as UserCredential
       )
 
       const googleLoginPromise = store.loginWithGoogle()
@@ -620,6 +642,48 @@ describe('useFirebaseAuthStore', () => {
       )
 
       await expect(store.accessBillingPortal()).rejects.toThrow()
+    })
+  })
+
+  describe('createCustomer', () => {
+    it('should succeed with API key auth when no Firebase user is present', async () => {
+      authStateCallback(null)
+      mockApiKeyGetAuthHeader.mockReturnValue({ 'X-API-KEY': 'test-api-key' })
+
+      const result = await store.createCustomer()
+
+      expect(mockFetch).toHaveBeenCalledWith(
+        expect.stringContaining('/customers'),
+        expect.objectContaining({
+          method: 'POST',
+          headers: expect.objectContaining({
+            'X-API-KEY': 'test-api-key'
+          })
+        })
+      )
+      expect(result).toEqual({ id: 'test-customer-id' })
+    })
+
+    it('should use Firebase token when Firebase user is present', async () => {
+      const result = await store.createCustomer()
+
+      expect(mockFetch).toHaveBeenCalledWith(
+        expect.stringContaining('/customers'),
+        expect.objectContaining({
+          method: 'POST',
+          headers: expect.objectContaining({
+            Authorization: 'Bearer mock-id-token'
+          })
+        })
+      )
+      expect(result).toEqual({ id: 'test-customer-id' })
+    })
+
+    it('should throw when no auth method is available', async () => {
+      authStateCallback(null)
+      mockApiKeyGetAuthHeader.mockReturnValue(null)
+
+      await expect(store.createCustomer()).rejects.toThrow()
     })
   })
 })

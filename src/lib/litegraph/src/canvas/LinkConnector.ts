@@ -115,10 +115,10 @@ export class LinkConnector {
   /** The reroute beneath the pointer, if it is a valid connection target. */
   overReroute?: Reroute
 
-  readonly #setConnectingLinks: (value: ConnectingLink[]) => void
+  private readonly _setConnectingLinks: (value: ConnectingLink[]) => void
 
   constructor(setConnectingLinks: (value: ConnectingLink[]) => void) {
-    this.#setConnectingLinks = setConnectingLinks
+    this._setConnectingLinks = setConnectingLinks
   }
 
   get isConnecting() {
@@ -253,7 +253,7 @@ export class LinkConnector {
     state.connectingTo = 'input'
     state.draggingExistingLinks = true
 
-    this.#setLegacyLinks(false)
+    this._setLegacyLinks(false)
   }
 
   /** Drag all links from an output to a new output. */
@@ -364,7 +364,7 @@ export class LinkConnector {
     state.multi = true
     state.connectingTo = 'output'
 
-    this.#setLegacyLinks(true)
+    this._setLegacyLinks(true)
   }
 
   /**
@@ -387,7 +387,7 @@ export class LinkConnector {
 
     state.connectingTo = 'input'
 
-    this.#setLegacyLinks(false)
+    this._setLegacyLinks(false)
   }
 
   /**
@@ -410,7 +410,7 @@ export class LinkConnector {
 
     state.connectingTo = 'output'
 
-    this.#setLegacyLinks(true)
+    this._setLegacyLinks(true)
   }
 
   dragNewFromSubgraphInput(
@@ -431,7 +431,7 @@ export class LinkConnector {
 
     this.state.connectingTo = 'input'
 
-    this.#setLegacyLinks(false)
+    this._setLegacyLinks(false)
   }
 
   dragNewFromSubgraphOutput(
@@ -452,7 +452,7 @@ export class LinkConnector {
 
     this.state.connectingTo = 'output'
 
-    this.#setLegacyLinks(true)
+    this._setLegacyLinks(true)
   }
 
   /**
@@ -489,7 +489,7 @@ export class LinkConnector {
 
       this.state.connectingTo = 'input'
 
-      this.#setLegacyLinks(false)
+      this._setLegacyLinks(false)
       return
     }
 
@@ -516,7 +516,7 @@ export class LinkConnector {
 
     this.state.connectingTo = 'input'
 
-    this.#setLegacyLinks(false)
+    this._setLegacyLinks(false)
   }
 
   /**
@@ -553,7 +553,7 @@ export class LinkConnector {
 
       this.state.connectingTo = 'output'
 
-      this.#setLegacyLinks(false)
+      this._setLegacyLinks(false)
       return
     }
 
@@ -581,7 +581,7 @@ export class LinkConnector {
 
     this.state.connectingTo = 'output'
 
-    this.#setLegacyLinks(true)
+    this._setLegacyLinks(true)
   }
 
   dragFromLinkSegment(network: LinkNetwork, linkSegment: LinkSegment): void {
@@ -603,7 +603,7 @@ export class LinkConnector {
 
     state.connectingTo = 'input'
 
-    this.#setLegacyLinks(false)
+    this._setLegacyLinks(false)
   }
 
   /**
@@ -754,7 +754,7 @@ export class LinkConnector {
       const output = node.getOutputOnPos([canvasX, canvasY])
 
       if (output) {
-        this.#dropOnOutput(node, output)
+        this._dropOnOutput(node, output)
       } else {
         this.connectToNode(node, event)
       }
@@ -765,7 +765,7 @@ export class LinkConnector {
 
       // Input slot
       if (inputOrSocket) {
-        this.#dropOnInput(node, inputOrSocket)
+        this._dropOnInput(node, inputOrSocket)
       } else {
         // Node background / title
         this.connectToNode(node, event)
@@ -911,7 +911,7 @@ export class LinkConnector {
         return
       }
 
-      this.#dropOnOutput(node, output)
+      this._dropOnOutput(node, output)
     } else if (connectingTo === 'input') {
       // Dropping new input link
       const input = node.findInputByType(firstLink.fromSlot.type)?.slot
@@ -922,11 +922,11 @@ export class LinkConnector {
         return
       }
 
-      this.#dropOnInput(node, input)
+      this._dropOnInput(node, input)
     }
   }
 
-  #dropOnInput(node: LGraphNode, input: INodeInputSlot): void {
+  private _dropOnInput(node: LGraphNode, input: INodeInputSlot): void {
     for (const link of this.renderLinks) {
       if (!link.canConnectToInput(node, input)) continue
 
@@ -934,7 +934,7 @@ export class LinkConnector {
     }
   }
 
-  #dropOnOutput(node: LGraphNode, output: INodeOutputSlot): void {
+  private _dropOnOutput(node: LGraphNode, output: INodeOutputSlot): void {
     for (const link of this.renderLinks) {
       if (!link.canConnectToOutput(node, output)) {
         if (
@@ -1014,7 +1014,7 @@ export class LinkConnector {
   }
 
   /** Sets connecting_links, used by some extensions still. */
-  #setLegacyLinks(fromSlotIsInput: boolean): void {
+  private _setLegacyLinks(fromSlotIsInput: boolean): void {
     const links = this.renderLinks.map((link) => {
       const input = fromSlotIsInput ? (link.fromSlot as INodeInputSlot) : null
       const output = fromSlotIsInput ? null : (link.fromSlot as INodeOutputSlot)
@@ -1033,7 +1033,7 @@ export class LinkConnector {
         afterRerouteId
       } satisfies ConnectingLink
     })
-    this.#setConnectingLinks(links)
+    this._setConnectingLinks(links)
   }
 
   /**

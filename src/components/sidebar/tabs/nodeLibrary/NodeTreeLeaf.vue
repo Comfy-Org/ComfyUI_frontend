@@ -1,5 +1,10 @@
 <template>
-  <div ref="container" class="node-lib-node-container">
+  <div
+    ref="container"
+    class="node-lib-node-container"
+    data-testid="node-tree-leaf"
+    :data-node-name="nodeDef.display_name"
+  >
     <TreeExplorerTreeNode :node="node" @contextmenu="handleContextMenu">
       <template #before-label>
         <Tag

@@ -1,10 +1,7 @@
 <template>
   <div
     :class="
-      cn(
-        WidgetInputBaseClass,
-        'p-1 inline-flex justify-center items-center gap-1'
-      )
+      cn(WidgetInputBaseClass, 'w-full p-1 flex min-w-0 items-center gap-1')
     "
   >
     <button
@@ -12,7 +9,7 @@
       :key="getOptionValue(option, index)"
       :class="
         cn(
-          'flex-1 h-6 px-5 py-[5px] rounded flex justify-center items-center gap-1 transition-all duration-150 ease-in-out truncate min-w-[4ch]',
+          'flex-1 min-w-0 h-6 px-5 py-[5px] rounded flex justify-center items-center gap-1 transition-all duration-150 ease-in-out truncate',
           'bg-transparent border-none',
           'text-center text-xs font-normal',
           {
@@ -76,25 +73,27 @@ const getOptionValue = (option: T, index: number): ModelValue => {
   }
 
   const valueField = props.optionValue
+  const optionRecord = option as Record<string, unknown>
   const value =
-    (option as any)[valueField] ??
+    optionRecord[valueField] ??
     option.value ??
-    (option as any).name ??
+    optionRecord.name ??
     option.label ??
     index
-  return value
+  return value as ModelValue
 }
 
 // for display with PrimeVue compatibility
 const getOptionLabel = (option: T): string => {
   if (typeof option === 'object' && option !== null) {
     const labelField = props.optionLabel
-    return (
-      (option as any)[labelField] ??
-      option.label ??
-      (option as any).name ??
-      option.value ??
-      String(option)
+    const optionRecord = option as Record<string, unknown>
+    return String(
+      optionRecord[labelField] ??
+        option.label ??
+        optionRecord.name ??
+        option.value ??
+        option
     )
   }
   return String(option)

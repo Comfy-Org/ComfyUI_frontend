@@ -55,8 +55,15 @@ vi.mock('@/composables/bottomPanelTabs/useTerminal', () => ({
 }))
 
 vi.mock('@/utils/envUtil', () => ({
-  isElectron: vi.fn(() => false),
   electronAPI: vi.fn(() => null)
+}))
+
+const mockData = vi.hoisted(() => ({ isDesktop: false }))
+
+vi.mock('@/platform/distribution/types', () => ({
+  get isDesktop() {
+    return mockData.isDesktop
+  }
 }))
 
 // Mock clipboard API

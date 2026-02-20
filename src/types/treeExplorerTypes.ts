@@ -1,13 +1,19 @@
+import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 import type { MenuItem } from 'primevue/menuitem'
 import type { TreeNode as PrimeVueTreeNode } from 'primevue/treenode'
-import type { InjectionKey, ModelRef } from 'vue'
+import type { InjectionKey, ModelRef, Ref } from 'vue'
 
 export interface TreeNode extends PrimeVueTreeNode {
   label: string
   children?: this[]
 }
 
-export interface TreeExplorerNode<T = any> extends TreeNode {
+export interface NodeLibrarySection {
+  title?: string
+  root: RenderedTreeExplorerNode<ComfyNodeDefImpl>
+}
+
+export interface TreeExplorerNode<T = unknown> extends TreeNode {
   data?: T
   children?: this[]
   icon?: string
@@ -46,7 +52,7 @@ export interface TreeExplorerNode<T = any> extends TreeNode {
   /** Function to handle dropping a node */
   handleDrop?: (
     this: TreeExplorerNode<T>,
-    data: TreeExplorerDragAndDropData
+    data: TreeExplorerDragAndDropData<T>
   ) => void | Promise<void>
   /** Function to handle clicking a node */
   handleClick?: (
@@ -58,10 +64,12 @@ export interface TreeExplorerNode<T = any> extends TreeNode {
   /** Extra context menu items */
   contextMenuItems?:
     | MenuItem[]
-    | ((targetNode: RenderedTreeExplorerNode) => MenuItem[])
+    | ((targetNode: RenderedTreeExplorerNode<T>) => MenuItem[])
 }
 
-export interface RenderedTreeExplorerNode<T = any> extends TreeExplorerNode<T> {
+export interface RenderedTreeExplorerNode<
+  T = unknown
+> extends TreeExplorerNode<T> {
   children?: this[]
   icon: string
   type: 'folder' | 'node'
@@ -73,7 +81,7 @@ export interface RenderedTreeExplorerNode<T = any> extends TreeExplorerNode<T> {
   isEditingLabel?: boolean
 }
 
-export type TreeExplorerDragAndDropData<T = any> = {
+export type TreeExplorerDragAndDropData<T = unknown> = {
   type: 'tree-explorer-node'
   data: RenderedTreeExplorerNode<T>
 }
@@ -84,4 +92,8 @@ export const InjectKeyHandleEditLabelFunction: InjectionKey<
 
 export const InjectKeyExpandedKeys: InjectionKey<
   ModelRef<Record<string, boolean>>
+> = Symbol()
+
+export const InjectKeyContextMenuNode: InjectionKey<
+  Ref<RenderedTreeExplorerNode<ComfyNodeDefImpl> | null>
 > = Symbol()

@@ -208,6 +208,47 @@
       }
     }
   },
+  "AudioEqualizer3Band": {
+    "display_name": "Equalizador de Áudio (3 Bandas)",
+    "inputs": {
+      "audio": {
+        "name": "áudio"
+      },
+      "high_freq": {
+        "name": "freq_aguda",
+        "tooltip": "Frequência de corte para o filtro de agudos"
+      },
+      "high_gain_dB": {
+        "name": "ganho_agudo_dB",
+        "tooltip": "Ganho para frequências altas (Agudo)"
+      },
+      "low_freq": {
+        "name": "freq_baixa",
+        "tooltip": "Frequência de corte para o filtro de graves"
+      },
+      "low_gain_dB": {
+        "name": "ganho_baixo_dB",
+        "tooltip": "Ganho para frequências baixas (Grave)"
+      },
+      "mid_freq": {
+        "name": "freq_média",
+        "tooltip": "Frequência central para médios"
+      },
+      "mid_gain_dB": {
+        "name": "ganho_médio_dB",
+        "tooltip": "Ganho para frequências médias"
+      },
+      "mid_q": {
+        "name": "q_médio",
+        "tooltip": "Fator Q (largura de banda) para médios"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "AudioMerge": {
     "description": "Combina duas faixas de áudio sobrepondo suas formas de onda.",
     "display_name": "Mesclar Áudio",
@@ -353,15 +394,6 @@
         "name": "moderação",
         "tooltip": "Configurações de moderação"
       },
-      "moderation_prompt_content_moderation": {
-        "name": "moderação_do_conteúdo_do_prompt"
-      },
-      "moderation_visual_input_moderation": {
-        "name": "moderação_da_entrada_visual"
-      },
-      "moderation_visual_output_moderation": {
-        "name": "moderação_da_saida_visual"
-      },
       "negative_prompt": {
         "name": "prompt_negativo"
       },
@@ -386,6 +418,56 @@
       },
       "1": {
         "name": "prompt_estruturado",
+        "tooltip": null
+      }
+    }
+  },
+  "BriaRemoveImageBackground": {
+    "description": "Remove o fundo de uma imagem usando Bria RMBG 2.0.",
+    "display_name": "Bria Remover Fundo da Imagem",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controlar após gerar"
+      },
+      "image": {
+        "name": "imagem"
+      },
+      "moderation": {
+        "name": "moderação",
+        "tooltip": "Configurações de moderação"
+      },
+      "seed": {
+        "name": "semente",
+        "tooltip": "A semente controla se o nó deve ser executado novamente; os resultados são não determinísticos independentemente da semente."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "BriaRemoveVideoBackground": {
+    "description": "Remove o fundo de um vídeo usando Bria.",
+    "display_name": "Bria Remover Fundo do Vídeo",
+    "inputs": {
+      "background_color": {
+        "name": "cor de fundo",
+        "tooltip": "Cor de fundo para o vídeo de saída."
+      },
+      "control_after_generate": {
+        "name": "controlar após gerar"
+      },
+      "seed": {
+        "name": "semente",
+        "tooltip": "A semente controla se o nó deve ser executado novamente; os resultados são não determinísticos independentemente da semente."
+      },
+      "video": {
+        "name": "vídeo"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -1266,6 +1348,21 @@
       }
     }
   },
+  "ColorToRGBInt": {
+    "description": "Converte uma cor em um valor inteiro RGB.",
+    "display_name": "Cor para RGB Int",
+    "inputs": {
+      "color": {
+        "name": "cor"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "rgb_int",
+        "tooltip": null
+      }
+    }
+  },
   "CombineHooks2": {
     "display_name": "Combinar Hooks [2]",
     "inputs": {
@@ -2005,6 +2102,20 @@
       }
     }
   },
+  "CreateList": {
+    "display_name": "Criar Lista",
+    "inputs": {
+      "inputs": {
+        "name": "entradas"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "lista",
+        "tooltip": null
+      }
+    }
+  },
   "CreateVideo": {
     "description": "Crie um vídeo a partir de imagens.",
     "display_name": "Criar Vídeo",
@@ -2061,13 +2172,12 @@
       "index": {},
       "option1": {}
     },
-    "outputs": [
-      null,
-      {
+    "outputs": {
+      "1": {
         "name": "ÍNDICE",
         "tooltip": null
       }
-    ]
+    }
   },
   "DiffControlNetLoader": {
     "display_name": "Carregar Modelo ControlNet (diff)",
@@ -2189,6 +2299,23 @@
     "outputs": {
       "0": {
         "tooltip": "O modelo com EasyCache."
+      }
+    }
+  },
+  "EmptyAceStep1_5LatentAudio": {
+    "display_name": "Empty Ace Step 1.5 Latent Audio",
+    "inputs": {
+      "batch_size": {
+        "name": "tamanho_do_lote",
+        "tooltip": "O número de imagens latentes no lote."
+      },
+      "seconds": {
+        "name": "segundos"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -3544,6 +3671,50 @@
       }
     }
   },
+  "HitPawGeneralImageEnhance": {
+    "description": "Aumente imagens de baixa resolução para super-resolução, eliminando artefatos e ruídos. Saída máxima: 32 megapixels.",
+    "display_name": "HitPaw General Image Enhance",
+    "inputs": {
+      "auto_downscale": {
+        "name": "auto_redimensionar",
+        "tooltip": "Redimensiona automaticamente a imagem de entrada se a saída exceder o limite."
+      },
+      "image": {
+        "name": "imagem"
+      },
+      "model": {
+        "name": "modelo"
+      },
+      "upscale_factor": {
+        "name": "fator_de_upscale"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HitPawVideoEnhance": {
+    "description": "Aumente vídeos de baixa resolução para alta resolução, eliminando artefatos e ruídos. Os preços exibidos são por segundo de vídeo.",
+    "display_name": "HitPaw Video Enhance",
+    "inputs": {
+      "model": {
+        "name": "modelo"
+      },
+      "model_resolution": {
+        "name": "resolução"
+      },
+      "video": {
+        "name": "vídeo"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "Hunyuan3Dv2Conditioning": {
     "display_name": "Hunyuan3Dv2Conditioning",
     "inputs": {
@@ -4113,6 +4284,26 @@
       "y": {
         "name": "y"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ImageCropV2": {
+    "display_name": "Corte de Imagem",
+    "inputs": {
+      "crop_region": {
+        "name": "região_de_corte"
+      },
+      "height": {},
+      "image": {
+        "name": "imagem"
+      },
+      "width": {},
+      "x": {},
+      "y": {}
     },
     "outputs": {
       "0": {
@@ -4943,6 +5134,46 @@
       }
     }
   },
+  "KlingFirstLastFrameNode": {
+    "description": "Gere vídeos com Kling V3 usando o primeiro e o último frame.",
+    "display_name": "Kling 3.0 Primeiro-Último-Frame para Vídeo",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controlar após gerar"
+      },
+      "duration": {
+        "name": "duração"
+      },
+      "end_frame": {
+        "name": "último_frame"
+      },
+      "first_frame": {
+        "name": "primeiro_frame"
+      },
+      "generate_audio": {
+        "name": "gerar_áudio"
+      },
+      "model": {
+        "name": "modelo",
+        "tooltip": "Configurações de modelo e geração."
+      },
+      "model_resolution": {
+        "name": "resolução"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "seed": {
+        "name": "semente",
+        "tooltip": "A semente controla se o nó deve ser executado novamente; os resultados são não determinísticos independentemente da semente."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "KlingImage2VideoNode": {
     "display_name": "Kling Imagem (Primeiro Quadro) para Vídeo",
     "inputs": {
@@ -4995,6 +5226,9 @@
       "aspect_ratio": {
         "name": "aspect_ratio"
       },
+      "control_after_generate": {
+        "name": "controlar após gerar"
+      },
       "human_fidelity": {
         "name": "human_fidelity",
         "tooltip": "Similaridade de referência do sujeito"
@@ -5023,6 +5257,10 @@
       "prompt": {
         "name": "prompt",
         "tooltip": "Prompt de texto positivo"
+      },
+      "seed": {
+        "name": "semente",
+        "tooltip": "A semente controla se o nó deve ser executado novamente; os resultados são não determinísticos independentemente da semente."
       }
     },
     "outputs": {
@@ -5155,6 +5393,9 @@
     "description": "Edite um vídeo existente com o modelo mais recente da Kling.",
     "display_name": "Kling Omni Editar Vídeo (Pro)",
     "inputs": {
+      "control_after_generate": {
+        "name": "controlar após gerar"
+      },
       "keep_original_sound": {
         "name": "manter_som_original"
       },
@@ -5172,6 +5413,10 @@
       "resolution": {
         "name": "resolução"
       },
+      "seed": {
+        "name": "semente",
+        "tooltip": "A semente controla se o nó deve ser executado novamente; os resultados são não determinísticos independentemente da semente."
+      },
       "video": {
         "name": "vídeo",
         "tooltip": "Vídeo para edição. O comprimento do vídeo de saída será o mesmo."
@@ -5187,6 +5432,9 @@
     "description": "Use um quadro inicial, um quadro final opcional ou imagens de referência com o modelo mais recente da Kling.",
     "display_name": "Kling Omni Quadro Inicial-Final para Vídeo (Pro)",
     "inputs": {
+      "control_after_generate": {
+        "name": "controlar após gerar"
+      },
       "duration": {
         "name": "duration"
       },
@@ -5196,6 +5444,10 @@
       },
       "first_frame": {
         "name": "first_frame"
+      },
+      "generate_audio": {
+        "name": "gerar_áudio",
+        "tooltip": "Gerar áudio para o vídeo. Suportado apenas para kling-v3-omni."
       },
       "model_name": {
         "name": "model_name"
@@ -5210,6 +5462,14 @@
       },
       "resolution": {
         "name": "resolution"
+      },
+      "seed": {
+        "name": "semente",
+        "tooltip": "A semente controla se o nó deve ser executado novamente; os resultados são não determinísticos independentemente da semente."
+      },
+      "storyboards": {
+        "name": "storyboards",
+        "tooltip": "Gere uma série de segmentos de vídeo com prompts e durações individuais. Suportado apenas para kling-v3-omni."
       }
     },
     "outputs": {
@@ -5225,6 +5485,9 @@
       "aspect_ratio": {
         "name": "aspect_ratio"
       },
+      "control_after_generate": {
+        "name": "controlar após gerar"
+      },
       "model_name": {
         "name": "model_name"
       },
@@ -5238,6 +5501,14 @@
       },
       "resolution": {
         "name": "resolution"
+      },
+      "seed": {
+        "name": "semente",
+        "tooltip": "A semente controla se o nó deve ser executado novamente; os resultados são não determinísticos independentemente da semente."
+      },
+      "series_amount": {
+        "name": "quantidade_de_séries",
+        "tooltip": "Gere uma série de imagens. Não suportado para kling-image-o1."
       }
     },
     "outputs": {
@@ -5253,8 +5524,15 @@
       "aspect_ratio": {
         "name": "aspect_ratio"
       },
+      "control_after_generate": {
+        "name": "controlar após gerar"
+      },
       "duration": {
         "name": "duration"
+      },
+      "generate_audio": {
+        "name": "gerar_áudio",
+        "tooltip": "Gerar áudio para o vídeo. Suportado apenas para kling-v3-omni."
       },
       "model_name": {
         "name": "model_name"
@@ -5269,6 +5547,14 @@
       },
       "resolution": {
         "name": "resolution"
+      },
+      "seed": {
+        "name": "semente",
+        "tooltip": "A semente controla se o nó deve ser executado novamente; os resultados são não determinísticos independentemente da semente."
+      },
+      "storyboards": {
+        "name": "storyboards",
+        "tooltip": "Gere uma série de segmentos de vídeo com prompts e durações individuais. Suportado apenas para kling-v3-omni."
       }
     },
     "outputs": {
@@ -5284,8 +5570,14 @@
       "aspect_ratio": {
         "name": "aspect_ratio"
       },
+      "control_after_generate": {
+        "name": "controlar após gerar"
+      },
       "duration": {
         "name": "duration"
+      },
+      "generate_audio": {
+        "name": "gerar_áudio"
       },
       "model_name": {
         "name": "model_name"
@@ -5296,6 +5588,14 @@
       },
       "resolution": {
         "name": "resolution"
+      },
+      "seed": {
+        "name": "semente",
+        "tooltip": "A semente controla se o nó deve ser executado novamente; os resultados são não determinísticos independentemente da semente."
+      },
+      "storyboards": {
+        "name": "storyboards",
+        "tooltip": "Gere uma série de segmentos de vídeo com prompts e durações individuais. Ignorado para o modelo o1."
       }
     },
     "outputs": {
@@ -5310,6 +5610,9 @@
     "inputs": {
       "aspect_ratio": {
         "name": "aspect_ratio"
+      },
+      "control_after_generate": {
+        "name": "controlar após gerar"
       },
       "duration": {
         "name": "duration"
@@ -5334,6 +5637,10 @@
       },
       "resolution": {
         "name": "resolution"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "O seed controla se o nó deve ser executado novamente; os resultados são não determinísticos independentemente do seed."
       }
     },
     "outputs": {
@@ -5515,6 +5822,54 @@
       },
       "2": {
         "name": "duration",
+        "tooltip": null
+      }
+    }
+  },
+  "KlingVideoNode": {
+    "description": "Gere vídeos com Kling V3. Suporta texto-para-vídeo e imagem-para-vídeo com storyboard opcional, multi-prompt e geração de áudio.",
+    "display_name": "Kling 3.0 Vídeo",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controlar após gerar"
+      },
+      "generate_audio": {
+        "name": "gerar áudio"
+      },
+      "model": {
+        "name": "modelo",
+        "tooltip": "Configurações de modelo e geração."
+      },
+      "model_aspect_ratio": {
+        "name": "proporção"
+      },
+      "model_resolution": {
+        "name": "resolução"
+      },
+      "multi_shot": {
+        "name": "multi_shot",
+        "tooltip": "Gere uma série de segmentos de vídeo com prompts e durações individuais."
+      },
+      "multi_shot_duration": {
+        "name": "duração"
+      },
+      "multi_shot_negative_prompt": {
+        "name": "prompt_negativo"
+      },
+      "multi_shot_prompt": {
+        "name": "prompt"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "O seed controla se o nó deve ser executado novamente; os resultados são não determinísticos independentemente do seed."
+      },
+      "start_frame": {
+        "name": "quadro inicial",
+        "tooltip": "Quadro inicial opcional. Quando conectado, alterna para o modo imagem-para-vídeo."
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -6368,28 +6723,8 @@
       }
     },
     "outputs": {
-      "0": {
-        "name": "imagem",
-        "tooltip": null
-      },
-      "1": {
-        "name": "mask",
-        "tooltip": null
-      },
-      "2": {
-        "name": "caminho_malha",
-        "tooltip": null
-      },
-      "3": {
-        "name": "normal",
-        "tooltip": null
-      },
-      "4": {
-        "name": "info_câmera",
-        "tooltip": null
-      },
-      "5": {
-        "name": "vídeo_gravado",
+      "6": {
+        "name": "model_3d",
         "tooltip": null
       }
     }
@@ -6640,6 +6975,10 @@
   "LoraModelLoader": {
     "display_name": "Carregar Modelo LoRA",
     "inputs": {
+      "bypass": {
+        "name": "bypass",
+        "tooltip": "Quando ativado, aplica o LoRA no modo bypass sem modificar os pesos do modelo base. Útil para treinamento e quando os pesos do modelo são descarregados."
+      },
       "lora": {
         "name": "lora",
         "tooltip": "O modelo LoRA a ser aplicado ao modelo de difusão."
@@ -7105,6 +7444,88 @@
       }
     }
   },
+  "MagnificImageUpscalerCreativeNode": {
+    "description": "Aprimoramento guiado por prompt, estilização e upscaling em 2x/4x/8x/16x. Saída máxima: 25,3 megapixels.",
+    "display_name": "Magnific Image Upscale (Criativo)",
+    "inputs": {
+      "auto_downscale": {
+        "name": "redução automática",
+        "tooltip": "Reduz automaticamente a imagem de entrada se a saída exceder o limite máximo de pixels."
+      },
+      "creativity": {
+        "name": "criatividade"
+      },
+      "engine": {
+        "name": "engine"
+      },
+      "fractality": {
+        "name": "fractalidade",
+        "tooltip": "A força do prompt e complexidade por pixel quadrado."
+      },
+      "hdr": {
+        "name": "hdr",
+        "tooltip": "O nível de definição e detalhe."
+      },
+      "image": {
+        "name": "imagem"
+      },
+      "optimized_for": {
+        "name": "otimizado para"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "resemblance": {
+        "name": "semelhança",
+        "tooltip": "O nível de semelhança com a imagem original."
+      },
+      "scale_factor": {
+        "name": "fator de escala"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MagnificImageUpscalerPreciseV2Node": {
+    "description": "Upscaling de alta fidelidade com controle refinado de nitidez, granulação e detalhes. Saída máxima: 10060×10060 pixels.",
+    "display_name": "Magnific Image Upscale (Preciso V2)",
+    "inputs": {
+      "auto_downscale": {
+        "name": "redução automática",
+        "tooltip": "Reduz automaticamente a imagem de entrada se a saída exceder a resolução máxima."
+      },
+      "flavor": {
+        "name": "estilo",
+        "tooltip": "Estilo de processamento: sublime para uso geral, photo para fotografias, photo_denoiser para fotos com ruído."
+      },
+      "image": {
+        "name": "imagem"
+      },
+      "scale_factor": {
+        "name": "fator de escala"
+      },
+      "sharpen": {
+        "name": "nitidez",
+        "tooltip": "Intensidade da nitidez da imagem. Valores mais altos aumentam a definição das bordas e a clareza."
+      },
+      "smart_grain": {
+        "name": "granulação inteligente",
+        "tooltip": "Aprimoramento inteligente de granulação/textura para evitar que a imagem fique muito lisa ou artificial."
+      },
+      "ultra_detail": {
+        "name": "ultra detalhe",
+        "tooltip": "Controla detalhes finos, texturas e microdetalhes adicionados durante o upscaling."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "Mahiro": {
     "description": "Modifica a orientação para escalar mais na 'direção' do prompt positivo do que na diferença entre o prompt negativo.",
     "display_name": "Mahiro CFG",
@@ -7254,8 +7675,12 @@
       }
     },
     "outputs": {
-      "0": {
-        "name": "model_file",
+      "1": {
+        "name": "GLB",
+        "tooltip": null
+      },
+      "2": {
+        "name": "FBX",
         "tooltip": null
       }
     }
@@ -7305,12 +7730,12 @@
       }
     },
     "outputs": {
-      "0": {
-        "name": "arquivo_do_modelo",
+      "2": {
+        "name": "GLB",
         "tooltip": null
       },
-      "1": {
-        "name": "meshy_task_id",
+      "3": {
+        "name": "FBX",
         "tooltip": null
       }
     }
@@ -7360,12 +7785,12 @@
       }
     },
     "outputs": {
-      "0": {
-        "name": "arquivo_do_modelo",
+      "2": {
+        "name": "GLB",
         "tooltip": null
       },
-      "1": {
-        "name": "meshy_task_id",
+      "3": {
+        "name": "FBX",
         "tooltip": null
       }
     }
@@ -7394,12 +7819,12 @@
       }
     },
     "outputs": {
-      "0": {
-        "name": "arquivo_modelo",
+      "2": {
+        "name": "GLB",
         "tooltip": null
       },
-      "1": {
-        "name": "meshy_task_id",
+      "3": {
+        "name": "FBX",
         "tooltip": null
       }
     }
@@ -7421,12 +7846,12 @@
       }
     },
     "outputs": {
-      "0": {
-        "name": "arquivo_modelo",
+      "2": {
+        "name": "GLB",
         "tooltip": null
       },
-      "1": {
-        "name": "rig_task_id",
+      "3": {
+        "name": "FBX",
         "tooltip": null
       }
     }
@@ -7469,12 +7894,12 @@
       }
     },
     "outputs": {
-      "0": {
-        "name": "arquivo_modelo",
+      "2": {
+        "name": "GLB",
         "tooltip": null
       },
-      "1": {
-        "name": "meshy_task_id",
+      "3": {
+        "name": "FBX",
         "tooltip": null
       }
     }
@@ -7505,12 +7930,12 @@
       }
     },
     "outputs": {
-      "0": {
-        "name": "arquivo_do_modelo",
+      "2": {
+        "name": "GLB",
         "tooltip": null
       },
-      "1": {
-        "name": "meshy_task_id",
+      "3": {
+        "name": "FBX",
         "tooltip": null
       }
     }
@@ -9956,6 +10381,32 @@
       }
     }
   },
+  "NAGuidance": {
+    "description": "Aplica Orientação de Atenção Normalizada aos modelos, permitindo prompts negativos em modelos distilled/schnell.",
+    "display_name": "Orientação de Atenção Normalizada",
+    "inputs": {
+      "model": {
+        "name": "modelo",
+        "tooltip": "O modelo ao qual aplicar o NAG."
+      },
+      "nag_alpha": {
+        "name": "nag_alpha",
+        "tooltip": "Fator de mesclagem para a atenção normalizada. 1.0 é substituição total, 0.0 não tem efeito."
+      },
+      "nag_scale": {
+        "name": "escala_nag",
+        "tooltip": "O fator de escala da orientação. Valores mais altos afastam mais do prompt negativo."
+      },
+      "nag_tau": {
+        "name": "nag_tau"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "O modelo modificado com NAG ativado."
+      }
+    }
+  },
   "NormalizeImages": {
     "display_name": "Normalizar Imagens",
     "inputs": {
@@ -10711,18 +11162,24 @@
         "name": "camera_info"
       },
       "image": {
-        "name": "image"
+        "name": "imagem"
       },
       "model_file": {
-        "name": "model_file"
+        "name": "model_file",
+        "tooltip": "Arquivo de modelo 3D ou caminho do arquivo"
       }
     }
   },
   "PreviewAny": {
     "display_name": "Pré-visualizar como Texto",
     "inputs": {
-      "preview": {},
       "previewMode": {},
+      "preview_markdown": {
+        "name": "Pré-visualização"
+      },
+      "preview_text": {
+        "name": "Pré-visualização"
+      },
       "source": {
         "name": "source"
       }
@@ -10753,6 +11210,28 @@
     "inputs": {
       "value": {
         "name": "valor"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PrimitiveBoundingBox": {
+    "display_name": "Caixa Delimitadora",
+    "inputs": {
+      "height": {
+        "name": "altura"
+      },
+      "width": {
+        "name": "largura"
+      },
+      "x": {
+        "name": "x"
+      },
+      "y": {
+        "name": "y"
       }
     },
     "outputs": {
@@ -10994,6 +11473,25 @@
     "outputs": {
       "0": {
         "name": "recraft_controls",
+        "tooltip": null
+      }
+    }
+  },
+  "RecraftCreateStyleNode": {
+    "description": "Crie um estilo personalizado a partir de imagens de referência. Faça upload de 1 a 5 imagens para usar como referência de estilo. O tamanho total de todas as imagens é limitado a 5 MB.",
+    "display_name": "Recraft Criar Estilo",
+    "inputs": {
+      "images": {
+        "name": "imagens"
+      },
+      "style": {
+        "name": "estilo",
+        "tooltip": "O estilo base das imagens geradas."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "id_estilo",
         "tooltip": null
       }
     }
@@ -11305,6 +11803,88 @@
       }
     }
   },
+  "RecraftV4TextToImageNode": {
+    "description": "Gera imagens usando os modelos Recraft V4 ou V4 Pro.",
+    "display_name": "Recraft V4 Texto para Imagem",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controle após gerar"
+      },
+      "model": {
+        "name": "modelo",
+        "tooltip": "O modelo a ser usado para geração."
+      },
+      "model_size": {
+        "name": "tamanho"
+      },
+      "n": {
+        "name": "n",
+        "tooltip": "O número de imagens a serem geradas."
+      },
+      "negative_prompt": {
+        "name": "prompt_negativo",
+        "tooltip": "Uma descrição opcional em texto de elementos indesejados em uma imagem."
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Prompt para a geração da imagem. Máximo de 10.000 caracteres."
+      },
+      "recraft_controls": {
+        "name": "recraft_controls",
+        "tooltip": "Controles adicionais opcionais sobre a geração via o nó Recraft Controls."
+      },
+      "seed": {
+        "name": "semente",
+        "tooltip": "Semente para determinar se o nó deve ser executado novamente; os resultados reais são não determinísticos independentemente da semente."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "RecraftV4TextToVectorNode": {
+    "description": "Gera SVG usando os modelos Recraft V4 ou V4 Pro.",
+    "display_name": "Recraft V4 Texto para Vetor",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controle após gerar"
+      },
+      "model": {
+        "name": "modelo",
+        "tooltip": "O modelo a ser usado para geração."
+      },
+      "model_size": {
+        "name": "tamanho"
+      },
+      "n": {
+        "name": "n",
+        "tooltip": "O número de imagens a serem geradas."
+      },
+      "negative_prompt": {
+        "name": "prompt_negativo",
+        "tooltip": "Uma descrição opcional em texto de elementos indesejados em uma imagem."
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Prompt para a geração da imagem. Máximo de 10.000 caracteres."
+      },
+      "recraft_controls": {
+        "name": "recraft_controls",
+        "tooltip": "Controles adicionais opcionais sobre a geração via o nó Recraft Controls."
+      },
+      "seed": {
+        "name": "semente",
+        "tooltip": "Semente para determinar se o nó deve ser executado novamente; os resultados reais são não determinísticos independentemente da semente."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "RecraftVectorizeImageNode": {
     "description": "Gera SVG de forma síncrona a partir de uma imagem de entrada.",
     "display_name": "Recraft Vetorizar Imagem",
@@ -11328,6 +11908,23 @@
       },
       "latent": {
         "name": "latent"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ReferenceTimbreAudio": {
+    "description": "Este nó define o áudio de referência para timbre (para ace step 1.5)",
+    "display_name": "ReferenceTimbreAudio",
+    "inputs": {
+      "conditioning": {
+        "name": "condicionamento"
+      },
+      "latent": {
+        "name": "latente"
       }
     },
     "outputs": {
@@ -11665,8 +12262,8 @@
       }
     },
     "outputs": {
-      "0": {
-        "name": "Caminho do Modelo 3D",
+      "1": {
+        "name": "GLB",
         "tooltip": null
       }
     }
@@ -11692,8 +12289,8 @@
       }
     },
     "outputs": {
-      "0": {
-        "name": "Caminho do Modelo 3D",
+      "1": {
+        "name": "GLB",
         "tooltip": null
       }
     }
@@ -11716,8 +12313,8 @@
       }
     },
     "outputs": {
-      "0": {
-        "name": "Caminho do Modelo 3D",
+      "1": {
+        "name": "GLB",
         "tooltip": null
       }
     }
@@ -11734,8 +12331,8 @@
       }
     },
     "outputs": {
-      "0": {
-        "name": "Caminho do Modelo 3D",
+      "1": {
+        "name": "GLB",
         "tooltip": null
       }
     }
@@ -11758,8 +12355,8 @@
       }
     },
     "outputs": {
-      "0": {
-        "name": "Caminho do Modelo 3D",
+      "1": {
+        "name": "GLB",
         "tooltip": null
       }
     }
@@ -12498,7 +13095,8 @@
         "name": "imagem"
       },
       "mesh": {
-        "name": "malha"
+        "name": "malha",
+        "tooltip": "Malha ou arquivo GLB para salvar"
       }
     }
   },
@@ -13721,6 +14319,29 @@
       }
     }
   },
+  "Tencent3DPartNode": {
+    "description": "Realiza automaticamente a identificação e geração de componentes com base na estrutura do modelo.",
+    "display_name": "Hunyuan3D: Parte 3D",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controlar após gerar"
+      },
+      "model_3d": {
+        "name": "modelo_3d",
+        "tooltip": "Modelo 3D no formato FBX. O modelo deve ter menos de 30.000 faces."
+      },
+      "seed": {
+        "name": "semente",
+        "tooltip": "A semente controla se o nó deve ser executado novamente; os resultados são não determinísticos independentemente da semente."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "FBX",
+        "tooltip": null
+      }
+    }
+  },
   "TencentImageToModelNode": {
     "display_name": "Hunyuan3D: Imagem(ns) para Modelo (Pro)",
     "inputs": {
@@ -13758,8 +14379,12 @@
       }
     },
     "outputs": {
-      "0": {
-        "name": "arquivo_modelo",
+      "1": {
+        "name": "GLB",
+        "tooltip": null
+      },
+      "2": {
+        "name": "OBJ",
         "tooltip": null
       }
     }
@@ -13793,8 +14418,12 @@
       }
     },
     "outputs": {
-      "0": {
-        "name": "arquivo_modelo",
+      "1": {
+        "name": "GLB",
+        "tooltip": null
+      },
+      "2": {
+        "name": "OBJ",
         "tooltip": null
       }
     }
@@ -13813,6 +14442,65 @@
       },
       "tags": {
         "name": "tags"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "TextEncodeAceStepAudio1_5": {
+    "display_name": "TextEncodeAceStepAudio1.5",
+    "inputs": {
+      "bpm": {
+        "name": "bpm"
+      },
+      "cfg_scale": {
+        "name": "cfg_scale"
+      },
+      "clip": {
+        "name": "clip"
+      },
+      "control_after_generate": {
+        "name": "controle após gerar"
+      },
+      "duration": {
+        "name": "duração"
+      },
+      "generate_audio_codes": {
+        "name": "gerar_códigos_de_áudio",
+        "tooltip": "Ativa o LLM que gera códigos de áudio. Isso pode ser lento, mas aumentará a qualidade do áudio gerado. Desative se você fornecer uma referência de áudio ao modelo."
+      },
+      "keyscale": {
+        "name": "escala tonal"
+      },
+      "language": {
+        "name": "idioma"
+      },
+      "lyrics": {
+        "name": "letra"
+      },
+      "min_p": {
+        "name": "min_p"
+      },
+      "seed": {
+        "name": "semente"
+      },
+      "tags": {
+        "name": "tags"
+      },
+      "temperature": {
+        "name": "temperatura"
+      },
+      "timesignature": {
+        "name": "fórmula de compasso"
+      },
+      "top_k": {
+        "name": "top_k"
+      },
+      "top_p": {
+        "name": "top_p"
       }
     },
     "outputs": {
@@ -14137,6 +14825,10 @@
         "name": "bypass_mode",
         "tooltip": "Ativar modo bypass para treinamento. Quando ativado, os adaptadores são aplicados via hooks de encaminhamento em vez de modificação de pesos. Útil para modelos quantizados onde os pesos não podem ser modificados diretamente."
       },
+      "checkpoint_depth": {
+        "name": "checkpoint_depth",
+        "tooltip": "Nível de profundidade para checkpointing de gradiente."
+      },
       "control_after_generate": {
         "name": "controlar após gerar"
       },
@@ -14171,6 +14863,10 @@
       "model": {
         "name": "modelo",
         "tooltip": "O modelo no qual treinar a LoRA."
+      },
+      "offloading": {
+        "name": "offloading",
+        "tooltip": "Nível de profundidade para checkpointing de gradiente."
       },
       "optimizer": {
         "name": "otimizador",
@@ -14377,12 +15073,8 @@
       }
     },
     "outputs": {
-      "0": {
-        "name": "arquivo_do_modelo",
-        "tooltip": null
-      },
-      "1": {
-        "name": "task_id do modelo",
+      "2": {
+        "name": "GLB",
         "tooltip": null
       }
     }
@@ -14438,12 +15130,8 @@
       }
     },
     "outputs": {
-      "0": {
-        "name": "arquivo_do_modelo",
-        "tooltip": null
-      },
-      "1": {
-        "name": "id_da_tarefa_do_modelo",
+      "2": {
+        "name": "GLB",
         "tooltip": null
       }
     }
@@ -14458,12 +15146,8 @@
       }
     },
     "outputs": {
-      "0": {
-        "name": "arquivo_do_modelo",
-        "tooltip": null
-      },
-      "1": {
-        "name": "id_da_tarefa_do_modelo",
+      "2": {
+        "name": "GLB",
         "tooltip": null
       }
     }
@@ -14479,12 +15163,8 @@
       }
     },
     "outputs": {
-      "0": {
-        "name": "arquivo_do_modelo",
-        "tooltip": null
-      },
-      "1": {
-        "name": "id_da_tarefa_de_retarget",
+      "2": {
+        "name": "GLB",
         "tooltip": null
       }
     }
@@ -14497,12 +15177,8 @@
       }
     },
     "outputs": {
-      "0": {
-        "name": "arquivo_do_modelo",
-        "tooltip": null
-      },
-      "1": {
-        "name": "id_da_tarefa_de_rig",
+      "2": {
+        "name": "GLB",
         "tooltip": null
       }
     }
@@ -14551,12 +15227,8 @@
       }
     },
     "outputs": {
-      "0": {
-        "name": "arquivo_do_modelo",
-        "tooltip": null
-      },
-      "1": {
-        "name": "id_da_tarefa_do_modelo",
+      "2": {
+        "name": "GLB",
         "tooltip": null
       }
     }
@@ -14584,12 +15256,8 @@
       }
     },
     "outputs": {
-      "0": {
-        "name": "arquivo_modelo",
-        "tooltip": null
-      },
-      "1": {
-        "name": "model task_id",
+      "2": {
+        "name": "GLB",
         "tooltip": null
       }
     }
@@ -14750,6 +15418,28 @@
     "inputs": {
       "samples": {
         "name": "amostras"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "VAEDecodeAudioTiled": {
+    "display_name": "VAE Decodificar Áudio (Em Blocos)",
+    "inputs": {
+      "overlap": {
+        "name": "sobreposição"
+      },
+      "samples": {
+        "name": "amostras"
+      },
+      "tile_size": {
+        "name": "tamanho_do_bloco"
       },
       "vae": {
         "name": "vae"
@@ -15074,6 +15764,31 @@
       }
     }
   },
+  "Video Slice": {
+    "display_name": "Corte de Vídeo",
+    "inputs": {
+      "duration": {
+        "name": "duração",
+        "tooltip": "Duração em segundos, ou 0 para duração ilimitada"
+      },
+      "start_time": {
+        "name": "início",
+        "tooltip": "Tempo de início em segundos"
+      },
+      "strict_duration": {
+        "name": "duração_estrita",
+        "tooltip": "Se Verdadeiro, quando a duração especificada não for possível, um erro será exibido."
+      },
+      "video": {
+        "name": "vídeo"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "VideoLinearCFGGuidance": {
     "display_name": "VideoLinearCFGGuidance",
     "inputs": {
@@ -15256,6 +15971,159 @@
       }
     }
   },
+  "Vidu3ImageToVideoNode": {
+    "description": "Gere um vídeo a partir de uma imagem e um prompt opcional.",
+    "display_name": "Geração de Vídeo de Imagem para Vídeo Vidu Q3",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controle após gerar"
+      },
+      "image": {
+        "name": "imagem",
+        "tooltip": "Uma imagem a ser usada como quadro inicial do vídeo gerado."
+      },
+      "model": {
+        "name": "modelo",
+        "tooltip": "Modelo a ser usado para geração de vídeo."
+      },
+      "model_audio": {
+        "name": "áudio"
+      },
+      "model_duration": {
+        "name": "duração"
+      },
+      "model_resolution": {
+        "name": "resolução"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Um prompt de texto opcional para geração de vídeo (máx. 2000 caracteres)."
+      },
+      "seed": {
+        "name": "semente"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Vidu3StartEndToVideoNode": {
+    "description": "Gere um vídeo a partir de um quadro inicial, um quadro final e um prompt.",
+    "display_name": "Geração de Vídeo Quadro Inicial/Final Vidu Q3",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controle após gerar"
+      },
+      "end_frame": {
+        "name": "quadro final"
+      },
+      "first_frame": {
+        "name": "quadro inicial"
+      },
+      "model": {
+        "name": "modelo",
+        "tooltip": "Modelo a ser usado para geração de vídeo."
+      },
+      "model_audio": {
+        "name": "áudio"
+      },
+      "model_duration": {
+        "name": "duração"
+      },
+      "model_resolution": {
+        "name": "resolução"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Descrição do prompt (máx. 2000 caracteres)."
+      },
+      "seed": {
+        "name": "semente"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Vidu3TextToVideoNode": {
+    "description": "Gere um vídeo a partir de um prompt de texto.",
+    "display_name": "Geração de Vídeo de Texto para Vídeo Vidu Q3",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controle após gerar"
+      },
+      "model": {
+        "name": "modelo",
+        "tooltip": "Modelo a ser usado para geração de vídeo."
+      },
+      "model_aspect_ratio": {
+        "name": "proporção"
+      },
+      "model_audio": {
+        "name": "áudio"
+      },
+      "model_duration": {
+        "name": "duração"
+      },
+      "model_resolution": {
+        "name": "resolução"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Uma descrição textual para geração de vídeo, com comprimento máximo de 2000 caracteres."
+      },
+      "seed": {
+        "name": "semente"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ViduExtendVideoNode": {
+    "description": "Estenda um vídeo existente gerando quadros adicionais.",
+    "display_name": "Extensão de Vídeo Vidu",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controle após gerar"
+      },
+      "end_frame": {
+        "name": "quadro_final"
+      },
+      "model": {
+        "name": "modelo",
+        "tooltip": "Modelo a ser usado para extensão de vídeo."
+      },
+      "model_duration": {
+        "name": "duração"
+      },
+      "model_resolution": {
+        "name": "resolução"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Um prompt de texto opcional para o vídeo estendido (máx. 2000 caracteres)."
+      },
+      "seed": {
+        "name": "semente"
+      },
+      "video": {
+        "name": "vídeo",
+        "tooltip": "O vídeo de origem a ser estendido."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ViduImageToVideoNode": {
     "description": "Gera vídeo a partir de uma imagem e prompt opcional",
     "display_name": "Geração de Vídeo a partir de Imagem Vidu",
@@ -15290,6 +16158,49 @@
       "seed": {
         "name": "seed",
         "tooltip": "Semente para geração de vídeo (0 para aleatório)"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ViduMultiFrameVideoNode": {
+    "description": "Gere um vídeo com múltiplas transições de quadros-chave.",
+    "display_name": "Geração de Vídeo com Múltiplos Quadros Vidu",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controle após gerar"
+      },
+      "frames": {
+        "name": "quadros",
+        "tooltip": "Número de transições de quadros-chave (2-9)."
+      },
+      "frames_duration1": {
+        "name": "duração1"
+      },
+      "frames_duration2": {
+        "name": "duração2"
+      },
+      "frames_prompt1": {
+        "name": "prompt1"
+      },
+      "frames_prompt2": {
+        "name": "prompt2"
+      },
+      "model": {
+        "name": "modelo"
+      },
+      "resolution": {
+        "name": "resolução"
+      },
+      "seed": {
+        "name": "semente"
+      },
+      "start_image": {
+        "name": "imagem_inicial",
+        "tooltip": "A imagem do quadro inicial. A proporção deve estar entre 1:4 e 4:1."
       }
     },
     "outputs": {

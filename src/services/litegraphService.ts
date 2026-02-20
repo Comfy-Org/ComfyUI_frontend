@@ -19,6 +19,7 @@ import {
   createBounds
 } from '@/lib/litegraph/src/litegraph'
 import type {
+  GraphAddOptions,
   IContextMenuValue,
   Point,
   Subgraph
@@ -56,8 +57,10 @@ import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import { useWidgetStore } from '@/stores/widgetStore'
 import { normalizeI18nKey } from '@/utils/formatUtil'
 import {
+  isAnimatedOutput,
   isImageNode,
   isVideoNode,
+  isVideoOutput,
   migrateWidgetsValues
 } from '@/utils/litegraphUtil'
 import { getOrderedInputSpecs } from '@/workbench/utils/nodeDefOrderingUtil'
@@ -85,7 +88,7 @@ export function getExtraOptionsForWidget(
       callback: async () => {
         const newLabel = await useDialogService().prompt({
           title: t('g.rename'),
-          message: t('g.enterNewName') + ':',
+          message: t('g.enterNewNamePrompt'),
           defaultValue: widget.label,
           placeholder: widget.name
         })
@@ -162,7 +165,7 @@ export const useLitegraphService = () => {
       const state =
         useExecutionStore().nodeLocationProgressStates[nodeLocatorId]?.state
       if (state === 'running') {
-        return { color: '#0f0' }
+        return { color: '#0f0', lineWidth: 3 }
       }
     }
     node.strokeStyles['dragOver'] = function (this: LGraphNode) {
@@ -172,7 +175,7 @@ export const useLitegraphService = () => {
     }
     node.strokeStyles['executionError'] = function (this: LGraphNode) {
       if (app.lastExecutionError?.node_id == this.id) {
-        return { color: '#f0f', lineWidth: 2 }
+        return { color: '#f0f', lineWidth: 3 }
       }
     }
   }
@@ -753,17 +756,9 @@ export const useLitegraphService = () => {
     if (isNewOutput) this.images = output.images
 
     if (isNewOutput || isNewPreview) {
-      this.animatedImages = output?.animated?.find(Boolean)
+      this.animatedImages = isAnimatedOutput(output)
 
-      const isAnimatedWebp =
-        this.animatedImages &&
-        output?.images?.some((img) => img.filename?.includes('webp'))
-      const isAnimatedPng =
-        this.animatedImages &&
-        output?.images?.some((img) => img.filename?.includes('png'))
-      const isVideo =
-        (this.animatedImages && !isAnimatedWebp && !isAnimatedPng) ||
-        isVideoNode(this)
+      const isVideo = isVideoOutput(output) || isVideoNode(this)
       if (isVideo) {
         useNodeVideo(this, callback).showPreview()
       } else {
@@ -849,8 +844,9 @@ export const useLitegraphService = () => {
 
   function addNodeOnGraph(
     nodeDef: ComfyNodeDefV1 | ComfyNodeDefV2,
-    options: Record<string, any> = {}
-  ): LGraphNode {
+    options: Record<string, unknown> & { pos?: Point } = {},
+    addOptions?: GraphAddOptions
+  ): LGraphNode | null {
     options.pos ??= getCanvasCenter()
 
     if (nodeDef.name.startsWith(useSubgraphStore().typePrefix)) {
@@ -879,10 +875,9 @@ export const useLitegraphService = () => {
     )
 
     const graph = useWorkflowStore().activeSubgraph ?? app.graph
+    if (!graph || !node) return null
 
-    // @ts-expect-error fixme ts strict error
-    graph.add(node)
-    // @ts-expect-error fixme ts strict error
+    graph.add(node, addOptions)
     return node
   }
 

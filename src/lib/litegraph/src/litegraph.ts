@@ -107,7 +107,8 @@ export {
   type GroupNodeConfigEntry,
   type GroupNodeWorkflowData,
   type LGraphTriggerAction,
-  type LGraphTriggerParam
+  type LGraphTriggerParam,
+  type GraphAddOptions
 } from './LGraph'
 export type { LGraphTriggerEvent } from './types/graphTriggers'
 export { BadgePosition, LGraphBadge } from './LGraphBadge'
@@ -150,7 +151,9 @@ export { BaseWidget } from './widgets/BaseWidget'
 
 export { LegacyWidget } from './widgets/LegacyWidget'
 
-export { isComboWidget, isAssetWidget } from './widgets/widgetMap'
+export { isComboWidget } from './widgets/widgetMap'
+/** @knipIgnoreUnusedButUsedByCustomNodes */
+export { isAssetWidget } from './widgets/widgetMap'
 // Additional test-specific exports
 export { LGraphButton } from './LGraphButton'
 export { MovingOutputLink } from './canvas/MovingOutputLink'

@@ -50,7 +50,7 @@ export class ExecutableNodeDTO implements ExecutableLGraphNode {
   inputs: { linkId: number | null; name: string; type: ISlotType }[]
 
   /** Backing field for {@link id}. */
-  #id: ExecutionId
+  private _id: ExecutionId
 
   /**
    * The path to the actual node through subgraph instances, represented as a list of all subgraph node IDs (instances),
@@ -62,7 +62,7 @@ export class ExecutableNodeDTO implements ExecutableLGraphNode {
    * - `3` is the node ID of the actual node in the subgraph definition
    */
   get id() {
-    return this.#id
+    return this._id
   }
 
   get type() {
@@ -106,7 +106,7 @@ export class ExecutableNodeDTO implements ExecutableLGraphNode {
     if (!node.graph) throw new NullGraphError()
 
     // Set the internal ID of the DTO
-    this.#id = [...this.subgraphNodePath, this.node.id].join(':')
+    this._id = [...this.subgraphNodePath, this.node.id].join(':')
     this.graph = node.graph
     this.inputs = this.node.inputs.map((x) => ({
       linkId: x.link,
@@ -194,6 +194,10 @@ export class ExecutableNodeDTO implements ExecutableLGraphNode {
         }
       }
 
+      if (!subgraphNode.graph)
+        throw new NullGraphError(
+          `SubgraphNode ${subgraphNode.id} has no graph during input resolution`
+        )
       const outerLink = subgraphNode.graph.getLink(linkId)
       if (!outerLink)
         throw new InvalidLinkError(
@@ -265,7 +269,7 @@ export class ExecutableNodeDTO implements ExecutableLGraphNode {
     // Upstreamed: Bypass nodes are bypassed using the first input with matching type
     if (this.mode === LGraphEventMode.BYPASS) {
       // Bypass nodes by finding first input with matching type
-      const matchingIndex = this.#getBypassSlotIndex(slot, type)
+      const matchingIndex = this._getBypassSlotIndex(slot, type)
 
       // No input types match - bypass not possible
       if (matchingIndex === -1) {
@@ -281,7 +285,7 @@ export class ExecutableNodeDTO implements ExecutableLGraphNode {
 
     const { node } = this
     if (node.isSubgraphNode())
-      return this.#resolveSubgraphOutput(slot, type, visited)
+      return this._resolveSubgraphOutput(slot, type, visited)
 
     if (node.isVirtualNode) {
       const virtualLink = this.node.getInputLink(slot)
@@ -321,7 +325,7 @@ export class ExecutableNodeDTO implements ExecutableLGraphNode {
    * @param type The type of the final target input (so type list matches are accurate)
    * @returns The index of the input slot on this node, otherwise `-1`.
    */
-  #getBypassSlotIndex(slot: number, type: ISlotType) {
+  private _getBypassSlotIndex(slot: number, type: ISlotType) {
     const { inputs } = this
     const oppositeInput = inputs[slot]
     const outputType = this.node.outputs[slot].type
@@ -358,7 +362,7 @@ export class ExecutableNodeDTO implements ExecutableLGraphNode {
    * @param visited A set of unique IDs to guard against infinite recursion. See {@link resolveInput}.
    * @returns A DTO for the node, and the origin ID / slot index of the output.
    */
-  #resolveSubgraphOutput(
+  private _resolveSubgraphOutput(
     slot: number,
     type: ISlotType,
     visited: Set<string>

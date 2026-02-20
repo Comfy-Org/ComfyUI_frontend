@@ -332,6 +332,8 @@ export interface INodeFlags {
   collapsed?: boolean
   /** Configuration setting for {@link LGraphNode.connectInputToOutput} */
   keepAllLinksOnBypass?: boolean
+  /** Node is in ghost placement mode (semi-transparent, following cursor) */
+  ghost?: boolean
 }
 
 /**

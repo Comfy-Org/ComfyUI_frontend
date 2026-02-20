@@ -201,7 +201,6 @@ export const i18n = createI18n({
 })
 
 /** Convenience shorthand: i18n.global */
-/** @deprecated use useI18n */
 export const { t, te, d } = i18n.global
 
 /**

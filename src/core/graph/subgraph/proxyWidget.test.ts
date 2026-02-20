@@ -1,4 +1,6 @@
-import { describe, expect, test, vi } from 'vitest'
+import { createTestingPinia } from '@pinia/testing'
+import { setActivePinia } from 'pinia'
+import { beforeEach, describe, expect, test, vi } from 'vitest'
 
 import { registerProxyWidgets } from '@/core/graph/subgraph/proxyWidget'
 import { promoteWidget } from '@/core/graph/subgraph/proxyWidgetUtils'
@@ -31,7 +33,7 @@ function setupSubgraph(
   const subgraph = createTestSubgraph()
   const subgraphNode = createTestSubgraphNode(subgraph)
   subgraphNode._internalConfigureAfterSlots()
-  const graph = subgraphNode.graph
+  const graph = subgraphNode.graph!
   graph.add(subgraphNode)
   const innerNodes = []
   for (let i = 0; i < innerNodeCount; i++) {
@@ -43,6 +45,10 @@ function setupSubgraph(
 }
 
 describe('Subgraph proxyWidgets', () => {
+  beforeEach(() => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
+  })
+
   test('Can add simple widget', () => {
     const [subgraphNode, innerNodes] = setupSubgraph(1)
     innerNodes[0].addWidget('text', 'stringWidget', 'value', () => {})

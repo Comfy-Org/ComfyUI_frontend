@@ -1,7 +1,7 @@
 import { computed, unref } from 'vue'
 import type { ComputedRef } from 'vue'
 
-import { useDialogService } from '@/services/dialogService'
+import { useImportFailedNodeDialog } from '@/workbench/extensions/manager/composables/useImportFailedNodeDialog'
 import { useComfyManagerStore } from '@/workbench/extensions/manager/stores/comfyManagerStore'
 import { useConflictDetectionStore } from '@/workbench/extensions/manager/stores/conflictDetectionStore'
 import type {
@@ -26,14 +26,14 @@ function extractImportFailedConflicts(conflicts?: ConflictDetail[] | null) {
  * Creating import failed dialog
  */
 function createImportFailedDialog() {
-  const { showImportFailedNodeDialog } = useDialogService()
+  const { show } = useImportFailedNodeDialog()
 
   return (
     conflictedPackages: ConflictDetectionResult[] | null,
     onClose?: () => void
   ) => {
     if (conflictedPackages && conflictedPackages.length > 0) {
-      showImportFailedNodeDialog({
+      void show({
         conflictedPackages,
         dialogComponentProps: {
           onClose

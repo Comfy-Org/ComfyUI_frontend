@@ -44,12 +44,6 @@
         @clear-queued="cancelQueuedWorkflows"
         @view-all-jobs="viewAllJobs"
       />
-
-      <QueueOverlayEmpty
-        v-else-if="completionSummary"
-        :summary="completionSummary"
-        @summary-click="onSummaryClick"
-      />
     </div>
   </div>
 
@@ -64,11 +58,9 @@ import { computed, nextTick, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import QueueOverlayActive from '@/components/queue/QueueOverlayActive.vue'
-import QueueOverlayEmpty from '@/components/queue/QueueOverlayEmpty.vue'
 import QueueOverlayExpanded from '@/components/queue/QueueOverlayExpanded.vue'
 import QueueClearHistoryDialog from '@/components/queue/dialogs/QueueClearHistoryDialog.vue'
 import ResultGallery from '@/components/sidebar/tabs/queue/ResultGallery.vue'
-import { useCompletionSummary } from '@/composables/queue/useCompletionSummary'
 import { useJobList } from '@/composables/queue/useJobList'
 import type { JobListItem } from '@/composables/queue/useJobList'
 import { useQueueProgress } from '@/composables/queue/useQueueProgress'
@@ -84,7 +76,7 @@ import { useExecutionStore } from '@/stores/executionStore'
 import { useQueueStore } from '@/stores/queueStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 
-type OverlayState = 'hidden' | 'empty' | 'active' | 'expanded'
+type OverlayState = 'hidden' | 'active' | 'expanded'
 
 const props = withDefaults(
   defineProps<{
@@ -100,7 +92,7 @@ const emit = defineEmits<{
   (e: 'update:expanded', value: boolean): void
 }>()
 
-const { t } = useI18n()
+const { t, n } = useI18n()
 const queueStore = useQueueStore()
 const commandStore = useCommandStore()
 const executionStore = useExecutionStore()
@@ -130,26 +122,20 @@ const isExpanded = computed({
   }
 })
 
-const { summary: completionSummary, clearSummary } = useCompletionSummary()
-const hasCompletionSummary = computed(() => completionSummary.value !== null)
-
 const runningCount = computed(() => queueStore.runningTasks.length)
 const queuedCount = computed(() => queueStore.pendingTasks.length)
 const isExecuting = computed(() => !executionStore.isIdle)
 const hasActiveJob = computed(() => runningCount.value > 0 || isExecuting.value)
-const activeJobsCount = computed(() => runningCount.value + queuedCount.value)
 
 const overlayState = computed<OverlayState>(() => {
   if (isExpanded.value) return 'expanded'
   if (hasActiveJob.value) return 'active'
-  if (hasCompletionSummary.value) return 'empty'
   return 'hidden'
 })
 
 const showBackground = computed(
   () =>
     overlayState.value === 'expanded' ||
-    overlayState.value === 'empty' ||
     (overlayState.value === 'active' && isOverlayHovered.value)
 )
 
@@ -169,11 +155,34 @@ const bottomRowClass = computed(
         : 'opacity-0 pointer-events-none'
     }`
 )
-const headerTitle = computed(() =>
-  hasActiveJob.value
-    ? `${activeJobsCount.value} ${t('sideToolbar.queueProgressOverlay.activeJobsSuffix')}`
-    : t('sideToolbar.queueProgressOverlay.jobQueue')
+const runningJobsLabel = computed(() =>
+  t('sideToolbar.queueProgressOverlay.runningJobsLabel', {
+    count: n(runningCount.value)
+  })
 )
+const queuedJobsLabel = computed(() =>
+  t('sideToolbar.queueProgressOverlay.queuedJobsLabel', {
+    count: n(queuedCount.value)
+  })
+)
+const headerTitle = computed(() => {
+  if (!hasActiveJob.value) {
+    return t('sideToolbar.queueProgressOverlay.jobQueue')
+  }
+
+  if (queuedCount.value === 0) {
+    return runningJobsLabel.value
+  }
+
+  if (runningCount.value === 0) {
+    return queuedJobsLabel.value
+  }
+
+  return t('sideToolbar.queueProgressOverlay.runningQueuedSummary', {
+    running: runningJobsLabel.value,
+    queued: queuedJobsLabel.value
+  })
+})
 
 const concurrentWorkflowCount = computed(
   () => executionStore.runningWorkflowCount
@@ -195,22 +204,22 @@ const {
 const displayedJobGroups = computed(() => groupedJobItems.value)
 
 const onCancelItem = wrapWithErrorHandlingAsync(async (item: JobListItem) => {
-  const promptId = item.taskRef?.promptId
-  if (!promptId) return
+  const jobId = item.taskRef?.jobId
+  if (!jobId) return
 
   if (item.state === 'running' || item.state === 'initialization') {
     // Running/initializing jobs: interrupt execution
     // Cloud backend uses deleteItem, local uses interrupt
     if (isCloud) {
-      await api.deleteItem('queue', promptId)
+      await api.deleteItem('queue', jobId)
     } else {
-      await api.interrupt(promptId)
+      await api.interrupt(jobId)
     }
-    executionStore.clearInitializationByPromptId(promptId)
+    executionStore.clearInitializationByJobId(jobId)
     await queueStore.update()
   } else if (item.state === 'pending') {
     // Pending jobs: remove from queue
-    await api.deleteItem('queue', promptId)
+    await api.deleteItem('queue', jobId)
     await queueStore.update()
   }
 })
@@ -230,17 +239,8 @@ const setExpanded = (expanded: boolean) => {
   isExpanded.value = expanded
 }
 
-const openExpandedFromEmpty = () => {
-  setExpanded(true)
-}
-
 const viewAllJobs = () => {
   setExpanded(true)
-}
-
-const onSummaryClick = () => {
-  openExpandedFromEmpty()
-  clearSummary()
 }
 
 const openAssetsSidebar = () => {
@@ -249,11 +249,11 @@ const openAssetsSidebar = () => {
 
 const focusAssetInSidebar = async (item: JobListItem) => {
   const task = item.taskRef
-  const promptId = task?.promptId
+  const jobId = task?.jobId
   const preview = task?.previewOutput
-  if (!promptId || !preview) return
+  if (!jobId || !preview) return
 
-  const assetId = String(promptId)
+  const assetId = String(jobId)
   openAssetsSidebar()
   await nextTick()
   await assetsStore.updateHistory()
@@ -264,6 +264,7 @@ const focusAssetInSidebar = async (item: JobListItem) => {
     throw new Error('Asset not found in media assets panel')
   }
   assetSelectionStore.setSelection([assetId])
+  assetSelectionStore.setLastSelectedAssetId(assetId)
 }
 
 const inspectJobAsset = wrapWithErrorHandlingAsync(
@@ -274,37 +275,37 @@ const inspectJobAsset = wrapWithErrorHandlingAsync(
 )
 
 const cancelQueuedWorkflows = wrapWithErrorHandlingAsync(async () => {
-  // Capture pending promptIds before clearing
-  const pendingPromptIds = queueStore.pendingTasks
-    .map((task) => task.promptId)
+  // Capture pending jobIds before clearing
+  const pendingJobIds = queueStore.pendingTasks
+    .map((task) => task.jobId)
     .filter((id): id is string => typeof id === 'string' && id.length > 0)
 
   await commandStore.execute('Comfy.ClearPendingTasks')
 
-  // Clear initialization state for removed prompts
-  executionStore.clearInitializationByPromptIds(pendingPromptIds)
+  // Clear initialization state for removed jobs
+  executionStore.clearInitializationByJobIds(pendingJobIds)
 })
 
 const interruptAll = wrapWithErrorHandlingAsync(async () => {
   const tasks = queueStore.runningTasks
-  const promptIds = tasks
-    .map((task) => task.promptId)
+  const jobIds = tasks
+    .map((task) => task.jobId)
     .filter((id): id is string => typeof id === 'string' && id.length > 0)
 
-  if (!promptIds.length) return
+  if (!jobIds.length) return
 
   // Cloud backend supports cancelling specific jobs via /queue delete,
   // while /interrupt always targets the "first" job. Use the targeted API
   // on cloud to ensure we cancel the workflow the user clicked.
   if (isCloud) {
-    await Promise.all(promptIds.map((id) => api.deleteItem('queue', id)))
-    executionStore.clearInitializationByPromptIds(promptIds)
+    await Promise.all(jobIds.map((id) => api.deleteItem('queue', id)))
+    executionStore.clearInitializationByJobIds(jobIds)
     await queueStore.update()
     return
   }
 
-  await Promise.all(promptIds.map((id) => api.interrupt(id)))
-  executionStore.clearInitializationByPromptIds(promptIds)
+  await Promise.all(jobIds.map((id) => api.interrupt(id)))
+  executionStore.clearInitializationByJobIds(jobIds)
   await queueStore.update()
 })
 

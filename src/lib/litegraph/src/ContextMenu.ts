@@ -1,9 +1,43 @@
+import DOMPurify from 'dompurify'
+
 import type {
   ContextMenuDivElement,
   IContextMenuOptions,
   IContextMenuValue
 } from './interfaces'
 import { LiteGraph } from './litegraph'
+
+const ALLOWED_TAGS = ['span', 'b', 'i', 'em', 'strong']
+const ALLOWED_STYLE_PROPS = new Set([
+  'display',
+  'color',
+  'background-color',
+  'padding-left',
+  'border-left'
+])
+
+DOMPurify.addHook('uponSanitizeAttribute', (_node, data) => {
+  if (data.attrName === 'style') {
+    const sanitizedStyle = data.attrValue
+      .split(';')
+      .map((s) => s.trim())
+      .filter((s) => {
+        const colonIdx = s.indexOf(':')
+        if (colonIdx === -1) return false
+        const prop = s.slice(0, colonIdx).trim().toLowerCase()
+        return ALLOWED_STYLE_PROPS.has(prop)
+      })
+      .join('; ')
+    data.attrValue = sanitizedStyle
+  }
+})
+
+function sanitizeMenuHTML(html: string): string {
+  return DOMPurify.sanitize(html, {
+    ALLOWED_TAGS,
+    ALLOWED_ATTR: ['style']
+  })
+}
 
 // TODO: Replace this pattern with something more modern.
 export interface ContextMenu<TValue = unknown> {
@@ -123,7 +157,7 @@ export class ContextMenu<TValue = unknown> {
     if (options.title) {
       const element = document.createElement('div')
       element.className = 'litemenu-title'
-      element.innerHTML = options.title
+      element.textContent = options.title
       root.append(element)
     }
 
@@ -218,11 +252,18 @@ export class ContextMenu<TValue = unknown> {
     if (value === null) {
       element.classList.add('separator')
     } else {
-      const innerHtml = name === null ? '' : String(name)
+      const label = name === null ? '' : String(name)
       if (typeof value === 'string') {
-        element.innerHTML = innerHtml
+        element.textContent = label
       } else {
-        element.innerHTML = value?.title ?? innerHtml
+        // Use innerHTML for content that contains HTML tags, textContent otherwise
+        const hasHtmlContent =
+          value?.content !== undefined && /<[a-z][\s\S]*>/i.test(value.content)
+        if (hasHtmlContent) {
+          element.innerHTML = sanitizeMenuHTML(value.content!)
+        } else {
+          element.textContent = value?.title ?? label
+        }
 
         if (value.disabled) {
           disabled = true

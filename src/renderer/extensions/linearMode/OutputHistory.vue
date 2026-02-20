@@ -135,7 +135,7 @@ function allOutputs(item?: AssetItem): MaybeRef<ResultItemImpl[]> {
     return user_metadata.allOutputs
 
   const outputRef = useAsyncState(
-    getJobDetail(user_metadata.promptId).then((jobDetail) => {
+    getJobDetail(user_metadata.jobId).then((jobDetail) => {
       if (!jobDetail?.outputs) return []
       return Object.entries(jobDetail.outputs).flatMap(flattenNodeOutput)
     }),

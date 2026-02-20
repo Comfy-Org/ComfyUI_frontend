@@ -5,9 +5,9 @@ import {
 
 test.describe('Vue Node Custom Colors', { tag: '@screenshot' }, () => {
   test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.setSetting('Comfy.UseNewMenu', 'Top')
-    await comfyPage.setSetting('Comfy.Canvas.SelectionToolbox', true)
-    await comfyPage.setSetting('Comfy.VueNodes.Enabled', true)
+    await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
+    await comfyPage.settings.setSetting('Comfy.Canvas.SelectionToolbox', true)
+    await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
     await comfyPage.vueNodes.waitForNodes()
   })
 
@@ -31,7 +31,7 @@ test.describe('Vue Node Custom Colors', { tag: '@screenshot' }, () => {
   })
 
   test('should load node colors from workflow', async ({ comfyPage }) => {
-    await comfyPage.loadWorkflow('nodes/every_node_color')
+    await comfyPage.workflow.loadWorkflow('nodes/every_node_color')
     await expect(comfyPage.canvas).toHaveScreenshot(
       'vue-node-custom-colors-dark-all-colors.png'
     )
@@ -40,8 +40,8 @@ test.describe('Vue Node Custom Colors', { tag: '@screenshot' }, () => {
   test('should show brightened node colors on light theme', async ({
     comfyPage
   }) => {
-    await comfyPage.setSetting('Comfy.ColorPalette', 'light')
-    await comfyPage.loadWorkflow('nodes/every_node_color')
+    await comfyPage.settings.setSetting('Comfy.ColorPalette', 'light')
+    await comfyPage.workflow.loadWorkflow('nodes/every_node_color')
     await expect(comfyPage.canvas).toHaveScreenshot(
       'vue-node-custom-colors-light-all-colors.png'
     )

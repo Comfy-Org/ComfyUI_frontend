@@ -5,6 +5,7 @@ import PrimeVue from 'primevue/config'
 import { describe, expect, it } from 'vitest'
 import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
+import type { ComponentProps } from 'vue-component-type-helpers'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
@@ -12,9 +13,11 @@ import GridSkeleton from './GridSkeleton.vue'
 import PackCardSkeleton from './PackCardSkeleton.vue'
 
 describe('GridSkeleton', () => {
-  const mountComponent = ({
+  function mountComponent({
     props = {}
-  }: Record<string, any> = {}): VueWrapper => {
+  }: {
+    props?: Partial<ComponentProps<typeof GridSkeleton>>
+  } = {}): VueWrapper {
     const i18n = createI18n({
       legacy: false,
       locale: 'en',

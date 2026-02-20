@@ -47,7 +47,7 @@ import InputSlider from '@/components/common/InputSlider.vue'
 import UrlInput from '@/components/common/UrlInput.vue'
 import type { FormItem } from '@/platform/settings/types'
 
-const formValue = defineModel<any>('formValue')
+const formValue = defineModel<unknown>('formValue')
 const props = defineProps<{
   item: FormItem
   id?: string
@@ -61,7 +61,7 @@ function getFormAttrs(item: FormItem) {
     attrs['renderFunction'] = () =>
       inputType(
         props.item.name,
-        (v: any) => (formValue.value = v),
+        (v: unknown) => (formValue.value = v),
         formValue.value,
         item.attrs
       )

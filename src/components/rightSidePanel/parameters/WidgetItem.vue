@@ -20,6 +20,7 @@ import { getNodeByExecutionId } from '@/utils/graphTraversalUtil'
 import { resolveNodeDisplayName } from '@/utils/nodeTitleUtil'
 import { cn } from '@/utils/tailwindUtil'
 import { renameWidget } from '@/utils/widgetUtil'
+import type { WidgetValue } from '@/utils/widgetUtil'
 
 import WidgetActions from './WidgetActions.vue'
 
@@ -41,7 +42,13 @@ const {
   isShownOnParents?: boolean
 }>()
 
+const emit = defineEmits<{
+  'update:widgetValue': [value: WidgetValue]
+  resetToDefault: [value: WidgetValue]
+}>()
+
 const { t } = useI18n()
+
 const canvasStore = useCanvasStore()
 const favoritedWidgetsStore = useFavoritedWidgetsStore()
 const isEditing = ref(false)
@@ -78,15 +85,9 @@ const favoriteNode = computed(() =>
 )
 
 const widgetValue = computed({
-  get: () => {
-    widget.vueTrack?.()
-    return widget.value
-  },
-  set: (newValue: string | number | boolean | object) => {
-    // eslint-disable-next-line vue/no-mutating-props
-    widget.value = newValue
-    widget.callback?.(newValue)
-    canvasStore.canvas?.setDirty(true, true)
+  get: () => widget.value,
+  set: (newValue: WidgetValue) => {
+    emit('update:widgetValue', newValue)
   }
 })
 
@@ -155,6 +156,7 @@ const displayLabel = customRef((track, trigger) => {
           :node="node"
           :parents="parents"
           :is-shown-on-parents="isShownOnParents"
+          @reset-to-default="emit('resetToDefault', $event)"
         />
       </div>
     </div>

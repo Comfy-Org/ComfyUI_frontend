@@ -2,7 +2,7 @@
   <div class="flex h-full flex-col">
     <!-- Active Jobs Grid -->
     <div
-      v-if="isQueuePanelV2Enabled && activeJobItems.length"
+      v-if="!isInFolderView && isQueuePanelV2Enabled && activeJobItems.length"
       class="grid max-h-[50%] scrollbar-custom overflow-y-auto"
       :style="gridStyle"
     >
@@ -70,12 +70,14 @@ import { useSettingStore } from '@/platform/settings/settingStore'
 const {
   assets,
   isSelected,
+  isInFolderView = false,
   assetType = 'output',
   showOutputCount,
   getOutputCount
 } = defineProps<{
   assets: AssetItem[]
   isSelected: (assetId: string) => boolean
+  isInFolderView?: boolean
   assetType?: 'input' | 'output'
   showOutputCount: (asset: AssetItem) => boolean
   getOutputCount: (asset: AssetItem) => number
@@ -100,7 +102,7 @@ const isQueuePanelV2Enabled = computed(() =>
 type AssetGridItem = { key: string; asset: AssetItem }
 
 const activeJobItems = computed(() =>
-  jobItems.value.filter((item) => isActiveJobState(item.state))
+  jobItems.value.filter((item) => isActiveJobState(item.state)).toReversed()
 )
 
 const assetItems = computed<AssetGridItem[]>(() =>

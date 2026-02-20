@@ -22,7 +22,7 @@
           @click="triggerDownload"
         >
           <i class="pi pi-download" />
-          {{ $t('g.download') + ' (' + fileSize + ')' }}
+          {{ $t('g.downloadWithSize', { size: fileSize }) }}
         </Button>
         <Button
           v-if="(status === null || status === 'error') && !!props.url"

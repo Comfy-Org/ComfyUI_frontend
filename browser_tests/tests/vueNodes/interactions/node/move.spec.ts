@@ -7,7 +7,7 @@ import type { Position } from '../../../../fixtures/types'
 
 test.describe('Vue Node Moving', () => {
   test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.setSetting('Comfy.VueNodes.Enabled', true)
+    await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
     await comfyPage.vueNodes.waitForNodes()
   })
 
@@ -35,7 +35,7 @@ test.describe('Vue Node Moving', () => {
     async ({ comfyPage }) => {
       const loadCheckpointHeaderPos =
         await getLoadCheckpointHeaderPos(comfyPage)
-      await comfyPage.dragAndDrop(loadCheckpointHeaderPos, {
+      await comfyPage.canvasOps.dragAndDrop(loadCheckpointHeaderPos, {
         x: 256,
         y: 256
       })
@@ -52,11 +52,11 @@ test.describe('Vue Node Moving', () => {
     { tag: '@screenshot' },
     async ({ comfyPage }) => {
       // Disable minimap (gets in way of the node on small screens)
-      await comfyPage.setSetting('Comfy.Minimap.Visible', false)
+      await comfyPage.settings.setSetting('Comfy.Minimap.Visible', false)
 
       const loadCheckpointHeaderPos =
         await getLoadCheckpointHeaderPos(comfyPage)
-      await comfyPage.panWithTouch(
+      await comfyPage.canvasOps.panWithTouch(
         {
           x: 64,
           y: 64
