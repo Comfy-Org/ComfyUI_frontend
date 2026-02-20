@@ -28,6 +28,7 @@
       </span>
       <Button
         v-if="queuedCount > 0"
+        v-tooltip.top="clearAllJobsTooltip"
         variant="destructive"
         size="icon"
         :aria-label="t('sideToolbar.queueProgressOverlay.clearQueued')"
@@ -109,6 +110,9 @@ const { t } = useI18n()
 
 const morePopoverRef = ref<PopoverMethods | null>(null)
 const moreTooltipConfig = computed(() => buildTooltipConfig(t('g.more')))
+const clearAllJobsTooltip = computed(() =>
+  buildTooltipConfig(t('sideToolbar.queueProgressOverlay.clearAllJobsTooltip'))
+)
 
 const onMoreClick = (event: MouseEvent) => {
   morePopoverRef.value?.toggle(event)
