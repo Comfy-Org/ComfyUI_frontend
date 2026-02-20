@@ -12,6 +12,9 @@ const mockCloseDialog = vi.hoisted(() => vi.fn())
 const mockFlags = vi.hoisted(() => ({
   comfyHubProfileGateEnabled: false
 }))
+const mockResolvedUserInfo = vi.hoisted(() => ({
+  value: { id: 'user-a' }
+}))
 
 vi.mock('@/scripts/api', () => ({
   api: {
@@ -21,6 +24,12 @@ vi.mock('@/scripts/api', () => ({
 
 vi.mock('@/composables/useFeatureFlags', () => ({
   useFeatureFlags: () => ({ flags: mockFlags })
+}))
+
+vi.mock('@/composables/auth/useCurrentUser', () => ({
+  useCurrentUser: () => ({
+    resolvedUserInfo: mockResolvedUserInfo
+  })
 }))
 
 vi.mock('./useComfyHubPublishDialog', () => ({
@@ -74,6 +83,7 @@ describe('useComfyHubProfileGate', () => {
     setActivePinia(createTestingPinia({ stubActions: false }))
     vi.clearAllMocks()
     mockFlags.comfyHubProfileGateEnabled = false
+    mockResolvedUserInfo.value = { id: 'user-a' }
 
     // Reset module-level singleton refs
     gate = useComfyHubProfileGate()
@@ -118,6 +128,16 @@ describe('useComfyHubProfileGate', () => {
 
       expect(result).toBe(true)
       expect(mockFetchApi).toHaveBeenCalledTimes(1)
+    })
+
+    it('clears cached profile state when the authenticated user changes', async () => {
+      mockFetchApi.mockResolvedValue(mockSuccessResponse())
+
+      await gate.checkProfile()
+      mockResolvedUserInfo.value = { id: 'user-b' }
+      await gate.checkProfile()
+
+      expect(mockFetchApi).toHaveBeenCalledTimes(2)
     })
 
     it('sets isCheckingProfile during fetch', async () => {

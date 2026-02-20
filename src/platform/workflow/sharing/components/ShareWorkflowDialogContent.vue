@@ -222,12 +222,25 @@ const formattedDate = computed(() => {
   })
 })
 
+function stripJsonExtension(filename: string): string {
+  return filename.replace(/\.json$/i, '')
+}
+
+function buildWorkflowPath(directory: string, filename: string): string {
+  const normalizedDirectory = directory.replace(/\/+$/, '')
+  const normalizedFilename = appendJsonExt(stripJsonExtension(filename))
+
+  return normalizedDirectory
+    ? `${normalizedDirectory}/${normalizedFilename}`
+    : normalizedFilename
+}
+
 function refreshDialogState() {
   const workflow = workflowStore.activeWorkflow
   if (!workflow || workflow.isTemporary || workflow.isModified) {
     dialogState.value = 'unsaved'
     if (workflow) {
-      workflowName.value = workflow.filename
+      workflowName.value = stripJsonExtension(workflow.filename)
     }
     return
   }
@@ -259,7 +272,7 @@ const { isLoading: isSaving, execute: handleSave } = useAsyncState(
     if (workflow.isTemporary) {
       const name = workflowName.value.trim()
       if (!name) return
-      const newPath = workflow.directory + '/' + appendJsonExt(name)
+      const newPath = buildWorkflowPath(workflow.directory, name)
       await workflowService.renameWorkflow(workflow, newPath)
       await workflowStore.saveWorkflow(workflow)
     } else {
