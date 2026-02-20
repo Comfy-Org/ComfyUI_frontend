@@ -97,7 +97,7 @@ const linearWorkflowRef = useTemplateRef('linearWorkflowRef')
       <SplitterPanel
         id="linearCenterPanel"
         :size="98"
-        class="flex flex-col min-w-min gap-4 px-10 pt-8 pb-4 relative text-muted-foreground outline-none"
+        class="flex flex-col min-w-0 gap-4 px-10 pt-8 pb-4 relative text-muted-foreground outline-none"
       >
         <LinearProgressBar
           class="absolute top-0 left-0 w-[calc(100%+16px)] z-21"
