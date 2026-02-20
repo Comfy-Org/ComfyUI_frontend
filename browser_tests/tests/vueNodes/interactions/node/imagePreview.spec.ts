@@ -1,23 +1,22 @@
 import { expect } from '@playwright/test'
 
+import type { ComfyPage } from '../../../../fixtures/ComfyPage'
 import { comfyPageFixture as test } from '../../../../fixtures/ComfyPage'
 
 test.describe('Vue Nodes Image Preview', () => {
   test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.setSetting('Comfy.VueNodes.Enabled', true)
-    await comfyPage.loadWorkflow('widgets/load_image_widget')
+    await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
+    await comfyPage.workflow.loadWorkflow('widgets/load_image_widget')
     await comfyPage.vueNodes.waitForNodes()
   })
 
-  async function loadImageOnNode(
-    comfyPage: Awaited<
-      ReturnType<(typeof test)['info']>
-    >['fixtures']['comfyPage']
-  ) {
-    const loadImageNode = (await comfyPage.getNodeRefsByType('LoadImage'))[0]
+  async function loadImageOnNode(comfyPage: ComfyPage) {
+    const loadImageNode = (
+      await comfyPage.nodeOps.getNodeRefsByType('LoadImage')
+    )[0]
     const { x, y } = await loadImageNode.getPosition()
 
-    await comfyPage.dragAndDropFile('image64x64.webp', {
+    await comfyPage.dragDrop.dragAndDropFile('image64x64.webp', {
       dropPosition: { x, y }
     })
 
