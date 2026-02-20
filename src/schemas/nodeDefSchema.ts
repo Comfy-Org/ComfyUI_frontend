@@ -70,6 +70,7 @@ export const zStringInputOptions = zBaseInputOptions.extend({
   default: z.string().optional(),
   multiline: z.boolean().optional(),
   dynamicPrompts: z.boolean().optional(),
+  display: z.enum(['password']).optional(),
 
   // Multiline-only fields
   defaultVal: z.string().optional(),
