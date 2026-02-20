@@ -301,6 +301,14 @@ function createAssetService() {
   }
 
   /**
+   * Checks if the asset API is enabled (cloud environment + user setting).
+   */
+  function isAssetAPIEnabled(): boolean {
+    if (!isCloud) return false
+    return !!useSettingStore().get('Comfy.Assets.UseAssetAPI')
+  }
+
+  /**
    * Checks if the asset browser should be used for a given node input.
    * Combines the cloud environment check, user setting, and eligibility check.
    *
@@ -312,10 +320,7 @@ function createAssetService() {
     nodeType: string | undefined,
     widgetName: string
   ): boolean {
-    if (!isCloud) return false
-    const settingStore = useSettingStore()
-    const isUsingAssetAPI = settingStore.get('Comfy.Assets.UseAssetAPI')
-    return isUsingAssetAPI && isAssetBrowserEligible(nodeType, widgetName)
+    return isAssetAPIEnabled() && isAssetBrowserEligible(nodeType, widgetName)
   }
 
   /**
@@ -752,6 +757,7 @@ function createAssetService() {
   return {
     getAssetModelFolders,
     getAssetModels,
+    isAssetAPIEnabled,
     isAssetBrowserEligible,
     shouldUseAssetBrowser,
     getAssetsForNodeType,
