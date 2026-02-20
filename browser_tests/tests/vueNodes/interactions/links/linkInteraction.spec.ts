@@ -102,6 +102,7 @@ test.describe('Vue Node Link Interaction', { tag: '@screenshot' }, () => {
   test.beforeEach(async ({ comfyPage }) => {
     await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
     await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
+    await comfyPage.settings.setSetting('Comfy.NodeSearchBoxImpl', 'default')
     // await comfyPage.setup()
     await comfyPage.workflow.loadWorkflow('vueNodes/simple-triple')
     await comfyPage.vueNodes.waitForNodes()
