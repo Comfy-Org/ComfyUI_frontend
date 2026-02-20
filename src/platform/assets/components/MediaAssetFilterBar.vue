@@ -34,7 +34,9 @@
           />
         </template>
       </AssetSortButton>
-      <MediaAssetSettingsButton>
+      <MediaAssetSettingsButton
+        v-tooltip.top="{ value: $t('sideToolbar.mediaAssets.viewSettings') }"
+      >
         <template #default="{ close }">
           <MediaAssetSettingsMenu v-model:view-mode="viewMode" :close />
         </template>

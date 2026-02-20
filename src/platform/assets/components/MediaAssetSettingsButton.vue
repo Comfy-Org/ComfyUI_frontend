@@ -1,6 +1,11 @@
 <template>
   <div class="relative inline-flex items-center">
-    <Button variant="secondary" size="icon" @click="toggle">
+    <Button
+      variant="secondary"
+      size="icon"
+      :aria-label="$t('sideToolbar.mediaAssets.viewSettings')"
+      @click="toggle"
+    >
       <i class="icon-[lucide--settings-2]" />
     </Button>
 
