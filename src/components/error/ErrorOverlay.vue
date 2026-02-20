@@ -34,7 +34,9 @@
               <span
                 class="mt-1.5 size-1 shrink-0 rounded-full bg-muted-foreground"
               />
-              <span class="break-words line-clamp-3 whitespace-pre-wrap">{{ message }}</span>
+              <span class="break-words line-clamp-3 whitespace-pre-wrap">{{
+                message
+              }}</span>
             </li>
           </ul>
         </div>
