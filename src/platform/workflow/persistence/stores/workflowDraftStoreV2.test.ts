@@ -2,6 +2,7 @@ import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { MAX_DRAFTS } from '../base/draftTypes'
 import { useWorkflowDraftStoreV2 } from './workflowDraftStoreV2'
 
 vi.mock('@/scripts/api', () => ({
@@ -80,8 +81,7 @@ describe('workflowDraftStoreV2', () => {
     it('evicts oldest when over limit', () => {
       const store = useWorkflowDraftStoreV2()
 
-      // Save 32 drafts (MAX_DRAFTS)
-      for (let i = 0; i < 32; i++) {
+      for (let i = 0; i < MAX_DRAFTS; i++) {
         store.saveDraft(`workflows/draft${i}.json`, `{"id":${i}}`, {
           name: `draft${i}`,
           isTemporary: true

@@ -202,15 +202,13 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
     const result = moveEntry(index, oldPath, newPath, name)
 
     if (result) {
-      // Read old payload
       const oldPayload = readPayload(workspaceId, result.oldKey)
       if (oldPayload) {
-        // Write to new key
-        writePayload(workspaceId, result.newKey, {
+        const written = writePayload(workspaceId, result.newKey, {
           data: oldPayload.data,
           updatedAt: Date.now()
         })
-        // Delete old key
+        if (!written) return
         deletePayload(workspaceId, result.oldKey)
       }
       persistIndex(result.index)
