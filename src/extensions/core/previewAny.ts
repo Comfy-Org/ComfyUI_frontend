@@ -52,14 +52,12 @@ useExtensionService().registerExtension({
         showValueWidget.options.hidden = true
         showValueWidget.options.read_only = true
         showValueWidget.element.readOnly = true
-        showValueWidget.element.disabled = true
         showValueWidget.serialize = false
 
         showValueWidgetPlain.hidden = false
         showValueWidgetPlain.options.hidden = false
         showValueWidgetPlain.options.read_only = true
         showValueWidgetPlain.element.readOnly = true
-        showValueWidgetPlain.element.disabled = true
         showValueWidgetPlain.serialize = false
       }
 
