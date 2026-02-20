@@ -19,16 +19,14 @@ import { useClipboard } from '@vueuse/core'
 
 import Button from '@/components/ui/button/Button.vue'
 import Input from '@/components/ui/input/Input.vue'
-import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
 
 const { url } = defineProps<{
   url: string
 }>()
 
-const { copied } = useClipboard({ copiedDuring: 2000 })
-const { copyToClipboard } = useCopyToClipboard()
+const { copy, copied } = useClipboard({ copiedDuring: 2000 })
 
 async function handleCopy() {
-  await copyToClipboard(url)
+  await copy(url)
 }
 </script>

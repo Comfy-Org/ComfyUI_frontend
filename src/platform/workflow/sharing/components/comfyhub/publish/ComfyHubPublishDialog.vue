@@ -57,7 +57,7 @@
 </template>
 
 <script setup lang="ts">
-import { provide } from 'vue'
+import { onBeforeUnmount, provide } from 'vue'
 
 import BaseModalLayout from '@/components/widget/layout/BaseModalLayout.vue'
 import ComfyHubDescribeStep from './ComfyHubDescribeStep.vue'
@@ -83,6 +83,12 @@ const {
   goNext,
   goBack
 } = useComfyHubPublishWizard()
+
+onBeforeUnmount(() => {
+  for (const image of formData.value.exampleImages) {
+    URL.revokeObjectURL(image.url)
+  }
+})
 
 function handlePublish() {
   // TODO: Implement publish to ComfyHub API
