@@ -58,7 +58,7 @@ const { t } = useI18n()
 
 const {
   placeholder,
-  icon = 'pi pi-search',
+  icon = 'icon-[lucide--search]',
   debounceTime = 300,
   autofocus = false,
   showBorder = false,

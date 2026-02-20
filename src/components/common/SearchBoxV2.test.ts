@@ -63,7 +63,7 @@ describe('SearchBoxV2', () => {
 
   it('shows search icon when search term is empty', () => {
     const wrapper = mountComponent({ modelValue: '' })
-    expect(wrapper.find('i.pi').exists()).toBe(true)
+    expect(wrapper.find('i.icon-\\[lucide--search\\]').exists()).toBe(true)
   })
 
   it('shows clear button when search term is not empty', () => {
