@@ -8,6 +8,8 @@ import ShareWorkflowDialogContent from '@/platform/workflow/sharing/components/S
 const mockWorkflowStore = reactive<{
   activeWorkflow: {
     path: string
+    directory: string
+    filename: string
     isTemporary: boolean
     isModified: boolean
     lastModified: number
@@ -138,6 +140,8 @@ describe('ShareWorkflowDialogContent', () => {
     vi.clearAllMocks()
     mockWorkflowStore.activeWorkflow = {
       path: 'workflows/test.json',
+      directory: 'workflows',
+      filename: 'test.json',
       isTemporary: false,
       isModified: false,
       lastModified: 1000
@@ -164,6 +168,8 @@ describe('ShareWorkflowDialogContent', () => {
   it('renders in unsaved state when workflow is modified', async () => {
     mockWorkflowStore.activeWorkflow = {
       path: 'workflows/test.json',
+      directory: 'workflows',
+      filename: 'test.json',
       isTemporary: false,
       isModified: true,
       lastModified: 1000
@@ -178,6 +184,8 @@ describe('ShareWorkflowDialogContent', () => {
   it('renders in unsaved state when workflow is temporary', async () => {
     mockWorkflowStore.activeWorkflow = {
       path: 'workflows/test.json',
+      directory: 'workflows',
+      filename: 'test.json',
       isTemporary: true,
       isModified: false,
       lastModified: 1000

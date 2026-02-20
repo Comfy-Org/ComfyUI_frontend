@@ -1,5 +1,5 @@
 <template>
-  <div class="relative w-[480px] bg-base-background">
+  <div class="relative w-full bg-base-background">
     <!-- Close button -->
     <button
       class="absolute right-2 top-2 z-10 flex size-8 cursor-pointer items-center justify-center rounded-full bg-black/30 text-white hover:bg-black/50"
@@ -27,7 +27,7 @@
     <div class="flex flex-col items-center gap-4 px-6 pb-6">
       <!-- Profile picture -->
       <div
-        class="-mt-15 size-[120px] shrink-0 overflow-hidden rounded-full border-4 border-base-background"
+        class="-mt-15 size-30 shrink-0 overflow-hidden rounded-full border-4 border-base-background"
       >
         <img
           v-if="profile.profilePictureUrl"

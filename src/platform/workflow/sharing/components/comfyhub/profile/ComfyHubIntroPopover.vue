@@ -1,5 +1,5 @@
 <template>
-  <div class="flex w-[480px] flex-col overflow-hidden bg-base-background">
+  <div class="flex w-full flex-col overflow-hidden bg-base-background">
     <!-- Hero image with gradient fade -->
     <div class="relative h-[229px] shrink-0 overflow-hidden">
       <img
