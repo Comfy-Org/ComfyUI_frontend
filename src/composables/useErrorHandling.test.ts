@@ -1,15 +1,18 @@
-import { createPinia, setActivePinia } from 'pinia'
+import { createTestingPinia } from '@pinia/testing'
+import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { ErrorRecoveryStrategy } from '@/composables/useErrorHandling'
 import { useErrorHandling } from '@/composables/useErrorHandling'
+import { t } from '@/i18n'
+import { useToastStore } from '@/platform/updates/common/toastStore'
 
 describe('useErrorHandling', () => {
   let errorHandler: ReturnType<typeof useErrorHandling>
 
   beforeEach(() => {
     vi.clearAllMocks()
-    setActivePinia(createPinia())
+    setActivePinia(createTestingPinia())
     errorHandler = useErrorHandling()
   })
 
@@ -317,6 +320,45 @@ describe('useErrorHandling', () => {
         await wrapped()
 
         expect(recoveryStrategy.recover).toHaveBeenCalled()
+      })
+    })
+
+    describe('network error detection', () => {
+      it.each([
+        ['Failed to fetch', 'Chrome/Edge'],
+        ['NetworkError when attempting to fetch resource.', 'Firefox'],
+        ['Load failed', 'Safari']
+      ])('should show disconnected toast for "%s" (%s)', async (message) => {
+        const action = vi.fn(async () => {
+          throw new TypeError(message)
+        })
+
+        const wrapped = errorHandler.wrapWithErrorHandlingAsync(action)
+        await wrapped()
+
+        const toastStore = useToastStore()
+        expect(toastStore.add).toHaveBeenCalledWith(
+          expect.objectContaining({
+            severity: 'error',
+            detail: t('g.disconnectedFromBackend')
+          })
+        )
+      })
+
+      it('should not treat non-TypeError as network error', async () => {
+        const action = vi.fn(async () => {
+          throw new Error('Failed to fetch')
+        })
+
+        const wrapped = errorHandler.wrapWithErrorHandlingAsync(action)
+        await wrapped()
+
+        const toastStore = useToastStore()
+        expect(toastStore.add).toHaveBeenCalledWith(
+          expect.objectContaining({
+            detail: 'Failed to fetch'
+          })
+        )
       })
     })
 

@@ -52,6 +52,7 @@ import {
 } from '@/scripts/domWidget'
 import { useDialogService } from '@/services/dialogService'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
+import { useMissingNodesDialog } from '@/composables/useMissingNodesDialog'
 import { useExtensionService } from '@/services/extensionService'
 import { useLitegraphService } from '@/services/litegraphService'
 import { useSubgraphService } from '@/services/subgraphService'
@@ -1065,7 +1066,7 @@ export class ComfyApp {
 
   private showMissingNodesError(missingNodeTypes: MissingNodeType[]) {
     if (useSettingStore().get('Comfy.Workflow.ShowMissingNodesWarning')) {
-      useDialogService().showLoadWorkflowWarning({ missingNodeTypes })
+      useMissingNodesDialog().show({ missingNodeTypes })
     }
   }
 
@@ -1212,10 +1213,6 @@ export class ComfyApp {
       await modelStore.loadModelFolders()
       for (const m of uniqueModels) {
         const modelFolder = await modelStore.getLoadedModelFolder(m.directory)
-        if (!modelFolder)
-          (m as ModelFile & { directory_invalid?: boolean }).directory_invalid =
-            true
-
         const modelsAvailable = modelFolder?.models
         const modelExists =
           modelsAvailable &&
