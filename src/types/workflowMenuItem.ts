@@ -1,9 +1,4 @@
-import type { ComponentProps } from 'vue-component-type-helpers'
-
 import type { OverlayIconProps } from '@/components/common/OverlayIcon.vue'
-import type BadgePill from '@/components/common/BadgePill.vue'
-
-type BadgePillProps = ComponentProps<typeof BadgePill>
 
 export type WorkflowMenuItem = WorkflowMenuSeparator | WorkflowMenuAction
 
@@ -17,6 +12,6 @@ export interface WorkflowMenuAction {
   icon?: string
   command?: () => void
   disabled?: boolean
-  badge?: BadgePillProps
+  badge?: string
   overlayIcon?: OverlayIconProps
 }

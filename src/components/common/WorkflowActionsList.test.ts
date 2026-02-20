@@ -60,13 +60,13 @@ describe('WorkflowActionsList', () => {
         label: 'New Feature',
         icon: 'pi pi-star',
         command: vi.fn(),
-        badge: { text: 'NEW', variant: 'highlight' }
+        badge: 'NEW'
       }
     ]
 
     const wrapper = createWrapper(items)
 
-    expect(wrapper.findComponent({ name: 'BadgePill' }).exists()).toBe(true)
+    expect(wrapper.text()).toContain('NEW')
   })
 
   it('does not render badge when absent', () => {
@@ -76,6 +76,6 @@ describe('WorkflowActionsList', () => {
 
     const wrapper = createWrapper(items)
 
-    expect(wrapper.findComponent({ name: 'BadgePill' }).exists()).toBe(false)
+    expect(wrapper.text()).not.toContain('NEW')
   })
 })

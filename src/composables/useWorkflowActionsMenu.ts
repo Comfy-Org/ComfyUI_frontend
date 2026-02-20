@@ -83,7 +83,7 @@ export function useWorkflowActionsMenu(
       if (prependSeparator) items.push({ separator: true })
       const item: WorkflowMenuAction = { label, icon, command, disabled }
       if (isNew) {
-        item.badge = { text: t('contextMenu.new'), variant: 'highlight' }
+        item.badge = t('contextMenu.new')
       }
       items.push(item)
     }
