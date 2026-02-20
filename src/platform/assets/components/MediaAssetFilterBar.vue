@@ -11,7 +11,6 @@
       <MediaAssetFilterButton
         v-if="isCloud"
         v-tooltip.top="{ value: $t('assetBrowser.filterBy') }"
-        size="md"
       >
         <template #default="{ close }">
           <MediaAssetFilterMenu
@@ -24,7 +23,6 @@
       <AssetSortButton
         v-if="isCloud"
         v-tooltip.top="{ value: $t('assetBrowser.sortBy') }"
-        size="md"
       >
         <template #default="{ close }">
           <MediaAssetSortMenu

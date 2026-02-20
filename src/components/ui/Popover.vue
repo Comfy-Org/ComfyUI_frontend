@@ -38,7 +38,7 @@ defineProps<{
         v-bind="$attrs"
         class="z-1700 rounded-lg p-2 bg-base-background shadow-sm border border-border-subtle will-change-[transform,opacity] data-[state=open]:data-[side=top]:animate-slideDownAndFade data-[state=open]:data-[side=right]:animate-slideLeftAndFade data-[state=open]:data-[side=bottom]:animate-slideUpAndFade data-[state=open]:data-[side=left]:animate-slideRightAndFade"
       >
-        <slot>
+        <slot :close="close">
           <div class="flex flex-col p-1">
             <section
               v-for="(entryGroup, index) in entries ?? []"
