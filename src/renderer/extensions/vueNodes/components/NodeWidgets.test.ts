@@ -294,4 +294,56 @@ describe('NodeWidgets', () => {
       expect(widgetEl.classes()).not.toContain('border-l-2')
     })
   })
+
+  describe('slot dot visibility during drag', () => {
+    it('shows slot dots when drag is active', () => {
+      const widget = createMockWidget({
+        slotMetadata: { index: 0, linked: false }
+      })
+      const nodeData = createMockNodeData('TestNode', [widget])
+
+      mockDragState.active = true
+
+      const wrapper = mountComponent(nodeData)
+      const dotContainer = wrapper.find('.lg-node-widget > div:first-child')
+      expect(dotContainer.classes()).toContain('opacity-100')
+      expect(dotContainer.classes()).not.toContain('opacity-0')
+    })
+
+    it('hides slot dots when no drag is active and not linked', () => {
+      const widget = createMockWidget({
+        slotMetadata: { index: 0, linked: false }
+      })
+      const nodeData = createMockNodeData('TestNode', [widget])
+      const wrapper = mountComponent(nodeData)
+      const dotContainer = wrapper.find('.lg-node-widget > div:first-child')
+      expect(dotContainer.classes()).toContain('opacity-0')
+    })
+
+    it('shows slot dots when linked even without drag', () => {
+      const widget = createMockWidget({
+        slotMetadata: { index: 0, linked: true }
+      })
+      const nodeData = createMockNodeData('TestNode', [widget])
+      const wrapper = mountComponent(nodeData)
+      const dotContainer = wrapper.find('.lg-node-widget > div:first-child')
+      expect(dotContainer.classes()).toContain('opacity-100')
+      expect(dotContainer.classes()).not.toContain('opacity-0')
+    })
+  })
+
+  describe('pointer-events during drag', () => {
+    it('enables pointer-events on widget container during drag', () => {
+      const widget = createMockWidget({
+        slotMetadata: { index: 0, linked: false }
+      })
+      const nodeData = createMockNodeData('TestNode', [widget])
+
+      mockDragState.active = true
+
+      const wrapper = mountComponent(nodeData)
+      const container = wrapper.find('.lg-node-widgets')
+      expect(container.classes()).toContain('pointer-events-auto')
+    })
+  })
 })

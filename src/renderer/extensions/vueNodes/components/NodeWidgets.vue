@@ -7,7 +7,7 @@
     :class="
       cn(
         'lg-node-widgets grid grid-cols-[min-content_minmax(80px,min-content)_minmax(125px,1fr)] gap-y-1 pr-3',
-        shouldHandleNodePointerEvents
+        shouldHandleNodePointerEvents || dragState.active
           ? 'pointer-events-auto'
           : 'pointer-events-none'
       )
@@ -43,8 +43,10 @@
         <div
           :class="
             cn(
-              'z-10 w-3 opacity-0 transition-opacity duration-150 group-hover:opacity-100 flex items-stretch',
-              widget.slotMetadata?.linked && 'opacity-100'
+              'z-10 w-3 transition-opacity duration-150 flex items-stretch',
+              dragState.active || widget.slotMetadata?.linked
+                ? 'opacity-100'
+                : 'opacity-0 group-hover:opacity-100'
             )
           "
         >
