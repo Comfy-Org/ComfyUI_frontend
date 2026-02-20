@@ -2409,7 +2409,11 @@
     "downloads": "Descargas",
     "folderView": {
       "errorDetail": "No se pudieron recuperar las salidas para este trabajo. Por favor, inténtalo de nuevo.",
+<<<<<<< Updated upstream
       "errorSummary": "Error al cargar las salidas"
+=======
+      "errorSummary": "No se pudieron cargar las salidas"
+>>>>>>> Stashed changes
     },
     "generatedAssetsHeader": "Recursos generados",
     "helpCenter": "Centro de ayuda",

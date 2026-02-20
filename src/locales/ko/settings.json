@@ -257,7 +257,11 @@
     "options": {
       "default": "기본",
       "litegraph (legacy)": "litegraph (구버전)",
+<<<<<<< Updated upstream
       "v1 (legacy)": "v1 (legacy)"
+=======
+      "v1 (legacy)": "v1 (레거시)"
+>>>>>>> Stashed changes
     }
   },
   "Comfy_NodeSearchBoxImpl_NodePreview": {

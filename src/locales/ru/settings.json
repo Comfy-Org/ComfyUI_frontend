@@ -257,7 +257,11 @@
     "options": {
       "default": "по умолчанию",
       "litegraph (legacy)": "litegraph (устаревший)",
+<<<<<<< Updated upstream
       "v1 (legacy)": "v1 (устаревший)"
+=======
+      "v1 (legacy)": "v1 (устаревшее)"
+>>>>>>> Stashed changes
     }
   },
   "Comfy_NodeSearchBoxImpl_NodePreview": {

@@ -257,7 +257,11 @@
     "options": {
       "default": "پیش‌فرض",
       "litegraph (legacy)": "litegraph (قدیمی)",
+<<<<<<< Updated upstream
       "v1 (legacy)": "v۱ (قدیمی)"
+=======
+      "v1 (legacy)": "v1 (قدیمی)"
+>>>>>>> Stashed changes
     }
   },
   "Comfy_NodeSearchBoxImpl_NodePreview": {

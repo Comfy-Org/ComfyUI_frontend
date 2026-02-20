@@ -730,16 +730,27 @@
     "promptExecutionError": "فشل تنفيذ الطلب"
   },
   "exportToast": {
+<<<<<<< Updated upstream
     "allExportsCompleted": "اكتملت جميع عمليات التصدير",
+=======
+    "allExportsCompleted": "اكتمل تصدير جميع الملفات",
+>>>>>>> Stashed changes
     "downloadExport": "تحميل التصدير",
     "downloadFailed": "فشل تحميل \"{name}\"",
     "exportCompleted": "تحميل ZIP جاهز",
     "exportError": "فشل التصدير",
     "exportFailed": "فشل {count} في التصدير | فشل {count} في التصدير | فشل {count} في التصدير",
+<<<<<<< Updated upstream
     "exportFailedSingle": "فشل في إنشاء تصدير ZIP",
     "exportStarted": "يتم تجهيز تحميل ZIP...",
     "exportingAssets": "جاري تصدير العناصر",
     "noExportsInQueue": "لا يوجد {filter} عمليات تصدير في قائمة الانتظار",
+=======
+    "exportFailedSingle": "فشل إنشاء تصدير ZIP",
+    "exportStarted": "يتم تجهيز تحميل ZIP...",
+    "exportingAssets": "جاري تصدير الأصول",
+    "noExportsInQueue": "لا يوجد {filter} تصدير في قائمة الانتظار",
+>>>>>>> Stashed changes
     "preparingExport": "جاري تجهيز التصدير...",
     "retryDownload": "إعادة محاولة التحميل"
   },

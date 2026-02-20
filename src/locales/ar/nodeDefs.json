@@ -2306,7 +2306,11 @@
     }
   },
   "ElevenLabsAudioIsolation": {
+<<<<<<< Updated upstream
     "description": "إزالة الضوضاء الخلفية من الصوت، مع عزل الأصوات أو الكلام.",
+=======
+    "description": "إزالة الضوضاء الخلفية من الصوت، مع عزل الغناء أو الكلام.",
+>>>>>>> Stashed changes
     "display_name": "عزل الصوت من ElevenLabs",
     "inputs": {
       "audio": {
@@ -2321,7 +2325,11 @@
     }
   },
   "ElevenLabsInstantVoiceClone": {
+<<<<<<< Updated upstream
     "description": "إنشاء صوت مستنسخ من عينات صوتية. يرجى تقديم ١-٨ تسجيلات صوتية للصوت المراد استنساخه.",
+=======
+    "description": "إنشاء صوت مستنسخ من عينات صوتية. يرجى تقديم ١ إلى ٨ تسجيلات صوتية للصوت المراد استنساخه.",
+>>>>>>> Stashed changes
     "display_name": "استنساخ الصوت الفوري من ElevenLabs",
     "inputs": {
       "files": {
@@ -2330,7 +2338,11 @@
       },
       "remove_background_noise": {
         "name": "إزالة الضوضاء الخلفية",
+<<<<<<< Updated upstream
         "tooltip": "إزالة الضوضاء الخلفية من عينات الصوت باستخدام عزل الصوت."
+=======
+        "tooltip": "إزالة الضوضاء الخلفية من العينات الصوتية باستخدام عزل الصوت."
+>>>>>>> Stashed changes
       }
     },
     "outputs": {
@@ -2377,7 +2389,11 @@
       },
       "seed": {
         "name": "البذرة",
+<<<<<<< Updated upstream
         "tooltip": "بذرة لضمان إمكانية إعادة الإنتاج."
+=======
+        "tooltip": "بذرة لإعادة إنتاج النتائج."
+>>>>>>> Stashed changes
       },
       "stability": {
         "name": "الثبات",
@@ -2407,7 +2423,11 @@
       },
       "language_code": {
         "name": "رمز اللغة",
+<<<<<<< Updated upstream
         "tooltip": "رمز اللغة وفق ISO-639-1 أو ISO-639-3 (مثال: 'en'، 'es'، 'fra'). اتركه فارغًا للكشف التلقائي."
+=======
+        "tooltip": "رمز اللغة وفق معيار ISO-639-1 أو ISO-639-3 (مثال: 'en'، 'es'، 'fra'). اتركه فارغًا للكشف التلقائي."
+>>>>>>> Stashed changes
       },
       "model": {
         "name": "النموذج",
@@ -2434,7 +2454,11 @@
       },
       "seed": {
         "name": "البذرة",
+<<<<<<< Updated upstream
         "tooltip": "بذرة لإعادة الإنتاج (لا يضمن الحتمية)."
+=======
+        "tooltip": "بذرة لإعادة إنتاج النتائج (لا يضمن الحتمية)."
+>>>>>>> Stashed changes
       }
     },
     "outputs": {
@@ -2447,7 +2471,11 @@
         "tooltip": null
       },
       "2": {
+<<<<<<< Updated upstream
         "name": "كلمات_JSON",
+=======
+        "name": "كلمات (JSON)",
+>>>>>>> Stashed changes
         "tooltip": null
       }
     }
@@ -2457,14 +2485,23 @@
     "display_name": "ElevenLabs تحويل النص إلى حوار",
     "inputs": {
       "apply_text_normalization": {
+<<<<<<< Updated upstream
         "name": "تطبيق تطبيع النص",
         "tooltip": "وضع تطبيع النص. 'auto' يترك القرار للنظام، 'on' يطبق التطبيع دائمًا، 'off' يتخطى التطبيع."
+=======
+        "name": "تطبيق تنسيق النص",
+        "tooltip": "وضع تنسيق النص. 'auto' يترك القرار للنظام، 'on' يطبق التنسيق دائمًا، 'off' يتخطى التنسيق."
+>>>>>>> Stashed changes
       },
       "control_after_generate": {
         "name": "التحكم بعد التوليد"
       },
       "inputs": {
+<<<<<<< Updated upstream
         "name": "عدد الإدخالات",
+=======
+        "name": "عدد الحوارات",
+>>>>>>> Stashed changes
         "tooltip": "عدد أجزاء الحوار."
       },
       "inputs_text1": {
@@ -2472,19 +2509,32 @@
       },
       "language_code": {
         "name": "رمز اللغة",
+<<<<<<< Updated upstream
         "tooltip": "رمز اللغة وفق ISO-639-1 أو ISO-639-3 (مثال: 'en'، 'es'، 'fra'). اتركه فارغًا للكشف التلقائي."
+=======
+        "tooltip": "رمز اللغة وفق معيار ISO-639-1 أو ISO-639-3 (مثال: 'en'، 'es'، 'fra'). اتركه فارغًا للكشف التلقائي."
+>>>>>>> Stashed changes
       },
       "model": {
         "name": "النموذج",
         "tooltip": "النموذج المستخدم لتوليد الحوار."
       },
       "output_format": {
+<<<<<<< Updated upstream
         "name": "تنسيق الإخراج",
         "tooltip": "تنسيق إخراج الصوت."
       },
       "seed": {
         "name": "البذرة",
         "tooltip": "بذرة لإعادة الإنتاج."
+=======
+        "name": "صيغة الإخراج الصوتي",
+        "tooltip": "صيغة إخراج الصوت."
+      },
+      "seed": {
+        "name": "البذرة",
+        "tooltip": "بذرة لإعادة إنتاج النتائج."
+>>>>>>> Stashed changes
       },
       "stability": {
         "name": "الثبات",
@@ -2515,8 +2565,13 @@
         "name": "تأثير الوصف"
       },
       "output_format": {
+<<<<<<< Updated upstream
         "name": "تنسيق الإخراج",
         "tooltip": "تنسيق إخراج الصوت."
+=======
+        "name": "صيغة الإخراج الصوتي",
+        "tooltip": "صيغة إخراج الصوت."
+>>>>>>> Stashed changes
       },
       "text": {
         "name": "النص",
@@ -2566,7 +2621,11 @@
       },
       "seed": {
         "name": "البذرة",
+<<<<<<< Updated upstream
         "tooltip": "بذرة لضمان إعادة الإنتاج (لا يوجد ضمان للحتمية)."
+=======
+        "tooltip": "بذرة لضمان إمكانية إعادة الإنتاج (لا يوجد ضمان للحتمية)."
+>>>>>>> Stashed changes
       },
       "stability": {
         "name": "الاستقرار",
@@ -3539,7 +3598,11 @@
     }
   },
   "GLSLShader": {
+<<<<<<< Updated upstream
     "description": "تطبيق مظللات GLSL ES fragment على الصور. المتغير u_resolution (vec2) متوفر دائماً.",
+=======
+    "description": "تطبيق مظللات GLSL ES الفراغية على الصور. المتغير u_resolution (vec2) متوفر دائماً.",
+>>>>>>> Stashed changes
     "display_name": "مظلل GLSL",
     "inputs": {
       "floats": {
@@ -3548,7 +3611,11 @@
       },
       "fragment_shader": {
         "name": "fragment_shader",
+<<<<<<< Updated upstream
         "tooltip": "كود مصدر مظلل fragment لـ GLSL (متوافق مع GLSL ES 3.00 / WebGL 2.0)"
+=======
+        "tooltip": "كود مصدر مظلل GLSL الفراغي (متوافق مع GLSL ES 3.00 / WebGL 2.0)"
+>>>>>>> Stashed changes
       },
       "images": {
         "name": "images",
@@ -4069,11 +4136,19 @@
     },
     "outputs": {
       "0": {
+<<<<<<< Updated upstream
         "name": "positive",
         "tooltip": null
       },
       "1": {
         "name": "negative",
+=======
+        "name": "موجب",
+        "tooltip": null
+      },
+      "1": {
+        "name": "سلبي",
+>>>>>>> Stashed changes
         "tooltip": null
       }
     }
@@ -4096,11 +4171,19 @@
     },
     "outputs": {
       "0": {
+<<<<<<< Updated upstream
         "name": "positive",
         "tooltip": null
       },
       "1": {
         "name": "negative",
+=======
+        "name": "موجب",
+        "tooltip": null
+      },
+      "1": {
+        "name": "سلبي",
+>>>>>>> Stashed changes
         "tooltip": null
       }
     }
@@ -7069,6 +7152,7 @@
     },
     "outputs": {
       "0": {
+<<<<<<< Updated upstream
         "name": "image",
         "tooltip": null
       },
@@ -7094,6 +7178,33 @@
       },
       "6": {
         "name": "model_3d",
+=======
+        "name": "صورة",
+        "tooltip": null
+      },
+      "1": {
+        "name": "قناع",
+        "tooltip": null
+      },
+      "2": {
+        "name": "مسار النموذج الشبكي",
+        "tooltip": null
+      },
+      "3": {
+        "name": "السطح الطبيعي",
+        "tooltip": null
+      },
+      "4": {
+        "name": "معلومات الكاميرا",
+        "tooltip": null
+      },
+      "5": {
+        "name": "فيديو التسجيل",
+        "tooltip": null
+      },
+      "6": {
+        "name": "نموذج ثلاثي الأبعاد",
+>>>>>>> Stashed changes
         "tooltip": null
       }
     }
@@ -8045,7 +8156,11 @@
     },
     "outputs": {
       "0": {
+<<<<<<< Updated upstream
         "name": "model_file",
+=======
+        "name": "ملف النموذج",
+>>>>>>> Stashed changes
         "tooltip": null
       },
       "1": {
@@ -8104,11 +8219,19 @@
     },
     "outputs": {
       "0": {
+<<<<<<< Updated upstream
         "name": "model_file",
         "tooltip": null
       },
       "1": {
         "name": "meshy_task_id",
+=======
+        "name": "ملف النموذج",
+        "tooltip": null
+      },
+      "1": {
+        "name": "معرف مهمة Meshy",
+>>>>>>> Stashed changes
         "tooltip": null
       },
       "2": {
@@ -8167,11 +8290,19 @@
     },
     "outputs": {
       "0": {
+<<<<<<< Updated upstream
         "name": "model_file",
         "tooltip": null
       },
       "1": {
         "name": "meshy_task_id",
+=======
+        "name": "ملف النموذج",
+        "tooltip": null
+      },
+      "1": {
+        "name": "معرف مهمة Meshy",
+>>>>>>> Stashed changes
         "tooltip": null
       },
       "2": {
@@ -8209,11 +8340,19 @@
     },
     "outputs": {
       "0": {
+<<<<<<< Updated upstream
         "name": "model_file",
         "tooltip": null
       },
       "1": {
         "name": "meshy_task_id",
+=======
+        "name": "ملف النموذج",
+        "tooltip": null
+      },
+      "1": {
+        "name": "معرف مهمة Meshy",
+>>>>>>> Stashed changes
         "tooltip": null
       },
       "2": {
@@ -8244,11 +8383,19 @@
     },
     "outputs": {
       "0": {
+<<<<<<< Updated upstream
         "name": "model_file",
         "tooltip": null
       },
       "1": {
         "name": "rig_task_id",
+=======
+        "name": "ملف النموذج",
+        "tooltip": null
+      },
+      "1": {
+        "name": "معرف مهمة Rig",
+>>>>>>> Stashed changes
         "tooltip": null
       },
       "2": {
@@ -13100,7 +13247,11 @@
         "tooltip": null
       },
       "1": {
+<<<<<<< Updated upstream
         "name": "الناتج بعد إزالة الضوضاء",
+=======
+        "name": "الناتج بعد إزالة التشويش",
+>>>>>>> Stashed changes
         "tooltip": null
       }
     }
@@ -13130,7 +13281,11 @@
         "tooltip": null
       },
       "1": {
+<<<<<<< Updated upstream
         "name": "الناتج بعد إزالة الضوضاء",
+=======
+        "name": "الناتج بعد إزالة التشويش",
+>>>>>>> Stashed changes
         "tooltip": null
       }
     }
@@ -15078,10 +15233,17 @@
         "name": "الحد الأقصى للطول"
       },
       "prompt": {
+<<<<<<< Updated upstream
         "name": "الموجه"
       },
       "sampling_mode": {
         "name": "وضع العينة"
+=======
+        "name": "المطالبة"
+      },
+      "sampling_mode": {
+        "name": "وضع التوليد"
+>>>>>>> Stashed changes
       },
       "sampling_mode_min_p": {
         "name": "أدنى قيمة p"
@@ -15104,7 +15266,11 @@
     },
     "outputs": {
       "0": {
+<<<<<<< Updated upstream
         "name": "النص المولّد",
+=======
+        "name": "النص المُولّد",
+>>>>>>> Stashed changes
         "tooltip": null
       }
     }

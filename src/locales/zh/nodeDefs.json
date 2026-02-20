@@ -2321,7 +2321,11 @@
     }
   },
   "ElevenLabsInstantVoiceClone": {
+<<<<<<< Updated upstream
     "description": "通过音频样本克隆语音。请提供 1-8 段需要克隆的语音录音。",
+=======
+    "description": "通过音频样本创建克隆语音。请提供 1-8 段需要克隆的语音录音。",
+>>>>>>> Stashed changes
     "display_name": "ElevenLabs 即时语音克隆",
     "inputs": {
       "files": {
@@ -2341,7 +2345,11 @@
     }
   },
   "ElevenLabsSpeechToSpeech": {
+<<<<<<< Updated upstream
     "description": "将一种声音的语音转换为另一种声音，同时保留原始内容和情感。",
+=======
+    "description": "将一种语音转换为另一种语音，同时保留原始内容和情感。",
+>>>>>>> Stashed changes
     "display_name": "ElevenLabs 语音转换",
     "inputs": {
       "audio": {
@@ -2381,7 +2389,11 @@
       },
       "stability": {
         "name": "稳定性",
+<<<<<<< Updated upstream
         "tooltip": "语音稳定性。数值越低，情感变化越丰富；数值越高，语音越一致但可能更单调。"
+=======
+        "tooltip": "语音稳定性。较低数值带来更丰富的情感变化，较高数值则语音更一致但可能较为单调。"
+>>>>>>> Stashed changes
       },
       "voice": {
         "name": "目标语音",
@@ -2407,7 +2419,11 @@
       },
       "language_code": {
         "name": "语言代码",
+<<<<<<< Updated upstream
         "tooltip": "ISO-639-1 或 ISO-639-3 语言代码（例如 'en'、'es'、'fra'）。留空以自动检测。"
+=======
+        "tooltip": "ISO-639-1 或 ISO-639-3 语言代码（例如 'en'，'es'，'fra'）。留空以自动检测。"
+>>>>>>> Stashed changes
       },
       "model": {
         "name": "模型",
@@ -2430,7 +2446,11 @@
       },
       "num_speakers": {
         "name": "说话人数",
+<<<<<<< Updated upstream
         "tooltip": "预测的最大说话人数。设置为 0 以自动检测。"
+=======
+        "tooltip": "要预测的最大说话人数。设置为 0 以自动检测。"
+>>>>>>> Stashed changes
       },
       "seed": {
         "name": "种子",
@@ -2453,7 +2473,11 @@
     }
   },
   "ElevenLabsTextToDialogue": {
+<<<<<<< Updated upstream
     "description": "从文本生成多说话人对话。每条对话都有独立的文本和语音。",
+=======
+    "description": "从文本生成多说话人对话。每条对话都有独立的文本和声音。",
+>>>>>>> Stashed changes
     "display_name": "ElevenLabs 文本转对话",
     "inputs": {
       "apply_text_normalization": {
@@ -2472,7 +2496,11 @@
       },
       "language_code": {
         "name": "语言代码",
+<<<<<<< Updated upstream
         "tooltip": "ISO-639-1 或 ISO-639-3 语言代码（例如 'en'、'es'、'fra'）。留空以自动检测。"
+=======
+        "tooltip": "ISO-639-1 或 ISO-639-3 语言代码（例如 'en'，'es'，'fra'）。留空以自动检测。"
+>>>>>>> Stashed changes
       },
       "model": {
         "name": "模型",
@@ -2488,7 +2516,11 @@
       },
       "stability": {
         "name": "稳定性",
+<<<<<<< Updated upstream
         "tooltip": "语音稳定性。值越低情感范围越广，值越高语音更一致但可能更单调。"
+=======
+        "tooltip": "语音稳定性。较低值提供更广的情感范围，较高值产生更一致但可能单调的语音。"
+>>>>>>> Stashed changes
       }
     },
     "outputs": {
@@ -2535,14 +2567,22 @@
     "inputs": {
       "apply_text_normalization": {
         "name": "apply_text_normalization",
+<<<<<<< Updated upstream
         "tooltip": "文本规范化模式。'auto' 由系统自动决定，'on' 总是应用规范化，'off' 跳过规范化。"
+=======
+        "tooltip": "文本规范化模式。'auto' 由系统决定，'on' 总是应用规范化，'off' 跳过规范化。"
+>>>>>>> Stashed changes
       },
       "control_after_generate": {
         "name": "control after generate"
       },
       "language_code": {
         "name": "language_code",
+<<<<<<< Updated upstream
         "tooltip": "ISO-639-1 或 ISO-639-3 语言代码（如 'en', 'es', 'fra'）。留空则自动检测。"
+=======
+        "tooltip": "ISO-639-1 或 ISO-639-3 语言代码（如 'en'、'es'、'fra'）。留空则自动检测。"
+>>>>>>> Stashed changes
       },
       "model": {
         "name": "model",
@@ -2570,7 +2610,11 @@
       },
       "stability": {
         "name": "stability",
+<<<<<<< Updated upstream
         "tooltip": "语音稳定性。较低的数值带来更广泛的情感变化，较高的数值则语音更一致但可能更单调。"
+=======
+        "tooltip": "语音稳定性。较低的数值带来更广泛的情感变化，较高的数值则语音更一致但可能单调。"
+>>>>>>> Stashed changes
       },
       "text": {
         "name": "text",
@@ -3544,7 +3588,11 @@
     "inputs": {
       "floats": {
         "name": "floats",
+<<<<<<< Updated upstream
         "tooltip": "浮点数在着色器代码中以 u_float0-4 形式可用"
+=======
+        "tooltip": "在着色器代码中，浮点数可通过 u_float0-4 获取"
+>>>>>>> Stashed changes
       },
       "fragment_shader": {
         "name": "fragment_shader",
@@ -3552,11 +3600,19 @@
       },
       "images": {
         "name": "images",
+<<<<<<< Updated upstream
         "tooltip": "图像在着色器代码中以 u_image0-4（sampler2D）形式可用"
       },
       "ints": {
         "name": "ints",
         "tooltip": "整数在着色器代码中以 u_int0-4 形式可用"
+=======
+        "tooltip": "在着色器代码中，图像可通过 u_image0-4（sampler2D）获取"
+      },
+      "ints": {
+        "name": "ints",
+        "tooltip": "在着色器代码中，整数可通过 u_int0-4 获取"
+>>>>>>> Stashed changes
       },
       "size_mode": {
         "name": "size_mode",
@@ -3566,6 +3622,7 @@
     "outputs": {
       "0": {
         "name": "IMAGE0",
+<<<<<<< Updated upstream
         "tooltip": "在着色器代码中通过 layout(location = 0) out vec4 fragColor0 可用"
       },
       "1": {
@@ -3579,6 +3636,21 @@
       "3": {
         "name": "IMAGE3",
         "tooltip": "在着色器代码中通过 layout(location = 3) out vec4 fragColor3 可用"
+=======
+        "tooltip": "在着色器代码中通过 layout(location = 0) out vec4 fragColor0 获取"
+      },
+      "1": {
+        "name": "IMAGE1",
+        "tooltip": "在着色器代码中通过 layout(location = 1) out vec4 fragColor1 获取"
+      },
+      "2": {
+        "name": "IMAGE2",
+        "tooltip": "在着色器代码中通过 layout(location = 2) out vec4 fragColor2 获取"
+      },
+      "3": {
+        "name": "IMAGE3",
+        "tooltip": "在着色器代码中通过 layout(location = 3) out vec4 fragColor3 获取"
+>>>>>>> Stashed changes
       }
     }
   },
@@ -15066,7 +15138,11 @@
     }
   },
   "TextGenerate": {
+<<<<<<< Updated upstream
     "display_name": "TextGenerate",
+=======
+    "display_name": "文本生成",
+>>>>>>> Stashed changes
     "inputs": {
       "clip": {
         "name": "clip"
@@ -15096,10 +15172,17 @@
         "name": "温度"
       },
       "sampling_mode_top_k": {
+<<<<<<< Updated upstream
         "name": "top_k"
       },
       "sampling_mode_top_p": {
         "name": "top_p"
+=======
+        "name": "Top K"
+      },
+      "sampling_mode_top_p": {
+        "name": "Top P"
+>>>>>>> Stashed changes
       }
     },
     "outputs": {
@@ -15110,7 +15193,11 @@
     }
   },
   "TextGenerateLTX2Prompt": {
+<<<<<<< Updated upstream
     "display_name": "TextGenerateLTX2Prompt",
+=======
+    "display_name": "文本生成LTX2提示词",
+>>>>>>> Stashed changes
     "inputs": {
       "clip": {
         "name": "clip"
@@ -15140,10 +15227,17 @@
         "name": "温度"
       },
       "sampling_mode_top_k": {
+<<<<<<< Updated upstream
         "name": "top_k"
       },
       "sampling_mode_top_p": {
         "name": "top_p"
+=======
+        "name": "Top K"
+      },
+      "sampling_mode_top_p": {
+        "name": "Top P"
+>>>>>>> Stashed changes
       }
     },
     "outputs": {

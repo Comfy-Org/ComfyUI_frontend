@@ -2341,7 +2341,11 @@
     }
   },
   "ElevenLabsSpeechToSpeech": {
+<<<<<<< Updated upstream
     "description": "Bir sesi, orijinal içerik ve duyguyu koruyarak başka bir sese dönüştürün.",
+=======
+    "description": "Bir sesi başka bir sese dönüştürün, orijinal içeriği ve duyguyu koruyun.",
+>>>>>>> Stashed changes
     "display_name": "ElevenLabs Sesten Sese",
     "inputs": {
       "audio": {
@@ -2353,7 +2357,11 @@
       },
       "model": {
         "name": "model",
+<<<<<<< Updated upstream
         "tooltip": "Sesten sese dönüştürme için kullanılacak model."
+=======
+        "tooltip": "Sesten sese dönüşüm için kullanılacak model."
+>>>>>>> Stashed changes
       },
       "model_similarity_boost": {
         "name": "benzerlik_arttırıcı"
@@ -2381,11 +2389,19 @@
       },
       "stability": {
         "name": "kararlılık",
+<<<<<<< Updated upstream
         "tooltip": "Ses kararlılığı. Düşük değerler daha geniş bir duygusal aralık sunar, yüksek değerler ise daha tutarlı fakat muhtemelen tekdüze bir konuşma üretir."
       },
       "voice": {
         "name": "hedef_ses",
         "tooltip": "Dönüştürme için hedef ses. Ses Seçici veya Anında Ses Klonlama'dan bağlayın."
+=======
+        "tooltip": "Ses kararlılığı. Düşük değerler daha geniş duygusal aralık sunar, yüksek değerler daha tutarlı ama muhtemelen tekdüze konuşma üretir."
+      },
+      "voice": {
+        "name": "hedef_ses",
+        "tooltip": "Dönüşüm için hedef ses. Ses Seçici veya Anında Ses Klonlama'dan bağlayın."
+>>>>>>> Stashed changes
       }
     },
     "outputs": {
@@ -2395,7 +2411,11 @@
     }
   },
   "ElevenLabsSpeechToText": {
+<<<<<<< Updated upstream
     "description": "Sesi metne dönüştürür. Otomatik dil algılama, konuşmacı ayrımı ve ses olayı etiketleme desteklenir.",
+=======
+    "description": "Sesi metne dönüştürür. Otomatik dil algılama, konuşmacı ayrımı ve ses olayı etiketleme desteği sunar.",
+>>>>>>> Stashed changes
     "display_name": "ElevenLabs Konuşmadan Metne",
     "inputs": {
       "audio": {
@@ -2417,7 +2437,11 @@
         "name": "ayrım eşiği"
       },
       "model_diarize": {
+<<<<<<< Updated upstream
         "name": "ayrım yap"
+=======
+        "name": "ayrım"
+>>>>>>> Stashed changes
       },
       "model_tag_audio_events": {
         "name": "ses olaylarını etiketle"
@@ -2434,7 +2458,11 @@
       },
       "seed": {
         "name": "tohum",
+<<<<<<< Updated upstream
         "tooltip": "Tekrarlanabilirlik için tohum (deterministik olması garanti edilmez)."
+=======
+        "tooltip": "Tekrarlanabilirlik için tohum (belirleyicilik garanti edilmez)."
+>>>>>>> Stashed changes
       }
     },
     "outputs": {
@@ -2464,7 +2492,11 @@
         "name": "oluşturduktan sonra kontrol"
       },
       "inputs": {
+<<<<<<< Updated upstream
         "name": "girdiler",
+=======
+        "name": "girdi_sayısı",
+>>>>>>> Stashed changes
         "tooltip": "Diyalog girdisi sayısı."
       },
       "inputs_text1": {
@@ -2488,7 +2520,11 @@
       },
       "stability": {
         "name": "kararlılık",
+<<<<<<< Updated upstream
         "tooltip": "Ses kararlılığı. Düşük değerler daha geniş duygusal aralık sunar, yüksek değerler daha tutarlı ama muhtemelen tekdüze konuşma üretir."
+=======
+        "tooltip": "Ses kararlılığı. Düşük değerler daha geniş duygusal aralık sunar, yüksek değerler ise daha tutarlı fakat muhtemelen tekdüze konuşma üretir."
+>>>>>>> Stashed changes
       }
     },
     "outputs": {
@@ -2498,7 +2534,11 @@
     }
   },
   "ElevenLabsTextToSoundEffects": {
+<<<<<<< Updated upstream
     "description": "Metin açıklamalarından ses efektleri oluşturur.",
+=======
+    "description": "Metin açıklamalarından ses efektleri üretir.",
+>>>>>>> Stashed changes
     "display_name": "ElevenLabs Metinden Ses Efektlerine",
     "inputs": {
       "model": {
@@ -2520,7 +2560,11 @@
       },
       "text": {
         "name": "metin",
+<<<<<<< Updated upstream
         "tooltip": "Oluşturulacak ses efektinin metin açıklaması."
+=======
+        "tooltip": "Üretilecek ses efektinin metin açıklaması."
+>>>>>>> Stashed changes
       }
     },
     "outputs": {
@@ -2541,7 +2585,11 @@
         "name": "oluşturduktan sonra kontrol et"
       },
       "language_code": {
+<<<<<<< Updated upstream
         "name": "dil_kodu",
+=======
+        "name": "dil kodu",
+>>>>>>> Stashed changes
         "tooltip": "ISO-639-1 veya ISO-639-3 dil kodu (örn. 'en', 'es', 'fra'). Otomatik algılama için boş bırakın."
       },
       "model": {
@@ -2549,7 +2597,11 @@
         "tooltip": "Metinden konuşmaya için kullanılacak model."
       },
       "model_similarity_boost": {
+<<<<<<< Updated upstream
         "name": "benzerlik_arttırıcı"
+=======
+        "name": "benzerlik artırıcı"
+>>>>>>> Stashed changes
       },
       "model_speed": {
         "name": "hız"
@@ -2558,10 +2610,17 @@
         "name": "stil"
       },
       "model_use_speaker_boost": {
+<<<<<<< Updated upstream
         "name": "konuşmacı_arttırıcıyı_kullan"
       },
       "output_format": {
         "name": "çıktı_formatı",
+=======
+        "name": "konuşmacı artırıcıyı kullan"
+      },
+      "output_format": {
+        "name": "çıktı formatı",
+>>>>>>> Stashed changes
         "tooltip": "Ses çıktısı formatı."
       },
       "seed": {
@@ -2588,7 +2647,11 @@
     }
   },
   "ElevenLabsVoiceSelector": {
+<<<<<<< Updated upstream
     "description": "Metinden konuşma üretimi için önceden tanımlanmış bir ElevenLabs sesi seçin.",
+=======
+    "description": "Metinden konuşmaya üretimi için önceden tanımlanmış bir ElevenLabs sesi seçin.",
+>>>>>>> Stashed changes
     "display_name": "ElevenLabs Ses Seçici",
     "inputs": {
       "voice": {
@@ -3560,7 +3623,11 @@
       },
       "size_mode": {
         "name": "size_mode",
+<<<<<<< Updated upstream
         "tooltip": "Çıktı boyutu: 'from_input' ilk giriş görüntüsünün boyutlarını kullanır, 'custom' elle boyut ayarlamaya izin verir"
+=======
+        "tooltip": "Çıktı boyutu: 'from_input' ilk giriş görüntüsünün boyutlarını kullanır, 'custom' manuel boyut ayarlamaya izin verir"
+>>>>>>> Stashed changes
       }
     },
     "outputs": {
@@ -12684,7 +12751,11 @@
     },
     "outputs": {
       "0": {
+<<<<<<< Updated upstream
         "name": "3B Model Yolu",
+=======
+        "name": "3D Model Yolu",
+>>>>>>> Stashed changes
         "tooltip": null
       },
       "1": {
@@ -12715,7 +12786,11 @@
     },
     "outputs": {
       "0": {
+<<<<<<< Updated upstream
         "name": "3B Model Yolu",
+=======
+        "name": "3D Model Yolu",
+>>>>>>> Stashed changes
         "tooltip": null
       },
       "1": {
@@ -12743,7 +12818,11 @@
     },
     "outputs": {
       "0": {
+<<<<<<< Updated upstream
         "name": "3B Model Yolu",
+=======
+        "name": "3D Model Yolu",
+>>>>>>> Stashed changes
         "tooltip": null
       },
       "1": {
@@ -12765,7 +12844,11 @@
     },
     "outputs": {
       "0": {
+<<<<<<< Updated upstream
         "name": "3B Model Yolu",
+=======
+        "name": "3D Model Yolu",
+>>>>>>> Stashed changes
         "tooltip": null
       },
       "1": {
@@ -12793,7 +12876,11 @@
     },
     "outputs": {
       "0": {
+<<<<<<< Updated upstream
         "name": "3B Model Yolu",
+=======
+        "name": "3D Model Yolu",
+>>>>>>> Stashed changes
         "tooltip": null
       },
       "1": {
@@ -14030,11 +14117,19 @@
     },
     "outputs": {
       "0": {
+<<<<<<< Updated upstream
         "name": "yüksek_sigma",
         "tooltip": null
       },
       "1": {
         "name": "düşük_sigma",
+=======
+        "name": "yüksek_sigmas",
+        "tooltip": null
+      },
+      "1": {
+        "name": "düşük_sigmas",
+>>>>>>> Stashed changes
         "tooltip": null
       }
     }
@@ -14051,11 +14146,19 @@
     },
     "outputs": {
       "0": {
+<<<<<<< Updated upstream
         "name": "yüksek_sigma",
         "tooltip": null
       },
       "1": {
         "name": "düşük_sigma",
+=======
+        "name": "yüksek_sigmas",
+        "tooltip": null
+      },
+      "1": {
+        "name": "düşük_sigmas",
+>>>>>>> Stashed changes
         "tooltip": null
       }
     }

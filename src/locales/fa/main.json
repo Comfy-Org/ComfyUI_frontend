@@ -842,7 +842,11 @@
     "error": "خطا",
     "errorLoadingImage": "خطا در بارگذاری تصویر",
     "errorLoadingVideo": "خطا در بارگذاری ویدیو",
+<<<<<<< Updated upstream
     "essentials": "ضروریات",
+=======
+    "essentials": "ضروری‌ها",
+>>>>>>> Stashed changes
     "experimental": "آزمایشی",
     "export": "خروجی گرفتن",
     "extensionName": "نام افزونه",
@@ -2449,7 +2453,11 @@
     "nodeLibraryTab": {
       "allNodes": "همه nodeها",
       "custom": "سفارشی",
+<<<<<<< Updated upstream
       "essentials": "ضروریات",
+=======
+      "essentials": "ضروری‌ها",
+>>>>>>> Stashed changes
       "groupBy": "گروه‌بندی بر اساس",
       "groupStrategies": {
         "category": "دسته‌بندی",

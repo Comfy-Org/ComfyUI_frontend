@@ -2353,7 +2353,11 @@
       },
       "model": {
         "name": "модель",
+<<<<<<< Updated upstream
         "tooltip": "Модель для преобразования речь-в-речь."
+=======
+        "tooltip": "Модель для преобразования речи в речь."
+>>>>>>> Stashed changes
       },
       "model_similarity_boost": {
         "name": "повышение_сходства"
@@ -2400,7 +2404,11 @@
     "inputs": {
       "audio": {
         "name": "audio",
+<<<<<<< Updated upstream
         "tooltip": "Аудио для транскрибирования."
+=======
+        "tooltip": "Аудио для расшифровки."
+>>>>>>> Stashed changes
       },
       "control_after_generate": {
         "name": "control after generate"
@@ -2411,7 +2419,11 @@
       },
       "model": {
         "name": "model",
+<<<<<<< Updated upstream
         "tooltip": "Модель для распознавания."
+=======
+        "tooltip": "Модель для расшифровки."
+>>>>>>> Stashed changes
       },
       "model_diarization_threshold": {
         "name": "diarization_threshold"
@@ -2430,7 +2442,11 @@
       },
       "num_speakers": {
         "name": "num_speakers",
+<<<<<<< Updated upstream
         "tooltip": "Максимальное количество говорящих для определения. Установите 0 для автоматического определения."
+=======
+        "tooltip": "Максимальное количество говорящих для распознавания. Установите 0 для автоматического определения."
+>>>>>>> Stashed changes
       },
       "seed": {
         "name": "seed",
@@ -2458,7 +2474,11 @@
     "inputs": {
       "apply_text_normalization": {
         "name": "apply_text_normalization",
+<<<<<<< Updated upstream
         "tooltip": "Режим нормализации текста. 'auto' — система выбирает автоматически, 'on' — всегда применять нормализацию, 'off' — пропустить."
+=======
+        "tooltip": "Режим нормализации текста. 'auto' — система выбирает автоматически, 'on' — всегда применять нормализацию, 'off' — не применять."
+>>>>>>> Stashed changes
       },
       "control_after_generate": {
         "name": "control after generate"
@@ -2531,6 +2551,7 @@
   },
   "ElevenLabsTextToSpeech": {
     "description": "Преобразование текста в речь.",
+<<<<<<< Updated upstream
     "display_name": "ElevenLabs Text to Speech",
     "inputs": {
       "apply_text_normalization": {
@@ -2562,6 +2583,39 @@
       },
       "output_format": {
         "name": "output_format",
+=======
+    "display_name": "ElevenLabs преобразование текста в речь",
+    "inputs": {
+      "apply_text_normalization": {
+        "name": "применить нормализацию текста",
+        "tooltip": "Режим нормализации текста. 'auto' — система выбирает автоматически, 'on' — всегда применять нормализацию, 'off' — пропустить нормализацию."
+      },
+      "control_after_generate": {
+        "name": "управление после генерации"
+      },
+      "language_code": {
+        "name": "код языка",
+        "tooltip": "Код языка по ISO-639-1 или ISO-639-3 (например, 'en', 'es', 'fra'). Оставьте пустым для автоматического определения."
+      },
+      "model": {
+        "name": "модель",
+        "tooltip": "Модель для преобразования текста в речь."
+      },
+      "model_similarity_boost": {
+        "name": "повышение схожести"
+      },
+      "model_speed": {
+        "name": "скорость"
+      },
+      "model_style": {
+        "name": "стиль"
+      },
+      "model_use_speaker_boost": {
+        "name": "использовать speaker boost"
+      },
+      "output_format": {
+        "name": "формат вывода",
+>>>>>>> Stashed changes
         "tooltip": "Формат аудиовыхода."
       },
       "seed": {
@@ -2569,6 +2623,7 @@
         "tooltip": "Seed для воспроизводимости (детерминированность не гарантируется)."
       },
       "stability": {
+<<<<<<< Updated upstream
         "name": "stability",
         "tooltip": "Стабильность голоса. Более низкие значения дают более широкий эмоциональный диапазон, более высокие значения обеспечивают более стабильную, но потенциально монотонную речь."
       },
@@ -2578,6 +2633,17 @@
       },
       "voice": {
         "name": "voice",
+=======
+        "name": "стабильность",
+        "tooltip": "Стабильность голоса. Более низкие значения дают более широкий эмоциональный диапазон, более высокие значения обеспечивают более стабильную, но потенциально монотонную речь."
+      },
+      "text": {
+        "name": "текст",
+        "tooltip": "Текст для преобразования в речь."
+      },
+      "voice": {
+        "name": "голос",
+>>>>>>> Stashed changes
         "tooltip": "Голос для синтеза речи. Подключите из Voice Selector или Instant Voice Clone."
       }
     },
@@ -2588,17 +2654,29 @@
     }
   },
   "ElevenLabsVoiceSelector": {
+<<<<<<< Updated upstream
     "description": "Выбор предустановленного голоса ElevenLabs для генерации речи.",
     "display_name": "ElevenLabs Voice Selector",
     "inputs": {
       "voice": {
         "name": "voice",
+=======
+    "description": "Выберите предустановленный голос ElevenLabs для генерации речи.",
+    "display_name": "Выбор голоса ElevenLabs",
+    "inputs": {
+      "voice": {
+        "name": "голос",
+>>>>>>> Stashed changes
         "tooltip": "Выберите голос из предустановленных голосов ElevenLabs."
       }
     },
     "outputs": {
       "0": {
+<<<<<<< Updated upstream
         "name": "voice",
+=======
+        "name": "голос",
+>>>>>>> Stashed changes
         "tooltip": null
       }
     }
@@ -3824,6 +3902,7 @@
     },
     "outputs": {
       "0": {
+<<<<<<< Updated upstream
         "name": "width",
         "tooltip": null
       },
@@ -3833,6 +3912,17 @@
       },
       "2": {
         "name": "batch_size",
+=======
+        "name": "ширина",
+        "tooltip": null
+      },
+      "1": {
+        "name": "высота",
+        "tooltip": null
+      },
+      "2": {
+        "name": "размер_пакета",
+>>>>>>> Stashed changes
         "tooltip": null
       }
     }
@@ -15615,7 +15705,11 @@
         "tooltip": null
       },
       "1": {
+<<<<<<< Updated upstream
         "name": "model task_id",
+=======
+        "name": "task_id модели",
+>>>>>>> Stashed changes
         "tooltip": null
       },
       "2": {
@@ -15680,7 +15774,11 @@
         "tooltip": null
       },
       "1": {
+<<<<<<< Updated upstream
         "name": "model task_id",
+=======
+        "name": "task_id модели",
+>>>>>>> Stashed changes
         "tooltip": null
       },
       "2": {
@@ -15704,7 +15802,11 @@
         "tooltip": null
       },
       "1": {
+<<<<<<< Updated upstream
         "name": "model task_id",
+=======
+        "name": "task_id модели",
+>>>>>>> Stashed changes
         "tooltip": null
       },
       "2": {
@@ -15729,7 +15831,11 @@
         "tooltip": null
       },
       "1": {
+<<<<<<< Updated upstream
         "name": "retarget task_id",
+=======
+        "name": "task_id ретаргетинга",
+>>>>>>> Stashed changes
         "tooltip": null
       },
       "2": {
@@ -15751,7 +15857,11 @@
         "tooltip": null
       },
       "1": {
+<<<<<<< Updated upstream
         "name": "rig task_id",
+=======
+        "name": "task_id рига",
+>>>>>>> Stashed changes
         "tooltip": null
       },
       "2": {
@@ -15809,7 +15919,11 @@
         "tooltip": null
       },
       "1": {
+<<<<<<< Updated upstream
         "name": "model task_id",
+=======
+        "name": "task_id модели",
+>>>>>>> Stashed changes
         "tooltip": null
       },
       "2": {
@@ -15846,7 +15960,11 @@
         "tooltip": null
       },
       "1": {
+<<<<<<< Updated upstream
         "name": "model task_id",
+=======
+        "name": "task_id текстуры",
+>>>>>>> Stashed changes
         "tooltip": null
       },
       "2": {

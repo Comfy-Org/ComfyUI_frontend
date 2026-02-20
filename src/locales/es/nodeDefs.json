@@ -2381,7 +2381,11 @@
       },
       "stability": {
         "name": "estabilidad",
+<<<<<<< Updated upstream
         "tooltip": "Estabilidad de la voz. Valores bajos ofrecen mayor rango emocional, valores altos producen un habla más consistente pero potencialmente monótona."
+=======
+        "tooltip": "Estabilidad de la voz. Valores bajos dan un rango emocional más amplio, valores altos producen un habla más consistente pero potencialmente monótona."
+>>>>>>> Stashed changes
       },
       "voice": {
         "name": "voz",
@@ -2396,7 +2400,11 @@
   },
   "ElevenLabsSpeechToText": {
     "description": "Transcribe audio a texto. Soporta detección automática de idioma, diarización de hablantes y etiquetado de eventos de audio.",
+<<<<<<< Updated upstream
     "display_name": "ElevenLabs Voz a Texto",
+=======
+    "display_name": "ElevenLabs Speech to Text",
+>>>>>>> Stashed changes
     "inputs": {
       "audio": {
         "name": "audio",
@@ -2407,7 +2415,11 @@
       },
       "language_code": {
         "name": "código_de_idioma",
+<<<<<<< Updated upstream
         "tooltip": "Código de idioma ISO-639-1 o ISO-639-3 (ej., 'en', 'es', 'fra'). Déjelo vacío para detección automática."
+=======
+        "tooltip": "Código de idioma ISO-639-1 o ISO-639-3 (por ejemplo, 'en', 'es', 'fra'). Déjelo vacío para detección automática."
+>>>>>>> Stashed changes
       },
       "model": {
         "name": "modelo",
@@ -2453,8 +2465,13 @@
     }
   },
   "ElevenLabsTextToDialogue": {
+<<<<<<< Updated upstream
     "description": "Genera diálogo de varios hablantes a partir de texto. Cada entrada de diálogo tiene su propio texto y voz.",
     "display_name": "ElevenLabs Texto a Diálogo",
+=======
+    "description": "Genera diálogos multihablante a partir de texto. Cada entrada de diálogo tiene su propio texto y voz.",
+    "display_name": "ElevenLabs Text to Dialogue",
+>>>>>>> Stashed changes
     "inputs": {
       "apply_text_normalization": {
         "name": "aplicar_normalización_de_texto",
@@ -2472,11 +2489,19 @@
       },
       "language_code": {
         "name": "código_de_idioma",
+<<<<<<< Updated upstream
         "tooltip": "Código de idioma ISO-639-1 o ISO-639-3 (ej., 'en', 'es', 'fra'). Déjelo vacío para detección automática."
       },
       "model": {
         "name": "modelo",
         "tooltip": "Modelo a utilizar para la generación de diálogo."
+=======
+        "tooltip": "Código de idioma ISO-639-1 o ISO-639-3 (por ejemplo, 'en', 'es', 'fra'). Déjelo vacío para detección automática."
+      },
+      "model": {
+        "name": "modelo",
+        "tooltip": "Modelo a utilizar para la generación de diálogos."
+>>>>>>> Stashed changes
       },
       "output_format": {
         "name": "formato_de_salida",
@@ -2499,7 +2524,11 @@
   },
   "ElevenLabsTextToSoundEffects": {
     "description": "Genera efectos de sonido a partir de descripciones de texto.",
+<<<<<<< Updated upstream
     "display_name": "ElevenLabs Texto a Efectos de Sonido",
+=======
+    "display_name": "ElevenLabs Text to Sound Effects",
+>>>>>>> Stashed changes
     "inputs": {
       "model": {
         "name": "modelo",
@@ -15087,7 +15116,11 @@
         "name": "min_p"
       },
       "sampling_mode_repetition_penalty": {
+<<<<<<< Updated upstream
         "name": "penalización_por_repetición"
+=======
+        "name": "penalización_repetición"
+>>>>>>> Stashed changes
       },
       "sampling_mode_seed": {
         "name": "semilla"
@@ -15751,7 +15784,11 @@
         "tooltip": null
       },
       "1": {
+<<<<<<< Updated upstream
         "name": "id_de_tarea_de_rig",
+=======
+        "name": "id_de_tarea_de_rigging",
+>>>>>>> Stashed changes
         "tooltip": null
       },
       "2": {

@@ -730,6 +730,7 @@
     "promptExecutionError": "İstem yürütmesi başarısız oldu"
   },
   "exportToast": {
+<<<<<<< Updated upstream
     "allExportsCompleted": "Tüm dışa aktarmalar tamamlandı",
     "downloadExport": "Dışa aktarmayı indir",
     "downloadFailed": "\"{name}\" indirilemedi",
@@ -740,6 +741,18 @@
     "exportStarted": "ZIP indirme hazırlanıyor...",
     "exportingAssets": "Varlıklar dışa aktarılıyor",
     "noExportsInQueue": "Kuyrukta {filter} dışa aktarma yok",
+=======
+    "allExportsCompleted": "Tüm dışa aktarımlar tamamlandı",
+    "downloadExport": "Dışa aktarımı indir",
+    "downloadFailed": "\"{name}\" indirilemedi",
+    "exportCompleted": "ZIP indirme hazır",
+    "exportError": "Dışa aktarım başarısız",
+    "exportFailed": "{count} dışa aktarım başarısız oldu | {count} dışa aktarım başarısız oldu | {count} dışa aktarım başarısız oldu",
+    "exportFailedSingle": "ZIP dışa aktarımı oluşturulamadı",
+    "exportStarted": "ZIP indirme hazırlanıyor...",
+    "exportingAssets": "Varlıklar dışa aktarılıyor",
+    "noExportsInQueue": "Kuyrukta {filter} dışa aktarım yok",
+>>>>>>> Stashed changes
     "preparingExport": "Dışa aktarım hazırlanıyor...",
     "retryDownload": "İndirmeyi tekrar dene"
   },

@@ -2306,12 +2306,21 @@
     }
   },
   "ElevenLabsAudioIsolation": {
+<<<<<<< Updated upstream
     "description": "音声からバックグラウンドノイズを除去し、ボーカルやスピーチを分離します。",
     "display_name": "ElevenLabs ボイスアイソレーション",
     "inputs": {
       "audio": {
         "name": "音声",
         "tooltip": "バックグラウンドノイズ除去のために処理する音声。"
+=======
+    "description": "オーディオからバックグラウンドノイズを除去し、ボーカルやスピーチを分離します。",
+    "display_name": "ElevenLabs ボイスアイソレーション",
+    "inputs": {
+      "audio": {
+        "name": "オーディオ",
+        "tooltip": "バックグラウンドノイズ除去のために処理するオーディオ。"
+>>>>>>> Stashed changes
       }
     },
     "outputs": {
@@ -2325,12 +2334,20 @@
     "display_name": "ElevenLabs インスタントボイスクローン",
     "inputs": {
       "files": {
+<<<<<<< Updated upstream
         "name": "音声ファイル",
+=======
+        "name": "ファイル",
+>>>>>>> Stashed changes
         "tooltip": "ボイスクローン用の音声録音。"
       },
       "remove_background_noise": {
         "name": "バックグラウンドノイズ除去",
+<<<<<<< Updated upstream
         "tooltip": "音声アイソレーションを使ってサンプルからバックグラウンドノイズを除去します。"
+=======
+        "tooltip": "オーディオアイソレーションを使用して音声サンプルからバックグラウンドノイズを除去します。"
+>>>>>>> Stashed changes
       }
     },
     "outputs": {
@@ -2341,12 +2358,21 @@
     }
   },
   "ElevenLabsSpeechToSpeech": {
+<<<<<<< Updated upstream
     "description": "元の内容と感情を保ちながら、ある声から別の声へスピーチを変換します。",
     "display_name": "ElevenLabs スピーチ・トゥ・スピーチ",
     "inputs": {
       "audio": {
         "name": "音声",
         "tooltip": "変換する元の音声。"
+=======
+    "description": "元の内容と感情を保ちながら、ある声のスピーチを別の声に変換します。",
+    "display_name": "ElevenLabs スピーチ・トゥ・スピーチ",
+    "inputs": {
+      "audio": {
+        "name": "オーディオ",
+        "tooltip": "変換する元のオーディオ。"
+>>>>>>> Stashed changes
       },
       "control_after_generate": {
         "name": "生成後のコントロール"
@@ -2369,11 +2395,19 @@
       },
       "output_format": {
         "name": "出力フォーマット",
+<<<<<<< Updated upstream
         "tooltip": "音声の出力フォーマット。"
       },
       "remove_background_noise": {
         "name": "バックグラウンドノイズ除去",
         "tooltip": "音声アイソレーションを使って入力音声からバックグラウンドノイズを除去します。"
+=======
+        "tooltip": "オーディオの出力フォーマット。"
+      },
+      "remove_background_noise": {
+        "name": "バックグラウンドノイズ除去",
+        "tooltip": "オーディオアイソレーションを使用して入力オーディオからバックグラウンドノイズを除去します。"
+>>>>>>> Stashed changes
       },
       "seed": {
         "name": "シード",
@@ -2381,11 +2415,19 @@
       },
       "stability": {
         "name": "安定性",
+<<<<<<< Updated upstream
         "tooltip": "ボイスの安定性。値が低いほど感情の幅が広くなり、高いほど一貫性が増しますが単調になる可能性があります。"
       },
       "voice": {
         "name": "ターゲットボイス",
         "tooltip": "変換先の声。Voice SelectorまたはInstant Voice Cloneから接続してください。"
+=======
+        "tooltip": "ボイスの安定性。値が低いほど感情の幅が広がり、値が高いほど一貫性が増しますが、単調になる可能性があります。"
+      },
+      "voice": {
+        "name": "ボイス",
+        "tooltip": "変換先の声。ボイスセレクターまたはインスタントボイスクローンから接続してください。"
+>>>>>>> Stashed changes
       }
     },
     "outputs": {
@@ -2488,7 +2530,11 @@
       },
       "stability": {
         "name": "安定性",
+<<<<<<< Updated upstream
         "tooltip": "音声の安定性。値が低いほど感情の幅が広がり、値が高いほど一貫性が増しますが単調になる可能性があります。"
+=======
+        "tooltip": "音声の安定性。値が低いほど感情の幅が広くなり、高いほど一貫性が増しますが単調になる可能性があります。"
+>>>>>>> Stashed changes
       }
     },
     "outputs": {
@@ -2535,6 +2581,7 @@
     "inputs": {
       "apply_text_normalization": {
         "name": "apply_text_normalization",
+<<<<<<< Updated upstream
         "tooltip": "テキスト正規化モード。「auto」はシステムが自動で判断、「on」は常に正規化を適用、「off」は正規化をスキップします。"
       },
       "control_after_generate": {
@@ -2543,12 +2590,23 @@
       "language_code": {
         "name": "language_code",
         "tooltip": "ISO-639-1 または ISO-639-3 言語コード（例: 'en', 'es', 'fra'）。自動検出の場合は空欄にしてください。"
+=======
+        "tooltip": "テキスト正規化モード。「auto」はシステムが自動で判断し、「on」は常に正規化を適用、「off」は正規化をスキップします。"
+      },
+      "control_after_generate": {
+        "name": "生成後のコントロール"
+      },
+      "language_code": {
+        "name": "language_code",
+        "tooltip": "ISO-639-1 または ISO-639-3 言語コード（例: 'en', 'es', 'fra'）。自動検出の場合は空欄のままにしてください。"
+>>>>>>> Stashed changes
       },
       "model": {
         "name": "model",
         "tooltip": "テキスト読み上げに使用するモデル。"
       },
       "model_similarity_boost": {
+<<<<<<< Updated upstream
         "name": "similarity_boost"
       },
       "model_speed": {
@@ -2559,6 +2617,18 @@
       },
       "model_use_speaker_boost": {
         "name": "use_speaker_boost"
+=======
+        "name": "類似度ブースト"
+      },
+      "model_speed": {
+        "name": "速度"
+      },
+      "model_style": {
+        "name": "スタイル"
+      },
+      "model_use_speaker_boost": {
+        "name": "スピーカーブーストを使用"
+>>>>>>> Stashed changes
       },
       "output_format": {
         "name": "output_format",
@@ -2578,7 +2648,11 @@
       },
       "voice": {
         "name": "voice",
+<<<<<<< Updated upstream
         "tooltip": "音声合成に使用するボイス。Voice Selector または Instant Voice Clone から接続してください。"
+=======
+        "tooltip": "音声合成に使用するボイス。Voice Selector または Instant Voice Clone から接続します。"
+>>>>>>> Stashed changes
       }
     },
     "outputs": {
@@ -15131,7 +15205,11 @@
         "name": "最小p"
       },
       "sampling_mode_repetition_penalty": {
+<<<<<<< Updated upstream
         "name": "反復ペナルティ"
+=======
+        "name": "繰り返しペナルティ"
+>>>>>>> Stashed changes
       },
       "sampling_mode_seed": {
         "name": "シード"
@@ -15140,10 +15218,17 @@
         "name": "温度"
       },
       "sampling_mode_top_k": {
+<<<<<<< Updated upstream
         "name": "top_k"
       },
       "sampling_mode_top_p": {
         "name": "top_p"
+=======
+        "name": "トップK"
+      },
+      "sampling_mode_top_p": {
+        "name": "トップP"
+>>>>>>> Stashed changes
       }
     },
     "outputs": {
@@ -15725,11 +15810,19 @@
     },
     "outputs": {
       "0": {
+<<<<<<< Updated upstream
         "name": "リターゲットタスクID",
         "tooltip": null
       },
       "1": {
         "name": "リターゲット タスクID",
+=======
+        "name": "モデルファイル",
+        "tooltip": null
+      },
+      "1": {
+        "name": "リターゲットタスクID",
+>>>>>>> Stashed changes
         "tooltip": null
       },
       "2": {

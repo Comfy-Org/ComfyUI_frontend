@@ -2306,12 +2306,20 @@
     }
   },
   "ElevenLabsAudioIsolation": {
+<<<<<<< Updated upstream
     "description": "حذف نویز پس‌زمینه از صدا و ایزوله‌کردن گفتار یا آواز.",
+=======
+    "description": "حذف نویز پس‌زمینه از صدا و ایزوله کردن گفتار یا آواز.",
+>>>>>>> Stashed changes
     "display_name": "ایزوله‌سازی صدای ElevenLabs",
     "inputs": {
       "audio": {
         "name": "audio",
+<<<<<<< Updated upstream
         "tooltip": "صدایی که باید نویز پس‌زمینه از آن حذف شود."
+=======
+        "tooltip": "صدایی که باید برای حذف نویز پس‌زمینه پردازش شود."
+>>>>>>> Stashed changes
       }
     },
     "outputs": {
@@ -2321,12 +2329,20 @@
     }
   },
   "ElevenLabsInstantVoiceClone": {
+<<<<<<< Updated upstream
     "description": "ایجاد یک صدای شبیه‌سازی‌شده از نمونه‌های صوتی. بین ۱ تا ۸ نمونه صدای مورد نظر را ارائه دهید.",
+=======
+    "description": "ایجاد یک صدای شبیه‌سازی‌شده از نمونه‌های صوتی. بین ۱ تا ۸ نمونه صدای ضبط‌شده برای شبیه‌سازی صدا ارائه دهید.",
+>>>>>>> Stashed changes
     "display_name": "شبیه‌سازی فوری صدا ElevenLabs",
     "inputs": {
       "files": {
         "name": "files",
+<<<<<<< Updated upstream
         "tooltip": "نمونه‌های صوتی برای شبیه‌سازی صدا."
+=======
+        "tooltip": "ضبط‌های صوتی برای شبیه‌سازی صدا."
+>>>>>>> Stashed changes
       },
       "remove_background_noise": {
         "name": "remove_background_noise",
@@ -2381,7 +2397,11 @@
       },
       "stability": {
         "name": "stability",
+<<<<<<< Updated upstream
         "tooltip": "پایداری صدا. مقادیر کمتر دامنه احساسی بیشتری ایجاد می‌کند، مقادیر بالاتر صدایی یکنواخت‌تر اما احتمالاً یکنواخت‌تر تولید می‌کند."
+=======
+        "tooltip": "پایداری صدا. مقادیر کمتر دامنه احساسی بیشتری ایجاد می‌کند، مقادیر بالاتر صدایی یکنواخت‌تر اما احتمالاً یکنواخت و بدون تنوع تولید می‌کند."
+>>>>>>> Stashed changes
       },
       "voice": {
         "name": "voice",
@@ -2433,8 +2453,13 @@
         "tooltip": "حداکثر تعداد گویندگان قابل پیش‌بینی. برای شناسایی خودکار روی ۰ تنظیم کنید."
       },
       "seed": {
+<<<<<<< Updated upstream
         "name": "seed",
         "tooltip": "مقدار seed برای بازتولیدپذیری (تضمین قطعی بودن وجود ندارد)."
+=======
+        "name": "بذر",
+        "tooltip": "بذر برای بازتولیدپذیری (تضمین قطعی بودن وجود ندارد)."
+>>>>>>> Stashed changes
       }
     },
     "outputs": {
@@ -2453,8 +2478,13 @@
     }
   },
   "ElevenLabsTextToDialogue": {
+<<<<<<< Updated upstream
     "description": "تولید دیالوگ چند گوینده از متن. هر ورودی دیالوگ متن و صدای مخصوص به خود را دارد.",
     "display_name": "تبدیل متن به دیالوگ ElevenLabs",
+=======
+    "description": "تولید گفت‌وگوی چند گوینده از متن. هر ورودی گفت‌وگو متن و صدای مخصوص به خود را دارد.",
+    "display_name": "تبدیل متن به گفت‌وگو ElevenLabs",
+>>>>>>> Stashed changes
     "inputs": {
       "apply_text_normalization": {
         "name": "نرمال‌سازی متن",
@@ -2464,11 +2494,19 @@
         "name": "کنترل پس از تولید"
       },
       "inputs": {
+<<<<<<< Updated upstream
         "name": "تعداد ورودی دیالوگ",
         "tooltip": "تعداد ورودی‌های دیالوگ."
       },
       "inputs_text1": {
         "name": "متن۱"
+=======
+        "name": "تعداد ورودی‌ها",
+        "tooltip": "تعداد ورودی‌های گفت‌وگو."
+      },
+      "inputs_text1": {
+        "name": "متن ۱"
+>>>>>>> Stashed changes
       },
       "language_code": {
         "name": "کد زبان",
@@ -2476,19 +2514,32 @@
       },
       "model": {
         "name": "مدل",
+<<<<<<< Updated upstream
         "tooltip": "مدل مورد استفاده برای تولید دیالوگ."
+=======
+        "tooltip": "مدل مورد استفاده برای تولید گفت‌وگو."
+>>>>>>> Stashed changes
       },
       "output_format": {
         "name": "فرمت خروجی",
         "tooltip": "فرمت خروجی صوتی."
       },
       "seed": {
+<<<<<<< Updated upstream
         "name": "seed",
         "tooltip": "مقدار seed برای بازتولیدپذیری."
       },
       "stability": {
         "name": "پایداری صدا",
         "tooltip": "پایداری صدا. مقادیر کمتر دامنه احساسی بیشتری ایجاد می‌کند، مقادیر بالاتر صدای یکنواخت‌تر اما با ثبات بیشتر تولید می‌کند."
+=======
+        "name": "بذر",
+        "tooltip": "بذر برای بازتولیدپذیری."
+      },
+      "stability": {
+        "name": "پایداری صدا",
+        "tooltip": "پایداری صدا. مقادیر کمتر دامنه احساسی بیشتری ایجاد می‌کند، مقادیر بالاتر صدای یکنواخت‌تر اما احتمالاً یکنواخت تولید می‌کند."
+>>>>>>> Stashed changes
       }
     },
     "outputs": {
@@ -2512,7 +2563,11 @@
         "name": "حلقه"
       },
       "model_prompt_influence": {
+<<<<<<< Updated upstream
         "name": "تأثیر prompt"
+=======
+        "name": "تأثیر پرامپت"
+>>>>>>> Stashed changes
       },
       "output_format": {
         "name": "فرمت خروجی",
@@ -2566,11 +2621,19 @@
       },
       "seed": {
         "name": "seed",
+<<<<<<< Updated upstream
         "tooltip": "بذر برای بازتولیدپذیری (تضمین قطعی بودن وجود ندارد)."
       },
       "stability": {
         "name": "stability",
         "tooltip": "پایداری صدا. مقادیر کمتر دامنه احساسی بیشتری ایجاد می‌کند، مقادیر بالاتر صدایی یکنواخت‌تر اما احتمالاً یکنواخت‌تر تولید می‌کند."
+=======
+        "tooltip": "بذر برای بازتولیدپذیری (تعیین‌پذیری تضمین نمی‌شود)."
+      },
+      "stability": {
+        "name": "stability",
+        "tooltip": "پایداری صدا. مقادیر کمتر دامنه احساسی بیشتری ایجاد می‌کند، مقادیر بالاتر صدای یکنواخت‌تر اما احتمالاً یکنواخت‌تر تولید می‌کند."
+>>>>>>> Stashed changes
       },
       "text": {
         "name": "text",
@@ -8108,7 +8171,11 @@
         "tooltip": null
       },
       "1": {
+<<<<<<< Updated upstream
         "name": "شناسه وظیفه meshy",
+=======
+        "name": "meshy_task_id",
+>>>>>>> Stashed changes
         "tooltip": null
       },
       "2": {
@@ -8171,7 +8238,11 @@
         "tooltip": null
       },
       "1": {
+<<<<<<< Updated upstream
         "name": "شناسه وظیفه meshy",
+=======
+        "name": "meshy_task_id",
+>>>>>>> Stashed changes
         "tooltip": null
       },
       "2": {
@@ -8213,7 +8284,11 @@
         "tooltip": null
       },
       "1": {
+<<<<<<< Updated upstream
         "name": "شناسه وظیفه meshy",
+=======
+        "name": "meshy_task_id",
+>>>>>>> Stashed changes
         "tooltip": null
       },
       "2": {
@@ -8248,7 +8323,11 @@
         "tooltip": null
       },
       "1": {
+<<<<<<< Updated upstream
         "name": "شناسه وظیفه rig",
+=======
+        "name": "rig_task_id",
+>>>>>>> Stashed changes
         "tooltip": null
       },
       "2": {
@@ -8304,7 +8383,11 @@
         "tooltip": null
       },
       "1": {
+<<<<<<< Updated upstream
         "name": "شناسه وظیفه meshy",
+=======
+        "name": "meshy_task_id",
+>>>>>>> Stashed changes
         "tooltip": null
       },
       "2": {
@@ -8348,7 +8431,11 @@
         "tooltip": null
       },
       "1": {
+<<<<<<< Updated upstream
         "name": "شناسه وظیفه meshy",
+=======
+        "name": "meshy_task_id",
+>>>>>>> Stashed changes
         "tooltip": null
       },
       "2": {
@@ -15110,7 +15197,11 @@
     }
   },
   "TextGenerateLTX2Prompt": {
+<<<<<<< Updated upstream
     "display_name": "تولید متن LTX2",
+=======
+    "display_name": "تولید متن LTX2Prompt",
+>>>>>>> Stashed changes
     "inputs": {
       "clip": {
         "name": "clip"

@@ -2346,7 +2346,11 @@
     "inputs": {
       "audio": {
         "name": "áudio",
+<<<<<<< Updated upstream
         "tooltip": "Áudio de origem para transformar."
+=======
+        "tooltip": "Áudio de origem a ser transformado."
+>>>>>>> Stashed changes
       },
       "control_after_generate": {
         "name": "controle após gerar"
@@ -2426,7 +2430,11 @@
         "name": "temperatura"
       },
       "model_timestamps_granularity": {
+<<<<<<< Updated upstream
         "name": "granularidade_temporais"
+=======
+        "name": "granularidade_timestamps"
+>>>>>>> Stashed changes
       },
       "num_speakers": {
         "name": "num_locs",
@@ -2503,7 +2511,11 @@
     "inputs": {
       "model": {
         "name": "modelo",
+<<<<<<< Updated upstream
         "tooltip": "Modelo a ser usado para geração de efeito sonoro."
+=======
+        "tooltip": "Modelo a ser usado para geração do efeito sonoro."
+>>>>>>> Stashed changes
       },
       "model_duration": {
         "name": "duração"
@@ -2578,7 +2590,11 @@
       },
       "voice": {
         "name": "voz",
+<<<<<<< Updated upstream
         "tooltip": "Voz a ser usada para a síntese de fala. Conecte a partir do Seletor de Voz ou Instant Voice Clone."
+=======
+        "tooltip": "Voz a ser usada para a síntese de fala. Conecte a partir do Seletor de Voz ou Clone Instantâneo de Voz."
+>>>>>>> Stashed changes
       }
     },
     "outputs": {
@@ -2588,12 +2604,20 @@
     }
   },
   "ElevenLabsVoiceSelector": {
+<<<<<<< Updated upstream
     "description": "Selecione uma voz pré-definida do ElevenLabs para geração de texto para fala.",
+=======
+    "description": "Selecione uma voz ElevenLabs predefinida para geração de texto para fala.",
+>>>>>>> Stashed changes
     "display_name": "Seletor de Voz ElevenLabs",
     "inputs": {
       "voice": {
         "name": "voz",
+<<<<<<< Updated upstream
         "tooltip": "Escolha uma voz das vozes pré-definidas do ElevenLabs."
+=======
+        "tooltip": "Escolha uma voz das vozes predefinidas do ElevenLabs."
+>>>>>>> Stashed changes
       }
     },
     "outputs": {
@@ -3559,7 +3583,11 @@
         "tooltip": "Ints estão disponíveis como u_int0-4 no código do shader"
       },
       "size_mode": {
+<<<<<<< Updated upstream
         "name": "modo_tamanho",
+=======
+        "name": "modo de tamanho",
+>>>>>>> Stashed changes
         "tooltip": "Tamanho de saída: 'from_input' usa as dimensões da primeira imagem de entrada, 'custom' permite tamanho manual"
       }
     },
@@ -7073,11 +7101,19 @@
         "tooltip": null
       },
       "1": {
+<<<<<<< Updated upstream
         "name": "máscara",
         "tooltip": null
       },
       "2": {
         "name": "caminho_do_mesh",
+=======
+        "name": "mask",
+        "tooltip": null
+      },
+      "2": {
+        "name": "caminho_da_malha",
+>>>>>>> Stashed changes
         "tooltip": null
       },
       "3": {
@@ -15615,7 +15651,11 @@
         "tooltip": null
       },
       "1": {
+<<<<<<< Updated upstream
         "name": "task_id_do_modelo",
+=======
+        "name": "task_id do modelo",
+>>>>>>> Stashed changes
         "tooltip": null
       },
       "2": {
@@ -15680,7 +15720,11 @@
         "tooltip": null
       },
       "1": {
+<<<<<<< Updated upstream
         "name": "task_id_do_modelo",
+=======
+        "name": "task_id do modelo",
+>>>>>>> Stashed changes
         "tooltip": null
       },
       "2": {
@@ -15704,7 +15748,11 @@
         "tooltip": null
       },
       "1": {
+<<<<<<< Updated upstream
         "name": "task_id_do_modelo",
+=======
+        "name": "task_id do modelo",
+>>>>>>> Stashed changes
         "tooltip": null
       },
       "2": {
@@ -15729,7 +15777,11 @@
         "tooltip": null
       },
       "1": {
+<<<<<<< Updated upstream
         "name": "task_id_retarget",
+=======
+        "name": "task_id de retarget",
+>>>>>>> Stashed changes
         "tooltip": null
       },
       "2": {
@@ -15751,7 +15803,11 @@
         "tooltip": null
       },
       "1": {
+<<<<<<< Updated upstream
         "name": "task_id_rig",
+=======
+        "name": "task_id de rig",
+>>>>>>> Stashed changes
         "tooltip": null
       },
       "2": {
@@ -15809,7 +15865,11 @@
         "tooltip": null
       },
       "1": {
+<<<<<<< Updated upstream
         "name": "task_id_do_modelo",
+=======
+        "name": "task_id do modelo",
+>>>>>>> Stashed changes
         "tooltip": null
       },
       "2": {
@@ -15846,7 +15906,11 @@
         "tooltip": null
       },
       "1": {
+<<<<<<< Updated upstream
         "name": "task_id_do_modelo",
+=======
+        "name": "task_id do modelo",
+>>>>>>> Stashed changes
         "tooltip": null
       },
       "2": {

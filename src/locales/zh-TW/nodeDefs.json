@@ -1674,11 +1674,19 @@
     },
     "outputs": {
       "0": {
+<<<<<<< Updated upstream
         "name": "正向",
         "tooltip": null
       },
       "1": {
         "name": "負向",
+=======
+        "name": "positive",
+        "tooltip": null
+      },
+      "1": {
+        "name": "negative",
+>>>>>>> Stashed changes
         "tooltip": null
       }
     }
@@ -2321,12 +2329,21 @@
     }
   },
   "ElevenLabsInstantVoiceClone": {
+<<<<<<< Updated upstream
     "description": "從音訊樣本建立語音克隆。請提供 1-8 段要克隆的語音錄音。",
     "display_name": "ElevenLabs 即時語音克隆",
     "inputs": {
       "files": {
         "name": "檔案",
         "tooltip": "用於語音克隆的語音錄音。"
+=======
+    "description": "從音訊樣本建立複製語音。請提供 1-8 段要複製的語音錄音。",
+    "display_name": "ElevenLabs 即時語音複製",
+    "inputs": {
+      "files": {
+        "name": "檔案",
+        "tooltip": "用於語音複製的語音錄音。"
+>>>>>>> Stashed changes
       },
       "remove_background_noise": {
         "name": "去除背景雜音",
@@ -2345,8 +2362,13 @@
     "display_name": "ElevenLabs 語音轉語音",
     "inputs": {
       "audio": {
+<<<<<<< Updated upstream
         "name": "來源音訊",
         "tooltip": "要進行轉換的來源音訊。"
+=======
+        "name": "音訊",
+        "tooltip": "要轉換的來源音訊。"
+>>>>>>> Stashed changes
       },
       "control_after_generate": {
         "name": "生成後控制"
@@ -2385,7 +2407,11 @@
       },
       "voice": {
         "name": "目標語音",
+<<<<<<< Updated upstream
         "tooltip": "要轉換的目標語音。可從語音選擇器或即時語音克隆連接。"
+=======
+        "tooltip": "要轉換的目標語音。可從語音選擇器或即時語音複製連接。"
+>>>>>>> Stashed changes
       }
     },
     "outputs": {
@@ -2395,7 +2421,11 @@
     }
   },
   "ElevenLabsSpeechToText": {
+<<<<<<< Updated upstream
     "description": "將音訊轉錄為文字。支援自動語言偵測、說話人分離與音訊事件標記。",
+=======
+    "description": "將音訊轉錄為文字。支援自動語言偵測、說話者分離與音訊事件標記。",
+>>>>>>> Stashed changes
     "display_name": "ElevenLabs 語音轉文字",
     "inputs": {
       "audio": {
@@ -2417,10 +2447,17 @@
         "name": "分離門檻值"
       },
       "model_diarize": {
+<<<<<<< Updated upstream
         "name": "說話人分離"
       },
       "model_tag_audio_events": {
         "name": "標記音訊事件"
+=======
+        "name": "說話者分離"
+      },
+      "model_tag_audio_events": {
+        "name": "音訊事件標記"
+>>>>>>> Stashed changes
       },
       "model_temperature": {
         "name": "溫度"
@@ -2429,12 +2466,21 @@
         "name": "時間戳精細度"
       },
       "num_speakers": {
+<<<<<<< Updated upstream
         "name": "說話人數",
         "tooltip": "預測的最大說話人數。設為 0 以自動偵測。"
       },
       "seed": {
         "name": "隨機種子",
         "tooltip": "用於重現性的隨機種子（不保證完全確定性）。"
+=======
+        "name": "說話者數量",
+        "tooltip": "預測的最大說話者數量。設為 0 以自動偵測。"
+      },
+      "seed": {
+        "name": "隨機種子",
+        "tooltip": "用於重現性的種子（不保證完全確定性）。"
+>>>>>>> Stashed changes
       }
     },
     "outputs": {
@@ -2447,24 +2493,40 @@
         "tooltip": null
       },
       "2": {
+<<<<<<< Updated upstream
         "name": "單字 JSON",
+=======
+        "name": "單詞 JSON",
+>>>>>>> Stashed changes
         "tooltip": null
       }
     }
   },
   "ElevenLabsTextToDialogue": {
+<<<<<<< Updated upstream
     "description": "從文字產生多說話人對話。每個對話項目有其專屬文字與語音。",
+=======
+    "description": "從文字產生多說話者對話。每個對話項目都有自己的文字與語音。",
+>>>>>>> Stashed changes
     "display_name": "ElevenLabs 文字轉對話",
     "inputs": {
       "apply_text_normalization": {
         "name": "套用文字正規化",
+<<<<<<< Updated upstream
         "tooltip": "文字正規化模式。'auto' 由系統決定，'on' 一律正規化，'off' 則略過。"
+=======
+        "tooltip": "文字正規化模式。'auto' 由系統決定，'on' 總是套用正規化，'off' 則略過。"
+>>>>>>> Stashed changes
       },
       "control_after_generate": {
         "name": "產生後控制"
       },
       "inputs": {
+<<<<<<< Updated upstream
         "name": "對話項目數",
+=======
+        "name": "對話項目數量",
+>>>>>>> Stashed changes
         "tooltip": "對話項目的數量。"
       },
       "inputs_text1": {
@@ -2484,11 +2546,19 @@
       },
       "seed": {
         "name": "隨機種子",
+<<<<<<< Updated upstream
         "tooltip": "用於重現性的隨機種子。"
       },
       "stability": {
         "name": "穩定性",
         "tooltip": "語音穩定性。較低值產生更廣泛的情感表現，較高值則語音更一致但可能較單調。"
+=======
+        "tooltip": "用於重現性的種子。"
+      },
+      "stability": {
+        "name": "穩定性",
+        "tooltip": "語音穩定性。較低值提供更廣的情感範圍，較高值則產生更一致但可能較單調的語音。"
+>>>>>>> Stashed changes
       }
     },
     "outputs": {
@@ -2535,7 +2605,11 @@
     "inputs": {
       "apply_text_normalization": {
         "name": "套用文字正規化",
+<<<<<<< Updated upstream
         "tooltip": "文字正規化模式。'auto' 由系統自動決定，'on' 永遠套用正規化，'off' 則跳過正規化。"
+=======
+        "tooltip": "文字正規化模式。'auto' 由系統自動決定，'on' 總是套用正規化，'off' 則跳過正規化。"
+>>>>>>> Stashed changes
       },
       "control_after_generate": {
         "name": "產生後控制"
@@ -2558,7 +2632,11 @@
         "name": "風格"
       },
       "model_use_speaker_boost": {
+<<<<<<< Updated upstream
         "name": "使用說話者增強"
+=======
+        "name": "啟用說話者增強"
+>>>>>>> Stashed changes
       },
       "output_format": {
         "name": "輸出格式",
@@ -2566,11 +2644,19 @@
       },
       "seed": {
         "name": "種子",
+<<<<<<< Updated upstream
         "tooltip": "用於重現性的種子（不保證完全確定性）。"
       },
       "stability": {
         "name": "穩定性",
         "tooltip": "語音穩定性。較低的值會帶來更廣泛的情感表現，較高的值則產生更一致但可能較單調的語音。"
+=======
+        "tooltip": "用於重現性的種子值（不保證完全確定性）。"
+      },
+      "stability": {
+        "name": "穩定性",
+        "tooltip": "語音穩定性。較低的值會產生更廣泛的情感表現，較高的值則語音更一致但可能較單調。"
+>>>>>>> Stashed changes
       },
       "text": {
         "name": "文字",
@@ -3540,7 +3626,11 @@
   },
   "GLSLShader": {
     "description": "將 GLSL ES 片段著色器應用於影像。u_resolution（vec2）始終可用。",
+<<<<<<< Updated upstream
     "display_name": "GLSL 葉片著色器",
+=======
+    "display_name": "GLSL 著色器",
+>>>>>>> Stashed changes
     "inputs": {
       "floats": {
         "name": "浮點數",
@@ -3566,6 +3656,7 @@
     "outputs": {
       "0": {
         "name": "影像0",
+<<<<<<< Updated upstream
         "tooltip": "在著色器程式碼中以 layout(location = 0) out vec4 fragColor0 提供"
       },
       "1": {
@@ -3579,6 +3670,21 @@
       "3": {
         "name": "影像3",
         "tooltip": "在著色器程式碼中以 layout(location = 3) out vec4 fragColor3 提供"
+=======
+        "tooltip": "可在著色器程式碼中以 layout(location = 0) out vec4 fragColor0 取得"
+      },
+      "1": {
+        "name": "影像1",
+        "tooltip": "可在著色器程式碼中以 layout(location = 1) out vec4 fragColor1 取得"
+      },
+      "2": {
+        "name": "影像2",
+        "tooltip": "可在著色器程式碼中以 layout(location = 2) out vec4 fragColor2 取得"
+      },
+      "3": {
+        "name": "影像3",
+        "tooltip": "可在著色器程式碼中以 layout(location = 3) out vec4 fragColor3 取得"
+>>>>>>> Stashed changes
       }
     }
   },
@@ -8108,7 +8214,11 @@
         "tooltip": null
       },
       "1": {
+<<<<<<< Updated upstream
         "name": "meshy_task_id",
+=======
+        "name": "meshy 任務 ID",
+>>>>>>> Stashed changes
         "tooltip": null
       },
       "2": {
@@ -8171,7 +8281,11 @@
         "tooltip": null
       },
       "1": {
+<<<<<<< Updated upstream
         "name": "meshy_task_id",
+=======
+        "name": "meshy 任務 ID",
+>>>>>>> Stashed changes
         "tooltip": null
       },
       "2": {
@@ -8213,7 +8327,11 @@
         "tooltip": null
       },
       "1": {
+<<<<<<< Updated upstream
         "name": "meshy_task_id",
+=======
+        "name": "meshy 任務 ID",
+>>>>>>> Stashed changes
         "tooltip": null
       },
       "2": {
@@ -8248,7 +8366,11 @@
         "tooltip": null
       },
       "1": {
+<<<<<<< Updated upstream
         "name": "rig_task_id",
+=======
+        "name": "rig 任務 ID",
+>>>>>>> Stashed changes
         "tooltip": null
       },
       "2": {
@@ -8304,7 +8426,11 @@
         "tooltip": null
       },
       "1": {
+<<<<<<< Updated upstream
         "name": "meshy 任務 ID",
+=======
+        "name": "meshy_task_id",
+>>>>>>> Stashed changes
         "tooltip": null
       },
       "2": {
@@ -8348,7 +8474,11 @@
         "tooltip": null
       },
       "1": {
+<<<<<<< Updated upstream
         "name": "meshy 任務 ID",
+=======
+        "name": "meshy_task_id",
+>>>>>>> Stashed changes
         "tooltip": null
       },
       "2": {
@@ -15096,10 +15226,17 @@
         "name": "溫度"
       },
       "sampling_mode_top_k": {
+<<<<<<< Updated upstream
         "name": "Top K"
       },
       "sampling_mode_top_p": {
         "name": "Top P"
+=======
+        "name": "top_k"
+      },
+      "sampling_mode_top_p": {
+        "name": "top_p"
+>>>>>>> Stashed changes
       }
     },
     "outputs": {
@@ -15128,6 +15265,7 @@
         "name": "取樣模式"
       },
       "sampling_mode_min_p": {
+<<<<<<< Updated upstream
         "name": "最小 p 值"
       },
       "sampling_mode_repetition_penalty": {
@@ -15144,11 +15282,33 @@
       },
       "sampling_mode_top_p": {
         "name": "Top P"
+=======
+        "name": "最小機率 (min_p)"
+      },
+      "sampling_mode_repetition_penalty": {
+        "name": "重複懲罰 (repetition_penalty)"
+      },
+      "sampling_mode_seed": {
+        "name": "隨機種子 (seed)"
+      },
+      "sampling_mode_temperature": {
+        "name": "溫度 (temperature)"
+      },
+      "sampling_mode_top_k": {
+        "name": "Top-K"
+      },
+      "sampling_mode_top_p": {
+        "name": "Top-P"
+>>>>>>> Stashed changes
       }
     },
     "outputs": {
       "0": {
+<<<<<<< Updated upstream
         "name": "生成文字",
+=======
+        "name": "生成文本",
+>>>>>>> Stashed changes
         "tooltip": null
       }
     }

@@ -2326,7 +2326,11 @@
     "inputs": {
       "files": {
         "name": "files",
+<<<<<<< Updated upstream
         "tooltip": "음성 복제를 위한 오디오 녹음입니다."
+=======
+        "tooltip": "음성 복제를 위한 오디오 녹음 파일입니다."
+>>>>>>> Stashed changes
       },
       "remove_background_noise": {
         "name": "remove_background_noise",
@@ -2341,7 +2345,11 @@
     }
   },
   "ElevenLabsSpeechToSpeech": {
+<<<<<<< Updated upstream
     "description": "원본의 내용과 감정을 유지하면서 한 음성에서 다른 음성으로 변환합니다.",
+=======
+    "description": "원본 내용과 감정을 유지하면서 한 음성에서 다른 음성으로 변환합니다.",
+>>>>>>> Stashed changes
     "display_name": "ElevenLabs 음성 변환",
     "inputs": {
       "audio": {
@@ -2381,7 +2389,11 @@
       },
       "stability": {
         "name": "stability",
+<<<<<<< Updated upstream
         "tooltip": "음성의 안정성. 낮은 값은 더 넓은 감정 범위를, 높은 값은 더 일관되지만 다소 단조로운 음성을 생성합니다."
+=======
+        "tooltip": "음성의 안정성. 값이 낮을수록 감정의 폭이 넓고, 값이 높을수록 더 일관되지만 다소 단조로운 음성이 생성됩니다."
+>>>>>>> Stashed changes
       },
       "voice": {
         "name": "voice",
@@ -2430,7 +2442,11 @@
       },
       "num_speakers": {
         "name": "num_speakers",
+<<<<<<< Updated upstream
         "tooltip": "예측할 최대 화자 수. 자동 감지는 0으로 설정하세요."
+=======
+        "tooltip": "예측할 최대 화자 수. 0으로 설정하면 자동 감지."
+>>>>>>> Stashed changes
       },
       "seed": {
         "name": "seed",
@@ -2453,7 +2469,11 @@
     }
   },
   "ElevenLabsTextToDialogue": {
+<<<<<<< Updated upstream
     "description": "텍스트에서 다중 화자 대화를 생성합니다. 각 대화 항목은 고유한 텍스트와 음성을 가집니다.",
+=======
+    "description": "텍스트에서 다중 화자 대화를 생성합니다. 각 대화 항목마다 고유한 텍스트와 음성이 있습니다.",
+>>>>>>> Stashed changes
     "display_name": "ElevenLabs 텍스트 → 대화",
     "inputs": {
       "apply_text_normalization": {
@@ -2498,12 +2518,21 @@
     }
   },
   "ElevenLabsTextToSoundEffects": {
+<<<<<<< Updated upstream
     "description": "텍스트 설명에서 효과음을 생성합니다.",
     "display_name": "ElevenLabs 텍스트 → 효과음",
     "inputs": {
       "model": {
         "name": "model",
         "tooltip": "효과음 생성을 위한 모델."
+=======
+    "description": "텍스트 설명에서 음향 효과를 생성합니다.",
+    "display_name": "ElevenLabs 텍스트 → 음향 효과",
+    "inputs": {
+      "model": {
+        "name": "model",
+        "tooltip": "음향 효과 생성을 위한 모델."
+>>>>>>> Stashed changes
       },
       "model_duration": {
         "name": "duration"
@@ -2520,7 +2549,11 @@
       },
       "text": {
         "name": "text",
+<<<<<<< Updated upstream
         "tooltip": "생성할 효과음에 대한 텍스트 설명."
+=======
+        "tooltip": "생성할 음향 효과에 대한 텍스트 설명."
+>>>>>>> Stashed changes
       }
     },
     "outputs": {
@@ -2566,11 +2599,19 @@
       },
       "seed": {
         "name": "seed",
+<<<<<<< Updated upstream
         "tooltip": "재현성을 위한 시드(결정적 결과는 보장되지 않습니다)."
       },
       "stability": {
         "name": "stability",
         "tooltip": "음성의 안정성입니다. 값이 낮을수록 감정 표현이 다양해지고, 값이 높을수록 더 일관되지만 다소 단조로운 음성이 생성됩니다."
+=======
+        "tooltip": "재현성을 위한 시드(결정적 결과는 보장되지 않음)."
+      },
+      "stability": {
+        "name": "stability",
+        "tooltip": "음성의 안정성입니다. 값이 낮을수록 감정의 폭이 넓고, 값이 높을수록 더 일관되지만 다소 단조로운 음성이 생성됩니다."
+>>>>>>> Stashed changes
       },
       "text": {
         "name": "text",
@@ -13100,7 +13141,11 @@
         "tooltip": null
       },
       "1": {
+<<<<<<< Updated upstream
         "name": "디노이즈 출력",
+=======
+        "name": "노이즈 제거 출력",
+>>>>>>> Stashed changes
         "tooltip": null
       }
     }
@@ -13130,7 +13175,11 @@
         "tooltip": null
       },
       "1": {
+<<<<<<< Updated upstream
         "name": "디노이즈 출력",
+=======
+        "name": "노이즈 제거 출력",
+>>>>>>> Stashed changes
         "tooltip": null
       }
     }
@@ -15066,7 +15115,11 @@
     }
   },
   "TextGenerate": {
+<<<<<<< Updated upstream
     "display_name": "TextGenerate",
+=======
+    "display_name": "텍스트 생성",
+>>>>>>> Stashed changes
     "inputs": {
       "clip": {
         "name": "clip"
@@ -15725,11 +15778,19 @@
     },
     "outputs": {
       "0": {
+<<<<<<< Updated upstream
         "name": "리타겟 task_id",
         "tooltip": null
       },
       "1": {
         "name": "리타겟 작업 ID",
+=======
+        "name": "모델 파일",
+        "tooltip": null
+      },
+      "1": {
+        "name": "리타겟 task_id",
+>>>>>>> Stashed changes
         "tooltip": null
       },
       "2": {

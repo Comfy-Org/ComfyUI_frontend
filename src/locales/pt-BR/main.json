@@ -733,6 +733,7 @@
     "allExportsCompleted": "Todas as exportações concluídas",
     "downloadExport": "Baixar exportação",
     "downloadFailed": "Falha ao baixar \"{name}\"",
+<<<<<<< Updated upstream
     "exportCompleted": "Download ZIP pronto",
     "exportError": "Falha na exportação",
     "exportFailed": "{count} exportação falhou | {count} exportações falharam",
@@ -740,6 +741,15 @@
     "exportStarted": "Preparando download ZIP...",
     "exportingAssets": "Exportando ativos",
     "noExportsInQueue": "Nenhuma exportação {filter} na fila",
+=======
+    "exportCompleted": "Download do ZIP pronto",
+    "exportError": "Falha na exportação",
+    "exportFailed": "{count} exportação falhou | {count} exportações falharam",
+    "exportFailedSingle": "Falha ao criar exportação ZIP",
+    "exportStarted": "Preparando download do ZIP...",
+    "exportingAssets": "Exportando ativos",
+    "noExportsInQueue": "Nenhuma exportação de {filter} na fila",
+>>>>>>> Stashed changes
     "preparingExport": "Preparando exportação...",
     "retryDownload": "Tentar baixar novamente"
   },

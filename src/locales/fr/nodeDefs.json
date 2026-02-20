@@ -2356,7 +2356,11 @@
         "tooltip": "Modèle à utiliser pour la transformation voix à voix."
       },
       "model_similarity_boost": {
+<<<<<<< Updated upstream
         "name": "amélioration_similarité"
+=======
+        "name": "augmentation_similarité"
+>>>>>>> Stashed changes
       },
       "model_speed": {
         "name": "vitesse"
@@ -2365,7 +2369,11 @@
         "name": "style"
       },
       "model_use_speaker_boost": {
+<<<<<<< Updated upstream
         "name": "utiliser_amplification_parleur"
+=======
+        "name": "utiliser_augmentation_orateur"
+>>>>>>> Stashed changes
       },
       "output_format": {
         "name": "format_de_sortie",
@@ -2385,7 +2393,11 @@
       },
       "voice": {
         "name": "voix",
+<<<<<<< Updated upstream
         "tooltip": "Voix cible pour la transformation. Connectez depuis le Sélecteur de Voix ou le Clonage Instantané de Voix."
+=======
+        "tooltip": "Voix cible pour la transformation. Connectez depuis le Sélecteur de Voix ou Clonage Instantané de Voix."
+>>>>>>> Stashed changes
       }
     },
     "outputs": {
@@ -2395,7 +2407,11 @@
     }
   },
   "ElevenLabsSpeechToText": {
+<<<<<<< Updated upstream
     "description": "Transcrivez l’audio en texte. Prend en charge la détection automatique de la langue, la diarisation des locuteurs et l’étiquetage des événements audio.",
+=======
+    "description": "Transcrivez l'audio en texte. Prend en charge la détection automatique de la langue, la diarisation des locuteurs et l'étiquetage des événements audio.",
+>>>>>>> Stashed changes
     "display_name": "ElevenLabs Speech to Text",
     "inputs": {
       "audio": {
@@ -2406,6 +2422,7 @@
         "name": "contrôle après génération"
       },
       "language_code": {
+<<<<<<< Updated upstream
         "name": "language_code",
         "tooltip": "Code de langue ISO-639-1 ou ISO-639-3 (ex. : 'en', 'es', 'fra'). Laisser vide pour une détection automatique."
       },
@@ -2415,6 +2432,17 @@
       },
       "model_diarization_threshold": {
         "name": "seuil de diarisation"
+=======
+        "name": "code_langue",
+        "tooltip": "Code langue ISO-639-1 ou ISO-639-3 (ex : 'en', 'es', 'fra'). Laisser vide pour une détection automatique."
+      },
+      "model": {
+        "name": "modèle",
+        "tooltip": "Modèle à utiliser pour la transcription."
+      },
+      "model_diarization_threshold": {
+        "name": "seuil_de_diarisation"
+>>>>>>> Stashed changes
       },
       "model_diarize": {
         "name": "diariser"
@@ -2429,11 +2457,19 @@
         "name": "granularité_des_timestamps"
       },
       "num_speakers": {
+<<<<<<< Updated upstream
         "name": "num_speakers",
         "tooltip": "Nombre maximal de locuteurs à prédire. Mettre 0 pour une détection automatique."
       },
       "seed": {
         "name": "seed",
+=======
+        "name": "nombre_de_locuteurs",
+        "tooltip": "Nombre maximal de locuteurs à prédire. Mettre à 0 pour une détection automatique."
+      },
+      "seed": {
+        "name": "graine",
+>>>>>>> Stashed changes
         "tooltip": "Graine pour la reproductibilité (déterminisme non garanti)."
       }
     },
@@ -2443,17 +2479,29 @@
         "tooltip": null
       },
       "1": {
+<<<<<<< Updated upstream
         "name": "language_code",
         "tooltip": null
       },
       "2": {
         "name": "words_json",
+=======
+        "name": "code_langue",
+        "tooltip": null
+      },
+      "2": {
+        "name": "mots_json",
+>>>>>>> Stashed changes
         "tooltip": null
       }
     }
   },
   "ElevenLabsTextToDialogue": {
+<<<<<<< Updated upstream
     "description": "Générez un dialogue multi-locuteurs à partir d’un texte. Chaque entrée de dialogue possède son propre texte et sa propre voix.",
+=======
+    "description": "Générez un dialogue multi-locuteurs à partir d'un texte. Chaque entrée de dialogue possède son propre texte et sa propre voix.",
+>>>>>>> Stashed changes
     "display_name": "ElevenLabs Text to Dialogue",
     "inputs": {
       "apply_text_normalization": {
@@ -2465,17 +2513,29 @@
       },
       "inputs": {
         "name": "entrées",
+<<<<<<< Updated upstream
         "tooltip": "Nombre d’entrées de dialogue."
+=======
+        "tooltip": "Nombre d'entrées de dialogue."
+>>>>>>> Stashed changes
       },
       "inputs_text1": {
         "name": "texte1"
       },
       "language_code": {
+<<<<<<< Updated upstream
         "name": "language_code",
         "tooltip": "Code de langue ISO-639-1 ou ISO-639-3 (ex. : 'en', 'es', 'fra'). Laisser vide pour une détection automatique."
       },
       "model": {
         "name": "model",
+=======
+        "name": "code_langue",
+        "tooltip": "Code langue ISO-639-1 ou ISO-639-3 (ex : 'en', 'es', 'fra'). Laisser vide pour une détection automatique."
+      },
+      "model": {
+        "name": "modèle",
+>>>>>>> Stashed changes
         "tooltip": "Modèle à utiliser pour la génération du dialogue."
       },
       "output_format": {
@@ -2483,7 +2543,11 @@
         "tooltip": "Format de sortie audio."
       },
       "seed": {
+<<<<<<< Updated upstream
         "name": "seed",
+=======
+        "name": "graine",
+>>>>>>> Stashed changes
         "tooltip": "Graine pour la reproductibilité."
       },
       "stability": {
@@ -2502,8 +2566,13 @@
     "display_name": "ElevenLabs Text to Sound Effects",
     "inputs": {
       "model": {
+<<<<<<< Updated upstream
         "name": "model",
         "tooltip": "Modèle à utiliser pour la génération d’effets sonores."
+=======
+        "name": "modèle",
+        "tooltip": "Modèle à utiliser pour la génération de l'effet sonore."
+>>>>>>> Stashed changes
       },
       "model_duration": {
         "name": "durée"
@@ -2520,7 +2589,11 @@
       },
       "text": {
         "name": "texte",
+<<<<<<< Updated upstream
         "tooltip": "Description textuelle de l’effet sonore à générer."
+=======
+        "tooltip": "Description textuelle de l'effet sonore à générer."
+>>>>>>> Stashed changes
       }
     },
     "outputs": {
@@ -3539,7 +3612,11 @@
     }
   },
   "GLSLShader": {
+<<<<<<< Updated upstream
     "description": "Appliquez des shaders de fragment GLSL ES aux images. u_resolution (vec2) est toujours disponible.",
+=======
+    "description": "Appliquez des shaders de fragments GLSL ES aux images. u_resolution (vec2) est toujours disponible.",
+>>>>>>> Stashed changes
     "display_name": "Shader GLSL",
     "inputs": {
       "floats": {
@@ -3832,7 +3909,11 @@
         "tooltip": null
       },
       "2": {
+<<<<<<< Updated upstream
         "name": "taille du lot",
+=======
+        "name": "taille_lot",
+>>>>>>> Stashed changes
         "tooltip": null
       }
     }
@@ -15728,10 +15809,13 @@
         "name": "retarget task_id",
         "tooltip": null
       },
+<<<<<<< Updated upstream
       "1": {
         "name": "retarget task_id",
         "tooltip": null
       },
+=======
+>>>>>>> Stashed changes
       "2": {
         "name": "GLB",
         "tooltip": null

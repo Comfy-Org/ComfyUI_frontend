@@ -2929,8 +2929,13 @@
   },
   "widgets": {
     "boolean": {
+<<<<<<< Updated upstream
       "false": "假",
       "true": "真"
+=======
+      "false": "否",
+      "true": "是"
+>>>>>>> Stashed changes
     },
     "node2only": "仅限 Node 2.0",
     "selectModel": "选择模型",

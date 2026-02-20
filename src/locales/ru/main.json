@@ -1636,7 +1636,11 @@
     "runWorkflowFront": "Запустить рабочий процесс (Очередь в начале)",
     "settings": "Настройки",
     "showMenu": "Показать меню",
+<<<<<<< Updated upstream
     "stopRunInstant": "Остановить выполнение (мгновенно)",
+=======
+    "stopRunInstant": "Остановить выполнение (немедленно)",
+>>>>>>> Stashed changes
     "stopRunInstantTooltip": "Остановить выполнение",
     "theme": "Тема",
     "toggleBottomPanel": "Переключить нижнюю панель"
@@ -1888,7 +1892,11 @@
     "scheduling": "scheduling",
     "sd": "sd",
     "sd3": "sd3",
+<<<<<<< Updated upstream
     "shader": "шейдер",
+=======
+    "shader": "shader",
+>>>>>>> Stashed changes
     "sigmas": "сигмы",
     "stable_cascade": "стабильная_каскадная",
     "string": "строка",

@@ -842,7 +842,11 @@
     "error": "오류",
     "errorLoadingImage": "이미지 로드 오류",
     "errorLoadingVideo": "비디오 로드 오류",
+<<<<<<< Updated upstream
     "essentials": "필수 항목",
+=======
+    "essentials": "필수",
+>>>>>>> Stashed changes
     "experimental": "베타",
     "export": "내보내기",
     "extensionName": "확장 이름",
@@ -2438,7 +2442,11 @@
     "nodeLibraryTab": {
       "allNodes": "모든 노드",
       "custom": "사용자 정의",
+<<<<<<< Updated upstream
       "essentials": "필수 항목",
+=======
+      "essentials": "필수",
+>>>>>>> Stashed changes
       "groupBy": "그룹 기준",
       "groupStrategies": {
         "category": "카테고리",

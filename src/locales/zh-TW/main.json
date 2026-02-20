@@ -738,7 +738,11 @@
     "exportFailed": "{count} 項匯出失敗",
     "exportFailedSingle": "建立 ZIP 匯出失敗",
     "exportStarted": "正在準備 ZIP 下載...",
+<<<<<<< Updated upstream
     "exportingAssets": "正在匯出資產",
+=======
+    "exportingAssets": "正在匯出素材",
+>>>>>>> Stashed changes
     "noExportsInQueue": "佇列中沒有 {filter} 匯出",
     "preparingExport": "正在準備匯出...",
     "retryDownload": "重試下載"
