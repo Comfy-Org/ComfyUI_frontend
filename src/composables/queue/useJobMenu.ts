@@ -84,7 +84,7 @@ export function useJobMenu(
     } else if (target.state === 'pending') {
       await api.deleteItem('queue', target.id)
     }
-    executionStore.clearInitializationByPromptId(target.id)
+    executionStore.clearInitializationByJobId(target.id)
     await queueStore.update()
   }
 

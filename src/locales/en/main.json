@@ -918,6 +918,8 @@
     "runWorkflowFront": "Run workflow (Queue at front)",
     "runWorkflowDisabled": "Workflow contains unsupported nodes (highlighted red). Remove these to run the workflow.",
     "run": "Run",
+    "stopRunInstant": "Stop Run (Instant)",
+    "stopRunInstantTooltip": "Stop running",
     "execute": "Execute",
     "interrupt": "Cancel current run",
     "refresh": "Refresh node definitions",
