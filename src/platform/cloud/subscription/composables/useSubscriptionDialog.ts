@@ -6,9 +6,7 @@ import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspace
 
 const DIALOG_KEY = 'subscription-required'
 
-export type SubscriptionDialogReason =
-  | 'subscription_required'
-  | 'out_of_credits'
+type SubscriptionDialogReason = 'subscription_required' | 'out_of_credits'
 
 export const useSubscriptionDialog = () => {
   const { flags } = useFeatureFlags()
