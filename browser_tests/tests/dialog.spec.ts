@@ -342,9 +342,11 @@ test.describe('Support', () => {
     await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
 
     // Prevent loading the external page
-    await comfyPage.page.context().route('https://support.comfy.org/**', (route) =>
-      route.fulfill({ body: '<html></html>', contentType: 'text/html' })
-    )
+    await comfyPage.page
+      .context()
+      .route('https://support.comfy.org/**', (route) =>
+        route.fulfill({ body: '<html></html>', contentType: 'text/html' })
+      )
 
     const popupPromise = comfyPage.page.waitForEvent('popup')
     await comfyPage.menu.topbar.triggerTopbarCommand(['Help', 'Support'])
