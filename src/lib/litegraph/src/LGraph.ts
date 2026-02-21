@@ -965,16 +965,16 @@ export class LGraph
       node.flags.ghost = true
     }
 
-    // Register all widgets with the WidgetValueStore now that node has a valid ID.
-    // Widgets added before the node was in the graph deferred their setNodeId call.
+    node.graph = this
+    this._version++
+
+    // Register all widgets with the WidgetValueStore now that node has a
+    // valid ID and graph reference.
     if (node.widgets) {
       for (const widget of node.widgets) {
         if (isNodeBindable(widget)) widget.setNodeId(node.id)
       }
     }
-
-    node.graph = this
-    this._version++
 
     this._nodes.push(node)
     this._nodes_by_id[node.id] = node
