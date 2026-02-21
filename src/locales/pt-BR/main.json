@@ -275,7 +275,9 @@
     "signOut": {
       "signOut": "Sair",
       "success": "Logout realizado com sucesso",
-      "successDetail": "Você saiu da sua conta."
+      "successDetail": "Você saiu da sua conta.",
+      "unsavedChangesMessage": "Você tem alterações não salvas que serão perdidas ao sair. Deseja continuar?",
+      "unsavedChangesTitle": "Alterações não salvas"
     },
     "signup": {
       "alreadyHaveAccount": "Já tem uma conta?",
