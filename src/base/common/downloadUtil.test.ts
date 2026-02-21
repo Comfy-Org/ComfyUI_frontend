@@ -190,7 +190,7 @@ describe('downloadUtil', () => {
         ok: false,
         status: 404,
         blob: vi.fn()
-      } as unknown as Response)
+      } as Partial<Response> as Response)
 
       downloadFile(testUrl)
 

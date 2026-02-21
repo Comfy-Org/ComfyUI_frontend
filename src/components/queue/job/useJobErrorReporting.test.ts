@@ -39,7 +39,7 @@ describe('useJobErrorReporting', () => {
     dialog = {
       showErrorDialog,
       showExecutionErrorDialog
-    } as unknown as JobErrorDialogService
+    } as Partial<JobErrorDialogService> as JobErrorDialogService
     composable = useJobErrorReporting({
       taskForJob,
       copyToClipboard: copyToClipboard as (
