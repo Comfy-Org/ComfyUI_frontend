@@ -37,7 +37,7 @@ test.describe('Load workflow warning', { tag: '@ui' }, () => {
 })
 
 test('Does not report warning on undo/redo', async ({ comfyPage }) => {
-  await comfyPage.settings.setSetting('Comfy.NodeSearchBoxImpl', 'default')
+  await comfyPage.settings.setSetting('Comfy.NodeSearchBoxImpl', 'v1 (legacy)')
 
   await comfyPage.workflow.loadWorkflow('missing/missing_nodes')
   await comfyPage.page
@@ -61,16 +61,21 @@ test('Does not report warning on undo/redo', async ({ comfyPage }) => {
 })
 
 test.describe('Execution error', () => {
+  test.beforeEach(async ({ comfyPage }) => {
+    await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
+    await comfyPage.setup()
+  })
+
   test('Should display an error message when an execution error occurs', async ({
     comfyPage
   }) => {
     await comfyPage.workflow.loadWorkflow('nodes/execution_error')
-    await comfyPage.queueButton.click()
+    await comfyPage.command.executeCommand('Comfy.QueuePrompt')
     await comfyPage.nextFrame()
 
-    // Wait for the element with the .comfy-execution-error selector to be visible
-    const executionError = comfyPage.page.locator('.comfy-error-report')
-    await expect(executionError).toBeVisible()
+    // Wait for the error overlay to be visible
+    const errorOverlay = comfyPage.page.locator('[data-testid="error-overlay"]')
+    await expect(errorOverlay).toBeVisible()
   })
 })
 
@@ -244,9 +249,13 @@ test.describe('Missing models warning', () => {
 test.describe('Settings', () => {
   test('@mobile Should be visible on mobile', async ({ comfyPage }) => {
     await comfyPage.page.keyboard.press('Control+,')
-    const settingsContent = comfyPage.page.locator('.settings-content')
-    await expect(settingsContent).toBeVisible()
-    const isUsableHeight = await settingsContent.evaluate(
+    const settingsDialog = comfyPage.page.locator(
+      '[data-testid="settings-dialog"]'
+    )
+    await expect(settingsDialog).toBeVisible()
+    const contentArea = settingsDialog.locator('main')
+    await expect(contentArea).toBeVisible()
+    const isUsableHeight = await contentArea.evaluate(
       (el) => el.clientHeight > 30
     )
     expect(isUsableHeight).toBeTruthy()
@@ -256,7 +265,9 @@ test.describe('Settings', () => {
     await comfyPage.page.keyboard.down('ControlOrMeta')
     await comfyPage.page.keyboard.press(',')
     await comfyPage.page.keyboard.up('ControlOrMeta')
-    const settingsLocator = comfyPage.page.locator('.settings-container')
+    const settingsLocator = comfyPage.page.locator(
+      '[data-testid="settings-dialog"]'
+    )
     await expect(settingsLocator).toBeVisible()
     await comfyPage.page.keyboard.press('Escape')
     await expect(settingsLocator).not.toBeVisible()
@@ -275,10 +286,15 @@ test.describe('Settings', () => {
   test('Should persist keybinding setting', async ({ comfyPage }) => {
     // Open the settings dialog
     await comfyPage.page.keyboard.press('Control+,')
-    await comfyPage.page.waitForSelector('.settings-container')
+    await comfyPage.page.waitForSelector('[data-testid="settings-dialog"]')
 
     // Open the keybinding tab
-    await comfyPage.page.getByLabel('Keybinding').click()
+    const settingsDialog = comfyPage.page.locator(
+      '[data-testid="settings-dialog"]'
+    )
+    await settingsDialog
+      .locator('nav [role="button"]', { hasText: 'Keybinding' })
+      .click()
     await comfyPage.page.waitForSelector(
       '[placeholder="Search Keybindings..."]'
     )
@@ -298,7 +314,10 @@ test.describe('Settings', () => {
     await input.press('Alt+n')
 
     const requestPromise = comfyPage.page.waitForRequest(
-      '**/api/settings/Comfy.Keybinding.NewBindings'
+      (req) =>
+        req.url().includes('/api/settings') &&
+        !req.url().includes('/api/settings/') &&
+        req.method() === 'POST'
     )
 
     // Save keybinding
@@ -326,17 +345,23 @@ test.describe('Support', () => {
     comfyPage
   }) => {
     await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
-    const pagePromise = comfyPage.page.context().waitForEvent('page')
+
+    // Prevent loading the external page
+    await comfyPage.page
+      .context()
+      .route('https://support.comfy.org/**', (route) =>
+        route.fulfill({ body: '<html></html>', contentType: 'text/html' })
+      )
+
+    const popupPromise = comfyPage.page.waitForEvent('popup')
     await comfyPage.menu.topbar.triggerTopbarCommand(['Help', 'Support'])
-    const newPage = await pagePromise
+    const popup = await popupPromise
 
-    await newPage.waitForLoadState('networkidle')
-    await expect(newPage).toHaveURL(/.*support\.comfy\.org.*/)
-
-    const url = new URL(newPage.url())
+    const url = new URL(popup.url())
+    expect(url.hostname).toBe('support.comfy.org')
     expect(url.searchParams.get('tf_42243568391700')).toBe('oss')
 
-    await newPage.close()
+    await popup.close()
   })
 })
 

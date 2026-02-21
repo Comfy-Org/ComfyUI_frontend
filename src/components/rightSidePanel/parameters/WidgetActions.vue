@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { cn } from '@comfyorg/tailwind-utils'
+import { isEqual } from 'es-toolkit'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import MoreButton from '@/components/button/MoreButton.vue'
+import Button from '@/components/ui/button/Button.vue'
 import { isProxyWidget } from '@/core/graph/subgraph/proxyWidget'
 import {
   demoteWidget,
@@ -14,7 +15,10 @@ import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useDialogService } from '@/services/dialogService'
+import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useFavoritedWidgetsStore } from '@/stores/workspace/favoritedWidgetsStore'
+import { getWidgetDefaultValue } from '@/utils/widgetUtil'
+import type { WidgetValue } from '@/utils/widgetUtil'
 
 const {
   widget,
@@ -28,10 +32,15 @@ const {
   isShownOnParents?: boolean
 }>()
 
+const emit = defineEmits<{
+  resetToDefault: [value: WidgetValue]
+}>()
+
 const label = defineModel<string>('label', { required: true })
 
 const canvasStore = useCanvasStore()
 const favoritedWidgetsStore = useFavoritedWidgetsStore()
+const nodeDefStore = useNodeDefStore()
 const dialogService = useDialogService()
 const { t } = useI18n()
 
@@ -42,6 +51,19 @@ const favoriteNode = computed(() =>
 const isFavorited = computed(() =>
   favoritedWidgetsStore.isFavorited(favoriteNode.value, widget.name)
 )
+
+const inputSpec = computed(() =>
+  nodeDefStore.getInputSpecForWidget(node, widget.name)
+)
+
+const defaultValue = computed(() => getWidgetDefaultValue(inputSpec.value))
+
+const hasDefault = computed(() => defaultValue.value !== undefined)
+
+const isCurrentValueDefault = computed(() => {
+  if (!hasDefault.value) return true
+  return isEqual(widget.value, defaultValue.value)
+})
 
 async function handleRename() {
   const newLabel = await dialogService.prompt({
@@ -97,11 +119,10 @@ function handleToggleFavorite() {
   favoritedWidgetsStore.toggleFavorite(favoriteNode.value, widget.name)
 }
 
-const buttonClasses = cn([
-  'border-none bg-transparent',
-  'w-full flex items-center gap-2 rounded px-3 py-2 text-sm',
-  'cursor-pointer transition-all hover:bg-secondary-background-hover active:scale-95'
-])
+function handleResetToDefault() {
+  if (!hasDefault.value) return
+  emit('resetToDefault', defaultValue.value)
+}
 </script>
 
 <template>
@@ -110,8 +131,10 @@ const buttonClasses = cn([
     class="text-muted-foreground bg-transparent hover:text-base-foreground hover:bg-secondary-background-hover active:scale-95 transition-all"
   >
     <template #default="{ close }">
-      <button
-        :class="buttonClasses"
+      <Button
+        variant="textonly"
+        size="unset"
+        class="w-full flex items-center gap-2 rounded px-3 py-2 text-sm transition-all active:scale-95"
         @click="
           () => {
             handleRename()
@@ -121,11 +144,13 @@ const buttonClasses = cn([
       >
         <i class="icon-[lucide--edit] size-4" />
         <span>{{ t('g.rename') }}</span>
-      </button>
+      </Button>
 
-      <button
+      <Button
         v-if="hasParents"
-        :class="buttonClasses"
+        variant="textonly"
+        size="unset"
+        class="w-full flex items-center gap-2 rounded px-3 py-2 text-sm transition-all active:scale-95"
         @click="
           () => {
             if (isShownOnParents) handleHideInput()
@@ -142,10 +167,12 @@ const buttonClasses = cn([
           <i class="icon-[lucide--eye] size-4" />
           <span>{{ t('rightSidePanel.showInput') }}</span>
         </template>
-      </button>
+      </Button>
 
-      <button
-        :class="buttonClasses"
+      <Button
+        variant="textonly"
+        size="unset"
+        class="w-full flex items-center gap-2 rounded px-3 py-2 text-sm transition-all active:scale-95"
         @click="
           () => {
             handleToggleFavorite()
@@ -154,14 +181,31 @@ const buttonClasses = cn([
         "
       >
         <template v-if="isFavorited">
-          <i class="icon-[lucide--star]" />
+          <i class="icon-[lucide--star] size-4" />
           <span>{{ t('rightSidePanel.removeFavorite') }}</span>
         </template>
         <template v-else>
-          <i class="icon-[lucide--star]" />
+          <i class="icon-[lucide--star] size-4" />
           <span>{{ t('rightSidePanel.addFavorite') }}</span>
         </template>
-      </button>
+      </Button>
+
+      <Button
+        v-if="hasDefault"
+        variant="textonly"
+        size="unset"
+        class="w-full flex items-center gap-2 rounded px-3 py-2 text-sm transition-all active:scale-95"
+        :disabled="isCurrentValueDefault"
+        @click="
+          () => {
+            handleResetToDefault()
+            close()
+          }
+        "
+      >
+        <i class="icon-[lucide--rotate-ccw] size-4" />
+        <span>{{ t('rightSidePanel.resetToDefault') }}</span>
+      </Button>
     </template>
   </MoreButton>
 </template>

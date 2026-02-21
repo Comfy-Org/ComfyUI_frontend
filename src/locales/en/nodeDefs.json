@@ -208,6 +208,47 @@
       }
     }
   },
+  "AudioEqualizer3Band": {
+    "display_name": "Audio Equalizer (3-Band)",
+    "inputs": {
+      "audio": {
+        "name": "audio"
+      },
+      "low_gain_dB": {
+        "name": "low_gain_dB",
+        "tooltip": "Gain for Low frequencies (Bass)"
+      },
+      "low_freq": {
+        "name": "low_freq",
+        "tooltip": "Cutoff frequency for Low shelf"
+      },
+      "mid_gain_dB": {
+        "name": "mid_gain_dB",
+        "tooltip": "Gain for Mid frequencies"
+      },
+      "mid_freq": {
+        "name": "mid_freq",
+        "tooltip": "Center frequency for Mids"
+      },
+      "mid_q": {
+        "name": "mid_q",
+        "tooltip": "Q factor (bandwidth) for Mids"
+      },
+      "high_gain_dB": {
+        "name": "high_gain_dB",
+        "tooltip": "Gain for High frequencies (Treble)"
+      },
+      "high_freq": {
+        "name": "high_freq",
+        "tooltip": "Cutoff frequency for High shelf"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "AudioMerge": {
     "display_name": "Audio Merge",
     "description": "Combine two audio tracks by overlaying their waveforms.",
@@ -369,15 +410,6 @@
       },
       "control_after_generate": {
         "name": "control after generate"
-      },
-      "moderation_prompt_content_moderation": {
-        "name": "prompt_content_moderation"
-      },
-      "moderation_visual_input_moderation": {
-        "name": "visual_input_moderation"
-      },
-      "moderation_visual_output_moderation": {
-        "name": "visual_output_moderation"
       }
     },
     "outputs": {
@@ -386,6 +418,56 @@
       },
       "1": {
         "name": "structured_prompt",
+        "tooltip": null
+      }
+    }
+  },
+  "BriaRemoveImageBackground": {
+    "display_name": "Bria Remove Image Background",
+    "description": "Remove the background from an image using Bria RMBG 2.0.",
+    "inputs": {
+      "image": {
+        "name": "image"
+      },
+      "moderation": {
+        "name": "moderation",
+        "tooltip": "Moderation settings"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed controls whether the node should re-run; results are non-deterministic regardless of seed."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "BriaRemoveVideoBackground": {
+    "display_name": "Bria Remove Video Background",
+    "description": "Remove the background from a video using Bria. ",
+    "inputs": {
+      "video": {
+        "name": "video"
+      },
+      "background_color": {
+        "name": "background_color",
+        "tooltip": "Background color for the output video."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed controls whether the node should re-run; results are non-deterministic regardless of seed."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -2020,6 +2102,20 @@
       }
     }
   },
+  "CreateList": {
+    "display_name": "Create List",
+    "inputs": {
+      "inputs": {
+        "name": "inputs"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "list",
+        "tooltip": null
+      }
+    }
+  },
   "CreateVideo": {
     "display_name": "Create Video",
     "description": "Create a video from images.",
@@ -2209,8 +2305,323 @@
       }
     }
   },
+  "ElevenLabsAudioIsolation": {
+    "display_name": "ElevenLabs Voice Isolation",
+    "description": "Remove background noise from audio, isolating vocals or speech.",
+    "inputs": {
+      "audio": {
+        "name": "audio",
+        "tooltip": "Audio to process for background noise removal."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ElevenLabsInstantVoiceClone": {
+    "display_name": "ElevenLabs Instant Voice Clone",
+    "description": "Create a cloned voice from audio samples. Provide 1-8 audio recordings of the voice to clone.",
+    "inputs": {
+      "files": {
+        "name": "files",
+        "tooltip": "Audio recordings for voice cloning."
+      },
+      "remove_background_noise": {
+        "name": "remove_background_noise",
+        "tooltip": "Remove background noise from voice samples using audio isolation."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "voice",
+        "tooltip": null
+      }
+    }
+  },
+  "ElevenLabsSpeechToSpeech": {
+    "display_name": "ElevenLabs Speech to Speech",
+    "description": "Transform speech from one voice to another while preserving the original content and emotion.",
+    "inputs": {
+      "voice": {
+        "name": "voice",
+        "tooltip": "Target voice for the transformation. Connect from Voice Selector or Instant Voice Clone."
+      },
+      "audio": {
+        "name": "audio",
+        "tooltip": "Source audio to transform."
+      },
+      "stability": {
+        "name": "stability",
+        "tooltip": "Voice stability. Lower values give broader emotional range, higher values produce more consistent but potentially monotonous speech."
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Model to use for speech-to-speech transformation."
+      },
+      "output_format": {
+        "name": "output_format",
+        "tooltip": "Audio output format."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed for reproducibility."
+      },
+      "remove_background_noise": {
+        "name": "remove_background_noise",
+        "tooltip": "Remove background noise from input audio using audio isolation."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model_similarity_boost": {
+        "name": "similarity_boost"
+      },
+      "model_speed": {
+        "name": "speed"
+      },
+      "model_style": {
+        "name": "style"
+      },
+      "model_use_speaker_boost": {
+        "name": "use_speaker_boost"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ElevenLabsSpeechToText": {
+    "display_name": "ElevenLabs Speech to Text",
+    "description": "Transcribe audio to text. Supports automatic language detection, speaker diarization, and audio event tagging.",
+    "inputs": {
+      "audio": {
+        "name": "audio",
+        "tooltip": "Audio to transcribe."
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Model to use for transcription."
+      },
+      "language_code": {
+        "name": "language_code",
+        "tooltip": "ISO-639-1 or ISO-639-3 language code (e.g., 'en', 'es', 'fra'). Leave empty for automatic detection."
+      },
+      "num_speakers": {
+        "name": "num_speakers",
+        "tooltip": "Maximum number of speakers to predict. Set to 0 for automatic detection."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed for reproducibility (determinism not guaranteed)."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model_diarization_threshold": {
+        "name": "diarization_threshold"
+      },
+      "model_diarize": {
+        "name": "diarize"
+      },
+      "model_tag_audio_events": {
+        "name": "tag_audio_events"
+      },
+      "model_temperature": {
+        "name": "temperature"
+      },
+      "model_timestamps_granularity": {
+        "name": "timestamps_granularity"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "text",
+        "tooltip": null
+      },
+      "1": {
+        "name": "language_code",
+        "tooltip": null
+      },
+      "2": {
+        "name": "words_json",
+        "tooltip": null
+      }
+    }
+  },
+  "ElevenLabsTextToDialogue": {
+    "display_name": "ElevenLabs Text to Dialogue",
+    "description": "Generate multi-speaker dialogue from text. Each dialogue entry has its own text and voice.",
+    "inputs": {
+      "stability": {
+        "name": "stability",
+        "tooltip": "Voice stability. Lower values give broader emotional range, higher values produce more consistent but potentially monotonous speech."
+      },
+      "apply_text_normalization": {
+        "name": "apply_text_normalization",
+        "tooltip": "Text normalization mode. 'auto' lets the system decide, 'on' always applies normalization, 'off' skips it."
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Model to use for dialogue generation."
+      },
+      "inputs": {
+        "name": "inputs",
+        "tooltip": "Number of dialogue entries."
+      },
+      "language_code": {
+        "name": "language_code",
+        "tooltip": "ISO-639-1 or ISO-639-3 language code (e.g., 'en', 'es', 'fra'). Leave empty for automatic detection."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed for reproducibility."
+      },
+      "output_format": {
+        "name": "output_format",
+        "tooltip": "Audio output format."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "inputs_text1": {
+        "name": "text1"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ElevenLabsTextToSoundEffects": {
+    "display_name": "ElevenLabs Text to Sound Effects",
+    "description": "Generate sound effects from text descriptions.",
+    "inputs": {
+      "text": {
+        "name": "text",
+        "tooltip": "Text description of the sound effect to generate."
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Model to use for sound effect generation."
+      },
+      "output_format": {
+        "name": "output_format",
+        "tooltip": "Audio output format."
+      },
+      "model_duration": {
+        "name": "duration"
+      },
+      "model_loop": {
+        "name": "loop"
+      },
+      "model_prompt_influence": {
+        "name": "prompt_influence"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ElevenLabsTextToSpeech": {
+    "display_name": "ElevenLabs Text to Speech",
+    "description": "Convert text to speech.",
+    "inputs": {
+      "voice": {
+        "name": "voice",
+        "tooltip": "Voice to use for speech synthesis. Connect from Voice Selector or Instant Voice Clone."
+      },
+      "text": {
+        "name": "text",
+        "tooltip": "The text to convert to speech."
+      },
+      "stability": {
+        "name": "stability",
+        "tooltip": "Voice stability. Lower values give broader emotional range, higher values produce more consistent but potentially monotonous speech."
+      },
+      "apply_text_normalization": {
+        "name": "apply_text_normalization",
+        "tooltip": "Text normalization mode. 'auto' lets the system decide, 'on' always applies normalization, 'off' skips it."
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Model to use for text-to-speech."
+      },
+      "language_code": {
+        "name": "language_code",
+        "tooltip": "ISO-639-1 or ISO-639-3 language code (e.g., 'en', 'es', 'fra'). Leave empty for automatic detection."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed for reproducibility (determinism not guaranteed)."
+      },
+      "output_format": {
+        "name": "output_format",
+        "tooltip": "Audio output format."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model_similarity_boost": {
+        "name": "similarity_boost"
+      },
+      "model_speed": {
+        "name": "speed"
+      },
+      "model_style": {
+        "name": "style"
+      },
+      "model_use_speaker_boost": {
+        "name": "use_speaker_boost"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ElevenLabsVoiceSelector": {
+    "display_name": "ElevenLabs Voice Selector",
+    "description": "Select a predefined ElevenLabs voice for text-to-speech generation.",
+    "inputs": {
+      "voice": {
+        "name": "voice",
+        "tooltip": "Choose a voice from the predefined ElevenLabs voices."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "voice",
+        "tooltip": null
+      }
+    }
+  },
+  "EmptyAceStep1_5LatentAudio": {
+    "display_name": "Empty Ace Step 1.5 Latent Audio",
+    "inputs": {
+      "seconds": {
+        "name": "seconds"
+      },
+      "batch_size": {
+        "name": "batch_size",
+        "tooltip": "The number of latent images in the batch."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "EmptyAceStepLatentAudio": {
-    "display_name": "EmptyAceStepLatentAudio",
+    "display_name": "Empty Ace Step 1.0 Latent Audio",
     "inputs": {
       "seconds": {
         "name": "seconds"
@@ -3406,6 +3817,50 @@
       }
     }
   },
+  "GLSLShader": {
+    "display_name": "GLSL Shader",
+    "description": "Apply GLSL ES fragment shaders to images. u_resolution (vec2) is always available.",
+    "inputs": {
+      "fragment_shader": {
+        "name": "fragment_shader",
+        "tooltip": "GLSL fragment shader source code (GLSL ES 3.00 / WebGL 2.0 compatible)"
+      },
+      "size_mode": {
+        "name": "size_mode",
+        "tooltip": "Output size: 'from_input' uses first input image dimensions, 'custom' allows manual size"
+      },
+      "images": {
+        "name": "images",
+        "tooltip": "Images are available as u_image0-4 (sampler2D) in the shader code"
+      },
+      "floats": {
+        "name": "floats",
+        "tooltip": "Floats are available as u_float0-4 in the shader code"
+      },
+      "ints": {
+        "name": "ints",
+        "tooltip": "Ints are available as u_int0-4 in the shader code"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "IMAGE0",
+        "tooltip": "Available via layout(location = 0) out vec4 fragColor0 in the shader code"
+      },
+      "1": {
+        "name": "IMAGE1",
+        "tooltip": "Available via layout(location = 1) out vec4 fragColor1 in the shader code"
+      },
+      "2": {
+        "name": "IMAGE2",
+        "tooltip": "Available via layout(location = 2) out vec4 fragColor2 in the shader code"
+      },
+      "3": {
+        "name": "IMAGE3",
+        "tooltip": "Available via layout(location = 3) out vec4 fragColor3 in the shader code"
+      }
+    }
+  },
   "GrokImageEditNode": {
     "display_name": "Grok Image Edit",
     "description": "Modify an existing image based on a text prompt",
@@ -3553,6 +4008,50 @@
       },
       "tapered_corners": {
         "name": "tapered_corners"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HitPawGeneralImageEnhance": {
+    "display_name": "HitPaw General Image Enhance",
+    "description": "Upscale low-resolution images to super-resolution, eliminate artifacts and noise. Maximum output: 32 megapixels.",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "image": {
+        "name": "image"
+      },
+      "upscale_factor": {
+        "name": "upscale_factor"
+      },
+      "auto_downscale": {
+        "name": "auto_downscale",
+        "tooltip": "Automatically downscale input image if output would exceed the limit."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HitPawVideoEnhance": {
+    "display_name": "HitPaw Video Enhance",
+    "description": "Upscale low-resolution videos to high resolution, eliminate artifacts and noise. Prices shown are per second of video.",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "video": {
+        "name": "video"
+      },
+      "model_resolution": {
+        "name": "resolution"
       }
     },
     "outputs": {
@@ -4113,7 +4612,7 @@
     }
   },
   "ImageCrop": {
-    "display_name": "Image Crop",
+    "display_name": "Image Crop (Deprecated)",
     "inputs": {
       "image": {
         "name": "image"
@@ -4130,6 +4629,26 @@
       "y": {
         "name": "y"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ImageCropV2": {
+    "display_name": "Image Crop",
+    "inputs": {
+      "image": {
+        "name": "image"
+      },
+      "crop_region": {
+        "name": "crop_region"
+      },
+      "height": {},
+      "width": {},
+      "x": {},
+      "y": {}
     },
     "outputs": {
       "0": {
@@ -4846,6 +5365,46 @@
       }
     }
   },
+  "KlingFirstLastFrameNode": {
+    "display_name": "Kling 3.0 First-Last-Frame to Video",
+    "description": "Generate videos with Kling V3 using first and last frames.",
+    "inputs": {
+      "prompt": {
+        "name": "prompt"
+      },
+      "duration": {
+        "name": "duration"
+      },
+      "first_frame": {
+        "name": "first_frame"
+      },
+      "end_frame": {
+        "name": "end_frame"
+      },
+      "generate_audio": {
+        "name": "generate_audio"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Model and generation settings."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed controls whether the node should re-run; results are non-deterministic regardless of seed."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "KlingImage2VideoNode": {
     "display_name": "Kling Image(First Frame) to Video",
     "inputs": {
@@ -4892,7 +5451,7 @@
     }
   },
   "KlingImageGenerationNode": {
-    "display_name": "Kling Image Generation",
+    "display_name": "Kling 3.0 Image",
     "description": "Kling Image Generation Node. Generate an image from a text prompt with an optional reference image.",
     "inputs": {
       "prompt": {
@@ -4926,6 +5485,13 @@
       },
       "image": {
         "name": "image"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed controls whether the node should re-run; results are non-deterministic regardless of seed."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
       }
     },
     "outputs": {
@@ -4935,7 +5501,7 @@
     }
   },
   "KlingImageToVideoWithAudio": {
-    "display_name": "Kling Image(First Frame) to Video with Audio",
+    "display_name": "Kling 2.6 Image(First Frame) to Video with Audio",
     "inputs": {
       "model_name": {
         "name": "model_name"
@@ -5055,7 +5621,7 @@
     }
   },
   "KlingOmniProEditVideoNode": {
-    "display_name": "Kling Omni Edit Video (Pro)",
+    "display_name": "Kling 3.0 Omni Edit Video",
     "description": "Edit an existing video with the latest model from Kling.",
     "inputs": {
       "model_name": {
@@ -5078,6 +5644,13 @@
       },
       "resolution": {
         "name": "resolution"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed controls whether the node should re-run; results are non-deterministic regardless of seed."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
       }
     },
     "outputs": {
@@ -5087,7 +5660,7 @@
     }
   },
   "KlingOmniProFirstLastFrameNode": {
-    "display_name": "Kling Omni First-Last-Frame to Video (Pro)",
+    "display_name": "Kling 3.0 Omni First-Last-Frame to Video",
     "description": "Use a start frame, an optional end frame, or reference images with the latest Kling model.",
     "inputs": {
       "model_name": {
@@ -5095,7 +5668,7 @@
       },
       "prompt": {
         "name": "prompt",
-        "tooltip": "A text prompt describing the video content. This can include both positive and negative descriptions."
+        "tooltip": "A text prompt describing the video content. This can include both positive and negative descriptions. Ignored when storyboards are enabled."
       },
       "duration": {
         "name": "duration"
@@ -5105,7 +5678,7 @@
       },
       "end_frame": {
         "name": "end_frame",
-        "tooltip": "An optional end frame for the video. This cannot be used simultaneously with 'reference_images'."
+        "tooltip": "An optional end frame for the video. This cannot be used simultaneously with 'reference_images'. Does not work with storyboards."
       },
       "reference_images": {
         "name": "reference_images",
@@ -5113,6 +5686,21 @@
       },
       "resolution": {
         "name": "resolution"
+      },
+      "storyboards": {
+        "name": "storyboards",
+        "tooltip": "Generate a series of video segments with individual prompts and durations. Only supported for kling-v3-omni."
+      },
+      "generate_audio": {
+        "name": "generate_audio",
+        "tooltip": "Generate audio for the video. Only supported for kling-v3-omni."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed controls whether the node should re-run; results are non-deterministic regardless of seed."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
       }
     },
     "outputs": {
@@ -5122,7 +5710,7 @@
     }
   },
   "KlingOmniProImageNode": {
-    "display_name": "Kling Omni Image (Pro)",
+    "display_name": "Kling 3.0 Omni Image",
     "description": "Create or edit images with the latest model from Kling.",
     "inputs": {
       "model_name": {
@@ -5138,9 +5726,20 @@
       "aspect_ratio": {
         "name": "aspect_ratio"
       },
+      "series_amount": {
+        "name": "series_amount",
+        "tooltip": "Generate a series of images. Not supported for kling-image-o1."
+      },
       "reference_images": {
         "name": "reference_images",
         "tooltip": "Up to 10 additional reference images."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed controls whether the node should re-run; results are non-deterministic regardless of seed."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
       }
     },
     "outputs": {
@@ -5150,7 +5749,7 @@
     }
   },
   "KlingOmniProImageToVideoNode": {
-    "display_name": "Kling Omni Image to Video (Pro)",
+    "display_name": "Kling 3.0 Omni Image to Video",
     "description": "Use up to 7 reference images to generate a video with the latest Kling model.",
     "inputs": {
       "model_name": {
@@ -5158,7 +5757,7 @@
       },
       "prompt": {
         "name": "prompt",
-        "tooltip": "A text prompt describing the video content. This can include both positive and negative descriptions."
+        "tooltip": "A text prompt describing the video content. This can include both positive and negative descriptions. Ignored when storyboards are enabled."
       },
       "aspect_ratio": {
         "name": "aspect_ratio"
@@ -5172,6 +5771,21 @@
       },
       "resolution": {
         "name": "resolution"
+      },
+      "storyboards": {
+        "name": "storyboards",
+        "tooltip": "Generate a series of video segments with individual prompts and durations. Only supported for kling-v3-omni."
+      },
+      "generate_audio": {
+        "name": "generate_audio",
+        "tooltip": "Generate audio for the video. Only supported for kling-v3-omni."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed controls whether the node should re-run; results are non-deterministic regardless of seed."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
       }
     },
     "outputs": {
@@ -5181,7 +5795,7 @@
     }
   },
   "KlingOmniProTextToVideoNode": {
-    "display_name": "Kling Omni Text to Video (Pro)",
+    "display_name": "Kling 3.0 Omni Text to Video",
     "description": "Use text prompts to generate videos with the latest Kling model.",
     "inputs": {
       "model_name": {
@@ -5189,7 +5803,7 @@
       },
       "prompt": {
         "name": "prompt",
-        "tooltip": "A text prompt describing the video content. This can include both positive and negative descriptions."
+        "tooltip": "A text prompt describing the video content. This can include both positive and negative descriptions. Ignored when storyboards are enabled."
       },
       "aspect_ratio": {
         "name": "aspect_ratio"
@@ -5199,6 +5813,20 @@
       },
       "resolution": {
         "name": "resolution"
+      },
+      "storyboards": {
+        "name": "storyboards",
+        "tooltip": "Generate a series of video segments with individual prompts and durations. Ignored for o1 model."
+      },
+      "generate_audio": {
+        "name": "generate_audio"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed controls whether the node should re-run; results are non-deterministic regardless of seed."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
       }
     },
     "outputs": {
@@ -5208,7 +5836,7 @@
     }
   },
   "KlingOmniProVideoToVideoNode": {
-    "display_name": "Kling Omni Video to Video (Pro)",
+    "display_name": "Kling 3.0 Omni Video to Video",
     "description": "Use a video and up to 4 reference images to generate a video with the latest Kling model.",
     "inputs": {
       "model_name": {
@@ -5237,6 +5865,13 @@
       },
       "resolution": {
         "name": "resolution"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed controls whether the node should re-run; results are non-deterministic regardless of seed."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
       }
     },
     "outputs": {
@@ -5360,7 +5995,7 @@
     }
   },
   "KlingTextToVideoWithAudio": {
-    "display_name": "Kling Text to Video with Audio",
+    "display_name": "Kling 2.6 Text to Video with Audio",
     "inputs": {
       "model_name": {
         "name": "model_name"
@@ -5418,6 +6053,54 @@
       },
       "2": {
         "name": "duration",
+        "tooltip": null
+      }
+    }
+  },
+  "KlingVideoNode": {
+    "display_name": "Kling 3.0 Video",
+    "description": "Generate videos with Kling V3. Supports text-to-video and image-to-video with optional storyboard multi-prompt and audio generation.",
+    "inputs": {
+      "multi_shot": {
+        "name": "multi_shot",
+        "tooltip": "Generate a series of video segments with individual prompts and durations."
+      },
+      "generate_audio": {
+        "name": "generate_audio"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Model and generation settings."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed controls whether the node should re-run; results are non-deterministic regardless of seed."
+      },
+      "start_frame": {
+        "name": "start_frame",
+        "tooltip": "Optional start frame image. When connected, switches to image-to-video mode."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      },
+      "multi_shot_duration": {
+        "name": "duration"
+      },
+      "multi_shot_negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "multi_shot_prompt": {
+        "name": "prompt"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -6043,6 +6726,10 @@
       "5": {
         "name": "recording_video",
         "tooltip": null
+      },
+      "6": {
+        "name": "model_3d",
+        "tooltip": null
       }
     }
   },
@@ -6303,6 +6990,10 @@
       "strength_model": {
         "name": "strength_model",
         "tooltip": "How strongly to modify the diffusion model. This value can be negative."
+      },
+      "bypass": {
+        "name": "bypass",
+        "tooltip": "When enabled, applies LoRA in bypass mode without modifying base model weights. Useful for training and when model weights are offloaded."
       }
     },
     "outputs": {
@@ -7122,6 +7813,88 @@
       }
     }
   },
+  "MagnificImageUpscalerCreativeNode": {
+    "display_name": "Magnific Image Upscale (Creative)",
+    "description": "Prompt‑guided enhancement, stylization, and 2x/4x/8x/16x upscaling. Maximum output: 25.3 megapixels.",
+    "inputs": {
+      "image": {
+        "name": "image"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "scale_factor": {
+        "name": "scale_factor"
+      },
+      "optimized_for": {
+        "name": "optimized_for"
+      },
+      "creativity": {
+        "name": "creativity"
+      },
+      "hdr": {
+        "name": "hdr",
+        "tooltip": "The level of definition and detail."
+      },
+      "resemblance": {
+        "name": "resemblance",
+        "tooltip": "The level of resemblance to the original image."
+      },
+      "fractality": {
+        "name": "fractality",
+        "tooltip": "The strength of the prompt and intricacy per square pixel."
+      },
+      "engine": {
+        "name": "engine"
+      },
+      "auto_downscale": {
+        "name": "auto_downscale",
+        "tooltip": "Automatically downscale input image if output would exceed maximum pixel limit."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MagnificImageUpscalerPreciseV2Node": {
+    "display_name": "Magnific Image Upscale (Precise V2)",
+    "description": "High-fidelity upscaling with fine control over sharpness, grain, and detail. Maximum output: 10060×10060 pixels.",
+    "inputs": {
+      "image": {
+        "name": "image"
+      },
+      "scale_factor": {
+        "name": "scale_factor"
+      },
+      "flavor": {
+        "name": "flavor",
+        "tooltip": "Processing style: sublime for general use, photo for photographs, photo_denoiser for noisy photos."
+      },
+      "sharpen": {
+        "name": "sharpen",
+        "tooltip": "Image sharpness intensity. Higher values increase edge definition and clarity."
+      },
+      "smart_grain": {
+        "name": "smart_grain",
+        "tooltip": "Intelligent grain/texture enhancement to prevent the image from looking too smooth or artificial."
+      },
+      "ultra_detail": {
+        "name": "ultra_detail",
+        "tooltip": "Controls fine detail, textures, and micro-details added during upscaling."
+      },
+      "auto_downscale": {
+        "name": "auto_downscale",
+        "tooltip": "Automatically downscale input image if output would exceed maximum resolution."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "Mahiro": {
     "display_name": "Mahiro CFG",
     "description": "Modify the guidance to scale more on the 'direction' of the positive prompt rather than the difference between the negative prompt.",
@@ -7274,6 +8047,14 @@
       "0": {
         "name": "model_file",
         "tooltip": null
+      },
+      "1": {
+        "name": "GLB",
+        "tooltip": null
+      },
+      "2": {
+        "name": "FBX",
+        "tooltip": null
       }
     }
   },
@@ -7328,6 +8109,14 @@
       },
       "1": {
         "name": "meshy_task_id",
+        "tooltip": null
+      },
+      "2": {
+        "name": "GLB",
+        "tooltip": null
+      },
+      "3": {
+        "name": "FBX",
         "tooltip": null
       }
     }
@@ -7384,6 +8173,14 @@
       "1": {
         "name": "meshy_task_id",
         "tooltip": null
+      },
+      "2": {
+        "name": "GLB",
+        "tooltip": null
+      },
+      "3": {
+        "name": "FBX",
+        "tooltip": null
       }
     }
   },
@@ -7418,6 +8215,14 @@
       "1": {
         "name": "meshy_task_id",
         "tooltip": null
+      },
+      "2": {
+        "name": "GLB",
+        "tooltip": null
+      },
+      "3": {
+        "name": "FBX",
+        "tooltip": null
       }
     }
   },
@@ -7444,6 +8249,14 @@
       },
       "1": {
         "name": "rig_task_id",
+        "tooltip": null
+      },
+      "2": {
+        "name": "GLB",
+        "tooltip": null
+      },
+      "3": {
+        "name": "FBX",
         "tooltip": null
       }
     }
@@ -7493,6 +8306,14 @@
       "1": {
         "name": "meshy_task_id",
         "tooltip": null
+      },
+      "2": {
+        "name": "GLB",
+        "tooltip": null
+      },
+      "3": {
+        "name": "FBX",
+        "tooltip": null
       }
     }
   },
@@ -7528,6 +8349,14 @@
       },
       "1": {
         "name": "meshy_task_id",
+        "tooltip": null
+      },
+      "2": {
+        "name": "GLB",
+        "tooltip": null
+      },
+      "3": {
+        "name": "FBX",
         "tooltip": null
       }
     }
@@ -9973,6 +10802,32 @@
       }
     }
   },
+  "NAGuidance": {
+    "display_name": "Normalized Attention Guidance",
+    "description": "Applies Normalized Attention Guidance to models, enabling negative prompts on distilled/schnell models.",
+    "inputs": {
+      "model": {
+        "name": "model",
+        "tooltip": "The model to apply NAG to."
+      },
+      "nag_scale": {
+        "name": "nag_scale",
+        "tooltip": "The guidance scale factor. Higher values push further from the negative prompt."
+      },
+      "nag_alpha": {
+        "name": "nag_alpha",
+        "tooltip": "Blending factor for the normalized attention. 1.0 is full replacement, 0.0 is no effect."
+      },
+      "nag_tau": {
+        "name": "nag_tau"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "The patched model with NAG enabled."
+      }
+    }
+  },
   "NormalizeImages": {
     "display_name": "Normalize Images",
     "inputs": {
@@ -10722,7 +11577,8 @@
     "display_name": "Preview 3D & Animation",
     "inputs": {
       "model_file": {
-        "name": "model_file"
+        "name": "model_file",
+        "tooltip": "3D model file or path string"
       },
       "camera_info": {
         "name": "camera_info"
@@ -10741,7 +11597,12 @@
       "source": {
         "name": "source"
       },
-      "preview": {},
+      "preview_markdown": {
+        "name": "Preview"
+      },
+      "preview_text": {
+        "name": "Preview"
+      },
       "previewMode": {}
     }
   },
@@ -10770,6 +11631,28 @@
     "inputs": {
       "value": {
         "name": "value"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PrimitiveBoundingBox": {
+    "display_name": "Bounding Box",
+    "inputs": {
+      "x": {
+        "name": "x"
+      },
+      "y": {
+        "name": "y"
+      },
+      "width": {
+        "name": "width"
+      },
+      "height": {
+        "name": "height"
       }
     },
     "outputs": {
@@ -11215,7 +12098,7 @@
   },
   "RecraftStyleV3InfiniteStyleLibrary": {
     "display_name": "Recraft Style - Infinite Style Library",
-    "description": "Select style based on preexisting UUID from Recraft's Infinite Style Library.",
+    "description": "Choose style based on preexisting UUID from Recraft's Infinite Style Library.",
     "inputs": {
       "style_id": {
         "name": "style_id",
@@ -11341,6 +12224,88 @@
       }
     }
   },
+  "RecraftV4TextToImageNode": {
+    "display_name": "Recraft V4 Text to Image",
+    "description": "Generates images using Recraft V4 or V4 Pro models.",
+    "inputs": {
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Prompt for the image generation. Maximum 10,000 characters."
+      },
+      "negative_prompt": {
+        "name": "negative_prompt",
+        "tooltip": "An optional text description of undesired elements on an image."
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "The model to use for generation."
+      },
+      "n": {
+        "name": "n",
+        "tooltip": "The number of images to generate."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed to determine if node should re-run; actual results are nondeterministic regardless of seed."
+      },
+      "recraft_controls": {
+        "name": "recraft_controls",
+        "tooltip": "Optional additional controls over the generation via the Recraft Controls node."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model_size": {
+        "name": "size"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "RecraftV4TextToVectorNode": {
+    "display_name": "Recraft V4 Text to Vector",
+    "description": "Generates SVG using Recraft V4 or V4 Pro models.",
+    "inputs": {
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Prompt for the image generation. Maximum 10,000 characters."
+      },
+      "negative_prompt": {
+        "name": "negative_prompt",
+        "tooltip": "An optional text description of undesired elements on an image."
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "The model to use for generation."
+      },
+      "n": {
+        "name": "n",
+        "tooltip": "The number of images to generate."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed to determine if node should re-run; actual results are nondeterministic regardless of seed."
+      },
+      "recraft_controls": {
+        "name": "recraft_controls",
+        "tooltip": "Optional additional controls over the generation via the Recraft Controls node."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model_size": {
+        "name": "size"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "RecraftVectorizeImageNode": {
     "display_name": "Recraft Vectorize Image",
     "description": "Generates SVG synchronously from an input image.",
@@ -11358,6 +12323,23 @@
   "ReferenceLatent": {
     "display_name": "ReferenceLatent",
     "description": "This node sets the guiding latent for an edit model. If the model supports it you can chain multiple to set multiple reference images.",
+    "inputs": {
+      "conditioning": {
+        "name": "conditioning"
+      },
+      "latent": {
+        "name": "latent"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ReferenceTimbreAudio": {
+    "display_name": "Reference Audio",
+    "description": "This node sets the reference audio for ace step 1.5",
     "inputs": {
       "conditioning": {
         "name": "conditioning"
@@ -11704,6 +12686,10 @@
       "0": {
         "name": "3D Model Path",
         "tooltip": null
+      },
+      "1": {
+        "name": "GLB",
+        "tooltip": null
       }
     }
   },
@@ -11731,6 +12717,10 @@
       "0": {
         "name": "3D Model Path",
         "tooltip": null
+      },
+      "1": {
+        "name": "GLB",
+        "tooltip": null
       }
     }
   },
@@ -11755,6 +12745,10 @@
       "0": {
         "name": "3D Model Path",
         "tooltip": null
+      },
+      "1": {
+        "name": "GLB",
+        "tooltip": null
       }
     }
   },
@@ -11772,6 +12766,10 @@
     "outputs": {
       "0": {
         "name": "3D Model Path",
+        "tooltip": null
+      },
+      "1": {
+        "name": "GLB",
         "tooltip": null
       }
     }
@@ -11796,6 +12794,10 @@
     "outputs": {
       "0": {
         "name": "3D Model Path",
+        "tooltip": null
+      },
+      "1": {
+        "name": "GLB",
         "tooltip": null
       }
     }
@@ -12389,10 +13391,11 @@
     }
   },
   "SaveGLB": {
-    "display_name": "SaveGLB",
+    "display_name": "Save 3D Model",
     "inputs": {
       "mesh": {
-        "name": "mesh"
+        "name": "mesh",
+        "tooltip": "Mesh or 3D file to save"
       },
       "filename_prefix": {
         "name": "filename_prefix"
@@ -13757,8 +14760,31 @@
       }
     }
   },
+  "Tencent3DPartNode": {
+    "display_name": "Hunyuan3D: 3D Part",
+    "description": "Automatically perform component identification and generation based on the model structure.",
+    "inputs": {
+      "model_3d": {
+        "name": "model_3d",
+        "tooltip": "3D model in FBX format. Model should have less than 30000 faces."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed controls whether the node should re-run; results are non-deterministic regardless of seed."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "FBX",
+        "tooltip": null
+      }
+    }
+  },
   "TencentImageToModelNode": {
-    "display_name": "Hunyuan3D: Image(s) to Model (Pro)",
+    "display_name": "Hunyuan3D: Image(s) to Model",
     "inputs": {
       "model": {
         "name": "model",
@@ -13797,11 +14823,19 @@
       "0": {
         "name": "model_file",
         "tooltip": null
+      },
+      "1": {
+        "name": "GLB",
+        "tooltip": null
+      },
+      "2": {
+        "name": "OBJ",
+        "tooltip": null
       }
     }
   },
   "TencentTextToModelNode": {
-    "display_name": "Hunyuan3D: Text to Model (Pro)",
+    "display_name": "Hunyuan3D: Text to Model",
     "inputs": {
       "model": {
         "name": "model",
@@ -13832,6 +14866,14 @@
       "0": {
         "name": "model_file",
         "tooltip": null
+      },
+      "1": {
+        "name": "GLB",
+        "tooltip": null
+      },
+      "2": {
+        "name": "OBJ",
+        "tooltip": null
       }
     }
   },
@@ -13849,6 +14891,65 @@
       },
       "lyrics_strength": {
         "name": "lyrics_strength"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "TextEncodeAceStepAudio1_5": {
+    "display_name": "TextEncodeAceStepAudio1.5",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "tags": {
+        "name": "tags"
+      },
+      "lyrics": {
+        "name": "lyrics"
+      },
+      "seed": {
+        "name": "seed"
+      },
+      "bpm": {
+        "name": "bpm"
+      },
+      "duration": {
+        "name": "duration"
+      },
+      "timesignature": {
+        "name": "timesignature"
+      },
+      "language": {
+        "name": "language"
+      },
+      "keyscale": {
+        "name": "keyscale"
+      },
+      "generate_audio_codes": {
+        "name": "generate_audio_codes",
+        "tooltip": "Enable the LLM that generates audio codes. This can be slow but will increase the quality of the generated audio. Turn this off if you are giving the model an audio reference."
+      },
+      "cfg_scale": {
+        "name": "cfg_scale"
+      },
+      "temperature": {
+        "name": "temperature"
+      },
+      "top_p": {
+        "name": "top_p"
+      },
+      "top_k": {
+        "name": "top_k"
+      },
+      "min_p": {
+        "name": "min_p"
+      },
+      "control_after_generate": {
+        "name": "control after generate"
       }
     },
     "outputs": {
@@ -13960,6 +15061,94 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "TextGenerate": {
+    "display_name": "TextGenerate",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "max_length": {
+        "name": "max_length"
+      },
+      "sampling_mode": {
+        "name": "sampling_mode"
+      },
+      "image": {
+        "name": "image"
+      },
+      "sampling_mode_min_p": {
+        "name": "min_p"
+      },
+      "sampling_mode_repetition_penalty": {
+        "name": "repetition_penalty"
+      },
+      "sampling_mode_seed": {
+        "name": "seed"
+      },
+      "sampling_mode_temperature": {
+        "name": "temperature"
+      },
+      "sampling_mode_top_k": {
+        "name": "top_k"
+      },
+      "sampling_mode_top_p": {
+        "name": "top_p"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "generated_text",
+        "tooltip": null
+      }
+    }
+  },
+  "TextGenerateLTX2Prompt": {
+    "display_name": "TextGenerateLTX2Prompt",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "max_length": {
+        "name": "max_length"
+      },
+      "sampling_mode": {
+        "name": "sampling_mode"
+      },
+      "image": {
+        "name": "image"
+      },
+      "sampling_mode_min_p": {
+        "name": "min_p"
+      },
+      "sampling_mode_repetition_penalty": {
+        "name": "repetition_penalty"
+      },
+      "sampling_mode_seed": {
+        "name": "seed"
+      },
+      "sampling_mode_temperature": {
+        "name": "temperature"
+      },
+      "sampling_mode_top_k": {
+        "name": "top_k"
+      },
+      "sampling_mode_top_p": {
+        "name": "top_p"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "generated_text",
         "tooltip": null
       }
     }
@@ -14217,6 +15406,14 @@
         "name": "gradient_checkpointing",
         "tooltip": "Use gradient checkpointing for training."
       },
+      "checkpoint_depth": {
+        "name": "checkpoint_depth",
+        "tooltip": "Depth level for gradient checkpointing."
+      },
+      "offloading": {
+        "name": "offloading",
+        "tooltip": "Offload the Model to RAM. Requires Bypass Mode."
+      },
       "existing_lora": {
         "name": "existing_lora",
         "tooltip": "The existing LoRA to append to. Set to None for new LoRA."
@@ -14420,6 +15617,10 @@
       "1": {
         "name": "model task_id",
         "tooltip": null
+      },
+      "2": {
+        "name": "GLB",
+        "tooltip": null
       }
     }
   },
@@ -14481,6 +15682,10 @@
       "1": {
         "name": "model task_id",
         "tooltip": null
+      },
+      "2": {
+        "name": "GLB",
+        "tooltip": null
       }
     }
   },
@@ -14500,6 +15705,10 @@
       },
       "1": {
         "name": "model task_id",
+        "tooltip": null
+      },
+      "2": {
+        "name": "GLB",
         "tooltip": null
       }
     }
@@ -14522,6 +15731,10 @@
       "1": {
         "name": "retarget task_id",
         "tooltip": null
+      },
+      "2": {
+        "name": "GLB",
+        "tooltip": null
       }
     }
   },
@@ -14539,6 +15752,10 @@
       },
       "1": {
         "name": "rig task_id",
+        "tooltip": null
+      },
+      "2": {
+        "name": "GLB",
         "tooltip": null
       }
     }
@@ -14594,6 +15811,10 @@
       "1": {
         "name": "model task_id",
         "tooltip": null
+      },
+      "2": {
+        "name": "GLB",
+        "tooltip": null
       }
     }
   },
@@ -14626,6 +15847,10 @@
       },
       "1": {
         "name": "model task_id",
+        "tooltip": null
+      },
+      "2": {
+        "name": "GLB",
         "tooltip": null
       }
     }
@@ -14814,6 +16039,28 @@
       },
       "vae": {
         "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "VAEDecodeAudioTiled": {
+    "display_name": "VAE Decode Audio (Tiled)",
+    "inputs": {
+      "samples": {
+        "name": "samples"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "tile_size": {
+        "name": "tile_size"
+      },
+      "overlap": {
+        "name": "overlap"
       }
     },
     "outputs": {
@@ -15113,6 +16360,31 @@
       }
     }
   },
+  "Video Slice": {
+    "display_name": "Video Slice",
+    "inputs": {
+      "video": {
+        "name": "video"
+      },
+      "start_time": {
+        "name": "start_time",
+        "tooltip": "Start time in seconds"
+      },
+      "duration": {
+        "name": "duration",
+        "tooltip": "Duration in seconds, or 0 for unlimited duration"
+      },
+      "strict_duration": {
+        "name": "strict_duration",
+        "tooltip": "If True, when the specified duration is not possible, an error will be raised."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "VideoLinearCFGGuidance": {
     "display_name": "VideoLinearCFGGuidance",
     "inputs": {
@@ -15310,6 +16582,46 @@
       "prompt": {
         "name": "prompt",
         "tooltip": "An optional text prompt for video generation (max 2000 characters)."
+      },
+      "seed": {
+        "name": "seed"
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model_audio": {
+        "name": "audio"
+      },
+      "model_duration": {
+        "name": "duration"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Vidu3StartEndToVideoNode": {
+    "display_name": "Vidu Q3 Start/End Frame-to-Video Generation",
+    "description": "Generate a video from a start frame, an end frame, and a prompt.",
+    "inputs": {
+      "model": {
+        "name": "model",
+        "tooltip": "Model to use for video generation."
+      },
+      "first_frame": {
+        "name": "first_frame"
+      },
+      "end_frame": {
+        "name": "end_frame"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Prompt description (max 2000 characters)."
       },
       "seed": {
         "name": "seed"

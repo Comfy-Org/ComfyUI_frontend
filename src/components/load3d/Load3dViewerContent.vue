@@ -94,6 +94,7 @@
 
 <script setup lang="ts">
 import { onBeforeUnmount, onMounted, ref, toRaw } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import AnimationControls from '@/components/load3d/controls/AnimationControls.vue'
 import CameraControls from '@/components/load3d/controls/viewer/ViewerCameraControls.vue'
@@ -104,11 +105,11 @@ import SceneControls from '@/components/load3d/controls/viewer/ViewerSceneContro
 import Button from '@/components/ui/button/Button.vue'
 import { useLoad3dDrag } from '@/composables/useLoad3dDrag'
 import { useLoad3dViewer } from '@/composables/useLoad3dViewer'
-import { t } from '@/i18n'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { useLoad3dService } from '@/services/load3dService'
 import { useDialogStore } from '@/stores/dialogStore'
 
+const { t } = useI18n()
 const props = defineProps<{
   node?: LGraphNode
   modelUrl?: string
@@ -131,7 +132,7 @@ const { isDragging, dragMessage, handleDragOver, handleDragLeave, handleDrop } =
     onModelDrop: async (file) => {
       await viewer.handleModelDrop(file)
     },
-    disabled: viewer.isPreview.value || isStandaloneMode
+    disabled: viewer.isPreview.value || !!isStandaloneMode
   })
 
 onMounted(async () => {

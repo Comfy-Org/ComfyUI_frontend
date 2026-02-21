@@ -4,12 +4,7 @@
     v-for="item in dialogStore.dialogStack"
     :key="item.key"
     v-model:visible="item.visible"
-    :class="[
-      'global-dialog',
-      item.key === 'global-settings' && teamWorkspacesEnabled
-        ? 'settings-dialog-workspace'
-        : ''
-    ]"
+    class="global-dialog"
     v-bind="item.dialogComponentProps"
     :pt="getDialogPt(item)"
     :aria-labelledby="item.key"
@@ -77,6 +72,10 @@ function getDialogPt(item: {
 
 <style>
 @reference '../../assets/css/style.css';
+
+.global-dialog {
+  max-width: calc(100vw - 1rem);
+}
 
 .global-dialog .p-dialog-header {
   @apply p-2 2xl:p-[var(--p-dialog-header-padding)];

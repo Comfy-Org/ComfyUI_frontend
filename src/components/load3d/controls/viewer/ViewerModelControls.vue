@@ -25,13 +25,14 @@
 <script setup lang="ts">
 import Select from 'primevue/select'
 import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import type {
   MaterialMode,
   UpDirection
 } from '@/extensions/core/load3d/interfaces'
-import { t } from '@/i18n'
 
+const { t } = useI18n()
 const { hideMaterialMode = false, isPlyModel = false } = defineProps<{
   hideMaterialMode?: boolean
   isPlyModel?: boolean

@@ -18,6 +18,7 @@ import { ColorWidget } from './ColorWidget'
 import { ComboWidget } from './ComboWidget'
 import { FileUploadWidget } from './FileUploadWidget'
 import { GalleriaWidget } from './GalleriaWidget'
+import { GradientSliderWidget } from './GradientSliderWidget'
 import { ImageCompareWidget } from './ImageCompareWidget'
 import { ImageCropWidget } from './ImageCropWidget'
 import { KnobWidget } from './KnobWidget'
@@ -35,6 +36,7 @@ export type WidgetTypeMap = {
   button: ButtonWidget
   toggle: BooleanWidget
   slider: SliderWidget
+  gradientslider: GradientSliderWidget
   knob: KnobWidget
   combo: ComboWidget
   number: NumberWidget
@@ -92,6 +94,8 @@ export function toConcreteWidget<TWidget extends IWidget | IBaseWidget>(
       return toClass(BooleanWidget, narrowedWidget, node)
     case 'slider':
       return toClass(SliderWidget, narrowedWidget, node)
+    case 'gradientslider':
+      return toClass(GradientSliderWidget, narrowedWidget, node)
     case 'knob':
       return toClass(KnobWidget, narrowedWidget, node)
     case 'combo':
@@ -141,7 +145,10 @@ export function isComboWidget(widget: IBaseWidget): widget is IComboWidget {
   return widget.type === 'combo'
 }
 
-/** Type guard: Narrow **from {@link IBaseWidget}** to {@link IAssetWidget}. */
+/**
+ * Type guard: Narrow **from {@link IBaseWidget}** to {@link IAssetWidget}.
+ * @knipIgnoreUnusedButUsedByCustomNodes
+ */
 export function isAssetWidget(widget: IBaseWidget): widget is IAssetWidget {
   return widget.type === 'asset'
 }

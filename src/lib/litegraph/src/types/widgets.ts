@@ -1,10 +1,25 @@
 import type { Bounds } from '@/renderer/core/layout/types'
 
-import type { CanvasColour, Point, RequiredProps, Size } from '../interfaces'
-import type { CanvasPointer, LGraphCanvas, LGraphNode } from '../litegraph'
+import type {
+  CanvasColour,
+  ColorStop,
+  Point,
+  RequiredProps,
+  Size
+} from '../interfaces'
+import type {
+  CanvasPointer,
+  LGraphCanvas,
+  LGraphNode,
+  NodeId
+} from '../litegraph'
 import type { CanvasPointerEvent } from './events'
 
-export interface IWidgetOptions<TValues = unknown[]> {
+export interface NodeBindable {
+  setNodeId(nodeId: NodeId): void
+}
+
+export interface IWidgetOptions<TValues = unknown> {
   on?: string
   off?: string
   max?: number
@@ -37,6 +52,14 @@ export interface IWidgetOptions<TValues = unknown[]> {
   getOptionLabel?: (value?: string | null) => string
   callback?: IWidget['callback']
   iconClass?: string
+
+  // Vue widget options
+  disabled?: boolean
+  useGrouping?: boolean
+  placeholder?: string
+  showThumbnails?: boolean
+  showItemNavigators?: boolean
+  hidden?: boolean
 }
 
 interface IWidgetSliderOptions extends IWidgetOptions<number[]> {
@@ -45,6 +68,13 @@ interface IWidgetSliderOptions extends IWidgetOptions<number[]> {
   step2: number
   slider_color?: CanvasColour
   marker_color?: CanvasColour
+}
+
+export interface IWidgetGradientSliderOptions extends IWidgetOptions<number[]> {
+  min: number
+  max: number
+  step2: number
+  gradient_stops?: ColorStop[]
 }
 
 interface IWidgetKnobOptions extends IWidgetOptions<number[]> {
@@ -76,6 +106,7 @@ export type IWidget =
   | IStringComboWidget
   | ICustomWidget
   | ISliderWidget
+  | IGradientSliderWidget
   | IButtonWidget
   | IKnobWidget
   | IFileUploadWidget
@@ -112,6 +143,15 @@ export interface ISliderWidget extends IBaseWidget<
   type: 'slider'
   value: number
   marker?: number
+}
+
+export interface IGradientSliderWidget extends IBaseWidget<
+  number,
+  'gradientslider',
+  IWidgetGradientSliderOptions
+> {
+  type: 'gradientslider'
+  value: number
 }
 
 export interface IKnobWidget extends IBaseWidget<
@@ -293,7 +333,7 @@ export type TWidgetValue = IWidget['value']
 export interface IBaseWidget<
   TValue = boolean | number | string | object | undefined,
   TType extends string = string,
-  TOptions extends IWidgetOptions<unknown> = IWidgetOptions<unknown>
+  TOptions extends IWidgetOptions = IWidgetOptions
 > {
   [symbol: symbol]: boolean
 

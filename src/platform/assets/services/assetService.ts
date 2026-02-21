@@ -18,6 +18,8 @@ import type {
   ModelFolder,
   TagsOperationResult
 } from '@/platform/assets/schemas/assetSchema'
+import { isCloud } from '@/platform/distribution/types'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { api } from '@/scripts/api'
 import { useModelToNodeStore } from '@/stores/modelToNodeStore'
 
@@ -29,6 +31,17 @@ export interface PaginationOptions {
 interface AssetRequestOptions extends PaginationOptions {
   includeTags: string[]
   includePublic?: boolean
+}
+
+interface AssetExportOptions {
+  job_ids?: string[]
+  asset_ids?: string[]
+  naming_strategy?:
+    | 'group_by_job_id'
+    | 'prepend_job_id'
+    | 'preserve'
+    | 'asset_id'
+  job_asset_name_filters?: Record<string, string[]>
 }
 
 /**
@@ -153,6 +166,7 @@ function getLocalizedErrorMessage(errorCode: string): string {
 
 const ASSETS_ENDPOINT = '/assets'
 const ASSETS_DOWNLOAD_ENDPOINT = '/assets/download'
+const ASSETS_EXPORT_ENDPOINT = '/assets/export'
 const EXPERIMENTAL_WARNING = `EXPERIMENTAL: If you are seeing this please make sure "Comfy.Assets.UseAssetAPI" is set to "false" in your ComfyUI Settings.\n`
 const DEFAULT_LIMIT = 500
 
@@ -284,6 +298,29 @@ function createAssetService() {
     return (
       useModelToNodeStore().getRegisteredNodeTypes()[nodeType] === widgetName
     )
+  }
+
+  /**
+   * Checks if the asset API is enabled (cloud environment + user setting).
+   */
+  function isAssetAPIEnabled(): boolean {
+    if (!isCloud) return false
+    return !!useSettingStore().get('Comfy.Assets.UseAssetAPI')
+  }
+
+  /**
+   * Checks if the asset browser should be used for a given node input.
+   * Combines the cloud environment check, user setting, and eligibility check.
+   *
+   * @param nodeType - The ComfyUI node comfyClass
+   * @param widgetName - The name of the widget to check
+   * @returns true if this input should use the asset browser
+   */
+  function shouldUseAssetBrowser(
+    nodeType: string | undefined,
+    widgetName: string
+  ): boolean {
+    return isAssetAPIEnabled() && isAssetBrowserEligible(nodeType, widgetName)
   }
 
   /**
@@ -487,7 +524,7 @@ function createAssetService() {
     url: string
     name: string
     tags?: string[]
-    user_metadata?: Record<string, any>
+    user_metadata?: Record<string, unknown>
     preview_id?: string
   }): Promise<AssetItem & { created_new: boolean }> {
     const res = await api.fetchApi(ASSETS_ENDPOINT, {
@@ -525,7 +562,7 @@ function createAssetService() {
     data: string
     name: string
     tags?: string[]
-    user_metadata?: Record<string, any>
+    user_metadata?: Record<string, unknown>
   }): Promise<AssetItem & { created_new: boolean }> {
     // Validate that data is a data URL
     if (!params.data || !params.data.startsWith('data:')) {
@@ -689,10 +726,40 @@ function createAssetService() {
     return result.data
   }
 
+  async function createAssetExport(
+    params: AssetExportOptions
+  ): Promise<{ task_id: string; status: string; message?: string }> {
+    const res = await api.fetchApi(ASSETS_EXPORT_ENDPOINT, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(params)
+    })
+
+    if (!res.ok) {
+      throw new Error(`Failed to create asset export: ${res.status}`)
+    }
+
+    return await res.json()
+  }
+
+  async function getExportDownloadUrl(
+    exportName: string
+  ): Promise<{ url: string; expires_at?: string }> {
+    const res = await api.fetchApi(`/assets/exports/${exportName}`)
+
+    if (!res.ok) {
+      throw new Error(`Failed to get export download URL: ${res.status}`)
+    }
+
+    return await res.json()
+  }
+
   return {
     getAssetModelFolders,
     getAssetModels,
+    isAssetAPIEnabled,
     isAssetBrowserEligible,
+    shouldUseAssetBrowser,
     getAssetsForNodeType,
     getAssetDetails,
     getAssetsByTag,
@@ -703,7 +770,9 @@ function createAssetService() {
     getAssetMetadata,
     uploadAssetFromUrl,
     uploadAssetFromBase64,
-    uploadAssetAsync
+    uploadAssetAsync,
+    createAssetExport,
+    getExportDownloadUrl
   }
 }
 

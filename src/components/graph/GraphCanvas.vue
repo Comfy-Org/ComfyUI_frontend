@@ -60,6 +60,9 @@
     v-if="shouldRenderVueNodes && comfyApp.canvas && comfyAppReady"
     :canvas="comfyApp.canvas"
     @wheel.capture="canvasInteractions.forwardEventToCanvas"
+    @pointerdown.capture="forwardPanEvent"
+    @pointerup.capture="forwardPanEvent"
+    @pointermove.capture="forwardPanEvent"
   >
     <!-- Vue nodes rendered based on graph nodes -->
     <LGraphNode
@@ -76,6 +79,13 @@
     />
   </TransformPane>
 
+  <LinkOverlayCanvas
+    v-if="shouldRenderVueNodes && comfyApp.canvas && comfyAppReady"
+    :canvas="comfyApp.canvas"
+    @ready="onLinkOverlayReady"
+    @dispose="onLinkOverlayDispose"
+  />
+
   <!-- Selection rectangle overlay - rendered in DOM layer to appear above DOM widgets -->
   <SelectionRectangle v-if="comfyAppReady" />
 
@@ -87,6 +97,7 @@
   <template v-if="comfyAppReady">
     <TitleEditor />
     <SelectionToolbox v-if="selectionToolboxEnabled" />
+    <NodeContextMenu />
     <!-- Render legacy DOM widgets only when Vue nodes are disabled -->
     <DomWidgets v-if="!shouldRenderVueNodes" />
   </template>
@@ -104,14 +115,18 @@ import {
   watch,
   watchEffect
 } from 'vue'
+import { useI18n } from 'vue-i18n'
 
+import { isMiddlePointerInput } from '@/base/pointerUtils'
 import LiteGraphCanvasSplitterOverlay from '@/components/LiteGraphCanvasSplitterOverlay.vue'
 import TopMenuSection from '@/components/TopMenuSection.vue'
 import BottomPanel from '@/components/bottomPanel/BottomPanel.vue'
 import ExtensionSlot from '@/components/common/ExtensionSlot.vue'
 import DomWidgets from '@/components/graph/DomWidgets.vue'
 import GraphCanvasMenu from '@/components/graph/GraphCanvasMenu.vue'
+import LinkOverlayCanvas from '@/components/graph/LinkOverlayCanvas.vue'
 import NodeTooltip from '@/components/graph/NodeTooltip.vue'
+import NodeContextMenu from '@/components/graph/NodeContextMenu.vue'
 import SelectionToolbox from '@/components/graph/SelectionToolbox.vue'
 import TitleEditor from '@/components/graph/TitleEditor.vue'
 import NodePropertiesPanel from '@/components/rightSidePanel/RightSidePanel.vue'
@@ -129,7 +144,6 @@ import { useCopy } from '@/composables/useCopy'
 import { useGlobalLitegraph } from '@/composables/useGlobalLitegraph'
 import { usePaste } from '@/composables/usePaste'
 import { useVueFeatureFlags } from '@/composables/useVueFeatureFlags'
-import { t } from '@/i18n'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { useLitegraphSettings } from '@/platform/settings/composables/useLitegraphSettings'
 import { CORE_SETTINGS } from '@/platform/settings/constants/coreSettings'
@@ -150,6 +164,7 @@ import { ChangeTracker } from '@/scripts/changeTracker'
 import { IS_CONTROL_WIDGET, updateControlWidgetLabel } from '@/scripts/widgets'
 import { useColorPaletteService } from '@/services/colorPaletteService'
 import { useNewUserService } from '@/services/useNewUserService'
+import { shouldIgnoreCopyPaste } from '@/workbench/eventHelpers'
 import { storeToRefs } from 'pinia'
 
 import { useBootstrapStore } from '@/stores/bootstrapStore'
@@ -167,6 +182,7 @@ import { isCloud } from '@/platform/distribution/types'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useInviteUrlLoader } from '@/platform/workspace/composables/useInviteUrlLoader'
 
+const { t } = useI18n()
 const emit = defineEmits<{
   ready: []
 }>()
@@ -240,6 +256,18 @@ watch(
 const allNodes = computed((): VueNodeData[] =>
   Array.from(vueNodeLifecycle.nodeManager.value?.vueNodeData?.values() ?? [])
 )
+
+function onLinkOverlayReady(el: HTMLCanvasElement) {
+  if (!canvasStore.canvas) return
+  canvasStore.canvas.overlayCanvas = el
+  canvasStore.canvas.overlayCtx = el.getContext('2d')
+}
+
+function onLinkOverlayDispose() {
+  if (!canvasStore.canvas) return
+  canvasStore.canvas.overlayCanvas = null
+  canvasStore.canvas.overlayCtx = null
+}
 
 watchEffect(() => {
   LiteGraph.nodeOpacity = settingStore.get('Comfy.Node.Opacity')
@@ -517,4 +545,13 @@ onMounted(async () => {
 onUnmounted(() => {
   vueNodeLifecycle.cleanup()
 })
+function forwardPanEvent(e: PointerEvent) {
+  if (
+    (shouldIgnoreCopyPaste(e.target) && document.activeElement === e.target) ||
+    !isMiddlePointerInput(e)
+  )
+    return
+
+  canvasInteractions.forwardEventToCanvas(e)
+}
 </script>

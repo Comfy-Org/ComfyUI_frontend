@@ -12,17 +12,19 @@ import type {
   IBaseWidget,
   TWidgetValue
 } from '@/lib/litegraph/src/types/widgets'
-import type { InputSpec } from '@/schemas/nodeDefSchema'
+import { assetService } from '@/platform/assets/services/assetService'
+import { createAssetWidget } from '@/platform/assets/utils/createAssetWidget'
+import type { ComfyNodeDef, InputSpec } from '@/schemas/nodeDefSchema'
 import { app } from '@/scripts/app'
 import {
   ComfyWidgets,
   addValueControlWidgets,
   isValidWidgetType
 } from '@/scripts/widgets'
+import { isPrimitiveNode } from '@/renderer/utils/nodeTypeGuards'
 import { CONFIG, GET_CONFIG } from '@/services/litegraphService'
 import { mergeInputSpec } from '@/utils/nodeDefUtil'
 import { applyTextReplacements } from '@/utils/searchAndReplace'
-import { isPrimitiveNode } from '@/renderer/utils/nodeTypeGuards'
 
 const replacePropertyName = 'Run widget replace on values'
 export class PrimitiveNode extends LGraphNode {
@@ -228,6 +230,18 @@ export class PrimitiveNode extends LGraphNode {
     // Store current size as addWidget resizes the node
     const [oldWidth, oldHeight] = this.size
     let widget: IBaseWidget
+
+    if (
+      type === 'COMBO' &&
+      assetService.shouldUseAssetBrowser(node.comfyClass, widgetName)
+    ) {
+      widget = this._createAssetWidget(node, widgetName, inputData)
+      const theirWidget = node.widgets?.find((w) => w.name === widgetName)
+      if (theirWidget) widget.value = theirWidget.value
+      this._finalizeWidget(widget, oldWidth, oldHeight, recreating)
+      return
+    }
+
     if (isValidWidgetType(type)) {
       widget = (ComfyWidgets[type](this, 'value', inputData, app) || {}).widget
     } else {
@@ -277,20 +291,50 @@ export class PrimitiveNode extends LGraphNode {
       }
     }
 
-    // When our value changes, update other widgets to reflect our changes
-    // e.g. so LoadImage shows correct image
+    this._finalizeWidget(widget, oldWidth, oldHeight, recreating)
+  }
+
+  private _createAssetWidget(
+    targetNode: LGraphNode,
+    targetInputName: string,
+    inputData: InputSpec
+  ): IBaseWidget {
+    const defaultValue = inputData[1]?.default as string | undefined
+    return createAssetWidget({
+      node: this,
+      widgetName: 'value',
+      nodeTypeForBrowser: targetNode.comfyClass ?? '',
+      inputNameForBrowser: targetInputName,
+      defaultValue,
+      onValueChange: (widget, newValue, oldValue) => {
+        widget.callback?.(
+          widget.value,
+          app.canvas,
+          this,
+          app.canvas.graph_mouse,
+          {} as CanvasPointerEvent
+        )
+        this.onWidgetChanged?.(widget.name, newValue, oldValue, widget)
+      }
+    })
+  }
+
+  private _finalizeWidget(
+    widget: IBaseWidget,
+    oldWidth: number,
+    oldHeight: number,
+    recreating: boolean
+  ) {
     widget.callback = useChainCallback(widget.callback, () => {
       this.applyToGraph()
     })
 
-    // Use the biggest dimensions in case the widgets caused the node to grow
     this.setSize([
       Math.max(this.size[0], oldWidth),
       Math.max(this.size[1], oldHeight)
     ])
 
     if (!recreating) {
-      // Grow our node more if required
       const sz = this.computeSize()
       if (this.size[0] < sz[0]) {
         this.size[0] = sz[0]
@@ -511,7 +555,10 @@ export function mergeIfValid(
 
 app.registerExtension({
   name: 'Comfy.WidgetInputs',
-  async beforeRegisterNodeDef(nodeType, _nodeData) {
+  async beforeRegisterNodeDef(
+    nodeType: typeof LGraphNode,
+    _nodeData: ComfyNodeDef
+  ) {
     // @ts-expect-error adding extra property
     nodeType.prototype.convertWidgetToInput = function (this: LGraphNode) {
       console.warn(

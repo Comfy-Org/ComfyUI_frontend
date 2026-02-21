@@ -3,15 +3,15 @@ import { useEventListener, useTimeout } from '@vueuse/core'
 import { partition } from 'es-toolkit'
 import { storeToRefs } from 'pinia'
 import { computed, ref, shallowRef } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import Popover from '@/components/ui/Popover.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { extractVueNodeData } from '@/composables/graph/useGraphNodeManager'
-import { t } from '@/i18n'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import { useBillingContext } from '@/composables/billing/useBillingContext'
 import SubscribeToRunButton from '@/platform/cloud/subscription/components/SubscribeToRun.vue'
-import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
-import { isCloud } from '@/platform/distribution/types'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import DropZone from '@/renderer/extensions/linearMode/DropZone.vue'
@@ -26,10 +26,12 @@ import { useQueueSettingsStore } from '@/stores/queueStore'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import { cn } from '@/utils/tailwindUtil'
 
+const { t } = useI18n()
 const commandStore = useCommandStore()
 const executionStore = useExecutionStore()
 const { batchCount } = storeToRefs(useQueueSettingsStore())
-const { isActiveSubscription } = useSubscription()
+const settingStore = useSettingStore()
+const { isActiveSubscription } = useBillingContext()
 const workflowStore = useWorkflowStore()
 
 const props = defineProps<{
@@ -100,7 +102,11 @@ const partitionedNodes = computed(() => {
 })
 
 const batchCountWidget: SimplifiedWidget<number> = {
-  options: { precision: 0, min: 1, max: isCloud ? 4 : 99 },
+  options: {
+    precision: 0,
+    min: 1,
+    max: settingStore.get('Comfy.QueueButton.BatchCountLimit')
+  },
   value: 1,
   name: t('linearMode.runCount'),
   type: 'number'

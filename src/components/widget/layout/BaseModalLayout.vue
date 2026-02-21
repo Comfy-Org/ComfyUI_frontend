@@ -1,6 +1,6 @@
 <template>
   <div
-    class="base-widget-layout rounded-2xl overflow-hidden relative"
+    :class="cn('rounded-2xl overflow-hidden relative', sizeClasses)"
     @keydown.esc.capture="handleEscape"
   >
     <div
@@ -141,13 +141,30 @@ import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
 import { OnCloseKey } from '@/types/widgetTypes'
+import { cn } from '@/utils/tailwindUtil'
 
 const { t } = useI18n()
 
-const { contentTitle, rightPanelTitle } = defineProps<{
+const SIZE_CLASSES = {
+  sm: 'h-[80vh] w-[90vw] max-w-[960px]',
+  md: 'h-[80vh] w-[90vw] max-w-[1400px]',
+  lg: 'h-[80vh] w-[90vw] max-w-[1280px] aspect-[20/13] min-[1450px]:max-w-[1724px]',
+  full: 'h-full w-full max-w-[1400px] 2xl:max-w-[1600px]'
+} as const
+
+type ModalSize = keyof typeof SIZE_CLASSES
+
+const {
+  contentTitle,
+  rightPanelTitle,
+  size = 'lg'
+} = defineProps<{
   contentTitle: string
   rightPanelTitle?: string
+  size?: ModalSize
 }>()
+
+const sizeClasses = computed(() => SIZE_CLASSES[size])
 
 const isRightPanelOpen = defineModel<boolean>('rightPanelOpen', {
   default: false
@@ -215,17 +232,3 @@ function handleEscape(event: KeyboardEvent) {
   }
 }
 </script>
-<style scoped>
-.base-widget-layout {
-  height: 80vh;
-  width: 90vw;
-  max-width: 1280px;
-  aspect-ratio: 20/13;
-}
-
-@media (min-width: 1450px) {
-  .base-widget-layout {
-    max-width: 1724px;
-  }
-}
-</style>

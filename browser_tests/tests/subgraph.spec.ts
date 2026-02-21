@@ -19,6 +19,10 @@ const SELECTORS = {
 test.describe('Subgraph Operations', { tag: ['@slow', '@subgraph'] }, () => {
   test.beforeEach(async ({ comfyPage }) => {
     await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Disabled')
+    await comfyPage.settings.setSetting(
+      'Comfy.NodeSearchBoxImpl',
+      'v1 (legacy)'
+    )
   })
 
   // Helper to get subgraph slot count
@@ -61,7 +65,10 @@ test.describe('Subgraph Operations', { tag: ['@slow', '@subgraph'] }, () => {
       await subgraphNode.navigateIntoSubgraph()
 
       const initialCount = await getSubgraphSlotCount(comfyPage, 'inputs')
-      const vaeEncodeNode = await comfyPage.nodeOps.getNodeRefById('2')
+      const [vaeEncodeNode] = await comfyPage.nodeOps.getNodeRefsByType(
+        'VAEEncode',
+        true
+      )
 
       await comfyPage.subgraph.connectFromInput(vaeEncodeNode, 0)
       await comfyPage.nextFrame()
@@ -77,7 +84,10 @@ test.describe('Subgraph Operations', { tag: ['@slow', '@subgraph'] }, () => {
       await subgraphNode.navigateIntoSubgraph()
 
       const initialCount = await getSubgraphSlotCount(comfyPage, 'outputs')
-      const vaeEncodeNode = await comfyPage.nodeOps.getNodeRefById('2')
+      const [vaeEncodeNode] = await comfyPage.nodeOps.getNodeRefsByType(
+        'VAEEncode',
+        true
+      )
 
       await comfyPage.subgraph.connectToOutput(vaeEncodeNode, 0)
       await comfyPage.nextFrame()
@@ -820,7 +830,7 @@ test.describe('Subgraph Operations', { tag: ['@slow', '@subgraph'] }, () => {
 
       // Open settings dialog using hotkey
       await comfyPage.page.keyboard.press('Control+,')
-      await comfyPage.page.waitForSelector('.settings-container', {
+      await comfyPage.page.waitForSelector('[data-testid="settings-dialog"]', {
         state: 'visible'
       })
 
@@ -830,7 +840,7 @@ test.describe('Subgraph Operations', { tag: ['@slow', '@subgraph'] }, () => {
 
       // Dialog should be closed
       await expect(
-        comfyPage.page.locator('.settings-container')
+        comfyPage.page.locator('[data-testid="settings-dialog"]')
       ).not.toBeVisible()
 
       // Should still be in subgraph

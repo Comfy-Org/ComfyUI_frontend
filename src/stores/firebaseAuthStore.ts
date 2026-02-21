@@ -22,7 +22,7 @@ import { useFirebaseAuth } from 'vuefire'
 
 import { getComfyApiBaseUrl } from '@/config/comfyApi'
 import { t } from '@/i18n'
-import { WORKSPACE_STORAGE_KEYS } from '@/platform/auth/workspace/workspaceConstants'
+import { WORKSPACE_STORAGE_KEYS } from '@/platform/workspace/workspaceConstants'
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
 import { useDialogService } from '@/services/dialogService'
@@ -349,7 +349,8 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
     if (isCloud) {
       useTelemetry()?.trackAuth({
         method: 'email',
-        is_new_user: false
+        is_new_user: false,
+        user_id: result.user.uid
       })
     }
 
@@ -369,7 +370,8 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
     if (isCloud) {
       useTelemetry()?.trackAuth({
         method: 'email',
-        is_new_user: true
+        is_new_user: true,
+        user_id: result.user.uid
       })
     }
 
@@ -387,7 +389,8 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
       const isNewUser = additionalUserInfo?.isNewUser ?? false
       useTelemetry()?.trackAuth({
         method: 'google',
-        is_new_user: isNewUser
+        is_new_user: isNewUser,
+        user_id: result.user.uid
       })
     }
 
@@ -405,7 +408,8 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
       const isNewUser = additionalUserInfo?.isNewUser ?? false
       useTelemetry()?.trackAuth({
         method: 'github',
-        is_new_user: isNewUser
+        is_new_user: isNewUser,
+        user_id: result.user.uid
       })
     }
 

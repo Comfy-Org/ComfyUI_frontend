@@ -1412,7 +1412,7 @@ export class GroupNodeHandler {
               handlerGroupData.oldToNewWidgetMap[Number(n)]?.[w]
             const widget = this.widgets.find((wg) => wg.name === widgetName)
             if (widget) {
-              widget.type = 'hidden'
+              widget.hidden = true
               widget.computeSize = () => [0, -4]
             }
           }
@@ -1993,11 +1993,11 @@ const ext: ComfyExtension = {
       await GroupNodeConfig.registerFromWorkflow(nodes, missingNodeTypes)
     }
   },
-  addCustomNodeDefs(defs) {
+  addCustomNodeDefs(defs: Record<string, ComfyNodeDef>) {
     // Store this so we can mutate it later with group nodes
     globalDefs = defs
   },
-  nodeCreated(node) {
+  nodeCreated(node: LGraphNode) {
     if (GroupNodeHandler.isGroupNode(node)) {
       ;(node as LGraphNode & { [GROUP]: GroupNodeHandler })[GROUP] =
         new GroupNodeHandler(node)

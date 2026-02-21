@@ -4,6 +4,7 @@ import { useChainCallback } from '@/composables/functional/useChainCallback'
 import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
 import { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { LLink } from '@/lib/litegraph/src/litegraph'
+import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import { app } from '@/scripts/app'
 
 function applyToGraph(this: LGraphNode, extraLinks: LLink[] = []) {
@@ -140,10 +141,30 @@ function onCustomIntCreated(this: LGraphNode) {
     }
   })
 }
+const DISPLAY_WIDGET_TYPES = new Set(['gradientslider', 'slider', 'knob'])
+
 function onCustomFloatCreated(this: LGraphNode) {
   const valueWidget = this.widgets?.[0]
   if (!valueWidget) return
 
+  let baseType = valueWidget.type
+  Object.defineProperty(valueWidget, 'type', {
+    get: () => {
+      const display = this.properties.display as string | undefined
+      if (display && DISPLAY_WIDGET_TYPES.has(display)) return display
+      return baseType
+    },
+    set: (v: string) => {
+      baseType = v
+    }
+  })
+
+  Object.defineProperty(valueWidget.options, 'gradient_stops', {
+    get: () => this.properties.gradient_stops,
+    set: (v) => {
+      this.properties.gradient_stops = v
+    }
+  })
   Object.defineProperty(valueWidget.options, 'min', {
     get: () => this.properties.min ?? -Infinity,
     set: (v) => {
@@ -190,7 +211,7 @@ function onCustomFloatCreated(this: LGraphNode) {
 
 app.registerExtension({
   name: 'Comfy.CustomWidgets',
-  beforeRegisterNodeDef(nodeType, nodeData) {
+  beforeRegisterNodeDef(nodeType: typeof LGraphNode, nodeData: ComfyNodeDef) {
     if (nodeData?.name === 'CustomCombo')
       nodeType.prototype.onNodeCreated = useChainCallback(
         nodeType.prototype.onNodeCreated,

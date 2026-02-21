@@ -277,6 +277,7 @@ function withComfyMatchType(node: LGraphNode): asserts node is MatchTypeNode {
     ) {
       const input = this.inputs[slot]
       if (contype !== LiteGraph.INPUT || !this.graph || !input) return
+      if (app.configuringGraph) return
       const [matchKey, matchGroup] = Object.entries(
         this.comfyDynamic.matchType
       ).find(([, group]) => input.name in group) ?? ['', undefined]

@@ -1,3 +1,4 @@
+import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { NodeOutputWith } from '@/schemas/apiSchema'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
@@ -11,7 +12,7 @@ type ImageCompareOutput = NodeOutputWith<{
 useExtensionService().registerExtension({
   name: 'Comfy.ImageCompare',
 
-  async nodeCreated(node) {
+  async nodeCreated(node: LGraphNode) {
     if (node.constructor.comfyClass !== 'ImageCompare') return
 
     const [oldWidth, oldHeight] = node.size

@@ -1,5 +1,5 @@
 <template>
-  <TabPanel value="PlanCredits" class="subscription-container h-full">
+  <div class="subscription-container h-full">
     <div class="flex h-full flex-col gap-6">
       <div class="flex items-center gap-2">
         <span class="text-2xl font-inter font-semibold leading-tight">
@@ -63,25 +63,24 @@
         </Button>
       </div>
     </div>
-  </TabPanel>
+  </div>
 </template>
 
 <script setup lang="ts">
-import TabPanel from 'primevue/tabpanel'
 import { computed, defineAsyncComponent } from 'vue'
 
 import CloudBadge from '@/components/topbar/CloudBadge.vue'
 import Button from '@/components/ui/button/Button.vue'
+import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useExternalLink } from '@/composables/useExternalLink'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import SubscriptionPanelContentLegacy from '@/platform/cloud/subscription/components/SubscriptionPanelContentLegacy.vue'
-import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
 import { useSubscriptionActions } from '@/platform/cloud/subscription/composables/useSubscriptionActions'
 import { isCloud } from '@/platform/distribution/types'
 
 const SubscriptionPanelContentWorkspace = defineAsyncComponent(
   () =>
-    import('@/platform/cloud/subscription/components/SubscriptionPanelContentWorkspace.vue')
+    import('@/platform/workspace/components/SubscriptionPanelContentWorkspace.vue')
 )
 
 const { flags } = useFeatureFlags()
@@ -91,10 +90,14 @@ const teamWorkspacesEnabled = computed(
 
 const { buildDocsUrl, docsPaths } = useExternalLink()
 
-const { isActiveSubscription, handleInvoiceHistory } = useSubscription()
+const { isActiveSubscription, manageSubscription } = useBillingContext()
 
 const { isLoadingSupport, handleMessageSupport, handleLearnMoreClick } =
   useSubscriptionActions()
+
+const handleInvoiceHistory = async () => {
+  await manageSubscription()
+}
 
 const handleOpenPartnerNodesInfo = () => {
   window.open(

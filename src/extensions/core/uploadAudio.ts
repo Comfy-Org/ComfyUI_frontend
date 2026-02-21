@@ -23,6 +23,7 @@ import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
 
 import { api } from '../../scripts/api'
 import { app } from '../../scripts/app'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
 
 function updateUIWidget(
   audioUIWidget: DOMWidget<HTMLAudioElement, string>,
@@ -70,6 +71,7 @@ async function uploadFile(
           api.apiURL(getResourceURL(...splitFilePath(path)))
         )
 
+        audioWidget.value = path
         // Manually trigger the callback to update VueNodes
         audioWidget.callback?.(path)
       }
@@ -86,7 +88,10 @@ async function uploadFile(
 // present.
 app.registerExtension({
   name: 'Comfy.AudioWidget',
-  async beforeRegisterNodeDef(nodeType, nodeData) {
+  async beforeRegisterNodeDef(
+    nodeType: typeof LGraphNode,
+    nodeData: ComfyNodeDef
+  ) {
     if (
       [
         'LoadAudio',
@@ -137,9 +142,16 @@ app.registerExtension({
           }
         }
 
-        let value = ''
-        audioUIWidget.options.getValue = () => value
-        audioUIWidget.options.setValue = (v) => (value = v)
+        audioUIWidget.options.getValue = () =>
+          (useWidgetValueStore().getWidget(node.id, inputName)
+            ?.value as string) ?? ''
+        audioUIWidget.options.setValue = (v) => {
+          const widgetState = useWidgetValueStore().getWidget(
+            node.id,
+            inputName
+          )
+          if (widgetState) widgetState.value = v
+        }
 
         return { widget: audioUIWidget }
       }
@@ -170,7 +182,10 @@ app.registerExtension({
 
 app.registerExtension({
   name: 'Comfy.UploadAudio',
-  async beforeRegisterNodeDef(_nodeType, nodeData: ComfyNodeDef) {
+  async beforeRegisterNodeDef(
+    _nodeType: typeof LGraphNode,
+    nodeData: ComfyNodeDef
+  ) {
     if (nodeData?.input?.required?.audio?.[1]?.audio_upload === true) {
       nodeData.input.required.upload = ['AUDIOUPLOAD', {}]
     }
@@ -410,7 +425,7 @@ app.registerExtension({
     }
   },
 
-  async nodeCreated(node) {
+  async nodeCreated(node: LGraphNode) {
     if (node.constructor.comfyClass !== 'RecordAudio') return
 
     await useAudioService().registerWavEncoder()

@@ -1,30 +1,20 @@
 <template>
-  <div v-if="imageUrl" class="flex h-full min-h-16 w-full min-w-16 flex-col">
-    <!-- Image Container -->
+  <template v-if="imageUrl">
     <div
-      class="relative h-88 w-full grow overflow-hidden rounded-[5px] bg-node-component-surface"
+      v-if="imageError"
+      class="text-pure-white flex h-full w-full flex-col items-center justify-center text-center"
     >
-      <!-- Error State -->
-      <div
-        v-if="imageError"
-        class="text-pure-white flex h-full w-full flex-col items-center justify-center text-center"
-      >
-        <i-lucide:image-off class="mb-1 size-8 text-smoke-500" />
-        <p class="text-xs text-smoke-400">{{ $t('g.imageFailedToLoad') }}</p>
-      </div>
-
-      <!-- Main Image -->
-      <img
-        v-else
-        :src="imageUrl"
-        :alt="$t('g.liveSamplingPreview')"
-        class="pointer-events-none h-full w-full object-contain object-center"
-        @load="handleImageLoad"
-        @error="handleImageError"
-      />
+      <i-lucide:image-off class="mb-1 size-8 text-smoke-500" />
+      <p class="text-xs text-smoke-400">{{ $t('g.imageFailedToLoad') }}</p>
     </div>
-
-    <!-- Image Dimensions -->
+    <img
+      v-else
+      :src="imageUrl"
+      :alt="$t('g.liveSamplingPreview')"
+      class="pointer-events-none w-full object-contain contain-size min-h-55 flex-1"
+      @load="handleImageLoad"
+      @error="handleImageError"
+    />
     <div class="text-node-component-header-text mt-1 text-center text-xs">
       {{
         imageError
@@ -32,15 +22,14 @@
           : actualDimensions || $t('g.calculatingDimensions')
       }}
     </div>
-  </div>
+  </template>
 </template>
 
 <script setup lang="ts">
 import { ref, watch } from 'vue'
 
 interface LivePreviewProps {
-  /** Image URL to display */
-  imageUrl: string | null
+  imageUrl: string
 }
 
 const props = defineProps<LivePreviewProps>()

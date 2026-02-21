@@ -10,6 +10,7 @@
 //   - async evaluation + cache,
 //   - reactive tick to update UI when async evaluation completes.
 
+import { memoize } from 'es-toolkit'
 import { readonly, ref } from 'vue'
 import type { Ref } from 'vue'
 import { CREDITS_PER_USD, formatCredits } from '@/base/credits/comfyCredits'
@@ -47,7 +48,7 @@ type CreditFormatOptions = {
   separator?: string
 }
 
-const formatCreditsValue = (usd: number): string => {
+export const formatCreditsValue = (usd: number): string => {
   // Use raw credits value (before rounding) to determine decimal display
   const rawCredits = usd * CREDITS_PER_USD
   return formatCredits({
@@ -68,23 +69,37 @@ const formatCreditsLabel = (
 ): string =>
   `${makePrefix(approximate)}${formatCreditsValue(usd)} credits${makeSuffix(suffix)}${appendNote(note)}`
 
+export const formatCreditsRangeValue = (
+  minUsd: number,
+  maxUsd: number
+): string => {
+  const min = formatCreditsValue(minUsd)
+  const max = formatCreditsValue(maxUsd)
+  return min === max ? min : `${min}-${max}`
+}
+
 const formatCreditsRangeLabel = (
   minUsd: number,
   maxUsd: number,
   { suffix, note, approximate }: CreditFormatOptions = {}
 ): string => {
-  const min = formatCreditsValue(minUsd)
-  const max = formatCreditsValue(maxUsd)
-  const rangeValue = min === max ? min : `${min}-${max}`
+  const rangeValue = formatCreditsRangeValue(minUsd, maxUsd)
   return `${makePrefix(approximate)}${rangeValue} credits${makeSuffix(suffix)}${appendNote(note)}`
+}
+
+export const formatCreditsListValue = (
+  usdValues: number[],
+  separator = '/'
+): string => {
+  const parts = usdValues.map((value) => formatCreditsValue(value))
+  return parts.join(separator)
 }
 
 const formatCreditsListLabel = (
   usdValues: number[],
   { suffix, note, approximate, separator }: CreditFormatOptions = {}
 ): string => {
-  const parts = usdValues.map((value) => formatCreditsValue(value))
-  const value = parts.join(separator ?? '/')
+  const value = formatCreditsListValue(usdValues, separator)
   return `${makePrefix(approximate)}${value} credits${makeSuffix(suffix)}${appendNote(note)}`
 }
 
@@ -130,7 +145,6 @@ type JsonataPricingRule = {
     input_groups: string[]
   }
   expr: string
-  result_defaults?: CreditFormatOptions
 }
 
 type CompiledJsonataPricingRule = JsonataPricingRule & {
@@ -283,10 +297,39 @@ const buildSignature = (
 // -----------------------------
 // Result formatting
 // -----------------------------
-const formatPricingResult = (
+
+type FormatPricingResultOptions = {
+  /** If true, return only the value without "credits/Run" suffix */
+  valueOnly?: boolean
+  defaults?: CreditFormatOptions
+}
+
+/**
+ * Format a PricingResult into a display string.
+ * @param result - The pricing result from JSONata evaluation
+ * @param options - Formatting options
+ * @returns Formatted string, e.g. "10 credits/Run" or "10" if valueOnly
+ */
+export const formatPricingResult = (
   result: unknown,
-  defaults: CreditFormatOptions = {}
+  options: FormatPricingResultOptions = {}
 ): string => {
+  const { valueOnly = false, defaults = {} } = options
+
+  // Handle legacy format: { usd: number } without type field
+  if (
+    result &&
+    typeof result === 'object' &&
+    !('type' in result) &&
+    'usd' in result
+  ) {
+    const r = result as { usd: unknown }
+    const usd = asFiniteNumber(r.usd)
+    if (usd === null) return ''
+    if (valueOnly) return formatCreditsValue(usd)
+    return formatCreditsLabel(usd, defaults)
+  }
+
   if (!isPricingResult(result)) {
     if (result !== undefined && result !== null) {
       console.warn('[pricing/jsonata] invalid result format:', result)
@@ -302,6 +345,10 @@ const formatPricingResult = (
     const usd = asFiniteNumber(result.usd)
     if (usd === null) return ''
     const fmt = { ...defaults, ...(result.format ?? {}) }
+    if (valueOnly) {
+      const prefix = fmt.approximate ? '~' : ''
+      return `${prefix}${formatCreditsValue(usd)}`
+    }
     return formatCreditsLabel(usd, fmt)
   }
 
@@ -310,6 +357,10 @@ const formatPricingResult = (
     const maxUsd = asFiniteNumber(result.max_usd)
     if (minUsd === null || maxUsd === null) return ''
     const fmt = { ...defaults, ...(result.format ?? {}) }
+    if (valueOnly) {
+      const prefix = fmt.approximate ? '~' : ''
+      return `${prefix}${formatCreditsRangeValue(minUsd, maxUsd)}`
+    }
     return formatCreditsRangeLabel(minUsd, maxUsd, fmt)
   }
 
@@ -324,6 +375,10 @@ const formatPricingResult = (
     if (usdValues.length === 0) return ''
 
     const fmt = { ...defaults, ...(result.format ?? {}) }
+    if (valueOnly) {
+      const prefix = fmt.approximate ? '~' : ''
+      return `${prefix}${formatCreditsListValue(usdValues)}`
+    }
     return formatCreditsListLabel(usdValues, fmt)
   }
 
@@ -418,8 +473,6 @@ const cache = new WeakMap<LGraphNode, CacheEntry>()
 const desiredSig = new WeakMap<LGraphNode, string>()
 const inflight = new WeakMap<LGraphNode, InflightEntry>()
 
-const DEBUG_JSONATA_PRICING = false
-
 const scheduleEvaluation = (
   node: LGraphNode,
   rule: CompiledJsonataPricingRule,
@@ -433,31 +486,17 @@ const scheduleEvaluation = (
 
   if (!rule._compiled) return
 
-  const nodeName = getNodeConstructorData(node)?.name ?? ''
-
   const promise = Promise.resolve(rule._compiled.evaluate(ctx))
     .then((res) => {
-      const label = formatPricingResult(res, rule.result_defaults ?? {})
+      const label = formatPricingResult(res)
 
       // Ignore stale results: if the node changed while we were evaluating,
       // desiredSig will no longer match.
       if (desiredSig.get(node) !== sig) return
 
       cache.set(node, { sig, label })
-
-      if (DEBUG_JSONATA_PRICING) {
-        console.warn('[pricing/jsonata] resolved', nodeName, {
-          sig,
-          res,
-          label
-        })
-      }
     })
-    .catch((err) => {
-      if (process.env.NODE_ENV === 'development') {
-        console.warn('[pricing/jsonata] evaluation failed', nodeName, err)
-      }
-
+    .catch(() => {
       // Cache empty to avoid retry-spam for same signature
       if (desiredSig.get(node) === sig) {
         cache.set(node, { sig, label: '' })
@@ -495,6 +534,14 @@ const getRuleForNode = (
 
   const compiled = getCompiledRuleForNodeType(nodeName, priceBadge)
   return compiled ?? undefined
+}
+
+// -----------------------------
+// Helper to get price badge from node type
+// -----------------------------
+const getNodePriceBadge = (nodeType: string): PriceBadge | undefined => {
+  const nodeDefStore = useNodeDefStore()
+  return nodeDefStore.nodeDefsByName[nodeType]?.price_badge
 }
 
 // -----------------------------
@@ -550,11 +597,7 @@ export const useNodePricing = () => {
    * returns union of widget dependencies + input dependencies for a node type.
    */
   const getRelevantWidgetNames = (nodeType: string): string[] => {
-    const nodeDefStore = useNodeDefStore()
-    const nodeDef = nodeDefStore.nodeDefsByName[nodeType]
-    if (!nodeDef) return []
-
-    const priceBadge = nodeDef.price_badge
+    const priceBadge = getNodePriceBadge(nodeType)
     if (!priceBadge) return []
 
     const dependsOn = priceBadge.depends_on ?? {
@@ -563,10 +606,9 @@ export const useNodePricing = () => {
       input_groups: []
     }
 
-    // Extract widget names
     const widgetNames = (dependsOn.widgets ?? []).map((w) => w.name)
 
-    // Keep stable output (dedupe while preserving order)
+    // Dedupe while preserving order
     const out: string[] = []
     for (const n of [
       ...widgetNames,
@@ -582,11 +624,7 @@ export const useNodePricing = () => {
    * Check if a node type has dynamic pricing (depends on widgets, inputs, or input_groups).
    */
   const hasDynamicPricing = (nodeType: string): boolean => {
-    const nodeDefStore = useNodeDefStore()
-    const nodeDef = nodeDefStore.nodeDefsByName[nodeType]
-    if (!nodeDef) return false
-
-    const priceBadge = nodeDef.price_badge
+    const priceBadge = getNodePriceBadge(nodeType)
     if (!priceBadge) return false
 
     const dependsOn = priceBadge.depends_on
@@ -603,28 +641,16 @@ export const useNodePricing = () => {
    * Get input_groups prefixes for a node type (for watching connection changes).
    */
   const getInputGroupPrefixes = (nodeType: string): string[] => {
-    const nodeDefStore = useNodeDefStore()
-    const nodeDef = nodeDefStore.nodeDefsByName[nodeType]
-    if (!nodeDef) return []
-
-    const priceBadge = nodeDef.price_badge
-    if (!priceBadge) return []
-
-    return priceBadge.depends_on?.input_groups ?? []
+    const priceBadge = getNodePriceBadge(nodeType)
+    return priceBadge?.depends_on?.input_groups ?? []
   }
 
   /**
    * Get regular input names for a node type (for watching connection changes).
    */
   const getInputNames = (nodeType: string): string[] => {
-    const nodeDefStore = useNodeDefStore()
-    const nodeDef = nodeDefStore.nodeDefsByName[nodeType]
-    if (!nodeDef) return []
-
-    const priceBadge = nodeDef.price_badge
-    if (!priceBadge) return []
-
-    return priceBadge.depends_on?.inputs ?? []
+    const priceBadge = getNodePriceBadge(nodeType)
+    return priceBadge?.depends_on?.inputs ?? []
   }
 
   /**
@@ -652,3 +678,97 @@ export const useNodePricing = () => {
     pricingRevision: readonly(pricingTick) // reactive invalidation signal
   }
 }
+
+/**
+ * Extract default value from an input spec.
+ */
+function extractDefaultFromSpec(spec: unknown[]): unknown {
+  const specOptions = spec[1] as Record<string, unknown> | undefined
+
+  // Check for explicit default
+  if (specOptions && 'default' in specOptions) {
+    return specOptions.default
+  }
+  // COMBO/DYNAMICCOMBO type with options array
+  if (
+    specOptions &&
+    Array.isArray(specOptions.options) &&
+    specOptions.options.length > 0
+  ) {
+    const firstOption = specOptions.options[0]
+    // Dynamic combo: options are objects with 'key' property
+    if (
+      typeof firstOption === 'object' &&
+      firstOption !== null &&
+      'key' in firstOption
+    ) {
+      return (firstOption as { key: unknown }).key
+    }
+    // Standard combo: options are primitive values
+    return firstOption
+  }
+  // COMBO type (old format): [["option1", "option2"], {...}]
+  if (Array.isArray(spec[0]) && spec[0].length > 0) {
+    return spec[0][0]
+  }
+  return null
+}
+
+/**
+ * Evaluate pricing for a node definition using default widget values.
+ * Used for NodePricingBadge where no LGraphNode instance exists.
+ * Results are memoized by node name since they are deterministic.
+ */
+export const evaluateNodeDefPricing = memoize(
+  async (nodeDef: ComfyNodeDef): Promise<string> => {
+    const priceBadge = nodeDef.price_badge
+    if (!priceBadge?.expr) return ''
+
+    // Reuse compiled expression cache
+    const rule = getCompiledRuleForNodeType(nodeDef.name, priceBadge)
+    if (!rule?._compiled) return ''
+
+    try {
+      // Merge all inputs for lookup
+      const allInputs = {
+        ...(nodeDef.input?.required ?? {}),
+        ...(nodeDef.input?.optional ?? {})
+      }
+
+      // Build widgets context using depends_on.widgets (matches buildJsonataContext)
+      const widgets: Record<string, NormalizedWidgetValue> = {}
+      for (const dep of priceBadge.depends_on?.widgets ?? []) {
+        const spec = allInputs[dep.name]
+        let rawValue: unknown = null
+        if (Array.isArray(spec)) {
+          rawValue = extractDefaultFromSpec(spec)
+        } else if (dep.type.toUpperCase() === 'COMBO') {
+          // For dynamic COMBO widgets without input spec, use a common default
+          // that works with most pricing expressions (e.g., resolution selectors)
+          rawValue = 'original'
+        }
+        widgets[dep.name] = normalizeWidgetValue(rawValue, dep.type)
+      }
+
+      // Build inputs context: assume all inputs are disconnected in preview
+      const inputs: Record<string, { connected: boolean }> = {}
+      for (const name of priceBadge.depends_on?.inputs ?? []) {
+        inputs[name] = { connected: false }
+      }
+
+      // Build inputGroups context: assume 0 connected inputs in preview
+      const inputGroups: Record<string, number> = {}
+      for (const groupName of priceBadge.depends_on?.input_groups ?? []) {
+        inputGroups[groupName] = 0
+      }
+
+      const context: JsonataEvalContext = { widgets, inputs, inputGroups }
+      const result = await rule._compiled.evaluate(context)
+      return formatPricingResult(result, { valueOnly: true })
+    } catch (e) {
+      console.error('[evaluateNodeDefPricing] error:', e)
+      return ''
+    }
+  },
+  { getCacheKey: (nodeDef: ComfyNodeDef) => nodeDef.name }
+)

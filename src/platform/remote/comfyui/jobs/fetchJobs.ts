@@ -8,7 +8,7 @@
 
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { validateComfyWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
-import type { PromptId } from '@/schemas/apiSchema'
+import type { JobId } from '@/schemas/apiSchema'
 
 import type {
   JobDetail,
@@ -119,19 +119,19 @@ export async function fetchQueue(
  */
 export async function fetchJobDetail(
   fetchApi: (url: string) => Promise<Response>,
-  promptId: PromptId
+  jobId: JobId
 ): Promise<JobDetail | undefined> {
   try {
-    const res = await fetchApi(`/jobs/${encodeURIComponent(promptId)}`)
+    const res = await fetchApi(`/jobs/${encodeURIComponent(jobId)}`)
 
     if (!res.ok) {
-      console.warn(`Job not found for prompt ${promptId}`)
+      console.warn(`Job not found for job ${jobId}`)
       return undefined
     }
 
     return zJobDetail.parse(await res.json())
   } catch (error) {
-    console.error(`Failed to fetch job detail for prompt ${promptId}:`, error)
+    console.error(`Failed to fetch job detail for job ${jobId}:`, error)
     return undefined
   }
 }

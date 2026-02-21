@@ -1,5 +1,9 @@
 import { test as base } from '@playwright/test'
 
+interface TestWindow extends Window {
+  __ws__?: Record<string, WebSocket>
+}
+
 export const webSocketFixture = base.extend<{
   ws: { trigger(data: unknown, url?: string): Promise<void> }
 }>({

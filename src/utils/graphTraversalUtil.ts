@@ -275,6 +275,28 @@ export function findSubgraphPathById(
 }
 
 /**
+ * Gets the root parent node associated with a hierarchical execution ID.
+ * Both Group Nodes and Subgraph Nodes use hierarchical IDs (e.g. "rootId:childId:...").
+ * The root parent is always located in the rootGraph.
+ *
+ * @param rootGraph - The root graph to search from
+ * @param executionId - The execution ID (e.g., "123:456")
+ * @returns The root parent node if found, null otherwise
+ */
+export function getRootParentNode(
+  rootGraph: LGraph,
+  executionId: string
+): LGraphNode | null {
+  const parts = parseExecutionId(executionId)
+  if (!parts || parts.length < 2) return null
+
+  const parentId = parts[0]
+  if (!rootGraph) return null
+
+  return rootGraph.getNodeById(Number(parentId)) || null
+}
+
+/**
  * Get a node by its execution ID from anywhere in the graph hierarchy.
  * Execution IDs use hierarchical format like "123:456:789" for nested nodes.
  *

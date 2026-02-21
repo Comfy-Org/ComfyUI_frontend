@@ -15,8 +15,7 @@
       v-model="modelValue"
       :class="cn(WidgetInputBaseClass, 'size-full text-xs resize-none')"
       :placeholder
-      :readonly="widget.options?.read_only"
-      :disabled="widget.options?.read_only"
+      :readonly="isReadOnly"
       fluid
       data-capture-wheel="true"
       @pointerdown.capture.stop
@@ -58,4 +57,8 @@ const filteredProps = computed(() =>
 
 const displayName = computed(() => widget.label || widget.name)
 const id = useId()
+
+const isReadOnly = computed(
+  () => widget.options?.read_only ?? widget.options?.disabled ?? false
+)
 </script>

@@ -1,8 +1,8 @@
 <template>
   <div
-    class="flex h-12 items-center justify-between gap-2 border-b border-interface-stroke px-2"
+    class="flex h-12 items-center gap-2 border-b border-interface-stroke px-2"
   >
-    <div class="px-2 text-[14px] font-normal text-text-primary">
+    <div class="min-w-0 flex-1 px-2 text-[14px] font-normal text-text-primary">
       <span>{{ headerTitle }}</span>
       <span
         v-if="showConcurrentIndicator"
@@ -17,83 +17,52 @@
         </span>
       </span>
     </div>
-    <div v-if="!isCloud" class="flex items-center gap-1">
+    <div
+      class="inline-flex h-6 items-center gap-2 text-[12px] leading-none text-text-primary"
+    >
+      <span class="opacity-90">
+        <span class="font-bold">{{ queuedCount }}</span>
+        <span class="ml-1">{{
+          t('sideToolbar.queueProgressOverlay.queuedSuffix')
+        }}</span>
+      </span>
       <Button
-        v-tooltip.top="moreTooltipConfig"
-        variant="textonly"
+        v-if="queuedCount > 0"
+        v-tooltip.top="clearAllJobsTooltip"
+        variant="destructive"
         size="icon"
-        :aria-label="t('sideToolbar.queueProgressOverlay.moreOptions')"
-        @click="onMoreClick"
+        :aria-label="t('sideToolbar.queueProgressOverlay.clearQueued')"
+        @click="$emit('clearQueued')"
       >
-        <i
-          class="icon-[lucide--more-horizontal] block size-4 leading-none text-text-secondary"
-        />
+        <i class="icon-[lucide--list-x] size-4" />
       </Button>
-      <Popover
-        ref="morePopoverRef"
-        :dismissable="true"
-        :close-on-escape="true"
-        unstyled
-        :pt="{
-          root: { class: 'absolute z-50' },
-          content: {
-            class: [
-              'bg-transparent border-none p-0 pt-2 rounded-lg shadow-lg font-inter'
-            ]
-          }
-        }"
-      >
-        <div
-          class="flex flex-col items-stretch rounded-lg border border-interface-stroke bg-interface-panel-surface px-2 py-3 font-inter"
-        >
-          <Button
-            class="w-full justify-start"
-            variant="textonly"
-            size="sm"
-            :aria-label="t('sideToolbar.queueProgressOverlay.clearHistory')"
-            @click="onClearHistoryFromMenu"
-          >
-            <i class="icon-[lucide--file-x-2] size-4 text-muted" />
-            <span>{{
-              t('sideToolbar.queueProgressOverlay.clearHistory')
-            }}</span>
-          </Button>
-        </div>
-      </Popover>
     </div>
+    <JobHistoryActionsMenu @clear-history="$emit('clearHistory')" />
   </div>
 </template>
 
 <script setup lang="ts">
-import Popover from 'primevue/popover'
-import type { PopoverMethods } from 'primevue/popover'
-import { computed, ref } from 'vue'
+import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import JobHistoryActionsMenu from '@/components/queue/JobHistoryActionsMenu.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { buildTooltipConfig } from '@/composables/useTooltipConfig'
-import { isCloud } from '@/platform/distribution/types'
 
 defineProps<{
   headerTitle: string
   showConcurrentIndicator: boolean
   concurrentWorkflowCount: number
+  queuedCount: number
 }>()
 
-const emit = defineEmits<{
+defineEmits<{
   (e: 'clearHistory'): void
+  (e: 'clearQueued'): void
 }>()
 
 const { t } = useI18n()
-
-const morePopoverRef = ref<PopoverMethods | null>(null)
-const moreTooltipConfig = computed(() => buildTooltipConfig(t('g.more')))
-
-const onMoreClick = (event: MouseEvent) => {
-  morePopoverRef.value?.toggle(event)
-}
-const onClearHistoryFromMenu = () => {
-  morePopoverRef.value?.hide()
-  emit('clearHistory')
-}
+const clearAllJobsTooltip = computed(() =>
+  buildTooltipConfig(t('sideToolbar.queueProgressOverlay.clearAllJobsTooltip'))
+)
 </script>

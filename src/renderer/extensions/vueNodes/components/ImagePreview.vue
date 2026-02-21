@@ -1,7 +1,7 @@
 <template>
   <div
     v-if="imageUrls.length > 0"
-    class="image-preview group relative flex size-full min-h-16 min-w-16 flex-col px-2 justify-center"
+    class="image-preview group relative flex size-full min-h-55 min-w-16 flex-col px-2 justify-center"
     @keydown="handleKeyDown"
   >
     <!-- Image Wrapper -->
@@ -40,10 +40,9 @@
       <!-- Main Image -->
       <img
         v-if="!imageError"
-        ref="currentImageEl"
         :src="currentImageUrl"
         :alt="imageAltText"
-        class="block size-full object-contain pointer-events-none"
+        class="block size-full object-contain pointer-events-none contain-size"
         @load="handleImageLoad"
         @error="handleImageError"
       />
@@ -128,8 +127,8 @@ import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { downloadFile } from '@/base/common/downloadUtil'
+import { useMaskEditor } from '@/composables/maskeditor/useMaskEditor'
 import { app } from '@/scripts/app'
-import { useCommandStore } from '@/stores/commandStore'
 import { useNodeOutputStore } from '@/stores/imagePreviewStore'
 
 interface ImagePreviewProps {
@@ -142,7 +141,7 @@ interface ImagePreviewProps {
 const props = defineProps<ImagePreviewProps>()
 
 const { t } = useI18n()
-const commandStore = useCommandStore()
+const maskEditor = useMaskEditor()
 const nodeOutputStore = useNodeOutputStore()
 
 const actionButtonClass =
@@ -156,7 +155,6 @@ const actualDimensions = ref<string | null>(null)
 const imageError = ref(false)
 const showLoader = ref(false)
 
-const currentImageEl = ref<HTMLImageElement>()
 const imageWrapperEl = ref<HTMLDivElement>()
 
 const { start: startDelayedLoader, stop: stopDelayedLoader } = useTimeoutFn(
@@ -209,6 +207,10 @@ const handleImageLoad = (event: Event) => {
   if (img.naturalWidth && img.naturalHeight) {
     actualDimensions.value = `${img.naturalWidth} x ${img.naturalHeight}`
   }
+
+  if (props.nodeId) {
+    nodeOutputStore.syncLegacyNodeImgs(props.nodeId, img, currentIndex.value)
+  }
 }
 
 const handleImageError = () => {
@@ -218,19 +220,11 @@ const handleImageError = () => {
   actualDimensions.value = null
 }
 
-// In vueNodes mode, we need to set them manually before opening the mask editor.
-const setupNodeForMaskEditor = () => {
-  if (!props.nodeId || !currentImageEl.value) return
-  const node = app.rootGraph?.getNodeById(props.nodeId)
-  if (!node) return
-  node.imageIndex = currentIndex.value
-  node.imgs = [currentImageEl.value]
-  app.canvas?.select(node)
-}
-
 const handleEditMask = () => {
-  setupNodeForMaskEditor()
-  void commandStore.execute('Comfy.MaskEditor.OpenMaskEditor')
+  if (!props.nodeId) return
+  const node = app.rootGraph?.getNodeById(Number(props.nodeId))
+  if (!node) return
+  maskEditor.openMaskEditor(node)
 }
 
 const handleDownload = () => {
@@ -321,10 +315,11 @@ const handleKeyDown = (event: KeyboardEvent) => {
 }
 
 const getImageFilename = (url: string): string => {
+  if (!url) return t('g.imageDoesNotExist')
   try {
-    return new URL(url).searchParams.get('filename') || 'Unknown file'
+    return new URL(url).searchParams.get('filename') || t('g.unknownFile')
   } catch {
-    return 'Invalid URL'
+    return t('g.imageDoesNotExist')
   }
 }
 </script>

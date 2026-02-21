@@ -61,14 +61,16 @@
 </template>
 
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n'
+
 import { ColorComparisonMethod } from '@/extensions/core/maskeditor/types'
-import { t } from '@/i18n'
 import { useMaskEditorStore } from '@/stores/maskEditorStore'
 
 import DropdownControl from './controls/DropdownControl.vue'
 import SliderControl from './controls/SliderControl.vue'
 import ToggleControl from './controls/ToggleControl.vue'
 
+const { t } = useI18n()
 const store = useMaskEditorStore()
 
 const methodOptions = Object.values(ColorComparisonMethod)

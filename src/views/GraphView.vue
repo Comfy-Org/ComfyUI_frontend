@@ -16,10 +16,12 @@
   </div>
 
   <GlobalToast />
+  <InviteAcceptedToast />
   <RerouteMigrationToast />
   <ModelImportProgressDialog />
+  <AssetExportProgressDialog />
   <ManagerProgressToast />
-  <UnloadWindowConfirmDialog v-if="!isElectron()" />
+  <UnloadWindowConfirmDialog v-if="!isDesktop" />
   <MenuHamburger />
 </template>
 
@@ -44,15 +46,18 @@ import MenuHamburger from '@/components/MenuHamburger.vue'
 import UnloadWindowConfirmDialog from '@/components/dialog/UnloadWindowConfirmDialog.vue'
 import GraphCanvas from '@/components/graph/GraphCanvas.vue'
 import GlobalToast from '@/components/toast/GlobalToast.vue'
+import InviteAcceptedToast from '@/platform/workspace/components/toasts/InviteAcceptedToast.vue'
 import RerouteMigrationToast from '@/components/toast/RerouteMigrationToast.vue'
 import { useBrowserTabTitle } from '@/composables/useBrowserTabTitle'
 import { useCoreCommands } from '@/composables/useCoreCommands'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { useProgressFavicon } from '@/composables/useProgressFavicon'
 import { SERVER_CONFIG_ITEMS } from '@/constants/serverConfig'
+import type { ServerConfig, ServerConfigValue } from '@/constants/serverConfig'
 import { i18n, loadLocale } from '@/i18n'
+import AssetExportProgressDialog from '@/platform/assets/components/AssetExportProgressDialog.vue'
 import ModelImportProgressDialog from '@/platform/assets/components/ModelImportProgressDialog.vue'
-import { isCloud } from '@/platform/distribution/types'
+import { isCloud, isDesktop } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
 import { useFrontendVersionMismatchWarning } from '@/platform/updates/common/useFrontendVersionMismatchWarning'
@@ -78,7 +83,7 @@ import { useServerConfigStore } from '@/stores/serverConfigStore'
 import { useBottomPanelStore } from '@/stores/workspace/bottomPanelStore'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
-import { electronAPI, isElectron } from '@/utils/envUtil'
+import { electronAPI } from '@/utils/envUtil'
 import LinearView from '@/views/LinearView.vue'
 import ManagerProgressToast from '@/workbench/extensions/manager/components/ManagerProgressToast.vue'
 
@@ -111,7 +116,7 @@ watch(
       document.body.classList.add(DARK_THEME_CLASS)
     }
 
-    if (isElectron()) {
+    if (isDesktop) {
       electronAPI().changeTheme({
         color: 'rgba(0, 0, 0, 0)',
         symbolColor: newTheme.colors.comfy_base['input-text']
@@ -121,18 +126,16 @@ watch(
   { immediate: true }
 )
 
-if (isElectron()) {
+if (isDesktop) {
   watch(
     () => queueStore.tasks,
     (newTasks, oldTasks) => {
       // Report tasks that previously running but are now completed (i.e. in history)
       const oldRunningTaskIds = new Set(
-        oldTasks.filter((task) => task.isRunning).map((task) => task.promptId)
+        oldTasks.filter((task) => task.isRunning).map((task) => task.jobId)
       )
       newTasks
-        .filter(
-          (task) => oldRunningTaskIds.has(task.promptId) && task.isHistory
-        )
+        .filter((task) => oldRunningTaskIds.has(task.jobId) && task.isHistory)
         .forEach((task) => {
           electronAPI().Events.incrementUserProperty(
             `execution:${task.displayStatus.toLowerCase()}`,
@@ -217,7 +220,7 @@ const onExecutionSuccess = async () => {
   await queueStore.update()
   // Only update assets if the assets sidebar is currently open
   // When sidebar is closed, AssetsSidebarTab.vue will refresh on mount
-  if (sidebarTabStore.activeSidebarTabId === 'assets') {
+  if (sidebarTabStore.activeSidebarTabId === 'assets' || linearMode.value) {
     await assetsStore.updateHistory()
   }
 }
@@ -344,7 +347,7 @@ const onGraphReady = () => {
 
     // Load server config
     wrapWithErrorHandling(useServerConfigStore().loadServerConfig)(
-      SERVER_CONFIG_ITEMS,
+      SERVER_CONFIG_ITEMS as ServerConfig<ServerConfigValue>[],
       settingStore.get('Comfy.Server.ServerConfigValues')
     )
 

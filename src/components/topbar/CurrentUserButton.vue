@@ -45,14 +45,16 @@
           class: 'rounded-lg w-80'
         }
       }"
+      @show="onPopoverShow"
     >
       <!-- Workspace mode: workspace-aware popover (only when ready) -->
       <CurrentUserPopoverWorkspace
         v-if="teamWorkspacesEnabled && initState === 'ready'"
+        ref="workspacePopoverContent"
         @close="closePopover"
       />
       <!-- Legacy mode: original popover -->
-      <CurrentUserPopover
+      <CurrentUserPopoverLegacy
         v-else-if="!teamWorkspacesEnabled"
         @close="closePopover"
       />
@@ -67,7 +69,7 @@ import Skeleton from 'primevue/skeleton'
 import { computed, defineAsyncComponent, ref } from 'vue'
 
 import UserAvatar from '@/components/common/UserAvatar.vue'
-import WorkspaceProfilePic from '@/components/common/WorkspaceProfilePic.vue'
+import WorkspaceProfilePic from '@/platform/workspace/components/WorkspaceProfilePic.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
@@ -75,10 +77,11 @@ import { isCloud } from '@/platform/distribution/types'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { cn } from '@/utils/tailwindUtil'
 
-import CurrentUserPopover from './CurrentUserPopover.vue'
+import CurrentUserPopoverLegacy from './CurrentUserPopoverLegacy.vue'
 
 const CurrentUserPopoverWorkspace = defineAsyncComponent(
-  () => import('./CurrentUserPopoverWorkspace.vue')
+  () =>
+    import('../../platform/workspace/components/CurrentUserPopoverWorkspace.vue')
 )
 
 const { showArrow = true, compact = false } = defineProps<{
@@ -112,8 +115,15 @@ const workspaceName = computed(() => {
 })
 
 const popover = ref<InstanceType<typeof Popover> | null>(null)
+const workspacePopoverContent = ref<{
+  refreshBalance: () => void
+} | null>(null)
 
 const closePopover = () => {
   popover.value?.hide()
+}
+
+const onPopoverShow = () => {
+  workspacePopoverContent.value?.refreshBalance()
 }
 </script>

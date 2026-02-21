@@ -5,10 +5,8 @@ import { PREFIX, SEPARATOR } from '@/constants/groupNodeConstants'
 import { LitegraphLinkAdapter } from '@/renderer/core/canvas/litegraph/litegraphLinkAdapter'
 import type { LinkRenderContext } from '@/renderer/core/canvas/litegraph/litegraphLinkAdapter'
 import { getSlotPosition } from '@/renderer/core/canvas/litegraph/slotCalculations'
-import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { LayoutSource } from '@/renderer/core/layout/types'
-import { removeNodeTitleHeight } from '@/renderer/core/layout/utils/nodeSizeUtil'
 import { forEachNode } from '@/utils/graphTraversalUtil'
 
 import { CanvasPointer } from './CanvasPointer'
@@ -203,6 +201,9 @@ interface LGraphCanvasState {
    * Downstream consumers may reset to false once actioned.
    */
   selectionChanged: boolean
+
+  /** ID of node currently in ghost placement mode (semi-transparent, following cursor). */
+  ghostNodeId: NodeId | null
 }
 
 /**
@@ -313,7 +314,8 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     readOnly: false,
     hoveringOver: CanvasItem.Nothing,
     shouldSetCursor: true,
-    selectionChanged: false
+    selectionChanged: false,
+    ghostNodeId: null
   }
 
   private _subgraph?: Subgraph
@@ -684,6 +686,8 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
   canvas: HTMLCanvasElement & ICustomEventTarget<LGraphCanvasEventMap>
   bgcanvas: HTMLCanvasElement
+  overlayCanvas: HTMLCanvasElement | null = null
+  overlayCtx: CanvasRenderingContext2D | null = null
   ctx: CanvasRenderingContext2D
   _events_binded?: boolean
   _mousedown_callback?(e: PointerEvent): void
@@ -2163,6 +2167,14 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
   }
 
   processMouseDown(e: MouseEvent): void {
+    if (this.state.ghostNodeId != null) {
+      if (e.button === 0) this.finalizeGhostPlacement(false)
+      if (e.button === 2) this.finalizeGhostPlacement(true)
+      e.stopPropagation()
+      e.preventDefault()
+      return
+    }
+
     if (
       this.dragZoomEnabled &&
       e.ctrlKey &&
@@ -2197,8 +2209,20 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
     if (!is_inside) return
 
-    const node =
+    let node =
       graph.getNodeOnPos(e.canvasX, e.canvasY, this.visible_nodes) ?? undefined
+
+    // In Vue nodes mode, slots extend beyond node bounds due to CSS transforms.
+    // If no node was found, check if the click is on a slot and use its owning node.
+    if (!node && LiteGraph.vueNodesMode) {
+      const slotLayout = layoutStore.querySlotAtPoint({
+        x: e.canvasX,
+        y: e.canvasY
+      })
+      if (slotLayout) {
+        node = graph.getNodeById(slotLayout.nodeId) ?? undefined
+      }
+    }
 
     this.mouse[0] = x
     this.mouse[1] = y
@@ -2370,8 +2394,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       const cloned = items?.created[0] as LGraphNode | undefined
       if (!cloned) return
 
-      cloned.pos[0] += 5
-      cloned.pos[1] += 5
+      cloned.setPos(cloned.pos[0] + 5, cloned.pos[1] + 5)
 
       if (this.allow_dragnodes) {
         pointer.onDragStart = (pointer) => {
@@ -3542,6 +3565,74 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
   }
 
   /**
+   * Starts ghost placement mode for a node.
+   * The node will be semi-transparent and follow the cursor until the user
+   * clicks to place it, or presses Escape/right-clicks to cancel.
+   * @param node The node to place
+   * @param dragEvent Optional mouse event for positioning under cursor
+   */
+  startGhostPlacement(node: LGraphNode, dragEvent?: MouseEvent): void {
+    this.emitBeforeChange()
+    this.graph?.beforeChange()
+
+    if (dragEvent) {
+      this.adjustMouseEvent(dragEvent)
+      const e = dragEvent as CanvasPointerEvent
+      node.setPos(e.canvasX - node.size[0] / 2, e.canvasY + 10)
+      // Update last_mouse to prevent jump on first drag move
+      this.last_mouse = [e.clientX, e.clientY]
+    } else {
+      node.setPos(
+        this.graph_mouse[0] - node.size[0] / 2,
+        this.graph_mouse[1] + 10
+      )
+    }
+
+    this.state.ghostNodeId = node.id
+
+    this.deselectAll()
+    this.select(node)
+    this.isDragging = true
+  }
+
+  /**
+   * Finalizes ghost placement mode.
+   * @param cancelled If true, the node is removed; otherwise it's placed
+   */
+  finalizeGhostPlacement(cancelled: boolean): void {
+    const nodeId = this.state.ghostNodeId
+    if (nodeId == null) return
+
+    this.state.ghostNodeId = null
+    this.isDragging = false
+
+    const node = this.graph?.getNodeById(nodeId)
+    if (!node) return
+
+    if (cancelled) {
+      this.deselect(node)
+      this.graph?.remove(node)
+    } else {
+      delete node.flags.ghost
+      this.graph?.trigger('node:property:changed', {
+        nodeId: node.id,
+        property: 'flags.ghost',
+        oldValue: true,
+        newValue: false
+      })
+
+      this.state.selectionChanged = true
+      this.onSelectionChange?.(this.selected_nodes)
+    }
+
+    this.dirty_canvas = true
+    this.dirty_bgcanvas = true
+
+    this.graph?.afterChange()
+    this.emitAfterChange()
+  }
+
+  /**
    * Called when a mouse up event has to be processed
    */
   processMouseUp(e: PointerEvent): void {
@@ -3710,6 +3801,17 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
     const { graph } = this
     if (!graph) return
+
+    // Cancel ghost placement
+    if (
+      (e.key === 'Escape' || e.key === 'Delete' || e.key === 'Backspace') &&
+      this.state.ghostNodeId != null
+    ) {
+      this.finalizeGhostPlacement(true)
+      e.stopPropagation()
+      e.preventDefault()
+      return
+    }
 
     let block_default = false
     // @ts-expect-error EventTarget.localName is not in standard types
@@ -4055,31 +4157,30 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       }
     }
 
-    // Adjust positions
+    // Adjust positions - use move/setPos to ensure layout store is updated
+    const dx = position[0] - offsetX
+    const dy = position[1] - offsetY
     for (const item of created) {
-      item.pos[0] += position[0] - offsetX
-      item.pos[1] += position[1] - offsetY
+      if (item instanceof LGraphNode) {
+        item.setPos(item.pos[0] + dx, item.pos[1] + dy)
+      } else if (item instanceof Reroute) {
+        item.move(dx, dy)
+      }
     }
 
     // TODO: Report failures, i.e. `failedNodes`
 
     const newPositions = created
       .filter((item): item is LGraphNode => item instanceof LGraphNode)
-      .map((node) => {
-        const fullHeight = node.size?.[1] ?? 200
-        const layoutHeight = LiteGraph.vueNodesMode
-          ? removeNodeTitleHeight(fullHeight)
-          : fullHeight
-        return {
-          nodeId: String(node.id),
-          bounds: {
-            x: node.pos[0],
-            y: node.pos[1],
-            width: node.size?.[0] ?? 100,
-            height: layoutHeight
-          }
+      .map((node) => ({
+        nodeId: String(node.id),
+        bounds: {
+          x: node.pos[0],
+          y: node.pos[1],
+          width: node.size?.[0] ?? 100,
+          height: node.size?.[1] ?? 200
         }
-      })
+      }))
 
     if (newPositions.length) layoutStore.setSource(LayoutSource.Canvas)
     layoutStore.batchUpdateNodeBounds(newPositions)
@@ -4744,7 +4845,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
   drawFrontCanvas(): void {
     this.dirty_canvas = false
 
-    const { ctx, canvas, graph, linkConnector } = this
+    const { ctx, canvas, graph } = this
 
     // @ts-expect-error start2D method not in standard CanvasRenderingContext2D
     if (ctx.start2D && !this.viewport) {
@@ -4844,78 +4945,14 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
         this.drawConnections(ctx)
       }
 
-      if (linkConnector.isConnecting) {
-        // current connection (the one being dragged by the mouse)
-        const { renderLinks } = linkConnector
-        const highlightPos = this._getHighlightPosition()
-        ctx.lineWidth = this.connections_width
-
-        for (const renderLink of renderLinks) {
-          const {
-            fromSlot,
-            fromPos: pos,
-            fromDirection,
-            dragDirection
-          } = renderLink
-          const connShape = fromSlot.shape
-          const connType = fromSlot.type
-
-          const colour = resolveConnectingLinkColor(connType)
-
-          // the connection being dragged by the mouse
-          if (this.linkRenderer) {
-            this.linkRenderer.renderDraggingLink(
-              ctx,
-              pos,
-              highlightPos,
-              colour,
-              fromDirection,
-              dragDirection,
-              {
-                ...this.buildLinkRenderContext(),
-                linkMarkerShape: LinkMarkerShape.None
-              }
-            )
-          }
-
-          ctx.fillStyle = colour
-          ctx.beginPath()
-          if (connType === LiteGraph.EVENT || connShape === RenderShape.BOX) {
-            ctx.rect(pos[0] - 6 + 0.5, pos[1] - 5 + 0.5, 14, 10)
-            ctx.rect(
-              highlightPos[0] - 6 + 0.5,
-              highlightPos[1] - 5 + 0.5,
-              14,
-              10
-            )
-          } else if (connShape === RenderShape.ARROW) {
-            ctx.moveTo(pos[0] + 8, pos[1] + 0.5)
-            ctx.lineTo(pos[0] - 4, pos[1] + 6 + 0.5)
-            ctx.lineTo(pos[0] - 4, pos[1] - 6 + 0.5)
-            ctx.closePath()
-          } else {
-            ctx.arc(pos[0], pos[1], 4, 0, Math.PI * 2)
-            ctx.arc(highlightPos[0], highlightPos[1], 4, 0, Math.PI * 2)
-          }
-          ctx.fill()
-        }
-
-        // Gradient half-border over target node
-        this._renderSnapHighlight(ctx, highlightPos)
-      }
-
-      // on top of link center
-      if (
-        !this.isDragging &&
-        this.over_link_center &&
-        this.render_link_tooltip
-      ) {
-        this.drawLinkTooltip(ctx, this.over_link_center)
+      if (!LiteGraph.vueNodesMode || !this.overlayCtx) {
+        this._drawConnectingLinks(ctx)
       } else {
-        this.onDrawLinkTooltip?.(ctx, null)
+        this._drawOverlayLinks()
       }
 
-      // custom info
+      this._drawLinkTooltip(ctx)
+
       this.onDrawForeground?.(ctx, this.visible_area)
 
       ctx.restore()
@@ -4926,9 +4963,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     if (area) ctx.restore()
   }
 
-  /** @returns If the pointer is over a link centre marker, the link segment it belongs to.  Otherwise, `undefined`.  */
   private _getLinkCentreOnPos(e: CanvasPointerEvent): LinkSegment | undefined {
-    // Skip hit detection if center markers are disabled
     if (this.linkMarkerShape === LinkMarkerShape.None) {
       return undefined
     }
@@ -4943,6 +4978,90 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
         return linkSegment
       }
     }
+  }
+
+  private _drawConnectingLinks(ctx: CanvasRenderingContext2D): void {
+    const { linkConnector } = this
+    if (!linkConnector.isConnecting) return
+
+    const { renderLinks } = linkConnector
+    const highlightPos = this._getHighlightPosition()
+    ctx.lineWidth = this.connections_width
+
+    for (const renderLink of renderLinks) {
+      const {
+        fromSlot,
+        fromPos: pos,
+        fromDirection,
+        dragDirection
+      } = renderLink
+      const connShape = fromSlot.shape
+      const connType = fromSlot.type
+
+      const colour = resolveConnectingLinkColor(connType)
+
+      if (this.linkRenderer) {
+        this.linkRenderer.renderDraggingLink(
+          ctx,
+          pos,
+          highlightPos,
+          colour,
+          fromDirection,
+          dragDirection,
+          {
+            ...this.buildLinkRenderContext(),
+            linkMarkerShape: LinkMarkerShape.None
+          }
+        )
+      }
+
+      ctx.fillStyle = colour
+      ctx.beginPath()
+      if (connType === LiteGraph.EVENT || connShape === RenderShape.BOX) {
+        ctx.rect(pos[0] - 6 + 0.5, pos[1] - 5 + 0.5, 14, 10)
+        ctx.rect(highlightPos[0] - 6 + 0.5, highlightPos[1] - 5 + 0.5, 14, 10)
+      } else if (connShape === RenderShape.ARROW) {
+        ctx.moveTo(pos[0] + 8, pos[1] + 0.5)
+        ctx.lineTo(pos[0] - 4, pos[1] + 6 + 0.5)
+        ctx.lineTo(pos[0] - 4, pos[1] - 6 + 0.5)
+        ctx.closePath()
+      } else {
+        ctx.arc(pos[0], pos[1], 4, 0, Math.PI * 2)
+        ctx.arc(highlightPos[0], highlightPos[1], 4, 0, Math.PI * 2)
+      }
+      ctx.fill()
+    }
+
+    this._renderSnapHighlight(ctx, highlightPos)
+  }
+
+  private _drawLinkTooltip(ctx: CanvasRenderingContext2D): void {
+    if (!this.isDragging && this.over_link_center && this.render_link_tooltip) {
+      this.drawLinkTooltip(ctx, this.over_link_center)
+    } else {
+      this.onDrawLinkTooltip?.(ctx, null)
+    }
+  }
+
+  private _drawOverlayLinks(): void {
+    const octx = this.overlayCtx
+    const overlayCanvas = this.overlayCanvas
+    if (!octx || !overlayCanvas) return
+
+    octx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height)
+
+    if (!this.linkConnector.isConnecting) return
+
+    octx.save()
+
+    const scale = overlayCanvas.width / (overlayCanvas.clientWidth || 1)
+    octx.setTransform(scale, 0, 0, scale, 0, 0)
+
+    this.ds.toCanvasContext(octx)
+
+    this._drawConnectingLinks(octx)
+
+    octx.restore()
   }
 
   /** Get the target snap / highlight point in graph space */
@@ -5793,6 +5912,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
   }
 
   private getNodeModeAlpha(node: LGraphNode) {
+    if (node.flags.ghost) return 0.3
     return node.mode === LGraphEventMode.BYPASS
       ? 0.2
       : node.mode === LGraphEventMode.NEVER
@@ -6281,7 +6401,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
                 options
               )
             ) {
-              node.pos[0] -= node.size[0] * 0.5
+              node.setPos(node.pos[0] - node.size[0] * 0.5, node.pos[1])
             }
           })
           break
@@ -8221,7 +8341,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
           callback: LGraphCanvas.onMenuNodeCollapse
         })
       }
-      if (node.widgets?.some((w) => w.advanced)) {
+      if (node.hasAdvancedWidgets()) {
         options.push({
           content: node.showAdvanced ? 'Hide Advanced' : 'Show Advanced',
           callback: LGraphCanvas.onMenuToggleAdvanced
@@ -8569,25 +8689,12 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
    * Apply batched node position updates
    */
   private applyNodePositionUpdates(
-    nodesToMove: Array<{ node: LGraphNode; newPos: { x: number; y: number } }>,
-    mutations: ReturnType<typeof useLayoutMutations>
+    nodesToMove: Array<{ node: LGraphNode; newPos: { x: number; y: number } }>
   ): void {
     for (const { node, newPos } of nodesToMove) {
-      // Update LiteGraph position first so next drag uses correct base position
-      node.pos[0] = newPos.x
-      node.pos[1] = newPos.y
-      // Then update layout store which will update Vue nodes
-      mutations.moveNode(node.id, newPos)
+      // setPos automatically syncs to layout store
+      node.setPos(newPos.x, newPos.y)
     }
-  }
-
-  /**
-   * Initialize layout mutations with Canvas source
-   */
-  private initLayoutMutations(): ReturnType<typeof useLayoutMutations> {
-    const mutations = useLayoutMutations()
-    mutations.setSource(LayoutSource.Canvas)
-    return mutations
   }
 
   /**
@@ -8637,7 +8744,6 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     deltaX: number,
     deltaY: number
   ) {
-    const mutations = this.initLayoutMutations()
     const nodesInMovingGroups = this.collectNodesInGroups(allItems)
     const nodesToMove: NewNodePosition[] = []
 
@@ -8663,12 +8769,11 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     }
 
     // Now apply all the node moves at once
-    this.applyNodePositionUpdates(nodesToMove, mutations)
+    this.applyNodePositionUpdates(nodesToMove)
   }
 
   repositionNodesVueMode(nodesToReposition: NewNodePosition[]) {
-    const mutations = this.initLayoutMutations()
-    this.applyNodePositionUpdates(nodesToReposition, mutations)
+    this.applyNodePositionUpdates(nodesToReposition)
   }
 
   /**

@@ -104,7 +104,8 @@ export const useModelToNodeStore = defineStore('modelToNode', () => {
    * @param modelType The name of the model type to get the node provider for.
    * @returns The node provider for the given model type name.
    */
-  function getNodeProvider(modelType: string): ModelNodeProvider | undefined {
+  function getNodeProvider(modelType: unknown): ModelNodeProvider | undefined {
+    if (typeof modelType !== 'string') return undefined
     registerDefaults()
     return findProvidersWithFallback(modelType)?.[0]
   }
@@ -115,7 +116,8 @@ export const useModelToNodeStore = defineStore('modelToNode', () => {
    * @param modelType The name of the model type to get the node providers for.
    * @returns The list of all valid node providers for the given model type name.
    */
-  function getAllNodeProviders(modelType: string): ModelNodeProvider[] {
+  function getAllNodeProviders(modelType: unknown): ModelNodeProvider[] {
+    if (typeof modelType !== 'string') return []
     registerDefaults()
     return findProvidersWithFallback(modelType) ?? []
   }
@@ -192,6 +194,44 @@ export const useModelToNodeStore = defineStore('modelToNode', () => {
       ''
     )
     quickRegister('chatterbox/chatterbox_vc', 'FL_ChatterboxVC', '')
+
+    // Latent upscale models (ComfyUI core - nodes_hunyuan.py)
+    quickRegister(
+      'latent_upscale_models',
+      'LatentUpscaleModelLoader',
+      'model_name'
+    )
+
+    // SAM/SAM2 segmentation models (comfyui-segment-anything-2, comfyui-impact-pack)
+    quickRegister('sam2', 'DownloadAndLoadSAM2Model', 'model')
+    quickRegister('sams', 'SAMLoader', 'model_name')
+
+    // Ultralytics detection models (comfyui-impact-subpack)
+    // Note: ultralytics/bbox and ultralytics/segm fall back to this via hierarchical lookup
+    quickRegister('ultralytics', 'UltralyticsDetectorProvider', 'model_name')
+
+    // DepthAnything models (comfyui-depthanythingv2)
+    quickRegister(
+      'depthanything',
+      'DownloadAndLoadDepthAnythingV2Model',
+      'model'
+    )
+
+    // IP-Adapter models (comfyui_ipadapter_plus)
+    quickRegister('ipadapter', 'IPAdapterModelLoader', 'ipadapter_file')
+
+    // Segformer clothing/fashion segmentation models (comfyui_layerstyle)
+    quickRegister('segformer_b2_clothes', 'LS_LoadSegformerModel', 'model_name')
+    quickRegister('segformer_b3_clothes', 'LS_LoadSegformerModel', 'model_name')
+    quickRegister('segformer_b3_fashion', 'LS_LoadSegformerModel', 'model_name')
+
+    // NLF pose estimation models (ComfyUI-WanVideoWrapper)
+    quickRegister('nlf', 'LoadNLFModel', 'nlf_model')
+
+    // FlashVSR video super-resolution (ComfyUI-FlashVSR_Ultra_Fast)
+    // Empty key means the node auto-loads models without a widget selector
+    quickRegister('FlashVSR', 'FlashVSRNode', '')
+    quickRegister('FlashVSR-v1.1', 'FlashVSRNode', '')
   }
 
   return {

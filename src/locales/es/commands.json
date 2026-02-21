@@ -44,6 +44,9 @@
   "Comfy_BrowseTemplates": {
     "label": "Explorar plantillas"
   },
+  "Comfy_Canvas_CopySelected": {
+    "label": "Copiar"
+  },
   "Comfy_Canvas_DeleteSelectedItems": {
     "label": "Eliminar elementos seleccionados"
   },
@@ -65,11 +68,17 @@
   "Comfy_Canvas_MoveSelectedNodes_Up": {
     "label": "Mover nodos seleccionados hacia arriba"
   },
+  "Comfy_Canvas_PasteFromClipboard": {
+    "label": "Pegar"
+  },
   "Comfy_Canvas_ResetView": {
     "label": "Restablecer vista"
   },
   "Comfy_Canvas_Resize": {
     "label": "Redimensionar Nodos Seleccionados"
+  },
+  "Comfy_Canvas_SelectAll": {
+    "label": "Seleccionar todo"
   },
   "Comfy_Canvas_ToggleLinkVisibility": {
     "label": "Alternar visibilidad de enlace en lienzo"
@@ -266,6 +275,12 @@
   "Comfy_ShowSettingsDialog": {
     "label": "Mostrar Diálogo de Configuraciones"
   },
+  "Comfy_Subgraph_SetDescription": {
+    "label": "Establecer descripción del subgrafo"
+  },
+  "Comfy_Subgraph_SetSearchAliases": {
+    "label": "Establecer alias de búsqueda del subgrafo"
+  },
   "Comfy_ToggleAssetAPI": {
     "label": "Experimental: Habilitar AssetAPI"
   },
@@ -312,10 +327,10 @@
     "label": "Alternar Panel Inferior"
   },
   "Workspace_ToggleBottomPanelTab_command-terminal": {
-    "label": "Alternar Panel Inferior de Terminal"
+    "label": "Mostrar/ocultar panel inferior de terminal"
   },
   "Workspace_ToggleBottomPanelTab_logs-terminal": {
-    "label": "Alternar Panel Inferior de Registros"
+    "label": "Mostrar/ocultar panel inferior de registros"
   },
   "Workspace_ToggleBottomPanelTab_shortcuts-essentials": {
     "label": "Alternar panel inferior esencial"

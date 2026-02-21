@@ -226,9 +226,7 @@ test.describe('Bottom Panel Shortcuts', { tag: '@ui' }, () => {
     await expect(bottomPanel.shortcuts.manageButton).toBeVisible()
     await bottomPanel.shortcuts.manageButton.click()
 
-    await expect(comfyPage.page.getByRole('dialog')).toBeVisible()
-    await expect(
-      comfyPage.page.getByRole('option', { name: 'Keybinding' })
-    ).toBeVisible()
+    await expect(comfyPage.settingDialog.root).toBeVisible()
+    await expect(comfyPage.settingDialog.category('Keybinding')).toBeVisible()
   })
 })

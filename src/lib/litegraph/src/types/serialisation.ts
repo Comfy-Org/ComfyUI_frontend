@@ -137,6 +137,8 @@ export interface ISerialisedGraph extends BaseExportedGraph {
 export interface ExportedSubgraph extends SerialisableGraph {
   /** The display name of the subgraph. */
   name: string
+  /** Optional category for organizing subgraph blueprints in the node library. */
+  category?: string
   inputNode: ExportedSubgraphIONode
   outputNode: ExportedSubgraphIONode
   /** Ordered list of inputs to the subgraph itself. Similar to a reroute, with the input side in the graph, and the output side in the subgraph. */

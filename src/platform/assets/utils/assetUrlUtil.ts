@@ -8,7 +8,7 @@ import { getAssetType } from './assetTypeUtil'
 
 /**
  * Get the download/view URL for an asset
- * Constructs the proper URL with filename encoding and type parameter
+ * Constructs the proper URL with filename encoding, type, and subfolder parameters
  *
  * @param asset The asset to get URL for
  * @param defaultType Default type if asset doesn't have tags (default: 'output')
@@ -23,7 +23,12 @@ export function getAssetUrl(
   defaultType: 'input' | 'output' = 'output'
 ): string {
   const assetType = getAssetType(asset, defaultType)
-  return api.apiURL(
-    `/view?filename=${encodeURIComponent(asset.name)}&type=${assetType}`
-  )
+  const subfolder = asset.user_metadata?.subfolder
+  const params = new URLSearchParams()
+  params.set('filename', asset.name)
+  params.set('type', assetType)
+  if (typeof subfolder === 'string' && subfolder) {
+    params.set('subfolder', subfolder)
+  }
+  return api.apiURL(`/view?${params}`)
 }

@@ -45,10 +45,14 @@ declare module '@/lib/litegraph/src/types/widgets' {
     hidden?: boolean
   }
 
+  interface WidgetCallbackOptions {
+    isPartialExecution?: boolean
+  }
+
   interface IBaseWidget {
     onRemove?(): void
-    beforeQueued?(): unknown
-    afterQueued?(): unknown
+    beforeQueued?(options?: WidgetCallbackOptions): unknown
+    afterQueued?(options?: WidgetCallbackOptions): unknown
     serializeValue?(node: LGraphNode, index: number): Promise<unknown> | unknown
 
     /**
@@ -173,6 +177,8 @@ declare module '@/lib/litegraph/src/litegraph' {
     isLoading?: boolean
     /** The content type of the node's preview media */
     previewMediaType?: 'image' | 'video' | 'audio' | 'model'
+    /** If true, output images are stored but not rendered below the node */
+    hideOutputImages?: boolean
 
     preview: string[]
     /** Index of the currently selected image on a multi-image node such as Preview Image */

@@ -1,6 +1,7 @@
 <template>
   <SidebarTabTemplate
     :title="isInFolderView ? '' : $t('sideToolbar.mediaAssets.title')"
+    v-bind="$attrs"
   >
     <template #alt-title>
       <div
@@ -9,7 +10,7 @@
       >
         <div class="flex items-center gap-2">
           <span class="font-bold">{{ $t('assetBrowser.jobId') }}:</span>
-          <span class="text-sm">{{ folderPromptId?.substring(0, 8) }}</span>
+          <span class="text-sm">{{ folderJobId?.substring(0, 8) }}</span>
           <button
             class="m-0 cursor-pointer border-0 bg-transparent p-0 outline-0"
             role="button"
@@ -52,35 +53,24 @@
         class="pb-1 px-2 2xl:px-4"
         :show-generation-time-sort="activeTab === 'output'"
       />
-      <div
-        v-if="isQueuePanelV2Enabled && !isInFolderView"
-        class="flex items-center justify-between px-2 py-2 2xl:px-4"
-      >
-        <span class="text-sm text-muted-foreground">
-          {{ activeJobsLabel }}
-        </span>
-        <div class="flex items-center gap-2">
-          <span class="text-sm text-base-foreground">
-            {{ t('sideToolbar.queueProgressOverlay.clearQueueTooltip') }}
-          </span>
-          <Button
-            variant="destructive"
-            size="icon"
-            :aria-label="
-              t('sideToolbar.queueProgressOverlay.clearQueueTooltip')
-            "
-            :disabled="queuedCount === 0"
-            @click="handleClearQueue"
-          >
-            <i class="icon-[lucide--list-x] size-4" />
-          </Button>
-        </div>
-      </div>
-      <Divider v-else type="dashed" class="my-2" />
+      <Divider type="dashed" class="my-2" />
     </template>
     <template #body>
-      <div v-if="showLoadingState">
-        <ProgressSpinner class="absolute left-1/2 w-[50px] -translate-x-1/2" />
+      <div
+        v-if="showLoadingState"
+        class="grid grid-cols-[repeat(auto-fill,minmax(200px,1fr))] gap-2 px-2"
+      >
+        <div
+          v-for="n in skeletonCount"
+          :key="`skeleton-${n}`"
+          class="flex flex-col gap-2 p-2"
+        >
+          <Skeleton class="aspect-square w-full rounded-lg" />
+          <div class="flex flex-col gap-1">
+            <Skeleton class="h-4 w-3/4" />
+            <Skeleton class="h-3 w-1/2" />
+          </div>
+        </div>
       </div>
       <div v-else-if="showEmptyState">
         <NoResultsPlaceholder
@@ -112,7 +102,6 @@
           v-else
           :assets="displayAssets"
           :is-selected="isSelected"
-          :is-in-folder-view="isInFolderView"
           :asset-type="activeTab"
           :show-output-count="shouldShowOutputCount"
           :get-output-count="getOutputCount"
@@ -206,14 +195,14 @@
 
 <script setup lang="ts">
 import {
+  useAsyncState,
   useDebounceFn,
   useElementHover,
   useResizeObserver,
-  useStorage
+  useStorage,
+  useTimeoutFn
 } from '@vueuse/core'
-import { storeToRefs } from 'pinia'
 import Divider from 'primevue/divider'
-import ProgressSpinner from 'primevue/progressspinner'
 import { useToast } from 'primevue/usetoast'
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -225,6 +214,7 @@ const Load3dViewerContent = () =>
 import AssetsSidebarGridView from '@/components/sidebar/tabs/AssetsSidebarGridView.vue'
 import AssetsSidebarListView from '@/components/sidebar/tabs/AssetsSidebarListView.vue'
 import SidebarTabTemplate from '@/components/sidebar/tabs/SidebarTabTemplate.vue'
+import Skeleton from '@/components/ui/skeleton/Skeleton.vue'
 import ResultGallery from '@/components/sidebar/tabs/queue/ResultGallery.vue'
 import Tab from '@/components/tab/Tab.vue'
 import TabList from '@/components/tab/TabList.vue'
@@ -237,40 +227,31 @@ import { useAssetSelection } from '@/platform/assets/composables/useAssetSelecti
 import { useMediaAssetActions } from '@/platform/assets/composables/useMediaAssetActions'
 import { useMediaAssetFiltering } from '@/platform/assets/composables/useMediaAssetFiltering'
 import { useOutputStacks } from '@/platform/assets/composables/useOutputStacks'
+import type { OutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
 import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import type { MediaKind } from '@/platform/assets/schemas/mediaAssetSchema'
 import { resolveOutputAssetItems } from '@/platform/assets/utils/outputAssetUtil'
 import { isCloud } from '@/platform/distribution/types'
-import { useSettingStore } from '@/platform/settings/settingStore'
-import { useCommandStore } from '@/stores/commandStore'
 import { useDialogStore } from '@/stores/dialogStore'
-import { useExecutionStore } from '@/stores/executionStore'
-import { ResultItemImpl, useQueueStore } from '@/stores/queueStore'
+import { ResultItemImpl } from '@/stores/queueStore'
 import { formatDuration, getMediaTypeFromFilename } from '@/utils/formatUtil'
 import { cn } from '@/utils/tailwindUtil'
 
-const { t, n } = useI18n()
-const commandStore = useCommandStore()
-const queueStore = useQueueStore()
-const { activeJobsCount } = storeToRefs(queueStore)
-const executionStore = useExecutionStore()
-const settingStore = useSettingStore()
+const { t } = useI18n()
+
+const emit = defineEmits<{ assetSelected: [asset: AssetItem] }>()
 
 const activeTab = ref<'input' | 'output'>('output')
-const folderPromptId = ref<string | null>(null)
+const folderJobId = ref<string | null>(null)
 const folderExecutionTime = ref<number | undefined>(undefined)
-const isInFolderView = computed(() => folderPromptId.value !== null)
+const expectedFolderCount = ref(0)
+const isInFolderView = computed(() => folderJobId.value !== null)
 const viewMode = useStorage<'list' | 'grid'>(
   'Comfy.Assets.Sidebar.ViewMode',
   'grid'
 )
-const isQueuePanelV2Enabled = computed(() =>
-  settingStore.get('Comfy.Queue.QPOV2')
-)
-const isListView = computed(
-  () => isQueuePanelV2Enabled.value && viewMode.value === 'list'
-)
+const isListView = computed(() => viewMode.value === 'list')
 
 const contextMenuRef = ref<InstanceType<typeof MediaAssetContextMenu>>()
 const contextMenuAsset = ref<AssetItem | null>(null)
@@ -300,16 +281,6 @@ const shouldShowOutputCount = (item: AssetItem): boolean => {
 const formattedExecutionTime = computed(() => {
   if (!folderExecutionTime.value) return ''
   return formatDuration(folderExecutionTime.value * 1000)
-})
-
-const queuedCount = computed(() => queueStore.pendingTasks.length)
-const activeJobsLabel = computed(() => {
-  const count = activeJobsCount.value
-  return t(
-    'sideToolbar.queueProgressOverlay.activeJobs',
-    { count: n(count) },
-    count
-  )
 })
 
 const toast = useToast()
@@ -376,7 +347,24 @@ const mediaAssets = computed(() => currentAssets.value.media.value)
 const galleryActiveIndex = ref(-1)
 const currentGalleryAssetId = ref<string | null>(null)
 
-const folderAssets = ref<AssetItem[]>([])
+const DEFAULT_SKELETON_COUNT = 6
+const skeletonCount = computed(() =>
+  expectedFolderCount.value > 0
+    ? expectedFolderCount.value
+    : DEFAULT_SKELETON_COUNT
+)
+
+const {
+  state: folderAssets,
+  isLoading: folderLoading,
+  error: folderError,
+  execute: loadFolderAssets
+} = useAsyncState(
+  (metadata: OutputAssetMetadata, options: { createdAt?: string } = {}) =>
+    resolveOutputAssetItems(metadata, options),
+  [] as AssetItem[],
+  { immediate: false, resetOnExecute: true }
+)
 
 // Base assets before search filtering
 const baseAssets = computed(() => {
@@ -414,18 +402,18 @@ const isBulkMode = computed(
   () => hasSelection.value && selectedAssets.value.length > 1
 )
 
+const isFolderLoading = computed(
+  () => isInFolderView.value && folderLoading.value
+)
+
 const showLoadingState = computed(
   () =>
-    loading.value &&
-    displayAssets.value.length === 0 &&
-    activeJobsCount.value === 0
+    (loading.value || isFolderLoading.value) && displayAssets.value.length === 0
 )
 
 const showEmptyState = computed(
   () =>
-    !loading.value &&
-    displayAssets.value.length === 0 &&
-    activeJobsCount.value === 0
+    !loading.value && !isFolderLoading.value && displayAssets.value.length === 0
 )
 
 watch(visibleAssets, (newAssets) => {
@@ -492,10 +480,20 @@ watch(
 function handleAssetSelect(asset: AssetItem, assets?: AssetItem[]) {
   const assetList = assets ?? visibleAssets.value
   const index = assetList.findIndex((a) => a.id === asset.id)
+  emit('assetSelected', asset)
   handleAssetClick(asset, index, assetList)
 }
 
+const { start: scheduleCleanup, stop: cancelCleanup } = useTimeoutFn(
+  () => {
+    contextMenuAsset.value = null
+  },
+  0,
+  { immediate: false }
+)
+
 function handleAssetContextMenu(event: MouseEvent, asset: AssetItem) {
+  cancelCleanup()
   contextMenuAsset.value = asset
   void nextTick(() => {
     contextMenuRef.value?.show(event)
@@ -503,10 +501,7 @@ function handleAssetContextMenu(event: MouseEvent, asset: AssetItem) {
 }
 
 function handleContextMenuHide() {
-  // Delay clearing to allow command callbacks to emit before component unmounts
-  requestAnimationFrame(() => {
-    contextMenuAsset.value = null
-  })
+  scheduleCleanup()
 }
 
 const handleBulkDownload = (assets: AssetItem[]) => {
@@ -518,16 +513,6 @@ const handleBulkDelete = async (assets: AssetItem[]) => {
   if (await deleteAssets(assets)) {
     clearSelection()
   }
-}
-
-const handleClearQueue = async () => {
-  const pendingPromptIds = queueStore.pendingTasks
-    .map((task) => task.promptId)
-    .filter((id): id is string => typeof id === 'string' && id.length > 0)
-
-  await commandStore.execute('Comfy.ClearPendingTasks')
-
-  executionStore.clearInitializationByPromptIds(pendingPromptIds)
 }
 
 const handleBulkAddToWorkflow = async (assets: AssetItem[]) => {
@@ -590,36 +575,34 @@ const enterFolderView = async (asset: AssetItem) => {
     return
   }
 
-  const { promptId, executionTimeInSeconds } = metadata
+  const { jobId, executionTimeInSeconds } = metadata
 
-  if (!promptId) {
+  if (!jobId) {
     console.warn('Missing required folder view data')
     return
   }
 
-  folderPromptId.value = promptId
+  folderJobId.value = jobId
   folderExecutionTime.value = executionTimeInSeconds
+  expectedFolderCount.value = metadata.outputCount ?? 0
 
-  let folderItems: AssetItem[] = []
-  try {
-    folderItems = await resolveOutputAssetItems(metadata, {
-      createdAt: asset.created_at
+  await loadFolderAssets(0, metadata, { createdAt: asset.created_at })
+
+  if (folderError.value) {
+    toast.add({
+      severity: 'error',
+      summary: t('sideToolbar.folderView.errorSummary'),
+      detail: t('sideToolbar.folderView.errorDetail'),
+      life: 5000
     })
-  } catch (error) {
-    console.error('Failed to resolve outputs for folder view:', error)
+    exitFolderView()
   }
-
-  if (folderItems.length === 0) {
-    console.warn('No outputs available for folder view')
-    return
-  }
-
-  folderAssets.value = folderItems
 }
 
 const exitFolderView = () => {
-  folderPromptId.value = null
+  folderJobId.value = null
   folderExecutionTime.value = undefined
+  expectedFolderCount.value = 0
   folderAssets.value = []
   searchQuery.value = ''
 }
@@ -643,9 +626,9 @@ const handleEmptySpaceClick = () => {
 }
 
 const copyJobId = async () => {
-  if (folderPromptId.value) {
+  if (folderJobId.value) {
     try {
-      await navigator.clipboard.writeText(folderPromptId.value)
+      await navigator.clipboard.writeText(folderJobId.value)
       toast.add({
         severity: 'success',
         summary: t('mediaAsset.jobIdToast.copied'),

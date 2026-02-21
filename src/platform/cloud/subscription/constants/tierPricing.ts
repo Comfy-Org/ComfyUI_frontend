@@ -11,6 +11,13 @@ export const TIER_TO_KEY: Record<SubscriptionTier, TierKey> = {
   FOUNDERS_EDITION: 'founder'
 }
 
+export const KEY_TO_TIER: Record<TierKey, SubscriptionTier> = {
+  standard: 'STANDARD',
+  creator: 'CREATOR',
+  pro: 'PRO',
+  founder: 'FOUNDERS_EDITION'
+}
+
 export interface TierPricing {
   monthly: number
   yearly: number
@@ -19,20 +26,21 @@ export interface TierPricing {
 }
 
 export const TIER_PRICING: Record<Exclude<TierKey, 'founder'>, TierPricing> = {
-  standard: { monthly: 20, yearly: 16, credits: 4200, videoEstimate: 120 },
-  creator: { monthly: 35, yearly: 28, credits: 7400, videoEstimate: 211 },
-  pro: { monthly: 100, yearly: 80, credits: 21100, videoEstimate: 600 }
+  standard: { monthly: 20, yearly: 16, credits: 4200, videoEstimate: 380 },
+  creator: { monthly: 35, yearly: 28, credits: 7400, videoEstimate: 670 },
+  pro: { monthly: 100, yearly: 80, credits: 21100, videoEstimate: 1915 }
 }
 
 interface TierFeatures {
   customLoRAs: boolean
+  maxMembers: number
 }
 
 const TIER_FEATURES: Record<TierKey, TierFeatures> = {
-  standard: { customLoRAs: false },
-  creator: { customLoRAs: true },
-  pro: { customLoRAs: true },
-  founder: { customLoRAs: false }
+  standard: { customLoRAs: false, maxMembers: 1 },
+  creator: { customLoRAs: true, maxMembers: 5 },
+  pro: { customLoRAs: true, maxMembers: 20 },
+  founder: { customLoRAs: false, maxMembers: 1 }
 }
 
 export const DEFAULT_TIER_KEY: TierKey = 'standard'

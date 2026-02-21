@@ -109,7 +109,7 @@ jobs:
       # Run sharded tests with snapshot updates (browsers pre-installed in container)
       - name: Update snapshots (Shard ${{ matrix.shardIndex }}/${{ matrix.shardTotal }})
         id: playwright-tests
-        run: pnpm exec playwright test --update-snapshots --shard=${{ matrix.shardIndex }}/${{ matrix.shardTotal }}
+        run: pnpm exec playwright test --update-snapshots --grep @screenshot --shard=${{ matrix.shardIndex }}/${{ matrix.shardTotal }}
         continue-on-error: true
 
       - name: Stage changed snapshot files

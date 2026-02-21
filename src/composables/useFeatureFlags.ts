@@ -20,7 +20,8 @@ export enum ServerFeatureFlag {
   ONBOARDING_SURVEY_ENABLED = 'onboarding_survey_enabled',
   LINEAR_TOGGLE_ENABLED = 'linear_toggle_enabled',
   TEAM_WORKSPACES_ENABLED = 'team_workspaces_enabled',
-  USER_SECRETS_ENABLED = 'user_secrets_enabled'
+  USER_SECRETS_ENABLED = 'user_secrets_enabled',
+  NODE_REPLACEMENTS = 'node_replacements'
 }
 
 /**
@@ -61,7 +62,7 @@ export function useFeatureFlags() {
     get onboardingSurveyEnabled() {
       return (
         remoteConfig.value.onboarding_survey_enabled ??
-        api.getServerFeature(ServerFeatureFlag.ONBOARDING_SURVEY_ENABLED, true)
+        api.getServerFeature(ServerFeatureFlag.ONBOARDING_SURVEY_ENABLED, false)
       )
     },
     get linearToggleEnabled() {
@@ -96,6 +97,9 @@ export function useFeatureFlags() {
         remoteConfig.value.user_secrets_enabled ??
         api.getServerFeature(ServerFeatureFlag.USER_SECRETS_ENABLED, false)
       )
+    },
+    get nodeReplacementsEnabled() {
+      return api.getServerFeature(ServerFeatureFlag.NODE_REPLACEMENTS, false)
     }
   })
 

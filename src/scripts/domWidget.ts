@@ -153,7 +153,7 @@ abstract class BaseDOMWidgetImpl<V extends object | string>
   }
 
   isVisible(): boolean {
-    return !['hidden'].includes(this.type) && this.node.isWidgetVisible(this)
+    return !this.hidden && this.node.isWidgetVisible(this)
   }
 
   override draw(

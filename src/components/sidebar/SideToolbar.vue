@@ -58,6 +58,7 @@
 import { useResizeObserver } from '@vueuse/core'
 import { debounce } from 'es-toolkit/compat'
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import HelpCenterPopups from '@/components/helpcenter/HelpCenterPopups.vue'
 import ComfyMenuButton from '@/components/sidebar/ComfyMenuButton.vue'
@@ -83,6 +84,7 @@ import SidebarIcon from './SidebarIcon.vue'
 import SidebarLogoutIcon from './SidebarLogoutIcon.vue'
 import SidebarTemplatesButton from './SidebarTemplatesButton.vue'
 
+const { t } = useI18n()
 const workspaceStore = useWorkspaceStore()
 const settingStore = useSettingStore()
 const userStore = useUserStore()
@@ -151,10 +153,10 @@ const onTabClick = async (item: SidebarTabExtension) => {
 
 const keybindingStore = useKeybindingStore()
 const getTabTooltipSuffix = (tab: SidebarTabExtension) => {
-  const keybinding = keybindingStore.getKeybindingByCommandId(
-    `Workspace.ToggleSidebarTab.${tab.id}`
-  )
-  return keybinding ? ` (${keybinding.combo.toString()})` : ''
+  const shortcut = keybindingStore
+    .getKeybindingByCommandId(`Workspace.ToggleSidebarTab.${tab.id}`)
+    ?.combo.toString()
+  return shortcut ? t('g.shortcutSuffix', { shortcut }) : ''
 }
 
 const isOverflowing = ref(false)

@@ -48,6 +48,11 @@ export type SharedIntersection<T1, T2> = {
 
 export type CanvasColour = string | CanvasGradient | CanvasPattern
 
+export interface ColorStop {
+  readonly offset: number
+  readonly color: readonly [r: number, g: number, b: number]
+}
+
 /**
  * Any object that has a {@link boundingRect}.
  */
@@ -332,6 +337,8 @@ export interface INodeFlags {
   collapsed?: boolean
   /** Configuration setting for {@link LGraphNode.connectInputToOutput} */
   keepAllLinksOnBypass?: boolean
+  /** Node is in ghost placement mode (semi-transparent, following cursor) */
+  ghost?: boolean
 }
 
 /**

@@ -44,6 +44,9 @@
   "Comfy_BrowseTemplates": {
     "label": "瀏覽範本"
   },
+  "Comfy_Canvas_CopySelected": {
+    "label": "複製"
+  },
   "Comfy_Canvas_DeleteSelectedItems": {
     "label": "刪除選取項目"
   },
@@ -65,11 +68,17 @@
   "Comfy_Canvas_MoveSelectedNodes_Up": {
     "label": "上移選取的節點"
   },
+  "Comfy_Canvas_PasteFromClipboard": {
+    "label": "貼上"
+  },
   "Comfy_Canvas_ResetView": {
     "label": "重設視圖"
   },
   "Comfy_Canvas_Resize": {
     "label": "調整所選節點大小"
+  },
+  "Comfy_Canvas_SelectAll": {
+    "label": "全選"
   },
   "Comfy_Canvas_ToggleLinkVisibility": {
     "label": "畫布切換連結可見性"
@@ -265,6 +274,12 @@
   },
   "Comfy_ShowSettingsDialog": {
     "label": "顯示設定對話框"
+  },
+  "Comfy_Subgraph_SetDescription": {
+    "label": "設定子圖描述"
+  },
+  "Comfy_Subgraph_SetSearchAliases": {
+    "label": "設定子圖搜尋別名"
   },
   "Comfy_ToggleAssetAPI": {
     "label": "實驗性：啟用 AssetAPI"

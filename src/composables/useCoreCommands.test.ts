@@ -23,7 +23,13 @@ vi.mock('vue-i18n', async () => {
 
 vi.mock('@/scripts/app', () => {
   const mockGraphClear = vi.fn()
-  const mockCanvas = { subgraph: undefined }
+  const mockCanvas = {
+    subgraph: undefined,
+    selectedItems: new Set(),
+    copyToClipboard: vi.fn(),
+    pasteFromClipboard: vi.fn(),
+    selectItems: vi.fn()
+  }
 
   return {
     app: {
@@ -68,8 +74,11 @@ vi.mock('@/platform/workflow/core/services/workflowService', () => ({
   useWorkflowService: vi.fn(() => ({}))
 }))
 
+const mockDialogService = vi.hoisted(() => ({
+  prompt: vi.fn()
+}))
 vi.mock('@/services/dialogService', () => ({
-  useDialogService: vi.fn(() => ({}))
+  useDialogService: vi.fn(() => mockDialogService)
 }))
 
 vi.mock('@/services/litegraphService', () => ({
@@ -84,12 +93,30 @@ vi.mock('@/stores/toastStore', () => ({
   useToastStore: vi.fn(() => ({}))
 }))
 
+const mockChangeTracker = vi.hoisted(() => ({
+  checkState: vi.fn()
+}))
+const mockWorkflowStore = vi.hoisted(() => ({
+  activeWorkflow: {
+    changeTracker: mockChangeTracker
+  }
+}))
 vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
-  useWorkflowStore: vi.fn(() => ({}))
+  useWorkflowStore: vi.fn(() => mockWorkflowStore)
 }))
 
 vi.mock('@/stores/subgraphStore', () => ({
   useSubgraphStore: vi.fn(() => ({}))
+}))
+
+vi.mock('@/renderer/core/canvas/canvasStore', () => ({
+  useCanvasStore: vi.fn(() => ({
+    getCanvas: () => app.canvas,
+    canvas: app.canvas
+  })),
+  useTitleEditorStore: vi.fn(() => ({
+    titleEditorTarget: null
+  }))
 }))
 
 vi.mock('@/stores/workspace/colorPaletteStore', () => ({
@@ -103,6 +130,13 @@ vi.mock('@/composables/auth/useFirebaseAuthActions', () => ({
 vi.mock('@/platform/cloud/subscription/composables/useSubscription', () => ({
   useSubscription: vi.fn(() => ({
     isActiveSubscription: vi.fn().mockReturnValue(true),
+    showSubscriptionDialog: vi.fn()
+  }))
+}))
+
+vi.mock('@/composables/billing/useBillingContext', () => ({
+  useBillingContext: vi.fn(() => ({
+    isActiveSubscription: { value: true },
     showSubscriptionDialog: vi.fn()
   }))
 }))
@@ -155,11 +189,12 @@ describe('useCoreCommands', () => {
       findNodeById: vi.fn(),
       getNodeById: vi.fn(),
       setDirtyCanvas: vi.fn(),
-      sendActionToCanvas: vi.fn()
+      sendActionToCanvas: vi.fn(),
+      extra: {} as Record<string, unknown>
     } as Partial<typeof app.canvas.subgraph> as typeof app.canvas.subgraph
   }
 
-  const mockSubgraph = createMockSubgraph()
+  const mockSubgraph = createMockSubgraph()!
 
   function createMockSettingStore(
     getReturnValue: boolean
@@ -169,6 +204,7 @@ describe('useCoreCommands', () => {
       addSetting: vi.fn(),
       load: vi.fn(),
       set: vi.fn(),
+      setMany: vi.fn(),
       exists: vi.fn(),
       getDefaultValue: vi.fn(),
       isReady: true,
@@ -268,6 +304,182 @@ describe('useCoreCommands', () => {
       expect(app.clean).not.toHaveBeenCalled()
       expect(app.rootGraph.clear).not.toHaveBeenCalled()
       expect(api.dispatchCustomEvent).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('Canvas clipboard commands', () => {
+    function findCommand(id: string) {
+      return useCoreCommands().find((cmd) => cmd.id === id)!
+    }
+
+    beforeEach(() => {
+      app.canvas.selectedItems = new Set()
+      vi.mocked(app.canvas.copyToClipboard).mockClear()
+      vi.mocked(app.canvas.pasteFromClipboard).mockClear()
+      vi.mocked(app.canvas.selectItems).mockClear()
+    })
+
+    it('should copy selected items when selection exists', async () => {
+      app.canvas.selectedItems = new Set([
+        {}
+      ]) as typeof app.canvas.selectedItems
+
+      await findCommand('Comfy.Canvas.CopySelected').function()
+
+      expect(app.canvas.copyToClipboard).toHaveBeenCalledWith()
+    })
+
+    it('should not copy when no items are selected', async () => {
+      await findCommand('Comfy.Canvas.CopySelected').function()
+
+      expect(app.canvas.copyToClipboard).not.toHaveBeenCalled()
+    })
+
+    it('should paste from clipboard', async () => {
+      await findCommand('Comfy.Canvas.PasteFromClipboard').function()
+
+      expect(app.canvas.pasteFromClipboard).toHaveBeenCalledWith()
+    })
+
+    it('should select all items', async () => {
+      await findCommand('Comfy.Canvas.SelectAll').function()
+
+      // No arguments means "select all items on canvas"
+      expect(app.canvas.selectItems).toHaveBeenCalledWith()
+    })
+  })
+
+  describe('Subgraph metadata commands', () => {
+    beforeEach(() => {
+      mockSubgraph.extra = {}
+      vi.clearAllMocks()
+    })
+
+    describe('SetDescription command', () => {
+      it('should do nothing when not in subgraph', async () => {
+        app.canvas.subgraph = undefined
+
+        const commands = useCoreCommands()
+        const setDescCommand = commands.find(
+          (cmd) => cmd.id === 'Comfy.Subgraph.SetDescription'
+        )!
+
+        await setDescCommand.function()
+
+        expect(mockDialogService.prompt).not.toHaveBeenCalled()
+      })
+
+      it('should set description on subgraph.extra', async () => {
+        app.canvas.subgraph = mockSubgraph
+        mockDialogService.prompt.mockResolvedValue('Test description')
+
+        const commands = useCoreCommands()
+        const setDescCommand = commands.find(
+          (cmd) => cmd.id === 'Comfy.Subgraph.SetDescription'
+        )!
+
+        await setDescCommand.function()
+
+        expect(mockDialogService.prompt).toHaveBeenCalled()
+        expect(mockSubgraph.extra.BlueprintDescription).toBe('Test description')
+        expect(mockChangeTracker.checkState).toHaveBeenCalled()
+      })
+
+      it('should not set description when user cancels', async () => {
+        app.canvas.subgraph = mockSubgraph
+        mockDialogService.prompt.mockResolvedValue(null)
+
+        const commands = useCoreCommands()
+        const setDescCommand = commands.find(
+          (cmd) => cmd.id === 'Comfy.Subgraph.SetDescription'
+        )!
+
+        await setDescCommand.function()
+
+        expect(mockSubgraph.extra.BlueprintDescription).toBeUndefined()
+        expect(mockChangeTracker.checkState).not.toHaveBeenCalled()
+      })
+    })
+
+    describe('SetSearchAliases command', () => {
+      it('should do nothing when not in subgraph', async () => {
+        app.canvas.subgraph = undefined
+
+        const commands = useCoreCommands()
+        const setAliasesCommand = commands.find(
+          (cmd) => cmd.id === 'Comfy.Subgraph.SetSearchAliases'
+        )!
+
+        await setAliasesCommand.function()
+
+        expect(mockDialogService.prompt).not.toHaveBeenCalled()
+      })
+
+      it('should set search aliases on subgraph.extra', async () => {
+        app.canvas.subgraph = mockSubgraph
+        mockDialogService.prompt.mockResolvedValue('alias1, alias2, alias3')
+
+        const commands = useCoreCommands()
+        const setAliasesCommand = commands.find(
+          (cmd) => cmd.id === 'Comfy.Subgraph.SetSearchAliases'
+        )!
+
+        await setAliasesCommand.function()
+
+        expect(mockDialogService.prompt).toHaveBeenCalled()
+        expect(mockSubgraph.extra.BlueprintSearchAliases).toEqual([
+          'alias1',
+          'alias2',
+          'alias3'
+        ])
+        expect(mockChangeTracker.checkState).toHaveBeenCalled()
+      })
+
+      it('should trim whitespace and filter empty strings', async () => {
+        app.canvas.subgraph = mockSubgraph
+        mockDialogService.prompt.mockResolvedValue('  alias1  ,  , alias2 ,  ')
+
+        const commands = useCoreCommands()
+        const setAliasesCommand = commands.find(
+          (cmd) => cmd.id === 'Comfy.Subgraph.SetSearchAliases'
+        )!
+
+        await setAliasesCommand.function()
+
+        expect(mockSubgraph.extra.BlueprintSearchAliases).toEqual([
+          'alias1',
+          'alias2'
+        ])
+      })
+
+      it('should set undefined when empty input', async () => {
+        app.canvas.subgraph = mockSubgraph
+        mockDialogService.prompt.mockResolvedValue('')
+
+        const commands = useCoreCommands()
+        const setAliasesCommand = commands.find(
+          (cmd) => cmd.id === 'Comfy.Subgraph.SetSearchAliases'
+        )!
+
+        await setAliasesCommand.function()
+
+        expect(mockSubgraph.extra.BlueprintSearchAliases).toBeUndefined()
+      })
+
+      it('should not set aliases when user cancels', async () => {
+        app.canvas.subgraph = mockSubgraph
+        mockDialogService.prompt.mockResolvedValue(null)
+
+        const commands = useCoreCommands()
+        const setAliasesCommand = commands.find(
+          (cmd) => cmd.id === 'Comfy.Subgraph.SetSearchAliases'
+        )!
+
+        await setAliasesCommand.function()
+
+        expect(mockSubgraph.extra.BlueprintSearchAliases).toBeUndefined()
+        expect(mockChangeTracker.checkState).not.toHaveBeenCalled()
+      })
     })
   })
 })

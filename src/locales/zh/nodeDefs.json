@@ -208,6 +208,47 @@
       }
     }
   },
+  "AudioEqualizer3Band": {
+    "display_name": "音频均衡器（三段）",
+    "inputs": {
+      "audio": {
+        "name": "音频"
+      },
+      "high_freq": {
+        "name": "高频截止",
+        "tooltip": "高频搁架的截止频率"
+      },
+      "high_gain_dB": {
+        "name": "高频增益（dB）",
+        "tooltip": "高频（高音）增益"
+      },
+      "low_freq": {
+        "name": "低频截止",
+        "tooltip": "低频搁架的截止频率"
+      },
+      "low_gain_dB": {
+        "name": "低频增益（dB）",
+        "tooltip": "低频（低音）增益"
+      },
+      "mid_freq": {
+        "name": "中频中心",
+        "tooltip": "中频的中心频率"
+      },
+      "mid_gain_dB": {
+        "name": "中频增益（dB）",
+        "tooltip": "中频增益"
+      },
+      "mid_q": {
+        "name": "中频Q值",
+        "tooltip": "中频的Q因子（带宽）"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "AudioMerge": {
     "description": "叠加 音频1 和 音频2 轨道的波形。",
     "display_name": "音频合并",
@@ -353,15 +394,6 @@
         "name": "moderation",
         "tooltip": "内容审核设置"
       },
-      "moderation_prompt_content_moderation": {
-        "name": "prompt_content_moderation"
-      },
-      "moderation_visual_input_moderation": {
-        "name": "visual_input_moderation"
-      },
-      "moderation_visual_output_moderation": {
-        "name": "visual_output_moderation"
-      },
       "negative_prompt": {
         "name": "negative_prompt"
       },
@@ -386,6 +418,56 @@
       },
       "1": {
         "name": "structured_prompt",
+        "tooltip": null
+      }
+    }
+  },
+  "BriaRemoveImageBackground": {
+    "description": "使用 Bria RMBG 2.0 移除图像的背景。",
+    "display_name": "Bria 移除图像背景",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "image": {
+        "name": "图像"
+      },
+      "moderation": {
+        "name": "内容审核",
+        "tooltip": "内容审核设置"
+      },
+      "seed": {
+        "name": "种子",
+        "tooltip": "种子控制节点是否重新运行；无论种子如何，结果都是非确定性的。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "BriaRemoveVideoBackground": {
+    "description": "使用 Bria 移除视频的背景。",
+    "display_name": "Bria 移除视频背景",
+    "inputs": {
+      "background_color": {
+        "name": "背景颜色",
+        "tooltip": "输出视频的背景颜色。"
+      },
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "seed": {
+        "name": "种子",
+        "tooltip": "种子控制节点是否重新运行；无论种子如何，结果都是非确定性的。"
+      },
+      "video": {
+        "name": "视频"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -2020,6 +2102,20 @@
       }
     }
   },
+  "CreateList": {
+    "display_name": "创建列表",
+    "inputs": {
+      "inputs": {
+        "name": "输入"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "列表",
+        "tooltip": null
+      }
+    }
+  },
   "CreateVideo": {
     "description": "从图像创建视频。",
     "display_name": "创建视频",
@@ -2076,13 +2172,15 @@
       "index": {},
       "option1": {}
     },
-    "outputs": [
-      null,
-      {
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
         "name": "索引",
         "tooltip": null
       }
-    ]
+    }
   },
   "DiffControlNetLoader": {
     "display_name": "加载ControlNet模型（diff）",
@@ -2204,6 +2302,321 @@
     "outputs": {
       "0": {
         "tooltip": "带有 EasyCache 的模型。"
+      }
+    }
+  },
+  "ElevenLabsAudioIsolation": {
+    "description": "去除音频中的背景噪音，仅保留人声或语音。",
+    "display_name": "ElevenLabs 语音隔离",
+    "inputs": {
+      "audio": {
+        "name": "音频",
+        "tooltip": "需要去除背景噪音的音频。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ElevenLabsInstantVoiceClone": {
+    "description": "通过音频样本创建克隆语音。请提供 1-8 段需要克隆的语音录音。",
+    "display_name": "ElevenLabs 即时语音克隆",
+    "inputs": {
+      "files": {
+        "name": "音频文件",
+        "tooltip": "用于语音克隆的录音。"
+      },
+      "remove_background_noise": {
+        "name": "去除背景噪音",
+        "tooltip": "使用音频隔离去除语音样本中的背景噪音。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "语音",
+        "tooltip": null
+      }
+    }
+  },
+  "ElevenLabsSpeechToSpeech": {
+    "description": "将一种声音的语音转换为另一种声音，同时保留原始内容和情感。",
+    "display_name": "ElevenLabs 语音转换",
+    "inputs": {
+      "audio": {
+        "name": "源音频",
+        "tooltip": "需要转换的源音频。"
+      },
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "model": {
+        "name": "模型",
+        "tooltip": "用于语音转换的模型。"
+      },
+      "model_similarity_boost": {
+        "name": "相似度增强"
+      },
+      "model_speed": {
+        "name": "速度"
+      },
+      "model_style": {
+        "name": "风格"
+      },
+      "model_use_speaker_boost": {
+        "name": "扬声器增强"
+      },
+      "output_format": {
+        "name": "输出格式",
+        "tooltip": "音频输出格式。"
+      },
+      "remove_background_noise": {
+        "name": "去除背景噪音",
+        "tooltip": "使用音频隔离去除输入音频中的背景噪音。"
+      },
+      "seed": {
+        "name": "随机种子",
+        "tooltip": "用于结果复现的随机种子。"
+      },
+      "stability": {
+        "name": "稳定性",
+        "tooltip": "语音稳定性。较低数值带来更广的情感范围，较高数值则更一致但可能较为单调。"
+      },
+      "voice": {
+        "name": "目标语音",
+        "tooltip": "转换的目标语音。可从语音选择器或即时语音克隆连接。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ElevenLabsSpeechToText": {
+    "description": "将音频转录为文本。支持自动语言检测、说话人分离和音频事件标记。",
+    "display_name": "ElevenLabs 语音转文本",
+    "inputs": {
+      "audio": {
+        "name": "音频",
+        "tooltip": "要转录的音频。"
+      },
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "language_code": {
+        "name": "语言代码",
+        "tooltip": "ISO-639-1 或 ISO-639-3 语言代码（如 'en'、'es'、'fra'）。留空以自动检测。"
+      },
+      "model": {
+        "name": "模型",
+        "tooltip": "用于转录的模型。"
+      },
+      "model_diarization_threshold": {
+        "name": "分离阈值"
+      },
+      "model_diarize": {
+        "name": "说话人分离"
+      },
+      "model_tag_audio_events": {
+        "name": "音频事件标记"
+      },
+      "model_temperature": {
+        "name": "温度"
+      },
+      "model_timestamps_granularity": {
+        "name": "时间戳粒度"
+      },
+      "num_speakers": {
+        "name": "说话人数",
+        "tooltip": "要预测的最大说话人数。设置为 0 以自动检测。"
+      },
+      "seed": {
+        "name": "种子",
+        "tooltip": "用于结果复现的种子（不保证确定性）。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "文本",
+        "tooltip": null
+      },
+      "1": {
+        "name": "语言代码",
+        "tooltip": null
+      },
+      "2": {
+        "name": "单词 JSON",
+        "tooltip": null
+      }
+    }
+  },
+  "ElevenLabsTextToDialogue": {
+    "description": "从文本生成多说话人对话。每条对话都有独立的文本和声音。",
+    "display_name": "ElevenLabs 文本转对话",
+    "inputs": {
+      "apply_text_normalization": {
+        "name": "应用文本规范化",
+        "tooltip": "文本规范化模式。'auto' 由系统决定，'on' 总是应用规范化，'off' 跳过规范化。"
+      },
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "inputs": {
+        "name": "对话条数",
+        "tooltip": "对话条目的数量。"
+      },
+      "inputs_text1": {
+        "name": "文本1"
+      },
+      "language_code": {
+        "name": "语言代码",
+        "tooltip": "ISO-639-1 或 ISO-639-3 语言代码（如 'en'、'es'、'fra'）。留空以自动检测。"
+      },
+      "model": {
+        "name": "模型",
+        "tooltip": "用于对话生成的模型。"
+      },
+      "output_format": {
+        "name": "输出格式",
+        "tooltip": "音频输出格式。"
+      },
+      "seed": {
+        "name": "种子",
+        "tooltip": "用于结果复现的种子。"
+      },
+      "stability": {
+        "name": "稳定性",
+        "tooltip": "语音稳定性。值越低情感范围越广，值越高语音更一致但可能更单调。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ElevenLabsTextToSoundEffects": {
+    "description": "根据文本描述生成音效。",
+    "display_name": "ElevenLabs 文本转音效",
+    "inputs": {
+      "model": {
+        "name": "模型",
+        "tooltip": "用于音效生成的模型。"
+      },
+      "model_duration": {
+        "name": "时长"
+      },
+      "model_loop": {
+        "name": "循环"
+      },
+      "model_prompt_influence": {
+        "name": "提示影响"
+      },
+      "output_format": {
+        "name": "输出格式",
+        "tooltip": "音频输出格式。"
+      },
+      "text": {
+        "name": "文本",
+        "tooltip": "要生成的音效的文本描述。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ElevenLabsTextToSpeech": {
+    "description": "将文字转换为语音。",
+    "display_name": "ElevenLabs 文字转语音",
+    "inputs": {
+      "apply_text_normalization": {
+        "name": "apply_text_normalization",
+        "tooltip": "文本规范化模式。'auto' 由系统决定，'on' 总是应用规范化，'off' 跳过规范化。"
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "language_code": {
+        "name": "language_code",
+        "tooltip": "ISO-639-1 或 ISO-639-3 语言代码（如 'en'、'es'、'fra'）。留空则自动检测。"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "用于文字转语音的模型。"
+      },
+      "model_similarity_boost": {
+        "name": "similarity_boost"
+      },
+      "model_speed": {
+        "name": "speed"
+      },
+      "model_style": {
+        "name": "style"
+      },
+      "model_use_speaker_boost": {
+        "name": "use_speaker_boost"
+      },
+      "output_format": {
+        "name": "output_format",
+        "tooltip": "音频输出格式。"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "用于结果可复现的种子（不保证完全确定性）。"
+      },
+      "stability": {
+        "name": "stability",
+        "tooltip": "语音稳定性。较低的数值带来更广泛的情感变化，较高的数值则语音更一致但可能单调。"
+      },
+      "text": {
+        "name": "text",
+        "tooltip": "要转换为语音的文本。"
+      },
+      "voice": {
+        "name": "voice",
+        "tooltip": "用于语音合成的声音。从 Voice Selector 或 Instant Voice Clone 连接。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ElevenLabsVoiceSelector": {
+    "description": "为文字转语音生成选择预设的 ElevenLabs 声音。",
+    "display_name": "ElevenLabs 声音选择器",
+    "inputs": {
+      "voice": {
+        "name": "voice",
+        "tooltip": "从预设的 ElevenLabs 声音中选择一个声音。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "voice",
+        "tooltip": null
+      }
+    }
+  },
+  "EmptyAceStep1_5LatentAudio": {
+    "display_name": "Empty Ace Step 1.5 潜空间音频",
+    "inputs": {
+      "batch_size": {
+        "name": "批量大小",
+        "tooltip": "批次中的潜空间图像数量。"
+      },
+      "seconds": {
+        "name": "秒数"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -3125,6 +3538,50 @@
       }
     }
   },
+  "GLSLShader": {
+    "description": "对图像应用 GLSL ES 片段着色器。u_resolution（vec2）始终可用。",
+    "display_name": "GLSL 着色器",
+    "inputs": {
+      "floats": {
+        "name": "floats",
+        "tooltip": "浮点数在着色器代码中以 u_float0-4 形式可用"
+      },
+      "fragment_shader": {
+        "name": "fragment_shader",
+        "tooltip": "GLSL 片段着色器源码（兼容 GLSL ES 3.00 / WebGL 2.0）"
+      },
+      "images": {
+        "name": "images",
+        "tooltip": "图像在着色器代码中以 u_image0-4（sampler2D）形式可用"
+      },
+      "ints": {
+        "name": "ints",
+        "tooltip": "整数在着色器代码中以 u_int0-4 形式可用"
+      },
+      "size_mode": {
+        "name": "size_mode",
+        "tooltip": "输出尺寸：'from_input' 使用第一个输入图像尺寸，'custom' 允许手动设置尺寸"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "IMAGE0",
+        "tooltip": "在着色器代码中通过 layout(location = 0) out vec4 fragColor0 可用"
+      },
+      "1": {
+        "name": "IMAGE1",
+        "tooltip": "在着色器代码中通过 layout(location = 1) out vec4 fragColor1 可用"
+      },
+      "2": {
+        "name": "IMAGE2",
+        "tooltip": "在着色器代码中通过 layout(location = 2) out vec4 fragColor2 可用"
+      },
+      "3": {
+        "name": "IMAGE3",
+        "tooltip": "在着色器代码中通过 layout(location = 3) out vec4 fragColor3 可用"
+      }
+    }
+  },
   "GeminiImage2Node": {
     "description": "通过Google API编辑图像。",
     "display_name": "Nano Banana Pro（Google Gemini 图像）",
@@ -3551,6 +4008,50 @@
       },
       "tapered_corners": {
         "name": "倒角"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HitPawGeneralImageEnhance": {
+    "description": "将低分辨率图像放大至超分辨率，消除伪影和噪点。最大输出：3200万像素。",
+    "display_name": "HitPaw 通用图像增强",
+    "inputs": {
+      "auto_downscale": {
+        "name": "自动缩小",
+        "tooltip": "如果输出超出限制，自动缩小输入图像。"
+      },
+      "image": {
+        "name": "图像"
+      },
+      "model": {
+        "name": "模型"
+      },
+      "upscale_factor": {
+        "name": "放大倍数"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HitPawVideoEnhance": {
+    "description": "将低分辨率视频放大至高分辨率，消除伪影和噪点。价格按视频每秒计费。",
+    "display_name": "HitPaw 视频增强",
+    "inputs": {
+      "model": {
+        "name": "模型"
+      },
+      "model_resolution": {
+        "name": "分辨率"
+      },
+      "video": {
+        "name": "视频"
       }
     },
     "outputs": {
@@ -4128,6 +4629,26 @@
       "y": {
         "name": "y"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ImageCropV2": {
+    "display_name": "图像裁剪",
+    "inputs": {
+      "crop_region": {
+        "name": "裁剪区域"
+      },
+      "height": {},
+      "image": {
+        "name": "图像"
+      },
+      "width": {},
+      "x": {},
+      "y": {}
     },
     "outputs": {
       "0": {
@@ -4958,6 +5479,46 @@
       }
     }
   },
+  "KlingFirstLastFrameNode": {
+    "description": "使用 Kling V3 通过首帧和末帧生成视频。",
+    "display_name": "Kling 3.0 首帧-末帧生成视频",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "duration": {
+        "name": "时长"
+      },
+      "end_frame": {
+        "name": "末帧"
+      },
+      "first_frame": {
+        "name": "首帧"
+      },
+      "generate_audio": {
+        "name": "生成音频"
+      },
+      "model": {
+        "name": "模型",
+        "tooltip": "模型与生成设置。"
+      },
+      "model_resolution": {
+        "name": "分辨率"
+      },
+      "prompt": {
+        "name": "提示词"
+      },
+      "seed": {
+        "name": "种子",
+        "tooltip": "种子控制节点是否重新运行；无论种子如何，结果都是非确定性的。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "KlingImage2VideoNode": {
     "display_name": "Kling 图像转视频",
     "inputs": {
@@ -5010,6 +5571,9 @@
       "aspect_ratio": {
         "name": "宽高比"
       },
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
       "human_fidelity": {
         "name": "主体参考强度",
         "tooltip": "主体参考相似度"
@@ -5038,6 +5602,10 @@
       "prompt": {
         "name": "提示词",
         "tooltip": "正向文本提示"
+      },
+      "seed": {
+        "name": "种子",
+        "tooltip": "种子控制节点是否重新运行；无论种子如何，结果都是非确定性的。"
       }
     },
     "outputs": {
@@ -5170,6 +5738,9 @@
     "description": "使用 Kling 最新模型编辑视频。",
     "display_name": "Kling Omni 编辑视频 (Pro)",
     "inputs": {
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
       "keep_original_sound": {
         "name": "保留原音频"
       },
@@ -5187,6 +5758,10 @@
       "resolution": {
         "name": "分辨率"
       },
+      "seed": {
+        "name": "种子",
+        "tooltip": "种子控制节点是否重新运行；无论种子如何，结果都是非确定性的。"
+      },
       "video": {
         "name": "视频",
         "tooltip": "需要编辑的视频，输出视频的时长和输入视频相同。"
@@ -5202,6 +5777,9 @@
     "description": "使用 Kling 最新模型和起始帧、可选的结束帧或参考图像。",
     "display_name": "Kling Omni 首尾帧到视频 (Pro)",
     "inputs": {
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
       "duration": {
         "name": "时长"
       },
@@ -5211,6 +5789,10 @@
       },
       "first_frame": {
         "name": "起始帧"
+      },
+      "generate_audio": {
+        "name": "生成音频",
+        "tooltip": "为视频生成音频。仅支持 kling-v3-omni。"
       },
       "model_name": {
         "name": "模型"
@@ -5225,6 +5807,14 @@
       },
       "resolution": {
         "name": "分辨率"
+      },
+      "seed": {
+        "name": "种子",
+        "tooltip": "种子控制节点是否重新运行；无论种子如何，结果都是非确定性的。"
+      },
+      "storyboards": {
+        "name": "分镜",
+        "tooltip": "生成一系列带有独立提示词和时长的视频片段。仅支持 kling-v3-omni。"
       }
     },
     "outputs": {
@@ -5240,6 +5830,9 @@
       "aspect_ratio": {
         "name": "宽高比"
       },
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
       "model_name": {
         "name": "模型"
       },
@@ -5253,6 +5846,14 @@
       },
       "resolution": {
         "name": "分辨率"
+      },
+      "seed": {
+        "name": "种子",
+        "tooltip": "种子控制节点是否重新运行；无论种子如何，结果都是非确定性的。"
+      },
+      "series_amount": {
+        "name": "系列数量",
+        "tooltip": "生成一系列图像。不支持 kling-image-o1。"
       }
     },
     "outputs": {
@@ -5268,8 +5869,15 @@
       "aspect_ratio": {
         "name": "宽高比"
       },
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
       "duration": {
         "name": "时长"
+      },
+      "generate_audio": {
+        "name": "生成音频",
+        "tooltip": "为视频生成音频。仅支持 kling-v3-omni。"
       },
       "model_name": {
         "name": "模型"
@@ -5284,6 +5892,14 @@
       },
       "resolution": {
         "name": "分辨率"
+      },
+      "seed": {
+        "name": "种子",
+        "tooltip": "种子控制节点是否重新运行；无论种子如何，结果都是非确定性的。"
+      },
+      "storyboards": {
+        "name": "分镜",
+        "tooltip": "生成一系列带有独立提示词和时长的视频片段。仅支持 kling-v3-omni。"
       }
     },
     "outputs": {
@@ -5299,8 +5915,14 @@
       "aspect_ratio": {
         "name": "宽高比"
       },
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
       "duration": {
         "name": "时长"
+      },
+      "generate_audio": {
+        "name": "生成音频"
       },
       "model_name": {
         "name": "模型"
@@ -5311,6 +5933,14 @@
       },
       "resolution": {
         "name": "分辨率"
+      },
+      "seed": {
+        "name": "种子",
+        "tooltip": "种子控制节点是否重新运行；无论种子如何，结果都是非确定性的。"
+      },
+      "storyboards": {
+        "name": "分镜",
+        "tooltip": "生成一系列带有独立提示词和时长的视频片段。o1 模型将忽略此项。"
       }
     },
     "outputs": {
@@ -5325,6 +5955,9 @@
     "inputs": {
       "aspect_ratio": {
         "name": "宽高比"
+      },
+      "control_after_generate": {
+        "name": "生成后控制"
       },
       "duration": {
         "name": "时长"
@@ -5349,6 +5982,10 @@
       },
       "resolution": {
         "name": "分辨率"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed 控制节点是否重新运行；无论 seed 如何，结果都是非确定性的。"
       }
     },
     "outputs": {
@@ -5530,6 +6167,54 @@
       },
       "2": {
         "name": "时长",
+        "tooltip": null
+      }
+    }
+  },
+  "KlingVideoNode": {
+    "description": "使用 Kling V3 生成视频。支持文生视频和图生视频，可选分镜多提示词和音频生成。",
+    "display_name": "Kling 3.0 视频",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "generate_audio": {
+        "name": "生成音频"
+      },
+      "model": {
+        "name": "模型",
+        "tooltip": "模型和生成设置。"
+      },
+      "model_aspect_ratio": {
+        "name": "宽高比"
+      },
+      "model_resolution": {
+        "name": "分辨率"
+      },
+      "multi_shot": {
+        "name": "多镜头",
+        "tooltip": "使用单独的提示词和时长生成一系列视频片段。"
+      },
+      "multi_shot_duration": {
+        "name": "时长"
+      },
+      "multi_shot_negative_prompt": {
+        "name": "反向提示词"
+      },
+      "multi_shot_prompt": {
+        "name": "提示词"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed 控制节点是否重新运行；无论 seed 如何，结果都是非确定性的。"
+      },
+      "start_frame": {
+        "name": "起始帧",
+        "tooltip": "可选的起始帧图像。连接后切换为图生视频模式。"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -6366,7 +7051,7 @@
   "Load3D": {
     "display_name": "加载3D",
     "inputs": {
-      "clear": {},
+      "clear": "清除",
       "height": {
         "name": "高度"
       },
@@ -6376,8 +7061,8 @@
       "model_file": {
         "name": "模型文件"
       },
-      "upload 3d model": {},
-      "upload extra resources": {},
+      "upload 3d model": "上传3D模型",
+      "upload extra resources": "上传额外资源",
       "width": {
         "name": "宽度"
       }
@@ -6388,7 +7073,7 @@
         "tooltip": null
       },
       "1": {
-        "name": "遮罩",
+        "name": "mask",
         "tooltip": null
       },
       "2": {
@@ -6396,15 +7081,19 @@
         "tooltip": null
       },
       "3": {
-        "name": "法向",
+        "name": "法线",
         "tooltip": null
       },
       "4": {
-        "name": "线条",
+        "name": "相机信息",
         "tooltip": null
       },
       "5": {
-        "name": "相机信息",
+        "name": "录制视频",
+        "tooltip": null
+      },
+      "6": {
+        "name": "model_3d",
         "tooltip": null
       }
     }
@@ -6655,6 +7344,10 @@
   "LoraModelLoader": {
     "display_name": "加载 LoRA 模型",
     "inputs": {
+      "bypass": {
+        "name": "bypass",
+        "tooltip": "启用后，以旁路模式应用LoRA，不修改基础模型权重。适用于训练和模型权重卸载时。"
+      },
       "lora": {
         "name": "lora",
         "tooltip": "要应用于扩散模型的 LoRA 模型。"
@@ -7120,6 +7813,88 @@
       }
     }
   },
+  "MagnificImageUpscalerCreativeNode": {
+    "description": "基于提示词的增强、风格化，以及 2x/4x/8x/16x 放大。最大输出：25.3 百万像素。",
+    "display_name": "Magnific 图像放大（创意）",
+    "inputs": {
+      "auto_downscale": {
+        "name": "自动降采样",
+        "tooltip": "如果输出超过最大像素限制，则自动缩小输入图像。"
+      },
+      "creativity": {
+        "name": "创意"
+      },
+      "engine": {
+        "name": "引擎"
+      },
+      "fractality": {
+        "name": "复杂度",
+        "tooltip": "每平方像素的提示词强度和复杂度。"
+      },
+      "hdr": {
+        "name": "HDR",
+        "tooltip": "清晰度和细节级别。"
+      },
+      "image": {
+        "name": "图像"
+      },
+      "optimized_for": {
+        "name": "优化目标"
+      },
+      "prompt": {
+        "name": "提示词"
+      },
+      "resemblance": {
+        "name": "相似度",
+        "tooltip": "与原始图像的相似程度。"
+      },
+      "scale_factor": {
+        "name": "放大倍数"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MagnificImageUpscalerPreciseV2Node": {
+    "description": "高保真放大，精细控制锐度、颗粒感和细节。最大输出：10060×10060 像素。",
+    "display_name": "Magnific 图像放大（精确 V2）",
+    "inputs": {
+      "auto_downscale": {
+        "name": "自动降采样",
+        "tooltip": "如果输出超过最大分辨率，则自动缩小输入图像。"
+      },
+      "flavor": {
+        "name": "风格",
+        "tooltip": "处理风格：sublime 适用于通用，photo 适用于照片，photo_denoiser 适用于有噪点的照片。"
+      },
+      "image": {
+        "name": "图像"
+      },
+      "scale_factor": {
+        "name": "放大倍数"
+      },
+      "sharpen": {
+        "name": "锐化",
+        "tooltip": "图像锐度强度。数值越高，边缘越清晰。"
+      },
+      "smart_grain": {
+        "name": "智能颗粒",
+        "tooltip": "智能增强颗粒/纹理，防止图像过于平滑或失真。"
+      },
+      "ultra_detail": {
+        "name": "超细节",
+        "tooltip": "控制放大过程中添加的细节、纹理和微观细节。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "Mahiro": {
     "description": "修改引导以更多地侧重于正面条件提示的'方向'，而不是负面条件提示之间的差异。",
     "display_name": "真寻太可爱了，她应该有个更好的引导功能！！(。・ω・。)",
@@ -7270,7 +8045,15 @@
     },
     "outputs": {
       "0": {
-        "name": "model_file",
+        "name": "模型文件",
+        "tooltip": null
+      },
+      "1": {
+        "name": "GLB",
+        "tooltip": null
+      },
+      "2": {
+        "name": "FBX",
         "tooltip": null
       }
     }
@@ -7321,11 +8104,19 @@
     },
     "outputs": {
       "0": {
-        "name": "model_file",
+        "name": "模型文件",
         "tooltip": null
       },
       "1": {
         "name": "meshy_task_id",
+        "tooltip": null
+      },
+      "2": {
+        "name": "GLB",
+        "tooltip": null
+      },
+      "3": {
+        "name": "FBX",
         "tooltip": null
       }
     }
@@ -7376,11 +8167,19 @@
     },
     "outputs": {
       "0": {
-        "name": "model_file",
+        "name": "模型文件",
         "tooltip": null
       },
       "1": {
         "name": "meshy_task_id",
+        "tooltip": null
+      },
+      "2": {
+        "name": "GLB",
+        "tooltip": null
+      },
+      "3": {
+        "name": "FBX",
         "tooltip": null
       }
     }
@@ -7410,11 +8209,19 @@
     },
     "outputs": {
       "0": {
-        "name": "model_file",
+        "name": "模型文件",
         "tooltip": null
       },
       "1": {
         "name": "meshy_task_id",
+        "tooltip": null
+      },
+      "2": {
+        "name": "GLB",
+        "tooltip": null
+      },
+      "3": {
+        "name": "FBX",
         "tooltip": null
       }
     }
@@ -7437,11 +8244,19 @@
     },
     "outputs": {
       "0": {
-        "name": "model_file",
+        "name": "模型文件",
         "tooltip": null
       },
       "1": {
         "name": "rig_task_id",
+        "tooltip": null
+      },
+      "2": {
+        "name": "GLB",
+        "tooltip": null
+      },
+      "3": {
+        "name": "FBX",
         "tooltip": null
       }
     }
@@ -7485,11 +8300,19 @@
     },
     "outputs": {
       "0": {
-        "name": "model_file",
+        "name": "模型文件",
         "tooltip": null
       },
       "1": {
         "name": "meshy_task_id",
+        "tooltip": null
+      },
+      "2": {
+        "name": "GLB",
+        "tooltip": null
+      },
+      "3": {
+        "name": "FBX",
         "tooltip": null
       }
     }
@@ -7526,6 +8349,14 @@
       },
       "1": {
         "name": "meshy_task_id",
+        "tooltip": null
+      },
+      "2": {
+        "name": "GLB",
+        "tooltip": null
+      },
+      "3": {
+        "name": "FBX",
         "tooltip": null
       }
     }
@@ -9971,6 +10802,32 @@
       }
     }
   },
+  "NAGuidance": {
+    "description": "对模型应用归一化注意力引导，使蒸馏/快速模型支持负向提示。",
+    "display_name": "归一化注意力引导",
+    "inputs": {
+      "model": {
+        "name": "model",
+        "tooltip": "要应用NAG的模型。"
+      },
+      "nag_alpha": {
+        "name": "nag_alpha",
+        "tooltip": "归一化注意力的混合因子。1.0为完全替换，0.0为无效果。"
+      },
+      "nag_scale": {
+        "name": "nag_scale",
+        "tooltip": "引导缩放因子。数值越大，越远离负向提示。"
+      },
+      "nag_tau": {
+        "name": "nag_tau"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "已启用NAG的修补模型。"
+      }
+    }
+  },
   "NormalizeImages": {
     "display_name": "规格化图像",
     "inputs": {
@@ -10729,15 +11586,21 @@
         "name": "图像"
       },
       "model_file": {
-        "name": "模型文件"
+        "name": "模型文件",
+        "tooltip": "3D模型文件或路径字符串"
       }
     }
   },
   "PreviewAny": {
     "display_name": "预览任意",
     "inputs": {
-      "preview": {},
       "previewMode": {},
+      "preview_markdown": {
+        "name": "预览"
+      },
+      "preview_text": {
+        "name": "预览"
+      },
       "source": {
         "name": "源"
       }
@@ -10768,6 +11631,28 @@
     "inputs": {
       "value": {
         "name": "值"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PrimitiveBoundingBox": {
+    "display_name": "边界框",
+    "inputs": {
+      "height": {
+        "name": "高度"
+      },
+      "width": {
+        "name": "宽度"
+      },
+      "x": {
+        "name": "x"
+      },
+      "y": {
+        "name": "y"
       }
     },
     "outputs": {
@@ -11339,6 +12224,88 @@
       }
     }
   },
+  "RecraftV4TextToImageNode": {
+    "description": "使用Recraft V4或V4 Pro模型生成图像。",
+    "display_name": "Recraft V4 文本转图像",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "用于生成的模型。"
+      },
+      "model_size": {
+        "name": "size"
+      },
+      "n": {
+        "name": "n",
+        "tooltip": "要生成的图像数量。"
+      },
+      "negative_prompt": {
+        "name": "negative_prompt",
+        "tooltip": "可选的图像中不希望出现元素的文本描述。"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "用于图像生成的提示词。最多10,000个字符。"
+      },
+      "recraft_controls": {
+        "name": "recraft_controls",
+        "tooltip": "通过Recraft Controls节点对生成过程的可选附加控制。"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "用于决定节点是否重新运行的种子；无论种子如何，实际结果都是非确定性的。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "RecraftV4TextToVectorNode": {
+    "description": "使用Recraft V4或V4 Pro模型生成SVG。",
+    "display_name": "Recraft V4 文本转矢量",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "用于生成的模型。"
+      },
+      "model_size": {
+        "name": "size"
+      },
+      "n": {
+        "name": "n",
+        "tooltip": "要生成的图像数量。"
+      },
+      "negative_prompt": {
+        "name": "negative_prompt",
+        "tooltip": "可选的图像中不希望出现元素的文本描述。"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "用于图像生成的提示词。最多10,000个字符。"
+      },
+      "recraft_controls": {
+        "name": "recraft_controls",
+        "tooltip": "通过Recraft Controls节点对生成过程的可选附加控制。"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "用于决定节点是否重新运行的种子；无论种子如何，实际结果都是非确定性的。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "RecraftVectorizeImageNode": {
     "description": "从输入图像同步生成 SVG。",
     "display_name": "Recraft 矢量化图像",
@@ -11362,6 +12329,23 @@
       },
       "latent": {
         "name": "Latent"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ReferenceTimbreAudio": {
+    "description": "此节点设置音色参考音频（用于 ace step 1.5）",
+    "display_name": "ReferenceTimbreAudio",
+    "inputs": {
+      "conditioning": {
+        "name": "条件"
+      },
+      "latent": {
+        "name": "潜空间"
       }
     },
     "outputs": {
@@ -11702,6 +12686,10 @@
       "0": {
         "name": "3D模型路径",
         "tooltip": null
+      },
+      "1": {
+        "name": "GLB",
+        "tooltip": null
       }
     }
   },
@@ -11729,6 +12717,10 @@
       "0": {
         "name": "3D模型路径",
         "tooltip": null
+      },
+      "1": {
+        "name": "GLB",
+        "tooltip": null
       }
     }
   },
@@ -11753,6 +12745,10 @@
       "0": {
         "name": "3D模型路径",
         "tooltip": null
+      },
+      "1": {
+        "name": "GLB",
+        "tooltip": null
       }
     }
   },
@@ -11770,6 +12766,10 @@
     "outputs": {
       "0": {
         "name": "3D模型路径",
+        "tooltip": null
+      },
+      "1": {
+        "name": "GLB",
         "tooltip": null
       }
     }
@@ -11794,6 +12794,10 @@
     "outputs": {
       "0": {
         "name": "3D模型路径",
+        "tooltip": null
+      },
+      "1": {
+        "name": "GLB",
         "tooltip": null
       }
     }
@@ -12532,7 +13536,8 @@
         "name": "图像"
       },
       "mesh": {
-        "name": "网格"
+        "name": "网格",
+        "tooltip": "要保存的网格或GLB文件"
       }
     }
   },
@@ -13755,6 +14760,29 @@
       }
     }
   },
+  "Tencent3DPartNode": {
+    "description": "根据模型结构自动进行组件识别与生成。",
+    "display_name": "Hunyuan3D：3D部件",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "model_3d": {
+        "name": "model_3d",
+        "tooltip": "FBX格式的3D模型。模型面数应少于30000。"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed用于控制节点是否重新运行；无论seed如何，结果都是非确定性的。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "FBX",
+        "tooltip": null
+      }
+    }
+  },
   "TencentImageToModelNode": {
     "display_name": "Hunyuan3D：图像转模型（专业版）",
     "inputs": {
@@ -13795,6 +14823,14 @@
       "0": {
         "name": "模型文件",
         "tooltip": null
+      },
+      "1": {
+        "name": "GLB",
+        "tooltip": null
+      },
+      "2": {
+        "name": "OBJ",
+        "tooltip": null
       }
     }
   },
@@ -13830,6 +14866,14 @@
       "0": {
         "name": "模型文件",
         "tooltip": null
+      },
+      "1": {
+        "name": "GLB",
+        "tooltip": null
+      },
+      "2": {
+        "name": "OBJ",
+        "tooltip": null
       }
     }
   },
@@ -13847,6 +14891,65 @@
       },
       "tags": {
         "name": "标签"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "TextEncodeAceStepAudio1_5": {
+    "display_name": "TextEncodeAceStepAudio1.5",
+    "inputs": {
+      "bpm": {
+        "name": "每分钟节拍数"
+      },
+      "cfg_scale": {
+        "name": "cfg_scale"
+      },
+      "clip": {
+        "name": "clip"
+      },
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "duration": {
+        "name": "时长"
+      },
+      "generate_audio_codes": {
+        "name": "生成音频代码",
+        "tooltip": "启用生成音频代码的LLM。这可能较慢，但会提升生成音频的质量。如果你为模型提供了音频参考，请关闭此选项。"
+      },
+      "keyscale": {
+        "name": "调式"
+      },
+      "language": {
+        "name": "语言"
+      },
+      "lyrics": {
+        "name": "歌词"
+      },
+      "min_p": {
+        "name": "最小 p"
+      },
+      "seed": {
+        "name": "种子"
+      },
+      "tags": {
+        "name": "标签"
+      },
+      "temperature": {
+        "name": "temperature"
+      },
+      "timesignature": {
+        "name": "拍号"
+      },
+      "top_k": {
+        "name": "top_k"
+      },
+      "top_p": {
+        "name": "top_p"
       }
     },
     "outputs": {
@@ -13958,6 +15061,94 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "TextGenerate": {
+    "display_name": "TextGenerate",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "image": {
+        "name": "图像"
+      },
+      "max_length": {
+        "name": "最大长度"
+      },
+      "prompt": {
+        "name": "提示词"
+      },
+      "sampling_mode": {
+        "name": "采样模式"
+      },
+      "sampling_mode_min_p": {
+        "name": "最小概率"
+      },
+      "sampling_mode_repetition_penalty": {
+        "name": "重复惩罚"
+      },
+      "sampling_mode_seed": {
+        "name": "种子"
+      },
+      "sampling_mode_temperature": {
+        "name": "温度"
+      },
+      "sampling_mode_top_k": {
+        "name": "Top K"
+      },
+      "sampling_mode_top_p": {
+        "name": "Top P"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "生成文本",
+        "tooltip": null
+      }
+    }
+  },
+  "TextGenerateLTX2Prompt": {
+    "display_name": "TextGenerateLTX2Prompt",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "image": {
+        "name": "图像"
+      },
+      "max_length": {
+        "name": "最大长度"
+      },
+      "prompt": {
+        "name": "提示词"
+      },
+      "sampling_mode": {
+        "name": "采样模式"
+      },
+      "sampling_mode_min_p": {
+        "name": "最小概率"
+      },
+      "sampling_mode_repetition_penalty": {
+        "name": "重复惩罚"
+      },
+      "sampling_mode_seed": {
+        "name": "种子"
+      },
+      "sampling_mode_temperature": {
+        "name": "温度"
+      },
+      "sampling_mode_top_k": {
+        "name": "Top K"
+      },
+      "sampling_mode_top_p": {
+        "name": "Top P"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "生成文本",
         "tooltip": null
       }
     }
@@ -14171,6 +15362,10 @@
         "name": "bypass_mode",
         "tooltip": "为训练启用旁路模式。启用后，适配器通过前向钩子应用，而不是直接修改权重。适用于权重无法直接修改的量化模型。"
       },
+      "checkpoint_depth": {
+        "name": "checkpoint_depth",
+        "tooltip": "用于梯度检查点的深度级别。"
+      },
       "control_after_generate": {
         "name": "生成后控制"
       },
@@ -14205,6 +15400,10 @@
       "model": {
         "name": "模型",
         "tooltip": "用于训练 LoRA 的模型。"
+      },
+      "offloading": {
+        "name": "offloading",
+        "tooltip": "用于梯度检查点的深度级别。"
       },
       "optimizer": {
         "name": "优化器",
@@ -14418,6 +15617,10 @@
       "1": {
         "name": "模型任务ID",
         "tooltip": null
+      },
+      "2": {
+        "name": "GLB",
+        "tooltip": null
       }
     }
   },
@@ -14479,6 +15682,10 @@
       "1": {
         "name": "模型任务ID",
         "tooltip": null
+      },
+      "2": {
+        "name": "GLB",
+        "tooltip": null
       }
     }
   },
@@ -14498,6 +15705,10 @@
       },
       "1": {
         "name": "模型任务ID",
+        "tooltip": null
+      },
+      "2": {
+        "name": "GLB",
         "tooltip": null
       }
     }
@@ -14520,6 +15731,10 @@
       "1": {
         "name": "重定向任务ID",
         "tooltip": null
+      },
+      "2": {
+        "name": "GLB",
+        "tooltip": null
       }
     }
   },
@@ -14537,6 +15752,10 @@
       },
       "1": {
         "name": "绑定任务ID",
+        "tooltip": null
+      },
+      "2": {
+        "name": "GLB",
         "tooltip": null
       }
     }
@@ -14592,6 +15811,10 @@
       "1": {
         "name": "模型任务ID",
         "tooltip": null
+      },
+      "2": {
+        "name": "GLB",
+        "tooltip": null
       }
     }
   },
@@ -14624,6 +15847,10 @@
       },
       "1": {
         "name": "模型任务ID",
+        "tooltip": null
+      },
+      "2": {
+        "name": "GLB",
         "tooltip": null
       }
     }
@@ -14784,6 +16011,28 @@
     "inputs": {
       "samples": {
         "name": "Latent"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "VAEDecodeAudioTiled": {
+    "display_name": "VAE解码音频（分块）",
+    "inputs": {
+      "overlap": {
+        "name": "重叠"
+      },
+      "samples": {
+        "name": "样本"
+      },
+      "tile_size": {
+        "name": "分块大小"
       },
       "vae": {
         "name": "vae"
@@ -15108,6 +16357,31 @@
       }
     }
   },
+  "Video Slice": {
+    "display_name": "视频切片",
+    "inputs": {
+      "duration": {
+        "name": "时长",
+        "tooltip": "以秒为单位的时长，0 表示不限时长"
+      },
+      "start_time": {
+        "name": "起始时间",
+        "tooltip": "以秒为单位的起始时间"
+      },
+      "strict_duration": {
+        "name": "严格时长",
+        "tooltip": "如为 True，当指定时长无法实现时将报错。"
+      },
+      "video": {
+        "name": "视频"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "VideoLinearCFGGuidance": {
     "display_name": "视频线性CFG引导",
     "inputs": {
@@ -15320,6 +16594,46 @@
       },
       "seed": {
         "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Vidu3StartEndToVideoNode": {
+    "description": "根据起始帧、结束帧和提示词生成视频。",
+    "display_name": "Vidu Q3 起始/结束帧到视频生成",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "end_frame": {
+        "name": "结束帧"
+      },
+      "first_frame": {
+        "name": "起始帧"
+      },
+      "model": {
+        "name": "模型",
+        "tooltip": "用于视频生成的模型。"
+      },
+      "model_audio": {
+        "name": "音频"
+      },
+      "model_duration": {
+        "name": "时长"
+      },
+      "model_resolution": {
+        "name": "分辨率"
+      },
+      "prompt": {
+        "name": "提示词",
+        "tooltip": "提示描述（最多2000字符）。"
+      },
+      "seed": {
+        "name": "种子"
       }
     },
     "outputs": {
