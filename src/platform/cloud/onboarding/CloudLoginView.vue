@@ -2,7 +2,7 @@
   <div class="flex h-full items-center justify-center p-8">
     <div class="max-w-screen p-2 lg:w-96">
       <!-- Header -->
-      <div class="mt-6 mb-8 flex flex-col gap-4">
+      <div class="mb-8 flex flex-col gap-4">
         <h1 class="my-0 text-xl leading-normal font-medium">
           {{ t('auth.login.title') }}
         </h1>
@@ -23,7 +23,7 @@
       <template v-if="!showEmailForm">
         <p
           v-if="showFreeTierBadge"
-          class="mb-4 text-center text-xs text-muted-foreground"
+          class="mb-4 text-center text-sm text-muted-foreground"
         >
           {{
             freeTierCredits

@@ -25,7 +25,7 @@
       <template v-if="!showEmailForm">
         <p
           v-if="showFreeTierBadge"
-          class="mb-4 text-center text-xs text-muted-foreground"
+          class="mb-4 text-center text-sm text-muted-foreground"
         >
           {{
             freeTierCredits
@@ -95,7 +95,7 @@
       </template>
 
       <!-- Terms & Contact -->
-      <div class="mt-5 text-sm text-gray-600">
+      <p class="mt-5 text-sm text-gray-600">
         {{ t('auth.login.termsText') }}
         <a
           href="https://www.comfy.org/terms-of-service"
@@ -106,24 +106,24 @@
         </a>
         {{ t('auth.login.andText') }}
         <a
-          href="/privacy-policy"
+          href="https://www.comfy.org/privacy-policy"
           target="_blank"
           class="cursor-pointer text-blue-400 no-underline"
         >
           {{ t('auth.login.privacyLink') }} </a
         >.
-        <p class="mt-2">
-          {{ t('cloudWaitlist_questionsText') }}
-          <a
-            href="https://support.comfy.org"
-            class="cursor-pointer text-blue-400 no-underline"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            {{ t('cloudWaitlist_contactLink') }}</a
-          >.
-        </p>
-      </div>
+      </p>
+      <p class="mt-2 text-sm text-gray-600">
+        {{ t('cloudWaitlist_questionsText') }}
+        <a
+          href="https://support.comfy.org"
+          class="cursor-pointer text-blue-400 no-underline"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          {{ t('cloudWaitlist_contactLink') }}</a
+        >.
+      </p>
     </div>
   </div>
 </template>
