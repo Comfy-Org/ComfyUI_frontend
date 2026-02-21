@@ -2501,6 +2501,9 @@
   },
   "breadcrumbsMenu": {
     "duplicate": "Duplicate",
+    "enterAppMode": "Enter app mode",
+    "exitAppMode": "Exit app mode",
+    "workflowActions": "Workflow actions",
     "clearWorkflow": "Clear Workflow",
     "deleteWorkflow": "Delete Workflow",
     "deleteBlueprint": "Delete Blueprint",

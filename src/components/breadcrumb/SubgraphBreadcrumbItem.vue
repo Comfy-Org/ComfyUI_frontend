@@ -185,14 +185,6 @@ const inputBlur = async (doRename: boolean) => {
 
   isEditing.value = false
 }
-
-const toggleMenu = (event: MouseEvent) => {
-  menu.value?.toggle(event)
-}
-
-defineExpose({
-  toggleMenu
-})
 </script>
 
 <style scoped>
