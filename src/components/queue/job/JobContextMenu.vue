@@ -26,6 +26,7 @@
           variant="textonly"
           size="sm"
           :aria-label="entry.label"
+          :disabled="entry.disabled"
           @click="onEntry(entry)"
         >
           <i
@@ -68,6 +69,7 @@ function hide() {
 }
 
 function onEntry(entry: MenuEntry) {
+  if (entry.kind === 'divider' || entry.disabled) return
   emit('action', entry)
 }
 
