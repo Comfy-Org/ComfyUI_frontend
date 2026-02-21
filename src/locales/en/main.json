@@ -1392,7 +1392,8 @@
     "Workspace": "Workspace",
     "Error System": "Error System",
     "Other": "Other",
-    "Secrets": "Secrets"
+    "Secrets": "Secrets",
+    "Node Library": "Node Library"
   },
   "serverConfigItems": {
     "listen": {

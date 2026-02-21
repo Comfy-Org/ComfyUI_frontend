@@ -2363,6 +2363,7 @@
     "Menu": "Menú",
     "ModelLibrary": "Biblioteca de Modelos",
     "Node": "Nodo",
+    "Node Library": "Biblioteca de nodos",
     "Node Search Box": "Caja de Búsqueda de Nodo",
     "Node Widget": "Widget de Nodo",
     "NodeLibrary": "Biblioteca de Nodos",
@@ -2464,7 +2465,9 @@
       },
       "resetView": "Restablecer vista a la predeterminada",
       "sections": {
-        "favorites": "Favoritos"
+        "favoriteNode": "Nodo favorito",
+        "favorites": "Favoritos",
+        "unfavoriteNode": "Quitar de favoritos"
       },
       "sortBy": {
         "alphabetical": "Alfabético",

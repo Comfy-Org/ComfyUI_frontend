@@ -2363,6 +2363,7 @@
     "Menu": "منو",
     "ModelLibrary": "کتابخانه مدل",
     "Node": "Node",
+    "Node Library": "کتابخانه گره",
     "Node Search Box": "جعبه جستجوی Node",
     "Node Widget": "ویجت Node",
     "NodeLibrary": "کتابخانه Node",
@@ -2451,7 +2452,8 @@
       "sortLongestFirst": "زمان تولید (بیشترین ابتدا)",
       "sortNewestFirst": "جدیدترین ابتدا",
       "sortOldestFirst": "قدیمی‌ترین ابتدا",
-      "title": "دارایی‌های رسانه‌ای"
+      "title": "دارایی‌های رسانه‌ای",
+      "viewSettings": "نمایش تنظیمات"
     },
     "modelLibrary": "کتابخانه مدل",
     "newBlankWorkflow": "ایجاد Workflow جدید خالی",
@@ -2475,7 +2477,9 @@
       },
       "resetView": "بازنشانی نمای پیش‌فرض",
       "sections": {
-        "favorites": "علاقه‌مندی‌ها"
+        "favoriteNode": "گره مورد علاقه",
+        "favorites": "علاقه‌مندی‌ها",
+        "unfavoriteNode": "حذف از علاقه‌مندی‌ها"
       },
       "sortBy": {
         "alphabetical": "حروف الفبا",

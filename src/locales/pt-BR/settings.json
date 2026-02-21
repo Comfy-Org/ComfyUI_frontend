@@ -248,6 +248,10 @@
   "Comfy_NodeBadge_ShowApiPricing": {
     "name": "Mostrar selo de preço do nó de API"
   },
+  "Comfy_NodeLibrary_NewDesign": {
+    "name": "Novo Design da Biblioteca de Nós",
+    "tooltip": "Ative a barra lateral redesenhada da biblioteca de nós com abas (Essencial, Todos, Personalizado), busca aprimorada e pré-visualizações ao passar o mouse."
+  },
   "Comfy_NodeReplacement_Enabled": {
     "name": "Ativar substituição automática de nós",
     "tooltip": "Quando ativado, nós ausentes podem ser substituídos automaticamente por seus equivalentes mais recentes, se existir um mapeamento de substituição."

@@ -248,6 +248,10 @@
   "Comfy_NodeBadge_ShowApiPricing": {
     "name": "API 노드 가격 배지 표시"
   },
+  "Comfy_NodeLibrary_NewDesign": {
+    "name": "새로운 노드 라이브러리 디자인",
+    "tooltip": "탭(필수, 전체, 사용자 정의), 향상된 검색, 그리고 미리보기 기능이 추가된 새롭게 디자인된 노드 라이브러리 사이드바를 활성화합니다."
+  },
   "Comfy_NodeReplacement_Enabled": {
     "name": "노드 교체 제안 활성화",
     "tooltip": "활성화하면, 교체 매핑이 존재하는 누락 노드가 교체 가능으로 표시되어 검토 후 교체할 수 있습니다."

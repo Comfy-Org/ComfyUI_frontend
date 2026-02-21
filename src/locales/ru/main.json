@@ -2363,6 +2363,7 @@
     "Menu": "Меню",
     "ModelLibrary": "Библиотека моделей",
     "Node": "Нода",
+    "Node Library": "Библиотека узлов",
     "Node Search Box": "Поисковая строка нод",
     "Node Widget": "Виджет ноды",
     "NodeLibrary": "Библиотека нод",
@@ -2464,7 +2465,9 @@
       },
       "resetView": "Сбросить вид по умолчанию",
       "sections": {
-        "favorites": "Избранное"
+        "favoriteNode": "Избранный узел",
+        "favorites": "Избранное",
+        "unfavoriteNode": "Удалить из избранного"
       },
       "sortBy": {
         "alphabetical": "По алфавиту",

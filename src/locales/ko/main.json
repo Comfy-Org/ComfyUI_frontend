@@ -2363,6 +2363,7 @@
     "Menu": "메뉴",
     "ModelLibrary": "모델 라이브러리",
     "Node": "노드",
+    "Node Library": "노드 라이브러리",
     "Node Search Box": "노드 검색 상자",
     "Node Widget": "노드 위젯",
     "NodeLibrary": "노드 라이브러리",
@@ -2464,7 +2465,9 @@
       },
       "resetView": "기본 보기로 재설정",
       "sections": {
-        "favorites": "즐겨찾기"
+        "favoriteNode": "즐겨찾는 노드",
+        "favorites": "즐겨찾기",
+        "unfavoriteNode": "즐겨찾기 해제 노드"
       },
       "sortBy": {
         "alphabetical": "알파벳순",

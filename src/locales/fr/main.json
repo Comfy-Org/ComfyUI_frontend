@@ -2363,6 +2363,7 @@
     "Menu": "Menu",
     "ModelLibrary": "Bibliothèque de Modèles",
     "Node": "Nœud",
+    "Node Library": "Bibliothèque de nœuds",
     "Node Search Box": "Boîte de Recherche de Nœud",
     "Node Widget": "Widget de Nœud",
     "NodeLibrary": "Bibliothèque de Nœuds",
@@ -2464,7 +2465,9 @@
       },
       "resetView": "Réinitialiser la vue par défaut",
       "sections": {
-        "favorites": "Favoris"
+        "favoriteNode": "Nœud favori",
+        "favorites": "Favoris",
+        "unfavoriteNode": "Retirer des favoris"
       },
       "sortBy": {
         "alphabetical": "Alphabétique",
