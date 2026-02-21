@@ -65,21 +65,20 @@ export const useMenuItemStore = defineStore('menuItem', () => {
       )
     }
   }
+  function commandIdToMenuItem(commandId: string, path?: string[]): MenuItem {
+    const command = commandStore.getCommand(commandId)
+    return {
+      command: () => commandStore.execute(command.id),
+      label: command.menubarLabel,
+      icon: command.icon,
+      tooltip: command.tooltip,
+      comfyCommand: command,
+      parentPath: path?.join('.')
+    }
+  }
 
   const registerCommands = (path: string[], commandIds: string[]) => {
-    const items = commandIds
-      .map((commandId) => commandStore.getCommand(commandId))
-      .map(
-        (command) =>
-          ({
-            command: () => commandStore.execute(command.id),
-            label: command.menubarLabel,
-            icon: command.icon,
-            tooltip: command.tooltip,
-            comfyCommand: command,
-            parentPath: path.join('.')
-          }) as MenuItem
-      )
+    const items = commandIds.map((id) => commandIdToMenuItem(id, path))
     registerMenuGroup(path, items)
   }
 
@@ -114,6 +113,7 @@ export const useMenuItemStore = defineStore('menuItem', () => {
     loadExtensionMenuCommands,
     registerCoreMenuCommands,
     menuItemHasActiveStateChildren,
-    hasSeenLinear
+    hasSeenLinear,
+    commandIdToMenuItem
   }
 })

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import type { MenuItem } from 'primevue/menuitem'
 import {
   DropdownMenuArrow,
   DropdownMenuContent,
@@ -6,10 +7,9 @@ import {
   DropdownMenuRoot,
   DropdownMenuTrigger
 } from 'reka-ui'
-import { computed } from 'vue'
+import { computed, toValue } from 'vue'
 
 import DropdownItem from '@/components/common/DropdownItem.vue'
-import type { Entry } from '@/components/common/DropdownItem.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { cn } from '@/utils/tailwindUtil'
 
@@ -18,7 +18,7 @@ defineOptions({
 })
 
 const { itemClass: itemProp, contentClass: contentProp } = defineProps<{
-  entries?: Entry[]
+  entries?: MenuItem[]
   icon?: string
   to?: string | HTMLElement
   itemClass?: string
@@ -27,7 +27,7 @@ const { itemClass: itemProp, contentClass: contentProp } = defineProps<{
 
 const itemClass = computed(() =>
   cn(
-    'data-[highlighted]:bg-secondary-background-hover data-[disabled]:pointer-events-none data-[disabled]:text-muted-foreground flex p-2 leading-none rounded-lg gap-1 cursor-pointer',
+    'data-[highlighted]:bg-secondary-background-hover data-[disabled]:pointer-events-none data-[disabled]:text-muted-foreground flex p-2 leading-none rounded-lg gap-1 cursor-pointer m-1',
     itemProp
   )
 )
@@ -60,11 +60,11 @@ const contentClass = computed(() =>
       >
         <slot :item-class>
           <DropdownItem
-            v-for="(entry, index) in entries!"
-            :key="entry.label ?? index"
+            v-for="(item, index) in entries!"
+            :key="toValue(item.label) ?? index"
             :item-class
             :content-class
-            :entry
+            :item
           />
         </slot>
         <DropdownMenuArrow class="fill-base-background stroke-border-subtle" />
