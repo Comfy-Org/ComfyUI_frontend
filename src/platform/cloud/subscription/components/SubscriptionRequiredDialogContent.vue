@@ -1,6 +1,13 @@
 <template>
+  <!-- Free tier users: show explanation modal first, upgrade button opens pricing table -->
+  <FreeTierDialogContent
+    v-if="isFreeTier && !showPricingTable"
+    :reason="reason"
+    @close="(subscribed: boolean) => emit('close', subscribed)"
+    @upgrade="showPricingTable = true"
+  />
   <div
-    v-if="showCustomPricingTable"
+    v-else-if="showCustomPricingTable"
     class="relative flex flex-col p-4 pt-8 md:p-16 !overflow-y-auto h-full gap-8"
   >
     <Button
@@ -130,15 +137,17 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onBeforeUnmount, watch } from 'vue'
+import { computed, onBeforeUnmount, ref, watch } from 'vue'
 
 import CloudBadge from '@/components/topbar/CloudBadge.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { MONTHLY_SUBSCRIPTION_PRICE } from '@/config/subscriptionPricesConfig'
+import FreeTierDialogContent from '@/platform/cloud/subscription/components/FreeTierDialogContent.vue'
 import PricingTable from '@/platform/cloud/subscription/components/PricingTable.vue'
 import SubscribeButton from '@/platform/cloud/subscription/components/SubscribeButton.vue'
 import SubscriptionBenefits from '@/platform/cloud/subscription/components/SubscriptionBenefits.vue'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
+import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
 import { useCommandStore } from '@/stores/commandStore'
@@ -153,9 +162,13 @@ const emit = defineEmits<{
 }>()
 
 const { fetchStatus, isActiveSubscription } = useBillingContext()
+const { isFreeTier } = useSubscription()
 
 const isSubscriptionEnabled = (): boolean =>
   Boolean(isCloud && window.__CONFIG__?.subscription_required)
+
+// Free tier users start on the explanation view; clicking "Subscribe for more" shows pricing
+const showPricingTable = ref(false)
 
 // Legacy price for non-tier flow with locale-aware formatting
 const formattedMonthlyPrice = new Intl.NumberFormat(
