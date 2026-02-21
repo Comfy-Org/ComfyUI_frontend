@@ -20,6 +20,8 @@ import type {
   ComfyNodeDef as ComfyNodeDefV1,
   InputSpec
 } from '@/schemas/nodeDefSchema'
+import { isCloud, isDesktop } from '@/platform/distribution/types'
+import { TemplateIncludeOnDistributionEnum } from '@/platform/workflow/templates/types/template'
 import { api } from '@/scripts/api'
 import type { GlobalSubgraphData } from '@/scripts/api'
 import { useDialogService } from '@/services/dialogService'
@@ -221,9 +223,22 @@ export const useSubgraphStore = defineStore('subgraph', () => {
         )
       }
       const subgraphs = await api.getGlobalSubgraphs()
-      await Promise.allSettled(
-        Object.entries(subgraphs).map(loadGlobalBlueprint)
-      )
+      const currentDistribution: TemplateIncludeOnDistributionEnum = isCloud
+        ? TemplateIncludeOnDistributionEnum.Cloud
+        : isDesktop
+          ? TemplateIncludeOnDistributionEnum.Desktop
+          : TemplateIncludeOnDistributionEnum.Local
+      const filteredEntries = Object.entries(subgraphs).filter(([, v]) => {
+        if (!isCloud && (v.info.requiresCustomNodes?.length ?? 0) > 0)
+          return false
+        if (
+          (v.info.includeOnDistributions?.length ?? 0) > 0 &&
+          !v.info.includeOnDistributions!.includes(currentDistribution)
+        )
+          return false
+        return true
+      })
+      await Promise.allSettled(filteredEntries.map(loadGlobalBlueprint))
     }
 
     const userSubs = (

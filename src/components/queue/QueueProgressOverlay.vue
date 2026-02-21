@@ -22,7 +22,7 @@
         :queued-count="queuedCount"
         :displayed-job-groups="displayedJobGroups"
         :has-failed-jobs="hasFailedJobs"
-        @show-assets="openAssetsSidebar"
+        @show-assets="toggleAssetsSidebar"
         @clear-history="onClearHistoryFromMenu"
         @clear-queued="cancelQueuedWorkflows"
         @cancel-item="onCancelItem"
@@ -59,10 +59,10 @@ import { useI18n } from 'vue-i18n'
 
 import QueueOverlayActive from '@/components/queue/QueueOverlayActive.vue'
 import QueueOverlayExpanded from '@/components/queue/QueueOverlayExpanded.vue'
-import QueueClearHistoryDialog from '@/components/queue/dialogs/QueueClearHistoryDialog.vue'
 import ResultGallery from '@/components/sidebar/tabs/queue/ResultGallery.vue'
 import { useJobList } from '@/composables/queue/useJobList'
 import type { JobListItem } from '@/composables/queue/useJobList'
+import { useQueueClearHistoryDialog } from '@/composables/queue/useQueueClearHistoryDialog'
 import { useQueueProgress } from '@/composables/queue/useQueueProgress'
 import { useResultGallery } from '@/composables/queue/useResultGallery'
 import { useErrorHandling } from '@/composables/useErrorHandling'
@@ -71,7 +71,6 @@ import { isCloud } from '@/platform/distribution/types'
 import { api } from '@/scripts/api'
 import { useAssetsStore } from '@/stores/assetsStore'
 import { useCommandStore } from '@/stores/commandStore'
-import { useDialogStore } from '@/stores/dialogStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useQueueStore } from '@/stores/queueStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
@@ -97,9 +96,9 @@ const queueStore = useQueueStore()
 const commandStore = useCommandStore()
 const executionStore = useExecutionStore()
 const sidebarTabStore = useSidebarTabStore()
-const dialogStore = useDialogStore()
 const assetsStore = useAssetsStore()
 const assetSelectionStore = useAssetSelectionStore()
+const { showQueueClearHistoryDialog } = useQueueClearHistoryDialog()
 const { wrapWithErrorHandlingAsync } = useErrorHandling()
 
 const {
@@ -243,6 +242,10 @@ const viewAllJobs = () => {
   setExpanded(true)
 }
 
+const toggleAssetsSidebar = () => {
+  sidebarTabStore.toggleSidebarTab('assets')
+}
+
 const openAssetsSidebar = () => {
   sidebarTabStore.activeSidebarTabId = 'assets'
 }
@@ -309,28 +312,7 @@ const interruptAll = wrapWithErrorHandlingAsync(async () => {
   await queueStore.update()
 })
 
-const showClearHistoryDialog = () => {
-  dialogStore.showDialog({
-    key: 'queue-clear-history',
-    component: QueueClearHistoryDialog,
-    dialogComponentProps: {
-      headless: true,
-      closable: false,
-      closeOnEscape: true,
-      dismissableMask: true,
-      pt: {
-        root: {
-          class: 'max-w-[360px] w-auto bg-transparent border-none shadow-none'
-        },
-        content: {
-          class: '!p-0 bg-transparent'
-        }
-      }
-    }
-  })
-}
-
 const onClearHistoryFromMenu = () => {
-  showClearHistoryDialog()
+  showQueueClearHistoryDialog()
 }
 </script>

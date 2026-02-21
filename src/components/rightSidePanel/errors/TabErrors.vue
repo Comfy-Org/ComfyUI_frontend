@@ -55,8 +55,9 @@
               :key="card.id"
               :card="card"
               :show-node-id-badge="showNodeIdBadge"
-              @locate-node="focusNode"
-              @enter-subgraph="enterSubgraph"
+              :compact="isSingleNodeSelected"
+              @locate-node="handleLocateNode"
+              @enter-subgraph="handleEnterSubgraph"
               @copy-to-clipboard="copyToClipboard"
             />
           </div>
@@ -97,16 +98,16 @@
 </template>
 
 <script setup lang="ts">
-import { computed, reactive, ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { useCommandStore } from '@/stores/commandStore'
-import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
 import { useFocusNode } from '@/composables/canvas/useFocusNode'
 import { useExternalLink } from '@/composables/useExternalLink'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
+import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import { NodeBadgeMode } from '@/types/nodeSource'
 
 import PropertiesAccordionItem from '../layout/PropertiesAccordionItem.vue'
@@ -119,10 +120,10 @@ const { t } = useI18n()
 const { copyToClipboard } = useCopyToClipboard()
 const { focusNode, enterSubgraph } = useFocusNode()
 const { staticUrls } = useExternalLink()
+const settingStore = useSettingStore()
 const rightSidePanelStore = useRightSidePanelStore()
 
 const searchQuery = ref('')
-const settingStore = useSettingStore()
 
 const showNodeIdBadge = computed(
   () =>
@@ -130,17 +131,30 @@ const showNodeIdBadge = computed(
     NodeBadgeMode.None
 )
 
-const { filteredGroups } = useErrorGroups(searchQuery, t)
+const {
+  allErrorGroups,
+  filteredGroups,
+  collapseState,
+  isSingleNodeSelected,
+  errorNodeCache
+} = useErrorGroups(searchQuery, t)
 
-const collapseState = reactive<Record<string, boolean>>({})
-
+/**
+ * When an external trigger (e.g. "See Error" button in SectionWidgets)
+ * sets focusedErrorNodeId, expand only the group containing the target
+ * node and collapse all others so the user sees the relevant errors
+ * immediately.
+ */
 watch(
   () => rightSidePanelStore.focusedErrorNodeId,
   (graphNodeId) => {
     if (!graphNodeId) return
-    for (const group of filteredGroups.value) {
+    const prefix = `${graphNodeId}:`
+    for (const group of allErrorGroups.value) {
       const hasMatch = group.cards.some(
-        (card) => card.graphNodeId === graphNodeId
+        (card) =>
+          card.graphNodeId === graphNodeId ||
+          (card.nodeId?.startsWith(prefix) ?? false)
       )
       collapseState[group.title] = !hasMatch
     }
@@ -148,6 +162,14 @@ watch(
   },
   { immediate: true }
 )
+
+function handleLocateNode(nodeId: string) {
+  focusNode(nodeId, errorNodeCache.value)
+}
+
+function handleEnterSubgraph(nodeId: string) {
+  enterSubgraph(nodeId, errorNodeCache.value)
+}
 
 function openGitHubIssues() {
   useTelemetry()?.trackUiButtonClicked({
@@ -162,6 +184,6 @@ async function contactSupport() {
     is_external: true,
     source: 'error_dialog'
   })
-  await useCommandStore().execute('Comfy.ContactSupport')
+  useCommandStore().execute('Comfy.ContactSupport')
 }
 </script>

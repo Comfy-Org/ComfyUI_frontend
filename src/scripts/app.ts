@@ -71,7 +71,6 @@ import { SYSTEM_NODE_DEFS, useNodeDefStore } from '@/stores/nodeDefStore'
 import { useNodeReplacementStore } from '@/platform/nodeReplacement/nodeReplacementStore'
 import { useSubgraphStore } from '@/stores/subgraphStore'
 import { useWidgetStore } from '@/stores/widgetStore'
-import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import type { ComfyExtension, MissingNodeType } from '@/types/comfy'
 import type { ExtensionManager } from '@/types/extensionTypes'
@@ -713,12 +712,10 @@ export class ComfyApp {
             isInsufficientCredits: true
           })
         }
+      } else if (useSettingStore().get('Comfy.RightSidePanel.ShowErrorsTab')) {
+        useExecutionStore().showErrorOverlay()
       } else {
         useDialogService().showExecutionErrorDialog(detail)
-      }
-      if (useSettingStore().get('Comfy.RightSidePanel.ShowErrorsTab')) {
-        this.canvas.deselectAll()
-        useRightSidePanelStore().openPanel('errors')
       }
       this.canvas.draw(true, true)
     })
@@ -1465,7 +1462,10 @@ export class ComfyApp {
                 {}) as MissingNodeTypeExtraInfo
               const missingNodeType = createMissingNodeTypeFromError(extraInfo)
               this.showMissingNodesError([missingNodeType])
-            } else {
+            } else if (
+              !useSettingStore().get('Comfy.RightSidePanel.ShowErrorsTab') ||
+              !(error instanceof PromptExecutionError)
+            ) {
               useDialogService().showErrorDialog(error, {
                 title: t('errorDialog.promptExecutionError'),
                 reportType: 'promptExecutionError'
@@ -1500,11 +1500,8 @@ export class ComfyApp {
                 }
               }
 
-              // Clear selection and open the error panel so the user can immediately
-              // see the error details without extra clicks.
               if (useSettingStore().get('Comfy.RightSidePanel.ShowErrorsTab')) {
-                this.canvas.deselectAll()
-                useRightSidePanelStore().openPanel('errors')
+                executionStore.showErrorOverlay()
               }
               this.canvas.draw(true, true)
             }

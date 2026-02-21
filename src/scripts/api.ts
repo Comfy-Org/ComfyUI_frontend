@@ -11,9 +11,10 @@ import type {
 import { isCloud } from '@/platform/distribution/types'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import type { IFuseOptions } from 'fuse.js'
-import {
-  type TemplateInfo,
-  type WorkflowTemplates
+import type {
+  TemplateIncludeOnDistributionEnum,
+  TemplateInfo,
+  WorkflowTemplates
 } from '@/platform/workflow/templates/types/template'
 import type {
   ComfyApiWorkflow,
@@ -241,6 +242,8 @@ export type GlobalSubgraphData = {
     node_pack: string
     category?: string
     search_aliases?: string[]
+    requiresCustomNodes?: string[]
+    includeOnDistributions?: TemplateIncludeOnDistributionEnum[]
   }
   data: string | Promise<string>
   essentials_category?: string
@@ -831,7 +834,20 @@ export class ComfyApi extends EventTarget {
     })
 
     if (res.status !== 200) {
-      throw new PromptExecutionError(await res.json())
+      const text = await res.text()
+      let errorResponse
+      try {
+        errorResponse = JSON.parse(text)
+      } catch {
+        errorResponse = {
+          error: {
+            type: 'server_error',
+            message: `${res.status} ${res.statusText}`,
+            details: text
+          }
+        }
+      }
+      throw new PromptExecutionError(errorResponse)
     }
 
     return await res.json()
