@@ -284,6 +284,10 @@
   "Comfy_NodeBadge_ShowApiPricing": {
     "name": "Show API node pricing badge"
   },
+  "Comfy_NodeLibrary_NewDesign": {
+    "name": "New Node Library Design",
+    "tooltip": "Enable the redesigned node library sidebar with tabs (Essential, All, Custom), improved search, and hover previews."
+  },
   "Comfy_NodeReplacement_Enabled": {
     "name": "Enable node replacement suggestions",
     "tooltip": "When enabled, missing nodes with known replacements will be shown as replaceable in the missing nodes dialog, allowing you to review and apply replacements."

@@ -2363,6 +2363,7 @@
     "Menu": "Menu",
     "ModelLibrary": "Biblioteca de Modelos",
     "Node": "Nó",
+    "Node Library": "Biblioteca de nós",
     "Node Search Box": "Caixa de Pesquisa de Nós",
     "Node Widget": "Widget de Nó",
     "NodeLibrary": "Biblioteca de Nós",
@@ -2451,7 +2452,8 @@
       "sortLongestFirst": "Tempo de geração (maior primeiro)",
       "sortNewestFirst": "Mais recentes primeiro",
       "sortOldestFirst": "Mais antigos primeiro",
-      "title": "Ativos de Mídia"
+      "title": "Ativos de Mídia",
+      "viewSettings": "Ver configurações"
     },
     "modelLibrary": "Biblioteca de modelos",
     "newBlankWorkflow": "Criar um novo workflow em branco",
@@ -2475,7 +2477,9 @@
       },
       "resetView": "Restaurar visualização padrão",
       "sections": {
-        "favorites": "Favoritos"
+        "favoriteNode": "Favoritar nó",
+        "favorites": "Favoritos",
+        "unfavoriteNode": "Desfavoritar nó"
       },
       "sortBy": {
         "alphabetical": "Alfabética",

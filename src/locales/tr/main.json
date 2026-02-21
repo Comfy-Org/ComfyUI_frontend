@@ -2363,6 +2363,7 @@
     "Menu": "Menü",
     "ModelLibrary": "Model Kütüphanesi",
     "Node": "Düğüm",
+    "Node Library": "Düğüm Kütüphanesi",
     "Node Search Box": "Düğüm Arama Kutusu",
     "Node Widget": "Düğüm Widget'ı",
     "NodeLibrary": "Düğüm Kütüphanesi",
@@ -2464,7 +2465,9 @@
       },
       "resetView": "Görünümü Varsayılana Sıfırla",
       "sections": {
-        "favorites": "Favoriler"
+        "favoriteNode": "Favori Düğüm",
+        "favorites": "Favoriler",
+        "unfavoriteNode": "Favori Düğümü Kaldır"
       },
       "sortBy": {
         "alphabetical": "Alfabetik",

@@ -2363,6 +2363,7 @@
     "Menu": "メニュー",
     "ModelLibrary": "モデルライブラリ",
     "Node": "ノード",
+    "Node Library": "ノードライブラリ",
     "Node Search Box": "ノード検索ボックス",
     "Node Widget": "ノードウィジェット",
     "NodeLibrary": "ノードライブラリ",
@@ -2464,7 +2465,9 @@
       },
       "resetView": "ビューをデフォルトにリセット",
       "sections": {
-        "favorites": "お気に入り"
+        "favoriteNode": "お気に入りノード",
+        "favorites": "お気に入り",
+        "unfavoriteNode": "お気に入りノードから削除"
       },
       "sortBy": {
         "alphabetical": "アルファベット順",

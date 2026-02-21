@@ -2363,6 +2363,7 @@
     "Menu": "القائمة",
     "ModelLibrary": "مكتبة النماذج",
     "Node": "العقدة",
+    "Node Library": "مكتبة العقد",
     "Node Search Box": "مربع بحث العقد",
     "Node Widget": "أداة العقدة",
     "NodeLibrary": "مكتبة العقد",
@@ -2464,7 +2465,9 @@
       },
       "resetView": "إعادة تعيين العرض إلى الافتراضي",
       "sections": {
-        "favorites": "المفضلة"
+        "favoriteNode": "العقدة المفضلة",
+        "favorites": "المفضلة",
+        "unfavoriteNode": "إزالة العقدة من المفضلة"
       },
       "sortBy": {
         "alphabetical": "أبجدي",

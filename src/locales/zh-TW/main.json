@@ -2363,6 +2363,7 @@
     "Menu": "選單",
     "ModelLibrary": "模型庫",
     "Node": "節點",
+    "Node Library": "節點庫",
     "Node Search Box": "節點搜尋框",
     "Node Widget": "節點元件",
     "NodeLibrary": "節點庫",
@@ -2464,7 +2465,9 @@
       },
       "resetView": "重設檢視為預設值",
       "sections": {
-        "favorites": "我的最愛"
+        "favoriteNode": "收藏節點",
+        "favorites": "我的最愛",
+        "unfavoriteNode": "取消收藏節點"
       },
       "sortBy": {
         "alphabetical": "字母順序",
