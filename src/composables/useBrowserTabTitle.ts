@@ -78,7 +78,7 @@ export const useBrowserTabTitle = () => {
     const progress = Math.round((state.value / state.max) * 100)
     const nodeType =
       executionStore.activeJob?.workflow?.changeTracker?.activeState.nodes.find(
-        (n) => String(n.id) === nodeId
+        (n: { id: string | number; type?: string }) => String(n.id) === nodeId
       )?.type || 'Node'
 
     return `${executionText.value}[${progress}%] ${nodeType}`

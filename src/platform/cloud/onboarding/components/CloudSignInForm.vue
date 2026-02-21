@@ -1,10 +1,5 @@
 <template>
-  <Form
-    v-slot="$form"
-    class="flex flex-col gap-6"
-    :resolver="zodResolver(signInSchema)"
-    @submit="onSubmit"
-  >
+  <form class="flex flex-col gap-6" @submit="onSubmit">
     <!-- Email Field -->
     <div class="flex flex-col gap-2">
       <label class="mb-2 text-base font-medium opacity-80" :for="emailInputId">
@@ -12,16 +7,15 @@
       </label>
       <InputText
         :id="emailInputId"
+        v-model="email"
+        v-bind="emailAttrs"
         autocomplete="email"
         class="h-10"
-        name="email"
         type="text"
         :placeholder="t('auth.login.emailPlaceholder')"
-        :invalid="$form.email?.invalid"
+        :invalid="Boolean(errors.email)"
       />
-      <small v-if="$form.email?.invalid" class="text-red-500">{{
-        $form.email.error.message
-      }}</small>
+      <small v-if="errors.email" class="text-red-500">{{ errors.email }}</small>
     </div>
 
     <!-- Password Field -->
@@ -35,18 +29,19 @@
         </label>
       </div>
       <Password
+        v-model="password"
+        v-bind="passwordAttrs"
         input-id="cloud-sign-in-password"
         pt:pc-input-text:root:autocomplete="current-password"
-        name="password"
         :feedback="false"
         toggle-mask
         :placeholder="t('auth.login.passwordPlaceholder')"
-        :class="{ 'p-invalid': $form.password?.invalid }"
+        :class="{ 'p-invalid': Boolean(errors.password) }"
         fluid
         class="h-10"
       />
-      <small v-if="$form.password?.invalid" class="text-red-500">{{
-        $form.password.error.message
+      <small v-if="errors.password" class="text-red-500">{{
+        errors.password
       }}</small>
 
       <router-link
@@ -68,21 +63,19 @@
       v-else
       type="submit"
       class="mt-4 h-10 font-medium text-white"
-      :disabled="!$form.valid"
+      :disabled="!meta.valid"
     >
       {{ t('auth.login.loginButton') }}
     </Button>
-  </Form>
+  </form>
 </template>
 
 <script setup lang="ts">
-import type { FormSubmitEvent } from '@primevue/forms'
-import { Form } from '@primevue/forms'
-import { zodResolver } from '@primevue/forms/resolvers/zod'
 import InputText from 'primevue/inputtext'
 import Message from 'primevue/message'
 import Password from 'primevue/password'
 import ProgressSpinner from 'primevue/progressspinner'
+import { useForm } from 'vee-validate'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -106,11 +99,21 @@ const emit = defineEmits<{
 
 const emailInputId = 'cloud-sign-in-email'
 
-const onSubmit = (event: FormSubmitEvent) => {
-  if (event.valid) {
-    emit('submit', event.values as SignInData)
-  }
-}
+const { defineField, errors, handleSubmit, meta } = useForm<SignInData>({
+  initialValues: {
+    email: '',
+    password: ''
+  },
+  validateOnMount: true,
+  validationSchema: signInSchema
+})
+
+const [email, emailAttrs] = defineField('email')
+const [password, passwordAttrs] = defineField('password')
+
+const onSubmit = handleSubmit((submittedValues) => {
+  emit('submit', submittedValues)
+})
 </script>
 <style scoped>
 :deep(.p-inputtext) {

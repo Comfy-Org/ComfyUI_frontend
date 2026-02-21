@@ -8,7 +8,10 @@ import {
   ComfyWorkflow,
   useWorkflowStore
 } from '@/platform/workflow/management/stores/workflowStore'
-import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
+import type {
+  ComfyNode,
+  ComfyWorkflowJSON
+} from '@/platform/workflow/validation/schemas/workflowSchema'
 import type { ExecutedWsMessage } from '@/schemas/apiSchema'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useNodeOutputStore } from '@/stores/imagePreviewStore'
@@ -434,7 +437,7 @@ export class ChangeTracker {
         extra: graph.extra,
         definitions: graph.definitions,
         subgraphs: graph.subgraphs,
-        nodes: graph.nodes.sort((a, b) => {
+        nodes: graph.nodes.sort((a: ComfyNode, b: ComfyNode) => {
           if (typeof a.id === 'number' && typeof b.id === 'number') {
             return a.id - b.id
           }

@@ -116,7 +116,7 @@ const completedPaletteSchema = z
   })
   .passthrough()
 
-export const colorPalettesSchema = z.record(paletteSchema)
+export const colorPalettesSchema = z.record(z.string(), paletteSchema)
 
 export type Colors = z.infer<typeof colorsSchema>
 export type Palette = z.infer<typeof paletteSchema>

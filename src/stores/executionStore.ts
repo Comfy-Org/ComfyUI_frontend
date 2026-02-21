@@ -209,8 +209,9 @@ export const useExecutionStore = defineStore('execution', () => {
     if (!canvasState) return null
 
     return (
-      canvasState.nodes.find((n) => String(n.id) === executingNodeId.value) ??
-      null
+      canvasState.nodes.find(
+        (n: { id: string | number }) => String(n.id) === executingNodeId.value
+      ) ?? null
     )
   })
 

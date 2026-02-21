@@ -17,11 +17,9 @@ catalog:
   '@nx/vite': 22.2.6
   '@pinia/testing': ^1.0.3
   '@playwright/test': ^1.58.1
-  '@primeuix/forms': 0.0.2
   '@primeuix/styled': 0.3.2
   '@primeuix/utils': ^0.3.2
   '@primevue/core': ^4.2.5
-  '@primevue/forms': ^4.2.5
   '@primevue/icons': 4.2.5
   '@primevue/themes': ^4.2.5
   '@sentry/vite-plugin': ^4.6.0
@@ -93,6 +91,7 @@ catalog:
   unplugin-icons: ^22.5.0
   unplugin-typegpu: 0.8.0
   unplugin-vue-components: ^30.0.0
+  vee-validate: 5.0.0-beta.0
   vite: 8.0.0-beta.13
   vite-plugin-dts: ^4.5.4
   vite-plugin-html: ^3.2.2
@@ -107,9 +106,9 @@ catalog:
   vuefire: ^3.2.1
   wwobjloader2: ^6.2.1
   yjs: ^13.6.27
-  zod: ^3.23.8
-  zod-to-json-schema: ^3.24.1
-  zod-validation-error: ^3.3.0
+  zod: ^4.3.6
+  zod-to-json-schema: ^3.25.1
+  zod-validation-error: ^5.0.0
 
 cleanupUnusedCatalogs: true
 

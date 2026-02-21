@@ -23,7 +23,7 @@ const zDownloadFileResult = z.object({
   hash: z.string().optional(),
   filename: z.string().optional(),
   asset_id: z.string().optional(),
-  metadata: z.record(z.unknown()).optional(),
+  metadata: z.record(z.string(), z.unknown()).optional(),
   error: z.string().optional()
 })
 
@@ -31,7 +31,7 @@ const zTaskResponse = z.object({
   id: z.string().uuid(),
   idempotency_key: z.string(),
   task_name: z.string(),
-  payload: z.record(z.unknown()),
+  payload: z.record(z.string(), z.unknown()),
   status: zTaskStatus,
   result: zDownloadFileResult.optional(),
   error_message: z.string().optional(),

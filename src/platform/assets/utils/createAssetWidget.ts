@@ -85,7 +85,7 @@ export function createAssetWidget(
         if (!validatedFilename.success) {
           console.error(
             'Invalid asset filename:',
-            validatedFilename.error.errors,
+            validatedFilename.error.issues,
             'for asset:',
             validatedAsset.data.id
           )

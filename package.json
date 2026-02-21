@@ -61,11 +61,9 @@
     "@comfyorg/shared-frontend-utils": "workspace:*",
     "@comfyorg/tailwind-utils": "workspace:*",
     "@iconify/json": "catalog:",
-    "@primeuix/forms": "catalog:",
     "@primeuix/styled": "catalog:",
     "@primeuix/utils": "catalog:",
     "@primevue/core": "catalog:",
-    "@primevue/forms": "catalog:",
     "@primevue/icons": "catalog:",
     "@primevue/themes": "catalog:",
     "@sentry/vue": "catalog:",
@@ -106,6 +104,7 @@
     "three": "^0.170.0",
     "tiptap-markdown": "^0.8.10",
     "typegpu": "catalog:",
+    "vee-validate": "catalog:",
     "vue": "catalog:",
     "vue-i18n": "catalog:",
     "vue-router": "catalog:",
@@ -194,6 +193,18 @@
   "pnpm": {
     "overrides": {
       "vite": "catalog:"
+    },
+    "packageExtensions": {
+      "openai@4.104.0": {
+        "peerDependencies": {
+          "zod": "^3.23.8 || ^4.0.0"
+        }
+      }
+    },
+    "peerDependencyRules": {
+      "allowedVersions": {
+        "zod": "^4.0.0"
+      }
     }
   }
 }

@@ -1227,7 +1227,7 @@ export class ComfyApp {
     }
 
     try {
-      // @ts-expect-error Discrepancies between zod and litegraph - in progress
+      // @ts-expect-error Zod schema type allows broader slot types than LiteGraph configure typings.
       this.rootGraph.configure(graphData)
 
       // Save original renderer version before scaling (it gets modified during scaling)
