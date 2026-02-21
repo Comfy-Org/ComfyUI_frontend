@@ -44,6 +44,9 @@
   "Comfy_BrowseTemplates": {
     "label": "テンプレートを参照"
   },
+  "Comfy_Canvas_CopySelected": {
+    "label": "コピー"
+  },
   "Comfy_Canvas_DeleteSelectedItems": {
     "label": "選択したアイテムを削除"
   },
@@ -65,11 +68,17 @@
   "Comfy_Canvas_MoveSelectedNodes_Up": {
     "label": "選択したノードを上に移動"
   },
+  "Comfy_Canvas_PasteFromClipboard": {
+    "label": "貼り付け"
+  },
   "Comfy_Canvas_ResetView": {
     "label": "ビューをリセット"
   },
   "Comfy_Canvas_Resize": {
     "label": "選択したノードのサイズ変更"
+  },
+  "Comfy_Canvas_SelectAll": {
+    "label": "すべて選択"
   },
   "Comfy_Canvas_ToggleLinkVisibility": {
     "label": "キャンバスのリンク表示を切り替える"

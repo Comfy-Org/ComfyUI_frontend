@@ -620,6 +620,7 @@
     "COMFY_MATCHTYPE_V3": "COMFY_MATCHTYPE_V3",
     "CONDITIONING": "조건",
     "CONTROL_NET": "컨트롤넷",
+    "ELEVENLABS_VOICE": "ELEVENLABS_VOICE",
     "FILE_3D": "FILE_3D",
     "FILE_3D_FBX": "FILE_3D_FBX",
     "FILE_3D_GLB": "FILE_3D_GLB",
@@ -728,11 +729,30 @@
     "noStackTrace": "스택 추적을 사용할 수 없습니다",
     "promptExecutionError": "프롬프트 실행 실패"
   },
+  "errorOverlay": {
+    "errorCount": "{count}개 오류",
+    "seeErrors": "오류 보기"
+  },
+  "exportToast": {
+    "allExportsCompleted": "모든 내보내기 완료",
+    "downloadExport": "내보내기 다운로드",
+    "downloadFailed": "\"{name}\" 다운로드 실패",
+    "exportCompleted": "ZIP 다운로드 준비 완료",
+    "exportError": "내보내기 실패",
+    "exportFailed": "{count}개 내보내기 실패",
+    "exportFailedSingle": "ZIP 내보내기 생성 실패",
+    "exportStarted": "ZIP 다운로드 준비 중...",
+    "exportingAssets": "에셋 내보내는 중",
+    "noExportsInQueue": "대기 중인 {filter} 내보내기 없음",
+    "preparingExport": "내보내기 준비 중...",
+    "retryDownload": "다운로드 재시도"
+  },
   "g": {
     "1x": "1배속",
     "2x": "2배속",
     "about": "정보",
     "add": "추가",
+    "addNode": "노드 추가...",
     "addNodeFilterCondition": "노드 필터 조건 추가",
     "all": "모두",
     "amount": "수량",
@@ -826,6 +846,7 @@
     "error": "오류",
     "errorLoadingImage": "이미지 로드 오류",
     "errorLoadingVideo": "비디오 로드 오류",
+    "essentials": "필수",
     "experimental": "베타",
     "export": "내보내기",
     "extensionName": "확장 이름",
@@ -834,9 +855,12 @@
     "failedToCopyJobId": "작업 ID 복사 실패",
     "failedToDownloadImage": "이미지 다운로드 실패",
     "failedToDownloadVideo": "비디오 다운로드 실패",
+    "favorites": "즐겨찾기",
     "feedback": "피드백",
     "file": "파일",
     "filter": "필터",
+    "filterBy": "필터 기준:",
+    "filterByType": "{type}별로 필터링...",
     "findIssues": "문제 찾기",
     "frameNodes": "노드 프레임",
     "frontendNewer": "프론트엔드 버전 {frontendVersion}이(가) 백엔드 버전 {backendVersion}과(와) 호환되지 않을 수 있습니다.",
@@ -857,6 +881,7 @@
     "inProgress": "진행 중",
     "increment": "증가",
     "info": "노드 정보",
+    "input": "입력",
     "insert": "삽입",
     "install": "설치",
     "installed": "설치됨",
@@ -880,6 +905,7 @@
     "login": "로그인",
     "logoAlt": "ComfyUI 로고",
     "logs": "로그",
+    "manageExtensions": "확장 프로그램 관리",
     "markdown": "마크다운",
     "micPermissionDenied": "마이크 권한이 거부되었습니다",
     "migrate": "이전(migrate)",
@@ -887,6 +913,7 @@
     "more": "더보기",
     "moreOptions": "추가 옵션",
     "moreWorkflows": "더 많은 워크플로",
+    "mostRelevant": "가장 관련성 높은",
     "multiSelectDropdown": "다중 선택 드롭다운",
     "name": "이름",
     "newFolder": "새 폴더",
@@ -917,6 +944,7 @@
     "openManager": "관리자 열기",
     "openNewIssue": "새 문제 열기",
     "or": "또는",
+    "output": "출력",
     "overwrite": "덮어쓰기",
     "playPause": "재생/일시정지",
     "playRecording": "녹음 재생",
@@ -943,6 +971,7 @@
     },
     "releaseTitle": "{package} {version} 릴리스",
     "reloadToApplyChanges": "변경 사항을 적용하려면 새로 고침하세요.",
+    "remove": "제거",
     "removeImage": "이미지 제거",
     "removeTag": "태그 제거",
     "removeVideo": "비디오 제거",
@@ -1559,6 +1588,7 @@
       "downloadSelectedAll": "전체 다운로드",
       "downloadStarted": "{count}개 파일 다운로드 중...",
       "downloadsStarted": "{count}개 파일 다운로드 시작됨",
+      "exportStarted": "{count}개 파일의 ZIP 내보내기 준비 중",
       "exportWorkflowAll": "모든 워크플로우 내보내기",
       "failedToAddNodes": "노드를 워크플로우에 추가하지 못했습니다",
       "failedToDeleteAssets": "선택한 에셋 삭제 실패",
@@ -1610,6 +1640,8 @@
     "runWorkflowFront": "워크플로 실행 (가장 먼저 실행)",
     "settings": "설정",
     "showMenu": "메뉴 표시",
+    "stopRunInstant": "즉시 실행 중지",
+    "stopRunInstantTooltip": "실행 중지",
     "theme": "테마",
     "toggleBottomPanel": "하단 패널 전환"
   },
@@ -1635,6 +1667,7 @@
     "Contact Support": "고객 지원 문의",
     "Convert Selection to Subgraph": "선택 영역을 서브그래프로 변환",
     "Convert selected nodes to group node": "선택한 노드를 그룹 노드로 변환",
+    "Copy": "복사",
     "Custom Nodes (Legacy)": "커스텀 노드(구버전)",
     "Custom Nodes Manager": "커스텀 노드 관리자",
     "Decrease Brush Size in MaskEditor": "마스크 편집기에서 브러시 크기 줄이기",
@@ -1689,6 +1722,7 @@
     "Open Outputs Folder": "출력 폴더 열기",
     "Open Sign In Dialog": "로그인 대화 상자 열기",
     "Open extra_model_paths_yaml": "extra_model_paths.yaml 열기",
+    "Paste": "붙여넣기",
     "Pin/Unpin Selected Items": "선택한 항목 고정/고정 해제",
     "Pin/Unpin Selected Nodes": "선택한 노드 고정/고정 해제",
     "Previous Opened Workflow": "이전 열린 워크플로",
@@ -1708,6 +1742,7 @@
     "Rotate Right in MaskEditor": "마스크 편집기에서 오른쪽으로 회전",
     "Save": "저장",
     "Save As": "다른 이름으로 저장",
+    "Select All": "모두 선택",
     "Set Subgraph Description": "서브그래프 설명 설정",
     "Set Subgraph Search Aliases": "서브그래프 검색 별칭 설정",
     "Show Keybindings Dialog": "단축키 대화상자 표시",
@@ -1777,6 +1812,7 @@
     "BFL": "BFL",
     "Bria": "Bria",
     "ByteDance": "ByteDance",
+    "ElevenLabs": "ElevenLabs",
     "Gemini": "Gemini",
     "Grok": "Grok",
     "HitPaw": "HitPaw",
@@ -1859,11 +1895,13 @@
     "scheduling": "스케줄링",
     "sd": "sd",
     "sd3": "sd3",
+    "shader": "shader",
     "sigmas": "시그마",
     "stable_cascade": "Stable Cascade",
     "string": "문자열",
     "style_model": "스타일 모델",
     "text": "텍스트",
+    "textgen": "textgen",
     "training": "학습",
     "transform": "변환",
     "unet": "UNet",
@@ -2021,6 +2059,7 @@
     "errorHelpGithub": "GitHub 이슈 제출",
     "errorHelpSupport": "고객 지원팀에 문의",
     "errors": "오류",
+    "executionErrorOccurred": "실행 중 오류가 발생했습니다. 자세한 내용은 오류 탭을 확인하세요.",
     "fallbackGroupTitle": "그룹",
     "fallbackNodeTitle": "노드",
     "favorites": "즐겨찾는 입력",
@@ -2070,6 +2109,12 @@
       },
       "prompt_no_outputs": {
         "desc": "워크플로우에 결과를 생성할 출력 노드(예: 이미지 저장, 이미지 미리보기)가 포함되어 있지 않습니다."
+      },
+      "server_error_cloud": {
+        "desc": "서버에서 예기치 않은 오류가 발생했습니다. 나중에 다시 시도해 주세요."
+      },
+      "server_error_local": {
+        "desc": "서버에서 예기치 않은 오류가 발생했습니다. 서버 로그를 확인해 주세요."
       }
     },
     "properties": "속성",
@@ -2318,6 +2363,7 @@
     "Menu": "메뉴",
     "ModelLibrary": "모델 라이브러리",
     "Node": "노드",
+    "Node Library": "노드 라이브러리",
     "Node Search Box": "노드 검색 상자",
     "Node Widget": "노드 위젯",
     "NodeLibrary": "노드 라이브러리",
@@ -2376,6 +2422,10 @@
     "backToAssets": "모든 에셋으로 돌아가기",
     "browseTemplates": "예제 템플릿 탐색",
     "downloads": "다운로드",
+    "folderView": {
+      "errorDetail": "이 작업의 출력을 가져올 수 없습니다. 다시 시도해 주세요.",
+      "errorSummary": "출력 불러오기 실패"
+    },
     "generatedAssetsHeader": "생성된 에셋",
     "helpCenter": "도움말 센터",
     "importedAssetsHeader": "가져온 에셋",
@@ -2401,6 +2451,9 @@
     "noImportedFiles": "가져온 파일을 찾을 수 없음",
     "nodeLibrary": "노드 라이브러리",
     "nodeLibraryTab": {
+      "allNodes": "모든 노드",
+      "custom": "사용자 정의",
+      "essentials": "필수",
       "groupBy": "그룹 기준",
       "groupStrategies": {
         "category": "카테고리",
@@ -2411,6 +2464,11 @@
         "sourceDesc": "소스 유형(Core, Custom, API)별로 그룹화"
       },
       "resetView": "기본 보기로 재설정",
+      "sections": {
+        "favoriteNode": "즐겨찾는 노드",
+        "favorites": "즐겨찾기",
+        "unfavoriteNode": "즐겨찾기 해제 노드"
+      },
       "sortBy": {
         "alphabetical": "알파벳순",
         "alphabeticalDesc": "그룹 내에서 알파벳순으로 정렬",
@@ -2419,6 +2477,7 @@
       },
       "sortMode": "정렬 방식"
     },
+    "nodes": "노드",
     "openWorkflow": "로컬 파일 시스템에서 워크플로 열기",
     "queue": "실행 대기열",
     "queueProgressOverlay": {
@@ -2426,14 +2485,17 @@
       "activeJobsShort": "{count}개 활성",
       "activeJobsSuffix": "활성 작업",
       "cancelJobTooltip": "작업 취소",
+      "clearAllJobsTooltip": "실행 중인 모든 작업 취소",
       "clearHistory": "작업 대기열 기록 삭제",
       "clearHistoryDialogAssetsNote": "이 작업들로 생성된 에셋은 삭제되지 않으며, 언제든지 에셋 패널에서 볼 수 있습니다.",
       "clearHistoryDialogDescription": "아래의 완료되었거나 실패한 모든 작업이 이 작업 대기열 패널에서 삭제됩니다.",
       "clearHistoryDialogTitle": "작업 대기열 기록을 삭제하시겠습니까?",
+      "clearHistoryMenuAssetsNote": "미디어 에셋은 삭제되지 않습니다.",
       "clearQueueTooltip": "대기열 비우기",
       "clearQueued": "대기열 비우기",
       "colonPercent": ": {percent}",
       "currentNode": "현재 노드:",
+      "dockedJobHistory": "도킹된 작업 기록",
       "expandCollapsedQueue": "작업 대기열 확장",
       "filterAllWorkflows": "모든 워크플로우",
       "filterBy": "필터 기준",
@@ -2455,6 +2517,7 @@
       "running": "실행 중",
       "runningJobsLabel": "{count}개 실행 중",
       "runningQueuedSummary": "{running} 실행 중, {queued} 대기 중",
+      "searchJobs": "검색...",
       "showAssets": "에셋 보기",
       "showAssetsPanel": "에셋 패널 보기",
       "sortBy": "정렬 기준",
@@ -2875,6 +2938,10 @@
     "dropPrompt": "파일을 끌어다 놓거나"
   },
   "widgets": {
+    "boolean": {
+      "false": "거짓",
+      "true": "참"
+    },
     "node2only": "Node 2.0 전용",
     "selectModel": "모델 선택",
     "uploadSelect": {

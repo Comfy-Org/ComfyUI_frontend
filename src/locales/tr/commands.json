@@ -44,6 +44,9 @@
   "Comfy_BrowseTemplates": {
     "label": "Şablonlara Gözat"
   },
+  "Comfy_Canvas_CopySelected": {
+    "label": "Kopyala"
+  },
   "Comfy_Canvas_DeleteSelectedItems": {
     "label": "Seçili Öğeleri Sil"
   },
@@ -65,11 +68,17 @@
   "Comfy_Canvas_MoveSelectedNodes_Up": {
     "label": "Seçili Düğümleri Yukarı Taşı"
   },
+  "Comfy_Canvas_PasteFromClipboard": {
+    "label": "Yapıştır"
+  },
   "Comfy_Canvas_ResetView": {
     "label": "Görünümü Sıfırla"
   },
   "Comfy_Canvas_Resize": {
     "label": "Seçili Düğümleri Yeniden Boyutlandır"
+  },
+  "Comfy_Canvas_SelectAll": {
+    "label": "Tümünü Seç"
   },
   "Comfy_Canvas_ToggleLinkVisibility": {
     "label": "Tuval Bağlantı Görünürlüğünü Aç/Kapat"

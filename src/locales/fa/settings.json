@@ -248,6 +248,10 @@
   "Comfy_NodeBadge_ShowApiPricing": {
     "name": "نمایش نشان قیمت‌گذاری API نود"
   },
+  "Comfy_NodeLibrary_NewDesign": {
+    "name": "طراحی جدید کتابخانه Node",
+    "tooltip": "فعال‌سازی نوار کناری بازطراحی‌شده کتابخانه node با تب‌های (ضروری، همه، سفارشی)، جستجوی بهبود یافته و پیش‌نمایش هنگام قرار گرفتن نشانگر ماوس."
+  },
   "Comfy_NodeReplacement_Enabled": {
     "name": "فعال‌سازی جایگزینی خودکار node",
     "tooltip": "در صورت فعال بودن، nodeهای مفقود می‌توانند به‌طور خودکار با معادل‌های جدیدتر خود جایگزین شوند اگر نگاشت جایگزینی وجود داشته باشد."
@@ -256,7 +260,8 @@
     "name": "پیاده‌سازی جعبه جستجوی نود",
     "options": {
       "default": "پیش‌فرض",
-      "litegraph (legacy)": "litegraph (قدیمی)"
+      "litegraph (legacy)": "litegraph (قدیمی)",
+      "v1 (legacy)": "v۱ (قدیمی)"
     }
   },
   "Comfy_NodeSearchBoxImpl_NodePreview": {

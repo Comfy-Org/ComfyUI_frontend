@@ -5,27 +5,26 @@
     :level="item.level"
     as-child
   >
-    <!-- Node with context menu -->
-    <ContextMenuTrigger v-if="item.value.type === 'node'" as-child>
-      <div
-        :class="cn(ROW_CLASS, isSelected && 'bg-comfy-input')"
-        :style="rowStyle"
-        draggable="true"
-        @click.stop="handleClick($event, handleToggle, handleSelect)"
-        @contextmenu="handleContextMenu"
-        @mouseenter="handleMouseEnter"
-        @mouseleave="handleMouseLeave"
-        @dragstart="handleDragStart"
-        @dragend="handleDragEnd"
-      >
-        <i class="icon-[comfy--node] size-4 shrink-0 text-muted-foreground" />
-        <span class="min-w-0 flex-1 truncate text-sm text-foreground">
-          <slot name="node" :node="item.value">
-            {{ item.value.label }}
-          </slot>
-        </span>
-      </div>
-    </ContextMenuTrigger>
+    <!-- Node -->
+    <div
+      v-if="item.value.type === 'node'"
+      :class="cn(ROW_CLASS, isSelected && 'bg-comfy-input')"
+      :style="rowStyle"
+      draggable="true"
+      @click.stop="handleClick($event, handleToggle, handleSelect)"
+      @contextmenu="handleContextMenu"
+      @mouseenter="handleMouseEnter"
+      @mouseleave="handleMouseLeave"
+      @dragstart="handleDragStart"
+      @dragend="handleDragEnd"
+    >
+      <i class="icon-[comfy--node] size-4 shrink-0 text-muted-foreground" />
+      <span class="min-w-0 flex-1 truncate text-sm text-foreground">
+        <slot name="node" :node="item.value">
+          {{ item.value.label }}
+        </slot>
+      </span>
+    </div>
 
     <!-- Folder -->
     <div
@@ -69,7 +68,7 @@
 
 <script setup lang="ts">
 import type { FlattenedItem } from 'reka-ui'
-import { ContextMenuTrigger, TreeItem } from 'reka-ui'
+import { TreeItem } from 'reka-ui'
 import { computed, inject } from 'vue'
 
 import NodePreviewCard from '@/components/node/NodePreviewCard.vue'

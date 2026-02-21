@@ -620,6 +620,7 @@
     "COMFY_MATCHTYPE_V3": "COMFY_MATCHTYPE_V3",
     "CONDITIONING": "條件設定",
     "CONTROL_NET": "ControlNet",
+    "ELEVENLABS_VOICE": "ELEVENLABS_VOICE",
     "FILE_3D": "FILE_3D",
     "FILE_3D_FBX": "FILE_3D_FBX",
     "FILE_3D_GLB": "FILE_3D_GLB",
@@ -728,11 +729,30 @@
     "noStackTrace": "沒有可用的堆疊追蹤",
     "promptExecutionError": "提示執行失敗"
   },
+  "errorOverlay": {
+    "errorCount": "{count} 個錯誤",
+    "seeErrors": "查看錯誤"
+  },
+  "exportToast": {
+    "allExportsCompleted": "所有匯出已完成",
+    "downloadExport": "下載匯出檔",
+    "downloadFailed": "下載「{name}」失敗",
+    "exportCompleted": "ZIP 下載已就緒",
+    "exportError": "匯出失敗",
+    "exportFailed": "{count} 項匯出失敗",
+    "exportFailedSingle": "建立 ZIP 匯出失敗",
+    "exportStarted": "正在準備 ZIP 下載...",
+    "exportingAssets": "正在匯出資產",
+    "noExportsInQueue": "佇列中沒有 {filter} 匯出",
+    "preparingExport": "正在準備匯出...",
+    "retryDownload": "重試下載"
+  },
   "g": {
     "1x": "1倍速",
     "2x": "2倍速",
     "about": "關於",
     "add": "新增",
+    "addNode": "新增節點...",
     "addNodeFilterCondition": "新增節點篩選條件",
     "all": "全部",
     "amount": "數量",
@@ -826,6 +846,7 @@
     "error": "錯誤",
     "errorLoadingImage": "載入圖片時發生錯誤",
     "errorLoadingVideo": "載入影片時發生錯誤",
+    "essentials": "基本功能",
     "experimental": "實驗性",
     "export": "匯出",
     "extensionName": "擴充套件名稱",
@@ -834,9 +855,12 @@
     "failedToCopyJobId": "複製工作 ID 失敗",
     "failedToDownloadImage": "下載圖片失敗",
     "failedToDownloadVideo": "下載影片失敗",
+    "favorites": "我的最愛",
     "feedback": "意見回饋",
     "file": "檔案",
     "filter": "篩選",
+    "filterBy": "篩選依據：",
+    "filterByType": "依 {type} 篩選...",
     "findIssues": "尋找問題",
     "frameNodes": "框架節點",
     "frontendNewer": "前端版本 {frontendVersion} 可能與後端版本 {backendVersion} 不相容。",
@@ -857,6 +881,7 @@
     "inProgress": "進行中",
     "increment": "增加",
     "info": "節點資訊",
+    "input": "輸入",
     "insert": "插入",
     "install": "安裝",
     "installed": "已安裝",
@@ -880,6 +905,7 @@
     "login": "登入",
     "logoAlt": "ComfyUI 標誌",
     "logs": "日誌",
+    "manageExtensions": "管理擴充功能",
     "markdown": "標記語言",
     "micPermissionDenied": "麥克風權限被拒絕",
     "migrate": "遷移",
@@ -887,6 +913,7 @@
     "more": "更多",
     "moreOptions": "更多選項",
     "moreWorkflows": "更多工作流程",
+    "mostRelevant": "最相關",
     "multiSelectDropdown": "多選下拉式選單",
     "name": "名稱",
     "newFolder": "新資料夾",
@@ -917,6 +944,7 @@
     "openManager": "開啟管理器",
     "openNewIssue": "開啟新問題",
     "or": "或",
+    "output": "輸出",
     "overwrite": "覆蓋",
     "playPause": "播放/暫停",
     "playRecording": "播放錄製",
@@ -943,6 +971,7 @@
     },
     "releaseTitle": "{package} {version} 版本發佈",
     "reloadToApplyChanges": "重新載入以套用變更",
+    "remove": "移除",
     "removeImage": "移除圖片",
     "removeTag": "移除標籤",
     "removeVideo": "移除影片",
@@ -1559,6 +1588,7 @@
       "downloadSelectedAll": "全部下載",
       "downloadStarted": "正在下載 {count} 個檔案...",
       "downloadsStarted": "已開始下載 {count} 個檔案",
+      "exportStarted": "正在準備 {count} 個檔案的 ZIP 匯出",
       "exportWorkflowAll": "全部匯出工作流程",
       "failedToAddNodes": "加入節點至工作流程失敗",
       "failedToDeleteAssets": "刪除選取資源失敗",
@@ -1610,6 +1640,8 @@
     "runWorkflowFront": "執行工作流程（前方排隊）",
     "settings": "設定",
     "showMenu": "顯示選單",
+    "stopRunInstant": "立即停止執行",
+    "stopRunInstantTooltip": "停止執行",
     "theme": "主題",
     "toggleBottomPanel": "切換下方面板"
   },
@@ -1635,6 +1667,7 @@
     "Contact Support": "聯絡支援",
     "Convert Selection to Subgraph": "將選取內容轉為子圖",
     "Convert selected nodes to group node": "將選取節點轉為群組節點",
+    "Copy": "複製",
     "Custom Nodes (Legacy)": "自訂節點（舊版）",
     "Custom Nodes Manager": "自訂節點管理員",
     "Decrease Brush Size in MaskEditor": "在 MaskEditor 中減小筆刷大小",
@@ -1689,6 +1722,7 @@
     "Open Outputs Folder": "開啟輸出資料夾",
     "Open Sign In Dialog": "開啟登入對話框",
     "Open extra_model_paths_yaml": "開啟 extra_model_paths.yaml",
+    "Paste": "貼上",
     "Pin/Unpin Selected Items": "釘選/取消釘選選取項目",
     "Pin/Unpin Selected Nodes": "釘選/取消釘選選取節點",
     "Previous Opened Workflow": "上一個已開啟的工作流程",
@@ -1708,6 +1742,7 @@
     "Rotate Right in MaskEditor": "在遮罩編輯器中向右旋轉",
     "Save": "儲存",
     "Save As": "另存新檔",
+    "Select All": "全選",
     "Set Subgraph Description": "設定子圖描述",
     "Set Subgraph Search Aliases": "設定子圖搜尋別名",
     "Show Keybindings Dialog": "顯示快捷鍵對話框",
@@ -1777,6 +1812,7 @@
     "BFL": "BFL",
     "Bria": "Bria",
     "ByteDance": "字節跳動",
+    "ElevenLabs": "ElevenLabs",
     "Gemini": "雙子星",
     "Grok": "Grok",
     "HitPaw": "HitPaw",
@@ -1859,11 +1895,13 @@
     "scheduling": "排程",
     "sd": "SD",
     "sd3": "sd3",
+    "shader": "著色器",
     "sigmas": "西格瑪值",
     "stable_cascade": "stable_cascade",
     "string": "字串",
     "style_model": "風格模型",
     "text": "文字",
+    "textgen": "文字生成",
     "training": "訓練",
     "transform": "轉換",
     "unet": "UNet",
@@ -2021,6 +2059,7 @@
     "errorHelpGithub": "提交 GitHub 問題",
     "errorHelpSupport": "聯絡我們的客服",
     "errors": "錯誤",
+    "executionErrorOccurred": "執行時發生錯誤。請查看「錯誤」分頁以取得詳細資訊。",
     "fallbackGroupTitle": "群組",
     "fallbackNodeTitle": "節點",
     "favorites": "已收藏輸入",
@@ -2070,6 +2109,12 @@
       },
       "prompt_no_outputs": {
         "desc": "工作流程中沒有任何輸出節點（例如：儲存圖像、預覽圖像），無法產生結果。"
+      },
+      "server_error_cloud": {
+        "desc": "伺服器發生非預期錯誤。請稍後再試。"
+      },
+      "server_error_local": {
+        "desc": "伺服器發生非預期錯誤。請檢查伺服器日誌。"
       }
     },
     "properties": "屬性",
@@ -2318,6 +2363,7 @@
     "Menu": "選單",
     "ModelLibrary": "模型庫",
     "Node": "節點",
+    "Node Library": "節點庫",
     "Node Search Box": "節點搜尋框",
     "Node Widget": "節點元件",
     "NodeLibrary": "節點庫",
@@ -2376,6 +2422,10 @@
     "backToAssets": "返回所有資源",
     "browseTemplates": "瀏覽範例模板",
     "downloads": "下載",
+    "folderView": {
+      "errorDetail": "無法取得此作業的輸出。請再試一次。",
+      "errorSummary": "載入輸出失敗"
+    },
     "generatedAssetsHeader": "已產生資產",
     "helpCenter": "說明中心",
     "importedAssetsHeader": "已匯入資產",
@@ -2401,6 +2451,9 @@
     "noImportedFiles": "找不到已匯入的檔案",
     "nodeLibrary": "節點庫",
     "nodeLibraryTab": {
+      "allNodes": "所有節點",
+      "custom": "自訂",
+      "essentials": "基本功能",
       "groupBy": "分組依據",
       "groupStrategies": {
         "category": "類別",
@@ -2411,6 +2464,11 @@
         "sourceDesc": "依來源類型分組（核心、自訂、API）"
       },
       "resetView": "重設檢視為預設值",
+      "sections": {
+        "favoriteNode": "收藏節點",
+        "favorites": "我的最愛",
+        "unfavoriteNode": "取消收藏節點"
+      },
       "sortBy": {
         "alphabetical": "字母順序",
         "alphabeticalDesc": "在分組內以字母排序",
@@ -2419,6 +2477,7 @@
       },
       "sortMode": "排序模式"
     },
+    "nodes": "節點",
     "openWorkflow": "在本機檔案系統中開啟工作流程",
     "queue": "佇列",
     "queueProgressOverlay": {
@@ -2426,14 +2485,17 @@
       "activeJobsShort": "{count} 個進行中",
       "activeJobsSuffix": "執行中作業",
       "cancelJobTooltip": "取消作業",
+      "clearAllJobsTooltip": "取消所有執行中的作業",
       "clearHistory": "清除作業佇列歷史",
       "clearHistoryDialogAssetsNote": "這些作業產生的資產不會被刪除，隨時可從資產面板檢視。",
       "clearHistoryDialogDescription": "下方所有已完成或失敗的作業將會從此作業佇列面板中移除。",
       "clearHistoryDialogTitle": "要清除作業佇列歷史嗎？",
+      "clearHistoryMenuAssetsNote": "媒體資產不會被刪除。",
       "clearQueueTooltip": "清除佇列",
       "clearQueued": "清除已排入佇列",
       "colonPercent": "：{percent}",
       "currentNode": "目前節點：",
+      "dockedJobHistory": "固定工作歷史",
       "expandCollapsedQueue": "展開作業佇列",
       "filterAllWorkflows": "所有工作流程",
       "filterBy": "篩選依據",
@@ -2455,6 +2517,7 @@
       "running": "執行中",
       "runningJobsLabel": "{count} 執行中",
       "runningQueuedSummary": "{running} 執行中, {queued} 已排隊",
+      "searchJobs": "搜尋...",
       "showAssets": "顯示資產",
       "showAssetsPanel": "顯示資產面板",
       "sortBy": "排序依據",
@@ -2875,6 +2938,10 @@
     "dropPrompt": "拖放您的檔案或"
   },
   "widgets": {
+    "boolean": {
+      "false": "否",
+      "true": "是"
+    },
     "node2only": "僅限 Node 2.0",
     "selectModel": "選擇模型",
     "uploadSelect": {

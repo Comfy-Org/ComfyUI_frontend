@@ -620,6 +620,7 @@
     "COMFY_MATCHTYPE_V3": "COMFY_MATCHTYPE_V3",
     "CONDITIONING": "条件",
     "CONTROL_NET": "ControlNet",
+    "ELEVENLABS_VOICE": "ELEVENLABS_VOICE",
     "FILE_3D": "FILE_3D",
     "FILE_3D_FBX": "FILE_3D_FBX",
     "FILE_3D_GLB": "FILE_3D_GLB",
@@ -728,11 +729,30 @@
     "noStackTrace": "无可用堆栈跟踪",
     "promptExecutionError": "提示执行失败"
   },
+  "errorOverlay": {
+    "errorCount": "{count}个错误",
+    "seeErrors": "查看错误"
+  },
+  "exportToast": {
+    "allExportsCompleted": "全部导出完成",
+    "downloadExport": "下载导出文件",
+    "downloadFailed": "下载“{name}”失败",
+    "exportCompleted": "ZIP下载已就绪",
+    "exportError": "导出失败",
+    "exportFailed": "{count}个导出失败",
+    "exportFailedSingle": "创建ZIP导出失败",
+    "exportStarted": "正在准备ZIP下载...",
+    "exportingAssets": "正在导出资源",
+    "noExportsInQueue": "队列中没有{filter}导出",
+    "preparingExport": "正在准备导出...",
+    "retryDownload": "重试下载"
+  },
   "g": {
     "1x": "1倍",
     "2x": "2倍",
     "about": "关于",
     "add": "添加",
+    "addNode": "添加节点...",
     "addNodeFilterCondition": "添加节点筛选条件",
     "all": "全部",
     "amount": "数量",
@@ -826,6 +846,7 @@
     "error": "错误",
     "errorLoadingImage": "图片加载出错",
     "errorLoadingVideo": "视频加载出错",
+    "essentials": "基础",
     "experimental": "测试版",
     "export": "导出",
     "extensionName": "扩展名称",
@@ -834,9 +855,12 @@
     "failedToCopyJobId": "未能复制队列 ID",
     "failedToDownloadImage": "图片下载失败",
     "failedToDownloadVideo": "视频下载失败",
+    "favorites": "收藏夹",
     "feedback": "反馈",
     "file": "文件",
     "filter": "过滤",
+    "filterBy": "筛选方式：",
+    "filterByType": "按{type}筛选...",
     "findIssues": "查找问题",
     "frameNodes": "框选节点",
     "frontendNewer": "前端版本 {frontendVersion} 可能与后端版本 {backendVersion} 不相容。",
@@ -857,6 +881,7 @@
     "inProgress": "进行中",
     "increment": "增加",
     "info": "节点信息",
+    "input": "输入",
     "insert": "插入",
     "install": "安装",
     "installed": "已安装",
@@ -880,6 +905,7 @@
     "login": "登录",
     "logoAlt": "ComfyUI 标志",
     "logs": "日志",
+    "manageExtensions": "管理扩展",
     "markdown": "markdown",
     "micPermissionDenied": "麦克风权限被拒绝",
     "migrate": "迁移",
@@ -887,6 +913,7 @@
     "more": "更多",
     "moreOptions": "更多选项",
     "moreWorkflows": "更多工作流",
+    "mostRelevant": "最相关",
     "multiSelectDropdown": "多选下拉框",
     "name": "名称",
     "newFolder": "新文件夹",
@@ -917,6 +944,7 @@
     "openManager": "打开管理器",
     "openNewIssue": "打开新问题",
     "or": "或",
+    "output": "输出",
     "overwrite": "覆盖",
     "playPause": "开启/暂停",
     "playRecording": "播放录音",
@@ -943,6 +971,7 @@
     },
     "releaseTitle": "{package} {version} 发布",
     "reloadToApplyChanges": "重新加载以应用更改",
+    "remove": "移除",
     "removeImage": "移除图片",
     "removeTag": "移除标签",
     "removeVideo": "移除视频",
@@ -1559,6 +1588,7 @@
       "downloadSelectedAll": "全部下载",
       "downloadStarted": "正在下载 {count} 个文件...",
       "downloadsStarted": "开始下载 {count} 个文件",
+      "exportStarted": "正在为{count}个文件准备ZIP导出",
       "exportWorkflowAll": "导出所有工作流",
       "failedToAddNodes": "添加节点到工作流失败",
       "failedToDeleteAssets": "未能删除所选资产",
@@ -1610,6 +1640,8 @@
     "runWorkflowFront": "运行工作流（排在前面）",
     "settings": "设定",
     "showMenu": "显示菜单",
+    "stopRunInstant": "立即停止运行",
+    "stopRunInstantTooltip": "停止运行",
     "theme": "主题",
     "toggleBottomPanel": "底部面板"
   },
@@ -1635,6 +1667,7 @@
     "Contact Support": "联系支持",
     "Convert Selection to Subgraph": "将选中内容转换为子工作流",
     "Convert selected nodes to group node": "将选中节点转换为组节点",
+    "Copy": "复制",
     "Custom Nodes (Legacy)": "自定义节点（旧版）",
     "Custom Nodes Manager": "自定义节点管理器",
     "Decrease Brush Size in MaskEditor": "在 MaskEditor 中减小笔刷大小",
@@ -1689,6 +1722,7 @@
     "Open Outputs Folder": "打开输出文件夹",
     "Open Sign In Dialog": "打开登录对话框",
     "Open extra_model_paths_yaml": "打开 extra_model_paths.yaml",
+    "Paste": "粘贴",
     "Pin/Unpin Selected Items": "固定/取消固定选定项目",
     "Pin/Unpin Selected Nodes": "固定/取消固定选定节点",
     "Previous Opened Workflow": "上一个打开的工作流",
@@ -1708,6 +1742,7 @@
     "Rotate Right in MaskEditor": "在蒙版编辑器中向右旋转",
     "Save": "保存",
     "Save As": "另存为",
+    "Select All": "全选",
     "Set Subgraph Description": "设置子图描述",
     "Set Subgraph Search Aliases": "设置子图搜索别名",
     "Show Keybindings Dialog": "显示快捷键对话框",
@@ -1777,6 +1812,7 @@
     "BFL": "BFL",
     "Bria": "Bria",
     "ByteDance": "字节跳动",
+    "ElevenLabs": "ElevenLabs",
     "Gemini": "Gemini",
     "Grok": "Grok",
     "HitPaw": "HitPaw",
@@ -1859,11 +1895,13 @@
     "scheduling": "调度",
     "sd": "sd",
     "sd3": "SD3",
+    "shader": "shader",
     "sigmas": "Sigmas",
     "stable_cascade": "StableCascade",
     "string": "字符串",
     "style_model": "风格模型",
     "text": "文本",
+    "textgen": "textgen",
     "training": "训练",
     "transform": "变换",
     "unet": "U-Net",
@@ -2021,6 +2059,7 @@
     "errorHelpGithub": "提交 GitHub 问题",
     "errorHelpSupport": "联系我们的支持团队",
     "errors": "错误",
+    "executionErrorOccurred": "执行过程中发生错误。请查看“错误”标签获取详情。",
     "fallbackGroupTitle": "分组",
     "fallbackNodeTitle": "节点",
     "favorites": "已收藏输入",
@@ -2070,6 +2109,12 @@
       },
       "prompt_no_outputs": {
         "desc": "工作流中没有包含任何输出节点（例如：保存图像、预览图像），无法生成结果。"
+      },
+      "server_error_cloud": {
+        "desc": "服务器遇到意外错误。请稍后再试。"
+      },
+      "server_error_local": {
+        "desc": "服务器遇到意外错误。请检查服务器日志。"
       }
     },
     "properties": "属性",
@@ -2318,6 +2363,7 @@
     "Menu": "菜单",
     "ModelLibrary": "模型库",
     "Node": "节点",
+    "Node Library": "节点库",
     "Node Search Box": "节点搜索框",
     "Node Widget": "节点组件",
     "NodeLibrary": "节点库",
@@ -2376,6 +2422,10 @@
     "backToAssets": "返回所有资产",
     "browseTemplates": "浏览示例模板",
     "downloads": "下载",
+    "folderView": {
+      "errorDetail": "无法获取此任务的输出。请重试。",
+      "errorSummary": "加载输出失败"
+    },
     "generatedAssetsHeader": "生成的资源",
     "helpCenter": "帮助中心",
     "importedAssetsHeader": "已导入资源",
@@ -2402,7 +2452,8 @@
       "sortLongestFirst": "生成时间（最慢）",
       "sortNewestFirst": "最新",
       "sortOldestFirst": "最旧",
-      "title": "媒体资产"
+      "title": "媒体资产",
+      "viewSettings": "查看设置"
     },
     "modelLibrary": "模型库",
     "newBlankWorkflow": "创建空白工作流",
@@ -2412,6 +2463,9 @@
     "noImportedFiles": "未找到导入的文件",
     "nodeLibrary": "节点库",
     "nodeLibraryTab": {
+      "allNodes": "全部节点",
+      "custom": "自定义",
+      "essentials": "基础",
       "groupBy": "分组方式",
       "groupStrategies": {
         "category": "类别",
@@ -2422,6 +2476,11 @@
         "sourceDesc": "按来源类型分组（核心，自定义，API）"
       },
       "resetView": "重置视图为默认",
+      "sections": {
+        "favoriteNode": "收藏节点",
+        "favorites": "收藏夹",
+        "unfavoriteNode": "取消收藏节点"
+      },
       "sortBy": {
         "alphabetical": "字母顺序",
         "alphabeticalDesc": "在分组内按字母顺序排序",
@@ -2430,6 +2489,7 @@
       },
       "sortMode": "排序模式"
     },
+    "nodes": "节点",
     "openWorkflow": "在本地文件系统中打开工作流",
     "queue": "队列",
     "queueProgressOverlay": {
@@ -2437,14 +2497,17 @@
       "activeJobsShort": "{count} 个活动任务 | {count} 个活动任务",
       "activeJobsSuffix": "活跃任务",
       "cancelJobTooltip": "取消任务",
+      "clearAllJobsTooltip": "取消所有正在运行的任务",
       "clearHistory": "清除任务记录",
       "clearHistoryDialogAssetsNote": "这些任务生成的资产不会被删除，并且始终可以在资产面板中查看。",
       "clearHistoryDialogDescription": "以下所有已完成或失败的任务将从队列面板中删除。",
       "clearHistoryDialogTitle": "确定要清除任务记录？",
+      "clearHistoryMenuAssetsNote": "媒体资源不会被删除。",
       "clearQueueTooltip": "清理队列",
       "clearQueued": "清除已执行",
       "colonPercent": "：{percent}",
       "currentNode": "当前节点：",
+      "dockedJobHistory": "停靠的作业历史",
       "expandCollapsedQueue": "展开任务队列",
       "filterAllWorkflows": "全部工作流",
       "filterBy": "筛选方式",
@@ -2466,6 +2529,7 @@
       "running": "运行中",
       "runningJobsLabel": "{count} 个正在运行",
       "runningQueuedSummary": "{running}，{queued}",
+      "searchJobs": "搜索...",
       "showAssets": "显示资产",
       "showAssetsPanel": "显示资产面板",
       "sortBy": "排序方式",
@@ -2886,6 +2950,10 @@
     "dropPrompt": "将文件拖到此处或"
   },
   "widgets": {
+    "boolean": {
+      "false": "否",
+      "true": "是"
+    },
     "node2only": "仅限 Node 2.0",
     "selectModel": "选择模型",
     "uploadSelect": {
