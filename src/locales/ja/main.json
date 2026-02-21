@@ -620,6 +620,7 @@
     "COMFY_MATCHTYPE_V3": "COMFY_MATCHTYPE_V3",
     "CONDITIONING": "条件付け",
     "CONTROL_NET": "コントロールネット",
+    "ELEVENLABS_VOICE": "ELEVENLABS_VOICE",
     "FILE_3D": "FILE_3D",
     "FILE_3D_FBX": "FILE_3D_FBX",
     "FILE_3D_GLB": "FILE_3D_GLB",
@@ -728,11 +729,30 @@
     "noStackTrace": "スタックトレースは利用できません",
     "promptExecutionError": "プロンプトの実行に失敗しました"
   },
+  "errorOverlay": {
+    "errorCount": "{count} 件のエラー",
+    "seeErrors": "エラーを表示"
+  },
+  "exportToast": {
+    "allExportsCompleted": "すべてのエクスポートが完了しました",
+    "downloadExport": "エクスポートをダウンロード",
+    "downloadFailed": "「{name}」のダウンロードに失敗しました",
+    "exportCompleted": "ZIPダウンロードの準備ができました",
+    "exportError": "エクスポートに失敗しました",
+    "exportFailed": "{count} 件のエクスポートに失敗しました",
+    "exportFailedSingle": "ZIPエクスポートの作成に失敗しました",
+    "exportStarted": "ZIPダウンロードを準備中...",
+    "exportingAssets": "アセットをエクスポート中",
+    "noExportsInQueue": "キューに{filter}エクスポートはありません",
+    "preparingExport": "エクスポートを準備中...",
+    "retryDownload": "ダウンロードを再試行"
+  },
   "g": {
     "1x": "1倍速",
     "2x": "2倍速",
     "about": "情報",
     "add": "追加",
+    "addNode": "ノードを追加...",
     "addNodeFilterCondition": "ノードフィルター条件を追加",
     "all": "すべて",
     "amount": "量",
@@ -826,6 +846,7 @@
     "error": "エラー",
     "errorLoadingImage": "画像の読み込みエラー",
     "errorLoadingVideo": "ビデオの読み込みエラー",
+    "essentials": "必須",
     "experimental": "ベータ",
     "export": "エクスポート",
     "extensionName": "拡張機能名",
@@ -834,9 +855,12 @@
     "failedToCopyJobId": "ジョブIDのコピーに失敗しました",
     "failedToDownloadImage": "画像のダウンロードに失敗しました",
     "failedToDownloadVideo": "ビデオのダウンロードに失敗しました",
+    "favorites": "お気に入り",
     "feedback": "フィードバック",
     "file": "ファイル",
     "filter": "フィルタ",
+    "filterBy": "フィルター:",
+    "filterByType": "{type}でフィルター...",
     "findIssues": "問題を見つける",
     "frameNodes": "ノードをフレーム化",
     "frontendNewer": "フロントエンドのバージョン {frontendVersion} はバックエンドのバージョン {backendVersion} と互換性がない可能性があります。",
@@ -857,6 +881,7 @@
     "inProgress": "進行中",
     "increment": "増加",
     "info": "ノード情報",
+    "input": "入力",
     "insert": "挿入",
     "install": "インストール",
     "installed": "インストール済み",
@@ -880,6 +905,7 @@
     "login": "ログイン",
     "logoAlt": "ComfyUIロゴ",
     "logs": "ログ",
+    "manageExtensions": "拡張機能の管理",
     "markdown": "マークダウン",
     "micPermissionDenied": "マイクの許可が拒否されました",
     "migrate": "移行する",
@@ -887,6 +913,7 @@
     "more": "もっと見る",
     "moreOptions": "その他のオプション",
     "moreWorkflows": "さらに多くのワークフロー",
+    "mostRelevant": "最も関連性の高い",
     "multiSelectDropdown": "複数選択ドロップダウン",
     "name": "名前",
     "newFolder": "新しいフォルダー",
@@ -917,6 +944,7 @@
     "openManager": "マネージャーを開く",
     "openNewIssue": "新しい問題を開く",
     "or": "または",
+    "output": "出力",
     "overwrite": "上書き",
     "playPause": "再生/一時停止",
     "playRecording": "録音を再生",
@@ -943,6 +971,7 @@
     },
     "releaseTitle": "{package} {version} リリース",
     "reloadToApplyChanges": "変更を適用するには再読み込みしてください",
+    "remove": "削除",
     "removeImage": "画像を削除",
     "removeTag": "タグを削除",
     "removeVideo": "ビデオを削除",
@@ -1559,6 +1588,7 @@
       "downloadSelectedAll": "すべてダウンロード",
       "downloadStarted": "{count} ファイルをダウンロード中...",
       "downloadsStarted": "{count} ファイルのダウンロードを開始しました",
+      "exportStarted": "{count} 件のファイルのZIPエクスポートを準備中",
       "exportWorkflowAll": "すべてのワークフローをエクスポート",
       "failedToAddNodes": "ノードのワークフローへの追加に失敗しました",
       "failedToDeleteAssets": "選択したアセットの削除に失敗しました",
@@ -1610,6 +1640,8 @@
     "runWorkflowFront": "ワークフローを実行する (先頭にキュー)",
     "settings": "設定",
     "showMenu": "メニューを表示",
+    "stopRunInstant": "実行を即時停止",
+    "stopRunInstantTooltip": "実行を停止",
     "theme": "テーマ",
     "toggleBottomPanel": "下部パネルを切り替え"
   },
@@ -1635,6 +1667,7 @@
     "Contact Support": "サポートに連絡",
     "Convert Selection to Subgraph": "選択範囲をサブグラフに変換",
     "Convert selected nodes to group node": "選択したノードをグループノードに変換",
+    "Copy": "コピー",
     "Custom Nodes (Legacy)": "カスタムノード（レガシー）",
     "Custom Nodes Manager": "カスタムノードマネージャ",
     "Decrease Brush Size in MaskEditor": "マスクエディタでブラシサイズを小さくする",
@@ -1689,6 +1722,7 @@
     "Open Outputs Folder": "出力フォルダーを開く",
     "Open Sign In Dialog": "サインインダイアログを開く",
     "Open extra_model_paths_yaml": "extra_model_paths.yaml を開く",
+    "Paste": "貼り付け",
     "Pin/Unpin Selected Items": "選択したアイテムのピン留め/ピン留め解除",
     "Pin/Unpin Selected Nodes": "選択したノードのピン留め/ピン留め解除",
     "Previous Opened Workflow": "前に開いたワークフロー",
@@ -1708,6 +1742,7 @@
     "Rotate Right in MaskEditor": "マスクエディタで右に回転",
     "Save": "保存",
     "Save As": "名前を付けて保存",
+    "Select All": "すべて選択",
     "Set Subgraph Description": "サブグラフの説明を設定",
     "Set Subgraph Search Aliases": "サブグラフの検索エイリアスを設定",
     "Show Keybindings Dialog": "キーバインドダイアログを表示",
@@ -1777,6 +1812,7 @@
     "BFL": "BFL",
     "Bria": "Bria",
     "ByteDance": "ByteDance",
+    "ElevenLabs": "ElevenLabs",
     "Gemini": "Gemini",
     "Grok": "Grok",
     "HitPaw": "HitPaw",
@@ -1859,11 +1895,13 @@
     "scheduling": "スケジューリング",
     "sd": "sd",
     "sd3": "SD3",
+    "shader": "shader",
     "sigmas": "シグマ",
     "stable_cascade": "安定したカスケード",
     "string": "文字列",
     "style_model": "スタイルモデル",
     "text": "テキスト",
+    "textgen": "textgen",
     "training": "トレーニング",
     "transform": "変換",
     "unet": "U-Net",
@@ -2021,6 +2059,7 @@
     "errorHelpGithub": "GitHub イシューを提出",
     "errorHelpSupport": "サポートに連絡",
     "errors": "エラー",
+    "executionErrorOccurred": "実行中にエラーが発生しました。詳細はエラータブをご確認ください。",
     "fallbackGroupTitle": "グループ",
     "fallbackNodeTitle": "ノード",
     "favorites": "お気に入り入力",
@@ -2070,6 +2109,12 @@
       },
       "prompt_no_outputs": {
         "desc": "ワークフローに結果を生成する出力ノード（例：画像を保存、画像をプレビュー）が含まれていません。"
+      },
+      "server_error_cloud": {
+        "desc": "サーバーで予期しないエラーが発生しました。しばらくしてから再度お試しください。"
+      },
+      "server_error_local": {
+        "desc": "サーバーで予期しないエラーが発生しました。サーバーログをご確認ください。"
       }
     },
     "properties": "プロパティ",
@@ -2376,6 +2421,10 @@
     "backToAssets": "すべてのアセットに戻る",
     "browseTemplates": "サンプルテンプレートを表示",
     "downloads": "ダウンロード",
+    "folderView": {
+      "errorDetail": "このジョブの出力を取得できませんでした。もう一度お試しください。",
+      "errorSummary": "出力の読み込みに失敗しました"
+    },
     "generatedAssetsHeader": "生成されたアセット",
     "helpCenter": "ヘルプセンター",
     "importedAssetsHeader": "インポート済みアセット",
@@ -2401,6 +2450,9 @@
     "noImportedFiles": "インポートされたファイルが見つかりません",
     "nodeLibrary": "ノードライブラリ",
     "nodeLibraryTab": {
+      "allNodes": "すべてのノード",
+      "custom": "カスタム",
+      "essentials": "必須",
       "groupBy": "グループ化",
       "groupStrategies": {
         "category": "カテゴリ",
@@ -2411,6 +2463,9 @@
         "sourceDesc": "ソースタイプ（Core、Custom、API）でグループ化"
       },
       "resetView": "ビューをデフォルトにリセット",
+      "sections": {
+        "favorites": "お気に入り"
+      },
       "sortBy": {
         "alphabetical": "アルファベット順",
         "alphabeticalDesc": "グループ内でアルファベット順に並び替え",
@@ -2419,6 +2474,7 @@
       },
       "sortMode": "並び替えモード"
     },
+    "nodes": "ノード",
     "openWorkflow": "ローカルでワークフローを開く",
     "queue": "キュー",
     "queueProgressOverlay": {
@@ -2426,14 +2482,17 @@
       "activeJobsShort": "{count} 件のアクティブ | {count} 件のアクティブ",
       "activeJobsSuffix": "アクティブジョブ",
       "cancelJobTooltip": "ジョブをキャンセル",
+      "clearAllJobsTooltip": "実行中のすべてのジョブをキャンセル",
       "clearHistory": "ジョブキュー履歴をクリア",
       "clearHistoryDialogAssetsNote": "これらのジョブで生成されたアセットは削除されず、アセットパネルからいつでも表示できます。",
       "clearHistoryDialogDescription": "以下の完了または失敗したジョブは、このジョブキューパネルから削除されます。",
       "clearHistoryDialogTitle": "ジョブキュー履歴をクリアしますか？",
+      "clearHistoryMenuAssetsNote": "メディアアセットは削除されません。",
       "clearQueueTooltip": "キューをクリア",
       "clearQueued": "キュー済みをクリア",
       "colonPercent": ": {percent}",
       "currentNode": "現在のノード：",
+      "dockedJobHistory": "ドックされたジョブ履歴",
       "expandCollapsedQueue": "ジョブキューを展開",
       "filterAllWorkflows": "すべてのワークフロー",
       "filterBy": "フィルター条件",
@@ -2455,6 +2514,7 @@
       "running": "実行中",
       "runningJobsLabel": "{count} 実行中",
       "runningQueuedSummary": "{running} 実行中、{queued} キュー中",
+      "searchJobs": "検索...",
       "showAssets": "アセットを表示",
       "showAssetsPanel": "アセットパネルを表示",
       "sortBy": "並べ替え条件",
@@ -2875,6 +2935,10 @@
     "dropPrompt": "ファイルをドロップするか"
   },
   "widgets": {
+    "boolean": {
+      "false": "false",
+      "true": "true"
+    },
     "node2only": "Node 2.0専用",
     "selectModel": "モデルを選択",
     "uploadSelect": {

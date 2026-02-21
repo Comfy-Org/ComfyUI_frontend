@@ -256,7 +256,8 @@
     "name": "تنفيذ مربع بحث العقدة",
     "options": {
       "default": "افتراضي",
-      "litegraph (legacy)": "لايت جراف (قديم)"
+      "litegraph (legacy)": "لايت جراف (قديم)",
+      "v1 (legacy)": "الإصدار 1 (قديم)"
     }
   },
   "Comfy_NodeSearchBoxImpl_NodePreview": {

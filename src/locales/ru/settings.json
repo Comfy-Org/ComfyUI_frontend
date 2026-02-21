@@ -256,7 +256,8 @@
     "name": "Реализация поискового поля нод",
     "options": {
       "default": "по умолчанию",
-      "litegraph (legacy)": "litegraph (устаревший)"
+      "litegraph (legacy)": "litegraph (устаревший)",
+      "v1 (legacy)": "v1 (устаревший)"
     }
   },
   "Comfy_NodeSearchBoxImpl_NodePreview": {

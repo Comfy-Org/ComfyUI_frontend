@@ -256,7 +256,8 @@
     "name": "ノード検索ボックスの実装",
     "options": {
       "default": "デフォルト",
-      "litegraph (legacy)": "litegraph (レガシー)"
+      "litegraph (legacy)": "litegraph (レガシー)",
+      "v1 (legacy)": "v1（レガシー）"
     }
   },
   "Comfy_NodeSearchBoxImpl_NodePreview": {

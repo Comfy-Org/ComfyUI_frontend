@@ -256,7 +256,8 @@
     "name": "Implementación de la caja de búsqueda de nodos",
     "options": {
       "default": "predeterminado",
-      "litegraph (legacy)": "litegraph (legado)"
+      "litegraph (legacy)": "litegraph (legado)",
+      "v1 (legacy)": "v1 (heredado)"
     }
   },
   "Comfy_NodeSearchBoxImpl_NodePreview": {
