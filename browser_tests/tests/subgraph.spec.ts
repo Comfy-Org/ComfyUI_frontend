@@ -371,6 +371,44 @@ test.describe('Subgraph Operations', { tag: ['@slow', '@subgraph'] }, () => {
     })
   })
 
+  test.describe('Subgraph Unpacking', () => {
+    test('Unpacking subgraph with duplicate links does not create extra links', async ({
+      comfyPage
+    }) => {
+      await comfyPage.workflow.loadWorkflow(
+        'subgraphs/subgraph-duplicate-links'
+      )
+
+      const result = await comfyPage.page.evaluate(() => {
+        const graph = window.app!.graph!
+        const subgraphNode = graph.nodes.find((n) => n.isSubgraphNode())
+        if (!subgraphNode || !subgraphNode.isSubgraphNode()) {
+          return { error: 'No subgraph node found' }
+        }
+
+        graph.unpackSubgraph(subgraphNode)
+
+        const linkCount = graph.links.size
+        const nodes = graph.nodes
+        const ksampler = nodes.find((n) => n.type === 'KSampler')
+        if (!ksampler) return { error: 'No KSampler found after unpack' }
+
+        const linkedInputCount = ksampler.inputs.filter(
+          (i) => i.link != null
+        ).length
+
+        return { linkCount, linkedInputCount, nodeCount: nodes.length }
+      })
+
+      expect(result).not.toHaveProperty('error')
+      // Should have exactly 2 links (EmptyLatentImage→KSampler + KSampler→output)
+      // not 5 (with 3 duplicates)
+      expect(result.linkCount).toBe(2)
+      // KSampler should have exactly 1 linked input (latent_image)
+      expect(result.linkedInputCount).toBe(1)
+    })
+  })
+
   test.describe('Subgraph Creation and Deletion', () => {
     test('Can create subgraph from selected nodes', async ({ comfyPage }) => {
       await comfyPage.workflow.loadWorkflow('default')
