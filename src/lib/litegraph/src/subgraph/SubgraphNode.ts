@@ -86,7 +86,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
 
   private _getPromotedViews(): PromotedWidgetView[] {
     const store = usePromotionStore()
-    const entries = store.getPromotionsRef(this.id)
+    const entries = store.getPromotionsRef(this.rootGraph.id, this.id)
 
     if (this._cachedWidgets && entries === this._cachedEntriesRef)
       return this._cachedWidgets
@@ -309,8 +309,20 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
         // If this widget is already promoted, demote it first
         // so it transitions cleanly to being linked via SubgraphInput.
         const nodeId = String(e.detail.node.id)
-        if (usePromotionStore().isPromoted(this.id, nodeId, widget.name)) {
-          usePromotionStore().demote(this.id, nodeId, widget.name)
+        if (
+          usePromotionStore().isPromoted(
+            this.rootGraph.id,
+            this.id,
+            nodeId,
+            widget.name
+          )
+        ) {
+          usePromotionStore().demote(
+            this.rootGraph.id,
+            this.id,
+            nodeId,
+            widget.name
+          )
         }
 
         const widgetLocator = e.detail.input.widget
@@ -419,7 +431,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
         return { interiorNodeId: nodeId, widgetName }
       })
       .filter((e): e is NonNullable<typeof e> => e !== null)
-    store.setPromotions(this.id, entries)
+    store.setPromotions(this.rootGraph.id, this.id, entries)
 
     // Write back resolved entries so legacy -1 format doesn't persist
     if (raw.some(([id]) => id === '-1')) {
@@ -496,7 +508,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     const widgetName = _widget.name
 
     // Add to promotion store
-    usePromotionStore().promote(this.id, nodeId, widgetName)
+    usePromotionStore().promote(this.rootGraph.id, this.id, nodeId, widgetName)
 
     // Create/retrieve the view from cache
     const key = `${nodeId}:${widgetName}`
@@ -685,6 +697,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     if (isPromotedWidgetView(widget)) {
       this._clearDomOverrideForView(widget)
       usePromotionStore().demote(
+        this.rootGraph.id,
         this.id,
         widget.sourceNodeId,
         widget.sourceWidgetName
@@ -720,7 +733,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
       })
     }
 
-    usePromotionStore().setPromotions(this.id, [])
+    usePromotionStore().setPromotions(this.rootGraph.id, this.id, [])
     this._viewCache.clear()
     this._cachedWidgets = null
     this._cachedEntriesRef = null
@@ -783,7 +796,10 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     }
 
     // Write promotion store state back to properties for serialization
-    const entries = usePromotionStore().getPromotions(this.id)
+    const entries = usePromotionStore().getPromotions(
+      this.rootGraph.id,
+      this.id
+    )
     this.properties.proxyWidgets = entries.map((e) => [
       e.interiorNodeId,
       e.widgetName

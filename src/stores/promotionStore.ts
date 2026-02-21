@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import { ref } from 'vue'
 
 import type { NodeId } from '@/lib/litegraph/src/LGraphNode'
+import type { UUID } from '@/lib/litegraph/src/utils/uuid'
 
 interface PromotionEntry {
   interiorNodeId: string
@@ -9,89 +10,128 @@ interface PromotionEntry {
 }
 
 export const usePromotionStore = defineStore('promotion', () => {
-  const promotions = ref(new Map<NodeId, PromotionEntry[]>())
-  const _refCounts = ref(new Map<string, number>())
+  const graphPromotions = ref(new Map<UUID, Map<NodeId, PromotionEntry[]>>())
+  const graphRefCounts = ref(new Map<UUID, Map<string, number>>())
+
+  function _getPromotionsForGraph(
+    graphId: UUID
+  ): Map<NodeId, PromotionEntry[]> {
+    const promotions = graphPromotions.value.get(graphId)
+    if (promotions) return promotions
+
+    const nextPromotions = new Map<NodeId, PromotionEntry[]>()
+    graphPromotions.value.set(graphId, nextPromotions)
+    return nextPromotions
+  }
+
+  function _getRefCountsForGraph(graphId: UUID): Map<string, number> {
+    const refCounts = graphRefCounts.value.get(graphId)
+    if (refCounts) return refCounts
+
+    const nextRefCounts = new Map<string, number>()
+    graphRefCounts.value.set(graphId, nextRefCounts)
+    return nextRefCounts
+  }
 
   function _makeKey(interiorNodeId: string, widgetName: string): string {
     return `${interiorNodeId}:${widgetName}`
   }
 
-  function _incrementKeys(entries: PromotionEntry[]): void {
+  function _incrementKeys(graphId: UUID, entries: PromotionEntry[]): void {
+    const refCounts = _getRefCountsForGraph(graphId)
     for (const e of entries) {
       const key = _makeKey(e.interiorNodeId, e.widgetName)
-      _refCounts.value.set(key, (_refCounts.value.get(key) ?? 0) + 1)
+      refCounts.set(key, (refCounts.get(key) ?? 0) + 1)
     }
   }
 
-  function _decrementKeys(entries: PromotionEntry[]): void {
+  function _decrementKeys(graphId: UUID, entries: PromotionEntry[]): void {
+    const refCounts = _getRefCountsForGraph(graphId)
     for (const e of entries) {
       const key = _makeKey(e.interiorNodeId, e.widgetName)
-      const count = (_refCounts.value.get(key) ?? 1) - 1
+      const count = (refCounts.get(key) ?? 1) - 1
       if (count <= 0) {
-        _refCounts.value.delete(key)
+        refCounts.delete(key)
       } else {
-        _refCounts.value.set(key, count)
+        refCounts.set(key, count)
       }
     }
   }
 
-  function getPromotionsRef(subgraphNodeId: NodeId): PromotionEntry[] {
-    return promotions.value.get(subgraphNodeId) ?? []
+  function getPromotionsRef(
+    graphId: UUID,
+    subgraphNodeId: NodeId
+  ): PromotionEntry[] {
+    return _getPromotionsForGraph(graphId).get(subgraphNodeId) ?? []
   }
 
-  function getPromotions(subgraphNodeId: NodeId): PromotionEntry[] {
-    return [...getPromotionsRef(subgraphNodeId)]
+  function getPromotions(
+    graphId: UUID,
+    subgraphNodeId: NodeId
+  ): PromotionEntry[] {
+    return [...getPromotionsRef(graphId, subgraphNodeId)]
   }
 
   function isPromoted(
+    graphId: UUID,
     subgraphNodeId: NodeId,
     interiorNodeId: string,
     widgetName: string
   ): boolean {
-    return getPromotionsRef(subgraphNodeId).some(
+    return getPromotionsRef(graphId, subgraphNodeId).some(
       (e) => e.interiorNodeId === interiorNodeId && e.widgetName === widgetName
     )
   }
 
   function isPromotedByAny(
+    graphId: UUID,
     interiorNodeId: string,
     widgetName: string
   ): boolean {
-    return (_refCounts.value.get(_makeKey(interiorNodeId, widgetName)) ?? 0) > 0
+    const refCounts = _getRefCountsForGraph(graphId)
+    return (refCounts.get(_makeKey(interiorNodeId, widgetName)) ?? 0) > 0
   }
 
   function setPromotions(
+    graphId: UUID,
     subgraphNodeId: NodeId,
     entries: PromotionEntry[]
   ): void {
-    const oldEntries = promotions.value.get(subgraphNodeId) ?? []
-    _decrementKeys(oldEntries)
-    _incrementKeys(entries)
+    const promotions = _getPromotionsForGraph(graphId)
+    const oldEntries = promotions.get(subgraphNodeId) ?? []
+    _decrementKeys(graphId, oldEntries)
+    _incrementKeys(graphId, entries)
 
     if (entries.length === 0) {
-      promotions.value.delete(subgraphNodeId)
+      promotions.delete(subgraphNodeId)
     } else {
-      promotions.value.set(subgraphNodeId, [...entries])
+      promotions.set(subgraphNodeId, [...entries])
     }
   }
 
   function promote(
+    graphId: UUID,
     subgraphNodeId: NodeId,
     interiorNodeId: string,
     widgetName: string
   ): void {
-    if (isPromoted(subgraphNodeId, interiorNodeId, widgetName)) return
-    const entries = getPromotionsRef(subgraphNodeId)
-    setPromotions(subgraphNodeId, [...entries, { interiorNodeId, widgetName }])
+    if (isPromoted(graphId, subgraphNodeId, interiorNodeId, widgetName)) return
+    const entries = getPromotionsRef(graphId, subgraphNodeId)
+    setPromotions(graphId, subgraphNodeId, [
+      ...entries,
+      { interiorNodeId, widgetName }
+    ])
   }
 
   function demote(
+    graphId: UUID,
     subgraphNodeId: NodeId,
     interiorNodeId: string,
     widgetName: string
   ): void {
-    const entries = getPromotionsRef(subgraphNodeId)
+    const entries = getPromotionsRef(graphId, subgraphNodeId)
     setPromotions(
+      graphId,
       subgraphNodeId,
       entries.filter(
         (e) =>
@@ -101,11 +141,12 @@ export const usePromotionStore = defineStore('promotion', () => {
   }
 
   function movePromotion(
+    graphId: UUID,
     subgraphNodeId: NodeId,
     fromIndex: number,
     toIndex: number
   ): void {
-    const entries = [...getPromotionsRef(subgraphNodeId)]
+    const entries = [...getPromotionsRef(graphId, subgraphNodeId)]
     if (
       fromIndex < 0 ||
       fromIndex >= entries.length ||
@@ -115,7 +156,12 @@ export const usePromotionStore = defineStore('promotion', () => {
       return
     const [entry] = entries.splice(fromIndex, 1)
     entries.splice(toIndex, 0, entry)
-    setPromotions(subgraphNodeId, entries)
+    setPromotions(graphId, subgraphNodeId, entries)
+  }
+
+  function clearGraph(graphId: UUID): void {
+    graphPromotions.value.delete(graphId)
+    graphRefCounts.value.delete(graphId)
   }
 
   return {
@@ -126,6 +172,7 @@ export const usePromotionStore = defineStore('promotion', () => {
     setPromotions,
     promote,
     demote,
-    movePromotion
+    movePromotion,
+    clearGraph
   }
 })

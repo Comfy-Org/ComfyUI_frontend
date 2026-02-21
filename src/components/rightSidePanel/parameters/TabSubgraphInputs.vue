@@ -40,7 +40,9 @@ const draggableList = ref<DraggableList | undefined>(undefined)
 const sectionWidgetsRef = useTemplateRef('sectionWidgetsRef')
 const advancedInputsSectionRef = useTemplateRef('advancedInputsSectionRef')
 
-const promotionEntries = computed(() => promotionStore.getPromotions(node.id))
+const promotionEntries = computed(() =>
+  promotionStore.getPromotions(node.rootGraph.id, node.id)
+)
 
 watch(
   focusedSection,
@@ -97,7 +99,12 @@ const advancedInputsWidgets = computed((): NodeWidgetsList => {
 
   return allInteriorWidgets.filter(
     ({ node: interiorNode, widget }) =>
-      !promotionStore.isPromoted(node.id, String(interiorNode.id), widget.name)
+      !promotionStore.isPromoted(
+        node.rootGraph.id,
+        node.id,
+        String(interiorNode.id),
+        widget.name
+      )
   )
 })
 
@@ -155,7 +162,12 @@ function setDraggableState() {
       this.draggableItem as HTMLElement
     )
 
-    promotionStore.movePromotion(node.id, oldPosition, newPosition)
+    promotionStore.movePromotion(
+      node.rootGraph.id,
+      node.id,
+      oldPosition,
+      newPosition
+    )
     canvasStore.canvas?.setDirty(true, true)
   }
 }

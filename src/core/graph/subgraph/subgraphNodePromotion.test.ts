@@ -46,22 +46,31 @@ describe('Subgraph proxyWidgets', () => {
   test('Can add simple widget', () => {
     const [subgraphNode, innerNodes] = setupSubgraph(1)
     innerNodes[0].addWidget('text', 'stringWidget', 'value', () => {})
-    usePromotionStore().setPromotions(subgraphNode.id, [
-      { interiorNodeId: '1', widgetName: 'stringWidget' }
-    ])
+    usePromotionStore().setPromotions(
+      subgraphNode.rootGraph.id,
+      subgraphNode.id,
+      [{ interiorNodeId: '1', widgetName: 'stringWidget' }]
+    )
     expect(subgraphNode.widgets.length).toBe(1)
-    expect(usePromotionStore().getPromotions(subgraphNode.id)).toStrictEqual([
-      { interiorNodeId: '1', widgetName: 'stringWidget' }
-    ])
+    expect(
+      usePromotionStore().getPromotions(
+        subgraphNode.rootGraph.id,
+        subgraphNode.id
+      )
+    ).toStrictEqual([{ interiorNodeId: '1', widgetName: 'stringWidget' }])
   })
   test('Can add multiple widgets with same name', () => {
     const [subgraphNode, innerNodes] = setupSubgraph(2)
     for (const innerNode of innerNodes)
       innerNode.addWidget('text', 'stringWidget', 'value', () => {})
-    usePromotionStore().setPromotions(subgraphNode.id, [
-      { interiorNodeId: '1', widgetName: 'stringWidget' },
-      { interiorNodeId: '2', widgetName: 'stringWidget' }
-    ])
+    usePromotionStore().setPromotions(
+      subgraphNode.rootGraph.id,
+      subgraphNode.id,
+      [
+        { interiorNodeId: '1', widgetName: 'stringWidget' },
+        { interiorNodeId: '2', widgetName: 'stringWidget' }
+      ]
+    )
     expect(subgraphNode.widgets.length).toBe(2)
     // Both views share the widget name; they're distinguished by sourceNodeId
     expect(subgraphNode.widgets[0].name).toBe('stringWidget')
@@ -73,7 +82,7 @@ describe('Subgraph proxyWidgets', () => {
     innerNodes[0].addWidget('text', 'widgetA', 'value', () => {})
     innerNodes[0].addWidget('text', 'widgetB', 'value', () => {})
 
-    store.setPromotions(subgraphNode.id, [
+    store.setPromotions(subgraphNode.rootGraph.id, subgraphNode.id, [
       { interiorNodeId: '1', widgetName: 'widgetA' },
       { interiorNodeId: '1', widgetName: 'widgetB' }
     ])
@@ -82,7 +91,7 @@ describe('Subgraph proxyWidgets', () => {
     expect(subgraphNode.widgets[1].name).toBe('widgetB')
 
     // Reorder
-    store.setPromotions(subgraphNode.id, [
+    store.setPromotions(subgraphNode.rootGraph.id, subgraphNode.id, [
       { interiorNodeId: '1', widgetName: 'widgetB' },
       { interiorNodeId: '1', widgetName: 'widgetA' }
     ])
@@ -92,9 +101,11 @@ describe('Subgraph proxyWidgets', () => {
   test('Will mirror changes to value', () => {
     const [subgraphNode, innerNodes] = setupSubgraph(1)
     innerNodes[0].addWidget('text', 'stringWidget', 'value', () => {})
-    usePromotionStore().setPromotions(subgraphNode.id, [
-      { interiorNodeId: '1', widgetName: 'stringWidget' }
-    ])
+    usePromotionStore().setPromotions(
+      subgraphNode.rootGraph.id,
+      subgraphNode.id,
+      [{ interiorNodeId: '1', widgetName: 'stringWidget' }]
+    )
     expect(subgraphNode.widgets.length).toBe(1)
     expect(subgraphNode.widgets[0].value).toBe('value')
     innerNodes[0].widgets![0].value = 'test'
@@ -105,9 +116,11 @@ describe('Subgraph proxyWidgets', () => {
   test('Will not modify position or sizing of existing widgets', () => {
     const [subgraphNode, innerNodes] = setupSubgraph(1)
     innerNodes[0].addWidget('text', 'stringWidget', 'value', () => {})
-    usePromotionStore().setPromotions(subgraphNode.id, [
-      { interiorNodeId: '1', widgetName: 'stringWidget' }
-    ])
+    usePromotionStore().setPromotions(
+      subgraphNode.rootGraph.id,
+      subgraphNode.id,
+      [{ interiorNodeId: '1', widgetName: 'stringWidget' }]
+    )
     if (!innerNodes[0].widgets) throw new Error('node has no widgets')
     innerNodes[0].widgets[0].y = 10
     innerNodes[0].widgets[0].last_y = 11
@@ -122,9 +135,11 @@ describe('Subgraph proxyWidgets', () => {
   test('Renders placeholder when interior widget is detached', () => {
     const [subgraphNode, innerNodes] = setupSubgraph(1)
     innerNodes[0].addWidget('text', 'stringWidget', 'value', () => {})
-    usePromotionStore().setPromotions(subgraphNode.id, [
-      { interiorNodeId: '1', widgetName: 'stringWidget' }
-    ])
+    usePromotionStore().setPromotions(
+      subgraphNode.rootGraph.id,
+      subgraphNode.id,
+      [{ interiorNodeId: '1', widgetName: 'stringWidget' }]
+    )
     if (!innerNodes[0].widgets) throw new Error('node has no widgets')
 
     // View resolves the interior widget's type
@@ -144,17 +159,31 @@ describe('Subgraph proxyWidgets', () => {
     innerNodes[0].addWidget('text', 'stringWidget', 'value', () => {})
 
     // Promote once
-    store.promote(subgraphNode.id, String(innerNodes[0].id), 'stringWidget')
+    store.promote(
+      subgraphNode.rootGraph.id,
+      subgraphNode.id,
+      String(innerNodes[0].id),
+      'stringWidget'
+    )
     expect(subgraphNode.widgets.length).toBe(1)
-    expect(store.getPromotions(subgraphNode.id)).toHaveLength(1)
+    expect(
+      store.getPromotions(subgraphNode.rootGraph.id, subgraphNode.id)
+    ).toHaveLength(1)
 
     // Try to promote again - should not create duplicate
-    store.promote(subgraphNode.id, String(innerNodes[0].id), 'stringWidget')
+    store.promote(
+      subgraphNode.rootGraph.id,
+      subgraphNode.id,
+      String(innerNodes[0].id),
+      'stringWidget'
+    )
     expect(subgraphNode.widgets.length).toBe(1)
-    expect(store.getPromotions(subgraphNode.id)).toHaveLength(1)
-    expect(store.getPromotions(subgraphNode.id)).toStrictEqual([
-      { interiorNodeId: '1', widgetName: 'stringWidget' }
-    ])
+    expect(
+      store.getPromotions(subgraphNode.rootGraph.id, subgraphNode.id)
+    ).toHaveLength(1)
+    expect(
+      store.getPromotions(subgraphNode.rootGraph.id, subgraphNode.id)
+    ).toStrictEqual([{ interiorNodeId: '1', widgetName: 'stringWidget' }])
   })
 
   test('removeWidget removes from promotion list and view cache', () => {
@@ -162,7 +191,7 @@ describe('Subgraph proxyWidgets', () => {
     const store = usePromotionStore()
     innerNodes[0].addWidget('text', 'widgetA', 'a', () => {})
     innerNodes[0].addWidget('text', 'widgetB', 'b', () => {})
-    store.setPromotions(subgraphNode.id, [
+    store.setPromotions(subgraphNode.rootGraph.id, subgraphNode.id, [
       { interiorNodeId: '1', widgetName: 'widgetA' },
       { interiorNodeId: '1', widgetName: 'widgetB' }
     ])
@@ -173,19 +202,23 @@ describe('Subgraph proxyWidgets', () => {
 
     expect(subgraphNode.widgets).toHaveLength(1)
     expect(subgraphNode.widgets[0].name).toBe('widgetB')
-    expect(store.getPromotions(subgraphNode.id)).toStrictEqual([
-      { interiorNodeId: '1', widgetName: 'widgetB' }
-    ])
+    expect(
+      store.getPromotions(subgraphNode.rootGraph.id, subgraphNode.id)
+    ).toStrictEqual([{ interiorNodeId: '1', widgetName: 'widgetB' }])
   })
 
   test('removeWidgetByName removes from promotion list', () => {
     const [subgraphNode, innerNodes] = setupSubgraph(1)
     innerNodes[0].addWidget('text', 'widgetA', 'a', () => {})
     innerNodes[0].addWidget('text', 'widgetB', 'b', () => {})
-    usePromotionStore().setPromotions(subgraphNode.id, [
-      { interiorNodeId: '1', widgetName: 'widgetA' },
-      { interiorNodeId: '1', widgetName: 'widgetB' }
-    ])
+    usePromotionStore().setPromotions(
+      subgraphNode.rootGraph.id,
+      subgraphNode.id,
+      [
+        { interiorNodeId: '1', widgetName: 'widgetA' },
+        { interiorNodeId: '1', widgetName: 'widgetB' }
+      ]
+    )
 
     subgraphNode.removeWidgetByName('widgetA')
 
@@ -196,9 +229,11 @@ describe('Subgraph proxyWidgets', () => {
   test('removeWidget cleans up input references', () => {
     const [subgraphNode, innerNodes] = setupSubgraph(1)
     innerNodes[0].addWidget('text', 'stringWidget', 'value', () => {})
-    usePromotionStore().setPromotions(subgraphNode.id, [
-      { interiorNodeId: '1', widgetName: 'stringWidget' }
-    ])
+    usePromotionStore().setPromotions(
+      subgraphNode.rootGraph.id,
+      subgraphNode.id,
+      [{ interiorNodeId: '1', widgetName: 'stringWidget' }]
+    )
 
     const view = subgraphNode.widgets[0]
     // Simulate an input referencing the widget
@@ -215,9 +250,11 @@ describe('Subgraph proxyWidgets', () => {
   test('serialize does not produce widgets_values for promoted views', () => {
     const [subgraphNode, innerNodes] = setupSubgraph(1)
     innerNodes[0].addWidget('text', 'stringWidget', 'value', () => {})
-    usePromotionStore().setPromotions(subgraphNode.id, [
-      { interiorNodeId: '1', widgetName: 'stringWidget' }
-    ])
+    usePromotionStore().setPromotions(
+      subgraphNode.rootGraph.id,
+      subgraphNode.id,
+      [{ interiorNodeId: '1', widgetName: 'stringWidget' }]
+    )
     expect(subgraphNode.widgets).toHaveLength(1)
 
     const serialized = subgraphNode.serialize()
@@ -231,10 +268,14 @@ describe('Subgraph proxyWidgets', () => {
     const [subgraphNode, innerNodes] = setupSubgraph(1)
     innerNodes[0].addWidget('text', 'widgetA', 'a', () => {})
     innerNodes[0].addWidget('text', 'widgetB', 'b', () => {})
-    usePromotionStore().setPromotions(subgraphNode.id, [
-      { interiorNodeId: '1', widgetName: 'widgetA' },
-      { interiorNodeId: '1', widgetName: 'widgetB' }
-    ])
+    usePromotionStore().setPromotions(
+      subgraphNode.rootGraph.id,
+      subgraphNode.id,
+      [
+        { interiorNodeId: '1', widgetName: 'widgetA' },
+        { interiorNodeId: '1', widgetName: 'widgetB' }
+      ]
+    )
 
     const serialized = subgraphNode.serialize()
 

@@ -50,7 +50,7 @@ export function promoteWidget(
   )
   const widgetName = getWidgetName(widget)
   for (const parent of parents) {
-    store.promote(parent.id, nodeId, widgetName)
+    store.promote(parent.rootGraph.id, parent.id, nodeId, widgetName)
   }
 }
 
@@ -65,7 +65,7 @@ export function demoteWidget(
   )
   const widgetName = getWidgetName(widget)
   for (const parent of parents) {
-    store.demote(parent.id, nodeId, widgetName)
+    store.demote(parent.rootGraph.id, parent.id, nodeId, widgetName)
   }
 }
 
@@ -98,7 +98,7 @@ export function addWidgetPromotionOptions(
   const nodeId = String(node.id)
   const widgetName = getWidgetName(widget)
   const promotableParents = parents.filter(
-    (s) => !store.isPromoted(s.id, nodeId, widgetName)
+    (s) => !store.isPromoted(s.rootGraph.id, s.id, nodeId, widgetName)
   )
   if (promotableParents.length > 0)
     options.unshift({
@@ -135,7 +135,7 @@ export function tryToggleWidgetPromotion() {
   const nodeId = String(node.id)
   const widgetName = getWidgetName(widget)
   const promotableParents = parents.filter(
-    (s) => !store.isPromoted(s.id, nodeId, widgetName)
+    (s) => !store.isPromoted(s.rootGraph.id, s.id, nodeId, widgetName)
   )
   if (promotableParents.length > 0)
     promoteWidget(node, widget, promotableParents)
@@ -171,7 +171,14 @@ export function promoteRecommendedWidgets(subgraphNode: SubgraphNode) {
     function promotePreviewWidget() {
       const widget = node.widgets?.find(isPreviewPseudoWidget)
       if (!widget) return
-      if (store.isPromoted(subgraphNode.id, String(node.id), widget.name))
+      if (
+        store.isPromoted(
+          subgraphNode.rootGraph.id,
+          subgraphNode.id,
+          String(node.id),
+          widget.name
+        )
+      )
         return
       promoteWidget(node, widget, [subgraphNode])
     }
@@ -190,7 +197,12 @@ export function promoteRecommendedWidgets(subgraphNode: SubgraphNode) {
     .flatMap(nodeWidgets)
     .filter(isRecommendedWidget)
   for (const [n, w] of filteredWidgets) {
-    store.promote(subgraphNode.id, String(n.id), getWidgetName(w))
+    store.promote(
+      subgraphNode.rootGraph.id,
+      subgraphNode.id,
+      String(n.id),
+      getWidgetName(w)
+    )
   }
   subgraphNode.computeSize(subgraphNode.size)
 }
@@ -198,10 +210,12 @@ export function promoteRecommendedWidgets(subgraphNode: SubgraphNode) {
 export function pruneDisconnected(subgraphNode: SubgraphNode) {
   const store = usePromotionStore()
   const subgraph = subgraphNode.subgraph
-  const validEntries = store.getPromotions(subgraphNode.id).filter((entry) => {
-    const node = subgraph.getNodeById(entry.interiorNodeId)
-    if (!node) return false
-    return node.widgets?.some((iw) => iw.name === entry.widgetName) ?? false
-  })
-  store.setPromotions(subgraphNode.id, validEntries)
+  const validEntries = store
+    .getPromotions(subgraphNode.rootGraph.id, subgraphNode.id)
+    .filter((entry) => {
+      const node = subgraph.getNodeById(entry.interiorNodeId)
+      if (!node) return false
+      return node.widgets?.some((iw) => iw.name === entry.widgetName) ?? false
+    })
+  store.setPromotions(subgraphNode.rootGraph.id, subgraphNode.id, validEntries)
 }

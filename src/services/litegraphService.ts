@@ -801,7 +801,8 @@ export const useLitegraphService = () => {
 
       if (this instanceof SubgraphNode) {
         const promotionStore = usePromotionStore()
-        const entries = promotionStore.getPromotions(this.id) ?? []
+        const entries =
+          promotionStore.getPromotions(this.rootGraph.id, this.id) ?? []
         const parentGraph = this.graph
         const pseudoEntries = entries.filter((e) => {
           const interiorNode = this.subgraph.getNodeById(e.interiorNodeId)

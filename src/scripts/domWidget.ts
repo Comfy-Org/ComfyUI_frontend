@@ -178,10 +178,20 @@ abstract class BaseDOMWidgetImpl<V extends object | string>
       )
       ctx.fill()
       ctx.fillStyle = originalFillStyle
-    } else if (
-      usePromotionStore().isPromotedByAny(String(this.node.id), this.name) &&
-      this.isVisible()
-    ) {
+    } else {
+      const graphId = this.node.graph?.rootGraph.id
+      const isPromoted =
+        graphId &&
+        usePromotionStore().isPromotedByAny(
+          graphId,
+          String(this.node.id),
+          this.name
+        )
+      if (!isPromoted || !this.isVisible()) {
+        this.options.onDraw?.(this)
+        return
+      }
+
       ctx.save()
       const adjustedMargin = this.margin - 1
       ctx.beginPath()

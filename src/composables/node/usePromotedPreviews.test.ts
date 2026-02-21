@@ -83,7 +83,12 @@ describe(usePromotedPreviews, () => {
   it('returns empty array when no $$ promotions exist', () => {
     const setup = createSetup()
     addInteriorNode(setup, { id: 10 })
-    usePromotionStore().promote(setup.subgraphNode.id, '10', 'seed')
+    usePromotionStore().promote(
+      setup.subgraphNode.rootGraph.id,
+      setup.subgraphNode.id,
+      '10',
+      'seed'
+    )
 
     const { promotedPreviews } = usePromotedPreviews(() => setup.subgraphNode)
     expect(promotedPreviews.value).toEqual([])
@@ -93,6 +98,7 @@ describe(usePromotedPreviews, () => {
     const setup = createSetup()
     addInteriorNode(setup, { id: 10, previewMediaType: 'image' })
     usePromotionStore().promote(
+      setup.subgraphNode.rootGraph.id,
       setup.subgraphNode.id,
       '10',
       '$$canvas-image-preview'
@@ -117,6 +123,7 @@ describe(usePromotedPreviews, () => {
     const setup = createSetup()
     addInteriorNode(setup, { id: 10, previewMediaType: 'video' })
     usePromotionStore().promote(
+      setup.subgraphNode.rootGraph.id,
       setup.subgraphNode.id,
       '10',
       '$$canvas-image-preview'
@@ -135,6 +142,7 @@ describe(usePromotedPreviews, () => {
     const setup = createSetup()
     addInteriorNode(setup, { id: 10, previewMediaType: 'audio' })
     usePromotionStore().promote(
+      setup.subgraphNode.rootGraph.id,
       setup.subgraphNode.id,
       '10',
       '$$canvas-image-preview'
@@ -160,11 +168,13 @@ describe(usePromotedPreviews, () => {
       previewMediaType: 'image'
     })
     usePromotionStore().promote(
+      setup.subgraphNode.rootGraph.id,
       setup.subgraphNode.id,
       '10',
       '$$canvas-image-preview'
     )
     usePromotionStore().promote(
+      setup.subgraphNode.rootGraph.id,
       setup.subgraphNode.id,
       '20',
       '$$canvas-image-preview'
@@ -189,6 +199,7 @@ describe(usePromotedPreviews, () => {
     const setup = createSetup()
     addInteriorNode(setup, { id: 10 })
     usePromotionStore().promote(
+      setup.subgraphNode.rootGraph.id,
       setup.subgraphNode.id,
       '10',
       '$$canvas-image-preview'
@@ -201,6 +212,7 @@ describe(usePromotedPreviews, () => {
   it('skips missing interior nodes', () => {
     const setup = createSetup()
     usePromotionStore().promote(
+      setup.subgraphNode.rootGraph.id,
       setup.subgraphNode.id,
       '99',
       '$$canvas-image-preview'
@@ -213,8 +225,14 @@ describe(usePromotedPreviews, () => {
   it('ignores non-$$ promoted widgets', () => {
     const setup = createSetup()
     addInteriorNode(setup, { id: 10 })
-    usePromotionStore().promote(setup.subgraphNode.id, '10', 'seed')
     usePromotionStore().promote(
+      setup.subgraphNode.rootGraph.id,
+      setup.subgraphNode.id,
+      '10',
+      'seed'
+    )
+    usePromotionStore().promote(
+      setup.subgraphNode.rootGraph.id,
       setup.subgraphNode.id,
       '10',
       '$$canvas-image-preview'

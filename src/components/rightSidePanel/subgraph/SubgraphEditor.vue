@@ -35,7 +35,7 @@ const draggableItems = ref()
 const promotionEntries = computed(() => {
   const node = activeNode.value
   if (!node) return []
-  return promotionStore.getPromotions(node.id)
+  return promotionStore.getPromotions(node.rootGraph.id, node.id)
 })
 
 const activeNode = computed(() => {
@@ -72,6 +72,7 @@ const activeWidgets = computed<WidgetItem[]>({
       return
     }
     promotionStore.setPromotions(
+      node.rootGraph.id,
       node.id,
       value.map(([n, w]) => ({
         interiorNodeId: String(n.id),
@@ -100,7 +101,12 @@ const candidateWidgets = computed<WidgetItem[]>(() => {
   if (!node) return []
   return interiorWidgets.value.filter(
     ([n, w]: WidgetItem) =>
-      !promotionStore.isPromoted(node.id, String(n.id), w.name)
+      !promotionStore.isPromoted(
+        node.rootGraph.id,
+        node.id,
+        String(n.id),
+        w.name
+      )
   )
 })
 const filteredCandidates = computed<WidgetItem[]>(() => {
@@ -140,19 +146,29 @@ function demote([node, widget]: WidgetItem) {
   const subgraphNode = activeNode.value
   if (!subgraphNode) return
   demoteWidget(node, widget, [subgraphNode])
-  promotionStore.demote(subgraphNode.id, String(node.id), getWidgetName(widget))
+  promotionStore.demote(
+    subgraphNode.rootGraph.id,
+    subgraphNode.id,
+    String(node.id),
+    getWidgetName(widget)
+  )
 }
 function promote([node, widget]: WidgetItem) {
   const subgraphNode = activeNode.value
   if (!subgraphNode) return
   promoteWidget(node, widget, [subgraphNode])
-  promotionStore.promote(subgraphNode.id, String(node.id), widget.name)
+  promotionStore.promote(
+    subgraphNode.rootGraph.id,
+    subgraphNode.id,
+    String(node.id),
+    widget.name
+  )
 }
 function showAll() {
   const node = activeNode.value
   if (!node) return
   for (const [n, w] of filteredCandidates.value) {
-    promotionStore.promote(node.id, String(n.id), w.name)
+    promotionStore.promote(node.rootGraph.id, node.id, String(n.id), w.name)
   }
 }
 function hideAll() {
@@ -160,14 +176,19 @@ function hideAll() {
   if (!node) return
   for (const [n, w] of filteredActive.value) {
     if (String(n.id) === '-1') continue
-    promotionStore.demote(node.id, String(n.id), getWidgetName(w))
+    promotionStore.demote(
+      node.rootGraph.id,
+      node.id,
+      String(n.id),
+      getWidgetName(w)
+    )
   }
 }
 function showRecommended() {
   const node = activeNode.value
   if (!node) return
   for (const [n, w] of recommendedWidgets.value) {
-    promotionStore.promote(node.id, String(n.id), w.name)
+    promotionStore.promote(node.rootGraph.id, node.id, String(n.id), w.name)
   }
 }
 
