@@ -371,6 +371,14 @@ export const useNodeDefStore = defineStore('nodeDef', () => {
     }
     return types
   })
+  const allNodeDefsByName = computed(() => {
+    const map: Record<string, ComfyNodeDefImpl> = {}
+    for (const nodeDef of nodeDefs.value) {
+      map[nodeDef.name] = nodeDef
+    }
+    return map
+  })
+
   const visibleNodeDefs = computed(() => {
     return nodeDefs.value.filter((nodeDef) =>
       nodeDefFilters.value.every((filter) => filter.predicate(nodeDef))
@@ -496,6 +504,7 @@ export const useNodeDefStore = defineStore('nodeDef', () => {
   return {
     nodeDefsByName,
     nodeDefsByDisplayName,
+    allNodeDefsByName,
     showDeprecated,
     showExperimental,
     showDevOnly,
