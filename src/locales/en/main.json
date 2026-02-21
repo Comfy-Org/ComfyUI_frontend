@@ -2012,7 +2012,9 @@
     "signOut": {
       "signOut": "Log Out",
       "success": "Signed out successfully",
-      "successDetail": "You have been signed out of your account."
+      "successDetail": "You have been signed out of your account.",
+      "unsavedChangesTitle": "Unsaved Changes",
+      "unsavedChangesMessage": "You have unsaved changes that will be lost when you sign out. Do you want to continue?"
     },
     "passwordUpdate": {
       "success": "Password Updated",

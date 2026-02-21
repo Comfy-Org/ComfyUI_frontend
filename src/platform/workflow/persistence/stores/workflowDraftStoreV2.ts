@@ -48,23 +48,34 @@ interface LoadPersistedWorkflowOptions {
 }
 
 export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
-  const workspaceId = getWorkspaceId()
+  // In-memory cache of the index per workspace (synced with localStorage)
+  // Key is workspaceId, value is the cached index
+  const indexCacheByWorkspace = ref<Record<string, DraftIndexV2>>({})
 
-  // In-memory cache of the index (synced with localStorage)
-  const indexCache = ref<DraftIndexV2 | null>(null)
+  /**
+   * Gets the current workspace ID fresh (not cached).
+   * This ensures operations use the correct workspace after switches.
+   */
+  function currentWorkspaceId(): string {
+    return getWorkspaceId()
+  }
 
   /**
    * Loads the index from localStorage or creates empty.
    */
   function loadIndex(): DraftIndexV2 {
-    if (indexCache.value) return indexCache.value
+    const workspaceId = currentWorkspaceId()
+
+    if (indexCacheByWorkspace.value[workspaceId]) {
+      return indexCacheByWorkspace.value[workspaceId]
+    }
 
     const stored = readIndex(workspaceId)
     if (stored) {
       // Clean up any index/payload drift
       const payloadKeys = new Set(getPayloadKeys(workspaceId))
       const cleaned = removeOrphanedEntries(stored, payloadKeys)
-      indexCache.value = cleaned
+      indexCacheByWorkspace.value[workspaceId] = cleaned
 
       // Also clean up orphan payloads
       const indexKeys = new Set(cleaned.order)
@@ -73,15 +84,17 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
       return cleaned
     }
 
-    indexCache.value = createEmptyIndex()
-    return indexCache.value
+    const emptyIndex = createEmptyIndex()
+    indexCacheByWorkspace.value[workspaceId] = emptyIndex
+    return emptyIndex
   }
 
   /**
    * Persists the current index to localStorage.
    */
   function persistIndex(index: DraftIndexV2): boolean {
-    indexCache.value = index
+    const workspaceId = currentWorkspaceId()
+    indexCacheByWorkspace.value[workspaceId] = index
     return writeIndex(workspaceId, index)
   }
 
@@ -92,6 +105,7 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
   function saveDraft(path: string, data: string, meta: DraftMeta): boolean {
     if (!isStorageAvailable()) return false
 
+    const workspaceId = currentWorkspaceId()
     const draftKey = hashPath(path)
     const now = Date.now()
 
@@ -136,6 +150,7 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
     data: string,
     meta: DraftMeta
   ): boolean {
+    const workspaceId = currentWorkspaceId()
     const index = loadIndex()
     const draftKey = hashPath(path)
 
@@ -188,6 +203,7 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
    * Removes a draft.
    */
   function removeDraft(path: string): void {
+    const workspaceId = currentWorkspaceId()
     const index = loadIndex()
     const { index: newIndex, removedKey } = removeEntry(index, path)
 
@@ -201,6 +217,7 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
    * Moves a draft from one path to another (rename).
    */
   function moveDraft(oldPath: string, newPath: string, name: string): void {
+    const workspaceId = currentWorkspaceId()
     const index = loadIndex()
     const result = moveEntry(index, oldPath, newPath, name)
 
@@ -228,6 +245,7 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
   function getDraft(
     path: string
   ): { data: string; name: string; isTemporary: boolean } | null {
+    const workspaceId = currentWorkspaceId()
     const index = loadIndex()
     const entry = getEntryByPath(index, path)
     if (!entry) return null
@@ -318,6 +336,13 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
       }
     }
 
+    // Legacy fallbacks are NOT workspace-scoped and must only be used for
+    // personal workspace to prevent cross-workspace data leakage.
+    // These exist only for migration from V1 and should be removed after 2026-07-15.
+    if (currentWorkspaceId() !== 'personal') {
+      return false
+    }
+
     // 3. Legacy fallback: sessionStorage payload (remove after 2026-07-15)
     const clientId = api.initialClientId ?? api.clientId
     if (clientId) {
@@ -341,10 +366,11 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
   }
 
   /**
-   * Resets the store (clears in-memory cache).
+   * Resets the store (clears in-memory cache for current workspace).
    */
   function reset(): void {
-    indexCache.value = null
+    const workspaceId = currentWorkspaceId()
+    delete indexCacheByWorkspace.value[workspaceId]
   }
 
   return {
