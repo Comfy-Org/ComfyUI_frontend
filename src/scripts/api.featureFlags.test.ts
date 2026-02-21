@@ -1,5 +1,6 @@
 import type { Mock } from 'vitest'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { computed, nextTick } from 'vue'
 
 import { api } from '@/scripts/api'
 
@@ -38,7 +39,7 @@ describe('API Feature Flags', () => {
     })
 
     // Reset API state
-    api.serverFeatureFlags = {}
+    api.serverFeatureFlags.value = {}
 
     // Mock getClientFeatureFlags to return test feature flags
     vi.spyOn(api, 'getClientFeatureFlags').mockReturnValue({
@@ -102,7 +103,7 @@ describe('API Feature Flags', () => {
       await initPromise
 
       // Check that server features were stored
-      expect(api.serverFeatureFlags).toEqual({
+      expect(api.serverFeatureFlags.value).toEqual({
         supports_preview_metadata: true,
         async_execution: true,
         supported_formats: ['webp', 'jpeg', 'png'],
@@ -144,14 +145,14 @@ describe('API Feature Flags', () => {
       await initPromise
 
       // Server features should remain empty
-      expect(api.serverFeatureFlags).toEqual({})
+      expect(api.serverFeatureFlags.value).toEqual({})
     })
   })
 
   describe('Feature checking methods', () => {
     beforeEach(() => {
       // Set up some test features
-      api.serverFeatureFlags = {
+      api.serverFeatureFlags.value = {
         supports_preview_metadata: true,
         async_execution: false,
         capabilities: ['isolated_nodes', 'dynamic_models']
@@ -208,12 +209,28 @@ describe('API Feature Flags', () => {
   describe('Integration with preview messages', () => {
     it('should affect preview message handling based on feature support', () => {
       // Test with metadata support
-      api.serverFeatureFlags = { supports_preview_metadata: true }
+      api.serverFeatureFlags.value = { supports_preview_metadata: true }
       expect(api.serverSupportsFeature('supports_preview_metadata')).toBe(true)
 
       // Test without metadata support
-      api.serverFeatureFlags = {}
+      api.serverFeatureFlags.value = {}
       expect(api.serverSupportsFeature('supports_preview_metadata')).toBe(false)
+    })
+  })
+
+  describe('Reactivity', () => {
+    it('should trigger computed updates when serverFeatureFlags changes', async () => {
+      api.serverFeatureFlags.value = {}
+
+      const flag = computed(() =>
+        api.getServerFeature('supports_preview_metadata', false)
+      )
+      expect(flag.value).toBe(false)
+
+      api.serverFeatureFlags.value = { supports_preview_metadata: true }
+      await nextTick()
+
+      expect(flag.value).toBe(true)
     })
   })
 })
