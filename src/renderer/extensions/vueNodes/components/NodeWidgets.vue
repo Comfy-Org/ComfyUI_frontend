@@ -87,6 +87,7 @@ import { useSettingStore } from '@/platform/settings/settingStore'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { st } from '@/i18n'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useNodeTooltips } from '@/renderer/extensions/vueNodes/composables/useNodeTooltips'
 import { useNodeZIndex } from '@/renderer/extensions/vueNodes/composables/useNodeZIndex'
 import WidgetDOM from '@/renderer/extensions/vueNodes/widgets/components/WidgetDOM.vue'
@@ -116,6 +117,7 @@ const { nodeData } = defineProps<NodeWidgetsProps>()
 
 const { shouldHandleNodePointerEvents, forwardEventToCanvas } =
   useCanvasInteractions()
+const canvasStore = useCanvasStore()
 const { bringNodeToFront } = useNodeZIndex()
 const executionStore = useExecutionStore()
 const promotionStore = usePromotionStore()
@@ -173,6 +175,7 @@ interface ProcessedWidget {
 const processedWidgets = computed((): ProcessedWidget[] => {
   if (!nodeData?.widgets) return []
   const nodeErrors = executionStore.lastNodeErrors?.[nodeData.id ?? '']
+  const graphId = canvasStore.canvas?.graph?.rootGraph.id
 
   const nodeId = nodeData.id
   const { widgets } = nodeData
@@ -189,7 +192,9 @@ const processedWidgets = computed((): ProcessedWidget[] => {
 
     // Get metadata from store (registered during BaseWidget.setNodeId)
     const bareWidgetId = stripGraphPrefix(widget.nodeId ?? nodeId)
-    const widgetState = widgetValueStore.getWidget(bareWidgetId, widget.name)
+    const widgetState = graphId
+      ? widgetValueStore.getWidget(graphId, bareWidgetId, widget.name)
+      : undefined
 
     // Get value from store (falls back to undefined if not registered)
     const value = widgetState?.value as WidgetValue
@@ -202,8 +207,9 @@ const processedWidgets = computed((): ProcessedWidget[] => {
 
     const isPromotedView = !!widget.nodeId
     const borderStyle =
+      graphId &&
       !isPromotedView &&
-      promotionStore.isPromotedByAny(String(bareWidgetId), widget.name)
+      promotionStore.isPromotedByAny(graphId, String(bareWidgetId), widget.name)
         ? 'ring ring-component-node-widget-promoted'
         : widget.options?.advanced
           ? 'ring ring-component-node-widget-advanced'

@@ -143,10 +143,15 @@ app.registerExtension({
         }
 
         audioUIWidget.options.getValue = () =>
-          (useWidgetValueStore().getWidget(node.id, inputName)
-            ?.value as string) ?? ''
+          (useWidgetValueStore().getWidget(
+            node.graph?.rootGraph.id ?? app.rootGraph.id,
+            node.id,
+            inputName
+          )?.value as string) ?? ''
         audioUIWidget.options.setValue = (v) => {
+          const graphId = node.graph?.rootGraph.id ?? app.rootGraph.id
           const widgetState = useWidgetValueStore().getWidget(
+            graphId,
             node.id,
             inputName
           )

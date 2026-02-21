@@ -54,6 +54,7 @@ function setPromotions(
   entries: [string, string][]
 ) {
   usePromotionStore().setPromotions(
+    subgraphNode.rootGraph.id,
     subgraphNode.id,
     entries.map(([interiorNodeId, widgetName]) => ({
       interiorNodeId,
@@ -194,7 +195,11 @@ describe(createPromotedWidgetView, () => {
     // No displayName → falls back to widgetName
     const view1 = createPromotedWidgetView(subgraphNode, bareId, 'myWidget')
     // Store label is undefined → falls back to displayName/widgetName
-    const state = store.getWidget(bareId as never, 'myWidget')
+    const state = store.getWidget(
+      subgraphNode.rootGraph.id,
+      bareId as never,
+      'myWidget'
+    )
     state!.label = undefined
     expect(view1.label).toBe('myWidget')
 
@@ -342,7 +347,10 @@ describe('SubgraphNode.widgets getter', () => {
     subgraphNode._internalConfigureAfterSlots()
 
     // Migration should have rewritten the store with resolved IDs
-    const entries = usePromotionStore().getPromotions(subgraphNode.id)
+    const entries = usePromotionStore().getPromotions(
+      subgraphNode.rootGraph.id,
+      subgraphNode.id
+    )
     expect(entries).toStrictEqual([
       {
         interiorNodeId: String(innerNodes[0].id),
@@ -436,7 +444,10 @@ describe('promote/demote cycle', () => {
 
     expect(subgraphNode.widgets).toHaveLength(1)
     expect(subgraphNode.widgets[0].name).toBe('widgetB')
-    const entries = usePromotionStore().getPromotions(subgraphNode.id)
+    const entries = usePromotionStore().getPromotions(
+      subgraphNode.rootGraph.id,
+      subgraphNode.id
+    )
     expect(entries).toStrictEqual([
       { interiorNodeId: '1', widgetName: 'widgetB' }
     ])

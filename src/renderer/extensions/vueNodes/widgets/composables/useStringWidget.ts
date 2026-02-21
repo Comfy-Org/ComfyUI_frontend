@@ -25,13 +25,15 @@ function addMultilineWidget(
 
   const widget = node.addDOMWidget(name, 'customtext', inputEl, {
     getValue(): string {
-      const widgetState = widgetStore.getWidget(node.id, name)
+      const graphId = node.graph?.rootGraph.id ?? app.rootGraph.id
+      const widgetState = widgetStore.getWidget(graphId, node.id, name)
 
       return (widgetState?.value as string) ?? inputEl.value
     },
     setValue(v: string) {
       inputEl.value = v
-      const widgetState = widgetStore.getWidget(node.id, name)
+      const graphId = node.graph?.rootGraph.id ?? app.rootGraph.id
+      const widgetState = widgetStore.getWidget(graphId, node.id, name)
       if (widgetState) widgetState.value = v
     }
   })

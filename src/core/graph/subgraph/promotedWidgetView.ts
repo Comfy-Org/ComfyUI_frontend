@@ -35,6 +35,7 @@ export function createPromotedWidgetView(
   widgetName: string,
   displayName?: string
 ): PromotedWidgetView {
+  const graphId = subgraphNode.rootGraph.id
   const bareNodeId = stripGraphPrefix(nodeId as NodeId)
 
   const view = {} as PromotedWidgetView
@@ -102,22 +103,38 @@ export function createPromotedWidgetView(
   Object.defineProperties(view, {
     value: {
       get: () => {
-        const state = useWidgetValueStore().getWidget(bareNodeId, widgetName)
+        const state = useWidgetValueStore().getWidget(
+          graphId,
+          bareNodeId,
+          widgetName
+        )
         return state?.value
       },
       set: (v: unknown) => {
-        const state = useWidgetValueStore().getWidget(bareNodeId, widgetName)
+        const state = useWidgetValueStore().getWidget(
+          graphId,
+          bareNodeId,
+          widgetName
+        )
         if (state) state.value = v
       },
       enumerable: true
     },
     label: {
       get: () => {
-        const state = useWidgetValueStore().getWidget(bareNodeId, widgetName)
+        const state = useWidgetValueStore().getWidget(
+          graphId,
+          bareNodeId,
+          widgetName
+        )
         return state?.label ?? displayName ?? widgetName
       },
       set: (v: string | undefined) => {
-        const state = useWidgetValueStore().getWidget(bareNodeId, widgetName)
+        const state = useWidgetValueStore().getWidget(
+          graphId,
+          bareNodeId,
+          widgetName
+        )
         if (state) state.label = v
       },
       enumerable: true

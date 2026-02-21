@@ -135,7 +135,10 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
    * Once set, value reads/writes will be delegated to the store.
    */
   setNodeId(nodeId: NodeId): void {
-    this._state = useWidgetValueStore().registerWidget({
+    const graphId = this.node.graph?.rootGraph.id
+    if (!graphId) return
+
+    this._state = useWidgetValueStore().registerWidget(graphId, {
       ...this._state,
       nodeId
     })
@@ -197,9 +200,15 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
   }
 
   getOutlineColor(suppressPromotedOutline = false) {
+    const graphId = this.node.graph?.rootGraph.id
     if (
+      graphId &&
       !suppressPromotedOutline &&
-      usePromotionStore().isPromotedByAny(String(this.node.id), this.name)
+      usePromotionStore().isPromotedByAny(
+        graphId,
+        String(this.node.id),
+        this.name
+      )
     )
       return LiteGraph.WIDGET_PROMOTED_OUTLINE_COLOR
     return this.advanced

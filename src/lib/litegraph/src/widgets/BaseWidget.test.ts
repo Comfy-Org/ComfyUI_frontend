@@ -2,7 +2,7 @@ import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it } from 'vitest'
 
-import { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { INumericWidget } from '@/lib/litegraph/src/types/widgets'
 import { NumberWidget } from '@/lib/litegraph/src/widgets/NumberWidget'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
@@ -25,14 +25,17 @@ function createTestWidget(
 }
 
 describe('BaseWidget store integration', () => {
+  let graph: LGraph
   let node: LGraphNode
   let store: ReturnType<typeof useWidgetValueStore>
 
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
     store = useWidgetValueStore()
+    graph = new LGraph()
     node = new LGraphNode('TestNode')
     node.id = 1
+    graph.add(node)
   })
 
   describe('metadata properties before registration', () => {
@@ -91,7 +94,7 @@ describe('BaseWidget store integration', () => {
       widget.disabled = true
       widget.advanced = true
 
-      const state = store.getWidget(1, 'writeWidget')
+      const state = store.getWidget(graph.id, 1, 'writeWidget')
       expect(state?.label).toBe('Updated Label')
       expect(state?.disabled).toBe(true)
 
@@ -104,9 +107,9 @@ describe('BaseWidget store integration', () => {
       widget.setNodeId(1)
 
       widget.value = 99
-      expect(store.getWidget(1, 'valueWidget')?.value).toBe(99)
+      expect(store.getWidget(graph.id, 1, 'valueWidget')?.value).toBe(99)
 
-      const state = store.getWidget(1, 'valueWidget')!
+      const state = store.getWidget(graph.id, 1, 'valueWidget')!
       state.value = 55
       expect(widget.value).toBe(55)
     })
@@ -124,7 +127,7 @@ describe('BaseWidget store integration', () => {
       })
       widget.setNodeId(1)
 
-      const state = store.getWidget(1, 'autoRegWidget')
+      const state = store.getWidget(graph.id, 1, 'autoRegWidget')
       expect(state).toBeDefined()
       expect(state?.nodeId).toBe(1)
       expect(state?.name).toBe('autoRegWidget')
@@ -142,7 +145,7 @@ describe('BaseWidget store integration', () => {
       const widget = createTestWidget(node, { name: 'defaultsWidget' })
       widget.setNodeId(1)
 
-      const state = store.getWidget(1, 'defaultsWidget')
+      const state = store.getWidget(graph.id, 1, 'defaultsWidget')
       expect(state).toBeDefined()
       expect(state?.disabled).toBe(false)
       expect(state?.label).toBeUndefined()
@@ -155,7 +158,7 @@ describe('BaseWidget store integration', () => {
       const widget = createTestWidget(node, { name: 'valuesWidget', value: 77 })
       widget.setNodeId(1)
 
-      expect(store.getWidget(1, 'valuesWidget')?.value).toBe(77)
+      expect(store.getWidget(graph.id, 1, 'valuesWidget')?.value).toBe(77)
     })
   })
 
@@ -175,7 +178,7 @@ describe('BaseWidget store integration', () => {
 
       widget.disabled = undefined
 
-      const state = store.getWidget(1, 'testWidget')
+      const state = store.getWidget(graph.id, 1, 'testWidget')
       expect(state?.disabled).toBe(false)
     })
   })

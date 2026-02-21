@@ -1,7 +1,8 @@
 import { defineStore } from 'pinia'
-import { ref } from 'vue'
+import { reactive, ref } from 'vue'
 
 import type { NodeId } from '@/lib/litegraph/src/LGraphNode'
+import type { UUID } from '@/lib/litegraph/src/utils/uuid'
 import type {
   IBaseWidget,
   IWidgetOptions
@@ -34,37 +35,55 @@ export interface WidgetState<
 }
 
 export const useWidgetValueStore = defineStore('widgetValue', () => {
-  const widgetStates = ref(new Map<WidgetKey, WidgetState>())
+  const graphWidgetStates = ref(new Map<UUID, Map<WidgetKey, WidgetState>>())
+
+  function getWidgetStateMap(graphId: UUID): Map<WidgetKey, WidgetState> {
+    const widgetStates = graphWidgetStates.value.get(graphId)
+    if (widgetStates) return widgetStates
+
+    const nextWidgetStates = reactive(new Map<WidgetKey, WidgetState>())
+    graphWidgetStates.value.set(graphId, nextWidgetStates)
+    return nextWidgetStates
+  }
 
   function makeKey(nodeId: NodeId, widgetName: string): WidgetKey {
     return `${nodeId}:${widgetName}`
   }
 
   function registerWidget<TValue = unknown>(
+    graphId: UUID,
     state: WidgetState<TValue>
   ): WidgetState<TValue> {
+    const widgetStates = getWidgetStateMap(graphId)
     const key = makeKey(state.nodeId, state.name)
-    widgetStates.value.set(key, state)
-    return widgetStates.value.get(key) as WidgetState<TValue>
+    widgetStates.set(key, state)
+    return widgetStates.get(key) as WidgetState<TValue>
   }
 
-  function getNodeWidgets(nodeId: NodeId): WidgetState[] {
+  function getNodeWidgets(graphId: UUID, nodeId: NodeId): WidgetState[] {
+    const widgetStates = getWidgetStateMap(graphId)
     const prefix = `${nodeId}:`
-    return [...widgetStates.value]
+    return [...widgetStates]
       .filter(([key]) => key.startsWith(prefix))
       .map(([, state]) => state)
   }
 
   function getWidget(
+    graphId: UUID,
     nodeId: NodeId,
     widgetName: string
   ): WidgetState | undefined {
-    return widgetStates.value.get(makeKey(nodeId, widgetName))
+    return getWidgetStateMap(graphId).get(makeKey(nodeId, widgetName))
+  }
+
+  function clearGraph(graphId: UUID): void {
+    graphWidgetStates.value.delete(graphId)
   }
 
   return {
     registerWidget,
     getWidget,
-    getNodeWidgets
+    getNodeWidgets,
+    clearGraph
   }
 })

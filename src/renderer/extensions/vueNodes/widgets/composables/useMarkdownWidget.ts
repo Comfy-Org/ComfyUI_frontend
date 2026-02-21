@@ -48,15 +48,17 @@ function addMarkdownWidget(
 
   const widget = node.addDOMWidget(name, 'MARKDOWN', inputEl, {
     getValue(): string {
+      const graphId = node.graph?.rootGraph.id ?? app.rootGraph.id
       return (
-        (widgetStore.getWidget(node.id, name)?.value as string) ??
+        (widgetStore.getWidget(graphId, node.id, name)?.value as string) ??
         textarea.value
       )
     },
     setValue(v: string) {
       textarea.value = v
       editor.commands.setContent(v)
-      const widgetState = widgetStore.getWidget(node.id, name)
+      const graphId = node.graph?.rootGraph.id ?? app.rootGraph.id
+      const widgetState = widgetStore.getWidget(graphId, node.id, name)
       if (widgetState) widgetState.value = v
     }
   })

@@ -26,7 +26,7 @@ describe('Node Reactivity', () => {
   }
 
   it('widget values are reactive through the store', async () => {
-    const { node } = createTestGraph()
+    const { node, graph } = createTestGraph()
     const store = useWidgetValueStore()
     const widget = node.widgets![0]
 
@@ -36,12 +36,13 @@ describe('Node Reactivity', () => {
     expect((widget as BaseWidget).node.id).toBe(node.id)
 
     // Initial value should be in store after setNodeId was called
-    expect(store.getWidget(node.id, 'testnum')?.value).toBe(2)
+    expect(store.getWidget(graph.id, node.id, 'testnum')?.value).toBe(2)
+
+    const state = store.getWidget(graph.id, node.id, 'testnum')
+    if (!state) throw new Error('Expected widget state to exist')
 
     const onValueChange = vi.fn()
-    const widgetValue = computed(
-      () => store.getWidget(node.id, 'testnum')?.value
-    )
+    const widgetValue = computed(() => state.value)
     watch(widgetValue, onValueChange)
 
     widget.value = 42
@@ -62,9 +63,10 @@ describe('Node Reactivity', () => {
     })
     await nextTick()
 
-    const widgetValue = computed(
-      () => store.getWidget(node.id, 'testnum')?.value
-    )
+    const state = store.getWidget(graph.id, node.id, 'testnum')
+    if (!state) throw new Error('Expected widget state to exist')
+
+    const widgetValue = computed(() => state.value)
     watch(widgetValue, onValueChange)
 
     node.widgets![0].value = 99
