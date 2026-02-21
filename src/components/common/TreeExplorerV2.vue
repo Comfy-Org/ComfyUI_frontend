@@ -53,7 +53,11 @@
             "
             class="size-4"
           />
-          {{ $t('sideToolbar.nodeLibraryTab.sections.favorites') }}
+          {{
+            isCurrentNodeBookmarked
+              ? $t('sideToolbar.nodeLibraryTab.sections.unfavoriteNode')
+              : $t('sideToolbar.nodeLibraryTab.sections.favoriteNode')
+          }}
         </ContextMenuItem>
       </ContextMenuContent>
     </ContextMenuPortal>
