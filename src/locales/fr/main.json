@@ -275,7 +275,9 @@
     "signOut": {
       "signOut": "Se déconnecter",
       "success": "Déconnexion réussie",
-      "successDetail": "Vous avez été déconnecté de votre compte."
+      "successDetail": "Vous avez été déconnecté de votre compte.",
+      "unsavedChangesMessage": "Vous avez des modifications non enregistrées qui seront perdues si vous vous déconnectez. Voulez-vous continuer ?",
+      "unsavedChangesTitle": "Modifications non enregistrées"
     },
     "signup": {
       "alreadyHaveAccount": "Vous avez déjà un compte?",

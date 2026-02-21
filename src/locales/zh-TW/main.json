@@ -275,7 +275,9 @@
     "signOut": {
       "signOut": "登出",
       "success": "成功登出",
-      "successDetail": "您已成功登出您的帳戶。"
+      "successDetail": "您已成功登出您的帳戶。",
+      "unsavedChangesMessage": "您有尚未儲存的變更，登出後這些變更將會遺失。您確定要繼續嗎？",
+      "unsavedChangesTitle": "未儲存的變更"
     },
     "signup": {
       "alreadyHaveAccount": "已經有帳戶？",

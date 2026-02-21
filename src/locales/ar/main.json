@@ -275,7 +275,9 @@
     "signOut": {
       "signOut": "تسجيل الخروج",
       "success": "تم تسجيل الخروج بنجاح",
-      "successDetail": "لقد تم تسجيل خروجك من حسابك."
+      "successDetail": "لقد تم تسجيل خروجك من حسابك.",
+      "unsavedChangesMessage": "لديك تغييرات غير محفوظة ستفقد عند تسجيل الخروج. هل ترغب في المتابعة؟",
+      "unsavedChangesTitle": "تغييرات غير محفوظة"
     },
     "signup": {
       "alreadyHaveAccount": "هل لديك حساب بالفعل؟",

@@ -275,7 +275,9 @@
     "signOut": {
       "signOut": "Cerrar sesión",
       "success": "Sesión cerrada correctamente",
-      "successDetail": "Has cerrado sesión en tu cuenta."
+      "successDetail": "Has cerrado sesión en tu cuenta.",
+      "unsavedChangesMessage": "Tienes cambios no guardados que se perderán al cerrar sesión. ¿Quieres continuar?",
+      "unsavedChangesTitle": "Cambios no guardados"
     },
     "signup": {
       "alreadyHaveAccount": "¿Ya tienes una cuenta?",

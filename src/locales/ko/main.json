@@ -275,7 +275,9 @@
     "signOut": {
       "signOut": "로그아웃",
       "success": "성공적으로 로그아웃되었습니다",
-      "successDetail": "계정에서 로그아웃되었습니다."
+      "successDetail": "계정에서 로그아웃되었습니다.",
+      "unsavedChangesMessage": "저장되지 않은 변경 사항이 있습니다. 로그아웃하면 변경 사항이 사라집니다. 계속하시겠습니까?",
+      "unsavedChangesTitle": "저장되지 않은 변경 사항"
     },
     "signup": {
       "alreadyHaveAccount": "이미 계정이 있으신가요?",
