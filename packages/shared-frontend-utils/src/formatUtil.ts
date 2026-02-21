@@ -583,3 +583,12 @@ export function getMediaTypeFromFilename(
 
   return 'other'
 }
+
+export function isPreviewableMediaType(mediaType: MediaType): boolean {
+  return (
+    mediaType === 'image' ||
+    mediaType === 'video' ||
+    mediaType === 'audio' ||
+    mediaType === '3D'
+  )
+}
