@@ -25,7 +25,7 @@
         {{ $t('builderToolbar.saveAsLabel') }}
       </label>
       <div role="radiogroup" class="flex flex-col gap-2">
-        <button
+        <Button
           v-for="option in saveTypeOptions"
           :key="option.value.toString()"
           role="radio"
@@ -36,6 +36,7 @@
               openAsApp === option.value && 'bg-secondary-background'
             )
           "
+          variant="textonly"
           @click="openAsApp = option.value"
         >
           <div
@@ -55,7 +56,7 @@
             v-if="openAsApp === option.value"
             class="icon-[lucide--check] size-4 text-base-foreground"
           />
-        </button>
+        </Button>
       </div>
     </div>
 

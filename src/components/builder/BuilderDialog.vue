@@ -10,13 +10,14 @@
           <slot name="title" />
         </h2>
       </div>
-      <button
-        class="cursor-pointer rounded border-none bg-transparent p-0 text-muted-foreground transition-colors hover:text-base-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-secondary-foreground"
+      <Button
+        variant="muted-textonly"
+        class="-mr-1"
         :aria-label="$t('g.close')"
         @click="$emit('close')"
       >
         <i class="pi pi-times size-4" />
-      </button>
+      </Button>
     </div>
 
     <!-- Body -->
@@ -32,6 +33,8 @@
 </template>
 
 <script setup lang="ts">
+import Button from '@/components/ui/button/Button.vue'
+
 defineEmits<{
   close: []
 }>()
