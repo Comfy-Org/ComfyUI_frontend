@@ -9,6 +9,8 @@ import type { UUID } from '@/lib/litegraph/src/utils/uuid'
 import { createUuidv4, zeroUuid } from '@/lib/litegraph/src/utils/uuid'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { LayoutSource } from '@/renderer/core/layout/types'
+import { usePromotionStore } from '@/stores/promotionStore'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { forEachNode } from '@/utils/graphTraversalUtil'
 
 import type { DragAndScaleState } from './DragAndScale'
@@ -351,6 +353,12 @@ export class LGraph
   clear(): void {
     this.stop()
     this.status = LGraph.STATUS_STOPPED
+
+    const graphId = this.id
+    if (this.isRootGraph && graphId !== zeroUuid) {
+      usePromotionStore().clearGraph(graphId)
+      useWidgetValueStore().clearGraph(graphId)
+    }
 
     this.id = zeroUuid
     this.revision = 0
