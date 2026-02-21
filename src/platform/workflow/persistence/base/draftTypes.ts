@@ -81,5 +81,4 @@ export interface OpenPathsPointer {
 /** Maximum number of drafts to keep per workspace */
 export const MAX_DRAFTS = 32
 
-/** @knipIgnoreUsedByStackedPR Used by workflowPersistenceV2.ts (PR #3) */
 export const PERSIST_DEBOUNCE_MS = 512

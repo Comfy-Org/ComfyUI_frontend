@@ -44,6 +44,9 @@
   "Comfy_BrowseTemplates": {
     "label": "تصفح القوالب"
   },
+  "Comfy_Canvas_CopySelected": {
+    "label": "نسخ"
+  },
   "Comfy_Canvas_DeleteSelectedItems": {
     "label": "حذف العناصر المحددة"
   },
@@ -65,11 +68,17 @@
   "Comfy_Canvas_MoveSelectedNodes_Up": {
     "label": "تحريك العقد المحددة للأعلى"
   },
+  "Comfy_Canvas_PasteFromClipboard": {
+    "label": "لصق"
+  },
   "Comfy_Canvas_ResetView": {
     "label": "إعادة تعيين العرض"
   },
   "Comfy_Canvas_Resize": {
     "label": "تغيير حجم العقد المحددة"
+  },
+  "Comfy_Canvas_SelectAll": {
+    "label": "تحديد الكل"
   },
   "Comfy_Canvas_ToggleLinkVisibility": {
     "label": "تبديل رؤية الروابط في اللوحة"

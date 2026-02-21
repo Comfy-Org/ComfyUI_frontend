@@ -94,5 +94,21 @@ describe('useWorkflowTabState', () => {
 
       expect(getOpenPaths()).toBeNull()
     })
+
+    it('retains paths when staying in same workspace', async () => {
+      sessionStorage.setItem(
+        'Comfy.Workspace.Current',
+        JSON.stringify({ type: 'team', id: 'ws-1' })
+      )
+      const { useWorkflowTabState } = await import('./useWorkflowTabState')
+      const { setOpenPaths, getOpenPaths } = useWorkflowTabState()
+
+      setOpenPaths(['workflows/test.json'], 0)
+
+      // Simulate re-reading (same workspace, same clientId)
+      const result = getOpenPaths()
+      expect(result).not.toBeNull()
+      expect(result!.paths).toEqual(['workflows/test.json'])
+    })
   })
 })

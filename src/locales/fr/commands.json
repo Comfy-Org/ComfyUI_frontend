@@ -44,6 +44,9 @@
   "Comfy_BrowseTemplates": {
     "label": "Parcourir les modèles"
   },
+  "Comfy_Canvas_CopySelected": {
+    "label": "Copier"
+  },
   "Comfy_Canvas_DeleteSelectedItems": {
     "label": "Supprimer les éléments sélectionnés"
   },
@@ -65,11 +68,17 @@
   "Comfy_Canvas_MoveSelectedNodes_Up": {
     "label": "Déplacer les nœuds sélectionnés vers le haut"
   },
+  "Comfy_Canvas_PasteFromClipboard": {
+    "label": "Coller"
+  },
   "Comfy_Canvas_ResetView": {
     "label": "Réinitialiser la vue"
   },
   "Comfy_Canvas_Resize": {
     "label": "Redimensionner les nœuds sélectionnés"
+  },
+  "Comfy_Canvas_SelectAll": {
+    "label": "Tout sélectionner"
   },
   "Comfy_Canvas_ToggleLinkVisibility": {
     "label": "Basculer la visibilité du lien sur le canevas"

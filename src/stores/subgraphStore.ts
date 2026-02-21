@@ -20,6 +20,8 @@ import type {
   ComfyNodeDef as ComfyNodeDefV1,
   InputSpec
 } from '@/schemas/nodeDefSchema'
+import { isCloud, isDesktop } from '@/platform/distribution/types'
+import { TemplateIncludeOnDistributionEnum } from '@/platform/workflow/templates/types/template'
 import { api } from '@/scripts/api'
 import type { GlobalSubgraphData } from '@/scripts/api'
 import { useDialogService } from '@/services/dialogService'
@@ -208,22 +210,35 @@ export const useSubgraphStore = defineStore('subgraph', () => {
         const loaded = await blueprint.load()
         const category = v.info.category
           ? `Subgraph Blueprints/${v.info.category}`
-          : 'Subgraph Blueprints'
+          : undefined
         registerNodeDef(
           loaded,
           {
-            python_module: v.info.node_pack,
             display_name: v.name,
-            category,
-            search_aliases: v.info.search_aliases
+            ...(category && { category }),
+            search_aliases: v.info.search_aliases,
+            isGlobal: true
           },
           k
         )
       }
       const subgraphs = await api.getGlobalSubgraphs()
-      await Promise.allSettled(
-        Object.entries(subgraphs).map(loadGlobalBlueprint)
-      )
+      const currentDistribution: TemplateIncludeOnDistributionEnum = isCloud
+        ? TemplateIncludeOnDistributionEnum.Cloud
+        : isDesktop
+          ? TemplateIncludeOnDistributionEnum.Desktop
+          : TemplateIncludeOnDistributionEnum.Local
+      const filteredEntries = Object.entries(subgraphs).filter(([, v]) => {
+        if (!isCloud && (v.info.requiresCustomNodes?.length ?? 0) > 0)
+          return false
+        if (
+          (v.info.includeOnDistributions?.length ?? 0) > 0 &&
+          !v.info.includeOnDistributions!.includes(currentDistribution)
+        )
+          return false
+        return true
+      })
+      await Promise.allSettled(filteredEntries.map(loadGlobalBlueprint))
     }
 
     const userSubs = (
@@ -265,6 +280,11 @@ export const useSubgraphStore = defineStore('subgraph', () => {
     const description =
       workflowExtra?.BlueprintDescription ?? 'User generated subgraph blueprint'
     const search_aliases = workflowExtra?.BlueprintSearchAliases
+    const subgraphDefCategory =
+      workflow.initialState.definitions?.subgraphs?.[0]?.category
+    const category = subgraphDefCategory
+      ? `Subgraph Blueprints/${subgraphDefCategory}`
+      : 'Subgraph Blueprints'
     const nodedefv1: ComfyNodeDefV1 = {
       input: { required: inputs },
       output: subgraphNode.outputs.map((o) => `${o.type}`),
@@ -272,7 +292,7 @@ export const useSubgraphStore = defineStore('subgraph', () => {
       name: typePrefix + name,
       display_name: name,
       description,
-      category: 'Subgraph Blueprints',
+      category,
       output_node: false,
       python_module: 'blueprint',
       search_aliases,
@@ -395,7 +415,7 @@ export const useSubgraphStore = defineStore('subgraph', () => {
 
   function isGlobalBlueprint(name: string): boolean {
     const nodeDef = subgraphDefCache.value.get(name)
-    return nodeDef !== undefined && nodeDef.python_module !== 'blueprint'
+    return nodeDef !== undefined && nodeDef.isGlobal === true
   }
 
   return {
