@@ -15,7 +15,7 @@ export class GradientSliderWidget
     ctx: CanvasRenderingContext2D,
     { width, showText = true }: DrawWidgetOptions
   ) {
-    const { fillStyle, strokeStyle, textAlign } = ctx
+    ctx.save()
 
     const { height, y } = this
     const { margin } = BaseWidget
@@ -46,7 +46,7 @@ export class GradientSliderWidget
       )
     }
 
-    Object.assign(ctx, { textAlign, strokeStyle, fillStyle })
+    ctx.restore()
   }
 
   override onClick(options: WidgetEventOptions) {

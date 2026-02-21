@@ -17,23 +17,29 @@ const props = defineProps<{
 
 const modelValue = defineModel<number>({ default: 0 })
 
-const hasControlAfterGenerate = computed(() => {
-  return !!props.widget.controlWidget
-})
+const controlWidget = computed<SimplifiedControlWidget<number> | null>(() =>
+  props.widget.controlWidget
+    ? (props.widget as SimplifiedControlWidget<number>)
+    : null
+)
 
 const widgetComponent = computed(() => {
-  if (props.widget.type === 'gradientslider')
-    return WidgetInputNumberGradientSlider
-  if (props.widget.type === 'slider') return WidgetInputNumberSlider
-  return WidgetInputNumberInput
+  switch (props.widget.type) {
+    case 'gradientslider':
+      return WidgetInputNumberGradientSlider
+    case 'slider':
+      return WidgetInputNumberSlider
+    default:
+      return WidgetInputNumberInput
+  }
 })
 </script>
 
 <template>
   <WidgetWithControl
-    v-if="hasControlAfterGenerate"
+    v-if="controlWidget"
     v-model="modelValue"
-    :widget="widget as SimplifiedControlWidget<number>"
+    :widget="controlWidget"
     :component="widgetComponent"
   />
   <component

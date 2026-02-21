@@ -59,7 +59,12 @@ export const zIntInputOptions = zNumericInputOptions.extend({
 export const zFloatInputOptions = zNumericInputOptions.extend({
   round: z.union([z.number(), z.literal(false)]).optional(),
   gradient_stops: z
-    .array(z.tuple([z.number(), z.number(), z.number(), z.number()]))
+    .array(
+      z.object({
+        offset: z.number(),
+        color: z.tuple([z.number(), z.number(), z.number()])
+      })
+    )
     .optional()
 })
 

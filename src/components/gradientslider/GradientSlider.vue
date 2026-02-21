@@ -47,10 +47,10 @@ const pressed = ref(false)
 <template>
   <SliderRoot
     v-model="sliderValue"
-    :min="min"
-    :max="max"
-    :step="step"
-    :disabled="disabled"
+    :min
+    :max
+    :step
+    :disabled
     :class="
       cn(
         'relative flex w-full touch-none items-center select-none',
@@ -74,7 +74,7 @@ const pressed = ref(false)
       <SliderThumb
         :class="
           cn(
-            'block size-4 shrink-0 cursor-grab rounded-full shadow-md ring-1 ring-black/25',
+            'block size-4 shrink-0 cursor-grab rounded-full shadow-md ring-1 ring-black/25 top-1/2',
             'transition-[color,box-shadow,background-color]',
             'before:absolute before:-inset-1.5 before:block before:rounded-full before:bg-transparent',
             'hover:ring-2 hover:ring-black/40 focus-visible:ring-2 focus-visible:ring-black/40 focus-visible:outline-hidden',
@@ -82,8 +82,8 @@ const pressed = ref(false)
             { 'cursor-grabbing': pressed }
           )
         "
-        :style="{ backgroundColor: thumbColor, top: '50%' }"
-        :aria-label="ariaLabel"
+        :style="{ backgroundColor: thumbColor }"
+        :aria-label
       />
     </SliderTrack>
   </SliderRoot>

@@ -6,8 +6,8 @@ import type { ColorStop } from '@/lib/litegraph/src/interfaces'
 import { interpolateStops, stopsToGradient } from './gradients'
 
 const TEST_STOPS: ColorStop[] = [
-  [0, 0, 0, 0],
-  [1, 255, 255, 255]
+  { offset: 0, color: [0, 0, 0] },
+  { offset: 1, color: [255, 255, 255] }
 ]
 
 function mountSlider(props: {

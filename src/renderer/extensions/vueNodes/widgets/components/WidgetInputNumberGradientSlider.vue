@@ -9,7 +9,7 @@
         :step="stepValue"
         :disabled="widget.options?.disabled"
         :aria-label="widget.name"
-        class="flex-grow"
+        class="flex-1 min-w-0"
       />
       <InputNumber
         :key="timesEmptied"
@@ -21,7 +21,7 @@
         :aria-label="widget.name"
         size="small"
         pt:pc-input-text:root="min-w-[4ch] bg-transparent border-none text-center truncate"
-        class="w-16"
+        class="w-16 shrink-0"
         :pt="numberPt"
         @update:model-value="handleNumberInputUpdate"
       />
@@ -49,8 +49,8 @@ import { WidgetInputBaseClass } from './layout'
 import WidgetLayoutField from './layout/WidgetLayoutField.vue'
 
 const DEFAULT_GRADIENT_STOPS: ColorStop[] = [
-  [0, 0, 0, 0],
-  [1, 255, 255, 255]
+  { offset: 0, color: [0, 0, 0] },
+  { offset: 1, color: [255, 255, 255] }
 ]
 
 const { widget } = defineProps<{
@@ -79,8 +79,10 @@ const filteredProps = computed(() =>
   filterWidgetProps(widget.options, STANDARD_EXCLUDED_PROPS)
 )
 
-const p = widget.options?.precision
-const precision = typeof p === 'number' && p >= 0 ? p : undefined
+const precision = computed(() => {
+  const p = widget.options?.precision
+  return typeof p === 'number' && p >= 0 ? p : undefined
+})
 
 const stepValue = useNumberStepCalculation(widget.options, precision, true)
 

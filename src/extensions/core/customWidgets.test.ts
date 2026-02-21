@@ -75,8 +75,8 @@ describe('PrimitiveFloat widget type bridging', () => {
     expect(widget.options.gradient_stops).toBeUndefined()
 
     const stops = [
-      [0, 255, 0, 0],
-      [1, 0, 0, 255]
+      { offset: 0, color: [255, 0, 0] },
+      { offset: 1, color: [0, 0, 255] }
     ]
     properties.gradient_stops = stops
     expect(widget.options.gradient_stops).toBe(stops)
@@ -87,8 +87,8 @@ describe('PrimitiveFloat widget type bridging', () => {
     applyFloatPropertyBridges(properties, widget)
 
     const stops = [
-      [0, 0, 0, 0],
-      [1, 255, 255, 255]
+      { offset: 0, color: [0, 0, 0] },
+      { offset: 1, color: [255, 255, 255] }
     ]
     widget.options.gradient_stops = stops
     expect(properties.gradient_stops).toBe(stops)
