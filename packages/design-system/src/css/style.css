@@ -113,6 +113,7 @@
   --color-interface-panel-job-progress-secondary: var(
     --color-alpha-azure-600-30
   );
+  --color-interface-panel-job-progress-border: var(--base-foreground);
 
   --color-blue-selection: rgb(from var(--color-azure-600) r g b / 0.3);
   --color-node-hover-100: rgb(from var(--color-charcoal-800) r g b/ 0.15);
@@ -412,6 +413,7 @@
   --color-interface-panel-job-progress-secondary: var(
     --color-alpha-azure-600-30
   );
+  --color-interface-panel-job-progress-border: var(--base-foreground);
 
   --text-secondary: var(--color-slate-100);
   --text-primary: var(--color-white);
@@ -1877,3 +1879,22 @@ audio.comfy-audio.empty-audio-widget {
   margin-left: 15px;
 }
 /* ===================== End of Mask Editor Styles ===================== */
+
+/* ===================== Skeleton Shimmer ===================== */
+.skeleton-shimmer {
+  background:
+    linear-gradient(135deg, rgb(188 188 188 / 0.5) 0%, rgb(0 0 0 / 0.5) 100%) 0
+      0 / 200% 200%,
+    #000;
+  animation: skeleton-shimmer 2s ease-in-out infinite;
+}
+
+@keyframes skeleton-shimmer {
+  0%,
+  100% {
+    background-position: 100% 100%;
+  }
+  50% {
+    background-position: 0 0;
+  }
+}

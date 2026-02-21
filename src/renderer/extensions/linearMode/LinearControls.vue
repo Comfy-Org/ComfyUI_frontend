@@ -156,7 +156,8 @@ defineExpose({ runButtonClick })
       <WidgetInputNumberInput
         v-model="batchCount"
         :widget="batchCountWidget"
-        class="*:[.min-w-0]:w-24 grid-cols-[auto_96px]!"
+        root-class="text-base-foreground grid-cols-[auto_96px]"
+        class="*:[.min-w-0]:w-24"
       />
       <SubscribeToRunButton v-if="!isActiveSubscription" class="w-full mt-4" />
       <div v-else class="flex mt-4 gap-2">
@@ -263,32 +264,23 @@ defineExpose({ runButtonClick })
         <WidgetInputNumberInput
           v-model="batchCount"
           :widget="batchCountWidget"
-          class="*:[.min-w-0]:w-24 grid-cols-[auto_96px]!"
+          root-class="text-base-foreground grid-cols-[auto_96px]"
+          class="*:[.min-w-0]:w-24"
         />
         <SubscribeToRunButton
           v-if="!isActiveSubscription"
           class="w-full mt-4"
         />
-        <div v-else class="flex mt-4 gap-2">
-          <Button
-            variant="primary"
-            class="grow-1"
-            size="lg"
-            @click="runButtonClick"
-          >
-            <i class="icon-[lucide--play]" />
-            {{ t('menu.run') }}
-          </Button>
-          <Button
-            v-if="!executionStore.isIdle"
-            variant="destructive"
-            size="lg"
-            class="w-10 p-2"
-            @click="commandStore.execute('Comfy.Interrupt')"
-          >
-            <i class="icon-[lucide--x]" />
-          </Button>
-        </div>
+        <Button
+          v-else
+          variant="primary"
+          class="w-full mt-4"
+          size="lg"
+          @click="runButtonClick"
+        >
+          <i class="icon-[lucide--play]" />
+          {{ t('menu.run') }}
+        </Button>
       </section>
     </div>
   </div>
