@@ -75,7 +75,6 @@
 </template>
 
 <script setup lang="ts">
-import { toTypedSchema } from '@vee-validate/zod'
 import { useThrottleFn } from '@vueuse/core'
 import InputText from 'primevue/inputtext'
 import Password from 'primevue/password'
@@ -91,6 +90,7 @@ import { useFirebaseAuthActions } from '@/composables/auth/useFirebaseAuthAction
 import { signInSchema } from '@/schemas/signInSchema'
 import type { SignInData } from '@/schemas/signInSchema'
 import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
+import { toTypedSchema } from '@/utils/veeValidateZod'
 
 const authStore = useFirebaseAuthStore()
 const firebaseAuthActions = useFirebaseAuthActions()

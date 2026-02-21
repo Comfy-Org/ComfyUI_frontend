@@ -199,11 +199,11 @@ const zInputSpec = z.union([
 ])
 
 const zComfyInputsSpec = z.object({
-  required: z.record(zInputSpec).optional(),
-  optional: z.record(zInputSpec).optional(),
+  required: z.record(z.string(), zInputSpec).optional(),
+  optional: z.record(z.string(), zInputSpec).optional(),
   // Frontend repo is not using it, but some custom nodes are using the
   // hidden field to pass various values.
-  hidden: z.record(z.any()).optional()
+  hidden: z.record(z.string(), z.any()).optional()
 })
 
 const zComfyNodeDataType = z.string()
@@ -285,7 +285,7 @@ export const zComfyNodeDef = z.object({
    * Used to ensure consistent widget ordering regardless of JSON serialization.
    * Keys are 'required', 'optional', etc., values are arrays of input names.
    */
-  input_order: z.record(z.array(z.string())).optional(),
+  input_order: z.record(z.string(), z.array(z.string())).optional(),
   /**
    * Alternative names for search. Useful for synonyms, abbreviations,
    * or old names after renaming a node.

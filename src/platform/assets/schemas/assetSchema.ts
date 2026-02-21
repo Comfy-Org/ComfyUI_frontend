@@ -14,8 +14,8 @@ const zAsset = z.object({
   updated_at: z.string().optional(),
   is_immutable: z.boolean().optional(),
   last_access_time: z.string().optional(),
-  metadata: z.record(z.unknown()).optional(), // API allows arbitrary key-value pairs
-  user_metadata: z.record(z.unknown()).optional() // API allows arbitrary key-value pairs
+  metadata: z.record(z.string(), z.unknown()).optional(), // API allows arbitrary key-value pairs
+  user_metadata: z.record(z.string(), z.unknown()).optional() // API allows arbitrary key-value pairs
 })
 
 const zAssetResponse = z.object({

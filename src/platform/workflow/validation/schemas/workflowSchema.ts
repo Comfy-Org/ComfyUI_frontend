@@ -1,5 +1,4 @@
 import { z } from 'zod'
-import type { SafeParseReturnType } from 'zod'
 import { fromZodError } from 'zod-validation-error'
 import type { RendererType } from '@/lib/litegraph/src/LGraph'
 
@@ -198,7 +197,7 @@ const zProperties = z
   })
   .passthrough()
 
-const zWidgetValues = z.union([z.array(z.any()), z.record(z.any())])
+const zWidgetValues = z.union([z.array(z.any()), z.record(z.string(), z.any())])
 
 const zComfyNode = z
   .object({
@@ -346,6 +345,12 @@ interface ComfyWorkflow1BaseOutput extends ComfyWorkflow1BaseType {
   }
 }
 
+// eslint-disable-next-line prefer-const -- Forward declaration required for recursive schema.
+let zSubgraphDefinition: z.ZodType<
+  SubgraphDefinitionBase<ComfyWorkflow1BaseOutput>,
+  SubgraphDefinitionBase<ComfyWorkflow1BaseInput>
+>
+
 /** Schema version 1 */
 export const zComfyWorkflow1 = zBaseExportableGraph
   .extend({
@@ -363,16 +368,7 @@ export const zComfyWorkflow1 = zBaseExportableGraph
     models: z.array(zModelFile).optional(),
     definitions: z
       .object({
-        subgraphs: z.lazy(
-          (): z.ZodArray<
-            z.ZodType<
-              SubgraphDefinitionBase<ComfyWorkflow1BaseOutput>,
-              z.ZodTypeDef,
-              SubgraphDefinitionBase<ComfyWorkflow1BaseInput>
-            >,
-            'many'
-          > => z.array(zSubgraphDefinition)
-        )
+        subgraphs: z.lazy(() => z.array(zSubgraphDefinition))
       })
       .optional()
   })
@@ -426,7 +422,7 @@ interface SubgraphDefinitionBase<
 }
 
 /** A subgraph definition `worfklow.definitions.subgraphs` */
-const zSubgraphDefinition = zComfyWorkflow1
+zSubgraphDefinition = zComfyWorkflow1
   .extend({
     /** Unique graph ID.  Automatically generated if not provided. */
     id: z.string().uuid(),
@@ -444,16 +440,7 @@ const zSubgraphDefinition = zComfyWorkflow1
     widgets: z.array(zExposedWidget).optional(),
     definitions: z
       .object({
-        subgraphs: z.lazy(
-          (): z.ZodArray<
-            z.ZodType<
-              SubgraphDefinitionBase<ComfyWorkflow1BaseInput>,
-              z.ZodTypeDef,
-              SubgraphDefinitionBase<ComfyWorkflow1BaseInput>
-            >,
-            'many'
-          > => zSubgraphDefinition.array()
-        )
+        subgraphs: z.lazy(() => zSubgraphDefinition.array())
       })
       .optional()
   })
@@ -467,7 +454,12 @@ export type WorkflowJSON04 = z.infer<typeof zComfyWorkflow>
 export type ComfyWorkflowJSON = z.infer<
   typeof zComfyWorkflow | typeof zComfyWorkflow1
 >
-type SubgraphDefinition = z.infer<typeof zSubgraphDefinition>
+type SubgraphDefinition = z.infer<typeof zComfyWorkflow1> & {
+  id: string
+  name: string
+  inputNode: unknown
+  outputNode: unknown
+}
 
 /**
  * Type guard to check if an object is a SubgraphDefinition.
@@ -496,7 +488,9 @@ export async function validateComfyWorkflow(
 ): Promise<ComfyWorkflowJSON | null> {
   const versionResult = zWorkflowVersion.safeParse(data)
 
-  let result: SafeParseReturnType<unknown, ComfyWorkflowJSON>
+  let result:
+    | { success: true; data: ComfyWorkflowJSON }
+    | { success: false; error: z.ZodError }
   if (!versionResult.success) {
     // Invalid workflow
     const error = fromZodError(versionResult.error)

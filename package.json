@@ -75,7 +75,6 @@
     "@tiptap/extension-table-header": "^2.10.4",
     "@tiptap/extension-table-row": "^2.10.4",
     "@tiptap/starter-kit": "^2.10.4",
-    "@vee-validate/zod": "catalog:",
     "@vueuse/core": "catalog:",
     "@vueuse/integrations": "catalog:",
     "@xterm/addon-fit": "^0.10.0",
@@ -194,6 +193,18 @@
   "pnpm": {
     "overrides": {
       "vite": "catalog:"
+    },
+    "packageExtensions": {
+      "openai@4.104.0": {
+        "peerDependencies": {
+          "zod": "^3.23.8 || ^4.0.0"
+        }
+      }
+    },
+    "peerDependencyRules": {
+      "allowedVersions": {
+        "zod": "^4.0.0"
+      }
     }
   }
 }

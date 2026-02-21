@@ -71,7 +71,7 @@
 </template>
 
 <script setup lang="ts">
-import { toTypedSchema } from '@vee-validate/zod'
+import { toTypedSchema } from '@/utils/veeValidateZod'
 import InputText from 'primevue/inputtext'
 import Message from 'primevue/message'
 import Password from 'primevue/password'

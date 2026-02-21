@@ -35,7 +35,6 @@ catalog:
   '@types/node': ^24.1.0
   '@types/semver': ^7.7.0
   '@types/three': ^0.169.0
-  '@vee-validate/zod': ^4.15.1
   '@vitejs/plugin-vue': ^6.0.0
   '@vitest/coverage-v8': ^4.0.16
   '@vitest/ui': ^4.0.16
@@ -107,9 +106,9 @@ catalog:
   vuefire: ^3.2.1
   wwobjloader2: ^6.2.1
   yjs: ^13.6.27
-  zod: ^3.23.8
-  zod-to-json-schema: ^3.24.1
-  zod-validation-error: ^3.3.0
+  zod: ^4.3.6
+  zod-to-json-schema: ^3.25.1
+  zod-validation-error: ^5.0.0
 
 cleanupUnusedCatalogs: true
 

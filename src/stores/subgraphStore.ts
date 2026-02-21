@@ -62,7 +62,7 @@ export const useSubgraphStore = defineStore('subgraph', () => {
       const { nodes } = this.activeState
       //Instanceof doesn't function as nodes are serialized
       function isSubgraphNode(node: ComfyNode) {
-        return node && subgraphs.some((s) => s.id === node.type)
+        return node && subgraphs.some((s: { id: string }) => s.id === node.type)
       }
       if (nodes.length == 1 && isSubgraphNode(nodes[0])) return
       const errors: Record<NodeId, NodeError> = {}
@@ -146,7 +146,7 @@ export const useSubgraphStore = defineStore('subgraph', () => {
       const loaded = await super.load({ force })
       const st = loaded.activeState
       const sg = (st.definitions?.subgraphs ?? []).find(
-        (sg) => sg.id == st.nodes[0].type
+        (sg: { id: string }) => sg.id == st.nodes[0].type
       )
       if (!sg)
         throw new Error(
@@ -249,7 +249,9 @@ export const useSubgraphStore = defineStore('subgraph', () => {
       loadInstalledBlueprints()
     ])
 
-    const errors = settled.filter((i) => 'reason' in i).map((i) => i.reason)
+    const errors = settled
+      .filter((i): i is PromiseRejectedResult => i.status === 'rejected')
+      .map((i) => i.reason)
     errors.forEach((e) => console.error('Failed to load subgraph blueprint', e))
     if (errors.length > 0) {
       useToastStore().add({
@@ -271,10 +273,12 @@ export const useSubgraphStore = defineStore('subgraph', () => {
     subgraphNode.outputs ??= []
     //NOTE: Types are cast to string. This is only used for input coloring on previews
     const inputs = Object.fromEntries(
-      subgraphNode.inputs.map((i) => [
-        i.name,
-        [`${i.type}`, undefined] satisfies InputSpec
-      ])
+      subgraphNode.inputs.map(
+        (i: { name: string; type: string | number | string[] }) => [
+          i.name,
+          [`${i.type}`, undefined] satisfies InputSpec
+        ]
+      )
     )
     const workflowExtra = workflow.initialState.extra
     const description =
@@ -282,8 +286,10 @@ export const useSubgraphStore = defineStore('subgraph', () => {
     const search_aliases = workflowExtra?.BlueprintSearchAliases
     const nodedefv1: ComfyNodeDefV1 = {
       input: { required: inputs },
-      output: subgraphNode.outputs.map((o) => `${o.type}`),
-      output_name: subgraphNode.outputs.map((o) => o.name),
+      output: subgraphNode.outputs.map(
+        (o: { type: string | number | string[] }) => `${o.type}`
+      ),
+      output_name: subgraphNode.outputs.map((o: { name: string }) => o.name),
       name: typePrefix + name,
       display_name: name,
       description,

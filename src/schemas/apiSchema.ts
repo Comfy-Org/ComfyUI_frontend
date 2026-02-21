@@ -259,7 +259,7 @@ const zUser = z.object({
   // `users` is only available in multi-user server mode.
   users: z.record(z.string(), z.string()).optional()
 })
-const zUserData = z.array(z.array(z.string(), z.string()))
+const zUserData = z.array(z.tuple([z.string(), z.string()]))
 const zUserDataFullInfo = z.object({
   path: z.string(),
   size: z.number(),
@@ -310,7 +310,7 @@ const zSettings = z.object({
   'Comfy.Graph.CtrlShiftZoom': z.boolean(),
   'Comfy.Graph.DeduplicateSubgraphNodeIds': z.boolean(),
   'Comfy.Graph.LiveSelection': z.boolean(),
-  'Comfy.Graph.LinkMarkers': z.nativeEnum(LinkMarkerShape),
+  'Comfy.Graph.LinkMarkers': z.enum(LinkMarkerShape),
   'Comfy.Graph.ZoomSpeed': z.number(),
   'Comfy.Group.DoubleClickTitleToEdit': z.boolean(),
   'Comfy.GroupSelectedNodes.Padding': z.number(),

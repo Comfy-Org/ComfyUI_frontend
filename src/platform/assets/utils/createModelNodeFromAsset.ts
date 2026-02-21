@@ -53,7 +53,7 @@ export function createModelNodeFromAsset(
   const validatedAsset = assetItemSchema.safeParse(asset)
 
   if (!validatedAsset.success) {
-    const errorMessage = validatedAsset.error.errors
+    const errorMessage = validatedAsset.error.issues
       .map((e) => `${e.path.join('.')}: ${e.message}`)
       .join(', ')
     console.error('Invalid asset item:', errorMessage)
