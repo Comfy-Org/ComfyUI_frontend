@@ -6,7 +6,7 @@
     <slot name="background" />
     <Button
       v-if="!hideButtons"
-      :aria-label="t('g.ariaLabel.decrement')"
+      :aria-label="t('g.decrement')"
       data-testid="decrement"
       class="h-full w-8 rounded-r-none hover:bg-base-foreground/20 disabled:opacity-30"
       variant="muted-textonly"
@@ -51,7 +51,7 @@
     <slot />
     <Button
       v-if="!hideButtons"
-      :aria-label="t('g.ariaLabel.increment')"
+      :aria-label="t('g.increment')"
       data-testid="increment"
       class="h-full w-8 rounded-l-none hover:bg-base-foreground/20 disabled:opacity-30"
       variant="muted-textonly"
