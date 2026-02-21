@@ -80,7 +80,7 @@ const workflowsEntries = computed(() => {
 })
 
 const menuEntries = computed<MenuItem[]>(() => [
-  { label: 'Apps', icon: 'icon-[lucide--panels-top-left]' },
+  { label: '[PH]Apps', icon: 'icon-[lucide--panels-top-left]' },
   {
     ...commandIdToMenuItem('Comfy.BrowseTemplates'),
     label: 'Templates',
@@ -88,7 +88,7 @@ const menuEntries = computed<MenuItem[]>(() => [
   },
   { separator: true },
   {
-    label: 'File',
+    label: t('icon.file'),
     items: [
       commandIdToMenuItem('Comfy.RenameWorkflow'),
       commandIdToMenuItem('Comfy.DuplicateWorkflow'),
@@ -101,7 +101,7 @@ const menuEntries = computed<MenuItem[]>(() => [
     ]
   },
   {
-    label: 'Edit',
+    label: t('g.edit'),
     items: [
       commandIdToMenuItem('Comfy.Undo'),
       commandIdToMenuItem('Comfy.Redo'),
@@ -119,7 +119,7 @@ const menuEntries = computed<MenuItem[]>(() => [
   },
   { separator: true },
   {
-    label: 'Theme',
+    label: t('menu.theme'),
     items: colorPaletteStore.palettes.map((palette) => ({
       label: palette.name,
       icon:
@@ -130,8 +130,11 @@ const menuEntries = computed<MenuItem[]>(() => [
     }))
   },
   { separator: true },
-  { ...commandIdToMenuItem('Comfy.ShowSettingsDialog'), label: 'Settings' },
-  { ...commandIdToMenuItem('Comfy.ToggleHelpCenter'), label: 'Help' }
+  {
+    ...commandIdToMenuItem('Comfy.ShowSettingsDialog'),
+    label: t('menu.settings')
+  },
+  { ...commandIdToMenuItem('Comfy.ToggleHelpCenter'), label: t('menu.help') }
 ])
 </script>
 <template>
