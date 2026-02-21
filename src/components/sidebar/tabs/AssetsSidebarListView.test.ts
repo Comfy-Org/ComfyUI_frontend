@@ -2,8 +2,8 @@ import { mount } from '@vue/test-utils'
 import { defineComponent } from 'vue'
 import { describe, expect, it, vi } from 'vitest'
 
-import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import type { OutputStackListItem } from '@/platform/assets/composables/useOutputStacks'
+import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 
 import AssetsSidebarListView from './AssetsSidebarListView.vue'
 
@@ -71,5 +71,22 @@ describe('AssetsSidebarListView', () => {
     const wrapper = mountListView([])
 
     expect(wrapper.text()).not.toContain('sideToolbar.generatedAssetsHeader')
+  })
+
+  it('marks mp4 assets as video previews', () => {
+    const videoAsset = {
+      ...buildAsset('video-asset', 'clip.mp4'),
+      preview_url: '/api/view/clip.mp4',
+      user_metadata: {}
+    } satisfies AssetItem
+
+    const wrapper = mountListView([buildOutputItem(videoAsset)])
+
+    const listItems = wrapper.findAllComponents({ name: 'AssetsListItem' })
+    const assetListItem = listItems.at(-1)
+
+    expect(assetListItem).toBeDefined()
+    expect(assetListItem?.props('previewUrl')).toBe('/api/view/clip.mp4')
+    expect(assetListItem?.props('isVideoPreview')).toBe(true)
   })
 })
