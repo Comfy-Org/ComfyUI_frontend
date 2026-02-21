@@ -74,7 +74,7 @@
       </template>
 
       <template v-else>
-        <Message severity="warn" class="mb-4">
+        <Message v-if="showFreeTierBadge" severity="warn" class="mb-4">
           {{ t('auth.signup.emailNotEligibleForFreeTier') }}
         </Message>
 

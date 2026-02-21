@@ -156,11 +156,7 @@
                     size="lg"
                     variant="primary"
                     class="rounded-lg px-4 text-sm font-normal text-text-primary"
-                    @click="
-                      isFreeTierPlan
-                        ? showPricingTable()
-                        : showSubscriptionDialog()
-                    "
+                    @click="handleUpgrade"
                   >
                     {{ $t('subscription.upgradePlan') }}
                   </Button>
@@ -463,6 +459,10 @@ const showZeroState = computed(
 // Subscribe workspace - opens the subscription dialog (personal or workspace variant)
 function handleSubscribeWorkspace() {
   showSubscriptionDialog()
+}
+
+function handleUpgrade() {
+  isFreeTierPlan.value ? showPricingTable() : showSubscriptionDialog()
 }
 const subscriptionTier = computed(() => subscription.value?.tier ?? null)
 const { isFreeTier: isFreeTierPlan } = useSubscription()

@@ -17,6 +17,7 @@ import type {
 } from '@/stores/dialogStore'
 
 import type { ComponentAttrs } from 'vue-component-type-helpers'
+import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
 import type { SubscriptionDialogReason } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
 
 // Lazy loaders for dialogs - components are loaded on first use
@@ -275,8 +276,9 @@ export const useDialogService = () => {
   async function showTopUpCreditsDialog(options?: {
     isInsufficientCredits?: boolean
   }) {
-    const { isActiveSubscription, subscription, type } = useBillingContext()
-    if (!isActiveSubscription.value || subscription.value?.tier === 'FREE') {
+    const { isActiveSubscription, type } = useBillingContext()
+    const { isFreeTier } = useSubscription()
+    if (!isActiveSubscription.value || isFreeTier.value) {
       await showSubscriptionRequiredDialog({
         reason: options?.isInsufficientCredits
           ? 'out_of_credits'
