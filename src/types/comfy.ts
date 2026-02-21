@@ -20,6 +20,7 @@ export interface AboutPageBadge {
   label: string
   url: string
   icon: string
+  severity?: 'danger' | 'warn'
 }
 
 type MenuCommandGroup = {
