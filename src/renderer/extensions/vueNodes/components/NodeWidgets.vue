@@ -7,7 +7,7 @@
     :class="
       cn(
         'lg-node-widgets grid grid-cols-[min-content_minmax(80px,min-content)_minmax(125px,1fr)] gap-y-1 pr-3',
-        shouldHandleNodePointerEvents
+        shouldHandleNodePointerEvents || dragState.active
           ? 'pointer-events-auto'
           : 'pointer-events-none'
       )
@@ -27,15 +27,26 @@
     >
       <div
         v-if="!widget.hidden && (!widget.advanced || showAdvanced)"
-        class="lg-node-widget group col-span-full grid grid-cols-subgrid items-stretch"
+        :class="
+          cn(
+            'lg-node-widget group col-span-full grid grid-cols-subgrid items-stretch',
+            widget.isDragHoverTarget &&
+              'ring ring-component-node-widget-linked',
+            !widget.isDragHoverTarget &&
+              widget.slotMetadata?.linked &&
+              'border-l-2 border-component-node-widget-linked'
+          )
+        "
         :data-widget-name="widget.name"
       >
         <!-- Widget Input Slot Dot -->
         <div
           :class="
             cn(
-              'z-10 w-3 opacity-0 transition-opacity duration-150 group-hover:opacity-100 flex items-stretch',
-              widget.slotMetadata?.linked && 'opacity-100'
+              'z-10 w-3 transition-opacity duration-150 flex items-stretch',
+              dragState.active || widget.slotMetadata?.linked
+                ? 'opacity-100'
+                : 'opacity-0 group-hover:opacity-100'
             )
           "
         >
@@ -86,6 +97,7 @@ import type {
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { st } from '@/i18n'
+import { useSlotLinkDragUIState } from '@/renderer/core/canvas/links/slotLinkDragUIState'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
 import { useNodeTooltips } from '@/renderer/extensions/vueNodes/composables/useNodeTooltips'
 import { useNodeZIndex } from '@/renderer/extensions/vueNodes/composables/useNodeZIndex'
@@ -117,6 +129,19 @@ const { shouldHandleNodePointerEvents, forwardEventToCanvas } =
   useCanvasInteractions()
 const { bringNodeToFront } = useNodeZIndex()
 const executionStore = useExecutionStore()
+const { state: dragState } = useSlotLinkDragUIState()
+
+function isDragHoverTarget(slotMetadata?: WidgetSlotMetadata): boolean {
+  if (!dragState.active || !dragState.candidate?.compatible || !slotMetadata)
+    return false
+  if (nodeData?.id == null) return false
+  const { layout } = dragState.candidate
+  return (
+    layout.type === 'input' &&
+    layout.nodeId === String(nodeData.id) &&
+    layout.index === slotMetadata.index
+  )
+}
 
 function handleWidgetPointerEvent(event: PointerEvent) {
   if (shouldHandleNodePointerEvents.value) return
@@ -158,6 +183,7 @@ interface ProcessedWidget {
   hasLayoutSize: boolean
   hasError: boolean
   hidden: boolean
+  isDragHoverTarget: boolean
   name: string
   simplified: SimplifiedWidget
   tooltipConfig: TooltipOptions
@@ -236,6 +262,7 @@ const processedWidgets = computed((): ProcessedWidget[] => {
           (error) => error.extra_info?.input_name === widget.name
         ) ?? false,
       hidden: widget.options?.hidden ?? false,
+      isDragHoverTarget: isDragHoverTarget(slotMetadata),
       name: widget.name,
       type: widget.type,
       vueComponent,

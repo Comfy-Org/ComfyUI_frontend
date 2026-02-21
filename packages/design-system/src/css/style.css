@@ -292,6 +292,7 @@
   --component-node-widget-background-highlighted: var(--color-ash-500);
   --component-node-widget-promoted: var(--color-purple-700);
   --component-node-widget-advanced: var(--color-azure-400);
+  --component-node-widget-linked: var(--color-azure-400);
 
   /* Default UI element color palette variables */
   --palette-contrast-mix-color: #fff;
@@ -456,6 +457,7 @@
   --component-node-widget-background-highlighted: var(--color-graphite-400);
   --component-node-widget-promoted: var(--color-purple-700);
   --component-node-widget-advanced: var(--color-azure-600);
+  --component-node-widget-linked: var(--color-azure-600);
 
   --modal-card-background: var(--secondary-background);
   --modal-card-background-hovered: var(--secondary-background-hover);
@@ -579,6 +581,7 @@
   );
   --color-component-node-widget-promoted: var(--component-node-widget-promoted);
   --color-component-node-widget-advanced: var(--component-node-widget-advanced);
+  --color-component-node-widget-linked: var(--component-node-widget-linked);
 
   /* Semantic tokens */
   --color-base-foreground: var(--base-foreground);
