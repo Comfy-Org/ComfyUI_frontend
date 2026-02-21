@@ -210,13 +210,13 @@ export const useSubgraphStore = defineStore('subgraph', () => {
         const loaded = await blueprint.load()
         const category = v.info.category
           ? `Subgraph Blueprints/${v.info.category}`
-          : 'Subgraph Blueprints'
+          : undefined
         registerNodeDef(
           loaded,
           {
             python_module: v.info.node_pack,
             display_name: v.name,
-            category,
+            ...(category && { category }),
             search_aliases: v.info.search_aliases
           },
           k
@@ -280,6 +280,11 @@ export const useSubgraphStore = defineStore('subgraph', () => {
     const description =
       workflowExtra?.BlueprintDescription ?? 'User generated subgraph blueprint'
     const search_aliases = workflowExtra?.BlueprintSearchAliases
+    const subgraphDefCategory =
+      workflow.initialState.definitions?.subgraphs?.[0]?.category
+    const category = subgraphDefCategory
+      ? `Subgraph Blueprints/${subgraphDefCategory}`
+      : 'Subgraph Blueprints'
     const nodedefv1: ComfyNodeDefV1 = {
       input: { required: inputs },
       output: subgraphNode.outputs.map((o) => `${o.type}`),
@@ -287,7 +292,7 @@ export const useSubgraphStore = defineStore('subgraph', () => {
       name: typePrefix + name,
       display_name: name,
       description,
-      category: 'Subgraph Blueprints',
+      category,
       output_node: false,
       python_module: 'blueprint',
       search_aliases,
