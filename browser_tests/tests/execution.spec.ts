@@ -7,22 +7,29 @@ test.beforeEach(async ({ comfyPage }) => {
 })
 
 test.describe('Execution', { tag: ['@smoke', '@workflow'] }, () => {
+  test.beforeEach(async ({ comfyPage }) => {
+    await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
+    await comfyPage.setup()
+  })
+
   test(
     'Report error on unconnected slot',
     { tag: '@screenshot' },
     async ({ comfyPage }) => {
       await comfyPage.canvasOps.disconnectEdge()
-      await comfyPage.canvasOps.clickEmptySpace()
+      await comfyPage.page.keyboard.press('Escape')
 
       await comfyPage.command.executeCommand('Comfy.QueuePrompt')
-      await expect(comfyPage.page.locator('.comfy-error-report')).toBeVisible()
+      await expect(
+        comfyPage.page.locator('[data-testid="error-overlay"]')
+      ).toBeVisible()
       await comfyPage.page
-        .locator('.p-dialog')
-        .getByRole('button', { name: 'Close' })
+        .locator('[data-testid="error-overlay"]')
+        .getByRole('button', { name: 'Dismiss' })
         .click()
-      await comfyPage.page.locator('.comfy-error-report').waitFor({
-        state: 'hidden'
-      })
+      await comfyPage.page
+        .locator('[data-testid="error-overlay"]')
+        .waitFor({ state: 'hidden' })
       await expect(comfyPage.canvas).toHaveScreenshot(
         'execution-error-unconnected-slot.png'
       )

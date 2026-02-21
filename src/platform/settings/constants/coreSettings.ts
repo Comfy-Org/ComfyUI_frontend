@@ -1148,6 +1148,7 @@ export const CORE_SETTINGS: SettingParams[] = [
     tooltip:
       'Modern: DOM-based rendering with enhanced interactivity, native browser features, and updated visual design. Classic: Traditional canvas rendering.',
     defaultValue: false,
+    defaultsByInstallVersion: { '1.41.0': isCloud },
     sortOrder: 100,
     experimental: true,
     versionAdded: '1.27.1'
@@ -1236,7 +1237,7 @@ export const CORE_SETTINGS: SettingParams[] = [
     tooltip:
       'When enabled, an errors tab is displayed in the right side panel to show workflow execution errors at a glance.',
     type: 'boolean',
-    defaultValue: false,
+    defaultValue: true,
     experimental: true,
     versionAdded: '1.40.0'
   }

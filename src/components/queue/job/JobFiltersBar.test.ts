@@ -76,4 +76,24 @@ describe('JobFiltersBar', () => {
 
     expect(wrapper.emitted('showAssets')).toHaveLength(1)
   })
+
+  it('hides the assets icon button when hideShowAssetsAction is true', () => {
+    const wrapper = mount(JobFiltersBar, {
+      props: {
+        selectedJobTab: 'All',
+        selectedWorkflowFilter: 'all',
+        selectedSortMode: 'mostRecent',
+        hasFailedJobs: false,
+        hideShowAssetsAction: true
+      },
+      global: {
+        plugins: [i18n],
+        directives: { tooltip: () => undefined }
+      }
+    })
+
+    expect(
+      wrapper.find('button[aria-label="Show assets panel"]').exists()
+    ).toBe(false)
+  })
 })
