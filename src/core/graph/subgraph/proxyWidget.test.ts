@@ -179,6 +179,8 @@ describe('Subgraph proxyWidgets', () => {
   })
 
   test('Proxy widget labels are correct when loaded from serialized data', () => {
+    // Intentionally constructs SubgraphNode via constructor (not setupSubgraph)
+    // to exercise the deserialization/onConfigure path from blueprint JSON.
     const subgraph = createTestSubgraph()
     const innerNode = new LGraphNode('InnerNode')
     subgraph.add(innerNode)
