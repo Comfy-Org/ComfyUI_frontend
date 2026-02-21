@@ -93,7 +93,6 @@ import { useFirebaseAuthActions } from '@/composables/auth/useFirebaseAuthAction
 import { signInSchema } from '@/schemas/signInSchema'
 import type { SignInData } from '@/schemas/signInSchema'
 import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
-import { toTypedSchema } from '@/utils/veeValidateZod'
 
 const authStore = useFirebaseAuthStore()
 const firebaseAuthActions = useFirebaseAuthActions()
@@ -114,7 +113,7 @@ const { errors, meta, validate, values } = useForm<SignInData>({
     password: ''
   },
   validateOnMount: true,
-  validationSchema: toTypedSchema(signInSchema)
+  validationSchema: signInSchema
 })
 
 const onSubmit = useThrottleFn(async (event: Event) => {

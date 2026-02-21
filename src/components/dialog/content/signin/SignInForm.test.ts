@@ -84,48 +84,45 @@ describe('SignInForm', () => {
   }
 
   describe('Forgot Password Link', () => {
+    function findForgotPasswordButton(wrapper: VueWrapper<ComponentInstance>) {
+      return wrapper
+        .findAll('button[type="button"]')
+        .find((btn) =>
+          btn.text().includes(enMessages.auth.login.forgotPassword)
+        )!
+    }
+
     it('shows disabled style when email is empty', async () => {
       const wrapper = mountComponent()
       await nextTick()
 
-      const forgotPasswordSpan = wrapper.find(
-        'span.text-muted.text-base.font-medium.cursor-pointer'
-      )
-
-      expect(forgotPasswordSpan.classes()).toContain('text-link-disabled')
+      const forgotBtn = findForgotPasswordButton(wrapper)
+      expect(forgotBtn.classes()).toContain('text-link-disabled')
     })
 
     it('shows toast and focuses email input when clicked while disabled', async () => {
       const wrapper = mountComponent()
-      const forgotPasswordSpan = wrapper.find(
-        'span.text-muted.text-base.font-medium.cursor-pointer'
-      )
+      const forgotBtn = findForgotPasswordButton(wrapper)
 
-      // Mock getElementById to track focus
       const mockFocus = vi.fn()
       const mockElement: Partial<HTMLElement> = { focus: mockFocus }
       vi.spyOn(document, 'getElementById').mockReturnValue(
         mockElement as HTMLElement
       )
 
-      // Click forgot password link while email is empty
-      await forgotPasswordSpan.trigger('click')
+      await forgotBtn.trigger('click')
       await nextTick()
 
-      // Should show toast warning
       expect(mockToastAdd).toHaveBeenCalledWith({
         severity: 'warn',
         summary: enMessages.auth.login.emailPlaceholder,
         life: 5000
       })
 
-      // Should focus email input
       expect(document.getElementById).toHaveBeenCalledWith(
         'comfy-org-sign-in-email'
       )
       expect(mockFocus).toHaveBeenCalled()
-
-      // Should NOT call sendPasswordReset
       expect(mockSendPasswordReset).not.toHaveBeenCalled()
     })
 
@@ -135,11 +132,8 @@ describe('SignInForm', () => {
         .find('#comfy-org-sign-in-email')
         .setValue('test@example.com')
 
-      const forgotPasswordSpan = wrapper.find(
-        'span.text-muted.text-base.font-medium.cursor-pointer'
-      )
-
-      await forgotPasswordSpan.trigger('click')
+      const forgotBtn = findForgotPasswordButton(wrapper)
+      await forgotBtn.trigger('click')
       expect(mockSendPasswordReset).toHaveBeenCalledWith('test@example.com')
     })
   })
@@ -157,28 +151,37 @@ describe('SignInForm', () => {
   describe('Loading State', () => {
     it('shows spinner when loading', async () => {
       mockLoading = true
+      const wrapper = mountComponent(
+        {},
+        {
+          global: {
+            plugins: [
+              PrimeVue,
+              createI18n({
+                legacy: false,
+                locale: 'en',
+                messages: { en: enMessages }
+              }),
+              ToastService
+            ],
+            stubs: {
+              ProgressSpinner: { template: '<div data-testid="spinner" />' }
+            }
+          }
+        }
+      )
+      await nextTick()
 
-      try {
-        const wrapper = mountComponent()
-        await nextTick()
-
-        expect(wrapper.findComponent(ProgressSpinner).exists()).toBe(true)
-        expect(wrapper.find('button').exists()).toBe(false)
-      } catch (error) {
-        mockLoading = true
-        const wrapper = mountComponent()
-        expect(wrapper.html()).toContain('p-progressspinner')
-        expect(wrapper.html()).not.toContain('<button')
-      }
+      expect(wrapper.find('[data-testid="spinner"]').exists()).toBe(true)
+      expect(wrapper.find('button[type="submit"]').exists()).toBe(false)
     })
 
-    it('shows button when not loading', () => {
+    it('shows submit button when not loading', () => {
       mockLoading = false
-
       const wrapper = mountComponent()
 
       expect(wrapper.findComponent(ProgressSpinner).exists()).toBe(false)
-      expect(wrapper.find('button').exists()).toBe(true)
+      expect(wrapper.find('button[type="submit"]').exists()).toBe(true)
     })
   })
 

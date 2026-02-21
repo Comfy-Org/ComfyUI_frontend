@@ -80,7 +80,6 @@
 </template>
 
 <script setup lang="ts">
-import { toTypedSchema } from '@/utils/veeValidateZod'
 import InputText from 'primevue/inputtext'
 import Message from 'primevue/message'
 import { useForm } from 'vee-validate'
@@ -119,7 +118,7 @@ const { defineField, errors, validate } = useForm({
   initialValues: {
     apiKey: ''
   },
-  validationSchema: toTypedSchema(apiKeySchema)
+  validationSchema: apiKeySchema
 })
 
 const [apiKey, apiKeyAttrs] = defineField('apiKey')

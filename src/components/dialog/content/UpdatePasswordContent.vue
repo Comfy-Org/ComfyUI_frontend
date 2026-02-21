@@ -10,7 +10,6 @@
 </template>
 
 <script setup lang="ts">
-import { toTypedSchema } from '@/utils/veeValidateZod'
 import { useForm } from 'vee-validate'
 import { ref } from 'vue'
 
@@ -31,7 +30,7 @@ const { handleSubmit } = useForm({
     confirmPassword: '',
     password: ''
   },
-  validationSchema: toTypedSchema(updatePasswordSchema)
+  validationSchema: updatePasswordSchema
 })
 
 const onSubmit = handleSubmit(async (submittedValues) => {
