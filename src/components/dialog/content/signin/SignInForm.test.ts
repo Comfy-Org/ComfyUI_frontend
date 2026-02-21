@@ -76,7 +76,8 @@ describe('SignInForm', () => {
 
     return mount(SignInForm, {
       global: {
-        plugins: [PrimeVue, i18n, ToastService]
+        plugins: [PrimeVue, i18n, ToastService],
+        stubs: { ProgressSpinner: true }
       },
       props,
       ...options
@@ -85,11 +86,13 @@ describe('SignInForm', () => {
 
   describe('Forgot Password Link', () => {
     function findForgotPasswordButton(wrapper: VueWrapper<ComponentInstance>) {
-      return wrapper
+      const btn = wrapper
         .findAll('button[type="button"]')
         .find((btn) =>
           btn.text().includes(enMessages.auth.login.forgotPassword)
-        )!
+        )
+      if (!btn) throw new Error('Forgot password button not found')
+      return btn
     }
 
     it('shows disabled style when email is empty', async () => {
@@ -151,28 +154,10 @@ describe('SignInForm', () => {
   describe('Loading State', () => {
     it('shows spinner when loading', async () => {
       mockLoading = true
-      const wrapper = mountComponent(
-        {},
-        {
-          global: {
-            plugins: [
-              PrimeVue,
-              createI18n({
-                legacy: false,
-                locale: 'en',
-                messages: { en: enMessages }
-              }),
-              ToastService
-            ],
-            stubs: {
-              ProgressSpinner: { template: '<div data-testid="spinner" />' }
-            }
-          }
-        }
-      )
+      const wrapper = mountComponent()
       await nextTick()
 
-      expect(wrapper.find('[data-testid="spinner"]').exists()).toBe(true)
+      expect(wrapper.findComponent(ProgressSpinner).exists()).toBe(true)
       expect(wrapper.find('button[type="submit"]').exists()).toBe(false)
     })
 
