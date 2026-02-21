@@ -57,12 +57,17 @@ export function useBuilderSave() {
       props: {
         defaultFilename,
         onSave: handleSave,
-        onClose: closeSaveDialog
+        onClose: handleCancelSave
       },
       dialogComponentProps: {
         onClose: resetSaving
       }
     })
+  }
+
+  function handleCancelSave() {
+    closeSaveDialog()
+    resetSaving()
   }
 
   async function handleSave(filename: string, openAsApp: boolean) {
