@@ -63,12 +63,12 @@ function openTemplates() {
     <Button
       v-if="appModeStore.enableAppBuilder"
       v-tooltip.right="{
-        value: t('appModeToolbar.appBuilder'),
+        value: t('linearMode.appModeToolbar.appBuilder'),
         ...tooltipOptions
       }"
       variant="secondary"
       size="unset"
-      :aria-label="t('appModeToolbar.appBuilder')"
+      :aria-label="t('linearMode.appModeToolbar.appBuilder')"
       class="size-10 rounded-lg"
       @click="enterBuilderMode"
     >
@@ -95,12 +95,12 @@ function openTemplates() {
       </Button>
       <Button
         v-tooltip.right="{
-          value: t('appModeToolbar.apps'),
+          value: t('linearMode.appModeToolbar.apps'),
           ...tooltipOptions
         }"
         variant="textonly"
         size="unset"
-        :aria-label="t('appModeToolbar.apps')"
+        :aria-label="t('linearMode.appModeToolbar.apps')"
         :class="
           cn('size-10', isWorkflowsActive && 'bg-secondary-background-hover')
         "
