@@ -739,6 +739,10 @@ export class ComfyApp {
       releaseSharedObjectUrl(blobUrl)
     })
 
+    api.addEventListener('feature_flags', () => {
+      void useNodeReplacementStore().load()
+    })
+
     api.init()
   }
 
@@ -802,7 +806,6 @@ export class ComfyApp {
     await useWorkspaceStore().workflow.syncWorkflows()
     //Doesn't need to block. Blueprints will load async
     void useSubgraphStore().fetchSubgraphs()
-    await useNodeReplacementStore().load()
     await useExtensionService().loadExtensions()
 
     this.addProcessKeyHandler()
