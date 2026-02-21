@@ -12,7 +12,7 @@ test.describe('Image Dropdown Virtualization', { tag: '@widget' }, () => {
   test('should virtualize items when dropdown has many entries', async ({
     comfyPage
   }) => {
-    await comfyPage.loadWorkflow('widgets/load_image_widget')
+    await comfyPage.workflow.loadWorkflow('widgets/load_image_widget')
     await comfyPage.vueNodes.waitForNodes()
 
     const totalItems = await comfyPage.page.evaluate(() => {
