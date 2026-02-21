@@ -29,8 +29,10 @@ describe('ShareAssetWarningBox', () => {
   function createWrapper(props = {}) {
     return mount(ShareAssetWarningBox, {
       props: {
-        assets: [{ name: 'image.png', thumbnailUrl: null }],
-        models: [{ name: 'model.safetensors' }],
+        assets: [
+          { name: 'image.png', thumbnailUrl: 'https://example.com/a.jpg' }
+        ],
+        models: [{ name: 'model.safetensors', thumbnailUrl: null }],
         acknowledged: false,
         ...props
       },
@@ -67,6 +69,28 @@ describe('ShareAssetWarningBox', () => {
     const wrapper = createWrapper()
 
     expect(wrapper.text()).toContain('image.png')
+  })
+
+  it('renders thumbnail previews for assets when URLs are available', () => {
+    const wrapper = createWrapper()
+
+    const images = wrapper.findAll('img')
+    expect(images).toHaveLength(1)
+    expect(images[0].attributes('src')).toBe('https://example.com/a.jpg')
+    expect(images[0].attributes('alt')).toBe('image.png')
+  })
+
+  it('renders fallback icon when thumbnail is missing', () => {
+    const wrapper = createWrapper({
+      assets: [{ name: 'image.png', thumbnailUrl: null }],
+      models: [{ name: 'model.safetensors', thumbnailUrl: null }]
+    })
+
+    const fallbackIcons = wrapper
+      .findAll('i')
+      .filter((icon) => icon.classes().includes('icon-[lucide--image]'))
+
+    expect(fallbackIcons).toHaveLength(2)
   })
 
   it('hides assets section when no assets provided', () => {

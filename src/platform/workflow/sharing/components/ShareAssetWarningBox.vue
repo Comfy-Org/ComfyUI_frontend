@@ -25,6 +25,13 @@
           :key="item.name"
           class="flex items-center gap-2 p-2"
         >
+          <ShareAssetThumbnail
+            :name="item.name"
+            :thumbnail-url="item.thumbnailUrl"
+            @thumbnail-error="
+              onThumbnailError($event.name, $event.thumbnailUrl)
+            "
+          />
           <span class="truncate text-sm text-base-foreground">
             {{ item.name }}
           </span>
@@ -55,6 +62,7 @@
 import { computed } from 'vue'
 
 import type { WorkflowAsset, WorkflowModel } from '@/schemas/apiSchema'
+import ShareAssetThumbnail from '@/platform/workflow/sharing/components/ShareAssetThumbnail.vue'
 
 const { assets, models } = defineProps<{
   assets: WorkflowAsset[]
@@ -69,7 +77,23 @@ defineEmits<{
 const sections = computed(() =>
   [
     { labelKey: 'shareWorkflow.assetsLabel', items: assets },
-    { labelKey: 'shareWorkflow.modelsLabel', items: models }
+    {
+      labelKey: 'shareWorkflow.modelsLabel',
+      items: models.map((model) => ({
+        ...model,
+        thumbnailUrl: model.thumbnailUrl ?? null
+      }))
+    }
   ].filter((s) => s.items.length > 0)
 )
+
+function onThumbnailError(
+  name: string,
+  thumbnailUrl: string | null | undefined
+) {
+  console.warn('[share][assets][thumbnail-error]', {
+    name,
+    thumbnailUrl: thumbnailUrl ?? null
+  })
+}
 </script>
