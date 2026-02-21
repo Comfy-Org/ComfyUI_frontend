@@ -6,7 +6,7 @@ import {
   FORM_ITEM_ID_INJECTION_KEY
 } from './injectionKeys'
 
-export const useFormField = () => {
+export function useFormField() {
   const fieldName = inject(FORM_FIELD_NAME_INJECTION_KEY)
   const itemId = inject(FORM_ITEM_ID_INJECTION_KEY)
 

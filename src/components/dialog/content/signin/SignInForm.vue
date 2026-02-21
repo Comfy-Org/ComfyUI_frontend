@@ -34,15 +34,18 @@
           >
             {{ t('auth.login.passwordLabel') }}
           </label>
-          <span
-            class="cursor-pointer text-base font-medium text-muted select-none"
+          <Button
+            type="button"
+            variant="textonly"
+            size="unset"
+            class="text-base font-medium text-muted select-none"
             :class="{
               'text-link-disabled': !values.email || Boolean(errors.email)
             }"
             @click="handleForgotPassword(values.email, !errors.email)"
           >
             {{ t('auth.login.forgotPassword') }}
-          </span>
+          </Button>
         </div>
         <Password
           v-bind="componentField"
@@ -85,7 +88,7 @@ import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
-import { FormField } from '@/components/ui/form'
+import FormField from '@/components/ui/form/FormField.vue'
 import { useFirebaseAuthActions } from '@/composables/auth/useFirebaseAuthActions'
 import { signInSchema } from '@/schemas/signInSchema'
 import type { SignInData } from '@/schemas/signInSchema'

@@ -96,14 +96,12 @@ import { useFormContext } from 'vee-validate'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import {
-  FormControl,
-  FormDescription,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage
-} from '@/components/ui/form'
+import FormControl from '@/components/ui/form/FormControl.vue'
+import FormDescription from '@/components/ui/form/FormDescription.vue'
+import FormField from '@/components/ui/form/FormField.vue'
+import FormItem from '@/components/ui/form/FormItem.vue'
+import FormLabel from '@/components/ui/form/FormLabel.vue'
+import FormMessage from '@/components/ui/form/FormMessage.vue'
 
 type PasswordFormValues = {
   confirmPassword: string
@@ -113,11 +111,14 @@ type PasswordFormValues = {
 const { t } = useI18n()
 const { errors, values } = useFormContext<PasswordFormValues>()
 
-const passwordChecks = computed(() => ({
-  length: values.password.length >= 8 && values.password.length <= 32,
-  uppercase: /[A-Z]/.test(values.password),
-  lowercase: /[a-z]/.test(values.password),
-  number: /\d/.test(values.password),
-  special: /[^A-Za-z0-9]/.test(values.password)
-}))
+const passwordChecks = computed(() => {
+  const password = values.password ?? ''
+  return {
+    length: password.length >= 8 && password.length <= 32,
+    uppercase: /[A-Z]/.test(password),
+    lowercase: /[a-z]/.test(password),
+    number: /\d/.test(password),
+    special: /[^A-Za-z0-9]/.test(password)
+  }
+})
 </script>

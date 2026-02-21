@@ -45,13 +45,11 @@ import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
-import {
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage
-} from '@/components/ui/form'
+import FormControl from '@/components/ui/form/FormControl.vue'
+import FormField from '@/components/ui/form/FormField.vue'
+import FormItem from '@/components/ui/form/FormItem.vue'
+import FormLabel from '@/components/ui/form/FormLabel.vue'
+import FormMessage from '@/components/ui/form/FormMessage.vue'
 import { signUpSchema } from '@/schemas/signInSchema'
 import type { SignUpData } from '@/schemas/signInSchema'
 import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
