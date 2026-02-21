@@ -63,6 +63,12 @@ function setPromotions(
   )
 }
 
+function firstInnerNode(innerNodes: LGraphNode[]): LGraphNode {
+  const innerNode = innerNodes[0]
+  if (!innerNode) throw new Error('Expected at least one inner node')
+  return innerNode
+}
+
 describe(createPromotedWidgetView, () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
@@ -131,12 +137,13 @@ describe(createPromotedWidgetView, () => {
 
   test('type delegates to interior widget', () => {
     const [subgraphNode, innerNodes] = setupSubgraph(1)
-    innerNodes[0].addWidget('combo', 'picker', 'a', () => {}, {
+    const innerNode = firstInnerNode(innerNodes)
+    innerNode.addWidget('combo', 'picker', 'a', () => {}, {
       values: ['a', 'b']
     })
     const view = createPromotedWidgetView(
       subgraphNode,
-      String(innerNodes[0].id),
+      String(innerNode.id),
       'picker'
     )
     expect(view.type).toBe('combo')
@@ -150,11 +157,12 @@ describe(createPromotedWidgetView, () => {
 
   test('options delegates to interior widget', () => {
     const [subgraphNode, innerNodes] = setupSubgraph(1)
+    const innerNode = firstInnerNode(innerNodes)
     const opts = { values: ['a', 'b'] as string[] }
-    innerNodes[0].addWidget('combo', 'picker', 'a', () => {}, opts)
+    innerNode.addWidget('combo', 'picker', 'a', () => {}, opts)
     const view = createPromotedWidgetView(
       subgraphNode,
-      String(innerNodes[0].id),
+      String(innerNode.id),
       'picker'
     )
     expect(view.options).toBe(opts)
@@ -166,12 +174,38 @@ describe(createPromotedWidgetView, () => {
     expect(view.options).toEqual({})
   })
 
-  test('value is store-backed via widgetValueStore', () => {
+  test('linkedWidgets delegates to interior widget', () => {
     const [subgraphNode, innerNodes] = setupSubgraph(1)
-    innerNodes[0].addWidget('text', 'myWidget', 'initial', () => {})
+    const innerNode = firstInnerNode(innerNodes)
+    const seedWidget = innerNode.addWidget('number', 'seed', 1, () => {})
+    const controlWidget = innerNode.addWidget(
+      'combo',
+      'control_after_generate',
+      'randomize',
+      () => {},
+      {
+        values: ['fixed', 'increment', 'decrement', 'randomize']
+      }
+    )
+    seedWidget.linkedWidgets = [controlWidget]
+
     const view = createPromotedWidgetView(
       subgraphNode,
-      String(innerNodes[0].id),
+      String(innerNode.id),
+      'seed'
+    )
+
+    expect(view.linkedWidgets).toBe(seedWidget.linkedWidgets)
+    expect(view.linkedWidgets?.[0].name).toBe('control_after_generate')
+  })
+
+  test('value is store-backed via widgetValueStore', () => {
+    const [subgraphNode, innerNodes] = setupSubgraph(1)
+    const innerNode = firstInnerNode(innerNodes)
+    innerNode.addWidget('text', 'myWidget', 'initial', () => {})
+    const view = createPromotedWidgetView(
+      subgraphNode,
+      String(innerNode.id),
       'myWidget'
     )
 
@@ -183,14 +217,15 @@ describe(createPromotedWidgetView, () => {
     expect(view.value).toBe('updated')
 
     // The interior widget reads from the same store
-    expect(innerNodes[0].widgets![0].value).toBe('updated')
+    expect(innerNode.widgets![0].value).toBe('updated')
   })
 
   test('label falls back to displayName then widgetName', () => {
     const [subgraphNode, innerNodes] = setupSubgraph(1)
-    innerNodes[0].addWidget('text', 'myWidget', 'val', () => {})
+    const innerNode = firstInnerNode(innerNodes)
+    innerNode.addWidget('text', 'myWidget', 'val', () => {})
     const store = useWidgetValueStore()
-    const bareId = String(innerNodes[0].id)
+    const bareId = String(innerNode.id)
 
     // No displayName → falls back to widgetName
     const view1 = createPromotedWidgetView(subgraphNode, bareId, 'myWidget')
@@ -215,11 +250,12 @@ describe(createPromotedWidgetView, () => {
 
   test('callback forwards to interior widget', () => {
     const [subgraphNode, innerNodes] = setupSubgraph(1)
+    const innerNode = firstInnerNode(innerNodes)
     const callbackSpy = vi.fn()
-    innerNodes[0].addWidget('text', 'myWidget', 'val', callbackSpy)
+    innerNode.addWidget('text', 'myWidget', 'val', callbackSpy)
     const view = createPromotedWidgetView(
       subgraphNode,
-      String(innerNodes[0].id),
+      String(innerNode.id),
       'myWidget'
     )
 

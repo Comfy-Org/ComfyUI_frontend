@@ -96,6 +96,11 @@ export function createPromotedWidgetView(
     tooltip: {
       get: () => resolve(subgraphNode, nodeId, widgetName)?.widget.tooltip,
       enumerable: true
+    },
+    linkedWidgets: {
+      get: () =>
+        resolve(subgraphNode, nodeId, widgetName)?.widget.linkedWidgets,
+      enumerable: true
     }
   })
 
