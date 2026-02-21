@@ -22,6 +22,16 @@ const UPLOAD_FLAGS = [
   'audio_upload'
 ] as const
 
+type ThumbnailLike = {
+  thumbnailUrl?: string | null
+  thumbnail_url?: string | null
+  thumbnail?: string | null
+  preview_url?: string | null
+  preview?: string | null
+}
+
+type AssetSourceType = 'input' | 'output'
+
 function isMediaUploadCombo(input: { type: string }): input is ComboInputSpec {
   if (input.type !== 'COMBO') return false
   const combo = input as ComboInputSpec
@@ -44,11 +54,110 @@ function getAssetNodeWidgets(): Record<string, string> {
   return result
 }
 
-function getWorkflowAssetsFromGraph(): WorkflowAsset[] {
+function resolveThumbnailUrl(rawUrl: string | null | undefined): string | null {
+  if (!rawUrl) return null
+
+  if (
+    rawUrl.startsWith('http://') ||
+    rawUrl.startsWith('https://') ||
+    rawUrl.startsWith('blob:') ||
+    rawUrl.startsWith('data:')
+  ) {
+    return rawUrl
+  }
+
+  if (rawUrl.startsWith('/api/')) {
+    return api.fileURL(rawUrl)
+  }
+
+  if (rawUrl.startsWith('/view')) {
+    return api.apiURL(rawUrl)
+  }
+
+  if (rawUrl.startsWith('/')) {
+    return api.fileURL(rawUrl)
+  }
+
+  return rawUrl
+}
+
+function getNormalizedThumbnailUrl(item: ThumbnailLike): string | null {
+  return resolveThumbnailUrl(
+    item.thumbnailUrl ??
+      item.thumbnail_url ??
+      item.thumbnail ??
+      item.preview_url ??
+      item.preview ??
+      null
+  )
+}
+
+function normalizeShareableAssetsResponse(
+  response: ShareableAssetsResponse
+): ShareableAssetsResponse {
+  return {
+    assets: response.assets.map((asset) => ({
+      name: asset.name,
+      thumbnailUrl: getNormalizedThumbnailUrl(asset)
+    })),
+    models: response.models.map((model) => ({
+      name: model.name,
+      thumbnailUrl: getNormalizedThumbnailUrl(model)
+    }))
+  }
+}
+
+function parseAssetWidgetValue(value: string): {
+  name: string
+  sourceType: AssetSourceType
+} {
+  const trimmed = value.trim()
+  if (trimmed.endsWith(' [output]')) {
+    return {
+      name: trimmed.slice(0, -' [output]'.length),
+      sourceType: 'output'
+    }
+  }
+
+  return {
+    name: trimmed,
+    sourceType: 'input'
+  }
+}
+
+function logShareableAssetsDebug(
+  source: 'backend' | 'fallback',
+  result: ShareableAssetsResponse
+) {
+  const summarize = (
+    items: Array<{ name: string; thumbnailUrl?: string | null }>
+  ) =>
+    items.map((item) => ({
+      name: item.name,
+      hasThumbnail: Boolean(item.thumbnailUrl),
+      thumbnailUrl: item.thumbnailUrl ?? null
+    }))
+
+  console.warn(`[share][assets][${source}]`, {
+    assets: summarize(result.assets),
+    models: summarize(result.models)
+  })
+}
+
+async function getWorkflowAssetsFromGraph(): Promise<WorkflowAsset[]> {
   const graph = app.rootGraph
   if (!graph) return []
 
   const assetNodeWidgets = getAssetNodeWidgets()
+  const assetsStore = useAssetsStore()
+
+  try {
+    await assetsStore.updateInputs()
+  } catch {
+    // Continue with null thumbnails if input assets cannot be refreshed.
+  }
+
+  const inputAssets = assetsStore.inputAssets
 
   return mapAllNodes(graph, (node) => {
     const widgetName = assetNodeWidgets[node.type ?? '']
@@ -58,7 +167,19 @@ function getWorkflowAssetsFromGraph(): WorkflowAsset[] {
     const value = widget?.value
     if (typeof value !== 'string' || !value.trim()) return undefined
 
-    return { name: value, thumbnailUrl: null } satisfies WorkflowAsset
+    const { name, sourceType } = parseAssetWidgetValue(value)
+
+    const matchingInputAsset = inputAssets.find(
+      (asset) => asset.name === name || asset.asset_hash === name
+    )
+    const fallbackThumbnailUrl = api.apiURL(
+      `/view?filename=${encodeURIComponent(name)}&type=${sourceType}`
+    )
+
+    return {
+      name,
+      thumbnailUrl: matchingInputAsset?.preview_url ?? fallbackThumbnailUrl
+    } satisfies WorkflowAsset
   })
 }
 
@@ -100,7 +221,10 @@ async function getWorkflowModelsFromGraph(): Promise<WorkflowModel[]> {
     const matchingAsset = cachedAssets.find((a) => a.name === value)
     if (matchingAsset?.is_immutable) return undefined
 
-    return { name: value } satisfies WorkflowModel
+    return {
+      name: value,
+      thumbnailUrl: matchingAsset?.preview_url ?? null
+    } satisfies WorkflowModel
   })
 }
 
@@ -155,10 +279,16 @@ export function useWorkflowShareService() {
     const graph = app.rootGraph
     if (!graph) return { assets: [], models: [] }
 
+    let refinedResult: ShareableAssetsResponse | null = null
     const backendCall = app
       .graphToPrompt(graph)
       .then(({ output }) => api.getShareableAssets(output))
-      .then((result) => onRefine?.(result))
+      .then((result) => {
+        const normalizedResult = normalizeShareableAssetsResponse(result)
+        refinedResult = normalizedResult
+        logShareableAssetsDebug('backend', normalizedResult)
+        onRefine?.(normalizedResult)
+      })
       .catch(() => {})
 
     const [assets, models] = await Promise.all([
@@ -168,7 +298,13 @@ export function useWorkflowShareService() {
 
     if (!onRefine) await backendCall
 
-    return { assets, models }
+    if (refinedResult) {
+      return refinedResult
+    }
+
+    const fallbackResult = { assets, models }
+    logShareableAssetsDebug('fallback', fallbackResult)
+    return fallbackResult
   }
 
   return {

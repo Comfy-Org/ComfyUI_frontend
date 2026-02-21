@@ -149,6 +149,10 @@
                     : 'border-border-default hover:border-muted-foreground'
                 )
               "
+              @dragenter.stop
+              @dragleave.stop
+              @dragover.prevent.stop
+              @drop.prevent.stop
             >
               <input
                 type="file"
@@ -189,6 +193,10 @@
                 : 'border-border-default hover:border-muted-foreground'
             )
           "
+          @dragenter.stop
+          @dragleave.stop
+          @dragover.prevent.stop
+          @drop.prevent.stop
         >
           <input
             type="file"

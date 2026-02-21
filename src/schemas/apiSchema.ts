@@ -488,7 +488,8 @@ const zWorkflowAsset = z.object({
 })
 
 const zWorkflowModel = z.object({
-  name: z.string()
+  name: z.string(),
+  thumbnailUrl: z.string().nullable().optional()
 })
 
 const zShareableAssetsResponse = z.object({

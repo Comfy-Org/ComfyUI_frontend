@@ -11,6 +11,8 @@ const mockRootGraph = vi.hoisted(() => ({
 const mockAssetsByNodeType = vi.hoisted(
   () => new Map<string, Partial<AssetItem>[]>()
 )
+const mockInputAssets = vi.hoisted(() => [] as Partial<AssetItem>[])
+const mockUpdateInputs = vi.hoisted(() => vi.fn())
 
 vi.mock('@/stores/nodeDefStore', () => ({
   useNodeDefStore: () => ({
@@ -42,7 +44,9 @@ const mockGetShareableAssets = vi.fn()
 
 vi.mock('@/scripts/api', () => ({
   api: {
-    getShareableAssets: (...args: unknown[]) => mockGetShareableAssets(...args)
+    getShareableAssets: (...args: unknown[]) => mockGetShareableAssets(...args),
+    apiURL: (route: string) => `/api${route}`,
+    fileURL: (route: string) => route
   }
 }))
 
@@ -57,6 +61,8 @@ vi.mock('@/stores/modelToNodeStore', () => ({
 
 vi.mock('@/stores/assetsStore', () => ({
   useAssetsStore: () => ({
+    inputAssets: mockInputAssets,
+    updateInputs: mockUpdateInputs,
     getAssets: (nodeType: string) => mockAssetsByNodeType.get(nodeType) ?? [],
     updateModelsForNodeType: vi.fn()
   })
@@ -78,6 +84,8 @@ describe('useWorkflowShareService', () => {
     vi.resetAllMocks()
     mockRootGraph.nodes = []
     mockAssetsByNodeType.clear()
+    mockInputAssets.splice(0)
+    mockUpdateInputs.mockReset()
     mockApp.rootGraph = mockRootGraph
   })
 
@@ -177,8 +185,14 @@ describe('useWorkflowShareService', () => {
     const result = await service.getShareableAssets()
 
     expect(result.assets).toEqual([
-      { name: 'photo.png', thumbnailUrl: null },
-      { name: 'clip.wav', thumbnailUrl: null }
+      {
+        name: 'photo.png',
+        thumbnailUrl: '/api/view?filename=photo.png&type=input'
+      },
+      {
+        name: 'clip.wav',
+        thumbnailUrl: '/api/view?filename=clip.wav&type=input'
+      }
     ])
   })
 
@@ -192,7 +206,52 @@ describe('useWorkflowShareService', () => {
     const service = useWorkflowShareService()
     const result = await service.getShareableAssets()
 
-    expect(result.assets).toEqual([{ name: 'real.png', thumbnailUrl: null }])
+    expect(result.assets).toEqual([
+      {
+        name: 'real.png',
+        thumbnailUrl: '/api/view?filename=real.png&type=input'
+      }
+    ])
+  })
+
+  it('includes asset thumbnail when matching input asset exists', async () => {
+    mockRootGraph.nodes = [
+      createMockNode('LoadImage', [{ name: 'image', value: 'photo.png' }])
+    ] as LGraphNode[]
+    mockInputAssets.push({
+      name: 'photo.png',
+      preview_url: 'https://example.com/photo-preview.jpg'
+    })
+    mockApp.graphToPrompt.mockRejectedValue(new Error('fail'))
+
+    const service = useWorkflowShareService()
+    const result = await service.getShareableAssets()
+
+    expect(result.assets).toEqual([
+      {
+        name: 'photo.png',
+        thumbnailUrl: 'https://example.com/photo-preview.jpg'
+      }
+    ])
+  })
+
+  it('parses output-marked asset names and builds output previews', async () => {
+    mockRootGraph.nodes = [
+      createMockNode('LoadImage', [
+        { name: 'image', value: 'rendered.png [output]' }
+      ])
+    ] as LGraphNode[]
+    mockApp.graphToPrompt.mockRejectedValue(new Error('fail'))
+
+    const service = useWorkflowShareService()
+    const result = await service.getShareableAssets()
+
+    expect(result.assets).toEqual([
+      {
+        name: 'rendered.png',
+        thumbnailUrl: '/api/view?filename=rendered.png&type=output'
+      }
+    ])
   })
 
   it('returns empty models when graph has no model loaders', async () => {
@@ -222,8 +281,8 @@ describe('useWorkflowShareService', () => {
     const result = await service.getShareableAssets()
 
     expect(result.models).toEqual([
-      { name: 'v1-5-pruned.safetensors' },
-      { name: 'detail_tweaker.safetensors' }
+      { name: 'v1-5-pruned.safetensors', thumbnailUrl: null },
+      { name: 'detail_tweaker.safetensors', thumbnailUrl: null }
     ])
   })
 
@@ -238,17 +297,30 @@ describe('useWorkflowShareService', () => {
     ] as LGraphNode[]
 
     mockAssetsByNodeType.set('CheckpointLoaderSimple', [
-      { name: 'public-model.safetensors', is_immutable: true }
+      {
+        name: 'public-model.safetensors',
+        is_immutable: true,
+        preview_url: 'https://example.com/public.jpg'
+      }
     ])
     mockAssetsByNodeType.set('LoraLoader', [
-      { name: 'my-lora.safetensors', is_immutable: false }
+      {
+        name: 'my-lora.safetensors',
+        is_immutable: false,
+        preview_url: 'https://example.com/lora.jpg'
+      }
     ])
     mockApp.graphToPrompt.mockRejectedValue(new Error('fail'))
 
     const service = useWorkflowShareService()
     const result = await service.getShareableAssets()
 
-    expect(result.models).toEqual([{ name: 'my-lora.safetensors' }])
+    expect(result.models).toEqual([
+      {
+        name: 'my-lora.safetensors',
+        thumbnailUrl: 'https://example.com/lora.jpg'
+      }
+    ])
   })
 
   it('includes models not found in assets cache', async () => {
@@ -262,7 +334,35 @@ describe('useWorkflowShareService', () => {
     const service = useWorkflowShareService()
     const result = await service.getShareableAssets()
 
-    expect(result.models).toEqual([{ name: 'uncached-model.safetensors' }])
+    expect(result.models).toEqual([
+      { name: 'uncached-model.safetensors', thumbnailUrl: null }
+    ])
+  })
+
+  it('includes model thumbnails when model assets provide preview URLs', async () => {
+    mockRootGraph.nodes = [
+      createMockNode('CheckpointLoaderSimple', [
+        { name: 'ckpt_name', value: 'preview-model.safetensors' }
+      ])
+    ] as LGraphNode[]
+    mockAssetsByNodeType.set('CheckpointLoaderSimple', [
+      {
+        name: 'preview-model.safetensors',
+        is_immutable: false,
+        preview_url: 'https://example.com/model-preview.jpg'
+      }
+    ])
+    mockApp.graphToPrompt.mockRejectedValue(new Error('fail'))
+
+    const service = useWorkflowShareService()
+    const result = await service.getShareableAssets()
+
+    expect(result.models).toEqual([
+      {
+        name: 'preview-model.safetensors',
+        thumbnailUrl: 'https://example.com/model-preview.jpg'
+      }
+    ])
   })
 
   it('returns empty results when no graph exists', async () => {
@@ -295,7 +395,12 @@ describe('useWorkflowShareService', () => {
 
     await vi.waitFor(() => expect(onRefine).toHaveBeenCalledWith(backendResult))
 
-    expect(result.assets).toEqual([{ name: 'photo.png', thumbnailUrl: null }])
+    expect(result.assets).toEqual([
+      {
+        name: 'photo.png',
+        thumbnailUrl: '/api/view?filename=photo.png&type=input'
+      }
+    ])
   })
 
   it('does not call onRefine when API fails', async () => {
@@ -320,5 +425,62 @@ describe('useWorkflowShareService', () => {
     await service.getShareableAssets()
 
     expect(mockGetShareableAssets).toHaveBeenCalledWith({})
+  })
+
+  it('normalizes backend thumbnail field names', async () => {
+    mockRootGraph.nodes = [] as LGraphNode[]
+    mockApp.graphToPrompt.mockResolvedValue({ output: {} })
+    mockGetShareableAssets.mockResolvedValue({
+      assets: [
+        { name: 'server-asset.png', thumbnail_url: 'https://example.com/a.jpg' }
+      ],
+      models: [
+        {
+          name: 'server-model.safetensors',
+          preview_url: 'https://example.com/m.jpg'
+        }
+      ]
+    } as unknown)
+
+    const service = useWorkflowShareService()
+    const result = await service.getShareableAssets()
+
+    expect(result).toEqual({
+      assets: [
+        { name: 'server-asset.png', thumbnailUrl: 'https://example.com/a.jpg' }
+      ],
+      models: [
+        {
+          name: 'server-model.safetensors',
+          thumbnailUrl: 'https://example.com/m.jpg'
+        }
+      ]
+    })
+  })
+
+  it('normalizes relative backend thumbnail URLs', async () => {
+    mockRootGraph.nodes = [] as LGraphNode[]
+    mockApp.graphToPrompt.mockResolvedValue({ output: {} })
+    mockGetShareableAssets.mockResolvedValue({
+      assets: [{ name: 'asset.png', thumbnail: '/view?filename=asset.png' }],
+      models: [
+        {
+          name: 'model.safetensors',
+          preview: '/api/assets/model-thumb'
+        }
+      ]
+    } as unknown)
+
+    const service = useWorkflowShareService()
+    const result = await service.getShareableAssets()
+
+    expect(result).toEqual({
+      assets: [
+        { name: 'asset.png', thumbnailUrl: '/api/view?filename=asset.png' }
+      ],
+      models: [
+        { name: 'model.safetensors', thumbnailUrl: '/api/assets/model-thumb' }
+      ]
+    })
   })
 })

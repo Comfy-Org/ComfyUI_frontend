@@ -13,8 +13,10 @@
       <!-- Upload tile -->
       <label
         class="flex h-[100px] aspect-square text-center cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-border-default transition-colors hover:border-muted-foreground"
-        @dragover.prevent
-        @drop.prevent="handleFileDrop"
+        @dragenter.stop
+        @dragleave.stop
+        @dragover.prevent.stop
+        @drop.prevent.stop="handleFileDrop"
       >
         <input
           type="file"
