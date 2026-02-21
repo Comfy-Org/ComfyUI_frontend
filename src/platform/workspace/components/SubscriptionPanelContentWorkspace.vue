@@ -372,10 +372,12 @@ import {
   DEFAULT_TIER_KEY,
   TIER_TO_KEY,
   getTierCredits,
-  getTierFeatures,
   getTierPrice
 } from '@/platform/cloud/subscription/constants/tierPricing'
+import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
 import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
+import type { TierBenefit } from '@/platform/cloud/subscription/utils/tierBenefits'
+import { getCommonTierBenefits } from '@/platform/cloud/subscription/utils/tierBenefits'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { cn } from '@/utils/tailwindUtil'
@@ -463,7 +465,7 @@ function handleSubscribeWorkspace() {
   showSubscriptionDialog()
 }
 const subscriptionTier = computed(() => subscription.value?.tier ?? null)
-const isFreeTierPlan = computed(() => subscriptionTier.value === 'FREE')
+const { isFreeTier: isFreeTierPlan } = useSubscription()
 const isYearlySubscription = computed(
   () => subscription.value?.duration === 'ANNUAL'
 )
@@ -543,6 +545,7 @@ const creditsRemainingLabel = computed(() =>
 
 const planTotalCredits = computed(() => {
   const credits = getTierCredits(tierKey.value)
+  if (credits === null) return '—'
   const total = isYearlySubscription.value ? credits * 12 : credits
   return n(total)
 })
@@ -551,21 +554,9 @@ const includedCreditsDisplay = computed(
   () => `${monthlyBonusCredits.value} / ${planTotalCredits.value}`
 )
 
-// Tier benefits for v-for loop
-type BenefitType = 'metric' | 'feature' | 'icon'
-
-interface Benefit {
-  key: string
-  type: BenefitType
-  label: string
-  value?: string
-  icon?: string
-}
-
-const tierBenefits = computed((): Benefit[] => {
+const tierBenefits = computed((): TierBenefit[] => {
   const key = tierKey.value
-
-  const benefits: Benefit[] = []
+  const benefits: TierBenefit[] = []
 
   if (!isInPersonalWorkspace.value) {
     benefits.push({
@@ -576,46 +567,7 @@ const tierBenefits = computed((): Benefit[] => {
     })
   }
 
-  const isFreeTierPlan = key === 'free'
-
-  if (isFreeTierPlan) {
-    benefits.push({
-      key: 'monthlyCredits',
-      type: 'metric',
-      value: n(getTierCredits(key)),
-      label: t('subscription.monthlyCreditsLabel')
-    })
-  }
-
-  benefits.push({
-    key: 'maxDuration',
-    type: 'metric',
-    value: t(`subscription.maxDuration.${key}`),
-    label: t('subscription.maxDurationLabel')
-  })
-
-  benefits.push({
-    key: 'gpu',
-    type: 'feature',
-    label: t('subscription.gpuLabel')
-  })
-
-  if (!isFreeTierPlan) {
-    benefits.push({
-      key: 'addCredits',
-      type: 'feature',
-      label: t('subscription.addCreditsLabel')
-    })
-  }
-
-  if (getTierFeatures(key).customLoRAs) {
-    benefits.push({
-      key: 'customLoRAs',
-      type: 'feature',
-      label: t('subscription.customLoRAsLabel')
-    })
-  }
-
+  benefits.push(...getCommonTierBenefits(key, t, n))
   return benefits
 })
 

@@ -33,7 +33,7 @@ export interface AuthMetadata {
 /**
  * Metadata for signup/login page opened events
  */
-export interface SignupPageMetadata {
+export interface AuthPageOpenedMetadata {
   free_tier_badge_shown?: boolean
 }
 
@@ -324,8 +324,8 @@ export interface BeginCheckoutMetadata
  */
 export interface TelemetryProvider {
   // Authentication flow events
-  trackSignupOpened?(metadata?: SignupPageMetadata): void
-  trackLoginOpened?(metadata?: SignupPageMetadata): void
+  trackSignupOpened?(metadata?: AuthPageOpenedMetadata): void
+  trackLoginOpened?(metadata?: AuthPageOpenedMetadata): void
   trackAuth?(metadata: AuthMetadata): void
   trackUserLoggedIn?(): void
 
@@ -522,4 +522,4 @@ export type TelemetryEventProperties =
   | HelpCenterClosedMetadata
   | WorkflowCreatedMetadata
   | EnterLinearMetadata
-  | SignupPageMetadata
+  | AuthPageOpenedMetadata

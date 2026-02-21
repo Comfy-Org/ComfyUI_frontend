@@ -182,7 +182,7 @@ import type { PreviewSubscribeResponse } from '@/platform/workspace/api/workspac
 import { cn } from '@/utils/tailwindUtil'
 
 interface Props {
-  tierKey: Exclude<TierKey, 'founder'>
+  tierKey: Exclude<TierKey, 'free' | 'founder'>
   billingCycle?: BillingCycle
   isLoading?: boolean
   previewData?: PreviewSubscribeResponse | null

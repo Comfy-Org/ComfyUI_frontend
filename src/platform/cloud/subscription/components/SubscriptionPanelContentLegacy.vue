@@ -213,9 +213,10 @@ import {
   DEFAULT_TIER_KEY,
   TIER_TO_KEY,
   getTierCredits,
-  getTierFeatures,
   getTierPrice
 } from '@/platform/cloud/subscription/constants/tierPricing'
+import type { TierBenefit } from '@/platform/cloud/subscription/utils/tierBenefits'
+import { getCommonTierBenefits } from '@/platform/cloud/subscription/utils/tierBenefits'
 import { cn } from '@/utils/tailwindUtil'
 
 const authActions = useFirebaseAuthActions()
@@ -264,6 +265,7 @@ const creditsRemainingLabel = computed(() =>
 
 const planTotalCredits = computed(() => {
   const credits = getTierCredits(tierKey.value)
+  if (credits === null) return '—'
   const total = isYearlySubscription.value ? credits * 12 : credits
   return n(total)
 })
@@ -272,63 +274,9 @@ const includedCreditsDisplay = computed(
   () => `${monthlyBonusCredits.value} / ${planTotalCredits.value}`
 )
 
-// Tier benefits for v-for loop
-type BenefitType = 'metric' | 'feature'
-
-interface Benefit {
-  key: string
-  type: BenefitType
-  label: string
-  value?: string
-}
-
-const tierBenefits = computed((): Benefit[] => {
-  const key = tierKey.value
-
-  const benefits: Benefit[] = []
-
-  const isFreeTierPlan = key === 'free'
-
-  if (isFreeTierPlan) {
-    benefits.push({
-      key: 'monthlyCredits',
-      type: 'metric',
-      value: n(getTierCredits(key)),
-      label: t('subscription.monthlyCreditsLabel')
-    })
-  }
-
-  benefits.push({
-    key: 'maxDuration',
-    type: 'metric',
-    value: t(`subscription.maxDuration.${key}`),
-    label: t('subscription.maxDurationLabel')
-  })
-
-  benefits.push({
-    key: 'gpu',
-    type: 'feature',
-    label: t('subscription.gpuLabel')
-  })
-
-  if (!isFreeTierPlan) {
-    benefits.push({
-      key: 'addCredits',
-      type: 'feature',
-      label: t('subscription.addCreditsLabel')
-    })
-  }
-
-  if (getTierFeatures(key).customLoRAs) {
-    benefits.push({
-      key: 'customLoRAs',
-      type: 'feature',
-      label: t('subscription.customLoRAsLabel')
-    })
-  }
-
-  return benefits
-})
+const tierBenefits = computed((): TierBenefit[] =>
+  getCommonTierBenefits(tierKey.value, t, n)
+)
 
 const { totalCredits, monthlyBonusCredits, prepaidCredits, isLoadingBalance } =
   useSubscriptionCredits()

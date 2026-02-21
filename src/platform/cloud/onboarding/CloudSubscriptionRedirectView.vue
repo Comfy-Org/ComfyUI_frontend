@@ -59,6 +59,7 @@ const runRedirect = wrapWithErrorHandlingAsync(async () => {
     return
   }
 
+  // Only paid tiers can be checked out via redirect
   const validTierKeys: TierKey[] = ['standard', 'creator', 'pro', 'founder']
   if (!(validTierKeys as string[]).includes(tierKeyParam)) {
     await router.push('/')

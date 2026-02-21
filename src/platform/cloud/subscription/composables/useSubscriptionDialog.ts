@@ -8,7 +8,7 @@ import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspace
 const DIALOG_KEY = 'subscription-required'
 const FREE_TIER_DIALOG_KEY = 'free-tier-info'
 
-type SubscriptionDialogReason =
+export type SubscriptionDialogReason =
   | 'subscription_required'
   | 'out_of_credits'
   | 'top_up_blocked'

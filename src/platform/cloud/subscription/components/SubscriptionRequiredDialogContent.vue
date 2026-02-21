@@ -142,10 +142,11 @@ import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
 import { useCommandStore } from '@/stores/commandStore'
+import type { SubscriptionDialogReason } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
 
 const { onClose, reason } = defineProps<{
   onClose: () => void
-  reason?: 'subscription_required' | 'out_of_credits' | 'top_up_blocked'
+  reason?: SubscriptionDialogReason
 }>()
 
 const emit = defineEmits<{

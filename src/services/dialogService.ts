@@ -17,6 +17,7 @@ import type {
 } from '@/stores/dialogStore'
 
 import type { ComponentAttrs } from 'vue-component-type-helpers'
+import type { SubscriptionDialogReason } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
 
 // Lazy loaders for dialogs - components are loaded on first use
 const lazyApiNodesSignInContent = () =>
@@ -276,8 +277,11 @@ export const useDialogService = () => {
   }) {
     const { isActiveSubscription, subscription, type } = useBillingContext()
     if (!isActiveSubscription.value || subscription.value?.tier === 'FREE') {
-      // Free tier users can't top up. Give them a clear upgrade CTA instead.
-      await showSubscriptionRequiredDialog({ reason: 'top_up_blocked' })
+      await showSubscriptionRequiredDialog({
+        reason: options?.isInsufficientCredits
+          ? 'out_of_credits'
+          : 'top_up_blocked'
+      })
       return
     }
 
@@ -397,9 +401,9 @@ export const useDialogService = () => {
   }
 
   async function showSubscriptionRequiredDialog(options?: {
-    reason?: 'subscription_required' | 'out_of_credits' | 'top_up_blocked'
+    reason?: SubscriptionDialogReason
   }) {
-    if (!isCloud) {
+    if (!isCloud || !window.__CONFIG__?.subscription_required) {
       return
     }
 

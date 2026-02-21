@@ -56,9 +56,11 @@
             class="m-0 text-sm text-text-secondary"
           >
             {{
-              $t('subscription.freeTier.description', {
-                credits: formattedCredits
-              })
+              freeTierCredits
+                ? $t('subscription.freeTier.description', {
+                    credits: freeTierCredits.toLocaleString()
+                  })
+                : $t('subscription.freeTier.descriptionGeneric')
             }}
           </p>
 
@@ -82,16 +84,7 @@
 
       <div class="flex flex-col pt-8">
         <Button
-          variant="primary"
-          class="py-2 px-4 rounded-lg w-full"
-          :pt="{
-            root: {
-              style: 'background: var(--color-accent-blue, #0B8CE9);'
-            },
-            label: {
-              class: 'font-inter font-[700] text-sm'
-            }
-          }"
+          class="w-full rounded-lg bg-[var(--color-accent-blue,#0B8CE9)] px-4 py-2 font-inter text-sm font-bold text-white hover:bg-[var(--color-accent-blue,#0B8CE9)]/90"
           @click="$emit('upgrade')"
         >
           {{
@@ -109,12 +102,13 @@
 import { computed } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
+import type { SubscriptionDialogReason } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
 import SubscriptionBenefits from '@/platform/cloud/subscription/components/SubscriptionBenefits.vue'
 import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
 import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 
 defineProps<{
-  reason?: 'subscription_required' | 'out_of_credits' | 'top_up_blocked'
+  reason?: SubscriptionDialogReason
 }>()
 
 defineEmits<{
@@ -124,13 +118,5 @@ defineEmits<{
 
 const { formattedRenewalDate } = useSubscription()
 
-const formattedCredits = computed(() =>
-  (remoteConfig.value.free_tier_credits ?? 400).toLocaleString()
-)
+const freeTierCredits = computed(() => remoteConfig.value.free_tier_credits)
 </script>
-
-<style scoped>
-:deep(.p-button) {
-  color: white;
-}
-</style>
