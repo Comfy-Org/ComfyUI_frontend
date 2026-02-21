@@ -135,7 +135,21 @@ describe('Subgraph proxyWidgets', () => {
     expect(proxyWidget.name).toBe('1: seed')
   })
 
-  test('Proxy widget label reflects user rename', () => {
+  test('Proxy widget label reflects linked widget label', () => {
+    const [subgraphNode, innerNodes] = setupSubgraph(1)
+    innerNodes[0].addWidget('text', 'seed', 'value', () => {})
+    subgraphNode.properties.proxyWidgets = [['1', 'seed']]
+
+    const proxyWidget = subgraphNode.widgets[0]
+    expect(proxyWidget.label).toBe('seed')
+
+    innerNodes[0].widgets![0].label = 'My Inner Label'
+    // Trigger re-resolve of linked widget
+    proxyWidget.computedHeight = 10
+    expect(proxyWidget.label).toBe('My Inner Label')
+  })
+
+  test('Proxy widget user rename takes priority over linked widget label', () => {
     const [subgraphNode, innerNodes] = setupSubgraph(1)
     innerNodes[0].addWidget('text', 'seed', 'value', () => {})
     subgraphNode.properties.proxyWidgets = [['1', 'seed']]
@@ -143,6 +157,25 @@ describe('Subgraph proxyWidgets', () => {
     const proxyWidget = subgraphNode.widgets[0]
     proxyWidget.label = 'My Custom Seed'
     expect(proxyWidget.label).toBe('My Custom Seed')
+
+    innerNodes[0].widgets![0].label = 'Inner Override'
+    proxyWidget.computedHeight = 10
+    expect(proxyWidget.label).toBe('My Custom Seed')
+  })
+
+  test('Proxy widget label resets to linked widget on undefined', () => {
+    const [subgraphNode, innerNodes] = setupSubgraph(1)
+    innerNodes[0].addWidget('text', 'seed', 'value', () => {})
+    subgraphNode.properties.proxyWidgets = [['1', 'seed']]
+
+    const proxyWidget = subgraphNode.widgets[0]
+    proxyWidget.label = 'Custom'
+    expect(proxyWidget.label).toBe('Custom')
+
+    proxyWidget.label = undefined
+    innerNodes[0].widgets![0].label = 'Inner Label'
+    proxyWidget.computedHeight = 10
+    expect(proxyWidget.label).toBe('Inner Label')
   })
 
   test('Proxy widget labels are correct when loaded from serialized data', () => {
