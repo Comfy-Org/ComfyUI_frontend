@@ -6,7 +6,7 @@
     <template v-if="showUI" #workflow-tabs>
       <div
         v-if="workflowTabsPosition === 'Topbar'"
-        class="workflow-tabs-container pointer-events-auto relative w-full"
+        class="workflow-tabs-container pointer-events-auto relative w-full h-(--workflow-tabs-height)"
       >
         <!-- Native drag area for Electron -->
         <div
