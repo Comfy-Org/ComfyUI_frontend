@@ -70,7 +70,9 @@
       <!-- Tab content (scrollable) -->
       <TabsRoot v-model="selectedTab" class="h-full">
         <EssentialNodesPanel
-          v-if="flags.nodeLibraryEssentialsEnabled && selectedTab === 'essentials'"
+          v-if="
+            flags.nodeLibraryEssentialsEnabled && selectedTab === 'essentials'
+          "
           v-model:expanded-keys="expandedKeys"
           :root="renderedEssentialRoot"
           @node-click="handleNodeClick"
@@ -145,7 +147,10 @@ const selectedTab = useLocalStorage<TabId>(
 )
 
 watchEffect(() => {
-  if (!flags.nodeLibraryEssentialsEnabled && selectedTab.value === 'essentials') {
+  if (
+    !flags.nodeLibraryEssentialsEnabled &&
+    selectedTab.value === 'essentials'
+  ) {
     selectedTab.value = DEFAULT_TAB_ID
   }
 })
