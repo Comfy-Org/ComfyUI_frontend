@@ -5,24 +5,43 @@ import { comfyPageFixture as test } from '../fixtures/ComfyPage'
 import { TestIds } from '../fixtures/selectors'
 import { fitToViewInstant } from '../helpers/fitToView'
 
+type ProxyWidgetEntry = [string, string]
+
+function isProxyWidgetEntry(entry: unknown): entry is ProxyWidgetEntry {
+  return (
+    Array.isArray(entry) &&
+    entry.length === 2 &&
+    typeof entry[0] === 'string' &&
+    typeof entry[1] === 'string'
+  )
+}
+
+function normalizeProxyWidgets(value: unknown): ProxyWidgetEntry[] {
+  if (!Array.isArray(value)) return []
+  return value.filter(isProxyWidgetEntry)
+}
+
+async function getProxyWidgets(
+  comfyPage: ComfyPage,
+  subgraphNodeId: string
+): Promise<ProxyWidgetEntry[]> {
+  const raw = await comfyPage.page.evaluate((nodeId) => {
+    const node = window.app!.canvas.graph!.getNodeById(nodeId)
+    return node?.properties?.proxyWidgets ?? []
+  }, subgraphNodeId)
+
+  return normalizeProxyWidgets(raw)
+}
+
 /**
- * Query a SubgraphNode's promoted widget names via its `properties.proxyWidgets`
- * and its synthesized `widgets` array (which reads from the promotion store).
+ * Query a SubgraphNode's promoted widget names via its `properties.proxyWidgets`.
  */
 async function getPromotedWidgetNames(
   comfyPage: ComfyPage,
   subgraphNodeId: string
 ): Promise<string[]> {
-  return comfyPage.page.evaluate((nodeId) => {
-    const node = window.app!.canvas.graph!.getNodeById(nodeId)
-    if (!node) return []
-    // proxyWidgets is [ [interiorNodeId, widgetName], ... ]
-    const proxy = (node.properties as Record<string, unknown>).proxyWidgets as
-      | [string, string][]
-      | undefined
-    if (!proxy) return []
-    return proxy.map(([, widgetName]) => widgetName)
-  }, subgraphNodeId)
+  const entries = await getProxyWidgets(comfyPage, subgraphNodeId)
+  return entries.map(([, widgetName]) => widgetName)
 }
 
 /**
@@ -461,6 +480,96 @@ test.describe(
 
         const widgetCount = await getWidgetCount(comfyPage, nodeId)
         expect(widgetCount).toBeGreaterThan(0)
+      })
+    })
+
+    test.describe('Legacy And Round-Trip Coverage', () => {
+      test('Legacy -1 proxyWidgets entries are hydrated to concrete interior node IDs', async ({
+        comfyPage
+      }) => {
+        await comfyPage.workflow.loadWorkflow(
+          'subgraphs/subgraph-compressed-target-slot'
+        )
+        await comfyPage.nextFrame()
+
+        const proxyWidgets = await getProxyWidgets(comfyPage, '2')
+        expect(proxyWidgets.length).toBeGreaterThan(0)
+        expect(
+          proxyWidgets.some(([interiorNodeId]) => interiorNodeId === '-1')
+        ).toBe(false)
+        expect(
+          proxyWidgets.some(
+            ([interiorNodeId, widgetName]) =>
+              interiorNodeId !== '-1' && widgetName === 'batch_size'
+          )
+        ).toBe(true)
+      })
+
+      test('Promoted widgets survive serialize -> loadGraphData round-trip', async ({
+        comfyPage
+      }) => {
+        await comfyPage.workflow.loadWorkflow(
+          'subgraphs/subgraph-with-promoted-text-widget'
+        )
+        await comfyPage.nextFrame()
+
+        const beforePromoted = await getPromotedWidgetNames(comfyPage, '11')
+        expect(beforePromoted).toContain('text')
+
+        const serialized = await comfyPage.page.evaluate(() => {
+          return window.app!.graph!.serialize()
+        })
+
+        await comfyPage.page.evaluate((workflow) => {
+          return window.app!.loadGraphData(workflow)
+        }, serialized)
+        await comfyPage.nextFrame()
+
+        const afterPromoted = await getPromotedWidgetNames(comfyPage, '11')
+        expect(afterPromoted).toContain('text')
+
+        const widgetCount = await getWidgetCount(comfyPage, '11')
+        expect(widgetCount).toBeGreaterThan(0)
+      })
+
+      test('Cloning a subgraph node keeps promoted widget entries on original and clone', async ({
+        comfyPage
+      }) => {
+        await comfyPage.workflow.loadWorkflow(
+          'subgraphs/subgraph-with-promoted-text-widget'
+        )
+        await comfyPage.nextFrame()
+
+        const originalNode = await comfyPage.nodeOps.getNodeRefById('11')
+        const originalPos = await originalNode.getPosition()
+
+        await comfyPage.page.mouse.move(originalPos.x + 16, originalPos.y + 16)
+        await comfyPage.page.keyboard.down('Alt')
+        await comfyPage.page.mouse.down()
+        await comfyPage.nextFrame()
+        await comfyPage.page.mouse.move(originalPos.x + 72, originalPos.y + 72)
+        await comfyPage.page.mouse.up()
+        await comfyPage.page.keyboard.up('Alt')
+        await comfyPage.nextFrame()
+
+        const subgraphNodeIds = await comfyPage.page.evaluate(() => {
+          const graph = window.app!.canvas.graph!
+          return graph.nodes
+            .filter(
+              (n) =>
+                typeof n.isSubgraphNode === 'function' && n.isSubgraphNode()
+            )
+            .map((n) => String(n.id))
+        })
+
+        expect(subgraphNodeIds.length).toBeGreaterThan(1)
+        for (const nodeId of subgraphNodeIds) {
+          const proxyWidgets = await getProxyWidgets(comfyPage, nodeId)
+          expect(proxyWidgets.length).toBeGreaterThan(0)
+          expect(
+            proxyWidgets.some(([, widgetName]) => widgetName === 'text')
+          ).toBe(true)
+        }
       })
     })
 
