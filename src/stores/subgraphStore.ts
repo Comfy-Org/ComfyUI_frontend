@@ -214,10 +214,10 @@ export const useSubgraphStore = defineStore('subgraph', () => {
         registerNodeDef(
           loaded,
           {
-            python_module: v.info.node_pack,
             display_name: v.name,
             category,
-            search_aliases: v.info.search_aliases
+            search_aliases: v.info.search_aliases,
+            isGlobal: true
           },
           k
         )
@@ -410,7 +410,7 @@ export const useSubgraphStore = defineStore('subgraph', () => {
 
   function isGlobalBlueprint(name: string): boolean {
     const nodeDef = subgraphDefCache.value.get(name)
-    return nodeDef !== undefined && nodeDef.python_module !== 'blueprint'
+    return nodeDef !== undefined && nodeDef.isGlobal === true
   }
 
   return {
