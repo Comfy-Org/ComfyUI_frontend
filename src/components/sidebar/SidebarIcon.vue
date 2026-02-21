@@ -41,7 +41,7 @@
         </div>
       </slot>
       <span v-if="label && !isSmall" class="side-bar-button-label">{{
-        t(label)
+        st(label, label)
       }}</span>
     </div>
   </Button>
@@ -50,12 +50,10 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import type { Component } from 'vue'
-import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
+import { st } from '@/i18n'
 import { cn } from '@/utils/tailwindUtil'
-
-const { t } = useI18n()
 const {
   icon = '',
   selected = false,
@@ -83,7 +81,7 @@ const overlayValue = computed(() =>
   typeof iconBadge === 'function' ? (iconBadge() ?? '') : iconBadge
 )
 const shouldShowBadge = computed(() => !!overlayValue.value)
-const computedTooltip = computed(() => t(tooltip) + tooltipSuffix)
+const computedTooltip = computed(() => st(tooltip, tooltip) + tooltipSuffix)
 </script>
 
 <style>

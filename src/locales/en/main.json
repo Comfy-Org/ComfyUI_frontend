@@ -1322,7 +1322,10 @@
     "Assets": "Assets",
     "Model Library": "Model Library",
     "Node Library": "Node Library",
-    "Workflows": "Workflows"
+    "Workflows": "Workflows",
+    "Copy": "Copy",
+    "Paste": "Paste",
+    "Select All": "Select All"
   },
   "desktopMenu": {
     "reinstall": "Reinstall",
