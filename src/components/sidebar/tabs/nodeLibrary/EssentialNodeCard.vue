@@ -37,15 +37,15 @@
     </span>
 
     <!-- Two lines: static first line + marquee second line -->
-    <div v-else class="shrink-0 h-8 w-full flex flex-col justify-center">
-      <div class="marquee-container w-full overflow-hidden h-4">
+    <div v-else class="shrink-0 h-9 w-full flex flex-col justify-center">
+      <div class="marquee-container w-full overflow-hidden h-[18px]">
         <span
           class="marquee-text inline-block whitespace-nowrap text-xs font-bold text-foreground leading-3 min-w-full text-center"
         >
           {{ firstLine }}
         </span>
       </div>
-      <div class="marquee-container w-full overflow-hidden h-4">
+      <div class="marquee-container w-full overflow-hidden h-[18px]">
         <span
           class="marquee-text inline-block whitespace-nowrap text-xs font-bold text-foreground leading-3 min-w-full text-center"
         >
