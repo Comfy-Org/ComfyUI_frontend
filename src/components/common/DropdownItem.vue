@@ -26,7 +26,7 @@ defineProps<{ itemClass: string; contentClass: string; item: MenuItem }>()
   <DropdownMenuSub v-else-if="item.items">
     <DropdownMenuSubTrigger
       :class="itemClass"
-      :disabled="toValue(item.disabled) || !item.items?.length"
+      :disabled="toValue(item.disabled) ?? !item.items?.length"
     >
       {{ item.label }}
       <i class="ml-auto icon-[lucide--chevron-right]" />
@@ -50,7 +50,7 @@ defineProps<{ itemClass: string; contentClass: string; item: MenuItem }>()
   <DropdownMenuItem
     v-else
     :class="itemClass"
-    :disabled="toValue(item.disabled) || !item.command"
+    :disabled="toValue(item.disabled) ?? !item.command"
     @select="item.command?.({ originalEvent: $event, item })"
   >
     <i class="size-5" :class="item.icon" />
