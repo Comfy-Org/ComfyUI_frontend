@@ -101,8 +101,9 @@ const renderedItems = computed(() =>
   isValidGrid.value ? items.slice(state.value.start, state.value.end) : []
 )
 
-function rowsToHeight(rows: number): string {
-  return `${(rows / cols.value) * itemHeight.value}px`
+function rowsToHeight(itemsCount: number): string {
+  const rows = Math.ceil(itemsCount / cols.value)
+  return `${rows * itemHeight.value}px`
 }
 const topSpacerStyle = computed<CSSProperties>(() => ({
   height: rowsToHeight(state.value.start)

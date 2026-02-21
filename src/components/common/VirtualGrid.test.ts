@@ -1,14 +1,15 @@
 import { mount } from '@vue/test-utils'
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import type { Ref } from 'vue'
 import { nextTick, ref } from 'vue'
 
 import VirtualGrid from './VirtualGrid.vue'
 
 type TestItem = { key: string; name: string }
 
-const mockedWidth = ref(400)
-const mockedHeight = ref(200)
-const mockedScrollY = ref(0)
+let mockedWidth: Ref<number>
+let mockedHeight: Ref<number>
+let mockedScrollY: Ref<number>
 
 vi.mock('@vueuse/core', async () => {
   const actual = await vi.importActual<Record<string, unknown>>('@vueuse/core')
@@ -17,6 +18,12 @@ vi.mock('@vueuse/core', async () => {
     useElementSize: () => ({ width: mockedWidth, height: mockedHeight }),
     useScroll: () => ({ y: mockedScrollY })
   }
+})
+
+beforeEach(() => {
+  mockedWidth = ref(400)
+  mockedHeight = ref(200)
+  mockedScrollY = ref(0)
 })
 
 function createItems(count: number): TestItem[] {
@@ -144,6 +151,8 @@ describe('VirtualGrid', () => {
 
     const renderedItems = wrapper.findAll('.test-item')
     expect(renderedItems.length).toBe(0)
+
+    wrapper.unmount()
   })
 
   it('forces cols to maxColumns when maxColumns is finite', async () => {

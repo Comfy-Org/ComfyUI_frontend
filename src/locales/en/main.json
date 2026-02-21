@@ -2459,7 +2459,8 @@
       "placeholderVideo": "Select video...",
       "placeholderMesh": "Select mesh...",
       "placeholderModel": "Select model...",
-      "placeholderUnknown": "Select media..."
+      "placeholderUnknown": "Select media...",
+      "maxSelectionReached": "Maximum selection limit reached"
     },
     "valueControl": {
       "header": {
