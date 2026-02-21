@@ -2931,15 +2931,27 @@
     "reuseParameters": "Reuse Parameters",
     "downloadAll": "Download All",
     "welcome": {
-      "title": "Welcome to App Mode",
-      "intro": "A simplified view that hides the node graph so you can focus on creating.",
-      "layout": "On the left, you'll see your generated images, videos, and outputs. On the right, just the controls you need. Everything complex stays out of sight.",
-      "sharing": "Sharing is easy: create your workflow, open App Mode, right-click the tab, and export. When others open your file, it launches straight into this clean view. You can share powerful workflows as simple tools without anyone needing to understand node graphs.",
-      "widget": "If you want to control which settings appear, convert your top-level nodes into a subgraph, then use widget promotion in the toolbox above it to choose what's exposed."
+      "title": "App Mode",
+      "message": "A simplified view that hides the node graph so you can focus on creating.",
+      "controls": "Your outputs appear at the bottom, your controls are on the right. Everything else stays out of the way.",
+      "sharing": "Share your workflow as a simple tool anyone can use. Export it from the tab menu and when others open it, they'll see App Mode. No node graph knowledge needed.",
+      "getStarted": "Click {runButton} to get started.",
+      "backToWorkflow": "Back to workflow",
+      "buildApp": "Build app"
     },
     "appModeToolbar": {
       "appBuilder": "App builder",
       "apps": "Apps"
+    },
+    "arrange": {
+      "noOutputs": "No outputs added yet",
+      "switchToSelect": "Switch to the 'Select' step and click on output nodes to add them here.",
+      "connectAtLeastOne": "Connect {atLeastOne} output node so users can see results after running.",
+      "atLeastOne": "at least one",
+      "outputExamples": "Examples: 'Save Image' or 'Save Video'",
+      "switchToSelectButton": "Switch to Select",
+      "outputs": "Outputs",
+      "resultsLabel": "Results generated from the selected output node(s) will be shown here after running this app"
     }
   },
   "missingNodes": {
