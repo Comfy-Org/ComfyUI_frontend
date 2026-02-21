@@ -52,7 +52,7 @@ const NODE_ORDER_BY_FOLDER = {
     'StabilityTextToAudio',
     'EmptyLatentAudio'
   ]
-} satisfies Record<string, string[]>
+} as const satisfies Record<string, readonly string[]>
 
 export const DEFAULT_GROUPING_ID = 'category' as const
 export const DEFAULT_SORTING_ID = 'original' as const
@@ -207,12 +207,13 @@ class NodeOrganizationService {
                 folder.label as keyof typeof NODE_ORDER_BY_FOLDER
               ]
             if (!order) continue
-            const orderLen = order.length
+            const nodeOrder: readonly string[] = order
+            const orderLen = nodeOrder.length
             folder.children.sort((a, b) => {
               const nameA = a.data?.name ?? a.label ?? ''
               const nameB = b.data?.name ?? b.label ?? ''
-              const ai = order.indexOf(nameA)
-              const bi = order.indexOf(nameB)
+              const ai = nodeOrder.indexOf(nameA)
+              const bi = nodeOrder.indexOf(nameB)
               const orderA = ai === -1 ? orderLen : ai
               const orderB = bi === -1 ? orderLen : bi
               return orderA - orderB
