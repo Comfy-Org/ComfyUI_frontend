@@ -26,6 +26,7 @@ import { LegacyWidget } from './LegacyWidget'
 import { MarkdownWidget } from './MarkdownWidget'
 import { MultiSelectWidget } from './MultiSelectWidget'
 import { NumberWidget } from './NumberWidget'
+import { PasswordWidget } from './PasswordWidget'
 import { SelectButtonWidget } from './SelectButtonWidget'
 import { SliderWidget } from './SliderWidget'
 import { TextWidget } from './TextWidget'
@@ -40,6 +41,7 @@ export type WidgetTypeMap = {
   knob: KnobWidget
   combo: ComboWidget
   number: NumberWidget
+  password: PasswordWidget
   string: TextWidget
   text: TextWidget
   custom: LegacyWidget
@@ -102,6 +104,8 @@ export function toConcreteWidget<TWidget extends IWidget | IBaseWidget>(
       return toClass(ComboWidget, narrowedWidget, node)
     case 'number':
       return toClass(NumberWidget, narrowedWidget, node)
+    case 'password':
+      return toClass(PasswordWidget, narrowedWidget, node)
     case 'string':
       return toClass(TextWidget, narrowedWidget, node)
     case 'text':

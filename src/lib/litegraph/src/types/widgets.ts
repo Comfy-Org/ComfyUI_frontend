@@ -121,6 +121,7 @@ export type IWidget =
   | ISelectButtonWidget
   | ITextareaWidget
   | IAssetWidget
+  | IPasswordWidget
   | IImageCropWidget
   | IBoundingBoxWidget
 
@@ -196,6 +197,12 @@ export interface IStringWidget extends IBaseWidget<
   IWidgetOptions<string[]>
 > {
   type: 'string' | 'text'
+  value: string
+}
+
+/** A widget with a masked string value for sensitive inputs like API keys */
+export interface IPasswordWidget extends IBaseWidget<string, 'password'> {
+  type: 'password'
   value: string
 }
 

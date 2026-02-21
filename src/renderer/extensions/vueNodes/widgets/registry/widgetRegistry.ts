@@ -36,6 +36,9 @@ const WidgetImageCompare = defineAsyncComponent(
 const WidgetGalleria = defineAsyncComponent(
   () => import('../components/WidgetGalleria.vue')
 )
+const WidgetInputPassword = defineAsyncComponent(
+  () => import('../components/WidgetInputPassword.vue')
+)
 const WidgetMarkdown = defineAsyncComponent(
   () => import('../components/WidgetMarkdown.vue')
 )
@@ -85,6 +88,14 @@ const coreWidgetDefinitions: Array<[string, WidgetDefinition]> = [
     {
       component: WidgetInputText,
       aliases: ['STRING', 'text'],
+      essential: false
+    }
+  ],
+  [
+    'password',
+    {
+      component: WidgetInputPassword,
+      aliases: ['PASSWORD'],
       essential: false
     }
   ],

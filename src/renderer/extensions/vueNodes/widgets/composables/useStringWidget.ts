@@ -129,13 +129,24 @@ export const useStringWidget = () => {
 
     const defaultVal = inputSpec.default ?? ''
     const multiline = inputSpec.multiline
+    const isPassword = inputSpec.display === 'password'
 
     const widget = multiline
       ? addMultilineWidget(node, inputSpec.name, {
           defaultVal,
           placeholder: inputSpec.placeholder
         })
-      : node.addWidget('text', inputSpec.name, defaultVal, () => {}, {})
+      : node.addWidget(
+          isPassword ? 'password' : 'text',
+          inputSpec.name,
+          defaultVal,
+          () => {},
+          {}
+        )
+
+    if (isPassword) {
+      widget.serialize = false
+    }
 
     if (typeof inputSpec.dynamicPrompts === 'boolean') {
       widget.dynamicPrompts = inputSpec.dynamicPrompts
