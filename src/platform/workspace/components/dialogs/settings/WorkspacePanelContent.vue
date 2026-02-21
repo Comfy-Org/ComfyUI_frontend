@@ -10,7 +10,7 @@
       </h1>
     </header>
     <TabsRoot v-model="activeTab">
-      <div class="flex w-full items-center">
+      <div class="flex w-full items-center justify-between">
         <TabsList class="flex items-center gap-2 pb-1">
           <TabsTrigger
             value="plan"
@@ -39,67 +39,68 @@
             }}
           </TabsTrigger>
         </TabsList>
-
-        <Button
-          v-if="permissions.canInviteMembers"
-          v-tooltip="
-            inviteTooltip
-              ? { value: inviteTooltip, showDelay: 0 }
-              : { value: $t('workspacePanel.inviteMember'), showDelay: 300 }
-          "
-          variant="secondary"
-          size="lg"
-          :disabled="!isSingleSeatPlan && isInviteLimitReached"
-          :class="
-            !isSingleSeatPlan &&
-            isInviteLimitReached &&
-            'opacity-50 cursor-not-allowed'
-          "
-          :aria-label="$t('workspacePanel.inviteMember')"
-          @click="handleInviteMember"
-        >
-          <i class="pi pi-plus text-sm" />
-        </Button>
-        <template v-if="permissions.canAccessWorkspaceMenu">
+        <div class="flex items-center gap-1">
           <Button
-            v-tooltip="{ value: $t('g.moreOptions'), showDelay: 300 }"
-            variant="muted-textonly"
-            size="icon"
-            :aria-label="$t('g.moreOptions')"
-            @click="menu?.toggle($event)"
+            v-if="permissions.canInviteMembers"
+            v-tooltip="
+              inviteTooltip
+                ? { value: inviteTooltip, showDelay: 0 }
+                : { value: $t('workspacePanel.inviteMember'), showDelay: 300 }
+            "
+            variant="secondary"
+            size="lg"
+            :disabled="!isSingleSeatPlan && isInviteLimitReached"
+            :class="
+              !isSingleSeatPlan &&
+              isInviteLimitReached &&
+              'opacity-50 cursor-not-allowed'
+            "
+            :aria-label="$t('workspacePanel.inviteMember')"
+            @click="handleInviteMember"
           >
-            <i class="pi pi-ellipsis-h" />
+            <i class="pi pi-plus text-sm" />
           </Button>
-          <Menu ref="menu" :model="menuItems" :popup="true">
-            <template #item="{ item }">
-              <button
-                v-tooltip="
-                  item.disabled && deleteTooltip
-                    ? { value: deleteTooltip, showDelay: 0 }
-                    : null
-                "
-                type="button"
-                :disabled="!!item.disabled"
-                :class="
-                  cn(
-                    'flex w-full items-center gap-2 px-3 py-2 bg-transparent border-none cursor-pointer',
-                    item.class,
-                    item.disabled && 'pointer-events-auto cursor-not-allowed'
-                  )
-                "
-                @click="
-                  item.command?.({
-                    originalEvent: $event,
-                    item
-                  })
-                "
-              >
-                <i :class="item.icon" />
-                <span>{{ item.label }}</span>
-              </button>
-            </template>
-          </Menu>
-        </template>
+          <template v-if="permissions.canAccessWorkspaceMenu">
+            <Button
+              v-tooltip="{ value: $t('g.moreOptions'), showDelay: 300 }"
+              variant="muted-textonly"
+              size="icon"
+              :aria-label="$t('g.moreOptions')"
+              @click="menu?.toggle($event)"
+            >
+              <i class="pi pi-ellipsis-h" />
+            </Button>
+            <Menu ref="menu" :model="menuItems" :popup="true">
+              <template #item="{ item }">
+                <button
+                  v-tooltip="
+                    item.disabled && deleteTooltip
+                      ? { value: deleteTooltip, showDelay: 0 }
+                      : null
+                  "
+                  type="button"
+                  :disabled="!!item.disabled"
+                  :class="
+                    cn(
+                      'flex w-full items-center gap-2 px-3 py-2 bg-transparent border-none cursor-pointer',
+                      item.class,
+                      item.disabled && 'pointer-events-auto cursor-not-allowed'
+                    )
+                  "
+                  @click="
+                    item.command?.({
+                      originalEvent: $event,
+                      item
+                    })
+                  "
+                >
+                  <i :class="item.icon" />
+                  <span>{{ item.label }}</span>
+                </button>
+              </template>
+            </Menu>
+          </template>
+        </div>
       </div>
 
       <TabsContent value="plan" class="mt-4">

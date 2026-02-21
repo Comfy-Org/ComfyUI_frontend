@@ -248,6 +248,10 @@
   "Comfy_NodeBadge_ShowApiPricing": {
     "name": "Mostrar insignia de precios de nodo API"
   },
+  "Comfy_NodeLibrary_NewDesign": {
+    "name": "Nuevo diseño de la biblioteca de nodos",
+    "tooltip": "Activa la barra lateral rediseñada de la biblioteca de nodos con pestañas (Esencial, Todo, Personalizado), búsqueda mejorada y vistas previas al pasar el cursor."
+  },
   "Comfy_NodeReplacement_Enabled": {
     "name": "Habilitar reemplazo automático de nodos",
     "tooltip": "Cuando está habilitado, los nodos faltantes pueden ser reemplazados automáticamente por sus equivalentes más nuevos si existe un mapeo de reemplazo."
@@ -256,7 +260,8 @@
     "name": "Implementación de la caja de búsqueda de nodos",
     "options": {
       "default": "predeterminado",
-      "litegraph (legacy)": "litegraph (legado)"
+      "litegraph (legacy)": "litegraph (legado)",
+      "v1 (legacy)": "v1 (heredado)"
     }
   },
   "Comfy_NodeSearchBoxImpl_NodePreview": {

@@ -751,7 +751,8 @@
       "filterVideo": "Video",
       "filterAudio": "Audio",
       "filter3D": "3D",
-      "filterText": "Text"
+      "filterText": "Text",
+      "viewSettings": "View settings"
     },
     "backToAssets": "Back to all assets",
     "folderView": {
@@ -803,7 +804,9 @@
         "alphabeticalDesc": "Sort alphabetically within groups"
       },
       "sections": {
-        "favorites": "Favorites"
+        "favorites": "Favorites",
+        "favoriteNode": "Favorite Node",
+        "unfavoriteNode": "Unfavorite Node"
       }
     },
     "modelLibrary": "Model Library",
@@ -1216,6 +1219,7 @@
     "Open 3D Viewer (Beta) for Selected Node": "Open 3D Viewer (Beta) for Selected Node",
     "Experimental: Browse Model Assets": "Experimental: Browse Model Assets",
     "Browse Templates": "Browse Templates",
+    "Copy": "Copy",
     "Delete Selected Items": "Delete Selected Items",
     "Zoom to fit": "Zoom to fit",
     "Lock Canvas": "Lock Canvas",
@@ -1223,8 +1227,10 @@
     "Move Selected Nodes Left": "Move Selected Nodes Left",
     "Move Selected Nodes Right": "Move Selected Nodes Right",
     "Move Selected Nodes Up": "Move Selected Nodes Up",
+    "Paste": "Paste",
     "Reset View": "Reset View",
     "Resize Selected Nodes": "Resize Selected Nodes",
+    "Select All": "Select All",
     "Node Links": "Node Links",
     "Canvas Toggle Lock": "Canvas Toggle Lock",
     "Minimap": "Minimap",
@@ -1387,7 +1393,7 @@
     "Error System": "Error System",
     "Other": "Other",
     "Secrets": "Secrets",
-    "Error System": "Error System"
+    "Node Library": "Node Library"
   },
   "serverConfigItems": {
     "listen": {
@@ -1564,6 +1570,7 @@
     "deprecated": "deprecated",
     "debug": "debug",
     "model": "model",
+    "ElevenLabs": "ElevenLabs",
     "3d": "3d",
     "ltxv": "ltxv",
     "qwen": "qwen",
@@ -1574,6 +1581,7 @@
     "Gemini": "Gemini",
     "video_models": "video_models",
     "gligen": "gligen",
+    "shader": "shader",
     "Grok": "Grok",
     "HitPaw": "HitPaw",
     "sd": "sd",
@@ -1617,6 +1625,7 @@
     "3d_models": "3d_models",
     "style_model": "style_model",
     "Tencent": "Tencent",
+    "textgen": "textgen",
     "Topaz": "Topaz",
     "Tripo": "Tripo",
     "Veo": "Veo",
@@ -1645,6 +1654,7 @@
     "COMFY_MATCHTYPE_V3": "COMFY_MATCHTYPE_V3",
     "CONDITIONING": "CONDITIONING",
     "CONTROL_NET": "CONTROL_NET",
+    "ELEVENLABS_VOICE": "ELEVENLABS_VOICE",
     "FILE_3D": "FILE_3D",
     "FILE_3D_FBX": "FILE_3D_FBX",
     "FILE_3D_GLB": "FILE_3D_GLB",
@@ -2009,7 +2019,9 @@
     "signOut": {
       "signOut": "Log Out",
       "success": "Signed out successfully",
-      "successDetail": "You have been signed out of your account."
+      "successDetail": "You have been signed out of your account.",
+      "unsavedChangesTitle": "Unsaved Changes",
+      "unsavedChangesMessage": "You have unsaved changes that will be lost when you sign out. Do you want to continue?"
     },
     "passwordUpdate": {
       "success": "Password Updated",
