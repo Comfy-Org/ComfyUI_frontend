@@ -401,9 +401,10 @@ test.describe('Subgraph Operations', { tag: ['@slow', '@subgraph'] }, () => {
       })
 
       expect(result).not.toHaveProperty('error')
-      // Should have exactly 2 links (EmptyLatentImage→KSampler + KSampler→output)
-      // not 5 (with 3 duplicates)
-      expect(result.linkCount).toBe(2)
+      // Should have exactly 1 link (EmptyLatentImage→KSampler)
+      // not 4 (with 3 duplicates). The KSampler→output link is dropped
+      // because the subgraph output has no downstream connection.
+      expect(result.linkCount).toBe(1)
       // KSampler should have exactly 1 linked input (latent_image)
       expect(result.linkedInputCount).toBe(1)
     })
