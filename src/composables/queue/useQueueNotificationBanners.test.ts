@@ -3,7 +3,6 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, reactive } from 'vue'
 
 import { useQueueNotificationBanners } from '@/composables/queue/useQueueNotificationBanners'
-import { api } from '@/scripts/api'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useQueueStore } from '@/stores/queueStore'
 
@@ -135,7 +134,7 @@ describe(useQueueNotificationBanners, () => {
     const { wrapper, composable } = mountComposable()
 
     try {
-      ;(api as unknown as EventTarget).dispatchEvent(
+      mockApi.dispatchEvent(
         new CustomEvent('promptQueued', { detail: { batchCount: 4 } })
       )
       await nextTick()
@@ -157,7 +156,7 @@ describe(useQueueNotificationBanners, () => {
     const { wrapper, composable } = mountComposable()
 
     try {
-      ;(api as unknown as EventTarget).dispatchEvent(
+      mockApi.dispatchEvent(
         new CustomEvent('promptQueueing', {
           detail: { requestId: 1, batchCount: 2 }
         })
@@ -170,7 +169,7 @@ describe(useQueueNotificationBanners, () => {
         requestId: 1
       })
 
-      ;(api as unknown as EventTarget).dispatchEvent(
+      mockApi.dispatchEvent(
         new CustomEvent('promptQueued', {
           detail: { requestId: 1, batchCount: 2 }
         })
@@ -191,7 +190,7 @@ describe(useQueueNotificationBanners, () => {
     const { wrapper, composable } = mountComposable()
 
     try {
-      ;(api as unknown as EventTarget).dispatchEvent(
+      mockApi.dispatchEvent(
         new CustomEvent('promptQueued', { detail: { batchCount: 0 } })
       )
       await nextTick()
