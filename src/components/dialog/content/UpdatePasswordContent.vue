@@ -1,22 +1,17 @@
 <template>
-  <Form
-    class="flex w-96 flex-col gap-6"
-    :resolver="zodResolver(updatePasswordSchema)"
-    @submit="onSubmit"
-  >
+  <form class="flex w-96 flex-col gap-6" @submit="onSubmit">
     <PasswordFields />
 
     <!-- Submit Button -->
     <Button type="submit" class="mt-4 h-10 font-medium" :loading="loading">
       {{ $t('userSettings.updatePassword') }}
     </Button>
-  </Form>
+  </form>
 </template>
 
 <script setup lang="ts">
-import type { FormSubmitEvent } from '@primevue/forms'
-import { Form } from '@primevue/forms'
-import { zodResolver } from '@primevue/forms/resolvers/zod'
+import { toTypedSchema } from '@vee-validate/zod'
+import { useForm } from 'vee-validate'
 import { ref } from 'vue'
 
 import PasswordFields from '@/components/dialog/content/signin/PasswordFields.vue'
@@ -31,15 +26,23 @@ const { onSuccess } = defineProps<{
   onSuccess: () => void
 }>()
 
-const onSubmit = async (event: FormSubmitEvent) => {
-  if (event.valid) {
+const { handleSubmit } = useForm({
+  initialValues: {
+    confirmPassword: '',
+    password: ''
+  },
+  validationSchema: toTypedSchema(updatePasswordSchema)
+})
+
+const onSubmit = handleSubmit(async (submittedValues) => {
+  if (submittedValues.password) {
     loading.value = true
     try {
-      await authActions.updatePassword(event.values.password)
+      await authActions.updatePassword(submittedValues.password)
       onSuccess()
     } finally {
       loading.value = false
     }
   }
-}
+})
 </script>

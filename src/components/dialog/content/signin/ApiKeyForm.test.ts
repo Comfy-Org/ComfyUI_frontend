@@ -1,6 +1,5 @@
 import type { ComponentProps } from 'vue-component-type-helpers'
 
-import { Form } from '@primevue/forms'
 import { mount } from '@vue/test-utils'
 import { createPinia } from 'pinia'
 import Button from '@/components/ui/button/Button.vue'
@@ -69,7 +68,7 @@ describe('ApiKeyForm', () => {
     return mount(ApiKeyForm, {
       global: {
         plugins: [PrimeVue, createPinia(), i18n],
-        components: { Button, Form, InputText, Message }
+        components: { Button, InputText, Message }
       },
       props
     })

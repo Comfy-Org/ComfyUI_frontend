@@ -1,63 +1,65 @@
 <template>
-  <Form
-    v-slot="$form"
-    class="flex flex-col gap-6"
-    :resolver="zodResolver(signInSchema)"
-    @submit="onSubmit"
-  >
+  <form class="flex flex-col gap-6" @submit="onSubmit">
     <!-- Email Field -->
-    <div class="flex flex-col gap-2">
-      <label class="mb-2 text-base font-medium opacity-80" :for="emailInputId">
-        {{ t('auth.login.emailLabel') }}
-      </label>
-      <InputText
-        :id="emailInputId"
-        autocomplete="email"
-        class="h-10"
-        name="email"
-        type="text"
-        :placeholder="t('auth.login.emailPlaceholder')"
-        :invalid="$form.email?.invalid"
-      />
-      <small v-if="$form.email?.invalid" class="text-red-500">{{
-        $form.email.error.message
-      }}</small>
-    </div>
+    <FormField v-slot="{ componentField }" name="email">
+      <div class="flex flex-col gap-2">
+        <label
+          class="mb-2 text-base font-medium opacity-80"
+          :for="emailInputId"
+        >
+          {{ t('auth.login.emailLabel') }}
+        </label>
+        <InputText
+          v-bind="componentField"
+          :id="emailInputId"
+          autocomplete="email"
+          class="h-10"
+          type="text"
+          :placeholder="t('auth.login.emailPlaceholder')"
+          :invalid="Boolean(errors.email)"
+        />
+        <small v-if="errors.email" class="text-red-500">{{
+          errors.email
+        }}</small>
+      </div>
+    </FormField>
 
     <!-- Password Field -->
-    <div class="flex flex-col gap-2">
-      <div class="mb-2 flex items-center justify-between">
-        <label
-          class="text-base font-medium opacity-80"
-          for="comfy-org-sign-in-password"
-        >
-          {{ t('auth.login.passwordLabel') }}
-        </label>
-        <span
-          class="cursor-pointer text-base font-medium text-muted select-none"
-          :class="{
-            'text-link-disabled': !$form.email?.value || $form.email?.invalid
-          }"
-          @click="handleForgotPassword($form.email?.value, $form.email?.valid)"
-        >
-          {{ t('auth.login.forgotPassword') }}
-        </span>
+    <FormField v-slot="{ componentField }" name="password">
+      <div class="flex flex-col gap-2">
+        <div class="mb-2 flex items-center justify-between">
+          <label
+            class="text-base font-medium opacity-80"
+            for="comfy-org-sign-in-password"
+          >
+            {{ t('auth.login.passwordLabel') }}
+          </label>
+          <span
+            class="cursor-pointer text-base font-medium text-muted select-none"
+            :class="{
+              'text-link-disabled': !values.email || Boolean(errors.email)
+            }"
+            @click="handleForgotPassword(values.email, !errors.email)"
+          >
+            {{ t('auth.login.forgotPassword') }}
+          </span>
+        </div>
+        <Password
+          v-bind="componentField"
+          input-id="comfy-org-sign-in-password"
+          pt:pc-input-text:root:autocomplete="current-password"
+          :feedback="false"
+          toggle-mask
+          :placeholder="t('auth.login.passwordPlaceholder')"
+          :class="{ 'p-invalid': Boolean(errors.password) }"
+          fluid
+          class="h-10"
+        />
+        <small v-if="errors.password" class="text-red-500">{{
+          errors.password
+        }}</small>
       </div>
-      <Password
-        input-id="comfy-org-sign-in-password"
-        pt:pc-input-text:root:autocomplete="current-password"
-        name="password"
-        :feedback="false"
-        toggle-mask
-        :placeholder="t('auth.login.passwordPlaceholder')"
-        :class="{ 'p-invalid': $form.password?.invalid }"
-        fluid
-        class="h-10"
-      />
-      <small v-if="$form.password?.invalid" class="text-red-500">{{
-        $form.password.error.message
-      }}</small>
-    </div>
+    </FormField>
 
     <!-- Submit Button -->
     <ProgressSpinner v-if="loading" class="mx-auto h-8 w-8" />
@@ -65,26 +67,26 @@
       v-else
       type="submit"
       class="mt-4 h-10 font-medium"
-      :disabled="!$form.valid"
+      :disabled="!meta.valid"
     >
       {{ t('auth.login.loginButton') }}
     </Button>
-  </Form>
+  </form>
 </template>
 
 <script setup lang="ts">
-import type { FormSubmitEvent } from '@primevue/forms'
-import { Form } from '@primevue/forms'
-import { zodResolver } from '@primevue/forms/resolvers/zod'
+import { toTypedSchema } from '@vee-validate/zod'
 import { useThrottleFn } from '@vueuse/core'
 import InputText from 'primevue/inputtext'
 import Password from 'primevue/password'
 import ProgressSpinner from 'primevue/progressspinner'
 import { useToast } from 'primevue/usetoast'
+import { useForm } from 'vee-validate'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
+import { FormField } from '@/components/ui/form'
 import { useFirebaseAuthActions } from '@/composables/auth/useFirebaseAuthActions'
 import { signInSchema } from '@/schemas/signInSchema'
 import type { SignInData } from '@/schemas/signInSchema'
@@ -103,9 +105,23 @@ const emit = defineEmits<{
 
 const emailInputId = 'comfy-org-sign-in-email'
 
-const onSubmit = useThrottleFn((event: FormSubmitEvent) => {
-  if (event.valid) {
-    emit('submit', event.values as SignInData)
+const { errors, meta, validate, values } = useForm<SignInData>({
+  initialValues: {
+    email: '',
+    password: ''
+  },
+  validateOnMount: true,
+  validationSchema: toTypedSchema(signInSchema)
+})
+
+const onSubmit = useThrottleFn(async (event: Event) => {
+  event.preventDefault()
+  const { valid, values: submittedValues } = await validate()
+  if (valid && submittedValues?.email && submittedValues.password) {
+    emit('submit', {
+      email: submittedValues.email,
+      password: submittedValues.password
+    })
   }
 }, 1_500)
 

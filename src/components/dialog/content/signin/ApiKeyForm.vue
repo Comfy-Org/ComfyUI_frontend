@@ -18,14 +18,9 @@
       </div>
     </div>
 
-    <Form
-      v-slot="$form"
-      class="flex flex-col gap-6"
-      :resolver="zodResolver(apiKeySchema)"
-      @submit="onSubmit"
-    >
-      <Message v-if="$form.apiKey?.invalid" severity="error" class="mb-4">
-        {{ $form.apiKey.error.message }}
+    <form class="flex flex-col gap-6" @submit="onSubmit">
+      <Message v-if="errors.apiKey" severity="error" class="mb-4">
+        {{ errors.apiKey }}
       </Message>
 
       <div class="flex flex-col gap-2">
@@ -37,13 +32,14 @@
         </label>
         <div class="flex flex-col gap-2">
           <InputText
-            pt:root:id="comfy-org-api-key"
-            pt:root:autocomplete="off"
+            id="comfy-org-api-key"
+            v-model="apiKey"
+            v-bind="apiKeyAttrs"
+            autocomplete="off"
             class="h-10"
-            name="apiKey"
             type="password"
             :placeholder="t('auth.apiKey.placeholder')"
-            :invalid="$form.apiKey?.invalid"
+            :invalid="Boolean(errors.apiKey)"
           />
           <small class="text-muted">
             {{ t('auth.apiKey.helpText') }}
@@ -79,16 +75,15 @@
           {{ t('g.save') }}
         </Button>
       </div>
-    </Form>
+    </form>
   </div>
 </template>
 
 <script setup lang="ts">
-import type { FormSubmitEvent } from '@primevue/forms'
-import { Form } from '@primevue/forms'
-import { zodResolver } from '@primevue/forms/resolvers/zod'
+import { toTypedSchema } from '@vee-validate/zod'
 import InputText from 'primevue/inputtext'
 import Message from 'primevue/message'
+import { useForm } from 'vee-validate'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -120,9 +115,24 @@ const emit = defineEmits<{
   (e: 'success'): void
 }>()
 
-const onSubmit = async (event: FormSubmitEvent) => {
-  if (event.valid) {
-    await apiKeyStore.storeApiKey(event.values.apiKey)
+const { defineField, errors, validate } = useForm({
+  initialValues: {
+    apiKey: ''
+  },
+  validationSchema: toTypedSchema(apiKeySchema)
+})
+
+const [apiKey, apiKeyAttrs] = defineField('apiKey')
+
+const onSubmit = async (event: Event) => {
+  event.preventDefault()
+  const { valid, values: submittedValues } = await validate()
+  if (!valid) {
+    return
+  }
+
+  if (submittedValues?.apiKey) {
+    await apiKeyStore.storeApiKey(submittedValues.apiKey)
     emit('success')
   }
 }
