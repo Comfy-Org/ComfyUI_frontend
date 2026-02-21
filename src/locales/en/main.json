@@ -2244,6 +2244,17 @@
     "haveQuestions": "Have questions or wondering about enterprise?",
     "contactUs": "Contact us",
     "viewEnterprise": "View enterprise",
+    "freeTier": {
+      "title": "You're on the Free plan",
+      "description": "Your free plan includes {credits} credits each month to try Comfy Cloud.",
+      "nextRefresh": "Your credits refresh on {date}.",
+      "subscribeCta": "Subscribe for more",
+      "topUpBlocked": {
+        "title": "Top-ups aren't available on Free",
+        "description": "Adding credits requires a paid subscription. Subscribe to get more monthly credits and the ability to add credits anytime.",
+        "subscribeCta": "View plans"
+      }
+    },
     "partnerNodesCredits": "Partner nodes pricing",
     "plansAndPricing": "Plans & pricing",
     "managePlan": "Manage plan",
