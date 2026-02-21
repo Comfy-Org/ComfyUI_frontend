@@ -313,14 +313,18 @@ useEventListener(document.body, 'keydown', (e: KeyboardEvent) => {
           <ListboxItem
             v-for="item in store.inProgressItems"
             :key="`${item.id}-${item.state}`"
-            :value="selectionMap.get(`slot:${item.id}`)!"
+            :value="{
+              id: `slot:${item.id}`,
+              kind: 'inProgress',
+              itemId: item.id
+            }"
             :class="itemClass"
           >
             <OutputPreviewItem
-              v-if="item.state === 'skeleton' || item.state === 'latent'"
+              v-if="item.state !== 'image' || !item.output"
               :latent-preview="item.latentPreviewUrl"
             />
-            <OutputHistoryItem v-else :output="item.output!" />
+            <OutputHistoryItem v-else :output="item.output" />
           </ListboxItem>
 
           <div
@@ -336,7 +340,12 @@ useEventListener(document.body, 'keydown', (e: KeyboardEvent) => {
             <ListboxItem
               v-for="(output, key) in toValue(allOutputs(asset))"
               :key
-              :value="selectionMap.get(`history:${asset.id}:${key}`)!"
+              :value="{
+                id: `history:${asset.id}:${key}`,
+                kind: 'history',
+                assetId: asset.id,
+                key
+              }"
               :class="itemClass"
             >
               <OutputHistoryItem :output="output" />

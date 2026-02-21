@@ -9,7 +9,7 @@ function makeOutput(
   return { ...overrides }
 }
 
-describe('flattenNodeOutput', () => {
+describe(flattenNodeOutput, () => {
   it('returns empty array for output with no known media types', () => {
     const result = flattenNodeOutput(['1', makeOutput({ text: 'hello' })])
     expect(result).toEqual([])

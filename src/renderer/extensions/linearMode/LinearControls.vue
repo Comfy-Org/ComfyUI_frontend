@@ -158,8 +158,8 @@ defineExpose({ runButtonClick })
       <WidgetInputNumberInput
         v-model="batchCount"
         :widget="batchCountWidget"
-        root-class="text-base-foreground"
-        class="*:[.min-w-0]:w-24 grid-cols-[auto_96px]!"
+        root-class="text-base-foreground grid-cols-[auto_96px]"
+        class="*:[.min-w-0]:w-24"
       />
       <SubscribeToRunButton v-if="!isActiveSubscription" class="w-full mt-4" />
       <div v-else class="flex mt-4 gap-2">
@@ -266,8 +266,8 @@ defineExpose({ runButtonClick })
         <WidgetInputNumberInput
           v-model="batchCount"
           :widget="batchCountWidget"
-          root-class="text-base-foreground"
-          class="*:[.min-w-0]:w-24 grid-cols-[auto_96px]!"
+          root-class="text-base-foreground grid-cols-[auto_96px]"
+          class="*:[.min-w-0]:w-24"
         />
         <SubscribeToRunButton
           v-if="!isActiveSubscription"
