@@ -15,9 +15,12 @@
       @click.stop="onVideoClick"
       @play="onVideoPlay"
       @pause="onVideoPause"
-      @ended="onVideoEnded"
     >
-      <source :src="asset.src || ''" />
+      <source
+        v-if="asset.src"
+        :src="asset.src"
+        :type="asset.mime_type ?? undefined"
+      />
     </video>
     <VideoPlayOverlay :visible="!isPlaying" size="md" />
   </div>
@@ -60,11 +63,6 @@ const onVideoPlay = () => {
 }
 
 const onVideoPause = () => {
-  isPlaying.value = false
-  emit('videoPlayingStateChanged', false)
-}
-
-const onVideoEnded = () => {
   isPlaying.value = false
   emit('videoPlayingStateChanged', false)
 }
