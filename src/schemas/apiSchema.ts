@@ -478,3 +478,32 @@ export type UserDataFullInfo = z.infer<typeof zUserDataFullInfo>
 export type TerminalSize = z.infer<typeof zTerminalSize>
 export type LogEntry = z.infer<typeof zLogEntry>
 export type LogsRawResponse = z.infer<typeof zLogRawResponse>
+
+const zComfyHubProfile = z.object({
+  username: z.string(),
+  name: z.string().optional(),
+  description: z.string().optional(),
+  coverImageUrl: z.string().nullable().optional(),
+  profilePictureUrl: z.string().nullable().optional()
+})
+
+export type ComfyHubProfile = z.infer<typeof zComfyHubProfile>
+
+const zWorkflowAsset = z.object({
+  name: z.string(),
+  thumbnailUrl: z.string().nullable()
+})
+
+const zWorkflowModel = z.object({
+  name: z.string(),
+  thumbnailUrl: z.string().nullable().optional()
+})
+
+const zShareableAssetsResponse = z.object({
+  assets: z.array(zWorkflowAsset),
+  models: z.array(zWorkflowModel)
+})
+
+export type WorkflowAsset = z.infer<typeof zWorkflowAsset>
+export type WorkflowModel = z.infer<typeof zWorkflowModel>
+export type ShareableAssetsResponse = z.infer<typeof zShareableAssetsResponse>

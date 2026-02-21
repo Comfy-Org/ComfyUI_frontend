@@ -11,6 +11,7 @@ import type {
 } from '@/platform/assets/schemas/assetSchema'
 import { isCloud } from '@/platform/distribution/types'
 import { useToastStore } from '@/platform/updates/common/toastStore'
+import type { ShareableAssetsResponse } from '@/schemas/apiSchema'
 import type { IFuseOptions } from 'fuse.js'
 import type {
   TemplateIncludeOnDistributionEnum,
@@ -852,6 +853,24 @@ export class ComfyApi extends EventTarget {
       throw new PromptExecutionError(errorResponse)
     }
 
+    return await res.json()
+  }
+
+  /**
+   * Gets the list of assets and models referenced by a prompt that would
+   * need user consent before sharing.
+   */
+  async getShareableAssets(
+    prompt: ComfyApiWorkflow
+  ): Promise<ShareableAssetsResponse> {
+    const res = await this.fetchApi('/prompt/assets', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ prompt })
+    })
+    if (res.status !== 200) {
+      throw new Error(`Failed to fetch shareable assets: ${res.status}`)
+    }
     return await res.json()
   }
 

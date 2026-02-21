@@ -15,6 +15,9 @@ catalogs:
     '@eslint/js':
       specifier: ^9.39.1
       version: 9.39.1
+    '@formkit/auto-animate':
+      specifier: ^0.9.0
+      version: 0.9.0
     '@iconify-json/lucide':
       specifier: ^1.1.178
       version: 1.2.79
@@ -353,6 +356,9 @@ importers:
       '@comfyorg/tailwind-utils':
         specifier: workspace:*
         version: link:packages/tailwind-utils
+      '@formkit/auto-animate':
+        specifier: 'catalog:'
+        version: 0.9.0
       '@iconify/json':
         specifier: 'catalog:'
         version: 2.2.380
@@ -2126,6 +2132,9 @@ packages:
 
   '@floating-ui/vue@1.1.9':
     resolution: {integrity: sha512-BfNqNW6KA83Nexspgb9DZuz578R7HT8MZw1CfK9I6Ah4QReNWEJsXWHN+SdmOVLNGmTPDi+fDT535Df5PzMLbQ==}
+
+  '@formkit/auto-animate@0.9.0':
+    resolution: {integrity: sha512-VhP4zEAacXS3dfTpJpJ88QdLqMTcabMg0jwpOSxZ/VzfQVfl3GkZSCZThhGC5uhq/TxPHPzW0dzr4H9Bb1OgKA==}
 
   '@grpc/grpc-js@1.9.15':
     resolution: {integrity: sha512-nqE7Hc0AzI+euzUwDAy0aY5hCp10r734gMGRdU+qOPX0XSceI2ULrcXB5U2xSc5VkWwalCj4M7GzCAygZl2KoQ==}
@@ -10048,6 +10057,8 @@ snapshots:
     transitivePeerDependencies:
       - '@vue/composition-api'
       - vue
+
+  '@formkit/auto-animate@0.9.0': {}
 
   '@grpc/grpc-js@1.9.15':
     dependencies:

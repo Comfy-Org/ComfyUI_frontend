@@ -78,7 +78,7 @@
             {{ contentTitle }}
           </h2>
           <div
-            class="min-h-0 flex-1 px-6 pt-0 pb-10 overflow-y-auto scrollbar-custom"
+            class="flex min-h-0 flex-1 px-6 pt-0 pb-2 overflow-y-auto scrollbar-custom"
           >
             <slot name="content" />
           </div>
@@ -157,11 +157,13 @@ type ModalSize = keyof typeof SIZE_CLASSES
 const {
   contentTitle,
   rightPanelTitle,
-  size = 'lg'
+  size = 'lg',
+  leftPanelWidth = '14rem'
 } = defineProps<{
   contentTitle: string
   rightPanelTitle?: string
   size?: ModalSize
+  leftPanelWidth?: string
 }>()
 
 const sizeClasses = computed(() => SIZE_CLASSES[size])
@@ -199,8 +201,8 @@ const showLeftPanel = computed(() => {
 
 const gridStyle = computed(() => ({
   gridTemplateColumns: hasRightPanel.value
-    ? `${hasLeftPanel.value && showLeftPanel.value ? '14rem' : '0rem'} 1fr ${isRightPanelOpen.value ? '18rem' : '0rem'}`
-    : `${hasLeftPanel.value && showLeftPanel.value ? '14rem' : '0rem'} 1fr`
+    ? `${hasLeftPanel.value && showLeftPanel.value ? leftPanelWidth : '0rem'} 1fr ${isRightPanelOpen.value ? '18rem' : '0rem'}`
+    : `${hasLeftPanel.value && showLeftPanel.value ? leftPanelWidth : '0rem'} 1fr`
 }))
 
 const toggleLeftPanel = () => {

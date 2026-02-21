@@ -43,4 +43,7 @@ export type RemoteConfig = {
   linear_toggle_enabled?: boolean
   team_workspaces_enabled?: boolean
   user_secrets_enabled?: boolean
+  workflow_sharing_enabled?: boolean
+  comfyhub_upload_enabled?: boolean
+  comfyhub_profile_gate_enabled?: boolean
 }

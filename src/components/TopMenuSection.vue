@@ -51,6 +51,7 @@
               ref="legacyCommandsContainerRef"
               class="[&:not(:has(*>*:not(:empty)))]:hidden"
             ></div>
+
             <ComfyActionbar
               :top-menu-container="actionbarContainerRef"
               :queue-overlay-expanded="isQueueOverlayExpanded"
@@ -98,6 +99,18 @@
               class="shrink-0"
             />
             <LoginButton v-else-if="isDesktop && !isIntegratedTabBar" />
+            <Button
+              v-if="isCloud && flags.workflowSharingEnabled"
+              v-tooltip.bottom="shareTooltipConfig"
+              variant="secondary"
+              :aria-label="t('actionbar.shareTooltip')"
+              @click="openShareDialog"
+              @pointerenter="prefetchShareDialog"
+            >
+              <span class="not-md:hidden">
+                {{ t('actionbar.share') }}
+              </span>
+            </Button>
             <Button
               v-if="!isRightSidePanelOpen"
               v-tooltip.bottom="rightSidePanelTooltipConfig"
@@ -173,7 +186,8 @@ import { useQueueStore, useQueueUIStore } from '@/stores/queueStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
-import { isDesktop } from '@/platform/distribution/types'
+import { isCloud, isDesktop } from '@/platform/distribution/types'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useConflictAcknowledgment } from '@/workbench/extensions/manager/composables/useConflictAcknowledgment'
 import { useManagerState } from '@/workbench/extensions/manager/composables/useManagerState'
 import { ManagerTab } from '@/workbench/extensions/manager/types/comfyManagerTypes'
@@ -183,6 +197,7 @@ const settingStore = useSettingStore()
 const workspaceStore = useWorkspaceStore()
 const rightSidePanelStore = useRightSidePanelStore()
 const managerState = useManagerState()
+const { flags } = useFeatureFlags()
 const { isLoggedIn } = useCurrentUser()
 const { t, n } = useI18n()
 const { toastErrorHandler } = useErrorHandling()
@@ -245,6 +260,9 @@ const queueHistoryTooltipConfig = computed(() =>
 const customNodesManagerTooltipConfig = computed(() =>
   buildTooltipConfig(t('menu.manageExtensions'))
 )
+const shareTooltipConfig = computed(() =>
+  buildTooltipConfig(t('actionbar.shareTooltip'))
+)
 const queueContextMenu = ref<InstanceType<typeof ContextMenu> | null>(null)
 const queueContextMenuItems = computed<MenuItem[]>(() => [
   {
@@ -298,6 +316,19 @@ const handleClearQueue = async () => {
 
   await commandStore.execute('Comfy.ClearPendingTasks')
   executionStore.clearInitializationByJobIds(pendingJobIds)
+}
+
+function importShareDialog() {
+  return import('@/platform/workflow/sharing/composables/useShareDialog')
+}
+
+function prefetchShareDialog() {
+  importShareDialog()
+}
+
+async function openShareDialog() {
+  const { useShareDialog } = await importShareDialog()
+  useShareDialog().show()
 }
 
 const openCustomNodeManager = async () => {

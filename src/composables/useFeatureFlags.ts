@@ -21,7 +21,10 @@ export enum ServerFeatureFlag {
   LINEAR_TOGGLE_ENABLED = 'linear_toggle_enabled',
   TEAM_WORKSPACES_ENABLED = 'team_workspaces_enabled',
   USER_SECRETS_ENABLED = 'user_secrets_enabled',
-  NODE_REPLACEMENTS = 'node_replacements'
+  NODE_REPLACEMENTS = 'node_replacements',
+  WORKFLOW_SHARING_ENABLED = 'workflow_sharing_enabled',
+  COMFYHUB_UPLOAD_ENABLED = 'comfyhub_upload_enabled',
+  COMFYHUB_PROFILE_GATE_ENABLED = 'comfyhub_profile_gate_enabled'
 }
 
 /**
@@ -100,6 +103,27 @@ export function useFeatureFlags() {
     },
     get nodeReplacementsEnabled() {
       return api.getServerFeature(ServerFeatureFlag.NODE_REPLACEMENTS, false)
+    },
+    get workflowSharingEnabled() {
+      return (
+        remoteConfig.value.workflow_sharing_enabled ??
+        api.getServerFeature(ServerFeatureFlag.WORKFLOW_SHARING_ENABLED, true)
+      )
+    },
+    get comfyHubUploadEnabled() {
+      return (
+        remoteConfig.value.comfyhub_upload_enabled ??
+        api.getServerFeature(ServerFeatureFlag.COMFYHUB_UPLOAD_ENABLED, true)
+      )
+    },
+    get comfyHubProfileGateEnabled() {
+      return (
+        remoteConfig.value.comfyhub_profile_gate_enabled ??
+        api.getServerFeature(
+          ServerFeatureFlag.COMFYHUB_PROFILE_GATE_ENABLED,
+          true
+        )
+      )
     }
   })
 
