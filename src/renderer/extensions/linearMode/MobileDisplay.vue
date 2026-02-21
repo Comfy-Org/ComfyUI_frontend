@@ -1,9 +1,9 @@
 <script setup lang="ts">
+import type { MenuItem } from 'primevue/menuitem'
 import { usePointerSwipe } from '@vueuse/core'
 import { computed, ref, useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import type { Entry } from '@/components/common/DropdownItem.vue'
 import DropdownMenu from '@/components/common/DropdownMenu.vue'
 import AssetsSidebarTab from '@/components/sidebar/tabs/AssetsSidebarTab.vue'
 import CurrentUserButton from '@/components/topbar/CurrentUserButton.vue'
@@ -12,10 +12,12 @@ import Popover from '@/components/ui/Popover.vue'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import LinearControls from '@/renderer/extensions/linearMode/LinearControls.vue'
 import LinearPreview from '@/renderer/extensions/linearMode/LinearPreview.vue'
 import { useColorPaletteService } from '@/services/colorPaletteService'
 import { useQueueStore } from '@/stores/queueStore'
+import { useMenuItemStore } from '@/stores/menuItemStore'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import { cn } from '@/utils/tailwindUtil'
 
@@ -25,10 +27,12 @@ const tabs = [
   ['Results', 'icon-[comfy--image-ai-edit]']
 ]
 
+const canvasStore = useCanvasStore()
 const colorPaletteService = useColorPaletteService()
 const colorPaletteStore = useColorPaletteStore()
 const { isLoggedIn } = useCurrentUser()
 const { t } = useI18n()
+const { commandIdToMenuItem } = useMenuItemStore()
 const queueStore = useQueueStore()
 const workflowService = useWorkflowService()
 const workflowStore = useWorkflowStore()
@@ -75,29 +79,48 @@ const workflowsEntries = computed(() => {
   }))
 })
 
-const menuEntries = computed<Entry[]>(() => [
+const menuEntries = computed<MenuItem[]>(() => [
   { label: 'Apps', icon: 'icon-[lucide--panels-top-left]' },
-  { label: 'Templates', icon: 'icon-[comfy--template]' },
+  {
+    ...commandIdToMenuItem('Comfy.BrowseTemplates'),
+    label: 'Templates',
+    icon: 'icon-[comfy--template]'
+  },
   { separator: true },
   {
     label: 'File',
-    submenu: [
-      { label: 'Rename', icon: 'icon-[lucide--pencil]' },
-      { label: 'Duplicate', icon: 'icon-[lucide--copy]' },
+    items: [
+      commandIdToMenuItem('Comfy.RenameWorkflow'),
+      commandIdToMenuItem('Comfy.DuplicateWorkflow'),
       { separator: true },
-      { label: 'Save', icon: 'icon-[lucide--save]' },
-      { label: 'Save as', icon: 'icon-[lucide--save]' },
+      commandIdToMenuItem('Comfy.SaveWorkflow'),
+      commandIdToMenuItem('Comfy.SaveWorkflowAs'),
       { separator: true },
-      { label: 'Export', icon: 'icon-[lucide--download]' },
-      { label: 'Export (API)', icon: 'icon-[lucide--download]' }
+      commandIdToMenuItem('Comfy.ExportWorkflow'),
+      commandIdToMenuItem('Comfy.ExportWorkflowAPI')
     ]
   },
-  { label: 'Edit', submenu: [] },
-  { label: 'Enter node graph', icon: 'icon-[comfy--workflow]', new: true },
+  {
+    label: 'Edit',
+    items: [
+      commandIdToMenuItem('Comfy.Undo'),
+      commandIdToMenuItem('Comfy.Redo'),
+      { separator: true },
+      commandIdToMenuItem('Comfy.RefreshNodeDefinitions'),
+      commandIdToMenuItem('Comfy.Memory.UnloadModels'),
+      commandIdToMenuItem('Comfy.Memory.UnloadModelsAndExecutionCache')
+    ]
+  },
+  {
+    label: 'Enter node graph',
+    icon: 'icon-[comfy--workflow]',
+    new: true,
+    command: () => (canvasStore.linearMode = false)
+  },
   { separator: true },
   {
     label: 'Theme',
-    submenu: colorPaletteStore.palettes.map((palette) => ({
+    items: colorPaletteStore.palettes.map((palette) => ({
       label: palette.name,
       icon:
         colorPaletteStore.activePaletteId === palette.id
@@ -107,8 +130,8 @@ const menuEntries = computed<Entry[]>(() => [
     }))
   },
   { separator: true },
-  { label: 'Settings', icon: 'icon-[lucide--settings]' },
-  { label: 'Help', icon: 'icon-[lucide--circle-question-mark]' }
+  { ...commandIdToMenuItem('Comfy.ShowSettingsDialog'), label: 'Settings' },
+  { ...commandIdToMenuItem('Comfy.ToggleHelpCenter'), label: 'Help' }
 ])
 </script>
 <template>

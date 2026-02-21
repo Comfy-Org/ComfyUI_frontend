@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import type { MenuItem } from 'primevue/menuitem'
 import {
   DropdownMenuItem,
   DropdownMenuSeparator,
@@ -7,18 +8,7 @@ import {
   DropdownMenuSubTrigger
 } from 'reka-ui'
 import { useI18n } from 'vue-i18n'
-
-export type Entry =
-  | { separator: true; label?: never }
-  | { separator?: undefined; label: string; submenu: Entry[] }
-  | {
-      separator?: undefined
-      submenu?: undefined
-      label: string
-      icon?: string
-      new?: boolean
-      command?: () => void
-    }
+import { toValue } from 'vue'
 
 const { t } = useI18n()
 
@@ -26,16 +16,19 @@ defineOptions({
   inheritAttrs: false
 })
 
-defineProps<{ itemClass: string; contentClass: string; entry: Entry }>()
+defineProps<{ itemClass: string; contentClass: string; item: MenuItem }>()
 </script>
 <template>
   <DropdownMenuSeparator
-    v-if="entry.separator"
+    v-if="item.separator"
     class="h-[1px] bg-border-subtle m-1"
   />
-  <DropdownMenuSub v-else-if="entry.submenu">
-    <DropdownMenuSubTrigger :class="itemClass">
-      {{ entry.label }}
+  <DropdownMenuSub v-else-if="item.items">
+    <DropdownMenuSubTrigger
+      :class="itemClass"
+      :disabled="toValue(item.disabled) || !item.items?.length"
+    >
+      {{ item.label }}
       <i class="ml-auto icon-[lucide--chevron-right]" />
     </DropdownMenuSubTrigger>
     <DropdownMenuPortal>
@@ -45,20 +38,25 @@ defineProps<{ itemClass: string; contentClass: string; entry: Entry }>()
         :align-offset="-5"
       >
         <DropdownItem
-          v-for="(subentry, index) in entry.submenu"
-          :key="entry.label ?? index"
-          :entry="subentry"
+          v-for="(subitem, index) in item.items"
+          :key="toValue(subitem.label) ?? index"
+          :item="subitem"
           :item-class
           :content-class
         />
       </DropdownMenuSubContent>
     </DropdownMenuPortal>
   </DropdownMenuSub>
-  <DropdownMenuItem v-else :class="itemClass" @select="entry.command">
-    <i class="size-5" :class="entry.icon" />
-    {{ entry.label }}
+  <DropdownMenuItem
+    v-else
+    :class="itemClass"
+    :disabled="toValue(item.disabled) || !item.command"
+    @select="item.command?.({ originalEvent: $event, item })"
+  >
+    <i class="size-5" :class="item.icon" />
+    {{ item.label }}
     <div
-      v-if="entry.new"
+      v-if="item.new"
       class="ml-auto bg-primary-background rounded-full text-xxs font-bold px-1 flex leading-none items-center"
       v-text="t('NEW')"
     />
