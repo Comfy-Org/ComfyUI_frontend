@@ -34,6 +34,7 @@ import { useNodeOutputStore } from '@/stores/imagePreviewStore'
 import { useJobPreviewStore } from '@/stores/jobPreviewStore'
 import type { NodeLocatorId } from '@/types/nodeIdentification'
 import { createNodeLocatorId } from '@/types/nodeIdentification'
+import { useGraphStateStore } from '@/core/graph/state/graphStateStore'
 import { forEachNode, getNodeByExecutionId } from '@/utils/graphTraversalUtil'
 import { classifyCloudValidationError } from '@/utils/executionErrorUtil'
 
@@ -635,56 +636,54 @@ export const useExecutionStore = defineStore('execution', () => {
   }
 
   /**
-   * Update node and slot error flags when validation errors change.
-   * Propagates errors up subgraph chains.
+   * Push execution errors to graphStateStore and handle slot errors.
    */
   watch(lastNodeErrors, () => {
-    if (!app.rootGraph) return
+    const graphStateStore = useGraphStateStore()
 
-    // Clear all error flags
-    forEachNode(app.rootGraph, (node) => {
-      node.has_errors = false
-      if (node.inputs) {
-        for (const slot of node.inputs) {
-          slot.hasErrors = false
+    // Clear slot errors
+    if (app.rootGraph) {
+      forEachNode(app.rootGraph, (node) => {
+        if (node.inputs) {
+          for (const slot of node.inputs) {
+            slot.hasErrors = false
+          }
         }
-      }
-    })
+      })
+    }
+
+    // Clear previous execution errors
+    graphStateStore.execute({ type: 'ClearAllErrors', version: 1 })
 
     if (!lastNodeErrors.value) return
 
-    // Set error flags on nodes and slots
+    // Push execution errors to graphStateStore
     for (const [executionId, nodeError] of Object.entries(
       lastNodeErrors.value
     )) {
-      const node = getNodeByExecutionId(app.rootGraph, executionId)
-      if (!node) continue
-
-      node.has_errors = true
-
-      // Mark input slots with errors
-      if (node.inputs) {
-        for (const error of nodeError.errors) {
-          const slotName = error.extra_info?.input_name
-          if (!slotName) continue
-
-          const slot = node.inputs.find((s) => s.name === slotName)
-          if (slot) {
-            slot.hasErrors = true
-          }
-        }
+      const locatorId = executionIdToNodeLocatorId(executionId)
+      if (locatorId) {
+        graphStateStore.execute({
+          type: 'SetNodeError',
+          version: 1,
+          nodeId: locatorId,
+          hasError: true
+        })
       }
 
-      // Propagate errors to parent subgraph nodes
-      const parts = executionId.split(':')
-      for (let i = parts.length - 1; i > 0; i--) {
-        const parentExecutionId = parts.slice(0, i).join(':')
-        const parentNode = getNodeByExecutionId(
-          app.rootGraph,
-          parentExecutionId
-        )
-        if (parentNode) {
-          parentNode.has_errors = true
+      // Handle slot errors directly (not part of graphStateStore yet)
+      if (app.rootGraph) {
+        const node = getNodeByExecutionId(app.rootGraph, executionId)
+        if (node?.inputs) {
+          for (const error of nodeError.errors) {
+            const slotName = error.extra_info?.input_name
+            if (!slotName) continue
+
+            const slot = node.inputs.find((s) => s.name === slotName)
+            if (slot) {
+              slot.hasErrors = true
+            }
+          }
         }
       }
     }
