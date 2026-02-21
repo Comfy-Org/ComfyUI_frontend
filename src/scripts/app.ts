@@ -1404,9 +1404,7 @@ export class ComfyApp {
     this.processingQueue = true
     const executionStore = useExecutionStore()
     const executionErrorStore = useExecutionErrorStore()
-    executionErrorStore.lastNodeErrors = null
-    executionErrorStore.lastExecutionError = null
-    executionErrorStore.lastPromptError = null
+    executionErrorStore.clearAllErrors()
 
     // Get auth token for backend nodes - uses workspace token if enabled, otherwise Firebase token
     const comfyOrgAuthToken = await useFirebaseAuthStore().getAuthToken()
@@ -1884,9 +1882,7 @@ export class ComfyApp {
     const nodeOutputStore = useNodeOutputStore()
     nodeOutputStore.resetAllOutputsAndPreviews()
     const executionErrorStore = useExecutionErrorStore()
-    executionErrorStore.lastNodeErrors = null
-    executionErrorStore.lastExecutionError = null
-    executionErrorStore.lastPromptError = null
+    executionErrorStore.clearAllErrors()
 
     useDomWidgetStore().clear()
 
