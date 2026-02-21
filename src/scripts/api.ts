@@ -690,6 +690,7 @@ export class ComfyApi extends EventTarget {
                 'Server feature flags received:',
                 this.serverFeatureFlags
               )
+              this.dispatchCustomEvent('feature_flags', msg.data)
               break
             default:
               if (this._registered.has(msg.type)) {
