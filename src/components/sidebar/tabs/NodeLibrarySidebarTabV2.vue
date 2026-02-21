@@ -114,6 +114,7 @@ import { useI18n } from 'vue-i18n'
 
 import SearchBox from '@/components/common/SearchBoxV2.vue'
 import { useNodeDragToCanvas } from '@/composables/node/useNodeDragToCanvas'
+import { usePerTabState } from '@/composables/usePerTabState'
 import {
   DEFAULT_SORTING_ID,
   DEFAULT_TAB_ID,
@@ -148,15 +149,7 @@ const sortOrderByTab = useLocalStorage<Record<TabId, SortingStrategyId>>(
     custom: 'alphabetical'
   }
 )
-const sortOrder = computed({
-  get: () => sortOrderByTab.value[selectedTab.value],
-  set: (value) => {
-    sortOrderByTab.value = {
-      ...sortOrderByTab.value,
-      [selectedTab.value]: value
-    }
-  }
-})
+const sortOrder = usePerTabState(selectedTab, sortOrderByTab)
 
 const sortingOptions = computed(() =>
   nodeOrganizationService.getSortingStrategies().map((strategy) => ({
@@ -174,12 +167,7 @@ const expandedKeysByTab = ref<Record<TabId, string[]>>({
   all: [],
   custom: []
 })
-const expandedKeys = computed({
-  get: () => expandedKeysByTab.value[selectedTab.value],
-  set: (value) => {
-    expandedKeysByTab.value[selectedTab.value] = value
-  }
-})
+const expandedKeys = usePerTabState(selectedTab, expandedKeysByTab)
 
 const nodeDefStore = useNodeDefStore()
 const { startDrag } = useNodeDragToCanvas()
