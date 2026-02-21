@@ -2203,8 +2203,9 @@
     "messageSupport": "Message support",
     "invoiceHistory": "Invoice history",
     "benefits": {
-      "benefit1": "Monthly credits for Partner Nodes — top up when needed",
-      "benefit2": "Up to 30 min runtime per job"
+      "benefit1": "More monthly credits, top up anytime",
+      "benefit2": "Up to 1 hour runtime per job on Pro",
+      "benefit3": "Bring your own models (Creator & Pro)"
     },
     "yearlyDiscount": "20% DISCOUNT",
     "tiers": {
@@ -2249,11 +2250,14 @@
       "description": "Your free plan includes {credits} credits each month to try Comfy Cloud.",
       "nextRefresh": "Your credits refresh on {date}.",
       "subscribeCta": "Subscribe for more",
+      "outOfCredits": {
+        "title": "You're out of free credits",
+        "subtitle": "Subscribe to unlock top-ups and more"
+      },
       "topUpBlocked": {
-        "title": "Top-ups aren't available on Free",
-        "description": "Adding credits requires a paid subscription. Subscribe to get more monthly credits and the ability to add credits anytime.",
-        "subscribeCta": "View plans"
-      }
+        "title": "Unlock top-ups and more"
+      },
+      "upgradeCta": "View plans"
     },
     "partnerNodesCredits": "Partner nodes pricing",
     "plansAndPricing": "Plans & pricing",
@@ -2272,6 +2276,7 @@
     "maxDurationLabel": "Max run duration",
     "gpuLabel": "RTX 6000 Pro (96GB VRAM)",
     "addCreditsLabel": "Add more credits whenever",
+    "monthlyCreditsIncluded": "{credits} credits / month",
     "customLoRAsLabel": "Import your own LoRAs",
     "videoEstimateLabel": "Approx. amount of 5s videos generated with Wan 2.2 Image-to-Video template",
     "videoEstimateHelp": "More details on this template",
@@ -2282,6 +2287,7 @@
     "upgradeTo": "Upgrade to {plan}",
     "changeTo": "Change to {plan}",
     "maxDuration": {
+      "free": "30 min",
       "standard": "30 min",
       "creator": "30 min",
       "pro": "1 hr",

@@ -144,6 +144,7 @@
                 <!-- Active state: show Manage Payment, Upgrade, and menu -->
                 <template v-else>
                   <Button
+                    v-if="!isFreeTierPlan"
                     size="lg"
                     variant="secondary"
                     class="rounded-lg px-4 text-sm font-normal text-text-primary bg-interface-menu-component-surface-selected"
@@ -155,11 +156,16 @@
                     size="lg"
                     variant="primary"
                     class="rounded-lg px-4 text-sm font-normal text-text-primary"
-                    @click="showSubscriptionDialog"
+                    @click="
+                      isFreeTierPlan
+                        ? showPricingTable()
+                        : showSubscriptionDialog()
+                    "
                   >
                     {{ $t('subscription.upgradePlan') }}
                   </Button>
                   <Button
+                    v-if="!isFreeTierPlan"
                     v-tooltip="{ value: $t('g.moreOptions'), showDelay: 300 }"
                     variant="secondary"
                     size="lg"
@@ -369,6 +375,7 @@ import {
   getTierFeatures,
   getTierPrice
 } from '@/platform/cloud/subscription/constants/tierPricing'
+import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { cn } from '@/utils/tailwindUtil'
@@ -394,6 +401,7 @@ const {
 } = useBillingContext()
 
 const { showCancelSubscriptionDialog } = useDialogService()
+const { showPricingTable } = useSubscriptionDialog()
 
 const isResubscribing = ref(false)
 
@@ -455,6 +463,7 @@ function handleSubscribeWorkspace() {
   showSubscriptionDialog()
 }
 const subscriptionTier = computed(() => subscription.value?.tier ?? null)
+const isFreeTierPlan = computed(() => subscriptionTier.value === 'FREE')
 const isYearlySubscription = computed(
   () => subscription.value?.duration === 'ANNUAL'
 )
@@ -567,24 +576,37 @@ const tierBenefits = computed((): Benefit[] => {
     })
   }
 
-  benefits.push(
-    {
-      key: 'maxDuration',
+  const isFreeTierPlan = key === 'free'
+
+  if (isFreeTierPlan) {
+    benefits.push({
+      key: 'monthlyCredits',
       type: 'metric',
-      value: t(`subscription.maxDuration.${key}`),
-      label: t('subscription.maxDurationLabel')
-    },
-    {
-      key: 'gpu',
-      type: 'feature',
-      label: t('subscription.gpuLabel')
-    },
-    {
+      value: n(getTierCredits(key)),
+      label: t('subscription.monthlyCreditsLabel')
+    })
+  }
+
+  benefits.push({
+    key: 'maxDuration',
+    type: 'metric',
+    value: t(`subscription.maxDuration.${key}`),
+    label: t('subscription.maxDurationLabel')
+  })
+
+  benefits.push({
+    key: 'gpu',
+    type: 'feature',
+    label: t('subscription.gpuLabel')
+  })
+
+  if (!isFreeTierPlan) {
+    benefits.push({
       key: 'addCredits',
       type: 'feature',
       label: t('subscription.addCreditsLabel')
-    }
-  )
+    })
+  }
 
   if (getTierFeatures(key).customLoRAs) {
     benefits.push({

@@ -220,7 +220,7 @@ const handleOpenUserSettings = () => {
 }
 
 const handleOpenPlansAndPricing = () => {
-  subscriptionDialog.show()
+  subscriptionDialog.showPricingTable()
   emit('close')
 }
 

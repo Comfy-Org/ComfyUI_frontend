@@ -1,3 +1,4 @@
+import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 import type { components } from '@/types/comfyRegistryTypes'
 
 type SubscriptionTier = components['schemas']['SubscriptionTier']
@@ -62,7 +63,7 @@ export function getTierPrice(tierKey: TierKey, isYearly = false): number {
 }
 
 export function getTierCredits(tierKey: TierKey): number {
-  if (tierKey === 'free') return 0
+  if (tierKey === 'free') return remoteConfig.value.free_tier_credits ?? 400
   if (tierKey === 'founder') return FOUNDER_MONTHLY_CREDITS
   return TIER_PRICING[tierKey].credits
 }

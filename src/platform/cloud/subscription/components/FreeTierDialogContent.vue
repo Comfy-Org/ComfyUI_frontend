@@ -32,34 +32,41 @@
     <div class="col-span-3 flex flex-col justify-between p-8">
       <div>
         <div class="flex flex-col gap-6">
-          <div class="inline-flex items-center gap-2">
-            <div class="text-sm text-text-primary">
-              {{
-                reason === 'out_of_credits'
-                  ? $t('subscription.freeTier.topUpBlocked.title')
-                  : $t('subscription.freeTier.title')
-              }}
-            </div>
-            <CloudBadge
-              reverse-order
-              no-padding
-              background-color="var(--p-dialog-background)"
-              use-subscription
-            />
+          <div class="text-sm text-text-primary">
+            <template v-if="reason === 'out_of_credits'">
+              {{ $t('subscription.freeTier.outOfCredits.title') }}
+            </template>
+            <template v-else-if="reason === 'top_up_blocked'">
+              {{ $t('subscription.freeTier.topUpBlocked.title') }}
+            </template>
+            <template v-else>
+              {{ $t('subscription.freeTier.title') }}
+            </template>
           </div>
 
-          <p class="m-0 text-sm text-text-secondary">
+          <p
+            v-if="reason === 'out_of_credits'"
+            class="m-0 text-sm text-text-secondary"
+          >
+            {{ $t('subscription.freeTier.outOfCredits.subtitle') }}
+          </p>
+
+          <p
+            v-if="!reason || reason === 'subscription_required'"
+            class="m-0 text-sm text-text-secondary"
+          >
             {{
-              reason === 'out_of_credits'
-                ? $t('subscription.freeTier.topUpBlocked.description')
-                : $t('subscription.freeTier.description', {
-                    credits: formattedCredits
-                  })
+              $t('subscription.freeTier.description', {
+                credits: formattedCredits
+              })
             }}
           </p>
 
           <p
-            v-if="reason !== 'out_of_credits' && formattedRenewalDate"
+            v-if="
+              (!reason || reason === 'subscription_required') &&
+              formattedRenewalDate
+            "
             class="m-0 text-sm text-text-secondary"
           >
             {{
@@ -88,8 +95,8 @@
           @click="$emit('upgrade')"
         >
           {{
-            reason === 'out_of_credits'
-              ? $t('subscription.freeTier.topUpBlocked.subscribeCta')
+            reason === 'out_of_credits' || reason === 'top_up_blocked'
+              ? $t('subscription.freeTier.upgradeCta')
               : $t('subscription.freeTier.subscribeCta')
           }}
         </Button>
@@ -99,14 +106,15 @@
 </template>
 
 <script setup lang="ts">
-import CloudBadge from '@/components/topbar/CloudBadge.vue'
+import { computed } from 'vue'
+
 import Button from '@/components/ui/button/Button.vue'
 import SubscriptionBenefits from '@/platform/cloud/subscription/components/SubscriptionBenefits.vue'
 import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
-import { centsToCredits } from '@/base/credits/comfyCredits'
+import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 
 defineProps<{
-  reason?: 'subscription_required' | 'out_of_credits'
+  reason?: 'subscription_required' | 'out_of_credits' | 'top_up_blocked'
 }>()
 
 defineEmits<{
@@ -116,17 +124,12 @@ defineEmits<{
 
 const { formattedRenewalDate } = useSubscription()
 
-const FREE_TIER_CENTS = 190
-const formattedCredits = Math.round(
-  centsToCredits(FREE_TIER_CENTS)
-).toLocaleString()
+const formattedCredits = computed(() =>
+  (remoteConfig.value.free_tier_credits ?? 400).toLocaleString()
+)
 </script>
 
 <style scoped>
-:deep(.bg-comfy-menu-secondary) {
-  background-color: transparent;
-}
-
 :deep(.p-button) {
   color: white;
 }
