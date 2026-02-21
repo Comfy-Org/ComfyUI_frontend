@@ -35,8 +35,12 @@ export const usePromotionStore = defineStore('promotion', () => {
     }
   }
 
-  function getPromotions(subgraphNodeId: NodeId): PromotionEntry[] {
+  function getPromotionsRef(subgraphNodeId: NodeId): PromotionEntry[] {
     return promotions.value.get(subgraphNodeId) ?? []
+  }
+
+  function getPromotions(subgraphNodeId: NodeId): PromotionEntry[] {
+    return [...getPromotionsRef(subgraphNodeId)]
   }
 
   function isPromoted(
@@ -44,7 +48,7 @@ export const usePromotionStore = defineStore('promotion', () => {
     interiorNodeId: string,
     widgetName: string
   ): boolean {
-    return getPromotions(subgraphNodeId).some(
+    return getPromotionsRef(subgraphNodeId).some(
       (e) => e.interiorNodeId === interiorNodeId && e.widgetName === widgetName
     )
   }
@@ -77,7 +81,7 @@ export const usePromotionStore = defineStore('promotion', () => {
     widgetName: string
   ): void {
     if (isPromoted(subgraphNodeId, interiorNodeId, widgetName)) return
-    const entries = getPromotions(subgraphNodeId)
+    const entries = getPromotionsRef(subgraphNodeId)
     setPromotions(subgraphNodeId, [...entries, { interiorNodeId, widgetName }])
   }
 
@@ -86,7 +90,7 @@ export const usePromotionStore = defineStore('promotion', () => {
     interiorNodeId: string,
     widgetName: string
   ): void {
-    const entries = getPromotions(subgraphNodeId)
+    const entries = getPromotionsRef(subgraphNodeId)
     setPromotions(
       subgraphNodeId,
       entries.filter(
@@ -101,7 +105,7 @@ export const usePromotionStore = defineStore('promotion', () => {
     fromIndex: number,
     toIndex: number
   ): void {
-    const entries = [...getPromotions(subgraphNodeId)]
+    const entries = [...getPromotionsRef(subgraphNodeId)]
     if (
       fromIndex < 0 ||
       fromIndex >= entries.length ||
@@ -115,6 +119,7 @@ export const usePromotionStore = defineStore('promotion', () => {
   }
 
   return {
+    getPromotionsRef,
     getPromotions,
     isPromoted,
     isPromotedByAny,

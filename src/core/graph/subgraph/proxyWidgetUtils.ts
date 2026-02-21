@@ -178,7 +178,6 @@ export function promoteRecommendedWidgets(subgraphNode: SubgraphNode) {
     // updatePreviews when node outputs are first loaded.
     requestAnimationFrame(() =>
       updatePreviews(node, () => {
-        updatePreviews(node)
         promotePreviewWidget()
       })
     )

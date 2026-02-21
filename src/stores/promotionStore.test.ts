@@ -28,6 +28,19 @@ describe('usePromotionStore', () => {
       store.setPromotions(nodeId, entries)
       expect(store.getPromotions(nodeId)).toEqual(entries)
     })
+
+    it('returns a defensive copy', () => {
+      store.setPromotions(nodeId, [
+        { interiorNodeId: '10', widgetName: 'seed' }
+      ])
+
+      const result = store.getPromotions(nodeId)
+      result.push({ interiorNodeId: '11', widgetName: 'steps' })
+
+      expect(store.getPromotions(nodeId)).toEqual([
+        { interiorNodeId: '10', widgetName: 'seed' }
+      ])
+    })
   })
 
   describe('isPromoted', () => {
