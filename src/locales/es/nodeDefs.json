@@ -15728,6 +15728,10 @@
         "name": "id_de_tarea_de_reorientación",
         "tooltip": null
       },
+      "1": {
+        "name": "reasignar task_id",
+        "tooltip": null
+      },
       "2": {
         "name": "GLB",
         "tooltip": null

@@ -15728,6 +15728,10 @@
         "name": "リターゲットタスクID",
         "tooltip": null
       },
+      "1": {
+        "name": "リターゲット タスクID",
+        "tooltip": null
+      },
       "2": {
         "name": "GLB",
         "tooltip": null
