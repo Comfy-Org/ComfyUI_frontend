@@ -39,7 +39,6 @@ const appModeStore = useAppModeStore()
 
 const props = defineProps<{
   toastTo?: string | HTMLElement
-  notesTo?: string | HTMLElement
   mobile?: boolean
 }>()
 
@@ -194,11 +193,10 @@ defineExpose({ runButtonClick })
       <div class="flex-1" />
       <Popover
         v-if="partitionedNodes[0].length"
-        align="start"
+        align="end"
         class="overflow-y-auto overflow-x-clip max-h-(--reka-popover-content-available-height) z-100"
-        :reference="notesTo"
-        side="left"
-        :to="notesTo"
+        side="bottom"
+        :side-offset="-8"
       >
         <template #button>
           <Button variant="muted-textonly">
@@ -311,10 +309,5 @@ defineExpose({ runButtonClick })
       <i v-else class="icon-[lucide--loader-circle] size-4 animate-spin" />
       <span v-text="t('queue.jobAddedToQueue')" />
     </div>
-  </Teleport>
-  <Teleport v-if="false" defer :to="notesTo">
-    <div
-      class="bg-base-background text-muted-foreground flex flex-col w-90 gap-2 rounded-2xl border-1 border-border-subtle py-3"
-    ></div>
   </Teleport>
 </template>

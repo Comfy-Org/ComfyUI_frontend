@@ -55,8 +55,6 @@ const selectedItem = ref<AssetItem>()
 const selectedOutput = ref<ResultItemImpl>()
 const canShowPreview = ref(true)
 
-const topLeftRef = useTemplateRef('topLeftRef')
-const topRightRef = useTemplateRef('topRightRef')
 const bottomLeftRef = useTemplateRef('bottomLeftRef')
 const bottomRightRef = useTemplateRef('bottomRightRef')
 const linearWorkflowRef = useTemplateRef('linearWorkflowRef')
@@ -118,13 +116,12 @@ const linearWorkflowRef = useTemplateRef('linearWorkflowRef')
           v-else
           ref="linearWorkflowRef"
           :toast-to="unrefElement(bottomLeftRef) ?? undefined"
-          :notes-to="unrefElement(topLeftRef) ?? undefined"
         />
       </SplitterPanel>
       <SplitterPanel
         id="linearCenterPanel"
         :size="98"
-        class="flex flex-col min-w-min gap-4 mr-2 px-10 pt-8 pb-4 relative text-muted-foreground outline-none"
+        class="flex flex-col min-w-min gap-4 px-10 pt-8 pb-4 relative text-muted-foreground outline-none"
       >
         <LinearPreview
           :latent-preview="
@@ -136,10 +133,9 @@ const linearWorkflowRef = useTemplateRef('linearWorkflowRef')
           :selected-item
           :selected-output
         />
-        <div ref="topLeftRef" class="absolute z-21 top-1 left-1">
+        <div class="absolute z-21 top-1 left-1">
           <AppModeToolbar v-if="!appModeStore.isBuilderMode" />
         </div>
-        <div ref="topRightRef" class="absolute z-21 top-4 right-4" />
         <div ref="bottomLeftRef" class="absolute z-20 bottom-4 left-4" />
         <div ref="bottomRightRef" class="absolute z-20 bottom-24 right-4" />
         <div
@@ -165,7 +161,6 @@ const linearWorkflowRef = useTemplateRef('linearWorkflowRef')
           v-if="sidebarOnLeft"
           ref="linearWorkflowRef"
           :toast-to="unrefElement(bottomRightRef) ?? undefined"
-          :notes-to="unrefElement(topRightRef) ?? undefined"
         />
         <div
           v-else-if="activeTab"
