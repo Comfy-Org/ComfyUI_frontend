@@ -2,39 +2,51 @@
   <div class="flex flex-col">
     <Button
       variant="textonly"
-      class="justify-start"
+      class="w-full"
       @click="handleSortChange('newest')"
     >
       <span>{{ $t('sideToolbar.mediaAssets.sortNewestFirst') }}</span>
-      <i v-if="sortBy === 'newest'" class="icon-[lucide--check] size-4" />
+      <i
+        class="icon-[lucide--check] ml-auto size-4"
+        :class="sortBy !== 'newest' && 'opacity-0'"
+      />
     </Button>
 
     <Button
       variant="textonly"
-      class="justify-start"
+      class="w-full"
       @click="handleSortChange('oldest')"
     >
       <span>{{ $t('sideToolbar.mediaAssets.sortOldestFirst') }}</span>
-      <i v-if="sortBy === 'oldest'" class="icon-[lucide--check] size-4" />
+      <i
+        class="icon-[lucide--check] ml-auto size-4"
+        :class="sortBy !== 'oldest' && 'opacity-0'"
+      />
     </Button>
 
     <template v-if="showGenerationTimeSort">
       <Button
         variant="textonly"
-        class="justify-start"
+        class="w-full"
         @click="handleSortChange('longest')"
       >
         <span>{{ $t('sideToolbar.mediaAssets.sortLongestFirst') }}</span>
-        <i v-if="sortBy === 'longest'" class="icon-[lucide--check] size-4" />
+        <i
+          class="icon-[lucide--check] ml-auto size-4"
+          :class="sortBy !== 'longest' && 'opacity-0'"
+        />
       </Button>
 
       <Button
         variant="textonly"
-        class="justify-start"
+        class="w-full"
         @click="handleSortChange('fastest')"
       >
         <span>{{ $t('sideToolbar.mediaAssets.sortFastestFirst') }}</span>
-        <i v-if="sortBy === 'fastest'" class="icon-[lucide--check] size-4" />
+        <i
+          class="icon-[lucide--check] ml-auto size-4"
+          :class="sortBy !== 'fastest' && 'opacity-0'"
+        />
       </Button>
     </template>
   </div>

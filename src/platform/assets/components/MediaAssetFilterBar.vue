@@ -11,7 +11,6 @@
       <MediaAssetFilterButton
         v-if="isCloud"
         v-tooltip.top="{ value: $t('assetBrowser.filterBy') }"
-        size="md"
       >
         <template #default="{ close }">
           <MediaAssetFilterMenu
@@ -24,7 +23,6 @@
       <AssetSortButton
         v-if="isCloud"
         v-tooltip.top="{ value: $t('assetBrowser.sortBy') }"
-        size="md"
       >
         <template #default="{ close }">
           <MediaAssetSortMenu
@@ -34,27 +32,28 @@
           />
         </template>
       </AssetSortButton>
-      <MediaAssetViewModeToggle
-        v-if="isQueuePanelV2Enabled"
-        v-model:view-mode="viewMode"
-      />
+      <MediaAssetSettingsButton
+        v-tooltip.top="{ value: $t('sideToolbar.mediaAssets.viewSettings') }"
+      >
+        <template #default="{ close }">
+          <MediaAssetSettingsMenu v-model:view-mode="viewMode" :close />
+        </template>
+      </MediaAssetSettingsButton>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
-
 import SearchBox from '@/components/common/SearchBox.vue'
 import { isCloud } from '@/platform/distribution/types'
-import { useSettingStore } from '@/platform/settings/settingStore'
 
 import MediaAssetFilterButton from './MediaAssetFilterButton.vue'
 import MediaAssetFilterMenu from './MediaAssetFilterMenu.vue'
 import AssetSortButton from './MediaAssetSortButton.vue'
 import MediaAssetSortMenu from './MediaAssetSortMenu.vue'
 import type { SortBy } from './MediaAssetSortMenu.vue'
-import MediaAssetViewModeToggle from './MediaAssetViewModeToggle.vue'
+import MediaAssetSettingsButton from './MediaAssetSettingsButton.vue'
+import MediaAssetSettingsMenu from './MediaAssetSettingsMenu.vue'
 
 const { showGenerationTimeSort = false } = defineProps<{
   searchQuery: string
@@ -69,11 +68,6 @@ const emit = defineEmits<{
 
 const sortBy = defineModel<SortBy>('sortBy', { required: true })
 const viewMode = defineModel<'list' | 'grid'>('viewMode', { required: true })
-
-const settingStore = useSettingStore()
-const isQueuePanelV2Enabled = computed(() =>
-  settingStore.get('Comfy.Queue.QPOV2')
-)
 
 const handleSearchChange = (value: string | undefined) => {
   emit('update:searchQuery', value ?? '')

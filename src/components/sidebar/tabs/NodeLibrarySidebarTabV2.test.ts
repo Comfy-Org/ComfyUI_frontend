@@ -113,7 +113,7 @@ describe('NodeLibrarySidebarTabV2', () => {
     const wrapper = mountComponent()
 
     const triggers = wrapper.findAllComponents(TabsTrigger)
-    expect(triggers.length).toBe(3)
+    expect(triggers).toHaveLength(3)
   })
 
   it('should render search box', () => {

@@ -14,6 +14,46 @@ import { upperCase } from 'es-toolkit/string'
 
 const DEFAULT_ICON = 'pi pi-sort'
 
+const NODE_ORDER_BY_FOLDER = {
+  basics: [
+    'LoadImage',
+    'LoadVideo',
+    'Load3D',
+    'SaveImage',
+    'SaveVideo',
+    'SaveGLB',
+    'PrimitiveStringMultiline',
+    'PreviewImage'
+  ],
+  'image tools': [
+    'ImageBatch',
+    'ImageCrop',
+    'ImageCropV2',
+    'ImageScale',
+    'ImageScaleBy',
+    'ImageRotate',
+    'ImageBlur',
+    'ImageBlend',
+    'ImageInvert',
+    'Canny',
+    'RecraftRemoveBackgroundNode',
+    'LoadImageMask'
+  ],
+  'video tools': ['GetVideoComponents', 'CreateVideo'],
+  'image generation': [
+    'LoraLoader',
+    'LoraLoaderModelOnly',
+    'ConditioningCombine'
+  ],
+  audio: [
+    'LoadAudio',
+    'SaveAudio',
+    'SaveAudioMP3',
+    'StabilityTextToAudio',
+    'EmptyLatentAudio'
+  ]
+} as const satisfies Record<string, readonly string[]>
+
 export const DEFAULT_GROUPING_ID = 'category' as const
 export const DEFAULT_SORTING_ID = 'original' as const
 export const DEFAULT_TAB_ID = 'all' as const
@@ -160,6 +200,25 @@ class NodeOrganizationService {
             const orderB = bi === -1 ? len + originalIndex.get(b)! : bi
             return orderA - orderB
           })
+          for (const folder of tree.children) {
+            if (!folder.children) continue
+            const order =
+              NODE_ORDER_BY_FOLDER[
+                folder.label as keyof typeof NODE_ORDER_BY_FOLDER
+              ]
+            if (!order) continue
+            const nodeOrder: readonly string[] = order
+            const orderLen = nodeOrder.length
+            folder.children.sort((a, b) => {
+              const nameA = a.data?.name ?? a.label ?? ''
+              const nameB = b.data?.name ?? b.label ?? ''
+              const ai = nodeOrder.indexOf(nameA)
+              const bi = nodeOrder.indexOf(nameB)
+              const orderA = ai === -1 ? orderLen : ai
+              const orderB = bi === -1 ? orderLen : bi
+              return orderA - orderB
+            })
+          }
         }
         return [{ tree }]
       }

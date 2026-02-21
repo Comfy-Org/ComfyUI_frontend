@@ -421,6 +421,52 @@ describe('useJobList', () => {
     expect(instance.filteredTasks.value.map((t) => t.jobId)).toEqual(['wf-1'])
   })
 
+  it('filters jobs by search query', async () => {
+    vi.useFakeTimers()
+    queueStoreMock.historyTasks = [
+      createTask({
+        jobId: 'alpha',
+        queueIndex: 2,
+        mockState: 'completed',
+        createTime: 2000,
+        executionEndTimestamp: 2000
+      }),
+      createTask({
+        jobId: 'beta',
+        queueIndex: 1,
+        mockState: 'failed',
+        createTime: 1000,
+        executionEndTimestamp: 1000
+      })
+    ]
+
+    const instance = initComposable()
+    await flush()
+    expect(instance.filteredTasks.value.map((task) => task.jobId)).toEqual([
+      'alpha',
+      'beta'
+    ])
+
+    instance.searchQuery.value = 'beta'
+    await vi.advanceTimersByTimeAsync(200)
+    await flush()
+    expect(instance.filteredTasks.value.map((task) => task.jobId)).toEqual([
+      'beta'
+    ])
+
+    instance.searchQuery.value = 'failed meta'
+    await vi.advanceTimersByTimeAsync(200)
+    await flush()
+    expect(instance.filteredTasks.value.map((task) => task.jobId)).toEqual([
+      'beta'
+    ])
+
+    instance.searchQuery.value = 'does-not-exist'
+    await vi.advanceTimersByTimeAsync(200)
+    await flush()
+    expect(instance.filteredTasks.value).toEqual([])
+  })
+
   it('hydrates job items with active progress and compute hours', async () => {
     queueStoreMock.runningTasks = [
       createTask({
