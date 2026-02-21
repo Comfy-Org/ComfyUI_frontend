@@ -23,6 +23,8 @@
         @mouseenter="hoveredJobId = job.id"
         @mouseleave="onJobLeave(job.id)"
         @contextmenu.prevent.stop="$emit('menu', job, $event)"
+        @dblclick.stop="emitViewItem(job)"
+        @preview-click="emitViewItem(job)"
         @click.stop
       >
         <template v-if="hoveredJobId === job.id" #actions>
@@ -78,7 +80,7 @@ import { isActiveJobState } from '@/utils/queueUtil'
 
 defineProps<{ displayedJobGroups: JobGroup[] }>()
 
-defineEmits<{
+const emit = defineEmits<{
   (e: 'cancelItem', item: JobListItem): void
   (e: 'deleteItem', item: JobListItem): void
   (e: 'menu', item: JobListItem, ev: MouseEvent): void
@@ -99,6 +101,15 @@ const isCancelable = (job: JobListItem) =>
 
 const isFailedDeletable = (job: JobListItem) =>
   job.showClear !== false && job.state === 'failed'
+
+const isPreviewableCompletedJob = (job: JobListItem) =>
+  job.state === 'completed' && !!job.iconImageUrl
+
+const emitViewItem = (job: JobListItem) => {
+  if (isPreviewableCompletedJob(job)) {
+    emit('viewItem', job)
+  }
+}
 
 const getJobIconClass = (job: JobListItem): string | undefined => {
   const iconName = job.iconName ?? iconForJobState(job.state)

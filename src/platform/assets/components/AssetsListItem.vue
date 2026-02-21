@@ -35,7 +35,11 @@
         :icon-class="iconClass"
         :icon-aria-label="iconAriaLabel"
       >
-        <div v-if="previewUrl" class="relative size-full">
+        <div
+          v-if="previewUrl"
+          class="relative size-full"
+          @click="emit('preview-click')"
+        >
           <template v-if="isVideoPreview">
             <video
               :src="previewUrl"
@@ -135,6 +139,7 @@ import VideoPlayOverlay from './VideoPlayOverlay.vue'
 
 const emit = defineEmits<{
   'stack-toggle': []
+  'preview-click': []
 }>()
 
 const {

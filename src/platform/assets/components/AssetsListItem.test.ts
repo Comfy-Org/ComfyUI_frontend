@@ -35,4 +35,17 @@ describe('AssetsListItem', () => {
     expect(wrapper.find('video').exists()).toBe(false)
     expect(wrapper.find('.icon-\\[lucide--play\\]').exists()).toBe(false)
   })
+
+  it('emits preview-click when preview is clicked', async () => {
+    const wrapper = mount(AssetsListItem, {
+      props: {
+        previewUrl: 'https://example.com/preview.jpg',
+        previewAlt: 'image.png'
+      }
+    })
+
+    await wrapper.find('img').trigger('click')
+
+    expect(wrapper.emitted('preview-click')).toHaveLength(1)
+  })
 })
