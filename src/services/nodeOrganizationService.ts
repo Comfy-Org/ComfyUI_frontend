@@ -22,7 +22,7 @@ const NODE_ORDER_BY_FOLDER = {
     'SaveImage',
     'SaveVideo',
     'SaveGLB',
-    'CLIPTextEncode',
+    'PrimitiveStringMultiline',
     'PreviewImage'
   ],
   'image tools': [
