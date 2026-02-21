@@ -113,12 +113,13 @@ vi.mock('@/platform/cloud/subscription/composables/useSubscription', () => ({
 }))
 
 // Mock the useSubscriptionDialog composable
-const mockSubscriptionDialogShow = vi.fn()
+const mockShowPricingTable = vi.fn()
 vi.mock(
   '@/platform/cloud/subscription/composables/useSubscriptionDialog',
   () => ({
     useSubscriptionDialog: vi.fn(() => ({
-      show: mockSubscriptionDialogShow,
+      show: vi.fn(),
+      showPricingTable: mockShowPricingTable,
       hide: vi.fn()
     }))
   })
@@ -318,8 +319,8 @@ describe('CurrentUserPopoverLegacy', () => {
 
     await plansPricingItem.trigger('click')
 
-    // Verify subscription dialog show was called
-    expect(mockSubscriptionDialogShow).toHaveBeenCalled()
+    // Verify showPricingTable was called
+    expect(mockShowPricingTable).toHaveBeenCalled()
 
     // Verify close event was emitted
     expect(wrapper.emitted('close')).toBeTruthy()

@@ -99,6 +99,8 @@ export const useFirebaseAuthActions = () => {
     const { isActiveSubscription } = useBillingContext()
     if (!isActiveSubscription.value) return
 
+    // Defense-in-depth: showTopUpCreditsDialog also gates free-tier users,
+    // but purchaseCredits can be called directly from other entry points.
     const { isFreeTier } = useSubscription()
     if (isFreeTier.value) {
       await useDialogService().showSubscriptionRequiredDialog({

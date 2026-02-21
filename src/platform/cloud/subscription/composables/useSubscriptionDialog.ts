@@ -22,9 +22,6 @@ export const useSubscriptionDialog = () => {
 
   function hide() {
     dialogStore.closeDialog({ key: DIALOG_KEY })
-  }
-
-  function hideFreeTier() {
     dialogStore.closeDialog({ key: FREE_TIER_DIALOG_KEY })
   }
 
@@ -76,9 +73,9 @@ export const useSubscriptionDialog = () => {
         component,
         props: {
           reason: options?.reason,
-          onClose: hideFreeTier,
+          onClose: hide,
           onUpgrade: () => {
-            hideFreeTier()
+            hide()
             showPricingTable(options)
           }
         },
