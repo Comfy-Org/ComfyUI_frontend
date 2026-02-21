@@ -1674,9 +1674,11 @@
     },
     "outputs": {
       "0": {
+        "name": "positivo",
         "tooltip": null
       },
       "1": {
+        "name": "negativo",
         "tooltip": null
       }
     }
@@ -2171,6 +2173,9 @@
       "option1": {}
     },
     "outputs": {
+      "0": {
+        "tooltip": null
+      },
       "1": {
         "name": "ÍNDICE",
         "tooltip": null
@@ -2297,6 +2302,304 @@
     "outputs": {
       "0": {
         "tooltip": "El modelo con EasyCache."
+      }
+    }
+  },
+  "ElevenLabsAudioIsolation": {
+    "description": "Elimina el ruido de fondo del audio, aislando las voces o el habla.",
+    "display_name": "ElevenLabs Aislamiento de Voz",
+    "inputs": {
+      "audio": {
+        "name": "audio",
+        "tooltip": "Audio a procesar para eliminar el ruido de fondo."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ElevenLabsInstantVoiceClone": {
+    "description": "Crea una voz clonada a partir de muestras de audio. Proporcione de 1 a 8 grabaciones de la voz a clonar.",
+    "display_name": "ElevenLabs Clonación Instantánea de Voz",
+    "inputs": {
+      "files": {
+        "name": "archivos",
+        "tooltip": "Grabaciones de audio para la clonación de voz."
+      },
+      "remove_background_noise": {
+        "name": "eliminar_ruido_de_fondo",
+        "tooltip": "Elimina el ruido de fondo de las muestras de voz usando aislamiento de audio."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "voz",
+        "tooltip": null
+      }
+    }
+  },
+  "ElevenLabsSpeechToSpeech": {
+    "description": "Transforma el habla de una voz a otra manteniendo el contenido y la emoción originales.",
+    "display_name": "ElevenLabs Conversión de Voz a Voz",
+    "inputs": {
+      "audio": {
+        "name": "audio",
+        "tooltip": "Audio de origen a transformar."
+      },
+      "control_after_generate": {
+        "name": "control después de generar"
+      },
+      "model": {
+        "name": "modelo",
+        "tooltip": "Modelo a utilizar para la transformación de voz a voz."
+      },
+      "model_similarity_boost": {
+        "name": "aumento_de_similitud"
+      },
+      "model_speed": {
+        "name": "velocidad"
+      },
+      "model_style": {
+        "name": "estilo"
+      },
+      "model_use_speaker_boost": {
+        "name": "usar_aumento_de_altavoz"
+      },
+      "output_format": {
+        "name": "formato_de_salida",
+        "tooltip": "Formato de salida de audio."
+      },
+      "remove_background_noise": {
+        "name": "eliminar_ruido_de_fondo",
+        "tooltip": "Elimina el ruido de fondo del audio de entrada usando aislamiento de audio."
+      },
+      "seed": {
+        "name": "semilla",
+        "tooltip": "Semilla para reproducibilidad."
+      },
+      "stability": {
+        "name": "estabilidad",
+        "tooltip": "Estabilidad de la voz. Valores bajos ofrecen mayor rango emocional, valores altos producen un habla más consistente pero potencialmente monótona."
+      },
+      "voice": {
+        "name": "voz",
+        "tooltip": "Voz objetivo para la transformación. Conectar desde el Selector de Voz o Clonación Instantánea de Voz."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ElevenLabsSpeechToText": {
+    "description": "Transcribe audio a texto. Soporta detección automática de idioma, diarización de hablantes y etiquetado de eventos de audio.",
+    "display_name": "ElevenLabs Voz a Texto",
+    "inputs": {
+      "audio": {
+        "name": "audio",
+        "tooltip": "Audio para transcribir."
+      },
+      "control_after_generate": {
+        "name": "controlar después de generar"
+      },
+      "language_code": {
+        "name": "código_de_idioma",
+        "tooltip": "Código de idioma ISO-639-1 o ISO-639-3 (ej., 'en', 'es', 'fra'). Déjelo vacío para detección automática."
+      },
+      "model": {
+        "name": "modelo",
+        "tooltip": "Modelo a utilizar para la transcripción."
+      },
+      "model_diarization_threshold": {
+        "name": "umbral_de_diarización"
+      },
+      "model_diarize": {
+        "name": "diarizar"
+      },
+      "model_tag_audio_events": {
+        "name": "etiquetar_eventos_de_audio"
+      },
+      "model_temperature": {
+        "name": "temperatura"
+      },
+      "model_timestamps_granularity": {
+        "name": "granularidad_de_marcadores_de_tiempo"
+      },
+      "num_speakers": {
+        "name": "número_de_hablantes",
+        "tooltip": "Número máximo de hablantes a predecir. Establezca en 0 para detección automática."
+      },
+      "seed": {
+        "name": "semilla",
+        "tooltip": "Semilla para reproducibilidad (no se garantiza determinismo)."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "texto",
+        "tooltip": null
+      },
+      "1": {
+        "name": "código_de_idioma",
+        "tooltip": null
+      },
+      "2": {
+        "name": "palabras_json",
+        "tooltip": null
+      }
+    }
+  },
+  "ElevenLabsTextToDialogue": {
+    "description": "Genera diálogo de varios hablantes a partir de texto. Cada entrada de diálogo tiene su propio texto y voz.",
+    "display_name": "ElevenLabs Texto a Diálogo",
+    "inputs": {
+      "apply_text_normalization": {
+        "name": "aplicar_normalización_de_texto",
+        "tooltip": "Modo de normalización de texto. 'auto' deja que el sistema decida, 'on' siempre aplica normalización, 'off' la omite."
+      },
+      "control_after_generate": {
+        "name": "controlar después de generar"
+      },
+      "inputs": {
+        "name": "entradas",
+        "tooltip": "Número de entradas de diálogo."
+      },
+      "inputs_text1": {
+        "name": "texto1"
+      },
+      "language_code": {
+        "name": "código_de_idioma",
+        "tooltip": "Código de idioma ISO-639-1 o ISO-639-3 (ej., 'en', 'es', 'fra'). Déjelo vacío para detección automática."
+      },
+      "model": {
+        "name": "modelo",
+        "tooltip": "Modelo a utilizar para la generación de diálogo."
+      },
+      "output_format": {
+        "name": "formato_de_salida",
+        "tooltip": "Formato de salida de audio."
+      },
+      "seed": {
+        "name": "semilla",
+        "tooltip": "Semilla para reproducibilidad."
+      },
+      "stability": {
+        "name": "estabilidad",
+        "tooltip": "Estabilidad de la voz. Valores bajos dan mayor rango emocional, valores altos producen un habla más consistente pero potencialmente monótona."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ElevenLabsTextToSoundEffects": {
+    "description": "Genera efectos de sonido a partir de descripciones de texto.",
+    "display_name": "ElevenLabs Texto a Efectos de Sonido",
+    "inputs": {
+      "model": {
+        "name": "modelo",
+        "tooltip": "Modelo a utilizar para la generación de efectos de sonido."
+      },
+      "model_duration": {
+        "name": "duración"
+      },
+      "model_loop": {
+        "name": "bucle"
+      },
+      "model_prompt_influence": {
+        "name": "influencia_del_prompt"
+      },
+      "output_format": {
+        "name": "formato_de_salida",
+        "tooltip": "Formato de salida de audio."
+      },
+      "text": {
+        "name": "texto",
+        "tooltip": "Descripción en texto del efecto de sonido a generar."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ElevenLabsTextToSpeech": {
+    "description": "Convierte texto en voz.",
+    "display_name": "ElevenLabs Texto a Voz",
+    "inputs": {
+      "apply_text_normalization": {
+        "name": "aplicar_normalización_de_texto",
+        "tooltip": "Modo de normalización de texto. 'auto' permite que el sistema decida, 'on' siempre aplica la normalización, 'off' la omite."
+      },
+      "control_after_generate": {
+        "name": "controlar después de generar"
+      },
+      "language_code": {
+        "name": "código_de_idioma",
+        "tooltip": "Código de idioma ISO-639-1 o ISO-639-3 (por ejemplo, 'en', 'es', 'fra'). Dejar vacío para detección automática."
+      },
+      "model": {
+        "name": "modelo",
+        "tooltip": "Modelo a utilizar para texto a voz."
+      },
+      "model_similarity_boost": {
+        "name": "impulso_de_similitud"
+      },
+      "model_speed": {
+        "name": "velocidad"
+      },
+      "model_style": {
+        "name": "estilo"
+      },
+      "model_use_speaker_boost": {
+        "name": "usar_impulso_de_altavoz"
+      },
+      "output_format": {
+        "name": "formato_de_salida",
+        "tooltip": "Formato de salida de audio."
+      },
+      "seed": {
+        "name": "semilla",
+        "tooltip": "Semilla para reproducibilidad (no se garantiza el determinismo)."
+      },
+      "stability": {
+        "name": "estabilidad",
+        "tooltip": "Estabilidad de la voz. Valores bajos ofrecen un rango emocional más amplio, valores altos producen una voz más consistente pero potencialmente monótona."
+      },
+      "text": {
+        "name": "texto",
+        "tooltip": "El texto a convertir en voz."
+      },
+      "voice": {
+        "name": "voz",
+        "tooltip": "Voz a utilizar para la síntesis de voz. Conectar desde el Selector de Voz o Instant Voice Clone."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ElevenLabsVoiceSelector": {
+    "description": "Selecciona una voz predefinida de ElevenLabs para la generación de texto a voz.",
+    "display_name": "Selector de Voz de ElevenLabs",
+    "inputs": {
+      "voice": {
+        "name": "voz",
+        "tooltip": "Elige una voz de las voces predefinidas de ElevenLabs."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "voz",
+        "tooltip": null
       }
     }
   },
@@ -3235,6 +3538,50 @@
       }
     }
   },
+  "GLSLShader": {
+    "description": "Aplica shaders de fragmento GLSL ES a imágenes. u_resolution (vec2) siempre está disponible.",
+    "display_name": "Shader GLSL",
+    "inputs": {
+      "floats": {
+        "name": "floats",
+        "tooltip": "Los floats están disponibles como u_float0-4 en el código del shader"
+      },
+      "fragment_shader": {
+        "name": "fragment_shader",
+        "tooltip": "Código fuente del shader de fragmento GLSL (compatible con GLSL ES 3.00 / WebGL 2.0)"
+      },
+      "images": {
+        "name": "images",
+        "tooltip": "Las imágenes están disponibles como u_image0-4 (sampler2D) en el código del shader"
+      },
+      "ints": {
+        "name": "ints",
+        "tooltip": "Los ints están disponibles como u_int0-4 en el código del shader"
+      },
+      "size_mode": {
+        "name": "size_mode",
+        "tooltip": "Tamaño de salida: 'from_input' usa las dimensiones de la primera imagen de entrada, 'custom' permite tamaño manual"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "IMAGE0",
+        "tooltip": "Disponible mediante layout(location = 0) out vec4 fragColor0 en el código del shader"
+      },
+      "1": {
+        "name": "IMAGE1",
+        "tooltip": "Disponible mediante layout(location = 1) out vec4 fragColor1 en el código del shader"
+      },
+      "2": {
+        "name": "IMAGE2",
+        "tooltip": "Disponible mediante layout(location = 2) out vec4 fragColor2 en el código del shader"
+      },
+      "3": {
+        "name": "IMAGE3",
+        "tooltip": "Disponible mediante layout(location = 3) out vec4 fragColor3 en el código del shader"
+      }
+    }
+  },
   "GeminiImage2Node": {
     "description": "Genera o edita imágenes de forma sincrónica a través de la API de Google Vertex.",
     "display_name": "Nano Banana Pro (Google Gemini Image)",
@@ -3477,12 +3824,15 @@
     },
     "outputs": {
       "0": {
+        "name": "ancho",
         "tooltip": null
       },
       "1": {
+        "name": "alto",
         "tooltip": null
       },
       "2": {
+        "name": "tamaño_de_lote",
         "tooltip": null
       }
     }
@@ -3719,9 +4069,11 @@
     },
     "outputs": {
       "0": {
+        "name": "positive",
         "tooltip": null
       },
       "1": {
+        "name": "negative",
         "tooltip": null
       }
     }
@@ -3744,9 +4096,11 @@
     },
     "outputs": {
       "0": {
+        "name": "positive",
         "tooltip": null
       },
       "1": {
+        "name": "negative",
         "tooltip": null
       }
     }
@@ -6715,21 +7069,31 @@
     },
     "outputs": {
       "0": {
+        "name": "imagen",
         "tooltip": null
       },
       "1": {
+        "name": "mask",
         "tooltip": null
       },
       "2": {
+        "name": "mesh_path",
         "tooltip": null
       },
       "3": {
+        "name": "normal",
         "tooltip": null
       },
       "4": {
+        "name": "camera_info",
         "tooltip": null
       },
       "5": {
+        "name": "recording_video",
+        "tooltip": null
+      },
+      "6": {
+        "name": "model_3d",
         "tooltip": null
       }
     }
@@ -6999,7 +7363,8 @@
     },
     "outputs": {
       "0": {
-        "name": "model"
+        "name": "model",
+        "tooltip": "El modelo de difusión modificado."
       }
     }
   },
@@ -7679,6 +8044,10 @@
       }
     },
     "outputs": {
+      "0": {
+        "name": "model_file",
+        "tooltip": null
+      },
       "1": {
         "name": "GLB",
         "tooltip": null
@@ -7734,6 +8103,14 @@
       }
     },
     "outputs": {
+      "0": {
+        "name": "model_file",
+        "tooltip": null
+      },
+      "1": {
+        "name": "meshy_task_id",
+        "tooltip": null
+      },
       "2": {
         "name": "GLB",
         "tooltip": null
@@ -7789,6 +8166,14 @@
       }
     },
     "outputs": {
+      "0": {
+        "name": "model_file",
+        "tooltip": null
+      },
+      "1": {
+        "name": "meshy_task_id",
+        "tooltip": null
+      },
       "2": {
         "name": "GLB",
         "tooltip": null
@@ -7823,6 +8208,14 @@
       }
     },
     "outputs": {
+      "0": {
+        "name": "model_file",
+        "tooltip": null
+      },
+      "1": {
+        "name": "meshy_task_id",
+        "tooltip": null
+      },
       "2": {
         "name": "GLB",
         "tooltip": null
@@ -7850,6 +8243,14 @@
       }
     },
     "outputs": {
+      "0": {
+        "name": "model_file",
+        "tooltip": null
+      },
+      "1": {
+        "name": "rig_task_id",
+        "tooltip": null
+      },
       "2": {
         "name": "GLB",
         "tooltip": null
@@ -7898,6 +8299,14 @@
       }
     },
     "outputs": {
+      "0": {
+        "name": "archivo_modelo",
+        "tooltip": null
+      },
+      "1": {
+        "name": "meshy_task_id",
+        "tooltip": null
+      },
       "2": {
         "name": "GLB",
         "tooltip": null
@@ -7934,6 +8343,14 @@
       }
     },
     "outputs": {
+      "0": {
+        "name": "archivo_modelo",
+        "tooltip": null
+      },
+      "1": {
+        "name": "meshy_task_id",
+        "tooltip": null
+      },
       "2": {
         "name": "GLB",
         "tooltip": null
@@ -12266,6 +12683,10 @@
       }
     },
     "outputs": {
+      "0": {
+        "name": "Ruta del modelo 3D",
+        "tooltip": null
+      },
       "1": {
         "name": "GLB",
         "tooltip": null
@@ -12293,6 +12714,10 @@
       }
     },
     "outputs": {
+      "0": {
+        "name": "Ruta del modelo 3D",
+        "tooltip": null
+      },
       "1": {
         "name": "GLB",
         "tooltip": null
@@ -12317,6 +12742,10 @@
       }
     },
     "outputs": {
+      "0": {
+        "name": "Ruta del modelo 3D",
+        "tooltip": null
+      },
       "1": {
         "name": "GLB",
         "tooltip": null
@@ -12335,6 +12764,10 @@
       }
     },
     "outputs": {
+      "0": {
+        "name": "Ruta del modelo 3D",
+        "tooltip": null
+      },
       "1": {
         "name": "GLB",
         "tooltip": null
@@ -12359,6 +12792,10 @@
       }
     },
     "outputs": {
+      "0": {
+        "name": "Ruta del modelo 3D",
+        "tooltip": null
+      },
       "1": {
         "name": "GLB",
         "tooltip": null
@@ -12659,9 +13096,11 @@
     },
     "outputs": {
       "0": {
+        "name": "salida",
         "tooltip": null
       },
       "1": {
+        "name": "salida_sin_ruido",
         "tooltip": null
       }
     }
@@ -12687,9 +13126,11 @@
     },
     "outputs": {
       "0": {
+        "name": "salida",
         "tooltip": null
       },
       "1": {
+        "name": "salida_sin_ruido",
         "tooltip": null
       }
     }
@@ -12992,6 +13433,7 @@
     },
     "outputs": {
       "0": {
+        "name": "valor_sigma",
         "tooltip": null
       }
     }
@@ -13551,9 +13993,11 @@
     },
     "outputs": {
       "0": {
+        "name": "izquierdo",
         "tooltip": null
       },
       "1": {
+        "name": "derecho",
         "tooltip": null
       }
     }
@@ -13586,9 +14030,11 @@
     },
     "outputs": {
       "0": {
+        "name": "sigmas_altos",
         "tooltip": null
       },
       "1": {
+        "name": "sigmas_bajos",
         "tooltip": null
       }
     }
@@ -13605,9 +14051,11 @@
     },
     "outputs": {
       "0": {
+        "name": "sigmas_altos",
         "tooltip": null
       },
       "1": {
+        "name": "sigmas_bajos",
         "tooltip": null
       }
     }
@@ -14372,6 +14820,10 @@
       }
     },
     "outputs": {
+      "0": {
+        "name": "archivo_modelo",
+        "tooltip": null
+      },
       "1": {
         "name": "GLB",
         "tooltip": null
@@ -14411,6 +14863,10 @@
       }
     },
     "outputs": {
+      "0": {
+        "name": "archivo_modelo",
+        "tooltip": null
+      },
       "1": {
         "name": "GLB",
         "tooltip": null
@@ -14605,6 +15061,94 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "TextGenerate": {
+    "display_name": "TextGenerate",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "image": {
+        "name": "imagen"
+      },
+      "max_length": {
+        "name": "longitud_máxima"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "sampling_mode": {
+        "name": "modo_de_muestreo"
+      },
+      "sampling_mode_min_p": {
+        "name": "min_p"
+      },
+      "sampling_mode_repetition_penalty": {
+        "name": "penalización_por_repetición"
+      },
+      "sampling_mode_seed": {
+        "name": "semilla"
+      },
+      "sampling_mode_temperature": {
+        "name": "temperatura"
+      },
+      "sampling_mode_top_k": {
+        "name": "top_k"
+      },
+      "sampling_mode_top_p": {
+        "name": "top_p"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "texto_generado",
+        "tooltip": null
+      }
+    }
+  },
+  "TextGenerateLTX2Prompt": {
+    "display_name": "TextGenerateLTX2Prompt",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "image": {
+        "name": "imagen"
+      },
+      "max_length": {
+        "name": "longitud_máxima"
+      },
+      "prompt": {
+        "name": "mensaje"
+      },
+      "sampling_mode": {
+        "name": "modo_de_muestreo"
+      },
+      "sampling_mode_min_p": {
+        "name": "min_p"
+      },
+      "sampling_mode_repetition_penalty": {
+        "name": "penalización_por_repetición"
+      },
+      "sampling_mode_seed": {
+        "name": "semilla"
+      },
+      "sampling_mode_temperature": {
+        "name": "temperatura"
+      },
+      "sampling_mode_top_k": {
+        "name": "top_k"
+      },
+      "sampling_mode_top_p": {
+        "name": "top_p"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "texto_generado",
         "tooltip": null
       }
     }
@@ -14888,16 +15432,16 @@
     },
     "outputs": {
       "0": {
+        "name": "lora",
         "tooltip": "Modelo con LoRA aplicado"
       },
       "1": {
+        "name": "mapa_de_pérdida",
         "tooltip": "Pesos de LoRA"
       },
       "2": {
+        "name": "pasos",
         "tooltip": "Historial de pérdida"
-      },
-      "3": {
-        "tooltip": "Total de pasos de entrenamiento"
       }
     }
   },
@@ -15066,6 +15610,14 @@
       }
     },
     "outputs": {
+      "0": {
+        "name": "archivo_de_modelo",
+        "tooltip": null
+      },
+      "1": {
+        "name": "id_de_tarea_de_modelo",
+        "tooltip": null
+      },
       "2": {
         "name": "GLB",
         "tooltip": null
@@ -15123,6 +15675,14 @@
       }
     },
     "outputs": {
+      "0": {
+        "name": "archivo_de_modelo",
+        "tooltip": null
+      },
+      "1": {
+        "name": "id_de_tarea_de_modelo",
+        "tooltip": null
+      },
       "2": {
         "name": "GLB",
         "tooltip": null
@@ -15139,6 +15699,14 @@
       }
     },
     "outputs": {
+      "0": {
+        "name": "archivo_de_modelo",
+        "tooltip": null
+      },
+      "1": {
+        "name": "id_de_tarea_de_modelo",
+        "tooltip": null
+      },
       "2": {
         "name": "GLB",
         "tooltip": null
@@ -15156,6 +15724,10 @@
       }
     },
     "outputs": {
+      "0": {
+        "name": "id_de_tarea_de_reorientación",
+        "tooltip": null
+      },
       "2": {
         "name": "GLB",
         "tooltip": null
@@ -15170,6 +15742,14 @@
       }
     },
     "outputs": {
+      "0": {
+        "name": "archivo_de_modelo",
+        "tooltip": null
+      },
+      "1": {
+        "name": "id_de_tarea_de_rig",
+        "tooltip": null
+      },
       "2": {
         "name": "GLB",
         "tooltip": null
@@ -15220,6 +15800,14 @@
       }
     },
     "outputs": {
+      "0": {
+        "name": "archivo_de_modelo",
+        "tooltip": null
+      },
+      "1": {
+        "name": "id_de_tarea_de_modelo",
+        "tooltip": null
+      },
       "2": {
         "name": "GLB",
         "tooltip": null
@@ -15249,6 +15837,14 @@
       }
     },
     "outputs": {
+      "0": {
+        "name": "archivo_de_modelo",
+        "tooltip": null
+      },
+      "1": {
+        "name": "id_de_tarea_de_modelo",
+        "tooltip": null
+      },
       "2": {
         "name": "GLB",
         "tooltip": null

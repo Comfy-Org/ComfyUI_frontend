@@ -256,7 +256,8 @@
     "name": "پیاده‌سازی جعبه جستجوی نود",
     "options": {
       "default": "پیش‌فرض",
-      "litegraph (legacy)": "litegraph (قدیمی)"
+      "litegraph (legacy)": "litegraph (قدیمی)",
+      "v1 (legacy)": "v۱ (قدیمی)"
     }
   },
   "Comfy_NodeSearchBoxImpl_NodePreview": {

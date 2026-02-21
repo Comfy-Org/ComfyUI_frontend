@@ -256,7 +256,8 @@
     "name": "節點搜尋框實作",
     "options": {
       "default": "預設",
-      "litegraph (legacy)": "litegraph（舊版）"
+      "litegraph (legacy)": "litegraph（舊版）",
+      "v1 (legacy)": "v1（舊版）"
     }
   },
   "Comfy_NodeSearchBoxImpl_NodePreview": {

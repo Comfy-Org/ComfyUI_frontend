@@ -292,6 +292,7 @@
     "name": "Node search box implementation",
     "options": {
       "default": "default",
+      "v1 (legacy)": "v1 (legacy)",
       "litegraph (legacy)": "litegraph (legacy)"
     }
   },
@@ -301,15 +302,15 @@
   },
   "Comfy_NodeSearchBoxImpl_ShowCategory": {
     "name": "Show node category in search results",
-    "tooltip": "Only applies to the default implementation"
+    "tooltip": "Only applies to v1 (legacy)"
   },
   "Comfy_NodeSearchBoxImpl_ShowIdName": {
     "name": "Show node id name in search results",
-    "tooltip": "Only applies to the default implementation"
+    "tooltip": "Does not apply to litegraph (legacy)"
   },
   "Comfy_NodeSearchBoxImpl_ShowNodeFrequency": {
     "name": "Show node frequency in search results",
-    "tooltip": "Only applies to the default implementation"
+    "tooltip": "Only applies to v1 (legacy)"
   },
   "Comfy_NodeSuggestions_number": {
     "name": "Number of nodes suggestions",

@@ -1674,9 +1674,11 @@
     },
     "outputs": {
       "0": {
+        "name": "ポジティブ",
         "tooltip": null
       },
       "1": {
+        "name": "ネガティブ",
         "tooltip": null
       }
     }
@@ -2171,6 +2173,9 @@
       "option1": {}
     },
     "outputs": {
+      "0": {
+        "tooltip": null
+      },
       "1": {
         "name": "インデックス",
         "tooltip": null
@@ -2297,6 +2302,304 @@
     "outputs": {
       "0": {
         "tooltip": "EasyCacheが適用されたモデル。"
+      }
+    }
+  },
+  "ElevenLabsAudioIsolation": {
+    "description": "音声からバックグラウンドノイズを除去し、ボーカルやスピーチを分離します。",
+    "display_name": "ElevenLabs ボイスアイソレーション",
+    "inputs": {
+      "audio": {
+        "name": "音声",
+        "tooltip": "バックグラウンドノイズ除去のために処理する音声。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ElevenLabsInstantVoiceClone": {
+    "description": "音声サンプルからクローンボイスを作成します。クローンしたい声の音声録音を1～8個提供してください。",
+    "display_name": "ElevenLabs インスタントボイスクローン",
+    "inputs": {
+      "files": {
+        "name": "ファイル",
+        "tooltip": "ボイスクローン用の音声録音。"
+      },
+      "remove_background_noise": {
+        "name": "バックグラウンドノイズ除去",
+        "tooltip": "音声アイソレーションを使ってサンプルからバックグラウンドノイズを除去します。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "ボイス",
+        "tooltip": null
+      }
+    }
+  },
+  "ElevenLabsSpeechToSpeech": {
+    "description": "元の内容と感情を保ちながら、ある声から別の声へスピーチを変換します。",
+    "display_name": "ElevenLabs スピーチ・トゥ・スピーチ",
+    "inputs": {
+      "audio": {
+        "name": "音声",
+        "tooltip": "変換する元の音声。"
+      },
+      "control_after_generate": {
+        "name": "生成後のコントロール"
+      },
+      "model": {
+        "name": "モデル",
+        "tooltip": "スピーチ・トゥ・スピーチ変換に使用するモデル。"
+      },
+      "model_similarity_boost": {
+        "name": "類似度ブースト"
+      },
+      "model_speed": {
+        "name": "スピード"
+      },
+      "model_style": {
+        "name": "スタイル"
+      },
+      "model_use_speaker_boost": {
+        "name": "スピーカーブーストを使用"
+      },
+      "output_format": {
+        "name": "出力フォーマット",
+        "tooltip": "音声の出力フォーマット。"
+      },
+      "remove_background_noise": {
+        "name": "バックグラウンドノイズ除去",
+        "tooltip": "音声アイソレーションを使って入力音声からバックグラウンドノイズを除去します。"
+      },
+      "seed": {
+        "name": "シード",
+        "tooltip": "再現性のためのシード値。"
+      },
+      "stability": {
+        "name": "安定性",
+        "tooltip": "ボイスの安定性。値が低いほど感情の幅が広がり、高いほど一貫性が増しますが単調になる可能性があります。"
+      },
+      "voice": {
+        "name": "ターゲットボイス",
+        "tooltip": "変換先の声。ボイスセレクターまたはインスタントボイスクローンから接続してください。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ElevenLabsSpeechToText": {
+    "description": "音声をテキストに書き起こします。自動言語検出、話者識別、音声イベントタグ付けに対応しています。",
+    "display_name": "ElevenLabs 音声からテキストへ",
+    "inputs": {
+      "audio": {
+        "name": "音声",
+        "tooltip": "書き起こす音声。"
+      },
+      "control_after_generate": {
+        "name": "生成後のコントロール"
+      },
+      "language_code": {
+        "name": "言語コード",
+        "tooltip": "ISO-639-1 または ISO-639-3 言語コード（例: 'en', 'es', 'fra'）。自動検出の場合は空欄にしてください。"
+      },
+      "model": {
+        "name": "モデル",
+        "tooltip": "書き起こしに使用するモデル。"
+      },
+      "model_diarization_threshold": {
+        "name": "話者識別しきい値"
+      },
+      "model_diarize": {
+        "name": "話者識別"
+      },
+      "model_tag_audio_events": {
+        "name": "音声イベントタグ付け"
+      },
+      "model_temperature": {
+        "name": "温度"
+      },
+      "model_timestamps_granularity": {
+        "name": "タイムスタンプ粒度"
+      },
+      "num_speakers": {
+        "name": "話者数",
+        "tooltip": "予測する最大話者数。自動検出の場合は0に設定してください。"
+      },
+      "seed": {
+        "name": "シード値",
+        "tooltip": "再現性のためのシード値（決定性は保証されません）。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "テキスト",
+        "tooltip": null
+      },
+      "1": {
+        "name": "言語コード",
+        "tooltip": null
+      },
+      "2": {
+        "name": "単語JSON",
+        "tooltip": null
+      }
+    }
+  },
+  "ElevenLabsTextToDialogue": {
+    "description": "テキストから複数話者の対話を生成します。各対話エントリには独自のテキストと音声があります。",
+    "display_name": "ElevenLabs テキストから対話へ",
+    "inputs": {
+      "apply_text_normalization": {
+        "name": "テキスト正規化適用",
+        "tooltip": "テキスト正規化モード。「auto」はシステムが判断、「on」は常に正規化を適用、「off」はスキップします。"
+      },
+      "control_after_generate": {
+        "name": "生成後のコントロール"
+      },
+      "inputs": {
+        "name": "入力数",
+        "tooltip": "対話エントリの数。"
+      },
+      "inputs_text1": {
+        "name": "テキスト1"
+      },
+      "language_code": {
+        "name": "言語コード",
+        "tooltip": "ISO-639-1 または ISO-639-3 言語コード（例: 'en', 'es', 'fra'）。自動検出の場合は空欄にしてください。"
+      },
+      "model": {
+        "name": "モデル",
+        "tooltip": "対話生成に使用するモデル。"
+      },
+      "output_format": {
+        "name": "出力フォーマット",
+        "tooltip": "音声出力フォーマット。"
+      },
+      "seed": {
+        "name": "シード値",
+        "tooltip": "再現性のためのシード値。"
+      },
+      "stability": {
+        "name": "安定性",
+        "tooltip": "音声の安定性。値が低いほど感情の幅が広がり、値が高いほど一貫性が増しますが単調になる可能性があります。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ElevenLabsTextToSoundEffects": {
+    "description": "テキスト説明から効果音を生成します。",
+    "display_name": "ElevenLabs テキストから効果音へ",
+    "inputs": {
+      "model": {
+        "name": "モデル",
+        "tooltip": "効果音生成に使用するモデル。"
+      },
+      "model_duration": {
+        "name": "長さ"
+      },
+      "model_loop": {
+        "name": "ループ"
+      },
+      "model_prompt_influence": {
+        "name": "プロンプト影響度"
+      },
+      "output_format": {
+        "name": "出力フォーマット",
+        "tooltip": "音声出力フォーマット。"
+      },
+      "text": {
+        "name": "テキスト",
+        "tooltip": "生成する効果音のテキスト説明。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ElevenLabsTextToSpeech": {
+    "description": "テキストを音声に変換します。",
+    "display_name": "ElevenLabs テキスト読み上げ",
+    "inputs": {
+      "apply_text_normalization": {
+        "name": "apply_text_normalization",
+        "tooltip": "テキスト正規化モード。「auto」はシステムが自動で判断し、「on」は常に正規化を適用、「off」は正規化をスキップします。"
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "language_code": {
+        "name": "language_code",
+        "tooltip": "ISO-639-1 または ISO-639-3 言語コード（例: 'en', 'es', 'fra'）。自動検出の場合は空欄にしてください。"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "テキスト読み上げに使用するモデル。"
+      },
+      "model_similarity_boost": {
+        "name": "similarity_boost"
+      },
+      "model_speed": {
+        "name": "speed"
+      },
+      "model_style": {
+        "name": "style"
+      },
+      "model_use_speaker_boost": {
+        "name": "use_speaker_boost"
+      },
+      "output_format": {
+        "name": "output_format",
+        "tooltip": "音声出力フォーマット。"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "再現性のためのシード値（決定性は保証されません）。"
+      },
+      "stability": {
+        "name": "stability",
+        "tooltip": "ボイスの安定性。値が低いほど感情の幅が広がり、値が高いほど一貫性が増しますが、単調になる可能性があります。"
+      },
+      "text": {
+        "name": "text",
+        "tooltip": "音声に変換するテキスト。"
+      },
+      "voice": {
+        "name": "voice",
+        "tooltip": "音声合成に使用するボイス。Voice Selector または Instant Voice Clone から接続してください。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ElevenLabsVoiceSelector": {
+    "description": "テキスト読み上げ用の事前定義された ElevenLabs ボイスを選択します。",
+    "display_name": "ElevenLabs ボイスセレクター",
+    "inputs": {
+      "voice": {
+        "name": "voice",
+        "tooltip": "事前定義された ElevenLabs ボイスから選択してください。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "voice",
+        "tooltip": null
       }
     }
   },
@@ -3235,6 +3538,50 @@
       }
     }
   },
+  "GLSLShader": {
+    "description": "GLSL ESフラグメントシェーダーを画像に適用します。u_resolution（vec2）は常に利用可能です。",
+    "display_name": "GLSLシェーダー",
+    "inputs": {
+      "floats": {
+        "name": "floats",
+        "tooltip": "floatsはシェーダーコード内でu_float0-4として利用可能"
+      },
+      "fragment_shader": {
+        "name": "fragment_shader",
+        "tooltip": "GLSLフラグメントシェーダーのソースコード（GLSL ES 3.00 / WebGL 2.0対応）"
+      },
+      "images": {
+        "name": "images",
+        "tooltip": "画像はシェーダーコード内でu_image0-4（sampler2D）として利用可能"
+      },
+      "ints": {
+        "name": "ints",
+        "tooltip": "intsはシェーダーコード内でu_int0-4として利用可能"
+      },
+      "size_mode": {
+        "name": "size_mode",
+        "tooltip": "出力サイズ：「from_input」は最初の入力画像の寸法を使用、「custom」は手動でサイズ指定"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "IMAGE0",
+        "tooltip": "シェーダーコード内でlayout(location = 0) out vec4 fragColor0として利用可能"
+      },
+      "1": {
+        "name": "IMAGE1",
+        "tooltip": "シェーダーコード内でlayout(location = 1) out vec4 fragColor1として利用可能"
+      },
+      "2": {
+        "name": "IMAGE2",
+        "tooltip": "シェーダーコード内でlayout(location = 2) out vec4 fragColor2として利用可能"
+      },
+      "3": {
+        "name": "IMAGE3",
+        "tooltip": "シェーダーコード内でlayout(location = 3) out vec4 fragColor3として利用可能"
+      }
+    }
+  },
   "GeminiImage2Node": {
     "description": "Google Vertex API を通じて画像を同期的に生成または編集します。",
     "display_name": "Nano Banana Pro（Google Gemini Image）",
@@ -3477,12 +3824,15 @@
     },
     "outputs": {
       "0": {
+        "name": "width",
         "tooltip": null
       },
       "1": {
+        "name": "height",
         "tooltip": null
       },
       "2": {
+        "name": "batch_size",
         "tooltip": null
       }
     }
@@ -3719,9 +4069,11 @@
     },
     "outputs": {
       "0": {
+        "name": "positive",
         "tooltip": null
       },
       "1": {
+        "name": "negative",
         "tooltip": null
       }
     }
@@ -3744,9 +4096,11 @@
     },
     "outputs": {
       "0": {
+        "name": "positive",
         "tooltip": null
       },
       "1": {
+        "name": "negative",
         "tooltip": null
       }
     }
@@ -6715,21 +7069,31 @@
     },
     "outputs": {
       "0": {
+        "name": "image",
         "tooltip": null
       },
       "1": {
+        "name": "mask",
         "tooltip": null
       },
       "2": {
+        "name": "mesh_path",
         "tooltip": null
       },
       "3": {
+        "name": "normal",
         "tooltip": null
       },
       "4": {
+        "name": "camera_info",
         "tooltip": null
       },
       "5": {
+        "name": "recording_video",
+        "tooltip": null
+      },
+      "6": {
+        "name": "model_3d",
         "tooltip": null
       }
     }
@@ -6999,7 +7363,8 @@
     },
     "outputs": {
       "0": {
-        "name": "model"
+        "name": "model",
+        "tooltip": "変更された拡散モデル。"
       }
     }
   },
@@ -7679,6 +8044,10 @@
       }
     },
     "outputs": {
+      "0": {
+        "name": "model_file",
+        "tooltip": null
+      },
       "1": {
         "name": "GLB",
         "tooltip": null
@@ -7734,6 +8103,14 @@
       }
     },
     "outputs": {
+      "0": {
+        "name": "model_file",
+        "tooltip": null
+      },
+      "1": {
+        "name": "meshy_task_id",
+        "tooltip": null
+      },
       "2": {
         "name": "GLB",
         "tooltip": null
@@ -7789,6 +8166,14 @@
       }
     },
     "outputs": {
+      "0": {
+        "name": "model_file",
+        "tooltip": null
+      },
+      "1": {
+        "name": "meshy_task_id",
+        "tooltip": null
+      },
       "2": {
         "name": "GLB",
         "tooltip": null
@@ -7823,6 +8208,14 @@
       }
     },
     "outputs": {
+      "0": {
+        "name": "model_file",
+        "tooltip": null
+      },
+      "1": {
+        "name": "meshy_task_id",
+        "tooltip": null
+      },
       "2": {
         "name": "GLB",
         "tooltip": null
@@ -7850,6 +8243,14 @@
       }
     },
     "outputs": {
+      "0": {
+        "name": "model_file",
+        "tooltip": null
+      },
+      "1": {
+        "name": "rig_task_id",
+        "tooltip": null
+      },
       "2": {
         "name": "GLB",
         "tooltip": null
@@ -7898,6 +8299,14 @@
       }
     },
     "outputs": {
+      "0": {
+        "name": "モデルファイル",
+        "tooltip": null
+      },
+      "1": {
+        "name": "meshy_task_id",
+        "tooltip": null
+      },
       "2": {
         "name": "GLB",
         "tooltip": null
@@ -7934,6 +8343,14 @@
       }
     },
     "outputs": {
+      "0": {
+        "name": "モデルファイル",
+        "tooltip": null
+      },
+      "1": {
+        "name": "meshy_task_id",
+        "tooltip": null
+      },
       "2": {
         "name": "GLB",
         "tooltip": null
@@ -12266,6 +12683,10 @@
       }
     },
     "outputs": {
+      "0": {
+        "name": "3Dモデルパス",
+        "tooltip": null
+      },
       "1": {
         "name": "GLB",
         "tooltip": null
@@ -12293,6 +12714,10 @@
       }
     },
     "outputs": {
+      "0": {
+        "name": "3Dモデルパス",
+        "tooltip": null
+      },
       "1": {
         "name": "GLB",
         "tooltip": null
@@ -12317,6 +12742,10 @@
       }
     },
     "outputs": {
+      "0": {
+        "name": "3Dモデルパス",
+        "tooltip": null
+      },
       "1": {
         "name": "GLB",
         "tooltip": null
@@ -12335,6 +12764,10 @@
       }
     },
     "outputs": {
+      "0": {
+        "name": "3Dモデルパス",
+        "tooltip": null
+      },
       "1": {
         "name": "GLB",
         "tooltip": null
@@ -12359,6 +12792,10 @@
       }
     },
     "outputs": {
+      "0": {
+        "name": "3Dモデルパス",
+        "tooltip": null
+      },
       "1": {
         "name": "GLB",
         "tooltip": null
@@ -12659,9 +13096,11 @@
     },
     "outputs": {
       "0": {
+        "name": "出力",
         "tooltip": null
       },
       "1": {
+        "name": "ノイズ除去出力",
         "tooltip": null
       }
     }
@@ -12687,9 +13126,11 @@
     },
     "outputs": {
       "0": {
+        "name": "出力",
         "tooltip": null
       },
       "1": {
+        "name": "ノイズ除去出力",
         "tooltip": null
       }
     }
@@ -12992,6 +13433,7 @@
     },
     "outputs": {
       "0": {
+        "name": "シグマ値",
         "tooltip": null
       }
     }
@@ -13551,9 +13993,11 @@
     },
     "outputs": {
       "0": {
+        "name": "左",
         "tooltip": null
       },
       "1": {
+        "name": "右",
         "tooltip": null
       }
     }
@@ -13586,9 +14030,11 @@
     },
     "outputs": {
       "0": {
+        "name": "高シグマ",
         "tooltip": null
       },
       "1": {
+        "name": "低シグマ",
         "tooltip": null
       }
     }
@@ -13605,9 +14051,11 @@
     },
     "outputs": {
       "0": {
+        "name": "高シグマ",
         "tooltip": null
       },
       "1": {
+        "name": "低シグマ",
         "tooltip": null
       }
     }
@@ -14372,6 +14820,10 @@
       }
     },
     "outputs": {
+      "0": {
+        "name": "モデルファイル",
+        "tooltip": null
+      },
       "1": {
         "name": "GLB",
         "tooltip": null
@@ -14411,6 +14863,10 @@
       }
     },
     "outputs": {
+      "0": {
+        "name": "モデルファイル",
+        "tooltip": null
+      },
       "1": {
         "name": "GLB",
         "tooltip": null
@@ -14605,6 +15061,94 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "TextGenerate": {
+    "display_name": "TextGenerate",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "image": {
+        "name": "画像"
+      },
+      "max_length": {
+        "name": "最大長"
+      },
+      "prompt": {
+        "name": "プロンプト"
+      },
+      "sampling_mode": {
+        "name": "サンプリングモード"
+      },
+      "sampling_mode_min_p": {
+        "name": "最小p"
+      },
+      "sampling_mode_repetition_penalty": {
+        "name": "繰り返しペナルティ"
+      },
+      "sampling_mode_seed": {
+        "name": "シード"
+      },
+      "sampling_mode_temperature": {
+        "name": "温度"
+      },
+      "sampling_mode_top_k": {
+        "name": "top_k"
+      },
+      "sampling_mode_top_p": {
+        "name": "top_p"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "生成テキスト",
+        "tooltip": null
+      }
+    }
+  },
+  "TextGenerateLTX2Prompt": {
+    "display_name": "TextGenerateLTX2Prompt",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "image": {
+        "name": "画像"
+      },
+      "max_length": {
+        "name": "最大長"
+      },
+      "prompt": {
+        "name": "プロンプト"
+      },
+      "sampling_mode": {
+        "name": "サンプリングモード"
+      },
+      "sampling_mode_min_p": {
+        "name": "最小p"
+      },
+      "sampling_mode_repetition_penalty": {
+        "name": "繰り返しペナルティ"
+      },
+      "sampling_mode_seed": {
+        "name": "シード"
+      },
+      "sampling_mode_temperature": {
+        "name": "温度"
+      },
+      "sampling_mode_top_k": {
+        "name": "top_k"
+      },
+      "sampling_mode_top_p": {
+        "name": "top_p"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "生成テキスト",
         "tooltip": null
       }
     }
@@ -14888,16 +15432,16 @@
     },
     "outputs": {
       "0": {
+        "name": "lora",
         "tooltip": "LoRA適用済みモデル"
       },
       "1": {
+        "name": "損失マップ",
         "tooltip": "LoRA重み"
       },
       "2": {
+        "name": "ステップ数",
         "tooltip": "損失履歴"
-      },
-      "3": {
-        "tooltip": "総トレーニングステップ数"
       }
     }
   },
@@ -15066,6 +15610,14 @@
       }
     },
     "outputs": {
+      "0": {
+        "name": "モデルファイル",
+        "tooltip": null
+      },
+      "1": {
+        "name": "モデルタスクID",
+        "tooltip": null
+      },
       "2": {
         "name": "GLB",
         "tooltip": null
@@ -15123,6 +15675,14 @@
       }
     },
     "outputs": {
+      "0": {
+        "name": "モデルファイル",
+        "tooltip": null
+      },
+      "1": {
+        "name": "モデルタスクID",
+        "tooltip": null
+      },
       "2": {
         "name": "GLB",
         "tooltip": null
@@ -15139,6 +15699,14 @@
       }
     },
     "outputs": {
+      "0": {
+        "name": "モデルファイル",
+        "tooltip": null
+      },
+      "1": {
+        "name": "モデルタスクID",
+        "tooltip": null
+      },
       "2": {
         "name": "GLB",
         "tooltip": null
@@ -15156,6 +15724,10 @@
       }
     },
     "outputs": {
+      "0": {
+        "name": "リターゲットタスクID",
+        "tooltip": null
+      },
       "2": {
         "name": "GLB",
         "tooltip": null
@@ -15170,6 +15742,14 @@
       }
     },
     "outputs": {
+      "0": {
+        "name": "モデルファイル",
+        "tooltip": null
+      },
+      "1": {
+        "name": "リグタスクID",
+        "tooltip": null
+      },
       "2": {
         "name": "GLB",
         "tooltip": null
@@ -15220,6 +15800,14 @@
       }
     },
     "outputs": {
+      "0": {
+        "name": "モデルファイル",
+        "tooltip": null
+      },
+      "1": {
+        "name": "モデルタスクID",
+        "tooltip": null
+      },
       "2": {
         "name": "GLB",
         "tooltip": null
@@ -15249,6 +15837,14 @@
       }
     },
     "outputs": {
+      "0": {
+        "name": "モデルファイル",
+        "tooltip": null
+      },
+      "1": {
+        "name": "モデルタスクID",
+        "tooltip": null
+      },
       "2": {
         "name": "GLB",
         "tooltip": null
