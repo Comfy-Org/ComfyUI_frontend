@@ -248,6 +248,10 @@
   "Comfy_NodeBadge_ShowApiPricing": {
     "name": "APIノードの料金バッジを表示"
   },
+  "Comfy_NodeLibrary_NewDesign": {
+    "name": "新しいノードライブラリデザイン",
+    "tooltip": "タブ（Essential、All、Custom）、強化された検索機能、ホバープレビューを備えた再設計されたノードライブラリサイドバーを有効にします。"
+  },
   "Comfy_NodeReplacement_Enabled": {
     "name": "自動ノード置換を有効にする",
     "tooltip": "有効にすると、置換マッピングが存在する場合、欠落しているノードが自動的に新しい同等ノードに置き換えられます。"
@@ -256,7 +260,8 @@
     "name": "ノード検索ボックスの実装",
     "options": {
       "default": "デフォルト",
-      "litegraph (legacy)": "litegraph (レガシー)"
+      "litegraph (legacy)": "litegraph (レガシー)",
+      "v1 (legacy)": "v1（レガシー）"
     }
   },
   "Comfy_NodeSearchBoxImpl_NodePreview": {

@@ -186,6 +186,99 @@ describe('storageIO', () => {
     it('returns null for missing open paths', () => {
       expect(readOpenPaths('missing')).toBeNull()
     })
+
+    it('falls back to workspace search when clientId does not match and migrates', () => {
+      const oldClientId = 'old-client'
+      const newClientId = 'new-client'
+      const workspaceId = 'ws-123'
+
+      // Store pointer with old clientId
+      const pointer = {
+        workspaceId,
+        paths: ['workflows/a.json', 'workflows/b.json'],
+        activeIndex: 0
+      }
+      writeOpenPaths(oldClientId, pointer)
+
+      // Read with new clientId but same workspace - should find via fallback
+      const read = readOpenPaths(newClientId, workspaceId)
+      expect(read).toEqual(pointer)
+
+      // Should have migrated to new key and removed old key
+      const oldKey = `Comfy.Workflow.OpenPaths:${oldClientId}`
+      const newKey = `Comfy.Workflow.OpenPaths:${newClientId}`
+      expect(sessionStorage.getItem(oldKey)).toBeNull()
+      expect(sessionStorage.getItem(newKey)).not.toBeNull()
+    })
+
+    it('does not fall back to different workspace pointer', () => {
+      const oldClientId = 'old-client'
+      const newClientId = 'new-client'
+
+      // Store pointer for workspace-A
+      writeOpenPaths(oldClientId, {
+        workspaceId: 'workspace-A',
+        paths: ['workflows/a.json'],
+        activeIndex: 0
+      })
+
+      // Read with new clientId looking for workspace-B - should not find
+      const read = readOpenPaths(newClientId, 'workspace-B')
+      expect(read).toBeNull()
+    })
+
+    it('prefers exact clientId match over fallback search', () => {
+      const clientId = 'my-client'
+      const workspaceId = 'ws-123'
+
+      // Store pointer with different clientId for same workspace
+      writeOpenPaths('other-client', {
+        workspaceId,
+        paths: ['workflows/old.json'],
+        activeIndex: 0
+      })
+
+      // Store pointer with exact clientId match
+      const exactPointer = {
+        workspaceId,
+        paths: ['workflows/exact.json'],
+        activeIndex: 0
+      }
+      writeOpenPaths(clientId, exactPointer)
+
+      // Should return exact match, not fallback
+      const read = readOpenPaths(clientId, workspaceId)
+      expect(read).toEqual(exactPointer)
+    })
+
+    it('removes stale exact match from wrong workspace and falls back', () => {
+      const clientId = 'my-client'
+
+      // Store pointer for workspace-A under this clientId
+      writeActivePath(clientId, {
+        workspaceId: 'ws-A',
+        path: 'workflows/stale.json'
+      })
+
+      // Store pointer for workspace-B under a different clientId
+      writeActivePath('old-client', {
+        workspaceId: 'ws-B',
+        path: 'workflows/correct.json'
+      })
+
+      // Reading with workspace-B should skip the stale ws-A pointer and find the fallback
+      const result = readActivePath(clientId, 'ws-B')
+      expect(result).toEqual({
+        workspaceId: 'ws-B',
+        path: 'workflows/correct.json'
+      })
+
+      // Stale pointer should have been removed
+      const raw = sessionStorage.getItem(
+        `Comfy.Workflow.ActivePath:${clientId}`
+      )
+      expect(JSON.parse(raw!).workspaceId).toBe('ws-B')
+    })
   })
 
   describe('clearAllV2Storage', () => {

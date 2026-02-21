@@ -15,7 +15,7 @@ TODO: Extract checkbox pattern into reusable Checkbox component
     <div
       v-for="filter in filters"
       :key="filter.type"
-      class="flex h-10 cursor-pointer items-center gap-2 rounded-lg px-2 hover:bg-secondary-background-hover"
+      class="flex h-10 min-w-32 cursor-pointer items-center gap-2 rounded-lg px-2 hover:bg-secondary-background-hover"
       tabindex="0"
       role="checkbox"
       :aria-checked="mediaTypeFilters.includes(filter.type)"

@@ -53,31 +53,7 @@
         class="pb-1 px-2 2xl:px-4"
         :show-generation-time-sort="activeTab === 'output'"
       />
-      <div
-        v-if="isQueuePanelV2Enabled && !isInFolderView"
-        class="flex items-center justify-between px-2 py-2 2xl:px-4"
-      >
-        <span class="text-sm text-muted-foreground">
-          {{ activeJobsLabel }}
-        </span>
-        <div class="flex items-center gap-2">
-          <span class="text-sm text-base-foreground">
-            {{ t('sideToolbar.queueProgressOverlay.clearQueueTooltip') }}
-          </span>
-          <Button
-            variant="destructive"
-            size="icon"
-            :aria-label="
-              t('sideToolbar.queueProgressOverlay.clearQueueTooltip')
-            "
-            :disabled="queuedCount === 0"
-            @click="handleClearQueue"
-          >
-            <i class="icon-[lucide--list-x] size-4" />
-          </Button>
-        </div>
-      </div>
-      <Divider v-else type="dashed" class="my-2" />
+      <Divider type="dashed" class="my-2" />
     </template>
     <template #body>
       <div
@@ -126,7 +102,6 @@
           v-else
           :assets="displayAssets"
           :is-selected="isSelected"
-          :is-in-folder-view="isInFolderView"
           :asset-type="activeTab"
           :show-output-count="shouldShowOutputCount"
           :get-output-count="getOutputCount"
@@ -224,18 +199,27 @@ import {
   useDebounceFn,
   useElementHover,
   useResizeObserver,
-  useStorage
+  useStorage,
+  useTimeoutFn
 } from '@vueuse/core'
-import { storeToRefs } from 'pinia'
 import Divider from 'primevue/divider'
 import { useToast } from 'primevue/usetoast'
-import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
+import {
+  computed,
+  defineAsyncComponent,
+  nextTick,
+  onMounted,
+  onUnmounted,
+  ref,
+  watch
+} from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import NoResultsPlaceholder from '@/components/common/NoResultsPlaceholder.vue'
 // Lazy-loaded to avoid pulling THREE.js into the main bundle
-const Load3dViewerContent = () =>
-  import('@/components/load3d/Load3dViewerContent.vue')
+const Load3dViewerContent = defineAsyncComponent(
+  () => import('@/components/load3d/Load3dViewerContent.vue')
+)
 import AssetsSidebarGridView from '@/components/sidebar/tabs/AssetsSidebarGridView.vue'
 import AssetsSidebarListView from '@/components/sidebar/tabs/AssetsSidebarListView.vue'
 import SidebarTabTemplate from '@/components/sidebar/tabs/SidebarTabTemplate.vue'
@@ -258,20 +242,16 @@ import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import type { MediaKind } from '@/platform/assets/schemas/mediaAssetSchema'
 import { resolveOutputAssetItems } from '@/platform/assets/utils/outputAssetUtil'
 import { isCloud } from '@/platform/distribution/types'
-import { useSettingStore } from '@/platform/settings/settingStore'
-import { useCommandStore } from '@/stores/commandStore'
 import { useDialogStore } from '@/stores/dialogStore'
-import { useExecutionStore } from '@/stores/executionStore'
-import { ResultItemImpl, useQueueStore } from '@/stores/queueStore'
-import { formatDuration, getMediaTypeFromFilename } from '@/utils/formatUtil'
+import { ResultItemImpl } from '@/stores/queueStore'
+import {
+  formatDuration,
+  getMediaTypeFromFilename,
+  isPreviewableMediaType
+} from '@/utils/formatUtil'
 import { cn } from '@/utils/tailwindUtil'
 
-const { t, n } = useI18n()
-const commandStore = useCommandStore()
-const queueStore = useQueueStore()
-const { activeJobsCount } = storeToRefs(queueStore)
-const executionStore = useExecutionStore()
-const settingStore = useSettingStore()
+const { t } = useI18n()
 
 const emit = defineEmits<{ assetSelected: [asset: AssetItem] }>()
 
@@ -284,12 +264,7 @@ const viewMode = useStorage<'list' | 'grid'>(
   'Comfy.Assets.Sidebar.ViewMode',
   'grid'
 )
-const isQueuePanelV2Enabled = computed(() =>
-  settingStore.get('Comfy.Queue.QPOV2')
-)
-const isListView = computed(
-  () => isQueuePanelV2Enabled.value && viewMode.value === 'list'
-)
+const isListView = computed(() => viewMode.value === 'list')
 
 const contextMenuRef = ref<InstanceType<typeof MediaAssetContextMenu>>()
 const contextMenuAsset = ref<AssetItem | null>(null)
@@ -319,16 +294,6 @@ const shouldShowOutputCount = (item: AssetItem): boolean => {
 const formattedExecutionTime = computed(() => {
   if (!folderExecutionTime.value) return ''
   return formatDuration(folderExecutionTime.value * 1000)
-})
-
-const queuedCount = computed(() => queueStore.pendingTasks.length)
-const activeJobsLabel = computed(() => {
-  const count = activeJobsCount.value
-  return t(
-    'sideToolbar.queueProgressOverlay.activeJobs',
-    { count: n(count) },
-    count
-  )
 })
 
 const toast = useToast()
@@ -444,6 +409,12 @@ const visibleAssets = computed(() => {
   return listViewSelectableAssets.value
 })
 
+const previewableVisibleAssets = computed(() =>
+  visibleAssets.value.filter((asset) =>
+    isPreviewableMediaType(getMediaTypeFromFilename(asset.name))
+  )
+)
+
 const selectedAssets = computed(() => getSelectedAssets(visibleAssets.value))
 
 const isBulkMode = computed(
@@ -456,17 +427,12 @@ const isFolderLoading = computed(
 
 const showLoadingState = computed(
   () =>
-    (loading.value || isFolderLoading.value) &&
-    displayAssets.value.length === 0 &&
-    activeJobsCount.value === 0
+    (loading.value || isFolderLoading.value) && displayAssets.value.length === 0
 )
 
 const showEmptyState = computed(
   () =>
-    !loading.value &&
-    !isFolderLoading.value &&
-    displayAssets.value.length === 0 &&
-    activeJobsCount.value === 0
+    !loading.value && !isFolderLoading.value && displayAssets.value.length === 0
 )
 
 watch(visibleAssets, (newAssets) => {
@@ -474,12 +440,10 @@ watch(visibleAssets, (newAssets) => {
   // so selection stays consistent with what this view can act on.
   reconcileSelection(newAssets)
   if (currentGalleryAssetId.value && galleryActiveIndex.value !== -1) {
-    const newIndex = newAssets.findIndex(
+    const newIndex = previewableVisibleAssets.value.findIndex(
       (asset) => asset.id === currentGalleryAssetId.value
     )
-    if (newIndex !== -1) {
-      galleryActiveIndex.value = newIndex
-    }
+    galleryActiveIndex.value = newIndex
   }
 })
 
@@ -490,7 +454,7 @@ watch(galleryActiveIndex, (index) => {
 })
 
 const galleryItems = computed(() => {
-  return visibleAssets.value.map((asset) => {
+  return previewableVisibleAssets.value.map((asset) => {
     const mediaType = getMediaTypeFromFilename(asset.name)
     const resultItem = new ResultItemImpl({
       filename: asset.name,
@@ -537,7 +501,16 @@ function handleAssetSelect(asset: AssetItem, assets?: AssetItem[]) {
   handleAssetClick(asset, index, assetList)
 }
 
+const { start: scheduleCleanup, stop: cancelCleanup } = useTimeoutFn(
+  () => {
+    contextMenuAsset.value = null
+  },
+  0,
+  { immediate: false }
+)
+
 function handleAssetContextMenu(event: MouseEvent, asset: AssetItem) {
+  cancelCleanup()
   contextMenuAsset.value = asset
   void nextTick(() => {
     contextMenuRef.value?.show(event)
@@ -545,10 +518,7 @@ function handleAssetContextMenu(event: MouseEvent, asset: AssetItem) {
 }
 
 function handleContextMenuHide() {
-  // Delay clearing to allow command callbacks to emit before component unmounts
-  requestAnimationFrame(() => {
-    contextMenuAsset.value = null
-  })
+  scheduleCleanup()
 }
 
 const handleBulkDownload = (assets: AssetItem[]) => {
@@ -560,16 +530,6 @@ const handleBulkDelete = async (assets: AssetItem[]) => {
   if (await deleteAssets(assets)) {
     clearSelection()
   }
-}
-
-const handleClearQueue = async () => {
-  const pendingJobIds = queueStore.pendingTasks
-    .map((task) => task.jobId)
-    .filter((id): id is string => typeof id === 'string' && id.length > 0)
-
-  await commandStore.execute('Comfy.ClearPendingTasks')
-
-  executionStore.clearInitializationByJobIds(pendingJobIds)
 }
 
 const handleBulkAddToWorkflow = async (assets: AssetItem[]) => {
@@ -600,6 +560,9 @@ const handleDeleteSelected = async () => {
 
 const handleZoomClick = (asset: AssetItem) => {
   const mediaType = getMediaTypeFromFilename(asset.name)
+  if (!isPreviewableMediaType(mediaType)) {
+    return
+  }
 
   if (mediaType === '3D') {
     const dialogStore = useDialogStore()
@@ -619,7 +582,9 @@ const handleZoomClick = (asset: AssetItem) => {
   }
 
   currentGalleryAssetId.value = asset.id
-  const index = visibleAssets.value.findIndex((a) => a.id === asset.id)
+  const index = previewableVisibleAssets.value.findIndex(
+    (a) => a.id === asset.id
+  )
   if (index !== -1) {
     galleryActiveIndex.value = index
   }

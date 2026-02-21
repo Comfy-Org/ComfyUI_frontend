@@ -104,7 +104,7 @@ const coreWidgetDefinitions: Array<[string, WidgetDefinition]> = [
     'float',
     {
       component: WidgetInputNumber,
-      aliases: ['FLOAT', 'number', 'slider'],
+      aliases: ['FLOAT', 'number', 'slider', 'gradientslider'],
       essential: true
     }
   ],
