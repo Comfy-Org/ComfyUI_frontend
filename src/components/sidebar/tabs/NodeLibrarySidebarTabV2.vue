@@ -70,7 +70,7 @@
       <!-- Tab content (scrollable) -->
       <TabsRoot v-model="selectedTab" class="h-full">
         <EssentialNodesPanel
-          v-if="selectedTab === 'essentials'"
+          v-if="flags.nodeLibraryEssentialsEnabled && selectedTab === 'essentials'"
           v-model:expanded-keys="expandedKeys"
           :root="renderedEssentialRoot"
           @node-click="handleNodeClick"
@@ -109,10 +109,11 @@ import {
   TabsRoot,
   TabsTrigger
 } from 'reka-ui'
-import { computed, nextTick, onMounted, ref } from 'vue'
+import { computed, nextTick, onMounted, ref, watchEffect } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import SearchBox from '@/components/common/SearchBoxV2.vue'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useNodeDragToCanvas } from '@/composables/node/useNodeDragToCanvas'
 import { usePerTabState } from '@/composables/usePerTabState'
 import {
@@ -136,10 +137,18 @@ import EssentialNodesPanel from './nodeLibrary/EssentialNodesPanel.vue'
 import NodeDragPreview from './nodeLibrary/NodeDragPreview.vue'
 import SidebarTabTemplate from './SidebarTabTemplate.vue'
 
+const { flags } = useFeatureFlags()
+
 const selectedTab = useLocalStorage<TabId>(
   'Comfy.NodeLibrary.Tab',
   DEFAULT_TAB_ID
 )
+
+watchEffect(() => {
+  if (!flags.nodeLibraryEssentialsEnabled && selectedTab.value === 'essentials') {
+    selectedTab.value = DEFAULT_TAB_ID
+  }
+})
 
 const sortOrderByTab = useLocalStorage<Record<TabId, SortingStrategyId>>(
   'Comfy.NodeLibrary.SortByTab',
@@ -324,11 +333,20 @@ async function handleSearch() {
   expandedKeys.value = allKeys
 }
 
-const tabs = computed(() => [
-  { value: 'essentials', label: t('sideToolbar.nodeLibraryTab.essentials') },
-  { value: 'all', label: t('sideToolbar.nodeLibraryTab.allNodes') },
-  { value: 'custom', label: t('sideToolbar.nodeLibraryTab.custom') }
-])
+const tabs = computed(() => {
+  const result = []
+  if (flags.nodeLibraryEssentialsEnabled) {
+    result.push({
+      value: 'essentials',
+      label: t('sideToolbar.nodeLibraryTab.essentials')
+    })
+  }
+  result.push(
+    { value: 'all', label: t('sideToolbar.nodeLibraryTab.allNodes') },
+    { value: 'custom', label: t('sideToolbar.nodeLibraryTab.custom') }
+  )
+  return result
+})
 
 onMounted(() => {
   searchBoxRef.value?.focus()
