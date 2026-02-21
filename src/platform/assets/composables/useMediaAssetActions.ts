@@ -26,7 +26,7 @@ import type { AssetItem } from '../schemas/assetSchema'
 import { MediaAssetKey } from '../schemas/mediaAssetSchema'
 import { assetService } from '../services/assetService'
 
-const EXCLUDED_TAGS = new Set(['models', 'input', 'output'] as const)
+const EXCLUDED_TAGS = new Set(['models', 'input', 'output'])
 
 export function useMediaAssetActions() {
   const { t } = useI18n()
