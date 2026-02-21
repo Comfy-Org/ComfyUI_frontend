@@ -102,7 +102,9 @@ export function addWidgetPromotionOptions(
   )
   if (promotableParents.length > 0)
     options.unshift({
-      content: `Promote Widget: ${widget.label ?? widget.name}`,
+      content: t('subgraphStore.promoteWidget', {
+        name: widget.label ?? widget.name
+      }),
       callback: () => {
         promoteWidget(node, widget, promotableParents)
         widget.callback?.(widget.value)
@@ -110,7 +112,9 @@ export function addWidgetPromotionOptions(
     })
   else {
     options.unshift({
-      content: `Un-Promote Widget: ${widget.label ?? widget.name}`,
+      content: t('subgraphStore.unpromoteWidget', {
+        name: widget.label ?? widget.name
+      }),
       callback: () => {
         demoteWidget(node, widget, parents)
         widget.callback?.(widget.value)

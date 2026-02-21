@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { storeToRefs } from 'pinia'
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
 import {
@@ -22,6 +23,7 @@ import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 
 import SubgraphNodeWidget from './SubgraphNodeWidget.vue'
 
+const { t } = useI18n()
 const canvasStore = useCanvasStore()
 const promotionStore = usePromotionStore()
 const rightSidePanelStore = useRightSidePanelStore()
@@ -51,7 +53,9 @@ const activeWidgets = computed<WidgetItem[]>({
         if (interiorNodeId === '-1') {
           const widget = node.widgets.find((w) => w.name === widgetName)
           if (!widget) return []
-          return [[{ id: -1, title: '(Linked)', type: '' }, widget]]
+          return [
+            [{ id: -1, title: t('subgraphStore.linked'), type: '' }, widget]
+          ]
         }
         const wNode = node.subgraph._nodes_by_id[interiorNodeId]
         if (!wNode?.widgets) return []

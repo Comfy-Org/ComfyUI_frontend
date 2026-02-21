@@ -6,7 +6,7 @@ import type { NodeId } from '@/lib/litegraph/src/LGraphNode'
 
 import { usePromotionStore } from './promotionStore'
 
-describe('usePromotionStore', () => {
+describe(usePromotionStore, () => {
   let store: ReturnType<typeof usePromotionStore>
   const nodeId = 1 as NodeId
 

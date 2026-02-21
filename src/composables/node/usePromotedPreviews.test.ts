@@ -14,7 +14,7 @@ import { createNodeLocatorId } from '@/types/nodeIdentification'
 
 import { usePromotedPreviews } from './usePromotedPreviews'
 
-const getNodeImageUrls = vi.fn()
+const getNodeImageUrls = vi.hoisted(() => vi.fn())
 const nodeOutputs = reactive<Record<string, unknown>>({})
 
 vi.mock('@/stores/imagePreviewStore', () => {
@@ -58,7 +58,7 @@ function seedOutputs(subgraphId: string, nodeIds: Array<number | string>) {
   }
 }
 
-describe('usePromotedPreviews', () => {
+describe(usePromotedPreviews, () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
     vi.clearAllMocks()

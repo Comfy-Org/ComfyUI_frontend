@@ -12,7 +12,7 @@ import type { BaseDOMWidget } from '@/scripts/domWidget'
 
 interface PositionOverride {
   node: Raw<LGraphNode>
-  widget: IBaseWidget
+  widget: Raw<IBaseWidget>
 }
 
 export interface DomWidgetState extends PositionConfig {
@@ -37,10 +37,7 @@ export const useDomWidgetStore = defineStore('domWidget', () => {
     [...widgetStates.value.values()].filter((state) => !state.active)
   )
 
-  // Register a widget with the store
-  const registerWidget = <V extends object | string>(
-    widget: BaseDOMWidget<V>
-  ) => {
+  function registerWidget<V extends object | string>(widget: BaseDOMWidget<V>) {
     widgetStates.value.set(widget.id, {
       widget: markRaw(widget) as unknown as Raw<BaseDOMWidget<object | string>>,
       visible: true,
@@ -52,32 +49,28 @@ export const useDomWidgetStore = defineStore('domWidget', () => {
     })
   }
 
-  // Unregister a widget from the store
-  const unregisterWidget = (widgetId: string) => {
+  function unregisterWidget(widgetId: string) {
     widgetStates.value.delete(widgetId)
   }
 
-  const activateWidget = (widgetId: string) => {
+  function activateWidget(widgetId: string) {
     const state = widgetStates.value.get(widgetId)
     if (state) state.active = true
   }
 
-  const deactivateWidget = (widgetId: string) => {
+  function deactivateWidget(widgetId: string) {
     const state = widgetStates.value.get(widgetId)
     if (state) state.active = false
   }
 
-  const setWidget = (widget: BaseDOMWidget) => {
+  function setWidget(widget: BaseDOMWidget) {
     const state = widgetStates.value.get(widget.id)
     if (!state) return
     state.active = true
     state.widget = widget
   }
 
-  const setPositionOverride = (
-    widgetId: string,
-    override: PositionOverride
-  ) => {
+  function setPositionOverride(widgetId: string, override: PositionOverride) {
     const state = widgetStates.value.get(widgetId)
     if (!state) return
     const current = state.positionOverride
@@ -89,16 +82,16 @@ export const useDomWidgetStore = defineStore('domWidget', () => {
       return
     state.positionOverride = {
       node: markRaw(override.node),
-      widget: override.widget
+      widget: markRaw(override.widget)
     }
   }
 
-  const clearPositionOverride = (widgetId: string) => {
+  function clearPositionOverride(widgetId: string) {
     const state = widgetStates.value.get(widgetId)
     if (state) state.positionOverride = undefined
   }
 
-  const clear = () => {
+  function clear() {
     widgetStates.value.clear()
   }
 

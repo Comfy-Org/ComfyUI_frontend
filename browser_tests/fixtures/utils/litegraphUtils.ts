@@ -128,7 +128,8 @@ class NodeSlotReference {
             nodeSize: [node.size[0], node.size[1]],
             rawConnectionPos: [rawPos[0], rawPos[1]],
             convertedPos: [convertedPos[0], convertedPos[1]],
-            currentGraphType: window.app!.canvas.graph!.constructor.name
+            currentGraphType:
+              'inputNode' in window.app!.canvas.graph! ? 'Subgraph' : 'LGraph'
           }
         )
 
@@ -479,7 +480,7 @@ export class NodeReference {
     const checkIsInSubgraph = async () => {
       return this.comfyPage.page.evaluate(() => {
         const graph = window.app!.canvas.graph
-        return graph?.constructor?.name === 'Subgraph'
+        return !!graph && 'inputNode' in graph
       })
     }
 

@@ -185,11 +185,11 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
       (e) => {
         const subgraphInput = e.detail.input
         const { name, type } = subgraphInput
-        const existingInput = this.inputs.find((i) => i.name == name)
+        const existingInput = this.inputs.find((i) => i.name === name)
         if (existingInput) {
           const linkId = subgraphInput.linkIds[0]
           const { inputNode, input } = subgraph.links[linkId].resolve(subgraph)
-          const widget = inputNode?.widgets?.find?.((w) => w.name == name)
+          const widget = inputNode?.widgets?.find?.((w) => w.name === name)
           if (widget && inputNode)
             this._setWidget(
               subgraphInput,
@@ -409,6 +409,11 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
           const resolved = this._resolveLegacyEntry(widgetName)
           if (resolved)
             return { interiorNodeId: resolved[0], widgetName: resolved[1] }
+          if (import.meta.env.DEV) {
+            console.warn(
+              `[SubgraphNode] Failed to resolve legacy -1 entry for widget "${widgetName}"`
+            )
+          }
           return null
         }
         return { interiorNodeId: nodeId, widgetName }
@@ -788,9 +793,6 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
   }
   override clone() {
     const clone = super.clone()
-    // force reasign so domWidgets reset ownership
-
-    this.properties.proxyWidgets = this.properties.proxyWidgets
 
     //TODO: Consider deep cloning subgraphs here.
     //It's the safest place to prevent creation of linked subgraphs

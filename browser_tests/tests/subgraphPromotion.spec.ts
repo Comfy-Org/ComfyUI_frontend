@@ -1,5 +1,6 @@
 import { expect } from '@playwright/test'
 
+import type { ComfyPage } from '../fixtures/ComfyPage'
 import { comfyPageFixture as test } from '../fixtures/ComfyPage'
 import { TestIds } from '../fixtures/selectors'
 import { fitToViewInstant } from '../helpers/fitToView'
@@ -9,7 +10,7 @@ import { fitToViewInstant } from '../helpers/fitToView'
  * and its synthesized `widgets` array (which reads from the promotion store).
  */
 async function getPromotedWidgetNames(
-  comfyPage: Parameters<Parameters<typeof test>[2]>[0]['comfyPage'],
+  comfyPage: ComfyPage,
   subgraphNodeId: string
 ): Promise<string[]> {
   return comfyPage.page.evaluate((nodeId) => {
@@ -28,7 +29,7 @@ async function getPromotedWidgetNames(
  * Query widget count on a node via the litegraph graph.
  */
 async function getWidgetCount(
-  comfyPage: Parameters<Parameters<typeof test>[2]>[0]['comfyPage'],
+  comfyPage: ComfyPage,
   nodeId: string
 ): Promise<number> {
   return comfyPage.page.evaluate((id) => {
@@ -40,11 +41,10 @@ async function getWidgetCount(
 /**
  * Check whether we're currently in a subgraph.
  */
-async function isInSubgraph(
-  comfyPage: Parameters<Parameters<typeof test>[2]>[0]['comfyPage']
-): Promise<boolean> {
+async function isInSubgraph(comfyPage: ComfyPage): Promise<boolean> {
   return comfyPage.page.evaluate(() => {
-    return window.app!.canvas.graph?.constructor?.name === 'Subgraph'
+    const graph = window.app!.canvas.graph
+    return !!graph && 'inputNode' in graph
   })
 }
 
@@ -293,10 +293,9 @@ test.describe(
         )
         await textarea.fill(testContent)
 
-        const subgraphNode = await comfyPage.nodeOps.getNodeRefById('11')
-
         // Navigate in and out multiple times
         for (let i = 0; i < 3; i++) {
+          const subgraphNode = await comfyPage.nodeOps.getNodeRefById('11')
           await subgraphNode.navigateIntoSubgraph()
           const interiorTextarea = comfyPage.page.getByTestId(
             TestIds.widgets.domWidgetTextarea

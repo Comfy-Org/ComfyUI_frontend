@@ -6,6 +6,7 @@ import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import { toConcreteWidget } from '@/lib/litegraph/src/widgets/widgetMap'
+import { t } from '@/i18n'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
 import {
   stripGraphPrefix,
@@ -283,6 +284,6 @@ function drawDisconnectedPlaceholder(
   ctx.font = '11px monospace'
   ctx.textAlign = 'center'
   ctx.textBaseline = 'middle'
-  ctx.fillText('Disconnected', width / 2, y + H / 2)
+  ctx.fillText(t('subgraphStore.disconnected'), width / 2, y + H / 2)
   ctx.restore()
 }

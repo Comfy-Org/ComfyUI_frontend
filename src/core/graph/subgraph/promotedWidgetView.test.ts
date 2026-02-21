@@ -20,11 +20,11 @@ import {
 vi.mock('@/renderer/core/canvas/canvasStore', () => ({
   useCanvasStore: () => ({})
 }))
-const mockDomWidgetStore = {
+const mockDomWidgetStore = vi.hoisted(() => ({
   widgetStates: new Map(),
   setPositionOverride: vi.fn(),
   clearPositionOverride: vi.fn()
-}
+}))
 vi.mock('@/stores/domWidgetStore', () => ({
   useDomWidgetStore: () => mockDomWidgetStore
 }))
@@ -62,9 +62,11 @@ function setPromotions(
   )
 }
 
-describe('createPromotedWidgetView', () => {
+describe(createPromotedWidgetView, () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
+    mockDomWidgetStore.widgetStates.clear()
+    vi.clearAllMocks()
   })
 
   test('exposes sourceNodeId and sourceWidgetName', () => {

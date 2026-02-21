@@ -626,7 +626,7 @@ const showAdvancedInputsButton = computed(() => {
       (n.widgets ?? []).some(
         (w) =>
           !w.computedDisabled &&
-          !promotionStore.isPromotedByAny(String(n.id), w.name)
+          !promotionStore.isPromoted(node.id, String(n.id), w.name)
       )
     )
   }
