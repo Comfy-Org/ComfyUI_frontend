@@ -51,6 +51,7 @@ import type {
 } from '@/composables/queue/useJobList'
 import type { MenuEntry } from '@/composables/queue/useJobMenu'
 import { useJobMenu } from '@/composables/queue/useJobMenu'
+import { useErrorHandling } from '@/composables/useErrorHandling'
 
 import QueueOverlayHeader from './QueueOverlayHeader.vue'
 import JobContextMenu from './job/JobContextMenu.vue'
@@ -83,6 +84,7 @@ const emit = defineEmits<{
 
 const currentMenuItem = ref<JobListItem | null>(null)
 const jobContextMenuRef = ref<InstanceType<typeof JobContextMenu> | null>(null)
+const { wrapWithErrorHandlingAsync } = useErrorHandling()
 
 const { jobMenuEntries } = useJobMenu(
   () => currentMenuItem.value,
@@ -102,9 +104,9 @@ const onMenuItem = (item: JobListItem, event: Event) => {
   jobContextMenuRef.value?.open(event)
 }
 
-const onJobMenuAction = async (entry: MenuEntry) => {
+const onJobMenuAction = wrapWithErrorHandlingAsync(async (entry: MenuEntry) => {
   if (entry.kind === 'divider') return
   if (entry.onClick) await entry.onClick()
   jobContextMenuRef.value?.hide()
-}
+})
 </script>
