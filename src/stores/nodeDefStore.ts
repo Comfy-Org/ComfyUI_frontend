@@ -89,6 +89,8 @@ export class ComfyNodeDefImpl
   readonly search_aliases?: string[]
   /** Category for the Essentials tab. If set, the node appears in Essentials. */
   readonly essentials_category?: string
+  /** Whether the blueprint is a global/installed blueprint (not user-created). */
+  readonly isGlobal?: boolean
 
   // V2 fields
   readonly inputs: Record<string, InputSpecV2>
@@ -165,6 +167,7 @@ export class ComfyNodeDefImpl
       obj.name,
       obj.essentials_category
     )
+    this.isGlobal = obj.isGlobal
 
     // Initialize V2 fields
     const defV2 = transformNodeDefV1ToV2(obj)

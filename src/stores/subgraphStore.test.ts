@@ -177,6 +177,54 @@ describe('useSubgraphStore', () => {
     expect(store.isGlobalBlueprint('nonexistent')).toBe(false)
   })
 
+  describe('blueprint badge display', () => {
+    it('should set isGlobal flag on global blueprints', async () => {
+      await mockFetch(
+        {},
+        {
+          global_bp: {
+            name: 'Global Blueprint',
+            info: { node_pack: 'some-uuid-string' },
+            data: JSON.stringify(mockGraph)
+          }
+        }
+      )
+      const nodeDef = useNodeDefStore().nodeDefs.find(
+        (d) => d.name === 'SubgraphBlueprint.global_bp'
+      )
+      expect(nodeDef).toBeDefined()
+      expect(nodeDef?.isGlobal).toBe(true)
+    })
+
+    it('should not set isGlobal flag on user blueprints', async () => {
+      await mockFetch({ 'user-blueprint.json': mockGraph })
+      const nodeDef = useNodeDefStore().nodeDefs.find(
+        (d) => d.name === 'SubgraphBlueprint.user-blueprint'
+      )
+      expect(nodeDef).toBeDefined()
+      expect(nodeDef?.isGlobal).toBeUndefined()
+    })
+
+    it('should use blueprint python_module for global blueprints to show Blueprint badge', async () => {
+      await mockFetch(
+        {},
+        {
+          global_bp: {
+            name: 'Global Blueprint',
+            info: { node_pack: 'comfyui-ltx-video-0fbc55c6-long-uuid' },
+            data: JSON.stringify(mockGraph)
+          }
+        }
+      )
+      const nodeDef = useNodeDefStore().nodeDefs.find(
+        (d) => d.name === 'SubgraphBlueprint.global_bp'
+      )
+      expect(nodeDef).toBeDefined()
+      expect(nodeDef?.python_module).toBe('blueprint')
+      expect(nodeDef?.nodeSource.displayText).toBe('Blueprint')
+    })
+  })
+
   describe('search_aliases support', () => {
     it('should include search_aliases from workflow extra', async () => {
       const mockGraphWithAliases = {
