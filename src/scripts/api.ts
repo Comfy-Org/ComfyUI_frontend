@@ -11,9 +11,10 @@ import type {
 import { isCloud } from '@/platform/distribution/types'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import type { IFuseOptions } from 'fuse.js'
-import {
-  type TemplateInfo,
-  type WorkflowTemplates
+import type {
+  TemplateIncludeOnDistributionEnum,
+  TemplateInfo,
+  WorkflowTemplates
 } from '@/platform/workflow/templates/types/template'
 import type {
   ComfyApiWorkflow,
@@ -241,6 +242,8 @@ export type GlobalSubgraphData = {
     node_pack: string
     category?: string
     search_aliases?: string[]
+    requiresCustomNodes?: string[]
+    includeOnDistributions?: TemplateIncludeOnDistributionEnum[]
   }
   data: string | Promise<string>
   essentials_category?: string

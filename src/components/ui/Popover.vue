@@ -15,10 +15,16 @@ defineOptions({
   inheritAttrs: false
 })
 
-defineProps<{
+const {
+  entries,
+  icon,
+  to,
+  showArrow = true
+} = defineProps<{
   entries?: MenuItem[]
   icon?: string
   to?: string | HTMLElement
+  showArrow?: boolean
 }>()
 </script>
 
@@ -39,7 +45,7 @@ defineProps<{
         v-bind="$attrs"
         class="z-1700 rounded-lg p-2 bg-base-background shadow-sm border border-border-subtle will-change-[transform,opacity] data-[state=open]:data-[side=top]:animate-slideDownAndFade data-[state=open]:data-[side=right]:animate-slideLeftAndFade data-[state=open]:data-[side=bottom]:animate-slideUpAndFade data-[state=open]:data-[side=left]:animate-slideRightAndFade"
       >
-        <slot>
+        <slot :close>
           <div class="flex flex-col p-1">
             <template v-for="item in entries ?? []" :key="item.label">
               <div
@@ -71,7 +77,10 @@ defineProps<{
             </template>
           </div>
         </slot>
-        <PopoverArrow class="fill-base-background stroke-border-subtle" />
+        <PopoverArrow
+          v-if="showArrow"
+          class="fill-base-background stroke-border-subtle"
+        />
       </PopoverContent>
     </PopoverPortal>
   </PopoverRoot>
