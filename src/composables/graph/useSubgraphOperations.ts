@@ -69,6 +69,13 @@ export function useSubgraphOperations() {
   }
 
   const addSubgraphToLibrary = async () => {
+    const selectedItems = Array.from(canvasStore.selectedItems)
+    const subgraphNodes = selectedItems.filter(
+      (item): item is SubgraphNode => item instanceof SubgraphNode
+    )
+    if (subgraphNodes.length !== 1) {
+      return
+    }
     await subgraphStore.publishSubgraph()
   }
 
