@@ -53,31 +53,7 @@
         class="pb-1 px-2 2xl:px-4"
         :show-generation-time-sort="activeTab === 'output'"
       />
-      <div
-        v-if="isQueuePanelV2Enabled && !isInFolderView"
-        class="flex items-center justify-between px-2 py-2 2xl:px-4"
-      >
-        <span class="text-sm text-muted-foreground">
-          {{ activeJobsLabel }}
-        </span>
-        <div class="flex items-center gap-2">
-          <span class="text-sm text-base-foreground">
-            {{ t('sideToolbar.queueProgressOverlay.clearQueueTooltip') }}
-          </span>
-          <Button
-            variant="destructive"
-            size="icon"
-            :aria-label="
-              t('sideToolbar.queueProgressOverlay.clearQueueTooltip')
-            "
-            :disabled="queuedCount === 0"
-            @click="handleClearQueue"
-          >
-            <i class="icon-[lucide--list-x] size-4" />
-          </Button>
-        </div>
-      </div>
-      <Divider v-else type="dashed" class="my-2" />
+      <Divider type="dashed" class="my-2" />
     </template>
     <template #body>
       <div
@@ -126,7 +102,6 @@
           v-else
           :assets="displayAssets"
           :is-selected="isSelected"
-          :is-in-folder-view="isInFolderView"
           :asset-type="activeTab"
           :show-output-count="shouldShowOutputCount"
           :get-output-count="getOutputCount"
@@ -226,7 +201,6 @@ import {
   useResizeObserver,
   useStorage
 } from '@vueuse/core'
-import { storeToRefs } from 'pinia'
 import Divider from 'primevue/divider'
 import { useToast } from 'primevue/usetoast'
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
@@ -258,20 +232,12 @@ import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import type { MediaKind } from '@/platform/assets/schemas/mediaAssetSchema'
 import { resolveOutputAssetItems } from '@/platform/assets/utils/outputAssetUtil'
 import { isCloud } from '@/platform/distribution/types'
-import { useSettingStore } from '@/platform/settings/settingStore'
-import { useCommandStore } from '@/stores/commandStore'
 import { useDialogStore } from '@/stores/dialogStore'
-import { useExecutionStore } from '@/stores/executionStore'
-import { ResultItemImpl, useQueueStore } from '@/stores/queueStore'
+import { ResultItemImpl } from '@/stores/queueStore'
 import { formatDuration, getMediaTypeFromFilename } from '@/utils/formatUtil'
 import { cn } from '@/utils/tailwindUtil'
 
-const { t, n } = useI18n()
-const commandStore = useCommandStore()
-const queueStore = useQueueStore()
-const { activeJobsCount } = storeToRefs(queueStore)
-const executionStore = useExecutionStore()
-const settingStore = useSettingStore()
+const { t } = useI18n()
 
 const emit = defineEmits<{ assetSelected: [asset: AssetItem] }>()
 
@@ -284,12 +250,7 @@ const viewMode = useStorage<'list' | 'grid'>(
   'Comfy.Assets.Sidebar.ViewMode',
   'grid'
 )
-const isQueuePanelV2Enabled = computed(() =>
-  settingStore.get('Comfy.Queue.QPOV2')
-)
-const isListView = computed(
-  () => isQueuePanelV2Enabled.value && viewMode.value === 'list'
-)
+const isListView = computed(() => viewMode.value === 'list')
 
 const contextMenuRef = ref<InstanceType<typeof MediaAssetContextMenu>>()
 const contextMenuAsset = ref<AssetItem | null>(null)
@@ -319,16 +280,6 @@ const shouldShowOutputCount = (item: AssetItem): boolean => {
 const formattedExecutionTime = computed(() => {
   if (!folderExecutionTime.value) return ''
   return formatDuration(folderExecutionTime.value * 1000)
-})
-
-const queuedCount = computed(() => queueStore.pendingTasks.length)
-const activeJobsLabel = computed(() => {
-  const count = activeJobsCount.value
-  return t(
-    'sideToolbar.queueProgressOverlay.activeJobs',
-    { count: n(count) },
-    count
-  )
 })
 
 const toast = useToast()
@@ -456,17 +407,12 @@ const isFolderLoading = computed(
 
 const showLoadingState = computed(
   () =>
-    (loading.value || isFolderLoading.value) &&
-    displayAssets.value.length === 0 &&
-    activeJobsCount.value === 0
+    (loading.value || isFolderLoading.value) && displayAssets.value.length === 0
 )
 
 const showEmptyState = computed(
   () =>
-    !loading.value &&
-    !isFolderLoading.value &&
-    displayAssets.value.length === 0 &&
-    activeJobsCount.value === 0
+    !loading.value && !isFolderLoading.value && displayAssets.value.length === 0
 )
 
 watch(visibleAssets, (newAssets) => {
@@ -560,16 +506,6 @@ const handleBulkDelete = async (assets: AssetItem[]) => {
   if (await deleteAssets(assets)) {
     clearSelection()
   }
-}
-
-const handleClearQueue = async () => {
-  const pendingJobIds = queueStore.pendingTasks
-    .map((task) => task.jobId)
-    .filter((id): id is string => typeof id === 'string' && id.length > 0)
-
-  await commandStore.execute('Comfy.ClearPendingTasks')
-
-  executionStore.clearInitializationByJobIds(pendingJobIds)
 }
 
 const handleBulkAddToWorkflow = async (assets: AssetItem[]) => {

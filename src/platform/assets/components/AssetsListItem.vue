@@ -59,19 +59,28 @@
     <div class="relative z-1 flex min-w-0 flex-1 flex-col gap-1">
       <div
         v-if="$slots.primary || primaryText"
-        class="text-xs leading-none text-text-primary"
+        class="min-w-0 text-xs leading-none text-text-primary"
       >
-        <slot name="primary">{{ primaryText }}</slot>
+        <slot v-if="$slots.primary" name="primary" />
+        <span v-else class="block truncate" :title="primaryText">
+          {{ primaryText }}
+        </span>
       </div>
       <div
         v-if="$slots.secondary || secondaryText"
-        class="text-xs leading-none text-text-secondary"
+        class="min-w-0 text-xs leading-none text-text-secondary"
       >
-        <slot name="secondary">{{ secondaryText }}</slot>
+        <slot v-if="$slots.secondary" name="secondary" />
+        <span v-else class="block truncate" :title="secondaryText">
+          {{ secondaryText }}
+        </span>
       </div>
     </div>
 
-    <div v-if="$slots.actions" class="relative z-1 flex items-center gap-2">
+    <div
+      v-if="$slots.actions"
+      class="relative z-1 flex shrink-0 items-center gap-2"
+    >
       <slot name="actions" />
     </div>
 
