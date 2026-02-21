@@ -14,6 +14,46 @@ import { upperCase } from 'es-toolkit/string'
 
 const DEFAULT_ICON = 'pi pi-sort'
 
+const NODE_ORDER_BY_FOLDER = {
+  basics: [
+    'LoadImage',
+    'LoadVideo',
+    'Load3D',
+    'SaveImage',
+    'SaveVideo',
+    'SaveGLB',
+    'CLIPTextEncode',
+    'PreviewImage'
+  ],
+  'image tools': [
+    'ImageBatch',
+    'ImageCrop',
+    'ImageCropV2',
+    'ImageScale',
+    'ImageScaleBy',
+    'ImageRotate',
+    'ImageBlur',
+    'ImageBlend',
+    'ImageInvert',
+    'Canny',
+    'RecraftRemoveBackgroundNode',
+    'LoadImageMask'
+  ],
+  'video tools': ['GetVideoComponents', 'CreateVideo'],
+  'image generation': [
+    'LoraLoader',
+    'LoraLoaderModelOnly',
+    'ConditioningCombine'
+  ],
+  audio: [
+    'LoadAudio',
+    'SaveAudio',
+    'SaveAudioMP3',
+    'StabilityTextToAudio',
+    'EmptyLatentAudio'
+  ]
+} satisfies Record<string, string[]>
+
 export const DEFAULT_GROUPING_ID = 'category' as const
 export const DEFAULT_SORTING_ID = 'original' as const
 export const DEFAULT_TAB_ID = 'all' as const
@@ -160,48 +200,12 @@ class NodeOrganizationService {
             const orderB = bi === -1 ? len + originalIndex.get(b)! : bi
             return orderA - orderB
           })
-          const nodeOrderByFolder: Record<string, string[]> = {
-            basics: [
-              'LoadImage',
-              'LoadVideo',
-              'Load3D',
-              'SaveImage',
-              'SaveVideo',
-              'SaveGLB',
-              'CLIPTextEncode',
-              'PreviewImage'
-            ],
-            'image tools': [
-              'ImageBatch',
-              'ImageCrop',
-              'ImageCropV2',
-              'ImageScale',
-              'ImageScaleBy',
-              'ImageRotate',
-              'ImageBlur',
-              'ImageBlend',
-              'ImageInvert',
-              'Canny',
-              'RecraftRemoveBackgroundNode',
-              'LoadImageMask'
-            ],
-            'video tools': ['GetVideoComponents', 'CreateVideo'],
-            'image generation': [
-              'LoraLoader',
-              'LoraLoaderModelOnly',
-              'ConditioningCombine'
-            ],
-            audio: [
-              'LoadAudio',
-              'SaveAudio',
-              'SaveAudioMP3',
-              'StabilityTextToAudio',
-              'EmptyLatentAudio'
-            ]
-          }
           for (const folder of tree.children) {
             if (!folder.children) continue
-            const order = nodeOrderByFolder[folder.label ?? '']
+            const order =
+              NODE_ORDER_BY_FOLDER[
+                folder.label as keyof typeof NODE_ORDER_BY_FOLDER
+              ]
             if (!order) continue
             const orderLen = order.length
             folder.children.sort((a, b) => {
