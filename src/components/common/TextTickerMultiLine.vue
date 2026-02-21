@@ -25,7 +25,7 @@ import { useMutationObserver, useResizeObserver } from '@vueuse/core'
 import { ref } from 'vue'
 
 import MarqueeLine from './MarqueeLine.vue'
-import { splitTextAtWordBoundary } from './textTickerUtils'
+import { splitTextAtWordBoundary } from '@/utils/textTickerUtils'
 
 const measureRef = ref<HTMLElement | null>(null)
 const firstLine = ref('')
