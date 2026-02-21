@@ -32,7 +32,7 @@ const createMockNode = (overrides: Record<string, unknown> = {}): LGraphNode =>
     id: 1,
     type: 'TestNode',
     ...overrides
-  }) as unknown as LGraphNode
+  }) as Partial<LGraphNode> as LGraphNode
 
 const createMockOutputs = (
   images?: ExecutedWsMessage['output']['images']
