@@ -99,6 +99,10 @@
   --color-magenta-300: #ceaac9;
   --color-magenta-700: #6a246a;
 
+  --color-ocean-300: #badde8;
+  --color-ocean-600: #2f687a;
+  --color-ocean-900: #253236;
+
   --color-danger-100: #c02323;
   --color-danger-200: #d62952;
 
@@ -154,6 +158,7 @@
   --comfy-menu-bg: #353535;
   --comfy-menu-secondary-bg: #292929;
   --comfy-topbar-height: 2.5rem;
+  --workflow-tabs-height: 2.375rem;
   --comfy-input-bg: #222;
   --input-text: #ddd;
   --descrip-text: #999;
@@ -217,6 +222,10 @@
   --interface-menu-stroke: var(--color-smoke-600);
   --interface-panel-surface: var(--color-white);
   --interface-stroke: var(--color-smoke-300);
+
+  --interface-builder-mode-background: var(--color-ocean-300);
+  --interface-builder-mode-button-background: var(--color-ocean-600);
+  --interface-builder-mode-button-foreground: var(--color-white);
 
   --nav-background: var(--color-white);
 
@@ -377,6 +386,10 @@
   --interface-panel-surface: var(--color-charcoal-800);
   --interface-stroke: var(--color-charcoal-400);
 
+  --interface-builder-mode-background: var(--color-ocean-900);
+  --interface-builder-mode-button-background: var(--color-ocean-600);
+  --interface-builder-mode-button-foreground: var(--color-white);
+
   --nav-background: var(--color-charcoal-800);
 
   --node-border: var(--color-charcoal-500);
@@ -510,6 +523,15 @@
   --color-comfy-menu-bg: var(--comfy-menu-bg);
   --color-comfy-menu-secondary: var(--comfy-menu-secondary-bg);
 
+  --color-interface-builder-mode-background: var(
+    --interface-builder-mode-background
+  );
+  --color-interface-builder-mode-button-background: var(
+    --interface-builder-mode-button-background
+  );
+  --color-interface-builder-mode-button-foreground: var(
+    --interface-builder-mode-button-foreground
+  );
   --color-interface-stroke: var(--interface-stroke);
   --color-nav-background: var(--nav-background);
   --color-node-border: var(--node-border);

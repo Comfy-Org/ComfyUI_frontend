@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import { readonly, computed, ref } from 'vue'
 
-type AppMode = 'graph' | 'app' | 'builder:select' | 'builder:arrange'
+export type AppMode = 'graph' | 'app' | 'builder:select' | 'builder:arrange'
 
 export const useAppModeStore = defineStore('appMode', () => {
   const mode = ref<AppMode>('graph')

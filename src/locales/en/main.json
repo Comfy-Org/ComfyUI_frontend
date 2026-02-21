@@ -3151,5 +3151,18 @@
       "duplicateName": "A secret with this name already exists",
       "duplicateProvider": "A secret for this provider already exists"
     }
+  },
+  "builderToolbar": {
+    "label": "App Builder",
+    "select": "Select",
+    "selectDescription": "Choose inputs/outputs",
+    "arrange": "Preview",
+    "arrangeDescription": "Review app layout",
+    "save": "Save",
+    "saveDescription": "Save and finish",
+    "connectOutput": "Connect an output",
+    "connectOutputBody1": "Your app needs at least one output to be connected before it can be saved.",
+    "connectOutputBody2": "Switch to the 'Select' step and click on output nodes to add them here.",
+    "switchToSelect": "Switch to Select"
   }
 }
