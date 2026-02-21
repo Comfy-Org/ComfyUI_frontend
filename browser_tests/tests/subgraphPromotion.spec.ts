@@ -1,5 +1,7 @@
 import { expect } from '@playwright/test'
 
+import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
+
 import type { ComfyPage } from '../fixtures/ComfyPage'
 import { comfyPageFixture as test } from '../fixtures/ComfyPage'
 import { TestIds } from '../fixtures/selectors'
@@ -65,6 +67,16 @@ async function isInSubgraph(comfyPage: ComfyPage): Promise<boolean> {
     const graph = window.app!.canvas.graph
     return !!graph && 'inputNode' in graph
   })
+}
+
+async function exitSubgraphViaBreadcrumb(comfyPage: ComfyPage): Promise<void> {
+  const breadcrumb = comfyPage.page.getByTestId(TestIds.breadcrumb.subgraph)
+  await breadcrumb.waitFor({ state: 'visible', timeout: 5000 })
+
+  const parentLink = breadcrumb.getByRole('link').first()
+  await expect(parentLink).toBeVisible()
+  await parentLink.click()
+  await comfyPage.nextFrame()
 }
 
 test.describe(
@@ -286,8 +298,7 @@ test.describe(
         await comfyPage.nextFrame()
 
         // Navigate back to parent graph
-        await comfyPage.page.keyboard.press('Escape')
-        await comfyPage.nextFrame()
+        await exitSubgraphViaBreadcrumb(comfyPage)
 
         // Promoted textarea on SubgraphNode should have the same value
         const promotedTextarea = comfyPage.page.getByTestId(
@@ -321,8 +332,7 @@ test.describe(
           )
           await expect(interiorTextarea).toHaveValue(testContent)
 
-          await comfyPage.page.keyboard.press('Escape')
-          await comfyPage.nextFrame()
+          await exitSubgraphViaBreadcrumb(comfyPage)
 
           const promotedTextarea = comfyPage.page.getByTestId(
             TestIds.widgets.domWidgetTextarea
@@ -368,8 +378,7 @@ test.describe(
         await comfyPage.nextFrame()
 
         // Navigate back to parent
-        await comfyPage.page.keyboard.press('Escape')
-        await comfyPage.nextFrame()
+        await exitSubgraphViaBreadcrumb(comfyPage)
 
         // SubgraphNode should now have the promoted widget
         const widgetCount = await getWidgetCount(comfyPage, '2')
@@ -404,8 +413,7 @@ test.describe(
         await comfyPage.nextFrame()
 
         // Navigate back and verify promotion took effect
-        await comfyPage.page.keyboard.press('Escape')
-        await comfyPage.nextFrame()
+        await exitSubgraphViaBreadcrumb(comfyPage)
         await fitToViewInstant(comfyPage)
         await comfyPage.nextFrame()
 
@@ -436,8 +444,7 @@ test.describe(
         await comfyPage.nextFrame()
 
         // Navigate back to parent
-        await comfyPage.page.keyboard.press('Escape')
-        await comfyPage.nextFrame()
+        await exitSubgraphViaBreadcrumb(comfyPage)
 
         // SubgraphNode should have fewer widgets
         const finalWidgetCount = await getWidgetCount(comfyPage, '2')
@@ -520,9 +527,9 @@ test.describe(
           return window.app!.graph!.serialize()
         })
 
-        await comfyPage.page.evaluate((workflow) => {
+        await comfyPage.page.evaluate((workflow: ComfyWorkflowJSON) => {
           return window.app!.loadGraphData(workflow)
-        }, serialized)
+        }, serialized as ComfyWorkflowJSON)
         await comfyPage.nextFrame()
 
         const afterPromoted = await getPromotedWidgetNames(comfyPage, '11')

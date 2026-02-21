@@ -1,23 +1,25 @@
 import { expect } from '@playwright/test'
 
+import type { ComfyPage } from '../../../../fixtures/ComfyPage'
 import { comfyPageFixture as test } from '../../../../fixtures/ComfyPage'
 
 test.describe('Vue Nodes Image Preview', () => {
   test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.setSetting('Comfy.VueNodes.Enabled', true)
-    await comfyPage.loadWorkflow('widgets/load_image_widget')
+    await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
+    await comfyPage.workflow.loadWorkflow('widgets/load_image_widget')
     await comfyPage.vueNodes.waitForNodes()
   })
 
-  async function loadImageOnNode(
-    comfyPage: Awaited<
-      ReturnType<(typeof test)['info']>
-    >['fixtures']['comfyPage']
-  ) {
-    const loadImageNode = (await comfyPage.getNodeRefsByType('LoadImage'))[0]
+  async function loadImageOnNode(comfyPage: ComfyPage) {
+    const loadImageNode = (
+      await comfyPage.nodeOps.getNodeRefsByType('LoadImage')
+    ).at(0)
+    if (!loadImageNode) {
+      throw new Error('LoadImage node not found')
+    }
     const { x, y } = await loadImageNode.getPosition()
 
-    await comfyPage.dragAndDropFile('image64x64.webp', {
+    await comfyPage.dragDrop.dragAndDropFile('image64x64.webp', {
       dropPosition: { x, y }
     })
 
@@ -29,9 +31,7 @@ test.describe('Vue Nodes Image Preview', () => {
     return imagePreview
   }
 
-  test.fixme('opens mask editor from image preview button', async ({
-    comfyPage
-  }) => {
+  test('opens mask editor from image preview button', async ({ comfyPage }) => {
     const imagePreview = await loadImageOnNode(comfyPage)
 
     await imagePreview.locator('[role="img"]').hover()
@@ -40,7 +40,7 @@ test.describe('Vue Nodes Image Preview', () => {
     await expect(comfyPage.page.locator('.mask-editor-dialog')).toBeVisible()
   })
 
-  test.fixme('shows image context menu options', async ({ comfyPage }) => {
+  test('shows image context menu options', async ({ comfyPage }) => {
     await loadImageOnNode(comfyPage)
 
     const nodeHeader = comfyPage.vueNodes.getNodeByTitle('Load Image')
