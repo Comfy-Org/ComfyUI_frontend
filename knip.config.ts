@@ -29,7 +29,6 @@ const config: KnipConfig = {
     // Weird importmap things
     '@iconify-json/lucide',
     '@iconify/json',
-    '@primeuix/forms',
     '@primeuix/styled',
     '@primeuix/utils',
     '@primevue/icons'

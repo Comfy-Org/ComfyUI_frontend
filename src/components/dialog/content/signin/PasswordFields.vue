@@ -20,7 +20,10 @@
         />
       </FormControl>
       <div class="flex flex-col gap-1">
-        <small v-if="meta.dirty || Boolean(errors.password)" class="text-sm">
+        <FormDescription
+          v-if="meta.dirty || Boolean(errors.password)"
+          class="text-sm"
+        >
           {{ t('validation.password.requirements') }}:
           <ul class="mt-1 space-y-1">
             <li
@@ -59,7 +62,7 @@
               {{ t('validation.password.special') }}
             </li>
           </ul>
-        </small>
+        </FormDescription>
       </div>
     </FormItem>
   </FormField>
@@ -95,6 +98,7 @@ import { useI18n } from 'vue-i18n'
 
 import {
   FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
