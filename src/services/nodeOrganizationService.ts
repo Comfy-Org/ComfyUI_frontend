@@ -160,6 +160,60 @@ class NodeOrganizationService {
             const orderB = bi === -1 ? len + originalIndex.get(b)! : bi
             return orderA - orderB
           })
+          const nodeOrderByFolder: Record<string, string[]> = {
+            basics: [
+              'LoadImage',
+              'LoadVideo',
+              'Load3D',
+              'SaveImage',
+              'SaveVideo',
+              'SaveGLB',
+              'CLIPTextEncode',
+              'PreviewImage'
+            ],
+            'image tools': [
+              'ImageBatch',
+              'ImageCrop',
+              'ImageCropV2',
+              'ImageScale',
+              'ImageScaleBy',
+              'ImageRotate',
+              'ImageBlur',
+              'ImageBlend',
+              'ImageInvert',
+              'Canny',
+              'RecraftRemoveBackgroundNode',
+              'LoadImageMask'
+            ],
+            'video tools': ['GetVideoComponents', 'CreateVideo'],
+            'image generation': [
+              'LoraLoader',
+              'LoraLoaderModelOnly',
+              'ConditioningCombine'
+            ],
+            audio: [
+              'LoadAudio',
+              'SaveAudio',
+              'SaveAudioMP3',
+              'StabilityTextToAudio',
+              'EmptyLatentAudio'
+            ]
+          }
+          for (const folder of tree.children) {
+            if (!folder.children) continue
+            const order = nodeOrderByFolder[folder.label ?? '']
+            if (!order) continue
+            const orderLen = order.length
+            folder.children.sort((a, b) => {
+              const nameA = a.data?.name ?? a.label ?? ''
+              const nameB = b.data?.name ?? b.label ?? ''
+              const ai = order.indexOf(nameA)
+              const bi = order.indexOf(nameB)
+              const orderA = ai === -1 ? orderLen : ai
+              const orderB = bi === -1 ? orderLen : bi
+              return orderA - orderB
+            })
+          }
         }
         return [{ tree }]
       }
