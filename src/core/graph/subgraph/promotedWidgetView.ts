@@ -29,6 +29,14 @@ function resolve(
   return widget ? { node, widget } : undefined
 }
 
+function isWidgetValue(value: unknown): value is IBaseWidget['value'] {
+  if (value === undefined) return true
+  if (typeof value === 'string') return true
+  if (typeof value === 'number') return true
+  if (typeof value === 'boolean') return true
+  return value !== null && typeof value === 'object'
+}
+
 export function createPromotedWidgetView(
   subgraphNode: SubgraphNode,
   nodeId: string,
@@ -113,7 +121,8 @@ export function createPromotedWidgetView(
           bareNodeId,
           widgetName
         )
-        return state?.value
+        if (state) return state.value
+        return resolve(subgraphNode, nodeId, widgetName)?.widget.value
       },
       set: (v: unknown) => {
         const state = useWidgetValueStore().getWidget(
@@ -121,7 +130,15 @@ export function createPromotedWidgetView(
           bareNodeId,
           widgetName
         )
-        if (state) state.value = v
+        if (state) {
+          state.value = v
+          return
+        }
+
+        const resolved = resolve(subgraphNode, nodeId, widgetName)
+        if (resolved && isWidgetValue(v)) {
+          resolved.widget.value = v
+        }
       },
       enumerable: true
     },
@@ -175,27 +192,21 @@ export function createPromotedWidgetView(
 
     const concrete = toConcreteWidget(resolved.widget, resolved.node, false)
     if (concrete) {
-      const interiorNode = resolved.node
-      const originalY = concrete.y
-      const originalComputedHeight = concrete.computedHeight
-      const originalPos = interiorNode.pos
-      const originalWidth = interiorNode.size[0]
+      const projected = concrete.createCopyForNode(subgraphNode)
+      const originalY = projected.y
+      const originalComputedHeight = projected.computedHeight
 
-      concrete.y = view.y
-      concrete.computedHeight = view.computedHeight
-      interiorNode.pos = subgraphNode.pos
-      interiorNode.size[0] = subgraphNode.size[0]
+      projected.y = view.y
+      projected.computedHeight = view.computedHeight
 
-      concrete.drawWidget(ctx, {
+      projected.drawWidget(ctx, {
         width: widget_width,
         showText: !lowQuality,
         suppressPromotedOutline: true
       })
 
-      concrete.y = originalY
-      concrete.computedHeight = originalComputedHeight
-      interiorNode.pos = originalPos
-      interiorNode.size[0] = originalWidth
+      projected.y = originalY
+      projected.computedHeight = originalComputedHeight
     }
   }
 

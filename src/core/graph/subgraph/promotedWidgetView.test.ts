@@ -4,8 +4,9 @@ import { beforeEach, describe, expect, test, vi } from 'vitest'
 
 // Barrel import must come first to avoid circular dependency
 // (promotedWidgetView → widgetMap → BaseWidget → LegacyWidget → barrel)
-import { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { SubgraphNode } from '@/lib/litegraph/src/litegraph'
+import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 
 import { createPromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetView'
 import type { PromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetView'
@@ -220,6 +221,32 @@ describe(createPromotedWidgetView, () => {
     expect(innerNode.widgets![0].value).toBe('updated')
   })
 
+  test('value falls back to interior widget when store entry is missing', () => {
+    const [subgraphNode, innerNodes] = setupSubgraph(1)
+    const innerNode = firstInnerNode(innerNodes)
+    const fallbackWidgetShape = {
+      name: 'myWidget',
+      type: 'text',
+      value: 'initial',
+      options: {}
+    } satisfies Pick<IBaseWidget, 'name' | 'type' | 'value' | 'options'>
+    const fallbackWidget = fallbackWidgetShape as unknown as IBaseWidget
+    innerNode.widgets = [fallbackWidget]
+
+    const widgetValueStore = useWidgetValueStore()
+    vi.spyOn(widgetValueStore, 'getWidget').mockReturnValue(undefined)
+
+    const view = createPromotedWidgetView(
+      subgraphNode,
+      String(innerNode.id),
+      'myWidget'
+    )
+
+    expect(view.value).toBe('initial')
+    view.value = 'updated'
+    expect(fallbackWidget.value).toBe('updated')
+  })
+
   test('label falls back to displayName then widgetName', () => {
     const [subgraphNode, innerNodes] = setupSubgraph(1)
     const innerNode = firstInnerNode(innerNodes)
@@ -391,6 +418,79 @@ describe('SubgraphNode.widgets getter', () => {
       {
         interiorNodeId: String(innerNodes[0].id),
         widgetName: 'stringWidget'
+      }
+    ])
+  })
+
+  test('hydrate promotions from serialize/configure round-trip', () => {
+    const [subgraphNode, innerNodes] = setupSubgraph(1)
+    const innerNode = firstInnerNode(innerNodes)
+    innerNode.addWidget('text', 'widgetA', 'a', () => {})
+
+    setPromotions(subgraphNode, [[String(innerNode.id), 'widgetA']])
+    const serialized = subgraphNode.serialize()
+
+    const restoredNode = createTestSubgraphNode(subgraphNode.subgraph, {
+      id: 99
+    })
+    restoredNode.configure({
+      ...serialized,
+      id: restoredNode.id,
+      type: subgraphNode.subgraph.id
+    })
+
+    const restoredEntries = usePromotionStore().getPromotions(
+      restoredNode.rootGraph.id,
+      restoredNode.id
+    )
+    expect(restoredEntries).toStrictEqual([
+      {
+        interiorNodeId: String(innerNode.id),
+        widgetName: 'widgetA'
+      }
+    ])
+  })
+
+  test('clone output preserves proxyWidgets for promotion hydration', () => {
+    const [subgraphNode, innerNodes] = setupSubgraph(1)
+    const innerNode = firstInnerNode(innerNodes)
+    innerNode.addWidget('text', 'widgetA', 'a', () => {})
+
+    setPromotions(subgraphNode, [[String(innerNode.id), 'widgetA']])
+
+    const createNodeSpy = vi
+      .spyOn(LiteGraph, 'createNode')
+      .mockImplementation(() =>
+        createTestSubgraphNode(subgraphNode.subgraph, { id: 999 })
+      )
+
+    const clonedNode = subgraphNode.clone()
+    expect(clonedNode).toBeTruthy()
+    createNodeSpy.mockRestore()
+    if (!clonedNode) throw new Error('Expected clone to return a node')
+
+    const clonedSerialized = clonedNode.serialize()
+    expect(clonedSerialized.properties?.proxyWidgets).toStrictEqual([
+      [String(innerNode.id), 'widgetA']
+    ])
+
+    const hydratedClone = createTestSubgraphNode(subgraphNode.subgraph, {
+      id: 100
+    })
+    hydratedClone.configure({
+      ...clonedSerialized,
+      id: hydratedClone.id,
+      type: subgraphNode.subgraph.id
+    })
+
+    const hydratedEntries = usePromotionStore().getPromotions(
+      hydratedClone.rootGraph.id,
+      hydratedClone.id
+    )
+    expect(hydratedEntries).toStrictEqual([
+      {
+        interiorNodeId: String(innerNode.id),
+        widgetName: 'widgetA'
       }
     ])
   })
@@ -632,6 +732,24 @@ describe('DOM widget promotion', () => {
     view.draw!(createFakeCanvasContext(), subgraphNode, 200, 0, 30, true)
 
     expect(mockDomWidgetStore.setPositionOverride).not.toHaveBeenCalled()
+  })
+
+  test('draw does not mutate interior node pos or size for non-DOM widgets', () => {
+    const [subgraphNode, innerNodes] = setupSubgraph(1)
+    const interiorNode = firstInnerNode(innerNodes)
+    interiorNode.pos = [10, 20]
+    interiorNode.size = [300, 120]
+    interiorNode.addWidget('text', 'textWidget', 'val', () => {})
+    setPromotions(subgraphNode, [[String(interiorNode.id), 'textWidget']])
+
+    const originalPos = [...interiorNode.pos]
+    const originalSize = [...interiorNode.size]
+    const view = subgraphNode.widgets[0]
+
+    view.draw!(createFakeCanvasContext(), subgraphNode, 200, 0, 30)
+
+    expect(Array.from(interiorNode.pos)).toEqual(originalPos)
+    expect(Array.from(interiorNode.size)).toEqual(originalSize)
   })
 
   test('computeLayoutSize delegates to interior DOM widget', () => {

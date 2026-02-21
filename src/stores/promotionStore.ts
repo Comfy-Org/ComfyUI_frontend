@@ -146,17 +146,25 @@ export const usePromotionStore = defineStore('promotion', () => {
     fromIndex: number,
     toIndex: number
   ): void {
-    const entries = [...getPromotionsRef(graphId, subgraphNodeId)]
+    const promotions = _getPromotionsForGraph(graphId)
+    const currentEntries = promotions.get(subgraphNodeId)
+    if (!currentEntries?.length) return
+
+    const entries = [...currentEntries]
     if (
       fromIndex < 0 ||
       fromIndex >= entries.length ||
       toIndex < 0 ||
-      toIndex >= entries.length
+      toIndex >= entries.length ||
+      fromIndex === toIndex
     )
       return
+
     const [entry] = entries.splice(fromIndex, 1)
     entries.splice(toIndex, 0, entry)
-    setPromotions(graphId, subgraphNodeId, entries)
+
+    // Reordering does not change membership, so ref-counts remain valid.
+    promotions.set(subgraphNodeId, entries)
   }
 
   function clearGraph(graphId: UUID): void {

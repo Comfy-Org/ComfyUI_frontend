@@ -168,6 +168,10 @@ export function promoteRecommendedWidgets(subgraphNode: SubgraphNode) {
   const interiorNodes = subgraphNode.subgraph.nodes
   for (const node of interiorNodes) {
     node.updateComputedDisabled()
+
+    const hasPreviewWidget = () =>
+      node.widgets?.some(isPreviewPseudoWidget) ?? false
+
     function promotePreviewWidget() {
       const widget = node.widgets?.find(isPreviewPseudoWidget)
       if (!widget) return
@@ -185,13 +189,14 @@ export function promoteRecommendedWidgets(subgraphNode: SubgraphNode) {
     // Promote preview widgets that already exist (e.g. custom node DOM widgets
     // like VHS videopreview that are created in onNodeCreated).
     promotePreviewWidget()
+
+    // If a preview widget already exists in this frame, there's nothing to
+    // defer. Core $$ preview widgets are the lazy path that needs updatePreviews.
+    if (hasPreviewWidget()) continue
+
     // Also schedule a deferred check: core $$ widgets are created lazily by
     // updatePreviews when node outputs are first loaded.
-    requestAnimationFrame(() =>
-      updatePreviews(node, () => {
-        promotePreviewWidget()
-      })
-    )
+    requestAnimationFrame(() => updatePreviews(node, promotePreviewWidget))
   }
   const filteredWidgets: WidgetItem[] = interiorNodes
     .flatMap(nodeWidgets)
@@ -210,12 +215,37 @@ export function promoteRecommendedWidgets(subgraphNode: SubgraphNode) {
 export function pruneDisconnected(subgraphNode: SubgraphNode) {
   const store = usePromotionStore()
   const subgraph = subgraphNode.subgraph
-  const validEntries = store
-    .getPromotions(subgraphNode.rootGraph.id, subgraphNode.id)
-    .filter((entry) => {
-      const node = subgraph.getNodeById(entry.interiorNodeId)
-      if (!node) return false
-      return node.widgets?.some((iw) => iw.name === entry.widgetName) ?? false
-    })
+  const entries = store.getPromotions(
+    subgraphNode.rootGraph.id,
+    subgraphNode.id
+  )
+  const removedEntries: Array<{ interiorNodeId: string; widgetName: string }> =
+    []
+
+  const validEntries = entries.filter((entry) => {
+    const node = subgraph.getNodeById(entry.interiorNodeId)
+    if (!node) {
+      removedEntries.push(entry)
+      return false
+    }
+    const hasWidget =
+      node.widgets?.some((iw) => iw.name === entry.widgetName) ?? false
+    if (!hasWidget) {
+      removedEntries.push(entry)
+    }
+    return hasWidget
+  })
+
+  if (removedEntries.length > 0 && import.meta.env.DEV) {
+    console.warn(
+      '[proxyWidgetUtils] Pruned disconnected promotions',
+      removedEntries,
+      {
+        graphId: subgraphNode.rootGraph.id,
+        subgraphNodeId: subgraphNode.id
+      }
+    )
+  }
+
   store.setPromotions(subgraphNode.rootGraph.id, subgraphNode.id, validEntries)
 }

@@ -1,8 +1,25 @@
-import { describe, expect, it } from 'vitest'
+import { createTestingPinia } from '@pinia/testing'
+import { setActivePinia } from 'pinia'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import {
+  createTestSubgraph,
+  createTestSubgraphNode
+} from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
+import { usePromotionStore } from '@/stores/promotionStore'
 
-import { isPreviewPseudoWidget } from './proxyWidgetUtils'
+const updatePreviewsMock = vi.hoisted(() => vi.fn())
+vi.mock('@/services/litegraphService', () => ({
+  useLitegraphService: () => ({ updatePreviews: updatePreviewsMock })
+}))
+
+import {
+  isPreviewPseudoWidget,
+  promoteRecommendedWidgets,
+  pruneDisconnected
+} from './proxyWidgetUtils'
 
 function widget(
   overrides: Partial<
@@ -13,6 +30,11 @@ function widget(
 }
 
 describe('isPreviewPseudoWidget', () => {
+  beforeEach(() => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
+    vi.restoreAllMocks()
+  })
+
   it('returns true for $$-prefixed widget names', () => {
     expect(
       isPreviewPseudoWidget(widget({ name: '$$canvas-image-preview' }))
@@ -76,5 +98,63 @@ describe('isPreviewPseudoWidget', () => {
         widget({ name: 'text', serialize: false, type: 'customtext' })
       )
     ).toBe(false)
+  })
+})
+
+describe('pruneDisconnected', () => {
+  beforeEach(() => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
+    vi.restoreAllMocks()
+  })
+
+  it('removes disconnected entries and emits a dev warning', () => {
+    const subgraph = createTestSubgraph()
+    const subgraphNode = createTestSubgraphNode(subgraph)
+    const interiorNode = new LGraphNode('TestNode')
+    subgraphNode.subgraph.add(interiorNode)
+    interiorNode.addWidget('text', 'kept', 'value', () => {})
+
+    const store = usePromotionStore()
+    store.setPromotions(subgraphNode.rootGraph.id, subgraphNode.id, [
+      { interiorNodeId: String(interiorNode.id), widgetName: 'kept' },
+      { interiorNodeId: String(interiorNode.id), widgetName: 'missing-widget' },
+      { interiorNodeId: '9999', widgetName: 'missing-node' }
+    ])
+
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+
+    pruneDisconnected(subgraphNode)
+
+    expect(
+      store.getPromotions(subgraphNode.rootGraph.id, subgraphNode.id)
+    ).toEqual([{ interiorNodeId: String(interiorNode.id), widgetName: 'kept' }])
+    expect(warnSpy).toHaveBeenCalledOnce()
+  })
+})
+
+describe('promoteRecommendedWidgets', () => {
+  beforeEach(() => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
+    updatePreviewsMock.mockReset()
+  })
+
+  it('skips deferred updatePreviews when a preview widget already exists', () => {
+    const subgraph = createTestSubgraph()
+    const subgraphNode = createTestSubgraphNode(subgraph)
+    const interiorNode = new LGraphNode('TestNode')
+    subgraph.add(interiorNode)
+
+    const previewWidget = interiorNode.addWidget(
+      'custom',
+      'videopreview',
+      'value',
+      () => {}
+    )
+    previewWidget.type = 'preview'
+    previewWidget.serialize = false
+
+    promoteRecommendedWidgets(subgraphNode)
+
+    expect(updatePreviewsMock).not.toHaveBeenCalled()
   })
 })

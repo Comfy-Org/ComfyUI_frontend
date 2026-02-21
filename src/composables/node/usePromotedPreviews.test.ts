@@ -14,17 +14,30 @@ import { createNodeLocatorId } from '@/types/nodeIdentification'
 
 import { usePromotedPreviews } from './usePromotedPreviews'
 
-const getNodeImageUrls = vi.hoisted(() => vi.fn())
-const nodeOutputs = reactive<Record<string, unknown>>({})
+type MockNodeOutputStore = Pick<
+  ReturnType<typeof useNodeOutputStore>,
+  'nodeOutputs' | 'getNodeImageUrls'
+>
+
+const getNodeImageUrls = vi.hoisted(() =>
+  vi.fn<MockNodeOutputStore['getNodeImageUrls']>()
+)
+const useNodeOutputStoreMock = vi.hoisted(() =>
+  vi.fn<() => MockNodeOutputStore>()
+)
 
 vi.mock('@/stores/imagePreviewStore', () => {
   return {
-    useNodeOutputStore: () => ({
-      nodeOutputs,
-      getNodeImageUrls
-    })
+    useNodeOutputStore: useNodeOutputStoreMock
   }
 })
+
+function createMockNodeOutputStore(): MockNodeOutputStore {
+  return {
+    nodeOutputs: reactive<MockNodeOutputStore['nodeOutputs']>({}),
+    getNodeImageUrls
+  }
+}
 
 function createSetup() {
   const subgraph = createTestSubgraph()
@@ -59,14 +72,14 @@ function seedOutputs(subgraphId: string, nodeIds: Array<number | string>) {
 }
 
 describe(usePromotedPreviews, () => {
+  let nodeOutputStore: MockNodeOutputStore
+
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
     vi.clearAllMocks()
 
-    const store = useNodeOutputStore()
-    for (const key of Object.keys(store.nodeOutputs)) {
-      delete store.nodeOutputs[key]
-    }
+    nodeOutputStore = createMockNodeOutputStore()
+    useNodeOutputStoreMock.mockReturnValue(nodeOutputStore)
   })
 
   it('returns empty array for non-SubgraphNode', () => {
