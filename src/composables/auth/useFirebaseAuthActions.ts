@@ -4,6 +4,7 @@ import { ref } from 'vue'
 
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useErrorHandling } from '@/composables/useErrorHandling'
+import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
 import type { ErrorRecoveryStrategy } from '@/composables/useErrorHandling'
 import { t } from '@/i18n'
 import { isCloud } from '@/platform/distribution/types'
@@ -95,10 +96,14 @@ export const useFirebaseAuthActions = () => {
   )
 
   const purchaseCredits = wrapWithErrorHandlingAsync(async (amount: number) => {
-    const { isActiveSubscription, subscription, showSubscriptionDialog } =
-      useBillingContext()
-    if (!isActiveSubscription.value || subscription.value?.tier === 'FREE') {
-      showSubscriptionDialog()
+    const { isActiveSubscription } = useBillingContext()
+    if (!isActiveSubscription.value) return
+
+    const { isFreeTier } = useSubscription()
+    if (isFreeTier.value) {
+      await useDialogService().showSubscriptionRequiredDialog({
+        reason: 'top_up_blocked'
+      })
       return
     }
 

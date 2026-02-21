@@ -62,8 +62,11 @@ export function getTierPrice(tierKey: TierKey, isYearly = false): number {
   return isYearly ? pricing.yearly : pricing.monthly
 }
 
-export function getTierCredits(tierKey: TierKey): number {
-  if (tierKey === 'free') return remoteConfig.value.free_tier_credits ?? 400
+export function getTierCredits(tierKey: 'free'): number | null
+export function getTierCredits(tierKey: Exclude<TierKey, 'free'>): number
+export function getTierCredits(tierKey: TierKey): number | null
+export function getTierCredits(tierKey: TierKey): number | null {
+  if (tierKey === 'free') return remoteConfig.value.free_tier_credits ?? null
   if (tierKey === 'founder') return FOUNDER_MONTHLY_CREDITS
   return TIER_PRICING[tierKey].credits
 }

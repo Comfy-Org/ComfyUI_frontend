@@ -1996,8 +1996,8 @@
       "noAssociatedUser": "There is no Comfy user associated with the provided API key",
       "useEmailInstead": "Use email instead",
       "freeTierBadge": "Eligible for Free Tier",
-      "freeTierDescription": "Sign up with Google to get {credits} free credits every month. No card needed.",
-      "freeTierDescriptionGeneric": "Sign up with Google and get free credits every month. No card needed.",
+      "freeTierDescription": "Sign up to get {credits} free credits every month. No card needed.",
+      "freeTierDescriptionGeneric": "Sign up and get free credits every month. No card needed.",
       "backToSocialLogin": "Sign up with Google or Github instead"
     },
     "signup": {
@@ -2248,6 +2248,7 @@
     "freeTier": {
       "title": "You're on the Free plan",
       "description": "Your free plan includes {credits} credits each month to try Comfy Cloud.",
+      "descriptionGeneric": "Your free plan includes a monthly credit allowance to try Comfy Cloud.",
       "nextRefresh": "Your credits refresh on {date}.",
       "subscribeCta": "Subscribe for more",
       "outOfCredits": {
@@ -2276,7 +2277,6 @@
     "maxDurationLabel": "Max run duration",
     "gpuLabel": "RTX 6000 Pro (96GB VRAM)",
     "addCreditsLabel": "Add more credits whenever",
-    "monthlyCreditsIncluded": "{credits} credits / month",
     "customLoRAsLabel": "Import your own LoRAs",
     "videoEstimateLabel": "Approx. amount of 5s videos generated with Wan 2.2 Image-to-Video template",
     "videoEstimateHelp": "More details on this template",

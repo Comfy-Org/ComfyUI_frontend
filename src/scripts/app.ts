@@ -51,7 +51,6 @@ import {
   DOMWidgetImpl
 } from '@/scripts/domWidget'
 import { useDialogService } from '@/services/dialogService'
-import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useMissingNodesDialog } from '@/composables/useMissingNodesDialog'
 import { useExtensionService } from '@/services/extensionService'
 import { useLitegraphService } from '@/services/litegraphService'
@@ -706,17 +705,9 @@ export class ComfyApp {
           'Payment Required: Please add credits to your account to use this node.'
         )
       ) {
-        const { isActiveSubscription, subscription } = useBillingContext()
-        if (isActiveSubscription.value && subscription.value?.tier !== 'FREE') {
-          useDialogService().showTopUpCreditsDialog({
-            isInsufficientCredits: true
-          })
-        } else {
-          // Free tier users can't top up; take them straight to the subscription CTA.
-          void useDialogService().showSubscriptionRequiredDialog({
-            reason: 'out_of_credits'
-          })
-        }
+        useDialogService().showTopUpCreditsDialog({
+          isInsufficientCredits: true
+        })
       } else if (useSettingStore().get('Comfy.RightSidePanel.ShowErrorsTab')) {
         useExecutionStore().showErrorOverlay()
       } else {

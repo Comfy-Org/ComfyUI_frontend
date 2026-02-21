@@ -31,6 +31,8 @@ import type { AuthHeader } from '@/types/authTypes'
 import type { operations } from '@/types/comfyRegistryTypes'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 
+export const HAS_ACCOUNT_KEY = 'comfy:hasAccount'
+
 type CreditPurchaseResponse =
   operations['InitiateCreditPurchase']['responses']['201']['content']['application/json']
 type CreditPurchasePayload =
@@ -104,8 +106,6 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
   const auth = useFirebaseAuth()!
   // Set persistence to localStorage (works in both browser and Electron)
   void setPersistence(auth, browserLocalPersistence)
-
-  const HAS_ACCOUNT_KEY = 'comfy:hasAccount'
 
   onAuthStateChanged(auth, (user) => {
     currentUser.value = user

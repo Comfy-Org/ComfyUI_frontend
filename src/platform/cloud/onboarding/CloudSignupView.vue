@@ -63,12 +63,13 @@
         </div>
 
         <div class="mt-6 text-center">
-          <button
-            class="cursor-pointer border-none bg-transparent text-sm text-muted-foreground underline hover:text-base-foreground"
-            @click="onShowEmailForm"
+          <Button
+            variant="muted-textonly"
+            class="text-sm underline"
+            @click="switchToEmailForm"
           >
             {{ t('auth.login.useEmailInstead') }}
-          </button>
+          </Button>
         </div>
       </template>
 
@@ -83,12 +84,13 @@
         <SignUpForm v-else :auth-error="authError" @submit="signUpWithEmail" />
 
         <div class="mt-4 text-center">
-          <button
-            class="cursor-pointer border-none bg-transparent text-sm text-muted-foreground underline hover:text-base-foreground"
-            @click="onBackToSocialLogin"
+          <Button
+            variant="muted-textonly"
+            class="text-sm underline"
+            @click="switchToSocialLogin"
           >
             {{ t('auth.login.backToSocialLogin') }}
-          </button>
+          </Button>
         </div>
       </template>
 
@@ -128,16 +130,16 @@
 
 <script setup lang="ts">
 import Message from 'primevue/message'
-import { computed, onMounted, ref } from 'vue'
+import { onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 
 import SignUpForm from '@/components/dialog/content/signin/SignUpForm.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useFirebaseAuthActions } from '@/composables/auth/useFirebaseAuthActions'
+import { useFreeTierOnboarding } from '@/platform/cloud/onboarding/composables/useFreeTierOnboarding'
 import { getSafePreviousFullPath } from '@/platform/cloud/onboarding/utils/previousFullPath'
 import { isCloud } from '@/platform/distribution/types'
-import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 import { useTelemetry } from '@/platform/telemetry'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import type { SignUpData } from '@/schemas/signInSchema'
@@ -149,22 +151,16 @@ const route = useRoute()
 const authActions = useFirebaseAuthActions()
 const isSecureContext = globalThis.isSecureContext
 const authError = ref('')
-const showEmailForm = ref(false)
-const freeTierCredits = computed(() => remoteConfig.value.free_tier_credits)
-const showFreeTierBadge = !localStorage.getItem('comfy:hasAccount')
 const userIsInChina = ref(false)
 const toastStore = useToastStore()
 const telemetry = useTelemetry()
-
-const onShowEmailForm = () => {
-  showEmailForm.value = true
-  telemetry?.trackUiButtonClicked({ button_id: 'signup_use_email_instead' })
-}
-
-const onBackToSocialLogin = () => {
-  showEmailForm.value = false
-  telemetry?.trackUiButtonClicked({ button_id: 'signup_back_to_social_login' })
-}
+const {
+  showEmailForm,
+  freeTierCredits,
+  showFreeTierBadge,
+  switchToEmailForm,
+  switchToSocialLogin
+} = useFreeTierOnboarding('signup')
 
 const navigateToLogin = async () => {
   await router.push({ name: 'cloud-login', query: route.query })
