@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { MenuItem } from 'primevue/menuitem'
-import { usePointerSwipe } from '@vueuse/core'
+import { useFullscreen, usePointerSwipe } from '@vueuse/core'
 import { computed, ref, useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -36,6 +36,11 @@ const { commandIdToMenuItem } = useMenuItemStore()
 const queueStore = useQueueStore()
 const workflowService = useWorkflowService()
 const workflowStore = useWorkflowStore()
+const { toggle: toggleFullscreen, enter: enterFullscreen } = useFullscreen(
+  undefined,
+  { autoExit: true }
+)
+enterFullscreen()
 
 const activeIndex = ref(2)
 const sliderPaneRef = useTemplateRef('sliderPaneRef')
@@ -112,7 +117,7 @@ const menuEntries = computed<MenuItem[]>(() => [
     ]
   },
   {
-    label: 'Enter node graph',
+    label: '[PH]Enter node graph',
     icon: 'icon-[comfy--workflow]',
     new: true,
     command: () => (canvasStore.linearMode = false)
@@ -134,7 +139,12 @@ const menuEntries = computed<MenuItem[]>(() => [
     ...commandIdToMenuItem('Comfy.ShowSettingsDialog'),
     label: t('menu.settings')
   },
-  { ...commandIdToMenuItem('Comfy.ToggleHelpCenter'), label: t('menu.help') }
+  { ...commandIdToMenuItem('Comfy.ToggleHelpCenter'), label: t('menu.help') },
+  {
+    label: 'Fullscreen',
+    icon: 'icon-[lucide--fullscreen]',
+    command: toggleFullscreen
+  }
 ])
 </script>
 <template>
