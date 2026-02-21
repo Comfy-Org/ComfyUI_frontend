@@ -35,7 +35,7 @@ const ESSENTIALS_CATEGORY_MOCK: Record<string, string> = {
   SaveVideo: 'basics',
   Load3D: 'basics',
   SaveGLB: 'basics',
-  CLIPTextEncode: 'basics',
+  PrimitiveStringMultiline: 'basics',
   // image tools
   ImageBatch: 'image tools',
   ImageCrop: 'image tools',

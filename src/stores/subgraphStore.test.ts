@@ -363,6 +363,96 @@ describe('useSubgraphStore', () => {
     })
   })
 
+  describe('subgraph definition category', () => {
+    it('should use category from subgraph definition as default', async () => {
+      const mockGraphWithCategory = {
+        nodes: [{ type: '123' }],
+        definitions: {
+          subgraphs: [{ id: '123', category: 'Image Processing' }]
+        }
+      }
+      await mockFetch(
+        {},
+        {
+          categorized: {
+            name: 'Categorized Blueprint',
+            info: { node_pack: 'test_pack' },
+            data: JSON.stringify(mockGraphWithCategory)
+          }
+        }
+      )
+
+      const nodeDef = useNodeDefStore().nodeDefs.find(
+        (d) => d.name === 'SubgraphBlueprint.categorized'
+      )
+      expect(nodeDef).toBeDefined()
+      expect(nodeDef?.category).toBe('Subgraph Blueprints/Image Processing')
+    })
+
+    it('should use User override for user blueprints even with definition category', async () => {
+      const mockGraphWithCategory = {
+        nodes: [{ type: '123' }],
+        definitions: {
+          subgraphs: [{ id: '123', category: 'Image Processing' }]
+        }
+      }
+      await mockFetch({ 'user-bp.json': mockGraphWithCategory })
+
+      const nodeDef = useNodeDefStore().nodeDefs.find(
+        (d) => d.name === 'SubgraphBlueprint.user-bp'
+      )
+      expect(nodeDef).toBeDefined()
+      expect(nodeDef?.category).toBe('Subgraph Blueprints/User')
+    })
+
+    it('should fallback to bare Subgraph Blueprints when no category anywhere', async () => {
+      await mockFetch(
+        {},
+        {
+          no_cat_global: {
+            name: 'No Category Global',
+            info: { node_pack: 'test_pack' },
+            data: JSON.stringify(mockGraph)
+          }
+        }
+      )
+
+      const nodeDef = useNodeDefStore().nodeDefs.find(
+        (d) => d.name === 'SubgraphBlueprint.no_cat_global'
+      )
+      expect(nodeDef).toBeDefined()
+      expect(nodeDef?.category).toBe('Subgraph Blueprints')
+    })
+
+    it('should let overrides take precedence over definition category', async () => {
+      const mockGraphWithCategory = {
+        nodes: [{ type: '123' }],
+        definitions: {
+          subgraphs: [{ id: '123', category: 'Image Processing' }]
+        }
+      }
+      await mockFetch(
+        {},
+        {
+          bp_override: {
+            name: 'Override Blueprint',
+            info: {
+              node_pack: 'test_pack',
+              category: 'Custom Category'
+            },
+            data: JSON.stringify(mockGraphWithCategory)
+          }
+        }
+      )
+
+      const nodeDef = useNodeDefStore().nodeDefs.find(
+        (d) => d.name === 'SubgraphBlueprint.bp_override'
+      )
+      expect(nodeDef).toBeDefined()
+      expect(nodeDef?.category).toBe('Subgraph Blueprints/Custom Category')
+    })
+  })
+
   describe('global blueprint filtering', () => {
     function globalBlueprint(
       overrides: Partial<GlobalSubgraphData['info']> = {}
