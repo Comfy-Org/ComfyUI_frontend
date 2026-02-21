@@ -199,12 +199,15 @@ function newProxyFromOverlay(subgraphNode: SubgraphNode, overlay: Overlay) {
    *   and the value used as 'this' if property is a get/set method
    * @param {unknown} value - only used on set calls. The thing being assigned
    */
+  let userLabel: string | undefined
   const handler = {
     get(_t: IBaseWidget, property: string, receiver: object) {
       let redirectedTarget: object = backingWidget
       let redirectedReceiver = receiver
       if (property == '_overlay') return overlay
       else if (property == 'value') redirectedReceiver = backingWidget
+      else if (property == 'label')
+        return userLabel ?? linkedWidget?.label ?? overlay.widgetName
       if (Object.prototype.hasOwnProperty.call(overlay, property)) {
         redirectedTarget = overlay
         redirectedReceiver = overlay
@@ -212,6 +215,10 @@ function newProxyFromOverlay(subgraphNode: SubgraphNode, overlay: Overlay) {
       return Reflect.get(redirectedTarget, property, redirectedReceiver)
     },
     set(_t: IBaseWidget, property: string, value: unknown) {
+      if (property == 'label') {
+        userLabel = value as string | undefined
+        return true
+      }
       let redirectedTarget: object = backingWidget
       if (property == 'computedHeight') {
         if (overlay.widgetName.startsWith('$$') && linkedNode) {
