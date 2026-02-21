@@ -347,17 +347,23 @@ test.describe('Support', () => {
     comfyPage
   }) => {
     await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
-    const pagePromise = comfyPage.page.context().waitForEvent('page')
+
+    // Prevent loading the external page
+    await comfyPage.page
+      .context()
+      .route('https://support.comfy.org/**', (route) =>
+        route.fulfill({ body: '<html></html>', contentType: 'text/html' })
+      )
+
+    const popupPromise = comfyPage.page.waitForEvent('popup')
     await comfyPage.menu.topbar.triggerTopbarCommand(['Help', 'Support'])
-    const newPage = await pagePromise
+    const popup = await popupPromise
 
-    await newPage.waitForLoadState('networkidle')
-    await expect(newPage).toHaveURL(/.*support\.comfy\.org.*/)
-
-    const url = new URL(newPage.url())
+    const url = new URL(popup.url())
+    expect(url.hostname).toBe('support.comfy.org')
     expect(url.searchParams.get('tf_42243568391700')).toBe('oss')
 
-    await newPage.close()
+    await popup.close()
   })
 })
 

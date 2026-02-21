@@ -119,7 +119,7 @@
           v-if="shouldShowPreviewImg"
           :image-url="latestPreviewUrl"
         />
-        <NodeBadges v-bind="badges" :pricing="undefined" />
+        <NodeBadges v-bind="badges" :pricing="undefined" class="mt-auto" />
       </div>
     </template>
     <Button
