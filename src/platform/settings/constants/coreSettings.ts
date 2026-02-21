@@ -314,8 +314,11 @@ export const CORE_SETTINGS: SettingParams[] = [
   // Bookmarks are stored in the settings store.
   {
     id: 'Comfy.NodeLibrary.NewDesign',
-    name: 'Use new node library design',
-    type: 'hidden',
+    category: ['Comfy', 'Node Library', 'NewDesign'],
+    name: 'New Node Library Design',
+    type: 'boolean',
+    tooltip:
+      'Enable the redesigned node library sidebar with tabs (Essential, All, Custom), improved search, and hover previews.',
     defaultValue: false,
     experimental: true
   },
