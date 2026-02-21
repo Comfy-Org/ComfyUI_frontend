@@ -5911,7 +5911,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       if (!this.pointer.isDown) reroute.drawSlots(ctx)
     }
 
-    const highlightPos = this.#getHighlightPosition()
+    const highlightPos = this._getHighlightPosition()
     this.linkConnector.renderLinks
       .filter((rl) => rl instanceof MovingInputLink)
       .forEach((rl) => rl.drawConnectionCircle(ctx, highlightPos))
