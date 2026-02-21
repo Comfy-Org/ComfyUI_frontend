@@ -804,7 +804,9 @@
         "alphabeticalDesc": "Sort alphabetically within groups"
       },
       "sections": {
-        "favorites": "Favorites"
+        "favorites": "Favorites",
+        "favoriteNode": "Favorite Node",
+        "unfavoriteNode": "Unfavorite Node"
       }
     },
     "modelLibrary": "Model Library",
