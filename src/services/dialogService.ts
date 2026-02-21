@@ -277,7 +277,7 @@ export const useDialogService = () => {
     const { isActiveSubscription, subscription, type } = useBillingContext()
     if (!isActiveSubscription.value || subscription.value?.tier === 'FREE') {
       // Free tier users can't top up. Give them a clear upgrade CTA instead.
-      await showSubscriptionRequiredDialog({ reason: 'out_of_credits' })
+      await showSubscriptionRequiredDialog({ reason: 'top_up_blocked' })
       return
     }
 
@@ -397,7 +397,7 @@ export const useDialogService = () => {
   }
 
   async function showSubscriptionRequiredDialog(options?: {
-    reason?: 'subscription_required' | 'out_of_credits'
+    reason?: 'subscription_required' | 'out_of_credits' | 'top_up_blocked'
   }) {
     if (!isCloud) {
       return

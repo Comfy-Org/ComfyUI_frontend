@@ -285,24 +285,39 @@ interface Benefit {
 const tierBenefits = computed((): Benefit[] => {
   const key = tierKey.value
 
-  const benefits: Benefit[] = [
-    {
-      key: 'maxDuration',
+  const benefits: Benefit[] = []
+
+  const isFreeTierPlan = key === 'free'
+
+  if (isFreeTierPlan) {
+    benefits.push({
+      key: 'monthlyCredits',
       type: 'metric',
-      value: t(`subscription.maxDuration.${key}`),
-      label: t('subscription.maxDurationLabel')
-    },
-    {
-      key: 'gpu',
-      type: 'feature',
-      label: t('subscription.gpuLabel')
-    },
-    {
+      value: n(getTierCredits(key)),
+      label: t('subscription.monthlyCreditsLabel')
+    })
+  }
+
+  benefits.push({
+    key: 'maxDuration',
+    type: 'metric',
+    value: t(`subscription.maxDuration.${key}`),
+    label: t('subscription.maxDurationLabel')
+  })
+
+  benefits.push({
+    key: 'gpu',
+    type: 'feature',
+    label: t('subscription.gpuLabel')
+  })
+
+  if (!isFreeTierPlan) {
+    benefits.push({
       key: 'addCredits',
       type: 'feature',
       label: t('subscription.addCreditsLabel')
-    }
-  ]
+    })
+  }
 
   if (getTierFeatures(key).customLoRAs) {
     benefits.push({
