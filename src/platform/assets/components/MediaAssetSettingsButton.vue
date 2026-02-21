@@ -2,8 +2,12 @@
   <div class="inline-flex items-center">
     <Popover>
       <template #button>
-        <Button variant="secondary" size="icon">
-          <i class="icon-[lucide--list-filter]" />
+        <Button
+          variant="secondary"
+          size="icon"
+          :aria-label="$t('sideToolbar.mediaAssets.viewSettings')"
+        >
+          <i class="icon-[lucide--settings-2]" />
         </Button>
       </template>
       <template #default="{ close }">

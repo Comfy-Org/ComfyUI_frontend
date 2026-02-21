@@ -751,7 +751,8 @@
       "filterVideo": "Video",
       "filterAudio": "Audio",
       "filter3D": "3D",
-      "filterText": "Text"
+      "filterText": "Text",
+      "viewSettings": "View settings"
     },
     "backToAssets": "Back to all assets",
     "folderView": {
