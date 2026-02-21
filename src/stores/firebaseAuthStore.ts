@@ -31,6 +31,7 @@ import type { AuthHeader } from '@/types/authTypes'
 import type { operations } from '@/types/comfyRegistryTypes'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 
+/** Set after first login; used to detect returning users so the sign-in flow can skip the free-tier badge. */
 export const HAS_ACCOUNT_KEY = 'comfy:hasAccount'
 
 type CreditPurchaseResponse =
