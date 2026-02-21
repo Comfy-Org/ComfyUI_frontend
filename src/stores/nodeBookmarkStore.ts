@@ -53,7 +53,7 @@ export const useNodeBookmarkStore = defineStore('nodeBookmark', () => {
         const parts = bookmark.split('/')
         const name = parts.pop() ?? ''
         const category = parts.join('/')
-        const srcNodeDef = nodeDefStore.nodeDefsByName[name]
+        const srcNodeDef = nodeDefStore.allNodeDefsByName[name]
         if (!srcNodeDef) {
           return null
         }
