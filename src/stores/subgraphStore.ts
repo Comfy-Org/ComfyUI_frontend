@@ -25,7 +25,7 @@ import { TemplateIncludeOnDistributionEnum } from '@/platform/workflow/templates
 import { api } from '@/scripts/api'
 import type { GlobalSubgraphData } from '@/scripts/api'
 import { useDialogService } from '@/services/dialogService'
-import { useExecutionStore } from '@/stores/executionStore'
+import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 import type { UserFile } from '@/stores/userFileStore'
 
@@ -79,7 +79,7 @@ export const useSubgraphStore = defineStore('subgraph', () => {
           dependent_outputs: []
         }
       }
-      useExecutionStore().lastNodeErrors = errors
+      useExecutionErrorStore().lastNodeErrors = errors
       useCanvasStore().getCanvas().draw(true, true)
       throw new Error(
         'The root graph of a subgraph blueprint must consist of only a single subgraph node'
