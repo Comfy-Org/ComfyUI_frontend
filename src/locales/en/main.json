@@ -3163,6 +3163,18 @@
     "connectOutput": "Connect an output",
     "connectOutputBody1": "Your app needs at least one output to be connected before it can be saved.",
     "connectOutputBody2": "Switch to the 'Select' step and click on output nodes to add them here.",
-    "switchToSelect": "Switch to Select"
+    "switchToSelect": "Switch to Select",
+    "saveAs": "Save as",
+    "filename": "Filename",
+    "saveAsLabel": "Save this workflow as a ...",
+    "app": "App",
+    "appDescription": "Opens as an app by default",
+    "nodeGraph": "Node graph",
+    "nodeGraphDescription": "Opens as node graph by default",
+    "saveSuccess": "Successfully saved",
+    "saveSuccessAppMessage": "'{name}' has been saved. It will open in App Mode by default from now on.",
+    "saveSuccessAppPrompt": "Would you like to view it now?",
+    "saveSuccessGraphMessage": "'{name}' has been saved. It will open as a node graph by default.",
+    "viewApp": "View app"
   }
 }

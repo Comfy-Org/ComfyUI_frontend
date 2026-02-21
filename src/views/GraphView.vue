@@ -87,10 +87,12 @@ import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 import { electronAPI } from '@/utils/envUtil'
 import BuilderToolbar from '@/components/builder/BuilderToolbar.vue'
+import { useBuilderSave } from '@/components/builder/useBuilderSave'
 import LinearView from '@/views/LinearView.vue'
 import ManagerProgressToast from '@/workbench/extensions/manager/components/ManagerProgressToast.vue'
 
 setupAutoQueueHandler()
+useBuilderSave()
 useProgressFavicon()
 useBrowserTabTitle()
 
