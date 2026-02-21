@@ -14,6 +14,14 @@ export const CORE_MENU_COMMANDS = [
     ]
   ],
   [['Edit'], ['Comfy.Undo', 'Comfy.Redo']],
+  [
+    ['Edit'],
+    [
+      'Comfy.Canvas.CopySelected',
+      'Comfy.Canvas.PasteFromClipboard',
+      'Comfy.Canvas.SelectAll'
+    ]
+  ],
   [['Edit'], ['Comfy.ClearWorkflow']],
   [['Edit'], ['Comfy.OpenClipspace']],
   [

@@ -15,27 +15,16 @@ const i18n = createI18n({
 })
 
 // Mock modules
-vi.mock('@/platform/distribution/types', () => ({
-  isCloud: true
-}))
-
 vi.mock('@/platform/assets/services/assetService', () => ({
   assetService: {
-    isAssetBrowserEligible: vi.fn(() => true)
+    shouldUseAssetBrowser: vi.fn(() => true),
+    isAssetAPIEnabled: vi.fn(() => true)
   }
-}))
-
-const mockSettingStoreGet = vi.fn()
-
-vi.mock('@/platform/settings/settingStore', () => ({
-  useSettingStore: vi.fn(() => ({
-    get: mockSettingStoreGet
-  }))
 }))
 
 // Import after mocks are defined
 import { assetService } from '@/platform/assets/services/assetService'
-const mockAssetServiceEligible = vi.mocked(assetService.isAssetBrowserEligible)
+const mockShouldUseAssetBrowser = vi.mocked(assetService.shouldUseAssetBrowser)
 
 describe('WidgetSelect asset mode', () => {
   const createWidget = (): SimplifiedWidget<string | undefined> => ({
@@ -49,8 +38,7 @@ describe('WidgetSelect asset mode', () => {
 
   beforeEach(() => {
     vi.clearAllMocks()
-    mockAssetServiceEligible.mockReturnValue(true)
-    mockSettingStoreGet.mockReturnValue(true) // Default to true for UseAssetAPI
+    mockShouldUseAssetBrowser.mockReturnValue(true)
   })
 
   // Helper to mount with common setup
@@ -76,17 +64,8 @@ describe('WidgetSelect asset mode', () => {
     ).toBe(true)
   })
 
-  it('uses default widget when UseAssetAPI setting is false', () => {
-    mockSettingStoreGet.mockReturnValue(false)
-    const wrapper = mountWidget()
-
-    expect(
-      wrapper.findComponent({ name: 'WidgetSelectDefault' }).exists()
-    ).toBe(true)
-  })
-
-  it('uses default widget when node is not eligible', () => {
-    mockAssetServiceEligible.mockReturnValue(false)
+  it('uses default widget when shouldUseAssetBrowser returns false', () => {
+    mockShouldUseAssetBrowser.mockReturnValue(false)
     const wrapper = mountWidget()
 
     expect(

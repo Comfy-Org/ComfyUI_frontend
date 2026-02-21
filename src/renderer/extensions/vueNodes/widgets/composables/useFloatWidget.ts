@@ -43,11 +43,13 @@ export const useFloatWidget = () => {
 
     const display_type = inputSpec.display
     const widgetType =
-      sliderEnabled && display_type == 'slider'
-        ? 'slider'
-        : display_type == 'knob'
-          ? 'knob'
-          : 'number'
+      display_type == 'gradientslider'
+        ? 'gradientslider'
+        : sliderEnabled && display_type == 'slider'
+          ? 'slider'
+          : display_type == 'knob'
+            ? 'knob'
+            : 'number'
 
     const step = inputSpec.step ?? 0.5
     const precision =
@@ -72,7 +74,10 @@ export const useFloatWidget = () => {
         /** @deprecated Use step2 instead. The 10x value is a legacy implementation. */
         step: step * 10.0,
         step2: step,
-        precision
+        precision,
+        ...(inputSpec.gradient_stops
+          ? { gradient_stops: inputSpec.gradient_stops }
+          : {})
       }
     )
 
