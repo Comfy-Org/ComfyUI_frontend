@@ -101,6 +101,7 @@ async function rerun(e: Event) {
     <Button
       v-if="selectedOutput"
       size="icon"
+      :aria-label="t('g.download')"
       @click="
         () => {
           if (selectedOutput?.url) downloadFile(selectedOutput.url)
@@ -113,6 +114,7 @@ async function rerun(e: Event) {
       v-if="!executionStore.isIdle && !selectedItem"
       variant="destructive"
       size="icon"
+      :aria-label="t('menu.interrupt')"
       @click="commandStore.execute('Comfy.Interrupt')"
     >
       <i class="icon-[lucide--x]" />
