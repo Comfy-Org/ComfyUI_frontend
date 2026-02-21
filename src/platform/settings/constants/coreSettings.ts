@@ -319,7 +319,7 @@ export const CORE_SETTINGS: SettingParams[] = [
     type: 'boolean',
     tooltip:
       'Enable the redesigned node library sidebar with tabs (Essential, All, Custom), improved search, and hover previews.',
-    defaultValue: false,
+    defaultValue: true,
     experimental: true
   },
   // Bookmarks are in format of category/display_name. e.g. "conditioning/CLIPTextEncode"
