@@ -568,8 +568,7 @@ export const useQueueStore = defineStore('queue', () => {
           executionStore.clearWorkflowExecutionResult(workflowId)
           continue
         }
-        const existing =
-          executionStore.lastExecutionResultByWorkflowId.get(workflowId)
+        const existing = executionStore.getWorkflowExecutionResult(workflowId)
         const jobTimestamp = job.create_time * 1000
         if (existing && existing.timestamp > jobTimestamp) continue
         batchResults.set(workflowId, {

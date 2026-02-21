@@ -383,25 +383,17 @@ describe('useExecutionStore - Workflow Execution State', () => {
     })
 
     it('should return completed state from last execution result', () => {
-      const next = new Map(store.lastExecutionResultByWorkflowId)
-      next.set('wf-1', {
-        state: 'completed',
-        timestamp: Date.now(),
-        jobId: 'prompt-1'
-      })
-      store.lastExecutionResultByWorkflowId = next
+      store.setWorkflowExecutionResultByWorkflowId(
+        'wf-1',
+        'completed',
+        'prompt-1'
+      )
 
       expect(store.workflowExecutionStates.get('wf-1')).toBe('completed')
     })
 
     it('should return error state from last execution result', () => {
-      const next = new Map(store.lastExecutionResultByWorkflowId)
-      next.set('wf-1', {
-        state: 'error',
-        timestamp: Date.now(),
-        jobId: 'prompt-1'
-      })
-      store.lastExecutionResultByWorkflowId = next
+      store.setWorkflowExecutionResultByWorkflowId('wf-1', 'error', 'prompt-1')
 
       expect(store.workflowExecutionStates.get('wf-1')).toBe('error')
     })
@@ -417,13 +409,11 @@ describe('useExecutionStore - Workflow Execution State', () => {
         'prompt-2': { '1': mockNodeProgress('running') }
       }
 
-      const next = new Map(store.lastExecutionResultByWorkflowId)
-      next.set('wf-1', {
-        state: 'completed',
-        timestamp: Date.now(),
-        jobId: 'prompt-1'
-      })
-      store.lastExecutionResultByWorkflowId = next
+      store.setWorkflowExecutionResultByWorkflowId(
+        'wf-1',
+        'completed',
+        'prompt-1'
+      )
 
       expect(store.workflowExecutionStates.get('wf-1')).toBe('running')
     })
@@ -439,13 +429,11 @@ describe('useExecutionStore - Workflow Execution State', () => {
     })
 
     it('should return state from workflowExecutionStates map', () => {
-      const next = new Map(store.lastExecutionResultByWorkflowId)
-      next.set('wf-1', {
-        state: 'completed',
-        timestamp: Date.now(),
-        jobId: 'prompt-1'
-      })
-      store.lastExecutionResultByWorkflowId = next
+      store.setWorkflowExecutionResultByWorkflowId(
+        'wf-1',
+        'completed',
+        'prompt-1'
+      )
 
       expect(store.getWorkflowExecutionState('wf-1')).toBe('completed')
     })

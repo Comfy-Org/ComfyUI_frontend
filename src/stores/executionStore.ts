@@ -226,6 +226,12 @@ export const useExecutionStore = defineStore('execution', () => {
     return workflowExecutionStates.value.get(workflowId) ?? 'idle'
   }
 
+  function getWorkflowExecutionResult(
+    workflowId: string
+  ): WorkflowExecutionResult | undefined {
+    return lastExecutionResultByWorkflowId.value.get(workflowId)
+  }
+
   const mergeExecutionProgressStates = (
     currentState: NodeProgressState | undefined,
     newState: NodeProgressState
@@ -658,7 +664,9 @@ export const useExecutionStore = defineStore('execution', () => {
     queuedJob.workflow = workflow
     const wid = workflow?.activeState?.id ?? workflow?.initialState?.id
     if (wid) {
-      jobIdToWorkflowId.value.set(String(id), String(wid))
+      const next = new Map(jobIdToWorkflowId.value)
+      next.set(String(id), String(wid))
+      jobIdToWorkflowId.value = next
     }
   }
 
@@ -667,7 +675,9 @@ export const useExecutionStore = defineStore('execution', () => {
    */
   function registerJobWorkflowIdMapping(jobId: string, workflowId: string) {
     if (!jobId || !workflowId) return
-    jobIdToWorkflowId.value.set(String(jobId), String(workflowId))
+    const next = new Map(jobIdToWorkflowId.value)
+    next.set(String(jobId), String(workflowId))
+    jobIdToWorkflowId.value = next
   }
 
   /**
