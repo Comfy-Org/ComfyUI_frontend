@@ -40,8 +40,8 @@ import { useWorkflowStore } from '@/platform/workflow/management/stores/workflow
 import type { NodeId } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useDialogService } from '@/services/dialogService'
-import { resolveSubgraphPseudoWidgetCache } from '@/services/subgraphPseudoWidgetCache';
-import type { SubgraphPseudoWidgetCache } from '@/services/subgraphPseudoWidgetCache';
+import { resolveSubgraphPseudoWidgetCache } from '@/services/subgraphPseudoWidgetCache'
+import type { SubgraphPseudoWidgetCache } from '@/services/subgraphPseudoWidgetCache'
 import { transformInputSpecV2ToV1 } from '@/schemas/nodeDef/migration'
 import type {
   ComfyNodeDef as ComfyNodeDefV2,
