@@ -17,7 +17,11 @@ import LayoutDefault from '@/views/layouts/LayoutDefault.vue'
 
 import { installPreservedQueryTracker } from '@/platform/navigation/preservedQueryTracker'
 import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQueryNamespaces'
-import { cloudOnboardingRoutes } from './platform/cloud/onboarding/onboardingCloudRoutes'
+
+const cloudOnboardingRoutes = isCloud
+  ? (await import('./platform/cloud/onboarding/onboardingCloudRoutes'))
+      .cloudOnboardingRoutes
+  : []
 
 const isFileProtocol = window.location.protocol === 'file:'
 
