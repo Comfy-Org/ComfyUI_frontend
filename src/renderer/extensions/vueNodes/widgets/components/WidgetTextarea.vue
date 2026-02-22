@@ -1,37 +1,45 @@
 <template>
-  <FloatLabel
-    variant="in"
-    :unstyled="hideLayoutField"
+  <div
     :class="
       cn(
-        'rounded-lg space-y-1 focus-within:ring focus-within:ring-component-node-widget-background-highlighted transition-all',
+        'relative rounded-lg focus-within:ring focus-within:ring-component-node-widget-background-highlighted transition-all',
         widget.borderStyle
       )
     "
   >
+    <label
+      v-if="!hideLayoutField"
+      :for="id"
+      class="pointer-events-none absolute left-3 top-1.5 z-10 text-xxs text-muted-foreground"
+    >
+      {{ displayName }}
+    </label>
     <Textarea
       v-bind="filteredProps"
       :id
       v-model="modelValue"
-      :class="cn(WidgetInputBaseClass, 'size-full text-xs resize-none')"
+      :class="
+        cn(
+          WidgetInputBaseClass,
+          'size-full text-xs resize-none',
+          !hideLayoutField && 'pt-5'
+        )
+      "
       :placeholder
       :readonly="isReadOnly"
-      fluid
       data-capture-wheel="true"
       @pointerdown.capture.stop
       @pointermove.capture.stop
       @pointerup.capture.stop
       @contextmenu.capture.stop
     />
-    <label v-if="!hideLayoutField" :for="id">{{ displayName }}</label>
-  </FloatLabel>
+  </div>
 </template>
 
 <script setup lang="ts">
-import FloatLabel from 'primevue/floatlabel'
-import Textarea from 'primevue/textarea'
 import { computed, useId } from 'vue'
 
+import Textarea from '@/components/ui/textarea/Textarea.vue'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import { useHideLayoutField } from '@/types/widgetTypes'
 import { cn } from '@/utils/tailwindUtil'
