@@ -1,5 +1,4 @@
 {
-  "0": "{",
   "actionbar": {
     "dockToTop": "Üste sabitle",
     "feedback": "Geri bildirim",
@@ -276,7 +275,9 @@
     "signOut": {
       "signOut": "Çıkış Yap",
       "success": "Başarıyla çıkış yapıldı",
-      "successDetail": "Hesabınızdan başarıyla çıkış yaptınız."
+      "successDetail": "Hesabınızdan başarıyla çıkış yaptınız.",
+      "unsavedChangesMessage": "Oturumu kapattığınızda kaydedilmemiş değişiklikleriniz kaybolacak. Devam etmek istiyor musunuz?",
+      "unsavedChangesTitle": "Kaydedilmemiş Değişiklikler"
     },
     "signup": {
       "alreadyHaveAccount": "Zaten bir hesabınız var mı?",
