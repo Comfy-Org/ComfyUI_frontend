@@ -64,17 +64,17 @@ import { useI18n } from 'vue-i18n'
 import { storeToRefs } from 'pinia'
 
 import Button from '@/components/ui/button/Button.vue'
-import { useExecutionStore } from '@/stores/executionStore'
+import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useErrorGroups } from '@/components/rightSidePanel/errors/useErrorGroups'
 
 const { t } = useI18n()
-const executionStore = useExecutionStore()
+const executionErrorStore = useExecutionErrorStore()
 const rightSidePanelStore = useRightSidePanelStore()
 const canvasStore = useCanvasStore()
 
-const { totalErrorCount, isErrorOverlayOpen } = storeToRefs(executionStore)
+const { totalErrorCount, isErrorOverlayOpen } = storeToRefs(executionErrorStore)
 const { groupedErrorMessages } = useErrorGroups(ref(''), t)
 
 const errorCountLabel = computed(() =>
@@ -90,7 +90,7 @@ const isVisible = computed(
 )
 
 function dismiss() {
-  executionStore.dismissErrorOverlay()
+  executionErrorStore.dismissErrorOverlay()
 }
 
 function seeErrors() {
@@ -100,6 +100,6 @@ function seeErrors() {
   }
 
   rightSidePanelStore.openPanel('errors')
-  executionStore.dismissErrorOverlay()
+  executionErrorStore.dismissErrorOverlay()
 }
 </script>

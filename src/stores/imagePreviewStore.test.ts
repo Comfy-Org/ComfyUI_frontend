@@ -38,10 +38,8 @@ const createMockOutputs = (
   images?: ExecutedWsMessage['output']['images']
 ): ExecutedWsMessage['output'] => ({ images })
 
-vi.mock('@/stores/executionStore', () => ({
-  useExecutionStore: vi.fn(() => ({
-    executionIdToNodeLocatorId: vi.fn((id: string) => id)
-  }))
+vi.mock('@/utils/graphTraversalUtil', () => ({
+  executionIdToNodeLocatorId: vi.fn((_rootGraph: unknown, id: string) => id)
 }))
 
 vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
