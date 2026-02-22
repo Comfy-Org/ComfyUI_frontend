@@ -1,11 +1,10 @@
 <template>
   <Button
-    class="comfy-help-center-btn relative text-base-foreground"
+    class="comfy-help-center-btn relative text-base-foreground text-lg"
     variant="textonly"
-    @click="toggleHelpCenter"
+    @click="toggleHelpCenter($event.currentTarget)"
   >
-    <div class="not-md:hidden">{{ $t('menu.helpAndFeedback') }}</div>
-    <i class="icon-[lucide--circle-help] ml-0.5" />
+    <i class="icon-[lucide--circle-help]" />
     <span
       v-if="shouldShowRedDot"
       class="absolute top-[7px] right-[7px] size-1.5 rounded-full bg-[#ff3b30]"
