@@ -3,13 +3,14 @@ import type { Ref } from 'vue'
 import Fuse from 'fuse.js'
 import type { IFuseOptions } from 'fuse.js'
 
-import { useExecutionStore } from '@/stores/executionStore'
+import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 
 import { app } from '@/scripts/app'
 import { isCloud } from '@/platform/distribution/types'
 import { SubgraphNode } from '@/lib/litegraph/src/litegraph'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+
 import {
   getNodeByExecutionId,
   getRootParentNode
@@ -192,7 +193,7 @@ export function useErrorGroups(
   searchQuery: Ref<string>,
   t: (key: string) => string
 ) {
-  const executionStore = useExecutionStore()
+  const executionErrorStore = useExecutionErrorStore()
   const canvasStore = useCanvasStore()
   const collapseState = reactive<Record<string, boolean>>({})
 
@@ -223,7 +224,7 @@ export function useErrorGroups(
 
   const errorNodeCache = computed(() => {
     const map = new Map<string, LGraphNode>()
-    for (const execId of executionStore.allErrorExecutionIds) {
+    for (const execId of executionErrorStore.allErrorExecutionIds) {
       const node = getNodeByExecutionId(app.rootGraph, execId)
       if (node) map.set(execId, node)
     }
@@ -262,10 +263,10 @@ export function useErrorGroups(
   }
 
   function processPromptError(groupsMap: Map<string, GroupEntry>) {
-    if (selectedNodeInfo.value.nodeIds || !executionStore.lastPromptError)
+    if (selectedNodeInfo.value.nodeIds || !executionErrorStore.lastPromptError)
       return
 
-    const error = executionStore.lastPromptError
+    const error = executionErrorStore.lastPromptError
     const groupTitle = error.message
     const cards = getOrCreateGroup(groupsMap, groupTitle, 0)
     const isKnown = KNOWN_PROMPT_ERROR_TYPES.has(error.type)
@@ -293,10 +294,10 @@ export function useErrorGroups(
     groupsMap: Map<string, GroupEntry>,
     filterBySelection = false
   ) {
-    if (!executionStore.lastNodeErrors) return
+    if (!executionErrorStore.lastNodeErrors) return
 
     for (const [nodeId, nodeError] of Object.entries(
-      executionStore.lastNodeErrors
+      executionErrorStore.lastNodeErrors
     )) {
       addNodeErrorToGroup(
         groupsMap,
@@ -316,9 +317,9 @@ export function useErrorGroups(
     groupsMap: Map<string, GroupEntry>,
     filterBySelection = false
   ) {
-    if (!executionStore.lastExecutionError) return
+    if (!executionErrorStore.lastExecutionError) return
 
-    const e = executionStore.lastExecutionError
+    const e = executionErrorStore.lastExecutionError
     addNodeErrorToGroup(
       groupsMap,
       String(e.node_id),

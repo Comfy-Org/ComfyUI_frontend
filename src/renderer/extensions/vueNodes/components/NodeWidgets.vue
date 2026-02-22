@@ -101,7 +101,7 @@ import {
   stripGraphPrefix,
   useWidgetValueStore
 } from '@/stores/widgetValueStore'
-import { useExecutionStore } from '@/stores/executionStore'
+import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import type { SimplifiedWidget, WidgetValue } from '@/types/simplifiedWidget'
 import { cn } from '@/utils/tailwindUtil'
 
@@ -116,7 +116,7 @@ const { nodeData } = defineProps<NodeWidgetsProps>()
 const { shouldHandleNodePointerEvents, forwardEventToCanvas } =
   useCanvasInteractions()
 const { bringNodeToFront } = useNodeZIndex()
-const executionStore = useExecutionStore()
+const executionErrorStore = useExecutionErrorStore()
 
 function handleWidgetPointerEvent(event: PointerEvent) {
   if (shouldHandleNodePointerEvents.value) return
@@ -170,7 +170,7 @@ interface ProcessedWidget {
 
 const processedWidgets = computed((): ProcessedWidget[] => {
   if (!nodeData?.widgets) return []
-  const nodeErrors = executionStore.lastNodeErrors?.[nodeData.id ?? '']
+  const nodeErrors = executionErrorStore.lastNodeErrors?.[nodeData.id ?? '']
 
   const nodeId = nodeData.id
   const { widgets } = nodeData
