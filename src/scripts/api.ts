@@ -1,10 +1,9 @@
 import { promiseTimeout, until } from '@vueuse/core'
 import axios from 'axios'
-import { get } from 'es-toolkit/compat'
 import { trimEnd } from 'es-toolkit'
 
 import defaultClientFeatureFlags from '@/config/clientFeatureFlags.json' with { type: 'json' }
-import { getDevOverride } from '@/utils/devFeatureFlagOverride'
+import { getServerCapability } from '@/services/serverCapabilities'
 import type {
   ModelFile,
   ModelFolderInfo
@@ -35,7 +34,6 @@ import type {
   ExecutionStartWsMessage,
   ExecutionSuccessWsMessage,
   ExtensionsResponse,
-  FeatureFlagsWsMessage,
   LogsRawResponse,
   LogsWsMessage,
   NotificationWsMessage,
@@ -170,7 +168,6 @@ interface BackendApiCalls {
   }
   progress_text: ProgressTextWsMessage
   progress_state: ProgressStateWsMessage
-  feature_flags: FeatureFlagsWsMessage
   asset_download: AssetDownloadWsMessage
   asset_export: AssetExportWsMessage
 }
@@ -338,8 +335,8 @@ export class ComfyApi extends EventTarget {
     return { ...defaultClientFeatureFlags }
   }
 
-  /** @deprecated Use `getServerCapability()` from `@/services/serverCapabilities` */
-  serverFeatureFlags: Record<string, unknown> = {}
+  /** @deprecated Server capabilities are now fetched via REST before app mount. */
+  serverFeatureFlags = { value: {} as Record<string, unknown> }
 
   /**
    * The auth token for the comfy org account if the user is logged in.
@@ -691,10 +688,6 @@ export class ComfyApi extends EventTarget {
             case 'b_preview':
             case 'notification':
               this.dispatchCustomEvent(msg.type, msg.data)
-              break
-            case 'feature_flags':
-              this.serverFeatureFlags = msg.data
-              this.dispatchCustomEvent('feature_flags', msg.data)
               break
             default:
               if (this._registered.has(msg.type)) {
@@ -1288,21 +1281,17 @@ export class ComfyApi extends EventTarget {
 
   /** @deprecated Use `getServerCapability()` from `@/services/serverCapabilities` */
   serverSupportsFeature(featureName: string): boolean {
-    const override = getDevOverride<boolean>(featureName)
-    if (override !== undefined) return override
-    return get(this.serverFeatureFlags, featureName) === true
+    return getServerCapability(featureName) === true
   }
 
   /** @deprecated Use `getServerCapability()` from `@/services/serverCapabilities` */
   getServerFeature<T = unknown>(featureName: string, defaultValue?: T): T {
-    const override = getDevOverride<T>(featureName)
-    if (override !== undefined) return override
-    return get(this.serverFeatureFlags, featureName, defaultValue) as T
+    return getServerCapability(featureName, defaultValue)
   }
 
   /** @deprecated Use `getServerCapability()` from `@/services/serverCapabilities` */
   getServerFeatures(): Record<string, unknown> {
-    return { ...this.serverFeatureFlags }
+    return {}
   }
 
   async getFuseOptions(): Promise<IFuseOptions<TemplateInfo> | null> {
