@@ -1,12 +1,12 @@
 import { useLocalStorage } from '@vueuse/core'
 import { computed, ref } from 'vue'
 
-import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
+import { getTierCredits } from '@/platform/cloud/subscription/constants/tierPricing'
 import { HAS_ACCOUNT_KEY } from '@/stores/firebaseAuthStore'
 
 export function useFreeTierOnboarding() {
   const showEmailForm = ref(false)
-  const freeTierCredits = computed(() => remoteConfig.value.free_tier_credits)
+  const freeTierCredits = computed(() => getTierCredits('free'))
 
   // Returning users are detected by either:
   // - HAS_ACCOUNT_KEY: set by onAuthStateChanged after first login
