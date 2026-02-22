@@ -1,6 +1,6 @@
 <template>
   <div
-    class="flex w-50 flex-col overflow-hidden rounded-2xl bg-(--base-background) border border-(--border-default)"
+    class="flex w-50 flex-col overflow-hidden rounded-2xl bg-base-background border border-border-default"
   >
     <div ref="previewContainerRef" class="overflow-hidden p-3">
       <div ref="previewWrapperRef" class="origin-top-left scale-50">
@@ -100,7 +100,7 @@ import LGraphNodePreview from '@/renderer/extensions/vueNodes/components/LGraphN
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 
 const SCALE_FACTOR = 0.5
-const PREVIEW_CONTAINER_PADDING_PX = 24 // p-3 top + bottom (12px × 2)
+const PREVIEW_CONTAINER_PADDING_PX = 24
 
 const {
   nodeDef,

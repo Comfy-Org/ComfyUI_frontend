@@ -19,8 +19,8 @@
     <!-- Node sections -->
     <div v-for="(section, index) in sections" :key="section.title ?? index">
       <h3
-        v-if="section.title"
-        class="px-4 py-2 text-xs font-medium tracking-wide text-muted-foreground mb-0"
+        v-if="section.title && sortOrder !== 'alphabetical'"
+        class="px-4 py-2 text-xs font-medium uppercase tracking-wide text-muted-foreground mb-0"
       >
         {{ section.title }}
       </h3>
@@ -48,9 +48,10 @@ import type {
   TreeNode
 } from '@/types/treeExplorerTypes'
 
-const { fillNodeInfo } = defineProps<{
-  sections: NodeLibrarySection[]
+const { fillNodeInfo, sortOrder = 'original' } = defineProps<{
+  sections: NodeLibrarySection<ComfyNodeDefImpl>[]
   fillNodeInfo: (node: TreeNode) => RenderedTreeExplorerNode<ComfyNodeDefImpl>
+  sortOrder?: string
 }>()
 
 const expandedKeys = defineModel<string[]>('expandedKeys', { required: true })
