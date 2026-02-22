@@ -1,4 +1,5 @@
-import { createPinia, setActivePinia } from 'pinia'
+import { createTestingPinia } from '@pinia/testing'
+import { setActivePinia } from 'pinia'
 import { nextTick } from 'vue'
 import { beforeEach, describe, expect, it } from 'vitest'
 
@@ -35,7 +36,7 @@ const createHistoryTask = ({
 
 describe('useAssetsSidebarBadgeStore', () => {
   beforeEach(() => {
-    setActivePinia(createPinia())
+    setActivePinia(createTestingPinia({ stubActions: false }))
   })
 
   it('does not count initial fetched history when store starts before hydration', async () => {
