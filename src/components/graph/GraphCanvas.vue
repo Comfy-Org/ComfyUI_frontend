@@ -98,6 +98,7 @@
     <TitleEditor />
     <SelectionToolbox v-if="selectionToolboxEnabled" />
     <NodeContextMenu />
+    <SlotContextMenu />
     <!-- Render legacy DOM widgets only when Vue nodes are disabled -->
     <DomWidgets v-if="!shouldRenderVueNodes" />
   </template>
@@ -128,6 +129,7 @@ import LinkOverlayCanvas from '@/components/graph/LinkOverlayCanvas.vue'
 import NodeTooltip from '@/components/graph/NodeTooltip.vue'
 import NodeContextMenu from '@/components/graph/NodeContextMenu.vue'
 import SelectionToolbox from '@/components/graph/SelectionToolbox.vue'
+import SlotContextMenu from '@/renderer/extensions/vueNodes/components/SlotContextMenu.vue'
 import TitleEditor from '@/components/graph/TitleEditor.vue'
 import NodePropertiesPanel from '@/components/rightSidePanel/RightSidePanel.vue'
 import NodeSearchboxPopover from '@/components/searchbox/NodeSearchBoxPopover.vue'
