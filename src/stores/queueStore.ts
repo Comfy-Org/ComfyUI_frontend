@@ -558,7 +558,7 @@ export const useQueueStore = defineStore('queue', () => {
         currentHistory.map((impl) => [impl.jobId, impl])
       )
 
-      historyTasks.value = sortedHistory.map((job) => {
+      const nextHistoryTasks = sortedHistory.map((job) => {
         const existing = existingByJobId.get(job.id)
         if (!existing) return new TaskItemImpl(job)
         // Recreate if outputs_count changed to ensure lazy loading works
@@ -567,6 +567,14 @@ export const useQueueStore = defineStore('queue', () => {
         }
         return existing
       })
+
+      const isHistoryUnchanged =
+        nextHistoryTasks.length === currentHistory.length &&
+        nextHistoryTasks.every((task, index) => task === currentHistory[index])
+
+      if (!isHistoryUnchanged) {
+        historyTasks.value = nextHistoryTasks
+      }
       hasFetchedHistorySnapshot.value = true
     } finally {
       // Only clear loading if this is the latest request.
