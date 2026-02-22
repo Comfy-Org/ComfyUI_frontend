@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { isReactive, isReadonly } from 'vue'
 
 import {
@@ -173,6 +173,52 @@ describe('useFeatureFlags', () => {
 
       const { flags } = useFeatureFlags()
       expect(flags.linearToggleEnabled).toBe(false)
+    })
+  })
+
+  describe('dev override via localStorage', () => {
+    afterEach(() => {
+      localStorage.clear()
+    })
+
+    it('resolveFlag returns localStorage override over remoteConfig and server value', () => {
+      vi.mocked(api.getServerFeature).mockReturnValue(false)
+      localStorage.setItem('ff:model_upload_button_enabled', 'true')
+
+      const { flags } = useFeatureFlags()
+      expect(flags.modelUploadButtonEnabled).toBe(true)
+    })
+
+    it('resolveFlag falls through to server when no override is set', () => {
+      vi.mocked(api.getServerFeature).mockImplementation(
+        (path, defaultValue) => {
+          if (path === ServerFeatureFlag.ASSET_RENAME_ENABLED) return true
+          return defaultValue
+        }
+      )
+
+      const { flags } = useFeatureFlags()
+      expect(flags.assetRenameEnabled).toBe(true)
+    })
+
+    it('direct server flags (supportsPreviewMetadata) respect override via api.getServerFeature', () => {
+      localStorage.setItem('ff:supports_preview_metadata', '"overridden"')
+      vi.mocked(api.getServerFeature).mockImplementation((path) => {
+        if (path === ServerFeatureFlag.SUPPORTS_PREVIEW_METADATA)
+          return 'overridden'
+        return undefined
+      })
+
+      const { flags } = useFeatureFlags()
+      expect(flags.supportsPreviewMetadata).toBe('overridden')
+    })
+
+    it('teamWorkspacesEnabled override bypasses isCloud and isAuthenticatedConfigLoaded guards', () => {
+      vi.mocked(distributionTypes).isCloud = false
+      localStorage.setItem('ff:team_workspaces_enabled', 'true')
+
+      const { flags } = useFeatureFlags()
+      expect(flags.teamWorkspacesEnabled).toBe(true)
     })
   })
 })
