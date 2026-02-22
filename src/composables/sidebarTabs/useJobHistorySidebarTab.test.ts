@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useJobHistorySidebarTab } from '@/composables/sidebarTabs/useJobHistorySidebarTab'
 
@@ -24,6 +24,11 @@ vi.mock('@/stores/workspace/sidebarTabStore', () => ({
 }))
 
 describe('useJobHistorySidebarTab', () => {
+  beforeEach(() => {
+    mockActiveSidebarTabId.value = null
+    mockActiveJobsCount.value = 0
+  })
+
   it('shows active jobs count while the panel is closed', () => {
     mockActiveSidebarTabId.value = 'assets'
     mockActiveJobsCount.value = 3
