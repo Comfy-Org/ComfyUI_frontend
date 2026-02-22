@@ -401,7 +401,10 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
   set read_only(value: boolean) {
     this.state.readOnly = value
     this._updateCursorStyle()
+    this.onReadOnlyChanged?.(value)
   }
+
+  onReadOnlyChanged?: (readOnly: boolean) => void
 
   get isDragging(): boolean {
     return this.state.draggingItems
