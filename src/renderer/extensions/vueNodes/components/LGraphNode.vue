@@ -10,7 +10,10 @@
     :class="
       cn(
         'group/node bg-node-component-header-surface lg-node absolute text-sm',
-        'contain-style contain-layout min-w-[225px] min-h-(--node-height) w-(--node-width)',
+        'contain-style contain-layout w-(--node-width)',
+        isRerouteNode
+          ? 'h-(--node-height)'
+          : 'min-w-[225px] min-h-(--node-height)',
         shapeClass,
         'touch-none flex flex-col',
         'border-1 border-solid border-component-node-border',
@@ -87,7 +90,11 @@
       :style="{ width: `${Math.min(progress * 100, 100)}%` }"
     />
 
-    <template v-if="!isCollapsed">
+    <template v-if="!isCollapsed && isRerouteNode">
+      <NodeSlots :node-data="nodeData" />
+    </template>
+
+    <template v-else-if="!isCollapsed">
       <div class="relative">
         <!-- Progress bar for executing state -->
         <div
@@ -123,6 +130,7 @@
       </div>
     </template>
     <Button
+      v-if="!isRerouteNode"
       variant="textonly"
       :class="
         cn(
@@ -162,7 +170,9 @@
         </template>
       </button>
     </Button>
-    <template v-if="!isCollapsed && nodeData.resizable !== false">
+    <template
+      v-if="!isCollapsed && !isRerouteNode && nodeData.resizable !== false"
+    >
       <div
         v-for="handle in RESIZE_HANDLES"
         :key="handle.corner"
@@ -312,6 +322,8 @@ const showErrorsTabEnabled = computed(() =>
 )
 
 const displayHeader = computed(() => nodeData.titleMode !== TitleMode.NO_TITLE)
+
+const isRerouteNode = computed(() => nodeData.type === 'Reroute')
 
 const isCollapsed = computed(() => nodeData.flags?.collapsed ?? false)
 const bypassed = computed(
