@@ -3,14 +3,48 @@ import { expect } from '@playwright/test'
 import type { ComfyPage } from '../../../../fixtures/ComfyPage'
 import { comfyPageFixture as test } from '../../../../fixtures/ComfyPage'
 
+async function getProxyWidgetNames(
+  comfyPage: ComfyPage,
+  nodeId: string
+): Promise<string[]> {
+  return await comfyPage.page.evaluate((id) => {
+    const node = window.app!.canvas.graph!.getNodeById(id)
+    const proxyWidgets = node?.properties?.proxyWidgets
+    if (!Array.isArray(proxyWidgets)) return []
+
+    return proxyWidgets
+      .filter(
+        (entry): entry is [string, string] =>
+          Array.isArray(entry) &&
+          entry.length === 2 &&
+          typeof entry[0] === 'string' &&
+          typeof entry[1] === 'string'
+      )
+      .map(([, widgetName]) => widgetName)
+  }, nodeId)
+}
+
+async function getPromotedPreviewWidgetCount(
+  comfyPage: ComfyPage,
+  nodeId: string
+): Promise<number> {
+  return await comfyPage.page.evaluate((id) => {
+    const node = window.app!.canvas.graph!.getNodeById(id)
+    const widgets = node?.widgets ?? []
+    return widgets.filter((widget) => widget.name === '$$canvas-image-preview')
+      .length
+  }, nodeId)
+}
+
 test.describe('Vue Nodes Image Preview', () => {
   test.beforeEach(async ({ comfyPage }) => {
     await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
-    await comfyPage.workflow.loadWorkflow('widgets/load_image_widget')
-    await comfyPage.vueNodes.waitForNodes()
   })
 
   async function loadImageOnNode(comfyPage: ComfyPage) {
+    await comfyPage.workflow.loadWorkflow('widgets/load_image_widget')
+    await comfyPage.vueNodes.waitForNodes()
+
     const loadImageNode = (
       await comfyPage.nodeOps.getNodeRefsByType('LoadImage')
     )[0]
@@ -59,5 +93,38 @@ test.describe('Vue Nodes Image Preview', () => {
     await expect(contextMenu.getByText('Copy Image')).toBeVisible()
     await expect(contextMenu.getByText('Save Image')).toBeVisible()
     await expect(contextMenu.getByText('Open in Mask Editor')).toBeVisible()
+  })
+
+  test('renders promoted image previews for each subgraph node', async ({
+    comfyPage
+  }) => {
+    await comfyPage.workflow.loadWorkflow(
+      'subgraphs/subgraph-with-multiple-promoted-previews'
+    )
+    await comfyPage.vueNodes.waitForNodes()
+
+    const firstSubgraphNode = comfyPage.vueNodes.getNodeLocator('7')
+    const secondSubgraphNode = comfyPage.vueNodes.getNodeLocator('8')
+
+    await expect(firstSubgraphNode).toBeVisible()
+    await expect(secondSubgraphNode).toBeVisible()
+
+    const firstProxyWidgets = await getProxyWidgetNames(comfyPage, '7')
+    const secondProxyWidgets = await getProxyWidgetNames(comfyPage, '8')
+    expect(firstProxyWidgets).toEqual([
+      '$$canvas-image-preview',
+      '$$canvas-image-preview'
+    ])
+    expect(secondProxyWidgets).toEqual(['$$canvas-image-preview'])
+
+    expect(await getPromotedPreviewWidgetCount(comfyPage, '7')).toBe(2)
+    expect(await getPromotedPreviewWidgetCount(comfyPage, '8')).toBe(1)
+
+    await expect(
+      firstSubgraphNode.locator('.lg-node-widgets')
+    ).not.toContainText('$$canvas-image-preview')
+    await expect(
+      secondSubgraphNode.locator('.lg-node-widgets')
+    ).not.toContainText('$$canvas-image-preview')
   })
 })
