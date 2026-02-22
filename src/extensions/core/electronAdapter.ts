@@ -294,6 +294,7 @@ import { electronAPI as getElectronAPI } from '@/utils/envUtil'
         commandId: 'Workspace.CloseWorkflow',
         combo: {
           key: 'w',
+          code: 'KeyW',
           ctrl: true
         }
       }

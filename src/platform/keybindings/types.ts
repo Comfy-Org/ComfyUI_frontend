@@ -2,6 +2,7 @@ import { z } from 'zod'
 
 const zKeyCombo = z.object({
   key: z.string(),
+  code: z.string().optional(),
   ctrl: z.boolean().optional(),
   alt: z.boolean().optional(),
   shift: z.boolean().optional(),

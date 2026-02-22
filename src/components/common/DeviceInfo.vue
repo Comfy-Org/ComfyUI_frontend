@@ -28,7 +28,10 @@ const deviceColumns: { field: keyof DeviceStats; header: string }[] = [
   { field: 'torch_vram_free', header: 'Torch VRAM Free' }
 ]
 
-const formatValue = (value: string | number, field: string) => {
+const formatValue = (value: string | number | null, field: string) => {
+  if (value === null) {
+    return '—'
+  }
   if (
     ['vram_total', 'vram_free', 'torch_vram_total', 'torch_vram_free'].includes(
       field
