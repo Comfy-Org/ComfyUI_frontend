@@ -1,7 +1,11 @@
 <template>
   <span
-    class="flex items-center gap-1 rounded border px-1.5 py-0.5 text-xxs"
-    :class="textColorClass"
+    :class="
+      cn(
+        'flex items-center gap-1 rounded border px-1.5 py-0.5 text-xxs',
+        textColorClass
+      )
+    "
     :style="customStyle"
   >
     <i v-if="icon" :class="cn(icon, 'size-2.5', iconClass)" />

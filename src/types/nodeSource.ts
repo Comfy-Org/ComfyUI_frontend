@@ -20,7 +20,7 @@ const UNKNOWN_NODE_SOURCE: NodeSource = {
   badgeText: '?'
 }
 
-const shortenNodeName = (name: string) => {
+function shortenNodeName(name: string) {
   return name
     .replace(/^(ComfyUI-|ComfyUI_|Comfy-|Comfy_)/, '')
     .replace(/(-ComfyUI|_ComfyUI|-Comfy|_Comfy)$/, '')
@@ -76,11 +76,11 @@ export function getEssentialsCategory(
   )
 }
 
-export const getNodeSource = (
+export function getNodeSource(
   python_module?: string,
   essentials_category?: string,
   name?: string
-): NodeSource => {
+): NodeSource {
   const resolvedEssentialsCategory = getEssentialsCategory(
     name,
     essentials_category

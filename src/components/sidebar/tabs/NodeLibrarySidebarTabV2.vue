@@ -29,14 +29,77 @@
                     v-for="option in sortingOptions"
                     :key="option.id"
                     :value="option.id"
-                    class="flex cursor-pointer items-center justify-end gap-2 rounded-md px-2 py-1.5 text-sm outline-none hover:bg-comfy-input"
+                    class="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-sm outline-none hover:bg-comfy-input"
                   >
+                    <span class="flex-1">{{ $t(option.label) }}</span>
                     <DropdownMenuItemIndicator class="w-4">
                       <i class="icon-[lucide--check] size-4" />
                     </DropdownMenuItemIndicator>
-                    <span>{{ $t(option.label) }}</span>
                   </DropdownMenuRadioItem>
                 </DropdownMenuRadioGroup>
+              </DropdownMenuContent>
+            </DropdownMenuPortal>
+          </DropdownMenuRoot>
+          <DropdownMenuRoot>
+            <DropdownMenuTrigger as-child>
+              <button
+                :aria-label="$t('sideToolbar.nodeLibraryTab.filter')"
+                class="flex size-10 shrink-0 cursor-pointer items-center justify-center rounded-lg bg-comfy-input hover:bg-comfy-input-hover border-none"
+              >
+                <i class="icon-[lucide--list-filter] size-4" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuPortal>
+              <DropdownMenuContent
+                class="z-[9999] min-w-32 rounded-lg border border-border-default bg-comfy-menu-bg p-1 shadow-lg"
+                align="end"
+                :side-offset="4"
+              >
+                <DropdownMenuCheckboxItem
+                  v-model:checked="filterOptions.blueprints"
+                  class="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-sm outline-none hover:bg-comfy-input"
+                >
+                  <span class="flex-1">{{
+                    $t('sideToolbar.nodeLibraryTab.filterOptions.blueprints')
+                  }}</span>
+                  <DropdownMenuItemIndicator class="w-4">
+                    <i class="icon-[lucide--check] size-4" />
+                  </DropdownMenuItemIndicator>
+                </DropdownMenuCheckboxItem>
+                <DropdownMenuCheckboxItem
+                  v-model:checked="filterOptions.partnerNodes"
+                  class="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-sm outline-none hover:bg-comfy-input"
+                >
+                  <span class="flex-1">{{
+                    $t('sideToolbar.nodeLibraryTab.filterOptions.partnerNodes')
+                  }}</span>
+                  <DropdownMenuItemIndicator class="w-4">
+                    <i class="icon-[lucide--check] size-4" />
+                  </DropdownMenuItemIndicator>
+                </DropdownMenuCheckboxItem>
+                <DropdownMenuSeparator class="my-1 h-px bg-border-default" />
+                <DropdownMenuCheckboxItem
+                  v-model:checked="filterOptions.comfyNodes"
+                  class="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-sm outline-none hover:bg-comfy-input"
+                >
+                  <span class="flex-1">{{
+                    $t('sideToolbar.nodeLibraryTab.filterOptions.comfyNodes')
+                  }}</span>
+                  <DropdownMenuItemIndicator class="w-4">
+                    <i class="icon-[lucide--check] size-4" />
+                  </DropdownMenuItemIndicator>
+                </DropdownMenuCheckboxItem>
+                <DropdownMenuCheckboxItem
+                  v-model:checked="filterOptions.extensions"
+                  class="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-sm outline-none hover:bg-comfy-input"
+                >
+                  <span class="flex-1">{{
+                    $t('sideToolbar.nodeLibraryTab.filterOptions.extensions')
+                  }}</span>
+                  <DropdownMenuItemIndicator class="w-4">
+                    <i class="icon-[lucide--check] size-4" />
+                  </DropdownMenuItemIndicator>
+                </DropdownMenuCheckboxItem>
               </DropdownMenuContent>
             </DropdownMenuPortal>
           </DropdownMenuRoot>
@@ -52,7 +115,7 @@
             :value="tab.value"
             :class="
               cn(
-                'flex-1 text-center select-none border-none outline-none px-3 py-2 rounded-lg cursor-pointer',
+                'select-none border-none outline-none px-3 py-2 rounded-lg cursor-pointer',
                 'text-sm text-foreground transition-colors',
                 selectedTab === tab.value
                   ? 'bg-comfy-input font-bold'
@@ -82,6 +145,7 @@
           v-model:expanded-keys="expandedKeys"
           :sections="renderedSections"
           :fill-node-info="fillNodeInfo"
+          :sort-order="sortOrder"
           @node-click="handleNodeClick"
         />
         <CustomNodesPanel
@@ -99,12 +163,14 @@
 import { cn } from '@/utils/tailwindUtil'
 import { useLocalStorage } from '@vueuse/core'
 import {
+  DropdownMenuCheckboxItem,
   DropdownMenuContent,
   DropdownMenuItemIndicator,
   DropdownMenuPortal,
   DropdownMenuRadioGroup,
   DropdownMenuRadioItem,
   DropdownMenuRoot,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
   Separator,
   TabsList,
@@ -171,6 +237,13 @@ const sortingOptions = computed(() =>
     label: strategy.label
   }))
 )
+
+const filterOptions = ref({
+  blueprints: true,
+  partnerNodes: true,
+  comfyNodes: true,
+  extensions: true
+})
 
 const { t } = useI18n()
 
@@ -339,19 +412,18 @@ async function handleSearch() {
 }
 
 const tabs = computed(() => {
-  const baseTabs: Array<{ value: TabId; label: string }> = [
+  const allTabs: Array<{ value: TabId; label: string }> = [
     { value: 'all', label: t('sideToolbar.nodeLibraryTab.allNodes') },
-    { value: 'custom', label: t('sideToolbar.nodeLibraryTab.custom') }
+    {
+      value: 'essentials' as TabId,
+      label: t('sideToolbar.nodeLibraryTab.essentials')
+    },
+    {
+      value: 'custom' as TabId,
+      label: t('sideToolbar.nodeLibraryTab.blueprints')
+    }
   ]
-  return flags.nodeLibraryEssentialsEnabled
-    ? [
-        {
-          value: 'essentials' as TabId,
-          label: t('sideToolbar.nodeLibraryTab.essentials')
-        },
-        ...baseTabs
-      ]
-    : baseTabs
+  return flags.nodeLibraryEssentialsEnabled ? allTabs : [allTabs[0], allTabs[2]]
 })
 
 onMounted(() => {
