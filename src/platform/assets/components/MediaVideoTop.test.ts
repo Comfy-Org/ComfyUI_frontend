@@ -49,7 +49,6 @@ describe('MediaVideoTop', () => {
     expect(wrapper.find('video').exists()).toBe(true)
     expect(wrapper.find('source').exists()).toBe(false)
   })
-
   it('emits playback events and hides paused overlay while playing', async () => {
     const wrapper = mount(MediaVideoTop, {
       props: {
