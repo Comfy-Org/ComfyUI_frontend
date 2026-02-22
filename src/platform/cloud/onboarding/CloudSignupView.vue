@@ -207,7 +207,9 @@ const signUpWithEmail = async (values: SignUpData) => {
 onMounted(async () => {
   // Track signup screen opened
   if (isCloud) {
-    telemetry?.trackSignupOpened({ free_tier_badge_shown: showFreeTierBadge })
+    telemetry?.trackSignupOpened({
+      free_tier_badge_shown: showFreeTierBadge.value
+    })
   }
 
   userIsInChina.value = await isInChina()

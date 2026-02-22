@@ -183,7 +183,9 @@ const signInWithEmail = async (values: SignInData) => {
 
 onMounted(() => {
   if (isCloud) {
-    telemetry?.trackLoginOpened({ free_tier_badge_shown: showFreeTierBadge })
+    telemetry?.trackLoginOpened({
+      free_tier_badge_shown: showFreeTierBadge.value
+    })
   }
 })
 </script>
