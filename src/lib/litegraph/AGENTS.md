@@ -6,6 +6,10 @@
 - Avoid repetition where possible, but not at expense of legibility
 - Prefer running single tests, not the whole suite, for performance
 
+## Widget Serialization
+
+See `docs/WIDGET_SERIALIZATION.md` for the distinction between `widget.serialize` (workflow persistence) and `widget.options.serialize` (API prompt). These are different properties checked by different code paths — a common source of confusion.
+
 ## Code Style
 
 - Prefer single line `if` syntax for concise expressions
