@@ -12,7 +12,8 @@
         v-for="job in group.items"
         :key="job.id"
         class="w-full shrink-0 cursor-default text-text-primary transition-colors hover:bg-secondary-background-hover"
-        :preview-url="job.iconImageUrl"
+        :preview-url="getJobPreviewUrl(job)"
+        :is-video-preview="isVideoPreviewJob(job)"
         :preview-alt="job.title"
         :icon-name="job.iconName ?? iconForJobState(job.state)"
         :icon-class="getJobIconClass(job)"
@@ -102,8 +103,21 @@ const isCancelable = (job: JobListItem) =>
 const isFailedDeletable = (job: JobListItem) =>
   job.showClear !== false && job.state === 'failed'
 
+const getPreviewOutput = (job: JobListItem) => job.taskRef?.previewOutput
+
+const getJobPreviewUrl = (job: JobListItem) => {
+  const preview = getPreviewOutput(job)
+  if (preview?.isImage || preview?.isVideo) {
+    return preview.url
+  }
+  return job.iconImageUrl
+}
+
+const isVideoPreviewJob = (job: JobListItem) =>
+  job.state === 'completed' && !!getPreviewOutput(job)?.isVideo
+
 const isPreviewableCompletedJob = (job: JobListItem) =>
-  job.state === 'completed' && !!job.iconImageUrl
+  job.state === 'completed' && !!getPreviewOutput(job)
 
 const emitViewItem = (job: JobListItem) => {
   if (isPreviewableCompletedJob(job)) {
