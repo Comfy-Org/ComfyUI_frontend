@@ -31,7 +31,10 @@ function createFilter(
     filterDef: {
       id,
       matches: vi.fn(() => true)
-    } as unknown as FuseFilter<ComfyNodeDefImpl, string>,
+    } as Partial<FuseFilter<ComfyNodeDefImpl, string>> as FuseFilter<
+      ComfyNodeDefImpl,
+      string
+    >,
     value
   }
 }
@@ -43,7 +46,10 @@ function createActiveFilter(label: string): FilterChip {
     filter: {
       id: label.toLowerCase(),
       matches: vi.fn(() => true)
-    } as unknown as FuseFilter<ComfyNodeDefImpl, string>
+    } as Partial<FuseFilter<ComfyNodeDefImpl, string>> as FuseFilter<
+      ComfyNodeDefImpl,
+      string
+    >
   }
 }
 

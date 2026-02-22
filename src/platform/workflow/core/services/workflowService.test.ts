@@ -181,7 +181,10 @@ describe('useWorkflowService', () => {
       vi.mocked(app.loadGraphData).mockImplementation(
         async (_data, _clean, _restore, wf) => {
           ;(
-            workflowStore as unknown as Record<string, unknown>
+            workflowStore as Partial<Record<string, unknown>> as Record<
+              string,
+              unknown
+            >
           ).activeWorkflow = wf
         }
       )

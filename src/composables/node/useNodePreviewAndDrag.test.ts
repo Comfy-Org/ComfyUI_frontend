@@ -172,7 +172,7 @@ describe('useNodePreviewAndDrag', () => {
         dataTransfer: { dropEffect: 'none' },
         clientX: 300,
         clientY: 400
-      } as unknown as DragEvent
+      } as Partial<DragEvent> as DragEvent
 
       result.handleDragEnd(mockEvent)
 
