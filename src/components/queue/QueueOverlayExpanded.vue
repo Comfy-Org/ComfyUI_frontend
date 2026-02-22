@@ -21,7 +21,7 @@
     />
 
     <div class="flex-1 min-h-0 overflow-y-auto">
-      <JobGroupsList
+      <JobAssetsList
         :displayed-job-groups="displayedJobGroups"
         @cancel-item="onCancelItemEvent"
         @delete-item="onDeleteItemEvent"
@@ -53,8 +53,8 @@ import { useErrorHandling } from '@/composables/useErrorHandling'
 
 import QueueOverlayHeader from './QueueOverlayHeader.vue'
 import JobContextMenu from './job/JobContextMenu.vue'
+import JobAssetsList from './job/JobAssetsList.vue'
 import JobFiltersBar from './job/JobFiltersBar.vue'
-import JobGroupsList from './job/JobGroupsList.vue'
 
 defineProps<{
   headerTitle: string
