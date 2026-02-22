@@ -12,7 +12,6 @@ import type {
 } from '@/schemas/apiSchema'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
-import { useExecutionStore } from '@/stores/executionStore'
 import type { NodeLocatorId } from '@/types/nodeIdentification'
 import { parseFilePath } from '@/utils/formatUtil'
 import { isAnimatedOutput, isVideoNode } from '@/utils/litegraphUtil'
@@ -20,6 +19,7 @@ import {
   releaseSharedObjectUrl,
   retainSharedObjectUrl
 } from '@/utils/objectUrlUtil'
+import { executionIdToNodeLocatorId } from '@/utils/graphTraversalUtil'
 
 const PREVIEW_REVOKE_DELAY_MS = 400
 
@@ -43,7 +43,6 @@ interface SetOutputOptions {
 
 export const useNodeOutputStore = defineStore('nodeOutput', () => {
   const { nodeIdToNodeLocatorId, nodeToNodeLocatorId } = useWorkflowStore()
-  const { executionIdToNodeLocatorId } = useExecutionStore()
   const scheduledRevoke: Record<NodeLocatorId, { stop: () => void }> = {}
   const latestPreview = ref<string[]>([])
 
@@ -202,7 +201,7 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
     outputs: ExecutedWsMessage['output'] | ResultItem,
     options: SetOutputOptions = {}
   ) {
-    const nodeLocatorId = executionIdToNodeLocatorId(executionId)
+    const nodeLocatorId = executionIdToNodeLocatorId(app.rootGraph, executionId)
     if (!nodeLocatorId) return
 
     setOutputsByLocatorId(nodeLocatorId, outputs, options)
@@ -219,7 +218,7 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
     executionId: string,
     previewImages: string[]
   ) {
-    const nodeLocatorId = executionIdToNodeLocatorId(executionId)
+    const nodeLocatorId = executionIdToNodeLocatorId(app.rootGraph, executionId)
     if (!nodeLocatorId) return
     const existingPreviews = app.nodePreviewImages[nodeLocatorId]
     if (scheduledRevoke[nodeLocatorId]) {
@@ -275,7 +274,7 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
    * @param executionId - The execution ID
    */
   function revokePreviewsByExecutionId(executionId: string) {
-    const nodeLocatorId = executionIdToNodeLocatorId(executionId)
+    const nodeLocatorId = executionIdToNodeLocatorId(app.rootGraph, executionId)
     if (!nodeLocatorId) return
     scheduleRevoke(nodeLocatorId, () =>
       revokePreviewsByLocatorId(nodeLocatorId)

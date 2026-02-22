@@ -5,6 +5,7 @@ import { comfyPageFixture as test } from '../../fixtures/ComfyPage'
 test.describe('Node library sidebar', () => {
   test.beforeEach(async ({ comfyPage }) => {
     await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
+    await comfyPage.settings.setSetting('Comfy.NodeLibrary.NewDesign', false)
     await comfyPage.settings.setSetting('Comfy.NodeLibrary.Bookmarks.V2', [])
     await comfyPage.settings.setSetting(
       'Comfy.NodeLibrary.BookmarksCustomization',

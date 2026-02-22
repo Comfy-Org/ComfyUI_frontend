@@ -507,12 +507,12 @@ describe('assetsStore - Model Assets Cache (Cloud)', () => {
     mockIsCloud.value = false
   })
 
-  const createMockAsset = (id: string) => ({
+  const createMockAsset = (id: string, tags: string[] = ['models']) => ({
     id,
     name: `asset-${id}`,
     size: 100,
     created_at: new Date().toISOString(),
-    tags: ['models'],
+    tags,
     preview_url: `http://test.com/${id}`
   })
 
@@ -749,6 +749,105 @@ describe('assetsStore - Model Assets Cache (Cloud)', () => {
       store.invalidateCategory('tag:models')
 
       expect(store.getAssets('tag:models')).toEqual([])
+    })
+  })
+
+  describe('hasCategory', () => {
+    it('should return true for loaded categories', async () => {
+      const store = useAssetsStore()
+      const assets = [createMockAsset('asset-1')]
+
+      vi.mocked(assetService.getAssetsForNodeType).mockResolvedValue(assets)
+      await store.updateModelsForNodeType('CheckpointLoaderSimple')
+
+      expect(store.hasCategory('checkpoints')).toBe(true)
+    })
+
+    it('should return true for tag-based category when tag: prefix is not used', async () => {
+      const store = useAssetsStore()
+      const assets = [createMockAsset('asset-1')]
+
+      vi.mocked(assetService.getAssetsByTag).mockResolvedValue(assets)
+      await store.updateModelsForTag('models')
+
+      // hasCategory('models') checks for both 'models' and 'tag:models'
+      expect(store.hasCategory('models')).toBe(true)
+    })
+
+    it('should return false for unloaded categories', () => {
+      const store = useAssetsStore()
+
+      expect(store.hasCategory('checkpoints')).toBe(false)
+      expect(store.hasCategory('unknown-category')).toBe(false)
+    })
+
+    it('should return false after category is invalidated', async () => {
+      const store = useAssetsStore()
+      const assets = [createMockAsset('asset-1')]
+
+      vi.mocked(assetService.getAssetsForNodeType).mockResolvedValue(assets)
+      await store.updateModelsForNodeType('CheckpointLoaderSimple')
+
+      expect(store.hasCategory('checkpoints')).toBe(true)
+
+      store.invalidateCategory('checkpoints')
+
+      expect(store.hasCategory('checkpoints')).toBe(false)
+    })
+  })
+
+  describe('invalidateModelsForCategory', () => {
+    it('should clear cache for category and trigger refetch on next access', async () => {
+      const store = useAssetsStore()
+      const initialAssets = [createMockAsset('initial-1')]
+      const refreshedAssets = [
+        createMockAsset('refreshed-1'),
+        createMockAsset('refreshed-2')
+      ]
+
+      vi.mocked(assetService.getAssetsForNodeType).mockResolvedValueOnce(
+        initialAssets
+      )
+      await store.updateModelsForNodeType('CheckpointLoaderSimple')
+      expect(store.getAssets('CheckpointLoaderSimple')).toHaveLength(1)
+
+      store.invalidateModelsForCategory('checkpoints')
+
+      // Cache should be cleared
+      expect(store.hasCategory('checkpoints')).toBe(false)
+      expect(store.getAssets('CheckpointLoaderSimple')).toEqual([])
+
+      // Next fetch should get fresh data
+      vi.mocked(assetService.getAssetsForNodeType).mockResolvedValueOnce(
+        refreshedAssets
+      )
+      await store.updateModelsForNodeType('CheckpointLoaderSimple')
+      expect(store.getAssets('CheckpointLoaderSimple')).toHaveLength(2)
+    })
+
+    it('should clear tag-based caches', async () => {
+      const store = useAssetsStore()
+      const tagAssets = [createMockAsset('tag-1'), createMockAsset('tag-2')]
+
+      vi.mocked(assetService.getAssetsByTag).mockResolvedValue(tagAssets)
+      await store.updateModelsForTag('checkpoints')
+      await store.updateModelsForTag('models')
+
+      expect(store.getAssets('tag:checkpoints')).toHaveLength(2)
+      expect(store.getAssets('tag:models')).toHaveLength(2)
+
+      store.invalidateModelsForCategory('checkpoints')
+
+      expect(store.getAssets('tag:checkpoints')).toEqual([])
+      expect(store.getAssets('tag:models')).toEqual([])
+    })
+
+    it('should handle unknown categories gracefully', () => {
+      const store = useAssetsStore()
+
+      expect(() =>
+        store.invalidateModelsForCategory('unknown-category')
+      ).not.toThrow()
     })
   })
 })
