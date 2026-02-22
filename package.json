@@ -117,6 +117,8 @@
     "zod-validation-error": "catalog:"
   },
   "devDependencies": {
+    "@actions/core": "^1.10.1",
+    "@actions/github": "^6.0.0",
     "@eslint/js": "catalog:",
     "@intlify/eslint-plugin-vue-i18n": "catalog:",
     "@lobehub/i18n-cli": "catalog:",

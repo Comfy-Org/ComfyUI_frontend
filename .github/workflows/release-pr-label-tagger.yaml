@@ -1,0 +1,32 @@
+---
+name: Release PR Label Tagger
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: 'Release tag to process (e.g. core/v1.40.0)'
+        required: true
+        type: string
+
+jobs:
+  label-prs:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+      issues: write
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Setup frontend
+        uses: ./.github/actions/setup-frontend
+
+      - name: Tag PRs with release label
+        run: pnpm exec tsx scripts/release-pr-label-tagger.ts
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          INPUT_RELEASE_TAG: ${{ inputs.release_tag }}
