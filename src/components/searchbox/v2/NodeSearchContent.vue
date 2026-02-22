@@ -25,6 +25,7 @@
       <NodeSearchFilterBar
         class="flex-1"
         :active-chip-key="activeFilter?.key"
+        :applied-filters="filters"
         @select-chip="onSelectFilterChip"
       />
     </div>

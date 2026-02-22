@@ -24,8 +24,8 @@
       </p>
 
       <!-- Badges -->
-      <div class="flex flex-wrap gap-2 empty:hidden">
-        <NodePricingBadge :node-def="nodeDef" />
+      <div class="flex flex-wrap gap-2 empty:hidden overflow-hidden">
+        <NodePricingBadge class="max-w-full truncate" :node-def="nodeDef" />
         <NodeProviderBadge :node-def="nodeDef" />
       </div>
 

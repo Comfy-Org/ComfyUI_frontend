@@ -1,5 +1,5 @@
 <template>
-  <div class="flex min-h-0 flex-col overflow-y-auto py-2.5">
+  <div ref="sidebarRef" class="flex min-h-0 flex-col overflow-y-auto py-2.5">
     <!-- Preset categories -->
     <div class="flex flex-col px-1">
       <button
@@ -38,6 +38,7 @@
         :node="category"
         :selected-category="selectedCategory"
         :selected-collapsed="selectedCollapsed"
+        :show-chevrons="isHovered"
         @select="selectCategory"
       />
     </div>
@@ -45,6 +46,7 @@
 </template>
 
 <script setup lang="ts">
+import { useElementHover } from '@vueuse/core'
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -63,6 +65,9 @@ import { cn } from '@/utils/tailwindUtil'
 const selectedCategory = defineModel<string>('selectedCategory', {
   required: true
 })
+
+const sidebarRef = ref<HTMLElement>()
+const isHovered = useElementHover(sidebarRef)
 
 const { t } = useI18n()
 const { flags } = useFeatureFlags()
