@@ -50,7 +50,8 @@ export const useAssetsSidebarBadgeStore = defineStore(
         }
 
         const isAssetsTabOpen = sidebarTabStore.activeSidebarTabId === 'assets'
-        const countedAssetsByJobId = countedHistoryAssetsByJobId.value
+        const previousCountedAssetsByJobId = countedHistoryAssetsByJobId.value
+        const nextCountedAssetsByJobId = new Map<string, number>()
 
         for (const task of historyTasks) {
           const jobId = task.jobId
@@ -58,9 +59,9 @@ export const useAssetsSidebarBadgeStore = defineStore(
             continue
           }
 
-          const countedAssets = countedAssetsByJobId.get(jobId) ?? 0
+          const countedAssets = previousCountedAssetsByJobId.get(jobId) ?? 0
           const currentAssets = getAddedAssetCount(task)
-          const hasSeenJob = countedAssetsByJobId.has(jobId)
+          const hasSeenJob = previousCountedAssetsByJobId.has(jobId)
 
           if (!isAssetsTabOpen && !hasSeenJob) {
             unseenAddedAssetsCount.value += currentAssets
@@ -68,11 +69,13 @@ export const useAssetsSidebarBadgeStore = defineStore(
             unseenAddedAssetsCount.value += currentAssets - countedAssets
           }
 
-          countedAssetsByJobId.set(
+          nextCountedAssetsByJobId.set(
             jobId,
             Math.max(countedAssets, currentAssets)
           )
         }
+
+        countedHistoryAssetsByJobId.value = nextCountedAssetsByJobId
       },
       { immediate: true }
     )

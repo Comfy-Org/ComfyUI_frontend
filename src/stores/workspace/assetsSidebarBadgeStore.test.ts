@@ -115,6 +115,34 @@ describe('useAssetsSidebarBadgeStore', () => {
     expect(assetsSidebarBadgeStore.unseenAddedAssetsCount).toBe(2)
   })
 
+  it('treats a reappearing job as unseen after it aged out of history', async () => {
+    const queueStore = useQueueStore()
+    const assetsSidebarBadgeStore = useAssetsSidebarBadgeStore()
+
+    queueStore.historyTasks = [
+      createHistoryTask({ id: 'job-1', outputsCount: 2 })
+    ]
+    queueStore.hasFetchedHistorySnapshot = true
+    await nextTick()
+
+    expect(assetsSidebarBadgeStore.unseenAddedAssetsCount).toBe(0)
+
+    queueStore.historyTasks = [
+      createHistoryTask({ id: 'job-2', outputsCount: 1 })
+    ]
+    await nextTick()
+
+    expect(assetsSidebarBadgeStore.unseenAddedAssetsCount).toBe(1)
+
+    queueStore.historyTasks = [
+      createHistoryTask({ id: 'job-1', outputsCount: 1 }),
+      createHistoryTask({ id: 'job-2', outputsCount: 1 })
+    ]
+    await nextTick()
+
+    expect(assetsSidebarBadgeStore.unseenAddedAssetsCount).toBe(2)
+  })
+
   it('clears and suppresses count while assets tab is open', async () => {
     const queueStore = useQueueStore()
     const sidebarTabStore = useSidebarTabStore()
