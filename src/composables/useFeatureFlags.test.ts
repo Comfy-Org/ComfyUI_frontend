@@ -6,16 +6,12 @@ import {
   useFeatureFlags
 } from '@/composables/useFeatureFlags'
 import * as distributionTypes from '@/platform/distribution/types'
-import { api } from '@/scripts/api'
+import * as serverCapabilities from '@/services/serverCapabilities'
 
-// Mock the API module
-vi.mock('@/scripts/api', () => ({
-  api: {
-    getServerFeature: vi.fn()
-  }
+vi.mock('@/services/serverCapabilities', () => ({
+  getServerCapability: vi.fn()
 }))
 
-// Mock the distribution types module
 vi.mock('@/platform/distribution/types', () => ({
   isCloud: false,
   isNightly: false
@@ -35,7 +31,7 @@ describe('useFeatureFlags', () => {
     })
 
     it('should access supportsPreviewMetadata', () => {
-      vi.mocked(api.getServerFeature).mockImplementation(
+      vi.mocked(serverCapabilities.getServerCapability).mockImplementation(
         (path, defaultValue) => {
           if (path === ServerFeatureFlag.SUPPORTS_PREVIEW_METADATA) return true
           return defaultValue
@@ -44,28 +40,28 @@ describe('useFeatureFlags', () => {
 
       const { flags } = useFeatureFlags()
       expect(flags.supportsPreviewMetadata).toBe(true)
-      expect(api.getServerFeature).toHaveBeenCalledWith(
+      expect(serverCapabilities.getServerCapability).toHaveBeenCalledWith(
         ServerFeatureFlag.SUPPORTS_PREVIEW_METADATA
       )
     })
 
     it('should access maxUploadSize', () => {
-      vi.mocked(api.getServerFeature).mockImplementation(
+      vi.mocked(serverCapabilities.getServerCapability).mockImplementation(
         (path, defaultValue) => {
-          if (path === ServerFeatureFlag.MAX_UPLOAD_SIZE) return 209715200 // 200MB
+          if (path === ServerFeatureFlag.MAX_UPLOAD_SIZE) return 209715200
           return defaultValue
         }
       )
 
       const { flags } = useFeatureFlags()
       expect(flags.maxUploadSize).toBe(209715200)
-      expect(api.getServerFeature).toHaveBeenCalledWith(
+      expect(serverCapabilities.getServerCapability).toHaveBeenCalledWith(
         ServerFeatureFlag.MAX_UPLOAD_SIZE
       )
     })
 
     it('should access supportsManagerV4', () => {
-      vi.mocked(api.getServerFeature).mockImplementation(
+      vi.mocked(serverCapabilities.getServerCapability).mockImplementation(
         (path, defaultValue) => {
           if (path === ServerFeatureFlag.MANAGER_SUPPORTS_V4) return true
           return defaultValue
@@ -74,13 +70,13 @@ describe('useFeatureFlags', () => {
 
       const { flags } = useFeatureFlags()
       expect(flags.supportsManagerV4).toBe(true)
-      expect(api.getServerFeature).toHaveBeenCalledWith(
+      expect(serverCapabilities.getServerCapability).toHaveBeenCalledWith(
         ServerFeatureFlag.MANAGER_SUPPORTS_V4
       )
     })
 
     it('should return undefined when features are not available and no default provided', () => {
-      vi.mocked(api.getServerFeature).mockImplementation(
+      vi.mocked(serverCapabilities.getServerCapability).mockImplementation(
         (_path, defaultValue) => defaultValue
       )
 
@@ -93,7 +89,7 @@ describe('useFeatureFlags', () => {
 
   describe('featureFlag', () => {
     it('should create reactive computed for custom feature flags', () => {
-      vi.mocked(api.getServerFeature).mockImplementation(
+      vi.mocked(serverCapabilities.getServerCapability).mockImplementation(
         (path, defaultValue) => {
           if (path === 'custom.feature') return 'custom-value'
           return defaultValue
@@ -104,14 +100,14 @@ describe('useFeatureFlags', () => {
       const customFlag = featureFlag('custom.feature', 'default')
 
       expect(customFlag.value).toBe('custom-value')
-      expect(api.getServerFeature).toHaveBeenCalledWith(
+      expect(serverCapabilities.getServerCapability).toHaveBeenCalledWith(
         'custom.feature',
         'default'
       )
     })
 
     it('should handle nested paths', () => {
-      vi.mocked(api.getServerFeature).mockImplementation(
+      vi.mocked(serverCapabilities.getServerCapability).mockImplementation(
         (path, defaultValue) => {
           if (path === 'extension.custom.nested.feature') return true
           return defaultValue
@@ -125,7 +121,7 @@ describe('useFeatureFlags', () => {
     })
 
     it('should work with ServerFeatureFlag enum', () => {
-      vi.mocked(api.getServerFeature).mockImplementation(
+      vi.mocked(serverCapabilities.getServerCapability).mockImplementation(
         (path, defaultValue) => {
           if (path === ServerFeatureFlag.MAX_UPLOAD_SIZE) return 104857600
           return defaultValue
@@ -145,12 +141,12 @@ describe('useFeatureFlags', () => {
 
       const { flags } = useFeatureFlags()
       expect(flags.linearToggleEnabled).toBe(true)
-      expect(api.getServerFeature).not.toHaveBeenCalled()
+      expect(serverCapabilities.getServerCapability).not.toHaveBeenCalled()
     })
 
-    it('should check remote config and server feature when isNightly is false', () => {
+    it('should check remote config and server capability when isNightly is false', () => {
       vi.mocked(distributionTypes).isNightly = false
-      vi.mocked(api.getServerFeature).mockImplementation(
+      vi.mocked(serverCapabilities.getServerCapability).mockImplementation(
         (path, defaultValue) => {
           if (path === ServerFeatureFlag.LINEAR_TOGGLE_ENABLED) return true
           return defaultValue
@@ -159,7 +155,7 @@ describe('useFeatureFlags', () => {
 
       const { flags } = useFeatureFlags()
       expect(flags.linearToggleEnabled).toBe(true)
-      expect(api.getServerFeature).toHaveBeenCalledWith(
+      expect(serverCapabilities.getServerCapability).toHaveBeenCalledWith(
         ServerFeatureFlag.LINEAR_TOGGLE_ENABLED,
         false
       )
@@ -167,7 +163,7 @@ describe('useFeatureFlags', () => {
 
     it('should return false when isNightly is false and flag is disabled', () => {
       vi.mocked(distributionTypes).isNightly = false
-      vi.mocked(api.getServerFeature).mockImplementation(
+      vi.mocked(serverCapabilities.getServerCapability).mockImplementation(
         (_path, defaultValue) => defaultValue
       )
 
@@ -182,7 +178,7 @@ describe('useFeatureFlags', () => {
     })
 
     it('resolveFlag returns localStorage override over remoteConfig and server value', () => {
-      vi.mocked(api.getServerFeature).mockReturnValue(false)
+      vi.mocked(serverCapabilities.getServerCapability).mockReturnValue(false)
       localStorage.setItem('ff:model_upload_button_enabled', 'true')
 
       const { flags } = useFeatureFlags()
@@ -190,7 +186,7 @@ describe('useFeatureFlags', () => {
     })
 
     it('resolveFlag falls through to server when no override is set', () => {
-      vi.mocked(api.getServerFeature).mockImplementation(
+      vi.mocked(serverCapabilities.getServerCapability).mockImplementation(
         (path, defaultValue) => {
           if (path === ServerFeatureFlag.ASSET_RENAME_ENABLED) return true
           return defaultValue
@@ -201,12 +197,14 @@ describe('useFeatureFlags', () => {
       expect(flags.assetRenameEnabled).toBe(true)
     })
 
-    it('direct server flags delegate override to api.getServerFeature', () => {
-      vi.mocked(api.getServerFeature).mockImplementation((path) => {
-        if (path === ServerFeatureFlag.SUPPORTS_PREVIEW_METADATA)
-          return 'overridden'
-        return undefined
-      })
+    it('direct server flags use getServerCapability which handles override', () => {
+      vi.mocked(serverCapabilities.getServerCapability).mockImplementation(
+        (path) => {
+          if (path === ServerFeatureFlag.SUPPORTS_PREVIEW_METADATA)
+            return 'overridden'
+          return undefined
+        }
+      )
 
       const { flags } = useFeatureFlags()
       expect(flags.supportsPreviewMetadata).toBe('overridden')
