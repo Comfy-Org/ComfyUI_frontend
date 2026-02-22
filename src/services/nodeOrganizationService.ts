@@ -1,3 +1,8 @@
+import type { EssentialsCategory } from '@/constants/essentialsNodes'
+import {
+  ESSENTIALS_CATEGORIES,
+  ESSENTIALS_NODES
+} from '@/constants/essentialsNodes'
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 import { buildNodeDefTree } from '@/stores/nodeDefStore'
 import type {
@@ -13,46 +18,6 @@ import { sortedTree } from '@/utils/treeUtil'
 import { upperCase } from 'es-toolkit/string'
 
 const DEFAULT_ICON = 'pi pi-sort'
-
-const NODE_ORDER_BY_FOLDER = {
-  basics: [
-    'LoadImage',
-    'LoadVideo',
-    'Load3D',
-    'SaveImage',
-    'SaveVideo',
-    'SaveGLB',
-    'PrimitiveStringMultiline',
-    'PreviewImage'
-  ],
-  'image tools': [
-    'ImageBatch',
-    'ImageCrop',
-    'ImageCropV2',
-    'ImageScale',
-    'ImageScaleBy',
-    'ImageRotate',
-    'ImageBlur',
-    'ImageBlend',
-    'ImageInvert',
-    'Canny',
-    'RecraftRemoveBackgroundNode',
-    'LoadImageMask'
-  ],
-  'video tools': ['GetVideoComponents', 'CreateVideo'],
-  'image generation': [
-    'LoraLoader',
-    'LoraLoaderModelOnly',
-    'ConditioningCombine'
-  ],
-  audio: [
-    'LoadAudio',
-    'SaveAudio',
-    'SaveAudioMP3',
-    'StabilityTextToAudio',
-    'EmptyLatentAudio'
-  ]
-} as const satisfies Record<string, readonly string[]>
 
 export const DEFAULT_GROUPING_ID = 'category' as const
 export const DEFAULT_SORTING_ID = 'original' as const
@@ -178,34 +143,25 @@ class NodeOrganizationService {
         const tree = buildNodeDefTree(essentialNodes, {
           pathExtractor: essentialsPathExtractor
         })
-        const folderOrder = [
-          'basics',
-          'text generation',
-          'image generation',
-          'video generation',
-          'image tools',
-          'video tools',
-          'audio',
-          '3D'
-        ]
         if (tree.children) {
-          const len = folderOrder.length
+          const len = ESSENTIALS_CATEGORIES.length
           const originalIndex = new Map(
             tree.children.map((child, i) => [child, i])
           )
           tree.children.sort((a, b) => {
-            const ai = folderOrder.indexOf(a.label ?? '')
-            const bi = folderOrder.indexOf(b.label ?? '')
+            const ai = ESSENTIALS_CATEGORIES.indexOf(
+              a.label as EssentialsCategory
+            )
+            const bi = ESSENTIALS_CATEGORIES.indexOf(
+              b.label as EssentialsCategory
+            )
             const orderA = ai === -1 ? len + originalIndex.get(a)! : ai
             const orderB = bi === -1 ? len + originalIndex.get(b)! : bi
             return orderA - orderB
           })
           for (const folder of tree.children) {
             if (!folder.children) continue
-            const order =
-              NODE_ORDER_BY_FOLDER[
-                folder.label as keyof typeof NODE_ORDER_BY_FOLDER
-              ]
+            const order = ESSENTIALS_NODES[folder.label as EssentialsCategory]
             if (!order) continue
             const nodeOrder: readonly string[] = order
             const orderLen = nodeOrder.length
