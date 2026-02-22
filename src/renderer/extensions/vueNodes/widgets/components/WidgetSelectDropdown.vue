@@ -6,6 +6,7 @@ import { useI18n } from 'vue-i18n'
 import { useTransformCompatOverlayProps } from '@/composables/useTransformCompatOverlayProps'
 import { SUPPORTED_EXTENSIONS_ACCEPT } from '@/extensions/core/load3d/constants'
 import { useAssetFilterOptions } from '@/platform/assets/composables/useAssetFilterOptions'
+import { useMediaAssets } from '@/platform/assets/composables/media/useMediaAssets'
 import {
   filterItemByBaseModels,
   filterItemByOwnership
@@ -31,9 +32,9 @@ import { useAssetWidgetData } from '@/renderer/extensions/vueNodes/widgets/compo
 import type { ResultItemType } from '@/schemas/apiSchema'
 import { api } from '@/scripts/api'
 import { useAssetsStore } from '@/stores/assetsStore'
-import { useQueueStore } from '@/stores/queueStore'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import type { AssetKind } from '@/types/widgetTypes'
+import { getMediaTypeFromFilename } from '@/utils/formatUtil'
 import {
   PANEL_EXCLUDED_PROPS,
   filterWidgetProps
@@ -66,7 +67,8 @@ const modelValue = defineModel<string | undefined>({
 
 const { t } = useI18n()
 const toastStore = useToastStore()
-const queueStore = useQueueStore()
+
+const outputMediaAssets = useMediaAssets('output')
 
 const transformCompatProps = useTransformCompatOverlayProps()
 
@@ -145,36 +147,40 @@ const inputItems = computed<FormDropdownItem[]>(() => {
     label: getDisplayLabel(String(value))
   }))
 })
+
+function toAssetKind(
+  mediaType: ReturnType<typeof getMediaTypeFromFilename>
+): AssetKind {
+  switch (mediaType) {
+    case 'image':
+    case 'video':
+    case 'audio':
+      return mediaType
+    case '3D':
+      return 'mesh'
+    default:
+      return 'unknown'
+  }
+}
+
 const outputItems = computed<FormDropdownItem[]>(() => {
-  if (!['image', 'video', 'mesh'].includes(props.assetKind ?? '')) return []
+  if (!['image', 'video', 'audio', 'mesh'].includes(props.assetKind ?? ''))
+    return []
 
-  const outputs = new Set<string>()
-
-  // Extract output images/videos from queue history
-  queueStore.historyTasks.forEach((task) => {
-    task.flatOutputs.forEach((output) => {
-      const isTargetType =
-        (props.assetKind === 'image' && output.mediaType === 'images') ||
-        (props.assetKind === 'video' && output.mediaType === 'video') ||
-        (props.assetKind === 'mesh' && output.is3D)
-
-      if (output.type === 'output' && isTargetType) {
-        const path = output.subfolder
-          ? `${output.subfolder}/${output.filename}`
-          : output.filename
-        // Add [output] annotation so the preview component knows the type
-        const annotatedPath = `${path} [output]`
-        outputs.add(annotatedPath)
-      }
-    })
+  const outputFiles = outputMediaAssets.media.value.filter((asset) => {
+    const mediaType = getMediaTypeFromFilename(asset.name)
+    return toAssetKind(mediaType) === props.assetKind
   })
 
-  return Array.from(outputs).map((output) => ({
-    id: `output-${output}`,
-    preview_url: getMediaUrl(output.replace(' [output]', ''), 'output'),
-    name: output,
-    label: getDisplayLabel(output)
-  }))
+  return outputFiles.map((asset, index) => {
+    const annotatedPath = `${asset.name} [output]`
+    return {
+      id: `output-${index}`,
+      preview_url: asset.preview_url || getMediaUrl(asset.name, 'output'),
+      name: annotatedPath,
+      label: getDisplayLabel(annotatedPath)
+    }
+  })
 })
 
 /**
@@ -462,6 +468,12 @@ function getMediaUrl(
   if (!['image', 'video'].includes(props.assetKind ?? '')) return ''
   return `/api/view?filename=${encodeURIComponent(filename)}&type=${type}`
 }
+
+function handleIsOpenUpdate(isOpen: boolean) {
+  if (isOpen && !outputMediaAssets.loading) {
+    outputMediaAssets.refresh()
+  }
+}
 </script>
 
 <template>
@@ -487,6 +499,7 @@ function getMediaUrl(
       class="w-full"
       @update:selected="updateSelectedItems"
       @update:files="handleFilesUpdate"
+      @update:is-open="handleIsOpenUpdate"
     />
   </WidgetLayoutField>
 </template>

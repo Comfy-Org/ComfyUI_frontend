@@ -71,6 +71,7 @@ const placeholderText = computed(
   () => placeholder ?? t('widgets.uploadSelect.placeholder')
 )
 
+const isOpen = defineModel<boolean>('isOpen', { default: false })
 const selected = defineModel<Set<string>>('selected', {
   default: () => new Set()
 })
@@ -93,7 +94,6 @@ const baseModelSelected = defineModel<Set<string>>('baseModelSelected', {
 const toastStore = useToastStore()
 const popoverRef = ref<InstanceType<typeof Popover>>()
 const triggerRef = useTemplateRef('triggerRef')
-const isOpen = ref(false)
 
 const maxSelectable = computed(() => {
   if (multiple === true) return Infinity
