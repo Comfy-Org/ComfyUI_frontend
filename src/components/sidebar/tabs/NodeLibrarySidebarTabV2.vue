@@ -112,6 +112,7 @@ import {
 import { computed, nextTick, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import { resolveEssentialsDisplayName } from '@/constants/essentialsDisplayNames'
 import SearchBox from '@/components/common/SearchBoxV2.vue'
 import { useNodeDragToCanvas } from '@/composables/node/useNodeDragToCanvas'
 import { usePerTabState } from '@/composables/usePerTabState'
@@ -225,7 +226,9 @@ function fillNodeInfo(
 
   return {
     key: node.key,
-    label: node.leaf ? node.data?.display_name : node.label,
+    label: node.leaf
+      ? (resolveEssentialsDisplayName(node.data!) ?? node.data?.display_name)
+      : node.label,
     leaf: node.leaf,
     data: node.data,
     icon: node.leaf ? 'icon-[comfy--node]' : getFolderIcon(node),
