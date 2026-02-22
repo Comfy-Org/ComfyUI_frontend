@@ -10,12 +10,14 @@ const {
   label,
   enableEmptyState,
   tooltip,
+  size = 'default',
   class: className
 } = defineProps<{
   disabled?: boolean
   label?: string
   enableEmptyState?: boolean
   tooltip?: string
+  size?: 'default' | 'lg'
   class?: string
 }>()
 
@@ -39,7 +41,8 @@ const tooltipConfig = computed(() => {
         type="button"
         :class="
           cn(
-            'group min-h-12 bg-transparent border-0 outline-0 ring-0 w-full text-left flex items-center justify-between pl-4 pr-3',
+            'group bg-transparent border-0 outline-0 ring-0 w-full text-left flex items-center justify-between pl-4 pr-3',
+            size === 'lg' ? 'min-h-16' : 'min-h-12',
             !disabled && 'cursor-pointer'
           )
         "

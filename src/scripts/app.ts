@@ -1072,6 +1072,11 @@ export class ComfyApp {
     if (useSettingStore().get('Comfy.Workflow.ShowMissingNodesWarning')) {
       useMissingNodesDialog().show({ missingNodeTypes })
     }
+    const executionErrorStore = useExecutionErrorStore()
+    executionErrorStore.setMissingNodeTypes(missingNodeTypes)
+    if (useSettingStore().get('Comfy.RightSidePanel.ShowErrorsTab')) {
+      executionErrorStore.showErrorOverlay()
+    }
   }
 
   async loadGraphData(
@@ -1153,12 +1158,13 @@ export class ComfyApp {
 
     const collectMissingNodesAndModels = (
       nodes: ComfyWorkflowJSON['nodes'],
-      path: string = ''
+      pathPrefix: string = '',
+      displayName: string = ''
     ) => {
       if (!Array.isArray(nodes)) {
         console.warn(
           'Workflow nodes data is missing or invalid, skipping node processing',
-          { nodes, path }
+          { nodes, pathPrefix }
         )
         return
       }
@@ -1167,9 +1173,22 @@ export class ComfyApp {
         if (!(n.type in LiteGraph.registered_node_types)) {
           const replacement = nodeReplacementStore.getReplacementFor(n.type)
 
+          let cnrId: string | undefined
+          if (typeof n.properties?.cnr_id === 'string') {
+            cnrId = n.properties.cnr_id
+          } else if (typeof n.properties?.aux_id === 'string') {
+            cnrId = n.properties.aux_id
+          }
+
+          const executionId = pathPrefix
+            ? `${pathPrefix}:${n.id}`
+            : String(n.id)
+
           missingNodeTypes.push({
             type: n.type,
-            ...(path && { hint: `in subgraph '${path}'` }),
+            nodeId: executionId,
+            cnrId,
+            ...(displayName && { hint: `in subgraph '${displayName}'` }),
             isReplaceable: replacement !== null,
             replacement: replacement ?? undefined
           })
@@ -1188,12 +1207,29 @@ export class ComfyApp {
     // Process nodes at the top level
     collectMissingNodesAndModels(graphData.nodes)
 
+    // Build map: subgraph definition UUID → container node LiteGraph ID
+    // A SubgraphNode in graphData.nodes has type === subgraph definition UUID.
+    const subgraphDefIds = new Set(
+      graphData.definitions?.subgraphs
+        ?.filter(isSubgraphDefinition)
+        .map((s) => s.id) ?? []
+    )
+    const subgraphContainerIdMap = new Map<string, string>()
+    for (const node of graphData.nodes ?? []) {
+      if (typeof node.type === 'string' && subgraphDefIds.has(node.type)) {
+        subgraphContainerIdMap.set(node.type, String(node.id))
+      }
+    }
+
     // Process nodes in subgraphs
     if (graphData.definitions?.subgraphs) {
       for (const subgraph of graphData.definitions.subgraphs) {
         if (isSubgraphDefinition(subgraph)) {
+          // Use the container node's LiteGraph ID as path prefix so the
+          // resulting nodeId is a valid execution ID: "containerNodeId:localNodeId"
           collectMissingNodesAndModels(
             subgraph.nodes,
+            subgraphContainerIdMap.get(subgraph.id) ?? '',
             subgraph.name || subgraph.id
           )
         }

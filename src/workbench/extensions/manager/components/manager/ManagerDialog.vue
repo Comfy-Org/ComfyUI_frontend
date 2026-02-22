@@ -211,8 +211,9 @@ import { useManagerState } from '@/workbench/extensions/manager/composables/useM
 import { useComfyManagerStore } from '@/workbench/extensions/manager/stores/comfyManagerStore'
 import { ManagerTab } from '@/workbench/extensions/manager/types/comfyManagerTypes'
 
-const { initialTab, onClose } = defineProps<{
+const { initialTab, initialPackId, onClose } = defineProps<{
   initialTab?: ManagerTab
+  initialPackId?: string
   onClose: () => void
 }>()
 
@@ -347,8 +348,17 @@ const {
   sortOptions
 } = useRegistrySearch({
   initialSortField: initialState.sortField,
-  initialSearchMode: initialState.searchMode,
-  initialSearchQuery: initialState.searchQuery
+  // Force 'packs' mode only when pre-filling search from a packId on non-Missing tabs
+  initialSearchMode:
+    initialPackId && initialTab !== ManagerTab.Missing
+      ? 'packs'
+      : initialState.searchMode,
+  // Missing tab always opens with empty search so all missing packs are visible.
+  // Other tabs use initialPackId as the pre-filled search query (or fall back to persisted state).
+  initialSearchQuery:
+    initialTab === ManagerTab.Missing
+      ? ''
+      : (initialPackId ?? initialState.searchQuery)
 })
 pageNumber.value = 0
 
@@ -473,6 +483,20 @@ watch(
       isRightPanelOpen.value = true
     }
   }
+)
+
+// Auto-select the pack matching initialPackId once displayPacks is populated.
+watch(
+  resultsWithKeys,
+  (packs) => {
+    if (!initialPackId) return
+    if (selectedNodePacks.value.length > 0) return
+    const target = packs.find((p) => p.id === initialPackId)
+    if (!target) return
+    selectedNodePacks.value = [target]
+    isRightPanelOpen.value = true
+  },
+  { immediate: true }
 )
 
 const getLoadingCount = () => {

@@ -130,6 +130,12 @@ const nodeHasError = computed(() => {
   return hasDirectError.value || hasContainerInternalError.value
 })
 
+const showSeeError = computed(
+  () =>
+    nodeHasError.value &&
+    useSettingStore().get('Comfy.RightSidePanel.ShowErrorsTab')
+)
+
 const parentGroup = computed<LGraphGroup | null>(() => {
   if (!targetNode.value || !getNodeParentGroup) return null
   return getNodeParentGroup(targetNode.value)
@@ -193,6 +199,7 @@ defineExpose({
       :enable-empty-state
       :disabled="isEmpty"
       :tooltip
+      :size="showSeeError ? 'lg' : 'default'"
     >
       <template #label>
         <div class="flex flex-wrap items-center gap-2 flex-1 min-w-0">
@@ -222,13 +229,10 @@ defineExpose({
             </span>
           </span>
           <Button
-            v-if="
-              nodeHasError &&
-              useSettingStore().get('Comfy.RightSidePanel.ShowErrorsTab')
-            "
+            v-if="showSeeError"
             variant="secondary"
             size="sm"
-            class="shrink-0 rounded-lg text-sm"
+            class="shrink-0 rounded-lg text-sm h-8"
             @click.stop="navigateToErrorTab"
           >
             {{ t('rightSidePanel.seeError') }}

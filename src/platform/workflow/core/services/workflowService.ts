@@ -21,6 +21,7 @@ import { useMissingModelsDialog } from '@/composables/useMissingModelsDialog'
 import { useMissingNodesDialog } from '@/composables/useMissingNodesDialog'
 import { useDialogService } from '@/services/dialogService'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
+import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { appendJsonExt } from '@/utils/formatUtil'
 
@@ -33,6 +34,7 @@ export const useWorkflowService = () => {
   const missingNodesDialog = useMissingNodesDialog()
   const workflowThumbnail = useWorkflowThumbnail()
   const domWidgetStore = useDomWidgetStore()
+  const executionErrorStore = useExecutionErrorStore()
   const workflowDraftStore = useWorkflowDraftStore()
 
   async function getFilename(defaultName: string): Promise<string | null> {
@@ -461,6 +463,14 @@ export const useWorkflowService = () => {
     ) {
       missingNodesDialog.show({ missingNodeTypes })
     }
+
+    if (missingNodeTypes?.length) {
+      executionErrorStore.setMissingNodeTypes(missingNodeTypes)
+      if (settingStore.get('Comfy.RightSidePanel.ShowErrorsTab')) {
+        executionErrorStore.showErrorOverlay()
+      }
+    }
+
     if (
       missingModels &&
       settingStore.get('Comfy.Workflow.ShowMissingModelsWarning')

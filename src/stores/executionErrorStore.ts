@@ -1,6 +1,8 @@
 import { defineStore } from 'pinia'
 import { computed, ref, watch } from 'vue'
 
+import { st } from '@/i18n'
+import { isCloud } from '@/platform/distribution/types'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { app } from '@/scripts/app'
@@ -14,8 +16,15 @@ import type { NodeLocatorId } from '@/types/nodeIdentification'
 import {
   executionIdToNodeLocatorId,
   forEachNode,
-  getNodeByExecutionId
+  getNodeByExecutionId,
+  getRootParentNode
 } from '@/utils/graphTraversalUtil'
+import type { MissingNodeType } from '@/types/comfy'
+
+interface MissingNodesError {
+  message: string
+  nodeTypes: MissingNodeType[]
+}
 
 /**
  * Store dedicated to execution error state management.
@@ -34,6 +43,9 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
 
   const isErrorOverlayOpen = ref(false)
 
+  // Missing node state (single error object or null)
+  const missingNodesError = ref<MissingNodesError | null>(null)
+
   function showErrorOverlay() {
     isErrorOverlayOpen.value = true
   }
@@ -47,12 +59,48 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
     lastExecutionError.value = null
     lastPromptError.value = null
     lastNodeErrors.value = null
+    missingNodesError.value = null
     isErrorOverlayOpen.value = false
   }
 
   /** Clear only prompt-level errors. Called during resetExecutionState. */
   function clearPromptError() {
     lastPromptError.value = null
+  }
+
+  /** Set missing node types detected during workflow load (deduplicated by nodeId, or by type for legacy string entries). */
+  function setMissingNodeTypes(types: MissingNodeType[]) {
+    if (!types.length) {
+      missingNodesError.value = null
+      return
+    }
+    const seen = new Set<string>()
+    const uniqueTypes = types.filter((node) => {
+      // For string entries (group nodes), deduplicate by the string itself.
+      // For object entries, prefer nodeId so multiple instances of the same
+      // type are kept as separate rows; fall back to type if nodeId is absent.
+      const isString = typeof node === 'string'
+      let key: string
+      if (isString) {
+        key = node
+      } else if (node.nodeId != null) {
+        key = String(node.nodeId)
+      } else {
+        key = node.type
+      }
+      if (seen.has(key)) return false
+      seen.add(key)
+      return true
+    })
+    missingNodesError.value = {
+      message: isCloud
+        ? st(
+            'rightSidePanel.missingNodePacks.unsupportedTitle',
+            'Unsupported Node Packs'
+          )
+        : st('rightSidePanel.missingNodePacks.title', 'Missing Node Packs'),
+      nodeTypes: uniqueTypes
+    }
   }
 
   const lastExecutionErrorNodeLocatorId = computed(() => {
@@ -79,9 +127,16 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
     () => !!lastNodeErrors.value && Object.keys(lastNodeErrors.value).length > 0
   )
 
-  /** Whether any error (node validation, runtime execution, or prompt-level) is present */
+  /** Whether any missing node types are present in the current workflow */
+  const hasMissingNodes = computed(() => !!missingNodesError.value)
+
+  /** Whether any error (node validation, runtime execution, prompt-level, or missing nodes) is present */
   const hasAnyError = computed(
-    () => hasExecutionError.value || hasPromptError.value || hasNodeError.value
+    () =>
+      hasExecutionError.value ||
+      hasPromptError.value ||
+      hasNodeError.value ||
+      hasMissingNodes.value
   )
 
   const allErrorExecutionIds = computed<string[]>(() => {
@@ -114,10 +169,16 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
   /** Count of runtime execution errors (0 or 1) */
   const executionErrorCount = computed(() => (lastExecutionError.value ? 1 : 0))
 
+  /** Count of missing node errors (0 or 1 — all missing nodes are a single error group) */
+  const missingNodeCount = computed(() => (missingNodesError.value ? 1 : 0))
+
   /** Total count of all individual errors */
   const totalErrorCount = computed(
     () =>
-      promptErrorCount.value + nodeErrorCount.value + executionErrorCount.value
+      promptErrorCount.value +
+      nodeErrorCount.value +
+      executionErrorCount.value +
+      missingNodeCount.value
   )
 
   /** Pre-computed Set of graph node IDs (as strings) that have errors in the current graph scope. */
@@ -145,6 +206,31 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
       }
     }
 
+    return ids
+  })
+
+  const activeMissingNodeGraphIds = computed<Set<string>>(() => {
+    const ids = new Set<string>()
+    const error = missingNodesError.value
+    if (!error || !app.rootGraph) return ids
+
+    const activeGraph = canvasStore.currentGraph ?? app.rootGraph
+
+    for (const nodeType of error.nodeTypes) {
+      if (typeof nodeType === 'string') continue
+      if (nodeType.nodeId == null) continue
+      const executionId = String(nodeType.nodeId)
+
+      const graphNode = getNodeByExecutionId(app.rootGraph, executionId)
+      if (graphNode?.graph === activeGraph) {
+        ids.add(String(graphNode.id))
+      }
+
+      const rootParent = getRootParentNode(app.rootGraph, executionId)
+      if (rootParent) {
+        ids.add(String(rootParent.id))
+      }
+    }
     return ids
   })
 
@@ -252,6 +338,7 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
     lastNodeErrors,
     lastExecutionError,
     lastPromptError,
+    missingNodesError,
 
     // Clearing
     clearAllErrors,
@@ -266,11 +353,16 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
     hasExecutionError,
     hasPromptError,
     hasNodeError,
+    hasMissingNodes,
     hasAnyError,
     allErrorExecutionIds,
     totalErrorCount,
     lastExecutionErrorNodeId,
     activeGraphErrorNodeIds,
+    activeMissingNodeGraphIds,
+
+    // Missing node actions
+    setMissingNodeTypes,
 
     // Lookup helpers
     getNodeErrors,

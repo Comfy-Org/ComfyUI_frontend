@@ -90,6 +90,9 @@ export type MissingNodeType =
   // Primarily used by group nodes.
   | {
       type: string
+      /** Graph node ID — used to locate this specific instance on the canvas. */
+      nodeId?: string | number
+      cnrId?: string
       hint?: string
       action?: {
         text: string
