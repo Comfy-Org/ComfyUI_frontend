@@ -863,7 +863,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
           if ('shiftKey' in e && e.shiftKey) {
             if (this.allow_searchbox) {
               this.showSearchBox(
-                e as unknown as MouseEvent,
+                e as MouseEvent,
                 linkReleaseContext as IShowSearchOptions
               )
             }

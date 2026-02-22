@@ -77,7 +77,7 @@ const createMockElectronAPI = () => {
 }
 
 const ensureElectronAPI = () => {
-  const globalWindow = window as unknown as { electronAPI?: unknown }
+  const globalWindow = window as { electronAPI?: unknown }
   if (!globalWindow.electronAPI) {
     globalWindow.electronAPI = createMockElectronAPI()
   }

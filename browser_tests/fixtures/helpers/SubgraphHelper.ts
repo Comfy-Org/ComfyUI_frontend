@@ -88,7 +88,7 @@ export class SubgraphHelper {
 
             if (node.onPointerDown) {
               node.onPointerDown(
-                event as unknown as CanvasPointerEvent,
+                event as Partial<CanvasPointerEvent> as CanvasPointerEvent,
                 app.canvas.pointer,
                 app.canvas.linkConnector
               )
@@ -121,7 +121,7 @@ export class SubgraphHelper {
 
           if (node.onPointerDown) {
             node.onPointerDown(
-              event as unknown as CanvasPointerEvent,
+              event as Partial<CanvasPointerEvent> as CanvasPointerEvent,
               app.canvas.pointer,
               app.canvas.linkConnector
             )
@@ -129,7 +129,7 @@ export class SubgraphHelper {
             // Trigger double-click
             if (app.canvas.pointer.onDoubleClick) {
               app.canvas.pointer.onDoubleClick(
-                event as unknown as CanvasPointerEvent
+                event as Partial<CanvasPointerEvent> as CanvasPointerEvent
               )
             }
           }
