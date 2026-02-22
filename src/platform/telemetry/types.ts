@@ -12,6 +12,7 @@
  * 3. Check dist/assets/*.js files contain no tracking code
  */
 
+import type { SubscriptionDialogReason } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
 import type { TierKey } from '@/platform/cloud/subscription/constants/tierPricing'
 import type { BillingCycle } from '@/platform/cloud/subscription/utils/subscriptionTierRank'
 import type { AuditLog } from '@/services/customerEventsService'
@@ -27,7 +28,6 @@ export interface AuthMetadata {
   utm_source?: string
   utm_medium?: string
   utm_campaign?: string
-  free_tier_badge_shown?: boolean
 }
 
 /**
@@ -304,6 +304,11 @@ export interface CheckoutAttributionMetadata {
   wbraid?: string
 }
 
+export interface SubscriptionMetadata {
+  current_tier?: string
+  reason?: SubscriptionDialogReason
+}
+
 export interface BeginCheckoutMetadata
   extends Record<string, unknown>, CheckoutAttributionMetadata {
   user_id: string
@@ -325,7 +330,10 @@ export interface TelemetryProvider {
   trackUserLoggedIn?(): void
 
   // Subscription flow events
-  trackSubscription?(event: 'modal_opened' | 'subscribe_clicked'): void
+  trackSubscription?(
+    event: 'modal_opened' | 'subscribe_clicked',
+    metadata?: SubscriptionMetadata
+  ): void
   trackBeginCheckout?(metadata: BeginCheckoutMetadata): void
   trackMonthlySubscriptionSucceeded?(): void
   trackMonthlySubscriptionCancelled?(): void
@@ -518,3 +526,4 @@ export type TelemetryEventProperties =
   | WorkflowCreatedMetadata
   | EnterLinearMetadata
   | AuthPageOpenedMetadata
+  | SubscriptionMetadata

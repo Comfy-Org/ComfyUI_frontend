@@ -16,6 +16,7 @@ import type {
   PageVisibilityMetadata,
   SettingChangedMetadata,
   AuthPageOpenedMetadata,
+  SubscriptionMetadata,
   SurveyResponses,
   TabCountMetadata,
   TelemetryDispatcher,
@@ -70,8 +71,11 @@ export class TelemetryRegistry implements TelemetryDispatcher {
     this.dispatch((provider) => provider.trackUserLoggedIn?.())
   }
 
-  trackSubscription(event: 'modal_opened' | 'subscribe_clicked'): void {
-    this.dispatch((provider) => provider.trackSubscription?.(event))
+  trackSubscription(
+    event: 'modal_opened' | 'subscribe_clicked',
+    metadata?: SubscriptionMetadata
+  ): void {
+    this.dispatch((provider) => provider.trackSubscription?.(event, metadata))
   }
 
   trackBeginCheckout(metadata: BeginCheckoutMetadata): void {

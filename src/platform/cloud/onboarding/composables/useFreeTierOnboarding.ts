@@ -1,10 +1,9 @@
 import { computed, ref } from 'vue'
 
 import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
-import { useTelemetry } from '@/platform/telemetry'
 import { HAS_ACCOUNT_KEY } from '@/stores/firebaseAuthStore'
 
-export function useFreeTierOnboarding(source: 'login' | 'signup') {
+export function useFreeTierOnboarding() {
   const showEmailForm = ref(false)
   const freeTierCredits = computed(() => remoteConfig.value.free_tier_credits)
   // Evaluated once at mount — localStorage won't change mid-session
@@ -15,20 +14,13 @@ export function useFreeTierOnboarding(source: 'login' | 'signup') {
       return false
     }
   })()
-  const telemetry = useTelemetry()
 
   function switchToEmailForm() {
     showEmailForm.value = true
-    telemetry?.trackUiButtonClicked({
-      button_id: `${source}_use_email_instead`
-    })
   }
 
   function switchToSocialLogin() {
     showEmailForm.value = false
-    telemetry?.trackUiButtonClicked({
-      button_id: `${source}_back_to_social_login`
-    })
   }
 
   return {

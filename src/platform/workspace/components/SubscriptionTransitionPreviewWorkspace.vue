@@ -208,7 +208,7 @@ const currentDisplayCredits = computed(() => {
     | 'standard'
     | 'creator'
     | 'pro'
-  return n(getTierCredits(tierKey))
+  return n(getTierCredits(tierKey) ?? 0)
 })
 
 const newDisplayCredits = computed(() => {
@@ -216,7 +216,7 @@ const newDisplayCredits = computed(() => {
     | 'standard'
     | 'creator'
     | 'pro'
-  return n(getTierCredits(tierKey))
+  return n(getTierCredits(tierKey) ?? 0)
 })
 
 const currentPeriodEndDate = computed(() =>

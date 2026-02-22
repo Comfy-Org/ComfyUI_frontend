@@ -8,6 +8,7 @@ import { getComfyApiBaseUrl, getComfyPlatformBaseUrl } from '@/config/comfyApi'
 import { t } from '@/i18n'
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
+import type { SubscriptionDialogReason } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
 import type { CheckoutAttributionMetadata } from '@/platform/telemetry/types'
 import {
   FirebaseAuthStoreError,
@@ -132,12 +133,17 @@ function useSubscriptionInternal() {
     window.open(response.checkout_url, '_blank')
   }, reportError)
 
-  const showSubscriptionDialog = () => {
+  const showSubscriptionDialog = (options?: {
+    reason?: SubscriptionDialogReason
+  }) => {
     if (isCloud) {
-      useTelemetry()?.trackSubscription('modal_opened')
+      useTelemetry()?.trackSubscription('modal_opened', {
+        current_tier: subscriptionTier.value?.toLowerCase(),
+        reason: options?.reason
+      })
     }
 
-    void showSubscriptionRequiredDialog()
+    void showSubscriptionRequiredDialog(options)
   }
 
   /**

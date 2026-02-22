@@ -213,7 +213,7 @@ const displayPrice = computed(() => {
   return getTierPrice(tierKey, billingCycle === 'yearly')
 })
 
-const displayCredits = computed(() => n(getTierCredits(tierKey)))
+const displayCredits = computed(() => n(getTierCredits(tierKey) ?? 0))
 
 const hasCustomLoRAs = computed(() => getTierFeatures(tierKey).customLoRAs)
 const maxDuration = computed(() => t(`subscription.maxDuration.${tierKey}`))

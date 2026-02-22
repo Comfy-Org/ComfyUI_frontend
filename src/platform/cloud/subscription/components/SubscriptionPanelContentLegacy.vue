@@ -33,7 +33,7 @@
           </div>
 
           <Button
-            v-if="isActiveSubscription"
+            v-if="isActiveSubscription && !isFreeTier"
             variant="secondary"
             class="ml-auto rounded-lg px-4 py-2 text-sm font-normal text-text-primary bg-interface-menu-component-surface-selected"
             @click="
@@ -225,6 +225,7 @@ const { t, n } = useI18n()
 const {
   isActiveSubscription,
   isCancelled,
+  isFreeTier,
   formattedRenewalDate,
   formattedEndDate,
   subscriptionTier,
