@@ -49,13 +49,13 @@ jobs:
           fi
 
           # Check for ABCROM font files
-          if find dist/ -type f \( -iname '*ABCROM*' -o -iname '*abcrom*' \) \
+          if find dist/ -type f -iname '*abcrom*' \
             \( -name '*.woff' -o -name '*.woff2' -o -name '*.ttf' -o -name '*.otf' \) \
             -print -quit | grep -q .; then
             echo ''
             echo '❌ ERROR: Found proprietary ABCROM font files in dist!'
             echo ''
-            find dist/ -type f \( -iname '*ABCROM*' -o -iname '*abcrom*' \) \
+            find dist/ -type f -iname '*abcrom*' \
               \( -name '*.woff' -o -name '*.woff2' -o -name '*.ttf' -o -name '*.otf' \)
             echo ''
             echo 'ABCROM fonts are proprietary and should not ship to OSS builds.'
