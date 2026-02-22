@@ -222,6 +222,9 @@ export const useSubgraphStore = defineStore('subgraph', () => {
           {
             display_name: v.name,
             ...(category && { category }),
+            ...(v.essentials_category && {
+              essentials_category: v.essentials_category
+            }),
             search_aliases: v.info.search_aliases,
             isGlobal: true
           },
@@ -291,6 +294,8 @@ export const useSubgraphStore = defineStore('subgraph', () => {
     const search_aliases = workflowExtra?.BlueprintSearchAliases
     const subgraphDefCategory =
       workflow.initialState.definitions?.subgraphs?.[0]?.category
+    const subgraphDefEssentialsCategory =
+      workflow.initialState.definitions?.subgraphs?.[0]?.essentials_category
     const category = subgraphDefCategory
       ? `Subgraph Blueprints/${subgraphDefCategory}`
       : 'Subgraph Blueprints'
@@ -305,6 +310,7 @@ export const useSubgraphStore = defineStore('subgraph', () => {
       output_node: false,
       python_module: 'blueprint',
       search_aliases,
+      essentials_category: subgraphDefEssentialsCategory,
       ...overrides
     }
     const nodeDefImpl = new ComfyNodeDefImpl(nodedefv1)

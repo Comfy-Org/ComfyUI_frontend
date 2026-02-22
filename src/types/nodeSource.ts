@@ -1,3 +1,5 @@
+import { ESSENTIALS_CATEGORY_MAP } from '@/constants/essentialsNodes'
+
 export enum NodeSourceType {
   Core = 'core',
   CustomNodes = 'custom_nodes',
@@ -26,44 +28,6 @@ const shortenNodeName = (name: string) => {
     .replace(/(-ComfyUI|_ComfyUI|-Comfy|_Comfy)$/, '')
 }
 
-// TODO: Remove this mock mapping once object_info/global_subgraphs returns essentials_category
-const ESSENTIALS_CATEGORY_MOCK: Record<string, string> = {
-  // basics
-  LoadImage: 'basics',
-  SaveImage: 'basics',
-  LoadVideo: 'basics',
-  SaveVideo: 'basics',
-  Load3D: 'basics',
-  SaveGLB: 'basics',
-  PrimitiveStringMultiline: 'basics',
-  // image tools
-  ImageBatch: 'image tools',
-  ImageCrop: 'image tools',
-  ImageScale: 'image tools',
-  ImageRotate: 'image tools',
-  ImageBlur: 'image tools',
-  ImageInvert: 'image tools',
-  Canny: 'image tools',
-  RecraftRemoveBackgroundNode: 'image tools',
-  // video tools
-  GetVideoComponents: 'video tools',
-  // image gen
-  LoraLoader: 'image generation',
-  // video gen
-  'SubgraphBlueprint.pose_to_video_ltx_2_0': 'video generation',
-  'SubgraphBlueprint.canny_to_video_ltx_2_0': 'video generation',
-  KlingLipSyncAudioToVideoNode: 'video generation',
-  // text gen
-  OpenAIChatNode: 'text generation',
-  // 3d
-  TencentTextToModelNode: '3D',
-  TencentImageToModelNode: '3D',
-  // audio
-  LoadAudio: 'audio',
-  SaveAudio: 'audio',
-  StabilityTextToAudio: 'audio'
-}
-
 /**
  * Get the essentials category for a node, falling back to mock data if not provided.
  */
@@ -72,7 +36,7 @@ export function getEssentialsCategory(
   essentials_category?: string
 ): string | undefined {
   return (
-    essentials_category ?? (name ? ESSENTIALS_CATEGORY_MOCK[name] : undefined)
+    essentials_category ?? (name ? ESSENTIALS_CATEGORY_MAP[name] : undefined)
   )
 }
 

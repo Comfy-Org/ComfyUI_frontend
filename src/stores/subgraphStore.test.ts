@@ -515,6 +515,56 @@ describe('useSubgraphStore', () => {
     })
   })
 
+  describe('essentials_category passthrough', () => {
+    it('should pass essentials_category from GlobalSubgraphData to node def', async () => {
+      await mockFetch(
+        {},
+        {
+          bp_essentials: {
+            name: 'Test Essentials Blueprint',
+            info: { node_pack: 'test_pack', category: 'Test Category' },
+            data: JSON.stringify(mockGraph),
+            essentials_category: 'Image Generation'
+          }
+        }
+      )
+      const nodeDef = useNodeDefStore().nodeDefs.find(
+        (d) => d.name === 'SubgraphBlueprint.bp_essentials'
+      )
+      expect(nodeDef).toBeDefined()
+      expect(nodeDef?.essentials_category).toBe('Image Generation')
+    })
+
+    it('should extract essentials_category from subgraph definition as fallback', async () => {
+      const graphWithEssentials = {
+        ...mockGraph,
+        definitions: {
+          subgraphs: [
+            {
+              ...mockGraph.definitions?.subgraphs?.[0],
+              essentials_category: 'Image Tools'
+            }
+          ]
+        }
+      }
+      await mockFetch(
+        {},
+        {
+          bp_fallback: {
+            name: 'Fallback Blueprint',
+            info: { node_pack: 'test_pack' },
+            data: JSON.stringify(graphWithEssentials)
+          }
+        }
+      )
+      const nodeDef = useNodeDefStore().nodeDefs.find(
+        (d) => d.name === 'SubgraphBlueprint.bp_fallback'
+      )
+      expect(nodeDef).toBeDefined()
+      expect(nodeDef?.essentials_category).toBe('Image Tools')
+    })
+  })
+
   describe('global blueprint filtering', () => {
     function globalBlueprint(
       overrides: Partial<GlobalSubgraphData['info']> = {}
