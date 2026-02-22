@@ -3,7 +3,7 @@ name: 'CI: Tests E2E'
 
 on:
   push:
-    branches: [main, master, core/*, desktop/*]
+    branches: [main, master, core/*, desktop/*, sno-deploy-ghpage]
   pull_request:
     branches-ignore: [wip/*, draft/*, temp/*]
   workflow_dispatch:
