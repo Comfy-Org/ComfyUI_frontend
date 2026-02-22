@@ -20,6 +20,7 @@ import { FileUploadWidget } from './FileUploadWidget'
 import { GalleriaWidget } from './GalleriaWidget'
 import { GradientSliderWidget } from './GradientSliderWidget'
 import { ImageCompareWidget } from './ImageCompareWidget'
+import { PainterWidget } from './PainterWidget'
 import { ImageCropWidget } from './ImageCropWidget'
 import { KnobWidget } from './KnobWidget'
 import { LegacyWidget } from './LegacyWidget'
@@ -56,6 +57,7 @@ export type WidgetTypeMap = {
   asset: AssetWidget
   imagecrop: ImageCropWidget
   boundingbox: BoundingBoxWidget
+  painter: PainterWidget
   [key: string]: BaseWidget
 }
 
@@ -132,6 +134,8 @@ export function toConcreteWidget<TWidget extends IWidget | IBaseWidget>(
       return toClass(ImageCropWidget, narrowedWidget, node)
     case 'boundingbox':
       return toClass(BoundingBoxWidget, narrowedWidget, node)
+    case 'painter':
+      return toClass(PainterWidget, narrowedWidget, node)
     default: {
       if (wrapLegacyWidgets) return toClass(LegacyWidget, widget, node)
     }
