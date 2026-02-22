@@ -8,6 +8,9 @@ test.describe('Essentials display names', () => {
   }) => {
     const objectInfo = await comfyPage.page.evaluate(async () => {
       const response = await fetch('/object_info')
+      if (!response.ok) {
+        throw new Error(`/object_info failed with status ${response.status}`)
+      }
       return response.json()
     })
 
@@ -22,6 +25,9 @@ test.describe('Essentials display names', () => {
   test('mapped nodes exist in object_info', async ({ comfyPage }) => {
     const objectInfo = await comfyPage.page.evaluate(async () => {
       const response = await fetch('/object_info')
+      if (!response.ok) {
+        throw new Error(`/object_info failed with status ${response.status}`)
+      }
       return response.json()
     })
 
