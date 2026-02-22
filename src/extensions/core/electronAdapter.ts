@@ -3,6 +3,7 @@ import log from 'loglevel'
 import { useExternalLink } from '@/composables/useExternalLink'
 import { PYTHON_MIRROR } from '@/constants/uvMirrors'
 import { t } from '@/i18n'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { app } from '@/scripts/app'
@@ -13,10 +14,17 @@ import { electronAPI as getElectronAPI } from '@/utils/envUtil'
 ;(async () => {
   if (!isDesktop) return
 
-  const electronAPI = getElectronAPI()
+  type ElectronCloseApi = ReturnType<typeof getElectronAPI> & {
+    onCloseRequested: (callback: () => void) => () => void
+    respondToCloseRequest: (allow: boolean) => Promise<boolean>
+  }
+
+  const electronAPI = getElectronAPI() as ElectronCloseApi
   const desktopAppVersion = await electronAPI.getElectronVersion()
   const workflowStore = useWorkflowStore()
+  const settingStore = useSettingStore()
   const toastStore = useToastStore()
+  const dialogService = useDialogService()
   const { staticUrls, buildDocsUrl } = useExternalLink()
 
   const onChangeRestartApp = (newValue: unknown, oldValue: unknown) => {
@@ -25,6 +33,38 @@ import { electronAPI as getElectronAPI } from '@/utils/envUtil'
       electronAPI.restartApp('Restart ComfyUI to apply changes.', 1500)
     }
   }
+
+  const handleCloseRequest = async () => {
+    try {
+      await settingStore.load()
+
+      const confirmOnClose = settingStore.get('Comfy.Window.UnloadConfirmation')
+      if (!confirmOnClose) {
+        await electronAPI.respondToCloseRequest(true)
+        return
+      }
+
+      if (workflowStore.modifiedWorkflows.length === 0) {
+        await electronAPI.respondToCloseRequest(true)
+        return
+      }
+
+      const confirmed = await dialogService.confirm({
+        message: t('desktopMenu.confirmQuit'),
+        title: t('desktopMenu.quit'),
+        type: 'default'
+      })
+
+      await electronAPI.respondToCloseRequest(confirmed === true)
+    } catch (error) {
+      log.error('Failed to handle close request.', error)
+      await electronAPI.respondToCloseRequest(true)
+    }
+  }
+
+  electronAPI.onCloseRequested(() => {
+    void handleCloseRequest()
+  })
 
   app.registerExtension({
     name: 'Comfy.ElectronAdapter',
@@ -246,18 +286,7 @@ import { electronAPI as getElectronAPI } from '@/utils/envUtil'
         id: 'Comfy-Desktop.Quit',
         label: 'Quit',
         icon: 'pi pi-sign-out',
-        async function() {
-          // Confirm if unsaved workflows are open
-          if (workflowStore.modifiedWorkflows.length > 0) {
-            const confirmed = await useDialogService().confirm({
-              message: t('desktopMenu.confirmQuit'),
-              title: t('desktopMenu.quit'),
-              type: 'default'
-            })
-
-            if (!confirmed) return
-          }
-
+        function() {
           electronAPI.quit()
         }
       }
