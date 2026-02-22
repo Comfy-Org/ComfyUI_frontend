@@ -52,7 +52,7 @@
             :value="tab.value"
             :class="
               cn(
-                'select-none border-none outline-none px-3 py-2 rounded-lg cursor-pointer',
+                'flex-1 text-center select-none border-none outline-none px-3 py-2 rounded-lg cursor-pointer',
                 'text-sm text-foreground transition-colors',
                 selectedTab === tab.value
                   ? 'bg-comfy-input font-bold'
