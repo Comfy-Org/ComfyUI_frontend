@@ -5,6 +5,7 @@ import { trimEnd } from 'es-toolkit'
 import { ref } from 'vue'
 
 import defaultClientFeatureFlags from '@/config/clientFeatureFlags.json' with { type: 'json' }
+import { getDevOverride } from '@/utils/devFeatureFlagOverride'
 import type {
   ModelFile,
   ModelFolderInfo
@@ -1299,6 +1300,8 @@ export class ComfyApi extends EventTarget {
    * @returns true if the feature is supported, false otherwise
    */
   serverSupportsFeature(featureName: string): boolean {
+    const override = getDevOverride<boolean>(featureName)
+    if (override !== undefined) return override
     return get(this.serverFeatureFlags.value, featureName) === true
   }
 
@@ -1309,6 +1312,8 @@ export class ComfyApi extends EventTarget {
    * @returns The feature value or default
    */
   getServerFeature<T = unknown>(featureName: string, defaultValue?: T): T {
+    const override = getDevOverride<T>(featureName)
+    if (override !== undefined) return override
     return get(this.serverFeatureFlags.value, featureName, defaultValue) as T
   }
 
