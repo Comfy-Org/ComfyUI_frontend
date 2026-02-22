@@ -1,3 +1,5 @@
+import { remove } from 'es-toolkit'
+
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { LLink } from '@/lib/litegraph/src/LLink'
 import type { Reroute } from '@/lib/litegraph/src/Reroute'
@@ -13,7 +15,8 @@ import type {
   INodeOutputSlot,
   ItemLocator,
   LinkNetwork,
-  LinkSegment
+  LinkSegment,
+  Point
 } from '@/lib/litegraph/src/interfaces'
 import { EmptySubgraphInput } from '@/lib/litegraph/src/subgraph/EmptySubgraphInput'
 import { EmptySubgraphOutput } from '@/lib/litegraph/src/subgraph/EmptySubgraphOutput'
@@ -130,7 +133,11 @@ export class LinkConnector {
   }
 
   /** Drag an existing link to a different input. */
-  moveInputLink(network: LinkNetwork, input: INodeInputSlot): void {
+  moveInputLink(
+    network: LinkNetwork,
+    input: INodeInputSlot,
+    opts?: { startPoint?: Point }
+  ): void {
     if (this.isConnecting) throw new Error('Already dragging links.')
 
     const { state, inputLinks, renderLinks } = this
@@ -221,7 +228,13 @@ export class LinkConnector {
         // Regular node links
         try {
           const reroute = network.getReroute(link.parentId)
-          const renderLink = new MovingInputLink(network, link, reroute)
+          const renderLink = new MovingInputLink(
+            network,
+            link,
+            reroute,
+            undefined,
+            opts?.startPoint
+          )
 
           const mayContinue = this.events.dispatch(
             'before-move-input',
@@ -860,6 +873,11 @@ export class LinkConnector {
   }
 
   dropOnNothing(event: CanvasPointerEvent): void {
+    remove(
+      this.renderLinks,
+      (link) => link instanceof MovingInputLink && link.disconnectOnDrop
+    ).forEach((link) => (link as MovingLinkBase).disconnect())
+    if (this.renderLinks.length === 0) return
     // For external event only.
     const mayContinue = this.events.dispatch('dropped-on-canvas', event)
     if (mayContinue === false) return
