@@ -70,44 +70,45 @@ test.describe('Vue Nodes Image Preview', () => {
     'renders promoted image previews for each subgraph node',
     { tag: '@screenshot' },
     async ({ comfyPage }) => {
-    await comfyPage.workflow.loadWorkflow(
-      'subgraphs/subgraph-with-multiple-promoted-previews'
-    )
-    await comfyPage.vueNodes.waitForNodes()
+      await comfyPage.workflow.loadWorkflow(
+        'subgraphs/subgraph-with-multiple-promoted-previews'
+      )
+      await comfyPage.vueNodes.waitForNodes()
 
-    const firstSubgraphNode = comfyPage.vueNodes.getNodeLocator('7')
-    const secondSubgraphNode = comfyPage.vueNodes.getNodeLocator('8')
+      const firstSubgraphNode = comfyPage.vueNodes.getNodeLocator('7')
+      const secondSubgraphNode = comfyPage.vueNodes.getNodeLocator('8')
 
-    await expect(firstSubgraphNode).toBeVisible()
-    await expect(secondSubgraphNode).toBeVisible()
+      await expect(firstSubgraphNode).toBeVisible()
+      await expect(secondSubgraphNode).toBeVisible()
 
-    const firstProxyWidgets = await getProxyWidgetNames(comfyPage, '7')
-    const secondProxyWidgets = await getProxyWidgetNames(comfyPage, '8')
-    expect(firstProxyWidgets).toEqual([
-      '$$canvas-image-preview',
-      '$$canvas-image-preview'
-    ])
-    expect(secondProxyWidgets).toEqual(['$$canvas-image-preview'])
+      const firstProxyWidgets = await getProxyWidgetNames(comfyPage, '7')
+      const secondProxyWidgets = await getProxyWidgetNames(comfyPage, '8')
+      expect(firstProxyWidgets).toEqual([
+        '$$canvas-image-preview',
+        '$$canvas-image-preview'
+      ])
+      expect(secondProxyWidgets).toEqual(['$$canvas-image-preview'])
 
-    expect(
-      await getNodeWidgetCountByName(comfyPage, '7', '$$canvas-image-preview')
-    ).toBe(2)
-    expect(
-      await getNodeWidgetCountByName(comfyPage, '8', '$$canvas-image-preview')
-    ).toBe(1)
+      expect(
+        await getNodeWidgetCountByName(comfyPage, '7', '$$canvas-image-preview')
+      ).toBe(2)
+      expect(
+        await getNodeWidgetCountByName(comfyPage, '8', '$$canvas-image-preview')
+      ).toBe(1)
 
-    await expect(
-      firstSubgraphNode.locator('.lg-node-widgets')
-    ).not.toContainText('$$canvas-image-preview')
-    await expect(
-      secondSubgraphNode.locator('.lg-node-widgets')
-    ).not.toContainText('$$canvas-image-preview')
+      await expect(
+        firstSubgraphNode.locator('.lg-node-widgets')
+      ).not.toContainText('$$canvas-image-preview')
+      await expect(
+        secondSubgraphNode.locator('.lg-node-widgets')
+      ).not.toContainText('$$canvas-image-preview')
 
       await comfyPage.command.executeCommand('Comfy.Canvas.FitView')
       await comfyPage.command.executeCommand('Comfy.QueuePrompt')
 
       const firstPreviewImages = firstSubgraphNode.locator('.image-preview img')
-      const secondPreviewImages = secondSubgraphNode.locator('.image-preview img')
+      const secondPreviewImages =
+        secondSubgraphNode.locator('.image-preview img')
 
       await expect(firstPreviewImages).toHaveCount(2, { timeout: 30_000 })
       await expect(secondPreviewImages).toHaveCount(1, { timeout: 30_000 })
