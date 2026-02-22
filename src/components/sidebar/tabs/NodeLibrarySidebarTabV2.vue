@@ -114,6 +114,7 @@ import {
 import { computed, nextTick, onMounted, ref, watchEffect } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import { resolveEssentialsDisplayName } from '@/constants/essentialsDisplayNames'
 import SearchBox from '@/components/common/SearchBoxV2.vue'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useNodeDragToCanvas } from '@/composables/node/useNodeDragToCanvas'
@@ -230,16 +231,23 @@ function findFirstLeaf(node: TreeNode): TreeNode | undefined {
 }
 
 function fillNodeInfo(
-  node: TreeNode
+  node: TreeNode,
+  { useEssentialsLabels = false }: { useEssentialsLabels?: boolean } = {}
 ): RenderedTreeExplorerNode<ComfyNodeDefImpl> {
-  const children = node.children?.map(fillNodeInfo)
+  const children = node.children?.map((child) =>
+    fillNodeInfo(child, { useEssentialsLabels })
+  )
   const totalLeaves = node.leaf
     ? 1
     : (children?.reduce((acc, child) => acc + child.totalLeaves, 0) ?? 0)
 
   return {
     key: node.key,
-    label: node.leaf ? node.data?.display_name : node.label,
+    label: node.leaf
+      ? useEssentialsLabels
+        ? (resolveEssentialsDisplayName(node.data) ?? node.data?.display_name)
+        : node.data?.display_name
+      : node.label,
     leaf: node.leaf,
     data: node.data,
     icon: node.leaf ? 'icon-[comfy--node]' : getFolderIcon(node),
@@ -274,7 +282,7 @@ const essentialSections = computed(() => {
 const renderedEssentialRoot = computed(() => {
   const section = essentialSections.value[0]
   return section
-    ? fillNodeInfo(applySorting(section.tree))
+    ? fillNodeInfo(applySorting(section.tree), { useEssentialsLabels: true })
     : fillNodeInfo({ key: 'root', label: '', children: [] })
 })
 
