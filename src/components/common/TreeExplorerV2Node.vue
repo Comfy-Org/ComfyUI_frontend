@@ -24,6 +24,25 @@
           {{ item.value.label }}
         </slot>
       </span>
+      <button
+        :class="
+          cn(
+            'flex size-6 shrink-0 cursor-pointer items-center justify-center rounded border-none bg-transparent text-muted-foreground hover:text-foreground',
+            'opacity-0 group-hover/tree-node:opacity-100'
+          )
+        "
+        :aria-label="$t('icon.bookmark')"
+        @click.stop="toggleBookmark"
+      >
+        <i
+          :class="
+            cn(
+              isBookmarked ? 'pi pi-bookmark-fill' : 'pi pi-bookmark',
+              'text-xs'
+            )
+          "
+        />
+      </button>
     </div>
 
     <!-- Folder -->
@@ -34,6 +53,15 @@
       @click.stop="handleClick($event, handleToggle, handleSelect)"
     >
       <i
+        v-if="item.hasChildren"
+        :class="
+          cn(
+            'icon-[lucide--chevron-down] size-4 shrink-0 text-muted-foreground transition-transform',
+            !isExpanded && '-rotate-90'
+          )
+        "
+      />
+      <i
         :class="cn(item.value.icon, 'size-4 shrink-0 text-muted-foreground')"
       />
       <span class="min-w-0 flex-1 truncate text-sm text-foreground">
@@ -41,15 +69,6 @@
           {{ item.value.label }}
         </slot>
       </span>
-      <i
-        v-if="item.hasChildren"
-        :class="
-          cn(
-            'icon-[lucide--chevron-down] mr-4 size-4 shrink-0 text-muted-foreground transition-transform',
-            !isExpanded && '-rotate-90'
-          )
-        "
-      />
     </div>
   </TreeItem>
 
@@ -73,6 +92,7 @@ import { computed, inject } from 'vue'
 
 import NodePreviewCard from '@/components/node/NodePreviewCard.vue'
 import { useNodePreviewAndDrag } from '@/composables/node/useNodePreviewAndDrag'
+import { useNodeBookmarkStore } from '@/stores/nodeBookmarkStore'
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 import { InjectKeyContextMenuNode } from '@/types/treeExplorerTypes'
 import type { RenderedTreeExplorerNode } from '@/types/treeExplorerTypes'
@@ -93,8 +113,20 @@ const emit = defineEmits<{
 }>()
 
 const contextMenuNode = inject(InjectKeyContextMenuNode)
+const nodeBookmarkStore = useNodeBookmarkStore()
 
 const nodeDef = computed(() => item.value.data)
+
+const isBookmarked = computed(() => {
+  if (!nodeDef.value) return false
+  return nodeBookmarkStore.isBookmarked(nodeDef.value)
+})
+
+function toggleBookmark() {
+  if (nodeDef.value) {
+    nodeBookmarkStore.toggleBookmark(nodeDef.value)
+  }
+}
 
 const {
   previewRef,

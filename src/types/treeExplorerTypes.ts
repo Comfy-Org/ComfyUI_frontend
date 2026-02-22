@@ -8,9 +8,9 @@ export interface TreeNode extends PrimeVueTreeNode {
   children?: this[]
 }
 
-export interface NodeLibrarySection {
+export interface NodeLibrarySection<T = unknown> {
   title?: string
-  root: RenderedTreeExplorerNode<ComfyNodeDefImpl>
+  root: RenderedTreeExplorerNode<T>
 }
 
 export interface TreeExplorerNode<T = unknown> extends TreeNode {

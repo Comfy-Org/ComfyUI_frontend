@@ -132,7 +132,7 @@ describe('NodeSearchContent', () => {
       expect(wrapper.text()).toContain('No results')
     })
 
-    it('should show only non-Core nodes when Custom is selected', async () => {
+    it('should show only CustomNodes when Extensions is selected', async () => {
       useNodeDefStore().updateNodeDefs([
         createMockNodeDef({
           name: 'CoreNode',
@@ -155,7 +155,7 @@ describe('NodeSearchContent', () => {
       ).toBe(NodeSourceType.CustomNodes)
 
       const wrapper = await createWrapper()
-      await wrapper.find('[data-testid="category-custom"]').trigger('click')
+      await wrapper.find('[data-testid="category-extensions"]').trigger('click')
       await nextTick()
 
       const items = getNodeItems(wrapper)

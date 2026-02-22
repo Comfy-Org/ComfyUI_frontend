@@ -55,7 +55,7 @@ import { cn } from '@/utils/tailwindUtil'
 
 import EssentialNodeCard from './EssentialNodeCard.vue'
 
-const props = defineProps<{
+const { root } = defineProps<{
   root: RenderedTreeExplorerNode<ComfyNodeDefImpl>
 }>()
 
@@ -74,7 +74,7 @@ function flattenLeaves(
 
 const folders = computed(() => {
   const topFolders =
-    (props.root.children?.filter(
+    (root.children?.filter(
       (child) => child.type === 'folder'
     ) as RenderedTreeExplorerNode<ComfyNodeDefImpl>[]) ?? []
 
