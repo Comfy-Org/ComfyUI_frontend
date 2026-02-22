@@ -54,6 +54,8 @@ const i18n = createI18n({
           running: 'running',
           queuedSuffix: 'queued',
           clearQueued: 'Clear queued',
+          clearQueueTooltip: 'Clear queue',
+          clearAllJobsTooltip: 'Cancel all running jobs',
           moreOptions: 'More options',
           clearHistory: 'Clear history',
           dockedJobHistory: 'Docked Job History'
@@ -101,23 +103,23 @@ describe('QueueOverlayHeader', () => {
     expect(wrapper.find('.inline-flex.items-center.gap-1').exists()).toBe(false)
   })
 
-  it('shows queued summary and emits clear queued', async () => {
+  it('shows clear queue text and emits clear queued', async () => {
     const wrapper = mountHeader({ queuedCount: 4 })
 
-    expect(wrapper.text()).toContain('4')
-    expect(wrapper.text()).toContain('queued')
+    expect(wrapper.text()).toContain('Clear queue')
+    expect(wrapper.text()).not.toContain('4 queued')
 
     const clearQueuedButton = wrapper.get('button[aria-label="Clear queued"]')
     await clearQueuedButton.trigger('click')
     expect(wrapper.emitted('clearQueued')).toHaveLength(1)
   })
 
-  it('hides clear queued button when queued count is zero', () => {
+  it('disables clear queued button when queued count is zero', () => {
     const wrapper = mountHeader({ queuedCount: 0 })
+    const clearQueuedButton = wrapper.get('button[aria-label="Clear queued"]')
 
-    expect(wrapper.find('button[aria-label="Clear queued"]').exists()).toBe(
-      false
-    )
+    expect(clearQueuedButton.attributes('disabled')).toBeDefined()
+    expect(wrapper.text()).toContain('Clear queue')
   })
 
   it('emits clear history from the menu', async () => {
