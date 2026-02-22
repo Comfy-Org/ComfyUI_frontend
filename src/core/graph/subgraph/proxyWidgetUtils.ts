@@ -7,6 +7,10 @@ import type {
 import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets.ts'
 import { useToastStore } from '@/platform/updates/common/toastStore'
+import {
+  CANVAS_IMAGE_PREVIEW_WIDGET,
+  supportsVirtualCanvasImagePreview
+} from '@/composables/node/useNodeCanvasImagePreview'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useLitegraphService } from '@/services/litegraphService'
 import { usePromotionStore } from '@/stores/promotionStore'
@@ -15,6 +19,7 @@ import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
 type PartialNode = Pick<LGraphNode, 'title' | 'id' | 'type'>
 
 export type WidgetItem = [PartialNode, IBaseWidget]
+export { CANVAS_IMAGE_PREVIEW_WIDGET }
 
 export function getWidgetName(w: IBaseWidget): string {
   return isPromotedWidgetView(w) ? w.sourceWidgetName : w.name
@@ -149,7 +154,6 @@ const recommendedNodes = [
   'PreviewImage'
 ]
 const recommendedWidgetNames = ['seed']
-
 export function isRecommendedWidget([node, widget]: WidgetItem) {
   return (
     !widget.computedDisabled &&
@@ -158,8 +162,37 @@ export function isRecommendedWidget([node, widget]: WidgetItem) {
   )
 }
 
+function supportsVirtualPreviewWidget(node: LGraphNode): boolean {
+  return supportsVirtualCanvasImagePreview(node)
+}
+
+function createVirtualCanvasImagePreviewWidget(): IBaseWidget {
+  return {
+    name: CANVAS_IMAGE_PREVIEW_WIDGET,
+    type: 'IMAGE_PREVIEW',
+    options: { serialize: false },
+    serialize: false,
+    y: 0,
+    computedDisabled: false
+  }
+}
+
+export function getPromotableWidgets(node: LGraphNode): IBaseWidget[] {
+  const widgets = [...(node.widgets ?? [])]
+
+  const hasCanvasPreviewWidget = widgets.some(
+    (widget) => widget.name === CANVAS_IMAGE_PREVIEW_WIDGET
+  )
+  const supportsVirtualPreview = supportsVirtualPreviewWidget(node)
+  if (!hasCanvasPreviewWidget && supportsVirtualPreview) {
+    widgets.push(createVirtualCanvasImagePreviewWidget())
+  }
+
+  return widgets
+}
+
 function nodeWidgets(n: LGraphNode): WidgetItem[] {
-  return n.widgets?.map((w: IBaseWidget) => [n, w]) ?? []
+  return getPromotableWidgets(n).map((w: IBaseWidget) => [n, w])
 }
 
 export function promoteRecommendedWidgets(subgraphNode: SubgraphNode) {
@@ -228,8 +261,9 @@ export function pruneDisconnected(subgraphNode: SubgraphNode) {
       removedEntries.push(entry)
       return false
     }
-    const hasWidget =
-      node.widgets?.some((iw) => iw.name === entry.widgetName) ?? false
+    const hasWidget = getPromotableWidgets(node).some(
+      (iw) => iw.name === entry.widgetName
+    )
     if (!hasWidget) {
       removedEntries.push(entry)
     }

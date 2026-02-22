@@ -5,7 +5,12 @@ import { computed, nextTick, watch } from 'vue'
 
 import { useGraphNodeManager } from '@/composables/graph/useGraphNodeManager'
 import { BaseWidget, LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import {
+  createTestSubgraph,
+  createTestSubgraphNode
+} from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import { NodeSlotType } from '@/lib/litegraph/src/types/globalEnums'
+import { usePromotionStore } from '@/stores/promotionStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 
 describe('Node Reactivity', () => {
@@ -74,5 +79,38 @@ describe('Node Reactivity', () => {
 
     expect(onValueChange).toHaveBeenCalledTimes(1)
     expect(widgetValue.value).toBe(99)
+  })
+})
+
+describe('Subgraph Promoted Pseudo Widgets', () => {
+  beforeEach(() => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
+  })
+
+  it('marks promoted $$ widgets as canvasOnly for Vue widget rendering', () => {
+    const subgraph = createTestSubgraph()
+    const interiorNode = new LGraphNode('interior')
+    interiorNode.id = 10
+    subgraph.add(interiorNode)
+
+    const subgraphNode = createTestSubgraphNode(subgraph, { id: 123 })
+    const graph = subgraphNode.graph as LGraph
+    graph.add(subgraphNode)
+
+    usePromotionStore().promote(
+      subgraphNode.rootGraph.id,
+      subgraphNode.id,
+      '10',
+      '$$canvas-image-preview'
+    )
+
+    const { vueNodeData } = useGraphNodeManager(graph)
+    const vueNode = vueNodeData.get(String(subgraphNode.id))
+    const promotedWidget = vueNode?.widgets?.find(
+      (widget) => widget.name === '$$canvas-image-preview'
+    )
+
+    expect(promotedWidget).toBeDefined()
+    expect(promotedWidget?.options?.canvasOnly).toBe(true)
   })
 })

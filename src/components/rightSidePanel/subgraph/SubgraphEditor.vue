@@ -6,6 +6,7 @@ import { useI18n } from 'vue-i18n'
 import Button from '@/components/ui/button/Button.vue'
 import {
   demoteWidget,
+  getPromotableWidgets,
   getWidgetName,
   isRecommendedWidget,
   promoteWidget,
@@ -48,6 +49,7 @@ const activeWidgets = computed<WidgetItem[]>({
   get() {
     const node = activeNode.value
     if (!node) return []
+
     return promotionEntries.value.flatMap(
       ({ interiorNodeId, widgetName }): WidgetItem[] => {
         if (interiorNodeId === '-1') {
@@ -58,8 +60,10 @@ const activeWidgets = computed<WidgetItem[]>({
           ]
         }
         const wNode = node.subgraph._nodes_by_id[interiorNodeId]
-        if (!wNode?.widgets) return []
-        const widget = wNode.widgets.find((w) => w.name === widgetName)
+        if (!wNode) return []
+        const widget = getPromotableWidgets(wNode).find(
+          (w) => w.name === widgetName
+        )
         if (!widget) return []
         return [[wNode, widget]]
       }
@@ -139,8 +143,7 @@ function toKey(item: WidgetItem) {
   return `${item[0].id}: ${item[1].name}`
 }
 function nodeWidgets(n: LGraphNode): WidgetItem[] {
-  if (!n.widgets) return []
-  return n.widgets.map((w) => [n, w])
+  return getPromotableWidgets(n).map((w) => [n, w])
 }
 function demote([node, widget]: WidgetItem) {
   const subgraphNode = activeNode.value

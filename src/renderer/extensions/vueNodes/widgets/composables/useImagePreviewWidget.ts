@@ -49,6 +49,8 @@ const renderPreview = (
   shiftY: number,
   computedHeight: number | undefined
 ) => {
+  if (!node.size) return
+
   const canvas = useCanvasStore().getCanvas()
   const mouse = canvas.graph_mouse
 

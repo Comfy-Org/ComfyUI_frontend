@@ -16,6 +16,8 @@ vi.mock('@/services/litegraphService', () => ({
 }))
 
 import {
+  CANVAS_IMAGE_PREVIEW_WIDGET,
+  getPromotableWidgets,
   isPreviewPseudoWidget,
   promoteRecommendedWidgets,
   pruneDisconnected
@@ -129,6 +131,79 @@ describe('pruneDisconnected', () => {
       store.getPromotions(subgraphNode.rootGraph.id, subgraphNode.id)
     ).toEqual([{ interiorNodeId: String(interiorNode.id), widgetName: 'kept' }])
     expect(warnSpy).toHaveBeenCalledOnce()
+  })
+
+  it('keeps virtual canvas preview promotions for PreviewImage nodes', () => {
+    const subgraph = createTestSubgraph()
+    const subgraphNode = createTestSubgraphNode(subgraph)
+    const interiorNode = new LGraphNode('PreviewImage')
+    interiorNode.type = 'PreviewImage'
+    subgraphNode.subgraph.add(interiorNode)
+
+    const store = usePromotionStore()
+    store.setPromotions(subgraphNode.rootGraph.id, subgraphNode.id, [
+      {
+        interiorNodeId: String(interiorNode.id),
+        widgetName: CANVAS_IMAGE_PREVIEW_WIDGET
+      }
+    ])
+
+    pruneDisconnected(subgraphNode)
+
+    expect(
+      store.getPromotions(subgraphNode.rootGraph.id, subgraphNode.id)
+    ).toEqual([
+      {
+        interiorNodeId: String(interiorNode.id),
+        widgetName: CANVAS_IMAGE_PREVIEW_WIDGET
+      }
+    ])
+  })
+})
+
+describe('getPromotableWidgets', () => {
+  it('adds virtual canvas preview widget for PreviewImage nodes', () => {
+    const node = new LGraphNode('PreviewImage')
+    node.type = 'PreviewImage'
+
+    const widgets = getPromotableWidgets(node)
+
+    expect(
+      widgets.some((widget) => widget.name === CANVAS_IMAGE_PREVIEW_WIDGET)
+    ).toBe(true)
+  })
+
+  it('adds virtual canvas preview widget for SaveImage nodes', () => {
+    const node = new LGraphNode('SaveImage')
+    node.type = 'SaveImage'
+
+    const widgets = getPromotableWidgets(node)
+
+    expect(
+      widgets.some((widget) => widget.name === CANVAS_IMAGE_PREVIEW_WIDGET)
+    ).toBe(true)
+  })
+
+  it('does not add virtual canvas preview widget for non-image nodes', () => {
+    const node = new LGraphNode('TextNode')
+    node.addOutput('TEXT', 'STRING')
+
+    const widgets = getPromotableWidgets(node)
+
+    expect(
+      widgets.some((widget) => widget.name === CANVAS_IMAGE_PREVIEW_WIDGET)
+    ).toBe(false)
+  })
+
+  it('does not add virtual canvas preview widget for ImageInvert nodes', () => {
+    const node = new LGraphNode('ImageInvert')
+    node.type = 'ImageInvert'
+
+    const widgets = getPromotableWidgets(node)
+
+    expect(
+      widgets.some((widget) => widget.name === CANVAS_IMAGE_PREVIEW_WIDGET)
+    ).toBe(false)
   })
 })
 

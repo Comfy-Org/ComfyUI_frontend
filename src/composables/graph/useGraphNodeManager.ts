@@ -214,6 +214,9 @@ function safeWidgetMapper(
         node.widgets?.forEach((w) => w.triggerDraw?.())
       }
 
+      const isPromotedPseudoWidget =
+        isPromotedWidgetView(widget) && widget.sourceWidgetName.startsWith('$$')
+
       // Extract only render-critical options (canvasOnly, advanced, read_only)
       const options = widget.options
         ? {
@@ -242,7 +245,9 @@ function safeWidgetMapper(
         callback,
         hasLayoutSize: typeof widget.computeLayoutSize === 'function',
         isDOMWidget: isDOMWidget(widget) || isPromotedDOMWidget(widget),
-        options,
+        options: isPromotedPseudoWidget
+          ? { ...options, canvasOnly: true }
+          : options,
         slotMetadata: slotInfo
       }
     } catch (error) {
