@@ -46,8 +46,6 @@
             (isHovered || isFocused) && 'opacity-60'
           )
         "
-        @load="handleImageLoad"
-        @error="handleImageError"
       />
 
       <!-- Floating Action Buttons (appear on hover and focus) -->
@@ -123,7 +121,7 @@
 </template>
 
 <script setup lang="ts">
-import { useTimeoutFn } from '@vueuse/core'
+import { useImage, useTimeoutFn } from '@vueuse/core'
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -157,7 +155,6 @@ const currentIndex = ref(0)
 const isHovered = ref(false)
 const isFocused = ref(false)
 const actualDimensions = ref<string | null>(null)
-const imageError = ref(false)
 const showLoader = ref(false)
 
 const imageWrapperEl = ref<HTMLDivElement>()
@@ -176,6 +173,14 @@ const currentImageUrl = computed(() => props.imageUrls[currentIndex.value])
 const hasMultipleImages = computed(() => props.imageUrls.length > 1)
 const imageAltText = computed(() => `Node output ${currentIndex.value + 1}`)
 
+const {
+  state: imageState,
+  error: imageLoadError,
+  isReady: imageIsReady
+} = useImage(computed(() => ({ src: currentImageUrl.value ?? '' })))
+
+const imageError = computed(() => !!imageLoadError.value)
+
 // Watch for URL changes and reset state
 watch(
   () => props.imageUrls,
@@ -193,37 +198,36 @@ watch(
       currentIndex.value = 0
     }
 
-    // Reset loading and error states when URLs change
     actualDimensions.value = null
-
-    imageError.value = false
     if (newUrls.length > 0) startDelayedLoader()
   },
   { immediate: true }
 )
 
-// Event handlers
-const handleImageLoad = (event: Event) => {
-  if (!event.target || !(event.target instanceof HTMLImageElement)) return
-  const img = event.target
-  stopDelayedLoader()
-  showLoader.value = false
-  imageError.value = false
-  if (img.naturalWidth && img.naturalHeight) {
-    actualDimensions.value = `${img.naturalWidth} x ${img.naturalHeight}`
+watch(imageIsReady, (ready) => {
+  if (ready) {
+    stopDelayedLoader()
+    showLoader.value = false
+    if (imageState.value?.naturalWidth && imageState.value?.naturalHeight) {
+      actualDimensions.value = `${imageState.value.naturalWidth} x ${imageState.value.naturalHeight}`
+    }
+    if (props.nodeId && imageState.value) {
+      nodeOutputStore.syncLegacyNodeImgs(
+        props.nodeId,
+        imageState.value,
+        currentIndex.value
+      )
+    }
   }
+})
 
-  if (props.nodeId) {
-    nodeOutputStore.syncLegacyNodeImgs(props.nodeId, img, currentIndex.value)
+watch(imageLoadError, (err) => {
+  if (err) {
+    stopDelayedLoader()
+    showLoader.value = false
+    actualDimensions.value = null
   }
-}
-
-const handleImageError = () => {
-  stopDelayedLoader()
-  showLoader.value = false
-  imageError.value = true
-  actualDimensions.value = null
-}
+})
 
 const handleEditMask = () => {
   if (!props.nodeId) return
@@ -262,7 +266,6 @@ const setCurrentIndex = (index: number) => {
   if (index >= 0 && index < props.imageUrls.length) {
     const urlChanged = props.imageUrls[index] !== currentImageUrl.value
     currentIndex.value = index
-    imageError.value = false
     if (urlChanged) startDelayedLoader()
   }
 }

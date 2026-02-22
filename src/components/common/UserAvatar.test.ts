@@ -3,11 +3,26 @@ import type { ComponentProps } from 'vue-component-type-helpers'
 import { mount } from '@vue/test-utils'
 import Avatar from 'primevue/avatar'
 import PrimeVue from 'primevue/config'
-import { beforeEach, describe, expect, it } from 'vitest'
-import { createApp, nextTick } from 'vue'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { createApp, nextTick, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import UserAvatar from './UserAvatar.vue'
+
+const mockImageError = ref(false)
+
+vi.mock('@vueuse/core', async () => {
+  const actual = await vi.importActual('@vueuse/core')
+  return {
+    ...actual,
+    useImage: () => ({
+      state: ref(undefined),
+      error: mockImageError,
+      isReady: ref(false),
+      isLoading: ref(false)
+    })
+  }
+})
 
 const i18n = createI18n({
   legacy: false,
@@ -27,6 +42,7 @@ describe('UserAvatar', () => {
   beforeEach(() => {
     const app = createApp({})
     app.use(PrimeVue)
+    mockImageError.value = false
   })
 
   const mountComponent = (props: ComponentProps<typeof UserAvatar> = {}) => {
@@ -80,8 +96,8 @@ describe('UserAvatar', () => {
     const avatar = wrapper.findComponent(Avatar)
     expect(avatar.props('icon')).toBeNull()
 
-    // Simulate image load error
-    avatar.vm.$emit('error')
+    // Simulate useImage reporting an error
+    mockImageError.value = true
     await nextTick()
 
     expect(avatar.props('icon')).toBe('icon-[lucide--user]')

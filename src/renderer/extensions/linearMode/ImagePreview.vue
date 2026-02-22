@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { ref, useTemplateRef } from 'vue'
+import { useImage } from '@vueuse/core'
+import { computed } from 'vue'
 
 import ZoomPane from '@/components/ui/ZoomPane.vue'
 import { cn } from '@/utils/tailwindUtil'
@@ -11,9 +12,10 @@ const { src } = defineProps<{
   mobile?: boolean
 }>()
 
-const imageRef = useTemplateRef('imageRef')
-const width = ref('')
-const height = ref('')
+const { state } = useImage({ src })
+
+const width = computed(() => state.value?.naturalWidth?.toString() ?? '')
+const height = computed(() => state.value?.naturalHeight?.toString() ?? '')
 </script>
 <template>
   <ZoomPane
@@ -21,32 +23,8 @@ const height = ref('')
     v-slot="slotProps"
     :class="cn('w-full flex-1', $attrs.class as string)"
   >
-    <img
-      ref="imageRef"
-      :src
-      v-bind="slotProps"
-      class="size-full object-contain"
-      @load="
-        () => {
-          if (!imageRef) return
-          width = `${imageRef.naturalWidth}`
-          height = `${imageRef.naturalHeight}`
-        }
-      "
-    />
+    <img :src v-bind="slotProps" class="size-full object-contain" />
   </ZoomPane>
-  <img
-    v-else
-    ref="imageRef"
-    class="grow object-contain contain-size"
-    :src
-    @load="
-      () => {
-        if (!imageRef) return
-        width = `${imageRef.naturalWidth}`
-        height = `${imageRef.naturalHeight}`
-      }
-    "
-  />
+  <img v-else class="grow object-contain contain-size" :src />
   <span class="self-center md:z-10" v-text="`${width} x ${height}`" />
 </template>
