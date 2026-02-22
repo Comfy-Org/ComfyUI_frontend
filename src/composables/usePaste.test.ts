@@ -85,7 +85,8 @@ vi.mock('@/scripts/app', () => ({
   }
 }))
 
-vi.mock('@/lib/litegraph/src/litegraph', () => ({
+vi.mock('@/lib/litegraph/src/litegraph', async (importOriginal) => ({
+  ...(await importOriginal()),
   LiteGraph: {
     createNode: vi.fn()
   }
