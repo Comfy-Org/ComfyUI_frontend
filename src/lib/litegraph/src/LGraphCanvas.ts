@@ -171,7 +171,7 @@ interface IDialogExtensions extends ICloseable {
   is_modified: boolean
 }
 
-interface IDialog extends HTMLDivElement, IDialogExtensions {}
+interface IDialog extends HTMLDivElement, IDialogExtensions { }
 type PromptDialog = Omit<IDialog, 'modified'>
 
 interface IDialogOptions {
@@ -848,15 +848,15 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
           const linkReleaseContext =
             this.linkConnector.state.connectingTo === 'input'
               ? {
-                  node_from: firstLink.node as LGraphNode,
-                  slot_from: firstLink.fromSlot as INodeOutputSlot,
-                  type_filter_in: firstLink.fromSlot.type
-                }
+                node_from: firstLink.node as LGraphNode,
+                slot_from: firstLink.fromSlot as INodeOutputSlot,
+                type_filter_in: firstLink.fromSlot.type
+              }
               : {
-                  node_to: firstLink.node as LGraphNode,
-                  slot_to: firstLink.fromSlot as INodeInputSlot,
-                  type_filter_out: firstLink.fromSlot.type
-                }
+                node_to: firstLink.node as LGraphNode,
+                slot_to: firstLink.fromSlot as INodeInputSlot,
+                type_filter_out: firstLink.fromSlot.type
+              }
 
           const afterRerouteId = firstLink.fromReroute?.id
 
@@ -1230,8 +1230,8 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     }
   }
 
-  static onMenuCollapseAll() {}
-  static onMenuNodeEdit() {}
+  static onMenuCollapseAll() { }
+  static onMenuNodeEdit() { }
 
   /** @param _options Parameter is never used */
   static showMenuNodeOptionalOutputs(
@@ -1944,6 +1944,11 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     return false
   }
 
+  /** Prevents default for middle-click auxclick only. */
+  _preventMiddleAuxClick(e: MouseEvent): void {
+    if (e.button === 1) e.preventDefault()
+  }
+
   /** Captures an event and prevents default - returns true. */
   _doReturnTrue(e: Event): boolean {
     e.preventDefault()
@@ -1979,6 +1984,8 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     canvas.addEventListener('pointercancel', this._mousecancel_callback, true)
 
     canvas.addEventListener('contextmenu', this._doNothing)
+    // Prevent middle-click paste (PRIMARY clipboard on Linux) - fixes #4464
+    canvas.addEventListener('auxclick', this._preventMiddleAuxClick)
 
     // Keyboard
     this._key_callback = this.processKey.bind(this)
@@ -2017,6 +2024,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     canvas.removeEventListener('keydown', this._key_callback!)
     document.removeEventListener('keyup', this._key_callback!)
     canvas.removeEventListener('contextmenu', this._doNothing)
+    canvas.removeEventListener('auxclick', this._preventMiddleAuxClick)
     canvas.removeEventListener('dragenter', this._doReturnTrue)
 
     this._mousedown_callback = undefined
@@ -2489,9 +2497,9 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
         let isLinkHit =
           hitSegment &&
           linkSegment.id ===
-            (linkSegment instanceof Reroute
-              ? hitSegment.rerouteId
-              : hitSegment.linkId)
+          (linkSegment instanceof Reroute
+            ? hitSegment.rerouteId
+            : hitSegment.linkId)
 
         if (!isLinkHit && linkSegment.path) {
           // Fallback to direct path hit testing if not found in layout store
@@ -2835,7 +2843,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
           ) {
             node.onTitleButtonClick(button, this)
             // Set a no-op click handler to prevent fallback canvas dragging
-            pointer.onClick = () => {}
+            pointer.onClick = () => { }
             return
           }
         }
@@ -2851,7 +2859,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       if (node.onMouseDown?.(e, pos, this)) {
         // Node handled the event (e.g., title button clicked)
         // Set a no-op click handler to prevent fallback canvas dragging
-        pointer.onClick = () => {}
+        pointer.onClick = () => { }
         return
       }
 
@@ -3114,7 +3122,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
         const alphaPosY =
           0.5 -
           (mClikSlot_index + 1) /
-            (mClikSlot_isOut ? outputs.length : inputs.length)
+          (mClikSlot_isOut ? outputs.length : inputs.length)
         const node_bounding = node.getBounding()
         // estimate a position: this is a bad semi-bad-working mess .. REFACTOR with
         // a correct autoplacement that knows about the others slots and nodes
@@ -5068,8 +5076,8 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
   private _getHighlightPosition(): Readonly<Point> {
     return LiteGraph.snaps_for_comfy
       ? (this.linkConnector.state.snapLinksPos ??
-          this._highlight_pos ??
-          this.graph_mouse)
+        this._highlight_pos ??
+        this.graph_mouse)
       : this.graph_mouse
   }
 
@@ -5611,7 +5619,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
     const render_title =
       title_mode == TitleMode.TRANSPARENT_TITLE ||
-      title_mode == TitleMode.NO_TITLE
+        title_mode == TitleMode.NO_TITLE
         ? false
         : true
 
@@ -6333,7 +6341,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     this.setDirty(true, true)
   }
 
-  onNodeSelectionChange(): void {}
+  onNodeSelectionChange(): void { }
 
   /**
    * Determines the furthest nodes in each direction for the currently selected nodes
@@ -7195,7 +7203,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
             // @ts-expect-error Property missing from interface definition
             options.type_filter_in !== false &&
             String(options.type_filter_in).toLowerCase() ==
-              String(aSlots[iK]).toLowerCase()
+            String(aSlots[iK]).toLowerCase()
           ) {
             opt.selected = true
           }
@@ -7221,7 +7229,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
           if (
             options.type_filter_out !== false &&
             String(options.type_filter_out).toLowerCase() ==
-              String(aSlot).toLowerCase()
+            String(aSlot).toLowerCase()
           ) {
             opt.selected = true
           }
@@ -8110,8 +8118,8 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       const nodeCol =
         node.color !== undefined
           ? Object.keys(LGraphCanvas.node_colors).filter(function (nK) {
-              return LGraphCanvas.node_colors[nK].color == node.color
-            })
+            return LGraphCanvas.node_colors[nK].color == node.color
+          })
           : ''
 
       panel.addWidget(
