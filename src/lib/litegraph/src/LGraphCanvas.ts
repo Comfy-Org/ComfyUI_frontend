@@ -182,6 +182,14 @@ interface IDialogOptions {
   onclose?(): void
 }
 
+export interface PromptOptions {
+  multiline?: boolean
+  inputType?: 'text' | 'number'
+  min?: number
+  max?: number
+  step?: number
+}
+
 /** @inheritdoc {@link LGraphCanvas.state} */
 interface LGraphCanvasState {
   /** {@link Positionable} items are being dragged on the canvas. */
@@ -6858,17 +6866,23 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     value: string | number,
     callback: (value: string) => void,
     event: CanvasPointerEvent,
-    multiline?: boolean
+    multilineOrOptions?: boolean | PromptOptions
   ): HTMLDivElement {
     const that = this
     title = title || ''
 
+    const options: PromptOptions =
+      typeof multilineOrOptions === 'boolean'
+        ? { multiline: multilineOrOptions }
+        : (multilineOrOptions ?? {})
+
+    const inputType = options.inputType === 'number' ? 'number' : 'text'
     const customProperties = {
       is_modified: false,
       className: 'graphdialog rounded',
-      innerHTML: multiline
+      innerHTML: options.multiline
         ? "<span class='name'></span> <textarea autofocus class='value'></textarea><button class='rounded'>OK</button>"
-        : "<span class='name'></span> <input autofocus type='text' class='value'/><button class='rounded'>OK</button>",
+        : `<span class='name'></span> <input autofocus type='${inputType}' class='value'/><button class='rounded'>OK</button>`,
       close() {
         that.prompt_box = null
         if (dialog.parentNode) {
@@ -6934,6 +6948,14 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     if (!value_element) throw new TypeError('value_element was null')
 
     value_element.value = String(value)
+    if (options.inputType === 'number') {
+      if (options.min != null)
+        value_element.setAttribute('min', String(options.min))
+      if (options.max != null)
+        value_element.setAttribute('max', String(options.max))
+      if (options.step != null)
+        value_element.setAttribute('step', String(options.step))
+    }
     value_element.select()
 
     const input = value_element

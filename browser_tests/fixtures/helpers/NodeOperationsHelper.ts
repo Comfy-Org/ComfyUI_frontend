@@ -173,7 +173,7 @@ export class NodeOperationsHelper {
     await this.page.locator('#graph-canvas').click({
       position: DefaultGraphPositions.emptyLatentWidgetClick
     })
-    const dialogInput = this.page.locator('.graphdialog input[type="text"]')
+    const dialogInput = this.page.locator('.graphdialog input.value')
     await dialogInput.click()
     await dialogInput.fill('128')
     await dialogInput.press('Enter')

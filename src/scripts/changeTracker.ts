@@ -3,6 +3,7 @@ import * as jsondiffpatch from 'jsondiffpatch'
 import log from 'loglevel'
 
 import type { CanvasPointerEvent } from '@/lib/litegraph/src/litegraph'
+import type { PromptOptions } from '@/lib/litegraph/src/LGraphCanvas'
 import { LGraphCanvas, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import {
   ComfyWorkflow,
@@ -306,14 +307,21 @@ export class ChangeTracker {
       title: string,
       value: string | number,
       callback: (v: string) => void,
-      event: CanvasPointerEvent
+      event: CanvasPointerEvent,
+      multilineOrOptions?: boolean | PromptOptions
     ) {
       const extendedCallback = (v: string) => {
         callback(v)
         checkState()
       }
       logger.debug('checkState on prompt')
-      return prompt.apply(this, [title, value, extendedCallback, event])
+      return prompt.apply(this, [
+        title,
+        value,
+        extendedCallback,
+        event,
+        multilineOrOptions
+      ])
     }
 
     // Handle litegraph context menu for COMBO widgets

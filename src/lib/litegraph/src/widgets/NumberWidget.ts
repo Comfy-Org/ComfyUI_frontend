@@ -71,7 +71,13 @@ export class NumberWidget
         const parsed = evaluateInput(v)
         if (parsed !== undefined) this.setValue(parsed, { e, node, canvas })
       },
-      e
+      e,
+      {
+        inputType: 'number',
+        min: this.options.min,
+        max: this.options.max,
+        step: getWidgetStep(this.options)
+      }
     )
   }
 
