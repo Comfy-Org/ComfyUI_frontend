@@ -138,7 +138,7 @@ const {
   showFreeTierBadge,
   switchToEmailForm,
   switchToSocialLogin
-} = useFreeTierOnboarding('login')
+} = useFreeTierOnboarding()
 
 const navigateToSignup = async () => {
   await router.push({ name: 'cloud-signup', query: route.query })
