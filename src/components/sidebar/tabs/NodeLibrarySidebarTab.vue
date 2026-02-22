@@ -154,6 +154,7 @@ import {
   render
 } from 'vue'
 
+import { resolveEssentialsDisplayName } from '@/constants/essentialsDisplayNames'
 import SearchBox from '@/components/common/SearchBox.vue'
 import type { SearchFilter } from '@/components/common/SearchFilterChip.vue'
 import TreeExplorer from '@/components/common/TreeExplorer.vue'
@@ -276,7 +277,9 @@ const renderedRoot = computed<TreeExplorerNode<ComfyNodeDefImpl>>(() => {
 
     return {
       key: node.key,
-      label: node.leaf ? node.data.display_name : node.label,
+      label: node.leaf
+        ? (resolveEssentialsDisplayName(node.data) ?? node.data.display_name)
+        : node.label,
       leaf: node.leaf,
       data: node.data,
       getIcon() {

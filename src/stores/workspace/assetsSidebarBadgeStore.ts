@@ -6,8 +6,8 @@ import { useQueueStore } from '@/stores/queueStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 
 const getAddedAssetCount = (task: TaskItemImpl): number => {
-  if (typeof task.outputsCount === 'number' && task.outputsCount > 0) {
-    return task.outputsCount
+  if (typeof task.outputsCount === 'number') {
+    return Math.max(task.outputsCount, 0)
   }
 
   return task.previewOutput ? 1 : 0
@@ -20,18 +20,29 @@ export const useAssetsSidebarBadgeStore = defineStore(
     const sidebarTabStore = useSidebarTabStore()
 
     const unseenAddedAssetsCount = ref(0)
-    const seenHistoryJobIds = ref(new Set<string>())
+    const countedHistoryAssetsByJobId = ref(new Map<string, number>())
     const hasInitializedHistory = ref(false)
 
     const markCurrentHistoryAsSeen = () => {
-      seenHistoryJobIds.value = new Set(
-        queueStore.historyTasks.map((task) => task.jobId)
+      countedHistoryAssetsByJobId.value = new Map(
+        queueStore.historyTasks.map((task) => [
+          task.jobId,
+          getAddedAssetCount(task)
+        ])
       )
     }
 
     watch(
-      () => queueStore.historyTasks,
-      (historyTasks) => {
+      () =>
+        [
+          queueStore.historyTasks,
+          queueStore.hasFetchedHistorySnapshot
+        ] as const,
+      ([historyTasks, hasFetchedHistorySnapshot]) => {
+        if (!hasFetchedHistorySnapshot) {
+          return
+        }
+
         if (!hasInitializedHistory.value) {
           hasInitializedHistory.value = true
           markCurrentHistoryAsSeen()
@@ -39,20 +50,32 @@ export const useAssetsSidebarBadgeStore = defineStore(
         }
 
         const isAssetsTabOpen = sidebarTabStore.activeSidebarTabId === 'assets'
-        const seen = seenHistoryJobIds.value
+        const previousCountedAssetsByJobId = countedHistoryAssetsByJobId.value
+        const nextCountedAssetsByJobId = new Map<string, number>()
 
         for (const task of historyTasks) {
           const jobId = task.jobId
-          if (!jobId || seen.has(jobId)) {
+          if (!jobId) {
             continue
           }
 
-          seen.add(jobId)
+          const countedAssets = previousCountedAssetsByJobId.get(jobId) ?? 0
+          const currentAssets = getAddedAssetCount(task)
+          const hasSeenJob = previousCountedAssetsByJobId.has(jobId)
 
-          if (!isAssetsTabOpen) {
-            unseenAddedAssetsCount.value += getAddedAssetCount(task)
+          if (!isAssetsTabOpen && !hasSeenJob) {
+            unseenAddedAssetsCount.value += currentAssets
+          } else if (!isAssetsTabOpen && currentAssets > countedAssets) {
+            unseenAddedAssetsCount.value += currentAssets - countedAssets
           }
+
+          nextCountedAssetsByJobId.set(
+            jobId,
+            Math.max(countedAssets, currentAssets)
+          )
         }
+
+        countedHistoryAssetsByJobId.value = nextCountedAssetsByJobId
       },
       { immediate: true }
     )

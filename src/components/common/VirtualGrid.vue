@@ -1,17 +1,16 @@
 <template>
   <div
     ref="container"
-    class="h-full overflow-y-auto scrollbar-thin scrollbar-track-transparent scrollbar-thumb-(--dialog-surface)"
+    class="h-full overflow-y-auto [overflow-anchor:none] [scrollbar-gutter:stable] scrollbar-thin scrollbar-track-transparent scrollbar-thumb-(--dialog-surface)"
   >
     <div :style="topSpacerStyle" />
     <div :style="mergedGridStyle">
       <div
-        v-for="item in renderedItems"
+        v-for="(item, i) in renderedItems"
         :key="item.key"
-        class="transition-[width] duration-150 ease-out"
         data-virtual-grid-item
       >
-        <slot name="item" :item="item" />
+        <slot name="item" :item :index="state.start + i" />
       </div>
     </div>
     <div :style="bottomSpacerStyle" />
@@ -66,9 +65,10 @@ const { y: scrollY } = useScroll(container, {
   eventListenerOptions: { passive: true }
 })
 
-const cols = computed(() =>
-  Math.min(Math.floor(width.value / itemWidth.value) || 1, maxColumns)
-)
+const cols = computed(() => {
+  if (maxColumns !== Infinity) return maxColumns
+  return Math.floor(width.value / itemWidth.value) || 1
+})
 
 const mergedGridStyle = computed<CSSProperties>(() => {
   if (maxColumns === Infinity) return gridStyle
@@ -101,8 +101,9 @@ const renderedItems = computed(() =>
   isValidGrid.value ? items.slice(state.value.start, state.value.end) : []
 )
 
-function rowsToHeight(rows: number): string {
-  return `${(rows / cols.value) * itemHeight.value}px`
+function rowsToHeight(itemsCount: number): string {
+  const rows = Math.ceil(itemsCount / cols.value)
+  return `${rows * itemHeight.value}px`
 }
 const topSpacerStyle = computed<CSSProperties>(() => ({
   height: rowsToHeight(state.value.start)
@@ -118,11 +119,10 @@ whenever(
   }
 )
 
-const updateItemSize = () => {
+function updateItemSize(): void {
   if (container.value) {
     const firstItem = container.value.querySelector('[data-virtual-grid-item]')
 
-    // Don't update item size if the first item is not rendered yet
     if (!firstItem?.clientHeight || !firstItem?.clientWidth) return
 
     if (itemHeight.value !== firstItem.clientHeight) {

@@ -1,13 +1,7 @@
 <template>
   <div
-    :class="
-      cn(
-        'flex flex-col items-center justify-center py-4 px-2 rounded-2xl cursor-pointer select-none transition-colors duration-150 box-content',
-        'bg-component-node-background hover:bg-secondary-background-hover border border-component-node-border',
-        'aspect-square'
-      )
-    "
-    :data-node-name="nodeDef?.display_name"
+    class="group relative flex flex-col items-center justify-center py-4 px-2 rounded-2xl cursor-pointer select-none transition-colors duration-150 box-content bg-component-node-background hover:bg-secondary-background-hover border border-component-node-border aspect-square"
+    :data-node-name="node.label"
     draggable="true"
     @click="handleClick"
     @dragstart="handleDragStart"
@@ -18,11 +12,12 @@
     <div class="flex flex-1 items-center justify-center">
       <i :class="cn(nodeIcon, 'size-14 text-muted-foreground')" />
     </div>
-    <span
-      class="shrink-0 h-8 text-sm font-bold text-center text-foreground line-clamp-2 leading-4"
+
+    <TextTickerMultiLine
+      class="shrink-0 h-8 w-full text-xs font-bold text-foreground leading-4"
     >
-      {{ nodeDef?.display_name }}
-    </span>
+      {{ node.label }}
+    </TextTickerMultiLine>
   </div>
 
   <Teleport v-if="showPreview" to="body">
@@ -30,7 +25,10 @@
       :ref="(el) => (previewRef = el as HTMLElement)"
       :style="nodePreviewStyle"
     >
-      <NodePreviewCard :node-def="nodeDef!" :show-inputs-and-outputs="false" />
+      <NodePreviewCard
+        :node-def="node.data!"
+        :show-inputs-and-outputs="false"
+      />
     </div>
   </Teleport>
 </template>
@@ -39,6 +37,7 @@
 import { kebabCase } from 'es-toolkit/string'
 import { computed, inject } from 'vue'
 
+import TextTickerMultiLine from '@/components/common/TextTickerMultiLine.vue'
 import NodePreviewCard from '@/components/node/NodePreviewCard.vue'
 import { SidebarContainerKey } from '@/components/sidebar/tabs/SidebarTabTemplate.vue'
 import { useNodePreviewAndDrag } from '@/composables/node/useNodePreviewAndDrag'
@@ -54,9 +53,8 @@ const emit = defineEmits<{
   click: [node: RenderedTreeExplorerNode<ComfyNodeDefImpl>]
 }>()
 
-const nodeDef = computed(() => node.data)
-
 const panelRef = inject(SidebarContainerKey, undefined)
+const nodeDef = computed(() => node.data)
 
 const {
   previewRef,
@@ -69,13 +67,13 @@ const {
 } = useNodePreviewAndDrag(nodeDef, { panelRef })
 
 const nodeIcon = computed(() => {
-  const nodeName = nodeDef.value?.name
+  const nodeName = node.data?.name
   const iconName = nodeName ? kebabCase(nodeName) : 'node'
   return `icon-[comfy--${iconName}]`
 })
 
 function handleClick() {
-  if (!nodeDef.value) return
+  if (!node.data) return
   emit('click', node)
 }
 </script>

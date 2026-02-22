@@ -199,7 +199,8 @@ import {
   useDebounceFn,
   useElementHover,
   useResizeObserver,
-  useStorage
+  useStorage,
+  useTimeoutFn
 } from '@vueuse/core'
 import Divider from 'primevue/divider'
 import { useToast } from 'primevue/usetoast'
@@ -500,7 +501,16 @@ function handleAssetSelect(asset: AssetItem, assets?: AssetItem[]) {
   handleAssetClick(asset, index, assetList)
 }
 
+const { start: scheduleCleanup, stop: cancelCleanup } = useTimeoutFn(
+  () => {
+    contextMenuAsset.value = null
+  },
+  0,
+  { immediate: false }
+)
+
 function handleAssetContextMenu(event: MouseEvent, asset: AssetItem) {
+  cancelCleanup()
   contextMenuAsset.value = asset
   void nextTick(() => {
     contextMenuRef.value?.show(event)
@@ -508,10 +518,7 @@ function handleAssetContextMenu(event: MouseEvent, asset: AssetItem) {
 }
 
 function handleContextMenuHide() {
-  // Delay clearing to allow command callbacks to emit before component unmounts
-  requestAnimationFrame(() => {
-    contextMenuAsset.value = null
-  })
+  scheduleCleanup()
 }
 
 const handleBulkDownload = (assets: AssetItem[]) => {

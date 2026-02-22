@@ -44,7 +44,7 @@ describe('EssentialNodeCard', () => {
 
     return {
       key: 'test-key',
-      label: 'Test Node',
+      label: data.display_name,
       icon: 'icon-[comfy--node]',
       type: 'node',
       totalLeaves: 1,

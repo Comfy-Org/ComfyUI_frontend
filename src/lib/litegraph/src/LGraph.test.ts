@@ -484,3 +484,110 @@ describe('ensureGlobalIdUniqueness', () => {
     expect(subNode.id).toBe(subId)
   })
 })
+
+describe('Subgraph Unpacking', () => {
+  class TestNode extends LGraphNode {
+    constructor(title?: string) {
+      super(title ?? 'TestNode')
+      this.addInput('input_0', 'number')
+      this.addOutput('output_0', 'number')
+    }
+  }
+
+  class MultiInputNode extends LGraphNode {
+    constructor(title?: string) {
+      super(title ?? 'MultiInputNode')
+      this.addInput('input_0', 'number')
+      this.addInput('input_1', 'number')
+      this.addOutput('output_0', 'number')
+    }
+  }
+
+  function registerTestNodes() {
+    LiteGraph.registerNodeType('test/TestNode', TestNode)
+    LiteGraph.registerNodeType('test/MultiInputNode', MultiInputNode)
+  }
+
+  function createSubgraphOnGraph(rootGraph: LGraph) {
+    return rootGraph.createSubgraph(createTestSubgraphData())
+  }
+
+  it('deduplicates links when unpacking subgraph with duplicate links', () => {
+    registerTestNodes()
+    const rootGraph = new LGraph()
+    const subgraph = createSubgraphOnGraph(rootGraph)
+
+    const sourceNode = LiteGraph.createNode('test/TestNode', 'Source')!
+    const targetNode = LiteGraph.createNode('test/TestNode', 'Target')!
+    subgraph.add(sourceNode)
+    subgraph.add(targetNode)
+
+    // Create a legitimate link
+    sourceNode.connect(0, targetNode, 0)
+    expect(subgraph._links.size).toBe(1)
+
+    // Manually add duplicate links (simulating the bug)
+    const existingLink = subgraph._links.values().next().value!
+    for (let i = 0; i < 3; i++) {
+      const dupLink = new LLink(
+        ++subgraph.state.lastLinkId,
+        existingLink.type,
+        existingLink.origin_id,
+        existingLink.origin_slot,
+        existingLink.target_id,
+        existingLink.target_slot
+      )
+      subgraph._links.set(dupLink.id, dupLink)
+      sourceNode.outputs[0].links!.push(dupLink.id)
+    }
+    expect(subgraph._links.size).toBe(4)
+
+    const subgraphNode = createTestSubgraphNode(subgraph, { pos: [100, 100] })
+    rootGraph.add(subgraphNode)
+
+    rootGraph.unpackSubgraph(subgraphNode)
+
+    // After unpacking, there should be exactly 1 link (not 4)
+    expect(rootGraph.links.size).toBe(1)
+  })
+
+  it('preserves correct link connections when unpacking with duplicate links', () => {
+    registerTestNodes()
+    const rootGraph = new LGraph()
+    const subgraph = createSubgraphOnGraph(rootGraph)
+
+    const sourceNode = LiteGraph.createNode('test/MultiInputNode', 'Source')!
+    const targetNode = LiteGraph.createNode('test/MultiInputNode', 'Target')!
+    subgraph.add(sourceNode)
+    subgraph.add(targetNode)
+
+    // Connect source output 0 → target input 0
+    sourceNode.connect(0, targetNode, 0)
+
+    // Add duplicate links to the same connection
+    const existingLink = subgraph._links.values().next().value!
+    const dupLink = new LLink(
+      ++subgraph.state.lastLinkId,
+      existingLink.type,
+      existingLink.origin_id,
+      existingLink.origin_slot,
+      existingLink.target_id,
+      existingLink.target_slot
+    )
+    subgraph._links.set(dupLink.id, dupLink)
+    sourceNode.outputs[0].links!.push(dupLink.id)
+
+    const subgraphNode = createTestSubgraphNode(subgraph, { pos: [100, 100] })
+    rootGraph.add(subgraphNode)
+
+    rootGraph.unpackSubgraph(subgraphNode)
+
+    // Verify only 1 link exists
+    expect(rootGraph.links.size).toBe(1)
+
+    // Verify target input 1 does NOT have a link (no spurious connection)
+    const unpackedTarget = rootGraph.nodes.find((n) => n.title === 'Target')!
+    expect(unpackedTarget.inputs[0].link).not.toBeNull()
+    expect(unpackedTarget.inputs[1].link).toBeNull()
+  })
+})

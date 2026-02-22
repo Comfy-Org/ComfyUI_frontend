@@ -14,7 +14,7 @@ import { SubgraphNode } from '@/lib/litegraph/src/litegraph'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { useExecutionStore } from '@/stores/executionStore'
+import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import type { RightSidePanelTab } from '@/stores/workspace/rightSidePanelStore'
 import { resolveNodeDisplayName } from '@/utils/nodeTitleUtil'
@@ -36,12 +36,12 @@ import SubgraphEditor from './subgraph/SubgraphEditor.vue'
 import TabErrors from './errors/TabErrors.vue'
 
 const canvasStore = useCanvasStore()
-const executionStore = useExecutionStore()
+const executionErrorStore = useExecutionErrorStore()
 const rightSidePanelStore = useRightSidePanelStore()
 const settingStore = useSettingStore()
 const { t } = useI18n()
 
-const { hasAnyError, allErrorExecutionIds } = storeToRefs(executionStore)
+const { hasAnyError, allErrorExecutionIds } = storeToRefs(executionErrorStore)
 
 const { findParentGroup } = useGraphHierarchy()
 
@@ -98,7 +98,7 @@ type RightSidePanelTabList = Array<{
 
 const hasDirectNodeError = computed(() =>
   selectedNodes.value.some((node) =>
-    executionStore.activeGraphErrorNodeIds.has(String(node.id))
+    executionErrorStore.activeGraphErrorNodeIds.has(String(node.id))
   )
 )
 
@@ -106,7 +106,7 @@ const hasContainerInternalError = computed(() => {
   if (allErrorExecutionIds.value.length === 0) return false
   return selectedNodes.value.some((node) => {
     if (!(node instanceof SubgraphNode || isGroupNode(node))) return false
-    return executionStore.hasInternalErrorForNode(node.id)
+    return executionErrorStore.hasInternalErrorForNode(node.id)
   })
 })
 

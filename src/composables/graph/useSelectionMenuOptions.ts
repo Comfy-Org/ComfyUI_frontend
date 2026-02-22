@@ -85,18 +85,18 @@ export function useSelectionMenuOptions() {
     }
 
     if (hasSubgraphs) {
-      options.push(
-        {
+      if (!hasMultipleSelection) {
+        options.push({
           label: t('contextMenu.Add Subgraph to Library'),
           icon: 'icon-[lucide--folder-plus]',
           action: addSubgraphToLibrary
-        },
-        {
-          label: t('contextMenu.Unpack Subgraph'),
-          icon: 'icon-[lucide--expand]',
-          action: unpackSubgraph
-        }
-      )
+        })
+      }
+      options.push({
+        label: t('contextMenu.Unpack Subgraph'),
+        icon: 'icon-[lucide--expand]',
+        action: unpackSubgraph
+      })
     }
 
     return options
