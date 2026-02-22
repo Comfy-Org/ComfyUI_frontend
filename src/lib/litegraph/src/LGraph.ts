@@ -1929,15 +1929,20 @@ export class LGraph
       node.id = this.last_node_id
       n_info.id = this.last_node_id
 
+      // Strip links from serialized data before configure to prevent
+      // onConnectionsChange from resolving subgraph-internal link IDs
+      // against the parent graph's link map (which may contain unrelated
+      // links with the same numeric IDs).
+      for (const input of n_info.inputs ?? []) {
+        input.link = null
+      }
+      for (const output of n_info.outputs ?? []) {
+        output.links = []
+      }
+
       this.add(node, true)
       node.configure(n_info)
       node.setPos(node.pos[0] + offsetX, node.pos[1] + offsetY)
-      for (const input of node.inputs) {
-        input.link = null
-      }
-      for (const output of node.outputs) {
-        output.links = []
-      }
       toSelect.push(node)
     }
     const groups = structuredClone(
@@ -2043,8 +2048,19 @@ export class LGraph
     }
     this.remove(subgraphNode)
     this.subgraphs.delete(subgraphNode.subgraph.id)
+
+    // Deduplicate links by (oid, oslot, tid, tslot) to prevent repeated
+    // disconnect/reconnect cycles on widget inputs that can shift slot indices.
+    const seenLinks = new Set<string>()
+    const dedupedNewLinks = newLinks.filter((link) => {
+      const key = `${link.oid}:${link.oslot}:${link.tid}:${link.tslot}`
+      if (seenLinks.has(key)) return false
+      seenLinks.add(key)
+      return true
+    })
+
     const linkIdMap = new Map<LinkId, LinkId[]>()
-    for (const newLink of newLinks) {
+    for (const newLink of dedupedNewLinks) {
       let created: LLink | null | undefined
       if (newLink.oid == SUBGRAPH_INPUT_ID) {
         if (!(this instanceof Subgraph)) {
@@ -2102,7 +2118,7 @@ export class LGraph
       toSelect.push(migratedReroute)
     }
     //iterate over newly created links to update reroute parentIds
-    for (const newLink of newLinks) {
+    for (const newLink of dedupedNewLinks) {
       const linkInstance = this.links.get(newLink.id)
       if (!linkInstance) {
         continue
