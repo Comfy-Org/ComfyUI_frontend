@@ -139,7 +139,7 @@ export const buildJobDisplay = (
       iconName: iconForJobState(state),
       iconImageUrl,
       primary,
-      secondary: time !== undefined ? `${time.toFixed(2)}s` : '',
+      secondary: time !== undefined ? formatDuration(time) : '',
       showClear: false
     }
   }

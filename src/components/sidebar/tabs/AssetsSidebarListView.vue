@@ -153,7 +153,7 @@ function getAssetPreviewUrl(asset: AssetItem): string {
 function getAssetSecondaryText(asset: AssetItem): string {
   const metadata = getOutputAssetMetadata(asset.user_metadata)
   if (typeof metadata?.executionTimeInSeconds === 'number') {
-    return `${metadata.executionTimeInSeconds.toFixed(2)}s`
+    return formatDuration(metadata.executionTimeInSeconds)
   }
 
   const duration = asset.user_metadata?.duration

@@ -391,9 +391,7 @@ export class TaskItemImpl {
   }
 
   get executionTimeInSeconds() {
-    return this.executionTime !== undefined
-      ? this.executionTime / 1000
-      : undefined
+    return this.executionTime
   }
 
   /**
