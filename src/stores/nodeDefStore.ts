@@ -82,6 +82,10 @@ export class ComfyNodeDefImpl
    * or old names after renaming a node.
    */
   readonly search_aliases?: string[]
+  /**
+   * Category for the Essentials tab in the node library.
+   */
+  readonly essentials_category?: string
 
   // V2 fields
   readonly inputs: Record<string, InputSpecV2>
@@ -152,6 +156,7 @@ export class ComfyNodeDefImpl
     this.output_tooltips = obj.output_tooltips
     this.input_order = obj.input_order
     this.price_badge = obj.price_badge
+    this.essentials_category = obj.essentials_category
 
     // Initialize V2 fields
     const defV2 = transformNodeDefV1ToV2(obj)

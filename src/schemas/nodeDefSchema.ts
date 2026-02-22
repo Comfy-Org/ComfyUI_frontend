@@ -287,7 +287,12 @@ export const zComfyNodeDef = z.object({
    * Contains a JSONata expression to calculate pricing based on widget values
    * and input connectivity.
    */
-  price_badge: zPriceBadge.optional()
+  price_badge: zPriceBadge.optional(),
+  /**
+   * Category for the Essentials tab in the node library.
+   * Provided by the backend to group nodes in the Essentials view.
+   */
+  essentials_category: z.string().optional()
 })
 
 export const zAutogrowOptions = z.object({
