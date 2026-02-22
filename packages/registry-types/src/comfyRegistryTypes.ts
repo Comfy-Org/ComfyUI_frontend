@@ -3952,7 +3952,7 @@ export interface components {
          * @description The subscription tier level
          * @enum {string}
          */
-        SubscriptionTier: "STANDARD" | "CREATOR" | "PRO" | "FOUNDERS_EDITION";
+        SubscriptionTier: "FREE" | "STANDARD" | "CREATOR" | "PRO" | "FOUNDERS_EDITION";
         /**
          * @description The subscription billing duration
          * @enum {string}

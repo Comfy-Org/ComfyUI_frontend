@@ -15,6 +15,8 @@ import type {
   PageViewMetadata,
   PageVisibilityMetadata,
   SettingChangedMetadata,
+  AuthPageOpenedMetadata,
+  SubscriptionMetadata,
   SurveyResponses,
   TabCountMetadata,
   TelemetryDispatcher,
@@ -53,8 +55,12 @@ export class TelemetryRegistry implements TelemetryDispatcher {
     })
   }
 
-  trackSignupOpened(): void {
-    this.dispatch((provider) => provider.trackSignupOpened?.())
+  trackSignupOpened(metadata?: AuthPageOpenedMetadata): void {
+    this.dispatch((provider) => provider.trackSignupOpened?.(metadata))
+  }
+
+  trackLoginOpened(metadata?: AuthPageOpenedMetadata): void {
+    this.dispatch((provider) => provider.trackLoginOpened?.(metadata))
   }
 
   trackAuth(metadata: AuthMetadata): void {
@@ -65,8 +71,11 @@ export class TelemetryRegistry implements TelemetryDispatcher {
     this.dispatch((provider) => provider.trackUserLoggedIn?.())
   }
 
-  trackSubscription(event: 'modal_opened' | 'subscribe_clicked'): void {
-    this.dispatch((provider) => provider.trackSubscription?.(event))
+  trackSubscription(
+    event: 'modal_opened' | 'subscribe_clicked',
+    metadata?: SubscriptionMetadata
+  ): void {
+    this.dispatch((provider) => provider.trackSubscription?.(event, metadata))
   }
 
   trackBeginCheckout(metadata: BeginCheckoutMetadata): void {

@@ -143,6 +143,7 @@ const { switchWithConfirmation } = useWorkspaceSwitch()
 const { subscription } = useBillingContext()
 
 const tierKeyMap: Record<string, string> = {
+  FREE: 'free',
   STANDARD: 'standard',
   CREATOR: 'creator',
   PRO: 'pro',

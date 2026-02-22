@@ -24,6 +24,7 @@ const mockGetCheckoutAttribution = vi.hoisted(() => vi.fn(() => ({})))
 vi.mock('@/platform/cloud/subscription/composables/useSubscription', () => ({
   useSubscription: () => ({
     isActiveSubscription: computed(() => mockIsActiveSubscription.value),
+    isFreeTier: computed(() => false),
     subscriptionTier: computed(() => mockSubscriptionTier.value),
     isYearlySubscription: computed(() => mockIsYearlySubscription.value),
     subscriptionStatus: ref(null)

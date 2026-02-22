@@ -81,7 +81,11 @@
         <div class="flex flex-col gap-6">
           <div class="inline-flex items-center gap-2">
             <div class="text-sm text-text-primary">
-              {{ $t('subscription.required.title') }}
+              {{
+                reason === 'out_of_credits'
+                  ? $t('credits.topUp.insufficientTitle')
+                  : $t('subscription.required.title')
+              }}
             </div>
             <CloudBadge
               reverse-order
@@ -90,6 +94,13 @@
               use-subscription
             />
           </div>
+
+          <p
+            v-if="reason === 'out_of_credits'"
+            class="m-0 text-sm text-text-secondary"
+          >
+            {{ $t('credits.topUp.insufficientMessage') }}
+          </p>
 
           <div class="flex items-baseline gap-2">
             <span class="text-4xl font-bold">{{ formattedMonthlyPrice }}</span>
@@ -131,9 +142,11 @@ import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
 import { useCommandStore } from '@/stores/commandStore'
+import type { SubscriptionDialogReason } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
 
-const props = defineProps<{
+const { onClose, reason } = defineProps<{
   onClose: () => void
+  reason?: SubscriptionDialogReason
 }>()
 
 const emit = defineEmits<{
@@ -234,7 +247,7 @@ const handleSubscribed = () => {
 
 const handleClose = () => {
   stopPolling()
-  props.onClose()
+  onClose()
 }
 
 const handleContactUs = async () => {

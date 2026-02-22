@@ -46,6 +46,17 @@
         class="icon-[lucide--circle-help] cursor-help text-base text-muted-foreground mr-auto"
       />
       <Button
+        v-if="isFreeTier"
+        variant="secondary"
+        size="sm"
+        class="text-base-foreground"
+        data-testid="upgrade-button"
+        @click="handleOpenPlansAndPricing"
+      >
+        {{ $t('subscription.upgrade') }}
+      </Button>
+      <Button
+        v-else
         variant="secondary"
         size="sm"
         class="text-base-foreground"
@@ -170,6 +181,7 @@ const settingsDialog = useSettingsDialog()
 const dialogService = useDialogService()
 const {
   isActiveSubscription,
+  isFreeTier,
   subscriptionTierName,
   subscriptionTier,
   fetchStatus
@@ -195,7 +207,10 @@ const formattedBalance = computed(() => {
 const canUpgrade = computed(() => {
   const tier = subscriptionTier.value
   return (
-    tier === 'FOUNDERS_EDITION' || tier === 'STANDARD' || tier === 'CREATOR'
+    tier === 'FREE' ||
+    tier === 'FOUNDERS_EDITION' ||
+    tier === 'STANDARD' ||
+    tier === 'CREATOR'
   )
 })
 
@@ -205,7 +220,7 @@ const handleOpenUserSettings = () => {
 }
 
 const handleOpenPlansAndPricing = () => {
-  subscriptionDialog.show()
+  subscriptionDialog.showPricingTable()
   emit('close')
 }
 

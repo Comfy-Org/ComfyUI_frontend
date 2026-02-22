@@ -12,6 +12,7 @@
  * 3. Check dist/assets/*.js files contain no tracking code
  */
 
+import type { SubscriptionDialogReason } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
 import type { TierKey } from '@/platform/cloud/subscription/constants/tierPricing'
 import type { BillingCycle } from '@/platform/cloud/subscription/utils/subscriptionTierRank'
 import type { AuditLog } from '@/services/customerEventsService'
@@ -27,6 +28,13 @@ export interface AuthMetadata {
   utm_source?: string
   utm_medium?: string
   utm_campaign?: string
+}
+
+/**
+ * Metadata for signup/login page opened events
+ */
+export interface AuthPageOpenedMetadata {
+  free_tier_badge_shown?: boolean
 }
 
 /**
@@ -301,6 +309,11 @@ export interface CheckoutAttributionMetadata {
   wbraid?: string
 }
 
+export interface SubscriptionMetadata {
+  current_tier?: string
+  reason?: SubscriptionDialogReason
+}
+
 export interface BeginCheckoutMetadata
   extends Record<string, unknown>, CheckoutAttributionMetadata {
   user_id: string
@@ -316,12 +329,16 @@ export interface BeginCheckoutMetadata
  */
 export interface TelemetryProvider {
   // Authentication flow events
-  trackSignupOpened?(): void
+  trackSignupOpened?(metadata?: AuthPageOpenedMetadata): void
+  trackLoginOpened?(metadata?: AuthPageOpenedMetadata): void
   trackAuth?(metadata: AuthMetadata): void
   trackUserLoggedIn?(): void
 
   // Subscription flow events
-  trackSubscription?(event: 'modal_opened' | 'subscribe_clicked'): void
+  trackSubscription?(
+    event: 'modal_opened' | 'subscribe_clicked',
+    metadata?: SubscriptionMetadata
+  ): void
   trackBeginCheckout?(metadata: BeginCheckoutMetadata): void
   trackMonthlySubscriptionSucceeded?(): void
   trackMonthlySubscriptionCancelled?(): void
@@ -407,6 +424,7 @@ export type TelemetryDispatcher = Required<TelemetryProvider>
 export const TelemetryEvents = {
   // Authentication Flow
   USER_SIGN_UP_OPENED: 'app:user_sign_up_opened',
+  USER_LOGIN_OPENED: 'app:user_login_opened',
   USER_AUTH_COMPLETED: 'app:user_auth_completed',
   USER_LOGGED_IN: 'app:user_logged_in',
 
@@ -512,3 +530,5 @@ export type TelemetryEventProperties =
   | HelpCenterClosedMetadata
   | WorkflowCreatedMetadata
   | EnterLinearMetadata
+  | AuthPageOpenedMetadata
+  | SubscriptionMetadata
