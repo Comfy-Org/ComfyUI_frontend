@@ -10,6 +10,7 @@
       <TreeExplorerV2
         v-model:expanded-keys="expandedKeys"
         :root="favoritesRoot"
+        show-context-menu
         @node-click="(node) => emit('nodeClick', node)"
         @add-to-favorites="handleAddToFavorites"
       />
@@ -26,6 +27,7 @@
       <TreeExplorerV2
         v-model:expanded-keys="expandedKeys"
         :root="section.root"
+        show-context-menu
         @node-click="(node) => emit('nodeClick', node)"
         @add-to-favorites="handleAddToFavorites"
       />

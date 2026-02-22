@@ -60,6 +60,7 @@ import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import { useCommandStore } from '@/stores/commandStore'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
 import { useExecutionStore } from '@/stores/executionStore'
+import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useExtensionStore } from '@/stores/extensionStore'
 import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
 import { useNodeOutputStore } from '@/stores/imagePreviewStore'
@@ -218,18 +219,18 @@ export class ComfyApp {
 
   /**
    * The node errors from the previous execution.
-   * @deprecated Use useExecutionStore().lastNodeErrors instead
+   * @deprecated Use app.extensionManager.lastNodeErrors instead
    */
   get lastNodeErrors(): Record<NodeId, NodeError> | null {
-    return useExecutionStore().lastNodeErrors
+    return useExecutionErrorStore().lastNodeErrors
   }
 
   /**
    * The error from the previous execution.
-   * @deprecated Use useExecutionStore().lastExecutionError instead
+   * @deprecated Use app.extensionManager.lastExecutionError instead
    */
   get lastExecutionError(): ExecutionErrorWsMessage | null {
-    return useExecutionStore().lastExecutionError
+    return useExecutionErrorStore().lastExecutionError
   }
 
   /**
@@ -713,7 +714,7 @@ export class ComfyApp {
           })
         }
       } else if (useSettingStore().get('Comfy.RightSidePanel.ShowErrorsTab')) {
-        useExecutionStore().showErrorOverlay()
+        useExecutionErrorStore().showErrorOverlay()
       } else {
         useDialogService().showExecutionErrorDialog(detail)
       }
@@ -737,6 +738,10 @@ export class ComfyApp {
         ])
       }
       releaseSharedObjectUrl(blobUrl)
+    })
+
+    api.addEventListener('feature_flags', () => {
+      void useNodeReplacementStore().load()
     })
 
     api.init()
@@ -802,7 +807,6 @@ export class ComfyApp {
     await useWorkspaceStore().workflow.syncWorkflows()
     //Doesn't need to block. Blueprints will load async
     void useSubgraphStore().fetchSubgraphs()
-    await useNodeReplacementStore().load()
     await useExtensionService().loadExtensions()
 
     this.addProcessKeyHandler()
@@ -1399,9 +1403,8 @@ export class ComfyApp {
 
     this.processingQueue = true
     const executionStore = useExecutionStore()
-    executionStore.lastNodeErrors = null
-    executionStore.lastExecutionError = null
-    executionStore.lastPromptError = null
+    const executionErrorStore = useExecutionErrorStore()
+    executionErrorStore.clearAllErrors()
 
     // Get auth token for backend nodes - uses workspace token if enabled, otherwise Firebase token
     const comfyOrgAuthToken = await useFirebaseAuthStore().getAuthToken()
@@ -1437,8 +1440,8 @@ export class ComfyApp {
             })
             delete api.authToken
             delete api.apiKey
-            executionStore.lastNodeErrors = res.node_errors ?? null
-            if (executionStore.lastNodeErrors?.length) {
+            executionErrorStore.lastNodeErrors = res.node_errors ?? null
+            if (executionErrorStore.lastNodeErrors?.length) {
               this.canvas.draw(true, true)
             } else {
               try {
@@ -1474,7 +1477,8 @@ export class ComfyApp {
             console.error(error)
 
             if (error instanceof PromptExecutionError) {
-              executionStore.lastNodeErrors = error.response.node_errors ?? null
+              executionErrorStore.lastNodeErrors =
+                error.response.node_errors ?? null
 
               // Store prompt-level error separately only when no node-specific errors exist,
               // because node errors already carry the full context. Prompt-level errors
@@ -1486,13 +1490,13 @@ export class ComfyApp {
               if (!hasNodeErrors) {
                 const respError = error.response.error
                 if (respError && typeof respError === 'object') {
-                  executionStore.lastPromptError = {
+                  executionErrorStore.lastPromptError = {
                     type: respError.type,
                     message: respError.message,
                     details: respError.details ?? ''
                   }
                 } else if (typeof respError === 'string') {
-                  executionStore.lastPromptError = {
+                  executionErrorStore.lastPromptError = {
                     type: 'error',
                     message: respError,
                     details: ''
@@ -1501,7 +1505,7 @@ export class ComfyApp {
               }
 
               if (useSettingStore().get('Comfy.RightSidePanel.ShowErrorsTab')) {
-                executionStore.showErrorOverlay()
+                executionErrorStore.showErrorOverlay()
               }
               this.canvas.draw(true, true)
             }
@@ -1530,7 +1534,7 @@ export class ComfyApp {
     } finally {
       this.processingQueue = false
     }
-    return !executionStore.lastNodeErrors
+    return !executionErrorStore.lastNodeErrors
   }
 
   showErrorOnFileLoad(file: File) {
@@ -1877,10 +1881,8 @@ export class ComfyApp {
   clean() {
     const nodeOutputStore = useNodeOutputStore()
     nodeOutputStore.resetAllOutputsAndPreviews()
-    const executionStore = useExecutionStore()
-    executionStore.lastNodeErrors = null
-    executionStore.lastExecutionError = null
-    executionStore.lastPromptError = null
+    const executionErrorStore = useExecutionErrorStore()
+    executionErrorStore.clearAllErrors()
 
     useDomWidgetStore().clear()
 

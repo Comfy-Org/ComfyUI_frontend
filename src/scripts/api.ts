@@ -2,8 +2,10 @@ import { promiseTimeout, until } from '@vueuse/core'
 import axios from 'axios'
 import { get } from 'es-toolkit/compat'
 import { trimEnd } from 'es-toolkit'
+import { ref } from 'vue'
 
 import defaultClientFeatureFlags from '@/config/clientFeatureFlags.json' with { type: 'json' }
+import { getDevOverride } from '@/utils/devFeatureFlagOverride'
 import type {
   ModelFile,
   ModelFolderInfo
@@ -11,9 +13,10 @@ import type {
 import { isCloud } from '@/platform/distribution/types'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import type { IFuseOptions } from 'fuse.js'
-import {
-  type TemplateInfo,
-  type WorkflowTemplates
+import type {
+  TemplateIncludeOnDistributionEnum,
+  TemplateInfo,
+  WorkflowTemplates
 } from '@/platform/workflow/templates/types/template'
 import type {
   ComfyApiWorkflow,
@@ -241,6 +244,8 @@ export type GlobalSubgraphData = {
     node_pack: string
     category?: string
     search_aliases?: string[]
+    requiresCustomNodes?: string[]
+    includeOnDistributions?: TemplateIncludeOnDistributionEnum[]
   }
   data: string | Promise<string>
   essentials_category?: string
@@ -337,7 +342,7 @@ export class ComfyApi extends EventTarget {
   /**
    * Feature flags received from the backend server.
    */
-  serverFeatureFlags: Record<string, unknown> = {}
+  serverFeatureFlags = ref<Record<string, unknown>>({})
 
   /**
    * The auth token for the comfy org account if the user is logged in.
@@ -692,11 +697,12 @@ export class ComfyApi extends EventTarget {
               break
             case 'feature_flags':
               // Store server feature flags
-              this.serverFeatureFlags = msg.data
+              this.serverFeatureFlags.value = msg.data
               console.log(
                 'Server feature flags received:',
-                this.serverFeatureFlags
+                this.serverFeatureFlags.value
               )
+              this.dispatchCustomEvent('feature_flags', msg.data)
               break
             default:
               if (this._registered.has(msg.type)) {
@@ -1176,9 +1182,16 @@ export class ComfyApi extends EventTarget {
 
   async getGlobalSubgraphData(id: string): Promise<string> {
     const resp = await api.fetchApi('/global_subgraphs/' + id)
-    if (resp.status !== 200) return ''
+    if (resp.status !== 200) {
+      throw new Error(
+        `Failed to fetch global subgraph '${id}': ${resp.status} ${resp.statusText}`
+      )
+    }
     const subgraph: GlobalSubgraphData = await resp.json()
-    return subgraph?.data ?? ''
+    if (!subgraph?.data) {
+      throw new Error(`Global subgraph '${id}' returned empty data`)
+    }
+    return subgraph.data as string
   }
   async getGlobalSubgraphs(): Promise<Record<string, GlobalSubgraphData>> {
     const resp = await api.fetchApi('/global_subgraphs')
@@ -1287,7 +1300,9 @@ export class ComfyApi extends EventTarget {
    * @returns true if the feature is supported, false otherwise
    */
   serverSupportsFeature(featureName: string): boolean {
-    return get(this.serverFeatureFlags, featureName) === true
+    const override = getDevOverride<boolean>(featureName)
+    if (override !== undefined) return override
+    return get(this.serverFeatureFlags.value, featureName) === true
   }
 
   /**
@@ -1297,7 +1312,9 @@ export class ComfyApi extends EventTarget {
    * @returns The feature value or default
    */
   getServerFeature<T = unknown>(featureName: string, defaultValue?: T): T {
-    return get(this.serverFeatureFlags, featureName, defaultValue) as T
+    const override = getDevOverride<T>(featureName)
+    if (override !== undefined) return override
+    return get(this.serverFeatureFlags.value, featureName, defaultValue) as T
   }
 
   /**
@@ -1305,7 +1322,7 @@ export class ComfyApi extends EventTarget {
    * @returns Copy of all server feature flags
    */
   getServerFeatures(): Record<string, unknown> {
-    return { ...this.serverFeatureFlags }
+    return { ...this.serverFeatureFlags.value }
   }
 
   async getFuseOptions(): Promise<IFuseOptions<TemplateInfo> | null> {

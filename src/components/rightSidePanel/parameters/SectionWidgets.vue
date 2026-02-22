@@ -9,7 +9,7 @@ import type { LGraphGroup, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { SubgraphNode } from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { useExecutionStore } from '@/stores/executionStore'
+import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { cn } from '@/utils/tailwindUtil'
@@ -62,7 +62,7 @@ watchEffect(() => (widgets.value = widgetsProp))
 provide(HideLayoutFieldKey, true)
 
 const canvasStore = useCanvasStore()
-const executionStore = useExecutionStore()
+const executionErrorStore = useExecutionErrorStore()
 const rightSidePanelStore = useRightSidePanelStore()
 const nodeDefStore = useNodeDefStore()
 const { t } = useI18n()
@@ -110,7 +110,9 @@ const targetNode = computed<LGraphNode | null>(() => {
 
 const hasDirectError = computed(() => {
   if (!targetNode.value) return false
-  return executionStore.activeGraphErrorNodeIds.has(String(targetNode.value.id))
+  return executionErrorStore.activeGraphErrorNodeIds.has(
+    String(targetNode.value.id)
+  )
 })
 
 const hasContainerInternalError = computed(() => {
@@ -119,7 +121,7 @@ const hasContainerInternalError = computed(() => {
     targetNode.value instanceof SubgraphNode || isGroupNode(targetNode.value)
   if (!isContainer) return false
 
-  return executionStore.hasInternalErrorForNode(targetNode.value.id)
+  return executionErrorStore.hasInternalErrorForNode(targetNode.value.id)
 })
 
 const nodeHasError = computed(() => {

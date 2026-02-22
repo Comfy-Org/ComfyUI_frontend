@@ -52,7 +52,7 @@
             :value="tab.value"
             :class="
               cn(
-                'select-none border-none outline-none px-3 py-2 rounded-lg cursor-pointer',
+                'flex-1 text-center select-none border-none outline-none px-3 py-2 rounded-lg cursor-pointer',
                 'text-sm text-foreground transition-colors',
                 selectedTab === tab.value
                   ? 'bg-comfy-input font-bold'
@@ -70,7 +70,9 @@
       <!-- Tab content (scrollable) -->
       <TabsRoot v-model="selectedTab" class="h-full">
         <EssentialNodesPanel
-          v-if="selectedTab === 'essentials'"
+          v-if="
+            flags.nodeLibraryEssentialsEnabled && selectedTab === 'essentials'
+          "
           v-model:expanded-keys="expandedKeys"
           :root="renderedEssentialRoot"
           @node-click="handleNodeClick"
@@ -94,7 +96,7 @@
 </template>
 
 <script setup lang="ts">
-import { cn } from '@comfyorg/tailwind-utils'
+import { cn } from '@/utils/tailwindUtil'
 import { useLocalStorage } from '@vueuse/core'
 import {
   DropdownMenuContent,
@@ -109,11 +111,13 @@ import {
   TabsRoot,
   TabsTrigger
 } from 'reka-ui'
-import { computed, nextTick, onMounted, ref } from 'vue'
+import { computed, nextTick, onMounted, ref, watchEffect } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import SearchBox from '@/components/common/SearchBoxV2.vue'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useNodeDragToCanvas } from '@/composables/node/useNodeDragToCanvas'
+import { usePerTabState } from '@/composables/usePerTabState'
 import {
   DEFAULT_SORTING_ID,
   DEFAULT_TAB_ID,
@@ -135,10 +139,21 @@ import EssentialNodesPanel from './nodeLibrary/EssentialNodesPanel.vue'
 import NodeDragPreview from './nodeLibrary/NodeDragPreview.vue'
 import SidebarTabTemplate from './SidebarTabTemplate.vue'
 
+const { flags } = useFeatureFlags()
+
 const selectedTab = useLocalStorage<TabId>(
   'Comfy.NodeLibrary.Tab',
   DEFAULT_TAB_ID
 )
+
+watchEffect(() => {
+  if (
+    !flags.nodeLibraryEssentialsEnabled &&
+    selectedTab.value === 'essentials'
+  ) {
+    selectedTab.value = DEFAULT_TAB_ID
+  }
+})
 
 const sortOrderByTab = useLocalStorage<Record<TabId, SortingStrategyId>>(
   'Comfy.NodeLibrary.SortByTab',
@@ -148,15 +163,7 @@ const sortOrderByTab = useLocalStorage<Record<TabId, SortingStrategyId>>(
     custom: 'alphabetical'
   }
 )
-const sortOrder = computed({
-  get: () => sortOrderByTab.value[selectedTab.value],
-  set: (value) => {
-    sortOrderByTab.value = {
-      ...sortOrderByTab.value,
-      [selectedTab.value]: value
-    }
-  }
-})
+const sortOrder = usePerTabState(selectedTab, sortOrderByTab)
 
 const sortingOptions = computed(() =>
   nodeOrganizationService.getSortingStrategies().map((strategy) => ({
@@ -174,12 +181,7 @@ const expandedKeysByTab = ref<Record<TabId, string[]>>({
   all: [],
   custom: []
 })
-const expandedKeys = computed({
-  get: () => expandedKeysByTab.value[selectedTab.value],
-  set: (value) => {
-    expandedKeysByTab.value[selectedTab.value] = value
-  }
-})
+const expandedKeys = usePerTabState(selectedTab, expandedKeysByTab)
 
 const nodeDefStore = useNodeDefStore()
 const { startDrag } = useNodeDragToCanvas()
@@ -336,11 +338,21 @@ async function handleSearch() {
   expandedKeys.value = allKeys
 }
 
-const tabs = computed(() => [
-  { value: 'essentials', label: t('sideToolbar.nodeLibraryTab.essentials') },
-  { value: 'all', label: t('sideToolbar.nodeLibraryTab.allNodes') },
-  { value: 'custom', label: t('sideToolbar.nodeLibraryTab.custom') }
-])
+const tabs = computed(() => {
+  const baseTabs: Array<{ value: TabId; label: string }> = [
+    { value: 'all', label: t('sideToolbar.nodeLibraryTab.allNodes') },
+    { value: 'custom', label: t('sideToolbar.nodeLibraryTab.custom') }
+  ]
+  return flags.nodeLibraryEssentialsEnabled
+    ? [
+        {
+          value: 'essentials' as TabId,
+          label: t('sideToolbar.nodeLibraryTab.essentials')
+        },
+        ...baseTabs
+      ]
+    : baseTabs
+})
 
 onMounted(() => {
   searchBoxRef.value?.focus()

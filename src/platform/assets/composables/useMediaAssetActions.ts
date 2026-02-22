@@ -26,6 +26,8 @@ import type { AssetItem } from '../schemas/assetSchema'
 import { MediaAssetKey } from '../schemas/mediaAssetSchema'
 import { assetService } from '../services/assetService'
 
+const EXCLUDED_TAGS = new Set(['models', 'input', 'output'])
+
 export function useMediaAssetActions() {
   const { t } = useI18n()
   const toast = useToast()
@@ -637,6 +639,22 @@ export function useMediaAssetActions() {
               }
               if (hasInputAssets) {
                 await assetsStore.updateInputs()
+              }
+
+              // Invalidate model caches for affected categories
+              const modelCategories = new Set<string>()
+
+              for (const asset of assetArray) {
+                for (const tag of asset.tags ?? []) {
+                  if (EXCLUDED_TAGS.has(tag)) continue
+                  if (assetsStore.hasCategory(tag)) {
+                    modelCategories.add(tag)
+                  }
+                }
+              }
+
+              for (const category of modelCategories) {
+                assetsStore.invalidateModelsForCategory(category)
               }
 
               // Show appropriate feedback based on results

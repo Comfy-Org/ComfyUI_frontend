@@ -248,6 +248,10 @@
   "Comfy_NodeBadge_ShowApiPricing": {
     "name": "API düğüm fiyatlandırma rozetini göster"
   },
+  "Comfy_NodeLibrary_NewDesign": {
+    "name": "Yeni Düğüm Kütüphanesi Tasarımı",
+    "tooltip": "Sekmeli (Temel, Tümü, Özel), geliştirilmiş arama ve üzerine gelindiğinde önizleme özelliklerine sahip yeniden tasarlanmış düğüm kütüphanesi kenar çubuğunu etkinleştir."
+  },
   "Comfy_NodeReplacement_Enabled": {
     "name": "Otomatik düğüm değiştirmeyi etkinleştir",
     "tooltip": "Etkinleştirildiğinde, eksik düğümler için bir değiştirme eşlemesi varsa otomatik olarak daha yeni karşılıklarıyla değiştirilebilir."
@@ -256,7 +260,8 @@
     "name": "Düğüm arama kutusu uygulaması",
     "options": {
       "default": "varsayılan",
-      "litegraph (legacy)": "litegraph (eski)"
+      "litegraph (legacy)": "litegraph (eski)",
+      "v1 (legacy)": "v1 (eski)"
     }
   },
   "Comfy_NodeSearchBoxImpl_NodePreview": {

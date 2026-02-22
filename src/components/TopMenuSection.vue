@@ -169,6 +169,7 @@ import { useSettingStore } from '@/platform/settings/settingStore'
 import { app } from '@/scripts/app'
 import { useCommandStore } from '@/stores/commandStore'
 import { useExecutionStore } from '@/stores/executionStore'
+import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useQueueStore, useQueueUIStore } from '@/stores/queueStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
@@ -189,6 +190,7 @@ const { toastErrorHandler } = useErrorHandling()
 const commandStore = useCommandStore()
 const queueStore = useQueueStore()
 const executionStore = useExecutionStore()
+const executionErrorStore = useExecutionErrorStore()
 const queueUIStore = useQueueUIStore()
 const sidebarTabStore = useSidebarTabStore()
 const { activeJobsCount } = storeToRefs(queueStore)
@@ -262,7 +264,7 @@ const shouldShowRedDot = computed((): boolean => {
   return shouldShowConflictRedDot.value
 })
 
-const { hasAnyError } = storeToRefs(executionStore)
+const { hasAnyError } = storeToRefs(executionErrorStore)
 
 // Right side panel toggle
 const { isOpen: isRightSidePanelOpen } = storeToRefs(rightSidePanelStore)

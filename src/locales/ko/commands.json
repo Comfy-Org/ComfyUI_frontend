@@ -44,6 +44,9 @@
   "Comfy_BrowseTemplates": {
     "label": "템플릿 탐색"
   },
+  "Comfy_Canvas_CopySelected": {
+    "label": "복사"
+  },
   "Comfy_Canvas_DeleteSelectedItems": {
     "label": "선택한 항목 삭제"
   },
@@ -65,11 +68,17 @@
   "Comfy_Canvas_MoveSelectedNodes_Up": {
     "label": "선택한 노드 위로 이동"
   },
+  "Comfy_Canvas_PasteFromClipboard": {
+    "label": "붙여넣기"
+  },
   "Comfy_Canvas_ResetView": {
     "label": "뷰 재설정"
   },
   "Comfy_Canvas_Resize": {
     "label": "선택된 노드 크기 조정"
+  },
+  "Comfy_Canvas_SelectAll": {
+    "label": "모두 선택"
   },
   "Comfy_Canvas_ToggleLinkVisibility": {
     "label": "캔버스 링크 가시성 토글"

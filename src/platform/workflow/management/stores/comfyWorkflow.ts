@@ -106,8 +106,13 @@ export class ComfyWorkflow extends UserFile {
     await super.load({ force })
     if (!force && this.isLoaded) return this as this & LoadedComfyWorkflow
 
-    if (!this.originalContent) {
-      throw new Error('[ASSERT] Workflow content should be loaded')
+    if (this.originalContent == null) {
+      throw new Error(
+        `[ASSERT] Workflow content should be loaded for '${this.path}'`
+      )
+    }
+    if (this.originalContent.trim().length === 0) {
+      throw new Error(`Workflow content is empty for '${this.path}'`)
     }
 
     const initialState = JSON.parse(this.originalContent)
