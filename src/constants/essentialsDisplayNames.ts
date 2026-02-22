@@ -1,84 +1,88 @@
+import { t } from '@/i18n'
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 
 const BLUEPRINT_PREFIX = 'SubgraphBlueprint.'
 
 /**
- * Static mapping of node names to their Essentials tab display names.
- * Only includes nodes that currently exist (status ✅ in the tracker).
+ * Static mapping of node names to their Essentials tab display name i18n keys.
  */
 const EXACT_NAME_MAP: Record<string, string> = {
   // Basics
-  LoadImage: 'Load Image',
-  SaveImage: 'Save Image',
-  LoadVideo: 'Load Video',
-  SaveVideo: 'Save Video',
-  Load3D: 'Load 3D model',
-  SaveGLB: 'Save 3D Model',
-  CLIPTextEncode: 'Text',
+  LoadImage: 'essentials.loadImage',
+  SaveImage: 'essentials.saveImage',
+  LoadVideo: 'essentials.loadVideo',
+  SaveVideo: 'essentials.saveVideo',
+  Load3D: 'essentials.load3DModel',
+  SaveGLB: 'essentials.save3DModel',
+  PrimitiveStringMultiline: 'essentials.text',
 
   // Image Tools
-  ImageBatch: 'Batch Image',
-  ImageCrop: 'Crop Image',
-  ImageScale: 'Resize Image',
-  ImageRotate: 'Rotate',
-  ImageBlur: 'Blur',
-  ImageInvert: 'Invert',
-  Canny: 'Canny',
-  RecraftRemoveBackgroundNode: 'Remove Background',
-  'image compare': 'Image compare',
+  BatchImagesNode: 'essentials.batchImage',
+  ImageCrop: 'essentials.cropImage',
+  ImageScale: 'essentials.resizeImage',
+  ImageRotate: 'essentials.rotate',
+  ImageInvert: 'essentials.invert',
+  Canny: 'essentials.canny',
+  RecraftRemoveBackgroundNode: 'essentials.removeBackground',
+  ImageCompare: 'essentials.imageCompare',
 
   // Video Tools
-  GetVideoComponents: 'Extract frame',
+  'Video Slice': 'essentials.extractFrame',
 
   // Image Generation
-  LoraLoader: 'Load style (LoRA)',
+  LoraLoader: 'essentials.loadStyleLora',
 
   // Video Generation
-  KlingLipSyncAudioToVideoNode: 'Lipsync',
+  KlingLipSyncAudioToVideoNode: 'essentials.lipsync',
+  KlingLipSyncTextToVideoNode: 'essentials.lipsync',
 
   // Text Generation
-  OpenAIChatNode: 'Text generation (LLM)',
+  OpenAIChatNode: 'essentials.textGenerationLLM',
 
   // 3D
-  TencentTextToModelNode: 'Text to 3D model',
-  TencentImageToModelNode: 'Image to 3D Model',
+  TencentTextToModelNode: 'essentials.textTo3DModel',
+  TencentImageToModelNode: 'essentials.imageTo3DModel',
+  MeshyTextToModelNode: 'essentials.textTo3DModel',
+  MeshyImageToModelNode: 'essentials.imageTo3DModel',
+  TripoTextToModelNode: 'essentials.textTo3DModel',
+  TripoImageToModelNode: 'essentials.imageTo3DModel',
 
   // Audio
-  StabilityTextToAudio: 'Music generation',
-  LoadAudio: 'Load Audio',
-  SaveAudio: 'Save Audio'
+  StabilityTextToAudio: 'essentials.musicGeneration',
+  LoadAudio: 'essentials.loadAudio',
+  SaveAudio: 'essentials.saveAudio'
 }
 
 /**
- * Blueprint prefix patterns mapped to display names.
+ * Blueprint prefix patterns mapped to display name i18n keys.
  * Entries are matched by checking if the blueprint filename
  * (after removing the SubgraphBlueprint. prefix) starts with the key.
  * Ordered longest-first so more specific prefixes match before shorter ones.
  */
-const BLUEPRINT_PREFIX_MAP: [prefix: string, displayName: string][] = [
+const BLUEPRINT_PREFIX_MAP: [prefix: string, displayNameKey: string][] = [
   // Image Generation
-  ['image_inpainting_', 'Inpaint image'],
-  ['image_outpainting_', 'Outpaint image'],
-  ['image_edit', 'Image to image'],
-  ['text_to_image', 'Text to image'],
-  ['pose_to_image', 'Pose to image'],
-  ['canny_to_image', 'Canny to image'],
-  ['depth_to_image', 'Depth to image'],
+  ['image_inpainting_', 'essentials.inpaintImage'],
+  ['image_outpainting_', 'essentials.outpaintImage'],
+  ['image_edit', 'essentials.imageToImage'],
+  ['text_to_image', 'essentials.textToImage'],
+  ['pose_to_image', 'essentials.poseToImage'],
+  ['canny_to_image', 'essentials.cannyToImage'],
+  ['depth_to_image', 'essentials.depthToImage'],
 
   // Video Generation
-  ['text_to_video', 'Text to video'],
-  ['image_to_video', 'Image to video'],
-  ['pose_to_video', 'Pose to video'],
-  ['canny_to_video', 'Canny to video'],
-  ['depth_to_video', 'Depth to video']
+  ['text_to_video', 'essentials.textToVideo'],
+  ['image_to_video', 'essentials.imageToVideo'],
+  ['pose_to_video', 'essentials.poseToVideo'],
+  ['canny_to_video', 'essentials.cannyToVideo'],
+  ['depth_to_video', 'essentials.depthToVideo']
 ]
 
 function resolveBlueprintDisplayName(
   blueprintName: string
 ): string | undefined {
-  for (const [prefix, displayName] of BLUEPRINT_PREFIX_MAP) {
+  for (const [prefix, displayNameKey] of BLUEPRINT_PREFIX_MAP) {
     if (blueprintName.startsWith(prefix)) {
-      return displayName
+      return t(displayNameKey)
     }
   }
   return undefined
@@ -98,5 +102,6 @@ export function resolveEssentialsDisplayName(
     return resolveBlueprintDisplayName(blueprintName)
   }
 
-  return EXACT_NAME_MAP[name]
+  const key = EXACT_NAME_MAP[name]
+  return key ? t(key) : undefined
 }
