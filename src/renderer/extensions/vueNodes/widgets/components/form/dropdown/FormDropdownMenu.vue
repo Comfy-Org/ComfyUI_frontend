@@ -31,7 +31,18 @@ interface Props {
   baseModelOptions?: FilterOption[]
 }
 
-const props = defineProps<Props>()
+const {
+  items,
+  isSelected,
+  filterOptions,
+  sortOptions,
+  searcher,
+  updateKey,
+  showOwnershipFilter,
+  ownershipOptions,
+  showBaseModelFilter,
+  baseModelOptions
+} = defineProps<Props>()
 const emit = defineEmits<{
   (e: 'item-click', item: FormDropdownItem, index: number): void
 }>()
@@ -74,7 +85,7 @@ const gridStyle = computed<CSSProperties>(() => ({
 
 type VirtualDropdownItem = FormDropdownItem & { key: string }
 const virtualItems = computed<VirtualDropdownItem[]>(() =>
-  props.items.map((item) => ({
+  items.map((item) => ({
     ...item,
     key: String(item.id)
   }))
