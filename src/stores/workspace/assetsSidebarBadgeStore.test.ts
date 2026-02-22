@@ -38,28 +38,32 @@ describe('useAssetsSidebarBadgeStore', () => {
     setActivePinia(createPinia())
   })
 
-  it('does not count existing history items on initialization', async () => {
+  it('does not count initial fetched history when store starts before hydration', async () => {
+    const queueStore = useQueueStore()
+    const assetsSidebarBadgeStore = useAssetsSidebarBadgeStore()
+
+    queueStore.historyTasks = [
+      createHistoryTask({ id: 'job-1', outputsCount: 2 })
+    ]
+    await nextTick()
+    expect(assetsSidebarBadgeStore.unseenAddedAssetsCount).toBe(0)
+
+    queueStore.hasFetchedHistorySnapshot = true
+    await nextTick()
+    expect(assetsSidebarBadgeStore.unseenAddedAssetsCount).toBe(0)
+  })
+
+  it('counts new history items after baseline hydration while assets tab is closed', async () => {
     const queueStore = useQueueStore()
     queueStore.historyTasks = [
       createHistoryTask({ id: 'job-1', outputsCount: 2 })
     ]
+    queueStore.hasFetchedHistorySnapshot = true
 
     const assetsSidebarBadgeStore = useAssetsSidebarBadgeStore()
     await nextTick()
 
     expect(assetsSidebarBadgeStore.unseenAddedAssetsCount).toBe(0)
-  })
-
-  it('counts new history items while assets tab is closed', async () => {
-    const queueStore = useQueueStore()
-    const assetsSidebarBadgeStore = useAssetsSidebarBadgeStore()
-
-    queueStore.historyTasks = [
-      createHistoryTask({ id: 'job-1', outputsCount: 2 })
-    ]
-    await nextTick()
-
-    expect(assetsSidebarBadgeStore.unseenAddedAssetsCount).toBe(2)
 
     queueStore.historyTasks = [
       createHistoryTask({ id: 'job-2', hasPreview: true }),
@@ -67,7 +71,27 @@ describe('useAssetsSidebarBadgeStore', () => {
     ]
     await nextTick()
 
-    expect(assetsSidebarBadgeStore.unseenAddedAssetsCount).toBe(3)
+    expect(assetsSidebarBadgeStore.unseenAddedAssetsCount).toBe(1)
+  })
+
+  it('adds only delta when a seen job gains more outputs', async () => {
+    const queueStore = useQueueStore()
+    const assetsSidebarBadgeStore = useAssetsSidebarBadgeStore()
+
+    queueStore.historyTasks = [
+      createHistoryTask({ id: 'job-1', hasPreview: true })
+    ]
+    queueStore.hasFetchedHistorySnapshot = true
+    await nextTick()
+
+    expect(assetsSidebarBadgeStore.unseenAddedAssetsCount).toBe(0)
+
+    queueStore.historyTasks = [
+      createHistoryTask({ id: 'job-1', outputsCount: 3 })
+    ]
+    await nextTick()
+
+    expect(assetsSidebarBadgeStore.unseenAddedAssetsCount).toBe(2)
   })
 
   it('clears and suppresses count while assets tab is open', async () => {
@@ -78,15 +102,23 @@ describe('useAssetsSidebarBadgeStore', () => {
     queueStore.historyTasks = [
       createHistoryTask({ id: 'job-1', outputsCount: 2 })
     ]
+    queueStore.hasFetchedHistorySnapshot = true
     await nextTick()
-    expect(assetsSidebarBadgeStore.unseenAddedAssetsCount).toBe(2)
+    expect(assetsSidebarBadgeStore.unseenAddedAssetsCount).toBe(0)
+
+    queueStore.historyTasks = [
+      createHistoryTask({ id: 'job-2', outputsCount: 4 }),
+      ...queueStore.historyTasks
+    ]
+    await nextTick()
+    expect(assetsSidebarBadgeStore.unseenAddedAssetsCount).toBe(4)
 
     sidebarTabStore.activeSidebarTabId = 'assets'
     await nextTick()
     expect(assetsSidebarBadgeStore.unseenAddedAssetsCount).toBe(0)
 
     queueStore.historyTasks = [
-      createHistoryTask({ id: 'job-2', outputsCount: 4 }),
+      createHistoryTask({ id: 'job-3', outputsCount: 4 }),
       ...queueStore.historyTasks
     ]
     await nextTick()
@@ -96,7 +128,7 @@ describe('useAssetsSidebarBadgeStore', () => {
     await nextTick()
 
     queueStore.historyTasks = [
-      createHistoryTask({ id: 'job-3', outputsCount: 1 }),
+      createHistoryTask({ id: 'job-4', outputsCount: 1 }),
       ...queueStore.historyTasks
     ]
     await nextTick()

@@ -479,6 +479,7 @@ export const useQueueStore = defineStore('queue', () => {
   const runningTasks = shallowRef<TaskItemImpl[]>([])
   const pendingTasks = shallowRef<TaskItemImpl[]>([])
   const historyTasks = shallowRef<TaskItemImpl[]>([])
+  const hasFetchedHistorySnapshot = ref(false)
   const maxHistoryItems = ref(64)
   const isLoading = ref(false)
 
@@ -566,6 +567,7 @@ export const useQueueStore = defineStore('queue', () => {
         }
         return existing
       })
+      hasFetchedHistorySnapshot.value = true
     } finally {
       // Only clear loading if this is the latest request.
       // A stale request completing (success or error) should not touch loading state
@@ -595,6 +597,7 @@ export const useQueueStore = defineStore('queue', () => {
     runningTasks,
     pendingTasks,
     historyTasks,
+    hasFetchedHistorySnapshot,
     maxHistoryItems,
     isLoading,
 

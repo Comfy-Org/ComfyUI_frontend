@@ -20,18 +20,29 @@ export const useAssetsSidebarBadgeStore = defineStore(
     const sidebarTabStore = useSidebarTabStore()
 
     const unseenAddedAssetsCount = ref(0)
-    const seenHistoryJobIds = ref(new Set<string>())
+    const countedHistoryAssetsByJobId = ref(new Map<string, number>())
     const hasInitializedHistory = ref(false)
 
     const markCurrentHistoryAsSeen = () => {
-      seenHistoryJobIds.value = new Set(
-        queueStore.historyTasks.map((task) => task.jobId)
+      countedHistoryAssetsByJobId.value = new Map(
+        queueStore.historyTasks.map((task) => [
+          task.jobId,
+          getAddedAssetCount(task)
+        ])
       )
     }
 
     watch(
-      () => queueStore.historyTasks,
-      (historyTasks) => {
+      () =>
+        [
+          queueStore.historyTasks,
+          queueStore.hasFetchedHistorySnapshot
+        ] as const,
+      ([historyTasks, hasFetchedHistorySnapshot]) => {
+        if (!hasFetchedHistorySnapshot) {
+          return
+        }
+
         if (!hasInitializedHistory.value) {
           hasInitializedHistory.value = true
           markCurrentHistoryAsSeen()
@@ -39,19 +50,28 @@ export const useAssetsSidebarBadgeStore = defineStore(
         }
 
         const isAssetsTabOpen = sidebarTabStore.activeSidebarTabId === 'assets'
-        const seen = seenHistoryJobIds.value
+        const countedAssetsByJobId = countedHistoryAssetsByJobId.value
 
         for (const task of historyTasks) {
           const jobId = task.jobId
-          if (!jobId || seen.has(jobId)) {
+          if (!jobId) {
             continue
           }
 
-          seen.add(jobId)
+          const countedAssets = countedAssetsByJobId.get(jobId) ?? 0
+          const currentAssets = getAddedAssetCount(task)
+          const hasSeenJob = countedAssetsByJobId.has(jobId)
 
-          if (!isAssetsTabOpen) {
-            unseenAddedAssetsCount.value += getAddedAssetCount(task)
+          if (!isAssetsTabOpen && !hasSeenJob) {
+            unseenAddedAssetsCount.value += currentAssets
+          } else if (!isAssetsTabOpen && currentAssets > countedAssets) {
+            unseenAddedAssetsCount.value += currentAssets - countedAssets
           }
+
+          countedAssetsByJobId.set(
+            jobId,
+            Math.max(countedAssets, currentAssets)
+          )
         }
       },
       { immediate: true }
