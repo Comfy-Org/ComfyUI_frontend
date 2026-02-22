@@ -217,9 +217,12 @@ function findFirstLeaf(node: TreeNode): TreeNode | undefined {
 }
 
 function fillNodeInfo(
-  node: TreeNode
+  node: TreeNode,
+  { useEssentialsLabels = false }: { useEssentialsLabels?: boolean } = {}
 ): RenderedTreeExplorerNode<ComfyNodeDefImpl> {
-  const children = node.children?.map(fillNodeInfo)
+  const children = node.children?.map((child) =>
+    fillNodeInfo(child, { useEssentialsLabels })
+  )
   const totalLeaves = node.leaf
     ? 1
     : (children?.reduce((acc, child) => acc + child.totalLeaves, 0) ?? 0)
@@ -227,7 +230,9 @@ function fillNodeInfo(
   return {
     key: node.key,
     label: node.leaf
-      ? (resolveEssentialsDisplayName(node.data!) ?? node.data?.display_name)
+      ? useEssentialsLabels
+        ? (resolveEssentialsDisplayName(node.data!) ?? node.data?.display_name)
+        : node.data?.display_name
       : node.label,
     leaf: node.leaf,
     data: node.data,
@@ -263,7 +268,7 @@ const essentialSections = computed(() => {
 const renderedEssentialRoot = computed(() => {
   const section = essentialSections.value[0]
   return section
-    ? fillNodeInfo(applySorting(section.tree))
+    ? fillNodeInfo(applySorting(section.tree), { useEssentialsLabels: true })
     : fillNodeInfo({ key: 'root', label: '', children: [] })
 })
 
