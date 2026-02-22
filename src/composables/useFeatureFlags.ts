@@ -104,10 +104,9 @@ export function useFeatureFlags() {
       if (!isCloud) return false
       if (!isAuthenticatedConfigLoaded.value) return false
 
-      return resolveFlag(
-        ServerFeatureFlag.TEAM_WORKSPACES_ENABLED,
-        remoteConfig.value.team_workspaces_enabled,
-        false
+      return (
+        remoteConfig.value.team_workspaces_enabled ??
+        api.getServerFeature(ServerFeatureFlag.TEAM_WORKSPACES_ENABLED, false)
       )
     },
     get userSecretsEnabled() {

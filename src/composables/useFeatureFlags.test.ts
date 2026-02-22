@@ -201,8 +201,7 @@ describe('useFeatureFlags', () => {
       expect(flags.assetRenameEnabled).toBe(true)
     })
 
-    it('direct server flags (supportsPreviewMetadata) respect override via api.getServerFeature', () => {
-      localStorage.setItem('ff:supports_preview_metadata', '"overridden"')
+    it('direct server flags delegate override to api.getServerFeature', () => {
       vi.mocked(api.getServerFeature).mockImplementation((path) => {
         if (path === ServerFeatureFlag.SUPPORTS_PREVIEW_METADATA)
           return 'overridden'
