@@ -339,18 +339,19 @@ async function handleSearch() {
 }
 
 const tabs = computed(() => {
-  const result = []
-  if (flags.nodeLibraryEssentialsEnabled) {
-    result.push({
-      value: 'essentials',
-      label: t('sideToolbar.nodeLibraryTab.essentials')
-    })
-  }
-  result.push(
+  const baseTabs: Array<{ value: TabId; label: string }> = [
     { value: 'all', label: t('sideToolbar.nodeLibraryTab.allNodes') },
     { value: 'custom', label: t('sideToolbar.nodeLibraryTab.custom') }
-  )
-  return result
+  ]
+  return flags.nodeLibraryEssentialsEnabled
+    ? [
+        {
+          value: 'essentials' as TabId,
+          label: t('sideToolbar.nodeLibraryTab.essentials')
+        },
+        ...baseTabs
+      ]
+    : baseTabs
 })
 
 onMounted(() => {
