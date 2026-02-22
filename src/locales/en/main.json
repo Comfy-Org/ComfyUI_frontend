@@ -300,7 +300,9 @@
     "beta": "BETA",
     "nightly": "NIGHTLY",
     "profile": "Profile",
-    "noItems": "No items"
+    "noItems": "No items",
+    "preloadError": "A required resource failed to load. Please reload the page.",
+    "preloadErrorTitle": "Loading Error"
   },
   "manager": {
     "title": "Nodes Manager",
