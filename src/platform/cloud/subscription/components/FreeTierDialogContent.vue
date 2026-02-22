@@ -105,7 +105,7 @@ import Button from '@/components/ui/button/Button.vue'
 import type { SubscriptionDialogReason } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
 import SubscriptionBenefits from '@/platform/cloud/subscription/components/SubscriptionBenefits.vue'
 import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
-import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
+import { getTierCredits } from '@/platform/cloud/subscription/constants/tierPricing'
 
 defineProps<{
   reason?: SubscriptionDialogReason
@@ -118,5 +118,5 @@ defineEmits<{
 
 const { formattedRenewalDate } = useSubscription()
 
-const freeTierCredits = computed(() => remoteConfig.value.free_tier_credits)
+const freeTierCredits = computed(() => getTierCredits('free'))
 </script>
