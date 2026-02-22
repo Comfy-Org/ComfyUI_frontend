@@ -248,6 +248,10 @@
   "Comfy_NodeBadge_ShowApiPricing": {
     "name": "API 노드 가격 배지 표시"
   },
+  "Comfy_NodeLibrary_NewDesign": {
+    "name": "새로운 노드 라이브러리 디자인",
+    "tooltip": "탭(필수, 전체, 사용자 정의), 향상된 검색, 그리고 미리보기 기능이 추가된 새롭게 디자인된 노드 라이브러리 사이드바를 활성화합니다."
+  },
   "Comfy_NodeReplacement_Enabled": {
     "name": "노드 교체 제안 활성화",
     "tooltip": "활성화하면, 교체 매핑이 존재하는 누락 노드가 교체 가능으로 표시되어 검토 후 교체할 수 있습니다."
@@ -256,7 +260,8 @@
     "name": "노드 검색 상자 구현",
     "options": {
       "default": "기본",
-      "litegraph (legacy)": "litegraph (구버전)"
+      "litegraph (legacy)": "litegraph (구버전)",
+      "v1 (legacy)": "v1 (legacy)"
     }
   },
   "Comfy_NodeSearchBoxImpl_NodePreview": {
@@ -349,6 +354,10 @@
   "Comfy_Queue_QPOV2": {
     "name": "에셋 사이드 패널에서 통합 작업 큐 사용",
     "tooltip": "떠다니는 작업 큐 패널을 에셋 사이드 패널에 내장된 동등한 작업 큐로 대체합니다. 이 옵션을 비활성화하면 기존의 떠다니는 패널 레이아웃으로 돌아갈 수 있습니다."
+  },
+  "Comfy_RightSidePanel_ShowErrorsTab": {
+    "name": "오류 탭을 사이드 패널에 표시",
+    "tooltip": "활성화하면 오른쪽 사이드 패널에 오류 탭이 표시되어 워크플로 실행 오류를 한눈에 확인할 수 있습니다."
   },
   "Comfy_Sidebar_Location": {
     "name": "사이드바 위치",

@@ -208,6 +208,47 @@
       }
     }
   },
+  "AudioEqualizer3Band": {
+    "display_name": "Эквалайзер (3-полосный)",
+    "inputs": {
+      "audio": {
+        "name": "аудио"
+      },
+      "high_freq": {
+        "name": "высокая_частота",
+        "tooltip": "Частота среза для высоких частот"
+      },
+      "high_gain_dB": {
+        "name": "усиление_высоких_dB",
+        "tooltip": "Усиление высоких частот (требл)"
+      },
+      "low_freq": {
+        "name": "низкая_частота",
+        "tooltip": "Частота среза для низких частот"
+      },
+      "low_gain_dB": {
+        "name": "усиление_низких_dB",
+        "tooltip": "Усиление низких частот (бас)"
+      },
+      "mid_freq": {
+        "name": "средняя_частота",
+        "tooltip": "Центральная частота для средних"
+      },
+      "mid_gain_dB": {
+        "name": "усиление_средних_dB",
+        "tooltip": "Усиление средних частот"
+      },
+      "mid_q": {
+        "name": "средний_q",
+        "tooltip": "Q-фактор (полоса пропускания) для средних"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "AudioMerge": {
     "description": "Объединить две аудиодорожки путем наложения их волновых форм.",
     "display_name": "Аудио - Слияние",
@@ -1631,14 +1672,16 @@
         "name": "всего_секунд"
       }
     },
-    "outputs": [
-      {
+    "outputs": {
+      "0": {
+        "name": "положительный",
         "tooltip": null
       },
-      {
+      "1": {
+        "name": "отрицательный",
         "tooltip": null
       }
-    ]
+    }
   },
   "ConditioningTimestepsRange": {
     "display_name": "Диапазон временных шагов",
@@ -2129,13 +2172,15 @@
       "index": {},
       "option1": {}
     },
-    "outputs": [
-      null,
-      {
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
         "name": "ИНДЕКС",
         "tooltip": null
       }
-    ]
+    }
   },
   "DiffControlNetLoader": {
     "display_name": "Загрузить модель ControlNet (дифф)",
@@ -2257,6 +2302,304 @@
     "outputs": {
       "0": {
         "tooltip": "Модель с EasyCache."
+      }
+    }
+  },
+  "ElevenLabsAudioIsolation": {
+    "description": "Удаляет фоновый шум из аудио, изолируя вокал или речь.",
+    "display_name": "ElevenLabs Voice Isolation",
+    "inputs": {
+      "audio": {
+        "name": "аудио",
+        "tooltip": "Аудио для обработки и удаления фонового шума."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ElevenLabsInstantVoiceClone": {
+    "description": "Создайте клон голоса на основе аудиосэмплов. Предоставьте 1-8 аудиозаписей голоса для клонирования.",
+    "display_name": "ElevenLabs Instant Voice Clone",
+    "inputs": {
+      "files": {
+        "name": "файлы",
+        "tooltip": "Аудиозаписи для клонирования голоса."
+      },
+      "remove_background_noise": {
+        "name": "удалить_фоновый_шум",
+        "tooltip": "Удалить фоновый шум из голосовых сэмплов с помощью изоляции аудио."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "голос",
+        "tooltip": null
+      }
+    }
+  },
+  "ElevenLabsSpeechToSpeech": {
+    "description": "Преобразуйте речь из одного голоса в другой, сохраняя оригинальное содержание и эмоции.",
+    "display_name": "ElevenLabs Speech to Speech",
+    "inputs": {
+      "audio": {
+        "name": "аудио",
+        "tooltip": "Исходное аудио для преобразования."
+      },
+      "control_after_generate": {
+        "name": "контроль после генерации"
+      },
+      "model": {
+        "name": "модель",
+        "tooltip": "Модель для преобразования речи в речь."
+      },
+      "model_similarity_boost": {
+        "name": "повышение_сходства"
+      },
+      "model_speed": {
+        "name": "скорость"
+      },
+      "model_style": {
+        "name": "стиль"
+      },
+      "model_use_speaker_boost": {
+        "name": "использовать_усиление_голоса"
+      },
+      "output_format": {
+        "name": "формат_выхода",
+        "tooltip": "Формат выходного аудио."
+      },
+      "remove_background_noise": {
+        "name": "удалить_фоновый_шум",
+        "tooltip": "Удалить фоновый шум из входного аудио с помощью изоляции аудио."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed для воспроизводимости."
+      },
+      "stability": {
+        "name": "стабильность",
+        "tooltip": "Стабильность голоса. Низкие значения дают более широкий эмоциональный диапазон, высокие значения обеспечивают более последовательную, но возможно монотонную речь."
+      },
+      "voice": {
+        "name": "голос",
+        "tooltip": "Целевой голос для преобразования. Подключите из Voice Selector или Instant Voice Clone."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ElevenLabsSpeechToText": {
+    "description": "Преобразование аудио в текст. Поддерживает автоматическое определение языка, диаризацию по говорящим и тегирование аудио событий.",
+    "display_name": "ElevenLabs Распознавание речи",
+    "inputs": {
+      "audio": {
+        "name": "audio",
+        "tooltip": "Аудио для расшифровки."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "language_code": {
+        "name": "language_code",
+        "tooltip": "Код языка по ISO-639-1 или ISO-639-3 (например, 'en', 'es', 'fra'). Оставьте пустым для автоматического определения."
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Модель для расшифровки."
+      },
+      "model_diarization_threshold": {
+        "name": "diarization_threshold"
+      },
+      "model_diarize": {
+        "name": "diarize"
+      },
+      "model_tag_audio_events": {
+        "name": "tag_audio_events"
+      },
+      "model_temperature": {
+        "name": "temperature"
+      },
+      "model_timestamps_granularity": {
+        "name": "timestamps_granularity"
+      },
+      "num_speakers": {
+        "name": "num_speakers",
+        "tooltip": "Максимальное количество говорящих для распознавания. Установите 0 для автоматического определения."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Зерно для воспроизводимости (детерминированность не гарантируется)."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "text",
+        "tooltip": null
+      },
+      "1": {
+        "name": "language_code",
+        "tooltip": null
+      },
+      "2": {
+        "name": "words_json",
+        "tooltip": null
+      }
+    }
+  },
+  "ElevenLabsTextToDialogue": {
+    "description": "Генерация диалога с несколькими говорящими на основе текста. Каждая реплика имеет свой текст и голос.",
+    "display_name": "ElevenLabs Текст в диалог",
+    "inputs": {
+      "apply_text_normalization": {
+        "name": "apply_text_normalization",
+        "tooltip": "Режим нормализации текста. 'auto' — система выбирает автоматически, 'on' — всегда применять нормализацию, 'off' — не применять."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "inputs": {
+        "name": "inputs",
+        "tooltip": "Количество реплик в диалоге."
+      },
+      "inputs_text1": {
+        "name": "text1"
+      },
+      "language_code": {
+        "name": "language_code",
+        "tooltip": "Код языка по ISO-639-1 или ISO-639-3 (например, 'en', 'es', 'fra'). Оставьте пустым для автоматического определения."
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Модель для генерации диалога."
+      },
+      "output_format": {
+        "name": "output_format",
+        "tooltip": "Формат аудиовыхода."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Зерно для воспроизводимости."
+      },
+      "stability": {
+        "name": "stability",
+        "tooltip": "Стабильность голоса. Низкие значения дают более широкий эмоциональный диапазон, высокие — более стабильную, но возможно монотонную речь."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ElevenLabsTextToSoundEffects": {
+    "description": "Генерация звуковых эффектов по текстовому описанию.",
+    "display_name": "ElevenLabs Текст в звуковые эффекты",
+    "inputs": {
+      "model": {
+        "name": "model",
+        "tooltip": "Модель для генерации звукового эффекта."
+      },
+      "model_duration": {
+        "name": "duration"
+      },
+      "model_loop": {
+        "name": "loop"
+      },
+      "model_prompt_influence": {
+        "name": "prompt_influence"
+      },
+      "output_format": {
+        "name": "output_format",
+        "tooltip": "Формат аудиовыхода."
+      },
+      "text": {
+        "name": "text",
+        "tooltip": "Текстовое описание звукового эффекта для генерации."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ElevenLabsTextToSpeech": {
+    "description": "Преобразование текста в речь.",
+    "display_name": "ElevenLabs Text to Speech",
+    "inputs": {
+      "apply_text_normalization": {
+        "name": "apply_text_normalization",
+        "tooltip": "Режим нормализации текста. 'auto' — система выбирает автоматически, 'on' — всегда применять нормализацию, 'off' — не применять."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "language_code": {
+        "name": "language_code",
+        "tooltip": "Код языка по ISO-639-1 или ISO-639-3 (например, 'en', 'es', 'fra'). Оставьте пустым для автоматического определения."
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Модель для преобразования текста в речь."
+      },
+      "model_similarity_boost": {
+        "name": "similarity_boost"
+      },
+      "model_speed": {
+        "name": "speed"
+      },
+      "model_style": {
+        "name": "style"
+      },
+      "model_use_speaker_boost": {
+        "name": "use_speaker_boost"
+      },
+      "output_format": {
+        "name": "output_format",
+        "tooltip": "Формат аудиовыхода."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed для воспроизводимости (детерминированность не гарантируется)."
+      },
+      "stability": {
+        "name": "stability",
+        "tooltip": "Стабильность голоса. Низкие значения дают более широкий эмоциональный диапазон, высокие значения обеспечивают более стабильную, но потенциально монотонную речь."
+      },
+      "text": {
+        "name": "text",
+        "tooltip": "Текст для преобразования в речь."
+      },
+      "voice": {
+        "name": "voice",
+        "tooltip": "Голос для синтеза речи. Подключите из Voice Selector или Instant Voice Clone."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ElevenLabsVoiceSelector": {
+    "description": "Выбор предустановленного голоса ElevenLabs для генерации речи.",
+    "display_name": "ElevenLabs Voice Selector",
+    "inputs": {
+      "voice": {
+        "name": "voice",
+        "tooltip": "Выберите голос из предустановленных голосов ElevenLabs."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "voice",
+        "tooltip": null
       }
     }
   },
@@ -3195,6 +3538,50 @@
       }
     }
   },
+  "GLSLShader": {
+    "description": "Применяет фрагментные шейдеры GLSL ES к изображениям. u_resolution (vec2) всегда доступен.",
+    "display_name": "GLSL Shader",
+    "inputs": {
+      "floats": {
+        "name": "floats",
+        "tooltip": "Числа с плавающей точкой доступны как u_float0-4 в коде шейдера"
+      },
+      "fragment_shader": {
+        "name": "fragment_shader",
+        "tooltip": "Исходный код фрагментного шейдера GLSL (совместим с GLSL ES 3.00 / WebGL 2.0)"
+      },
+      "images": {
+        "name": "images",
+        "tooltip": "Изображения доступны как u_image0-4 (sampler2D) в коде шейдера"
+      },
+      "ints": {
+        "name": "ints",
+        "tooltip": "Целые числа доступны как u_int0-4 в коде шейдера"
+      },
+      "size_mode": {
+        "name": "size_mode",
+        "tooltip": "Размер вывода: 'from_input' использует размеры первого входного изображения, 'custom' позволяет задать размер вручную"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "IMAGE0",
+        "tooltip": "Доступно через layout(location = 0) out vec4 fragColor0 в коде шейдера"
+      },
+      "1": {
+        "name": "IMAGE1",
+        "tooltip": "Доступно через layout(location = 1) out vec4 fragColor1 в коде шейдера"
+      },
+      "2": {
+        "name": "IMAGE2",
+        "tooltip": "Доступно через layout(location = 2) out vec4 fragColor2 в коде шейдера"
+      },
+      "3": {
+        "name": "IMAGE3",
+        "tooltip": "Доступно через layout(location = 3) out vec4 fragColor3 в коде шейдера"
+      }
+    }
+  },
   "GeminiImage2Node": {
     "description": "Генерируйте или редактируйте изображения синхронно через Google Vertex API.",
     "display_name": "Nano Banana Pro (Google Gemini Image)",
@@ -3435,17 +3822,20 @@
         "name": "изображение"
       }
     },
-    "outputs": [
-      {
+    "outputs": {
+      "0": {
+        "name": "width",
         "tooltip": null
       },
-      {
+      "1": {
+        "name": "height",
         "tooltip": null
       },
-      {
+      "2": {
+        "name": "batch_size",
         "tooltip": null
       }
-    ]
+    }
   },
   "GetVideoComponents": {
     "description": "Извлекает все компоненты из видео: кадры, аудио и частоту кадров.",
@@ -3677,14 +4067,16 @@
         "name": "выход_clip_vision"
       }
     },
-    "outputs": [
-      {
+    "outputs": {
+      "0": {
+        "name": "positive",
         "tooltip": null
       },
-      {
+      "1": {
+        "name": "negative",
         "tooltip": null
       }
-    ]
+    }
   },
   "Hunyuan3Dv2ConditioningMultiView": {
     "display_name": "Hunyuan3Dv2ConditioningMultiView",
@@ -3702,14 +4094,16 @@
         "name": "справа"
       }
     },
-    "outputs": [
-      {
+    "outputs": {
+      "0": {
+        "name": "positive",
         "tooltip": null
       },
-      {
+      "1": {
+        "name": "negative",
         "tooltip": null
       }
-    ]
+    }
   },
   "HunyuanImageToVideo": {
     "display_name": "HunyuanImageToVideo",
@@ -4235,6 +4629,26 @@
       "y": {
         "name": "y"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ImageCropV2": {
+    "display_name": "Обрезка изображения",
+    "inputs": {
+      "crop_region": {
+        "name": "область_обрезки"
+      },
+      "height": {},
+      "image": {
+        "name": "изображение"
+      },
+      "width": {},
+      "x": {},
+      "y": {}
     },
     "outputs": {
       "0": {
@@ -6653,26 +7067,36 @@
         "name": "ширина"
       }
     },
-    "outputs": [
-      {
+    "outputs": {
+      "0": {
+        "name": "image",
         "tooltip": null
       },
-      {
+      "1": {
+        "name": "mask",
         "tooltip": null
       },
-      {
+      "2": {
+        "name": "mesh_path",
         "tooltip": null
       },
-      {
+      "3": {
+        "name": "normal",
         "tooltip": null
       },
-      {
+      "4": {
+        "name": "camera_info",
         "tooltip": null
       },
-      {
+      "5": {
+        "name": "recording_video",
+        "tooltip": null
+      },
+      "6": {
+        "name": "model_3d",
         "tooltip": null
       }
-    ]
+    }
   },
   "LoadAudio": {
     "display_name": "Загрузить аудио",
@@ -6937,11 +7361,12 @@
         "tooltip": "Степень модификации диффузионной модели. Это значение может быть отрицательным."
       }
     },
-    "outputs": [
-      {
-        "name": "model"
+    "outputs": {
+      "0": {
+        "name": "model",
+        "tooltip": "Модифицированная диффузионная модель."
       }
-    ]
+    }
   },
   "LoraSave": {
     "display_name": "Извлечь и сохранить LoRA",
@@ -7618,17 +8043,20 @@
         "name": "rig_task_id"
       }
     },
-    "outputs": [
-      null,
-      {
+    "outputs": {
+      "0": {
+        "name": "model_file",
+        "tooltip": null
+      },
+      "1": {
         "name": "GLB",
         "tooltip": null
       },
-      {
+      "2": {
         "name": "FBX",
         "tooltip": null
       }
-    ]
+    }
   },
   "MeshyImageToModelNode": {
     "display_name": "Meshy: Изображение в модель",
@@ -7674,18 +8102,24 @@
         "name": "symmetry_mode"
       }
     },
-    "outputs": [
-      null,
-      null,
-      {
+    "outputs": {
+      "0": {
+        "name": "model_file",
+        "tooltip": null
+      },
+      "1": {
+        "name": "meshy_task_id",
+        "tooltip": null
+      },
+      "2": {
         "name": "GLB",
         "tooltip": null
       },
-      {
+      "3": {
         "name": "FBX",
         "tooltip": null
       }
-    ]
+    }
   },
   "MeshyMultiImageToModelNode": {
     "display_name": "Meshy: Мульти-изображение в модель",
@@ -7731,18 +8165,24 @@
         "name": "symmetry_mode"
       }
     },
-    "outputs": [
-      null,
-      null,
-      {
+    "outputs": {
+      "0": {
+        "name": "model_file",
+        "tooltip": null
+      },
+      "1": {
+        "name": "meshy_task_id",
+        "tooltip": null
+      },
+      "2": {
         "name": "GLB",
         "tooltip": null
       },
-      {
+      "3": {
         "name": "FBX",
         "tooltip": null
       }
-    ]
+    }
   },
   "MeshyRefineNode": {
     "description": "Улучшить ранее созданную черновую модель.",
@@ -7767,18 +8207,24 @@
         "tooltip": "Введите текстовый запрос для управления процессом текстурирования. Максимум 600 символов. Не может использоваться одновременно с 'texture_image'."
       }
     },
-    "outputs": [
-      null,
-      null,
-      {
+    "outputs": {
+      "0": {
+        "name": "model_file",
+        "tooltip": null
+      },
+      "1": {
+        "name": "meshy_task_id",
+        "tooltip": null
+      },
+      "2": {
         "name": "GLB",
         "tooltip": null
       },
-      {
+      "3": {
         "name": "FBX",
         "tooltip": null
       }
-    ]
+    }
   },
   "MeshyRigModelNode": {
     "description": "Предоставляет персонажа с риггингом в стандартных форматах. Автоматический риггинг в настоящее время не подходит для моделей без текстур, не-гуманоидных объектов или гуманоидов с нечеткой структурой конечностей и тела.",
@@ -7796,18 +8242,24 @@
         "tooltip": "UV-развернутая текстура базового цвета модели."
       }
     },
-    "outputs": [
-      null,
-      null,
-      {
+    "outputs": {
+      "0": {
+        "name": "model_file",
+        "tooltip": null
+      },
+      "1": {
+        "name": "rig_task_id",
+        "tooltip": null
+      },
+      "2": {
         "name": "GLB",
         "tooltip": null
       },
-      {
+      "3": {
         "name": "FBX",
         "tooltip": null
       }
-    ]
+    }
   },
   "MeshyTextToModelNode": {
     "display_name": "Meshy: Текст в Модель",
@@ -7846,18 +8298,24 @@
         "name": "symmetry_mode"
       }
     },
-    "outputs": [
-      null,
-      null,
-      {
+    "outputs": {
+      "0": {
+        "name": "файл модели",
+        "tooltip": null
+      },
+      "1": {
+        "name": "meshy_task_id",
+        "tooltip": null
+      },
+      "2": {
         "name": "GLB",
         "tooltip": null
       },
-      {
+      "3": {
         "name": "FBX",
         "tooltip": null
       }
-    ]
+    }
   },
   "MeshyTextureNode": {
     "display_name": "Meshy: Модель текстуры",
@@ -7884,18 +8342,24 @@
         "tooltip": "Опишите желаемый стиль текстуры объекта с помощью текста. Максимум 600 символов. Нельзя использовать одновременно с 'image_style'."
       }
     },
-    "outputs": [
-      null,
-      null,
-      {
+    "outputs": {
+      "0": {
+        "name": "файл модели",
+        "tooltip": null
+      },
+      "1": {
+        "name": "meshy_task_id",
+        "tooltip": null
+      },
+      "2": {
         "name": "GLB",
         "tooltip": null
       },
-      {
+      "3": {
         "name": "FBX",
         "tooltip": null
       }
-    ]
+    }
   },
   "MinimaxHailuoVideoNode": {
     "description": "Создает видео из промпта с возможностью использования начального кадра с помощью новой модели MiniMax Hailuo-02.",
@@ -11175,6 +11639,28 @@
       }
     }
   },
+  "PrimitiveBoundingBox": {
+    "display_name": "Границы (Bounding Box)",
+    "inputs": {
+      "height": {
+        "name": "высота"
+      },
+      "width": {
+        "name": "ширина"
+      },
+      "x": {
+        "name": "x"
+      },
+      "y": {
+        "name": "y"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "PrimitiveFloat": {
     "display_name": "Число с плавающей запятой",
     "inputs": {
@@ -12196,13 +12682,16 @@
         "name": "Сид"
       }
     },
-    "outputs": [
-      null,
-      {
+    "outputs": {
+      "0": {
+        "name": "Путь к 3D-модели",
+        "tooltip": null
+      },
+      "1": {
         "name": "GLB",
         "tooltip": null
       }
-    ]
+    }
   },
   "Rodin3D_Gen2": {
     "description": "Создание 3D-объектов с помощью Rodin API",
@@ -12224,13 +12713,16 @@
         "name": "TAPose"
       }
     },
-    "outputs": [
-      null,
-      {
+    "outputs": {
+      "0": {
+        "name": "Путь к 3D-модели",
+        "tooltip": null
+      },
+      "1": {
         "name": "GLB",
         "tooltip": null
       }
-    ]
+    }
   },
   "Rodin3D_Regular": {
     "description": "Создание 3D-объектов с помощью Rodin API",
@@ -12249,13 +12741,16 @@
         "name": "Сид"
       }
     },
-    "outputs": [
-      null,
-      {
+    "outputs": {
+      "0": {
+        "name": "Путь к 3D-модели",
+        "tooltip": null
+      },
+      "1": {
         "name": "GLB",
         "tooltip": null
       }
-    ]
+    }
   },
   "Rodin3D_Sketch": {
     "description": "Создание 3D-объектов с помощью Rodin API",
@@ -12268,13 +12763,16 @@
         "name": "Сид"
       }
     },
-    "outputs": [
-      null,
-      {
+    "outputs": {
+      "0": {
+        "name": "Путь к 3D-модели",
+        "tooltip": null
+      },
+      "1": {
         "name": "GLB",
         "tooltip": null
       }
-    ]
+    }
   },
   "Rodin3D_Smooth": {
     "description": "Создание 3D-объектов с помощью Rodin API",
@@ -12293,13 +12791,16 @@
         "name": "Сид"
       }
     },
-    "outputs": [
-      null,
-      {
+    "outputs": {
+      "0": {
+        "name": "Путь к 3D-модели",
+        "tooltip": null
+      },
+      "1": {
         "name": "GLB",
         "tooltip": null
       }
-    ]
+    }
   },
   "RunwayFirstLastFrameNode": {
     "description": "Загрузите первый и последний ключевые кадры, составьте промпт и создайте видео. Более сложные переходы, например, когда последний кадр полностью отличается от первого, могут выиграть от более длительной продолжительности в 10 секунд. Это даст генерации больше времени для плавного перехода между двумя входными данными. Прежде чем начать, ознакомьтесь с лучшими практиками, чтобы убедиться, что ваши входные данные обеспечат успешный результат: https://help.runwayml.com/hc/en-us/articles/34170748696595-Creating-with-Keyframes-on-Gen-3.",
@@ -12593,14 +13094,16 @@
         "name": "сигмы"
       }
     },
-    "outputs": [
-      {
+    "outputs": {
+      "0": {
+        "name": "выход",
         "tooltip": null
       },
-      {
+      "1": {
+        "name": "выход без шума",
         "tooltip": null
       }
-    ]
+    }
   },
   "SamplerCustomAdvanced": {
     "display_name": "Пользовательский сэмплер (Расширенный)",
@@ -12621,14 +13124,16 @@
         "name": "сигмы"
       }
     },
-    "outputs": [
-      {
+    "outputs": {
+      "0": {
+        "name": "выход",
         "tooltip": null
       },
-      {
+      "1": {
+        "name": "выход без шума",
         "tooltip": null
       }
-    ]
+    }
   },
   "SamplerDPMAdaptative": {
     "display_name": "Адаптивный сэмплер DPM",
@@ -12926,11 +13431,12 @@
         "name": "процент_дискретизации"
       }
     },
-    "outputs": [
-      {
+    "outputs": {
+      "0": {
+        "name": "значение сигмы",
         "tooltip": null
       }
-    ]
+    }
   },
   "SaveAnimatedPNG": {
     "display_name": "Сохранить анимированный PNG",
@@ -13485,14 +13991,16 @@
         "name": "аудио"
       }
     },
-    "outputs": [
-      {
+    "outputs": {
+      "0": {
+        "name": "левый",
         "tooltip": null
       },
-      {
+      "1": {
+        "name": "правый",
         "tooltip": null
       }
-    ]
+    }
   },
   "SplitImageWithAlpha": {
     "display_name": "Разделить изображение с альфа-каналом",
@@ -13520,14 +14028,16 @@
         "name": "шаг"
       }
     },
-    "outputs": [
-      {
+    "outputs": {
+      "0": {
+        "name": "высокие сигмы",
         "tooltip": null
       },
-      {
+      "1": {
+        "name": "низкие сигмы",
         "tooltip": null
       }
-    ]
+    }
   },
   "SplitSigmasDenoise": {
     "display_name": "Разделить сигмы для удаления шума",
@@ -13539,14 +14049,16 @@
         "name": "сигмы"
       }
     },
-    "outputs": [
-      {
+    "outputs": {
+      "0": {
+        "name": "высокие сигмы",
         "tooltip": null
       },
-      {
+      "1": {
+        "name": "низкие сигмы",
         "tooltip": null
       }
-    ]
+    }
   },
   "StabilityAudioInpaint": {
     "description": "Преобразует часть существующего аудиосэмпла с использованием текстовых инструкций.",
@@ -14307,17 +14819,20 @@
         "tooltip": "Seed управляет тем, будет ли узел запускаться повторно; результаты всегда недетерминированы, независимо от seed."
       }
     },
-    "outputs": [
-      null,
-      {
+    "outputs": {
+      "0": {
+        "name": "файл модели",
+        "tooltip": null
+      },
+      "1": {
         "name": "GLB",
         "tooltip": null
       },
-      {
+      "2": {
         "name": "OBJ",
         "tooltip": null
       }
-    ]
+    }
   },
   "TencentTextToModelNode": {
     "display_name": "Hunyuan3D: Текст в модель (Pro)",
@@ -14347,17 +14862,20 @@
         "tooltip": "Seed управляет тем, будет ли узел запускаться повторно; результаты всегда недетерминированы, независимо от seed."
       }
     },
-    "outputs": [
-      null,
-      {
+    "outputs": {
+      "0": {
+        "name": "файл модели",
+        "tooltip": null
+      },
+      "1": {
         "name": "GLB",
         "tooltip": null
       },
-      {
+      "2": {
         "name": "OBJ",
         "tooltip": null
       }
-    ]
+    }
   },
   "TextEncodeAceStepAudio": {
     "display_name": "TextEncodeAceStepAudio",
@@ -14543,6 +15061,94 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "TextGenerate": {
+    "display_name": "TextGenerate",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "image": {
+        "name": "изображение"
+      },
+      "max_length": {
+        "name": "максимальная длина"
+      },
+      "prompt": {
+        "name": "запрос"
+      },
+      "sampling_mode": {
+        "name": "режим выборки"
+      },
+      "sampling_mode_min_p": {
+        "name": "min_p"
+      },
+      "sampling_mode_repetition_penalty": {
+        "name": "штраф за повторение"
+      },
+      "sampling_mode_seed": {
+        "name": "seed"
+      },
+      "sampling_mode_temperature": {
+        "name": "температура"
+      },
+      "sampling_mode_top_k": {
+        "name": "top_k"
+      },
+      "sampling_mode_top_p": {
+        "name": "top_p"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "сгенерированный текст",
+        "tooltip": null
+      }
+    }
+  },
+  "TextGenerateLTX2Prompt": {
+    "display_name": "TextGenerateLTX2Prompt",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "image": {
+        "name": "изображение"
+      },
+      "max_length": {
+        "name": "максимальная длина"
+      },
+      "prompt": {
+        "name": "подсказка"
+      },
+      "sampling_mode": {
+        "name": "режим выборки"
+      },
+      "sampling_mode_min_p": {
+        "name": "минимальное p"
+      },
+      "sampling_mode_repetition_penalty": {
+        "name": "штраф за повторение"
+      },
+      "sampling_mode_seed": {
+        "name": "seed"
+      },
+      "sampling_mode_temperature": {
+        "name": "температура"
+      },
+      "sampling_mode_top_k": {
+        "name": "top_k"
+      },
+      "sampling_mode_top_p": {
+        "name": "top_p"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "сгенерированный текст",
         "tooltip": null
       }
     }
@@ -14824,20 +15430,20 @@
         "tooltip": "Тип данных, используемый для обучения."
       }
     },
-    "outputs": [
-      {
+    "outputs": {
+      "0": {
+        "name": "lora",
         "tooltip": "Модель с применённой LoRA"
       },
-      {
+      "1": {
+        "name": "карта потерь",
         "tooltip": "Веса LoRA"
       },
-      {
+      "2": {
+        "name": "шаги",
         "tooltip": "История потерь"
-      },
-      {
-        "tooltip": "Всего шагов обучения"
       }
-    ]
+    }
   },
   "TrimAudioDuration": {
     "description": "Обрезать аудио тензор в выбранном временном диапазоне.",
@@ -15003,14 +15609,20 @@
         "name": "texture_seed"
       }
     },
-    "outputs": [
-      null,
-      null,
-      {
+    "outputs": {
+      "0": {
+        "name": "файл модели",
+        "tooltip": null
+      },
+      "1": {
+        "name": "task_id модели",
+        "tooltip": null
+      },
+      "2": {
         "name": "GLB",
         "tooltip": null
       }
-    ]
+    }
   },
   "TripoMultiviewToModelNode": {
     "display_name": "Tripo: Мультивью в модель",
@@ -15062,14 +15674,20 @@
         "name": "сид_текстуры"
       }
     },
-    "outputs": [
-      null,
-      null,
-      {
+    "outputs": {
+      "0": {
+        "name": "файл модели",
+        "tooltip": null
+      },
+      "1": {
+        "name": "task_id модели",
+        "tooltip": null
+      },
+      "2": {
         "name": "GLB",
         "tooltip": null
       }
-    ]
+    }
   },
   "TripoRefineNode": {
     "description": "Уточнение черновой модели, созданной только моделями Tripo v1.4.",
@@ -15080,14 +15698,20 @@
         "tooltip": "Должна быть модель Tripo v1.4"
       }
     },
-    "outputs": [
-      null,
-      null,
-      {
+    "outputs": {
+      "0": {
+        "name": "файл модели",
+        "tooltip": null
+      },
+      "1": {
+        "name": "task_id модели",
+        "tooltip": null
+      },
+      "2": {
         "name": "GLB",
         "tooltip": null
       }
-    ]
+    }
   },
   "TripoRetargetNode": {
     "display_name": "Tripo: Перепривязка ригнутой модели",
@@ -15099,14 +15723,20 @@
         "name": "идентификатор_задачи_исходной_модели"
       }
     },
-    "outputs": [
-      null,
-      null,
-      {
+    "outputs": {
+      "0": {
+        "name": "файл модели",
+        "tooltip": null
+      },
+      "1": {
+        "name": "task_id ретаргетинга",
+        "tooltip": null
+      },
+      "2": {
         "name": "GLB",
         "tooltip": null
       }
-    ]
+    }
   },
   "TripoRigNode": {
     "display_name": "Tripo: Риггинг модели",
@@ -15115,14 +15745,20 @@
         "name": "идентификатор_задачи_исходной_модели"
       }
     },
-    "outputs": [
-      null,
-      null,
-      {
+    "outputs": {
+      "0": {
+        "name": "файл модели",
+        "tooltip": null
+      },
+      "1": {
+        "name": "task_id рига",
+        "tooltip": null
+      },
+      "2": {
         "name": "GLB",
         "tooltip": null
       }
-    ]
+    }
   },
   "TripoTextToModelNode": {
     "display_name": "Tripo: Текст в модель",
@@ -15167,14 +15803,20 @@
         "name": "texture_seed"
       }
     },
-    "outputs": [
-      null,
-      null,
-      {
+    "outputs": {
+      "0": {
+        "name": "файл модели",
+        "tooltip": null
+      },
+      "1": {
+        "name": "task_id модели",
+        "tooltip": null
+      },
+      "2": {
         "name": "GLB",
         "tooltip": null
       }
-    ]
+    }
   },
   "TripoTextureNode": {
     "display_name": "Tripo: Модель текстур",
@@ -15198,14 +15840,20 @@
         "name": "texture_seed"
       }
     },
-    "outputs": [
-      null,
-      null,
-      {
+    "outputs": {
+      "0": {
+        "name": "файл модели",
+        "tooltip": null
+      },
+      "1": {
+        "name": "task_id текстуры",
+        "tooltip": null
+      },
+      "2": {
         "name": "GLB",
         "tooltip": null
       }
-    ]
+    }
   },
   "TruncateText": {
     "display_name": "Обрезать текст",

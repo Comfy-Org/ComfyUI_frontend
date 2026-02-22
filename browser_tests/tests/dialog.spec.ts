@@ -37,7 +37,7 @@ test.describe('Load workflow warning', { tag: '@ui' }, () => {
 })
 
 test('Does not report warning on undo/redo', async ({ comfyPage }) => {
-  await comfyPage.settings.setSetting('Comfy.NodeSearchBoxImpl', 'default')
+  await comfyPage.settings.setSetting('Comfy.NodeSearchBoxImpl', 'v1 (legacy)')
 
   await comfyPage.workflow.loadWorkflow('missing/missing_nodes')
   await comfyPage.page
@@ -61,16 +61,21 @@ test('Does not report warning on undo/redo', async ({ comfyPage }) => {
 })
 
 test.describe('Execution error', () => {
+  test.beforeEach(async ({ comfyPage }) => {
+    await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
+    await comfyPage.setup()
+  })
+
   test('Should display an error message when an execution error occurs', async ({
     comfyPage
   }) => {
     await comfyPage.workflow.loadWorkflow('nodes/execution_error')
-    await comfyPage.queueButton.click()
+    await comfyPage.command.executeCommand('Comfy.QueuePrompt')
     await comfyPage.nextFrame()
 
-    // Wait for the element with the .comfy-execution-error selector to be visible
-    const executionError = comfyPage.page.locator('.comfy-error-report')
-    await expect(executionError).toBeVisible()
+    // Wait for the error overlay to be visible
+    const errorOverlay = comfyPage.page.locator('[data-testid="error-overlay"]')
+    await expect(errorOverlay).toBeVisible()
   })
 })
 
@@ -340,17 +345,23 @@ test.describe('Support', () => {
     comfyPage
   }) => {
     await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
-    const pagePromise = comfyPage.page.context().waitForEvent('page')
+
+    // Prevent loading the external page
+    await comfyPage.page
+      .context()
+      .route('https://support.comfy.org/**', (route) =>
+        route.fulfill({ body: '<html></html>', contentType: 'text/html' })
+      )
+
+    const popupPromise = comfyPage.page.waitForEvent('popup')
     await comfyPage.menu.topbar.triggerTopbarCommand(['Help', 'Support'])
-    const newPage = await pagePromise
+    const popup = await popupPromise
 
-    await newPage.waitForLoadState('networkidle')
-    await expect(newPage).toHaveURL(/.*support\.comfy\.org.*/)
-
-    const url = new URL(newPage.url())
+    const url = new URL(popup.url())
+    expect(url.hostname).toBe('support.comfy.org')
     expect(url.searchParams.get('tf_42243568391700')).toBe('oss')
 
-    await newPage.close()
+    await popup.close()
   })
 })
 

@@ -35,12 +35,24 @@
         :icon-class="iconClass"
         :icon-aria-label="iconAriaLabel"
       >
-        <img
-          v-if="previewUrl"
-          :src="previewUrl"
-          :alt="previewAlt"
-          class="size-full object-cover"
-        />
+        <div v-if="previewUrl" class="relative size-full">
+          <template v-if="isVideoPreview">
+            <video
+              :src="previewUrl"
+              preload="metadata"
+              muted
+              playsinline
+              class="pointer-events-none size-full object-cover"
+            />
+            <VideoPlayOverlay size="sm" />
+          </template>
+          <img
+            v-else
+            :src="previewUrl"
+            :alt="previewAlt"
+            class="size-full object-cover"
+          />
+        </div>
         <div v-else class="flex size-full items-center justify-center">
           <i
             aria-hidden="true"
@@ -59,19 +71,28 @@
     <div class="relative z-1 flex min-w-0 flex-1 flex-col gap-1">
       <div
         v-if="$slots.primary || primaryText"
-        class="text-xs leading-none text-text-primary"
+        class="min-w-0 text-xs leading-none text-text-primary"
       >
-        <slot name="primary">{{ primaryText }}</slot>
+        <slot v-if="$slots.primary" name="primary" />
+        <span v-else class="block truncate" :title="primaryText">
+          {{ primaryText }}
+        </span>
       </div>
       <div
         v-if="$slots.secondary || secondaryText"
-        class="text-xs leading-none text-text-secondary"
+        class="min-w-0 text-xs leading-none text-text-secondary"
       >
-        <slot name="secondary">{{ secondaryText }}</slot>
+        <slot v-if="$slots.secondary" name="secondary" />
+        <span v-else class="block truncate" :title="secondaryText">
+          {{ secondaryText }}
+        </span>
       </div>
     </div>
 
-    <div v-if="$slots.actions" class="relative z-1 flex items-center gap-2">
+    <div
+      v-if="$slots.actions"
+      class="relative z-1 flex shrink-0 items-center gap-2"
+    >
       <slot name="actions" />
     </div>
 
@@ -110,6 +131,8 @@ import { useProgressBarBackground } from '@/composables/useProgressBarBackground
 import Button from '@/components/ui/button/Button.vue'
 import { cn } from '@/utils/tailwindUtil'
 
+import VideoPlayOverlay from './VideoPlayOverlay.vue'
+
 const emit = defineEmits<{
   'stack-toggle': []
 }>()
@@ -121,6 +144,7 @@ const {
   iconAriaLabel,
   iconClass,
   iconWrapperClass,
+  isVideoPreview = false,
   primaryText,
   secondaryText,
   stackCount,
@@ -135,6 +159,7 @@ const {
   iconAriaLabel?: string
   iconClass?: string
   iconWrapperClass?: string
+  isVideoPreview?: boolean
   primaryText?: string
   secondaryText?: string
   stackCount?: number

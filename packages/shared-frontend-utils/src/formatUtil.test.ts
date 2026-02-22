@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest'
 
-import { getMediaTypeFromFilename, truncateFilename } from './formatUtil'
+import {
+  getMediaTypeFromFilename,
+  highlightQuery,
+  isPreviewableMediaType,
+  truncateFilename
+} from './formatUtil'
 
 describe('formatUtil', () => {
   describe('truncateFilename', () => {
@@ -52,7 +57,8 @@ describe('formatUtil', () => {
         { filename: 'image.jpeg', expected: 'image' },
         { filename: 'animation.gif', expected: 'image' },
         { filename: 'web.webp', expected: 'image' },
-        { filename: 'bitmap.bmp', expected: 'image' }
+        { filename: 'bitmap.bmp', expected: 'image' },
+        { filename: 'modern.avif', expected: 'image' }
       ]
 
       it.for(imageTestCases)(
@@ -92,26 +98,37 @@ describe('formatUtil', () => {
         expect(getMediaTypeFromFilename('scene.fbx')).toBe('3D')
         expect(getMediaTypeFromFilename('asset.gltf')).toBe('3D')
         expect(getMediaTypeFromFilename('binary.glb')).toBe('3D')
+        expect(getMediaTypeFromFilename('apple.usdz')).toBe('3D')
+      })
+    })
+
+    describe('text files', () => {
+      it('should identify text file extensions correctly', () => {
+        expect(getMediaTypeFromFilename('notes.txt')).toBe('text')
+        expect(getMediaTypeFromFilename('readme.md')).toBe('text')
+        expect(getMediaTypeFromFilename('data.json')).toBe('text')
+        expect(getMediaTypeFromFilename('table.csv')).toBe('text')
+        expect(getMediaTypeFromFilename('config.yaml')).toBe('text')
       })
     })
 
     describe('edge cases', () => {
       it('should handle empty strings', () => {
-        expect(getMediaTypeFromFilename('')).toBe('image')
+        expect(getMediaTypeFromFilename('')).toBe('other')
       })
 
       it('should handle files without extensions', () => {
-        expect(getMediaTypeFromFilename('README')).toBe('image')
+        expect(getMediaTypeFromFilename('README')).toBe('other')
       })
 
       it('should handle unknown extensions', () => {
-        expect(getMediaTypeFromFilename('document.pdf')).toBe('image')
-        expect(getMediaTypeFromFilename('data.json')).toBe('image')
+        expect(getMediaTypeFromFilename('document.pdf')).toBe('other')
+        expect(getMediaTypeFromFilename('archive.bin')).toBe('other')
       })
 
       it('should handle files with multiple dots', () => {
         expect(getMediaTypeFromFilename('my.file.name.png')).toBe('image')
-        expect(getMediaTypeFromFilename('archive.tar.gz')).toBe('image')
+        expect(getMediaTypeFromFilename('archive.tar.gz')).toBe('other')
       })
 
       it('should handle paths with directories', () => {
@@ -120,8 +137,8 @@ describe('formatUtil', () => {
       })
 
       it('should handle null and undefined gracefully', () => {
-        expect(getMediaTypeFromFilename(null)).toBe('image')
-        expect(getMediaTypeFromFilename(undefined)).toBe('image')
+        expect(getMediaTypeFromFilename(null)).toBe('other')
+        expect(getMediaTypeFromFilename(undefined)).toBe('other')
       })
 
       it('should handle special characters in filenames', () => {
@@ -140,6 +157,58 @@ describe('formatUtil', () => {
         expect(getMediaTypeFromFilename('video.Mp4')).toBe('video')
         expect(getMediaTypeFromFilename('audio.WaV')).toBe('audio')
       })
+    })
+  })
+
+  describe('highlightQuery', () => {
+    it('should return text unchanged when query is empty', () => {
+      expect(highlightQuery('Hello World', '')).toBe('Hello World')
+    })
+
+    it('should wrap matching text in highlight span', () => {
+      const result = highlightQuery('Hello World', 'World')
+      expect(result).toBe('Hello <span class="highlight">World</span>')
+    })
+
+    it('should be case-insensitive', () => {
+      const result = highlightQuery('Hello World', 'hello')
+      expect(result).toBe('<span class="highlight">Hello</span> World')
+    })
+
+    it('should sanitize text by default', () => {
+      const result = highlightQuery('<script>alert("xss")</script>', 'alert')
+      expect(result).not.toContain('<script>')
+    })
+
+    it('should skip sanitization when sanitize is false', () => {
+      const result = highlightQuery('<b>bold</b>', 'bold', false)
+      expect(result).toContain('<b>')
+    })
+
+    it('should escape special regex characters in query', () => {
+      const result = highlightQuery('price is $10.00', '$10')
+      expect(result).toContain('<span class="highlight">$10</span>')
+    })
+
+    it('should highlight multiple occurrences', () => {
+      const result = highlightQuery('foo bar foo', 'foo')
+      expect(result).toBe(
+        '<span class="highlight">foo</span> bar <span class="highlight">foo</span>'
+      )
+    })
+  })
+
+  describe('isPreviewableMediaType', () => {
+    it('returns true for image/video/audio/3D', () => {
+      expect(isPreviewableMediaType('image')).toBe(true)
+      expect(isPreviewableMediaType('video')).toBe(true)
+      expect(isPreviewableMediaType('audio')).toBe(true)
+      expect(isPreviewableMediaType('3D')).toBe(true)
+    })
+
+    it('returns false for text/other', () => {
+      expect(isPreviewableMediaType('text')).toBe(false)
+      expect(isPreviewableMediaType('other')).toBe(false)
     })
   })
 })

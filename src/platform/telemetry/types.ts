@@ -59,6 +59,8 @@ export interface RunButtonProperties {
   subgraph_count: number
   has_api_nodes: boolean
   api_node_names: string[]
+  has_toolkit_nodes: boolean
+  toolkit_node_names: string[]
   trigger_source?: ExecutionTriggerSource
 }
 
@@ -82,6 +84,9 @@ export interface ExecutionContext {
   total_node_count: number
   has_api_nodes: boolean
   api_node_names: string[]
+  has_toolkit_nodes: boolean
+  toolkit_node_names: string[]
+  toolkit_node_count: number
   trigger_source?: ExecutionTriggerSource
 }
 

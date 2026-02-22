@@ -110,6 +110,7 @@
             </Button>
           </div>
         </div>
+        <ErrorOverlay />
         <QueueProgressOverlay
           v-if="isQueueProgressOverlayEnabled"
           v-model:expanded="isQueueOverlayExpanded"
@@ -156,6 +157,7 @@ import StatusBadge from '@/components/common/StatusBadge.vue'
 import QueueInlineProgressSummary from '@/components/queue/QueueInlineProgressSummary.vue'
 import QueueNotificationBannerHost from '@/components/queue/QueueNotificationBannerHost.vue'
 import QueueProgressOverlay from '@/components/queue/QueueProgressOverlay.vue'
+import ErrorOverlay from '@/components/error/ErrorOverlay.vue'
 import ActionBarButtons from '@/components/topbar/ActionBarButtons.vue'
 import CurrentUserButton from '@/components/topbar/CurrentUserButton.vue'
 import LoginButton from '@/components/topbar/LoginButton.vue'
@@ -167,6 +169,7 @@ import { useSettingStore } from '@/platform/settings/settingStore'
 import { app } from '@/scripts/app'
 import { useCommandStore } from '@/stores/commandStore'
 import { useExecutionStore } from '@/stores/executionStore'
+import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useQueueStore, useQueueUIStore } from '@/stores/queueStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
@@ -187,6 +190,7 @@ const { toastErrorHandler } = useErrorHandling()
 const commandStore = useCommandStore()
 const queueStore = useQueueStore()
 const executionStore = useExecutionStore()
+const executionErrorStore = useExecutionErrorStore()
 const queueUIStore = useQueueUIStore()
 const sidebarTabStore = useSidebarTabStore()
 const { activeJobsCount } = storeToRefs(queueStore)
@@ -260,7 +264,7 @@ const shouldShowRedDot = computed((): boolean => {
   return shouldShowConflictRedDot.value
 })
 
-const { hasAnyError } = storeToRefs(executionStore)
+const { hasAnyError } = storeToRefs(executionErrorStore)
 
 // Right side panel toggle
 const { isOpen: isRightSidePanelOpen } = storeToRefs(rightSidePanelStore)
@@ -290,12 +294,12 @@ const showQueueContextMenu = (event: MouseEvent) => {
 }
 
 const handleClearQueue = async () => {
-  const pendingPromptIds = queueStore.pendingTasks
-    .map((task) => task.promptId)
+  const pendingJobIds = queueStore.pendingTasks
+    .map((task) => task.jobId)
     .filter((id): id is string => typeof id === 'string' && id.length > 0)
 
   await commandStore.execute('Comfy.ClearPendingTasks')
-  executionStore.clearInitializationByPromptIds(pendingPromptIds)
+  executionStore.clearInitializationByJobIds(pendingJobIds)
 }
 
 const openCustomNodeManager = async () => {

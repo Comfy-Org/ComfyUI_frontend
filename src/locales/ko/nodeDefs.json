@@ -208,6 +208,47 @@
       }
     }
   },
+  "AudioEqualizer3Band": {
+    "display_name": "오디오 이퀄라이저 (3-밴드)",
+    "inputs": {
+      "audio": {
+        "name": "오디오"
+      },
+      "high_freq": {
+        "name": "고역 컷오프 주파수",
+        "tooltip": "고역 셸프의 컷오프 주파수"
+      },
+      "high_gain_dB": {
+        "name": "고역 게인 (dB)",
+        "tooltip": "고주파수 (트레블) 게인"
+      },
+      "low_freq": {
+        "name": "저역 컷오프 주파수",
+        "tooltip": "저역 셸프의 컷오프 주파수"
+      },
+      "low_gain_dB": {
+        "name": "저역 게인 (dB)",
+        "tooltip": "저주파수 (베이스) 게인"
+      },
+      "mid_freq": {
+        "name": "중역 중심 주파수",
+        "tooltip": "중역의 중심 주파수"
+      },
+      "mid_gain_dB": {
+        "name": "중역 게인 (dB)",
+        "tooltip": "중주파수 게인"
+      },
+      "mid_q": {
+        "name": "중역 Q",
+        "tooltip": "중역의 Q 팩터 (대역폭)"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "AudioMerge": {
     "description": "두 오디오 트랙의 파형을 겹쳐서 결합합니다.",
     "display_name": "오디오 병합",
@@ -1631,14 +1672,16 @@
         "name": "전체(초)"
       }
     },
-    "outputs": [
-      {
+    "outputs": {
+      "0": {
+        "name": "positive",
         "tooltip": null
       },
-      {
+      "1": {
+        "name": "negative",
         "tooltip": null
       }
-    ]
+    }
   },
   "ConditioningTimestepsRange": {
     "display_name": "조건 (타임스텝 범위)",
@@ -2129,13 +2172,15 @@
       "index": {},
       "option1": {}
     },
-    "outputs": [
-      null,
-      {
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
         "name": "INDEX",
         "tooltip": null
       }
-    ]
+    }
   },
   "DiffControlNetLoader": {
     "display_name": "컨트롤넷 모델 로드 (차이)",
@@ -2257,6 +2302,304 @@
     "outputs": {
       "0": {
         "tooltip": "EasyCache가 적용된 모델입니다."
+      }
+    }
+  },
+  "ElevenLabsAudioIsolation": {
+    "description": "오디오에서 배경 소음을 제거하고 보컬 또는 음성을 분리합니다.",
+    "display_name": "ElevenLabs 음성 분리",
+    "inputs": {
+      "audio": {
+        "name": "audio",
+        "tooltip": "배경 소음 제거를 위해 처리할 오디오입니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ElevenLabsInstantVoiceClone": {
+    "description": "오디오 샘플에서 복제된 음성을 생성합니다. 복제할 음성의 오디오 녹음 파일 1~8개를 제공합니다.",
+    "display_name": "ElevenLabs 즉시 음성 복제",
+    "inputs": {
+      "files": {
+        "name": "files",
+        "tooltip": "음성 복제를 위한 오디오 녹음 파일입니다."
+      },
+      "remove_background_noise": {
+        "name": "remove_background_noise",
+        "tooltip": "오디오 분리를 사용하여 음성 샘플에서 배경 소음을 제거합니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "voice",
+        "tooltip": null
+      }
+    }
+  },
+  "ElevenLabsSpeechToSpeech": {
+    "description": "원본 내용과 감정을 유지하면서 한 음성에서 다른 음성으로 변환합니다.",
+    "display_name": "ElevenLabs 음성 변환",
+    "inputs": {
+      "audio": {
+        "name": "audio",
+        "tooltip": "변환할 소스 오디오입니다."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "음성 변환에 사용할 모델입니다."
+      },
+      "model_similarity_boost": {
+        "name": "similarity_boost"
+      },
+      "model_speed": {
+        "name": "speed"
+      },
+      "model_style": {
+        "name": "style"
+      },
+      "model_use_speaker_boost": {
+        "name": "use_speaker_boost"
+      },
+      "output_format": {
+        "name": "output_format",
+        "tooltip": "오디오 출력 형식입니다."
+      },
+      "remove_background_noise": {
+        "name": "remove_background_noise",
+        "tooltip": "오디오 분리를 사용하여 입력 오디오에서 배경 소음을 제거합니다."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "재현성을 위한 시드 값입니다."
+      },
+      "stability": {
+        "name": "stability",
+        "tooltip": "음성의 안정성입니다. 값이 낮을수록 감정의 폭이 넓고, 값이 높을수록 더 일관되지만 다소 단조로운 음성이 생성됩니다."
+      },
+      "voice": {
+        "name": "voice",
+        "tooltip": "변환할 대상 음성입니다. Voice Selector 또는 Instant Voice Clone에서 연결하세요."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ElevenLabsSpeechToText": {
+    "description": "오디오를 텍스트로 전사합니다. 자동 언어 감지, 화자 분리, 오디오 이벤트 태깅을 지원합니다.",
+    "display_name": "ElevenLabs 음성 → 텍스트",
+    "inputs": {
+      "audio": {
+        "name": "audio",
+        "tooltip": "전사할 오디오."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "language_code": {
+        "name": "language_code",
+        "tooltip": "ISO-639-1 또는 ISO-639-3 언어 코드(예: 'en', 'es', 'fra'). 자동 감지를 원하면 비워 두세요."
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "전사에 사용할 모델."
+      },
+      "model_diarization_threshold": {
+        "name": "diarization_threshold"
+      },
+      "model_diarize": {
+        "name": "diarize"
+      },
+      "model_tag_audio_events": {
+        "name": "tag_audio_events"
+      },
+      "model_temperature": {
+        "name": "temperature"
+      },
+      "model_timestamps_granularity": {
+        "name": "timestamps_granularity"
+      },
+      "num_speakers": {
+        "name": "num_speakers",
+        "tooltip": "예측할 최대 화자 수. 자동 감지는 0으로 설정하세요."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "재현성을 위한 시드(결정적 결과는 보장되지 않음)."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "text",
+        "tooltip": null
+      },
+      "1": {
+        "name": "language_code",
+        "tooltip": null
+      },
+      "2": {
+        "name": "words_json",
+        "tooltip": null
+      }
+    }
+  },
+  "ElevenLabsTextToDialogue": {
+    "description": "텍스트에서 다중 화자 대화를 생성합니다. 각 대화 항목은 고유한 텍스트와 음성을 가집니다.",
+    "display_name": "ElevenLabs 텍스트 → 대화",
+    "inputs": {
+      "apply_text_normalization": {
+        "name": "apply_text_normalization",
+        "tooltip": "텍스트 정규화 모드. 'auto'는 시스템이 결정, 'on'은 항상 정규화 적용, 'off'는 정규화 생략."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "inputs": {
+        "name": "inputs",
+        "tooltip": "대화 항목 수."
+      },
+      "inputs_text1": {
+        "name": "text1"
+      },
+      "language_code": {
+        "name": "language_code",
+        "tooltip": "ISO-639-1 또는 ISO-639-3 언어 코드(예: 'en', 'es', 'fra'). 자동 감지를 원하면 비워 두세요."
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "대화 생성을 위한 모델."
+      },
+      "output_format": {
+        "name": "output_format",
+        "tooltip": "오디오 출력 형식."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "재현성을 위한 시드."
+      },
+      "stability": {
+        "name": "stability",
+        "tooltip": "음성 안정성. 값이 낮을수록 감정 표현이 다양해지고, 값이 높을수록 일관성은 높지만 단조로울 수 있습니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ElevenLabsTextToSoundEffects": {
+    "description": "텍스트 설명에서 효과음을 생성합니다.",
+    "display_name": "ElevenLabs 텍스트 → 효과음",
+    "inputs": {
+      "model": {
+        "name": "model",
+        "tooltip": "효과음 생성을 위한 모델."
+      },
+      "model_duration": {
+        "name": "duration"
+      },
+      "model_loop": {
+        "name": "loop"
+      },
+      "model_prompt_influence": {
+        "name": "prompt_influence"
+      },
+      "output_format": {
+        "name": "output_format",
+        "tooltip": "오디오 출력 형식."
+      },
+      "text": {
+        "name": "text",
+        "tooltip": "생성할 효과음에 대한 텍스트 설명."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ElevenLabsTextToSpeech": {
+    "description": "텍스트를 음성으로 변환합니다.",
+    "display_name": "ElevenLabs 텍스트 음성 변환",
+    "inputs": {
+      "apply_text_normalization": {
+        "name": "apply_text_normalization",
+        "tooltip": "텍스트 정규화 모드입니다. 'auto'는 시스템이 자동으로 결정하고, 'on'은 항상 정규화를 적용하며, 'off'는 정규화를 건너뜁니다."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "language_code": {
+        "name": "language_code",
+        "tooltip": "ISO-639-1 또는 ISO-639-3 언어 코드(예: 'en', 'es', 'fra'). 자동 감지를 원하면 비워 두세요."
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "텍스트 음성 변환에 사용할 모델입니다."
+      },
+      "model_similarity_boost": {
+        "name": "similarity_boost"
+      },
+      "model_speed": {
+        "name": "speed"
+      },
+      "model_style": {
+        "name": "style"
+      },
+      "model_use_speaker_boost": {
+        "name": "use_speaker_boost"
+      },
+      "output_format": {
+        "name": "output_format",
+        "tooltip": "오디오 출력 형식입니다."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "재현성을 위한 시드(결정적 결과는 보장되지 않음)."
+      },
+      "stability": {
+        "name": "stability",
+        "tooltip": "음성의 안정성입니다. 값이 낮을수록 감정의 폭이 넓고, 값이 높을수록 더 일관되지만 다소 단조로운 음성이 생성됩니다."
+      },
+      "text": {
+        "name": "text",
+        "tooltip": "음성으로 변환할 텍스트입니다."
+      },
+      "voice": {
+        "name": "voice",
+        "tooltip": "음성 합성에 사용할 목소리입니다. Voice Selector 또는 Instant Voice Clone에서 연결하세요."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ElevenLabsVoiceSelector": {
+    "description": "텍스트 음성 변환 생성을 위한 사전 정의된 ElevenLabs 음성을 선택합니다.",
+    "display_name": "ElevenLabs 음성 선택기",
+    "inputs": {
+      "voice": {
+        "name": "voice",
+        "tooltip": "사전 정의된 ElevenLabs 음성 중에서 선택하세요."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "voice",
+        "tooltip": null
       }
     }
   },
@@ -3195,6 +3538,50 @@
       }
     }
   },
+  "GLSLShader": {
+    "description": "GLSL ES 프래그먼트 셰이더를 이미지에 적용합니다. u_resolution(vec2)은 항상 사용 가능합니다.",
+    "display_name": "GLSL 셰이더",
+    "inputs": {
+      "floats": {
+        "name": "floats",
+        "tooltip": "floats는 셰이더 코드에서 u_float0-4로 사용 가능합니다."
+      },
+      "fragment_shader": {
+        "name": "fragment_shader",
+        "tooltip": "GLSL 프래그먼트 셰이더 소스 코드(GLSL ES 3.00 / WebGL 2.0 호환)"
+      },
+      "images": {
+        "name": "images",
+        "tooltip": "이미지는 셰이더 코드에서 u_image0-4(sampler2D)로 사용 가능합니다."
+      },
+      "ints": {
+        "name": "ints",
+        "tooltip": "ints는 셰이더 코드에서 u_int0-4로 사용 가능합니다."
+      },
+      "size_mode": {
+        "name": "size_mode",
+        "tooltip": "출력 크기: 'from_input'은 첫 번째 입력 이미지의 크기를 사용하며, 'custom'은 수동 크기 설정을 허용합니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "IMAGE0",
+        "tooltip": "셰이더 코드에서 layout(location = 0) out vec4 fragColor0로 사용 가능합니다."
+      },
+      "1": {
+        "name": "IMAGE1",
+        "tooltip": "셰이더 코드에서 layout(location = 1) out vec4 fragColor1로 사용 가능합니다."
+      },
+      "2": {
+        "name": "IMAGE2",
+        "tooltip": "셰이더 코드에서 layout(location = 2) out vec4 fragColor2로 사용 가능합니다."
+      },
+      "3": {
+        "name": "IMAGE3",
+        "tooltip": "셰이더 코드에서 layout(location = 3) out vec4 fragColor3로 사용 가능합니다."
+      }
+    }
+  },
   "GeminiImage2Node": {
     "description": "Google Vertex API를 통해 동기적으로 이미지를 생성하거나 편집합니다.",
     "display_name": "Nano Banana Pro (Google Gemini Image)",
@@ -3435,17 +3822,20 @@
         "name": "이미지"
       }
     },
-    "outputs": [
-      {
+    "outputs": {
+      "0": {
+        "name": "width",
         "tooltip": null
       },
-      {
+      "1": {
+        "name": "height",
         "tooltip": null
       },
-      {
+      "2": {
+        "name": "batch_size",
         "tooltip": null
       }
-    ]
+    }
   },
   "GetVideoComponents": {
     "description": "비디오에서 모든 컴포넌트(프레임, 오디오, 프레임레이트)를 추출합니다.",
@@ -3677,14 +4067,16 @@
         "name": "clip_vision_output"
       }
     },
-    "outputs": [
-      {
+    "outputs": {
+      "0": {
+        "name": "positive",
         "tooltip": null
       },
-      {
+      "1": {
+        "name": "negative",
         "tooltip": null
       }
-    ]
+    }
   },
   "Hunyuan3Dv2ConditioningMultiView": {
     "display_name": "Hunyuan3Dv2ConditioningMultiView",
@@ -3702,14 +4094,16 @@
         "name": "오른쪽"
       }
     },
-    "outputs": [
-      {
+    "outputs": {
+      "0": {
+        "name": "positive",
         "tooltip": null
       },
-      {
+      "1": {
+        "name": "negative",
         "tooltip": null
       }
-    ]
+    }
   },
   "HunyuanImageToVideo": {
     "display_name": "HunyuanImageToVideo",
@@ -4235,6 +4629,26 @@
       "y": {
         "name": "y"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ImageCropV2": {
+    "display_name": "이미지 자르기",
+    "inputs": {
+      "crop_region": {
+        "name": "자르기 영역"
+      },
+      "height": {},
+      "image": {
+        "name": "이미지"
+      },
+      "width": {},
+      "x": {},
+      "y": {}
     },
     "outputs": {
       "0": {
@@ -6653,26 +7067,36 @@
         "name": "너비"
       }
     },
-    "outputs": [
-      {
+    "outputs": {
+      "0": {
+        "name": "image",
         "tooltip": null
       },
-      {
+      "1": {
+        "name": "mask",
         "tooltip": null
       },
-      {
+      "2": {
+        "name": "mesh_path",
         "tooltip": null
       },
-      {
+      "3": {
+        "name": "normal",
         "tooltip": null
       },
-      {
+      "4": {
+        "name": "camera_info",
         "tooltip": null
       },
-      {
+      "5": {
+        "name": "recording_video",
+        "tooltip": null
+      },
+      "6": {
+        "name": "model_3d",
         "tooltip": null
       }
-    ]
+    }
   },
   "LoadAudio": {
     "display_name": "오디오 로드",
@@ -6937,11 +7361,12 @@
         "tooltip": "디퓨전 모델을 수정하는 강도입니다. 이 값은 음수일 수 있습니다."
       }
     },
-    "outputs": [
-      {
-        "name": "model"
+    "outputs": {
+      "0": {
+        "name": "model",
+        "tooltip": "수정된 diffusion 모델입니다."
       }
-    ]
+    }
   },
   "LoraSave": {
     "display_name": "LoRA 추출 및 저장",
@@ -7618,17 +8043,20 @@
         "name": "rig_task_id"
       }
     },
-    "outputs": [
-      null,
-      {
+    "outputs": {
+      "0": {
+        "name": "model_file",
+        "tooltip": null
+      },
+      "1": {
         "name": "GLB",
         "tooltip": null
       },
-      {
+      "2": {
         "name": "FBX",
         "tooltip": null
       }
-    ]
+    }
   },
   "MeshyImageToModelNode": {
     "display_name": "Meshy: 이미지 → 모델",
@@ -7674,18 +8102,24 @@
         "name": "symmetry_mode"
       }
     },
-    "outputs": [
-      null,
-      null,
-      {
+    "outputs": {
+      "0": {
+        "name": "model_file",
+        "tooltip": null
+      },
+      "1": {
+        "name": "meshy_task_id",
+        "tooltip": null
+      },
+      "2": {
         "name": "GLB",
         "tooltip": null
       },
-      {
+      "3": {
         "name": "FBX",
         "tooltip": null
       }
-    ]
+    }
   },
   "MeshyMultiImageToModelNode": {
     "display_name": "Meshy: 다중 이미지 → 모델",
@@ -7731,18 +8165,24 @@
         "name": "symmetry_mode"
       }
     },
-    "outputs": [
-      null,
-      null,
-      {
+    "outputs": {
+      "0": {
+        "name": "model_file",
+        "tooltip": null
+      },
+      "1": {
+        "name": "meshy_task_id",
+        "tooltip": null
+      },
+      "2": {
         "name": "GLB",
         "tooltip": null
       },
-      {
+      "3": {
         "name": "FBX",
         "tooltip": null
       }
-    ]
+    }
   },
   "MeshyRefineNode": {
     "description": "이전에 생성된 초안 모델을 다듬습니다.",
@@ -7767,18 +8207,24 @@
         "tooltip": "텍스처링 과정을 안내할 텍스트 프롬프트를 입력하세요. 최대 600자. 'texture_image'와 동시에 사용할 수 없습니다."
       }
     },
-    "outputs": [
-      null,
-      null,
-      {
+    "outputs": {
+      "0": {
+        "name": "model_file",
+        "tooltip": null
+      },
+      "1": {
+        "name": "meshy_task_id",
+        "tooltip": null
+      },
+      "2": {
         "name": "GLB",
         "tooltip": null
       },
-      {
+      "3": {
         "name": "FBX",
         "tooltip": null
       }
-    ]
+    }
   },
   "MeshyRigModelNode": {
     "description": "표준 포맷으로 리깅된 캐릭터를 제공합니다. 자동 리깅은 텍스처가 없는 메시, 비휴머노이드 자산, 또는 팔다리와 신체 구조가 불분명한 휴머노이드 자산에는 적합하지 않습니다.",
@@ -7796,18 +8242,24 @@
         "tooltip": "모델의 UV 언랩된 기본 색상 텍스처 이미지입니다."
       }
     },
-    "outputs": [
-      null,
-      null,
-      {
+    "outputs": {
+      "0": {
+        "name": "model_file",
+        "tooltip": null
+      },
+      "1": {
+        "name": "rig_task_id",
+        "tooltip": null
+      },
+      "2": {
         "name": "GLB",
         "tooltip": null
       },
-      {
+      "3": {
         "name": "FBX",
         "tooltip": null
       }
-    ]
+    }
   },
   "MeshyTextToModelNode": {
     "display_name": "Meshy: 텍스트 → 모델",
@@ -7846,18 +8298,24 @@
         "name": "symmetry_mode"
       }
     },
-    "outputs": [
-      null,
-      null,
-      {
+    "outputs": {
+      "0": {
+        "name": "모델 파일",
+        "tooltip": null
+      },
+      "1": {
+        "name": "meshy_task_id",
+        "tooltip": null
+      },
+      "2": {
         "name": "GLB",
         "tooltip": null
       },
-      {
+      "3": {
         "name": "FBX",
         "tooltip": null
       }
-    ]
+    }
   },
   "MeshyTextureNode": {
     "display_name": "Meshy: 텍스처 모델",
@@ -7884,18 +8342,24 @@
         "tooltip": "오브젝트의 원하는 텍스처 스타일을 텍스트로 설명하세요. 최대 600자까지 입력할 수 있습니다. 'image_style'과 동시에 사용할 수 없습니다."
       }
     },
-    "outputs": [
-      null,
-      null,
-      {
+    "outputs": {
+      "0": {
+        "name": "모델 파일",
+        "tooltip": null
+      },
+      "1": {
+        "name": "meshy_task_id",
+        "tooltip": null
+      },
+      "2": {
         "name": "GLB",
         "tooltip": null
       },
-      {
+      "3": {
         "name": "FBX",
         "tooltip": null
       }
-    ]
+    }
   },
   "MinimaxHailuoVideoNode": {
     "description": "새로운 MiniMax Hailuo-02 모델을 사용하여 프롬프트로 비디오를 생성하며, 선택적으로 시작 프레임을 사용할 수 있습니다.",
@@ -11175,6 +11639,28 @@
       }
     }
   },
+  "PrimitiveBoundingBox": {
+    "display_name": "바운딩 박스",
+    "inputs": {
+      "height": {
+        "name": "높이"
+      },
+      "width": {
+        "name": "너비"
+      },
+      "x": {
+        "name": "x"
+      },
+      "y": {
+        "name": "y"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "PrimitiveFloat": {
     "display_name": "실수",
     "inputs": {
@@ -12196,13 +12682,16 @@
         "name": "시드"
       }
     },
-    "outputs": [
-      null,
-      {
+    "outputs": {
+      "0": {
+        "name": "3D 모델 경로",
+        "tooltip": null
+      },
+      "1": {
         "name": "GLB",
         "tooltip": null
       }
-    ]
+    }
   },
   "Rodin3D_Gen2": {
     "description": "Rodin API를 사용하여 3D 에셋 생성",
@@ -12224,13 +12713,16 @@
         "name": "TAPose"
       }
     },
-    "outputs": [
-      null,
-      {
+    "outputs": {
+      "0": {
+        "name": "3D 모델 경로",
+        "tooltip": null
+      },
+      "1": {
         "name": "GLB",
         "tooltip": null
       }
-    ]
+    }
   },
   "Rodin3D_Regular": {
     "description": "Rodin API를 사용하여 3D 에셋 생성",
@@ -12249,13 +12741,16 @@
         "name": "시드"
       }
     },
-    "outputs": [
-      null,
-      {
+    "outputs": {
+      "0": {
+        "name": "3D 모델 경로",
+        "tooltip": null
+      },
+      "1": {
         "name": "GLB",
         "tooltip": null
       }
-    ]
+    }
   },
   "Rodin3D_Sketch": {
     "description": "Rodin API를 사용하여 3D 에셋 생성",
@@ -12268,13 +12763,16 @@
         "name": "시드"
       }
     },
-    "outputs": [
-      null,
-      {
+    "outputs": {
+      "0": {
+        "name": "3D 모델 경로",
+        "tooltip": null
+      },
+      "1": {
         "name": "GLB",
         "tooltip": null
       }
-    ]
+    }
   },
   "Rodin3D_Smooth": {
     "description": "Rodin API를 사용하여 3D 에셋 생성",
@@ -12293,13 +12791,16 @@
         "name": "시드"
       }
     },
-    "outputs": [
-      null,
-      {
+    "outputs": {
+      "0": {
+        "name": "3D 모델 경로",
+        "tooltip": null
+      },
+      "1": {
         "name": "GLB",
         "tooltip": null
       }
-    ]
+    }
   },
   "RunwayFirstLastFrameNode": {
     "description": "첫 번째와 마지막 키프레임을 업로드하고 프롬프트를 작성하여 비디오를 생성합니다. 마지막 프레임이 첫 번째 프레임과 완전히 다른 경우와 같은 복잡한 전환은 10초의 긴 지속 시간을 사용하는 것이 좋습니다. 이렇게 하면 두 입력 사이를 부드럽게 전환할 수 있는 시간이 더 주어집니다. 시작하기 전에 입력 선택이 생성 성공을 보장할 수 있도록 다음 모범 사례를 검토하세요: https://help.runwayml.com/hc/en-us/articles/34170748696595-Creating-with-Keyframes-on-Gen-3.",
@@ -12593,14 +13094,16 @@
         "name": "시그마 배열"
       }
     },
-    "outputs": [
-      {
+    "outputs": {
+      "0": {
+        "name": "출력",
         "tooltip": null
       },
-      {
+      "1": {
+        "name": "디노이즈 출력",
         "tooltip": null
       }
-    ]
+    }
   },
   "SamplerCustomAdvanced": {
     "display_name": "고급 사용자 정의 샘플러",
@@ -12621,14 +13124,16 @@
         "name": "시그마 배열"
       }
     },
-    "outputs": [
-      {
+    "outputs": {
+      "0": {
+        "name": "출력",
         "tooltip": null
       },
-      {
+      "1": {
+        "name": "디노이즈 출력",
         "tooltip": null
       }
-    ]
+    }
   },
   "SamplerDPMAdaptative": {
     "display_name": "DPMAdaptive 샘플러",
@@ -12926,11 +13431,12 @@
         "name": "샘플링 백분율"
       }
     },
-    "outputs": [
-      {
+    "outputs": {
+      "0": {
+        "name": "시그마 값",
         "tooltip": null
       }
-    ]
+    }
   },
   "SaveAnimatedPNG": {
     "display_name": "애니메이션 PNG 저장",
@@ -13485,14 +13991,16 @@
         "name": "오디오"
       }
     },
-    "outputs": [
-      {
+    "outputs": {
+      "0": {
+        "name": "왼쪽",
         "tooltip": null
       },
-      {
+      "1": {
+        "name": "오른쪽",
         "tooltip": null
       }
-    ]
+    }
   },
   "SplitImageWithAlpha": {
     "display_name": "이미지와 알파채널 분리",
@@ -13520,14 +14028,16 @@
         "name": "분할 스텝"
       }
     },
-    "outputs": [
-      {
+    "outputs": {
+      "0": {
+        "name": "하이 시그마",
         "tooltip": null
       },
-      {
+      "1": {
+        "name": "로우 시그마",
         "tooltip": null
       }
-    ]
+    }
   },
   "SplitSigmasDenoise": {
     "display_name": "시그마 배열 분할 (노이즈 제거양)",
@@ -13539,14 +14049,16 @@
         "name": "시그마 배열"
       }
     },
-    "outputs": [
-      {
+    "outputs": {
+      "0": {
+        "name": "하이 시그마",
         "tooltip": null
       },
-      {
+      "1": {
+        "name": "로우 시그마",
         "tooltip": null
       }
-    ]
+    }
   },
   "StabilityAudioInpaint": {
     "description": "텍스트 지침을 사용하여 기존 오디오 샘플의 일부를 변환합니다.",
@@ -14307,17 +14819,20 @@
         "tooltip": "시드는 노드가 다시 실행될지 여부를 제어합니다. 시드와 관계없이 결과는 비결정적입니다."
       }
     },
-    "outputs": [
-      null,
-      {
+    "outputs": {
+      "0": {
+        "name": "모델 파일",
+        "tooltip": null
+      },
+      "1": {
         "name": "GLB",
         "tooltip": null
       },
-      {
+      "2": {
         "name": "OBJ",
         "tooltip": null
       }
-    ]
+    }
   },
   "TencentTextToModelNode": {
     "display_name": "Hunyuan3D: 텍스트 → 모델 (Pro)",
@@ -14347,17 +14862,20 @@
         "tooltip": "시드는 노드가 다시 실행될지 여부를 제어합니다. 시드와 관계없이 결과는 비결정적입니다."
       }
     },
-    "outputs": [
-      null,
-      {
+    "outputs": {
+      "0": {
+        "name": "모델 파일",
+        "tooltip": null
+      },
+      "1": {
         "name": "GLB",
         "tooltip": null
       },
-      {
+      "2": {
         "name": "OBJ",
         "tooltip": null
       }
-    ]
+    }
   },
   "TextEncodeAceStepAudio": {
     "display_name": "TextEncodeAceStepAudio",
@@ -14543,6 +15061,94 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "TextGenerate": {
+    "display_name": "텍스트 생성",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "image": {
+        "name": "이미지"
+      },
+      "max_length": {
+        "name": "최대 길이"
+      },
+      "prompt": {
+        "name": "프롬프트"
+      },
+      "sampling_mode": {
+        "name": "샘플링 모드"
+      },
+      "sampling_mode_min_p": {
+        "name": "최소 p"
+      },
+      "sampling_mode_repetition_penalty": {
+        "name": "반복 패널티"
+      },
+      "sampling_mode_seed": {
+        "name": "시드"
+      },
+      "sampling_mode_temperature": {
+        "name": "온도"
+      },
+      "sampling_mode_top_k": {
+        "name": "top_k"
+      },
+      "sampling_mode_top_p": {
+        "name": "top_p"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "생성된 텍스트",
+        "tooltip": null
+      }
+    }
+  },
+  "TextGenerateLTX2Prompt": {
+    "display_name": "TextGenerateLTX2Prompt",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "image": {
+        "name": "이미지"
+      },
+      "max_length": {
+        "name": "최대 길이"
+      },
+      "prompt": {
+        "name": "프롬프트"
+      },
+      "sampling_mode": {
+        "name": "샘플링 모드"
+      },
+      "sampling_mode_min_p": {
+        "name": "최소 p"
+      },
+      "sampling_mode_repetition_penalty": {
+        "name": "반복 패널티"
+      },
+      "sampling_mode_seed": {
+        "name": "시드"
+      },
+      "sampling_mode_temperature": {
+        "name": "온도"
+      },
+      "sampling_mode_top_k": {
+        "name": "top_k"
+      },
+      "sampling_mode_top_p": {
+        "name": "top_p"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "생성된 텍스트",
         "tooltip": null
       }
     }
@@ -14824,20 +15430,20 @@
         "tooltip": "훈련에 사용할 데이터 타입입니다."
       }
     },
-    "outputs": [
-      {
+    "outputs": {
+      "0": {
+        "name": "lora",
         "tooltip": "LoRA가 적용된 모델"
       },
-      {
+      "1": {
+        "name": "손실 맵",
         "tooltip": "LoRA 가중치"
       },
-      {
+      "2": {
+        "name": "스텝",
         "tooltip": "손실 기록"
-      },
-      {
-        "tooltip": "총 학습 스텝"
       }
-    ]
+    }
   },
   "TrimAudioDuration": {
     "description": "오디오 텐서를 선택한 시간 범위로 자릅니다.",
@@ -15003,14 +15609,20 @@
         "name": "텍스처 시드"
       }
     },
-    "outputs": [
-      null,
-      null,
-      {
+    "outputs": {
+      "0": {
+        "name": "모델 파일",
+        "tooltip": null
+      },
+      "1": {
+        "name": "모델 task_id",
+        "tooltip": null
+      },
+      "2": {
         "name": "GLB",
         "tooltip": null
       }
-    ]
+    }
   },
   "TripoMultiviewToModelNode": {
     "display_name": "Tripo: 다중 뷰에서 모델 생성",
@@ -15062,14 +15674,20 @@
         "name": "텍스처 시드"
       }
     },
-    "outputs": [
-      null,
-      null,
-      {
+    "outputs": {
+      "0": {
+        "name": "모델 파일",
+        "tooltip": null
+      },
+      "1": {
+        "name": "모델 task_id",
+        "tooltip": null
+      },
+      "2": {
         "name": "GLB",
         "tooltip": null
       }
-    ]
+    }
   },
   "TripoRefineNode": {
     "description": "v1.4 Tripo 모델로 생성된 드래프트 모델만 정제합니다.",
@@ -15080,14 +15698,20 @@
         "tooltip": "v1.4 Tripo 모델이어야 합니다"
       }
     },
-    "outputs": [
-      null,
-      null,
-      {
+    "outputs": {
+      "0": {
+        "name": "모델 파일",
+        "tooltip": null
+      },
+      "1": {
+        "name": "모델 task_id",
+        "tooltip": null
+      },
+      "2": {
         "name": "GLB",
         "tooltip": null
       }
-    ]
+    }
   },
   "TripoRetargetNode": {
     "display_name": "Tripo: 리깅된 모델 리타겟",
@@ -15099,14 +15723,20 @@
         "name": "원본 모델 작업 ID"
       }
     },
-    "outputs": [
-      null,
-      null,
-      {
+    "outputs": {
+      "0": {
+        "name": "모델 파일",
+        "tooltip": null
+      },
+      "1": {
+        "name": "리타겟 task_id",
+        "tooltip": null
+      },
+      "2": {
         "name": "GLB",
         "tooltip": null
       }
-    ]
+    }
   },
   "TripoRigNode": {
     "display_name": "Tripo: 모델 리깅",
@@ -15115,14 +15745,20 @@
         "name": "원본 모델 작업 ID"
       }
     },
-    "outputs": [
-      null,
-      null,
-      {
+    "outputs": {
+      "0": {
+        "name": "모델 파일",
+        "tooltip": null
+      },
+      "1": {
+        "name": "리깅 task_id",
+        "tooltip": null
+      },
+      "2": {
         "name": "GLB",
         "tooltip": null
       }
-    ]
+    }
   },
   "TripoTextToModelNode": {
     "display_name": "Tripo: 텍스트에서 모델 생성",
@@ -15167,14 +15803,20 @@
         "name": "텍스처 시드"
       }
     },
-    "outputs": [
-      null,
-      null,
-      {
+    "outputs": {
+      "0": {
+        "name": "모델 파일",
+        "tooltip": null
+      },
+      "1": {
+        "name": "모델 task_id",
+        "tooltip": null
+      },
+      "2": {
         "name": "GLB",
         "tooltip": null
       }
-    ]
+    }
   },
   "TripoTextureNode": {
     "display_name": "Tripo: 텍스처 모델",
@@ -15198,14 +15840,20 @@
         "name": "텍스처 시드"
       }
     },
-    "outputs": [
-      null,
-      null,
-      {
+    "outputs": {
+      "0": {
+        "name": "모델 파일",
+        "tooltip": null
+      },
+      "1": {
+        "name": "모델 task_id",
+        "tooltip": null
+      },
+      "2": {
         "name": "GLB",
         "tooltip": null
       }
-    ]
+    }
   },
   "TruncateText": {
     "display_name": "텍스트 자르기",

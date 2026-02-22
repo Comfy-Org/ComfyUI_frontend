@@ -5,6 +5,7 @@ import { useI18n } from 'vue-i18n'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import type { JobListItem } from '@/composables/queue/useJobList'
 import { useJobMenu } from '@/composables/queue/useJobMenu'
+import type { TaskItemImpl } from '@/stores/queueStore'
 import { isActiveJobState } from '@/utils/queueUtil'
 
 export type JobAction = {
@@ -18,11 +19,17 @@ export function useJobActions(
 ) {
   const { t } = useI18n()
   const { wrapWithErrorHandlingAsync } = useErrorHandling()
-  const { cancelJob } = useJobMenu()
+  const { cancelJob, removeFailedJob } = useJobMenu()
 
   const cancelAction: JobAction = {
     icon: 'icon-[lucide--x]',
     label: t('sideToolbar.queueProgressOverlay.cancelJobTooltip'),
+    variant: 'destructive'
+  }
+
+  const deleteAction: JobAction = {
+    icon: 'icon-[lucide--circle-minus]',
+    label: t('queue.jobMenu.removeJob'),
     variant: 'destructive'
   }
 
@@ -37,6 +44,15 @@ export function useJobActions(
     return currentJob.showClear !== false && isActiveJobState(currentJob.state)
   })
 
+  const canDeleteJob = computed(() => {
+    const currentJob = jobRef.value
+    if (!currentJob) {
+      return false
+    }
+
+    return currentJob.state === 'failed'
+  })
+
   const runCancelJob = wrapWithErrorHandlingAsync(async () => {
     const currentJob = jobRef.value
     if (!currentJob) {
@@ -46,9 +62,22 @@ export function useJobActions(
     await cancelJob(currentJob)
   })
 
+  const runDeleteJob = wrapWithErrorHandlingAsync(async () => {
+    const currentJob = jobRef.value
+    const task = currentJob?.taskRef as TaskItemImpl | undefined
+    if (!task) {
+      return
+    }
+
+    await removeFailedJob(task)
+  })
+
   return {
     cancelAction,
     canCancelJob,
-    runCancelJob
+    runCancelJob,
+    deleteAction,
+    canDeleteJob,
+    runDeleteJob
   }
 }

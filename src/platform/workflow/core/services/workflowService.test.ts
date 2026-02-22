@@ -9,16 +9,21 @@ import { useWorkflowStore } from '@/platform/workflow/management/stores/workflow
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { app } from '@/scripts/app'
 
-const { mockShowLoadWorkflowWarning, mockShowMissingModelsWarning } =
-  vi.hoisted(() => ({
-    mockShowLoadWorkflowWarning: vi.fn(),
-    mockShowMissingModelsWarning: vi.fn()
-  }))
+const { mockShowMissingNodes, mockShowMissingModels } = vi.hoisted(() => ({
+  mockShowMissingNodes: vi.fn(),
+  mockShowMissingModels: vi.fn()
+}))
+
+vi.mock('@/composables/useMissingNodesDialog', () => ({
+  useMissingNodesDialog: () => ({ show: mockShowMissingNodes, hide: vi.fn() })
+}))
+
+vi.mock('@/composables/useMissingModelsDialog', () => ({
+  useMissingModelsDialog: () => ({ show: mockShowMissingModels, hide: vi.fn() })
+}))
 
 vi.mock('@/services/dialogService', () => ({
   useDialogService: () => ({
-    showLoadWorkflowWarning: mockShowLoadWorkflowWarning,
-    showMissingModelsWarning: mockShowMissingModelsWarning,
     prompt: vi.fn(),
     confirm: vi.fn()
   })
@@ -114,8 +119,8 @@ describe('useWorkflowService', () => {
       const workflow = createWorkflow(null)
       useWorkflowService().showPendingWarnings(workflow)
 
-      expect(mockShowLoadWorkflowWarning).not.toHaveBeenCalled()
-      expect(mockShowMissingModelsWarning).not.toHaveBeenCalled()
+      expect(mockShowMissingNodes).not.toHaveBeenCalled()
+      expect(mockShowMissingModels).not.toHaveBeenCalled()
     })
 
     it('should show missing nodes dialog and clear warnings', () => {
@@ -124,7 +129,7 @@ describe('useWorkflowService', () => {
 
       useWorkflowService().showPendingWarnings(workflow)
 
-      expect(mockShowLoadWorkflowWarning).toHaveBeenCalledWith({
+      expect(mockShowMissingNodes).toHaveBeenCalledWith({
         missingNodeTypes
       })
       expect(workflow.pendingWarnings).toBeNull()
@@ -135,7 +140,7 @@ describe('useWorkflowService', () => {
 
       useWorkflowService().showPendingWarnings(workflow)
 
-      expect(mockShowMissingModelsWarning).toHaveBeenCalledWith(MISSING_MODELS)
+      expect(mockShowMissingModels).toHaveBeenCalledWith(MISSING_MODELS)
       expect(workflow.pendingWarnings).toBeNull()
     })
 
@@ -149,8 +154,8 @@ describe('useWorkflowService', () => {
 
       useWorkflowService().showPendingWarnings(workflow)
 
-      expect(mockShowLoadWorkflowWarning).not.toHaveBeenCalled()
-      expect(mockShowMissingModelsWarning).not.toHaveBeenCalled()
+      expect(mockShowMissingNodes).not.toHaveBeenCalled()
+      expect(mockShowMissingModels).not.toHaveBeenCalled()
       expect(workflow.pendingWarnings).toBeNull()
     })
 
@@ -163,7 +168,7 @@ describe('useWorkflowService', () => {
       service.showPendingWarnings(workflow)
       service.showPendingWarnings(workflow)
 
-      expect(mockShowLoadWorkflowWarning).toHaveBeenCalledTimes(1)
+      expect(mockShowMissingNodes).toHaveBeenCalledTimes(1)
     })
   })
 
@@ -188,7 +193,7 @@ describe('useWorkflowService', () => {
         { loadable: true }
       )
 
-      expect(mockShowLoadWorkflowWarning).not.toHaveBeenCalled()
+      expect(mockShowMissingNodes).not.toHaveBeenCalled()
 
       await useWorkflowService().openWorkflow(workflow)
 
@@ -199,7 +204,7 @@ describe('useWorkflowService', () => {
         workflow,
         expect.objectContaining({ deferWarnings: true })
       )
-      expect(mockShowLoadWorkflowWarning).toHaveBeenCalledWith({
+      expect(mockShowMissingNodes).toHaveBeenCalledWith({
         missingNodeTypes: ['CustomNode1']
       })
       expect(workflow.pendingWarnings).toBeNull()
@@ -218,16 +223,16 @@ describe('useWorkflowService', () => {
       const service = useWorkflowService()
 
       await service.openWorkflow(workflow1)
-      expect(mockShowLoadWorkflowWarning).toHaveBeenCalledTimes(1)
-      expect(mockShowLoadWorkflowWarning).toHaveBeenCalledWith({
+      expect(mockShowMissingNodes).toHaveBeenCalledTimes(1)
+      expect(mockShowMissingNodes).toHaveBeenCalledWith({
         missingNodeTypes: ['MissingNodeA']
       })
       expect(workflow1.pendingWarnings).toBeNull()
       expect(workflow2.pendingWarnings).not.toBeNull()
 
       await service.openWorkflow(workflow2)
-      expect(mockShowLoadWorkflowWarning).toHaveBeenCalledTimes(2)
-      expect(mockShowLoadWorkflowWarning).toHaveBeenLastCalledWith({
+      expect(mockShowMissingNodes).toHaveBeenCalledTimes(2)
+      expect(mockShowMissingNodes).toHaveBeenLastCalledWith({
         missingNodeTypes: ['MissingNodeB']
       })
       expect(workflow2.pendingWarnings).toBeNull()
@@ -242,10 +247,10 @@ describe('useWorkflowService', () => {
       const service = useWorkflowService()
 
       await service.openWorkflow(workflow, { force: true })
-      expect(mockShowLoadWorkflowWarning).toHaveBeenCalledTimes(1)
+      expect(mockShowMissingNodes).toHaveBeenCalledTimes(1)
 
       await service.openWorkflow(workflow, { force: true })
-      expect(mockShowLoadWorkflowWarning).toHaveBeenCalledTimes(1)
+      expect(mockShowMissingNodes).toHaveBeenCalledTimes(1)
     })
   })
 })

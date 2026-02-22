@@ -1,15 +1,34 @@
-import { computed } from 'vue'
+import { computed, reactive } from 'vue'
 import type { Ref } from 'vue'
 import Fuse from 'fuse.js'
 import type { IFuseOptions } from 'fuse.js'
 
-import { useExecutionStore } from '@/stores/executionStore'
+import { useExecutionErrorStore } from '@/stores/executionErrorStore'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+
 import { app } from '@/scripts/app'
-import { getNodeByExecutionId } from '@/utils/graphTraversalUtil'
+import { isCloud } from '@/platform/distribution/types'
+import { SubgraphNode } from '@/lib/litegraph/src/litegraph'
+import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+
+import {
+  getNodeByExecutionId,
+  getRootParentNode
+} from '@/utils/graphTraversalUtil'
 import { resolveNodeDisplayName } from '@/utils/nodeTitleUtil'
+import { isLGraphNode } from '@/utils/litegraphUtil'
+import { isGroupNode } from '@/utils/executableGroupNodeDto'
 import { st } from '@/i18n'
-import type { ErrorCardData, ErrorGroup } from './types'
+import type { ErrorCardData, ErrorGroup, ErrorItem } from './types'
 import { isNodeExecutionId } from '@/types/nodeIdentification'
+
+const PROMPT_CARD_ID = '__prompt__'
+const SINGLE_GROUP_KEY = '__single__'
+const KNOWN_PROMPT_ERROR_TYPES = new Set([
+  'prompt_no_outputs',
+  'no_prompt',
+  'server_error'
+])
 
 interface GroupEntry {
   priority: number
@@ -25,20 +44,26 @@ interface ErrorSearchItem {
   searchableDetails: string
 }
 
-const KNOWN_PROMPT_ERROR_TYPES = new Set(['prompt_no_outputs', 'no_prompt'])
-
-function resolveNodeInfo(nodeId: string): {
-  title: string
-  graphNodeId: string | undefined
-} {
+/**
+ * Resolve display info for a node by its execution ID.
+ * For group node internals, resolves the parent group node's title instead.
+ */
+function resolveNodeInfo(nodeId: string) {
   const graphNode = getNodeByExecutionId(app.rootGraph, nodeId)
+
+  const parentNode = getRootParentNode(app.rootGraph, nodeId)
+  const isParentGroupNode = parentNode ? isGroupNode(parentNode) : false
+
   return {
-    title: resolveNodeDisplayName(graphNode, {
-      emptyLabel: '',
-      untitledLabel: '',
-      st
-    }),
-    graphNodeId: graphNode ? String(graphNode.id) : undefined
+    title: isParentGroupNode
+      ? parentNode?.title || ''
+      : resolveNodeDisplayName(graphNode, {
+          emptyLabel: '',
+          untitledLabel: '',
+          st
+        }),
+    graphNodeId: graphNode ? String(graphNode.id) : undefined,
+    isParentGroupNode
   }
 }
 
@@ -55,93 +80,56 @@ function getOrCreateGroup(
   return entry.cards
 }
 
-function processPromptError(
-  groupsMap: Map<string, GroupEntry>,
-  executionStore: ReturnType<typeof useExecutionStore>,
-  t: (key: string) => string
-) {
-  if (!executionStore.lastPromptError) return
-
-  const error = executionStore.lastPromptError
-  const groupTitle = error.message
-  const cards = getOrCreateGroup(groupsMap, groupTitle, 0)
-  const isKnown = KNOWN_PROMPT_ERROR_TYPES.has(error.type)
-
-  cards.set('__prompt__', {
-    id: '__prompt__',
-    title: groupTitle,
-    errors: [
-      {
-        message: isKnown
-          ? t(`rightSidePanel.promptErrors.${error.type}.desc`)
-          : error.message
-      }
-    ]
-  })
-}
-
-function processNodeErrors(
-  groupsMap: Map<string, GroupEntry>,
-  executionStore: ReturnType<typeof useExecutionStore>
-) {
-  if (!executionStore.lastNodeErrors) return
-
-  for (const [nodeId, nodeError] of Object.entries(
-    executionStore.lastNodeErrors
-  )) {
-    const cards = getOrCreateGroup(groupsMap, nodeError.class_type, 1)
-    if (!cards.has(nodeId)) {
-      const nodeInfo = resolveNodeInfo(nodeId)
-      cards.set(nodeId, {
-        id: `node-${nodeId}`,
-        title: nodeError.class_type,
-        nodeId,
-        nodeTitle: nodeInfo.title,
-        graphNodeId: nodeInfo.graphNodeId,
-        isSubgraphNode: isNodeExecutionId(nodeId),
-        errors: []
-      })
-    }
-    const card = cards.get(nodeId)
-    if (!card) continue
-    card.errors.push(
-      ...nodeError.errors.map((e) => ({
-        message: e.message,
-        details: e.details ?? undefined
-      }))
-    )
+function createErrorCard(
+  nodeId: string,
+  classType: string,
+  idPrefix: string
+): ErrorCardData {
+  const nodeInfo = resolveNodeInfo(nodeId)
+  return {
+    id: `${idPrefix}-${nodeId}`,
+    title: classType,
+    nodeId,
+    nodeTitle: nodeInfo.title,
+    graphNodeId: nodeInfo.graphNodeId,
+    isSubgraphNode: isNodeExecutionId(nodeId) && !nodeInfo.isParentGroupNode,
+    errors: []
   }
 }
 
-function processExecutionError(
-  groupsMap: Map<string, GroupEntry>,
-  executionStore: ReturnType<typeof useExecutionStore>
-) {
-  if (!executionStore.lastExecutionError) return
+/**
+ * In single-node mode, regroup cards by error message instead of class_type.
+ * This lets the user see "what kinds of errors this node has" at a glance.
+ */
+function regroupByErrorMessage(
+  groupsMap: Map<string, GroupEntry>
+): Map<string, GroupEntry> {
+  const allCards = Array.from(groupsMap.values()).flatMap((g) =>
+    Array.from(g.cards.values())
+  )
 
-  const e = executionStore.lastExecutionError
-  const nodeId = String(e.node_id)
-  const cards = getOrCreateGroup(groupsMap, e.node_type, 1)
+  const cardErrorPairs = allCards.flatMap((card) =>
+    card.errors.map((error) => ({ card, error }))
+  )
 
-  if (!cards.has(nodeId)) {
-    const nodeInfo = resolveNodeInfo(nodeId)
-    cards.set(nodeId, {
-      id: `exec-${nodeId}`,
-      title: e.node_type,
-      nodeId,
-      nodeTitle: nodeInfo.title,
-      graphNodeId: nodeInfo.graphNodeId,
-      isSubgraphNode: isNodeExecutionId(nodeId),
-      errors: []
-    })
+  const messageMap = new Map<string, GroupEntry>()
+  for (const { card, error } of cardErrorPairs) {
+    addCardErrorToGroup(messageMap, card, error)
   }
-  const card = cards.get(nodeId)
-  if (!card) return
-  card.errors.push({
-    message: `${e.exception_type}: ${e.exception_message}`,
-    details: e.traceback.join('\n'),
-    isRuntimeError: true
-  })
+
+  return messageMap
+}
+
+function addCardErrorToGroup(
+  messageMap: Map<string, GroupEntry>,
+  card: ErrorCardData,
+  error: ErrorItem
+) {
+  const group = getOrCreateGroup(messageMap, error.message, 1)
+  if (!group.has(card.id)) {
+    group.set(card.id, { ...card, errors: [] })
+  }
+  group.get(card.id)?.errors.push(error)
 }
 
 function toSortedGroups(groupsMap: Map<string, GroupEntry>): ErrorGroup[] {
@@ -157,27 +145,14 @@ function toSortedGroups(groupsMap: Map<string, GroupEntry>): ErrorGroup[] {
     })
 }
 
-function buildErrorGroups(
-  executionStore: ReturnType<typeof useExecutionStore>,
-  t: (key: string) => string
-): ErrorGroup[] {
-  const groupsMap = new Map<string, GroupEntry>()
-
-  processPromptError(groupsMap, executionStore, t)
-  processNodeErrors(groupsMap, executionStore)
-  processExecutionError(groupsMap, executionStore)
-
-  return toSortedGroups(groupsMap)
-}
-
-function searchErrorGroups(groups: ErrorGroup[], query: string): ErrorGroup[] {
+function searchErrorGroups(groups: ErrorGroup[], query: string) {
   if (!query) return groups
 
   const searchableList: ErrorSearchItem[] = []
   for (let gi = 0; gi < groups.length; gi++) {
-    const group = groups[gi]!
+    const group = groups[gi]
     for (let ci = 0; ci < group.cards.length; ci++) {
-      const card = group.cards[ci]!
+      const card = group.cards[ci]
       searchableList.push({
         groupIndex: gi,
         cardIndex: ci,
@@ -218,19 +193,195 @@ export function useErrorGroups(
   searchQuery: Ref<string>,
   t: (key: string) => string
 ) {
-  const executionStore = useExecutionStore()
+  const executionErrorStore = useExecutionErrorStore()
+  const canvasStore = useCanvasStore()
+  const collapseState = reactive<Record<string, boolean>>({})
 
-  const errorGroups = computed<ErrorGroup[]>(() =>
-    buildErrorGroups(executionStore, t)
+  const selectedNodeInfo = computed(() => {
+    const items = canvasStore.selectedItems
+    const nodeIds = new Set<string>()
+    const containerIds = new Set<string>()
+
+    for (const item of items) {
+      if (!isLGraphNode(item)) continue
+      nodeIds.add(String(item.id))
+      if (item instanceof SubgraphNode || isGroupNode(item)) {
+        containerIds.add(String(item.id))
+      }
+    }
+
+    return {
+      nodeIds: nodeIds.size > 0 ? nodeIds : null,
+      containerIds
+    }
+  })
+
+  const isSingleNodeSelected = computed(
+    () =>
+      selectedNodeInfo.value.nodeIds?.size === 1 &&
+      selectedNodeInfo.value.containerIds.size === 0
   )
+
+  const errorNodeCache = computed(() => {
+    const map = new Map<string, LGraphNode>()
+    for (const execId of executionErrorStore.allErrorExecutionIds) {
+      const node = getNodeByExecutionId(app.rootGraph, execId)
+      if (node) map.set(execId, node)
+    }
+    return map
+  })
+
+  function isErrorInSelection(executionNodeId: string): boolean {
+    const nodeIds = selectedNodeInfo.value.nodeIds
+    if (!nodeIds) return true
+
+    const graphNode = errorNodeCache.value.get(executionNodeId)
+    if (graphNode && nodeIds.has(String(graphNode.id))) return true
+
+    for (const containerId of selectedNodeInfo.value.containerIds) {
+      if (executionNodeId.startsWith(`${containerId}:`)) return true
+    }
+
+    return false
+  }
+
+  function addNodeErrorToGroup(
+    groupsMap: Map<string, GroupEntry>,
+    nodeId: string,
+    classType: string,
+    idPrefix: string,
+    errors: ErrorItem[],
+    filterBySelection = false
+  ) {
+    if (filterBySelection && !isErrorInSelection(nodeId)) return
+    const groupKey = isSingleNodeSelected.value ? SINGLE_GROUP_KEY : classType
+    const cards = getOrCreateGroup(groupsMap, groupKey, 1)
+    if (!cards.has(nodeId)) {
+      cards.set(nodeId, createErrorCard(nodeId, classType, idPrefix))
+    }
+    cards.get(nodeId)?.errors.push(...errors)
+  }
+
+  function processPromptError(groupsMap: Map<string, GroupEntry>) {
+    if (selectedNodeInfo.value.nodeIds || !executionErrorStore.lastPromptError)
+      return
+
+    const error = executionErrorStore.lastPromptError
+    const groupTitle = error.message
+    const cards = getOrCreateGroup(groupsMap, groupTitle, 0)
+    const isKnown = KNOWN_PROMPT_ERROR_TYPES.has(error.type)
+
+    // For server_error, resolve the i18n key based on the environment
+    let errorTypeKey = error.type
+    if (error.type === 'server_error') {
+      errorTypeKey = isCloud ? 'server_error_cloud' : 'server_error_local'
+    }
+    const i18nKey = `rightSidePanel.promptErrors.${errorTypeKey}.desc`
+
+    // Prompt errors are not tied to a node, so they bypass addNodeErrorToGroup.
+    cards.set(PROMPT_CARD_ID, {
+      id: PROMPT_CARD_ID,
+      title: groupTitle,
+      errors: [
+        {
+          message: isKnown ? t(i18nKey) : error.message
+        }
+      ]
+    })
+  }
+
+  function processNodeErrors(
+    groupsMap: Map<string, GroupEntry>,
+    filterBySelection = false
+  ) {
+    if (!executionErrorStore.lastNodeErrors) return
+
+    for (const [nodeId, nodeError] of Object.entries(
+      executionErrorStore.lastNodeErrors
+    )) {
+      addNodeErrorToGroup(
+        groupsMap,
+        nodeId,
+        nodeError.class_type,
+        'node',
+        nodeError.errors.map((e) => ({
+          message: e.message,
+          details: e.details ?? undefined
+        })),
+        filterBySelection
+      )
+    }
+  }
+
+  function processExecutionError(
+    groupsMap: Map<string, GroupEntry>,
+    filterBySelection = false
+  ) {
+    if (!executionErrorStore.lastExecutionError) return
+
+    const e = executionErrorStore.lastExecutionError
+    addNodeErrorToGroup(
+      groupsMap,
+      String(e.node_id),
+      e.node_type,
+      'exec',
+      [
+        {
+          message: `${e.exception_type}: ${e.exception_message}`,
+          details: e.traceback.join('\n'),
+          isRuntimeError: true
+        }
+      ],
+      filterBySelection
+    )
+  }
+
+  const allErrorGroups = computed<ErrorGroup[]>(() => {
+    const groupsMap = new Map<string, GroupEntry>()
+
+    processPromptError(groupsMap)
+    processNodeErrors(groupsMap)
+    processExecutionError(groupsMap)
+
+    return toSortedGroups(groupsMap)
+  })
+
+  const tabErrorGroups = computed<ErrorGroup[]>(() => {
+    const groupsMap = new Map<string, GroupEntry>()
+
+    processPromptError(groupsMap)
+    processNodeErrors(groupsMap, true)
+    processExecutionError(groupsMap, true)
+
+    return isSingleNodeSelected.value
+      ? toSortedGroups(regroupByErrorMessage(groupsMap))
+      : toSortedGroups(groupsMap)
+  })
 
   const filteredGroups = computed<ErrorGroup[]>(() => {
     const query = searchQuery.value.trim()
-    return searchErrorGroups(errorGroups.value, query)
+    return searchErrorGroups(tabErrorGroups.value, query)
+  })
+
+  const groupedErrorMessages = computed<string[]>(() => {
+    const messages = new Set<string>()
+    for (const group of allErrorGroups.value) {
+      for (const card of group.cards) {
+        for (const err of card.errors) {
+          messages.add(err.message)
+        }
+      }
+    }
+    return Array.from(messages)
   })
 
   return {
-    errorGroups,
-    filteredGroups
+    allErrorGroups,
+    tabErrorGroups,
+    filteredGroups,
+    collapseState,
+    isSingleNodeSelected,
+    errorNodeCache,
+    groupedErrorMessages
   }
 }

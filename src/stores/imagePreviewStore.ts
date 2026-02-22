@@ -3,6 +3,7 @@ import { defineStore } from 'pinia'
 import { ref } from 'vue'
 
 import type { LGraphNode, SubgraphNode } from '@/lib/litegraph/src/litegraph'
+import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type {
   ExecutedWsMessage,
@@ -11,7 +12,6 @@ import type {
 } from '@/schemas/apiSchema'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
-import { useExecutionStore } from '@/stores/executionStore'
 import type { NodeLocatorId } from '@/types/nodeIdentification'
 import { parseFilePath } from '@/utils/formatUtil'
 import { isAnimatedOutput, isVideoNode } from '@/utils/litegraphUtil'
@@ -19,6 +19,7 @@ import {
   releaseSharedObjectUrl,
   retainSharedObjectUrl
 } from '@/utils/objectUrlUtil'
+import { executionIdToNodeLocatorId } from '@/utils/graphTraversalUtil'
 
 const PREVIEW_REVOKE_DELAY_MS = 400
 
@@ -42,7 +43,6 @@ interface SetOutputOptions {
 
 export const useNodeOutputStore = defineStore('nodeOutput', () => {
   const { nodeIdToNodeLocatorId, nodeToNodeLocatorId } = useWorkflowStore()
-  const { executionIdToNodeLocatorId } = useExecutionStore()
   const scheduledRevoke: Record<NodeLocatorId, { stop: () => void }> = {}
   const latestPreview = ref<string[]>([])
 
@@ -201,7 +201,7 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
     outputs: ExecutedWsMessage['output'] | ResultItem,
     options: SetOutputOptions = {}
   ) {
-    const nodeLocatorId = executionIdToNodeLocatorId(executionId)
+    const nodeLocatorId = executionIdToNodeLocatorId(app.rootGraph, executionId)
     if (!nodeLocatorId) return
 
     setOutputsByLocatorId(nodeLocatorId, outputs, options)
@@ -218,7 +218,7 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
     executionId: string,
     previewImages: string[]
   ) {
-    const nodeLocatorId = executionIdToNodeLocatorId(executionId)
+    const nodeLocatorId = executionIdToNodeLocatorId(app.rootGraph, executionId)
     if (!nodeLocatorId) return
     const existingPreviews = app.nodePreviewImages[nodeLocatorId]
     if (scheduledRevoke[nodeLocatorId]) {
@@ -274,7 +274,7 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
    * @param executionId - The execution ID
    */
   function revokePreviewsByExecutionId(executionId: string) {
-    const nodeLocatorId = executionIdToNodeLocatorId(executionId)
+    const nodeLocatorId = executionIdToNodeLocatorId(app.rootGraph, executionId)
     if (!nodeLocatorId) return
     scheduleRevoke(nodeLocatorId, () =>
       revokePreviewsByLocatorId(nodeLocatorId)
@@ -394,6 +394,32 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
     revokeAllPreviews()
   }
 
+  /**
+   * Sync legacy node.imgs property for backwards compatibility.
+   *
+   * In Vue Nodes mode, legacy systems (Copy Image, Open Image, Save Image,
+   * Open in Mask Editor) rely on `node.imgs` containing HTMLImageElement
+   * references. Since Vue handles image rendering, we need to sync the
+   * already-loaded element from the Vue component to the node.
+   *
+   * @param nodeId - The node ID
+   * @param element - The loaded HTMLImageElement from the Vue component
+   * @param activeIndex - The current image index (for multi-image outputs)
+   */
+  function syncLegacyNodeImgs(
+    nodeId: string | number,
+    element: HTMLImageElement,
+    activeIndex: number = 0
+  ) {
+    if (!LiteGraph.vueNodesMode) return
+
+    const node = app.rootGraph?.getNodeById(Number(nodeId))
+    if (!node) return
+
+    node.imgs = [element]
+    node.imageIndex = activeIndex
+  }
+
   return {
     // Getters
     getNodeOutputs,
@@ -407,6 +433,7 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
     setNodePreviewsByExecutionId,
     setNodePreviewsByNodeId,
     updateNodeImages,
+    syncLegacyNodeImgs,
 
     // Cleanup
     revokePreviewsByExecutionId,

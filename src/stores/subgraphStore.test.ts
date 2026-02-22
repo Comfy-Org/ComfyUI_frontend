@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { ComfyNodeDef as ComfyNodeDefV1 } from '@/schemas/nodeDefSchema'
 import type { GlobalSubgraphData } from '@/scripts/api'
 import type { ExportedSubgraph } from '@/lib/litegraph/src/types/serialisation'
+import { TemplateIncludeOnDistributionEnum } from '@/platform/workflow/templates/types/template'
 import { api } from '@/scripts/api'
 import { app as comfyApp } from '@/scripts/app'
 import { useLitegraphService } from '@/services/litegraphService'
@@ -15,6 +16,12 @@ import {
   createTestSubgraphNode
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import { createTestingPinia } from '@pinia/testing'
+
+const mockDistributionTypes = vi.hoisted(() => ({
+  isCloud: false,
+  isDesktop: false
+}))
+vi.mock('@/platform/distribution/types', () => mockDistributionTypes)
 
 // Mock telemetry to break circular dependency (telemetry → workflowStore → app → telemetry)
 vi.mock('@/platform/telemetry', () => ({
@@ -85,6 +92,8 @@ describe('useSubgraphStore', () => {
   }
 
   beforeEach(() => {
+    mockDistributionTypes.isCloud = false
+    mockDistributionTypes.isDesktop = false
     setActivePinia(createTestingPinia({ stubActions: false }))
     store = useSubgraphStore()
     vi.clearAllMocks()
@@ -166,6 +175,116 @@ describe('useSubgraphStore', () => {
   it('should return false for non-existent blueprints', async () => {
     await mockFetch({ 'test.json': mockGraph })
     expect(store.isGlobalBlueprint('nonexistent')).toBe(false)
+  })
+
+  describe('blueprint badge display', () => {
+    it('should set isGlobal flag on global blueprints', async () => {
+      await mockFetch(
+        {},
+        {
+          global_bp: {
+            name: 'Global Blueprint',
+            info: { node_pack: 'some-uuid-string' },
+            data: JSON.stringify(mockGraph)
+          }
+        }
+      )
+      const nodeDef = useNodeDefStore().nodeDefs.find(
+        (d) => d.name === 'SubgraphBlueprint.global_bp'
+      )
+      expect(nodeDef).toBeDefined()
+      expect(nodeDef?.isGlobal).toBe(true)
+    })
+
+    it('should not set isGlobal flag on user blueprints', async () => {
+      await mockFetch({ 'user-blueprint.json': mockGraph })
+      const nodeDef = useNodeDefStore().nodeDefs.find(
+        (d) => d.name === 'SubgraphBlueprint.user-blueprint'
+      )
+      expect(nodeDef).toBeDefined()
+      expect(nodeDef?.isGlobal).toBeUndefined()
+    })
+
+    it('should use blueprint python_module for global blueprints to show Blueprint badge', async () => {
+      await mockFetch(
+        {},
+        {
+          global_bp: {
+            name: 'Global Blueprint',
+            info: { node_pack: 'comfyui-ltx-video-0fbc55c6-long-uuid' },
+            data: JSON.stringify(mockGraph)
+          }
+        }
+      )
+      const nodeDef = useNodeDefStore().nodeDefs.find(
+        (d) => d.name === 'SubgraphBlueprint.global_bp'
+      )
+      expect(nodeDef).toBeDefined()
+      expect(nodeDef?.python_module).toBe('blueprint')
+      expect(nodeDef?.nodeSource.displayText).toBe('Blueprint')
+    })
+  })
+
+  it('should handle global blueprint with empty data gracefully', async () => {
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    await mockFetch(
+      {},
+      {
+        broken_blueprint: {
+          name: 'Broken Blueprint',
+          info: { node_pack: 'test_pack' },
+          data: ''
+        }
+      }
+    )
+    expect(consoleSpy).toHaveBeenCalledWith(
+      'Failed to load subgraph blueprint',
+      expect.any(Error)
+    )
+    expect(store.subgraphBlueprints).toHaveLength(0)
+    consoleSpy.mockRestore()
+  })
+
+  it('should handle global blueprint with rejected data promise gracefully', async () => {
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    await mockFetch(
+      {},
+      {
+        failing_blueprint: {
+          name: 'Failing Blueprint',
+          info: { node_pack: 'test_pack' },
+          data: Promise.reject(new Error('Network error')) as unknown as string
+        }
+      }
+    )
+    expect(consoleSpy).toHaveBeenCalledWith(
+      'Failed to load subgraph blueprint',
+      expect.any(Error)
+    )
+    expect(store.subgraphBlueprints).toHaveLength(0)
+    consoleSpy.mockRestore()
+  })
+
+  it('should load valid global blueprints even when others fail', async () => {
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    await mockFetch(
+      {},
+      {
+        broken: {
+          name: 'Broken',
+          info: { node_pack: 'test_pack' },
+          data: ''
+        },
+        valid: {
+          name: 'Valid Blueprint',
+          info: { node_pack: 'test_pack' },
+          data: JSON.stringify(mockGraph)
+        }
+      }
+    )
+    expect(consoleSpy).toHaveBeenCalled()
+    expect(store.subgraphBlueprints).toHaveLength(1)
+    consoleSpy.mockRestore()
   })
 
   describe('search_aliases support', () => {
@@ -303,6 +422,176 @@ describe('useSubgraphStore', () => {
       const subgraphExtra = definitions.subgraphs[0]?.extra
       expect(subgraphExtra?.BlueprintDescription).toBeUndefined()
       expect(subgraphExtra?.BlueprintSearchAliases).toBeUndefined()
+    })
+  })
+
+  describe('subgraph definition category', () => {
+    it('should use category from subgraph definition as default', async () => {
+      const mockGraphWithCategory = {
+        nodes: [{ type: '123' }],
+        definitions: {
+          subgraphs: [{ id: '123', category: 'Image Processing' }]
+        }
+      }
+      await mockFetch(
+        {},
+        {
+          categorized: {
+            name: 'Categorized Blueprint',
+            info: { node_pack: 'test_pack' },
+            data: JSON.stringify(mockGraphWithCategory)
+          }
+        }
+      )
+
+      const nodeDef = useNodeDefStore().nodeDefs.find(
+        (d) => d.name === 'SubgraphBlueprint.categorized'
+      )
+      expect(nodeDef).toBeDefined()
+      expect(nodeDef?.category).toBe('Subgraph Blueprints/Image Processing')
+    })
+
+    it('should use User override for user blueprints even with definition category', async () => {
+      const mockGraphWithCategory = {
+        nodes: [{ type: '123' }],
+        definitions: {
+          subgraphs: [{ id: '123', category: 'Image Processing' }]
+        }
+      }
+      await mockFetch({ 'user-bp.json': mockGraphWithCategory })
+
+      const nodeDef = useNodeDefStore().nodeDefs.find(
+        (d) => d.name === 'SubgraphBlueprint.user-bp'
+      )
+      expect(nodeDef).toBeDefined()
+      expect(nodeDef?.category).toBe('Subgraph Blueprints/User')
+    })
+
+    it('should fallback to bare Subgraph Blueprints when no category anywhere', async () => {
+      await mockFetch(
+        {},
+        {
+          no_cat_global: {
+            name: 'No Category Global',
+            info: { node_pack: 'test_pack' },
+            data: JSON.stringify(mockGraph)
+          }
+        }
+      )
+
+      const nodeDef = useNodeDefStore().nodeDefs.find(
+        (d) => d.name === 'SubgraphBlueprint.no_cat_global'
+      )
+      expect(nodeDef).toBeDefined()
+      expect(nodeDef?.category).toBe('Subgraph Blueprints')
+    })
+
+    it('should let overrides take precedence over definition category', async () => {
+      const mockGraphWithCategory = {
+        nodes: [{ type: '123' }],
+        definitions: {
+          subgraphs: [{ id: '123', category: 'Image Processing' }]
+        }
+      }
+      await mockFetch(
+        {},
+        {
+          bp_override: {
+            name: 'Override Blueprint',
+            info: {
+              node_pack: 'test_pack',
+              category: 'Custom Category'
+            },
+            data: JSON.stringify(mockGraphWithCategory)
+          }
+        }
+      )
+
+      const nodeDef = useNodeDefStore().nodeDefs.find(
+        (d) => d.name === 'SubgraphBlueprint.bp_override'
+      )
+      expect(nodeDef).toBeDefined()
+      expect(nodeDef?.category).toBe('Subgraph Blueprints/Custom Category')
+    })
+  })
+
+  describe('global blueprint filtering', () => {
+    function globalBlueprint(
+      overrides: Partial<GlobalSubgraphData['info']> = {}
+    ): GlobalSubgraphData {
+      return {
+        name: 'Filtered Blueprint',
+        info: { node_pack: 'test_pack', ...overrides },
+        data: JSON.stringify(mockGraph)
+      }
+    }
+
+    it('should exclude blueprints with requiresCustomNodes on non-cloud', async () => {
+      await mockFetch(
+        {},
+        {
+          bp: globalBlueprint({ requiresCustomNodes: ['custom-node-pack'] })
+        }
+      )
+      expect(store.isGlobalBlueprint('bp')).toBe(false)
+    })
+
+    it('should include blueprints with requiresCustomNodes on cloud', async () => {
+      mockDistributionTypes.isCloud = true
+      await mockFetch(
+        {},
+        {
+          bp: globalBlueprint({ requiresCustomNodes: ['custom-node-pack'] })
+        }
+      )
+      expect(store.isGlobalBlueprint('bp')).toBe(true)
+    })
+
+    it('should include blueprints with empty requiresCustomNodes everywhere', async () => {
+      await mockFetch({}, { bp: globalBlueprint({ requiresCustomNodes: [] }) })
+      expect(store.isGlobalBlueprint('bp')).toBe(true)
+    })
+
+    it('should exclude blueprints whose includeOnDistributions does not match', async () => {
+      await mockFetch(
+        {},
+        {
+          bp: globalBlueprint({
+            includeOnDistributions: [TemplateIncludeOnDistributionEnum.Cloud]
+          })
+        }
+      )
+      expect(store.isGlobalBlueprint('bp')).toBe(false)
+    })
+
+    it('should include blueprints whose includeOnDistributions matches current distribution', async () => {
+      await mockFetch(
+        {},
+        {
+          bp: globalBlueprint({
+            includeOnDistributions: [TemplateIncludeOnDistributionEnum.Local]
+          })
+        }
+      )
+      expect(store.isGlobalBlueprint('bp')).toBe(true)
+    })
+
+    it('should include blueprints on desktop when includeOnDistributions has desktop', async () => {
+      mockDistributionTypes.isDesktop = true
+      await mockFetch(
+        {},
+        {
+          bp: globalBlueprint({
+            includeOnDistributions: [TemplateIncludeOnDistributionEnum.Desktop]
+          })
+        }
+      )
+      expect(store.isGlobalBlueprint('bp')).toBe(true)
+    })
+
+    it('should include blueprints with no filtering fields', async () => {
+      await mockFetch({}, { bp: globalBlueprint() })
+      expect(store.isGlobalBlueprint('bp')).toBe(true)
     })
   })
 })

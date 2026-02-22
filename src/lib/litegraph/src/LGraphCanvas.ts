@@ -3628,6 +3628,9 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
         oldValue: true,
         newValue: false
       })
+
+      this.state.selectionChanged = true
+      this.onSelectionChange?.(this.selected_nodes)
     }
 
     this.dirty_canvas = true

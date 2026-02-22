@@ -37,7 +37,7 @@ function resetStores() {
   queue.runningTasks = []
   queue.historyTasks = []
 
-  exec.nodeProgressStatesByPrompt = {}
+  exec.nodeProgressStatesByJob = {}
 }
 
 function makeTask(
@@ -145,10 +145,10 @@ export const Queued: Story = {
         makePendingTask('job-older-2', 101, Date.now() - 30_000)
       )
 
-      // Queued at (in metadata on prompt[4])
+      // Queued at (in metadata on job tuple)
 
       // One running workflow
-      exec.nodeProgressStatesByPrompt = {
+      exec.nodeProgressStatesByJob = {
         p1: {
           '1': {
             value: 1,
@@ -198,7 +198,7 @@ export const QueuedParallel: Story = {
       ]
 
       // Two parallel workflows running
-      exec.nodeProgressStatesByPrompt = {
+      exec.nodeProgressStatesByJob = {
         p1: {
           '1': {
             value: 1,
@@ -248,7 +248,7 @@ export const Running: Story = {
         makeHistoryTask('hist-r3', 252, 60, true)
       ]
 
-      exec.nodeProgressStatesByPrompt = {
+      exec.nodeProgressStatesByJob = {
         p1: {
           '1': {
             value: 5,
@@ -293,7 +293,7 @@ export const QueuedZeroAheadSingleRunning: Story = {
 
       queue.runningTasks = [makeRunningTaskWithStart('running-1', 505, 20)]
 
-      exec.nodeProgressStatesByPrompt = {
+      exec.nodeProgressStatesByJob = {
         p1: {
           '1': {
             value: 1,
@@ -341,7 +341,7 @@ export const QueuedZeroAheadMultiRunning: Story = {
         makeRunningTaskWithStart('running-b', 507, 10)
       ]
 
-      exec.nodeProgressStatesByPrompt = {
+      exec.nodeProgressStatesByJob = {
         p1: {
           '1': {
             value: 2,

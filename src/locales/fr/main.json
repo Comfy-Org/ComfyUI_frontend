@@ -275,7 +275,9 @@
     "signOut": {
       "signOut": "Se déconnecter",
       "success": "Déconnexion réussie",
-      "successDetail": "Vous avez été déconnecté de votre compte."
+      "successDetail": "Vous avez été déconnecté de votre compte.",
+      "unsavedChangesMessage": "Vous avez des modifications non enregistrées qui seront perdues si vous vous déconnectez. Voulez-vous continuer ?",
+      "unsavedChangesTitle": "Modifications non enregistrées"
     },
     "signup": {
       "alreadyHaveAccount": "Vous avez déjà un compte?",
@@ -608,6 +610,7 @@
     "AUDIO_ENCODER_OUTPUT": "SORTIE_ENCODEUR_AUDIO",
     "AUDIO_RECORD": "ENREGISTREMENT_AUDIO",
     "BOOLEAN": "BOOLEAN",
+    "BOUNDING_BOX": "BOÎTE ENGLOBANTE",
     "CAMERA_CONTROL": "Contrôle de la caméra",
     "CLIP": "CLIP",
     "CLIP_VISION": "CLIP_VISION",
@@ -619,6 +622,7 @@
     "COMFY_MATCHTYPE_V3": "COMFY_MATCHTYPE_V3",
     "CONDITIONING": "CONDITIONNEMENT",
     "CONTROL_NET": "RESEAU_DE_CONTROLE",
+    "ELEVENLABS_VOICE": "ELEVENLABS_VOICE",
     "FILE_3D": "FICHIER_3D",
     "FILE_3D_FBX": "FICHIER_3D_FBX",
     "FILE_3D_GLB": "FICHIER_3D_GLB",
@@ -727,11 +731,30 @@
     "noStackTrace": "Aucune trace de pile disponible",
     "promptExecutionError": "L'exécution de l'invite a échoué"
   },
+  "errorOverlay": {
+    "errorCount": "{count} ERREURS | {count} ERREUR | {count} ERREURS",
+    "seeErrors": "Voir les erreurs"
+  },
+  "exportToast": {
+    "allExportsCompleted": "Toutes les exportations sont terminées",
+    "downloadExport": "Télécharger l’export",
+    "downloadFailed": "Échec du téléchargement de « {name} »",
+    "exportCompleted": "Téléchargement ZIP prêt",
+    "exportError": "Échec de l’exportation",
+    "exportFailed": "{count} exportation échouée | {count} exportation échouée | {count} exportations échouées",
+    "exportFailedSingle": "Échec de la création de l’export ZIP",
+    "exportStarted": "Préparation du téléchargement ZIP...",
+    "exportingAssets": "Exportation des ressources",
+    "noExportsInQueue": "Aucune exportation {filter} en file d’attente",
+    "preparingExport": "Préparation de l’export...",
+    "retryDownload": "Réessayer le téléchargement"
+  },
   "g": {
     "1x": "1x",
     "2x": "2x",
     "about": "À propos",
     "add": "Ajouter",
+    "addNode": "Ajouter un nœud...",
     "addNodeFilterCondition": "Ajouter une condition de filtre de nœud",
     "all": "Tout",
     "amount": "Quantité",
@@ -825,6 +848,7 @@
     "error": "Erreur",
     "errorLoadingImage": "Erreur lors du chargement de l'image",
     "errorLoadingVideo": "Erreur lors du chargement de la vidéo",
+    "essentials": "Essentiels",
     "experimental": "BETA",
     "export": "Exportation",
     "extensionName": "Nom de l'extension",
@@ -833,9 +857,12 @@
     "failedToCopyJobId": "Échec de la copie de l'ID du travail",
     "failedToDownloadImage": "Échec du téléchargement de l'image",
     "failedToDownloadVideo": "Échec du téléchargement de la vidéo",
+    "favorites": "Favoris",
     "feedback": "Commentaires",
     "file": "fichier",
     "filter": "Filtrer",
+    "filterBy": "Filtrer par :",
+    "filterByType": "Filtrer par {type}...",
     "findIssues": "Trouver des problèmes",
     "frameNodes": "Encadrer les nœuds",
     "frontendNewer": "La version du frontend {frontendVersion} peut ne pas être compatible avec la version du backend {backendVersion}.",
@@ -856,6 +883,7 @@
     "inProgress": "En cours",
     "increment": "Augmenter",
     "info": "Informations du nœud",
+    "input": "Entrée",
     "insert": "Insérer",
     "install": "Installer",
     "installed": "Installé",
@@ -879,6 +907,7 @@
     "login": "Connexion",
     "logoAlt": "Logo ComfyUI",
     "logs": "Journaux",
+    "manageExtensions": "Gérer les extensions",
     "markdown": "markdown",
     "micPermissionDenied": "Permission du microphone refusée",
     "migrate": "Migrer",
@@ -886,6 +915,7 @@
     "more": "Plus",
     "moreOptions": "Plus d'options",
     "moreWorkflows": "Plus de workflows",
+    "mostRelevant": "Les plus pertinents",
     "multiSelectDropdown": "Menu déroulant à sélection multiple",
     "name": "Nom",
     "newFolder": "Nouveau dossier",
@@ -916,6 +946,7 @@
     "openManager": "Ouvrir le gestionnaire",
     "openNewIssue": "Ouvrir un nouveau problème",
     "or": "ou",
+    "output": "Sortie",
     "overwrite": "Écraser",
     "playPause": "Lecture/Pause",
     "playRecording": "Lire l'enregistrement",
@@ -942,6 +973,7 @@
     },
     "releaseTitle": "Publication de {package} {version}",
     "reloadToApplyChanges": "Recharger pour appliquer les modifications",
+    "remove": "Supprimer",
     "removeImage": "Supprimer l'image",
     "removeTag": "Supprimer le tag",
     "removeVideo": "Supprimer la vidéo",
@@ -1558,6 +1590,7 @@
       "downloadSelectedAll": "Tout télécharger",
       "downloadStarted": "Téléchargement de {count} fichier(s)...",
       "downloadsStarted": "Début du téléchargement de {count} fichier(s)",
+      "exportStarted": "Préparation de l’export ZIP pour {count} fichier | Préparation de l’export ZIP pour {count} fichiers",
       "exportWorkflowAll": "Exporter tous les workflows",
       "failedToAddNodes": "Échec de l’ajout des nœuds au workflow",
       "failedToDeleteAssets": "Échec de la suppression des éléments sélectionnés",
@@ -1609,6 +1642,8 @@
     "runWorkflowFront": "Exécuter le workflow (Mettre en file d'attente en premier)",
     "settings": "Paramètres",
     "showMenu": "Afficher le menu",
+    "stopRunInstant": "Arrêter l'exécution (immédiat)",
+    "stopRunInstantTooltip": "Arrêter l'exécution",
     "theme": "Thème",
     "toggleBottomPanel": "Basculer le panneau inférieur"
   },
@@ -1634,6 +1669,7 @@
     "Contact Support": "Contacter le support",
     "Convert Selection to Subgraph": "Convertir la sélection en sous-graphe",
     "Convert selected nodes to group node": "Convertir les nœuds sélectionnés en nœud de groupe",
+    "Copy": "Copier",
     "Custom Nodes (Legacy)": "Nœuds personnalisés (héritage)",
     "Custom Nodes Manager": "Gestionnaire de Nœuds Personnalisés",
     "Decrease Brush Size in MaskEditor": "Réduire la taille du pinceau dans MaskEditor",
@@ -1688,6 +1724,7 @@
     "Open Outputs Folder": "Ouvrir le dossier des sorties",
     "Open Sign In Dialog": "Ouvrir la boîte de dialogue de connexion",
     "Open extra_model_paths_yaml": "Ouvrir extra_model_paths.yaml",
+    "Paste": "Coller",
     "Pin/Unpin Selected Items": "Épingler/Désépingler les éléments sélectionnés",
     "Pin/Unpin Selected Nodes": "Épingler/Désépingler les nœuds sélectionnés",
     "Previous Opened Workflow": "Flux de travail ouvert précédent",
@@ -1707,6 +1744,7 @@
     "Rotate Right in MaskEditor": "Tourner à droite dans l'éditeur de masque",
     "Save": "Enregistrer",
     "Save As": "Enregistrer sous",
+    "Select All": "Tout sélectionner",
     "Set Subgraph Description": "Définir la description du sous-graphe",
     "Set Subgraph Search Aliases": "Définir les alias de recherche du sous-graphe",
     "Show Keybindings Dialog": "Afficher la boîte de dialogue des raccourcis clavier",
@@ -1776,6 +1814,7 @@
     "BFL": "BFL",
     "Bria": "Bria",
     "ByteDance": "ByteDance",
+    "ElevenLabs": "ElevenLabs",
     "Gemini": "Gemini",
     "Grok": "Grok",
     "HitPaw": "HitPaw",
@@ -1858,11 +1897,13 @@
     "scheduling": "planification",
     "sd": "sd",
     "sd3": "sd3",
+    "shader": "shader",
     "sigmas": "sigmas",
     "stable_cascade": "stable_cascade",
     "string": "chaîne",
     "style_model": "modèle_de_style",
     "text": "texte",
+    "textgen": "textgen",
     "training": "entraînement",
     "transform": "transformer",
     "unet": "unet",
@@ -2015,6 +2056,12 @@
     "advancedInputs": "ENTRÉES AVANCÉES",
     "bypass": "Contourner",
     "color": "Couleur du nœud",
+    "enterSubgraph": "Entrer dans le sous-graphe",
+    "errorHelp": "Pour plus d'aide, {github} ou {support}",
+    "errorHelpGithub": "soumettre un ticket GitHub",
+    "errorHelpSupport": "contacter notre support",
+    "errors": "Erreurs",
+    "executionErrorOccurred": "Une erreur est survenue lors de l’exécution. Consultez l’onglet Erreurs pour plus de détails.",
     "fallbackGroupTitle": "Groupe",
     "fallbackNodeTitle": "Nœud",
     "favorites": "ENTRÉES FAVORITES",
@@ -2049,6 +2096,7 @@
     "inputsNoneTooltip": "Le nœud n’a pas d’entrées",
     "locateNode": "Localiser le nœud sur le canevas",
     "mute": "Muet",
+    "noErrors": "Aucune erreur",
     "noSelection": "Sélectionnez un nœud pour voir ses propriétés et informations.",
     "nodeState": "État du nœud",
     "nodes": "Nœuds",
@@ -2057,10 +2105,25 @@
     "normal": "Normal",
     "parameters": "Paramètres",
     "pinned": "Épinglé",
+    "promptErrors": {
+      "no_prompt": {
+        "desc": "Les données du flux de travail envoyées au serveur sont vides. Il peut s'agir d'une erreur système inattendue."
+      },
+      "prompt_no_outputs": {
+        "desc": "Le flux de travail ne contient aucun nœud de sortie (par exemple, Enregistrer l'image, Prévisualiser l'image) pour produire un résultat."
+      },
+      "server_error_cloud": {
+        "desc": "Le serveur a rencontré une erreur inattendue. Veuillez réessayer plus tard."
+      },
+      "server_error_local": {
+        "desc": "Le serveur a rencontré une erreur inattendue. Veuillez consulter les journaux du serveur."
+      }
+    },
     "properties": "Propriétés",
     "removeFavorite": "Retirer des favoris",
     "resetAllParameters": "Réinitialiser tous les paramètres",
     "resetToDefault": "Réinitialiser par défaut",
+    "seeError": "Voir l'erreur",
     "settings": "Paramètres",
     "showAdvancedInputsButton": "Afficher les entrées avancées",
     "showInput": "Afficher l’entrée",
@@ -2285,6 +2348,7 @@
     "CustomColorPalettes": "Palettes de Couleurs Personnalisées",
     "DevMode": "Mode Développeur",
     "EditTokenWeight": "Modifier le Poids du Jeton",
+    "Error System": "Système d'erreurs",
     "Execution": "Exécution",
     "Extension": "Extension",
     "General": "Général",
@@ -2301,6 +2365,7 @@
     "Menu": "Menu",
     "ModelLibrary": "Bibliothèque de Modèles",
     "Node": "Nœud",
+    "Node Library": "Bibliothèque de nœuds",
     "Node Search Box": "Boîte de Recherche de Nœud",
     "Node Widget": "Widget de Nœud",
     "NodeLibrary": "Bibliothèque de Nœuds",
@@ -2359,6 +2424,10 @@
     "backToAssets": "Retour à toutes les ressources",
     "browseTemplates": "Parcourir les modèles d'exemple",
     "downloads": "Téléchargements",
+    "folderView": {
+      "errorDetail": "Impossible de récupérer les sorties pour ce travail. Veuillez réessayer.",
+      "errorSummary": "Échec du chargement des sorties"
+    },
     "generatedAssetsHeader": "Ressources générées",
     "helpCenter": "Centre d'aide",
     "importedAssetsHeader": "Ressources importées",
@@ -2384,6 +2453,9 @@
     "noImportedFiles": "Aucun fichier importé trouvé",
     "nodeLibrary": "Bibliothèque de nœuds",
     "nodeLibraryTab": {
+      "allNodes": "Tous les nœuds",
+      "custom": "Personnalisé",
+      "essentials": "Essentiels",
       "groupBy": "Grouper par",
       "groupStrategies": {
         "category": "Catégorie",
@@ -2394,6 +2466,11 @@
         "sourceDesc": "Grouper par type de source (Core, Custom, API)"
       },
       "resetView": "Réinitialiser la vue par défaut",
+      "sections": {
+        "favoriteNode": "Nœud favori",
+        "favorites": "Favoris",
+        "unfavoriteNode": "Retirer des favoris"
+      },
       "sortBy": {
         "alphabetical": "Alphabétique",
         "alphabeticalDesc": "Trier alphabétiquement dans les groupes",
@@ -2402,6 +2479,7 @@
       },
       "sortMode": "Mode de tri"
     },
+    "nodes": "Nœuds",
     "openWorkflow": "Ouvrir le flux de travail dans le système de fichiers local",
     "queue": "File d'attente",
     "queueProgressOverlay": {
@@ -2409,14 +2487,17 @@
       "activeJobsShort": "{count} actif(s) | {count} actif(s)",
       "activeJobsSuffix": "travaux actifs",
       "cancelJobTooltip": "Annuler le travail",
+      "clearAllJobsTooltip": "Annuler tous les travaux en cours",
       "clearHistory": "Effacer l’historique de la file d’attente",
       "clearHistoryDialogAssetsNote": "Les ressources générées par ces travaux ne seront pas supprimées et resteront accessibles depuis le panneau des ressources.",
       "clearHistoryDialogDescription": "Tous les travaux terminés ou échoués ci-dessous seront supprimés de ce panneau de file d’attente.",
       "clearHistoryDialogTitle": "Effacer l’historique de la file d’attente ?",
+      "clearHistoryMenuAssetsNote": "Les ressources média ne seront pas supprimées.",
       "clearQueueTooltip": "Vider la file d’attente",
       "clearQueued": "Vider la file d’attente",
       "colonPercent": ": {percent}",
       "currentNode": "Nœud actuel :",
+      "dockedJobHistory": "Historique des tâches ancré",
       "expandCollapsedQueue": "Développer la file d’attente",
       "filterAllWorkflows": "Tous les workflows",
       "filterBy": "Filtrer par",
@@ -2438,6 +2519,7 @@
       "running": "en cours",
       "runningJobsLabel": "{count} en cours",
       "runningQueuedSummary": "{running} en cours, {queued} en file",
+      "searchJobs": "Rechercher...",
       "showAssets": "Afficher les ressources",
       "showAssetsPanel": "Afficher le panneau des ressources",
       "sortBy": "Trier par",
@@ -2858,9 +2940,14 @@
     "dropPrompt": "Déposez votre fichier ou"
   },
   "widgets": {
+    "boolean": {
+      "false": "faux",
+      "true": "vrai"
+    },
     "node2only": "Node 2.0 uniquement",
     "selectModel": "Sélectionner un modèle",
     "uploadSelect": {
+      "maxSelectionReached": "Limite maximale de sélection atteinte",
       "placeholder": "Sélectionner...",
       "placeholderAudio": "Sélectionner un audio...",
       "placeholderImage": "Sélectionner une image...",

@@ -347,7 +347,7 @@ export class ChangeTracker {
     api.addEventListener('executed', (e: CustomEvent<ExecutedWsMessage>) => {
       const detail = e.detail
       const workflow =
-        useExecutionStore().queuedPrompts[detail.prompt_id]?.workflow
+        useExecutionStore().queuedJobs[detail.prompt_id]?.workflow
       const changeTracker = workflow?.changeTracker
       if (!changeTracker) return
       changeTracker.nodeOutputs ??= {}

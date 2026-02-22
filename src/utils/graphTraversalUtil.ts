@@ -4,7 +4,10 @@ import type {
   Subgraph
 } from '@/lib/litegraph/src/litegraph'
 import type { NodeExecutionId, NodeLocatorId } from '@/types/nodeIdentification'
-import { parseNodeLocatorId } from '@/types/nodeIdentification'
+import {
+  createNodeLocatorId,
+  parseNodeLocatorId
+} from '@/types/nodeIdentification'
 
 import { isSubgraphIoNode } from './typeGuardUtil'
 
@@ -275,6 +278,28 @@ export function findSubgraphPathById(
 }
 
 /**
+ * Gets the root parent node associated with a hierarchical execution ID.
+ * Both Group Nodes and Subgraph Nodes use hierarchical IDs (e.g. "rootId:childId:...").
+ * The root parent is always located in the rootGraph.
+ *
+ * @param rootGraph - The root graph to search from
+ * @param executionId - The execution ID (e.g., "123:456")
+ * @returns The root parent node if found, null otherwise
+ */
+export function getRootParentNode(
+  rootGraph: LGraph,
+  executionId: string
+): LGraphNode | null {
+  const parts = parseExecutionId(executionId)
+  if (!parts || parts.length < 2) return null
+
+  const parentId = parts[0]
+  if (!rootGraph) return null
+
+  return rootGraph.getNodeById(Number(parentId)) || null
+}
+
+/**
  * Get a node by its execution ID from anywhere in the graph hierarchy.
  * Execution IDs use hierarchical format like "123:456:789" for nested nodes.
  *
@@ -335,6 +360,36 @@ export function getNodeByLocatorId(
   if (!targetSubgraph) return null
 
   return targetSubgraph.getNodeById(localNodeId) || null
+}
+
+/**
+ * Convert execution context node IDs to NodeLocatorIds.
+ * Uses traverseSubgraphPath to resolve the subgraph chain.
+ *
+ * @param rootGraph - The root graph to resolve against
+ * @param nodeId - The node ID from execution context (could be execution ID like "123:456:789")
+ * @returns The NodeLocatorId, or undefined if resolution fails
+ */
+export function executionIdToNodeLocatorId(
+  rootGraph: LGraph,
+  nodeId: string | number
+): NodeLocatorId | undefined {
+  const nodeIdStr = String(nodeId)
+
+  if (!nodeIdStr.includes(':')) {
+    // It's a top-level node ID
+    return nodeIdStr
+  }
+
+  // It's an execution node ID — resolve subgraph path
+  const parts = nodeIdStr.split(':')
+  const localNodeId = parts.at(-1)!
+  const subgraphPath = parts.slice(0, -1)
+
+  const targetGraph = traverseSubgraphPath(rootGraph, subgraphPath)
+  if (!targetGraph) return undefined
+
+  return createNodeLocatorId(targetGraph.id, localNodeId)
 }
 
 /**

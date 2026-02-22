@@ -275,7 +275,9 @@
     "signOut": {
       "signOut": "Sair",
       "success": "Logout realizado com sucesso",
-      "successDetail": "Você saiu da sua conta."
+      "successDetail": "Você saiu da sua conta.",
+      "unsavedChangesMessage": "Você tem alterações não salvas que serão perdidas ao sair. Deseja continuar?",
+      "unsavedChangesTitle": "Alterações não salvas"
     },
     "signup": {
       "alreadyHaveAccount": "Já tem uma conta?",
@@ -608,6 +610,7 @@
     "AUDIO_ENCODER_OUTPUT": "SAÍDA DO CODIFICADOR DE ÁUDIO",
     "AUDIO_RECORD": "GRAVAÇÃO DE ÁUDIO",
     "BOOLEAN": "BOOLEANO",
+    "BOUNDING_BOX": "BOUNDING_BOX",
     "CAMERA_CONTROL": "CONTROLE DE CÂMERA",
     "CLIP": "clip",
     "CLIP_VISION": "clip visão",
@@ -619,6 +622,7 @@
     "COMFY_MATCHTYPE_V3": "COMFY_MATCHTYPE_V3",
     "CONDITIONING": "CONDICIONAMENTO",
     "CONTROL_NET": "controlnet",
+    "ELEVENLABS_VOICE": "ELEVENLABS_VOICE",
     "FILE_3D": "ARQUIVO_3D",
     "FILE_3D_FBX": "ARQUIVO_3D_FBX",
     "FILE_3D_GLB": "ARQUIVO_3D_GLB",
@@ -727,11 +731,30 @@
     "noStackTrace": "Nenhum stacktrace disponível",
     "promptExecutionError": "Falha na execução do prompt"
   },
+  "errorOverlay": {
+    "errorCount": "{count} ERROS | {count} ERRO | {count} ERROS",
+    "seeErrors": "Ver erros"
+  },
+  "exportToast": {
+    "allExportsCompleted": "Todas as exportações concluídas",
+    "downloadExport": "Baixar exportação",
+    "downloadFailed": "Falha ao baixar \"{name}\"",
+    "exportCompleted": "Download ZIP pronto",
+    "exportError": "Falha na exportação",
+    "exportFailed": "{count} exportação falhou | {count} exportação falhou | {count} exportações falharam",
+    "exportFailedSingle": "Falha ao criar exportação ZIP",
+    "exportStarted": "Preparando download ZIP...",
+    "exportingAssets": "Exportando ativos",
+    "noExportsInQueue": "Nenhuma exportação de {filter} na fila",
+    "preparingExport": "Preparando exportação...",
+    "retryDownload": "Tentar baixar novamente"
+  },
   "g": {
     "1x": "1x",
     "2x": "2x",
     "about": "Sobre",
     "add": "Adicionar",
+    "addNode": "Adicionar um nó...",
     "addNodeFilterCondition": "Adicionar condição de filtro de nó",
     "all": "Todos",
     "amount": "Quantidade",
@@ -825,6 +848,7 @@
     "error": "Erro",
     "errorLoadingImage": "Erro ao carregar imagem",
     "errorLoadingVideo": "Erro ao carregar vídeo",
+    "essentials": "Essenciais",
     "experimental": "BETA",
     "export": "Exportar",
     "extensionName": "Nome da extensão",
@@ -833,9 +857,12 @@
     "failedToCopyJobId": "Falha ao copiar o ID da tarefa",
     "failedToDownloadImage": "Falha ao baixar imagem",
     "failedToDownloadVideo": "Falha ao baixar vídeo",
+    "favorites": "Favoritos",
     "feedback": "Feedback",
     "file": "arquivo",
     "filter": "Filtrar",
+    "filterBy": "Filtrar por:",
+    "filterByType": "Filtrar por {type}...",
     "findIssues": "Encontrar problemas",
     "frameNodes": "Enquadrar nós",
     "frontendNewer": "A versão do frontend {frontendVersion} pode não ser compatível com a versão do backend {backendVersion}.",
@@ -856,6 +883,7 @@
     "inProgress": "Em andamento",
     "increment": "Aumentar",
     "info": "Informações do nó",
+    "input": "Entrada",
     "insert": "Inserir",
     "install": "Instalar",
     "installed": "Instalado",
@@ -879,6 +907,7 @@
     "login": "Entrar",
     "logoAlt": "Logo do ComfyUI",
     "logs": "Logs",
+    "manageExtensions": "Gerenciar extensões",
     "markdown": "markdown",
     "micPermissionDenied": "Permissão do microfone negada",
     "migrate": "Migrar",
@@ -886,6 +915,7 @@
     "more": "Mais",
     "moreOptions": "Mais opções",
     "moreWorkflows": "Mais fluxos de trabalho",
+    "mostRelevant": "Mais relevante",
     "multiSelectDropdown": "Menu suspenso de seleção múltipla",
     "name": "Nome",
     "newFolder": "Nova pasta",
@@ -916,6 +946,7 @@
     "openManager": "Abrir gerenciador",
     "openNewIssue": "Abrir novo problema",
     "or": "ou",
+    "output": "Saída",
     "overwrite": "Sobrescrever",
     "playPause": "Reproduzir/Pausar",
     "playRecording": "Reproduzir gravação",
@@ -942,6 +973,7 @@
     },
     "releaseTitle": "Lançamento {package} {version}",
     "reloadToApplyChanges": "Recarregue para aplicar as alterações",
+    "remove": "Remover",
     "removeImage": "Remover imagem",
     "removeTag": "Remover tag",
     "removeVideo": "Remover vídeo",
@@ -1558,6 +1590,7 @@
       "downloadSelectedAll": "Baixar todos",
       "downloadStarted": "Baixando {count} arquivos...",
       "downloadsStarted": "Iniciada a transferência de {count} arquivo(s)",
+      "exportStarted": "Preparando exportação ZIP para {count} arquivo | Preparando exportação ZIP para {count} arquivos",
       "exportWorkflowAll": "Exportar todos os fluxos de trabalho",
       "failedToAddNodes": "Falha ao adicionar nós ao fluxo de trabalho",
       "failedToDeleteAssets": "Falha ao excluir os recursos selecionados",
@@ -1609,6 +1642,8 @@
     "runWorkflowFront": "Executar fluxo de trabalho (Enfileirar na frente)",
     "settings": "Configurações",
     "showMenu": "Mostrar menu",
+    "stopRunInstant": "Parar execução (Instantâneo)",
+    "stopRunInstantTooltip": "Parar execução",
     "theme": "Tema",
     "toggleBottomPanel": "Alternar painel inferior"
   },
@@ -1634,6 +1669,7 @@
     "Contact Support": "Contatar suporte",
     "Convert Selection to Subgraph": "Converter seleção em subgrafo",
     "Convert selected nodes to group node": "Converter nós selecionados em nó de grupo",
+    "Copy": "Copiar",
     "Custom Nodes (Legacy)": "Nós personalizados (Legado)",
     "Custom Nodes Manager": "Gerenciador de nós personalizados",
     "Decrease Brush Size in MaskEditor": "Diminuir tamanho do pincel no MaskEditor",
@@ -1688,6 +1724,7 @@
     "Open Outputs Folder": "Abrir pasta de saídas",
     "Open Sign In Dialog": "Abrir diálogo de login",
     "Open extra_model_paths_yaml": "Abrir extra_model_paths.yaml",
+    "Paste": "Colar",
     "Pin/Unpin Selected Items": "Fixar/Desafixar itens selecionados",
     "Pin/Unpin Selected Nodes": "Fixar/Desafixar nós selecionados",
     "Previous Opened Workflow": "Fluxo de trabalho anterior aberto",
@@ -1707,6 +1744,7 @@
     "Rotate Right in MaskEditor": "Girar para a direita no MaskEditor",
     "Save": "Salvar",
     "Save As": "Salvar como",
+    "Select All": "Selecionar tudo",
     "Set Subgraph Description": "Definir Descrição do Subgrafo",
     "Set Subgraph Search Aliases": "Definir Apelidos de Busca do Subgrafo",
     "Show Keybindings Dialog": "Mostrar diálogo de atalhos",
@@ -1776,6 +1814,7 @@
     "BFL": "BFL",
     "Bria": "Bria",
     "ByteDance": "ByteDance",
+    "ElevenLabs": "ElevenLabs",
     "Gemini": "Gemini",
     "Grok": "Grok",
     "HitPaw": "HitPaw",
@@ -1858,11 +1897,13 @@
     "scheduling": "agendamento",
     "sd": "sd",
     "sd3": "sd3",
+    "shader": "shader",
     "sigmas": "sigmas",
     "stable_cascade": "stable_cascade",
     "string": "string",
     "style_model": "modelo_de_estilo",
     "text": "texto",
+    "textgen": "textgen",
     "training": "treinamento",
     "transform": "transformar",
     "unet": "unet",
@@ -2015,6 +2056,12 @@
     "advancedInputs": "ENTRADAS AVANÇADAS",
     "bypass": "Ignorar",
     "color": "Cor do nó",
+    "enterSubgraph": "Entrar no subgrafo",
+    "errorHelp": "Para mais ajuda, {github} ou {support}",
+    "errorHelpGithub": "enviar um issue no GitHub",
+    "errorHelpSupport": "contatar nosso suporte",
+    "errors": "Erros",
+    "executionErrorOccurred": "Ocorreu um erro durante a execução. Verifique a aba de Erros para mais detalhes.",
     "fallbackGroupTitle": "Grupo",
     "fallbackNodeTitle": "Nó",
     "favorites": "ENTRADAS FAVORITAS",
@@ -2049,6 +2096,7 @@
     "inputsNoneTooltip": "O nó não possui entradas",
     "locateNode": "Localizar nó no canvas",
     "mute": "Silenciar",
+    "noErrors": "Sem erros",
     "noSelection": "Selecione um nó para ver suas propriedades e informações.",
     "nodeState": "Estado do nó",
     "nodes": "Nós",
@@ -2057,10 +2105,25 @@
     "normal": "Normal",
     "parameters": "Parâmetros",
     "pinned": "Fixado",
+    "promptErrors": {
+      "no_prompt": {
+        "desc": "Os dados do fluxo de trabalho enviados ao servidor estão vazios. Isso pode ser um erro de sistema inesperado."
+      },
+      "prompt_no_outputs": {
+        "desc": "O fluxo de trabalho não contém nenhum nó de saída (por exemplo, Salvar Imagem, Visualizar Imagem) para produzir um resultado."
+      },
+      "server_error_cloud": {
+        "desc": "O servidor encontrou um erro inesperado. Por favor, tente novamente mais tarde."
+      },
+      "server_error_local": {
+        "desc": "O servidor encontrou um erro inesperado. Por favor, verifique os logs do servidor."
+      }
+    },
     "properties": "Propriedades",
     "removeFavorite": "Desfavoritar",
     "resetAllParameters": "Redefinir todos os parâmetros",
     "resetToDefault": "Restaurar para o padrão",
+    "seeError": "Ver erro",
     "settings": "Configurações",
     "showAdvancedInputsButton": "Mostrar entradas avançadas",
     "showInput": "Mostrar entrada",
@@ -2285,6 +2348,7 @@
     "CustomColorPalettes": "Paletas de Cores Personalizadas",
     "DevMode": "Modo Desenvolvedor",
     "EditTokenWeight": "Editar Peso do Token",
+    "Error System": "Sistema de Erros",
     "Execution": "Execução",
     "Extension": "Extensão",
     "General": "Geral",
@@ -2301,6 +2365,7 @@
     "Menu": "Menu",
     "ModelLibrary": "Biblioteca de Modelos",
     "Node": "Nó",
+    "Node Library": "Biblioteca de nós",
     "Node Search Box": "Caixa de Pesquisa de Nós",
     "Node Widget": "Widget de Nó",
     "NodeLibrary": "Biblioteca de Nós",
@@ -2359,6 +2424,10 @@
     "backToAssets": "Voltar para todos os ativos",
     "browseTemplates": "Explorar modelos de exemplo",
     "downloads": "Downloads",
+    "folderView": {
+      "errorDetail": "Não foi possível recuperar as saídas para este trabalho. Por favor, tente novamente.",
+      "errorSummary": "Falha ao carregar saídas"
+    },
     "generatedAssetsHeader": "Ativos gerados",
     "helpCenter": "Central de Ajuda",
     "importedAssetsHeader": "Ativos importados",
@@ -2385,7 +2454,8 @@
       "sortLongestFirst": "Tempo de geração (maior primeiro)",
       "sortNewestFirst": "Mais recentes primeiro",
       "sortOldestFirst": "Mais antigos primeiro",
-      "title": "Ativos de Mídia"
+      "title": "Ativos de Mídia",
+      "viewSettings": "Ver configurações"
     },
     "modelLibrary": "Biblioteca de modelos",
     "newBlankWorkflow": "Criar um novo workflow em branco",
@@ -2395,6 +2465,9 @@
     "noImportedFiles": "Nenhum arquivo importado encontrado",
     "nodeLibrary": "Biblioteca de nós",
     "nodeLibraryTab": {
+      "allNodes": "Todos os nós",
+      "custom": "Personalizado",
+      "essentials": "Essenciais",
       "groupBy": "Agrupar por",
       "groupStrategies": {
         "category": "Categoria",
@@ -2405,6 +2478,11 @@
         "sourceDesc": "Agrupar por tipo de fonte (Core, Custom, API)"
       },
       "resetView": "Restaurar visualização padrão",
+      "sections": {
+        "favoriteNode": "Favoritar nó",
+        "favorites": "Favoritos",
+        "unfavoriteNode": "Desfavoritar nó"
+      },
       "sortBy": {
         "alphabetical": "Alfabética",
         "alphabeticalDesc": "Ordenar alfabeticamente dentro dos grupos",
@@ -2413,6 +2491,7 @@
       },
       "sortMode": "Modo de ordenação"
     },
+    "nodes": "Nós",
     "openWorkflow": "Abrir workflow no sistema de arquivos local",
     "queue": "Fila",
     "queueProgressOverlay": {
@@ -2420,14 +2499,17 @@
       "activeJobsShort": "{count} ativo(s) | {count} ativo(s)",
       "activeJobsSuffix": "trabalhos ativos",
       "cancelJobTooltip": "Cancelar trabalho",
+      "clearAllJobsTooltip": "Cancelar todos os trabalhos em execução",
       "clearHistory": "Limpar histórico da fila de trabalhos",
       "clearHistoryDialogAssetsNote": "Os ativos gerados por esses trabalhos não serão excluídos e sempre poderão ser visualizados no painel de ativos.",
       "clearHistoryDialogDescription": "Todos os trabalhos finalizados ou com falha abaixo serão removidos deste painel de fila de trabalhos.",
       "clearHistoryDialogTitle": "Limpar o histórico da fila de trabalhos?",
+      "clearHistoryMenuAssetsNote": "Os ativos de mídia não serão excluídos.",
       "clearQueueTooltip": "Limpar fila",
       "clearQueued": "Limpar fila",
       "colonPercent": ": {percent}",
       "currentNode": "Nó atual:",
+      "dockedJobHistory": "Histórico de trabalhos acoplado",
       "expandCollapsedQueue": "Expandir fila de trabalhos",
       "filterAllWorkflows": "Todos os workflows",
       "filterBy": "Filtrar por",
@@ -2449,6 +2531,7 @@
       "running": "executando",
       "runningJobsLabel": "{count} em execução",
       "runningQueuedSummary": "{running} em execução, {queued} na fila",
+      "searchJobs": "Pesquisar...",
       "showAssets": "Mostrar ativos",
       "showAssetsPanel": "Mostrar painel de ativos",
       "sortBy": "Ordenar por",
@@ -2869,9 +2952,14 @@
     "dropPrompt": "Solte seu arquivo ou"
   },
   "widgets": {
+    "boolean": {
+      "false": "falso",
+      "true": "verdadeiro"
+    },
     "node2only": "Apenas Node 2.0",
     "selectModel": "Selecionar modelo",
     "uploadSelect": {
+      "maxSelectionReached": "Limite máximo de seleção atingido",
       "placeholder": "Selecionar...",
       "placeholderAudio": "Selecionar áudio...",
       "placeholderImage": "Selecionar imagem...",

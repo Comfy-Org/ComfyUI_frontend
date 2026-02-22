@@ -248,6 +248,10 @@
   "Comfy_NodeBadge_ShowApiPricing": {
     "name": "Afficher l’insigne de tarification API du nœud"
   },
+  "Comfy_NodeLibrary_NewDesign": {
+    "name": "Nouveau design de la bibliothèque de nœuds",
+    "tooltip": "Activez la nouvelle barre latérale de la bibliothèque de nœuds avec des onglets (Essentiel, Tous, Personnalisé), une recherche améliorée et des aperçus au survol."
+  },
   "Comfy_NodeReplacement_Enabled": {
     "name": "Activer le remplacement automatique des nœuds",
     "tooltip": "Lorsqu'activé, les nœuds manquants peuvent être automatiquement remplacés par leurs équivalents plus récents si une correspondance de remplacement existe."
@@ -256,7 +260,8 @@
     "name": "Implémentation de la boîte de recherche de nœud",
     "options": {
       "default": "par défaut",
-      "litegraph (legacy)": "litegraph (héritage)"
+      "litegraph (legacy)": "litegraph (héritage)",
+      "v1 (legacy)": "v1 (héritage)"
     }
   },
   "Comfy_NodeSearchBoxImpl_NodePreview": {
@@ -349,6 +354,10 @@
   "Comfy_Queue_QPOV2": {
     "name": "Utiliser la file d’attente unifiée dans le panneau latéral des ressources",
     "tooltip": "Remplace le panneau flottant de la file d’attente des tâches par une file d’attente équivalente intégrée dans le panneau latéral des ressources. Vous pouvez désactiver cette option pour revenir à la disposition du panneau flottant."
+  },
+  "Comfy_RightSidePanel_ShowErrorsTab": {
+    "name": "Afficher l’onglet des erreurs dans le panneau latéral",
+    "tooltip": "Lorsque cette option est activée, un onglet des erreurs s’affiche dans le panneau latéral droit pour visualiser rapidement les erreurs d’exécution du workflow."
   },
   "Comfy_Sidebar_Location": {
     "name": "Emplacement de la barre latérale",

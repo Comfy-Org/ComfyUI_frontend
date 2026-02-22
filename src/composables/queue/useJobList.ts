@@ -1,3 +1,4 @@
+import { refDebounced } from '@vueuse/core'
 import { orderBy } from 'es-toolkit/array'
 import { computed, onUnmounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -127,7 +128,7 @@ export function useJobList() {
   watch(
     () =>
       queueStore.pendingTasks
-        .map((task) => taskIdToKey(task.promptId))
+        .map((task) => taskIdToKey(task.jobId))
         .filter((id): id is string => !!id),
     (pendingIds) => {
       const pendingSet = new Set(pendingIds)
@@ -158,7 +159,7 @@ export function useJobList() {
 
   const shouldShowAddedHint = (task: TaskItemImpl, state: JobState) => {
     if (state !== 'pending') return false
-    const id = taskIdToKey(task.promptId)
+    const id = taskIdToKey(task.jobId)
     if (!id) return false
     return recentlyAddedPendingIds.value.has(id)
   }
@@ -183,8 +184,8 @@ export function useJobList() {
   })
   const undatedLabel = computed(() => t('queue.jobList.undated') || 'Undated')
 
-  const isJobInitializing = (promptId: string | number | undefined) =>
-    executionStore.isPromptInitializing(promptId)
+  const isJobInitializing = (jobId: string | number | undefined) =>
+    executionStore.isJobInitializing(jobId)
 
   const currentNodeName = computed(() => {
     return resolveNodeDisplayName(executionStore.executingNode, {
@@ -197,6 +198,8 @@ export function useJobList() {
   const selectedJobTab = ref<JobTab>('All')
   const selectedWorkflowFilter = ref<'all' | 'current'>('all')
   const selectedSortMode = ref<JobSortMode>('mostRecent')
+  const searchQuery = ref('')
+  const debouncedSearchQuery = refDebounced(searchQuery, 150)
 
   const mostRecentTimestamp = (task: TaskItemImpl) => task.createTime ?? 0
 
@@ -212,7 +215,7 @@ export function useJobList() {
   const tasksWithJobState = computed<TaskWithState[]>(() =>
     allTasksSorted.value.map((task) => ({
       task,
-      state: jobStateFromTask(task, isJobInitializing(task?.promptId))
+      state: jobStateFromTask(task, isJobInitializing(task?.jobId))
     }))
   )
 
@@ -248,17 +251,20 @@ export function useJobList() {
     return entries
   })
 
+  const normalizedSearchQuery = computed(() =>
+    debouncedSearchQuery.value.trim().toLocaleLowerCase()
+  )
+
   const filteredTasks = computed<TaskItemImpl[]>(() =>
-    filteredTaskEntries.value.map(({ task }) => task)
+    searchableTaskEntries.value.map(({ task }) => task)
   )
 
   const jobItems = computed<JobListItem[]>(() => {
     return filteredTaskEntries.value.map(({ task, state }) => {
       const isActive =
-        String(task.promptId ?? '') ===
-        String(executionStore.activePromptId ?? '')
+        String(task.jobId ?? '') === String(executionStore.activeJobId ?? '')
       const showAddedHint = shouldShowAddedHint(task, state)
-      const promptKey = taskIdToKey(task.promptId)
+      const promptKey = taskIdToKey(task.jobId)
       const promptPreviewUrl =
         state === 'running' && jobPreviewStore.isPreviewEnabled && promptKey
           ? jobPreviewStore.previewsByPromptId[promptKey]
@@ -277,7 +283,7 @@ export function useJobList() {
       })
 
       return {
-        id: String(task.promptId),
+        id: String(task.jobId),
         title: display.primary,
         meta: display.secondary,
         state,
@@ -308,11 +314,31 @@ export function useJobList() {
     return m
   })
 
+  const searchableTaskEntries = computed<TaskWithState[]>(() => {
+    if (!normalizedSearchQuery.value) return filteredTaskEntries.value
+
+    return filteredTaskEntries.value.filter(({ task }) => {
+      const taskId = String(task.jobId ?? '').toLocaleLowerCase()
+      const item = jobItemById.value.get(String(task.jobId))
+      if (!item) {
+        return taskId.includes(normalizedSearchQuery.value)
+      }
+
+      const title = item.title.toLocaleLowerCase()
+      const meta = item.meta.toLocaleLowerCase()
+      return (
+        title.includes(normalizedSearchQuery.value) ||
+        meta.includes(normalizedSearchQuery.value) ||
+        taskId.includes(normalizedSearchQuery.value)
+      )
+    })
+  })
+
   const groupedJobItems = computed<JobGroup[]>(() => {
     const groups: JobGroup[] = []
     const index = new Map<string, number>()
     const localeValue = locale.value
-    for (const { task, state } of filteredTaskEntries.value) {
+    for (const { task, state } of searchableTaskEntries.value) {
       let ts: number | undefined
       if (state === 'completed' || state === 'failed') {
         ts = task.executionEndTimestamp
@@ -334,7 +360,7 @@ export function useJobList() {
         groupIdx = groups.length - 1
         index.set(key, groupIdx)
       }
-      const ji = jobItemById.value.get(String(task.promptId))
+      const ji = jobItemById.value.get(String(task.jobId))
       if (ji) groups[groupIdx].items.push(ji)
     }
 
@@ -357,6 +383,7 @@ export function useJobList() {
     selectedJobTab,
     selectedWorkflowFilter,
     selectedSortMode,
+    searchQuery,
     hasFailedJobs,
     // data sources
     allTasksSorted,

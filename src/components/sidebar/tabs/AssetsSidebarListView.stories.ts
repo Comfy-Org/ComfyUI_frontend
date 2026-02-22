@@ -80,7 +80,7 @@ const sampleAssets: AssetItem[] = [
     size: 1887437,
     tags: [],
     user_metadata: {
-      promptId: 'job-running-1',
+      jobId: 'job-running-1',
       nodeId: 12,
       executionTimeInSeconds: 1.84
     }
@@ -112,6 +112,22 @@ const sampleAssets: AssetItem[] = [
     created_at: baseTimestamp,
     size: 134217728,
     tags: []
+  },
+  {
+    id: 'asset-text-1',
+    name: 'generation-notes.txt',
+    created_at: baseTimestamp,
+    preview_url: '/assets/images/default-template.png',
+    size: 2048,
+    tags: []
+  },
+  {
+    id: 'asset-other-1',
+    name: 'workflow-payload.bin',
+    created_at: baseTimestamp,
+    preview_url: '/assets/images/default-template.png',
+    size: 4096,
+    tags: []
   }
 ]
 
@@ -130,6 +146,16 @@ export const RunningAndGenerated: Story = {
       'job-init-1': [cancelAction],
       'job-running-1': [cancelAction]
     }
+  },
+  render: renderAssetsSidebarListView
+}
+
+export const TextAndMiscGeneratedAssets: Story = {
+  args: {
+    assets: sampleAssets.filter((asset) =>
+      ['.txt', '.bin'].some((suffix) => asset.name.endsWith(suffix))
+    ),
+    jobs: []
   },
   render: renderAssetsSidebarListView
 }

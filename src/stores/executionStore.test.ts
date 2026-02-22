@@ -2,6 +2,8 @@ import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { app } from '@/scripts/app'
 import { useExecutionStore } from '@/stores/executionStore'
+import { useExecutionErrorStore } from '@/stores/executionErrorStore'
+import { executionIdToNodeLocatorId } from '@/utils/graphTraversalUtil'
 
 // Create mock functions that will be shared
 const mockNodeExecutionIdToNodeLocatorId = vi.fn()
@@ -80,20 +82,20 @@ describe('useExecutionStore - NodeLocatorId conversions', () => {
       // Mock app.rootGraph.getNodeById to return the mock node
       vi.mocked(app.rootGraph.getNodeById).mockReturnValue(mockNode)
 
-      const result = store.executionIdToNodeLocatorId('123:456')
+      const result = executionIdToNodeLocatorId(app.rootGraph, '123:456')
 
       expect(result).toBe('a1b2c3d4-e5f6-7890-abcd-ef1234567890:456')
     })
 
     it('should convert simple node ID to NodeLocatorId', () => {
-      const result = store.executionIdToNodeLocatorId('123')
+      const result = executionIdToNodeLocatorId(app.rootGraph, '123')
 
       // For simple node IDs, it should return the ID as-is
       expect(result).toBe('123')
     })
 
     it('should handle numeric node IDs', () => {
-      const result = store.executionIdToNodeLocatorId(123)
+      const result = executionIdToNodeLocatorId(app.rootGraph, 123)
 
       // For numeric IDs, it should convert to string and return as-is
       expect(result).toBe('123')
@@ -103,7 +105,9 @@ describe('useExecutionStore - NodeLocatorId conversions', () => {
       // Mock app.rootGraph.getNodeById to return null (node not found)
       vi.mocked(app.rootGraph.getNodeById).mockReturnValue(null)
 
-      expect(store.executionIdToNodeLocatorId('999:456')).toBe(undefined)
+      expect(executionIdToNodeLocatorId(app.rootGraph, '999:456')).toBe(
+        undefined
+      )
     })
   })
 
@@ -132,13 +136,55 @@ describe('useExecutionStore - NodeLocatorId conversions', () => {
   })
 })
 
-describe('useExecutionStore - Node Error Lookups', () => {
+describe('useExecutionStore - reconcileInitializingJobs', () => {
   let store: ReturnType<typeof useExecutionStore>
 
   beforeEach(() => {
     vi.clearAllMocks()
     setActivePinia(createTestingPinia({ stubActions: false }))
     store = useExecutionStore()
+  })
+
+  it('should remove job IDs not present in active jobs', () => {
+    store.initializingJobIds = new Set(['job-1', 'job-2', 'job-3'])
+
+    store.reconcileInitializingJobs(new Set(['job-1']))
+
+    expect(store.initializingJobIds).toEqual(new Set(['job-1']))
+  })
+
+  it('should be a no-op when all initializing IDs are active', () => {
+    store.initializingJobIds = new Set(['job-1', 'job-2'])
+
+    store.reconcileInitializingJobs(new Set(['job-1', 'job-2', 'job-3']))
+
+    expect(store.initializingJobIds).toEqual(new Set(['job-1', 'job-2']))
+  })
+
+  it('should be a no-op when there are no initializing jobs', () => {
+    store.initializingJobIds = new Set()
+
+    store.reconcileInitializingJobs(new Set(['job-1']))
+
+    expect(store.initializingJobIds).toEqual(new Set())
+  })
+
+  it('should clear all initializing IDs when no active jobs exist', () => {
+    store.initializingJobIds = new Set(['job-1', 'job-2'])
+
+    store.reconcileInitializingJobs(new Set())
+
+    expect(store.initializingJobIds).toEqual(new Set())
+  })
+})
+
+describe('useExecutionErrorStore - Node Error Lookups', () => {
+  let store: ReturnType<typeof useExecutionErrorStore>
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    setActivePinia(createTestingPinia({ stubActions: false }))
+    store = useExecutionErrorStore()
   })
 
   describe('getNodeErrors', () => {

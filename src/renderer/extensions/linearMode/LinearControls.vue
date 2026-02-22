@@ -11,7 +11,7 @@ import { extractVueNodeData } from '@/composables/graph/useGraphNodeManager'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import SubscribeToRunButton from '@/platform/cloud/subscription/components/SubscribeToRun.vue'
-import { isCloud } from '@/platform/distribution/types'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import DropZone from '@/renderer/extensions/linearMode/DropZone.vue'
@@ -22,6 +22,7 @@ import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { useCommandStore } from '@/stores/commandStore'
 import { useExecutionStore } from '@/stores/executionStore'
+import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useQueueSettingsStore } from '@/stores/queueStore'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import { cn } from '@/utils/tailwindUtil'
@@ -29,7 +30,9 @@ import { cn } from '@/utils/tailwindUtil'
 const { t } = useI18n()
 const commandStore = useCommandStore()
 const executionStore = useExecutionStore()
+const executionErrorStore = useExecutionErrorStore()
 const { batchCount } = storeToRefs(useQueueSettingsStore())
+const settingStore = useSettingStore()
 const { isActiveSubscription } = useBillingContext()
 const workflowStore = useWorkflowStore()
 
@@ -78,7 +81,7 @@ function nodeToNodeData(node: LGraphNode) {
   return {
     ...nodeData,
     //note lastNodeErrors uses exeuctionid, node.id is execution for root
-    hasErrors: !!executionStore.lastNodeErrors?.[node.id],
+    hasErrors: !!executionErrorStore.lastNodeErrors?.[node.id],
 
     dropIndicator,
     onDragDrop: node.onDragDrop,
@@ -101,7 +104,11 @@ const partitionedNodes = computed(() => {
 })
 
 const batchCountWidget: SimplifiedWidget<number> = {
-  options: { precision: 0, min: 1, max: isCloud ? 4 : 99 },
+  options: {
+    precision: 0,
+    min: 1,
+    max: settingStore.get('Comfy.QueueButton.BatchCountLimit')
+  },
   value: 1,
   name: t('linearMode.runCount'),
   type: 'number'

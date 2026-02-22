@@ -208,6 +208,47 @@
       }
     }
   },
+  "AudioEqualizer3Band": {
+    "display_name": "音频均衡器（三段）",
+    "inputs": {
+      "audio": {
+        "name": "音频"
+      },
+      "high_freq": {
+        "name": "高频截止",
+        "tooltip": "高频搁架的截止频率"
+      },
+      "high_gain_dB": {
+        "name": "高频增益（dB）",
+        "tooltip": "高频（高音）增益"
+      },
+      "low_freq": {
+        "name": "低频截止",
+        "tooltip": "低频搁架的截止频率"
+      },
+      "low_gain_dB": {
+        "name": "低频增益（dB）",
+        "tooltip": "低频（低音）增益"
+      },
+      "mid_freq": {
+        "name": "中频中心",
+        "tooltip": "中频的中心频率"
+      },
+      "mid_gain_dB": {
+        "name": "中频增益（dB）",
+        "tooltip": "中频增益"
+      },
+      "mid_q": {
+        "name": "中频Q值",
+        "tooltip": "中频的Q因子（带宽）"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "AudioMerge": {
     "description": "叠加 音频1 和 音频2 轨道的波形。",
     "display_name": "音频合并",
@@ -2131,13 +2172,15 @@
       "index": {},
       "option1": {}
     },
-    "outputs": [
-      null,
-      {
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
         "name": "索引",
         "tooltip": null
       }
-    ]
+    }
   },
   "DiffControlNetLoader": {
     "display_name": "加载ControlNet模型（diff）",
@@ -2259,6 +2302,304 @@
     "outputs": {
       "0": {
         "tooltip": "带有 EasyCache 的模型。"
+      }
+    }
+  },
+  "ElevenLabsAudioIsolation": {
+    "description": "去除音频中的背景噪音，仅保留人声或语音。",
+    "display_name": "ElevenLabs 语音隔离",
+    "inputs": {
+      "audio": {
+        "name": "音频",
+        "tooltip": "需要去除背景噪音的音频。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ElevenLabsInstantVoiceClone": {
+    "description": "通过音频样本创建克隆语音。请提供 1-8 段需要克隆的语音录音。",
+    "display_name": "ElevenLabs 即时语音克隆",
+    "inputs": {
+      "files": {
+        "name": "音频文件",
+        "tooltip": "用于语音克隆的录音。"
+      },
+      "remove_background_noise": {
+        "name": "去除背景噪音",
+        "tooltip": "使用音频隔离去除语音样本中的背景噪音。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "语音",
+        "tooltip": null
+      }
+    }
+  },
+  "ElevenLabsSpeechToSpeech": {
+    "description": "将一种声音的语音转换为另一种声音，同时保留原始内容和情感。",
+    "display_name": "ElevenLabs 语音转换",
+    "inputs": {
+      "audio": {
+        "name": "源音频",
+        "tooltip": "需要转换的源音频。"
+      },
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "model": {
+        "name": "模型",
+        "tooltip": "用于语音转换的模型。"
+      },
+      "model_similarity_boost": {
+        "name": "相似度增强"
+      },
+      "model_speed": {
+        "name": "速度"
+      },
+      "model_style": {
+        "name": "风格"
+      },
+      "model_use_speaker_boost": {
+        "name": "扬声器增强"
+      },
+      "output_format": {
+        "name": "输出格式",
+        "tooltip": "音频输出格式。"
+      },
+      "remove_background_noise": {
+        "name": "去除背景噪音",
+        "tooltip": "使用音频隔离去除输入音频中的背景噪音。"
+      },
+      "seed": {
+        "name": "随机种子",
+        "tooltip": "用于结果复现的随机种子。"
+      },
+      "stability": {
+        "name": "稳定性",
+        "tooltip": "语音稳定性。较低数值带来更广的情感范围，较高数值则更一致但可能较为单调。"
+      },
+      "voice": {
+        "name": "目标语音",
+        "tooltip": "转换的目标语音。可从语音选择器或即时语音克隆连接。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ElevenLabsSpeechToText": {
+    "description": "将音频转录为文本。支持自动语言检测、说话人分离和音频事件标记。",
+    "display_name": "ElevenLabs 语音转文本",
+    "inputs": {
+      "audio": {
+        "name": "音频",
+        "tooltip": "要转录的音频。"
+      },
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "language_code": {
+        "name": "语言代码",
+        "tooltip": "ISO-639-1 或 ISO-639-3 语言代码（如 'en'、'es'、'fra'）。留空以自动检测。"
+      },
+      "model": {
+        "name": "模型",
+        "tooltip": "用于转录的模型。"
+      },
+      "model_diarization_threshold": {
+        "name": "分离阈值"
+      },
+      "model_diarize": {
+        "name": "说话人分离"
+      },
+      "model_tag_audio_events": {
+        "name": "音频事件标记"
+      },
+      "model_temperature": {
+        "name": "温度"
+      },
+      "model_timestamps_granularity": {
+        "name": "时间戳粒度"
+      },
+      "num_speakers": {
+        "name": "说话人数",
+        "tooltip": "要预测的最大说话人数。设置为 0 以自动检测。"
+      },
+      "seed": {
+        "name": "种子",
+        "tooltip": "用于结果复现的种子（不保证确定性）。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "文本",
+        "tooltip": null
+      },
+      "1": {
+        "name": "语言代码",
+        "tooltip": null
+      },
+      "2": {
+        "name": "单词 JSON",
+        "tooltip": null
+      }
+    }
+  },
+  "ElevenLabsTextToDialogue": {
+    "description": "从文本生成多说话人对话。每条对话都有独立的文本和声音。",
+    "display_name": "ElevenLabs 文本转对话",
+    "inputs": {
+      "apply_text_normalization": {
+        "name": "应用文本规范化",
+        "tooltip": "文本规范化模式。'auto' 由系统决定，'on' 总是应用规范化，'off' 跳过规范化。"
+      },
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "inputs": {
+        "name": "对话条数",
+        "tooltip": "对话条目的数量。"
+      },
+      "inputs_text1": {
+        "name": "文本1"
+      },
+      "language_code": {
+        "name": "语言代码",
+        "tooltip": "ISO-639-1 或 ISO-639-3 语言代码（如 'en'、'es'、'fra'）。留空以自动检测。"
+      },
+      "model": {
+        "name": "模型",
+        "tooltip": "用于对话生成的模型。"
+      },
+      "output_format": {
+        "name": "输出格式",
+        "tooltip": "音频输出格式。"
+      },
+      "seed": {
+        "name": "种子",
+        "tooltip": "用于结果复现的种子。"
+      },
+      "stability": {
+        "name": "稳定性",
+        "tooltip": "语音稳定性。值越低情感范围越广，值越高语音更一致但可能更单调。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ElevenLabsTextToSoundEffects": {
+    "description": "根据文本描述生成音效。",
+    "display_name": "ElevenLabs 文本转音效",
+    "inputs": {
+      "model": {
+        "name": "模型",
+        "tooltip": "用于音效生成的模型。"
+      },
+      "model_duration": {
+        "name": "时长"
+      },
+      "model_loop": {
+        "name": "循环"
+      },
+      "model_prompt_influence": {
+        "name": "提示影响"
+      },
+      "output_format": {
+        "name": "输出格式",
+        "tooltip": "音频输出格式。"
+      },
+      "text": {
+        "name": "文本",
+        "tooltip": "要生成的音效的文本描述。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ElevenLabsTextToSpeech": {
+    "description": "将文字转换为语音。",
+    "display_name": "ElevenLabs 文字转语音",
+    "inputs": {
+      "apply_text_normalization": {
+        "name": "apply_text_normalization",
+        "tooltip": "文本规范化模式。'auto' 由系统决定，'on' 总是应用规范化，'off' 跳过规范化。"
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "language_code": {
+        "name": "language_code",
+        "tooltip": "ISO-639-1 或 ISO-639-3 语言代码（如 'en'、'es'、'fra'）。留空则自动检测。"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "用于文字转语音的模型。"
+      },
+      "model_similarity_boost": {
+        "name": "similarity_boost"
+      },
+      "model_speed": {
+        "name": "speed"
+      },
+      "model_style": {
+        "name": "style"
+      },
+      "model_use_speaker_boost": {
+        "name": "use_speaker_boost"
+      },
+      "output_format": {
+        "name": "output_format",
+        "tooltip": "音频输出格式。"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "用于结果可复现的种子（不保证完全确定性）。"
+      },
+      "stability": {
+        "name": "stability",
+        "tooltip": "语音稳定性。较低的数值带来更广泛的情感变化，较高的数值则语音更一致但可能单调。"
+      },
+      "text": {
+        "name": "text",
+        "tooltip": "要转换为语音的文本。"
+      },
+      "voice": {
+        "name": "voice",
+        "tooltip": "用于语音合成的声音。从 Voice Selector 或 Instant Voice Clone 连接。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ElevenLabsVoiceSelector": {
+    "description": "为文字转语音生成选择预设的 ElevenLabs 声音。",
+    "display_name": "ElevenLabs 声音选择器",
+    "inputs": {
+      "voice": {
+        "name": "voice",
+        "tooltip": "从预设的 ElevenLabs 声音中选择一个声音。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "voice",
+        "tooltip": null
       }
     }
   },
@@ -3194,6 +3535,50 @@
       },
       "y": {
         "name": "y"
+      }
+    }
+  },
+  "GLSLShader": {
+    "description": "对图像应用 GLSL ES 片段着色器。u_resolution（vec2）始终可用。",
+    "display_name": "GLSL 着色器",
+    "inputs": {
+      "floats": {
+        "name": "floats",
+        "tooltip": "浮点数在着色器代码中以 u_float0-4 形式可用"
+      },
+      "fragment_shader": {
+        "name": "fragment_shader",
+        "tooltip": "GLSL 片段着色器源码（兼容 GLSL ES 3.00 / WebGL 2.0）"
+      },
+      "images": {
+        "name": "images",
+        "tooltip": "图像在着色器代码中以 u_image0-4（sampler2D）形式可用"
+      },
+      "ints": {
+        "name": "ints",
+        "tooltip": "整数在着色器代码中以 u_int0-4 形式可用"
+      },
+      "size_mode": {
+        "name": "size_mode",
+        "tooltip": "输出尺寸：'from_input' 使用第一个输入图像尺寸，'custom' 允许手动设置尺寸"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "IMAGE0",
+        "tooltip": "在着色器代码中通过 layout(location = 0) out vec4 fragColor0 可用"
+      },
+      "1": {
+        "name": "IMAGE1",
+        "tooltip": "在着色器代码中通过 layout(location = 1) out vec4 fragColor1 可用"
+      },
+      "2": {
+        "name": "IMAGE2",
+        "tooltip": "在着色器代码中通过 layout(location = 2) out vec4 fragColor2 可用"
+      },
+      "3": {
+        "name": "IMAGE3",
+        "tooltip": "在着色器代码中通过 layout(location = 3) out vec4 fragColor3 可用"
       }
     }
   },
@@ -4244,6 +4629,26 @@
       "y": {
         "name": "y"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ImageCropV2": {
+    "display_name": "图像裁剪",
+    "inputs": {
+      "crop_region": {
+        "name": "裁剪区域"
+      },
+      "height": {},
+      "image": {
+        "name": "图像"
+      },
+      "width": {},
+      "x": {},
+      "y": {}
     },
     "outputs": {
       "0": {
@@ -6662,18 +7067,36 @@
         "name": "宽度"
       }
     },
-    "outputs": [
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      {
+    "outputs": {
+      "0": {
+        "name": "图像",
+        "tooltip": null
+      },
+      "1": {
+        "name": "mask",
+        "tooltip": null
+      },
+      "2": {
+        "name": "网格路径",
+        "tooltip": null
+      },
+      "3": {
+        "name": "法线",
+        "tooltip": null
+      },
+      "4": {
+        "name": "相机信息",
+        "tooltip": null
+      },
+      "5": {
+        "name": "录制视频",
+        "tooltip": null
+      },
+      "6": {
         "name": "model_3d",
         "tooltip": null
       }
-    ]
+    }
   },
   "LoadAudio": {
     "display_name": "加载音频",
@@ -7620,17 +8043,20 @@
         "name": "rig_task_id"
       }
     },
-    "outputs": [
-      null,
-      {
+    "outputs": {
+      "0": {
+        "name": "模型文件",
+        "tooltip": null
+      },
+      "1": {
         "name": "GLB",
         "tooltip": null
       },
-      {
+      "2": {
         "name": "FBX",
         "tooltip": null
       }
-    ]
+    }
   },
   "MeshyImageToModelNode": {
     "display_name": "Meshy：图像转模型",
@@ -7676,18 +8102,24 @@
         "name": "symmetry_mode"
       }
     },
-    "outputs": [
-      null,
-      null,
-      {
+    "outputs": {
+      "0": {
+        "name": "模型文件",
+        "tooltip": null
+      },
+      "1": {
+        "name": "meshy_task_id",
+        "tooltip": null
+      },
+      "2": {
         "name": "GLB",
         "tooltip": null
       },
-      {
+      "3": {
         "name": "FBX",
         "tooltip": null
       }
-    ]
+    }
   },
   "MeshyMultiImageToModelNode": {
     "display_name": "Meshy：多图像转模型",
@@ -7733,18 +8165,24 @@
         "name": "symmetry_mode"
       }
     },
-    "outputs": [
-      null,
-      null,
-      {
+    "outputs": {
+      "0": {
+        "name": "模型文件",
+        "tooltip": null
+      },
+      "1": {
+        "name": "meshy_task_id",
+        "tooltip": null
+      },
+      "2": {
         "name": "GLB",
         "tooltip": null
       },
-      {
+      "3": {
         "name": "FBX",
         "tooltip": null
       }
-    ]
+    }
   },
   "MeshyRefineNode": {
     "description": "对先前创建的草稿模型进行精细化处理。",
@@ -7769,18 +8207,24 @@
         "tooltip": "提供文本提示以引导材质生成。最多600个字符。不能与'texture_image'同时使用。"
       }
     },
-    "outputs": [
-      null,
-      null,
-      {
+    "outputs": {
+      "0": {
+        "name": "模型文件",
+        "tooltip": null
+      },
+      "1": {
+        "name": "meshy_task_id",
+        "tooltip": null
+      },
+      "2": {
         "name": "GLB",
         "tooltip": null
       },
-      {
+      "3": {
         "name": "FBX",
         "tooltip": null
       }
-    ]
+    }
   },
   "MeshyRigModelNode": {
     "description": "以标准格式提供带骨骼的角色模型。自动骨骼绑定目前不适用于无贴图网格、非类人资产或肢体结构不清晰的类人资产。",
@@ -7798,18 +8242,24 @@
         "tooltip": "模型的UV展开基础色贴图。"
       }
     },
-    "outputs": [
-      null,
-      null,
-      {
+    "outputs": {
+      "0": {
+        "name": "模型文件",
+        "tooltip": null
+      },
+      "1": {
+        "name": "rig_task_id",
+        "tooltip": null
+      },
+      "2": {
         "name": "GLB",
         "tooltip": null
       },
-      {
+      "3": {
         "name": "FBX",
         "tooltip": null
       }
-    ]
+    }
   },
   "MeshyTextToModelNode": {
     "display_name": "Meshy：文本生成模型",
@@ -7848,18 +8298,24 @@
         "name": "symmetry_mode"
       }
     },
-    "outputs": [
-      null,
-      null,
-      {
+    "outputs": {
+      "0": {
+        "name": "模型文件",
+        "tooltip": null
+      },
+      "1": {
+        "name": "meshy_task_id",
+        "tooltip": null
+      },
+      "2": {
         "name": "GLB",
         "tooltip": null
       },
-      {
+      "3": {
         "name": "FBX",
         "tooltip": null
       }
-    ]
+    }
   },
   "MeshyTextureNode": {
     "display_name": "Meshy：纹理模型",
@@ -7886,18 +8342,24 @@
         "tooltip": "用文本描述你想要的物体纹理风格。最多600个字符。不能与“image_style”同时使用。"
       }
     },
-    "outputs": [
-      null,
-      null,
-      {
+    "outputs": {
+      "0": {
+        "name": "模型文件",
+        "tooltip": null
+      },
+      "1": {
+        "name": "meshy_task_id",
+        "tooltip": null
+      },
+      "2": {
         "name": "GLB",
         "tooltip": null
       },
-      {
+      "3": {
         "name": "FBX",
         "tooltip": null
       }
-    ]
+    }
   },
   "MinimaxHailuoVideoNode": {
     "description": "使用新的 MiniMax Hailuo-02 模型从提示词生成视频，可选择起始帧。",
@@ -11177,6 +11639,28 @@
       }
     }
   },
+  "PrimitiveBoundingBox": {
+    "display_name": "边界框",
+    "inputs": {
+      "height": {
+        "name": "高度"
+      },
+      "width": {
+        "name": "宽度"
+      },
+      "x": {
+        "name": "x"
+      },
+      "y": {
+        "name": "y"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "PrimitiveFloat": {
     "display_name": "浮点数",
     "inputs": {
@@ -12198,13 +12682,16 @@
         "name": "种子"
       }
     },
-    "outputs": [
-      null,
-      {
+    "outputs": {
+      "0": {
+        "name": "3D模型路径",
+        "tooltip": null
+      },
+      "1": {
         "name": "GLB",
         "tooltip": null
       }
-    ]
+    }
   },
   "Rodin3D_Gen2": {
     "description": "使用Rodin API生成3D资源",
@@ -12226,13 +12713,16 @@
         "name": "TAPose"
       }
     },
-    "outputs": [
-      null,
-      {
+    "outputs": {
+      "0": {
+        "name": "3D模型路径",
+        "tooltip": null
+      },
+      "1": {
         "name": "GLB",
         "tooltip": null
       }
-    ]
+    }
   },
   "Rodin3D_Regular": {
     "description": "使用Rodin API生成3D资源",
@@ -12251,13 +12741,16 @@
         "name": "种子"
       }
     },
-    "outputs": [
-      null,
-      {
+    "outputs": {
+      "0": {
+        "name": "3D模型路径",
+        "tooltip": null
+      },
+      "1": {
         "name": "GLB",
         "tooltip": null
       }
-    ]
+    }
   },
   "Rodin3D_Sketch": {
     "description": "使用Rodin API生成3D资源",
@@ -12270,13 +12763,16 @@
         "name": "种子"
       }
     },
-    "outputs": [
-      null,
-      {
+    "outputs": {
+      "0": {
+        "name": "3D模型路径",
+        "tooltip": null
+      },
+      "1": {
         "name": "GLB",
         "tooltip": null
       }
-    ]
+    }
   },
   "Rodin3D_Smooth": {
     "description": "使用Rodin API生成3D资源",
@@ -12295,13 +12791,16 @@
         "name": "种子"
       }
     },
-    "outputs": [
-      null,
-      {
+    "outputs": {
+      "0": {
+        "name": "3D模型路径",
+        "tooltip": null
+      },
+      "1": {
         "name": "GLB",
         "tooltip": null
       }
-    ]
+    }
   },
   "RunwayFirstLastFrameNode": {
     "description": "上传首尾关键帧，草拟提示词，生成视频。对于更复杂的过渡（例如尾帧与首帧完全不同的情况），较长的10秒时长可能更有利，这能为生成过程提供更多时间在两个输入之间平滑过渡。开始前，请查看这些最佳实践以确保您的输入选择能为生成成功奠定基础：https://help.runwayml.com/hc/en-us/articles/34170748696595-Creating-with-Keyframes-on-Gen-3。",
@@ -14320,17 +14819,20 @@
         "tooltip": "种子控制节点是否重新运行；无论种子如何，结果都是非确定性的。"
       }
     },
-    "outputs": [
-      null,
-      {
+    "outputs": {
+      "0": {
+        "name": "模型文件",
+        "tooltip": null
+      },
+      "1": {
         "name": "GLB",
         "tooltip": null
       },
-      {
+      "2": {
         "name": "OBJ",
         "tooltip": null
       }
-    ]
+    }
   },
   "TencentTextToModelNode": {
     "display_name": "Hunyuan3D：文本转模型（专业版）",
@@ -14360,17 +14862,20 @@
         "tooltip": "种子控制节点是否重新运行；无论种子如何，结果都是非确定性的。"
       }
     },
-    "outputs": [
-      null,
-      {
+    "outputs": {
+      "0": {
+        "name": "模型文件",
+        "tooltip": null
+      },
+      "1": {
         "name": "GLB",
         "tooltip": null
       },
-      {
+      "2": {
         "name": "OBJ",
         "tooltip": null
       }
-    ]
+    }
   },
   "TextEncodeAceStepAudio": {
     "display_name": "文本音频编码（AceStep）",
@@ -14556,6 +15061,94 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "TextGenerate": {
+    "display_name": "TextGenerate",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "image": {
+        "name": "图像"
+      },
+      "max_length": {
+        "name": "最大长度"
+      },
+      "prompt": {
+        "name": "提示词"
+      },
+      "sampling_mode": {
+        "name": "采样模式"
+      },
+      "sampling_mode_min_p": {
+        "name": "最小概率"
+      },
+      "sampling_mode_repetition_penalty": {
+        "name": "重复惩罚"
+      },
+      "sampling_mode_seed": {
+        "name": "种子"
+      },
+      "sampling_mode_temperature": {
+        "name": "温度"
+      },
+      "sampling_mode_top_k": {
+        "name": "Top K"
+      },
+      "sampling_mode_top_p": {
+        "name": "Top P"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "生成文本",
+        "tooltip": null
+      }
+    }
+  },
+  "TextGenerateLTX2Prompt": {
+    "display_name": "TextGenerateLTX2Prompt",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "image": {
+        "name": "图像"
+      },
+      "max_length": {
+        "name": "最大长度"
+      },
+      "prompt": {
+        "name": "提示词"
+      },
+      "sampling_mode": {
+        "name": "采样模式"
+      },
+      "sampling_mode_min_p": {
+        "name": "最小概率"
+      },
+      "sampling_mode_repetition_penalty": {
+        "name": "重复惩罚"
+      },
+      "sampling_mode_seed": {
+        "name": "种子"
+      },
+      "sampling_mode_temperature": {
+        "name": "温度"
+      },
+      "sampling_mode_top_k": {
+        "name": "Top K"
+      },
+      "sampling_mode_top_p": {
+        "name": "Top P"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "生成文本",
         "tooltip": null
       }
     }
@@ -15016,14 +15609,20 @@
         "name": "纹理种子"
       }
     },
-    "outputs": [
-      null,
-      null,
-      {
+    "outputs": {
+      "0": {
+        "name": "模型文件",
+        "tooltip": null
+      },
+      "1": {
+        "name": "模型任务ID",
+        "tooltip": null
+      },
+      "2": {
         "name": "GLB",
         "tooltip": null
       }
-    ]
+    }
   },
   "TripoMultiviewToModelNode": {
     "display_name": "Tripo：多视图转模型",
@@ -15075,14 +15674,20 @@
         "name": "纹理种子"
       }
     },
-    "outputs": [
-      null,
-      null,
-      {
+    "outputs": {
+      "0": {
+        "name": "模型文件",
+        "tooltip": null
+      },
+      "1": {
+        "name": "模型任务ID",
+        "tooltip": null
+      },
+      "2": {
         "name": "GLB",
         "tooltip": null
       }
-    ]
+    }
   },
   "TripoRefineNode": {
     "description": "仅精修由v1.4 Tripo模型创建的草稿模型。",
@@ -15093,14 +15698,20 @@
         "tooltip": "必须是v1.4 Tripo模型"
       }
     },
-    "outputs": [
-      null,
-      null,
-      {
+    "outputs": {
+      "0": {
+        "name": "模型文件",
+        "tooltip": null
+      },
+      "1": {
+        "name": "模型任务ID",
+        "tooltip": null
+      },
+      "2": {
         "name": "GLB",
         "tooltip": null
       }
-    ]
+    }
   },
   "TripoRetargetNode": {
     "display_name": "Tripo: 重定向绑定模型",
@@ -15112,14 +15723,20 @@
         "name": "原始模型任务ID"
       }
     },
-    "outputs": [
-      null,
-      null,
-      {
+    "outputs": {
+      "0": {
+        "name": "模型文件",
+        "tooltip": null
+      },
+      "1": {
+        "name": "重定向任务ID",
+        "tooltip": null
+      },
+      "2": {
         "name": "GLB",
         "tooltip": null
       }
-    ]
+    }
   },
   "TripoRigNode": {
     "display_name": "Tripo: 绑定模型",
@@ -15128,14 +15745,20 @@
         "name": "原始模型任务ID"
       }
     },
-    "outputs": [
-      null,
-      null,
-      {
+    "outputs": {
+      "0": {
+        "name": "模型文件",
+        "tooltip": null
+      },
+      "1": {
+        "name": "绑定任务ID",
+        "tooltip": null
+      },
+      "2": {
         "name": "GLB",
         "tooltip": null
       }
-    ]
+    }
   },
   "TripoTextToModelNode": {
     "display_name": "Tripo: 文本转模型",
@@ -15180,14 +15803,20 @@
         "name": "纹理种子"
       }
     },
-    "outputs": [
-      null,
-      null,
-      {
+    "outputs": {
+      "0": {
+        "name": "模型文件",
+        "tooltip": null
+      },
+      "1": {
+        "name": "模型任务ID",
+        "tooltip": null
+      },
+      "2": {
         "name": "GLB",
         "tooltip": null
       }
-    ]
+    }
   },
   "TripoTextureNode": {
     "display_name": "Tripo: 纹理化模型",
@@ -15211,14 +15840,20 @@
         "name": "纹理种子"
       }
     },
-    "outputs": [
-      null,
-      null,
-      {
+    "outputs": {
+      "0": {
+        "name": "模型文件",
+        "tooltip": null
+      },
+      "1": {
+        "name": "模型任务ID",
+        "tooltip": null
+      },
+      "2": {
         "name": "GLB",
         "tooltip": null
       }
-    ]
+    }
   },
   "TruncateText": {
     "display_name": "截断文本",

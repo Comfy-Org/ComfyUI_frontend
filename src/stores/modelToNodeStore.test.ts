@@ -44,7 +44,6 @@ const EXPECTED_DEFAULT_TYPES = [
 
 type NodeDefStoreType = ReturnType<typeof useNodeDefStore>
 
-// Create minimal but valid ComfyNodeDefImpl for testing
 function createMockNodeDef(name: string): ComfyNodeDefImpl {
   const def: ComfyNodeDefV1 = {
     name,
@@ -82,7 +81,6 @@ const MOCK_NODE_NAMES = [
   'FL_ChatterboxTurboTTS',
   'FL_ChatterboxMultilingualTTS',
   'FL_ChatterboxVC',
-  // New extension node mappings
   'LatentUpscaleModelLoader',
   'DownloadAndLoadSAM2Model',
   'SAMLoader',
@@ -98,8 +96,6 @@ const mockNodeDefsByName = Object.fromEntries(
   MOCK_NODE_NAMES.map((name) => [name, createMockNodeDef(name)])
 )
 
-// Mock nodeDefStore dependency - modelToNodeStore relies on this for registration
-// Most tests expect this to be populated; tests that need empty state can override
 vi.mock('@/stores/nodeDefStore', async (importOriginal) => {
   const original = await importOriginal<NodeDefStoreType>()
 
@@ -139,7 +135,6 @@ describe('useModelToNodeStore', () => {
 
       const provider = modelToNodeStore.getNodeProvider('checkpoints')
       expect(provider).toBeDefined()
-      // After asserting provider is defined, we can safely access its properties
       expect(provider?.nodeDef?.name).toBe('CheckpointLoaderSimple')
       expect(provider?.key).toBe('ckpt_name')
     })
@@ -155,7 +150,6 @@ describe('useModelToNodeStore', () => {
       modelToNodeStore.registerDefaults()
 
       const provider = modelToNodeStore.getNodeProvider('checkpoints')
-      // Using optional chaining for safety since getNodeProvider() can return undefined
       expect(provider?.nodeDef?.name).toBe('CheckpointLoaderSimple')
     })
 
@@ -359,7 +353,6 @@ describe('useModelToNodeStore', () => {
 
       const retrieved = modelToNodeStore.getNodeProvider('custom_type')
       expect(retrieved).toStrictEqual(customProvider)
-      // Optional chaining for consistency with getNodeProvider() return type
       expect(retrieved?.key).toBe('custom_key')
     })
 
@@ -408,7 +401,6 @@ describe('useModelToNodeStore', () => {
 
       const provider = modelToNodeStore.getNodeProvider('test_type')
       expect(provider).toBeDefined()
-      // After asserting provider is defined, we can safely access its properties
       expect(provider!.nodeDef.name).toBe('UNETLoader')
       expect(provider!.key).toBe('test_param')
     })
@@ -474,7 +466,6 @@ describe('useModelToNodeStore', () => {
     })
 
     it('should not register when nodeDefStore is empty', () => {
-      // Create fresh Pinia for this test to avoid state persistence
       setActivePinia(createTestingPinia({ stubActions: false }))
 
       vi.mocked(useNodeDefStore, { partial: true }).mockReturnValue({
@@ -484,7 +475,6 @@ describe('useModelToNodeStore', () => {
       modelToNodeStore.registerDefaults()
       expect(modelToNodeStore.getNodeProvider('checkpoints')).toBeUndefined()
 
-      // Restore original mock for subsequent tests
       vi.mocked(useNodeDefStore, { partial: true }).mockReturnValue({
         nodeDefsByName: mockNodeDefsByName
       })
@@ -499,7 +489,6 @@ describe('useModelToNodeStore', () => {
     })
 
     it('should return empty Record when nodeDefStore is empty', () => {
-      // Create fresh Pinia for this test to avoid state persistence
       setActivePinia(createTestingPinia({ stubActions: false }))
 
       vi.mocked(useNodeDefStore, { partial: true }).mockReturnValue({
@@ -510,7 +499,6 @@ describe('useModelToNodeStore', () => {
       const result = modelToNodeStore.getRegisteredNodeTypes()
       expect(result).toStrictEqual({})
 
-      // Restore original mock for subsequent tests
       vi.mocked(useNodeDefStore, { partial: true }).mockReturnValue({
         nodeDefsByName: mockNodeDefsByName
       })
@@ -601,7 +589,6 @@ describe('useModelToNodeStore', () => {
       const modelToNodeStore = useModelToNodeStore()
       modelToNodeStore.registerDefaults()
 
-      // These should not throw but return undefined
       expect(modelToNodeStore.getCategoryForNodeType(null!)).toBeUndefined()
       expect(
         modelToNodeStore.getCategoryForNodeType(undefined!)

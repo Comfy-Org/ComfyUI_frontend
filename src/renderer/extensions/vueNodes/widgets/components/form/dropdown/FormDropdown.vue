@@ -161,7 +161,7 @@ function handleSelection(item: FormDropdownItem, index: number) {
       sel.clear()
       sel.add(item.id)
     } else {
-      toastStore.addAlert(`Maximum selection limit reached`)
+      toastStore.addAlert(t('widgets.uploadSelect.maxSelectionReached'))
       return
     }
   }
