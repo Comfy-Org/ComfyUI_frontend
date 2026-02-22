@@ -5,8 +5,12 @@ import { hashPath } from './hashUtil'
 /**
  * Gets the current workspace ID from sessionStorage.
  * Returns 'personal' for personal workspace or when no workspace is set.
+ *
+ * NOTE: This is called fresh each time rather than cached at module load,
+ * because the workspace auth store may not have set sessionStorage yet
+ * when this module is first imported.
  */
-function getCurrentWorkspaceId(): string {
+export function getWorkspaceId(): string {
   try {
     const json = sessionStorage.getItem(
       WORKSPACE_STORAGE_KEYS.CURRENT_WORKSPACE
@@ -21,16 +25,6 @@ function getCurrentWorkspaceId(): string {
   }
 }
 
-// Cache workspace ID at module load (static for page lifetime, workspace switch reloads page)
-const CURRENT_WORKSPACE_ID = getCurrentWorkspaceId()
-
-/**
- * Returns the current workspace ID used for storage key scoping.
- */
-export function getWorkspaceId(): string {
-  return CURRENT_WORKSPACE_ID
-}
-
 /**
  * Storage key generators for V2 workflow persistence.
  *
@@ -42,7 +36,7 @@ export const StorageKeys = {
    * Draft index key for localStorage.
    * Contains LRU order and metadata for all drafts.
    */
-  draftIndex(workspaceId: string = CURRENT_WORKSPACE_ID): string {
+  draftIndex(workspaceId: string): string {
     return `Comfy.Workflow.DraftIndex.v2:${workspaceId}`
   },
 
@@ -50,10 +44,7 @@ export const StorageKeys = {
    * Individual draft payload key for localStorage.
    * @param path - Workflow path (will be hashed to create key)
    */
-  draftPayload(
-    path: string,
-    workspaceId: string = CURRENT_WORKSPACE_ID
-  ): string {
+  draftPayload(path: string, workspaceId: string): string {
     const draftKey = hashPath(path)
     return `Comfy.Workflow.Draft.v2:${workspaceId}:${draftKey}`
   },

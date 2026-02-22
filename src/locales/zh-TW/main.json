@@ -275,7 +275,9 @@
     "signOut": {
       "signOut": "登出",
       "success": "成功登出",
-      "successDetail": "您已成功登出您的帳戶。"
+      "successDetail": "您已成功登出您的帳戶。",
+      "unsavedChangesMessage": "您有尚未儲存的變更，登出後這些變更將會遺失。您確定要繼續嗎？",
+      "unsavedChangesTitle": "未儲存的變更"
     },
     "signup": {
       "alreadyHaveAccount": "已經有帳戶？",
@@ -2363,6 +2365,7 @@
     "Menu": "選單",
     "ModelLibrary": "模型庫",
     "Node": "節點",
+    "Node Library": "節點庫",
     "Node Search Box": "節點搜尋框",
     "Node Widget": "節點元件",
     "NodeLibrary": "節點庫",
@@ -2464,7 +2467,9 @@
       },
       "resetView": "重設檢視為預設值",
       "sections": {
-        "favorites": "我的最愛"
+        "favoriteNode": "收藏節點",
+        "favorites": "我的最愛",
+        "unfavoriteNode": "取消收藏節點"
       },
       "sortBy": {
         "alphabetical": "字母順序",

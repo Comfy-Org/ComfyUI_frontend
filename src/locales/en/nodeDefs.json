@@ -4512,7 +4512,7 @@
     }
   },
   "ImageBlend": {
-    "display_name": "ImageBlend",
+    "display_name": "Image Blend",
     "inputs": {
       "image1": {
         "name": "image1"
@@ -4534,7 +4534,7 @@
     }
   },
   "ImageBlur": {
-    "display_name": "ImageBlur",
+    "display_name": "Image Blur",
     "inputs": {
       "image": {
         "name": "image"
@@ -4839,7 +4839,7 @@
     }
   },
   "ImageRotate": {
-    "display_name": "ImageRotate",
+    "display_name": "Image Rotate",
     "inputs": {
       "image": {
         "name": "image"

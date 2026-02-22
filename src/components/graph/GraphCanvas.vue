@@ -70,7 +70,7 @@
       :key="nodeData.id"
       :node-data="nodeData"
       :error="
-        executionStore.lastExecutionError?.node_id === nodeData.id
+        executionErrorStore.lastExecutionError?.node_id === nodeData.id
           ? 'Execution error'
           : null
       "
@@ -152,7 +152,7 @@ import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowAutoSave } from '@/platform/workflow/persistence/composables/useWorkflowAutoSave'
-import { useWorkflowPersistence } from '@/platform/workflow/persistence/composables/useWorkflowPersistence'
+import { useWorkflowPersistenceV2 as useWorkflowPersistence } from '@/platform/workflow/persistence/composables/useWorkflowPersistenceV2'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
 import TransformPane from '@/renderer/core/layout/transform/TransformPane.vue'
@@ -170,6 +170,7 @@ import { storeToRefs } from 'pinia'
 import { useBootstrapStore } from '@/stores/bootstrapStore'
 import { useCommandStore } from '@/stores/commandStore'
 import { useExecutionStore } from '@/stores/executionStore'
+import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import { useSearchBoxStore } from '@/stores/workspace/searchBoxStore'
@@ -196,6 +197,7 @@ const workspaceStore = useWorkspaceStore()
 const canvasStore = useCanvasStore()
 const workflowStore = useWorkflowStore()
 const executionStore = useExecutionStore()
+const executionErrorStore = useExecutionErrorStore()
 const toastStore = useToastStore()
 const colorPaletteStore = useColorPaletteStore()
 const colorPaletteService = useColorPaletteService()
@@ -376,7 +378,7 @@ watch(
 // Update node slot errors for LiteGraph nodes
 // (Vue nodes read from store directly)
 watch(
-  () => executionStore.lastNodeErrors,
+  () => executionErrorStore.lastNodeErrors,
   (lastNodeErrors) => {
     if (!comfyApp.graph) return
 

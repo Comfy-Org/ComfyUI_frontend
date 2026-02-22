@@ -275,7 +275,9 @@
     "signOut": {
       "signOut": "ログアウト",
       "success": "正常にサインアウトしました",
-      "successDetail": "アカウントからサインアウトしました。"
+      "successDetail": "アカウントからサインアウトしました。",
+      "unsavedChangesMessage": "サインアウトすると未保存の変更が失われます。続行しますか？",
+      "unsavedChangesTitle": "未保存の変更"
     },
     "signup": {
       "alreadyHaveAccount": "すでにアカウントをお持ちですか？",
@@ -2363,6 +2365,7 @@
     "Menu": "メニュー",
     "ModelLibrary": "モデルライブラリ",
     "Node": "ノード",
+    "Node Library": "ノードライブラリ",
     "Node Search Box": "ノード検索ボックス",
     "Node Widget": "ノードウィジェット",
     "NodeLibrary": "ノードライブラリ",
@@ -2464,7 +2467,9 @@
       },
       "resetView": "ビューをデフォルトにリセット",
       "sections": {
-        "favorites": "お気に入り"
+        "favoriteNode": "お気に入りノード",
+        "favorites": "お気に入り",
+        "unfavoriteNode": "お気に入りノードから削除"
       },
       "sortBy": {
         "alphabetical": "アルファベット順",

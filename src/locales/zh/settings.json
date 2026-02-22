@@ -248,6 +248,10 @@
   "Comfy_NodeBadge_ShowApiPricing": {
     "name": "显示 API 节点定价徽章"
   },
+  "Comfy_NodeLibrary_NewDesign": {
+    "name": "全新节点库设计",
+    "tooltip": "启用带有标签页（基础、全部、自定义）、改进搜索和悬停预览功能的全新节点库侧边栏。"
+  },
   "Comfy_NodeReplacement_Enabled": {
     "name": "启用自动节点替换",
     "tooltip": "启用后，如果存在替换映射，缺失的节点可以自动替换为其较新的等效节点。"

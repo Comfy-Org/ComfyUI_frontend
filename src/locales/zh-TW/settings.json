@@ -248,6 +248,10 @@
   "Comfy_NodeBadge_ShowApiPricing": {
     "name": "顯示 API 節點價格標籤"
   },
+  "Comfy_NodeLibrary_NewDesign": {
+    "name": "全新節點庫設計",
+    "tooltip": "啟用重新設計的節點庫側邊欄，包含分頁（精選、全部、自訂）、強化搜尋功能及滑鼠懸停預覽。"
+  },
   "Comfy_NodeReplacement_Enabled": {
     "name": "啟用自動節點替換",
     "tooltip": "啟用後，若有替換對應關係，遺失的節點可自動以其較新的對應節點替換。"

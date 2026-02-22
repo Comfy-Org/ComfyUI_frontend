@@ -2,6 +2,8 @@ import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { app } from '@/scripts/app'
 import { useExecutionStore } from '@/stores/executionStore'
+import { useExecutionErrorStore } from '@/stores/executionErrorStore'
+import { executionIdToNodeLocatorId } from '@/utils/graphTraversalUtil'
 
 // Create mock functions that will be shared
 const mockNodeExecutionIdToNodeLocatorId = vi.fn()
@@ -82,20 +84,20 @@ describe('useExecutionStore - NodeLocatorId conversions', () => {
       // Mock app.rootGraph.getNodeById to return the mock node
       vi.mocked(app.rootGraph.getNodeById).mockReturnValue(mockNode)
 
-      const result = store.executionIdToNodeLocatorId('123:456')
+      const result = executionIdToNodeLocatorId(app.rootGraph, '123:456')
 
       expect(result).toBe('a1b2c3d4-e5f6-7890-abcd-ef1234567890:456')
     })
 
     it('should convert simple node ID to NodeLocatorId', () => {
-      const result = store.executionIdToNodeLocatorId('123')
+      const result = executionIdToNodeLocatorId(app.rootGraph, '123')
 
       // For simple node IDs, it should return the ID as-is
       expect(result).toBe('123')
     })
 
     it('should handle numeric node IDs', () => {
-      const result = store.executionIdToNodeLocatorId(123)
+      const result = executionIdToNodeLocatorId(app.rootGraph, 123)
 
       // For numeric IDs, it should convert to string and return as-is
       expect(result).toBe('123')
@@ -105,7 +107,9 @@ describe('useExecutionStore - NodeLocatorId conversions', () => {
       // Mock app.rootGraph.getNodeById to return null (node not found)
       vi.mocked(app.rootGraph.getNodeById).mockReturnValue(null)
 
-      expect(store.executionIdToNodeLocatorId('999:456')).toBe(undefined)
+      expect(executionIdToNodeLocatorId(app.rootGraph, '999:456')).toBe(
+        undefined
+      )
     })
   })
 
@@ -176,13 +180,13 @@ describe('useExecutionStore - reconcileInitializingJobs', () => {
   })
 })
 
-describe('useExecutionStore - Node Error Lookups', () => {
-  let store: ReturnType<typeof useExecutionStore>
+describe('useExecutionErrorStore - Node Error Lookups', () => {
+  let store: ReturnType<typeof useExecutionErrorStore>
 
   beforeEach(() => {
     vi.clearAllMocks()
     setActivePinia(createTestingPinia({ stubActions: false }))
-    store = useExecutionStore()
+    store = useExecutionErrorStore()
   })
 
   describe('getNodeErrors', () => {

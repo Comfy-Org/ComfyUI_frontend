@@ -275,7 +275,9 @@
     "signOut": {
       "signOut": "로그아웃",
       "success": "성공적으로 로그아웃되었습니다",
-      "successDetail": "계정에서 로그아웃되었습니다."
+      "successDetail": "계정에서 로그아웃되었습니다.",
+      "unsavedChangesMessage": "저장되지 않은 변경 사항이 있습니다. 로그아웃하면 변경 사항이 사라집니다. 계속하시겠습니까?",
+      "unsavedChangesTitle": "저장되지 않은 변경 사항"
     },
     "signup": {
       "alreadyHaveAccount": "이미 계정이 있으신가요?",
@@ -2363,6 +2365,7 @@
     "Menu": "메뉴",
     "ModelLibrary": "모델 라이브러리",
     "Node": "노드",
+    "Node Library": "노드 라이브러리",
     "Node Search Box": "노드 검색 상자",
     "Node Widget": "노드 위젯",
     "NodeLibrary": "노드 라이브러리",
@@ -2464,7 +2467,9 @@
       },
       "resetView": "기본 보기로 재설정",
       "sections": {
-        "favorites": "즐겨찾기"
+        "favoriteNode": "즐겨찾는 노드",
+        "favorites": "즐겨찾기",
+        "unfavoriteNode": "즐겨찾기 해제 노드"
       },
       "sortBy": {
         "alphabetical": "알파벳순",

@@ -275,7 +275,9 @@
     "signOut": {
       "signOut": "Выйти",
       "success": "Вы успешно вышли из системы",
-      "successDetail": "Вы вышли из своей учетной записи."
+      "successDetail": "Вы вышли из своей учетной записи.",
+      "unsavedChangesMessage": "У вас есть несохранённые изменения, которые будут потеряны при выходе из системы. Вы хотите продолжить?",
+      "unsavedChangesTitle": "Несохранённые изменения"
     },
     "signup": {
       "alreadyHaveAccount": "Уже есть аккаунт?",
@@ -2363,6 +2365,7 @@
     "Menu": "Меню",
     "ModelLibrary": "Библиотека моделей",
     "Node": "Нода",
+    "Node Library": "Библиотека узлов",
     "Node Search Box": "Поисковая строка нод",
     "Node Widget": "Виджет ноды",
     "NodeLibrary": "Библиотека нод",
@@ -2464,7 +2467,9 @@
       },
       "resetView": "Сбросить вид по умолчанию",
       "sections": {
-        "favorites": "Избранное"
+        "favoriteNode": "Избранный узел",
+        "favorites": "Избранное",
+        "unfavoriteNode": "Удалить из избранного"
       },
       "sortBy": {
         "alphabetical": "По алфавиту",
