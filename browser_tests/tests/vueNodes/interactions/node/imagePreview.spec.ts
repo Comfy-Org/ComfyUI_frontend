@@ -66,9 +66,10 @@ test.describe('Vue Nodes Image Preview', () => {
     await expect(contextMenu.getByText('Open in Mask Editor')).toBeVisible()
   })
 
-  test('renders promoted image previews for each subgraph node', async ({
-    comfyPage
-  }) => {
+  test(
+    'renders promoted image previews for each subgraph node',
+    { tag: '@screenshot' },
+    async ({ comfyPage }) => {
     await comfyPage.workflow.loadWorkflow(
       'subgraphs/subgraph-with-multiple-promoted-previews'
     )
@@ -101,5 +102,23 @@ test.describe('Vue Nodes Image Preview', () => {
     await expect(
       secondSubgraphNode.locator('.lg-node-widgets')
     ).not.toContainText('$$canvas-image-preview')
-  })
+
+      await comfyPage.command.executeCommand('Comfy.Canvas.FitView')
+      await comfyPage.command.executeCommand('Comfy.QueuePrompt')
+
+      const firstPreviewImages = firstSubgraphNode.locator('.image-preview img')
+      const secondPreviewImages = secondSubgraphNode.locator('.image-preview img')
+
+      await expect(firstPreviewImages).toHaveCount(2, { timeout: 30_000 })
+      await expect(secondPreviewImages).toHaveCount(1, { timeout: 30_000 })
+
+      await expect(firstPreviewImages.first()).toBeVisible({ timeout: 30_000 })
+      await expect(firstPreviewImages.nth(1)).toBeVisible({ timeout: 30_000 })
+      await expect(secondPreviewImages.first()).toBeVisible({ timeout: 30_000 })
+
+      await expect(comfyPage.canvas).toHaveScreenshot(
+        'vue-node-multiple-promoted-previews.png'
+      )
+    }
+  )
 })
