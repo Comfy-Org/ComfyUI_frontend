@@ -125,6 +125,7 @@ abstract class BaseDOMWidgetImpl<V extends object | string>
   declare readonly name: string
   declare readonly options: DOMWidgetOptions<V>
   declare callback?: (value: V) => void
+  readonly promotionStore = usePromotionStore()
 
   readonly id: string
 
@@ -165,7 +166,9 @@ abstract class BaseDOMWidgetImpl<V extends object | string>
     widget_height: number,
     lowQuality?: boolean
   ): void {
-    if (this.options.hideOnZoom && lowQuality && this.isVisible()) {
+    const isVisible = this.isVisible()
+
+    if (this.options.hideOnZoom && lowQuality && isVisible) {
       // Draw a placeholder rectangle
       const originalFillStyle = ctx.fillStyle
       ctx.beginPath()
@@ -179,15 +182,20 @@ abstract class BaseDOMWidgetImpl<V extends object | string>
       ctx.fill()
       ctx.fillStyle = originalFillStyle
     } else {
+      if (!isVisible) {
+        this.options.onDraw?.(this)
+        return
+      }
+
       const graphId = this.node.graph?.rootGraph.id
       const isPromoted =
         graphId &&
-        usePromotionStore().isPromotedByAny(
+        this.promotionStore.isPromotedByAny(
           graphId,
           String(this.node.id),
           this.name
         )
-      if (!isPromoted || !this.isVisible()) {
+      if (!isPromoted) {
         this.options.onDraw?.(this)
         return
       }

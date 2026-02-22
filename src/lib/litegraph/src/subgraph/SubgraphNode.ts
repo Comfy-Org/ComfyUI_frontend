@@ -40,6 +40,7 @@ import { usePromotionStore } from '@/stores/promotionStore'
 
 import { ExecutableNodeDTO } from './ExecutableNodeDTO'
 import type { ExecutableLGraphNode, ExecutionId } from './ExecutableNodeDTO'
+import { PromotedWidgetViewManager } from './PromotedWidgetViewManager'
 import type { SubgraphInput } from './SubgraphInput'
 
 const workflowSvg = new Image()
@@ -70,14 +71,8 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     return true
   }
 
-  private _viewCache = new Map<string, PromotedWidgetView>()
-  private _cachedWidgets: PromotedWidgetView[] | null = null
-  private _cachedEntriesRef:
-    | readonly {
-        interiorNodeId: string
-        widgetName: string
-      }[]
-    | null = null
+  private _promotedViewManager =
+    new PromotedWidgetViewManager<PromotedWidgetView>()
 
   // Declared as accessor via Object.defineProperty in constructor.
   // TypeScript doesn't allow overriding a property with get/set syntax,
@@ -88,33 +83,9 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     const store = usePromotionStore()
     const entries = store.getPromotionsRef(this.rootGraph.id, this.id)
 
-    if (this._cachedWidgets && entries === this._cachedEntriesRef)
-      return this._cachedWidgets
-
-    const views: PromotedWidgetView[] = []
-    const seenKeys = new Set<string>()
-
-    for (const { interiorNodeId, widgetName } of entries) {
-      const key = `${interiorNodeId}:${widgetName}`
-      if (seenKeys.has(key)) continue
-      seenKeys.add(key)
-
-      let view = this._viewCache.get(key)
-      if (!view) {
-        view = createPromotedWidgetView(this, interiorNodeId, widgetName)
-        this._viewCache.set(key, view)
-      }
-      views.push(view)
-    }
-
-    // Clean up stale cache entries
-    for (const key of this._viewCache.keys()) {
-      if (!seenKeys.has(key)) this._viewCache.delete(key)
-    }
-
-    this._cachedWidgets = views
-    this._cachedEntriesRef = entries
-    return views
+    return this._promotedViewManager.reconcile(entries, (entry) =>
+      createPromotedWidgetView(this, entry.interiorNodeId, entry.widgetName)
+    )
   }
 
   private _resolveLegacyEntry(
@@ -408,9 +379,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     // Clear view cache — forces re-creation on next getter access.
     // Do NOT clear properties.proxyWidgets — it was already populated
     // from serialized data by super.configure(info) before this runs.
-    this._viewCache.clear()
-    this._cachedWidgets = null
-    this._cachedEntriesRef = null
+    this._promotedViewManager.clear()
 
     // Hydrate the store from serialized properties.proxyWidgets
     const raw = parseProxyWidgets(this.properties.proxyWidgets)
@@ -511,17 +480,9 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     usePromotionStore().promote(this.rootGraph.id, this.id, nodeId, widgetName)
 
     // Create/retrieve the view from cache
-    const key = `${nodeId}:${widgetName}`
-    let view = this._viewCache.get(key)
-    if (!view) {
-      view = createPromotedWidgetView(
-        this,
-        nodeId,
-        widgetName,
-        subgraphInput.name
-      )
-      this._viewCache.set(key, view)
-    }
+    const view = this._promotedViewManager.getOrCreate(nodeId, widgetName, () =>
+      createPromotedWidgetView(this, nodeId, widgetName, subgraphInput.name)
+    )
 
     // NOTE: This code creates linked chains of prototypes for passing across
     // multiple levels of subgraphs. As part of this, it intentionally avoids
@@ -702,11 +663,10 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
         widget.sourceNodeId,
         widget.sourceWidgetName
       )
-      this._viewCache.delete(
-        `${widget.sourceNodeId}:${widget.sourceWidgetName}`
+      this._promotedViewManager.remove(
+        widget.sourceNodeId,
+        widget.sourceWidgetName
       )
-      this._cachedWidgets = null
-      this._cachedEntriesRef = null
     }
     for (const input of this.inputs) {
       if (input._widget === widget) {
@@ -734,9 +694,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     }
 
     usePromotionStore().setPromotions(this.rootGraph.id, this.id, [])
-    this._viewCache.clear()
-    this._cachedWidgets = null
-    this._cachedEntriesRef = null
+    this._promotedViewManager.clear()
 
     for (const input of this.inputs) {
       if (

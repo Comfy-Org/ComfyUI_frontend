@@ -40,6 +40,8 @@ import { useWorkflowStore } from '@/platform/workflow/management/stores/workflow
 import type { NodeId } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useDialogService } from '@/services/dialogService'
+import { resolveSubgraphPseudoWidgetCache } from '@/services/subgraphPseudoWidgetCache';
+import type { SubgraphPseudoWidgetCache } from '@/services/subgraphPseudoWidgetCache';
 import { transformInputSpecV2ToV1 } from '@/schemas/nodeDef/migration'
 import type {
   ComfyNodeDef as ComfyNodeDefV2,
@@ -131,6 +133,30 @@ export const useLitegraphService = () => {
   const widgetStore = useWidgetStore()
   const canvasStore = useCanvasStore()
   const { toggleSelectedNodesMode } = useSelectedLiteGraphItems()
+  const subgraphPseudoWidgetCache = new WeakMap<
+    SubgraphNode,
+    SubgraphPseudoWidgetCache<LGraphNode, IBaseWidget>
+  >()
+
+  function invalidateSubgraphPseudoWidgetCache(node: SubgraphNode) {
+    subgraphPseudoWidgetCache.delete(node)
+  }
+
+  function getPseudoWidgetPreviewTargets(node: SubgraphNode): LGraphNode[] {
+    const promotionStore = usePromotionStore()
+    const promotions = promotionStore.getPromotionsRef(
+      node.rootGraph.id,
+      node.id
+    )
+    const resolved = resolveSubgraphPseudoWidgetCache({
+      cache: subgraphPseudoWidgetCache.get(node) ?? null,
+      promotions,
+      getNodeById: (nodeId) => node.subgraph.getNodeById(nodeId) ?? undefined,
+      isPreviewPseudoWidget
+    })
+    subgraphPseudoWidgetCache.set(node, resolved.cache)
+    return resolved.nodes
+  }
 
   /**
    * @internal The key for the node definition in the i18n file.
@@ -321,6 +347,7 @@ export const useLitegraphService = () => {
 
         // Set up event listener for promoted widget registration
         subgraph.events.addEventListener('widget-promoted', (event) => {
+          invalidateSubgraphPseudoWidgetCache(this)
           const { widget } = event.detail
           // Only handle DOM widgets
           if (!isDOMWidget(widget) && !isComponentWidget(widget)) return
@@ -340,6 +367,7 @@ export const useLitegraphService = () => {
 
         // Set up event listener for promoted widget removal
         subgraph.events.addEventListener('widget-demoted', (event) => {
+          invalidateSubgraphPseudoWidgetCache(this)
           const { widget } = event.detail
           // Only handle DOM widgets
           if (!isDOMWidget(widget) && !isComponentWidget(widget)) return
@@ -800,23 +828,8 @@ export const useLitegraphService = () => {
       updatePreviews(this)
 
       if (this instanceof SubgraphNode) {
-        const promotionStore = usePromotionStore()
-        const entries =
-          promotionStore.getPromotions(this.rootGraph.id, this.id) ?? []
         const parentGraph = this.graph
-        const pseudoEntries = entries.filter((e) => {
-          const interiorNode = this.subgraph.getNodeById(e.interiorNodeId)
-          if (!interiorNode) return false
-          const widget = interiorNode.widgets?.find(
-            (w: IBaseWidget) => w.name === e.widgetName
-          )
-          return widget
-            ? isPreviewPseudoWidget(widget)
-            : e.widgetName && e.widgetName.startsWith('$$')
-        })
-        for (const entry of pseudoEntries) {
-          const interiorNode = this.subgraph.getNodeById(entry.interiorNodeId)
-          if (!interiorNode) continue
+        for (const interiorNode of getPseudoWidgetPreviewTargets(this)) {
           updatePreviews(interiorNode, () => {
             parentGraph?.setDirtyCanvas(true)
           })

@@ -2,10 +2,10 @@
 import { whenever } from '@vueuse/core'
 import { onMounted, ref } from 'vue'
 
-import { isPromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetTypes'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import type { DOMWidget } from '@/scripts/domWidget'
 import { isDOMWidget } from '@/scripts/domWidget'
+import { resolveWidgetFromHostNode } from '@/renderer/extensions/vueNodes/widgets/utils/resolvePromotedWidget'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 
 // Button widgets don't have a v-model value, they trigger actions
@@ -20,22 +20,9 @@ const canvasStore = useCanvasStore()
 const { canvas } = canvasStore
 
 function findDOMWidget(): DOMWidget<HTMLElement, object | string> | undefined {
-  const node = canvas?.graph?.getNodeById(props.nodeId) ?? undefined
-  if (!node) return undefined
-  const widget = node.widgets?.find((w) => w.name === props.widget.name)
-  if (!widget) return undefined
-
-  // Direct DOM widget on the node
-  if (isDOMWidget(widget)) return widget
-
-  // Promoted DOM widget: resolve through subgraph to interior widget
-  if (isPromotedWidgetView(widget) && node.isSubgraphNode()) {
-    const innerNode = node.subgraph.getNodeById(widget.sourceNodeId)
-    const innerWidget = innerNode?.widgets?.find(
-      (w) => w.name === widget.sourceWidgetName
-    )
-    if (innerWidget && isDOMWidget(innerWidget)) return innerWidget
-  }
+  const hostNode = canvas?.graph?.getNodeById(props.nodeId) ?? undefined
+  const resolved = resolveWidgetFromHostNode(hostNode, props.widget.name)
+  if (resolved && isDOMWidget(resolved.widget)) return resolved.widget
 
   return undefined
 }

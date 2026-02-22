@@ -227,6 +227,7 @@ import Button from '@/components/ui/button/Button.vue'
 import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
 import { showNodeOptions } from '@/composables/graph/useMoreOptionsMenu'
 import { useErrorHandling } from '@/composables/useErrorHandling'
+import { hasUnpromotedWidgets } from '@/core/graph/subgraph/unpromotedWidgetUtils'
 import { st } from '@/i18n'
 import {
   LGraphCanvas,
@@ -257,7 +258,6 @@ import { useNodePreviewState } from '@/renderer/extensions/vueNodes/preview/useN
 import { nonWidgetedInputs } from '@/renderer/extensions/vueNodes/utils/nodeDataUtils'
 import { applyLightThemeColor } from '@/renderer/extensions/vueNodes/utils/nodeStyleUtils'
 import { app } from '@/scripts/app'
-import { usePromotionStore } from '@/stores/promotionStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useNodeOutputStore } from '@/stores/imagePreviewStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
@@ -306,7 +306,6 @@ const isSelected = computed(() => {
 const nodeLocatorId = computed(() => getLocatorIdFromNodeData(nodeData))
 const { executing, progress } = useNodeExecutionState(nodeLocatorId)
 const executionErrorStore = useExecutionErrorStore()
-const promotionStore = usePromotionStore()
 const hasExecutionError = computed(
   () => executionErrorStore.lastExecutionErrorNodeId === nodeData.id
 )
@@ -621,19 +620,7 @@ const showAdvancedInputsButton = computed(() => {
 
   // For subgraph nodes: check for unpromoted widgets
   if (node instanceof SubgraphNode) {
-    const interiorNodes = node.subgraph.nodes
-    return interiorNodes.some((n) =>
-      (n.widgets ?? []).some(
-        (w) =>
-          !w.computedDisabled &&
-          !promotionStore.isPromoted(
-            node.rootGraph.id,
-            node.id,
-            String(n.id),
-            w.name
-          )
-      )
-    )
+    return hasUnpromotedWidgets(node)
   }
 
   // For regular nodes: show button if there are advanced widgets and they're currently hidden

@@ -580,6 +580,43 @@ describe('widgets getter caching', () => {
     setActivePinia(createTestingPinia({ stubActions: false }))
   })
 
+  test('preserves view identities when promotion order changes', () => {
+    const [subgraphNode, innerNodes] = setupSubgraph(1)
+    innerNodes[0].addWidget('text', 'widgetA', 'a', () => {})
+    innerNodes[0].addWidget('text', 'widgetB', 'b', () => {})
+    setPromotions(subgraphNode, [
+      ['1', 'widgetA'],
+      ['1', 'widgetB']
+    ])
+
+    const [viewA, viewB] = subgraphNode.widgets
+
+    setPromotions(subgraphNode, [
+      ['1', 'widgetB'],
+      ['1', 'widgetA']
+    ])
+
+    expect(subgraphNode.widgets[0]).toBe(viewB)
+    expect(subgraphNode.widgets[1]).toBe(viewA)
+  })
+
+  test('deduplicates by key while preserving first-occurrence order', () => {
+    const [subgraphNode, innerNodes] = setupSubgraph(1)
+    innerNodes[0].addWidget('text', 'widgetA', 'a', () => {})
+    innerNodes[0].addWidget('text', 'widgetB', 'b', () => {})
+
+    setPromotions(subgraphNode, [
+      ['1', 'widgetB'],
+      ['1', 'widgetA'],
+      ['1', 'widgetB'],
+      ['1', 'widgetA']
+    ])
+
+    expect(subgraphNode.widgets).toHaveLength(2)
+    expect(subgraphNode.widgets[0].name).toBe('widgetB')
+    expect(subgraphNode.widgets[1].name).toBe('widgetA')
+  })
+
   test('returns same array reference when promotions unchanged', () => {
     const [subgraphNode, innerNodes] = setupSubgraph(1)
     innerNodes[0].addWidget('text', 'widgetA', 'a', () => {})

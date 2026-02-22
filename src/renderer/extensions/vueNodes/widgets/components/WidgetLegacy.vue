@@ -3,13 +3,13 @@ import { useResizeObserver, whenever } from '@vueuse/core'
 import { onBeforeUnmount, onMounted, ref, watch } from 'vue'
 
 import { useChainCallback } from '@/composables/functional/useChainCallback'
-import { isPromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetTypes'
 import { CanvasPointer } from '@/lib/litegraph/src/CanvasPointer'
 import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { augmentToCanvasPointerEvent } from '@/renderer/extensions/vueNodes/utils/eventUtils'
+import { resolveWidgetFromHostNode } from '@/renderer/extensions/vueNodes/widgets/utils/resolvePromotedWidget'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 
@@ -35,22 +35,7 @@ function findLegacyWidget():
     }
   | undefined {
   const hostNode = canvas?.graph?.getNodeById(props.nodeId) ?? undefined
-  if (!hostNode) return undefined
-  const widget = hostNode.widgets?.find((w) => w.name === props.widget.name)
-  if (!widget) return undefined
-
-  // Promoted legacy widget: resolve through subgraph to interior widget
-  if (isPromotedWidgetView(widget) && hostNode.isSubgraphNode()) {
-    const innerNode = hostNode.subgraph.getNodeById(widget.sourceNodeId)
-    if (!innerNode) return undefined
-    const innerWidget = innerNode.widgets?.find(
-      (w) => w.name === widget.sourceWidgetName
-    )
-    if (innerWidget) return { node: innerNode, widget: innerWidget }
-    return undefined
-  }
-
-  return { node: hostNode, widget }
+  return resolveWidgetFromHostNode(hostNode, props.widget.name)
 }
 
 function bindWidget() {

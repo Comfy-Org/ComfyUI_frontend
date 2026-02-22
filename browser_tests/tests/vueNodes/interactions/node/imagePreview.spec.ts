@@ -2,31 +2,10 @@ import { expect } from '@playwright/test'
 
 import type { ComfyPage } from '../../../../fixtures/ComfyPage'
 import { comfyPageFixture as test } from '../../../../fixtures/ComfyPage'
-import { normalizeProxyWidgets } from '../../../../helpers/proxyWidgets'
-
-async function getProxyWidgetNames(
-  comfyPage: ComfyPage,
-  nodeId: string
-): Promise<string[]> {
-  const raw = await comfyPage.page.evaluate((id) => {
-    const node = window.app!.canvas.graph!.getNodeById(id)
-    return node?.properties?.proxyWidgets ?? []
-  }, nodeId)
-
-  return normalizeProxyWidgets(raw).map(([, widgetName]) => widgetName)
-}
-
-async function getPromotedPreviewWidgetCount(
-  comfyPage: ComfyPage,
-  nodeId: string
-): Promise<number> {
-  return await comfyPage.page.evaluate((id) => {
-    const node = window.app!.canvas.graph!.getNodeById(id)
-    const widgets = node?.widgets ?? []
-    return widgets.filter((widget) => widget.name === '$$canvas-image-preview')
-      .length
-  }, nodeId)
-}
+import {
+  getNodeWidgetCountByName,
+  getProxyWidgetNames
+} from '../../../../helpers/proxyWidgets'
 
 test.describe('Vue Nodes Image Preview', () => {
   test.beforeEach(async ({ comfyPage }) => {
@@ -109,8 +88,12 @@ test.describe('Vue Nodes Image Preview', () => {
     ])
     expect(secondProxyWidgets).toEqual(['$$canvas-image-preview'])
 
-    expect(await getPromotedPreviewWidgetCount(comfyPage, '7')).toBe(2)
-    expect(await getPromotedPreviewWidgetCount(comfyPage, '8')).toBe(1)
+    expect(
+      await getNodeWidgetCountByName(comfyPage, '7', '$$canvas-image-preview')
+    ).toBe(2)
+    expect(
+      await getNodeWidgetCountByName(comfyPage, '8', '$$canvas-image-preview')
+    ).toBe(1)
 
     await expect(
       firstSubgraphNode.locator('.lg-node-widgets')
