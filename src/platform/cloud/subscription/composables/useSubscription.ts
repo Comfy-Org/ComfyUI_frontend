@@ -4,7 +4,10 @@ import { createSharedComposable } from '@vueuse/core'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useFirebaseAuthActions } from '@/composables/auth/useFirebaseAuthActions'
 import { useErrorHandling } from '@/composables/useErrorHandling'
-import { getComfyApiBaseUrl, getComfyPlatformBaseUrl } from '@/config/comfyApi'
+import {
+  getComfyPlatformBaseUrl,
+  getCustomerApiBaseUrl
+} from '@/config/comfyApi'
 import { t } from '@/i18n'
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
@@ -96,7 +99,7 @@ function useSubscriptionInternal() {
   })
 
   function buildApiUrl(path: string): string {
-    return `${getComfyApiBaseUrl()}${path}`
+    return `${getCustomerApiBaseUrl()}${path}`
   }
 
   const getCheckoutAttributionForCloud =
