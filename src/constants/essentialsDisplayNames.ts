@@ -93,8 +93,9 @@ function resolveBlueprintDisplayName(
  * Returns `undefined` if the node has no Essentials display name mapping.
  */
 export function resolveEssentialsDisplayName(
-  nodeDef: Pick<ComfyNodeDefImpl, 'name'>
+  nodeDef: Pick<ComfyNodeDefImpl, 'name'> | undefined
 ): string | undefined {
+  if (!nodeDef) return undefined
   const { name } = nodeDef
 
   if (name.startsWith(BLUEPRINT_PREFIX)) {

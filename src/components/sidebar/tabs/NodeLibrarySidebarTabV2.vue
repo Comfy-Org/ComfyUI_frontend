@@ -231,7 +231,7 @@ function fillNodeInfo(
     key: node.key,
     label: node.leaf
       ? useEssentialsLabels
-        ? (resolveEssentialsDisplayName(node.data!) ?? node.data?.display_name)
+        ? (resolveEssentialsDisplayName(node.data) ?? node.data?.display_name)
         : node.data?.display_name
       : node.label,
     leaf: node.leaf,
