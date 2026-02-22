@@ -74,6 +74,27 @@ describe('useAssetsSidebarBadgeStore', () => {
     expect(assetsSidebarBadgeStore.unseenAddedAssetsCount).toBe(1)
   })
 
+  it('does not count preview fallback when server outputsCount is zero', async () => {
+    const queueStore = useQueueStore()
+    queueStore.historyTasks = [
+      createHistoryTask({ id: 'job-1', outputsCount: 2 })
+    ]
+    queueStore.hasFetchedHistorySnapshot = true
+
+    const assetsSidebarBadgeStore = useAssetsSidebarBadgeStore()
+    await nextTick()
+
+    expect(assetsSidebarBadgeStore.unseenAddedAssetsCount).toBe(0)
+
+    queueStore.historyTasks = [
+      createHistoryTask({ id: 'job-2', outputsCount: 0, hasPreview: true }),
+      ...queueStore.historyTasks
+    ]
+    await nextTick()
+
+    expect(assetsSidebarBadgeStore.unseenAddedAssetsCount).toBe(0)
+  })
+
   it('adds only delta when a seen job gains more outputs', async () => {
     const queueStore = useQueueStore()
     const assetsSidebarBadgeStore = useAssetsSidebarBadgeStore()

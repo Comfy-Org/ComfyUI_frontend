@@ -6,8 +6,8 @@ import { useQueueStore } from '@/stores/queueStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 
 const getAddedAssetCount = (task: TaskItemImpl): number => {
-  if (typeof task.outputsCount === 'number' && task.outputsCount > 0) {
-    return task.outputsCount
+  if (typeof task.outputsCount === 'number') {
+    return Math.max(task.outputsCount, 0)
   }
 
   return task.previewOutput ? 1 : 0
