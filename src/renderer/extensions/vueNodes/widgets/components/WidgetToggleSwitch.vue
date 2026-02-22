@@ -1,5 +1,5 @@
 <template>
-  <WidgetLayoutField :widget>
+  <WidgetLayoutField v-slot="{ borderStyle }" :widget :no-border="!hasLabels">
     <!-- Use ToggleGroup when explicit labels are provided -->
     <ToggleGroup
       v-if="hasLabels"
@@ -25,7 +25,13 @@
     <!-- Use ToggleSwitch for implicit boolean states -->
     <div
       v-else
-      :class="cn('flex w-fit items-center gap-2', hideLayoutField || 'ml-auto')"
+      :class="
+        cn(
+          'flex w-fit items-center gap-2 rounded-full p-1 -m-1',
+          hideLayoutField || 'ml-auto',
+          borderStyle
+        )
+      "
     >
       <ToggleSwitch
         v-model="modelValue"
