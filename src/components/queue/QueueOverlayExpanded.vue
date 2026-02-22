@@ -2,8 +2,6 @@
   <div class="flex w-full flex-col gap-4">
     <QueueOverlayHeader
       :header-title="headerTitle"
-      :show-concurrent-indicator="showConcurrentIndicator"
-      :concurrent-workflow-count="concurrentWorkflowCount"
       :queued-count="queuedCount"
       @clear-history="$emit('clearHistory')"
       @clear-queued="$emit('clearQueued')"
@@ -60,8 +58,6 @@ import JobGroupsList from './job/JobGroupsList.vue'
 
 defineProps<{
   headerTitle: string
-  showConcurrentIndicator: boolean
-  concurrentWorkflowCount: number
   queuedCount: number
   selectedJobTab: JobTab
   selectedWorkflowFilter: 'all' | 'current'
