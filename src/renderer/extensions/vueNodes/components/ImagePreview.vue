@@ -44,8 +44,6 @@
         :src="currentImageUrl"
         :alt="imageAltText"
         class="block size-full object-contain pointer-events-none contain-size"
-        @load="handleImageLoad"
-        @error="handleImageError"
       />
 
       <!-- Floating Action Buttons (appear on hover and focus) -->
@@ -121,7 +119,7 @@
 </template>
 
 <script setup lang="ts">
-import { useTimeoutFn } from '@vueuse/core'
+import { useImage, useTimeoutFn } from '@vueuse/core'
 import { useToast } from 'primevue'
 import Skeleton from 'primevue/skeleton'
 import { computed, ref, watch } from 'vue'
@@ -153,7 +151,6 @@ const currentIndex = ref(0)
 const isHovered = ref(false)
 const isFocused = ref(false)
 const actualDimensions = ref<string | null>(null)
-const imageError = ref(false)
 const showLoader = ref(false)
 
 const currentImageEl = ref<HTMLImageElement>()
@@ -173,6 +170,14 @@ const currentImageUrl = computed(() => props.imageUrls[currentIndex.value])
 const hasMultipleImages = computed(() => props.imageUrls.length > 1)
 const imageAltText = computed(() => `Node output ${currentIndex.value + 1}`)
 
+const {
+  state: imageState,
+  error: imageLoadError,
+  isReady: imageIsReady
+} = useImage(computed(() => ({ src: currentImageUrl.value ?? '' })))
+
+const imageError = computed(() => !!imageLoadError.value)
+
 // Watch for URL changes and reset state
 watch(
   () => props.imageUrls,
@@ -190,33 +195,29 @@ watch(
       currentIndex.value = 0
     }
 
-    // Reset loading and error states when URLs change
     actualDimensions.value = null
-
-    imageError.value = false
     if (newUrls.length > 0) startDelayedLoader()
   },
   { immediate: true }
 )
 
-// Event handlers
-const handleImageLoad = (event: Event) => {
-  if (!event.target || !(event.target instanceof HTMLImageElement)) return
-  const img = event.target
-  stopDelayedLoader()
-  showLoader.value = false
-  imageError.value = false
-  if (img.naturalWidth && img.naturalHeight) {
-    actualDimensions.value = `${img.naturalWidth} x ${img.naturalHeight}`
+watch(imageIsReady, (ready) => {
+  if (ready) {
+    stopDelayedLoader()
+    showLoader.value = false
+    if (imageState.value?.naturalWidth && imageState.value?.naturalHeight) {
+      actualDimensions.value = `${imageState.value.naturalWidth} x ${imageState.value.naturalHeight}`
+    }
   }
-}
+})
 
-const handleImageError = () => {
-  stopDelayedLoader()
-  showLoader.value = false
-  imageError.value = true
-  actualDimensions.value = null
-}
+watch(imageLoadError, (err) => {
+  if (err) {
+    stopDelayedLoader()
+    showLoader.value = false
+    actualDimensions.value = null
+  }
+})
 
 // In vueNodes mode, we need to set them manually before opening the mask editor.
 const setupNodeForMaskEditor = () => {
@@ -257,7 +258,6 @@ const setCurrentIndex = (index: number) => {
   if (index >= 0 && index < props.imageUrls.length) {
     currentIndex.value = index
     startDelayedLoader()
-    imageError.value = false
   }
 }
 

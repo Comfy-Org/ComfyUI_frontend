@@ -3,12 +3,10 @@
     <div class="p-3">
       <div class="relative aspect-square w-full overflow-hidden rounded-lg">
         <img
-          ref="imgRef"
           :src="imageUrl"
           :alt="name"
           class="h-full w-full cursor-pointer object-contain"
           @click="$emit('image-click')"
-          @load="onImgLoad"
         />
         <div
           v-if="timeLabel"
@@ -40,11 +38,12 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { useImage } from '@vueuse/core'
+import { computed } from 'vue'
 
 defineOptions({ inheritAttrs: false })
 
-defineProps<{
+const { imageUrl, name } = defineProps<{
   imageUrl: string
   name: string
   timeLabel?: string
@@ -52,14 +51,12 @@ defineProps<{
 
 defineEmits(['image-click'])
 
-const imgRef = ref<HTMLImageElement | null>(null)
-const width = ref<number | null>(null)
-const height = ref<number | null>(null)
+const { state, isReady } = useImage({ src: imageUrl, alt: name })
 
-const onImgLoad = () => {
-  const el = imgRef.value
-  if (!el) return
-  width.value = el.naturalWidth || null
-  height.value = el.naturalHeight || null
-}
+const width = computed(() =>
+  isReady.value ? (state.value?.naturalWidth ?? null) : null
+)
+const height = computed(() =>
+  isReady.value ? (state.value?.naturalHeight ?? null) : null
+)
 </script>

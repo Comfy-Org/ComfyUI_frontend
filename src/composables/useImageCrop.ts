@@ -1,4 +1,4 @@
-import { useResizeObserver } from '@vueuse/core'
+import { useImage, useResizeObserver } from '@vueuse/core'
 import type { Ref } from 'vue'
 import { computed, onMounted, ref, watch } from 'vue'
 
@@ -353,15 +353,23 @@ export function useImageCrop(nodeId: NodeId, options: UseImageCropOptions) {
     )
   })
 
-  const handleImageLoad = () => {
-    isLoading.value = false
-    updateDisplayedDimensions()
-  }
+  const { isReady: imageIsReady, error: imageLoadError } = useImage(
+    computed(() => ({ src: imageUrl.value ?? '' }))
+  )
 
-  const handleImageError = () => {
-    isLoading.value = false
-    imageUrl.value = null
-  }
+  watch(imageIsReady, (ready) => {
+    if (ready) {
+      isLoading.value = false
+      updateDisplayedDimensions()
+    }
+  })
+
+  watch(imageLoadError, (err) => {
+    if (err) {
+      isLoading.value = false
+      imageUrl.value = null
+    }
+  })
 
   const capturePointer = (e: PointerEvent) =>
     (e.target as HTMLElement).setPointerCapture(e.pointerId)
@@ -598,8 +606,6 @@ export function useImageCrop(nodeId: NodeId, options: UseImageCropOptions) {
     cropImageStyle,
     resizeHandles,
 
-    handleImageLoad,
-    handleImageError,
     handleDragStart,
     handleDragMove,
     handleDragEnd,

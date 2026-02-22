@@ -12,15 +12,8 @@
       class="comfy-image-blur"
       :style="{ 'background-image': `url(${src})` }"
       :alt="alt"
-      @error="handleImageError"
     />
-    <img
-      :src="src"
-      class="comfy-image-main"
-      :class="classProp"
-      :alt="alt"
-      @error="handleImageError"
-    />
+    <img :src="src" class="comfy-image-main" :class="classProp" :alt="alt" />
   </span>
   <div v-if="imageBroken" class="broken-image-placeholder">
     <i class="pi pi-image" />
@@ -29,7 +22,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { useImage } from '@vueuse/core'
 
 const {
   src,
@@ -46,10 +39,7 @@ const {
   alt?: string
 }>()
 
-const imageBroken = ref(false)
-const handleImageError = () => {
-  imageBroken.value = true
-}
+const { error: imageBroken } = useImage({ src, alt })
 </script>
 
 <style scoped>

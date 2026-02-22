@@ -1,10 +1,27 @@
 import { createTestingPinia } from '@pinia/testing'
 import { mount } from '@vue/test-utils'
 import { describe, expect, it, vi } from 'vitest'
-import { nextTick } from 'vue'
+import { nextTick, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import LivePreview from '@/renderer/extensions/vueNodes/components/LivePreview.vue'
+
+const mockState = ref<HTMLImageElement | undefined>(undefined)
+const mockError = ref(false)
+const mockIsReady = ref(false)
+
+vi.mock('@vueuse/core', async () => {
+  const actual = await vi.importActual('@vueuse/core')
+  return {
+    ...actual,
+    useImage: () => ({
+      state: mockState,
+      error: mockError,
+      isReady: mockIsReady,
+      isLoading: ref(false)
+    })
+  }
+})
 
 const i18n = createI18n({
   legacy: false,
@@ -27,6 +44,11 @@ describe('LivePreview', () => {
   }
 
   const mountLivePreview = (props = {}) => {
+    // Reset mock state before each mount
+    mockState.value = undefined
+    mockError.value = false
+    mockIsReady.value = false
+
     return mount(LivePreview, {
       props: { ...defaultProps, ...props },
       global: {
@@ -70,65 +92,46 @@ describe('LivePreview', () => {
     expect(img.attributes('alt')).toBe('Live sampling preview')
   })
 
-  it('handles image load event', async () => {
+  it('displays dimensions when image is ready', async () => {
     const wrapper = mountLivePreview()
-    const img = wrapper.find('img')
 
-    // Mock the naturalWidth and naturalHeight properties on the img element
-    Object.defineProperty(img.element, 'naturalWidth', {
-      writable: false,
-      value: 512
-    })
-    Object.defineProperty(img.element, 'naturalHeight', {
-      writable: false,
-      value: 512
-    })
-
-    // Trigger the load event
-    await img.trigger('load')
+    // Simulate useImage reporting the image as ready with dimensions
+    const fakeImg = { naturalWidth: 512, naturalHeight: 512 }
+    mockState.value = fakeImg as HTMLImageElement
+    mockIsReady.value = true
+    await nextTick()
 
     expect(wrapper.text()).toContain('512 x 512')
   })
 
-  it('handles image error state', async () => {
+  it('shows error state when image fails to load', async () => {
     const wrapper = mountLivePreview()
-    const img = wrapper.find('img')
 
-    // Trigger the error event
-    await img.trigger('error')
+    // Simulate useImage reporting an error
+    mockError.value = true
+    await nextTick()
 
-    // Check that the image is hidden and error content is shown
     expect(wrapper.find('img').exists()).toBe(false)
     expect(wrapper.text()).toContain('Image failed to load')
+    expect(wrapper.text()).toContain('Error loading image')
   })
 
   it('resets state when imageUrl changes', async () => {
     const wrapper = mountLivePreview()
-    const img = wrapper.find('img')
 
-    // Set error state via event
-    await img.trigger('error')
+    // Simulate error state
+    mockError.value = true
+    await nextTick()
     expect(wrapper.text()).toContain('Error loading image')
 
-    // Change imageUrl prop
+    // Change imageUrl and reset mock state (simulating useImage auto-reset)
+    mockError.value = false
+    mockIsReady.value = false
+    mockState.value = undefined
     await wrapper.setProps({ imageUrl: '/new-image.png' })
     await nextTick()
 
-    // State should be reset - dimensions text should show calculating
     expect(wrapper.text()).toContain('Calculating dimensions')
     expect(wrapper.text()).not.toContain('Error loading image')
-  })
-
-  it('shows error state when image fails to load', async () => {
-    const wrapper = mountLivePreview()
-    const img = wrapper.find('img')
-
-    // Trigger error event
-    await img.trigger('error')
-
-    // Should show error state instead of image
-    expect(wrapper.find('img').exists()).toBe(false)
-    expect(wrapper.text()).toContain('Image failed to load')
-    expect(wrapper.text()).toContain('Error loading image')
   })
 })

@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { ref, useTemplateRef } from 'vue'
+import { useImage } from '@vueuse/core'
+import { computed } from 'vue'
 
 import ZoomPane from '@/components/ui/ZoomPane.vue'
 
@@ -8,38 +9,15 @@ const { src } = defineProps<{
   mobile?: boolean
 }>()
 
-const imageRef = useTemplateRef('imageRef')
-const width = ref('')
-const height = ref('')
+const { state } = useImage({ src })
+
+const width = computed(() => state.value?.naturalWidth?.toString() ?? '')
+const height = computed(() => state.value?.naturalHeight?.toString() ?? '')
 </script>
 <template>
   <ZoomPane v-if="!mobile" v-slot="slotProps" class="flex-1 w-full">
-    <img
-      ref="imageRef"
-      :src
-      v-bind="slotProps"
-      class="h-full object-contain w-full"
-      @load="
-        () => {
-          if (!imageRef) return
-          width = `${imageRef.naturalWidth}`
-          height = `${imageRef.naturalHeight}`
-        }
-      "
-    />
+    <img :src v-bind="slotProps" class="h-full object-contain w-full" />
   </ZoomPane>
-  <img
-    v-else
-    ref="imageRef"
-    class="w-full"
-    :src
-    @load="
-      () => {
-        if (!imageRef) return
-        width = `${imageRef.naturalWidth}`
-        height = `${imageRef.naturalHeight}`
-      }
-    "
-  />
+  <img v-else class="w-full" :src />
   <span class="self-center md:z-10" v-text="`${width} x ${height}`" />
 </template>

@@ -12,8 +12,6 @@
       :src="imageUrl"
       :alt="$t('g.liveSamplingPreview')"
       class="pointer-events-none w-full object-contain contain-size min-h-55 flex-1"
-      @load="handleImageLoad"
-      @error="handleImageError"
     />
     <div class="text-node-component-header-text mt-1 text-center text-xs">
       {{
@@ -26,7 +24,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { useImage } from '@vueuse/core'
+import { computed } from 'vue'
 
 interface LivePreviewProps {
   imageUrl: string
@@ -34,29 +33,19 @@ interface LivePreviewProps {
 
 const props = defineProps<LivePreviewProps>()
 
-const actualDimensions = ref<string | null>(null)
-const imageError = ref(false)
+const {
+  state,
+  error: imageError,
+  isReady
+} = useImage(computed(() => ({ src: props.imageUrl ?? '', alt: '' })))
 
-watch(
-  () => props.imageUrl,
-  () => {
-    // Reset states when URL changes
-    actualDimensions.value = null
-    imageError.value = false
-  }
-)
-
-const handleImageLoad = (event: Event) => {
-  if (!event.target || !(event.target instanceof HTMLImageElement)) return
-  const img = event.target
-  imageError.value = false
-  if (img.naturalWidth && img.naturalHeight) {
-    actualDimensions.value = `${img.naturalWidth} x ${img.naturalHeight}`
-  }
-}
-
-const handleImageError = () => {
-  imageError.value = true
-  actualDimensions.value = null
-}
+const actualDimensions = computed(() => {
+  if (
+    !isReady.value ||
+    !state.value?.naturalWidth ||
+    !state.value?.naturalHeight
+  )
+    return null
+  return `${state.value.naturalWidth} x ${state.value.naturalHeight}`
+})
 </script>

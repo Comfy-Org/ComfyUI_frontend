@@ -2,7 +2,7 @@ import { createTestingPinia } from '@pinia/testing'
 import type { VueWrapper } from '@vue/test-utils'
 import { mount } from '@vue/test-utils'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { nextTick } from 'vue'
+import { nextTick, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import { downloadFile } from '@/base/common/downloadUtil'
@@ -12,6 +12,23 @@ import ImagePreview from '@/renderer/extensions/vueNodes/components/ImagePreview
 vi.mock('@/base/common/downloadUtil', () => ({
   downloadFile: vi.fn()
 }))
+
+const mockImageState = ref<HTMLImageElement | undefined>(undefined)
+const mockImageError = ref(false)
+const mockImageIsReady = ref(false)
+
+vi.mock('@vueuse/core', async () => {
+  const actual = await vi.importActual('@vueuse/core')
+  return {
+    ...actual,
+    useImage: () => ({
+      state: mockImageState,
+      error: mockImageError,
+      isReady: mockImageIsReady,
+      isLoading: ref(false)
+    })
+  }
+})
 
 const i18n = createI18n({
   legacy: false,
@@ -47,6 +64,11 @@ describe('ImagePreview', () => {
   const wrapperRegistry = new Set<VueWrapper>()
 
   const mountImagePreview = (props = {}) => {
+    // Reset mock state before each mount
+    mockImageState.value = undefined
+    mockImageError.value = false
+    mockImageIsReady.value = false
+
     const wrapper = mount(ImagePreview, {
       props: { ...defaultProps, ...props },
       global: {
@@ -318,9 +340,8 @@ describe('ImagePreview', () => {
         const urls = ['/api/view?filename=test.png&type=output']
         const wrapper = mountImagePreview({ imageUrls: urls })
 
-        // Simulate image load completing
-        const img = wrapper.find('img')
-        await img.trigger('load')
+        // Simulate useImage reporting image as ready
+        mockImageIsReady.value = true
         await nextTick()
 
         // Verify loader is hidden after load
@@ -346,9 +367,8 @@ describe('ImagePreview', () => {
       const urls = ['/api/view?filename=test.png&type=output']
       const wrapper = mountImagePreview({ imageUrls: urls })
 
-      // Simulate image load completing
-      const img = wrapper.find('img')
-      await img.trigger('load')
+      // Simulate useImage reporting image as ready
+      mockImageIsReady.value = true
       await nextTick()
 
       // Verify loader is hidden
@@ -361,8 +381,6 @@ describe('ImagePreview', () => {
       await nextTick()
 
       // After 250ms timeout, loading state should be reset (aria-busy="true")
-      // We can check the internal state via the Skeleton appearing
-      // or wait for the timeout
       await new Promise((resolve) => setTimeout(resolve, 300))
       await nextTick()
 
