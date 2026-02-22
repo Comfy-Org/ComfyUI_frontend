@@ -2657,6 +2657,8 @@ export class Subgraph
 
   /** The display name of the subgraph. */
   name: string = 'Unnamed Subgraph'
+  /** Optional description shown as tooltip when hovering over the subgraph node. */
+  description?: string
 
   readonly inputNode = new SubgraphInputNode(this)
   readonly outputNode = new SubgraphOutputNode(this)
@@ -2707,9 +2709,10 @@ export class Subgraph
       | (ISerialisedGraph & ExportedSubgraph)
       | (SerialisableGraph & ExportedSubgraph)
   ): void {
-    const { name, inputs, outputs, widgets } = data
+    const { name, description, inputs, outputs, widgets } = data
 
     this.name = name
+    this.description = description
     if (inputs) {
       this.inputs.length = 0
       for (const input of inputs) {
@@ -2920,6 +2923,7 @@ export class Subgraph
       revision: this.revision,
       config: this.config,
       name: this.name,
+      ...(this.description && { description: this.description }),
       inputNode: this.inputNode.asSerialisable(),
       outputNode: this.outputNode.asSerialisable(),
       inputs: this.inputs.map((x) => x.asSerialisable()),
