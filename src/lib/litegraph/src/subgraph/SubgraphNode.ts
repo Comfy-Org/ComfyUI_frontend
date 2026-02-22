@@ -29,11 +29,18 @@ import type {
 } from '@/lib/litegraph/src/types/serialisation'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import type { UUID } from '@/lib/litegraph/src/utils/uuid'
-import { BaseWidget } from '@/lib/litegraph/src/widgets/BaseWidget'
-import { AssetWidget } from '@/lib/litegraph/src/widgets/AssetWidget'
+import {
+  createPromotedWidgetView,
+  isPromotedWidgetView
+} from '@/core/graph/subgraph/promotedWidgetView'
+import type { PromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetView'
+import { parseProxyWidgets } from '@/core/schemas/proxyWidget'
+import { useDomWidgetStore } from '@/stores/domWidgetStore'
+import { usePromotionStore } from '@/stores/promotionStore'
 
 import { ExecutableNodeDTO } from './ExecutableNodeDTO'
 import type { ExecutableLGraphNode, ExecutionId } from './ExecutableNodeDTO'
+import { PromotedWidgetViewManager } from './PromotedWidgetViewManager'
 import type { SubgraphInput } from './SubgraphInput'
 
 const workflowSvg = new Image()
@@ -64,7 +71,55 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     return true
   }
 
-  override widgets: IBaseWidget[] = []
+  private _promotedViewManager =
+    new PromotedWidgetViewManager<PromotedWidgetView>()
+
+  // Declared as accessor via Object.defineProperty in constructor.
+  // TypeScript doesn't allow overriding a property with get/set syntax,
+  // so we use declare + defineProperty instead.
+  declare widgets: IBaseWidget[]
+
+  private _getPromotedViews(): PromotedWidgetView[] {
+    const store = usePromotionStore()
+    const entries = store.getPromotionsRef(this.rootGraph.id, this.id)
+
+    return this._promotedViewManager.reconcile(entries, (entry) =>
+      createPromotedWidgetView(this, entry.interiorNodeId, entry.widgetName)
+    )
+  }
+
+  private _resolveLegacyEntry(
+    widgetName: string
+  ): [string, string] | undefined {
+    // Legacy -1 entries use the slot name as the widget name.
+    // Find the input with that name, then trace to the connected interior widget.
+    const input = this.inputs.find((i) => i.name === widgetName)
+    if (!input?._widget) return undefined
+
+    const widget = input._widget
+    if (isPromotedWidgetView(widget)) {
+      return [widget.sourceNodeId, widget.sourceWidgetName]
+    }
+
+    // Fallback: find via subgraph input slot connection
+    const subgraphInput = this.subgraph.inputNode.slots.find(
+      (slot) => slot.name === widgetName
+    )
+    if (!subgraphInput) return undefined
+
+    for (const linkId of subgraphInput.linkIds) {
+      const link = this.subgraph.getLink(linkId)
+      if (!link) continue
+      const { inputNode } = link.resolve(this.subgraph)
+      if (!inputNode) continue
+      const targetInput = inputNode.inputs.find((inp) => inp.link === linkId)
+      if (!targetInput) continue
+      const w = inputNode.getWidgetFromSlot(targetInput)
+      if (w) return [String(inputNode.id), w.name]
+    }
+
+    return undefined
+  }
 
   /** Manages lifecycle of all subgraph event listeners */
   private _eventAbortController = new AbortController()
@@ -79,6 +134,19 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     super(subgraph.name, subgraph.id)
     this.graph = graph
 
+    // Synthetic widgets getter — SubgraphNodes have no native widgets.
+    Object.defineProperty(this, 'widgets', {
+      get: () => this._getPromotedViews(),
+      set: () => {
+        if (import.meta.env.DEV)
+          console.warn(
+            'Cannot manually set widgets on SubgraphNode; use the promotion system.'
+          )
+      },
+      configurable: true,
+      enumerable: true
+    })
+
     // Update this node when the subgraph input / output slots are changed
     const subgraphEvents = this.subgraph.events
     const { signal } = this._eventAbortController
@@ -88,13 +156,19 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
       (e) => {
         const subgraphInput = e.detail.input
         const { name, type } = subgraphInput
-        const existingInput = this.inputs.find((i) => i.name == name)
+        const existingInput = this.inputs.find((i) => i.name === name)
         if (existingInput) {
           const linkId = subgraphInput.linkIds[0]
           const { inputNode, input } = subgraph.links[linkId].resolve(subgraph)
-          const widget = inputNode?.widgets?.find?.((w) => w.name == name)
-          if (widget)
-            this._setWidget(subgraphInput, existingInput, widget, input?.widget)
+          const widget = inputNode?.widgets?.find?.((w) => w.name === name)
+          if (widget && inputNode)
+            this._setWidget(
+              subgraphInput,
+              existingInput,
+              widget,
+              input?.widget,
+              inputNode
+            )
           return
         }
         const input = this.addInput(name, type)
@@ -200,13 +274,36 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     subgraphInput.events.addEventListener(
       'input-connected',
       (e) => {
-        if (input._widget) return
-
         const widget = subgraphInput._widget
         if (!widget) return
 
+        // If this widget is already promoted, demote it first
+        // so it transitions cleanly to being linked via SubgraphInput.
+        const nodeId = String(e.detail.node.id)
+        if (
+          usePromotionStore().isPromoted(
+            this.rootGraph.id,
+            this.id,
+            nodeId,
+            widget.name
+          )
+        ) {
+          usePromotionStore().demote(
+            this.rootGraph.id,
+            this.id,
+            nodeId,
+            widget.name
+          )
+        }
+
         const widgetLocator = e.detail.input.widget
-        this._setWidget(subgraphInput, input, widget, widgetLocator)
+        this._setWidget(
+          subgraphInput,
+          input,
+          widget,
+          widgetLocator,
+          e.detail.node
+        )
       },
       { signal }
     )
@@ -218,7 +315,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
         const connectedWidgets = subgraphInput.getConnectedWidgets()
         if (connectedWidgets.length > 0) return
 
-        this.removeWidgetByName(input.name)
+        if (input._widget) this.ensureWidgetRemoved(input._widget)
 
         delete input.pos
         delete input.widget
@@ -276,8 +373,42 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
   }
 
   override _internalConfigureAfterSlots() {
-    // Reset widgets
-    this.widgets.length = 0
+    // Ensure proxyWidgets is initialized so it serializes
+    this.properties.proxyWidgets ??= []
+
+    // Clear view cache — forces re-creation on next getter access.
+    // Do NOT clear properties.proxyWidgets — it was already populated
+    // from serialized data by super.configure(info) before this runs.
+    this._promotedViewManager.clear()
+
+    // Hydrate the store from serialized properties.proxyWidgets
+    const raw = parseProxyWidgets(this.properties.proxyWidgets)
+    const store = usePromotionStore()
+    const entries = raw
+      .map(([nodeId, widgetName]) => {
+        if (nodeId === '-1') {
+          const resolved = this._resolveLegacyEntry(widgetName)
+          if (resolved)
+            return { interiorNodeId: resolved[0], widgetName: resolved[1] }
+          if (import.meta.env.DEV) {
+            console.warn(
+              `[SubgraphNode] Failed to resolve legacy -1 entry for widget "${widgetName}"`
+            )
+          }
+          return null
+        }
+        return { interiorNodeId: nodeId, widgetName }
+      })
+      .filter((e): e is NonNullable<typeof e> => e !== null)
+    store.setPromotions(this.rootGraph.id, this.id, entries)
+
+    // Write back resolved entries so legacy -1 format doesn't persist
+    if (raw.some(([id]) => id === '-1')) {
+      this.properties.proxyWidgets = entries.map((e) => [
+        e.interiorNodeId,
+        e.widgetName
+      ])
+    }
 
     // Check all inputs for connected widgets
     for (const input of this.inputs) {
@@ -323,7 +454,13 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
         const widget = inputNode.getWidgetFromSlot(targetInput)
         if (!widget) continue
 
-        this._setWidget(subgraphInput, input, widget, targetInput.widget)
+        this._setWidget(
+          subgraphInput,
+          input,
+          widget,
+          targetInput.widget,
+          inputNode
+        )
         break
       }
     }
@@ -332,69 +469,20 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
   private _setWidget(
     subgraphInput: Readonly<SubgraphInput>,
     input: INodeInputSlot,
-    widget: Readonly<IBaseWidget>,
-    inputWidget: IWidgetLocator | undefined
+    _widget: Readonly<IBaseWidget>,
+    inputWidget: IWidgetLocator | undefined,
+    interiorNode: LGraphNode
   ) {
-    // Use the first matching widget
-    const promotedWidget =
-      widget instanceof BaseWidget
-        ? widget.createCopyForNode(this)
-        : { ...widget, node: this }
-    if (widget instanceof AssetWidget)
-      promotedWidget.options.nodeType ??= widget.node.type
+    const nodeId = String(interiorNode.id)
+    const widgetName = _widget.name
 
-    Object.assign(promotedWidget, {
-      get name() {
-        return subgraphInput.name
-      },
-      set name(value) {
-        console.warn(
-          'Promoted widget: setting name is not allowed',
-          this,
-          value
-        )
-      },
-      get localized_name() {
-        return subgraphInput.localized_name
-      },
-      set localized_name(value) {
-        console.warn(
-          'Promoted widget: setting localized_name is not allowed',
-          this,
-          value
-        )
-      },
-      get label() {
-        return subgraphInput.label
-      },
-      set label(value) {
-        console.warn(
-          'Promoted widget: setting label is not allowed',
-          this,
-          value
-        )
-      },
-      get tooltip() {
-        // Preserve the original widget's tooltip for promoted widgets
-        return widget.tooltip
-      },
-      set tooltip(value) {
-        console.warn(
-          'Promoted widget: setting tooltip is not allowed',
-          this,
-          value
-        )
-      }
-    })
+    // Add to promotion store
+    usePromotionStore().promote(this.rootGraph.id, this.id, nodeId, widgetName)
 
-    const widgetCount = this.inputs.filter((i) => i.widget).length
-    this.widgets.splice(widgetCount, 0, promotedWidget)
-
-    // Dispatch widget-promoted event
-    this.subgraph.events.dispatch('widget-promoted', {
-      widget: promotedWidget,
-      subgraphNode: this
-    })
+    // Create/retrieve the view from cache
+    const view = this._promotedViewManager.getOrCreate(nodeId, widgetName, () =>
+      createPromotedWidgetView(this, nodeId, widgetName, subgraphInput.name)
+    )
 
     // NOTE: This code creates linked chains of prototypes for passing across
     // multiple levels of subgraphs. As part of this, it intentionally avoids
@@ -403,7 +491,13 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     input.widget.name = subgraphInput.name
     if (inputWidget) Object.setPrototypeOf(input.widget, inputWidget)
 
-    input._widget = promotedWidget
+    input._widget = view
+
+    // Dispatch widget-promoted event
+    this.subgraph.events.dispatch('widget-promoted', {
+      widget: view,
+      subgraphNode: this
+    })
   }
 
   /**
@@ -535,39 +629,72 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     return nodes
   }
 
+  /** Clear the DOM position override for a promoted view's interior widget. */
+  private _clearDomOverrideForView(view: PromotedWidgetView): void {
+    const node = this.subgraph.getNodeById(view.sourceNodeId)
+    if (!node) return
+    const interiorWidget = node.widgets?.find(
+      (w: IBaseWidget) => w.name === view.sourceWidgetName
+    )
+    if (
+      interiorWidget &&
+      'id' in interiorWidget &&
+      ('element' in interiorWidget || 'component' in interiorWidget)
+    ) {
+      useDomWidgetStore().clearPositionOverride(interiorWidget.id as string)
+    }
+  }
+
+  override removeWidget(widget: IBaseWidget): void {
+    this.ensureWidgetRemoved(widget)
+  }
+
   override removeWidgetByName(name: string): void {
     const widget = this.widgets.find((w) => w.name === name)
-    if (widget) {
-      this.subgraph.events.dispatch('widget-demoted', {
-        widget,
-        subgraphNode: this
-      })
-    }
-    super.removeWidgetByName(name)
+    if (widget) this.ensureWidgetRemoved(widget)
   }
 
   override ensureWidgetRemoved(widget: IBaseWidget): void {
-    if (this.widgets.includes(widget)) {
-      this.subgraph.events.dispatch('widget-demoted', {
-        widget,
-        subgraphNode: this
-      })
+    if (isPromotedWidgetView(widget)) {
+      this._clearDomOverrideForView(widget)
+      usePromotionStore().demote(
+        this.rootGraph.id,
+        this.id,
+        widget.sourceNodeId,
+        widget.sourceWidgetName
+      )
+      this._promotedViewManager.remove(
+        widget.sourceNodeId,
+        widget.sourceWidgetName
+      )
     }
-    super.ensureWidgetRemoved(widget)
+    for (const input of this.inputs) {
+      if (input._widget === widget) {
+        input._widget = undefined
+        input.widget = undefined
+      }
+    }
+    this.subgraph.events.dispatch('widget-demoted', {
+      widget,
+      subgraphNode: this
+    })
   }
 
   override onRemoved(): void {
-    // Clean up all subgraph event listeners
     this._eventAbortController.abort()
 
-    // Clean up all promoted widgets
     for (const widget of this.widgets) {
-      if ('isProxyWidget' in widget && widget.isProxyWidget) continue
+      if (isPromotedWidgetView(widget)) {
+        this._clearDomOverrideForView(widget)
+      }
       this.subgraph.events.dispatch('widget-demoted', {
         widget,
         subgraphNode: this
       })
     }
+
+    usePromotionStore().setPromotions(this.rootGraph.id, this.id, [])
+    this._promotedViewManager.clear()
 
     for (const input of this.inputs) {
       if (
@@ -610,36 +737,36 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
    * This ensures nested subgraph widget values are preserved when saving.
    */
   override serialize(): ISerialisedNode {
-    // Sync widget values to subgraph definition before serialization
-    for (let i = 0; i < this.widgets.length; i++) {
-      const widget = this.widgets[i]
-      const input = this.inputs.find((inp) => inp.name === widget.name)
+    // Sync widget values to subgraph definition before serialization.
+    // Only sync for inputs that are linked to a promoted widget via _widget.
+    for (const input of this.inputs) {
+      if (!input._widget) continue
 
-      if (input) {
-        const subgraphInput = this.subgraph.inputNode.slots.find(
-          (slot) => slot.name === input.name
-        )
+      const subgraphInput = this.subgraph.inputNode.slots.find(
+        (slot) => slot.name === input.name
+      )
+      if (!subgraphInput) continue
 
-        if (subgraphInput) {
-          // Find all widgets connected to this subgraph input
-          const connectedWidgets = subgraphInput.getConnectedWidgets()
-
-          // Update the value of all connected widgets
-          for (const connectedWidget of connectedWidgets) {
-            connectedWidget.value = widget.value
-          }
-        }
+      const connectedWidgets = subgraphInput.getConnectedWidgets()
+      for (const connectedWidget of connectedWidgets) {
+        connectedWidget.value = input._widget.value
       }
     }
 
-    // Call parent serialize method
+    // Write promotion store state back to properties for serialization
+    const entries = usePromotionStore().getPromotions(
+      this.rootGraph.id,
+      this.id
+    )
+    this.properties.proxyWidgets = entries.map((e) => [
+      e.interiorNodeId,
+      e.widgetName
+    ])
+
     return super.serialize()
   }
   override clone() {
     const clone = super.clone()
-    // force reasign so domWidgets reset ownership
-
-    this.properties.proxyWidgets = this.properties.proxyWidgets
 
     //TODO: Consider deep cloning subgraphs here.
     //It's the safest place to prevent creation of linked subgraphs

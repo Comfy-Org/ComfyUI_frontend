@@ -1074,7 +1074,11 @@
     "cannotDeleteGlobal": "Cannot delete installed blueprints",
     "enterDescription": "Enter a description",
     "searchAliases": "Search Aliases",
-    "enterSearchAliases": "Enter search aliases (comma separated)"
+    "enterSearchAliases": "Enter search aliases (comma separated)",
+    "disconnected": "Disconnected",
+    "linked": "(Linked)",
+    "promoteWidget": "Promote Widget: {name}",
+    "unpromoteWidget": "Un-Promote Widget: {name}"
   },
   "electronFileDownload": {
     "inProgress": "In Progress",

@@ -1,4 +1,4 @@
-import { isProxyWidget } from '@/core/graph/subgraph/proxyWidget'
+import { isPromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetTypes'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
@@ -31,12 +31,12 @@ export function getWidgetDefaultValue(
 
 /**
  * Renames a widget and its corresponding input.
- * Handles both regular widgets and proxy widgets in subgraphs.
+ * Handles both regular widgets and promoted widget views in subgraphs.
  *
  * @param widget The widget to rename
  * @param node The node containing the widget
  * @param newLabel The new label for the widget (empty string or undefined to clear)
- * @param parents Optional array of parent SubgraphNodes (for proxy widgets)
+ * @param parents Optional array of parent SubgraphNodes (for promoted widgets)
  * @returns true if the rename was successful, false otherwise
  */
 export function renameWidget(
@@ -45,46 +45,41 @@ export function renameWidget(
   newLabel: string,
   parents?: SubgraphNode[]
 ): boolean {
-  // For proxy widgets in subgraphs, we need to rename the original interior widget
-  if (isProxyWidget(widget) && parents?.length) {
+  if (isPromotedWidgetView(widget) && parents?.length) {
+    const view = widget
     const subgraph = parents[0].subgraph
     if (!subgraph) {
-      console.error('Could not find subgraph for proxy widget')
+      console.error('Could not find subgraph for promoted widget')
       return false
     }
-    const interiorNode = subgraph.getNodeById(widget._overlay.nodeId)
+    const interiorNode = subgraph.getNodeById(view.sourceNodeId)
 
     if (!interiorNode) {
-      console.error('Could not find interior node for proxy widget')
+      console.error('Could not find interior node for promoted widget')
       return false
     }
 
     const originalWidget = interiorNode.widgets?.find(
-      (w) => w.name === widget._overlay.widgetName
+      (w) => w.name === view.sourceWidgetName
     )
 
     if (!originalWidget) {
-      console.error('Could not find original widget for proxy widget')
+      console.error('Could not find original widget for promoted widget')
       return false
     }
 
-    // Rename the original widget
     originalWidget.label = newLabel || undefined
 
-    // Also rename the corresponding input on the interior node
     const interiorInput = interiorNode.inputs?.find(
-      (inp) => inp.widget?.name === widget._overlay.widgetName
+      (inp) => inp.widget?.name === view.sourceWidgetName
     )
     if (interiorInput) {
       interiorInput.label = newLabel || undefined
     }
   }
 
-  // Always rename the widget on the current node (either regular widget or proxy widget)
   const input = node.inputs?.find((inp) => inp.widget?.name === widget.name)
 
-  // Intentionally mutate the widget object here as it's a reference
-  // to the actual widget in the graph
   widget.label = newLabel || undefined
   if (input) {
     input.label = newLabel || undefined

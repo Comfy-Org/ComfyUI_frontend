@@ -2,6 +2,7 @@ import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { isStringInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
+import { resolveWidgetGraphId } from '@/renderer/extensions/vueNodes/widgets/composables/resolveWidgetGraphId'
 import { app } from '@/scripts/app'
 import type { ComfyWidgetConstructorV2 } from '@/scripts/widgets'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
@@ -18,19 +19,22 @@ function addMultilineWidget(
   const widgetStore = useWidgetValueStore()
   const inputEl = document.createElement('textarea')
   inputEl.className = 'comfy-multiline-input'
+  inputEl.dataset.testid = 'dom-widget-textarea'
   inputEl.value = opts.defaultVal
   inputEl.placeholder = opts.placeholder || name
   inputEl.spellcheck = useSettingStore().get('Comfy.TextareaWidget.Spellcheck')
 
   const widget = node.addDOMWidget(name, 'customtext', inputEl, {
     getValue(): string {
-      const widgetState = widgetStore.getWidget(node.id, name)
+      const graphId = resolveWidgetGraphId(node)
+      const widgetState = widgetStore.getWidget(graphId, node.id, name)
 
       return (widgetState?.value as string) ?? inputEl.value
     },
     setValue(v: string) {
       inputEl.value = v
-      const widgetState = widgetStore.getWidget(node.id, name)
+      const graphId = resolveWidgetGraphId(node)
+      const widgetState = widgetStore.getWidget(graphId, node.id, name)
       if (widgetState) widgetState.value = v
     }
   })

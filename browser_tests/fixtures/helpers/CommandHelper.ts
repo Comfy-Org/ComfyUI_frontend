@@ -11,7 +11,10 @@ export class CommandHelper {
   ): Promise<void> {
     await this.page.evaluate(
       ({ commandId, metadata }) => {
-        return window['app'].extensionManager.command.execute(commandId, {
+        const app = window.app
+        if (!app) throw new Error('window.app is not available')
+
+        return app.extensionManager.command.execute(commandId, {
           metadata
         })
       },

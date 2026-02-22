@@ -3,10 +3,10 @@ import { computed, inject, provide, ref, shallowRef, watchEffect } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
-import { isProxyWidget } from '@/core/graph/subgraph/proxyWidget'
-import { parseProxyWidgets } from '@/core/schemas/proxyWidget'
+import { isPromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetTypes'
 import type { LGraphGroup, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { SubgraphNode } from '@/lib/litegraph/src/litegraph'
+import { usePromotionStore } from '@/stores/promotionStore'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
@@ -69,27 +69,28 @@ const { t } = useI18n()
 
 const getNodeParentGroup = inject(GetNodeParentGroupKey, null)
 
+const promotionStore = usePromotionStore()
+
 function isWidgetShownOnParents(
   widgetNode: LGraphNode,
   widget: IBaseWidget
 ): boolean {
-  if (!parents.length) return false
-  const proxyWidgets = parseProxyWidgets(parents[0].properties.proxyWidgets)
-
-  // For proxy widgets (already promoted), check using overlay information
-  if (isProxyWidget(widget)) {
-    return proxyWidgets.some(
-      ([nodeId, widgetName]) =>
-        widget._overlay.nodeId == nodeId &&
-        widget._overlay.widgetName === widgetName
+  return parents.some((parent) => {
+    if (isPromotedWidgetView(widget)) {
+      return promotionStore.isPromoted(
+        parent.rootGraph.id,
+        parent.id,
+        widget.sourceNodeId,
+        widget.sourceWidgetName
+      )
+    }
+    return promotionStore.isPromoted(
+      parent.rootGraph.id,
+      parent.id,
+      String(widgetNode.id),
+      widget.name
     )
-  }
-
-  // For regular widgets (not yet promoted), check using node ID and widget name
-  return proxyWidgets.some(
-    ([nodeId, widgetName]) =>
-      widgetNode.id == nodeId && widget.name === widgetName
-  )
+  })
 }
 
 const isEmpty = computed(() => widgets.value.length === 0)

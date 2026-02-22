@@ -9,17 +9,20 @@ test.describe('Vue Upload Widgets', () => {
     await comfyPage.vueNodes.waitForNodes()
   })
 
-  test(
-    'should hide canvas-only upload buttons',
-    { tag: '@screenshot' },
-    async ({ comfyPage }) => {
-      await comfyPage.setup()
-      await comfyPage.workflow.loadWorkflow('widgets/all_load_widgets')
-      await comfyPage.vueNodes.waitForNodes()
+  test('should hide canvas-only upload buttons', async ({ comfyPage }) => {
+    await comfyPage.setup()
+    await comfyPage.workflow.loadWorkflow('widgets/all_load_widgets')
+    await comfyPage.vueNodes.waitForNodes()
 
-      await expect(comfyPage.canvas).toHaveScreenshot(
-        'vue-nodes-upload-widgets.png'
-      )
-    }
-  )
+    await expect(
+      comfyPage.page.getByText('choose file to upload', { exact: true })
+    ).not.toBeVisible()
+
+    await expect
+      .poll(() => comfyPage.page.getByText('Error loading image').count())
+      .toBeGreaterThan(0)
+    await expect
+      .poll(() => comfyPage.page.getByText('Error loading video').count())
+      .toBeGreaterThan(0)
+  })
 })

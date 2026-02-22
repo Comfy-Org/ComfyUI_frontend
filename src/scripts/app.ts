@@ -7,7 +7,7 @@ import { shallowRef } from 'vue'
 import { useCanvasPositionConversion } from '@/composables/element/useCanvasPositionConversion'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { flushScheduledSlotLayoutSync } from '@/renderer/extensions/vueNodes/composables/useSlotElementTracking'
-import { registerProxyWidgets } from '@/core/graph/subgraph/proxyWidget'
+
 import { st, t } from '@/i18n'
 import type { IContextMenuValue } from '@/lib/litegraph/src/interfaces'
 import {
@@ -892,8 +892,6 @@ export class ComfyApp {
       }
     )
 
-    registerProxyWidgets(this.canvas)
-
     this.rootGraph.start()
 
     // Ensure the canvas fills the window
@@ -1314,18 +1312,18 @@ export class ComfyApp {
               }
             }
           }
-          if (reset_invalid_values) {
-            if (widget.type == 'combo') {
-              const values = widget.options.values as
-                | (string | number | boolean)[]
-                | undefined
-              if (
-                values &&
-                values.length > 0 &&
-                !values.includes(widget.value as string | number | boolean)
-              ) {
-                widget.value = values[0]
-              }
+          if (widget.type == 'combo') {
+            const values = widget.options.values as
+              | (string | number | boolean)[]
+              | undefined
+            if (
+              values &&
+              values.length > 0 &&
+              (widget.value == null ||
+                (reset_invalid_values &&
+                  !values.includes(widget.value as string | number | boolean)))
+            ) {
+              widget.value = values[0]
             }
           }
         }

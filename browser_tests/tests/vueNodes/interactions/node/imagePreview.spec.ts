@@ -2,15 +2,20 @@ import { expect } from '@playwright/test'
 
 import type { ComfyPage } from '../../../../fixtures/ComfyPage'
 import { comfyPageFixture as test } from '../../../../fixtures/ComfyPage'
+import {
+  getNodeWidgetCountByName,
+  getProxyWidgetNames
+} from '../../../../helpers/proxyWidgets'
 
 test.describe('Vue Nodes Image Preview', () => {
   test.beforeEach(async ({ comfyPage }) => {
     await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
-    await comfyPage.workflow.loadWorkflow('widgets/load_image_widget')
-    await comfyPage.vueNodes.waitForNodes()
   })
 
   async function loadImageOnNode(comfyPage: ComfyPage) {
+    await comfyPage.workflow.loadWorkflow('widgets/load_image_widget')
+    await comfyPage.vueNodes.waitForNodes()
+
     const loadImageNode = (
       await comfyPage.nodeOps.getNodeRefsByType('LoadImage')
     )[0]
@@ -25,16 +30,19 @@ test.describe('Vue Nodes Image Preview', () => {
     await expect(imagePreview.locator('img')).toBeVisible()
     await expect(imagePreview).toContainText('x')
 
-    return imagePreview
+    return {
+      imagePreview,
+      nodeId: String(loadImageNode.id)
+    }
   }
 
   // TODO(#8143): Re-enable after image preview sync is working in CI
   test.fixme('opens mask editor from image preview button', async ({
     comfyPage
   }) => {
-    const imagePreview = await loadImageOnNode(comfyPage)
+    const { imagePreview } = await loadImageOnNode(comfyPage)
 
-    await imagePreview.locator('[role="img"]').hover()
+    await imagePreview.locator('[role="img"]').focus()
     await comfyPage.page.getByLabel('Edit or mask image').click()
 
     await expect(comfyPage.page.locator('.mask-editor-dialog')).toBeVisible()
@@ -42,9 +50,11 @@ test.describe('Vue Nodes Image Preview', () => {
 
   // TODO(#8143): Re-enable after image preview sync is working in CI
   test.fixme('shows image context menu options', async ({ comfyPage }) => {
-    await loadImageOnNode(comfyPage)
+    const { nodeId } = await loadImageOnNode(comfyPage)
 
-    const nodeHeader = comfyPage.vueNodes.getNodeByTitle('Load Image')
+    const nodeHeader = comfyPage.vueNodes
+      .getNodeLocator(nodeId)
+      .locator('.lg-node-header')
     await nodeHeader.click()
     await nodeHeader.click({ button: 'right' })
 
@@ -55,4 +65,61 @@ test.describe('Vue Nodes Image Preview', () => {
     await expect(contextMenu.getByText('Save Image')).toBeVisible()
     await expect(contextMenu.getByText('Open in Mask Editor')).toBeVisible()
   })
+
+  test(
+    'renders promoted image previews for each subgraph node',
+    { tag: '@screenshot' },
+    async ({ comfyPage }) => {
+      await comfyPage.workflow.loadWorkflow(
+        'subgraphs/subgraph-with-multiple-promoted-previews'
+      )
+      await comfyPage.vueNodes.waitForNodes()
+
+      const firstSubgraphNode = comfyPage.vueNodes.getNodeLocator('7')
+      const secondSubgraphNode = comfyPage.vueNodes.getNodeLocator('8')
+
+      await expect(firstSubgraphNode).toBeVisible()
+      await expect(secondSubgraphNode).toBeVisible()
+
+      const firstProxyWidgets = await getProxyWidgetNames(comfyPage, '7')
+      const secondProxyWidgets = await getProxyWidgetNames(comfyPage, '8')
+      expect(firstProxyWidgets).toEqual([
+        '$$canvas-image-preview',
+        '$$canvas-image-preview'
+      ])
+      expect(secondProxyWidgets).toEqual(['$$canvas-image-preview'])
+
+      expect(
+        await getNodeWidgetCountByName(comfyPage, '7', '$$canvas-image-preview')
+      ).toBe(2)
+      expect(
+        await getNodeWidgetCountByName(comfyPage, '8', '$$canvas-image-preview')
+      ).toBe(1)
+
+      await expect(
+        firstSubgraphNode.locator('.lg-node-widgets')
+      ).not.toContainText('$$canvas-image-preview')
+      await expect(
+        secondSubgraphNode.locator('.lg-node-widgets')
+      ).not.toContainText('$$canvas-image-preview')
+
+      await comfyPage.command.executeCommand('Comfy.Canvas.FitView')
+      await comfyPage.command.executeCommand('Comfy.QueuePrompt')
+
+      const firstPreviewImages = firstSubgraphNode.locator('.image-preview img')
+      const secondPreviewImages =
+        secondSubgraphNode.locator('.image-preview img')
+
+      await expect(firstPreviewImages).toHaveCount(2, { timeout: 30_000 })
+      await expect(secondPreviewImages).toHaveCount(1, { timeout: 30_000 })
+
+      await expect(firstPreviewImages.first()).toBeVisible({ timeout: 30_000 })
+      await expect(firstPreviewImages.nth(1)).toBeVisible({ timeout: 30_000 })
+      await expect(secondPreviewImages.first()).toBeVisible({ timeout: 30_000 })
+
+      await expect(comfyPage.canvas).toHaveScreenshot(
+        'vue-node-multiple-promoted-previews.png'
+      )
+    }
+  )
 })

@@ -1,6 +1,7 @@
 import TextPreviewWidget from '@/components/graph/widgets/TextPreviewWidget.vue'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
+import { resolveWidgetGraphId } from '@/renderer/extensions/vueNodes/widgets/composables/resolveWidgetGraphId'
 import { ComponentWidgetImpl, addWidget } from '@/scripts/domWidget'
 import type { ComponentWidgetStandardProps } from '@/scripts/domWidget'
 import type { ComfyWidgetConstructorV2 } from '@/scripts/widgets'
@@ -36,9 +37,15 @@ export function useTextPreviewWidget(
       },
       options: {
         getValue: () =>
-          useWidgetValueStore().getWidget(node.id, inputSpec.name)?.value ?? '',
+          useWidgetValueStore().getWidget(
+            resolveWidgetGraphId(node),
+            node.id,
+            inputSpec.name
+          )?.value ?? '',
         setValue: (value: string | object) => {
+          const graphId = resolveWidgetGraphId(node)
           const widgetState = useWidgetValueStore().getWidget(
+            graphId,
             node.id,
             inputSpec.name
           )

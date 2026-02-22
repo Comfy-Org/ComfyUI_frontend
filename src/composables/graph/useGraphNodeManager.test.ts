@@ -5,7 +5,12 @@ import { computed, nextTick, watch } from 'vue'
 
 import { useGraphNodeManager } from '@/composables/graph/useGraphNodeManager'
 import { BaseWidget, LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import {
+  createTestSubgraph,
+  createTestSubgraphNode
+} from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import { NodeSlotType } from '@/lib/litegraph/src/types/globalEnums'
+import { usePromotionStore } from '@/stores/promotionStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 
 describe('Node Reactivity', () => {
@@ -26,7 +31,7 @@ describe('Node Reactivity', () => {
   }
 
   it('widget values are reactive through the store', async () => {
-    const { node } = createTestGraph()
+    const { node, graph } = createTestGraph()
     const store = useWidgetValueStore()
     const widget = node.widgets![0]
 
@@ -36,12 +41,13 @@ describe('Node Reactivity', () => {
     expect((widget as BaseWidget).node.id).toBe(node.id)
 
     // Initial value should be in store after setNodeId was called
-    expect(store.getWidget(node.id, 'testnum')?.value).toBe(2)
+    expect(store.getWidget(graph.id, node.id, 'testnum')?.value).toBe(2)
+
+    const state = store.getWidget(graph.id, node.id, 'testnum')
+    if (!state) throw new Error('Expected widget state to exist')
 
     const onValueChange = vi.fn()
-    const widgetValue = computed(
-      () => store.getWidget(node.id, 'testnum')?.value
-    )
+    const widgetValue = computed(() => state.value)
     watch(widgetValue, onValueChange)
 
     widget.value = 42
@@ -62,9 +68,10 @@ describe('Node Reactivity', () => {
     })
     await nextTick()
 
-    const widgetValue = computed(
-      () => store.getWidget(node.id, 'testnum')?.value
-    )
+    const state = store.getWidget(graph.id, node.id, 'testnum')
+    if (!state) throw new Error('Expected widget state to exist')
+
+    const widgetValue = computed(() => state.value)
     watch(widgetValue, onValueChange)
 
     node.widgets![0].value = 99
@@ -72,5 +79,38 @@ describe('Node Reactivity', () => {
 
     expect(onValueChange).toHaveBeenCalledTimes(1)
     expect(widgetValue.value).toBe(99)
+  })
+})
+
+describe('Subgraph Promoted Pseudo Widgets', () => {
+  beforeEach(() => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
+  })
+
+  it('marks promoted $$ widgets as canvasOnly for Vue widget rendering', () => {
+    const subgraph = createTestSubgraph()
+    const interiorNode = new LGraphNode('interior')
+    interiorNode.id = 10
+    subgraph.add(interiorNode)
+
+    const subgraphNode = createTestSubgraphNode(subgraph, { id: 123 })
+    const graph = subgraphNode.graph as LGraph
+    graph.add(subgraphNode)
+
+    usePromotionStore().promote(
+      subgraphNode.rootGraph.id,
+      subgraphNode.id,
+      '10',
+      '$$canvas-image-preview'
+    )
+
+    const { vueNodeData } = useGraphNodeManager(graph)
+    const vueNode = vueNodeData.get(String(subgraphNode.id))
+    const promotedWidget = vueNode?.widgets?.find(
+      (widget) => widget.name === '$$canvas-image-preview'
+    )
+
+    expect(promotedWidget).toBeDefined()
+    expect(promotedWidget?.options?.canvasOnly).toBe(true)
   })
 })

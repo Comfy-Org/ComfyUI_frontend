@@ -87,6 +87,7 @@ import { useSettingStore } from '@/platform/settings/settingStore'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { st } from '@/i18n'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useNodeTooltips } from '@/renderer/extensions/vueNodes/composables/useNodeTooltips'
 import { useNodeZIndex } from '@/renderer/extensions/vueNodes/composables/useNodeZIndex'
 import WidgetDOM from '@/renderer/extensions/vueNodes/widgets/components/WidgetDOM.vue'
@@ -101,6 +102,7 @@ import {
   stripGraphPrefix,
   useWidgetValueStore
 } from '@/stores/widgetValueStore'
+import { usePromotionStore } from '@/stores/promotionStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import type { SimplifiedWidget, WidgetValue } from '@/types/simplifiedWidget'
 import { cn } from '@/utils/tailwindUtil'
@@ -115,7 +117,9 @@ const { nodeData } = defineProps<NodeWidgetsProps>()
 
 const { shouldHandleNodePointerEvents, forwardEventToCanvas } =
   useCanvasInteractions()
+const canvasStore = useCanvasStore()
 const { bringNodeToFront } = useNodeZIndex()
+const promotionStore = usePromotionStore()
 const executionErrorStore = useExecutionErrorStore()
 
 function handleWidgetPointerEvent(event: PointerEvent) {
@@ -171,6 +175,7 @@ interface ProcessedWidget {
 const processedWidgets = computed((): ProcessedWidget[] => {
   if (!nodeData?.widgets) return []
   const nodeErrors = executionErrorStore.lastNodeErrors?.[nodeData.id ?? '']
+  const graphId = canvasStore.canvas?.graph?.rootGraph.id
 
   const nodeId = nodeData.id
   const { widgets } = nodeData
@@ -187,7 +192,9 @@ const processedWidgets = computed((): ProcessedWidget[] => {
 
     // Get metadata from store (registered during BaseWidget.setNodeId)
     const bareWidgetId = stripGraphPrefix(widget.nodeId ?? nodeId)
-    const widgetState = widgetValueStore.getWidget(bareWidgetId, widget.name)
+    const widgetState = graphId
+      ? widgetValueStore.getWidget(graphId, bareWidgetId, widget.name)
+      : undefined
 
     // Get value from store (falls back to undefined if not registered)
     const value = widgetState?.value as WidgetValue
@@ -198,9 +205,11 @@ const processedWidgets = computed((): ProcessedWidget[] => {
       ? { ...storeOptions, disabled: true }
       : storeOptions
 
-    // Derive border style from store metadata
+    const isPromotedView = !!widget.nodeId
     const borderStyle =
-      widgetState?.promoted && String(widgetState?.nodeId) === String(nodeId)
+      graphId &&
+      !isPromotedView &&
+      promotionStore.isPromotedByAny(graphId, String(bareWidgetId), widget.name)
         ? 'ring ring-component-node-widget-promoted'
         : widget.options?.advanced
           ? 'ring ring-component-node-widget-advanced'

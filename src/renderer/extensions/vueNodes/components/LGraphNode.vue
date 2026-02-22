@@ -111,8 +111,18 @@
 
         <NodeWidgets v-if="nodeData.widgets?.length" :node-data="nodeData" />
 
-        <div v-if="hasCustomContent" class="min-h-0 flex-1 flex">
-          <NodeContent :node-data="nodeData" :media="nodeMedia" />
+        <div v-if="hasCustomContent" class="min-h-0 flex-1 flex flex-col">
+          <NodeContent
+            v-if="nodeMedia"
+            :node-data="nodeData"
+            :media="nodeMedia"
+          />
+          <NodeContent
+            v-for="preview in promotedPreviews"
+            :key="`${preview.interiorNodeId}-${preview.widgetName}`"
+            :node-data="nodeData"
+            :media="preview"
+          />
         </div>
         <!-- Live mid-execution preview images -->
         <LivePreview
@@ -217,6 +227,7 @@ import Button from '@/components/ui/button/Button.vue'
 import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
 import { showNodeOptions } from '@/composables/graph/useMoreOptionsMenu'
 import { useErrorHandling } from '@/composables/useErrorHandling'
+import { hasUnpromotedWidgets } from '@/core/graph/subgraph/unpromotedWidgetUtils'
 import { st } from '@/i18n'
 import {
   LGraphCanvas,
@@ -231,6 +242,7 @@ import { useTelemetry } from '@/platform/telemetry'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import { usePromotedPreviews } from '@/composables/node/usePromotedPreviews'
 import NodeBadges from '@/renderer/extensions/vueNodes/components/NodeBadges.vue'
 import { LayoutSource } from '@/renderer/core/layout/types'
 import SlotConnectionDot from '@/renderer/extensions/vueNodes/components/SlotConnectionDot.vue'
@@ -484,7 +496,7 @@ watch(isCollapsed, (collapsed) => {
 
 // Check if node has custom content (like image/video outputs)
 const hasCustomContent = computed(() => {
-  // Show custom content if node has media outputs
+  if (promotedPreviews.value.length > 0) return true
   return !!nodeMedia.value && nodeMedia.value.urls.length > 0
 })
 
@@ -598,15 +610,17 @@ const lgraphNode = computed(() => {
   return getNodeByLocatorId(app.rootGraph, locatorId)
 })
 
+// TODO: Surface subgraph info more cleanly in VueNodeData instead of
+// reaching through lgraphNode for promoted preview resolution.
+const { promotedPreviews } = usePromotedPreviews(lgraphNode)
+
 const showAdvancedInputsButton = computed(() => {
   const node = lgraphNode.value
   if (!node) return false
 
   // For subgraph nodes: check for unpromoted widgets
   if (node instanceof SubgraphNode) {
-    const interiorNodes = node.subgraph.nodes
-    const allInteriorWidgets = interiorNodes.flatMap((n) => n.widgets ?? [])
-    return allInteriorWidgets.some((w) => !w.computedDisabled && !w.promoted)
+    return hasUnpromotedWidgets(node)
   }
 
   // For regular nodes: show button if there are advanced widgets and they're currently hidden

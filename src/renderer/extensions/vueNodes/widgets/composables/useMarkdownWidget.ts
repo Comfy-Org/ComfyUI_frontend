@@ -9,6 +9,7 @@ import { Markdown as TiptapMarkdown } from 'tiptap-markdown'
 
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
+import { resolveWidgetGraphId } from '@/renderer/extensions/vueNodes/widgets/composables/resolveWidgetGraphId'
 import { app } from '@/scripts/app'
 import type { ComfyWidgetConstructorV2 } from '@/scripts/widgets'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
@@ -48,15 +49,17 @@ function addMarkdownWidget(
 
   const widget = node.addDOMWidget(name, 'MARKDOWN', inputEl, {
     getValue(): string {
+      const graphId = resolveWidgetGraphId(node)
       return (
-        (widgetStore.getWidget(node.id, name)?.value as string) ??
+        (widgetStore.getWidget(graphId, node.id, name)?.value as string) ??
         textarea.value
       )
     },
     setValue(v: string) {
       textarea.value = v
       editor.commands.setContent(v)
-      const widgetState = widgetStore.getWidget(node.id, name)
+      const graphId = resolveWidgetGraphId(node)
+      const widgetState = widgetStore.getWidget(graphId, node.id, name)
       if (widgetState) widgetState.value = v
     }
   })

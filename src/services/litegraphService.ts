@@ -6,7 +6,10 @@ import { useSubgraphOperations } from '@/composables/graph/useSubgraphOperations
 import { useNodeAnimatedImage } from '@/composables/node/useNodeAnimatedImage'
 import { useNodeCanvasImagePreview } from '@/composables/node/useNodeCanvasImagePreview'
 import { useNodeImage, useNodeVideo } from '@/composables/node/useNodeImage'
-import { addWidgetPromotionOptions } from '@/core/graph/subgraph/proxyWidgetUtils'
+import {
+  addWidgetPromotionOptions,
+  isPreviewPseudoWidget
+} from '@/core/graph/subgraph/proxyWidgetUtils'
 import { applyDynamicInputs } from '@/core/graph/widgets/dynamicWidgets'
 import { st, t } from '@/i18n'
 import {
@@ -37,6 +40,8 @@ import { useWorkflowStore } from '@/platform/workflow/management/stores/workflow
 import type { NodeId } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useDialogService } from '@/services/dialogService'
+import { resolveSubgraphPseudoWidgetCache } from '@/services/subgraphPseudoWidgetCache'
+import type { SubgraphPseudoWidgetCache } from '@/services/subgraphPseudoWidgetCache'
 import { transformInputSpecV2ToV1 } from '@/schemas/nodeDef/migration'
 import type {
   ComfyNodeDef as ComfyNodeDefV2,
@@ -51,6 +56,7 @@ import { useDomWidgetStore } from '@/stores/domWidgetStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useNodeOutputStore } from '@/stores/imagePreviewStore'
 import { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
+import { usePromotionStore } from '@/stores/promotionStore'
 import { useSubgraphStore } from '@/stores/subgraphStore'
 import { useFavoritedWidgetsStore } from '@/stores/workspace/favoritedWidgetsStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
@@ -127,6 +133,30 @@ export const useLitegraphService = () => {
   const widgetStore = useWidgetStore()
   const canvasStore = useCanvasStore()
   const { toggleSelectedNodesMode } = useSelectedLiteGraphItems()
+  const subgraphPseudoWidgetCache = new WeakMap<
+    SubgraphNode,
+    SubgraphPseudoWidgetCache<LGraphNode, IBaseWidget>
+  >()
+
+  function invalidateSubgraphPseudoWidgetCache(node: SubgraphNode) {
+    subgraphPseudoWidgetCache.delete(node)
+  }
+
+  function getPseudoWidgetPreviewTargets(node: SubgraphNode): LGraphNode[] {
+    const promotionStore = usePromotionStore()
+    const promotions = promotionStore.getPromotionsRef(
+      node.rootGraph.id,
+      node.id
+    )
+    const resolved = resolveSubgraphPseudoWidgetCache({
+      cache: subgraphPseudoWidgetCache.get(node) ?? null,
+      promotions,
+      getNodeById: (nodeId) => node.subgraph.getNodeById(nodeId) ?? undefined,
+      isPreviewPseudoWidget
+    })
+    subgraphPseudoWidgetCache.set(node, resolved.cache)
+    return resolved.nodes
+  }
 
   /**
    * @internal The key for the node definition in the i18n file.
@@ -317,6 +347,7 @@ export const useLitegraphService = () => {
 
         // Set up event listener for promoted widget registration
         subgraph.events.addEventListener('widget-promoted', (event) => {
+          invalidateSubgraphPseudoWidgetCache(this)
           const { widget } = event.detail
           // Only handle DOM widgets
           if (!isDOMWidget(widget) && !isComponentWidget(widget)) return
@@ -336,6 +367,7 @@ export const useLitegraphService = () => {
 
         // Set up event listener for promoted widget removal
         subgraph.events.addEventListener('widget-demoted', (event) => {
+          invalidateSubgraphPseudoWidgetCache(this)
           const { widget } = event.detail
           // Only handle DOM widgets
           if (!isDOMWidget(widget) && !isComponentWidget(widget)) return
@@ -794,6 +826,15 @@ export const useLitegraphService = () => {
     }
     node.prototype.onDrawBackground = function () {
       updatePreviews(this)
+
+      if (this instanceof SubgraphNode) {
+        const parentGraph = this.graph
+        for (const interiorNode of getPseudoWidgetPreviewTargets(this)) {
+          updatePreviews(interiorNode, () => {
+            parentGraph?.setDirtyCanvas(true)
+          })
+        }
+      }
     }
   }
 

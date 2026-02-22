@@ -1,9 +1,4 @@
-import { parseProxyWidgets } from '@/core/schemas/proxyWidget'
-import type { ProxyWidgetsProperty } from '@/core/schemas/proxyWidget'
-import {
-  isProxyWidget,
-  isDisconnectedWidget
-} from '@/core/graph/subgraph/proxyWidget'
+import { isPromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetTypes'
 import { t } from '@/i18n'
 import type {
   IContextMenuValue,
@@ -12,35 +7,56 @@ import type {
 import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets.ts'
 import { useToastStore } from '@/platform/updates/common/toastStore'
+import {
+  CANVAS_IMAGE_PREVIEW_WIDGET,
+  supportsVirtualCanvasImagePreview
+} from '@/composables/node/useNodeCanvasImagePreview'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useLitegraphService } from '@/services/litegraphService'
+import { usePromotionStore } from '@/stores/promotionStore'
 import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
 
 type PartialNode = Pick<LGraphNode, 'title' | 'id' | 'type'>
 
 export type WidgetItem = [PartialNode, IBaseWidget]
+export { CANVAS_IMAGE_PREVIEW_WIDGET }
 
-function getProxyWidgets(node: SubgraphNode) {
-  return parseProxyWidgets(node.properties.proxyWidgets)
+export function getWidgetName(w: IBaseWidget): string {
+  return isPromotedWidgetView(w) ? w.sourceWidgetName : w.name
 }
+
+/** Known non-$$ preview widget types added by core or popular extensions. */
+const PREVIEW_WIDGET_TYPES = new Set(['preview', 'video', 'audioUI'])
+
+/**
+ * Returns true for pseudo-widgets that display media previews and should
+ * be auto-promoted when their node is inside a subgraph.
+ * Matches the core `$$` convention as well as custom-node patterns
+ * (e.g. VHS `videopreview` with type `"preview"`).
+ */
+export function isPreviewPseudoWidget(widget: IBaseWidget): boolean {
+  if (widget.name.startsWith('$$')) return true
+  // Custom nodes may set serialize on the widget or in options
+  if (widget.serialize !== false && widget.options?.serialize !== false)
+    return false
+  if (typeof widget.type === 'string' && PREVIEW_WIDGET_TYPES.has(widget.type))
+    return true
+  return false
+}
+
 export function promoteWidget(
   node: PartialNode,
   widget: IBaseWidget,
   parents: SubgraphNode[]
 ) {
+  const store = usePromotionStore()
+  const nodeId = String(
+    isPromotedWidgetView(widget) ? widget.sourceNodeId : node.id
+  )
+  const widgetName = getWidgetName(widget)
   for (const parent of parents) {
-    const existingProxyWidgets = getProxyWidgets(parent)
-    // Prevent duplicate promotion
-    if (existingProxyWidgets.some(matchesPropertyItem([node, widget]))) {
-      continue
-    }
-    const proxyWidgets = [
-      ...existingProxyWidgets,
-      widgetItemToProperty([node, widget])
-    ]
-    parent.properties.proxyWidgets = proxyWidgets
+    store.promote(parent.rootGraph.id, parent.id, nodeId, widgetName)
   }
-  widget.promoted = true
 }
 
 export function demoteWidget(
@@ -48,36 +64,17 @@ export function demoteWidget(
   widget: IBaseWidget,
   parents: SubgraphNode[]
 ) {
+  const store = usePromotionStore()
+  const nodeId = String(
+    isPromotedWidgetView(widget) ? widget.sourceNodeId : node.id
+  )
+  const widgetName = getWidgetName(widget)
   for (const parent of parents) {
-    const proxyWidgets = getProxyWidgets(parent).filter(
-      (widgetItem) => !matchesPropertyItem([node, widget])(widgetItem)
-    )
-    parent.properties.proxyWidgets = proxyWidgets
+    store.demote(parent.rootGraph.id, parent.id, nodeId, widgetName)
   }
-  widget.promoted = false
-}
-
-function getWidgetName(w: IBaseWidget): string {
-  return isProxyWidget(w) ? w._overlay.widgetName : w.name
-}
-
-export function matchesWidgetItem([nodeId, widgetName]: [string, string]) {
-  return ([n, w]: WidgetItem) =>
-    n.id == nodeId && getWidgetName(w) === widgetName
-}
-export function matchesPropertyItem([n, w]: WidgetItem) {
-  return ([nodeId, widgetName]: [string, string]) =>
-    n.id == nodeId && getWidgetName(w) === widgetName
-}
-export function widgetItemToProperty([n, w]: WidgetItem): [string, string] {
-  return [`${n.id}`, getWidgetName(w)]
 }
 
 function getParentNodes(): SubgraphNode[] {
-  //NOTE: support for determining parents of a subgraph is limited
-  //This function will require rework to properly support linked subgraphs
-  //Either by including actual parents in the navigation stack,
-  //or by adding a new event for parent listeners to collect from
   const { navigationStack } = useSubgraphNavigationStore()
   const subgraph = navigationStack.at(-1)
   if (!subgraph) {
@@ -101,13 +98,18 @@ export function addWidgetPromotionOptions(
   widget: IBaseWidget,
   node: LGraphNode
 ) {
+  const store = usePromotionStore()
   const parents = getParentNodes()
+  const nodeId = String(node.id)
+  const widgetName = getWidgetName(widget)
   const promotableParents = parents.filter(
-    (s) => !getProxyWidgets(s).some(matchesPropertyItem([node, widget]))
+    (s) => !store.isPromoted(s.rootGraph.id, s.id, nodeId, widgetName)
   )
   if (promotableParents.length > 0)
     options.unshift({
-      content: `Promote Widget: ${widget.label ?? widget.name}`,
+      content: t('subgraphStore.promoteWidget', {
+        name: widget.label ?? widget.name
+      }),
       callback: () => {
         promoteWidget(node, widget, promotableParents)
         widget.callback?.(widget.value)
@@ -115,7 +117,9 @@ export function addWidgetPromotionOptions(
     })
   else {
     options.unshift({
-      content: `Un-Promote Widget: ${widget.label ?? widget.name}`,
+      content: t('subgraphStore.unpromoteWidget', {
+        name: widget.label ?? widget.name
+      }),
       callback: () => {
         demoteWidget(node, widget, parents)
         widget.callback?.(widget.value)
@@ -123,6 +127,7 @@ export function addWidgetPromotionOptions(
     })
   }
 }
+
 export function tryToggleWidgetPromotion() {
   const canvas = useCanvasStore().getCanvas()
   const [x, y] = canvas.graph_mouse
@@ -131,13 +136,17 @@ export function tryToggleWidgetPromotion() {
   const widget = node.getWidgetOnPos(x, y, true)
   const parents = getParentNodes()
   if (!parents.length || !widget) return
+  const store = usePromotionStore()
+  const nodeId = String(node.id)
+  const widgetName = getWidgetName(widget)
   const promotableParents = parents.filter(
-    (s) => !getProxyWidgets(s).some(matchesPropertyItem([node, widget]))
+    (s) => !store.isPromoted(s.rootGraph.id, s.id, nodeId, widgetName)
   )
   if (promotableParents.length > 0)
     promoteWidget(node, widget, promotableParents)
   else demoteWidget(node, widget, parents)
 }
+
 const recommendedNodes = [
   'CLIPTextEncode',
   'LoadImage',
@@ -153,36 +162,124 @@ export function isRecommendedWidget([node, widget]: WidgetItem) {
   )
 }
 
-function nodeWidgets(n: LGraphNode): WidgetItem[] {
-  return n.widgets?.map((w: IBaseWidget) => [n, w]) ?? []
+function supportsVirtualPreviewWidget(node: LGraphNode): boolean {
+  return supportsVirtualCanvasImagePreview(node)
 }
+
+function createVirtualCanvasImagePreviewWidget(): IBaseWidget {
+  return {
+    name: CANVAS_IMAGE_PREVIEW_WIDGET,
+    type: 'IMAGE_PREVIEW',
+    options: { serialize: false },
+    serialize: false,
+    y: 0,
+    computedDisabled: false
+  }
+}
+
+export function getPromotableWidgets(node: LGraphNode): IBaseWidget[] {
+  const widgets = [...(node.widgets ?? [])]
+
+  const hasCanvasPreviewWidget = widgets.some(
+    (widget) => widget.name === CANVAS_IMAGE_PREVIEW_WIDGET
+  )
+  const supportsVirtualPreview = supportsVirtualPreviewWidget(node)
+  if (!hasCanvasPreviewWidget && supportsVirtualPreview) {
+    widgets.push(createVirtualCanvasImagePreviewWidget())
+  }
+
+  return widgets
+}
+
+function nodeWidgets(n: LGraphNode): WidgetItem[] {
+  return getPromotableWidgets(n).map((w: IBaseWidget) => [n, w])
+}
+
 export function promoteRecommendedWidgets(subgraphNode: SubgraphNode) {
+  const store = usePromotionStore()
   const { updatePreviews } = useLitegraphService()
   const interiorNodes = subgraphNode.subgraph.nodes
   for (const node of interiorNodes) {
     node.updateComputedDisabled()
-    function checkWidgets() {
-      updatePreviews(node)
-      const widget = node.widgets?.find((w) => w.name.startsWith('$$'))
+
+    const hasPreviewWidget = () =>
+      node.widgets?.some(isPreviewPseudoWidget) ?? false
+
+    function promotePreviewWidget() {
+      const widget = node.widgets?.find(isPreviewPseudoWidget)
       if (!widget) return
-      const pw = getProxyWidgets(subgraphNode)
-      if (pw.some(matchesPropertyItem([node, widget]))) return
+      if (
+        store.isPromoted(
+          subgraphNode.rootGraph.id,
+          subgraphNode.id,
+          String(node.id),
+          widget.name
+        )
+      )
+        return
       promoteWidget(node, widget, [subgraphNode])
     }
-    requestAnimationFrame(() => updatePreviews(node, checkWidgets))
+    // Promote preview widgets that already exist (e.g. custom node DOM widgets
+    // like VHS videopreview that are created in onNodeCreated).
+    promotePreviewWidget()
+
+    // If a preview widget already exists in this frame, there's nothing to
+    // defer. Core $$ preview widgets are the lazy path that needs updatePreviews.
+    if (hasPreviewWidget()) continue
+
+    // Also schedule a deferred check: core $$ widgets are created lazily by
+    // updatePreviews when node outputs are first loaded.
+    requestAnimationFrame(() => updatePreviews(node, promotePreviewWidget))
   }
   const filteredWidgets: WidgetItem[] = interiorNodes
     .flatMap(nodeWidgets)
     .filter(isRecommendedWidget)
-  const proxyWidgets: ProxyWidgetsProperty =
-    filteredWidgets.map(widgetItemToProperty)
-  subgraphNode.properties.proxyWidgets = proxyWidgets
+  for (const [n, w] of filteredWidgets) {
+    store.promote(
+      subgraphNode.rootGraph.id,
+      subgraphNode.id,
+      String(n.id),
+      getWidgetName(w)
+    )
+  }
   subgraphNode.computeSize(subgraphNode.size)
 }
 
 export function pruneDisconnected(subgraphNode: SubgraphNode) {
-  subgraphNode.properties.proxyWidgets = subgraphNode.widgets
-    .filter(isProxyWidget)
-    .filter((w) => !isDisconnectedWidget(w))
-    .map((w) => [w._overlay.nodeId, w._overlay.widgetName])
+  const store = usePromotionStore()
+  const subgraph = subgraphNode.subgraph
+  const entries = store.getPromotions(
+    subgraphNode.rootGraph.id,
+    subgraphNode.id
+  )
+  const removedEntries: Array<{ interiorNodeId: string; widgetName: string }> =
+    []
+
+  const validEntries = entries.filter((entry) => {
+    const node = subgraph.getNodeById(entry.interiorNodeId)
+    if (!node) {
+      removedEntries.push(entry)
+      return false
+    }
+    const hasWidget = getPromotableWidgets(node).some(
+      (iw) => iw.name === entry.widgetName
+    )
+    if (!hasWidget) {
+      removedEntries.push(entry)
+    }
+    return hasWidget
+  })
+
+  if (removedEntries.length > 0 && import.meta.env.DEV) {
+    console.warn(
+      '[proxyWidgetUtils] Pruned disconnected promotions',
+      removedEntries,
+      {
+        graphId: subgraphNode.rootGraph.id,
+        subgraphNodeId: subgraphNode.id
+      }
+    )
+  }
+
+  store.setPromotions(subgraphNode.rootGraph.id, subgraphNode.id, validEntries)
 }
