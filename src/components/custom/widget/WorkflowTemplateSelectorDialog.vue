@@ -729,10 +729,11 @@ const sortOptions = computed(() => [
     value: 'popular'
   },
   { name: t('templateWorkflows.sort.newest', 'Newest'), value: 'newest' },
-  {
-    name: t('templateWorkflows.sort.vramLowToHigh', 'VRAM Usage (Low to High)'),
-    value: 'vram-low-to-high'
-  },
+  // TODO: Uncomment when we have a way to get the real VRAM usage
+  // {
+  //   name: t('templateWorkflows.sort.vramLowToHigh', 'VRAM Usage (Low to High)'),
+  //   value: 'vram-low-to-high'
+  // },
   {
     name: t(
       'templateWorkflows.sort.modelSizeLowToHigh',
