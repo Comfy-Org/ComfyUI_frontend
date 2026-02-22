@@ -95,6 +95,7 @@
           :toggle-stack="toggleListViewStack"
           :asset-type="activeTab"
           @select-asset="handleAssetSelect"
+          @preview-asset="handleZoomClick"
           @context-menu="handleAssetContextMenu"
           @approach-end="handleApproachEnd"
         />

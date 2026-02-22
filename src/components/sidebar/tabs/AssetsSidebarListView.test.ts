@@ -106,4 +106,42 @@ describe('AssetsSidebarListView', () => {
     expect(assetListItem?.props('previewUrl')).toBe('')
     expect(assetListItem?.props('isVideoPreview')).toBe(false)
   })
+
+  it('emits preview-asset when item preview is clicked', async () => {
+    const imageAsset = {
+      ...buildAsset('image-asset', 'image.png'),
+      preview_url: '/api/view/image.png',
+      user_metadata: {}
+    } satisfies AssetItem
+
+    const wrapper = mountListView([buildOutputItem(imageAsset)])
+    const listItems = wrapper.findAllComponents({ name: 'AssetsListItem' })
+    const assetListItem = listItems.at(-1)
+
+    expect(assetListItem).toBeDefined()
+
+    assetListItem!.vm.$emit('preview-click')
+    await wrapper.vm.$nextTick()
+
+    expect(wrapper.emitted('preview-asset')).toEqual([[imageAsset]])
+  })
+
+  it('emits preview-asset when item is double-clicked', async () => {
+    const imageAsset = {
+      ...buildAsset('image-asset-dbl', 'image.png'),
+      preview_url: '/api/view/image.png',
+      user_metadata: {}
+    } satisfies AssetItem
+
+    const wrapper = mountListView([buildOutputItem(imageAsset)])
+    const listItems = wrapper.findAllComponents({ name: 'AssetsListItem' })
+    const assetListItem = listItems.at(-1)
+
+    expect(assetListItem).toBeDefined()
+
+    await assetListItem!.trigger('dblclick')
+    await wrapper.vm.$nextTick()
+
+    expect(wrapper.emitted('preview-asset')).toEqual([[imageAsset]])
+  })
 })
