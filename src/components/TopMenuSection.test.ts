@@ -7,6 +7,7 @@ import type { Component } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import TopMenuSection from '@/components/TopMenuSection.vue'
+import QueueNotificationBannerHost from '@/components/queue/QueueNotificationBannerHost.vue'
 import CurrentUserButton from '@/components/topbar/CurrentUserButton.vue'
 import LoginButton from '@/components/topbar/LoginButton.vue'
 import type {
@@ -113,6 +114,7 @@ function createWrapper({
         SubgraphBreadcrumb: true,
         QueueProgressOverlay: true,
         QueueInlineProgressSummary: true,
+        QueueNotificationBannerHost: true,
         CurrentUserButton: true,
         LoginButton: true,
         ContextMenu: {
@@ -140,6 +142,18 @@ function createJob(id: string, status: JobStatus): JobListItem {
 
 function createTask(id: string, status: JobStatus): TaskItemImpl {
   return new TaskItemImpl(createJob(id, status))
+}
+
+function createComfyActionbarStub(actionbarTarget: HTMLElement) {
+  return defineComponent({
+    name: 'ComfyActionbar',
+    setup(_, { emit }) {
+      onMounted(() => {
+        emit('update:progressTarget', actionbarTarget)
+      })
+      return () => h('div')
+    }
+  })
 }
 
 describe('TopMenuSection', () => {
@@ -201,6 +215,17 @@ describe('TopMenuSection', () => {
 
     const queueButton = wrapper.find('[data-testid="queue-overlay-toggle"]')
     expect(queueButton.text()).toContain('3 active')
+    expect(wrapper.find('[data-testid="active-jobs-indicator"]').exists()).toBe(
+      true
+    )
+  })
+
+  it('hides the active jobs indicator when no jobs are active', () => {
+    const wrapper = createWrapper()
+
+    expect(wrapper.find('[data-testid="active-jobs-indicator"]').exists()).toBe(
+      false
+    )
   })
 
   it('hides queue progress overlay when QPO V2 is enabled', async () => {
@@ -314,17 +339,9 @@ describe('TopMenuSection', () => {
       const pinia = createTestingPinia({ createSpy: vi.fn })
       configureSettings(pinia, true)
       const executionStore = useExecutionStore(pinia)
-      executionStore.activePromptId = 'prompt-1'
+      executionStore.activeJobId = 'job-1'
 
-      const ComfyActionbarStub = defineComponent({
-        name: 'ComfyActionbar',
-        setup(_, { emit }) {
-          onMounted(() => {
-            emit('update:progressTarget', actionbarTarget)
-          })
-          return () => h('div')
-        }
-      })
+      const ComfyActionbarStub = createComfyActionbarStub(actionbarTarget)
 
       const wrapper = createWrapper({
         pinia,
@@ -339,6 +356,103 @@ describe('TopMenuSection', () => {
         await nextTick()
 
         expect(actionbarTarget.querySelector('[role="status"]')).not.toBeNull()
+      } finally {
+        wrapper.unmount()
+        actionbarTarget.remove()
+      }
+    })
+  })
+
+  describe(QueueNotificationBannerHost, () => {
+    const configureSettings = (
+      pinia: ReturnType<typeof createTestingPinia>,
+      qpoV2Enabled: boolean
+    ) => {
+      const settingStore = useSettingStore(pinia)
+      vi.mocked(settingStore.get).mockImplementation((key) => {
+        if (key === 'Comfy.Queue.QPOV2') return qpoV2Enabled
+        if (key === 'Comfy.UseNewMenu') return 'Top'
+        return undefined
+      })
+    }
+
+    it('renders queue notification banners when QPO V2 is enabled', async () => {
+      const pinia = createTestingPinia({ createSpy: vi.fn })
+      configureSettings(pinia, true)
+
+      const wrapper = createWrapper({ pinia })
+
+      await nextTick()
+
+      expect(
+        wrapper.findComponent({ name: 'QueueNotificationBannerHost' }).exists()
+      ).toBe(true)
+    })
+
+    it('renders queue notification banners when QPO V2 is disabled', async () => {
+      const pinia = createTestingPinia({ createSpy: vi.fn })
+      configureSettings(pinia, false)
+
+      const wrapper = createWrapper({ pinia })
+
+      await nextTick()
+
+      expect(
+        wrapper.findComponent({ name: 'QueueNotificationBannerHost' }).exists()
+      ).toBe(true)
+    })
+
+    it('renders inline summary above banners when both are visible', async () => {
+      const pinia = createTestingPinia({ createSpy: vi.fn })
+      configureSettings(pinia, true)
+      const wrapper = createWrapper({ pinia })
+
+      await nextTick()
+
+      const html = wrapper.html()
+      const inlineSummaryIndex = html.indexOf(
+        'queue-inline-progress-summary-stub'
+      )
+      const queueBannerIndex = html.indexOf(
+        'queue-notification-banner-host-stub'
+      )
+
+      expect(inlineSummaryIndex).toBeGreaterThan(-1)
+      expect(queueBannerIndex).toBeGreaterThan(-1)
+      expect(inlineSummaryIndex).toBeLessThan(queueBannerIndex)
+    })
+
+    it('does not teleport queue notification banners when actionbar is floating', async () => {
+      localStorage.setItem('Comfy.MenuPosition.Docked', 'false')
+      const actionbarTarget = document.createElement('div')
+      document.body.appendChild(actionbarTarget)
+      const pinia = createTestingPinia({ createSpy: vi.fn })
+      configureSettings(pinia, true)
+      const executionStore = useExecutionStore(pinia)
+      executionStore.activeJobId = 'job-1'
+
+      const ComfyActionbarStub = createComfyActionbarStub(actionbarTarget)
+
+      const wrapper = createWrapper({
+        pinia,
+        attachTo: document.body,
+        stubs: {
+          ComfyActionbar: ComfyActionbarStub,
+          QueueNotificationBannerHost: true
+        }
+      })
+
+      try {
+        await nextTick()
+
+        expect(
+          actionbarTarget.querySelector('queue-notification-banner-host-stub')
+        ).toBeNull()
+        expect(
+          wrapper
+            .findComponent({ name: 'QueueNotificationBannerHost' })
+            .exists()
+        ).toBe(true)
       } finally {
         wrapper.unmount()
         actionbarTarget.remove()

@@ -284,14 +284,19 @@
   "Comfy_NodeBadge_ShowApiPricing": {
     "name": "Show API node pricing badge"
   },
+  "Comfy_NodeLibrary_NewDesign": {
+    "name": "New Node Library Design",
+    "tooltip": "Enable the redesigned node library sidebar with tabs (Essential, All, Custom), improved search, and hover previews."
+  },
   "Comfy_NodeReplacement_Enabled": {
-    "name": "Enable automatic node replacement",
-    "tooltip": "When enabled, missing nodes can be automatically replaced with their newer equivalents if a replacement mapping exists."
+    "name": "Enable node replacement suggestions",
+    "tooltip": "When enabled, missing nodes with known replacements will be shown as replaceable in the missing nodes dialog, allowing you to review and apply replacements."
   },
   "Comfy_NodeSearchBoxImpl": {
     "name": "Node search box implementation",
     "options": {
       "default": "default",
+      "v1 (legacy)": "v1 (legacy)",
       "litegraph (legacy)": "litegraph (legacy)"
     }
   },
@@ -301,15 +306,15 @@
   },
   "Comfy_NodeSearchBoxImpl_ShowCategory": {
     "name": "Show node category in search results",
-    "tooltip": "Only applies to the default implementation"
+    "tooltip": "Only applies to v1 (legacy)"
   },
   "Comfy_NodeSearchBoxImpl_ShowIdName": {
     "name": "Show node id name in search results",
-    "tooltip": "Only applies to the default implementation"
+    "tooltip": "Does not apply to litegraph (legacy)"
   },
   "Comfy_NodeSearchBoxImpl_ShowNodeFrequency": {
     "name": "Show node frequency in search results",
-    "tooltip": "Only applies to the default implementation"
+    "tooltip": "Only applies to v1 (legacy)"
   },
   "Comfy_NodeSuggestions_number": {
     "name": "Number of nodes suggestions",
@@ -349,6 +354,10 @@
   "Comfy_QueueButton_BatchCountLimit": {
     "name": "Batch count limit",
     "tooltip": "The maximum number of tasks added to the queue at one button click"
+  },
+  "Comfy_RightSidePanel_ShowErrorsTab": {
+    "name": "Show errors tab in side panel",
+    "tooltip": "When enabled, an errors tab is displayed in the right side panel to show workflow execution errors at a glance."
   },
   "Comfy_Sidebar_Location": {
     "name": "Sidebar location",

@@ -8,7 +8,6 @@ import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { assetService } from '@/platform/assets/services/assetService'
 import { createAssetWidget } from '@/platform/assets/utils/createAssetWidget'
 import { isCloud } from '@/platform/distribution/types'
-import { useSettingStore } from '@/platform/settings/settingStore'
 import type {
   ComboInputSpec,
   InputSpec
@@ -91,6 +90,7 @@ function createAssetBrowserWidget(
     node,
     widgetName: inputSpec.name,
     nodeTypeForBrowser: node.comfyClass ?? '',
+    inputNameForBrowser: inputSpec.name,
     defaultValue,
     onValueChange: (widget, newValue, oldValue) => {
       node.onWidgetChanged?.(widget.name, newValue, oldValue, widget)
@@ -177,14 +177,7 @@ const addComboWidget = (
   const defaultValue = getDefaultValue(inputSpec)
 
   if (isCloud) {
-    const settingStore = useSettingStore()
-    const isUsingAssetAPI = settingStore.get('Comfy.Assets.UseAssetAPI')
-    const isEligible = assetService.isAssetBrowserEligible(
-      node.comfyClass,
-      inputSpec.name
-    )
-
-    if (isUsingAssetAPI && isEligible) {
+    if (assetService.shouldUseAssetBrowser(node.comfyClass, inputSpec.name)) {
       return createAssetBrowserWidget(node, inputSpec, defaultValue)
     }
 

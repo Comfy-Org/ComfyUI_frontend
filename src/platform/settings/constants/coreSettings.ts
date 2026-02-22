@@ -35,7 +35,7 @@ export const CORE_SETTINGS: SettingParams[] = [
     experimental: true,
     name: 'Node search box implementation',
     type: 'combo',
-    options: ['default', 'litegraph (legacy)'],
+    options: ['default', 'v1 (legacy)', 'litegraph (legacy)'],
     defaultValue: 'default'
   },
   {
@@ -72,7 +72,7 @@ export const CORE_SETTINGS: SettingParams[] = [
     id: 'Comfy.NodeSearchBoxImpl.ShowCategory',
     category: ['Comfy', 'Node Search Box', 'ShowCategory'],
     name: 'Show node category in search results',
-    tooltip: 'Only applies to the default implementation',
+    tooltip: 'Only applies to v1 (legacy)',
     type: 'boolean',
     defaultValue: true
   },
@@ -80,7 +80,7 @@ export const CORE_SETTINGS: SettingParams[] = [
     id: 'Comfy.NodeSearchBoxImpl.ShowIdName',
     category: ['Comfy', 'Node Search Box', 'ShowIdName'],
     name: 'Show node id name in search results',
-    tooltip: 'Only applies to the default implementation',
+    tooltip: 'Does not apply to litegraph (legacy)',
     type: 'boolean',
     defaultValue: false
   },
@@ -88,7 +88,7 @@ export const CORE_SETTINGS: SettingParams[] = [
     id: 'Comfy.NodeSearchBoxImpl.ShowNodeFrequency',
     category: ['Comfy', 'Node Search Box', 'ShowNodeFrequency'],
     name: 'Show node frequency in search results',
-    tooltip: 'Only applies to the default implementation',
+    tooltip: 'Only applies to v1 (legacy)',
     type: 'boolean',
     defaultValue: false
   },
@@ -312,6 +312,16 @@ export const CORE_SETTINGS: SettingParams[] = [
     }
   },
   // Bookmarks are stored in the settings store.
+  {
+    id: 'Comfy.NodeLibrary.NewDesign',
+    category: ['Comfy', 'Node Library', 'NewDesign'],
+    name: 'New Node Library Design',
+    type: 'boolean',
+    tooltip:
+      'Enable the redesigned node library sidebar with tabs (Essential, All, Custom), improved search, and hover previews.',
+    defaultValue: true,
+    experimental: true
+  },
   // Bookmarks are in format of category/display_name. e.g. "conditioning/CLIPTextEncode"
   {
     id: 'Comfy.NodeLibrary.Bookmarks',
@@ -1141,6 +1151,7 @@ export const CORE_SETTINGS: SettingParams[] = [
     tooltip:
       'Modern: DOM-based rendering with enhanced interactivity, native browser features, and updated visual design. Classic: Traditional canvas rendering.',
     defaultValue: false,
+    defaultsByInstallVersion: { '1.41.0': isCloud },
     sortOrder: 100,
     experimental: true,
     versionAdded: '1.27.1'
@@ -1202,9 +1213,9 @@ export const CORE_SETTINGS: SettingParams[] = [
   {
     id: 'Comfy.NodeReplacement.Enabled',
     category: ['Comfy', 'Workflow', 'NodeReplacement'],
-    name: 'Enable automatic node replacement',
+    name: 'Enable node replacement suggestions',
     tooltip:
-      'When enabled, missing nodes can be automatically replaced with their newer equivalents if a replacement mapping exists.',
+      'When enabled, missing nodes with known replacements will be shown as replaceable in the missing nodes dialog, allowing you to review and apply replacements.',
     type: 'boolean',
     defaultValue: false,
     experimental: true,
@@ -1218,6 +1229,17 @@ export const CORE_SETTINGS: SettingParams[] = [
       'Automatically reassign duplicate node IDs in subgraphs when loading a workflow.',
     type: 'boolean',
     deprecated: true,
+    defaultValue: true,
+    experimental: true,
+    versionAdded: '1.40.0'
+  },
+  {
+    id: 'Comfy.RightSidePanel.ShowErrorsTab',
+    category: ['Comfy', 'Error System'],
+    name: 'Show errors tab in side panel',
+    tooltip:
+      'When enabled, an errors tab is displayed in the right side panel to show workflow execution errors at a glance.',
+    type: 'boolean',
     defaultValue: true,
     experimental: true,
     versionAdded: '1.40.0'

@@ -119,7 +119,7 @@
           v-if="shouldShowPreviewImg"
           :image-url="latestPreviewUrl"
         />
-        <NodeBadges v-bind="badges" :pricing="undefined" />
+        <NodeBadges v-bind="badges" :pricing="undefined" class="mt-auto" />
       </div>
     </template>
     <Button
@@ -134,8 +134,8 @@
       as-child
     >
       <button
-        v-if="hasAnyError"
-        @click.stop="useRightSidePanelStore().openPanel('error')"
+        v-if="hasAnyError && showErrorsTabEnabled"
+        @click.stop="useRightSidePanelStore().openPanel('errors')"
       >
         <span>{{ t('g.error') }}</span>
         <i class="icon-[lucide--info] size-4" />
@@ -246,10 +246,11 @@ import { useNodePreviewState } from '@/renderer/extensions/vueNodes/preview/useN
 import { nonWidgetedInputs } from '@/renderer/extensions/vueNodes/utils/nodeDataUtils'
 import { applyLightThemeColor } from '@/renderer/extensions/vueNodes/utils/nodeStyleUtils'
 import { app } from '@/scripts/app'
-import { useExecutionStore } from '@/stores/executionStore'
+import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useNodeOutputStore } from '@/stores/imagePreviewStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import { isTransparent } from '@/utils/colorUtil'
+import { isVideoOutput } from '@/utils/litegraphUtil'
 import {
   getLocatorIdFromNodeData,
   getNodeByLocatorId
@@ -292,9 +293,9 @@ const isSelected = computed(() => {
 
 const nodeLocatorId = computed(() => getLocatorIdFromNodeData(nodeData))
 const { executing, progress } = useNodeExecutionState(nodeLocatorId)
-const executionStore = useExecutionStore()
+const executionErrorStore = useExecutionErrorStore()
 const hasExecutionError = computed(
-  () => executionStore.lastExecutionErrorNodeId === nodeData.id
+  () => executionErrorStore.lastExecutionErrorNodeId === nodeData.id
 )
 
 const hasAnyError = computed((): boolean => {
@@ -302,9 +303,13 @@ const hasAnyError = computed((): boolean => {
     hasExecutionError.value ||
     nodeData.hasErrors ||
     error ||
-    (executionStore.lastNodeErrors?.[nodeData.id]?.errors.length ?? 0) > 0
+    (executionErrorStore.lastNodeErrors?.[nodeData.id]?.errors.length ?? 0) > 0
   )
 })
+
+const showErrorsTabEnabled = computed(() =>
+  settingStore.get('Comfy.RightSidePanel.ShowErrorsTab')
+)
 
 const displayHeader = computed(() => nodeData.titleMode !== TitleMode.NO_TITLE)
 
@@ -656,12 +661,14 @@ const nodeMedia = computed(() => {
   const newOutputs = nodeOutputs.nodeOutputs[nodeOutputLocatorId.value]
   const node = lgraphNode.value
 
-  if (!node || !newOutputs?.images?.length) return undefined
+  if (!node || !newOutputs?.images?.length || node.hideOutputImages)
+    return undefined
 
   const urls = nodeOutputs.getNodeImageUrls(node)
   if (!urls?.length) return undefined
 
   const type =
+    isVideoOutput(newOutputs) ||
     node.previewMediaType === 'video' ||
     (!node.previewMediaType && hasVideoInput.value)
       ? 'video'

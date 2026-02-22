@@ -2,9 +2,9 @@ import { describe, expect, it, vi } from 'vitest'
 
 import { useAssetsSidebarTab } from '@/composables/sidebarTabs/useAssetsSidebarTab'
 
-const { mockGetSetting, mockPendingTasks } = vi.hoisted(() => ({
+const { mockGetSetting, mockActiveJobsCount } = vi.hoisted(() => ({
   mockGetSetting: vi.fn(),
-  mockPendingTasks: [] as unknown[]
+  mockActiveJobsCount: { value: 0 }
 }))
 
 vi.mock('@/platform/settings/settingStore', () => ({
@@ -19,14 +19,14 @@ vi.mock('@/components/sidebar/tabs/AssetsSidebarTab.vue', () => ({
 
 vi.mock('@/stores/queueStore', () => ({
   useQueueStore: () => ({
-    pendingTasks: mockPendingTasks
+    activeJobsCount: mockActiveJobsCount.value
   })
 }))
 
 describe('useAssetsSidebarTab', () => {
   it('hides icon badge when QPO V2 is disabled', () => {
     mockGetSetting.mockReturnValue(false)
-    mockPendingTasks.splice(0, mockPendingTasks.length, {}, {})
+    mockActiveJobsCount.value = 3
 
     const sidebarTab = useAssetsSidebarTab()
 
@@ -34,13 +34,22 @@ describe('useAssetsSidebarTab', () => {
     expect((sidebarTab.iconBadge as () => string | null)()).toBeNull()
   })
 
-  it('shows pending task count when QPO V2 is enabled', () => {
+  it('shows active job count when QPO V2 is enabled', () => {
     mockGetSetting.mockReturnValue(true)
-    mockPendingTasks.splice(0, mockPendingTasks.length, {}, {}, {})
+    mockActiveJobsCount.value = 3
 
     const sidebarTab = useAssetsSidebarTab()
 
     expect(typeof sidebarTab.iconBadge).toBe('function')
     expect((sidebarTab.iconBadge as () => string | null)()).toBe('3')
+  })
+
+  it('hides badge when no active jobs', () => {
+    mockGetSetting.mockReturnValue(true)
+    mockActiveJobsCount.value = 0
+
+    const sidebarTab = useAssetsSidebarTab()
+
+    expect((sidebarTab.iconBadge as () => string | null)()).toBeNull()
   })
 })

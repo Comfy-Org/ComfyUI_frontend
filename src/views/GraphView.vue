@@ -19,6 +19,7 @@
   <InviteAcceptedToast />
   <RerouteMigrationToast />
   <ModelImportProgressDialog />
+  <AssetExportProgressDialog />
   <ManagerProgressToast />
   <UnloadWindowConfirmDialog v-if="!isDesktop" />
   <MenuHamburger />
@@ -45,7 +46,7 @@ import MenuHamburger from '@/components/MenuHamburger.vue'
 import UnloadWindowConfirmDialog from '@/components/dialog/UnloadWindowConfirmDialog.vue'
 import GraphCanvas from '@/components/graph/GraphCanvas.vue'
 import GlobalToast from '@/components/toast/GlobalToast.vue'
-import InviteAcceptedToast from '@/components/toast/InviteAcceptedToast.vue'
+import InviteAcceptedToast from '@/platform/workspace/components/toasts/InviteAcceptedToast.vue'
 import RerouteMigrationToast from '@/components/toast/RerouteMigrationToast.vue'
 import { useBrowserTabTitle } from '@/composables/useBrowserTabTitle'
 import { useCoreCommands } from '@/composables/useCoreCommands'
@@ -54,6 +55,7 @@ import { useProgressFavicon } from '@/composables/useProgressFavicon'
 import { SERVER_CONFIG_ITEMS } from '@/constants/serverConfig'
 import type { ServerConfig, ServerConfigValue } from '@/constants/serverConfig'
 import { i18n, loadLocale } from '@/i18n'
+import AssetExportProgressDialog from '@/platform/assets/components/AssetExportProgressDialog.vue'
 import ModelImportProgressDialog from '@/platform/assets/components/ModelImportProgressDialog.vue'
 import { isCloud, isDesktop } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
@@ -130,12 +132,10 @@ if (isDesktop) {
     (newTasks, oldTasks) => {
       // Report tasks that previously running but are now completed (i.e. in history)
       const oldRunningTaskIds = new Set(
-        oldTasks.filter((task) => task.isRunning).map((task) => task.promptId)
+        oldTasks.filter((task) => task.isRunning).map((task) => task.jobId)
       )
       newTasks
-        .filter(
-          (task) => oldRunningTaskIds.has(task.promptId) && task.isHistory
-        )
+        .filter((task) => oldRunningTaskIds.has(task.jobId) && task.isHistory)
         .forEach((task) => {
           electronAPI().Events.incrementUserProperty(
             `execution:${task.displayStatus.toLowerCase()}`,
@@ -220,7 +220,7 @@ const onExecutionSuccess = async () => {
   await queueStore.update()
   // Only update assets if the assets sidebar is currently open
   // When sidebar is closed, AssetsSidebarTab.vue will refresh on mount
-  if (sidebarTabStore.activeSidebarTabId === 'assets') {
+  if (sidebarTabStore.activeSidebarTabId === 'assets' || linearMode.value) {
     await assetsStore.updateHistory()
   }
 }

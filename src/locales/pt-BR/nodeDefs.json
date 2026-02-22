@@ -208,6 +208,47 @@
       }
     }
   },
+  "AudioEqualizer3Band": {
+    "display_name": "Equalizador de Áudio (3 Bandas)",
+    "inputs": {
+      "audio": {
+        "name": "áudio"
+      },
+      "high_freq": {
+        "name": "freq_aguda",
+        "tooltip": "Frequência de corte para o filtro de agudos"
+      },
+      "high_gain_dB": {
+        "name": "ganho_agudo_dB",
+        "tooltip": "Ganho para frequências altas (Agudo)"
+      },
+      "low_freq": {
+        "name": "freq_baixa",
+        "tooltip": "Frequência de corte para o filtro de graves"
+      },
+      "low_gain_dB": {
+        "name": "ganho_baixo_dB",
+        "tooltip": "Ganho para frequências baixas (Grave)"
+      },
+      "mid_freq": {
+        "name": "freq_média",
+        "tooltip": "Frequência central para médios"
+      },
+      "mid_gain_dB": {
+        "name": "ganho_médio_dB",
+        "tooltip": "Ganho para frequências médias"
+      },
+      "mid_q": {
+        "name": "q_médio",
+        "tooltip": "Fator Q (largura de banda) para médios"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "AudioMerge": {
     "description": "Combina duas faixas de áudio sobrepondo suas formas de onda.",
     "display_name": "Mesclar Áudio",
@@ -353,15 +394,6 @@
         "name": "moderação",
         "tooltip": "Configurações de moderação"
       },
-      "moderation_prompt_content_moderation": {
-        "name": "moderação_do_conteúdo_do_prompt"
-      },
-      "moderation_visual_input_moderation": {
-        "name": "moderação_da_entrada_visual"
-      },
-      "moderation_visual_output_moderation": {
-        "name": "moderação_da_saida_visual"
-      },
       "negative_prompt": {
         "name": "prompt_negativo"
       },
@@ -386,6 +418,56 @@
       },
       "1": {
         "name": "prompt_estruturado",
+        "tooltip": null
+      }
+    }
+  },
+  "BriaRemoveImageBackground": {
+    "description": "Remove o fundo de uma imagem usando Bria RMBG 2.0.",
+    "display_name": "Bria Remover Fundo da Imagem",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controlar após gerar"
+      },
+      "image": {
+        "name": "imagem"
+      },
+      "moderation": {
+        "name": "moderação",
+        "tooltip": "Configurações de moderação"
+      },
+      "seed": {
+        "name": "semente",
+        "tooltip": "A semente controla se o nó deve ser executado novamente; os resultados são não determinísticos independentemente da semente."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "BriaRemoveVideoBackground": {
+    "description": "Remove o fundo de um vídeo usando Bria.",
+    "display_name": "Bria Remover Fundo do Vídeo",
+    "inputs": {
+      "background_color": {
+        "name": "cor de fundo",
+        "tooltip": "Cor de fundo para o vídeo de saída."
+      },
+      "control_after_generate": {
+        "name": "controlar após gerar"
+      },
+      "seed": {
+        "name": "semente",
+        "tooltip": "A semente controla se o nó deve ser executado novamente; os resultados são não determinísticos independentemente da semente."
+      },
+      "video": {
+        "name": "vídeo"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -2090,13 +2172,15 @@
       "index": {},
       "option1": {}
     },
-    "outputs": [
-      null,
-      {
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
         "name": "ÍNDICE",
         "tooltip": null
       }
-    ]
+    }
   },
   "DiffControlNetLoader": {
     "display_name": "Carregar Modelo ControlNet (diff)",
@@ -2218,6 +2302,304 @@
     "outputs": {
       "0": {
         "tooltip": "O modelo com EasyCache."
+      }
+    }
+  },
+  "ElevenLabsAudioIsolation": {
+    "description": "Remova o ruído de fundo do áudio, isolando vocais ou fala.",
+    "display_name": "ElevenLabs Isolamento de Voz",
+    "inputs": {
+      "audio": {
+        "name": "áudio",
+        "tooltip": "Áudio a ser processado para remoção de ruído de fundo."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ElevenLabsInstantVoiceClone": {
+    "description": "Crie uma voz clonada a partir de amostras de áudio. Forneça de 1 a 8 gravações de áudio da voz a ser clonada.",
+    "display_name": "ElevenLabs Clonagem Instantânea de Voz",
+    "inputs": {
+      "files": {
+        "name": "arquivos",
+        "tooltip": "Gravações de áudio para clonagem de voz."
+      },
+      "remove_background_noise": {
+        "name": "remover_ruído_de_fundo",
+        "tooltip": "Remova o ruído de fundo das amostras de voz usando isolamento de áudio."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "voz",
+        "tooltip": null
+      }
+    }
+  },
+  "ElevenLabsSpeechToSpeech": {
+    "description": "Transforme a fala de uma voz para outra, preservando o conteúdo e a emoção originais.",
+    "display_name": "ElevenLabs Fala para Fala",
+    "inputs": {
+      "audio": {
+        "name": "áudio",
+        "tooltip": "Áudio de origem para transformar."
+      },
+      "control_after_generate": {
+        "name": "controle após gerar"
+      },
+      "model": {
+        "name": "modelo",
+        "tooltip": "Modelo a ser usado para transformação de fala para fala."
+      },
+      "model_similarity_boost": {
+        "name": "impulso_de_semelhança"
+      },
+      "model_speed": {
+        "name": "velocidade"
+      },
+      "model_style": {
+        "name": "estilo"
+      },
+      "model_use_speaker_boost": {
+        "name": "usar_impulso_de_falante"
+      },
+      "output_format": {
+        "name": "formato_de_saida",
+        "tooltip": "Formato de saída do áudio."
+      },
+      "remove_background_noise": {
+        "name": "remover_ruído_de_fundo",
+        "tooltip": "Remova o ruído de fundo do áudio de entrada usando isolamento de áudio."
+      },
+      "seed": {
+        "name": "semente",
+        "tooltip": "Semente para reprodutibilidade."
+      },
+      "stability": {
+        "name": "estabilidade",
+        "tooltip": "Estabilidade da voz. Valores mais baixos proporcionam maior variação emocional, valores mais altos produzem fala mais consistente, porém potencialmente monótona."
+      },
+      "voice": {
+        "name": "voz",
+        "tooltip": "Voz de destino para a transformação. Conecte a partir do Seletor de Voz ou Clonagem Instantânea de Voz."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ElevenLabsSpeechToText": {
+    "description": "Transcreva áudio para texto. Suporta detecção automática de idioma, diarização de locutores e marcação de eventos de áudio.",
+    "display_name": "ElevenLabs Fala para Texto",
+    "inputs": {
+      "audio": {
+        "name": "áudio",
+        "tooltip": "Áudio para transcrever."
+      },
+      "control_after_generate": {
+        "name": "controle após gerar"
+      },
+      "language_code": {
+        "name": "código_idioma",
+        "tooltip": "Código de idioma ISO-639-1 ou ISO-639-3 (ex: 'en', 'es', 'fra'). Deixe em branco para detecção automática."
+      },
+      "model": {
+        "name": "modelo",
+        "tooltip": "Modelo a ser usado para transcrição."
+      },
+      "model_diarization_threshold": {
+        "name": "limiar_diarização"
+      },
+      "model_diarize": {
+        "name": "diarizar"
+      },
+      "model_tag_audio_events": {
+        "name": "marcar_eventos_áudio"
+      },
+      "model_temperature": {
+        "name": "temperatura"
+      },
+      "model_timestamps_granularity": {
+        "name": "granularidade_tempos"
+      },
+      "num_speakers": {
+        "name": "num_locs",
+        "tooltip": "Número máximo de locutores a prever. Defina como 0 para detecção automática."
+      },
+      "seed": {
+        "name": "semente",
+        "tooltip": "Semente para reprodutibilidade (não garante determinismo)."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "texto",
+        "tooltip": null
+      },
+      "1": {
+        "name": "código_idioma",
+        "tooltip": null
+      },
+      "2": {
+        "name": "palavras_json",
+        "tooltip": null
+      }
+    }
+  },
+  "ElevenLabsTextToDialogue": {
+    "description": "Gere diálogos com múltiplos locutores a partir de texto. Cada entrada de diálogo possui seu próprio texto e voz.",
+    "display_name": "ElevenLabs Texto para Diálogo",
+    "inputs": {
+      "apply_text_normalization": {
+        "name": "aplicar_normalização_texto",
+        "tooltip": "Modo de normalização de texto. 'auto' deixa o sistema decidir, 'on' sempre aplica normalização, 'off' pula a normalização."
+      },
+      "control_after_generate": {
+        "name": "controle após gerar"
+      },
+      "inputs": {
+        "name": "entradas",
+        "tooltip": "Número de entradas de diálogo."
+      },
+      "inputs_text1": {
+        "name": "texto1"
+      },
+      "language_code": {
+        "name": "código_idioma",
+        "tooltip": "Código de idioma ISO-639-1 ou ISO-639-3 (ex: 'en', 'es', 'fra'). Deixe em branco para detecção automática."
+      },
+      "model": {
+        "name": "modelo",
+        "tooltip": "Modelo a ser usado para geração de diálogo."
+      },
+      "output_format": {
+        "name": "formato_saida",
+        "tooltip": "Formato de saída de áudio."
+      },
+      "seed": {
+        "name": "semente",
+        "tooltip": "Semente para reprodutibilidade."
+      },
+      "stability": {
+        "name": "estabilidade",
+        "tooltip": "Estabilidade da voz. Valores menores dão maior variação emocional, valores maiores produzem fala mais consistente, porém potencialmente monótona."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ElevenLabsTextToSoundEffects": {
+    "description": "Gere efeitos sonoros a partir de descrições em texto.",
+    "display_name": "ElevenLabs Texto para Efeitos Sonoros",
+    "inputs": {
+      "model": {
+        "name": "modelo",
+        "tooltip": "Modelo a ser usado para geração de efeitos sonoros."
+      },
+      "model_duration": {
+        "name": "duração"
+      },
+      "model_loop": {
+        "name": "loop"
+      },
+      "model_prompt_influence": {
+        "name": "influência_prompt"
+      },
+      "output_format": {
+        "name": "formato_saida",
+        "tooltip": "Formato de saída de áudio."
+      },
+      "text": {
+        "name": "texto",
+        "tooltip": "Descrição em texto do efeito sonoro a ser gerado."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ElevenLabsTextToSpeech": {
+    "description": "Converter texto em fala.",
+    "display_name": "ElevenLabs Text to Speech",
+    "inputs": {
+      "apply_text_normalization": {
+        "name": "aplicar normalização de texto",
+        "tooltip": "Modo de normalização de texto. 'auto' deixa o sistema decidir, 'on' sempre aplica a normalização, 'off' pula a normalização."
+      },
+      "control_after_generate": {
+        "name": "controle após gerar"
+      },
+      "language_code": {
+        "name": "código do idioma",
+        "tooltip": "Código de idioma ISO-639-1 ou ISO-639-3 (ex: 'en', 'es', 'fra'). Deixe em branco para detecção automática."
+      },
+      "model": {
+        "name": "modelo",
+        "tooltip": "Modelo a ser usado para texto para fala."
+      },
+      "model_similarity_boost": {
+        "name": "impulso de similaridade"
+      },
+      "model_speed": {
+        "name": "velocidade"
+      },
+      "model_style": {
+        "name": "estilo"
+      },
+      "model_use_speaker_boost": {
+        "name": "usar impulso de locutor"
+      },
+      "output_format": {
+        "name": "formato de saída",
+        "tooltip": "Formato de saída do áudio."
+      },
+      "seed": {
+        "name": "semente",
+        "tooltip": "Semente para reprodutibilidade (determinismo não garantido)."
+      },
+      "stability": {
+        "name": "estabilidade",
+        "tooltip": "Estabilidade da voz. Valores mais baixos proporcionam maior variação emocional, valores mais altos produzem fala mais consistente, porém potencialmente monótona."
+      },
+      "text": {
+        "name": "texto",
+        "tooltip": "O texto a ser convertido em fala."
+      },
+      "voice": {
+        "name": "voz",
+        "tooltip": "Voz a ser usada para a síntese de fala. Conecte a partir do Seletor de Voz ou Instant Voice Clone."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ElevenLabsVoiceSelector": {
+    "description": "Selecione uma voz ElevenLabs predefinida para geração de texto para fala.",
+    "display_name": "Seletor de Voz ElevenLabs",
+    "inputs": {
+      "voice": {
+        "name": "voz",
+        "tooltip": "Escolha uma voz das vozes predefinidas do ElevenLabs."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "voz",
+        "tooltip": null
       }
     }
   },
@@ -3153,6 +3535,50 @@
       },
       "y": {
         "name": "y"
+      }
+    }
+  },
+  "GLSLShader": {
+    "description": "Aplicar shaders de fragmento GLSL ES em imagens. u_resolution (vec2) está sempre disponível.",
+    "display_name": "GLSL Shader",
+    "inputs": {
+      "floats": {
+        "name": "floats",
+        "tooltip": "Floats estão disponíveis como u_float0-4 no código do shader"
+      },
+      "fragment_shader": {
+        "name": "fragment_shader",
+        "tooltip": "Código fonte do shader de fragmento GLSL (compatível com GLSL ES 3.00 / WebGL 2.0)"
+      },
+      "images": {
+        "name": "imagens",
+        "tooltip": "Imagens estão disponíveis como u_image0-4 (sampler2D) no código do shader"
+      },
+      "ints": {
+        "name": "ints",
+        "tooltip": "Ints estão disponíveis como u_int0-4 no código do shader"
+      },
+      "size_mode": {
+        "name": "modo_tamanho",
+        "tooltip": "Tamanho de saída: 'from_input' usa as dimensões da primeira imagem de entrada, 'custom' permite tamanho manual"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "IMAGEM0",
+        "tooltip": "Disponível via layout(location = 0) out vec4 fragColor0 no código do shader"
+      },
+      "1": {
+        "name": "IMAGEM1",
+        "tooltip": "Disponível via layout(location = 1) out vec4 fragColor1 no código do shader"
+      },
+      "2": {
+        "name": "IMAGEM2",
+        "tooltip": "Disponível via layout(location = 2) out vec4 fragColor2 no código do shader"
+      },
+      "3": {
+        "name": "IMAGEM3",
+        "tooltip": "Disponível via layout(location = 3) out vec4 fragColor3 no código do shader"
       }
     }
   },
@@ -4203,6 +4629,26 @@
       "y": {
         "name": "y"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ImageCropV2": {
+    "display_name": "Corte de Imagem",
+    "inputs": {
+      "crop_region": {
+        "name": "região_de_corte"
+      },
+      "height": {},
+      "image": {
+        "name": "imagem"
+      },
+      "width": {},
+      "x": {},
+      "y": {}
     },
     "outputs": {
       "0": {
@@ -6621,18 +7067,36 @@
         "name": "largura"
       }
     },
-    "outputs": [
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      {
+    "outputs": {
+      "0": {
+        "name": "imagem",
+        "tooltip": null
+      },
+      "1": {
+        "name": "mask",
+        "tooltip": null
+      },
+      "2": {
+        "name": "caminho_do_mesh",
+        "tooltip": null
+      },
+      "3": {
+        "name": "normal",
+        "tooltip": null
+      },
+      "4": {
+        "name": "informações_da_câmera",
+        "tooltip": null
+      },
+      "5": {
+        "name": "vídeo_de_gravação",
+        "tooltip": null
+      },
+      "6": {
         "name": "model_3d",
         "tooltip": null
       }
-    ]
+    }
   },
   "LoadAudio": {
     "display_name": "Carregar Áudio",
@@ -7579,17 +8043,20 @@
         "name": "rig_task_id"
       }
     },
-    "outputs": [
-      null,
-      {
+    "outputs": {
+      "0": {
+        "name": "arquivo_do_modelo",
+        "tooltip": null
+      },
+      "1": {
         "name": "GLB",
         "tooltip": null
       },
-      {
+      "2": {
         "name": "FBX",
         "tooltip": null
       }
-    ]
+    }
   },
   "MeshyImageToModelNode": {
     "display_name": "Meshy: Imagem para Modelo",
@@ -7635,18 +8102,24 @@
         "name": "modo_de_simetria"
       }
     },
-    "outputs": [
-      null,
-      null,
-      {
+    "outputs": {
+      "0": {
+        "name": "arquivo_do_modelo",
+        "tooltip": null
+      },
+      "1": {
+        "name": "meshy_task_id",
+        "tooltip": null
+      },
+      "2": {
         "name": "GLB",
         "tooltip": null
       },
-      {
+      "3": {
         "name": "FBX",
         "tooltip": null
       }
-    ]
+    }
   },
   "MeshyMultiImageToModelNode": {
     "display_name": "Meshy: Múltiplas Imagens para Modelo",
@@ -7692,18 +8165,24 @@
         "name": "modo_de_simetria"
       }
     },
-    "outputs": [
-      null,
-      null,
-      {
+    "outputs": {
+      "0": {
+        "name": "arquivo_do_modelo",
+        "tooltip": null
+      },
+      "1": {
+        "name": "meshy_task_id",
+        "tooltip": null
+      },
+      "2": {
         "name": "GLB",
         "tooltip": null
       },
-      {
+      "3": {
         "name": "FBX",
         "tooltip": null
       }
-    ]
+    }
   },
   "MeshyRefineNode": {
     "description": "Refine um modelo rascunho criado anteriormente.",
@@ -7728,18 +8207,24 @@
         "tooltip": "Forneça um prompt de texto para orientar o processo de texturização. Máximo de 600 caracteres. Não pode ser usado ao mesmo tempo que 'texture_image'."
       }
     },
-    "outputs": [
-      null,
-      null,
-      {
+    "outputs": {
+      "0": {
+        "name": "arquivo_do_modelo",
+        "tooltip": null
+      },
+      "1": {
+        "name": "meshy_task_id",
+        "tooltip": null
+      },
+      "2": {
         "name": "GLB",
         "tooltip": null
       },
-      {
+      "3": {
         "name": "FBX",
         "tooltip": null
       }
-    ]
+    }
   },
   "MeshyRigModelNode": {
     "description": "Fornece um personagem com rig em formatos padrão. O auto-rigging atualmente não é adequado para malhas sem textura, ativos não humanóides ou ativos humanóides com estrutura de membros e corpo indefinida.",
@@ -7757,18 +8242,24 @@
         "tooltip": "Imagem de textura de cor base UV-desdobrada do modelo."
       }
     },
-    "outputs": [
-      null,
-      null,
-      {
+    "outputs": {
+      "0": {
+        "name": "arquivo_do_modelo",
+        "tooltip": null
+      },
+      "1": {
+        "name": "rig_task_id",
+        "tooltip": null
+      },
+      "2": {
         "name": "GLB",
         "tooltip": null
       },
-      {
+      "3": {
         "name": "FBX",
         "tooltip": null
       }
-    ]
+    }
   },
   "MeshyTextToModelNode": {
     "display_name": "Meshy: Texto para Modelo",
@@ -7807,18 +8298,24 @@
         "name": "modo_de_simetria"
       }
     },
-    "outputs": [
-      null,
-      null,
-      {
+    "outputs": {
+      "0": {
+        "name": "arquivo_do_modelo",
+        "tooltip": null
+      },
+      "1": {
+        "name": "meshy_task_id",
+        "tooltip": null
+      },
+      "2": {
         "name": "GLB",
         "tooltip": null
       },
-      {
+      "3": {
         "name": "FBX",
         "tooltip": null
       }
-    ]
+    }
   },
   "MeshyTextureNode": {
     "display_name": "Meshy: Modelo de Textura",
@@ -7845,18 +8342,24 @@
         "tooltip": "Descreva o estilo de textura desejado para o objeto usando texto. Máximo de 600 caracteres. Não pode ser usado ao mesmo tempo que 'image_style'."
       }
     },
-    "outputs": [
-      null,
-      null,
-      {
+    "outputs": {
+      "0": {
+        "name": "arquivo_do_modelo",
+        "tooltip": null
+      },
+      "1": {
+        "name": "meshy_task_id",
+        "tooltip": null
+      },
+      "2": {
         "name": "GLB",
         "tooltip": null
       },
-      {
+      "3": {
         "name": "FBX",
         "tooltip": null
       }
-    ]
+    }
   },
   "MinimaxHailuoVideoNode": {
     "description": "Gera vídeos a partir do prompt, com quadro inicial opcional usando o novo modelo MiniMax Hailuo-02.",
@@ -10299,6 +10802,32 @@
       }
     }
   },
+  "NAGuidance": {
+    "description": "Aplica Orientação de Atenção Normalizada aos modelos, permitindo prompts negativos em modelos distilled/schnell.",
+    "display_name": "Orientação de Atenção Normalizada",
+    "inputs": {
+      "model": {
+        "name": "modelo",
+        "tooltip": "O modelo ao qual aplicar o NAG."
+      },
+      "nag_alpha": {
+        "name": "nag_alpha",
+        "tooltip": "Fator de mesclagem para a atenção normalizada. 1.0 é substituição total, 0.0 não tem efeito."
+      },
+      "nag_scale": {
+        "name": "escala_nag",
+        "tooltip": "O fator de escala da orientação. Valores mais altos afastam mais do prompt negativo."
+      },
+      "nag_tau": {
+        "name": "nag_tau"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "O modelo modificado com NAG ativado."
+      }
+    }
+  },
   "NormalizeImages": {
     "display_name": "Normalizar Imagens",
     "inputs": {
@@ -11110,6 +11639,28 @@
       }
     }
   },
+  "PrimitiveBoundingBox": {
+    "display_name": "Caixa Delimitadora",
+    "inputs": {
+      "height": {
+        "name": "altura"
+      },
+      "width": {
+        "name": "largura"
+      },
+      "x": {
+        "name": "x"
+      },
+      "y": {
+        "name": "y"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "PrimitiveFloat": {
     "display_name": "Ponto Flutuante",
     "inputs": {
@@ -11673,6 +12224,88 @@
       }
     }
   },
+  "RecraftV4TextToImageNode": {
+    "description": "Gera imagens usando os modelos Recraft V4 ou V4 Pro.",
+    "display_name": "Recraft V4 Texto para Imagem",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controle após gerar"
+      },
+      "model": {
+        "name": "modelo",
+        "tooltip": "O modelo a ser usado para geração."
+      },
+      "model_size": {
+        "name": "tamanho"
+      },
+      "n": {
+        "name": "n",
+        "tooltip": "O número de imagens a serem geradas."
+      },
+      "negative_prompt": {
+        "name": "prompt_negativo",
+        "tooltip": "Uma descrição opcional em texto de elementos indesejados em uma imagem."
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Prompt para a geração da imagem. Máximo de 10.000 caracteres."
+      },
+      "recraft_controls": {
+        "name": "recraft_controls",
+        "tooltip": "Controles adicionais opcionais sobre a geração via o nó Recraft Controls."
+      },
+      "seed": {
+        "name": "semente",
+        "tooltip": "Semente para determinar se o nó deve ser executado novamente; os resultados reais são não determinísticos independentemente da semente."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "RecraftV4TextToVectorNode": {
+    "description": "Gera SVG usando os modelos Recraft V4 ou V4 Pro.",
+    "display_name": "Recraft V4 Texto para Vetor",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controle após gerar"
+      },
+      "model": {
+        "name": "modelo",
+        "tooltip": "O modelo a ser usado para geração."
+      },
+      "model_size": {
+        "name": "tamanho"
+      },
+      "n": {
+        "name": "n",
+        "tooltip": "O número de imagens a serem geradas."
+      },
+      "negative_prompt": {
+        "name": "prompt_negativo",
+        "tooltip": "Uma descrição opcional em texto de elementos indesejados em uma imagem."
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Prompt para a geração da imagem. Máximo de 10.000 caracteres."
+      },
+      "recraft_controls": {
+        "name": "recraft_controls",
+        "tooltip": "Controles adicionais opcionais sobre a geração via o nó Recraft Controls."
+      },
+      "seed": {
+        "name": "semente",
+        "tooltip": "Semente para determinar se o nó deve ser executado novamente; os resultados reais são não determinísticos independentemente da semente."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "RecraftVectorizeImageNode": {
     "description": "Gera SVG de forma síncrona a partir de uma imagem de entrada.",
     "display_name": "Recraft Vetorizar Imagem",
@@ -12049,13 +12682,16 @@
         "name": "Semente"
       }
     },
-    "outputs": [
-      null,
-      {
+    "outputs": {
+      "0": {
+        "name": "Caminho do Modelo 3D",
+        "tooltip": null
+      },
+      "1": {
         "name": "GLB",
         "tooltip": null
       }
-    ]
+    }
   },
   "Rodin3D_Gen2": {
     "description": "Gerar ativos 3D usando a API Rodin",
@@ -12077,13 +12713,16 @@
         "name": "TAPose"
       }
     },
-    "outputs": [
-      null,
-      {
+    "outputs": {
+      "0": {
+        "name": "Caminho do Modelo 3D",
+        "tooltip": null
+      },
+      "1": {
         "name": "GLB",
         "tooltip": null
       }
-    ]
+    }
   },
   "Rodin3D_Regular": {
     "description": "Gerar ativos 3D usando a API Rodin",
@@ -12102,13 +12741,16 @@
         "name": "Semente"
       }
     },
-    "outputs": [
-      null,
-      {
+    "outputs": {
+      "0": {
+        "name": "Caminho do Modelo 3D",
+        "tooltip": null
+      },
+      "1": {
         "name": "GLB",
         "tooltip": null
       }
-    ]
+    }
   },
   "Rodin3D_Sketch": {
     "description": "Gerar ativos 3D usando a API Rodin",
@@ -12121,13 +12763,16 @@
         "name": "Semente"
       }
     },
-    "outputs": [
-      null,
-      {
+    "outputs": {
+      "0": {
+        "name": "Caminho do Modelo 3D",
+        "tooltip": null
+      },
+      "1": {
         "name": "GLB",
         "tooltip": null
       }
-    ]
+    }
   },
   "Rodin3D_Smooth": {
     "description": "Gerar ativos 3D usando a API Rodin",
@@ -12146,13 +12791,16 @@
         "name": "Semente"
       }
     },
-    "outputs": [
-      null,
-      {
+    "outputs": {
+      "0": {
+        "name": "Caminho do Modelo 3D",
+        "tooltip": null
+      },
+      "1": {
         "name": "GLB",
         "tooltip": null
       }
-    ]
+    }
   },
   "RunwayFirstLastFrameNode": {
     "description": "Envie os quadros-chave inicial e final, escreva um prompt e gere um vídeo. Transições mais complexas, como casos em que o quadro final é completamente diferente do inicial, podem se beneficiar da duração mais longa de 10s. Isso dará mais tempo para a geração fazer uma transição suave entre as duas entradas. Antes de começar, revise estas melhores práticas para garantir que suas seleções de entrada ajudarão no sucesso da geração: https://help.runwayml.com/hc/en-us/articles/34170748696595-Creating-with-Keyframes-on-Gen-3.",
@@ -14112,6 +14760,29 @@
       }
     }
   },
+  "Tencent3DPartNode": {
+    "description": "Realiza automaticamente a identificação e geração de componentes com base na estrutura do modelo.",
+    "display_name": "Hunyuan3D: Parte 3D",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controlar após gerar"
+      },
+      "model_3d": {
+        "name": "modelo_3d",
+        "tooltip": "Modelo 3D no formato FBX. O modelo deve ter menos de 30.000 faces."
+      },
+      "seed": {
+        "name": "semente",
+        "tooltip": "A semente controla se o nó deve ser executado novamente; os resultados são não determinísticos independentemente da semente."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "FBX",
+        "tooltip": null
+      }
+    }
+  },
   "TencentImageToModelNode": {
     "display_name": "Hunyuan3D: Imagem(ns) para Modelo (Pro)",
     "inputs": {
@@ -14148,17 +14819,20 @@
         "tooltip": "A semente controla se o nó deve ser executado novamente; os resultados são não determinísticos independentemente da semente."
       }
     },
-    "outputs": [
-      null,
-      {
+    "outputs": {
+      "0": {
+        "name": "arquivo_do_modelo",
+        "tooltip": null
+      },
+      "1": {
         "name": "GLB",
         "tooltip": null
       },
-      {
+      "2": {
         "name": "OBJ",
         "tooltip": null
       }
-    ]
+    }
   },
   "TencentTextToModelNode": {
     "display_name": "Hunyuan3D: Texto para Modelo (Pro)",
@@ -14188,17 +14862,20 @@
         "tooltip": "A semente controla se o nó deve ser executado novamente; os resultados são não determinísticos independentemente da semente."
       }
     },
-    "outputs": [
-      null,
-      {
+    "outputs": {
+      "0": {
+        "name": "arquivo_do_modelo",
+        "tooltip": null
+      },
+      "1": {
         "name": "GLB",
         "tooltip": null
       },
-      {
+      "2": {
         "name": "OBJ",
         "tooltip": null
       }
-    ]
+    }
   },
   "TextEncodeAceStepAudio": {
     "display_name": "TextEncodeAceStepAudio",
@@ -14384,6 +15061,94 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "TextGenerate": {
+    "display_name": "TextGenerate",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "image": {
+        "name": "imagem"
+      },
+      "max_length": {
+        "name": "comprimento_máximo"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "sampling_mode": {
+        "name": "modo_de_amostragem"
+      },
+      "sampling_mode_min_p": {
+        "name": "min_p"
+      },
+      "sampling_mode_repetition_penalty": {
+        "name": "penalidade_de_repetição"
+      },
+      "sampling_mode_seed": {
+        "name": "semente"
+      },
+      "sampling_mode_temperature": {
+        "name": "temperatura"
+      },
+      "sampling_mode_top_k": {
+        "name": "top_k"
+      },
+      "sampling_mode_top_p": {
+        "name": "top_p"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "texto_gerado",
+        "tooltip": null
+      }
+    }
+  },
+  "TextGenerateLTX2Prompt": {
+    "display_name": "TextGenerateLTX2Prompt",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "image": {
+        "name": "imagem"
+      },
+      "max_length": {
+        "name": "comprimento_máximo"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "sampling_mode": {
+        "name": "modo_de_amostragem"
+      },
+      "sampling_mode_min_p": {
+        "name": "min_p"
+      },
+      "sampling_mode_repetition_penalty": {
+        "name": "penalidade_de_repetição"
+      },
+      "sampling_mode_seed": {
+        "name": "semente"
+      },
+      "sampling_mode_temperature": {
+        "name": "temperatura"
+      },
+      "sampling_mode_top_k": {
+        "name": "top_k"
+      },
+      "sampling_mode_top_p": {
+        "name": "top_p"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "texto_gerado",
         "tooltip": null
       }
     }
@@ -14844,14 +15609,20 @@
         "name": "semente_da_textura"
       }
     },
-    "outputs": [
-      null,
-      null,
-      {
+    "outputs": {
+      "0": {
+        "name": "arquivo_do_modelo",
+        "tooltip": null
+      },
+      "1": {
+        "name": "task_id_do_modelo",
+        "tooltip": null
+      },
+      "2": {
         "name": "GLB",
         "tooltip": null
       }
-    ]
+    }
   },
   "TripoMultiviewToModelNode": {
     "display_name": "Tripo: Multiview para Modelo",
@@ -14903,14 +15674,20 @@
         "name": "semente_da_textura"
       }
     },
-    "outputs": [
-      null,
-      null,
-      {
+    "outputs": {
+      "0": {
+        "name": "arquivo_do_modelo",
+        "tooltip": null
+      },
+      "1": {
+        "name": "task_id_do_modelo",
+        "tooltip": null
+      },
+      "2": {
         "name": "GLB",
         "tooltip": null
       }
-    ]
+    }
   },
   "TripoRefineNode": {
     "description": "Refine um modelo rascunho criado apenas por modelos Tripo v1.4.",
@@ -14921,14 +15698,20 @@
         "tooltip": "Deve ser um modelo Tripo v1.4"
       }
     },
-    "outputs": [
-      null,
-      null,
-      {
+    "outputs": {
+      "0": {
+        "name": "arquivo_do_modelo",
+        "tooltip": null
+      },
+      "1": {
+        "name": "task_id_do_modelo",
+        "tooltip": null
+      },
+      "2": {
         "name": "GLB",
         "tooltip": null
       }
-    ]
+    }
   },
   "TripoRetargetNode": {
     "display_name": "Tripo: Retarget para modelo com rig",
@@ -14940,14 +15723,20 @@
         "name": "id_da_tarefa_do_modelo_original"
       }
     },
-    "outputs": [
-      null,
-      null,
-      {
+    "outputs": {
+      "0": {
+        "name": "arquivo_do_modelo",
+        "tooltip": null
+      },
+      "1": {
+        "name": "task_id_de_retarget",
+        "tooltip": null
+      },
+      "2": {
         "name": "GLB",
         "tooltip": null
       }
-    ]
+    }
   },
   "TripoRigNode": {
     "display_name": "Tripo: Rig no modelo",
@@ -14956,14 +15745,20 @@
         "name": "id_da_tarefa_do_modelo_original"
       }
     },
-    "outputs": [
-      null,
-      null,
-      {
+    "outputs": {
+      "0": {
+        "name": "arquivo_do_modelo",
+        "tooltip": null
+      },
+      "1": {
+        "name": "task_id_de_rig",
+        "tooltip": null
+      },
+      "2": {
         "name": "GLB",
         "tooltip": null
       }
-    ]
+    }
   },
   "TripoTextToModelNode": {
     "display_name": "Tripo: Texto para Modelo",
@@ -15008,14 +15803,20 @@
         "name": "semente_da_textura"
       }
     },
-    "outputs": [
-      null,
-      null,
-      {
+    "outputs": {
+      "0": {
+        "name": "arquivo_do_modelo",
+        "tooltip": null
+      },
+      "1": {
+        "name": "task_id_do_modelo",
+        "tooltip": null
+      },
+      "2": {
         "name": "GLB",
         "tooltip": null
       }
-    ]
+    }
   },
   "TripoTextureNode": {
     "display_name": "Tripo: Modelo de Textura",
@@ -15039,14 +15840,20 @@
         "name": "semente_textura"
       }
     },
-    "outputs": [
-      null,
-      null,
-      {
+    "outputs": {
+      "0": {
+        "name": "arquivo_do_modelo",
+        "tooltip": null
+      },
+      "1": {
+        "name": "task_id_do_modelo",
+        "tooltip": null
+      },
+      "2": {
         "name": "GLB",
         "tooltip": null
       }
-    ]
+    }
   },
   "TruncateText": {
     "display_name": "Truncar Texto",
@@ -15784,6 +16591,46 @@
       "prompt": {
         "name": "prompt",
         "tooltip": "Um prompt de texto opcional para geração de vídeo (máx. 2000 caracteres)."
+      },
+      "seed": {
+        "name": "semente"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Vidu3StartEndToVideoNode": {
+    "description": "Gere um vídeo a partir de um quadro inicial, um quadro final e um prompt.",
+    "display_name": "Geração de Vídeo Quadro Inicial/Final Vidu Q3",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controle após gerar"
+      },
+      "end_frame": {
+        "name": "quadro final"
+      },
+      "first_frame": {
+        "name": "quadro inicial"
+      },
+      "model": {
+        "name": "modelo",
+        "tooltip": "Modelo a ser usado para geração de vídeo."
+      },
+      "model_audio": {
+        "name": "áudio"
+      },
+      "model_duration": {
+        "name": "duração"
+      },
+      "model_resolution": {
+        "name": "resolução"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Descrição do prompt (máx. 2000 caracteres)."
       },
       "seed": {
         "name": "semente"

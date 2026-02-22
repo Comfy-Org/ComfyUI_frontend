@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { whenever } from '@vueuse/core'
+import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { downloadFile } from '@/base/common/downloadUtil'
@@ -12,6 +13,7 @@ import { useWorkflowStore } from '@/platform/workflow/management/stores/workflow
 import { extractWorkflowFromAsset } from '@/platform/workflow/utils/workflowExtractionUtil'
 import ImagePreview from '@/renderer/extensions/linearMode/ImagePreview.vue'
 import LinearWelcome from '@/renderer/extensions/linearMode/LinearWelcome.vue'
+import OutputHistory from '@/renderer/extensions/linearMode/OutputHistory.vue'
 // Lazy-loaded to avoid pulling THREE.js into the main bundle
 const Preview3d = () => import('@/renderer/extensions/linearMode/Preview3d.vue')
 import VideoPreview from '@/renderer/extensions/linearMode/VideoPreview.vue'
@@ -21,6 +23,7 @@ import {
 } from '@/renderer/extensions/linearMode/mediaTypes'
 import type { StatItem } from '@/renderer/extensions/linearMode/mediaTypes'
 import { app } from '@/scripts/app'
+import { useNodeOutputStore } from '@/stores/imagePreviewStore'
 import type { ResultItemImpl } from '@/stores/queueStore'
 import { formatDuration } from '@/utils/dateTimeUtil'
 import { collectAllNodes } from '@/utils/graphTraversalUtil'
@@ -28,14 +31,21 @@ import { executeWidgetsCallback } from '@/utils/litegraphUtil'
 
 const { t, d } = useI18n()
 const mediaActions = useMediaAssetActions()
+const nodeOutputStore = useNodeOutputStore()
 
-const { runButtonClick, selectedItem, selectedOutput } = defineProps<{
-  latentPreview?: string
+const { runButtonClick } = defineProps<{
   runButtonClick?: (e: Event) => void
-  selectedItem?: AssetItem
-  selectedOutput?: ResultItemImpl
   mobile?: boolean
 }>()
+
+const selectedItem = ref<AssetItem>()
+const selectedOutput = ref<ResultItemImpl>()
+const canShowPreview = ref(true)
+const latentPreview = ref<string>()
+whenever(
+  () => nodeOutputStore.latestPreview[0],
+  () => (latentPreview.value = nodeOutputStore.latestPreview[0])
+)
 
 const dateOptions = {
   month: 'short',
@@ -55,16 +65,17 @@ function formatTime(time?: string) {
 }
 
 const itemStats = computed<StatItem[]>(() => {
-  if (!selectedItem) return []
-  const user_metadata = getOutputAssetMetadata(selectedItem.user_metadata)
+  if (!selectedItem.value) return []
+  const user_metadata = getOutputAssetMetadata(selectedItem.value.user_metadata)
   if (!user_metadata) return []
 
   const { allOutputs } = user_metadata
   return [
-    { content: formatTime(selectedItem.created_at) },
+    { content: formatTime(selectedItem.value.created_at) },
     { content: formatDuration(user_metadata.executionTimeInSeconds) },
     allOutputs && { content: t('g.asset', allOutputs.length) },
-    (selectedOutput && mediaTypes[getMediaType(selectedOutput)]) ?? {}
+    (selectedOutput.value && mediaTypes[getMediaType(selectedOutput.value)]) ??
+      {}
   ].filter((i) => !!i)
 })
 
@@ -89,7 +100,7 @@ async function loadWorkflow(item: AssetItem | undefined) {
 
 async function rerun(e: Event) {
   if (!runButtonClick) return
-  await loadWorkflow(selectedItem)
+  await loadWorkflow(selectedItem.value)
   //FIXME don't use timeouts here
   //Currently seeds fail to properly update even with timeouts?
   await new Promise((r) => setTimeout(r, 500))
@@ -136,28 +147,28 @@ async function rerun(e: Event) {
       </Button>
       <Popover
         :entries="[
-          [
-            {
-              icon: 'icon-[lucide--download]',
-              label: t('linearMode.downloadAll'),
-              action: () => downloadAsset(selectedItem!)
-            }
-          ],
-          [
-            {
-              icon: 'icon-[lucide--trash-2]',
-              label: t('queue.jobMenu.deleteAsset'),
-              action: () => mediaActions.deleteAssets(selectedItem!)
-            }
-          ]
+          {
+            icon: 'icon-[lucide--download]',
+            label: t('linearMode.downloadAll'),
+            command: () => downloadAsset(selectedItem!)
+          },
+          { separator: true },
+          {
+            icon: 'icon-[lucide--trash-2]',
+            label: t('queue.jobMenu.deleteAsset'),
+            command: () => mediaActions.deleteAssets(selectedItem!)
+          }
         ]"
       />
     </div>
   </section>
   <ImagePreview
-    v-if="latentPreview ?? getMediaType(selectedOutput) === 'images'"
+    v-if="
+      (canShowPreview && latentPreview) ||
+      getMediaType(selectedOutput) === 'images'
+    "
     :mobile
-    :src="latentPreview ?? selectedOutput!.url"
+    :src="(canShowPreview && latentPreview) || selectedOutput!.url"
   />
   <VideoPreview
     v-else-if="getMediaType(selectedOutput) === 'video'"
@@ -180,4 +191,12 @@ async function rerun(e: Event) {
     :model-url="selectedOutput!.url"
   />
   <LinearWelcome v-else />
+  <OutputHistory
+    @update-selection="
+      (event) => {
+        ;[selectedItem, selectedOutput, canShowPreview] = event
+        latentPreview = undefined
+      }
+    "
+  />
 </template>

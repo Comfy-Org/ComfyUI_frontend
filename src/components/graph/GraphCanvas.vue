@@ -60,6 +60,9 @@
     v-if="shouldRenderVueNodes && comfyApp.canvas && comfyAppReady"
     :canvas="comfyApp.canvas"
     @wheel.capture="canvasInteractions.forwardEventToCanvas"
+    @pointerdown.capture="forwardPanEvent"
+    @pointerup.capture="forwardPanEvent"
+    @pointermove.capture="forwardPanEvent"
   >
     <!-- Vue nodes rendered based on graph nodes -->
     <LGraphNode
@@ -67,7 +70,7 @@
       :key="nodeData.id"
       :node-data="nodeData"
       :error="
-        executionStore.lastExecutionError?.node_id === nodeData.id
+        executionErrorStore.lastExecutionError?.node_id === nodeData.id
           ? 'Execution error'
           : null
       "
@@ -114,6 +117,7 @@ import {
 } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import { isMiddlePointerInput } from '@/base/pointerUtils'
 import LiteGraphCanvasSplitterOverlay from '@/components/LiteGraphCanvasSplitterOverlay.vue'
 import TopMenuSection from '@/components/TopMenuSection.vue'
 import BottomPanel from '@/components/bottomPanel/BottomPanel.vue'
@@ -148,7 +152,7 @@ import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowAutoSave } from '@/platform/workflow/persistence/composables/useWorkflowAutoSave'
-import { useWorkflowPersistence } from '@/platform/workflow/persistence/composables/useWorkflowPersistence'
+import { useWorkflowPersistenceV2 as useWorkflowPersistence } from '@/platform/workflow/persistence/composables/useWorkflowPersistenceV2'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
 import TransformPane from '@/renderer/core/layout/transform/TransformPane.vue'
@@ -160,11 +164,13 @@ import { ChangeTracker } from '@/scripts/changeTracker'
 import { IS_CONTROL_WIDGET, updateControlWidgetLabel } from '@/scripts/widgets'
 import { useColorPaletteService } from '@/services/colorPaletteService'
 import { useNewUserService } from '@/services/useNewUserService'
+import { shouldIgnoreCopyPaste } from '@/workbench/eventHelpers'
 import { storeToRefs } from 'pinia'
 
 import { useBootstrapStore } from '@/stores/bootstrapStore'
 import { useCommandStore } from '@/stores/commandStore'
 import { useExecutionStore } from '@/stores/executionStore'
+import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import { useSearchBoxStore } from '@/stores/workspace/searchBoxStore'
@@ -191,6 +197,7 @@ const workspaceStore = useWorkspaceStore()
 const canvasStore = useCanvasStore()
 const workflowStore = useWorkflowStore()
 const executionStore = useExecutionStore()
+const executionErrorStore = useExecutionErrorStore()
 const toastStore = useToastStore()
 const colorPaletteStore = useColorPaletteStore()
 const colorPaletteService = useColorPaletteService()
@@ -371,7 +378,7 @@ watch(
 // Update node slot errors for LiteGraph nodes
 // (Vue nodes read from store directly)
 watch(
-  () => executionStore.lastNodeErrors,
+  () => executionErrorStore.lastNodeErrors,
   (lastNodeErrors) => {
     if (!comfyApp.graph) return
 
@@ -540,4 +547,13 @@ onMounted(async () => {
 onUnmounted(() => {
   vueNodeLifecycle.cleanup()
 })
+function forwardPanEvent(e: PointerEvent) {
+  if (
+    (shouldIgnoreCopyPaste(e.target) && document.activeElement === e.target) ||
+    !isMiddlePointerInput(e)
+  )
+    return
+
+  canvasInteractions.forwardEventToCanvas(e)
+}
 </script>

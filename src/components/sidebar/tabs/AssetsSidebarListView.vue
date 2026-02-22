@@ -1,48 +1,6 @@
 <template>
   <div class="flex h-full flex-col">
-    <div
-      v-if="isQueuePanelV2Enabled && activeJobItems.length"
-      class="flex max-h-[50%] scrollbar-custom flex-col gap-2 overflow-y-auto px-2"
-    >
-      <AssetsListItem
-        v-for="job in activeJobItems"
-        :key="job.id"
-        :class="
-          cn(
-            'w-full shrink-0 text-text-primary transition-colors hover:bg-secondary-background-hover',
-            'cursor-default'
-          )
-        "
-        :preview-url="job.iconImageUrl"
-        :preview-alt="job.title"
-        :icon-name="job.iconName"
-        :icon-class="getJobIconClass(job)"
-        :primary-text="job.title"
-        :secondary-text="job.meta"
-        :progress-total-percent="job.progressTotalPercent"
-        :progress-current-percent="job.progressCurrentPercent"
-        @mouseenter="onJobEnter(job.id)"
-        @mouseleave="onJobLeave(job.id)"
-        @click.stop
-      >
-        <template v-if="hoveredJobId === job.id" #actions>
-          <Button
-            v-if="canCancelJob"
-            :variant="cancelAction.variant"
-            size="icon"
-            :aria-label="cancelAction.label"
-            @click.stop="runCancelJob()"
-          >
-            <i :class="cancelAction.icon" class="size-4" />
-          </Button>
-        </template>
-      </AssetsListItem>
-    </div>
-
-    <div
-      v-if="assetItems.length"
-      :class="cn('px-2', activeJobItems.length && 'mt-2')"
-    >
+    <div v-if="assetItems.length" class="px-2">
       <div
         class="flex items-center p-2 text-sm font-normal leading-normal text-muted-foreground font-inter"
       >
@@ -76,7 +34,7 @@
             :aria-label="
               t('assetBrowser.ariaLabel.assetCard', {
                 name: item.asset.name,
-                type: getMediaTypeFromFilename(item.asset.name)
+                type: getAssetMediaType(item.asset)
               })
             "
             :class="
@@ -85,11 +43,10 @@
                 item.isChild && 'pl-6'
               )
             "
-            :preview-url="item.asset.preview_url"
+            :preview-url="getAssetPreviewUrl(item.asset)"
             :preview-alt="item.asset.name"
-            :icon-name="
-              iconForMediaType(getMediaTypeFromFilename(item.asset.name))
-            "
+            :icon-name="iconForMediaType(getAssetMediaType(item.asset))"
+            :is-video-preview="isVideoAsset(item.asset)"
             :primary-text="getAssetPrimaryText(item.asset)"
             :secondary-text="getAssetSecondaryText(item.asset)"
             :stack-count="getStackCount(item.asset)"
@@ -119,31 +76,25 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import LoadingOverlay from '@/components/common/LoadingOverlay.vue'
 import VirtualGrid from '@/components/common/VirtualGrid.vue'
 import Button from '@/components/ui/button/Button.vue'
-import { useJobActions } from '@/composables/queue/useJobActions'
-import type { JobListItem } from '@/composables/queue/useJobList'
-import { useJobList } from '@/composables/queue/useJobList'
 import AssetsListItem from '@/platform/assets/components/AssetsListItem.vue'
 import type { OutputStackListItem } from '@/platform/assets/composables/useOutputStacks'
 import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { iconForMediaType } from '@/platform/assets/utils/mediaIconUtil'
 import { useAssetsStore } from '@/stores/assetsStore'
-import { isActiveJobState } from '@/utils/queueUtil'
 import {
   formatDuration,
   formatSize,
   getMediaTypeFromFilename,
   truncateFilename
 } from '@/utils/formatUtil'
-import { iconForJobState } from '@/utils/queueDisplay'
 import { cn } from '@/utils/tailwindUtil'
-import { useSettingStore } from '@/platform/settings/settingStore'
 
 const {
   assetItems,
@@ -170,24 +121,7 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useI18n()
-const { jobItems } = useJobList()
-const settingStore = useSettingStore()
-
-const isQueuePanelV2Enabled = computed(() =>
-  settingStore.get('Comfy.Queue.QPOV2')
-)
-const hoveredJobId = ref<string | null>(null)
 const hoveredAssetId = ref<string | null>(null)
-const activeJobItems = computed(() =>
-  jobItems.value.filter((item) => isActiveJobState(item.state)).toReversed()
-)
-const hoveredJob = computed(() =>
-  hoveredJobId.value
-    ? (activeJobItems.value.find((job) => job.id === hoveredJobId.value) ??
-      null)
-    : null
-)
-const { cancelAction, canCancelJob, runCancelJob } = useJobActions(hoveredJob)
 
 const listGridStyle = {
   display: 'grid',
@@ -198,6 +132,22 @@ const listGridStyle = {
 
 function getAssetPrimaryText(asset: AssetItem): string {
   return truncateFilename(asset.name)
+}
+
+function getAssetMediaType(asset: AssetItem) {
+  return getMediaTypeFromFilename(asset.name)
+}
+
+function isVideoAsset(asset: AssetItem): boolean {
+  return getAssetMediaType(asset) === 'video'
+}
+
+function getAssetPreviewUrl(asset: AssetItem): string {
+  const mediaType = getAssetMediaType(asset)
+  if (mediaType === 'image' || mediaType === 'video') {
+    return asset.preview_url || ''
+  }
+  return ''
 }
 
 function getAssetSecondaryText(asset: AssetItem): string {
@@ -240,16 +190,6 @@ function getAssetCardClass(selected: boolean): string {
   )
 }
 
-function onJobEnter(jobId: string) {
-  hoveredJobId.value = jobId
-}
-
-function onJobLeave(jobId: string) {
-  if (hoveredJobId.value === jobId) {
-    hoveredJobId.value = null
-  }
-}
-
 function onAssetEnter(assetId: string) {
   hoveredAssetId.value = assetId
 }
@@ -258,14 +198,5 @@ function onAssetLeave(assetId: string) {
   if (hoveredAssetId.value === assetId) {
     hoveredAssetId.value = null
   }
-}
-
-function getJobIconClass(job: JobListItem): string | undefined {
-  const classes = []
-  const iconName = job.iconName ?? iconForJobState(job.state)
-  if (!job.iconImageUrl && iconName === iconForJobState('pending')) {
-    classes.push('animate-spin')
-  }
-  return classes.length ? classes.join(' ') : undefined
 }
 </script>

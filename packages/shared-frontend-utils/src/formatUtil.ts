@@ -1,3 +1,4 @@
+import { default as DOMPurify } from 'dompurify'
 import type { operations } from '@comfyorg/registry-types'
 
 export function formatCamelCase(str: string): string {
@@ -32,8 +33,15 @@ export function appendJsonExt(path: string) {
   return path
 }
 
-export function highlightQuery(text: string, query: string) {
+export function highlightQuery(
+  text: string,
+  query: string,
+  sanitize: boolean = true
+) {
   if (!query) return text
+  if (sanitize) {
+    text = DOMPurify.sanitize(text)
+  }
 
   // Escape special regex characters in the query string
   const escapedQuery = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
@@ -486,19 +494,41 @@ export function formatDuration(milliseconds: number): string {
   return parts.join(' ')
 }
 
-const IMAGE_EXTENSIONS = ['png', 'jpg', 'jpeg', 'gif', 'webp', 'bmp'] as const
+const IMAGE_EXTENSIONS = [
+  'png',
+  'jpg',
+  'jpeg',
+  'gif',
+  'webp',
+  'bmp',
+  'avif',
+  'tif',
+  'tiff'
+] as const
 const VIDEO_EXTENSIONS = ['mp4', 'webm', 'mov', 'avi'] as const
 const AUDIO_EXTENSIONS = ['mp3', 'wav', 'ogg', 'flac'] as const
-const THREE_D_EXTENSIONS = ['obj', 'fbx', 'gltf', 'glb'] as const
+const THREE_D_EXTENSIONS = ['obj', 'fbx', 'gltf', 'glb', 'usdz'] as const
+const TEXT_EXTENSIONS = [
+  'txt',
+  'md',
+  'markdown',
+  'json',
+  'csv',
+  'yaml',
+  'yml',
+  'xml',
+  'log'
+] as const
 
-const MEDIA_TYPES = ['image', 'video', 'audio', '3D'] as const
-type MediaType = (typeof MEDIA_TYPES)[number]
+const MEDIA_TYPES = ['image', 'video', 'audio', '3D', 'text', 'other'] as const
+export type MediaType = (typeof MEDIA_TYPES)[number]
 
 // Type guard helper for checking array membership
 type ImageExtension = (typeof IMAGE_EXTENSIONS)[number]
 type VideoExtension = (typeof VIDEO_EXTENSIONS)[number]
 type AudioExtension = (typeof AUDIO_EXTENSIONS)[number]
 type ThreeDExtension = (typeof THREE_D_EXTENSIONS)[number]
+type TextExtension = (typeof TEXT_EXTENSIONS)[number]
 
 /**
  * Truncates a filename while preserving the extension
@@ -535,20 +565,30 @@ export function truncateFilename(
 /**
  * Determines the media type from a filename's extension (singular form)
  * @param filename The filename to analyze
- * @returns The media type: 'image', 'video', 'audio', or '3D'
+ * @returns The media type: 'image', 'video', 'audio', '3D', 'text', or 'other'
  */
 export function getMediaTypeFromFilename(
   filename: string | null | undefined
 ): MediaType {
-  if (!filename) return 'image'
+  if (!filename) return 'other'
   const ext = filename.split('.').pop()?.toLowerCase()
-  if (!ext) return 'image'
+  if (!ext) return 'other'
 
   // Type-safe array includes check using type assertion
   if (IMAGE_EXTENSIONS.includes(ext as ImageExtension)) return 'image'
   if (VIDEO_EXTENSIONS.includes(ext as VideoExtension)) return 'video'
   if (AUDIO_EXTENSIONS.includes(ext as AudioExtension)) return 'audio'
   if (THREE_D_EXTENSIONS.includes(ext as ThreeDExtension)) return '3D'
+  if (TEXT_EXTENSIONS.includes(ext as TextExtension)) return 'text'
 
-  return 'image'
+  return 'other'
+}
+
+export function isPreviewableMediaType(mediaType: MediaType): boolean {
+  return (
+    mediaType === 'image' ||
+    mediaType === 'video' ||
+    mediaType === 'audio' ||
+    mediaType === '3D'
+  )
 }

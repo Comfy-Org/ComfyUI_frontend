@@ -1,11 +1,9 @@
 import _ from 'es-toolkit/compat'
 
-import type {
-  ColorOption,
-  LGraph,
-  LGraphCanvas
-} from '@/lib/litegraph/src/litegraph'
+import type { ColorOption, LGraph } from '@/lib/litegraph/src/litegraph'
+import type { ExecutedWsMessage } from '@/schemas/apiSchema'
 import {
+  LGraphCanvas,
   LGraphGroup,
   LGraphNode,
   LiteGraph,
@@ -75,6 +73,32 @@ export function isImageNode(node: LGraphNode | undefined): node is ImageNode {
 export function isVideoNode(node: LGraphNode | undefined): node is VideoNode {
   if (!node) return false
   return node.previewMediaType === 'video' || !!node.videoContainer
+}
+
+/**
+ * Check if output data indicates animated content (animated webp/png or video).
+ */
+export function isAnimatedOutput(
+  output: ExecutedWsMessage['output'] | undefined
+): boolean {
+  return !!output?.animated?.find(Boolean)
+}
+
+/**
+ * Check if output data indicates video content (animated but not webp/png).
+ */
+export function isVideoOutput(
+  output: ExecutedWsMessage['output'] | undefined
+): boolean {
+  if (!isAnimatedOutput(output)) return false
+
+  const isAnimatedWebp = output?.images?.some((img) =>
+    img.filename?.endsWith('.webp')
+  )
+  const isAnimatedPng = output?.images?.some((img) =>
+    img.filename?.endsWith('.png')
+  )
+  return !isAnimatedWebp && !isAnimatedPng
 }
 
 export function isAudioNode(node: LGraphNode | undefined): boolean {
@@ -274,6 +298,10 @@ function compressSubgraphWidgetInputSlots(
 
     compressSubgraphWidgetInputSlots(subgraph.definitions?.subgraphs, visited)
   }
+}
+
+export function getLinkTypeColor(typeName: string): string {
+  return LGraphCanvas.link_type_colors[typeName] ?? LiteGraph.LINK_COLOR
 }
 
 export function isLoad3dNode(node: LGraphNode) {
