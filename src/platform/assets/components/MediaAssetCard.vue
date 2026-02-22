@@ -255,7 +255,7 @@ const formattedDuration = computed(() => {
   // Check for execution time first (from history API)
   const executionTime = asset?.user_metadata?.executionTimeInSeconds
   if (executionTime !== undefined && executionTime !== null) {
-    return `${Number(executionTime).toFixed(2)}s`
+    return formatDuration(Number(executionTime))
   }
 
   // Fall back to duration for media files

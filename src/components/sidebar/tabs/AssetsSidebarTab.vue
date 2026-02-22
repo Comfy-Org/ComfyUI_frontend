@@ -293,7 +293,7 @@ const shouldShowOutputCount = (item: AssetItem): boolean => {
 
 const formattedExecutionTime = computed(() => {
   if (!folderExecutionTime.value) return ''
-  return formatDuration(folderExecutionTime.value * 1000)
+  return formatDuration(folderExecutionTime.value)
 })
 
 const toast = useToast()

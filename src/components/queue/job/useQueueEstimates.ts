@@ -30,10 +30,8 @@ export const formatElapsedTime = (ms: number): string => {
 const pickRecentDurations = (queueStore: QueueStore) =>
   queueStore.historyTasks
     .map((task: TaskItemImpl) => Number(task.executionTimeInSeconds))
-    .filter(
-      (value: number | undefined) =>
-        typeof value === 'number' && !Number.isNaN(value)
-    ) as number[]
+    .filter((value: number) => Number.isFinite(value) && value >= 0)
+    .map((durationMilliseconds: number) => durationMilliseconds / 1000)
 
 export const useQueueEstimates = ({
   queueStore,
