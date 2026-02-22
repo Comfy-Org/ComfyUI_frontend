@@ -2,7 +2,7 @@
 set -e
 
 # Deploy Storybook to Cloudflare Pages and comment on PR
-# Usage: ./pr-storybook-deploy-and-comment.sh <pr_number> <branch_name> <status> [start_time]
+# Usage: ./pr-storybook-deploy-and-comment.sh <pr_number> <branch_name> <status>
 
 # Input validation
 # Validate PR number is numeric
@@ -31,7 +31,6 @@ case "$STATUS" in
         ;;
 esac
 
-START_TIME="${4:-$(date -u '+%m/%d/%Y, %I:%M:%S %p')}"
 
 # Required environment variables
 : "${GITHUB_TOKEN:?GITHUB_TOKEN is required}"
