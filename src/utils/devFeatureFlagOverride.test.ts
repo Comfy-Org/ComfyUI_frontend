@@ -5,6 +5,7 @@ import { getDevOverride } from '@/utils/devFeatureFlagOverride'
 describe('getDevOverride', () => {
   afterEach(() => {
     localStorage.clear()
+    vi.restoreAllMocks()
   })
 
   it('returns undefined when no override is set', () => {
@@ -55,7 +56,5 @@ describe('getDevOverride', () => {
       '[ff] Invalid JSON for override "bad":',
       'True'
     )
-
-    warnSpy.mockRestore()
   })
 })
