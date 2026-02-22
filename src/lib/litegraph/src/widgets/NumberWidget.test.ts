@@ -34,7 +34,7 @@ function createNumberWidget(
   )
 }
 
-describe('NumberWidget.onClick', () => {
+describe(NumberWidget, () => {
   let node: LGraphNode
 
   beforeEach(() => {
