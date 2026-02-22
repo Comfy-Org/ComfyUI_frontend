@@ -31,6 +31,13 @@ export const useLitegraphSettings = () => {
   })
 
   watchEffect(() => {
+    const autoPanSpeed = settingStore.get('Comfy.Graph.AutoPanSpeed')
+    if (canvasStore.canvas) {
+      canvasStore.canvas.auto_pan_speed = autoPanSpeed
+    }
+  })
+
+  watchEffect(() => {
     LiteGraph.snaps_for_comfy = settingStore.get(
       'Comfy.Node.AutoSnapLinkToSlot'
     )
