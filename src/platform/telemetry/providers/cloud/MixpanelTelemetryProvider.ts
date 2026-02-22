@@ -3,6 +3,10 @@ import { watch } from 'vue'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import {
+  TOOLKIT_BLUEPRINT_MODULES,
+  TOOLKIT_NODE_NAMES
+} from '@/constants/toolkitNodes'
+import {
   checkForCompletedTopup as checkTopupUtil,
   clearTopupTracking as clearTopupUtil,
   startTopupTracking as startTopupUtil
@@ -285,6 +289,8 @@ export class MixpanelTelemetryProvider implements TelemetryProvider {
       subgraph_count: executionContext.subgraph_count,
       has_api_nodes: executionContext.has_api_nodes,
       api_node_names: executionContext.api_node_names,
+      has_toolkit_nodes: executionContext.has_toolkit_nodes,
+      toolkit_node_names: executionContext.toolkit_node_names,
       trigger_source: options?.trigger_source
     }
 
@@ -432,10 +438,13 @@ export class MixpanelTelemetryProvider implements TelemetryProvider {
     type NodeMetrics = {
       custom_node_count: number
       api_node_count: number
+      toolkit_node_count: number
       subgraph_count: number
       total_node_count: number
       has_api_nodes: boolean
       api_node_names: string[]
+      has_toolkit_nodes: boolean
+      toolkit_node_names: string[]
     }
 
     const nodeCounts = reduceAllNodes<NodeMetrics>(
@@ -458,8 +467,21 @@ export class MixpanelTelemetryProvider implements TelemetryProvider {
           }
         }
 
+        const isToolkitNode =
+          TOOLKIT_NODE_NAMES.has(node.type) ||
+          (nodeDef?.python_module !== undefined &&
+            TOOLKIT_BLUEPRINT_MODULES.has(nodeDef.python_module))
+        if (isToolkitNode) {
+          metrics.has_toolkit_nodes = true
+          const trackingName = nodeDef?.name ?? node.type
+          if (!metrics.toolkit_node_names.includes(trackingName)) {
+            metrics.toolkit_node_names.push(trackingName)
+          }
+        }
+
         metrics.custom_node_count += isCustomNode ? 1 : 0
         metrics.api_node_count += isApiNode ? 1 : 0
+        metrics.toolkit_node_count += isToolkitNode ? 1 : 0
         metrics.subgraph_count += isSubgraph ? 1 : 0
         metrics.total_node_count += 1
 
@@ -468,10 +490,13 @@ export class MixpanelTelemetryProvider implements TelemetryProvider {
       {
         custom_node_count: 0,
         api_node_count: 0,
+        toolkit_node_count: 0,
         subgraph_count: 0,
         total_node_count: 0,
         has_api_nodes: false,
-        api_node_names: []
+        api_node_names: [],
+        has_toolkit_nodes: false,
+        toolkit_node_names: []
       }
     )
 
