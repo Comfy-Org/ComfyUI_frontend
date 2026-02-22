@@ -129,7 +129,7 @@ const virtualItems = computed<VirtualDropdownItem[]>(() =>
       v-else
       :key="layoutMode"
       :items="virtualItems"
-      :grid-style="gridStyle"
+      :grid-style
       :max-columns="layoutConfig.maxColumns"
       :default-item-height="layoutConfig.itemHeight"
       :default-item-width="layoutConfig.itemWidth"
@@ -138,7 +138,7 @@ const virtualItems = computed<VirtualDropdownItem[]>(() =>
     >
       <template #item="{ item, index }">
         <FormDropdownMenuItem
-          :index="index"
+          :index
           :selected="isSelected(item, index)"
           :preview-url="item.preview_url ?? ''"
           :name="item.name"
