@@ -172,6 +172,26 @@ describe('useWorkflowService', () => {
     })
   })
 
+  describe('duplicateWorkflow', () => {
+    it('should strip the id from the cloned state so a new one is generated', async () => {
+      const workflow = createWorkflow(null, { loadable: true })
+      // Inject an id into activeState to simulate a real workflow
+      ;(workflow as unknown as Record<string, unknown>).activeState = {
+        id: 'original-workflow-id',
+        nodes: [],
+        links: []
+      }
+      ;(workflow as unknown as Record<string, unknown>).isPersisted = true
+      ;(workflow as unknown as Record<string, unknown>).filename = 'test'
+
+      await useWorkflowService().duplicateWorkflow(workflow)
+
+      expect(app.loadGraphData).toHaveBeenCalledTimes(1)
+      const passedState = vi.mocked(app.loadGraphData).mock.calls[0][0]
+      expect(passedState).not.toHaveProperty('id')
+    })
+  })
+
   describe('openWorkflow deferred warnings', () => {
     let workflowStore: ReturnType<typeof useWorkflowStore>
 

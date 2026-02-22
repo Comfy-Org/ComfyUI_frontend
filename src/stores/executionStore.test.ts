@@ -11,6 +11,8 @@ const mockNodeIdToNodeLocatorId = vi.fn()
 const mockNodeLocatorIdToNodeExecutionId = vi.fn()
 
 import type * as WorkflowStoreModule from '@/platform/workflow/management/stores/workflowStore'
+import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
+import type { NodeProgressState } from '@/schemas/apiSchema'
 import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
 import { createTestingPinia } from '@pinia/testing'
 
@@ -342,6 +344,102 @@ describe('useExecutionErrorStore - Node Error Lookups', () => {
 
       const result = store.slotHasError('123', 'width')
       expect(result).toBe(false)
+    })
+  })
+})
+
+describe('useExecutionStore - Workflow Execution State', () => {
+  let store: ReturnType<typeof useExecutionStore>
+
+  function mockWorkflow(id: string) {
+    return { activeState: { id } } as unknown as ComfyWorkflow
+  }
+
+  function mockNodeProgress(
+    state: NodeProgressState['state']
+  ): NodeProgressState {
+    return { value: 0, max: 1, state, node_id: '1', prompt_id: 'prompt-1' }
+  }
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    setActivePinia(createTestingPinia({ stubActions: false }))
+    store = useExecutionStore()
+  })
+
+  describe('workflowExecutionStates', () => {
+    it('should return empty map when no workflows are running or have results', () => {
+      expect(store.workflowExecutionStates.size).toBe(0)
+    })
+
+    it('should return running state for workflows with active prompts', () => {
+      store.storeJob({
+        nodes: ['1', '2'],
+        id: 'prompt-1',
+        workflow: mockWorkflow('wf-1')
+      })
+
+      store.nodeProgressStatesByJob = {
+        'prompt-1': { '1': mockNodeProgress('running') }
+      }
+
+      expect(store.workflowExecutionStates.get('wf-1')).toBe('running')
+    })
+
+    it('should return completed state from last execution result', () => {
+      store.setWorkflowExecutionResultByWorkflowId(
+        'wf-1',
+        'completed',
+        'prompt-1'
+      )
+
+      expect(store.workflowExecutionStates.get('wf-1')).toBe('completed')
+    })
+
+    it('should return error state from last execution result', () => {
+      store.setWorkflowExecutionResultByWorkflowId('wf-1', 'error', 'prompt-1')
+
+      expect(store.workflowExecutionStates.get('wf-1')).toBe('error')
+    })
+
+    it('should prioritize running over completed/error', () => {
+      store.storeJob({
+        nodes: ['1', '2'],
+        id: 'prompt-2',
+        workflow: mockWorkflow('wf-1')
+      })
+
+      store.nodeProgressStatesByJob = {
+        'prompt-2': { '1': mockNodeProgress('running') }
+      }
+
+      store.setWorkflowExecutionResultByWorkflowId(
+        'wf-1',
+        'completed',
+        'prompt-1'
+      )
+
+      expect(store.workflowExecutionStates.get('wf-1')).toBe('running')
+    })
+  })
+
+  describe('getWorkflowExecutionState', () => {
+    it('should return idle for undefined workflowId', () => {
+      expect(store.getWorkflowExecutionState(undefined)).toBe('idle')
+    })
+
+    it('should return idle for unknown workflowId', () => {
+      expect(store.getWorkflowExecutionState('unknown')).toBe('idle')
+    })
+
+    it('should return state from workflowExecutionStates map', () => {
+      store.setWorkflowExecutionResultByWorkflowId(
+        'wf-1',
+        'completed',
+        'prompt-1'
+      )
+
+      expect(store.getWorkflowExecutionState('wf-1')).toBe('completed')
     })
   })
 })
