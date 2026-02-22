@@ -6873,7 +6873,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
         ? { multiline: multilineOrOptions }
         : (multilineOrOptions ?? {})
 
-    const inputType = options.inputType ?? 'text'
+    const inputType = options.inputType === 'number' ? 'number' : 'text'
     const customProperties = {
       is_modified: false,
       className: 'graphdialog rounded',
