@@ -2947,6 +2947,7 @@
     "node2only": "فقط Node 2.0",
     "selectModel": "اختر نموذج",
     "uploadSelect": {
+      "maxSelectionReached": "تم الوصول إلى الحد الأقصى للاختيار",
       "placeholder": "اختر...",
       "placeholderAudio": "اختر صوت...",
       "placeholderImage": "اختر صورة...",

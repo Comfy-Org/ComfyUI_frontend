@@ -2947,6 +2947,7 @@
     "node2only": "Только Node 2.0",
     "selectModel": "Выбрать модель",
     "uploadSelect": {
+      "maxSelectionReached": "Достигнут максимальный лимит выбора",
       "placeholder": "Выбрать...",
       "placeholderAudio": "Выбрать аудио...",
       "placeholderImage": "Выбрать изображение...",

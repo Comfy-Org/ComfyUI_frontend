@@ -2947,6 +2947,7 @@
     "node2only": "Node 2.0 uniquement",
     "selectModel": "Sélectionner un modèle",
     "uploadSelect": {
+      "maxSelectionReached": "Limite maximale de sélection atteinte",
       "placeholder": "Sélectionner...",
       "placeholderAudio": "Sélectionner un audio...",
       "placeholderImage": "Sélectionner une image...",

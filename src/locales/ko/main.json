@@ -2947,6 +2947,7 @@
     "node2only": "Node 2.0 전용",
     "selectModel": "모델 선택",
     "uploadSelect": {
+      "maxSelectionReached": "최대 선택 한도에 도달했습니다",
       "placeholder": "선택...",
       "placeholderAudio": "오디오 선택...",
       "placeholderImage": "이미지 선택...",
