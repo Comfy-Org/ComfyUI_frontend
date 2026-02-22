@@ -2203,7 +2203,8 @@
     "messageSupport": "Message support",
     "invoiceHistory": "Invoice history",
     "benefits": {
-      "benefit1": "More monthly credits, top up anytime",
+      "benefit1": "Monthly credits for Partner Nodes — top up when needed",
+      "benefit1FreeTier": "More monthly credits, top up anytime",
       "benefit2": "Up to 1 hour runtime per job on Pro",
       "benefit3": "Bring your own models (Creator & Pro)"
     },
