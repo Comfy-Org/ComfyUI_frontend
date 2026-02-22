@@ -1,16 +1,25 @@
 <script setup lang="ts">
+import { computed } from 'vue'
+
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import { useHideLayoutField } from '@/types/widgetTypes'
 import { cn } from '@/utils/tailwindUtil'
 
-defineProps<{
+const { widget } = defineProps<{
   widget: Pick<
     SimplifiedWidget<string | number | undefined>,
     'name' | 'label' | 'borderStyle'
   >
+  noBorder?: boolean
 }>()
 
 const hideLayoutField = useHideLayoutField()
+const borderStyle = computed(() =>
+  cn(
+    'focus-within:ring focus-within:ring-component-node-widget-background-highlighted',
+    widget.borderStyle
+  )
+)
 </script>
 
 <template>
@@ -27,15 +36,15 @@ const hideLayoutField = useHideLayoutField()
       <div
         :class="
           cn(
-            'cursor-default min-w-0 rounded-lg focus-within:ring focus-within:ring-component-node-widget-background-highlighted transition-all',
-            widget.borderStyle
+            'cursor-default min-w-0 rounded-lg transition-all',
+            !noBorder && borderStyle
           )
         "
         @pointerdown.stop
         @pointermove.stop
         @pointerup.stop
       >
-        <slot />
+        <slot :border-style />
       </div>
     </div>
   </div>
