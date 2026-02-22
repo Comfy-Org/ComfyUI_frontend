@@ -79,7 +79,7 @@
           </p>
         </div>
 
-        <SubscriptionBenefits class="mt-6 text-muted" />
+        <SubscriptionBenefits is-free-tier class="mt-6 text-muted" />
       </div>
 
       <div class="flex flex-col pt-8">
