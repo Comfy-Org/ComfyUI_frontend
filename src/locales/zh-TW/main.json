@@ -2947,6 +2947,7 @@
     "node2only": "僅限 Node 2.0",
     "selectModel": "選擇模型",
     "uploadSelect": {
+      "maxSelectionReached": "已達到最大選取限制",
       "placeholder": "選擇...",
       "placeholderAudio": "選擇音訊...",
       "placeholderImage": "選擇圖片...",

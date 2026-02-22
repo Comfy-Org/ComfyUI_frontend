@@ -2959,6 +2959,7 @@
     "node2only": "فقط Node 2.0",
     "selectModel": "انتخاب مدل",
     "uploadSelect": {
+      "maxSelectionReached": "حداکثر تعداد انتخاب مجاز رسید",
       "placeholder": "انتخاب...",
       "placeholderAudio": "انتخاب صوت...",
       "placeholderImage": "انتخاب تصویر...",

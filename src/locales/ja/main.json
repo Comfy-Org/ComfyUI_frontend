@@ -2947,6 +2947,7 @@
     "node2only": "Node 2.0専用",
     "selectModel": "モデルを選択",
     "uploadSelect": {
+      "maxSelectionReached": "選択の上限に達しました",
       "placeholder": "選択...",
       "placeholderAudio": "音声を選択...",
       "placeholderImage": "画像を選択...",

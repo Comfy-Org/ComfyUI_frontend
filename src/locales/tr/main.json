@@ -2947,6 +2947,7 @@
     "node2only": "Yalnızca Node 2.0",
     "selectModel": "Model seç",
     "uploadSelect": {
+      "maxSelectionReached": "Maksimum seçim sınırına ulaşıldı",
       "placeholder": "Seç...",
       "placeholderAudio": "Ses seç...",
       "placeholderImage": "Görsel seç...",
