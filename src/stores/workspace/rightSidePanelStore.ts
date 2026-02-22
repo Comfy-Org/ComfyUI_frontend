@@ -31,6 +31,7 @@ export const useRightSidePanelStore = defineStore('rightSidePanel', () => {
       settingStore.set('Comfy.RightSidePanel.IsOpen', value)
   })
   const activeTab = ref<RightSidePanelTab>('parameters')
+  const inAppBuilder = ref(false)
   const isEditingSubgraph = computed(() => activeTab.value === 'subgraph')
   const focusedSection = ref<RightSidePanelSection | null>(null)
   /**
@@ -92,6 +93,7 @@ export const useRightSidePanelStore = defineStore('rightSidePanel', () => {
     closePanel,
     togglePanel,
     focusSection,
-    clearFocusedSection
+    clearFocusedSection,
+    inAppBuilder
   }
 })

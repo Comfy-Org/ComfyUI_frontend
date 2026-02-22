@@ -1,15 +1,8 @@
 <script setup lang="ts">
 import { storeToRefs } from 'pinia'
-import {
-  computed,
-  customRef,
-  onBeforeUnmount,
-  onMounted,
-  ref,
-  triggerRef,
-  watch
-} from 'vue'
+import { computed, customRef, onMounted, triggerRef } from 'vue'
 
+import DraggableList from '@/components/common/DraggableList.vue'
 import Button from '@/components/ui/button/Button.vue'
 import {
   demoteWidget,
@@ -28,9 +21,9 @@ import { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import FormSearchInput from '@/renderer/extensions/vueNodes/widgets/components/form/FormSearchInput.vue'
-import { DraggableList } from '@/scripts/ui/draggableList'
 import { useLitegraphService } from '@/services/litegraphService'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
+import { cn } from '@/utils/tailwindUtil'
 
 import SubgraphNodeWidget from './SubgraphNodeWidget.vue'
 
@@ -38,8 +31,6 @@ const canvasStore = useCanvasStore()
 const rightSidePanelStore = useRightSidePanelStore()
 const { searchQuery } = storeToRefs(rightSidePanelStore)
 
-const draggableList = ref<DraggableList | undefined>(undefined)
-const draggableItems = ref()
 const proxyWidgets = customRef<ProxyWidgetsProperty>((track, trigger) => ({
   get() {
     track()
@@ -188,53 +179,8 @@ function showRecommended() {
   proxyWidgets.value = widgets
 }
 
-function setDraggableState() {
-  draggableList.value?.dispose()
-  if (searchQuery.value || !draggableItems.value?.children?.length) return
-  draggableList.value = new DraggableList(
-    draggableItems.value,
-    '.draggable-item'
-  )
-  draggableList.value.applyNewItemsOrder = function () {
-    const reorderedItems = []
-
-    let oldPosition = -1
-    this.getAllItems().forEach((item, index) => {
-      if (item === this.draggableItem) {
-        oldPosition = index
-        return
-      }
-      if (!this.isItemToggled(item)) {
-        reorderedItems[index] = item
-        return
-      }
-      const newIndex = this.isItemAbove(item) ? index + 1 : index - 1
-      reorderedItems[newIndex] = item
-    })
-
-    for (let index = 0; index < this.getAllItems().length; index++) {
-      const item = reorderedItems[index]
-      if (typeof item === 'undefined') {
-        reorderedItems[index] = this.draggableItem
-      }
-    }
-    const newPosition = reorderedItems.indexOf(this.draggableItem)
-    const aw = activeWidgets.value
-    const [w] = aw.splice(oldPosition, 1)
-    aw.splice(newPosition, 0, w)
-    activeWidgets.value = aw
-  }
-}
-watch(filteredActive, () => {
-  setDraggableState()
-})
-
 onMounted(() => {
-  setDraggableState()
   if (activeNode.value) pruneDisconnected(activeNode.value)
-})
-onBeforeUnmount(() => {
-  draggableList.value?.dispose()
 })
 </script>
 
@@ -273,19 +219,18 @@ onBeforeUnmount(() => {
             {{ $t('subgraphStore.hideAll') }}</a
           >
         </div>
-        <div ref="draggableItems" class="pb-2 px-2 space-y-0.5 mt-0.5">
+        <DraggableList v-slot="{ dragClass }" v-model="activeWidgets">
           <SubgraphNodeWidget
             v-for="[node, widget] in filteredActive"
             :key="toKey([node, widget])"
-            class="bg-comfy-menu-bg"
+            :class="cn(!searchQuery && dragClass, 'bg-comfy-menu-bg')"
             :node-title="node.title"
             :widget-name="widget.name"
-            :is-shown="true"
-            :is-draggable="!searchQuery"
             :is-physical="node.id === -1"
+            :is-draggable="!searchQuery"
             @toggle-visibility="demote([node, widget])"
           />
-        </div>
+        </DraggableList>
       </div>
 
       <div
