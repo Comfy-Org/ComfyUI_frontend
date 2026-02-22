@@ -241,6 +241,7 @@ import { useTelemetry } from '@/platform/telemetry'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import { usePromotedPreviews } from '@/composables/node/usePromotedPreviews'
 import NodeBadges from '@/renderer/extensions/vueNodes/components/NodeBadges.vue'
 import { LayoutSource } from '@/renderer/core/layout/types'
 import SlotConnectionDot from '@/renderer/extensions/vueNodes/components/SlotConnectionDot.vue'
@@ -256,9 +257,8 @@ import { useNodePreviewState } from '@/renderer/extensions/vueNodes/preview/useN
 import { nonWidgetedInputs } from '@/renderer/extensions/vueNodes/utils/nodeDataUtils'
 import { applyLightThemeColor } from '@/renderer/extensions/vueNodes/utils/nodeStyleUtils'
 import { app } from '@/scripts/app'
-import { useExecutionStore } from '@/stores/executionStore'
-import { usePromotedPreviews } from '@/composables/node/usePromotedPreviews'
 import { usePromotionStore } from '@/stores/promotionStore'
+import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useNodeOutputStore } from '@/stores/imagePreviewStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import { isTransparent } from '@/utils/colorUtil'
@@ -305,10 +305,10 @@ const isSelected = computed(() => {
 
 const nodeLocatorId = computed(() => getLocatorIdFromNodeData(nodeData))
 const { executing, progress } = useNodeExecutionState(nodeLocatorId)
-const executionStore = useExecutionStore()
+const executionErrorStore = useExecutionErrorStore()
 const promotionStore = usePromotionStore()
 const hasExecutionError = computed(
-  () => executionStore.lastExecutionErrorNodeId === nodeData.id
+  () => executionErrorStore.lastExecutionErrorNodeId === nodeData.id
 )
 
 const hasAnyError = computed((): boolean => {
@@ -316,7 +316,7 @@ const hasAnyError = computed((): boolean => {
     hasExecutionError.value ||
     nodeData.hasErrors ||
     error ||
-    (executionStore.lastNodeErrors?.[nodeData.id]?.errors.length ?? 0) > 0
+    (executionErrorStore.lastNodeErrors?.[nodeData.id]?.errors.length ?? 0) > 0
   )
 })
 

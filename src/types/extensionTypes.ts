@@ -1,5 +1,7 @@
 import type { Component } from 'vue'
 
+import type { NodeId } from '@/platform/workflow/validation/schemas/workflowSchema'
+import type { ExecutionErrorWsMessage, NodeError } from '@/schemas/apiSchema'
 import type { useDialogService } from '@/services/dialogService'
 import type { ComfyCommand } from '@/stores/commandStore'
 
@@ -111,6 +113,10 @@ export interface ExtensionManager {
     get: <T = unknown>(id: string) => T | undefined
     set: <T = unknown>(id: string, value: T) => void
   }
+
+  // Execution error state (read-only)
+  lastNodeErrors: Record<NodeId, NodeError> | null
+  lastExecutionError: ExecutionErrorWsMessage | null
 }
 
 export interface CommandManager {

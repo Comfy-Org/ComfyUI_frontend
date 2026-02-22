@@ -34,7 +34,7 @@
             :aria-label="
               t('assetBrowser.ariaLabel.assetCard', {
                 name: item.asset.name,
-                type: getMediaTypeFromFilename(item.asset.name)
+                type: getAssetMediaType(item.asset)
               })
             "
             :class="
@@ -43,11 +43,10 @@
                 item.isChild && 'pl-6'
               )
             "
-            :preview-url="item.asset.preview_url"
+            :preview-url="getAssetPreviewUrl(item.asset)"
             :preview-alt="item.asset.name"
-            :icon-name="
-              iconForMediaType(getMediaTypeFromFilename(item.asset.name))
-            "
+            :icon-name="iconForMediaType(getAssetMediaType(item.asset))"
+            :is-video-preview="isVideoAsset(item.asset)"
             :primary-text="getAssetPrimaryText(item.asset)"
             :secondary-text="getAssetSecondaryText(item.asset)"
             :stack-count="getStackCount(item.asset)"
@@ -133,6 +132,22 @@ const listGridStyle = {
 
 function getAssetPrimaryText(asset: AssetItem): string {
   return truncateFilename(asset.name)
+}
+
+function getAssetMediaType(asset: AssetItem) {
+  return getMediaTypeFromFilename(asset.name)
+}
+
+function isVideoAsset(asset: AssetItem): boolean {
+  return getAssetMediaType(asset) === 'video'
+}
+
+function getAssetPreviewUrl(asset: AssetItem): string {
+  const mediaType = getAssetMediaType(asset)
+  if (mediaType === 'image' || mediaType === 'video') {
+    return asset.preview_url || ''
+  }
+  return ''
 }
 
 function getAssetSecondaryText(asset: AssetItem): string {

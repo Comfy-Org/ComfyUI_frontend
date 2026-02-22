@@ -11,7 +11,6 @@
       <MediaAssetFilterButton
         v-if="isCloud"
         v-tooltip.top="{ value: $t('assetBrowser.filterBy') }"
-        size="md"
       >
         <template #default="{ close }">
           <MediaAssetFilterMenu
@@ -24,7 +23,6 @@
       <AssetSortButton
         v-if="isCloud"
         v-tooltip.top="{ value: $t('assetBrowser.sortBy') }"
-        size="md"
       >
         <template #default="{ close }">
           <MediaAssetSortMenu
@@ -34,7 +32,13 @@
           />
         </template>
       </AssetSortButton>
-      <MediaAssetViewModeToggle v-model:view-mode="viewMode" />
+      <MediaAssetSettingsButton
+        v-tooltip.top="{ value: $t('sideToolbar.mediaAssets.viewSettings') }"
+      >
+        <template #default="{ close }">
+          <MediaAssetSettingsMenu v-model:view-mode="viewMode" :close />
+        </template>
+      </MediaAssetSettingsButton>
     </div>
   </div>
 </template>
@@ -48,7 +52,8 @@ import MediaAssetFilterMenu from './MediaAssetFilterMenu.vue'
 import AssetSortButton from './MediaAssetSortButton.vue'
 import MediaAssetSortMenu from './MediaAssetSortMenu.vue'
 import type { SortBy } from './MediaAssetSortMenu.vue'
-import MediaAssetViewModeToggle from './MediaAssetViewModeToggle.vue'
+import MediaAssetSettingsButton from './MediaAssetSettingsButton.vue'
+import MediaAssetSettingsMenu from './MediaAssetSettingsMenu.vue'
 
 const { showGenerationTimeSort = false } = defineProps<{
   searchQuery: string

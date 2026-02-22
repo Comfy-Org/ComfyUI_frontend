@@ -199,17 +199,27 @@ import {
   useDebounceFn,
   useElementHover,
   useResizeObserver,
-  useStorage
+  useStorage,
+  useTimeoutFn
 } from '@vueuse/core'
 import Divider from 'primevue/divider'
 import { useToast } from 'primevue/usetoast'
-import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
+import {
+  computed,
+  defineAsyncComponent,
+  nextTick,
+  onMounted,
+  onUnmounted,
+  ref,
+  watch
+} from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import NoResultsPlaceholder from '@/components/common/NoResultsPlaceholder.vue'
 // Lazy-loaded to avoid pulling THREE.js into the main bundle
-const Load3dViewerContent = () =>
-  import('@/components/load3d/Load3dViewerContent.vue')
+const Load3dViewerContent = defineAsyncComponent(
+  () => import('@/components/load3d/Load3dViewerContent.vue')
+)
 import AssetsSidebarGridView from '@/components/sidebar/tabs/AssetsSidebarGridView.vue'
 import AssetsSidebarListView from '@/components/sidebar/tabs/AssetsSidebarListView.vue'
 import SidebarTabTemplate from '@/components/sidebar/tabs/SidebarTabTemplate.vue'
@@ -234,7 +244,11 @@ import { resolveOutputAssetItems } from '@/platform/assets/utils/outputAssetUtil
 import { isCloud } from '@/platform/distribution/types'
 import { useDialogStore } from '@/stores/dialogStore'
 import { ResultItemImpl } from '@/stores/queueStore'
-import { formatDuration, getMediaTypeFromFilename } from '@/utils/formatUtil'
+import {
+  formatDuration,
+  getMediaTypeFromFilename,
+  isPreviewableMediaType
+} from '@/utils/formatUtil'
 import { cn } from '@/utils/tailwindUtil'
 
 const { t } = useI18n()
@@ -395,6 +409,12 @@ const visibleAssets = computed(() => {
   return listViewSelectableAssets.value
 })
 
+const previewableVisibleAssets = computed(() =>
+  visibleAssets.value.filter((asset) =>
+    isPreviewableMediaType(getMediaTypeFromFilename(asset.name))
+  )
+)
+
 const selectedAssets = computed(() => getSelectedAssets(visibleAssets.value))
 
 const isBulkMode = computed(
@@ -420,12 +440,10 @@ watch(visibleAssets, (newAssets) => {
   // so selection stays consistent with what this view can act on.
   reconcileSelection(newAssets)
   if (currentGalleryAssetId.value && galleryActiveIndex.value !== -1) {
-    const newIndex = newAssets.findIndex(
+    const newIndex = previewableVisibleAssets.value.findIndex(
       (asset) => asset.id === currentGalleryAssetId.value
     )
-    if (newIndex !== -1) {
-      galleryActiveIndex.value = newIndex
-    }
+    galleryActiveIndex.value = newIndex
   }
 })
 
@@ -436,7 +454,7 @@ watch(galleryActiveIndex, (index) => {
 })
 
 const galleryItems = computed(() => {
-  return visibleAssets.value.map((asset) => {
+  return previewableVisibleAssets.value.map((asset) => {
     const mediaType = getMediaTypeFromFilename(asset.name)
     const resultItem = new ResultItemImpl({
       filename: asset.name,
@@ -483,7 +501,16 @@ function handleAssetSelect(asset: AssetItem, assets?: AssetItem[]) {
   handleAssetClick(asset, index, assetList)
 }
 
+const { start: scheduleCleanup, stop: cancelCleanup } = useTimeoutFn(
+  () => {
+    contextMenuAsset.value = null
+  },
+  0,
+  { immediate: false }
+)
+
 function handleAssetContextMenu(event: MouseEvent, asset: AssetItem) {
+  cancelCleanup()
   contextMenuAsset.value = asset
   void nextTick(() => {
     contextMenuRef.value?.show(event)
@@ -491,10 +518,7 @@ function handleAssetContextMenu(event: MouseEvent, asset: AssetItem) {
 }
 
 function handleContextMenuHide() {
-  // Delay clearing to allow command callbacks to emit before component unmounts
-  requestAnimationFrame(() => {
-    contextMenuAsset.value = null
-  })
+  scheduleCleanup()
 }
 
 const handleBulkDownload = (assets: AssetItem[]) => {
@@ -536,6 +560,9 @@ const handleDeleteSelected = async () => {
 
 const handleZoomClick = (asset: AssetItem) => {
   const mediaType = getMediaTypeFromFilename(asset.name)
+  if (!isPreviewableMediaType(mediaType)) {
+    return
+  }
 
   if (mediaType === '3D') {
     const dialogStore = useDialogStore()
@@ -555,7 +582,9 @@ const handleZoomClick = (asset: AssetItem) => {
   }
 
   currentGalleryAssetId.value = asset.id
-  const index = visibleAssets.value.findIndex((a) => a.id === asset.id)
+  const index = previewableVisibleAssets.value.findIndex(
+    (a) => a.id === asset.id
+  )
   if (index !== -1) {
     galleryActiveIndex.value = index
   }

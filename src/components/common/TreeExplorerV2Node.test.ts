@@ -80,10 +80,6 @@ describe('TreeExplorerV2Node', () => {
         global: {
           stubs: {
             TreeItem: treeItemStub.stub,
-            ContextMenuTrigger: {
-              name: 'ContextMenuTrigger',
-              template: '<div data-testid="context-menu-trigger"><slot /></div>'
-            },
             Teleport: { template: '<div />' }
           },
           provide: {
@@ -145,36 +141,12 @@ describe('TreeExplorerV2Node', () => {
   })
 
   describe('context menu', () => {
-    it('renders ContextMenuTrigger when showContextMenu is true for nodes', () => {
-      const { wrapper } = mountComponent({
-        item: createMockItem('node'),
-        showContextMenu: true
-      })
-
-      expect(
-        wrapper.find('[data-testid="context-menu-trigger"]').exists()
-      ).toBe(true)
-    })
-
-    it('does not render ContextMenuTrigger for folder items', () => {
-      const { wrapper } = mountComponent({
-        item: createMockItem('folder')
-      })
-
-      expect(
-        wrapper.find('[data-testid="context-menu-trigger"]').exists()
-      ).toBe(false)
-    })
-
-    it('sets contextMenuNode when contextmenu event is triggered', async () => {
+    it('sets contextMenuNode when contextmenu event is triggered on node', async () => {
       const contextMenuNode = ref<RenderedTreeExplorerNode | null>(null)
       const nodeItem = createMockItem('node')
 
       const { wrapper } = mountComponent(
-        {
-          item: nodeItem,
-          showContextMenu: true
-        },
+        { item: nodeItem },
         {
           provide: {
             [InjectKeyContextMenuNode as symbol]: contextMenuNode
@@ -186,6 +158,24 @@ describe('TreeExplorerV2Node', () => {
       await nodeDiv.trigger('contextmenu')
 
       expect(contextMenuNode.value).toEqual(nodeItem.value)
+    })
+
+    it('does not set contextMenuNode for folder items', async () => {
+      const contextMenuNode = ref<RenderedTreeExplorerNode | null>(null)
+
+      const { wrapper } = mountComponent(
+        { item: createMockItem('folder') },
+        {
+          provide: {
+            [InjectKeyContextMenuNode as symbol]: contextMenuNode
+          }
+        }
+      )
+
+      const folderDiv = wrapper.find('div.group\\/tree-node')
+      await folderDiv.trigger('contextmenu')
+
+      expect(contextMenuNode.value).toBeNull()
     })
   })
 

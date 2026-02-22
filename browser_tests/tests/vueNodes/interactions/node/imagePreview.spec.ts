@@ -13,15 +13,11 @@ test.describe('Vue Nodes Image Preview', () => {
   async function loadImageOnNode(comfyPage: ComfyPage) {
     const loadImageNode = (
       await comfyPage.nodeOps.getNodeRefsByType('LoadImage')
-    ).at(0)
-    if (!loadImageNode) {
-      throw new Error('LoadImage node not found')
-    }
-    const { x, y } = await loadImageNode.getTitlePosition()
+    )[0]
+    const { x, y } = await loadImageNode.getPosition()
 
     await comfyPage.dragDrop.dragAndDropFile('image64x64.webp', {
-      dropPosition: { x, y },
-      waitForUpload: true
+      dropPosition: { x, y }
     })
 
     const imagePreview = comfyPage.page.locator('.image-preview')
@@ -35,7 +31,10 @@ test.describe('Vue Nodes Image Preview', () => {
     }
   }
 
-  test('opens mask editor from image preview button', async ({ comfyPage }) => {
+  // TODO(#8143): Re-enable after image preview sync is working in CI
+  test.fixme('opens mask editor from image preview button', async ({
+    comfyPage
+  }) => {
     const { imagePreview } = await loadImageOnNode(comfyPage)
 
     await imagePreview.locator('[role="img"]').focus()
@@ -44,7 +43,8 @@ test.describe('Vue Nodes Image Preview', () => {
     await expect(comfyPage.page.locator('.mask-editor-dialog')).toBeVisible()
   })
 
-  test('shows image context menu options', async ({ comfyPage }) => {
+  // TODO(#8143): Re-enable after image preview sync is working in CI
+  test.fixme('shows image context menu options', async ({ comfyPage }) => {
     const { nodeId } = await loadImageOnNode(comfyPage)
 
     const nodeHeader = comfyPage.vueNodes

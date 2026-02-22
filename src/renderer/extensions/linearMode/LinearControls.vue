@@ -22,6 +22,7 @@ import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { useCommandStore } from '@/stores/commandStore'
 import { useExecutionStore } from '@/stores/executionStore'
+import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useQueueSettingsStore } from '@/stores/queueStore'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import { cn } from '@/utils/tailwindUtil'
@@ -29,6 +30,7 @@ import { cn } from '@/utils/tailwindUtil'
 const { t } = useI18n()
 const commandStore = useCommandStore()
 const executionStore = useExecutionStore()
+const executionErrorStore = useExecutionErrorStore()
 const { batchCount } = storeToRefs(useQueueSettingsStore())
 const settingStore = useSettingStore()
 const { isActiveSubscription } = useBillingContext()
@@ -79,7 +81,7 @@ function nodeToNodeData(node: LGraphNode) {
   return {
     ...nodeData,
     //note lastNodeErrors uses exeuctionid, node.id is execution for root
-    hasErrors: !!executionStore.lastNodeErrors?.[node.id],
+    hasErrors: !!executionErrorStore.lastNodeErrors?.[node.id],
 
     dropIndicator,
     onDragDrop: node.onDragDrop,

@@ -1,37 +1,41 @@
 <template>
   <ContextMenuRoot>
-    <TreeRoot
-      :expanded="[...expandedKeys]"
-      :items="root.children ?? []"
-      :get-key="(item) => item.key"
-      :get-children="
-        (item) => (item.children?.length ? item.children : undefined)
-      "
-      class="m-0 p-0 pb-6"
-    >
-      <TreeVirtualizer
-        v-slot="{ item }"
-        :estimate-size="36"
-        :text-content="(item) => item.value.label ?? ''"
+    <ContextMenuTrigger :disabled="!showContextMenu" as-child>
+      <TreeRoot
+        :expanded="[...expandedKeys]"
+        :items="root.children ?? []"
+        :get-key="(item) => item.key"
+        :get-children="
+          (item) => (item.children?.length ? item.children : undefined)
+        "
+        class="m-0 p-0 pb-6"
       >
-        <TreeExplorerV2Node
-          :item="
-            item as FlattenedItem<RenderedTreeExplorerNode<ComfyNodeDefImpl>>
-          "
-          @node-click="
-            (node: RenderedTreeExplorerNode<ComfyNodeDefImpl>, e: MouseEvent) =>
-              emit('nodeClick', node, e)
-          "
+        <TreeVirtualizer
+          v-slot="{ item }"
+          :estimate-size="36"
+          :text-content="(item) => item.value.label ?? ''"
         >
-          <template #folder="{ node }">
-            <slot name="folder" :node="node" />
-          </template>
-          <template #node="{ node }">
-            <slot name="node" :node="node" />
-          </template>
-        </TreeExplorerV2Node>
-      </TreeVirtualizer>
-    </TreeRoot>
+          <TreeExplorerV2Node
+            :item="
+              item as FlattenedItem<RenderedTreeExplorerNode<ComfyNodeDefImpl>>
+            "
+            @node-click="
+              (
+                node: RenderedTreeExplorerNode<ComfyNodeDefImpl>,
+                e: MouseEvent
+              ) => emit('nodeClick', node, e)
+            "
+          >
+            <template #folder="{ node }">
+              <slot name="folder" :node="node" />
+            </template>
+            <template #node="{ node }">
+              <slot name="node" :node="node" />
+            </template>
+          </TreeExplorerV2Node>
+        </TreeVirtualizer>
+      </TreeRoot>
+    </ContextMenuTrigger>
 
     <ContextMenuPortal v-if="showContextMenu">
       <ContextMenuContent
@@ -49,7 +53,11 @@
             "
             class="size-4"
           />
-          {{ $t('sideToolbar.nodeLibraryTab.sections.favorites') }}
+          {{
+            isCurrentNodeBookmarked
+              ? $t('sideToolbar.nodeLibraryTab.sections.unfavoriteNode')
+              : $t('sideToolbar.nodeLibraryTab.sections.favoriteNode')
+          }}
         </ContextMenuItem>
       </ContextMenuContent>
     </ContextMenuPortal>
@@ -63,6 +71,7 @@ import {
   ContextMenuItem,
   ContextMenuPortal,
   ContextMenuRoot,
+  ContextMenuTrigger,
   TreeRoot,
   TreeVirtualizer
 } from 'reka-ui'

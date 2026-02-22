@@ -248,7 +248,9 @@ const zSystemStats = z.object({
     // Cloud-specific fields
     cloud_version: z.string().optional(),
     comfyui_frontend_version: z.string().optional(),
-    workflow_templates_version: z.string().optional()
+    workflow_templates_version: z.string().optional(),
+    installed_templates_version: z.string().optional(),
+    required_templates_version: z.string().optional()
   }),
   devices: z.array(zDeviceStats)
 })

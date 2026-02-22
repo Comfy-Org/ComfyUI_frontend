@@ -26,7 +26,6 @@ import { Topbar } from './components/Topbar'
 import { CanvasHelper } from './helpers/CanvasHelper'
 import { ClipboardHelper } from './helpers/ClipboardHelper'
 import { CommandHelper } from './helpers/CommandHelper'
-import { DebugHelper } from './helpers/DebugHelper'
 import { DragDropHelper } from './helpers/DragDropHelper'
 import { KeyboardHelper } from './helpers/KeyboardHelper'
 import { NodeOperationsHelper } from './helpers/NodeOperationsHelper'
@@ -174,7 +173,6 @@ export class ComfyPage {
   public readonly settingDialog: SettingDialog
   public readonly confirmDialog: ConfirmDialog
   public readonly vueNodes: VueNodeHelpers
-  public readonly debug: DebugHelper
   public readonly subgraph: SubgraphHelper
   public readonly canvasOps: CanvasHelper
   public readonly nodeOps: NodeOperationsHelper
@@ -219,7 +217,6 @@ export class ComfyPage {
     this.settingDialog = new SettingDialog(page, this)
     this.confirmDialog = new ConfirmDialog(page)
     this.vueNodes = new VueNodeHelpers(page)
-    this.debug = new DebugHelper(page, this.canvas)
     this.subgraph = new SubgraphHelper(this)
     this.canvasOps = new CanvasHelper(page, this.canvas, this.resetViewButton)
     this.nodeOps = new NodeOperationsHelper(this)
