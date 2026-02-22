@@ -6,22 +6,8 @@ import type { ComfyPage } from '../fixtures/ComfyPage'
 import { comfyPageFixture as test } from '../fixtures/ComfyPage'
 import { TestIds } from '../fixtures/selectors'
 import { fitToViewInstant } from '../helpers/fitToView'
-
-type ProxyWidgetEntry = [string, string]
-
-function isProxyWidgetEntry(entry: unknown): entry is ProxyWidgetEntry {
-  return (
-    Array.isArray(entry) &&
-    entry.length === 2 &&
-    typeof entry[0] === 'string' &&
-    typeof entry[1] === 'string'
-  )
-}
-
-function normalizeProxyWidgets(value: unknown): ProxyWidgetEntry[] {
-  if (!Array.isArray(value)) return []
-  return value.filter(isProxyWidgetEntry)
-}
+import { normalizeProxyWidgets } from '../helpers/proxyWidgets'
+import type { ProxyWidgetEntry } from '../helpers/proxyWidgets'
 
 async function getProxyWidgets(
   comfyPage: ComfyPage,

@@ -2,26 +2,18 @@ import { expect } from '@playwright/test'
 
 import type { ComfyPage } from '../../../../fixtures/ComfyPage'
 import { comfyPageFixture as test } from '../../../../fixtures/ComfyPage'
+import { normalizeProxyWidgets } from '../../../../helpers/proxyWidgets'
 
 async function getProxyWidgetNames(
   comfyPage: ComfyPage,
   nodeId: string
 ): Promise<string[]> {
-  return await comfyPage.page.evaluate((id) => {
+  const raw = await comfyPage.page.evaluate((id) => {
     const node = window.app!.canvas.graph!.getNodeById(id)
-    const proxyWidgets = node?.properties?.proxyWidgets
-    if (!Array.isArray(proxyWidgets)) return []
-
-    return proxyWidgets
-      .filter(
-        (entry): entry is [string, string] =>
-          Array.isArray(entry) &&
-          entry.length === 2 &&
-          typeof entry[0] === 'string' &&
-          typeof entry[1] === 'string'
-      )
-      .map(([, widgetName]) => widgetName)
+    return node?.properties?.proxyWidgets ?? []
   }, nodeId)
+
+  return normalizeProxyWidgets(raw).map(([, widgetName]) => widgetName)
 }
 
 async function getPromotedPreviewWidgetCount(
