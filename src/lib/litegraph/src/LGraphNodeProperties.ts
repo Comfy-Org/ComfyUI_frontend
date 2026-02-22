@@ -89,6 +89,16 @@ export class LGraphNodeProperties {
     const currentValue = targetObject[propertyName]
 
     if (!hasProperty) {
+      // Check if a prototype in the chain defines a getter/setter for this
+      // property.  Defining an own closure-based accessor would shadow the
+      // prototype accessor and break its internal logic (e.g. the `shape`
+      // setter that writes `_shape`).  Skip instrumentation in that case –
+      // the prototype setter is expected to emit its own change events.
+      if (this._hasPrototypeAccessor(targetObject, propertyName)) {
+        this._instrumentedPaths.add(path)
+        return
+      }
+
       let value: unknown = undefined
 
       Object.defineProperty(targetObject, propertyName, {
@@ -126,6 +136,23 @@ export class LGraphNodeProperties {
     }
 
     this._instrumentedPaths.add(path)
+  }
+
+  /**
+   * Checks whether any prototype in the chain defines a getter/setter for
+   * the given property.
+   */
+  private _hasPrototypeAccessor(
+    obj: Record<string, unknown>,
+    propertyName: string
+  ): boolean {
+    let proto = Object.getPrototypeOf(obj)
+    while (proto) {
+      const desc = Object.getOwnPropertyDescriptor(proto, propertyName)
+      if (desc && (desc.get || desc.set)) return true
+      proto = Object.getPrototypeOf(proto)
+    }
+    return false
   }
 
   /**
