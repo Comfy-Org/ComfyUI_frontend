@@ -54,7 +54,6 @@ export type WorkflowExecutionResult = {
 
 export type WorkflowExecutionState = 'idle' | 'running' | 'completed' | 'error'
 
-
 export const useExecutionStore = defineStore('execution', () => {
   const workflowStore = useWorkflowStore()
   const canvasStore = useCanvasStore()
