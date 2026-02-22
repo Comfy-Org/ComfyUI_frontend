@@ -1,32 +1,45 @@
 <template>
-  <button
-    type="button"
-    :data-testid="`category-${node.key}`"
-    :aria-current="selectedCategory === node.key || undefined"
-    :style="{ paddingLeft: `${0.75 + depth * 1.25}rem` }"
+  <div
     :class="
       cn(
-        'w-full cursor-pointer rounded border-none bg-transparent py-2.5 pr-3 text-left text-sm transition-colors',
-        selectedCategory === node.key
-          ? CATEGORY_SELECTED_CLASS
-          : CATEGORY_UNSELECTED_CLASS
+        isExpanded &&
+          hasChildren &&
+          'flex flex-col rounded-lg bg-secondary-background'
       )
     "
-    @click="$emit('select', node.key)"
   >
-    {{ node.label }}
-  </button>
-  <template v-if="isExpanded && node.children?.length">
-    <NodeSearchCategoryTreeNode
-      v-for="child in node.children"
-      :key="child.key"
-      :node="child"
-      :depth="depth + 1"
-      :selected-category="selectedCategory"
-      :selected-collapsed="selectedCollapsed"
-      @select="$emit('select', $event)"
-    />
-  </template>
+    <button
+      type="button"
+      :data-testid="`category-${node.key}`"
+      :aria-current="selectedCategory === node.key || undefined"
+      :class="categoryButtonClass"
+      :style="{ paddingLeft: paddingLeft }"
+      @click="$emit('select', node.key)"
+    >
+      <i
+        v-if="showChevrons && hasChildren"
+        :class="
+          cn(
+            'pi pi-chevron-down shrink-0 text-[10px] transition-transform',
+            !isExpanded && '-rotate-90'
+          )
+        "
+      />
+      {{ node.label }}
+    </button>
+    <template v-if="isExpanded && hasChildren">
+      <NodeSearchCategoryTreeNode
+        v-for="child in node.children"
+        :key="child.key"
+        :node="child"
+        :depth="depth + 1"
+        :selected-category="selectedCategory"
+        :selected-collapsed="selectedCollapsed"
+        :show-chevrons="showChevrons"
+        @select="$emit('select', $event)"
+      />
+    </template>
+  </div>
 </template>
 
 <script lang="ts">
@@ -51,20 +64,38 @@ const {
   node,
   depth = 0,
   selectedCategory,
-  selectedCollapsed = false
+  selectedCollapsed = false,
+  showChevrons = false
 } = defineProps<{
   node: CategoryNode
   depth?: number
   selectedCategory: string
   selectedCollapsed?: boolean
+  showChevrons?: boolean
 }>()
 
 defineEmits<{
   select: [key: string]
 }>()
 
+const hasChildren = computed(() => (node.children?.length ?? 0) > 0)
+
 const isExpanded = computed(() => {
   if (selectedCategory === node.key) return !selectedCollapsed
   return selectedCategory.startsWith(node.key + '/')
 })
+
+const paddingLeft = computed(() => {
+  if (hasChildren.value && showChevrons) return `${0.5 + depth * 1.25}rem`
+  return `${0.75 + depth * 1.25}rem`
+})
+
+const categoryButtonClass = computed(() =>
+  cn(
+    'w-full cursor-pointer rounded border-none bg-transparent py-3 pr-3 text-left text-sm transition-colors flex items-center gap-2',
+    selectedCategory === node.key
+      ? CATEGORY_SELECTED_CLASS
+      : CATEGORY_UNSELECTED_CLASS
+  )
+)
 </script>

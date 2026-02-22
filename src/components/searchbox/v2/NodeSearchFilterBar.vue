@@ -5,23 +5,22 @@
       :key="chip.key"
       type="button"
       :aria-pressed="activeChipKey === chip.key"
-      :class="
-        cn(
-          'cursor-pointer rounded-md border px-3 py-1 text-sm transition-colors flex-auto border-secondary-background',
-          activeChipKey === chip.key
-            ? 'bg-secondary-background text-foreground'
-            : 'bg-transparent text-muted-foreground hover:border-base-foreground/60 hover:text-base-foreground/60'
-        )
-      "
+      :class="chipClass(chip.key)"
       @click="emit('selectChip', chip)"
     >
       {{ chip.label }}
+      <span
+        v-if="appliedFilterCounts[chip.key]"
+        class="ml-0.5 text-xs opacity-80"
+      >
+        ({{ appliedFilterCounts[chip.key] }})
+      </span>
     </button>
   </div>
 </template>
 
 <script lang="ts">
-import type { FuseFilter } from '@/utils/fuseUtil'
+import type { FuseFilter, FuseFilterWithValue } from '@/utils/fuseUtil'
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 
 export interface FilterChip {
@@ -38,8 +37,9 @@ import { useI18n } from 'vue-i18n'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { cn } from '@/utils/tailwindUtil'
 
-const { activeChipKey = null } = defineProps<{
+const { activeChipKey = null, appliedFilters = [] } = defineProps<{
   activeChipKey?: string | null
+  appliedFilters?: FuseFilterWithValue<ComfyNodeDefImpl, string>[]
 }>()
 
 const emit = defineEmits<{
@@ -69,4 +69,26 @@ const chips = computed<FilterChip[]>(() => {
     }
   ]
 })
+
+const appliedFilterCounts = computed(() => {
+  const counts: Record<string, number> = {}
+  for (const filter of appliedFilters) {
+    counts[filter.filterDef.id] = (counts[filter.filterDef.id] ?? 0) + 1
+  }
+  return counts
+})
+
+function chipClass(chipKey: string) {
+  const isActive = activeChipKey === chipKey
+  const hasApplied = (appliedFilterCounts.value[chipKey] ?? 0) > 0
+
+  return cn(
+    'cursor-pointer rounded-md border px-3 py-1 text-sm transition-colors flex-auto',
+    isActive
+      ? 'bg-base-foreground text-base-background border-base-foreground'
+      : hasApplied
+        ? 'bg-base-foreground/10 border-base-foreground text-base-foreground'
+        : 'border-muted-foreground bg-transparent text-muted-foreground hover:border-base-foreground/60 hover:text-base-foreground/60'
+  )
+}
 </script>
