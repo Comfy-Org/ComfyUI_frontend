@@ -11,10 +11,10 @@ type QueueStore = UseQueueEstimatesOptions['queueStore']
 type ExecutionStore = UseQueueEstimatesOptions['executionStore']
 
 const makeHistoryTask = (
-  executionTimeInSeconds: number | string | undefined
+  executionTimeInMilliseconds: number | string | undefined
 ): TaskItemImpl =>
   ({
-    executionTimeInSeconds
+    executionTimeInSeconds: executionTimeInMilliseconds
   }) as TaskItemImpl
 
 const makeRunningTask = (executionStartTimestamp?: number): TaskItemImpl =>
@@ -116,13 +116,13 @@ describe('useQueueEstimates', () => {
   })
 
   it('uses the last 20 valid durations to estimate queued batches', () => {
-    const durations = Array.from({ length: 25 }, (_, idx) => idx + 1)
+    const durationsMs = Array.from({ length: 25 }, (_, idx) => (idx + 1) * 1000)
     const queueStore = createQueueStore({
       historyTasks: [
-        ...durations.slice(0, 5).map((value) => makeHistoryTask(value)),
+        ...durationsMs.slice(0, 5).map((value) => makeHistoryTask(value)),
         makeHistoryTask('not-a-number'),
         makeHistoryTask(undefined),
-        ...durations.slice(5).map((value) => makeHistoryTask(value))
+        ...durationsMs.slice(5).map((value) => makeHistoryTask(value))
       ]
     })
 
@@ -144,7 +144,7 @@ describe('useQueueEstimates', () => {
 
     const missingAhead = createHarness({
       queueStore: createQueueStore({
-        historyTasks: [makeHistoryTask(10)]
+        historyTasks: [makeHistoryTask(10_000)]
       })
     })
     expect(missingAhead.estimateRangeSeconds.value).toBeNull()
@@ -153,7 +153,9 @@ describe('useQueueEstimates', () => {
   it('falls back to the running remaining range when there are no jobs ahead', () => {
     const now = 20000
     const queueStore = createQueueStore({
-      historyTasks: [10, 20, 30].map((value) => makeHistoryTask(value)),
+      historyTasks: [10_000, 20_000, 30_000].map((value) =>
+        makeHistoryTask(value)
+      ),
       runningTasks: [
         makeRunningTask(now - 5000),
         makeRunningTask(now - 15000),
@@ -173,7 +175,9 @@ describe('useQueueEstimates', () => {
   it('subtracts elapsed time when estimating a running job', () => {
     const now = 25000
     const queueStore = createQueueStore({
-      historyTasks: [10, 20, 30].map((value) => makeHistoryTask(value))
+      historyTasks: [10_000, 20_000, 30_000].map((value) =>
+        makeHistoryTask(value)
+      )
     })
 
     const { estimateRemainingRangeSeconds } = createHarness({
@@ -189,7 +193,9 @@ describe('useQueueEstimates', () => {
 
   it('uses the first-seen timestamp for pending jobs and clamps negatives to zero', () => {
     const queueStore = createQueueStore({
-      historyTasks: [10, 20, 30].map((value) => makeHistoryTask(value))
+      historyTasks: [10_000, 20_000, 30_000].map((value) =>
+        makeHistoryTask(value)
+      )
     })
 
     const harness = createHarness({
@@ -205,6 +211,19 @@ describe('useQueueEstimates', () => {
     harness.nowRef.value = 70000
 
     expect(harness.estimateRemainingRangeSeconds.value).toEqual([0, 0])
+  })
+
+  it('converts execution durations from milliseconds to seconds', () => {
+    const queueStore = createQueueStore({
+      historyTasks: [2_000, 4_000].map((value) => makeHistoryTask(value))
+    })
+
+    const { estimateRangeSeconds } = createHarness({
+      queueStore,
+      jobsAhead: 1
+    })
+
+    expect(estimateRangeSeconds.value).toEqual([3, 4])
   })
 
   it('computes the elapsed label using execution start, then first-seen timestamp', () => {
