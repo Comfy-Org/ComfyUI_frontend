@@ -160,12 +160,12 @@ test.describe('Change Tracker', { tag: '@workflow' }, () => {
     })
     // Click empty space to trigger a change detection.
     await comfyPage.canvasOps.clickEmptySpace()
-    expect(await comfyPage.workflow.getUndoQueueSize()).toBe(1)
+    await expect.poll(() => comfyPage.workflow.getUndoQueueSize()).toBe(1)
   })
 
   test('Ignores changes in workflow.ds', async ({ comfyPage }) => {
     expect(await comfyPage.workflow.getUndoQueueSize()).toBe(0)
     await comfyPage.canvasOps.pan({ x: 10, y: 10 })
-    expect(await comfyPage.workflow.getUndoQueueSize()).toBe(0)
+    await expect.poll(() => comfyPage.workflow.getUndoQueueSize()).toBe(0)
   })
 })

@@ -38,13 +38,12 @@ test.describe('Load workflow warning', { tag: '@ui' }, () => {
 
 test('Does not report warning on undo/redo', async ({ comfyPage }) => {
   await comfyPage.settings.setSetting('Comfy.NodeSearchBoxImpl', 'v1 (legacy)')
+  const missingNodesWarning = comfyPage.page.locator('.comfy-missing-nodes')
 
   await comfyPage.workflow.loadWorkflow('missing/missing_nodes')
-  await comfyPage.page
-    .locator('.p-dialog')
-    .getByRole('button', { name: 'Close' })
-    .click({ force: true })
-  await comfyPage.page.locator('.p-dialog').waitFor({ state: 'hidden' })
+  await expect(missingNodesWarning).toBeVisible()
+  await comfyPage.page.keyboard.press('Escape')
+  await expect(missingNodesWarning).not.toBeVisible()
 
   // Wait for any async operations to complete after dialog closes
   await comfyPage.nextFrame()
@@ -55,9 +54,14 @@ test('Does not report warning on undo/redo', async ({ comfyPage }) => {
 
   // Undo and redo the change
   await comfyPage.keyboard.undo()
-  await expect(comfyPage.page.locator('.comfy-missing-nodes')).not.toBeVisible()
+  await expect(async () => {
+    await expect(missingNodesWarning).not.toBeVisible()
+  }).toPass({ timeout: 5000 })
+
   await comfyPage.keyboard.redo()
-  await expect(comfyPage.page.locator('.comfy-missing-nodes')).not.toBeVisible()
+  await expect(async () => {
+    await expect(missingNodesWarning).not.toBeVisible()
+  }).toPass({ timeout: 5000 })
 })
 
 test.describe('Execution error', () => {

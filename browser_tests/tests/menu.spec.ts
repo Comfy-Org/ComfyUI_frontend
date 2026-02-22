@@ -203,19 +203,19 @@ test.describe('Menu', { tag: '@ui' }, () => {
       await topbar.switchTheme('light')
 
       // Verify menu stays open and Light theme shows as active
-      await expect(menu).toBeVisible()
-      await expect(themeSubmenu).toBeVisible()
-
-      // Check that Light theme is active
-      expect(await topbar.isMenuItemActive(lightThemeItem)).toBe(true)
+      await expect(async () => {
+        await expect(menu).toBeVisible()
+        await expect(themeSubmenu).toBeVisible()
+        expect(await topbar.isMenuItemActive(lightThemeItem)).toBe(true)
+      }).toPass({ timeout: 5000 })
 
       // Screenshot with light theme active
       await comfyPage.attachScreenshot('theme-menu-light-active')
 
       // Verify ColorPalette setting is set to "light"
-      expect(await comfyPage.settings.getSetting('Comfy.ColorPalette')).toBe(
-        'light'
-      )
+      await expect
+        .poll(() => comfyPage.settings.getSetting('Comfy.ColorPalette'))
+        .toBe('light')
 
       // Close menu to see theme change
       await topbar.closeTopbarMenu()
@@ -228,20 +228,22 @@ test.describe('Menu', { tag: '@ui' }, () => {
       await topbar.switchTheme('dark')
 
       // Verify menu stays open and Dark theme shows as active
-      await expect(menu).toBeVisible()
-      await expect(themeItems2.submenu).toBeVisible()
-
-      // Check that Dark theme is active and Light theme is not
-      expect(await topbar.isMenuItemActive(themeItems2.darkTheme)).toBe(true)
-      expect(await topbar.isMenuItemActive(themeItems2.lightTheme)).toBe(false)
+      await expect(async () => {
+        await expect(menu).toBeVisible()
+        await expect(themeItems2.submenu).toBeVisible()
+        expect(await topbar.isMenuItemActive(themeItems2.darkTheme)).toBe(true)
+        expect(await topbar.isMenuItemActive(themeItems2.lightTheme)).toBe(
+          false
+        )
+      }).toPass({ timeout: 5000 })
 
       // Screenshot with dark theme active
       await comfyPage.attachScreenshot('theme-menu-dark-active')
 
       // Verify ColorPalette setting is set to "dark"
-      expect(await comfyPage.settings.getSetting('Comfy.ColorPalette')).toBe(
-        'dark'
-      )
+      await expect
+        .poll(() => comfyPage.settings.getSetting('Comfy.ColorPalette'))
+        .toBe('dark')
 
       // Close menu
       await topbar.closeTopbarMenu()

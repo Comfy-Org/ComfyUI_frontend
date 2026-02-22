@@ -17,10 +17,11 @@ test.describe('Vue Nodes Image Preview', () => {
     if (!loadImageNode) {
       throw new Error('LoadImage node not found')
     }
-    const { x, y } = await loadImageNode.getPosition()
+    const { x, y } = await loadImageNode.getTitlePosition()
 
     await comfyPage.dragDrop.dragAndDropFile('image64x64.webp', {
-      dropPosition: { x, y }
+      dropPosition: { x, y },
+      waitForUpload: true
     })
 
     const imagePreview = comfyPage.page.locator('.image-preview')
@@ -28,22 +29,27 @@ test.describe('Vue Nodes Image Preview', () => {
     await expect(imagePreview.locator('img')).toBeVisible()
     await expect(imagePreview).toContainText('x')
 
-    return imagePreview
+    return {
+      imagePreview,
+      nodeId: String(loadImageNode.id)
+    }
   }
 
   test('opens mask editor from image preview button', async ({ comfyPage }) => {
-    const imagePreview = await loadImageOnNode(comfyPage)
+    const { imagePreview } = await loadImageOnNode(comfyPage)
 
-    await imagePreview.locator('[role="img"]').hover()
+    await imagePreview.locator('[role="img"]').focus()
     await comfyPage.page.getByLabel('Edit or mask image').click()
 
     await expect(comfyPage.page.locator('.mask-editor-dialog')).toBeVisible()
   })
 
   test('shows image context menu options', async ({ comfyPage }) => {
-    await loadImageOnNode(comfyPage)
+    const { nodeId } = await loadImageOnNode(comfyPage)
 
-    const nodeHeader = comfyPage.vueNodes.getNodeByTitle('Load Image')
+    const nodeHeader = comfyPage.vueNodes
+      .getNodeLocator(nodeId)
+      .locator('.lg-node-header')
     await nodeHeader.click()
     await nodeHeader.click({ button: 'right' })
 
