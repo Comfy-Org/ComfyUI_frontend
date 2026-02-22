@@ -5,6 +5,7 @@ import type { Point } from '@/lib/litegraph/src/interfaces'
 import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
+import type { BaseWidget } from '@/lib/litegraph/src/widgets/BaseWidget'
 import { toConcreteWidget } from '@/lib/litegraph/src/widgets/widgetMap'
 import { t } from '@/i18n'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
@@ -51,272 +52,295 @@ export function createPromotedWidgetView(
   widgetName: string,
   displayName?: string
 ): PromotedWidgetView {
-  const graphId = subgraphNode.rootGraph.id
-  const bareNodeId = stripGraphPrefix(nodeId as NodeId)
+  return new PromotedWidgetViewImpl(
+    subgraphNode,
+    nodeId,
+    widgetName,
+    displayName
+  )
+}
 
-  const view = {} as PromotedWidgetView
+class PromotedWidgetViewImpl implements PromotedWidgetView {
+  [symbol: symbol]: boolean
 
-  // Identity — own data properties
-  Object.defineProperties(view, {
-    sourceNodeId: { value: nodeId, enumerable: true },
-    sourceWidgetName: { value: widgetName, enumerable: true }
-  })
+  readonly sourceNodeId: string
+  readonly sourceWidgetName: string
 
-  // Positional — writable, owned by this view for _arrangeWidgets.
-  // The y setter also syncs the DOM position override so DomWidgets.vue
-  // positions the widget correctly even in Vue nodes mode (where draw()
-  // is never called).
-  let _y = 0
-  Object.defineProperty(view, 'y', {
-    get: () => _y,
-    set: (v: number) => {
-      _y = v
-      syncDomOverride(subgraphNode, nodeId, widgetName, view)
-    },
-    enumerable: true,
-    configurable: true
-  })
-  view.last_y = undefined
-  view.computedHeight = undefined
+  readonly serialize = false
 
-  // Fixed properties
-  Object.defineProperties(view, {
-    node: {
-      get: () => subgraphNode,
-      enumerable: true
-    },
-    name: {
-      get: () => displayName ?? widgetName,
-      enumerable: true
-    },
-    serialize: { value: false, enumerable: true },
-    computedDisabled: {
-      get: () => false,
-      set: () => {},
-      enumerable: true
-    }
-  })
+  last_y?: number
+  computedHeight?: number
 
-  // Delegated getters → interior widget
-  Object.defineProperties(view, {
-    type: {
-      get: () =>
-        resolve(subgraphNode, nodeId, widgetName)?.widget.type ?? 'button',
-      enumerable: true
-    },
-    options: {
-      get: () =>
-        resolve(subgraphNode, nodeId, widgetName)?.widget.options ?? {},
-      enumerable: true
-    },
-    tooltip: {
-      get: () => resolve(subgraphNode, nodeId, widgetName)?.widget.tooltip,
-      enumerable: true
-    },
-    linkedWidgets: {
-      get: () =>
-        resolve(subgraphNode, nodeId, widgetName)?.widget.linkedWidgets,
-      enumerable: true
-    }
-  })
+  private readonly graphId: string
+  private readonly bareNodeId: NodeId
+  private yValue = 0
 
-  // Store-backed: value, label, hidden
-  Object.defineProperties(view, {
-    value: {
-      get: () => {
-        const state = useWidgetValueStore().getWidget(
-          graphId,
-          bareNodeId,
-          widgetName
-        )
-        if (state) return state.value
-        return resolve(subgraphNode, nodeId, widgetName)?.widget.value
-      },
-      set: (v: unknown) => {
-        const state = useWidgetValueStore().getWidget(
-          graphId,
-          bareNodeId,
-          widgetName
-        )
-        if (state) {
-          state.value = v
-          return
-        }
+  private projectedSourceNode?: LGraphNode
+  private projectedSourceWidget?: IBaseWidget
+  private projectedWidget?: BaseWidget
 
-        const resolved = resolve(subgraphNode, nodeId, widgetName)
-        if (resolved && isWidgetValue(v)) {
-          resolved.widget.value = v
-        }
-      },
-      enumerable: true
-    },
-    label: {
-      get: () => {
-        const state = useWidgetValueStore().getWidget(
-          graphId,
-          bareNodeId,
-          widgetName
-        )
-        return state?.label ?? displayName ?? widgetName
-      },
-      set: (v: string | undefined) => {
-        const state = useWidgetValueStore().getWidget(
-          graphId,
-          bareNodeId,
-          widgetName
-        )
-        if (state) state.label = v
-      },
-      enumerable: true
-    },
-    hidden: {
-      get: () => {
-        const resolved = resolve(subgraphNode, nodeId, widgetName)
-        return resolved?.widget.hidden ?? false
-      },
-      enumerable: true
-    }
-  })
-
-  // Drawing — delegates to interior widget's concrete class
-  view.draw = function (
-    ctx: CanvasRenderingContext2D,
-    _node: LGraphNode,
-    widget_width: number,
-    y: number,
-    H: number,
-    lowQuality?: boolean
+  constructor(
+    private readonly subgraphNode: SubgraphNode,
+    nodeId: string,
+    widgetName: string,
+    private readonly displayName?: string
   ) {
-    const resolved = resolve(subgraphNode, nodeId, widgetName)
-    if (!resolved) {
-      drawDisconnectedPlaceholder(ctx, widget_width, y, H)
+    this.sourceNodeId = nodeId
+    this.sourceWidgetName = widgetName
+    this.graphId = subgraphNode.rootGraph.id
+    this.bareNodeId = stripGraphPrefix(nodeId as NodeId)
+  }
+
+  get node(): SubgraphNode {
+    return this.subgraphNode
+  }
+
+  get name(): string {
+    return this.displayName ?? this.sourceWidgetName
+  }
+
+  get y(): number {
+    return this.yValue
+  }
+
+  set y(value: number) {
+    this.yValue = value
+    this.syncDomOverride()
+  }
+
+  get computedDisabled(): false {
+    return false
+  }
+
+  set computedDisabled(_value: boolean | undefined) {}
+
+  get type(): IBaseWidget['type'] {
+    return this.resolve()?.widget.type ?? 'button'
+  }
+
+  get options(): IBaseWidget['options'] {
+    return this.resolve()?.widget.options ?? {}
+  }
+
+  get tooltip(): string | undefined {
+    return this.resolve()?.widget.tooltip
+  }
+
+  get linkedWidgets(): IBaseWidget[] | undefined {
+    return this.resolve()?.widget.linkedWidgets
+  }
+
+  get value(): IBaseWidget['value'] {
+    const state = this.getWidgetState()
+    if (state && isWidgetValue(state.value)) return state.value
+    return this.resolve()?.widget.value
+  }
+
+  set value(value: IBaseWidget['value']) {
+    const state = this.getWidgetState()
+    if (state) {
+      state.value = value
       return
     }
 
-    if (isBaseDOMWidget(resolved.widget)) {
-      syncDomOverride(subgraphNode, nodeId, widgetName, view)
-      return
-    }
-
-    const concrete = toConcreteWidget(resolved.widget, resolved.node, false)
-    if (concrete) {
-      const projected = concrete.createCopyForNode(subgraphNode)
-      const originalY = projected.y
-      const originalComputedHeight = projected.computedHeight
-
-      projected.y = view.y
-      projected.computedHeight = view.computedHeight
-
-      projected.drawWidget(ctx, {
-        width: widget_width,
-        showText: !lowQuality,
-        suppressPromotedOutline: true
-      })
-
-      projected.y = originalY
-      projected.computedHeight = originalComputedHeight
+    const resolved = this.resolve()
+    if (resolved && isWidgetValue(value)) {
+      resolved.widget.value = value
     }
   }
 
-  // Layout sizing — delegate to interior widget's computeLayoutSize.
-  // Use a getter so typeof check returns 'function' only when the
-  // interior widget actually has computeLayoutSize (otherwise
-  // _arrangeWidgets treats it as a fixed-size widget).
-  Object.defineProperty(view, 'computeLayoutSize', {
-    get: () => {
-      const resolved = resolve(subgraphNode, nodeId, widgetName)
-      if (!resolved?.widget.computeLayoutSize) return undefined
-      return (node: LGraphNode) => resolved.widget.computeLayoutSize!(node)
-    },
-    enumerable: true,
-    configurable: true
-  })
+  get label(): string | undefined {
+    const state = this.getWidgetState()
+    return state?.label ?? this.displayName ?? this.sourceWidgetName
+  }
 
-  Object.defineProperty(view, 'computeSize', {
-    get: () => {
-      const resolved = resolve(subgraphNode, nodeId, widgetName)
-      if (!resolved?.widget.computeSize) return undefined
-      return (width?: number) => resolved.widget.computeSize!(width)
-    },
-    enumerable: true,
-    configurable: true
-  })
+  set label(value: string | undefined) {
+    const state = this.getWidgetState()
+    if (state) state.label = value
+  }
 
-  // Interaction — resolve interior widget and delegate pointer events.
-  // Without this, processWidgetClick wraps the PromotedWidgetView POJO
-  // via toConcreteWidget, creating a throwaway widget whose value writes
-  // never propagate to the store or interior widget.
-  view.onPointerDown = function (
+  get hidden(): boolean {
+    return this.resolve()?.widget.hidden ?? false
+  }
+
+  get computeLayoutSize(): IBaseWidget['computeLayoutSize'] {
+    const resolved = this.resolve()
+    if (!resolved?.widget.computeLayoutSize) return undefined
+    return (node: LGraphNode) => resolved.widget.computeLayoutSize!(node)
+  }
+
+  get computeSize(): IBaseWidget['computeSize'] {
+    const resolved = this.resolve()
+    if (!resolved?.widget.computeSize) return undefined
+    return (width?: number) => resolved.widget.computeSize!(width)
+  }
+
+  draw(
+    ctx: CanvasRenderingContext2D,
+    _node: LGraphNode,
+    widgetWidth: number,
+    y: number,
+    H: number,
+    lowQuality?: boolean
+  ): void {
+    const resolved = this.resolve()
+    if (!resolved) {
+      drawDisconnectedPlaceholder(ctx, widgetWidth, y, H)
+      return
+    }
+
+    if (isBaseDOMWidget(resolved.widget)) return this.syncDomOverride(resolved)
+
+    const projected = this.getProjectedWidget(resolved)
+    if (!projected || typeof projected.drawWidget !== 'function') return
+
+    const originalY = projected.y
+    const originalComputedHeight = projected.computedHeight
+
+    projected.y = this.y
+    projected.computedHeight = this.computedHeight
+    projected.value = this.value
+
+    projected.drawWidget(ctx, {
+      width: widgetWidth,
+      showText: !lowQuality,
+      suppressPromotedOutline: true
+    })
+
+    projected.y = originalY
+    projected.computedHeight = originalComputedHeight
+  }
+
+  onPointerDown(
     pointer: CanvasPointer,
     _node: LGraphNode,
     canvas: LGraphCanvas
   ): boolean {
-    const resolved = resolve(subgraphNode, nodeId, widgetName)
+    const resolved = this.resolve()
     if (!resolved) return false
 
     const interior = resolved.widget
     if (typeof interior.onPointerDown === 'function') {
-      const handled = interior.onPointerDown(pointer, subgraphNode, canvas)
+      const handled = interior.onPointerDown(pointer, this.subgraphNode, canvas)
       if (handled) return true
     }
 
-    const concrete = toConcreteWidget(interior, subgraphNode, false)
-    if (concrete) {
-      pointer.onClick = () =>
-        concrete.onClick({
-          e: pointer.eDown!,
-          node: subgraphNode,
-          canvas
-        })
-      pointer.onDrag = (eMove) =>
-        concrete.onDrag?.({
-          e: eMove,
-          node: subgraphNode,
-          canvas
-        })
-      return true
-    }
+    const concrete = toConcreteWidget(interior, this.subgraphNode, false)
+    if (concrete)
+      return this.bindConcretePointerHandlers(pointer, canvas, concrete)
 
-    if (hasLegacyMouse(interior)) {
-      const downEvent = pointer.eDown
-      if (!downEvent) return false
-
-      const downPosition: Point = [
-        downEvent.canvasX - subgraphNode.pos[0],
-        downEvent.canvasY - subgraphNode.pos[1]
-      ]
-      interior.mouse(downEvent, downPosition, subgraphNode)
-
-      pointer.finally = () => {
-        const upEvent = pointer.eUp
-        if (!upEvent) return
-
-        const upPosition: Point = [
-          upEvent.canvasX - subgraphNode.pos[0],
-          upEvent.canvasY - subgraphNode.pos[1]
-        ]
-        interior.mouse(upEvent, upPosition, subgraphNode)
-      }
-
-      return true
-    }
+    if (hasLegacyMouse(interior))
+      return this.handleLegacyMouse(pointer, interior)
 
     return false
   }
 
-  // Callback forwarding
-  view.callback = function (
+  callback(
     value: unknown,
     canvas?: LGraphCanvas,
     node?: LGraphNode,
     pos?: Point,
     e?: CanvasPointerEvent
   ) {
-    const resolved = resolve(subgraphNode, nodeId, widgetName)
-    resolved?.widget.callback?.(value, canvas, node, pos, e)
+    this.resolve()?.widget.callback?.(value, canvas, node, pos, e)
   }
 
-  return view
+  private resolve(): { node: LGraphNode; widget: IBaseWidget } | undefined {
+    return resolve(this.subgraphNode, this.sourceNodeId, this.sourceWidgetName)
+  }
+
+  private getWidgetState() {
+    return useWidgetValueStore().getWidget(
+      this.graphId,
+      this.bareNodeId,
+      this.sourceWidgetName
+    )
+  }
+
+  private getProjectedWidget(resolved: {
+    node: LGraphNode
+    widget: IBaseWidget
+  }): BaseWidget | undefined {
+    const shouldRebuild =
+      !this.projectedWidget ||
+      this.projectedSourceNode !== resolved.node ||
+      this.projectedSourceWidget !== resolved.widget ||
+      this.projectedWidget.type !== resolved.widget.type
+
+    if (!shouldRebuild) return this.projectedWidget
+
+    const concrete = toConcreteWidget(resolved.widget, resolved.node, false)
+    if (!concrete) {
+      this.projectedWidget = undefined
+      this.projectedSourceNode = undefined
+      this.projectedSourceWidget = undefined
+      return undefined
+    }
+
+    this.projectedWidget = concrete.createCopyForNode(this.subgraphNode)
+    this.projectedSourceNode = resolved.node
+    this.projectedSourceWidget = resolved.widget
+    return this.projectedWidget
+  }
+
+  private bindConcretePointerHandlers(
+    pointer: CanvasPointer,
+    canvas: LGraphCanvas,
+    concrete: BaseWidget
+  ): boolean {
+    pointer.onClick = () =>
+      concrete.onClick({
+        e: pointer.eDown!,
+        node: this.subgraphNode,
+        canvas
+      })
+    pointer.onDrag = (eMove) =>
+      concrete.onDrag?.({
+        e: eMove,
+        node: this.subgraphNode,
+        canvas
+      })
+    return true
+  }
+
+  private handleLegacyMouse(
+    pointer: CanvasPointer,
+    interior: LegacyMouseWidget
+  ): boolean {
+    const downEvent = pointer.eDown
+    if (!downEvent) return false
+
+    const downPosition: Point = [
+      downEvent.canvasX - this.subgraphNode.pos[0],
+      downEvent.canvasY - this.subgraphNode.pos[1]
+    ]
+    interior.mouse(downEvent, downPosition, this.subgraphNode)
+
+    pointer.finally = () => {
+      const upEvent = pointer.eUp
+      if (!upEvent) return
+
+      const upPosition: Point = [
+        upEvent.canvasX - this.subgraphNode.pos[0],
+        upEvent.canvasY - this.subgraphNode.pos[1]
+      ]
+      interior.mouse(upEvent, upPosition, this.subgraphNode)
+    }
+
+    return true
+  }
+
+  private syncDomOverride(
+    resolved:
+      | { node: LGraphNode; widget: IBaseWidget }
+      | undefined = this.resolve()
+  ) {
+    if (!resolved || !isBaseDOMWidget(resolved.widget)) return
+    useDomWidgetStore().setPositionOverride(resolved.widget.id, {
+      node: this.subgraphNode,
+      widget: this
+    })
+  }
 }
 
 /** Checks if a widget is a BaseDOMWidget (DOMWidget or ComponentWidget). */
@@ -324,26 +348,6 @@ function isBaseDOMWidget(
   widget: IBaseWidget
 ): widget is IBaseWidget & { id: string } {
   return 'id' in widget && ('element' in widget || 'component' in widget)
-}
-
-/**
- * If the interior widget is a DOM widget, register (or update) the
- * position override so DomWidgets.vue renders it on the SubgraphNode.
- * Called from both the `y` setter (covers Vue nodes mode where draw()
- * is never called) and `draw()` (covers legacy canvas mode).
- */
-function syncDomOverride(
-  subgraphNode: SubgraphNode,
-  nodeId: string,
-  widgetName: string,
-  view: PromotedWidgetView
-) {
-  const resolved = resolve(subgraphNode, nodeId, widgetName)
-  if (!resolved || !isBaseDOMWidget(resolved.widget)) return
-  useDomWidgetStore().setPositionOverride(resolved.widget.id, {
-    node: subgraphNode,
-    widget: view
-  })
 }
 
 function drawDisconnectedPlaceholder(
