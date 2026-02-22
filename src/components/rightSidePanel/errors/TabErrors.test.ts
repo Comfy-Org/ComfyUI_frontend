@@ -94,7 +94,7 @@ describe('TabErrors.vue', () => {
 
   it('renders prompt-level errors (Group title = error message)', async () => {
     const wrapper = mountComponent({
-      execution: {
+      executionError: {
         lastPromptError: {
           type: 'prompt_no_outputs',
           message: 'Server Error: No outputs',
@@ -118,7 +118,7 @@ describe('TabErrors.vue', () => {
     } as ReturnType<typeof getNodeByExecutionId>)
 
     const wrapper = mountComponent({
-      execution: {
+      executionError: {
         lastNodeErrors: {
           '6': {
             class_type: 'CLIPTextEncode',
@@ -143,7 +143,7 @@ describe('TabErrors.vue', () => {
     } as ReturnType<typeof getNodeByExecutionId>)
 
     const wrapper = mountComponent({
-      execution: {
+      executionError: {
         lastExecutionError: {
           prompt_id: 'abc',
           node_id: '10',
@@ -167,7 +167,7 @@ describe('TabErrors.vue', () => {
     vi.mocked(getNodeByExecutionId).mockReturnValue(null)
 
     const wrapper = mountComponent({
-      execution: {
+      executionError: {
         lastNodeErrors: {
           '1': {
             class_type: 'CLIPTextEncode',
@@ -198,7 +198,7 @@ describe('TabErrors.vue', () => {
     vi.mocked(useCopyToClipboard).mockReturnValue({ copyToClipboard: mockCopy })
 
     const wrapper = mountComponent({
-      execution: {
+      executionError: {
         lastNodeErrors: {
           '1': {
             class_type: 'TestNode',
