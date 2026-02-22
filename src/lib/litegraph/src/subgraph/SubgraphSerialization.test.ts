@@ -76,7 +76,6 @@ describe.skip('SubgraphSerialization - Basic Serialization', () => {
     // Verify core properties
     expect(restored.id).toBe(original.id)
     expect(restored.name).toBe(original.name)
-    // @ts-expect-error description property not in type definition
     expect(restored.description).toBe(original.description)
 
     // Verify I/O structure

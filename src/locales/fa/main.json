@@ -275,7 +275,9 @@
     "signOut": {
       "signOut": "خروج",
       "success": "خروج با موفقیت انجام شد",
-      "successDetail": "شما با موفقیت از حساب کاربری خود خارج شدید."
+      "successDetail": "شما با موفقیت از حساب کاربری خود خارج شدید.",
+      "unsavedChangesMessage": "شما تغییرات ذخیره‌نشده‌ای دارید که با خروج از حساب از بین خواهند رفت. آیا مایل به ادامه هستید؟",
+      "unsavedChangesTitle": "تغییرات ذخیره‌نشده"
     },
     "signup": {
       "alreadyHaveAccount": "قبلاً حساب کاربری دارید؟",
@@ -608,6 +610,7 @@
     "AUDIO_ENCODER_OUTPUT": "خروجی رمزگذار صوت",
     "AUDIO_RECORD": "ضبط صوت",
     "BOOLEAN": "بولی",
+    "BOUNDING_BOX": "BOUNDING_BOX",
     "CAMERA_CONTROL": "کنترل دوربین",
     "CLIP": "clip",
     "CLIP_VISION": "بینایی clip",
@@ -619,6 +622,7 @@
     "COMFY_MATCHTYPE_V3": "Comfy MatchType V3",
     "CONDITIONING": "شرط‌گذاری",
     "CONTROL_NET": "controlnet",
+    "ELEVENLABS_VOICE": "ELEVENLABS_VOICE",
     "FILE_3D": "FILE_3D",
     "FILE_3D_FBX": "FILE_3D_FBX",
     "FILE_3D_GLB": "FILE_3D_GLB",
@@ -727,11 +731,30 @@
     "noStackTrace": "هیچ stacktraceی موجود نیست",
     "promptExecutionError": "اجرای prompt با شکست مواجه شد"
   },
+  "errorOverlay": {
+    "errorCount": "{count} خطا",
+    "seeErrors": "مشاهده خطاها"
+  },
+  "exportToast": {
+    "allExportsCompleted": "همه خروجی‌ها تکمیل شد",
+    "downloadExport": "دانلود خروجی",
+    "downloadFailed": "دانلود \"{name}\" ناموفق بود",
+    "exportCompleted": "دانلود ZIP آماده است",
+    "exportError": "خروجی‌گیری ناموفق بود",
+    "exportFailed": "{count} خروجی ناموفق بود",
+    "exportFailedSingle": "ایجاد خروجی ZIP ناموفق بود",
+    "exportStarted": "در حال آماده‌سازی دانلود ZIP...",
+    "exportingAssets": "در حال خروجی گرفتن دارایی‌ها",
+    "noExportsInQueue": "هیچ خروجی {filter} در صف نیست",
+    "preparingExport": "در حال آماده‌سازی خروجی...",
+    "retryDownload": "تلاش مجدد برای دانلود"
+  },
   "g": {
     "1x": "۱x",
     "2x": "۲x",
     "about": "درباره",
     "add": "افزودن",
+    "addNode": "افزودن node...",
     "addNodeFilterCondition": "افزودن شرط فیلتر node",
     "all": "همه",
     "amount": "مقدار",
@@ -825,6 +848,7 @@
     "error": "خطا",
     "errorLoadingImage": "خطا در بارگذاری تصویر",
     "errorLoadingVideo": "خطا در بارگذاری ویدیو",
+    "essentials": "ضروریات",
     "experimental": "آزمایشی",
     "export": "خروجی گرفتن",
     "extensionName": "نام افزونه",
@@ -833,9 +857,12 @@
     "failedToCopyJobId": "کپی شناسه وظیفه ناموفق بود",
     "failedToDownloadImage": "دانلود تصویر ناموفق بود",
     "failedToDownloadVideo": "دانلود ویدیو ناموفق بود",
+    "favorites": "علاقه‌مندی‌ها",
     "feedback": "بازخورد",
     "file": "فایل",
     "filter": "فیلتر",
+    "filterBy": "فیلتر بر اساس:",
+    "filterByType": "فیلتر بر اساس {type}...",
     "findIssues": "یافتن مشکلات",
     "frameNodes": "قاب‌بندی nodeها",
     "frontendNewer": "نسخه فرانت‌اند {frontendVersion} ممکن است با نسخه بک‌اند {backendVersion} ناسازگار باشد.",
@@ -856,6 +883,7 @@
     "inProgress": "در حال انجام",
     "increment": "افزایش",
     "info": "اطلاعات node",
+    "input": "ورودی",
     "insert": "درج",
     "install": "نصب",
     "installed": "نصب شده",
@@ -879,6 +907,7 @@
     "login": "ورود",
     "logoAlt": "لوگوی ComfyUI",
     "logs": "گزارش‌ها",
+    "manageExtensions": "مدیریت افزونه‌ها",
     "markdown": "markdown",
     "micPermissionDenied": "دسترسی میکروفون رد شد",
     "migrate": "مهاجرت",
@@ -886,6 +915,7 @@
     "more": "بیشتر",
     "moreOptions": "گزینه‌های بیشتر",
     "moreWorkflows": "workflowهای بیشتر",
+    "mostRelevant": "مرتبط‌ترین",
     "multiSelectDropdown": "لیست کشویی چندانتخابی",
     "name": "نام",
     "newFolder": "پوشه جدید",
@@ -916,6 +946,7 @@
     "openManager": "باز کردن مدیریت",
     "openNewIssue": "ایجاد گزارش جدید",
     "or": "یا",
+    "output": "خروجی",
     "overwrite": "جایگزینی",
     "playPause": "پخش/توقف",
     "playRecording": "پخش ضبط",
@@ -942,6 +973,7 @@
     },
     "releaseTitle": "انتشار {package} نسخه {version}",
     "reloadToApplyChanges": "برای اعمال تغییرات بارگذاری مجدد کنید",
+    "remove": "حذف",
     "removeImage": "حذف تصویر",
     "removeTag": "حذف برچسب",
     "removeVideo": "حذف ویدیو",
@@ -1558,6 +1590,7 @@
       "downloadSelectedAll": "دانلود همه",
       "downloadStarted": "در حال دانلود {count} فایل...",
       "downloadsStarted": "دانلود {count} فایل آغاز شد",
+      "exportStarted": "در حال آماده‌سازی خروجی ZIP برای {count} فایل",
       "exportWorkflowAll": "خروجی گرفتن از همه workflowها",
       "failedToAddNodes": "افزودن nodeها به workflow ناموفق بود",
       "failedToDeleteAssets": "حذف دارایی‌های انتخاب‌شده ناموفق بود",
@@ -1609,6 +1642,8 @@
     "runWorkflowFront": "اجرای workflow (صف در ابتدا)",
     "settings": "تنظیمات",
     "showMenu": "نمایش منو",
+    "stopRunInstant": "توقف اجرا (فوری)",
+    "stopRunInstantTooltip": "توقف اجرا",
     "theme": "پوسته",
     "toggleBottomPanel": "نمایش/مخفی‌سازی پنل پایین"
   },
@@ -1634,6 +1669,7 @@
     "Contact Support": "تماس با پشتیبانی",
     "Convert Selection to Subgraph": "تبدیل انتخاب به Subgraph",
     "Convert selected nodes to group node": "تبدیل Nodeهای انتخاب‌شده به group node",
+    "Copy": "کپی",
     "Custom Nodes (Legacy)": "Custom Nodes (قدیمی)",
     "Custom Nodes Manager": "مدیر Custom Nodes",
     "Decrease Brush Size in MaskEditor": "کاهش اندازه قلم‌مو در MaskEditor",
@@ -1688,6 +1724,7 @@
     "Open Outputs Folder": "باز کردن پوشه Outputs",
     "Open Sign In Dialog": "باز کردن پنجره ورود",
     "Open extra_model_paths_yaml": "باز کردن extra_model_paths.yaml",
+    "Paste": "چسباندن",
     "Pin/Unpin Selected Items": "سنجاق/برداشتن سنجاق موارد انتخاب‌شده",
     "Pin/Unpin Selected Nodes": "سنجاق/برداشتن سنجاق Nodeهای انتخاب‌شده",
     "Previous Opened Workflow": "Workflow قبلی بازشده",
@@ -1707,6 +1744,7 @@
     "Rotate Right in MaskEditor": "چرخش به راست در MaskEditor",
     "Save": "ذخیره",
     "Save As": "ذخیره به عنوان",
+    "Select All": "انتخاب همه",
     "Set Subgraph Description": "تنظیم توضیح زیرگراف",
     "Set Subgraph Search Aliases": "تنظیم نام‌های مستعار جستجوی زیرگراف",
     "Show Keybindings Dialog": "نمایش پنجره کلیدهای میانبر",
@@ -1776,6 +1814,7 @@
     "BFL": "BFL",
     "Bria": "Bria",
     "ByteDance": "ByteDance",
+    "ElevenLabs": "ElevenLabs",
     "Gemini": "Gemini",
     "Grok": "Grok",
     "HitPaw": "HitPaw",
@@ -1858,11 +1897,13 @@
     "scheduling": "زمان‌بندی",
     "sd": "sd",
     "sd3": "sd3",
+    "shader": "shader",
     "sigmas": "سیگماها",
     "stable_cascade": "stable cascade",
     "string": "رشته",
     "style_model": "مدل سبک",
     "text": "متن",
+    "textgen": "textgen",
     "training": "آموزش",
     "transform": "تبدیل",
     "unet": "unet",
@@ -1897,6 +1938,25 @@
     "moreHelp": "برای راهنمایی بیشتر، مراجعه کنید به",
     "outputs": "خروجی‌ها",
     "type": "نوع"
+  },
+  "nodeReplacement": {
+    "compatibleAlternatives": "گزینه‌های سازگار",
+    "installMissingNodes": "نصب نودهای مفقود",
+    "installationRequired": "نصب مورد نیاز است",
+    "instructionMessage": "برای اجرای workflow باید این نودها را نصب یا با گزینه‌های نصب‌شده جایگزین کنید. نودهای مفقود با رنگ {red} روی بوم مشخص شده‌اند. برخی نودها قابل تعویض نیستند و باید از طریق Node Manager نصب شوند.",
+    "notReplaceable": "نیاز به نصب",
+    "openNodeManager": "باز کردن Node Manager",
+    "quickFixAvailable": "رفع سریع در دسترس است",
+    "redHighlight": "قرمز",
+    "replaceFailed": "جایگزینی نودها ناموفق بود",
+    "replaceSelected": "جایگزینی انتخاب‌شده‌ها ({count})",
+    "replaceWarning": "این کار workflow را به طور دائمی تغییر می‌دهد. اگر مطمئن نیستید، ابتدا یک نسخه ذخیره کنید.",
+    "replaceable": "قابل جایگزینی",
+    "replaced": "جایگزین شد",
+    "replacedAllNodes": "{count} نوع نود جایگزین شد",
+    "replacedNode": "نود جایگزین شد: {nodeType}",
+    "selectAll": "انتخاب همه",
+    "skipForNow": "فعلاً رد شود"
   },
   "nodeTemplates": {
     "enterName": "نام را وارد کنید",
@@ -1996,6 +2056,12 @@
     "advancedInputs": "ورودی‌های پیشرفته",
     "bypass": "عبور",
     "color": "رنگ نود",
+    "enterSubgraph": "ورود به زیرگراف",
+    "errorHelp": "برای دریافت کمک بیشتر، {github} یا {support}",
+    "errorHelpGithub": "ثبت یک issue در GitHub",
+    "errorHelpSupport": "تماس با پشتیبانی ما",
+    "errors": "خطاها",
+    "executionErrorOccurred": "خطایی در حین اجرا رخ داد. برای جزئیات به تب خطاها مراجعه کنید.",
     "fallbackGroupTitle": "گروه",
     "fallbackNodeTitle": "node",
     "favorites": "ورودی‌های علاقه‌مندی",
@@ -2030,6 +2096,7 @@
     "inputsNoneTooltip": "این نود ورودی ندارد",
     "locateNode": "یافتن node در canvas",
     "mute": "بی‌صدا",
+    "noErrors": "بدون خطا",
     "noSelection": "یک نود را انتخاب کنید تا ویژگی‌ها و اطلاعات آن نمایش داده شود.",
     "nodeState": "وضعیت نود",
     "nodes": "nodeها",
@@ -2038,10 +2105,25 @@
     "normal": "عادی",
     "parameters": "پارامترها",
     "pinned": "سنجاق شده",
+    "promptErrors": {
+      "no_prompt": {
+        "desc": "داده‌های گردش‌کار ارسال‌شده به سرور خالی است. این ممکن است یک خطای غیرمنتظره سیستمی باشد."
+      },
+      "prompt_no_outputs": {
+        "desc": "گردش‌کار هیچ نود خروجی (مانند Save Image یا Preview Image) برای تولید نتیجه ندارد."
+      },
+      "server_error_cloud": {
+        "desc": "سرور با خطای غیرمنتظره‌ای مواجه شد. لطفاً بعداً دوباره تلاش کنید."
+      },
+      "server_error_local": {
+        "desc": "سرور با خطای غیرمنتظره‌ای مواجه شد. لطفاً لاگ‌های سرور را بررسی کنید."
+      }
+    },
     "properties": "ویژگی‌ها",
     "removeFavorite": "حذف از علاقه‌مندی‌ها",
     "resetAllParameters": "بازنشانی همه پارامترها",
     "resetToDefault": "بازنشانی به پیش‌فرض",
+    "seeError": "مشاهده خطا",
     "settings": "تنظیمات",
     "showAdvancedInputsButton": "نمایش ورودی‌های پیشرفته",
     "showInput": "نمایش ورودی",
@@ -2266,6 +2348,7 @@
     "CustomColorPalettes": "پالت‌های رنگ سفارشی",
     "DevMode": "حالت توسعه‌دهنده",
     "EditTokenWeight": "ویرایش وزن توکن",
+    "Error System": "سیستم خطا",
     "Execution": "اجرا",
     "Extension": "افزونه",
     "General": "عمومی",
@@ -2282,6 +2365,7 @@
     "Menu": "منو",
     "ModelLibrary": "کتابخانه مدل",
     "Node": "Node",
+    "Node Library": "کتابخانه گره",
     "Node Search Box": "جعبه جستجوی Node",
     "Node Widget": "ویجت Node",
     "NodeLibrary": "کتابخانه Node",
@@ -2340,6 +2424,10 @@
     "backToAssets": "بازگشت به همه دارایی‌ها",
     "browseTemplates": "مرور قالب‌های نمونه",
     "downloads": "دانلودها",
+    "folderView": {
+      "errorDetail": "امکان دریافت خروجی‌ها برای این job وجود ندارد. لطفاً دوباره تلاش کنید.",
+      "errorSummary": "بارگذاری خروجی‌ها ناموفق بود"
+    },
     "generatedAssetsHeader": "دارایی‌های تولیدشده",
     "helpCenter": "مرکز راهنما",
     "importedAssetsHeader": "دارایی‌های واردشده",
@@ -2366,7 +2454,8 @@
       "sortLongestFirst": "زمان تولید (بیشترین ابتدا)",
       "sortNewestFirst": "جدیدترین ابتدا",
       "sortOldestFirst": "قدیمی‌ترین ابتدا",
-      "title": "دارایی‌های رسانه‌ای"
+      "title": "دارایی‌های رسانه‌ای",
+      "viewSettings": "نمایش تنظیمات"
     },
     "modelLibrary": "کتابخانه مدل",
     "newBlankWorkflow": "ایجاد Workflow جدید خالی",
@@ -2376,6 +2465,9 @@
     "noImportedFiles": "فایل واردشده‌ای یافت نشد",
     "nodeLibrary": "کتابخانه Node",
     "nodeLibraryTab": {
+      "allNodes": "همه nodeها",
+      "custom": "سفارشی",
+      "essentials": "ضروریات",
       "groupBy": "گروه‌بندی بر اساس",
       "groupStrategies": {
         "category": "دسته‌بندی",
@@ -2386,6 +2478,11 @@
         "sourceDesc": "گروه‌بندی بر اساس نوع منبع (Core، Custom، API)"
       },
       "resetView": "بازنشانی نمای پیش‌فرض",
+      "sections": {
+        "favoriteNode": "گره مورد علاقه",
+        "favorites": "علاقه‌مندی‌ها",
+        "unfavoriteNode": "حذف از علاقه‌مندی‌ها"
+      },
       "sortBy": {
         "alphabetical": "حروف الفبا",
         "alphabeticalDesc": "مرتب‌سازی الفبایی درون گروه‌ها",
@@ -2394,6 +2491,7 @@
       },
       "sortMode": "حالت مرتب‌سازی"
     },
+    "nodes": "nodeها",
     "openWorkflow": "باز کردن Workflow در سیستم فایل محلی",
     "queue": "صف",
     "queueProgressOverlay": {
@@ -2401,14 +2499,17 @@
       "activeJobsShort": "{count} فعال | {count} فعال",
       "activeJobsSuffix": "کار فعال",
       "cancelJobTooltip": "لغو کار",
+      "clearAllJobsTooltip": "لغو همه jobهای در حال اجرا",
       "clearHistory": "پاک‌سازی تاریخچه صف کار",
       "clearHistoryDialogAssetsNote": "دارایی‌های تولیدشده توسط این کارها حذف نمی‌شوند و همیشه از پنل دارایی‌ها قابل مشاهده هستند.",
       "clearHistoryDialogDescription": "همه کارهای تمام‌شده یا ناموفق زیر از این پنل صف کار حذف خواهند شد.",
       "clearHistoryDialogTitle": "تاریخچه صف کار را پاک کنید؟",
+      "clearHistoryMenuAssetsNote": "دارایی‌های رسانه‌ای حذف نخواهند شد.",
       "clearQueueTooltip": "پاک‌سازی صف",
       "clearQueued": "پاک‌سازی صف",
       "colonPercent": ": {percent}",
       "currentNode": "Node فعلی:",
+      "dockedJobHistory": "تاریخچه کارهای متصل",
       "expandCollapsedQueue": "گسترش صف کار",
       "filterAllWorkflows": "همه Workflowها",
       "filterBy": "فیلتر بر اساس",
@@ -2425,8 +2526,12 @@
       "moreOptions": "گزینه‌های بیشتر",
       "noActiveJobs": "کار فعالی وجود ندارد",
       "preview": "پیش‌نمایش",
+      "queuedJobsLabel": "{count} در صف",
       "queuedSuffix": "در صف",
       "running": "در حال اجرا",
+      "runningJobsLabel": "{count} در حال اجرا",
+      "runningQueuedSummary": "{running}، {queued}",
+      "searchJobs": "جستجو...",
       "showAssets": "نمایش دارایی‌ها",
       "showAssetsPanel": "نمایش پنل دارایی‌ها",
       "sortBy": "مرتب‌سازی بر اساس",
@@ -2847,9 +2952,14 @@
     "dropPrompt": "فایل خود را رها کنید یا"
   },
   "widgets": {
+    "boolean": {
+      "false": "نادرست",
+      "true": "درست"
+    },
     "node2only": "فقط Node 2.0",
     "selectModel": "انتخاب مدل",
     "uploadSelect": {
+      "maxSelectionReached": "حداکثر تعداد انتخاب مجاز رسید",
       "placeholder": "انتخاب...",
       "placeholderAudio": "انتخاب صوت...",
       "placeholderImage": "انتخاب تصویر...",

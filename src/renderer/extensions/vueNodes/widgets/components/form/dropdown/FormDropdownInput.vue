@@ -49,7 +49,7 @@ const theButtonStyle = computed(() =>
   <div
     :class="
       cn(WidgetInputBaseClass, 'flex text-base leading-none', {
-        'opacity-50 cursor-not-allowed !outline-zinc-300/10': disabled
+        'opacity-50 cursor-not-allowed outline-zinc-300/10': disabled
       })
     "
   >

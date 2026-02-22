@@ -6,6 +6,7 @@ import {
   remoteConfig
 } from '@/platform/remoteConfig/remoteConfig'
 import { api } from '@/scripts/api'
+import { getDevOverride } from '@/utils/devFeatureFlagOverride'
 
 /**
  * Known server feature flags (top-level, not extensions)
@@ -20,7 +21,22 @@ export enum ServerFeatureFlag {
   ONBOARDING_SURVEY_ENABLED = 'onboarding_survey_enabled',
   LINEAR_TOGGLE_ENABLED = 'linear_toggle_enabled',
   TEAM_WORKSPACES_ENABLED = 'team_workspaces_enabled',
-  USER_SECRETS_ENABLED = 'user_secrets_enabled'
+  USER_SECRETS_ENABLED = 'user_secrets_enabled',
+  NODE_REPLACEMENTS = 'node_replacements',
+  NODE_LIBRARY_ESSENTIALS_ENABLED = 'node_library_essentials_enabled'
+}
+
+/**
+ * Resolves a feature flag value with dev override > remoteConfig > serverFeature priority.
+ */
+function resolveFlag<T>(
+  flagKey: string,
+  remoteConfigValue: T | undefined,
+  defaultValue: T
+): T {
+  const override = getDevOverride<T>(flagKey)
+  if (override !== undefined) return override
+  return remoteConfigValue ?? api.getServerFeature(flagKey, defaultValue)
 }
 
 /**
@@ -38,38 +54,40 @@ export function useFeatureFlags() {
       return api.getServerFeature(ServerFeatureFlag.MANAGER_SUPPORTS_V4)
     },
     get modelUploadButtonEnabled() {
-      return (
-        remoteConfig.value.model_upload_button_enabled ??
-        api.getServerFeature(
-          ServerFeatureFlag.MODEL_UPLOAD_BUTTON_ENABLED,
-          false
-        )
+      return resolveFlag(
+        ServerFeatureFlag.MODEL_UPLOAD_BUTTON_ENABLED,
+        remoteConfig.value.model_upload_button_enabled,
+        false
       )
     },
     get assetRenameEnabled() {
-      return (
-        remoteConfig.value.asset_rename_enabled ??
-        api.getServerFeature(ServerFeatureFlag.ASSET_RENAME_ENABLED, false)
+      return resolveFlag(
+        ServerFeatureFlag.ASSET_RENAME_ENABLED,
+        remoteConfig.value.asset_rename_enabled,
+        false
       )
     },
     get privateModelsEnabled() {
-      return (
-        remoteConfig.value.private_models_enabled ??
-        api.getServerFeature(ServerFeatureFlag.PRIVATE_MODELS_ENABLED, false)
+      return resolveFlag(
+        ServerFeatureFlag.PRIVATE_MODELS_ENABLED,
+        remoteConfig.value.private_models_enabled,
+        false
       )
     },
     get onboardingSurveyEnabled() {
-      return (
-        remoteConfig.value.onboarding_survey_enabled ??
-        api.getServerFeature(ServerFeatureFlag.ONBOARDING_SURVEY_ENABLED, false)
+      return resolveFlag(
+        ServerFeatureFlag.ONBOARDING_SURVEY_ENABLED,
+        remoteConfig.value.onboarding_survey_enabled,
+        false
       )
     },
     get linearToggleEnabled() {
       if (isNightly) return true
 
-      return (
-        remoteConfig.value.linear_toggle_enabled ??
-        api.getServerFeature(ServerFeatureFlag.LINEAR_TOGGLE_ENABLED, false)
+      return resolveFlag(
+        ServerFeatureFlag.LINEAR_TOGGLE_ENABLED,
+        remoteConfig.value.linear_toggle_enabled,
+        false
       )
     },
     /**
@@ -79,11 +97,12 @@ export function useFeatureFlags() {
      * and prevents race conditions during initialization.
      */
     get teamWorkspacesEnabled() {
-      if (!isCloud) return false
+      const override = getDevOverride<boolean>(
+        ServerFeatureFlag.TEAM_WORKSPACES_ENABLED
+      )
+      if (override !== undefined) return override
 
-      // Only return true if authenticated config has been loaded.
-      // This prevents race conditions where code checks this flag before
-      // WorkspaceAuthGate has refreshed the config with auth.
+      if (!isCloud) return false
       if (!isAuthenticatedConfigLoaded.value) return false
 
       return (
@@ -92,9 +111,24 @@ export function useFeatureFlags() {
       )
     },
     get userSecretsEnabled() {
+      return resolveFlag(
+        ServerFeatureFlag.USER_SECRETS_ENABLED,
+        remoteConfig.value.user_secrets_enabled,
+        false
+      )
+    },
+    get nodeReplacementsEnabled() {
+      return api.getServerFeature(ServerFeatureFlag.NODE_REPLACEMENTS, false)
+    },
+    get nodeLibraryEssentialsEnabled() {
+      if (isNightly || import.meta.env.DEV) return true
+
       return (
-        remoteConfig.value.user_secrets_enabled ??
-        api.getServerFeature(ServerFeatureFlag.USER_SECRETS_ENABLED, false)
+        remoteConfig.value.node_library_essentials_enabled ??
+        api.getServerFeature(
+          ServerFeatureFlag.NODE_LIBRARY_ESSENTIALS_ENABLED,
+          false
+        )
       )
     }
   })

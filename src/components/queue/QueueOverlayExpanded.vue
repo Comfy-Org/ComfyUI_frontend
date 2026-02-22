@@ -2,8 +2,6 @@
   <div class="flex w-full flex-col gap-4">
     <QueueOverlayHeader
       :header-title="headerTitle"
-      :show-concurrent-indicator="showConcurrentIndicator"
-      :concurrent-workflow-count="concurrentWorkflowCount"
       :queued-count="queuedCount"
       @clear-history="$emit('clearHistory')"
       @clear-queued="$emit('clearQueued')"
@@ -23,7 +21,7 @@
     />
 
     <div class="flex-1 min-h-0 overflow-y-auto">
-      <JobGroupsList
+      <JobAssetsList
         :displayed-job-groups="displayedJobGroups"
         @cancel-item="onCancelItemEvent"
         @delete-item="onDeleteItemEvent"
@@ -51,16 +49,15 @@ import type {
 } from '@/composables/queue/useJobList'
 import type { MenuEntry } from '@/composables/queue/useJobMenu'
 import { useJobMenu } from '@/composables/queue/useJobMenu'
+import { useErrorHandling } from '@/composables/useErrorHandling'
 
 import QueueOverlayHeader from './QueueOverlayHeader.vue'
 import JobContextMenu from './job/JobContextMenu.vue'
+import JobAssetsList from './job/JobAssetsList.vue'
 import JobFiltersBar from './job/JobFiltersBar.vue'
-import JobGroupsList from './job/JobGroupsList.vue'
 
 defineProps<{
   headerTitle: string
-  showConcurrentIndicator: boolean
-  concurrentWorkflowCount: number
   queuedCount: number
   selectedJobTab: JobTab
   selectedWorkflowFilter: 'all' | 'current'
@@ -83,6 +80,7 @@ const emit = defineEmits<{
 
 const currentMenuItem = ref<JobListItem | null>(null)
 const jobContextMenuRef = ref<InstanceType<typeof JobContextMenu> | null>(null)
+const { wrapWithErrorHandlingAsync } = useErrorHandling()
 
 const { jobMenuEntries } = useJobMenu(
   () => currentMenuItem.value,
@@ -102,9 +100,9 @@ const onMenuItem = (item: JobListItem, event: Event) => {
   jobContextMenuRef.value?.open(event)
 }
 
-const onJobMenuAction = async (entry: MenuEntry) => {
+const onJobMenuAction = wrapWithErrorHandlingAsync(async (entry: MenuEntry) => {
   if (entry.kind === 'divider') return
   if (entry.onClick) await entry.onClick()
   jobContextMenuRef.value?.hide()
-}
+})
 </script>

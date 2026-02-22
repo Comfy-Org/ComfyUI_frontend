@@ -14,13 +14,13 @@ import { SubgraphNode } from '@/lib/litegraph/src/litegraph'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { useExecutionStore } from '@/stores/executionStore'
+import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import type { RightSidePanelTab } from '@/stores/workspace/rightSidePanelStore'
 import { resolveNodeDisplayName } from '@/utils/nodeTitleUtil'
 import { cn } from '@/utils/tailwindUtil'
+import { isGroupNode } from '@/utils/executableGroupNodeDto'
 
-import TabError from './TabError.vue'
 import TabInfo from './info/TabInfo.vue'
 import TabGlobalParameters from './parameters/TabGlobalParameters.vue'
 import TabNodes from './parameters/TabNodes.vue'
@@ -33,12 +33,15 @@ import {
   useFlatAndCategorizeSelectedItems
 } from './shared'
 import SubgraphEditor from './subgraph/SubgraphEditor.vue'
+import TabErrors from './errors/TabErrors.vue'
 
 const canvasStore = useCanvasStore()
-const executionStore = useExecutionStore()
+const executionErrorStore = useExecutionErrorStore()
 const rightSidePanelStore = useRightSidePanelStore()
 const settingStore = useSettingStore()
 const { t } = useI18n()
+
+const { hasAnyError, allErrorExecutionIds } = storeToRefs(executionErrorStore)
 
 const { findParentGroup } = useGraphHierarchy()
 
@@ -93,19 +96,35 @@ type RightSidePanelTabList = Array<{
   icon?: string
 }>
 
-//FIXME all errors if nothing selected?
-const selectedNodeErrors = computed(() =>
-  selectedNodes.value
-    .map((node) => executionStore.getNodeErrors(`${node.id}`))
-    .filter((nodeError) => !!nodeError)
+const hasDirectNodeError = computed(() =>
+  selectedNodes.value.some((node) =>
+    executionErrorStore.activeGraphErrorNodeIds.has(String(node.id))
+  )
 )
+
+const hasContainerInternalError = computed(() => {
+  if (allErrorExecutionIds.value.length === 0) return false
+  return selectedNodes.value.some((node) => {
+    if (!(node instanceof SubgraphNode || isGroupNode(node))) return false
+    return executionErrorStore.hasInternalErrorForNode(node.id)
+  })
+})
+
+const hasRelevantErrors = computed(() => {
+  if (!hasSelection.value) return hasAnyError.value
+  return hasDirectNodeError.value || hasContainerInternalError.value
+})
 
 const tabs = computed<RightSidePanelTabList>(() => {
   const list: RightSidePanelTabList = []
-  if (selectedNodeErrors.value.length) {
+
+  if (
+    settingStore.get('Comfy.RightSidePanel.ShowErrorsTab') &&
+    hasRelevantErrors.value
+  ) {
     list.push({
-      label: () => t('g.error'),
-      value: 'error',
+      label: () => t('rightSidePanel.errors'),
+      value: 'errors',
       icon: 'icon-[lucide--octagon-alert] bg-node-stroke-error ml-1'
     })
   }
@@ -297,7 +316,8 @@ function handleProxyWidgetsUpdate(value: ProxyWidgetsProperty) {
 
     <!-- Panel Content -->
     <div class="scrollbar-thin flex-1 overflow-y-auto">
-      <template v-if="!hasSelection">
+      <TabErrors v-if="activeTab === 'errors'" />
+      <template v-else-if="!hasSelection">
         <TabGlobalParameters v-if="activeTab === 'parameters'" />
         <TabNodes v-else-if="activeTab === 'nodes'" />
         <TabGlobalSettings v-else-if="activeTab === 'settings'" />
@@ -307,7 +327,6 @@ function handleProxyWidgetsUpdate(value: ProxyWidgetsProperty) {
         :node="selectedSingleNode"
       />
       <template v-else>
-        <TabError v-if="activeTab === 'error'" :errors="selectedNodeErrors" />
         <TabSubgraphInputs
           v-if="activeTab === 'parameters' && isSingleSubgraphNode"
           :node="selectedSingleNode as SubgraphNode"

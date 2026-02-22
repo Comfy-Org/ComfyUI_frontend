@@ -43,7 +43,7 @@ const zNumericInputOptions = zBaseInputOptions.extend({
   step: z.number().optional(),
   /** Note: Many node authors are using INT/FLOAT to pass list of INT/FLOAT. */
   default: z.union([z.number(), z.array(z.number())]).optional(),
-  display: z.enum(['slider', 'number', 'knob']).optional()
+  display: z.enum(['slider', 'number', 'knob', 'gradientslider']).optional()
 })
 
 export const zIntInputOptions = zNumericInputOptions.extend({
@@ -57,7 +57,15 @@ export const zIntInputOptions = zNumericInputOptions.extend({
 })
 
 export const zFloatInputOptions = zNumericInputOptions.extend({
-  round: z.union([z.number(), z.literal(false)]).optional()
+  round: z.union([z.number(), z.literal(false)]).optional(),
+  gradient_stops: z
+    .array(
+      z.object({
+        offset: z.number(),
+        color: z.tuple([z.number(), z.number(), z.number()])
+      })
+    )
+    .optional()
 })
 
 export const zBooleanInputOptions = zBaseInputOptions.extend({
@@ -260,6 +268,7 @@ export const zComfyNodeDef = z.object({
   description: z.string(),
   help: z.string().optional(),
   category: z.string(),
+  main_category: z.string().optional(),
   output_node: z.boolean(),
   python_module: z.string(),
   deprecated: z.boolean().optional(),
@@ -287,7 +296,11 @@ export const zComfyNodeDef = z.object({
    * Contains a JSONata expression to calculate pricing based on widget values
    * and input connectivity.
    */
-  price_badge: zPriceBadge.optional()
+  price_badge: zPriceBadge.optional(),
+  /** Category for the Essentials tab. If set, the node appears in Essentials. */
+  essentials_category: z.string().optional(),
+  /** Whether the blueprint is a global/installed blueprint (not user-created). */
+  isGlobal: z.boolean().optional()
 })
 
 export const zAutogrowOptions = z.object({

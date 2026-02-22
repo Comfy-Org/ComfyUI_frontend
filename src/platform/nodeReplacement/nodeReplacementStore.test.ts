@@ -3,7 +3,9 @@ import type { NodeReplacementResponse } from './types'
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { ServerFeatureFlag } from '@/composables/useFeatureFlags'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { api } from '@/scripts/api'
 import { fetchNodeReplacements } from './nodeReplacementService'
 import { useNodeReplacementStore } from './nodeReplacementStore'
 
@@ -13,6 +15,12 @@ vi.mock('@/platform/settings/settingStore', () => ({
 
 vi.mock('./nodeReplacementService', () => ({
   fetchNodeReplacements: vi.fn()
+}))
+
+vi.mock('@/scripts/api', () => ({
+  api: {
+    getServerFeature: vi.fn()
+  }
 }))
 
 function mockSettingStore(enabled: boolean) {
@@ -27,9 +35,17 @@ function mockSettingStore(enabled: boolean) {
   })
 }
 
-function createStore(enabled = true) {
+function createStore(settingEnabled = true, serverFeatureEnabled = true) {
   setActivePinia(createPinia())
-  mockSettingStore(enabled)
+  mockSettingStore(settingEnabled)
+  vi.mocked(api.getServerFeature).mockImplementation(
+    (flag: string, defaultValue?: unknown) => {
+      if (flag === ServerFeatureFlag.NODE_REPLACEMENTS) {
+        return serverFeatureEnabled
+      }
+      return defaultValue
+    }
+  )
   return useNodeReplacementStore()
 }
 
@@ -38,7 +54,7 @@ describe('useNodeReplacementStore', () => {
 
   beforeEach(() => {
     vi.clearAllMocks()
-    store = createStore(true)
+    store = createStore()
   })
 
   it('should initialize with empty replacements', () => {
@@ -228,9 +244,19 @@ describe('useNodeReplacementStore', () => {
       consoleErrorSpy.mockRestore()
     })
 
-    it('should not fetch when feature is disabled', async () => {
+    it('should not fetch when setting is disabled', async () => {
       vi.mocked(fetchNodeReplacements).mockResolvedValue({})
       store = createStore(false)
+
+      await store.load()
+
+      expect(fetchNodeReplacements).not.toHaveBeenCalled()
+      expect(store.isLoaded).toBe(false)
+    })
+
+    it('should not fetch when server feature flag is disabled', async () => {
+      vi.mocked(fetchNodeReplacements).mockResolvedValue(mockReplacements)
+      store = createStore(true, false)
 
       await store.load()
 
@@ -246,16 +272,6 @@ describe('useNodeReplacementStore', () => {
       await store.load()
 
       expect(fetchNodeReplacements).toHaveBeenCalledOnce()
-    })
-
-    it('should not call API when setting is disabled', async () => {
-      vi.mocked(fetchNodeReplacements).mockResolvedValue(mockReplacements)
-      store = createStore(false)
-
-      await store.load()
-
-      expect(fetchNodeReplacements).not.toHaveBeenCalled()
-      expect(store.isLoaded).toBe(false)
     })
   })
 })

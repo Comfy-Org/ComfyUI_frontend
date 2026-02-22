@@ -17,12 +17,10 @@
         v-model:selected-sort-mode="selectedSortMode"
         class="flex-1 min-h-0"
         :header-title="headerTitle"
-        :show-concurrent-indicator="showConcurrentIndicator"
-        :concurrent-workflow-count="concurrentWorkflowCount"
         :queued-count="queuedCount"
         :displayed-job-groups="displayedJobGroups"
         :has-failed-jobs="hasFailedJobs"
-        @show-assets="openAssetsSidebar"
+        @show-assets="toggleAssetsSidebar"
         @clear-history="onClearHistoryFromMenu"
         @clear-queued="cancelQueuedWorkflows"
         @cancel-item="onCancelItem"
@@ -59,10 +57,10 @@ import { useI18n } from 'vue-i18n'
 
 import QueueOverlayActive from '@/components/queue/QueueOverlayActive.vue'
 import QueueOverlayExpanded from '@/components/queue/QueueOverlayExpanded.vue'
-import QueueClearHistoryDialog from '@/components/queue/dialogs/QueueClearHistoryDialog.vue'
 import ResultGallery from '@/components/sidebar/tabs/queue/ResultGallery.vue'
 import { useJobList } from '@/composables/queue/useJobList'
 import type { JobListItem } from '@/composables/queue/useJobList'
+import { useQueueClearHistoryDialog } from '@/composables/queue/useQueueClearHistoryDialog'
 import { useQueueProgress } from '@/composables/queue/useQueueProgress'
 import { useResultGallery } from '@/composables/queue/useResultGallery'
 import { useErrorHandling } from '@/composables/useErrorHandling'
@@ -71,7 +69,6 @@ import { isCloud } from '@/platform/distribution/types'
 import { api } from '@/scripts/api'
 import { useAssetsStore } from '@/stores/assetsStore'
 import { useCommandStore } from '@/stores/commandStore'
-import { useDialogStore } from '@/stores/dialogStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useQueueStore } from '@/stores/queueStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
@@ -97,9 +94,9 @@ const queueStore = useQueueStore()
 const commandStore = useCommandStore()
 const executionStore = useExecutionStore()
 const sidebarTabStore = useSidebarTabStore()
-const dialogStore = useDialogStore()
 const assetsStore = useAssetsStore()
 const assetSelectionStore = useAssetSelectionStore()
+const { showQueueClearHistoryDialog } = useQueueClearHistoryDialog()
 const { wrapWithErrorHandlingAsync } = useErrorHandling()
 
 const {
@@ -184,13 +181,6 @@ const headerTitle = computed(() => {
   })
 })
 
-const concurrentWorkflowCount = computed(
-  () => executionStore.runningWorkflowCount
-)
-const showConcurrentIndicator = computed(
-  () => concurrentWorkflowCount.value > 1
-)
-
 const {
   selectedJobTab,
   selectedWorkflowFilter,
@@ -204,22 +194,22 @@ const {
 const displayedJobGroups = computed(() => groupedJobItems.value)
 
 const onCancelItem = wrapWithErrorHandlingAsync(async (item: JobListItem) => {
-  const promptId = item.taskRef?.promptId
-  if (!promptId) return
+  const jobId = item.taskRef?.jobId
+  if (!jobId) return
 
   if (item.state === 'running' || item.state === 'initialization') {
     // Running/initializing jobs: interrupt execution
     // Cloud backend uses deleteItem, local uses interrupt
     if (isCloud) {
-      await api.deleteItem('queue', promptId)
+      await api.deleteItem('queue', jobId)
     } else {
-      await api.interrupt(promptId)
+      await api.interrupt(jobId)
     }
-    executionStore.clearInitializationByPromptId(promptId)
+    executionStore.clearInitializationByJobId(jobId)
     await queueStore.update()
   } else if (item.state === 'pending') {
     // Pending jobs: remove from queue
-    await api.deleteItem('queue', promptId)
+    await api.deleteItem('queue', jobId)
     await queueStore.update()
   }
 })
@@ -243,17 +233,21 @@ const viewAllJobs = () => {
   setExpanded(true)
 }
 
+const toggleAssetsSidebar = () => {
+  sidebarTabStore.toggleSidebarTab('assets')
+}
+
 const openAssetsSidebar = () => {
   sidebarTabStore.activeSidebarTabId = 'assets'
 }
 
 const focusAssetInSidebar = async (item: JobListItem) => {
   const task = item.taskRef
-  const promptId = task?.promptId
+  const jobId = task?.jobId
   const preview = task?.previewOutput
-  if (!promptId || !preview) return
+  if (!jobId || !preview) return
 
-  const assetId = String(promptId)
+  const assetId = String(jobId)
   openAssetsSidebar()
   await nextTick()
   await assetsStore.updateHistory()
@@ -275,62 +269,41 @@ const inspectJobAsset = wrapWithErrorHandlingAsync(
 )
 
 const cancelQueuedWorkflows = wrapWithErrorHandlingAsync(async () => {
-  // Capture pending promptIds before clearing
-  const pendingPromptIds = queueStore.pendingTasks
-    .map((task) => task.promptId)
+  // Capture pending jobIds before clearing
+  const pendingJobIds = queueStore.pendingTasks
+    .map((task) => task.jobId)
     .filter((id): id is string => typeof id === 'string' && id.length > 0)
 
   await commandStore.execute('Comfy.ClearPendingTasks')
 
-  // Clear initialization state for removed prompts
-  executionStore.clearInitializationByPromptIds(pendingPromptIds)
+  // Clear initialization state for removed jobs
+  executionStore.clearInitializationByJobIds(pendingJobIds)
 })
 
 const interruptAll = wrapWithErrorHandlingAsync(async () => {
   const tasks = queueStore.runningTasks
-  const promptIds = tasks
-    .map((task) => task.promptId)
+  const jobIds = tasks
+    .map((task) => task.jobId)
     .filter((id): id is string => typeof id === 'string' && id.length > 0)
 
-  if (!promptIds.length) return
+  if (!jobIds.length) return
 
   // Cloud backend supports cancelling specific jobs via /queue delete,
   // while /interrupt always targets the "first" job. Use the targeted API
   // on cloud to ensure we cancel the workflow the user clicked.
   if (isCloud) {
-    await Promise.all(promptIds.map((id) => api.deleteItem('queue', id)))
-    executionStore.clearInitializationByPromptIds(promptIds)
+    await Promise.all(jobIds.map((id) => api.deleteItem('queue', id)))
+    executionStore.clearInitializationByJobIds(jobIds)
     await queueStore.update()
     return
   }
 
-  await Promise.all(promptIds.map((id) => api.interrupt(id)))
-  executionStore.clearInitializationByPromptIds(promptIds)
+  await Promise.all(jobIds.map((id) => api.interrupt(id)))
+  executionStore.clearInitializationByJobIds(jobIds)
   await queueStore.update()
 })
 
-const showClearHistoryDialog = () => {
-  dialogStore.showDialog({
-    key: 'queue-clear-history',
-    component: QueueClearHistoryDialog,
-    dialogComponentProps: {
-      headless: true,
-      closable: false,
-      closeOnEscape: true,
-      dismissableMask: true,
-      pt: {
-        root: {
-          class: 'max-w-[360px] w-auto bg-transparent border-none shadow-none'
-        },
-        content: {
-          class: '!p-0 bg-transparent'
-        }
-      }
-    }
-  })
-}
-
 const onClearHistoryFromMenu = () => {
-  showClearHistoryDialog()
+  showQueueClearHistoryDialog()
 }
 </script>

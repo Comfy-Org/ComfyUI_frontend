@@ -208,6 +208,47 @@
       }
     }
   },
+  "AudioEqualizer3Band": {
+    "display_name": "Égaliseur audio (3 bandes)",
+    "inputs": {
+      "audio": {
+        "name": "audio"
+      },
+      "high_freq": {
+        "name": "high_freq",
+        "tooltip": "Fréquence de coupure pour l'étagère haute"
+      },
+      "high_gain_dB": {
+        "name": "high_gain_dB",
+        "tooltip": "Gain pour les hautes fréquences (aigus)"
+      },
+      "low_freq": {
+        "name": "low_freq",
+        "tooltip": "Fréquence de coupure pour l'étagère basse"
+      },
+      "low_gain_dB": {
+        "name": "low_gain_dB",
+        "tooltip": "Gain pour les basses fréquences (basses)"
+      },
+      "mid_freq": {
+        "name": "mid_freq",
+        "tooltip": "Fréquence centrale pour les médiums"
+      },
+      "mid_gain_dB": {
+        "name": "mid_gain_dB",
+        "tooltip": "Gain pour les fréquences moyennes"
+      },
+      "mid_q": {
+        "name": "mid_q",
+        "tooltip": "Facteur Q (bande passante) pour les médiums"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "AudioMerge": {
     "description": "Combine deux pistes audio en superposant leurs formes d'onde.",
     "display_name": "Fusion Audio",
@@ -1631,14 +1672,16 @@
         "name": "secondes_total"
       }
     },
-    "outputs": [
-      {
+    "outputs": {
+      "0": {
+        "name": "positif",
         "tooltip": null
       },
-      {
+      "1": {
+        "name": "négatif",
         "tooltip": null
       }
-    ]
+    }
   },
   "ConditioningTimestepsRange": {
     "display_name": "Plage de pas de temps",
@@ -2129,13 +2172,15 @@
       "index": {},
       "option1": {}
     },
-    "outputs": [
-      null,
-      {
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
         "name": "INDEX",
         "tooltip": null
       }
-    ]
+    }
   },
   "DiffControlNetLoader": {
     "display_name": "Charger le modèle ControlNet (diff)",
@@ -2257,6 +2302,304 @@
     "outputs": {
       "0": {
         "tooltip": "Le modèle avec EasyCache."
+      }
+    }
+  },
+  "ElevenLabsAudioIsolation": {
+    "description": "Supprimez le bruit de fond de l'audio, en isolant les voix ou la parole.",
+    "display_name": "ElevenLabs Isolation de Voix",
+    "inputs": {
+      "audio": {
+        "name": "audio",
+        "tooltip": "Audio à traiter pour la suppression du bruit de fond."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ElevenLabsInstantVoiceClone": {
+    "description": "Créez une voix clonée à partir d'échantillons audio. Fournissez 1 à 8 enregistrements audio de la voix à cloner.",
+    "display_name": "ElevenLabs Clonage Instantané de Voix",
+    "inputs": {
+      "files": {
+        "name": "fichiers",
+        "tooltip": "Enregistrements audio pour le clonage de voix."
+      },
+      "remove_background_noise": {
+        "name": "supprimer_bruit_de_fond",
+        "tooltip": "Supprimez le bruit de fond des échantillons de voix à l'aide de l'isolation audio."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "voix",
+        "tooltip": null
+      }
+    }
+  },
+  "ElevenLabsSpeechToSpeech": {
+    "description": "Transformez la parole d'une voix à une autre tout en préservant le contenu et l'émotion d'origine.",
+    "display_name": "ElevenLabs Conversion de Voix à Voix",
+    "inputs": {
+      "audio": {
+        "name": "audio",
+        "tooltip": "Audio source à transformer."
+      },
+      "control_after_generate": {
+        "name": "contrôle après génération"
+      },
+      "model": {
+        "name": "modèle",
+        "tooltip": "Modèle à utiliser pour la transformation voix-à-voix."
+      },
+      "model_similarity_boost": {
+        "name": "augmentation_similarité"
+      },
+      "model_speed": {
+        "name": "vitesse"
+      },
+      "model_style": {
+        "name": "style"
+      },
+      "model_use_speaker_boost": {
+        "name": "utiliser_augmentation_parleur"
+      },
+      "output_format": {
+        "name": "format_de_sortie",
+        "tooltip": "Format de sortie audio."
+      },
+      "remove_background_noise": {
+        "name": "supprimer_bruit_de_fond",
+        "tooltip": "Supprimez le bruit de fond de l'audio d'entrée à l'aide de l'isolation audio."
+      },
+      "seed": {
+        "name": "graine",
+        "tooltip": "Graine pour la reproductibilité."
+      },
+      "stability": {
+        "name": "stabilité",
+        "tooltip": "Stabilité de la voix. Des valeurs plus faibles donnent une gamme émotionnelle plus large, des valeurs plus élevées produisent une parole plus cohérente mais potentiellement monotone."
+      },
+      "voice": {
+        "name": "voix",
+        "tooltip": "Voix cible pour la transformation. Connectez depuis le Sélecteur de Voix ou le Clonage Instantané de Voix."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ElevenLabsSpeechToText": {
+    "description": "Transcrivez l’audio en texte. Prend en charge la détection automatique de la langue, la diarisation des locuteurs et l’étiquetage des événements audio.",
+    "display_name": "ElevenLabs Speech to Text",
+    "inputs": {
+      "audio": {
+        "name": "audio",
+        "tooltip": "Audio à transcrire."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "language_code": {
+        "name": "language_code",
+        "tooltip": "Code de langue ISO-639-1 ou ISO-639-3 (ex. : 'en', 'es', 'fra'). Laisser vide pour une détection automatique."
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Modèle à utiliser pour la transcription."
+      },
+      "model_diarization_threshold": {
+        "name": "diarization_threshold"
+      },
+      "model_diarize": {
+        "name": "diarize"
+      },
+      "model_tag_audio_events": {
+        "name": "tag_audio_events"
+      },
+      "model_temperature": {
+        "name": "temperature"
+      },
+      "model_timestamps_granularity": {
+        "name": "timestamps_granularity"
+      },
+      "num_speakers": {
+        "name": "num_speakers",
+        "tooltip": "Nombre maximal de locuteurs à prédire. Mettre à 0 pour une détection automatique."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Graine pour la reproductibilité (déterminisme non garanti)."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "text",
+        "tooltip": null
+      },
+      "1": {
+        "name": "language_code",
+        "tooltip": null
+      },
+      "2": {
+        "name": "words_json",
+        "tooltip": null
+      }
+    }
+  },
+  "ElevenLabsTextToDialogue": {
+    "description": "Générez un dialogue multi-locuteurs à partir d’un texte. Chaque entrée de dialogue possède son propre texte et sa propre voix.",
+    "display_name": "ElevenLabs Text to Dialogue",
+    "inputs": {
+      "apply_text_normalization": {
+        "name": "apply_text_normalization",
+        "tooltip": "Mode de normalisation du texte. 'auto' laisse le système décider, 'on' applique toujours la normalisation, 'off' la désactive."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "inputs": {
+        "name": "inputs",
+        "tooltip": "Nombre d’entrées de dialogue."
+      },
+      "inputs_text1": {
+        "name": "text1"
+      },
+      "language_code": {
+        "name": "language_code",
+        "tooltip": "Code de langue ISO-639-1 ou ISO-639-3 (ex. : 'en', 'es', 'fra'). Laisser vide pour une détection automatique."
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Modèle à utiliser pour la génération du dialogue."
+      },
+      "output_format": {
+        "name": "output_format",
+        "tooltip": "Format de sortie audio."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Graine pour la reproductibilité."
+      },
+      "stability": {
+        "name": "stability",
+        "tooltip": "Stabilité de la voix. Des valeurs plus faibles donnent une gamme émotionnelle plus large, des valeurs plus élevées produisent une voix plus cohérente mais potentiellement monotone."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ElevenLabsTextToSoundEffects": {
+    "description": "Générez des effets sonores à partir de descriptions textuelles.",
+    "display_name": "ElevenLabs Text to Sound Effects",
+    "inputs": {
+      "model": {
+        "name": "model",
+        "tooltip": "Modèle à utiliser pour la génération de l’effet sonore."
+      },
+      "model_duration": {
+        "name": "duration"
+      },
+      "model_loop": {
+        "name": "loop"
+      },
+      "model_prompt_influence": {
+        "name": "prompt_influence"
+      },
+      "output_format": {
+        "name": "output_format",
+        "tooltip": "Format de sortie audio."
+      },
+      "text": {
+        "name": "text",
+        "tooltip": "Description textuelle de l’effet sonore à générer."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ElevenLabsTextToSpeech": {
+    "description": "Convertir du texte en parole.",
+    "display_name": "ElevenLabs Text to Speech",
+    "inputs": {
+      "apply_text_normalization": {
+        "name": "appliquer la normalisation du texte",
+        "tooltip": "Mode de normalisation du texte. 'auto' laisse le système décider, 'on' applique toujours la normalisation, 'off' la désactive."
+      },
+      "control_after_generate": {
+        "name": "contrôle après génération"
+      },
+      "language_code": {
+        "name": "code langue",
+        "tooltip": "Code langue ISO-639-1 ou ISO-639-3 (ex : 'en', 'es', 'fra'). Laisser vide pour une détection automatique."
+      },
+      "model": {
+        "name": "modèle",
+        "tooltip": "Modèle à utiliser pour la synthèse texte-parole."
+      },
+      "model_similarity_boost": {
+        "name": "augmentation de similarité"
+      },
+      "model_speed": {
+        "name": "vitesse"
+      },
+      "model_style": {
+        "name": "style"
+      },
+      "model_use_speaker_boost": {
+        "name": "utiliser le speaker boost"
+      },
+      "output_format": {
+        "name": "format de sortie",
+        "tooltip": "Format de sortie audio."
+      },
+      "seed": {
+        "name": "graine",
+        "tooltip": "Graine pour la reproductibilité (déterminisme non garanti)."
+      },
+      "stability": {
+        "name": "stabilité",
+        "tooltip": "Stabilité de la voix. Des valeurs plus faibles offrent une gamme émotionnelle plus large, des valeurs plus élevées produisent une voix plus cohérente mais potentiellement monotone."
+      },
+      "text": {
+        "name": "texte",
+        "tooltip": "Le texte à convertir en parole."
+      },
+      "voice": {
+        "name": "voix",
+        "tooltip": "Voix à utiliser pour la synthèse vocale. Connectez depuis Voice Selector ou Instant Voice Clone."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ElevenLabsVoiceSelector": {
+    "description": "Sélectionnez une voix prédéfinie ElevenLabs pour la génération texte-parole.",
+    "display_name": "Sélecteur de voix ElevenLabs",
+    "inputs": {
+      "voice": {
+        "name": "voix",
+        "tooltip": "Choisissez une voix parmi les voix prédéfinies ElevenLabs."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "voix",
+        "tooltip": null
       }
     }
   },
@@ -3195,6 +3538,50 @@
       }
     }
   },
+  "GLSLShader": {
+    "description": "Appliquez des shaders de fragments GLSL ES aux images. u_resolution (vec2) est toujours disponible.",
+    "display_name": "Shader GLSL",
+    "inputs": {
+      "floats": {
+        "name": "floats",
+        "tooltip": "Les flottants sont disponibles sous u_float0-4 dans le code du shader"
+      },
+      "fragment_shader": {
+        "name": "fragment_shader",
+        "tooltip": "Code source du shader de fragment GLSL (compatible GLSL ES 3.00 / WebGL 2.0)"
+      },
+      "images": {
+        "name": "images",
+        "tooltip": "Les images sont disponibles sous u_image0-4 (sampler2D) dans le code du shader"
+      },
+      "ints": {
+        "name": "ints",
+        "tooltip": "Les entiers sont disponibles sous u_int0-4 dans le code du shader"
+      },
+      "size_mode": {
+        "name": "size_mode",
+        "tooltip": "Taille de sortie : 'from_input' utilise les dimensions de la première image d'entrée, 'custom' permet de définir la taille manuellement"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "IMAGE0",
+        "tooltip": "Disponible via layout(location = 0) out vec4 fragColor0 dans le code du shader"
+      },
+      "1": {
+        "name": "IMAGE1",
+        "tooltip": "Disponible via layout(location = 1) out vec4 fragColor1 dans le code du shader"
+      },
+      "2": {
+        "name": "IMAGE2",
+        "tooltip": "Disponible via layout(location = 2) out vec4 fragColor2 dans le code du shader"
+      },
+      "3": {
+        "name": "IMAGE3",
+        "tooltip": "Disponible via layout(location = 3) out vec4 fragColor3 dans le code du shader"
+      }
+    }
+  },
   "GeminiImage2Node": {
     "description": "Générez ou modifiez des images de manière synchrone via l'API Google Vertex.",
     "display_name": "Nano Banana Pro (Google Gemini Image)",
@@ -3435,17 +3822,20 @@
         "name": "image"
       }
     },
-    "outputs": [
-      {
+    "outputs": {
+      "0": {
+        "name": "largeur",
         "tooltip": null
       },
-      {
+      "1": {
+        "name": "hauteur",
         "tooltip": null
       },
-      {
+      "2": {
+        "name": "taille du lot",
         "tooltip": null
       }
-    ]
+    }
   },
   "GetVideoComponents": {
     "description": "Extrait tous les composants d'une vidéo : images, audio et fréquence d’images.",
@@ -3677,14 +4067,16 @@
         "name": "sortie_vision_clip"
       }
     },
-    "outputs": [
-      {
+    "outputs": {
+      "0": {
+        "name": "positive",
         "tooltip": null
       },
-      {
+      "1": {
+        "name": "negative",
         "tooltip": null
       }
-    ]
+    }
   },
   "Hunyuan3Dv2ConditioningMultiView": {
     "display_name": "Hunyuan3Dv2ConditioningMultiView",
@@ -3702,14 +4094,16 @@
         "name": "droite"
       }
     },
-    "outputs": [
-      {
+    "outputs": {
+      "0": {
+        "name": "positive",
         "tooltip": null
       },
-      {
+      "1": {
+        "name": "negative",
         "tooltip": null
       }
-    ]
+    }
   },
   "HunyuanImageToVideo": {
     "display_name": "HunyuanImageToVideo",
@@ -4235,6 +4629,26 @@
       "y": {
         "name": "y"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ImageCropV2": {
+    "display_name": "Rogner l'image",
+    "inputs": {
+      "crop_region": {
+        "name": "crop_region"
+      },
+      "height": {},
+      "image": {
+        "name": "image"
+      },
+      "width": {},
+      "x": {},
+      "y": {}
     },
     "outputs": {
       "0": {
@@ -6653,26 +7067,36 @@
         "name": "largeur"
       }
     },
-    "outputs": [
-      {
+    "outputs": {
+      "0": {
+        "name": "image",
         "tooltip": null
       },
-      {
+      "1": {
+        "name": "mask",
         "tooltip": null
       },
-      {
+      "2": {
+        "name": "mesh_path",
         "tooltip": null
       },
-      {
+      "3": {
+        "name": "normal",
         "tooltip": null
       },
-      {
+      "4": {
+        "name": "camera_info",
         "tooltip": null
       },
-      {
+      "5": {
+        "name": "recording_video",
+        "tooltip": null
+      },
+      "6": {
+        "name": "model_3d",
         "tooltip": null
       }
-    ]
+    }
   },
   "LoadAudio": {
     "display_name": "ChargerAudio",
@@ -6937,11 +7361,12 @@
         "tooltip": "Intensité de modification du modèle de diffusion. Cette valeur peut être négative."
       }
     },
-    "outputs": [
-      {
-        "name": "model"
+    "outputs": {
+      "0": {
+        "name": "model",
+        "tooltip": "Le modèle de diffusion modifié."
       }
-    ]
+    }
   },
   "LoraSave": {
     "display_name": "Extraire et Sauvegarder Lora",
@@ -7618,17 +8043,20 @@
         "name": "rig_task_id"
       }
     },
-    "outputs": [
-      null,
-      {
+    "outputs": {
+      "0": {
+        "name": "model_file",
+        "tooltip": null
+      },
+      "1": {
         "name": "GLB",
         "tooltip": null
       },
-      {
+      "2": {
         "name": "FBX",
         "tooltip": null
       }
-    ]
+    }
   },
   "MeshyImageToModelNode": {
     "display_name": "Meshy : Image vers modèle",
@@ -7674,18 +8102,24 @@
         "name": "symmetry_mode"
       }
     },
-    "outputs": [
-      null,
-      null,
-      {
+    "outputs": {
+      "0": {
+        "name": "model_file",
+        "tooltip": null
+      },
+      "1": {
+        "name": "meshy_task_id",
+        "tooltip": null
+      },
+      "2": {
         "name": "GLB",
         "tooltip": null
       },
-      {
+      "3": {
         "name": "FBX",
         "tooltip": null
       }
-    ]
+    }
   },
   "MeshyMultiImageToModelNode": {
     "display_name": "Meshy : Multi-image vers modèle",
@@ -7731,18 +8165,24 @@
         "name": "symmetry_mode"
       }
     },
-    "outputs": [
-      null,
-      null,
-      {
+    "outputs": {
+      "0": {
+        "name": "model_file",
+        "tooltip": null
+      },
+      "1": {
+        "name": "meshy_task_id",
+        "tooltip": null
+      },
+      "2": {
         "name": "GLB",
         "tooltip": null
       },
-      {
+      "3": {
         "name": "FBX",
         "tooltip": null
       }
-    ]
+    }
   },
   "MeshyRefineNode": {
     "description": "Affinez un modèle brouillon précédemment créé.",
@@ -7767,18 +8207,24 @@
         "tooltip": "Fournissez une invite textuelle pour guider le processus de texturage. Maximum 600 caractères. Ne peut pas être utilisé en même temps que 'texture_image'."
       }
     },
-    "outputs": [
-      null,
-      null,
-      {
+    "outputs": {
+      "0": {
+        "name": "model_file",
+        "tooltip": null
+      },
+      "1": {
+        "name": "meshy_task_id",
+        "tooltip": null
+      },
+      "2": {
         "name": "GLB",
         "tooltip": null
       },
-      {
+      "3": {
         "name": "FBX",
         "tooltip": null
       }
-    ]
+    }
   },
   "MeshyRigModelNode": {
     "description": "Fournit un personnage riggé dans des formats standards. L’auto-rigging n’est actuellement pas adapté aux maillages non texturés, aux assets non humanoïdes ou aux assets humanoïdes avec une structure de membres et de corps peu claire.",
@@ -7796,18 +8242,24 @@
         "tooltip": "L’image de texture couleur de base UV-dépliée du modèle."
       }
     },
-    "outputs": [
-      null,
-      null,
-      {
+    "outputs": {
+      "0": {
+        "name": "model_file",
+        "tooltip": null
+      },
+      "1": {
+        "name": "rig_task_id",
+        "tooltip": null
+      },
+      "2": {
         "name": "GLB",
         "tooltip": null
       },
-      {
+      "3": {
         "name": "FBX",
         "tooltip": null
       }
-    ]
+    }
   },
   "MeshyTextToModelNode": {
     "display_name": "Meshy : Texte vers modèle",
@@ -7846,18 +8298,24 @@
         "name": "mode_symétrie"
       }
     },
-    "outputs": [
-      null,
-      null,
-      {
+    "outputs": {
+      "0": {
+        "name": "fichier_modèle",
+        "tooltip": null
+      },
+      "1": {
+        "name": "meshy_task_id",
+        "tooltip": null
+      },
+      "2": {
         "name": "GLB",
         "tooltip": null
       },
-      {
+      "3": {
         "name": "FBX",
         "tooltip": null
       }
-    ]
+    }
   },
   "MeshyTextureNode": {
     "display_name": "Meshy : Modèle de texture",
@@ -7884,18 +8342,24 @@
         "tooltip": "Décrivez le style de texture souhaité pour l’objet en utilisant du texte. 600 caractères maximum. Ne peut pas être utilisé en même temps que « image_style »."
       }
     },
-    "outputs": [
-      null,
-      null,
-      {
+    "outputs": {
+      "0": {
+        "name": "fichier_modèle",
+        "tooltip": null
+      },
+      "1": {
+        "name": "meshy_task_id",
+        "tooltip": null
+      },
+      "2": {
         "name": "GLB",
         "tooltip": null
       },
-      {
+      "3": {
         "name": "FBX",
         "tooltip": null
       }
-    ]
+    }
   },
   "MinimaxHailuoVideoNode": {
     "description": "Génère des vidéos à partir d'un prompt, avec option d'image de départ utilisant le nouveau modèle MiniMax Hailuo-02.",
@@ -10338,6 +10802,32 @@
       }
     }
   },
+  "NAGuidance": {
+    "description": "Applique le Guidage d’Attention Normalisée aux modèles, permettant l’utilisation de prompts négatifs sur les modèles distilled/schnell.",
+    "display_name": "Guidage d’Attention Normalisée",
+    "inputs": {
+      "model": {
+        "name": "modèle",
+        "tooltip": "Le modèle auquel appliquer NAG."
+      },
+      "nag_alpha": {
+        "name": "alpha_nag",
+        "tooltip": "Facteur de fusion pour l’attention normalisée. 1,0 correspond à un remplacement total, 0,0 à aucun effet."
+      },
+      "nag_scale": {
+        "name": "facteur_nag",
+        "tooltip": "Le facteur d’échelle du guidage. Des valeurs plus élevées éloignent davantage du prompt négatif."
+      },
+      "nag_tau": {
+        "name": "tau_nag"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "Le modèle modifié avec NAG activé."
+      }
+    }
+  },
   "NormalizeImages": {
     "display_name": "Normaliser les images",
     "inputs": {
@@ -11149,6 +11639,28 @@
       }
     }
   },
+  "PrimitiveBoundingBox": {
+    "display_name": "Boîte englobante",
+    "inputs": {
+      "height": {
+        "name": "height"
+      },
+      "width": {
+        "name": "width"
+      },
+      "x": {
+        "name": "x"
+      },
+      "y": {
+        "name": "y"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "PrimitiveFloat": {
     "display_name": "Flottant",
     "inputs": {
@@ -11712,6 +12224,88 @@
       }
     }
   },
+  "RecraftV4TextToImageNode": {
+    "description": "Génère des images à l’aide des modèles Recraft V4 ou V4 Pro.",
+    "display_name": "Recraft V4 Texte vers Image",
+    "inputs": {
+      "control_after_generate": {
+        "name": "contrôle après génération"
+      },
+      "model": {
+        "name": "modèle",
+        "tooltip": "Le modèle à utiliser pour la génération."
+      },
+      "model_size": {
+        "name": "taille"
+      },
+      "n": {
+        "name": "n",
+        "tooltip": "Nombre d’images à générer."
+      },
+      "negative_prompt": {
+        "name": "prompt_négatif",
+        "tooltip": "Description textuelle optionnelle des éléments indésirables sur une image."
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Prompt pour la génération d’image. Maximum 10 000 caractères."
+      },
+      "recraft_controls": {
+        "name": "recraft_controls",
+        "tooltip": "Contrôles supplémentaires optionnels sur la génération via le nœud Recraft Controls."
+      },
+      "seed": {
+        "name": "graine",
+        "tooltip": "Graine pour déterminer si le nœud doit être relancé ; les résultats réels restent non déterministes quel que soit la graine."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "RecraftV4TextToVectorNode": {
+    "description": "Génère des SVG à l’aide des modèles Recraft V4 ou V4 Pro.",
+    "display_name": "Recraft V4 Texte vers Vectoriel",
+    "inputs": {
+      "control_after_generate": {
+        "name": "contrôle après génération"
+      },
+      "model": {
+        "name": "modèle",
+        "tooltip": "Le modèle à utiliser pour la génération."
+      },
+      "model_size": {
+        "name": "taille"
+      },
+      "n": {
+        "name": "n",
+        "tooltip": "Nombre d’images à générer."
+      },
+      "negative_prompt": {
+        "name": "prompt_négatif",
+        "tooltip": "Description textuelle optionnelle des éléments indésirables sur une image."
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Prompt pour la génération d’image. Maximum 10 000 caractères."
+      },
+      "recraft_controls": {
+        "name": "recraft_controls",
+        "tooltip": "Contrôles supplémentaires optionnels sur la génération via le nœud Recraft Controls."
+      },
+      "seed": {
+        "name": "graine",
+        "tooltip": "Graine pour déterminer si le nœud doit être relancé ; les résultats réels restent non déterministes quel que soit la graine."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "RecraftVectorizeImageNode": {
     "description": "Génère un SVG de manière synchrone à partir d'une image d'entrée.",
     "display_name": "Vectoriser une image avec Recraft",
@@ -12088,13 +12682,16 @@
         "name": "Graine"
       }
     },
-    "outputs": [
-      null,
-      {
+    "outputs": {
+      "0": {
+        "name": "Chemin du modèle 3D",
+        "tooltip": null
+      },
+      "1": {
         "name": "GLB",
         "tooltip": null
       }
-    ]
+    }
   },
   "Rodin3D_Gen2": {
     "description": "Générer des actifs 3D en utilisant l'API Rodin",
@@ -12116,13 +12713,16 @@
         "name": "PoseTAP"
       }
     },
-    "outputs": [
-      null,
-      {
+    "outputs": {
+      "0": {
+        "name": "Chemin du modèle 3D",
+        "tooltip": null
+      },
+      "1": {
         "name": "GLB",
         "tooltip": null
       }
-    ]
+    }
   },
   "Rodin3D_Regular": {
     "description": "Générer des actifs 3D en utilisant l'API Rodin",
@@ -12141,13 +12741,16 @@
         "name": "Graine"
       }
     },
-    "outputs": [
-      null,
-      {
+    "outputs": {
+      "0": {
+        "name": "Chemin du modèle 3D",
+        "tooltip": null
+      },
+      "1": {
         "name": "GLB",
         "tooltip": null
       }
-    ]
+    }
   },
   "Rodin3D_Sketch": {
     "description": "Générer des actifs 3D en utilisant l'API Rodin",
@@ -12160,13 +12763,16 @@
         "name": "Graine"
       }
     },
-    "outputs": [
-      null,
-      {
+    "outputs": {
+      "0": {
+        "name": "Chemin du modèle 3D",
+        "tooltip": null
+      },
+      "1": {
         "name": "GLB",
         "tooltip": null
       }
-    ]
+    }
   },
   "Rodin3D_Smooth": {
     "description": "Générer des ressources 3D avec l'API Rodin",
@@ -12185,13 +12791,16 @@
         "name": "Graine"
       }
     },
-    "outputs": [
-      null,
-      {
+    "outputs": {
+      "0": {
+        "name": "Chemin du modèle 3D",
+        "tooltip": null
+      },
+      "1": {
         "name": "GLB",
         "tooltip": null
       }
-    ]
+    }
   },
   "RunwayFirstLastFrameNode": {
     "description": "Téléchargez les premières et dernières images clés, rédigez un prompt et générez une vidéo. Les transitions plus complexes, comme lorsque la dernière image est complètement différente de la première, peuvent bénéficier de la durée plus longue de 10s. Cela donnerait à la génération plus de temps pour effectuer une transition fluide entre les deux entrées. Avant de commencer, consultez ces bonnes pratiques pour vous assurer que vos sélections d'entrée permettront à votre génération de réussir : https://help.runwayml.com/hc/en-us/articles/34170748696595-Creating-with-Keyframes-on-Gen-3.",
@@ -12485,14 +13094,16 @@
         "name": "sigmas"
       }
     },
-    "outputs": [
-      {
+    "outputs": {
+      "0": {
+        "name": "sortie",
         "tooltip": null
       },
-      {
+      "1": {
+        "name": "sortie_débruitée",
         "tooltip": null
       }
-    ]
+    }
   },
   "SamplerCustomAdvanced": {
     "display_name": "ÉchantillonneurPersonnaliséAvancé",
@@ -12513,14 +13124,16 @@
         "name": "sigmas"
       }
     },
-    "outputs": [
-      {
+    "outputs": {
+      "0": {
+        "name": "sortie",
         "tooltip": null
       },
-      {
+      "1": {
+        "name": "sortie_débruitée",
         "tooltip": null
       }
-    ]
+    }
   },
   "SamplerDPMAdaptative": {
     "display_name": "SamplerDPMAdaptative",
@@ -12818,11 +13431,12 @@
         "name": "pourcent_échantillonnage"
       }
     },
-    "outputs": [
-      {
+    "outputs": {
+      "0": {
+        "name": "valeur_sigma",
         "tooltip": null
       }
-    ]
+    }
   },
   "SaveAnimatedPNG": {
     "display_name": "EnregistrerPNGAnimé",
@@ -13377,14 +13991,16 @@
         "name": "audio"
       }
     },
-    "outputs": [
-      {
+    "outputs": {
+      "0": {
+        "name": "gauche",
         "tooltip": null
       },
-      {
+      "1": {
+        "name": "droite",
         "tooltip": null
       }
-    ]
+    }
   },
   "SplitImageWithAlpha": {
     "display_name": "Diviser l'image avec Alpha",
@@ -13412,14 +14028,16 @@
         "name": "étape"
       }
     },
-    "outputs": [
-      {
+    "outputs": {
+      "0": {
+        "name": "sigmas_hauts",
         "tooltip": null
       },
-      {
+      "1": {
+        "name": "sigmas_bas",
         "tooltip": null
       }
-    ]
+    }
   },
   "SplitSigmasDenoise": {
     "display_name": "SplitSigmasDenoise",
@@ -13431,14 +14049,16 @@
         "name": "sigmas"
       }
     },
-    "outputs": [
-      {
+    "outputs": {
+      "0": {
+        "name": "sigmas_hauts",
         "tooltip": null
       },
-      {
+      "1": {
+        "name": "sigmas_bas",
         "tooltip": null
       }
-    ]
+    }
   },
   "StabilityAudioInpaint": {
     "description": "Transforme une partie d'un échantillon audio existant en utilisant des instructions textuelles.",
@@ -14199,17 +14819,20 @@
         "tooltip": "La graine contrôle si le nœud doit être relancé ; les résultats restent non déterministes quelle que soit la graine."
       }
     },
-    "outputs": [
-      null,
-      {
+    "outputs": {
+      "0": {
+        "name": "fichier_modèle",
+        "tooltip": null
+      },
+      "1": {
         "name": "GLB",
         "tooltip": null
       },
-      {
+      "2": {
         "name": "OBJ",
         "tooltip": null
       }
-    ]
+    }
   },
   "TencentTextToModelNode": {
     "display_name": "Hunyuan3D : Texte vers Modèle (Pro)",
@@ -14239,17 +14862,20 @@
         "tooltip": "La graine contrôle si le nœud doit être relancé ; les résultats restent non déterministes quelle que soit la graine."
       }
     },
-    "outputs": [
-      null,
-      {
+    "outputs": {
+      "0": {
+        "name": "fichier_modèle",
+        "tooltip": null
+      },
+      "1": {
         "name": "GLB",
         "tooltip": null
       },
-      {
+      "2": {
         "name": "OBJ",
         "tooltip": null
       }
-    ]
+    }
   },
   "TextEncodeAceStepAudio": {
     "display_name": "TextEncodeAceStepAudio",
@@ -14435,6 +15061,94 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "TextGenerate": {
+    "display_name": "TextGenerate",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "image": {
+        "name": "image"
+      },
+      "max_length": {
+        "name": "longueur_max"
+      },
+      "prompt": {
+        "name": "invite"
+      },
+      "sampling_mode": {
+        "name": "mode_d'échantillonnage"
+      },
+      "sampling_mode_min_p": {
+        "name": "min_p"
+      },
+      "sampling_mode_repetition_penalty": {
+        "name": "pénalité_de_répétition"
+      },
+      "sampling_mode_seed": {
+        "name": "graine"
+      },
+      "sampling_mode_temperature": {
+        "name": "température"
+      },
+      "sampling_mode_top_k": {
+        "name": "top_k"
+      },
+      "sampling_mode_top_p": {
+        "name": "top_p"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "texte_généré",
+        "tooltip": null
+      }
+    }
+  },
+  "TextGenerateLTX2Prompt": {
+    "display_name": "TextGenerateLTX2Prompt",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "image": {
+        "name": "image"
+      },
+      "max_length": {
+        "name": "longueur_maximale"
+      },
+      "prompt": {
+        "name": "invite"
+      },
+      "sampling_mode": {
+        "name": "mode_d'échantillonnage"
+      },
+      "sampling_mode_min_p": {
+        "name": "min_p"
+      },
+      "sampling_mode_repetition_penalty": {
+        "name": "pénalité_de_répétition"
+      },
+      "sampling_mode_seed": {
+        "name": "graine"
+      },
+      "sampling_mode_temperature": {
+        "name": "température"
+      },
+      "sampling_mode_top_k": {
+        "name": "top_k"
+      },
+      "sampling_mode_top_p": {
+        "name": "top_p"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "texte_généré",
         "tooltip": null
       }
     }
@@ -14716,20 +15430,20 @@
         "tooltip": "Le type de données à utiliser pour l'entraînement."
       }
     },
-    "outputs": [
-      {
+    "outputs": {
+      "0": {
+        "name": "lora",
         "tooltip": "Modèle avec LoRA appliqué"
       },
-      {
+      "1": {
+        "name": "carte_de_perte",
         "tooltip": "Poids LoRA"
       },
-      {
+      "2": {
+        "name": "étapes",
         "tooltip": "Historique de la perte"
-      },
-      {
-        "tooltip": "Nombre total d’étapes d’entraînement"
       }
-    ]
+    }
   },
   "TrimAudioDuration": {
     "description": "Tronquer le tenseur audio dans la plage de temps choisie.",
@@ -14895,14 +15609,20 @@
         "name": "graine_texture"
       }
     },
-    "outputs": [
-      null,
-      null,
-      {
+    "outputs": {
+      "0": {
+        "name": "fichier_modèle",
+        "tooltip": null
+      },
+      "1": {
+        "name": "modèle task_id",
+        "tooltip": null
+      },
+      "2": {
         "name": "GLB",
         "tooltip": null
       }
-    ]
+    }
   },
   "TripoMultiviewToModelNode": {
     "display_name": "Tripo : Multivue vers Modèle",
@@ -14954,14 +15674,20 @@
         "name": "graine_texture"
       }
     },
-    "outputs": [
-      null,
-      null,
-      {
+    "outputs": {
+      "0": {
+        "name": "fichier_modèle",
+        "tooltip": null
+      },
+      "1": {
+        "name": "modèle task_id",
+        "tooltip": null
+      },
+      "2": {
         "name": "GLB",
         "tooltip": null
       }
-    ]
+    }
   },
   "TripoRefineNode": {
     "description": "Affinez un modèle d'ébauche créé uniquement par les modèles Tripo v1.4.",
@@ -14972,14 +15698,20 @@
         "tooltip": "Doit être un modèle Tripo v1.4"
       }
     },
-    "outputs": [
-      null,
-      null,
-      {
+    "outputs": {
+      "0": {
+        "name": "fichier_modèle",
+        "tooltip": null
+      },
+      "1": {
+        "name": "modèle task_id",
+        "tooltip": null
+      },
+      "2": {
         "name": "GLB",
         "tooltip": null
       }
-    ]
+    }
   },
   "TripoRetargetNode": {
     "display_name": "Tripo : Modèle squeletté redirigé",
@@ -14991,14 +15723,20 @@
         "name": "ID_tâche_modèle_original"
       }
     },
-    "outputs": [
-      null,
-      null,
-      {
+    "outputs": {
+      "0": {
+        "name": "retarget task_id",
+        "tooltip": null
+      },
+      "1": {
+        "name": "retarget task_id",
+        "tooltip": null
+      },
+      "2": {
         "name": "GLB",
         "tooltip": null
       }
-    ]
+    }
   },
   "TripoRigNode": {
     "display_name": "Tripo : Modèle squeletté",
@@ -15007,14 +15745,20 @@
         "name": "ID_tâche_modèle_original"
       }
     },
-    "outputs": [
-      null,
-      null,
-      {
+    "outputs": {
+      "0": {
+        "name": "fichier_modèle",
+        "tooltip": null
+      },
+      "1": {
+        "name": "rig task_id",
+        "tooltip": null
+      },
+      "2": {
         "name": "GLB",
         "tooltip": null
       }
-    ]
+    }
   },
   "TripoTextToModelNode": {
     "display_name": "Tripo : Texte vers Modèle",
@@ -15059,14 +15803,20 @@
         "name": "texture_graine"
       }
     },
-    "outputs": [
-      null,
-      null,
-      {
+    "outputs": {
+      "0": {
+        "name": "fichier_modèle",
+        "tooltip": null
+      },
+      "1": {
+        "name": "modèle task_id",
+        "tooltip": null
+      },
+      "2": {
         "name": "GLB",
         "tooltip": null
       }
-    ]
+    }
   },
   "TripoTextureNode": {
     "display_name": "Tripo : Modèle de texture",
@@ -15090,14 +15840,20 @@
         "name": "texture_graine"
       }
     },
-    "outputs": [
-      null,
-      null,
-      {
+    "outputs": {
+      "0": {
+        "name": "fichier_modèle",
+        "tooltip": null
+      },
+      "1": {
+        "name": "modèle task_id",
+        "tooltip": null
+      },
+      "2": {
         "name": "GLB",
         "tooltip": null
       }
-    ]
+    }
   },
   "TruncateText": {
     "display_name": "Tronquer le texte",
@@ -15835,6 +16591,46 @@
       "prompt": {
         "name": "invite",
         "tooltip": "Une invite textuelle optionnelle pour la génération de vidéo (max. 2000 caractères)."
+      },
+      "seed": {
+        "name": "graine"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Vidu3StartEndToVideoNode": {
+    "description": "Générez une vidéo à partir d'une image de début, d'une image de fin et d'une invite.",
+    "display_name": "Génération vidéo Vidu Q3 à partir d'une image de début/fin",
+    "inputs": {
+      "control_after_generate": {
+        "name": "contrôle après génération"
+      },
+      "end_frame": {
+        "name": "image de fin"
+      },
+      "first_frame": {
+        "name": "image de début"
+      },
+      "model": {
+        "name": "modèle",
+        "tooltip": "Modèle à utiliser pour la génération vidéo."
+      },
+      "model_audio": {
+        "name": "audio"
+      },
+      "model_duration": {
+        "name": "durée"
+      },
+      "model_resolution": {
+        "name": "résolution"
+      },
+      "prompt": {
+        "name": "invite",
+        "tooltip": "Description de l'invite (2000 caractères max)."
       },
       "seed": {
         "name": "graine"

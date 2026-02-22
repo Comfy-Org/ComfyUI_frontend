@@ -52,6 +52,7 @@ import {
 } from '@/scripts/domWidget'
 import { useDialogService } from '@/services/dialogService'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
+import { useMissingNodesDialog } from '@/composables/useMissingNodesDialog'
 import { useExtensionService } from '@/services/extensionService'
 import { useLitegraphService } from '@/services/litegraphService'
 import { useSubgraphService } from '@/services/subgraphService'
@@ -59,6 +60,7 @@ import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import { useCommandStore } from '@/stores/commandStore'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
 import { useExecutionStore } from '@/stores/executionStore'
+import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useExtensionStore } from '@/stores/extensionStore'
 import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
 import { useNodeOutputStore } from '@/stores/imagePreviewStore'
@@ -217,18 +219,18 @@ export class ComfyApp {
 
   /**
    * The node errors from the previous execution.
-   * @deprecated Use useExecutionStore().lastNodeErrors instead
+   * @deprecated Use app.extensionManager.lastNodeErrors instead
    */
   get lastNodeErrors(): Record<NodeId, NodeError> | null {
-    return useExecutionStore().lastNodeErrors
+    return useExecutionErrorStore().lastNodeErrors
   }
 
   /**
    * The error from the previous execution.
-   * @deprecated Use useExecutionStore().lastExecutionError instead
+   * @deprecated Use app.extensionManager.lastExecutionError instead
    */
   get lastExecutionError(): ExecutionErrorWsMessage | null {
-    return useExecutionStore().lastExecutionError
+    return useExecutionErrorStore().lastExecutionError
   }
 
   /**
@@ -711,6 +713,8 @@ export class ComfyApp {
             isInsufficientCredits: true
           })
         }
+      } else if (useSettingStore().get('Comfy.RightSidePanel.ShowErrorsTab')) {
+        useExecutionErrorStore().showErrorOverlay()
       } else {
         useDialogService().showExecutionErrorDialog(detail)
       }
@@ -719,11 +723,11 @@ export class ComfyApp {
 
     api.addEventListener('b_preview_with_metadata', ({ detail }) => {
       // Enhanced preview with explicit node context
-      const { blob, displayNodeId, promptId } = detail
+      const { blob, displayNodeId, jobId } = detail
       const { setNodePreviewsByExecutionId, revokePreviewsByExecutionId } =
         useNodeOutputStore()
       const blobUrl = createSharedObjectUrl(blob)
-      useJobPreviewStore().setPreviewUrl(promptId, blobUrl)
+      useJobPreviewStore().setPreviewUrl(jobId, blobUrl)
       // Ensure clean up if `executing` event is missed.
       revokePreviewsByExecutionId(displayNodeId)
       // Preview cleanup is handled in progress_state event to support multiple concurrent previews
@@ -734,6 +738,10 @@ export class ComfyApp {
         ])
       }
       releaseSharedObjectUrl(blobUrl)
+    })
+
+    api.addEventListener('feature_flags', () => {
+      void useNodeReplacementStore().load()
     })
 
     api.init()
@@ -799,7 +807,6 @@ export class ComfyApp {
     await useWorkspaceStore().workflow.syncWorkflows()
     //Doesn't need to block. Blueprints will load async
     void useSubgraphStore().fetchSubgraphs()
-    await useNodeReplacementStore().load()
     await useExtensionService().loadExtensions()
 
     this.addProcessKeyHandler()
@@ -1063,7 +1070,7 @@ export class ComfyApp {
 
   private showMissingNodesError(missingNodeTypes: MissingNodeType[]) {
     if (useSettingStore().get('Comfy.Workflow.ShowMissingNodesWarning')) {
-      useDialogService().showLoadWorkflowWarning({ missingNodeTypes })
+      useMissingNodesDialog().show({ missingNodeTypes })
     }
   }
 
@@ -1210,10 +1217,6 @@ export class ComfyApp {
       await modelStore.loadModelFolders()
       for (const m of uniqueModels) {
         const modelFolder = await modelStore.getLoadedModelFolder(m.directory)
-        if (!modelFolder)
-          (m as ModelFile & { directory_invalid?: boolean }).directory_invalid =
-            true
-
         const modelsAvailable = modelFolder?.models
         const modelExists =
           modelsAvailable &&
@@ -1248,7 +1251,10 @@ export class ComfyApp {
         restore_view &&
         useSettingStore().get('Comfy.EnableWorkflowViewRestore')
       ) {
-        if (graphData.extra?.ds) {
+        // Always fit view for templates to ensure they're visible on load
+        if (openSource === 'template') {
+          useLitegraphService().fitView()
+        } else if (graphData.extra?.ds) {
           this.canvas.ds.offset = graphData.extra.ds.offset
           this.canvas.ds.scale = graphData.extra.ds.scale
 
@@ -1397,7 +1403,8 @@ export class ComfyApp {
 
     this.processingQueue = true
     const executionStore = useExecutionStore()
-    executionStore.lastNodeErrors = null
+    const executionErrorStore = useExecutionErrorStore()
+    executionErrorStore.clearAllErrors()
 
     // Get auth token for backend nodes - uses workspace token if enabled, otherwise Firebase token
     const comfyOrgAuthToken = await useFirebaseAuthStore().getAuthToken()
@@ -1433,13 +1440,13 @@ export class ComfyApp {
             })
             delete api.authToken
             delete api.apiKey
-            executionStore.lastNodeErrors = res.node_errors ?? null
-            if (executionStore.lastNodeErrors?.length) {
+            executionErrorStore.lastNodeErrors = res.node_errors ?? null
+            if (executionErrorStore.lastNodeErrors?.length) {
               this.canvas.draw(true, true)
             } else {
               try {
                 if (res.prompt_id) {
-                  executionStore.storePrompt({
+                  executionStore.storeJob({
                     id: res.prompt_id,
                     nodes: Object.keys(p.output),
                     workflow: useWorkspaceStore().workflow
@@ -1458,7 +1465,10 @@ export class ComfyApp {
                 {}) as MissingNodeTypeExtraInfo
               const missingNodeType = createMissingNodeTypeFromError(extraInfo)
               this.showMissingNodesError([missingNodeType])
-            } else {
+            } else if (
+              !useSettingStore().get('Comfy.RightSidePanel.ShowErrorsTab') ||
+              !(error instanceof PromptExecutionError)
+            ) {
               useDialogService().showErrorDialog(error, {
                 title: t('errorDialog.promptExecutionError'),
                 reportType: 'promptExecutionError'
@@ -1467,7 +1477,36 @@ export class ComfyApp {
             console.error(error)
 
             if (error instanceof PromptExecutionError) {
-              executionStore.lastNodeErrors = error.response.node_errors ?? null
+              executionErrorStore.lastNodeErrors =
+                error.response.node_errors ?? null
+
+              // Store prompt-level error separately only when no node-specific errors exist,
+              // because node errors already carry the full context. Prompt-level errors
+              // (e.g. prompt_no_outputs, no_prompt) lack node IDs and need their own path.
+              const nodeErrors = error.response.node_errors
+              const hasNodeErrors =
+                nodeErrors && Object.keys(nodeErrors).length > 0
+
+              if (!hasNodeErrors) {
+                const respError = error.response.error
+                if (respError && typeof respError === 'object') {
+                  executionErrorStore.lastPromptError = {
+                    type: respError.type,
+                    message: respError.message,
+                    details: respError.details ?? ''
+                  }
+                } else if (typeof respError === 'string') {
+                  executionErrorStore.lastPromptError = {
+                    type: 'error',
+                    message: respError,
+                    details: ''
+                  }
+                }
+              }
+
+              if (useSettingStore().get('Comfy.RightSidePanel.ShowErrorsTab')) {
+                executionErrorStore.showErrorOverlay()
+              }
               this.canvas.draw(true, true)
             }
             break
@@ -1495,7 +1534,7 @@ export class ComfyApp {
     } finally {
       this.processingQueue = false
     }
-    return !executionStore.lastNodeErrors
+    return !executionErrorStore.lastNodeErrors
   }
 
   showErrorOnFileLoad(file: File) {
@@ -1842,9 +1881,8 @@ export class ComfyApp {
   clean() {
     const nodeOutputStore = useNodeOutputStore()
     nodeOutputStore.resetAllOutputsAndPreviews()
-    const executionStore = useExecutionStore()
-    executionStore.lastNodeErrors = null
-    executionStore.lastExecutionError = null
+    const executionErrorStore = useExecutionErrorStore()
+    executionErrorStore.clearAllErrors()
 
     useDomWidgetStore().clear()
 

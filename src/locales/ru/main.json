@@ -275,7 +275,9 @@
     "signOut": {
       "signOut": "Выйти",
       "success": "Вы успешно вышли из системы",
-      "successDetail": "Вы вышли из своей учетной записи."
+      "successDetail": "Вы вышли из своей учетной записи.",
+      "unsavedChangesMessage": "У вас есть несохранённые изменения, которые будут потеряны при выходе из системы. Вы хотите продолжить?",
+      "unsavedChangesTitle": "Несохранённые изменения"
     },
     "signup": {
       "alreadyHaveAccount": "Уже есть аккаунт?",
@@ -608,6 +610,7 @@
     "AUDIO_ENCODER_OUTPUT": "ВЫХОД_АУДИО_КОДЕРА",
     "AUDIO_RECORD": "АУДИО_ЗАПИСЬ",
     "BOOLEAN": "БУЛЕВО",
+    "BOUNDING_BOX": "BOUNDING_BOX",
     "CAMERA_CONTROL": "УПРАВЛЕНИЕ_КАМЕРОЙ",
     "CLIP": "CLIP",
     "CLIP_VISION": "CLIP_VISION",
@@ -619,6 +622,7 @@
     "COMFY_MATCHTYPE_V3": "COMFY_MATCHTYPE_V3",
     "CONDITIONING": "КОНДИЦИОНИРОВАНИЕ",
     "CONTROL_NET": "CONTROL_NET",
+    "ELEVENLABS_VOICE": "ELEVENLABS_VOICE",
     "FILE_3D": "FILE_3D",
     "FILE_3D_FBX": "FILE_3D_FBX",
     "FILE_3D_GLB": "FILE_3D_GLB",
@@ -727,11 +731,30 @@
     "noStackTrace": "Стек вызовов недоступен",
     "promptExecutionError": "Ошибка выполнения запроса"
   },
+  "errorOverlay": {
+    "errorCount": "{count} ОШИБОК | {count} ОШИБКА | {count} ОШИБКИ",
+    "seeErrors": "Посмотреть ошибки"
+  },
+  "exportToast": {
+    "allExportsCompleted": "Все экспорты завершены",
+    "downloadExport": "Скачать экспорт",
+    "downloadFailed": "Не удалось скачать «{name}»",
+    "exportCompleted": "ZIP-архив готов к загрузке",
+    "exportError": "Ошибка экспорта",
+    "exportFailed": "{count} экспорт не выполнен | {count} экспорт не выполнен | {count} экспорта не выполнено",
+    "exportFailedSingle": "Не удалось создать ZIP-экспорт",
+    "exportStarted": "Подготовка к загрузке ZIP...",
+    "exportingAssets": "Экспорт ассетов",
+    "noExportsInQueue": "Нет {filter} экспортов в очереди",
+    "preparingExport": "Подготовка к экспорту...",
+    "retryDownload": "Повторить загрузку"
+  },
   "g": {
     "1x": "1x",
     "2x": "2x",
     "about": "О программе",
     "add": "Добавить",
+    "addNode": "Добавить узел...",
     "addNodeFilterCondition": "Добавить условие фильтрации узла",
     "all": "Все",
     "amount": "Количество",
@@ -825,6 +848,7 @@
     "error": "Ошибка",
     "errorLoadingImage": "Ошибка загрузки изображения",
     "errorLoadingVideo": "Ошибка загрузки видео",
+    "essentials": "Основное",
     "experimental": "БЕТА",
     "export": "Экспорт",
     "extensionName": "Название расширения",
@@ -833,9 +857,12 @@
     "failedToCopyJobId": "Не удалось скопировать ID задания",
     "failedToDownloadImage": "Не удалось скачать изображение",
     "failedToDownloadVideo": "Не удалось скачать видео",
+    "favorites": "Избранное",
     "feedback": "Обратная связь",
     "file": "файл",
     "filter": "Фильтр",
+    "filterBy": "Фильтр по:",
+    "filterByType": "Фильтр по {type}...",
     "findIssues": "Найти проблемы",
     "frameNodes": "Фреймовые ноды",
     "frontendNewer": "Версия интерфейса {frontendVersion} может быть несовместима с версией сервера {backendVersion}.",
@@ -856,6 +883,7 @@
     "inProgress": "В процессе",
     "increment": "Увеличить",
     "info": "Информация о ноде",
+    "input": "Вход",
     "insert": "Вставить",
     "install": "Установить",
     "installed": "Установлено",
@@ -879,6 +907,7 @@
     "login": "Вход",
     "logoAlt": "Логотип ComfyUI",
     "logs": "Логи",
+    "manageExtensions": "Управление расширениями",
     "markdown": "markdown",
     "micPermissionDenied": "Доступ к микрофону запрещён",
     "migrate": "Мигрировать",
@@ -886,6 +915,7 @@
     "more": "Больше",
     "moreOptions": "Больше опций",
     "moreWorkflows": "Больше рабочих процессов",
+    "mostRelevant": "Наиболее релевантные",
     "multiSelectDropdown": "Выпадающий список множественного выбора",
     "name": "Имя",
     "newFolder": "Новая папка",
@@ -916,6 +946,7 @@
     "openManager": "Открыть менеджер",
     "openNewIssue": "Открыть новую проблему",
     "or": "или",
+    "output": "Выход",
     "overwrite": "Перезаписать",
     "playPause": "Воспроизвести/Пауза",
     "playRecording": "Воспроизвести запись",
@@ -942,6 +973,7 @@
     },
     "releaseTitle": "Релиз {package} {version}",
     "reloadToApplyChanges": "Перезагрузите, чтобы применить изменения",
+    "remove": "Удалить",
     "removeImage": "Удалить изображение",
     "removeTag": "Удалить тег",
     "removeVideo": "Удалить видео",
@@ -1558,6 +1590,7 @@
       "downloadSelectedAll": "Скачать все",
       "downloadStarted": "Скачивание {count} файлов...",
       "downloadsStarted": "Начато скачивание {count} файла(ов)",
+      "exportStarted": "Подготовка ZIP-экспорта для {count} файла | Подготовка ZIP-экспорта для {count} файлов",
       "exportWorkflowAll": "Экспортировать все рабочие процессы",
       "failedToAddNodes": "Не удалось добавить узлы в рабочий процесс",
       "failedToDeleteAssets": "Не удалось удалить выбранные ресурсы",
@@ -1609,6 +1642,8 @@
     "runWorkflowFront": "Запустить рабочий процесс (Очередь в начале)",
     "settings": "Настройки",
     "showMenu": "Показать меню",
+    "stopRunInstant": "Остановить выполнение (немедленно)",
+    "stopRunInstantTooltip": "Остановить выполнение",
     "theme": "Тема",
     "toggleBottomPanel": "Переключить нижнюю панель"
   },
@@ -1634,6 +1669,7 @@
     "Contact Support": "Связаться с поддержкой",
     "Convert Selection to Subgraph": "Преобразовать выделенное в подграф",
     "Convert selected nodes to group node": "Преобразовать выбранные ноды в групповую ноду",
+    "Copy": "Копировать",
     "Custom Nodes (Legacy)": "Пользовательские узлы (устаревшие)",
     "Custom Nodes Manager": "Менеджер Пользовательских Узлов",
     "Decrease Brush Size in MaskEditor": "Уменьшить размер кисти в MaskEditor",
@@ -1688,6 +1724,7 @@
     "Open Outputs Folder": "Открыть папку выходных данных",
     "Open Sign In Dialog": "Открыть окно входа",
     "Open extra_model_paths_yaml": "Открыть extra_model_paths.yaml",
+    "Paste": "Вставить",
     "Pin/Unpin Selected Items": "Закрепить/открепить выбранные элементы",
     "Pin/Unpin Selected Nodes": "Закрепить/открепить выбранные ноды",
     "Previous Opened Workflow": "Предыдущий открытый рабочий процесс",
@@ -1707,6 +1744,7 @@
     "Rotate Right in MaskEditor": "Повернуть вправо в MaskEditor",
     "Save": "Сохранить",
     "Save As": "Сохранить как",
+    "Select All": "Выделить всё",
     "Set Subgraph Description": "Установить описание подграфа",
     "Set Subgraph Search Aliases": "Установить псевдонимы поиска подграфа",
     "Show Keybindings Dialog": "Показать диалог клавиш быстрого доступа",
@@ -1776,6 +1814,7 @@
     "BFL": "BFL",
     "Bria": "Bria",
     "ByteDance": "ByteDance",
+    "ElevenLabs": "ElevenLabs",
     "Gemini": "Gemini",
     "Grok": "Grok",
     "HitPaw": "HitPaw",
@@ -1858,11 +1897,13 @@
     "scheduling": "scheduling",
     "sd": "sd",
     "sd3": "sd3",
+    "shader": "шейдер",
     "sigmas": "сигмы",
     "stable_cascade": "стабильная_каскадная",
     "string": "строка",
     "style_model": "модель_стиля",
     "text": "текст",
+    "textgen": "textgen",
     "training": "обучение",
     "transform": "преобразование",
     "unet": "unet",
@@ -1897,6 +1938,25 @@
     "moreHelp": "Для получения дополнительной помощи посетите",
     "outputs": "Выходы",
     "type": "Тип"
+  },
+  "nodeReplacement": {
+    "compatibleAlternatives": "Совместимые альтернативы",
+    "installMissingNodes": "Установить отсутствующие узлы",
+    "installationRequired": "Требуется установка",
+    "instructionMessage": "Вам необходимо установить эти узлы или заменить их установленными альтернативами, чтобы запустить рабочий процесс. Отсутствующие узлы выделены {red} на холсте. Некоторые узлы нельзя заменить, их нужно установить через Менеджер узлов.",
+    "notReplaceable": "Требуется установка",
+    "openNodeManager": "Открыть Менеджер узлов",
+    "quickFixAvailable": "Доступно быстрое исправление",
+    "redHighlight": "красным",
+    "replaceFailed": "Не удалось заменить узлы",
+    "replaceSelected": "Заменить выбранные ({count})",
+    "replaceWarning": "Это действие навсегда изменит рабочий процесс. Сохраните копию, если не уверены.",
+    "replaceable": "Можно заменить",
+    "replaced": "Заменено",
+    "replacedAllNodes": "Заменено {count} типов(а) узлов",
+    "replacedNode": "Заменённый узел: {nodeType}",
+    "selectAll": "Выбрать все",
+    "skipForNow": "Пропустить сейчас"
   },
   "nodeTemplates": {
     "enterName": "Введите название",
@@ -1996,6 +2056,12 @@
     "advancedInputs": "РАСШИРЕННЫЕ ВХОДНЫЕ ДАННЫЕ",
     "bypass": "Обход",
     "color": "Цвет узла",
+    "enterSubgraph": "Войти в подграф",
+    "errorHelp": "Для получения дополнительной помощи {github} или {support}",
+    "errorHelpGithub": "создайте issue на GitHub",
+    "errorHelpSupport": "свяжитесь с нашей поддержкой",
+    "errors": "Ошибки",
+    "executionErrorOccurred": "Произошла ошибка во время выполнения. Подробности смотрите на вкладке Ошибки.",
     "fallbackGroupTitle": "Группа",
     "fallbackNodeTitle": "Узел",
     "favorites": "ИЗБРАННЫЕ ВХОДЫ",
@@ -2030,6 +2096,7 @@
     "inputsNoneTooltip": "Узел не имеет входов",
     "locateNode": "Найти узел на холсте",
     "mute": "Отключить",
+    "noErrors": "Ошибок нет",
     "noSelection": "Выберите узел, чтобы увидеть его свойства и информацию.",
     "nodeState": "Состояние узла",
     "nodes": "Узлы",
@@ -2038,10 +2105,25 @@
     "normal": "Обычный",
     "parameters": "Параметры",
     "pinned": "Закреплено",
+    "promptErrors": {
+      "no_prompt": {
+        "desc": "Данные рабочего процесса, отправленные на сервер, пусты. Это может быть неожиданной системной ошибкой."
+      },
+      "prompt_no_outputs": {
+        "desc": "В рабочем процессе отсутствуют выходные узлы (например, Сохранить изображение, Предпросмотр изображения) для получения результата."
+      },
+      "server_error_cloud": {
+        "desc": "На сервере произошла непредвиденная ошибка. Пожалуйста, попробуйте позже."
+      },
+      "server_error_local": {
+        "desc": "На сервере произошла непредвиденная ошибка. Пожалуйста, проверьте логи сервера."
+      }
+    },
     "properties": "Свойства",
     "removeFavorite": "Убрать из избранного",
     "resetAllParameters": "Сбросить все параметры",
     "resetToDefault": "Сбросить по умолчанию",
+    "seeError": "Посмотреть ошибку",
     "settings": "Настройки",
     "showAdvancedInputsButton": "Показать расширенные входные данные",
     "showInput": "Показать вход",
@@ -2266,6 +2348,7 @@
     "CustomColorPalettes": "Пользовательские цветовые палитры",
     "DevMode": "Режим разработчика",
     "EditTokenWeight": "Редактировать вес токена",
+    "Error System": "Система ошибок",
     "Execution": "Выполнение",
     "Extension": "Расширение",
     "General": "Общие",
@@ -2282,6 +2365,7 @@
     "Menu": "Меню",
     "ModelLibrary": "Библиотека моделей",
     "Node": "Нода",
+    "Node Library": "Библиотека узлов",
     "Node Search Box": "Поисковая строка нод",
     "Node Widget": "Виджет ноды",
     "NodeLibrary": "Библиотека нод",
@@ -2340,6 +2424,10 @@
     "backToAssets": "Назад ко всем ассетам",
     "browseTemplates": "Просмотреть примеры шаблонов",
     "downloads": "Загрузки",
+    "folderView": {
+      "errorDetail": "Не удалось получить выходные данные для этой задачи. Пожалуйста, попробуйте еще раз.",
+      "errorSummary": "Не удалось загрузить выходные данные"
+    },
     "generatedAssetsHeader": "Сгенерированные ресурсы",
     "helpCenter": "Центр поддержки",
     "importedAssetsHeader": "Импортированные ресурсы",
@@ -2365,6 +2453,9 @@
     "noImportedFiles": "Импортированные файлы не найдены",
     "nodeLibrary": "Библиотека нод",
     "nodeLibraryTab": {
+      "allNodes": "Все узлы",
+      "custom": "Пользовательские",
+      "essentials": "Основное",
       "groupBy": "Группировать по",
       "groupStrategies": {
         "category": "Категория",
@@ -2375,6 +2466,11 @@
         "sourceDesc": "Группировать по типу источника (Core, Custom, API)"
       },
       "resetView": "Сбросить вид по умолчанию",
+      "sections": {
+        "favoriteNode": "Избранный узел",
+        "favorites": "Избранное",
+        "unfavoriteNode": "Удалить из избранного"
+      },
       "sortBy": {
         "alphabetical": "По алфавиту",
         "alphabeticalDesc": "Сортировать по алфавиту внутри групп",
@@ -2383,6 +2479,7 @@
       },
       "sortMode": "Режим сортировки"
     },
+    "nodes": "Узлы",
     "openWorkflow": "Открыть рабочий процесс в локальной файловой системе",
     "queue": "Очередь",
     "queueProgressOverlay": {
@@ -2390,14 +2487,17 @@
       "activeJobsShort": "{count} активно | {count} активно",
       "activeJobsSuffix": "активных заданий",
       "cancelJobTooltip": "Отменить задание",
+      "clearAllJobsTooltip": "Отменить все выполняющиеся задачи",
       "clearHistory": "Очистить историю очереди заданий",
       "clearHistoryDialogAssetsNote": "Ассеты, созданные этими заданиями, не будут удалены и всегда доступны на панели ассетов.",
       "clearHistoryDialogDescription": "Все завершённые или неудачные задания ниже будут удалены из этой панели очереди заданий.",
       "clearHistoryDialogTitle": "Очистить историю очереди заданий?",
+      "clearHistoryMenuAssetsNote": "Медиафайлы не будут удалены.",
       "clearQueueTooltip": "Очистить очередь",
       "clearQueued": "Очистить очередь",
       "colonPercent": ": {percent}",
       "currentNode": "Текущий узел:",
+      "dockedJobHistory": "Закреплённая история заданий",
       "expandCollapsedQueue": "Развернуть очередь заданий",
       "filterAllWorkflows": "Все рабочие процессы",
       "filterBy": "Фильтровать по",
@@ -2414,8 +2514,12 @@
       "moreOptions": "Больше опций",
       "noActiveJobs": "Нет активных заданий",
       "preview": "Предпросмотр",
+      "queuedJobsLabel": "{count} в очереди",
       "queuedSuffix": "в очереди",
       "running": "выполняется",
+      "runningJobsLabel": "{count} выполняется",
+      "runningQueuedSummary": "{running}, {queued}",
+      "searchJobs": "Поиск...",
       "showAssets": "Показать ассеты",
       "showAssetsPanel": "Показать панель ассетов",
       "sortBy": "Сортировать по",
@@ -2836,9 +2940,14 @@
     "dropPrompt": "Перетащите ваш файл или"
   },
   "widgets": {
+    "boolean": {
+      "false": "ложь",
+      "true": "истина"
+    },
     "node2only": "Только Node 2.0",
     "selectModel": "Выбрать модель",
     "uploadSelect": {
+      "maxSelectionReached": "Достигнут максимальный лимит выбора",
       "placeholder": "Выбрать...",
       "placeholderAudio": "Выбрать аудио...",
       "placeholderImage": "Выбрать изображение...",
