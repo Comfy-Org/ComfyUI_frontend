@@ -98,7 +98,10 @@
     "typescript/no-floating-promises": "error",
     "typescript/no-explicit-any": "error",
     "vue/no-import-compiler-macros": "error",
-    "vue/no-dupe-keys": "error"
+    "vue/no-dupe-keys": "error",
+    "vue/no-arrow-functions-in-watch": "error",
+    "vue/no-deprecated-destroyed-lifecycle": "error",
+    "vue/no-lifecycle-after-await": "error"
   },
   "overrides": [
     {

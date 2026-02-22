@@ -152,6 +152,9 @@ export default defineConfig([
       'vue/no-use-v-else-with-v-for': 'error',
       'vue/one-component-per-file': 'error',
       'vue/require-default-prop': 'off', // TODO: fix -- this one is very worthwhile
+      'vue/no-arrow-functions-in-watch': 'off',
+      'vue/no-deprecated-destroyed-lifecycle': 'off',
+      'vue/no-lifecycle-after-await': 'off',
 
       // i18n rules
       '@intlify/vue-i18n/no-raw-text': [

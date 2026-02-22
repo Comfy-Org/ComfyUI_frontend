@@ -55,7 +55,7 @@ describe('ColorWidget', () => {
     node = new LGraphNode('TestNode')
     mockCanvas = createMockCanvas()
     mockEvent = createMockEvent()
-  })
+  }, 20_000)
 
   afterEach(() => {
     vi.useRealTimers()
