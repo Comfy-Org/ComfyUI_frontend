@@ -1,3 +1,4 @@
+import * as Sentry from '@sentry/vue'
 import { parseProxyWidgets } from '@/core/schemas/proxyWidget'
 import type { ProxyWidgetsProperty } from '@/core/schemas/proxyWidget'
 import {
@@ -41,6 +42,11 @@ export function promoteWidget(
     parent.properties.proxyWidgets = proxyWidgets
   }
   widget.promoted = true
+  Sentry.addBreadcrumb({
+    category: 'subgraph',
+    message: `Promoted widget "${getWidgetName(widget)}" on node ${node.id}`,
+    level: 'info'
+  })
 }
 
 export function demoteWidget(
@@ -55,6 +61,11 @@ export function demoteWidget(
     parent.properties.proxyWidgets = proxyWidgets
   }
   widget.promoted = false
+  Sentry.addBreadcrumb({
+    category: 'subgraph',
+    message: `Demoted widget "${getWidgetName(widget)}" on node ${node.id}`,
+    level: 'info'
+  })
 }
 
 function getWidgetName(w: IBaseWidget): string {
@@ -181,8 +192,16 @@ export function promoteRecommendedWidgets(subgraphNode: SubgraphNode) {
 }
 
 export function pruneDisconnected(subgraphNode: SubgraphNode) {
-  subgraphNode.properties.proxyWidgets = subgraphNode.widgets
-    .filter(isProxyWidget)
-    .filter((w) => !isDisconnectedWidget(w))
-    .map((w) => [w._overlay.nodeId, w._overlay.widgetName])
+  const proxyWidgets = subgraphNode.widgets.filter(isProxyWidget)
+  const connected = proxyWidgets.filter((w) => !isDisconnectedWidget(w))
+  const removedCount = proxyWidgets.length - connected.length
+  subgraphNode.properties.proxyWidgets = connected.map((w) => [
+    w._overlay.nodeId,
+    w._overlay.widgetName
+  ])
+  Sentry.addBreadcrumb({
+    category: 'subgraph',
+    message: `Pruned ${removedCount} disconnected widget(s) from subgraph node ${subgraphNode.id}`,
+    level: 'info'
+  })
 }
