@@ -120,50 +120,9 @@ post_comment() {
 
 # Main execution
 if [ "$STATUS" = "starting" ]; then
-    # Check if this is a version-bump branch
-    IS_VERSION_BUMP="false"
-    if echo "$BRANCH_NAME" | grep -q "^version-bump-"; then
-        IS_VERSION_BUMP="true"
-    fi
-    
-    # Post starting comment with appropriate message
-    if [ "$IS_VERSION_BUMP" = "true" ]; then
-        comment=$(cat <<EOF
-$COMMENT_MARKER
-## 🎨 Storybook Build Status
-
-<img alt='loading' src='https://github.com/user-attachments/assets/755c86ee-e445-4ea8-bc2c-cca85df48686' width='14px' height='14px'/> **Build is starting...**
-
-⏰ Started at: $START_TIME UTC
-
-### 🚀 Building Storybook
-- 📦 Installing dependencies...
-- 🔧 Building Storybook components...
-- 🎨 Running Chromatic visual tests...
-
----
-⏱️ Please wait while the Storybook build is in progress...
-EOF
-)
-    else
-        comment=$(cat <<EOF
-$COMMENT_MARKER
-## 🎨 Storybook Build Status
-
-<img alt='loading' src='https://github.com/user-attachments/assets/755c86ee-e445-4ea8-bc2c-cca85df48686' width='14px' height='14px'/> **Build is starting...**
-
-⏰ Started at: $START_TIME UTC
-
-### 🚀 Building Storybook
-- 📦 Installing dependencies...
-- 🔧 Building Storybook components...
-- 🌐 Preparing deployment to Cloudflare Pages...
-
----
-⏱️ Please wait while the Storybook build is in progress...
-EOF
-)
-    fi
+    # Post starting comment
+    comment="$COMMENT_MARKER
+## 🎨 Storybook: <img alt='loading' src='https://github.com/user-attachments/assets/755c86ee-e445-4ea8-bc2c-cca85df48686' width='14px' height='14px'/> Building..."
     post_comment "$comment"
     
 elif [ "$STATUS" = "completed" ]; then
@@ -192,56 +151,57 @@ elif [ "$STATUS" = "completed" ]; then
     WORKFLOW_CONCLUSION="${WORKFLOW_CONCLUSION:-success}"
     WORKFLOW_URL="${WORKFLOW_URL:-}"
     
-    # Generate completion comment based on conclusion
+    # Generate compact header based on conclusion
     if [ "$WORKFLOW_CONCLUSION" = "success" ]; then
         status_icon="✅"
-        status_text="Build completed successfully!"
-        footer_text="🎉 Your Storybook is ready for review!"
+        status_text="Built"
     elif [ "$WORKFLOW_CONCLUSION" = "skipped" ]; then
         status_icon="⏭️"
-        status_text="Build skipped."
-        footer_text="ℹ️ Chromatic was skipped for this PR."
+        status_text="Skipped"
     elif [ "$WORKFLOW_CONCLUSION" = "cancelled" ]; then
         status_icon="🚫"
-        status_text="Build cancelled."
-        footer_text="ℹ️ The Chromatic run was cancelled."
+        status_text="Cancelled"
     else
         status_icon="❌"
-        status_text="Build failed!"
-        footer_text="⚠️ Please check the workflow logs for error details."
+        status_text="Failed"
     fi
-    
-    comment="$COMMENT_MARKER
-## 🎨 Storybook Build Status
 
-$status_icon **$status_text**
+    # Build compact header with optional storybook link
+    header="## 🎨 Storybook: $status_icon $status_text"
+    if [ "$deployment_url" != "Not deployed" ] && [ "$deployment_url" != "Deployment failed" ] && [ "$WORKFLOW_CONCLUSION" = "success" ]; then
+        header="$header — $deployment_url"
+    fi
+
+    # Build details section
+    details="<details>
+<summary>Details</summary>
 
 ⏰ Completed at: $(date -u '+%m/%d/%Y, %I:%M:%S %p') UTC
 
-### 🔗 Links
+**Links**
 - [📊 View Workflow Run]($WORKFLOW_URL)"
-    
-    # Add deployment status
+
     if [ "$deployment_url" != "Not deployed" ]; then
         if [ "$deployment_url" = "Deployment failed" ]; then
-            comment="$comment
+            details="$details
 - ❌ Storybook deployment failed"
-        elif [ "$WORKFLOW_CONCLUSION" = "success" ]; then
-            comment="$comment
-- 🎨 $deployment_url"
-        else
-            comment="$comment
-- ⚠️ Build failed - $deployment_url"
+        elif [ "$WORKFLOW_CONCLUSION" != "success" ]; then
+            details="$details
+- ⚠️ Build failed — $deployment_url"
         fi
     elif [ "$WORKFLOW_CONCLUSION" != "success" ]; then
-        comment="$comment
+        details="$details
 - ⏭️ Storybook deployment skipped (build did not succeed)"
     fi
-    
-    comment="$comment
 
----
-$footer_text"
+    details="$details
+
+</details>"
+
+    comment="$COMMENT_MARKER
+$header
+
+$details"
     
     post_comment "$comment"
 fi
