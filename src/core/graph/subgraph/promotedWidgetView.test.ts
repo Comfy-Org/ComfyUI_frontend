@@ -4,8 +4,15 @@ import { beforeEach, describe, expect, test, vi } from 'vitest'
 
 // Barrel import must come first to avoid circular dependency
 // (promotedWidgetView → widgetMap → BaseWidget → LegacyWidget → barrel)
-import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
-import type { SubgraphNode } from '@/lib/litegraph/src/litegraph'
+import {
+  CanvasPointer,
+  LGraphNode,
+  LiteGraph
+} from '@/lib/litegraph/src/litegraph'
+import type {
+  CanvasPointerEvent,
+  SubgraphNode
+} from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 
 import { createPromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetView'
@@ -295,6 +302,78 @@ describe(createPromotedWidgetView, () => {
     const [subgraphNode] = setupSubgraph()
     const view = createPromotedWidgetView(subgraphNode, '999', 'missing')
     expect(() => view.callback!('val')).not.toThrow()
+  })
+
+  test('computeSize delegates to interior widget computeSize', () => {
+    const [subgraphNode, innerNodes] = setupSubgraph(1)
+    const innerNode = firstInnerNode(innerNodes)
+    const widget = innerNode.addWidget('text', 'legacySize', 'val', () => {})
+    const computeSize = vi.fn<(width?: number) => [number, number]>(
+      (width?: number) => [width ?? 0, 37]
+    )
+    widget.computeSize = computeSize
+
+    const view = createPromotedWidgetView(
+      subgraphNode,
+      String(innerNode.id),
+      'legacySize'
+    )
+
+    expect(typeof view.computeSize).toBe('function')
+    expect(view.computeSize?.(210)).toEqual([210, 37])
+    expect(computeSize).toHaveBeenCalledWith(210)
+  })
+
+  test('onPointerDown falls back to legacy mouse callback', () => {
+    const [subgraphNode, innerNodes] = setupSubgraph(1)
+    subgraphNode.pos = [10, 20]
+    const innerNode = firstInnerNode(innerNodes)
+    const mouse = vi.fn(() => true)
+    const legacyWidget = {
+      name: 'legacyMouse',
+      type: 'mystery-legacy',
+      value: 'val',
+      options: {},
+      mouse
+    } as unknown as IBaseWidget
+    innerNode.widgets = [legacyWidget]
+
+    const view = createPromotedWidgetView(
+      subgraphNode,
+      String(innerNode.id),
+      'legacyMouse'
+    )
+
+    const pointer = new CanvasPointer(document.createElement('div'))
+    pointer.eDown = {
+      canvasX: 110,
+      canvasY: 120,
+      deltaX: 0,
+      deltaY: 0,
+      safeOffsetX: 0,
+      safeOffsetY: 0
+    } as CanvasPointerEvent
+
+    const handled = view.onPointerDown?.(
+      pointer,
+      subgraphNode,
+      {} as Parameters<NonNullable<typeof view.onPointerDown>>[2]
+    )
+
+    expect(handled).toBe(true)
+    expect(mouse).toHaveBeenCalledWith(pointer.eDown, [100, 100], subgraphNode)
+
+    pointer.eUp = {
+      canvasX: 130,
+      canvasY: 140,
+      deltaX: 0,
+      deltaY: 0,
+      safeOffsetX: 0,
+      safeOffsetY: 0
+    } as CanvasPointerEvent
+    pointer.finally?.()
+
+    expect(mouse).toHaveBeenCalledWith(pointer.eUp, [120, 120], subgraphNode)
   })
 })
 

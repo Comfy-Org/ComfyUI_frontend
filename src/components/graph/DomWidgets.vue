@@ -15,6 +15,7 @@ import { whenever } from '@vueuse/core'
 import { computed } from 'vue'
 
 import DomWidget from '@/components/graph/widgets/DomWidget.vue'
+import { getDomWidgetZIndex } from '@/components/graph/widgets/domWidgetZIndex'
 import { useChainCallback } from '@/composables/functional/useChainCallback'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
@@ -90,7 +91,7 @@ const updateWidgets = () => {
         (posWidget.width ?? posNode.width) - margin * 2,
         (posWidget.computedHeight ?? 50) - margin * 2
       ]
-      widgetState.zIndex = posNode.order ?? -1
+      widgetState.zIndex = getDomWidgetZIndex(posNode, currentGraph)
       widgetState.readonly = lgCanvas.read_only
     }
   }

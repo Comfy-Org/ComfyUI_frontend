@@ -37,6 +37,14 @@ function isWidgetValue(value: unknown): value is IBaseWidget['value'] {
   return value !== null && typeof value === 'object'
 }
 
+type LegacyMouseWidget = IBaseWidget & {
+  mouse: (e: CanvasPointerEvent, pos: Point, node: LGraphNode) => unknown
+}
+
+function hasLegacyMouse(widget: IBaseWidget): widget is LegacyMouseWidget {
+  return typeof (widget as Partial<LegacyMouseWidget>).mouse === 'function'
+}
+
 export function createPromotedWidgetView(
   subgraphNode: SubgraphNode,
   nodeId: string,
@@ -224,6 +232,16 @@ export function createPromotedWidgetView(
     configurable: true
   })
 
+  Object.defineProperty(view, 'computeSize', {
+    get: () => {
+      const resolved = resolve(subgraphNode, nodeId, widgetName)
+      if (!resolved?.widget.computeSize) return undefined
+      return (width?: number) => resolved.widget.computeSize!(width)
+    },
+    enumerable: true,
+    configurable: true
+  })
+
   // Interaction — resolve interior widget and delegate pointer events.
   // Without this, processWidgetClick wraps the PromotedWidgetView POJO
   // via toConcreteWidget, creating a throwaway widget whose value writes
@@ -256,6 +274,30 @@ export function createPromotedWidgetView(
           node: subgraphNode,
           canvas
         })
+      return true
+    }
+
+    if (hasLegacyMouse(interior)) {
+      const downEvent = pointer.eDown
+      if (!downEvent) return false
+
+      const downPosition: Point = [
+        downEvent.canvasX - subgraphNode.pos[0],
+        downEvent.canvasY - subgraphNode.pos[1]
+      ]
+      interior.mouse(downEvent, downPosition, subgraphNode)
+
+      pointer.finally = () => {
+        const upEvent = pointer.eUp
+        if (!upEvent) return
+
+        const upPosition: Point = [
+          upEvent.canvasX - subgraphNode.pos[0],
+          upEvent.canvasY - subgraphNode.pos[1]
+        ]
+        interior.mouse(upEvent, upPosition, subgraphNode)
+      }
+
       return true
     }
 
