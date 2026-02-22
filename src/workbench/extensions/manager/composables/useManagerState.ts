@@ -143,6 +143,7 @@ export function useManagerState() {
    */
   const openManager = async (options?: {
     initialTab?: ManagerTab
+    initialPackId?: string
     legacyCommand?: string
     showToastOnLegacyError?: boolean
     isLegacyOnly?: boolean
@@ -188,9 +189,9 @@ export function useManagerState() {
             detail: t('manager.legacyMenuNotAvailable'),
             life: 3000
           })
-          await managerDialog.show(ManagerTab.All)
+          managerDialog.show(ManagerTab.All)
         } else {
-          await managerDialog.show(options?.initialTab)
+          managerDialog.show(options?.initialTab, options?.initialPackId)
         }
         break
     }
