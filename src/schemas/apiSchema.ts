@@ -135,8 +135,6 @@ const zLogRawResponse = z.object({
   entries: z.array(zLogEntry)
 })
 
-const zFeatureFlagsWsMessage = z.record(z.string(), z.any())
-
 const zAssetDownloadWsMessage = z.object({
   task_id: z.string(),
   asset_name: z.string(),
@@ -179,7 +177,6 @@ export type LogsWsMessage = z.infer<typeof zLogsWsMessage>
 export type ProgressTextWsMessage = z.infer<typeof zProgressTextWsMessage>
 export type NodeProgressState = z.infer<typeof zNodeProgressState>
 export type ProgressStateWsMessage = z.infer<typeof zProgressStateWsMessage>
-export type FeatureFlagsWsMessage = z.infer<typeof zFeatureFlagsWsMessage>
 export type AssetDownloadWsMessage = z.infer<typeof zAssetDownloadWsMessage>
 export type AssetExportWsMessage = z.infer<typeof zAssetExportWsMessage>
 // End of ws messages
