@@ -10,12 +10,12 @@ These correspond to the two data formats in `ComfyMetadata` embedded in output f
 
 ## Permutation table
 
-| `widget.serialize` | `widget.options.serialize` | In workflow? | In prompt? | Examples |
-|---|---|---|---|---|
-| ✅ default | ✅ default | Yes | Yes | seed, cfg, sampler_name |
-| ✅ default | ❌ false | Yes | No | control_after_generate, combo filter list |
-| ❌ false | ✅ default | No | Yes | No current usage (would be a transient value computed at queue time) |
-| ❌ false | ❌ false | No | No | Image/video previews, audio players, progress text |
+| `widget.serialize` | `widget.options.serialize` | In workflow? | In prompt? | Examples                                                             |
+| ------------------ | -------------------------- | ------------ | ---------- | -------------------------------------------------------------------- |
+| ✅ default         | ✅ default                 | Yes          | Yes        | seed, cfg, sampler_name                                              |
+| ✅ default         | ❌ false                   | Yes          | No         | control_after_generate, combo filter list                            |
+| ❌ false           | ✅ default                 | No           | Yes        | No current usage (would be a transient value computed at queue time) |
+| ❌ false           | ❌ false                   | No           | No         | Image/video previews, audio players, progress text                   |
 
 ## Gotchas
 
