@@ -14,12 +14,15 @@ import { VueFire, VueFireAuth } from 'vuefire'
 import { getFirebaseConfig } from '@/config/firebase'
 import '@/lib/litegraph/public/css/litegraph.css'
 import router from '@/router'
+import { initServerCapabilities } from '@/services/serverCapabilities'
 import { useBootstrapStore } from '@/stores/bootstrapStore'
 
 import App from './App.vue'
 // Intentionally relative import to ensure the CSS is loaded in the right order (after litegraph.css)
 import './assets/css/style.css'
 import { i18n } from './i18n'
+
+await initServerCapabilities()
 
 /**
  * CRITICAL: Load remote config FIRST for cloud builds to ensure
