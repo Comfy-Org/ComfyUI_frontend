@@ -53,6 +53,7 @@ import NodeSearchCategoryTreeNode, {
   CATEGORY_UNSELECTED_CLASS
 } from '@/components/searchbox/v2/NodeSearchCategoryTreeNode.vue'
 import type { CategoryNode } from '@/components/searchbox/v2/NodeSearchCategoryTreeNode.vue'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { nodeOrganizationService } from '@/services/nodeOrganizationService'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { NodeSourceType } from '@/types/nodeSource'
@@ -64,6 +65,7 @@ const selectedCategory = defineModel<string>('selectedCategory', {
 })
 
 const { t } = useI18n()
+const { flags } = useFeatureFlags()
 const nodeDefStore = useNodeDefStore()
 
 const topCategories = computed(() => [
@@ -79,7 +81,7 @@ const hasEssentialNodes = computed(() =>
 
 const sourceCategories = computed(() => {
   const categories = []
-  if (hasEssentialNodes.value) {
+  if (flags.nodeLibraryEssentialsEnabled && hasEssentialNodes.value) {
     categories.push({ id: 'essentials', label: t('g.essentials') })
   }
   categories.push({ id: 'custom', label: t('g.custom') })
