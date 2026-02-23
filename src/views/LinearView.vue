@@ -1,41 +1,60 @@
 <script setup lang="ts">
-import { breakpointsTailwind, unrefElement, useBreakpoints } from '@vueuse/core'
+import {
+  breakpointsTailwind,
+  unrefElement,
+  useBreakpoints,
+  whenever
+} from '@vueuse/core'
 import Splitter from 'primevue/splitter'
 import SplitterPanel from 'primevue/splitterpanel'
-import { computed, useTemplateRef } from 'vue'
+import { computed, ref, useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import AppModeToolbar from '@/components/appMode/AppModeToolbar.vue'
 import ExtensionSlot from '@/components/common/ExtensionSlot.vue'
 import ModeToggle from '@/components/sidebar/ModeToggle.vue'
-import SideToolbar from '@/components/sidebar/SideToolbar.vue'
 import TopbarBadges from '@/components/topbar/TopbarBadges.vue'
 import WorkflowTabs from '@/components/topbar/WorkflowTabs.vue'
-import Button from '@/components/ui/button/Button.vue'
-import Popover from '@/components/ui/Popover.vue'
 import TypeformPopoverButton from '@/components/ui/TypeformPopoverButton.vue'
-import { useWorkflowActionsMenu } from '@/composables/useWorkflowActionsMenu'
+import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import LinearControls from '@/renderer/extensions/linearMode/LinearControls.vue'
 import LinearPreview from '@/renderer/extensions/linearMode/LinearPreview.vue'
 import MobileMenu from '@/renderer/extensions/linearMode/MobileMenu.vue'
-import { useCommandStore } from '@/stores/commandStore'
+import { useNodeOutputStore } from '@/stores/imagePreviewStore'
+import type { ResultItemImpl } from '@/stores/queueStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
+import { useAppModeStore } from '@/stores/appModeStore'
 
 const { t } = useI18n()
+const nodeOutputStore = useNodeOutputStore()
 const settingStore = useSettingStore()
 const workspaceStore = useWorkspaceStore()
+const appModeStore = useAppModeStore()
 
 const mobileDisplay = useBreakpoints(breakpointsTailwind).smaller('md')
 
 const activeTab = computed(() => workspaceStore.sidebarTab.activeSidebarTab)
-
-const { menuItems } = useWorkflowActionsMenu(
-  () => useCommandStore().execute('Comfy.RenameWorkflow'),
-  { isRoot: true }
+const sidebarOnLeft = computed(
+  () => settingStore.get('Comfy.Sidebar.Location') === 'left'
+)
+const hasLeftPanel = computed(
+  () => (sidebarOnLeft.value && activeTab.value) || !sidebarOnLeft.value
+)
+const hasRightPanel = computed(
+  () => sidebarOnLeft.value || (!sidebarOnLeft.value && activeTab.value)
 )
 
-const topLeftRef = useTemplateRef('topLeftRef')
-const topRightRef = useTemplateRef('topRightRef')
+const hasPreview = ref(false)
+whenever(
+  () => nodeOutputStore.latestPreview[0],
+  () => (hasPreview.value = true)
+)
+
+const selectedItem = ref<AssetItem>()
+const selectedOutput = ref<ResultItemImpl>()
+const canShowPreview = ref(true)
+
 const bottomLeftRef = useTemplateRef('bottomLeftRef')
 const bottomRightRef = useTemplateRef('bottomRightRef')
 const linearWorkflowRef = useTemplateRef('linearWorkflowRef')
@@ -55,7 +74,14 @@ const linearWorkflowRef = useTemplateRef('linearWorkflowRef')
       <MobileMenu />
       <div class="flex flex-col text-muted-foreground">
         <LinearPreview
+          :latent-preview="
+            canShowPreview && hasPreview
+              ? nodeOutputStore.latestPreview[0]
+              : undefined
+          "
           :run-button-click="linearWorkflowRef?.runButtonClick"
+          :selected-item
+          :selected-output
           mobile
         />
       </div>
@@ -75,40 +101,41 @@ const linearWorkflowRef = useTemplateRef('linearWorkflowRef')
       @resizestart="({ originalEvent }) => originalEvent.preventDefault()"
     >
       <SplitterPanel
+        v-if="hasLeftPanel"
         id="linearLeftPanel"
         :size="1"
         class="min-w-min outline-none"
       >
         <div
-          v-if="settingStore.get('Comfy.Sidebar.Location') === 'left'"
+          v-if="sidebarOnLeft && activeTab"
           class="flex h-full border-border-subtle border-r"
         >
-          <SideToolbar />
-          <ExtensionSlot v-if="activeTab" :extension="activeTab" />
+          <ExtensionSlot :extension="activeTab" />
         </div>
         <LinearControls
           v-else
           ref="linearWorkflowRef"
           :toast-to="unrefElement(bottomLeftRef) ?? undefined"
-          :notes-to="unrefElement(topLeftRef) ?? undefined"
         />
       </SplitterPanel>
       <SplitterPanel
         id="linearCenterPanel"
         :size="98"
-        class="flex flex-col min-w-min gap-4 mx-2 px-10 pt-8 pb-4 relative text-muted-foreground outline-none"
+        class="flex flex-col min-w-min gap-4 px-10 pt-8 pb-4 relative text-muted-foreground outline-none"
       >
-        <LinearPreview :run-button-click="linearWorkflowRef?.runButtonClick" />
-        <div ref="topLeftRef" class="absolute z-21 top-4 left-4">
-          <Popover :entries="menuItems" align="start">
-            <template #button>
-              <Button size="icon" variant="textonly">
-                <i class="icon-[lucide--menu]" />
-              </Button>
-            </template>
-          </Popover>
+        <LinearPreview
+          :latent-preview="
+            canShowPreview && hasPreview
+              ? nodeOutputStore.latestPreview[0]
+              : undefined
+          "
+          :run-button-click="linearWorkflowRef?.runButtonClick"
+          :selected-item
+          :selected-output
+        />
+        <div class="absolute z-21 top-1 left-1">
+          <AppModeToolbar v-if="!appModeStore.isBuilderMode" />
         </div>
-        <div ref="topRightRef" class="absolute z-21 top-4 right-4" />
         <div ref="bottomLeftRef" class="absolute z-20 bottom-4 left-4" />
         <div ref="bottomRightRef" class="absolute z-20 bottom-24 right-4" />
         <div
@@ -125,19 +152,21 @@ const linearWorkflowRef = useTemplateRef('linearWorkflowRef')
         </div>
       </SplitterPanel>
       <SplitterPanel
+        v-if="hasRightPanel"
         id="linearRightPanel"
         :size="1"
         class="min-w-min outline-none"
       >
         <LinearControls
-          v-if="settingStore.get('Comfy.Sidebar.Location') === 'left'"
+          v-if="sidebarOnLeft"
           ref="linearWorkflowRef"
           :toast-to="unrefElement(bottomRightRef) ?? undefined"
-          :notes-to="unrefElement(topRightRef) ?? undefined"
         />
-        <div v-else class="flex h-full border-border-subtle border-l">
-          <ExtensionSlot v-if="activeTab" :extension="activeTab" />
-          <SideToolbar class="border-border-subtle border-l" />
+        <div
+          v-else-if="activeTab"
+          class="flex h-full border-border-subtle border-l"
+        >
+          <ExtensionSlot :extension="activeTab" />
         </div>
       </SplitterPanel>
     </Splitter>

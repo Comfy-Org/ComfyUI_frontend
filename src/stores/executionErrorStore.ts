@@ -10,11 +10,13 @@ import type {
   PromptError
 } from '@/schemas/apiSchema'
 import type { NodeId } from '@/platform/workflow/validation/schemas/workflowSchema'
-import type { NodeLocatorId } from '@/types/nodeIdentification'
+import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { NodeExecutionId, NodeLocatorId } from '@/types/nodeIdentification'
 import {
   executionIdToNodeLocatorId,
   forEachNode,
-  getNodeByExecutionId
+  getNodeByExecutionId,
+  getExecutionIdByNode
 } from '@/utils/graphTraversalUtil'
 
 /**
@@ -186,9 +188,32 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
     return nodeError.errors.some((e) => e.extra_info?.input_name === slotName)
   }
 
-  function hasInternalErrorForNode(nodeId: string | number): boolean {
-    const prefix = `${nodeId}:`
-    return allErrorExecutionIds.value.some((id) => id.startsWith(prefix))
+  /**
+   * Set of all execution ID prefixes derived from active error nodes,
+   * including the error nodes themselves.
+   *
+   * Example: error at "65:70:63" → Set { "65", "65:70", "65:70:63" }
+   */
+  const errorAncestorExecutionIds = computed<Set<NodeExecutionId>>(() => {
+    const ids = new Set<NodeExecutionId>()
+
+    for (const executionId of allErrorExecutionIds.value) {
+      const parts = executionId.split(':')
+      // Add every prefix including the full ID (error leaf node itself)
+      for (let i = 1; i <= parts.length; i++) {
+        ids.add(parts.slice(0, i).join(':'))
+      }
+    }
+
+    return ids
+  })
+
+  /** True if the node has errors inside it at any nesting depth. */
+  function isContainerWithInternalError(node: LGraphNode): boolean {
+    if (!app.rootGraph) return false
+    const execId = getExecutionIdByNode(app.rootGraph, node)
+    if (!execId) return false
+    return errorAncestorExecutionIds.value.has(execId)
   }
 
   /**
@@ -275,6 +300,7 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
     // Lookup helpers
     getNodeErrors,
     slotHasError,
-    hasInternalErrorForNode
+    errorAncestorExecutionIds,
+    isContainerWithInternalError
   }
 })

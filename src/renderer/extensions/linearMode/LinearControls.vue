@@ -26,7 +26,7 @@ import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useQueueSettingsStore } from '@/stores/queueStore'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import { cn } from '@/utils/tailwindUtil'
-
+import { useAppModeStore } from '@/stores/appModeStore'
 const { t } = useI18n()
 const commandStore = useCommandStore()
 const executionStore = useExecutionStore()
@@ -35,10 +35,10 @@ const { batchCount } = storeToRefs(useQueueSettingsStore())
 const settingStore = useSettingStore()
 const { isActiveSubscription } = useBillingContext()
 const workflowStore = useWorkflowStore()
+const appModeStore = useAppModeStore()
 
 const props = defineProps<{
   toastTo?: string | HTMLElement
-  notesTo?: string | HTMLElement
   mobile?: boolean
 }>()
 
@@ -146,7 +146,10 @@ async function runButtonClick(e: Event) {
 defineExpose({ runButtonClick })
 </script>
 <template>
-  <div class="flex flex-col min-w-80 md:h-full">
+  <div
+    v-if="!appModeStore.isBuilderMode && appModeStore.hasOutputs"
+    class="flex flex-col min-w-80 md:h-full"
+  >
     <section
       v-if="mobile"
       data-testid="linear-run-button"
@@ -190,11 +193,10 @@ defineExpose({ runButtonClick })
       <div class="flex-1" />
       <Popover
         v-if="partitionedNodes[0].length"
-        align="start"
+        align="end"
         class="overflow-y-auto overflow-x-clip max-h-(--reka-popover-content-available-height) z-100"
-        :reference="notesTo"
-        side="left"
-        :to="notesTo"
+        side="bottom"
+        :side-offset="-8"
       >
         <template #button>
           <Button variant="muted-textonly">
@@ -307,10 +309,5 @@ defineExpose({ runButtonClick })
       <i v-else class="icon-[lucide--loader-circle] size-4 animate-spin" />
       <span v-text="t('queue.jobAddedToQueue')" />
     </div>
-  </Teleport>
-  <Teleport v-if="false" defer :to="notesTo">
-    <div
-      class="bg-base-background text-muted-foreground flex flex-col w-90 gap-2 rounded-2xl border-1 border-border-subtle py-3"
-    ></div>
   </Teleport>
 </template>
