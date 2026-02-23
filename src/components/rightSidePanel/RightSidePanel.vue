@@ -106,7 +106,7 @@ const hasContainerInternalError = computed(() => {
   if (allErrorExecutionIds.value.length === 0) return false
   return selectedNodes.value.some((node) => {
     if (!(node instanceof SubgraphNode || isGroupNode(node))) return false
-    return executionErrorStore.hasInternalErrorForNode(node.id)
+    return executionErrorStore.isContainerWithInternalError(node)
   })
 })
 

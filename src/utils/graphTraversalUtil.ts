@@ -332,6 +332,35 @@ export function getNodeByExecutionId(
 }
 
 /**
+ * Returns the execution ID for a node relative to the root graph.
+ *
+ * Root-level nodes return their ID directly (e.g. "42").
+ * Nodes inside subgraphs return a colon-separated chain (e.g. "65:70:63").
+ *
+ * @param rootGraph - The root graph to resolve from
+ * @param node - The node whose execution ID to compute
+ * @returns The execution ID string, or null if the node has no graph
+ */
+export function getExecutionIdByNode(
+  rootGraph: LGraph,
+  node: LGraphNode
+): NodeExecutionId | null {
+  if (!node.graph) return null
+
+  if (node.graph === rootGraph || node.graph.isRootGraph) {
+    return String(node.id)
+  }
+
+  const parentPath = findPartialExecutionPathToGraph(
+    node.graph as LGraph,
+    rootGraph
+  )
+  if (parentPath === undefined) return null
+
+  return `${parentPath}:${node.id}`
+}
+
+/**
  * Get a node by its locator ID from anywhere in the graph hierarchy.
  * Locator IDs use UUID format like "uuid:nodeId" for subgraph nodes.
  *
