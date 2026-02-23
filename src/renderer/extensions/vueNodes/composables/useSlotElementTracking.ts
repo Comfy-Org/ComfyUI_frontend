@@ -8,7 +8,6 @@
 import { onMounted, onUnmounted, watch } from 'vue'
 import type { Ref } from 'vue'
 
-import { useSharedCanvasPositionConversion } from '@/composables/element/useCanvasPositionConversion'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { getSlotKey } from '@/renderer/core/layout/slots/slotIdentifier'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
@@ -48,10 +47,9 @@ export function flushScheduledSlotLayoutSync() {
     app.canvas?.setDirty(true, true)
     return
   }
-  const conv = useSharedCanvasPositionConversion()
   for (const nodeId of Array.from(pendingNodes)) {
     pendingNodes.delete(nodeId)
-    syncNodeSlotLayoutsFromDOM(nodeId, conv)
+    syncNodeSlotLayoutsFromDOM(nodeId)
   }
   // Clear the pending sync flag - slots are now synced
   layoutStore.setPendingSlotSync(false)
@@ -59,15 +57,29 @@ export function flushScheduledSlotLayoutSync() {
   app.canvas?.setDirty(true, true)
 }
 
-export function syncNodeSlotLayoutsFromDOM(
-  nodeId: string,
-  conv?: ReturnType<typeof useSharedCanvasPositionConversion>
-) {
+export function syncNodeSlotLayoutsFromDOM(nodeId: string) {
   const nodeSlotRegistryStore = useNodeSlotRegistryStore()
   const node = nodeSlotRegistryStore.getNode(nodeId)
   if (!node) return
   const nodeLayout = layoutStore.getNodeLayoutRef(nodeId).value
   if (!nodeLayout) return
+
+  // Find the node's DOM element for relative offset measurement.
+  // Using DOM-relative measurement avoids the transform desync issue where
+  // lgCanvas.ds (used by clientPosToCanvasPos) can diverge from the
+  // TransformPane's CSS transform during workflow loading (e.g., after
+  // fitView or ensureCorrectLayoutScale). Both the slot and node elements
+  // share the same DOM transform, so their pixel difference divided by the
+  // effective scale yields a correct canvas-space offset regardless of
+  // whether the TransformPane has flushed its latest transform to the DOM.
+  const nodeEl = node.slots.values().next().value?.el.closest(
+    '[data-node-id]'
+  ) as HTMLElement | null
+  const nodeRect = nodeEl?.getBoundingClientRect()
+  const effectiveScale =
+    nodeRect && nodeLayout.size.width > 0
+      ? nodeRect.width / nodeLayout.size.width
+      : 0
 
   const batch: Array<{ key: string; layout: SlotLayout }> = []
 
@@ -77,15 +89,23 @@ export function syncNodeSlotLayoutsFromDOM(
       rect.left + rect.width / 2,
       rect.top + rect.height / 2
     ]
-    const [x, y] = (
-      conv ?? useSharedCanvasPositionConversion()
-    ).clientPosToCanvasPos(screenCenter)
-    const centerCanvas = { x, y }
 
-    // Cache offset relative to node position for fast updates later
+    if (!nodeRect || effectiveScale <= 0) continue
+
+    // DOM-relative measurement: compute offset from the node element's
+    // top-left corner in canvas units. The node element is rendered at
+    // (position.x, position.y - NODE_TITLE_HEIGHT), so the Y offset
+    // must subtract NODE_TITLE_HEIGHT to be relative to position.y.
     entry.cachedOffset = {
-      x: centerCanvas.x - nodeLayout.position.x,
-      y: centerCanvas.y - nodeLayout.position.y
+      x: (screenCenter[0] - nodeRect.left) / effectiveScale,
+      y:
+        (screenCenter[1] - nodeRect.top) / effectiveScale -
+        LiteGraph.NODE_TITLE_HEIGHT
+    }
+
+    const centerCanvas = {
+      x: nodeLayout.position.x + entry.cachedOffset.x,
+      y: nodeLayout.position.y + entry.cachedOffset.y
     }
 
     // Persist layout in canvas coordinates
