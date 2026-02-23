@@ -1,23 +1,23 @@
 import { mount } from '@vue/test-utils'
 import type { VueWrapper } from '@vue/test-utils'
-import { ref } from 'vue'
+import { reactive } from 'vue'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useQueuePolling } from '@/composables/queue/useQueuePolling'
 
-const activeJobsCountRef = ref(0)
-const updateMock = vi.fn()
-
-vi.mock('@/stores/queueStore', () => ({
-  useQueueStore: () => ({
-    get activeJobsCount() {
-      return activeJobsCountRef.value
-    },
-    update: updateMock
+vi.mock('@/stores/queueStore', () => {
+  const state = reactive({
+    activeJobsCount: 0,
+    update: vi.fn()
   })
-}))
 
-const mountedWrappers: VueWrapper[] = []
+  return {
+    useQueueStore: () => state
+  }
+})
+
+// Re-import to get the mock instance for assertions
+import { useQueueStore } from '@/stores/queueStore'
 
 function mountUseQueuePolling() {
   const wrapper = mount({
@@ -27,65 +27,71 @@ function mountUseQueuePolling() {
       return {}
     }
   })
-  mountedWrappers.push(wrapper)
   return wrapper
 }
 
 describe('useQueuePolling', () => {
+  let wrapper: VueWrapper
+  const store = useQueueStore() as Partial<
+    ReturnType<typeof useQueueStore>
+  > as {
+    activeJobsCount: number
+    update: ReturnType<typeof vi.fn>
+  }
+
   beforeEach(() => {
     vi.useFakeTimers()
-    activeJobsCountRef.value = 0
-    updateMock.mockReset()
+    store.activeJobsCount = 0
+    store.update.mockReset()
   })
 
   afterEach(() => {
-    mountedWrappers.forEach((w) => w.unmount())
-    mountedWrappers.length = 0
+    wrapper?.unmount()
     vi.useRealTimers()
   })
 
   it('calls queueStore.update() immediately on creation', () => {
-    mountUseQueuePolling()
-    expect(updateMock).toHaveBeenCalledOnce()
+    wrapper = mountUseQueuePolling()
+    expect(store.update).toHaveBeenCalledOnce()
   })
 
   it('starts polling when activeJobsCount > 0', async () => {
-    mountUseQueuePolling()
-    updateMock.mockClear()
+    wrapper = mountUseQueuePolling()
+    store.update.mockClear()
 
-    activeJobsCountRef.value = 2
+    store.activeJobsCount = 2
     await vi.advanceTimersByTimeAsync(5_000)
 
-    expect(updateMock).toHaveBeenCalled()
+    expect(store.update).toHaveBeenCalled()
   })
 
   it('stops polling when activeJobsCount drops to 0', async () => {
-    activeJobsCountRef.value = 1
-    mountUseQueuePolling()
-    updateMock.mockClear()
+    store.activeJobsCount = 1
+    wrapper = mountUseQueuePolling()
+    store.update.mockClear()
 
-    activeJobsCountRef.value = 0
+    store.activeJobsCount = 0
     await vi.advanceTimersByTimeAsync(10_000)
 
-    expect(updateMock).not.toHaveBeenCalled()
+    expect(store.update).not.toHaveBeenCalled()
   })
 
   it('resumes polling when jobs reappear', async () => {
-    mountUseQueuePolling()
-    updateMock.mockClear()
+    wrapper = mountUseQueuePolling()
+    store.update.mockClear()
 
-    activeJobsCountRef.value = 1
+    store.activeJobsCount = 1
     await vi.advanceTimersByTimeAsync(5_000)
-    expect(updateMock).toHaveBeenCalled()
+    expect(store.update).toHaveBeenCalled()
 
-    updateMock.mockClear()
-    activeJobsCountRef.value = 0
+    store.update.mockClear()
+    store.activeJobsCount = 0
     await vi.advanceTimersByTimeAsync(5_000)
-    expect(updateMock).not.toHaveBeenCalled()
+    expect(store.update).not.toHaveBeenCalled()
 
-    updateMock.mockClear()
-    activeJobsCountRef.value = 3
+    store.update.mockClear()
+    store.activeJobsCount = 3
     await vi.advanceTimersByTimeAsync(5_000)
-    expect(updateMock).toHaveBeenCalled()
+    expect(store.update).toHaveBeenCalled()
   })
 })
