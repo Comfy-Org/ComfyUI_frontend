@@ -11,7 +11,11 @@
           <span
             class="ml-1 cursor-pointer text-blue-500"
             @click="navigateToSignup"
-            >{{ t('auth.login.signUp') }}</span
+            >{{
+              isFreeTierEnabled
+                ? t('auth.login.signUpFreeTier')
+                : t('auth.login.signUp')
+            }}</span
           >
         </p>
       </div>
@@ -21,33 +25,12 @@
       </Message>
 
       <template v-if="!showEmailForm">
-        <p
-          v-if="showFreeTierBadge"
-          class="mb-4 text-center text-sm text-muted-foreground"
-        >
-          {{
-            freeTierCredits
-              ? t('auth.login.freeTierDescription', {
-                  credits: freeTierCredits
-                })
-              : t('auth.login.freeTierDescriptionGeneric')
-          }}
-        </p>
-
         <!-- OAuth Buttons (primary) -->
         <div class="flex flex-col gap-4">
-          <div class="relative">
-            <Button type="button" class="h-10 w-full" @click="signInWithGoogle">
-              <i class="pi pi-google mr-2"></i>
-              {{ t('auth.login.loginWithGoogle') }}
-            </Button>
-            <span
-              v-if="showFreeTierBadge"
-              class="absolute -top-2.5 -right-2.5 rounded-full bg-yellow-400 px-2 py-0.5 text-[10px] font-bold whitespace-nowrap text-gray-900"
-            >
-              {{ t('auth.login.freeTierBadge') }}
-            </span>
-          </div>
+          <Button type="button" class="h-10 w-full" @click="signInWithGoogle">
+            <i class="pi pi-google mr-2"></i>
+            {{ t('auth.login.loginWithGoogle') }}
+          </Button>
 
           <Button
             type="button"
@@ -110,7 +93,7 @@
 
 <script setup lang="ts">
 import Message from 'primevue/message'
-import { onMounted, ref } from 'vue'
+import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 
@@ -119,8 +102,6 @@ import { useFirebaseAuthActions } from '@/composables/auth/useFirebaseAuthAction
 import CloudSignInForm from '@/platform/cloud/onboarding/components/CloudSignInForm.vue'
 import { useFreeTierOnboarding } from '@/platform/cloud/onboarding/composables/useFreeTierOnboarding'
 import { getSafePreviousFullPath } from '@/platform/cloud/onboarding/utils/previousFullPath'
-import { isCloud } from '@/platform/distribution/types'
-import { useTelemetry } from '@/platform/telemetry'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import type { SignInData } from '@/schemas/signInSchema'
 
@@ -131,14 +112,16 @@ const authActions = useFirebaseAuthActions()
 const isSecureContext = globalThis.isSecureContext
 const authError = ref('')
 const toastStore = useToastStore()
-const telemetry = useTelemetry()
-const {
-  showEmailForm,
-  freeTierCredits,
-  showFreeTierBadge,
-  switchToEmailForm,
-  switchToSocialLogin
-} = useFreeTierOnboarding()
+const showEmailForm = ref(false)
+const { isFreeTierEnabled } = useFreeTierOnboarding()
+
+function switchToEmailForm() {
+  showEmailForm.value = true
+}
+
+function switchToSocialLogin() {
+  showEmailForm.value = false
+}
 
 const navigateToSignup = async () => {
   await router.push({ name: 'cloud-signup', query: route.query })
@@ -180,12 +163,4 @@ const signInWithEmail = async (values: SignInData) => {
     await onSuccess()
   }
 }
-
-onMounted(() => {
-  if (isCloud) {
-    telemetry?.trackLoginOpened({
-      free_tier_badge_shown: showFreeTierBadge.value
-    })
-  }
-})
 </script>

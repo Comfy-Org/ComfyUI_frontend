@@ -33,9 +33,7 @@ export interface AuthMetadata {
 /**
  * Metadata for signup/login page opened events
  */
-export interface AuthPageOpenedMetadata {
-  free_tier_badge_shown?: boolean
-}
+export interface AuthPageOpenedMetadata {}
 
 /**
  * Survey response data for user profiling

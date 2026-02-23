@@ -31,9 +31,6 @@ import type { AuthHeader } from '@/types/authTypes'
 import type { operations } from '@/types/comfyRegistryTypes'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 
-/** Set after first login; used to detect returning users so the sign-in flow can skip the free-tier badge. */
-export const HAS_ACCOUNT_KEY = 'comfy:hasAccount'
-
 type CreditPurchaseResponse =
   operations['InitiateCreditPurchase']['responses']['201']['content']['application/json']
 type CreditPurchasePayload =
@@ -111,13 +108,6 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
   onAuthStateChanged(auth, (user) => {
     currentUser.value = user
     isInitialized.value = true
-    if (user) {
-      try {
-        localStorage.setItem(HAS_ACCOUNT_KEY, '1')
-      } catch {
-        // Ignore localStorage errors (e.g., in private browsing mode)
-      }
-    }
     if (user === null) {
       lastTokenUserId.value = null
 

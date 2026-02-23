@@ -24,7 +24,7 @@
 
       <template v-if="!showEmailForm">
         <p
-          v-if="showFreeTierBadge"
+          v-if="isFreeTierEnabled"
           class="mb-4 text-center text-sm text-muted-foreground"
         >
           {{
@@ -44,7 +44,7 @@
               {{ t('auth.signup.signUpWithGoogle') }}
             </Button>
             <span
-              v-if="showFreeTierBadge"
+              v-if="isFreeTierEnabled"
               class="absolute -top-2.5 -right-2.5 rounded-full bg-yellow-400 px-2 py-0.5 text-[10px] font-bold whitespace-nowrap text-gray-900"
             >
               {{ t('auth.login.freeTierBadge') }}
@@ -74,7 +74,7 @@
       </template>
 
       <template v-else>
-        <Message v-if="showFreeTierBadge" severity="warn" class="mb-4">
+        <Message v-if="isFreeTierEnabled" severity="warn" class="mb-4">
           {{ t('auth.signup.emailNotEligibleForFreeTier') }}
         </Message>
 
@@ -157,7 +157,7 @@ const telemetry = useTelemetry()
 const {
   showEmailForm,
   freeTierCredits,
-  showFreeTierBadge,
+  isFreeTierEnabled,
   switchToEmailForm,
   switchToSocialLogin
 } = useFreeTierOnboarding()
@@ -207,9 +207,7 @@ const signUpWithEmail = async (values: SignUpData) => {
 onMounted(async () => {
   // Track signup screen opened
   if (isCloud) {
-    telemetry?.trackSignupOpened({
-      free_tier_badge_shown: showFreeTierBadge.value
-    })
+    telemetry?.trackSignupOpened({})
   }
 
   userIsInChina.value = await isInChina()

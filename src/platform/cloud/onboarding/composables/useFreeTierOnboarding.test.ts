@@ -1,36 +1,16 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import { useFreeTierOnboarding } from '@/platform/cloud/onboarding/composables/useFreeTierOnboarding'
-import { HAS_ACCOUNT_KEY } from '@/stores/firebaseAuthStore'
+
+const mockRemoteConfig = vi.hoisted(() => ({
+  value: { free_tier_credits: 50 } as Record<string, unknown>
+}))
 
 vi.mock('@/platform/remoteConfig/remoteConfig', () => ({
-  remoteConfig: { value: { free_tier_credits: 50 } }
+  remoteConfig: mockRemoteConfig
 }))
 
 describe('useFreeTierOnboarding', () => {
-  beforeEach(() => {
-    localStorage.clear()
-  })
-
-  describe('showFreeTierBadge', () => {
-    it('returns true when neither key exists in localStorage', () => {
-      const { showFreeTierBadge } = useFreeTierOnboarding()
-      expect(showFreeTierBadge.value).toBe(true)
-    })
-
-    it('returns false when HAS_ACCOUNT_KEY is set', () => {
-      localStorage.setItem(HAS_ACCOUNT_KEY, '1')
-      const { showFreeTierBadge } = useFreeTierOnboarding()
-      expect(showFreeTierBadge.value).toBe(false)
-    })
-
-    it('returns false when Comfy.PreviousWorkflow is set', () => {
-      localStorage.setItem('Comfy.PreviousWorkflow', 'default.json')
-      const { showFreeTierBadge } = useFreeTierOnboarding()
-      expect(showFreeTierBadge.value).toBe(false)
-    })
-  })
-
   describe('showEmailForm', () => {
     it('starts as false', () => {
       const { showEmailForm } = useFreeTierOnboarding()
@@ -56,6 +36,26 @@ describe('useFreeTierOnboarding', () => {
     it('returns value from remote config', () => {
       const { freeTierCredits } = useFreeTierOnboarding()
       expect(freeTierCredits.value).toBe(50)
+    })
+  })
+
+  describe('isFreeTierEnabled', () => {
+    it('returns true when remote config says enabled', () => {
+      mockRemoteConfig.value.new_free_tier_subscriptions = true
+      const { isFreeTierEnabled } = useFreeTierOnboarding()
+      expect(isFreeTierEnabled.value).toBe(true)
+    })
+
+    it('returns false when remote config says disabled', () => {
+      mockRemoteConfig.value.new_free_tier_subscriptions = false
+      const { isFreeTierEnabled } = useFreeTierOnboarding()
+      expect(isFreeTierEnabled.value).toBe(false)
+    })
+
+    it('defaults to false when not set in remote config', () => {
+      mockRemoteConfig.value = { free_tier_credits: 50 }
+      const { isFreeTierEnabled } = useFreeTierOnboarding()
+      expect(isFreeTierEnabled.value).toBe(false)
     })
   })
 })
