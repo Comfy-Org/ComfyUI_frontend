@@ -24,7 +24,6 @@ import { app } from '@/scripts/app'
 import { DOMWidgetImpl } from '@/scripts/domWidget'
 import { useDialogService } from '@/services/dialogService'
 import { useAppModeStore } from '@/stores/appModeStore'
-import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import { cn } from '@/utils/tailwindUtil'
 
 type BoundStyle = { top: string; left: string; width: string; height: string }
@@ -32,7 +31,6 @@ type BoundStyle = { top: string; left: string; width: string; height: string }
 const appModeStore = useAppModeStore()
 const canvasInteractions = useCanvasInteractions()
 const canvasStore = useCanvasStore()
-const rightSidePanelStore = useRightSidePanelStore()
 const settingStore = useSettingStore()
 const workflowStore = useWorkflowStore()
 const { t } = useI18n()
@@ -180,7 +178,7 @@ const renderedInputs = computed<[string, MaybeRef<BoundStyle> | undefined][]>(
 <template>
   <div class="flex font-bold p-2 border-border-subtle border-b items-center">
     {{ t('linearMode.builder.title') }}
-    <Button class="ml-auto" @click="rightSidePanelStore.inAppBuilder = false">
+    <Button class="ml-auto" @click="appModeStore.setMode('graph')">
       {{ t('linearMode.builder.exit') }}
     </Button>
   </div>

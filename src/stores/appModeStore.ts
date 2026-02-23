@@ -3,12 +3,14 @@ import { whenever } from '@vueuse/core'
 import { reactive, readonly, computed, ref, watch } from 'vue'
 
 import type { NodeId } from '@/lib/litegraph/src/LGraphNode'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { app } from '@/scripts/app'
 
 export type AppMode = 'graph' | 'app' | 'builder:select' | 'builder:arrange'
 
 export const useAppModeStore = defineStore('appMode', () => {
+  const { getCanvas } = useCanvasStore()
   const workflowStore = useWorkflowStore()
 
   const selectedInputs = reactive<[NodeId, string][]>([])
@@ -64,6 +66,10 @@ export const useAppModeStore = defineStore('appMode', () => {
     ]
     workflowStore.activeWorkflow?.changeTracker?.checkState()
   })
+  watch(
+    () => mode.value === 'builder:select',
+    (inSelect) => (getCanvas().read_only = inSelect)
+  )
 
   return {
     mode: readonly(mode),
