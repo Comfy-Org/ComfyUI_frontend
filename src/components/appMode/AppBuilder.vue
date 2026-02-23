@@ -5,7 +5,7 @@ import type { MaybeRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import DraggableList from '@/components/common/DraggableList.vue'
-import IoItem from '@/components/rightSidePanel/app/IoItem.vue'
+import IoItem from '@/components/appMode/IoItem.vue'
 import PropertiesAccordionItem from '@/components/rightSidePanel/layout/PropertiesAccordionItem.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
@@ -23,13 +23,13 @@ import TransformPane from '@/renderer/core/layout/transform/TransformPane.vue'
 import { app } from '@/scripts/app'
 import { DOMWidgetImpl } from '@/scripts/domWidget'
 import { useDialogService } from '@/services/dialogService'
-import { useAppIOStore } from '@/stores/appIOStore'
+import { useAppModeStore } from '@/stores/appModeStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import { cn } from '@/utils/tailwindUtil'
 
 type BoundStyle = { top: string; left: string; width: string; height: string }
 
-const appIOStore = useAppIOStore()
+const appModeStore = useAppModeStore()
 const canvasInteractions = useCanvasInteractions()
 const canvasStore = useCanvasStore()
 const rightSidePanelStore = useRightSidePanelStore()
@@ -43,7 +43,7 @@ const hoveringSelectable = ref(false)
 workflowStore.activeWorkflow?.changeTracker?.reset()
 
 const inputsWithState = computed(() =>
-  appIOStore.selectedInputs.map(([nodeId, widgetName]) => {
+  appModeStore.selectedInputs.map(([nodeId, widgetName]) => {
     const node = app.rootGraph.getNodeById(nodeId)
     const widget = node?.widgets?.find((w) => w.name === widgetName)
     if (!node || !widget) return { nodeId, widgetName }
@@ -61,7 +61,7 @@ const inputsWithState = computed(() =>
   })
 )
 const outputsWithState = computed<[NodeId, string][]>(() =>
-  appIOStore.selectedOutputs.map((nodeId) => [
+  appModeStore.selectedOutputs.map((nodeId) => [
     nodeId,
     app.rootGraph.getNodeById(nodeId)?.title ?? String(nodeId)
   ])
@@ -140,17 +140,17 @@ function handleClick(e: MouseEvent) {
   if (!widget) {
     if (!node.constructor.nodeData?.output_node)
       return canvasInteractions.forwardEventToCanvas(e)
-    const index = appIOStore.selectedOutputs.findIndex((id) => id === node.id)
-    if (index === -1) appIOStore.selectedOutputs.push(node.id)
-    else appIOStore.selectedOutputs.splice(index, 1)
+    const index = appModeStore.selectedOutputs.findIndex((id) => id === node.id)
+    if (index === -1) appModeStore.selectedOutputs.push(node.id)
+    else appModeStore.selectedOutputs.splice(index, 1)
     return
   }
 
-  const index = appIOStore.selectedInputs.findIndex(
+  const index = appModeStore.selectedInputs.findIndex(
     ([nodeId, widgetName]) => node.id === nodeId && widget.name === widgetName
   )
-  if (index === -1) appIOStore.selectedInputs.push([node.id, widget.name])
-  else appIOStore.selectedInputs.splice(index, 1)
+  if (index === -1) appModeStore.selectedInputs.push([node.id, widget.name])
+  else appModeStore.selectedInputs.splice(index, 1)
 }
 
 function nodeToDisplayTuple(
@@ -159,19 +159,19 @@ function nodeToDisplayTuple(
   return [
     n.id,
     getBounding(n.id),
-    appIOStore.selectedOutputs.some((id) => n.id === id)
+    appModeStore.selectedOutputs.some((id) => n.id === id)
   ]
 }
 
 const renderedOutputs = computed(() => {
-  void appIOStore.selectedOutputs.length
+  void appModeStore.selectedOutputs.length
   return canvas
     .graph!.nodes.filter((n) => n.constructor.nodeData?.output_node)
     .map(nodeToDisplayTuple)
 })
 const renderedInputs = computed<[string, MaybeRef<BoundStyle> | undefined][]>(
   () =>
-    appIOStore.selectedInputs.map(([nodeId, widgetName]) => [
+    appModeStore.selectedInputs.map(([nodeId, widgetName]) => [
       `${nodeId}: ${widgetName}`,
       getBounding(nodeId, widgetName)
     ])
@@ -187,7 +187,7 @@ const renderedInputs = computed<[string, MaybeRef<BoundStyle> | undefined][]>(
   <PropertiesAccordionItem
     :label="t('nodeHelpPage.inputs')"
     enable-empty-state
-    :disabled="!appIOStore.selectedInputs.length"
+    :disabled="!appModeStore.selectedInputs.length"
     class="border-border-subtle border-b"
   >
     <template #empty>
@@ -205,7 +205,7 @@ const renderedInputs = computed<[string, MaybeRef<BoundStyle> | undefined][]>(
       class="w-full p-4 pt-2 text-muted-foreground"
       v-text="t('linearMode.builder.promptAddInputs')"
     />
-    <DraggableList v-slot="{ dragClass }" v-model="appIOStore.selectedInputs">
+    <DraggableList v-slot="{ dragClass }" v-model="appModeStore.selectedInputs">
       <IoItem
         v-for="{
           nodeId,
@@ -222,7 +222,7 @@ const renderedInputs = computed<[string, MaybeRef<BoundStyle> | undefined][]>(
         :remove="
           () =>
             remove(
-              appIOStore.selectedInputs,
+              appModeStore.selectedInputs,
               ([id, name]) => nodeId === id && widgetName === name
             )
         "
@@ -232,7 +232,7 @@ const renderedInputs = computed<[string, MaybeRef<BoundStyle> | undefined][]>(
   <PropertiesAccordionItem
     :label="t('nodeHelpPage.outputs')"
     enable-empty-state
-    :disabled="!appIOStore.selectedOutputs.length"
+    :disabled="!appModeStore.selectedOutputs.length"
   >
     <template #empty>
       <div class="w-full p-4 text-muted-foreground gap-2 flex flex-col">
@@ -249,7 +249,10 @@ const renderedInputs = computed<[string, MaybeRef<BoundStyle> | undefined][]>(
       class="w-full p-4 pt-2 text-muted-foreground"
       v-text="t('linearMode.builder.promptAddOutputs')"
     />
-    <DraggableList v-slot="{ dragClass }" v-model="appIOStore.selectedOutputs">
+    <DraggableList
+      v-slot="{ dragClass }"
+      v-model="appModeStore.selectedOutputs"
+    >
       <IoItem
         v-for="([key, title], index) in outputsWithState"
         :key
@@ -262,7 +265,7 @@ const renderedInputs = computed<[string, MaybeRef<BoundStyle> | undefined][]>(
         "
         :title
         :sub-title="String(key)"
-        :remove="() => remove(appIOStore.selectedOutputs, (k) => k === key)"
+        :remove="() => remove(appModeStore.selectedOutputs, (k) => k === key)"
       />
     </DraggableList>
   </PropertiesAccordionItem>

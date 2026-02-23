@@ -21,7 +21,6 @@ import { resolveNodeDisplayName } from '@/utils/nodeTitleUtil'
 import { cn } from '@/utils/tailwindUtil'
 import { isGroupNode } from '@/utils/executableGroupNodeDto'
 
-import AppBuilder from './app/AppBuilder.vue'
 import TabInfo from './info/TabInfo.vue'
 import TabGlobalParameters from './parameters/TabGlobalParameters.vue'
 import TabNodes from './parameters/TabNodes.vue'
@@ -47,8 +46,7 @@ const { hasAnyError, allErrorExecutionIds } = storeToRefs(executionErrorStore)
 const { findParentGroup } = useGraphHierarchy()
 
 const { selectedItems: directlySelectedItems } = storeToRefs(canvasStore)
-const { activeTab, isEditingSubgraph, inAppBuilder } =
-  storeToRefs(rightSidePanelStore)
+const { activeTab, isEditingSubgraph } = storeToRefs(rightSidePanelStore)
 
 const sidebarLocation = computed<'left' | 'right'>(() =>
   settingStore.get('Comfy.Sidebar.Location')
@@ -240,9 +238,7 @@ function handleProxyWidgetsUpdate(value: ProxyWidgetsProperty) {
 </script>
 
 <template>
-  <AppBuilder v-if="inAppBuilder" />
   <div
-    v-else
     data-testid="properties-panel"
     class="flex size-full flex-col bg-comfy-menu-bg"
   >
