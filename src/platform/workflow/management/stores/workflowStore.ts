@@ -497,12 +497,15 @@ export const useWorkflowStore = defineStore('workflow', () => {
       const wasBookmarked = bookmarkStore.isBookmarked(oldPath)
       const draftStore = useWorkflowDraftStore()
 
-      const openIndex = detachWorkflow(workflow)
-      // Perform the actual rename operation first
-      try {
-        await workflow.rename(newPath)
-      } finally {
-        attachWorkflow(workflow, openIndex)
+      await workflow.rename(newPath)
+
+      // Synchronously swap old path for new path in lookup and open paths
+      // to avoid a tab flicker caused by an async gap between detach/attach.
+      delete workflowLookup.value[oldPath]
+      workflowLookup.value[workflow.path] = workflow
+      const openIndex = openWorkflowPaths.value.indexOf(oldPath)
+      if (openIndex !== -1) {
+        openWorkflowPaths.value.splice(openIndex, 1, workflow.path)
       }
 
       draftStore.moveDraft(oldPath, newPath, workflow.key)
@@ -543,13 +546,11 @@ export const useWorkflowStore = defineStore('workflow', () => {
   const saveWorkflow = async (workflow: ComfyWorkflow) => {
     isBusy.value = true
     try {
-      // Detach the workflow and re-attach to force refresh the tree objects.
+      await workflow.save()
+      // Synchronously detach and re-attach to force refresh the tree objects
+      // without an async gap that would cause the tab to disappear.
       const openIndex = detachWorkflow(workflow)
-      try {
-        await workflow.save()
-      } finally {
-        attachWorkflow(workflow, openIndex)
-      }
+      attachWorkflow(workflow, openIndex)
     } finally {
       isBusy.value = false
     }
