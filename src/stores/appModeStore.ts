@@ -15,7 +15,7 @@ export const useAppModeStore = defineStore('appMode', () => {
   const selectedOutputs = reactive<NodeId[]>([])
   const mode = ref<AppMode>('graph')
   const builderSaving = ref(false)
-  const hasOutputs = ref(true)
+  const hasOutputs = computed(() => !!selectedOutputs.length)
   const enableAppBuilder = ref(false)
 
   const isBuilderMode = computed(

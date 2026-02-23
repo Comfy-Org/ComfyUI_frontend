@@ -5,7 +5,7 @@ import type { MaybeRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import DraggableList from '@/components/common/DraggableList.vue'
-import IoItem from '@/components/rightSidePanel/app/IoItem.vue'
+import IoItem from '@/components/appMode/IoItem.vue'
 import PropertiesAccordionItem from '@/components/rightSidePanel/layout/PropertiesAccordionItem.vue'
 import Button from '@/components/ui/button/Button.vue'
 import type { LGraphNode, NodeId } from '@/lib/litegraph/src/LGraphNode'
