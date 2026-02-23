@@ -27,6 +27,7 @@ export const TestIds = {
     settingsContainer: 'settings-container',
     settingsTabAbout: 'settings-tab-about',
     confirm: 'confirm-dialog',
+    missingNodes: 'missing-nodes-warning',
     about: 'about-panel',
     whatsNewSection: 'whats-new-section'
   },

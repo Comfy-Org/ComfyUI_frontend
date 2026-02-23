@@ -4,6 +4,7 @@ import { expect } from '@playwright/test'
 import type { Keybinding } from '../../src/platform/keybindings/types'
 import { comfyPageFixture as test } from '../fixtures/ComfyPage'
 import { DefaultGraphPositions } from '../fixtures/constants/defaultGraphPositions'
+import { TestIds } from '../fixtures/selectors'
 
 test.beforeEach(async ({ comfyPage }) => {
   await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Disabled')
@@ -15,8 +16,9 @@ test.describe('Load workflow warning', { tag: '@ui' }, () => {
   }) => {
     await comfyPage.workflow.loadWorkflow('missing/missing_nodes')
 
-    // Wait for the element with the .comfy-missing-nodes selector to be visible
-    const missingNodesWarning = comfyPage.page.locator('.comfy-missing-nodes')
+    const missingNodesWarning = comfyPage.page.getByTestId(
+      TestIds.dialogs.missingNodes
+    )
     await expect(missingNodesWarning).toBeVisible()
   })
 
@@ -25,8 +27,9 @@ test.describe('Load workflow warning', { tag: '@ui' }, () => {
   }) => {
     await comfyPage.workflow.loadWorkflow('missing/missing_nodes_in_subgraph')
 
-    // Wait for the element with the .comfy-missing-nodes selector to be visible
-    const missingNodesWarning = comfyPage.page.locator('.comfy-missing-nodes')
+    const missingNodesWarning = comfyPage.page.getByTestId(
+      TestIds.dialogs.missingNodes
+    )
     await expect(missingNodesWarning).toBeVisible()
 
     // Verify the missing node text includes subgraph context
@@ -38,7 +41,9 @@ test.describe('Load workflow warning', { tag: '@ui' }, () => {
 
 test('Does not report warning on undo/redo', async ({ comfyPage }) => {
   await comfyPage.settings.setSetting('Comfy.NodeSearchBoxImpl', 'v1 (legacy)')
-  const missingNodesWarning = comfyPage.page.locator('.comfy-missing-nodes')
+  const missingNodesWarning = comfyPage.page.getByTestId(
+    TestIds.dialogs.missingNodes
+  )
 
   await comfyPage.workflow.loadWorkflow('missing/missing_nodes')
   await expect(missingNodesWarning).toBeVisible()
