@@ -69,6 +69,7 @@
     "icon": "Icon",
     "color": "Color",
     "error": "Error",
+    "enter": "Enter",
     "enterSubgraph": "Enter Subgraph",
     "resizeFromBottomRight": "Resize from bottom-right corner",
     "resizeFromTopRight": "Resize from top-right corner",
