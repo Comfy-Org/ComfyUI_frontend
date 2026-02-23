@@ -6,16 +6,28 @@
         <h1 class="my-0 text-xl leading-normal font-medium">
           {{ t('auth.login.title') }}
         </h1>
-        <p class="my-0 text-base">
-          <span class="text-muted">{{ t('auth.login.newUser') }}</span>
+        <i18n-t
+          v-if="isFreeTierEnabled"
+          keypath="auth.login.signUpFreeTierPromo"
+          tag="p"
+          class="my-0 text-base text-muted"
+          :plural="freeTierCredits ?? undefined"
+        >
+          <template #signUp>
+            <span
+              class="cursor-pointer text-blue-500"
+              @click="navigateToSignup"
+              >{{ t('auth.login.signUp') }}</span
+            >
+          </template>
+          <template #credits>{{ freeTierCredits }}</template>
+        </i18n-t>
+        <p v-else class="my-0 text-base text-muted">
+          {{ t('auth.login.newUser') }}
           <span
-            class="ml-1 cursor-pointer text-blue-500"
+            class="cursor-pointer text-blue-500"
             @click="navigateToSignup"
-            >{{
-              isFreeTierEnabled
-                ? t('auth.login.signUpFreeTier')
-                : t('auth.login.signUp')
-            }}</span
+            >{{ t('auth.login.signUp') }}</span
           >
         </p>
       </div>
@@ -113,7 +125,7 @@ const isSecureContext = globalThis.isSecureContext
 const authError = ref('')
 const toastStore = useToastStore()
 const showEmailForm = ref(false)
-const { isFreeTierEnabled } = useFreeTierOnboarding()
+const { isFreeTierEnabled, freeTierCredits } = useFreeTierOnboarding()
 
 function switchToEmailForm() {
   showEmailForm.value = true

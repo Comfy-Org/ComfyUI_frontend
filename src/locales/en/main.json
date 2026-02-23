@@ -1987,7 +1987,7 @@
       "newUser": "New here?",
       "userAvatar": "User Avatar",
       "signUp": "Sign up",
-      "signUpFreeTier": "Sign up to try Cloud for free",
+      "signUpFreeTierPromo": "New here? {signUp} with a Gmail account to get {credits} free credits every month.",
       "emailLabel": "Email",
       "emailPlaceholder": "Enter your email",
       "passwordLabel": "Password",
