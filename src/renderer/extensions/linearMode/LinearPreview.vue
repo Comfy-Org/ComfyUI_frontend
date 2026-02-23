@@ -1,6 +1,5 @@
 <script setup lang="ts">
-import { whenever } from '@vueuse/core'
-import { computed, ref } from 'vue'
+import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { downloadFile } from '@/base/common/downloadUtil'
@@ -12,27 +11,28 @@ import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { extractWorkflowFromAsset } from '@/platform/workflow/utils/workflowExtractionUtil'
 import ImagePreview from '@/renderer/extensions/linearMode/ImagePreview.vue'
+import LatentPreview from '@/renderer/extensions/linearMode/LatentPreview.vue'
 import LinearWelcome from '@/renderer/extensions/linearMode/LinearWelcome.vue'
 import LinearArrange from '@/renderer/extensions/linearMode/LinearArrange.vue'
 import OutputHistory from '@/renderer/extensions/linearMode/OutputHistory.vue'
+import type { OutputSelection } from '@/renderer/extensions/linearMode/linearModeTypes'
 // Lazy-loaded to avoid pulling THREE.js into the main bundle
 const Preview3d = () => import('@/renderer/extensions/linearMode/Preview3d.vue')
 import VideoPreview from '@/renderer/extensions/linearMode/VideoPreview.vue'
-import {
-  getMediaType,
-  mediaTypes
-} from '@/renderer/extensions/linearMode/mediaTypes'
-import type { StatItem } from '@/renderer/extensions/linearMode/mediaTypes'
+import { getMediaType } from '@/renderer/extensions/linearMode/mediaTypes'
 import { app } from '@/scripts/app'
-import { useNodeOutputStore } from '@/stores/imagePreviewStore'
+import { useCommandStore } from '@/stores/commandStore'
+import { useExecutionStore } from '@/stores/executionStore'
+import { useQueueStore } from '@/stores/queueStore'
 import type { ResultItemImpl } from '@/stores/queueStore'
-import { formatDuration } from '@/utils/dateTimeUtil'
 import { collectAllNodes } from '@/utils/graphTraversalUtil'
 import { executeWidgetsCallback } from '@/utils/litegraphUtil'
 import { useAppModeStore } from '@/stores/appModeStore'
-const { t, d } = useI18n()
+const { t } = useI18n()
+const commandStore = useCommandStore()
+const executionStore = useExecutionStore()
 const mediaActions = useMediaAssetActions()
-const nodeOutputStore = useNodeOutputStore()
+const queueStore = useQueueStore()
 const appModeStore = useAppModeStore()
 const { runButtonClick } = defineProps<{
   runButtonClick?: (e: Event) => void
@@ -43,42 +43,13 @@ const selectedItem = ref<AssetItem>()
 const selectedOutput = ref<ResultItemImpl>()
 const canShowPreview = ref(true)
 const latentPreview = ref<string>()
-whenever(
-  () => nodeOutputStore.latestPreview[0],
-  () => (latentPreview.value = nodeOutputStore.latestPreview[0])
-)
 
-const dateOptions = {
-  month: 'short',
-  day: 'numeric',
-  year: 'numeric'
-} as const
-const timeOptions = {
-  hour: 'numeric',
-  minute: 'numeric',
-  second: 'numeric'
-} as const
-
-function formatTime(time?: string) {
-  if (!time) return ''
-  const date = new Date(time)
-  return `${d(date, dateOptions)} | ${d(date, timeOptions)}`
+function handleSelection(sel: OutputSelection) {
+  selectedItem.value = sel.asset
+  selectedOutput.value = sel.output
+  canShowPreview.value = sel.canShowPreview
+  latentPreview.value = sel.latentPreviewUrl
 }
-
-const itemStats = computed<StatItem[]>(() => {
-  if (!selectedItem.value) return []
-  const user_metadata = getOutputAssetMetadata(selectedItem.value.user_metadata)
-  if (!user_metadata) return []
-
-  const { allOutputs } = user_metadata
-  return [
-    { content: formatTime(selectedItem.value.created_at) },
-    { content: formatDuration(user_metadata.executionTimeInSeconds) },
-    allOutputs && { content: t('g.asset', allOutputs.length) },
-    (selectedOutput.value && mediaTypes[getMediaType(selectedOutput.value)]) ??
-      {}
-  ].filter((i) => !!i)
-})
 
 function downloadAsset(item?: AssetItem) {
   const user_metadata = getOutputAssetMetadata(item?.user_metadata)
@@ -112,21 +83,11 @@ async function rerun(e: Event) {
 </script>
 <template>
   <section
-    v-if="selectedItem"
+    v-if="selectedItem || selectedOutput || !executionStore.isIdle"
     data-testid="linear-output-info"
-    class="flex flex-wrap gap-2 p-1 w-full md:z-10 tabular-nums justify-between text-sm"
+    class="flex flex-wrap gap-2 p-4 w-full md:z-10 tabular-nums justify-center text-sm"
   >
-    <div class="flex gap-3 text-nowrap">
-      <div
-        v-for="({ content, iconClass }, index) in itemStats"
-        :key="index"
-        class="flex items-center justify-items-center gap-1 tabular-nums"
-      >
-        <i v-if="iconClass" :class="iconClass" />
-        {{ content }}
-      </div>
-    </div>
-    <div class="flex gap-3 justify-self-end">
+    <template v-if="selectedItem">
       <Button size="md" @click="rerun">
         {{ t('linearMode.rerun') }}
         <i class="icon-[lucide--refresh-cw]" />
@@ -136,32 +97,44 @@ async function rerun(e: Event) {
         <i class="icon-[lucide--list-restart]" />
       </Button>
       <div class="border-r border-border-subtle mx-1" />
-      <Button
-        size="icon"
-        @click="
-          () => {
-            if (selectedOutput?.url) downloadFile(selectedOutput.url)
-          }
-        "
-      >
-        <i class="icon-[lucide--download]" />
-      </Button>
-      <Popover
-        :entries="[
-          {
-            icon: 'icon-[lucide--download]',
-            label: t('linearMode.downloadAll'),
-            command: () => downloadAsset(selectedItem!)
-          },
-          { separator: true },
-          {
-            icon: 'icon-[lucide--trash-2]',
-            label: t('queue.jobMenu.deleteAsset'),
-            command: () => mediaActions.deleteAssets(selectedItem!)
-          }
-        ]"
-      />
-    </div>
+    </template>
+    <Button
+      v-if="selectedOutput"
+      size="icon"
+      :aria-label="t('g.download')"
+      @click="
+        () => {
+          if (selectedOutput?.url) downloadFile(selectedOutput.url)
+        }
+      "
+    >
+      <i class="icon-[lucide--download]" />
+    </Button>
+    <Button
+      v-if="!executionStore.isIdle && !selectedItem"
+      variant="destructive"
+      size="icon"
+      :aria-label="t('menu.interrupt')"
+      @click="commandStore.execute('Comfy.Interrupt')"
+    >
+      <i class="icon-[lucide--x]" />
+    </Button>
+    <Popover
+      v-if="selectedItem"
+      :entries="[
+        {
+          icon: 'icon-[lucide--download]',
+          label: t('linearMode.downloadAll'),
+          command: () => downloadAsset(selectedItem!)
+        },
+        { separator: true },
+        {
+          icon: 'icon-[lucide--trash-2]',
+          label: t('queue.jobMenu.deleteAsset'),
+          command: () => mediaActions.deleteAssets(selectedItem!)
+        }
+      ]"
+    />
   </section>
   <ImagePreview
     v-if="
@@ -191,14 +164,8 @@ async function rerun(e: Event) {
     v-else-if="getMediaType(selectedOutput) === '3d'"
     :model-url="selectedOutput!.url"
   />
+  <LatentPreview v-else-if="queueStore.runningTasks.length > 0" />
   <LinearArrange v-else-if="appModeStore.mode === 'builder:arrange'" />
   <LinearWelcome v-else />
-  <OutputHistory
-    @update-selection="
-      (event) => {
-        ;[selectedItem, selectedOutput, canShowPreview] = event
-        latentPreview = undefined
-      }
-    "
-  />
+  <OutputHistory @update-selection="handleSelection" />
 </template>

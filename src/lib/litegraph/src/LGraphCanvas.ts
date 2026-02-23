@@ -2,6 +2,7 @@ import { toString } from 'es-toolkit/compat'
 import { toValue } from 'vue'
 
 import { PREFIX, SEPARATOR } from '@/constants/groupNodeConstants'
+import { MovingInputLink } from '@/lib/litegraph/src/canvas/MovingInputLink'
 import { LitegraphLinkAdapter } from '@/renderer/core/canvas/litegraph/litegraphLinkAdapter'
 import type { LinkRenderContext } from '@/renderer/core/canvas/litegraph/litegraphLinkAdapter'
 import { getSlotPosition } from '@/renderer/core/canvas/litegraph/slotCalculations'
@@ -5015,6 +5016,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
           }
         )
       }
+      if (renderLink instanceof MovingInputLink) this.setDirty(false, true)
 
       ctx.fillStyle = colour
       ctx.beginPath()
@@ -5909,6 +5911,12 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       // Never draw slots when the pointer is down
       if (!this.pointer.isDown) reroute.drawSlots(ctx)
     }
+
+    const highlightPos = this._getHighlightPosition()
+    this.linkConnector.renderLinks
+      .filter((rl) => rl instanceof MovingInputLink)
+      .forEach((rl) => rl.drawConnectionCircle(ctx, highlightPos))
+
     ctx.globalAlpha = 1
   }
 

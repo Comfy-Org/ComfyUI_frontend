@@ -99,6 +99,10 @@
   --color-magenta-300: #ceaac9;
   --color-magenta-700: #6a246a;
 
+  --color-ocean-300: #badde8;
+  --color-ocean-600: #2f687a;
+  --color-ocean-900: #253236;
+
   --color-danger-100: #c02323;
   --color-danger-200: #d62952;
 
@@ -113,6 +117,7 @@
   --color-interface-panel-job-progress-secondary: var(
     --color-alpha-azure-600-30
   );
+  --color-interface-panel-job-progress-border: var(--base-foreground);
 
   --color-blue-selection: rgb(from var(--color-azure-600) r g b / 0.3);
   --color-node-hover-100: rgb(from var(--color-charcoal-800) r g b/ 0.15);
@@ -154,6 +159,7 @@
   --comfy-menu-bg: #353535;
   --comfy-menu-secondary-bg: #292929;
   --comfy-topbar-height: 2.5rem;
+  --workflow-tabs-height: 2.375rem;
   --comfy-input-bg: #222;
   --input-text: #ddd;
   --descrip-text: #999;
@@ -217,6 +223,10 @@
   --interface-menu-stroke: var(--color-smoke-600);
   --interface-panel-surface: var(--color-white);
   --interface-stroke: var(--color-smoke-300);
+
+  --interface-builder-mode-background: var(--color-ocean-300);
+  --interface-builder-mode-button-background: var(--color-ocean-600);
+  --interface-builder-mode-button-foreground: var(--color-white);
 
   --nav-background: var(--color-white);
 
@@ -377,6 +387,10 @@
   --interface-panel-surface: var(--color-charcoal-800);
   --interface-stroke: var(--color-charcoal-400);
 
+  --interface-builder-mode-background: var(--color-ocean-900);
+  --interface-builder-mode-button-background: var(--color-ocean-600);
+  --interface-builder-mode-button-foreground: var(--color-white);
+
   --nav-background: var(--color-charcoal-800);
 
   --node-border: var(--color-charcoal-500);
@@ -412,6 +426,7 @@
   --color-interface-panel-job-progress-secondary: var(
     --color-alpha-azure-600-30
   );
+  --color-interface-panel-job-progress-border: var(--base-foreground);
 
   --text-secondary: var(--color-slate-100);
   --text-primary: var(--color-white);
@@ -510,6 +525,15 @@
   --color-comfy-menu-bg: var(--comfy-menu-bg);
   --color-comfy-menu-secondary: var(--comfy-menu-secondary-bg);
 
+  --color-interface-builder-mode-background: var(
+    --interface-builder-mode-background
+  );
+  --color-interface-builder-mode-button-background: var(
+    --interface-builder-mode-button-background
+  );
+  --color-interface-builder-mode-button-foreground: var(
+    --interface-builder-mode-button-foreground
+  );
   --color-interface-stroke: var(--interface-stroke);
   --color-nav-background: var(--nav-background);
   --color-node-border: var(--node-border);
@@ -1877,3 +1901,22 @@ audio.comfy-audio.empty-audio-widget {
   margin-left: 15px;
 }
 /* ===================== End of Mask Editor Styles ===================== */
+
+/* ===================== Skeleton Shimmer ===================== */
+.skeleton-shimmer {
+  background:
+    linear-gradient(135deg, rgb(188 188 188 / 0.5) 0%, rgb(0 0 0 / 0.5) 100%) 0
+      0 / 200% 200%,
+    #000;
+  animation: skeleton-shimmer 2s ease-in-out infinite;
+}
+
+@keyframes skeleton-shimmer {
+  0%,
+  100% {
+    background-position: 100% 100%;
+  }
+  50% {
+    background-position: 0 0;
+  }
+}
