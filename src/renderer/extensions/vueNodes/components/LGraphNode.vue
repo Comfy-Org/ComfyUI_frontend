@@ -342,7 +342,9 @@ const hasAnyError = computed((): boolean => {
     hasExecutionError.value ||
     nodeData.hasErrors ||
     error ||
-    (executionErrorStore.lastNodeErrors?.[nodeData.id]?.errors.length ?? 0) > 0
+    executionErrorStore.getNodeErrors(nodeLocatorId.value) ||
+    (lgraphNode.value &&
+      executionErrorStore.isContainerWithInternalError(lgraphNode.value))
   )
 })
 
