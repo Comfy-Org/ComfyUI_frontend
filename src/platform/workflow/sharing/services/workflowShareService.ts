@@ -1,7 +1,9 @@
 import type {
+  SharedWorkflowPayload,
   WorkflowPublishResult,
   WorkflowPublishStatus
 } from '@/platform/workflow/sharing/types/shareTypes'
+import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import type {
   ShareableAssetsResponse,
   WorkflowAsset,
@@ -211,6 +213,21 @@ interface PublishRecord {
   savedAt?: number | null
 }
 
+export class SharedWorkflowLoadError extends Error {
+  readonly status: number | null
+
+  constructor(status: number | null, message?: string) {
+    super(message ?? `Failed to load shared workflow: ${status ?? 'unknown'}`)
+    this.name = 'SharedWorkflowLoadError'
+    this.status = status
+  }
+
+  get isRetryable(): boolean {
+    if (this.status === null) return true
+    return this.status >= 500 || this.status === 408 || this.status === 429
+  }
+}
+
 function decodePublishRecord(payload: unknown): PublishRecord | null {
   if (!payload || typeof payload !== 'object') return null
 
@@ -240,20 +257,52 @@ function parsePublishedAt(value: string | null | undefined): Date | null {
   return Number.isNaN(parsed.getTime()) ? null : parsed
 }
 
-function normalizeShareUrl(rawShareUrl: string): string {
+function extractShareId(rawShareUrl: string): string | null {
   const match = rawShareUrl.match(/\/workflows\/shares\/([^/?#]+)/)
-  const shareId = match?.[1]
+  return match?.[1] ?? null
+}
+
+function normalizeShareUrl(rawShareUrl: string): string {
+  const shareId = extractShareId(rawShareUrl)
   if (!shareId) {
     return rawShareUrl
   }
 
-  const endpointPath = api.apiURL(`/workflows/shares/${shareId}`)
-
+  const queryString = `share=${encodeURIComponent(shareId)}`
   if (typeof window === 'undefined' || !window.location?.origin) {
-    return endpointPath
+    return `/?${queryString}`
   }
 
-  return new URL(endpointPath, window.location.origin).toString()
+  const normalizedUrl = new URL(window.location.href)
+  normalizedUrl.search = queryString
+  normalizedUrl.hash = ''
+  return normalizedUrl.toString()
+}
+
+function decodeSharedWorkflowPayload(
+  payload: unknown
+): SharedWorkflowPayload | null {
+  if (!payload || typeof payload !== 'object') return null
+
+  const record = payload as Record<string, unknown>
+  if (typeof record.name !== 'string' || typeof record.version !== 'number') {
+    return null
+  }
+
+  const workflowJson = record.workflow_json
+  if (!workflowJson || typeof workflowJson !== 'object') {
+    return null
+  }
+
+  const description =
+    typeof record.description === 'string' ? record.description : null
+
+  return {
+    name: record.name,
+    description,
+    workflowJson: workflowJson as ComfyWorkflowJSON,
+    version: record.version
+  }
 }
 
 export function useWorkflowShareService() {
@@ -394,9 +443,38 @@ export function useWorkflowShareService() {
     return { assets, models }
   }
 
+  async function getSharedWorkflow(
+    shareId: string
+  ): Promise<SharedWorkflowPayload> {
+    let response: Response
+    try {
+      response = await api.fetchApi(
+        `/workflows/shares/${encodeURIComponent(shareId)}`
+      )
+    } catch {
+      throw new SharedWorkflowLoadError(
+        null,
+        'Failed to load shared workflow: network error'
+      )
+    }
+
+    if (!response.ok) {
+      throw new SharedWorkflowLoadError(response.status)
+    }
+
+    const workflow = decodeSharedWorkflowPayload(await response.json())
+    if (!workflow) {
+      throw new Error('Failed to load shared workflow: invalid response')
+    }
+
+    return workflow
+  }
+
   return {
+    extractShareId,
     publishWorkflow,
     getPublishStatus,
-    getShareableAssets
+    getShareableAssets,
+    getSharedWorkflow
   }
 }

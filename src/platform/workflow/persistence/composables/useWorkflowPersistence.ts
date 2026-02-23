@@ -15,6 +15,7 @@ import {
   ComfyWorkflow,
   useWorkflowStore
 } from '@/platform/workflow/management/stores/workflowStore'
+import { useSharedWorkflowUrlLoader } from '@/platform/workflow/sharing/composables/useSharedWorkflowUrlLoader'
 import { useWorkflowDraftStore } from '@/platform/workflow/persistence/stores/workflowDraftStore'
 import { useTemplateUrlLoader } from '@/platform/workflow/templates/composables/useTemplateUrlLoader'
 import { api } from '@/scripts/api'
@@ -28,6 +29,7 @@ export function useWorkflowPersistence() {
   const settingStore = useSettingStore()
   const route = useRoute()
   const router = useRouter()
+  const sharedWorkflowUrlLoader = useSharedWorkflowUrlLoader()
   const templateUrlLoader = useTemplateUrlLoader()
   const TEMPLATE_NAMESPACE = PRESERVED_QUERY_NAMESPACES.TEMPLATE
   const workflowDraftStore = useWorkflowDraftStore()
@@ -164,6 +166,10 @@ export function useWorkflowPersistence() {
     }
   }
 
+  const loadSharedWorkflowFromUrlIfPresent = async () => {
+    return await sharedWorkflowUrlLoader.loadSharedWorkflowFromUrl()
+  }
+
   // Setup watchers
   watch(
     () => workflowStore.activeWorkflow?.key,
@@ -257,6 +263,7 @@ export function useWorkflowPersistence() {
 
   return {
     initializeWorkflow,
+    loadSharedWorkflowFromUrlIfPresent,
     loadTemplateFromUrlIfPresent,
     restoreWorkflowTabsState
   }

@@ -3017,6 +3017,7 @@
     "publishedOn": "Published on {date}",
     "copyLink": "Copy",
     "linkCopied": "Copied!",
+    "loadFailed": "Failed to load shared workflow",
     "assetsLabel": "Asset ({count}) | Assets ({count})",
     "modelsLabel": "Model ({count}) | Models ({count})",
     "checkingAssets": "Checking asset visibility…",

@@ -97,6 +97,7 @@ describe('useWorkflowShareService', () => {
     mockInputAssets.splice(0)
     mockUpdateInputs.mockReset()
     mockApp.rootGraph = mockRootGraph
+    window.history.replaceState({}, '', '/')
   })
 
   it('returns unpublished status for unknown workflow', async () => {
@@ -129,9 +130,7 @@ describe('useWorkflowShareService', () => {
 
     const result = await service.publishWorkflow('test-workflow', 1000)
 
-    expect(result.shareUrl).toBe(
-      `${window.location.origin}/api/workflows/shares/abc123`
-    )
+    expect(result.shareUrl).toBe(`${window.location.origin}/?share=abc123`)
     expect(result.publishedAt).toBeInstanceOf(Date)
     expect(mockFetchApi).toHaveBeenCalledWith('/workflows/publish', {
       method: 'POST',
@@ -163,6 +162,23 @@ describe('useWorkflowShareService', () => {
     })
   })
 
+  it('preserves app subpath when normalizing published share URLs', async () => {
+    window.history.replaceState({}, '', '/comfy/subpath/?foo=bar#section')
+    mockFetchApi.mockResolvedValue(
+      mockJsonResponse({
+        share_url: 'https://comfy.org/workflows/shares/subpath-id',
+        published_at: '2026-02-23T00:00:00Z'
+      })
+    )
+
+    const service = useWorkflowShareService()
+    const result = await service.publishWorkflow('test-workflow', 1000)
+
+    expect(result.shareUrl).toBe(
+      `${window.location.origin}/comfy/subpath/?share=subpath-id`
+    )
+  })
+
   it('reports published status after publishing', async () => {
     mockFetchApi.mockResolvedValue(
       mockJsonResponse({
@@ -177,11 +193,28 @@ describe('useWorkflowShareService', () => {
     const status = await service.getPublishStatus('wf-1', 1000)
 
     expect(status.isPublished).toBe(true)
-    expect(status.shareUrl).toBe(
-      `${window.location.origin}/api/workflows/shares/wf-1`
-    )
+    expect(status.shareUrl).toBe(`${window.location.origin}/?share=wf-1`)
     expect(status.publishedAt).toBeInstanceOf(Date)
     expect(status.hasChangesSincePublish).toBe(false)
+  })
+
+  it('preserves app subpath when normalizing publish status share URLs', async () => {
+    window.history.replaceState({}, '', '/comfy/subpath/')
+    mockFetchApi.mockResolvedValue(
+      mockJsonResponse({
+        is_published: true,
+        share_url: 'https://comfy.org/workflows/shares/wf-subpath',
+        published_at: '2026-02-23T00:00:00Z',
+        saved_at: 1000
+      })
+    )
+
+    const service = useWorkflowShareService()
+    const status = await service.getPublishStatus('wf-subpath', 1000)
+
+    expect(status.shareUrl).toBe(
+      `${window.location.origin}/comfy/subpath/?share=wf-subpath`
+    )
   })
 
   it('detects changes when workflow was saved after publish', async () => {
@@ -233,6 +266,64 @@ describe('useWorkflowShareService', () => {
     const status = await service.getPublishStatus('wf-3', 1000)
 
     expect(status.hasChangesSincePublish).toBe(false)
+  })
+
+  it('extracts share ID from backend share URL', () => {
+    const service = useWorkflowShareService()
+
+    expect(
+      service.extractShareId('https://comfy.org/workflows/shares/share-1')
+    ).toBe('share-1')
+  })
+
+  it('returns null when share ID cannot be extracted from URL', () => {
+    const service = useWorkflowShareService()
+
+    expect(service.extractShareId('https://comfy.org/workflows')).toBeNull()
+  })
+
+  it('fetches and maps shared workflow payload', async () => {
+    mockFetchApi.mockResolvedValue(
+      mockJsonResponse({
+        name: 'Shared Workflow',
+        description: 'A shared workflow',
+        workflow_json: { nodes: [] },
+        version: 2
+      })
+    )
+
+    const service = useWorkflowShareService()
+    const shared = await service.getSharedWorkflow('share-123')
+
+    expect(mockFetchApi).toHaveBeenCalledWith('/workflows/shares/share-123')
+    expect(shared).toEqual({
+      name: 'Shared Workflow',
+      description: 'A shared workflow',
+      workflowJson: { nodes: [] },
+      version: 2
+    })
+  })
+
+  it('throws when shared workflow request fails', async () => {
+    mockFetchApi.mockResolvedValue(mockJsonResponse({}, false, 404))
+
+    const service = useWorkflowShareService()
+
+    await expect(service.getSharedWorkflow('missing')).rejects.toThrow(
+      'Failed to load shared workflow: 404'
+    )
+  })
+
+  it('throws when shared workflow payload is invalid', async () => {
+    mockFetchApi.mockResolvedValue(
+      mockJsonResponse({ name: 'Invalid', version: 1 })
+    )
+
+    const service = useWorkflowShareService()
+
+    await expect(service.getSharedWorkflow('invalid')).rejects.toThrow(
+      'Failed to load shared workflow: invalid response'
+    )
   })
 
   it('treats malformed publish-status payload as unpublished', async () => {
