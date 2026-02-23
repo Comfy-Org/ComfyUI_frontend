@@ -36,11 +36,9 @@ const { commandIdToMenuItem } = useMenuItemStore()
 const queueStore = useQueueStore()
 const workflowService = useWorkflowService()
 const workflowStore = useWorkflowStore()
-const { toggle: toggleFullscreen, enter: enterFullscreen } = useFullscreen(
-  undefined,
-  { autoExit: true }
-)
-enterFullscreen()
+const { toggle: toggleFullscreen } = useFullscreen(undefined, {
+  autoExit: true
+})
 
 const activeIndex = ref(2)
 const sliderPaneRef = useTemplateRef('sliderPaneRef')

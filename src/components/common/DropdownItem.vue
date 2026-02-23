@@ -2,6 +2,7 @@
 import type { MenuItem } from 'primevue/menuitem'
 import {
   DropdownMenuItem,
+  DropdownMenuPortal,
   DropdownMenuSeparator,
   DropdownMenuSub,
   DropdownMenuSubContent,
