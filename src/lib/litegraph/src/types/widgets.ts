@@ -47,6 +47,19 @@ export interface IWidgetOptions<TValues = unknown> {
   /** Used as a temporary override for determining the asset type in vue mode*/
   nodeType?: string
 
+  /**
+   * Whether the widget value should be included in the API prompt sent to
+   * the backend for execution. Checked by {@link executionUtil} when
+   * building the prompt payload.
+   *
+   * This is distinct from {@link IBaseWidget.serialize}, which controls
+   * whether the value is persisted in the workflow JSON file.
+   *
+   * @default true
+   * @see IBaseWidget.serialize — workflow persistence
+   */
+  serialize?: boolean
+
   values?: TValues
   /** Optional function to format values for display (e.g., hash → human-readable name) */
   getOptionLabel?: (value?: string | null) => string
@@ -349,8 +362,15 @@ export interface IBaseWidget<
   vueTrack?: () => void
 
   /**
-   * Whether the widget value should be serialized on node serialization.
+   * Whether the widget value is persisted in the workflow JSON
+   * (`widgets_values`). Checked by {@link LGraphNode.serialize} and
+   * {@link LGraphNode.configure}.
+   *
+   * This is distinct from {@link IWidgetOptions.serialize}, which controls
+   * whether the value is included in the API prompt sent for execution.
+   *
    * @default true
+   * @see IWidgetOptions.serialize — API prompt inclusion
    */
   serialize?: boolean
 

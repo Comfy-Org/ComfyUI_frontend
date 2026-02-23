@@ -4,7 +4,13 @@ import type {
 } from '@/platform/workflow/validation/schemas/workflowSchema'
 
 /**
- * Tag names used in ComfyUI metadata
+ * Tag names used in ComfyUI output file metadata.
+ *
+ * These correspond to the two serialization paths for widget values:
+ * - {@link ComfyMetadataTags.PROMPT} — API prompt; inclusion controlled by
+ *   `widget.options.serialize` ({@link IWidgetOptions.serialize}).
+ * - {@link ComfyMetadataTags.WORKFLOW} — workflow JSON; persistence controlled
+ *   by `widget.serialize` ({@link IBaseWidget.serialize}).
  */
 export enum ComfyMetadataTags {
   PROMPT = 'PROMPT',
