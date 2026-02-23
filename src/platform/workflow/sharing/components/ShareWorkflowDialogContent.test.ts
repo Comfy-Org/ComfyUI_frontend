@@ -77,12 +77,13 @@ const mockShareServiceData = vi.hoisted(() => ({
 
 vi.mock('@/platform/workflow/sharing/services/workflowShareService', () => ({
   useWorkflowShareService: () => ({
-    getPublishStatus: () => ({
-      isPublished: false,
-      shareUrl: null,
-      publishedAt: null,
-      hasChangesSincePublish: false
-    }),
+    getPublishStatus: () =>
+      Promise.resolve({
+        isPublished: false,
+        shareUrl: null,
+        publishedAt: null,
+        hasChangesSincePublish: false
+      }),
     publishWorkflow: () =>
       Promise.resolve({
         shareUrl: 'https://comfy.org/shared/test-123',

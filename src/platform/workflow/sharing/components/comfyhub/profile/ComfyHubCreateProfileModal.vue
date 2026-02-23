@@ -168,6 +168,8 @@
 <script setup lang="ts">
 import { onBeforeUnmount, ref } from 'vue'
 import { useDropZone } from '@vueuse/core'
+import { useToast } from 'primevue/usetoast'
+import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
 import Input from '@/components/ui/input/Input.vue'
@@ -182,6 +184,8 @@ const { onProfileCreated, onClose } = defineProps<{
 }>()
 
 const { createProfile } = useComfyHubProfileGate()
+const toast = useToast()
+const { t } = useI18n()
 
 const name = ref('')
 const username = ref('')
@@ -252,16 +256,13 @@ async function handleCreate() {
       profilePicture: profilePictureFile.value ?? undefined
     })
     onProfileCreated(profile)
-  } catch {
-    // Backend not ready yet — proceed with locally constructed profile
-    const localProfile: ComfyHubProfile = {
-      username: username.value.trim(),
-      name: name.value.trim() || undefined,
-      description: description.value.trim() || undefined,
-      coverImageUrl: coverPreviewUrl.value,
-      profilePictureUrl: profilePreviewUrl.value
-    }
-    onProfileCreated(localProfile)
+  } catch (error) {
+    toast.add({
+      severity: 'error',
+      summary: t('g.error'),
+      detail: error instanceof Error ? error.message : t('g.error'),
+      life: 5000
+    })
   } finally {
     isCreating.value = false
   }

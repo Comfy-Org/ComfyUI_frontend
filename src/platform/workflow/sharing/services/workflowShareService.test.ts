@@ -41,10 +41,12 @@ vi.mock('@/scripts/app', () => ({
 }))
 
 const mockGetShareableAssets = vi.fn()
+const mockFetchApi = vi.fn()
 
 vi.mock('@/scripts/api', () => ({
   api: {
     getShareableAssets: (...args: unknown[]) => mockGetShareableAssets(...args),
+    fetchApi: (...args: unknown[]) => mockFetchApi(...args),
     apiURL: (route: string) => `/api${route}`,
     fileURL: (route: string) => route
   }
@@ -80,6 +82,14 @@ function createMockNode(
 }
 
 describe('useWorkflowShareService', () => {
+  function mockJsonResponse(payload: unknown, ok = true, status = 200) {
+    return {
+      ok,
+      status,
+      json: async () => payload
+    } as Response
+  }
+
   beforeEach(() => {
     vi.resetAllMocks()
     mockRootGraph.nodes = []
@@ -89,9 +99,17 @@ describe('useWorkflowShareService', () => {
     mockApp.rootGraph = mockRootGraph
   })
 
-  it('returns unpublished status for unknown workflow', () => {
+  it('returns unpublished status for unknown workflow', async () => {
+    mockFetchApi.mockResolvedValue(
+      mockJsonResponse({
+        is_published: false,
+        share_url: null,
+        published_at: null
+      })
+    )
+
     const service = useWorkflowShareService()
-    const status = service.getPublishStatus('unknown-id', 1000)
+    const status = await service.getPublishStatus('unknown-id', 1000)
 
     expect(status.isPublished).toBe(false)
     expect(status.shareUrl).toBeNull()
@@ -100,66 +118,135 @@ describe('useWorkflowShareService', () => {
   })
 
   it('publishes a workflow and returns a share URL', async () => {
-    vi.useFakeTimers()
+    mockFetchApi.mockResolvedValue(
+      mockJsonResponse({
+        share_url: 'https://comfy.org/workflows/shares/abc123',
+        published_at: '2026-02-23T00:00:00Z'
+      })
+    )
+
     const service = useWorkflowShareService()
 
-    const publishPromise = service.publishWorkflow('test-workflow', 1000)
-    await vi.advanceTimersByTimeAsync(800)
-    const result = await publishPromise
+    const result = await service.publishWorkflow('test-workflow', 1000)
 
-    expect(result.shareUrl).toContain('test-workflow')
+    expect(result.shareUrl).toBe(
+      `${window.location.origin}/api/workflows/shares/abc123`
+    )
     expect(result.publishedAt).toBeInstanceOf(Date)
+    expect(mockFetchApi).toHaveBeenCalledWith('/workflows/publish', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ workflow_path: 'test-workflow', saved_at: 1000 })
+    })
+  })
 
-    vi.useRealTimers()
+  it('normalizes ISO workflow save timestamp before publishing', async () => {
+    mockFetchApi.mockResolvedValue(
+      mockJsonResponse({
+        share_url: 'https://comfy.org/workflows/shares/iso',
+        published_at: '2026-02-23T00:00:00Z'
+      })
+    )
+
+    const service = useWorkflowShareService()
+    const savedAtIso = '2026-02-23T21:47:29.369842552Z'
+
+    await service.publishWorkflow('test-workflow', savedAtIso)
+
+    expect(mockFetchApi).toHaveBeenCalledWith('/workflows/publish', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        workflow_path: 'test-workflow',
+        saved_at: Date.parse(savedAtIso)
+      })
+    })
   })
 
   it('reports published status after publishing', async () => {
-    vi.useFakeTimers()
+    mockFetchApi.mockResolvedValue(
+      mockJsonResponse({
+        is_published: true,
+        share_url: 'https://comfy.org/workflows/shares/wf-1',
+        published_at: '2026-02-23T00:00:00Z',
+        saved_at: 1000
+      })
+    )
+
     const service = useWorkflowShareService()
+    const status = await service.getPublishStatus('wf-1', 1000)
 
-    const savedAt = 1000
-    const publishPromise = service.publishWorkflow('wf-1', savedAt)
-    await vi.advanceTimersByTimeAsync(800)
-    await publishPromise
-
-    const status = service.getPublishStatus('wf-1', savedAt)
     expect(status.isPublished).toBe(true)
-    expect(status.shareUrl).toBeTruthy()
+    expect(status.shareUrl).toBe(
+      `${window.location.origin}/api/workflows/shares/wf-1`
+    )
     expect(status.publishedAt).toBeInstanceOf(Date)
     expect(status.hasChangesSincePublish).toBe(false)
-
-    vi.useRealTimers()
   })
 
   it('detects changes when workflow was saved after publish', async () => {
-    vi.useFakeTimers()
+    mockFetchApi.mockResolvedValue(
+      mockJsonResponse({
+        is_published: true,
+        share_url: 'https://comfy.org/workflows/shares/wf-2',
+        published_at: '2026-02-23T00:00:00Z',
+        saved_at: 1000
+      })
+    )
+
     const service = useWorkflowShareService()
+    const status = await service.getPublishStatus('wf-2', 2000)
 
-    const savedAtPublish = 1000
-    const publishPromise = service.publishWorkflow('wf-2', savedAtPublish)
-    await vi.advanceTimersByTimeAsync(800)
-    await publishPromise
-
-    const savedAfterEdit = 2000
-    const status = service.getPublishStatus('wf-2', savedAfterEdit)
     expect(status.hasChangesSincePublish).toBe(true)
+  })
 
-    vi.useRealTimers()
+  it('detects changes when current save timestamp is an ISO string', async () => {
+    mockFetchApi.mockResolvedValue(
+      mockJsonResponse({
+        is_published: true,
+        share_url: 'https://comfy.org/workflows/shares/wf-iso',
+        published_at: '2026-02-23T00:00:00Z',
+        saved_at: 1000
+      })
+    )
+
+    const service = useWorkflowShareService()
+    const status = await service.getPublishStatus(
+      'wf-iso',
+      '2026-02-23T00:00:05.000Z'
+    )
+
+    expect(status.hasChangesSincePublish).toBe(true)
   })
 
   it('reports no changes when workflow has not been saved since publish', async () => {
-    vi.useFakeTimers()
+    mockFetchApi.mockResolvedValue(
+      mockJsonResponse({
+        is_published: true,
+        share_url: 'https://comfy.org/workflows/shares/wf-3',
+        published_at: '2026-02-23T00:00:00Z',
+        saved_at: 1000
+      })
+    )
+
     const service = useWorkflowShareService()
+    const status = await service.getPublishStatus('wf-3', 1000)
 
-    const savedAt = 1000
-    const publishPromise = service.publishWorkflow('wf-3', savedAt)
-    await vi.advanceTimersByTimeAsync(800)
-    await publishPromise
-
-    const status = service.getPublishStatus('wf-3', savedAt)
     expect(status.hasChangesSincePublish).toBe(false)
+  })
 
-    vi.useRealTimers()
+  it('treats malformed publish-status payload as unpublished', async () => {
+    mockFetchApi.mockResolvedValue(mockJsonResponse({ is_published: true }))
+
+    const service = useWorkflowShareService()
+    const status = await service.getPublishStatus('wf-4', 1000)
+
+    expect(status).toEqual({
+      isPublished: false,
+      shareUrl: null,
+      publishedAt: null,
+      hasChangesSincePublish: false
+    })
   })
 
   it('returns empty assets when graph has no asset nodes', async () => {

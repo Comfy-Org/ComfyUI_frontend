@@ -173,7 +173,38 @@ type DialogState = 'loading' | 'unsaved' | 'ready' | 'shared' | 'stale'
 const dialogState = ref<DialogState>('loading')
 const acknowledged = ref(false)
 const workflowName = ref('')
-const nameInputRef = ref<HTMLInputElement | null>(null)
+type InputRefTarget = {
+  focus?: () => void
+  select?: () => void
+  $el?: Element
+}
+
+const nameInputRef = ref<InputRefTarget | HTMLInputElement | null>(null)
+
+function focusNameInput() {
+  const target = nameInputRef.value
+  if (!target) return
+
+  if (target instanceof HTMLInputElement) {
+    target.focus()
+    target.select()
+    return
+  }
+
+  if (typeof target.focus === 'function') {
+    target.focus()
+  }
+
+  if (typeof target.select === 'function') {
+    target.select()
+  }
+
+  const nestedInput = target.$el?.querySelector('input')
+  if (nestedInput instanceof HTMLInputElement) {
+    nestedInput.focus()
+    nestedInput.select()
+  }
+}
 
 const isTemporary = computed(
   () => workflowStore.activeWorkflow?.isTemporary ?? false
@@ -182,8 +213,7 @@ const isTemporary = computed(
 watch(dialogState, async (state) => {
   if (state === 'unsaved' && isTemporary.value) {
     await nextTick()
-    nameInputRef.value?.focus()
-    nameInputRef.value?.select()
+    focusNameInput()
   }
 })
 
@@ -235,8 +265,9 @@ function buildWorkflowPath(directory: string, filename: string): string {
     : normalizedFilename
 }
 
-function refreshDialogState() {
+async function refreshDialogState() {
   const workflow = workflowStore.activeWorkflow
+
   if (!workflow || workflow.isTemporary || workflow.isModified) {
     dialogState.value = 'unsaved'
     if (workflow) {
@@ -245,7 +276,7 @@ function refreshDialogState() {
     return
   }
 
-  const status = shareService.getPublishStatus(
+  const status = await shareService.getPublishStatus(
     workflow.path,
     workflow.lastModified
   )
@@ -261,7 +292,7 @@ function refreshDialogState() {
 }
 
 onMounted(() => {
-  refreshDialogState()
+  void refreshDialogState()
 })
 
 const { isLoading: isSaving, execute: handleSave } = useAsyncState(
@@ -282,7 +313,7 @@ const { isLoading: isSaving, execute: handleSave } = useAsyncState(
     acknowledged.value = false
     reloadAssets()
 
-    const status = shareService.getPublishStatus(
+    const status = await shareService.getPublishStatus(
       workflow.path,
       workflow.lastModified
     )
@@ -326,6 +357,7 @@ const {
     )
     dialogState.value = 'shared'
     acknowledged.value = false
+
     return result
   },
   null,

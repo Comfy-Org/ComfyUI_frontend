@@ -125,25 +125,6 @@ function parseAssetWidgetValue(value: string): {
   }
 }
 
-function logShareableAssetsDebug(
-  source: 'backend' | 'fallback',
-  result: ShareableAssetsResponse
-) {
-  const summarize = (
-    items: Array<{ name: string; thumbnailUrl?: string | null }>
-  ) =>
-    items.map((item) => ({
-      name: item.name,
-      hasThumbnail: Boolean(item.thumbnailUrl),
-      thumbnailUrl: item.thumbnailUrl ?? null
-    }))
-
-  console.warn(`[share][assets][${source}]`, {
-    assets: summarize(result.assets),
-    models: summarize(result.models)
-  })
-}
-
 async function getWorkflowAssetsFromGraph(): Promise<WorkflowAsset[]> {
   const graph = app.rootGraph
   if (!graph) return []
@@ -197,16 +178,11 @@ async function getWorkflowModelsFromGraph(): Promise<WorkflowModel[]> {
     })
   )
 
-  const settledResults = await Promise.allSettled(
+  await Promise.allSettled(
     [...nodeTypesInGraph].map((nodeType) =>
       assetsStore.updateModelsForNodeType(nodeType)
     )
   )
-  for (const result of settledResults) {
-    if (result.status === 'rejected') {
-      console.error('Failed to update models for node type:', result.reason)
-    }
-  }
 
   return mapAllNodes(graph, (node) => {
     const nodeType = node.type ?? ''
@@ -229,34 +205,124 @@ async function getWorkflowModelsFromGraph(): Promise<WorkflowModel[]> {
 }
 
 interface PublishRecord {
-  shareUrl: string
-  publishedAt: Date
-  savedAt: number
+  isPublished: boolean
+  shareUrl?: string | null
+  publishedAt?: string | null
+  savedAt?: number | null
 }
 
-const publishedWorkflows = new Map<string, PublishRecord>()
+function decodePublishRecord(payload: unknown): PublishRecord | null {
+  if (!payload || typeof payload !== 'object') return null
 
-export function useWorkflowShareService() {
-  async function publishWorkflow(
-    workflowPath: string,
-    savedAt: number
-  ): Promise<WorkflowPublishResult> {
-    await new Promise((resolve) => setTimeout(resolve, 800))
+  const record = payload as Record<string, unknown>
+  const isPublished = record.is_published
+  if (typeof isPublished !== 'boolean') return null
 
-    const shareUrl = `https://comfy.org/shared/${workflowPath}-${Date.now().toString(36)}`
-    const publishedAt = new Date()
+  const shareUrl =
+    typeof record.share_url === 'string' ? record.share_url : undefined
+  const publishedAt =
+    typeof record.published_at === 'string' ? record.published_at : undefined
+  const savedAt =
+    typeof record.saved_at === 'number' ? record.saved_at : undefined
 
-    publishedWorkflows.set(workflowPath, { shareUrl, publishedAt, savedAt })
+  return {
+    isPublished,
+    shareUrl,
+    publishedAt,
+    savedAt
+  }
+}
 
-    return { shareUrl, publishedAt }
+function parsePublishedAt(value: string | null | undefined): Date | null {
+  if (!value) return null
+
+  const parsed = new Date(value)
+  return Number.isNaN(parsed.getTime()) ? null : parsed
+}
+
+function normalizeShareUrl(rawShareUrl: string): string {
+  const match = rawShareUrl.match(/\/workflows\/shares\/([^/?#]+)/)
+  const shareId = match?.[1]
+  if (!shareId) {
+    return rawShareUrl
   }
 
-  function getPublishStatus(
+  const endpointPath = api.apiURL(`/workflows/shares/${shareId}`)
+
+  if (typeof window === 'undefined' || !window.location?.origin) {
+    return endpointPath
+  }
+
+  return new URL(endpointPath, window.location.origin).toString()
+}
+
+export function useWorkflowShareService() {
+  function toSavedAtMs(savedAt: number | string | Date): number {
+    if (typeof savedAt === 'number' && Number.isFinite(savedAt)) {
+      return savedAt
+    }
+
+    if (savedAt instanceof Date) {
+      const asMs = savedAt.getTime()
+      if (!Number.isNaN(asMs)) return asMs
+    }
+
+    if (typeof savedAt === 'string') {
+      const asNumber = Number(savedAt)
+      if (Number.isFinite(asNumber)) {
+        return asNumber
+      }
+
+      const asDateMs = Date.parse(savedAt)
+      if (!Number.isNaN(asDateMs)) {
+        return asDateMs
+      }
+    }
+
+    throw new Error('Invalid workflow savedAt value')
+  }
+
+  async function publishWorkflow(
     workflowPath: string,
-    currentSavedAt: number
-  ): WorkflowPublishStatus {
-    const record = publishedWorkflows.get(workflowPath)
-    if (!record) {
+    savedAt: number | string | Date
+  ): Promise<WorkflowPublishResult> {
+    const savedAtMs = toSavedAtMs(savedAt)
+
+    const response = await api.fetchApi('/workflows/publish', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ workflow_path: workflowPath, saved_at: savedAtMs })
+    })
+
+    if (!response.ok) {
+      throw new Error(`Failed to publish workflow: ${response.status}`)
+    }
+
+    const body = (await response.json()) as Record<string, unknown>
+    const shareUrl =
+      typeof body.share_url === 'string' ? body.share_url : undefined
+    const publishedAt =
+      typeof body.published_at === 'string'
+        ? parsePublishedAt(body.published_at)
+        : null
+
+    if (!shareUrl || !publishedAt) {
+      throw new Error('Failed to publish workflow: invalid response')
+    }
+
+    return { shareUrl: normalizeShareUrl(shareUrl), publishedAt }
+  }
+
+  async function getPublishStatus(
+    workflowPath: string,
+    currentSavedAt: number | string | Date
+  ): Promise<WorkflowPublishStatus> {
+    const currentSavedAtMs = toSavedAtMs(currentSavedAt)
+
+    const response = await api.fetchApi(
+      `/workflows/publish-status?path=${encodeURIComponent(workflowPath)}`
+    )
+    if (!response.ok) {
       return {
         isPublished: false,
         shareUrl: null,
@@ -265,11 +331,35 @@ export function useWorkflowShareService() {
       }
     }
 
+    const record = decodePublishRecord(await response.json())
+    if (!record || !record.isPublished) {
+      return {
+        isPublished: false,
+        shareUrl: null,
+        publishedAt: null,
+        hasChangesSincePublish: false
+      }
+    }
+
+    const publishedAt = parsePublishedAt(record.publishedAt)
+    if (!record.shareUrl || !publishedAt) {
+      return {
+        isPublished: false,
+        shareUrl: null,
+        publishedAt: null,
+        hasChangesSincePublish: false
+      }
+    }
+
+    const savedAt = typeof record.savedAt === 'number' ? record.savedAt : null
+    const hasChangesSincePublish =
+      savedAt === null ? false : currentSavedAtMs > savedAt
+
     return {
       isPublished: true,
-      shareUrl: record.shareUrl,
-      publishedAt: record.publishedAt,
-      hasChangesSincePublish: currentSavedAt > record.savedAt
+      shareUrl: normalizeShareUrl(record.shareUrl),
+      publishedAt,
+      hasChangesSincePublish
     }
   }
 
@@ -286,7 +376,6 @@ export function useWorkflowShareService() {
       .then((result) => {
         const normalizedResult = normalizeShareableAssetsResponse(result)
         refinedResult = normalizedResult
-        logShareableAssetsDebug('backend', normalizedResult)
         onRefine?.(normalizedResult)
       })
       .catch(() => {})
@@ -302,9 +391,7 @@ export function useWorkflowShareService() {
       return refinedResult
     }
 
-    const fallbackResult = { assets, models }
-    logShareableAssetsDebug('fallback', fallbackResult)
-    return fallbackResult
+    return { assets, models }
   }
 
   return {

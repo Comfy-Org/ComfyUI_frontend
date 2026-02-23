@@ -188,8 +188,8 @@ describe('useComfyHubProfileGate', () => {
       const body = mockFetchApi.mock.calls[0][1].body as FormData
       expect(body.get('name')).toBe('Test User')
       expect(body.get('description')).toBe('Hello')
-      expect(body.get('coverImage')).toBe(coverImage)
-      expect(body.get('profilePicture')).toBe(profilePicture)
+      expect(body.get('cover_image')).toBe(coverImage)
+      expect(body.get('profile_picture')).toBe(profilePicture)
     })
 
     it('omits optional fields when not provided', async () => {
@@ -200,8 +200,8 @@ describe('useComfyHubProfileGate', () => {
       const body = mockFetchApi.mock.calls[0][1].body as FormData
       expect(body.has('name')).toBe(false)
       expect(body.has('description')).toBe(false)
-      expect(body.has('coverImage')).toBe(false)
-      expect(body.has('profilePicture')).toBe(false)
+      expect(body.has('cover_image')).toBe(false)
+      expect(body.has('profile_picture')).toBe(false)
     })
 
     it('sets hasProfile to true on success', async () => {
@@ -213,11 +213,23 @@ describe('useComfyHubProfileGate', () => {
     })
 
     it('returns the created profile', async () => {
-      mockFetchApi.mockResolvedValue(mockSuccessResponse(mockProfile))
+      mockFetchApi.mockResolvedValue(
+        mockSuccessResponse({
+          username: 'testuser',
+          name: 'Test User',
+          description: 'A test profile',
+          cover_image_url: 'https://example.com/cover.png',
+          profile_picture_url: 'https://example.com/profile.png'
+        })
+      )
 
       const profile = await gate.createProfile({ username: 'testuser' })
 
-      expect(profile).toEqual(mockProfile)
+      expect(profile).toEqual({
+        ...mockProfile,
+        coverImageUrl: 'https://example.com/cover.png',
+        profilePictureUrl: 'https://example.com/profile.png'
+      })
     })
 
     it('throws with error message from API response', async () => {

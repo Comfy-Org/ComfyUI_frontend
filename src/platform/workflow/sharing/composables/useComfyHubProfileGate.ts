@@ -16,6 +16,29 @@ const hasProfile = ref<boolean | null>(null)
 const isCheckingProfile = ref(false)
 const cachedUserId = ref<string | null>(null)
 
+function mapHubProfileResponse(payload: unknown): ComfyHubProfile {
+  const data = payload as Record<string, unknown>
+
+  return {
+    username: typeof data.username === 'string' ? data.username : '',
+    name: typeof data.name === 'string' ? data.name : undefined,
+    description:
+      typeof data.description === 'string' ? data.description : undefined,
+    coverImageUrl:
+      typeof data.coverImageUrl === 'string'
+        ? data.coverImageUrl
+        : typeof data.cover_image_url === 'string'
+          ? data.cover_image_url
+          : undefined,
+    profilePictureUrl:
+      typeof data.profilePictureUrl === 'string'
+        ? data.profilePictureUrl
+        : typeof data.profile_picture_url === 'string'
+          ? data.profile_picture_url
+          : undefined
+  }
+}
+
 export function useComfyHubProfileGate() {
   const { resolvedUserInfo } = useCurrentUser()
   const { flags } = useFeatureFlags()
@@ -63,9 +86,9 @@ export function useComfyHubProfileGate() {
     formData.append('username', data.username)
     if (data.name) formData.append('name', data.name)
     if (data.description) formData.append('description', data.description)
-    if (data.coverImage) formData.append('coverImage', data.coverImage)
+    if (data.coverImage) formData.append('cover_image', data.coverImage)
     if (data.profilePicture)
-      formData.append('profilePicture', data.profilePicture)
+      formData.append('profile_picture', data.profilePicture)
 
     const response = await api.fetchApi('/hub/profile', {
       method: 'POST',
@@ -77,7 +100,7 @@ export function useComfyHubProfileGate() {
       throw new Error(error.message ?? 'Failed to create profile')
     }
 
-    const profile: ComfyHubProfile = await response.json()
+    const profile = mapHubProfileResponse(await response.json())
     hasProfile.value = true
     return profile
   }
