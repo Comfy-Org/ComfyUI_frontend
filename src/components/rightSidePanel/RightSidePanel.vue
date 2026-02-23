@@ -14,6 +14,7 @@ import { SubgraphNode } from '@/lib/litegraph/src/litegraph'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { useAppModeStore } from '@//stores/appModeStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import type { RightSidePanelTab } from '@/stores/workspace/rightSidePanelStore'
@@ -21,6 +22,7 @@ import { resolveNodeDisplayName } from '@/utils/nodeTitleUtil'
 import { cn } from '@/utils/tailwindUtil'
 import { isGroupNode } from '@/utils/executableGroupNodeDto'
 
+import AppBuilder from './app/AppBuilder.vue'
 import TabInfo from './info/TabInfo.vue'
 import TabGlobalParameters from './parameters/TabGlobalParameters.vue'
 import TabNodes from './parameters/TabNodes.vue'
@@ -35,6 +37,7 @@ import {
 import SubgraphEditor from './subgraph/SubgraphEditor.vue'
 import TabErrors from './errors/TabErrors.vue'
 
+const appModeStore = useAppModeStore()
 const canvasStore = useCanvasStore()
 const executionStore = useExecutionStore()
 const rightSidePanelStore = useRightSidePanelStore()
@@ -238,7 +241,9 @@ function handleProxyWidgetsUpdate(value: ProxyWidgetsProperty) {
 </script>
 
 <template>
+  <AppBuilder v-if="appModeStore.mode === 'builder:select'" />
   <div
+    v-else
     data-testid="properties-panel"
     class="flex size-full flex-col bg-comfy-menu-bg"
   >
