@@ -1154,8 +1154,8 @@
   "queue": {
     "initializingAlmostReady": "Initializing - Almost ready",
     "inQueue": "In queue...",
-    "jobAddedToQueue": "Job added to queue",
-    "jobQueueing": "Job queueing",
+    "jobAddedToQueue": "Job queued",
+    "jobQueueing": "Job queuing",
     "completedIn": "Finished in {duration}",
     "jobMenu": {
       "openAsWorkflowNewTab": "Open as workflow in new tab",
@@ -2978,7 +2978,8 @@
   },
   "linearMode": {
     "linearMode": "App Mode",
-    "beta": "App Mode in Beta - Feedback",
+    "beta": "App mode in beta",
+    "giveFeedback": "Give feedback",
     "graphMode": "Graph Mode",
     "dragAndDropImage": "Click to browse or drag an image",
     "runCount": "Number of runs",
@@ -3016,11 +3017,15 @@
       "promptAddInputs": "Click on node parameters to add them here as inputs",
       "noInputs": "No inputs added yet",
       "inputsDesc": "Users will interact and adjust these to generate their outputs.",
-      "inputsExample": "Examples: “Load image”, “Text prompt”, “Steps”",
+      "inputsExample": "Examples: \u201cLoad image\u201d, \u201cText prompt\u201d, \u201cSteps\u201d",
       "promptAddOutputs": "Click on output nodes to add them here. These will be the generated results.",
       "noOutputs": "No output nodes added yet",
       "outputsDesc": "Connect at least one output node so users can see results after running.",
-      "outputsExample": "Examples: “Save Image” or “Save Video”"
+      "outputsExample": "Examples: \u201cSave Image\u201d or \u201cSave Video\u201d"
+    },
+    "queue": {
+      "clickToClear": "Click to clear queue",
+      "clear": "Clear queue"
     }
   },
   "missingNodes": {

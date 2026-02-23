@@ -3,7 +3,7 @@
     ref="containerRef"
     :class="
       cn(
-        'comfy-vue-side-bar-container group/sidebar-tab flex h-full flex-col',
+        'comfy-vue-side-bar-container group/sidebar-tab flex h-full flex-col w-full',
         props.class
       )
     "

@@ -1,13 +1,56 @@
 import { createTestingPinia } from '@pinia/testing'
+import { markRaw } from 'vue'
 import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { PendingWarnings } from '@/platform/workflow/management/stores/comfyWorkflow'
+import type {
+  LoadedComfyWorkflow,
+  PendingWarnings
+} from '@/platform/workflow/management/stores/comfyWorkflow'
+import { ComfyWorkflow as ComfyWorkflowClass } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
+import type { ChangeTracker } from '@/scripts/changeTracker'
 import { app } from '@/scripts/app'
+import { useAppMode } from '@/composables/useAppMode'
+import type { AppMode } from '@/composables/useAppMode'
+import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
+
+function createModeTestWorkflow(
+  options: {
+    path?: string
+    initialMode?: AppMode | null
+    activeMode?: AppMode | null
+  } = {}
+): ComfyWorkflowClass {
+  const workflow = new ComfyWorkflowClass({
+    path: options.path ?? 'workflows/test.json',
+    modified: Date.now(),
+    size: 100
+  })
+  workflow.initialMode = options.initialMode ?? null
+  workflow.activeMode = options.activeMode ?? null
+  workflow.changeTracker = markRaw({
+    store: vi.fn(),
+    reset: vi.fn(),
+    restore: vi.fn()
+  } as Partial<ChangeTracker> as ChangeTracker)
+  workflow.content = '{}'
+  workflow.originalContent = '{}'
+  return workflow
+}
+
+function makeWorkflowData(
+  extra: Record<string, unknown> = {}
+): ComfyWorkflowJSON {
+  return {
+    nodes: [],
+    links: [],
+    extra
+  } as Partial<ComfyWorkflowJSON> as ComfyWorkflowJSON
+}
 
 const { mockShowMissingNodes, mockShowMissingModels } = vi.hoisted(() => ({
   mockShowMissingNodes: vi.fn(),
@@ -69,6 +112,14 @@ vi.mock('@/platform/workflow/persistence/stores/workflowDraftStore', () => ({
 vi.mock('@/stores/domWidgetStore', () => ({
   useDomWidgetStore: () => ({
     clear: vi.fn()
+  })
+}))
+
+vi.mock('@/stores/workspaceStore', () => ({
+  useWorkspaceStore: () => ({
+    get workflow() {
+      return useWorkflowStore()
+    }
   })
 }))
 
@@ -254,6 +305,170 @@ describe('useWorkflowService', () => {
 
       await service.openWorkflow(workflow, { force: true })
       expect(mockShowMissingNodes).toHaveBeenCalledTimes(1)
+    })
+  })
+
+  describe('per-workflow mode switching', () => {
+    let appMode: ReturnType<typeof useAppMode>
+    let workflowStore: ReturnType<typeof useWorkflowStore>
+    let service: ReturnType<typeof useWorkflowService>
+
+    function mockOpenWorkflow() {
+      vi.spyOn(workflowStore, 'openWorkflow').mockImplementation(async (wf) => {
+        workflowStore.activeWorkflow = wf as unknown as LoadedComfyWorkflow
+        return wf as unknown as LoadedComfyWorkflow
+      })
+    }
+
+    beforeEach(() => {
+      appMode = useAppMode()
+      workflowStore = useWorkflowStore()
+      service = useWorkflowService()
+    })
+
+    describe('mode derivation from active workflow', () => {
+      it('reflects initialMode of the active workflow', () => {
+        const workflow = createModeTestWorkflow({ initialMode: 'app' })
+        workflowStore.activeWorkflow =
+          workflow as unknown as LoadedComfyWorkflow
+
+        expect(appMode.mode.value).toBe('app')
+      })
+
+      it('activeMode takes precedence over initialMode', () => {
+        const workflow = createModeTestWorkflow({
+          initialMode: 'app',
+          activeMode: 'graph'
+        })
+        workflowStore.activeWorkflow =
+          workflow as unknown as LoadedComfyWorkflow
+
+        expect(appMode.mode.value).toBe('graph')
+      })
+
+      it('defaults to graph when no active workflow', () => {
+        expect(appMode.mode.value).toBe('graph')
+      })
+
+      it('updates when activeWorkflow changes', () => {
+        const workflow1 = createModeTestWorkflow({
+          path: 'workflows/one.json',
+          initialMode: 'app'
+        })
+        const workflow2 = createModeTestWorkflow({
+          path: 'workflows/two.json',
+          activeMode: 'builder:select'
+        })
+
+        workflowStore.activeWorkflow =
+          workflow1 as unknown as LoadedComfyWorkflow
+        expect(appMode.mode.value).toBe('app')
+
+        workflowStore.activeWorkflow =
+          workflow2 as unknown as LoadedComfyWorkflow
+        expect(appMode.mode.value).toBe('builder:select')
+      })
+    })
+
+    describe('setMode writes to active workflow', () => {
+      it('writes activeMode without changing initialMode', () => {
+        const workflow = createModeTestWorkflow({ initialMode: 'graph' })
+        workflowStore.activeWorkflow =
+          workflow as unknown as LoadedComfyWorkflow
+
+        appMode.setMode('builder:arrange')
+
+        expect(workflow.activeMode).toBe('builder:arrange')
+        expect(workflow.initialMode).toBe('graph')
+        expect(appMode.mode.value).toBe('builder:arrange')
+      })
+    })
+
+    describe('afterLoadNewGraph initializes initialMode', () => {
+      beforeEach(() => {
+        mockOpenWorkflow()
+      })
+
+      it('sets initialMode from extra.linearMode on first load', async () => {
+        const workflow = createModeTestWorkflow()
+
+        await service.afterLoadNewGraph(
+          workflow,
+          makeWorkflowData({ linearMode: true })
+        )
+
+        expect(workflow.initialMode).toBe('app')
+      })
+
+      it('defaults initialMode to graph when no extra.linearMode', async () => {
+        const workflow = createModeTestWorkflow()
+
+        await service.afterLoadNewGraph(workflow, makeWorkflowData())
+
+        expect(workflow.initialMode).toBe('graph')
+      })
+
+      it('preserves existing initialMode on tab switch', async () => {
+        const workflow = createModeTestWorkflow({
+          initialMode: 'app'
+        })
+
+        await service.afterLoadNewGraph(workflow, makeWorkflowData())
+
+        expect(workflow.initialMode).toBe('app')
+      })
+
+      it('sets initialMode for fresh string-based loads', async () => {
+        vi.spyOn(workflowStore, 'createNewTemporary').mockReturnValue(
+          createModeTestWorkflow()
+        )
+
+        await service.afterLoadNewGraph(
+          'test.json',
+          makeWorkflowData({ linearMode: true })
+        )
+
+        expect(appMode.mode.value).toBe('app')
+      })
+    })
+
+    describe('round-trip mode preservation', () => {
+      it('each workflow retains its own mode across tab switches', () => {
+        const workflow1 = createModeTestWorkflow({
+          path: 'workflows/one.json',
+          activeMode: 'builder:select'
+        })
+        const workflow2 = createModeTestWorkflow({
+          path: 'workflows/two.json',
+          initialMode: 'app'
+        })
+
+        workflowStore.activeWorkflow =
+          workflow1 as unknown as LoadedComfyWorkflow
+        expect(appMode.mode.value).toBe('builder:select')
+
+        workflowStore.activeWorkflow =
+          workflow2 as unknown as LoadedComfyWorkflow
+        expect(appMode.mode.value).toBe('app')
+
+        workflowStore.activeWorkflow =
+          workflow1 as unknown as LoadedComfyWorkflow
+        expect(appMode.mode.value).toBe('builder:select')
+      })
+
+      it('fresh loads never get builder modes', async () => {
+        mockOpenWorkflow()
+        vi.spyOn(workflowStore, 'createNewTemporary').mockReturnValue(
+          createModeTestWorkflow()
+        )
+
+        await service.afterLoadNewGraph(
+          'new.json',
+          makeWorkflowData({ linearMode: true })
+        )
+
+        expect(appMode.mode.value).toBe('app')
+      })
     })
   })
 })

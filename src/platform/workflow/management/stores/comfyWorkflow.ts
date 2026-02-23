@@ -2,6 +2,7 @@ import { markRaw } from 'vue'
 
 import { t } from '@/i18n'
 import type { ChangeTracker } from '@/scripts/changeTracker'
+import type { AppMode } from '@/composables/useAppMode'
 import { UserFile } from '@/stores/userFileStore'
 import type {
   ComfyWorkflowJSON,
@@ -33,6 +34,16 @@ export class ComfyWorkflow extends UserFile {
    * Warnings deferred from load time, shown when the workflow is first focused.
    */
   pendingWarnings: PendingWarnings | null = null
+  /**
+   * Initial app mode derived from the serialized workflow (extra.linearMode).
+   * Set once on load, never mutated by runtime mode switches.
+   */
+  initialMode: AppMode | null = null
+  /**
+   * Current app mode set by the user during the session.
+   * Takes precedence over initialMode when present.
+   */
+  activeMode: AppMode | null = null
 
   /**
    * @param options The path, modified, and size of the workflow.

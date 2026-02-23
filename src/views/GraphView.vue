@@ -13,7 +13,7 @@
       <GraphCanvas @ready="onGraphReady" />
     </div>
     <LinearView v-if="linearMode" />
-    <BuilderToolbar v-if="appModeStore.isBuilderMode" />
+    <BuilderToolbar v-if="isBuilderMode" />
   </div>
 
   <GlobalToast />
@@ -70,7 +70,7 @@ import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { setupAutoQueueHandler } from '@/services/autoQueueService'
 import { useKeybindingService } from '@/platform/keybindings/keybindingService'
-import { useAppModeStore } from '@/stores/appModeStore'
+import { useAppMode } from '@/composables/useAppMode'
 import { useAssetsStore } from '@/stores/assetsStore'
 import { useCommandStore } from '@/stores/commandStore'
 import { useExecutionStore } from '@/stores/executionStore'
@@ -88,12 +88,10 @@ import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 import { electronAPI } from '@/utils/envUtil'
 import BuilderToolbar from '@/components/builder/BuilderToolbar.vue'
-import { useBuilderSave } from '@/components/builder/useBuilderSave'
 import LinearView from '@/views/LinearView.vue'
 import ManagerProgressToast from '@/workbench/extensions/manager/components/ManagerProgressToast.vue'
 
 setupAutoQueueHandler()
-useBuilderSave()
 useProgressFavicon()
 useBrowserTabTitle()
 
@@ -106,7 +104,7 @@ const queueStore = useQueueStore()
 const assetsStore = useAssetsStore()
 const versionCompatibilityStore = useVersionCompatibilityStore()
 const graphCanvasContainerRef = ref<HTMLDivElement | null>(null)
-const appModeStore = useAppModeStore()
+const { isBuilderMode } = useAppMode()
 const { linearMode } = storeToRefs(useCanvasStore())
 
 const telemetry = useTelemetry()

@@ -13,13 +13,14 @@ import {
 } from '@/platform/workflow/management/stores/workflowStore'
 import { useTelemetry } from '@/platform/telemetry'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
-import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useWorkflowThumbnail } from '@/renderer/core/thumbnail/useWorkflowThumbnail'
 import { app } from '@/scripts/app'
 import { blankGraph, defaultGraph } from '@/scripts/defaultGraph'
 import { useMissingModelsDialog } from '@/composables/useMissingModelsDialog'
 import { useMissingNodesDialog } from '@/composables/useMissingNodesDialog'
 import { useDialogService } from '@/services/dialogService'
+import { useAppMode } from '@/composables/useAppMode'
+import type { AppMode } from '@/composables/useAppMode'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { appendJsonExt } from '@/utils/formatUtil'
@@ -356,14 +357,16 @@ export const useWorkflowService = () => {
     workflowData: ComfyWorkflowJSON
   ) => {
     const workflowStore = useWorkspaceStore().workflow
-    if (
-      workflowData.extra?.linearMode !== undefined ||
-      !workflowData.nodes.length
-    ) {
-      if (workflowData.extra?.linearMode && !useCanvasStore().linearMode)
-        useTelemetry()?.trackEnterLinear({ source: 'workflow' })
-      useCanvasStore().linearMode = !!workflowData.extra?.linearMode
-    }
+    const { isAppMode } = useAppMode()
+
+    // Determine the initial app mode for fresh loads from serialized state.
+    // Tab switches don't need this — the mode is already on the workflow.
+    const freshLoadMode: AppMode = workflowData.extra?.linearMode
+      ? 'app'
+      : 'graph'
+
+    if (!isAppMode.value && freshLoadMode === 'app')
+      useTelemetry()?.trackEnterLinear({ source: 'workflow' })
 
     if (value === null || typeof value === 'string') {
       const path = value as string | null
@@ -379,13 +382,14 @@ export const useWorkflowService = () => {
         if (existingWorkflow?.isPersisted && !existingWorkflow.isLoaded) {
           const loadedWorkflow =
             await workflowStore.openWorkflow(existingWorkflow)
+          loadedWorkflow.initialMode = freshLoadMode
           loadedWorkflow.changeTracker.reset(workflowData)
           loadedWorkflow.changeTracker.restore()
           return
         }
       }
 
-      if (useCanvasStore().linearMode) {
+      if (freshLoadMode === 'app') {
         app.rootGraph.extra ??= {}
         app.rootGraph.extra.linearMode = true
       }
@@ -394,11 +398,14 @@ export const useWorkflowService = () => {
         path ? appendJsonExt(path) : undefined,
         workflowData
       )
+      tempWorkflow.initialMode = freshLoadMode
       await workflowStore.openWorkflow(tempWorkflow)
       return
     }
 
     const loadedWorkflow = await workflowStore.openWorkflow(value)
+    if (loadedWorkflow.initialMode === null)
+      loadedWorkflow.initialMode = freshLoadMode
     loadedWorkflow.changeTracker.reset(workflowData)
     loadedWorkflow.changeTracker.restore()
   }

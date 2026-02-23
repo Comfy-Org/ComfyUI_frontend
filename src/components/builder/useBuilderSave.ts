@@ -1,9 +1,9 @@
-import { watch } from 'vue'
+import { ref, watch } from 'vue'
 
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useDialogService } from '@/services/dialogService'
-import { useAppModeStore } from '@/stores/appModeStore'
+import { useAppMode } from '@/composables/useAppMode'
 import { useDialogStore } from '@/stores/dialogStore'
 
 import BuilderSaveDialogContent from './BuilderSaveDialogContent.vue'
@@ -13,18 +13,21 @@ const SAVE_DIALOG_KEY = 'builder-save'
 const SUCCESS_DIALOG_KEY = 'builder-save-success'
 
 export function useBuilderSave() {
-  const appModeStore = useAppModeStore()
+  const { isAppMode, setMode } = useAppMode()
   const workflowStore = useWorkflowStore()
   const workflowService = useWorkflowService()
   const dialogService = useDialogService()
   const dialogStore = useDialogStore()
 
-  watch(
-    () => appModeStore.isBuilderSaving,
-    (saving) => {
-      if (saving) void onBuilderSave()
-    }
-  )
+  const saving = ref(false)
+
+  watch(saving, (value) => {
+    if (value) void onBuilderSave()
+  })
+
+  function setSaving(value: boolean) {
+    saving.value = value
+  }
 
   async function onBuilderSave() {
     const workflow = workflowStore.activeWorkflow
@@ -38,7 +41,7 @@ export function useBuilderSave() {
         workflow.changeTracker?.checkState()
         appModeStore.saveSelectedToWorkflow()
         await workflowService.saveWorkflow(workflow)
-        showSuccessDialog(workflow.filename, appModeStore.isAppMode)
+        showSuccessDialog(workflow.filename, isAppMode.value)
       } catch {
         resetSaving()
       }
@@ -97,7 +100,7 @@ export function useBuilderSave() {
         workflowName,
         savedAsApp,
         onViewApp: () => {
-          appModeStore.setMode('app')
+          setMode('app')
           closeSuccessDialog()
         },
         onClose: closeSuccessDialog
@@ -118,6 +121,8 @@ export function useBuilderSave() {
   }
 
   function resetSaving() {
-    appModeStore.setBuilderSaving(false)
+    saving.value = false
   }
+
+  return { saving, setSaving }
 }
