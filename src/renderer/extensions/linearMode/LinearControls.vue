@@ -25,7 +25,7 @@ import { useExecutionStore } from '@/stores/executionStore'
 import { useQueueSettingsStore } from '@/stores/queueStore'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import { cn } from '@/utils/tailwindUtil'
-
+import { useAppModeStore } from '@/stores/appModeStore'
 const { t } = useI18n()
 const commandStore = useCommandStore()
 const executionStore = useExecutionStore()
@@ -33,10 +33,10 @@ const { batchCount } = storeToRefs(useQueueSettingsStore())
 const settingStore = useSettingStore()
 const { isActiveSubscription } = useBillingContext()
 const workflowStore = useWorkflowStore()
+const appModeStore = useAppModeStore()
 
 const props = defineProps<{
   toastTo?: string | HTMLElement
-  notesTo?: string | HTMLElement
   mobile?: boolean
 }>()
 
@@ -144,7 +144,10 @@ async function runButtonClick(e: Event) {
 defineExpose({ runButtonClick })
 </script>
 <template>
-  <div class="flex flex-col min-w-80 md:h-full">
+  <div
+    v-if="!appModeStore.isBuilderMode && appModeStore.hasOutputs"
+    class="flex flex-col min-w-80 md:h-full"
+  >
     <section
       v-if="mobile"
       data-testid="linear-run-button"
@@ -153,7 +156,8 @@ defineExpose({ runButtonClick })
       <WidgetInputNumberInput
         v-model="batchCount"
         :widget="batchCountWidget"
-        class="*:[.min-w-0]:w-24 grid-cols-[auto_96px]!"
+        root-class="text-base-foreground grid-cols-[auto_96px]"
+        class="*:[.min-w-0]:w-24"
       />
       <SubscribeToRunButton v-if="!isActiveSubscription" class="w-full mt-4" />
       <div v-else class="flex mt-4 gap-2">
@@ -188,11 +192,10 @@ defineExpose({ runButtonClick })
       <div class="flex-1" />
       <Popover
         v-if="partitionedNodes[0].length"
-        align="start"
+        align="end"
         class="overflow-y-auto overflow-x-clip max-h-(--reka-popover-content-available-height) z-100"
-        :reference="notesTo"
-        side="left"
-        :to="notesTo"
+        side="bottom"
+        :side-offset="-8"
       >
         <template #button>
           <Button variant="muted-textonly">
@@ -261,32 +264,23 @@ defineExpose({ runButtonClick })
         <WidgetInputNumberInput
           v-model="batchCount"
           :widget="batchCountWidget"
-          class="*:[.min-w-0]:w-24 grid-cols-[auto_96px]!"
+          root-class="text-base-foreground grid-cols-[auto_96px]"
+          class="*:[.min-w-0]:w-24"
         />
         <SubscribeToRunButton
           v-if="!isActiveSubscription"
           class="w-full mt-4"
         />
-        <div v-else class="flex mt-4 gap-2">
-          <Button
-            variant="primary"
-            class="grow-1"
-            size="lg"
-            @click="runButtonClick"
-          >
-            <i class="icon-[lucide--play]" />
-            {{ t('menu.run') }}
-          </Button>
-          <Button
-            v-if="!executionStore.isIdle"
-            variant="destructive"
-            size="lg"
-            class="w-10 p-2"
-            @click="commandStore.execute('Comfy.Interrupt')"
-          >
-            <i class="icon-[lucide--x]" />
-          </Button>
-        </div>
+        <Button
+          v-else
+          variant="primary"
+          class="w-full mt-4"
+          size="lg"
+          @click="runButtonClick"
+        >
+          <i class="icon-[lucide--play]" />
+          {{ t('menu.run') }}
+        </Button>
       </section>
     </div>
   </div>
@@ -305,10 +299,5 @@ defineExpose({ runButtonClick })
       <i v-else class="icon-[lucide--loader-circle] size-4 animate-spin" />
       <span v-text="t('queue.jobAddedToQueue')" />
     </div>
-  </Teleport>
-  <Teleport v-if="false" defer :to="notesTo">
-    <div
-      class="bg-base-background text-muted-foreground flex flex-col w-90 gap-2 rounded-2xl border-1 border-border-subtle py-3"
-    ></div>
   </Teleport>
 </template>
