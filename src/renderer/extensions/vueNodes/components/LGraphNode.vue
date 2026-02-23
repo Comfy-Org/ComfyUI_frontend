@@ -122,46 +122,85 @@
         <NodeBadges v-bind="badges" :pricing="undefined" class="mt-auto" />
       </div>
     </template>
-    <Button
-      variant="textonly"
+    <div
+      v-if="
+        (hasAnyError && showErrorsTabEnabled) ||
+        lgraphNode?.isSubgraphNode() ||
+        showAdvancedState ||
+        showAdvancedInputsButton
+      "
       :class="
         cn(
-          'w-full h-7 rounded-b-2xl py-2 -z-1 text-xs rounded-t-none',
-          hasAnyError && 'hover:bg-destructive-background-hover',
-          !isCollapsed && '-mt-5 pt-7 h-12'
+          'flex w-full h-7 rounded-b-2xl -z-1 text-xs rounded-t-none overflow-hidden divide-x divide-component-node-border',
+          !isCollapsed && '-mt-5 h-12'
         )
       "
-      as-child
     >
-      <button
-        v-if="hasAnyError && showErrorsTabEnabled"
-        @click.stop="useRightSidePanelStore().openPanel('errors')"
-      >
-        <span>{{ t('g.error') }}</span>
-        <i class="icon-[lucide--info] size-4" />
-      </button>
-      <button
-        v-else-if="lgraphNode?.isSubgraphNode()"
+      <Button
+        v-if="lgraphNode?.isSubgraphNode()"
+        variant="textonly"
+        :class="
+          cn(
+            'flex-1 rounded-none h-full',
+            hasAnyError &&
+              showErrorsTabEnabled &&
+              !nodeData.color &&
+              'bg-node-component-header-surface',
+            isCollapsed ? 'py-2' : 'pt-7 pb-2'
+          )
+        "
         data-testid="subgraph-enter-button"
         @click.stop="handleEnterSubgraph"
       >
-        <span>{{ t('g.enterSubgraph') }}</span>
-        <i class="icon-[comfy--workflow] size-4" />
-      </button>
-      <button
-        v-else-if="showAdvancedState || showAdvancedInputsButton"
+        <span class="truncate">{{
+          hasAnyError && showErrorsTabEnabled
+            ? t('g.enter')
+            : t('g.enterSubgraph')
+        }}</span>
+        <i class="icon-[comfy--workflow] size-4 shrink-0" />
+      </Button>
+
+      <Button
+        v-if="hasAnyError && showErrorsTabEnabled"
+        variant="textonly"
+        :class="
+          cn(
+            'flex-1 rounded-none h-full bg-error hover:bg-destructive-background-hover',
+            isCollapsed ? 'py-2' : 'pt-7 pb-2'
+          )
+        "
+        @click.stop="useRightSidePanelStore().openPanel('errors')"
+      >
+        <span class="truncate">{{ t('g.error') }}</span>
+        <i class="icon-[lucide--info] size-4 shrink-0" />
+      </Button>
+
+      <!-- Advanced inputs (non-subgraph nodes only) -->
+      <Button
+        v-if="
+          !lgraphNode?.isSubgraphNode() &&
+          (showAdvancedState || showAdvancedInputsButton)
+        "
+        variant="textonly"
+        :class="
+          cn('flex-1 rounded-none h-full', isCollapsed ? 'py-2' : 'pt-7 pb-2')
+        "
         @click.stop="showAdvancedState = !showAdvancedState"
       >
         <template v-if="showAdvancedState">
-          <span>{{ t('rightSidePanel.hideAdvancedInputsButton') }}</span>
-          <i class="icon-[lucide--chevron-up] size-4" />
+          <span class="truncate">{{
+            t('rightSidePanel.hideAdvancedInputsButton')
+          }}</span>
+          <i class="icon-[lucide--chevron-up] size-4 shrink-0" />
         </template>
         <template v-else>
-          <span>{{ t('rightSidePanel.showAdvancedInputsButton') }} </span>
-          <i class="icon-[lucide--settings-2] size-4" />
+          <span class="truncate">{{
+            t('rightSidePanel.showAdvancedInputsButton')
+          }}</span>
+          <i class="icon-[lucide--settings-2] size-4 shrink-0" />
         </template>
-      </button>
-    </Button>
+      </Button>
+    </div>
     <template v-if="!isCollapsed && nodeData.resizable !== false">
       <div
         v-for="handle in RESIZE_HANDLES"
