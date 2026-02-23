@@ -19,16 +19,16 @@ const entries = computed(() => {
   if (rename)
     items.push({
       label: t('g.rename'),
-      action: rename,
+      command: rename,
       icon: 'icon-[lucide--pencil]'
     })
   if (remove)
     items.push({
       label: t('g.delete'),
-      action: remove,
+      command: remove,
       icon: 'icon-[lucide--trash-2]'
     })
-  return [items]
+  return items
 })
 </script>
 <template>

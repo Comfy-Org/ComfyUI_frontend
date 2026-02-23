@@ -8,16 +8,20 @@ import DraggableList from '@/components/common/DraggableList.vue'
 import IoItem from '@/components/rightSidePanel/app/IoItem.vue'
 import PropertiesAccordionItem from '@/components/rightSidePanel/layout/PropertiesAccordionItem.vue'
 import Button from '@/components/ui/button/Button.vue'
+import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { LGraphNode, NodeId } from '@/lib/litegraph/src/LGraphNode'
 import type { INodeInputSlot } from '@/lib/litegraph/src/interfaces'
 import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
+import { TitleMode } from '@/lib/litegraph/src/types/globalEnums'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import { BaseWidget } from '@/lib/litegraph/src/widgets/BaseWidget'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
 import TransformPane from '@/renderer/core/layout/transform/TransformPane.vue'
 import { app } from '@/scripts/app'
+import { DOMWidgetImpl } from '@/scripts/domWidget'
 import { useDialogService } from '@/services/dialogService'
 import { useAppIOStore } from '@/stores/appIOStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
@@ -98,21 +102,30 @@ function getBounding(nodeId: NodeId, widgetName?: string) {
   const node = app.rootGraph.getNodeById(nodeId)
   if (!node) return
 
+  const titleOffset =
+    node.title_mode === TitleMode.NORMAL_TITLE ? LiteGraph.NODE_TITLE_HEIGHT : 0
+
   if (!widgetName)
     return {
       width: `${node.size[0]}px`,
-      height: `${node.size[1] + 30}px`,
+      height: `${node.size[1] + titleOffset}px`,
       left: `${node.pos[0]}px`,
-      top: `${node.pos[1] - 30}px`
+      top: `${node.pos[1] - titleOffset}px`
     }
   const widget = node.widgets?.find((w) => w.name === widgetName)
   if (!widget) return
 
+  const margin = widget instanceof DOMWidgetImpl ? widget.margin : undefined
+  const marginX = margin ?? BaseWidget.margin
+  const height =
+    (widget.computedHeight !== undefined
+      ? widget.computedHeight - 4
+      : LiteGraph.NODE_WIDGET_HEIGHT) - (margin ? 2 * margin - 4 : 0)
   return {
-    width: `${node.size[0] - 30}px`,
-    height: `${(widget.computedHeight ?? 24) - 4}px`,
-    left: `${node.pos[0] + 15}px`,
-    top: `${node.pos[1] + widget.y}px`
+    width: `${node.size[0] - marginX * 2}px`,
+    height: `${height}px`,
+    left: `${node.pos[0] + marginX}px`,
+    top: `${node.pos[1] + widget.y + (margin ?? 0)}px`
   }
 }
 
