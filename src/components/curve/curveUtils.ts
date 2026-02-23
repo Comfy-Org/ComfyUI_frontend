@@ -85,10 +85,6 @@ export function createMonotoneInterpolator(
 }
 
 /**
- * Generate a 256-entry lookup table from curve control points.
- * Points are in [0, 1] space; output is clamped to [0, 255] as Uint8.
- */
-/**
  * Convert a 256-bin histogram into an SVG path string.
  * Normalizes using the 99.5th percentile to avoid outlier spikes.
  */

@@ -200,6 +200,7 @@ export type BoundingBoxInputSpec = z.infer<typeof zBoundingBoxInputSpec>
 export type ChartInputSpec = z.infer<typeof zChartInputSpec>
 export type GalleriaInputSpec = z.infer<typeof zGalleriaInputSpec>
 export type TextareaInputSpec = z.infer<typeof zTextareaInputSpec>
+export type CurveInputSpec = z.infer<typeof zCurveInputSpec>
 export type CustomInputSpec = z.infer<typeof zCustomInputSpec>
 
 export type InputSpec = z.infer<typeof zInputSpec>

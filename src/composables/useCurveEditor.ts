@@ -78,6 +78,8 @@ export function useCurveEditor({ svgRef, modelValue }: UseCurveEditorOptions) {
       return
     }
 
+    if (e.ctrlKey) return
+
     const newPoints: CurvePoint[] = [...modelValue.value, [x, y]]
     modelValue.value = newPoints
 

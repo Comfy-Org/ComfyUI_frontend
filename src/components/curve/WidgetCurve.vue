@@ -1,7 +1,5 @@
 <template>
-  <div class="widget-expands">
-    <CurveEditor v-model="modelValue" />
-  </div>
+  <CurveEditor v-model="modelValue" />
 </template>
 
 <script setup lang="ts">
