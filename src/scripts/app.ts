@@ -89,7 +89,8 @@ import {
   executeWidgetsCallback,
   createNode,
   fixLinkInputSlots,
-  isImageNode
+  isImageNode,
+  isVideoNode
 } from '@/utils/litegraphUtil'
 import {
   createSharedObjectUrl,
@@ -114,7 +115,8 @@ import {
   extractFilesFromDragEvent,
   hasAudioType,
   hasImageType,
-  hasVideoType
+  hasVideoType,
+  isMediaFile
 } from '@/utils/eventUtils'
 import { getWorkflowDataFromFile } from '@/scripts/metadata/parser'
 import {
@@ -588,12 +590,7 @@ export class ComfyApp {
             if (videoFiles.length > 0) {
               await this.handleVideoFileList(videoFiles)
             }
-            const handled = new Set([
-              ...imageFiles,
-              ...audioFiles,
-              ...videoFiles
-            ])
-            for (const file of files.filter((f) => !handled.has(f))) {
+            for (const file of files.filter((f) => !isMediaFile(f))) {
               await this.handleFile(file, 'file_drop', {
                 deferWarnings: true
               })
@@ -1592,23 +1589,21 @@ export class ComfyApp {
     const { workflow, prompt, parameters, templates } = workflowData ?? {}
 
     if (!(workflow || prompt || parameters || templates)) {
-      if (file.type.startsWith('image')) {
+      const mediaNodeTypes: Record<string, [string, typeof pasteImageNode]> = {
+        image: ['LoadImage', pasteImageNode],
+        audio: ['LoadAudio', pasteAudioNode],
+        video: ['LoadVideo', pasteVideoNode]
+      }
+
+      const mediaType = Object.keys(mediaNodeTypes).find((t) =>
+        file.type.startsWith(t)
+      )
+      if (mediaType) {
+        const [nodeType, pasteFn] = mediaNodeTypes[mediaType]
         const transfer = new DataTransfer()
         transfer.items.add(file)
-        const imageNode = await createNode(this.canvas, 'LoadImage')
-        await pasteImageNode(this.canvas, transfer.items, imageNode)
-        return
-      } else if (file.type.startsWith('audio')) {
-        const transfer = new DataTransfer()
-        transfer.items.add(file)
-        const audioNode = await createNode(this.canvas, 'LoadAudio')
-        await pasteAudioNode(this.canvas, transfer.items, audioNode)
-        return
-      } else if (file.type.startsWith('video')) {
-        const transfer = new DataTransfer()
-        transfer.items.add(file)
-        const videoNode = await createNode(this.canvas, 'LoadVideo')
-        await pasteVideoNode(this.canvas, transfer.items, videoNode)
+        const node = await createNode(this.canvas, nodeType)
+        await pasteFn(this.canvas, transfer.items, node)
         return
       }
 
@@ -1909,6 +1904,7 @@ export class ComfyApp {
       this.registerNodeDef(nodeId, defs[nodeId])
     }
     // Refresh combo widgets in all nodes including those in subgraphs
+    const nodeOutputStore = useNodeOutputStore()
     forEachNode(this.rootGraph, (node) => {
       const def = defs[node.type]
       // Allow primitive nodes to handle refresh
@@ -1940,6 +1936,12 @@ export class ComfyApp {
             }
           }
         }
+      }
+
+      // Re-trigger previews on media nodes (e.g. LoadImage)
+      // to bust browser cache when files are edited externally
+      if (isImageNode(node) || isVideoNode(node)) {
+        nodeOutputStore.refreshNodeOutputs(node)
       }
     })
 

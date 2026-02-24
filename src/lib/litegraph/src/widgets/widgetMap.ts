@@ -16,6 +16,7 @@ import { ButtonWidget } from './ButtonWidget'
 import { ChartWidget } from './ChartWidget'
 import { ColorWidget } from './ColorWidget'
 import { ComboWidget } from './ComboWidget'
+import { CurveWidget } from './CurveWidget'
 import { FileUploadWidget } from './FileUploadWidget'
 import { GalleriaWidget } from './GalleriaWidget'
 import { GradientSliderWidget } from './GradientSliderWidget'
@@ -56,6 +57,7 @@ export type WidgetTypeMap = {
   asset: AssetWidget
   imagecrop: ImageCropWidget
   boundingbox: BoundingBoxWidget
+  curve: CurveWidget
   [key: string]: BaseWidget
 }
 
@@ -132,6 +134,8 @@ export function toConcreteWidget<TWidget extends IWidget | IBaseWidget>(
       return toClass(ImageCropWidget, narrowedWidget, node)
     case 'boundingbox':
       return toClass(BoundingBoxWidget, narrowedWidget, node)
+    case 'curve':
+      return toClass(CurveWidget, narrowedWidget, node)
     default: {
       if (wrapLegacyWidgets) return toClass(LegacyWidget, widget, node)
     }

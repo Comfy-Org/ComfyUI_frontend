@@ -7,7 +7,14 @@ import type {
 } from '@/lib/litegraph/src/litegraph'
 import { ComfyApp } from './app'
 import { createNode } from '@/utils/litegraphUtil'
-import { pasteImageNode, pasteImageNodes } from '@/composables/usePaste'
+import {
+  pasteAudioNode,
+  pasteAudioNodes,
+  pasteImageNode,
+  pasteImageNodes,
+  pasteVideoNode,
+  pasteVideoNodes
+} from '@/composables/usePaste'
 import { getWorkflowDataFromFile } from '@/scripts/metadata/parser'
 
 vi.mock('@/utils/litegraphUtil', () => ({
@@ -20,8 +27,12 @@ vi.mock('@/utils/litegraphUtil', () => ({
 }))
 
 vi.mock('@/composables/usePaste', () => ({
+  pasteAudioNode: vi.fn(),
+  pasteAudioNodes: vi.fn(),
   pasteImageNode: vi.fn(),
-  pasteImageNodes: vi.fn()
+  pasteImageNodes: vi.fn(),
+  pasteVideoNode: vi.fn(),
+  pasteVideoNodes: vi.fn()
 }))
 
 vi.mock('@/scripts/metadata/parser', () => ({
@@ -130,6 +141,60 @@ describe('ComfyApp', () => {
     })
   })
 
+  describe('handleAudioFileList', () => {
+    it('should create audio nodes and select them', async () => {
+      const mockNode1 = createMockNode({ id: 1, type: 'LoadAudio' })
+      const mockNode2 = createMockNode({ id: 2, type: 'LoadAudio' })
+      vi.mocked(pasteAudioNodes).mockResolvedValue([mockNode1, mockNode2])
+
+      const file1 = createTestFile('test1.mp3', 'audio/mpeg')
+      const file2 = createTestFile('test2.wav', 'audio/wav')
+
+      await app.handleAudioFileList([file1, file2])
+
+      expect(pasteAudioNodes).toHaveBeenCalledWith(mockCanvas, [file1, file2])
+      expect(mockCanvas.selectItems).toHaveBeenCalledWith([
+        mockNode1,
+        mockNode2
+      ])
+    })
+
+    it('should not select when no nodes created', async () => {
+      vi.mocked(pasteAudioNodes).mockResolvedValue([])
+
+      await app.handleAudioFileList([createTestFile('test.mp3', 'audio/mpeg')])
+
+      expect(mockCanvas.selectItems).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('handleVideoFileList', () => {
+    it('should create video nodes and select them', async () => {
+      const mockNode1 = createMockNode({ id: 1, type: 'LoadVideo' })
+      const mockNode2 = createMockNode({ id: 2, type: 'LoadVideo' })
+      vi.mocked(pasteVideoNodes).mockResolvedValue([mockNode1, mockNode2])
+
+      const file1 = createTestFile('test1.mp4', 'video/mp4')
+      const file2 = createTestFile('test2.webm', 'video/webm')
+
+      await app.handleVideoFileList([file1, file2])
+
+      expect(pasteVideoNodes).toHaveBeenCalledWith(mockCanvas, [file1, file2])
+      expect(mockCanvas.selectItems).toHaveBeenCalledWith([
+        mockNode1,
+        mockNode2
+      ])
+    })
+
+    it('should not select when no nodes created', async () => {
+      vi.mocked(pasteVideoNodes).mockResolvedValue([])
+
+      await app.handleVideoFileList([createTestFile('test.mp4', 'video/mp4')])
+
+      expect(mockCanvas.selectItems).not.toHaveBeenCalled()
+    })
+  })
+
   describe('positionBatchNodes', () => {
     it('should position batch node to the right of first node', () => {
       const mockNode1 = createMockNode({
@@ -185,6 +250,42 @@ describe('ComfyApp', () => {
 
       expect(createNode).toHaveBeenCalledWith(mockCanvas, 'LoadImage')
       expect(pasteImageNode).toHaveBeenCalledWith(
+        mockCanvas,
+        expect.any(DataTransferItemList),
+        mockNode
+      )
+    })
+
+    it('should handle audio files by creating LoadAudio node', async () => {
+      vi.mocked(getWorkflowDataFromFile).mockResolvedValue({})
+
+      const mockNode = createMockNode({ type: 'LoadAudio' })
+      vi.mocked(createNode).mockResolvedValue(mockNode)
+
+      const audioFile = createTestFile('test.mp3', 'audio/mpeg')
+
+      await app.handleFile(audioFile)
+
+      expect(createNode).toHaveBeenCalledWith(mockCanvas, 'LoadAudio')
+      expect(pasteAudioNode).toHaveBeenCalledWith(
+        mockCanvas,
+        expect.any(DataTransferItemList),
+        mockNode
+      )
+    })
+
+    it('should handle video files by creating LoadVideo node', async () => {
+      vi.mocked(getWorkflowDataFromFile).mockResolvedValue({})
+
+      const mockNode = createMockNode({ type: 'LoadVideo' })
+      vi.mocked(createNode).mockResolvedValue(mockNode)
+
+      const videoFile = createTestFile('test.mp4', 'video/mp4')
+
+      await app.handleFile(videoFile)
+
+      expect(createNode).toHaveBeenCalledWith(mockCanvas, 'LoadVideo')
+      expect(pasteVideoNode).toHaveBeenCalledWith(
         mockCanvas,
         expect.any(DataTransferItemList),
         mockNode

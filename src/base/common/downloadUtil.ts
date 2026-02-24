@@ -1,7 +1,9 @@
 /**
  * Utility functions for downloading files
  */
+import { t } from '@/i18n'
 import { isCloud } from '@/platform/distribution/types'
+import { useToastStore } from '@/platform/updates/common/toastStore'
 
 // Constants
 const DEFAULT_DOWNLOAD_FILENAME = 'download.png'
@@ -112,14 +114,23 @@ export function extractFilenameFromContentDisposition(
   return null
 }
 
-const downloadViaBlobFetch = async (
+/**
+ * Fetch a URL and return its body as a Blob.
+ * Shared by download and open-in-new-tab cloud paths.
+ */
+async function fetchAsBlob(url: string): Promise<Response> {
+  const response = await fetch(url)
+  if (!response.ok) {
+    throw new Error(`Failed to fetch ${url}: ${response.status}`)
+  }
+  return response
+}
+
+async function downloadViaBlobFetch(
   href: string,
   fallbackFilename: string
-): Promise<void> => {
-  const response = await fetch(href)
-  if (!response.ok) {
-    throw new Error(`Failed to fetch ${href}: ${response.status}`)
-  }
+): Promise<void> {
+  const response = await fetchAsBlob(href)
 
   // Try to get filename from Content-Disposition header (set by backend)
   const contentDisposition = response.headers.get('Content-Disposition')
@@ -128,4 +139,45 @@ const downloadViaBlobFetch = async (
 
   const blob = await response.blob()
   downloadBlob(headerFilename ?? fallbackFilename, blob)
+}
+
+/**
+ * Open a file URL in a new browser tab.
+ * On cloud, fetches the resource as a blob first to avoid GCS redirects
+ * that would trigger an auto-download instead of displaying the file.
+ *
+ * Opens the tab synchronously to preserve the user-gesture context
+ * (browsers block window.open after an await), then navigates it to
+ * the blob URL once the fetch completes.
+ */
+export async function openFileInNewTab(url: string): Promise<void> {
+  if (!isCloud) {
+    window.open(url, '_blank')
+    return
+  }
+
+  // Open immediately to preserve user-gesture activation.
+  const tab = window.open('', '_blank')
+
+  try {
+    const response = await fetchAsBlob(url)
+    const blob = await response.blob()
+    const blobUrl = URL.createObjectURL(blob)
+
+    if (tab && !tab.closed) {
+      tab.location.href = blobUrl
+      // Revoke after the tab has had time to load the blob.
+      setTimeout(() => URL.revokeObjectURL(blobUrl), 60_000)
+    } else {
+      URL.revokeObjectURL(blobUrl)
+    }
+  } catch (error) {
+    tab?.close()
+    console.error('Failed to open image:', error)
+    useToastStore().addAlert(
+      t('toastMessages.errorOpenImage', {
+        error: error instanceof Error ? error.message : String(error)
+      })
+    )
+  }
 }

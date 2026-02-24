@@ -1,6 +1,6 @@
 import { useI18n } from 'vue-i18n'
 
-import { downloadFile } from '@/base/common/downloadUtil'
+import { downloadFile, openFileInNewTab } from '@/base/common/downloadUtil'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { useCommandStore } from '@/stores/commandStore'
 
@@ -23,7 +23,7 @@ export function useImageMenuOptions() {
     if (!img) return
     const url = new URL(img.src)
     url.searchParams.delete('preview')
-    window.open(url.toString(), '_blank')
+    void openFileInNewTab(url.toString())
   }
 
   const copyImage = async (node: LGraphNode) => {

@@ -1,6 +1,6 @@
 import _ from 'es-toolkit/compat'
 
-import { downloadFile } from '@/base/common/downloadUtil'
+import { downloadFile, openFileInNewTab } from '@/base/common/downloadUtil'
 import { useSelectedLiteGraphItems } from '@/composables/canvas/useSelectedLiteGraphItems'
 import { useSubgraphOperations } from '@/composables/graph/useSubgraphOperations'
 import { useNodeAnimatedImage } from '@/composables/node/useNodeAnimatedImage'
@@ -686,7 +686,7 @@ export const useLitegraphService = () => {
               callback: () => {
                 const url = new URL(img.src)
                 url.searchParams.delete('preview')
-                window.open(url, '_blank')
+                void openFileInNewTab(url.toString())
               }
             },
             ...getCopyImageOption(img),
