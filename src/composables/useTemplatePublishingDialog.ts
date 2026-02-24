@@ -1,12 +1,15 @@
-import { h } from 'vue'
-
+import TemplatePublishingDialog from '@/components/templatePublishing/TemplatePublishingDialog.vue'
 import { useDialogService } from '@/services/dialogService'
 import { useDialogStore } from '@/stores/dialogStore'
 
-const DIALOG_KEY = 'global-workflow-template-selector'
-// const GETTING_STARTED_CATEGORY_ID = 'basics-getting-started' // comeback when there are tabs to pick between, or remove if they're fundamentally ordered
+const DIALOG_KEY = 'global-template-publishing'
 
-export const useTemplateMarketplaceDialog = () => {
+/**
+ * Manages the lifecycle of the template publishing dialog.
+ *
+ * @returns `show` to open the dialog and `hide` to close it.
+ */
+export const useTemplatePublishingDialog = () => {
   const dialogService = useDialogService()
   const dialogStore = useDialogStore()
 
@@ -16,12 +19,11 @@ export const useTemplateMarketplaceDialog = () => {
 
   function show(options?: { initialPage?: string }) {
     // comeback need a new telemetry for this
-    // useTelemetry()?.trackTemplateLibraryOpened({ source })
+    // useTelemetry()?.trackTemplatePublishingOpened({ source })
 
     dialogService.showLayoutDialog({
       key: DIALOG_KEY,
-      component: () => h('div', 'Placeholder comeback'),
-      //    component: TemplateMarketplaceDialog,
+      component: TemplatePublishingDialog,
       props: {
         onClose: hide,
         initialPage: options?.initialPage

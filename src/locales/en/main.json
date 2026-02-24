@@ -1054,10 +1054,82 @@
     "enterFilenamePrompt": "Enter the filename:",
     "saveWorkflow": "Save workflow"
   },
-  "templateMarketplace": {
+  "templatePublishing": {
     "publishToMarketplace": "Publish to Marketplace",
     "saveDraft": "Save Draft",
-    "previewThenSave": "Preview then Save"
+    "previewThenSave": "Preview then Save",
+    "dialogTitle": "Template Publishing",
+    "next": "Next",
+    "previous": "Previous",
+    "submit": "Submit for Review",
+    "stepProgress": "Step {current} of {total}",
+    "steps": {
+      "landing": {
+        "title": "Getting Started",
+        "description": "Overview of the publishing process"
+      },
+      "metadata": {
+        "title": "Metadata",
+        "description": "Title, description, and author info",
+        "titleLabel": "Title",
+        "categoryLabel": "Categories",
+        "tagsLabel": "Tags",
+        "tagsPlaceholder": "Type to search tags…",
+        "difficultyLabel": "Difficulty",
+        "licenseLabel": "License",
+        "difficulty": {
+          "beginner": "Beginner",
+          "intermediate": "Intermediate",
+          "advanced": "Advanced"
+        },
+        "license": {
+          "mit": "MIT",
+          "ccBy": "CC BY",
+          "ccBySa": "CC BY-SA",
+          "ccByNc": "CC BY-NC",
+          "apache": "Apache",
+          "custom": "Custom"
+        },
+        "category": {
+          "imageGeneration": "Image Generation",
+          "videoGeneration": "Video Generation",
+          "audio": "Audio",
+          "text": "Text",
+          "threeD": "3D",
+          "upscaling": "Upscaling",
+          "inpainting": "Inpainting",
+          "controlNet": "ControlNet",
+          "styleTransfer": "Style Transfer",
+          "other": "Other"
+        }
+      },
+      "description": {
+        "title": "Description",
+        "description": "Write a detailed description of your template",
+        "editorLabel": "Description (Markdown)",
+        "previewLabel": "Description (Render preview)"
+      },
+      "previewGeneration": {
+        "title": "Preview",
+        "description": "Generate preview images and videos"
+      },
+      "categoryAndTagging": {
+        "title": "Categories & Tags",
+        "description": "Categorize and tag your template"
+      },
+      "preview": {
+        "title": "Preview",
+        "description": "Review your template before submitting"
+      },
+      "submissionForReview": {
+        "title": "Submit",
+        "description": "Submit your template for review"
+      },
+      "complete": {
+        "title": "Complete",
+        "description": "Your template has been submitted"
+      }
+    }
   },
   "subgraphStore": {
     "confirmDeleteTitle": "Delete blueprint?",
@@ -1333,7 +1405,7 @@
     "Model Library": "Model Library",
     "Node Library": "Node Library",
     "Workflows": "Workflows",
-    "templateMarketplace": "Template Marketplace"
+    "templatePublishing": "Template Publishing"
   },
   "desktopMenu": {
     "reinstall": "Reinstall",

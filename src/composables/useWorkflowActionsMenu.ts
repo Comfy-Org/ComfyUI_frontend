@@ -198,10 +198,10 @@ export function useWorkflowActionsMenu(
     })
 
     addItem({
-      label: t('menuLabels.templateMarketplace'),
+      label: t('menuLabels.templatePublishing'),
       icon: 'pi pi-objects-column',
       command: async () => {
-        await commandStore.execute('Comfy.OpenTemplateMarketplace')
+        await commandStore.execute('Comfy.ShowTemplatePublishing')
       },
       visible: isRoot && flags.templateMarketplaceEnabled,
       prependSeparator: true
