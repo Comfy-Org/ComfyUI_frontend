@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { useEventListener, useScroll, whenever } from '@vueuse/core'
+import { useScroll, whenever } from '@vueuse/core'
 import Panel from 'primevue/panel'
 import TabMenu from 'primevue/tabmenu'
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
@@ -8,18 +8,12 @@ import { useI18n } from 'vue-i18n'
 import DotSpinner from '@/components/common/DotSpinner.vue'
 import HoneyToast from '@/components/honeyToast/HoneyToast.vue'
 import Button from '@/components/ui/button/Button.vue'
-import { useSettingStore } from '@/platform/settings/settingStore'
-import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
-import { api } from '@/scripts/api'
-import { useCommandStore } from '@/stores/commandStore'
-import { useConflictDetection } from '@/workbench/extensions/manager/composables/useConflictDetection'
-import { useComfyManagerService } from '@/workbench/extensions/manager/services/comfyManagerService'
+import { useApplyChanges } from '@/workbench/extensions/manager/composables/useApplyChanges'
 import { useComfyManagerStore } from '@/workbench/extensions/manager/stores/comfyManagerStore'
 
 const { t } = useI18n()
 const comfyManagerStore = useComfyManagerStore()
-const settingStore = useSettingStore()
-const { runFullConflictAnalysis } = useConflictDetection()
+const { isRestarting, isRestartCompleted, applyChanges } = useApplyChanges()
 
 const isExpanded = ref(false)
 const activeTabIndex = ref(0)
@@ -41,9 +35,6 @@ const focusedLogs = computed(() => {
 })
 
 const visible = computed(() => comfyManagerStore.taskLogs.length > 0)
-
-const isRestarting = ref(false)
-const isRestartCompleted = ref(false)
 
 const isInProgress = computed(
   () => comfyManagerStore.isProcessingTasks || isRestarting.value
@@ -148,48 +139,7 @@ function closeToast() {
 }
 
 async function handleRestart() {
-  const originalToastSetting = settingStore.get(
-    'Comfy.Toast.DisableReconnectingToast'
-  )
-
-  try {
-    await settingStore.set('Comfy.Toast.DisableReconnectingToast', true)
-
-    isRestarting.value = true
-
-    const onReconnect = async () => {
-      try {
-        comfyManagerStore.setStale()
-        await useCommandStore().execute('Comfy.RefreshNodeDefinitions')
-        await useWorkflowService().reloadCurrentWorkflow()
-        void runFullConflictAnalysis()
-      } finally {
-        await settingStore.set(
-          'Comfy.Toast.DisableReconnectingToast',
-          originalToastSetting
-        )
-        isRestarting.value = false
-        isRestartCompleted.value = true
-
-        setTimeout(() => {
-          closeToast()
-        }, 3000)
-      }
-    }
-
-    useEventListener(api, 'reconnected', onReconnect, { once: true })
-
-    await useComfyManagerService().rebootComfyUI()
-  } catch (error) {
-    await settingStore.set(
-      'Comfy.Toast.DisableReconnectingToast',
-      originalToastSetting
-    )
-    isRestarting.value = false
-    isRestartCompleted.value = false
-    closeToast()
-    throw error
-  }
+  await applyChanges(closeToast)
 }
 
 onMounted(() => {
