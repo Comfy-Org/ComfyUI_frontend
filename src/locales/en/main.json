@@ -1987,7 +1987,7 @@
       "newUser": "New here?",
       "userAvatar": "User Avatar",
       "signUp": "Sign up",
-      "signUpFreeTierPromo": "New here? {signUp} with a Gmail account to get {credits} free credits every month.",
+      "signUpFreeTierPromo": "New here? {signUp} with Google to get {credits} free credits every month.",
       "emailLabel": "Email",
       "emailPlaceholder": "Enter your email",
       "passwordLabel": "Password",
@@ -2015,8 +2015,8 @@
       "noAssociatedUser": "There is no Comfy user associated with the provided API key",
       "useEmailInstead": "Use email instead",
       "freeTierBadge": "Eligible for Free Tier",
-      "freeTierDescription": "Sign up to get {credits} free credits every month. No card needed.",
-      "freeTierDescriptionGeneric": "Sign up and get free credits every month. No card needed.",
+      "freeTierDescription": "Sign up with Google to get {credits} free credits every month. No card needed.",
+      "freeTierDescriptionGeneric": "Sign up with Google to get free credits every month. No card needed.",
       "backToSocialLogin": "Sign up with Google or Github instead"
     },
     "signup": {

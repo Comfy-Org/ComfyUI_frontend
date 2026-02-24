@@ -23,10 +23,7 @@
       </Message>
 
       <template v-if="!showEmailForm">
-        <p
-          v-if="isFreeTierEnabled"
-          class="mb-4 text-center text-sm text-muted-foreground"
-        >
+        <p v-if="isFreeTierEnabled" class="mb-4 text-sm text-muted-foreground">
           {{
             freeTierCredits
               ? t('auth.login.freeTierDescription', {
