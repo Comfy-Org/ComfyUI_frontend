@@ -10,8 +10,10 @@ import type {
   LGraph,
   LGraphCanvas,
   LGraphGroup,
-  LGraphNode
+  LGraphNode,
+  SubgraphNode
 } from '@/lib/litegraph/src/litegraph'
+import { promoteRecommendedWidgets } from '@/core/graph/subgraph/promotionUtils'
 import { app } from '@/scripts/app'
 import { isLGraphGroup, isLGraphNode, isReroute } from '@/utils/litegraphUtil'
 
@@ -135,6 +137,13 @@ export const useCanvasStore = defineStore('canvas', () => {
       useEventListener(newCanvas.canvas, 'subgraph-opened', () => {
         isInSubgraph.value = true
       })
+
+      useEventListener(
+        newCanvas.canvas,
+        'subgraph-converted',
+        (e: CustomEvent<{ subgraphNode: SubgraphNode }>) =>
+          promoteRecommendedWidgets(e.detail.subgraphNode)
+      )
     },
     { immediate: true }
   )

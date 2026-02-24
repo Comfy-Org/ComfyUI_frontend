@@ -7,7 +7,7 @@
     <!-- Video Wrapper -->
     <div
       ref="videoWrapperEl"
-      class="relative h-full w-full grow overflow-hidden rounded-[5px] bg-node-component-surface"
+      class="relative flex flex-1 overflow-hidden rounded-[5px] bg-node-component-surface"
       tabindex="0"
       role="region"
       :aria-label="$t('g.videoPreview')"
@@ -21,7 +21,7 @@
       <div
         v-if="videoError"
         role="alert"
-        class="flex size-full flex-col items-center justify-center bg-muted-background text-center text-base-foreground py-8"
+        class="flex flex-auto flex-col items-center justify-center bg-muted-background text-center text-base-foreground py-8"
       >
         <i
           class="mb-2 icon-[lucide--video-off] h-12 w-12 text-base-foreground"

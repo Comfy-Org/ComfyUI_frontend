@@ -475,6 +475,23 @@ export class ComfyApi extends EventTarget {
     super.removeEventListener(type, callback as EventListener, options)
   }
 
+  addCustomEventListener(
+    type: string,
+    callback: ((event: CustomEvent<unknown>) => void) | null,
+    options?: AddEventListenerOptions | boolean
+  ) {
+    super.addEventListener(type, callback as EventListener, options)
+    this._registered.add(type)
+  }
+
+  removeCustomEventListener(
+    type: string,
+    callback: ((event: CustomEvent<unknown>) => void) | null,
+    options?: EventListenerOptions | boolean
+  ) {
+    super.removeEventListener(type, callback as EventListener, options)
+  }
+
   /**
    * Dispatches a custom event.
    * Provides type safety for the contravariance issue with EventTarget (last checked TS 5.6).

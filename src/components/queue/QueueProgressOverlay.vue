@@ -75,15 +75,10 @@ import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 
 type OverlayState = 'hidden' | 'active' | 'expanded'
 
-const props = withDefaults(
-  defineProps<{
-    expanded?: boolean
-    menuHovered?: boolean
-  }>(),
-  {
-    menuHovered: false
-  }
-)
+const { expanded, menuHovered = false } = defineProps<{
+  expanded?: boolean
+  menuHovered?: boolean
+}>()
 
 const emit = defineEmits<{
   (e: 'update:expanded', value: boolean): void
@@ -106,13 +101,12 @@ const {
   currentNodeProgressStyle
 } = useQueueProgress()
 const isHovered = ref(false)
-const isOverlayHovered = computed(() => isHovered.value || props.menuHovered)
+const isOverlayHovered = computed(() => isHovered.value || menuHovered)
 const internalExpanded = ref(false)
 const isExpanded = computed({
-  get: () =>
-    props.expanded === undefined ? internalExpanded.value : props.expanded,
+  get: () => (expanded === undefined ? internalExpanded.value : expanded),
   set: (value) => {
-    if (props.expanded === undefined) {
+    if (expanded === undefined) {
       internalExpanded.value = value
     }
     emit('update:expanded', value)

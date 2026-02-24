@@ -315,8 +315,36 @@
     "deleteBlueprint": "Supprimer le plan",
     "deleteWorkflow": "Supprimer le workflow",
     "duplicate": "Dupliquer",
+    "enterAppMode": "Entrer en mode application",
     "enterNewName": "Entrez un nouveau nom",
-    "missingNodesWarning": "Le workflow contient des nœuds non pris en charge (surlignés en rouge)."
+    "exitAppMode": "Quitter le mode application",
+    "missingNodesWarning": "Le workflow contient des nœuds non pris en charge (surlignés en rouge).",
+    "workflowActions": "Actions du workflow"
+  },
+  "builderToolbar": {
+    "app": "Application",
+    "appDescription": "S'ouvre par défaut en tant qu'application",
+    "arrange": "Aperçu",
+    "arrangeDescription": "Vérifier la disposition de l'application",
+    "connectOutput": "Connecter une sortie",
+    "connectOutputBody1": "Votre application doit avoir au moins une sortie connectée avant de pouvoir être enregistrée.",
+    "connectOutputBody2": "Passez à l'étape « Sélectionner » et cliquez sur les nœuds de sortie pour les ajouter ici.",
+    "filename": "Nom du fichier",
+    "label": "Créateur d'applications",
+    "nodeGraph": "Graphe de nœuds",
+    "nodeGraphDescription": "S'ouvre par défaut en tant que graphe de nœuds",
+    "save": "Enregistrer",
+    "saveAs": "Enregistrer sous",
+    "saveAsLabel": "Enregistrer ce workflow sous ...",
+    "saveDescription": "Enregistrer et terminer",
+    "saveSuccess": "Enregistré avec succès",
+    "saveSuccessAppMessage": "« {name} » a été enregistré. Il s'ouvrira désormais par défaut en mode application.",
+    "saveSuccessAppPrompt": "Voulez-vous le voir maintenant ?",
+    "saveSuccessGraphMessage": "« {name} » a été enregistré. Il s'ouvrira par défaut en tant que graphe de nœuds.",
+    "select": "Sélectionner",
+    "selectDescription": "Choisir les entrées/sorties",
+    "switchToSelect": "Passer à Sélectionner",
+    "viewApp": "Voir l'application"
   },
   "clipboard": {
     "errorMessage": "Échec de la copie dans le presse-papiers",
@@ -879,6 +907,7 @@
     "enableSelected": "Activer la sélection",
     "enabled": "Activé",
     "enabling": "Activation",
+    "enter": "Entrer",
     "enterBaseName": "Entrez le nom de base",
     "enterNewName": "Entrez le nouveau nom",
     "enterNewNamePrompt": "Entrez le nouveau nom :",
@@ -1282,6 +1311,20 @@
     "helpFix": "Aidez à résoudre cela"
   },
   "linearMode": {
+    "appModeToolbar": {
+      "appBuilder": "Créateur d'applications",
+      "apps": "Applications"
+    },
+    "arrange": {
+      "atLeastOne": "au moins un",
+      "connectAtLeastOne": "Connectez {atLeastOne} nœud de sortie pour que les utilisateurs puissent voir les résultats après l'exécution.",
+      "noOutputs": "Aucune sortie ajoutée pour le moment",
+      "outputExamples": "Exemples : « Enregistrer l'image » ou « Enregistrer la vidéo »",
+      "outputs": "Sorties",
+      "resultsLabel": "Les résultats générés à partir du ou des nœuds de sortie sélectionnés seront affichés ici après l'exécution de cette application",
+      "switchToSelect": "Passez à l'étape « Sélectionner » et cliquez sur les nœuds de sortie pour les ajouter ici.",
+      "switchToSelectButton": "Passer à Sélectionner"
+    },
     "beta": "Mode App Bêta - Donnez votre avis",
     "downloadAll": "Tout télécharger",
     "dragAndDropImage": "Glissez-déposez une image",
@@ -1291,11 +1334,13 @@
     "reuseParameters": "Réutiliser les paramètres",
     "runCount": "Nombre d’exécutions :",
     "welcome": {
-      "intro": "Une vue simplifiée qui masque le graphe de nœuds pour vous permettre de vous concentrer sur la création.",
-      "layout": "À gauche, vous verrez vos images, vidéos et sorties générées. À droite, seulement les contrôles nécessaires. Tout ce qui est complexe reste caché.",
+      "backToWorkflow": "Retour au workflow",
+      "buildApp": "Créer une application",
+      "controls": "Vos sorties apparaissent en bas, vos contrôles sont à droite. Tout le reste reste à l'écart.",
+      "getStarted": "Cliquez sur {runButton} pour commencer.",
+      "message": "Une vue simplifiée qui masque le graphe de nœuds pour vous permettre de vous concentrer sur la création.",
       "sharing": "Le partage est facile : créez votre workflow, ouvrez le mode App, faites un clic droit sur l’onglet et exportez. Quand d’autres ouvrent votre fichier, il s’ouvre directement dans cette vue épurée. Vous pouvez partager des workflows puissants comme des outils simples, sans que personne n’ait besoin de comprendre les graphes de nœuds.",
-      "title": "Bienvenue en mode App",
-      "widget": "Si vous souhaitez contrôler quels paramètres apparaissent, convertissez vos nœuds principaux en sous-graphe, puis utilisez la promotion de widget dans la boîte à outils au-dessus pour choisir ce qui est exposé."
+      "title": "Bienvenue en mode App"
     }
   },
   "load3d": {
@@ -1844,6 +1889,14 @@
       "label": "Version de prévisualisation",
       "tooltip": "Vous utilisez une version nightly de ComfyUI. Veuillez utiliser le bouton de retour pour partager vos impressions sur ces fonctionnalités."
     }
+  },
+  "nightlySurvey": {
+    "accept": "Oui, je veux aider !",
+    "description": "Vous avez utilisé cette fonctionnalité. Pourriez-vous prendre un moment pour partager votre avis ?",
+    "dontAskAgain": "Ne plus demander",
+    "loadError": "Échec du chargement du sondage. Veuillez réessayer plus tard.",
+    "notNow": "Pas maintenant",
+    "title": "Aidez-nous à nous améliorer"
   },
   "nodeCategories": {
     "": "",
@@ -2599,14 +2652,17 @@
     "cannotDeleteGlobal": "Impossible de supprimer les blueprints installés",
     "confirmDelete": "Cette action supprimera définitivement le plan de votre bibliothèque",
     "confirmDeleteTitle": "Supprimer le plan ?",
+    "disconnected": "Déconnecté",
     "enterDescription": "Saisissez une description",
     "enterSearchAliases": "Saisissez des alias de recherche (séparés par des virgules)",
     "hidden": "Paramètres cachés / imbriqués",
     "hideAll": "Tout masquer",
+    "linked": "(Lié)",
     "loadFailure": "Échec du chargement des plans de sous-graphes",
     "overwriteBlueprint": "L'enregistrement écrasera le plan actuel avec vos modifications",
     "overwriteBlueprintTitle": "Écraser le plan existant ?",
     "promoteOutsideSubgraph": "Impossible de promouvoir le widget en dehors d'un sous-graphe",
+    "promoteWidget": "Promouvoir le widget : {name}",
     "publish": "Publier le sous-graphe",
     "publishSuccess": "Enregistré dans la bibliothèque de nœuds",
     "publishSuccessMessage": "Vous pouvez trouver votre plan de sous-graphe dans la bibliothèque de nœuds sous \"Plans de sous-graphes\"",
@@ -2614,7 +2670,8 @@
     "searchAliases": "Rechercher des alias",
     "showAll": "Tout afficher",
     "showRecommended": "Afficher les widgets recommandés",
-    "shown": "Affiché sur le nœud"
+    "shown": "Affiché sur le nœud",
+    "unpromoteWidget": "Rétrograder le widget : {name}"
   },
   "subscription": {
     "addApiCredits": "Ajouter des crédits API",

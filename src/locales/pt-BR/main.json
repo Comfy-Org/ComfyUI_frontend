@@ -315,8 +315,36 @@
     "deleteBlueprint": "Excluir Blueprint",
     "deleteWorkflow": "Excluir Fluxo de Trabalho",
     "duplicate": "Duplicar",
+    "enterAppMode": "Entrar no modo de aplicativo",
     "enterNewName": "Digite um novo nome",
-    "missingNodesWarning": "O fluxo de trabalho contém nós não suportados (destacados em vermelho)."
+    "exitAppMode": "Sair do modo de aplicativo",
+    "missingNodesWarning": "O fluxo de trabalho contém nós não suportados (destacados em vermelho).",
+    "workflowActions": "Ações do fluxo de trabalho"
+  },
+  "builderToolbar": {
+    "app": "Aplicativo",
+    "appDescription": "Abre como aplicativo por padrão",
+    "arrange": "Pré-visualizar",
+    "arrangeDescription": "Revisar layout do aplicativo",
+    "connectOutput": "Conectar uma saída",
+    "connectOutputBody1": "Seu aplicativo precisa de pelo menos uma saída conectada antes de ser salvo.",
+    "connectOutputBody2": "Altere para a etapa 'Selecionar' e clique nos nós de saída para adicioná-los aqui.",
+    "filename": "Nome do arquivo",
+    "label": "Construtor de aplicativos",
+    "nodeGraph": "Grafo de nós",
+    "nodeGraphDescription": "Abre como grafo de nós por padrão",
+    "save": "Salvar",
+    "saveAs": "Salvar como",
+    "saveAsLabel": "Salvar este fluxo de trabalho como ...",
+    "saveDescription": "Salvar e finalizar",
+    "saveSuccess": "Salvo com sucesso",
+    "saveSuccessAppMessage": "'{name}' foi salvo. Ele abrirá no Modo de Aplicativo por padrão a partir de agora.",
+    "saveSuccessAppPrompt": "Gostaria de visualizá-lo agora?",
+    "saveSuccessGraphMessage": "'{name}' foi salvo. Ele abrirá como grafo de nós por padrão.",
+    "select": "Selecionar",
+    "selectDescription": "Escolha entradas/saídas",
+    "switchToSelect": "Ir para Selecionar",
+    "viewApp": "Visualizar aplicativo"
   },
   "clipboard": {
     "errorMessage": "Falha ao copiar para a área de transferência",
@@ -879,6 +907,7 @@
     "enableSelected": "Ativar selecionados",
     "enabled": "Ativado",
     "enabling": "Ativando {id}",
+    "enter": "Entrar",
     "enterBaseName": "Digite o nome base",
     "enterNewName": "Digite o novo nome",
     "enterNewNamePrompt": "Digite o novo nome:",
@@ -1282,6 +1311,20 @@
     "helpFix": "Ajude a Corrigir Isto"
   },
   "linearMode": {
+    "appModeToolbar": {
+      "appBuilder": "Construtor de aplicativos",
+      "apps": "Aplicativos"
+    },
+    "arrange": {
+      "atLeastOne": "pelo menos um",
+      "connectAtLeastOne": "Conecte {atLeastOne} nó de saída para que os usuários possam ver os resultados após a execução.",
+      "noOutputs": "Nenhuma saída adicionada ainda",
+      "outputExamples": "Exemplos: 'Salvar imagem' ou 'Salvar vídeo'",
+      "outputs": "Saídas",
+      "resultsLabel": "Os resultados gerados pelo(s) nó(s) de saída selecionado(s) serão exibidos aqui após a execução deste aplicativo",
+      "switchToSelect": "Altere para a etapa 'Selecionar' e clique nos nós de saída para adicioná-los aqui.",
+      "switchToSelectButton": "Ir para Selecionar"
+    },
     "beta": "Modo App Beta - Envie seu feedback",
     "downloadAll": "Baixar tudo",
     "dragAndDropImage": "Arraste e solte uma imagem",
@@ -1291,11 +1334,13 @@
     "reuseParameters": "Reutilizar parâmetros",
     "runCount": "Número de execuções:",
     "welcome": {
-      "intro": "Uma visualização simplificada que oculta o grafo de nós para você focar na criação.",
-      "layout": "À esquerda, você verá suas imagens, vídeos e saídas geradas. À direita, apenas os controles necessários. Tudo que é complexo fica fora de vista.",
+      "backToWorkflow": "Voltar ao fluxo de trabalho",
+      "buildApp": "Criar aplicativo",
+      "controls": "Seus resultados aparecem na parte inferior, seus controles estão à direita. Todo o resto fica fora do caminho.",
+      "getStarted": "Clique em {runButton} para começar.",
+      "message": "Uma visualização simplificada que oculta o grafo de nós para você focar na criação.",
       "sharing": "Compartilhar é fácil: crie seu fluxo de trabalho, abra o Modo App, clique com o botão direito na aba e exporte. Quando outros abrirem seu arquivo, ele será iniciado diretamente nesta visualização limpa. Você pode compartilhar fluxos de trabalho poderosos como ferramentas simples, sem que ninguém precise entender grafos de nós.",
-      "title": "Bem-vindo ao Modo App",
-      "widget": "Se quiser controlar quais configurações aparecem, converta seus nós de nível superior em um subgrafo e use a promoção de widgets na caixa de ferramentas acima dele para escolher o que será exposto."
+      "title": "Bem-vindo ao Modo App"
     }
   },
   "load3d": {
@@ -1844,6 +1889,14 @@
       "label": "Versão de Prévia",
       "tooltip": "Você está usando uma versão nightly do ComfyUI. Por favor, use o botão de feedback para compartilhar suas opiniões sobre esses recursos."
     }
+  },
+  "nightlySurvey": {
+    "accept": "Claro, vou ajudar!",
+    "description": "Você tem usado este recurso. Pode dedicar um momento para compartilhar seu feedback?",
+    "dontAskAgain": "Não perguntar novamente",
+    "loadError": "Falha ao carregar a pesquisa. Por favor, tente novamente mais tarde.",
+    "notNow": "Agora não",
+    "title": "Ajude-nos a melhorar"
   },
   "nodeCategories": {
     "": "",
@@ -2611,14 +2664,17 @@
     "cannotDeleteGlobal": "Não é possível excluir blueprints instalados",
     "confirmDelete": "Esta ação removerá permanentemente o blueprint da sua biblioteca",
     "confirmDeleteTitle": "Excluir blueprint?",
+    "disconnected": "Desconectado",
     "enterDescription": "Insira uma descrição",
     "enterSearchAliases": "Insira apelidos de busca (separados por vírgula)",
     "hidden": "Parâmetros ocultos/aninhados",
     "hideAll": "Ocultar tudo",
+    "linked": "(Vinculado)",
     "loadFailure": "Falha ao carregar blueprints de subgrafo",
     "overwriteBlueprint": "Salvar irá sobrescrever o blueprint atual com suas alterações",
     "overwriteBlueprintTitle": "Sobrescrever blueprint existente?",
     "promoteOutsideSubgraph": "Não é possível promover o widget fora do subgrafo",
+    "promoteWidget": "Promover Widget: {name}",
     "publish": "Publicar Subgrafo",
     "publishSuccess": "Salvo na Biblioteca de Nós",
     "publishSuccessMessage": "Você pode encontrar seu blueprint de subgrafo na biblioteca de nós em \"Blueprints de Subgrafo\"",
@@ -2626,7 +2682,8 @@
     "searchAliases": "Buscar Apelidos",
     "showAll": "Mostrar tudo",
     "showRecommended": "Mostrar widgets recomendados",
-    "shown": "Exibido no nó"
+    "shown": "Exibido no nó",
+    "unpromoteWidget": "Despromover Widget: {name}"
   },
   "subscription": {
     "addApiCredits": "Adicionar créditos de API",

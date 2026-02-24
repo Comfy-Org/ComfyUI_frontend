@@ -53,7 +53,7 @@ test.describe('Subgraph Operations', { tag: ['@slow', '@subgraph'] }, () => {
   ): Promise<boolean> {
     return await comfyPage.page.evaluate(() => {
       const graph = window.app!.canvas.graph
-      return graph?.constructor?.name === 'Subgraph'
+      return !!graph && 'inputNode' in graph
     })
   }
 

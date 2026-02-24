@@ -136,6 +136,7 @@ export type IWidget =
   | IAssetWidget
   | IImageCropWidget
   | IBoundingBoxWidget
+  | ICurveWidget
 
 export interface IBooleanWidget extends IBaseWidget<boolean, 'toggle'> {
   type: 'toggle'
@@ -328,6 +329,13 @@ export interface IBoundingBoxWidget extends IBaseWidget<Bounds, 'boundingbox'> {
   value: Bounds
 }
 
+export type CurvePoint = [x: number, y: number]
+
+export interface ICurveWidget extends IBaseWidget<CurvePoint[], 'curve'> {
+  type: 'curve'
+  value: CurvePoint[]
+}
+
 /**
  * Valid widget types.  TS cannot provide easily extensible type safety for this at present.
  * Override linkedWidgets[]
@@ -410,14 +418,6 @@ export interface IBaseWidget<
 
   hidden?: boolean
   advanced?: boolean
-  /**
-   * This property is automatically computed on graph change
-   * and should not be changed.
-   * Promoted widgets have a colored border
-   * @see /core/graph/subgraph/proxyWidget.registerProxyWidgets
-   */
-  promoted?: boolean
-
   tooltip?: string
 
   // TODO: Confirm this format

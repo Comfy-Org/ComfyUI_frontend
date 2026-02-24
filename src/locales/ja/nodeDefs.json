@@ -5327,6 +5327,39 @@
       }
     }
   },
+  "KlingAvatarNode": {
+    "description": "1枚の写真と音声ファイルから、放送スタイルのデジタルヒューマン動画を生成します。",
+    "display_name": "Kling Avatar 2.0",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後に制御"
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "アバターの参照画像。幅と高さは300px以上である必要があります。アスペクト比は1:2.5から2.5:1の間でなければなりません。"
+      },
+      "mode": {
+        "name": "mode"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "アバターの動作、感情、カメラの動きを定義するためのオプションのプロンプトです。"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "シードはノードを再実行するかどうかを制御します。シードに関係なく結果は非決定的です。"
+      },
+      "sound_file": {
+        "name": "sound_file",
+        "tooltip": "音声入力。2秒から300秒の間である必要があります。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "KlingCameraControlI2VNode": {
     "description": "静止画像を、実際の映画撮影のようなプロフェッショナルなカメラ動作でシネマティックな動画に変換します。ズーム、回転、パン、チルト、一人称視点などのバーチャルカメラ操作を制御し、元画像へのフォーカスを維持します。",
     "display_name": "Kling 画像から動画へ（カメラコントロール）",

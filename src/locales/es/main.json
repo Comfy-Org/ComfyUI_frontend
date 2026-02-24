@@ -315,8 +315,36 @@
     "deleteBlueprint": "Eliminar Plano",
     "deleteWorkflow": "Eliminar flujo de trabajo",
     "duplicate": "Duplicar",
+    "enterAppMode": "Entrar en modo aplicación",
     "enterNewName": "Ingrese un nuevo nombre",
-    "missingNodesWarning": "El flujo de trabajo contiene nodos no compatibles (resaltados en rojo)."
+    "exitAppMode": "Salir del modo aplicación",
+    "missingNodesWarning": "El flujo de trabajo contiene nodos no compatibles (resaltados en rojo).",
+    "workflowActions": "Acciones del flujo de trabajo"
+  },
+  "builderToolbar": {
+    "app": "Aplicación",
+    "appDescription": "Se abre como una aplicación por defecto",
+    "arrange": "Vista previa",
+    "arrangeDescription": "Revisar el diseño de la aplicación",
+    "connectOutput": "Conectar una salida",
+    "connectOutputBody1": "Tu aplicación necesita al menos una salida conectada antes de poder guardarse.",
+    "connectOutputBody2": "Cambia al paso 'Seleccionar' y haz clic en los nodos de salida para agregarlos aquí.",
+    "filename": "Nombre de archivo",
+    "label": "Constructor de aplicaciones",
+    "nodeGraph": "Grafo de nodos",
+    "nodeGraphDescription": "Se abre como grafo de nodos por defecto",
+    "save": "Guardar",
+    "saveAs": "Guardar como",
+    "saveAsLabel": "Guardar este flujo de trabajo como...",
+    "saveDescription": "Guardar y finalizar",
+    "saveSuccess": "Guardado exitosamente",
+    "saveSuccessAppMessage": "'{name}' ha sido guardado. Se abrirá en modo aplicación por defecto de ahora en adelante.",
+    "saveSuccessAppPrompt": "¿Te gustaría verlo ahora?",
+    "saveSuccessGraphMessage": "'{name}' ha sido guardado. Se abrirá como grafo de nodos por defecto.",
+    "select": "Seleccionar",
+    "selectDescription": "Elegir entradas/salidas",
+    "switchToSelect": "Cambiar a Seleccionar",
+    "viewApp": "Ver aplicación"
   },
   "clipboard": {
     "errorMessage": "Error al copiar al portapapeles",
@@ -879,6 +907,7 @@
     "enableSelected": "Habilitar seleccionados",
     "enabled": "Habilitado",
     "enabling": "Habilitando",
+    "enter": "Entrar",
     "enterBaseName": "Introduce el nombre base",
     "enterNewName": "Introduce el nuevo nombre",
     "enterNewNamePrompt": "Introduce un nuevo nombre:",
@@ -1282,6 +1311,20 @@
     "helpFix": "Ayuda a Solucionar Esto"
   },
   "linearMode": {
+    "appModeToolbar": {
+      "appBuilder": "Constructor de aplicaciones",
+      "apps": "Aplicaciones"
+    },
+    "arrange": {
+      "atLeastOne": "al menos uno",
+      "connectAtLeastOne": "Conecta {atLeastOne} nodo de salida para que los usuarios puedan ver los resultados después de ejecutar.",
+      "noOutputs": "Aún no se han añadido salidas",
+      "outputExamples": "Ejemplos: 'Guardar imagen' o 'Guardar video'",
+      "outputs": "Salidas",
+      "resultsLabel": "Los resultados generados por el/los nodo(s) de salida seleccionados se mostrarán aquí después de ejecutar esta aplicación",
+      "switchToSelect": "Cambia al paso 'Seleccionar' y haz clic en los nodos de salida para agregarlos aquí.",
+      "switchToSelectButton": "Cambiar a Seleccionar"
+    },
     "beta": "Modo App Beta - Enviar comentarios",
     "downloadAll": "Descargar todo",
     "dragAndDropImage": "Arrastra y suelta una imagen",
@@ -1291,11 +1334,13 @@
     "reuseParameters": "Reutilizar parámetros",
     "runCount": "Número de ejecuciones:",
     "welcome": {
-      "intro": "Una vista simplificada que oculta el grafo de nodos para que puedas concentrarte en crear.",
-      "layout": "A la izquierda, verás tus imágenes, videos y resultados generados. A la derecha, solo los controles necesarios. Todo lo complejo queda fuera de la vista.",
+      "backToWorkflow": "Volver al flujo de trabajo",
+      "buildApp": "Crear aplicación",
+      "controls": "Tus resultados aparecen abajo, tus controles están a la derecha. Todo lo demás se mantiene fuera del camino.",
+      "getStarted": "Haz clic en {runButton} para comenzar.",
+      "message": "Una vista simplificada que oculta el grafo de nodos para que puedas concentrarte en crear.",
       "sharing": "Compartir es fácil: crea tu flujo de trabajo, abre el Modo App, haz clic derecho en la pestaña y exporta. Cuando otros abran tu archivo, se lanzará directamente en esta vista limpia. Puedes compartir flujos de trabajo potentes como herramientas simples sin que nadie tenga que entender grafos de nodos.",
-      "title": "Bienvenido al Modo App",
-      "widget": "Si quieres controlar qué ajustes aparecen, convierte tus nodos principales en un subgrafo y luego usa la promoción de widgets en la barra de herramientas sobre él para elegir qué se expone."
+      "title": "Bienvenido al Modo App"
     }
   },
   "load3d": {
@@ -1844,6 +1889,14 @@
       "label": "Versión preliminar",
       "tooltip": "Estás usando una versión nightly de ComfyUI. Por favor, utiliza el botón de comentarios para compartir tus opiniones sobre estas funciones."
     }
+  },
+  "nightlySurvey": {
+    "accept": "¡Claro, ayudaré!",
+    "description": "Has estado usando esta función. ¿Te tomarías un momento para compartir tus comentarios?",
+    "dontAskAgain": "No preguntar de nuevo",
+    "loadError": "No se pudo cargar la encuesta. Por favor, inténtalo de nuevo más tarde.",
+    "notNow": "Ahora no",
+    "title": "Ayúdanos a mejorar"
   },
   "nodeCategories": {
     "": "",
@@ -2599,14 +2652,17 @@
     "cannotDeleteGlobal": "No se pueden eliminar los blueprints instalados",
     "confirmDelete": "Esta acción eliminará permanentemente el subgrafo de tu biblioteca",
     "confirmDeleteTitle": "¿Eliminar subgrafo?",
+    "disconnected": "Desconectado",
     "enterDescription": "Introduce una descripción",
     "enterSearchAliases": "Introduce alias de búsqueda (separados por comas)",
     "hidden": "Parámetros ocultos/anidados",
     "hideAll": "Ocultar todo",
+    "linked": "(Vinculado)",
     "loadFailure": "No se pudieron cargar los subgrafos",
     "overwriteBlueprint": "Guardar sobrescribirá el subgrafo actual con tus cambios",
     "overwriteBlueprintTitle": "¿Sobrescribir subgrafo existente?",
     "promoteOutsideSubgraph": "No se puede promocionar widget cuando no está en subgrafo",
+    "promoteWidget": "Promocionar widget: {name}",
     "publish": "Publicar subgrafo",
     "publishSuccess": "Guardado en la biblioteca de nodos",
     "publishSuccessMessage": "Puedes encontrar tu subgrafo en la biblioteca de nodos bajo \"Subgraph Blueprints\"",
@@ -2614,7 +2670,8 @@
     "searchAliases": "Buscar alias",
     "showAll": "Mostrar todo",
     "showRecommended": "Mostrar widgets recomendados",
-    "shown": "Mostrado en el nodo"
+    "shown": "Mostrado en el nodo",
+    "unpromoteWidget": "Dejar de promocionar widget: {name}"
   },
   "subscription": {
     "addApiCredits": "Agregar créditos de API",

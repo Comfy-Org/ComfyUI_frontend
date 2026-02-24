@@ -100,21 +100,24 @@ describe('ComfyApp', () => {
       expect(mockNode2.connect).toHaveBeenCalledWith(0, mockBatchNode, 1)
     })
 
-    it('should not proceed if batch node creation fails', async () => {
+    it('should select single image node without batch node', async () => {
       const mockNode1 = createMockNode({ id: 1 })
       vi.mocked(pasteImageNodes).mockResolvedValue([mockNode1])
-      vi.mocked(createNode).mockResolvedValue(null)
 
       const file = createTestFile('test.png', 'image/png')
 
       await app.handleFileList([file])
 
-      expect(mockCanvas.selectItems).not.toHaveBeenCalled()
+      expect(createNode).not.toHaveBeenCalled()
+      expect(mockCanvas.selectItems).toHaveBeenCalledWith([mockNode1])
       expect(mockNode1.connect).not.toHaveBeenCalled()
     })
 
     it('should handle empty file list', async () => {
-      await expect(app.handleFileList([])).rejects.toThrow()
+      await app.handleFileList([])
+
+      expect(pasteImageNodes).not.toHaveBeenCalled()
+      expect(createNode).not.toHaveBeenCalled()
     })
 
     it('should not process unsupported file types', async () => {

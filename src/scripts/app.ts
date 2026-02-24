@@ -7,7 +7,7 @@ import { shallowRef } from 'vue'
 import { useCanvasPositionConversion } from '@/composables/element/useCanvasPositionConversion'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { flushScheduledSlotLayoutSync } from '@/renderer/extensions/vueNodes/composables/useSlotElementTracking'
-import { registerProxyWidgets } from '@/core/graph/subgraph/proxyWidget'
+
 import { st, t } from '@/i18n'
 import type { IContextMenuValue } from '@/lib/litegraph/src/interfaces'
 import {
@@ -89,7 +89,8 @@ import {
   executeWidgetsCallback,
   createNode,
   fixLinkInputSlots,
-  isImageNode
+  isImageNode,
+  isVideoNode
 } from '@/utils/litegraphUtil'
 import {
   createSharedObjectUrl,
@@ -110,9 +111,18 @@ import { ComfyAppMenu } from './ui/menu/index'
 import { clone } from './utils'
 import { type ComfyWidgetConstructor } from './widgets'
 import { ensureCorrectLayoutScale } from '@/renderer/extensions/vueNodes/layout/ensureCorrectLayoutScale'
-import { extractFilesFromDragEvent, hasImageType } from '@/utils/eventUtils'
+import {
+  extractFilesFromDragEvent,
+  hasAudioType,
+  hasImageType
+} from '@/utils/eventUtils'
 import { getWorkflowDataFromFile } from '@/scripts/metadata/parser'
-import { pasteImageNode, pasteImageNodes } from '@/composables/usePaste'
+import {
+  pasteAudioNode,
+  pasteAudioNodes,
+  pasteImageNode,
+  pasteImageNodes
+} from '@/composables/usePaste'
 
 export const ANIM_PREVIEW_WIDGET = '$$comfy_animation_preview'
 
@@ -559,8 +569,24 @@ export class ComfyApp {
         const workspace = useWorkspaceStore()
         try {
           workspace.spinner = true
-          if (files.length > 1 && files.every(hasImageType)) {
-            await this.handleFileList(files)
+          const imageFiles = files.filter(hasImageType)
+          const audioFiles = files.filter(hasAudioType)
+          const totalMedia = imageFiles.length + audioFiles.length
+          const hasMultipleMedia = totalMedia > 1
+
+          if (hasMultipleMedia) {
+            if (imageFiles.length > 0) {
+              await this.handleFileList(imageFiles)
+            }
+            if (audioFiles.length > 0) {
+              await this.handleAudioFileList(audioFiles)
+            }
+            const handled = new Set([...imageFiles, ...audioFiles])
+            for (const file of files.filter((f) => !handled.has(f))) {
+              await this.handleFile(file, 'file_drop', {
+                deferWarnings: true
+              })
+            }
           } else {
             for (const file of files) {
               await this.handleFile(file, 'file_drop', {
@@ -891,8 +917,6 @@ export class ComfyApp {
         }
       }
     )
-
-    registerProxyWidgets(this.canvas)
 
     this.rootGraph.start()
 
@@ -1314,18 +1338,18 @@ export class ComfyApp {
               }
             }
           }
-          if (reset_invalid_values) {
-            if (widget.type == 'combo') {
-              const values = widget.options.values as
-                | (string | number | boolean)[]
-                | undefined
-              if (
-                values &&
-                values.length > 0 &&
-                !values.includes(widget.value as string | number | boolean)
-              ) {
-                widget.value = values[0]
-              }
+          if (widget.type == 'combo') {
+            const values = widget.options.values as
+              | (string | number | boolean)[]
+              | undefined
+            if (
+              values &&
+              values.length > 0 &&
+              (widget.value == null ||
+                (reset_invalid_values &&
+                  !values.includes(widget.value as string | number | boolean)))
+            ) {
+              widget.value = values[0]
             }
           }
         }
@@ -1563,6 +1587,12 @@ export class ComfyApp {
         const imageNode = await createNode(this.canvas, 'LoadImage')
         await pasteImageNode(this.canvas, transfer.items, imageNode)
         return
+      } else if (file.type.startsWith('audio')) {
+        const transfer = new DataTransfer()
+        transfer.items.add(file)
+        const audioNode = await createNode(this.canvas, 'LoadAudio')
+        await pasteAudioNode(this.canvas, transfer.items, audioNode)
+        return
       }
 
       this.showErrorOnFileLoad(file)
@@ -1644,18 +1674,33 @@ export class ComfyApp {
    * @param {FileList} fileList
    */
   async handleFileList(fileList: File[]) {
-    if (fileList[0].type.startsWith('image')) {
-      const imageNodes = await pasteImageNodes(this.canvas, fileList)
+    if (fileList.length === 0) return
+    if (!fileList[0].type.startsWith('image')) return
+
+    const imageNodes = await pasteImageNodes(this.canvas, fileList)
+    if (imageNodes.length === 0) return
+
+    if (imageNodes.length > 1) {
       const batchImagesNode = await createNode(this.canvas, 'BatchImagesNode')
       if (!batchImagesNode) return
 
       this.positionBatchNodes(imageNodes, batchImagesNode)
       this.canvas.selectItems([...imageNodes, batchImagesNode])
 
-      Array.from(imageNodes).forEach((imageNode, index) => {
+      imageNodes.forEach((imageNode, index) => {
         imageNode.connect(0, batchImagesNode, index)
       })
+    } else {
+      this.canvas.selectItems(imageNodes)
     }
+  }
+
+  async handleAudioFileList(fileList: File[]) {
+    const audioNodes = await pasteAudioNodes(this.canvas, fileList)
+    if (audioNodes.length === 0) return
+
+    this.positionNodes(audioNodes)
+    this.canvas.selectItems(audioNodes)
   }
 
   /**
@@ -1663,6 +1708,21 @@ export class ComfyApp {
    * @param nodes
    * @param batchNode
    */
+  positionNodes(nodes: LGraphNode[]): void {
+    if (nodes.length <= 1) return
+
+    const [x, y] = nodes[0].getBounding()
+    const nodeHeight = 150
+
+    nodes.forEach((node, index) => {
+      if (index > 0) {
+        node.pos = [x, y + nodeHeight * index + 25 * (index + 1)]
+      }
+    })
+
+    this.canvas.graph?.change()
+  }
+
   positionBatchNodes(nodes: LGraphNode[], batchNode: LGraphNode): void {
     const [x, y, width] = nodes[0].getBounding()
     batchNode.pos = [x + width + 100, y + 30]
@@ -1824,6 +1884,7 @@ export class ComfyApp {
       this.registerNodeDef(nodeId, defs[nodeId])
     }
     // Refresh combo widgets in all nodes including those in subgraphs
+    const nodeOutputStore = useNodeOutputStore()
     forEachNode(this.rootGraph, (node) => {
       const def = defs[node.type]
       // Allow primitive nodes to handle refresh
@@ -1855,6 +1916,12 @@ export class ComfyApp {
             }
           }
         }
+      }
+
+      // Re-trigger previews on media nodes (e.g. LoadImage)
+      // to bust browser cache when files are edited externally
+      if (isImageNode(node) || isVideoNode(node)) {
+        nodeOutputStore.refreshNodeOutputs(node)
       }
     })
 
