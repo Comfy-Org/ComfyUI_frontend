@@ -5327,6 +5327,39 @@
       }
     }
   },
+  "KlingAvatarNode": {
+    "description": "從單張照片和音訊檔案生成廣播風格的數位人像影片。",
+    "display_name": "Kling Avatar 2.0",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "頭像參考圖片。寬度與高度需至少 300 像素。長寬比需介於 1:2.5 與 2.5:1 之間。"
+      },
+      "mode": {
+        "name": "mode"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "可選提示，用於定義頭像動作、情緒與鏡頭運動。"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed 控制此節點是否重新執行；無論 seed 為何，結果皆為非確定性。"
+      },
+      "sound_file": {
+        "name": "sound_file",
+        "tooltip": "音訊輸入。長度必須介於 2 到 300 秒之間。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "KlingCameraControlI2VNode": {
     "description": "將靜態圖片轉換為具有專業攝影機運鏡的電影感影片。可模擬真實世界的攝影效果，並控制虛擬攝影機的動作，包括縮放、旋轉、平移、傾斜及第一人稱視角，同時保持對原始圖片的聚焦。",
     "display_name": "Kling 靜態圖轉影片（攝影機控制）",

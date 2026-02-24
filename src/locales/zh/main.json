@@ -315,8 +315,36 @@
     "deleteBlueprint": "删除蓝图",
     "deleteWorkflow": "删除工作流",
     "duplicate": "复制",
+    "enterAppMode": "进入应用模式",
     "enterNewName": "输入新名称",
-    "missingNodesWarning": "工作流包含不支持的节点（红色突出显示）。"
+    "exitAppMode": "退出应用模式",
+    "missingNodesWarning": "工作流包含不支持的节点（红色突出显示）。",
+    "workflowActions": "工作流操作"
+  },
+  "builderToolbar": {
+    "app": "应用",
+    "appDescription": "默认以应用方式打开",
+    "arrange": "预览",
+    "arrangeDescription": "查看应用布局",
+    "connectOutput": "连接输出",
+    "connectOutputBody1": "您的应用需要至少连接一个输出，才能保存。",
+    "connectOutputBody2": "切换到“选择”步骤，点击输出节点将其添加到此处。",
+    "filename": "文件名",
+    "label": "应用构建器",
+    "nodeGraph": "节点图",
+    "nodeGraphDescription": "默认以节点图方式打开",
+    "save": "保存",
+    "saveAs": "另存为",
+    "saveAsLabel": "将此工作流另存为...",
+    "saveDescription": "保存并完成",
+    "saveSuccess": "保存成功",
+    "saveSuccessAppMessage": "“{name}”已保存。今后将默认以应用模式打开。",
+    "saveSuccessAppPrompt": "现在要查看吗？",
+    "saveSuccessGraphMessage": "“{name}”已保存。今后将默认以节点图方式打开。",
+    "select": "选择",
+    "selectDescription": "选择输入/输出",
+    "switchToSelect": "切换到选择",
+    "viewApp": "查看应用"
   },
   "clipboard": {
     "errorMessage": "复制到剪贴板失败",
@@ -879,6 +907,7 @@
     "enableSelected": "启用选中项",
     "enabled": "已启用",
     "enabling": "启用中",
+    "enter": "进入",
     "enterBaseName": "输入基础名称",
     "enterNewName": "输入新名称",
     "enterNewNamePrompt": "输入新名称：",
@@ -1282,6 +1311,20 @@
     "helpFix": "帮助修复这个"
   },
   "linearMode": {
+    "appModeToolbar": {
+      "appBuilder": "应用构建器",
+      "apps": "应用"
+    },
+    "arrange": {
+      "atLeastOne": "至少一个",
+      "connectAtLeastOne": "请连接{atLeastOne}个输出节点，以便用户在运行后查看结果。",
+      "noOutputs": "尚未添加输出",
+      "outputExamples": "示例：“保存图像”或“保存视频”",
+      "outputs": "输出",
+      "resultsLabel": "运行此应用后，所选输出节点生成的结果将在此显示",
+      "switchToSelect": "切换到“选择”步骤，点击输出节点将其添加到此处。",
+      "switchToSelectButton": "切换到选择"
+    },
     "beta": "App 模式测试版 - 提供反馈",
     "downloadAll": "全部下载",
     "dragAndDropImage": "拖拽图片到此处",
@@ -1291,11 +1334,13 @@
     "reuseParameters": "复用参数",
     "runCount": "运行次数：",
     "welcome": {
-      "intro": "简化视图，隐藏节点图，让你专注于创作。",
-      "layout": "左侧显示你生成的图像、视频和输出。右侧只保留所需的控制项。所有复杂内容都被隐藏。",
+      "backToWorkflow": "返回工作流",
+      "buildApp": "构建应用",
+      "controls": "输出显示在底部，控制项在右侧。其他内容都不会干扰您。",
+      "getStarted": "点击 {runButton} 开始。",
+      "message": "简化视图，隐藏节点图，让您专注于创作。",
       "sharing": "分享很简单：创建工作流，打开应用模式，右键点击标签页并导出。当他人打开你的文件时，会直接进入这个简洁视图。你可以将强大的工作流作为简单工具分享，无需理解节点图。",
-      "title": "欢迎使用应用模式",
-      "widget": "如果你想控制显示哪些设置，将顶层节点转换为子图，然后在上方工具箱中使用控件提升，选择要暴露的内容。"
+      "title": "欢迎使用应用模式"
     }
   },
   "load3d": {
@@ -1844,6 +1889,14 @@
       "label": "预览版",
       "tooltip": "您正在使用 ComfyUI 的夜间版本。请使用反馈按钮分享您对这些功能的看法。"
     }
+  },
+  "nightlySurvey": {
+    "accept": "好的，我来帮忙！",
+    "description": "您一直在使用此功能。能否花一点时间分享您的反馈？",
+    "dontAskAgain": "不再询问",
+    "loadError": "加载问卷失败。请稍后再试。",
+    "notNow": "暂不",
+    "title": "帮助我们改进"
   },
   "nodeCategories": {
     "": "",
@@ -2611,14 +2664,17 @@
     "cannotDeleteGlobal": "无法删除已安装的蓝图",
     "confirmDelete": "此操作将永久从您的库中移除该子工作流",
     "confirmDeleteTitle": "删除子工作流？",
+    "disconnected": "已断开连接",
     "enterDescription": "输入描述",
     "enterSearchAliases": "输入搜索别名（用逗号分隔）",
     "hidden": "隐藏/嵌套参数",
     "hideAll": "全部隐藏",
+    "linked": "（已关联）",
     "loadFailure": "加载子工作流蓝图失败",
     "overwriteBlueprint": "保存将用您的更改覆盖当前子工作流",
     "overwriteBlueprintTitle": "覆盖现有子工作流？",
     "promoteOutsideSubgraph": "不在子工作流中时无法提升小部件",
+    "promoteWidget": "提升组件：{name}",
     "publish": "发布子工作流",
     "publishSuccess": "已保存到节点库",
     "publishSuccessMessage": "您可以在节点库的“子工作流蓝图”下找到您的子工作流蓝图",
@@ -2626,7 +2682,8 @@
     "searchAliases": "搜索别名",
     "showAll": "全部显示",
     "showRecommended": "显示推荐控件",
-    "shown": "节点上显示"
+    "shown": "节点上显示",
+    "unpromoteWidget": "取消提升组件：{name}"
   },
   "subscription": {
     "addApiCredits": "添加API额度",

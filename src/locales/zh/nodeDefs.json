@@ -5327,6 +5327,39 @@
       }
     }
   },
+  "KlingAvatarNode": {
+    "description": "从单张照片和音频文件生成广播风格的数字人视频。",
+    "display_name": "Kling Avatar 2.0",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "头像参考图像。宽度和高度必须至少为300像素。宽高比需在1:2.5到2.5:1之间。"
+      },
+      "mode": {
+        "name": "mode"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "可选提示，用于定义头像动作、情感和摄像机运动。"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "种子用于控制节点是否重新运行；无论种子如何，结果都是非确定性的。"
+      },
+      "sound_file": {
+        "name": "sound_file",
+        "tooltip": "音频输入。时长必须在2到300秒之间。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "KlingCameraControlI2VNode": {
     "description": "将静态图像转化为具有专业摄像机运动的电影级视频，模拟真实世界的电影摄影。可控制虚拟摄像机的缩放、旋转、平移、俯仰和第一人称视角，同时保持对原始图像的聚焦。",
     "display_name": "Kling 图像转视频（摄像机控制）",

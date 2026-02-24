@@ -315,8 +315,36 @@
     "deleteBlueprint": "刪除藍圖",
     "deleteWorkflow": "刪除工作流程",
     "duplicate": "複製",
+    "enterAppMode": "進入應用模式",
     "enterNewName": "輸入新名稱",
-    "missingNodesWarning": "工作流程包含不支援的節點（以紅色標示）。"
+    "exitAppMode": "離開應用模式",
+    "missingNodesWarning": "工作流程包含不支援的節點（以紅色標示）。",
+    "workflowActions": "工作流程操作"
+  },
+  "builderToolbar": {
+    "app": "應用",
+    "appDescription": "預設以應用模式開啟",
+    "arrange": "預覽",
+    "arrangeDescription": "檢視應用版面",
+    "connectOutput": "連接輸出",
+    "connectOutputBody1": "您的應用必須至少連接一個輸出才能儲存。",
+    "connectOutputBody2": "切換到「選擇」步驟，點擊輸出節點以新增到這裡。",
+    "filename": "檔案名稱",
+    "label": "應用建立器",
+    "nodeGraph": "節點圖",
+    "nodeGraphDescription": "預設以節點圖開啟",
+    "save": "儲存",
+    "saveAs": "另存新檔",
+    "saveAsLabel": "將此工作流程另存為...",
+    "saveDescription": "儲存並完成",
+    "saveSuccess": "儲存成功",
+    "saveSuccessAppMessage": "「{name}」已儲存。從現在起將預設以應用模式開啟。",
+    "saveSuccessAppPrompt": "您想現在檢視嗎？",
+    "saveSuccessGraphMessage": "「{name}」已儲存。將預設以節點圖開啟。",
+    "select": "選擇",
+    "selectDescription": "選擇輸入／輸出",
+    "switchToSelect": "切換到選擇",
+    "viewApp": "檢視應用"
   },
   "clipboard": {
     "errorMessage": "複製到剪貼簿失敗",
@@ -879,6 +907,7 @@
     "enableSelected": "啟用所選",
     "enabled": "已啟用",
     "enabling": "啟用中",
+    "enter": "輸入",
     "enterBaseName": "輸入基礎名稱",
     "enterNewName": "輸入新名稱",
     "enterNewNamePrompt": "輸入新名稱：",
@@ -1282,6 +1311,20 @@
     "helpFix": "協助修復此問題"
   },
   "linearMode": {
+    "appModeToolbar": {
+      "appBuilder": "應用建立器",
+      "apps": "應用"
+    },
+    "arrange": {
+      "atLeastOne": "至少一個",
+      "connectAtLeastOne": "請連接{atLeastOne}個輸出節點，讓使用者在執行後能看到結果。",
+      "noOutputs": "尚未新增任何輸出",
+      "outputExamples": "範例：「儲存圖像」或「儲存影片」",
+      "outputs": "輸出",
+      "resultsLabel": "執行此應用後，從所選輸出節點產生的結果將顯示於此",
+      "switchToSelect": "切換到「選擇」步驟，點擊輸出節點以新增到這裡。",
+      "switchToSelectButton": "切換到選擇"
+    },
     "beta": "App 模式 Beta - 提供回饋",
     "downloadAll": "全部下載",
     "dragAndDropImage": "拖曳圖片到此",
@@ -1291,11 +1334,13 @@
     "reuseParameters": "重用參數",
     "runCount": "執行次數：",
     "welcome": {
-      "intro": "這是一個簡化視圖，隱藏節點圖，讓你專注於創作。",
-      "layout": "左側顯示你產生的圖片、影片和輸出，右側只保留必要的控制項。所有複雜內容都被隱藏。",
+      "backToWorkflow": "返回工作流程",
+      "buildApp": "建立應用",
+      "controls": "您的輸出會顯示在下方，控制項在右側。其他內容都不會干擾您。",
+      "getStarted": "點擊 {runButton} 開始。",
+      "message": "這是一個簡化視圖，隱藏節點圖，讓您專注於創作。",
       "sharing": "分享很簡單：建立工作流程，開啟 App 模式，右鍵分頁並匯出。其他人開啟你的檔案時，會直接進入這個乾淨的視圖。你可以將強大的工作流程分享成簡單工具，無需理解節點圖。",
-      "title": "歡迎使用 App 模式",
-      "widget": "如果想控制哪些設定顯示，請將頂層節點轉為子圖，然後在上方工具箱使用元件推廣，選擇要公開的項目。"
+      "title": "歡迎使用 App 模式"
     }
   },
   "load3d": {
@@ -1844,6 +1889,14 @@
       "label": "預覽版本",
       "tooltip": "您正在使用 ComfyUI 的夜間版本。請使用反饋按鈕分享您對這些功能的看法。"
     }
+  },
+  "nightlySurvey": {
+    "accept": "好的，我願意協助！",
+    "description": "您已經使用過這個功能。能否花一點時間分享您的回饋？",
+    "dontAskAgain": "不要再詢問",
+    "loadError": "載入問卷失敗。請稍後再試。",
+    "notNow": "暫時不要",
+    "title": "協助我們改進"
   },
   "nodeCategories": {
     "": "",
@@ -2599,14 +2652,17 @@
     "cannotDeleteGlobal": "無法刪除已安裝的藍圖",
     "confirmDelete": "此操作將永久從您的程式庫中移除藍圖",
     "confirmDeleteTitle": "刪除藍圖？",
+    "disconnected": "已斷線",
     "enterDescription": "輸入描述",
     "enterSearchAliases": "輸入搜尋別名（以逗號分隔）",
     "hidden": "隱藏 / 巢狀參數",
     "hideAll": "全部隱藏",
+    "linked": "（已連結）",
     "loadFailure": "載入子圖藍圖失敗",
     "overwriteBlueprint": "儲存將以您的變更覆蓋目前的藍圖",
     "overwriteBlueprintTitle": "覆蓋現有藍圖？",
     "promoteOutsideSubgraph": "不在子圖中時無法提升小工具",
+    "promoteWidget": "推廣元件：{name}",
     "publish": "發佈子圖",
     "publishSuccess": "已儲存至節點庫",
     "publishSuccessMessage": "您可以在節點庫的「子圖藍圖」中找到您的子圖藍圖",
@@ -2614,7 +2670,8 @@
     "searchAliases": "搜尋別名",
     "showAll": "顯示全部",
     "showRecommended": "顯示建議的小工具",
-    "shown": "在節點上顯示"
+    "shown": "在節點上顯示",
+    "unpromoteWidget": "取消推廣元件：{name}"
   },
   "subscription": {
     "addApiCredits": "新增 API 點數",

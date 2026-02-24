@@ -315,8 +315,36 @@
     "deleteBlueprint": "Taslağı Sil",
     "deleteWorkflow": "İş Akışını Sil",
     "duplicate": "Çoğalt",
+    "enterAppMode": "Uygulama moduna gir",
     "enterNewName": "Yeni isim girin",
-    "missingNodesWarning": "İş akışında desteklenmeyen düğümler var (kırmızı ile vurgulanmış)."
+    "exitAppMode": "Uygulama modundan çık",
+    "missingNodesWarning": "İş akışında desteklenmeyen düğümler var (kırmızı ile vurgulanmış).",
+    "workflowActions": "İş akışı işlemleri"
+  },
+  "builderToolbar": {
+    "app": "Uygulama",
+    "appDescription": "Varsayılan olarak uygulama olarak açılır",
+    "arrange": "Önizleme",
+    "arrangeDescription": "Uygulama düzenini gözden geçir",
+    "connectOutput": "Bir çıktı bağla",
+    "connectOutputBody1": "Uygulamanızın kaydedilebilmesi için en az bir çıktı bağlanmalıdır.",
+    "connectOutputBody2": "'Seç' adımına geçin ve çıktı düğümlerine tıklayarak buraya ekleyin.",
+    "filename": "Dosya adı",
+    "label": "Uygulama Oluşturucu",
+    "nodeGraph": "Düğüm grafiği",
+    "nodeGraphDescription": "Varsayılan olarak düğüm grafiği olarak açılır",
+    "save": "Kaydet",
+    "saveAs": "Farklı kaydet",
+    "saveAsLabel": "Bu iş akışını farklı kaydet ...",
+    "saveDescription": "Kaydet ve bitir",
+    "saveSuccess": "Başarıyla kaydedildi",
+    "saveSuccessAppMessage": "'{name}' kaydedildi. Artık varsayılan olarak Uygulama Modunda açılacak.",
+    "saveSuccessAppPrompt": "Şimdi görüntülemek ister misiniz?",
+    "saveSuccessGraphMessage": "'{name}' kaydedildi. Varsayılan olarak düğüm grafiği olarak açılacak.",
+    "select": "Seç",
+    "selectDescription": "Girdi/çıktı seçin",
+    "switchToSelect": "Seç'e Geç",
+    "viewApp": "Uygulamayı görüntüle"
   },
   "clipboard": {
     "errorMessage": "Panoya kopyalanamadı",
@@ -879,6 +907,7 @@
     "enableSelected": "Seçilenleri Etkinleştir",
     "enabled": "Etkin",
     "enabling": "{id} etkinleştiriliyor",
+    "enter": "Giriş",
     "enterBaseName": "Temel adı girin",
     "enterNewName": "Yeni adı girin",
     "enterNewNamePrompt": "Yeni adı girin:",
@@ -1282,6 +1311,20 @@
     "helpFix": "Bunu Düzeltmeye Yardım Et"
   },
   "linearMode": {
+    "appModeToolbar": {
+      "appBuilder": "Uygulama oluşturucu",
+      "apps": "Uygulamalar"
+    },
+    "arrange": {
+      "atLeastOne": "en az bir",
+      "connectAtLeastOne": "Kullanıcıların çalıştırdıktan sonra sonuçları görebilmesi için {atLeastOne} çıktı düğümünü bağlayın.",
+      "noOutputs": "Henüz çıktı eklenmedi",
+      "outputExamples": "Örnekler: 'Görseli Kaydet' veya 'Videoyu Kaydet'",
+      "outputs": "Çıktılar",
+      "resultsLabel": "Seçili çıktı düğüm(ler)inden üretilen sonuçlar bu uygulama çalıştırıldıktan sonra burada gösterilecektir.",
+      "switchToSelect": "'Seç' adımına geçin ve çıktı düğümlerine tıklayarak buraya ekleyin.",
+      "switchToSelectButton": "Seç'e Geç"
+    },
     "beta": "Uygulama Modu Beta - Geri Bildirim Verin",
     "downloadAll": "Tümünü İndir",
     "dragAndDropImage": "Bir görseli sürükleyip bırakın",
@@ -1291,11 +1334,13 @@
     "reuseParameters": "Parametreleri Yeniden Kullan",
     "runCount": "Çalıştırma sayısı:",
     "welcome": {
-      "intro": "Düğüm grafiğini gizleyerek odaklanmanızı sağlayan basitleştirilmiş bir görünüm.",
-      "layout": "Solda oluşturulan görsellerinizi, videolarınızı ve çıktılarınızı göreceksiniz. Sağda ise sadece ihtiyacınız olan kontroller var. Karmaşık her şey gözden uzak.",
+      "backToWorkflow": "İş akışına geri dön",
+      "buildApp": "Uygulama oluştur",
+      "controls": "Çıktılarınız altta, kontrolleriniz sağda görünür. Diğer her şey arka planda kalır.",
+      "getStarted": "Başlamak için {runButton} tıklayın.",
+      "message": "Düğüm grafiğini gizleyerek odaklanmanıza yardımcı olan basitleştirilmiş bir görünüm.",
       "sharing": "Paylaşmak çok kolay: iş akışınızı oluşturun, Uygulama Modunu açın, sekmeye sağ tıklayın ve dışa aktarın. Başkaları dosyanızı açtığında, doğrudan bu sade görünüme geçer. Güçlü iş akışlarını, kimsenin düğüm grafiğini anlamasına gerek kalmadan basit araçlar olarak paylaşabilirsiniz.",
-      "title": "Uygulama Moduna Hoş Geldiniz",
-      "widget": "Hangi ayarların görüneceğini kontrol etmek istiyorsanız, üst düzey düğümlerinizi bir alt grafiğe dönüştürün, ardından üstündeki araç kutusunda widget tanıtımını kullanarak nelerin görüneceğini seçin."
+      "title": "Uygulama Moduna Hoş Geldiniz"
     }
   },
   "load3d": {
@@ -1844,6 +1889,14 @@
       "label": "Önizleme Sürümü",
       "tooltip": "ComfyUI'nin nightly sürümünü kullanıyorsunuz. Lütfen bu özelliklerle ilgili görüşlerinizi paylaşmak için geri bildirim butonunu kullanın."
     }
+  },
+  "nightlySurvey": {
+    "accept": "Tabii, yardımcı olacağım!",
+    "description": "Bu özelliği kullanıyorsunuz. Geri bildiriminizi bizimle paylaşır mısınız?",
+    "dontAskAgain": "Bir daha sorma",
+    "loadError": "Anket yüklenemedi. Lütfen daha sonra tekrar deneyin.",
+    "notNow": "Şimdi değil",
+    "title": "Bize Yardımcı Olun"
   },
   "nodeCategories": {
     "": "",
@@ -2599,14 +2652,17 @@
     "cannotDeleteGlobal": "Yüklü şablonlar silinemez",
     "confirmDelete": "Bu işlem taslağı kütüphanenizden kalıcı olarak kaldıracaktır",
     "confirmDeleteTitle": "Taslak silinsin mi?",
+    "disconnected": "Bağlantı kesildi",
     "enterDescription": "Bir açıklama girin",
     "enterSearchAliases": "Arama takma adlarını girin (virgülle ayrılmış)",
     "hidden": "Gizli / iç içe parametreler",
     "hideAll": "Tümünü gizle",
+    "linked": "(Bağlı)",
     "loadFailure": "Alt grafik taslakları yüklenemedi",
     "overwriteBlueprint": "Kaydetmek, mevcut taslağın üzerine değişikliklerinizi yazacaktır",
     "overwriteBlueprintTitle": "Mevcut taslağın üzerine yazılsın mı?",
     "promoteOutsideSubgraph": "Alt grafikte değilken widget yükseltilemez",
+    "promoteWidget": "Widget'ı Yükselt: {name}",
     "publish": "Alt Grafiği Yayınla",
     "publishSuccess": "Düğüm Kütüphanesine Kaydedildi",
     "publishSuccessMessage": "Alt grafik taslağınızı düğüm kütüphanesinde \"Alt Grafik Taslakları\" altında bulabilirsiniz",
@@ -2614,7 +2670,8 @@
     "searchAliases": "Takma Adlarda Ara",
     "showAll": "Tümünü göster",
     "showRecommended": "Önerilen widget'ları göster",
-    "shown": "Düğümde gösterilen"
+    "shown": "Düğümde gösterilen",
+    "unpromoteWidget": "Widget'ı Geri Al: {name}"
   },
   "subscription": {
     "addApiCredits": "API kredisi ekle",
