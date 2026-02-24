@@ -189,7 +189,7 @@ const renderedInputs = computed<[string, MaybeRef<BoundStyle> | undefined][]>(
     enable-empty-state
     :disabled="!appModeStore.selectedInputs.length"
     class="border-border-subtle border-b"
-    :tooltip="`${t('linearMode.builder.inputsDesc')}\n${t('linearMode.builder.inputtsExample')}`"
+    :tooltip="`${t('linearMode.builder.inputsDesc')}\n${t('linearMode.builder.inputsExample')}`"
   >
     <template #label>
       <div class="flex gap-3">

@@ -70,10 +70,8 @@ export const useAppModeStore = defineStore('appMode', () => {
   async function exitBuilder() {
     if (
       !(await useDialogService().confirm({
-        title: t('[ph]exit app builder?'),
-        message: t(
-          '[ph]You have unsaved changes that will be lost\nExit without saving?'
-        )
+        title: t('linearMode.builder.exitConfirmTitle'),
+        message: t('linearMode.builder.exitConfirmMessage')
       }))
     )
       return

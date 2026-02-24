@@ -150,7 +150,7 @@ const { activeSidebarTabId, activeSidebarTab } = storeToRefs(sidebarTabStore)
 const { bottomPanelVisible } = storeToRefs(useBottomPanelStore())
 const { isOpen: rightSidePanelVisible } = storeToRefs(rightSidePanelStore)
 const showOffsideSplitter = computed(
-  () => rightSidePanelVisible || appModeStore.mode === 'builder:select'
+  () => rightSidePanelVisible.value || appModeStore.mode === 'builder:select'
 )
 
 const sidebarPanelVisible = computed(() => activeSidebarTab.value !== null)
