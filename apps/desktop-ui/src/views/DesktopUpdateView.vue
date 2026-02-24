@@ -42,14 +42,15 @@ import Button from 'primevue/button'
 import ProgressSpinner from 'primevue/progressspinner'
 import Toast from 'primevue/toast'
 import { onUnmounted, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import TerminalOutputDrawer from '@/components/maintenance/TerminalOutputDrawer.vue'
-import { t } from '@/i18n'
 import { electronAPI } from '@/utils/envUtil'
 
 import BaseViewTemplate from './templates/BaseViewTemplate.vue'
 
 const electron = electronAPI()
+const { t } = useI18n()
 
 const terminalVisible = ref(false)
 
@@ -61,10 +62,10 @@ onUnmounted(() => electron.Validation.dispose())
 </script>
 
 <style scoped>
-@reference '../assets/css/style.css';
-
 .download-bg::before {
-  @apply m-0 absolute text-muted;
+  position: absolute;
+  margin: 0;
+  color: var(--text-muted);
   font-family: 'primeicons', sans-serif;
   top: -2rem;
   right: 2rem;
