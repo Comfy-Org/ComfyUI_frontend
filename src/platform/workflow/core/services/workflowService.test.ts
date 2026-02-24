@@ -167,6 +167,7 @@ describe('useWorkflowService', () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
     vi.clearAllMocks()
+    mockWorkspaceWorkflow.activeWorkflow = null
   })
 
   describe('showPendingWarnings', () => {
@@ -311,6 +312,7 @@ describe('useWorkflowService', () => {
     })
   })
 
+<<<<<<< HEAD
   describe('per-workflow mode switching', () => {
     let appMode: ReturnType<typeof useAppMode>
     let workflowStore: ReturnType<typeof useWorkflowStore>
