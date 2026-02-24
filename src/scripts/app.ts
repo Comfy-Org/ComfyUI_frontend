@@ -570,10 +570,8 @@ export class ComfyApp {
           workspace.spinner = true
           const imageFiles = files.filter(hasImageType)
           const audioFiles = files.filter(hasAudioType)
-          const hasMultipleMedia =
-            imageFiles.length > 1 ||
-            audioFiles.length > 0 ||
-            (imageFiles.length > 0 && audioFiles.length > 0)
+          const totalMedia = imageFiles.length + audioFiles.length
+          const hasMultipleMedia = totalMedia > 1
 
           if (hasMultipleMedia) {
             if (imageFiles.length > 0) {
