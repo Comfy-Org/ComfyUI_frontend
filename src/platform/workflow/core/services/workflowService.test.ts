@@ -1,5 +1,4 @@
 import { createTestingPinia } from '@pinia/testing'
-import { markRaw } from 'vue'
 import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -12,11 +11,11 @@ import { useSettingStore } from '@/platform/settings/settingStore'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
-import type { ChangeTracker } from '@/scripts/changeTracker'
 import { app } from '@/scripts/app'
 import { useAppMode } from '@/composables/useAppMode'
 import type { AppMode } from '@/composables/useAppMode'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
+import { createMockChangeTracker } from '@/utils/__tests__/litegraphTestUtils'
 
 function createModeTestWorkflow(
   options: {
@@ -24,7 +23,7 @@ function createModeTestWorkflow(
     initialMode?: AppMode | null
     activeMode?: AppMode | null
   } = {}
-): ComfyWorkflowClass {
+): LoadedComfyWorkflow {
   const workflow = new ComfyWorkflowClass({
     path: options.path ?? 'workflows/test.json',
     modified: Date.now(),
@@ -32,24 +31,25 @@ function createModeTestWorkflow(
   })
   workflow.initialMode = options.initialMode ?? null
   workflow.activeMode = options.activeMode ?? null
-  workflow.changeTracker = markRaw({
-    store: vi.fn(),
-    reset: vi.fn(),
-    restore: vi.fn()
-  } as Partial<ChangeTracker> as ChangeTracker)
+  workflow.changeTracker = createMockChangeTracker()
   workflow.content = '{}'
   workflow.originalContent = '{}'
-  return workflow
+  return workflow as LoadedComfyWorkflow
 }
 
 function makeWorkflowData(
   extra: Record<string, unknown> = {}
 ): ComfyWorkflowJSON {
   return {
+    last_node_id: 5,
+    last_link_id: 3,
     nodes: [],
     links: [],
+    groups: [],
+    config: {},
+    version: 0.4,
     extra
-  } as Partial<ComfyWorkflowJSON> as ComfyWorkflowJSON
+  }
 }
 
 const { mockShowMissingNodes, mockShowMissingModels } = vi.hoisted(() => ({
@@ -134,7 +134,7 @@ function createWorkflow(
   warnings: PendingWarnings | null = null,
   options: { loadable?: boolean; path?: string } = {}
 ): ComfyWorkflow {
-  return {
+  const wf = {
     pendingWarnings: warnings,
     ...(options.loadable && {
       path: options.path ?? 'workflows/test.json',
@@ -142,7 +142,8 @@ function createWorkflow(
       activeState: { nodes: [], links: [] },
       changeTracker: { reset: vi.fn(), restore: vi.fn() }
     })
-  } as Partial<ComfyWorkflow> as ComfyWorkflow
+  } as Partial<ComfyWorkflow>
+  return wf as ComfyWorkflow
 }
 
 function enableWarningSettings() {
@@ -231,12 +232,7 @@ describe('useWorkflowService', () => {
       workflowStore = useWorkflowStore()
       vi.mocked(app.loadGraphData).mockImplementation(
         async (_data, _clean, _restore, wf) => {
-          ;(
-            workflowStore as Partial<Record<string, unknown>> as Record<
-              string,
-              unknown
-            >
-          ).activeWorkflow = wf
+          workflowStore.activeWorkflow = wf as LoadedComfyWorkflow
         }
       )
     })
@@ -315,8 +311,9 @@ describe('useWorkflowService', () => {
 
     function mockOpenWorkflow() {
       vi.spyOn(workflowStore, 'openWorkflow').mockImplementation(async (wf) => {
-        workflowStore.activeWorkflow = wf as unknown as LoadedComfyWorkflow
-        return wf as unknown as LoadedComfyWorkflow
+        const loaded = wf as LoadedComfyWorkflow
+        workflowStore.activeWorkflow = loaded
+        return loaded
       })
     }
 
@@ -329,8 +326,7 @@ describe('useWorkflowService', () => {
     describe('mode derivation from active workflow', () => {
       it('reflects initialMode of the active workflow', () => {
         const workflow = createModeTestWorkflow({ initialMode: 'app' })
-        workflowStore.activeWorkflow =
-          workflow as unknown as LoadedComfyWorkflow
+        workflowStore.activeWorkflow = workflow
 
         expect(appMode.mode.value).toBe('app')
       })
@@ -340,8 +336,7 @@ describe('useWorkflowService', () => {
           initialMode: 'app',
           activeMode: 'graph'
         })
-        workflowStore.activeWorkflow =
-          workflow as unknown as LoadedComfyWorkflow
+        workflowStore.activeWorkflow = workflow
 
         expect(appMode.mode.value).toBe('graph')
       })
@@ -360,12 +355,10 @@ describe('useWorkflowService', () => {
           activeMode: 'builder:select'
         })
 
-        workflowStore.activeWorkflow =
-          workflow1 as unknown as LoadedComfyWorkflow
+        workflowStore.activeWorkflow = workflow1
         expect(appMode.mode.value).toBe('app')
 
-        workflowStore.activeWorkflow =
-          workflow2 as unknown as LoadedComfyWorkflow
+        workflowStore.activeWorkflow = workflow2
         expect(appMode.mode.value).toBe('builder:select')
       })
     })
@@ -373,8 +366,7 @@ describe('useWorkflowService', () => {
     describe('setMode writes to active workflow', () => {
       it('writes activeMode without changing initialMode', () => {
         const workflow = createModeTestWorkflow({ initialMode: 'graph' })
-        workflowStore.activeWorkflow =
-          workflow as unknown as LoadedComfyWorkflow
+        workflowStore.activeWorkflow = workflow
 
         appMode.setMode('builder:arrange')
 
@@ -443,16 +435,13 @@ describe('useWorkflowService', () => {
           initialMode: 'app'
         })
 
-        workflowStore.activeWorkflow =
-          workflow1 as unknown as LoadedComfyWorkflow
+        workflowStore.activeWorkflow = workflow1
         expect(appMode.mode.value).toBe('builder:select')
 
-        workflowStore.activeWorkflow =
-          workflow2 as unknown as LoadedComfyWorkflow
+        workflowStore.activeWorkflow = workflow2
         expect(appMode.mode.value).toBe('app')
 
-        workflowStore.activeWorkflow =
-          workflow1 as unknown as LoadedComfyWorkflow
+        workflowStore.activeWorkflow = workflow1
         expect(appMode.mode.value).toBe('builder:select')
       })
 

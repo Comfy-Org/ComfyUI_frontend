@@ -227,6 +227,7 @@ export function createMockChangeTracker(
     redoQueue: [],
     changeCount: 0,
     reset: vi.fn(),
+    restore: vi.fn(),
     ...overrides
   }
   return partial as Partial<ChangeTracker> as ChangeTracker
