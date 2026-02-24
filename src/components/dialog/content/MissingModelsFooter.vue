@@ -43,22 +43,19 @@ import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
-import { isDesktop } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
 import { useDialogStore } from '@/stores/dialogStore'
-import { useElectronDownloadStore } from '@/stores/electronDownloadStore'
 
-import { hasValidDirectory, isModelDownloadable } from './missingModelsUtils'
-
-interface ModelInfo {
-  name: string
-  directory: string
-  url: string
-}
+import type { ModelWithUrl } from './missingModelsUtils'
+import {
+  downloadModel,
+  hasValidDirectory,
+  isModelDownloadable
+} from './missingModelsUtils'
 
 const { missingModels, paths } = defineProps<{
-  missingModels: ModelInfo[]
+  missingModels: ModelWithUrl[]
   paths: Record<string, string[]>
 }>()
 
@@ -98,23 +95,7 @@ const buttonLabel = computed(() => {
 function handleAction() {
   if (hasDownloadable.value) {
     for (const model of downloadableModels.value) {
-      if (isDesktop) {
-        const modelPaths = paths[model.directory]
-        if (modelPaths?.[0]) {
-          void useElectronDownloadStore().start({
-            url: model.url,
-            savePath: modelPaths[0],
-            filename: model.name
-          })
-        }
-      } else {
-        const link = document.createElement('a')
-        link.href = model.url
-        link.download = model.name
-        link.target = '_blank'
-        link.rel = 'noopener noreferrer'
-        link.click()
-      }
+      downloadModel(model, paths)
     }
   }
   dialogStore.closeDialog({ key: DIALOG_KEY })

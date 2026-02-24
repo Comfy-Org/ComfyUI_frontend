@@ -1,5 +1,7 @@
 <template>
-  <div class="flex w-[490px] flex-col border-t border-border-default">
+  <div
+    class="flex w-full max-w-[490px] flex-col border-t border-border-default"
+  >
     <div class="flex h-full w-full flex-col gap-4 p-4">
       <p class="m-0 text-sm leading-5 text-muted-foreground">
         {{ $t('missingModelsDialog.description') }}
@@ -15,7 +17,7 @@
         >
           <div class="flex items-center gap-2 overflow-hidden">
             <span
-              class="shrink-0 truncate text-sm text-foreground"
+              class="min-w-0 truncate text-sm text-foreground"
               :title="model.name"
             >
               {{ model.name }}
@@ -38,7 +40,8 @@
               variant="textonly"
               size="icon"
               :title="model.url"
-              @click="downloadModel(model)"
+              :aria-label="$t('g.download')"
+              @click="downloadModel(model, paths)"
             >
               <i class="icon-[lucide--download] size-4" />
             </Button>
@@ -47,7 +50,8 @@
               variant="textonly"
               size="icon"
               :title="model.url"
-              @click="copyUrl(model.url)"
+              :aria-label="$t('g.copyURL')"
+              @click="void copyToClipboard(model.url)"
             >
               <i class="icon-[lucide--copy] size-4" />
             </Button>
@@ -100,24 +104,18 @@ import { computed, onMounted, reactive } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
 import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
-import { isDesktop } from '@/platform/distribution/types'
-import { useElectronDownloadStore } from '@/stores/electronDownloadStore'
 import { formatSize } from '@/utils/formatUtil'
 
+import type { ModelWithUrl } from './missingModelsUtils'
 import {
+  downloadModel,
   getBadgeLabel,
   hasValidDirectory,
   isModelDownloadable
 } from './missingModelsUtils'
 
-interface ModelInfo {
-  name: string
-  directory: string
-  url: string
-}
-
 const { missingModels, paths } = defineProps<{
-  missingModels: ModelInfo[]
+  missingModels: ModelWithUrl[]
   paths: Record<string, string[]>
 }>()
 
@@ -146,16 +144,11 @@ const hasCustomModels = computed(() =>
 
 const fileSizes = reactive(new Map<string, number>())
 
-const totalDownloadSize = computed(() => {
-  let total = 0
-  for (const model of processedModels.value) {
-    if (model.isDownloadable) {
-      const size = fileSizes.get(model.url)
-      if (size) total += size
-    }
-  }
-  return total
-})
+const totalDownloadSize = computed(() =>
+  processedModels.value
+    .filter((model) => model.isDownloadable)
+    .reduce((total, model) => total + (fileSizes.get(model.url) ?? 0), 0)
+)
 
 onMounted(async () => {
   const downloadableUrls = processedModels.value
@@ -168,7 +161,7 @@ onMounted(async () => {
         const response = await fetch(url, { method: 'HEAD' })
         if (!response.ok) return
         const size = response.headers.get('content-length')
-        if (size) fileSizes.set(url, parseInt(size))
+        if (size) fileSizes.set(url, parseInt(size, 10))
       } catch {
         // Silently skip size fetch failures
       }
@@ -177,28 +170,4 @@ onMounted(async () => {
 })
 
 const { copyToClipboard } = useCopyToClipboard()
-
-function copyUrl(url: string) {
-  void copyToClipboard(url)
-}
-
-function downloadModel(model: ProcessedModel) {
-  if (isDesktop) {
-    const modelPaths = paths[model.directory]
-    if (modelPaths?.[0]) {
-      void useElectronDownloadStore().start({
-        url: model.url,
-        savePath: modelPaths[0],
-        filename: model.name
-      })
-    }
-  } else {
-    const link = document.createElement('a')
-    link.href = model.url
-    link.download = model.name
-    link.target = '_blank'
-    link.rel = 'noopener noreferrer'
-    link.click()
-  }
-}
 </script>
