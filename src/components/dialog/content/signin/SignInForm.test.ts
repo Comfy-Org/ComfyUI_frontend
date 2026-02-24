@@ -101,7 +101,8 @@ describe('SignInForm', () => {
         'span.text-muted.text-base.font-medium.cursor-pointer'
       )
 
-      expect(forgotPasswordSpan.classes()).toContain('text-link-disabled')
+      expect(forgotPasswordSpan.classes()).toContain('cursor-not-allowed')
+      expect(forgotPasswordSpan.classes()).toContain('opacity-50')
     })
 
     it('shows toast and focuses email input when clicked while disabled', async () => {
