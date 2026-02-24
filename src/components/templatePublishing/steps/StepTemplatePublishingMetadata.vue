@@ -1,104 +1,22 @@
 <template>
   <div class="flex flex-col gap-6 p-6">
-    <h2 class="text-lg font-semibold">
-      {{ t('templatePublishing.steps.metadata.title') }}
-    </h2>
-    <p class="text-muted-foreground">
-      {{ t('templatePublishing.steps.metadata.description') }}
-    </p>
-
-    <FormItem
-      id="tpl-title"
-      v-model:form-value="ctx.template.value.title"
-      :item="titleField"
-    />
-
     <div class="flex flex-row items-center gap-2">
-      <div class="form-label flex grow items-center">
-        <span id="tpl-category-label" class="text-muted">
-          {{ t('templatePublishing.steps.metadata.categoryLabel') }}
+      <div class="form-label flex w-28 shrink-0 items-center">
+        <span id="tpl-title-label" class="text-muted">
+          {{ t('templatePublishing.steps.metadata.titleLabel') }}
         </span>
       </div>
-      <div
-        class="flex flex-wrap gap-2"
-        role="group"
-        aria-labelledby="tpl-category-label"
-      >
-        <label
-          v-for="cat in CATEGORIES"
-          :key="cat.value"
-          :for="`tpl-category-${cat.value}`"
-          class="flex cursor-pointer items-center gap-1.5 text-sm"
-        >
-          <input
-            :id="`tpl-category-${cat.value}`"
-            type="checkbox"
-            :checked="ctx.template.value.categories?.includes(cat.value)"
-            @change="toggleCategory(cat.value)"
-          />
-          {{ t(`templatePublishing.steps.metadata.category.${cat.key}`) }}
-        </label>
-      </div>
+      <input
+        id="tpl-title"
+        v-model="ctx.template.value.title"
+        type="text"
+        class="h-8 w-[100em] rounded border border-border-default bg-secondary-background px-2 text-sm focus:outline-none"
+        aria-labelledby="tpl-title-label"
+      />
     </div>
 
     <div class="flex flex-row items-center gap-2">
-      <div class="form-label flex grow items-center">
-        <span id="tpl-tags-label" class="text-muted">
-          {{ t('templatePublishing.steps.metadata.tagsLabel') }}
-        </span>
-      </div>
-      <div class="flex flex-col gap-2">
-        <div class="relative">
-          <input
-            v-model="tagQuery"
-            type="text"
-            class="h-8 w-44 rounded border border-border-default bg-transparent px-2 text-sm focus:outline-none"
-            :placeholder="
-              t('templatePublishing.steps.metadata.tagsPlaceholder')
-            "
-            aria-labelledby="tpl-tags-label"
-            @focus="showSuggestions = true"
-            @keydown.enter.prevent="addTag(tagQuery)"
-          />
-          <ul
-            v-if="showSuggestions && filteredSuggestions.length > 0"
-            class="absolute z-10 mt-1 max-h-40 w-44 overflow-auto rounded border border-border-default bg-comfy-menu-background shadow-md"
-          >
-            <li
-              v-for="suggestion in filteredSuggestions"
-              :key="suggestion"
-              class="cursor-pointer px-2 py-1 text-sm hover:bg-comfy-input-background"
-              @mousedown.prevent="addTag(suggestion)"
-            >
-              {{ suggestion }}
-            </li>
-          </ul>
-        </div>
-        <div
-          v-if="ctx.template.value.tags?.length"
-          class="flex flex-wrap gap-1"
-        >
-          <span
-            v-for="tag in ctx.template.value.tags"
-            :key="tag"
-            class="inline-flex items-center gap-1 rounded-full bg-comfy-input-background px-2 py-0.5 text-xs"
-          >
-            {{ tag }}
-            <button
-              type="button"
-              class="hover:text-danger"
-              :aria-label="`Remove tag ${tag}`"
-              @click="removeTag(tag)"
-            >
-              <i class="icon-[lucide--x] h-3 w-3" />
-            </button>
-          </span>
-        </div>
-      </div>
-    </div>
-
-    <div class="flex flex-row items-center gap-2">
-      <div class="form-label flex grow items-center">
+      <div class="form-label flex w-28 shrink-0 items-center">
         <span id="tpl-difficulty-label" class="text-muted">
           {{ t('templatePublishing.steps.metadata.difficultyLabel') }}
         </span>
@@ -122,7 +40,7 @@
             :checked="ctx.template.value.difficulty === option.value"
             :class="
               cn(
-                'h-5 w-5 appearance-none rounded-full border checked:bg-current checked:shadow-[inset_0_0_0_1px_white]',
+                'h-5 w-5 appearance-none rounded-full border-2 checked:bg-current checked:shadow-[inset_0_0_0_1px_white]',
                 option.borderClass
               )
             "
@@ -138,63 +56,107 @@
       v-model:form-value="ctx.template.value.license"
       :item="licenseField"
     />
+
+    <div class="flex flex-col gap-2">
+      <span id="tpl-required-nodes-label" class="text-sm text-muted">
+        {{ t('templatePublishing.steps.metadata.requiredNodesLabel') }}
+      </span>
+
+      <div
+        v-if="detectedCustomNodes.length > 0"
+        aria-labelledby="tpl-required-nodes-label"
+      >
+        <span class="text-xs text-muted-foreground">
+          {{ t('templatePublishing.steps.metadata.requiredNodesDetected') }}
+        </span>
+        <ul class="mt-1 flex flex-col gap-1">
+          <li
+            v-for="nodeName in detectedCustomNodes"
+            :key="nodeName"
+            class="flex items-center gap-2 rounded bg-secondary-background px-2 py-1 text-sm"
+          >
+            <i
+              class="icon-[lucide--puzzle] h-3.5 w-3.5 text-muted-foreground"
+            />
+            {{ nodeName }}
+          </li>
+        </ul>
+      </div>
+
+      <div>
+        <span class="text-xs text-muted-foreground">
+          {{ t('templatePublishing.steps.metadata.requiredNodesManualLabel') }}
+        </span>
+        <div class="relative mt-1">
+          <input
+            v-model="manualNodeQuery"
+            type="text"
+            class="h-8 w-56 rounded border border-border-default bg-secondary-background px-2 text-sm focus:outline-none"
+            :placeholder="
+              t(
+                'templatePublishing.steps.metadata.requiredNodesManualPlaceholder'
+              )
+            "
+            @focus="showNodeSuggestions = true"
+            @keydown.enter.prevent="addManualNode(manualNodeQuery)"
+          />
+          <ul
+            v-if="showNodeSuggestions && filteredNodeSuggestions.length > 0"
+            class="absolute z-10 mt-1 max-h-40 w-56 overflow-auto rounded border border-border-default bg-secondary-background shadow-md"
+          >
+            <li
+              v-for="suggestion in filteredNodeSuggestions"
+              :key="suggestion"
+              class="cursor-pointer px-2 py-1 text-sm hover:bg-comfy-input-background"
+              @mousedown.prevent="addManualNode(suggestion)"
+            >
+              {{ suggestion }}
+            </li>
+          </ul>
+        </div>
+        <div
+          v-if="manualNodes.length > 0"
+          class="mt-1 flex flex-wrap items-center gap-1"
+        >
+          <span
+            v-for="node in manualNodes"
+            :key="node"
+            class="inline-flex items-center gap-1 rounded-full bg-comfy-input-background px-2 py-0.5 text-xs"
+          >
+            {{ node }}
+            <button
+              type="button"
+              class="hover:text-danger"
+              :aria-label="`Remove ${node}`"
+              @click="removeManualNode(node)"
+            >
+              <i class="icon-[lucide--x] h-3 w-3" />
+            </button>
+          </span>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, inject, ref } from 'vue'
+import { computed, inject, onMounted, ref } from 'vue'
 import { watchDebounced } from '@vueuse/core'
 import { useI18n } from 'vue-i18n'
 
 import FormItem from '@/components/common/FormItem.vue'
 import type { FormItem as FormItemType } from '@/platform/settings/types'
+import { app } from '@/scripts/app'
+import { useNodeDefStore } from '@/stores/nodeDefStore'
+import { NodeSourceType } from '@/types/nodeSource'
+import { mapAllNodes } from '@/utils/graphTraversalUtil'
 import { cn } from '@/utils/tailwindUtil'
 
 import { PublishingStepperKey } from '../types'
 
 const { t } = useI18n()
 const ctx = inject(PublishingStepperKey)!
-
-const CATEGORIES = [
-  { key: 'imageGeneration', value: 'image-generation' },
-  { key: 'videoGeneration', value: 'video-generation' },
-  { key: 'audio', value: 'audio' },
-  { key: 'text', value: 'text' },
-  { key: 'threeD', value: '3d' },
-  { key: 'upscaling', value: 'upscaling' },
-  { key: 'inpainting', value: 'inpainting' },
-  { key: 'controlNet', value: 'controlnet' },
-  { key: 'styleTransfer', value: 'style-transfer' },
-  { key: 'other', value: 'other' }
-] as const
-
-const TAG_SUGGESTIONS = [
-  'stable-diffusion',
-  'flux',
-  'sdxl',
-  'sd1.5',
-  'img2img',
-  'txt2img',
-  'upscale',
-  'face-restore',
-  'animation',
-  'video',
-  'lora',
-  'controlnet',
-  'ipadapter',
-  'inpainting',
-  'outpainting',
-  'depth',
-  'pose',
-  'segmentation',
-  'latent',
-  'sampler'
-]
-
-const titleField: FormItemType = {
-  name: t('templatePublishing.steps.metadata.titleLabel'),
-  type: 'text'
-}
+const nodeDefStore = useNodeDefStore()
 
 const DIFFICULTY_OPTIONS = [
   {
@@ -243,43 +205,76 @@ const licenseField: FormItemType = {
   attrs: { filter: true }
 }
 
-const tagQuery = ref('')
-const showSuggestions = ref(false)
+/**
+ * Collects unique custom node type names from the current workflow graph.
+ * Excludes core, essentials, and blueprint nodes.
+ */
+function detectCustomNodes(): string[] {
+  if (!app.rootGraph) return []
 
-const filteredSuggestions = computed(() => {
-  const query = tagQuery.value.toLowerCase().trim()
+  const nodeTypes = mapAllNodes(app.rootGraph, (node) => node.type)
+  const unique = new Set(nodeTypes)
+
+  return [...unique]
+    .filter((type) => {
+      const def = nodeDefStore.nodeDefsByName[type]
+      if (!def) return false
+      return def.nodeSource.type === NodeSourceType.CustomNodes
+    })
+    .sort()
+}
+
+const detectedCustomNodes = ref<string[]>([])
+
+onMounted(() => {
+  detectedCustomNodes.value = detectCustomNodes()
+
+  const existing = ctx.template.value.requiredNodes ?? []
+  if (existing.length === 0) {
+    ctx.template.value.requiredNodes = [...detectedCustomNodes.value]
+  }
+})
+
+const manualNodes = computed(() => {
+  const all = ctx.template.value.requiredNodes ?? []
+  const detected = new Set(detectedCustomNodes.value)
+  return all.filter((n) => !detected.has(n))
+})
+
+const manualNodeQuery = ref('')
+const showNodeSuggestions = ref(false)
+
+/** All installed custom node type names for searchable suggestions. */
+const allCustomNodeNames = computed(() =>
+  Object.values(nodeDefStore.nodeDefsByName)
+    .filter((def) => def.nodeSource.type === NodeSourceType.CustomNodes)
+    .map((def) => def.name)
+    .sort()
+)
+
+const filteredNodeSuggestions = computed(() => {
+  const query = manualNodeQuery.value.toLowerCase().trim()
   if (!query) return []
-  const existing = ctx.template.value.tags ?? []
-  return TAG_SUGGESTIONS.filter(
-    (s) => s.includes(query) && !existing.includes(s)
+  const existing = new Set(ctx.template.value.requiredNodes ?? [])
+  return allCustomNodeNames.value.filter(
+    (name) => name.toLowerCase().includes(query) && !existing.has(name)
   )
 })
 
-function toggleCategory(value: string) {
-  const categories = ctx.template.value.categories ?? []
-  const index = categories.indexOf(value)
-  if (index >= 0) {
-    categories.splice(index, 1)
-  } else {
-    categories.push(value)
-  }
-  ctx.template.value.categories = [...categories]
-}
-
-function addTag(tag: string) {
-  const trimmed = tag.trim().toLowerCase()
+function addManualNode(name: string) {
+  const trimmed = name.trim()
   if (!trimmed) return
-  const tags = ctx.template.value.tags ?? []
-  if (!tags.includes(trimmed)) {
-    ctx.template.value.tags = [...tags, trimmed]
+  const nodes = ctx.template.value.requiredNodes ?? []
+  if (!nodes.includes(trimmed)) {
+    ctx.template.value.requiredNodes = [...nodes, trimmed]
   }
-  tagQuery.value = ''
-  showSuggestions.value = false
+  manualNodeQuery.value = ''
+  showNodeSuggestions.value = false
 }
 
-function removeTag(tag: string) {
-  const tags = ctx.template.value.tags ?? []
-  ctx.template.value.tags = tags.filter((t) => t !== tag)
+function removeManualNode(name: string) {
+  const nodes = ctx.template.value.requiredNodes ?? []
+  ctx.template.value.requiredNodes = nodes.filter((n) => n !== name)
 }
 
 watchDebounced(

@@ -1077,6 +1077,10 @@
         "tagsPlaceholder": "Type to search tags…",
         "difficultyLabel": "Difficulty",
         "licenseLabel": "License",
+        "requiredNodesLabel": "Custom Nodes",
+        "requiredNodesDetected": "Detected from workflow",
+        "requiredNodesManualPlaceholder": "Add custom node name…",
+        "requiredNodesManualLabel": "Additional custom nodes",
         "difficulty": {
           "beginner": "Beginner",
           "intermediate": "Intermediate",
@@ -1123,7 +1127,7 @@
       },
       "submissionForReview": {
         "title": "Submit",
-        "description": "Submit your template for review"
+        "description": "Submit your template for review.  Comfy staff will evaluate the template, and either publish it or contact you here with next steps."
       },
       "complete": {
         "title": "Complete",

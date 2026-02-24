@@ -1,13 +1,21 @@
 import { mount } from '@vue/test-utils'
 import { createI18n } from 'vue-i18n'
-import { computed, ref } from 'vue'
+import { computed, nextTick, ref } from 'vue'
 import { describe, expect, it, vi } from 'vitest'
 
 import type { MarketplaceTemplate } from '@/types/templateMarketplace'
+import { NodeSourceType } from '@/types/nodeSource'
 
 import type { PublishingStepperContext } from '../types'
 import { PublishingStepperKey } from '../types'
 import StepTemplatePublishingMetadata from './StepTemplatePublishingMetadata.vue'
+
+const mockNodes = vi.hoisted(() => [
+  { type: 'KSampler', isSubgraphNode: () => false },
+  { type: 'MyCustomNode', isSubgraphNode: () => false },
+  { type: 'AnotherCustom', isSubgraphNode: () => false },
+  { type: 'MyCustomNode', isSubgraphNode: () => false }
+])
 
 vi.mock('@vueuse/core', async (importOriginal) => {
   const actual = (await importOriginal()) as Record<string, unknown>
@@ -25,6 +33,43 @@ vi.mock('@vueuse/core', async (importOriginal) => {
   }
 })
 
+vi.mock('@/scripts/app', () => ({
+  app: {
+    rootGraph: {
+      nodes: mockNodes
+    }
+  }
+}))
+
+vi.mock('@/utils/graphTraversalUtil', () => ({
+  mapAllNodes: vi.fn(
+    (
+      graph: { nodes: Array<{ type: string }> },
+      mapFn: (node: { type: string }) => string | undefined
+    ) => graph.nodes.map(mapFn).filter(Boolean)
+  )
+}))
+
+vi.mock('@/stores/nodeDefStore', () => ({
+  useNodeDefStore: () => ({
+    nodeDefsByName: {
+      KSampler: { name: 'KSampler', nodeSource: { type: NodeSourceType.Core } },
+      MyCustomNode: {
+        name: 'MyCustomNode',
+        nodeSource: { type: NodeSourceType.CustomNodes }
+      },
+      AnotherCustom: {
+        name: 'AnotherCustom',
+        nodeSource: { type: NodeSourceType.CustomNodes }
+      },
+      ExtraCustomPack: {
+        name: 'ExtraCustomPack',
+        nodeSource: { type: NodeSourceType.CustomNodes }
+      }
+    }
+  })
+}))
+
 const i18n = createI18n({
   legacy: false,
   locale: 'en',
@@ -36,11 +81,12 @@ const i18n = createI18n({
             title: 'Metadata',
             description: 'Title, description, and author info',
             titleLabel: 'Title',
-            categoryLabel: 'Categories',
-            tagsLabel: 'Tags',
-            tagsPlaceholder: 'Type to search tags…',
             difficultyLabel: 'Difficulty',
             licenseLabel: 'License',
+            requiredNodesLabel: 'Custom Nodes',
+            requiredNodesDetected: 'Detected from workflow',
+            requiredNodesManualPlaceholder: 'Add custom node name…',
+            requiredNodesManualLabel: 'Additional custom nodes',
             difficulty: {
               beginner: 'Beginner',
               intermediate: 'Intermediate',
@@ -53,18 +99,6 @@ const i18n = createI18n({
               ccByNc: 'CC BY-NC',
               apache: 'Apache',
               custom: 'Custom'
-            },
-            category: {
-              imageGeneration: 'Image Generation',
-              videoGeneration: 'Video Generation',
-              audio: 'Audio',
-              text: 'Text',
-              threeD: '3D',
-              upscaling: 'Upscaling',
-              inpainting: 'Inpainting',
-              controlNet: 'ControlNet',
-              styleTransfer: 'Style Transfer',
-              other: 'Other'
             }
           }
         }
@@ -115,111 +149,14 @@ function mountStep(ctx?: PublishingStepperContext) {
 }
 
 describe('StepTemplatePublishingMetadata', () => {
-  it('renders heading and all form fields', () => {
+  it('renders all form fields', () => {
     const { wrapper } = mountStep()
 
-    expect(wrapper.find('h2').text()).toBe('Metadata')
-    expect(wrapper.find('[data-testid="form-item-tpl-title"]').exists()).toBe(
-      true
-    )
+    expect(wrapper.find('#tpl-title').exists()).toBe(true)
     expect(wrapper.text()).toContain('Difficulty')
     expect(wrapper.find('[data-testid="form-item-tpl-license"]').exists()).toBe(
       true
     )
-    expect(wrapper.text()).toContain('Categories')
-    expect(wrapper.text()).toContain('Tags')
-  })
-
-  it('renders all category checkboxes', () => {
-    const { wrapper } = mountStep()
-    const checkboxes = wrapper.findAll('input[type="checkbox"]')
-    expect(checkboxes).toHaveLength(10)
-    expect(wrapper.text()).toContain('Image Generation')
-    expect(wrapper.text()).toContain('ControlNet')
-  })
-
-  it('toggles category when checkbox is clicked', async () => {
-    const ctx = createContext({ categories: [] })
-    const { wrapper } = mountStep(ctx)
-
-    const checkbox = wrapper.find('#tpl-category-audio')
-    await checkbox.setValue(true)
-
-    expect(ctx.template.value.categories).toContain('audio')
-
-    await checkbox.setValue(false)
-    expect(ctx.template.value.categories).not.toContain('audio')
-  })
-
-  it('preserves existing categories when toggling', async () => {
-    const ctx = createContext({ categories: ['text', '3d'] })
-    const { wrapper } = mountStep(ctx)
-
-    const audioCheckbox = wrapper.find('#tpl-category-audio')
-    await audioCheckbox.setValue(true)
-
-    expect(ctx.template.value.categories).toContain('text')
-    expect(ctx.template.value.categories).toContain('3d')
-    expect(ctx.template.value.categories).toContain('audio')
-  })
-
-  it('adds a tag when pressing enter in the tags input', async () => {
-    const ctx = createContext({ tags: [] })
-    const { wrapper } = mountStep(ctx)
-
-    const tagInput = wrapper.find('input[type="text"]')
-    await tagInput.setValue('my-tag')
-    await tagInput.trigger('keydown.enter')
-
-    expect(ctx.template.value.tags).toContain('my-tag')
-  })
-
-  it('does not add duplicate tags', async () => {
-    const ctx = createContext({ tags: ['existing'] })
-    const { wrapper } = mountStep(ctx)
-
-    const tagInput = wrapper.find('input[type="text"]')
-    await tagInput.setValue('existing')
-    await tagInput.trigger('keydown.enter')
-
-    expect(ctx.template.value.tags).toEqual(['existing'])
-  })
-
-  it('removes a tag when the remove button is clicked', async () => {
-    const ctx = createContext({ tags: ['alpha', 'beta'] })
-    const { wrapper } = mountStep(ctx)
-
-    const removeButtons = wrapper.findAll('button[aria-label^="Remove tag"]')
-    await removeButtons[0].trigger('click')
-
-    expect(ctx.template.value.tags).toEqual(['beta'])
-  })
-
-  it('shows filtered suggestions when typing in tags input', async () => {
-    const ctx = createContext({ tags: [] })
-    const { wrapper } = mountStep(ctx)
-
-    const tagInput = wrapper.find('input[type="text"]')
-    await tagInput.setValue('flux')
-    await tagInput.trigger('focus')
-
-    const suggestions = wrapper.findAll('li')
-    expect(suggestions.length).toBeGreaterThan(0)
-    expect(suggestions[0].text()).toBe('flux')
-  })
-
-  it('adds a suggestion tag when clicking it', async () => {
-    const ctx = createContext({ tags: [] })
-    const { wrapper } = mountStep(ctx)
-
-    const tagInput = wrapper.find('input[type="text"]')
-    await tagInput.setValue('flux')
-    await tagInput.trigger('focus')
-
-    const suggestion = wrapper.find('li')
-    await suggestion.trigger('mousedown')
-
-    expect(ctx.template.value.tags).toContain('flux')
   })
 
   it('selects difficulty when radio button is clicked', async () => {
@@ -230,5 +167,94 @@ describe('StepTemplatePublishingMetadata', () => {
     await intermediateRadio.setValue(true)
 
     expect(ctx.template.value.difficulty).toBe('intermediate')
+  })
+
+  it('displays detected custom nodes from the workflow', async () => {
+    const { wrapper } = mountStep()
+    await nextTick()
+
+    expect(wrapper.text()).toContain('AnotherCustom')
+    expect(wrapper.text()).toContain('MyCustomNode')
+    expect(wrapper.text()).not.toContain('KSampler')
+  })
+
+  it('populates requiredNodes on mount when empty', () => {
+    const ctx = createContext({ requiredNodes: [] })
+    mountStep(ctx)
+
+    expect(ctx.template.value.requiredNodes).toContain('AnotherCustom')
+    expect(ctx.template.value.requiredNodes).toContain('MyCustomNode')
+    expect(ctx.template.value.requiredNodes).not.toContain('KSampler')
+  })
+
+  it('does not overwrite existing requiredNodes on mount', () => {
+    const ctx = createContext({ requiredNodes: ['PreExisting'] })
+    mountStep(ctx)
+
+    expect(ctx.template.value.requiredNodes).toEqual(['PreExisting'])
+  })
+
+  it('adds a manual custom node via the input', async () => {
+    const ctx = createContext({ requiredNodes: [] })
+    const { wrapper } = mountStep(ctx)
+
+    const input = wrapper.find('.relative input[type="text"]')
+    await input.setValue('ManualNode')
+    await input.trigger('keydown.enter')
+
+    expect(ctx.template.value.requiredNodes).toContain('ManualNode')
+  })
+
+  it('removes a manual custom node when its remove button is clicked', async () => {
+    const ctx = createContext({
+      requiredNodes: ['AnotherCustom', 'MyCustomNode', 'ManualNode']
+    })
+    const { wrapper } = mountStep(ctx)
+
+    const removeButtons = wrapper.findAll(
+      'button[aria-label="Remove ManualNode"]'
+    )
+    await removeButtons[0].trigger('click')
+
+    expect(ctx.template.value.requiredNodes).not.toContain('ManualNode')
+  })
+
+  it('shows filtered custom node suggestions when typing', async () => {
+    const ctx = createContext({ requiredNodes: [] })
+    const { wrapper } = mountStep(ctx)
+
+    const input = wrapper.find('.relative input[type="text"]')
+    await input.trigger('focus')
+    await input.setValue('Extra')
+
+    const suggestions = wrapper.findAll('.relative ul li')
+    expect(suggestions.length).toBe(1)
+    expect(suggestions[0].text()).toBe('ExtraCustomPack')
+  })
+
+  it('excludes already-added nodes from suggestions', async () => {
+    const ctx = createContext({ requiredNodes: ['ExtraCustomPack'] })
+    const { wrapper } = mountStep(ctx)
+
+    const input = wrapper.find('.relative input[type="text"]')
+    await input.trigger('focus')
+    await input.setValue('Extra')
+
+    const suggestions = wrapper.findAll('.relative ul li')
+    expect(suggestions.length).toBe(0)
+  })
+
+  it('adds a node from the suggestion dropdown', async () => {
+    const ctx = createContext({ requiredNodes: [] })
+    const { wrapper } = mountStep(ctx)
+
+    const input = wrapper.find('.relative input[type="text"]')
+    await input.trigger('focus')
+    await input.setValue('Extra')
+
+    const suggestion = wrapper.find('.relative ul li')
+    await suggestion.trigger('mousedown')
+
+    expect(ctx.template.value.requiredNodes).toContain('ExtraCustomPack')
   })
 })

@@ -32,7 +32,7 @@
     </template>
 
     <template #header-right-area>
-      <div class="flex gap-2">
+      <div class="mr-6 flex gap-2">
         <Button
           :disabled="isFirstStep"
           variant="secondary"
@@ -41,10 +41,6 @@
         >
           <i class="icon-[lucide--arrow-left]" />
           {{ t('templatePublishing.previous') }}
-        </Button>
-        <Button variant="secondary" size="lg" @click="saveDraft">
-          <i class="icon-[lucide--save]" />
-          {{ t('templatePublishing.saveDraft') }}
         </Button>
         <Button
           :disabled="currentStep >= totalSteps - 1"

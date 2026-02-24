@@ -1,6 +1,6 @@
 <template>
-  <div class="flex h-full flex-col gap-4 p-6">
-    <div class="flex min-h-0 flex-1 flex-col gap-1">
+  <div class="flex h-full flex-row gap-4 p-6">
+    <div class="flex min-w-0 flex-1 flex-col gap-1">
       <label for="tpl-description-editor" class="text-sm text-muted-foreground">
         {{ t('templatePublishing.steps.description.editorLabel') }}
       </label>
@@ -11,7 +11,7 @@
       />
     </div>
 
-    <div class="flex min-h-0 flex-1 flex-col gap-1">
+    <div class="flex min-w-0 flex-1 flex-col gap-1">
       <span class="text-sm text-muted-foreground">
         {{ t('templatePublishing.steps.description.previewLabel') }}
       </span>
