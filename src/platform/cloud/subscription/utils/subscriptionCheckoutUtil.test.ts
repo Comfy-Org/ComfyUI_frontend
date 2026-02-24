@@ -39,7 +39,7 @@ vi.mock('@/platform/telemetry', () => ({
 vi.mock('@/stores/firebaseAuthStore', () => ({
   useFirebaseAuthStore: vi.fn(() =>
     reactive({
-      getFirebaseAuthHeader: mockGetAuthHeader,
+      getAuthHeader: mockGetAuthHeader,
       userId: computed(() => mockUserId.value)
     })
   ),
