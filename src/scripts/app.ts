@@ -43,8 +43,7 @@ import type {
 import {
   type ComfyNodeDef as ComfyNodeDefV1,
   isComboInputSpecV1,
-  isComboInputSpecV2,
-  isMediaUploadComboInput
+  isComboInputSpecV2
 } from '@/schemas/nodeDefSchema'
 import {
   type BaseDOMWidget,
@@ -90,7 +89,8 @@ import {
   executeWidgetsCallback,
   createNode,
   fixLinkInputSlots,
-  isImageNode
+  isImageNode,
+  isVideoNode
 } from '@/utils/litegraphUtil'
 import {
   createSharedObjectUrl,
@@ -1857,16 +1857,10 @@ export class ComfyApp {
         }
       }
 
-      // Re-trigger previews on media upload nodes (e.g. LoadImage)
+      // Re-trigger previews on media nodes (e.g. LoadImage)
       // to bust browser cache when files are edited externally
-      const hasMediaUpload = Object.values(def.input.required ?? {}).some(
-        isMediaUploadComboInput
-      )
-      if (hasMediaUpload && nodeOutputStore.getNodeOutputs(node)) {
-        const comboWidget = node.widgets?.find(
-          (w) => w.type === 'combo' && w.callback
-        )
-        comboWidget?.callback?.(comboWidget.value)
+      if (isImageNode(node) || isVideoNode(node)) {
+        nodeOutputStore.refreshNodeOutputs(node)
       }
     })
 
