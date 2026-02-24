@@ -36,6 +36,8 @@ function formatAndEslint(fileNames: string[]) {
 }
 
 function toJoinedRelativePaths(fileNames: string[]) {
-  const relativePaths = fileNames.map((f) => path.relative(process.cwd(), f))
+  const relativePaths = fileNames.map((f) =>
+    path.relative(process.cwd(), f).replace(/\\/g, '/')
+  )
   return relativePaths.map((p) => `"${p}"`).join(' ')
 }
