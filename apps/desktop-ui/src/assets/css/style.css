@@ -37,10 +37,6 @@
   opacity: 0.9;
 }
 
-.task-div .p-card.task-card-muted {
-  opacity: 0.65;
-}
-
 .task-div .p-card:hover {
   opacity: 1;
 }

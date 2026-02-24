@@ -8,13 +8,13 @@
     <!-- Markdown fetched successfully -->
     <div
       v-else-if="!error"
-      class="markdown-content overflow-visible text-sm leading-[var(--text-sm--line-height)]"
+      class="markdown-content overflow-visible text-sm leading-(--text-sm--line-height)"
       v-html="renderedHelpHtml"
     />
     <!-- Fallback: markdown not found or fetch error -->
     <div
       v-else
-      class="fallback-content space-y-6 text-sm leading-[var(--text-sm--line-height)]"
+      class="fallback-content space-y-6 text-sm leading-(--text-sm--line-height)"
     >
       <p v-if="node.description">
         <strong>{{ $t('g.description') }}:</strong> {{ node.description }}
@@ -139,13 +139,27 @@ const outputList = computed(() =>
 }
 
 .markdown-content :deep(h4),
+.fallback-content h4 {
+  margin-top: calc(var(--spacing) * 8);
+  margin-bottom: calc(var(--spacing) * 4);
+  font-size: var(--text-sm);
+  font-weight: var(--font-weight-bold);
+}
+
 .markdown-content :deep(h5),
+.fallback-content h5 {
+  margin-top: calc(var(--spacing) * 8);
+  margin-bottom: calc(var(--spacing) * 4);
+  font-size: var(--text-sm);
+  font-weight: var(--font-weight-bold);
+}
+
 .markdown-content :deep(h6),
-.fallback-content h4,
-.fallback-content h5,
 .fallback-content h6 {
   margin-top: calc(var(--spacing) * 8);
   margin-bottom: calc(var(--spacing) * 4);
+  font-size: var(--text-xs);
+  font-weight: var(--font-weight-bold);
 }
 
 .markdown-content :deep(td),
@@ -204,8 +218,11 @@ const outputList = computed(() =>
 
 .markdown-content :deep(table),
 .fallback-content table {
-  width: 100%;
   border-collapse: collapse;
+}
+
+.fallback-content table {
+  width: 100%;
 }
 
 .markdown-content :deep(th),

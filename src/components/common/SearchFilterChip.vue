@@ -1,5 +1,5 @@
 <template>
-  <Chip removable @remove="$emit('remove', $event)">
+  <Chip removable @remove="emit('remove', $event)">
     <Badge size="small" :class="semanticBadgeClass">
       {{ badge }}
     </Badge>
@@ -27,7 +27,9 @@ const semanticClassMap: Record<string, string> = {
 }
 
 const props = defineProps<Omit<SearchFilter, 'id'>>()
-defineEmits(['remove'])
+const emit = defineEmits<{
+  (e: 'remove', event: Event): void
+}>()
 
 const semanticBadgeClass = computed(() => {
   return semanticClassMap[props.badgeClass] ?? props.badgeClass
