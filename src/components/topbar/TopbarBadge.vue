@@ -132,8 +132,8 @@ import { cn } from '@/utils/tailwindUtil'
 const {
   badge,
   displayMode = 'full',
-  reverseOrder = false,
-  noPadding = false,
+  reverseOrder,
+  noPadding,
   backgroundColor = 'var(--comfy-menu-bg)'
 } = defineProps<{
   badge: TopbarBadge

@@ -78,7 +78,7 @@ interface Props {
   isActive?: boolean
 }
 
-const { item, isActive = false } = defineProps<Props>()
+const { item, isActive } = defineProps<Props>()
 
 const nodeDefStore = useNodeDefStore()
 const hasMissingNodes = computed(() =>

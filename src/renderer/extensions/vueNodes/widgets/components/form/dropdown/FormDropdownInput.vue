@@ -20,7 +20,7 @@ interface Props {
 }
 
 const {
-  isOpen = false,
+  isOpen,
   placeholder = 'Select...',
   items,
   displayItems,
