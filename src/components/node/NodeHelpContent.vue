@@ -100,30 +100,42 @@ const outputList = computed(() =>
 </script>
 
 <style scoped>
-@reference './../../assets/css/style.css';
-
 .node-help-content :deep(:is(img, video)) {
-  @apply max-w-full h-auto block mb-4;
+  display: block;
+  max-width: 100%;
+  height: auto;
+  margin-bottom: calc(var(--spacing) * 4);
 }
 
 .markdown-content,
 .fallback-content {
-  @apply text-sm overflow-visible;
+  overflow: visible;
+  font-size: var(--text-sm);
+  line-height: var(--tw-leading, var(--text-sm--line-height));
 }
 
 .markdown-content :deep(h1),
 .fallback-content h1 {
-  @apply text-[22px] font-bold mt-8 mb-4 first:mt-0;
+  margin-top: calc(var(--spacing) * 8);
+  margin-bottom: calc(var(--spacing) * 4);
+  font-size: 22px;
+  font-weight: var(--font-weight-bold);
 }
 
 .markdown-content :deep(h2),
 .fallback-content h2 {
-  @apply text-[18px] font-bold mt-8 mb-4 first:mt-0;
+  margin-top: calc(var(--spacing) * 8);
+  margin-bottom: calc(var(--spacing) * 4);
+  font-size: 18px;
+  font-weight: var(--font-weight-bold);
 }
 
 .markdown-content :deep(h3),
 .fallback-content h3 {
-  @apply text-[16px] font-bold mt-8 mb-4 first:mt-0;
+  margin-top: calc(var(--spacing) * 8);
+  margin-bottom: calc(var(--spacing) * 4);
+  font-size: 16px;
+  font-weight: var(--font-weight-bold);
 }
 
 .markdown-content :deep(h4),
@@ -132,7 +144,8 @@ const outputList = computed(() =>
 .fallback-content h4,
 .fallback-content h5,
 .fallback-content h6 {
-  @apply mt-8 mb-4 first:mt-0;
+  margin-top: calc(var(--spacing) * 8);
+  margin-bottom: calc(var(--spacing) * 4);
 }
 
 .markdown-content :deep(td),
@@ -155,7 +168,8 @@ const outputList = computed(() =>
 .markdown-content :deep(ol),
 .fallback-content ul,
 .fallback-content ol {
-  @apply pl-8 my-2;
+  margin-block: calc(var(--spacing) * 2);
+  padding-left: calc(var(--spacing) * 8);
 }
 
 .markdown-content :deep(ul ul),
@@ -166,36 +180,39 @@ const outputList = computed(() =>
 .fallback-content ol ol,
 .fallback-content ul ol,
 .fallback-content ol ul {
-  @apply pl-6 my-2;
+  margin-block: calc(var(--spacing) * 2);
+  padding-left: calc(var(--spacing) * 6);
 }
 
 .markdown-content :deep(li),
 .fallback-content li {
-  @apply my-2;
+  margin-block: calc(var(--spacing) * 2);
 }
 
 .markdown-content :deep(*:first-child),
 .fallback-content > *:first-child {
-  @apply mt-0;
+  margin-top: 0;
 }
 
 .markdown-content :deep(code),
 .fallback-content code {
   color: var(--code-text-color);
   background-color: var(--code-bg-color);
-  @apply rounded px-1.5 py-0.5;
+  border-radius: var(--radius);
+  padding: calc(var(--spacing) * 0.5) calc(var(--spacing) * 1.5);
 }
 
 .markdown-content :deep(table),
 .fallback-content table {
-  @apply w-full border-collapse;
+  width: 100%;
+  border-collapse: collapse;
 }
 
 .markdown-content :deep(th),
 .markdown-content :deep(td),
 .fallback-content th,
 .fallback-content td {
-  @apply px-2 py-2;
+  padding: calc(var(--spacing) * 2);
 }
 
 .markdown-content :deep(tr),
@@ -215,16 +232,20 @@ const outputList = computed(() =>
 
 .markdown-content :deep(pre),
 .fallback-content pre {
-  @apply rounded p-4 my-4 overflow-x-auto;
+  margin-block: calc(var(--spacing) * 4);
+  overflow-x: auto;
+  border-radius: var(--radius);
+  padding: calc(var(--spacing) * 4);
   background-color: var(--code-block-bg-color);
 
   code {
-    @apply bg-transparent p-0;
+    background-color: transparent;
+    padding: 0;
     color: var(--p-text-color);
   }
 }
 
 .markdown-content :deep(table) {
-  @apply overflow-x-auto;
+  overflow-x: auto;
 }
 </style>
