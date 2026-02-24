@@ -13,12 +13,8 @@ export function useCurveEditor({ svgRef, modelValue }: UseCurveEditorOptions) {
   const dragIndex = ref(-1)
   let cleanupDrag: (() => void) | null = null
 
-  const sortedPoints = computed(() =>
-    [...modelValue.value].sort((a, b) => a[0] - b[0])
-  )
-
   const curvePath = computed(() => {
-    const points = sortedPoints.value
+    const points = modelValue.value
     if (points.length < 2) return ''
 
     const interpolate = createMonotoneInterpolator(points)
@@ -79,15 +75,12 @@ export function useCurveEditor({ svgRef, modelValue }: UseCurveEditorOptions) {
 
     if (e.ctrlKey) return
 
-    const newPoints: CurvePoint[] = [...modelValue.value, [x, y]]
+    const newPoint: CurvePoint = [x, y]
+    const newPoints: CurvePoint[] = [...modelValue.value, newPoint]
+    newPoints.sort((a, b) => a[0] - b[0])
     modelValue.value = newPoints
 
-    const newIndex = newPoints.length - 1
-    startDrag(newIndex, e)
-  }
-
-  function sortByX(points: CurvePoint[]): CurvePoint[] {
-    return [...points].sort((a, b) => a[0] - b[0])
+    startDrag(newPoints.indexOf(newPoint), e)
   }
 
   function startDrag(index: number, e: PointerEvent) {
@@ -97,7 +90,7 @@ export function useCurveEditor({ svgRef, modelValue }: UseCurveEditorOptions) {
       if (modelValue.value.length > 2) {
         const newPoints = [...modelValue.value]
         newPoints.splice(index, 1)
-        modelValue.value = sortByX(newPoints)
+        modelValue.value = newPoints
       }
       return
     }
@@ -111,15 +104,17 @@ export function useCurveEditor({ svgRef, modelValue }: UseCurveEditorOptions) {
     const onMove = (ev: PointerEvent) => {
       if (dragIndex.value < 0) return
       const [x, y] = svgCoords(ev)
+      const movedPoint: CurvePoint = [x, y]
       const newPoints = [...modelValue.value]
-      newPoints[dragIndex.value] = [x, y]
+      newPoints[dragIndex.value] = movedPoint
+      newPoints.sort((a, b) => a[0] - b[0])
       modelValue.value = newPoints
+      dragIndex.value = newPoints.indexOf(movedPoint)
     }
 
     const endDrag = () => {
       if (dragIndex.value < 0) return
       dragIndex.value = -1
-      modelValue.value = sortByX(modelValue.value)
       svg.removeEventListener('pointermove', onMove)
       svg.removeEventListener('pointerup', endDrag)
       svg.removeEventListener('lostpointercapture', endDrag)
