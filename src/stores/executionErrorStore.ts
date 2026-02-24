@@ -403,9 +403,7 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
     // Lookup helpers
     getNodeErrors,
     slotHasError,
-    errorAncestorExecutionIds,
     isContainerWithInternalError,
-    missingAncestorExecutionIds,
     isContainerWithMissingNode
   }
 })

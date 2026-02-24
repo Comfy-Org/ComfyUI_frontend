@@ -10,14 +10,6 @@ import type { ConflictDetail } from '@/workbench/extensions/manager/types/confli
 
 type NodePack = components['schemas']['Node']
 
-/**
- * Composable that encapsulates node pack install logic.
- * Extracted from PackInstallButton to enable reuse across custom-styled buttons.
- *
- * @param getNodePacks - Reactive getter returning the list of packs to install
- * @param getHasConflict - Optional getter for external conflict flag (mirrors PackInstallButton's hasConflict prop)
- * @param getConflictInfo - Optional getter for pre-computed conflict details (mirrors PackInstallButton's conflictInfo prop)
- */
 export function usePackInstall(
   getNodePacks: () => NodePack[],
   getHasConflict?: () => boolean | undefined,
@@ -25,6 +17,7 @@ export function usePackInstall(
 ) {
   const managerStore = useComfyManagerStore()
   const { show: showNodeConflictDialog } = useNodeConflictDialog()
+  const { checkNodeCompatibility } = useConflictDetection()
   const { t } = useI18n()
 
   // Check if any of the packs are currently being installed
@@ -59,8 +52,11 @@ export function usePackInstall(
     managerStore.installPack.call(createPayload(item))
 
   const performInstallation = async (packs: NodePack[]) => {
-    await Promise.all(packs.map(installPack))
-    managerStore.installPack.clear()
+    try {
+      await Promise.all(packs.map(installPack))
+    } finally {
+      managerStore.installPack.clear()
+    }
   }
 
   const installAllPacks = async () => {
@@ -70,9 +66,9 @@ export function usePackInstall(
     const hasConflict = getHasConflict?.()
     const conflictInfo = getConflictInfo?.()
 
-    if (hasConflict && conflictInfo) {
-      // Check each package individually for conflicts
-      const { checkNodeCompatibility } = useConflictDetection()
+    if (hasConflict) {
+      if (!conflictInfo) return
+
       const conflictedPackages = nodePacks
         .map((pack) => {
           const compatibilityCheck = checkNodeCompatibility(pack)
@@ -84,13 +80,12 @@ export function usePackInstall(
             is_compatible: !compatibilityCheck.hasConflict
           }
         })
-        .filter((result) => result.has_conflict) // Only show packages with conflicts
+        .filter((result) => result.has_conflict)
 
       showNodeConflictDialog({
         conflictedPackages,
         buttonText: t('manager.conflicts.installAnyway'),
         onButtonClick: async () => {
-          // Proceed with installation of uninstalled packages
           const uninstalledPacks = nodePacks.filter(
             (pack) => !managerStore.isPackInstalled(pack.id)
           )
@@ -101,7 +96,6 @@ export function usePackInstall(
       return
     }
 
-    // No conflicts or conflicts acknowledged - proceed with installation
     const uninstalledPacks = nodePacks.filter(
       (pack) => !managerStore.isPackInstalled(pack.id)
     )
