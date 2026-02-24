@@ -205,7 +205,15 @@ import {
 } from '@vueuse/core'
 import Divider from 'primevue/divider'
 import { useToast } from 'primevue/usetoast'
-import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
+import {
+  computed,
+  defineAsyncComponent,
+  nextTick,
+  onMounted,
+  onUnmounted,
+  ref,
+  watch
+} from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import NoResultsPlaceholder from '@/components/common/NoResultsPlaceholder.vue'
@@ -231,6 +239,7 @@ import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import type { MediaKind } from '@/platform/assets/schemas/mediaAssetSchema'
 import { resolveOutputAssetItems } from '@/platform/assets/utils/outputAssetUtil'
 import { isCloud } from '@/platform/distribution/types'
+import { useDialogStore } from '@/stores/dialogStore'
 import { ResultItemImpl } from '@/stores/queueStore'
 import {
   formatDuration,
@@ -238,6 +247,10 @@ import {
   isPreviewableMediaType
 } from '@/utils/formatUtil'
 import { cn } from '@/utils/tailwindUtil'
+
+const Load3dViewerContent = defineAsyncComponent(
+  () => import('@/components/load3d/Load3dViewerContent.vue')
+)
 
 const { t } = useI18n()
 
@@ -549,6 +562,23 @@ const handleDeleteSelected = async () => {
 const handleZoomClick = (asset: AssetItem) => {
   const mediaType = getMediaTypeFromFilename(asset.name)
   if (!isPreviewableMediaType(mediaType)) {
+    return
+  }
+
+  if (mediaType === '3D') {
+    const dialogStore = useDialogStore()
+    dialogStore.showDialog({
+      key: 'asset-3d-viewer',
+      title: asset.name,
+      component: Load3dViewerContent,
+      props: {
+        modelUrl: asset.preview_url || ''
+      },
+      dialogComponentProps: {
+        style: 'width: 80vw; height: 80vh;',
+        maximizable: true
+      }
+    })
     return
   }
 
