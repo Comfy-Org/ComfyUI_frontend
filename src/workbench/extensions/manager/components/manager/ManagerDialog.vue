@@ -165,7 +165,7 @@
 </template>
 
 <script setup lang="ts">
-import { whenever } from '@vueuse/core'
+import { until, whenever } from '@vueuse/core'
 import { merge, stubTrue } from 'es-toolkit/compat'
 import type { AutoCompleteOptionSelectEvent } from 'primevue/autocomplete'
 import {
@@ -348,15 +348,16 @@ const {
   sortOptions
 } = useRegistrySearch({
   initialSortField: initialState.sortField,
-  // Force 'packs' mode only when pre-filling search from a packId on non-Missing tabs
+  // Force 'packs' mode only when pre-filling search from a packId on non-Missing tabs.
+  // Use initialTabId (which resolves persisted tab) rather than the raw initialTab prop.
   initialSearchMode:
-    initialPackId && initialTab !== ManagerTab.Missing
+    initialPackId && initialTabId !== ManagerTab.Missing
       ? 'packs'
       : initialState.searchMode,
   // Missing tab always opens with empty search so all missing packs are visible.
   // Other tabs use initialPackId as the pre-filled search query (or fall back to persisted state).
   initialSearchQuery:
-    initialTab === ManagerTab.Missing
+    initialTabId === ManagerTab.Missing
       ? ''
       : (initialPackId ?? initialState.searchQuery)
 })
@@ -485,19 +486,18 @@ watch(
   }
 )
 
-// Auto-select the pack matching initialPackId once displayPacks is populated.
-watch(
-  resultsWithKeys,
-  (packs) => {
-    if (!initialPackId) return
-    if (selectedNodePacks.value.length > 0) return
-    const target = packs.find((p) => p.id === initialPackId)
-    if (!target) return
-    selectedNodePacks.value = [target]
-    isRightPanelOpen.value = true
-  },
-  { immediate: true }
-)
+// Auto-select the pack matching initialPackId once — one-shot, never re-triggers.
+if (initialPackId) {
+  until(resultsWithKeys)
+    .toMatch((packs) => packs.some((p) => p.id === initialPackId))
+    .then((packs) => {
+      const target = packs.find((p) => p.id === initialPackId)
+      if (target) {
+        selectedNodePacks.value = [target]
+        isRightPanelOpen.value = true
+      }
+    })
+}
 
 const getLoadingCount = () => {
   switch (selectedTab.value?.id) {
