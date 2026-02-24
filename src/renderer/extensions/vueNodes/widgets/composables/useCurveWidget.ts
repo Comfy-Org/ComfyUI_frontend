@@ -18,11 +18,7 @@ export const useCurveWidget = (): ComfyWidgetConstructorV2 => {
       'curve',
       spec.name,
       [...defaultValue],
-      () => {},
-      {
-        serialize: true,
-        canvasOnly: false
-      }
+      () => {}
     )
 
     if (rawWidget.type !== 'curve') {

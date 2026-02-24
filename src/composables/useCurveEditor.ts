@@ -13,11 +13,9 @@ export function useCurveEditor({ svgRef, modelValue }: UseCurveEditorOptions) {
   const dragIndex = ref(-1)
   let cleanupDrag: (() => void) | null = null
 
-  const sortedPoints = computed(() => {
-    const points = modelValue.value
-    if (!Array.isArray(points)) return []
-    return [...points].sort((a, b) => a[0] - b[0])
-  })
+  const sortedPoints = computed(() =>
+    [...modelValue.value].sort((a, b) => a[0] - b[0])
+  )
 
   const curvePath = computed(() => {
     const points = sortedPoints.value
@@ -53,14 +51,15 @@ export function useCurveEditor({ svgRef, modelValue }: UseCurveEditorOptions) {
   }
 
   function findNearestPoint(x: number, y: number): number {
-    const threshold = 0.04
+    const threshold2 = 0.04 * 0.04
     let nearest = -1
-    let minDist = threshold
+    let minDist2 = threshold2
     for (let i = 0; i < modelValue.value.length; i++) {
-      const [px, py] = modelValue.value[i]
-      const dist = Math.hypot(px - x, py - y)
-      if (dist < minDist) {
-        minDist = dist
+      const dx = modelValue.value[i][0] - x
+      const dy = modelValue.value[i][1] - y
+      const dist2 = dx * dx + dy * dy
+      if (dist2 < minDist2) {
+        minDist2 = dist2
         nearest = i
       }
     }
@@ -92,6 +91,8 @@ export function useCurveEditor({ svgRef, modelValue }: UseCurveEditorOptions) {
   }
 
   function startDrag(index: number, e: PointerEvent) {
+    cleanupDrag?.()
+
     if (e.button === 2 || (e.button === 0 && e.ctrlKey)) {
       if (modelValue.value.length > 2) {
         const newPoints = [...modelValue.value]
