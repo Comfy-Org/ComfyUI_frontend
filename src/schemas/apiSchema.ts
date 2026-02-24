@@ -450,7 +450,8 @@ const zSettings = z.object({
     'alphabetical',
     'newest',
     'vram-low-to-high',
-    'model-size-low-to-high'
+    'model-size-low-to-high',
+    'similar-to-current'
   ]),
   /** Settings used for testing */
   'test.setting': z.any(),

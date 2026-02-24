@@ -44,6 +44,15 @@ vi.mock('@/platform/telemetry', () => ({
   }))
 }))
 
+const mockGraphNodes = vi.hoisted(() => ({ value: [] as { type: string }[] }))
+vi.mock('@/scripts/app', () => ({
+  app: {
+    get graph() {
+      return { _nodes: mockGraphNodes.value }
+    }
+  }
+}))
+
 const mockGetFuseOptions = vi.hoisted(() => vi.fn())
 vi.mock('@/scripts/api', () => ({
   api: {
@@ -277,6 +286,48 @@ describe('useTemplateFiltering', () => {
       'zeta-extended',
       'alpha-starter',
       'beta-pro'
+    ])
+  })
+
+  it('sorts by similarity to current workflow nodes', () => {
+    mockGraphNodes.value = [
+      { type: 'KSampler' },
+      { type: 'VAEDecode' },
+      { type: 'CLIPTextEncode' }
+    ]
+
+    const templates = ref<TemplateInfo[]>([
+      {
+        name: 'unrelated',
+        description: 'no overlap',
+        mediaType: 'image',
+        mediaSubtype: 'png',
+        requiresCustomNodes: ['ThreeDLoader']
+      },
+      {
+        name: 'best-match',
+        description: 'shares two nodes',
+        mediaType: 'image',
+        mediaSubtype: 'png',
+        requiresCustomNodes: ['KSampler', 'VAEDecode']
+      },
+      {
+        name: 'partial-match',
+        description: 'shares one node',
+        mediaType: 'image',
+        mediaSubtype: 'png',
+        requiresCustomNodes: ['KSampler', 'ThreeDLoader']
+      }
+    ])
+
+    const { sortBy, filteredTemplates } = useTemplateFiltering(templates)
+
+    sortBy.value = 'similar-to-current'
+
+    expect(filteredTemplates.value.map((t) => t.name)).toEqual([
+      'best-match',
+      'partial-match',
+      'unrelated'
     ])
   })
 

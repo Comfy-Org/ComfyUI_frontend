@@ -725,6 +725,10 @@ const sortOptions = computed(() => [
     value: 'recommended'
   },
   {
+    name: t('templateWorkflows.sort.similarToCurrent', 'Similar to Current'),
+    value: 'similar-to-current'
+  },
+  {
     name: t('templateWorkflows.sort.popular', 'Popular'),
     value: 'popular'
   },

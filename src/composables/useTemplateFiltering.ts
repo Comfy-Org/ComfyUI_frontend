@@ -7,7 +7,13 @@ import type { Ref } from 'vue'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
 import type { TemplateInfo } from '@/platform/workflow/templates/types/template'
+import { app } from '@/scripts/app'
 import { useTemplateRankingStore } from '@/stores/templateRankingStore'
+import type { TemplateSimilarityInput } from '@/utils/templateSimilarity'
+import {
+  computeSimilarity,
+  toSimilarityInput
+} from '@/utils/templateSimilarity'
 import { debounce } from 'es-toolkit/compat'
 import { api } from '@/scripts/api'
 
@@ -50,6 +56,7 @@ export function useTemplateFiltering(
     | 'newest'
     | 'vram-low-to-high'
     | 'model-size-low-to-high'
+    | 'similar-to-current'
   >(settingStore.get('Comfy.Templates.SortBy'))
 
   const fuseOptions = ref<IFuseOptions<TemplateInfo>>(defaultFuseOptions)
@@ -270,6 +277,18 @@ export function useTemplateFiltering(
           if (sizeA === sizeB) return 0
           return sizeA - sizeB
         })
+      case 'similar-to-current': {
+        const nodes = app.graph?._nodes ?? []
+        const reference: TemplateSimilarityInput = {
+          name: '',
+          requiredNodes: nodes.map((n) => n.type)
+        }
+        return templates.sort((a, b) => {
+          const scoreA = computeSimilarity(reference, toSimilarityInput(a))
+          const scoreB = computeSimilarity(reference, toSimilarityInput(b))
+          return scoreB - scoreA
+        })
+      }
       case 'default':
       default:
         return templates

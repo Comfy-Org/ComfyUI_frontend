@@ -1004,7 +1004,8 @@
       "searchPlaceholder": "Search...",
       "vramLowToHigh": "VRAM Usage (Low to High)",
       "modelSizeLowToHigh": "Model Size (Low to High)",
-      "default": "Default"
+      "default": "Default",
+      "similarToCurrent": "Similar to Current"
     },
     "error": {
       "templateNotFound": "Template \"{templateName}\" not found"
@@ -1115,7 +1116,21 @@
       },
       "previewGeneration": {
         "title": "Preview",
-        "description": "Generate preview images and videos"
+        "description": "Generate preview images and videos",
+        "thumbnailLabel": "Thumbnail",
+        "thumbnailHint": "Primary image shown in marketplace listings",
+        "comparisonLabel": "Before & After Comparison",
+        "comparisonHint": "Show what the workflow transforms",
+        "beforeImageLabel": "Before",
+        "afterImageLabel": "After",
+        "workflowPreviewLabel": "Workflow Graph",
+        "workflowPreviewHint": "Screenshot of the workflow graph layout",
+        "videoPreviewLabel": "Video Preview",
+        "videoPreviewHint": "Optional short video demonstrating the workflow",
+        "galleryLabel": "Example Gallery",
+        "galleryHint": "Up to {max} example output images",
+        "uploadPrompt": "Click to upload",
+        "removeFile": "Remove"
       },
       "categoryAndTagging": {
         "title": "Categories & Tags",
@@ -1134,6 +1149,33 @@
         "description": "Your template has been submitted"
       }
     }
+  },
+  "developerProfile": {
+    "dialogTitle": "Developer Profile",
+    "username": "Username",
+    "bio": "Bio",
+    "reviews": "Reviews",
+    "publishedTemplates": "Published Templates",
+    "totalDownloads": "Downloads",
+    "totalFavorites": "Favorites",
+    "averageRating": "Avg. Rating",
+    "templateCount": "Templates",
+    "revenue": "Revenue",
+    "monthlyRevenue": "Monthly",
+    "totalRevenue": "Total",
+    "noReviews": "No reviews yet",
+    "noTemplates": "No published templates yet",
+    "unpublish": "Unpublish",
+    "save": "Save Profile",
+    "saving": "Saving...",
+    "verified": "Verified",
+    "quickActions": "Quick Actions",
+    "bannerPlaceholder": "Banner image",
+    "editUsername": "Edit username",
+    "editBio": "Edit bio",
+    "downloads": "Downloads",
+    "favorites": "Favorites",
+    "rating": "Rating"
   },
   "subgraphStore": {
     "confirmDeleteTitle": "Delete blueprint?",
@@ -1409,7 +1451,8 @@
     "Model Library": "Model Library",
     "Node Library": "Node Library",
     "Workflows": "Workflows",
-    "templatePublishing": "Template Publishing"
+    "templatePublishing": "Template Publishing",
+    "developerProfile": "Developer Profile"
   },
   "desktopMenu": {
     "reinstall": "Reinstall",

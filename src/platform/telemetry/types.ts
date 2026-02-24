@@ -222,6 +222,7 @@ export interface TemplateFilterMetadata {
     | 'newest'
     | 'vram-low-to-high'
     | 'model-size-low-to-high'
+    | 'similar-to-current'
   filtered_count: number
   total_count: number
 }
