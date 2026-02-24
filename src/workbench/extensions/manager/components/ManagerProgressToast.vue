@@ -139,7 +139,11 @@ function closeToast() {
 }
 
 async function handleRestart() {
-  await applyChanges(closeToast)
+  try {
+    await applyChanges(closeToast)
+  } catch (err) {
+    console.error('[ManagerProgressToast] Restart failed:', err)
+  }
 }
 
 onMounted(() => {
