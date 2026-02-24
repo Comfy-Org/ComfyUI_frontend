@@ -89,8 +89,11 @@ jobs:
           path: temp/perf-baseline/
           if_no_artifact_found: warn
 
+      - name: Install dependencies
+        run: npm install tsx
+
       - name: Generate perf report
-        run: node scripts/perf-report.js > perf-report.md
+        run: npx tsx scripts/perf-report.ts > perf-report.md
 
       - name: Read perf report
         id: perf-report
