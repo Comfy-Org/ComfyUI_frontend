@@ -28,7 +28,6 @@
       <div
         v-if="!widget.hidden && (!widget.advanced || showAdvanced)"
         class="lg-node-widget group col-span-full grid grid-cols-subgrid items-stretch"
-        :data-widget-name="widget.name"
       >
         <!-- Widget Input Slot Dot -->
         <div
@@ -68,6 +67,7 @@
             )
           "
           @update:model-value="widget.updateHandler"
+          @contextmenu="widget.handleContextMenu"
         />
       </div>
     </template>
@@ -84,11 +84,13 @@ import type {
   WidgetSlotMetadata
 } from '@/composables/graph/useGraphNodeManager'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { showNodeOptions } from '@/composables/graph/useMoreOptionsMenu'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { st } from '@/i18n'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useNodeTooltips } from '@/renderer/extensions/vueNodes/composables/useNodeTooltips'
+import { useNodeEventHandlers } from '@/renderer/extensions/vueNodes/composables/useNodeEventHandlers'
 import { useNodeZIndex } from '@/renderer/extensions/vueNodes/composables/useNodeZIndex'
 import WidgetDOM from '@/renderer/extensions/vueNodes/widgets/components/WidgetDOM.vue'
 // Import widget components directly
@@ -134,6 +136,8 @@ function handleBringToFront() {
   }
 }
 
+const { handleNodeRightClick } = useNodeEventHandlers()
+
 // Error boundary implementation
 const renderError = ref<string | null>(null)
 
@@ -159,6 +163,7 @@ const widgetValueStore = useWidgetValueStore()
 
 interface ProcessedWidget {
   advanced: boolean
+  handleContextMenu: (e: PointerEvent) => void
   hasLayoutSize: boolean
   hasError: boolean
   hidden: boolean
@@ -240,9 +245,22 @@ const processedWidgets = computed((): ProcessedWidget[] => {
 
     const tooltipText = getWidgetTooltip(widget)
     const tooltipConfig = createTooltipConfig(tooltipText)
+    const handleContextMenu = (e: PointerEvent) => {
+      e.preventDefault()
+      e.stopPropagation()
+      handleNodeRightClick(e, nodeId)
+      showNodeOptions(
+        e,
+        widget.name,
+        widget.nodeId !== undefined
+          ? String(stripGraphPrefix(widget.nodeId))
+          : undefined
+      )
+    }
 
     result.push({
       advanced: widget.options?.advanced ?? false,
+      handleContextMenu,
       hasLayoutSize: widget.hasLayoutSize ?? false,
       hasError:
         nodeErrors?.errors?.some(
