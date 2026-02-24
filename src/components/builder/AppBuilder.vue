@@ -92,7 +92,9 @@ function getHovered(
   const node = graph.getNodeOnPos(e.canvasX, e.canvasY)
   if (!node) return
 
-  return [node, node.getWidgetOnPos(e.canvasX, e.canvasY, false)]
+  const widget = node.getWidgetOnPos(e.canvasX, e.canvasY, false)
+
+  if (widget || node.constructor.nodeData?.output_node) return [node, widget]
 }
 
 function getBounding(nodeId: NodeId, widgetName?: string) {
