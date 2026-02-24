@@ -46,17 +46,6 @@
         class="icon-[lucide--circle-help] cursor-help text-base text-muted-foreground mr-auto"
       />
       <Button
-        v-if="isFreeTier"
-        variant="secondary"
-        size="sm"
-        class="text-base-foreground"
-        data-testid="upgrade-button"
-        @click="handleOpenPlansAndPricing"
-      >
-        {{ $t('subscription.upgrade') }}
-      </Button>
-      <Button
-        v-else
         variant="secondary"
         size="sm"
         class="text-base-foreground"
@@ -181,7 +170,6 @@ const settingsDialog = useSettingsDialog()
 const dialogService = useDialogService()
 const {
   isActiveSubscription,
-  isFreeTier,
   subscriptionTierName,
   subscriptionTier,
   fetchStatus
