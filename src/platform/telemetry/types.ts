@@ -31,11 +31,6 @@ export interface AuthMetadata {
 }
 
 /**
- * Metadata for signup/login page opened events
- */
-export interface AuthPageOpenedMetadata {}
-
-/**
  * Survey response data for user profiling
  * Maps 1-to-1 with actual survey fields
  */
@@ -327,8 +322,7 @@ export interface BeginCheckoutMetadata
  */
 export interface TelemetryProvider {
   // Authentication flow events
-  trackSignupOpened?(metadata?: AuthPageOpenedMetadata): void
-  trackLoginOpened?(metadata?: AuthPageOpenedMetadata): void
+  trackSignupOpened?(): void
   trackAuth?(metadata: AuthMetadata): void
   trackUserLoggedIn?(): void
 
@@ -422,7 +416,6 @@ export type TelemetryDispatcher = Required<TelemetryProvider>
 export const TelemetryEvents = {
   // Authentication Flow
   USER_SIGN_UP_OPENED: 'app:user_sign_up_opened',
-  USER_LOGIN_OPENED: 'app:user_login_opened',
   USER_AUTH_COMPLETED: 'app:user_auth_completed',
   USER_LOGGED_IN: 'app:user_logged_in',
 
@@ -528,5 +521,4 @@ export type TelemetryEventProperties =
   | HelpCenterClosedMetadata
   | WorkflowCreatedMetadata
   | EnterLinearMetadata
-  | AuthPageOpenedMetadata
   | SubscriptionMetadata
