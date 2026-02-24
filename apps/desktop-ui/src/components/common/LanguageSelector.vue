@@ -7,7 +7,7 @@
     option-value="value"
     :disabled="isSwitching"
     :pt="dropdownPt"
-    :size="props.size"
+    :size="size"
     class="language-selector"
     @change="onLocaleChange"
   >
@@ -36,16 +36,10 @@ import { i18n, loadLocale, st } from '@/i18n'
 type VariantKey = 'dark' | 'light'
 type SizeKey = 'small' | 'large'
 
-const props = withDefaults(
-  defineProps<{
-    variant?: VariantKey
-    size?: SizeKey
-  }>(),
-  {
-    variant: 'dark',
-    size: 'small'
-  }
-)
+const { variant = 'dark', size = 'small' } = defineProps<{
+  variant?: VariantKey
+  size?: SizeKey
+}>()
 
 const dropdownId = `language-select-${Math.random().toString(36).slice(2)}`
 
@@ -104,10 +98,8 @@ const VARIANT_PRESETS = {
 const selectedLocale = ref<string>(i18n.global.locale.value)
 const isSwitching = ref(false)
 
-const sizePreset = computed(() => SIZE_PRESETS[props.size as SizeKey])
-const variantPreset = computed(
-  () => VARIANT_PRESETS[props.variant as VariantKey]
-)
+const sizePreset = computed(() => SIZE_PRESETS[size])
+const variantPreset = computed(() => VARIANT_PRESETS[variant])
 
 const dropdownPt = computed(() => ({
   root: {
