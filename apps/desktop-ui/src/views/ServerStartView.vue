@@ -232,8 +232,6 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
-@reference '../assets/css/style.css';
-
 /* Hide the xterm scrollbar completely */
 :deep(.p-terminal) .xterm-viewport {
   overflow: hidden !important;
