@@ -1796,7 +1796,12 @@
     "errorNotSupported": "Clipboard API not supported in your browser"
   },
   "imageCompare": {
-    "noImages": "No images to compare"
+    "noImages": "No images to compare",
+    "batchLabelA": "A:",
+    "batchLabelB": "B:"
+  },
+  "batch": {
+    "index": "{current} / {total}"
   },
   "load3d": {
     "switchCamera": "Switch Camera",
@@ -1905,6 +1910,7 @@
     "nodeDefinitionsUpdated": "Node definitions updated",
     "errorSaveSetting": "Error saving setting {id}: {err}",
     "errorCopyImage": "Error copying image: {error}",
+    "errorOpenImage": "Error opening image: {error}",
     "noTemplatesToExport": "No templates to export",
     "failedToFetchLogs": "Failed to fetch server logs",
     "migrateToLitegraphReroute": "Reroute nodes will be removed in future versions. Click to migrate to litegraph-native reroute.",
