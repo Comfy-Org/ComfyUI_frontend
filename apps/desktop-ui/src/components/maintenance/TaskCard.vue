@@ -92,21 +92,6 @@ const isExecuting = useMinLoadingDurationRef(reactiveExecuting, 250)
   z-index: 10;
 }
 
-.p-card {
-  transition: opacity var(--default-transition-duration);
-
-  --p-card-background: var(--p-button-secondary-background);
-  opacity: 0.9;
-
-  &.opacity-65 {
-    opacity: 0.4;
-  }
-
-  &:hover {
-    opacity: 1;
-  }
-}
-
 :deep(.p-card-header) {
   z-index: 0;
 }

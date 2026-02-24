@@ -17,7 +17,7 @@
     </Button>
     <div
       v-if="showColorPicker"
-      class="color-picker-container absolute -top-10 left-1/2"
+      class="absolute -top-10 left-1/2 -translate-x-1/2"
     >
       <SelectButton
         :model-value="selectedColorOption"
@@ -159,14 +159,7 @@ watch(
 </script>
 
 <style scoped>
-.color-picker-container {
-  transform: translateX(-50%);
-}
-
 :deep(.p-togglebutton) {
-  padding-top: calc(var(--spacing) * 2);
-  padding-bottom: calc(var(--spacing) * 2);
-  padding-left: calc(var(--spacing) * 1);
-  padding-right: calc(var(--spacing) * 1);
+  padding: calc(var(--spacing) * 2) var(--spacing);
 }
 </style>

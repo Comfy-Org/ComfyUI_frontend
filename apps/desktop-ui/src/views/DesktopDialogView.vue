@@ -42,31 +42,3 @@ const handleButtonClick = async (button: DialogAction) => {
   await electronAPI().Dialog.clickButton(button.returnValue)
 }
 </script>
-
-<style scoped>
-.p-button-secondary {
-  border: none;
-  background-color: var(--color-neutral-600);
-  color: var(--color-white);
-}
-
-.p-button-secondary:hover {
-  background-color: var(--color-neutral-550);
-}
-
-.p-button-secondary:active {
-  background-color: var(--color-neutral-500);
-}
-
-.p-button-danger {
-  background-color: var(--color-coral-red-600);
-}
-
-.p-button-danger:hover {
-  background-color: var(--color-coral-red-500);
-}
-
-.p-button-danger:active {
-  background-color: var(--color-coral-red-400);
-}
-</style>

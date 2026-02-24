@@ -633,6 +633,20 @@
   }
 }
 
+.task-div .p-card {
+  transition: opacity var(--default-transition-duration);
+  --p-card-background: var(--p-button-secondary-background);
+  opacity: 0.9;
+}
+
+.task-div .p-card.opacity-65 {
+  opacity: 0.4;
+}
+
+.task-div .p-card:hover {
+  opacity: 1;
+}
+
 @utility scrollbar-hide {
   scrollbar-width: none;
   &::-webkit-scrollbar {

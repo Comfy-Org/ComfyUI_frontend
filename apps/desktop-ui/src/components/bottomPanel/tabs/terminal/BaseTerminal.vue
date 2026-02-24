@@ -101,6 +101,9 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
+/* xterm renders its internal DOM outside Vue templates, so :deep selectors are
+ * required to style those generated nodes.
+ */
 :deep(.p-terminal) .xterm {
   overflow: hidden;
 }

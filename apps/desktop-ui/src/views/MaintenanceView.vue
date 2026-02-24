@@ -228,7 +228,7 @@ onUnmounted(() => electron.Validation.dispose())
 .backspan::before {
   position: absolute;
   margin: 0;
-  color: var(--text-muted);
+  color: var(--muted-foreground);
   font-family: 'primeicons', sans-serif;
   top: -2rem;
   right: -2rem;

@@ -1,6 +1,6 @@
 <template>
   <Chip removable @remove="$emit('remove', $event)">
-    <Badge size="small" :class="badgeClass">
+    <Badge size="small" :class="semanticBadgeClass">
       {{ badge }}
     </Badge>
     {{ text }}
@@ -10,6 +10,7 @@
 <script setup lang="ts">
 import Badge from 'primevue/badge'
 import Chip from 'primevue/chip'
+import { computed } from 'vue'
 
 export interface SearchFilter {
   text: string
@@ -18,27 +19,17 @@ export interface SearchFilter {
   id: string | number
 }
 
-defineProps<Omit<SearchFilter, 'id'>>()
+const props = defineProps<Omit<SearchFilter, 'id'>>()
 defineEmits(['remove'])
+
+const semanticBadgeClass = computed(() => {
+  const semanticClassMap: Record<string, string> = {
+    'i-badge': 'bg-green-500 text-white',
+    'o-badge': 'bg-red-500 text-white',
+    'c-badge': 'bg-blue-500 text-white',
+    's-badge': 'bg-yellow-500'
+  }
+
+  return semanticClassMap[props.badgeClass] ?? props.badgeClass
+})
 </script>
-
-<style scoped>
-:deep(.i-badge) {
-  background-color: var(--color-green-500);
-  color: var(--color-white);
-}
-
-:deep(.o-badge) {
-  background-color: var(--color-red-500);
-  color: var(--color-white);
-}
-
-:deep(.c-badge) {
-  background-color: var(--color-blue-500);
-  color: var(--color-white);
-}
-
-:deep(.s-badge) {
-  background-color: var(--color-yellow-500);
-}
-</style>
