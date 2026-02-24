@@ -50,8 +50,12 @@ export function useLayoutSync() {
           liteNode.size[0] !== layout.size.width ||
           liteNode.size[1] !== layout.size.height
         ) {
-          // Use setSize() to trigger onResize callback
-          liteNode.setSize([layout.size.width, layout.size.height])
+          // Update internal size directly (like position above) to avoid
+          // the size setter writing back to layoutStore with Canvas source,
+          // which would create a feedback loop through handleLayoutChange.
+          liteNode.size[0] = layout.size.width
+          liteNode.size[1] = layout.size.height
+          liteNode.onResize?.(liteNode.size)
         }
       }
 
