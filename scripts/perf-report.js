@@ -67,9 +67,7 @@ function main() {
     for (const m of current.measurements) {
       const base = baseline.measurements.find((b) => b.name === m.name)
       if (!base) {
-        lines.push(
-          `| ${m.name}: style recalcs | — | ${m.styleRecalcs} | new |`
-        )
+        lines.push(`| ${m.name}: style recalcs | — | ${m.styleRecalcs} | new |`)
         lines.push(`| ${m.name}: layouts | — | ${m.layouts} | new |`)
         continue
       }
@@ -85,9 +83,7 @@ function main() {
 
       // Layouts
       const layoutPct =
-        base.layouts > 0
-          ? ((m.layouts - base.layouts) / base.layouts) * 100
-          : 0
+        base.layouts > 0 ? ((m.layouts - base.layouts) / base.layouts) * 100 : 0
       lines.push(
         `| ${m.name}: layouts | ${base.layouts} | ${m.layouts} | ${formatDelta(layoutPct)} |`
       )

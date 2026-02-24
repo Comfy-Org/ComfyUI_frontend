@@ -72,8 +72,7 @@ export class PerformanceHelper {
       styleRecalcDurationMs:
         (after.RecalcStyleDuration - before.RecalcStyleDuration) * 1000,
       layouts: after.LayoutCount - before.LayoutCount,
-      layoutDurationMs:
-        (after.LayoutDuration - before.LayoutDuration) * 1000,
+      layoutDurationMs: (after.LayoutDuration - before.LayoutDuration) * 1000,
       taskDurationMs: (after.TaskDuration - before.TaskDuration) * 1000,
       heapDeltaBytes: after.JSHeapUsedSize - before.JSHeapUsedSize
     }
