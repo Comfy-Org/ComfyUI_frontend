@@ -35,7 +35,7 @@ type NodePack = components['schemas']['Node']
 const {
   nodePacks,
   isLoading = false,
-  label = 'Install',
+  label,
   size = 'sm',
   hasConflict,
   conflictInfo
