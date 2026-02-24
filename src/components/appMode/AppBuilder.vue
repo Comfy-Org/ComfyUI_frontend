@@ -178,7 +178,15 @@ const renderedInputs = computed<[string, MaybeRef<BoundStyle> | undefined][]>(
 <template>
   <div class="flex font-bold p-2 border-border-subtle border-b items-center">
     {{ t('linearMode.builder.title') }}
-    <Button class="ml-auto" @click="appModeStore.setMode('graph')">
+    <Button
+      class="ml-auto"
+      @click="
+        () => {
+          appModeStore.resetSelectedToWorkflow()
+          appModeStore.setMode('graph')
+        }
+      "
+    >
       {{ t('linearMode.builder.exit') }}
     </Button>
   </div>

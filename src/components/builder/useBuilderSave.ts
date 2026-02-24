@@ -33,12 +33,10 @@ export function useBuilderSave() {
       return
     }
 
-    // TODO: Update this to show the save dialog if it is temp OR if the user has not saved app mode before.
-    // If they have saved app mode before, just save the workflow, but use the initial app mode state not current.
-
-    if (!workflow.isTemporary) {
+    if (!workflow.isTemporary && workflow.activeState.extra?.linearMode) {
       try {
         workflow.changeTracker?.checkState()
+        appModeStore.saveSelectedToWorkflow()
         await workflowService.saveWorkflow(workflow)
         showSuccessDialog(workflow.filename, appModeStore.isAppMode)
       } catch {
@@ -75,6 +73,7 @@ export function useBuilderSave() {
       const workflow = workflowStore.activeWorkflow
       if (!workflow) return
 
+      appModeStore.saveSelectedToWorkflow()
       const saved = await workflowService.saveWorkflowAs(workflow, {
         filename,
         openAsApp

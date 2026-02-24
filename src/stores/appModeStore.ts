@@ -33,39 +33,33 @@ export const useAppModeStore = defineStore('appMode', () => {
     () => builderSaving.value && isBuilderMode.value
   )
 
-  whenever(
-    () => workflowStore.activeWorkflow,
-    (workflow) => {
-      const { activeState } = workflow.changeTracker
-      selectedInputs.splice(
-        0,
-        selectedInputs.length,
-        ...(activeState.extra?.linearData?.inputs ?? [])
-      )
-      selectedOutputs.splice(
-        0,
-        selectedOutputs.length,
-        ...(activeState.extra?.linearData?.outputs ?? [])
-      )
-    },
-    { immediate: true }
-  )
+  function resetSelectedToWorkflow() {
+    const { activeWorkflow } = workflowStore
+    if (!activeWorkflow) return
 
-  //FIXME type here is only on ComfyWorkflowJson, not an active graph
-  watch(selectedOutputs, () => {
-    app.rootGraph.extra.linearData ??= {}
-    ;(app.rootGraph.extra.linearData! as { outputs?: unknown }).outputs = [
-      ...selectedOutputs
-    ]
-    workflowStore.activeWorkflow?.changeTracker?.checkState()
+    const { activeState } = activeWorkflow.changeTracker
+    selectedInputs.splice(
+      0,
+      selectedInputs.length,
+      ...(activeState.extra?.linearData?.inputs ?? [])
+    )
+    selectedOutputs.splice(
+      0,
+      selectedOutputs.length,
+      ...(activeState.extra?.linearData?.outputs ?? [])
+    )
+  }
+  function saveSelectedToWorkflow() {
+    app.rootGraph.extra ??= {}
+    app.rootGraph.extra.linearData = {
+      inputs: [...selectedInputs],
+      outputs: [...selectedOutputs]
+    }
+  }
+  whenever(() => workflowStore.activeWorkflow, resetSelectedToWorkflow, {
+    immediate: true
   })
-  watch(selectedInputs, () => {
-    app.rootGraph.extra.linearData ??= {}
-    ;(app.rootGraph.extra.linearData! as { inputs?: unknown }).inputs = [
-      ...selectedInputs
-    ]
-    workflowStore.activeWorkflow?.changeTracker?.checkState()
-  })
+
   watch(
     () => mode.value === 'builder:select',
     (inSelect) => (getCanvas().read_only = inSelect)
@@ -79,6 +73,8 @@ export const useAppModeStore = defineStore('appMode', () => {
     isGraphMode,
     isBuilderSaving,
     hasOutputs,
+    resetSelectedToWorkflow,
+    saveSelectedToWorkflow,
     selectedInputs,
     selectedOutputs,
     setBuilderSaving: (newBuilderSaving: boolean) => {
