@@ -162,8 +162,13 @@ const emit = defineEmits<{
 
 const { buildDocsUrl, docsPaths } = useExternalLink()
 
-const { userDisplayName, userEmail, userPhotoUrl, handleSignOut } =
-  useCurrentUser()
+const {
+  userDisplayName,
+  userEmail,
+  userPhotoUrl,
+  handleSignOut,
+  isApiKeyLogin
+} = useCurrentUser()
 const authActions = useFirebaseAuthActions()
 const authStore = useFirebaseAuthStore()
 const settingsDialog = useSettingsDialog()
@@ -244,6 +249,8 @@ const handleSubscribed = async () => {
 }
 
 onMounted(() => {
-  void authActions.fetchBalance()
+  if (!isApiKeyLogin.value) {
+    void authActions.fetchBalance()
+  }
 })
 </script>

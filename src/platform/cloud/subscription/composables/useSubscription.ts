@@ -217,7 +217,7 @@ function useSubscriptionInternal() {
   watch(
     () => isLoggedIn.value,
     async (loggedIn) => {
-      if (loggedIn) {
+      if (loggedIn && isCloud) {
         try {
           await fetchSubscriptionStatus()
         } catch (error) {

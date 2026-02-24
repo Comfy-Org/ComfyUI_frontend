@@ -237,6 +237,21 @@ describe('useSubscription', () => {
   })
 
   describe('fetchStatus', () => {
+    it('should not auto-fetch subscription status when not on cloud', async () => {
+      mockIsCloud.value = false
+      mockIsLoggedIn.value = true
+
+      const { isInitialized } = useSubscriptionWithScope()
+
+      // Wait for the watcher to process
+      await vi.waitFor(() => {
+        expect(isInitialized.value).toBe(true)
+      })
+
+      // Should not have tried to fetch subscription status
+      expect(global.fetch).not.toHaveBeenCalled()
+    })
+
     it('should fetch subscription status successfully', async () => {
       const mockStatus = {
         is_active: true,

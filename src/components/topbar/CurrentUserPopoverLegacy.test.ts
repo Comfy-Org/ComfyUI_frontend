@@ -57,7 +57,8 @@ vi.mock('@/composables/auth/useCurrentUser', () => ({
     userPhotoUrl: 'https://example.com/avatar.jpg',
     userDisplayName: 'Test User',
     userEmail: 'test@example.com',
-    handleSignOut: mockHandleSignOut
+    handleSignOut: mockHandleSignOut,
+    isApiKeyLogin: { value: false }
   }))
 }))
 
