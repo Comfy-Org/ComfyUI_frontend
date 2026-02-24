@@ -18,6 +18,23 @@ export interface PendingWarnings {
   }
 }
 
+type LinearModeTarget = { extra?: Record<string, unknown> | null } | null
+
+export function syncLinearMode(
+  workflow: ComfyWorkflow,
+  ...targets: LinearModeTarget[]
+): void {
+  for (const target of targets) {
+    if (!target) continue
+    if (workflow.initialMode === 'app' || workflow.initialMode === 'graph') {
+      const extra = (target.extra ??= {})
+      extra.linearMode = workflow.initialMode === 'app'
+    } else {
+      delete target.extra?.linearMode
+    }
+  }
+}
+
 export class ComfyWorkflow extends UserFile {
   static readonly basePath: string = 'workflows/'
   readonly tintCanvasBg?: string
@@ -36,9 +53,11 @@ export class ComfyWorkflow extends UserFile {
   pendingWarnings: PendingWarnings | null = null
   /**
    * Initial app mode derived from the serialized workflow (extra.linearMode).
-   * Set once on load, never mutated by runtime mode switches.
+   * - `undefined`: not yet resolved (first load hasn't happened)
+   * - `null`: resolved, but no mode was set (never builder-saved)
+   * - `AppMode`: resolved to a specific mode
    */
-  initialMode: AppMode | null = null
+  initialMode: AppMode | null | undefined = undefined
   /**
    * Current app mode set by the user during the session.
    * Takes precedence over initialMode when present.

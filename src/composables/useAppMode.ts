@@ -9,10 +9,12 @@ const enableAppBuilder = ref(true)
 
 export function useAppMode() {
   const workflowStore = useWorkflowStore()
-  const mode = computed(() => {
-    const wf = workflowStore.activeWorkflow
-    return wf?.activeMode ?? wf?.initialMode ?? 'graph'
-  })
+  const mode = computed(
+    () =>
+      workflowStore.activeWorkflow?.activeMode ??
+      workflowStore.activeWorkflow?.initialMode ??
+      'graph'
+  )
 
   const isBuilderMode = computed(
     () => mode.value === 'builder:select' || mode.value === 'builder:arrange'

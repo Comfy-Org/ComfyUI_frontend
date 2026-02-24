@@ -13,7 +13,7 @@ const SAVE_DIALOG_KEY = 'builder-save'
 const SUCCESS_DIALOG_KEY = 'builder-save-success'
 
 export function useBuilderSave() {
-  const { isAppMode, setMode } = useAppMode()
+  const { setMode } = useAppMode()
   const workflowStore = useWorkflowStore()
   const workflowService = useWorkflowService()
   const dialogService = useDialogService()
@@ -36,12 +36,11 @@ export function useBuilderSave() {
       return
     }
 
-    if (!workflow.isTemporary && workflow.activeState.extra?.linearMode) {
+    if (!workflow.isTemporary && workflow.initialMode != null) {
+      // Re-save with the previously chosen mode — no dialog needed.
       try {
-        workflow.changeTracker?.checkState()
-        appModeStore.saveSelectedToWorkflow()
         await workflowService.saveWorkflow(workflow)
-        showSuccessDialog(workflow.filename, isAppMode.value)
+        showSuccessDialog(workflow.filename, workflow.initialMode === 'app')
       } catch {
         resetSaving()
       }
@@ -76,10 +75,10 @@ export function useBuilderSave() {
       const workflow = workflowStore.activeWorkflow
       if (!workflow) return
 
-      appModeStore.saveSelectedToWorkflow()
+      const mode = openAsApp ? 'app' : 'graph'
       const saved = await workflowService.saveWorkflowAs(workflow, {
         filename,
-        openAsApp
+        initialMode: mode
       })
 
       if (!saved) return

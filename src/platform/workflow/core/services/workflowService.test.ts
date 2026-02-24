@@ -22,6 +22,7 @@ function createModeTestWorkflow(
     path?: string
     initialMode?: AppMode | null
     activeMode?: AppMode | null
+    loaded?: boolean
   } = {}
 ): LoadedComfyWorkflow {
   const workflow = new ComfyWorkflowClass({
@@ -29,11 +30,13 @@ function createModeTestWorkflow(
     modified: Date.now(),
     size: 100
   })
-  workflow.initialMode = options.initialMode ?? null
+  if ('initialMode' in options) workflow.initialMode = options.initialMode
   workflow.activeMode = options.activeMode ?? null
-  workflow.changeTracker = createMockChangeTracker()
-  workflow.content = '{}'
-  workflow.originalContent = '{}'
+  if (options.loaded !== false) {
+    workflow.changeTracker = createMockChangeTracker()
+    workflow.content = '{}'
+    workflow.originalContent = '{}'
+  }
   return workflow as LoadedComfyWorkflow
 }
 
@@ -311,6 +314,12 @@ describe('useWorkflowService', () => {
 
     function mockOpenWorkflow() {
       vi.spyOn(workflowStore, 'openWorkflow').mockImplementation(async (wf) => {
+        // Simulate load() setting changeTracker on first open
+        if (!wf.changeTracker) {
+          wf.changeTracker = createMockChangeTracker()
+          wf.content = '{}'
+          wf.originalContent = '{}'
+        }
         const loaded = wf as LoadedComfyWorkflow
         workflowStore.activeWorkflow = loaded
         return loaded
@@ -382,7 +391,7 @@ describe('useWorkflowService', () => {
       })
 
       it('sets initialMode from extra.linearMode on first load', async () => {
-        const workflow = createModeTestWorkflow()
+        const workflow = createModeTestWorkflow({ loaded: false })
 
         await service.afterLoadNewGraph(
           workflow,
@@ -392,12 +401,43 @@ describe('useWorkflowService', () => {
         expect(workflow.initialMode).toBe('app')
       })
 
-      it('defaults initialMode to graph when no extra.linearMode', async () => {
-        const workflow = createModeTestWorkflow()
+      it('leaves initialMode null when extra.linearMode is absent', async () => {
+        const workflow = createModeTestWorkflow({ loaded: false })
 
         await service.afterLoadNewGraph(workflow, makeWorkflowData())
 
+        expect(workflow.initialMode).toBeNull()
+      })
+
+      it('sets initialMode to graph when extra.linearMode is false', async () => {
+        const workflow = createModeTestWorkflow({ loaded: false })
+
+        await service.afterLoadNewGraph(
+          workflow,
+          makeWorkflowData({ linearMode: false })
+        )
+
         expect(workflow.initialMode).toBe('graph')
+      })
+
+      it('does not set initialMode on tab switch even if data has linearMode', async () => {
+        const workflow = createModeTestWorkflow({ loaded: false })
+
+        // First load — no linearMode in data
+        await service.afterLoadNewGraph(workflow, makeWorkflowData())
+        expect(workflow.initialMode).toBeNull()
+
+        // User switches to app mode at runtime
+        workflow.activeMode = 'app'
+
+        // Tab switch / reload — data now has linearMode (leaked from graph)
+        await service.afterLoadNewGraph(
+          workflow,
+          makeWorkflowData({ linearMode: true })
+        )
+
+        // initialMode should NOT have been updated — only builder save sets it
+        expect(workflow.initialMode).toBeNull()
       })
 
       it('preserves existing initialMode on tab switch', async () => {
@@ -421,6 +461,53 @@ describe('useWorkflowService', () => {
         )
 
         expect(appMode.mode.value).toBe('app')
+      })
+
+      it('syncs linearMode to rootGraph.extra for draft persistence', async () => {
+        const workflow = createModeTestWorkflow({ loaded: false })
+
+        await service.afterLoadNewGraph(
+          workflow,
+          makeWorkflowData({ linearMode: true })
+        )
+
+        expect(app.rootGraph.extra.linearMode).toBe(true)
+      })
+
+      it('reads initialMode from file when draft lacks linearMode (restoration)', async () => {
+        const filePath = 'workflows/saved-app.json'
+        const fileInitialState = makeWorkflowData({ linearMode: true })
+        const mockTracker = createMockChangeTracker()
+        mockTracker.initialState = fileInitialState
+
+        // Persisted, not-loaded workflow in the store
+        const persistedWorkflow = new ComfyWorkflowClass({
+          path: filePath,
+          modified: Date.now(),
+          size: 100
+        })
+
+        vi.spyOn(workflowStore, 'getWorkflowByPath').mockReturnValue(
+          persistedWorkflow
+        )
+        vi.spyOn(workflowStore, 'openWorkflow').mockImplementation(
+          async (wf) => {
+            wf.changeTracker = mockTracker
+            wf.content = JSON.stringify(fileInitialState)
+            wf.originalContent = wf.content
+            workflowStore.activeWorkflow = wf as LoadedComfyWorkflow
+            return wf as LoadedComfyWorkflow
+          }
+        )
+
+        // Draft data has NO linearMode (simulates rootGraph serialization)
+        const draftData = makeWorkflowData()
+
+        await service.afterLoadNewGraph('saved-app.json', draftData)
+
+        // initialMode should come from the file, not the draft
+        expect(persistedWorkflow.initialMode).toBe('app')
+        expect(app.rootGraph.extra.linearMode).toBe(true)
       })
     })
 

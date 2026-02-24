@@ -7,6 +7,7 @@ import type { Point, SerialisableGraph } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useWorkflowDraftStore } from '@/platform/workflow/persistence/stores/workflowDraftStore'
+import { syncLinearMode } from '@/platform/workflow/management/stores/comfyWorkflow'
 import {
   ComfyWorkflow,
   useWorkflowStore
@@ -24,6 +25,10 @@ import type { AppMode } from '@/composables/useAppMode'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { appendJsonExt } from '@/utils/formatUtil'
+
+function linearModeToAppMode(linearMode: unknown): AppMode | null {
+  return linearMode == null ? null : linearMode ? 'app' : 'graph'
+}
 
 export const useWorkflowService = () => {
   const settingStore = useSettingStore()
@@ -92,23 +97,19 @@ export const useWorkflowService = () => {
    * Save a workflow as a new file
    * @param workflow The workflow to save
    * @param options.filename Pre-supplied filename (skips the prompt dialog)
-   * @param options.openAsApp If set, updates linearMode extra before saving
    */
   const saveWorkflowAs = async (
     workflow: ComfyWorkflow,
-    options: { filename?: string; openAsApp?: boolean } = {}
+    options: { filename?: string; initialMode?: AppMode } = {}
   ): Promise<boolean> => {
     const newFilename = options.filename ?? (await workflow.promptSave())
     if (!newFilename) return false
 
-    if (options.openAsApp !== undefined) {
-      app.rootGraph.extra ??= {}
-      app.rootGraph.extra.linearMode = options.openAsApp
-      workflow.changeTracker?.checkState()
-    }
-
     const newPath = workflow.directory + '/' + appendJsonExt(newFilename)
     const existingWorkflow = workflowStore.getWorkflowByPath(newPath)
+
+    const isSelfOverwrite =
+      existingWorkflow?.path === workflow.path && !existingWorkflow?.isTemporary
 
     if (existingWorkflow && !existingWorkflow.isTemporary) {
       const res = await dialogService.confirm({
@@ -120,15 +121,20 @@ export const useWorkflowService = () => {
 
       if (res !== true) return false
 
-      if (existingWorkflow.path === workflow.path) {
-        await saveWorkflow(workflow)
-        return true
+      if (!isSelfOverwrite) {
+        const deleted = await deleteWorkflow(existingWorkflow, true)
+        if (!deleted) return false
       }
-      const deleted = await deleteWorkflow(existingWorkflow, true)
-      if (!deleted) return false
     }
 
-    if (workflow.isTemporary) {
+    if (options.initialMode) workflow.initialMode = options.initialMode
+
+    syncLinearMode(workflow, app.rootGraph)
+    workflow.changeTracker?.checkState()
+
+    if (isSelfOverwrite) {
+      await saveWorkflow(workflow)
+    } else if (workflow.isTemporary) {
       await renameWorkflow(workflow, newPath)
       await workflowStore.saveWorkflow(workflow)
     } else {
@@ -147,6 +153,8 @@ export const useWorkflowService = () => {
     if (workflow.isTemporary) {
       await saveWorkflowAs(workflow)
     } else {
+      syncLinearMode(workflow, app.rootGraph)
+      workflow.changeTracker?.checkState()
       await workflowStore.saveWorkflow(workflow)
     }
   }
@@ -358,15 +366,17 @@ export const useWorkflowService = () => {
   ) => {
     const workflowStore = useWorkspaceStore().workflow
     const { isAppMode } = useAppMode()
+    const wasAppMode = isAppMode.value
 
     // Determine the initial app mode for fresh loads from serialized state.
-    // Tab switches don't need this — the mode is already on the workflow.
-    const freshLoadMode: AppMode = workflowData.extra?.linearMode
-      ? 'app'
-      : 'graph'
+    // null means linearMode was never explicitly set (not builder-saved).
+    const freshLoadMode = linearModeToAppMode(workflowData.extra?.linearMode)
 
-    if (!isAppMode.value && freshLoadMode === 'app')
-      useTelemetry()?.trackEnterLinear({ source: 'workflow' })
+    function trackIfEnteringApp(workflow: ComfyWorkflow) {
+      if (!wasAppMode && workflow.initialMode === 'app') {
+        useTelemetry()?.trackEnterLinear({ source: 'workflow' })
+      }
+    }
 
     if (value === null || typeof value === 'string') {
       const path = value as string | null
@@ -382,16 +392,20 @@ export const useWorkflowService = () => {
         if (existingWorkflow?.isPersisted && !existingWorkflow.isLoaded) {
           const loadedWorkflow =
             await workflowStore.openWorkflow(existingWorkflow)
-          loadedWorkflow.initialMode = freshLoadMode
+          if (loadedWorkflow.initialMode === undefined) {
+            // Prefer the file's linearMode over the draft's since the file
+            // is the authoritative saved state.
+            loadedWorkflow.initialMode =
+              linearModeToAppMode(
+                loadedWorkflow.initialState?.extra?.linearMode
+              ) ?? freshLoadMode
+            trackIfEnteringApp(loadedWorkflow)
+          }
+          syncLinearMode(loadedWorkflow, workflowData, app.rootGraph)
           loadedWorkflow.changeTracker.reset(workflowData)
           loadedWorkflow.changeTracker.restore()
           return
         }
-      }
-
-      if (freshLoadMode === 'app') {
-        app.rootGraph.extra ??= {}
-        app.rootGraph.extra.linearMode = true
       }
 
       const tempWorkflow = workflowStore.createNewTemporary(
@@ -399,13 +413,18 @@ export const useWorkflowService = () => {
         workflowData
       )
       tempWorkflow.initialMode = freshLoadMode
+      trackIfEnteringApp(tempWorkflow)
+      syncLinearMode(tempWorkflow, workflowData, app.rootGraph)
       await workflowStore.openWorkflow(tempWorkflow)
       return
     }
 
     const loadedWorkflow = await workflowStore.openWorkflow(value)
-    if (loadedWorkflow.initialMode === null)
+    if (loadedWorkflow.initialMode === undefined) {
       loadedWorkflow.initialMode = freshLoadMode
+      trackIfEnteringApp(loadedWorkflow)
+    }
+    syncLinearMode(loadedWorkflow, workflowData, app.rootGraph)
     loadedWorkflow.changeTracker.reset(workflowData)
     loadedWorkflow.changeTracker.restore()
   }
