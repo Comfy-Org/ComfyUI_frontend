@@ -1,5 +1,5 @@
 <script setup lang="ts" generic="T">
-import { onBeforeUnmount, ref, useTemplateRef, watchEffect } from 'vue'
+import { onBeforeUnmount, ref, useTemplateRef, watchPostEffect } from 'vue'
 
 import { DraggableList } from '@/scripts/ui/draggableList'
 
@@ -7,7 +7,7 @@ const modelValue = defineModel<T[]>({ required: true })
 const draggableList = ref<DraggableList>()
 const draggableItems = useTemplateRef('draggableItems')
 
-watchEffect(() => {
+watchPostEffect(() => {
   void modelValue.value.length
   draggableList.value?.dispose()
   if (!draggableItems.value?.children?.length) return
