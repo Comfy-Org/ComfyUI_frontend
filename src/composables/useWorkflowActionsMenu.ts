@@ -198,6 +198,16 @@ export function useWorkflowActionsMenu(
     })
 
     addItem({
+      label: t('menuLabels.templateMarketplace'),
+      icon: 'pi pi-objects-column',
+      command: async () => {
+        await commandStore.execute('Comfy.OpenTemplateMarketplace')
+      },
+      visible: isRoot && flags.templateMarketplaceEnabled,
+      prependSeparator: true
+    })
+
+    addItem({
       label: t('subgraphStore.publish'),
       icon: 'pi pi-upload',
       command: async () => {

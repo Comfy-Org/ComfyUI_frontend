@@ -65,6 +65,7 @@ import {
 import { ManagerTab } from '@/workbench/extensions/manager/types/comfyManagerTypes'
 
 import { useWorkflowTemplateSelectorDialog } from './useWorkflowTemplateSelectorDialog'
+import { useTemplateMarketplaceDialog } from './useTemplateMarketplaceDialog'
 
 import { useMaskEditorStore } from '@/stores/maskEditorStore'
 import { useDialogStore } from '@/stores/dialogStore'
@@ -337,11 +338,21 @@ export function useCoreCommands(): ComfyCommand[] {
       }
     },
     {
+      // comeback
       id: 'Comfy.BrowseTemplates',
       icon: 'pi pi-folder-open',
       label: 'Browse Templates',
       function: () => {
         useWorkflowTemplateSelectorDialog().show()
+      }
+    },
+    {
+      // comeback
+      id: 'Comfy.ShowTemplateMarketplace',
+      icon: 'pi pi-objects-column',
+      label: 'Show Template Marketplace',
+      function: () => {
+        useTemplateMarketplaceDialog().show()
       }
     },
     {
