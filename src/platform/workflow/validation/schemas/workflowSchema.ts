@@ -541,3 +541,47 @@ const zNodeData = z.object({
 
 const zComfyApiWorkflow = z.record(zNodeId, zNodeData)
 export type ComfyApiWorkflow = z.infer<typeof zComfyApiWorkflow>
+
+/**
+ * Builds a map from subgraph definition ID to all execution path prefixes
+ * where that definition is instantiated in the workflow.
+ *
+ * "def-A" → ["5", "10"] for each container node instantiating that subgraph definition.
+ * @knipIgnoreUsedByStackedPR
+ */
+export function buildSubgraphExecutionPaths(
+  rootNodes: ComfyNode[],
+  allSubgraphDefs: unknown[]
+): Map<string, string[]> {
+  const subgraphDefMap = new Map(
+    allSubgraphDefs.filter(isSubgraphDefinition).map((s) => [s.id, s])
+  )
+  const pathMap = new Map<string, string[]>()
+  const visited = new Set<string>()
+
+  const build = (nodes: ComfyNode[], parentPrefix: string) => {
+    for (const n of nodes ?? []) {
+      if (typeof n.type !== 'string' || !subgraphDefMap.has(n.type)) continue
+      const path = parentPrefix ? `${parentPrefix}:${n.id}` : String(n.id)
+      const existing = pathMap.get(n.type)
+      if (existing) {
+        existing.push(path)
+      } else {
+        pathMap.set(n.type, [path])
+      }
+
+      if (visited.has(n.type)) continue
+      visited.add(n.type)
+
+      const innerDef = subgraphDefMap.get(n.type)
+      if (innerDef) {
+        build(innerDef.nodes, path)
+      }
+
+      visited.delete(n.type)
+    }
+  }
+
+  build(rootNodes, '')
+  return pathMap
+}
