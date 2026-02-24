@@ -239,7 +239,7 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
   const fetchBalance = async (): Promise<GetCustomerBalanceResponse | null> => {
     isFetchingBalance.value = true
     try {
-      const authHeader = await getFirebaseAuthHeader()
+      const authHeader = await getAuthHeader()
       if (!authHeader) {
         throw new FirebaseAuthStoreError(
           t('toastMessages.userNotAuthenticated')
@@ -435,7 +435,7 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
   const addCredits = async (
     requestBodyContent: CreditPurchasePayload
   ): Promise<CreditPurchaseResponse> => {
-    const authHeader = await getFirebaseAuthHeader()
+    const authHeader = await getAuthHeader()
     if (!authHeader) {
       throw new FirebaseAuthStoreError(t('toastMessages.userNotAuthenticated'))
     }
@@ -475,7 +475,7 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
   const accessBillingPortal = async (
     targetTier?: BillingPortalTargetTier
   ): Promise<AccessBillingPortalResponse> => {
-    const authHeader = await getFirebaseAuthHeader()
+    const authHeader = await getAuthHeader()
     if (!authHeader) {
       throw new FirebaseAuthStoreError(t('toastMessages.userNotAuthenticated'))
     }
