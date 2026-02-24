@@ -18,7 +18,9 @@ export const useApplyChanges = createSharedComposable(() => {
   const isRestartCompleted = ref(false)
 
   async function applyChanges(onClose?: () => void) {
-    isRestarting.value = false
+    if (isRestarting.value) return
+
+    isRestarting.value = true
     isRestartCompleted.value = false
 
     const originalToastSetting = settingStore.get(
@@ -55,7 +57,6 @@ export const useApplyChanges = createSharedComposable(() => {
 
     try {
       await settingStore.set('Comfy.Toast.DisableReconnectingToast', true)
-      isRestarting.value = true
       await useComfyManagerService().rebootComfyUI()
     } catch (error) {
       stopReconnectListener()
