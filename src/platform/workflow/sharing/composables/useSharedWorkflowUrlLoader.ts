@@ -14,7 +14,7 @@ import {
 } from '@/platform/workflow/sharing/services/workflowShareService'
 import { app } from '@/scripts/app'
 
-export type SharedWorkflowUrlLoadStatus = 'not-present' | 'loaded' | 'failed'
+type SharedWorkflowUrlLoadStatus = 'not-present' | 'loaded' | 'failed'
 
 export function useSharedWorkflowUrlLoader() {
   const route = useRoute()
