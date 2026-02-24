@@ -479,8 +479,8 @@ describe('TopMenuSection', () => {
     const wrapper = createWrapper()
     const menu = wrapper.findComponent({ name: 'ContextMenu' })
     const model = menu.props('model') as MenuItem[]
-    const clearQueueItem = model.find((item) => item.label === 'Clear queue')
-    expect(clearQueueItem?.disabled).toBe(true)
+    expect(model[0]?.label).toBe('Clear queue')
+    expect(model[0]?.disabled).toBe(true)
   })
 
   it('enables the clear queue context menu item when queued jobs exist', async () => {
@@ -492,8 +492,7 @@ describe('TopMenuSection', () => {
 
     const menu = wrapper.findComponent({ name: 'ContextMenu' })
     const model = menu.props('model') as MenuItem[]
-    const clearQueueItem = model.find((item) => item.label === 'Clear queue')
-    expect(clearQueueItem?.disabled).toBe(false)
+    expect(model[0]?.disabled).toBe(false)
   })
 
   it('shows manager red dot only for manager conflicts', async () => {
