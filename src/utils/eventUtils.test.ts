@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { hasAudioType, hasImageType } from './eventUtils'
+import { hasAudioType, hasImageType, hasVideoType } from './eventUtils'
 
 describe('hasImageType', () => {
   it('should return true for image types', () => {
@@ -22,5 +22,17 @@ describe('hasAudioType', () => {
   it('should return false for non-audio types', () => {
     expect(hasAudioType({ type: 'image/png' } as File)).toBe(false)
     expect(hasAudioType({ type: 'video/mp4' } as File)).toBe(false)
+  })
+})
+
+describe('hasVideoType', () => {
+  it('should return true for video types', () => {
+    expect(hasVideoType({ type: 'video/mp4' } as File)).toBe(true)
+    expect(hasVideoType({ type: 'video/webm' } as File)).toBe(true)
+  })
+
+  it('should return false for non-video types', () => {
+    expect(hasVideoType({ type: 'audio/mpeg' } as File)).toBe(false)
+    expect(hasVideoType({ type: 'image/png' } as File)).toBe(false)
   })
 })

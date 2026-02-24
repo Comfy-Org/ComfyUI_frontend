@@ -143,6 +143,37 @@ export async function pasteAudioNodes(
   return nodes
 }
 
+export async function pasteVideoNode(
+  canvas: LGraphCanvas,
+  items: DataTransferItemList,
+  videoNode: LGraphNode | null = null
+): Promise<LGraphNode | null> {
+  if (!videoNode) {
+    videoNode = await createNode(canvas, 'LoadVideo')
+  }
+  pasteItemsOnNode(items, videoNode, 'video')
+  return videoNode
+}
+
+export async function pasteVideoNodes(
+  canvas: LGraphCanvas,
+  fileList: File[]
+): Promise<LGraphNode[]> {
+  const nodes: LGraphNode[] = []
+
+  for (const file of fileList) {
+    const transfer = new DataTransfer()
+    transfer.items.add(file)
+    const node = await pasteVideoNode(canvas, transfer.items)
+
+    if (node) {
+      nodes.push(node)
+    }
+  }
+
+  return nodes
+}
+
 /**
  * Adds a handler on paste that extracts and loads images or workflows from pasted JSON data
  */
@@ -191,13 +222,8 @@ export const usePaste = () => {
         await pasteImageNode(canvas as LGraphCanvas, items, imageNode)
         return
       } else if (item.type.startsWith('video/')) {
-        if (!videoNode) {
-          // No video node selected: add a new one
-          // TODO: when video node exists
-        } else {
-          pasteItemsOnNode(items, videoNode, 'video')
-          return
-        }
+        await pasteVideoNode(canvas as LGraphCanvas, items, videoNode)
+        return
       } else if (item.type.startsWith('audio/')) {
         await pasteAudioNode(canvas as LGraphCanvas, items, audioNode)
         return

@@ -7,13 +7,20 @@ import type {
 } from '@/lib/litegraph/src/litegraph'
 import { app } from '@/scripts/app'
 import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
-import { createNode, isAudioNode, isImageNode } from '@/utils/litegraphUtil'
+import {
+  createNode,
+  isAudioNode,
+  isImageNode,
+  isVideoNode
+} from '@/utils/litegraphUtil'
 import {
   cloneDataTransfer,
   pasteAudioNode,
   pasteAudioNodes,
   pasteImageNode,
   pasteImageNodes,
+  pasteVideoNode,
+  pasteVideoNodes,
   usePaste
 } from './usePaste'
 
@@ -35,6 +42,13 @@ function createImageFile(
 function createAudioFile(
   name: string = 'test.mp3',
   type: string = 'audio/mpeg'
+): File {
+  return new File([''], name, { type })
+}
+
+function createVideoFile(
+  name: string = 'test.mp4',
+  type: string = 'video/mp4'
 ): File {
   return new File([''], name, { type })
 }
@@ -300,6 +314,102 @@ describe('pasteAudioNodes', () => {
   })
 })
 
+describe('pasteVideoNode', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  it('should create new LoadVideo node when no video node provided', async () => {
+    const mockNode = createMockNode()
+    vi.mocked(createNode).mockResolvedValue(mockNode)
+
+    const file = createVideoFile()
+    const dataTransfer = createDataTransfer([file])
+
+    await pasteVideoNode(mockCanvas, dataTransfer.items)
+
+    expect(createNode).toHaveBeenCalledWith(mockCanvas, 'LoadVideo')
+    expect(mockNode.pasteFile).toHaveBeenCalledWith(file)
+  })
+
+  it('should use existing video node when provided', async () => {
+    const mockNode = createMockNode()
+    const file = createVideoFile()
+    const dataTransfer = createDataTransfer([file])
+
+    await pasteVideoNode(mockCanvas, dataTransfer.items, mockNode)
+
+    expect(createNode).not.toHaveBeenCalled()
+    expect(mockNode.pasteFile).toHaveBeenCalledWith(file)
+  })
+
+  it('should filter non-video items', async () => {
+    const mockNode = createMockNode()
+    const videoFile = createVideoFile()
+    const imageFile = createImageFile()
+    const dataTransfer = createDataTransfer([imageFile, videoFile])
+
+    await pasteVideoNode(mockCanvas, dataTransfer.items, mockNode)
+
+    expect(mockNode.pasteFile).toHaveBeenCalledWith(videoFile)
+    expect(mockNode.pasteFiles).toHaveBeenCalledWith([videoFile])
+  })
+
+  it('should do nothing when no video files present', async () => {
+    const mockNode = createMockNode()
+    const dataTransfer = createDataTransfer()
+
+    await pasteVideoNode(mockCanvas, dataTransfer.items, mockNode)
+
+    expect(mockNode.pasteFile).not.toHaveBeenCalled()
+    expect(mockNode.pasteFiles).not.toHaveBeenCalled()
+  })
+})
+
+describe('pasteVideoNodes', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  it('should create multiple nodes for multiple video files', async () => {
+    const mockNode1 = createMockNode()
+    const mockNode2 = createMockNode()
+    vi.mocked(createNode)
+      .mockResolvedValueOnce(mockNode1)
+      .mockResolvedValueOnce(mockNode2)
+
+    const file1 = createVideoFile('file1.mp4')
+    const file2 = createVideoFile('file2.webm', 'video/webm')
+
+    const result = await pasteVideoNodes(mockCanvas, [file1, file2])
+
+    expect(createNode).toHaveBeenCalledTimes(2)
+    expect(createNode).toHaveBeenNthCalledWith(1, mockCanvas, 'LoadVideo')
+    expect(createNode).toHaveBeenNthCalledWith(2, mockCanvas, 'LoadVideo')
+    expect(mockNode1.pasteFile).toHaveBeenCalledWith(file1)
+    expect(mockNode2.pasteFile).toHaveBeenCalledWith(file2)
+    expect(result).toEqual([mockNode1, mockNode2])
+  })
+
+  it('should handle empty file list', async () => {
+    const result = await pasteVideoNodes(mockCanvas, [])
+
+    expect(createNode).not.toHaveBeenCalled()
+    expect(result).toEqual([])
+  })
+
+  it('should handle single video file', async () => {
+    const mockNode = createMockNode()
+    vi.mocked(createNode).mockResolvedValue(mockNode)
+
+    const file = createVideoFile()
+    const result = await pasteVideoNodes(mockCanvas, [file])
+
+    expect(createNode).toHaveBeenCalledTimes(1)
+    expect(result).toEqual([mockNode])
+  })
+})
+
 describe('usePaste', () => {
   beforeEach(() => {
     vi.clearAllMocks()
@@ -356,6 +466,45 @@ describe('usePaste', () => {
     usePaste()
 
     const file = createAudioFile()
+    const dataTransfer = createDataTransfer([file])
+    const event = new ClipboardEvent('paste', { clipboardData: dataTransfer })
+    document.dispatchEvent(event)
+
+    await vi.waitFor(() => {
+      expect(createNode).not.toHaveBeenCalled()
+      expect(mockNode.pasteFile).toHaveBeenCalledWith(file)
+    })
+  })
+
+  it('should handle video paste', async () => {
+    const mockNode = createMockNode()
+    vi.mocked(createNode).mockResolvedValue(mockNode)
+
+    usePaste()
+
+    const file = createVideoFile()
+    const dataTransfer = createDataTransfer([file])
+    const event = new ClipboardEvent('paste', { clipboardData: dataTransfer })
+    document.dispatchEvent(event)
+
+    await vi.waitFor(() => {
+      expect(createNode).toHaveBeenCalledWith(mockCanvas, 'LoadVideo')
+      expect(mockNode.pasteFile).toHaveBeenCalledWith(file)
+    })
+  })
+
+  it('should paste video onto selected LoadVideo node', async () => {
+    const mockNode = createMockLGraphNode({
+      is_selected: true,
+      pasteFile: vi.fn(),
+      pasteFiles: vi.fn()
+    })
+    mockCanvas.current_node = mockNode
+    vi.mocked(isVideoNode).mockReturnValue(true)
+
+    usePaste()
+
+    const file = createVideoFile()
     const dataTransfer = createDataTransfer([file])
     const event = new ClipboardEvent('paste', { clipboardData: dataTransfer })
     document.dispatchEvent(event)
