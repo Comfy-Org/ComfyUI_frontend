@@ -110,12 +110,12 @@ describe('ColorPickerButton', () => {
     const wrapper = createWrapper()
     const button = wrapper.find('button')
 
-    expect(wrapper.find('.color-picker-container').exists()).toBe(false)
+    expect(wrapper.findComponent({ name: 'SelectButton' }).exists()).toBe(false)
 
     await button.trigger('click')
-    expect(wrapper.find('.color-picker-container').exists()).toBe(true)
+    expect(wrapper.findComponent({ name: 'SelectButton' }).exists()).toBe(true)
 
     await button.trigger('click')
-    expect(wrapper.find('.color-picker-container').exists()).toBe(false)
+    expect(wrapper.findComponent({ name: 'SelectButton' }).exists()).toBe(false)
   })
 })
