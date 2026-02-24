@@ -307,6 +307,47 @@ describe('useWorkflowService', () => {
     })
   })
 
+  describe('afterLoadNewGraph', () => {
+    it('should reuse the active workflow when loading the same path repeatedly', async () => {
+      const reset = vi.fn()
+      const restore = vi.fn()
+      const existingWorkflow = {
+        path: 'workflows/repeat.json',
+        isPersisted: true,
+        isLoaded: true,
+        changeTracker: {
+          reset,
+          restore
+        }
+      } as unknown as ComfyWorkflow
+
+      const workflowStore = useWorkflowStore()
+      vi.spyOn(workflowStore, 'getWorkflowByPath').mockReturnValue(
+        existingWorkflow
+      )
+      vi.spyOn(workflowStore, 'isActive').mockReturnValue(true)
+      vi.spyOn(workflowStore, 'openWorkflow').mockResolvedValue(
+        existingWorkflow as LoadedComfyWorkflow
+      )
+      const createNewTemporarySpy = vi.spyOn(
+        workflowStore,
+        'createNewTemporary'
+      )
+
+      await useWorkflowService().afterLoadNewGraph('repeat', {
+        nodes: [{ id: 1, type: 'TestNode', pos: [0, 0], size: [100, 100] }]
+      } as never)
+
+      expect(workflowStore.getWorkflowByPath).toHaveBeenCalledWith(
+        'workflows/repeat.json'
+      )
+      expect(workflowStore.openWorkflow).toHaveBeenCalledWith(existingWorkflow)
+      expect(reset).toHaveBeenCalled()
+      expect(restore).toHaveBeenCalled()
+      expect(createNewTemporarySpy).not.toHaveBeenCalled()
+    })
+  })
+
   describe('per-workflow mode switching', () => {
     let appMode: ReturnType<typeof useAppMode>
     let workflowStore: ReturnType<typeof useWorkflowStore>
