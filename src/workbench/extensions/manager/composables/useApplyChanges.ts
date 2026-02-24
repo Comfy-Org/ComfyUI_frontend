@@ -31,7 +31,9 @@ export const useApplyChanges = createSharedComposable(() => {
         comfyManagerStore.setStale()
         await useCommandStore().execute('Comfy.RefreshNodeDefinitions')
         await useWorkflowService().reloadCurrentWorkflow()
-        void runFullConflictAnalysis()
+        runFullConflictAnalysis().catch((err) => {
+          console.error('[useApplyChanges] Conflict analysis failed:', err)
+        })
       } catch (err) {
         console.error('[useApplyChanges] Post-reconnect tasks failed:', err)
       } finally {
