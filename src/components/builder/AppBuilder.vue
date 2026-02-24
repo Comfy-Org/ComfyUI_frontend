@@ -176,25 +176,11 @@ const renderedInputs = computed<[string, MaybeRef<BoundStyle> | undefined][]>(
       getBounding(nodeId, widgetName)
     ])
 )
-async function exitBuilder() {
-  if (
-    !(await useDialogService().confirm({
-      title: t('[ph]exit app builder?'),
-      message: t(
-        '[ph]You have unsaved changes that will be lost\nExit without saving?'
-      )
-    }))
-  )
-    return
-
-  appModeStore.resetSelectedToWorkflow()
-  appModeStore.setMode('graph')
-}
 </script>
 <template>
   <div class="flex font-bold p-2 border-border-subtle border-b items-center">
     {{ t('linearMode.builder.title') }}
-    <Button class="ml-auto" @click="exitBuilder">
+    <Button class="ml-auto" @click="appModeStore.exitBuilder">
       {{ t('linearMode.builder.exit') }}
     </Button>
   </div>

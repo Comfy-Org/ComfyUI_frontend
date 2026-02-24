@@ -2,8 +2,10 @@ import { defineStore } from 'pinia'
 import { whenever } from '@vueuse/core'
 import { reactive, readonly, computed, ref, watch } from 'vue'
 
+import { t } from '@/i18n'
 import type { NodeId } from '@/lib/litegraph/src/LGraphNode'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { useDialogService } from '@/services/dialogService'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { app } from '@/scripts/app'
 
@@ -18,7 +20,7 @@ export const useAppModeStore = defineStore('appMode', () => {
   const mode = ref<AppMode>('graph')
   const builderSaving = ref(false)
   const hasOutputs = computed(() => !!selectedOutputs.length)
-  const enableAppBuilder = ref(false)
+  const enableAppBuilder = ref(true)
 
   const isBuilderMode = computed(
     () => mode.value === 'builder:select' || mode.value === 'builder:arrange'
@@ -65,9 +67,25 @@ export const useAppModeStore = defineStore('appMode', () => {
     (inSelect) => (getCanvas().read_only = inSelect)
   )
 
+  async function exitBuilder() {
+    if (
+      !(await useDialogService().confirm({
+        title: t('[ph]exit app builder?'),
+        message: t(
+          '[ph]You have unsaved changes that will be lost\nExit without saving?'
+        )
+      }))
+    )
+      return
+
+    resetSelectedToWorkflow()
+    mode.value = 'graph'
+  }
+
   return {
     mode: readonly(mode),
     enableAppBuilder: readonly(enableAppBuilder),
+    exitBuilder,
     isBuilderMode,
     isAppMode,
     isGraphMode,
