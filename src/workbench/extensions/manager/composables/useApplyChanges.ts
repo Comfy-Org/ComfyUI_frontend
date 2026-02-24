@@ -18,6 +18,9 @@ export const useApplyChanges = createSharedComposable(() => {
   const isRestartCompleted = ref(false)
 
   async function applyChanges(onClose?: () => void) {
+    isRestarting.value = false
+    isRestartCompleted.value = false
+
     const originalToastSetting = settingStore.get(
       'Comfy.Toast.DisableReconnectingToast'
     )
@@ -27,6 +30,8 @@ export const useApplyChanges = createSharedComposable(() => {
         await useCommandStore().execute('Comfy.RefreshNodeDefinitions')
         await useWorkflowService().reloadCurrentWorkflow()
         void runFullConflictAnalysis()
+      } catch (err) {
+        console.error('[useApplyChanges] Post-reconnect tasks failed:', err)
       } finally {
         await settingStore.set(
           'Comfy.Toast.DisableReconnectingToast',
