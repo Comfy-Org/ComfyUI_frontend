@@ -98,7 +98,7 @@ const { showSortOptions = false, showGenerationTimeSort = false } =
   }>()
 
 const viewMode = defineModel<'list' | 'grid'>('viewMode', { required: true })
-const sortBy = defineModel<SortBy>('sortBy')
+const sortBy = defineModel<SortBy>('sortBy', { required: true })
 
 function handleViewModeChange(value: 'list' | 'grid') {
   viewMode.value = value
