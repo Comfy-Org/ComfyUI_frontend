@@ -111,8 +111,18 @@
 
         <NodeWidgets v-if="nodeData.widgets?.length" :node-data="nodeData" />
 
-        <div v-if="hasCustomContent" class="min-h-0 flex-1 flex">
-          <NodeContent :node-data="nodeData" :media="nodeMedia" />
+        <div v-if="hasCustomContent" class="min-h-0 flex-1 flex flex-col">
+          <NodeContent
+            v-if="nodeMedia"
+            :node-data="nodeData"
+            :media="nodeMedia"
+          />
+          <NodeContent
+            v-for="preview in promotedPreviews"
+            :key="`${preview.interiorNodeId}-${preview.widgetName}`"
+            :node-data="nodeData"
+            :media="preview"
+          />
         </div>
         <!-- Live mid-execution preview images -->
         <LivePreview
@@ -122,46 +132,85 @@
         <NodeBadges v-bind="badges" :pricing="undefined" class="mt-auto" />
       </div>
     </template>
-    <Button
-      variant="textonly"
+    <div
+      v-if="
+        (hasAnyError && showErrorsTabEnabled) ||
+        lgraphNode?.isSubgraphNode() ||
+        showAdvancedState ||
+        showAdvancedInputsButton
+      "
       :class="
         cn(
-          'w-full h-7 rounded-b-2xl py-2 -z-1 text-xs rounded-t-none',
-          hasAnyError && 'hover:bg-destructive-background-hover',
-          !isCollapsed && '-mt-5 pt-7 h-12'
+          'flex w-full h-7 rounded-b-2xl -z-1 text-xs rounded-t-none overflow-hidden divide-x divide-component-node-border',
+          !isCollapsed && '-mt-5 h-12'
         )
       "
-      as-child
     >
-      <button
-        v-if="hasAnyError && showErrorsTabEnabled"
-        @click.stop="useRightSidePanelStore().openPanel('errors')"
-      >
-        <span>{{ t('g.error') }}</span>
-        <i class="icon-[lucide--info] size-4" />
-      </button>
-      <button
-        v-else-if="lgraphNode?.isSubgraphNode()"
+      <Button
+        v-if="lgraphNode?.isSubgraphNode()"
+        variant="textonly"
+        :class="
+          cn(
+            'flex-1 rounded-none h-full',
+            hasAnyError &&
+              showErrorsTabEnabled &&
+              !nodeData.color &&
+              'bg-node-component-header-surface',
+            isCollapsed ? 'py-2' : 'pt-7 pb-2'
+          )
+        "
         data-testid="subgraph-enter-button"
         @click.stop="handleEnterSubgraph"
       >
-        <span>{{ t('g.enterSubgraph') }}</span>
-        <i class="icon-[comfy--workflow] size-4" />
-      </button>
-      <button
-        v-else-if="showAdvancedState || showAdvancedInputsButton"
+        <span class="truncate">{{
+          hasAnyError && showErrorsTabEnabled
+            ? t('g.enter')
+            : t('g.enterSubgraph')
+        }}</span>
+        <i class="icon-[comfy--workflow] size-4 shrink-0" />
+      </Button>
+
+      <Button
+        v-if="hasAnyError && showErrorsTabEnabled"
+        variant="textonly"
+        :class="
+          cn(
+            'flex-1 rounded-none h-full bg-error hover:bg-destructive-background-hover',
+            isCollapsed ? 'py-2' : 'pt-7 pb-2'
+          )
+        "
+        @click.stop="useRightSidePanelStore().openPanel('errors')"
+      >
+        <span class="truncate">{{ t('g.error') }}</span>
+        <i class="icon-[lucide--info] size-4 shrink-0" />
+      </Button>
+
+      <!-- Advanced inputs (non-subgraph nodes only) -->
+      <Button
+        v-if="
+          !lgraphNode?.isSubgraphNode() &&
+          (showAdvancedState || showAdvancedInputsButton)
+        "
+        variant="textonly"
+        :class="
+          cn('flex-1 rounded-none h-full', isCollapsed ? 'py-2' : 'pt-7 pb-2')
+        "
         @click.stop="showAdvancedState = !showAdvancedState"
       >
         <template v-if="showAdvancedState">
-          <span>{{ t('rightSidePanel.hideAdvancedInputsButton') }}</span>
-          <i class="icon-[lucide--chevron-up] size-4" />
+          <span class="truncate">{{
+            t('rightSidePanel.hideAdvancedInputsButton')
+          }}</span>
+          <i class="icon-[lucide--chevron-up] size-4 shrink-0" />
         </template>
         <template v-else>
-          <span>{{ t('rightSidePanel.showAdvancedInputsButton') }} </span>
-          <i class="icon-[lucide--settings-2] size-4" />
+          <span class="truncate">{{
+            t('rightSidePanel.showAdvancedInputsButton')
+          }}</span>
+          <i class="icon-[lucide--settings-2] size-4 shrink-0" />
         </template>
-      </button>
-    </Button>
+      </Button>
+    </div>
     <template v-if="!isCollapsed && nodeData.resizable !== false">
       <div
         v-for="handle in RESIZE_HANDLES"
@@ -217,6 +266,7 @@ import Button from '@/components/ui/button/Button.vue'
 import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
 import { showNodeOptions } from '@/composables/graph/useMoreOptionsMenu'
 import { useErrorHandling } from '@/composables/useErrorHandling'
+import { hasUnpromotedWidgets } from '@/core/graph/subgraph/unpromotedWidgetUtils'
 import { st } from '@/i18n'
 import {
   LGraphCanvas,
@@ -231,6 +281,7 @@ import { useTelemetry } from '@/platform/telemetry'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import { usePromotedPreviews } from '@/composables/node/usePromotedPreviews'
 import NodeBadges from '@/renderer/extensions/vueNodes/components/NodeBadges.vue'
 import { LayoutSource } from '@/renderer/core/layout/types'
 import SlotConnectionDot from '@/renderer/extensions/vueNodes/components/SlotConnectionDot.vue'
@@ -303,7 +354,9 @@ const hasAnyError = computed((): boolean => {
     hasExecutionError.value ||
     nodeData.hasErrors ||
     error ||
-    (executionErrorStore.lastNodeErrors?.[nodeData.id]?.errors.length ?? 0) > 0
+    executionErrorStore.getNodeErrors(nodeLocatorId.value) ||
+    (lgraphNode.value &&
+      executionErrorStore.isContainerWithInternalError(lgraphNode.value))
   )
 })
 
@@ -484,7 +537,7 @@ watch(isCollapsed, (collapsed) => {
 
 // Check if node has custom content (like image/video outputs)
 const hasCustomContent = computed(() => {
-  // Show custom content if node has media outputs
+  if (promotedPreviews.value.length > 0) return true
   return !!nodeMedia.value && nodeMedia.value.urls.length > 0
 })
 
@@ -598,15 +651,17 @@ const lgraphNode = computed(() => {
   return getNodeByLocatorId(app.rootGraph, locatorId)
 })
 
+// TODO: Surface subgraph info more cleanly in VueNodeData instead of
+// reaching through lgraphNode for promoted preview resolution.
+const { promotedPreviews } = usePromotedPreviews(lgraphNode)
+
 const showAdvancedInputsButton = computed(() => {
   const node = lgraphNode.value
   if (!node) return false
 
   // For subgraph nodes: check for unpromoted widgets
   if (node instanceof SubgraphNode) {
-    const interiorNodes = node.subgraph.nodes
-    const allInteriorWidgets = interiorNodes.flatMap((n) => n.widgets ?? [])
-    return allInteriorWidgets.some((w) => !w.computedDisabled && !w.promoted)
+    return hasUnpromotedWidgets(node)
   }
 
   // For regular nodes: show button if there are advanced widgets and they're currently hidden

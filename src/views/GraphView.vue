@@ -13,6 +13,7 @@
       <GraphCanvas @ready="onGraphReady" />
     </div>
     <LinearView v-if="linearMode" />
+    <BuilderToolbar v-if="appModeStore.isBuilderMode" />
   </div>
 
   <GlobalToast />
@@ -50,6 +51,7 @@ import InviteAcceptedToast from '@/platform/workspace/components/toasts/InviteAc
 import RerouteMigrationToast from '@/components/toast/RerouteMigrationToast.vue'
 import { useBrowserTabTitle } from '@/composables/useBrowserTabTitle'
 import { useCoreCommands } from '@/composables/useCoreCommands'
+import { useQueuePolling } from '@/platform/remote/comfyui/useQueuePolling'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { useProgressFavicon } from '@/composables/useProgressFavicon'
 import { SERVER_CONFIG_ITEMS } from '@/constants/serverConfig'
@@ -68,6 +70,7 @@ import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { setupAutoQueueHandler } from '@/services/autoQueueService'
 import { useKeybindingService } from '@/platform/keybindings/keybindingService'
+import { useAppModeStore } from '@/stores/appModeStore'
 import { useAssetsStore } from '@/stores/assetsStore'
 import { useCommandStore } from '@/stores/commandStore'
 import { useExecutionStore } from '@/stores/executionStore'
@@ -84,10 +87,13 @@ import { useBottomPanelStore } from '@/stores/workspace/bottomPanelStore'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 import { electronAPI } from '@/utils/envUtil'
+import BuilderToolbar from '@/components/builder/BuilderToolbar.vue'
+import { useBuilderSave } from '@/components/builder/useBuilderSave'
 import LinearView from '@/views/LinearView.vue'
 import ManagerProgressToast from '@/workbench/extensions/manager/components/ManagerProgressToast.vue'
 
 setupAutoQueueHandler()
+useBuilderSave()
 useProgressFavicon()
 useBrowserTabTitle()
 
@@ -100,6 +106,7 @@ const queueStore = useQueueStore()
 const assetsStore = useAssetsStore()
 const versionCompatibilityStore = useVersionCompatibilityStore()
 const graphCanvasContainerRef = ref<HTMLDivElement | null>(null)
+const appModeStore = useAppModeStore()
 const { linearMode } = storeToRefs(useCanvasStore())
 
 const telemetry = useTelemetry()
@@ -203,6 +210,7 @@ useKeybindingService().registerCoreKeybindings()
 useSidebarTabStore().registerCoreSidebarTabs()
 void useBottomPanelStore().registerCoreBottomPanelTabs()
 
+useQueuePolling()
 const queuePendingTaskCountStore = useQueuePendingTaskCountStore()
 const sidebarTabStore = useSidebarTabStore()
 

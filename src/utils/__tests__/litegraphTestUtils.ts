@@ -82,14 +82,14 @@ export function createMockSubgraphNode(
  * Creates a mock LGraphCanvas with minimal required properties for testing
  */
 export function createMockCanvas(
-  overrides: Partial<LGraphCanvas> = {}
+  overrides: Partial<LGraphCanvas> | Record<string, unknown> = {}
 ): LGraphCanvas {
   return {
     setDirty: vi.fn(),
     state: {
       selectionChanged: false
     },
-    ...overrides
+    ...(overrides as Partial<LGraphCanvas>)
   } as LGraphCanvas
 }
 

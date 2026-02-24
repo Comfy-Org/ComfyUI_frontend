@@ -1,7 +1,7 @@
 <template>
   <div
     class="group relative flex flex-col items-center justify-center py-4 px-2 rounded-2xl cursor-pointer select-none transition-colors duration-150 box-content bg-component-node-background hover:bg-secondary-background-hover border border-component-node-border aspect-square"
-    :data-node-name="node.data?.display_name"
+    :data-node-name="node.label"
     draggable="true"
     @click="handleClick"
     @dragstart="handleDragStart"
@@ -16,7 +16,7 @@
     <TextTickerMultiLine
       class="shrink-0 h-8 w-full text-xs font-bold text-foreground leading-4"
     >
-      {{ node.data?.display_name }}
+      {{ node.label }}
     </TextTickerMultiLine>
   </div>
 

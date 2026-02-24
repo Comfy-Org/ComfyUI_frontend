@@ -2,7 +2,7 @@ import { markRaw } from 'vue'
 
 import AssetsSidebarTab from '@/components/sidebar/tabs/AssetsSidebarTab.vue'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { useQueueStore } from '@/stores/queueStore'
+import { useAssetsSidebarBadgeStore } from '@/stores/workspace/assetsSidebarBadgeStore'
 import type { SidebarTabExtension } from '@/types/extensionTypes'
 
 export const useAssetsSidebarTab = (): SidebarTabExtension => {
@@ -21,8 +21,8 @@ export const useAssetsSidebarTab = (): SidebarTabExtension => {
         return null
       }
 
-      const queueStore = useQueueStore()
-      const count = queueStore.activeJobsCount
+      const assetsSidebarBadgeStore = useAssetsSidebarBadgeStore()
+      const count = assetsSidebarBadgeStore.unseenAddedAssetsCount
       return count > 0 ? count.toString() : null
     }
   }

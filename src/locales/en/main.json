@@ -69,6 +69,7 @@
     "icon": "Icon",
     "color": "Color",
     "error": "Error",
+    "enter": "Enter",
     "enterSubgraph": "Enter Subgraph",
     "resizeFromBottomRight": "Resize from bottom-right corner",
     "resizeFromTopRight": "Resize from top-right corner",
@@ -1074,7 +1075,11 @@
     "cannotDeleteGlobal": "Cannot delete installed blueprints",
     "enterDescription": "Enter a description",
     "searchAliases": "Search Aliases",
-    "enterSearchAliases": "Enter search aliases (comma separated)"
+    "enterSearchAliases": "Enter search aliases (comma separated)",
+    "disconnected": "Disconnected",
+    "linked": "(Linked)",
+    "promoteWidget": "Promote Widget: {name}",
+    "unpromoteWidget": "Un-Promote Widget: {name}"
   },
   "electronFileDownload": {
     "inProgress": "In Progress",
@@ -1604,7 +1609,6 @@
     "MiniMax": "MiniMax",
     "model_specific": "model_specific",
     "Moonvalley Marey": "Moonvalley Marey",
-    "": "",
     "OpenAI": "OpenAI",
     "Sora": "Sora",
     "cond pair": "cond pair",
@@ -1626,6 +1630,7 @@
     "style_model": "style_model",
     "Tencent": "Tencent",
     "textgen": "textgen",
+    "": "",
     "Topaz": "Topaz",
     "Tripo": "Tripo",
     "Veo": "Veo",
@@ -1791,7 +1796,12 @@
     "errorNotSupported": "Clipboard API not supported in your browser"
   },
   "imageCompare": {
-    "noImages": "No images to compare"
+    "noImages": "No images to compare",
+    "batchLabelA": "A:",
+    "batchLabelB": "B:"
+  },
+  "batch": {
+    "index": "{current} / {total}"
   },
   "load3d": {
     "switchCamera": "Switch Camera",
@@ -1900,6 +1910,7 @@
     "nodeDefinitionsUpdated": "Node definitions updated",
     "errorSaveSetting": "Error saving setting {id}: {err}",
     "errorCopyImage": "Error copying image: {error}",
+    "errorOpenImage": "Error opening image: {error}",
     "noTemplatesToExport": "No templates to export",
     "failedToFetchLogs": "Failed to fetch server logs",
     "migrateToLitegraphReroute": "Reroute nodes will be removed in future versions. Click to migrate to litegraph-native reroute.",
@@ -2459,7 +2470,8 @@
       "placeholderVideo": "Select video...",
       "placeholderMesh": "Select mesh...",
       "placeholderModel": "Select model...",
-      "placeholderUnknown": "Select media..."
+      "placeholderUnknown": "Select media...",
+      "maxSelectionReached": "Maximum selection limit reached"
     },
     "valueControl": {
       "header": {
@@ -2501,6 +2513,9 @@
   },
   "breadcrumbsMenu": {
     "duplicate": "Duplicate",
+    "enterAppMode": "Enter app mode",
+    "exitAppMode": "Exit app mode",
+    "workflowActions": "Workflow actions",
     "clearWorkflow": "Clear Workflow",
     "deleteWorkflow": "Delete Workflow",
     "deleteBlueprint": "Delete Blueprint",
@@ -2528,6 +2543,14 @@
     "showGroups": "Show Frames/Groups",
     "renderBypassState": "Render Bypass State",
     "renderErrorState": "Render Error State"
+  },
+  "nightlySurvey": {
+    "title": "Help Us Improve",
+    "description": "You've been using this feature. Would you take a moment to share your feedback?",
+    "accept": "Sure, I'll help!",
+    "notNow": "Not Now",
+    "dontAskAgain": "Don't Ask Again",
+    "loadError": "Failed to load survey. Please try again later."
   },
   "cloudOnboarding": {
     "skipToCloudApp": "Skip to the cloud app",
@@ -2923,16 +2946,32 @@
     "beta": "App Mode in Beta - Feedback",
     "graphMode": "Graph Mode",
     "dragAndDropImage": "Click to browse or drag an image",
-    "runCount": "Run count:",
+    "runCount": "Number of runs",
     "rerun": "Rerun",
     "reuseParameters": "Reuse Parameters",
     "downloadAll": "Download All",
     "welcome": {
-      "title": "Welcome to App Mode",
-      "intro": "A simplified view that hides the node graph so you can focus on creating.",
-      "layout": "On the left, you'll see your generated images, videos, and outputs. On the right, just the controls you need. Everything complex stays out of sight.",
-      "sharing": "Sharing is easy: create your workflow, open App Mode, right-click the tab, and export. When others open your file, it launches straight into this clean view. You can share powerful workflows as simple tools without anyone needing to understand node graphs.",
-      "widget": "If you want to control which settings appear, convert your top-level nodes into a subgraph, then use widget promotion in the toolbox above it to choose what's exposed."
+      "title": "App Mode",
+      "message": "A simplified view that hides the node graph so you can focus on creating.",
+      "controls": "Your outputs appear at the bottom, your controls are on the right. Everything else stays out of the way.",
+      "sharing": "Share your workflow as a simple tool anyone can use. Export it from the tab menu and when others open it, they'll see App Mode. No node graph knowledge needed.",
+      "getStarted": "Click {runButton} to get started.",
+      "backToWorkflow": "Back to workflow",
+      "buildApp": "Build app"
+    },
+    "appModeToolbar": {
+      "appBuilder": "App builder",
+      "apps": "Apps"
+    },
+    "arrange": {
+      "noOutputs": "No outputs added yet",
+      "switchToSelect": "Switch to the 'Select' step and click on output nodes to add them here.",
+      "connectAtLeastOne": "Connect {atLeastOne} output node so users can see results after running.",
+      "atLeastOne": "at least one",
+      "outputExamples": "Examples: 'Save Image' or 'Save Video'",
+      "switchToSelectButton": "Switch to Select",
+      "outputs": "Outputs",
+      "resultsLabel": "Results generated from the selected output node(s) will be shown here after running this app"
     }
   },
   "missingNodes": {
@@ -3151,5 +3190,68 @@
       "duplicateName": "A secret with this name already exists",
       "duplicateProvider": "A secret for this provider already exists"
     }
+  },
+  "essentials": {
+    "loadImage": "Load Image",
+    "saveImage": "Save Image",
+    "loadVideo": "Load Video",
+    "saveVideo": "Save Video",
+    "load3DModel": "Load 3D model",
+    "save3DModel": "Save 3D Model",
+    "text": "Text",
+    "batchImage": "Batch Image",
+    "cropImage": "Crop Image",
+    "resizeImage": "Resize Image",
+    "rotate": "Rotate",
+    "invert": "Invert",
+    "canny": "Canny",
+    "removeBackground": "Remove Background",
+    "imageCompare": "Image compare",
+    "extractFrame": "Extract frame",
+    "loadStyleLora": "Load style (LoRA)",
+    "lipsync": "Lipsync",
+    "textGenerationLLM": "Text generation (LLM)",
+    "textTo3DModel": "Text to 3D model",
+    "imageTo3DModel": "Image to 3D Model",
+    "musicGeneration": "Music generation",
+    "loadAudio": "Load Audio",
+    "saveAudio": "Save Audio",
+    "inpaintImage": "Inpaint image",
+    "outpaintImage": "Outpaint image",
+    "imageToImage": "Image to image",
+    "textToImage": "Text to image",
+    "poseToImage": "Pose to image",
+    "cannyToImage": "Canny to image",
+    "depthToImage": "Depth to image",
+    "textToVideo": "Text to video",
+    "imageToVideo": "Image to video",
+    "poseToVideo": "Pose to video",
+    "cannyToVideo": "Canny to video",
+    "depthToVideo": "Depth to video"
+  },
+  "builderToolbar": {
+    "label": "App Builder",
+    "select": "Select",
+    "selectDescription": "Choose inputs/outputs",
+    "arrange": "Preview",
+    "arrangeDescription": "Review app layout",
+    "save": "Save",
+    "saveDescription": "Save and finish",
+    "connectOutput": "Connect an output",
+    "connectOutputBody1": "Your app needs at least one output to be connected before it can be saved.",
+    "connectOutputBody2": "Switch to the 'Select' step and click on output nodes to add them here.",
+    "switchToSelect": "Switch to Select",
+    "saveAs": "Save as",
+    "filename": "Filename",
+    "saveAsLabel": "Save this workflow as a ...",
+    "app": "App",
+    "appDescription": "Opens as an app by default",
+    "nodeGraph": "Node graph",
+    "nodeGraphDescription": "Opens as node graph by default",
+    "saveSuccess": "Successfully saved",
+    "saveSuccessAppMessage": "'{name}' has been saved. It will open in App Mode by default from now on.",
+    "saveSuccessAppPrompt": "Would you like to view it now?",
+    "saveSuccessGraphMessage": "'{name}' has been saved. It will open as a node graph by default.",
+    "viewApp": "View app"
   }
 }

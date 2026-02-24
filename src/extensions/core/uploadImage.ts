@@ -2,26 +2,12 @@ import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import {
   type ComfyNodeDef,
   type InputSpec,
-  isComboInputSpecV1
+  isMediaUploadComboInput
 } from '@/schemas/nodeDefSchema'
 
 import { app } from '../../scripts/app'
 
 // Adds an upload button to the nodes
-
-const isMediaUploadComboInput = (inputSpec: InputSpec) => {
-  const [inputName, inputOptions] = inputSpec
-  if (!inputOptions) return false
-
-  const isUploadInput =
-    inputOptions['image_upload'] === true ||
-    inputOptions['video_upload'] === true ||
-    inputOptions['animated_image_upload'] === true
-
-  return (
-    isUploadInput && (isComboInputSpecV1(inputSpec) || inputName === 'COMBO')
-  )
-}
 
 const createUploadInput = (
   imageInputName: string,

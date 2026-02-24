@@ -535,6 +535,7 @@ describe('useQueueStore', () => {
 
       await store.update()
       const initialTask = store.historyTasks[0]
+      const initialHistoryTasks = store.historyTasks
 
       // Same job with same outputs_count
       mockGetHistory.mockResolvedValue([{ ...job }])
@@ -543,6 +544,8 @@ describe('useQueueStore', () => {
 
       // Should reuse the same instance
       expect(store.historyTasks[0]).toBe(initialTask)
+      // Should preserve array identity when history is unchanged
+      expect(store.historyTasks).toBe(initialHistoryTasks)
     })
   })
 

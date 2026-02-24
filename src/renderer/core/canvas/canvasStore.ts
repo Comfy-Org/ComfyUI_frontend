@@ -3,13 +3,17 @@ import { defineStore } from 'pinia'
 import { computed, markRaw, ref, shallowRef } from 'vue'
 import type { Raw } from 'vue'
 
+import { useAppModeStore } from '@/stores/appModeStore'
+
 import type { Point, Positionable } from '@/lib/litegraph/src/interfaces'
 import type {
   LGraph,
   LGraphCanvas,
   LGraphGroup,
-  LGraphNode
+  LGraphNode,
+  SubgraphNode
 } from '@/lib/litegraph/src/litegraph'
+import { promoteRecommendedWidgets } from '@/core/graph/subgraph/promotionUtils'
 import { app } from '@/scripts/app'
 import { isLGraphGroup, isLGraphNode, isReroute } from '@/utils/litegraphUtil'
 
@@ -40,7 +44,12 @@ export const useCanvasStore = defineStore('canvas', () => {
   // Reactive scale percentage that syncs with app.canvas.ds.scale
   const appScalePercentage = ref(100)
 
-  const linearMode = ref(false)
+  const linearMode = computed({
+    get: () => useAppModeStore().isAppMode,
+    set: (val: boolean) => {
+      useAppModeStore().setMode(val ? 'app' : 'graph')
+    }
+  })
 
   // Set up scale synchronization when canvas is available
   let originalOnChanged: ((scale: number, offset: Point) => void) | undefined =
@@ -128,6 +137,13 @@ export const useCanvasStore = defineStore('canvas', () => {
       useEventListener(newCanvas.canvas, 'subgraph-opened', () => {
         isInSubgraph.value = true
       })
+
+      useEventListener(
+        newCanvas.canvas,
+        'subgraph-converted',
+        (e: CustomEvent<{ subgraphNode: SubgraphNode }>) =>
+          promoteRecommendedWidgets(e.detail.subgraphNode)
+      )
     },
     { immediate: true }
   )

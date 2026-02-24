@@ -92,7 +92,9 @@ export const graphToPrompt = async (
     const inputs: ComfyApiWorkflow[string]['inputs'] = {}
     const { widgets } = node
 
-    // Store all widget values
+    // Store all widget values in the API prompt.
+    // Note: widget.options.serialize controls prompt inclusion (checked here).
+    // widget.serialize controls workflow persistence (checked by LGraphNode).
     if (widgets) {
       for (const [i, widget] of widgets.entries()) {
         if (!widget.name || widget.options?.serialize === false) continue

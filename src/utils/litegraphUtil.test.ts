@@ -40,7 +40,7 @@ function createMockCanvas(overrides: Partial<LGraphCanvas> = {}): LGraphCanvas {
   const mockGraph = {
     add: vi.fn((node) => node),
     change: vi.fn()
-  } satisfies Partial<LGraph> as unknown as LGraph
+  } as Partial<LGraph> as LGraph
   const mockCanvas: Partial<LGraphCanvas> = {
     graph_mouse: [100, 200],
     graph: mockGraph,

@@ -2,8 +2,6 @@
   <div class="flex w-full flex-col gap-4">
     <QueueOverlayHeader
       :header-title="headerTitle"
-      :show-concurrent-indicator="showConcurrentIndicator"
-      :concurrent-workflow-count="concurrentWorkflowCount"
       :queued-count="queuedCount"
       @clear-history="$emit('clearHistory')"
       @clear-queued="$emit('clearQueued')"
@@ -23,7 +21,7 @@
     />
 
     <div class="flex-1 min-h-0 overflow-y-auto">
-      <JobGroupsList
+      <JobAssetsList
         :displayed-job-groups="displayedJobGroups"
         @cancel-item="onCancelItemEvent"
         @delete-item="onDeleteItemEvent"
@@ -55,13 +53,11 @@ import { useErrorHandling } from '@/composables/useErrorHandling'
 
 import QueueOverlayHeader from './QueueOverlayHeader.vue'
 import JobContextMenu from './job/JobContextMenu.vue'
+import JobAssetsList from './job/JobAssetsList.vue'
 import JobFiltersBar from './job/JobFiltersBar.vue'
-import JobGroupsList from './job/JobGroupsList.vue'
 
 defineProps<{
   headerTitle: string
-  showConcurrentIndicator: boolean
-  concurrentWorkflowCount: number
   queuedCount: number
   selectedJobTab: JobTab
   selectedWorkflowFilter: 'all' | 'current'

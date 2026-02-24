@@ -39,7 +39,9 @@ const config: KnipConfig = {
     'src/workbench/extensions/manager/types/generatedManagerTypes.ts',
     'packages/registry-types/src/comfyRegistryTypes.ts',
     // Used by a custom node (that should move off of this)
-    'src/scripts/ui/components/splitButton.ts'
+    'src/scripts/ui/components/splitButton.ts',
+    // Workflow files contain license names that knip misinterprets as binaries
+    '.github/workflows/ci-oss-assets-validation.yaml'
   ],
   compilers: {
     // https://github.com/webpro-nl/knip/issues/1008#issuecomment-3207756199

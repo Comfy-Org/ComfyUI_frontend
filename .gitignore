@@ -64,6 +64,7 @@ browser_tests/local/
 dist.zip
 
 /temp/
+/tmp/
 
 # Generated JSON Schemas
 /schemas/

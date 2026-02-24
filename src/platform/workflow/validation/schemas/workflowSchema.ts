@@ -396,6 +396,8 @@ interface SubgraphDefinitionBase<
   id: string
   revision: number
   name: string
+  /** Optional description shown as tooltip when hovering over the subgraph node. */
+  description?: string
   category?: string
   /** Custom metadata for the subgraph (description, searchAliases, etc.) */
   extra?: T extends ComfyWorkflow1BaseInput
@@ -432,6 +434,8 @@ const zSubgraphDefinition = zComfyWorkflow1
     id: z.string().uuid(),
     revision: z.number(),
     name: z.string(),
+    /** Optional description shown as tooltip when hovering over the subgraph node. */
+    description: z.string().optional(),
     category: z.string().optional(),
     inputNode: zExportedSubgraphIONode,
     outputNode: zExportedSubgraphIONode,

@@ -28,3 +28,7 @@ export async function extractFilesFromDragEvent(
 export function hasImageType({ type }: File): boolean {
   return type.startsWith('image')
 }
+
+export function hasAudioType({ type }: File): boolean {
+  return type.startsWith('audio')
+}

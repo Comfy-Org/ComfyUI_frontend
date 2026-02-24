@@ -72,7 +72,9 @@ describe('useNodePreviewAndDrag', () => {
         toJSON: () => ({})
       })
 
-      const mockEvent = { currentTarget: mockElement } as unknown as MouseEvent
+      const mockEvent = {
+        currentTarget: mockElement
+      } as Partial<MouseEvent> as MouseEvent
       result.handleMouseEnter(mockEvent)
 
       expect(result.isHovered.value).toBe(true)
@@ -83,7 +85,9 @@ describe('useNodePreviewAndDrag', () => {
       const result = useNodePreviewAndDrag(nodeDef)
 
       const mockElement = document.createElement('div')
-      const mockEvent = { currentTarget: mockElement } as unknown as MouseEvent
+      const mockEvent = {
+        currentTarget: mockElement
+      } as Partial<MouseEvent> as MouseEvent
       result.handleMouseEnter(mockEvent)
 
       expect(result.isHovered.value).toBe(false)
@@ -150,7 +154,7 @@ describe('useNodePreviewAndDrag', () => {
       const mockEvent = {
         clientX: 100,
         clientY: 200
-      } as unknown as DragEvent
+      } as Partial<DragEvent> as DragEvent
 
       result.handleDragEnd(mockEvent)
 
@@ -168,7 +172,7 @@ describe('useNodePreviewAndDrag', () => {
         dataTransfer: { dropEffect: 'none' },
         clientX: 300,
         clientY: 400
-      } as unknown as DragEvent
+      } as Partial<DragEvent> as DragEvent
 
       result.handleDragEnd(mockEvent)
 

@@ -17,10 +17,7 @@
         @mouseenter="onPopoverEnter"
         @mouseleave="onPopoverLeave"
       >
-        <JobDetailsPopover
-          :job-id="props.jobId"
-          :workflow-id="props.workflowId"
-        />
+        <JobDetailsPopover :job-id="jobId" :workflow-id="workflowId" />
       </div>
     </Teleport>
     <Teleport to="body">
@@ -36,7 +33,7 @@
       >
         <QueueAssetPreview
           :image-url="iconImageUrl!"
-          :name="props.title"
+          :name="title"
           :time-label="rightText || undefined"
           @image-click="emit('view')"
         />
@@ -49,23 +46,20 @@
     >
       <div
         v-if="
-          props.state === 'running' &&
-          hasAnyProgressPercent(
-            props.progressTotalPercent,
-            props.progressCurrentPercent
-          )
+          state === 'running' &&
+          hasAnyProgressPercent(progressTotalPercent, progressCurrentPercent)
         "
         :class="progressBarContainerClass"
       >
         <div
-          v-if="hasProgressPercent(props.progressTotalPercent)"
+          v-if="hasProgressPercent(progressTotalPercent)"
           :class="progressBarPrimaryClass"
-          :style="progressPercentStyle(props.progressTotalPercent)"
+          :style="progressPercentStyle(progressTotalPercent)"
         />
         <div
-          v-if="hasProgressPercent(props.progressCurrentPercent)"
+          v-if="hasProgressPercent(progressCurrentPercent)"
           :class="progressBarSecondaryClass"
-          :style="progressPercentStyle(props.progressCurrentPercent)"
+          :style="progressPercentStyle(progressCurrentPercent)"
         />
       </div>
 
@@ -93,8 +87,8 @@
       </div>
 
       <div class="relative z-1 min-w-0 flex-1">
-        <div class="truncate opacity-90" :title="props.title">
-          <slot name="primary">{{ props.title }}</slot>
+        <div class="truncate opacity-90" :title="title">
+          <slot name="primary">{{ title }}</slot>
         </div>
       </div>
 
@@ -131,7 +125,7 @@
             class="inline-flex items-center gap-2 pr-1"
           >
             <Button
-              v-if="props.state === 'failed' && computedShowClear"
+              v-if="state === 'failed' && computedShowClear"
               v-tooltip.top="deleteTooltipConfig"
               variant="destructive"
               size="icon"
@@ -142,8 +136,8 @@
             </Button>
             <Button
               v-else-if="
-                props.state !== 'completed' &&
-                props.state !== 'running' &&
+                state !== 'completed' &&
+                state !== 'running' &&
                 computedShowClear
               "
               v-tooltip.top="cancelTooltipConfig"
@@ -155,14 +149,14 @@
               <i class="icon-[lucide--x] size-4" />
             </Button>
             <Button
-              v-else-if="props.state === 'completed'"
+              v-else-if="state === 'completed'"
               variant="textonly"
               size="sm"
               @click.stop="emit('view')"
               >{{ t('menuLabels.View') }}</Button
             >
             <Button
-              v-if="props.showMenu !== undefined ? props.showMenu : true"
+              v-if="showMenu !== undefined ? showMenu : true"
               v-tooltip.top="moreTooltipConfig"
               variant="textonly"
               size="icon-sm"
@@ -172,17 +166,13 @@
               <i class="icon-[lucide--more-horizontal] size-4" />
             </Button>
           </div>
-          <div
-            v-else-if="props.state !== 'running'"
-            key="secondary"
-            class="pr-2"
-          >
-            <slot name="secondary">{{ props.rightText }}</slot>
+          <div v-else-if="state !== 'running'" key="secondary" class="pr-2">
+            <slot name="secondary">{{ rightText }}</slot>
           </div>
         </Transition>
         <!-- Running job cancel button - always visible -->
         <Button
-          v-if="props.state === 'running' && computedShowClear"
+          v-if="state === 'running' && computedShowClear"
           v-tooltip.top="cancelTooltipConfig"
           variant="destructive"
           size="icon"
@@ -209,34 +199,33 @@ import type { JobState } from '@/types/queue'
 import { iconForJobState } from '@/utils/queueDisplay'
 import { cn } from '@/utils/tailwindUtil'
 
-const props = withDefaults(
-  defineProps<{
-    jobId: string
-    workflowId?: string
-    state: JobState
-    title: string
-    rightText?: string
-    iconName?: string
-    iconImageUrl?: string
-    showClear?: boolean
-    showMenu?: boolean
-    progressTotalPercent?: number
-    progressCurrentPercent?: number
-    activeDetailsId?: string | null
-  }>(),
-  {
-    workflowId: undefined,
-    rightText: '',
-    iconName: undefined,
-    iconImageUrl: undefined,
-    showClear: undefined,
-    showMenu: undefined,
-    progressTotalPercent: undefined,
-    progressCurrentPercent: undefined,
-    runningNodeName: undefined,
-    activeDetailsId: null
-  }
-)
+const {
+  jobId,
+  workflowId,
+  state,
+  title,
+  rightText = '',
+  iconName,
+  iconImageUrl,
+  showClear,
+  showMenu,
+  progressTotalPercent,
+  progressCurrentPercent,
+  activeDetailsId = null
+} = defineProps<{
+  jobId: string
+  workflowId?: string
+  state: JobState
+  title: string
+  rightText?: string
+  iconName?: string
+  iconImageUrl?: string
+  showClear?: boolean
+  showMenu?: boolean
+  progressTotalPercent?: number
+  progressCurrentPercent?: number
+  activeDetailsId?: string | null
+}>()
 
 const emit = defineEmits<{
   (e: 'cancel'): void
@@ -262,14 +251,14 @@ const deleteTooltipConfig = computed(() => buildTooltipConfig(t('g.delete')))
 const moreTooltipConfig = computed(() => buildTooltipConfig(t('g.more')))
 
 const rowRef = ref<HTMLDivElement | null>(null)
-const showDetails = computed(() => props.activeDetailsId === props.jobId)
+const showDetails = computed(() => activeDetailsId === jobId)
 
 const onRowEnter = () => {
-  if (!isPreviewVisible.value) emit('details-enter', props.jobId)
+  if (!isPreviewVisible.value) emit('details-enter', jobId)
 }
-const onRowLeave = () => emit('details-leave', props.jobId)
-const onPopoverEnter = () => emit('details-enter', props.jobId)
-const onPopoverLeave = () => emit('details-leave', props.jobId)
+const onRowLeave = () => emit('details-leave', jobId)
+const onPopoverEnter = () => emit('details-enter', jobId)
+const onPopoverLeave = () => emit('details-leave', jobId)
 
 const isPreviewVisible = ref(false)
 const previewHideTimer = ref<number | null>(null)
@@ -286,9 +275,7 @@ const clearPreviewShowTimer = () => {
     previewShowTimer.value = null
   }
 }
-const canShowPreview = computed(
-  () => props.state === 'completed' && !!props.iconImageUrl
-)
+const canShowPreview = computed(() => state === 'completed' && !!iconImageUrl)
 const scheduleShowPreview = () => {
   if (!canShowPreview.value) return
   clearPreviewHideTimer()
@@ -343,23 +330,23 @@ watch(
 const isHovered = ref(false)
 
 const iconClass = computed(() => {
-  if (props.iconName) return props.iconName
-  return iconForJobState(props.state)
+  if (iconName) return iconName
+  return iconForJobState(state)
 })
 
 const shouldSpin = computed(
   () =>
-    props.state === 'pending' &&
+    state === 'pending' &&
     iconClass.value === iconForJobState('pending') &&
-    !props.iconImageUrl
+    !iconImageUrl
 )
 
 const computedShowClear = computed(() => {
-  if (props.showClear !== undefined) return props.showClear
-  return props.state !== 'completed'
+  if (showClear !== undefined) return showClear
+  return state !== 'completed'
 })
 
-const emitDetailsLeave = () => emit('details-leave', props.jobId)
+const emitDetailsLeave = () => emit('details-leave', jobId)
 
 const onCancelClick = () => {
   emitDetailsLeave()
@@ -372,7 +359,7 @@ const onDeleteClick = () => {
 }
 
 const onContextMenu = (event: MouseEvent) => {
-  const shouldShowMenu = props.showMenu !== undefined ? props.showMenu : true
+  const shouldShowMenu = showMenu !== undefined ? showMenu : true
   if (shouldShowMenu) emit('menu', event)
 }
 </script>
