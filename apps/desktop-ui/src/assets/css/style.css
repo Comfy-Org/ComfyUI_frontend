@@ -30,3 +30,17 @@
 .p-button-danger:active {
   background-color: var(--color-coral-red-400);
 }
+
+.task-div .p-card {
+  transition: opacity var(--default-transition-duration);
+  --p-card-background: var(--p-button-secondary-background);
+  opacity: 0.9;
+}
+
+.task-div .p-card.task-card-muted {
+  opacity: 0.65;
+}
+
+.task-div .p-card:hover {
+  opacity: 1;
+}

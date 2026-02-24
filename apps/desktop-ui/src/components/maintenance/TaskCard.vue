@@ -5,7 +5,7 @@
   >
     <Card
       class="relative h-full max-w-48 overflow-hidden"
-      :class="{ 'opacity-65': runner.state !== 'error' }"
+      :class="{ 'task-card-muted': runner.state !== 'error' }"
       v-bind="(({ onClick, ...rest }) => rest)($attrs)"
     >
       <template #header>

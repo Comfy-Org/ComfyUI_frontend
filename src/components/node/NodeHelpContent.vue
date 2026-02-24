@@ -25,48 +25,52 @@
           <strong>{{ $t('nodeHelpPage.inputs') }}:</strong>
         </p>
         <!-- Using plain HTML table instead of DataTable for consistent styling with markdown content -->
-        <table class="overflow-x-auto">
-          <thead>
-            <tr>
-              <th>{{ $t('g.name') }}</th>
-              <th>{{ $t('nodeHelpPage.type') }}</th>
-              <th>{{ $t('g.description') }}</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="input in inputList" :key="input.name">
-              <td>
-                <code>{{ input.name }}</code>
-              </td>
-              <td>{{ input.type }}</td>
-              <td>{{ input.tooltip || '-' }}</td>
-            </tr>
-          </tbody>
-        </table>
+        <div class="overflow-x-auto">
+          <table>
+            <thead>
+              <tr>
+                <th>{{ $t('g.name') }}</th>
+                <th>{{ $t('nodeHelpPage.type') }}</th>
+                <th>{{ $t('g.description') }}</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="input in inputList" :key="input.name">
+                <td>
+                  <code>{{ input.name }}</code>
+                </td>
+                <td>{{ input.type }}</td>
+                <td>{{ input.tooltip || '-' }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
       </div>
 
       <div v-if="outputList.length">
         <p>
           <strong>{{ $t('nodeHelpPage.outputs') }}:</strong>
         </p>
-        <table class="overflow-x-auto">
-          <thead>
-            <tr>
-              <th>{{ $t('g.name') }}</th>
-              <th>{{ $t('nodeHelpPage.type') }}</th>
-              <th>{{ $t('g.description') }}</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="output in outputList" :key="output.name">
-              <td>
-                <code>{{ output.name }}</code>
-              </td>
-              <td>{{ output.type }}</td>
-              <td>{{ output.tooltip || '-' }}</td>
-            </tr>
-          </tbody>
-        </table>
+        <div class="overflow-x-auto">
+          <table>
+            <thead>
+              <tr>
+                <th>{{ $t('g.name') }}</th>
+                <th>{{ $t('nodeHelpPage.type') }}</th>
+                <th>{{ $t('g.description') }}</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="output in outputList" :key="output.name">
+                <td>
+                  <code>{{ output.name }}</code>
+                </td>
+                <td>{{ output.type }}</td>
+                <td>{{ output.tooltip || '-' }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   </div>
@@ -242,6 +246,8 @@ const outputList = computed(() =>
 }
 
 .markdown-content :deep(table) {
+  display: block;
+  width: 100%;
   overflow-x: auto;
 }
 </style>

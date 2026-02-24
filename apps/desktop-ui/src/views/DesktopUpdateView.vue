@@ -6,11 +6,11 @@
       <div class="relative m-8 text-center">
         <!-- Header -->
         <h1 class="download-bg pi-download text-4xl font-bold">
-          {{ t('desktopUpdate.title') }}
+          {{ $t('desktopUpdate.title') }}
         </h1>
 
         <div class="m-8">
-          <span>{{ t('desktopUpdate.description') }}</span>
+          <span>{{ $t('desktopUpdate.description') }}</span>
         </div>
 
         <ProgressSpinner class="m-8 w-48 h-48" />
@@ -19,7 +19,7 @@
         <Button
           style="transform: translateX(-50%)"
           class="fixed bottom-0 left-1/2 my-8"
-          :label="t('maintenance.consoleLogs')"
+          :label="$t('maintenance.consoleLogs')"
           icon="pi pi-desktop"
           icon-pos="left"
           severity="secondary"
@@ -28,8 +28,8 @@
 
         <TerminalOutputDrawer
           v-model="terminalVisible"
-          :header="t('g.terminal')"
-          :default-message="t('desktopUpdate.terminalDefaultMessage')"
+          :header="$t('g.terminal')"
+          :default-message="$t('desktopUpdate.terminalDefaultMessage')"
         />
       </div>
     </div>
@@ -42,7 +42,6 @@ import Button from 'primevue/button'
 import ProgressSpinner from 'primevue/progressspinner'
 import Toast from 'primevue/toast'
 import { onUnmounted, ref } from 'vue'
-import { useI18n } from 'vue-i18n'
 
 import TerminalOutputDrawer from '@/components/maintenance/TerminalOutputDrawer.vue'
 import { electronAPI } from '@/utils/envUtil'
@@ -50,7 +49,6 @@ import { electronAPI } from '@/utils/envUtil'
 import BaseViewTemplate from './templates/BaseViewTemplate.vue'
 
 const electron = electronAPI()
-const { t } = useI18n()
 
 const terminalVisible = ref(false)
 

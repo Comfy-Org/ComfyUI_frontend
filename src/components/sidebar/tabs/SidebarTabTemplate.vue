@@ -11,9 +11,7 @@
     <div class="comfy-vue-side-bar-header flex flex-col gap-2">
       <Toolbar
         class="min-h-16 bg-transparent rounded-none border-x-0 border-t-0 px-2 2xl:px-4"
-        :pt="{
-          start: 'min-w-0 flex-1 overflow-hidden'
-        }"
+        :pt="sidebarPt"
       >
         <template #start>
           <span class="truncate font-bold" :title="props.title">
@@ -57,6 +55,9 @@ const props = defineProps<{
   title: string
   class?: string
 }>()
+const sidebarPt = {
+  start: 'min-w-0 flex-1 overflow-hidden'
+}
 
 const containerRef = ref<HTMLElement | null>(null)
 provide(SidebarContainerKey, containerRef)
