@@ -100,6 +100,9 @@ const visible = computed(() => position.value !== 'Disabled')
 const isQueuePanelV2Enabled = computed(() =>
   settingsStore.get('Comfy.Queue.QPOV2')
 )
+const isRunProgressBarEnabled = computed(
+  () => settingsStore.get('Comfy.Queue.ShowRunProgressBar') !== false
+)
 
 const panelRef = ref<ComponentPublicInstance | null>(null)
 const panelElement = computed<HTMLElement | null>(() => {
@@ -283,7 +286,13 @@ const onMouseLeaveDropZone = () => {
 }
 
 const inlineProgressTarget = computed(() => {
-  if (!visible.value || !isQueuePanelV2Enabled.value) return null
+  if (
+    !visible.value ||
+    !isQueuePanelV2Enabled.value ||
+    !isRunProgressBarEnabled.value
+  ) {
+    return null
+  }
   if (isDocked.value) return topMenuContainer ?? null
   return panelElement.value
 })

@@ -296,11 +296,13 @@ describe('TopMenuSection', () => {
   describe('inline progress summary', () => {
     const configureSettings = (
       pinia: ReturnType<typeof createTestingPinia>,
-      qpoV2Enabled: boolean
+      qpoV2Enabled: boolean,
+      showRunProgressBar = true
     ) => {
       const settingStore = useSettingStore(pinia)
       vi.mocked(settingStore.get).mockImplementation((key) => {
         if (key === 'Comfy.Queue.QPOV2') return qpoV2Enabled
+        if (key === 'Comfy.Queue.ShowRunProgressBar') return showRunProgressBar
         if (key === 'Comfy.UseNewMenu') return 'Top'
         return undefined
       })
@@ -322,6 +324,19 @@ describe('TopMenuSection', () => {
     it('does not render inline progress summary when QPO V2 is disabled', async () => {
       const pinia = createTestingPinia({ createSpy: vi.fn })
       configureSettings(pinia, false)
+
+      const wrapper = createWrapper({ pinia })
+
+      await nextTick()
+
+      expect(
+        wrapper.findComponent({ name: 'QueueInlineProgressSummary' }).exists()
+      ).toBe(false)
+    })
+
+    it('does not render inline progress summary when run progress bar is disabled', async () => {
+      const pinia = createTestingPinia({ createSpy: vi.fn })
+      configureSettings(pinia, true, false)
 
       const wrapper = createWrapper({ pinia })
 
@@ -464,8 +479,8 @@ describe('TopMenuSection', () => {
     const wrapper = createWrapper()
     const menu = wrapper.findComponent({ name: 'ContextMenu' })
     const model = menu.props('model') as MenuItem[]
-    expect(model[0]?.label).toBe('Clear queue')
-    expect(model[0]?.disabled).toBe(true)
+    const clearQueueItem = model.find((item) => item.label === 'Clear queue')
+    expect(clearQueueItem?.disabled).toBe(true)
   })
 
   it('enables the clear queue context menu item when queued jobs exist', async () => {
@@ -477,7 +492,8 @@ describe('TopMenuSection', () => {
 
     const menu = wrapper.findComponent({ name: 'ContextMenu' })
     const model = menu.props('model') as MenuItem[]
-    expect(model[0]?.disabled).toBe(false)
+    const clearQueueItem = model.find((item) => item.label === 'Clear queue')
+    expect(clearQueueItem?.disabled).toBe(false)
   })
 
   it('shows manager red dot only for manager conflicts', async () => {

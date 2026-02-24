@@ -24,7 +24,9 @@ vi.mock('@/components/ui/Popover.vue', () => {
 })
 
 const mockGetSetting = vi.fn((key: string) =>
-  key === 'Comfy.Queue.QPOV2' ? true : undefined
+  key === 'Comfy.Queue.QPOV2' || key === 'Comfy.Queue.ShowRunProgressBar'
+    ? true
+    : undefined
 )
 const mockSetSetting = vi.fn()
 
@@ -57,7 +59,8 @@ const i18n = createI18n({
           clearAllJobsTooltip: 'Cancel all running jobs',
           moreOptions: 'More options',
           clearHistory: 'Clear history',
-          dockedJobHistory: 'Docked Job History'
+          dockedJobHistory: 'Docked Job History',
+          showRunProgressBar: 'Show run progress bar'
         }
       }
     }
@@ -135,5 +138,20 @@ describe('QueueOverlayHeader', () => {
 
     expect(mockSetSetting).toHaveBeenCalledTimes(1)
     expect(mockSetSetting).toHaveBeenCalledWith('Comfy.Queue.QPOV2', false)
+  })
+
+  it('toggles show run progress bar setting from the menu', async () => {
+    const wrapper = mountHeader()
+
+    const showRunProgressBarButton = wrapper.get(
+      '[data-testid="show-run-progress-bar-action"]'
+    )
+    await showRunProgressBarButton.trigger('click')
+
+    expect(mockSetSetting).toHaveBeenCalledTimes(1)
+    expect(mockSetSetting).toHaveBeenCalledWith(
+      'Comfy.Queue.ShowRunProgressBar',
+      false
+    )
   })
 })

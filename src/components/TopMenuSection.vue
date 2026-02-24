@@ -225,8 +225,14 @@ const isQueuePanelV2Enabled = computed(() =>
 const isQueueProgressOverlayEnabled = computed(
   () => !isQueuePanelV2Enabled.value
 )
+const isRunProgressBarEnabled = computed(
+  () => settingStore.get('Comfy.Queue.ShowRunProgressBar') !== false
+)
 const shouldShowInlineProgressSummary = computed(
-  () => isQueuePanelV2Enabled.value && isActionbarEnabled.value
+  () =>
+    isQueuePanelV2Enabled.value &&
+    isActionbarEnabled.value &&
+    isRunProgressBarEnabled.value
 )
 const shouldShowQueueNotificationBanners = computed(
   () => isActionbarEnabled.value

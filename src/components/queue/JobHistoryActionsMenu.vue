@@ -35,6 +35,24 @@
               class="icon-[lucide--check] size-4"
             />
           </Button>
+          <Button
+            data-testid="show-run-progress-bar-action"
+            class="w-full justify-between text-sm font-light"
+            variant="textonly"
+            size="sm"
+            @click="onToggleRunProgressBar"
+          >
+            <span class="flex items-center gap-2">
+              <i class="icon-[lucide--hourglass] size-4 text-text-secondary" />
+              <span>{{
+                t('sideToolbar.queueProgressOverlay.showRunProgressBar')
+              }}</span>
+            </span>
+            <i
+              v-if="isRunProgressBarEnabled"
+              class="icon-[lucide--check] size-4"
+            />
+          </Button>
           <!-- TODO: Bug in assets sidebar panel derives assets from history, so despite this not deleting the assets, it still effectively shows to the user as deleted -->
           <template v-if="showClearHistoryAction">
             <div class="my-1 border-t border-interface-stroke" />
@@ -91,6 +109,9 @@ const moreTooltipConfig = computed(() => buildTooltipConfig(t('g.more')))
 const isQueuePanelV2Enabled = computed(() =>
   settingStore.get('Comfy.Queue.QPOV2')
 )
+const isRunProgressBarEnabled = computed(
+  () => settingStore.get('Comfy.Queue.ShowRunProgressBar') !== false
+)
 const showClearHistoryAction = computed(() => !isCloud)
 
 const onClearHistoryFromMenu = (close: () => void) => {
@@ -100,5 +121,12 @@ const onClearHistoryFromMenu = (close: () => void) => {
 
 const onToggleDockedJobHistory = async () => {
   await settingStore.set('Comfy.Queue.QPOV2', !isQueuePanelV2Enabled.value)
+}
+
+const onToggleRunProgressBar = async () => {
+  await settingStore.set(
+    'Comfy.Queue.ShowRunProgressBar',
+    !isRunProgressBarEnabled.value
+  )
 }
 </script>
