@@ -31,9 +31,19 @@ export function useUngroupedAssets(
 
       onCancel(() => cancel())
 
+      const entries = assets.value.map((asset) => ({
+        asset,
+        metadata: getOutputAssetMetadata(asset.user_metadata)
+      }))
+
+      for (const { metadata } of entries) {
+        if ((metadata?.outputCount ?? 1) > 1 && metadata?.jobId) {
+          void cachedResolve(metadata.jobId)
+        }
+      }
+
       const result: AssetItem[] = []
-      for (const asset of assets.value) {
-        const metadata = getOutputAssetMetadata(asset.user_metadata)
+      for (const { asset, metadata } of entries) {
         const count = metadata?.outputCount ?? 1
         if (count <= 1 || !metadata?.jobId) {
           result.push(asset)
