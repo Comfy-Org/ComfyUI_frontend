@@ -1,13 +1,9 @@
-type LoggedInAuthHeader = {
-  Authorization: `Bearer ${string}`
-}
-
-export type ApiKeyAuthHeader = {
-  'X-API-KEY': string
-}
-
-export type AuthHeader = LoggedInAuthHeader | ApiKeyAuthHeader
-
-export interface AuthUserInfo {
-  id: string
-}
+/**
+ * Re-export auth types from the @comfyorg/auth package.
+ * This file is kept for backward compatibility with existing imports.
+ */
+export type {
+  ApiKeyAuthHeader,
+  AuthHeader,
+  AuthUserInfo
+} from '@comfyorg/auth/types'

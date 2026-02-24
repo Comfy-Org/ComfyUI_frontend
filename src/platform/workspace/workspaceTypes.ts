@@ -1,6 +1,5 @@
-export interface WorkspaceWithRole {
-  id: string
-  name: string
-  type: 'personal' | 'team'
-  role: 'owner' | 'member'
-}
+/**
+ * Re-export workspace types from the @comfyorg/auth package.
+ * This file is kept for backward compatibility with existing imports.
+ */
+export type { WorkspaceWithRole } from '@comfyorg/auth/types'

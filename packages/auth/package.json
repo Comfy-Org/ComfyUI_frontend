@@ -1,0 +1,24 @@
+{
+  "name": "@comfyorg/auth",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Authentication package for ComfyUI Frontend",
+  "type": "module",
+  "exports": {
+    "./types": "./src/types/index.ts",
+    "./constants": "./src/constants/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "typescript": "catalog:"
+  },
+  "packageManager": "pnpm@10.17.1",
+  "nx": {
+    "tags": [
+      "scope:shared",
+      "type:auth"
+    ]
+  }
+}

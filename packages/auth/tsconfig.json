@@ -1,0 +1,12 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "rootDir": "src",
+    "outDir": "dist",
+    "paths": {
+      "@/*": ["../../src/*"],
+      "@comfyorg/auth/*": ["./src/*"]
+    }
+  },
+  "include": ["src/**/*"]
+}

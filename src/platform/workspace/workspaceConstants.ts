@@ -1,10 +1,8 @@
-export const WORKSPACE_STORAGE_KEYS = {
-  // sessionStorage keys (cleared on browser close)
-  CURRENT_WORKSPACE: 'Comfy.Workspace.Current',
-  TOKEN: 'Comfy.Workspace.Token',
-  EXPIRES_AT: 'Comfy.Workspace.ExpiresAt',
-  // localStorage key (persists across browser sessions)
-  LAST_WORKSPACE_ID: 'Comfy.Workspace.LastWorkspaceId'
-} as const
-
-export const TOKEN_REFRESH_BUFFER_MS = 5 * 60 * 1000
+/**
+ * Re-export workspace constants from the @comfyorg/auth package.
+ * This file is kept for backward compatibility with existing imports.
+ */
+export {
+  TOKEN_REFRESH_BUFFER_MS,
+  WORKSPACE_STORAGE_KEYS
+} from '@comfyorg/auth/constants'
