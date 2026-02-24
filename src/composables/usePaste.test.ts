@@ -5,12 +5,13 @@ import type {
   LGraphGroup,
   LGraphNode
 } from '@/lib/litegraph/src/litegraph'
-import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { app } from '@/scripts/app'
 import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
-import { createNode, isImageNode } from '@/utils/litegraphUtil'
+import { createNode, isAudioNode, isImageNode } from '@/utils/litegraphUtil'
 import {
   cloneDataTransfer,
+  pasteAudioNode,
+  pasteAudioNodes,
   pasteImageNode,
   pasteImageNodes,
   usePaste
@@ -203,6 +204,102 @@ describe('pasteImageNodes', () => {
   })
 })
 
+describe('pasteAudioNode', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  it('should create new LoadAudio node when no audio node provided', async () => {
+    const mockNode = createMockNode()
+    vi.mocked(createNode).mockResolvedValue(mockNode)
+
+    const file = createAudioFile()
+    const dataTransfer = createDataTransfer([file])
+
+    await pasteAudioNode(mockCanvas, dataTransfer.items)
+
+    expect(createNode).toHaveBeenCalledWith(mockCanvas, 'LoadAudio')
+    expect(mockNode.pasteFile).toHaveBeenCalledWith(file)
+  })
+
+  it('should use existing audio node when provided', async () => {
+    const mockNode = createMockNode()
+    const file = createAudioFile()
+    const dataTransfer = createDataTransfer([file])
+
+    await pasteAudioNode(mockCanvas, dataTransfer.items, mockNode)
+
+    expect(createNode).not.toHaveBeenCalled()
+    expect(mockNode.pasteFile).toHaveBeenCalledWith(file)
+  })
+
+  it('should filter non-audio items', async () => {
+    const mockNode = createMockNode()
+    const audioFile = createAudioFile()
+    const textFile = new File([''], 'test.txt', { type: 'text/plain' })
+    const dataTransfer = createDataTransfer([textFile, audioFile])
+
+    await pasteAudioNode(mockCanvas, dataTransfer.items, mockNode)
+
+    expect(mockNode.pasteFile).toHaveBeenCalledWith(audioFile)
+    expect(mockNode.pasteFiles).toHaveBeenCalledWith([audioFile])
+  })
+
+  it('should do nothing when no audio files present', async () => {
+    const mockNode = createMockNode()
+    const dataTransfer = createDataTransfer()
+
+    await pasteAudioNode(mockCanvas, dataTransfer.items, mockNode)
+
+    expect(mockNode.pasteFile).not.toHaveBeenCalled()
+    expect(mockNode.pasteFiles).not.toHaveBeenCalled()
+  })
+})
+
+describe('pasteAudioNodes', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  it('should create multiple nodes for multiple audio files', async () => {
+    const mockNode1 = createMockNode()
+    const mockNode2 = createMockNode()
+    vi.mocked(createNode)
+      .mockResolvedValueOnce(mockNode1)
+      .mockResolvedValueOnce(mockNode2)
+
+    const file1 = createAudioFile('file1.mp3')
+    const file2 = createAudioFile('file2.wav', 'audio/wav')
+
+    const result = await pasteAudioNodes(mockCanvas, [file1, file2])
+
+    expect(createNode).toHaveBeenCalledTimes(2)
+    expect(createNode).toHaveBeenNthCalledWith(1, mockCanvas, 'LoadAudio')
+    expect(createNode).toHaveBeenNthCalledWith(2, mockCanvas, 'LoadAudio')
+    expect(mockNode1.pasteFile).toHaveBeenCalledWith(file1)
+    expect(mockNode2.pasteFile).toHaveBeenCalledWith(file2)
+    expect(result).toEqual([mockNode1, mockNode2])
+  })
+
+  it('should handle empty file list', async () => {
+    const result = await pasteAudioNodes(mockCanvas, [])
+
+    expect(createNode).not.toHaveBeenCalled()
+    expect(result).toEqual([])
+  })
+
+  it('should handle single audio file', async () => {
+    const mockNode = createMockNode()
+    vi.mocked(createNode).mockResolvedValue(mockNode)
+
+    const file = createAudioFile()
+    const result = await pasteAudioNodes(mockCanvas, [file])
+
+    expect(createNode).toHaveBeenCalledTimes(1)
+    expect(result).toEqual([mockNode])
+  })
+})
+
 describe('usePaste', () => {
   beforeEach(() => {
     vi.clearAllMocks()
@@ -230,9 +327,9 @@ describe('usePaste', () => {
     })
   })
 
-  it('should handle audio paste', async () => {
+  it('should handle audio paste using createNode helper', async () => {
     const mockNode = createMockNode()
-    vi.mocked(LiteGraph.createNode).mockReturnValue(mockNode)
+    vi.mocked(createNode).mockResolvedValue(mockNode)
 
     usePaste()
 
@@ -242,7 +339,29 @@ describe('usePaste', () => {
     document.dispatchEvent(event)
 
     await vi.waitFor(() => {
-      expect(LiteGraph.createNode).toHaveBeenCalledWith('LoadAudio')
+      expect(createNode).toHaveBeenCalledWith(mockCanvas, 'LoadAudio')
+      expect(mockNode.pasteFile).toHaveBeenCalledWith(file)
+    })
+  })
+
+  it('should paste audio onto selected LoadAudio node', async () => {
+    const mockNode = createMockLGraphNode({
+      is_selected: true,
+      pasteFile: vi.fn(),
+      pasteFiles: vi.fn()
+    })
+    mockCanvas.current_node = mockNode
+    vi.mocked(isAudioNode).mockReturnValue(true)
+
+    usePaste()
+
+    const file = createAudioFile()
+    const dataTransfer = createDataTransfer([file])
+    const event = new ClipboardEvent('paste', { clipboardData: dataTransfer })
+    document.dispatchEvent(event)
+
+    await vi.waitFor(() => {
+      expect(createNode).not.toHaveBeenCalled()
       expect(mockNode.pasteFile).toHaveBeenCalledWith(file)
     })
   })
@@ -273,7 +392,7 @@ describe('usePaste', () => {
     const event = new ClipboardEvent('paste', { clipboardData: dataTransfer })
     document.dispatchEvent(event)
 
-    expect(LiteGraph.createNode).not.toHaveBeenCalled()
+    expect(createNode).not.toHaveBeenCalled()
   })
 
   it('should use existing image node when selected', () => {
