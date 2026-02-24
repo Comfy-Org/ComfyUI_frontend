@@ -13,6 +13,7 @@ export function useQueuePolling() {
 
   const { start, stop } = useTimeoutFn(
     () => {
+      if (queueStore.activeJobsCount !== 1 || queueStore.isLoading) return
       delay.value = Math.min(delay.value * BACKOFF_MULTIPLIER, MAX_INTERVAL_MS)
       void queueStore.update()
     },
@@ -21,7 +22,7 @@ export function useQueuePolling() {
   )
 
   function scheduleNextPoll() {
-    if (queueStore.activeJobsCount === 1) start()
+    if (queueStore.activeJobsCount === 1 && !queueStore.isLoading) start()
     else stop()
   }
 
@@ -40,6 +41,7 @@ export function useQueuePolling() {
     () => queueStore.isLoading,
     (loading, wasLoading) => {
       if (wasLoading && !loading) scheduleNextPoll()
-    }
+    },
+    { flush: 'sync' }
   )
 }

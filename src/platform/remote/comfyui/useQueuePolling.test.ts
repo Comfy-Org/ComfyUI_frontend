@@ -129,6 +129,23 @@ describe('useQueuePolling', () => {
     expect(store.update).toHaveBeenCalledTimes(2)
   })
 
+  it('skips poll when an update is already in-flight', async () => {
+    store.activeJobsCount = 1
+    wrapper = mountUseQueuePolling()
+
+    // Simulate an external update starting before the timer fires
+    store.isLoading = true
+
+    await vi.advanceTimersByTimeAsync(8_000)
+    expect(store.update).not.toHaveBeenCalled()
+
+    // Once the in-flight update completes, polling resumes
+    store.isLoading = false
+
+    await vi.advanceTimersByTimeAsync(8_000)
+    expect(store.update).toHaveBeenCalledOnce()
+  })
+
   it('resets backoff when activeJobsCount changes', async () => {
     store.activeJobsCount = 1
     wrapper = mountUseQueuePolling()
