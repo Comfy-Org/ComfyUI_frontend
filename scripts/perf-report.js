@@ -41,8 +41,8 @@ function formatBytes(bytes) {
 
 function main() {
   if (!existsSync(CURRENT_PATH)) {
-    console.log(
-      '## ⚡ Performance Report\n\nNo perf metrics found. Perf tests may not have run.'
+    process.stdout.write(
+      '## ⚡ Performance Report\n\nNo perf metrics found. Perf tests may not have run.\n'
     )
     process.exit(0)
   }
@@ -124,7 +124,7 @@ function main() {
   lines.push('```')
   lines.push('\n</details>')
 
-  console.log(lines.join('\n'))
+  process.stdout.write(lines.join('\n') + '\n')
 }
 
 main()

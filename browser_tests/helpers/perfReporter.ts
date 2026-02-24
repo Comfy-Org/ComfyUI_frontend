@@ -1,4 +1,4 @@
-import { mkdirSync, writeFileSync } from 'fs'
+import { mkdirSync, readdirSync, readFileSync, writeFileSync } from 'fs'
 import { join } from 'path'
 
 import type { PerfMeasurement } from '../fixtures/helpers/PerformanceHelper'
@@ -10,16 +10,29 @@ export interface PerfReport {
   measurements: PerfMeasurement[]
 }
 
-const measurements: PerfMeasurement[] = []
+const TEMP_DIR = join('test-results', 'perf-temp')
 
 export function recordMeasurement(m: PerfMeasurement) {
-  measurements.push(m)
+  mkdirSync(TEMP_DIR, { recursive: true })
+  const filename = `${m.name}-${Date.now()}.json`
+  writeFileSync(join(TEMP_DIR, filename), JSON.stringify(m))
 }
 
 export function writePerfReport() {
-  if (measurements.length === 0) return
+  if (!readdirSync('test-results', { withFileTypes: true }).length) return
 
-  mkdirSync('test-results', { recursive: true })
+  let tempFiles: string[]
+  try {
+    tempFiles = readdirSync(TEMP_DIR).filter((f) => f.endsWith('.json'))
+  } catch {
+    return
+  }
+  if (tempFiles.length === 0) return
+
+  const measurements: PerfMeasurement[] = tempFiles.map((f) =>
+    JSON.parse(readFileSync(join(TEMP_DIR, f), 'utf-8'))
+  )
+
   const report: PerfReport = {
     timestamp: new Date().toISOString(),
     gitSha: process.env.GITHUB_SHA ?? 'local',

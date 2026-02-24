@@ -27,14 +27,14 @@ test.describe('Performance', { tag: ['@perf'] }, () => {
 
     const canvas = comfyPage.canvas
     const box = await canvas.boundingBox()
-    if (box) {
-      // Sweep mouse across the canvas — crosses nodes, empty space, slots
-      for (let i = 0; i < 100; i++) {
-        await comfyPage.page.mouse.move(
-          box.x + (box.width * i) / 100,
-          box.y + (box.height * (i % 3)) / 3
-        )
-      }
+    if (!box) throw new Error('Canvas bounding box not available')
+
+    // Sweep mouse across the canvas — crosses nodes, empty space, slots
+    for (let i = 0; i < 100; i++) {
+      await comfyPage.page.mouse.move(
+        box.x + (box.width * i) / 100,
+        box.y + (box.height * (i % 3)) / 3
+      )
     }
 
     const m = await comfyPage.perf.stopMeasuring('canvas-mouse-sweep')
@@ -42,27 +42,6 @@ test.describe('Performance', { tag: ['@perf'] }, () => {
     console.log(
       `Mouse sweep: ${m.styleRecalcs} style recalcs, ${m.layouts} layouts`
     )
-  })
-
-  test('cursor style mutations during mouse sweep', async ({ comfyPage }) => {
-    await comfyPage.workflow.loadWorkflow('default')
-    await comfyPage.perf.startMeasuring()
-
-    const canvas = comfyPage.canvas
-    const box = await canvas.boundingBox()
-    if (box) {
-      // Sweep mouse across entire canvas — crosses nodes, empty space, slots
-      for (let i = 0; i < 100; i++) {
-        await comfyPage.page.mouse.move(
-          box.x + (box.width * i) / 100,
-          box.y + (box.height * (i % 3)) / 3
-        )
-      }
-    }
-
-    const m = await comfyPage.perf.stopMeasuring('cursor-sweep')
-    recordMeasurement(m)
-    console.log(`Cursor sweep: ${m.styleRecalcs} style recalcs`)
   })
 
   test('DOM widget clipping during node selection', async ({ comfyPage }) => {
@@ -73,15 +52,15 @@ test.describe('Performance', { tag: ['@perf'] }, () => {
     // Select and deselect nodes rapidly to trigger clipping recalculation
     const canvas = comfyPage.canvas
     const box = await canvas.boundingBox()
-    if (box) {
-      for (let i = 0; i < 20; i++) {
-        // Click on canvas area (nodes occupy various positions)
-        await comfyPage.page.mouse.click(
-          box.x + box.width / 3 + (i % 5) * 30,
-          box.y + box.height / 3 + (i % 4) * 30
-        )
-        await comfyPage.nextFrame()
-      }
+    if (!box) throw new Error('Canvas bounding box not available')
+
+    for (let i = 0; i < 20; i++) {
+      // Click on canvas area (nodes occupy various positions)
+      await comfyPage.page.mouse.click(
+        box.x + box.width / 3 + (i % 5) * 30,
+        box.y + box.height / 3 + (i % 4) * 30
+      )
+      await comfyPage.nextFrame()
     }
 
     const m = await comfyPage.perf.stopMeasuring('dom-widget-clipping')

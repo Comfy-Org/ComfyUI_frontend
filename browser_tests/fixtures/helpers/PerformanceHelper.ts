@@ -1,6 +1,6 @@
 import type { CDPSession, Page } from '@playwright/test'
 
-export interface PerfSnapshot {
+interface PerfSnapshot {
   RecalcStyleCount: number
   RecalcStyleDuration: number
   LayoutCount: number
