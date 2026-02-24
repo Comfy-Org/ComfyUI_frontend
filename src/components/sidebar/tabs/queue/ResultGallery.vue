@@ -36,6 +36,7 @@
       />
       <ResultVideo v-else-if="item.isVideo" :result="item" />
       <ResultAudio v-else-if="item.isAudio" :result="item" />
+      <Result3D v-else-if="item.is3D" :result="item" />
     </template>
   </Galleria>
 </template>
@@ -48,6 +49,7 @@ import ComfyImage from '@/components/common/ComfyImage.vue'
 import type { ResultItemImpl } from '@/stores/queueStore'
 
 import ResultAudio from './ResultAudio.vue'
+import Result3D from './Result3D.vue'
 import ResultVideo from './ResultVideo.vue'
 
 const galleryVisible = ref(false)

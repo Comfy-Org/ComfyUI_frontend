@@ -36,6 +36,12 @@ describe('ResultGallery', () => {
     props: ['result']
   }
 
+  const mockResult3D = {
+    name: 'Result3D',
+    template: '<div class="mock-result-3d" data-testid="result-3d"></div>',
+    props: ['result']
+  }
+
   // Sample gallery items - using mock instances with only required properties
   const mockGalleryItems: MockResultItem[] = [
     {
@@ -85,10 +91,12 @@ describe('ResultGallery', () => {
         components: {
           Galleria,
           ComfyImage: mockComfyImage,
-          ResultVideo: mockResultVideo
+          ResultVideo: mockResultVideo,
+          Result3D: mockResult3D
         },
         stubs: {
-          teleport: true
+          teleport: true,
+          Result3D: mockResult3D
         }
       },
       props: {
@@ -177,6 +185,30 @@ describe('ResultGallery', () => {
     const pt = galleria.props('pt') as GalleriaPT
     expect(pt?.prevButton?.style).toContain('position: fixed')
     expect(pt?.nextButton?.style).toContain('position: fixed')
+  })
+
+  it('renders 3D result in gallery when active item is 3D', async () => {
+    const wrapper = mountGallery({
+      allGalleryItems: [
+        {
+          filename: 'model.glb',
+          subfolder: 'outputs',
+          type: 'output',
+          nodeId: '123' as NodeId,
+          mediaType: '3D',
+          isImage: false,
+          isVideo: false,
+          is3D: true,
+          url: '/api/view/model.glb'
+        }
+      ] as ResultItemImpl[],
+      activeIndex: -1
+    })
+
+    await wrapper.setProps({ activeIndex: 0 })
+    await nextTick()
+
+    expect(wrapper.find('[data-testid="result-3d"]').exists()).toBe(true)
   })
 
   // Additional tests for interaction could be added once we can reliably
