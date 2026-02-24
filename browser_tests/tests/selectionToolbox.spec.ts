@@ -15,6 +15,9 @@ const RED_COLOR = 'rgb(85, 51, 51)'
 const getColorPickerButton = (comfyPage: { page: Page }) =>
   comfyPage.page.getByTestId(TestIds.selectionToolbox.colorPickerButton)
 
+const getColorPickerCurrentColor = (comfyPage: { page: Page }) =>
+  comfyPage.page.getByTestId(TestIds.selectionToolbox.colorPickerCurrentColor)
+
 const getColorPickerGroup = (comfyPage: { page: Page }) =>
   comfyPage.page.getByRole('group').filter({
     has: comfyPage.page.getByTestId(TestIds.selectionToolbox.colorBlue)
@@ -179,6 +182,7 @@ test.describe('Selection Toolbox', { tag: ['@screenshot', '@ui'] }, () => {
       ])
 
       const colorPickerButton = getColorPickerButton(comfyPage)
+      const colorPickerCurrentColor = getColorPickerCurrentColor(comfyPage)
 
       // Initially should show default color
       await expect(colorPickerButton).not.toHaveAttribute('color')
@@ -191,7 +195,7 @@ test.describe('Selection Toolbox', { tag: ['@screenshot', '@ui'] }, () => {
       await redColorOption.click()
 
       // Button should now show the selected color
-      await expect(colorPickerButton).toHaveCSS('color', RED_COLOR)
+      await expect(colorPickerCurrentColor).toHaveCSS('color', RED_COLOR)
     })
 
     test('color picker shows mixed state for differently colored selections', async ({
@@ -240,8 +244,8 @@ test.describe('Selection Toolbox', { tag: ['@screenshot', '@ui'] }, () => {
       await comfyPage.nodeOps.selectNodes(['KSampler'])
 
       // Color picker button should show the correct color
-      const colorPickerButton = getColorPickerButton(comfyPage)
-      await expect(colorPickerButton).toHaveCSS('color', BLUE_COLOR)
+      const colorPickerCurrentColor = getColorPickerCurrentColor(comfyPage)
+      await expect(colorPickerCurrentColor).toHaveCSS('color', BLUE_COLOR)
     })
 
     test('colorization via color picker can be undone', async ({

@@ -46,6 +46,7 @@ export const TestIds = {
   },
   selectionToolbox: {
     colorPickerButton: 'color-picker-button',
+    colorPickerCurrentColor: 'color-picker-current-color',
     colorBlue: 'blue',
     colorRed: 'red'
   },
