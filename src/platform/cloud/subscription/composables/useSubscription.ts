@@ -40,7 +40,7 @@ function useSubscriptionInternal() {
   const { showSubscriptionRequiredDialog } = useDialogService()
 
   const firebaseAuthStore = useFirebaseAuthStore()
-  const { getFirebaseAuthHeader } = firebaseAuthStore
+  const { getAuthHeader } = firebaseAuthStore
   const { wrapWithErrorHandlingAsync } = useErrorHandling()
 
   const { isLoggedIn } = useCurrentUser()
@@ -184,7 +184,7 @@ function useSubscriptionInternal() {
    * @returns Subscription status or null if no subscription exists
    */
   async function fetchSubscriptionStatus(): Promise<CloudSubscriptionStatusResponse | null> {
-    const authHeader = await getFirebaseAuthHeader()
+    const authHeader = await getAuthHeader()
     if (!authHeader) {
       throw new FirebaseAuthStoreError(t('toastMessages.userNotAuthenticated'))
     }
@@ -217,7 +217,7 @@ function useSubscriptionInternal() {
   watch(
     () => isLoggedIn.value,
     async (loggedIn) => {
-      if (loggedIn) {
+      if (loggedIn && isCloud) {
         try {
           await fetchSubscriptionStatus()
         } catch (error) {
@@ -238,7 +238,7 @@ function useSubscriptionInternal() {
 
   const initiateSubscriptionCheckout =
     async (): Promise<CloudSubscriptionCheckoutResponse> => {
-      const authHeader = await getFirebaseAuthHeader()
+      const authHeader = await getAuthHeader()
       if (!authHeader) {
         throw new FirebaseAuthStoreError(
           t('toastMessages.userNotAuthenticated')
