@@ -5,7 +5,7 @@ import type { MaybeRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import DraggableList from '@/components/common/DraggableList.vue'
-import IoItem from '@/components/appMode/IoItem.vue'
+import IoItem from '@/components/builder/IoItem.vue'
 import PropertiesAccordionItem from '@/components/rightSidePanel/layout/PropertiesAccordionItem.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
@@ -174,19 +174,25 @@ const renderedInputs = computed<[string, MaybeRef<BoundStyle> | undefined][]>(
       getBounding(nodeId, widgetName)
     ])
 )
+async function exitBuilder() {
+  if (
+    !(await useDialogService().confirm({
+      title: t('[ph]exit app builder?'),
+      message: t(
+        '[ph]You have unsaved changes that will be lost\nExit without saving?'
+      )
+    }))
+  )
+    return
+
+  appModeStore.resetSelectedToWorkflow()
+  appModeStore.setMode('graph')
+}
 </script>
 <template>
   <div class="flex font-bold p-2 border-border-subtle border-b items-center">
     {{ t('linearMode.builder.title') }}
-    <Button
-      class="ml-auto"
-      @click="
-        () => {
-          appModeStore.resetSelectedToWorkflow()
-          appModeStore.setMode('graph')
-        }
-      "
-    >
+    <Button class="ml-auto" @click="exitBuilder">
       {{ t('linearMode.builder.exit') }}
     </Button>
   </div>
