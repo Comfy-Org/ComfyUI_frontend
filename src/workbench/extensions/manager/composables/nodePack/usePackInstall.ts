@@ -53,7 +53,16 @@ export function usePackInstall(
 
   const performInstallation = async (packs: NodePack[]) => {
     try {
-      await Promise.all(packs.map(installPack))
+      const results = await Promise.allSettled(packs.map(installPack))
+      const failures = results.filter(
+        (r): r is PromiseRejectedResult => r.status === 'rejected'
+      )
+      if (failures.length) {
+        console.error(
+          '[usePackInstall] Some installations failed:',
+          failures.map((f) => f.reason)
+        )
+      }
     } finally {
       managerStore.installPack.clear()
     }
