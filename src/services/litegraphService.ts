@@ -654,9 +654,7 @@ export const useLitegraphService = () => {
               callback: () => {
                 const url = new URL(img.src)
                 url.searchParams.delete('preview')
-                void openFileInNewTab(url.toString()).catch((error) => {
-                  console.error('Failed to open image:', error)
-                })
+                void openFileInNewTab(url.toString())
               }
             },
             ...getCopyImageOption(img),

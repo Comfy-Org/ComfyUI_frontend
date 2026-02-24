@@ -1,7 +1,9 @@
 /**
  * Utility functions for downloading files
  */
+import { t } from '@/i18n'
 import { isCloud } from '@/platform/distribution/types'
+import { useToastStore } from '@/platform/updates/common/toastStore'
 
 // Constants
 const DEFAULT_DOWNLOAD_FILENAME = 'download.png'
@@ -171,6 +173,11 @@ export async function openFileInNewTab(url: string): Promise<void> {
     }
   } catch (error) {
     tab?.close()
-    throw error
+    console.error('Failed to open image:', error)
+    useToastStore().addAlert(
+      t('toastMessages.errorOpenImage', {
+        error: error instanceof Error ? error.message : String(error)
+      })
+    )
   }
 }

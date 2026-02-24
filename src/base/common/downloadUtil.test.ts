@@ -6,12 +6,22 @@ import {
   openFileInNewTab
 } from '@/base/common/downloadUtil'
 
-let mockIsCloud = false
+const { mockIsCloud } = vi.hoisted(() => ({
+  mockIsCloud: { value: false }
+}))
 
 vi.mock('@/platform/distribution/types', () => ({
   get isCloud() {
-    return mockIsCloud
+    return mockIsCloud.value
   }
+}))
+
+vi.mock('@/i18n', () => ({
+  t: (key: string) => key
+}))
+
+vi.mock('@/platform/updates/common/toastStore', () => ({
+  useToastStore: vi.fn(() => ({ addAlert: vi.fn() }))
 }))
 
 // Global stubs
@@ -27,7 +37,7 @@ describe('downloadUtil', () => {
   let fetchMock: ReturnType<typeof vi.fn>
 
   beforeEach(() => {
-    mockIsCloud = false
+    mockIsCloud.value = false
     fetchMock = vi.fn()
     vi.stubGlobal('fetch', fetchMock)
     createObjectURLSpy.mockClear().mockReturnValue('blob:mock-url')
@@ -155,7 +165,7 @@ describe('downloadUtil', () => {
     })
 
     it('streams downloads via blob when running in cloud', async () => {
-      mockIsCloud = true
+      mockIsCloud.value = true
       const testUrl = 'https://storage.googleapis.com/bucket/file.bin'
       const blob = new Blob(['test'])
       const blobFn = vi.fn().mockResolvedValue(blob)
@@ -185,7 +195,7 @@ describe('downloadUtil', () => {
     })
 
     it('logs an error when cloud fetch fails', async () => {
-      mockIsCloud = true
+      mockIsCloud.value = true
       const testUrl = 'https://storage.googleapis.com/bucket/missing.bin'
       const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
       fetchMock.mockResolvedValue({
@@ -207,7 +217,7 @@ describe('downloadUtil', () => {
     })
 
     it('uses filename from Content-Disposition header in cloud mode', async () => {
-      mockIsCloud = true
+      mockIsCloud.value = true
       const testUrl = 'https://storage.googleapis.com/bucket/abc123.png'
       const blob = new Blob(['test'])
       const blobFn = vi.fn().mockResolvedValue(blob)
@@ -235,7 +245,7 @@ describe('downloadUtil', () => {
     })
 
     it('uses RFC 5987 filename from Content-Disposition header', async () => {
-      mockIsCloud = true
+      mockIsCloud.value = true
       const testUrl = 'https://storage.googleapis.com/bucket/abc123.png'
       const blob = new Blob(['test'])
       const blobFn = vi.fn().mockResolvedValue(blob)
@@ -265,7 +275,7 @@ describe('downloadUtil', () => {
     })
 
     it('falls back to provided filename when Content-Disposition is missing', async () => {
-      mockIsCloud = true
+      mockIsCloud.value = true
       const testUrl = 'https://storage.googleapis.com/bucket/abc123.png'
       const blob = new Blob(['test'])
       const blobFn = vi.fn().mockResolvedValue(blob)
@@ -304,7 +314,7 @@ describe('downloadUtil', () => {
     })
 
     it('opens URL directly when not in cloud mode', async () => {
-      mockIsCloud = false
+      mockIsCloud.value = false
       const testUrl = 'https://example.com/image.png'
 
       await openFileInNewTab(testUrl)
@@ -314,7 +324,7 @@ describe('downloadUtil', () => {
     })
 
     it('opens blank tab synchronously then navigates to blob URL in cloud mode', async () => {
-      mockIsCloud = true
+      mockIsCloud.value = true
       const testUrl = 'https://storage.googleapis.com/bucket/image.png'
       const blob = new Blob(['test'], { type: 'image/png' })
       const mockTab = { location: { href: '' }, closed: false, close: vi.fn() }
@@ -333,7 +343,7 @@ describe('downloadUtil', () => {
     })
 
     it('revokes blob URL after timeout in cloud mode', async () => {
-      mockIsCloud = true
+      mockIsCloud.value = true
       const blob = new Blob(['test'], { type: 'image/png' })
       const mockTab = { location: { href: '' }, closed: false, close: vi.fn() }
       windowOpenSpy.mockReturnValue(mockTab as unknown as Window)
@@ -349,9 +359,10 @@ describe('downloadUtil', () => {
       expect(revokeObjectURLSpy).toHaveBeenCalledWith('blob:mock-url')
     })
 
-    it('closes blank tab and throws when cloud fetch fails', async () => {
-      mockIsCloud = true
+    it('closes blank tab and logs error when cloud fetch fails', async () => {
+      mockIsCloud.value = true
       const testUrl = 'https://storage.googleapis.com/bucket/missing.png'
+      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
       const mockTab = { location: { href: '' }, closed: false, close: vi.fn() }
       windowOpenSpy.mockReturnValue(mockTab as unknown as Window)
       fetchMock.mockResolvedValue({
@@ -359,12 +370,15 @@ describe('downloadUtil', () => {
         status: 404
       } as unknown as Response)
 
-      await expect(openFileInNewTab(testUrl)).rejects.toThrow('Failed to fetch')
+      await openFileInNewTab(testUrl)
+
       expect(mockTab.close).toHaveBeenCalled()
+      expect(consoleSpy).toHaveBeenCalled()
+      consoleSpy.mockRestore()
     })
 
     it('revokes blob URL immediately if tab was closed by user', async () => {
-      mockIsCloud = true
+      mockIsCloud.value = true
       const blob = new Blob(['test'], { type: 'image/png' })
       const mockTab = { location: { href: '' }, closed: true, close: vi.fn() }
       windowOpenSpy.mockReturnValue(mockTab as unknown as Window)
