@@ -20,23 +20,16 @@
           />
         </template>
       </MediaAssetFilterButton>
-      <AssetSortButton
-        v-if="isCloud"
-        v-tooltip.top="{ value: $t('assetBrowser.sortBy') }"
-      >
-        <template #default="{ close }">
-          <MediaAssetSortMenu
-            v-model:sort-by="sortBy"
-            :show-generation-time-sort
-            :close
-          />
-        </template>
-      </AssetSortButton>
       <MediaAssetSettingsButton
         v-tooltip.top="{ value: $t('sideToolbar.mediaAssets.viewSettings') }"
       >
-        <template #default="{ close }">
-          <MediaAssetSettingsMenu v-model:view-mode="viewMode" :close />
+        <template #default>
+          <MediaAssetSettingsMenu
+            v-model:view-mode="viewMode"
+            v-model:sort-by="sortBy"
+            :show-sort-options="isCloud"
+            :show-generation-time-sort
+          />
         </template>
       </MediaAssetSettingsButton>
     </div>
@@ -49,11 +42,9 @@ import { isCloud } from '@/platform/distribution/types'
 
 import MediaAssetFilterButton from './MediaAssetFilterButton.vue'
 import MediaAssetFilterMenu from './MediaAssetFilterMenu.vue'
-import AssetSortButton from './MediaAssetSortButton.vue'
-import MediaAssetSortMenu from './MediaAssetSortMenu.vue'
-import type { SortBy } from './MediaAssetSortMenu.vue'
 import MediaAssetSettingsButton from './MediaAssetSettingsButton.vue'
 import MediaAssetSettingsMenu from './MediaAssetSettingsMenu.vue'
+import type { SortBy } from './MediaAssetSettingsMenu.vue'
 
 const { showGenerationTimeSort = false } = defineProps<{
   searchQuery: string
