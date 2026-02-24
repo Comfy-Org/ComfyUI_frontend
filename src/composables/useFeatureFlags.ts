@@ -23,7 +23,8 @@ export enum ServerFeatureFlag {
   TEAM_WORKSPACES_ENABLED = 'team_workspaces_enabled',
   USER_SECRETS_ENABLED = 'user_secrets_enabled',
   NODE_REPLACEMENTS = 'node_replacements',
-  NODE_LIBRARY_ESSENTIALS_ENABLED = 'node_library_essentials_enabled'
+  NODE_LIBRARY_ESSENTIALS_ENABLED = 'node_library_essentials_enabled',
+  TEMPLATE_MARKETPLACE_ENABLED = 'template_marketplace_enabled'
 }
 
 /**
@@ -119,6 +120,13 @@ export function useFeatureFlags() {
     },
     get nodeReplacementsEnabled() {
       return api.getServerFeature(ServerFeatureFlag.NODE_REPLACEMENTS, false)
+    },
+    get templateMarketplaceEnabled() {
+      return resolveFlag(
+        ServerFeatureFlag.TEMPLATE_MARKETPLACE_ENABLED,
+        remoteConfig.value.template_marketplace_enabled,
+        false
+      )
     },
     get nodeLibraryEssentialsEnabled() {
       if (isNightly || import.meta.env.DEV) return true
