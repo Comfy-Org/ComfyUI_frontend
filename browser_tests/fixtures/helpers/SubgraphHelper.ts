@@ -36,7 +36,7 @@ export class SubgraphHelper {
         const currentGraph = app.canvas!.graph!
 
         // Check if we're in a subgraph
-        if (currentGraph.constructor.name !== 'Subgraph') {
+        if (!('inputNode' in currentGraph)) {
           throw new Error(
             'Not in a subgraph - this method only works inside subgraphs'
           )

@@ -108,7 +108,7 @@ vi.mock('@/services/dialogService', () => ({
 
 vi.mock('@/stores/firebaseAuthStore', () => ({
   useFirebaseAuthStore: vi.fn(() => ({
-    getFirebaseAuthHeader: mockGetAuthHeader,
+    getAuthHeader: mockGetAuthHeader,
     get userId() {
       return mockUserId.value
     }
@@ -360,6 +360,27 @@ describe('useSubscription', () => {
       await requireActiveSubscription()
 
       expect(mockShowSubscriptionRequiredDialog).toHaveBeenCalled()
+    })
+  })
+
+  describe('non-cloud environments', () => {
+    it('should not fetch subscription status when not on cloud', async () => {
+      mockIsCloud.value = false
+      mockIsLoggedIn.value = true
+
+      useSubscriptionWithScope()
+
+      await vi.dynamicImportSettled()
+
+      expect(global.fetch).not.toHaveBeenCalled()
+    })
+
+    it('should report isActiveSubscription as true when not on cloud', () => {
+      mockIsCloud.value = false
+
+      const { isActiveSubscription } = useSubscriptionWithScope()
+
+      expect(isActiveSubscription.value).toBe(true)
     })
   })
 

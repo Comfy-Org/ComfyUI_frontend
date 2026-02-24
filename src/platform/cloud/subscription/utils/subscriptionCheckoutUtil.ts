@@ -54,7 +54,7 @@ export async function performSubscriptionCheckout(
   const firebaseAuthStore = useFirebaseAuthStore()
   const { userId } = storeToRefs(firebaseAuthStore)
   const telemetry = useTelemetry()
-  const authHeader = await firebaseAuthStore.getFirebaseAuthHeader()
+  const authHeader = await firebaseAuthStore.getAuthHeader()
 
   if (!authHeader) {
     throw new FirebaseAuthStoreError(t('toastMessages.userNotAuthenticated'))

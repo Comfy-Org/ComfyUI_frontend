@@ -3,25 +3,22 @@ import { useMounted, watchDebounced } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
 import {
   computed,
-  customRef,
   nextTick,
   onBeforeUnmount,
   onMounted,
   ref,
   shallowRef,
-  triggerRef,
   useTemplateRef,
   watch
 } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { isProxyWidget } from '@/core/graph/subgraph/proxyWidget'
-import { parseProxyWidgets } from '@/core/schemas/proxyWidget'
-import type { ProxyWidgetsProperty } from '@/core/schemas/proxyWidget'
+import { isPromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetTypes'
 import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import FormSearchInput from '@/renderer/extensions/vueNodes/widgets/components/form/FormSearchInput.vue'
 import { DraggableList } from '@/scripts/ui/draggableList'
+import { usePromotionStore } from '@/stores/promotionStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 
 import { searchWidgets } from '../shared'
@@ -32,12 +29,9 @@ const { node } = defineProps<{
   node: SubgraphNode
 }>()
 
-const emit = defineEmits<{
-  'update:proxyWidgets': [value: ProxyWidgetsProperty]
-}>()
-
 const { t } = useI18n()
 const canvasStore = useCanvasStore()
+const promotionStore = usePromotionStore()
 const rightSidePanelStore = useRightSidePanelStore()
 const { focusedSection, searchQuery } = storeToRefs(rightSidePanelStore)
 
@@ -46,18 +40,9 @@ const draggableList = ref<DraggableList | undefined>(undefined)
 const sectionWidgetsRef = useTemplateRef('sectionWidgetsRef')
 const advancedInputsSectionRef = useTemplateRef('advancedInputsSectionRef')
 
-// Use customRef to track proxyWidgets changes
-const proxyWidgets = customRef<ProxyWidgetsProperty>((track, trigger) => ({
-  get() {
-    track()
-    return parseProxyWidgets(node.properties.proxyWidgets)
-  },
-  set(value?: ProxyWidgetsProperty) {
-    trigger()
-    if (!value) return
-    emit('update:proxyWidgets', value)
-  }
-}))
+const promotionEntries = computed(() =>
+  promotionStore.getPromotions(node.rootGraph.id, node.id)
+)
 
 watch(
   focusedSection,
@@ -81,22 +66,18 @@ watch(
 )
 
 const widgetsList = computed((): NodeWidgetsList => {
-  const proxyWidgetsOrder = proxyWidgets.value
+  const entries = promotionEntries.value
   const { widgets = [] } = node
 
-  // Map proxyWidgets to actual proxy widgets in the correct order
   const result: NodeWidgetsList = []
-  for (const [nodeId, widgetName] of proxyWidgetsOrder) {
-    // Find the proxy widget that matches this nodeId and widgetName
+  for (const { interiorNodeId, widgetName } of entries) {
     const widget = widgets.find((w) => {
-      // Check if this is a proxy widget with _overlay
-      if (isProxyWidget(w)) {
+      if (isPromotedWidgetView(w)) {
         return (
-          String(w._overlay.nodeId) === nodeId &&
-          w._overlay.widgetName === widgetName
+          String(w.sourceNodeId) === interiorNodeId &&
+          w.sourceWidgetName === widgetName
         )
       }
-      // For non-proxy widgets (like linked widgets), match by name
       return w.name === widgetName
     })
     if (widget) {
@@ -108,9 +89,7 @@ const widgetsList = computed((): NodeWidgetsList => {
 
 const advancedInputsWidgets = computed((): NodeWidgetsList => {
   const interiorNodes = node.subgraph.nodes
-  const proxyWidgetsValue = parseProxyWidgets(node.properties.proxyWidgets)
 
-  // Get all widgets from interior nodes
   const allInteriorWidgets = interiorNodes.flatMap((interiorNode) => {
     const { widgets = [] } = interiorNode
     return widgets
@@ -118,13 +97,15 @@ const advancedInputsWidgets = computed((): NodeWidgetsList => {
       .map((widget) => ({ node: interiorNode, widget }))
   })
 
-  // Filter out widgets that are already promoted using tuple matching
-  return allInteriorWidgets.filter(({ node: interiorNode, widget }) => {
-    return !proxyWidgetsValue.some(
-      ([nodeId, widgetName]) =>
-        interiorNode.id == nodeId && widget.name === widgetName
-    )
-  })
+  return allInteriorWidgets.filter(
+    ({ node: interiorNode, widget }) =>
+      !promotionStore.isPromoted(
+        node.rootGraph.id,
+        node.id,
+        String(interiorNode.id),
+        widget.name
+      )
+  )
 })
 
 const parents = computed<SubgraphNode[]>(() => [node])
@@ -181,13 +162,13 @@ function setDraggableState() {
       this.draggableItem as HTMLElement
     )
 
-    // Update proxyWidgets order
-    const pw = proxyWidgets.value
-    const [w] = pw.splice(oldPosition, 1)
-    pw.splice(newPosition, 0, w)
-    proxyWidgets.value = pw
+    promotionStore.movePromotion(
+      node.rootGraph.id,
+      node.id,
+      oldPosition,
+      newPosition
+    )
     canvasStore.canvas?.setDirty(true, true)
-    triggerRef(proxyWidgets)
   }
 }
 

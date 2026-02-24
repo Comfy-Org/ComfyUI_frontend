@@ -18,6 +18,7 @@ const { locale } = useI18n()
 
 const props = defineProps<{
   widget: SimplifiedWidget<number>
+  rootClass?: string
 }>()
 
 function formatNumber(value: number, options?: Intl.NumberFormatOptions) {
@@ -156,7 +157,7 @@ const inputAriaAttrs = computed(() => ({
 </script>
 
 <template>
-  <WidgetLayoutField :widget>
+  <WidgetLayoutField :widget :root-class="props.rootClass">
     <ScrubableNumberInput
       v-model="modelValue"
       v-tooltip="buttonTooltip"
