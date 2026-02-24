@@ -23,7 +23,7 @@ export class ButtonWidget
    */
   override drawWidget(
     ctx: CanvasRenderingContext2D,
-    { width, showText = true }: DrawWidgetOptions
+    { width, showText = true, suppressPromotedOutline }: DrawWidgetOptions
   ) {
     // Store original context attributes
     const { fillStyle, strokeStyle, textAlign } = ctx
@@ -41,7 +41,7 @@ export class ButtonWidget
 
     // Draw button outline if not disabled
     if (showText && !this.computedDisabled) {
-      ctx.strokeStyle = this.outline_color
+      ctx.strokeStyle = this.getOutlineColor(suppressPromotedOutline)
       ctx.strokeRect(margin, y, width - margin * 2, height)
     }
 

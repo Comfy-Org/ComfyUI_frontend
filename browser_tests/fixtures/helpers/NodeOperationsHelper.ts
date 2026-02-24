@@ -33,6 +33,10 @@ export class NodeOperationsHelper {
     })
   }
 
+  async getNodeCount(): Promise<number> {
+    return await this.page.evaluate(() => window.app!.graph.nodes.length)
+  }
+
   async getNodes(): Promise<LGraphNode[]> {
     return await this.page.evaluate(() => {
       return window.app!.graph.nodes

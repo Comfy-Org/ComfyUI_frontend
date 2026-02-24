@@ -5,6 +5,7 @@ import { useNodeFileInput } from '@/composables/node/useNodeFileInput'
 import { useNodePaste } from '@/composables/node/useNodePaste'
 import { t } from '@/i18n'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { resolveNodeRootGraphId } from '@/lib/litegraph/src/litegraph'
 import type {
   IBaseWidget,
   IStringWidget
@@ -143,10 +144,15 @@ app.registerExtension({
         }
 
         audioUIWidget.options.getValue = () =>
-          (useWidgetValueStore().getWidget(node.id, inputName)
-            ?.value as string) ?? ''
+          (useWidgetValueStore().getWidget(
+            resolveNodeRootGraphId(node, app.rootGraph.id),
+            node.id,
+            inputName
+          )?.value as string) ?? ''
         audioUIWidget.options.setValue = (v) => {
+          const graphId = resolveNodeRootGraphId(node, app.rootGraph.id)
           const widgetState = useWidgetValueStore().getWidget(
+            graphId,
             node.id,
             inputName
           )

@@ -1,4 +1,6 @@
+import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { IWidgetOptions } from '@/lib/litegraph/src/types/widgets'
+import type { UUID } from '@/lib/litegraph/src/utils/uuid'
 
 /**
  * The step value for numeric widgets.
@@ -22,4 +24,18 @@ export function evaluateInput(input: string): number | undefined {
   const newValue = Number(input)
   if (isNaN(newValue)) return undefined
   return newValue
+}
+
+export function resolveNodeRootGraphId(
+  node: Pick<LGraphNode, 'graph'>
+): UUID | undefined
+export function resolveNodeRootGraphId(
+  node: Pick<LGraphNode, 'graph'>,
+  fallbackGraphId: UUID
+): UUID
+export function resolveNodeRootGraphId(
+  node: Pick<LGraphNode, 'graph'>,
+  fallbackGraphId?: UUID
+): UUID | undefined {
+  return node.graph?.rootGraph.id ?? fallbackGraphId
 }
