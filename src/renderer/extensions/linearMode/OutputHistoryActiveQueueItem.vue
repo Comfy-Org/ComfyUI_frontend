@@ -38,6 +38,7 @@ function clearQueue(close: () => void) {
       </template>
       <template #default="{ close }">
         <Button
+          :disabled="queueCount === 0"
           variant="textonly"
           class="text-destructive-background px-4 text-sm"
           @click="clearQueue(close)"

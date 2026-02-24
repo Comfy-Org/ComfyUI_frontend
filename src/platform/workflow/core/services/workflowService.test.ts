@@ -410,7 +410,7 @@ describe('useWorkflowService', () => {
         expect(workflow.initialMode).toBe('app')
       })
 
-      it('sets initialMode for fresh string-based loads', async () => {
+      it('sets initialMode to app for fresh string-based loads with linearMode', async () => {
         vi.spyOn(workflowStore, 'createNewTemporary').mockReturnValue(
           createModeTestWorkflow()
         )
@@ -443,20 +443,6 @@ describe('useWorkflowService', () => {
 
         workflowStore.activeWorkflow = workflow1
         expect(appMode.mode.value).toBe('builder:select')
-      })
-
-      it('fresh loads never get builder modes', async () => {
-        mockOpenWorkflow()
-        vi.spyOn(workflowStore, 'createNewTemporary').mockReturnValue(
-          createModeTestWorkflow()
-        )
-
-        await service.afterLoadNewGraph(
-          'new.json',
-          makeWorkflowData({ linearMode: true })
-        )
-
-        expect(appMode.mode.value).toBe('app')
       })
     })
   })

@@ -299,7 +299,7 @@ defineExpose({ runButtonClick })
         <Button
           v-else
           variant="primary"
-          class="w-full mt-4 text-[14px]"
+          class="w-full mt-4 text-sm"
           size="lg"
           @click="runButtonClick"
         >

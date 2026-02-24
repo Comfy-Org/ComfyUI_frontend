@@ -5,11 +5,12 @@ import { useWorkflowStore } from '@/platform/workflow/management/stores/workflow
 export type AppMode = 'graph' | 'app' | 'builder:select' | 'builder:arrange'
 
 const hasOutputs = ref(true)
-const enableAppBuilder = ref(false)
+const enableAppBuilder = ref(true)
 
 export function useAppMode() {
+  const workflowStore = useWorkflowStore()
   const mode = computed(() => {
-    const wf = useWorkflowStore().activeWorkflow
+    const wf = workflowStore.activeWorkflow
     return wf?.activeMode ?? wf?.initialMode ?? 'graph'
   })
 
@@ -26,7 +27,7 @@ export function useAppMode() {
   function setMode(newMode: AppMode) {
     if (newMode === mode.value) return
 
-    const workflow = useWorkflowStore().activeWorkflow
+    const workflow = workflowStore.activeWorkflow
     if (workflow) workflow.activeMode = newMode
   }
 
