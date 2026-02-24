@@ -467,7 +467,7 @@ const showLoadingState = computed(() => {
     return true
   }
   if (!groupByJob.value && isResolving.value) {
-    return true
+    return ungroupedAssets.value.length === 0
   }
   return false
 })

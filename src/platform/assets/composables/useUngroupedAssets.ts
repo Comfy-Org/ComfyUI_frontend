@@ -49,8 +49,12 @@ export function useUngroupedAssets(
           result.push(asset)
           continue
         }
-        const children = await cachedResolve(metadata.jobId)
-        result.push(...(children?.length ? children : [asset]))
+        try {
+          const children = await cachedResolve(metadata.jobId)
+          result.push(...(children?.length ? children : [asset]))
+        } catch {
+          result.push(asset)
+        }
       }
       return result
     },
