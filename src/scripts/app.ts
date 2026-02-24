@@ -43,7 +43,8 @@ import type {
 import {
   type ComfyNodeDef as ComfyNodeDefV1,
   isComboInputSpecV1,
-  isComboInputSpecV2
+  isComboInputSpecV2,
+  isMediaUploadComboInput
 } from '@/schemas/nodeDefSchema'
 import {
   type BaseDOMWidget,
@@ -1822,6 +1823,7 @@ export class ComfyApp {
       this.registerNodeDef(nodeId, defs[nodeId])
     }
     // Refresh combo widgets in all nodes including those in subgraphs
+    const nodeOutputStore = useNodeOutputStore()
     forEachNode(this.rootGraph, (node) => {
       const def = defs[node.type]
       // Allow primitive nodes to handle refresh
@@ -1853,6 +1855,18 @@ export class ComfyApp {
             }
           }
         }
+      }
+
+      // Re-trigger previews on media upload nodes (e.g. LoadImage)
+      // to bust browser cache when files are edited externally
+      const hasMediaUpload = Object.values(def.input.required ?? {}).some(
+        isMediaUploadComboInput
+      )
+      if (hasMediaUpload && nodeOutputStore.getNodeOutputs(node)) {
+        const comboWidget = node.widgets?.find(
+          (w) => w.type === 'combo' && w.callback
+        )
+        comboWidget?.callback?.(comboWidget.value)
       }
     })
 
