@@ -176,6 +176,30 @@ describe('useFeatureFlags', () => {
     })
   })
 
+  describe('templateMarketplaceEnabled', () => {
+    it('should return false by default', () => {
+      vi.mocked(api.getServerFeature).mockImplementation(
+        (_path, defaultValue) => defaultValue
+      )
+
+      const { flags } = useFeatureFlags()
+      expect(flags.templateMarketplaceEnabled).toBe(false)
+    })
+
+    it('should return true when server feature flag is enabled', () => {
+      vi.mocked(api.getServerFeature).mockImplementation(
+        (path, defaultValue) => {
+          if (path === ServerFeatureFlag.TEMPLATE_MARKETPLACE_ENABLED)
+            return true
+          return defaultValue
+        }
+      )
+
+      const { flags } = useFeatureFlags()
+      expect(flags.templateMarketplaceEnabled).toBe(true)
+    })
+  })
+
   describe('dev override via localStorage', () => {
     afterEach(() => {
       localStorage.clear()
