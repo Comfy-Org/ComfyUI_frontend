@@ -6,12 +6,25 @@
  * in their test files. Each fixture provides a clean, pre-configured subgraph
  * setup for different testing scenarios.
  */
+import { createTestingPinia } from '@pinia/testing'
+import { setActivePinia } from 'pinia'
+
 import type { Subgraph } from '@/lib/litegraph/src/litegraph'
 import { LGraph } from '@/lib/litegraph/src/litegraph'
 import type { SubgraphEventMap } from '@/lib/litegraph/src/infrastructure/SubgraphEventMap'
 import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 
-import { test } from '../../__fixtures__/testExtensions'
+import { test as baseTest } from '../../__fixtures__/testExtensions'
+
+const test = baseTest.extend({
+  pinia: [
+    async ({}, use) => {
+      setActivePinia(createTestingPinia({ stubActions: false }))
+      await use(undefined)
+    },
+    { auto: true }
+  ]
+})
 import {
   createEventCapture,
   createNestedSubgraphs,

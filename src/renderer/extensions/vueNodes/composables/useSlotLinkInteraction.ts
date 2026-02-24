@@ -671,7 +671,8 @@ export function useSlotLinkInteraction({
       })
     } else {
       activeAdapter.beginFromInput(localNodeId, index, {
-        moveExisting: shouldMoveExistingInput
+        moveExisting: shouldMoveExistingInput,
+        layout
       })
     }
 

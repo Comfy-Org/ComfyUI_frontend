@@ -1,7 +1,11 @@
 import { describe, expect, test } from 'vitest'
 
+import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { IWidgetOptions } from '@/lib/litegraph/src/litegraph'
-import { getWidgetStep } from '@/lib/litegraph/src/litegraph'
+import {
+  getWidgetStep,
+  resolveNodeRootGraphId
+} from '@/lib/litegraph/src/litegraph'
 
 describe('getWidgetStep', () => {
   test('should return step2 when available', () => {
@@ -40,5 +44,29 @@ describe('getWidgetStep', () => {
     }
 
     expect(getWidgetStep(optionsWithZeroStep)).toBe(1)
+  })
+})
+
+type GraphIdNode = Pick<LGraphNode, 'graph'>
+
+describe('resolveNodeRootGraphId', () => {
+  test('returns node rootGraph id when node belongs to a graph', () => {
+    const node = {
+      graph: {
+        rootGraph: {
+          id: 'subgraph-root-id'
+        }
+      }
+    } as GraphIdNode
+
+    expect(resolveNodeRootGraphId(node)).toBe('subgraph-root-id')
+  })
+
+  test('returns fallback graph id when node graph is missing', () => {
+    const node = {
+      graph: null
+    } as GraphIdNode
+
+    expect(resolveNodeRootGraphId(node, 'app-root-id')).toBe('app-root-id')
   })
 })

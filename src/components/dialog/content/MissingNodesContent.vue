@@ -1,5 +1,6 @@
 <template>
   <div
+    data-testid="missing-nodes-warning"
     class="comfy-missing-nodes flex w-[490px] flex-col border-t border-border-default"
     :class="isCloud ? 'border-b' : ''"
   >

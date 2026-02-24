@@ -1,36 +1,53 @@
 <template>
-  <div
-    ref="workflowTabRef"
-    class="workflow-tab group flex gap-2 p-2"
-    v-bind="$attrs"
-    @mouseenter="handleMouseEnter"
-    @mouseleave="handleMouseLeave"
-    @click="handleClick"
-  >
-    <i
-      v-if="workflowOption.workflow.activeState?.extra?.linearMode"
-      class="icon-[lucide--panels-top-left] bg-primary-background"
-    />
-    <span class="workflow-label inline-block max-w-[150px] truncate text-sm">
-      {{ workflowOption.workflow.filename }}
-    </span>
-    <div class="relative">
-      <span
-        v-if="shouldShowStatusIndicator"
-        class="absolute top-1/2 left-1/2 z-10 w-4 -translate-1/2 bg-(--comfy-menu-bg) text-2xl font-bold group-hover:hidden"
-        >•</span
+  <ContextMenuRoot>
+    <ContextMenuTrigger as-child>
+      <div
+        ref="workflowTabRef"
+        class="workflow-tab group flex gap-2 p-2"
+        v-bind="$attrs"
+        @mouseenter="handleMouseEnter"
+        @mouseleave="handleMouseLeave"
+        @click="handleClick"
       >
-      <Button
-        class="close-button invisible w-auto p-0"
-        variant="muted-textonly"
-        size="icon-sm"
-        :aria-label="t('g.close')"
-        @click.stop="onCloseWorkflow(workflowOption)"
+        <i
+          v-if="workflowOption.workflow.activeState?.extra?.linearMode"
+          class="icon-[lucide--panels-top-left] bg-primary-background"
+        />
+        <span
+          class="workflow-label inline-block max-w-[150px] truncate text-sm"
+        >
+          {{ workflowOption.workflow.filename }}
+        </span>
+        <div class="relative">
+          <span
+            v-if="shouldShowStatusIndicator"
+            class="absolute top-1/2 left-1/2 z-10 w-4 -translate-1/2 bg-(--comfy-menu-bg) text-2xl font-bold group-hover:hidden"
+            >•</span
+          >
+          <Button
+            class="close-button invisible w-auto p-0"
+            variant="muted-textonly"
+            size="icon-sm"
+            :aria-label="t('g.close')"
+            @click.stop="onCloseWorkflow(workflowOption)"
+          >
+            <i class="pi pi-times" />
+          </Button>
+        </div>
+      </div>
+    </ContextMenuTrigger>
+    <ContextMenuPortal>
+      <ContextMenuContent
+        class="z-1000 rounded-lg px-2 py-3 min-w-56 bg-base-background shadow-interface border border-border-subtle"
       >
-        <i class="pi pi-times" />
-      </Button>
-    </div>
-  </div>
+        <WorkflowActionsList
+          :items="contextMenuItems"
+          :item-component="ContextMenuItem"
+          :separator-component="ContextMenuSeparator"
+        />
+      </ContextMenuContent>
+    </ContextMenuPortal>
+  </ContextMenuRoot>
 
   <WorkflowTabPopover
     ref="popoverRef"
@@ -41,20 +58,32 @@
 </template>
 
 <script setup lang="ts">
+import {
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuPortal,
+  ContextMenuRoot,
+  ContextMenuSeparator,
+  ContextMenuTrigger
+} from 'reka-ui'
 import { computed, onUnmounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import WorkflowActionsList from '@/components/common/WorkflowActionsList.vue'
 import Button from '@/components/ui/button/Button.vue'
 import {
   usePragmaticDraggable,
   usePragmaticDroppable
 } from '@/composables/usePragmaticDragAndDrop'
+import { useWorkflowActionsMenu } from '@/composables/useWorkflowActionsMenu'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowThumbnail } from '@/renderer/core/thumbnail/useWorkflowThumbnail'
+import { useCommandStore } from '@/stores/commandStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
+import type { WorkflowMenuItem } from '@/types/workflowMenuItem'
 
 import WorkflowTabPopover from './WorkflowTabPopover.vue'
 
@@ -65,6 +94,8 @@ interface WorkflowOption {
 
 const props = defineProps<{
   workflowOption: WorkflowOption
+  isFirst: boolean
+  isLast: boolean
 }>()
 
 const { t } = useI18n()
@@ -148,6 +179,67 @@ const closeWorkflows = async (options: WorkflowOption[]) => {
 const onCloseWorkflow = async (option: WorkflowOption) => {
   await closeWorkflows([option])
 }
+
+const emit = defineEmits<{
+  closeToLeft: []
+  closeToRight: []
+  closeOthers: []
+}>()
+
+const commandStore = useCommandStore()
+const workflow = computed(() => props.workflowOption.workflow)
+
+const { menuItems: baseMenuItems } = useWorkflowActionsMenu(
+  () => commandStore.execute('Comfy.RenameWorkflow'),
+  { includeDelete: false, workflow }
+)
+
+const contextMenuItems = computed<WorkflowMenuItem[]>(() => [
+  ...baseMenuItems.value,
+  { separator: true },
+  {
+    label: t('tabMenu.closeTab'),
+    icon: 'pi pi-times',
+    command: () => onCloseWorkflow(props.workflowOption)
+  },
+  {
+    label: t('tabMenu.closeTabsToLeft'),
+    overlayIcon: {
+      mainIcon: 'pi pi-times',
+      subIcon: 'pi pi-arrow-left',
+      positionX: 'right',
+      positionY: 'bottom',
+      subIconScale: 0.5
+    },
+    command: () => emit('closeToLeft'),
+    disabled: props.isFirst
+  },
+  {
+    label: t('tabMenu.closeTabsToRight'),
+    overlayIcon: {
+      mainIcon: 'pi pi-times',
+      subIcon: 'pi pi-arrow-right',
+      positionX: 'right',
+      positionY: 'bottom',
+      subIconScale: 0.5
+    },
+    command: () => emit('closeToRight'),
+    disabled: props.isLast
+  },
+  {
+    label: t('tabMenu.closeOtherTabs'),
+    overlayIcon: {
+      mainIcon: 'pi pi-times',
+      subIcon: 'pi pi-arrows-h',
+      positionX: 'right',
+      positionY: 'bottom',
+      subIconScale: 0.5
+    },
+    command: () => emit('closeOthers'),
+    disabled: props.isFirst && props.isLast
+  }
+])
+
 const tabGetter = () => workflowTabRef.value as HTMLElement
 
 usePragmaticDraggable(tabGetter, {

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { useResizeObserver } from '@vueuse/core'
+import { useResizeObserver, whenever } from '@vueuse/core'
 import { onBeforeUnmount, onMounted, ref, watch } from 'vue'
 
 import { useChainCallback } from '@/composables/functional/useChainCallback'
@@ -9,31 +9,46 @@ import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { augmentToCanvasPointerEvent } from '@/renderer/extensions/vueNodes/utils/eventUtils'
+import { resolveWidgetFromHostNode } from '@/renderer/extensions/vueNodes/widgets/utils/resolvePromotedWidget'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 
 const props = defineProps<{
   widget: SimplifiedWidget<void>
+  nodeId: string
 }>()
 
 const canvasEl = ref()
 const containerHeight = ref(20)
 
-const canvas: LGraphCanvas = useCanvasStore().canvas as LGraphCanvas
+const canvasStore = useCanvasStore()
+const canvas: LGraphCanvas = canvasStore.canvas as LGraphCanvas
 let node: LGraphNode | undefined
 let widgetInstance: IBaseWidget | undefined
 let pointer: CanvasPointer | undefined
 const scaleFactor = 2
 
-onMounted(() => {
-  node =
-    canvas?.graph?.getNodeById(
-      canvasEl.value.parentElement.attributes['node-id'].value
-    ) ?? undefined
-  if (!node) return
-  widgetInstance = node.widgets?.find((w) => w.name === props.widget.name)
-  if (!widgetInstance) return
-  canvasEl.value.width *= scaleFactor
+function findLegacyWidget():
+  | {
+      node: LGraphNode
+      widget: IBaseWidget
+    }
+  | undefined {
+  const hostNode = canvas?.graph?.getNodeById(props.nodeId) ?? undefined
+  return resolveWidgetFromHostNode(hostNode, props.widget.name)
+}
+
+function bindWidget() {
+  if (widgetInstance) widgetInstance.triggerDraw = () => {}
+
+  const resolved = findLegacyWidget()
+  if (!resolved) {
+    widgetInstance = undefined
+    node = undefined
+    return
+  }
+  node = resolved.node
+  widgetInstance = resolved.widget
   if (!widgetInstance.triggerDraw)
     widgetInstance.callback = useChainCallback(
       widgetInstance.callback,
@@ -42,6 +57,13 @@ onMounted(() => {
       }
     )
   widgetInstance.triggerDraw = draw
+  draw()
+}
+
+onMounted(() => {
+  canvasEl.value.width *= scaleFactor
+  bindWidget()
+  if (!widgetInstance) return
   useResizeObserver(canvasEl.value.parentElement, draw)
   watch(() => useColorPaletteStore().activePaletteId, draw)
   pointer = new CanvasPointer(canvasEl.value)
@@ -49,6 +71,9 @@ onMounted(() => {
 onBeforeUnmount(() => {
   if (widgetInstance) widgetInstance.triggerDraw = () => {}
 })
+
+whenever(() => !canvasStore.linearMode, bindWidget)
+watch(() => canvasStore.currentGraph, bindWidget)
 
 function draw() {
   if (!widgetInstance || !node) return

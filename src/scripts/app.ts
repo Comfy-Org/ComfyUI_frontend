@@ -7,7 +7,7 @@ import { shallowRef } from 'vue'
 import { useCanvasPositionConversion } from '@/composables/element/useCanvasPositionConversion'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { flushScheduledSlotLayoutSync } from '@/renderer/extensions/vueNodes/composables/useSlotElementTracking'
-import { registerProxyWidgets } from '@/core/graph/subgraph/proxyWidget'
+
 import { st, t } from '@/i18n'
 import type { IContextMenuValue } from '@/lib/litegraph/src/interfaces'
 import {
@@ -90,7 +90,8 @@ import {
   executeWidgetsCallback,
   createNode,
   fixLinkInputSlots,
-  isImageNode
+  isImageNode,
+  isVideoNode
 } from '@/utils/litegraphUtil'
 import {
   createSharedObjectUrl,
@@ -893,8 +894,6 @@ export class ComfyApp {
       }
     )
 
-    registerProxyWidgets(this.canvas)
-
     this.rootGraph.start()
 
     // Ensure the canvas fills the window
@@ -1347,18 +1346,18 @@ export class ComfyApp {
               }
             }
           }
-          if (reset_invalid_values) {
-            if (widget.type == 'combo') {
-              const values = widget.options.values as
-                | (string | number | boolean)[]
-                | undefined
-              if (
-                values &&
-                values.length > 0 &&
-                !values.includes(widget.value as string | number | boolean)
-              ) {
-                widget.value = values[0]
-              }
+          if (widget.type == 'combo') {
+            const values = widget.options.values as
+              | (string | number | boolean)[]
+              | undefined
+            if (
+              values &&
+              values.length > 0 &&
+              (widget.value == null ||
+                (reset_invalid_values &&
+                  !values.includes(widget.value as string | number | boolean)))
+            ) {
+              widget.value = values[0]
             }
           }
         }
@@ -1857,6 +1856,7 @@ export class ComfyApp {
       this.registerNodeDef(nodeId, defs[nodeId])
     }
     // Refresh combo widgets in all nodes including those in subgraphs
+    const nodeOutputStore = useNodeOutputStore()
     forEachNode(this.rootGraph, (node) => {
       const def = defs[node.type]
       // Allow primitive nodes to handle refresh
@@ -1888,6 +1888,12 @@ export class ComfyApp {
             }
           }
         }
+      }
+
+      // Re-trigger previews on media nodes (e.g. LoadImage)
+      // to bust browser cache when files are edited externally
+      if (isImageNode(node) || isVideoNode(node)) {
+        nodeOutputStore.refreshNodeOutputs(node)
       }
     })
 

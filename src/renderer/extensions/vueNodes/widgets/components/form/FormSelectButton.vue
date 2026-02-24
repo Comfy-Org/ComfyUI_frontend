@@ -58,11 +58,13 @@ interface Emits {
   'update:modelValue': [value: ModelValue]
 }
 
-const props = withDefaults(defineProps<Props>(), {
-  disabled: false,
-  optionLabel: 'label',
-  optionValue: 'value'
-})
+const {
+  modelValue,
+  options,
+  optionLabel = 'label',
+  optionValue = 'value',
+  disabled = false
+} = defineProps<Props>()
 
 const emit = defineEmits<Emits>()
 
@@ -72,7 +74,7 @@ const getOptionValue = (option: T, index: number): ModelValue => {
     return option as ModelValue
   }
 
-  const valueField = props.optionValue
+  const valueField = optionValue
   const optionRecord = option as Record<string, unknown>
   const value =
     optionRecord[valueField] ??
@@ -86,7 +88,7 @@ const getOptionValue = (option: T, index: number): ModelValue => {
 // for display with PrimeVue compatibility
 const getOptionLabel = (option: T): string => {
   if (typeof option === 'object' && option !== null) {
-    const labelField = props.optionLabel
+    const labelField = optionLabel
     const optionRecord = option as Record<string, unknown>
     return String(
       optionRecord[labelField] ??
@@ -100,14 +102,14 @@ const getOptionLabel = (option: T): string => {
 }
 
 const isSelected = (index: number): boolean => {
-  const optionValue = getOptionValue(props.options[index], index)
-  return String(optionValue) === String(props.modelValue ?? '')
+  const optVal = getOptionValue(options[index], index)
+  return String(optVal) === String(modelValue ?? '')
 }
 
 const handleSelect = (index: number) => {
-  if (props.disabled) return
+  if (disabled) return
 
-  const optionValue = getOptionValue(props.options[index], index)
-  emit('update:modelValue', optionValue)
+  const optVal = getOptionValue(options[index], index)
+  emit('update:modelValue', optVal)
 }
 </script>
