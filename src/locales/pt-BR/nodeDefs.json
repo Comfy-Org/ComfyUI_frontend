@@ -5327,6 +5327,39 @@
       }
     }
   },
+  "KlingAvatarNode": {
+    "description": "Gere vídeos de humanos digitais em estilo de transmissão a partir de uma única foto e um arquivo de áudio.",
+    "display_name": "Kling Avatar 2.0",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controlar após gerar"
+      },
+      "image": {
+        "name": "imagem",
+        "tooltip": "Imagem de referência do avatar. A largura e a altura devem ser de pelo menos 300px. A proporção deve estar entre 1:2.5 e 2.5:1."
+      },
+      "mode": {
+        "name": "modo"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Prompt opcional para definir ações, emoções e movimentos de câmera do avatar."
+      },
+      "seed": {
+        "name": "semente",
+        "tooltip": "A semente controla se o nó deve ser executado novamente; os resultados são não determinísticos independentemente da semente."
+      },
+      "sound_file": {
+        "name": "arquivo_de_áudio",
+        "tooltip": "Entrada de áudio. Deve ter entre 2 e 300 segundos de duração."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "KlingCameraControlI2VNode": {
     "description": "Transforme imagens estáticas em vídeos cinematográficos com movimentos de câmera profissionais que simulam a cinematografia do mundo real. Controle ações virtuais da câmera, incluindo zoom, rotação, panorâmica, inclinação e visão em primeira pessoa, mantendo o foco na sua imagem original.",
     "display_name": "Kling Imagem para Vídeo (Controle de Câmera)",

@@ -315,8 +315,36 @@
     "deleteBlueprint": "ブループリントを削除",
     "deleteWorkflow": "ワークフローを削除",
     "duplicate": "複製",
+    "enterAppMode": "アプリモードに入る",
     "enterNewName": "新しい名前を入力",
-    "missingNodesWarning": "ワークフローに未対応のノードが含まれています（赤でハイライト）。"
+    "exitAppMode": "アプリモードを終了",
+    "missingNodesWarning": "ワークフローに未対応のノードが含まれています（赤でハイライト）。",
+    "workflowActions": "ワークフロー操作"
+  },
+  "builderToolbar": {
+    "app": "アプリ",
+    "appDescription": "デフォルトでアプリとして開きます",
+    "arrange": "プレビュー",
+    "arrangeDescription": "アプリのレイアウトを確認",
+    "connectOutput": "出力を接続",
+    "connectOutputBody1": "アプリを保存するには、少なくとも1つの出力を接続する必要があります。",
+    "connectOutputBody2": "「選択」ステップに切り替えて、出力ノードをクリックしてここに追加してください。",
+    "filename": "ファイル名",
+    "label": "アプリビルダー",
+    "nodeGraph": "ノードグラフ",
+    "nodeGraphDescription": "デフォルトでノードグラフとして開きます",
+    "save": "保存",
+    "saveAs": "名前を付けて保存",
+    "saveAsLabel": "このワークフローを次の形式で保存...",
+    "saveDescription": "保存して終了",
+    "saveSuccess": "保存に成功しました",
+    "saveSuccessAppMessage": "「{name}」が保存されました。今後はデフォルトでアプリモードで開きます。",
+    "saveSuccessAppPrompt": "今すぐ表示しますか？",
+    "saveSuccessGraphMessage": "「{name}」が保存されました。今後はデフォルトでノードグラフとして開きます。",
+    "select": "選択",
+    "selectDescription": "入力／出力を選択",
+    "switchToSelect": "選択に切り替え",
+    "viewApp": "アプリを表示"
   },
   "clipboard": {
     "errorMessage": "クリップボードへのコピーに失敗しました",
@@ -879,6 +907,7 @@
     "enableSelected": "選択したものを有効化",
     "enabled": "有効",
     "enabling": "有効化",
+    "enter": "入力",
     "enterBaseName": "ベース名を入力",
     "enterNewName": "新しい名前を入力",
     "enterNewNamePrompt": "新しい名前を入力してください：",
@@ -1282,6 +1311,20 @@
     "helpFix": "これを修正するのを助ける"
   },
   "linearMode": {
+    "appModeToolbar": {
+      "appBuilder": "アプリビルダー",
+      "apps": "アプリ"
+    },
+    "arrange": {
+      "atLeastOne": "少なくとも1つ",
+      "connectAtLeastOne": "ユーザーが実行後に結果を確認できるよう、{atLeastOne} 出力ノードを接続してください。",
+      "noOutputs": "まだ出力が追加されていません",
+      "outputExamples": "例：「画像を保存」や「動画を保存」",
+      "outputs": "出力",
+      "resultsLabel": "選択した出力ノードから生成された結果は、このアプリ実行後にここに表示されます",
+      "switchToSelect": "「選択」ステップに切り替えて、出力ノードをクリックしてここに追加してください。",
+      "switchToSelectButton": "選択に切り替え"
+    },
     "beta": "アプリモード ベータ版 - フィードバックを送る",
     "downloadAll": "すべてダウンロード",
     "dragAndDropImage": "画像をドラッグ＆ドロップ",
@@ -1291,11 +1334,13 @@
     "reuseParameters": "パラメータを再利用",
     "runCount": "実行回数：",
     "welcome": {
-      "intro": "ノードグラフを非表示にして、作成に集中できるシンプルなビューです。",
-      "layout": "左側には生成した画像、動画、出力が表示されます。右側には必要なコントロールだけが表示されます。複雑なものはすべて見えません。",
+      "backToWorkflow": "ワークフローに戻る",
+      "buildApp": "アプリを作成",
+      "controls": "出力は下部に表示され、コントロールは右側にあります。他の要素は邪魔になりません。",
+      "getStarted": "{runButton} をクリックして開始してください。",
+      "message": "ノードグラフを非表示にして、作成に集中できるシンプルなビューです。",
       "sharing": "共有も簡単です：ワークフローを作成し、アプリモードを開き、タブを右クリックしてエクスポートします。他の人がファイルを開くと、このクリーンなビューで直接起動します。ノードグラフを理解しなくても、強力なワークフローをシンプルなツールとして共有できます。",
-      "title": "アプリモードへようこそ",
-      "widget": "表示する設定を制御したい場合は、トップレベルのノードをサブグラフに変換し、その上のツールボックスでウィジェットプロモーションを使って公開する項目を選択してください。"
+      "title": "アプリモードへようこそ"
     }
   },
   "load3d": {
@@ -1844,6 +1889,14 @@
       "label": "プレビュー版",
       "tooltip": "現在、ComfyUI のナイトリーバージョンを使用しています。これらの機能についてご意見があれば、フィードバックボタンからお知らせください。"
     }
+  },
+  "nightlySurvey": {
+    "accept": "はい、協力します！",
+    "description": "この機能をご利用いただきありがとうございます。ご意見をお聞かせいただけますか？",
+    "dontAskAgain": "今後表示しない",
+    "loadError": "アンケートの読み込みに失敗しました。後でもう一度お試しください。",
+    "notNow": "今はしない",
+    "title": "改善にご協力ください"
   },
   "nodeCategories": {
     "": "",
@@ -2599,14 +2652,17 @@
     "cannotDeleteGlobal": "インストール済みのブループリントは削除できません",
     "confirmDelete": "この操作により、ライブラリからサブグラフが完全に削除されます",
     "confirmDeleteTitle": "サブグラフを削除しますか？",
+    "disconnected": "切断されました",
     "enterDescription": "説明を入力してください",
     "enterSearchAliases": "検索用エイリアスを入力（カンマ区切り）",
     "hidden": "非表示／ネストされたパラメータ",
     "hideAll": "すべて非表示",
+    "linked": "（リンク済み）",
     "loadFailure": "サブグラフの読み込みに失敗しました",
     "overwriteBlueprint": "保存すると、現在のサブグラフが変更内容で上書きされます",
     "overwriteBlueprintTitle": "既存のサブグラフを上書きしますか？",
     "promoteOutsideSubgraph": "サブグラフ内でない場合、ウィジェットを昇格できません",
+    "promoteWidget": "ウィジェットを昇格: {name}",
     "publish": "サブグラフを公開",
     "publishSuccess": "ノードライブラリに保存されました",
     "publishSuccessMessage": "サブグラフはノードライブラリの「サブグラフブループリント」で見つけることができます",
@@ -2614,7 +2670,8 @@
     "searchAliases": "エイリアスを検索",
     "showAll": "すべて表示",
     "showRecommended": "おすすめウィジェットを表示",
-    "shown": "ノード上で表示"
+    "shown": "ノード上で表示",
+    "unpromoteWidget": "ウィジェットの昇格を解除: {name}"
   },
   "subscription": {
     "addApiCredits": "APIクレジットを追加",

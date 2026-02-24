@@ -315,8 +315,36 @@
     "deleteBlueprint": "블루프린트 삭제",
     "deleteWorkflow": "워크플로 삭제",
     "duplicate": "복제",
+    "enterAppMode": "앱 모드로 진입",
     "enterNewName": "새 이름 입력",
-    "missingNodesWarning": "워크플로우에 지원되지 않는 노드가 포함되어 있습니다(빨간색으로 표시됨)."
+    "exitAppMode": "앱 모드 종료",
+    "missingNodesWarning": "워크플로우에 지원되지 않는 노드가 포함되어 있습니다(빨간색으로 표시됨).",
+    "workflowActions": "워크플로우 작업"
+  },
+  "builderToolbar": {
+    "app": "앱",
+    "appDescription": "기본적으로 앱으로 열립니다",
+    "arrange": "미리보기",
+    "arrangeDescription": "앱 레이아웃 검토",
+    "connectOutput": "출력 연결",
+    "connectOutputBody1": "앱을 저장하려면 최소 한 개의 출력이 연결되어야 합니다.",
+    "connectOutputBody2": "'선택' 단계로 전환한 후 출력 노드를 클릭하여 여기에 추가하세요.",
+    "filename": "파일명",
+    "label": "앱 빌더",
+    "nodeGraph": "노드 그래프",
+    "nodeGraphDescription": "기본적으로 노드 그래프로 열립니다",
+    "save": "저장",
+    "saveAs": "다른 이름으로 저장",
+    "saveAsLabel": "이 워크플로우를 다음으로 저장 ...",
+    "saveDescription": "저장 및 완료",
+    "saveSuccess": "성공적으로 저장되었습니다",
+    "saveSuccessAppMessage": "'{name}'이(가) 저장되었습니다. 앞으로 기본적으로 앱 모드로 열립니다.",
+    "saveSuccessAppPrompt": "지금 확인하시겠습니까?",
+    "saveSuccessGraphMessage": "'{name}'이(가) 저장되었습니다. 앞으로 기본적으로 노드 그래프로 열립니다.",
+    "select": "선택",
+    "selectDescription": "입력/출력 선택",
+    "switchToSelect": "선택으로 전환",
+    "viewApp": "앱 보기"
   },
   "clipboard": {
     "errorMessage": "클립보드에 복사하지 못했습니다",
@@ -879,6 +907,7 @@
     "enableSelected": "선택 항목 활성화",
     "enabled": "활성화됨",
     "enabling": "활성화 중",
+    "enter": "입력",
     "enterBaseName": "기본 이름 입력",
     "enterNewName": "새 이름 입력",
     "enterNewNamePrompt": "새 이름을 입력하세요:",
@@ -1282,6 +1311,20 @@
     "helpFix": "이 문제 해결에 도움을 주세요"
   },
   "linearMode": {
+    "appModeToolbar": {
+      "appBuilder": "앱 빌더",
+      "apps": "앱"
+    },
+    "arrange": {
+      "atLeastOne": "최소 한 개",
+      "connectAtLeastOne": "사용자가 실행 후 결과를 볼 수 있도록 {atLeastOne}개의 출력 노드를 연결하세요.",
+      "noOutputs": "아직 출력이 추가되지 않았습니다",
+      "outputExamples": "예시: '이미지 저장' 또는 '비디오 저장'",
+      "outputs": "출력",
+      "resultsLabel": "선택한 출력 노드에서 생성된 결과가 이곳에 표시됩니다.",
+      "switchToSelect": "'선택' 단계로 전환한 후 출력 노드를 클릭하여 여기에 추가하세요.",
+      "switchToSelectButton": "선택으로 전환"
+    },
     "beta": "앱 모드 베타 - 피드백 보내기",
     "downloadAll": "모두 다운로드",
     "dragAndDropImage": "이미지를 드래그 앤 드롭하세요",
@@ -1291,11 +1334,13 @@
     "reuseParameters": "파라미터 재사용",
     "runCount": "실행 횟수:",
     "welcome": {
-      "intro": "노드 그래프를 숨겨 창작에 집중할 수 있는 간소화된 보기입니다.",
-      "layout": "왼쪽에는 생성된 이미지, 비디오, 출력물이 표시됩니다. 오른쪽에는 필요한 컨트롤만 있습니다. 복잡한 모든 것은 보이지 않습니다.",
+      "backToWorkflow": "워크플로우로 돌아가기",
+      "buildApp": "앱 만들기",
+      "controls": "출력은 하단에, 컨트롤은 오른쪽에 표시됩니다. 나머지는 모두 숨겨집니다.",
+      "getStarted": "{runButton}을(를) 클릭하여 시작하세요.",
+      "message": "노드 그래프를 숨겨 창작에 집중할 수 있는 간소화된 보기입니다.",
       "sharing": "공유는 간단합니다: 워크플로우를 만들고, 앱 모드를 열고, 탭을 우클릭한 후 내보내기를 선택하세요. 다른 사람이 파일을 열면 이 깔끔한 뷰로 바로 시작됩니다. 복잡한 노드 그래프를 몰라도 강력한 워크플로우를 간단한 도구로 공유할 수 있습니다.",
-      "title": "앱 모드에 오신 것을 환영합니다",
-      "widget": "어떤 설정이 표시될지 제어하려면, 최상위 노드를 서브그래프로 변환한 후 위의 툴박스에서 위젯 프로모션을 사용해 노출할 항목을 선택하세요."
+      "title": "앱 모드에 오신 것을 환영합니다"
     }
   },
   "load3d": {
@@ -1844,6 +1889,14 @@
       "label": "미리보기 버전",
       "tooltip": "현재 ComfyUI의 나이트리 버전을 사용 중입니다. 이 기능들에 대한 의견을 피드백 버튼을 통해 공유해 주세요."
     }
+  },
+  "nightlySurvey": {
+    "accept": "네, 도와드릴게요!",
+    "description": "이 기능을 사용해 주셨네요. 잠시 시간을 내어 피드백을 남겨주시겠어요?",
+    "dontAskAgain": "다시 묻지 않기",
+    "loadError": "설문을 불러오지 못했습니다. 나중에 다시 시도해 주세요.",
+    "notNow": "나중에",
+    "title": "개선에 도움을 주세요"
   },
   "nodeCategories": {
     "": "",
@@ -2599,14 +2652,17 @@
     "cannotDeleteGlobal": "설치된 블루프린트는 삭제할 수 없습니다",
     "confirmDelete": "이 작업은 라이브러리에서 블루프린트를 영구적으로 제거합니다",
     "confirmDeleteTitle": "블루프린트를 삭제하시겠습니까?",
+    "disconnected": "연결 해제됨",
     "enterDescription": "설명을 입력하세요",
     "enterSearchAliases": "검색 별칭을 입력하세요 (쉼표로 구분)",
     "hidden": "숨김 / 중첩 매개변수",
     "hideAll": "모두 숨김",
+    "linked": "(연결됨)",
     "loadFailure": "서브그래프 블루프린트 로드 실패",
     "overwriteBlueprint": "저장하면 현재 블루프린트가 변경사항으로 덮어쓰여집니다",
     "overwriteBlueprintTitle": "기존 블루프린트를 덮어쓰시겠습니까?",
     "promoteOutsideSubgraph": "하위 그래프가 아닐 때 위젯을 승격할 수 없음",
+    "promoteWidget": "위젯 승격: {name}",
     "publish": "서브그래프 게시",
     "publishSuccess": "노드 라이브러리에 저장됨",
     "publishSuccessMessage": "노드 라이브러리의 \"서브그래프 블루프린트\" 아래에서 서브그래프 블루프린트를 찾을 수 있습니다",
@@ -2614,7 +2670,8 @@
     "searchAliases": "별칭 검색",
     "showAll": "모두 표시",
     "showRecommended": "권장 위젯 표시",
-    "shown": "노드에 표시됨"
+    "shown": "노드에 표시됨",
+    "unpromoteWidget": "위젯 승격 해제: {name}"
   },
   "subscription": {
     "addApiCredits": "API 크레딧 추가",

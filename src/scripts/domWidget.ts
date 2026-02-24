@@ -7,6 +7,7 @@ import {
   LegacyWidget,
   LiteGraph
 } from '@/lib/litegraph/src/litegraph'
+import type { NodeId } from '@/lib/litegraph/src/litegraph'
 import type {
   IBaseWidget,
   IWidgetOptions
@@ -14,6 +15,7 @@ import type {
 import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
 import { usePromotionStore } from '@/stores/promotionStore'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { generateUUID } from '@/utils/formatUtil'
 
 export interface BaseDOMWidget<
@@ -148,6 +150,18 @@ abstract class BaseDOMWidgetImpl<V extends object | string>
   override set value(v: V) {
     this.options.setValue?.(v)
     this.callback?.(this.value)
+  }
+
+  override setNodeId(nodeId: NodeId): void {
+    // Capture the DOM-resolved value before registration, since the base class
+    // registers _state.value which is undefined for DOM widgets (their value
+    // lives in the DOM element / options.getValue).
+    const resolvedValue = this.value
+    super.setNodeId(nodeId)
+    const graphId = this.node.graph?.rootGraph.id
+    if (!graphId) return
+    const state = useWidgetValueStore().getWidget(graphId, nodeId, this.name)
+    if (state) state.value = resolvedValue
   }
 
   get margin(): number {

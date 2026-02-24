@@ -5327,6 +5327,39 @@
       }
     }
   },
+  "KlingAvatarNode": {
+    "description": "한 장의 사진과 오디오 파일로 방송 스타일의 디지털 휴먼 영상을 생성합니다.",
+    "display_name": "Kling Avatar 2.0",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "아바타 참조 이미지입니다. 너비와 높이는 최소 300px이어야 합니다. 가로세로 비율은 1:2.5에서 2.5:1 사이여야 합니다."
+      },
+      "mode": {
+        "name": "mode"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "아바타의 동작, 감정, 카메라 움직임을 정의하는 선택적 프롬프트입니다."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "시드는 노드가 다시 실행될지 여부를 제어합니다. 시드와 관계없이 결과는 비결정적입니다."
+      },
+      "sound_file": {
+        "name": "sound_file",
+        "tooltip": "오디오 입력입니다. 길이는 2초에서 300초 사이여야 합니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "KlingCameraControlI2VNode": {
     "description": "정지 이미지를 실제 영화 촬영과 유사한 전문적인 카메라 움직임으로 시네마틱 비디오로 변환합니다. 원본 이미지에 초점을 유지하면서 줌, 회전, 패닝, 틸트, 1인칭 시점 등 가상 카메라 동작을 제어할 수 있습니다.",
     "display_name": "Kling 이미지 투 비디오 (카메라 컨트롤)",
