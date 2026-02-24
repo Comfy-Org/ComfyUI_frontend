@@ -364,6 +364,8 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     this.canvas.dispatchEvent(new CustomEvent(type, { detail }))
   }
 
+  private _lastCursor = ''
+
   private _updateCursorStyle() {
     if (!this.state.shouldSetCursor) return
 
@@ -386,7 +388,10 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       cursor = 'grab'
     }
 
-    this.canvas.style.cursor = cursor
+    if (cursor !== this._lastCursor) {
+      this._lastCursor = cursor
+      this.canvas.style.cursor = cursor
+    }
   }
 
   // Whether the canvas was previously being dragged prior to pressing space key.
