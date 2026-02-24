@@ -268,10 +268,20 @@ export interface ComfyApi extends EventTarget {
     callback: ((event: ApiEvents[TEvent]) => void) | null,
     options?: AddEventListenerOptions | boolean
   ): void
+  addEventListener(
+    type: string,
+    callback: ((event: CustomEvent) => void) | null,
+    options?: AddEventListenerOptions | boolean
+  ): void
 
   removeEventListener<TEvent extends keyof ApiEvents>(
     type: TEvent,
     callback: ((event: ApiEvents[TEvent]) => void) | null,
+    options?: EventListenerOptions | boolean
+  ): void
+  removeEventListener(
+    type: string,
+    callback: ((event: CustomEvent) => void) | null,
     options?: EventListenerOptions | boolean
   ): void
 }
@@ -461,6 +471,16 @@ export class ComfyApi extends EventTarget {
     type: TEvent,
     callback: ((event: ApiEvents[TEvent]) => void) | null,
     options?: AddEventListenerOptions | boolean
+  ): void
+  override addEventListener(
+    type: string,
+    callback: ((event: CustomEvent) => void) | null,
+    options?: AddEventListenerOptions | boolean
+  ): void
+  override addEventListener(
+    type: string,
+    callback: ((event: CustomEvent) => void) | null,
+    options?: AddEventListenerOptions | boolean
   ) {
     // Type assertion: strictFunctionTypes.  So long as we emit events in a type-safe fashion, this is safe.
     super.addEventListener(type, callback as EventListener, options)
@@ -471,7 +491,17 @@ export class ComfyApi extends EventTarget {
     type: TEvent,
     callback: ((event: ApiEvents[TEvent]) => void) | null,
     options?: EventListenerOptions | boolean
-  ): void {
+  ): void
+  override removeEventListener(
+    type: string,
+    callback: ((event: CustomEvent) => void) | null,
+    options?: EventListenerOptions | boolean
+  ): void
+  override removeEventListener(
+    type: string,
+    callback: ((event: CustomEvent) => void) | null,
+    options?: EventListenerOptions | boolean
+  ) {
     super.removeEventListener(type, callback as EventListener, options)
   }
 
