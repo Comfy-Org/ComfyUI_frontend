@@ -186,7 +186,26 @@ async function getWorkflowModelsFromGraph(): Promise<WorkflowModel[]> {
     )
   )
 
-  return mapAllNodes(graph, (node) => {
+  // Load the global model index so custom/extension loader nodes that are not
+  // registered in modelToNodeStore can still resolve selected model names.
+  await assetsStore.updateModelsForTag('models')
+
+  const globalModelAssets = assetsStore.getAssets('tag:models')
+  const globalModelByName = new Map(
+    globalModelAssets.map((asset) => [asset.name, asset])
+  )
+
+  const resolvedModels = new Map<string, WorkflowModel>()
+
+  function toCandidateNames(value: string): string[] {
+    const trimmed = value.trim()
+    if (!trimmed) return []
+
+    const basename = trimmed.split(/[\\/]/).at(-1) ?? trimmed
+    return basename === trimmed ? [trimmed] : [trimmed, basename]
+  }
+
+  for (const model of mapAllNodes(graph, (node) => {
     const nodeType = node.type ?? ''
     const widgetKey = registeredTypes[nodeType]
     if (!widgetKey) return undefined
@@ -203,7 +222,30 @@ async function getWorkflowModelsFromGraph(): Promise<WorkflowModel[]> {
       name: value,
       thumbnailUrl: matchingAsset?.preview_url ?? null
     } satisfies WorkflowModel
-  })
+  })) {
+    resolvedModels.set(model.name, model)
+  }
+
+  for (const node of mapAllNodes(graph, (candidateNode) => candidateNode)) {
+    for (const widget of node.widgets ?? []) {
+      if (typeof widget.value !== 'string') continue
+
+      const modelAsset = toCandidateNames(widget.value)
+        .map((candidateName) => globalModelByName.get(candidateName))
+        .find((asset) => !!asset)
+      if (!modelAsset) continue
+      if (modelAsset.is_immutable) continue
+
+      if (!resolvedModels.has(modelAsset.name)) {
+        resolvedModels.set(modelAsset.name, {
+          name: modelAsset.name,
+          thumbnailUrl: modelAsset.preview_url ?? null
+        })
+      }
+    }
+  }
+
+  return [...resolvedModels.values()]
 }
 
 interface PublishRecord {
@@ -434,7 +476,11 @@ export function useWorkflowShareService() {
       getWorkflowModelsFromGraph()
     ])
 
-    if (!onRefine) await backendCall
+    if (onRefine) {
+      return { assets, models }
+    }
+
+    await backendCall
 
     if (refinedResult) {
       return refinedResult

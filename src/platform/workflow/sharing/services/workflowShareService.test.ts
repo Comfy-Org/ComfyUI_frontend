@@ -66,7 +66,8 @@ vi.mock('@/stores/assetsStore', () => ({
     inputAssets: mockInputAssets,
     updateInputs: mockUpdateInputs,
     getAssets: (nodeType: string) => mockAssetsByNodeType.get(nodeType) ?? [],
-    updateModelsForNodeType: vi.fn()
+    updateModelsForNodeType: vi.fn(),
+    updateModelsForTag: vi.fn()
   })
 }))
 
@@ -514,6 +515,32 @@ describe('useWorkflowShareService', () => {
 
     expect(result.models).toEqual([
       { name: 'uncached-model.safetensors', thumbnailUrl: null }
+    ])
+  })
+
+  it('includes LoRA models from unregistered loader nodes via global model assets', async () => {
+    mockRootGraph.nodes = [
+      createMockNode('PowerLoraLoader', [
+        { name: 'lora_model', value: 'detail_tweaker.safetensors' }
+      ])
+    ] as LGraphNode[]
+    mockAssetsByNodeType.set('tag:models', [
+      {
+        name: 'detail_tweaker.safetensors',
+        is_immutable: false,
+        preview_url: 'https://example.com/lora-preview.jpg'
+      }
+    ])
+    mockApp.graphToPrompt.mockRejectedValue(new Error('fail'))
+
+    const service = useWorkflowShareService()
+    const result = await service.getShareableAssets()
+
+    expect(result.models).toEqual([
+      {
+        name: 'detail_tweaker.safetensors',
+        thumbnailUrl: 'https://example.com/lora-preview.jpg'
+      }
     ])
   })
 
