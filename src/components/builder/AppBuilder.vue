@@ -201,17 +201,19 @@ async function exitBuilder() {
     enable-empty-state
     :disabled="!appModeStore.selectedInputs.length"
     class="border-border-subtle border-b"
+    :tooltip="`${t('linearMode.builder.inputsDesc')}\n${t('linearMode.builder.inputtsExample')}`"
   >
-    <template #empty>
-      <div class="w-full p-4 text-muted-foreground gap-2 flex flex-col">
-        <div v-text="t('linearMode.builder.promptAddInputs')" />
-        <div
-          class="text-base-foreground"
-          v-text="t('linearMode.builder.noInputs')"
-        />
-        <div v-text="t('linearMode.builder.inputsDesc')" />
-        <div v-text="t('linearMode.builder.inputsExample')" />
+    <template #label>
+      <div class="flex gap-3">
+        {{ t('nodeHelpPage.inputs') }}
+        <i class="bg-muted-foreground icon-[lucide--circle-alert]" />
       </div>
+    </template>
+    <template #empty>
+      <div
+        class="w-full p-4 pt-2 text-muted-foreground"
+        v-text="t('linearMode.builder.promptAddInputs')"
+      />
     </template>
     <div
       class="w-full p-4 pt-2 text-muted-foreground"
@@ -245,17 +247,19 @@ async function exitBuilder() {
     :label="t('nodeHelpPage.outputs')"
     enable-empty-state
     :disabled="!appModeStore.selectedOutputs.length"
+    :tooltip="`${t('linearMode.builder.outputsDesc')}\n${t('linearMode.builder.outputsExample')}`"
   >
-    <template #empty>
-      <div class="w-full p-4 text-muted-foreground gap-2 flex flex-col">
-        <div v-text="t('linearMode.builder.promptAddOutputs')" />
-        <div
-          class="text-base-foreground"
-          v-text="t('linearMode.builder.noOutputs')"
-        />
-        <div v-text="t('linearMode.builder.outputsDesc')" />
-        <div v-text="t('linearMode.builder.outputsExample')" />
+    <template #label>
+      <div class="flex gap-3">
+        {{ t('nodeHelpPage.outputs') }}
+        <i class="bg-muted-foreground icon-[lucide--circle-alert]" />
       </div>
+    </template>
+    <template #empty>
+      <div
+        class="w-full p-4 pt-2 text-muted-foreground"
+        v-text="t('linearMode.builder.promptAddOutputs')"
+      />
     </template>
     <div
       class="w-full p-4 pt-2 text-muted-foreground"
