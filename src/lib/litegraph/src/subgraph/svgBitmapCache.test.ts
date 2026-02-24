@@ -30,7 +30,9 @@ describe('SVG bitmap cache', () => {
   function mockGetContext(returnValue: CanvasRenderingContext2D | null) {
     return vi
       .spyOn(HTMLCanvasElement.prototype, 'getContext')
-      .mockImplementation((() => returnValue) as typeof HTMLCanvasElement.prototype.getContext)
+      .mockImplementation(
+        (() => returnValue) as typeof HTMLCanvasElement.prototype.getContext
+      )
   }
 
   const stubContext = {} as CanvasRenderingContext2D
