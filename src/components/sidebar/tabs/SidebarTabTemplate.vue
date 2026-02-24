@@ -60,13 +60,21 @@ provide(SidebarContainerKey, containerRef)
 </script>
 
 <style scoped>
-@reference '../../../assets/css/style.css';
-
 :deep(.p-toolbar-end) .p-button {
-  @apply py-1 2xl:py-2;
+  padding-top: calc(var(--spacing) * 1);
+  padding-bottom: calc(var(--spacing) * 1);
 }
 
 :deep(.p-toolbar-start) {
-  @apply min-w-0 flex-1 overflow-hidden;
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
+}
+
+@media (min-width: 1536px) {
+  :deep(.p-toolbar-end) .p-button {
+    padding-top: calc(var(--spacing) * 2);
+    padding-bottom: calc(var(--spacing) * 2);
+  }
 }
 </style>

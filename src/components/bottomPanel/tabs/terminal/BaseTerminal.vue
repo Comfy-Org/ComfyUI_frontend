@@ -103,13 +103,12 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
-@reference '../../../../assets/css/style.css';
-
 :deep(.p-terminal) .xterm {
-  @apply overflow-hidden;
+  overflow: hidden;
 }
 
 :deep(.p-terminal) .xterm-screen {
-  @apply bg-neutral-900 overflow-hidden;
+  overflow: hidden;
+  background-color: var(--color-neutral-900);
 }
 </style>

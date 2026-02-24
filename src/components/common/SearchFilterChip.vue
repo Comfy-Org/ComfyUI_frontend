@@ -23,21 +23,22 @@ defineEmits(['remove'])
 </script>
 
 <style scoped>
-@reference '../../assets/css/style.css';
-
 :deep(.i-badge) {
-  @apply bg-green-500 text-white;
+  background-color: var(--color-green-500);
+  color: var(--color-white);
 }
 
 :deep(.o-badge) {
-  @apply bg-red-500 text-white;
+  background-color: var(--color-red-500);
+  color: var(--color-white);
 }
 
 :deep(.c-badge) {
-  @apply bg-blue-500 text-white;
+  background-color: var(--color-blue-500);
+  color: var(--color-white);
 }
 
 :deep(.s-badge) {
-  @apply bg-yellow-500;
+  background-color: var(--color-yellow-500);
 }
 </style>

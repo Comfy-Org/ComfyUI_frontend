@@ -159,13 +159,14 @@ watch(
 </script>
 
 <style scoped>
-@reference '../../../assets/css/style.css';
-
 .color-picker-container {
   transform: translateX(-50%);
 }
 
 :deep(.p-togglebutton) {
-  @apply py-2 px-1;
+  padding-top: calc(var(--spacing) * 2);
+  padding-bottom: calc(var(--spacing) * 2);
+  padding-left: calc(var(--spacing) * 1);
+  padding-right: calc(var(--spacing) * 1);
 }
 </style>

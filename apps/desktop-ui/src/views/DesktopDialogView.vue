@@ -27,14 +27,15 @@
 <script setup lang="ts">
 import { normalizeI18nKey } from '@comfyorg/shared-frontend-utils/formatUtil'
 import Button from 'primevue/button'
+import { useI18n } from 'vue-i18n'
 import { useRoute } from 'vue-router'
 
 import { getDialog } from '@/constants/desktopDialogs'
 import type { DialogAction } from '@/constants/desktopDialogs'
-import { t } from '@/i18n'
 import { electronAPI } from '@/utils/envUtil'
 
 const route = useRoute()
+const { t } = useI18n()
 const { id, title, message, buttons } = getDialog(route.params.dialogId)
 
 const handleButtonClick = async (button: DialogAction) => {
@@ -43,29 +44,29 @@ const handleButtonClick = async (button: DialogAction) => {
 </script>
 
 <style scoped>
-@reference '../assets/css/style.css';
-
 .p-button-secondary {
-  @apply text-white border-none bg-neutral-600;
+  border: none;
+  background-color: var(--color-neutral-600);
+  color: var(--color-white);
 }
 
 .p-button-secondary:hover {
-  @apply bg-neutral-550;
+  background-color: var(--color-neutral-550);
 }
 
 .p-button-secondary:active {
-  @apply bg-neutral-500;
+  background-color: var(--color-neutral-500);
 }
 
 .p-button-danger {
-  @apply bg-coral-red-600;
+  background-color: var(--color-coral-red-600);
 }
 
 .p-button-danger:hover {
-  @apply bg-coral-red-500;
+  background-color: var(--color-coral-red-500);
 }
 
 .p-button-danger:active {
-  @apply bg-coral-red-400;
+  background-color: var(--color-coral-red-400);
 }
 </style>
