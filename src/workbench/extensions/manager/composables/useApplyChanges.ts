@@ -57,23 +57,26 @@ export const useApplyChanges = createSharedComposable(() => {
       }
     }
 
+    let hasReconnected = false
     const stopReconnectListener = useEventListener(
       api,
       'reconnected',
       () => {
         clearTimeout(reconnectTimeout)
+        hasReconnected = true
         void onReconnect()
       },
       { once: true }
     )
 
     const RECONNECT_TIMEOUT_MS = 120_000 // 2 minutes
-    let reconnectTimeout: ReturnType<typeof setTimeout>
+    let reconnectTimeout: ReturnType<typeof setTimeout> | undefined
 
     try {
       await settingStore.set('Comfy.Toast.DisableReconnectingToast', true)
       await useComfyManagerService().rebootComfyUI()
       reconnectTimeout = setTimeout(async () => {
+        if (hasReconnected) return
         stopReconnectListener()
         try {
           await settingStore.set(
@@ -92,13 +95,21 @@ export const useApplyChanges = createSharedComposable(() => {
       }, RECONNECT_TIMEOUT_MS)
     } catch (error) {
       stopReconnectListener()
-      await settingStore.set(
-        'Comfy.Toast.DisableReconnectingToast',
-        originalToastSetting
-      )
-      isRestarting.value = false
-      isRestartCompleted.value = false
-      onClose?.()
+      try {
+        await settingStore.set(
+          'Comfy.Toast.DisableReconnectingToast',
+          originalToastSetting
+        )
+      } catch (restoreErr) {
+        console.error(
+          '[useApplyChanges] Failed to restore reconnect toast setting:',
+          restoreErr
+        )
+      } finally {
+        isRestarting.value = false
+        isRestartCompleted.value = false
+        onClose?.()
+      }
       throw error
     }
   }
