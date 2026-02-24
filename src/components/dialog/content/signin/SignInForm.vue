@@ -36,7 +36,8 @@
         <span
           class="cursor-pointer text-base font-medium text-muted select-none"
           :class="{
-            'text-link-disabled': !$form.email?.value || $form.email?.invalid
+            'cursor-not-allowed opacity-50':
+              !$form.email?.value || $form.email?.invalid
           }"
           @click="handleForgotPassword($form.email?.value, $form.email?.valid)"
         >
@@ -126,11 +127,3 @@ const handleForgotPassword = async (
   await firebaseAuthActions.sendPasswordReset(email)
 }
 </script>
-
-<style scoped>
-@reference '../../../../assets/css/style.css';
-
-.text-link-disabled {
-  @apply opacity-50 cursor-not-allowed;
-}
-</style>

@@ -117,20 +117,18 @@ function getFormComponent(item: FormItem): Component {
 </script>
 
 <style scoped>
-@reference '../../assets/css/style.css';
-
 .form-input :deep(.input-slider) .p-inputnumber input,
 .form-input :deep(.input-slider) .slider-part {
-  @apply w-20;
+  width: 5rem;
 }
 
 .form-input :deep(.input-knob) .p-inputnumber input,
 .form-input :deep(.input-knob) .knob-part {
-  @apply w-32;
+  width: 8rem;
 }
 
 .form-input :deep(.p-inputtext),
 .form-input :deep(.p-select) {
-  @apply w-44;
+  width: 11rem;
 }
 </style>
