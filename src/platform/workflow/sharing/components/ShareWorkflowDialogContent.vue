@@ -6,9 +6,18 @@
     <div
       class="flex h-12 items-center justify-between border-b border-border-default px-4"
     >
-      <h2 class="m-0 text-sm font-medium text-base-foreground">
-        {{ headerTitle }}
-      </h2>
+      <TabList
+        :model-value="dialogMode"
+        class="flex-1"
+        @update:model-value="handleDialogModeChange"
+      >
+        <Tab value="shareLink">
+          {{ $t('shareWorkflow.shareLinkTab') }}
+        </Tab>
+        <Tab v-if="showPublishToHubTab" value="publishToHub">
+          {{ $t('shareWorkflow.publishToHubTab') }}
+        </Tab>
+      </TabList>
       <button
         class="cursor-pointer rounded border-none bg-transparent p-0 text-muted-foreground transition-colors hover:text-base-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-secondary-foreground"
         :aria-label="$t('g.close')"
@@ -20,121 +29,134 @@
 
     <!-- Body -->
     <div v-auto-animate class="flex flex-col gap-4 p-4">
-      <!-- Loading state -->
-      <template v-if="dialogState === 'loading'">
-        <div class="h-3 w-4/5 animate-pulse rounded bg-muted-foreground/20" />
-        <div class="h-3 w-3/5 animate-pulse rounded bg-muted-foreground/20" />
-        <div class="h-10 w-full animate-pulse rounded bg-muted-foreground/20" />
-      </template>
-
-      <!-- Unsaved state -->
-      <template v-if="dialogState === 'unsaved'">
-        <p class="m-0 text-xs text-muted-foreground">
-          {{ $t('shareWorkflow.unsavedDescription') }}
-        </p>
-        <label v-if="isTemporary" class="flex flex-col gap-1">
-          <span class="text-xs font-medium text-muted-foreground">
-            {{ $t('shareWorkflow.workflowNameLabel') }}
-          </span>
-          <Input
-            ref="nameInputRef"
-            v-model="workflowName"
-            :disabled="isSaving"
-            @keydown.enter="() => handleSave()"
+      <div v-show="dialogMode === 'shareLink'" class="flex flex-col gap-4">
+        <!-- Loading state -->
+        <template v-if="dialogState === 'loading'">
+          <div class="h-3 w-4/5 animate-pulse rounded bg-muted-foreground/20" />
+          <div class="h-3 w-3/5 animate-pulse rounded bg-muted-foreground/20" />
+          <div
+            class="h-10 w-full animate-pulse rounded bg-muted-foreground/20"
           />
-        </label>
-        <Button
-          variant="primary"
-          size="lg"
-          :loading="isSaving"
-          @click="handleSave"
-        >
-          {{
-            isSaving
-              ? $t('shareWorkflow.saving')
-              : $t('shareWorkflow.saveButton')
-          }}
-        </Button>
-      </template>
+        </template>
 
-      <!-- Ready state -->
-      <template v-if="dialogState === 'ready'">
-        <p
-          v-if="isLoadingAssets"
-          class="m-0 text-xs italic text-muted-foreground"
-        >
-          {{ $t('shareWorkflow.checkingAssets') }}
-        </p>
-        <ShareAssetWarningBox
-          v-else-if="requiresAcknowledgment"
-          v-model:acknowledged="acknowledged"
-          :assets="assetInfo.assets"
-          :models="assetInfo.models"
-        />
-        <Button
-          variant="primary"
-          size="lg"
-          :disabled="isPublishing || (requiresAcknowledgment && !acknowledged)"
-          @click="handlePublish"
-        >
-          {{
-            isPublishing
-              ? $t('shareWorkflow.creatingLink')
-              : $t('shareWorkflow.createLinkButton')
-          }}
-        </Button>
-      </template>
-
-      <!-- Shared state -->
-      <template v-if="dialogState === 'shared' && publishResult">
-        <ShareUrlCopyField :url="publishResult.shareUrl" />
-        <div class="flex flex-col gap-1">
-          <p
-            v-if="publishResult.publishedAt"
-            class="m-0 text-xs text-muted-foreground"
-          >
-            {{ $t('shareWorkflow.publishedOn', { date: formattedDate }) }}
-          </p>
+        <!-- Unsaved state -->
+        <template v-if="dialogState === 'unsaved'">
           <p class="m-0 text-xs text-muted-foreground">
-            {{ $t('shareWorkflow.successDescription') }}
+            {{ $t('shareWorkflow.unsavedDescription') }}
           </p>
-        </div>
-      </template>
+          <label v-if="isTemporary" class="flex flex-col gap-1">
+            <span class="text-xs font-medium text-muted-foreground">
+              {{ $t('shareWorkflow.workflowNameLabel') }}
+            </span>
+            <Input
+              ref="nameInputRef"
+              v-model="workflowName"
+              :disabled="isSaving"
+              @keydown.enter="() => handleSave()"
+            />
+          </label>
+          <Button
+            variant="primary"
+            size="lg"
+            :loading="isSaving"
+            @click="handleSave"
+          >
+            {{
+              isSaving
+                ? $t('shareWorkflow.saving')
+                : $t('shareWorkflow.saveButton')
+            }}
+          </Button>
+        </template>
 
-      <!-- Stale state -->
-      <template v-if="dialogState === 'stale'">
-        <p class="m-0 text-xs text-muted-foreground">
-          {{ $t('shareWorkflow.hasChangesDescription') }}
-        </p>
-        <p
-          v-if="isLoadingAssets"
-          class="m-0 text-xs italic text-muted-foreground"
-        >
-          {{ $t('shareWorkflow.checkingAssets') }}
-        </p>
-        <ShareAssetWarningBox
-          v-else-if="requiresAcknowledgment"
-          v-model:acknowledged="acknowledged"
-          :assets="assetInfo.assets"
-          :models="assetInfo.models"
-        />
-        <Button
-          variant="primary"
-          size="lg"
-          :disabled="isPublishing || (requiresAcknowledgment && !acknowledged)"
-          @click="handlePublish"
-        >
-          {{
-            isPublishing
-              ? $t('shareWorkflow.updatingLink')
-              : $t('shareWorkflow.updateLinkButton')
-          }}
-        </Button>
-      </template>
+        <!-- Ready state -->
+        <template v-if="dialogState === 'ready'">
+          <p
+            v-if="isLoadingAssets"
+            class="m-0 text-xs italic text-muted-foreground"
+          >
+            {{ $t('shareWorkflow.checkingAssets') }}
+          </p>
+          <ShareAssetWarningBox
+            v-else-if="requiresAcknowledgment"
+            v-model:acknowledged="acknowledged"
+            :assets="assetInfo.assets"
+            :models="assetInfo.models"
+          />
+          <Button
+            variant="primary"
+            size="lg"
+            :disabled="
+              isPublishing || (requiresAcknowledgment && !acknowledged)
+            "
+            @click="handlePublish"
+          >
+            {{
+              isPublishing
+                ? $t('shareWorkflow.creatingLink')
+                : $t('shareWorkflow.createLinkButton')
+            }}
+          </Button>
+        </template>
+
+        <!-- Shared state -->
+        <template v-if="dialogState === 'shared' && publishResult">
+          <ShareUrlCopyField :url="publishResult.shareUrl" />
+          <div class="flex flex-col gap-1">
+            <p
+              v-if="publishResult.publishedAt"
+              class="m-0 text-xs text-muted-foreground"
+            >
+              {{ $t('shareWorkflow.publishedOn', { date: formattedDate }) }}
+            </p>
+            <p class="m-0 text-xs text-muted-foreground">
+              {{ $t('shareWorkflow.successDescription') }}
+            </p>
+          </div>
+        </template>
+
+        <!-- Stale state -->
+        <template v-if="dialogState === 'stale'">
+          <p class="m-0 text-xs text-muted-foreground">
+            {{ $t('shareWorkflow.hasChangesDescription') }}
+          </p>
+          <p
+            v-if="isLoadingAssets"
+            class="m-0 text-xs italic text-muted-foreground"
+          >
+            {{ $t('shareWorkflow.checkingAssets') }}
+          </p>
+          <ShareAssetWarningBox
+            v-else-if="requiresAcknowledgment"
+            v-model:acknowledged="acknowledged"
+            :assets="assetInfo.assets"
+            :models="assetInfo.models"
+          />
+          <Button
+            variant="primary"
+            size="lg"
+            :disabled="
+              isPublishing || (requiresAcknowledgment && !acknowledged)
+            "
+            @click="handlePublish"
+          >
+            {{
+              isPublishing
+                ? $t('shareWorkflow.updatingLink')
+                : $t('shareWorkflow.updateLinkButton')
+            }}
+          </Button>
+        </template>
+      </div>
+      <div
+        v-if="showPublishToHubTab"
+        v-show="dialogMode === 'publishToHub'"
+        data-testid="publish-tab-panel"
+        class="min-h-0"
+      >
+        <ComfyHubPublishWizardPanel :on-publish="onClose" />
+      </div>
     </div>
-
-    <!-- ComfyHub section -->
-    <ComfyHubUploadSection v-if="flags.comfyHubUploadEnabled" />
   </div>
 </template>
 
@@ -145,11 +167,14 @@ import { useToast } from 'primevue/usetoast'
 import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import ComfyHubUploadSection from '@/platform/workflow/sharing/components/ComfyHubUploadSection.vue'
+import ComfyHubPublishWizardPanel from '@/platform/workflow/sharing/components/comfyhub/publish/ComfyHubPublishWizardPanel.vue'
 import ShareAssetWarningBox from '@/platform/workflow/sharing/components/ShareAssetWarningBox.vue'
 import ShareUrlCopyField from '@/platform/workflow/sharing/components/ShareUrlCopyField.vue'
+import Tab from '@/components/tab/Tab.vue'
+import TabList from '@/components/tab/TabList.vue'
 import Button from '@/components/ui/button/Button.vue'
 import Input from '@/components/ui/input/Input.vue'
+import { useComfyHubProfileGate } from '@/platform/workflow/sharing/composables/useComfyHubProfileGate'
 import type { WorkflowPublishResult } from '@/platform/workflow/sharing/types/shareTypes'
 import { useWorkflowShareService } from '@/platform/workflow/sharing/services/workflowShareService'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
@@ -164,13 +189,18 @@ const { onClose } = defineProps<{
 const { t, locale } = useI18n()
 const toast = useToast()
 const { flags } = useFeatureFlags()
+const { ensurePublishAccess } = useComfyHubProfileGate()
 const shareService = useWorkflowShareService()
 const workflowStore = useWorkflowStore()
 const workflowService = useWorkflowService()
 
 type DialogState = 'loading' | 'unsaved' | 'ready' | 'shared' | 'stale'
+type DialogMode = 'shareLink' | 'publishToHub'
 
 const dialogState = ref<DialogState>('loading')
+const dialogMode = ref<DialogMode>('shareLink')
+const isResolvingPublishTabAccess = ref(false)
+const publishTabAccessRequestId = ref(0)
 const acknowledged = ref(false)
 const workflowName = ref('')
 type InputRefTarget = {
@@ -232,16 +262,57 @@ const {
 const requiresAcknowledgment = computed(
   () => assetInfo.value.assets.length > 0 || assetInfo.value.models.length > 0
 )
+const showPublishToHubTab = computed(() => flags.comfyHubUploadEnabled)
 
-const HEADER_TITLES: Record<DialogState, string> = {
-  loading: 'shareWorkflow.loadingTitle',
-  unsaved: 'shareWorkflow.unsavedTitle',
-  ready: 'shareWorkflow.createLinkTitle',
-  shared: 'shareWorkflow.successTitle',
-  stale: 'shareWorkflow.hasChangesTitle'
+async function handleDialogModeChange(nextMode: DialogMode) {
+  if (nextMode === 'shareLink') {
+    publishTabAccessRequestId.value += 1
+    isResolvingPublishTabAccess.value = false
+    dialogMode.value = 'shareLink'
+    return
+  }
+
+  if (nextMode === dialogMode.value) {
+    return
+  }
+
+  if (!showPublishToHubTab.value || isResolvingPublishTabAccess.value) {
+    return
+  }
+
+  const requestId = ++publishTabAccessRequestId.value
+  isResolvingPublishTabAccess.value = true
+  try {
+    const hasPublishAccess = await ensurePublishAccess()
+    if (requestId !== publishTabAccessRequestId.value) {
+      return
+    }
+
+    dialogMode.value = hasPublishAccess ? 'publishToHub' : 'shareLink'
+  } catch (error) {
+    if (requestId !== publishTabAccessRequestId.value) {
+      return
+    }
+
+    console.error('Failed to resolve publish tab access:', error)
+    dialogMode.value = 'shareLink'
+  } finally {
+    if (requestId === publishTabAccessRequestId.value) {
+      isResolvingPublishTabAccess.value = false
+    }
+  }
 }
 
-const headerTitle = computed(() => t(HEADER_TITLES[dialogState.value]))
+watch(showPublishToHubTab, (isVisible) => {
+  if (!isVisible) {
+    publishTabAccessRequestId.value += 1
+    isResolvingPublishTabAccess.value = false
+  }
+
+  if (!isVisible && dialogMode.value === 'publishToHub') {
+    dialogMode.value = 'shareLink'
+  }
+})
 
 const formattedDate = computed(() => {
   if (!publishResult.value) return ''

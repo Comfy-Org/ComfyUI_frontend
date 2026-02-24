@@ -35,6 +35,7 @@ vi.mock('@formkit/auto-animate/vue', () => ({
 const mockFlags = vi.hoisted(() => ({
   comfyHubUploadEnabled: false
 }))
+const mockEnsurePublishAccess = vi.hoisted(() => vi.fn())
 
 vi.mock('@/composables/useFeatureFlags', () => ({
   useFeatureFlags: () => ({
@@ -43,19 +44,10 @@ vi.mock('@/composables/useFeatureFlags', () => ({
 }))
 
 vi.mock(
-  '@/platform/workflow/sharing/composables/useComfyHubPublishDialog',
-  () => ({
-    useComfyHubPublishDialog: () => ({
-      show: vi.fn()
-    })
-  })
-)
-
-vi.mock(
   '@/platform/workflow/sharing/composables/useComfyHubProfileGate',
   () => ({
     useComfyHubProfileGate: () => ({
-      openPublishWithGate: vi.fn()
+      ensurePublishAccess: mockEnsurePublishAccess
     })
   })
 )
@@ -63,7 +55,7 @@ vi.mock(
 vi.mock('@/platform/workflow/core/services/workflowService', () => ({
   useWorkflowService: () => ({
     saveWorkflow: vi.fn(),
-    saveWorkflowAs: vi.fn()
+    renameWorkflow: vi.fn()
   })
 }))
 
@@ -107,6 +99,8 @@ const i18n = createI18n({
         loadingTitle: 'Loading...',
         unsavedTitle: 'Save workflow first',
         unsavedDescription: 'You must save your workflow before sharing.',
+        shareLinkTab: 'Share link',
+        publishToHubTab: 'Publish to Hub',
         workflowNameLabel: 'Workflow name',
         saving: 'Saving...',
         saveButton: 'Save workflow',
@@ -123,7 +117,7 @@ const i18n = createI18n({
         updateLinkButton: 'Update link',
         updatingLink: 'Updating link...',
         publishedOn: 'Published on {date}',
-        assetsLabel: 'Assets ({count})',
+        mediaLabel: 'Media ({count})',
         modelsLabel: 'Models ({count})',
         acknowledgeCheckbox: 'I understand these assets...',
         comfyHubTitle: 'Upload to ComfyHub',
@@ -147,6 +141,7 @@ describe('ShareWorkflowDialogContent', () => {
       isModified: false,
       lastModified: 1000
     }
+    mockEnsurePublishAccess.mockResolvedValue(true)
     mockShareServiceData.assets = [{ name: 'test.png', thumbnailUrl: null }]
     mockShareServiceData.models = [{ name: 'model.safetensors' }]
   })
@@ -157,6 +152,13 @@ describe('ShareWorkflowDialogContent', () => {
       global: {
         plugins: [i18n],
         stubs: {
+          ComfyHubPublishWizardPanel: {
+            data: () => ({
+              publishName: ''
+            }),
+            template:
+              '<section data-testid="publish-panel"><input v-model="publishName" data-testid="publish-panel-input" /></section>'
+          },
           Input: {
             template: '<input v-bind="$attrs" />',
             methods: { focus() {}, select() {} }
@@ -178,7 +180,9 @@ describe('ShareWorkflowDialogContent', () => {
     const wrapper = createWrapper()
     await flushPromises()
 
-    expect(wrapper.text()).toContain('Save workflow first')
+    expect(wrapper.text()).toContain(
+      'You must save your workflow before sharing.'
+    )
     expect(wrapper.text()).toContain('Save workflow')
   })
 
@@ -194,7 +198,37 @@ describe('ShareWorkflowDialogContent', () => {
     const wrapper = createWrapper()
     await flushPromises()
 
-    expect(wrapper.text()).toContain('Save workflow first')
+    expect(wrapper.text()).toContain(
+      'You must save your workflow before sharing.'
+    )
+  })
+
+  it('renders share-link and publish tabs when comfy hub upload is enabled', async () => {
+    mockFlags.comfyHubUploadEnabled = true
+    const wrapper = createWrapper()
+    await flushPromises()
+
+    expect(wrapper.text()).toContain('Share link')
+    expect(wrapper.text()).toContain('Publish to Hub')
+    expect(wrapper.text()).toContain('Create link')
+    const publishTabPanel = wrapper.find('[data-testid="publish-tab-panel"]')
+    expect(publishTabPanel.exists()).toBe(true)
+    expect(publishTabPanel.attributes('style') ?? '').toContain(
+      'display: none;'
+    )
+    const publishPanel = wrapper.find('[data-testid="publish-panel"]')
+    expect(publishPanel.exists()).toBe(true)
+    mockFlags.comfyHubUploadEnabled = false
+  })
+
+  it('hides the publish tab when comfy hub upload is disabled', async () => {
+    mockFlags.comfyHubUploadEnabled = false
+    const wrapper = createWrapper()
+    await flushPromises()
+
+    expect(wrapper.text()).toContain('Share link')
+    expect(wrapper.text()).not.toContain('Publish to Hub')
+    expect(wrapper.find('[data-testid="publish-panel"]').exists()).toBe(false)
   })
 
   it('renders in unpublished state when workflow is saved', async () => {
@@ -202,6 +236,141 @@ describe('ShareWorkflowDialogContent', () => {
     await flushPromises()
 
     expect(wrapper.text()).toContain('Create link')
+  })
+
+  it('switches to publish tab when publish access is granted', async () => {
+    mockFlags.comfyHubUploadEnabled = true
+    mockEnsurePublishAccess.mockResolvedValueOnce(true)
+    const wrapper = createWrapper()
+    await flushPromises()
+
+    const publishTab = wrapper
+      .findAll('button')
+      .find((button) => button.text().includes('Publish to Hub'))
+
+    expect(publishTab).toBeDefined()
+    await publishTab!.trigger('click')
+    await flushPromises()
+
+    const publishTabPanel = wrapper.find('[data-testid="publish-tab-panel"]')
+    expect(publishTabPanel.attributes('style')).toBeUndefined()
+    expect(mockEnsurePublishAccess).toHaveBeenCalledOnce()
+    expect(mockEnsurePublishAccess).toHaveBeenCalledWith()
+    mockFlags.comfyHubUploadEnabled = false
+  })
+
+  it('keeps the share tab active when publish gate is cancelled', async () => {
+    mockFlags.comfyHubUploadEnabled = true
+    mockEnsurePublishAccess.mockResolvedValueOnce(false)
+    const wrapper = createWrapper()
+    await flushPromises()
+
+    const publishTab = wrapper
+      .findAll('button')
+      .find((button) => button.text().includes('Publish to Hub'))
+
+    expect(publishTab).toBeDefined()
+    await publishTab!.trigger('click')
+    await flushPromises()
+
+    const publishTabPanel = wrapper.find('[data-testid="publish-tab-panel"]')
+    expect(publishTabPanel.attributes('style') ?? '').toContain(
+      'display: none;'
+    )
+    expect(mockEnsurePublishAccess).toHaveBeenCalledOnce()
+    expect(mockEnsurePublishAccess).toHaveBeenCalledWith()
+    mockFlags.comfyHubUploadEnabled = false
+  })
+
+  it('keeps the share tab active while publish access is pending', async () => {
+    mockFlags.comfyHubUploadEnabled = true
+    let resolveGate: ((value: boolean) => void) | undefined
+    mockEnsurePublishAccess.mockReturnValue(
+      new Promise<boolean>((resolve) => {
+        resolveGate = resolve
+      })
+    )
+    const wrapper = createWrapper()
+    await flushPromises()
+
+    const publishTab = wrapper
+      .findAll('button')
+      .find((button) => button.text().includes('Publish to Hub'))
+
+    expect(publishTab).toBeDefined()
+    await publishTab!.trigger('click')
+    await nextTick()
+
+    const publishTabPanel = wrapper.find('[data-testid="publish-tab-panel"]')
+    expect(publishTabPanel.attributes('style') ?? '').toContain(
+      'display: none;'
+    )
+
+    resolveGate?.(true)
+    await flushPromises()
+
+    expect(publishTabPanel.attributes('style')).toBeUndefined()
+    mockFlags.comfyHubUploadEnabled = false
+  })
+
+  it('ignores stale publish access results when user switches back to share tab', async () => {
+    mockFlags.comfyHubUploadEnabled = true
+    let resolveGate: ((value: boolean) => void) | undefined
+    mockEnsurePublishAccess.mockReturnValue(
+      new Promise<boolean>((resolve) => {
+        resolveGate = resolve
+      })
+    )
+    const wrapper = createWrapper()
+    await flushPromises()
+
+    const publishTab = wrapper
+      .findAll('button')
+      .find((button) => button.text().includes('Publish to Hub'))
+    const shareTab = wrapper
+      .findAll('button')
+      .find((button) => button.text().includes('Share link'))
+
+    expect(publishTab).toBeDefined()
+    expect(shareTab).toBeDefined()
+
+    await publishTab!.trigger('click')
+    await nextTick()
+
+    await shareTab!.trigger('click')
+    await nextTick()
+
+    resolveGate?.(true)
+    await flushPromises()
+
+    const publishTabPanel = wrapper.find('[data-testid="publish-tab-panel"]')
+    expect(publishTabPanel.attributes('style') ?? '').toContain(
+      'display: none;'
+    )
+    mockFlags.comfyHubUploadEnabled = false
+  })
+
+  it('keeps the share tab active when publish access check fails', async () => {
+    mockFlags.comfyHubUploadEnabled = true
+    mockEnsurePublishAccess.mockRejectedValueOnce(new Error('Network error'))
+    const wrapper = createWrapper()
+    await flushPromises()
+
+    const publishTab = wrapper
+      .findAll('button')
+      .find((button) => button.text().includes('Publish to Hub'))
+
+    expect(publishTab).toBeDefined()
+    await publishTab!.trigger('click')
+    await flushPromises()
+
+    const publishTabPanel = wrapper.find('[data-testid="publish-tab-panel"]')
+    expect(publishTabPanel.attributes('style') ?? '').toContain(
+      'display: none;'
+    )
+    expect(mockEnsurePublishAccess).toHaveBeenCalledOnce()
+    expect(mockEnsurePublishAccess).toHaveBeenCalledWith()
+    mockFlags.comfyHubUploadEnabled = false
   })
 
   it('disables publish button when acknowledgment is unchecked', async () => {
@@ -256,12 +425,68 @@ describe('ShareWorkflowDialogContent', () => {
     expect(onClose).toHaveBeenCalled()
   })
 
-  it('renders ComfyHub upload section', async () => {
+  it('preserves share-link acknowledgment state across tab switches', async () => {
     mockFlags.comfyHubUploadEnabled = true
     const wrapper = createWrapper()
     await flushPromises()
 
-    expect(wrapper.text()).toContain('Upload to ComfyHub')
+    const checkbox = wrapper.find('input[type="checkbox"]')
+    await checkbox.setValue(true)
+    await nextTick()
+
+    const publishButton = wrapper
+      .findAll('button')
+      .find((button) => button.text().includes('Create link'))
+
+    expect(publishButton?.attributes('disabled')).toBeUndefined()
+
+    const publishTab = wrapper
+      .findAll('button')
+      .find((button) => button.text().includes('Publish to Hub'))
+
+    expect(publishTab).toBeDefined()
+    await publishTab!.trigger('click')
+    await flushPromises()
+
+    const publishTabPanel = wrapper.find('[data-testid="publish-tab-panel"]')
+    expect(publishTabPanel.attributes('style')).toBeUndefined()
+
+    const publishPanel = wrapper.find('[data-testid="publish-panel"]')
+    expect(publishPanel.exists()).toBe(true)
+
+    const publishPanelInput = wrapper.find(
+      '[data-testid="publish-panel-input"]'
+    )
+    await publishPanelInput.setValue('In-progress publish draft')
+
+    const shareTab = wrapper
+      .findAll('button')
+      .find((button) => button.text().includes('Share link'))
+
+    expect(shareTab).toBeDefined()
+    await shareTab!.trigger('click')
+
+    const createLinkButtonAfterSwitch = wrapper
+      .findAll('button')
+      .find((button) => button.text().includes('Create link'))
+
+    expect(createLinkButtonAfterSwitch?.attributes('disabled')).toBeUndefined()
+
+    const publishPanelAfterShareSwitch = wrapper.find(
+      '[data-testid="publish-panel"]'
+    )
+    expect(publishPanelAfterShareSwitch.exists()).toBe(true)
+    expect(publishTabPanel.attributes('style') ?? '').toContain(
+      'display: none;'
+    )
+
+    await publishTab!.trigger('click')
+    expect(
+      (
+        wrapper.find('[data-testid="publish-panel-input"]')
+          .element as HTMLInputElement
+      ).value
+    ).toBe('In-progress publish draft')
     mockFlags.comfyHubUploadEnabled = false
   })
 })

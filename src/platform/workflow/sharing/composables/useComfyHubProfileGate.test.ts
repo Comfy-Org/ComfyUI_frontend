@@ -255,6 +255,66 @@ describe('useComfyHubProfileGate', () => {
     })
   })
 
+  describe('ensurePublishAccess', () => {
+    it('returns true immediately when profile gate feature is disabled', async () => {
+      mockFlags.comfyHubProfileGateEnabled = false
+
+      const result = await gate.ensurePublishAccess()
+
+      expect(result).toBe(true)
+      expect(mockFetchApi).not.toHaveBeenCalled()
+      expect(mockShowDialog).not.toHaveBeenCalled()
+      expect(mockShareHide).not.toHaveBeenCalled()
+    })
+
+    it('returns true when gate completes without hiding the share dialog by default', async () => {
+      mockFlags.comfyHubProfileGateEnabled = true
+      mockFetchApi.mockResolvedValue(mockErrorResponse(404))
+      mockShowDialog.mockImplementation(({ props }) => {
+        props.onComplete()
+      })
+
+      const result = await gate.ensurePublishAccess()
+
+      expect(result).toBe(true)
+      expect(mockShowDialog).toHaveBeenCalledOnce()
+      expect(mockShareHide).not.toHaveBeenCalled()
+      expect(mockCloseDialog).toHaveBeenCalledWith({
+        key: 'comfyhub-profile-gate'
+      })
+    })
+
+    it('returns false when gate is cancelled without hiding the share dialog by default', async () => {
+      mockFlags.comfyHubProfileGateEnabled = true
+      mockFetchApi.mockResolvedValue(mockErrorResponse(404))
+      mockShowDialog.mockImplementation(({ props }) => {
+        props.onClose()
+      })
+
+      const result = await gate.ensurePublishAccess()
+
+      expect(result).toBe(false)
+      expect(mockShowDialog).toHaveBeenCalledOnce()
+      expect(mockShareHide).not.toHaveBeenCalled()
+      expect(mockCloseDialog).toHaveBeenCalledWith({
+        key: 'comfyhub-profile-gate'
+      })
+    })
+
+    it('hides the share dialog when explicitly requested before opening gate dialog', async () => {
+      mockFlags.comfyHubProfileGateEnabled = true
+      mockFetchApi.mockResolvedValue(mockErrorResponse(404))
+      mockShowDialog.mockImplementation(({ props }) => {
+        expect(mockShareHide).toHaveBeenCalledOnce()
+        props.onClose()
+      })
+
+      await gate.ensurePublishAccess({ hideShareDialogOnGate: true })
+
+      expect(mockShowDialog).toHaveBeenCalledOnce()
+    })
+  })
+
   describe('openPublishWithGate', () => {
     it('shows publish dialog directly when flag is off', async () => {
       mockFlags.comfyHubProfileGateEnabled = false

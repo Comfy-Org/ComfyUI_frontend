@@ -138,21 +138,31 @@ export function useComfyHubProfileGate() {
     })
   }
 
-  async function openPublishWithGate() {
+  async function ensurePublishAccess(options?: {
+    hideShareDialogOnGate?: boolean
+  }): Promise<boolean> {
     if (!flags.comfyHubProfileGateEnabled) {
-      publishDialog.show()
-      return
+      return true
     }
 
     const profileExists = await checkProfile()
     if (profileExists) {
-      publishDialog.show()
-      return
+      return true
     }
 
-    shareDialog.hide()
+    if (options?.hideShareDialogOnGate ?? false) {
+      shareDialog.hide()
+    }
+
     const result = await showProfileGateDialog()
-    if (result === 'complete') {
+    return result === 'complete'
+  }
+
+  async function openPublishWithGate() {
+    const hasPublishAccess = await ensurePublishAccess({
+      hideShareDialogOnGate: true
+    })
+    if (hasPublishAccess) {
       publishDialog.show()
     }
   }
@@ -162,6 +172,7 @@ export function useComfyHubProfileGate() {
     isCheckingProfile,
     checkProfile,
     createProfile,
+    ensurePublishAccess,
     openPublishWithGate
   }
 }

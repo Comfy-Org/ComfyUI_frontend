@@ -9,32 +9,54 @@
       </p>
     </div>
 
-    <div
-      v-for="section in sections"
-      :key="section.labelKey"
-      class="flex flex-col gap-2 my-0"
-    >
-      <p class="m-0 px-2 pb-1 pt-3 text-sm text-muted-foreground">
-        {{ $t(section.labelKey, section.items.length) }}
-      </p>
+    <div class="overflow-hidden rounded-lg border border-border-subtle">
       <div
-        class="max-h-[101px] overflow-y-auto rounded-lg border border-border-subtle bg-secondary-background py-2"
+        v-for="section in sections"
+        :key="section.id"
+        class="border-b border-border-subtle bg-secondary-background last:border-b-0"
       >
-        <div
-          v-for="item in section.items"
-          :key="item.name"
-          class="flex items-center gap-2 p-2"
+        <button
+          type="button"
+          :data-testid="`section-header-${section.id}`"
+          :aria-expanded="expandedSectionId === section.id"
+          :aria-controls="`section-content-${section.id}`"
+          class="flex h-6 w-full cursor-pointer items-center justify-between gap-2 border-none bg-transparent px-2 py-1 text-left"
+          @click="toggleSection(section.id)"
         >
-          <ShareAssetThumbnail
-            :name="item.name"
-            :thumbnail-url="item.thumbnailUrl"
-            @thumbnail-error="
-              onThumbnailError($event.name, $event.thumbnailUrl)
+          <span class="text-xs text-muted-foreground">
+            {{ $t(section.labelKey, section.items.length) }}
+          </span>
+          <i
+            :class="
+              cn(
+                'icon-[lucide--chevron-down] size-4 text-muted-foreground transition-transform',
+                expandedSectionId === section.id && 'rotate-180'
+              )
             "
           />
-          <span class="truncate text-sm text-base-foreground">
-            {{ item.name }}
-          </span>
+        </button>
+        <div
+          v-show="expandedSectionId === section.id"
+          :id="`section-content-${section.id}`"
+          :data-testid="`section-content-${section.id}`"
+          class="max-h-[101px] overflow-y-auto border-t border-border-subtle py-1"
+        >
+          <div
+            v-for="item in section.items"
+            :key="item.name"
+            class="flex items-center gap-2 p-2"
+          >
+            <ShareAssetThumbnail
+              :name="item.name"
+              :thumbnail-url="item.thumbnailUrl"
+              @thumbnail-error="
+                onThumbnailError($event.name, $event.thumbnailUrl)
+              "
+            />
+            <span class="truncate text-sm text-base-foreground">
+              {{ item.name }}
+            </span>
+          </div>
         </div>
       </div>
     </div>
@@ -59,10 +81,11 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref, watch } from 'vue'
 
 import type { WorkflowAsset, WorkflowModel } from '@/schemas/apiSchema'
 import ShareAssetThumbnail from '@/platform/workflow/sharing/components/ShareAssetThumbnail.vue'
+import { cn } from '@/utils/tailwindUtil'
 
 const { assets, models } = defineProps<{
   assets: WorkflowAsset[]
@@ -74,10 +97,17 @@ defineEmits<{
   'update:acknowledged': [value: boolean]
 }>()
 
+type SectionId = 'media' | 'models'
+
 const sections = computed(() =>
   [
-    { labelKey: 'shareWorkflow.assetsLabel', items: assets },
     {
+      id: 'media' as SectionId,
+      labelKey: 'shareWorkflow.mediaLabel',
+      items: assets
+    },
+    {
+      id: 'models' as SectionId,
       labelKey: 'shareWorkflow.modelsLabel',
       items: models.map((model) => ({
         ...model,
@@ -86,6 +116,42 @@ const sections = computed(() =>
     }
   ].filter((s) => s.items.length > 0)
 )
+
+const expandedSectionId = ref<SectionId | null>(null)
+
+function getDefaultExpandedSection(
+  availableSections: Array<{ id: SectionId }>
+): SectionId | null {
+  if (availableSections.length === 0) {
+    return null
+  }
+
+  return (
+    availableSections.find((section) => section.id === 'media')?.id ??
+    availableSections[0].id
+  )
+}
+
+watch(
+  sections,
+  (availableSections) => {
+    const hasExpandedSection = availableSections.some(
+      (section) => section.id === expandedSectionId.value
+    )
+    if (hasExpandedSection) {
+      return
+    }
+    expandedSectionId.value = getDefaultExpandedSection(availableSections)
+  },
+  { immediate: true }
+)
+
+function toggleSection(sectionId: SectionId) {
+  if (expandedSectionId.value === sectionId) {
+    return
+  }
+  expandedSectionId.value = sectionId
+}
 
 function onThumbnailError(
   name: string,
