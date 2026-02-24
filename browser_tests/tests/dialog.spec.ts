@@ -231,12 +231,13 @@ test.describe('Missing models warning', () => {
     test('Should disable warning dialog when checkbox is checked', async ({
       comfyPage
     }) => {
-      await checkbox.click()
       const changeSettingPromise = comfyPage.page.waitForRequest(
         '**/api/settings/Comfy.Workflow.ShowMissingModelsWarning'
       )
-      await closeButton.click()
+      await checkbox.click()
       await changeSettingPromise
+
+      await closeButton.click()
 
       const settingValue = await comfyPage.settings.getSetting(
         'Comfy.Workflow.ShowMissingModelsWarning'
