@@ -1,5 +1,5 @@
 <template>
-  <div class="flex items-center gap-3">
+  <div class="flex items-center gap-3 px-3 pt-2 2xl:px-4">
     <SearchBox
       :model-value="searchQuery"
       :placeholder="
@@ -27,6 +27,9 @@
           <MediaAssetSettingsMenu
             v-model:view-mode="viewMode"
             v-model:sort-by="sortBy"
+            v-model:group-by-job="groupByJob"
+            v-model:show-asset-names="showAssetNames"
+            v-model:show-asset-details="showAssetDetails"
             :show-sort-options="isCloud"
             :show-generation-time-sort
           />
@@ -59,6 +62,13 @@ const emit = defineEmits<{
 
 const sortBy = defineModel<SortBy>('sortBy', { required: true })
 const viewMode = defineModel<'list' | 'grid'>('viewMode', { required: true })
+const groupByJob = defineModel<boolean>('groupByJob', { required: true })
+const showAssetNames = defineModel<boolean>('showAssetNames', {
+  required: true
+})
+const showAssetDetails = defineModel<boolean>('showAssetDetails', {
+  required: true
+})
 
 const handleSearchChange = (value: string | undefined) => {
   emit('update:searchQuery', value ?? '')

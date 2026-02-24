@@ -47,9 +47,13 @@
             :preview-alt="getAssetDisplayName(item.asset)"
             :icon-name="iconForMediaType(getAssetMediaType(item.asset))"
             :is-video-preview="isVideoAsset(item.asset)"
-            :primary-text="getAssetPrimaryText(item.asset)"
-            :secondary-text="getAssetSecondaryText(item.asset)"
-            :stack-count="getStackCount(item.asset)"
+            :primary-text="
+              showAssetNames ? getAssetPrimaryText(item.asset) : undefined
+            "
+            :secondary-text="
+              showAssetDetails ? getAssetSecondaryText(item.asset) : undefined
+            "
+            :stack-count="groupByJob ? getStackCount(item.asset) : undefined"
             :stack-indicator-label="t('mediaAsset.actions.seeMoreOutputs')"
             :stack-expanded="isStackExpanded(item.asset)"
             @mouseenter="onAssetEnter(item.asset.id)"
@@ -78,7 +82,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { inject, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import LoadingOverlay from '@/components/common/LoadingOverlay.vue'
@@ -88,6 +92,10 @@ import AssetsListItem from '@/platform/assets/components/AssetsListItem.vue'
 import type { OutputStackListItem } from '@/platform/assets/composables/useOutputStacks'
 import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import {
+  ShowAssetDetailsKey,
+  ShowAssetNamesKey
+} from '@/platform/assets/schemas/mediaAssetSchema'
 import { iconForMediaType } from '@/platform/assets/utils/mediaIconUtil'
 import { useAssetsStore } from '@/stores/assetsStore'
 import {
@@ -104,7 +112,8 @@ const {
   isSelected,
   isStackExpanded,
   toggleStack,
-  assetType = 'output'
+  assetType = 'output',
+  groupByJob = true
 } = defineProps<{
   assetItems: OutputStackListItem[]
   selectableAssets: AssetItem[]
@@ -112,7 +121,11 @@ const {
   isStackExpanded: (asset: AssetItem) => boolean
   toggleStack: (asset: AssetItem) => Promise<void>
   assetType?: 'input' | 'output'
+  groupByJob?: boolean
 }>()
+
+const showAssetNames = inject(ShowAssetNamesKey, ref(true))
+const showAssetDetails = inject(ShowAssetDetailsKey, ref(true))
 
 const assetsStore = useAssetsStore()
 

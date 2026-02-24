@@ -50,6 +50,9 @@
         v-model:sort-by="sortBy"
         v-model:view-mode="viewMode"
         v-model:media-type-filters="mediaTypeFilters"
+        v-model:group-by-job="groupByJob"
+        v-model:show-asset-names="showAssetNames"
+        v-model:show-asset-details="showAssetDetails"
         class="px-2 pb-1 2xl:px-4"
         :show-generation-time-sort="activeTab === 'output'"
       />
@@ -88,12 +91,17 @@
       <div v-else class="relative size-full" @click="handleEmptySpaceClick">
         <AssetsSidebarListView
           v-if="isListView"
-          :asset-items="listViewAssetItems"
+          :asset-items="
+            groupByJob ? listViewAssetItems : ungroupedListViewItems
+          "
           :is-selected="isSelected"
-          :selectable-assets="listViewSelectableAssets"
+          :selectable-assets="
+            groupByJob ? listViewSelectableAssets : ungroupedAssets
+          "
           :is-stack-expanded="isListViewStackExpanded"
           :toggle-stack="toggleListViewStack"
           :asset-type="activeTab"
+          :group-by-job="groupByJob"
           @select-asset="handleAssetSelect"
           @preview-asset="handleZoomClick"
           @context-menu="handleAssetContextMenu"
@@ -101,7 +109,7 @@
         />
         <AssetsSidebarGridView
           v-else
-          :assets="displayAssets"
+          :assets="ungroupedAssets"
           :is-selected="isSelected"
           :asset-type="activeTab"
           :show-output-count="shouldShowOutputCount"
@@ -211,6 +219,7 @@ import {
   nextTick,
   onMounted,
   onUnmounted,
+  provide,
   ref,
   watch
 } from 'vue'
@@ -232,11 +241,17 @@ import { useMediaAssets } from '@/platform/assets/composables/media/useMediaAsse
 import { useAssetSelection } from '@/platform/assets/composables/useAssetSelection'
 import { useMediaAssetActions } from '@/platform/assets/composables/useMediaAssetActions'
 import { useMediaAssetFiltering } from '@/platform/assets/composables/useMediaAssetFiltering'
+import type { OutputStackListItem } from '@/platform/assets/composables/useOutputStacks'
 import { useOutputStacks } from '@/platform/assets/composables/useOutputStacks'
+import { useUngroupedAssets } from '@/platform/assets/composables/useUngroupedAssets'
 import type { OutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
 import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import type { MediaKind } from '@/platform/assets/schemas/mediaAssetSchema'
+import {
+  ShowAssetDetailsKey,
+  ShowAssetNamesKey
+} from '@/platform/assets/schemas/mediaAssetSchema'
 import { resolveOutputAssetItems } from '@/platform/assets/utils/outputAssetUtil'
 import { isCloud } from '@/platform/distribution/types'
 import { useDialogStore } from '@/stores/dialogStore'
@@ -266,6 +281,14 @@ const viewMode = useStorage<'list' | 'grid'>(
   'grid'
 )
 const isListView = computed(() => viewMode.value === 'list')
+const groupByJob = useStorage('Comfy.Assets.Sidebar.GroupByJob', true)
+const showAssetNames = useStorage('Comfy.Assets.Sidebar.ShowAssetNames', true)
+const showAssetDetails = useStorage(
+  'Comfy.Assets.Sidebar.ShowAssetDetails',
+  true
+)
+provide(ShowAssetNamesKey, showAssetNames)
+provide(ShowAssetDetailsKey, showAssetDetails)
 
 const contextMenuRef = ref<InstanceType<typeof MediaAssetContextMenu>>()
 const contextMenuAsset = ref<AssetItem | null>(null)
@@ -286,6 +309,7 @@ const contextMenuFileKind = computed<MediaKind>(() =>
 )
 
 const shouldShowOutputCount = (item: AssetItem): boolean => {
+  if (!groupByJob.value) return false
   if (activeTab.value !== 'output' || isInFolderView.value) {
     return false
   }
@@ -392,9 +416,10 @@ const baseAssets = computed(() => {
 const { searchQuery, sortBy, mediaTypeFilters, filteredAssets } =
   useMediaAssetFiltering(baseAssets)
 
-const displayAssets = computed(() => {
-  return filteredAssets.value
-})
+const { ungroupedAssets, isResolving } = useUngroupedAssets(
+  filteredAssets,
+  groupByJob
+)
 
 const {
   assetItems: listViewAssetItems,
@@ -402,11 +427,19 @@ const {
   isStackExpanded: isListViewStackExpanded,
   toggleStack: toggleListViewStack
 } = useOutputStacks({
-  assets: computed(() => displayAssets.value)
+  assets: filteredAssets
 })
 
+const ungroupedListViewItems = computed<OutputStackListItem[]>(() =>
+  ungroupedAssets.value.map((asset) => ({
+    key: `asset-${asset.id}`,
+    asset
+  }))
+)
+
 const visibleAssets = computed(() => {
-  if (!isListView.value) return displayAssets.value
+  if (!isListView.value) return ungroupedAssets.value
+  if (!groupByJob.value) return ungroupedAssets.value
   return listViewSelectableAssets.value
 })
 
@@ -426,14 +459,24 @@ const isFolderLoading = computed(
   () => isInFolderView.value && folderLoading.value
 )
 
-const showLoadingState = computed(
-  () =>
-    (loading.value || isFolderLoading.value) && displayAssets.value.length === 0
-)
+const showLoadingState = computed(() => {
+  if (
+    (loading.value || isFolderLoading.value) &&
+    filteredAssets.value.length === 0
+  ) {
+    return true
+  }
+  if (!groupByJob.value && isResolving.value) {
+    return true
+  }
+  return false
+})
 
 const showEmptyState = computed(
   () =>
-    !loading.value && !isFolderLoading.value && displayAssets.value.length === 0
+    !loading.value &&
+    !isFolderLoading.value &&
+    filteredAssets.value.length === 0
 )
 
 watch(visibleAssets, (newAssets) => {

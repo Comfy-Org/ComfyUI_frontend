@@ -49,3 +49,9 @@ interface MediaAssetProviderValue {
 
 export const MediaAssetKey: InjectionKey<MediaAssetProviderValue> =
   Symbol('mediaAsset')
+
+export const ShowAssetNamesKey: InjectionKey<Ref<boolean>> =
+  Symbol('showAssetNames')
+
+export const ShowAssetDetailsKey: InjectionKey<Ref<boolean>> =
+  Symbol('showAssetDetails')
