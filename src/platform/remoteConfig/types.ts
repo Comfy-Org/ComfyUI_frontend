@@ -44,4 +44,6 @@ export type RemoteConfig = {
   team_workspaces_enabled?: boolean
   user_secrets_enabled?: boolean
   node_library_essentials_enabled?: boolean
+  free_tier_credits?: number
+  new_free_tier_subscriptions?: boolean
 }
