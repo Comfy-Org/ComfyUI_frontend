@@ -8,10 +8,12 @@ interface WorkflowMenuSeparator {
 
 export interface WorkflowMenuAction {
   separator?: false
+  id: string
   label: string
   icon?: string
   command?: () => void
   disabled?: boolean
   badge?: string
+  isNew?: boolean
   overlayIcon?: OverlayIconProps
 }
