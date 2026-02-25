@@ -20,7 +20,7 @@ const badges = computed<TopbarBadge[]>(() => {
 
   // Always add cloud badge last (furthest right)
   result.push({
-    icon: 'pi pi-cloud',
+    icon: 'icon-[lucide--cloud]',
     text: 'Comfy Cloud'
   })
 
