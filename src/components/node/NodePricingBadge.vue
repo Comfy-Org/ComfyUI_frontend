@@ -1,18 +1,11 @@
 <template>
-  <BadgePill
-    v-if="nodeDef.api_node"
-    v-show="priceLabel"
-    :text="priceLabel"
-    icon="icon-[comfy--credits]"
-    border-style="#f59e0b"
-    filled
-  />
+  <CreditBadge v-if="nodeDef.api_node && priceLabel" :text="priceLabel" />
 </template>
 
 <script setup lang="ts">
 import { ref, watch } from 'vue'
 
-import BadgePill from '@/components/common/BadgePill.vue'
+import CreditBadge from '@/components/node/CreditBadge.vue'
 import { evaluateNodeDefPricing } from '@/composables/node/useNodePricing'
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 

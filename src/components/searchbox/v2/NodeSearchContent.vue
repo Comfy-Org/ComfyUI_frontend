@@ -7,52 +7,43 @@
     <NodeSearchInput
       ref="searchInputRef"
       v-model:search-query="searchQuery"
-      v-model:filter-query="filterQuery"
       :filters="filters"
-      :active-filter="activeFilter"
       @remove-filter="emit('removeFilter', $event)"
-      @cancel-filter="cancelFilter"
-      @navigate-down="onKeyDown"
-      @navigate-up="onKeyUp"
-      @select-current="onKeyEnter"
+      @navigate-down="navigateResults(1)"
+      @navigate-up="navigateResults(-1)"
+      @select-current="selectCurrentResult"
     />
 
     <!-- Filter header row -->
     <div class="flex items-center">
-      <div class="shrink-0 px-3 py-2 text-sm text-muted-foreground">
-        {{ $t('g.filterBy') }}
-      </div>
       <NodeSearchFilterBar
         class="flex-1"
-        :active-chip-key="activeFilter?.key"
-        @select-chip="onSelectFilterChip"
+        :filters="filters"
+        :active-category="rootFilter"
+        @toggle-filter="onToggleFilter"
+        @clear-filter-group="onClearFilterGroup"
+        @focus-search="nextTick(() => searchInputRef?.focus())"
+        @select-category="onSelectCategory"
       />
     </div>
 
     <!-- Content area -->
     <div class="flex min-h-0 flex-1 overflow-hidden">
-      <!-- Category sidebar (hidden in filter mode) -->
+      <!-- Category sidebar -->
       <NodeSearchCategorySidebar
-        v-if="!activeFilter"
         v-model:selected-category="sidebarCategory"
         class="w-52 shrink-0"
+        :hide-chevrons="!anyTreeCategoryHasChildren"
+        :hide-presets="rootFilter !== null"
+        :node-defs="rootFilteredNodeDefs"
       />
 
-      <!-- Filter options list (filter selection mode) -->
-      <NodeSearchFilterPanel
-        v-if="activeFilter"
-        ref="filterPanelRef"
-        v-model:query="filterQuery"
-        :chip="activeFilter"
-        @apply="onFilterApply"
-      />
-
-      <!-- Results list (normal mode) -->
+      <!-- Results list -->
       <div
-        v-else
         id="results-list"
         role="listbox"
         class="flex-1 overflow-y-auto py-2"
+        @pointermove="onPointerMove"
       >
         <div
           v-for="(node, index) in displayedResults"
@@ -68,13 +59,12 @@
             )
           "
           @click="emit('addNode', node, $event)"
-          @mouseenter="selectedIndex = index"
         >
           <NodeSearchListItem
             :node-def="node"
             :current-query="searchQuery"
             show-description
-            :show-source-badge="effectiveCategory !== 'essentials'"
+            :show-source-badge="rootFilter !== 'essentials'"
             :hide-bookmark-icon="effectiveCategory === 'favorites'"
           />
         </div>
@@ -90,19 +80,17 @@
 </template>
 
 <script setup lang="ts">
-import { computed, nextTick, ref, watch } from 'vue'
+import { computed, nextTick, onMounted, ref, watch } from 'vue'
 
-import type { FilterChip } from '@/components/searchbox/v2/NodeSearchFilterBar.vue'
 import NodeSearchFilterBar from '@/components/searchbox/v2/NodeSearchFilterBar.vue'
 import NodeSearchCategorySidebar from '@/components/searchbox/v2/NodeSearchCategorySidebar.vue'
-import NodeSearchFilterPanel from '@/components/searchbox/v2/NodeSearchFilterPanel.vue'
 import NodeSearchInput from '@/components/searchbox/v2/NodeSearchInput.vue'
 import NodeSearchListItem from '@/components/searchbox/v2/NodeSearchListItem.vue'
 import { useNodeBookmarkStore } from '@/stores/nodeBookmarkStore'
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 import { useNodeDefStore, useNodeFrequencyStore } from '@/stores/nodeDefStore'
 import { NodeSourceType } from '@/types/nodeSource'
-import type { FuseFilterWithValue } from '@/utils/fuseUtil'
+import type { FuseFilter, FuseFilterWithValue } from '@/utils/fuseUtil'
 import { cn } from '@/utils/tailwindUtil'
 
 const { filters } = defineProps<{
@@ -116,58 +104,85 @@ const emit = defineEmits<{
   hoverNode: [nodeDef: ComfyNodeDefImpl | null]
 }>()
 
+const BLUEPRINT_CATEGORY = 'Subgraph Blueprints'
+
 const nodeDefStore = useNodeDefStore()
 const nodeFrequencyStore = useNodeFrequencyStore()
 const nodeBookmarkStore = useNodeBookmarkStore()
 
+function isEssentialNode(n: ComfyNodeDefImpl): boolean {
+  return n.nodeSource.type === NodeSourceType.Essentials
+}
+
+function isCustomNode(n: ComfyNodeDefImpl): boolean {
+  return (
+    n.nodeSource.type !== NodeSourceType.Core &&
+    !isEssentialNode(n) &&
+    n.python_module !== 'blueprint'
+  )
+}
+
 const dialogRef = ref<HTMLElement>()
 const searchInputRef = ref<InstanceType<typeof NodeSearchInput>>()
-const filterPanelRef = ref<InstanceType<typeof NodeSearchFilterPanel>>()
+
+onMounted(() => {
+  if (dialogRef.value) {
+    dialogRef.value.style.height = `${dialogRef.value.offsetHeight}px`
+  }
+})
 
 const searchQuery = ref('')
 const selectedCategory = ref('most-relevant')
 const selectedIndex = ref(0)
 
-// Filter selection mode
-const activeFilter = ref<FilterChip | null>(null)
-const filterQuery = ref('')
+// Root filter from filter bar category buttons (radio toggle)
+const rootFilter = ref<string | null>(null)
 
-function lockDialogHeight() {
-  if (dialogRef.value) {
-    dialogRef.value.style.height = `${dialogRef.value.offsetHeight}px`
+const rootFilteredNodeDefs = computed(() => {
+  if (!rootFilter.value) return nodeDefStore.visibleNodeDefs
+  const allNodes = nodeDefStore.visibleNodeDefs
+  switch (rootFilter.value) {
+    case BLUEPRINT_CATEGORY:
+      return allNodes.filter((n) => n.category.startsWith(rootFilter.value!))
+    case 'partner-nodes':
+      return allNodes.filter((n) => n.api_node)
+    case 'essentials':
+      return allNodes.filter(isEssentialNode)
+    case 'custom':
+      return allNodes.filter(isCustomNode)
+    default:
+      return allNodes
+  }
+})
+
+function onToggleFilter(
+  filterDef: FuseFilter<ComfyNodeDefImpl, string>,
+  value: string
+) {
+  const existing = filters.find(
+    (f) => f.filterDef.id === filterDef.id && f.value === value
+  )
+  if (existing) {
+    emit('removeFilter', existing)
+  } else {
+    emit('addFilter', { filterDef, value })
   }
 }
 
-function unlockDialogHeight() {
-  if (dialogRef.value) {
-    dialogRef.value.style.height = ''
+function onClearFilterGroup(filterId: string) {
+  for (const f of filters.filter((f) => f.filterDef.id === filterId)) {
+    emit('removeFilter', f)
   }
 }
 
-function onSelectFilterChip(chip: FilterChip) {
-  if (activeFilter.value?.key === chip.key) {
-    cancelFilter()
-    return
+function onSelectCategory(category: string) {
+  if (rootFilter.value === category) {
+    rootFilter.value = null
+  } else {
+    rootFilter.value = category
   }
-  lockDialogHeight()
-  activeFilter.value = chip
-  filterQuery.value = ''
-  nextTick(() => searchInputRef.value?.focus())
-}
-
-function onFilterApply(value: string) {
-  if (!activeFilter.value) return
-  emit('addFilter', { filterDef: activeFilter.value.filter, value })
-  activeFilter.value = null
-  filterQuery.value = ''
-  unlockDialogHeight()
-  nextTick(() => searchInputRef.value?.focus())
-}
-
-function cancelFilter() {
-  activeFilter.value = null
-  filterQuery.value = ''
-  unlockDialogHeight()
+  selectedCategory.value = 'most-relevant'
+  searchQuery.value = ''
   nextTick(() => searchInputRef.value?.focus())
 }
 
@@ -197,30 +212,41 @@ function matchesFilters(node: ComfyNodeDefImpl): boolean {
   return filters.every(({ filterDef, value }) => filterDef.matches(node, value))
 }
 
+// Check if any tree category has children (for chevron visibility)
+const anyTreeCategoryHasChildren = computed(() =>
+  rootFilteredNodeDefs.value.some((n) => n.category.includes('/'))
+)
+
 const displayedResults = computed<ComfyNodeDefImpl[]>(() => {
-  const allNodes = nodeDefStore.visibleNodeDefs
+  const baseNodes = rootFilteredNodeDefs.value
 
   let results: ComfyNodeDefImpl[]
   switch (effectiveCategory.value) {
-    case 'most-relevant':
-      return searchResults.value
+    case 'most-relevant': {
+      if (searchQuery.value || filters.length > 0) {
+        const searched = searchResults.value
+        if (rootFilter.value) {
+          const rootSet = new Set(baseNodes.map((n) => n.name))
+          return searched.filter((n) => rootSet.has(n.name))
+        }
+        return searched
+      }
+      if (rootFilter.value) {
+        return baseNodes
+      }
+      return nodeFrequencyStore.topNodeDefs
+    }
     case 'favorites':
-      results = allNodes.filter((n) => nodeBookmarkStore.isBookmarked(n))
+      results = baseNodes.filter((n) => nodeBookmarkStore.isBookmarked(n))
       break
     case 'essentials':
-      results = allNodes.filter(
-        (n) => n.nodeSource.type === NodeSourceType.Essentials
-      )
+      results = baseNodes.filter(isEssentialNode)
       break
     case 'custom':
-      results = allNodes.filter(
-        (n) =>
-          n.nodeSource.type !== NodeSourceType.Core &&
-          n.nodeSource.type !== NodeSourceType.Essentials
-      )
+      results = baseNodes.filter(isCustomNode)
       break
     default:
-      results = allNodes.filter(
+      results = baseNodes.filter(
         (n) =>
           n.category === effectiveCategory.value ||
           n.category.startsWith(effectiveCategory.value + '/')
@@ -243,35 +269,19 @@ watch(
   { immediate: true }
 )
 
-watch([selectedCategory, searchQuery, () => filters], () => {
+watch([selectedCategory, searchQuery, rootFilter, () => filters], () => {
   selectedIndex.value = 0
 })
 
+function onPointerMove(event: PointerEvent) {
+  const item = (event.target as HTMLElement).closest('[role=option]')
+  if (!item) return
+  const index = Number(item.id.replace('result-item-', ''))
+  if (!isNaN(index) && index !== selectedIndex.value)
+    selectedIndex.value = index
+}
+
 // Keyboard navigation
-function onKeyDown() {
-  if (activeFilter.value) {
-    filterPanelRef.value?.navigate(1)
-  } else {
-    navigateResults(1)
-  }
-}
-
-function onKeyUp() {
-  if (activeFilter.value) {
-    filterPanelRef.value?.navigate(-1)
-  } else {
-    navigateResults(-1)
-  }
-}
-
-function onKeyEnter() {
-  if (activeFilter.value) {
-    filterPanelRef.value?.selectCurrent()
-  } else {
-    selectCurrentResult()
-  }
-}
-
 function navigateResults(direction: number) {
   const newIndex = selectedIndex.value + direction
   if (newIndex >= 0 && newIndex < displayedResults.value.length) {

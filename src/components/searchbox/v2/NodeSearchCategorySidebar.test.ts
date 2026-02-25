@@ -8,6 +8,7 @@ import {
   setupTestPinia,
   testI18n
 } from '@/components/searchbox/v2/__test__/testUtils'
+import { useNodeBookmarkStore } from '@/stores/nodeBookmarkStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 
 vi.mock('@/platform/settings/settingStore', () => ({
@@ -21,6 +22,7 @@ describe('NodeSearchCategorySidebar', () => {
   beforeEach(() => {
     vi.restoreAllMocks()
     setupTestPinia()
+    vi.spyOn(useNodeBookmarkStore(), 'bookmarks', 'get').mockReturnValue([])
   })
 
   async function createWrapper(props = {}) {
@@ -47,6 +49,9 @@ describe('NodeSearchCategorySidebar', () => {
 
   describe('preset categories', () => {
     it('should render all preset categories', async () => {
+      vi.spyOn(useNodeBookmarkStore(), 'bookmarks', 'get').mockReturnValue([
+        'placeholder'
+      ])
       useNodeDefStore().updateNodeDefs([
         createMockNodeDef({
           name: 'EssentialNode',
@@ -74,6 +79,9 @@ describe('NodeSearchCategorySidebar', () => {
     })
 
     it('should emit update:selectedCategory when preset is clicked', async () => {
+      vi.spyOn(useNodeBookmarkStore(), 'bookmarks', 'get').mockReturnValue([
+        'placeholder'
+      ])
       const wrapper = await createWrapper({ selectedCategory: 'most-relevant' })
 
       await clickCategory(wrapper, 'Favorites')
@@ -122,7 +130,8 @@ describe('NodeSearchCategorySidebar', () => {
       useNodeDefStore().updateNodeDefs([
         createMockNodeDef({ name: 'Node1', category: 'sampling' }),
         createMockNodeDef({ name: 'Node2', category: 'sampling/advanced' }),
-        createMockNodeDef({ name: 'Node3', category: 'sampling/basic' })
+        createMockNodeDef({ name: 'Node3', category: 'sampling/basic' }),
+        createMockNodeDef({ name: 'Node4', category: 'other' })
       ])
       await nextTick()
 
@@ -161,7 +170,8 @@ describe('NodeSearchCategorySidebar', () => {
     it('should emit update:selectedCategory when subcategory is clicked', async () => {
       useNodeDefStore().updateNodeDefs([
         createMockNodeDef({ name: 'Node1', category: 'sampling' }),
-        createMockNodeDef({ name: 'Node2', category: 'sampling/advanced' })
+        createMockNodeDef({ name: 'Node2', category: 'sampling/advanced' }),
+        createMockNodeDef({ name: 'Node3', category: 'other' })
       ])
       await nextTick()
 
@@ -197,7 +207,8 @@ describe('NodeSearchCategorySidebar', () => {
     it('should emit selected subcategory when expanded', async () => {
       useNodeDefStore().updateNodeDefs([
         createMockNodeDef({ name: 'Node1', category: 'sampling' }),
-        createMockNodeDef({ name: 'Node2', category: 'sampling/advanced' })
+        createMockNodeDef({ name: 'Node2', category: 'sampling/advanced' }),
+        createMockNodeDef({ name: 'Node3', category: 'other' })
       ])
       await nextTick()
 
@@ -216,7 +227,8 @@ describe('NodeSearchCategorySidebar', () => {
     useNodeDefStore().updateNodeDefs([
       createMockNodeDef({ name: 'Node1', category: 'api' }),
       createMockNodeDef({ name: 'Node2', category: 'api/image' }),
-      createMockNodeDef({ name: 'Node3', category: 'api/image/BFL' })
+      createMockNodeDef({ name: 'Node3', category: 'api/image/BFL' }),
+      createMockNodeDef({ name: 'Node4', category: 'other' })
     ])
     await nextTick()
 

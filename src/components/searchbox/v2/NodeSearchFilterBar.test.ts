@@ -33,48 +33,72 @@ describe(NodeSearchFilterBar, () => {
   async function createWrapper(props = {}) {
     const wrapper = mount(NodeSearchFilterBar, {
       props,
-      global: { plugins: [testI18n] }
+      global: {
+        plugins: [testI18n],
+        stubs: {
+          NodeSearchTypeFilterPopover: {
+            template: '<div data-testid="popover"><slot /></div>',
+            props: ['chip', 'selectedValues']
+          }
+        }
+      }
     })
     await nextTick()
     return wrapper
   }
 
-  it('should render Input, Output, and Source filter chips', async () => {
+  it('should render Extensions button and Input/Output popover triggers', async () => {
     const wrapper = await createWrapper()
 
     const buttons = wrapper.findAll('button')
-    expect(buttons).toHaveLength(3)
-    expect(buttons[0].text()).toBe('Input')
-    expect(buttons[1].text()).toBe('Output')
-    expect(buttons[2].text()).toBe('Source')
+    const texts = buttons.map((b) => b.text())
+    expect(texts).toContain('Extensions')
+    expect(texts).toContain('Input')
+    expect(texts).toContain('Output')
   })
 
-  it('should mark active chip as pressed when activeChipKey matches', async () => {
-    const wrapper = await createWrapper({ activeChipKey: 'input' })
+  it('should render conditional category buttons when matching nodes exist', async () => {
+    useNodeDefStore().updateNodeDefs([
+      createMockNodeDef({
+        name: 'BlueprintNode',
+        category: 'Subgraph Blueprints/MyBlueprint'
+      }),
+      createMockNodeDef({
+        name: 'ApiNode',
+        api_node: true
+      }),
+      createMockNodeDef({
+        name: 'EssentialNode',
+        essentials_category: 'basic'
+      })
+    ])
+    await nextTick()
 
-    const inputBtn = wrapper.findAll('button').find((b) => b.text() === 'Input')
-    expect(inputBtn?.attributes('aria-pressed')).toBe('true')
+    const wrapper = await createWrapper()
+    const texts = wrapper.findAll('button').map((b) => b.text())
+    expect(texts).toContain('Blueprints')
+    expect(texts).toContain('Partner Nodes')
+    expect(texts).toContain('Essentials')
   })
 
-  it('should not mark chips as pressed when activeChipKey does not match', async () => {
-    const wrapper = await createWrapper({ activeChipKey: null })
-
-    wrapper.findAll('button').forEach((btn) => {
-      expect(btn.attributes('aria-pressed')).toBe('false')
-    })
-  })
-
-  it('should emit selectChip with chip data when clicked', async () => {
+  it('should emit selectCategory when category button is clicked', async () => {
     const wrapper = await createWrapper()
 
-    const inputBtn = wrapper.findAll('button').find((b) => b.text() === 'Input')
-    await inputBtn?.trigger('click')
+    const extensionsBtn = wrapper
+      .findAll('button')
+      .find((b) => b.text() === 'Extensions')!
+    await extensionsBtn.trigger('click')
 
-    const emitted = wrapper.emitted('selectChip')!
-    expect(emitted[0][0]).toMatchObject({
-      key: 'input',
-      label: 'Input',
-      filter: expect.anything()
-    })
+    expect(wrapper.emitted('selectCategory')![0]).toEqual(['custom'])
+  })
+
+  it('should apply active styling when activeCategory matches', async () => {
+    const wrapper = await createWrapper({ activeCategory: 'custom' })
+
+    const extensionsBtn = wrapper
+      .findAll('button')
+      .find((b) => b.text() === 'Extensions')!
+
+    expect(extensionsBtn.classes()).toContain('bg-base-foreground')
   })
 })

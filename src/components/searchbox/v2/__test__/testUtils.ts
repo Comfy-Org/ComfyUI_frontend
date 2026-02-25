@@ -41,11 +41,13 @@ export const testI18n = createI18n({
         essentials: 'Essentials',
         custom: 'Custom',
         noResults: 'No results',
-        filterByType: 'Filter by {type}...',
         input: 'Input',
         output: 'Output',
         source: 'Source',
-        search: 'Search'
+        search: 'Search',
+        blueprints: 'Blueprints',
+        partnerNodes: 'Partner Nodes',
+        extensions: 'Extensions'
       }
     }
   }

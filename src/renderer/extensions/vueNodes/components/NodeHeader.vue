@@ -55,25 +55,12 @@
         </div>
       </div>
 
-      <template v-for="badge in priceBadges ?? []" :key="badge.required">
-        <span
-          :class="
-            cn(
-              'flex h-5 bg-component-node-widget-background p-1 items-center text-xs shrink-0',
-              badge.rest ? 'rounded-l-full pr-1' : 'rounded-full'
-            )
-          "
-        >
-          <i class="h-full icon-[lucide--component] bg-amber-400" />
-          <span class="truncate" v-text="badge.required" />
-        </span>
-        <span
-          v-if="badge.rest"
-          class="truncate -ml-2.5 grow-1 basis-0 bg-component-node-widget-background rounded-r-full max-w-max min-w-0"
-        >
-          <span class="pr-2" v-text="badge.rest" />
-        </span>
-      </template>
+      <CreditBadge
+        v-for="badge in priceBadges ?? []"
+        :key="badge.required"
+        :text="badge.required"
+        :rest="badge.rest"
+      />
       <NodeBadge v-if="statusBadge" v-bind="statusBadge" />
       <i
         v-if="isPinned"
@@ -88,6 +75,7 @@
 import { computed, onErrorCaptured, ref, watch } from 'vue'
 
 import EditableText from '@/components/common/EditableText.vue'
+import CreditBadge from '@/components/node/CreditBadge.vue'
 import Button from '@/components/ui/button/Button.vue'
 import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
 import { useErrorHandling } from '@/composables/useErrorHandling'
