@@ -44,6 +44,12 @@ export const TestIds = {
   node: {
     titleInput: 'node-title-input'
   },
+  selectionToolbox: {
+    colorPickerButton: 'color-picker-button',
+    colorPickerCurrentColor: 'color-picker-current-color',
+    colorBlue: 'blue',
+    colorRed: 'red'
+  },
   widgets: {
     decrement: 'decrement',
     increment: 'increment',
@@ -74,6 +80,7 @@ export type TestIdValue =
   | (typeof TestIds.nodeLibrary)[keyof typeof TestIds.nodeLibrary]
   | (typeof TestIds.propertiesPanel)[keyof typeof TestIds.propertiesPanel]
   | (typeof TestIds.node)[keyof typeof TestIds.node]
+  | (typeof TestIds.selectionToolbox)[keyof typeof TestIds.selectionToolbox]
   | (typeof TestIds.widgets)[keyof typeof TestIds.widgets]
   | (typeof TestIds.breadcrumb)[keyof typeof TestIds.breadcrumb]
   | Exclude<
