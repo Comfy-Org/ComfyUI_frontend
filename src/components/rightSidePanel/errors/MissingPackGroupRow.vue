@@ -93,14 +93,12 @@
       "
       class="flex items-start w-full pt-1 pb-1"
     >
-      <div
-        :class="
-          cn(
-            'flex flex-1 h-8 items-center justify-center overflow-hidden p-2 rounded-lg min-w-0 transition-colors select-none',
-            comfyManagerStore.isPackInstalled(group.packId)
-              ? 'bg-secondary-background opacity-60 cursor-not-allowed'
-              : 'bg-secondary-background-hover cursor-pointer hover:bg-secondary-background-selected'
-          )
+      <Button
+        variant="secondary"
+        size="md"
+        class="flex flex-1 w-full"
+        :disabled="
+          comfyManagerStore.isPackInstalled(group.packId) || isInstalling
         "
         @click="handlePackInstallClick"
       >
@@ -127,7 +125,7 @@
                 : t('rightSidePanel.missingNodePacks.installNodePack')
           }}
         </span>
-      </div>
+      </Button>
     </div>
 
     <!-- Registry still loading: packId known but result not yet available -->
@@ -150,8 +148,10 @@
       v-else-if="group.packId !== null && shouldShowManagerButtons"
       class="flex items-start w-full pt-1 pb-1"
     >
-      <div
-        class="flex flex-1 h-8 items-center justify-center overflow-hidden p-2 rounded-lg min-w-0 bg-secondary-background-hover cursor-pointer hover:bg-secondary-background-selected transition-colors select-none"
+      <Button
+        variant="secondary"
+        size="md"
+        class="flex flex-1 w-full"
         @click="
           openManager({
             initialTab: ManagerTab.All,
@@ -163,7 +163,7 @@
         <span class="text-sm text-foreground truncate min-w-0">
           {{ t('rightSidePanel.missingNodePacks.searchInManager') }}
         </span>
-      </div>
+      </Button>
     </div>
   </div>
 </template>
