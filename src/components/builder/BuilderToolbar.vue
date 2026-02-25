@@ -62,6 +62,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useEventListener } from '@vueuse/core'
 
 import { useAppModeStore } from '@/stores/appModeStore'
 import type { AppMode } from '@/stores/appModeStore'
@@ -74,6 +75,14 @@ import type { BuilderToolbarStep } from './types'
 
 const { t } = useI18n()
 const appModeStore = useAppModeStore()
+
+useEventListener(document, 'keydown', (e: KeyboardEvent) => {
+  if (e.key !== 'Escape') return
+
+  e.preventDefault()
+  e.stopPropagation()
+  void appModeStore.exitBuilder()
+})
 
 const activeStep = computed(() =>
   appModeStore.isBuilderSaving ? 'save' : appModeStore.mode

@@ -25,7 +25,7 @@
         <!-- First panel: sidebar when left, properties when right -->
         <SplitterPanel
           v-if="
-            !focusMode && (sidebarLocation === 'left' || rightSidePanelVisible)
+            !focusMode && (sidebarLocation === 'left' || showOffsideSplitter)
           "
           :class="
             sidebarLocation === 'left'
@@ -85,7 +85,7 @@
         <!-- Last panel: properties when left, sidebar when right -->
         <SplitterPanel
           v-if="
-            !focusMode && (sidebarLocation === 'right' || rightSidePanelVisible)
+            !focusMode && (sidebarLocation === 'right' || showOffsideSplitter)
           "
           :class="
             sidebarLocation === 'right'
@@ -124,6 +124,7 @@ import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { useAppModeStore } from '@/stores/appModeStore'
 import { useBottomPanelStore } from '@/stores/workspace/bottomPanelStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
@@ -144,9 +145,13 @@ const unifiedWidth = computed(() =>
 
 const { focusMode } = storeToRefs(workspaceStore)
 
+const appModeStore = useAppModeStore()
 const { activeSidebarTabId, activeSidebarTab } = storeToRefs(sidebarTabStore)
 const { bottomPanelVisible } = storeToRefs(useBottomPanelStore())
 const { isOpen: rightSidePanelVisible } = storeToRefs(rightSidePanelStore)
+const showOffsideSplitter = computed(
+  () => rightSidePanelVisible.value || appModeStore.mode === 'builder:select'
+)
 
 const sidebarPanelVisible = computed(() => activeSidebarTab.value !== null)
 
