@@ -13,9 +13,11 @@
       <GraphCanvas @ready="onGraphReady" />
     </div>
     <LinearView v-if="linearMode" />
-    <BuilderToolbar v-if="isBuilderMode" />
-    <BuilderMenu v-if="isBuilderMode" />
-    <BuilderExitButton v-if="isBuilderMode" />
+    <template v-if="isBuilderMode">
+      <BuilderToolbar />
+      <BuilderMenu />
+      <BuilderExitButton />
+    </template>
   </div>
 
   <GlobalToast />
