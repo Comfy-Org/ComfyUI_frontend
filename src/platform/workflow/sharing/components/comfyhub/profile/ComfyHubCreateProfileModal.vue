@@ -7,13 +7,8 @@
       <h2 class="text-base font-normal text-base-foreground">
         {{ $t('comfyHubProfile.createProfileTitle') }}
       </h2>
-      <Button
-        size="lg"
-        class="w-10 p-0"
-        :aria-label="$t('g.close')"
-        @click="onClose"
-      >
-        <i class="pi pi-times" />
+      <Button size="icon" :aria-label="$t('g.close')" @click="onClose">
+        <i class="icon-[lucide--x] size-4" />
       </Button>
     </div>
     <h2 v-else class="px-6 pt-6 text-base font-normal text-base-foreground">
@@ -65,21 +60,16 @@
           <label for="profile-username" class="text-sm text-muted-foreground">
             {{ $t('comfyHubProfile.usernameLabel') }}
           </label>
-          <div
-            class="flex h-10 items-center rounded-lg bg-secondary-background px-4 text-sm"
-          >
+          <div class="relative">
             <span
+              class="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-sm"
               :class="
                 username ? 'text-base-foreground' : 'text-muted-foreground'
               "
             >
               @
             </span>
-            <input
-              id="profile-username"
-              v-model="username"
-              class="h-full w-full min-w-0 appearance-none border-none bg-transparent p-0 text-sm text-base-foreground placeholder:text-muted-foreground focus-visible:outline-none"
-            />
+            <Input id="profile-username" v-model="username" class="pl-7" />
           </div>
         </div>
 

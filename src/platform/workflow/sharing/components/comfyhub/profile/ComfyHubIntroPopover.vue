@@ -11,14 +11,15 @@
         class="absolute inset-0 bg-gradient-to-b from-transparent from-[53%] to-base-background to-[76%]"
       />
       <!-- Close button -->
-      <button
+      <Button
         v-if="showCloseButton"
-        class="absolute right-2 top-2 z-10 flex size-8 cursor-pointer items-center justify-center rounded-full bg-black/30 border-none text-white hover:bg-black/50"
+        size="icon"
+        class="absolute right-2 top-2 z-10 rounded-full bg-black/30 text-white hover:bg-black/50"
         :aria-label="$t('g.close')"
         @click="onClose"
       >
-        <i class="pi pi-times size-4" />
-      </button>
+        <i class="icon-[lucide--x] size-4" />
+      </Button>
     </div>
 
     <!-- Content -->

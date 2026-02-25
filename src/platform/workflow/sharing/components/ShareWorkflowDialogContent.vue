@@ -35,11 +35,9 @@
         class="flex flex-col gap-4"
       >
         <template v-if="dialogState === 'loading'">
-          <div class="h-3 w-4/5 animate-pulse rounded bg-muted-foreground/20" />
-          <div class="h-3 w-3/5 animate-pulse rounded bg-muted-foreground/20" />
-          <div
-            class="h-10 w-full animate-pulse rounded bg-muted-foreground/20"
-          />
+          <Skeleton class="h-3 w-4/5" />
+          <Skeleton class="h-3 w-3/5" />
+          <Skeleton class="h-10 w-full" />
         </template>
 
         <template v-if="dialogState === 'unsaved'">
@@ -178,6 +176,7 @@ import ShareAssetWarningBox from '@/platform/workflow/sharing/components/ShareAs
 import ShareUrlCopyField from '@/platform/workflow/sharing/components/ShareUrlCopyField.vue'
 import Button from '@/components/ui/button/Button.vue'
 import Input from '@/components/ui/input/Input.vue'
+import Skeleton from '@/components/ui/skeleton/Skeleton.vue'
 import { useComfyHubPublishDialog } from '@/platform/workflow/sharing/composables/useComfyHubPublishDialog'
 import { useComfyHubProfileGate } from '@/platform/workflow/sharing/composables/useComfyHubProfileGate'
 import type { WorkflowPublishResult } from '@/platform/workflow/sharing/types/shareTypes'

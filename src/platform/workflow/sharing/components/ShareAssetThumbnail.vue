@@ -2,9 +2,9 @@
   <div
     class="relative flex size-8 shrink-0 items-center justify-center overflow-hidden rounded-sm bg-muted"
   >
-    <div
+    <Skeleton
       v-if="normalizedThumbnailUrl && isLoading"
-      class="absolute inset-0 animate-pulse bg-muted-foreground/20"
+      class="absolute inset-0"
     />
     <img
       v-if="normalizedThumbnailUrl && !error"
@@ -31,6 +31,7 @@
 import { useImage } from '@vueuse/core'
 import { computed, watchEffect } from 'vue'
 
+import Skeleton from '@/components/ui/skeleton/Skeleton.vue'
 import { cn } from '@/utils/tailwindUtil'
 
 const { name, thumbnailUrl } = defineProps<{

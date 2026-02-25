@@ -8,19 +8,17 @@
       <span class="text-sm text-base-foreground">
         {{ $t('comfyHubPublish.thumbnailType') }}
       </span>
-      <div class="flex gap-4">
-        <button
+      <ToggleGroup
+        type="single"
+        :model-value="thumbnailType"
+        class="grid w-full grid-cols-3 gap-4"
+        @update:model-value="handleThumbnailTypeChange"
+      >
+        <ToggleGroupItem
           v-for="option in thumbnailOptions"
           :key="option.value"
-          :class="
-            cn(
-              'flex flex-1 cursor-pointer items-center gap-2 rounded border-none p-2',
-              thumbnailType === option.value
-                ? 'bg-muted-background'
-                : 'bg-node-component-surface'
-            )
-          "
-          @click="$emit('update:thumbnailType', option.value)"
+          :value="option.value"
+          class="h-auto w-full gap-2 rounded bg-node-component-surface p-2 data-[state=on]:bg-muted-background"
         >
           <div
             :ref="
@@ -55,8 +53,8 @@
           >
             {{ option.label }}
           </span>
-        </button>
-      </div>
+        </ToggleGroupItem>
+      </ToggleGroup>
     </div>
 
     <div class="flex min-h-0 flex-1 shrink flex-col gap-2">
@@ -216,6 +214,7 @@
 
 <script setup lang="ts">
 import Button from '@/components/ui/button/Button.vue'
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import type { ThumbnailType } from '@/platform/workflow/sharing/types/comfyHubTypes'
 import { cn } from '@/utils/tailwindUtil'
 import { useDropZone, useMouseInElement } from '@vueuse/core'
@@ -234,6 +233,16 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useI18n()
+
+function isThumbnailType(value: string): value is ThumbnailType {
+  return value === 'image' || value === 'video' || value === 'imageComparison'
+}
+
+function handleThumbnailTypeChange(value: unknown) {
+  if (typeof value === 'string' && isThumbnailType(value)) {
+    emit('update:thumbnailType', value)
+  }
+}
 
 const uploadSectionLabel = computed(() => {
   if (thumbnailType === 'video') return t('comfyHubPublish.uploadVideo')

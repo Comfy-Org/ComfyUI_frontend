@@ -1,14 +1,15 @@
 <template>
   <div class="relative w-full bg-base-background">
     <!-- Close button -->
-    <button
+    <Button
       v-if="showCloseButton"
-      class="absolute right-2 top-2 z-10 flex size-8 cursor-pointer items-center justify-center rounded-full bg-black/30 text-white hover:bg-black/50"
+      size="icon"
+      class="absolute right-2 top-2 z-10 rounded-full bg-black/30 text-white hover:bg-black/50"
       :aria-label="$t('g.close')"
       @click="onClose"
     >
-      <i class="pi pi-times" />
-    </button>
+      <i class="icon-[lucide--x] size-4" />
+    </Button>
 
     <!-- Cover image -->
     <div class="h-[229px] overflow-hidden rounded-t-lg">

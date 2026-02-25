@@ -38,7 +38,7 @@
         :class="
           cn(
             'relative h-[100px] cursor-pointer overflow-hidden rounded border-none p-0',
-            isSelected(image.id) ? 'ring-2 ring-blue-500' : 'ring-0'
+            isSelected(image.id) ? 'ring-2 ring-ring' : 'ring-0'
           )
         "
         @click="toggleSelection(image.id)"
@@ -50,7 +50,7 @@
         />
         <div
           v-if="isSelected(image.id)"
-          class="absolute bottom-1.5 left-1.5 flex size-7 items-center justify-center rounded-full bg-blue-500 text-sm font-bold text-white"
+          class="absolute bottom-1.5 left-1.5 flex size-7 items-center justify-center rounded-full bg-primary-background text-sm font-bold text-base-foreground"
         >
           {{ selectionIndex(image.id) }}
         </div>
