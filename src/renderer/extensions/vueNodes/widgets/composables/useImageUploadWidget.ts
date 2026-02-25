@@ -54,6 +54,7 @@ export const useImageUploadWidget = () => {
       createAnnotatedPath(value, { rootFolder: image_folder })
 
     // Setup file upload handling
+    let previousValue = fileComboWidget.value
     const { openFileSelection } = useNodeImageUpload(node, {
       allow_batch,
       fileFilter,
@@ -61,8 +62,12 @@ export const useImageUploadWidget = () => {
       folder,
       onUploadStart: (files) => {
         if (files.length > 0) {
+          previousValue = fileComboWidget.value
           fileComboWidget.value = files[0].name
         }
+      },
+      onUploadError: () => {
+        fileComboWidget.value = previousValue
       },
       onUploadComplete: (output) => {
         const annotated = output.map(formatPath)

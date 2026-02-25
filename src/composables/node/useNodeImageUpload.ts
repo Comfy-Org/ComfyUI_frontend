@@ -63,6 +63,7 @@ interface ImageUploadOptions {
    */
   folder?: ResultItemType
   onUploadStart?: (files: File[]) => void
+  onUploadError?: () => void
 }
 
 /**
@@ -93,14 +94,19 @@ export const useNodeImageUpload = (
   const handleUploadBatch = async (files: File[]) => {
     if (node.isUploading) return []
     node.isUploading = true
-    node.imgs = undefined
-    node.graph?.setDirtyCanvas(true)
-    options.onUploadStart?.(files)
 
     try {
+      node.imgs = undefined
+      node.graph?.setDirtyCanvas(true)
+      options.onUploadStart?.(files)
+
       const paths = await Promise.all(files.map(handleUpload))
       const validPaths = paths.filter((p): p is string => !!p)
-      if (validPaths.length) onUploadComplete(validPaths)
+      if (validPaths.length) {
+        onUploadComplete(validPaths)
+      } else {
+        options.onUploadError?.()
+      }
       return validPaths
     } finally {
       node.isUploading = false
