@@ -178,6 +178,7 @@ export class ComfyWorkflow extends UserFile {
 
   override unload(): void {
     this.changeTracker = null
+    this.activeMode = null
     super.unload()
   }
 
