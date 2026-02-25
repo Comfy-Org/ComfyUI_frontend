@@ -1,6 +1,7 @@
 <template>
   <svg
     :class="rotateUp && 'rotate-180'"
+    style="width: 8px; height: 5px; min-width: 8px; min-height: 5px"
     xmlns="http://www.w3.org/2000/svg"
     width="8"
     height="5"
