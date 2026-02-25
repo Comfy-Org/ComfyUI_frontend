@@ -7,6 +7,7 @@
     "empty": "Empty",
     "noWorkflowsFound": "No workflows found.",
     "comingSoon": "Coming Soon",
+    "inSubgraph": "in subgraph {name}",
     "download": "Download",
     "downloadImage": "Download image",
     "downloadVideo": "Download video",
