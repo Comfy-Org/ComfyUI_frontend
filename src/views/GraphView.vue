@@ -8,9 +8,10 @@
       v-show="!linearMode"
       id="graph-canvas-container"
       ref="graphCanvasContainerRef"
-      class="graph-canvas-container"
+      class="graph-canvas-container relative"
     >
       <GraphCanvas @ready="onGraphReady" />
+      <VramEstimateIndicator />
     </div>
     <LinearView v-if="linearMode" />
     <BuilderToolbar v-if="appModeStore.isBuilderMode" />
@@ -46,6 +47,7 @@ import { runWhenGlobalIdle } from '@/base/common/async'
 import MenuHamburger from '@/components/MenuHamburger.vue'
 import UnloadWindowConfirmDialog from '@/components/dialog/UnloadWindowConfirmDialog.vue'
 import GraphCanvas from '@/components/graph/GraphCanvas.vue'
+import VramEstimateIndicator from '@/components/graph/VramEstimateIndicator.vue'
 import GlobalToast from '@/components/toast/GlobalToast.vue'
 import InviteAcceptedToast from '@/platform/workspace/components/toasts/InviteAcceptedToast.vue'
 import RerouteMigrationToast from '@/components/toast/RerouteMigrationToast.vue'

@@ -43,6 +43,10 @@
           {{ t('templatePublishing.steps.preview.noneDetected') }}
         </span>
       </PreviewField>
+      <PreviewField
+        :label="t('templatePublishing.steps.preview.vramLabel')"
+        :value="vramLabel"
+      />
     </PreviewSection>
 
     <!-- Description -->
@@ -220,6 +224,7 @@
 </template>
 
 <script setup lang="ts">
+import { formatSize } from '@/utils/formatUtil'
 import { computed, inject } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -283,5 +288,11 @@ const difficultyLabel = computed(() => {
   const difficulty = tpl.value.difficulty
   if (!difficulty) return t('templatePublishing.steps.preview.notProvided')
   return t(`templatePublishing.steps.metadata.difficulty.${difficulty}`)
+})
+
+const vramLabel = computed(() => {
+  const vram = tpl.value.vramRequirement
+  if (!vram) return t('templatePublishing.steps.preview.notProvided')
+  return formatSize(vram)
 })
 </script>

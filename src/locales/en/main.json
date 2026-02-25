@@ -1007,6 +1007,7 @@
       "default": "Default",
       "similarToCurrent": "Similar to Current"
     },
+    "vramEstimateTooltip": "Estimated GPU memory required to run this workflow",
     "error": {
       "templateNotFound": "Template \"{templateName}\" not found"
     }
@@ -1082,6 +1083,9 @@
         "requiredNodesDetected": "Detected from workflow",
         "requiredNodesManualPlaceholder": "Add custom node name…",
         "requiredNodesManualLabel": "Additional custom nodes",
+        "vramLabel": "Estimated VRAM Requirement",
+        "vramAutoDetected": "Auto-detected from workflow:",
+        "vramManualOverride": "Manual override (GB):",
         "difficulty": {
           "beginner": "Beginner",
           "intermediate": "Intermediate",
@@ -1130,7 +1134,8 @@
         "galleryLabel": "Example Gallery",
         "galleryHint": "Up to {max} example output images",
         "uploadPrompt": "Click to upload",
-        "removeFile": "Remove"
+        "removeFile": "Remove",
+        "uploadingProgress": "Uploading… {percent}%"
       },
       "categoryAndTagging": {
         "title": "Categories & Tags",
@@ -1148,6 +1153,7 @@
         "workflowPreviewLabel": "Workflow Graph",
         "videoPreviewLabel": "Video Preview",
         "galleryLabel": "Gallery",
+        "vramLabel": "VRAM Requirement",
         "notProvided": "Not provided",
         "noneDetected": "None detected",
         "correct": "Correct",

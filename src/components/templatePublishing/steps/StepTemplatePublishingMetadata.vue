@@ -136,15 +136,46 @@
         </div>
       </div>
     </div>
+
+    <div class="flex flex-col gap-2">
+      <span id="tpl-vram-label" class="text-sm text-muted">
+        {{ t('templatePublishing.steps.metadata.vramLabel') }}
+      </span>
+      <div class="flex items-center gap-3">
+        <i class="icon-[lucide--cpu] h-3.5 w-3.5 text-muted-foreground" />
+        <span class="text-xs text-muted-foreground">
+          {{ t('templatePublishing.steps.metadata.vramAutoDetected') }}
+        </span>
+        <span class="text-sm font-medium">
+          {{ formatSize(autoDetectedVram) }}
+        </span>
+      </div>
+      <div class="flex items-center gap-2">
+        <input
+          id="tpl-vram-override"
+          v-model.number="manualVramGb"
+          type="number"
+          min="0"
+          step="0.5"
+          class="h-8 w-24 rounded border border-border-default bg-secondary-background px-2 text-sm focus:outline-none"
+          aria-labelledby="tpl-vram-label"
+        />
+        <span class="text-xs text-muted-foreground">
+          {{ t('templatePublishing.steps.metadata.vramManualOverride') }}
+        </span>
+      </div>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { computed, inject, onMounted, ref } from 'vue'
 import { watchDebounced } from '@vueuse/core'
+import { formatSize } from '@/utils/formatUtil'
 import { useI18n } from 'vue-i18n'
 
 import FormItem from '@/components/common/FormItem.vue'
+import { estimateWorkflowVram } from '@/composables/useVramEstimation'
 import type { FormItem as FormItemType } from '@/platform/settings/types'
 import { app } from '@/scripts/app'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
@@ -260,6 +291,29 @@ function detectCustomNodePackages(): string[] {
 }
 
 const detectedCustomNodes = ref<string[]>([])
+const autoDetectedVram = ref(0)
+
+const GB = 1_073_741_824
+
+/**
+ * Manual VRAM override in GB. When set to a positive number, this
+ * value (converted to bytes) takes precedence over the auto-detected
+ * estimate for `vramRequirement`.
+ */
+const manualVramGb = computed({
+  get: () => {
+    const stored = ctx.template.value.vramRequirement
+    if (!stored || stored === autoDetectedVram.value) return undefined
+    return Math.round((stored / GB) * 10) / 10
+  },
+  set: (gb: number | undefined) => {
+    if (gb && gb > 0) {
+      ctx.template.value.vramRequirement = Math.round(gb * GB)
+    } else {
+      ctx.template.value.vramRequirement = autoDetectedVram.value
+    }
+  }
+})
 
 onMounted(() => {
   detectedCustomNodes.value = detectCustomNodes()
@@ -272,6 +326,11 @@ onMounted(() => {
   const existingPackages = ctx.template.value.requiresCustomNodes ?? []
   if (existingPackages.length === 0) {
     ctx.template.value.requiresCustomNodes = detectCustomNodePackages()
+  }
+
+  autoDetectedVram.value = estimateWorkflowVram(app.rootGraph)
+  if (!ctx.template.value.vramRequirement) {
+    ctx.template.value.vramRequirement = autoDetectedVram.value
   }
 })
 

@@ -51,6 +51,10 @@ vi.mock('@/utils/graphTraversalUtil', () => ({
   )
 }))
 
+vi.mock('@/composables/useVramEstimation', () => ({
+  estimateWorkflowVram: vi.fn(() => 5_000_000_000)
+}))
+
 vi.mock('@/stores/nodeDefStore', () => ({
   useNodeDefStore: () => ({
     nodeDefsByName: {
@@ -100,6 +104,9 @@ const i18n = createI18n({
             requiredNodesDetected: 'Detected from workflow',
             requiredNodesManualPlaceholder: 'Add custom node name…',
             requiredNodesManualLabel: 'Additional custom nodes',
+            vramLabel: 'Estimated VRAM Requirement',
+            vramAutoDetected: 'Auto-detected from workflow:',
+            vramManualOverride: 'Manual override (GB):',
             difficulty: {
               beginner: 'Beginner',
               intermediate: 'Intermediate',

@@ -267,6 +267,16 @@
                     />
                   </div>
                 </template>
+                <template v-if="template.vram" #top-left>
+                  <SquareChip
+                    :label="formatSize(template.vram)"
+                    :title="t('templateWorkflows.vramEstimateTooltip')"
+                  >
+                    <template #icon>
+                      <i class="icon-[lucide--cpu] h-3 w-3" />
+                    </template>
+                  </SquareChip>
+                </template>
                 <template #bottom-right>
                   <template v-if="template.tags && template.tags.length > 0">
                     <SquareChip
@@ -387,6 +397,7 @@
 
 <script setup lang="ts">
 import { useAsyncState } from '@vueuse/core'
+import { formatSize } from '@/utils/formatUtil'
 import ProgressSpinner from 'primevue/progressspinner'
 import { computed, onBeforeUnmount, onMounted, provide, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
