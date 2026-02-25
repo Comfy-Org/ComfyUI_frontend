@@ -471,9 +471,7 @@ describe('useSettingSearch', () => {
     })
 
     it('matches nav items with translated labels different from key', () => {
-      const translatedNavItems = [
-        { key: 'keybinding', label: '키 바인딩' }
-      ]
+      const translatedNavItems = [{ key: 'keybinding', label: '키 바인딩' }]
       const search = useSettingSearch()
 
       search.handleSearch('키 바인딩', translatedNavItems)
