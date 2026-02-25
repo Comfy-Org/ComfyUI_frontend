@@ -79,6 +79,7 @@ import Button from '@/components/ui/button/Button.vue'
 import { buildTooltipConfig } from '@/composables/useTooltipConfig'
 import { isCloud } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 
 const emit = defineEmits<{
   (e: 'clearHistory'): void
@@ -86,6 +87,7 @@ const emit = defineEmits<{
 
 const { t } = useI18n()
 const settingStore = useSettingStore()
+const sidebarTabStore = useSidebarTabStore()
 
 const moreTooltipConfig = computed(() => buildTooltipConfig(t('g.more')))
 const isQueuePanelV2Enabled = computed(() =>
@@ -99,6 +101,13 @@ const onClearHistoryFromMenu = (close: () => void) => {
 }
 
 const onToggleDockedJobHistory = async () => {
-  await settingStore.set('Comfy.Queue.QPOV2', !isQueuePanelV2Enabled.value)
+  if (isQueuePanelV2Enabled.value) {
+    await settingStore.set('Comfy.Queue.QPOV2', false)
+    await settingStore.set('Comfy.Queue.History.Expanded', true)
+    return
+  }
+
+  await settingStore.set('Comfy.Queue.QPOV2', true)
+  sidebarTabStore.activeSidebarTabId = 'job-history'
 }
 </script>

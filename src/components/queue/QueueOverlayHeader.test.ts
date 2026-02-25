@@ -23,16 +23,23 @@ vi.mock('@/components/ui/Popover.vue', () => {
   return { default: PopoverStub }
 })
 
-const mockGetSetting = vi.fn((key: string) =>
+const mockGetSetting = vi.fn<(key: string) => boolean | undefined>((key) =>
   key === 'Comfy.Queue.QPOV2' ? true : undefined
 )
 const mockSetSetting = vi.fn()
+const mockSidebarTabStore = {
+  activeSidebarTabId: null as string | null
+}
 
 vi.mock('@/platform/settings/settingStore', () => ({
   useSettingStore: () => ({
     get: mockGetSetting,
     set: mockSetSetting
   })
+}))
+
+vi.mock('@/stores/workspace/sidebarTabStore', () => ({
+  useSidebarTabStore: () => mockSidebarTabStore
 }))
 
 import QueueOverlayHeader from './QueueOverlayHeader.vue'
@@ -81,6 +88,10 @@ describe('QueueOverlayHeader', () => {
   beforeEach(() => {
     popoverCloseSpy.mockClear()
     mockSetSetting.mockClear()
+    mockSidebarTabStore.activeSidebarTabId = null
+    mockGetSetting.mockImplementation((key: string) =>
+      key === 'Comfy.Queue.QPOV2' ? true : undefined
+    )
   })
 
   it('renders header title', () => {
@@ -125,7 +136,32 @@ describe('QueueOverlayHeader', () => {
     expect(wrapper.emitted('clearHistory')).toHaveLength(1)
   })
 
-  it('toggles docked job history setting from the menu', async () => {
+  it('opens floating queue progress overlay when disabling from the menu', async () => {
+    const wrapper = mountHeader()
+
+    const dockedJobHistoryButton = wrapper.get(
+      '[data-testid="docked-job-history-action"]'
+    )
+    await dockedJobHistoryButton.trigger('click')
+
+    expect(mockSetSetting).toHaveBeenCalledTimes(2)
+    expect(mockSetSetting).toHaveBeenNthCalledWith(
+      1,
+      'Comfy.Queue.QPOV2',
+      false
+    )
+    expect(mockSetSetting).toHaveBeenNthCalledWith(
+      2,
+      'Comfy.Queue.History.Expanded',
+      true
+    )
+    expect(mockSidebarTabStore.activeSidebarTabId).toBe(null)
+  })
+
+  it('opens docked job history sidebar when enabling from the menu', async () => {
+    mockGetSetting.mockImplementation((key: string) =>
+      key === 'Comfy.Queue.QPOV2' ? false : undefined
+    )
     const wrapper = mountHeader()
 
     const dockedJobHistoryButton = wrapper.get(
@@ -134,6 +170,7 @@ describe('QueueOverlayHeader', () => {
     await dockedJobHistoryButton.trigger('click')
 
     expect(mockSetSetting).toHaveBeenCalledTimes(1)
-    expect(mockSetSetting).toHaveBeenCalledWith('Comfy.Queue.QPOV2', false)
+    expect(mockSetSetting).toHaveBeenCalledWith('Comfy.Queue.QPOV2', true)
+    expect(mockSidebarTabStore.activeSidebarTabId).toBe('job-history')
   })
 })
