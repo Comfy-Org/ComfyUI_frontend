@@ -33,7 +33,13 @@ test.describe(
       test(`Load workflow in ${fileName} (drop from filesystem)`, async ({
         comfyPage
       }) => {
-        await comfyPage.dragDrop.dragAndDropFile(`workflowInMedia/${fileName}`)
+        const needsUploadWait = fileName === 'no_workflow.webp'
+        await comfyPage.dragDrop.dragAndDropFile(
+          `workflowInMedia/${fileName}`,
+          {
+            waitForUpload: needsUploadWait
+          }
+        )
         await expect(comfyPage.canvas).toHaveScreenshot(`${fileName}.png`)
       })
     })
