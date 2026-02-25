@@ -696,8 +696,7 @@
         "tooltip": "当 sequential_image_generation='auto' 时生成图像的最大数量。总图像数（输入+生成）不能超过 15。"
       },
       "model": {
-        "name": "模型",
-        "tooltip": "模型名称"
+        "name": "模型"
       },
       "prompt": {
         "name": "提示",
@@ -4746,6 +4745,28 @@
     "inputs": {
       "image": {
         "name": "图像"
+      }
+    }
+  },
+  "ImageMergeTileList": {
+    "display_name": "将图块列表合并为图像",
+    "inputs": {
+      "final_height": {
+        "name": "final_height"
+      },
+      "final_width": {
+        "name": "final_width"
+      },
+      "image_list": {
+        "name": "image_list"
+      },
+      "overlap": {
+        "name": "overlap"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -14031,6 +14052,29 @@
       },
       "1": {
         "name": "右声道",
+        "tooltip": null
+      }
+    }
+  },
+  "SplitImageToTileList": {
+    "description": "将图像拆分为带有指定重叠的批量图块列表。",
+    "display_name": "将图像拆分为图块列表",
+    "inputs": {
+      "image": {
+        "name": "image"
+      },
+      "overlap": {
+        "name": "overlap"
+      },
+      "tile_height": {
+        "name": "tile_height"
+      },
+      "tile_width": {
+        "name": "tile_width"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }

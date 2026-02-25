@@ -294,6 +294,9 @@
       "title": "创建一个账户"
     }
   },
+  "batch": {
+    "index": "{current} / {total}"
+  },
   "billingOperation": {
     "subscriptionFailed": "订阅更新失败",
     "subscriptionProcessing": "正在处理付款 — 正在设置您的工作区...",
@@ -1178,6 +1181,8 @@
     "star": "星星"
   },
   "imageCompare": {
+    "batchLabelA": "A：",
+    "batchLabelB": "B：",
     "noImages": "没有可以对比的图像"
   },
   "imageCrop": {
@@ -2921,6 +2926,7 @@
     "emptyCanvas": "画布为空",
     "errorCopyImage": "复制图片出错：{error}",
     "errorLoadingModel": "加载模型出错",
+    "errorOpenImage": "打开图像时出错：{error}",
     "errorSaveSetting": "保存设置 {id} 出错：{err}",
     "exportSuccess": "成功将模型导出为 {format}",
     "failedExecutionPathResolution": "无法解析所选节点的路径",

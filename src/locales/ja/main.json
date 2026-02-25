@@ -294,6 +294,9 @@
       "title": "アカウントを作成する"
     }
   },
+  "batch": {
+    "index": "{current} / {total}"
+  },
   "billingOperation": {
     "subscriptionFailed": "サブスクリプションの更新に失敗しました",
     "subscriptionProcessing": "お支払い処理中 — ワークスペースを設定しています…",
@@ -1178,6 +1181,8 @@
     "star": "星"
   },
   "imageCompare": {
+    "batchLabelA": "A：",
+    "batchLabelB": "B：",
     "noImages": "比較する画像がありません"
   },
   "imageCrop": {
@@ -2909,6 +2914,7 @@
     "emptyCanvas": "キャンバスが空です",
     "errorCopyImage": "画像のコピーにエラーが発生しました: {error}",
     "errorLoadingModel": "モデルの読み込みエラー",
+    "errorOpenImage": "画像の読み込み中にエラーが発生しました: {error}",
     "errorSaveSetting": "設定{id}の保存エラー: {err}",
     "exportSuccess": "モデルを {format} として正常にエクスポートしました",
     "failedExecutionPathResolution": "選択したノードへのパスを解決できませんでした",

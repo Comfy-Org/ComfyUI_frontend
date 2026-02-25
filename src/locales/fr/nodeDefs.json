@@ -696,8 +696,7 @@
         "tooltip": "Nombre maximum d'images à générer lorsque sequential_image_generation='auto'. Le nombre total d'images (entrée + générées) ne peut pas dépasser 15."
       },
       "model": {
-        "name": "model",
-        "tooltip": "Nom du modèle"
+        "name": "model"
       },
       "prompt": {
         "name": "prompt",
@@ -4746,6 +4745,28 @@
     "inputs": {
       "image": {
         "name": "image"
+      }
+    }
+  },
+  "ImageMergeTileList": {
+    "display_name": "Fusionner une liste de tuiles en image",
+    "inputs": {
+      "final_height": {
+        "name": "hauteur_finale"
+      },
+      "final_width": {
+        "name": "largeur_finale"
+      },
+      "image_list": {
+        "name": "liste_d'images"
+      },
+      "overlap": {
+        "name": "chevauchement"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -14031,6 +14052,29 @@
       },
       "1": {
         "name": "droite",
+        "tooltip": null
+      }
+    }
+  },
+  "SplitImageToTileList": {
+    "description": "Divise une image en une liste groupée de tuiles avec un chevauchement spécifié.",
+    "display_name": "Diviser l'image en liste de tuiles",
+    "inputs": {
+      "image": {
+        "name": "image"
+      },
+      "overlap": {
+        "name": "chevauchement"
+      },
+      "tile_height": {
+        "name": "hauteur_tuile"
+      },
+      "tile_width": {
+        "name": "largeur_tuile"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }

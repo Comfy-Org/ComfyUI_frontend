@@ -294,6 +294,9 @@
       "title": "إنشاء حساب"
     }
   },
+  "batch": {
+    "index": "{current} / {total}"
+  },
   "billingOperation": {
     "subscriptionFailed": "فشل تحديث الاشتراك",
     "subscriptionProcessing": "جارٍ معالجة الدفع — يتم إعداد مساحة العمل...",
@@ -1178,6 +1181,8 @@
     "star": "نجمة"
   },
   "imageCompare": {
+    "batchLabelA": "أ: ",
+    "batchLabelB": "ب: ",
     "noImages": "لا توجد صور للمقارنة"
   },
   "imageCrop": {
@@ -2909,6 +2914,7 @@
     "emptyCanvas": "لوحة فارغة",
     "errorCopyImage": "خطأ في نسخ الصورة: {error}",
     "errorLoadingModel": "خطأ في تحميل النموذج",
+    "errorOpenImage": "حدث خطأ أثناء فتح الصورة: {error}",
     "errorSaveSetting": "خطأ في حفظ الإعداد {id}: {err}",
     "exportSuccess": "تم تصدير النموذج بنجاح كـ {format}",
     "failedExecutionPathResolution": "تعذر حل المسار إلى العُقَد المحددة",

@@ -696,8 +696,7 @@
         "tooltip": "Número máximo de imagens a serem geradas quando sequential_image_generation='auto'. O total de imagens (entrada + geradas) não pode exceder 15."
       },
       "model": {
-        "name": "model",
-        "tooltip": "Nome do modelo"
+        "name": "model"
       },
       "prompt": {
         "name": "prompt",
@@ -4746,6 +4745,28 @@
     "inputs": {
       "image": {
         "name": "imagem"
+      }
+    }
+  },
+  "ImageMergeTileList": {
+    "display_name": "Mesclar Lista de Blocos em Imagem",
+    "inputs": {
+      "final_height": {
+        "name": "final_height"
+      },
+      "final_width": {
+        "name": "final_width"
+      },
+      "image_list": {
+        "name": "image_list"
+      },
+      "overlap": {
+        "name": "overlap"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -14031,6 +14052,29 @@
       },
       "1": {
         "name": "direito",
+        "tooltip": null
+      }
+    }
+  },
+  "SplitImageToTileList": {
+    "description": "Divide uma imagem em uma lista agrupada de blocos com uma sobreposição especificada.",
+    "display_name": "Dividir Imagem em Lista de Blocos",
+    "inputs": {
+      "image": {
+        "name": "image"
+      },
+      "overlap": {
+        "name": "overlap"
+      },
+      "tile_height": {
+        "name": "tile_height"
+      },
+      "tile_width": {
+        "name": "tile_width"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }

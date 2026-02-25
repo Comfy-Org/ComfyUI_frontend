@@ -294,6 +294,9 @@
       "title": "Hesap oluşturun"
     }
   },
+  "batch": {
+    "index": "{current} / {total}"
+  },
   "billingOperation": {
     "subscriptionFailed": "Abonelik güncellemesi başarısız oldu",
     "subscriptionProcessing": "Ödeme işleniyor — çalışma alanınız hazırlanıyor...",
@@ -1178,6 +1181,8 @@
     "star": "Yıldız"
   },
   "imageCompare": {
+    "batchLabelA": "A:",
+    "batchLabelB": "B:",
     "noImages": "Karşılaştırılacak görsel yok"
   },
   "imageCrop": {
@@ -2909,6 +2914,7 @@
     "emptyCanvas": "Boş tuval",
     "errorCopyImage": "Görüntü kopyalanırken hata oluştu: {error}",
     "errorLoadingModel": "Model yüklenirken hata oluştu",
+    "errorOpenImage": "Görüntü açılırken hata oluştu: {error}",
     "errorSaveSetting": "{id} ayarı kaydedilirken hata oluştu: {err}",
     "exportSuccess": "Model başarıyla {format} olarak dışa aktarıldı",
     "failedExecutionPathResolution": "Seçilen düğümlerin yolu çözülemedi",

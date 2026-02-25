@@ -294,6 +294,9 @@
       "title": "ایجاد حساب کاربری"
     }
   },
+  "batch": {
+    "index": "{current} / {total}"
+  },
   "billingOperation": {
     "subscriptionFailed": "به‌روزرسانی اشتراک ناموفق بود",
     "subscriptionProcessing": "در حال پردازش پرداخت — در حال راه‌اندازی فضای کاری...",
@@ -1178,6 +1181,8 @@
     "star": "ستاره"
   },
   "imageCompare": {
+    "batchLabelA": "A:",
+    "batchLabelB": "B:",
     "noImages": "تصویری برای مقایسه وجود ندارد"
   },
   "imageCrop": {
@@ -2921,6 +2926,7 @@
     "emptyCanvas": "بوم خالی است",
     "errorCopyImage": "خطا در کپی تصویر: {error}",
     "errorLoadingModel": "خطا در بارگذاری مدل",
+    "errorOpenImage": "خطا در باز کردن تصویر: {error}",
     "errorSaveSetting": "خطا در ذخیره تنظیمات {id}: {err}",
     "exportSuccess": "مدل با موفقیت با فرمت {format} صادر شد",
     "failedExecutionPathResolution": "مسیر اجرای nodeهای انتخاب‌شده قابل شناسایی نیست",
