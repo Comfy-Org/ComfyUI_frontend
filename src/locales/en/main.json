@@ -3474,9 +3474,15 @@
     "app": "App",
     "appDescription": "Opens as an app by default",
     "nodeGraph": "Node graph",
-    "nodeGraphDescription": "Opens as node graph by default"
+    "nodeGraphDescription": "Opens as node graph by default",
+    "saveSuccess": "Successfully saved",
+    "saveSuccessAppMessage": "'{name}' has been saved. It will open in App Mode by default from now on.",
+    "saveSuccessAppPrompt": "Would you like to view it now?",
+    "saveSuccessGraphMessage": "'{name}' has been saved. It will open as a node graph by default.",
+    "viewApp": "View app"
   },
   "builderMenu": {
     "exitAppBuilder": "Exit app builder"
-  }
+  },
+  "comfyHubPublish.tagsPlaceholder": "e.g #nanobanana, #anime or #faceswap"
 }

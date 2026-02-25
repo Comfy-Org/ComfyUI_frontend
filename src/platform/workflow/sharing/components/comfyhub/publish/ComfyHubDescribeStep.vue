@@ -48,13 +48,14 @@
       </Select>
     </div>
 
-    <div class="flex flex-col gap-4 py-4">
-      <p class="text-sm text-base-foreground">
+    <div class="flex flex-col gap-2">
+      <span class="text-sm text-base-foreground">
         {{ $t('comfyHubPublish.tagsDescription') }}
-      </p>
+      </span>
       <TagsInput
         v-slot="{ isEmpty }"
-        class="bg-modal-card-background-hovered"
+        always-editing
+        class="select-none bg-modal-card-background-hovered"
         :model-value="tags"
         @update:model-value="$emit('update:tags', $event as string[])"
       >
@@ -62,21 +63,25 @@
           <TagsInputItemText />
           <TagsInputItemDelete />
         </TagsInputItem>
-        <TagsInputInput
-          :is-empty="isEmpty"
-          :placeholder="$t('comfyHubPublish.tagsPlaceholder')"
-        />
+        <TagsInputInput :is-empty />
       </TagsInput>
-      <div class="flex flex-wrap gap-2">
-        <button
-          v-for="tag in availableSuggestions"
-          :key="tag"
-          class="cursor-pointer rounded-sm bg-secondary-background px-2 py-1 text-xs text-muted-foreground transition-colors hover:text-base-foreground"
-          @click="addTag(tag)"
+
+      <TagsInput always-editing class="bg-transparent hover:bg-transparent p-0">
+        <div
+          v-if="availableSuggestions.length > 0"
+          class="basis-full flex flex-wrap gap-2"
         >
-          {{ tag }}
-        </button>
-      </div>
+          <TagsInputItem
+            v-for="tag in availableSuggestions"
+            :key="tag"
+            :value="tag"
+            class="cursor-pointer select-none transition-colors bg-secondary-background hover:bg-secondary-background-selected text-muted-foreground px-2"
+            @click="addTag(tag)"
+          >
+            <TagsInputItemText />
+          </TagsInputItem>
+        </div>
+      </TagsInput>
     </div>
   </div>
 </template>
