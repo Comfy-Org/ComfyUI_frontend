@@ -40,6 +40,8 @@ const config: KnipConfig = {
     'packages/registry-types/src/comfyRegistryTypes.ts',
     // Used by a custom node (that should move off of this)
     'src/scripts/ui/components/splitButton.ts',
+    // Used by stacked PR (feat/glsl-live-preview)
+    'src/renderer/glsl/useGLSLRenderer.ts',
     // Workflow files contain license names that knip misinterprets as binaries
     '.github/workflows/ci-oss-assets-validation.yaml',
     // Pending integration in stacked PR
