@@ -1,5 +1,6 @@
 import { ref, watch } from 'vue'
 
+import { useErrorHandling } from '@/composables/useErrorHandling'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useDialogService } from '@/services/dialogService'
@@ -15,6 +16,7 @@ const SUCCESS_DIALOG_KEY = 'builder-save-success'
 
 export function useBuilderSave() {
   const { setMode } = useAppMode()
+  const { toastErrorHandler } = useErrorHandling()
   const workflowStore = useWorkflowStore()
   const workflowService = useWorkflowService()
   const dialogService = useDialogService()
@@ -44,7 +46,8 @@ export function useBuilderSave() {
         appModeStore.flushSelections()
         await workflowService.saveWorkflow(workflow)
         showSuccessDialog(workflow.filename, workflow.initialMode === 'app')
-      } catch {
+      } catch (e) {
+        toastErrorHandler(e)
         resetSaving()
       }
       return
@@ -89,7 +92,8 @@ export function useBuilderSave() {
 
       closeSaveDialog()
       showSuccessDialog(filename, openAsApp)
-    } catch {
+    } catch (e) {
+      toastErrorHandler(e)
       closeSaveDialog()
       resetSaving()
     }
