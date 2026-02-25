@@ -478,6 +478,7 @@ export const useWorkflowService = () => {
       // For now, we'll make them coexist.
       // Once the Node Replacement feature is implemented in TabErrors
       // we'll remove the modal display and direct users to the error tab.
+      executionErrorStore.setMissingNodeTypes(missingNodeTypes)
       if (settingStore.get('Comfy.RightSidePanel.ShowErrorsTab')) {
         executionErrorStore.showErrorOverlay()
       }
