@@ -61,8 +61,7 @@
           "^build"
         ],
         "options": {
-          "cwd": "apps/desktop-ui",
-          "command": "vite build --config vite.config.mts"
+          "command": "vite build --config apps/desktop-ui/vite.config.mts"
         },
         "outputs": [
           "{projectRoot}/dist"
