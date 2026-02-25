@@ -53,7 +53,7 @@
           />
         </div>
         <!-- Widget Component -->
-        <AppInput :id="nodeData?.id ?? ''" :name="widget.name">
+        <AppInput :id="widget.id" :name="widget.name">
           <component
             :is="widget.vueComponent"
             v-model="widget.value"
@@ -170,6 +170,7 @@ interface ProcessedWidget {
   hasLayoutSize: boolean
   hasError: boolean
   hidden: boolean
+  id: string
   name: string
   simplified: SimplifiedWidget
   tooltipConfig: TooltipOptions
@@ -266,6 +267,7 @@ const processedWidgets = computed((): ProcessedWidget[] => {
           (error) => error.extra_info?.input_name === widget.name
         ) ?? false,
       hidden: widget.options?.hidden ?? false,
+      id: widget.nodeId ?? nodeId,
       name: widget.name,
       type: widget.type,
       vueComponent,

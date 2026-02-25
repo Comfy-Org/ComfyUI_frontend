@@ -24,6 +24,7 @@ import { app } from '@/scripts/app'
 import { DOMWidgetImpl } from '@/scripts/domWidget'
 import { useDialogService } from '@/services/dialogService'
 import { useAppModeStore } from '@/stores/appModeStore'
+import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
 import { cn } from '@/utils/tailwindUtil'
 
 type BoundStyle = { top: string; left: string; width: string; height: string }
@@ -42,7 +43,7 @@ workflowStore.activeWorkflow?.changeTracker?.reset()
 
 const inputsWithState = computed(() =>
   appModeStore.selectedInputs.map(([nodeId, widgetName]) => {
-    const node = app.rootGraph.getNodeById(nodeId)
+    const node = getNodeByLocatorId(app.rootGraph, String(nodeId))
     const widget = node?.widgets?.find((w) => w.name === widgetName)
     if (!node || !widget) return { nodeId, widgetName }
 
