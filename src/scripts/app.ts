@@ -51,7 +51,6 @@ import {
   DOMWidgetImpl
 } from '@/scripts/domWidget'
 import { useDialogService } from '@/services/dialogService'
-import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useMissingNodesDialog } from '@/composables/useMissingNodesDialog'
 import { useExtensionService } from '@/services/extensionService'
 import { useLitegraphService } from '@/services/litegraphService'
@@ -707,12 +706,9 @@ export class ComfyApp {
           'Payment Required: Please add credits to your account to use this node.'
         )
       ) {
-        const { isActiveSubscription } = useBillingContext()
-        if (isActiveSubscription.value) {
-          useDialogService().showTopUpCreditsDialog({
-            isInsufficientCredits: true
-          })
-        }
+        useDialogService().showTopUpCreditsDialog({
+          isInsufficientCredits: true
+        })
       } else if (useSettingStore().get('Comfy.RightSidePanel.ShowErrorsTab')) {
         useExecutionErrorStore().showErrorOverlay()
       } else {
