@@ -106,6 +106,7 @@ test.describe('Node search box V2', { tag: '@node' }, () => {
 
       // Close the popover by pressing Escape
       await searchBoxV2.filterPopoverSearch.press('Escape')
+      await expect(searchBoxV2.filterPopover).not.toBeVisible()
 
       // Filter chip should appear and results should be filtered
       await expect(searchBoxV2.filterChips.first()).toContainText('MODEL')

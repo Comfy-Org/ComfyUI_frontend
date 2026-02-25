@@ -2,85 +2,40 @@
   <div class="flex items-center gap-2 px-2 py-1.5">
     <!-- Category filter buttons -->
     <button
-      v-if="hasBlueprintNodes"
+      v-for="chip in categoryChips"
+      :key="chip.category"
       type="button"
-      :class="chipClass(activeCategory === BLUEPRINT_CATEGORY)"
-      @click="emit('selectCategory', BLUEPRINT_CATEGORY)"
+      :aria-pressed="activeCategory === chip.category"
+      :class="chipClass(activeCategory === chip.category)"
+      @click="emit('selectCategory', chip.category)"
     >
-      {{ t('g.blueprints') }}
-    </button>
-    <button
-      v-if="hasPartnerNodes"
-      type="button"
-      :class="chipClass(activeCategory === 'partner-nodes')"
-      @click="emit('selectCategory', 'partner-nodes')"
-    >
-      {{ t('g.partnerNodes') }}
-    </button>
-    <button
-      v-if="hasEssentialNodes"
-      type="button"
-      :class="chipClass(activeCategory === 'essentials')"
-      @click="emit('selectCategory', 'essentials')"
-    >
-      {{ t('g.essentials') }}
-    </button>
-    <button
-      type="button"
-      :class="chipClass(activeCategory === 'custom')"
-      @click="emit('selectCategory', 'custom')"
-    >
-      {{ t('g.extensions') }}
+      {{ chip.label }}
     </button>
 
-    <!-- Input filter (multi-select popover) -->
+    <!-- Type filter popovers (input/output) -->
     <NodeSearchTypeFilterPopover
-      :chip="inputChip"
-      :selected-values="selectedInputValues"
-      @toggle="(v) => emit('toggleFilter', inputChip.filter, v)"
-      @clear="emit('clearFilterGroup', inputChip.filter.id)"
+      v-for="{ chip, selectedValues } in typeFilterChips"
+      :key="chip.key"
+      :chip="chip"
+      :selected-values="selectedValues"
+      @toggle="(v) => emit('toggleFilter', chip.filter, v)"
+      @clear="emit('clearFilterGroup', chip.filter.id)"
       @escape-close="emit('focusSearch')"
     >
       <button
         type="button"
-        :class="chipClass(false, selectedInputValues.length > 0)"
+        :class="chipClass(false, selectedValues.length > 0)"
       >
-        <span v-if="selectedInputValues.length > 0" class="flex items-center">
+        <span v-if="selectedValues.length > 0" class="flex items-center">
           <span
-            v-for="val in selectedInputValues.slice(0, 4)"
+            v-for="val in selectedValues.slice(0, 4)"
             :key="val"
             class="text-lg leading-none -mx-[2px]"
             :style="{ color: getLinkTypeColor(val) }"
             >&bull;</span
           >
         </span>
-        {{ inputChip.label }}
-        <i class="icon-[lucide--chevron-down] size-3.5" />
-      </button>
-    </NodeSearchTypeFilterPopover>
-
-    <!-- Output filter (multi-select popover) -->
-    <NodeSearchTypeFilterPopover
-      :chip="outputChip"
-      :selected-values="selectedOutputValues"
-      @toggle="(v) => emit('toggleFilter', outputChip.filter, v)"
-      @clear="emit('clearFilterGroup', outputChip.filter.id)"
-      @escape-close="emit('focusSearch')"
-    >
-      <button
-        type="button"
-        :class="chipClass(false, selectedOutputValues.length > 0)"
-      >
-        <span v-if="selectedOutputValues.length > 0" class="flex items-center">
-          <span
-            v-for="val in selectedOutputValues.slice(0, 4)"
-            :key="val"
-            class="text-lg leading-none -mx-[2px]"
-            :style="{ color: getLinkTypeColor(val) }"
-            >&bull;</span
-          >
-        </span>
-        {{ outputChip.label }}
+        {{ chip.label }}
         <i class="icon-[lucide--chevron-down] size-3.5" />
       </button>
     </NodeSearchTypeFilterPopover>
@@ -129,43 +84,34 @@ const { t } = useI18n()
 const { flags } = useFeatureFlags()
 const nodeDefStore = useNodeDefStore()
 
-const inputChip = computed<FilterChip>(() => ({
-  key: 'input',
-  label: t('g.input'),
-  filter: nodeDefStore.nodeSearchService.inputTypeFilter
-}))
+const typeFilterChips = computed(() => {
+  const { inputTypeFilter, outputTypeFilter } = nodeDefStore.nodeSearchService
+  return [
+    { key: 'input', label: t('g.input'), filter: inputTypeFilter },
+    { key: 'output', label: t('g.output'), filter: outputTypeFilter }
+  ].map((chip) => ({
+    chip,
+    selectedValues: filters
+      .filter((f) => f.filterDef.id === chip.key)
+      .map((f) => f.value)
+  }))
+})
 
-const outputChip = computed<FilterChip>(() => ({
-  key: 'output',
-  label: t('g.output'),
-  filter: nodeDefStore.nodeSearchService.outputTypeFilter
-}))
-
-const selectedInputValues = computed(() =>
-  filters.filter((f) => f.filterDef.id === 'input').map((f) => f.value)
-)
-
-const selectedOutputValues = computed(() =>
-  filters.filter((f) => f.filterDef.id === 'output').map((f) => f.value)
-)
-
-const hasBlueprintNodes = computed(() =>
-  nodeDefStore.visibleNodeDefs.some((n) =>
-    n.category.startsWith(BLUEPRINT_CATEGORY)
-  )
-)
-
-const hasPartnerNodes = computed(() =>
-  nodeDefStore.visibleNodeDefs.some((n) => n.api_node)
-)
-
-const hasEssentialNodes = computed(
-  () =>
+const categoryChips = computed(() => {
+  const chips: { category: string; label: string }[] = []
+  const defs = nodeDefStore.visibleNodeDefs
+  if (defs.some((n) => n.category.startsWith(BLUEPRINT_CATEGORY)))
+    chips.push({ category: BLUEPRINT_CATEGORY, label: t('g.blueprints') })
+  if (defs.some((n) => n.api_node))
+    chips.push({ category: 'partner-nodes', label: t('g.partnerNodes') })
+  if (
     flags.nodeLibraryEssentialsEnabled &&
-    nodeDefStore.visibleNodeDefs.some(
-      (n) => n.nodeSource.type === NodeSourceType.Essentials
-    )
-)
+    defs.some((n) => n.nodeSource.type === NodeSourceType.Essentials)
+  )
+    chips.push({ category: 'essentials', label: t('g.essentials') })
+  chips.push({ category: 'custom', label: t('g.extensions') })
+  return chips
+})
 
 function chipClass(isActive: boolean, forceHover = false) {
   return cn(
