@@ -38,7 +38,8 @@
       <BottomPanel />
     </template>
     <template v-if="showUI" #right-side-panel>
-      <NodePropertiesPanel v-if="!appModeStore.isBuilderMode" />
+      <AppBuilder v-if="appModeStore.mode === 'builder:select'" />
+      <NodePropertiesPanel v-else-if="!appModeStore.isBuilderMode" />
     </template>
     <template #graph-canvas-panel>
       <GraphCanvasMenu
@@ -126,6 +127,7 @@ import {
 import { useI18n } from 'vue-i18n'
 
 import { isMiddlePointerInput } from '@/base/pointerUtils'
+import AppBuilder from '@/components/builder/AppBuilder.vue'
 import LiteGraphCanvasSplitterOverlay from '@/components/LiteGraphCanvasSplitterOverlay.vue'
 import TopMenuSection from '@/components/TopMenuSection.vue'
 import BottomPanel from '@/components/bottomPanel/BottomPanel.vue'
