@@ -91,6 +91,7 @@ export const useNodeImageUpload = (
   }
 
   const handleUploadBatch = async (files: File[]) => {
+    if (node.isUploading) return []
     node.isUploading = true
     node.imgs = undefined
     node.graph?.setDirtyCanvas(true)
