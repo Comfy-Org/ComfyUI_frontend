@@ -348,14 +348,10 @@ const {
   sortOptions
 } = useRegistrySearch({
   initialSortField: initialState.sortField,
-  // Force 'packs' mode only when pre-filling search from a packId on non-Missing tabs.
-  // Use initialTabId (which resolves persisted tab) rather than the raw initialTab prop.
   initialSearchMode:
     initialPackId && initialTabId !== ManagerTab.Missing
       ? 'packs'
       : initialState.searchMode,
-  // Missing tab always opens with empty search so all missing packs are visible.
-  // Other tabs use initialPackId as the pre-filled search query (or fall back to persisted state).
   initialSearchQuery:
     initialTabId === ManagerTab.Missing
       ? ''
@@ -486,7 +482,7 @@ watch(
   }
 )
 
-// Auto-select the pack matching initialPackId once — one-shot, never re-triggers.
+// Auto-select the pack matching initialPackId once
 if (initialPackId) {
   until(resultsWithKeys)
     .toMatch((packs) => packs.some((p) => p.id === initialPackId))
