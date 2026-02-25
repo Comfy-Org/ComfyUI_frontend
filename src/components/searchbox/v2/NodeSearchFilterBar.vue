@@ -49,7 +49,7 @@
           <span
             v-for="val in selectedInputValues.slice(0, 4)"
             :key="val"
-            class="text-lg leading-none -mx-[4px]"
+            class="text-lg leading-none -mx-[2px]"
             :style="{ color: getLinkTypeColor(val) }"
             >&bull;</span
           >
@@ -75,7 +75,7 @@
           <span
             v-for="val in selectedOutputValues.slice(0, 4)"
             :key="val"
-            class="text-lg leading-none -mx-[4px]"
+            class="text-lg leading-none -mx-[2px]"
             :style="{ color: getLinkTypeColor(val) }"
             >&bull;</span
           >

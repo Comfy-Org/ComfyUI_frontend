@@ -132,6 +132,10 @@ const rootFilter = ref<string | null>(null)
 
 const rootFilterLabel = computed(() => {
   switch (rootFilter.value) {
+    case BLUEPRINT_CATEGORY:
+      return t('g.blueprints')
+    case 'partner-nodes':
+      return t('g.partnerNodes')
     case 'essentials':
       return t('g.essentials')
     case 'custom':
