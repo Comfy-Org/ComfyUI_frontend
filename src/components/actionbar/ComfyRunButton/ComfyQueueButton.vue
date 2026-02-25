@@ -148,7 +148,7 @@ const splitButtonPt = computed(() => ({
   pcButton: {
     root: {
       class: [
-        'h-full gap-1.5 rounded-lg text-white hover:text-white font-light',
+        'h-full gap-1.5 rounded-lg text-base-foreground hover:text-base-foreground font-light',
         !isStopInstantAction.value &&
           'bg-primary-background border-primary-background hover:bg-primary-background hover:border-primary-background'
       ],
@@ -157,10 +157,10 @@ const splitButtonPt = computed(() => ({
       }
     },
     icon: {
-      class: 'text-white'
+      class: 'text-base-foreground'
     },
     label: {
-      class: 'text-white font-light'
+      class: 'text-base-foreground font-light'
     }
   },
   pcDropdown: {
