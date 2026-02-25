@@ -1,9 +1,14 @@
 import zipdir from 'zip-dir'
 
-zipdir('./dist', { saveTo: './dist.zip' }, function (err, buffer) {
+const sourceDir = process.argv[2] || './dist'
+const outputPath = process.argv[3] || './dist.zip'
+
+zipdir(sourceDir, { saveTo: outputPath }, function (err, buffer) {
   if (err) {
-    console.error('Error zipping "dist" directory:', err)
+    console.error(`Error zipping "${sourceDir}" directory:`, err)
   } else {
-    console.log('Successfully zipped "dist" directory.')
+    process.stdout.write(
+      `Successfully zipped "${sourceDir}" directory to "${outputPath}".\n`
+    )
   }
 })
