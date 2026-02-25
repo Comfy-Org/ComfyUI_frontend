@@ -1,46 +1,39 @@
 <template>
-  <div
-    class="flex w-full flex-col border border-border-default bg-base-background"
-  >
-    <!-- Header -->
-    <div
+  <div class="flex w-full flex-col">
+    <header
       class="flex h-12 items-center justify-between gap-2 border-b border-border-default px-4"
     >
       <div role="tablist" class="flex flex-1 items-center gap-2">
-        <button
+        <Button
           role="tab"
           :aria-selected="dialogMode === 'shareLink'"
-          class="h-8 rounded-lg px-2 py-2 text-sm font-normal"
           :class="tabButtonClass('shareLink')"
           @click="handleDialogModeChange('shareLink')"
         >
           {{ $t('shareWorkflow.shareLinkTab') }}
-        </button>
-        <button
+        </Button>
+        <Button
           v-if="showPublishToHubTab"
           role="tab"
           :aria-selected="dialogMode === 'publishToHub'"
-          class="flex h-8 items-center gap-1 rounded-lg px-2 py-2 text-sm font-normal"
           :class="tabButtonClass('publishToHub')"
           @click="handleDialogModeChange('publishToHub')"
         >
           <i class="icon-[lucide--globe] size-4" />
           {{ $t('shareWorkflow.publishToHubTab') }}
-        </button>
+        </Button>
       </div>
-      <button
-        class="cursor-pointer rounded border-none bg-transparent p-0 text-muted-foreground transition-colors hover:text-base-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-secondary-foreground"
-        :aria-label="$t('g.close')"
-        @click="onClose"
-      >
+      <Button size="icon" :aria-label="$t('g.close')" @click="onClose">
         <i class="icon-[lucide--x] size-4" />
-      </button>
-    </div>
+      </Button>
+    </header>
 
-    <!-- Body -->
-    <div v-auto-animate class="flex flex-col gap-4 p-4">
-      <div v-show="dialogMode === 'shareLink'" class="flex flex-col gap-4">
-        <!-- Loading state -->
+    <main v-auto-animate class="flex flex-col gap-4 p-4">
+      <div
+        v-show="dialogMode === 'shareLink'"
+        v-auto-animate
+        class="flex flex-col gap-4"
+      >
         <template v-if="dialogState === 'loading'">
           <div class="h-3 w-4/5 animate-pulse rounded bg-muted-foreground/20" />
           <div class="h-3 w-3/5 animate-pulse rounded bg-muted-foreground/20" />
@@ -49,7 +42,6 @@
           />
         </template>
 
-        <!-- Unsaved state -->
         <template v-if="dialogState === 'unsaved'">
           <p class="m-0 text-xs text-muted-foreground">
             {{ $t('shareWorkflow.unsavedDescription') }}
@@ -79,7 +71,6 @@
           </Button>
         </template>
 
-        <!-- Ready state -->
         <template v-if="dialogState === 'ready'">
           <p
             v-if="isLoadingAssets"
@@ -109,7 +100,6 @@
           </Button>
         </template>
 
-        <!-- Shared state -->
         <template v-if="dialogState === 'shared' && publishResult">
           <ShareUrlCopyField :url="publishResult.shareUrl" />
           <div class="flex flex-col gap-1">
@@ -125,7 +115,6 @@
           </div>
         </template>
 
-        <!-- Stale state -->
         <template v-if="dialogState === 'stale'">
           <p class="m-0 text-xs text-muted-foreground">
             {{ $t('shareWorkflow.hasChangesDescription') }}
@@ -161,6 +150,7 @@
       <div
         v-if="showPublishToHubTab"
         v-show="dialogMode === 'publishToHub'"
+        v-auto-animate
         data-testid="publish-tab-panel"
         class="min-h-0"
       >
@@ -172,7 +162,7 @@
           :show-close-button="false"
         />
       </div>
-    </div>
+    </main>
   </div>
 </template>
 
