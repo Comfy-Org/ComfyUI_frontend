@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import {
   ESSENTIALS_CATEGORIES,
+  ESSENTIALS_CATEGORY_CANONICAL,
   ESSENTIALS_CATEGORY_MAP,
   ESSENTIALS_NODES,
   TOOLKIT_BLUEPRINT_MODULES,
@@ -49,5 +50,13 @@ describe('essentialsNodes', () => {
 
   it('TOOLKIT_BLUEPRINT_MODULES contains comfy_essentials', () => {
     expect(TOOLKIT_BLUEPRINT_MODULES.has('comfy_essentials')).toBe(true)
+  })
+
+  it('ESSENTIALS_CATEGORY_CANONICAL maps every category case-insensitively', () => {
+    for (const category of ESSENTIALS_CATEGORIES) {
+      expect(ESSENTIALS_CATEGORY_CANONICAL.get(category.toLowerCase())).toBe(
+        category
+      )
+    }
   })
 })

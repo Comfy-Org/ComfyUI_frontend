@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest'
 
-import { NodeSourceType, getNodeSource } from '@/types/nodeSource'
+import {
+  NodeSourceType,
+  getEssentialsCategory,
+  getNodeSource
+} from '@/types/nodeSource'
 
 describe('getNodeSource', () => {
   it('should return UNKNOWN_NODE_SOURCE when python_module is undefined', () => {
@@ -104,6 +108,36 @@ describe('getNodeSource', () => {
     it('should identify nodes from mock list as essentials', () => {
       const result = getNodeSource('nodes.some_module', undefined, 'LoadImage')
       expect(result.type).toBe(NodeSourceType.Essentials)
+    })
+
+    it('should normalize title-cased backend categories to canonical form', () => {
+      const result = getNodeSource(
+        'nodes.some_module',
+        'Image Generation',
+        'SomeNode'
+      )
+      expect(result.type).toBe(NodeSourceType.Essentials)
+      expect(getEssentialsCategory('SomeNode', 'Image Generation')).toBe(
+        'image generation'
+      )
+    })
+  })
+
+  describe('getEssentialsCategory', () => {
+    it('should normalize title-cased essentials_category to canonical form', () => {
+      expect(getEssentialsCategory('SomeNode', 'Image Generation')).toBe(
+        'image generation'
+      )
+      expect(getEssentialsCategory('SomeNode', '3d')).toBe('3D')
+      expect(getEssentialsCategory('SomeNode', '3D')).toBe('3D')
+    })
+
+    it('should fall back to ESSENTIALS_CATEGORY_MAP when no category provided', () => {
+      expect(getEssentialsCategory('LoadImage')).toBe('basics')
+    })
+
+    it('should return undefined for unknown node without category', () => {
+      expect(getEssentialsCategory('UnknownNode')).toBeUndefined()
     })
   })
 

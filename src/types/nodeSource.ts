@@ -1,4 +1,7 @@
-import { ESSENTIALS_CATEGORY_MAP } from '@/constants/essentialsNodes'
+import {
+  ESSENTIALS_CATEGORY_CANONICAL,
+  ESSENTIALS_CATEGORY_MAP
+} from '@/constants/essentialsNodes'
 
 export enum NodeSourceType {
   Core = 'core',
@@ -35,9 +38,12 @@ export function getEssentialsCategory(
   name?: string,
   essentials_category?: string
 ): string | undefined {
-  return (
-    essentials_category ?? (name ? ESSENTIALS_CATEGORY_MAP[name] : undefined)
-  )
+  const normalizedCategory = essentials_category?.trim().toLowerCase()
+  const canonical = normalizedCategory
+    ? (ESSENTIALS_CATEGORY_CANONICAL.get(normalizedCategory) ??
+      normalizedCategory)
+    : undefined
+  return canonical ?? (name ? ESSENTIALS_CATEGORY_MAP[name] : undefined)
 }
 
 export const getNodeSource = (

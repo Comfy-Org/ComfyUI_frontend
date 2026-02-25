@@ -79,12 +79,22 @@ export const ESSENTIALS_NODES: Record<EssentialsCategory, readonly string[]> = {
  * Flat map: node name → category (derived from ESSENTIALS_NODES).
  * Used as mock/fallback when backend doesn't provide essentials_category.
  */
-export const ESSENTIALS_CATEGORY_MAP: Record<string, string> =
+export const ESSENTIALS_CATEGORY_MAP: Record<string, EssentialsCategory> =
   Object.fromEntries(
     Object.entries(ESSENTIALS_NODES).flatMap(([category, nodes]) =>
       nodes.map((node) => [node, category])
     )
-  )
+  ) as Record<string, EssentialsCategory>
+
+/**
+ * Case-insensitive lookup: lowercase category → canonical category.
+ * Used to normalize backend categories (which may be title-cased) to the
+ * canonical form used in ESSENTIALS_CATEGORIES.
+ */
+export const ESSENTIALS_CATEGORY_CANONICAL: ReadonlyMap<
+  string,
+  EssentialsCategory
+> = new Map(ESSENTIALS_CATEGORIES.map((c) => [c.toLowerCase(), c]))
 
 /**
  * "Novel" toolkit nodes for telemetry — basics excluded.
