@@ -50,6 +50,10 @@
     @dragleave="handleDragLeave"
     @drop.stop.prevent="handleDrop"
   >
+    <AppOutput
+      v-if="lgraphNode?.constructor?.nodeData?.output_node"
+      :id="nodeData.id"
+    />
     <div
       v-if="displayHeader"
       class="flex flex-col justify-center items-center relative"
@@ -284,6 +288,7 @@ import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { usePromotedPreviews } from '@/composables/node/usePromotedPreviews'
 import NodeBadges from '@/renderer/extensions/vueNodes/components/NodeBadges.vue'
 import { LayoutSource } from '@/renderer/core/layout/types'
+import AppOutput from '@/renderer/extensions/linearMode/AppOutput.vue'
 import SlotConnectionDot from '@/renderer/extensions/vueNodes/components/SlotConnectionDot.vue'
 import { useNodeEventHandlers } from '@/renderer/extensions/vueNodes/composables/useNodeEventHandlers'
 import { useNodePointerInteractions } from '@/renderer/extensions/vueNodes/composables/useNodePointerInteractions'
