@@ -110,6 +110,8 @@ const i18n = createI18n({
         checkingAssets: 'Checking assets...',
         createLinkDescription:
           'When you create a link, you will share these assets',
+        privateAssetsDescription:
+          'Your workflow contains private models and/or media files',
         successTitle: 'Workflow successfully published!',
         successDescription: 'Anyone with this link...',
         hasChangesTitle: 'Share workflow',
@@ -117,8 +119,8 @@ const i18n = createI18n({
         updateLinkButton: 'Update link',
         updatingLink: 'Updating link...',
         publishedOn: 'Published on {date}',
-        mediaLabel: 'Media ({count})',
-        modelsLabel: 'Models ({count})',
+        mediaLabel: '{count} Media File | {count} Media Files',
+        modelsLabel: '{count} Model | {count} Models',
         acknowledgeCheckbox: 'I understand these assets...',
         comfyHubTitle: 'Upload to ComfyHub',
         comfyHubDescription: 'Share your workflow...',

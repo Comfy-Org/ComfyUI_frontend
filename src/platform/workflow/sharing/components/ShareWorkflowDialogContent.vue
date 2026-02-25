@@ -4,26 +4,36 @@
   >
     <!-- Header -->
     <div
-      class="flex h-12 items-center justify-between border-b border-border-default px-4"
+      class="flex h-12 items-center justify-between gap-2 border-b border-border-default px-4"
     >
-      <TabList
-        :model-value="dialogMode"
-        class="flex-1"
-        @update:model-value="handleDialogModeChange"
-      >
-        <Tab value="shareLink">
+      <div role="tablist" class="flex flex-1 items-center gap-2">
+        <button
+          role="tab"
+          :aria-selected="dialogMode === 'shareLink'"
+          class="h-8 rounded-lg px-2 py-2 text-sm font-normal"
+          :class="tabButtonClass('shareLink')"
+          @click="handleDialogModeChange('shareLink')"
+        >
           {{ $t('shareWorkflow.shareLinkTab') }}
-        </Tab>
-        <Tab v-if="showPublishToHubTab" value="publishToHub">
+        </button>
+        <button
+          v-if="showPublishToHubTab"
+          role="tab"
+          :aria-selected="dialogMode === 'publishToHub'"
+          class="flex h-8 items-center gap-1 rounded-lg px-2 py-2 text-sm font-normal"
+          :class="tabButtonClass('publishToHub')"
+          @click="handleDialogModeChange('publishToHub')"
+        >
+          <i class="icon-[lucide--globe] size-4" />
           {{ $t('shareWorkflow.publishToHubTab') }}
-        </Tab>
-      </TabList>
+        </button>
+      </div>
       <button
         class="cursor-pointer rounded border-none bg-transparent p-0 text-muted-foreground transition-colors hover:text-base-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-secondary-foreground"
         :aria-label="$t('g.close')"
         @click="onClose"
       >
-        <i class="pi pi-times size-4" />
+        <i class="icon-[lucide--x] size-4" />
       </button>
     </div>
 
@@ -170,8 +180,6 @@ import { useI18n } from 'vue-i18n'
 import ComfyHubPublishWizardPanel from '@/platform/workflow/sharing/components/comfyhub/publish/ComfyHubPublishWizardPanel.vue'
 import ShareAssetWarningBox from '@/platform/workflow/sharing/components/ShareAssetWarningBox.vue'
 import ShareUrlCopyField from '@/platform/workflow/sharing/components/ShareUrlCopyField.vue'
-import Tab from '@/components/tab/Tab.vue'
-import TabList from '@/components/tab/TabList.vue'
 import Button from '@/components/ui/button/Button.vue'
 import Input from '@/components/ui/input/Input.vue'
 import { useComfyHubProfileGate } from '@/platform/workflow/sharing/composables/useComfyHubProfileGate'
@@ -181,6 +189,7 @@ import { useWorkflowStore } from '@/platform/workflow/management/stores/workflow
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { appendJsonExt } from '@/utils/formatUtil'
+import { cn } from '@/utils/tailwindUtil'
 
 const { onClose } = defineProps<{
   onClose: () => void
@@ -263,6 +272,15 @@ const requiresAcknowledgment = computed(
   () => assetInfo.value.assets.length > 0 || assetInfo.value.models.length > 0
 )
 const showPublishToHubTab = computed(() => flags.comfyHubUploadEnabled)
+
+function tabButtonClass(mode: DialogMode) {
+  return cn(
+    'cursor-pointer border-none transition-colors',
+    dialogMode.value === mode
+      ? 'bg-secondary-background text-base-foreground'
+      : 'bg-transparent text-muted-foreground hover:bg-secondary-background-hover'
+  )
+}
 
 async function handleDialogModeChange(nextMode: DialogMode) {
   if (nextMode === 'shareLink') {
