@@ -232,6 +232,7 @@ app.registerExtension({
 
         const handleUpload = async (files: File[]) => {
           if (files?.length) {
+            audioWidget.value = files[0].name
             uploadFile(audioWidget, audioUIWidget, files[0], true)
           }
           return files
