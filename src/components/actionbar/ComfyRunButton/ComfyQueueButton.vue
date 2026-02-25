@@ -15,7 +15,7 @@
       :data-variant="queueButtonVariant"
       @click="queuePrompt"
     >
-      <i :class="[iconClass, 'size-4']" />
+      <i :class="cn(iconClass, 'size-4')" />
       {{ queueButtonLabel }}
     </Button>
 
@@ -51,7 +51,6 @@
                 item.key === selectedQueueMode ? 'primary' : 'secondary'
               "
               size="sm"
-              :aria-label="item.tooltip"
               :class="queueMenuItemButtonClass"
             >
               {{ item.label }}
@@ -90,6 +89,7 @@ import {
   useQueueSettingsStore
 } from '@/stores/queueStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
+import { cn } from '@/utils/tailwindUtil'
 import { graphHasMissingNodes } from '@/workbench/extensions/manager/utils/graphHasMissingNodes'
 
 const workspaceStore = useWorkspaceStore()
