@@ -129,6 +129,24 @@ export const getNodeSource = (
   }
 }
 
+interface NodeDefLike {
+  nodeSource: NodeSource
+  python_module?: string
+}
+
+export function isEssentialNode(node: NodeDefLike): boolean {
+  return node.nodeSource.type === NodeSourceType.Essentials
+}
+
+export function isCustomNode(node: NodeDefLike): boolean {
+  return (
+    node.nodeSource.type !== NodeSourceType.Core &&
+    node.nodeSource.type !== NodeSourceType.Unknown &&
+    !isEssentialNode(node) &&
+    node.python_module !== 'blueprint'
+  )
+}
+
 export enum NodeBadgeMode {
   None = 'None',
   ShowAll = 'Show all',

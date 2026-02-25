@@ -92,7 +92,7 @@ import NodeSearchListItem from '@/components/searchbox/v2/NodeSearchListItem.vue
 import { useNodeBookmarkStore } from '@/stores/nodeBookmarkStore'
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 import { useNodeDefStore, useNodeFrequencyStore } from '@/stores/nodeDefStore'
-import { NodeSourceType } from '@/types/nodeSource'
+import { isCustomNode, isEssentialNode } from '@/types/nodeSource'
 import type { FuseFilter, FuseFilterWithValue } from '@/utils/fuseUtil'
 import { cn } from '@/utils/tailwindUtil'
 
@@ -113,18 +113,6 @@ const { t } = useI18n()
 const nodeDefStore = useNodeDefStore()
 const nodeFrequencyStore = useNodeFrequencyStore()
 const nodeBookmarkStore = useNodeBookmarkStore()
-
-function isEssentialNode(n: ComfyNodeDefImpl): boolean {
-  return n.nodeSource.type === NodeSourceType.Essentials
-}
-
-function isCustomNode(n: ComfyNodeDefImpl): boolean {
-  return (
-    n.nodeSource.type !== NodeSourceType.Core &&
-    !isEssentialNode(n) &&
-    n.python_module !== 'blueprint'
-  )
-}
 
 const dialogRef = ref<HTMLElement>()
 const searchInputRef = ref<InstanceType<typeof NodeSearchInput>>()

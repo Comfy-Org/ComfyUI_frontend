@@ -2,36 +2,64 @@
   <div
     class="option-container flex w-full cursor-pointer items-center justify-between overflow-hidden"
   >
-    <div class="flex flex-col gap-0.5 overflow-hidden">
-      <div class="font-semibold text-foreground flex items-center gap-2">
+    <div class="flex min-w-0 flex-1 flex-col gap-0.5 overflow-hidden">
+      <!-- Row 1: Name (left) + badges (right) -->
+      <div class="flex items-center gap-2 font-semibold text-foreground">
         <span v-if="isBookmarked && !hideBookmarkIcon">
           <i class="pi pi-bookmark-fill mr-1 text-sm" />
         </span>
-        <span v-html="highlightQuery(nodeDef.display_name, currentQuery)" />
+        <span
+          class="truncate"
+          v-html="highlightQuery(nodeDef.display_name, currentQuery)"
+        />
         <span v-if="showIdName">&nbsp;</span>
         <span
           v-if="showIdName"
-          class="rounded bg-secondary-background px-1.5 py-0.5 text-xs text-muted-foreground"
+          class="shrink-0 rounded bg-secondary-background px-1.5 py-0.5 text-xs text-muted-foreground"
           v-html="highlightQuery(nodeDef.name, currentQuery)"
         />
 
-        <NodePricingBadge :node-def="nodeDef" />
-        <NodeProviderBadge v-if="nodeDef.api_node" :node-def="nodeDef" />
+        <template v-if="showDescription">
+          <div class="flex-1" />
+          <div class="flex shrink-0 items-center gap-1">
+            <span
+              v-if="showSourceBadge && !isCustomNode"
+              aria-hidden="true"
+              class="flex size-[18px] shrink-0 items-center justify-center rounded-full bg-secondary-background-selected"
+            >
+              <ComfyLogo :size="10" mode="fill" color="currentColor" />
+            </span>
+            <span
+              v-else-if="showSourceBadge && isCustomNode"
+              :class="badgePillClass"
+            >
+              <span class="truncate text-[10px]">
+                {{ nodeDef.nodeSource.displayText }}
+              </span>
+            </span>
+
+            <span
+              v-if="nodeDef.api_node && providerName"
+              :class="badgePillClass"
+            >
+              <i
+                aria-hidden="true"
+                class="icon-[lucide--component] size-3 text-amber-400"
+              />
+              <i
+                aria-hidden="true"
+                :class="cn(getProviderIcon(providerName), 'size-3')"
+              />
+            </span>
+          </div>
+        </template>
+        <template v-else>
+          <NodePricingBadge :node-def="nodeDef" />
+          <NodeProviderBadge v-if="nodeDef.api_node" :node-def="nodeDef" />
+        </template>
       </div>
-      <div
-        v-if="showDescription"
-        class="flex items-center gap-1 text-[11px] text-muted-foreground"
-      >
-        <span
-          v-if="
-            showSourceBadge &&
-            nodeDef.nodeSource.type !== NodeSourceType.Core &&
-            nodeDef.nodeSource.type !== NodeSourceType.Unknown
-          "
-          class="inline-flex shrink-0 rounded border border-border px-1.5 py-0.5 text-xs bg-base-foreground/5 text-base-foreground/70 mr-0.5"
-        >
-          {{ nodeDef.nodeSource.displayText }}
-        </span>
+
+      <div v-if="showDescription" class="text-[11px] text-muted-foreground">
         <TextTicker v-if="nodeDef.description">
           {{ nodeDef.description }}
         </TextTicker>
@@ -82,14 +110,20 @@
 import { computed } from 'vue'
 
 import TextTicker from '@/components/common/TextTicker.vue'
+import ComfyLogo from '@/components/icons/ComfyLogo.vue'
 import NodePricingBadge from '@/components/node/NodePricingBadge.vue'
 import NodeProviderBadge from '@/components/node/NodeProviderBadge.vue'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useNodeBookmarkStore } from '@/stores/nodeBookmarkStore'
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 import { useNodeFrequencyStore } from '@/stores/nodeDefStore'
-import { NodeSourceType } from '@/types/nodeSource'
+import {
+  isCustomNode as isCustomNodeDef,
+  NodeSourceType
+} from '@/types/nodeSource'
+import { getProviderIcon, getProviderName } from '@/utils/categoryUtil'
 import { formatNumberWithSuffix, highlightQuery } from '@/utils/formatUtil'
+import { cn } from '@/utils/tailwindUtil'
 
 const {
   nodeDef,
@@ -104,6 +138,9 @@ const {
   showSourceBadge?: boolean
   hideBookmarkIcon?: boolean
 }>()
+
+const badgePillClass =
+  'flex h-[18px] max-w-28 shrink-0 items-center justify-center gap-1 rounded-full bg-secondary-background-selected px-2'
 
 const settingStore = useSettingStore()
 const showCategory = computed(() =>
@@ -122,6 +159,8 @@ const nodeFrequency = computed(() =>
 
 const nodeBookmarkStore = useNodeBookmarkStore()
 const isBookmarked = computed(() => nodeBookmarkStore.isBookmarked(nodeDef))
+const providerName = computed(() => getProviderName(nodeDef.category))
+const isCustomNode = computed(() => isCustomNodeDef(nodeDef))
 </script>
 
 <style scoped>

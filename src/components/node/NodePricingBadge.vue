@@ -1,5 +1,7 @@
 <template>
-  <CreditBadge v-if="nodeDef.api_node && priceLabel" :text="priceLabel" />
+  <span v-if="nodeDef.api_node && priceLabel">
+    <CreditBadge :text="priceLabel" />
+  </span>
 </template>
 
 <script setup lang="ts">
