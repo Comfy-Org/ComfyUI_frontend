@@ -27,7 +27,8 @@ import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { appendJsonExt } from '@/utils/formatUtil'
 
 function linearModeToAppMode(linearMode: unknown): AppMode | null {
-  return linearMode == null ? null : linearMode ? 'app' : 'graph'
+  if (typeof linearMode !== 'boolean') return null
+  return linearMode ? 'app' : 'graph'
 }
 
 export const useWorkflowService = () => {
