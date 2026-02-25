@@ -253,15 +253,19 @@ const displayedResults = computed<ComfyNodeDefImpl[]>(() => {
       results = baseNodes.filter(isCustomNode)
       break
     default: {
-      const prefix = rootFilter.value ? rootFilter.value + '/' : ''
-      const categoryPath = effectiveCategory.value.startsWith(prefix)
-        ? effectiveCategory.value.slice(prefix.length)
-        : effectiveCategory.value
-      results = baseNodes.filter(
-        (n) =>
-          n.category === categoryPath ||
-          n.category.startsWith(categoryPath + '/')
-      )
+      if (rootFilter.value && effectiveCategory.value === rootFilter.value) {
+        results = baseNodes
+      } else {
+        const rootPrefix = rootFilter.value ? rootFilter.value + '/' : ''
+        const categoryPath = effectiveCategory.value.startsWith(rootPrefix)
+          ? effectiveCategory.value.slice(rootPrefix.length)
+          : effectiveCategory.value
+        results = baseNodes.filter(
+          (n) =>
+            n.category === categoryPath ||
+            n.category.startsWith(categoryPath + '/')
+        )
+      }
       break
     }
   }
