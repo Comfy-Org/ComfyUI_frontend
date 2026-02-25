@@ -6,7 +6,7 @@ import { orderBy } from 'es-toolkit/array'
  *
  * To regenerate: pnpm dlx tsx temp/scripts/extract-comfyhub-tags.ts
  */
-export const COMFY_HUB_TAG_FREQUENCIES = [
+const COMFY_HUB_TAG_FREQUENCIES = [
   { tag: 'API', count: 143 },
   { tag: 'Video', count: 102 },
   { tag: 'Image', count: 98 },
