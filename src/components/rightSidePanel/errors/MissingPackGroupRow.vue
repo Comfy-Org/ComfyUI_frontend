@@ -29,6 +29,7 @@
         variant="textonly"
         size="icon-sm"
         class="size-8 text-muted-foreground hover:text-base-foreground shrink-0"
+        :aria-label="t('rightSidePanel.missingNodePacks.viewInManager')"
         @click="emit('openManagerInfo', group.packId ?? '')"
       >
         <i class="icon-[lucide--info] size-4" />
@@ -41,6 +42,11 @@
             'size-8 shrink-0 transition-transform duration-200 hover:bg-transparent',
             { 'rotate-180': expanded }
           )
+        "
+        :aria-label="
+          expanded
+            ? t('rightSidePanel.missingNodePacks.collapse')
+            : t('rightSidePanel.missingNodePacks.expand')
         "
         @click="toggleExpand"
       >
@@ -75,9 +81,11 @@
             {{ getLabel(nodeType) }}
           </p>
           <Button
+            v-if="typeof nodeType !== 'string' && nodeType.nodeId != null"
             variant="textonly"
             size="icon-sm"
             class="size-6 text-muted-foreground hover:text-base-foreground shrink-0 mr-1"
+            :aria-label="t('rightSidePanel.locateNode')"
             @click="handleLocateNode(nodeType)"
           >
             <i class="icon-[lucide--locate] size-3" />

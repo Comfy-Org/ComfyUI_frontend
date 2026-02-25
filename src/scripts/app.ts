@@ -1100,15 +1100,15 @@ export class ComfyApp {
   private showMissingNodesError(missingNodeTypes: MissingNodeType[]) {
     if (useSettingStore().get('Comfy.Workflow.ShowMissingNodesWarning')) {
       useMissingNodesDialog().show({ missingNodeTypes })
+    }
 
-      // For now, we'll make them coexist.
-      // Once the Node Replacement feature is implemented in TabErrors
-      // we'll remove the modal display and direct users to the error tab.
-      const executionErrorStore = useExecutionErrorStore()
-      executionErrorStore.setMissingNodeTypes(missingNodeTypes)
-      if (useSettingStore().get('Comfy.RightSidePanel.ShowErrorsTab')) {
-        executionErrorStore.showErrorOverlay()
-      }
+    // For now, we'll make them coexist.
+    // Once the Node Replacement feature is implemented in TabErrors
+    // we'll remove the modal display and direct users to the error tab.
+    const executionErrorStore = useExecutionErrorStore()
+    executionErrorStore.setMissingNodeTypes(missingNodeTypes)
+    if (useSettingStore().get('Comfy.RightSidePanel.ShowErrorsTab')) {
+      executionErrorStore.showErrorOverlay()
     }
   }
 

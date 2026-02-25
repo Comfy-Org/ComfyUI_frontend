@@ -469,11 +469,10 @@ export const useWorkflowService = () => {
     const { missingNodeTypes, missingModels } = wf.pendingWarnings
     wf.pendingWarnings = null
 
-    if (
-      missingNodeTypes?.length &&
-      settingStore.get('Comfy.Workflow.ShowMissingNodesWarning')
-    ) {
-      missingNodesDialog.show({ missingNodeTypes })
+    if (missingNodeTypes?.length) {
+      if (settingStore.get('Comfy.Workflow.ShowMissingNodesWarning')) {
+        missingNodesDialog.show({ missingNodeTypes })
+      }
 
       // For now, we'll make them coexist.
       // Once the Node Replacement feature is implemented in TabErrors
