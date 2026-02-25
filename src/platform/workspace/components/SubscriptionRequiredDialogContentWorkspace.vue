@@ -23,6 +23,15 @@
       <i class="pi pi-times text-xl" />
     </Button>
 
+    <div v-if="reason === 'out_of_credits'" class="text-center">
+      <h2 class="text-xl lg:text-2xl text-muted-foreground m-0">
+        {{ $t('credits.topUp.insufficientTitle') }}
+      </h2>
+      <p class="m-0 mt-2 text-sm text-text-secondary">
+        {{ $t('credits.topUp.insufficientMessage') }}
+      </p>
+    </div>
+
     <!-- Pricing Table Step -->
     <PricingTableWorkspace
       v-if="checkoutStep === 'pricing'"
@@ -75,16 +84,18 @@ import type { BillingCycle } from '@/platform/cloud/subscription/utils/subscript
 import type { PreviewSubscribeResponse } from '@/platform/workspace/api/workspaceApi'
 import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
 import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
+import type { SubscriptionDialogReason } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
 
 import PricingTableWorkspace from './PricingTableWorkspace.vue'
 import SubscriptionAddPaymentPreviewWorkspace from './SubscriptionAddPaymentPreviewWorkspace.vue'
 import SubscriptionTransitionPreviewWorkspace from './SubscriptionTransitionPreviewWorkspace.vue'
 
 type CheckoutStep = 'pricing' | 'preview'
-type CheckoutTierKey = Exclude<TierKey, 'founder'>
+type CheckoutTierKey = Exclude<TierKey, 'free' | 'founder'>
 
-const props = defineProps<{
+const { onClose, reason } = defineProps<{
   onClose: () => void
+  reason?: SubscriptionDialogReason
 }>()
 
 const emit = defineEmits<{
@@ -314,7 +325,7 @@ async function handleResubscribe() {
 }
 
 function handleClose() {
-  props.onClose()
+  onClose()
 }
 </script>
 

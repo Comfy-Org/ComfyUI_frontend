@@ -17,6 +17,7 @@ import type {
 } from '@/stores/dialogStore'
 
 import type { ComponentAttrs } from 'vue-component-type-helpers'
+import type { SubscriptionDialogReason } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
 
 // Lazy loaders for dialogs - components are loaded on first use
 const lazyApiNodesSignInContent = () =>
@@ -274,8 +275,15 @@ export const useDialogService = () => {
   async function showTopUpCreditsDialog(options?: {
     isInsufficientCredits?: boolean
   }) {
-    const { isActiveSubscription, type } = useBillingContext()
-    if (!isActiveSubscription.value) return
+    const { isActiveSubscription, isFreeTier, type } = useBillingContext()
+    if (!isActiveSubscription.value || isFreeTier.value) {
+      await showSubscriptionRequiredDialog({
+        reason: options?.isInsufficientCredits
+          ? 'out_of_credits'
+          : 'top_up_blocked'
+      })
+      return
+    }
 
     const component =
       type.value === 'workspace'
@@ -392,7 +400,9 @@ export const useDialogService = () => {
     })
   }
 
-  async function showSubscriptionRequiredDialog() {
+  async function showSubscriptionRequiredDialog(options?: {
+    reason?: SubscriptionDialogReason
+  }) {
     if (!isCloud || !window.__CONFIG__?.subscription_required) {
       return
     }
@@ -400,7 +410,7 @@ export const useDialogService = () => {
     const { useSubscriptionDialog } =
       await import('@/platform/cloud/subscription/composables/useSubscriptionDialog')
     const { show } = useSubscriptionDialog()
-    show()
+    show(options)
   }
 
   // Workspace dialogs - dynamically imported to avoid bundling when feature flag is off
