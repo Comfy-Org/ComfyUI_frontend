@@ -547,7 +547,6 @@ export type ComfyApiWorkflow = z.infer<typeof zComfyApiWorkflow>
  * where that definition is instantiated in the workflow.
  *
  * "def-A" → ["5", "10"] for each container node instantiating that subgraph definition.
- * @knipIgnoreUsedByStackedPR
  */
 export function buildSubgraphExecutionPaths(
   rootNodes: ComfyNode[],
