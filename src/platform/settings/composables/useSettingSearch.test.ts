@@ -421,10 +421,10 @@ describe('useSettingSearch', () => {
 
   describe('nav item matching', () => {
     const navItems = [
-      { key: 'keybinding', label: 'keybinding', translatedLabel: 'Keybinding' },
-      { key: 'about', label: 'about', translatedLabel: 'About' },
-      { key: 'extension', label: 'extension', translatedLabel: 'Extension' },
-      { key: 'Comfy', label: 'Comfy', translatedLabel: 'Comfy' }
+      { key: 'keybinding', label: 'Keybinding' },
+      { key: 'about', label: 'About' },
+      { key: 'extension', label: 'Extension' },
+      { key: 'Comfy', label: 'Comfy' }
     ]
 
     it('matches nav items by key', () => {
@@ -472,7 +472,7 @@ describe('useSettingSearch', () => {
 
     it('matches nav items with translated labels different from key', () => {
       const translatedNavItems = [
-        { key: 'keybinding', label: 'keybinding', translatedLabel: '키 바인딩' }
+        { key: 'keybinding', label: '키 바인딩' }
       ]
       const search = useSettingSearch()
 
