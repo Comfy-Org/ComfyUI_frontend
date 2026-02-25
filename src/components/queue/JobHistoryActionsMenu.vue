@@ -19,7 +19,7 @@
             data-testid="docked-job-history-action"
             class="w-full justify-between text-sm font-light"
             variant="textonly"
-            size="sm"
+            size="md"
             @click="onToggleDockedJobHistory"
           >
             <span class="flex items-center gap-2">
@@ -39,7 +39,7 @@
             data-testid="show-run-progress-bar-action"
             class="w-full justify-between text-sm font-light"
             variant="textonly"
-            size="sm"
+            size="md"
             @click="onToggleRunProgressBar"
           >
             <span class="flex items-center gap-2">
@@ -58,9 +58,9 @@
             <div class="my-1 border-t border-interface-stroke" />
             <Button
               data-testid="clear-history-action"
-              class="h-auto min-h-0 w-full items-start justify-start whitespace-normal"
+              class="h-auto min-h-8 w-full items-start justify-start whitespace-normal"
               variant="textonly"
-              size="sm"
+              size="md"
               @click="onClearHistoryFromMenu(close)"
             >
               <i
