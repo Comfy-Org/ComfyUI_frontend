@@ -12,12 +12,21 @@
 </template>
 
 <script setup lang="ts">
+import { useEventListener } from '@vueuse/core'
 import { useI18n } from 'vue-i18n'
 
 import { useAppModeStore } from '@/stores/appModeStore'
 
 const { t } = useI18n()
 const appModeStore = useAppModeStore()
+
+useEventListener(window, 'keydown', (e: KeyboardEvent) => {
+  if (e.key === 'Escape' && !e.ctrlKey && !e.altKey && !e.metaKey) {
+    e.preventDefault()
+    e.stopPropagation()
+    onExitBuilder()
+  }
+})
 
 function onExitBuilder() {
   void appModeStore.exitBuilder()
