@@ -1,33 +1,56 @@
 <template>
-  <ComboboxRoot :ignore-filter="true" :open="false">
+  <ComboboxRoot :ignore-filter="true" :open="false" :disabled="disabled">
     <ComboboxAnchor
-      :class="cn(searchInputVariants({ size }), className)"
+      :class="
+        cn(
+          searchInputVariants({ size }),
+          disabled && 'opacity-50 pointer-events-none',
+          className
+        )
+      "
       @click="focus"
     >
       <Button
         v-if="modelValue"
-        class="absolute left-3.5"
+        :class="cn('absolute', sizeConfig.clearPos)"
         variant="textonly"
         size="icon-sm"
         :aria-label="$t('g.clear')"
         @click.stop="clearSearch"
       >
-        <i class="icon-[lucide--x] size-4" />
+        <i :class="cn('icon-[lucide--x]', sizeConfig.icon)" />
       </Button>
       <i
         v-else-if="loading"
-        class="icon-[lucide--loader-circle] absolute left-4 size-4 animate-spin pointer-events-none"
+        :class="
+          cn(
+            'icon-[lucide--loader-circle] absolute animate-spin pointer-events-none',
+            sizeConfig.iconPos,
+            sizeConfig.icon
+          )
+        "
       />
       <i
         v-else
-        :class="cn('absolute left-4 size-4 pointer-events-none', icon)"
+        :class="
+          cn(
+            'absolute pointer-events-none',
+            sizeConfig.iconPos,
+            sizeConfig.icon,
+            icon
+          )
+        "
       />
 
       <ComboboxInput
         ref="inputRef"
         v-model="modelValue"
         :class="
-          cn('size-full border-none bg-transparent text-sm outline-none pl-8')
+          cn(
+            'size-full border-none bg-transparent outline-none',
+            sizeConfig.inputPl,
+            sizeConfig.inputText
+          )
         "
         :placeholder="placeholderText"
         :auto-focus="autofocus"
@@ -47,7 +70,10 @@ import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
 import type { SearchInputVariants } from './searchInput.variants'
-import { searchInputVariants } from './searchInput.variants'
+import {
+  searchInputSizeConfig,
+  searchInputVariants
+} from './searchInput.variants'
 
 const { t } = useI18n()
 
@@ -57,6 +83,7 @@ const {
   debounceTime = 300,
   autofocus = false,
   loading = false,
+  disabled = false,
   size = 'md',
   class: className
 } = defineProps<{
@@ -65,6 +92,7 @@ const {
   debounceTime?: number
   autofocus?: boolean
   loading?: boolean
+  disabled?: boolean
   size?: SearchInputVariants['size']
   class?: HTMLAttributes['class']
 }>()
@@ -72,6 +100,8 @@ const {
 const emit = defineEmits<{
   search: [value: string]
 }>()
+
+const sizeConfig = computed(() => searchInputSizeConfig[size])
 
 const modelValue = defineModel<string>({ required: true })
 
@@ -89,6 +119,7 @@ const placeholderText = computed(
 
 function clearSearch() {
   modelValue.value = ''
+  emit('search', '')
   focus()
 }
 

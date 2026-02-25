@@ -5,9 +5,10 @@ export const searchInputVariants = cva({
   base: 'relative flex w-full cursor-text items-center rounded-lg bg-secondary-background text-base-foreground',
   variants: {
     size: {
-      sm: 'h-8 px-2 py-1.5',
-      md: 'h-10 px-4 py-2',
-      lg: 'h-12 px-4 py-2'
+      sm: 'h-6 p-1',
+      md: 'h-8 px-2 py-1.5',
+      lg: 'h-10 px-4 py-2',
+      xl: 'h-12 px-4 py-2'
     }
   },
   defaultVariants: { size: 'md' }
@@ -15,8 +16,39 @@ export const searchInputVariants = cva({
 
 export type SearchInputVariants = VariantProps<typeof searchInputVariants>
 
-const sizes = ['sm', 'md', 'lg'] as const satisfies Array<
+export const searchInputSizeConfig = {
+  sm: {
+    icon: 'size-3',
+    iconPos: 'left-2',
+    inputPl: 'pl-6',
+    inputText: 'text-xs',
+    clearPos: 'left-1'
+  },
+  md: {
+    icon: 'size-3.5',
+    iconPos: 'left-2.5',
+    inputPl: 'pl-7',
+    inputText: 'text-xs',
+    clearPos: 'left-1.5'
+  },
+  lg: {
+    icon: 'size-4',
+    iconPos: 'left-3',
+    inputPl: 'pl-8',
+    inputText: 'text-sm',
+    clearPos: 'left-2.5'
+  },
+  xl: {
+    icon: 'size-5',
+    iconPos: 'left-4',
+    inputPl: 'pl-10',
+    inputText: 'text-sm',
+    clearPos: 'left-3.5'
+  }
+} as const
+
+const sizes = ['sm', 'md', 'lg', 'xl'] as const satisfies Array<
   SearchInputVariants['size']
 >
 
-export const FOR_STORIES = { sizes } as const
+export const searchInputStoryConfig = { sizes } as const

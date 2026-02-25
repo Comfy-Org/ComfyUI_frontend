@@ -7,9 +7,9 @@ import type {
 import { ref } from 'vue'
 
 import SearchInput from './SearchInput.vue'
-import { FOR_STORIES } from './searchInput.variants'
+import { searchInputStoryConfig } from './searchInput.variants'
 
-const { sizes } = FOR_STORIES
+const { sizes } = searchInputStoryConfig
 
 const meta: Meta<ComponentPropsAndSlots<typeof SearchInput>> = {
   title: 'Components/Input/SearchInput',
@@ -44,7 +44,7 @@ export const Default: Story = {
   render: (args) => ({
     components: { SearchInput },
     setup() {
-      const searchText = ref('')
+      const searchText = ref(args.modelValue ?? '')
       return { searchText, args }
     },
     template: `
@@ -62,7 +62,8 @@ export const AllSizes: Story = {
       const sm = ref('')
       const md = ref('')
       const lg = ref('')
-      return { sm, md, lg }
+      const xl = ref('')
+      return { sm, md, lg, xl }
     },
     template: `
       <div class="flex flex-col gap-4" style="max-width: 320px;">
@@ -72,6 +73,8 @@ export const AllSizes: Story = {
         <SearchInput v-model="md" size="md" />
         <div class="text-xs text-muted-foreground">lg</div>
         <SearchInput v-model="lg" size="lg" />
+        <div class="text-xs text-muted-foreground">xl</div>
+        <SearchInput v-model="xl" size="xl" />
       </div>
     `
   })
@@ -135,6 +138,21 @@ export const CustomBackground: Story = {
           v-model="searchText"
           class="bg-component-node-widget-background"
         />
+      </div>
+    `
+  })
+}
+
+export const Disabled: Story = {
+  render: (args) => ({
+    components: { SearchInput },
+    setup() {
+      const searchText = ref('')
+      return { searchText, args }
+    },
+    template: `
+      <div style="max-width: 320px;">
+        <SearchInput v-bind="args" v-model="searchText" :disabled="true" />
       </div>
     `
   })
