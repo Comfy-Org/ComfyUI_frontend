@@ -62,7 +62,7 @@ export const useSubscriptionDialog = () => {
   }
 
   function show(options?: { reason?: SubscriptionDialogReason }) {
-    if (isFreeTier.value) {
+    if (isFreeTier.value && workspaceStore.isInPersonalWorkspace) {
       const component = defineAsyncComponent(
         () =>
           import('@/platform/cloud/subscription/components/FreeTierDialogContent.vue')

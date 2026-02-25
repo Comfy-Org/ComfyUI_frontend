@@ -370,7 +370,6 @@ import {
   getTierCredits,
   getTierPrice
 } from '@/platform/cloud/subscription/constants/tierPricing'
-import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
 import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
 import type { TierBenefit } from '@/platform/cloud/subscription/utils/tierBenefits'
 import { getCommonTierBenefits } from '@/platform/cloud/subscription/utils/tierBenefits'
@@ -390,6 +389,7 @@ const isSettingUp = computed(() => billingOperationStore.isSettingUp)
 
 const {
   isActiveSubscription,
+  isFreeTier: isFreeTierPlan,
   subscription,
   showSubscriptionDialog,
   manageSubscription,
@@ -465,7 +465,6 @@ function handleUpgrade() {
   isFreeTierPlan.value ? showPricingTable() : showSubscriptionDialog()
 }
 const subscriptionTier = computed(() => subscription.value?.tier ?? null)
-const { isFreeTier: isFreeTierPlan } = useSubscription()
 const isYearlySubscription = computed(
   () => subscription.value?.duration === 'ANNUAL'
 )
