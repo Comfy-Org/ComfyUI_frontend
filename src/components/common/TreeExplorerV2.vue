@@ -2,7 +2,7 @@
   <ContextMenuRoot>
     <ContextMenuTrigger :disabled="!showContextMenu" as-child>
       <TreeRoot
-        v-model:expanded="expandedKeys"
+        :expanded="[...expandedKeys]"
         :items="root.children ?? []"
         :get-key="(item) => item.key"
         :get-children="

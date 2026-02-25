@@ -65,6 +65,9 @@ export function getNodeSource(
     }
   } else if (modules[0] === 'custom_nodes') {
     const moduleName = modules[1]
+    if (!moduleName) {
+      return UNKNOWN_NODE_SOURCE
+    }
     const customNodeName = moduleName.split('@')[0]
     const displayName = shortenNodeName(customNodeName)
     return {

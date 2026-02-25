@@ -47,7 +47,7 @@ export function unwrapTreeRoot(tree: TreeNode): TreeNode {
   if (
     tree.children?.length === 1 &&
     !tree.children[0].leaf &&
-    tree.children[0].children
+    (tree.children[0].children?.length ?? 0) > 0
   ) {
     return { ...tree, children: tree.children[0].children }
   }
