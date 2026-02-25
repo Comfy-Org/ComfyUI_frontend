@@ -2,6 +2,7 @@ import { mount } from '@vue/test-utils'
 import { createI18n } from 'vue-i18n'
 import { describe, expect, it } from 'vitest'
 
+import type { UploadProgress } from '@/composables/useAssetUploadProgress'
 import type { CachedAsset } from '@/types/templateMarketplace'
 
 import TemplateAssetUploadZone from './TemplateAssetUploadZone.vue'
@@ -15,7 +16,8 @@ const i18n = createI18n({
         steps: {
           previewGeneration: {
             uploadPrompt: 'Click to upload',
-            removeFile: 'Remove'
+            removeFile: 'Remove',
+            uploadingProgress: 'Uploading… {percent}%'
           }
         }
       }
@@ -105,5 +107,114 @@ describe('TemplateAssetUploadZone', () => {
     const input = wrapper.find('input[type="file"]')
 
     expect(input.attributes('accept')).toBe('video/*')
+  })
+
+  describe('upload progress bar', () => {
+    it('shows progress bar when upload is in progress', () => {
+      const progress: UploadProgress = {
+        loaded: 500,
+        total: 1000,
+        percent: 50,
+        complete: false
+      }
+      const wrapper = mountZone({
+        asset: makeAsset('photo.png'),
+        uploadProgress: progress
+      })
+
+      const progressEl = wrapper.find('progress')
+      expect(progressEl.exists()).toBe(true)
+      expect(progressEl.attributes('value')).toBe('50')
+      expect(progressEl.attributes('max')).toBe('100')
+      expect(wrapper.text()).toContain('50%')
+    })
+
+    it('hides progress bar when upload is complete', () => {
+      const progress: UploadProgress = {
+        loaded: 1000,
+        total: 1000,
+        percent: 100,
+        complete: true
+      }
+      const wrapper = mountZone({
+        asset: makeAsset('photo.png'),
+        uploadProgress: progress
+      })
+
+      expect(wrapper.find('progress').exists()).toBe(false)
+    })
+
+    it('hides progress bar when no uploadProgress is provided', () => {
+      const wrapper = mountZone({ asset: makeAsset('photo.png') })
+
+      expect(wrapper.find('progress').exists()).toBe(false)
+    })
+
+    it('reflects intermediate progress values during upload', () => {
+      const progress: UploadProgress = {
+        loaded: 750,
+        total: 1000,
+        percent: 75,
+        complete: false
+      }
+      const wrapper = mountZone({
+        asset: makeAsset('photo.png'),
+        uploadProgress: progress
+      })
+
+      expect(wrapper.find('progress').attributes('value')).toBe('75')
+      expect(wrapper.text()).toContain('75%')
+    })
+  })
+
+  describe('file type validation', () => {
+    it('restricts file input to image/* by default', () => {
+      const wrapper = mountZone()
+      expect(wrapper.find('input[type="file"]').attributes('accept')).toBe(
+        'image/*'
+      )
+    })
+
+    it('restricts file input to video/* when configured', () => {
+      const wrapper = mountZone({ accept: 'video/*' })
+      expect(wrapper.find('input[type="file"]').attributes('accept')).toBe(
+        'video/*'
+      )
+    })
+
+    it('supports a specific MIME type list', () => {
+      const wrapper = mountZone({ accept: 'image/png,image/jpeg' })
+      expect(wrapper.find('input[type="file"]').attributes('accept')).toBe(
+        'image/png,image/jpeg'
+      )
+    })
+  })
+
+  describe('error handling', () => {
+    it('does not emit upload when no file is selected', async () => {
+      const wrapper = mountZone()
+      const input = wrapper.find('input[type="file"]')
+
+      Object.defineProperty(input.element, 'files', { value: [] })
+      await input.trigger('change')
+
+      expect(wrapper.emitted('upload')).toBeUndefined()
+    })
+
+    it('displays error state from upload progress', () => {
+      const progress: UploadProgress = {
+        loaded: 200,
+        total: 1000,
+        percent: 20,
+        complete: true,
+        error: 'Server responded with 500'
+      }
+      const wrapper = mountZone({
+        asset: makeAsset('photo.png'),
+        uploadProgress: progress
+      })
+
+      expect(wrapper.find('progress').exists()).toBe(false)
+    })
   })
 })

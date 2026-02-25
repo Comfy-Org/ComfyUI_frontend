@@ -2,6 +2,7 @@
   Step 4 of the template publishing wizard. Collects preview assets:
   thumbnail, before/after comparison, workflow graph, optional video,
   and an optional gallery of up to six example output images.
+  Each asset is uploaded to the upload progress server with a progress bar.
 -->
 <template>
   <div class="flex flex-col gap-6 overflow-y-auto p-6">
@@ -15,6 +16,7 @@
       </span>
       <TemplateAssetUploadZone
         :asset="assets.thumbnail.value"
+        :upload-progress="uploader.getProgress('thumbnail')"
         size-class="h-40 w-64"
         @upload="onThumbnailUpload"
         @remove="onThumbnailRemove"
@@ -38,6 +40,7 @@
           </span>
           <TemplateAssetUploadZone
             :asset="assets.beforeImage.value"
+            :upload-progress="uploader.getProgress('beforeImage')"
             @upload="onBeforeUpload"
             @remove="onBeforeRemove"
           />
@@ -50,6 +53,7 @@
           </span>
           <TemplateAssetUploadZone
             :asset="assets.afterImage.value"
+            :upload-progress="uploader.getProgress('afterImage')"
             @upload="onAfterUpload"
             @remove="onAfterRemove"
           />
@@ -71,6 +75,7 @@
       </span>
       <TemplateAssetUploadZone
         :asset="assets.workflowPreview.value"
+        :upload-progress="uploader.getProgress('workflowPreview')"
         size-class="h-40 w-72"
         @upload="onWorkflowUpload"
         @remove="onWorkflowRemove"
@@ -87,6 +92,7 @@
       </span>
       <TemplateAssetUploadZone
         :asset="assets.videoPreview.value"
+        :upload-progress="uploader.getProgress('videoPreview')"
         accept="video/*"
         preview-type="video"
         size-class="h-40 w-72"
@@ -111,29 +117,50 @@
         <div
           v-for="(asset, index) in assets.galleryImages.value"
           :key="asset.originalName + index"
-          class="group relative h-28 w-28 overflow-hidden rounded-lg"
+          class="flex flex-col"
         >
-          <img
-            :src="asset.objectUrl"
-            :alt="asset.originalName"
-            class="h-full w-full object-cover"
-          />
-          <div
-            class="absolute inset-x-0 bottom-0 flex items-center justify-between bg-black/60 px-1.5 py-0.5 opacity-0 transition-opacity group-hover:opacity-100"
-          >
-            <span class="truncate text-[10px] text-white">
-              {{ asset.originalName }}
-            </span>
-            <button
-              type="button"
-              class="shrink-0 text-white hover:text-danger"
-              :aria-label="
-                t('templatePublishing.steps.previewGeneration.removeFile')
-              "
-              @click="onGalleryRemove(index)"
+          <div class="group relative h-28 w-28 overflow-hidden rounded-lg">
+            <img
+              :src="asset.objectUrl"
+              :alt="asset.originalName"
+              class="h-full w-full object-cover"
+            />
+            <div
+              class="absolute inset-x-0 bottom-0 flex items-center justify-between bg-black/60 px-1.5 py-0.5 opacity-0 transition-opacity group-hover:opacity-100"
             >
-              <i class="icon-[lucide--x] h-3.5 w-3.5" />
-            </button>
+              <span class="truncate text-[10px] text-white">
+                {{ asset.originalName }}
+              </span>
+              <button
+                type="button"
+                class="shrink-0 text-white hover:text-danger"
+                :aria-label="
+                  t('templatePublishing.steps.previewGeneration.removeFile')
+                "
+                @click="onGalleryRemove(index)"
+              >
+                <i class="icon-[lucide--x] h-3.5 w-3.5" />
+              </button>
+            </div>
+          </div>
+          <div
+            v-if="galleryProgress(index) && !galleryProgress(index)!.complete"
+            class="mt-1 flex w-28 flex-col gap-0.5"
+          >
+            <progress
+              :value="galleryProgress(index)!.percent"
+              max="100"
+              :aria-label="
+                t(
+                  'templatePublishing.steps.previewGeneration.uploadingProgress',
+                  { percent: galleryProgress(index)!.percent }
+                )
+              "
+              class="h-1.5 w-full appearance-none overflow-hidden rounded-full [&::-moz-progress-bar]:rounded-full [&::-moz-progress-bar]:bg-primary [&::-webkit-progress-bar]:rounded-full [&::-webkit-progress-bar]:bg-muted [&::-webkit-progress-value]:rounded-full [&::-webkit-progress-value]:bg-primary [&::-webkit-progress-value]:transition-[width] [&::-webkit-progress-value]:duration-150 [&::-webkit-progress-value]:ease-out"
+            />
+            <span class="text-[10px] text-muted-foreground">
+              {{ galleryProgress(index)!.percent }}%
+            </span>
           </div>
         </div>
 
@@ -164,14 +191,17 @@
 </template>
 
 <script setup lang="ts">
-import { inject, ref } from 'vue'
+import { inject, onMounted, ref } from 'vue'
 import { watchDebounced } from '@vueuse/core'
 import { useI18n } from 'vue-i18n'
 
+import { useAssetUploadProgress } from '@/composables/useAssetUploadProgress'
 import {
   MAX_GALLERY_IMAGES,
   useTemplatePreviewAssets
 } from '@/composables/useTemplatePreviewAssets'
+import { createTemplateScreenshot } from '@/renderer/core/thumbnail/templateScreenshotRenderer'
+import { app } from '@/scripts/app'
 
 import { PublishingStepperKey } from '../types'
 import TemplateAssetUploadZone from '../TemplateAssetUploadZone.vue'
@@ -179,10 +209,22 @@ import TemplateAssetUploadZone from '../TemplateAssetUploadZone.vue'
 const { t } = useI18n()
 const ctx = inject(PublishingStepperKey)!
 const assets = useTemplatePreviewAssets()
+const uploader = useAssetUploadProgress()
 const galleryInput = ref<HTMLInputElement | null>(null)
+
+/**
+ * Uploads a file to the progress server under the given key, clearing
+ * the progress entry once complete.
+ */
+function uploadToServer(key: string, file: File) {
+  uploader.upload(key, file).finally(() => {
+    setTimeout(() => uploader.clearProgress(key), 600)
+  })
+}
 
 function onThumbnailUpload(file: File) {
   ctx.template.value.thumbnail = assets.setThumbnail(file)
+  uploadToServer('thumbnail', file)
 }
 
 function onThumbnailRemove() {
@@ -192,6 +234,7 @@ function onThumbnailRemove() {
 
 function onBeforeUpload(file: File) {
   ctx.template.value.beforeImage = assets.setBeforeImage(file)
+  uploadToServer('beforeImage', file)
 }
 
 function onBeforeRemove() {
@@ -201,6 +244,7 @@ function onBeforeRemove() {
 
 function onAfterUpload(file: File) {
   ctx.template.value.afterImage = assets.setAfterImage(file)
+  uploadToServer('afterImage', file)
 }
 
 function onAfterRemove() {
@@ -210,6 +254,7 @@ function onAfterRemove() {
 
 function onWorkflowUpload(file: File) {
   ctx.template.value.workflowPreview = assets.setWorkflowPreview(file)
+  uploadToServer('workflowPreview', file)
 }
 
 function onWorkflowRemove() {
@@ -219,6 +264,7 @@ function onWorkflowRemove() {
 
 function onVideoUpload(file: File) {
   ctx.template.value.videoPreview = assets.setVideoPreview(file)
+  uploadToServer('videoPreview', file)
 }
 
 function onVideoRemove() {
@@ -235,10 +281,12 @@ function onGallerySelect(event: Event) {
     const url = assets.addGalleryImage(file)
     if (url) {
       const gallery = ctx.template.value.gallery ?? []
+      const index = gallery.length
       ctx.template.value.gallery = [
         ...gallery,
         { type: 'image', url, caption: file.name }
       ]
+      uploadToServer(`gallery-${index}`, file)
     }
   }
   input.value = ''
@@ -246,9 +294,30 @@ function onGallerySelect(event: Event) {
 
 function onGalleryRemove(index: number) {
   assets.removeGalleryImage(index)
+  uploader.clearProgress(`gallery-${index}`)
   const gallery = ctx.template.value.gallery ?? []
   ctx.template.value.gallery = gallery.filter((_, i) => i !== index)
 }
+
+/** Returns the upload progress for a gallery image by index. */
+function galleryProgress(index: number) {
+  return uploader.getProgress(`gallery-${index}`)
+}
+
+/**
+ * Auto-generates a workflow graph screenshot from the current canvas when
+ * this step mounts, filling the preview slot if it is still empty.
+ */
+onMounted(async () => {
+  if (assets.workflowPreview.value || !app.rootGraph) return
+
+  const blob = await createTemplateScreenshot(app.rootGraph)
+  if (blob) {
+    onWorkflowUpload(
+      new File([blob], 'workflow-preview.png', { type: blob.type })
+    )
+  }
+})
 
 watchDebounced(
   () => ctx.template.value,

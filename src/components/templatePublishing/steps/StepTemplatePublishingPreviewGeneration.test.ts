@@ -1,4 +1,4 @@
-import { mount } from '@vue/test-utils'
+import { flushPromises, mount } from '@vue/test-utils'
 import { createI18n } from 'vue-i18n'
 import { computed, ref } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -10,9 +10,33 @@ import type { PublishingStepperContext } from '../types'
 import { PublishingStepperKey } from '../types'
 import StepTemplatePublishingPreviewGeneration from './StepTemplatePublishingPreviewGeneration.vue'
 
+const { mockCreateScreenshot, mockRootGraph } = vi.hoisted(() => ({
+  mockCreateScreenshot: vi.fn(),
+  mockRootGraph: { _nodes: [{ pos: [0, 0], size: [200, 100] }] }
+}))
+
+vi.mock('@/renderer/core/thumbnail/templateScreenshotRenderer', () => ({
+  createTemplateScreenshot: (...args: unknown[]) =>
+    mockCreateScreenshot(...args)
+}))
+
+vi.mock('@/scripts/app', () => ({
+  app: { rootGraph: mockRootGraph }
+}))
+
 let blobCounter = 0
 URL.createObjectURL = vi.fn(() => `blob:http://localhost/mock-${++blobCounter}`)
 URL.revokeObjectURL = vi.fn()
+
+class MockXMLHttpRequest {
+  open = vi.fn()
+  send = vi.fn()
+  upload = { addEventListener: vi.fn() }
+  addEventListener = vi.fn()
+  status = 200
+  responseText = '{}'
+}
+vi.stubGlobal('XMLHttpRequest', MockXMLHttpRequest)
 
 vi.mock('@vueuse/core', async (importOriginal) => {
   const actual = (await importOriginal()) as Record<string, unknown>
@@ -51,7 +75,8 @@ const i18n = createI18n({
             galleryLabel: 'Example Gallery',
             galleryHint: 'Up to {max} example output images',
             uploadPrompt: 'Click to upload',
-            removeFile: 'Remove'
+            removeFile: 'Remove',
+            uploadingProgress: 'Uploading… {percent}%'
           }
         }
       }
@@ -235,5 +260,38 @@ describe('StepTemplatePublishingPreviewGeneration', () => {
 
     expect(ctx.template.value.gallery).toHaveLength(1)
     expect(ctx.template.value.gallery![0].caption).toBe('b.png')
+  })
+
+  it('auto-generates workflow preview from the graph on mount', async () => {
+    const screenshotBlob = new Blob(['png'], { type: 'image/png' })
+    mockCreateScreenshot.mockResolvedValue(screenshotBlob)
+
+    const ctx = createContext()
+    mountStep(ctx)
+    await flushPromises()
+
+    expect(mockCreateScreenshot).toHaveBeenCalledWith(mockRootGraph)
+    expect(ctx.template.value.workflowPreview).toMatch(/^blob:/)
+  })
+
+  it('skips auto-generation when workflow preview already exists', async () => {
+    mockCreateScreenshot.mockResolvedValue(new Blob(['png']))
+    const assets = useTemplatePreviewAssets()
+    assets.setWorkflowPreview(new File([''], 'existing.png'))
+
+    mountStep(createContext({ workflowPreview: 'blob:existing' }))
+    await flushPromises()
+
+    expect(mockCreateScreenshot).not.toHaveBeenCalled()
+  })
+
+  it('skips auto-generation when screenshot returns null', async () => {
+    mockCreateScreenshot.mockResolvedValue(null)
+
+    const ctx = createContext()
+    mountStep(ctx)
+    await flushPromises()
+
+    expect(ctx.template.value.workflowPreview).toBeUndefined()
   })
 })

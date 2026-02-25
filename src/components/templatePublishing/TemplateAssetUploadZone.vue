@@ -1,6 +1,7 @@
 <!--
   Reusable upload zone for a single file asset. Shows a dashed click-to-upload
   area when empty, and a preview with filename overlay when populated.
+  Optionally displays an upload progress bar underneath.
 -->
 <template>
   <div>
@@ -61,6 +62,25 @@
       </div>
     </div>
 
+    <div
+      v-if="uploadProgress && !uploadProgress.complete"
+      class="mt-1 flex flex-col gap-0.5"
+    >
+      <progress
+        :value="uploadProgress.percent"
+        max="100"
+        :aria-label="
+          t('templatePublishing.steps.previewGeneration.uploadingProgress', {
+            percent: uploadProgress.percent
+          })
+        "
+        class="h-1.5 w-full appearance-none overflow-hidden rounded-full [&::-moz-progress-bar]:rounded-full [&::-moz-progress-bar]:bg-primary [&::-webkit-progress-bar]:rounded-full [&::-webkit-progress-bar]:bg-muted [&::-webkit-progress-value]:rounded-full [&::-webkit-progress-value]:bg-primary [&::-webkit-progress-value]:transition-[width] [&::-webkit-progress-value]:duration-150 [&::-webkit-progress-value]:ease-out"
+      />
+      <span class="text-[10px] text-muted-foreground">
+        {{ uploadProgress.percent }}%
+      </span>
+    </div>
+
     <input
       ref="fileInput"
       type="file"
@@ -75,6 +95,7 @@
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import type { UploadProgress } from '@/composables/useAssetUploadProgress'
 import type { CachedAsset } from '@/types/templateMarketplace'
 import { cn } from '@/utils/tailwindUtil'
 
@@ -82,12 +103,15 @@ const {
   asset = null,
   accept = 'image/*',
   previewType = 'image',
-  sizeClass = 'h-32 w-48'
+  sizeClass = 'h-32 w-48',
+  uploadProgress
 } = defineProps<{
   asset?: CachedAsset | null
   accept?: string
   previewType?: 'image' | 'video'
   sizeClass?: string
+  /** Reactive upload progress. Progress bar is shown only while uploading. */
+  uploadProgress?: UploadProgress
 }>()
 
 const emit = defineEmits<{
