@@ -27,6 +27,7 @@ import { useQueueSettingsStore } from '@/stores/queueStore'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import { cn } from '@/utils/tailwindUtil'
 import { useAppMode } from '@/composables/useAppMode'
+import { useAppModeStore } from '@/stores/appModeStore'
 const { t } = useI18n()
 const commandStore = useCommandStore()
 const executionStore = useExecutionStore()
@@ -36,6 +37,7 @@ const settingStore = useSettingStore()
 const { isActiveSubscription } = useBillingContext()
 const workflowStore = useWorkflowStore()
 const { isBuilderMode, hasOutputs } = useAppMode()
+const appModeStore = useAppModeStore()
 
 const props = defineProps<{
   toastTo?: string | HTMLElement
