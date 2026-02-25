@@ -76,6 +76,9 @@ function main() {
       if (!base) {
         lines.push(`| ${m.name}: style recalcs | — | ${m.styleRecalcs} | new |`)
         lines.push(`| ${m.name}: layouts | — | ${m.layouts} | new |`)
+        lines.push(
+          `| ${m.name}: task duration | — | ${m.taskDurationMs.toFixed(0)}ms | new |`
+        )
         continue
       }
 
