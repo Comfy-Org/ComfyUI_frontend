@@ -38,7 +38,7 @@ const workflowStore = useWorkflowStore()
 const { t } = useI18n()
 const canvas: LGraphCanvas = canvasStore.getCanvas()
 
-const { mode, isArrangeMode } = useAppMode()
+const { isSelectMode, isArrangeMode } = useAppMode()
 const hoveringSelectable = ref(false)
 
 provide(HideLayoutFieldKey, true)
@@ -324,7 +324,10 @@ const renderedInputs = computed<[string, MaybeRef<BoundStyle> | undefined][]>(
     </DraggableList>
   </PropertiesAccordionItem>
 
-  <Teleport v-if="mode === 'builder:select'" to="body">
+  <Teleport
+    v-if="isSelectMode && !settingStore.get('Comfy.VueNodes.Enabled')"
+    to="body"
+  >
     <div
       :class="
         cn(

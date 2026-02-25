@@ -53,22 +53,24 @@
           />
         </div>
         <!-- Widget Component -->
-        <component
-          :is="widget.vueComponent"
-          v-model="widget.value"
-          v-tooltip.left="widget.tooltipConfig"
-          :widget="widget.simplified"
-          :node-id="nodeData?.id != null ? String(nodeData.id) : ''"
-          :node-type="nodeType"
-          :class="
-            cn(
-              'col-span-2',
-              widget.hasError && 'text-node-stroke-error font-bold'
-            )
-          "
-          @update:model-value="widget.updateHandler"
-          @contextmenu="widget.handleContextMenu"
-        />
+        <AppInput :id="nodeData?.id ?? ''" :name="widget.name">
+          <component
+            :is="widget.vueComponent"
+            v-model="widget.value"
+            v-tooltip.left="widget.tooltipConfig"
+            :widget="widget.simplified"
+            :node-id="nodeData?.id != null ? String(nodeData.id) : ''"
+            :node-type="nodeType"
+            :class="
+              cn(
+                'col-span-2',
+                widget.hasError && 'text-node-stroke-error font-bold'
+              )
+            "
+            @update:model-value="widget.updateHandler"
+            @contextmenu="widget.handleContextMenu"
+          />
+        </AppInput>
       </div>
     </template>
   </div>
@@ -89,6 +91,7 @@ import { useErrorHandling } from '@/composables/useErrorHandling'
 import { st } from '@/i18n'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import AppInput from '@/renderer/extensions/linearMode/AppInput.vue'
 import { useNodeTooltips } from '@/renderer/extensions/vueNodes/composables/useNodeTooltips'
 import { useNodeEventHandlers } from '@/renderer/extensions/vueNodes/composables/useNodeEventHandlers'
 import { useNodeZIndex } from '@/renderer/extensions/vueNodes/composables/useNodeZIndex'
