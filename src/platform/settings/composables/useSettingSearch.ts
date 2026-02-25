@@ -10,7 +10,7 @@ import type { ISettingGroup, SettingParams } from '@/platform/settings/types'
 import { normalizeI18nKey } from '@/utils/formatUtil'
 import { useVueFeatureFlags } from '@/composables/useVueFeatureFlags'
 
-export interface SearchableNavItem {
+interface SearchableNavItem {
   key: string
   label: string
   translatedLabel: string
