@@ -696,8 +696,7 @@
         "tooltip": "Número máximo de imágenes a generar cuando generación_secuencial_de_imágenes='automático'. El total de imágenes (entrada + generadas) no puede exceder 15."
       },
       "model": {
-        "name": "modelo",
-        "tooltip": "Nombre del modelo"
+        "name": "modelo"
       },
       "prompt": {
         "name": "prompt",
@@ -4746,6 +4745,28 @@
     "inputs": {
       "image": {
         "name": "imagen"
+      }
+    }
+  },
+  "ImageMergeTileList": {
+    "display_name": "Unir lista de mosaicos en imagen",
+    "inputs": {
+      "final_height": {
+        "name": "final_height"
+      },
+      "final_width": {
+        "name": "final_width"
+      },
+      "image_list": {
+        "name": "image_list"
+      },
+      "overlap": {
+        "name": "overlap"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -14031,6 +14052,29 @@
       },
       "1": {
         "name": "derecho",
+        "tooltip": null
+      }
+    }
+  },
+  "SplitImageToTileList": {
+    "description": "Divide una imagen en una lista agrupada de mosaicos con una superposición especificada.",
+    "display_name": "Dividir imagen en lista de mosaicos",
+    "inputs": {
+      "image": {
+        "name": "image"
+      },
+      "overlap": {
+        "name": "overlap"
+      },
+      "tile_height": {
+        "name": "tile_height"
+      },
+      "tile_width": {
+        "name": "tile_width"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }

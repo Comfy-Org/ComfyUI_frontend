@@ -294,6 +294,9 @@
       "title": "Создать аккаунт"
     }
   },
+  "batch": {
+    "index": "{current} / {total}"
+  },
   "billingOperation": {
     "subscriptionFailed": "Не удалось обновить подписку",
     "subscriptionProcessing": "Обработка платежа — настройка вашего рабочего пространства...",
@@ -1178,6 +1181,8 @@
     "star": "Звезда"
   },
   "imageCompare": {
+    "batchLabelA": "A:",
+    "batchLabelB": "B:",
     "noImages": "Нет изображений для сравнения"
   },
   "imageCrop": {
@@ -2909,6 +2914,7 @@
     "emptyCanvas": "Пустой холст",
     "errorCopyImage": "Ошибка копирования изображения: {error}",
     "errorLoadingModel": "Ошибка загрузки модели",
+    "errorOpenImage": "Ошибка при открытии изображения: {error}",
     "errorSaveSetting": "Ошибка сохранения настройки {id}: {err}",
     "exportSuccess": "Модель успешно экспортирована как {format}",
     "failedExecutionPathResolution": "Не удалось определить путь к выбранным узлам",

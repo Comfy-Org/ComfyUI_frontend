@@ -294,6 +294,9 @@
       "title": "Créer un compte"
     }
   },
+  "batch": {
+    "index": "{current} / {total}"
+  },
   "billingOperation": {
     "subscriptionFailed": "Échec de la mise à jour de l'abonnement",
     "subscriptionProcessing": "Traitement du paiement — configuration de votre espace de travail...",
@@ -1178,6 +1181,8 @@
     "star": "Étoile"
   },
   "imageCompare": {
+    "batchLabelA": "A :",
+    "batchLabelB": "B :",
     "noImages": "Aucune image à comparer"
   },
   "imageCrop": {
@@ -2909,6 +2914,7 @@
     "emptyCanvas": "Toile vide",
     "errorCopyImage": "Erreur lors de la copie de l'image: {error}",
     "errorLoadingModel": "Erreur lors du chargement du modèle",
+    "errorOpenImage": "Erreur lors de l'ouverture de l'image : {error}",
     "errorSaveSetting": "Erreur lors de l'enregistrement du paramètre {id}: {err}",
     "exportSuccess": "Modèle exporté avec succès au format {format}",
     "failedExecutionPathResolution": "Impossible de résoudre le chemin vers les nœuds sélectionnés",
