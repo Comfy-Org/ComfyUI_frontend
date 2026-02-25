@@ -4,7 +4,6 @@ import { useWorkflowStore } from '@/platform/workflow/management/stores/workflow
 
 export type AppMode = 'graph' | 'app' | 'builder:select' | 'builder:arrange'
 
-const hasOutputs = ref(true)
 const enableAppBuilder = ref(true)
 
 export function useAppMode() {
@@ -39,7 +38,6 @@ export function useAppMode() {
     isBuilderMode,
     isAppMode,
     isGraphMode,
-    hasOutputs,
     setMode
   }
 }

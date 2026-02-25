@@ -124,7 +124,7 @@ import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { useAppModeStore } from '@/stores/appModeStore'
+import { useAppMode } from '@/composables/useAppMode'
 import { useBottomPanelStore } from '@/stores/workspace/bottomPanelStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
@@ -145,12 +145,12 @@ const unifiedWidth = computed(() =>
 
 const { focusMode } = storeToRefs(workspaceStore)
 
-const appModeStore = useAppModeStore()
+const { mode } = useAppMode()
 const { activeSidebarTabId, activeSidebarTab } = storeToRefs(sidebarTabStore)
 const { bottomPanelVisible } = storeToRefs(useBottomPanelStore())
 const { isOpen: rightSidePanelVisible } = storeToRefs(rightSidePanelStore)
 const showOffsideSplitter = computed(
-  () => rightSidePanelVisible.value || appModeStore.mode === 'builder:select'
+  () => rightSidePanelVisible.value || mode.value === 'builder:select'
 )
 
 const sidebarPanelVisible = computed(() => activeSidebarTab.value !== null)

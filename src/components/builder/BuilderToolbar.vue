@@ -65,6 +65,7 @@ import { useI18n } from 'vue-i18n'
 
 import { useAppMode } from '@/composables/useAppMode'
 import type { AppMode } from '@/composables/useAppMode'
+import { useAppModeStore } from '@/stores/appModeStore'
 import { cn } from '@/utils/tailwindUtil'
 
 import { useBuilderSave } from './useBuilderSave'
@@ -74,7 +75,8 @@ import StepLabel from './StepLabel.vue'
 import type { BuilderToolbarStep } from './types'
 
 const { t } = useI18n()
-const { mode, hasOutputs, setMode } = useAppMode()
+const { mode, setMode } = useAppMode()
+const { hasOutputs } = useAppModeStore()
 const { saving, setSaving } = useBuilderSave()
 
 const activeStep = computed(() => (saving.value ? 'save' : mode.value))

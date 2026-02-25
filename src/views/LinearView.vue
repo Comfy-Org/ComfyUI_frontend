@@ -2,6 +2,7 @@
 import { breakpointsTailwind, unrefElement, useBreakpoints } from '@vueuse/core'
 import Splitter from 'primevue/splitter'
 import SplitterPanel from 'primevue/splitterpanel'
+import { storeToRefs } from 'pinia'
 import { computed, useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -19,11 +20,13 @@ import LinearProgressBar from '@/renderer/extensions/linearMode/LinearProgressBa
 import MobileMenu from '@/renderer/extensions/linearMode/MobileMenu.vue'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { useAppMode } from '@/composables/useAppMode'
+import { useAppModeStore } from '@/stores/appModeStore'
 
 const { t } = useI18n()
 const settingStore = useSettingStore()
 const workspaceStore = useWorkspaceStore()
-const { isBuilderMode, hasOutputs } = useAppMode()
+const { isBuilderMode } = useAppMode()
+const { hasOutputs } = storeToRefs(useAppModeStore())
 
 const mobileDisplay = useBreakpoints(breakpointsTailwind).smaller('md')
 

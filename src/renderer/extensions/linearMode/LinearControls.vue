@@ -36,8 +36,9 @@ const { batchCount } = storeToRefs(useQueueSettingsStore())
 const settingStore = useSettingStore()
 const { isActiveSubscription } = useBillingContext()
 const workflowStore = useWorkflowStore()
-const { isBuilderMode, hasOutputs } = useAppMode()
+const { isBuilderMode } = useAppMode()
 const appModeStore = useAppModeStore()
+const { hasOutputs } = appModeStore
 
 const props = defineProps<{
   toastTo?: string | HTMLElement

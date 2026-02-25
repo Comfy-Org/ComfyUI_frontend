@@ -1,10 +1,12 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 import { useAppMode } from '@/composables/useAppMode'
+import { useAppModeStore } from '@/stores/appModeStore'
 import Button from '@/components/ui/button/Button.vue'
 
 const { t } = useI18n()
-const { hasOutputs, setMode } = useAppMode()
+const { setMode } = useAppMode()
+const { hasOutputs } = useAppModeStore()
 </script>
 
 <template>
