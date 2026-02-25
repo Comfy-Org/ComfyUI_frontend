@@ -93,23 +93,22 @@ test.describe('Node search box V2', { tag: '@node' }, () => {
       await comfyPage.canvasOps.doubleClick()
       await expect(searchBoxV2.input).toBeVisible()
 
-      // Click "Input" filter chip in the filter bar
+      // Click "Input" filter chip to open the popover
       await searchBoxV2.filterBarButton('Input').click()
-
-      // Filter options should appear
-      await expect(searchBoxV2.filterOptions.first()).toBeVisible()
+      await expect(searchBoxV2.filterPopover).toBeVisible()
 
       // Type to narrow and select MODEL
-      await searchBoxV2.input.fill('MODEL')
-      await searchBoxV2.filterOptions
+      await searchBoxV2.filterPopoverSearch.fill('MODEL')
+      await searchBoxV2.filterPopoverOptions
         .filter({ hasText: 'MODEL' })
         .first()
         .click()
 
+      // Close the popover by pressing Escape
+      await searchBoxV2.filterPopoverSearch.press('Escape')
+
       // Filter chip should appear and results should be filtered
-      await expect(
-        searchBoxV2.dialog.getByText('Input:', { exact: false }).locator('..')
-      ).toContainText('MODEL')
+      await expect(searchBoxV2.filterChips.first()).toContainText('MODEL')
       await expect(searchBoxV2.results.first()).toBeVisible()
     })
   })
