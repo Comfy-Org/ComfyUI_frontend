@@ -28,6 +28,7 @@ const {
 }>()
 
 const cloudBadge = computed<TopbarBadgeType>(() => ({
+  icon: 'pi pi-cloud',
   text: 'Comfy Cloud'
 }))
 </script>
