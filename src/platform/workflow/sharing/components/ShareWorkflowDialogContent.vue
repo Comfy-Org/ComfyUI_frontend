@@ -164,7 +164,13 @@
         data-testid="publish-tab-panel"
         class="min-h-0"
       >
-        <ComfyHubPublishWizardPanel :on-publish="onClose" />
+        <ComfyHubIntroPopover
+          data-testid="publish-intro"
+          :has-profile="hasProfile === true"
+          :on-create-profile="handleOpenPublishDialog"
+          :on-close="onClose"
+          :show-close-button="false"
+        />
       </div>
     </div>
   </div>
@@ -177,11 +183,12 @@ import { useToast } from 'primevue/usetoast'
 import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import ComfyHubPublishWizardPanel from '@/platform/workflow/sharing/components/comfyhub/publish/ComfyHubPublishWizardPanel.vue'
+import ComfyHubIntroPopover from '@/platform/workflow/sharing/components/comfyhub/profile/ComfyHubIntroPopover.vue'
 import ShareAssetWarningBox from '@/platform/workflow/sharing/components/ShareAssetWarningBox.vue'
 import ShareUrlCopyField from '@/platform/workflow/sharing/components/ShareUrlCopyField.vue'
 import Button from '@/components/ui/button/Button.vue'
 import Input from '@/components/ui/input/Input.vue'
+import { useComfyHubPublishDialog } from '@/platform/workflow/sharing/composables/useComfyHubPublishDialog'
 import { useComfyHubProfileGate } from '@/platform/workflow/sharing/composables/useComfyHubProfileGate'
 import type { WorkflowPublishResult } from '@/platform/workflow/sharing/types/shareTypes'
 import { useWorkflowShareService } from '@/platform/workflow/sharing/services/workflowShareService'
@@ -198,7 +205,8 @@ const { onClose } = defineProps<{
 const { t, locale } = useI18n()
 const toast = useToast()
 const { flags } = useFeatureFlags()
-const { ensurePublishAccess } = useComfyHubProfileGate()
+const publishDialog = useComfyHubPublishDialog()
+const { hasProfile, checkProfile } = useComfyHubProfileGate()
 const shareService = useWorkflowShareService()
 const workflowStore = useWorkflowStore()
 const workflowService = useWorkflowService()
@@ -208,8 +216,6 @@ type DialogMode = 'shareLink' | 'publishToHub'
 
 const dialogState = ref<DialogState>('loading')
 const dialogMode = ref<DialogMode>('shareLink')
-const isResolvingPublishTabAccess = ref(false)
-const publishTabAccessRequestId = ref(0)
 const acknowledged = ref(false)
 const workflowName = ref('')
 type InputRefTarget = {
@@ -273,6 +279,11 @@ const requiresAcknowledgment = computed(
 )
 const showPublishToHubTab = computed(() => flags.comfyHubUploadEnabled)
 
+function handleOpenPublishDialog() {
+  onClose()
+  publishDialog.show()
+}
+
 function tabButtonClass(mode: DialogMode) {
   return cn(
     'cursor-pointer border-none transition-colors',
@@ -282,10 +293,8 @@ function tabButtonClass(mode: DialogMode) {
   )
 }
 
-async function handleDialogModeChange(nextMode: DialogMode) {
+function handleDialogModeChange(nextMode: DialogMode) {
   if (nextMode === 'shareLink') {
-    publishTabAccessRequestId.value += 1
-    isResolvingPublishTabAccess.value = false
     dialogMode.value = 'shareLink'
     return
   }
@@ -294,39 +303,14 @@ async function handleDialogModeChange(nextMode: DialogMode) {
     return
   }
 
-  if (!showPublishToHubTab.value || isResolvingPublishTabAccess.value) {
+  if (!showPublishToHubTab.value) {
     return
   }
 
-  const requestId = ++publishTabAccessRequestId.value
-  isResolvingPublishTabAccess.value = true
-  try {
-    const hasPublishAccess = await ensurePublishAccess()
-    if (requestId !== publishTabAccessRequestId.value) {
-      return
-    }
-
-    dialogMode.value = hasPublishAccess ? 'publishToHub' : 'shareLink'
-  } catch (error) {
-    if (requestId !== publishTabAccessRequestId.value) {
-      return
-    }
-
-    console.error('Failed to resolve publish tab access:', error)
-    dialogMode.value = 'shareLink'
-  } finally {
-    if (requestId === publishTabAccessRequestId.value) {
-      isResolvingPublishTabAccess.value = false
-    }
-  }
+  dialogMode.value = 'publishToHub'
 }
 
 watch(showPublishToHubTab, (isVisible) => {
-  if (!isVisible) {
-    publishTabAccessRequestId.value += 1
-    isResolvingPublishTabAccess.value = false
-  }
-
   if (!isVisible && dialogMode.value === 'publishToHub') {
     dialogMode.value = 'shareLink'
   }
@@ -381,6 +365,10 @@ async function refreshDialogState() {
 }
 
 onMounted(() => {
+  if (showPublishToHubTab.value) {
+    void checkProfile()
+  }
+
   void refreshDialogState()
 })
 

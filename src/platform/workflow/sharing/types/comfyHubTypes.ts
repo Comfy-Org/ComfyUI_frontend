@@ -9,6 +9,7 @@ export interface ExampleImage {
 export interface ComfyHubPublishFormData {
   name: string
   description: string
+  workflowType: string
   tags: string[]
   thumbnailType: ThumbnailType
   thumbnailFile: File | null

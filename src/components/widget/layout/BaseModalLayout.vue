@@ -77,9 +77,7 @@
           >
             {{ contentTitle }}
           </h2>
-          <div
-            class="flex min-h-0 flex-1 px-6 pt-0 pb-2 overflow-y-auto scrollbar-custom"
-          >
+          <div :class="contentContainerClass">
             <slot name="content" />
           </div>
         </main>
@@ -153,17 +151,20 @@ const SIZE_CLASSES = {
 } as const
 
 type ModalSize = keyof typeof SIZE_CLASSES
+type ContentPadding = 'default' | 'none'
 
 const {
   contentTitle,
   rightPanelTitle,
   size = 'lg',
-  leftPanelWidth = '14rem'
+  leftPanelWidth = '14rem',
+  contentPadding = 'default'
 } = defineProps<{
   contentTitle: string
   rightPanelTitle?: string
   size?: ModalSize
   leftPanelWidth?: string
+  contentPadding?: ContentPadding
 }>()
 
 const sizeClasses = computed(() => SIZE_CLASSES[size])
@@ -198,6 +199,13 @@ const showLeftPanel = computed(() => {
     : mobileMenuOpen.value
   return shouldShow
 })
+
+const contentContainerClass = computed(() =>
+  cn(
+    'flex min-h-0 flex-1 overflow-y-auto scrollbar-custom',
+    contentPadding === 'default' && 'px-6 pt-0 pb-2'
+  )
+)
 
 const gridStyle = computed(() => ({
   gridTemplateColumns: hasRightPanel.value

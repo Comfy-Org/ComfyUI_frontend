@@ -2,6 +2,7 @@
   <div class="relative w-full bg-base-background">
     <!-- Close button -->
     <button
+      v-if="showCloseButton"
       class="absolute right-2 top-2 z-10 flex size-8 cursor-pointer items-center justify-center rounded-full bg-black/30 text-white hover:bg-black/50"
       :aria-label="$t('g.close')"
       @click="onClose"
@@ -77,9 +78,15 @@ import type { ComfyHubProfile } from '@/schemas/apiSchema'
 
 import Button from '@/components/ui/button/Button.vue'
 
-const { profile, onUpload, onClose } = defineProps<{
+const {
+  profile,
+  onUpload,
+  onClose,
+  showCloseButton = true
+} = defineProps<{
   profile: ComfyHubProfile
   onUpload: () => void
   onClose: () => void
+  showCloseButton?: boolean
 }>()
 </script>

@@ -13,6 +13,7 @@ function createDefaultFormData(): ComfyHubPublishFormData {
   return {
     name: activeWorkflow?.filename ?? '',
     description: '',
+    workflowType: '',
     tags: [],
     thumbnailType: 'image',
     thumbnailFile: null,

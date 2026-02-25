@@ -1,7 +1,7 @@
 <template>
   <div class="flex w-full flex-col overflow-hidden bg-base-background">
     <!-- Hero image with gradient fade -->
-    <div class="relative h-[229px] shrink-0 overflow-hidden">
+    <div class="relative h-[229px] shrink-0 overflow-hidden rounded-t-xl">
       <img
         src="/assets/images/comfyhub/hub_profile_intro_hero.png"
         alt=""
@@ -12,6 +12,7 @@
       />
       <!-- Close button -->
       <button
+        v-if="showCloseButton"
         class="absolute right-2 top-2 z-10 flex size-8 cursor-pointer items-center justify-center rounded-full bg-black/30 border-none text-white hover:bg-black/50"
         :aria-label="$t('g.close')"
         @click="onClose"
@@ -28,11 +29,19 @@
       <p class="m-0 text-center text-sm text-muted-foreground">
         {{ $t('comfyHubProfile.introDescription') }}
       </p>
-      <p class="m-0 text-center text-sm text-muted-foreground">
-        {{ $t('comfyHubProfile.introSubtitle') }}
-      </p>
-      <Button variant="primary" size="lg" class="mt-2" @click="onCreateProfile">
-        {{ $t('comfyHubProfile.createProfileButton') }}
+      <Button
+        variant="primary"
+        size="lg"
+        class="mt-2 w-full"
+        @click="onCreateProfile"
+      >
+        {{
+          $t(
+            hasProfile
+              ? 'comfyHubProfile.startPublishingButton'
+              : 'comfyHubProfile.createProfileButton'
+          )
+        }}
       </Button>
     </div>
   </div>
@@ -41,8 +50,15 @@
 <script setup lang="ts">
 import Button from '@/components/ui/button/Button.vue'
 
-const { onCreateProfile, onClose } = defineProps<{
+const {
+  onCreateProfile,
+  onClose,
+  showCloseButton = true,
+  hasProfile = false
+} = defineProps<{
   onCreateProfile: () => void
   onClose: () => void
+  showCloseButton?: boolean
+  hasProfile?: boolean
 }>()
 </script>

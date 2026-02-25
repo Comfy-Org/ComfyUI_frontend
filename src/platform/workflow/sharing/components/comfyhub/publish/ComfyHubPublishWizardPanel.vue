@@ -1,80 +1,110 @@
 <template>
-  <div class="flex min-h-0 flex-1 flex-col md:flex-row">
-    <aside
-      class="shrink-0 border-b border-border-default md:w-64 md:border-b-0 md:border-r"
+  <div class="flex min-h-0 flex-1 flex-col">
+    <div
+      v-if="publishPanelState === 'checkingAccess'"
+      data-testid="publish-access-loading"
+      class="flex min-h-0 flex-1 items-center justify-center px-6 py-8 text-sm text-muted-foreground"
     >
-      <ComfyHubPublishNav :current-step="currentStep" @step-click="goToStep" />
-    </aside>
-
-    <section class="flex min-h-0 flex-1 flex-col px-4 py-3 md:px-6 md:py-4">
+      {{ $t('comfyHubProfile.checkingAccess') }}
+    </div>
+    <ComfyHubProfileGateDialog
+      v-else-if="publishPanelState === 'gateFlow'"
+      data-testid="publish-gate-flow"
+      :on-complete="onGateComplete"
+      :on-close="onGateClose"
+      initial-step="create"
+      :show-close-button="false"
+    />
+    <div v-else class="flex min-h-0 flex-1 flex-col px-6 pb-2 pt-4">
       <div class="flex min-h-0 flex-1 flex-col overflow-y-auto">
         <ComfyHubDescribeStep
           v-if="currentStep === 'describe'"
           :name="formData.name"
           :description="formData.description"
-          :thumbnail-type="formData.thumbnailType"
-          @update:name="formData.name = $event"
-          @update:description="formData.description = $event"
-          @update:thumbnail-type="formData.thumbnailType = $event"
-          @update:thumbnail-file="formData.thumbnailFile = $event"
-          @update:comparison-before-file="
-            formData.comparisonBeforeFile = $event
-          "
-          @update:comparison-after-file="formData.comparisonAfterFile = $event"
+          :workflow-type="formData.workflowType"
+          :tags="formData.tags"
+          @update:name="onUpdateFormData({ name: $event })"
+          @update:description="onUpdateFormData({ description: $event })"
+          @update:workflow-type="onUpdateFormData({ workflowType: $event })"
+          @update:tags="onUpdateFormData({ tags: $event })"
         />
         <ComfyHubExamplesStep
           v-else-if="currentStep === 'examples'"
           :example-images="formData.exampleImages"
           :selected-example-ids="formData.selectedExampleIds"
-          @update:example-images="formData.exampleImages = $event"
-          @update:selected-example-ids="formData.selectedExampleIds = $event"
+          @update:example-images="onUpdateFormData({ exampleImages: $event })"
+          @update:selected-example-ids="
+            onUpdateFormData({ selectedExampleIds: $event })
+          "
         />
         <ComfyHubFinishStep
           v-else-if="currentStep === 'finish'"
-          :tags="formData.tags"
-          @update:tags="formData.tags = $event"
+          :thumbnail-type="formData.thumbnailType"
+          @update:thumbnail-type="onUpdateFormData({ thumbnailType: $event })"
+          @update:thumbnail-file="onUpdateFormData({ thumbnailFile: $event })"
+          @update:comparison-before-file="
+            onUpdateFormData({ comparisonBeforeFile: $event })
+          "
+          @update:comparison-after-file="
+            onUpdateFormData({ comparisonAfterFile: $event })
+          "
         />
       </div>
       <ComfyHubPublishFooter
+        v-if="publishPanelState === 'publishWizard'"
         :is-first-step="isFirstStep"
         :is-last-step="isLastStep"
-        @back="goBack"
-        @next="goNext"
+        @back="onGoBack"
+        @next="onGoNext"
         @publish="handlePublish"
+        @cancel="onCancel"
       />
-    </section>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { onBeforeUnmount } from 'vue'
-
+import ComfyHubProfileGateDialog from '@/platform/workflow/sharing/components/comfyhub/profile/ComfyHubProfileGateDialog.vue'
+import type { ComfyHubPublishStep } from '@/platform/workflow/sharing/composables/useComfyHubPublishWizard'
+import type { ComfyHubPublishFormData } from '@/platform/workflow/sharing/types/comfyHubTypes'
 import ComfyHubDescribeStep from './ComfyHubDescribeStep.vue'
 import ComfyHubExamplesStep from './ComfyHubExamplesStep.vue'
 import ComfyHubFinishStep from './ComfyHubFinishStep.vue'
 import ComfyHubPublishFooter from './ComfyHubPublishFooter.vue'
-import ComfyHubPublishNav from './ComfyHubPublishNav.vue'
-import { useComfyHubPublishWizard } from '@/platform/workflow/sharing/composables/useComfyHubPublishWizard'
 
-const { onPublish } = defineProps<{
-  onPublish: () => void
-}>()
+type PublishPanelState =
+  | 'uninitialized'
+  | 'checkingAccess'
+  | 'gateFlow'
+  | 'publishWizard'
 
 const {
   currentStep,
   formData,
   isFirstStep,
   isLastStep,
-  goToStep,
-  goNext,
-  goBack
-} = useComfyHubPublishWizard()
-
-onBeforeUnmount(() => {
-  for (const image of formData.value.exampleImages) {
-    URL.revokeObjectURL(image.url)
-  }
-})
+  onGoNext,
+  onGoBack,
+  onUpdateFormData,
+  onCancel,
+  onPublish,
+  onGateComplete = () => {},
+  onGateClose = () => {},
+  publishPanelState = 'publishWizard'
+} = defineProps<{
+  currentStep: ComfyHubPublishStep
+  formData: ComfyHubPublishFormData
+  isFirstStep: boolean
+  isLastStep: boolean
+  onGoNext: () => void
+  onGoBack: () => void
+  onUpdateFormData: (patch: Partial<ComfyHubPublishFormData>) => void
+  onCancel: () => void
+  onPublish: () => void
+  onGateComplete?: () => void
+  onGateClose?: () => void
+  publishPanelState?: PublishPanelState
+}>()
 
 function handlePublish() {
   // TODO: Implement publish to ComfyHub API

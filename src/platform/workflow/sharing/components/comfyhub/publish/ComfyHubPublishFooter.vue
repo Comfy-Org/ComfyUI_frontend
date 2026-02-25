@@ -6,11 +6,14 @@
       </Button>
     </div>
     <div class="flex gap-4">
+      <Button size="lg" variant="secondary" @click="$emit('cancel')">
+        {{ $t('g.cancel') }}
+      </Button>
       <Button v-if="!isLastStep" size="lg" @click="$emit('next')">
         {{ $t('comfyHubPublish.next') }}
         <i class="icon-[lucide--chevron-right] size-4" />
       </Button>
-      <Button variant="primary" size="lg" @click="$emit('publish')">
+      <Button v-else variant="primary" size="lg" @click="$emit('publish')">
         <i class="icon-[lucide--upload] size-4" />
         {{ $t('comfyHubPublish.publishButton') }}
       </Button>
@@ -28,6 +31,7 @@ defineProps<{
 
 defineEmits<{
   back: []
+  cancel: []
   next: []
   publish: []
 }>()

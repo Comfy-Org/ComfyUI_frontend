@@ -1,157 +1,136 @@
 <template>
-  <div class="w-full bg-base-background">
-    <!-- Header -->
+  <div class="flex min-h-0 flex-1 flex-col overflow-hidden bg-base-background">
     <div
-      class="flex h-12 items-center justify-between border-b border-border-default px-4"
+      v-if="showCloseButton"
+      class="flex h-16 items-center justify-between px-6"
     >
-      <span class="text-sm font-medium text-base-foreground">
-        {{ $t('comfyHubProfile.modalTitle') }}
-      </span>
-      <button
-        class="cursor-pointer rounded border-none bg-transparent text-muted-foreground hover:text-base-foreground"
+      <h2 class="text-base font-normal text-base-foreground">
+        {{ $t('comfyHubProfile.createProfileTitle') }}
+      </h2>
+      <Button
+        size="lg"
+        class="w-10 p-0"
         :aria-label="$t('g.close')"
         @click="onClose"
       >
         <i class="pi pi-times" />
-      </button>
+      </Button>
     </div>
+    <h2 v-else class="px-6 pt-6 text-base font-normal text-base-foreground">
+      {{ $t('comfyHubProfile.createProfileTitle') }}
+    </h2>
 
-    <!-- Image uploads -->
-    <div class="relative flex flex-col items-center px-6 pt-4">
-      <!-- Cover image -->
-      <label
-        ref="coverDropRef"
-        :class="
-          cn(
-            'flex h-[130px] w-full cursor-pointer flex-col items-center justify-center rounded-lg border border-dashed transition-colors',
-            isOverCoverDrop
-              ? 'border-muted-foreground'
-              : 'border-border-default hover:border-muted-foreground'
-          )
-        "
-        @dragenter.stop
-        @dragleave.stop
-        @dragover.prevent.stop
-        @drop.prevent.stop
-      >
-        <input
-          type="file"
-          accept="image/*"
-          class="hidden"
-          @change="handleCoverSelect"
-        />
-        <template v-if="coverPreviewUrl">
-          <img
-            :src="coverPreviewUrl"
-            :alt="$t('comfyHubProfile.uploadCover')"
-            class="size-full rounded-lg object-cover"
-          />
-        </template>
-        <template v-else>
-          <span class="text-sm text-muted-foreground">
-            {{ $t('comfyHubProfile.uploadCover') }}
-          </span>
-        </template>
-      </label>
-
-      <!-- Profile picture -->
-      <label
-        ref="profileDropRef"
-        :class="
-          cn(
-            '-mt-15 z-10 flex size-30 cursor-pointer flex-col items-center justify-center rounded-full border border-dashed bg-base-background transition-colors',
-            isOverProfileDrop
-              ? 'border-muted-foreground'
-              : 'border-border-default hover:border-muted-foreground'
-          )
-        "
-        @dragenter.stop
-        @dragleave.stop
-        @dragover.prevent.stop
-        @drop.prevent.stop
-      >
-        <input
-          type="file"
-          accept="image/*"
-          class="hidden"
-          @change="handleProfileSelect"
-        />
-        <template v-if="profilePreviewUrl">
-          <img
-            :src="profilePreviewUrl"
-            :alt="$t('comfyHubProfile.uploadProfilePicture')"
-            class="size-full rounded-full object-cover"
-          />
-        </template>
-        <template v-else>
-          <span class="text-center text-xs text-muted-foreground">
-            {{ $t('comfyHubProfile.uploadProfilePicture') }}
-          </span>
-        </template>
-      </label>
-    </div>
-
-    <!-- Form fields -->
-    <div class="flex flex-col gap-4 px-6 py-4">
-      <div class="flex flex-col gap-2">
+    <div class="flex min-h-0 flex-1 flex-col gap-6 overflow-y-auto px-6 py-4">
+      <div class="flex flex-col gap-4">
+        <span class="text-sm text-muted-foreground">
+          {{ $t('comfyHubProfile.chooseProfilePicture') }}
+        </span>
         <label
-          for="profile-name"
-          class="text-sm font-medium text-base-foreground"
+          class="flex size-[51px] cursor-pointer items-center justify-center overflow-hidden rounded-full bg-gradient-to-b from-[rgba(40,200,64,0.53)] to-[#00630f]"
         >
-          {{ $t('comfyHubProfile.nameLabel') }}
+          <input
+            type="file"
+            accept="image/*"
+            class="hidden"
+            @change="handleProfileSelect"
+          />
+          <template v-if="profilePreviewUrl">
+            <img
+              :src="profilePreviewUrl"
+              :alt="$t('comfyHubProfile.chooseProfilePicture')"
+              class="size-full rounded-full object-cover"
+            />
+          </template>
+          <template v-else>
+            <span class="text-base text-white">
+              {{ profileInitial }}
+            </span>
+          </template>
         </label>
-        <Input
-          id="profile-name"
-          v-model="name"
-          :placeholder="$t('comfyHubProfile.namePlaceholder')"
-        />
       </div>
 
-      <div class="flex flex-col gap-2">
-        <label
-          for="profile-username"
-          class="text-sm font-medium text-base-foreground"
-        >
-          {{ $t('comfyHubProfile.usernameLabel') }}
-        </label>
-        <div
-          class="flex h-10 items-center rounded-lg bg-secondary-background px-4 text-sm"
-        >
-          <span
-            :class="
-              cn(username ? 'text-base-foreground' : 'text-muted-foreground')
-            "
-            >@</span
-          >
-          <input
-            id="profile-username"
-            v-model="username"
-            class="h-full w-full min-w-0 appearance-none border-none bg-transparent p-0 text-sm text-base-foreground placeholder:text-muted-foreground focus-visible:outline-none"
+      <div class="flex flex-col gap-6">
+        <div class="flex flex-col gap-4">
+          <label for="profile-name" class="text-sm text-muted-foreground">
+            {{ $t('comfyHubProfile.nameLabel') }}
+          </label>
+          <Input
+            id="profile-name"
+            v-model="name"
+            :placeholder="$t('comfyHubProfile.namePlaceholder')"
           />
         </div>
-      </div>
 
-      <div class="flex flex-col gap-2">
-        <label
-          for="profile-description"
-          class="text-sm font-medium text-base-foreground"
-        >
-          {{ $t('comfyHubProfile.descriptionLabel') }}
-        </label>
-        <Textarea
-          id="profile-description"
-          v-model="description"
-          :placeholder="$t('comfyHubProfile.descriptionPlaceholder')"
-        />
+        <div class="flex flex-col gap-2">
+          <label for="profile-username" class="text-sm text-muted-foreground">
+            {{ $t('comfyHubProfile.usernameLabel') }}
+          </label>
+          <div
+            class="flex h-10 items-center rounded-lg bg-secondary-background px-4 text-sm"
+          >
+            <span
+              :class="
+                username ? 'text-base-foreground' : 'text-muted-foreground'
+              "
+            >
+              @
+            </span>
+            <input
+              id="profile-username"
+              v-model="username"
+              class="h-full w-full min-w-0 appearance-none border-none bg-transparent p-0 text-sm text-base-foreground placeholder:text-muted-foreground focus-visible:outline-none"
+            />
+          </div>
+        </div>
+
+        <div class="flex flex-col gap-2">
+          <label
+            for="profile-description"
+            class="text-sm text-muted-foreground"
+          >
+            {{ $t('comfyHubProfile.descriptionLabel') }}
+          </label>
+          <Textarea
+            id="profile-description"
+            v-model="description"
+            :placeholder="$t('comfyHubProfile.descriptionPlaceholder')"
+            class="h-[98px] resize-none rounded-lg border-none bg-secondary-background px-4 py-4 text-sm shadow-none"
+          />
+        </div>
+
+        <div class="flex flex-col gap-2">
+          <label class="text-sm text-muted-foreground">
+            {{ $t('comfyHubProfile.socialLinksLabel') }}
+          </label>
+          <div class="flex flex-col gap-2">
+            <Input
+              v-for="(_, index) in socialLinks"
+              :key="index"
+              v-model="socialLinks[index]"
+              :placeholder="$t('comfyHubProfile.socialLinkPlaceholder')"
+            />
+          </div>
+          <Button
+            size="sm"
+            class="mt-2 h-8 w-fit gap-1 rounded-lg bg-secondary-background px-3 text-xs text-base-foreground hover:bg-secondary-background-selected"
+            @click="addSocialLink"
+          >
+            <i class="icon-[lucide--plus] size-3" />
+            {{ $t('comfyHubProfile.addAnotherLink') }}
+          </Button>
+        </div>
       </div>
     </div>
 
-    <!-- Footer -->
-    <div class="flex justify-end px-6 pb-8">
+    <div
+      class="flex items-center justify-end gap-4 border-t border-border-default px-6 py-4"
+    >
+      <Button size="lg" @click="onClose">
+        {{ $t('g.cancel') }}
+      </Button>
       <Button
         variant="primary"
         size="lg"
-        class="h-10"
         :disabled="!username.trim() || isCreating"
         @click="handleCreate"
       >
@@ -166,8 +145,7 @@
 </template>
 
 <script setup lang="ts">
-import { onBeforeUnmount, ref } from 'vue'
-import { useDropZone } from '@vueuse/core'
+import { computed, onBeforeUnmount, ref } from 'vue'
 import { useToast } from 'primevue/usetoast'
 import { useI18n } from 'vue-i18n'
 
@@ -176,11 +154,15 @@ import Input from '@/components/ui/input/Input.vue'
 import Textarea from '@/components/ui/textarea/Textarea.vue'
 import { useComfyHubProfileGate } from '@/platform/workflow/sharing/composables/useComfyHubProfileGate'
 import type { ComfyHubProfile } from '@/schemas/apiSchema'
-import { cn } from '@/utils/tailwindUtil'
 
-const { onProfileCreated, onClose } = defineProps<{
+const {
+  onProfileCreated,
+  onClose,
+  showCloseButton = true
+} = defineProps<{
   onProfileCreated: (profile: ComfyHubProfile) => void
   onClose: () => void
+  showCloseButton?: boolean
 }>()
 
 const { createProfile } = useComfyHubProfileGate()
@@ -190,32 +172,20 @@ const { t } = useI18n()
 const name = ref('')
 const username = ref('')
 const description = ref('')
-const coverImageFile = ref<File | null>(null)
+const socialLinks = ref<string[]>([''])
 const profilePictureFile = ref<File | null>(null)
-const coverPreviewUrl = ref<string | null>(null)
 const profilePreviewUrl = ref<string | null>(null)
 const isCreating = ref(false)
 
-function isImageType(types: readonly string[]) {
-  return types.some((type) => type.startsWith('image/'))
-}
-
-function setCoverPreview(file: File) {
-  if (coverPreviewUrl.value) URL.revokeObjectURL(coverPreviewUrl.value)
-  coverImageFile.value = file
-  coverPreviewUrl.value = URL.createObjectURL(file)
-}
+const profileInitial = computed(() => {
+  const source = name.value.trim() || username.value.trim()
+  return source ? source[0].toUpperCase() : 'C'
+})
 
 function setProfilePreview(file: File) {
   if (profilePreviewUrl.value) URL.revokeObjectURL(profilePreviewUrl.value)
   profilePictureFile.value = file
   profilePreviewUrl.value = URL.createObjectURL(file)
-}
-
-function handleCoverSelect(event: Event) {
-  const input = event.target as HTMLInputElement
-  const file = input.files?.[0]
-  if (file) setCoverPreview(file)
 }
 
 function handleProfileSelect(event: Event) {
@@ -224,26 +194,9 @@ function handleProfileSelect(event: Event) {
   if (file) setProfilePreview(file)
 }
 
-const coverDropRef = ref<HTMLElement | null>(null)
-const profileDropRef = ref<HTMLElement | null>(null)
-
-const { isOverDropZone: isOverCoverDrop } = useDropZone(coverDropRef, {
-  dataTypes: isImageType,
-  multiple: false,
-  onDrop(files) {
-    const file = files?.[0]
-    if (file) setCoverPreview(file)
-  }
-})
-
-const { isOverDropZone: isOverProfileDrop } = useDropZone(profileDropRef, {
-  dataTypes: isImageType,
-  multiple: false,
-  onDrop(files) {
-    const file = files?.[0]
-    if (file) setProfilePreview(file)
-  }
-})
+function addSocialLink() {
+  socialLinks.value = [...socialLinks.value, '']
+}
 
 async function handleCreate() {
   isCreating.value = true
@@ -252,7 +205,6 @@ async function handleCreate() {
       username: username.value.trim(),
       name: name.value.trim() || undefined,
       description: description.value.trim() || undefined,
-      coverImage: coverImageFile.value ?? undefined,
       profilePicture: profilePictureFile.value ?? undefined
     })
     onProfileCreated(profile)
@@ -269,7 +221,6 @@ async function handleCreate() {
 }
 
 onBeforeUnmount(() => {
-  if (coverPreviewUrl.value) URL.revokeObjectURL(coverPreviewUrl.value)
   if (profilePreviewUrl.value) URL.revokeObjectURL(profilePreviewUrl.value)
 })
 </script>
