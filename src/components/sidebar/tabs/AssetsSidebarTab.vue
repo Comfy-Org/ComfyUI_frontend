@@ -95,13 +95,13 @@
             groupByJob ? listViewAssetItems : ungroupedListViewItems
           "
           :is-selected="isSelected"
-          :selectable-assets="
-            groupByJob ? listViewSelectableAssets : ungroupedAssets
-          "
+          :selectable-assets="listViewVisibleAssets"
           :is-stack-expanded="isListViewStackExpanded"
           :toggle-stack="toggleListViewStack"
           :asset-type="activeTab"
           :group-by-job="groupByJob"
+          :show-asset-names="showAssetNames"
+          :show-asset-details="showAssetDetails"
           @select-asset="handleAssetSelect"
           @preview-asset="handleZoomClick"
           @context-menu="handleAssetContextMenu"
@@ -437,9 +437,12 @@ const ungroupedListViewItems = computed<OutputStackListItem[]>(() =>
   }))
 )
 
+const listViewVisibleAssets = computed(() =>
+  groupByJob.value ? listViewSelectableAssets.value : ungroupedAssets.value
+)
+
 const visibleAssets = computed(() => {
-  if (!isListView.value) return ungroupedAssets.value
-  if (!groupByJob.value) return ungroupedAssets.value
+  if (!isListView.value || !groupByJob.value) return ungroupedAssets.value
   return listViewSelectableAssets.value
 })
 
@@ -460,16 +463,12 @@ const isFolderLoading = computed(
 )
 
 const showLoadingState = computed(() => {
-  if (
+  const isPrimaryLoading =
     (loading.value || isFolderLoading.value) &&
     filteredAssets.value.length === 0
-  ) {
-    return true
-  }
-  if (!groupByJob.value && isResolving.value) {
-    return ungroupedAssets.value.length === 0
-  }
-  return false
+  const isUngroupedResolvingEmpty =
+    !groupByJob.value && isResolving.value && ungroupedAssets.value.length === 0
+  return isPrimaryLoading || isUngroupedResolvingEmpty
 })
 
 const showEmptyState = computed(

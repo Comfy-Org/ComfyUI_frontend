@@ -32,7 +32,12 @@
 
     <div class="border-b w-full border-border-subtle my-1" />
 
-    <Button variant="textonly" class="w-full" @click="groupByJob = !groupByJob">
+    <Button
+      variant="textonly"
+      class="w-full"
+      :aria-pressed="groupByJob"
+      @click="groupByJob = !groupByJob"
+    >
       <span>{{ $t('sideToolbar.mediaAssets.groupByJob') }}</span>
       <i
         class="icon-[lucide--check] ml-auto size-4"
@@ -45,6 +50,7 @@
     <Button
       variant="textonly"
       class="w-full"
+      :aria-pressed="showAssetNames"
       @click="showAssetNames = !showAssetNames"
     >
       <span>{{ $t('sideToolbar.mediaAssets.showAssetNames') }}</span>
@@ -57,6 +63,7 @@
     <Button
       variant="textonly"
       class="w-full"
+      :aria-pressed="showAssetDetails"
       @click="showAssetDetails = !showAssetDetails"
     >
       <span>{{ $t('sideToolbar.mediaAssets.showAssetDetails') }}</span>

@@ -82,7 +82,7 @@
 </template>
 
 <script setup lang="ts">
-import { inject, ref } from 'vue'
+import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import LoadingOverlay from '@/components/common/LoadingOverlay.vue'
@@ -92,10 +92,6 @@ import AssetsListItem from '@/platform/assets/components/AssetsListItem.vue'
 import type { OutputStackListItem } from '@/platform/assets/composables/useOutputStacks'
 import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
-import {
-  ShowAssetDetailsKey,
-  ShowAssetNamesKey
-} from '@/platform/assets/schemas/mediaAssetSchema'
 import { iconForMediaType } from '@/platform/assets/utils/mediaIconUtil'
 import { useAssetsStore } from '@/stores/assetsStore'
 import {
@@ -113,7 +109,9 @@ const {
   isStackExpanded,
   toggleStack,
   assetType = 'output',
-  groupByJob = true
+  groupByJob = true,
+  showAssetNames = true,
+  showAssetDetails = true
 } = defineProps<{
   assetItems: OutputStackListItem[]
   selectableAssets: AssetItem[]
@@ -122,10 +120,9 @@ const {
   toggleStack: (asset: AssetItem) => Promise<void>
   assetType?: 'input' | 'output'
   groupByJob?: boolean
+  showAssetNames?: boolean
+  showAssetDetails?: boolean
 }>()
-
-const showAssetNames = inject(ShowAssetNamesKey, ref(true))
-const showAssetDetails = inject(ShowAssetDetailsKey, ref(true))
 
 const assetsStore = useAssetsStore()
 
