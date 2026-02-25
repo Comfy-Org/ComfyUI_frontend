@@ -22,19 +22,37 @@ function togglePromotion() {
 </script>
 <template>
   <div
-    v-if="true"
-    :class="
-      cn(
-        'col-span-2 grid grid-cols-subgrid items-stretch ring-primary-background rounded-lg pointer-events-auto **:cursor-pointer',
-        isPromoted && 'ring-2'
-      )
-    "
+    v-if="appModeStore.mode === 'builder:select'"
+    class="col-span-2 flex flex-row pointer-events-auto cursor-pointer gap-1 relative"
     @pointerdown.capture.stop.prevent="togglePromotion"
     @click.capture.stop.prevent
     @pointerup.capture.stop.prevent
     @pointermove.capture.stop.prevent
   >
-    <slot />
+    <div
+      :class="
+        cn(
+          'border-primary-background border rounded-sm size-4 self-center m-1',
+          isPromoted && 'bg-primary-background flex items-center'
+        )
+      "
+    >
+      <i
+        v-if="isPromoted"
+        class="icon-[lucide--check] bg-primary-foreground place-center"
+      />
+    </div>
+    <div
+      :class="
+        cn(
+          'grid grid-cols-2 items-stretch ring-primary-background rounded-lg pointer-events-none flex-1',
+          isPromoted && 'ring-2'
+        )
+      "
+    >
+      <slot />
+    </div>
+    <div class="absolute size-full hover:bg-primary-background/10 rounded-lg" />
   </div>
   <slot v-else />
 </template>
