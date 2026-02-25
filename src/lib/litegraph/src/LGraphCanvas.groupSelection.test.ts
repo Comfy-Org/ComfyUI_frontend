@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
   LGraph,
@@ -81,9 +81,12 @@ describe('LGraphCanvas group selection', () => {
   let nodeA: TestNode
   let nodeB: TestNode
 
+  beforeAll(() => {
+    LiteGraph.registerNodeType('test', TestNode)
+  })
+
   beforeEach(() => {
     vi.clearAllMocks()
-    LiteGraph.registerNodeType('test', TestNode)
 
     graph = new LGraph()
     canvas = createCanvas(graph)
