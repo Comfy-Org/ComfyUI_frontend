@@ -274,7 +274,7 @@ const renderedInputs = computed<[string, MaybeRef<BoundStyle> | undefined][]>(
     </DraggableList>
   </PropertiesAccordionItem>
 
-  <Teleport to="body">
+  <Teleport v-if="!settingStore.get('Comfy.VueNodes.Enabled')" to="body">
     <div
       :class="
         cn(
