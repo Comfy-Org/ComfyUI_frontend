@@ -7,8 +7,8 @@ export const searchInputVariants = cva({
     size: {
       sm: 'h-6 p-1',
       md: 'h-8 px-2 py-1.5',
-      lg: 'h-10 px-4 py-2',
-      xl: 'h-12 px-4 py-2'
+      lg: 'h-10 px-2 py-2',
+      xl: 'h-12 px-2 py-2'
     }
   },
   defaultVariants: { size: 'md' }
@@ -25,25 +25,25 @@ export const searchInputSizeConfig = {
     clearPos: 'left-1'
   },
   md: {
-    icon: 'size-3.5',
+    icon: 'size-4',
     iconPos: 'left-2.5',
-    inputPl: 'pl-7',
+    inputPl: 'pl-8',
     inputText: 'text-xs',
-    clearPos: 'left-1.5'
+    clearPos: 'left-2.5'
   },
   lg: {
     icon: 'size-4',
-    iconPos: 'left-3',
+    iconPos: 'left-2.5',
     inputPl: 'pl-8',
-    inputText: 'text-sm',
+    inputText: 'text-xs',
     clearPos: 'left-2.5'
   },
   xl: {
-    icon: 'size-5',
-    iconPos: 'left-4',
-    inputPl: 'pl-10',
-    inputText: 'text-sm',
-    clearPos: 'left-3.5'
+    icon: 'size-4',
+    iconPos: 'left-2.5',
+    inputPl: 'pl-8',
+    inputText: 'text-xs',
+    clearPos: 'left-2'
   }
 } as const
 

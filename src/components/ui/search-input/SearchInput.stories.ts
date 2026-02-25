@@ -67,13 +67,13 @@ export const AllSizes: Story = {
     },
     template: `
       <div class="flex flex-col gap-4" style="max-width: 320px;">
-        <div class="text-xs text-muted-foreground">sm</div>
+        <div class="text-xs text-muted-foreground">sm — icon: size-3 (12px)</div>
         <SearchInput v-model="sm" size="sm" />
-        <div class="text-xs text-muted-foreground">md</div>
+        <div class="text-xs text-muted-foreground">md — icon: size-4 (16px, capped)</div>
         <SearchInput v-model="md" size="md" />
-        <div class="text-xs text-muted-foreground">lg</div>
+        <div class="text-xs text-muted-foreground">lg — icon: size-4 (16px, capped)</div>
         <SearchInput v-model="lg" size="lg" />
-        <div class="text-xs text-muted-foreground">xl</div>
+        <div class="text-xs text-muted-foreground">xl — icon: size-4 (16px, capped)</div>
         <SearchInput v-model="xl" size="xl" />
       </div>
     `
