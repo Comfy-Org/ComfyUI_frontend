@@ -46,10 +46,10 @@ vi.mock('./nodeLibrary/AllNodesPanel.vue', () => ({
   }
 }))
 
-vi.mock('./nodeLibrary/CustomNodesPanel.vue', () => ({
+vi.mock('./nodeLibrary/BlueprintsPanel.vue', () => ({
   default: {
-    name: 'CustomNodesPanel',
-    template: '<div data-testid="custom-panel"><slot /></div>',
+    name: 'BlueprintsPanel',
+    template: '<div data-testid="blueprints-panel"><slot /></div>',
     props: ['sections', 'expandedKeys']
   }
 }))
@@ -58,7 +58,7 @@ vi.mock('./nodeLibrary/EssentialNodesPanel.vue', () => ({
   default: {
     name: 'EssentialNodesPanel',
     template: '<div data-testid="essential-panel"><slot /></div>',
-    props: ['root', 'expandedKeys']
+    props: ['root', 'expandedKeys', 'flatNodes']
   }
 }))
 
@@ -127,6 +127,8 @@ describe('NodeLibrarySidebarTabV2', () => {
 
     expect(wrapper.find('[data-testid="essential-panel"]').exists()).toBe(true)
     expect(wrapper.find('[data-testid="all-panel"]').exists()).toBe(false)
-    expect(wrapper.find('[data-testid="custom-panel"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="blueprints-panel"]').exists()).toBe(
+      false
+    )
   })
 })

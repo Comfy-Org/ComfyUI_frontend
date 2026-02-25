@@ -40,7 +40,7 @@
               </DropdownMenuContent>
             </DropdownMenuPortal>
           </DropdownMenuRoot>
-          <DropdownMenuRoot>
+          <DropdownMenuRoot v-if="selectedTab === 'all'">
             <DropdownMenuTrigger as-child>
               <button
                 :aria-label="$t('sideToolbar.nodeLibraryTab.filter')"
@@ -56,7 +56,7 @@
                 :side-offset="4"
               >
                 <DropdownMenuCheckboxItem
-                  v-model:checked="filterOptions.blueprints"
+                  v-model="filterOptions.blueprints"
                   class="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-sm outline-none hover:bg-comfy-input"
                 >
                   <span class="flex-1">{{
@@ -67,7 +67,7 @@
                   </DropdownMenuItemIndicator>
                 </DropdownMenuCheckboxItem>
                 <DropdownMenuCheckboxItem
-                  v-model:checked="filterOptions.partnerNodes"
+                  v-model="filterOptions.partnerNodes"
                   class="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-sm outline-none hover:bg-comfy-input"
                 >
                   <span class="flex-1">{{
@@ -77,9 +77,8 @@
                     <i class="icon-[lucide--check] size-4" />
                   </DropdownMenuItemIndicator>
                 </DropdownMenuCheckboxItem>
-                <DropdownMenuSeparator class="my-1 h-px bg-border-default" />
                 <DropdownMenuCheckboxItem
-                  v-model:checked="filterOptions.comfyNodes"
+                  v-model="filterOptions.comfyNodes"
                   class="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-sm outline-none hover:bg-comfy-input"
                 >
                   <span class="flex-1">{{
@@ -90,7 +89,7 @@
                   </DropdownMenuItemIndicator>
                 </DropdownMenuCheckboxItem>
                 <DropdownMenuCheckboxItem
-                  v-model:checked="filterOptions.extensions"
+                  v-model="filterOptions.extensions"
                   class="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-sm outline-none hover:bg-comfy-input"
                 >
                   <span class="flex-1">{{
@@ -138,6 +137,7 @@
           "
           v-model:expanded-keys="expandedKeys"
           :root="renderedEssentialRoot"
+          :flat-nodes="essentialFlatNodes"
           @node-click="handleNodeClick"
         />
         <AllNodesPanel
@@ -148,10 +148,10 @@
           :sort-order="sortOrder"
           @node-click="handleNodeClick"
         />
-        <CustomNodesPanel
-          v-if="selectedTab === 'custom'"
+        <BlueprintsPanel
+          v-if="selectedTab === 'blueprints'"
           v-model:expanded-keys="expandedKeys"
-          :sections="renderedCustomSections"
+          :sections="renderedBlueprintsSections"
           @node-click="handleNodeClick"
         />
       </TabsRoot>
@@ -170,7 +170,6 @@ import {
   DropdownMenuRadioGroup,
   DropdownMenuRadioItem,
   DropdownMenuRoot,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
   Separator,
   TabsList,
@@ -191,17 +190,23 @@ import {
   nodeOrganizationService
 } from '@/services/nodeOrganizationService'
 import { getProviderIcon } from '@/utils/categoryUtil'
-import { sortedTree } from '@/utils/treeUtil'
+import { flattenTree, sortedTree, unwrapTreeRoot } from '@/utils/treeUtil'
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
-import { useNodeDefStore } from '@/stores/nodeDefStore'
-import type { SortingStrategyId, TabId } from '@/types/nodeOrganizationTypes'
+import { buildNodeDefTree, useNodeDefStore } from '@/stores/nodeDefStore'
 import type {
+  NodeCategoryId,
+  NodeSection,
+  SortingStrategyId,
+  TabId
+} from '@/types/nodeOrganizationTypes'
+import type {
+  NodeLibrarySection,
   RenderedTreeExplorerNode,
   TreeNode
 } from '@/types/treeExplorerTypes'
 
 import AllNodesPanel from './nodeLibrary/AllNodesPanel.vue'
-import CustomNodesPanel from './nodeLibrary/CustomNodesPanel.vue'
+import BlueprintsPanel from './nodeLibrary/BlueprintsPanel.vue'
 import EssentialNodesPanel from './nodeLibrary/EssentialNodesPanel.vue'
 import NodeDragPreview from './nodeLibrary/NodeDragPreview.vue'
 import SidebarTabTemplate from './SidebarTabTemplate.vue'
@@ -227,7 +232,7 @@ const sortOrderByTab = useLocalStorage<Record<TabId, SortingStrategyId>>(
   {
     essentials: DEFAULT_SORTING_ID,
     all: DEFAULT_SORTING_ID,
-    custom: 'alphabetical'
+    blueprints: 'alphabetical'
   }
 )
 const sortOrder = usePerTabState(selectedTab, sortOrderByTab)
@@ -239,7 +244,7 @@ const sortingOptions = computed(() =>
   }))
 )
 
-const filterOptions = ref({
+const filterOptions = ref<Record<NodeCategoryId, boolean>>({
   blueprints: true,
   partnerNodes: true,
   comfyNodes: true,
@@ -248,12 +253,12 @@ const filterOptions = ref({
 
 const { t } = useI18n()
 
-const searchBoxRef = ref()
+const searchBoxRef = ref<InstanceType<typeof SearchBox> | null>(null)
 const searchQuery = ref('')
 const expandedKeysByTab = ref<Record<TabId, string[]>>({
   essentials: [],
   all: [],
-  custom: []
+  blueprints: []
 })
 const expandedKeys = usePerTabState(selectedTab, expandedKeysByTab)
 
@@ -286,8 +291,8 @@ const sections = computed(() => {
 function getFolderIcon(node: TreeNode): string {
   const firstLeaf = findFirstLeaf(node)
   if (
-    firstLeaf?.key?.startsWith('root/api node') &&
-    firstLeaf.key.replace(`${node.key}/`, '') === firstLeaf.label
+    firstLeaf?.data?.api_node &&
+    firstLeaf.key?.replace(`${node.key}/`, '') === firstLeaf.label
   ) {
     return getProviderIcon(node.label ?? '')
   }
@@ -337,12 +342,33 @@ function applySorting(tree: TreeNode): TreeNode {
   return tree
 }
 
-const renderedSections = computed(() => {
-  return sections.value.map((section) => ({
+function renderSections(
+  nodeSections: NodeSection[],
+  filter?: (section: NodeSection) => boolean
+): NodeLibrarySection<ComfyNodeDefImpl>[] {
+  const filtered = filter ? nodeSections.filter(filter) : nodeSections
+
+  if (sortOrder.value === 'alphabetical') {
+    const allNodes = filtered.flatMap((section) =>
+      flattenTree<ComfyNodeDefImpl>(section.tree)
+    )
+    const mergedTree = unwrapTreeRoot(buildNodeDefTree(allNodes))
+    return [{ root: fillNodeInfo(applySorting(mergedTree)) }]
+  }
+
+  return filtered.map((section) => ({
+    category: section.category,
     title: section.title,
     root: fillNodeInfo(applySorting(section.tree))
   }))
-})
+}
+
+const renderedSections = computed(() =>
+  renderSections(
+    sections.value,
+    (section) => !section.category || filterOptions.value[section.category]
+  )
+)
 
 const essentialSections = computed(() => {
   if (selectedTab.value !== 'essentials') return []
@@ -359,17 +385,31 @@ const renderedEssentialRoot = computed(() => {
     : fillNodeInfo({ key: 'root', label: '', children: [] })
 })
 
-const customSections = computed(() => {
-  if (selectedTab.value !== 'custom') return []
-  return nodeOrganizationService.organizeNodesByTab(activeNodes.value, 'custom')
+function flattenRenderedLeaves(
+  node: RenderedTreeExplorerNode<ComfyNodeDefImpl>
+): RenderedTreeExplorerNode<ComfyNodeDefImpl>[] {
+  if (node.type === 'node') return [node]
+  return node.children?.flatMap(flattenRenderedLeaves) ?? []
+}
+
+const essentialFlatNodes = computed(() => {
+  if (sortOrder.value !== 'alphabetical') return []
+  return flattenRenderedLeaves(renderedEssentialRoot.value).sort((a, b) =>
+    (a.label ?? '').localeCompare(b.label ?? '')
+  )
 })
 
-const renderedCustomSections = computed(() => {
-  return customSections.value.map((section) => ({
-    title: section.title,
-    root: fillNodeInfo(applySorting(section.tree))
-  }))
+const blueprintsSections = computed(() => {
+  if (selectedTab.value !== 'blueprints') return []
+  return nodeOrganizationService.organizeNodesByTab(
+    activeNodes.value,
+    'blueprints'
+  )
 })
+
+const renderedBlueprintsSections = computed(() =>
+  renderSections(blueprintsSections.value)
+)
 
 function collectFolderKeys(node: TreeNode): string[] {
   if (node.leaf) return []
@@ -407,8 +447,8 @@ async function handleSearch() {
     for (const section of essentialSections.value) {
       allKeys.push(...collectFolderKeys(section.tree))
     }
-  } else if (selectedTab.value === 'custom') {
-    for (const section of customSections.value) {
+  } else if (selectedTab.value === 'blueprints') {
+    for (const section of blueprintsSections.value) {
       allKeys.push(...collectFolderKeys(section.tree))
     }
   } else {
@@ -427,7 +467,7 @@ const tabs = computed(() => {
       label: t('sideToolbar.nodeLibraryTab.essentials')
     },
     {
-      value: 'custom' as TabId,
+      value: 'blueprints',
       label: t('sideToolbar.nodeLibraryTab.blueprints')
     }
   ]

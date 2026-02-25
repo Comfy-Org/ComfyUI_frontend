@@ -1,4 +1,5 @@
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
+import type { NodeCategoryId } from '@/types/nodeOrganizationTypes'
 import type { MenuItem } from 'primevue/menuitem'
 import type { TreeNode as PrimeVueTreeNode } from 'primevue/treenode'
 import type { InjectionKey, ModelRef, Ref } from 'vue'
@@ -9,6 +10,7 @@ export interface TreeNode extends PrimeVueTreeNode {
 }
 
 export interface NodeLibrarySection<T = unknown> {
+  category?: NodeCategoryId
   title?: string
   root: RenderedTreeExplorerNode<T>
 }

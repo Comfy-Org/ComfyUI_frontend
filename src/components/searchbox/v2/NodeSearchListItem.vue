@@ -123,13 +123,3 @@ const nodeFrequency = computed(() =>
 const nodeBookmarkStore = useNodeBookmarkStore()
 const isBookmarked = computed(() => nodeBookmarkStore.isBookmarked(nodeDef))
 </script>
-
-<style scoped>
-:deep(.highlight) {
-  background-color: color-mix(in srgb, currentColor 20%, transparent);
-  font-weight: 700;
-  border-radius: 0.25rem;
-  padding: 0 0.125rem;
-  margin: -0.125rem 0.125rem;
-}
-</style>

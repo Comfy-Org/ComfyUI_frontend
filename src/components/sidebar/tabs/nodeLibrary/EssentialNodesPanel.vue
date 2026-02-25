@@ -1,41 +1,57 @@
 <template>
   <TabsContent value="essentials" class="flex-1 overflow-y-auto px-3 h-full">
     <div class="flex flex-col gap-2 pb-6">
-      <CollapsibleRoot
-        v-for="folder in folders"
-        :key="folder.key"
-        class="rounded-lg"
-        :open="expandedKeys.includes(folder.key)"
-        @update:open="toggleFolder(folder.key, $event)"
+      <!-- Flat sorted grid when alphabetical -->
+      <div
+        v-if="flatNodes.length > 0"
+        class="grid grid-cols-[repeat(auto-fill,minmax(5rem,1fr))] gap-3 pt-3"
       >
-        <CollapsibleTrigger
-          class="group flex w-full cursor-pointer items-center justify-between border-0 bg-transparent py-3 px-1 text-xs font-medium tracking-wide text-muted-foreground h-8 box-content"
+        <EssentialNodeCard
+          v-for="node in flatNodes"
+          :key="node.key"
+          :node="node"
+          @click="emit('nodeClick', $event)"
+        />
+      </div>
+
+      <!-- Grouped collapsible folders when original -->
+      <template v-else>
+        <CollapsibleRoot
+          v-for="folder in folders"
+          :key="folder.key"
+          class="rounded-lg"
+          :open="expandedKeys.includes(folder.key)"
+          @update:open="toggleFolder(folder.key, $event)"
         >
-          <span class="uppercase">{{ folder.label }}</span>
-          <i
-            :class="
-              cn(
-                'icon-[lucide--chevron-up] size-4 transition-transform duration-200',
-                !expandedKeys.includes(folder.key) && '-rotate-180'
-              )
-            "
-          />
-        </CollapsibleTrigger>
-        <CollapsibleContent
-          class="overflow-hidden data-[state=closed]:animate-collapsible-up data-[state=open]:animate-collapsible-down"
-        >
-          <div
-            class="grid grid-cols-[repeat(auto-fill,minmax(5rem,1fr))] gap-3"
+          <CollapsibleTrigger
+            class="group flex w-full cursor-pointer items-center justify-between border-0 bg-transparent py-3 px-1 text-xs font-medium tracking-wide text-muted-foreground h-8 box-content"
           >
-            <EssentialNodeCard
-              v-for="node in folder.children"
-              :key="node.key"
-              :node="node"
-              @click="emit('nodeClick', $event)"
+            <span class="uppercase">{{ folder.label }}</span>
+            <i
+              :class="
+                cn(
+                  'icon-[lucide--chevron-up] size-4 transition-transform duration-200',
+                  !expandedKeys.includes(folder.key) && '-rotate-180'
+                )
+              "
             />
-          </div>
-        </CollapsibleContent>
-      </CollapsibleRoot>
+          </CollapsibleTrigger>
+          <CollapsibleContent
+            class="overflow-hidden data-[state=closed]:animate-collapsible-up data-[state=open]:animate-collapsible-down"
+          >
+            <div
+              class="grid grid-cols-[repeat(auto-fill,minmax(5rem,1fr))] gap-3"
+            >
+              <EssentialNodeCard
+                v-for="node in folder.children"
+                :key="node.key"
+                :node="node"
+                @click="emit('nodeClick', $event)"
+              />
+            </div>
+          </CollapsibleContent>
+        </CollapsibleRoot>
+      </template>
     </div>
   </TabsContent>
 </template>
@@ -55,8 +71,9 @@ import { cn } from '@/utils/tailwindUtil'
 
 import EssentialNodeCard from './EssentialNodeCard.vue'
 
-const { root } = defineProps<{
+const { root, flatNodes = [] } = defineProps<{
   root: RenderedTreeExplorerNode<ComfyNodeDefImpl>
+  flatNodes?: RenderedTreeExplorerNode<ComfyNodeDefImpl>[]
 }>()
 
 const expandedKeys = defineModel<string[]>('expandedKeys', { required: true })

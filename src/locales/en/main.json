@@ -822,8 +822,16 @@
       "sections": {
         "favorites": "Favorites",
         "favoriteNode": "Favorite Node",
-        "unfavoriteNode": "Unfavorite Node"
-      }
+        "unfavoriteNode": "Unfavorite Node",
+        "bookmarked": "Bookmarked",
+        "subgraphBlueprints": "Subgraph Blueprints",
+        "myBlueprints": "My Blueprints",
+        "comfyBlueprints": "Comfy Blueprints",
+        "partnerNodes": "Partner Nodes",
+        "comfyNodes": "Comfy Nodes",
+        "extensions": "Extensions"
+      },
+      "noBookmarkedNodes": "No favorites yet"
     },
     "modelLibrary": "Model Library",
     "downloads": "Downloads",

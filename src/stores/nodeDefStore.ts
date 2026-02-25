@@ -25,7 +25,6 @@ import { NodeSearchService } from '@/services/nodeSearchService'
 import { useSubgraphStore } from '@/stores/subgraphStore'
 import {
   CORE_NODE_MODULES,
-  getEssentialsCategory,
   getNodeSource
 } from '@/types/nodeSource'
 import type { NodeSource } from '@/types/nodeSource'
@@ -164,11 +163,7 @@ export class ComfyNodeDefImpl
     this.output_tooltips = obj.output_tooltips
     this.input_order = obj.input_order
     this.price_badge = obj.price_badge
-    // Resolve essentials_category from API or fallback to mock data
-    this.essentials_category = getEssentialsCategory(
-      obj.name,
-      obj.essentials_category
-    )
+    this.essentials_category = obj.essentials_category
     this.isGlobal = obj.isGlobal
     this.isCoreNode = CORE_NODE_MODULES.includes(
       this.python_module.split('.')[0]
@@ -181,11 +176,7 @@ export class ComfyNodeDefImpl
     this.hidden = defV2.hidden
 
     // Initialize node source
-    this.nodeSource = getNodeSource(
-      obj.python_module,
-      this.essentials_category,
-      this.name
-    )
+    this.nodeSource = getNodeSource(obj.python_module, this.essentials_category)
   }
 
   get nodePath(): string {
