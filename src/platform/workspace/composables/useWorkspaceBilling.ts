@@ -37,6 +37,9 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
   const isActiveSubscription = computed(
     () => statusData.value?.is_active ?? false
   )
+  const isFreeTier = computed(
+    () => statusData.value?.subscription_tier === 'FREE'
+  )
 
   const subscription = computed<SubscriptionInfo | null>(() => {
     const status = statusData.value
@@ -141,6 +144,10 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
     error.value = null
     try {
       await Promise.all([fetchStatus(), fetchBalance(), fetchPlans()])
+      // Re-fetch balance if free tier credits were just lazily granted
+      if (isFreeTier.value && balance.value?.amountMicros === 0) {
+        await fetchBalance()
+      }
       isInitialized.value = true
     } catch (err) {
       error.value =
@@ -295,6 +302,7 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
     isLoading,
     error,
     isActiveSubscription,
+    isFreeTier,
 
     // Actions
     initialize,

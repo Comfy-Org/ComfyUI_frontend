@@ -17,9 +17,9 @@
       }"
       @row-dblclick="editKeybinding($event.data)"
     >
-      <Column field="actions" header="">
+      <Column field="actions" header="" :pt="{ bodyCell: 'p-1 min-h-8' }">
         <template #body="slotProps">
-          <div class="actions invisible flex flex-row">
+          <div class="actions flex flex-row">
             <Button
               variant="textonly"
               size="icon"
@@ -56,6 +56,7 @@
         :header="$t('g.command')"
         sortable
         class="max-w-64 2xl:max-w-full"
+        :pt="{ bodyCell: 'p-1 min-h-8' }"
       >
         <template #body="slotProps">
           <div class="truncate" :title="slotProps.data.id">
@@ -63,7 +64,11 @@
           </div>
         </template>
       </Column>
-      <Column field="keybinding" :header="$t('g.keybinding')">
+      <Column
+        field="keybinding"
+        :header="$t('g.keybinding')"
+        :pt="{ bodyCell: 'p-1 min-h-8' }"
+      >
         <template #body="slotProps">
           <KeyComboDisplay
             v-if="slotProps.data.keybinding"
@@ -75,7 +80,11 @@
           <span v-else>-</span>
         </template>
       </Column>
-      <Column field="source" :header="$t('g.source')">
+      <Column
+        field="source"
+        :header="$t('g.source')"
+        :pt="{ bodyCell: 'p-1 min-h-8' }"
+      >
         <template #body="slotProps">
           <span class="overflow-hidden text-ellipsis">{{
             slotProps.data.source || '-'
@@ -293,17 +302,3 @@ async function resetAllKeybindings() {
   })
 }
 </script>
-
-<style scoped>
-@reference '../../../../assets/css/style.css';
-
-:deep(.p-datatable-tbody) > tr > td {
-  @apply p-1;
-  min-height: 2rem;
-}
-
-:deep(.p-datatable-row-selected) .actions,
-:deep(.p-datatable-selectable-row:hover) .actions {
-  @apply visible;
-}
-</style>

@@ -182,7 +182,7 @@ import type { PreviewSubscribeResponse } from '@/platform/workspace/api/workspac
 import { cn } from '@/utils/tailwindUtil'
 
 interface Props {
-  tierKey: Exclude<TierKey, 'founder'>
+  tierKey: Exclude<TierKey, 'free' | 'founder'>
   billingCycle?: BillingCycle
   isLoading?: boolean
   previewData?: PreviewSubscribeResponse | null
@@ -213,7 +213,7 @@ const displayPrice = computed(() => {
   return getTierPrice(tierKey, billingCycle === 'yearly')
 })
 
-const displayCredits = computed(() => n(getTierCredits(tierKey)))
+const displayCredits = computed(() => n(getTierCredits(tierKey) ?? 0))
 
 const hasCustomLoRAs = computed(() => getTierFeatures(tierKey).customLoRAs)
 const maxDuration = computed(() => t(`subscription.maxDuration.${tierKey}`))

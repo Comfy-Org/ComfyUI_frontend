@@ -195,7 +195,10 @@ const formattedBalance = computed(() => {
 const canUpgrade = computed(() => {
   const tier = subscriptionTier.value
   return (
-    tier === 'FOUNDERS_EDITION' || tier === 'STANDARD' || tier === 'CREATOR'
+    tier === 'FREE' ||
+    tier === 'FOUNDERS_EDITION' ||
+    tier === 'STANDARD' ||
+    tier === 'CREATOR'
   )
 })
 
@@ -205,7 +208,7 @@ const handleOpenUserSettings = () => {
 }
 
 const handleOpenPlansAndPricing = () => {
-  subscriptionDialog.show()
+  subscriptionDialog.showPricingTable()
   emit('close')
 }
 

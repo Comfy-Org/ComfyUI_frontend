@@ -186,19 +186,19 @@ const inputBlur = async (doRename: boolean) => {
 </script>
 
 <style scoped>
-@reference '../../assets/css/style.css';
-
 .p-breadcrumb-item-link,
 .p-breadcrumb-item-icon {
-  @apply select-none;
+  user-select: none;
 }
 
 .p-breadcrumb-item-link {
-  @apply overflow-hidden;
+  overflow: hidden;
 }
 
 .p-breadcrumb-item-label {
-  @apply whitespace-nowrap text-ellipsis overflow-hidden;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .active-breadcrumb-item {

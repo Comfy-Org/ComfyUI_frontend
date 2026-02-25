@@ -27,6 +27,7 @@ const selectedTierKey = ref<TierKey | null>(null)
 const tierDisplayName = computed(() => {
   if (!selectedTierKey.value) return ''
   const names: Record<TierKey, string> = {
+    free: t('subscription.tiers.free.name'),
     standard: t('subscription.tiers.standard.name'),
     creator: t('subscription.tiers.creator.name'),
     pro: t('subscription.tiers.pro.name'),
@@ -58,6 +59,7 @@ const runRedirect = wrapWithErrorHandlingAsync(async () => {
     return
   }
 
+  // Only paid tiers can be checked out via redirect
   const validTierKeys: TierKey[] = ['standard', 'creator', 'pro', 'founder']
   if (!(validTierKeys as string[]).includes(tierKeyParam)) {
     await router.push('/')
