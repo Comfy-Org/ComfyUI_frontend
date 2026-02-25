@@ -2,13 +2,14 @@
   <div
     v-show="widgetState.visible"
     ref="widgetElement"
-    class="dom-widget"
+    class="dom-widget h-full w-full"
     :title="tooltip"
     :style="style"
   >
     <component
       :is="widget.component"
       v-if="isComponentWidget(widget)"
+      class="h-full w-full"
       :model-value="widget.value"
       :widget="widget"
       v-bind="widget.props"
@@ -174,6 +175,8 @@ const mountElementIfVisible = () => {
   if (widgetElement.value.contains(widget.element)) {
     return
   }
+
+  widget.element.classList.add('h-full', 'w-full')
   widgetElement.value.appendChild(widget.element)
 }
 
@@ -196,11 +199,3 @@ watch(
 
 whenever(() => !canvasStore.linearMode, mountElementIfVisible)
 </script>
-
-<style scoped>
-@reference '../../../assets/css/style.css';
-
-.dom-widget > * {
-  @apply h-full w-full;
-}
-</style>

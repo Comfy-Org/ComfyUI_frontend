@@ -34,10 +34,13 @@
           {{ t('auth.login.passwordLabel') }}
         </label>
         <span
-          class="cursor-pointer text-base font-medium text-muted select-none"
-          :class="{
-            'text-link-disabled': !$form.email?.value || $form.email?.invalid
-          }"
+          :class="
+            cn('text-base font-medium text-muted select-none', {
+              'cursor-not-allowed opacity-50':
+                !$form.email?.value || $form.email?.invalid,
+              'cursor-pointer': $form.email?.value && !$form.email?.invalid
+            })
+          "
           @click="handleForgotPassword($form.email?.value, $form.email?.valid)"
         >
           {{ t('auth.login.forgotPassword') }}
@@ -89,6 +92,7 @@ import { useFirebaseAuthActions } from '@/composables/auth/useFirebaseAuthAction
 import { signInSchema } from '@/schemas/signInSchema'
 import type { SignInData } from '@/schemas/signInSchema'
 import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
+import { cn } from '@/utils/tailwindUtil'
 
 const authStore = useFirebaseAuthStore()
 const firebaseAuthActions = useFirebaseAuthActions()
@@ -126,11 +130,3 @@ const handleForgotPassword = async (
   await firebaseAuthActions.sendPasswordReset(email)
 }
 </script>
-
-<style scoped>
-@reference '../../../../assets/css/style.css';
-
-.text-link-disabled {
-  @apply opacity-50 cursor-not-allowed;
-}
-</style>

@@ -2,6 +2,7 @@ import {
   comfyExpect as expect,
   comfyPageFixture as test
 } from '../../../fixtures/ComfyPage'
+import { TestIds } from '../../../fixtures/selectors'
 
 test.describe('Vue Node Custom Colors', { tag: '@screenshot' }, () => {
   test.beforeEach(async ({ comfyPage }) => {
@@ -19,10 +20,16 @@ test.describe('Vue Node Custom Colors', { tag: '@screenshot' }, () => {
     })
     await loadCheckpointNode.getByText('Load Checkpoint').click()
 
-    await comfyPage.page.locator('.selection-toolbox .pi-circle-fill').click()
-    await comfyPage.page
-      .locator('.color-picker-container')
-      .locator('i[data-testid="blue"]')
+    const colorPickerButton = comfyPage.page.getByTestId(
+      TestIds.selectionToolbox.colorPickerButton
+    )
+    await colorPickerButton.click()
+
+    const colorPickerGroup = comfyPage.page.getByRole('group').filter({
+      has: comfyPage.page.getByTestId(TestIds.selectionToolbox.colorBlue)
+    })
+    await colorPickerGroup
+      .getByTestId(TestIds.selectionToolbox.colorBlue)
       .click()
 
     await expect(comfyPage.canvas).toHaveScreenshot(

@@ -269,26 +269,43 @@ const onFocus = async () => {
 </script>
 
 <style scoped>
-@reference '../../assets/css/style.css';
-
 :deep(.location-picker-accordion) {
-  @apply px-12;
+  padding-inline: calc(var(--spacing) * 12);
 
   .p-accordionpanel {
-    @apply border-0 bg-transparent;
+    border: 0;
+    background-color: transparent;
   }
 
   .p-accordionheader {
-    @apply bg-neutral-800/50 border-0 rounded-xl mt-2 hover:bg-neutral-700/50;
+    margin-top: calc(var(--spacing) * 2);
+    border: 0;
+    border-radius: var(--radius-xl);
+    background-color: color-mix(
+      in srgb,
+      var(--color-neutral-800) 50%,
+      transparent
+    );
     transition:
       background-color 0.2s ease,
       border-radius 0.5s ease;
+
+    &:hover {
+      background-color: color-mix(
+        in srgb,
+        var(--color-neutral-700) 50%,
+        transparent
+      );
+    }
   }
 
   /* When panel is expanded, adjust header border radius */
   .p-accordionpanel-active {
     .p-accordionheader {
-      @apply rounded-t-xl rounded-b-none;
+      border-top-left-radius: var(--radius-xl);
+      border-top-right-radius: var(--radius-xl);
+      border-bottom-right-radius: 0;
+      border-bottom-left-radius: 0;
     }
 
     .p-accordionheader-toggle-icon {
@@ -299,11 +316,24 @@ const onFocus = async () => {
   }
 
   .p-accordioncontent {
-    @apply bg-neutral-800/50 border-0 rounded-b-xl rounded-t-none;
+    border: 0;
+    border-top-left-radius: 0;
+    border-top-right-radius: 0;
+    border-bottom-right-radius: var(--radius-xl);
+    border-bottom-left-radius: var(--radius-xl);
+    background-color: color-mix(
+      in srgb,
+      var(--color-neutral-800) 50%,
+      transparent
+    );
   }
 
   .p-accordioncontent-content {
-    @apply bg-transparent pt-3 pr-5 pb-5 pl-5;
+    background-color: transparent;
+    padding-top: calc(var(--spacing) * 3);
+    padding-right: calc(var(--spacing) * 5);
+    padding-bottom: calc(var(--spacing) * 5);
+    padding-left: calc(var(--spacing) * 5);
   }
 
   /* Override default chevron icons to use up/down */
