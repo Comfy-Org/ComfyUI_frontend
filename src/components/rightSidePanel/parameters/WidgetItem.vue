@@ -16,10 +16,7 @@ import {
   shouldExpand
 } from '@/renderer/extensions/vueNodes/widgets/registry/widgetRegistry'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
-import {
-  useWidgetValueStore,
-  stripGraphPrefix
-} from '@/stores/widgetValueStore'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { useFavoritedWidgetsStore } from '@/stores/workspace/favoritedWidgetsStore'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import { resolveNodeDisplayName } from '@/utils/nodeTitleUtil'
@@ -73,7 +70,7 @@ function resolveSourceWidget(): { node: LGraphNode; widget: IBaseWidget } {
 const simplifiedWidget = computed((): SimplifiedWidget => {
   const { node: sourceNode, widget: sourceWidget } = resolveSourceWidget()
   const graphId = node.graph?.rootGraph?.id
-  const bareNodeId = stripGraphPrefix(String(sourceNode.id))
+  const bareNodeId = String(sourceNode.id)
   const widgetState = graphId
     ? widgetValueStore.getWidget(graphId, bareNodeId, sourceWidget.name)
     : undefined

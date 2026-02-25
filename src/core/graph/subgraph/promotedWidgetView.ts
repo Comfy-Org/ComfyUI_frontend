@@ -9,10 +9,7 @@ import type { BaseWidget } from '@/lib/litegraph/src/widgets/BaseWidget'
 import { toConcreteWidget } from '@/lib/litegraph/src/widgets/widgetMap'
 import { t } from '@/i18n'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
-import {
-  stripGraphPrefix,
-  useWidgetValueStore
-} from '@/stores/widgetValueStore'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
 
 import type { PromotedWidgetView as IPromotedWidgetView } from './promotedWidgetTypes'
 
@@ -83,7 +80,7 @@ class PromotedWidgetView implements IPromotedWidgetView {
     this.sourceNodeId = nodeId
     this.sourceWidgetName = widgetName
     this.graphId = subgraphNode.rootGraph.id
-    this.bareNodeId = stripGraphPrefix(nodeId)
+    this.bareNodeId = nodeId
   }
 
   get node(): SubgraphNode {

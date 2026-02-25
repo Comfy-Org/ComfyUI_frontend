@@ -15,14 +15,6 @@ import type {
  */
 type WidgetKey = `${NodeId}:${string}`
 
-/**
- * Strips graph/subgraph prefixes from a scoped node ID to get the bare node ID.
- * e.g., "graph1:subgraph2:42" → "42"
- */
-export function stripGraphPrefix(scopedId: NodeId | string): NodeId {
-  return String(scopedId).replace(/^(.*:)+/, '') as NodeId
-}
-
 export interface WidgetState<
   TValue = unknown,
   TType extends string = string,

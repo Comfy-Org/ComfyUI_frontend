@@ -222,13 +222,9 @@ function safeWidgetMapper(
             read_only: widget.options.read_only
           }
         : undefined
-      const subgraphId = node.isSubgraphNode() && node.subgraph.id
-
-      const localId = isPromotedWidgetView(widget)
+      const nodeId = isPromotedWidgetView(widget)
         ? widget.sourceNodeId
         : undefined
-      const nodeId =
-        subgraphId && localId ? `${subgraphId}:${localId}` : undefined
       const name = isPromotedWidgetView(widget)
         ? widget.sourceWidgetName
         : widget.name

@@ -103,10 +103,7 @@ import {
   shouldExpand,
   shouldRenderAsVue
 } from '@/renderer/extensions/vueNodes/widgets/registry/widgetRegistry'
-import {
-  stripGraphPrefix,
-  useWidgetValueStore
-} from '@/stores/widgetValueStore'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { usePromotionStore } from '@/stores/promotionStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import type { SimplifiedWidget, WidgetValue } from '@/types/simplifiedWidget'
@@ -200,7 +197,7 @@ const processedWidgets = computed((): ProcessedWidget[] => {
     const { slotMetadata } = widget
 
     // Get metadata from store (registered during BaseWidget.setNodeId)
-    const bareWidgetId = stripGraphPrefix(widget.nodeId ?? nodeId)
+    const bareWidgetId = widget.nodeId ?? nodeId
     const widgetState = graphId
       ? widgetValueStore.getWidget(graphId, bareWidgetId, widget.name)
       : undefined
@@ -252,9 +249,7 @@ const processedWidgets = computed((): ProcessedWidget[] => {
       showNodeOptions(
         e,
         widget.name,
-        widget.nodeId !== undefined
-          ? String(stripGraphPrefix(widget.nodeId))
-          : undefined
+        widget.nodeId !== undefined ? String(widget.nodeId) : undefined
       )
     }
 
