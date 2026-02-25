@@ -488,7 +488,7 @@ if (initialPackId) {
     .toMatch((packs) => packs.some((p) => p.id === initialPackId))
     .then((packs) => {
       const target = packs.find((p) => p.id === initialPackId)
-      if (target) {
+      if (target && selectedNodePacks.value.length === 0) {
         selectedNodePacks.value = [target]
         isRightPanelOpen.value = true
       }
