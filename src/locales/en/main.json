@@ -1138,7 +1138,20 @@
       },
       "preview": {
         "title": "Preview",
-        "description": "Review your template before submitting"
+        "description": "Review your template before submitting",
+        "sectionMetadata": "Metadata",
+        "sectionDescription": "Description",
+        "sectionPreviewAssets": "Preview Assets",
+        "sectionCategoriesAndTags": "Categories & Tags",
+        "thumbnailLabel": "Thumbnail",
+        "comparisonLabel": "Before & After",
+        "workflowPreviewLabel": "Workflow Graph",
+        "videoPreviewLabel": "Video Preview",
+        "galleryLabel": "Gallery",
+        "notProvided": "Not provided",
+        "noneDetected": "None detected",
+        "correct": "Correct",
+        "editStep": "Edit"
       },
       "submissionForReview": {
         "title": "Submit",
@@ -1156,6 +1169,7 @@
     "bio": "Bio",
     "reviews": "Reviews",
     "publishedTemplates": "Published Templates",
+    "dependencies": "Dependencies",
     "totalDownloads": "Downloads",
     "totalFavorites": "Favorites",
     "averageRating": "Avg. Rating",
@@ -1173,9 +1187,17 @@
     "bannerPlaceholder": "Banner image",
     "editUsername": "Edit username",
     "editBio": "Edit bio",
+    "lookupHandle": "Enter developer handle\u2026",
     "downloads": "Downloads",
     "favorites": "Favorites",
-    "rating": "Rating"
+    "rating": "Rating",
+    "downloadHistory": "Download History",
+    "range": {
+      "week": "Week",
+      "month": "Month",
+      "year": "Year",
+      "allTime": "All Time"
+    }
   },
   "subgraphStore": {
     "confirmDeleteTitle": "Delete blueprint?",

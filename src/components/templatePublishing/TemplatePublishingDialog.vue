@@ -43,7 +43,10 @@
           {{ t('templatePublishing.previous') }}
         </Button>
         <Button
-          :disabled="currentStep >= totalSteps - 1"
+          :disabled="
+            currentStep >= totalSteps - 1 ||
+            currentStep === STEP_PAGE_MAP.preview
+          "
           size="lg"
           @click="nextStep"
         >

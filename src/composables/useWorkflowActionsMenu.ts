@@ -208,6 +208,15 @@ export function useWorkflowActionsMenu(
     })
 
     addItem({
+      label: t('menuLabels.developerProfile'),
+      icon: 'pi pi-user',
+      command: async () => {
+        await commandStore.execute('Comfy.ShowDeveloperProfile')
+      },
+      visible: isRoot && flags.templateMarketplaceEnabled
+    })
+
+    addItem({
       label: t('subgraphStore.publish'),
       icon: 'pi pi-upload',
       command: async () => {

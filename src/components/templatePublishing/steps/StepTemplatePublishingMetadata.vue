@@ -224,6 +224,41 @@ function detectCustomNodes(): string[] {
     .sort()
 }
 
+/**
+ * Extracts the custom node package ID from a `python_module` string.
+ *
+ * Custom node modules follow the pattern
+ * `custom_nodes.PackageName@version.submodule`, so the package ID is the
+ * second dot-segment with the `@version` suffix stripped.
+ *
+ * @returns The package folder name, or `undefined` when the module does not
+ *          match the expected pattern.
+ */
+function extractPackageId(pythonModule: string): string | undefined {
+  const segments = pythonModule.split('.')
+  if (segments[0] !== 'custom_nodes' || !segments[1]) return undefined
+  return segments[1].split('@')[0]
+}
+
+/**
+ * Collects unique custom node package IDs from the current workflow graph.
+ */
+function detectCustomNodePackages(): string[] {
+  if (!app.rootGraph) return []
+
+  const nodeTypes = mapAllNodes(app.rootGraph, (node) => node.type)
+  const packages = new Set<string>()
+
+  for (const type of nodeTypes) {
+    const def = nodeDefStore.nodeDefsByName[type]
+    if (!def || def.nodeSource.type !== NodeSourceType.CustomNodes) continue
+    const pkgId = extractPackageId(def.python_module)
+    if (pkgId) packages.add(pkgId)
+  }
+
+  return [...packages].sort()
+}
+
 const detectedCustomNodes = ref<string[]>([])
 
 onMounted(() => {
@@ -232,6 +267,11 @@ onMounted(() => {
   const existing = ctx.template.value.requiredNodes ?? []
   if (existing.length === 0) {
     ctx.template.value.requiredNodes = [...detectedCustomNodes.value]
+  }
+
+  const existingPackages = ctx.template.value.requiresCustomNodes ?? []
+  if (existingPackages.length === 0) {
+    ctx.template.value.requiresCustomNodes = detectCustomNodePackages()
   }
 })
 

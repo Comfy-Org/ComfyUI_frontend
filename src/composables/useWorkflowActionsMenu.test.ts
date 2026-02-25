@@ -45,7 +45,7 @@ const mockCanvasStore = vi.hoisted(() => ({
 }))
 
 const mockFeatureFlags = vi.hoisted(() => ({
-  flags: { linearToggleEnabled: false }
+  flags: { linearToggleEnabled: false, templateMarketplaceEnabled: false }
 }))
 
 vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
@@ -102,6 +102,7 @@ describe('useWorkflowActionsMenu', () => {
     mockMenuItemStore.hasSeenLinear = false
     mockCanvasStore.linearMode = false
     mockFeatureFlags.flags.linearToggleEnabled = false
+    mockFeatureFlags.flags.templateMarketplaceEnabled = false
     mockWorkflowStore.activeWorkflow = {
       path: 'test.json',
       isPersisted: true
@@ -310,6 +311,33 @@ describe('useWorkflowActionsMenu', () => {
     const rename = findItem(menuItems.value, 'g.rename')
 
     expect(rename.disabled).toBe(true)
+  })
+
+  it('shows developer profile when templateMarketplaceEnabled flag is set', () => {
+    mockFeatureFlags.flags.templateMarketplaceEnabled = true
+
+    const { menuItems } = useWorkflowActionsMenu(vi.fn(), { isRoot: true })
+    const labels = menuLabels(menuItems.value)
+
+    expect(labels).toContain('menuLabels.developerProfile')
+  })
+
+  it('hides developer profile when templateMarketplaceEnabled flag is not set', () => {
+    const { menuItems } = useWorkflowActionsMenu(vi.fn(), { isRoot: true })
+    const labels = menuLabels(menuItems.value)
+
+    expect(labels).not.toContain('menuLabels.developerProfile')
+  })
+
+  it('developer profile executes Comfy.ShowDeveloperProfile', async () => {
+    mockFeatureFlags.flags.templateMarketplaceEnabled = true
+
+    const { menuItems } = useWorkflowActionsMenu(vi.fn(), { isRoot: true })
+    await findItem(menuItems.value, 'menuLabels.developerProfile').command?.()
+
+    expect(mockCommandStore.execute).toHaveBeenCalledWith(
+      'Comfy.ShowDeveloperProfile'
+    )
   })
 
   it('bookmark is disabled for temporary workflows', () => {

@@ -65,6 +65,7 @@ import {
 import { ManagerTab } from '@/workbench/extensions/manager/types/comfyManagerTypes'
 
 import { useWorkflowTemplateSelectorDialog } from './useWorkflowTemplateSelectorDialog'
+import { useDeveloperProfileDialog } from './useDeveloperProfileDialog'
 import { useTemplatePublishingDialog } from './useTemplatePublishingDialog'
 
 import { useMaskEditorStore } from '@/stores/maskEditorStore'
@@ -350,9 +351,17 @@ export function useCoreCommands(): ComfyCommand[] {
       // comeback
       id: 'Comfy.ShowTemplatePublishing',
       icon: 'pi pi-objects-column',
-      label: 'Show Template Publishing',
+      label: t('templatePublishing.dialogTitle'),
       function: () => {
         useTemplatePublishingDialog().show()
+      }
+    },
+    {
+      id: 'Comfy.ShowDeveloperProfile',
+      icon: 'pi pi-user',
+      label: t('developerProfile.dialogTitle'),
+      function: () => {
+        useDeveloperProfileDialog().show()
       }
     },
     {

@@ -14,7 +14,8 @@ const mockNodes = vi.hoisted(() => [
   { type: 'KSampler', isSubgraphNode: () => false },
   { type: 'MyCustomNode', isSubgraphNode: () => false },
   { type: 'AnotherCustom', isSubgraphNode: () => false },
-  { type: 'MyCustomNode', isSubgraphNode: () => false }
+  { type: 'MyCustomNode', isSubgraphNode: () => false },
+  { type: 'ExtraCustomPack', isSubgraphNode: () => false }
 ])
 
 vi.mock('@vueuse/core', async (importOriginal) => {
@@ -53,17 +54,29 @@ vi.mock('@/utils/graphTraversalUtil', () => ({
 vi.mock('@/stores/nodeDefStore', () => ({
   useNodeDefStore: () => ({
     nodeDefsByName: {
-      KSampler: { name: 'KSampler', nodeSource: { type: NodeSourceType.Core } },
+      KSampler: {
+        name: 'KSampler',
+        python_module: 'nodes',
+        nodeSource: { type: NodeSourceType.Core }
+      },
       MyCustomNode: {
         name: 'MyCustomNode',
+        python_module: 'custom_nodes.MyPack@1.0.nodes',
         nodeSource: { type: NodeSourceType.CustomNodes }
       },
       AnotherCustom: {
         name: 'AnotherCustom',
+        python_module: 'custom_nodes.MyPack@1.0.extra',
         nodeSource: { type: NodeSourceType.CustomNodes }
       },
       ExtraCustomPack: {
         name: 'ExtraCustomPack',
+        python_module: 'custom_nodes.ExtraPack.nodes',
+        nodeSource: { type: NodeSourceType.CustomNodes }
+      },
+      UnusedCustomNode: {
+        name: 'UnusedCustomNode',
+        python_module: 'custom_nodes.UnusedPack@2.0.nodes',
         nodeSource: { type: NodeSourceType.CustomNodes }
       }
     }
@@ -194,6 +207,25 @@ describe('StepTemplatePublishingMetadata', () => {
     expect(ctx.template.value.requiredNodes).toEqual(['PreExisting'])
   })
 
+  it('populates requiresCustomNodes with deduplicated package IDs on mount', () => {
+    const ctx = createContext({})
+    mountStep(ctx)
+
+    // MyCustomNode and AnotherCustom both come from MyPack@1.0 (@ stripped)
+    // ExtraCustomPack comes from ExtraPack (no @version in module path)
+    expect(ctx.template.value.requiresCustomNodes).toEqual([
+      'ExtraPack',
+      'MyPack'
+    ])
+  })
+
+  it('does not overwrite existing requiresCustomNodes on mount', () => {
+    const ctx = createContext({ requiresCustomNodes: ['PreExisting'] })
+    mountStep(ctx)
+
+    expect(ctx.template.value.requiresCustomNodes).toEqual(['PreExisting'])
+  })
+
   it('adds a manual custom node via the input', async () => {
     const ctx = createContext({ requiredNodes: [] })
     const { wrapper } = mountStep(ctx)
@@ -225,20 +257,20 @@ describe('StepTemplatePublishingMetadata', () => {
 
     const input = wrapper.find('.relative input[type="text"]')
     await input.trigger('focus')
-    await input.setValue('Extra')
+    await input.setValue('Unused')
 
     const suggestions = wrapper.findAll('.relative ul li')
     expect(suggestions.length).toBe(1)
-    expect(suggestions[0].text()).toBe('ExtraCustomPack')
+    expect(suggestions[0].text()).toBe('UnusedCustomNode')
   })
 
   it('excludes already-added nodes from suggestions', async () => {
-    const ctx = createContext({ requiredNodes: ['ExtraCustomPack'] })
+    const ctx = createContext({ requiredNodes: ['UnusedCustomNode'] })
     const { wrapper } = mountStep(ctx)
 
     const input = wrapper.find('.relative input[type="text"]')
     await input.trigger('focus')
-    await input.setValue('Extra')
+    await input.setValue('Unused')
 
     const suggestions = wrapper.findAll('.relative ul li')
     expect(suggestions.length).toBe(0)
@@ -250,11 +282,11 @@ describe('StepTemplatePublishingMetadata', () => {
 
     const input = wrapper.find('.relative input[type="text"]')
     await input.trigger('focus')
-    await input.setValue('Extra')
+    await input.setValue('Unused')
 
     const suggestion = wrapper.find('.relative ul li')
     await suggestion.trigger('mousedown')
 
-    expect(ctx.template.value.requiredNodes).toContain('ExtraCustomPack')
+    expect(ctx.template.value.requiredNodes).toContain('UnusedCustomNode')
   })
 })

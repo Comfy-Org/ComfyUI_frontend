@@ -307,6 +307,18 @@ describe('useCoreCommands', () => {
     })
   })
 
+  describe('ShowDeveloperProfile command', () => {
+    it('is registered as a command', () => {
+      const commands = useCoreCommands()
+      const command = commands.find(
+        (cmd) => cmd.id === 'Comfy.ShowDeveloperProfile'
+      )
+
+      expect(command).toBeDefined()
+      expect(command!.label).toBe('Developer Profile')
+    })
+  })
+
   describe('Canvas clipboard commands', () => {
     function findCommand(id: string) {
       return useCoreCommands().find((cmd) => cmd.id === id)!
