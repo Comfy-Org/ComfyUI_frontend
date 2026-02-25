@@ -3047,6 +3047,8 @@
     "tags": "Tags",
     "tagsDescription": "Select tags so people can find your workflow faster",
     "tagsPlaceholder": "Enter tags that match your workflow to help people find it e.g #nanobanana, #anime or #faceswap",
+    "showMoreTags": "Show more...",
+    "showLessTags": "Show less...",
     "suggestedTags": "Suggested tags",
     "thumbnailType": "Thumbnail type",
     "thumbnailImage": "Image",

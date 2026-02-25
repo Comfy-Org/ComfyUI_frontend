@@ -12,7 +12,7 @@
         </p>
       </div>
 
-      <div class="flex flex-col gap-1 p-2">
+      <div class="flex flex-col gap-1 p-0">
         <CollapsibleRoot
           v-for="section in sections"
           :key="section.id"
@@ -21,14 +21,14 @@
           @update:open="onSectionOpenChange(section.id, $event)"
         >
           <CollapsibleTrigger as-child>
-            <button
-              type="button"
+            <Button
               :data-testid="`section-header-${section.id}`"
               :aria-expanded="expandedSectionId === section.id"
               :aria-controls="`section-content-${section.id}`"
-              class="flex h-6 w-full cursor-pointer items-center justify-between gap-2 rounded-sm border-none bg-secondary-background px-6 py-1 text-left hover:bg-secondary-background-hover"
+              variant="secondary"
+              class="w-full justify-between px-6 py-1"
             >
-              <span class="text-xs text-base-foreground">
+              <span>
                 {{ $t(section.labelKey, section.items.length) }}
               </span>
               <i
@@ -39,7 +39,7 @@
                   )
                 "
               />
-            </button>
+            </Button>
           </CollapsibleTrigger>
           <CollapsibleContent
             :id="`section-content-${section.id}`"
@@ -73,7 +73,7 @@
       <input
         type="checkbox"
         :checked="acknowledged"
-        class="mt-0.5 size-4 shrink-0 cursor-pointer accent-primary-background"
+        class="size-3.5 shrink-0 cursor-pointer accent-primary-background"
         @change="
           $emit(
             'update:acknowledged',
@@ -81,7 +81,7 @@
           )
         "
       />
-      <span class="text-xs text-base-foreground font-bold">
+      <span class="text-sm text-muted-foreground">
         {{ $t('shareWorkflow.acknowledgeCheckbox') }}
       </span>
     </label>
@@ -99,6 +99,7 @@ import { computed, ref, watch } from 'vue'
 import type { WorkflowAsset, WorkflowModel } from '@/schemas/apiSchema'
 import ShareAssetThumbnail from '@/platform/workflow/sharing/components/ShareAssetThumbnail.vue'
 import { cn } from '@/utils/tailwindUtil'
+import Button from '@/components/ui/button/Button.vue'
 
 const { assets, models } = defineProps<{
   assets: WorkflowAsset[]

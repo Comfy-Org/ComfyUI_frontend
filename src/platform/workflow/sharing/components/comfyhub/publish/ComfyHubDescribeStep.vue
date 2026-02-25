@@ -55,7 +55,7 @@
       <TagsInput
         v-slot="{ isEmpty }"
         always-editing
-        class="select-none bg-modal-card-background-hovered"
+        class="select-none bg-secondary-background"
         :model-value="tags"
         @update:model-value="$emit('update:tags', $event as string[])"
       >
@@ -66,14 +66,18 @@
         <TagsInputInput :is-empty />
       </TagsInput>
 
-      <TagsInput always-editing class="bg-transparent hover:bg-transparent p-0">
+      <TagsInput
+        disabled
+        class="bg-transparent hover:bg-transparent hover-within:bg-transparent p-0"
+      >
         <div
-          v-if="availableSuggestions.length > 0"
+          v-if="displayedSuggestions.length > 0"
           class="basis-full flex flex-wrap gap-2"
         >
           <TagsInputItem
-            v-for="tag in availableSuggestions"
+            v-for="tag in displayedSuggestions"
             :key="tag"
+            v-auto-animate
             :value="tag"
             class="cursor-pointer select-none transition-colors bg-secondary-background hover:bg-secondary-background-selected text-muted-foreground px-2"
             @click="addTag(tag)"
@@ -81,12 +85,28 @@
             <TagsInputItemText />
           </TagsInputItem>
         </div>
+        <Button
+          v-if="shouldShowSuggestionToggle"
+          variant="muted-textonly"
+          size="unset"
+          class="text-xs px-0 hover:bg-unset"
+          @click="showAllSuggestions = !showAllSuggestions"
+        >
+          {{
+            $t(
+              showAllSuggestions
+                ? 'comfyHubPublish.showLessTags'
+                : 'comfyHubPublish.showMoreTags'
+            )
+          }}
+        </Button>
       </TagsInput>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
+import Button from '@/components/ui/button/Button.vue'
 import Input from '@/components/ui/input/Input.vue'
 import Select from '@/components/ui/select/Select.vue'
 import SelectContent from '@/components/ui/select/SelectContent.vue'
@@ -100,8 +120,9 @@ import TagsInputItemDelete from '@/components/ui/tags-input/TagsInputItemDelete.
 import TagsInputItemText from '@/components/ui/tags-input/TagsInputItemText.vue'
 import Textarea from '@/components/ui/textarea/Textarea.vue'
 import { COMFY_HUB_TAG_OPTIONS } from '@/platform/workflow/sharing/constants/comfyHubTags'
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { vAutoAnimate } from '@formkit/auto-animate/vue'
 
 const { tags, workflowType } = defineProps<{
   name: string
@@ -138,8 +159,28 @@ const workflowTypeOptions = [
   }
 ]
 
+const INITIAL_TAG_SUGGESTION_COUNT = 10
+
+const showAllSuggestions = ref(false)
+
 const availableSuggestions = computed(() =>
-  COMFY_HUB_TAG_OPTIONS.filter((tag) => !tags.includes(tag)).slice(0, 10)
+  COMFY_HUB_TAG_OPTIONS.filter((tag) => !tags.includes(tag))
+)
+
+const displayedSuggestions = computed(() =>
+  showAllSuggestions.value
+    ? availableSuggestions.value
+    : availableSuggestions.value.slice(0, INITIAL_TAG_SUGGESTION_COUNT)
+)
+
+const hasHiddenSuggestions = computed(
+  () =>
+    !showAllSuggestions.value &&
+    availableSuggestions.value.length > INITIAL_TAG_SUGGESTION_COUNT
+)
+
+const shouldShowSuggestionToggle = computed(
+  () => showAllSuggestions.value || hasHiddenSuggestions.value
 )
 
 function addTag(tag: string) {
