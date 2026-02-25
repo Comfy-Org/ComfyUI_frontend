@@ -130,8 +130,7 @@ describe('NodeSearchCategorySidebar', () => {
       useNodeDefStore().updateNodeDefs([
         createMockNodeDef({ name: 'Node1', category: 'sampling' }),
         createMockNodeDef({ name: 'Node2', category: 'sampling/advanced' }),
-        createMockNodeDef({ name: 'Node3', category: 'sampling/basic' }),
-        createMockNodeDef({ name: 'Node4', category: 'other' })
+        createMockNodeDef({ name: 'Node3', category: 'sampling/basic' })
       ])
       await nextTick()
 
@@ -170,8 +169,7 @@ describe('NodeSearchCategorySidebar', () => {
     it('should emit update:selectedCategory when subcategory is clicked', async () => {
       useNodeDefStore().updateNodeDefs([
         createMockNodeDef({ name: 'Node1', category: 'sampling' }),
-        createMockNodeDef({ name: 'Node2', category: 'sampling/advanced' }),
-        createMockNodeDef({ name: 'Node3', category: 'other' })
+        createMockNodeDef({ name: 'Node2', category: 'sampling/advanced' })
       ])
       await nextTick()
 
@@ -207,8 +205,7 @@ describe('NodeSearchCategorySidebar', () => {
     it('should emit selected subcategory when expanded', async () => {
       useNodeDefStore().updateNodeDefs([
         createMockNodeDef({ name: 'Node1', category: 'sampling' }),
-        createMockNodeDef({ name: 'Node2', category: 'sampling/advanced' }),
-        createMockNodeDef({ name: 'Node3', category: 'other' })
+        createMockNodeDef({ name: 'Node2', category: 'sampling/advanced' })
       ])
       await nextTick()
 
@@ -227,8 +224,7 @@ describe('NodeSearchCategorySidebar', () => {
     useNodeDefStore().updateNodeDefs([
       createMockNodeDef({ name: 'Node1', category: 'api' }),
       createMockNodeDef({ name: 'Node2', category: 'api/image' }),
-      createMockNodeDef({ name: 'Node3', category: 'api/image/BFL' }),
-      createMockNodeDef({ name: 'Node4', category: 'other' })
+      createMockNodeDef({ name: 'Node3', category: 'api/image/BFL' })
     ])
     await nextTick()
 
@@ -255,6 +251,88 @@ describe('NodeSearchCategorySidebar', () => {
 
     const emitted = wrapper.emitted('update:selectedCategory')!
     expect(emitted[emitted.length - 1]).toEqual(['api/image/BFL'])
+  })
+
+  describe('rootLabel wrapping', () => {
+    it('should wrap multiple roots under a parent when rootLabel is provided', async () => {
+      useNodeDefStore().updateNodeDefs([
+        createMockNodeDef({ name: 'Node1', category: 'sampling' }),
+        createMockNodeDef({ name: 'Node2', category: 'loaders' })
+      ])
+      await nextTick()
+
+      const wrapper = await createWrapper({
+        hidePresets: true,
+        rootLabel: 'Extensions',
+        rootKey: 'custom'
+      })
+
+      expect(wrapper.text()).toContain('Extensions')
+    })
+
+    it('should auto-expand the synthetic root and keep it expanded when selecting a child', async () => {
+      useNodeDefStore().updateNodeDefs([
+        createMockNodeDef({ name: 'Node1', category: 'sampling' }),
+        createMockNodeDef({ name: 'Node2', category: 'loaders' })
+      ])
+      await nextTick()
+
+      const wrapper = await createWrapper({
+        hidePresets: true,
+        rootLabel: 'Extensions',
+        rootKey: 'custom'
+      })
+
+      // Auto-expanded: children should be visible
+      expect(wrapper.text()).toContain('sampling')
+      expect(wrapper.text()).toContain('loaders')
+
+      // Select a child category
+      await clickCategory(wrapper, 'sampling')
+      await nextTick()
+
+      // Parent should stay expanded (children still visible)
+      expect(wrapper.text()).toContain('Extensions')
+      expect(wrapper.text()).toContain('sampling')
+      expect(wrapper.text()).toContain('loaders')
+    })
+
+    it('should prefix child keys with rootKey', async () => {
+      useNodeDefStore().updateNodeDefs([
+        createMockNodeDef({ name: 'Node1', category: 'sampling' }),
+        createMockNodeDef({ name: 'Node2', category: 'loaders' })
+      ])
+      await nextTick()
+
+      const wrapper = await createWrapper({
+        hidePresets: true,
+        rootLabel: 'Extensions',
+        rootKey: 'custom'
+      })
+
+      await clickCategory(wrapper, 'sampling')
+
+      const emitted = wrapper.emitted('update:selectedCategory')!
+      expect(emitted[emitted.length - 1]).toEqual(['custom/sampling'])
+    })
+
+    it('should not wrap when there is only one root category', async () => {
+      useNodeDefStore().updateNodeDefs([
+        createMockNodeDef({ name: 'Node1', category: 'sampling' }),
+        createMockNodeDef({ name: 'Node2', category: 'sampling/advanced' })
+      ])
+      await nextTick()
+
+      const wrapper = await createWrapper({
+        hidePresets: true,
+        rootLabel: 'Extensions',
+        rootKey: 'custom'
+      })
+
+      // No wrapping — "Extensions" parent should not appear
+      expect(wrapper.text()).not.toContain('Extensions')
+      expect(wrapper.text()).toContain('sampling')
+    })
   })
 
   it('should emit category without root/ prefix', async () => {

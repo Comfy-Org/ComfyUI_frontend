@@ -36,6 +36,8 @@
         :hide-chevrons="!anyTreeCategoryHasChildren"
         :hide-presets="rootFilter !== null"
         :node-defs="rootFilteredNodeDefs"
+        :root-label="rootFilterLabel"
+        :root-key="rootFilter ?? undefined"
       />
 
       <!-- Results list -->
@@ -81,6 +83,7 @@
 
 <script setup lang="ts">
 import { computed, nextTick, onMounted, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import NodeSearchFilterBar from '@/components/searchbox/v2/NodeSearchFilterBar.vue'
 import NodeSearchCategorySidebar from '@/components/searchbox/v2/NodeSearchCategorySidebar.vue'
@@ -106,6 +109,7 @@ const emit = defineEmits<{
 
 const BLUEPRINT_CATEGORY = 'Subgraph Blueprints'
 
+const { t } = useI18n()
 const nodeDefStore = useNodeDefStore()
 const nodeFrequencyStore = useNodeFrequencyStore()
 const nodeBookmarkStore = useNodeBookmarkStore()
@@ -137,6 +141,17 @@ const selectedIndex = ref(0)
 
 // Root filter from filter bar category buttons (radio toggle)
 const rootFilter = ref<string | null>(null)
+
+const rootFilterLabel = computed(() => {
+  switch (rootFilter.value) {
+    case 'essentials':
+      return t('g.essentials')
+    case 'custom':
+      return t('g.extensions')
+    default:
+      return undefined
+  }
+})
 
 const rootFilteredNodeDefs = computed(() => {
   if (!rootFilter.value) return nodeDefStore.visibleNodeDefs
@@ -245,13 +260,18 @@ const displayedResults = computed<ComfyNodeDefImpl[]>(() => {
     case 'custom':
       results = baseNodes.filter(isCustomNode)
       break
-    default:
+    default: {
+      const prefix = rootFilter.value ? rootFilter.value + '/' : ''
+      const categoryPath = effectiveCategory.value.startsWith(prefix)
+        ? effectiveCategory.value.slice(prefix.length)
+        : effectiveCategory.value
       results = baseNodes.filter(
         (n) =>
-          n.category === effectiveCategory.value ||
-          n.category.startsWith(effectiveCategory.value + '/')
+          n.category === categoryPath ||
+          n.category.startsWith(categoryPath + '/')
       )
       break
+    }
   }
 
   return filters.length > 0 ? results.filter(matchesFilters) : results

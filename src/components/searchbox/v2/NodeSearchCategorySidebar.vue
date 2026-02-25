@@ -58,7 +58,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import NodeSearchCategoryTreeNode, {
@@ -78,11 +78,15 @@ import { cn } from '@/utils/tailwindUtil'
 const {
   hideChevrons = false,
   hidePresets = false,
-  nodeDefs
+  nodeDefs,
+  rootLabel,
+  rootKey
 } = defineProps<{
   hideChevrons?: boolean
   hidePresets?: boolean
   nodeDefs?: ComfyNodeDefImpl[]
+  rootLabel?: string
+  rootKey?: string
 }>()
 
 const selectedCategory = defineModel<string>('selectedCategory', {
@@ -138,17 +142,39 @@ const categoryTree = computed<CategoryNode[]>(() => {
     }
   }
 
-  let nodes = (tree.children ?? [])
+  const nodes = (tree.children ?? [])
     .filter((node): node is TreeNode => !node.leaf)
     .map(mapNode)
 
-  // Skip single root node if it has children
-  if (nodes.length === 1 && nodes[0].children?.length) {
-    nodes = nodes[0].children
+  if (rootLabel && nodes.length > 1) {
+    const key = rootKey ?? rootLabel.toLowerCase()
+    function prefixKeys(node: CategoryNode): CategoryNode {
+      return {
+        key: key + '/' + node.key,
+        label: node.label,
+        ...(node.children?.length
+          ? { children: node.children.map(prefixKeys) }
+          : {})
+      }
+    }
+    return [{ key, label: rootLabel, children: nodes.map(prefixKeys) }]
   }
 
   return nodes
 })
+
+const selectedCollapsed = ref(false)
+
+watch(
+  categoryTree,
+  (nodes) => {
+    if (rootLabel && nodes.length === 1) {
+      selectedCategory.value = nodes[0].key
+      selectedCollapsed.value = false
+    }
+  },
+  { immediate: true }
+)
 
 function categoryBtnClass(id: string) {
   return cn(
@@ -159,8 +185,6 @@ function categoryBtnClass(id: string) {
       : CATEGORY_UNSELECTED_CLASS
   )
 }
-
-const selectedCollapsed = ref(false)
 
 function selectCategory(categoryId: string) {
   if (selectedCategory.value === categoryId) {
