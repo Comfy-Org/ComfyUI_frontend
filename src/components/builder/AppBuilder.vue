@@ -362,13 +362,19 @@ const renderedInputs = computed<[string, MaybeRef<BoundStyle> | undefined][]>(
           <div class="absolute top-0 right-0 size-8">
             <div
               v-if="isSelected"
-              class="absolute -top-1/2 -right-1/2 size-full p-2 bg-warning-background rounded-lg"
+              class="absolute -top-1/2 -right-1/2 size-full p-2 bg-warning-background rounded-lg cursor-pointer pointer-events-auto"
+              @click.stop="
+                remove(appModeStore.selectedOutputs, (k) => k === key)
+              "
+              @pointerdown.stop
             >
               <i class="icon-[lucide--check] bg-text-foreground size-full" />
             </div>
             <div
               v-else
-              class="absolute -top-1/2 -right-1/2 size-full ring-warning-background/50 ring-4 ring-inset bg-component-node-background rounded-lg"
+              class="absolute -top-1/2 -right-1/2 size-full ring-warning-background/50 ring-4 ring-inset bg-component-node-background rounded-lg cursor-pointer pointer-events-auto"
+              @click.stop="appModeStore.selectedOutputs.push(key)"
+              @pointerdown.stop
             />
           </div>
         </div>
