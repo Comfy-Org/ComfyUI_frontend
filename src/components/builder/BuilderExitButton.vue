@@ -13,13 +13,24 @@ import { useEventListener } from '@vueuse/core'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
+import { useAppMode } from '@/composables/useAppMode'
 import { useAppModeStore } from '@/stores/appModeStore'
+import { useDialogStore } from '@/stores/dialogStore'
 
 const { t } = useI18n()
 const appModeStore = useAppModeStore()
+const dialogStore = useDialogStore()
+const { isBuilderMode } = useAppMode()
 
 useEventListener(window, 'keydown', (e: KeyboardEvent) => {
-  if (e.key === 'Escape' && !e.ctrlKey && !e.altKey && !e.metaKey) {
+  if (
+    e.key === 'Escape' &&
+    !e.ctrlKey &&
+    !e.altKey &&
+    !e.metaKey &&
+    dialogStore.dialogStack.length === 0 &&
+    isBuilderMode.value
+  ) {
     e.preventDefault()
     e.stopPropagation()
     onExitBuilder()
