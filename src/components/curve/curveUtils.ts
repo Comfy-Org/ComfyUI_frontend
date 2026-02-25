@@ -1,4 +1,4 @@
-import type { CurvePoint } from '@/lib/litegraph/src/types/widgets'
+import type { CurvePoint } from './types'
 
 /**
  * Monotone cubic Hermite interpolation.
@@ -95,15 +95,15 @@ export function histogramToPath(histogram: Uint32Array): string {
   const max = sorted[Math.floor(255 * 0.995)]
   if (max === 0) return ''
 
-  const step = 1 / 255
-  let d = 'M0,1'
+  const invMax = 1 / max
+  const parts: string[] = ['M0,1']
   for (let i = 0; i < 256; i++) {
-    const x = i * step
-    const y = 1 - Math.min(1, histogram[i] / max)
-    d += ` L${x.toFixed(4)},${y.toFixed(4)}`
+    const x = i / 255
+    const y = 1 - Math.min(1, histogram[i] * invMax)
+    parts.push(`L${x},${y}`)
   }
-  d += ' L1,1 Z'
-  return d
+  parts.push('L1,1 Z')
+  return parts.join(' ')
 }
 
 export function curvesToLUT(points: CurvePoint[]): Uint8Array {

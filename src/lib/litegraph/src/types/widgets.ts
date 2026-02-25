@@ -329,7 +329,7 @@ export interface IBoundingBoxWidget extends IBaseWidget<Bounds, 'boundingbox'> {
   value: Bounds
 }
 
-export type CurvePoint = [x: number, y: number]
+import type { CurvePoint } from '@/components/curve/types'
 
 export interface ICurveWidget extends IBaseWidget<CurvePoint[], 'curve'> {
   type: 'curve'
