@@ -19,7 +19,9 @@
           {{ t('g.loading') }}...
         </span>
         <span v-else>
-          {{ group.packId ?? t('rightSidePanel.missingNodePacks.unknownPack') }}
+          {{
+            `${group.packId ?? t('rightSidePanel.missingNodePacks.unknownPack')} (${group.nodeTypes.length})`
+          }}
         </span>
       </p>
       <Button

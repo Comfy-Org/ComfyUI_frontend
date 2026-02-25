@@ -37,7 +37,11 @@
                   class="icon-[lucide--octagon-alert] size-4 text-destructive-background-hover shrink-0"
                 />
                 <span class="text-destructive-background-hover truncate">
-                  {{ group.title }}
+                  {{
+                    group.type === 'missing_node'
+                      ? `${group.title} (${missingPackGroups.filter((g) => g.packId !== null).length})`
+                      : group.title
+                  }}
                 </span>
                 <span
                   v-if="group.type !== 'missing_node' && group.cards.length > 1"
