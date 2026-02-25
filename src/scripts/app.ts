@@ -80,10 +80,15 @@ import type { ExtensionManager } from '@/types/extensionTypes'
 import type { NodeExecutionId } from '@/types/nodeIdentification'
 import { graphToPrompt } from '@/utils/executionUtil'
 import type { MissingNodeTypeExtraInfo } from '@/workbench/extensions/manager/types/missingNodeErrorTypes'
-import { createMissingNodeTypeFromError } from '@/workbench/extensions/manager/utils/missingNodeErrorUtil'
-import { anyItemOverlapsRect } from '@/utils/mathUtil'
-import { collectAllNodes, forEachNode } from '@/utils/graphTraversalUtil'
 import {
+  createMissingNodeTypeFromError,
+  getCnrIdFromNode,
+  getCnrIdFromProperties
+} from '@/workbench/extensions/manager/utils/missingNodeErrorUtil'
+import { anyItemOverlapsRect } from '@/utils/mathUtil'
+import {
+  collectAllNodes,
+  forEachNode,
   getNodeByExecutionId,
   triggerCallbackOnAllNodes
 } from '@/utils/graphTraversalUtil'
@@ -1210,12 +1215,9 @@ export class ComfyApp {
 
           // To access missing node information in the error tab
           // we collect the cnr_id and execution_id here.
-          let cnrId: string | undefined
-          if (typeof n.properties?.cnr_id === 'string') {
-            cnrId = n.properties.cnr_id
-          } else if (typeof n.properties?.aux_id === 'string') {
-            cnrId = n.properties.aux_id
-          }
+          const cnrId = getCnrIdFromProperties(
+            n.properties as Record<string, unknown> | undefined
+          )
 
           const executionId = pathPrefix
             ? `${pathPrefix}:${n.id}`
@@ -1532,7 +1534,32 @@ export class ComfyApp {
             ) {
               const extraInfo = (error.response.error.extra_info ??
                 {}) as MissingNodeTypeExtraInfo
-              const missingNodeType = createMissingNodeTypeFromError(extraInfo)
+
+              let graphNode = null
+              if (extraInfo.node_id && this.rootGraph) {
+                graphNode = getNodeByExecutionId(
+                  this.rootGraph,
+                  extraInfo.node_id
+                )
+              }
+
+              const enrichedExtraInfo: MissingNodeTypeExtraInfo = {
+                ...extraInfo,
+                class_type: extraInfo.class_type ?? graphNode?.type,
+                node_title: extraInfo.node_title ?? graphNode?.title
+              }
+
+              const missingNodeType =
+                createMissingNodeTypeFromError(enrichedExtraInfo)
+
+              if (
+                graphNode &&
+                typeof missingNodeType !== 'string' &&
+                !missingNodeType.cnrId
+              ) {
+                missingNodeType.cnrId = getCnrIdFromNode(graphNode)
+              }
+
               this.showMissingNodesError([missingNodeType])
             } else if (
               !useSettingStore().get('Comfy.RightSidePanel.ShowErrorsTab') ||
