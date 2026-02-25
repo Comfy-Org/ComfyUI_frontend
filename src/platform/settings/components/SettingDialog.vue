@@ -124,8 +124,7 @@ const searchableNavItems = computed(() =>
   navGroups.value.flatMap((g) =>
     g.items.map((item) => ({
       key: item.id,
-      label: item.id,
-      translatedLabel: item.label
+      label: item.label
     }))
   )
 )

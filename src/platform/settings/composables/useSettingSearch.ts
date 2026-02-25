@@ -13,7 +13,6 @@ import { useVueFeatureFlags } from '@/composables/useVueFeatureFlags'
 interface SearchableNavItem {
   key: string
   label: string
-  translatedLabel: string
 }
 
 export function useSettingSearch() {
@@ -102,8 +101,7 @@ export function useSettingSearch() {
       for (const item of navItems) {
         if (
           item.key.toLocaleLowerCase().includes(queryLower) ||
-          item.label.toLocaleLowerCase().includes(queryLower) ||
-          item.translatedLabel.toLocaleLowerCase().includes(queryLower)
+          item.label.toLocaleLowerCase().includes(queryLower)
         ) {
           matchedNavItemKeys.value.add(item.key)
         }
