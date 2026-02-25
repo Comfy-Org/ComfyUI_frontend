@@ -3,10 +3,11 @@ import { useI18n } from 'vue-i18n'
 import { useAppMode } from '@/composables/useAppMode'
 import { useAppModeStore } from '@/stores/appModeStore'
 import Button from '@/components/ui/button/Button.vue'
+import { storeToRefs } from 'pinia'
 
 const { t } = useI18n()
 const { setMode } = useAppMode()
-const { hasOutputs } = useAppModeStore()
+const { hasOutputs } = storeToRefs(useAppModeStore())
 </script>
 
 <template>

@@ -38,7 +38,7 @@ const { isActiveSubscription } = useBillingContext()
 const workflowStore = useWorkflowStore()
 const { isBuilderMode } = useAppMode()
 const appModeStore = useAppModeStore()
-const { hasOutputs } = appModeStore
+const { hasOutputs } = storeToRefs(appModeStore)
 
 const props = defineProps<{
   toastTo?: string | HTMLElement

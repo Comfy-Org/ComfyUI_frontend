@@ -73,10 +73,11 @@ import ConnectOutputPopover from './ConnectOutputPopover.vue'
 import StepBadge from './StepBadge.vue'
 import StepLabel from './StepLabel.vue'
 import type { BuilderToolbarStep } from './types'
+import { storeToRefs } from 'pinia'
 
 const { t } = useI18n()
 const { mode, setMode } = useAppMode()
-const { hasOutputs } = useAppModeStore()
+const { hasOutputs } = storeToRefs(useAppModeStore())
 const { saving, setSaving } = useBuilderSave()
 
 const activeStep = computed(() => (saving.value ? 'save' : mode.value))

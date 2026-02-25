@@ -38,7 +38,8 @@
       <BottomPanel />
     </template>
     <template v-if="showUI" #right-side-panel>
-      <NodePropertiesPanel v-if="!isBuilderMode" />
+      <AppBuilder v-if="mode === 'builder:select'" />
+      <NodePropertiesPanel v-else-if="!isBuilderMode" />
     </template>
     <template #graph-canvas-panel>
       <GraphCanvasMenu
@@ -126,6 +127,7 @@ import { isMiddlePointerInput } from '@/base/pointerUtils'
 import LiteGraphCanvasSplitterOverlay from '@/components/LiteGraphCanvasSplitterOverlay.vue'
 import TopMenuSection from '@/components/TopMenuSection.vue'
 import BottomPanel from '@/components/bottomPanel/BottomPanel.vue'
+import AppBuilder from '@/components/builder/AppBuilder.vue'
 import ExtensionSlot from '@/components/common/ExtensionSlot.vue'
 import DomWidgets from '@/components/graph/DomWidgets.vue'
 import GraphCanvasMenu from '@/components/graph/GraphCanvasMenu.vue'
@@ -200,7 +202,7 @@ const nodeSearchboxPopoverRef = shallowRef<InstanceType<
 const settingStore = useSettingStore()
 const nodeDefStore = useNodeDefStore()
 const workspaceStore = useWorkspaceStore()
-const { isBuilderMode } = useAppMode()
+const { mode, isBuilderMode } = useAppMode()
 const canvasStore = useCanvasStore()
 const workflowStore = useWorkflowStore()
 const executionStore = useExecutionStore()

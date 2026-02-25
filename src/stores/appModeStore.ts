@@ -1,6 +1,5 @@
 import { defineStore } from 'pinia'
-import { whenever } from '@vueuse/core'
-import { reactive, computed, ref, watch } from 'vue'
+import { reactive, computed, watch } from 'vue'
 
 import { useAppMode } from '@/composables/useAppMode'
 import { t } from '@/i18n'
@@ -13,43 +12,58 @@ import { app } from '@/scripts/app'
 export const useAppModeStore = defineStore('appMode', () => {
   const { getCanvas } = useCanvasStore()
   const workflowStore = useWorkflowStore()
-  const { mode, setMode, isBuilderMode } = useAppMode()
+  const { mode, setMode } = useAppMode()
 
   const selectedInputs = reactive<[NodeId, string][]>([])
   const selectedOutputs = reactive<NodeId[]>([])
-  const builderSaving = ref(false)
   const hasOutputs = computed(() => !!selectedOutputs.length)
 
-  const isBuilderSaving = computed(
-    () => builderSaving.value && isBuilderMode.value
-  )
+  function loadSelections(
+    data: { inputs?: [NodeId, string][]; outputs?: NodeId[] } | undefined
+  ) {
+    selectedInputs.splice(0, selectedInputs.length, ...(data?.inputs ?? []))
+    selectedOutputs.splice(0, selectedOutputs.length, ...(data?.outputs ?? []))
+  }
 
   function resetSelectedToWorkflow() {
     const { activeWorkflow } = workflowStore
     if (!activeWorkflow) return
 
-    const { activeState } = activeWorkflow.changeTracker
-    selectedInputs.splice(
-      0,
-      selectedInputs.length,
-      ...(activeState.extra?.linearData?.inputs ?? [])
-    )
-    selectedOutputs.splice(
-      0,
-      selectedOutputs.length,
-      ...(activeState.extra?.linearData?.outputs ?? [])
-    )
+    loadSelections(activeWorkflow.changeTracker?.activeState?.extra?.linearData)
   }
+
   function saveSelectedToWorkflow() {
     app.rootGraph.extra ??= {}
     app.rootGraph.extra.linearData = {
       inputs: [...selectedInputs],
       outputs: [...selectedOutputs]
     }
+    const workflow = workflowStore.activeWorkflow
+    if (workflow) workflow.dirtyLinearData = null
   }
-  whenever(() => workflowStore.activeWorkflow, resetSelectedToWorkflow, {
-    immediate: true
-  })
+
+  watch(
+    () => workflowStore.activeWorkflow,
+    (newWorkflow, oldWorkflow) => {
+      // Persist in-progress builder selections to the outgoing workflow
+      if (oldWorkflow) {
+        oldWorkflow.dirtyLinearData = {
+          inputs: [...selectedInputs],
+          outputs: [...selectedOutputs]
+        }
+      }
+      // Load from incoming workflow: dirty state first, then persisted
+      if (newWorkflow) {
+        loadSelections(
+          newWorkflow.dirtyLinearData ??
+            newWorkflow.changeTracker?.activeState?.extra?.linearData
+        )
+      } else {
+        loadSelections(undefined)
+      }
+    },
+    { immediate: true }
+  )
 
   watch(
     () => mode.value === 'builder:select',
@@ -65,21 +79,18 @@ export const useAppModeStore = defineStore('appMode', () => {
     )
       return
 
+    const workflow = workflowStore.activeWorkflow
+    if (workflow) workflow.dirtyLinearData = null
     resetSelectedToWorkflow()
     setMode('graph')
   }
 
   return {
     exitBuilder,
-    isBuilderSaving,
     hasOutputs,
     resetSelectedToWorkflow,
     saveSelectedToWorkflow,
     selectedInputs,
-    selectedOutputs,
-    setBuilderSaving: (newBuilderSaving: boolean) => {
-      if (!isBuilderMode.value) return
-      builderSaving.value = newBuilderSaving
-    }
+    selectedOutputs
   }
 })
