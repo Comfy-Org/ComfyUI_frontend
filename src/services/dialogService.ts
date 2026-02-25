@@ -437,11 +437,7 @@ export const useDialogService = () => {
       component,
       props: { onConfirm },
       dialogComponentProps: {
-        ...workspaceDialogPt,
-        pt: {
-          ...workspaceDialogPt.pt,
-          root: { class: 'rounded-2xl max-w-[400px] w-full' }
-        }
+        ...workspaceDialogPt
       }
     })
   }
@@ -463,11 +459,7 @@ export const useDialogService = () => {
       key: 'edit-workspace',
       component,
       dialogComponentProps: {
-        ...workspaceDialogPt,
-        pt: {
-          ...workspaceDialogPt.pt,
-          root: { class: 'rounded-2xl max-w-[400px] w-full' }
-        }
+        ...workspaceDialogPt
       }
     })
   }
@@ -490,11 +482,7 @@ export const useDialogService = () => {
       key: 'invite-member',
       component,
       dialogComponentProps: {
-        ...workspaceDialogPt,
-        pt: {
-          ...workspaceDialogPt.pt,
-          root: { class: 'rounded-2xl max-w-[512px] w-full' }
-        }
+        ...workspaceDialogPt
       }
     })
   }
@@ -506,11 +494,7 @@ export const useDialogService = () => {
       key: 'invite-member-upsell',
       component,
       dialogComponentProps: {
-        ...workspaceDialogPt,
-        pt: {
-          ...workspaceDialogPt.pt,
-          root: { class: 'rounded-2xl max-w-[512px] w-full' }
-        }
+        ...workspaceDialogPt
       }
     })
   }
@@ -552,11 +536,7 @@ export const useDialogService = () => {
       component,
       props: { cancelAt },
       dialogComponentProps: {
-        ...workspaceDialogPt,
-        pt: {
-          ...workspaceDialogPt.pt,
-          root: { class: 'rounded-2xl max-w-[400px] w-full' }
-        }
+        ...workspaceDialogPt
       }
     })
   }
