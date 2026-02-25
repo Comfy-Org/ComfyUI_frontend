@@ -64,8 +64,6 @@ function renderUploadSpinner(
   ctx.arc(centerX, centerY, radius, angle, angle + Math.PI * 1.5)
   ctx.stroke()
   ctx.restore()
-
-  node.graph?.setDirtyCanvas(true)
 }
 
 const renderPreview = (
