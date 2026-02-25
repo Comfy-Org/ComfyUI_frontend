@@ -71,20 +71,30 @@ function getDialogPt(item: {
 </script>
 
 <style>
-@reference '../../assets/css/style.css';
-
 .global-dialog {
   max-width: calc(100vw - 1rem);
 }
 
 .global-dialog .p-dialog-header {
-  @apply p-2 2xl:p-[var(--p-dialog-header-padding)];
-  @apply pb-0;
+  padding: calc(var(--spacing) * 2);
+  padding-bottom: 0;
 }
 
 .global-dialog .p-dialog-content {
-  @apply p-2 2xl:p-[var(--p-dialog-content-padding)];
-  @apply pt-0;
+  padding: calc(var(--spacing) * 2);
+  padding-top: 0;
+}
+
+@media (min-width: 1536px) {
+  .global-dialog .p-dialog-header {
+    padding: var(--p-dialog-header-padding);
+    padding-bottom: 0;
+  }
+
+  .global-dialog .p-dialog-content {
+    padding: var(--p-dialog-content-padding);
+    padding-top: 0;
+  }
 }
 
 /* Workspace mode: wider settings dialog */

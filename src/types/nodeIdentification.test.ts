@@ -4,6 +4,8 @@ import type { NodeId } from '@/platform/workflow/validation/schemas/workflowSche
 import {
   createNodeExecutionId,
   createNodeLocatorId,
+  getAncestorExecutionIds,
+  getParentExecutionIds,
   isNodeExecutionId,
   isNodeLocatorId,
   parseNodeExecutionId,
@@ -202,6 +204,32 @@ describe('nodeIdentification', () => {
       const parsed = parseNodeExecutionId(executionId)
 
       expect(parsed).toEqual(nodeIds)
+    })
+  })
+
+  describe('getAncestorExecutionIds', () => {
+    it('returns only itself for a root node', () => {
+      expect(getAncestorExecutionIds('65')).toEqual(['65'])
+    })
+
+    it('returns all ancestors including self for nested IDs', () => {
+      expect(getAncestorExecutionIds('65:70')).toEqual(['65', '65:70'])
+      expect(getAncestorExecutionIds('65:70:63')).toEqual([
+        '65',
+        '65:70',
+        '65:70:63'
+      ])
+    })
+  })
+
+  describe('getParentExecutionIds', () => {
+    it('returns empty for a root node', () => {
+      expect(getParentExecutionIds('65')).toEqual([])
+    })
+
+    it('returns all ancestors excluding self for nested IDs', () => {
+      expect(getParentExecutionIds('65:70')).toEqual(['65'])
+      expect(getParentExecutionIds('65:70:63')).toEqual(['65', '65:70'])
     })
   })
 })

@@ -121,3 +121,30 @@ export function parseNodeExecutionId(id: string): NodeId[] | null {
 export function createNodeExecutionId(nodeIds: NodeId[]): NodeExecutionId {
   return nodeIds.join(':')
 }
+
+/**
+ * Returns all ancestor execution IDs for a given execution ID, including itself.
+ *
+ * Example: "65:70:63" → ["65", "65:70", "65:70:63"]
+ * @knipIgnoreUsedByStackedPR
+ */
+export function getAncestorExecutionIds(
+  executionId: string | NodeExecutionId
+): NodeExecutionId[] {
+  const parts = executionId.split(':')
+  return Array.from({ length: parts.length }, (_, i) =>
+    parts.slice(0, i + 1).join(':')
+  )
+}
+
+/**
+ * Returns all ancestor execution IDs for a given execution ID, excluding itself.
+ *
+ * Example: "65:70:63" → ["65", "65:70"]
+ * @knipIgnoreUsedByStackedPR
+ */
+export function getParentExecutionIds(
+  executionId: string | NodeExecutionId
+): NodeExecutionId[] {
+  return getAncestorExecutionIds(executionId).slice(0, -1)
+}

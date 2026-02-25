@@ -367,7 +367,6 @@ export interface IBaseWidget<
   /** Widget type (see {@link TWidgetType}) */
   type: TType
   value?: TValue
-  vueTrack?: () => void
 
   /**
    * Whether the widget value is persisted in the workflow JSON

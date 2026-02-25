@@ -15,7 +15,7 @@
     :aria-label="computedTooltip"
     @click="emit('click', $event)"
   >
-    <div class="side-bar-button-content">
+    <div class="side-bar-button-content flex flex-col items-center gap-2">
       <slot name="icon">
         <div class="sidebar-icon-wrapper relative">
           <i
@@ -40,9 +40,11 @@
           </span>
         </div>
       </slot>
-      <span v-if="label && !isSmall" class="side-bar-button-label">{{
-        st(label, label)
-      }}</span>
+      <span
+        v-if="label && !isSmall"
+        class="side-bar-button-label text-center text-[10px]"
+        >{{ st(label, label) }}</span
+      >
     </div>
   </Button>
 </template>
@@ -104,8 +106,6 @@ const computedTooltip = computed(() => st(tooltip, tooltip) + tooltipSuffix)
 </style>
 
 <style scoped>
-@reference '../../assets/css/style.css';
-
 .side-bar-button {
   width: var(--sidebar-width);
   height: var(--sidebar-item-height);
@@ -117,12 +117,7 @@ const computedTooltip = computed(() => st(tooltip, tooltip) + tooltipSuffix)
   height: var(--sidebar-width);
 }
 
-.side-bar-button-content {
-  @apply flex flex-col items-center gap-2;
-}
-
 .side-bar-button-label {
-  @apply text-[10px] text-center;
   line-height: 1;
 }
 

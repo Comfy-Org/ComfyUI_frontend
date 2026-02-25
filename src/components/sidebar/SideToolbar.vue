@@ -255,8 +255,6 @@ onMounted(() => {
 </style>
 
 <style scoped>
-@reference "tailwindcss";
-
 .floating-sidebar {
   padding: var(--sidebar-padding);
 }
