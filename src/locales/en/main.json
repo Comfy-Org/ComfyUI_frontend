@@ -7,7 +7,6 @@
     "empty": "Empty",
     "noWorkflowsFound": "No workflows found.",
     "comingSoon": "Coming Soon",
-    "inSubgraph": "in subgraph {name}",
     "download": "Download",
     "downloadImage": "Download image",
     "downloadVideo": "Download video",
@@ -72,6 +71,7 @@
     "error": "Error",
     "enter": "Enter",
     "enterSubgraph": "Enter Subgraph",
+    "inSubgraph": "in subgraph '{name}'",
     "resizeFromBottomRight": "Resize from bottom-right corner",
     "resizeFromTopRight": "Resize from top-right corner",
     "resizeFromBottomLeft": "Resize from bottom-left corner",
@@ -450,6 +450,9 @@
         "import_failed": "Import Failed"
       },
       "warningTooltip": "This package may have compatibility issues with your current environment"
+    },
+    "packInstall": {
+      "nodeIdRequired": "Node ID is required for installation"
     }
   },
   "importFailed": {
@@ -3122,7 +3125,20 @@
     "errorHelpGithub": "submit a GitHub issue",
     "errorHelpSupport": "contact our support",
     "resetToDefault": "Reset to default",
-    "resetAllParameters": "Reset all parameters"
+    "resetAllParameters": "Reset all parameters",
+    "missingNodePacks": {
+      "title": "Missing Node Packs",
+      "unsupportedTitle": "Unsupported Node Packs",
+      "cloudMessage": "This workflow requires custom nodes not yet available on Comfy Cloud.",
+      "ossMessage": "This workflow uses custom nodes you haven't installed yet.",
+      "installAll": "Install All",
+      "installNodePack": "Install node pack",
+      "unknownPack": "Unknown pack",
+      "installing": "Installing...",
+      "installed": "Installed",
+      "applyChanges": "Apply Changes",
+      "searchInManager": "Search in Node Manager"
+    }
   },
   "errorOverlay": {
     "errorCount": "{count} ERRORS | {count} ERROR | {count} ERRORS",

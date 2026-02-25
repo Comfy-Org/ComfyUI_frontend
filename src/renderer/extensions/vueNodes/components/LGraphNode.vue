@@ -356,7 +356,8 @@ const hasAnyError = computed((): boolean => {
     error ||
     executionErrorStore.getNodeErrors(nodeLocatorId.value) ||
     (lgraphNode.value &&
-      executionErrorStore.isContainerWithInternalError(lgraphNode.value))
+      (executionErrorStore.isContainerWithInternalError(lgraphNode.value) ||
+        executionErrorStore.isContainerWithMissingNode(lgraphNode.value)))
   )
 })
 
