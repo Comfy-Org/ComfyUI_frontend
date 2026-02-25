@@ -696,8 +696,7 @@
         "tooltip": "sequential_image_generation='auto'일 때 생성할 최대 이미지 수입니다. 총 이미지 수(입력 + 생성)는 15개를 초과할 수 없습니다."
       },
       "model": {
-        "name": "모델",
-        "tooltip": "모델 이름"
+        "name": "모델"
       },
       "prompt": {
         "name": "프롬프트",
@@ -4746,6 +4745,28 @@
     "inputs": {
       "image": {
         "name": "이미지"
+      }
+    }
+  },
+  "ImageMergeTileList": {
+    "display_name": "타일 목록을 이미지로 병합",
+    "inputs": {
+      "final_height": {
+        "name": "final_height"
+      },
+      "final_width": {
+        "name": "final_width"
+      },
+      "image_list": {
+        "name": "image_list"
+      },
+      "overlap": {
+        "name": "overlap"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -14031,6 +14052,29 @@
       },
       "1": {
         "name": "오른쪽",
+        "tooltip": null
+      }
+    }
+  },
+  "SplitImageToTileList": {
+    "description": "이미지를 지정된 오버랩으로 배치된 타일 목록으로 분할합니다.",
+    "display_name": "이미지를 타일 목록으로 분할",
+    "inputs": {
+      "image": {
+        "name": "image"
+      },
+      "overlap": {
+        "name": "overlap"
+      },
+      "tile_height": {
+        "name": "tile_height"
+      },
+      "tile_width": {
+        "name": "tile_width"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }

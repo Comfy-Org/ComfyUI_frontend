@@ -696,8 +696,7 @@
         "tooltip": "sequential_image_generation='auto' olduğunda oluşturulacak maksimum resim sayısı. Toplam resim sayısı (girdi + oluşturulan) 15'i geçemez."
       },
       "model": {
-        "name": "model",
-        "tooltip": "Model adı"
+        "name": "model"
       },
       "prompt": {
         "name": "prompt",
@@ -4746,6 +4745,28 @@
     "inputs": {
       "image": {
         "name": "görüntü"
+      }
+    }
+  },
+  "ImageMergeTileList": {
+    "display_name": "Döşeme Listesini Görüntüye Birleştir",
+    "inputs": {
+      "final_height": {
+        "name": "final_height"
+      },
+      "final_width": {
+        "name": "final_width"
+      },
+      "image_list": {
+        "name": "image_list"
+      },
+      "overlap": {
+        "name": "overlap"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -14031,6 +14052,29 @@
       },
       "1": {
         "name": "sağ",
+        "tooltip": null
+      }
+    }
+  },
+  "SplitImageToTileList": {
+    "description": "Bir görüntüyü, belirtilen örtüşme ile toplu bir döşeme listesine böler.",
+    "display_name": "Görüntüyü Döşeme Listesine Böl",
+    "inputs": {
+      "image": {
+        "name": "image"
+      },
+      "overlap": {
+        "name": "overlap"
+      },
+      "tile_height": {
+        "name": "tile_height"
+      },
+      "tile_width": {
+        "name": "tile_width"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }

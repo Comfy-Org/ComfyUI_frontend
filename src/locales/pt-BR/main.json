@@ -294,6 +294,9 @@
       "title": "Criar uma conta"
     }
   },
+  "batch": {
+    "index": "{current} / {total}"
+  },
   "billingOperation": {
     "subscriptionFailed": "Falha ao atualizar a assinatura",
     "subscriptionProcessing": "Processando pagamento — configurando seu workspace...",
@@ -1178,6 +1181,8 @@
     "star": "Estrela"
   },
   "imageCompare": {
+    "batchLabelA": "A:",
+    "batchLabelB": "B:",
     "noImages": "Nenhuma imagem para comparar"
   },
   "imageCrop": {
@@ -2921,6 +2926,7 @@
     "emptyCanvas": "Tela vazia",
     "errorCopyImage": "Erro ao copiar imagem: {error}",
     "errorLoadingModel": "Erro ao carregar o modelo",
+    "errorOpenImage": "Erro ao abrir a imagem: {error}",
     "errorSaveSetting": "Erro ao salvar configuração {id}: {err}",
     "exportSuccess": "Modelo exportado com sucesso como {format}",
     "failedExecutionPathResolution": "Não foi possível resolver o caminho para os nós selecionados",

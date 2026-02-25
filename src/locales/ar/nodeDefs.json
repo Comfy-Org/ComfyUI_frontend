@@ -696,8 +696,7 @@
         "tooltip": "الحد الأقصى لعدد الصور التي سيتم توليدها عندما يكون sequential_image_generation='auto'. إجمالي الصور (المدخلة + المولدة) لا يمكن أن يتجاوز 15."
       },
       "model": {
-        "name": "model",
-        "tooltip": "اسم النموذج"
+        "name": "model"
       },
       "prompt": {
         "name": "prompt",
@@ -4746,6 +4745,28 @@
     "inputs": {
       "image": {
         "name": "الصورة"
+      }
+    }
+  },
+  "ImageMergeTileList": {
+    "display_name": "دمج قائمة القطع إلى صورة",
+    "inputs": {
+      "final_height": {
+        "name": "final_height"
+      },
+      "final_width": {
+        "name": "final_width"
+      },
+      "image_list": {
+        "name": "image_list"
+      },
+      "overlap": {
+        "name": "overlap"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -14031,6 +14052,29 @@
       },
       "1": {
         "name": "يمين",
+        "tooltip": null
+      }
+    }
+  },
+  "SplitImageToTileList": {
+    "description": "يقوم بتقسيم صورة إلى قائمة دفعات من القطع مع تداخل محدد.",
+    "display_name": "تجزئة الصورة إلى قائمة قطع",
+    "inputs": {
+      "image": {
+        "name": "image"
+      },
+      "overlap": {
+        "name": "overlap"
+      },
+      "tile_height": {
+        "name": "tile_height"
+      },
+      "tile_width": {
+        "name": "tile_width"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }

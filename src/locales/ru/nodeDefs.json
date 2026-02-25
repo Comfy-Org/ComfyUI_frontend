@@ -696,8 +696,7 @@
         "tooltip": "Максимальное количество изображений для генерации при sequential_image_generation='auto'. Общее количество изображений (входные + сгенерированные) не может превышать 15."
       },
       "model": {
-        "name": "model",
-        "tooltip": "Название модели"
+        "name": "model"
       },
       "prompt": {
         "name": "prompt",
@@ -4746,6 +4745,28 @@
     "inputs": {
       "image": {
         "name": "изображение"
+      }
+    }
+  },
+  "ImageMergeTileList": {
+    "display_name": "Объединить список тайлов в изображение",
+    "inputs": {
+      "final_height": {
+        "name": "final_height"
+      },
+      "final_width": {
+        "name": "final_width"
+      },
+      "image_list": {
+        "name": "image_list"
+      },
+      "overlap": {
+        "name": "overlap"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -14031,6 +14052,29 @@
       },
       "1": {
         "name": "правый",
+        "tooltip": null
+      }
+    }
+  },
+  "SplitImageToTileList": {
+    "description": "Разделяет изображение на пакетированный список тайлов с заданным перекрытием.",
+    "display_name": "Разделить изображение на список тайлов",
+    "inputs": {
+      "image": {
+        "name": "image"
+      },
+      "overlap": {
+        "name": "overlap"
+      },
+      "tile_height": {
+        "name": "tile_height"
+      },
+      "tile_width": {
+        "name": "tile_width"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }

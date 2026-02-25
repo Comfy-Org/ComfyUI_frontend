@@ -696,8 +696,7 @@
         "tooltip": "حداکثر تعداد تصاویری که هنگام فعال بودن تولید ترتیبی تصویر (auto) تولید می‌شود. مجموع تصاویر (ورودی + تولید شده) نباید از ۱۵ بیشتر باشد."
       },
       "model": {
-        "name": "مدل",
-        "tooltip": "نام مدل"
+        "name": "مدل"
       },
       "prompt": {
         "name": "پرامپت",
@@ -4746,6 +4745,28 @@
     "inputs": {
       "image": {
         "name": "تصویر"
+      }
+    }
+  },
+  "ImageMergeTileList": {
+    "display_name": "ادغام فهرست کاشی‌ها به تصویر",
+    "inputs": {
+      "final_height": {
+        "name": "final_height"
+      },
+      "final_width": {
+        "name": "final_width"
+      },
+      "image_list": {
+        "name": "image_list"
+      },
+      "overlap": {
+        "name": "overlap"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -14031,6 +14052,29 @@
       },
       "1": {
         "name": "راست",
+        "tooltip": null
+      }
+    }
+  },
+  "SplitImageToTileList": {
+    "description": "یک تصویر را به فهرستی دسته‌ای از کاشی‌ها با همپوشانی مشخص تقسیم می‌کند.",
+    "display_name": "تقسیم تصویر به فهرست کاشی‌ها",
+    "inputs": {
+      "image": {
+        "name": "image"
+      },
+      "overlap": {
+        "name": "overlap"
+      },
+      "tile_height": {
+        "name": "tile_height"
+      },
+      "tile_width": {
+        "name": "tile_width"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }

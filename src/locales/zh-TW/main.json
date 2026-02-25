@@ -294,6 +294,9 @@
       "title": "建立帳戶"
     }
   },
+  "batch": {
+    "index": "{current} / {total}"
+  },
   "billingOperation": {
     "subscriptionFailed": "訂閱更新失敗",
     "subscriptionProcessing": "正在處理付款 — 設定您的工作區...",
@@ -1178,6 +1181,8 @@
     "star": "星號"
   },
   "imageCompare": {
+    "batchLabelA": "A：",
+    "batchLabelB": "B：",
     "noImages": "沒有可比較的圖像"
   },
   "imageCrop": {
@@ -2909,6 +2914,7 @@
     "emptyCanvas": "畫布為空",
     "errorCopyImage": "複製圖片時發生錯誤：{error}",
     "errorLoadingModel": "載入模型時發生錯誤",
+    "errorOpenImage": "開啟圖像時發生錯誤：{error}",
     "errorSaveSetting": "儲存設定 {id} 時發生錯誤：{err}",
     "exportSuccess": "已成功將模型匯出為 {format}",
     "failedExecutionPathResolution": "無法解析所選節點的路徑",

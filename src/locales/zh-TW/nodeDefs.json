@@ -696,8 +696,7 @@
         "tooltip": "當 sequential_image_generation='auto' 時，生成圖像的最大數量。總圖像數（輸入 + 生成）不得超過 15 張。"
       },
       "model": {
-        "name": "model",
-        "tooltip": "模型名稱"
+        "name": "model"
       },
       "prompt": {
         "name": "prompt",
@@ -4746,6 +4745,28 @@
     "inputs": {
       "image": {
         "name": "影像"
+      }
+    }
+  },
+  "ImageMergeTileList": {
+    "display_name": "合併圖塊清單為圖像",
+    "inputs": {
+      "final_height": {
+        "name": "final_height"
+      },
+      "final_width": {
+        "name": "final_width"
+      },
+      "image_list": {
+        "name": "image_list"
+      },
+      "overlap": {
+        "name": "overlap"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -14031,6 +14052,29 @@
       },
       "1": {
         "name": "右聲道",
+        "tooltip": null
+      }
+    }
+  },
+  "SplitImageToTileList": {
+    "description": "將圖像分割為具有指定重疊區域的批次圖塊清單。",
+    "display_name": "將圖像分割為圖塊清單",
+    "inputs": {
+      "image": {
+        "name": "image"
+      },
+      "overlap": {
+        "name": "overlap"
+      },
+      "tile_height": {
+        "name": "tile_height"
+      },
+      "tile_width": {
+        "name": "tile_width"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }

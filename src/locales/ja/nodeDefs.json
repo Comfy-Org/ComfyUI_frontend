@@ -696,8 +696,7 @@
         "tooltip": "sequential_image_generation='auto'時の最大生成画像数。総画像数（入力＋生成）は15を超えることはできません。"
       },
       "model": {
-        "name": "model",
-        "tooltip": "モデル名"
+        "name": "model"
       },
       "prompt": {
         "name": "prompt",
@@ -4746,6 +4745,28 @@
     "inputs": {
       "image": {
         "name": "画像"
+      }
+    }
+  },
+  "ImageMergeTileList": {
+    "display_name": "タイルのリストを画像に結合",
+    "inputs": {
+      "final_height": {
+        "name": "final_height"
+      },
+      "final_width": {
+        "name": "final_width"
+      },
+      "image_list": {
+        "name": "image_list"
+      },
+      "overlap": {
+        "name": "overlap"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -14031,6 +14052,29 @@
       },
       "1": {
         "name": "右",
+        "tooltip": null
+      }
+    }
+  },
+  "SplitImageToTileList": {
+    "description": "指定したオーバーラップで画像をバッチ化されたタイルのリストに分割します。",
+    "display_name": "画像をタイルのリストに分割",
+    "inputs": {
+      "image": {
+        "name": "image"
+      },
+      "overlap": {
+        "name": "overlap"
+      },
+      "tile_height": {
+        "name": "tile_height"
+      },
+      "tile_width": {
+        "name": "tile_width"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }

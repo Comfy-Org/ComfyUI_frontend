@@ -673,12 +673,11 @@
     }
   },
   "ByteDanceSeedreamNode": {
-    "display_name": "ByteDance Seedream 4.5",
+    "display_name": "ByteDance Seedream 5.0",
     "description": "Unified text-to-image generation and precise single-sentence editing at up to 4K resolution.",
     "inputs": {
       "model": {
-        "name": "model",
-        "tooltip": "Model name"
+        "name": "model"
       },
       "prompt": {
         "name": "prompt",
@@ -690,7 +689,7 @@
       },
       "image": {
         "name": "image",
-        "tooltip": "Input image(s) for image-to-image generation. List of 1-10 images for single or multi-reference generation."
+        "tooltip": "Input image(s) for image-to-image generation. Reference image(s) for single or multi-reference generation."
       },
       "width": {
         "name": "width",
@@ -4746,6 +4745,28 @@
     "inputs": {
       "image": {
         "name": "image"
+      }
+    }
+  },
+  "ImageMergeTileList": {
+    "display_name": "Merge List of Tiles to Image",
+    "inputs": {
+      "image_list": {
+        "name": "image_list"
+      },
+      "final_width": {
+        "name": "final_width"
+      },
+      "final_height": {
+        "name": "final_height"
+      },
+      "overlap": {
+        "name": "overlap"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -13948,6 +13969,29 @@
       },
       "1": {
         "name": "right",
+        "tooltip": null
+      }
+    }
+  },
+  "SplitImageToTileList": {
+    "display_name": "Split Image into List of Tiles",
+    "description": "Splits an image into a batched list of tiles with a specified overlap.",
+    "inputs": {
+      "image": {
+        "name": "image"
+      },
+      "tile_width": {
+        "name": "tile_width"
+      },
+      "tile_height": {
+        "name": "tile_height"
+      },
+      "overlap": {
+        "name": "overlap"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
