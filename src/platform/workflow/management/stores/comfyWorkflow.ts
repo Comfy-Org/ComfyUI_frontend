@@ -28,7 +28,8 @@ type LinearModeTarget = { extra?: Record<string, unknown> | null } | null
 
 export function syncLinearMode(
   workflow: ComfyWorkflow,
-  ...targets: LinearModeTarget[]
+  targets: LinearModeTarget[],
+  options?: { flushLinearData?: boolean }
 ): void {
   for (const target of targets) {
     if (!target) continue
@@ -38,6 +39,13 @@ export function syncLinearMode(
     } else {
       delete target.extra?.linearMode
     }
+    if (options?.flushLinearData && workflow.dirtyLinearData) {
+      const extra = (target.extra ??= {})
+      extra.linearData = workflow.dirtyLinearData
+    }
+  }
+  if (options?.flushLinearData && workflow.dirtyLinearData) {
+    workflow.dirtyLinearData = null
   }
 }
 

@@ -129,7 +129,7 @@ export const useWorkflowService = () => {
 
     if (options.initialMode) workflow.initialMode = options.initialMode
 
-    syncLinearMode(workflow, app.rootGraph)
+    syncLinearMode(workflow, [app.rootGraph], { flushLinearData: true })
     workflow.changeTracker?.checkState()
 
     if (isSelfOverwrite) {
@@ -153,7 +153,7 @@ export const useWorkflowService = () => {
     if (workflow.isTemporary) {
       await saveWorkflowAs(workflow)
     } else {
-      syncLinearMode(workflow, app.rootGraph)
+      syncLinearMode(workflow, [app.rootGraph], { flushLinearData: true })
       workflow.changeTracker?.checkState()
       await workflowStore.saveWorkflow(workflow)
     }
@@ -401,7 +401,7 @@ export const useWorkflowService = () => {
               ) ?? freshLoadMode
             trackIfEnteringApp(loadedWorkflow)
           }
-          syncLinearMode(loadedWorkflow, workflowData, app.rootGraph)
+          syncLinearMode(loadedWorkflow, [workflowData, app.rootGraph])
           loadedWorkflow.changeTracker.reset(workflowData)
           loadedWorkflow.changeTracker.restore()
           return
@@ -414,7 +414,7 @@ export const useWorkflowService = () => {
       )
       tempWorkflow.initialMode = freshLoadMode
       trackIfEnteringApp(tempWorkflow)
-      syncLinearMode(tempWorkflow, workflowData, app.rootGraph)
+      syncLinearMode(tempWorkflow, [workflowData, app.rootGraph])
       await workflowStore.openWorkflow(tempWorkflow)
       return
     }
@@ -424,7 +424,7 @@ export const useWorkflowService = () => {
       loadedWorkflow.initialMode = freshLoadMode
       trackIfEnteringApp(loadedWorkflow)
     }
-    syncLinearMode(loadedWorkflow, workflowData, app.rootGraph)
+    syncLinearMode(loadedWorkflow, [workflowData, app.rootGraph])
     loadedWorkflow.changeTracker.reset(workflowData)
     loadedWorkflow.changeTracker.restore()
   }

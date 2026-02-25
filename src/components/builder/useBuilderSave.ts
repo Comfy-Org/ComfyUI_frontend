@@ -4,6 +4,7 @@ import { useWorkflowService } from '@/platform/workflow/core/services/workflowSe
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useDialogService } from '@/services/dialogService'
 import { useAppMode } from '@/composables/useAppMode'
+import { useAppModeStore } from '@/stores/appModeStore'
 import { useDialogStore } from '@/stores/dialogStore'
 
 import BuilderSaveDialogContent from './BuilderSaveDialogContent.vue'
@@ -17,6 +18,7 @@ export function useBuilderSave() {
   const workflowStore = useWorkflowStore()
   const workflowService = useWorkflowService()
   const dialogService = useDialogService()
+  const appModeStore = useAppModeStore()
   const dialogStore = useDialogStore()
 
   const saving = ref(false)
@@ -39,6 +41,7 @@ export function useBuilderSave() {
     if (!workflow.isTemporary && workflow.initialMode != null) {
       // Re-save with the previously chosen mode — no dialog needed.
       try {
+        appModeStore.flushSelections()
         await workflowService.saveWorkflow(workflow)
         showSuccessDialog(workflow.filename, workflow.initialMode === 'app')
       } catch {
@@ -75,6 +78,7 @@ export function useBuilderSave() {
       const workflow = workflowStore.activeWorkflow
       if (!workflow) return
 
+      appModeStore.flushSelections()
       const mode = openAsApp ? 'app' : 'graph'
       const saved = await workflowService.saveWorkflowAs(workflow, {
         filename,
