@@ -124,6 +124,43 @@ test.describe('Change Tracker', { tag: '@workflow' }, () => {
       expect(afterRedo.reroutes).toBe(mutated.reroutes)
       expect(afterRedo.serialised).toEqual(mutated.serialised)
     })
+
+    test('read-through accessors stay in sync for links, floating links, and reroutes', async ({
+      comfyPage
+    }) => {
+      await comfyPage.workflow.loadWorkflow('links/batch_move_links')
+
+      const parity = await comfyPage.page.evaluate(() => {
+        const graph = window.app!.rootGraph
+        const firstLink = graph.links.values().next().value
+        if (!firstLink) throw new Error('Expected at least one link')
+
+        const reroute = graph.createReroute(
+          [firstLink.id * 7, firstLink.id * 4],
+          firstLink
+        )
+        const floatingLink = firstLink.toFloating('output', reroute.id)
+        graph.addFloatingLink(floatingLink)
+
+        return {
+          normalLinkMatches:
+            graph.getLink(firstLink.id) ===
+            graph.linkStore.getLink(firstLink.id),
+          floatingLinkRequiresExplicitProjection:
+            graph.getLink(floatingLink.id) !==
+              graph.linkStore.getFloatingLink(floatingLink.id) &&
+            graph.linkStore.getFloatingLink(floatingLink.id) ===
+              graph.floatingLinks.get(floatingLink.id),
+          rerouteMatches:
+            graph.getReroute(reroute.id) ===
+            graph.linkStore.getReroute(reroute.id)
+        }
+      })
+
+      expect(parity.normalLinkMatches).toBe(true)
+      expect(parity.floatingLinkRequiresExplicitProjection).toBe(true)
+      expect(parity.rerouteMatches).toBe(true)
+    })
   })
 
   test('Can group multiple change actions into a single transaction', async ({

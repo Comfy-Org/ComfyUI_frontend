@@ -9,6 +9,7 @@ import type { UUID } from '@/lib/litegraph/src/utils/uuid'
 import { createUuidv4, zeroUuid } from '@/lib/litegraph/src/utils/uuid'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { LayoutSource } from '@/renderer/core/layout/types'
+import { LinkStore } from '@/stores/linkStore'
 import { usePromotionStore } from '@/stores/promotionStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { forEachNode } from '@/utils/graphTraversalUtil'
@@ -17,7 +18,6 @@ import type { DragAndScaleState } from './DragAndScale'
 import { LGraphCanvas } from './LGraphCanvas'
 import { LGraphGroup } from './LGraphGroup'
 import { LGraphNode } from './LGraphNode'
-import { LinkStore } from './LinkStore'
 import type { NodeId } from './LGraphNode'
 import { LLink } from './LLink'
 import type { LinkId, SerialisedLLinkArray } from './LLink'
@@ -1452,7 +1452,7 @@ export class LGraph
   getLink(id: null | undefined): undefined
   getLink(id: LinkId | null | undefined): LLink | undefined
   getLink(id: LinkId | null | undefined): LLink | undefined {
-    return id == null ? undefined : this._links.get(id)
+    return this.linkStore.getLink(id)
   }
 
   /**
@@ -1463,7 +1463,7 @@ export class LGraph
   getReroute(id: null | undefined): undefined
   getReroute(id: RerouteId | null | undefined): Reroute | undefined
   getReroute(id: RerouteId | null | undefined): Reroute | undefined {
-    return id == null ? undefined : this.reroutes.get(id)
+    return this.linkStore.getReroute(id)
   }
 
   /**

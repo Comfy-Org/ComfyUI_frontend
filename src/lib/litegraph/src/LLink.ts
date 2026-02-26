@@ -244,7 +244,7 @@ export class LLink implements LinkSegment, Serialisable<SerialisableLLink> {
     network: BasicReadonlyNetwork,
     linkId: LinkId
   ): LGraphNode | undefined {
-    const id = network.links.get(linkId)?.origin_id
+    const id = network.getLink(linkId)?.origin_id
     return network.getNodeById(id) ?? undefined
   }
 
@@ -258,7 +258,7 @@ export class LLink implements LinkSegment, Serialisable<SerialisableLLink> {
     network: BasicReadonlyNetwork,
     linkId: LinkId
   ): LGraphNode | undefined {
-    const id = network.links.get(linkId)?.target_id
+    const id = network.getLink(linkId)?.target_id
     return network.getNodeById(id) ?? undefined
   }
 

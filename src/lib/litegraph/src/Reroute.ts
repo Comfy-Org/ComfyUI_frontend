@@ -170,7 +170,7 @@ export class Reroute
     const linkId = this.linkIds.values().next().value
     return linkId === undefined
       ? undefined
-      : this.network.deref()?.links.get(linkId)
+      : this.network.deref()?.getLink(linkId)
   }
 
   get firstFloatingLink(): LLink | undefined {

@@ -292,6 +292,52 @@ describe('LinkStore Lifecycle Rehydration', () => {
   })
 })
 
+describe('LinkStore Read-Through Projection', () => {
+  it('reads normal links from the projected store map', () => {
+    const graph = new LGraph()
+    const { linkedNodeId } = buildLinkTopology(graph)
+    const linkId = graph.getNodeById(linkedNodeId)?.inputs[0].link
+    if (linkId == null) throw new Error('Expected linked input link')
+
+    const projectedLinks = new Map(graph.links)
+    graph.linkStore.rehydrate({
+      links: projectedLinks,
+      floatingLinks: graph.floatingLinks,
+      reroutes: graph.reroutes
+    })
+    graph.links.clear()
+
+    expect(graph.getLink(linkId)).toBe(projectedLinks.get(linkId))
+    expect(graph.links.get(linkId)).toBeUndefined()
+  })
+
+  it('reads reroutes from the projected store map', () => {
+    const graph = new LGraph()
+    const { rerouteId } = buildLinkTopology(graph)
+
+    const projectedReroutes = new Map(graph.reroutes)
+    graph.linkStore.rehydrate({
+      links: graph.links,
+      floatingLinks: graph.floatingLinks,
+      reroutes: projectedReroutes
+    })
+    graph.reroutes.clear()
+
+    expect(graph.getReroute(rerouteId)).toBe(projectedReroutes.get(rerouteId))
+    expect(graph.reroutes.get(rerouteId)).toBeUndefined()
+  })
+
+  it('keeps floating-link reads explicit through floating projection', () => {
+    const graph = new LGraph()
+    const { floatingLinkId } = buildLinkTopology(graph)
+    const floatingLink = graph.linkStore.getFloatingLink(floatingLinkId)
+    if (!floatingLink) throw new Error('Expected floating link projection')
+
+    expect(graph.getLink(floatingLinkId)).not.toBe(floatingLink)
+    expect(graph.linkStore.getFloatingLink(floatingLinkId)).toBe(floatingLink)
+  })
+})
+
 describe('Graph Clearing and Callbacks', () => {
   test('clear() calls both node.onRemoved() and graph.onNodeRemoved()', ({
     expect

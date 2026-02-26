@@ -1,5 +1,5 @@
-import type { LinkId, LLink } from './LLink'
-import type { Reroute, RerouteId } from './Reroute'
+import type { LinkId, LLink } from '@/lib/litegraph/src/LLink'
+import type { Reroute, RerouteId } from '@/lib/litegraph/src/Reroute'
 
 interface LinkStoreTopology {
   links: ReadonlyMap<LinkId, LLink>
