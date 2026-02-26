@@ -192,14 +192,9 @@ const linearWorkflowRef = useTemplateRef('linearWorkflowRef')
           )
         "
       >
-<<<<<<< HEAD
         <div v-if="showRightBuilder" class="h-full overflow-y-auto">
           <AppBuilder />
         </div>
-||||||| parent of 05f866335 (Revert "Show inputs during preview step")
-        <ControlPreview v-if="isBuilderMode && sidebarOnLeft" />
-=======
->>>>>>> 05f866335 (Revert "Show inputs during preview step")
         <LinearControls
           v-else-if="sidebarOnLeft && !isArrangeMode"
           ref="linearWorkflowRef"
