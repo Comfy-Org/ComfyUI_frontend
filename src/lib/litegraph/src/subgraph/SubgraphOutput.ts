@@ -10,6 +10,7 @@ import type {
 } from '@/lib/litegraph/src/interfaces'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { NodeSlotType } from '@/lib/litegraph/src/types/globalEnums'
+import { warnDeprecated } from '@/lib/litegraph/src/utils/feedback'
 
 import type { SubgraphInput } from './SubgraphInput'
 import type { SubgraphOutputNode } from './SubgraphOutputNode'
@@ -129,6 +130,10 @@ export class SubgraphOutput extends SubgraphSlot {
   }
   override disconnect() {
     const { subgraph } = this.parent
+    warnDeprecated(
+      '[DEPRECATED] SubgraphOutput.disconnect now dispatches onConnectionsChange for output-node disconnect parity. Remedy: update extension handlers to treat OUTPUT/disconnected callbacks as the canonical disconnect signal and no-op safely if already detached.'
+    )
+
     //should never have more than one connection
     for (const linkId of [...this.linkIds]) {
       const link = subgraph.links[linkId]

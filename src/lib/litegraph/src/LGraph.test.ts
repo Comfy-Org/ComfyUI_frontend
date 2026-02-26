@@ -1,6 +1,6 @@
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { NodeId, Subgraph } from '@/lib/litegraph/src/litegraph'
 import {
@@ -10,8 +10,10 @@ import {
   LLink,
   SubgraphNode
 } from '@/lib/litegraph/src/litegraph'
+import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { NodeSlotType } from '@/lib/litegraph/src/types/globalEnums'
 import type { UUID } from '@/lib/litegraph/src/utils/uuid'
+import { useLinkStore } from '@/stores/linkStore'
 import { usePromotionStore } from '@/stores/promotionStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import {
@@ -20,6 +22,39 @@ import {
 } from './subgraph/__fixtures__/subgraphHelpers'
 
 import { test } from './__fixtures__/testExtensions'
+
+vi.mock('@/renderer/core/layout/operations/layoutMutations', () => {
+  const createLink = vi.fn()
+  const deleteLink = vi.fn()
+  const createNode = vi.fn()
+  const deleteNode = vi.fn()
+  const moveNode = vi.fn()
+  const resizeNode = vi.fn()
+  const setNodeZIndex = vi.fn()
+  const createReroute = vi.fn()
+  const deleteReroute = vi.fn()
+  const moveReroute = vi.fn()
+  const bringNodeToFront = vi.fn()
+  const setSource = vi.fn()
+  const setActor = vi.fn()
+  return {
+    useLayoutMutations: () => ({
+      createLink,
+      deleteLink,
+      createNode,
+      deleteNode,
+      moveNode,
+      resizeNode,
+      setNodeZIndex,
+      createReroute,
+      deleteReroute,
+      moveReroute,
+      bringNodeToFront,
+      setSource,
+      setActor
+    })
+  }
+})
 
 function swapNodes(nodes: LGraphNode[]) {
   const firstNode = nodes[0]
@@ -269,29 +304,36 @@ describe('LinkStore Lifecycle Rehydration', () => {
     const linkedInput = restored.getNodeById(linkedNodeId)?.inputs[0]
     const linkedInputLink = restored.getLink(linkedInput?.link)
 
-    expect(restored.linkStore.links.size).toBe(restored.links.size)
-    expect(restored.linkStore.floatingLinks.size).toBe(
-      restored.floatingLinks.size
+    const linkStore = useLinkStore()
+    const topology = linkStore.getTopology(restored.linkStoreKey)
+    expect(topology.links.size).toBe(restored.links.size)
+    expect(topology.floatingLinks.size).toBe(restored.floatingLinks.size)
+    expect(topology.reroutes.size).toBe(restored.reroutes.size)
+    expect(
+      linkStore.getFloatingLink(restored.linkStoreKey, floatingLinkId)
+    ).toBeDefined()
+    expect(linkStore.getReroute(restored.linkStoreKey, rerouteId)).toBeDefined()
+    expect(linkStore.getLink(restored.linkStoreKey, linkedInput?.link)).toBe(
+      linkedInputLink
     )
-    expect(restored.linkStore.reroutes.size).toBe(restored.reroutes.size)
-    expect(restored.linkStore.getFloatingLink(floatingLinkId)).toBeDefined()
-    expect(restored.linkStore.getReroute(rerouteId)).toBeDefined()
-    expect(restored.linkStore.getLink(linkedInput?.link)).toBe(linkedInputLink)
   })
 
   it('clears and rehydrates the store on graph.clear()', () => {
     const graph = new LGraph()
     buildLinkTopology(graph)
 
-    expect(graph.linkStore.links.size).toBeGreaterThan(0)
-    expect(graph.linkStore.floatingLinks.size).toBeGreaterThan(0)
-    expect(graph.linkStore.reroutes.size).toBeGreaterThan(0)
+    const linkStore = useLinkStore()
+    const topologyBefore = linkStore.getTopology(graph.linkStoreKey)
+    expect(topologyBefore.links.size).toBeGreaterThan(0)
+    expect(topologyBefore.floatingLinks.size).toBeGreaterThan(0)
+    expect(topologyBefore.reroutes.size).toBeGreaterThan(0)
 
     graph.clear()
 
-    expect(graph.linkStore.links.size).toBe(0)
-    expect(graph.linkStore.floatingLinks.size).toBe(0)
-    expect(graph.linkStore.reroutes.size).toBe(0)
+    const topologyAfter = linkStore.getTopology(graph.linkStoreKey)
+    expect(topologyAfter.links.size).toBe(0)
+    expect(topologyAfter.floatingLinks.size).toBe(0)
+    expect(topologyAfter.reroutes.size).toBe(0)
   })
 
   it('preserves root/subgraph store isolation after round-trip', () => {
@@ -317,15 +359,25 @@ describe('LinkStore Lifecycle Rehydration', () => {
 
     const subgraphLinkId = [...restoredSubgraph.links.keys()][0]
 
+    const linkStore = useLinkStore()
     expect(
-      restoredRoot.linkStore.getFloatingLink(rootTopology.floatingLinkId)
+      linkStore.getFloatingLink(
+        restoredRoot.linkStoreKey,
+        rootTopology.floatingLinkId
+      )
     ).toBeDefined()
     expect(
-      restoredRoot.linkStore.getReroute(rootTopology.rerouteId)
+      linkStore.getReroute(restoredRoot.linkStoreKey, rootTopology.rerouteId)
     ).toBeDefined()
-    expect(restoredRoot.linkStore.getLink(subgraphLinkId)).toBeUndefined()
-    expect(restoredSubgraph.linkStore.getLink(subgraphLinkId)).toBeDefined()
-    expect(restoredSubgraph.linkStore.floatingLinks.size).toBe(0)
+    expect(
+      linkStore.getLink(restoredRoot.linkStoreKey, subgraphLinkId)
+    ).toBeUndefined()
+    expect(
+      linkStore.getLink(restoredSubgraph.linkStoreKey, subgraphLinkId)
+    ).toBeDefined()
+    expect(
+      linkStore.getTopology(restoredSubgraph.linkStoreKey).floatingLinks.size
+    ).toBe(0)
   })
 })
 
@@ -336,8 +388,9 @@ describe('LinkStore Read-Through Projection', () => {
     const linkId = graph.getNodeById(linkedNodeId)?.inputs[0].link
     if (linkId == null) throw new Error('Expected linked input link')
 
+    const linkStore = useLinkStore()
     const projectedLinks = new Map(graph.links)
-    graph.linkStore.rehydrate({
+    linkStore.rehydrate(graph.linkStoreKey, {
       links: projectedLinks,
       floatingLinks: graph.floatingLinks,
       reroutes: graph.reroutes
@@ -352,8 +405,9 @@ describe('LinkStore Read-Through Projection', () => {
     const graph = new LGraph()
     const { rerouteId } = buildLinkTopology(graph)
 
+    const linkStore = useLinkStore()
     const projectedReroutes = new Map(graph.reroutes)
-    graph.linkStore.rehydrate({
+    linkStore.rehydrate(graph.linkStoreKey, {
       links: graph.links,
       floatingLinks: graph.floatingLinks,
       reroutes: projectedReroutes
@@ -367,11 +421,17 @@ describe('LinkStore Read-Through Projection', () => {
   it('keeps floating-link reads explicit through floating projection', () => {
     const graph = new LGraph()
     const { floatingLinkId } = buildLinkTopology(graph)
-    const floatingLink = graph.linkStore.getFloatingLink(floatingLinkId)
+    const linkStore = useLinkStore()
+    const floatingLink = linkStore.getFloatingLink(
+      graph.linkStoreKey,
+      floatingLinkId
+    )
     if (!floatingLink) throw new Error('Expected floating link projection')
 
     expect(graph.getLink(floatingLinkId)).not.toBe(floatingLink)
-    expect(graph.linkStore.getFloatingLink(floatingLinkId)).toBe(floatingLink)
+    expect(linkStore.getFloatingLink(graph.linkStoreKey, floatingLinkId)).toBe(
+      floatingLink
+    )
   })
 })
 
@@ -435,12 +495,17 @@ describe('Disconnect/Remove Characterization', () => {
 
     graph.removeLink(disconnectedLinkId)
 
+    const linkStore = useLinkStore()
     expect(graph.getLink(disconnectedLinkId)).toBeUndefined()
-    expect(graph.linkStore.getLink(disconnectedLinkId)).toBeUndefined()
+    expect(
+      linkStore.getLink(graph.linkStoreKey, disconnectedLinkId)
+    ).toBeUndefined()
     expect(graph.getReroute(rerouteId)).toBeDefined()
-    expect(graph.linkStore.getReroute(rerouteId)).toBeDefined()
+    expect(linkStore.getReroute(graph.linkStoreKey, rerouteId)).toBeDefined()
     expect(graph.floatingLinks.has(floatingLinkId)).toBe(true)
-    expect(graph.linkStore.getFloatingLink(floatingLinkId)).toBeDefined()
+    expect(
+      linkStore.getFloatingLink(graph.linkStoreKey, floatingLinkId)
+    ).toBeDefined()
   })
 })
 
@@ -464,13 +529,16 @@ describe('Connect Characterization', () => {
     const rerouteAfterConnect = graph.getReroute(rerouteId)
     if (!rerouteAfterConnect) throw new Error('Expected reroute after connect')
 
+    const linkStore = useLinkStore()
     expect(graph.getLink(link.id)).toBe(link)
-    expect(graph.linkStore.getLink(link.id)).toBe(link)
+    expect(linkStore.getLink(graph.linkStoreKey, link.id)).toBe(link)
     expect(rerouteAfterConnect.linkIds.has(link.id)).toBe(true)
     expect(rerouteAfterConnect.floating).toBeUndefined()
     expect(rerouteAfterConnect.floatingLinkIds.has(floatingLinkId)).toBe(false)
     expect(graph.floatingLinks.has(floatingLinkId)).toBe(false)
-    expect(graph.linkStore.getFloatingLink(floatingLinkId)).toBeUndefined()
+    expect(
+      linkStore.getFloatingLink(graph.linkStoreKey, floatingLinkId)
+    ).toBeUndefined()
   })
 })
 
@@ -1097,5 +1165,63 @@ describe('Subgraph Unpacking', () => {
     } finally {
       cleanupRegistration()
     }
+  })
+})
+
+describe('Subgraph Layout Integration', () => {
+  beforeEach(() => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
+    vi.clearAllMocks()
+  })
+
+  function createSubgraphWithIO(rootGraph: LGraph) {
+    const subgraph = rootGraph.createSubgraph(createTestSubgraphData())
+    subgraph.addInput('in_0', 'number')
+    subgraph.addOutput('out_0', 'number')
+
+    const innerNode = new LGraphNode('InnerNode')
+    innerNode.addInput('in', 'number')
+    innerNode.addOutput('out', 'number')
+    subgraph.add(innerNode)
+
+    return { subgraph, innerNode }
+  }
+
+  it('calls layoutMutations.createLink when connectSubgraphInputSlot is called', () => {
+    const rootGraph = new LGraph()
+    const { subgraph, innerNode } = createSubgraphWithIO(rootGraph)
+
+    const subgraphInput = subgraph.inputs[0]
+    const link = subgraph.connectSubgraphInputSlot(subgraphInput, innerNode, 0)
+
+    const mutations = useLayoutMutations()
+    expect(mutations.createLink).toHaveBeenCalledWith(
+      link.id,
+      subgraphInput.parent.id,
+      0,
+      innerNode.id,
+      0
+    )
+  })
+
+  it('calls layoutMutations.createLink when connectSubgraphOutputSlot is called', () => {
+    const rootGraph = new LGraph()
+    const { subgraph, innerNode } = createSubgraphWithIO(rootGraph)
+
+    const subgraphOutput = subgraph.outputs[0]
+    const link = subgraph.connectSubgraphOutputSlot(
+      innerNode,
+      0,
+      subgraphOutput
+    )
+
+    const mutations = useLayoutMutations()
+    expect(mutations.createLink).toHaveBeenCalledWith(
+      link.id,
+      innerNode.id,
+      0,
+      subgraphOutput.parent.id,
+      0
+    )
   })
 })

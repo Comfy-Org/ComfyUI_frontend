@@ -10,6 +10,7 @@ import {
   Reroute,
   isColorable
 } from '@/lib/litegraph/src/litegraph'
+import { warnDeprecated } from '@/lib/litegraph/src/utils/feedback'
 import type {
   ExportedSubgraph,
   ISerialisableNodeInput,
@@ -217,6 +218,10 @@ export function migrateWidgetsValues<TWidgetValue>(
  * @param graph - The graph to fix links for.
  */
 export function fixLinkInputSlots(graph: LGraph) {
+  warnDeprecated(
+    '[DEPRECATED] Legacy slot-index repair (fixLinkInputSlots) now narrows to connected inputs only. Remedy: resave workflows in the current frontend to persist canonical link target slots and remove reliance on migration repair.'
+  )
+
   // Note: We can't use forEachNode here because we need access to the graph's
   // links map at each level. Links are stored in their respective graph/subgraph.
   for (const node of graph.nodes) {

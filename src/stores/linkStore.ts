@@ -1,56 +1,76 @@
+import { defineStore } from 'pinia'
+
 import type { LinkId, LLink } from '@/lib/litegraph/src/LLink'
 import type { Reroute, RerouteId } from '@/lib/litegraph/src/Reroute'
+import type { UUID } from '@/lib/litegraph/src/utils/uuid'
 
-interface LinkStoreTopology {
+export interface LinkStoreTopology {
   links: ReadonlyMap<LinkId, LLink>
   floatingLinks: ReadonlyMap<LinkId, LLink>
   reroutes: ReadonlyMap<RerouteId, Reroute>
 }
 
 /**
- * Passive graph-scoped topology store.
+ * Graph-scoped topology store (Pinia).
  *
  * Slice 1 contract: this store owns no mutation logic and is rehydrated from
  * graph lifecycle boundaries (`clear` and `configure`).
+ *
+ * Each graph/subgraph registers its own topology keyed by graph UUID.
  */
-export class LinkStore {
-  private _links: ReadonlyMap<LinkId, LLink> = new Map()
-  private _floatingLinks: ReadonlyMap<LinkId, LLink> = new Map()
-  private _reroutes: ReadonlyMap<RerouteId, Reroute> = new Map()
+export const useLinkStore = defineStore('link', () => {
+  // Intentionally non-reactive for now: this store is used as an imperative
+  // graph lookup boundary, not as UI-driven reactive state.
+  const topologies = new Map<UUID, LinkStoreTopology>()
 
-  get links(): ReadonlyMap<LinkId, LLink> {
-    return this._links
+  function rehydrate(graphId: UUID, topology: LinkStoreTopology) {
+    topologies.set(graphId, topology)
   }
 
-  get floatingLinks(): ReadonlyMap<LinkId, LLink> {
-    return this._floatingLinks
+  function getTopology(graphId: UUID): LinkStoreTopology {
+    return (
+      topologies.get(graphId) ?? {
+        links: new Map(),
+        floatingLinks: new Map(),
+        reroutes: new Map()
+      }
+    )
   }
 
-  get reroutes(): ReadonlyMap<RerouteId, Reroute> {
-    return this._reroutes
+  function getLink(
+    graphId: UUID,
+    id: LinkId | null | undefined
+  ): LLink | undefined {
+    if (id == null) return undefined
+    return topologies.get(graphId)?.links.get(id)
   }
 
-  getLink(id: LinkId | null | undefined): LLink | undefined {
-    return id == null ? undefined : this._links.get(id)
+  function getFloatingLink(
+    graphId: UUID,
+    id: LinkId | null | undefined
+  ): LLink | undefined {
+    if (id == null) return undefined
+    return topologies.get(graphId)?.floatingLinks.get(id)
   }
 
-  getFloatingLink(id: LinkId | null | undefined): LLink | undefined {
-    return id == null ? undefined : this._floatingLinks.get(id)
+  function getReroute(
+    graphId: UUID,
+    id: RerouteId | null | undefined
+  ): Reroute | undefined {
+    if (id == null) return undefined
+    return topologies.get(graphId)?.reroutes.get(id)
   }
 
-  getReroute(id: RerouteId | null | undefined): Reroute | undefined {
-    return id == null ? undefined : this._reroutes.get(id)
+  function clearGraph(graphId: UUID) {
+    topologies.delete(graphId)
   }
 
-  clear(): void {
-    this._links = new Map()
-    this._floatingLinks = new Map()
-    this._reroutes = new Map()
+  return {
+    rehydrate,
+    getTopology,
+    getLink,
+    getFloatingLink,
+    getReroute,
+    clearGraph
   }
-
-  rehydrate(topology: LinkStoreTopology): void {
-    this._links = topology.links
-    this._floatingLinks = topology.floatingLinks
-    this._reroutes = topology.reroutes
-  }
-}
+})

@@ -1,6 +1,7 @@
 import { describe, expect } from 'vitest'
 
 import { LGraph, LGraphNode, LLink } from '@/lib/litegraph/src/litegraph'
+import { useLinkStore } from '@/stores/linkStore'
 
 import { test } from './__fixtures__/testExtensions'
 
@@ -29,8 +30,9 @@ describe('LLink', () => {
     const linkId = originNode.outputs[0].links?.[0]
     if (linkId == null) throw new Error('Expected link ID')
 
+    const linkStore = useLinkStore()
     const projectedLinks = new Map(graph.links)
-    graph.linkStore.rehydrate({
+    linkStore.rehydrate(graph.linkStoreKey, {
       links: projectedLinks,
       floatingLinks: graph.floatingLinks,
       reroutes: graph.reroutes
@@ -56,8 +58,9 @@ describe('LLink', () => {
     const linkId = originNode.outputs[0].links?.[0]
     if (linkId == null) throw new Error('Expected link ID')
 
+    const linkStore = useLinkStore()
     const projectedLinks = new Map(graph.links)
-    graph.linkStore.rehydrate({
+    linkStore.rehydrate(graph.linkStoreKey, {
       links: projectedLinks,
       floatingLinks: graph.floatingLinks,
       reroutes: graph.reroutes

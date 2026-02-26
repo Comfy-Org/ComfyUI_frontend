@@ -9,7 +9,7 @@ import type { UUID } from '@/lib/litegraph/src/utils/uuid'
 import { createUuidv4, zeroUuid } from '@/lib/litegraph/src/utils/uuid'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { LayoutSource } from '@/renderer/core/layout/types'
-import { LinkStore } from '@/stores/linkStore'
+import { useLinkStore } from '@/stores/linkStore'
 import { usePromotionStore } from '@/stores/promotionStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { forEachNode } from '@/utils/graphTraversalUtil'
@@ -81,6 +81,7 @@ import type {
   SerialisableReroute
 } from './types/serialisation'
 import { getAllNestedItems } from './utils/collections'
+import { warnDeprecated } from './utils/feedback'
 
 export type {
   LGraphTriggerAction,
@@ -273,12 +274,10 @@ export class LGraph
   /** Internal only.  Not required for serialisation; calculated on deserialise. */
   private _lastFloatingLinkId: number = 0
 
-  private readonly floatingLinksInternal: Map<LinkId, LLink> = new Map()
-  private readonly linkStoreInternal = new LinkStore()
+  /** Stable instance key for the link store — never changes once created. */
+  readonly linkStoreKey: UUID = createUuidv4()
 
-  get linkStore(): LinkStore {
-    return this.linkStoreInternal
-  }
+  private readonly floatingLinksInternal: Map<LinkId, LLink> = new Map()
 
   get floatingLinks(): ReadonlyMap<LinkId, LLink> {
     return this.floatingLinksInternal
@@ -441,7 +440,7 @@ export class LGraph
   }
 
   private rehydrateLinkStore(): void {
-    this.linkStoreInternal.rehydrate({
+    useLinkStore().rehydrate(this.linkStoreKey, {
       links: this._links,
       floatingLinks: this.floatingLinksInternal,
       reroutes: this.reroutesInternal
@@ -1455,7 +1454,7 @@ export class LGraph
   getLink(id: null | undefined): undefined
   getLink(id: LinkId | null | undefined): LLink | undefined
   getLink(id: LinkId | null | undefined): LLink | undefined {
-    return this.linkStore.getLink(id)
+    return useLinkStore().getLink(this.linkStoreKey, id)
   }
 
   /**
@@ -1466,7 +1465,7 @@ export class LGraph
   getReroute(id: null | undefined): undefined
   getReroute(id: RerouteId | null | undefined): Reroute | undefined
   getReroute(id: RerouteId | null | undefined): Reroute | undefined {
-    return this.linkStore.getReroute(id)
+    return useLinkStore().getReroute(this.linkStoreKey, id)
   }
 
   /**
@@ -1721,6 +1720,17 @@ export class LGraph
     )
 
     this._links.set(link.id, link)
+
+    const layoutMutations = useLayoutMutations()
+    layoutMutations.setSource(LayoutSource.Canvas)
+    layoutMutations.createLink(
+      link.id,
+      subgraphInput.parent.id,
+      subgraphInputIndex,
+      targetNode.id,
+      targetSlotIndex
+    )
+
     subgraphInput.linkIds.push(link.id)
     targetInput.link = link.id
 
@@ -1748,6 +1758,17 @@ export class LGraph
     )
 
     this._links.set(link.id, link)
+
+    const layoutMutations = useLayoutMutations()
+    layoutMutations.setSource(LayoutSource.Canvas)
+    layoutMutations.createLink(
+      link.id,
+      sourceNode.id,
+      sourceSlotIndex,
+      subgraphOutput.parent.id,
+      subgraphOutputIndex
+    )
+
     subgraphOutput.linkIds[0] = link.id
     sourceOutput.links ??= []
     sourceOutput.links.push(link.id)
@@ -3108,8 +3129,21 @@ export class Subgraph
       seenCounts.set(slot.name, count + 1)
       if (count === 0) continue
 
+      warnDeprecated(
+        '[DEPRECATED] Legacy subgraph workflows with duplicate slot names are automatically canonicalized by appending a stable slot ID. Remedy: resave the workflow in the current frontend to persist canonical slot names and avoid compatibility fallback.'
+      )
+
+      const oldName = slot.name
       slot.label ??= slot.name
       slot.name = `${slot.name}${Subgraph.duplicateIdentitySeparator}${slot.id}`
+      console.warn(
+        'Subgraph slot identity deduplicated during legacy normalization',
+        {
+          slotId: slot.id,
+          oldName,
+          canonicalName: slot.name
+        }
+      )
     }
   }
 
