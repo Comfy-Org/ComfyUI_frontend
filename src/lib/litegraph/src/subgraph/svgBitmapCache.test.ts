@@ -1,31 +1,21 @@
 import { describe, expect, it, vi } from 'vitest'
 
-interface ImageLike {
-  complete: boolean
-  naturalWidth: number
+import { createBitmapCache } from './svgBitmapCache'
+
+function mockSvg(
+  overrides: Partial<{ complete: boolean; naturalWidth: number }> = {}
+) {
+  const img = new Image()
+  Object.defineProperty(img, 'complete', {
+    value: overrides.complete ?? true
+  })
+  Object.defineProperty(img, 'naturalWidth', {
+    value: overrides.naturalWidth ?? 16
+  })
+  return img
 }
 
-function createBitmapCache(svg: ImageLike, bitmapSize: number) {
-  let bitmap: HTMLCanvasElement | null = null
-
-  return {
-    get(): HTMLCanvasElement | ImageLike {
-      if (bitmap) return bitmap
-      if (!svg.complete || svg.naturalWidth === 0) return svg
-
-      const canvas = document.createElement('canvas')
-      canvas.width = bitmapSize
-      canvas.height = bitmapSize
-      const ctx = canvas.getContext('2d')
-      if (!ctx) return svg
-
-      bitmap = canvas
-      return bitmap
-    }
-  }
-}
-
-describe('SVG bitmap cache', () => {
+describe('createBitmapCache', () => {
   const BITMAP_SIZE = 16
   function mockGetContext(returnValue: CanvasRenderingContext2D | null) {
     return vi
@@ -35,24 +25,26 @@ describe('SVG bitmap cache', () => {
       )
   }
 
-  const stubContext = {} as CanvasRenderingContext2D
+  const stubContext = {
+    drawImage: vi.fn()
+  } as unknown as CanvasRenderingContext2D
 
   it('returns the SVG when image is not yet complete', () => {
-    const svg: ImageLike = { complete: false, naturalWidth: 0 }
+    const svg = mockSvg({ complete: false, naturalWidth: 0 })
     const cache = createBitmapCache(svg, BITMAP_SIZE)
 
     expect(cache.get()).toBe(svg)
   })
 
   it('returns the SVG when naturalWidth is 0', () => {
-    const svg: ImageLike = { complete: true, naturalWidth: 0 }
+    const svg = mockSvg({ complete: true, naturalWidth: 0 })
     const cache = createBitmapCache(svg, BITMAP_SIZE)
 
     expect(cache.get()).toBe(svg)
   })
 
   it('creates a bitmap canvas once the SVG is loaded', () => {
-    const svg: ImageLike = { complete: true, naturalWidth: 16 }
+    const svg = mockSvg()
     const cache = createBitmapCache(svg, BITMAP_SIZE)
     mockGetContext(stubContext)
 
@@ -65,7 +57,7 @@ describe('SVG bitmap cache', () => {
   })
 
   it('returns the cached bitmap on subsequent calls', () => {
-    const svg: ImageLike = { complete: true, naturalWidth: 16 }
+    const svg = mockSvg()
     const cache = createBitmapCache(svg, BITMAP_SIZE)
     mockGetContext(stubContext)
 
@@ -77,7 +69,7 @@ describe('SVG bitmap cache', () => {
   })
 
   it('does not re-create the canvas on subsequent calls', () => {
-    const svg: ImageLike = { complete: true, naturalWidth: 16 }
+    const svg = mockSvg()
     const cache = createBitmapCache(svg, BITMAP_SIZE)
     mockGetContext(stubContext)
     const createElementSpy = vi.spyOn(document, 'createElement')
@@ -91,13 +83,11 @@ describe('SVG bitmap cache', () => {
   })
 
   it('falls back to SVG when canvas context is unavailable', () => {
-    const svg: ImageLike = { complete: true, naturalWidth: 16 }
+    const svg = mockSvg()
     const cache = createBitmapCache(svg, BITMAP_SIZE)
-
     mockGetContext(null)
 
     expect(cache.get()).toBe(svg)
-
     vi.restoreAllMocks()
   })
 })

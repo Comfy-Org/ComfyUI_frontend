@@ -42,6 +42,7 @@ import { ExecutableNodeDTO } from './ExecutableNodeDTO'
 import type { ExecutableLGraphNode, ExecutionId } from './ExecutableNodeDTO'
 import { PromotedWidgetViewManager } from './PromotedWidgetViewManager'
 import type { SubgraphInput } from './SubgraphInput'
+import { createBitmapCache } from './svgBitmapCache'
 
 const workflowSvg = new Image()
 workflowSvg.src =
@@ -49,24 +50,7 @@ workflowSvg.src =
 
 // Pre-rasterize the SVG to a bitmap canvas to avoid Firefox re-processing
 // the SVG's internal stylesheet on every ctx.drawImage() call per frame.
-let workflowBitmap: HTMLCanvasElement | null = null
-const BITMAP_SIZE = 16
-
-function getWorkflowBitmap(): HTMLCanvasElement | typeof workflowSvg {
-  if (workflowBitmap) return workflowBitmap
-  if (!workflowSvg.complete || workflowSvg.naturalWidth === 0)
-    return workflowSvg
-
-  const canvas = document.createElement('canvas')
-  canvas.width = BITMAP_SIZE
-  canvas.height = BITMAP_SIZE
-  const ctx = canvas.getContext('2d')
-  if (!ctx) return workflowSvg
-
-  ctx.drawImage(workflowSvg, 0, 0, BITMAP_SIZE, BITMAP_SIZE)
-  workflowBitmap = canvas
-  return workflowBitmap
-}
+const workflowBitmapCache = createBitmapCache(workflowSvg, 16)
 
 /**
  * An instance of a {@link Subgraph}, displayed as a node on the containing (parent) graph.
@@ -747,7 +731,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     if (!low_quality) {
       ctx.translate(25, 23)
       ctx.scale(-1.5, 1.5)
-      ctx.drawImage(getWorkflowBitmap(), 0, -title_height, box_size, box_size)
+      ctx.drawImage(workflowBitmapCache.get(), 0, -title_height, box_size, box_size)
     }
     ctx.restore()
   }
