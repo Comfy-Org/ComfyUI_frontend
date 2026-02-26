@@ -14,11 +14,11 @@ export interface ErrorCardData {
   errors: ErrorItem[]
 }
 
-export type ErrorGroupType = 'execution' | 'missing_node' | 'missing_model'
-
-export interface ErrorGroup {
-  type: ErrorGroupType
-  title: string
-  cards: ErrorCardData[]
-  priority: number
-}
+export type ErrorGroup =
+  | {
+      type: 'execution'
+      title: string
+      cards: ErrorCardData[]
+      priority: number
+    }
+  | { type: 'missing_node'; title: string; priority: number }

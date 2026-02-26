@@ -4,6 +4,7 @@ import { computed, ref, watch } from 'vue'
 import { st } from '@/i18n'
 import { isCloud } from '@/platform/distribution/types'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { app } from '@/scripts/app'
 import type {
@@ -26,9 +27,6 @@ import {
   getExecutionIdByNode
 } from '@/utils/graphTraversalUtil'
 
-/**
- * @knipIgnoreUsedByStackedPR
- */
 interface MissingNodesError {
   message: string
   nodeTypes: MissingNodeType[]
@@ -106,6 +104,14 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
     lastPromptError.value = null
   }
 
+  /** Set missing node types and open the error overlay if the Errors tab is enabled. */
+  function surfaceMissingNodes(types: MissingNodeType[]) {
+    setMissingNodeTypes(types)
+    if (useSettingStore().get('Comfy.RightSidePanel.ShowErrorsTab')) {
+      showErrorOverlay()
+    }
+  }
+
   function setMissingNodeTypes(types: MissingNodeType[]) {
     if (!types.length) {
       missingNodesError.value = null
@@ -164,9 +170,7 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
     () => !!lastNodeErrors.value && Object.keys(lastNodeErrors.value).length > 0
   )
 
-  /** Whether any missing node types are present in the current workflow
-   * @knipIgnoreUsedByStackedPR
-   */
+  /** Whether any missing node types are present in the current workflow */
   const hasMissingNodes = computed(() => !!missingNodesError.value)
 
   /** Whether any error (node validation, runtime execution, prompt-level, or missing nodes) is present */
@@ -348,9 +352,7 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
     return errorAncestorExecutionIds.value.has(execId)
   }
 
-  /** True if the node has a missing node inside it at any nesting depth.
-   * @knipIgnoreUsedByStackedPR
-   */
+  /** True if the node has a missing node inside it at any nesting depth. */
   function isContainerWithMissingNode(node: LGraphNode): boolean {
     if (!app.rootGraph) return false
     const execId = getExecutionIdByNode(app.rootGraph, node)
@@ -403,6 +405,7 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
 
     // Missing node actions
     setMissingNodeTypes,
+    surfaceMissingNodes,
 
     // Lookup helpers
     getNodeErrors,

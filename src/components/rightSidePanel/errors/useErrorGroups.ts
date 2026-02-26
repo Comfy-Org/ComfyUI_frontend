@@ -21,12 +21,7 @@ import { isLGraphNode } from '@/utils/litegraphUtil'
 import { isGroupNode } from '@/utils/executableGroupNodeDto'
 import { st } from '@/i18n'
 import type { MissingNodeType } from '@/types/comfy'
-import type {
-  ErrorCardData,
-  ErrorGroup,
-  ErrorGroupType,
-  ErrorItem
-} from './types'
+import type { ErrorCardData, ErrorGroup, ErrorItem } from './types'
 import type { NodeExecutionId } from '@/types/nodeIdentification'
 import { isNodeExecutionId } from '@/types/nodeIdentification'
 
@@ -48,7 +43,7 @@ export interface MissingPackGroup {
 }
 
 interface GroupEntry {
-  type: ErrorGroupType
+  type: 'execution'
   priority: number
   cards: Map<string, ErrorCardData>
 }
@@ -88,12 +83,11 @@ function resolveNodeInfo(nodeId: string) {
 function getOrCreateGroup(
   groupsMap: Map<string, GroupEntry>,
   title: string,
-  priority = 1,
-  type: ErrorGroupType = 'execution'
+  priority = 1
 ): Map<string, ErrorCardData> {
   let entry = groupsMap.get(title)
   if (!entry) {
-    entry = { type, priority, cards: new Map() }
+    entry = { type: 'execution', priority, cards: new Map() }
     groupsMap.set(title, entry)
   }
   return entry.cards
@@ -154,7 +148,7 @@ function addCardErrorToGroup(
 function toSortedGroups(groupsMap: Map<string, GroupEntry>): ErrorGroup[] {
   return Array.from(groupsMap.entries())
     .map(([title, groupData]) => ({
-      type: groupData.type,
+      type: 'execution' as const,
       title,
       cards: Array.from(groupData.cards.values()),
       priority: groupData.priority
@@ -171,6 +165,7 @@ function searchErrorGroups(groups: ErrorGroup[], query: string) {
   const searchableList: ErrorSearchItem[] = []
   for (let gi = 0; gi < groups.length; gi++) {
     const group = groups[gi]
+    if (group.type !== 'execution') continue
     for (let ci = 0; ci < group.cards.length; ci++) {
       const card = group.cards[ci]
       searchableList.push({
@@ -178,8 +173,12 @@ function searchErrorGroups(groups: ErrorGroup[], query: string) {
         cardIndex: ci,
         searchableNodeId: card.nodeId ?? '',
         searchableNodeTitle: card.nodeTitle ?? '',
-        searchableMessage: card.errors.map((e) => e.message).join(' '),
-        searchableDetails: card.errors.map((e) => e.details ?? '').join(' ')
+        searchableMessage: card.errors
+          .map((e: ErrorItem) => e.message)
+          .join(' '),
+        searchableDetails: card.errors
+          .map((e: ErrorItem) => e.details ?? '')
+          .join(' ')
       })
     }
   }
@@ -202,11 +201,16 @@ function searchErrorGroups(groups: ErrorGroup[], query: string) {
   )
 
   return groups
-    .map((group, gi) => ({
-      ...group,
-      cards: group.cards.filter((_, ci) => matchedCardKeys.has(`${gi}:${ci}`))
-    }))
-    .filter((group) => group.cards.length > 0)
+    .map((group, gi) => {
+      if (group.type !== 'execution') return group
+      return {
+        ...group,
+        cards: group.cards.filter((_: ErrorCardData, ci: number) =>
+          matchedCardKeys.has(`${gi}:${ci}`)
+        )
+      }
+    })
+    .filter((group) => group.type !== 'execution' || group.cards.length > 0)
 }
 
 export function useErrorGroups(
@@ -387,25 +391,32 @@ export function useErrorGroups(
 
   watch(
     pendingTypes,
-    async (pending) => {
+    async (pending, _, onCleanup) => {
       const toResolve = pending.filter(
         (n) => !asyncResolvedIds.value.has(n.type)
       )
       if (!toResolve.length) return
 
+      let cancelled = false
+      onCleanup(() => {
+        cancelled = true
+      })
+
       const updated = new Map(asyncResolvedIds.value)
-      for (const nodeType of toResolve) {
-        updated.set(nodeType.type, RESOLVING)
-      }
+      for (const n of toResolve) updated.set(n.type, RESOLVING)
       asyncResolvedIds.value = updated
 
-      for (const nodeType of toResolve) {
-        const pack = await inferPackFromNodeName.call(nodeType.type)
-        asyncResolvedIds.value = new Map(asyncResolvedIds.value).set(
-          nodeType.type,
-          pack?.id ?? null
-        )
-      }
+      const results = await Promise.all(
+        toResolve.map(async (n) => ({
+          type: n.type,
+          packId: (await inferPackFromNodeName.call(n.type))?.id ?? null
+        }))
+      )
+      if (cancelled) return
+
+      const final = new Map(asyncResolvedIds.value)
+      for (const r of results) final.set(r.type, r.packId)
+      asyncResolvedIds.value = final
     },
     { immediate: true }
   )
@@ -479,17 +490,6 @@ export function useErrorGroups(
       {
         type: 'missing_node' as const,
         title: error.message,
-        cards: [
-          {
-            id: '__missing_nodes__',
-            title: error.message,
-            errors: [
-              {
-                message: error.message
-              }
-            ]
-          }
-        ],
         priority: 0
       }
     ]
@@ -527,10 +527,15 @@ export function useErrorGroups(
   const groupedErrorMessages = computed<string[]>(() => {
     const messages = new Set<string>()
     for (const group of allErrorGroups.value) {
-      for (const card of group.cards) {
-        for (const err of card.errors) {
-          messages.add(err.message)
+      if (group.type === 'execution') {
+        for (const card of group.cards) {
+          for (const err of card.errors) {
+            messages.add(err.message)
+          }
         }
+      } else {
+        // Groups without cards (e.g. missing_node) surface their title as the message.
+        messages.add(group.title)
       }
     }
     return Array.from(messages)

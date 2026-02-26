@@ -39,12 +39,12 @@
                 <span class="text-destructive-background-hover truncate">
                   {{
                     group.type === 'missing_node'
-                      ? `${group.title} (${missingPackGroups.filter((g) => g.packId !== null).length})`
+                      ? `${group.title} (${missingPackGroups.length})`
                       : group.title
                   }}
                 </span>
                 <span
-                  v-if="group.type !== 'missing_node' && group.cards.length > 1"
+                  v-if="group.type === 'execution' && group.cards.length > 1"
                   class="text-destructive-background-hover"
                 >
                   ({{ group.cards.length }})
@@ -198,11 +198,13 @@ watch(
     if (!graphNodeId) return
     const prefix = `${graphNodeId}:`
     for (const group of allErrorGroups.value) {
-      const hasMatch = group.cards.some(
-        (card) =>
-          card.graphNodeId === graphNodeId ||
-          (card.nodeId?.startsWith(prefix) ?? false)
-      )
+      const hasMatch =
+        group.type === 'execution' &&
+        group.cards.some(
+          (card) =>
+            card.graphNodeId === graphNodeId ||
+            (card.nodeId?.startsWith(prefix) ?? false)
+        )
       collapseState[group.title] = !hasMatch
     }
     rightSidePanelStore.focusedErrorNodeId = null
