@@ -3075,7 +3075,7 @@
   "comfyHubProfile": {
     "checkingAccess": "Checking your publishing access...",
     "profileCreationNav": "Profile creation",
-    "introTitle": "Introducing ComfyHub",
+    "introTitle": "Publish to the ComfyHub",
     "introDescription": "Publish your workflows, build your portfolio and get discovered by millions of users",
     "introSubtitle": "To share your workflow on ComfyHub, let's first create your profile.",
     "createProfileButton": "Create my profile",

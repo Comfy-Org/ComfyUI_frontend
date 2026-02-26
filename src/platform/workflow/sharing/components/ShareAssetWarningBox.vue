@@ -1,73 +1,92 @@
 <template>
   <div class="rounded-lg flex flex-col gap-3">
-    <div class="overflow-hidden rounded-lg bg-secondary-background">
-      <div
-        class="flex items-center gap-2 border-b border-border-subtle px-4 py-2"
-      >
-        <i
-          class="icon-[lucide--circle-alert] size-4 shrink-0 text-warning-background"
-        />
-        <p class="m-0 text-sm text-muted-foreground">
-          {{ $t('shareWorkflow.privateAssetsDescription') }}
-        </p>
-      </div>
-
-      <div class="flex flex-col gap-1 p-0">
-        <CollapsibleRoot
-          v-for="section in sections"
-          :key="section.id"
-          class="overflow-hidden rounded-sm"
-          :open="expandedSectionId === section.id"
-          @update:open="onSectionOpenChange(section.id, $event)"
+    <CollapsibleRoot
+      v-model:open="isWarningExpanded"
+      class="overflow-hidden rounded-lg bg-secondary-background"
+    >
+      <CollapsibleTrigger as-child>
+        <Button
+          variant="secondary"
+          class="w-full justify-between px-4 py-1 text-sm"
         >
-          <CollapsibleTrigger as-child>
-            <Button
-              :data-testid="`section-header-${section.id}`"
-              :aria-expanded="expandedSectionId === section.id"
-              :aria-controls="`section-content-${section.id}`"
-              variant="secondary"
-              class="w-full justify-between px-6 py-1"
-            >
-              <span>
-                {{ $t(section.labelKey, section.items.length) }}
-              </span>
-              <i
-                :class="
-                  cn(
-                    'icon-[lucide--chevron-right] size-4 text-muted-foreground transition-transform',
-                    expandedSectionId === section.id && 'rotate-90'
-                  )
-                "
-              />
-            </Button>
-          </CollapsibleTrigger>
-          <CollapsibleContent
-            :id="`section-content-${section.id}`"
-            :data-testid="`section-content-${section.id}`"
-            class="overflow-hidden data-[state=closed]:animate-collapsible-up data-[state=open]:animate-collapsible-down"
+          <i
+            class="icon-[lucide--circle-alert] size-4 shrink-0 text-warning-background"
+          />
+          <span class="m-0 flex-1 text-left text-sm text-muted-foreground">
+            {{ $t('shareWorkflow.privateAssetsDescription') }}
+          </span>
+
+          <i
+            :class="
+              cn(
+                'icon-[lucide--chevron-right] size-4 shrink-0 text-muted-foreground transition-transform',
+                isWarningExpanded && 'rotate-90'
+              )
+            "
+          />
+        </Button>
+      </CollapsibleTrigger>
+
+      <CollapsibleContent
+        class="overflow-hidden data-[state=closed]:animate-collapsible-up data-[state=open]:animate-collapsible-down"
+      >
+        <div class="flex flex-col gap-1 p-0">
+          <CollapsibleRoot
+            v-for="section in sections"
+            :key="section.id"
+            class="overflow-hidden rounded-sm"
+            :open="expandedSectionId === section.id"
+            @update:open="onSectionOpenChange(section.id, $event)"
           >
-            <div class="max-h-25 overflow-y-auto px-2 pb-1 pt-0.5">
-              <div
-                v-for="item in section.items"
-                :key="item.name"
-                class="flex items-center gap-2 rounded-sm px-2 py-1"
+            <CollapsibleTrigger as-child>
+              <Button
+                :data-testid="`section-header-${section.id}`"
+                :aria-expanded="expandedSectionId === section.id"
+                :aria-controls="`section-content-${section.id}`"
+                variant="secondary"
+                class="w-full justify-between px-6 py-1"
               >
-                <ShareAssetThumbnail
-                  :name="item.name"
-                  :thumbnail-url="item.thumbnailUrl"
-                  @thumbnail-error="
-                    onThumbnailError($event.name, $event.thumbnailUrl)
+                <span>
+                  {{ $t(section.labelKey, section.items.length) }}
+                </span>
+                <i
+                  :class="
+                    cn(
+                      'icon-[lucide--chevron-right] size-4 text-muted-foreground transition-transform',
+                      expandedSectionId === section.id && 'rotate-90'
+                    )
                   "
                 />
-                <span class="truncate text-xs text-base-foreground">
-                  {{ item.name }}
-                </span>
+              </Button>
+            </CollapsibleTrigger>
+            <CollapsibleContent
+              :id="`section-content-${section.id}`"
+              :data-testid="`section-content-${section.id}`"
+              class="overflow-hidden data-[state=closed]:animate-collapsible-up data-[state=open]:animate-collapsible-down"
+            >
+              <div class="max-h-25 overflow-y-auto px-6 pb-1 pt-0.5">
+                <div
+                  v-for="item in section.items"
+                  :key="item.name"
+                  class="flex items-center gap-2 rounded-sm py-1"
+                >
+                  <ShareAssetThumbnail
+                    :name="item.name"
+                    :thumbnail-url="item.thumbnailUrl"
+                    @thumbnail-error="
+                      onThumbnailError($event.name, $event.thumbnailUrl)
+                    "
+                  />
+                  <span class="truncate text-xs text-base-foreground">
+                    {{ item.name }}
+                  </span>
+                </div>
               </div>
-            </div>
-          </CollapsibleContent>
-        </CollapsibleRoot>
-      </div>
-    </div>
+            </CollapsibleContent>
+          </CollapsibleRoot>
+        </div>
+      </CollapsibleContent>
+    </CollapsibleRoot>
 
     <label class="mt-3 flex cursor-pointer items-center gap-2">
       <input
@@ -131,6 +150,7 @@ const sections = computed(() =>
   ].filter((s) => s.items.length > 0)
 )
 
+const isWarningExpanded = ref(true)
 const expandedSectionId = ref<SectionId | null>(null)
 
 function getDefaultExpandedSection(
