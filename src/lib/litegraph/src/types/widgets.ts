@@ -1,4 +1,5 @@
 import type { Bounds } from '@/renderer/core/layout/types'
+import type { CurvePoint } from '@/components/curve/types'
 
 import type {
   CanvasColour,
@@ -328,8 +329,6 @@ export interface IBoundingBoxWidget extends IBaseWidget<Bounds, 'boundingbox'> {
   type: 'boundingbox'
   value: Bounds
 }
-
-import type { CurvePoint } from '@/components/curve/types'
 
 export interface ICurveWidget extends IBaseWidget<CurvePoint[], 'curve'> {
   type: 'curve'
