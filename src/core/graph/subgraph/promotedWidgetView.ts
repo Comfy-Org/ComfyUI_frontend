@@ -193,9 +193,11 @@ class PromotedWidgetView implements IPromotedWidgetView {
 
     const originalY = projected.y
     const originalComputedHeight = projected.computedHeight
+    const originalComputedDisabled = projected.computedDisabled
 
     projected.y = this.y
     projected.computedHeight = this.computedHeight
+    projected.computedDisabled = this.computedDisabled
     projected.value = this.value
 
     projected.drawWidget(ctx, {
@@ -207,6 +209,7 @@ class PromotedWidgetView implements IPromotedWidgetView {
 
     projected.y = originalY
     projected.computedHeight = originalComputedHeight
+    projected.computedDisabled = originalComputedDisabled
   }
 
   onPointerDown(

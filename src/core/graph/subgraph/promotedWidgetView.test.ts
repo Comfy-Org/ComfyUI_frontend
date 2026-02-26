@@ -786,6 +786,68 @@ function createFakeCanvasContext() {
   })
 }
 
+function createInspectableCanvasContext(fillText = vi.fn()) {
+  const fallback = vi.fn()
+  return new Proxy(
+    {
+      fillText,
+      beginPath: vi.fn(),
+      roundRect: vi.fn(),
+      rect: vi.fn(),
+      fill: vi.fn(),
+      stroke: vi.fn(),
+      moveTo: vi.fn(),
+      lineTo: vi.fn(),
+      arc: vi.fn(),
+      measureText: (text: string) => ({ width: text.length * 8 }),
+      fillStyle: '#fff',
+      strokeStyle: '#fff',
+      textAlign: 'left',
+      globalAlpha: 1,
+      lineWidth: 1
+    } as Record<string, unknown>,
+    {
+      get(target, key) {
+        if (typeof key === 'string' && key in target)
+          return target[key as keyof typeof target]
+        return fallback
+      }
+    }
+  ) as unknown as CanvasRenderingContext2D
+}
+
+describe('promoted combo rendering', () => {
+  beforeEach(() => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
+  })
+
+  test('draw shows value even when interior combo is computedDisabled', () => {
+    const [subgraphNode, innerNodes] = setupSubgraph(1)
+    const innerNode = firstInnerNode(innerNodes)
+    const comboWidget = innerNode.addWidget('combo', 'picker', 'a', () => {}, {
+      values: ['a', 'b']
+    })
+
+    // Simulates source widgets connected to subgraph inputs.
+    comboWidget.computedDisabled = true
+    setPromotions(subgraphNode, [[String(innerNode.id), 'picker']])
+
+    const fillText = vi.fn()
+    const ctx = createInspectableCanvasContext(fillText)
+    subgraphNode.widgets[0].draw?.(
+      ctx,
+      subgraphNode,
+      260,
+      0,
+      LiteGraph.NODE_WIDGET_HEIGHT,
+      false
+    )
+
+    const renderedText = fillText.mock.calls.map((call) => call[0])
+    expect(renderedText).toContain('a')
+  })
+})
+
 describe('DOM widget promotion', () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
