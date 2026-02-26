@@ -144,7 +144,11 @@ export { isColorable } from './utils/type'
 export { createUuidv4 } from './utils/uuid'
 export type { UUID } from './utils/uuid'
 export { truncateText } from './utils/textUtils'
-export { getWidgetStep, resolveNodeRootGraphId } from './utils/widget'
+export {
+  evaluateInput,
+  getWidgetStep,
+  resolveNodeRootGraphId
+} from './utils/widget'
 export { distributeSpace, type SpaceRequest } from './utils/spaceDistribution'
 
 export { BaseWidget } from './widgets/BaseWidget'
