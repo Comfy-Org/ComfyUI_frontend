@@ -766,6 +766,17 @@ export class ComfyApi extends EventTarget {
   }
 
   /**
+   * Gets the index of custom nodes workflow templates supporting it.
+   * supported in the index: icon, Title (to confirm ?) templates
+   * templates: name, title, description, mediaSubType ? date, models, requiresCustomNodes, tags, thumbnailVariant
+   */
+  async getCustomIndexWorkflowTemplates(customNodeName: string): Promise<WorkflowTemplates[]> {
+    const res = await axios.get(this.fileURL(`/workflow_templates/${customNodeName}/index.json`))
+    const contentType = res.headers['content-type']
+    return contentType?.includes('application/json') ? res.data : []
+  }
+
+  /**
    * Gets the index of core workflow templates.
    * @param locale Optional locale code (e.g., 'en', 'fr', 'zh') to load localized templates
    */
