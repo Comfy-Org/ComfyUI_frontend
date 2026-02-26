@@ -161,12 +161,16 @@ const menuEntries = computed<MenuItem[]>(() => [
           <div
             class="bg-secondary-background h-10 rounded-sm grow-1 flex items-center p-2 gap-2"
           >
-            <i class="icon-[lucide--panels-top-left] bg-primary-background" />
+            <i
+              class="shrink-0 icon-[lucide--panels-top-left] bg-primary-background"
+            />
             <span
-              class="grow-1"
+              class="truncate contain-size h-full w-full"
               v-text="workflowStore.activeWorkflow?.filename"
             />
-            <i class="icon-[lucide--chevron-down] bg-muted-foreground" />
+            <i
+              class="shirnk-0 icon-[lucide--chevron-down] bg-muted-foreground"
+            />
           </div>
         </template>
       </Popover>
@@ -178,7 +182,7 @@ const menuEntries = computed<MenuItem[]>(() => [
         :style="{ translate }"
       >
         <AssetsSidebarTab
-          class="h-full w-screen absolute bg-secondary-background"
+          class="h-full w-screen absolute bg-secondary-background [&>:first-child>:nth-child(odd)]:hidden"
         />
         <div
           class="overflow-y-auto contain-size h-full w-screen absolute left-[100vw] top-0"
