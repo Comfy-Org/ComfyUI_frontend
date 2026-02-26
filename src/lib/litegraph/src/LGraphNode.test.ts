@@ -419,6 +419,65 @@ describe('LGraphNode', () => {
     )
   })
 
+  describe('Connect Characterization', () => {
+    test('connect keeps callback ordering and payload parity', () => {
+      const sourceNode = new LGraphNode('SourceNode')
+      const targetNode = new LGraphNode('TargetNode')
+      sourceNode.addOutput('Output1', 'number')
+      targetNode.addInput('Input1', 'number')
+
+      const graph = new LGraph()
+      graph.add(sourceNode)
+      graph.add(targetNode)
+
+      const callbackOrder: string[] = []
+      const sourceOutput = sourceNode.outputs[0]
+      const targetInput = targetNode.inputs[0]
+
+      sourceNode.onConnectionsChange = (
+        slotType,
+        slotIndex,
+        connected,
+        linkInfo,
+        ioSlot
+      ) => {
+        if (!linkInfo) throw new Error('Expected link info')
+        callbackOrder.push(`source:${slotType}:${slotIndex}:${connected}`)
+        expect(slotType).toBe(NodeSlotType.OUTPUT)
+        expect(slotIndex).toBe(0)
+        expect(connected).toBe(true)
+        expect(linkInfo.origin_id).toBe(sourceNode.id)
+        expect(linkInfo.target_id).toBe(targetNode.id)
+        expect(ioSlot).toBe(sourceOutput)
+      }
+
+      targetNode.onConnectionsChange = (
+        slotType,
+        slotIndex,
+        connected,
+        linkInfo,
+        ioSlot
+      ) => {
+        if (!linkInfo) throw new Error('Expected link info')
+        callbackOrder.push(`target:${slotType}:${slotIndex}:${connected}`)
+        expect(slotType).toBe(NodeSlotType.INPUT)
+        expect(slotIndex).toBe(0)
+        expect(connected).toBe(true)
+        expect(linkInfo.origin_id).toBe(sourceNode.id)
+        expect(linkInfo.target_id).toBe(targetNode.id)
+        expect(ioSlot).toBe(targetInput)
+      }
+
+      const link = sourceNode.connect(0, targetNode, 0)
+
+      expect(link).toBeDefined()
+      expect(callbackOrder).toEqual([
+        `source:${NodeSlotType.OUTPUT}:0:true`,
+        `target:${NodeSlotType.INPUT}:0:true`
+      ])
+    })
+  })
+
   describe('getInputPos and getOutputPos', () => {
     test('should handle collapsed nodes correctly', () => {
       const node = createMockLGraphNodeWithArrayBoundingRect('TestNode')

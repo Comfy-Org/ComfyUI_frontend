@@ -10,11 +10,7 @@ import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMuta
 import { LayoutSource } from '@/renderer/core/layout/types'
 import { adjustColor } from '@/utils/colorUtil'
 import type { ColorAdjustOptions } from '@/utils/colorUtil'
-import {
-  commonType,
-  isNodeBindable,
-  toClass
-} from '@/lib/litegraph/src/utils/type'
+import { isNodeBindable, toClass } from '@/lib/litegraph/src/utils/type'
 
 import { SUBGRAPH_OUTPUT_ID } from '@/lib/litegraph/src/constants'
 import type { DragAndScale } from './DragAndScale'
@@ -2866,8 +2862,6 @@ export class LGraphNode
     const { graph } = this
     if (!graph) throw new NullGraphError()
 
-    const layoutMutations = useLayoutMutations()
-
     const outputIndex = this.outputs.indexOf(output)
     if (outputIndex === -1) {
       console.warn('connectSlots: output not found')
@@ -2913,67 +2907,13 @@ export class LGraphNode
       inputNode.disconnectInput(inputIndex, true)
     }
 
-    const maybeCommonType =
-      input.type && output.type && commonType(input.type, output.type)
-
-    const link = new LLink(
-      ++graph.state.lastLinkId,
-      maybeCommonType || input.type || output.type,
-      this.id,
+    const link = graph.connectSlots(
+      this,
       outputIndex,
-      inputNode.id,
+      inputNode,
       inputIndex,
       afterRerouteId
     )
-
-    // add to graph links list
-    graph._links.set(link.id, link)
-
-    // Register link in Layout Store for spatial tracking
-    layoutMutations.setSource(LayoutSource.Canvas)
-    layoutMutations.createLink(
-      link.id,
-      this.id,
-      outputIndex,
-      inputNode.id,
-      inputIndex
-    )
-
-    // connect in output
-    output.links ??= []
-    output.links.push(link.id)
-    // connect in input
-    const targetInput = inputNode.inputs[inputIndex]
-    targetInput.link = link.id
-    if (targetInput.widget) {
-      graph.trigger('node:slot-links:changed', {
-        nodeId: inputNode.id,
-        slotType: NodeSlotType.INPUT,
-        slotIndex: inputIndex,
-        connected: true,
-        linkId: link.id
-      })
-    }
-
-    // Reroutes
-    const reroutes = LLink.getReroutes(graph, link)
-    for (const reroute of reroutes) {
-      reroute.linkIds.add(link.id)
-      if (reroute.floating) reroute.floating = undefined
-      reroute._dragging = undefined
-    }
-
-    // If this is the terminus of a floating link, remove it
-    const lastReroute = reroutes.at(-1)
-    if (lastReroute) {
-      for (const linkId of lastReroute.floatingLinkIds) {
-        const link = graph.floatingLinks.get(linkId)
-        if (link?.parentId === lastReroute.id) {
-          graph.removeFloatingLink(link)
-        }
-      }
-    }
-    graph._version++
 
     // link has been created now, so its updated
     this.onConnectionsChange?.(

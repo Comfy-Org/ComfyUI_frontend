@@ -410,6 +410,36 @@ describe('Disconnect/Remove Characterization', () => {
   })
 })
 
+describe('Connect Characterization', () => {
+  it('connect with reroute keeps floating cleanup invariants', () => {
+    const graph = new LGraph()
+    const { floatingLinkId, rerouteId } = buildLinkTopology(graph)
+
+    const sourceNode = createNumberNode('new-source')
+    const targetNode = createNumberNode('new-target')
+    graph.add(sourceNode)
+    graph.add(targetNode)
+
+    const rerouteBeforeConnect = graph.getReroute(rerouteId)
+    if (!rerouteBeforeConnect) throw new Error('Expected reroute')
+    expect(rerouteBeforeConnect.floatingLinkIds.has(floatingLinkId)).toBe(true)
+
+    const link = sourceNode.connect(0, targetNode, 0, rerouteId)
+    if (!link) throw new Error('Expected link')
+
+    const rerouteAfterConnect = graph.getReroute(rerouteId)
+    if (!rerouteAfterConnect) throw new Error('Expected reroute after connect')
+
+    expect(graph.getLink(link.id)).toBe(link)
+    expect(graph.linkStore.getLink(link.id)).toBe(link)
+    expect(rerouteAfterConnect.linkIds.has(link.id)).toBe(true)
+    expect(rerouteAfterConnect.floating).toBeUndefined()
+    expect(rerouteAfterConnect.floatingLinkIds.has(floatingLinkId)).toBe(false)
+    expect(graph.floatingLinks.has(floatingLinkId)).toBe(false)
+    expect(graph.linkStore.getFloatingLink(floatingLinkId)).toBeUndefined()
+  })
+})
+
 describe('Graph Clearing and Callbacks', () => {
   test('clear() calls both node.onRemoved() and graph.onNodeRemoved()', ({
     expect

@@ -4,7 +4,7 @@ import {
   SUBGRAPH_INPUT_ID,
   SUBGRAPH_OUTPUT_ID
 } from '@/lib/litegraph/src/constants'
-import { isNodeBindable } from '@/lib/litegraph/src/utils/type'
+import { commonType, isNodeBindable } from '@/lib/litegraph/src/utils/type'
 import type { UUID } from '@/lib/litegraph/src/utils/uuid'
 import { createUuidv4, zeroUuid } from '@/lib/litegraph/src/utils/uuid'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
@@ -61,7 +61,7 @@ import {
   multiClone,
   splitPositionables
 } from './subgraph/subgraphUtils'
-import { Alignment, LGraphEventMode } from './types/globalEnums'
+import { Alignment, LGraphEventMode, NodeSlotType } from './types/globalEnums'
 import type {
   LGraphTriggerAction,
   LGraphTriggerEvent,
@@ -1620,6 +1620,81 @@ export class LGraph
 
   disconnectLink(link: LLink, keepReroutes?: 'input' | 'output'): void {
     link.disconnect(this, keepReroutes)
+  }
+
+  connectSlots(
+    sourceNode: LGraphNode,
+    outputIndex: number,
+    targetNode: LGraphNode,
+    inputIndex: number,
+    afterRerouteId?: RerouteId
+  ): LLink {
+    const output = sourceNode.outputs[outputIndex]
+    const input = targetNode.inputs[inputIndex]
+
+    const maybeCommonType =
+      input.type && output.type && commonType(input.type, output.type)
+    const link = new LLink(
+      ++this.state.lastLinkId,
+      maybeCommonType || input.type || output.type,
+      sourceNode.id,
+      outputIndex,
+      targetNode.id,
+      inputIndex,
+      afterRerouteId
+    )
+
+    // add to graph links list
+    this._links.set(link.id, link)
+
+    const layoutMutations = useLayoutMutations()
+
+    // Register link in Layout Store for spatial tracking
+    layoutMutations.setSource(LayoutSource.Canvas)
+    layoutMutations.createLink(
+      link.id,
+      sourceNode.id,
+      outputIndex,
+      targetNode.id,
+      inputIndex
+    )
+
+    // connect in output
+    output.links ??= []
+    output.links.push(link.id)
+    // connect in input
+    input.link = link.id
+    if (input.widget) {
+      this.trigger('node:slot-links:changed', {
+        nodeId: targetNode.id,
+        slotType: NodeSlotType.INPUT,
+        slotIndex: inputIndex,
+        connected: true,
+        linkId: link.id
+      })
+    }
+
+    // Reroutes
+    const reroutes = LLink.getReroutes(this, link)
+    for (const reroute of reroutes) {
+      reroute.linkIds.add(link.id)
+      if (reroute.floating) reroute.floating = undefined
+      reroute._dragging = undefined
+    }
+
+    // If this is the terminus of a floating link, remove it
+    const lastReroute = reroutes.at(-1)
+    if (lastReroute) {
+      for (const floatingLinkId of lastReroute.floatingLinkIds) {
+        const floatingLink = this.floatingLinks.get(floatingLinkId)
+        if (floatingLink?.parentId === lastReroute.id) {
+          this.removeFloatingLink(floatingLink)
+        }
+      }
+    }
+
+    this._version++
+    return link
   }
 
   /**
