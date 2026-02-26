@@ -62,7 +62,7 @@
               size="md"
               :aria-pressed="
                 isQueuePanelV2Enabled
-                  ? activeSidebarTabId === 'assets'
+                  ? activeSidebarTabId === 'job-history'
                   : isQueueProgressOverlayEnabled
                     ? isQueueOverlayExpanded
                     : undefined
@@ -283,7 +283,7 @@ onMounted(() => {
 
 const toggleQueueOverlay = () => {
   if (isQueuePanelV2Enabled.value) {
-    sidebarTabStore.toggleSidebarTab('assets')
+    sidebarTabStore.toggleSidebarTab('job-history')
     return
   }
   commandStore.execute('Comfy.Queue.ToggleOverlay')
