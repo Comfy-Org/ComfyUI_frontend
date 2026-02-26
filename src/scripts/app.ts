@@ -717,11 +717,15 @@ export class ComfyApp {
       const nodeOutputStore = useNodeOutputStore()
       const executionId = String(detail.display_node || detail.node)
 
+      const node = getNodeByExecutionId(this.rootGraph, executionId)
+      const accumulate = node?.widgets?.find(
+        (w) => w.name === 'accumulate'
+      )?.value
+
       nodeOutputStore.setNodeOutputsByExecutionId(executionId, detail.output, {
-        merge: detail.merge
+        merge: detail.merge || !!accumulate
       })
 
-      const node = getNodeByExecutionId(this.rootGraph, executionId)
       if (node && node.onExecuted) {
         node.onExecuted(detail.output)
       }
