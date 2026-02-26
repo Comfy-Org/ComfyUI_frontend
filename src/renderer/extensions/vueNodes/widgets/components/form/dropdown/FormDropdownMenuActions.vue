@@ -42,7 +42,7 @@ const baseModelSelected = defineModel<Set<string>>('baseModelSelected', {
 })
 
 const actionButtonStyle = cn(
-  'h-8 bg-zinc-500/20 rounded-lg outline outline-1 outline-offset-[-1px] outline-node-component-border transition-all duration-150'
+  'h-8 bg-zinc-500/20 rounded-lg outline-1 -outline-offset-1 outline-node-component-border transition-all duration-150'
 )
 
 const layoutSwitchItemStyle =
@@ -157,7 +157,7 @@ function toggleBaseModelSelection(item: FilterOption) {
           cn(
             'flex flex-col gap-2 p-2 min-w-32',
             'bg-component-node-background',
-            'rounded-lg outline outline-offset-[-1px] outline-component-node-border'
+            'rounded-lg outline -outline-offset-1 outline-component-node-border'
           )
         "
       >
@@ -219,7 +219,7 @@ function toggleBaseModelSelection(item: FilterOption) {
           cn(
             'flex flex-col gap-2 p-2 min-w-32',
             'bg-component-node-background',
-            'rounded-lg outline outline-offset-[-1px] outline-component-node-border'
+            'rounded-lg outline -outline-offset-1 outline-component-node-border'
           )
         "
       >
@@ -281,7 +281,7 @@ function toggleBaseModelSelection(item: FilterOption) {
           cn(
             'flex flex-col gap-2 p-2 min-w-32',
             'bg-component-node-background',
-            'rounded-lg outline outline-offset-[-1px] outline-component-node-border'
+            'rounded-lg outline -outline-offset-1 outline-component-node-border'
           )
         "
       >
