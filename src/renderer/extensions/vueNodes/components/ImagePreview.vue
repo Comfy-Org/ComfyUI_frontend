@@ -4,9 +4,66 @@
     class="image-preview group relative flex size-full min-h-55 min-w-16 flex-col justify-center px-2"
     @keydown="handleKeyDown"
   >
-    <!-- Image Wrapper -->
+    <!-- Grid View -->
     <div
-      ref="imageWrapperEl"
+      v-if="viewMode === 'grid'"
+      data-testid="image-grid"
+      class="relative grid w-full gap-1 overflow-hidden rounded-sm bg-muted-background p-1"
+      :style="{ gridTemplateColumns: `repeat(${gridCols}, 1fr)` }"
+      @mouseenter="handleMouseEnter"
+      @mouseleave="handleMouseLeave"
+      @focusin="handleFocusIn"
+      @focusout="handleFocusOut"
+    >
+      <button
+        v-for="(url, index) in imageUrls"
+        :key="index"
+        class="relative aspect-square cursor-pointer overflow-hidden rounded border-0 bg-transparent p-0 transition-opacity hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        :aria-label="
+          $t('g.viewImageOfTotal', {
+            index: index + 1,
+            total: imageUrls.length
+          })
+        "
+        @click="selectGridImage(index)"
+      >
+        <img
+          :src="url"
+          :alt="`${$t('g.galleryThumbnail')} ${index + 1}`"
+          class="size-full object-contain"
+        />
+      </button>
+
+      <!-- Floating Action Buttons (grid mode) -->
+      <div
+        v-if="isHovered || isFocused"
+        class="actions absolute top-2 right-2 flex gap-2.5"
+      >
+        <!-- View Mode Toggle -->
+        <button
+          :class="actionButtonClass"
+          :title="$t('g.viewGallery')"
+          :aria-label="$t('g.viewGallery')"
+          @click="viewMode = 'gallery'"
+        >
+          <i class="icon-[lucide--image] h-4 w-4" />
+        </button>
+
+        <!-- Close Button -->
+        <button
+          :class="actionButtonClass"
+          :title="$t('g.removeImage')"
+          :aria-label="$t('g.removeImage')"
+          @click="handleRemove"
+        >
+          <i class="icon-[lucide--x] h-4 w-4" />
+        </button>
+      </div>
+    </div>
+
+    <!-- Gallery View (Image Wrapper) -->
+    <div
+      v-if="viewMode === 'gallery'"
       class="relative flex min-h-0 w-full flex-1 cursor-pointer overflow-hidden rounded-sm bg-transparent"
       tabindex="0"
       role="img"
@@ -38,6 +95,7 @@
       <!-- Main Image -->
       <img
         v-if="!imageError"
+        data-testid="main-image"
         :src="currentImageUrl"
         :alt="imageAltText"
         :class="
@@ -55,6 +113,17 @@
         v-if="isHovered || isFocused"
         class="actions absolute top-2 right-2 flex gap-1"
       >
+        <!-- Grid View Toggle (only for multiple images) -->
+        <button
+          v-if="hasMultipleImages"
+          :class="actionButtonClass"
+          :title="$t('g.viewGrid')"
+          :aria-label="$t('g.viewGrid')"
+          @click="viewMode = 'grid'"
+        >
+          <i class="icon-[lucide--layout-grid] h-4 w-4" />
+        </button>
+
         <!-- Mask/Edit Button -->
         <button
           v-if="!hasMultipleImages"
@@ -88,8 +157,11 @@
       </div>
     </div>
 
-    <!-- Image Dimensions -->
-    <div class="pt-2 text-center text-xs text-base-foreground">
+    <!-- Image Dimensions (gallery mode only) -->
+    <div
+      v-if="viewMode === 'gallery'"
+      class="pt-2 text-center text-xs text-base-foreground"
+    >
       <span v-if="imageError" class="text-red-400">
         {{ $t('g.errorLoadingImage') }}
       </span>
@@ -100,11 +172,31 @@
         {{ actualDimensions || $t('g.calculatingDimensions') }}
       </span>
     </div>
-    <!-- Multiple Images Navigation -->
+
+    <!-- Image Count (grid mode) -->
     <div
-      v-if="hasMultipleImages"
-      class="flex flex-wrap justify-center gap-1 pt-4"
+      v-if="viewMode === 'grid'"
+      class="pt-2 text-center text-xs text-base-foreground"
     >
+      {{ $t('g.imageCount', imageUrls.length) }}
+    </div>
+
+    <!-- Multiple Images Navigation (gallery mode only) -->
+    <div
+      v-if="viewMode === 'gallery' && hasMultipleImages"
+      class="flex flex-wrap items-center justify-center gap-1 pt-4"
+    >
+      <!-- Back to Grid button -->
+      <button
+        class="mr-1 flex cursor-pointer items-center justify-center rounded border-0 bg-transparent p-0.5 text-base-foreground/50 transition-colors hover:text-base-foreground"
+        :title="$t('g.viewGrid')"
+        :aria-label="$t('g.viewGrid')"
+        @click="viewMode = 'grid'"
+      >
+        <i class="icon-[lucide--layout-grid] h-3.5 w-3.5" />
+      </button>
+
+      <!-- Navigation Dots -->
       <button
         v-for="(_, index) in imageUrls"
         :key="index"
@@ -152,15 +244,16 @@ const toastStore = useToastStore()
 const actionButtonClass =
   'flex h-8 min-h-8 cursor-pointer items-center justify-center rounded-lg border-0 bg-base-foreground p-2 text-base-background transition-colors duration-200 hover:bg-base-foreground/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-base-foreground focus-visible:ring-offset-2'
 
+type ViewMode = 'gallery' | 'grid'
+
 // Component state
 const currentIndex = ref(0)
+const viewMode = ref<ViewMode>(props.imageUrls.length > 1 ? 'grid' : 'gallery')
 const isHovered = ref(false)
 const isFocused = ref(false)
 const actualDimensions = ref<string | null>(null)
 const imageError = ref(false)
 const showLoader = ref(false)
-
-const imageWrapperEl = ref<HTMLDivElement>()
 
 const { start: startDelayedLoader, stop: stopDelayedLoader } = useTimeoutFn(
   () => {
@@ -175,6 +268,12 @@ const { start: startDelayedLoader, stop: stopDelayedLoader } = useTimeoutFn(
 const currentImageUrl = computed(() => props.imageUrls[currentIndex.value])
 const hasMultipleImages = computed(() => props.imageUrls.length > 1)
 const imageAltText = computed(() => `Node output ${currentIndex.value + 1}`)
+const gridCols = computed(() => {
+  const count = props.imageUrls.length
+  if (count <= 4) return 2
+  if (count <= 9) return 3
+  return 4
+})
 
 // Watch for URL changes and reset state
 watch(
@@ -196,6 +295,7 @@ watch(
     // Reset loading and error states when URLs change
     actualDimensions.value = null
 
+    viewMode.value = newUrls.length > 1 ? 'grid' : 'gallery'
     imageError.value = false
     if (newUrls.length > 0) startDelayedLoader()
   },
@@ -235,7 +335,7 @@ const handleEditMask = () => {
 const handleDownload = () => {
   try {
     downloadFile(currentImageUrl.value)
-  } catch (error) {
+  } catch {
     toastStore.add({
       severity: 'error',
       summary: t('g.error'),
@@ -267,6 +367,11 @@ const setCurrentIndex = (index: number) => {
   }
 }
 
+function selectGridImage(index: number) {
+  setCurrentIndex(index)
+  viewMode.value = 'gallery'
+}
+
 const handleMouseEnter = () => {
   isHovered.value = true
 }
@@ -280,8 +385,9 @@ const handleFocusIn = () => {
 }
 
 const handleFocusOut = (event: FocusEvent) => {
-  // Only unfocus if focus is leaving the wrapper entirely
-  if (!imageWrapperEl.value?.contains(event.relatedTarget as Node)) {
+  // Only unfocus if focus is leaving the container entirely
+  const container = event.currentTarget as HTMLElement | null
+  if (!container?.contains(event.relatedTarget as Node)) {
     isFocused.value = false
   }
 }
@@ -296,7 +402,7 @@ function getNavigationDotClass(index: number) {
 }
 
 const handleKeyDown = (event: KeyboardEvent) => {
-  if (props.imageUrls.length <= 1) return
+  if (props.imageUrls.length <= 1 || viewMode.value === 'grid') return
 
   switch (event.key) {
     case 'ArrowLeft':
