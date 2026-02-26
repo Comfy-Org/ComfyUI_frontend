@@ -127,13 +127,15 @@
         <div
           class="pointer-events-none absolute left-0 right-0 top-full mt-1 flex justify-end pr-1"
         >
-          <QueueInlineProgressSummary :hidden="isQueueOverlayExpanded" />
+          <QueueInlineProgressSummary
+            :hidden="shouldHideInlineProgressSummary"
+          />
         </div>
       </Teleport>
       <QueueInlineProgressSummary
         v-else-if="shouldShowInlineProgressSummary && !isActionbarFloating"
         class="pr-1"
-        :hidden="isQueueOverlayExpanded"
+        :hidden="shouldHideInlineProgressSummary"
       />
       <QueueNotificationBannerHost
         v-if="shouldShowQueueNotificationBanners"
@@ -241,6 +243,9 @@ const inlineProgressSummaryTarget = computed(() => {
   }
   return progressTarget.value
 })
+const shouldHideInlineProgressSummary = computed(
+  () => isQueueProgressOverlayEnabled.value && isQueueOverlayExpanded.value
+)
 const queueHistoryTooltipConfig = computed(() =>
   buildTooltipConfig(t('sideToolbar.queueProgressOverlay.viewJobHistory'))
 )

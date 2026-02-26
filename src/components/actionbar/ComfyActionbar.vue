@@ -47,7 +47,7 @@
 
     <Teleport v-if="inlineProgressTarget" :to="inlineProgressTarget">
       <QueueInlineProgress
-        :hidden="queueOverlayExpanded"
+        :hidden="shouldHideInlineProgress"
         :radius-class="cn(isDocked ? 'rounded-[7px]' : 'rounded-[5px]')"
         data-testid="queue-inline-progress"
       />
@@ -287,6 +287,9 @@ const inlineProgressTarget = computed(() => {
   if (isDocked.value) return topMenuContainer ?? null
   return panelElement.value
 })
+const shouldHideInlineProgress = computed(
+  () => !isQueuePanelV2Enabled.value && queueOverlayExpanded
+)
 watch(
   panelElement,
   (target) => {
