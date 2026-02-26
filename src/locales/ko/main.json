@@ -225,6 +225,7 @@
     "login": {
       "andText": "및",
       "backToLogin": "로그인으로 돌아가기",
+      "backToSocialLogin": "Google 또는 Github로 가입하기",
       "confirmPasswordLabel": "비밀번호 확인",
       "confirmPasswordPlaceholder": "동일한 비밀번호를 다시 입력하세요",
       "didntReceiveEmail": "이메일을 받지 못하셨나요? 다음으로 문의하세요:",
@@ -233,6 +234,9 @@
       "failed": "로그인 실패",
       "forgotPassword": "비밀번호를 잊으셨나요?",
       "forgotPasswordError": "비밀번호 재설정 이메일 전송에 실패했습니다",
+      "freeTierBadge": "무료 등급 가능",
+      "freeTierDescription": "Google로 가입하면 매월 {credits} 무료 크레딧을 받을 수 있습니다. 카드 필요 없음.",
+      "freeTierDescriptionGeneric": "Google로 가입하면 매월 무료 크레딧을 받을 수 있습니다. 카드 필요 없음.",
       "insecureContextWarning": "이 연결은 안전하지 않습니다(HTTP) - 로그인을 계속하면 자격 증명이 공격자에게 가로채질 수 있습니다.",
       "loginButton": "로그인",
       "loginWithGithub": "Github로 로그인",
@@ -251,11 +255,13 @@
       "sendResetLink": "재설정 링크 보내기",
       "signInOrSignUp": "로그인 / 회원가입",
       "signUp": "가입하기",
+      "signUpFreeTierPromo": "처음이신가요? Google로 {signUp} 하여 매월 {credits} 무료 크레딧을 받으세요.",
       "success": "로그인 성공",
       "termsLink": "이용 약관",
       "termsText": "\"다음\" 또는 \"가입하기\"를 클릭하면 우리의",
       "title": "계정에 로그인",
       "useApiKey": "Comfy API 키",
+      "useEmailInstead": "이메일로 계속하기",
       "userAvatar": "사용자 아바타"
     },
     "loginButton": {
@@ -282,6 +288,7 @@
     "signup": {
       "alreadyHaveAccount": "이미 계정이 있으신가요?",
       "emailLabel": "이메일",
+      "emailNotEligibleForFreeTier": "이메일 가입은 무료 등급에 해당되지 않습니다.",
       "emailPlaceholder": "이메일을 입력하세요",
       "passwordLabel": "비밀번호",
       "passwordPlaceholder": "새 비밀번호를 입력하세요",
@@ -1331,6 +1338,20 @@
       "switchToSelectButton": "선택으로 전환"
     },
     "beta": "앱 모드 베타 - 피드백 보내기",
+    "builder": {
+      "exit": "빌더 종료",
+      "exitConfirmMessage": "저장되지 않은 변경사항이 사라집니다\n저장하지 않고 종료하시겠습니까?",
+      "exitConfirmTitle": "앱 빌더를 종료할까요?",
+      "inputsDesc": "사용자가 이 항목을 조정하여 결과를 생성할 수 있습니다.",
+      "inputsExample": "예시: “이미지 불러오기”, “텍스트 프롬프트”, “스텝 수”",
+      "noInputs": "아직 입력값이 추가되지 않았습니다",
+      "noOutputs": "아직 출력 노드가 추가되지 않았습니다",
+      "outputsDesc": "최소 한 개 이상의 출력 노드를 연결해야 실행 후 결과를 볼 수 있습니다.",
+      "outputsExample": "예시: “이미지 저장” 또는 “비디오 저장”",
+      "promptAddInputs": "노드 파라미터를 클릭하여 입력값으로 추가하세요",
+      "promptAddOutputs": "출력 노드를 클릭하여 여기에 추가하세요. 이들이 생성된 결과가 됩니다.",
+      "title": "앱 빌더 모드"
+    },
     "downloadAll": "모두 다운로드",
     "dragAndDropImage": "이미지를 드래그 앤 드롭하세요",
     "graphMode": "그래프 모드",
@@ -1868,11 +1889,18 @@
     "showLinks": "링크 표시"
   },
   "missingModelsDialog": {
+    "customModelsInstruction": "직접 찾아서 수동으로 다운로드해야 합니다. 온라인에서 검색해보세요(예: Civitai 또는 Hugging Face) 또는 원래 워크플로우 제공자에게 문의하세요.",
+    "customModelsWarning": "이 중 일부는 인식되지 않는 커스텀 모델입니다.",
+    "description": "이 워크플로우에는 아직 다운로드하지 않은 모델이 필요합니다.",
     "doNotAskAgain": "다시 보지 않기",
-    "missingModels": "모델이 없습니다",
-    "missingModelsMessage": "그래프를 로드할 때 다음 모델을 찾을 수 없었습니다",
+    "downloadAll": "모두 다운로드",
+    "downloadAvailable": "다운로드 가능",
+    "footerDescription": "이 모델들을 다운로드하여 올바른 폴더에 넣으세요.\n모델이 누락된 노드는 캔버스에서 빨간색으로 표시됩니다.",
+    "gotIt": "확인",
     "reEnableInSettings": "{link}에서 다시 활성화",
-    "reEnableInSettingsLink": "설정"
+    "reEnableInSettingsLink": "설정",
+    "title": "이 워크플로우에 모델이 누락되었습니다",
+    "totalSize": "총 다운로드 크기:"
   },
   "missingNodes": {
     "cloud": {
@@ -2684,7 +2712,9 @@
     "addCreditsLabel": "언제든지 크레딧 추가 가능",
     "benefits": {
       "benefit1": "파트너 노드 월간 크레딧 — 필요 시 충전",
-      "benefit2": "작업당 최대 30분 실행 시간"
+      "benefit1FreeTier": "더 많은 월간 크레딧, 언제든지 충전 가능",
+      "benefit2": "작업당 최대 30분 실행 시간",
+      "benefit3": "직접 모델 가져오기(Creator & Pro)"
     },
     "beta": "베타",
     "billedMonthly": "매월 결제",
@@ -2722,6 +2752,21 @@
     "description": "가장 적합한 플랜을 선택하세요",
     "descriptionWorkspace": "워크스페이스에 가장 적합한 플랜을 선택하세요",
     "expiresDate": "만료일 {date}",
+    "freeTier": {
+      "description": "무료 플랜에는 Comfy Cloud를 체험할 수 있도록 매월 {credits} 크레딧이 포함되어 있습니다.",
+      "descriptionGeneric": "무료 플랜에는 Comfy Cloud를 체험할 수 있는 월간 크레딧이 포함되어 있습니다.",
+      "nextRefresh": "크레딧은 {date}에 새로 고침됩니다.",
+      "outOfCredits": {
+        "subtitle": "충전 및 추가 혜택을 위해 구독하세요",
+        "title": "무료 크레딧이 모두 소진되었습니다"
+      },
+      "subscribeCta": "더 많은 혜택 구독하기",
+      "title": "무료 플랜을 사용 중입니다",
+      "topUpBlocked": {
+        "title": "충전 및 추가 혜택 잠금 해제"
+      },
+      "upgradeCta": "플랜 보기"
+    },
     "gpuLabel": "RTX 6000 Pro (96GB VRAM)",
     "haveQuestions": "질문이 있거나 엔터프라이즈가 궁금하신가요?",
     "invoiceHistory": "청구서 기록",
@@ -2732,6 +2777,7 @@
     "maxDuration": {
       "creator": "30분",
       "founder": "30분",
+      "free": "30분",
       "pro": "1시간",
       "standard": "30분"
     },
@@ -2803,6 +2849,9 @@
       },
       "founder": {
         "name": "Founder's Edition"
+      },
+      "free": {
+        "name": "무료"
       },
       "pro": {
         "name": "Pro"

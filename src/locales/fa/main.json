@@ -225,6 +225,7 @@
     "login": {
       "andText": "و",
       "backToLogin": "بازگشت به ورود",
+      "backToSocialLogin": "ثبت‌نام با Google یا Github",
       "confirmPasswordLabel": "تأیید رمز عبور",
       "confirmPasswordPlaceholder": "رمز عبور را مجدداً وارد کنید",
       "didntReceiveEmail": "ایمیلی دریافت نکردید؟ با ما تماس بگیرید:",
@@ -233,6 +234,9 @@
       "failed": "ورود ناموفق بود",
       "forgotPassword": "رمز عبور را فراموش کرده‌اید؟",
       "forgotPasswordError": "ارسال ایمیل بازیابی رمز عبور ناموفق بود",
+      "freeTierBadge": "واجد شرایط طرح رایگان",
+      "freeTierDescription": "با ثبت‌نام از طریق Google هر ماه {credits} اعتبار رایگان دریافت کنید. نیاز به کارت نیست.",
+      "freeTierDescriptionGeneric": "با ثبت‌نام از طریق Google هر ماه اعتبار رایگان دریافت کنید. نیاز به کارت نیست.",
       "insecureContextWarning": "این اتصال ناامن است (HTTP) - در صورت ادامه ورود، اطلاعات شما ممکن است توسط مهاجمان رهگیری شود.",
       "loginButton": "ورود",
       "loginWithGithub": "ورود با Github",
@@ -251,11 +255,13 @@
       "sendResetLink": "ارسال لینک بازیابی",
       "signInOrSignUp": "ورود / ثبت‌نام",
       "signUp": "ثبت‌نام",
+      "signUpFreeTierPromo": "جدید هستید؟ با {signUp} از طریق Google هر ماه {credits} اعتبار رایگان دریافت کنید.",
       "success": "ورود موفقیت‌آمیز بود",
       "termsLink": "شرایط استفاده",
       "termsText": "با کلیک بر روی «بعدی» یا «ثبت‌نام»، شما با",
       "title": "ورود به حساب کاربری",
       "useApiKey": "کلید Comfy API",
+      "useEmailInstead": "استفاده از ایمیل به جای آن",
       "userAvatar": "آواتار کاربر"
     },
     "loginButton": {
@@ -282,6 +288,7 @@
     "signup": {
       "alreadyHaveAccount": "قبلاً حساب کاربری دارید؟",
       "emailLabel": "ایمیل",
+      "emailNotEligibleForFreeTier": "ثبت‌نام با ایمیل شامل طرح رایگان نمی‌شود.",
       "emailPlaceholder": "ایمیل خود را وارد کنید",
       "passwordLabel": "رمز عبور",
       "passwordPlaceholder": "رمز عبور جدید را وارد کنید",
@@ -1331,6 +1338,20 @@
       "switchToSelectButton": "رفتن به انتخاب"
     },
     "beta": "حالت برنامه بتا - ارسال بازخورد",
+    "builder": {
+      "exit": "خروج از حالت ساخت",
+      "exitConfirmMessage": "تغییرات ذخیره‌نشده شما از بین خواهد رفت\nخروج بدون ذخیره؟",
+      "exitConfirmTitle": "خروج از حالت ساخت اپلیکیشن؟",
+      "inputsDesc": "کاربران می‌توانند این موارد را تنظیم کنند تا خروجی مورد نظر خود را تولید نمایند.",
+      "inputsExample": "مثال‌ها: «بارگذاری تصویر»، «متن راهنما»، «تعداد مراحل»",
+      "noInputs": "هنوز ورودی‌ای اضافه نشده است",
+      "noOutputs": "هنوز گره خروجی اضافه نشده است",
+      "outputsDesc": "حداقل یک گره خروجی متصل کنید تا کاربران پس از اجرا نتایج را مشاهده کنند.",
+      "outputsExample": "مثال‌ها: «ذخیره تصویر» یا «ذخیره ویدیو»",
+      "promptAddInputs": "برای افزودن پارامترها به عنوان ورودی، روی پارامترهای گره کلیک کنید",
+      "promptAddOutputs": "برای افزودن خروجی، روی گره‌های خروجی کلیک کنید. این‌ها نتایج تولیدشده خواهند بود.",
+      "title": "حالت ساخت اپلیکیشن"
+    },
     "downloadAll": "دانلود همه",
     "dragAndDropImage": "تصویر را بکشید و رها کنید",
     "graphMode": "حالت گراف",
@@ -1868,11 +1889,18 @@
     "showLinks": "نمایش پیوندها"
   },
   "missingModelsDialog": {
+    "customModelsInstruction": "باید این مدل‌ها را به صورت دستی پیدا و دانلود کنید. آن‌ها را به صورت آنلاین جستجو کنید (Civitai یا Hugging Face را امتحان کنید) یا با ارائه‌دهنده اصلی گردش‌کار تماس بگیرید.",
+    "customModelsWarning": "برخی از این مدل‌ها سفارشی هستند و ما آن‌ها را نمی‌شناسیم.",
+    "description": "این گردش‌کار به مدل‌هایی نیاز دارد که هنوز آن‌ها را دانلود نکرده‌اید.",
     "doNotAskAgain": "دیگر نمایش داده نشود",
-    "missingModels": "مدل‌های مفقود",
-    "missingModelsMessage": "هنگام بارگذاری گراف، مدل‌های زیر یافت نشدند",
+    "downloadAll": "دانلود همه",
+    "downloadAvailable": "دانلود موجود",
+    "footerDescription": "این مدل‌ها را دانلود کرده و در پوشه صحیح قرار دهید.\nگره‌هایی که مدل آن‌ها موجود نیست، روی بوم به رنگ قرمز نمایش داده می‌شوند.",
+    "gotIt": "متوجه شدم",
     "reEnableInSettings": "فعال‌سازی مجدد در {link}",
-    "reEnableInSettingsLink": "تنظیمات"
+    "reEnableInSettingsLink": "تنظیمات",
+    "title": "این گردش‌کار فاقد مدل‌ها است",
+    "totalSize": "حجم کل دانلود:"
   },
   "missingNodes": {
     "cloud": {
@@ -2696,7 +2724,9 @@
     "addCreditsLabel": "هر زمان اعتبار بیشتری اضافه کنید",
     "benefits": {
       "benefit1": "۱۰ دلار اعتبار ماهانه برای Partner Nodes — در صورت نیاز شارژ کنید",
-      "benefit2": "تا ۳۰ دقیقه زمان اجرا برای هر کار"
+      "benefit1FreeTier": "اعتبار ماهانه بیشتر، شارژ مجدد در هر زمان",
+      "benefit2": "تا ۳۰ دقیقه زمان اجرا برای هر کار",
+      "benefit3": "امکان استفاده از مدل‌های شخصی (Creator و Pro)"
     },
     "beta": "بتا",
     "billedMonthly": "صورتحساب ماهانه",
@@ -2734,6 +2764,21 @@
     "description": "بهترین طرح را برای خود انتخاب کنید",
     "descriptionWorkspace": "بهترین طرح را برای فضای کاری خود انتخاب کنید",
     "expiresDate": "انقضا در {date}",
+    "freeTier": {
+      "description": "طرح رایگان شما شامل {credits} اعتبار در هر ماه برای استفاده از Comfy Cloud است.",
+      "descriptionGeneric": "طرح رایگان شما شامل اعتبار ماهانه برای استفاده از Comfy Cloud است.",
+      "nextRefresh": "اعتبار شما در تاریخ {date} به‌روزرسانی می‌شود.",
+      "outOfCredits": {
+        "subtitle": "با اشتراک، امکان شارژ مجدد و امکانات بیشتر را فعال کنید",
+        "title": "اعتبار رایگان شما تمام شده است"
+      },
+      "subscribeCta": "اشتراک برای اعتبار بیشتر",
+      "title": "شما در طرح رایگان هستید",
+      "topUpBlocked": {
+        "title": "امکان شارژ مجدد و امکانات بیشتر را فعال کنید"
+      },
+      "upgradeCta": "مشاهده طرح‌ها"
+    },
     "gpuLabel": "RTX 6000 Pro (۹۶ گیگابایت VRAM)",
     "haveQuestions": "سوالی دارید یا به دنبال راهکار سازمانی هستید؟",
     "invoiceHistory": "تاریخچه فاکتورها",
@@ -2744,6 +2789,7 @@
     "maxDuration": {
       "creator": "۳۰ دقیقه",
       "founder": "۳۰ دقیقه",
+      "free": "۳۰ دقیقه",
       "pro": "۱ ساعت",
       "standard": "۳۰ دقیقه"
     },
@@ -2815,6 +2861,9 @@
       },
       "founder": {
         "name": "نسخه بنیان‌گذاران"
+      },
+      "free": {
+        "name": "رایگان"
       },
       "pro": {
         "name": "حرفه‌ای"

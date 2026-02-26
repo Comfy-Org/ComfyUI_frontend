@@ -225,6 +225,7 @@
     "login": {
       "andText": "ve",
       "backToLogin": "Girişe dön",
+      "backToSocialLogin": "Bunun yerine Google veya Github ile kaydolun",
       "confirmPasswordLabel": "Şifreyi Onayla",
       "confirmPasswordPlaceholder": "Aynı şifreyi tekrar girin",
       "didntReceiveEmail": "E-posta almadınız mı? Bize şu adresten ulaşın:",
@@ -233,6 +234,9 @@
       "failed": "Giriş başarısız",
       "forgotPassword": "Şifrenizi mi unuttunuz?",
       "forgotPasswordError": "Şifre sıfırlama e-postası gönderilemedi",
+      "freeTierBadge": "Ücretsiz Katman Uygun",
+      "freeTierDescription": "Google ile kaydolun, her ay {credits} ücretsiz kredi kazanın. Kart gerekmez.",
+      "freeTierDescriptionGeneric": "Google ile kaydolun, her ay ücretsiz kredi kazanın. Kart gerekmez.",
       "insecureContextWarning": "Bu bağlantı güvensiz (HTTP) - giriş yapmaya devam ederseniz kimlik bilgileriniz saldırganlar tarafından ele geçirilebilir.",
       "loginButton": "Giriş Yap",
       "loginWithGithub": "Github ile giriş yap",
@@ -251,11 +255,13 @@
       "sendResetLink": "Sıfırlama bağlantısını gönder",
       "signInOrSignUp": "Giriş Yap / Kaydol",
       "signUp": "Kaydol",
+      "signUpFreeTierPromo": "Yeni misiniz? Her ay {credits} ücretsiz kredi almak için Google ile {signUp} olun.",
       "success": "Giriş başarılı",
       "termsLink": "Kullanım Koşullarımızı",
       "termsText": "\"İleri\" veya \"Kaydol\" düğmesine tıklayarak,",
       "title": "Hesabınıza giriş yapın",
       "useApiKey": "Comfy API Anahtarı",
+      "useEmailInstead": "Bunun yerine e-posta kullan",
       "userAvatar": "Kullanıcı Avatarı"
     },
     "loginButton": {
@@ -282,6 +288,7 @@
     "signup": {
       "alreadyHaveAccount": "Zaten bir hesabınız var mı?",
       "emailLabel": "E-posta",
+      "emailNotEligibleForFreeTier": "E-posta ile kayıt Ücretsiz Katman için uygun değildir.",
       "emailPlaceholder": "E-postanızı girin",
       "passwordLabel": "Şifre",
       "passwordPlaceholder": "Yeni şifre girin",
@@ -1331,6 +1338,20 @@
       "switchToSelectButton": "Seç'e Geç"
     },
     "beta": "Uygulama Modu Beta - Geri Bildirim Verin",
+    "builder": {
+      "exit": "Oluşturucudan çık",
+      "exitConfirmMessage": "Kaydedilmemiş değişiklikleriniz kaybolacak\nKaydetmeden çıkılsın mı?",
+      "exitConfirmTitle": "Uygulama oluşturucudan çıkılsın mı?",
+      "inputsDesc": "Kullanıcılar bunlarla etkileşime geçip ayarlayarak çıktılarını oluşturacak.",
+      "inputsExample": "Örnekler: “Resim yükle”, “Metin istemi”, “Adımlar”",
+      "noInputs": "Henüz giriş eklenmedi",
+      "noOutputs": "Henüz çıktı düğümü eklenmedi",
+      "outputsDesc": "Kullanıcıların çalıştırdıktan sonra sonuçları görebilmesi için en az bir çıktı düğümü bağlayın.",
+      "outputsExample": "Örnekler: “Resmi Kaydet” veya “Videoyu Kaydet”",
+      "promptAddInputs": "Girdi olarak eklemek için düğüm parametrelerine tıklayın",
+      "promptAddOutputs": "Çıktı olarak eklemek için çıktı düğümlerine tıklayın. Bunlar oluşturulan sonuçlar olacak.",
+      "title": "Uygulama oluşturucu modu"
+    },
     "downloadAll": "Tümünü İndir",
     "dragAndDropImage": "Bir görseli sürükleyip bırakın",
     "graphMode": "Grafik Modu",
@@ -1868,11 +1889,18 @@
     "showLinks": "Bağlantıları Göster"
   },
   "missingModelsDialog": {
+    "customModelsInstruction": "Bunları manuel olarak bulup indirmeniz gerekecek. İnternette arayın (Civitai veya Hugging Face deneyin) ya da orijinal iş akışı sağlayıcısıyla iletişime geçin.",
+    "customModelsWarning": "Bunlardan bazıları tanımadığımız özel modellerdir.",
+    "description": "Bu iş akışı, henüz indirmediğiniz modellere ihtiyaç duyuyor.",
     "doNotAskAgain": "Bunu bir daha gösterme",
-    "missingModels": "Eksik Modeller",
-    "missingModelsMessage": "Grafik yüklenirken aşağıdaki modeller bulunamadı",
+    "downloadAll": "Hepsini indir",
+    "downloadAvailable": "İndirilebilir",
+    "footerDescription": "Bu modelleri indirip doğru klasöre yerleştirin.\nEksik modeli olan düğümler tuvalde kırmızı ile vurgulanır.",
+    "gotIt": "Tamam, anladım",
     "reEnableInSettings": "{link} içinde tekrar etkinleştir",
-    "reEnableInSettingsLink": "Ayarlar"
+    "reEnableInSettingsLink": "Ayarlar",
+    "title": "Bu iş akışında eksik modeller var",
+    "totalSize": "Toplam indirme boyutu:"
   },
   "missingNodes": {
     "cloud": {
@@ -2684,7 +2712,9 @@
     "addCreditsLabel": "İstediğiniz zaman kredi ekleyin",
     "benefits": {
       "benefit1": "Partner Düğümleri için aylık krediler — ihtiyaç duyulduğunda yükleyin",
-      "benefit2": "İş başına en fazla 30 dakika çalışma süresi"
+      "benefit1FreeTier": "Daha fazla aylık kredi, istediğiniz zaman yükleyin",
+      "benefit2": "İş başına en fazla 30 dakika çalışma süresi",
+      "benefit3": "Kendi modellerinizi getirin (Creator & Pro)"
     },
     "beta": "BETA",
     "billedMonthly": "Aylık faturalandırılır",
@@ -2722,6 +2752,21 @@
     "description": "Sizin için en iyi planı seçin",
     "descriptionWorkspace": "Çalışma alanınız için en iyi planı seçin",
     "expiresDate": "{date} tarihinde sona erer",
+    "freeTier": {
+      "description": "Ücretsiz planınız, Comfy Cloud'u denemek için her ay {credits} kredi içerir.",
+      "descriptionGeneric": "Ücretsiz planınız, Comfy Cloud'u denemek için aylık kredi hakkı içerir.",
+      "nextRefresh": "Kredileriniz {date} tarihinde yenilenecek.",
+      "outOfCredits": {
+        "subtitle": "Yeniden yükleme ve daha fazlasının kilidini açmak için abone olun",
+        "title": "Ücretsiz kredileriniz bitti"
+      },
+      "subscribeCta": "Daha fazlası için abone olun",
+      "title": "Ücretsiz plandasınız",
+      "topUpBlocked": {
+        "title": "Yeniden yükleme ve daha fazlasının kilidini açın"
+      },
+      "upgradeCta": "Planları görüntüle"
+    },
     "gpuLabel": "RTX 6000 Pro (96GB VRAM)",
     "haveQuestions": "Sorularınız mı var veya kurumsal çözüm mü arıyorsunuz?",
     "invoiceHistory": "Fatura geçmişi",
@@ -2732,6 +2777,7 @@
     "maxDuration": {
       "creator": "30 dk",
       "founder": "30 dk",
+      "free": "30 dk",
       "pro": "1 sa",
       "standard": "30 dk"
     },
@@ -2803,6 +2849,9 @@
       },
       "founder": {
         "name": "Kurucu Sürümü"
+      },
+      "free": {
+        "name": "Ücretsiz"
       },
       "pro": {
         "name": "Pro"

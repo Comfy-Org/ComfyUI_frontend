@@ -225,6 +225,7 @@
     "login": {
       "andText": "和",
       "backToLogin": "返回登录",
+      "backToSocialLogin": "改用 Google 或 Github 注册",
       "confirmPasswordLabel": "确认密码",
       "confirmPasswordPlaceholder": "再次输入相同的密码",
       "didntReceiveEmail": "没有收到邮件？请联系我们：",
@@ -233,6 +234,9 @@
       "failed": "登录失败",
       "forgotPassword": "忘记密码？",
       "forgotPasswordError": "发送重置密码邮件失败",
+      "freeTierBadge": "可享免费套餐",
+      "freeTierDescription": "使用 Google 注册，每月可获得 {credits} 免费积分。无需绑定银行卡。",
+      "freeTierDescriptionGeneric": "使用 Google 注册，每月可获得免费积分。无需绑定银行卡。",
       "insecureContextWarning": "此连接不安全（HTTP）—如果继续登录，您的凭据可能会被攻击者拦截。",
       "loginButton": "登录",
       "loginWithGithub": "使用Github登录",
@@ -251,11 +255,13 @@
       "sendResetLink": "发送重置链接",
       "signInOrSignUp": "登录 / 注册",
       "signUp": "注册",
+      "signUpFreeTierPromo": "新用户？使用 Google {signUp}，每月可获得 {credits} 免费积分。",
       "success": "登录成功",
       "termsLink": "使用条款",
       "termsText": "点击“下一步”或“注册”即表示您同意我们的",
       "title": "登录您的账户",
       "useApiKey": "Comfy API 密钥",
+      "useEmailInstead": "改用邮箱",
       "userAvatar": "用户头像"
     },
     "loginButton": {
@@ -282,6 +288,7 @@
     "signup": {
       "alreadyHaveAccount": "已经有账户了？",
       "emailLabel": "电子邮件",
+      "emailNotEligibleForFreeTier": "邮箱注册不支持免费套餐。",
       "emailPlaceholder": "输入您的电子邮件",
       "passwordLabel": "密码",
       "passwordPlaceholder": "输入新密码",
@@ -1331,6 +1338,20 @@
       "switchToSelectButton": "切换到选择"
     },
     "beta": "App 模式测试版 - 提供反馈",
+    "builder": {
+      "exit": "退出构建器",
+      "exitConfirmMessage": "您有未保存的更改将会丢失\n确定不保存直接退出吗？",
+      "exitConfirmTitle": "退出应用构建器？",
+      "inputsDesc": "用户可通过这些输入项进行交互和调整，以生成输出结果。",
+      "inputsExample": "示例：“加载图像”、“文本提示”、“步数”",
+      "noInputs": "尚未添加输入项",
+      "noOutputs": "尚未添加输出节点",
+      "outputsDesc": "请至少连接一个输出节点，用户运行后才能看到结果。",
+      "outputsExample": "示例：“保存图像”或“保存视频”",
+      "promptAddInputs": "点击节点参数，将其添加为输入项",
+      "promptAddOutputs": "点击输出节点，将其添加到此处。这些将作为生成结果。",
+      "title": "应用构建模式"
+    },
     "downloadAll": "全部下载",
     "dragAndDropImage": "拖拽图片到此处",
     "graphMode": "图形模式",
@@ -1868,11 +1889,18 @@
     "showLinks": "显示连接"
   },
   "missingModelsDialog": {
+    "customModelsInstruction": "您需要手动查找并下载这些模型。请在网上搜索（如 Civitai 或 Hugging Face），或联系原始工作流提供者。",
+    "customModelsWarning": "其中一些是我们无法识别的自定义模型。",
+    "description": "此工作流需要您尚未下载的模型。",
     "doNotAskAgain": "不再显示此消息",
-    "missingModels": "缺少模型",
-    "missingModelsMessage": "加载工作流时，未找到以下模型",
+    "downloadAll": "全部下载",
+    "downloadAvailable": "下载可用项",
+    "footerDescription": "请下载并将这些模型放入正确的文件夹。\n画布上缺少模型的节点会以红色高亮显示。",
+    "gotIt": "好的，知道了",
     "reEnableInSettings": "可在{link}中重新启用",
-    "reEnableInSettingsLink": "设置"
+    "reEnableInSettingsLink": "设置",
+    "title": "此工作流缺少模型",
+    "totalSize": "总下载大小："
   },
   "missingNodes": {
     "cloud": {
@@ -2696,7 +2724,9 @@
     "addCreditsLabel": "随时获取更多积分",
     "benefits": {
       "benefit1": "合作伙伴节点的月度积分 — 按需充值",
-      "benefit2": "每个队列最长运行 30 分钟"
+      "benefit1FreeTier": "每月更多积分，随时补充",
+      "benefit2": "每个队列最长运行 30 分钟",
+      "benefit3": "支持自带模型（Creator & Pro）"
     },
     "beta": "测试版",
     "billedMonthly": "每月付款",
@@ -2734,6 +2764,21 @@
     "description": "选择最适合您的订阅计划",
     "descriptionWorkspace": "为您的工作区选择最佳方案",
     "expiresDate": "于 {date} 过期",
+    "freeTier": {
+      "description": "您的免费套餐每月包含 {credits} 积分，可体验 Comfy Cloud。",
+      "descriptionGeneric": "您的免费套餐每月包含积分额度，可体验 Comfy Cloud。",
+      "nextRefresh": "您的积分将在 {date} 刷新。",
+      "outOfCredits": {
+        "subtitle": "订阅以解锁补充积分和更多功能",
+        "title": "您的免费积分已用完"
+      },
+      "subscribeCta": "订阅获取更多",
+      "title": "您正在使用免费套餐",
+      "topUpBlocked": {
+        "title": "解锁补充积分和更多功能"
+      },
+      "upgradeCta": "查看套餐"
+    },
     "gpuLabel": "RTX 6000 Pro (96GB VRAM)",
     "haveQuestions": "对企业级有疑问？",
     "invoiceHistory": "发票历史",
@@ -2744,6 +2789,7 @@
     "maxDuration": {
       "creator": "30 分钟",
       "founder": "30 分钟",
+      "free": "30 分钟",
       "pro": "1 小时",
       "standard": "30 分钟"
     },
@@ -2815,6 +2861,9 @@
       },
       "founder": {
         "name": "Founder's Edition"
+      },
+      "free": {
+        "name": "免费"
       },
       "pro": {
         "name": "Pro"
