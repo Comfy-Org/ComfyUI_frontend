@@ -211,11 +211,13 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     subgraphEvents.addEventListener(
       'renaming-input',
       (e) => {
-        const { index, newName } = e.detail
+        const { index, newName, canonicalName } = e.detail
         const input = this.inputs.at(index)
         if (!input) throw new Error('Subgraph input not found')
 
+        input.name = canonicalName ?? newName
         input.label = newName
+        if (input.widget) input.widget.name = input.name
         if (input._widget) {
           input._widget.label = newName
         }
@@ -226,10 +228,11 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     subgraphEvents.addEventListener(
       'renaming-output',
       (e) => {
-        const { index, newName } = e.detail
+        const { index, newName, canonicalName } = e.detail
         const output = this.outputs.at(index)
         if (!output) throw new Error('Subgraph output not found')
 
+        output.name = canonicalName ?? newName
         output.label = newName
       },
       { signal }

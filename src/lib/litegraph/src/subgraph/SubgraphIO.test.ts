@@ -1,7 +1,7 @@
 // TODO: Fix these tests after migration
 import { describe, expect, it, vi } from 'vitest'
 
-import { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { ToInputFromIoNodeLink } from '@/lib/litegraph/src/canvas/ToInputFromIoNodeLink'
 import {
   SUBGRAPH_INPUT_ID,
@@ -9,12 +9,97 @@ import {
 } from '@/lib/litegraph/src/constants'
 import { LinkDirection } from '@/lib/litegraph/src//types/globalEnums'
 import { NodeSlotType } from '@/lib/litegraph/src/types/globalEnums'
+import { createUuidv4 } from '@/lib/litegraph/src/utils/uuid'
 
 import { subgraphTest } from './__fixtures__/subgraphFixtures'
 import {
+  createTestSubgraphData,
   createTestSubgraph,
   createTestSubgraphNode
 } from './__fixtures__/subgraphHelpers'
+
+describe('SubgraphIO - Slot Identity Normalization', () => {
+  subgraphTest(
+    'adds duplicate input/output names with stable canonical names while preserving display labels',
+    ({ simpleSubgraph }) => {
+      const inputA = simpleSubgraph.addInput('duplicate', 'number')
+      const inputB = simpleSubgraph.addInput('duplicate', 'string')
+      const outputA = simpleSubgraph.addOutput('duplicate', 'number')
+      const outputB = simpleSubgraph.addOutput('duplicate', 'string')
+
+      expect(inputA.name).toBe('duplicate')
+      expect(inputA.displayName).toBe('duplicate')
+      expect(inputB.name).toBe(`duplicate__${inputB.id}`)
+      expect(inputB.label).toBe('duplicate')
+      expect(inputB.displayName).toBe('duplicate')
+
+      expect(outputA.name).toBe('duplicate')
+      expect(outputA.displayName).toBe('duplicate')
+      expect(outputB.name).toBe(`duplicate__${outputB.id}`)
+      expect(outputB.label).toBe('duplicate')
+      expect(outputB.displayName).toBe('duplicate')
+    }
+  )
+
+  subgraphTest(
+    'renaming to an existing slot name preserves display labels while assigning stable canonical identities',
+    ({ simpleSubgraph }) => {
+      const inputA = simpleSubgraph.addInput('source', 'number')
+      const inputB = simpleSubgraph.addInput('target', 'number')
+      const outputA = simpleSubgraph.addOutput('source', 'number')
+      const outputB = simpleSubgraph.addOutput('target', 'number')
+
+      simpleSubgraph.renameInput(inputB, 'source')
+      simpleSubgraph.renameOutput(outputB, 'source')
+
+      expect(inputA.name).toBe('source')
+      expect(inputB.name).toBe(`source__${inputB.id}`)
+      expect(inputB.displayName).toBe('source')
+
+      expect(outputA.name).toBe('source')
+      expect(outputB.name).toBe(`source__${outputB.id}`)
+      expect(outputB.displayName).toBe('source')
+    }
+  )
+
+  it('normalizes legacy duplicate slot names into stable canonical identities on configure', () => {
+    const rootGraph = new LGraph()
+    const inputIdA = createUuidv4()
+    const inputIdB = createUuidv4()
+    const outputIdA = createUuidv4()
+    const outputIdB = createUuidv4()
+
+    const subgraph = rootGraph.createSubgraph(
+      createTestSubgraphData({
+        inputs: [
+          { id: inputIdA, name: 'legacy', type: 'number' },
+          { id: inputIdB, name: 'legacy', type: 'number' }
+        ],
+        outputs: [
+          { id: outputIdA, name: 'legacy', type: 'number' },
+          { id: outputIdB, name: 'legacy', type: 'number' }
+        ]
+      })
+    )
+
+    expect(subgraph.inputs.map((slot) => slot.name)).toEqual([
+      'legacy',
+      `legacy__${inputIdB}`
+    ])
+    expect(subgraph.outputs.map((slot) => slot.name)).toEqual([
+      'legacy',
+      `legacy__${outputIdB}`
+    ])
+    expect(subgraph.inputs.map((slot) => slot.displayName)).toEqual([
+      'legacy',
+      'legacy'
+    ])
+    expect(subgraph.outputs.map((slot) => slot.displayName)).toEqual([
+      'legacy',
+      'legacy'
+    ])
+  })
+})
 
 describe('SubgraphIO - Input Slot Dual-Nature Behavior', () => {
   subgraphTest(

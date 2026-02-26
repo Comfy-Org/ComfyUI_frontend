@@ -2879,6 +2879,7 @@ export class Subgraph
   implements BaseLGraph, Serialisable<ExportedSubgraph>
 {
   override readonly events = new CustomEventTarget<SubgraphEventMap>()
+  private static duplicateIdentitySeparator = '__'
 
   /** Limits the number of levels / depth that subgraphs may be nested.  Prevents uncontrolled programmatic nesting. */
   static MAX_NESTED_SUBGRAPHS = 1000
@@ -2946,8 +2947,11 @@ export class Subgraph
       for (const input of inputs) {
         const subgraphInput = new SubgraphInput(input, this.inputNode)
         this.inputs.push(subgraphInput)
-        this.events.dispatch('input-added', { input: subgraphInput })
       }
+
+      this._normalizeLegacySlotIdentity(this.inputs)
+      for (const subgraphInput of this.inputs)
+        this.events.dispatch('input-added', { input: subgraphInput })
     }
 
     if (outputs) {
@@ -2955,6 +2959,8 @@ export class Subgraph
       for (const output of outputs) {
         this.outputs.push(new SubgraphOutput(output, this.outputNode))
       }
+
+      this._normalizeLegacySlotIdentity(this.outputs)
     }
 
     if (widgets) {
@@ -2993,10 +2999,14 @@ export class Subgraph
 
     this.events.dispatch('adding-input', { name, type })
 
+    const id = createUuidv4()
+    const canonicalName = this._resolveCanonicalSlotName(this.inputs, name, id)
+
     const input = new SubgraphInput(
       {
-        id: createUuidv4(),
-        name,
+        id,
+        name: canonicalName,
+        label: canonicalName === name ? undefined : name,
         type
       },
       this.inputNode
@@ -3015,10 +3025,14 @@ export class Subgraph
 
     this.events.dispatch('adding-output', { name, type })
 
+    const id = createUuidv4()
+    const canonicalName = this._resolveCanonicalSlotName(this.outputs, name, id)
+
     const output = new SubgraphOutput(
       {
-        id: createUuidv4(),
-        name,
+        id,
+        name: canonicalName,
+        label: canonicalName === name ? undefined : name,
         type
       },
       this.outputNode
@@ -3040,13 +3054,20 @@ export class Subgraph
     if (index === -1) throw new Error('Input not found')
 
     const oldName = input.displayName
+    const canonicalName = this._resolveCanonicalSlotName(
+      this.inputs,
+      name,
+      input.id
+    )
     this.events.dispatch('renaming-input', {
       input,
       index,
       oldName,
-      newName: name
+      newName: name,
+      canonicalName
     })
 
+    input.name = canonicalName
     input.label = name
   }
 
@@ -3060,14 +3081,49 @@ export class Subgraph
     if (index === -1) throw new Error('Output not found')
 
     const oldName = output.displayName
+    const canonicalName = this._resolveCanonicalSlotName(
+      this.outputs,
+      name,
+      output.id
+    )
     this.events.dispatch('renaming-output', {
       output,
       index,
       oldName,
-      newName: name
+      newName: name,
+      canonicalName
     })
 
+    output.name = canonicalName
     output.label = name
+  }
+
+  private _resolveCanonicalSlotName<TSlot extends { id: UUID; name: string }>(
+    slots: readonly TSlot[],
+    requestedName: string,
+    slotId: UUID
+  ): string {
+    if (
+      !slots.some((slot) => slot.id !== slotId && slot.name === requestedName)
+    )
+      return requestedName
+
+    return `${requestedName}${Subgraph.duplicateIdentitySeparator}${slotId}`
+  }
+
+  private _normalizeLegacySlotIdentity<
+    TSlot extends { id: UUID; name: string; label?: string }
+  >(slots: TSlot[]): void {
+    const seenCounts = new Map<string, number>()
+
+    for (const slot of slots) {
+      const count = seenCounts.get(slot.name) ?? 0
+      seenCounts.set(slot.name, count + 1)
+      if (count === 0) continue
+
+      slot.label ??= slot.name
+      slot.name = `${slot.name}${Subgraph.duplicateIdentitySeparator}${slot.id}`
+    }
   }
 
   /**
