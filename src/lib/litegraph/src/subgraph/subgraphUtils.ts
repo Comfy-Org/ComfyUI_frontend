@@ -1,8 +1,9 @@
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import { LGraphGroup } from '@/lib/litegraph/src/LGraphGroup'
 import { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import type { NodeId } from '@/lib/litegraph/src/LGraphNode'
 import { LLink } from '@/lib/litegraph/src/LLink'
-import type { ResolvedConnection } from '@/lib/litegraph/src/LLink'
+import type { LinkId, ResolvedConnection } from '@/lib/litegraph/src/LLink'
 import { Reroute } from '@/lib/litegraph/src/Reroute'
 import type { RerouteId } from '@/lib/litegraph/src/Reroute'
 import {
@@ -88,6 +89,90 @@ interface BoundaryLinks {
   internalLinks: LLink[]
   boundaryInputLinks: LLink[]
   boundaryOutputLinks: LLink[]
+}
+
+interface SubgraphBoundaryNodeView {
+  id: NodeId
+  inputs: Array<{ link?: LinkId | null }>
+  outputs: Array<{ links?: LinkId[] | null }>
+}
+
+interface SubgraphBoundaryOutputEndpoint {
+  targetId: NodeId
+  targetSlot: number
+  externalParentId: RerouteId | undefined
+}
+
+interface SubgraphBoundaryInputEndpoint {
+  originId: NodeId
+  originSlot: number
+  externalParentId: RerouteId | undefined
+}
+
+export const subgraphBoundaryAdapter = {
+  isInputBoundary(link: LLink): boolean {
+    return link.origin_id === SUBGRAPH_INPUT_ID
+  },
+
+  isOutputBoundary(link: LLink): boolean {
+    return link.target_id === SUBGRAPH_OUTPUT_ID
+  },
+
+  remapInputBoundaryForConvert(
+    link: LLink,
+    subgraphNodeId: NodeId,
+    subgraphInputSlot: number
+  ): void {
+    link.target_id = subgraphNodeId
+    link.target_slot = subgraphInputSlot
+  },
+
+  remapOutputBoundaryForConvert(
+    link: LLink,
+    subgraphNodeId: NodeId,
+    subgraphOutputSlot: number
+  ): void {
+    link.origin_id = subgraphNodeId
+    link.origin_slot = subgraphOutputSlot
+  },
+
+  remapInputBoundaryForUnpack(
+    link: LLink,
+    subgraphNode: SubgraphBoundaryNodeView,
+    links: Map<LinkId, LLink>
+  ): SubgraphBoundaryInputEndpoint | undefined {
+    const outerLinkId = subgraphNode.inputs[link.origin_slot]?.link
+    if (outerLinkId == null) return
+
+    const outerLink = links.get(outerLinkId)
+    if (!outerLink) return
+
+    return {
+      originId: outerLink.origin_id,
+      originSlot: outerLink.origin_slot,
+      externalParentId: outerLink.parentId
+    }
+  },
+
+  resolveOutputBoundaryForUnpack(
+    link: LLink,
+    subgraphNode: SubgraphBoundaryNodeView,
+    links: Map<LinkId, LLink>
+  ): SubgraphBoundaryOutputEndpoint[] {
+    const results: SubgraphBoundaryOutputEndpoint[] = []
+    for (const linkId of subgraphNode.outputs[link.target_slot]?.links ?? []) {
+      const outerLink = links.get(linkId)
+      if (!outerLink) continue
+
+      results.push({
+        targetId: outerLink.target_id,
+        targetSlot: outerLink.target_slot,
+        externalParentId: outerLink.parentId
+      })
+    }
+
+    return results
+  }
 }
 
 export function getBoundaryLinks(

@@ -7,7 +7,8 @@ import {
   LGraph,
   LGraphNode,
   LiteGraph,
-  LLink
+  LLink,
+  SubgraphNode
 } from '@/lib/litegraph/src/litegraph'
 import { NodeSlotType } from '@/lib/litegraph/src/types/globalEnums'
 import type { UUID } from '@/lib/litegraph/src/utils/uuid'
@@ -786,6 +787,42 @@ describe('ensureGlobalIdUniqueness', () => {
 })
 
 describe('Subgraph Unpacking', () => {
+  function installSubgraphNodeRegistration(rootGraph: LGraph): () => void {
+    const listener = (event: CustomEvent<{ subgraph: Subgraph }>): void => {
+      const { subgraph } = event.detail
+
+      class RuntimeSubgraphNode extends SubgraphNode {
+        constructor(title?: string) {
+          super(rootGraph, subgraph, {
+            id: ++rootGraph.last_node_id,
+            type: subgraph.id,
+            title,
+            pos: [0, 0],
+            size: [140, 80],
+            inputs: [],
+            outputs: [],
+            properties: {},
+            flags: {},
+            mode: 0,
+            order: 0
+          })
+        }
+      }
+
+      LiteGraph.registerNodeType(subgraph.id, RuntimeSubgraphNode)
+    }
+
+    rootGraph.events.addEventListener('subgraph-created', listener)
+    return () =>
+      rootGraph.events.removeEventListener('subgraph-created', listener)
+  }
+
+  function getRequiredNodeByTitle(graph: LGraph, title: string): LGraphNode {
+    const node = graph.nodes.find((candidate) => candidate.title === title)
+    if (!node) throw new Error(`Expected node titled ${title}`)
+    return node
+  }
+
   class TestNode extends LGraphNode {
     constructor(title?: string) {
       super(title ?? 'TestNode')
@@ -889,5 +926,116 @@ describe('Subgraph Unpacking', () => {
     const unpackedTarget = rootGraph.nodes.find((n) => n.title === 'Target')!
     expect(unpackedTarget.inputs[0].link).not.toBeNull()
     expect(unpackedTarget.inputs[1].link).toBeNull()
+  })
+
+  it('preserves boundary input reroute parent remap across convert and unpack', () => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
+    registerTestNodes()
+    const rootGraph = new LGraph()
+    const cleanupRegistration = installSubgraphNodeRegistration(rootGraph)
+    try {
+      const externalSource = LiteGraph.createNode(
+        'test/TestNode',
+        'external-source'
+      )
+      const boundaryTarget = LiteGraph.createNode(
+        'test/TestNode',
+        'boundary-target'
+      )
+      if (!externalSource || !boundaryTarget)
+        throw new Error('Expected test nodes')
+      rootGraph.add(externalSource)
+      rootGraph.add(boundaryTarget)
+
+      const boundaryLink = externalSource.connect(0, boundaryTarget, 0)
+      if (!boundaryLink) throw new Error('Expected boundary link')
+
+      const reroute = rootGraph.createReroute([120, 40], boundaryLink)
+      expect(boundaryLink.parentId).toBe(reroute.id)
+
+      const { node: subgraphNode } = rootGraph.convertToSubgraph(
+        new Set([boundaryTarget])
+      )
+      const convertedBoundaryLinkId = subgraphNode.inputs[0].link
+      if (convertedBoundaryLinkId == null)
+        throw new Error('Expected converted boundary input link')
+
+      const convertedBoundaryLink = rootGraph.getLink(convertedBoundaryLinkId)
+      if (!convertedBoundaryLink)
+        throw new Error('Expected converted boundary input link instance')
+      expect(convertedBoundaryLink.parentId).toBe(reroute.id)
+
+      rootGraph.unpackSubgraph(subgraphNode)
+
+      const unpackedTarget = getRequiredNodeByTitle(
+        rootGraph,
+        'boundary-target'
+      )
+      const unpackedLink = rootGraph.getLink(unpackedTarget.inputs[0].link)
+      if (!unpackedLink)
+        throw new Error('Expected unpacked boundary input link')
+
+      expect(unpackedLink.origin_id).toBe(externalSource.id)
+      expect(unpackedLink.target_id).toBe(unpackedTarget.id)
+      expect(unpackedLink.parentId).toBe(reroute.id)
+    } finally {
+      cleanupRegistration()
+    }
+  })
+
+  it('preserves boundary output reroute parent remap across convert and unpack', () => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
+    registerTestNodes()
+    const rootGraph = new LGraph()
+    const cleanupRegistration = installSubgraphNodeRegistration(rootGraph)
+    try {
+      const boundarySource = LiteGraph.createNode(
+        'test/TestNode',
+        'boundary-source'
+      )
+      const externalTarget = LiteGraph.createNode(
+        'test/TestNode',
+        'external-target'
+      )
+      if (!boundarySource || !externalTarget)
+        throw new Error('Expected test nodes')
+      rootGraph.add(boundarySource)
+      rootGraph.add(externalTarget)
+
+      const boundaryLink = boundarySource.connect(0, externalTarget, 0)
+      if (!boundaryLink) throw new Error('Expected boundary link')
+
+      const reroute = rootGraph.createReroute([180, 80], boundaryLink)
+      expect(boundaryLink.parentId).toBe(reroute.id)
+
+      const { node: subgraphNode } = rootGraph.convertToSubgraph(
+        new Set([boundarySource])
+      )
+      const convertedBoundaryLinkId = subgraphNode.outputs[0].links?.[0]
+      if (convertedBoundaryLinkId == null)
+        throw new Error('Expected converted boundary output link')
+
+      const convertedBoundaryLink = rootGraph.getLink(convertedBoundaryLinkId)
+      if (!convertedBoundaryLink)
+        throw new Error('Expected converted boundary output link instance')
+      expect(convertedBoundaryLink.parentId).toBe(reroute.id)
+
+      rootGraph.unpackSubgraph(subgraphNode)
+
+      const unpackedSource = getRequiredNodeByTitle(
+        rootGraph,
+        'boundary-source'
+      )
+      const unpackedLinkId = unpackedSource.outputs[0].links?.[0]
+      const unpackedLink = rootGraph.getLink(unpackedLinkId)
+      if (!unpackedLink)
+        throw new Error('Expected unpacked boundary output link')
+
+      expect(unpackedLink.origin_id).toBe(unpackedSource.id)
+      expect(unpackedLink.target_id).toBe(externalTarget.id)
+      expect(unpackedLink.parentId).toBe(reroute.id)
+    } finally {
+      cleanupRegistration()
+    }
   })
 })

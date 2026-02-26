@@ -59,6 +59,7 @@ import {
   mapSubgraphInputsAndLinks,
   mapSubgraphOutputsAndLinks,
   multiClone,
+  subgraphBoundaryAdapter,
   splitPositionables
 } from './subgraph/subgraphUtils'
 import { Alignment, LGraphEventMode, NodeSlotType } from './types/globalEnums'
@@ -1991,9 +1992,12 @@ export class LGraph
 
       // Special handling: Subgraph input node
       i++
-      if (link.origin_id === SUBGRAPH_INPUT_ID) {
-        link.target_id = subgraphNode.id
-        link.target_slot = i - 1
+      if (subgraphBoundaryAdapter.isInputBoundary(link)) {
+        subgraphBoundaryAdapter.remapInputBoundaryForConvert(
+          link,
+          subgraphNode.id,
+          i - 1
+        )
         if (subgraphInput instanceof SubgraphInput) {
           subgraphInput.connect(
             subgraphNode.findInputSlotByType(link.type, true, true),
@@ -2032,9 +2036,12 @@ export class LGraph
       for (const connection of connections) {
         const { input, inputNode, link, subgraphOutput } = connection
         // Special handling: Subgraph output node
-        if (link.target_id === SUBGRAPH_OUTPUT_ID) {
-          link.origin_id = subgraphNode.id
-          link.origin_slot = i - 1
+        if (subgraphBoundaryAdapter.isOutputBoundary(link)) {
+          subgraphBoundaryAdapter.remapOutputBoundaryForConvert(
+            link,
+            subgraphNode.id,
+            i - 1
+          )
           this.links.set(link.id, link)
           if (subgraphOutput instanceof SubgraphOutput) {
             subgraphOutput.connect(
@@ -2203,16 +2210,20 @@ export class LGraph
     }[] = []
     for (const [, link] of subgraphNode.subgraph._links) {
       let externalParentId: RerouteId | undefined
-      if (link.origin_id === SUBGRAPH_INPUT_ID) {
-        const outerLinkId = subgraphNode.inputs[link.origin_slot].link
-        if (!outerLinkId) {
+      if (subgraphBoundaryAdapter.isInputBoundary(link)) {
+        const endpoint = subgraphBoundaryAdapter.remapInputBoundaryForUnpack(
+          link,
+          subgraphNode,
+          this.links
+        )
+        if (!endpoint) {
           console.error('Missing Link ID when unpacking')
           continue
         }
-        const outerLink = this.links[outerLinkId]
-        link.origin_id = outerLink.origin_id
-        link.origin_slot = outerLink.origin_slot
-        externalParentId = outerLink.parentId
+
+        link.origin_id = endpoint.originId
+        link.origin_slot = endpoint.originSlot
+        externalParentId = endpoint.externalParentId
       } else {
         const origin_id = nodeIdMap.get(link.origin_id)
         if (!origin_id) {
@@ -2221,22 +2232,37 @@ export class LGraph
         }
         link.origin_id = origin_id
       }
-      if (link.target_id === SUBGRAPH_OUTPUT_ID) {
-        for (const linkId of subgraphNode.outputs[link.target_slot].links ??
-          []) {
-          const sublink = this.links[linkId]
+      if (subgraphBoundaryAdapter.isOutputBoundary(link)) {
+        const outputEndpoints =
+          subgraphBoundaryAdapter.resolveOutputBoundaryForUnpack(
+            link,
+            subgraphNode,
+            this.links
+          )
+        if (outputEndpoints.length === 0) {
+          console.error('Missing Link ID when unpacking')
+          continue
+        }
+
+        for (const endpoint of outputEndpoints) {
           newLinks.push({
             oid: link.origin_id,
             oslot: link.origin_slot,
-            tid: sublink.target_id,
-            tslot: sublink.target_slot,
+            tid: endpoint.targetId,
+            tslot: endpoint.targetSlot,
             id: link.id,
             iparent: link.parentId,
-            eparent: sublink.parentId,
+            eparent: endpoint.externalParentId,
             externalFirst: true
           })
-          sublink.parentId = undefined
         }
+
+        for (const linkId of subgraphNode.outputs[link.target_slot].links ??
+          []) {
+          const sublink = this.links.get(linkId)
+          if (sublink) sublink.parentId = undefined
+        }
+
         continue
       } else {
         const target_id = nodeIdMap.get(link.target_id)
