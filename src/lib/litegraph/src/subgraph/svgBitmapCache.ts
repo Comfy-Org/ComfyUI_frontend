@@ -1,7 +1,4 @@
-export function createBitmapCache(
-  svg: HTMLImageElement,
-  bitmapSize: number
-) {
+export function createBitmapCache(svg: HTMLImageElement, bitmapSize: number) {
   let bitmap: HTMLCanvasElement | null = null
 
   return {
