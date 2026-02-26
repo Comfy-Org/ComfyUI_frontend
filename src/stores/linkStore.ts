@@ -4,7 +4,7 @@ import type { LinkId, LLink } from '@/lib/litegraph/src/LLink'
 import type { Reroute, RerouteId } from '@/lib/litegraph/src/Reroute'
 import type { UUID } from '@/lib/litegraph/src/utils/uuid'
 
-export interface LinkStoreTopology {
+interface LinkStoreTopology {
   links: ReadonlyMap<LinkId, LLink>
   floatingLinks: ReadonlyMap<LinkId, LLink>
   reroutes: ReadonlyMap<RerouteId, Reroute>
