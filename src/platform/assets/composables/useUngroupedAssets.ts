@@ -11,17 +11,20 @@ export function useUngroupedAssets(
   assets: Ref<AssetItem[]>,
   groupByJob: Ref<boolean>
 ) {
-  const { call: cachedResolve, cancel } = useCachedRequest((jobId: string) => {
-    const asset = assets.value.find((a) => {
-      const m = getOutputAssetMetadata(a.user_metadata)
-      return m?.jobId === jobId
-    })
-    if (!asset) return Promise.resolve(null)
-    const metadata = getOutputAssetMetadata(asset.user_metadata)!
-    return resolveOutputAssetItems(metadata, {
-      createdAt: asset.created_at
-    })
-  })
+  const { call: cachedResolve, cancel } = useCachedRequest(
+    (jobId: string, signal?: AbortSignal) => {
+      const asset = assets.value.find((a) => {
+        const m = getOutputAssetMetadata(a.user_metadata)
+        return m?.jobId === jobId
+      })
+      if (!asset) return Promise.resolve(null)
+      const metadata = getOutputAssetMetadata(asset.user_metadata)!
+      return resolveOutputAssetItems(metadata, {
+        createdAt: asset.created_at,
+        signal
+      })
+    }
+  )
 
   const isResolving = ref(false)
 

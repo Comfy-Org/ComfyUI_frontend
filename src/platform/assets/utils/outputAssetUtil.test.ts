@@ -117,7 +117,7 @@ describe('resolveOutputAssetItems', () => {
 
     const results = await resolveOutputAssetItems(metadata)
 
-    expect(mocks.getJobDetail).toHaveBeenCalledWith('job-2')
+    expect(mocks.getJobDetail).toHaveBeenCalledWith('job-2', undefined)
     expect(mocks.getPreviewableOutputsFromJobDetail).toHaveBeenCalledWith(
       jobDetail
     )

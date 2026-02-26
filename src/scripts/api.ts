@@ -1008,8 +1008,11 @@ export class ComfyApi extends EventTarget {
    * @param jobId The job ID
    * @returns Full job details or undefined if not found
    */
-  async getJobDetail(jobId: string): Promise<JobDetail | undefined> {
-    return fetchJobDetail(this.fetchApi.bind(this), jobId)
+  async getJobDetail(
+    jobId: string,
+    signal?: AbortSignal
+  ): Promise<JobDetail | undefined> {
+    return fetchJobDetail(this.fetchApi.bind(this), jobId, signal)
   }
 
   /**

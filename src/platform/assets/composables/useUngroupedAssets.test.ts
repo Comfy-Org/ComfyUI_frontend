@@ -95,7 +95,7 @@ describe('useUngroupedAssets', () => {
     expect(ungroupedAssets.value).toEqual([childA, childB, childC])
     expect(mocks.resolveOutputAssetItems).toHaveBeenCalledWith(
       expect.objectContaining({ jobId: 'job-1' }),
-      { createdAt: parent.created_at }
+      { createdAt: parent.created_at, signal: expect.any(AbortSignal) }
     )
   })
 

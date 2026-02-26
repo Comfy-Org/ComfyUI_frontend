@@ -19,6 +19,7 @@ type OutputAssetMapOptions = {
 type ResolveOutputAssetItemsOptions = {
   createdAt?: string
   excludeOutputKey?: string
+  signal?: AbortSignal
 }
 
 type OutputKeyParts = {
@@ -89,11 +90,11 @@ function mapOutputsToAssetItems({
 
 export async function resolveOutputAssetItems(
   metadata: OutputAssetMetadata,
-  { createdAt, excludeOutputKey }: ResolveOutputAssetItemsOptions = {}
+  { createdAt, excludeOutputKey, signal }: ResolveOutputAssetItemsOptions = {}
 ): Promise<AssetItem[]> {
   let outputsToDisplay = metadata.allOutputs ?? []
   if (shouldLoadFullOutputs(metadata.outputCount, outputsToDisplay.length)) {
-    const jobDetail = await getJobDetail(metadata.jobId)
+    const jobDetail = await getJobDetail(metadata.jobId, signal)
     const previewableOutputs = getPreviewableOutputsFromJobDetail(jobDetail)
     if (previewableOutputs.length) {
       outputsToDisplay = previewableOutputs
