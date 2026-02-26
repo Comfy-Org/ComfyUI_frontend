@@ -43,6 +43,9 @@ function scheduleDeferredImageRender() {
   })
 }
 
+const TWO_PI = Math.PI * 2
+const SPINNER_ARC_LENGTH = Math.PI * 1.5
+
 function renderUploadSpinner(
   ctx: CanvasRenderingContext2D,
   node: LGraphNode,
@@ -54,16 +57,20 @@ function renderUploadSpinner(
   const centerX = dw / 2
   const centerY = shiftY + dh / 2
   const radius = 16
-  const angle = ((Date.now() % 1000) / 1000) * Math.PI * 2
+  const angle = ((Date.now() % 1000) / 1000) * TWO_PI
 
   ctx.save()
   ctx.strokeStyle = LiteGraph.NODE_TEXT_COLOR
   ctx.lineWidth = 3
   ctx.lineCap = 'round'
   ctx.beginPath()
-  ctx.arc(centerX, centerY, radius, angle, angle + Math.PI * 1.5)
+  ctx.arc(centerX, centerY, radius, angle, angle + SPINNER_ARC_LENGTH)
   ctx.stroke()
   ctx.restore()
+
+  // Schedule next frame to keep spinner animating continuously.
+  // Only runs while node.isUploading is true (checked by caller).
+  node.graph?.setDirtyCanvas(true)
 }
 
 const renderPreview = (
