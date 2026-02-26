@@ -1622,6 +1622,27 @@ export class LGraph
     link.disconnect(this, keepReroutes)
   }
 
+  private finalizeConnectedLink(link: LLink): void {
+    const reroutes = LLink.getReroutes(this, link)
+    for (const reroute of reroutes) {
+      reroute.linkIds.add(link.id)
+      if (reroute.floating) reroute.floating = undefined
+      reroute._dragging = undefined
+    }
+
+    const lastReroute = reroutes.at(-1)
+    if (lastReroute) {
+      for (const floatingLinkId of lastReroute.floatingLinkIds) {
+        const floatingLink = this.floatingLinks.get(floatingLinkId)
+        if (floatingLink?.parentId === lastReroute.id) {
+          this.removeFloatingLink(floatingLink)
+        }
+      }
+    }
+
+    this._version++
+  }
+
   connectSlots(
     sourceNode: LGraphNode,
     outputIndex: number,
@@ -1674,27 +1695,112 @@ export class LGraph
       })
     }
 
-    // Reroutes
-    const reroutes = LLink.getReroutes(this, link)
-    for (const reroute of reroutes) {
-      reroute.linkIds.add(link.id)
-      if (reroute.floating) reroute.floating = undefined
-      reroute._dragging = undefined
-    }
+    this.finalizeConnectedLink(link)
+    return link
+  }
 
-    // If this is the terminus of a floating link, remove it
-    const lastReroute = reroutes.at(-1)
-    if (lastReroute) {
-      for (const floatingLinkId of lastReroute.floatingLinkIds) {
-        const floatingLink = this.floatingLinks.get(floatingLinkId)
-        if (floatingLink?.parentId === lastReroute.id) {
-          this.removeFloatingLink(floatingLink)
-        }
+  connectSubgraphInputSlot(
+    subgraphInput: SubgraphInput,
+    targetNode: LGraphNode,
+    targetSlotIndex: number,
+    afterRerouteId?: RerouteId
+  ): LLink {
+    const targetInput = targetNode.inputs[targetSlotIndex]
+    const subgraphInputIndex = subgraphInput.parent.slots.indexOf(subgraphInput)
+    const link = new LLink(
+      ++this.state.lastLinkId,
+      targetInput.type,
+      subgraphInput.parent.id,
+      subgraphInputIndex,
+      targetNode.id,
+      targetSlotIndex,
+      afterRerouteId
+    )
+
+    this._links.set(link.id, link)
+    subgraphInput.linkIds.push(link.id)
+    targetInput.link = link.id
+
+    this.finalizeConnectedLink(link)
+    return link
+  }
+
+  connectSubgraphOutputSlot(
+    sourceNode: LGraphNode,
+    sourceSlotIndex: number,
+    subgraphOutput: SubgraphOutput,
+    afterRerouteId?: RerouteId
+  ): LLink {
+    const sourceOutput = sourceNode.outputs[sourceSlotIndex]
+    const subgraphOutputIndex =
+      subgraphOutput.parent.slots.indexOf(subgraphOutput)
+    const link = new LLink(
+      ++this.state.lastLinkId,
+      sourceOutput.type,
+      sourceNode.id,
+      sourceSlotIndex,
+      subgraphOutput.parent.id,
+      subgraphOutputIndex,
+      afterRerouteId
+    )
+
+    this._links.set(link.id, link)
+    subgraphOutput.linkIds[0] = link.id
+    sourceOutput.links ??= []
+    sourceOutput.links.push(link.id)
+
+    this.finalizeConnectedLink(link)
+    return link
+  }
+
+  disconnectSubgraphInputLink(
+    subgraphInput: SubgraphInput,
+    targetNode: LGraphNode,
+    targetSlotIndex: number,
+    link: LLink | undefined
+  ): void {
+    const targetInput = targetNode.inputs[targetSlotIndex]
+    if (targetInput._floatingLinks?.size) {
+      for (const floatingLink of targetInput._floatingLinks) {
+        this.removeFloatingLink(floatingLink)
       }
     }
 
+    targetInput.link = null
+    if (!link) return
+
+    this.disconnectLink(link, 'output')
     this._version++
-    return link
+
+    const index = subgraphInput.linkIds.indexOf(link.id)
+    if (index === -1) {
+      console.warn(
+        'disconnectSubgraphInputLink: link ID not found in subgraph input',
+        link.id
+      )
+      return
+    }
+    subgraphInput.linkIds.splice(index, 1)
+  }
+
+  disconnectSubgraphOutputLink(
+    subgraphOutput: SubgraphOutput,
+    sourceNode: LGraphNode,
+    sourceSlotIndex: number,
+    link: LLink
+  ): void {
+    const sourceOutput = sourceNode.outputs[sourceSlotIndex]
+    this.disconnectLink(link, 'input')
+    this._version++
+
+    if (sourceOutput.links) {
+      sourceOutput.links = sourceOutput.links.filter((id) => id !== link.id)
+    }
+
+    const subgraphLinkIndex = subgraphOutput.linkIds.indexOf(link.id)
+    if (subgraphLinkIndex !== -1) {
+      subgraphOutput.linkIds.splice(subgraphLinkIndex, 1)
+    }
   }
 
   /**

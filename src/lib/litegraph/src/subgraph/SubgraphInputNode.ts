@@ -170,52 +170,32 @@ export class SubgraphInputNode
   ): void {
     const { subgraph } = this
 
-    // Break floating links
-    if (input._floatingLinks?.size) {
-      for (const link of input._floatingLinks) {
-        subgraph.removeFloatingLink(link)
-      }
-    }
-
-    input.link = null
-    subgraph.setDirtyCanvas(false, true)
-
-    if (!link) return
-
-    const subgraphInputIndex = link.origin_slot
-    link.disconnect(subgraph, 'output')
-    subgraph._version++
-
-    const subgraphInput = this.slots.at(subgraphInputIndex)
+    const subgraphInput = link ? this.slots.at(link.origin_slot) : undefined
     if (!subgraphInput) {
       console.warn(
         'disconnectNodeInput: subgraphInput not found',
         this,
-        subgraphInputIndex
+        link?.origin_slot
       )
       return
     }
 
-    // search in the inputs list for this link
-    const index = subgraphInput.linkIds.indexOf(link.id)
-    if (index !== -1) {
-      subgraphInput.linkIds.splice(index, 1)
-    } else {
-      console.warn(
-        'disconnectNodeInput: link ID not found in subgraphInput linkIds',
-        link.id
-      )
-    }
     const slotIndex = node.inputs.findIndex((inp) => inp === input)
-    if (slotIndex !== -1) {
-      node.onConnectionsChange?.(
-        NodeSlotType.INPUT,
-        slotIndex,
-        false,
-        link,
-        subgraphInput
-      )
+    if (slotIndex === -1) {
+      console.warn('disconnectNodeInput: target input slot not found', this)
+      return
     }
+
+    subgraph.disconnectSubgraphInputLink(subgraphInput, node, slotIndex, link)
+    subgraph.setDirtyCanvas(false, true)
+
+    node.onConnectionsChange?.(
+      NodeSlotType.INPUT,
+      slotIndex,
+      false,
+      link,
+      subgraphInput
+    )
   }
 
   override drawProtected(

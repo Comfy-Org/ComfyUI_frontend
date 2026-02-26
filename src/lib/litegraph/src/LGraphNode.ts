@@ -3093,7 +3093,20 @@ export class LGraphNode
         ) {
           const targetSlot = graph.outputNode.slots[link_info.target_slot]
           if (targetSlot) {
-            targetSlot.linkIds.length = 0
+            graph.disconnectSubgraphOutputLink(
+              targetSlot,
+              this,
+              slot,
+              link_info
+            )
+            this.onConnectionsChange?.(
+              NodeSlotType.OUTPUT,
+              slot,
+              false,
+              link_info,
+              output
+            )
+            continue
           } else {
             console.error('Missing subgraphOutput slot when disconnecting link')
           }

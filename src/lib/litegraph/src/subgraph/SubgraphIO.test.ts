@@ -1,9 +1,14 @@
 // TODO: Fix these tests after migration
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { ToInputFromIoNodeLink } from '@/lib/litegraph/src/canvas/ToInputFromIoNodeLink'
+import {
+  SUBGRAPH_INPUT_ID,
+  SUBGRAPH_OUTPUT_ID
+} from '@/lib/litegraph/src/constants'
 import { LinkDirection } from '@/lib/litegraph/src//types/globalEnums'
+import { NodeSlotType } from '@/lib/litegraph/src/types/globalEnums'
 
 import { subgraphTest } from './__fixtures__/subgraphFixtures'
 import {
@@ -12,6 +17,81 @@ import {
 } from './__fixtures__/subgraphHelpers'
 
 describe('SubgraphIO - Input Slot Dual-Nature Behavior', () => {
+  subgraphTest(
+    'connect callback payload keeps current subgraph-input asymmetry',
+    ({ subgraphWithNode }) => {
+      const { subgraph } = subgraphWithNode
+      const internalNode = new LGraphNode('Internal Target')
+      internalNode.addInput('in', '*')
+      subgraph.add(internalNode)
+
+      const inputCallback = vi.fn()
+      internalNode.onConnectionsChange = inputCallback
+
+      const subgraphInput = subgraph.inputNode.slots[0]
+      const nodeInput = internalNode.inputs[0]
+      const link = subgraphInput.connect(nodeInput, internalNode)
+
+      expect(link).toBeDefined()
+      expect(link?.origin_id).toBe(SUBGRAPH_INPUT_ID)
+      expect(link?.target_id).toBe(internalNode.id)
+      expect(inputCallback).toHaveBeenCalledTimes(1)
+      expect(inputCallback).toHaveBeenLastCalledWith(
+        NodeSlotType.INPUT,
+        0,
+        true,
+        link,
+        nodeInput
+      )
+    }
+  )
+
+  subgraphTest(
+    'disconnect callback payload keeps current subgraph-input asymmetry',
+    ({ subgraphWithNode }) => {
+      const { subgraph } = subgraphWithNode
+      const internalNode = new LGraphNode('Internal Target')
+      internalNode.addInput('in', '*')
+      subgraph.add(internalNode)
+
+      const inputCallback = vi.fn()
+      internalNode.onConnectionsChange = inputCallback
+
+      const subgraphInput = subgraph.inputNode.slots[0]
+      const link = subgraphInput.connect(internalNode.inputs[0], internalNode)
+      if (!link) throw new Error('Expected link')
+
+      new ToInputFromIoNodeLink(
+        subgraph,
+        subgraph.inputNode,
+        subgraphInput,
+        undefined,
+        LinkDirection.CENTER,
+        link
+      ).disconnect()
+
+      expect(inputCallback).toHaveBeenNthCalledWith(
+        1,
+        NodeSlotType.INPUT,
+        0,
+        true,
+        link,
+        internalNode.inputs[0]
+      )
+      expect(inputCallback).toHaveBeenNthCalledWith(
+        2,
+        NodeSlotType.INPUT,
+        0,
+        false,
+        link,
+        subgraphInput
+      )
+      expect(internalNode.inputs[0].link).toBeNull()
+      expect(subgraphInput.linkIds).toEqual([])
+      expect(subgraph.links.get(link.id)).toBeUndefined()
+    }
+  )
+
   subgraphTest(
     'input accepts external connections from parent graph',
     ({ subgraphWithNode }) => {
@@ -128,6 +208,75 @@ describe('SubgraphIO - Input Slot Dual-Nature Behavior', () => {
 })
 
 describe('SubgraphIO - Output Slot Dual-Nature Behavior', () => {
+  subgraphTest(
+    'connect callback payload keeps current subgraph-output asymmetry',
+    ({ subgraphWithNode }) => {
+      const { subgraph } = subgraphWithNode
+
+      const internalNode = new LGraphNode('Internal Source')
+      internalNode.addOutput('out', '*')
+      subgraph.add(internalNode)
+
+      const outputCallback = vi.fn()
+      internalNode.onConnectionsChange = outputCallback
+
+      const subgraphOutput = subgraph.outputNode.slots[0]
+      const nodeOutput = internalNode.outputs[0]
+      const link = subgraphOutput.connect(nodeOutput, internalNode)
+
+      expect(link).toBeDefined()
+      expect(link?.origin_id).toBe(internalNode.id)
+      expect(link?.target_id).toBe(SUBGRAPH_OUTPUT_ID)
+      expect(outputCallback).toHaveBeenLastCalledWith(
+        NodeSlotType.OUTPUT,
+        0,
+        true,
+        link,
+        nodeOutput
+      )
+    }
+  )
+
+  subgraphTest(
+    'disconnect callback payload keeps current subgraph-output asymmetry',
+    ({ subgraphWithNode }) => {
+      const { subgraph } = subgraphWithNode
+
+      const internalNode = new LGraphNode('Internal Source')
+      internalNode.addOutput('out', '*')
+      subgraph.add(internalNode)
+
+      const outputCallback = vi.fn()
+      internalNode.onConnectionsChange = outputCallback
+
+      const subgraphOutput = subgraph.outputNode.slots[0]
+      const link = subgraphOutput.connect(internalNode.outputs[0], internalNode)
+      if (!link) throw new Error('Expected link')
+
+      subgraphOutput.disconnect()
+
+      expect(outputCallback).toHaveBeenNthCalledWith(
+        1,
+        NodeSlotType.OUTPUT,
+        0,
+        true,
+        link,
+        internalNode.outputs[0]
+      )
+      expect(outputCallback).toHaveBeenNthCalledWith(
+        2,
+        NodeSlotType.OUTPUT,
+        0,
+        false,
+        link,
+        subgraphOutput
+      )
+      expect(subgraph.links.get(link.id)).toBeUndefined()
+      expect(subgraphOutput.linkIds).toEqual([])
+      expect(internalNode.outputs[0].links).toEqual([])
+    }
+  )
+
   subgraphTest(
     'output provides connections to parent graph',
     ({ subgraphWithNode }) => {
