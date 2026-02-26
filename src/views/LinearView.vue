@@ -15,6 +15,7 @@ import WorkflowTabs from '@/components/topbar/WorkflowTabs.vue'
 import TypeformPopoverButton from '@/components/ui/TypeformPopoverButton.vue'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { cn } from '@/utils/tailwindUtil'
+import ControlPreview from '@/renderer/extensions/linearMode/ControlPreview.vue'
 import LinearControls from '@/renderer/extensions/linearMode/LinearControls.vue'
 import LinearPreview from '@/renderer/extensions/linearMode/LinearPreview.vue'
 import LinearProgressBar from '@/renderer/extensions/linearMode/LinearProgressBar.vue'
@@ -55,7 +56,7 @@ const hasLeftPanel = computed(
   () =>
     isArrangeMode.value ||
     (sidebarOnLeft.value && activeTab.value) ||
-    (!sidebarOnLeft.value && !isBuilderMode.value && hasOutputs.value)
+    (!sidebarOnLeft.value && hasOutputs.value)
 )
 const hasRightPanel = computed(
   () =>
@@ -139,6 +140,7 @@ const linearWorkflowRef = useTemplateRef('linearWorkflowRef')
         >
           <ExtensionSlot :extension="activeTab" />
         </div>
+        <ControlPreview v-else-if="isBuilderMode" />
         <LinearControls
           v-else-if="!isArrangeMode"
           ref="linearWorkflowRef"
