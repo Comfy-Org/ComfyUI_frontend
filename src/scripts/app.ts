@@ -759,7 +759,7 @@ export class ComfyApp {
       this.canvas.draw(true, true)
     })
 
-    api.addEventListener('b_preview_with_metadata', async ({ detail }) => {
+    api.addEventListener('b_preview_with_metadata', ({ detail }) => {
       // Enhanced preview with explicit node context
       const { blob, displayNodeId, jobId } = detail
       const { setNodePreviewsByExecutionId, revokePreviewsByExecutionId } =
