@@ -31,6 +31,7 @@ import { useNodeOutputStore } from '@/stores/imagePreviewStore'
 import { useJobPreviewStore } from '@/stores/jobPreviewStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import type { NodeLocatorId } from '@/types/nodeIdentification'
+import { getDevOverride } from '@/utils/devFeatureFlagOverride'
 import { classifyCloudValidationError } from '@/utils/executionErrorUtil'
 import { executionIdToNodeLocatorId } from '@/utils/graphTraversalUtil'
 
@@ -66,6 +67,16 @@ export const useExecutionStore = defineStore('execution', () => {
   const jobIdToWorkflowId = ref<Map<string, string>>(new Map())
 
   const initializingJobIds = ref<Set<string>>(new Set())
+
+  let executionIdToLocatorCallCount = 0
+
+  function isLocatorCacheCounterEnabled(): boolean {
+    return (
+      getDevOverride<boolean>(
+        'expose_executionId_to_node_locator_id_cache_counters'
+      ) ?? false
+    )
+  }
 
   const mergeExecutionProgressStates = (
     currentState: NodeProgressState | undefined,
@@ -106,6 +117,9 @@ export const useExecutionStore = defineStore('execution', () => {
       const parts = String(state.display_node_id).split(':')
       for (let i = 0; i < parts.length; i++) {
         const executionId = parts.slice(0, i + 1).join(':')
+        if (isLocatorCacheCounterEnabled()) {
+          executionIdToLocatorCallCount++
+        }
         const locatorId = executionIdToNodeLocatorId(app.rootGraph, executionId)
         if (!locatorId) continue
 
@@ -424,6 +438,12 @@ export const useExecutionStore = defineStore('execution', () => {
    * Reset execution-related state after a run completes or is stopped.
    */
   function resetExecutionState(jobIdParam?: string | null) {
+    if (isLocatorCacheCounterEnabled() && executionIdToLocatorCallCount > 0) {
+      console.warn(
+        `[executionStore] executionIdToNodeLocatorId calls this run: ${executionIdToLocatorCallCount}`
+      )
+      executionIdToLocatorCallCount = 0
+    }
     nodeProgressStates.value = {}
     const jobId = jobIdParam ?? activeJobId.value ?? null
     if (jobId) {
