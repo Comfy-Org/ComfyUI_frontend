@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { remove } from 'es-toolkit'
-import { computed, provide, ref, toValue } from 'vue'
+import { computed, provide, ref, toValue, watchEffect } from 'vue'
 import type { MaybeRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -45,6 +45,18 @@ const hoveringSelectable = ref(false)
 provide(HideLayoutFieldKey, true)
 
 workflowStore.activeWorkflow?.changeTracker?.reset()
+
+// Prune stale entries whose node/widget no longer exists, so the
+// DraggableList model always matches the rendered items.
+watchEffect(() => {
+  const valid = appModeStore.selectedInputs.filter(([nodeId, widgetName]) => {
+    const node = app.rootGraph.getNodeById(nodeId)
+    return node?.widgets?.some((w) => w.name === widgetName)
+  })
+  if (valid.length < appModeStore.selectedInputs.length) {
+    appModeStore.selectedInputs = valid
+  }
+})
 
 const arrangeInputs = computed(() =>
   appModeStore.selectedInputs
