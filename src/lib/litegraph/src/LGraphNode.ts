@@ -3121,7 +3121,7 @@ export class LGraphNode
         }
 
         // remove the link from the links pool
-        link_info.disconnect(graph, 'input')
+        graph.disconnectLink(link_info, 'input')
         graph._version++
 
         // link_info hasn't been modified so its ok
@@ -3186,7 +3186,7 @@ export class LGraphNode
           )
         }
         // remove the link from the links pool
-        link_info.disconnect(graph, 'input')
+        graph.disconnectLink(link_info, 'input')
 
         this.onConnectionsChange?.(
           NodeSlotType.OUTPUT,
@@ -3287,7 +3287,7 @@ export class LGraphNode
           }
         }
 
-        link_info.disconnect(graph, keepReroutes ? 'output' : undefined)
+        graph.disconnectLink(link_info, keepReroutes ? 'output' : undefined)
         if (graph) graph._version++
 
         this.onConnectionsChange?.(

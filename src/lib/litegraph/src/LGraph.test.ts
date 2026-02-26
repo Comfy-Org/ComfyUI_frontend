@@ -9,6 +9,7 @@ import {
   LiteGraph,
   LLink
 } from '@/lib/litegraph/src/litegraph'
+import { NodeSlotType } from '@/lib/litegraph/src/types/globalEnums'
 import type { UUID } from '@/lib/litegraph/src/utils/uuid'
 import { usePromotionStore } from '@/stores/promotionStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
@@ -47,6 +48,7 @@ function createNumberNode(title: string): LGraphNode {
 }
 
 function buildLinkTopology(graph: LGraph): {
+  disconnectedLinkId: number
   floatingLinkId: number
   linkedNodeId: NodeId
   rerouteId: number
@@ -71,6 +73,7 @@ function buildLinkTopology(graph: LGraph): {
   if (floatingLinkId == null) throw new Error('Expected floating link')
 
   return {
+    disconnectedLinkId: linkToDisconnect.id,
     floatingLinkId,
     linkedNodeId: linkedTarget.id,
     rerouteId: reroute.id
@@ -335,6 +338,75 @@ describe('LinkStore Read-Through Projection', () => {
 
     expect(graph.getLink(floatingLinkId)).not.toBe(floatingLink)
     expect(graph.linkStore.getFloatingLink(floatingLinkId)).toBe(floatingLink)
+  })
+})
+
+describe('Disconnect/Remove Characterization', () => {
+  it('graph.removeLink preserves disconnect callback ordering parity', () => {
+    const graph = new LGraph()
+    const sourceNode = createNumberNode('source')
+    const targetNode = createNumberNode('target')
+
+    graph.add(sourceNode)
+    graph.add(targetNode)
+
+    const link = sourceNode.connect(0, targetNode, 0)
+    if (!link) throw new Error('Expected link')
+
+    const callbackOrder: string[] = []
+
+    targetNode.onConnectionsChange = (
+      slotType,
+      slotIndex,
+      connected,
+      linkInfo
+    ) => {
+      if (!linkInfo) throw new Error('Expected link info')
+      callbackOrder.push(`target:${slotType}:${slotIndex}:${connected}`)
+      expect(slotType).toBe(NodeSlotType.INPUT)
+      expect(slotIndex).toBe(0)
+      expect(connected).toBe(false)
+      expect(linkInfo.id).toBe(link.id)
+    }
+
+    sourceNode.onConnectionsChange = (
+      slotType,
+      slotIndex,
+      connected,
+      linkInfo
+    ) => {
+      if (!linkInfo) throw new Error('Expected link info')
+      callbackOrder.push(`source:${slotType}:${slotIndex}:${connected}`)
+      expect(slotType).toBe(NodeSlotType.OUTPUT)
+      expect(slotIndex).toBe(0)
+      expect(connected).toBe(false)
+      expect(linkInfo.id).toBe(link.id)
+    }
+
+    graph.removeLink(link.id)
+
+    expect(callbackOrder).toEqual([
+      `target:${NodeSlotType.INPUT}:0:false`,
+      `source:${NodeSlotType.OUTPUT}:0:false`
+    ])
+    expect(graph.getLink(link.id)).toBeUndefined()
+    expect(targetNode.inputs[0].link).toBeNull()
+    expect(sourceNode.outputs[0].links).toEqual([])
+  })
+
+  it('removeLink retains floating/reroute cleanup invariants', () => {
+    const graph = new LGraph()
+    const { disconnectedLinkId, floatingLinkId, rerouteId } =
+      buildLinkTopology(graph)
+
+    graph.removeLink(disconnectedLinkId)
+
+    expect(graph.getLink(disconnectedLinkId)).toBeUndefined()
+    expect(graph.linkStore.getLink(disconnectedLinkId)).toBeUndefined()
+    expect(graph.getReroute(rerouteId)).toBeDefined()
+    expect(graph.linkStore.getReroute(rerouteId)).toBeDefined()
+    expect(graph.floatingLinks.has(floatingLinkId)).toBe(true)
+    expect(graph.linkStore.getFloatingLink(floatingLinkId)).toBeDefined()
   })
 })
 

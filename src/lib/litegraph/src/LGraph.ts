@@ -1611,9 +1611,15 @@ export class LGraph
     if (!link) return
 
     const node = this.getNodeById(link.target_id)
-    node?.disconnectInput(link.target_slot, false)
+    if (node?.disconnectInput(link.target_slot, false)) {
+      return
+    }
 
-    link.disconnect(this)
+    this.disconnectLink(link)
+  }
+
+  disconnectLink(link: LLink, keepReroutes?: 'input' | 'output'): void {
+    link.disconnect(this, keepReroutes)
   }
 
   /**
@@ -1818,7 +1824,7 @@ export class LGraph
         }
 
         for (const resolved of others) {
-          resolved.link.disconnect(this)
+          this.disconnectLink(resolved.link)
         }
         continue
       }

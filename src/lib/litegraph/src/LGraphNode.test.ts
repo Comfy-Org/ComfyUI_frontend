@@ -14,6 +14,7 @@ import {
   NodeInputSlot,
   NodeOutputSlot
 } from '@/lib/litegraph/src/litegraph'
+import { NodeSlotType } from '@/lib/litegraph/src/types/globalEnums'
 
 import { test } from './__fixtures__/testExtensions'
 import { createMockLGraphNodeWithArrayBoundingRect } from '@/utils/__tests__/litegraphTestUtils'
@@ -149,6 +150,58 @@ describe('LGraphNode', () => {
   })
 
   describe('Disconnect I/O Slots', () => {
+    test('disconnectInput keeps current callback ordering and payload parity', () => {
+      const sourceNode = new LGraphNode('SourceNode')
+      const targetNode = new LGraphNode('TargetNode')
+      sourceNode.addOutput('Output1', 'number')
+      targetNode.addInput('Input1', 'number')
+
+      const graph = new LGraph()
+      graph.add(sourceNode)
+      graph.add(targetNode)
+
+      const link = sourceNode.connect(0, targetNode, 0)
+      if (!link) throw new Error('Expected link')
+
+      const callbackOrder: string[] = []
+
+      targetNode.onConnectionsChange = (
+        slotType,
+        slotIndex,
+        connected,
+        linkInfo
+      ) => {
+        if (!linkInfo) throw new Error('Expected link info')
+        callbackOrder.push(`target:${slotType}:${slotIndex}:${connected}`)
+        expect(slotType).toBe(NodeSlotType.INPUT)
+        expect(slotIndex).toBe(0)
+        expect(connected).toBe(false)
+        expect(linkInfo.id).toBe(link.id)
+      }
+
+      sourceNode.onConnectionsChange = (
+        slotType,
+        slotIndex,
+        connected,
+        linkInfo
+      ) => {
+        if (!linkInfo) throw new Error('Expected link info')
+        callbackOrder.push(`source:${slotType}:${slotIndex}:${connected}`)
+        expect(slotType).toBe(NodeSlotType.OUTPUT)
+        expect(slotIndex).toBe(0)
+        expect(connected).toBe(false)
+        expect(linkInfo.id).toBe(link.id)
+      }
+
+      const disconnected = targetNode.disconnectInput(0)
+
+      expect(disconnected).toBe(true)
+      expect(callbackOrder).toEqual([
+        `target:${NodeSlotType.INPUT}:0:false`,
+        `source:${NodeSlotType.OUTPUT}:0:false`
+      ])
+    })
+
     test('should disconnect input correctly', () => {
       const node1 = new LGraphNode('SourceNode')
       const node2 = new LGraphNode('TargetNode')
@@ -198,6 +251,62 @@ describe('LGraphNode', () => {
       // Test disconnecting already disconnected input
       const alreadyDisconnected = node2.disconnectInput(0)
       expect(alreadyDisconnected).toBe(true)
+    })
+
+    test('disconnectOutput(target) keeps callback ordering and payload parity', () => {
+      const sourceNode = new LGraphNode('SourceNode')
+      const targetNode1 = new LGraphNode('TargetNode1')
+      const targetNode2 = new LGraphNode('TargetNode2')
+      sourceNode.addOutput('Output1', 'number')
+      targetNode1.addInput('Input1', 'number')
+      targetNode2.addInput('Input1', 'number')
+
+      const graph = new LGraph()
+      graph.add(sourceNode)
+      graph.add(targetNode1)
+      graph.add(targetNode2)
+
+      const targetLink = sourceNode.connect(0, targetNode1, 0)
+      sourceNode.connect(0, targetNode2, 0)
+      if (!targetLink) throw new Error('Expected target link')
+
+      const callbackOrder: string[] = []
+
+      targetNode1.onConnectionsChange = (
+        slotType,
+        slotIndex,
+        connected,
+        linkInfo
+      ) => {
+        if (!linkInfo) throw new Error('Expected link info')
+        callbackOrder.push(`target:${slotType}:${slotIndex}:${connected}`)
+        expect(slotType).toBe(NodeSlotType.INPUT)
+        expect(slotIndex).toBe(0)
+        expect(connected).toBe(false)
+        expect(linkInfo.id).toBe(targetLink.id)
+      }
+
+      sourceNode.onConnectionsChange = (
+        slotType,
+        slotIndex,
+        connected,
+        linkInfo
+      ) => {
+        if (!linkInfo) throw new Error('Expected link info')
+        callbackOrder.push(`source:${slotType}:${slotIndex}:${connected}`)
+        expect(slotType).toBe(NodeSlotType.OUTPUT)
+        expect(slotIndex).toBe(0)
+        expect(connected).toBe(false)
+        expect(linkInfo.id).toBe(targetLink.id)
+      }
+
+      const disconnected = sourceNode.disconnectOutput(0, targetNode1)
+
+      expect(disconnected).toBe(true)
+      expect(callbackOrder).toEqual([
+        `target:${NodeSlotType.INPUT}:0:false`,
+        `source:${NodeSlotType.OUTPUT}:0:false`
+      ])
     })
 
     test('should disconnect output correctly', () => {
