@@ -16,8 +16,10 @@ export function useAppMode() {
   )
 
   const isBuilderMode = computed(
-    () => mode.value === 'builder:select' || mode.value === 'builder:arrange'
+    () => isSelectMode.value || isArrangeMode.value
   )
+  const isSelectMode = computed(() => mode.value === 'builder:select')
+  const isArrangeMode = computed(() => mode.value === 'builder:arrange')
   const isAppMode = computed(
     () => mode.value === 'app' || mode.value === 'builder:arrange'
   )
@@ -36,6 +38,8 @@ export function useAppMode() {
     mode,
     enableAppBuilder,
     isBuilderMode,
+    isSelectMode,
+    isArrangeMode,
     isAppMode,
     isGraphMode,
     setMode
