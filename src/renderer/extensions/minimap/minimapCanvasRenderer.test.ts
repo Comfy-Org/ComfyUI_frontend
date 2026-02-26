@@ -22,6 +22,12 @@ vi.mock('@/utils/colorUtil', () => ({
   adjustColor: vi.fn((color: string) => color + '_adjusted')
 }))
 
+vi.mock('@/stores/executionStore', () => ({
+  useExecutionStore: vi.fn().mockReturnValue({
+    nodeProgressStates: {}
+  })
+}))
+
 describe('minimapCanvasRenderer', () => {
   let mockCanvas: HTMLCanvasElement
   let mockContext: CanvasRenderingContext2D
