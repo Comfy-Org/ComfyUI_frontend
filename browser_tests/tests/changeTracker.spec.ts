@@ -3,6 +3,7 @@ import {
   comfyExpect as expect,
   comfyPageFixture as test
 } from '../fixtures/ComfyPage'
+import type { WorkspaceStore } from '../types/globals'
 
 async function beforeChange(comfyPage: ComfyPage) {
   await comfyPage.page.evaluate(() => {
@@ -62,6 +63,66 @@ test.describe('Change Tracker', { tag: '@workflow' }, () => {
       expect(await comfyPage.workflow.isCurrentWorkflowModified()).toBe(false)
       expect(await comfyPage.workflow.getUndoQueueSize()).toBe(0)
       expect(await comfyPage.workflow.getRedoQueueSize()).toBe(2)
+    })
+
+    test('undo/redo restores link topology with reroutes and floating links', async ({
+      comfyPage
+    }) => {
+      await comfyPage.workflow.loadWorkflow('links/batch_move_links')
+
+      const readTopology = () =>
+        comfyPage.page.evaluate(() => {
+          const graph = window.app!.rootGraph
+          return {
+            links: graph.links.size,
+            floatingLinks: graph.floatingLinks.size,
+            reroutes: graph.reroutes.size,
+            serialised: graph.serialize()
+          }
+        })
+
+      const baseline = await readTopology()
+
+      await beforeChange(comfyPage)
+      await comfyPage.page.evaluate(() => {
+        const graph = window.app!.rootGraph
+        const firstLink = graph.links.values().next().value
+        if (!firstLink) throw new Error('Expected at least one link')
+
+        const reroute = graph.createReroute(
+          [firstLink.id * 5, firstLink.id * 3],
+          firstLink
+        )
+        graph.addFloatingLink(firstLink.toFloating('output', reroute.id))
+      })
+      await afterChange(comfyPage)
+
+      const mutated = await readTopology()
+      expect(mutated.floatingLinks).toBeGreaterThan(baseline.floatingLinks)
+      expect(mutated.reroutes).toBeGreaterThan(baseline.reroutes)
+      await expect.poll(() => comfyPage.workflow.getUndoQueueSize()).toBe(1)
+
+      await comfyPage.page.evaluate(async () => {
+        await (
+          window.app!.extensionManager as WorkspaceStore
+        ).workflow.activeWorkflow?.changeTracker.undo()
+      })
+      const afterUndo = await readTopology()
+      expect(afterUndo.links).toBe(baseline.links)
+      expect(afterUndo.floatingLinks).toBe(baseline.floatingLinks)
+      expect(afterUndo.reroutes).toBe(baseline.reroutes)
+      expect(afterUndo.serialised).toEqual(baseline.serialised)
+
+      await comfyPage.page.evaluate(async () => {
+        await (
+          window.app!.extensionManager as WorkspaceStore
+        ).workflow.activeWorkflow?.changeTracker.redo()
+      })
+      const afterRedo = await readTopology()
+      expect(afterRedo.links).toBe(mutated.links)
+      expect(afterRedo.floatingLinks).toBe(mutated.floatingLinks)
+      expect(afterRedo.reroutes).toBe(mutated.reroutes)
+      expect(afterRedo.serialised).toEqual(mutated.serialised)
     })
   })
 

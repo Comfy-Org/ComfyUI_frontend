@@ -39,6 +39,44 @@ class DummyNode extends LGraphNode {
   }
 }
 
+function createNumberNode(title: string): LGraphNode {
+  const node = new LGraphNode(title)
+  node.addOutput('out', 'number')
+  node.addInput('in', 'number')
+  return node
+}
+
+function buildLinkTopology(graph: LGraph): {
+  floatingLinkId: number
+  linkedNodeId: NodeId
+  rerouteId: number
+} {
+  const source = createNumberNode('source')
+  const floatingTarget = createNumberNode('floating-target')
+  const linkedTarget = createNumberNode('linked-target')
+  graph.add(source)
+  graph.add(floatingTarget)
+  graph.add(linkedTarget)
+
+  source.connect(0, floatingTarget, 0)
+  source.connect(0, linkedTarget, 0)
+
+  const linkToDisconnect = graph.getLink(floatingTarget.inputs[0].link)
+  if (!linkToDisconnect) throw new Error('Expected link to disconnect')
+
+  const reroute = graph.createReroute([120, 80], linkToDisconnect)
+  graph.addFloatingLink(linkToDisconnect.toFloating('output', reroute.id))
+
+  const floatingLinkId = [...graph.floatingLinks.keys()][0]
+  if (floatingLinkId == null) throw new Error('Expected floating link')
+
+  return {
+    floatingLinkId,
+    linkedNodeId: linkedTarget.id,
+    rerouteId: reroute.id
+  }
+}
+
 describe('LGraph', () => {
   it('should serialize deterministic node order', async () => {
     LiteGraph.registerNodeType('dummy', DummyNode)
@@ -181,6 +219,76 @@ describe('Floating Links / Reroutes', () => {
     expect(graph.links.size).toBe(0)
     expect(graph.floatingLinks.size).toBe(0)
     expect(graph.reroutes.size).toBe(0)
+  })
+})
+
+describe('LinkStore Lifecycle Rehydration', () => {
+  it('tracks links, floating links, and reroutes after configure', () => {
+    const graph = new LGraph()
+    const { floatingLinkId, linkedNodeId, rerouteId } = buildLinkTopology(graph)
+    const serialised = graph.asSerialisable()
+
+    const restored = new LGraph(serialised)
+    const linkedInput = restored.getNodeById(linkedNodeId)?.inputs[0]
+    const linkedInputLink = restored.getLink(linkedInput?.link)
+
+    expect(restored.linkStore.links.size).toBe(restored.links.size)
+    expect(restored.linkStore.floatingLinks.size).toBe(
+      restored.floatingLinks.size
+    )
+    expect(restored.linkStore.reroutes.size).toBe(restored.reroutes.size)
+    expect(restored.linkStore.getFloatingLink(floatingLinkId)).toBeDefined()
+    expect(restored.linkStore.getReroute(rerouteId)).toBeDefined()
+    expect(restored.linkStore.getLink(linkedInput?.link)).toBe(linkedInputLink)
+  })
+
+  it('clears and rehydrates the store on graph.clear()', () => {
+    const graph = new LGraph()
+    buildLinkTopology(graph)
+
+    expect(graph.linkStore.links.size).toBeGreaterThan(0)
+    expect(graph.linkStore.floatingLinks.size).toBeGreaterThan(0)
+    expect(graph.linkStore.reroutes.size).toBeGreaterThan(0)
+
+    graph.clear()
+
+    expect(graph.linkStore.links.size).toBe(0)
+    expect(graph.linkStore.floatingLinks.size).toBe(0)
+    expect(graph.linkStore.reroutes.size).toBe(0)
+  })
+
+  it('preserves root/subgraph store isolation after round-trip', () => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
+
+    const root = new LGraph()
+    const rootTopology = buildLinkTopology(root)
+
+    const subgraph = root.createSubgraph(createTestSubgraphData())
+    const subgraphSource = createNumberNode('subgraph-source')
+    const subgraphTarget = createNumberNode('subgraph-target')
+    subgraph.add(subgraphSource)
+    subgraph.add(subgraphTarget)
+    subgraphSource.connect(0, subgraphTarget, 0)
+
+    root.add(createTestSubgraphNode(subgraph, { pos: [500, 200] }))
+
+    const serialised = root.asSerialisable()
+    const restoredRoot = new LGraph(serialised)
+    const restoredSubgraph = [...restoredRoot.subgraphs.values()][0]
+
+    if (!restoredSubgraph) throw new Error('Expected restored subgraph')
+
+    const subgraphLinkId = [...restoredSubgraph.links.keys()][0]
+
+    expect(
+      restoredRoot.linkStore.getFloatingLink(rootTopology.floatingLinkId)
+    ).toBeDefined()
+    expect(
+      restoredRoot.linkStore.getReroute(rootTopology.rerouteId)
+    ).toBeDefined()
+    expect(restoredRoot.linkStore.getLink(subgraphLinkId)).toBeUndefined()
+    expect(restoredSubgraph.linkStore.getLink(subgraphLinkId)).toBeDefined()
+    expect(restoredSubgraph.linkStore.floatingLinks.size).toBe(0)
   })
 })
 

@@ -17,6 +17,7 @@ import type { DragAndScaleState } from './DragAndScale'
 import { LGraphCanvas } from './LGraphCanvas'
 import { LGraphGroup } from './LGraphGroup'
 import { LGraphNode } from './LGraphNode'
+import { LinkStore } from './LinkStore'
 import type { NodeId } from './LGraphNode'
 import { LLink } from './LLink'
 import type { LinkId, SerialisedLLinkArray } from './LLink'
@@ -270,6 +271,12 @@ export class LGraph
   private _lastFloatingLinkId: number = 0
 
   private readonly floatingLinksInternal: Map<LinkId, LLink> = new Map()
+  private readonly linkStoreInternal = new LinkStore()
+
+  get linkStore(): LinkStore {
+    return this.linkStoreInternal
+  }
+
   get floatingLinks(): ReadonlyMap<LinkId, LLink> {
     return this.floatingLinksInternal
   }
@@ -393,6 +400,7 @@ export class LGraph
     this._links.clear()
     this.reroutes.clear()
     this.floatingLinksInternal.clear()
+    this.rehydrateLinkStore()
 
     this._lastFloatingLinkId = 0
 
@@ -427,6 +435,14 @@ export class LGraph
     this.change()
 
     this.canvasAction((c) => c.clear())
+  }
+
+  private rehydrateLinkStore(): void {
+    this.linkStoreInternal.rehydrate({
+      links: this._links,
+      floatingLinks: this.floatingLinksInternal,
+      reroutes: this.reroutesInternal
+    })
   }
 
   get subgraphs(): Map<UUID, Subgraph> {
@@ -2569,6 +2585,7 @@ export class LGraph
       this.setDirtyCanvas(true, true)
       return error
     } finally {
+      this.rehydrateLinkStore()
       this.events.dispatch('configured')
     }
   }
