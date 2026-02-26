@@ -131,11 +131,11 @@ export const Queued: Story = {
       const exec = useExecutionStore()
 
       const jobId = 'job-queued-1'
-      const queueIndex = 104
+      const priority = 104
 
       // Current job in pending
       queue.pendingTasks = [
-        makePendingTask(jobId, queueIndex, Date.now() - 90_000)
+        makePendingTask(jobId, priority, Date.now() - 90_000)
       ]
       // Add some other pending jobs to give context
       queue.pendingTasks.push(
@@ -179,13 +179,13 @@ export const QueuedParallel: Story = {
       const exec = useExecutionStore()
 
       const jobId = 'job-queued-parallel'
-      const queueIndex = 210
+      const priority = 210
 
       // Current job in pending with some ahead
       queue.pendingTasks = [
         makePendingTask('job-ahead-1', 200, Date.now() - 180_000),
         makePendingTask('job-ahead-2', 205, Date.now() - 150_000),
-        makePendingTask(jobId, queueIndex, Date.now() - 120_000)
+        makePendingTask(jobId, priority, Date.now() - 120_000)
       ]
 
       // Seen 2 minutes ago - set via prompt metadata above
@@ -238,9 +238,9 @@ export const Running: Story = {
       const exec = useExecutionStore()
 
       const jobId = 'job-running-1'
-      const queueIndex = 300
+      const priority = 300
       queue.runningTasks = [
-        makeRunningTask(jobId, queueIndex, Date.now() - 65_000)
+        makeRunningTask(jobId, priority, Date.now() - 65_000)
       ]
       queue.historyTasks = [
         makeHistoryTask('hist-r1', 250, 30, true),
@@ -279,10 +279,10 @@ export const QueuedZeroAheadSingleRunning: Story = {
       const exec = useExecutionStore()
 
       const jobId = 'job-queued-zero-ahead-single'
-      const queueIndex = 510
+      const priority = 510
 
       queue.pendingTasks = [
-        makePendingTask(jobId, queueIndex, Date.now() - 45_000)
+        makePendingTask(jobId, priority, Date.now() - 45_000)
       ]
 
       queue.historyTasks = [
@@ -324,10 +324,10 @@ export const QueuedZeroAheadMultiRunning: Story = {
       const exec = useExecutionStore()
 
       const jobId = 'job-queued-zero-ahead-multi'
-      const queueIndex = 520
+      const priority = 520
 
       queue.pendingTasks = [
-        makePendingTask(jobId, queueIndex, Date.now() - 20_000)
+        makePendingTask(jobId, priority, Date.now() - 20_000)
       ]
 
       queue.historyTasks = [
@@ -380,8 +380,8 @@ export const Completed: Story = {
       const queue = useQueueStore()
 
       const jobId = 'job-completed-1'
-      const queueIndex = 400
-      queue.historyTasks = [makeHistoryTask(jobId, queueIndex, 37, true)]
+      const priority = 400
+      queue.historyTasks = [makeHistoryTask(jobId, priority, 37, true)]
 
       return { args: { ...args, jobId } }
     },
@@ -401,11 +401,11 @@ export const Failed: Story = {
       const queue = useQueueStore()
 
       const jobId = 'job-failed-1'
-      const queueIndex = 410
+      const priority = 410
       queue.historyTasks = [
         makeHistoryTask(
           jobId,
-          queueIndex,
+          priority,
           12,
           false,
           'Example error: invalid inputs for node X'

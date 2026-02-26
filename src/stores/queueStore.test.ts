@@ -334,7 +334,7 @@ describe('useQueueStore', () => {
   })
 
   describe('update() - sorting', () => {
-    it('should sort tasks by queueIndex descending', async () => {
+    it('should sort tasks by job.priority descending', async () => {
       const job1 = createHistoryJob(1, 'hist-1')
       const job2 = createHistoryJob(5, 'hist-2')
       const job3 = createHistoryJob(3, 'hist-3')
@@ -344,9 +344,9 @@ describe('useQueueStore', () => {
 
       await store.update()
 
-      expect(store.historyTasks[0].queueIndex).toBe(5)
-      expect(store.historyTasks[1].queueIndex).toBe(3)
-      expect(store.historyTasks[2].queueIndex).toBe(1)
+      expect(store.historyTasks[0].job.priority).toBe(5)
+      expect(store.historyTasks[1].job.priority).toBe(3)
+      expect(store.historyTasks[2].job.priority).toBe(1)
     })
 
     it('should preserve API sort order for pending tasks', async () => {
@@ -363,14 +363,14 @@ describe('useQueueStore', () => {
 
       await store.update()
 
-      expect(store.pendingTasks[0].queueIndex).toBe(15)
-      expect(store.pendingTasks[1].queueIndex).toBe(12)
-      expect(store.pendingTasks[2].queueIndex).toBe(10)
+      expect(store.pendingTasks[0].job.priority).toBe(15)
+      expect(store.pendingTasks[1].job.priority).toBe(12)
+      expect(store.pendingTasks[2].job.priority).toBe(10)
     })
   })
 
   describe('update() - queue index collision (THE BUG FIX)', () => {
-    it('should NOT confuse different prompts with same queueIndex', async () => {
+    it('should NOT confuse different prompts with same job.priority', async () => {
       const hist1 = createHistoryJob(50, 'prompt-uuid-aaa')
 
       mockGetQueue.mockResolvedValue({ Running: [], Pending: [] })
@@ -387,10 +387,10 @@ describe('useQueueStore', () => {
 
       expect(store.historyTasks).toHaveLength(1)
       expect(store.historyTasks[0].jobId).toBe('prompt-uuid-bbb')
-      expect(store.historyTasks[0].queueIndex).toBe(51)
+      expect(store.historyTasks[0].job.priority).toBe(51)
     })
 
-    it('should correctly reconcile when queueIndex is reused', async () => {
+    it('should correctly reconcile when job.priority is reused', async () => {
       const hist1 = createHistoryJob(100, 'first-prompt-at-100')
       const hist2 = createHistoryJob(99, 'prompt-at-99')
 
@@ -412,7 +412,7 @@ describe('useQueueStore', () => {
       expect(jobIds).not.toContain('first-prompt-at-100')
     })
 
-    it('should handle multiple queueIndex collisions simultaneously', async () => {
+    it('should handle multiple job.priority collisions simultaneously', async () => {
       const hist1 = createHistoryJob(10, 'old-at-10')
       const hist2 = createHistoryJob(20, 'old-at-20')
       const hist3 = createHistoryJob(30, 'keep-at-30')
@@ -563,9 +563,9 @@ describe('useQueueStore', () => {
       await store.update()
 
       expect(store.historyTasks).toHaveLength(3)
-      expect(store.historyTasks[0].queueIndex).toBe(10)
-      expect(store.historyTasks[1].queueIndex).toBe(9)
-      expect(store.historyTasks[2].queueIndex).toBe(8)
+      expect(store.historyTasks[0].job.priority).toBe(10)
+      expect(store.historyTasks[1].job.priority).toBe(9)
+      expect(store.historyTasks[2].job.priority).toBe(8)
     })
 
     it('should respect maxHistoryItems when combining new and existing', async () => {
@@ -589,7 +589,7 @@ describe('useQueueStore', () => {
       await store.update()
 
       expect(store.historyTasks).toHaveLength(5)
-      expect(store.historyTasks[0].queueIndex).toBe(23)
+      expect(store.historyTasks[0].job.priority).toBe(23)
     })
 
     it('should handle maxHistoryItems = 0', async () => {
@@ -619,7 +619,7 @@ describe('useQueueStore', () => {
       await store.update()
 
       expect(store.historyTasks).toHaveLength(1)
-      expect(store.historyTasks[0].queueIndex).toBe(10)
+      expect(store.historyTasks[0].job.priority).toBe(10)
     })
 
     it('should dynamically adjust when maxHistoryItems changes', async () => {
