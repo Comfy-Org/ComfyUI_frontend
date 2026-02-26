@@ -162,8 +162,20 @@ describe('LGraphNode', () => {
 
       const link = sourceNode.connect(0, targetNode, 0)
       if (!link) throw new Error('Expected link')
+      targetNode.inputs[0].widget = { name: 'in-widget' }
 
       const callbackOrder: string[] = []
+      graph.onTrigger = (event) => {
+        if (event.type !== 'node:slot-links:changed') return
+
+        callbackOrder.push(`trigger:${event.type}:${event.connected}`)
+        expect(event.type).toBe('node:slot-links:changed')
+        expect(event.nodeId).toBe(targetNode.id)
+        expect(event.slotType).toBe(NodeSlotType.INPUT)
+        expect(event.slotIndex).toBe(0)
+        expect(event.connected).toBe(false)
+        expect(event.linkId).toBe(link.id)
+      }
 
       targetNode.onConnectionsChange = (
         slotType,
@@ -197,6 +209,7 @@ describe('LGraphNode', () => {
 
       expect(disconnected).toBe(true)
       expect(callbackOrder).toEqual([
+        'trigger:node:slot-links:changed:false',
         `target:${NodeSlotType.INPUT}:0:false`,
         `source:${NodeSlotType.OUTPUT}:0:false`
       ])
@@ -269,8 +282,20 @@ describe('LGraphNode', () => {
       const targetLink = sourceNode.connect(0, targetNode1, 0)
       sourceNode.connect(0, targetNode2, 0)
       if (!targetLink) throw new Error('Expected target link')
+      targetNode1.inputs[0].widget = { name: 'in-widget' }
 
       const callbackOrder: string[] = []
+      graph.onTrigger = (event) => {
+        if (event.type !== 'node:slot-links:changed') return
+
+        callbackOrder.push(`trigger:${event.type}:${event.connected}`)
+        expect(event.type).toBe('node:slot-links:changed')
+        expect(event.nodeId).toBe(targetNode1.id)
+        expect(event.slotType).toBe(NodeSlotType.INPUT)
+        expect(event.slotIndex).toBe(0)
+        expect(event.connected).toBe(false)
+        expect(event.linkId).toBe(targetLink.id)
+      }
 
       targetNode1.onConnectionsChange = (
         slotType,
@@ -304,6 +329,7 @@ describe('LGraphNode', () => {
 
       expect(disconnected).toBe(true)
       expect(callbackOrder).toEqual([
+        'trigger:node:slot-links:changed:false',
         `target:${NodeSlotType.INPUT}:0:false`,
         `source:${NodeSlotType.OUTPUT}:0:false`
       ])
@@ -433,6 +459,18 @@ describe('LGraphNode', () => {
       const callbackOrder: string[] = []
       const sourceOutput = sourceNode.outputs[0]
       const targetInput = targetNode.inputs[0]
+      targetInput.widget = { name: 'in-widget' }
+
+      graph.onTrigger = (event) => {
+        if (event.type !== 'node:slot-links:changed') return
+
+        callbackOrder.push(`trigger:${event.type}:${event.connected}`)
+        expect(event.type).toBe('node:slot-links:changed')
+        expect(event.nodeId).toBe(targetNode.id)
+        expect(event.slotType).toBe(NodeSlotType.INPUT)
+        expect(event.slotIndex).toBe(0)
+        expect(event.connected).toBe(true)
+      }
 
       sourceNode.onConnectionsChange = (
         slotType,
@@ -472,6 +510,7 @@ describe('LGraphNode', () => {
 
       expect(link).toBeDefined()
       expect(callbackOrder).toEqual([
+        'trigger:node:slot-links:changed:true',
         `source:${NodeSlotType.OUTPUT}:0:true`,
         `target:${NodeSlotType.INPUT}:0:true`
       ])

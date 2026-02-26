@@ -23,6 +23,7 @@ import { LLink } from './LLink'
 import type { Reroute, RerouteId } from './Reroute'
 import { getNodeInputOnPos, getNodeOutputOnPos } from './canvas/measureSlots'
 import type { IDrawBoundingOptions } from './draw'
+import { graphLifecycleEventDispatcher } from './infrastructure/GraphLifecycleEventDispatcher'
 import { NullGraphError } from './infrastructure/NullGraphError'
 import type { ReadOnlyRectangle } from './infrastructure/Rectangle'
 import { Rectangle } from './infrastructure/Rectangle'
@@ -2915,22 +2916,15 @@ export class LGraphNode
       afterRerouteId
     )
 
-    // link has been created now, so its updated
-    this.onConnectionsChange?.(
-      NodeSlotType.OUTPUT,
-      outputIndex,
-      true,
-      link,
-      output
-    )
-
-    inputNode.onConnectionsChange?.(
-      NodeSlotType.INPUT,
-      inputIndex,
-      true,
-      link,
-      input
-    )
+    graphLifecycleEventDispatcher.dispatchConnectNodePair({
+      sourceNode: this,
+      sourceSlotIndex: outputIndex,
+      sourceSlot: output,
+      targetNode: inputNode,
+      targetSlotIndex: inputIndex,
+      targetSlot: input,
+      link
+    })
 
     this.setDirtyCanvas(false, true)
     graph.afterChange()
@@ -3050,35 +3044,29 @@ export class LGraphNode
         const input = target.inputs[link_info.target_slot]
         // remove there
         input.link = null
-        if (input.widget) {
-          graph.trigger('node:slot-links:changed', {
-            nodeId: target.id,
-            slotType: NodeSlotType.INPUT,
-            slotIndex: link_info.target_slot,
-            connected: false,
-            linkId: link_info.id
-          })
-        }
+        graphLifecycleEventDispatcher.dispatchSlotLinkChanged({
+          graph,
+          nodeId: target.id,
+          slotType: NodeSlotType.INPUT,
+          slotIndex: link_info.target_slot,
+          connected: false,
+          linkId: link_info.id,
+          hasWidget: !!input.widget
+        })
 
         // remove the link from the links pool
         graph.disconnectLink(link_info, 'input')
         graph._version++
 
-        // link_info hasn't been modified so its ok
-        target.onConnectionsChange?.(
-          NodeSlotType.INPUT,
-          link_info.target_slot,
-          false,
-          link_info,
-          input
-        )
-        this.onConnectionsChange?.(
-          NodeSlotType.OUTPUT,
-          slot,
-          false,
-          link_info,
-          output
-        )
+        graphLifecycleEventDispatcher.dispatchDisconnectNodePair({
+          sourceNode: this,
+          sourceSlotIndex: slot,
+          sourceSlot: output,
+          targetNode: target,
+          targetSlotIndex: link_info.target_slot,
+          targetSlot: input,
+          link: link_info
+        })
 
         break
       }
@@ -3099,13 +3087,14 @@ export class LGraphNode
               slot,
               link_info
             )
-            this.onConnectionsChange?.(
-              NodeSlotType.OUTPUT,
-              slot,
-              false,
-              link_info,
-              output
-            )
+            graphLifecycleEventDispatcher.dispatchNodeConnectionChange({
+              node: this,
+              slotType: NodeSlotType.OUTPUT,
+              slotIndex: slot,
+              connected: false,
+              link: link_info,
+              slot: output
+            })
             continue
           } else {
             console.error('Missing subgraphOutput slot when disconnecting link')
@@ -3119,35 +3108,36 @@ export class LGraphNode
           const input = target.inputs[link_info.target_slot]
           // remove other side link
           input.link = null
-          if (input.widget) {
-            graph.trigger('node:slot-links:changed', {
-              nodeId: target.id,
-              slotType: NodeSlotType.INPUT,
-              slotIndex: link_info.target_slot,
-              connected: false,
-              linkId: link_info.id
-            })
-          }
+          graphLifecycleEventDispatcher.dispatchSlotLinkChanged({
+            graph,
+            nodeId: target.id,
+            slotType: NodeSlotType.INPUT,
+            slotIndex: link_info.target_slot,
+            connected: false,
+            linkId: link_info.id,
+            hasWidget: !!input.widget
+          })
 
-          // link_info hasn't been modified so its ok
-          target.onConnectionsChange?.(
-            NodeSlotType.INPUT,
-            link_info.target_slot,
-            false,
-            link_info,
-            input
-          )
+          graphLifecycleEventDispatcher.dispatchNodeConnectionChange({
+            node: target,
+            slotType: NodeSlotType.INPUT,
+            slotIndex: link_info.target_slot,
+            connected: false,
+            link: link_info,
+            slot: input
+          })
         }
         // remove the link from the links pool
         graph.disconnectLink(link_info, 'input')
 
-        this.onConnectionsChange?.(
-          NodeSlotType.OUTPUT,
-          slot,
-          false,
-          link_info,
-          output
-        )
+        graphLifecycleEventDispatcher.dispatchNodeConnectionChange({
+          node: this,
+          slotType: NodeSlotType.OUTPUT,
+          slotIndex: slot,
+          connected: false,
+          link: link_info,
+          slot: output
+        })
       }
       output.links = null
     }
@@ -3197,15 +3187,15 @@ export class LGraphNode
     const link_id = this.inputs[slot].link
     if (link_id != null) {
       this.inputs[slot].link = null
-      if (input.widget) {
-        graph.trigger('node:slot-links:changed', {
-          nodeId: this.id,
-          slotType: NodeSlotType.INPUT,
-          slotIndex: slot,
-          connected: false,
-          linkId: link_id
-        })
-      }
+      graphLifecycleEventDispatcher.dispatchSlotLinkChanged({
+        graph,
+        nodeId: this.id,
+        slotType: NodeSlotType.INPUT,
+        slotIndex: slot,
+        connected: false,
+        linkId: link_id,
+        hasWidget: !!input.widget
+      })
 
       // remove other side
       const link_info = graph._links.get(link_id)
@@ -3243,20 +3233,15 @@ export class LGraphNode
         graph.disconnectLink(link_info, keepReroutes ? 'output' : undefined)
         if (graph) graph._version++
 
-        this.onConnectionsChange?.(
-          NodeSlotType.INPUT,
-          slot,
-          false,
-          link_info,
-          input
-        )
-        target_node.onConnectionsChange?.(
-          NodeSlotType.OUTPUT,
-          i,
-          false,
-          link_info,
-          output
-        )
+        graphLifecycleEventDispatcher.dispatchDisconnectNodePair({
+          sourceNode: target_node,
+          sourceSlotIndex: i,
+          sourceSlot: output,
+          targetNode: this,
+          targetSlotIndex: slot,
+          targetSlot: input,
+          link: link_info
+        })
       }
     }
 

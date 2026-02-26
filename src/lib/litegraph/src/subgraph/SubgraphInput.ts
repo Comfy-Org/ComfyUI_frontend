@@ -2,6 +2,7 @@ import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { LLink } from '@/lib/litegraph/src/LLink'
 import type { RerouteId } from '@/lib/litegraph/src/Reroute'
 import { CustomEventTarget } from '@/lib/litegraph/src/infrastructure/CustomEventTarget'
+import { graphLifecycleEventDispatcher } from '@/lib/litegraph/src/infrastructure/GraphLifecycleEventDispatcher'
 import type { SubgraphInputEventMap } from '@/lib/litegraph/src/infrastructure/SubgraphInputEventMap'
 import type {
   INodeInputSlot,
@@ -102,7 +103,14 @@ export class SubgraphInput extends SubgraphSlot {
       afterRerouteId
     )
 
-    node.onConnectionsChange?.(NodeSlotType.INPUT, inputIndex, true, link, slot)
+    graphLifecycleEventDispatcher.dispatchNodeConnectionChange({
+      node,
+      slotType: NodeSlotType.INPUT,
+      slotIndex: inputIndex,
+      connected: true,
+      link,
+      slot
+    })
 
     subgraph.afterChange()
 

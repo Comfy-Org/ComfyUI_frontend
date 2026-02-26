@@ -4,6 +4,7 @@ import { LLink } from '@/lib/litegraph/src/LLink'
 import type { RerouteId } from '@/lib/litegraph/src/Reroute'
 import type { LinkConnector } from '@/lib/litegraph/src/canvas/LinkConnector'
 import { SUBGRAPH_INPUT_ID } from '@/lib/litegraph/src/constants'
+import { graphLifecycleEventDispatcher } from '@/lib/litegraph/src/infrastructure/GraphLifecycleEventDispatcher'
 import type {
   DefaultConnectionColors,
   INodeInputSlot,
@@ -189,13 +190,14 @@ export class SubgraphInputNode
     subgraph.disconnectSubgraphInputLink(subgraphInput, node, slotIndex, link)
     subgraph.setDirtyCanvas(false, true)
 
-    node.onConnectionsChange?.(
-      NodeSlotType.INPUT,
+    graphLifecycleEventDispatcher.dispatchNodeConnectionChange({
+      node,
+      slotType: NodeSlotType.INPUT,
       slotIndex,
-      false,
+      connected: false,
       link,
-      subgraphInput
-    )
+      slot: subgraphInput
+    })
   }
 
   override drawProtected(

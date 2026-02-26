@@ -25,6 +25,7 @@ import { MapProxyHandler } from './MapProxyHandler'
 import { Reroute } from './Reroute'
 import type { RerouteId } from './Reroute'
 import { CustomEventTarget } from './infrastructure/CustomEventTarget'
+import { graphLifecycleEventDispatcher } from './infrastructure/GraphLifecycleEventDispatcher'
 import { graphPersistenceAdapter } from './infrastructure/GraphPersistenceAdapter'
 import type { LGraphEventMap } from './infrastructure/LGraphEventMap'
 import type { SubgraphEventMap } from './infrastructure/SubgraphEventMap'
@@ -1687,15 +1688,15 @@ export class LGraph
     output.links.push(link.id)
     // connect in input
     input.link = link.id
-    if (input.widget) {
-      this.trigger('node:slot-links:changed', {
-        nodeId: targetNode.id,
-        slotType: NodeSlotType.INPUT,
-        slotIndex: inputIndex,
-        connected: true,
-        linkId: link.id
-      })
-    }
+    graphLifecycleEventDispatcher.dispatchSlotLinkChanged({
+      graph: this,
+      nodeId: targetNode.id,
+      slotType: NodeSlotType.INPUT,
+      slotIndex: inputIndex,
+      connected: true,
+      linkId: link.id,
+      hasWidget: !!input.widget
+    })
 
     this.finalizeConnectedLink(link)
     return link

@@ -1,6 +1,7 @@
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { LLink } from '@/lib/litegraph/src/LLink'
 import type { RerouteId } from '@/lib/litegraph/src/Reroute'
+import { graphLifecycleEventDispatcher } from '@/lib/litegraph/src/infrastructure/GraphLifecycleEventDispatcher'
 import type {
   INodeInputSlot,
   INodeOutputSlot,
@@ -73,13 +74,14 @@ export class SubgraphOutput extends SubgraphSlot {
       afterRerouteId
     )
 
-    node.onConnectionsChange?.(
-      NodeSlotType.OUTPUT,
-      outputIndex,
-      true,
+    graphLifecycleEventDispatcher.dispatchNodeConnectionChange({
+      node,
+      slotType: NodeSlotType.OUTPUT,
+      slotIndex: outputIndex,
+      connected: true,
       link,
       slot
-    )
+    })
 
     subgraph.afterChange()
 
@@ -142,13 +144,14 @@ export class SubgraphOutput extends SubgraphSlot {
         link
       )
 
-      outputNode?.onConnectionsChange?.(
-        NodeSlotType.OUTPUT,
-        link.origin_slot,
-        false,
+      graphLifecycleEventDispatcher.dispatchNodeConnectionChange({
+        node: outputNode,
+        slotType: NodeSlotType.OUTPUT,
+        slotIndex: link.origin_slot,
+        connected: false,
         link,
-        this
-      )
+        slot: this
+      })
     }
   }
 }

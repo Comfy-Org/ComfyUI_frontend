@@ -178,6 +178,63 @@ describe('SubgraphIO - Input Slot Dual-Nature Behavior', () => {
   )
 
   subgraphTest(
+    'connect lifecycle keeps input-connected event before node callback',
+    ({ subgraphWithNode }) => {
+      const { subgraph } = subgraphWithNode
+      const internalNode = new LGraphNode('Internal Target')
+      internalNode.addInput('in', '*')
+      internalNode.addWidget('number', 'in-widget', 0, null)
+      internalNode.inputs[0].widget = { name: 'in-widget' }
+      subgraph.add(internalNode)
+
+      const subgraphInput = subgraph.inputNode.slots[0]
+      const callbackOrder: string[] = []
+      subgraphInput.events.addEventListener('input-connected', () => {
+        callbackOrder.push('event:input-connected')
+      })
+      internalNode.onConnectionsChange = () => {
+        callbackOrder.push('callback:node-connected')
+      }
+
+      subgraphInput.connect(internalNode.inputs[0], internalNode)
+
+      expect(callbackOrder).toEqual([
+        'event:input-connected',
+        'callback:node-connected'
+      ])
+    }
+  )
+
+  subgraphTest(
+    'disconnect lifecycle keeps node callback before input-disconnected event',
+    ({ subgraphWithNode }) => {
+      const { subgraph } = subgraphWithNode
+      const internalNode = new LGraphNode('Internal Target')
+      internalNode.addInput('in', '*')
+      subgraph.add(internalNode)
+
+      const subgraphInput = subgraph.inputNode.slots[0]
+      subgraphInput.connect(internalNode.inputs[0], internalNode)
+
+      const callbackOrder: string[] = []
+      internalNode.onConnectionsChange = (...args) => {
+        if (args[2]) return
+        callbackOrder.push('callback:node-disconnected')
+      }
+      subgraphInput.events.addEventListener('input-disconnected', () => {
+        callbackOrder.push('event:input-disconnected')
+      })
+
+      subgraphInput.disconnect()
+
+      expect(callbackOrder).toEqual([
+        'callback:node-disconnected',
+        'event:input-disconnected'
+      ])
+    }
+  )
+
+  subgraphTest(
     'input accepts external connections from parent graph',
     ({ subgraphWithNode }) => {
       const { subgraph, subgraphNode, parentGraph } = subgraphWithNode
