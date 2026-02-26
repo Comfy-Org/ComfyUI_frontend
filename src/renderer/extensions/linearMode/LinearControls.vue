@@ -69,7 +69,11 @@ const mappedSelections = computed(() => {
       ([id]) => id === nodeId
     ).map(([, widgetName]) => widgetName)
     unprocessedInputs = unprocessedInputs.slice(inputGroup.length)
-    const node = app.rootGraph.getNodeById(nodeId)
+    const node =
+      app.rootGraph.getNodeById(nodeId) ??
+      [...app.rootGraph.subgraphs.values()]
+        .flatMap((sg) => sg.nodes)
+        .find((n) => n.id == nodeId)
     if (!node) continue
 
     const nodeData = nodeToNodeData(node)
