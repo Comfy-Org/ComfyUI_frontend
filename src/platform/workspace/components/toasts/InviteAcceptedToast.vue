@@ -33,10 +33,10 @@ import { useWorkspaceSwitch } from '@/platform/workspace/composables/useWorkspac
 
 const { t } = useI18n()
 const toast = useToast()
-const { switchWithConfirmation } = useWorkspaceSwitch()
+const { switchWorkspace } = useWorkspaceSwitch()
 
 function viewWorkspace(workspaceId: string) {
-  void switchWithConfirmation(workspaceId)
+  void switchWorkspace(workspaceId)
   toast.removeGroup('invite-accepted')
 }
 </script>
