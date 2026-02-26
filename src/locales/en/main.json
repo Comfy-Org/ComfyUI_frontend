@@ -174,6 +174,7 @@
     "control_after_generate": "control after generate",
     "control_before_generate": "control before generate",
     "choose_file_to_upload": "choose file to upload",
+    "uploadAlreadyInProgress": "Upload already in progress",
     "capture": "capture",
     "nodes": "Nodes",
     "nodesCount": "{count} nodes | {count} node | {count} nodes",
