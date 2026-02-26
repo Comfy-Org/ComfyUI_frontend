@@ -3235,7 +3235,7 @@ export class LGraphNode
 
         graphLifecycleEventDispatcher.dispatchDisconnectNodePair({
           sourceNode: target_node,
-          sourceSlotIndex: i,
+          sourceSlotIndex: link_info.origin_slot,
           sourceSlot: output,
           targetNode: this,
           targetSlotIndex: slot,

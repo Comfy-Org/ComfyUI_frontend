@@ -209,7 +209,7 @@ export class SubgraphInputNode
       slotIndex,
       connected: false,
       link,
-      slot: subgraphInput
+      slot: input
     })
   }
 

@@ -7,8 +7,10 @@ import {
   SUBGRAPH_INPUT_ID,
   SUBGRAPH_OUTPUT_ID
 } from '@/lib/litegraph/src/constants'
-import { LinkDirection } from '@/lib/litegraph/src//types/globalEnums'
-import { NodeSlotType } from '@/lib/litegraph/src/types/globalEnums'
+import {
+  LinkDirection,
+  NodeSlotType
+} from '@/lib/litegraph/src/types/globalEnums'
 import { createUuidv4 } from '@/lib/litegraph/src/utils/uuid'
 
 import { subgraphTest } from './__fixtures__/subgraphFixtures'
@@ -169,7 +171,7 @@ describe('SubgraphIO - Input Slot Dual-Nature Behavior', () => {
         0,
         false,
         link,
-        subgraphInput
+        internalNode.inputs[0]
       )
       expect(internalNode.inputs[0].link).toBeNull()
       expect(subgraphInput.linkIds).toEqual([])
