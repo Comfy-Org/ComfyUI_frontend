@@ -68,16 +68,20 @@ export class PerformanceHelper {
     const after = await this.getSnapshot()
     const before = this.snapshot
     this.snapshot = null
+
+    function delta(key: keyof PerfSnapshot): number {
+      return after[key] - before[key]
+    }
+
     return {
       name,
-      durationMs: (after.Timestamp - before.Timestamp) * 1000,
-      styleRecalcs: after.RecalcStyleCount - before.RecalcStyleCount,
-      styleRecalcDurationMs:
-        (after.RecalcStyleDuration - before.RecalcStyleDuration) * 1000,
-      layouts: after.LayoutCount - before.LayoutCount,
-      layoutDurationMs: (after.LayoutDuration - before.LayoutDuration) * 1000,
-      taskDurationMs: (after.TaskDuration - before.TaskDuration) * 1000,
-      heapDeltaBytes: after.JSHeapUsedSize - before.JSHeapUsedSize
+      durationMs: delta('Timestamp') * 1000,
+      styleRecalcs: delta('RecalcStyleCount'),
+      styleRecalcDurationMs: delta('RecalcStyleDuration') * 1000,
+      layouts: delta('LayoutCount'),
+      layoutDurationMs: delta('LayoutDuration') * 1000,
+      taskDurationMs: delta('TaskDuration') * 1000,
+      heapDeltaBytes: delta('JSHeapUsedSize')
     }
   }
 }

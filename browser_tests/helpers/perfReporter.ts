@@ -18,7 +18,10 @@ export function recordMeasurement(m: PerfMeasurement) {
   writeFileSync(join(TEMP_DIR, filename), JSON.stringify(m))
 }
 
-export function writePerfReport() {
+export function writePerfReport(
+  gitSha = process.env.GITHUB_SHA ?? 'local',
+  branch = process.env.GITHUB_HEAD_REF ?? 'local'
+) {
   if (!readdirSync('test-results', { withFileTypes: true }).length) return
 
   let tempFiles: string[]
@@ -35,8 +38,8 @@ export function writePerfReport() {
 
   const report: PerfReport = {
     timestamp: new Date().toISOString(),
-    gitSha: process.env.GITHUB_SHA ?? 'local',
-    branch: process.env.GITHUB_HEAD_REF ?? 'local',
+    gitSha,
+    branch,
     measurements
   }
   writeFileSync(
