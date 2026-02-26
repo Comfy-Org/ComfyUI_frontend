@@ -25,6 +25,7 @@ import { MapProxyHandler } from './MapProxyHandler'
 import { Reroute } from './Reroute'
 import type { RerouteId } from './Reroute'
 import { CustomEventTarget } from './infrastructure/CustomEventTarget'
+import { graphPersistenceAdapter } from './infrastructure/GraphPersistenceAdapter'
 import type { LGraphEventMap } from './infrastructure/LGraphEventMap'
 import type { SubgraphEventMap } from './infrastructure/SubgraphEventMap'
 import type {
@@ -2623,59 +2624,12 @@ export class LGraph
 
       this._configureBase(data)
 
-      let reroutes: SerialisableReroute[] | undefined
-
-      // TODO: Determine whether this should this fall back to 0.4.
-      if (data.version === 0.4) {
-        const { extra } = data
-        // Deprecated - old schema version, links are arrays
-        if (Array.isArray(data.links)) {
-          for (const linkData of data.links) {
-            const link = LLink.createFromArray(linkData)
-            this._links.set(link.id, link)
-          }
-        }
-        // #region `extra` embeds for v0.4
-
-        // LLink parentIds
-        if (Array.isArray(extra?.linkExtensions)) {
-          for (const linkEx of extra.linkExtensions) {
-            const link = this._links.get(linkEx.id)
-            if (link) link.parentId = linkEx.parentId
-          }
-        }
-
-        // Reroutes
-        reroutes = extra?.reroutes
-
-        // #endregion `extra` embeds for v0.4
-      } else {
-        // New schema - one version so far, no check required.
-
-        // State - use max to prevent ID collisions across root and subgraphs
-        if (data.state) {
-          const { lastGroupId, lastLinkId, lastNodeId, lastRerouteId } =
-            data.state
-          const { state } = this
-          if (lastGroupId != null)
-            state.lastGroupId = Math.max(state.lastGroupId, lastGroupId)
-          if (lastLinkId != null)
-            state.lastLinkId = Math.max(state.lastLinkId, lastLinkId)
-          if (lastNodeId != null)
-            state.lastNodeId = Math.max(state.lastNodeId, lastNodeId)
-          if (lastRerouteId != null)
-            state.lastRerouteId = Math.max(state.lastRerouteId, lastRerouteId)
-        }
-
-        // Links
-        if (Array.isArray(data.links)) {
-          for (const linkData of data.links) {
-            const link = LLink.create(linkData)
-            this._links.set(link.id, link)
-          }
-        }
-
-        reroutes = data.reroutes
+      const { links, reroutes } = graphPersistenceAdapter.toConfiguredTopology(
+        data,
+        this.state
+      )
+      for (const link of links) {
+        this._links.set(link.id, link)
       }
 
       // Reroutes
@@ -2841,8 +2795,14 @@ export class LGraph
       }
 
       if (remappedIds.size > 0) {
-        patchLinkNodeIds(graph._links, remappedIds)
-        patchLinkNodeIds(graph.floatingLinksInternal, remappedIds)
+        graphPersistenceAdapter.patchLinkNodeIds(
+          graph._links.values(),
+          remappedIds
+        )
+        graphPersistenceAdapter.patchLinkNodeIds(
+          graph.floatingLinksInternal.values(),
+          remappedIds
+        )
       }
     }
   }
@@ -3247,18 +3207,5 @@ export class Subgraph
         : undefined,
       extra: this.extra
     }
-  }
-}
-
-function patchLinkNodeIds(
-  links: Map<LinkId, LLink>,
-  remappedIds: Map<NodeId, NodeId>
-): void {
-  for (const link of links.values()) {
-    const newOrigin = remappedIds.get(link.origin_id)
-    if (newOrigin !== undefined) link.origin_id = newOrigin
-
-    const newTarget = remappedIds.get(link.target_id)
-    if (newTarget !== undefined) link.target_id = newTarget
   }
 }

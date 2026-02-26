@@ -29,6 +29,7 @@ import type {
   CustomEventDispatcher,
   ICustomEventTarget
 } from './infrastructure/CustomEventTarget'
+import { graphPersistenceAdapter } from './infrastructure/GraphPersistenceAdapter'
 import type { LGraphCanvasEventMap } from './infrastructure/LGraphCanvasEventMap'
 import { NullGraphError } from './infrastructure/NullGraphError'
 import { Rectangle } from './infrastructure/Rectangle'
@@ -8799,55 +8800,6 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
   }
 }
 
-function patchLinkNodeIds(
-  links: { origin_id: NodeId; target_id: NodeId }[] | undefined,
-  remappedIds: Map<NodeId, NodeId>
-) {
-  if (!links?.length) return
-
-  for (const link of links) {
-    const newOriginId = remappedIds.get(link.origin_id)
-    if (newOriginId !== undefined) link.origin_id = newOriginId
-
-    const newTargetId = remappedIds.get(link.target_id)
-    if (newTargetId !== undefined) link.target_id = newTargetId
-  }
-}
-
-function remapNodeId(
-  nodeId: string,
-  remappedIds: Map<NodeId, NodeId>
-): NodeId | undefined {
-  const directMatch = remappedIds.get(nodeId)
-  if (directMatch !== undefined) return directMatch
-  if (!/^-?\d+$/.test(nodeId)) return undefined
-
-  const numericId = Number(nodeId)
-  if (!Number.isSafeInteger(numericId)) return undefined
-
-  return remappedIds.get(numericId)
-}
-
-function remapProxyWidgets(
-  info: ISerialisedNode,
-  remappedIds: Map<NodeId, NodeId> | undefined
-) {
-  if (!remappedIds || remappedIds.size === 0) return
-
-  const proxyWidgets = info.properties?.proxyWidgets
-  if (!Array.isArray(proxyWidgets)) return
-
-  for (const entry of proxyWidgets) {
-    if (!Array.isArray(entry)) continue
-
-    const [nodeId] = entry
-    if (typeof nodeId !== 'string' || nodeId === '-1') continue
-
-    const remappedNodeId = remapNodeId(nodeId, remappedIds)
-    if (remappedNodeId !== undefined) entry[0] = String(remappedNodeId)
-  }
-}
-
 /**
  * Remaps pasted subgraph interior node IDs that would collide with existing
  * node IDs in the root graph. Also patches subgraph link node IDs and
@@ -8895,7 +8847,7 @@ export function remapClipboardSubgraphNodeIds(
     }
 
     if (remappedIds.size > 0) {
-      patchLinkNodeIds(subgraphInfo.links, remappedIds)
+      graphPersistenceAdapter.patchLinkNodeIds(subgraphInfo.links, remappedIds)
       subgraphNodeIdMap.set(subgraphInfo.id, remappedIds)
     }
   }
@@ -8907,6 +8859,9 @@ export function remapClipboardSubgraphNodeIds(
 
   for (const nodeInfo of allNodeInfo) {
     if (typeof nodeInfo.type !== 'string') continue
-    remapProxyWidgets(nodeInfo, subgraphNodeIdMap.get(nodeInfo.type))
+    graphPersistenceAdapter.remapProxyWidgets(
+      nodeInfo,
+      subgraphNodeIdMap.get(nodeInfo.type)
+    )
   }
 }

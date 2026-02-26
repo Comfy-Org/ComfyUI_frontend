@@ -130,6 +130,39 @@ describe('LGraph', () => {
     const fromOldSchema = new LGraph(oldSchemaGraph)
     expect(fromOldSchema).toMatchSnapshot('oldSchemaGraph')
   })
+
+  it('round-trips v0.4 link parent extensions and reroutes through configure', () => {
+    const source = createNumberNode('source')
+    const target = createNumberNode('target')
+    const graph = createGraph(source, target)
+
+    const link = source.connect(0, target, 0)
+    if (!link) throw new Error('Expected link')
+    const reroute = graph.createReroute([80, 40], link)
+
+    const serialized04 = graph.serialize()
+    const restored = new LGraph(serialized04)
+    const restoredLink = restored.getLink(link.id)
+
+    if (!restoredLink) throw new Error('Expected restored link')
+    expect(restoredLink.parentId).toBe(reroute.id)
+    expect(restored.reroutes.size).toBe(1)
+    expect(restored.reroutes.get(reroute.id)?.linkIds.has(link.id)).toBe(true)
+  })
+
+  it('round-trips v1 serialisable links/floating/reroutes through configure', () => {
+    const graph = new LGraph()
+    const { floatingLinkId, rerouteId, linkedNodeId } = buildLinkTopology(graph)
+    const serialisedV1 = graph.asSerialisable()
+
+    const restored = new LGraph(serialisedV1)
+    const linkedInputLinkId = restored.getNodeById(linkedNodeId)?.inputs[0].link
+
+    expect(linkedInputLinkId).toBeDefined()
+    expect(restored.getLink(linkedInputLinkId)).toBeDefined()
+    expect(restored.getReroute(rerouteId)).toBeDefined()
+    expect(restored.floatingLinks.get(floatingLinkId)).toBeDefined()
+  })
 })
 
 describe('Floating Links / Reroutes', () => {
@@ -749,6 +782,33 @@ describe('ensureGlobalIdUniqueness', () => {
     expect(link.origin_id).toBe(subNodeA.id)
     expect(link.target_id).toBe(subNodeB.id)
     expect(link.origin_id).not.toBe(rootNode.id)
+  })
+
+  it('patches floating link origin_id and target_id after reassignment', () => {
+    const rootGraph = new LGraph()
+    const subgraph = createSubgraphOnGraph(rootGraph)
+
+    const rootNode = new DummyNode()
+    rootGraph.add(rootNode)
+
+    const subNodeA = new DummyNode()
+    subNodeA.id = rootNode.id
+    subgraph._nodes.push(subNodeA)
+    subgraph._nodes_by_id[subNodeA.id] = subNodeA
+
+    const subNodeB = new DummyNode()
+    subNodeB.id = 777
+    subgraph._nodes.push(subNodeB)
+    subgraph._nodes_by_id[subNodeB.id] = subNodeB
+
+    const floatingLink = new LLink(9, 'number', subNodeA.id, 0, subNodeB.id, 0)
+    subgraph.addFloatingLink(floatingLink)
+
+    rootGraph.ensureGlobalIdUniqueness()
+
+    expect(floatingLink.origin_id).toBe(subNodeA.id)
+    expect(floatingLink.target_id).toBe(subNodeB.id)
+    expect(floatingLink.origin_id).not.toBe(rootNode.id)
   })
 
   it('detects collisions with reserved (not-yet-created) node IDs', () => {
