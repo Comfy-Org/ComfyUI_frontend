@@ -133,7 +133,7 @@ class NodeOrganizationService {
     switch (tabId) {
       case 'essentials': {
         const essentialNodes = nodes.filter(
-          (nodeDef) => nodeDef.essentials_category !== undefined
+          (nodeDef) => !!nodeDef.essentials_category
         )
         const essentialsPathExtractor = (nodeDef: ComfyNodeDefImpl) => {
           const folder = nodeDef.essentials_category || ''
