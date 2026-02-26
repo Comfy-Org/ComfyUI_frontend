@@ -1,6 +1,8 @@
 import type { Ref } from 'vue'
 import { customRef, onScopeDispose } from 'vue'
 
+import { useEventListener } from '@vueuse/core'
+
 type ValueElement = HTMLInputElement | HTMLTextAreaElement
 
 export function useDomValueBridge(element: ValueElement): Ref<string> {
@@ -40,25 +42,30 @@ export function useDomValueBridge(element: ValueElement): Ref<string> {
     }
   })
 
-  Object.defineProperty(element, 'value', {
-    configurable: true,
-    enumerable: true,
-    get() {
-      return prevGet.call(element)
-    },
-    set(v: string) {
-      prevSet.call(element, v)
-      notifyChange?.()
-    }
+  const canOverride =
+    existingDescriptor == null || existingDescriptor.configurable !== false
+
+  if (canOverride) {
+    Object.defineProperty(element, 'value', {
+      configurable: true,
+      enumerable: true,
+      get() {
+        return prevGet.call(element)
+      },
+      set(v: string) {
+        prevSet.call(element, v)
+        notifyChange?.()
+      }
+    })
+  }
+
+  useEventListener(element, 'input', () => {
+    notifyChange?.()
   })
 
-  function onInput() {
-    notifyChange?.()
-  }
-  element.addEventListener('input', onInput)
-
   onScopeDispose(() => {
-    element.removeEventListener('input', onInput)
+    if (!canOverride) return
+
     if (existingDescriptor) {
       Object.defineProperty(element, 'value', existingDescriptor)
     } else {

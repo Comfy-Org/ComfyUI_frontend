@@ -416,19 +416,32 @@ LGraphNode.prototype.addDOMWidget = function <
     element instanceof HTMLInputElement ||
     element instanceof HTMLTextAreaElement
   ) {
-    const bridgeScope = effectScope()
-    bridgeScope.run(() => {
-      const bridgedValue = useDomValueBridge(element)
-      watch(bridgedValue, (newVal) => {
-        if (widget.value !== newVal) {
-          widget.value = newVal as V
-        }
-      })
-    })
+    let bridgeScope: ReturnType<typeof effectScope> | null = null
 
-    widget.onRemove = useChainCallback(widget.onRemove, () => {
-      bridgeScope.stop()
-    })
+    const valueElement = element as HTMLInputElement | HTMLTextAreaElement
+
+    function startBridge() {
+      if (bridgeScope?.active) return
+      bridgeScope = effectScope()
+      bridgeScope.run(() => {
+        const bridgedValue = useDomValueBridge(valueElement)
+        watch(bridgedValue, (newVal) => {
+          if (widget.value !== newVal) {
+            widget.value = newVal as V
+          }
+        })
+      })
+    }
+
+    function stopBridge() {
+      bridgeScope?.stop()
+      bridgeScope = null
+    }
+
+    startBridge()
+
+    this.onAdded = useChainCallback(this.onAdded, startBridge)
+    widget.onRemove = useChainCallback(widget.onRemove, stopBridge)
   }
 
   return widget

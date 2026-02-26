@@ -19,7 +19,7 @@ function addMultilineWidget(
     component: WidgetTextarea,
     inputSpec,
     type: 'customtext',
-    props: { placeholder: opts.placeholder || name },
+    props: { placeholder: opts.placeholder ?? name },
     options: {
       minNodeSize: [400, 200]
     }
