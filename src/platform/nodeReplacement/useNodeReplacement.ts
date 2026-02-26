@@ -285,13 +285,17 @@ export function useNodeReplacement() {
       }
     } catch (error) {
       console.error('Failed to replace nodes:', error)
+      if (replacedTypes.length > 0) {
+        graph.updateExecutionOrder()
+        graph.setDirtyCanvas(true, true)
+      }
       toastStore.add({
         severity: 'error',
         summary: t('g.error', 'Error'),
         detail: t('nodeReplacement.replaceFailed', 'Failed to replace nodes'),
         life: 5000
       })
-      return []
+      return replacedTypes
     } finally {
       changeTracker?.afterChange()
     }

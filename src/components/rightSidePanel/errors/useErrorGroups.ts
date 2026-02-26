@@ -536,7 +536,7 @@ export function useErrorGroups(
     if (swapNodeGroups.value.length > 0) {
       groups.push({
         type: 'swap_nodes' as const,
-        title: 'Swap Nodes',
+        title: st('nodeReplacement.swapNodesTitle', 'Swap Nodes'),
         priority: 0
       })
     }

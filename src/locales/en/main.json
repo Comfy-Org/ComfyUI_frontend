@@ -3079,7 +3079,8 @@
     "replaceNode": "Replace Node",
     "replaceAll": "Replace All",
     "unknownNode": "Unknown",
-    "replaceAllWarning": "Replaces all available nodes in this group."
+    "replaceAllWarning": "Replaces all available nodes in this group.",
+    "swapNodesTitle": "Swap Nodes"
   },
   "rightSidePanel": {
     "togglePanel": "Toggle properties panel",
