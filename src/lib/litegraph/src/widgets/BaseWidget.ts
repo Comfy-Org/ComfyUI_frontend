@@ -27,6 +27,8 @@ export interface DrawWidgetOptions {
   showText?: boolean
   /** When true, suppresses the promoted outline color (e.g. for projected copies on SubgraphNode). */
   suppressPromotedOutline?: boolean
+  /** Transient image source for preview widgets rendered on behalf of another node (e.g. subgraph promotion). */
+  previewImages?: HTMLImageElement[]
 }
 
 interface DrawTruncatingTextOptions extends DrawWidgetOptions {

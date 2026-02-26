@@ -4,6 +4,7 @@ import type {
   IBaseWidget,
   IWidgetOptions
 } from '@/lib/litegraph/src/types/widgets'
+import type { DrawWidgetOptions } from '@/lib/litegraph/src/widgets/BaseWidget'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
@@ -77,7 +78,9 @@ const renderPreview = (
   ctx: CanvasRenderingContext2D,
   node: LGraphNode,
   shiftY: number,
-  computedHeight: number | undefined
+  computedHeight: number | undefined,
+  imgs: HTMLImageElement[],
+  width: number
 ) => {
   if (!node.size) return
 
@@ -99,7 +102,6 @@ const renderPreview = (
     node.pointerDown = null
   }
 
-  const imgs = node.imgs ?? []
   if (imgs.length === 0) return
 
   let { imageIndex } = node
@@ -112,7 +114,7 @@ const renderPreview = (
   const settingStore = useSettingStore()
   const allowImageSizeDraw = settingStore.get('Comfy.Node.AllowImageSizeDraw')
   const IMAGE_TEXT_SIZE_TEXT_HEIGHT = allowImageSizeDraw ? 15 : 0
-  const dw = node.size[0]
+  const dw = width
   const dh = computedHeight ? computedHeight - IMAGE_TEXT_SIZE_TEXT_HEIGHT : 0
 
   if (imageIndex == null) {
@@ -358,8 +360,19 @@ class ImagePreviewWidget extends BaseWidget {
     this.serialize = false
   }
 
-  override drawWidget(ctx: CanvasRenderingContext2D): void {
-    renderPreview(ctx, this.node, this.y, this.computedHeight)
+  override drawWidget(
+    ctx: CanvasRenderingContext2D,
+    options: DrawWidgetOptions
+  ): void {
+    const imgs = options.previewImages ?? this.node.imgs ?? []
+    renderPreview(
+      ctx,
+      this.node,
+      this.y,
+      this.computedHeight,
+      imgs,
+      options.width
+    )
   }
 
   override createCopyForNode(node: LGraphNode): this {
