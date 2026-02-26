@@ -1186,7 +1186,7 @@ export class ComfyApp {
     const embeddedModels: ModelFile[] = []
 
     const nodeReplacementStore = useNodeReplacementStore()
-
+    await nodeReplacementStore.load()
     const collectMissingNodesAndModels = (
       nodes: ComfyWorkflowJSON['nodes'],
       pathPrefix: string = '',
