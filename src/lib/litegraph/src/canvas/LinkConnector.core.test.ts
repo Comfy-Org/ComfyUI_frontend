@@ -38,14 +38,16 @@ interface TestContext {
 const test = baseTest.extend<TestContext>({
   network: async ({}, use) => {
     const graph = new LGraph()
+    const links = new Map<number, LLink>()
     const floatingLinks = new Map<number, LLink>()
     const reroutes = new Map<number, Reroute>()
 
     await use({
-      links: new Map<number, LLink>(),
+      links,
       reroutes,
       floatingLinks,
-      getLink: graph.getLink.bind(graph),
+      getLink: ((id: number | null | undefined) =>
+        id == null ? undefined : links.get(id)) as LinkNetwork['getLink'],
       getNodeById: (id: number) => graph.getNodeById(id),
       addFloatingLink: (link: LLink) => {
         floatingLinks.set(link.id, link)

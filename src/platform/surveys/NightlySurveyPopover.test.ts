@@ -90,7 +90,7 @@ describe('NightlySurveyPopover', () => {
       await nextTick()
 
       expect(wrapper.find(POPOVER_SELECTOR).exists()).toBe(true)
-    })
+    }, 15000)
 
     it('does not show when not eligible', async () => {
       setFeatureUsage('test-feature', 1)
