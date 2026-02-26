@@ -86,7 +86,7 @@
                 variant="secondary"
                 size="sm"
                 class="shrink-0 mr-2 h-8 rounded-lg text-sm"
-                @click.stop="handleReplaceAll(swapNodeGroups)"
+                @click.stop="handleReplaceAll()"
               >
                 {{ t('nodeReplacement.replaceAll', 'Replace All') }}
               </Button>
@@ -184,7 +184,6 @@ import Button from '@/components/ui/button/Button.vue'
 import DotSpinner from '@/components/common/DotSpinner.vue'
 import { usePackInstall } from '@/workbench/extensions/manager/composables/nodePack/usePackInstall'
 import { useMissingNodes } from '@/workbench/extensions/manager/composables/nodePack/useMissingNodes'
-import type { SwapNodeGroup } from './useErrorGroups'
 import { useErrorGroups } from './useErrorGroups'
 import { useNodeReplacement } from '@/platform/nodeReplacement/useNodeReplacement'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
@@ -265,12 +264,11 @@ function handleOpenManagerInfo(packId: string) {
   }
 }
 
-function handleReplaceAll(swapNodeGroups: SwapNodeGroup[]) {
-  const allNodeTypes = swapNodeGroups.flatMap((g) => g.nodeTypes)
+function handleReplaceAll() {
+  const allNodeTypes = swapNodeGroups.value.flatMap((g) => g.nodeTypes)
   const replaced = replaceNodesInPlace(allNodeTypes)
   if (replaced.length > 0) {
-    const typesToRemove = swapNodeGroups.map((g) => g.type)
-    executionErrorStore.removeMissingNodesByType(typesToRemove)
+    executionErrorStore.removeMissingNodesByType(replaced)
   }
 }
 
