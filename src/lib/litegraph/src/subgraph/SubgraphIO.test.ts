@@ -324,6 +324,35 @@ describe('SubgraphIO - Input Slot Dual-Nature Behavior', () => {
   })
 
   subgraphTest(
+    'disconnects subgraph-input links even when link origin_slot points to a missing slot',
+    ({ subgraphWithNode }) => {
+      const { subgraph } = subgraphWithNode
+      const internalNode = new LGraphNode('Internal Target')
+      internalNode.addInput('in', '*')
+      subgraph.add(internalNode)
+
+      const subgraphInput = subgraph.inputNode.slots[0]
+      const link = subgraphInput.connect(internalNode.inputs[0], internalNode)
+      if (!link) throw new Error('Expected link')
+
+      // Simulate stale legacy/corrupt topology where the slot index no longer resolves.
+      link.origin_slot = 999
+
+      new ToInputFromIoNodeLink(
+        subgraph,
+        subgraph.inputNode,
+        subgraphInput,
+        undefined,
+        LinkDirection.CENTER,
+        link
+      ).disconnect()
+
+      expect(internalNode.inputs[0].link).toBeNull()
+      expect(subgraph.links.get(link.id)).toBeUndefined()
+    }
+  )
+
+  subgraphTest(
     'handles slot renaming with active connections',
     ({ subgraphWithNode }) => {
       const { subgraph, subgraphNode, parentGraph } = subgraphWithNode
@@ -507,6 +536,31 @@ describe('SubgraphIO - Output Slot Dual-Nature Behavior', () => {
       expect(externalNode.inputs[0].link).not.toBe(null)
       expect(subgraph.outputs[0].label).toBe('new_name')
       expect(subgraph.outputs[0].displayName).toBe('new_name')
+    }
+  )
+
+  subgraphTest(
+    'cleans stale subgraph-output linkIds while disconnecting active output links',
+    ({ subgraphWithNode }) => {
+      const { subgraph } = subgraphWithNode
+
+      const internalNode = new LGraphNode('Internal Source')
+      internalNode.addOutput('out', '*')
+      subgraph.add(internalNode)
+
+      const subgraphOutput = subgraph.outputNode.slots[0]
+      const link = subgraphOutput.connect(internalNode.outputs[0], internalNode)
+      if (!link) throw new Error('Expected link')
+
+      // Simulate stale/corrupt bookkeeping where a dead link id remains.
+      const staleLinkId = 999_999
+      subgraphOutput.linkIds.push(staleLinkId)
+
+      subgraphOutput.disconnect()
+
+      expect(subgraphOutput.linkIds).toEqual([])
+      expect(subgraph.links.get(link.id)).toBeUndefined()
+      expect(internalNode.outputs[0].links).toEqual([])
     }
   )
 })

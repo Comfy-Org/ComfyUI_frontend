@@ -153,5 +153,7 @@ export class SubgraphOutput extends SubgraphSlot {
         slot: this
       })
     }
+
+    this.linkIds.length = 0
   }
 }

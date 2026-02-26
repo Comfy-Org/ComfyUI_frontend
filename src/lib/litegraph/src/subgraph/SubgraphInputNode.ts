@@ -171,6 +171,12 @@ export class SubgraphInputNode
   ): void {
     const { subgraph } = this
 
+    const slotIndex = node.inputs.findIndex((inp) => inp === input)
+    if (slotIndex === -1) {
+      console.warn('disconnectNodeInput: target input slot not found', this)
+      return
+    }
+
     const subgraphInput = link ? this.slots.at(link.origin_slot) : undefined
     if (!subgraphInput) {
       console.warn(
@@ -178,12 +184,19 @@ export class SubgraphInputNode
         this,
         link?.origin_slot
       )
-      return
-    }
 
-    const slotIndex = node.inputs.findIndex((inp) => inp === input)
-    if (slotIndex === -1) {
-      console.warn('disconnectNodeInput: target input slot not found', this)
+      if (input._floatingLinks?.size) {
+        for (const floatingLink of input._floatingLinks) {
+          subgraph.removeFloatingLink(floatingLink)
+        }
+      }
+
+      input.link = null
+      if (link) {
+        subgraph.disconnectLink(link, 'output')
+        subgraph._version++
+      }
+      subgraph.setDirtyCanvas(false, true)
       return
     }
 
