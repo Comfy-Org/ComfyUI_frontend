@@ -6,7 +6,11 @@ import type {
   LGraphNode
 } from '@/lib/litegraph/src/litegraph'
 import { ComfyApp } from './app'
-import { createNode } from '@/utils/litegraphUtil'
+import {
+  createNode,
+  fixLinkInputSlots,
+  hasLegacyLinkInputSlotMismatch
+} from '@/utils/litegraphUtil'
 import {
   pasteAudioNode,
   pasteAudioNodes,
@@ -23,7 +27,8 @@ vi.mock('@/utils/litegraphUtil', () => ({
   isVideoNode: vi.fn(),
   isAudioNode: vi.fn(),
   executeWidgetsCallback: vi.fn(),
-  fixLinkInputSlots: vi.fn()
+  fixLinkInputSlots: vi.fn(),
+  hasLegacyLinkInputSlotMismatch: vi.fn()
 }))
 
 vi.mock('@/composables/usePaste', () => ({
@@ -138,6 +143,37 @@ describe('ComfyApp', () => {
 
       expect(pasteImageNodes).not.toHaveBeenCalled()
       expect(createNode).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('addAfterConfigureHandler', () => {
+    function createConfigureGraph() {
+      return {
+        nodes: [],
+        onConfigure: vi.fn()
+      } as unknown as LGraph
+    }
+
+    it('runs legacy slot repair when mismatch is detected', () => {
+      vi.mocked(hasLegacyLinkInputSlotMismatch).mockReturnValue(true)
+      const graph = createConfigureGraph()
+
+      ;(app as any).addAfterConfigureHandler(graph)
+      graph.onConfigure?.({} as never)
+
+      expect(hasLegacyLinkInputSlotMismatch).toHaveBeenCalledWith(graph)
+      expect(fixLinkInputSlots).toHaveBeenCalledWith(graph)
+    })
+
+    it('skips legacy slot repair when no mismatch is present', () => {
+      vi.mocked(hasLegacyLinkInputSlotMismatch).mockReturnValue(false)
+      const graph = createConfigureGraph()
+
+      ;(app as any).addAfterConfigureHandler(graph)
+      graph.onConfigure?.({} as never)
+
+      expect(hasLegacyLinkInputSlotMismatch).toHaveBeenCalledWith(graph)
+      expect(fixLinkInputSlots).not.toHaveBeenCalled()
     })
   })
 

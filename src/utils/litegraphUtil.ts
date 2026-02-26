@@ -239,6 +239,29 @@ export function fixLinkInputSlots(graph: LGraph) {
 }
 
 /**
+ * Detect legacy slot-index drift where a link still points to an old input
+ * index after input ordering changes.
+ */
+export function hasLegacyLinkInputSlotMismatch(graph: LGraph): boolean {
+  for (const node of graph.nodes) {
+    for (const [inputIndex, input] of node.inputs.entries()) {
+      const linkId = input.link
+      if (!linkId) continue
+
+      const link = graph.links.get(linkId)
+      if (!link) continue
+      if (link.target_slot !== inputIndex) return true
+    }
+
+    if (node.isSubgraphNode?.() && node.subgraph) {
+      if (hasLegacyLinkInputSlotMismatch(node.subgraph)) return true
+    }
+  }
+
+  return false
+}
+
+/**
  * Compress widget input slots by removing all unconnected widget input slots.
  * This should match the serialization format of legacy widget conversion.
  *

@@ -13,6 +13,8 @@ import type { ExecutedWsMessage } from '@/schemas/apiSchema'
 import {
   compressWidgetInputSlots,
   createNode,
+  fixLinkInputSlots,
+  hasLegacyLinkInputSlotMismatch,
   isAnimatedOutput,
   isVideoOutput,
   migrateWidgetsValues
@@ -382,5 +384,100 @@ describe('compressWidgetInputSlots', () => {
 
     expect(graph.nodes).toEqual([])
     expect(graph.links).toEqual([])
+  })
+})
+
+function createGraphWithLinks(options: {
+  targetSlot: number
+  inputLink: number | null
+  nestedTargetSlot?: number
+  nestedInputLink?: number | null
+}) {
+  const nestedGraph = {
+    nodes: [
+      {
+        inputs: [{ link: options.nestedInputLink ?? null }],
+        isSubgraphNode: vi.fn(() => false)
+      }
+    ],
+    links: new Map(
+      options.nestedInputLink
+        ? [
+            [
+              options.nestedInputLink,
+              { target_slot: options.nestedTargetSlot ?? 0 }
+            ]
+          ]
+        : []
+    )
+  }
+
+  const graph = {
+    nodes: [
+      {
+        inputs: [{ link: options.inputLink }],
+        isSubgraphNode: vi.fn(() => true),
+        subgraph: nestedGraph
+      }
+    ],
+    links: new Map(
+      options.inputLink
+        ? [[options.inputLink, { target_slot: options.targetSlot }]]
+        : []
+    )
+  }
+
+  return {
+    graph: graph as unknown as LGraph,
+    nestedGraph
+  }
+}
+
+describe('hasLegacyLinkInputSlotMismatch', () => {
+  it('returns true when a root link target slot is stale', () => {
+    const { graph } = createGraphWithLinks({
+      targetSlot: 3,
+      inputLink: 11
+    })
+
+    expect(hasLegacyLinkInputSlotMismatch(graph)).toBe(true)
+  })
+
+  it('returns true when a nested subgraph link target slot is stale', () => {
+    const { graph } = createGraphWithLinks({
+      targetSlot: 0,
+      inputLink: 11,
+      nestedTargetSlot: 2,
+      nestedInputLink: 22
+    })
+
+    expect(hasLegacyLinkInputSlotMismatch(graph)).toBe(true)
+  })
+
+  it('returns false when link target slots already match input indices', () => {
+    const { graph } = createGraphWithLinks({
+      targetSlot: 0,
+      inputLink: 11,
+      nestedTargetSlot: 0,
+      nestedInputLink: 22
+    })
+
+    expect(hasLegacyLinkInputSlotMismatch(graph)).toBe(false)
+  })
+})
+
+describe('fixLinkInputSlots', () => {
+  it('repairs stale target slot indices recursively', () => {
+    const { graph, nestedGraph } = createGraphWithLinks({
+      targetSlot: 4,
+      inputLink: 11,
+      nestedTargetSlot: 3,
+      nestedInputLink: 22
+    })
+
+    fixLinkInputSlots(graph)
+
+    expect(graph.links.get(11)?.target_slot).toBe(0)
+    expect(nestedGraph.links.get(22)?.target_slot).toBe(0)
   })
 })
