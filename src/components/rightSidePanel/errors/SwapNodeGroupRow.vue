@@ -142,7 +142,9 @@ function handleLocateNode(nodeType: MissingNodeType) {
 }
 
 function handleReplaceNode() {
-  replaceNodesInPlace(props.group.nodeTypes)
-  executionErrorStore.removeMissingNodesByType([props.group.type])
+  const replaced = replaceNodesInPlace(props.group.nodeTypes)
+  if (replaced.length > 0) {
+    executionErrorStore.removeMissingNodesByType([props.group.type])
+  }
 }
 </script>

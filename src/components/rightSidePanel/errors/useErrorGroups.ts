@@ -537,7 +537,7 @@ export function useErrorGroups(
       groups.push({
         type: 'swap_nodes' as const,
         title: 'Swap Nodes',
-        priority: 1
+        priority: 0
       })
     }
 
@@ -545,11 +545,11 @@ export function useErrorGroups(
       groups.push({
         type: 'missing_node' as const,
         title: error.message,
-        priority: 0
+        priority: 1
       })
     }
 
-    return groups
+    return groups.sort((a, b) => a.priority - b.priority)
   }
 
   const allErrorGroups = computed<ErrorGroup[]>(() => {

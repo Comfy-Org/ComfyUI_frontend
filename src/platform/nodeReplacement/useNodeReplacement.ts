@@ -283,6 +283,15 @@ export function useNodeReplacement() {
           life: 3000
         })
       }
+    } catch (error) {
+      console.error('Failed to replace nodes:', error)
+      toastStore.add({
+        severity: 'error',
+        summary: t('g.error', 'Error'),
+        detail: t('nodeReplacement.replaceFailed', 'Failed to replace nodes'),
+        life: 5000
+      })
+      return []
     } finally {
       changeTracker?.afterChange()
     }

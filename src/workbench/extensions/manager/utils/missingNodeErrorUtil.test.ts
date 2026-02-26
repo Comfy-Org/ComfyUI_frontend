@@ -49,6 +49,20 @@ describe('getCnrIdFromNode', () => {
     expect(getCnrIdFromNode(node)).toBe('node-pack')
   })
 
+  it('returns aux_id when cnr_id is absent', () => {
+    const node = {
+      properties: { aux_id: 'node-aux-pack' }
+    } as unknown as LGraphNode
+    expect(getCnrIdFromNode(node)).toBe('node-aux-pack')
+  })
+
+  it('prefers cnr_id over aux_id in node properties', () => {
+    const node = {
+      properties: { cnr_id: 'primary', aux_id: 'secondary' }
+    } as unknown as LGraphNode
+    expect(getCnrIdFromNode(node)).toBe('primary')
+  })
+
   it('returns undefined when node has no cnr_id or aux_id', () => {
     const node = { properties: {} } as unknown as LGraphNode
     expect(getCnrIdFromNode(node)).toBeUndefined()

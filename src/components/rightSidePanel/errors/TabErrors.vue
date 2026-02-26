@@ -267,9 +267,11 @@ function handleOpenManagerInfo(packId: string) {
 
 function handleReplaceAll(swapNodeGroups: SwapNodeGroup[]) {
   const allNodeTypes = swapNodeGroups.flatMap((g) => g.nodeTypes)
-  replaceNodesInPlace(allNodeTypes)
-  const typesToRemove = swapNodeGroups.map((g) => g.type)
-  executionErrorStore.removeMissingNodesByType(typesToRemove)
+  const replaced = replaceNodesInPlace(allNodeTypes)
+  if (replaced.length > 0) {
+    const typesToRemove = swapNodeGroups.map((g) => g.type)
+    executionErrorStore.removeMissingNodesByType(typesToRemove)
+  }
 }
 
 function handleEnterSubgraph(nodeId: string) {
