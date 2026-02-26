@@ -534,12 +534,24 @@ const refillsDate = computed(() => {
 
 const creditsRemainingLabel = computed(() =>
   isYearlySubscription.value
-    ? t('subscription.creditsRemainingThisYear', {
-        date: refillsDate.value
-      })
-    : t('subscription.creditsRemainingThisMonth', {
-        date: refillsDate.value
-      })
+    ? t(
+        'subscription.creditsRemainingThisYear',
+        {
+          date: refillsDate.value
+        },
+        {
+          escapeParameter: false
+        }
+      )
+    : t(
+        'subscription.creditsRemainingThisMonth',
+        {
+          date: refillsDate.value
+        },
+        {
+          escapeParameter: false
+        }
+      )
 )
 
 const planTotalCredits = computed(() => {
