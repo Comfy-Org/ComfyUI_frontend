@@ -138,6 +138,35 @@ describe('useDomValueBridge', () => {
     expect(customGetter).toHaveBeenCalled()
   })
 
+  it('handles non-configurable descriptor without throwing', () => {
+    const nativeDesc = Object.getOwnPropertyDescriptor(
+      HTMLTextAreaElement.prototype,
+      'value'
+    )!
+    Object.defineProperty(element, 'value', {
+      configurable: false,
+      get() {
+        return nativeDesc.get!.call(element)
+      },
+      set(v: string) {
+        nativeDesc.set!.call(element, v)
+      }
+    })
+
+    const scope = effectScope()
+    expect(() => {
+      scope.run(() => {
+        const ref = useDomValueBridge(element)
+        expect(ref.value).toBe('initial')
+      })
+    }).not.toThrow()
+    scope.stop()
+
+    const afterDesc = Object.getOwnPropertyDescriptor(element, 'value')
+    expect(afterDesc).toBeDefined()
+    expect(afterDesc!.configurable).toBe(false)
+  })
+
   it('works with HTMLInputElement', () => {
     const input = document.createElement('input')
     input.value = 'input-initial'
