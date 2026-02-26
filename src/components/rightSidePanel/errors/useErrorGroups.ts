@@ -393,20 +393,26 @@ export function useErrorGroups(
     pendingTypes,
     async (pending, _, onCleanup) => {
       const toResolve = pending.filter(
-        (n) => !asyncResolvedIds.value.has(n.type)
+        (n) => asyncResolvedIds.value.get(n.type) === undefined
       )
       if (!toResolve.length) return
 
+      const resolvingTypes = toResolve.map((n) => n.type)
       let cancelled = false
       onCleanup(() => {
         cancelled = true
+        const next = new Map(asyncResolvedIds.value)
+        for (const type of resolvingTypes) {
+          if (next.get(type) === RESOLVING) next.delete(type)
+        }
+        asyncResolvedIds.value = next
       })
 
       const updated = new Map(asyncResolvedIds.value)
-      for (const n of toResolve) updated.set(n.type, RESOLVING)
+      for (const type of resolvingTypes) updated.set(type, RESOLVING)
       asyncResolvedIds.value = updated
 
-      const results = await Promise.all(
+      const results = await Promise.allSettled(
         toResolve.map(async (n) => ({
           type: n.type,
           packId: (await inferPackFromNodeName.call(n.type))?.id ?? null
@@ -415,7 +421,15 @@ export function useErrorGroups(
       if (cancelled) return
 
       const final = new Map(asyncResolvedIds.value)
-      for (const r of results) final.set(r.type, r.packId)
+      for (const r of results) {
+        if (r.status === 'fulfilled') {
+          final.set(r.value.type, r.value.packId)
+        }
+      }
+      // Clear any remaining RESOLVING markers for failed lookups
+      for (const type of resolvingTypes) {
+        if (final.get(type) === RESOLVING) final.set(type, null)
+      }
       asyncResolvedIds.value = final
     },
     { immediate: true }
