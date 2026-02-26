@@ -225,6 +225,7 @@
     "login": {
       "andText": "و",
       "backToLogin": "العودة إلى تسجيل الدخول",
+      "backToSocialLogin": "سجّل باستخدام Google أو Github بدلاً من ذلك",
       "confirmPasswordLabel": "تأكيد كلمة المرور",
       "confirmPasswordPlaceholder": "أدخل نفس كلمة المرور مرة أخرى",
       "didntReceiveEmail": "لم تستلم البريد الإلكتروني؟ اتصل بنا على",
@@ -233,6 +234,9 @@
       "failed": "فشل تسجيل الدخول",
       "forgotPassword": "هل نسيت كلمة المرور؟",
       "forgotPasswordError": "فشل في إرسال بريد إعادة تعيين كلمة المرور",
+      "freeTierBadge": "مؤهل للخطة المجانية",
+      "freeTierDescription": "سجّل باستخدام Google للحصول على {credits} رصيد مجاني كل شهر. لا حاجة لبطاقة.",
+      "freeTierDescriptionGeneric": "سجّل باستخدام Google للحصول على رصيد مجاني كل شهر. لا حاجة لبطاقة.",
       "insecureContextWarning": "هذا الاتصال غير آمن (HTTP) - قد يتم اعتراض بيانات اعتمادك من قبل المهاجمين إذا تابعت تسجيل الدخول.",
       "loginButton": "تسجيل الدخول",
       "loginWithGithub": "تسجيل الدخول باستخدام Github",
@@ -251,11 +255,13 @@
       "sendResetLink": "إرسال رابط إعادة التعيين",
       "signInOrSignUp": "تسجيل الدخول / إنشاء حساب",
       "signUp": "إنشاء حساب",
+      "signUpFreeTierPromo": "جديد هنا؟ {signUp} باستخدام Google للحصول على {credits} رصيد مجاني كل شهر.",
       "success": "تم تسجيل الدخول بنجاح",
       "termsLink": "شروط الاستخدام",
       "termsText": "بالنقر على \"التالي\" أو \"إنشاء حساب\"، فإنك توافق على",
       "title": "تسجيل الدخول إلى حسابك",
       "useApiKey": "مفتاح API الخاص بـ Comfy",
+      "useEmailInstead": "استخدم البريد الإلكتروني بدلاً من ذلك",
       "userAvatar": "صورة المستخدم"
     },
     "loginButton": {
@@ -282,6 +288,7 @@
     "signup": {
       "alreadyHaveAccount": "هل لديك حساب بالفعل؟",
       "emailLabel": "البريد الإلكتروني",
+      "emailNotEligibleForFreeTier": "التسجيل بالبريد الإلكتروني غير مؤهل للخطة المجانية.",
       "emailPlaceholder": "أدخل بريدك الإلكتروني",
       "passwordLabel": "كلمة المرور",
       "passwordPlaceholder": "أدخل كلمة مرور جديدة",
@@ -1331,6 +1338,20 @@
       "switchToSelectButton": "الانتقال إلى التحديد"
     },
     "beta": "وضع التطبيق تجريبي - أرسل ملاحظاتك",
+    "builder": {
+      "exit": "خروج من البناء",
+      "exitConfirmMessage": "لديك تغييرات غير محفوظة ستفقد\nهل تريد الخروج بدون حفظ؟",
+      "exitConfirmTitle": "الخروج من بناء التطبيق؟",
+      "inputsDesc": "سيتفاعل المستخدمون مع هذه المدخلات ويعدلونها لإنشاء النتائج.",
+      "inputsExample": "أمثلة: \"تحميل صورة\"، \"موجه نصي\"، \"خطوات\"",
+      "noInputs": "لم تتم إضافة أي مدخلات بعد",
+      "noOutputs": "لم تتم إضافة أي عقد إخراج بعد",
+      "outputsDesc": "وصل عقدة إخراج واحدة على الأقل حتى يتمكن المستخدمون من رؤية النتائج بعد التشغيل.",
+      "outputsExample": "أمثلة: \"حفظ صورة\" أو \"حفظ فيديو\"",
+      "promptAddInputs": "انقر على معلمات العقدة لإضافتها هنا كمدخلات",
+      "promptAddOutputs": "انقر على عقد الإخراج لإضافتها هنا. هذه ستكون النتائج المُولدة.",
+      "title": "وضع بناء التطبيق"
+    },
     "downloadAll": "تنزيل الكل",
     "dragAndDropImage": "اسحب وأسقط صورة",
     "graphMode": "وضع الرسم البياني",
@@ -1868,11 +1889,18 @@
     "showLinks": "إظهار الروابط"
   },
   "missingModelsDialog": {
+    "customModelsInstruction": "ستحتاج إلى العثور عليها وتنزيلها يدويًا. ابحث عنها عبر الإنترنت (جرّب Civitai أو Hugging Face) أو تواصل مع مزود سير العمل الأصلي.",
+    "customModelsWarning": "بعض هذه النماذج مخصصة ولا نتعرف عليها.",
+    "description": "يتطلب سير العمل هذا نماذج لم تقم بتنزيلها بعد.",
     "doNotAskAgain": "عدم العرض مرة أخرى",
-    "missingModels": "نماذج مفقودة",
-    "missingModelsMessage": "عند تحميل الرسم البياني، لم يتم العثور على النماذج التالية",
+    "downloadAll": "تنزيل الكل",
+    "downloadAvailable": "التنزيل متاح",
+    "footerDescription": "قم بتنزيل هذه النماذج وضعها في المجلد الصحيح.\nالعُقد التي تفتقد إلى النماذج مميزة باللون الأحمر على اللوحة.",
+    "gotIt": "حسنًا، فهمت",
     "reEnableInSettings": "إعادة التفعيل في {link}",
-    "reEnableInSettingsLink": "الإعدادات"
+    "reEnableInSettingsLink": "الإعدادات",
+    "title": "هذا سير العمل يفتقد إلى النماذج",
+    "totalSize": "إجمالي حجم التنزيل:"
   },
   "missingNodes": {
     "cloud": {
@@ -2684,7 +2712,9 @@
     "addCreditsLabel": "أضف المزيد من الرصيد في أي وقت",
     "benefits": {
       "benefit1": "رصيد شهري للعقد الشريكة - تجديد عند الحاجة",
-      "benefit2": "حتى 30 دقيقة وقت تشغيل لكل مهمة"
+      "benefit1FreeTier": "رصيد شهري أكثر، مع إمكانية الشحن في أي وقت",
+      "benefit2": "حتى 30 دقيقة وقت تشغيل لكل مهمة",
+      "benefit3": "استخدم نماذجك الخاصة (Creator & Pro)"
     },
     "beta": "نسخة تجريبية",
     "billedMonthly": "يتم الفوترة شهريًا",
@@ -2722,6 +2752,21 @@
     "description": "اختر الخطة الأنسب لك",
     "descriptionWorkspace": "اختر أفضل خطة لمساحة العمل الخاصة بك",
     "expiresDate": "ينتهي في {date}",
+    "freeTier": {
+      "description": "تشمل خطتك المجانية {credits} رصيد شهري لتجربة Comfy Cloud.",
+      "descriptionGeneric": "تشمل خطتك المجانية رصيدًا شهريًا لتجربة Comfy Cloud.",
+      "nextRefresh": "سيتم تجديد رصيدك في {date}.",
+      "outOfCredits": {
+        "subtitle": "اشترك لفتح الشحن والمزيد",
+        "title": "لقد نفد رصيدك المجاني"
+      },
+      "subscribeCta": "اشترك للمزيد",
+      "title": "أنت على الخطة المجانية",
+      "topUpBlocked": {
+        "title": "افتح الشحن والمزيد"
+      },
+      "upgradeCta": "عرض الخطط"
+    },
     "gpuLabel": "RTX 6000 Pro (ذاكرة 96GB VRAM)",
     "haveQuestions": "هل لديك أسئلة أو ترغب في معرفة المزيد عن المؤسسات؟",
     "invoiceHistory": "سجل الفواتير",
@@ -2732,6 +2777,7 @@
     "maxDuration": {
       "creator": "30 دقيقة",
       "founder": "30 دقيقة",
+      "free": "٣٠ دقيقة",
       "pro": "ساعة واحدة",
       "standard": "30 دقيقة"
     },
@@ -2803,6 +2849,9 @@
       },
       "founder": {
         "name": "إصدار المؤسس"
+      },
+      "free": {
+        "name": "مجاني"
       },
       "pro": {
         "name": "احترافي"

@@ -225,6 +225,7 @@
     "login": {
       "andText": "e",
       "backToLogin": "Voltar para login",
+      "backToSocialLogin": "Cadastre-se com Google ou Github em vez disso",
       "confirmPasswordLabel": "Confirmar senha",
       "confirmPasswordPlaceholder": "Digite a mesma senha novamente",
       "didntReceiveEmail": "Não recebeu o e-mail? Entre em contato conosco em",
@@ -233,6 +234,9 @@
       "failed": "Falha no login",
       "forgotPassword": "Esqueceu a senha?",
       "forgotPasswordError": "Falha ao enviar e-mail de redefinição de senha",
+      "freeTierBadge": "Elegível para o Plano Gratuito",
+      "freeTierDescription": "Cadastre-se com Google para ganhar {credits} créditos gratuitos todo mês. Não precisa de cartão.",
+      "freeTierDescriptionGeneric": "Cadastre-se com Google para ganhar créditos gratuitos todo mês. Não precisa de cartão.",
       "insecureContextWarning": "Esta conexão é insegura (HTTP) - suas credenciais podem ser interceptadas por invasores se você continuar.",
       "loginButton": "Entrar",
       "loginWithGithub": "Entrar com Github",
@@ -251,11 +255,13 @@
       "sendResetLink": "Enviar link de redefinição",
       "signInOrSignUp": "Entrar / Cadastrar-se",
       "signUp": "Cadastrar-se",
+      "signUpFreeTierPromo": "Novo por aqui? {signUp} com Google para ganhar {credits} créditos gratuitos todo mês.",
       "success": "Login realizado com sucesso",
       "termsLink": "Termos de Uso",
       "termsText": "Ao clicar em \"Próximo\" ou \"Cadastrar-se\", você concorda com nossos",
       "title": "Faça login na sua conta",
       "useApiKey": "Chave de API Comfy",
+      "useEmailInstead": "Usar e-mail em vez disso",
       "userAvatar": "Avatar do usuário"
     },
     "loginButton": {
@@ -282,6 +288,7 @@
     "signup": {
       "alreadyHaveAccount": "Já tem uma conta?",
       "emailLabel": "E-mail",
+      "emailNotEligibleForFreeTier": "Cadastro por e-mail não é elegível para o Plano Gratuito.",
       "emailPlaceholder": "Digite seu e-mail",
       "passwordLabel": "Senha",
       "passwordPlaceholder": "Digite uma nova senha",
@@ -1331,6 +1338,20 @@
       "switchToSelectButton": "Ir para Selecionar"
     },
     "beta": "Modo App Beta - Envie seu feedback",
+    "builder": {
+      "exit": "Sair do construtor",
+      "exitConfirmMessage": "Você tem alterações não salvas que serão perdidas\nSair sem salvar?",
+      "exitConfirmTitle": "Sair do construtor de app?",
+      "inputsDesc": "Os usuários irão interagir e ajustar estes para gerar seus resultados.",
+      "inputsExample": "Exemplos: “Carregar imagem”, “Prompt de texto”, “Passos”",
+      "noInputs": "Nenhuma entrada adicionada ainda",
+      "noOutputs": "Nenhum nó de saída adicionado ainda",
+      "outputsDesc": "Conecte pelo menos um nó de saída para que os usuários vejam os resultados após executar.",
+      "outputsExample": "Exemplos: “Salvar imagem” ou “Salvar vídeo”",
+      "promptAddInputs": "Clique nos parâmetros do nó para adicioná-los aqui como entradas",
+      "promptAddOutputs": "Clique nos nós de saída para adicioná-los aqui. Estes serão os resultados gerados.",
+      "title": "Modo construtor de app"
+    },
     "downloadAll": "Baixar tudo",
     "dragAndDropImage": "Arraste e solte uma imagem",
     "graphMode": "Modo Gráfico",
@@ -1868,11 +1889,18 @@
     "showLinks": "Mostrar Conexões"
   },
   "missingModelsDialog": {
+    "customModelsInstruction": "Você precisará encontrá-los e baixá-los manualmente. Procure por eles online (tente Civitai ou Hugging Face) ou entre em contato com o provedor original do fluxo de trabalho.",
+    "customModelsWarning": "Alguns desses são modelos personalizados que não reconhecemos.",
+    "description": "Este fluxo de trabalho requer modelos que você ainda não baixou.",
     "doNotAskAgain": "Não mostrar novamente",
-    "missingModels": "Modelos ausentes",
-    "missingModelsMessage": "Ao carregar o grafo, os seguintes modelos não foram encontrados",
+    "downloadAll": "Baixar todos",
+    "downloadAvailable": "Baixar disponíveis",
+    "footerDescription": "Baixe e coloque esses modelos na pasta correta.\nNós com modelos ausentes estão destacados em vermelho no canvas.",
+    "gotIt": "Ok, entendi",
     "reEnableInSettings": "Reativar em {link}",
-    "reEnableInSettingsLink": "Configurações"
+    "reEnableInSettingsLink": "Configurações",
+    "title": "Este fluxo de trabalho está sem modelos",
+    "totalSize": "Tamanho total do download:"
   },
   "missingNodes": {
     "cloud": {
@@ -2696,7 +2724,9 @@
     "addCreditsLabel": "Adicione mais créditos quando quiser",
     "benefits": {
       "benefit1": "$10 em créditos mensais para Partner Nodes — recarregue quando necessário",
-      "benefit2": "Até 30 min de execução por tarefa"
+      "benefit1FreeTier": "Mais créditos mensais, recarregue a qualquer momento",
+      "benefit2": "Até 30 min de execução por tarefa",
+      "benefit3": "Use seus próprios modelos (Creator & Pro)"
     },
     "beta": "BETA",
     "billedMonthly": "Cobrado mensalmente",
@@ -2734,6 +2764,21 @@
     "description": "Escolha o melhor plano para você",
     "descriptionWorkspace": "Escolha o melhor plano para seu workspace",
     "expiresDate": "Expira em {date}",
+    "freeTier": {
+      "description": "Seu plano gratuito inclui {credits} créditos por mês para testar o Comfy Cloud.",
+      "descriptionGeneric": "Seu plano gratuito inclui uma cota mensal de créditos para testar o Comfy Cloud.",
+      "nextRefresh": "Seus créditos serão renovados em {date}.",
+      "outOfCredits": {
+        "subtitle": "Assine para liberar recargas e mais benefícios",
+        "title": "Você ficou sem créditos gratuitos"
+      },
+      "subscribeCta": "Assine para mais",
+      "title": "Você está no plano Gratuito",
+      "topUpBlocked": {
+        "title": "Desbloqueie recargas e mais benefícios"
+      },
+      "upgradeCta": "Ver planos"
+    },
     "gpuLabel": "RTX 6000 Pro (96GB VRAM)",
     "haveQuestions": "Tem dúvidas ou interesse em soluções empresariais?",
     "invoiceHistory": "Histórico de faturas",
@@ -2744,6 +2789,7 @@
     "maxDuration": {
       "creator": "30 min",
       "founder": "30 min",
+      "free": "30 min",
       "pro": "1 h",
       "standard": "30 min"
     },
@@ -2815,6 +2861,9 @@
       },
       "founder": {
         "name": "Edição do Fundador"
+      },
+      "free": {
+        "name": "Gratuito"
       },
       "pro": {
         "name": "Pro"

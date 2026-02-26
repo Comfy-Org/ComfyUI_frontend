@@ -12,7 +12,8 @@
         v-for="job in group.items"
         :key="job.id"
         class="w-full shrink-0 cursor-default text-text-primary transition-colors hover:bg-secondary-background-hover"
-        :preview-url="job.iconImageUrl"
+        :preview-url="getJobPreviewUrl(job)"
+        :is-video-preview="isVideoPreviewJob(job)"
         :preview-alt="job.title"
         :icon-name="job.iconName ?? iconForJobState(job.state)"
         :icon-class="getJobIconClass(job)"
@@ -23,6 +24,8 @@
         @mouseenter="hoveredJobId = job.id"
         @mouseleave="onJobLeave(job.id)"
         @contextmenu.prevent.stop="$emit('menu', job, $event)"
+        @dblclick.stop="emitViewItem(job)"
+        @preview-click="emitViewItem(job)"
         @click.stop
       >
         <template v-if="hoveredJobId === job.id" #actions>
@@ -78,7 +81,7 @@ import { isActiveJobState } from '@/utils/queueUtil'
 
 defineProps<{ displayedJobGroups: JobGroup[] }>()
 
-defineEmits<{
+const emit = defineEmits<{
   (e: 'cancelItem', item: JobListItem): void
   (e: 'deleteItem', item: JobListItem): void
   (e: 'menu', item: JobListItem, ev: MouseEvent): void
@@ -99,6 +102,28 @@ const isCancelable = (job: JobListItem) =>
 
 const isFailedDeletable = (job: JobListItem) =>
   job.showClear !== false && job.state === 'failed'
+
+const getPreviewOutput = (job: JobListItem) => job.taskRef?.previewOutput
+
+const getJobPreviewUrl = (job: JobListItem) => {
+  const preview = getPreviewOutput(job)
+  if (preview?.isImage || preview?.isVideo) {
+    return preview.url
+  }
+  return job.iconImageUrl
+}
+
+const isVideoPreviewJob = (job: JobListItem) =>
+  job.state === 'completed' && !!getPreviewOutput(job)?.isVideo
+
+const isPreviewableCompletedJob = (job: JobListItem) =>
+  job.state === 'completed' && !!getPreviewOutput(job)
+
+const emitViewItem = (job: JobListItem) => {
+  if (isPreviewableCompletedJob(job)) {
+    emit('viewItem', job)
+  }
+}
 
 const getJobIconClass = (job: JobListItem): string | undefined => {
   const iconName = job.iconName ?? iconForJobState(job.state)

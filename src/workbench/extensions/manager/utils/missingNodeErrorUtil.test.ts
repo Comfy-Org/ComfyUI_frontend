@@ -56,6 +56,7 @@ describe('createMissingNodeTypeFromError', () => {
     })
     expect(result).toEqual({
       type: 'MyNodeClass',
+      nodeId: '42',
       hint: '"My Custom Title" (Node ID #42)'
     })
   })
@@ -68,6 +69,7 @@ describe('createMissingNodeTypeFromError', () => {
     })
     expect(result).toEqual({
       type: 'Unknown',
+      nodeId: '42',
       hint: '"Some Title" (Node ID #42)'
     })
   })
@@ -84,6 +86,7 @@ describe('createMissingNodeTypeFromError', () => {
     })
     expect(result).toEqual({
       type: 'MyNodeClass',
+      nodeId: '123',
       hint: 'Node ID #123'
     })
   })

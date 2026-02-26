@@ -69,6 +69,12 @@ export interface SafeWidgetData {
   spec?: InputSpec
   /** Input slot metadata (index and link status) */
   slotMetadata?: WidgetSlotMetadata
+  /**
+   * Original LiteGraph widget name used for slot metadata matching.
+   * For promoted widgets, `name` is `sourceWidgetName` (interior widget name)
+   * which differs from the subgraph node's input slot widget name.
+   */
+  slotName?: string
 }
 
 export interface VueNodeData {
@@ -238,7 +244,8 @@ function safeWidgetMapper(
         options: isPromotedPseudoWidget
           ? { ...options, canvasOnly: true }
           : options,
-        slotMetadata: slotInfo
+        slotMetadata: slotInfo,
+        slotName: name !== widget.name ? widget.name : undefined
       }
     } catch (error) {
       return {
@@ -376,7 +383,7 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
 
     // Update only widgets with new slot metadata, keeping other widget data intact
     for (const widget of currentData.widgets ?? []) {
-      const slotInfo = slotMetadata.get(widget.name)
+      const slotInfo = slotMetadata.get(widget.slotName ?? widget.name)
       if (slotInfo) widget.slotMetadata = slotInfo
     }
   }

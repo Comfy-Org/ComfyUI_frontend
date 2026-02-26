@@ -137,6 +137,7 @@ export type IWidget =
   | IImageCropWidget
   | IBoundingBoxWidget
   | ICurveWidget
+  | IPainterWidget
 
 export interface IBooleanWidget extends IBaseWidget<boolean, 'toggle'> {
   type: 'toggle'
@@ -336,6 +337,11 @@ export interface ICurveWidget extends IBaseWidget<CurvePoint[], 'curve'> {
   value: CurvePoint[]
 }
 
+export interface IPainterWidget extends IBaseWidget<string, 'painter'> {
+  type: 'painter'
+  value: string
+}
+
 /**
  * Valid widget types.  TS cannot provide easily extensible type safety for this at present.
  * Override linkedWidgets[]
@@ -367,7 +373,6 @@ export interface IBaseWidget<
   /** Widget type (see {@link TWidgetType}) */
   type: TType
   value?: TValue
-  vueTrack?: () => void
 
   /**
    * Whether the widget value is persisted in the workflow JSON

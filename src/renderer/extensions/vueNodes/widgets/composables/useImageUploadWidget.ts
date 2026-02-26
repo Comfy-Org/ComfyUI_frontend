@@ -54,12 +54,27 @@ export const useImageUploadWidget = () => {
       createAnnotatedPath(value, { rootFolder: image_folder })
 
     // Setup file upload handling
+    let rollback: (() => void) | undefined
     const { openFileSelection } = useNodeImageUpload(node, {
       allow_batch,
       fileFilter,
       accept,
       folder,
+      onUploadStart: (files) => {
+        if (files.length > 0) {
+          const prev = fileComboWidget.value
+          fileComboWidget.value = files[0].name
+          rollback = () => {
+            fileComboWidget.value = prev
+          }
+        }
+      },
+      onUploadError: () => {
+        rollback?.()
+        rollback = undefined
+      },
       onUploadComplete: (output) => {
+        rollback = undefined
         const annotated = output.map(formatPath)
         annotated.forEach((path) => {
           addToComboValues(fileComboWidget, path)
@@ -88,6 +103,7 @@ export const useImageUploadWidget = () => {
 
     // Add our own callback to the combo widget to render an image when it changes
     fileComboWidget.callback = function () {
+      node.imgs = undefined
       nodeOutputStore.setNodeOutputs(node, String(fileComboWidget.value), {
         isAnimated
       })

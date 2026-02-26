@@ -27,12 +27,15 @@ import { useWorkflowService } from '@/platform/workflow/core/services/workflowSe
 import type { PendingWarnings } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowValidation } from '@/platform/workflow/validation/composables/useWorkflowValidation'
+import type {
+  ComfyApiWorkflow,
+  ComfyWorkflowJSON,
+  ModelFile,
+  NodeId
+} from '@/platform/workflow/validation/schemas/workflowSchema'
 import {
-  type ComfyApiWorkflow,
-  type ComfyWorkflowJSON,
-  type ModelFile,
-  type NodeId,
-  isSubgraphDefinition
+  isSubgraphDefinition,
+  buildSubgraphExecutionPaths
 } from '@/platform/workflow/validation/schemas/workflowSchema'
 import type {
   ExecutionErrorWsMessage,
@@ -77,10 +80,15 @@ import type { ExtensionManager } from '@/types/extensionTypes'
 import type { NodeExecutionId } from '@/types/nodeIdentification'
 import { graphToPrompt } from '@/utils/executionUtil'
 import type { MissingNodeTypeExtraInfo } from '@/workbench/extensions/manager/types/missingNodeErrorTypes'
-import { createMissingNodeTypeFromError } from '@/workbench/extensions/manager/utils/missingNodeErrorUtil'
-import { anyItemOverlapsRect } from '@/utils/mathUtil'
-import { collectAllNodes, forEachNode } from '@/utils/graphTraversalUtil'
 import {
+  createMissingNodeTypeFromError,
+  getCnrIdFromNode,
+  getCnrIdFromProperties
+} from '@/workbench/extensions/manager/utils/missingNodeErrorUtil'
+import { anyItemOverlapsRect } from '@/utils/mathUtil'
+import {
+  collectAllNodes,
+  forEachNode,
   getNodeByExecutionId,
   triggerCallbackOnAllNodes
 } from '@/utils/graphTraversalUtil'
@@ -1097,9 +1105,13 @@ export class ComfyApp {
   }
 
   private showMissingNodesError(missingNodeTypes: MissingNodeType[]) {
+    // Remove modal once Node Replacement is implemented in TabErrors.
     if (useSettingStore().get('Comfy.Workflow.ShowMissingNodesWarning')) {
       useMissingNodesDialog().show({ missingNodeTypes })
     }
+
+    const executionErrorStore = useExecutionErrorStore()
+    executionErrorStore.surfaceMissingNodes(missingNodeTypes)
   }
 
   async loadGraphData(
@@ -1181,12 +1193,13 @@ export class ComfyApp {
 
     const collectMissingNodesAndModels = (
       nodes: ComfyWorkflowJSON['nodes'],
-      path: string = ''
+      pathPrefix: string = '',
+      displayName: string = ''
     ) => {
       if (!Array.isArray(nodes)) {
         console.warn(
           'Workflow nodes data is missing or invalid, skipping node processing',
-          { nodes, path }
+          { nodes, pathPrefix }
         )
         return
       }
@@ -1195,9 +1208,23 @@ export class ComfyApp {
         if (!(n.type in LiteGraph.registered_node_types)) {
           const replacement = nodeReplacementStore.getReplacementFor(n.type)
 
+          // To access missing node information in the error tab
+          // we collect the cnr_id and execution_id here.
+          const cnrId = getCnrIdFromProperties(
+            n.properties as Record<string, unknown> | undefined
+          )
+
+          const executionId = pathPrefix
+            ? `${pathPrefix}:${n.id}`
+            : String(n.id)
+
           missingNodeTypes.push({
             type: n.type,
-            ...(path && { hint: `in subgraph '${path}'` }),
+            nodeId: executionId,
+            cnrId,
+            ...(displayName && {
+              hint: t('g.inSubgraph', { name: displayName })
+            }),
             isReplaceable: replacement !== null,
             replacement: replacement ?? undefined
           })
@@ -1216,14 +1243,25 @@ export class ComfyApp {
     // Process nodes at the top level
     collectMissingNodesAndModels(graphData.nodes)
 
+    // Build map: subgraph definition UUID → full execution path prefix.
+    // Handles arbitrary nesting depth (e.g. root node 11 → "11", node 14 in sg 11 → "11:14").
+    const subgraphContainerIdMap = buildSubgraphExecutionPaths(
+      graphData.nodes,
+      graphData.definitions?.subgraphs ?? []
+    )
+
     // Process nodes in subgraphs
     if (graphData.definitions?.subgraphs) {
       for (const subgraph of graphData.definitions.subgraphs) {
         if (isSubgraphDefinition(subgraph)) {
-          collectMissingNodesAndModels(
-            subgraph.nodes,
-            subgraph.name || subgraph.id
-          )
+          const paths = subgraphContainerIdMap.get(subgraph.id) ?? []
+          for (const pathPrefix of paths) {
+            collectMissingNodesAndModels(
+              subgraph.nodes,
+              pathPrefix,
+              subgraph.name || subgraph.id
+            )
+          }
         }
       }
     }
@@ -1491,7 +1529,32 @@ export class ComfyApp {
             ) {
               const extraInfo = (error.response.error.extra_info ??
                 {}) as MissingNodeTypeExtraInfo
-              const missingNodeType = createMissingNodeTypeFromError(extraInfo)
+
+              let graphNode = null
+              if (extraInfo.node_id && this.rootGraph) {
+                graphNode = getNodeByExecutionId(
+                  this.rootGraph,
+                  extraInfo.node_id
+                )
+              }
+
+              const enrichedExtraInfo: MissingNodeTypeExtraInfo = {
+                ...extraInfo,
+                class_type: extraInfo.class_type ?? graphNode?.type,
+                node_title: extraInfo.node_title ?? graphNode?.title
+              }
+
+              const missingNodeType =
+                createMissingNodeTypeFromError(enrichedExtraInfo)
+
+              if (
+                graphNode &&
+                typeof missingNodeType !== 'string' &&
+                !missingNodeType.cnrId
+              ) {
+                missingNodeType.cnrId = getCnrIdFromNode(graphNode)
+              }
+
               this.showMissingNodesError([missingNodeType])
             } else if (
               !useSettingStore().get('Comfy.RightSidePanel.ShowErrorsTab') ||

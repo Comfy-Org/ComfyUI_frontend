@@ -21,6 +21,7 @@ import { useMissingModelsDialog } from '@/composables/useMissingModelsDialog'
 import { useMissingNodesDialog } from '@/composables/useMissingNodesDialog'
 import { useDialogService } from '@/services/dialogService'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
+import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { appendJsonExt } from '@/utils/formatUtil'
 
@@ -33,6 +34,7 @@ export const useWorkflowService = () => {
   const missingNodesDialog = useMissingNodesDialog()
   const workflowThumbnail = useWorkflowThumbnail()
   const domWidgetStore = useDomWidgetStore()
+  const executionErrorStore = useExecutionErrorStore()
   const workflowDraftStore = useWorkflowDraftStore()
 
   async function getFilename(defaultName: string): Promise<string | null> {
@@ -467,12 +469,15 @@ export const useWorkflowService = () => {
     const { missingNodeTypes, missingModels } = wf.pendingWarnings
     wf.pendingWarnings = null
 
-    if (
-      missingNodeTypes?.length &&
-      settingStore.get('Comfy.Workflow.ShowMissingNodesWarning')
-    ) {
-      missingNodesDialog.show({ missingNodeTypes })
+    if (missingNodeTypes?.length) {
+      // Remove modal once Node Replacement is implemented in TabErrors.
+      if (settingStore.get('Comfy.Workflow.ShowMissingNodesWarning')) {
+        missingNodesDialog.show({ missingNodeTypes })
+      }
+
+      executionErrorStore.surfaceMissingNodes(missingNodeTypes)
     }
+
     if (
       missingModels &&
       settingStore.get('Comfy.Workflow.ShowMissingModelsWarning')

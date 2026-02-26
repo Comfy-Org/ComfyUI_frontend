@@ -71,6 +71,7 @@
     "error": "Error",
     "enter": "Enter",
     "enterSubgraph": "Enter Subgraph",
+    "inSubgraph": "in subgraph '{name}'",
     "resizeFromBottomRight": "Resize from bottom-right corner",
     "resizeFromTopRight": "Resize from top-right corner",
     "resizeFromBottomLeft": "Resize from bottom-left corner",
@@ -174,6 +175,7 @@
     "control_after_generate": "control after generate",
     "control_before_generate": "control before generate",
     "choose_file_to_upload": "choose file to upload",
+    "uploadAlreadyInProgress": "Upload already in progress",
     "capture": "capture",
     "nodes": "Nodes",
     "nodesCount": "{count} nodes | {count} node | {count} nodes",
@@ -449,6 +451,9 @@
         "import_failed": "Import Failed"
       },
       "warningTooltip": "This package may have compatibility issues with your current environment"
+    },
+    "packInstall": {
+      "nodeIdRequired": "Node ID is required for installation"
     }
   },
   "importFailed": {
@@ -1883,6 +1888,19 @@
     "unlockRatio": "Unlock aspect ratio",
     "custom": "Custom"
   },
+  "painter": {
+    "tool": "Tool",
+    "brush": "Brush",
+    "eraser": "Eraser",
+    "size": "Cursor Size",
+    "color": "Color Picker",
+    "hardness": "Hardness",
+    "width": "Width",
+    "height": "Height",
+    "background": "Background",
+    "clear": "Clear",
+    "uploadError": "Failed to upload painter image: {status} - {statusText}"
+  },
   "boundingBox": {
     "x": "X",
     "y": "Y",
@@ -3007,6 +3025,20 @@
       "switchToSelectButton": "Switch to Select",
       "outputs": "Outputs",
       "resultsLabel": "Results generated from the selected output node(s) will be shown here after running this app"
+    },
+    "builder": {
+      "title": "App builder mode",
+      "exit": "Exit builder",
+      "exitConfirmTitle": "Exit app builder?",
+      "exitConfirmMessage": "You have unsaved changes that will be lost\nExit without saving?",
+      "promptAddInputs": "Click on node parameters to add them here as inputs",
+      "noInputs": "No inputs added yet",
+      "inputsDesc": "Users will interact and adjust these to generate their outputs.",
+      "inputsExample": "Examples: “Load image”, “Text prompt”, “Steps”",
+      "promptAddOutputs": "Click on output nodes to add them here. These will be the generated results.",
+      "noOutputs": "No output nodes added yet",
+      "outputsDesc": "Connect at least one output node so users can see results after running.",
+      "outputsExample": "Examples: “Save Image” or “Save Video”"
     }
   },
   "missingNodes": {
@@ -3121,7 +3153,23 @@
     "errorHelpGithub": "submit a GitHub issue",
     "errorHelpSupport": "contact our support",
     "resetToDefault": "Reset to default",
-    "resetAllParameters": "Reset all parameters"
+    "resetAllParameters": "Reset all parameters",
+    "missingNodePacks": {
+      "title": "Missing Node Packs",
+      "unsupportedTitle": "Unsupported Node Packs",
+      "cloudMessage": "This workflow requires custom nodes not yet available on Comfy Cloud.",
+      "ossMessage": "This workflow uses custom nodes you haven't installed yet.",
+      "installAll": "Install All",
+      "installNodePack": "Install node pack",
+      "unknownPack": "Unknown pack",
+      "installing": "Installing...",
+      "installed": "Installed",
+      "applyChanges": "Apply Changes",
+      "searchInManager": "Search in Node Manager",
+      "viewInManager": "View in Manager",
+      "collapse": "Collapse",
+      "expand": "Expand"
+    }
   },
   "errorOverlay": {
     "errorCount": "{count} ERRORS | {count} ERROR | {count} ERRORS",

@@ -43,6 +43,36 @@ function scheduleDeferredImageRender() {
   })
 }
 
+const TWO_PI = Math.PI * 2
+const SPINNER_ARC_LENGTH = Math.PI * 1.5
+
+function renderUploadSpinner(
+  ctx: CanvasRenderingContext2D,
+  node: LGraphNode,
+  shiftY: number,
+  computedHeight: number | undefined
+) {
+  const dw = node.size[0]
+  const dh = computedHeight ?? 220
+  const centerX = dw / 2
+  const centerY = shiftY + dh / 2
+  const radius = 16
+  const angle = ((Date.now() % 1000) / 1000) * TWO_PI
+
+  ctx.save()
+  ctx.strokeStyle = LiteGraph.NODE_TEXT_COLOR
+  ctx.lineWidth = 3
+  ctx.lineCap = 'round'
+  ctx.beginPath()
+  ctx.arc(centerX, centerY, radius, angle, angle + SPINNER_ARC_LENGTH)
+  ctx.stroke()
+  ctx.restore()
+
+  // Schedule next frame to keep spinner animating continuously.
+  // Only runs while node.isUploading is true (checked by caller).
+  node.graph?.setDirtyCanvas(true)
+}
+
 const renderPreview = (
   ctx: CanvasRenderingContext2D,
   node: LGraphNode,
@@ -50,6 +80,11 @@ const renderPreview = (
   computedHeight: number | undefined
 ) => {
   if (!node.size) return
+
+  if (node.isUploading) {
+    renderUploadSpinner(ctx, node, shiftY, computedHeight)
+    return
+  }
 
   const canvas = useCanvasStore().getCanvas()
   const mouse = canvas.graph_mouse
@@ -65,6 +100,8 @@ const renderPreview = (
   }
 
   const imgs = node.imgs ?? []
+  if (imgs.length === 0) return
+
   let { imageIndex } = node
   const numImages = imgs.length
   if (numImages === 1 && !imageIndex) {

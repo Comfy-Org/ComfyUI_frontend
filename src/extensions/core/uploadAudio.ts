@@ -43,7 +43,7 @@ async function uploadFile(
   file: File,
   updateNode: boolean,
   pasted: boolean = false
-) {
+): Promise<boolean> {
   try {
     // Wrap file in formdata so it includes filename
     const body = new FormData()
@@ -76,12 +76,15 @@ async function uploadFile(
         // Manually trigger the callback to update VueNodes
         audioWidget.callback?.(path)
       }
+      return true
     } else {
       useToastStore().addAlert(resp.status + ' - ' + resp.statusText)
+      return false
     }
   } catch (error) {
     // @ts-expect-error fixme ts strict error
     useToastStore().addAlert(error)
+    return false
   }
 }
 
@@ -232,7 +235,17 @@ app.registerExtension({
 
         const handleUpload = async (files: File[]) => {
           if (files?.length) {
-            uploadFile(audioWidget, audioUIWidget, files[0], true)
+            const previousValue = audioWidget.value
+            audioWidget.value = files[0].name
+            const success = await uploadFile(
+              audioWidget,
+              audioUIWidget,
+              files[0],
+              true
+            )
+            if (!success) {
+              audioWidget.value = previousValue
+            }
           }
           return files
         }
