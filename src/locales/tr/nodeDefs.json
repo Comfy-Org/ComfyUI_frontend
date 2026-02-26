@@ -696,8 +696,7 @@
         "tooltip": "sequential_image_generation='auto' olduğunda oluşturulacak maksimum resim sayısı. Toplam resim sayısı (girdi + oluşturulan) 15'i geçemez."
       },
       "model": {
-        "name": "model",
-        "tooltip": "Model adı"
+        "name": "model"
       },
       "prompt": {
         "name": "prompt",
@@ -4749,6 +4748,28 @@
       }
     }
   },
+  "ImageMergeTileList": {
+    "display_name": "Döşeme Listesini Görüntüye Birleştir",
+    "inputs": {
+      "final_height": {
+        "name": "final_height"
+      },
+      "final_width": {
+        "name": "final_width"
+      },
+      "image_list": {
+        "name": "image_list"
+      },
+      "overlap": {
+        "name": "overlap"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ImageOnlyCheckpointLoader": {
     "display_name": "Sadece Görüntü Kontrol Noktası Yükleyici (img2vid modeli)",
     "inputs": {
@@ -5319,6 +5340,39 @@
       },
       "steps": {
         "name": "adımlar"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "KlingAvatarNode": {
+    "description": "Tek bir fotoğraf ve bir ses dosyasından yayın tarzı dijital insan videoları oluşturun.",
+    "display_name": "Kling Avatar 2.0",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "Avatar referans görseli. Genişlik ve yükseklik en az 300px olmalıdır. En-boy oranı 1:2.5 ile 2.5:1 arasında olmalıdır."
+      },
+      "mode": {
+        "name": "mode"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Avatarın hareketlerini, duygularını ve kamera hareketlerini tanımlamak için isteğe bağlı komut."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed, düğümün tekrar çalıştırılıp çalıştırılmayacağını kontrol eder; seed ne olursa olsun sonuçlar deterministik değildir."
+      },
+      "sound_file": {
+        "name": "sound_file",
+        "tooltip": "Ses girişi. Süresi 2 ile 300 saniye arasında olmalıdır."
       }
     },
     "outputs": {
@@ -13998,6 +14052,29 @@
       },
       "1": {
         "name": "sağ",
+        "tooltip": null
+      }
+    }
+  },
+  "SplitImageToTileList": {
+    "description": "Bir görüntüyü, belirtilen örtüşme ile toplu bir döşeme listesine böler.",
+    "display_name": "Görüntüyü Döşeme Listesine Böl",
+    "inputs": {
+      "image": {
+        "name": "image"
+      },
+      "overlap": {
+        "name": "overlap"
+      },
+      "tile_height": {
+        "name": "tile_height"
+      },
+      "tile_width": {
+        "name": "tile_width"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }

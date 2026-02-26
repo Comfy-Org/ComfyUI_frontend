@@ -696,8 +696,7 @@
         "tooltip": "當 sequential_image_generation='auto' 時，生成圖像的最大數量。總圖像數（輸入 + 生成）不得超過 15 張。"
       },
       "model": {
-        "name": "model",
-        "tooltip": "模型名稱"
+        "name": "model"
       },
       "prompt": {
         "name": "prompt",
@@ -4749,6 +4748,28 @@
       }
     }
   },
+  "ImageMergeTileList": {
+    "display_name": "合併圖塊清單為圖像",
+    "inputs": {
+      "final_height": {
+        "name": "final_height"
+      },
+      "final_width": {
+        "name": "final_width"
+      },
+      "image_list": {
+        "name": "image_list"
+      },
+      "overlap": {
+        "name": "overlap"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ImageOnlyCheckpointLoader": {
     "display_name": "僅影像權重載入器（img2vid 模型）",
     "inputs": {
@@ -5319,6 +5340,39 @@
       },
       "steps": {
         "name": "步驟數"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "KlingAvatarNode": {
+    "description": "從單張照片和音訊檔案生成廣播風格的數位人像影片。",
+    "display_name": "Kling Avatar 2.0",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "頭像參考圖片。寬度與高度需至少 300 像素。長寬比需介於 1:2.5 與 2.5:1 之間。"
+      },
+      "mode": {
+        "name": "mode"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "可選提示，用於定義頭像動作、情緒與鏡頭運動。"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed 控制此節點是否重新執行；無論 seed 為何，結果皆為非確定性。"
+      },
+      "sound_file": {
+        "name": "sound_file",
+        "tooltip": "音訊輸入。長度必須介於 2 到 300 秒之間。"
       }
     },
     "outputs": {
@@ -13998,6 +14052,29 @@
       },
       "1": {
         "name": "右聲道",
+        "tooltip": null
+      }
+    }
+  },
+  "SplitImageToTileList": {
+    "description": "將圖像分割為具有指定重疊區域的批次圖塊清單。",
+    "display_name": "將圖像分割為圖塊清單",
+    "inputs": {
+      "image": {
+        "name": "image"
+      },
+      "overlap": {
+        "name": "overlap"
+      },
+      "tile_height": {
+        "name": "tile_height"
+      },
+      "tile_width": {
+        "name": "tile_width"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }

@@ -183,33 +183,37 @@ onMounted(async () => {
 </script>
 
 <style scoped>
-@reference '../assets/css/style.css';
-
 :deep(.p-steppanel) {
-  @apply mt-8 flex justify-center bg-transparent;
+  margin-top: calc(var(--spacing) * 8);
+  display: flex;
+  justify-content: center;
+  background-color: transparent;
 }
 
 /* Remove default padding/margin from StepPanels to make scrollbar flush */
 :deep(.p-steppanels) {
-  @apply p-0 m-0;
+  margin: 0;
+  padding: 0;
 }
 
 /* Ensure StepPanel content container has no top/bottom padding */
 :deep(.p-steppanel-content) {
-  @apply p-0;
+  padding: 0;
 }
 
 /* Custom overlay scrollbar for WebKit browsers (Electron, Chrome) */
 :deep(.p-steppanels::-webkit-scrollbar) {
-  @apply w-4;
+  width: calc(var(--spacing) * 4);
 }
 
 :deep(.p-steppanels::-webkit-scrollbar-track) {
-  @apply bg-transparent;
+  background-color: transparent;
 }
 
 :deep(.p-steppanels::-webkit-scrollbar-thumb) {
-  @apply bg-white/20 rounded-lg border-[4px] border-transparent;
+  border: 4px solid transparent;
+  border-radius: var(--radius-lg);
+  background-color: color-mix(in srgb, var(--color-white) 20%, transparent);
   background-clip: content-box;
 }
 </style>

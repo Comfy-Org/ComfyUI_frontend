@@ -51,7 +51,6 @@ import {
   DOMWidgetImpl
 } from '@/scripts/domWidget'
 import { useDialogService } from '@/services/dialogService'
-import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useMissingNodesDialog } from '@/composables/useMissingNodesDialog'
 import { useExtensionService } from '@/services/extensionService'
 import { useLitegraphService } from '@/services/litegraphService'
@@ -111,9 +110,22 @@ import { ComfyAppMenu } from './ui/menu/index'
 import { clone } from './utils'
 import { type ComfyWidgetConstructor } from './widgets'
 import { ensureCorrectLayoutScale } from '@/renderer/extensions/vueNodes/layout/ensureCorrectLayoutScale'
-import { extractFilesFromDragEvent, hasImageType } from '@/utils/eventUtils'
+import {
+  extractFilesFromDragEvent,
+  hasAudioType,
+  hasImageType,
+  hasVideoType,
+  isMediaFile
+} from '@/utils/eventUtils'
 import { getWorkflowDataFromFile } from '@/scripts/metadata/parser'
-import { pasteImageNode, pasteImageNodes } from '@/composables/usePaste'
+import {
+  pasteAudioNode,
+  pasteAudioNodes,
+  pasteImageNode,
+  pasteImageNodes,
+  pasteVideoNode,
+  pasteVideoNodes
+} from '@/composables/usePaste'
 
 export const ANIM_PREVIEW_WIDGET = '$$comfy_animation_preview'
 
@@ -560,8 +572,28 @@ export class ComfyApp {
         const workspace = useWorkspaceStore()
         try {
           workspace.spinner = true
-          if (files.length > 1 && files.every(hasImageType)) {
-            await this.handleFileList(files)
+          const imageFiles = files.filter(hasImageType)
+          const audioFiles = files.filter(hasAudioType)
+          const videoFiles = files.filter(hasVideoType)
+          const totalMedia =
+            imageFiles.length + audioFiles.length + videoFiles.length
+          const hasMultipleMedia = totalMedia > 1
+
+          if (hasMultipleMedia) {
+            if (imageFiles.length > 0) {
+              await this.handleFileList(imageFiles)
+            }
+            if (audioFiles.length > 0) {
+              await this.handleAudioFileList(audioFiles)
+            }
+            if (videoFiles.length > 0) {
+              await this.handleVideoFileList(videoFiles)
+            }
+            for (const file of files.filter((f) => !isMediaFile(f))) {
+              await this.handleFile(file, 'file_drop', {
+                deferWarnings: true
+              })
+            }
           } else {
             for (const file of files) {
               await this.handleFile(file, 'file_drop', {
@@ -708,12 +740,9 @@ export class ComfyApp {
           'Payment Required: Please add credits to your account to use this node.'
         )
       ) {
-        const { isActiveSubscription } = useBillingContext()
-        if (isActiveSubscription.value) {
-          useDialogService().showTopUpCreditsDialog({
-            isInsufficientCredits: true
-          })
-        }
+        useDialogService().showTopUpCreditsDialog({
+          isInsufficientCredits: true
+        })
       } else if (useSettingStore().get('Comfy.RightSidePanel.ShowErrorsTab')) {
         useExecutionErrorStore().showErrorOverlay()
       } else {
@@ -1556,11 +1585,21 @@ export class ComfyApp {
     const { workflow, prompt, parameters, templates } = workflowData ?? {}
 
     if (!(workflow || prompt || parameters || templates)) {
-      if (file.type.startsWith('image')) {
+      const mediaNodeTypes: Record<string, [string, typeof pasteImageNode]> = {
+        image: ['LoadImage', pasteImageNode],
+        audio: ['LoadAudio', pasteAudioNode],
+        video: ['LoadVideo', pasteVideoNode]
+      }
+
+      const mediaType = Object.keys(mediaNodeTypes).find((t) =>
+        file.type.startsWith(t)
+      )
+      if (mediaType) {
+        const [nodeType, pasteFn] = mediaNodeTypes[mediaType]
         const transfer = new DataTransfer()
         transfer.items.add(file)
-        const imageNode = await createNode(this.canvas, 'LoadImage')
-        await pasteImageNode(this.canvas, transfer.items, imageNode)
+        const node = await createNode(this.canvas, nodeType)
+        await pasteFn(this.canvas, transfer.items, node)
         return
       }
 
@@ -1643,18 +1682,41 @@ export class ComfyApp {
    * @param {FileList} fileList
    */
   async handleFileList(fileList: File[]) {
-    if (fileList[0].type.startsWith('image')) {
-      const imageNodes = await pasteImageNodes(this.canvas, fileList)
+    if (fileList.length === 0) return
+    if (!fileList[0].type.startsWith('image')) return
+
+    const imageNodes = await pasteImageNodes(this.canvas, fileList)
+    if (imageNodes.length === 0) return
+
+    if (imageNodes.length > 1) {
       const batchImagesNode = await createNode(this.canvas, 'BatchImagesNode')
       if (!batchImagesNode) return
 
       this.positionBatchNodes(imageNodes, batchImagesNode)
       this.canvas.selectItems([...imageNodes, batchImagesNode])
 
-      Array.from(imageNodes).forEach((imageNode, index) => {
+      imageNodes.forEach((imageNode, index) => {
         imageNode.connect(0, batchImagesNode, index)
       })
+    } else {
+      this.canvas.selectItems(imageNodes)
     }
+  }
+
+  async handleAudioFileList(fileList: File[]) {
+    const audioNodes = await pasteAudioNodes(this.canvas, fileList)
+    if (audioNodes.length === 0) return
+
+    this.positionNodes(audioNodes)
+    this.canvas.selectItems(audioNodes)
+  }
+
+  async handleVideoFileList(fileList: File[]) {
+    const videoNodes = await pasteVideoNodes(this.canvas, fileList)
+    if (videoNodes.length === 0) return
+
+    this.positionNodes(videoNodes)
+    this.canvas.selectItems(videoNodes)
   }
 
   /**
@@ -1662,6 +1724,21 @@ export class ComfyApp {
    * @param nodes
    * @param batchNode
    */
+  positionNodes(nodes: LGraphNode[]): void {
+    if (nodes.length <= 1) return
+
+    const [x, y] = nodes[0].getBounding()
+    const nodeHeight = 150
+
+    nodes.forEach((node, index) => {
+      if (index > 0) {
+        node.pos = [x, y + nodeHeight * index + 25 * (index + 1)]
+      }
+    })
+
+    this.canvas.graph?.change()
+  }
+
   positionBatchNodes(nodes: LGraphNode[], batchNode: LGraphNode): void {
     const [x, y, width] = nodes[0].getBounding()
     batchNode.pos = [x + width + 100, y + 30]

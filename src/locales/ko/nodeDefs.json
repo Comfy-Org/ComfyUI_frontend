@@ -696,8 +696,7 @@
         "tooltip": "sequential_image_generation='auto'일 때 생성할 최대 이미지 수입니다. 총 이미지 수(입력 + 생성)는 15개를 초과할 수 없습니다."
       },
       "model": {
-        "name": "모델",
-        "tooltip": "모델 이름"
+        "name": "모델"
       },
       "prompt": {
         "name": "프롬프트",
@@ -4749,6 +4748,28 @@
       }
     }
   },
+  "ImageMergeTileList": {
+    "display_name": "타일 목록을 이미지로 병합",
+    "inputs": {
+      "final_height": {
+        "name": "final_height"
+      },
+      "final_width": {
+        "name": "final_width"
+      },
+      "image_list": {
+        "name": "image_list"
+      },
+      "overlap": {
+        "name": "overlap"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ImageOnlyCheckpointLoader": {
     "display_name": "이미지 전용 체크포인트 로드 (img2vid 모델)",
     "inputs": {
@@ -5319,6 +5340,39 @@
       },
       "steps": {
         "name": "스텝 수"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "KlingAvatarNode": {
+    "description": "한 장의 사진과 오디오 파일로 방송 스타일의 디지털 휴먼 영상을 생성합니다.",
+    "display_name": "Kling Avatar 2.0",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "아바타 참조 이미지입니다. 너비와 높이는 최소 300px이어야 합니다. 가로세로 비율은 1:2.5에서 2.5:1 사이여야 합니다."
+      },
+      "mode": {
+        "name": "mode"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "아바타의 동작, 감정, 카메라 움직임을 정의하는 선택적 프롬프트입니다."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "시드는 노드가 다시 실행될지 여부를 제어합니다. 시드와 관계없이 결과는 비결정적입니다."
+      },
+      "sound_file": {
+        "name": "sound_file",
+        "tooltip": "오디오 입력입니다. 길이는 2초에서 300초 사이여야 합니다."
       }
     },
     "outputs": {
@@ -13998,6 +14052,29 @@
       },
       "1": {
         "name": "오른쪽",
+        "tooltip": null
+      }
+    }
+  },
+  "SplitImageToTileList": {
+    "description": "이미지를 지정된 오버랩으로 배치된 타일 목록으로 분할합니다.",
+    "display_name": "이미지를 타일 목록으로 분할",
+    "inputs": {
+      "image": {
+        "name": "image"
+      },
+      "overlap": {
+        "name": "overlap"
+      },
+      "tile_height": {
+        "name": "tile_height"
+      },
+      "tile_width": {
+        "name": "tile_width"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }

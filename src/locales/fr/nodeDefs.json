@@ -696,8 +696,7 @@
         "tooltip": "Nombre maximum d'images à générer lorsque sequential_image_generation='auto'. Le nombre total d'images (entrée + générées) ne peut pas dépasser 15."
       },
       "model": {
-        "name": "model",
-        "tooltip": "Nom du modèle"
+        "name": "model"
       },
       "prompt": {
         "name": "prompt",
@@ -4749,6 +4748,28 @@
       }
     }
   },
+  "ImageMergeTileList": {
+    "display_name": "Fusionner une liste de tuiles en image",
+    "inputs": {
+      "final_height": {
+        "name": "hauteur_finale"
+      },
+      "final_width": {
+        "name": "largeur_finale"
+      },
+      "image_list": {
+        "name": "liste_d'images"
+      },
+      "overlap": {
+        "name": "chevauchement"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ImageOnlyCheckpointLoader": {
     "display_name": "Chargeur de points de contrôle uniquement pour image (modèle img2vid)",
     "inputs": {
@@ -5319,6 +5340,39 @@
       },
       "steps": {
         "name": "étapes"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "KlingAvatarNode": {
+    "description": "Générez des vidéos de type diffusion de personnages numériques à partir d'une seule photo et d'un fichier audio.",
+    "display_name": "Kling Avatar 2.0",
+    "inputs": {
+      "control_after_generate": {
+        "name": "contrôle après génération"
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "Image de référence de l'avatar. La largeur et la hauteur doivent être d'au moins 300 px. Le rapport d'aspect doit être compris entre 1:2,5 et 2,5:1."
+      },
+      "mode": {
+        "name": "mode"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Invite optionnelle pour définir les actions, émotions et mouvements de caméra de l'avatar."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Le seed contrôle si le nœud doit être relancé ; les résultats restent non déterministes quel que soit le seed."
+      },
+      "sound_file": {
+        "name": "sound_file",
+        "tooltip": "Entrée audio. Doit durer entre 2 et 300 secondes."
       }
     },
     "outputs": {
@@ -13998,6 +14052,29 @@
       },
       "1": {
         "name": "droite",
+        "tooltip": null
+      }
+    }
+  },
+  "SplitImageToTileList": {
+    "description": "Divise une image en une liste groupée de tuiles avec un chevauchement spécifié.",
+    "display_name": "Diviser l'image en liste de tuiles",
+    "inputs": {
+      "image": {
+        "name": "image"
+      },
+      "overlap": {
+        "name": "chevauchement"
+      },
+      "tile_height": {
+        "name": "hauteur_tuile"
+      },
+      "tile_width": {
+        "name": "largeur_tuile"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }

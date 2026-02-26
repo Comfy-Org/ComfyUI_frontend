@@ -8,7 +8,7 @@ import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDi
 import { useCommandStore } from '@/stores/commandStore'
 import { useSystemStatsStore } from '@/stores/systemStatsStore'
 import { useManagerDialog } from '@/workbench/extensions/manager/composables/useManagerDialog'
-import { ManagerTab } from '@/workbench/extensions/manager/types/comfyManagerTypes'
+import type { ManagerTab } from '@/workbench/extensions/manager/types/comfyManagerTypes'
 
 export enum ManagerUIState {
   DISABLED = 'disabled',
@@ -143,6 +143,7 @@ export function useManagerState() {
    */
   const openManager = async (options?: {
     initialTab?: ManagerTab
+    initialPackId?: string
     legacyCommand?: string
     showToastOnLegacyError?: boolean
     isLegacyOnly?: boolean
@@ -181,16 +182,14 @@ export function useManagerState() {
 
       case ManagerUIState.NEW_UI:
         if (options?.isLegacyOnly) {
-          // Legacy command is not available in NEW_UI mode
           useToastStore().add({
             severity: 'error',
             summary: t('g.error'),
             detail: t('manager.legacyMenuNotAvailable'),
             life: 3000
           })
-          await managerDialog.show(ManagerTab.All)
         } else {
-          await managerDialog.show(options?.initialTab)
+          managerDialog.show(options?.initialTab, options?.initialPackId)
         }
         break
     }

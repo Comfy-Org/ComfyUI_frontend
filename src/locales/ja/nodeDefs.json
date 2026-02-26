@@ -696,8 +696,7 @@
         "tooltip": "sequential_image_generation='auto'時の最大生成画像数。総画像数（入力＋生成）は15を超えることはできません。"
       },
       "model": {
-        "name": "model",
-        "tooltip": "モデル名"
+        "name": "model"
       },
       "prompt": {
         "name": "prompt",
@@ -4749,6 +4748,28 @@
       }
     }
   },
+  "ImageMergeTileList": {
+    "display_name": "タイルのリストを画像に結合",
+    "inputs": {
+      "final_height": {
+        "name": "final_height"
+      },
+      "final_width": {
+        "name": "final_width"
+      },
+      "image_list": {
+        "name": "image_list"
+      },
+      "overlap": {
+        "name": "overlap"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ImageOnlyCheckpointLoader": {
     "display_name": "画像のみのチェックポイントローダー（img2vidモデル）",
     "inputs": {
@@ -5319,6 +5340,39 @@
       },
       "steps": {
         "name": "ステップ"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "KlingAvatarNode": {
+    "description": "1枚の写真と音声ファイルから、放送スタイルのデジタルヒューマン動画を生成します。",
+    "display_name": "Kling Avatar 2.0",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後に制御"
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "アバターの参照画像。幅と高さは300px以上である必要があります。アスペクト比は1:2.5から2.5:1の間でなければなりません。"
+      },
+      "mode": {
+        "name": "mode"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "アバターの動作、感情、カメラの動きを定義するためのオプションのプロンプトです。"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "シードはノードを再実行するかどうかを制御します。シードに関係なく結果は非決定的です。"
+      },
+      "sound_file": {
+        "name": "sound_file",
+        "tooltip": "音声入力。2秒から300秒の間である必要があります。"
       }
     },
     "outputs": {
@@ -13998,6 +14052,29 @@
       },
       "1": {
         "name": "右",
+        "tooltip": null
+      }
+    }
+  },
+  "SplitImageToTileList": {
+    "description": "指定したオーバーラップで画像をバッチ化されたタイルのリストに分割します。",
+    "display_name": "画像をタイルのリストに分割",
+    "inputs": {
+      "image": {
+        "name": "image"
+      },
+      "overlap": {
+        "name": "overlap"
+      },
+      "tile_height": {
+        "name": "tile_height"
+      },
+      "tile_width": {
+        "name": "tile_width"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }

@@ -120,6 +120,8 @@ function useBillingContextInternal(): BillingContext {
     toValue(activeContext.value.isActiveSubscription)
   )
 
+  const isFreeTier = computed(() => subscription.value?.tier === 'FREE')
+
   function getMaxSeats(tierKey: TierKey): number {
     if (type.value === 'legacy') return 1
 
@@ -238,6 +240,7 @@ function useBillingContextInternal(): BillingContext {
     isLoading,
     error,
     isActiveSubscription,
+    isFreeTier,
     getMaxSeats,
 
     initialize,
