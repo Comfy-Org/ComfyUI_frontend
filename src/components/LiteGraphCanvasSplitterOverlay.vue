@@ -164,7 +164,7 @@ const showOffsideSplitter = computed(
 )
 
 const sidebarPanelVisible = computed(
-  () => activeSidebarTab.value !== null && !isBuilderMode
+  () => activeSidebarTab.value !== null && !isBuilderMode.value
 )
 
 const sidebarStateKey = computed(() => {
