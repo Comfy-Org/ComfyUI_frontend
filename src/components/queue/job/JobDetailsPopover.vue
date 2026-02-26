@@ -166,13 +166,13 @@ const queuedAtValue = computed(() =>
     : ''
 )
 
-const currentQueueIndex = computed<number | null>(() => {
+const currentJobPriority = computed<number | null>(() => {
   const task = taskForJob.value
   return task ? Number(task.job.priority) : null
 })
 
 const jobsAhead = computed<number | null>(() => {
-  const idx = currentQueueIndex.value
+  const idx = currentJobPriority.value
   if (idx == null) return null
   const ahead = queueStore.pendingTasks.filter(
     (t: TaskItemImpl) => Number(t.job.priority) < idx
