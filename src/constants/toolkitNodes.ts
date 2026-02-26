@@ -25,7 +25,10 @@ export const TOOLKIT_NODE_NAMES: ReadonlySet<string> = new Set([
   // API Nodes
   'RecraftRemoveBackgroundNode',
   'RecraftVectorizeImageNode',
-  'KlingOmniProEditVideoNode'
+  'KlingOmniProEditVideoNode',
+
+  // Shader Nodes
+  'GLSLShader'
 ])
 
 /**
