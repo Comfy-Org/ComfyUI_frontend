@@ -3,9 +3,11 @@ import { remove } from 'es-toolkit'
 import { computed } from 'vue'
 import type { NodeId } from '@/lib/litegraph/src/LGraphNode'
 
+import { useAppMode } from '@/composables/useAppMode'
 import { useAppModeStore } from '@/stores/appModeStore'
 import { cn } from '@/utils/tailwindUtil'
 
+const { isSelectMode } = useAppMode()
 const appModeStore = useAppModeStore()
 
 const { id } = defineProps<{ id: string }>()
@@ -24,6 +26,7 @@ function togglePromotion() {
 </script>
 <template>
   <div
+    v-if="isSelectMode"
     :class="
       cn(
         'absolute w-full h-full pointer-events-auto ring-warning-background/50 ring-5 rounded-2xl',
