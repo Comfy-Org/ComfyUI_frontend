@@ -184,6 +184,17 @@ describe('getPromotableWidgets', () => {
     ).toBe(true)
   })
 
+  it('adds virtual canvas preview widget for GLSLShader nodes', () => {
+    const node = new LGraphNode('GLSLShader')
+    node.type = 'GLSLShader'
+
+    const widgets = getPromotableWidgets(node)
+
+    expect(
+      widgets.some((widget) => widget.name === CANVAS_IMAGE_PREVIEW_WIDGET)
+    ).toBe(true)
+  })
+
   it('does not add virtual canvas preview widget for non-image nodes', () => {
     const node = new LGraphNode('TextNode')
     node.addOutput('TEXT', 'STRING')
