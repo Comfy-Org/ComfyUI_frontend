@@ -15,18 +15,21 @@
         "
         @click="$emit('stepClick', step.name)"
       >
-        <div
+        <StatusBadge
+          :label="step.number"
+          variant="circle"
+          severity="contrast"
           :class="
             cn(
-              'flex size-5 shrink-0 items-center justify-center rounded-full border text-xs',
-              currentStep === step.name
-                ? 'border-white bg-white text-black'
-                : 'border-white text-base-foreground'
+              'size-5 shrink-0 border text-xs font-bold font-inter',
+              isCurrentStep(step.name)
+                ? 'border-base-foreground bg-base-foreground text-base-background'
+                : isCompletedStep(step.name)
+                  ? 'border-base-foreground bg-transparent text-base-foreground'
+                  : 'border-muted-foreground bg-transparent text-muted-foreground'
             )
           "
-        >
-          {{ step.number }}
-        </div>
+        />
         <span class="truncate text-sm text-base-foreground">
           {{ step.label }}
         </span>
@@ -36,6 +39,9 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue'
+
+import StatusBadge from '@/components/common/StatusBadge.vue'
 import type { ComfyHubPublishStep } from '@/platform/workflow/sharing/composables/useComfyHubPublishWizard'
 import { cn } from '@/utils/tailwindUtil'
 import { useI18n } from 'vue-i18n'
@@ -63,4 +69,15 @@ const steps = [
   },
   { name: 'finish' as const, number: 3, label: t('comfyHubPublish.stepFinish') }
 ]
+
+const currentStepNumber = computed(
+  () => steps.find((step) => step.name === currentStep)?.number ?? 0
+)
+
+const isCurrentStep = (stepName: ComfyHubPublishStep) =>
+  currentStep === stepName
+
+const isCompletedStep = (stepName: ComfyHubPublishStep) =>
+  (steps.find((step) => step.name === stepName)?.number ?? 0) <
+  currentStepNumber.value
 </script>

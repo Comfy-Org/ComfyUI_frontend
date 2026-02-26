@@ -14,7 +14,7 @@
     <template #leftPanel>
       <ComfyHubPublishNav
         v-if="publishPanelState === 'publishWizard'"
-        :current-step="currentStep"
+        :current-step
         @step-click="goToStep"
       />
       <div v-else class="flex flex-col gap-2 px-3 py-4">
