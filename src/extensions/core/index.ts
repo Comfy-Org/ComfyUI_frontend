@@ -20,6 +20,7 @@ if (!isCloud) {
 }
 import './noteNode'
 import './painter'
+import './rangeHistogram'
 import './previewAny'
 import './rerouteNode'
 import './saveImageExtraOutput'
