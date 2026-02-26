@@ -112,6 +112,17 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
     }
   }
 
+  /** Remove specific node types from the missing nodes list (e.g. after replacement). */
+  function removeMissingNodesByType(typesToRemove: string[]) {
+    if (!missingNodesError.value) return
+    const removeSet = new Set(typesToRemove)
+    const remaining = missingNodesError.value.nodeTypes.filter((node) => {
+      const nodeType = typeof node === 'string' ? node : node.type
+      return !removeSet.has(nodeType)
+    })
+    setMissingNodeTypes(remaining)
+  }
+
   function setMissingNodeTypes(types: MissingNodeType[]) {
     if (!types.length) {
       missingNodesError.value = null
@@ -406,6 +417,7 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
     // Missing node actions
     setMissingNodeTypes,
     surfaceMissingNodes,
+    removeMissingNodesByType,
 
     // Lookup helpers
     getNodeErrors,

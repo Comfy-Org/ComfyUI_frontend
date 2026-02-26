@@ -3073,7 +3073,13 @@
     "openNodeManager": "Open Node Manager",
     "skipForNow": "Skip for Now",
     "installMissingNodes": "Install Missing Nodes",
-    "replaceWarning": "This will permanently modify the workflow. Save a copy first if unsure."
+    "replaceWarning": "This will permanently modify the workflow. Save a copy first if unsure.",
+    "swapNodesGuide": "The following nodes can be automatically replaced with compatible alternatives.",
+    "willBeReplacedBy": "This node will be replaced by:",
+    "replaceNode": "Replace Node",
+    "replaceAll": "Replace All",
+    "unknownNode": "Unknown",
+    "replaceAllWarning": "Replaces all available nodes in this group."
   },
   "rightSidePanel": {
     "togglePanel": "Toggle properties panel",

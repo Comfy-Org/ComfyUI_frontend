@@ -1,48 +1,4 @@
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import type { MissingNodeType } from '@/types/comfy'
-
-import type { MissingNodeTypeExtraInfo } from '../types/missingNodeErrorTypes'
-
-/**
- * Builds a hint string from missing node metadata.
- * Provides context about which node is missing (title, ID) when available.
- */
-export function buildMissingNodeHint(
-  nodeTitle: string | null | undefined,
-  classType: string,
-  nodeId: string | undefined
-): string | undefined {
-  const hasTitle = nodeTitle && nodeTitle !== classType
-  if (hasTitle && nodeId) {
-    return `"${nodeTitle}" (Node ID #${nodeId})`
-  } else if (hasTitle) {
-    return `"${nodeTitle}"`
-  } else if (nodeId) {
-    return `Node ID #${nodeId}`
-  }
-  return undefined
-}
-
-/**
- * Creates a MissingNodeType from backend error extra_info.
- * Used when the /prompt endpoint returns a missing_node_type error.
- */
-export function createMissingNodeTypeFromError(
-  extraInfo: MissingNodeTypeExtraInfo
-): MissingNodeType {
-  const classType = extraInfo.class_type ?? 'Unknown'
-  const nodeTitle = extraInfo.node_title ?? classType
-  const hint = buildMissingNodeHint(nodeTitle, classType, extraInfo.node_id)
-
-  if (hint) {
-    return {
-      type: classType,
-      ...(extraInfo.node_id ? { nodeId: extraInfo.node_id } : {}),
-      ...(hint ? { hint } : {})
-    }
-  }
-  return classType
-}
 
 /**
  * Extracts the custom node registry ID (cnr_id or aux_id) from a raw

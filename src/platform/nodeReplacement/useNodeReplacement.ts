@@ -261,6 +261,10 @@ export function useNodeReplacement() {
             }
         replaceWithMapping(node, newNode, effectiveReplacement, nodeGraph, idx)
 
+        // Refresh Vue node data — replaceWithMapping bypasses graph.add()
+        // so onNodeAdded must be called explicitly to update VueNodeData.
+        nodeGraph.onNodeAdded?.(newNode)
+
         if (!replacedTypes.includes(match.type)) {
           replacedTypes.push(match.type)
         }

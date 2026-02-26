@@ -22,3 +22,4 @@ export type ErrorGroup =
       priority: number
     }
   | { type: 'missing_node'; title: string; priority: number }
+  | { type: 'swap_nodes'; title: string; priority: number }

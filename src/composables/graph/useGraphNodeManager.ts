@@ -14,6 +14,7 @@ import type {
 } from '@/lib/litegraph/src/interfaces'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
+import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { LayoutSource } from '@/renderer/core/layout/types'
 import type { NodeId } from '@/renderer/core/layout/types'
 import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
@@ -441,6 +442,11 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
       // Extract actual positions after configure() has potentially updated them
       const nodePosition = { x: node.pos[0], y: node.pos[1] }
       const nodeSize = { width: node.size[0], height: node.size[1] }
+
+      // Skip layout creation if it already exists
+      // (e.g. in-place node replacement where the old node's layout is reused for the new node with the same ID).
+      const existingLayout = layoutStore.getNodeLayoutRef(id).value
+      if (existingLayout) return
 
       // Add node to layout store with final positions
       setSource(LayoutSource.Canvas)
