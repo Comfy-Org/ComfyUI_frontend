@@ -60,6 +60,9 @@ export class PerformanceHelper {
   }
 
   async startMeasuring(): Promise<void> {
+    if (this.snapshot) {
+      throw new Error('Measurement already in progress — call stopMeasuring() first')
+    }
     this.snapshot = await this.getSnapshot()
   }
 
