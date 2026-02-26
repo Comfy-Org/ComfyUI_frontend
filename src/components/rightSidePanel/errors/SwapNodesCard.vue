@@ -27,7 +27,7 @@ import SwapNodeGroupRow from './SwapNodeGroupRow.vue'
 
 const { t } = useI18n()
 
-const props = defineProps<{
+const { swapNodeGroups, showNodeIdBadge } = defineProps<{
   swapNodeGroups: SwapNodeGroup[]
   showNodeIdBadge: boolean
 }>()
