@@ -232,4 +232,25 @@ describe('promoteRecommendedWidgets', () => {
 
     expect(updatePreviewsMock).not.toHaveBeenCalled()
   })
+
+  it('eagerly promotes virtual preview widget for CANVAS_IMAGE_PREVIEW nodes', () => {
+    const subgraph = createTestSubgraph()
+    const subgraphNode = createTestSubgraphNode(subgraph)
+    const glslNode = new LGraphNode('GLSLShader')
+    glslNode.type = 'GLSLShader'
+    subgraph.add(glslNode)
+
+    promoteRecommendedWidgets(subgraphNode)
+
+    const store = usePromotionStore()
+    expect(
+      store.isPromoted(
+        subgraphNode.rootGraph.id,
+        subgraphNode.id,
+        String(glslNode.id),
+        CANVAS_IMAGE_PREVIEW_WIDGET
+      )
+    ).toBe(true)
+    expect(updatePreviewsMock).not.toHaveBeenCalled()
+  })
 })
