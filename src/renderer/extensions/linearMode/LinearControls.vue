@@ -223,7 +223,7 @@ defineExpose({ runButtonClick })
       <Button v-if="false"> {{ t('menuLabels.publish') }} </Button>
     </section>
     <div
-      class="border gap-2 h-full border-[var(--interface-stroke)] bg-comfy-menu-bg flex flex-col px-2"
+      class="border-x md:border-y gap-2 h-full border-[var(--interface-stroke)] bg-comfy-menu-bg flex flex-col px-2"
     >
       <section
         data-testid="linear-widgets"
@@ -294,7 +294,7 @@ defineExpose({ runButtonClick })
         <div v-else class="flex mt-4">
           <Popover side="top" @open-auto-focus.prevent>
             <template #button>
-              <Button size="lg" variant="inverted" class="-mr-3 pr-7">
+              <Button size="lg" class="-mr-3 pr-7">
                 <i v-if="batchCount == 1" class="icon-[lucide--chevron-down]" />
                 <div v-else class="tabular-nums" v-text="`${batchCount}x`" />
               </Button>

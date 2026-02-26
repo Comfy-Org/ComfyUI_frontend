@@ -146,9 +146,9 @@ const menuEntries = computed<MenuItem[]>(() => [
 ])
 </script>
 <template>
-  <section class="absolute w-full h-full flex flex-col bg-base-background">
+  <section class="absolute w-full h-full flex flex-col bg-secondary-background">
     <header
-      class="w-full h-16 px-4 py-3 flex border-border-subtle border-b items-center gap-3"
+      class="w-full h-16 px-4 py-3 flex border-border-subtle border-b items-center gap-3 bg-base-background"
     >
       <DropdownMenu :entries="menuEntries" />
       <Popover
@@ -182,19 +182,15 @@ const menuEntries = computed<MenuItem[]>(() => [
         :style="{ translate }"
       >
         <AssetsSidebarTab
-          class="h-full w-screen absolute bg-secondary-background [&>:first-child>:nth-child(odd)]:hidden"
+          class="h-full w-screen absolute bg-base-background [&>:first-child>:nth-child(odd)]:hidden"
         />
         <div
           class="overflow-y-auto contain-size h-full w-screen absolute left-[100vw] top-0"
         >
-          <LinearControls
-            class="*:bg-secondary-background"
-            mobile
-            @navigate-assets="activeIndex = 0"
-          />
+          <LinearControls mobile @navigate-assets="activeIndex = 0" />
         </div>
         <div
-          class="w-screen absolute bg-secondary-background h-full left-[200vw] top-0 flex flex-col"
+          class="w-screen absolute h-full bg-base-background left-[200vw] top-0 flex flex-col"
         >
           <LinearPreview mobile />
         </div>
@@ -202,7 +198,7 @@ const menuEntries = computed<MenuItem[]>(() => [
     </div>
     <div
       ref="sliderPaneRef"
-      class="h-22 p-4 w-full flex gap-4 items-center justify-around"
+      class="h-22 p-4 w-full flex gap-4 items-center justify-around bg-secondary-background"
     >
       <Button
         v-for="([label, icon], index) in tabs"
