@@ -33,10 +33,14 @@ export class PerformanceHelper {
   }
 
   async dispose(): Promise<void> {
+    this.snapshot = null
     if (this.cdp) {
-      await this.cdp.send('Performance.disable')
-      await this.cdp.detach()
-      this.cdp = null
+      try {
+        await this.cdp.send('Performance.disable')
+      } finally {
+        await this.cdp.detach()
+        this.cdp = null
+      }
     }
   }
 
