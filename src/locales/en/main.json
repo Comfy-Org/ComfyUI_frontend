@@ -3007,6 +3007,20 @@
       "switchToSelectButton": "Switch to Select",
       "outputs": "Outputs",
       "resultsLabel": "Results generated from the selected output node(s) will be shown here after running this app"
+    },
+    "builder": {
+      "title": "App builder mode",
+      "exit": "Exit builder",
+      "exitConfirmTitle": "Exit app builder?",
+      "exitConfirmMessage": "You have unsaved changes that will be lost\nExit without saving?",
+      "promptAddInputs": "Click on node parameters to add them here as inputs",
+      "noInputs": "No inputs added yet",
+      "inputsDesc": "Users will interact and adjust these to generate their outputs.",
+      "inputsExample": "Examples: “Load image”, “Text prompt”, “Steps”",
+      "promptAddOutputs": "Click on output nodes to add them here. These will be the generated results.",
+      "noOutputs": "No output nodes added yet",
+      "outputsDesc": "Connect at least one output node so users can see results after running.",
+      "outputsExample": "Examples: “Save Image” or “Save Video”"
     }
   },
   "missingNodes": {

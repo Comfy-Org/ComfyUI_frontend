@@ -225,6 +225,7 @@
     "login": {
       "andText": "et",
       "backToLogin": "Retour à la connexion",
+      "backToSocialLogin": "Inscrivez-vous avec Google ou Github à la place",
       "confirmPasswordLabel": "Confirmer le mot de passe",
       "confirmPasswordPlaceholder": "Entrez à nouveau le même mot de passe",
       "didntReceiveEmail": "Vous n'avez pas reçu d'e-mail ? Contactez-nous à",
@@ -233,6 +234,9 @@
       "failed": "Échec de la connexion",
       "forgotPassword": "Mot de passe oublié?",
       "forgotPasswordError": "Échec de l'envoi de l'e-mail de réinitialisation du mot de passe",
+      "freeTierBadge": "Éligible à l’offre gratuite",
+      "freeTierDescription": "Inscrivez-vous avec Google pour obtenir {credits} crédits gratuits chaque mois. Aucune carte requise.",
+      "freeTierDescriptionGeneric": "Inscrivez-vous avec Google pour obtenir des crédits gratuits chaque mois. Aucune carte requise.",
       "insecureContextWarning": "Cette connexion n'est pas sécurisée (HTTP) - vos identifiants pourraient être interceptés par des attaquants si vous continuez à vous connecter.",
       "loginButton": "Se connecter",
       "loginWithGithub": "Se connecter avec Github",
@@ -251,11 +255,13 @@
       "sendResetLink": "Envoyer le lien de réinitialisation",
       "signInOrSignUp": "Se connecter / S’inscrire",
       "signUp": "S'inscrire",
+      "signUpFreeTierPromo": "Nouveau ici ? {signUp} avec Google pour obtenir {credits} crédits gratuits chaque mois.",
       "success": "Connexion réussie",
       "termsLink": "Conditions d'utilisation",
       "termsText": "En cliquant sur \"Suivant\" ou \"S'inscrire\", vous acceptez nos",
       "title": "Connectez-vous à votre compte",
       "useApiKey": "Clé API Comfy",
+      "useEmailInstead": "Utiliser l’e-mail à la place",
       "userAvatar": "Avatar utilisateur"
     },
     "loginButton": {
@@ -282,6 +288,7 @@
     "signup": {
       "alreadyHaveAccount": "Vous avez déjà un compte?",
       "emailLabel": "Email",
+      "emailNotEligibleForFreeTier": "L’inscription par e-mail n’est pas éligible à l’offre gratuite.",
       "emailPlaceholder": "Entrez votre email",
       "passwordLabel": "Mot de passe",
       "passwordPlaceholder": "Entrez un nouveau mot de passe",
@@ -1331,6 +1338,20 @@
       "switchToSelectButton": "Passer à Sélectionner"
     },
     "beta": "Mode App Bêta - Donnez votre avis",
+    "builder": {
+      "exit": "Quitter le mode créateur",
+      "exitConfirmMessage": "Vous avez des modifications non enregistrées qui seront perdues\nQuitter sans enregistrer ?",
+      "exitConfirmTitle": "Quitter le créateur d’application ?",
+      "inputsDesc": "Les utilisateurs interagiront avec ces paramètres pour générer leurs résultats.",
+      "inputsExample": "Exemples : « Charger une image », « Prompt texte », « Étapes »",
+      "noInputs": "Aucune entrée ajoutée pour le moment",
+      "noOutputs": "Aucun nœud de sortie ajouté pour le moment",
+      "outputsDesc": "Connectez au moins un nœud de sortie pour que les utilisateurs voient les résultats après l’exécution.",
+      "outputsExample": "Exemples : « Enregistrer l’image » ou « Enregistrer la vidéo »",
+      "promptAddInputs": "Cliquez sur les paramètres du nœud pour les ajouter ici comme entrées",
+      "promptAddOutputs": "Cliquez sur les nœuds de sortie pour les ajouter ici. Ce seront les résultats générés.",
+      "title": "Mode créateur d’application"
+    },
     "downloadAll": "Tout télécharger",
     "dragAndDropImage": "Glissez-déposez une image",
     "graphMode": "Mode graphique",
@@ -1868,11 +1889,18 @@
     "showLinks": "Afficher les liens"
   },
   "missingModelsDialog": {
+    "customModelsInstruction": "Vous devrez les trouver et les télécharger manuellement. Cherchez-les en ligne (essayez Civitai ou Hugging Face) ou contactez le créateur du workflow d'origine.",
+    "customModelsWarning": "Certains de ces modèles sont personnalisés et nous ne les reconnaissons pas.",
+    "description": "Ce workflow nécessite des modèles que vous n'avez pas encore téléchargés.",
     "doNotAskAgain": "Ne plus afficher ce message",
-    "missingModels": "Modèles manquants",
-    "missingModelsMessage": "Lors du chargement du graphique, les modèles suivants n'ont pas été trouvés",
+    "downloadAll": "Tout télécharger",
+    "downloadAvailable": "Téléchargement disponible",
+    "footerDescription": "Téléchargez et placez ces modèles dans le dossier approprié.\nLes nœuds avec des modèles manquants sont surlignés en rouge sur le canevas.",
+    "gotIt": "Ok, compris",
     "reEnableInSettings": "Réactiver dans {link}",
-    "reEnableInSettingsLink": "Paramètres"
+    "reEnableInSettingsLink": "Paramètres",
+    "title": "Ce workflow est incomplet : modèles manquants",
+    "totalSize": "Taille totale du téléchargement :"
   },
   "missingNodes": {
     "cloud": {
@@ -2684,7 +2712,9 @@
     "addCreditsLabel": "Ajoutez des crédits à tout moment",
     "benefits": {
       "benefit1": "Crédits mensuels pour les Nœuds Partenaires — rechargez si nécessaire",
-      "benefit2": "Jusqu'à 30 min d'exécution par tâche"
+      "benefit1FreeTier": "Plus de crédits mensuels, recharge à tout moment",
+      "benefit2": "Jusqu'à 30 min d'exécution par tâche",
+      "benefit3": "Utilisez vos propres modèles (Creator & Pro)"
     },
     "beta": "BÊTA",
     "billedMonthly": "Facturé mensuellement",
@@ -2722,6 +2752,21 @@
     "description": "Choisissez le forfait qui vous convient",
     "descriptionWorkspace": "Choisissez la meilleure offre pour votre espace de travail",
     "expiresDate": "Expire le {date}",
+    "freeTier": {
+      "description": "Votre plan gratuit inclut {credits} crédits chaque mois pour essayer Comfy Cloud.",
+      "descriptionGeneric": "Votre plan gratuit inclut une allocation mensuelle de crédits pour essayer Comfy Cloud.",
+      "nextRefresh": "Vos crédits seront renouvelés le {date}.",
+      "outOfCredits": {
+        "subtitle": "Abonnez-vous pour débloquer les recharges et plus encore",
+        "title": "Vous n’avez plus de crédits gratuits"
+      },
+      "subscribeCta": "Abonnez-vous pour plus",
+      "title": "Vous êtes sur le plan Gratuit",
+      "topUpBlocked": {
+        "title": "Débloquez les recharges et plus encore"
+      },
+      "upgradeCta": "Voir les offres"
+    },
     "gpuLabel": "RTX 6000 Pro (96GB VRAM)",
     "haveQuestions": "Des questions ou besoin d'une offre entreprise ?",
     "invoiceHistory": "Historique des factures",
@@ -2732,6 +2777,7 @@
     "maxDuration": {
       "creator": "30 min",
       "founder": "30 min",
+      "free": "30 min",
       "pro": "1 h",
       "standard": "30 min"
     },
@@ -2803,6 +2849,9 @@
       },
       "founder": {
         "name": "Édition Fondateur"
+      },
+      "free": {
+        "name": "Gratuit"
       },
       "pro": {
         "name": "Pro"

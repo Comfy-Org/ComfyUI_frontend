@@ -225,6 +225,7 @@
     "login": {
       "andText": "y",
       "backToLogin": "Volver al inicio de sesión",
+      "backToSocialLogin": "Regístrate con Google o Github en su lugar",
       "confirmPasswordLabel": "Confirmar contraseña",
       "confirmPasswordPlaceholder": "Ingresa la misma contraseña nuevamente",
       "didntReceiveEmail": "¿No recibiste el correo? Contáctanos en",
@@ -233,6 +234,9 @@
       "failed": "Inicio de sesión fallido",
       "forgotPassword": "¿Olvidaste tu contraseña?",
       "forgotPasswordError": "No se pudo enviar el correo electrónico para restablecer la contraseña",
+      "freeTierBadge": "Elegible para el plan gratuito",
+      "freeTierDescription": "Regístrate con Google para obtener {credits} créditos gratis cada mes. No se necesita tarjeta.",
+      "freeTierDescriptionGeneric": "Regístrate con Google para obtener créditos gratis cada mes. No se necesita tarjeta.",
       "insecureContextWarning": "Esta conexión no es segura (HTTP): tus credenciales pueden ser interceptadas por atacantes si continúas con el inicio de sesión.",
       "loginButton": "Iniciar sesión",
       "loginWithGithub": "Iniciar sesión con Github",
@@ -251,11 +255,13 @@
       "sendResetLink": "Enviar enlace de restablecimiento",
       "signInOrSignUp": "Iniciar sesión / Registrarse",
       "signUp": "Regístrate",
+      "signUpFreeTierPromo": "¿Nuevo aquí? {signUp} con Google para obtener {credits} créditos gratis cada mes.",
       "success": "Inicio de sesión exitoso",
       "termsLink": "Términos de uso",
       "termsText": "Al hacer clic en \"Siguiente\" o \"Registrarse\", aceptas nuestros",
       "title": "Inicia sesión en tu cuenta",
       "useApiKey": "Clave API de Comfy",
+      "useEmailInstead": "Usar correo electrónico en su lugar",
       "userAvatar": "Avatar de usuario"
     },
     "loginButton": {
@@ -282,6 +288,7 @@
     "signup": {
       "alreadyHaveAccount": "¿Ya tienes una cuenta?",
       "emailLabel": "Correo electrónico",
+      "emailNotEligibleForFreeTier": "El registro por correo electrónico no es elegible para el plan gratuito.",
       "emailPlaceholder": "Ingresa tu correo electrónico",
       "passwordLabel": "Contraseña",
       "passwordPlaceholder": "Ingresa una nueva contraseña",
@@ -1331,6 +1338,20 @@
       "switchToSelectButton": "Cambiar a Seleccionar"
     },
     "beta": "Modo App Beta - Enviar comentarios",
+    "builder": {
+      "exit": "Salir del constructor",
+      "exitConfirmMessage": "Tienes cambios sin guardar que se perderán\n¿Salir sin guardar?",
+      "exitConfirmTitle": "¿Salir del constructor de aplicaciones?",
+      "inputsDesc": "Los usuarios interactuarán y ajustarán estos para generar sus resultados.",
+      "inputsExample": "Ejemplos: “Cargar imagen”, “Prompt de texto”, “Pasos”",
+      "noInputs": "Aún no se han agregado entradas",
+      "noOutputs": "Aún no se han agregado nodos de salida",
+      "outputsDesc": "Conecta al menos un nodo de salida para que los usuarios vean los resultados después de ejecutar.",
+      "outputsExample": "Ejemplos: “Guardar imagen” o “Guardar video”",
+      "promptAddInputs": "Haz clic en los parámetros del nodo para agregarlos aquí como entradas",
+      "promptAddOutputs": "Haz clic en los nodos de salida para agregarlos aquí. Estos serán los resultados generados.",
+      "title": "Modo constructor de aplicaciones"
+    },
     "downloadAll": "Descargar todo",
     "dragAndDropImage": "Arrastra y suelta una imagen",
     "graphMode": "Modo gráfico",
@@ -1868,11 +1889,18 @@
     "showLinks": "Mostrar enlaces"
   },
   "missingModelsDialog": {
+    "customModelsInstruction": "Tendrás que encontrarlos y descargarlos manualmente. Búscalos en línea (prueba Civitai o Hugging Face) o contacta al proveedor original del flujo de trabajo.",
+    "customModelsWarning": "Algunos de estos son modelos personalizados que no reconocemos.",
+    "description": "Este flujo de trabajo requiere modelos que aún no has descargado.",
     "doNotAskAgain": "No mostrar esto de nuevo",
-    "missingModels": "Modelos faltantes",
-    "missingModelsMessage": "Al cargar el gráfico, no se encontraron los siguientes modelos",
+    "downloadAll": "Descargar todo",
+    "downloadAvailable": "Descargar disponibles",
+    "footerDescription": "Descarga y coloca estos modelos en la carpeta correcta.\nLos nodos con modelos faltantes están resaltados en rojo en el lienzo.",
+    "gotIt": "Entendido",
     "reEnableInSettings": "Vuelve a habilitar en {link}",
-    "reEnableInSettingsLink": "Configuración"
+    "reEnableInSettingsLink": "Configuración",
+    "title": "Faltan modelos en este flujo de trabajo",
+    "totalSize": "Tamaño total de descarga:"
   },
   "missingNodes": {
     "cloud": {
@@ -2684,7 +2712,9 @@
     "addCreditsLabel": "Agrega más créditos cuando quieras",
     "benefits": {
       "benefit1": "Créditos mensuales para Nodos de Socio — recarga cuando sea necesario",
-      "benefit2": "Hasta 30 min de tiempo de ejecución por trabajo"
+      "benefit1FreeTier": "Más créditos mensuales, recarga en cualquier momento",
+      "benefit2": "Hasta 30 min de tiempo de ejecución por trabajo",
+      "benefit3": "Usa tus propios modelos (Creator & Pro)"
     },
     "beta": "BETA",
     "billedMonthly": "Facturado mensualmente",
@@ -2722,6 +2752,21 @@
     "description": "Elige el mejor plan para ti",
     "descriptionWorkspace": "Elige el mejor plan para tu espacio de trabajo",
     "expiresDate": "Caduca el {date}",
+    "freeTier": {
+      "description": "Tu plan gratuito incluye {credits} créditos cada mes para probar Comfy Cloud.",
+      "descriptionGeneric": "Tu plan gratuito incluye una asignación mensual de créditos para probar Comfy Cloud.",
+      "nextRefresh": "Tus créditos se renovarán el {date}.",
+      "outOfCredits": {
+        "subtitle": "Suscríbete para desbloquear recargas y más",
+        "title": "Te has quedado sin créditos gratuitos"
+      },
+      "subscribeCta": "Suscríbete para más",
+      "title": "Estás en el plan gratuito",
+      "topUpBlocked": {
+        "title": "Desbloquea recargas y más"
+      },
+      "upgradeCta": "Ver planes"
+    },
     "gpuLabel": "RTX 6000 Pro (96GB VRAM)",
     "haveQuestions": "¿Tienes preguntas o buscas soluciones empresariales?",
     "invoiceHistory": "Historial de facturas",
@@ -2732,6 +2777,7 @@
     "maxDuration": {
       "creator": "30 min",
       "founder": "30 min",
+      "free": "30 min",
       "pro": "1 h",
       "standard": "30 min"
     },
@@ -2803,6 +2849,9 @@
       },
       "founder": {
         "name": "Edición Fundador"
+      },
+      "free": {
+        "name": "Gratis"
       },
       "pro": {
         "name": "Pro"

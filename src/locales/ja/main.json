@@ -225,6 +225,7 @@
     "login": {
       "andText": "および",
       "backToLogin": "ログインに戻る",
+      "backToSocialLogin": "GoogleまたはGithubでサインアップする",
       "confirmPasswordLabel": "パスワードの確認",
       "confirmPasswordPlaceholder": "もう一度同じパスワードを入力してください",
       "didntReceiveEmail": "メールが届きませんか？こちらまでご連絡ください：",
@@ -233,6 +234,9 @@
       "failed": "ログイン失敗",
       "forgotPassword": "パスワードを忘れましたか？",
       "forgotPasswordError": "パスワードリセット用メールの送信に失敗しました",
+      "freeTierBadge": "無料プラン対象",
+      "freeTierDescription": "Googleでサインアップすると、毎月{credits}の無料クレジットがもらえます。クレジットカード不要。",
+      "freeTierDescriptionGeneric": "Googleでサインアップすると、毎月無料クレジットがもらえます。クレジットカード不要。",
       "insecureContextWarning": "この接続は安全ではありません（HTTP）- このままログインを続けると、認証情報が攻撃者に傍受される可能性があります。",
       "loginButton": "ログイン",
       "loginWithGithub": "Githubでログイン",
@@ -251,11 +255,13 @@
       "sendResetLink": "リセットリンクを送信",
       "signInOrSignUp": "サインイン / サインアップ",
       "signUp": "サインアップ",
+      "signUpFreeTierPromo": "初めての方はこちら。Googleで{signUp}して、毎月{credits}の無料クレジットを獲得しましょう。",
       "success": "ログイン成功",
       "termsLink": "利用規約",
       "termsText": "「次へ」または「サインアップ」をクリックすると、私たちの",
       "title": "アカウントにログインする",
       "useApiKey": "Comfy APIキー",
+      "useEmailInstead": "メールアドレスを使用する",
       "userAvatar": "ユーザーアバター"
     },
     "loginButton": {
@@ -282,6 +288,7 @@
     "signup": {
       "alreadyHaveAccount": "すでにアカウントをお持ちですか？",
       "emailLabel": "メール",
+      "emailNotEligibleForFreeTier": "メールでのサインアップは無料プランの対象外です。",
       "emailPlaceholder": "メールアドレスを入力してください",
       "passwordLabel": "パスワード",
       "passwordPlaceholder": "新しいパスワードを入力してください",
@@ -1331,6 +1338,20 @@
       "switchToSelectButton": "選択に切り替え"
     },
     "beta": "アプリモード ベータ版 - フィードバックを送る",
+    "builder": {
+      "exit": "ビルダーを終了",
+      "exitConfirmMessage": "保存されていない変更は失われます。\n保存せずに終了しますか？",
+      "exitConfirmTitle": "アプリビルダーを終了しますか？",
+      "inputsDesc": "ユーザーはこれらを操作して出力を生成します。",
+      "inputsExample": "例：「画像を読み込む」「テキストプロンプト」「ステップ数」",
+      "noInputs": "まだ入力が追加されていません",
+      "noOutputs": "まだ出力ノードが追加されていません",
+      "outputsDesc": "少なくとも1つの出力ノードを接続すると、ユーザーが実行後に結果を確認できます。",
+      "outputsExample": "例：「画像を保存」「動画を保存」",
+      "promptAddInputs": "ノードのパラメータをクリックして、ここに入力として追加してください",
+      "promptAddOutputs": "出力ノードをクリックしてここに追加してください。これが生成される結果となります。",
+      "title": "アプリビルダーモード"
+    },
     "downloadAll": "すべてダウンロード",
     "dragAndDropImage": "画像をドラッグ＆ドロップ",
     "graphMode": "グラフモード",
@@ -1868,11 +1889,18 @@
     "showLinks": "リンクを表示"
   },
   "missingModelsDialog": {
+    "customModelsInstruction": "手動で探してダウンロードする必要があります。オンラインで検索するか（CivitaiやHugging Faceを試してください）、元のワークフロープロバイダーに連絡してください。",
+    "customModelsWarning": "これらの中には、認識できないカスタムモデルが含まれています。",
+    "description": "このワークフローには、まだダウンロードしていないモデルが必要です。",
     "doNotAskAgain": "再度表示しない",
-    "missingModels": "モデルが見つかりません",
-    "missingModelsMessage": "グラフを読み込む際に、次のモデルが見つかりませんでした",
+    "downloadAll": "すべてダウンロード",
+    "downloadAvailable": "ダウンロード可能",
+    "footerDescription": "これらのモデルをダウンロードし、正しいフォルダに配置してください。\n不足しているモデルがあるノードはキャンバス上で赤く表示されます。",
+    "gotIt": "了解しました",
     "reEnableInSettings": "{link}で再有効化",
-    "reEnableInSettingsLink": "設定"
+    "reEnableInSettingsLink": "設定",
+    "title": "このワークフローにはモデルが不足しています",
+    "totalSize": "合計ダウンロードサイズ："
   },
   "missingNodes": {
     "cloud": {
@@ -2684,7 +2712,9 @@
     "addCreditsLabel": "いつでもクレジット追加可能",
     "benefits": {
       "benefit1": "パートナーノード用月間クレジット — 必要に応じて追加購入可能",
-      "benefit2": "ジョブあたり最大30分の実行時間"
+      "benefit1FreeTier": "毎月のクレジット増加、いつでもチャージ可能",
+      "benefit2": "ジョブあたり最大30分の実行時間",
+      "benefit3": "独自のモデルを利用可能（Creator & Pro）"
     },
     "beta": "ベータ版",
     "billedMonthly": "毎月請求",
@@ -2722,6 +2752,21 @@
     "description": "あなたに最適なプランを選択してください",
     "descriptionWorkspace": "ワークスペースに最適なプランを選択してください",
     "expiresDate": "{date} に期限切れ",
+    "freeTier": {
+      "description": "無料プランには、Comfy Cloudをお試しいただける毎月{credits}クレジットが含まれています。",
+      "descriptionGeneric": "無料プランには、Comfy Cloudをお試しいただける毎月のクレジット枠が含まれています。",
+      "nextRefresh": "クレジットは{date}にリフレッシュされます。",
+      "outOfCredits": {
+        "subtitle": "サブスクリプションでチャージや追加機能を利用しましょう",
+        "title": "無料クレジットがなくなりました"
+      },
+      "subscribeCta": "さらに詳しく",
+      "title": "無料プランをご利用中です",
+      "topUpBlocked": {
+        "title": "チャージや追加機能をアンロック"
+      },
+      "upgradeCta": "プランを見る"
+    },
     "gpuLabel": "RTX 6000 Pro（96GB VRAM）",
     "haveQuestions": "ご質問やエンタープライズについてのお問い合わせはこちら",
     "invoiceHistory": "請求履歴",
@@ -2732,6 +2777,7 @@
     "maxDuration": {
       "creator": "30分",
       "founder": "30分",
+      "free": "30分",
       "pro": "1時間",
       "standard": "30分"
     },
@@ -2803,6 +2849,9 @@
       },
       "founder": {
         "name": "ファウンダーエディション"
+      },
+      "free": {
+        "name": "無料"
       },
       "pro": {
         "name": "プロ"

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useEventListener, useTimeout } from '@vueuse/core'
-import { partition } from 'es-toolkit'
+import { partition, remove, takeWhile } from 'es-toolkit'
 import { storeToRefs } from 'pinia'
 import { computed, ref, shallowRef } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -54,6 +54,27 @@ useEventListener(
   'configured',
   () => (graphNodes.value = app.rootGraph.nodes)
 )
+
+const mappedSelections = computed(() => {
+  let unprocessedInputs = [...appModeStore.selectedInputs]
+  //FIXME strict typing here
+  const processedInputs: ReturnType<typeof nodeToNodeData>[] = []
+  while (unprocessedInputs.length) {
+    const nodeId = unprocessedInputs[0][0]
+    const inputGroup = takeWhile(
+      unprocessedInputs,
+      ([id]) => id === nodeId
+    ).map(([, widgetName]) => widgetName)
+    unprocessedInputs = unprocessedInputs.slice(inputGroup.length)
+    const node = app.rootGraph.getNodeById(nodeId)
+    if (!node) continue
+
+    const nodeData = nodeToNodeData(node)
+    remove(nodeData.widgets ?? [], (w) => !inputGroup.includes(w.name))
+    processedInputs.push(nodeData)
+  }
+  return processedInputs
+})
 
 function getDropIndicator(node: LGraphNode) {
   if (node.type !== 'LoadImage') return undefined
@@ -231,11 +252,13 @@ defineExpose({ runButtonClick })
         class="grow-1 md:overflow-y-auto md:contain-size"
       >
         <template
-          v-for="(nodeData, index) of partitionedNodes[1]"
+          v-for="(nodeData, index) of appModeStore.selectedInputs.length
+            ? mappedSelections
+            : partitionedNodes[0]"
           :key="nodeData.id"
         >
           <div
-            v-if="index !== 0"
+            v-if="index !== 0 && !appModeStore.selectedInputs.length"
             class="w-full border-t-1 border-node-component-border"
           />
           <DropZone
