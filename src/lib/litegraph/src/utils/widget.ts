@@ -12,16 +12,13 @@ export function getWidgetStep(options: IWidgetOptions<unknown>): number {
 }
 
 export function evaluateInput(input: string): number | undefined {
-  // Check if input is a valid arithmetic expression (digits, operators, parens)
+  // Check if v is a valid equation or a number
   if (/^[\d\s.()*+/-]+$/.test(input)) {
+    // Solve the equation if possible
     try {
-      // Use Function constructor instead of eval — no access to local scope
-      const result = new Function(`return (${input})`)()
-      if (typeof result === 'number' && !isNaN(result)) {
-        return result
-      }
+      input = eval(input)
     } catch {
-      // Ignore evaluation errors
+      // Ignore eval errors
     }
   }
   const newValue = Number(input)
