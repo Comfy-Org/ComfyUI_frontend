@@ -373,6 +373,14 @@ export interface INodeOutputSlot extends INodeSlot {
   slot_index?: number
 }
 
+/** Options for {@link LiteGraphGlobal.createNode}. Shallow-copied onto the new node. */
+export interface CreateNodeOptions extends Partial<
+  Omit<LGraphNode, 'constructor' | 'inputs' | 'outputs'>
+> {
+  inputs?: Partial<INodeInputSlot>[]
+  outputs?: Partial<INodeOutputSlot>[]
+}
+
 /** Links */
 export interface ConnectingLink extends IInputOrOutput {
   node: LGraphNode
