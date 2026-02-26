@@ -1,4 +1,4 @@
-import { ref, watch } from 'vue'
+import { ref } from 'vue'
 
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
@@ -10,6 +10,7 @@ import { useDialogStore } from '@/stores/dialogStore'
 
 import BuilderSaveDialogContent from './BuilderSaveDialogContent.vue'
 import BuilderSaveSuccessDialogContent from './BuilderSaveSuccessDialogContent.vue'
+import { whenever } from '@vueuse/core'
 
 const SAVE_DIALOG_KEY = 'builder-save'
 const SUCCESS_DIALOG_KEY = 'builder-save-success'
@@ -25,9 +26,7 @@ export function useBuilderSave() {
 
   const saving = ref(false)
 
-  watch(saving, (value) => {
-    if (value) void onBuilderSave()
-  })
+  whenever(saving, onBuilderSave)
 
   function setSaving(value: boolean) {
     saving.value = value

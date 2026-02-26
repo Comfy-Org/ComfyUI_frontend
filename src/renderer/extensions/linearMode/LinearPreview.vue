@@ -28,7 +28,6 @@ import type { ResultItemImpl } from '@/stores/queueStore'
 import { collectAllNodes } from '@/utils/graphTraversalUtil'
 import { executeWidgetsCallback } from '@/utils/litegraphUtil'
 import { useAppMode } from '@/composables/useAppMode'
-import { cn } from '@/utils/tailwindUtil'
 const { t } = useI18n()
 const commandStore = useCommandStore()
 const executionStore = useExecutionStore()
@@ -168,8 +167,5 @@ async function rerun(e: Event) {
   <LatentPreview v-else-if="queueStore.runningTasks.length > 0" />
   <LinearArrange v-else-if="appModeValue === 'builder:arrange'" />
   <LinearWelcome v-else />
-  <OutputHistory
-    :class="cn(!mobile && 'mx-40')"
-    @update-selection="handleSelection"
-  />
+  <OutputHistory class="not-md:mx-40" @update-selection="handleSelection" />
 </template>
