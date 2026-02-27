@@ -102,11 +102,26 @@ describe('evaluateInput', () => {
     }
   )
 
-  test('division by zero returns Infinity', () => {
-    expect(evaluateInput('1/0')).toBe(Infinity)
+  test('division by zero returns undefined', () => {
+    expect(evaluateInput('1/0')).toBeUndefined()
   })
 
   test('0/0 returns undefined (NaN is filtered)', () => {
     expect(evaluateInput('0/0')).toBeUndefined()
   })
+
+  test('scientific notation via Number() fallback', () => {
+    expect(evaluateInput('1e5')).toBe(100000)
+  })
+
+  test('hex notation via Number() fallback', () => {
+    expect(evaluateInput('0xff')).toBe(255)
+  })
+
+  test.each(['Infinity', '-Infinity'])(
+    '"%s" returns undefined (non-finite rejected)',
+    (input) => {
+      expect(evaluateInput(input)).toBeUndefined()
+    }
+  )
 })

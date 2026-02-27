@@ -2,7 +2,7 @@ type Token = { type: 'number'; value: number } | { type: 'op'; value: string }
 
 function tokenize(input: string): Token[] | undefined {
   const tokens: Token[] = []
-  const re = /(\d+(?:\.\d*)?|\.\d+)|([+\-*/()])/g
+  const re = /(\d+(?:\.\d*)?|\.\d+)|([+\-*/%()])/g
   let lastIndex = 0
 
   for (const match of input.matchAll(re)) {
@@ -20,7 +20,7 @@ function tokenize(input: string): Token[] | undefined {
 
 /**
  * Evaluates a basic arithmetic expression string containing
- * `+`, `-`, `*`, `/`, parentheses, and decimal numbers.
+ * `+`, `-`, `*`, `/`, `%`, parentheses, and decimal numbers.
  * Returns `undefined` for empty or malformed input.
  */
 export function evaluateMathExpression(input: string): number | undefined {
@@ -29,6 +29,8 @@ export function evaluateMathExpression(input: string): number | undefined {
 
   const tokens: Token[] = tokenized
   let pos = 0
+  let depth = 0
+  const MAX_DEPTH = 200
 
   function peek(): Token | undefined {
     return tokens[pos]
@@ -38,7 +40,7 @@ export function evaluateMathExpression(input: string): number | undefined {
     return tokens[pos++]
   }
 
-  function unit(): number | undefined {
+  function primary(): number | undefined {
     const t = peek()
     if (!t) return undefined
 
@@ -48,6 +50,7 @@ export function evaluateMathExpression(input: string): number | undefined {
     }
 
     if (t.type === 'op' && t.value === '(') {
+      if (++depth > MAX_DEPTH) return undefined
       consume()
       const result = expr()
       if (result === undefined) return undefined
@@ -56,6 +59,7 @@ export function evaluateMathExpression(input: string): number | undefined {
         return undefined
       }
       consume()
+      depth--
       return result
     }
 
@@ -70,7 +74,7 @@ export function evaluateMathExpression(input: string): number | undefined {
       if (operand === undefined) return undefined
       return t.value === '-' ? -operand : operand
     }
-    return unit()
+    return primary()
   }
 
   function factor(): number | undefined {
@@ -79,12 +83,13 @@ export function evaluateMathExpression(input: string): number | undefined {
 
     while (
       peek()?.type === 'op' &&
-      (peek()!.value === '*' || peek()!.value === '/')
+      (peek()!.value === '*' || peek()!.value === '/' || peek()!.value === '%')
     ) {
       const op = consume().value
       const right = unary()
       if (right === undefined) return undefined
-      left = op === '*' ? left * right : left / right
+      left =
+        op === '*' ? left * right : op === '/' ? left / right : left % right
     }
     return left
   }
@@ -107,5 +112,5 @@ export function evaluateMathExpression(input: string): number | undefined {
 
   const result = expr()
   if (result === undefined || pos !== tokens.length) return undefined
-  return result
+  return result === 0 ? 0 : result
 }

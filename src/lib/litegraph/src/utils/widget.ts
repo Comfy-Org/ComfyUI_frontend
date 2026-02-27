@@ -16,11 +16,11 @@ export function getWidgetStep(options: IWidgetOptions<unknown>): number {
 export function evaluateInput(input: string): number | undefined {
   const result = evaluateMathExpression(input)
   if (result !== undefined) {
-    if (isNaN(result)) return undefined
+    if (!isFinite(result)) return undefined
     return result
   }
   const newValue = Number(input)
-  if (isNaN(newValue)) return undefined
+  if (!isFinite(newValue)) return undefined
   return newValue
 }
 

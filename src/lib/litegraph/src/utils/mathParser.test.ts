@@ -25,7 +25,9 @@ describe('evaluateMathExpression', () => {
     ['3.14*2', 6.28],
     ['.5+.5', 1],
     ['1.5+2.5', 4],
-    ['0.1+0.2', 0.1 + 0.2]
+    ['0.1+0.2', 0.1 + 0.2],
+    ['123.', 123],
+    ['123.+3', 126]
   ])('decimals: %s', (input, expected) => {
     expect(evaluateMathExpression(input)).toBe(expected)
   })
@@ -52,7 +54,11 @@ describe('evaluateMathExpression', () => {
     ['--5', 5],
     ['+5', 5],
     ['-3*2', -6],
-    ['2*-3', -6]
+    ['2*-3', -6],
+    ['1+-2', -1],
+    ['2--3', 5],
+    ['-2*-3', 6],
+    ['-(2+3)*-(4+5)', 45]
   ])('unary operators: %s = %d', (input, expected) => {
     expect(evaluateMathExpression(input)).toBe(expected)
   })
@@ -76,7 +82,7 @@ describe('evaluateMathExpression', () => {
     expect(evaluateMathExpression(input)).toBeCloseTo(expected as number)
   })
 
-  test.each(['', 'abc', '2+', '(2+3', '2+3)', '()', '*3', '2 3'])(
+  test.each(['', 'abc', '2+', '(2+3', '2+3)', '()', '*3', '2 3', '.', '123..'])(
     'invalid input returns undefined: "%s"',
     (input) => {
       expect(evaluateMathExpression(input)).toBeUndefined()
@@ -89,5 +95,27 @@ describe('evaluateMathExpression', () => {
 
   test('0/0 returns NaN', () => {
     expect(evaluateMathExpression('0/0')).toBeNaN()
+  })
+
+  test.each([
+    ['10%3', 1],
+    ['10%3+1', 2],
+    ['7%2', 1]
+  ])('modulo: %s = %d', (input, expected) => {
+    expect(evaluateMathExpression(input)).toBe(expected)
+  })
+
+  test('negative zero is normalized to positive zero', () => {
+    expect(Object.is(evaluateMathExpression('-0'), 0)).toBe(true)
+  })
+
+  test('deeply nested parentheses exceeding depth limit returns undefined', () => {
+    const input = '('.repeat(201) + '1' + ')'.repeat(201)
+    expect(evaluateMathExpression(input)).toBeUndefined()
+  })
+
+  test('parentheses within depth limit evaluate correctly', () => {
+    const input = '('.repeat(200) + '1' + ')'.repeat(200)
+    expect(evaluateMathExpression(input)).toBe(1)
   })
 })
