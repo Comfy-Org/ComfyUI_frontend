@@ -94,6 +94,7 @@ import { useI18n } from 'vue-i18n'
 
 import Popover from '@/components/ui/Popover.vue'
 import Button from '@/components/ui/button/Button.vue'
+import { useQueueFeatureFlags } from '@/composables/queue/useQueueFeatureFlags'
 import { buildTooltipConfig } from '@/composables/useTooltipConfig'
 import { isCloud } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
@@ -108,12 +109,8 @@ const settingStore = useSettingStore()
 const sidebarTabStore = useSidebarTabStore()
 
 const moreTooltipConfig = computed(() => buildTooltipConfig(t('g.more')))
-const isQueuePanelV2Enabled = computed(() =>
-  settingStore.get('Comfy.Queue.QPOV2')
-)
-const isRunProgressBarEnabled = computed(
-  () => settingStore.get('Comfy.Queue.ShowRunProgressBar') !== false
-)
+const { isQueuePanelV2Enabled, isRunProgressBarEnabled } =
+  useQueueFeatureFlags()
 const showClearHistoryAction = computed(() => !isCloud)
 
 const onClearHistoryFromMenu = (close: () => void) => {

@@ -1,7 +1,8 @@
 import { mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { createI18n } from 'vue-i18n'
 import { defineComponent, h } from 'vue'
+
+import { i18n } from '@/i18n'
 
 const popoverCloseSpy = vi.fn()
 
@@ -54,28 +55,6 @@ const tooltipDirectiveStub = {
   updated: vi.fn()
 }
 
-const i18n = createI18n({
-  legacy: false,
-  locale: 'en',
-  messages: {
-    en: {
-      g: { more: 'More' },
-      sideToolbar: {
-        queueProgressOverlay: {
-          queuedSuffix: 'queued',
-          clearQueued: 'Clear queued',
-          clearQueueTooltip: 'Clear queue',
-          clearAllJobsTooltip: 'Cancel all running jobs',
-          moreOptions: 'More options',
-          clearHistory: 'Clear history',
-          dockedJobHistory: 'Docked Job History',
-          showRunProgressBar: 'Show run progress bar'
-        }
-      }
-    }
-  }
-})
-
 const mountHeader = (props = {}) =>
   mount(QueueOverlayHeader, {
     props: {
@@ -91,6 +70,7 @@ const mountHeader = (props = {}) =>
 
 describe('QueueOverlayHeader', () => {
   beforeEach(() => {
+    i18n.global.locale.value = 'en'
     popoverCloseSpy.mockClear()
     mockSetSetting.mockClear()
     mockSetMany.mockClear()

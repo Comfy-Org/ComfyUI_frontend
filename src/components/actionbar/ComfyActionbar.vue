@@ -107,6 +107,7 @@ import { useI18n } from 'vue-i18n'
 import StatusBadge from '@/components/common/StatusBadge.vue'
 import QueueInlineProgress from '@/components/queue/QueueInlineProgress.vue'
 import Button from '@/components/ui/button/Button.vue'
+import { useQueueFeatureFlags } from '@/composables/queue/useQueueFeatureFlags'
 import { buildTooltipConfig } from '@/composables/useTooltipConfig'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
@@ -127,7 +128,7 @@ const emit = defineEmits<{
   (event: 'update:progressTarget', target: HTMLElement | null): void
 }>()
 
-const settingsStore = useSettingStore()
+const settingStore = useSettingStore()
 const commandStore = useCommandStore()
 const executionStore = useExecutionStore()
 const queueStore = useQueueStore()
@@ -137,14 +138,10 @@ const { isIdle: isExecutionIdle } = storeToRefs(executionStore)
 const { activeJobsCount } = storeToRefs(queueStore)
 const { activeSidebarTabId } = storeToRefs(sidebarTabStore)
 
-const position = computed(() => settingsStore.get('Comfy.UseNewMenu'))
+const position = computed(() => settingStore.get('Comfy.UseNewMenu'))
 const visible = computed(() => position.value !== 'Disabled')
-const isQueuePanelV2Enabled = computed(() =>
-  settingsStore.get('Comfy.Queue.QPOV2')
-)
-const isRunProgressBarEnabled = computed(
-  () => settingsStore.get('Comfy.Queue.ShowRunProgressBar') !== false
-)
+const { isQueuePanelV2Enabled, isRunProgressBarEnabled } =
+  useQueueFeatureFlags()
 
 const panelRef = ref<ComponentPublicInstance | null>(null)
 const panelElement = computed<HTMLElement | null>(() => {
