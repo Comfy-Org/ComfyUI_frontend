@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { computed, ref } from 'vue'
+import { computed, ref, shallowRef } from 'vue'
 
 import { useNodeProgressText } from '@/composables/node/useNodeProgressText'
 import { isCloud } from '@/platform/distribution/types'
@@ -64,6 +64,12 @@ export const useExecutionStore = defineStore('execution', () => {
    * Map of job ID to workflow ID for quick lookup across the app.
    */
   const jobIdToWorkflowId = ref<Map<string, string>>(new Map())
+
+  /**
+   * Map of job ID to workflow file path in the current session.
+   * Only populated for jobs that are queued in this browser tab.
+   */
+  const jobIdToSessionWorkflowPath = shallowRef<Map<string, string>>(new Map())
 
   const initializingJobIds = ref<Set<string>>(new Set())
 
@@ -482,6 +488,16 @@ export const useExecutionStore = defineStore('execution', () => {
     if (wid) {
       jobIdToWorkflowId.value.set(String(id), String(wid))
     }
+    if (workflow?.path) {
+      ensureSessionWorkflowPath(String(id), workflow.path)
+    }
+  }
+
+  function ensureSessionWorkflowPath(jobId: string, path: string) {
+    if (jobIdToSessionWorkflowPath.value.get(jobId) === path) return
+    const next = new Map(jobIdToSessionWorkflowPath.value)
+    next.set(jobId, path)
+    jobIdToSessionWorkflowPath.value = next
   }
 
   /**
@@ -550,6 +566,8 @@ export const useExecutionStore = defineStore('execution', () => {
     _executingNodeProgress,
     // NodeLocatorId conversion helpers
     nodeLocatorIdToExecutionId,
-    jobIdToWorkflowId
+    jobIdToWorkflowId,
+    jobIdToSessionWorkflowPath,
+    ensureSessionWorkflowPath
   }
 })

@@ -1,18 +1,9 @@
 <script setup lang="ts">
 import { useEventListener, useInfiniteScroll } from '@vueuse/core'
 import { ListboxContent, ListboxItem, ListboxRoot } from 'reka-ui'
-import {
-  computed,
-  nextTick,
-  toValue,
-  useTemplateRef,
-  watch,
-  watchEffect
-} from 'vue'
+import { computed, nextTick, useTemplateRef, watch, watchEffect } from 'vue'
 
 import { CanvasPointer } from '@/lib/litegraph/src/CanvasPointer'
-import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
-import OutputHistoryActiveQueueItem from '@/renderer/extensions/linearMode/OutputHistoryActiveQueueItem.vue'
 import OutputHistoryItem from '@/renderer/extensions/linearMode/OutputHistoryItem.vue'
 import { useLinearOutputStore } from '@/renderer/extensions/linearMode/linearOutputStore'
 import type {
@@ -24,7 +15,7 @@ import { useOutputHistory } from '@/renderer/extensions/linearMode/useOutputHist
 import { useQueueStore } from '@/stores/queueStore'
 import { cn } from '@/utils/tailwindUtil'
 
-const { outputs, allOutputs } = useOutputHistory()
+const { outputs, allOutputs, selectFirstHistory } = useOutputHistory()
 const queueStore = useQueueStore()
 const store = useLinearOutputStore()
 
@@ -45,15 +36,17 @@ const itemClass = cn(
   'data-[state=checked]:border-interface-panel-job-progress-border'
 )
 
-const hasActiveContent = computed(() => store.inProgressItems.length > 0)
+const hasActiveContent = computed(
+  () => store.activeWorkflowInProgressItems.length > 0
+)
 
 const visibleHistory = computed(() =>
-  outputs.media.value.filter((a) => toValue(allOutputs(a)).length > 0)
+  outputs.media.value.filter((a) => allOutputs(a).length > 0)
 )
 
 const selectableItems = computed(() => {
   const items: SelectionValue[] = []
-  for (const item of store.inProgressItems) {
+  for (const item of store.activeWorkflowInProgressItems) {
     items.push({
       id: `slot:${item.id}`,
       kind: 'inProgress',
@@ -61,7 +54,7 @@ const selectableItems = computed(() => {
     })
   }
   for (const asset of outputs.media.value) {
-    const outs = toValue(allOutputs(asset))
+    const outs = allOutputs(asset)
     for (let k = 0; k < outs.length; k++) {
       items.push({
         id: `history:${asset.id}:${k}`,
@@ -95,7 +88,9 @@ function doEmit() {
     return
   }
   if (sel.kind === 'inProgress') {
-    const item = store.inProgressItems.find((i) => i.id === sel.itemId)
+    const item = store.activeWorkflowInProgressItems.find(
+      (i) => i.id === sel.itemId
+    )
     if (!item || item.state === 'skeleton') {
       emit('updateSelection', { canShowPreview: true })
     } else if (item.state === 'latent') {
@@ -112,7 +107,7 @@ function doEmit() {
     return
   }
   const asset = outputs.media.value.find((a) => a.id === sel.assetId)
-  const output = asset ? toValue(allOutputs(asset))[sel.key] : undefined
+  const output = asset ? allOutputs(asset)[sel.key] : undefined
   const isFirst = outputs.media.value[0]?.id === sel.assetId
   emit('updateSelection', {
     asset,
@@ -122,24 +117,6 @@ function doEmit() {
 }
 
 watchEffect(doEmit)
-
-// Resolve in-progress items only when history outputs are loaded.
-// Using watchEffect so it re-runs when allOutputs refs resolve (async).
-watchEffect(() => {
-  if (store.pendingResolve.size === 0) return
-  for (const jobId of store.pendingResolve) {
-    const asset = outputs.media.value.find((a) => {
-      const m = getOutputAssetMetadata(a?.user_metadata)
-      return m?.jobId === jobId
-    })
-    if (!asset) continue
-    const loaded = toValue(allOutputs(asset)).length > 0
-    if (loaded) {
-      store.resolveIfReady(jobId, true)
-      if (!store.selectedId) selectFirstHistory()
-    }
-  }
-})
 
 // Keep history selection stable on media changes
 watch(
@@ -168,15 +145,6 @@ watch(
     }
   }
 )
-
-function selectFirstHistory() {
-  const first = outputs.media.value[0]
-  if (first) {
-    store.selectAsLatest(`history:${first.id}:0`)
-  } else {
-    store.selectAsLatest(null)
-  }
-}
 
 const outputsRef = useTemplateRef('outputsRef')
 useInfiniteScroll(outputsRef, outputs.loadMore, {
@@ -296,7 +264,7 @@ useEventListener(document.body, 'keydown', (e: KeyboardEvent) => {
           </div>
 
           <ListboxItem
-            v-for="item in store.inProgressItems"
+            v-for="item in store.activeWorkflowInProgressItems"
             :key="`${item.id}-${item.state}`"
             :value="{
               id: `slot:${item.id}`,
@@ -323,7 +291,7 @@ useEventListener(document.body, 'keydown', (e: KeyboardEvent) => {
               class="border-l border-border-default h-12 shrink-0 mx-4"
             />
             <ListboxItem
-              v-for="(output, key) in toValue(allOutputs(asset))"
+              v-for="(output, key) in allOutputs(asset)"
               :key
               :value="{
                 id: `history:${asset.id}:${key}`,

@@ -9,6 +9,9 @@ import { ResultItemImpl } from '@/stores/queueStore'
 const activeJobIdRef = ref<string | null>(null)
 const previewsRef = ref<Record<string, { url: string; nodeId?: string }>>({})
 const isAppModeRef = ref(true)
+const activeWorkflowPathRef = ref<string>('workflows/test-workflow.json')
+const queuedJobsRef = ref<Record<string, { workflow?: { path: string } }>>({})
+const jobIdToWorkflowPathRef = ref(new Map<string, string>())
 
 const { apiTarget } = vi.hoisted(() => ({
   apiTarget: new EventTarget()
@@ -24,6 +27,23 @@ vi.mock('@/stores/executionStore', () => ({
   useExecutionStore: () => ({
     get activeJobId() {
       return activeJobIdRef.value
+    },
+    get queuedJobs() {
+      return queuedJobsRef.value
+    },
+    get jobIdToSessionWorkflowPath() {
+      return jobIdToWorkflowPathRef.value
+    },
+    ensureSessionWorkflowPath: vi.fn((jobId: string, path: string) => {
+      setJobWorkflowPath(jobId, path)
+    })
+  })
+}))
+
+vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
+  useWorkflowStore: () => ({
+    get activeWorkflow() {
+      return { path: activeWorkflowPathRef.value }
     }
   })
 }))
@@ -59,6 +79,12 @@ vi.mock('@/renderer/extensions/linearMode/flattenNodeOutput', () => ({
   }
 }))
 
+function setJobWorkflowPath(jobId: string, path: string) {
+  const next = new Map(jobIdToWorkflowPathRef.value)
+  next.set(jobId, path)
+  jobIdToWorkflowPathRef.value = next
+}
+
 function makeExecutedDetail(
   promptId: string,
   images: Array<Record<string, string>> = [
@@ -80,11 +106,16 @@ describe('linearOutputStore', () => {
     activeJobIdRef.value = null
     previewsRef.value = {}
     isAppModeRef.value = true
+    activeWorkflowPathRef.value = 'workflows/test-workflow.json'
+    queuedJobsRef.value = {}
+    jobIdToWorkflowPathRef.value = new Map()
   })
 
   afterEach(() => {
     activeJobIdRef.value = null
     previewsRef.value = {}
+    queuedJobsRef.value = {}
+    jobIdToWorkflowPathRef.value = new Map()
   })
 
   it('creates a skeleton item when a job starts', () => {
@@ -613,8 +644,113 @@ describe('linearOutputStore', () => {
 
     expect(store.inProgressItems).toHaveLength(0)
     expect(store.selectedId).toBeNull()
-    expect(store.trackedJobId).toBeNull()
     expect(store.pendingResolve.size).toBe(0)
+  })
+
+  it('does not show in-progress items from another workflow', () => {
+    const store = useLinearOutputStore()
+
+    // Job-1 submitted from workflow-a
+    activeWorkflowPathRef.value = 'workflows/app-a.json'
+    setJobWorkflowPath('job-1', 'workflows/app-a.json')
+    store.onJobStart('job-1')
+
+    // User switches to workflow-b: job-1 should NOT appear
+    activeWorkflowPathRef.value = 'workflows/app-b.json'
+    expect(store.activeWorkflowInProgressItems).toHaveLength(0)
+
+    // Back on workflow-a: job-1 should appear
+    activeWorkflowPathRef.value = 'workflows/app-a.json'
+    expect(store.activeWorkflowInProgressItems).toHaveLength(1)
+    expect(store.activeWorkflowInProgressItems[0].jobId).toBe('job-1')
+  })
+
+  it('uses executionStore path map for workflow scoping', () => {
+    const store = useLinearOutputStore()
+
+    // Simulate storeJob populating executionStore.jobIdToSessionWorkflowPath
+    setJobWorkflowPath('job-1', 'workflows/app-a.json')
+    setJobWorkflowPath('job-2', 'workflows/app-a.json')
+
+    // User switches to workflow-b before execution starts
+    activeWorkflowPathRef.value = 'workflows/app-b.json'
+
+    store.onJobStart('job-1')
+    store.onJobStart('job-2')
+
+    // On workflow-b: neither job should appear
+    expect(store.activeWorkflowInProgressItems).toHaveLength(0)
+
+    // On workflow-a: both jobs should appear
+    activeWorkflowPathRef.value = 'workflows/app-a.json'
+    expect(store.activeWorkflowInProgressItems).toHaveLength(2)
+  })
+
+  it('scopes in-progress items per workflow with concurrent jobs', () => {
+    vi.useFakeTimers()
+    const store = useLinearOutputStore()
+
+    // Job-1 on workflow-a (dog)
+    activeWorkflowPathRef.value = 'workflows/app-a.json'
+    setJobWorkflowPath('job-1', 'workflows/app-a.json')
+    store.onJobStart('job-1')
+    store.onLatentPreview('job-1', 'blob:dog')
+    vi.advanceTimersByTime(16)
+
+    // User switches to workflow-b, runs job-2
+    activeWorkflowPathRef.value = 'workflows/app-b.json'
+    setJobWorkflowPath('job-2', 'workflows/app-b.json')
+
+    // Job-1 finishes, job-2 starts
+    store.onJobComplete('job-1')
+    store.onJobStart('job-2')
+    store.onLatentPreview('job-2', 'blob:landscape')
+    vi.advanceTimersByTime(16)
+
+    // On workflow-b: should only see job-2 (landscape), NOT job-1 (dog)
+    const items = store.activeWorkflowInProgressItems
+    expect(items).toHaveLength(1)
+    expect(items[0].jobId).toBe('job-2')
+    expect(items[0].latentPreviewUrl).toBe('blob:landscape')
+    vi.useRealTimers()
+  })
+
+  it('records workflow path from queuedJobs when not already mapped', () => {
+    const store = useLinearOutputStore()
+
+    // queuedJobs has a workflow path but jobIdToSessionWorkflowPath does not
+    queuedJobsRef.value = {
+      'job-1': { workflow: { path: 'workflows/from-queue.json' } }
+    }
+
+    store.onJobStart('job-1')
+
+    expect(jobIdToWorkflowPathRef.value.get('job-1')).toBe(
+      'workflows/from-queue.json'
+    )
+  })
+
+  it('does not fall back to activeWorkflow when queuedJobs has no path', () => {
+    const store = useLinearOutputStore()
+
+    activeWorkflowPathRef.value = 'workflows/fallback.json'
+
+    store.onJobStart('job-1')
+
+    expect(jobIdToWorkflowPathRef.value.has('job-1')).toBe(false)
+  })
+
+  it('does not overwrite existing path mapping on job start', () => {
+    const store = useLinearOutputStore()
+
+    setJobWorkflowPath('job-1', 'workflows/original.json')
+    activeWorkflowPathRef.value = 'workflows/different.json'
+
+    store.onJobStart('job-1')
+
+    expect(jobIdToWorkflowPathRef.value.get('job-1')).toBe(
+      'workflows/original.json'
+    )
   })
 
   it('ignores execution events when not in app mode', async () => {

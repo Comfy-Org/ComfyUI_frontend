@@ -1,8 +1,9 @@
 import { defineStore } from 'pinia'
-import { ref, shallowRef, watch } from 'vue'
+import { computed, ref, shallowRef, watch } from 'vue'
 
 import { flattenNodeOutput } from '@/renderer/extensions/linearMode/flattenNodeOutput'
 import type { InProgressItem } from '@/renderer/extensions/linearMode/linearModeTypes'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { ExecutedWsMessage } from '@/schemas/apiSchema'
 import { api } from '@/scripts/api'
 import { useAppMode } from '@/composables/useAppMode'
@@ -13,6 +14,7 @@ export const useLinearOutputStore = defineStore('linearOutput', () => {
   const { isAppMode } = useAppMode()
   const executionStore = useExecutionStore()
   const jobPreviewStore = useJobPreviewStore()
+  const workflowStore = useWorkflowStore()
 
   const inProgressItems = ref<InProgressItem[]>([])
   const selectedId = ref<string | null>(null)
@@ -20,6 +22,15 @@ export const useLinearOutputStore = defineStore('linearOutput', () => {
   const trackedJobId = ref<string | null>(null)
   const pendingResolve = ref(new Set<string>())
   const executedNodeIds = new Set<string>()
+
+  const activeWorkflowInProgressItems = computed(() => {
+    const path = workflowStore.activeWorkflow?.path
+    if (!path) return []
+    const all = inProgressItems.value
+    return all.filter(
+      (i) => executionStore.jobIdToSessionWorkflowPath.get(i.jobId) === path
+    )
+  })
 
   let nextSeq = 0
 
@@ -42,6 +53,16 @@ export const useLinearOutputStore = defineStore('linearOutput', () => {
 
   function onJobStart(jobId: string) {
     executedNodeIds.clear()
+
+    // Ensure path mapping exists — execution_start can arrive via WebSocket
+    // before the HTTP response from queuePrompt triggers storeJob.
+    if (!executionStore.jobIdToSessionWorkflowPath.has(jobId)) {
+      const path = executionStore.queuedJobs[jobId]?.workflow?.path
+      if (path) {
+        executionStore.ensureSessionWorkflowPath(jobId, path)
+      }
+    }
+
     const item: InProgressItem = {
       id: makeItemId(jobId),
       jobId,
@@ -273,14 +294,13 @@ export const useLinearOutputStore = defineStore('linearOutput', () => {
   )
 
   return {
-    inProgressItems,
+    activeWorkflowInProgressItems,
     selectedId,
-    trackedJobId,
     pendingResolve,
     select,
     selectAsLatest,
     resolveIfReady,
-
+    inProgressItems,
     onJobStart,
     onLatentPreview,
     onNodeExecuted,

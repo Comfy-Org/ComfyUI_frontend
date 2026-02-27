@@ -1,29 +1,61 @@
 import { useAsyncState } from '@vueuse/core'
-import type { MaybeRef } from 'vue'
+import { computed, ref, watchEffect } from 'vue'
 
 import { useMediaAssets } from '@/platform/assets/composables/media/useMediaAssets'
 import type { IAssetsProvider } from '@/platform/assets/composables/media/IAssetsProvider'
 import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { flattenNodeOutput } from '@/renderer/extensions/linearMode/flattenNodeOutput'
 import { useLinearOutputStore } from '@/renderer/extensions/linearMode/linearOutputStore'
 import { getJobDetail } from '@/services/jobOutputCache'
+import { useExecutionStore } from '@/stores/executionStore'
 import type { ResultItemImpl } from '@/stores/queueStore'
 
 export function useOutputHistory(): {
   outputs: IAssetsProvider
-  allOutputs: (item?: AssetItem) => MaybeRef<ResultItemImpl[]>
+  allOutputs: (item?: AssetItem) => ResultItemImpl[]
+  selectFirstHistory: () => void
 } {
-  const outputs = useMediaAssets('output')
-  void outputs.fetchMediaList()
+  const backingOutputs = useMediaAssets('output')
+  void backingOutputs.fetchMediaList()
   const linearStore = useLinearOutputStore()
+  const workflowStore = useWorkflowStore()
+  const executionStore = useExecutionStore()
 
-  const outputsCache: Record<string, MaybeRef<ResultItemImpl[]>> = {}
+  const sessionMedia = computed(() => {
+    const path = workflowStore.activeWorkflow?.path
+    if (!path) return []
 
-  function allOutputs(item?: AssetItem): MaybeRef<ResultItemImpl[]> {
-    if (item?.id && outputsCache[item.id]) return outputsCache[item.id]
+    const pathMap = executionStore.jobIdToSessionWorkflowPath
 
-    const user_metadata = getOutputAssetMetadata(item?.user_metadata)
+    return backingOutputs.media.value.filter((asset) => {
+      const m = getOutputAssetMetadata(asset?.user_metadata)
+      return m ? pathMap.get(m.jobId) === path : false
+    })
+  })
+
+  const outputs: IAssetsProvider = {
+    ...backingOutputs,
+    media: sessionMedia,
+    hasMore: ref(false),
+    isLoadingMore: ref(false),
+    loadMore: async () => {}
+  }
+
+  const resolvedCache = new Map<string, ResultItemImpl[]>()
+  const asyncRefs = new Map<
+    string,
+    ReturnType<typeof useAsyncState<ResultItemImpl[]>>['state']
+  >()
+
+  function allOutputs(item?: AssetItem): ResultItemImpl[] {
+    if (!item?.id) return []
+
+    const cached = resolvedCache.get(item.id)
+    if (cached) return cached
+
+    const user_metadata = getOutputAssetMetadata(item.user_metadata)
     if (!user_metadata) return []
 
     // For recently completed jobs still pending resolve, derive order from
@@ -33,7 +65,7 @@ export function useOutputHistory(): {
         .filter((i) => i.jobId === user_metadata.jobId && i.output)
         .map((i) => i.output!)
       if (ordered.length > 0) {
-        outputsCache[item!.id] = ordered
+        resolvedCache.set(item.id, ordered)
         return ordered
       }
     }
@@ -44,22 +76,54 @@ export function useOutputHistory(): {
       user_metadata.outputCount <= user_metadata.allOutputs.length
     ) {
       const reversed = user_metadata.allOutputs.toReversed()
-      outputsCache[item!.id] = reversed
+      resolvedCache.set(item.id, reversed)
       return reversed
     }
+
+    // Async fetch — return empty until resolved, then re-render via ref
+    const existing = asyncRefs.get(item.id)
+    if (existing) return existing.value
 
     const outputRef = useAsyncState(
       getJobDetail(user_metadata.jobId).then((jobDetail) => {
         if (!jobDetail?.outputs) return []
-        return Object.entries(jobDetail.outputs)
+        const results = Object.entries(jobDetail.outputs)
           .flatMap(flattenNodeOutput)
           .toReversed()
+        resolvedCache.set(item!.id, results)
+        return results
       }),
       []
     ).state
-    outputsCache[item!.id] = outputRef
-    return outputRef
+    asyncRefs.set(item.id, outputRef)
+    return outputRef.value
   }
 
-  return { outputs, allOutputs }
+  function selectFirstHistory() {
+    const first = outputs.media.value[0]
+    if (first) {
+      linearStore.selectAsLatest(`history:${first.id}:0`)
+    } else {
+      linearStore.selectAsLatest(null)
+    }
+  }
+
+  // Resolve in-progress items when history outputs are loaded.
+  watchEffect(() => {
+    if (linearStore.pendingResolve.size === 0) return
+    for (const jobId of linearStore.pendingResolve) {
+      const asset = outputs.media.value.find((a) => {
+        const m = getOutputAssetMetadata(a?.user_metadata)
+        return m?.jobId === jobId
+      })
+      if (!asset) continue
+      const loaded = allOutputs(asset).length > 0
+      if (loaded) {
+        linearStore.resolveIfReady(jobId, true)
+        if (!linearStore.selectedId) selectFirstHistory()
+      }
+    }
+  })
+
+  return { outputs, allOutputs, selectFirstHistory }
 }
