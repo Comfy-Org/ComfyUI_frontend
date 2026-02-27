@@ -41,7 +41,7 @@ function resolveWidgetByInputLink(
   return undefined
 }
 
-export type PromotedWidgetResolutionFailure = {
+type PromotedWidgetResolutionFailure = {
   reason: 'invalid-host' | 'cycle' | 'missing-node' | 'missing-widget'
   currentHostId: string
   sourceNodeId: string
@@ -49,7 +49,7 @@ export type PromotedWidgetResolutionFailure = {
   availableWidgetNames?: string[]
 }
 
-export type PromotedWidgetResolutionResult =
+type PromotedWidgetResolutionResult =
   | {
       resolved: ResolvedPromotedWidget
     }
