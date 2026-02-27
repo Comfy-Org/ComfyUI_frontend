@@ -1,66 +1,67 @@
 import { defineStore } from 'pinia'
-import { whenever } from '@vueuse/core'
-import { reactive, readonly, computed, ref, watch } from 'vue'
+import { reactive, computed, watch } from 'vue'
 
+import { useAppMode } from '@/composables/useAppMode'
 import { t } from '@/i18n'
 import type { NodeId } from '@/lib/litegraph/src/LGraphNode'
+import type { LinearData } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useDialogService } from '@/services/dialogService'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import { app } from '@/scripts/app'
-
-export type AppMode = 'graph' | 'app' | 'builder:select' | 'builder:arrange'
 
 export const useAppModeStore = defineStore('appMode', () => {
   const { getCanvas } = useCanvasStore()
   const workflowStore = useWorkflowStore()
+  const { mode, setMode, isBuilderMode } = useAppMode()
 
   const selectedInputs = reactive<[NodeId, string][]>([])
   const selectedOutputs = reactive<NodeId[]>([])
-  const mode = ref<AppMode>('graph')
-  const builderSaving = ref(false)
   const hasOutputs = computed(() => !!selectedOutputs.length)
-  const enableAppBuilder = ref(true)
 
-  const isBuilderMode = computed(
-    () => mode.value === 'builder:select' || mode.value === 'builder:arrange'
-  )
-  const isAppMode = computed(
-    () => mode.value === 'app' || mode.value === 'builder:arrange'
-  )
-  const isGraphMode = computed(
-    () => mode.value === 'graph' || mode.value === 'builder:select'
-  )
-  const isBuilderSaving = computed(
-    () => builderSaving.value && isBuilderMode.value
-  )
+  function loadSelections(data: Partial<LinearData> | undefined) {
+    selectedInputs.splice(0, selectedInputs.length, ...(data?.inputs ?? []))
+    selectedOutputs.splice(0, selectedOutputs.length, ...(data?.outputs ?? []))
+  }
 
   function resetSelectedToWorkflow() {
     const { activeWorkflow } = workflowStore
     if (!activeWorkflow) return
 
-    const { activeState } = activeWorkflow.changeTracker
-    selectedInputs.splice(
-      0,
-      selectedInputs.length,
-      ...(activeState.extra?.linearData?.inputs ?? [])
-    )
-    selectedOutputs.splice(
-      0,
-      selectedOutputs.length,
-      ...(activeState.extra?.linearData?.outputs ?? [])
-    )
+    loadSelections(activeWorkflow.changeTracker?.activeState?.extra?.linearData)
   }
-  function saveSelectedToWorkflow() {
-    app.rootGraph.extra ??= {}
-    app.rootGraph.extra.linearData = {
-      inputs: [...selectedInputs],
-      outputs: [...selectedOutputs]
+
+  function flushSelections() {
+    const workflow = workflowStore.activeWorkflow
+    if (workflow) {
+      workflow.dirtyLinearData = {
+        inputs: [...selectedInputs],
+        outputs: [...selectedOutputs]
+      }
     }
   }
-  whenever(() => workflowStore.activeWorkflow, resetSelectedToWorkflow, {
-    immediate: true
-  })
+
+  watch(
+    () => workflowStore.activeWorkflow,
+    (newWorkflow, oldWorkflow) => {
+      // Persist in-progress builder selections to the outgoing workflow
+      if (oldWorkflow && isBuilderMode.value) {
+        oldWorkflow.dirtyLinearData = {
+          inputs: [...selectedInputs],
+          outputs: [...selectedOutputs]
+        }
+      }
+      // Load from incoming workflow: dirty state first, then persisted
+      if (newWorkflow) {
+        loadSelections(
+          newWorkflow.dirtyLinearData ??
+            newWorkflow.changeTracker?.activeState?.extra?.linearData
+        )
+      } else {
+        loadSelections(undefined)
+      }
+    },
+    { immediate: true }
+  )
 
   watch(
     () => mode.value === 'builder:select',
@@ -76,30 +77,18 @@ export const useAppModeStore = defineStore('appMode', () => {
     )
       return
 
+    const workflow = workflowStore.activeWorkflow
+    if (workflow) workflow.dirtyLinearData = null
     resetSelectedToWorkflow()
-    mode.value = 'graph'
+    setMode('graph')
   }
 
   return {
-    mode: readonly(mode),
-    enableAppBuilder: readonly(enableAppBuilder),
     exitBuilder,
-    isBuilderMode,
-    isAppMode,
-    isGraphMode,
-    isBuilderSaving,
     hasOutputs,
+    flushSelections,
     resetSelectedToWorkflow,
-    saveSelectedToWorkflow,
     selectedInputs,
-    selectedOutputs,
-    setBuilderSaving: (newBuilderSaving: boolean) => {
-      if (!isBuilderMode.value) return
-      builderSaving.value = newBuilderSaving
-    },
-    setMode: (newMode: AppMode) => {
-      if (newMode === mode.value) return
-      mode.value = newMode
-    }
+    selectedOutputs
   }
 })

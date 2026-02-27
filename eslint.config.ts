@@ -22,7 +22,9 @@ const extraFileExtensions = ['.vue']
 
 const commonGlobals = {
   ...globals.browser,
-  __COMFYUI_FRONTEND_VERSION__: 'readonly'
+  __COMFYUI_FRONTEND_VERSION__: 'readonly',
+  __DISTRIBUTION__: 'readonly',
+  __IS_NIGHTLY__: 'readonly'
 } as const
 
 const settings = {

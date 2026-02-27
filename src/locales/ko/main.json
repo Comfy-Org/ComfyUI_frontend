@@ -699,6 +699,7 @@
     "OPENAI_INPUT_FILES": "OpenAI 입력 파일",
     "PHOTOMAKER": "PHOTOMAKER",
     "PIXVERSE_TEMPLATE": "Pixverse 템플릿",
+    "POSE_KEYPOINT": "POSE_KEYPOINT",
     "RECRAFT_COLOR": "Recraft 색상",
     "RECRAFT_CONTROLS": "Recraft 컨트롤",
     "RECRAFT_V3_STYLE": "Recraft V3 스타일",
@@ -958,6 +959,7 @@
     "imageUrl": "이미지 URL",
     "import": "가져오기",
     "inProgress": "진행 중",
+    "inSubgraph": "서브그래프 '{name}'에 있음",
     "increment": "증가",
     "info": "노드 정보",
     "input": "입력",
@@ -1115,6 +1117,7 @@
     "updated": "업데이트 됨",
     "updating": "업데이트 중",
     "upload": "업로드",
+    "uploadAlreadyInProgress": "업로드가 이미 진행 중입니다",
     "usageHint": "사용 힌트",
     "use": "사용",
     "user": "사용자",
@@ -1354,8 +1357,13 @@
     },
     "downloadAll": "모두 다운로드",
     "dragAndDropImage": "이미지를 드래그 앤 드롭하세요",
+    "giveFeedback": "피드백 보내기",
     "graphMode": "그래프 모드",
     "linearMode": "앱 모드",
+    "queue": {
+      "clear": "대기열 비우기",
+      "clickToClear": "클릭하여 대기열 비우기"
+    },
     "rerun": "다시 실행",
     "reuseParameters": "파라미터 재사용",
     "runCount": "실행 횟수:",
@@ -1575,6 +1583,9 @@
     "nodePack": "노드 팩",
     "nodePackInfo": "노드 팩 정보",
     "notAvailable": "사용 불가",
+    "packInstall": {
+      "nodeIdRequired": "설치를 위해 노드 ID가 필요합니다"
+    },
     "packsSelected": "선택한 노드 팩",
     "repository": "저장소",
     "restartToApplyChanges": "변경 사항을 적용하려면 ComfyUI를 재시작해 주세요",
@@ -2072,7 +2083,10 @@
     "openNodeManager": "Node Manager 열기",
     "quickFixAvailable": "빠른 수정 가능",
     "redHighlight": "빨간색",
+    "replaceAll": "모두 교체",
+    "replaceAllWarning": "이 그룹의 사용 가능한 모든 노드를 교체합니다.",
     "replaceFailed": "노드 교체 실패",
+    "replaceNode": "노드 교체",
     "replaceSelected": "선택한 항목 교체 ({count})",
     "replaceWarning": "이 작업은 워크플로를 영구적으로 수정합니다. 확실하지 않으면 먼저 복사본을 저장하세요.",
     "replaceable": "교체 가능",
@@ -2080,7 +2094,11 @@
     "replacedAllNodes": "{count}개 노드 유형 교체됨",
     "replacedNode": "교체된 노드: {nodeType}",
     "selectAll": "전체 선택",
-    "skipForNow": "일단 건너뛰기"
+    "skipForNow": "일단 건너뛰기",
+    "swapNodesGuide": "다음 노드는 호환 가능한 대체 노드로 자동 교체할 수 있습니다.",
+    "swapNodesTitle": "노드 교체",
+    "unknownNode": "알 수 없음",
+    "willBeReplacedBy": "이 노드는 다음으로 교체됩니다:"
   },
   "nodeTemplates": {
     "enterName": "이름 입력",
@@ -2098,6 +2116,19 @@
       "windows": "Windows (CUDA 지원 Nvidia GPU)"
     },
     "title": "이 장치는 지원되지 않습니다."
+  },
+  "painter": {
+    "background": "배경",
+    "brush": "브러시",
+    "clear": "지우기",
+    "color": "색상 선택기",
+    "eraser": "지우개",
+    "hardness": "경도",
+    "height": "높이",
+    "size": "커서 크기",
+    "tool": "도구",
+    "uploadError": "페인터 이미지를 업로드하지 못했습니다: {status} - {statusText}",
+    "width": "너비"
   },
   "progressToast": {
     "allDownloadsCompleted": "모든 다운로드가 완료되었습니다",
@@ -2219,6 +2250,22 @@
     "inputsNone": "입력 없음",
     "inputsNoneTooltip": "노드에 입력이 없습니다",
     "locateNode": "캔버스에서 노드 찾기",
+    "missingNodePacks": {
+      "applyChanges": "변경 사항 적용",
+      "cloudMessage": "이 워크플로우에는 Comfy Cloud에서 아직 사용할 수 없는 커스텀 노드가 필요합니다.",
+      "collapse": "접기",
+      "expand": "펼치기",
+      "installAll": "모두 설치",
+      "installNodePack": "노드 팩 설치",
+      "installed": "설치됨",
+      "installing": "설치 중...",
+      "ossMessage": "이 워크플로우에는 아직 설치하지 않은 커스텀 노드를 사용합니다.",
+      "searchInManager": "노드 매니저에서 검색",
+      "title": "누락된 노드 팩",
+      "unknownPack": "알 수 없는 팩",
+      "unsupportedTitle": "지원되지 않는 노드 팩",
+      "viewInManager": "매니저에서 보기"
+    },
     "mute": "음소거",
     "noErrors": "오류 없음",
     "noSelection": "노드를 선택하면 속성과 정보를 볼 수 있습니다.",

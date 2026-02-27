@@ -26,6 +26,7 @@ import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useQueueSettingsStore } from '@/stores/queueStore'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import { cn } from '@/utils/tailwindUtil'
+import { useAppMode } from '@/composables/useAppMode'
 import { useAppModeStore } from '@/stores/appModeStore'
 const { t } = useI18n()
 const commandStore = useCommandStore()
@@ -35,7 +36,9 @@ const { batchCount } = storeToRefs(useQueueSettingsStore())
 const settingStore = useSettingStore()
 const { isActiveSubscription } = useBillingContext()
 const workflowStore = useWorkflowStore()
+const { isBuilderMode } = useAppMode()
 const appModeStore = useAppModeStore()
+const { hasOutputs } = storeToRefs(appModeStore)
 
 const props = defineProps<{
   toastTo?: string | HTMLElement
@@ -168,7 +171,7 @@ defineExpose({ runButtonClick })
 </script>
 <template>
   <div
-    v-if="!appModeStore.isBuilderMode && appModeStore.hasOutputs"
+    v-if="!isBuilderMode && hasOutputs"
     class="flex flex-col min-w-80 md:h-full"
   >
     <section
@@ -299,7 +302,7 @@ defineExpose({ runButtonClick })
         <Button
           v-else
           variant="primary"
-          class="w-full mt-4"
+          class="w-full mt-4 text-sm"
           size="lg"
           @click="runButtonClick"
         >
@@ -315,14 +318,18 @@ defineExpose({ runButtonClick })
     :to="toastTo"
   >
     <div
-      class="bg-base-foreground text-base-background rounded-sm flex h-8 p-1 pr-2 gap-2 items-center"
+      class="bg-secondary-background text-base-foreground rounded-lg flex h-8 p-1 pr-2 gap-2 items-center"
     >
       <i
         v-if="jobFinishedQueue"
-        class="icon-[lucide--check] size-5 bg-success-background"
+        class="icon-[lucide--check] size-5 text-muted-foreground"
       />
       <i v-else class="icon-[lucide--loader-circle] size-4 animate-spin" />
-      <span v-text="t('queue.jobAddedToQueue')" />
+      <span
+        v-text="
+          jobFinishedQueue ? t('queue.jobAddedToQueue') : t('queue.jobQueueing')
+        "
+      />
     </div>
   </Teleport>
 </template>

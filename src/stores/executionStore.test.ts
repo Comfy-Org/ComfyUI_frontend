@@ -345,3 +345,100 @@ describe('useExecutionErrorStore - Node Error Lookups', () => {
     })
   })
 })
+
+describe('useExecutionErrorStore - setMissingNodeTypes', () => {
+  let store: ReturnType<typeof useExecutionErrorStore>
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    setActivePinia(createTestingPinia({ stubActions: false }))
+    store = useExecutionErrorStore()
+  })
+
+  it('clears missingNodesError when called with an empty array', () => {
+    store.setMissingNodeTypes([{ type: 'NodeA' }])
+    store.setMissingNodeTypes([])
+    expect(store.missingNodesError).toBeNull()
+  })
+
+  it('hasMissingNodes is false when error is null', () => {
+    store.setMissingNodeTypes([])
+    expect(store.hasMissingNodes).toBe(false)
+  })
+
+  it('hasMissingNodes is true after setting non-empty types', () => {
+    store.setMissingNodeTypes([{ type: 'NodeA' }])
+    expect(store.hasMissingNodes).toBe(true)
+  })
+
+  it('deduplicates string entries by value', () => {
+    store.setMissingNodeTypes(['GroupNode', 'GroupNode', 'OtherGroup'])
+    expect(store.missingNodesError?.nodeTypes).toHaveLength(2)
+    expect(store.missingNodesError?.nodeTypes).toEqual([
+      'GroupNode',
+      'OtherGroup'
+    ])
+  })
+
+  it('keeps a single string entry unchanged', () => {
+    store.setMissingNodeTypes(['GroupNode'])
+    expect(store.missingNodesError?.nodeTypes).toHaveLength(1)
+  })
+
+  it('deduplicates object entries with the same nodeId', () => {
+    store.setMissingNodeTypes([
+      { type: 'NodeA', nodeId: 1 },
+      { type: 'NodeA', nodeId: 1 }
+    ])
+    expect(store.missingNodesError?.nodeTypes).toHaveLength(1)
+  })
+
+  it('keeps object entries with different nodeIds even if same type', () => {
+    store.setMissingNodeTypes([
+      { type: 'NodeA', nodeId: 1 },
+      { type: 'NodeA', nodeId: 2 }
+    ])
+    expect(store.missingNodesError?.nodeTypes).toHaveLength(2)
+  })
+
+  it('deduplicates object entries by type when nodeId is absent', () => {
+    store.setMissingNodeTypes([{ type: 'NodeB' }, { type: 'NodeB' }])
+    expect(store.missingNodesError?.nodeTypes).toHaveLength(1)
+  })
+
+  it('keeps distinct types when nodeId is absent', () => {
+    store.setMissingNodeTypes([{ type: 'NodeB' }, { type: 'NodeC' }])
+    expect(store.missingNodesError?.nodeTypes).toHaveLength(2)
+  })
+
+  it('treats absent nodeId the same as type-only key (falls back to type)', () => {
+    store.setMissingNodeTypes([{ type: 'NodeD' }, { type: 'NodeD' }])
+    expect(store.missingNodesError?.nodeTypes).toHaveLength(1)
+  })
+
+  it('handles a mix of string and object entries correctly', () => {
+    store.setMissingNodeTypes([
+      'GroupNode',
+      'GroupNode', // string dup
+      { type: 'NodeA', nodeId: 1 },
+      { type: 'NodeA', nodeId: 1 }, // object dup by nodeId
+      { type: 'NodeA', nodeId: 2 }, // same type, different nodeId → kept
+      { type: 'NodeB' },
+      { type: 'NodeB' } // object dup by type
+    ])
+    // Unique: 'GroupNode', {NodeA,1}, {NodeA,2}, {NodeB} → 4
+    expect(store.missingNodesError?.nodeTypes).toHaveLength(4)
+  })
+
+  it('stores a non-empty message string in missingNodesError', () => {
+    store.setMissingNodeTypes([{ type: 'NodeA' }])
+    expect(typeof store.missingNodesError?.message).toBe('string')
+    expect(store.missingNodesError!.message.length).toBeGreaterThan(0)
+  })
+
+  it('stores the deduplicated nodeTypes array in missingNodesError', () => {
+    const input = [{ type: 'NodeA' }, { type: 'NodeB' }]
+    store.setMissingNodeTypes(input)
+    expect(store.missingNodesError?.nodeTypes).toEqual(input)
+  })
+})

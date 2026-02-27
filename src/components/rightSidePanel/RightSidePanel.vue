@@ -40,7 +40,8 @@ const rightSidePanelStore = useRightSidePanelStore()
 const settingStore = useSettingStore()
 const { t } = useI18n()
 
-const { hasAnyError, allErrorExecutionIds } = storeToRefs(executionErrorStore)
+const { hasAnyError, allErrorExecutionIds, activeMissingNodeGraphIds } =
+  storeToRefs(executionErrorStore)
 
 const { findParentGroup } = useGraphHierarchy()
 
@@ -109,9 +110,21 @@ const hasContainerInternalError = computed(() => {
   })
 })
 
+const hasMissingNodeSelected = computed(
+  () =>
+    hasSelection.value &&
+    selectedNodes.value.some((node) =>
+      activeMissingNodeGraphIds.value.has(String(node.id))
+    )
+)
+
 const hasRelevantErrors = computed(() => {
   if (!hasSelection.value) return hasAnyError.value
-  return hasDirectNodeError.value || hasContainerInternalError.value
+  return (
+    hasDirectNodeError.value ||
+    hasContainerInternalError.value ||
+    hasMissingNodeSelected.value
+  )
 })
 
 const tabs = computed<RightSidePanelTabList>(() => {

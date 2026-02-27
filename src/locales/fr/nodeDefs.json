@@ -2137,6 +2137,35 @@
       }
     }
   },
+  "CropByBBoxes": {
+    "description": "Rogner et redimensionner des régions du lot d’images d’entrée selon les boîtes englobantes fournies.",
+    "display_name": "CropByBBoxes",
+    "inputs": {
+      "bboxes": {
+        "name": "bboxes"
+      },
+      "image": {
+        "name": "image"
+      },
+      "output_height": {
+        "name": "output_height",
+        "tooltip": "Hauteur à laquelle chaque découpe est redimensionnée."
+      },
+      "output_width": {
+        "name": "output_width",
+        "tooltip": "Largeur à laquelle chaque découpe est redimensionnée."
+      },
+      "padding": {
+        "name": "padding",
+        "tooltip": "Marge supplémentaire en pixels ajoutée de chaque côté de la boîte avant le rognage."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "Toutes les découpes empilées dans un seul lot d’images."
+      }
+    }
+  },
   "CropMask": {
     "display_name": "CropMask",
     "inputs": {
@@ -3693,6 +3722,57 @@
       "file": {
         "name": "fichier",
         "tooltip": "Fichiers d'entrée à inclure comme contexte pour le modèle. N'accepte pour le moment que les fichiers texte (.txt) et PDF (.pdf)."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "GeminiNanoBanana2": {
+    "description": "Générez ou modifiez des images de manière synchrone via l’API Google Vertex.",
+    "display_name": "Nano Banana 2",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "rapport d’aspect",
+        "tooltip": "Si défini sur « auto », correspond au rapport d’aspect de votre image d’entrée ; si aucune image n’est fournie, un carré 16:9 est généralement généré."
+      },
+      "control_after_generate": {
+        "name": "contrôle après génération"
+      },
+      "files": {
+        "name": "fichiers",
+        "tooltip": "Fichier(s) optionnel(s) à utiliser comme contexte pour le modèle. Accepte les entrées du nœud Gemini Generate Content Input Files."
+      },
+      "images": {
+        "name": "images",
+        "tooltip": "Image(s) de référence optionnelle(s). Pour inclure plusieurs images, utilisez le nœud Batch Images (jusqu’à 14)."
+      },
+      "model": {
+        "name": "modèle"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Invite textuelle décrivant l’image à générer ou les modifications à appliquer. Incluez toutes contraintes, styles ou détails que le modèle doit respecter."
+      },
+      "resolution": {
+        "name": "résolution",
+        "tooltip": "Résolution de sortie cible. Pour le 2K/4K, l’upscaler natif Gemini est utilisé."
+      },
+      "response_modalities": {
+        "name": "modalités de réponse"
+      },
+      "seed": {
+        "name": "graine",
+        "tooltip": "Lorsque la graine est fixée à une valeur spécifique, le modèle s’efforce de fournir la même réponse pour des requêtes répétées. Un résultat déterministe n’est pas garanti. De plus, changer le modèle ou les paramètres, comme la température, peut entraîner des variations de la réponse même avec la même valeur de graine. Par défaut, une graine aléatoire est utilisée."
+      },
+      "system_prompt": {
+        "name": "invite système",
+        "tooltip": "Instructions fondamentales qui dictent le comportement de l’IA."
+      },
+      "thinking_level": {
+        "name": "niveau de réflexion"
       }
     },
     "outputs": {
@@ -12975,6 +13055,90 @@
     "outputs": {
       "0": {
         "tooltip": null
+      }
+    }
+  },
+  "SDPoseDrawKeypoints": {
+    "display_name": "SDPoseDrawKeypoints",
+    "inputs": {
+      "draw_body": {
+        "name": "draw_body"
+      },
+      "draw_face": {
+        "name": "draw_face"
+      },
+      "draw_feet": {
+        "name": "draw_feet"
+      },
+      "draw_hands": {
+        "name": "draw_hands"
+      },
+      "face_point_size": {
+        "name": "face_point_size"
+      },
+      "keypoints": {
+        "name": "keypoints"
+      },
+      "score_threshold": {
+        "name": "score_threshold"
+      },
+      "stick_width": {
+        "name": "stick_width"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SDPoseFaceBBoxes": {
+    "display_name": "SDPoseFaceBBoxes",
+    "inputs": {
+      "force_square": {
+        "name": "force_square",
+        "tooltip": "Agrandir l’axe le plus court de la boîte pour que la région découpée soit toujours carrée."
+      },
+      "keypoints": {
+        "name": "keypoints"
+      },
+      "scale": {
+        "name": "scale",
+        "tooltip": "Multiplicateur pour la zone de la boîte englobante autour de chaque visage détecté."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "bboxes",
+        "tooltip": "Boîtes englobantes des visages par image, compatibles avec l’entrée bboxes de SDPoseKeypointExtractor."
+      }
+    }
+  },
+  "SDPoseKeypointExtractor": {
+    "description": "Extraire les points clés de pose à partir d’images en utilisant le modèle SDPose : https://huggingface.co/Comfy-Org/SDPose/tree/main/checkpoints",
+    "display_name": "SDPoseKeypointExtractor",
+    "inputs": {
+      "batch_size": {
+        "name": "batch_size"
+      },
+      "bboxes": {
+        "name": "bboxes",
+        "tooltip": "Boîtes englobantes optionnelles pour des détections plus précises. Requis pour la détection multi-personnes."
+      },
+      "image": {
+        "name": "image"
+      },
+      "model": {
+        "name": "model"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "keypoints",
+        "tooltip": "Points clés au format OpenPose (canvas_width, canvas_height, people)"
       }
     }
   },

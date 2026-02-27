@@ -1,7 +1,6 @@
 import { computed } from 'vue'
 
 import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
-import { t } from '@/i18n'
 import { useExtensionService } from '@/services/extensionService'
 import type { TopbarBadge } from '@/types/comfy'
 
@@ -21,7 +20,7 @@ const badges = computed<TopbarBadge[]>(() => {
 
   // Always add cloud badge last (furthest right)
   result.push({
-    label: t('g.beta'),
+    icon: 'icon-[lucide--cloud]',
     text: 'Comfy Cloud'
   })
 

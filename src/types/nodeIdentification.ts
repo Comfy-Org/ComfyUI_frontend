@@ -126,7 +126,6 @@ export function createNodeExecutionId(nodeIds: NodeId[]): NodeExecutionId {
  * Returns all ancestor execution IDs for a given execution ID, including itself.
  *
  * Example: "65:70:63" → ["65", "65:70", "65:70:63"]
- * @knipIgnoreUsedByStackedPR
  */
 export function getAncestorExecutionIds(
   executionId: string | NodeExecutionId
@@ -141,7 +140,6 @@ export function getAncestorExecutionIds(
  * Returns all ancestor execution IDs for a given execution ID, excluding itself.
  *
  * Example: "65:70:63" → ["65", "65:70"]
- * @knipIgnoreUsedByStackedPR
  */
 export function getParentExecutionIds(
   executionId: string | NodeExecutionId

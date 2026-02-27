@@ -405,6 +405,7 @@ interface SubgraphDefinitionBase<
   /** Optional description shown as tooltip when hovering over the subgraph node. */
   description?: string
   category?: string
+  essentials_category?: string
   /** Custom metadata for the subgraph (description, searchAliases, etc.) */
   extra?: T extends ComfyWorkflow1BaseInput
     ? z.input<typeof zExtra> | null
@@ -443,6 +444,7 @@ const zSubgraphDefinition = zComfyWorkflow1
     /** Optional description shown as tooltip when hovering over the subgraph node. */
     description: z.string().optional(),
     category: z.string().optional(),
+    essentials_category: z.string().optional(),
     inputNode: zExportedSubgraphIONode,
     outputNode: zExportedSubgraphIONode,
 
@@ -553,7 +555,6 @@ export type ComfyApiWorkflow = z.infer<typeof zComfyApiWorkflow>
  * where that definition is instantiated in the workflow.
  *
  * "def-A" → ["5", "10"] for each container node instantiating that subgraph definition.
- * @knipIgnoreUsedByStackedPR
  */
 export function buildSubgraphExecutionPaths(
   rootNodes: ComfyNode[],

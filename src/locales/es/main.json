@@ -699,6 +699,7 @@
     "OPENAI_INPUT_FILES": "ARCHIVOS_ENTRADA_OPENAI",
     "PHOTOMAKER": "PHOTOMAKER",
     "PIXVERSE_TEMPLATE": "PLANTILLA PIXVERSE",
+    "POSE_KEYPOINT": "POSE_KEYPOINT",
     "RECRAFT_COLOR": "COLOR RECRAFT",
     "RECRAFT_CONTROLS": "CONTROLES RECRAFT",
     "RECRAFT_V3_STYLE": "ESTILO RECRAFT V3",
@@ -958,6 +959,7 @@
     "imageUrl": "URL de la imagen",
     "import": "Importar",
     "inProgress": "En progreso",
+    "inSubgraph": "en subgrafo '{name}'",
     "increment": "Incrementar",
     "info": "Información del Nodo",
     "input": "Entrada",
@@ -1115,6 +1117,7 @@
     "updated": "Actualizado",
     "updating": "Actualizando",
     "upload": "Subir",
+    "uploadAlreadyInProgress": "La carga ya está en curso",
     "usageHint": "Sugerencia de uso",
     "use": "Usar",
     "user": "Usuario",
@@ -1354,8 +1357,13 @@
     },
     "downloadAll": "Descargar todo",
     "dragAndDropImage": "Arrastra y suelta una imagen",
+    "giveFeedback": "Enviar comentarios",
     "graphMode": "Modo gráfico",
     "linearMode": "Modo App",
+    "queue": {
+      "clear": "Limpiar cola",
+      "clickToClear": "Haz clic para limpiar la cola"
+    },
     "rerun": "Volver a ejecutar",
     "reuseParameters": "Reutilizar parámetros",
     "runCount": "Número de ejecuciones:",
@@ -1575,6 +1583,9 @@
     "nodePack": "Paquete de Nodos",
     "nodePackInfo": "Información del paquete de nodos",
     "notAvailable": "No Disponible",
+    "packInstall": {
+      "nodeIdRequired": "Se requiere el ID del nodo para la instalación"
+    },
     "packsSelected": "Paquetes Seleccionados",
     "repository": "Repositorio",
     "restartToApplyChanges": "Para aplicar los cambios, por favor reinicia ComfyUI",
@@ -2072,7 +2083,10 @@
     "openNodeManager": "Abrir Administrador de Nodos",
     "quickFixAvailable": "Solución rápida disponible",
     "redHighlight": "rojo",
+    "replaceAll": "Reemplazar todo",
+    "replaceAllWarning": "Reemplaza todos los nodos disponibles en este grupo.",
     "replaceFailed": "Error al reemplazar nodos",
+    "replaceNode": "Reemplazar nodo",
     "replaceSelected": "Reemplazar seleccionados ({count})",
     "replaceWarning": "Esto modificará permanentemente el flujo de trabajo. Guarda una copia primero si no estás seguro.",
     "replaceable": "Reemplazable",
@@ -2080,7 +2094,11 @@
     "replacedAllNodes": "Reemplazados {count} tipo(s) de nodo",
     "replacedNode": "Nodo reemplazado: {nodeType}",
     "selectAll": "Seleccionar todo",
-    "skipForNow": "Omitir por ahora"
+    "skipForNow": "Omitir por ahora",
+    "swapNodesGuide": "Los siguientes nodos pueden ser reemplazados automáticamente por alternativas compatibles.",
+    "swapNodesTitle": "Intercambiar nodos",
+    "unknownNode": "Desconocido",
+    "willBeReplacedBy": "Este nodo será reemplazado por:"
   },
   "nodeTemplates": {
     "enterName": "Introduzca el nombre",
@@ -2098,6 +2116,19 @@
       "windows": "Windows (GPU Nvidia con soporte CUDA)"
     },
     "title": "Tu dispositivo no es compatible"
+  },
+  "painter": {
+    "background": "Fondo",
+    "brush": "Pincel",
+    "clear": "Limpiar",
+    "color": "Selector de color",
+    "eraser": "Borrador",
+    "hardness": "Dureza",
+    "height": "Alto",
+    "size": "Tamaño del cursor",
+    "tool": "Herramienta",
+    "uploadError": "Error al cargar la imagen del pintor: {status} - {statusText}",
+    "width": "Ancho"
   },
   "progressToast": {
     "allDownloadsCompleted": "Todas las descargas completadas",
@@ -2219,6 +2250,22 @@
     "inputsNone": "SIN ENTRADAS",
     "inputsNoneTooltip": "El nodo no tiene entradas",
     "locateNode": "Localizar nodo en el lienzo",
+    "missingNodePacks": {
+      "applyChanges": "Aplicar cambios",
+      "cloudMessage": "Este flujo de trabajo requiere nodos personalizados que aún no están disponibles en Comfy Cloud.",
+      "collapse": "Colapsar",
+      "expand": "Expandir",
+      "installAll": "Instalar todo",
+      "installNodePack": "Instalar paquete de nodos",
+      "installed": "Instalado",
+      "installing": "Instalando...",
+      "ossMessage": "Este flujo de trabajo utiliza nodos personalizados que aún no has instalado.",
+      "searchInManager": "Buscar en el Gestor de Nodos",
+      "title": "Paquetes de nodos faltantes",
+      "unknownPack": "Paquete desconocido",
+      "unsupportedTitle": "Paquetes de nodos no compatibles",
+      "viewInManager": "Ver en el Gestor"
+    },
     "mute": "Silenciar",
     "noErrors": "Sin errores",
     "noSelection": "Selecciona un nodo para ver sus propiedades e información.",

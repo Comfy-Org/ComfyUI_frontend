@@ -1338,8 +1338,6 @@ export function useCoreCommands(): ComfyCommand[] {
           typeof metadata?.source === 'string' ? metadata.source : 'keybind'
         const newMode = !canvasStore.linearMode
         if (newMode) useTelemetry()?.trackEnterLinear({ source })
-        app.rootGraph.extra.linearMode = newMode
-        workflowStore.activeWorkflow?.changeTracker?.checkState()
         canvasStore.linearMode = newMode
       }
     }

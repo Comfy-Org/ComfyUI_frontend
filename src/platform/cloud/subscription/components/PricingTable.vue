@@ -282,7 +282,6 @@ const getCheckoutTier = (
 
 const getCheckoutAttributionForCloud =
   async (): Promise<CheckoutAttributionMetadata> => {
-    // eslint-disable-next-line no-undef
     if (__DISTRIBUTION__ !== 'cloud') {
       return {}
     }
