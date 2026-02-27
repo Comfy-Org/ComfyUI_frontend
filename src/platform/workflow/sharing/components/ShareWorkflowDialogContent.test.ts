@@ -74,11 +74,15 @@ vi.mock('@/platform/workflow/core/services/workflowService', () => ({
 }))
 
 const mockShareServiceData = vi.hoisted(() => ({
-  assets: [{ name: 'test.png', thumbnailUrl: null }] as {
+  assets: [{ id: 'test.png', name: 'test.png', thumbnailUrl: null }] as {
+    id: string
     name: string
     thumbnailUrl: string | null
   }[],
-  models: [{ name: 'model.safetensors' }] as { name: string }[]
+  models: [{ id: 'model.safetensors', name: 'model.safetensors' }] as {
+    id: string
+    name: string
+  }[]
 }))
 
 vi.mock('@/platform/workflow/sharing/services/workflowShareService', () => ({
@@ -86,12 +90,13 @@ vi.mock('@/platform/workflow/sharing/services/workflowShareService', () => ({
     getPublishStatus: () =>
       Promise.resolve({
         isPublished: false,
+        shareId: null,
         shareUrl: null,
-        publishedAt: null,
-        hasChangesSincePublish: false
+        publishedAt: null
       }),
     publishWorkflow: () =>
       Promise.resolve({
+        shareId: 'test-123',
         shareUrl: 'https://comfy.org/shared/test-123',
         publishedAt: new Date('2026-01-15')
       }),
@@ -153,8 +158,12 @@ describe('ShareWorkflowDialogContent', () => {
     mockFlags.comfyHubUploadEnabled = false
     mockHasProfile.value = null
     mockCheckProfile.mockResolvedValue(true)
-    mockShareServiceData.assets = [{ name: 'test.png', thumbnailUrl: null }]
-    mockShareServiceData.models = [{ name: 'model.safetensors' }]
+    mockShareServiceData.assets = [
+      { id: 'test.png', name: 'test.png', thumbnailUrl: null }
+    ]
+    mockShareServiceData.models = [
+      { id: 'model.safetensors', name: 'model.safetensors' }
+    ]
   })
 
   function createWrapper() {

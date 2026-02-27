@@ -1,20 +1,23 @@
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 
 export interface WorkflowPublishResult {
-  shareUrl: string
   publishedAt: Date
+  shareId: string
+  shareUrl: string
 }
 
 export interface WorkflowPublishStatus {
   isPublished: boolean
-  shareUrl: string | null
   publishedAt: Date | null
-  hasChangesSincePublish: boolean
+  shareId: string | null
+  shareUrl: string | null
 }
 
 export interface SharedWorkflowPayload {
-  name: string
-  description: string | null
+  importedAssets: unknown[]
+  listed: boolean
+  publishedAt: Date | null
+  shareId: string
+  workflowId: string
   workflowJson: ComfyWorkflowJSON
-  version: number
 }

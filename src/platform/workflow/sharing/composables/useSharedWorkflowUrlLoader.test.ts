@@ -93,10 +93,12 @@ describe('useSharedWorkflowUrlLoader', () => {
   it('loads shared workflow from query parameter', async () => {
     mockQueryParams = { share: 'share-id-1' }
     mockGetSharedWorkflow.mockResolvedValue({
-      name: 'My Shared Workflow',
-      description: null,
+      shareId: 'share-id-1',
+      workflowId: 'workflow-id-1',
+      listed: true,
+      publishedAt: new Date('2026-02-20T00:00:00Z'),
       workflowJson: { nodes: [] },
-      version: 1
+      importedAssets: []
     })
 
     const { loadSharedWorkflowFromUrl } = useSharedWorkflowUrlLoader()
@@ -108,7 +110,7 @@ describe('useSharedWorkflowUrlLoader', () => {
       { nodes: [] },
       true,
       true,
-      'My Shared Workflow'
+      'share-id-1'
     )
     expect(mockRouterReplace).toHaveBeenCalledWith({ query: {} })
     expect(preservedQueryMocks.clearPreservedQuery).toHaveBeenCalledWith(
@@ -121,10 +123,12 @@ describe('useSharedWorkflowUrlLoader', () => {
       share: 'preserved-share-id'
     })
     mockGetSharedWorkflow.mockResolvedValue({
-      name: 'Preserved Workflow',
-      description: null,
+      shareId: 'preserved-share-id',
+      workflowId: 'workflow-id-2',
+      listed: false,
+      publishedAt: new Date('2026-02-20T00:00:00Z'),
       workflowJson: { nodes: [] },
-      version: 1
+      importedAssets: []
     })
 
     const { loadSharedWorkflowFromUrl } = useSharedWorkflowUrlLoader()

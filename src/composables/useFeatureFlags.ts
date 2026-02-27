@@ -143,7 +143,7 @@ export function useFeatureFlags() {
     get comfyHubUploadEnabled() {
       return (
         remoteConfig.value.comfyhub_upload_enabled ??
-        api.getServerFeature(ServerFeatureFlag.COMFYHUB_UPLOAD_ENABLED, true)
+        api.getServerFeature(ServerFeatureFlag.COMFYHUB_UPLOAD_ENABLED, false)
       )
     },
     get comfyHubProfileGateEnabled() {

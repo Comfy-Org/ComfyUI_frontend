@@ -83,6 +83,11 @@ function createMockNode(
 }
 
 describe('useWorkflowShareService', () => {
+  const mockShareableAssets = {
+    assets: [{ id: 'asset-1', name: 'asset.png', storage_url: null }],
+    models: [{ id: 'model-1', name: 'model.safetensors', storage_url: null }]
+  }
+
   function mockJsonResponse(payload: unknown, ok = true, status = 200) {
     return {
       ok,
@@ -104,76 +109,71 @@ describe('useWorkflowShareService', () => {
   it('returns unpublished status for unknown workflow', async () => {
     mockFetchApi.mockResolvedValue(
       mockJsonResponse({
-        is_published: false,
-        share_url: null,
-        published_at: null
+        workflow_id: 'wf-0',
+        publish_time: null,
+        share_id: null,
+        listed: false
       })
     )
 
     const service = useWorkflowShareService()
-    const status = await service.getPublishStatus('unknown-id', 1000)
+    const status = await service.getPublishStatus('unknown-id')
 
     expect(status.isPublished).toBe(false)
+    expect(status.shareId).toBeNull()
     expect(status.shareUrl).toBeNull()
     expect(status.publishedAt).toBeNull()
-    expect(status.hasChangesSincePublish).toBe(false)
   })
 
   it('publishes a workflow and returns a share URL', async () => {
     mockFetchApi.mockResolvedValue(
       mockJsonResponse({
-        share_url: 'https://comfy.org/workflows/shares/abc123',
-        published_at: '2026-02-23T00:00:00Z'
+        workflow_id: 'test-workflow',
+        share_id: 'abc123',
+        publish_time: '2026-02-23T00:00:00Z',
+        listed: false
       })
     )
 
     const service = useWorkflowShareService()
 
-    const result = await service.publishWorkflow('test-workflow', 1000)
+    const result = await service.publishWorkflow(
+      'test-workflow',
+      mockShareableAssets
+    )
 
+    expect(result.shareId).toBe('abc123')
     expect(result.shareUrl).toBe(`${window.location.origin}/?share=abc123`)
     expect(result.publishedAt).toBeInstanceOf(Date)
-    expect(mockFetchApi).toHaveBeenCalledWith('/workflows/publish', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ workflow_path: 'test-workflow', saved_at: 1000 })
-    })
-  })
-
-  it('normalizes ISO workflow save timestamp before publishing', async () => {
-    mockFetchApi.mockResolvedValue(
-      mockJsonResponse({
-        share_url: 'https://comfy.org/workflows/shares/iso',
-        published_at: '2026-02-23T00:00:00Z'
-      })
+    expect(mockFetchApi).toHaveBeenCalledWith(
+      '/userdata/test-workflow/publish',
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          assets: [{ id: 'asset-1' }],
+          models: [{ id: 'model-1' }]
+        })
+      }
     )
-
-    const service = useWorkflowShareService()
-    const savedAtIso = '2026-02-23T21:47:29.369842552Z'
-
-    await service.publishWorkflow('test-workflow', savedAtIso)
-
-    expect(mockFetchApi).toHaveBeenCalledWith('/workflows/publish', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        workflow_path: 'test-workflow',
-        saved_at: Date.parse(savedAtIso)
-      })
-    })
   })
 
   it('preserves app subpath when normalizing published share URLs', async () => {
     window.history.replaceState({}, '', '/comfy/subpath/?foo=bar#section')
     mockFetchApi.mockResolvedValue(
       mockJsonResponse({
-        share_url: 'https://comfy.org/workflows/shares/subpath-id',
-        published_at: '2026-02-23T00:00:00Z'
+        workflow_id: 'test-workflow',
+        share_id: 'subpath-id',
+        publish_time: '2026-02-23T00:00:00Z',
+        listed: false
       })
     )
 
     const service = useWorkflowShareService()
-    const result = await service.publishWorkflow('test-workflow', 1000)
+    const result = await service.publishWorkflow(
+      'test-workflow',
+      mockShareableAssets
+    )
 
     expect(result.shareUrl).toBe(
       `${window.location.origin}/comfy/subpath/?share=subpath-id`
@@ -183,97 +183,63 @@ describe('useWorkflowShareService', () => {
   it('reports published status after publishing', async () => {
     mockFetchApi.mockResolvedValue(
       mockJsonResponse({
-        is_published: true,
-        share_url: 'https://comfy.org/workflows/shares/wf-1',
-        published_at: '2026-02-23T00:00:00Z',
-        saved_at: 1000
+        workflow_id: 'wf-1',
+        share_id: 'wf-1',
+        publish_time: '2026-02-23T00:00:00Z',
+        listed: false
       })
     )
 
     const service = useWorkflowShareService()
-    const status = await service.getPublishStatus('wf-1', 1000)
+    const status = await service.getPublishStatus('wf-1')
 
     expect(status.isPublished).toBe(true)
+    expect(status.shareId).toBe('wf-1')
     expect(status.shareUrl).toBe(`${window.location.origin}/?share=wf-1`)
     expect(status.publishedAt).toBeInstanceOf(Date)
-    expect(status.hasChangesSincePublish).toBe(false)
   })
 
   it('preserves app subpath when normalizing publish status share URLs', async () => {
     window.history.replaceState({}, '', '/comfy/subpath/')
     mockFetchApi.mockResolvedValue(
       mockJsonResponse({
-        is_published: true,
-        share_url: 'https://comfy.org/workflows/shares/wf-subpath',
-        published_at: '2026-02-23T00:00:00Z',
-        saved_at: 1000
+        workflow_id: 'wf-subpath',
+        share_id: 'wf-subpath',
+        publish_time: '2026-02-23T00:00:00Z',
+        listed: false
       })
     )
 
     const service = useWorkflowShareService()
-    const status = await service.getPublishStatus('wf-subpath', 1000)
+    const status = await service.getPublishStatus('wf-subpath')
 
     expect(status.shareUrl).toBe(
       `${window.location.origin}/comfy/subpath/?share=wf-subpath`
     )
   })
 
-  it('detects changes when workflow was saved after publish', async () => {
+  it('returns unpublished when publish record has no share id', async () => {
     mockFetchApi.mockResolvedValue(
       mockJsonResponse({
-        is_published: true,
-        share_url: 'https://comfy.org/workflows/shares/wf-2',
-        published_at: '2026-02-23T00:00:00Z',
-        saved_at: 1000
+        workflow_id: 'wf-2',
+        share_id: null,
+        publish_time: '2026-02-23T00:00:00Z',
+        listed: false
       })
     )
 
     const service = useWorkflowShareService()
-    const status = await service.getPublishStatus('wf-2', 2000)
+    const status = await service.getPublishStatus('wf-2')
 
-    expect(status.hasChangesSincePublish).toBe(true)
-  })
-
-  it('detects changes when current save timestamp is an ISO string', async () => {
-    mockFetchApi.mockResolvedValue(
-      mockJsonResponse({
-        is_published: true,
-        share_url: 'https://comfy.org/workflows/shares/wf-iso',
-        published_at: '2026-02-23T00:00:00Z',
-        saved_at: 1000
-      })
-    )
-
-    const service = useWorkflowShareService()
-    const status = await service.getPublishStatus(
-      'wf-iso',
-      '2026-02-23T00:00:05.000Z'
-    )
-
-    expect(status.hasChangesSincePublish).toBe(true)
-  })
-
-  it('reports no changes when workflow has not been saved since publish', async () => {
-    mockFetchApi.mockResolvedValue(
-      mockJsonResponse({
-        is_published: true,
-        share_url: 'https://comfy.org/workflows/shares/wf-3',
-        published_at: '2026-02-23T00:00:00Z',
-        saved_at: 1000
-      })
-    )
-
-    const service = useWorkflowShareService()
-    const status = await service.getPublishStatus('wf-3', 1000)
-
-    expect(status.hasChangesSincePublish).toBe(false)
+    expect(status.isPublished).toBe(false)
+    expect(status.shareId).toBeNull()
   })
 
   it('extracts share ID from backend share URL', () => {
     const service = useWorkflowShareService()
 
     expect(
-      service.extractShareId('https://comfy.org/workflows/shares/share-1')
+      service.extractShareId('https://comfy.org/workflows/published/share-1')
     ).toBe('share-1')
   })
 
@@ -286,22 +252,26 @@ describe('useWorkflowShareService', () => {
   it('fetches and maps shared workflow payload', async () => {
     mockFetchApi.mockResolvedValue(
       mockJsonResponse({
-        name: 'Shared Workflow',
-        description: 'A shared workflow',
+        share_id: 'share-123',
+        workflow_id: 'wf-123',
+        listed: true,
+        publish_time: '2026-02-23T00:00:00Z',
         workflow_json: { nodes: [] },
-        version: 2
+        imported_assets: [{ id: 'asset-1' }]
       })
     )
 
     const service = useWorkflowShareService()
     const shared = await service.getSharedWorkflow('share-123')
 
-    expect(mockFetchApi).toHaveBeenCalledWith('/workflows/shares/share-123')
+    expect(mockFetchApi).toHaveBeenCalledWith('/workflows/published/share-123')
     expect(shared).toEqual({
-      name: 'Shared Workflow',
-      description: 'A shared workflow',
+      shareId: 'share-123',
+      workflowId: 'wf-123',
+      listed: true,
+      publishedAt: new Date('2026-02-23T00:00:00Z'),
       workflowJson: { nodes: [] },
-      version: 2
+      importedAssets: [{ id: 'asset-1' }]
     })
   })
 
@@ -331,13 +301,13 @@ describe('useWorkflowShareService', () => {
     mockFetchApi.mockResolvedValue(mockJsonResponse({ is_published: true }))
 
     const service = useWorkflowShareService()
-    const status = await service.getPublishStatus('wf-4', 1000)
+    const status = await service.getPublishStatus('wf-4')
 
     expect(status).toEqual({
       isPublished: false,
+      shareId: null,
       shareUrl: null,
-      publishedAt: null,
-      hasChangesSincePublish: false
+      publishedAt: null
     })
   })
 
@@ -365,11 +335,15 @@ describe('useWorkflowShareService', () => {
 
     expect(result.assets).toEqual([
       {
+        id: 'photo.png',
         name: 'photo.png',
+        storage_url: null,
         thumbnailUrl: '/api/view?filename=photo.png&type=input'
       },
       {
+        id: 'clip.wav',
         name: 'clip.wav',
+        storage_url: null,
         thumbnailUrl: '/api/view?filename=clip.wav&type=input'
       }
     ])
@@ -387,7 +361,9 @@ describe('useWorkflowShareService', () => {
 
     expect(result.assets).toEqual([
       {
+        id: 'real.png',
         name: 'real.png',
+        storage_url: null,
         thumbnailUrl: '/api/view?filename=real.png&type=input'
       }
     ])
@@ -398,6 +374,7 @@ describe('useWorkflowShareService', () => {
       createMockNode('LoadImage', [{ name: 'image', value: 'photo.png' }])
     ] as LGraphNode[]
     mockInputAssets.push({
+      id: 'asset-photo',
       name: 'photo.png',
       preview_url: 'https://example.com/photo-preview.jpg'
     })
@@ -408,7 +385,9 @@ describe('useWorkflowShareService', () => {
 
     expect(result.assets).toEqual([
       {
+        id: 'asset-photo',
         name: 'photo.png',
+        storage_url: null,
         thumbnailUrl: 'https://example.com/photo-preview.jpg'
       }
     ])
@@ -427,7 +406,9 @@ describe('useWorkflowShareService', () => {
 
     expect(result.assets).toEqual([
       {
+        id: 'rendered.png',
         name: 'rendered.png',
+        storage_url: null,
         thumbnailUrl: '/api/view?filename=rendered.png&type=output'
       }
     ])
@@ -460,8 +441,18 @@ describe('useWorkflowShareService', () => {
     const result = await service.getShareableAssets()
 
     expect(result.models).toEqual([
-      { name: 'v1-5-pruned.safetensors', thumbnailUrl: null },
-      { name: 'detail_tweaker.safetensors', thumbnailUrl: null }
+      {
+        id: 'v1-5-pruned.safetensors',
+        name: 'v1-5-pruned.safetensors',
+        storage_url: null,
+        thumbnailUrl: null
+      },
+      {
+        id: 'detail_tweaker.safetensors',
+        name: 'detail_tweaker.safetensors',
+        storage_url: null,
+        thumbnailUrl: null
+      }
     ])
   })
 
@@ -478,6 +469,7 @@ describe('useWorkflowShareService', () => {
     mockAssetsByNodeType.set('CheckpointLoaderSimple', [
       {
         name: 'public-model.safetensors',
+        id: 'public-model-id',
         is_immutable: true,
         preview_url: 'https://example.com/public.jpg'
       }
@@ -485,6 +477,7 @@ describe('useWorkflowShareService', () => {
     mockAssetsByNodeType.set('LoraLoader', [
       {
         name: 'my-lora.safetensors',
+        id: 'my-lora-id',
         is_immutable: false,
         preview_url: 'https://example.com/lora.jpg'
       }
@@ -496,7 +489,9 @@ describe('useWorkflowShareService', () => {
 
     expect(result.models).toEqual([
       {
+        id: 'my-lora-id',
         name: 'my-lora.safetensors',
+        storage_url: null,
         thumbnailUrl: 'https://example.com/lora.jpg'
       }
     ])
@@ -514,7 +509,12 @@ describe('useWorkflowShareService', () => {
     const result = await service.getShareableAssets()
 
     expect(result.models).toEqual([
-      { name: 'uncached-model.safetensors', thumbnailUrl: null }
+      {
+        id: 'uncached-model.safetensors',
+        name: 'uncached-model.safetensors',
+        storage_url: null,
+        thumbnailUrl: null
+      }
     ])
   })
 
@@ -527,6 +527,7 @@ describe('useWorkflowShareService', () => {
     mockAssetsByNodeType.set('tag:models', [
       {
         name: 'detail_tweaker.safetensors',
+        id: 'lora-global-id',
         is_immutable: false,
         preview_url: 'https://example.com/lora-preview.jpg'
       }
@@ -538,7 +539,9 @@ describe('useWorkflowShareService', () => {
 
     expect(result.models).toEqual([
       {
+        id: 'lora-global-id',
         name: 'detail_tweaker.safetensors',
+        storage_url: null,
         thumbnailUrl: 'https://example.com/lora-preview.jpg'
       }
     ])
@@ -553,6 +556,7 @@ describe('useWorkflowShareService', () => {
     mockAssetsByNodeType.set('CheckpointLoaderSimple', [
       {
         name: 'preview-model.safetensors',
+        id: 'preview-model-id',
         is_immutable: false,
         preview_url: 'https://example.com/model-preview.jpg'
       }
@@ -564,7 +568,9 @@ describe('useWorkflowShareService', () => {
 
     expect(result.models).toEqual([
       {
+        id: 'preview-model-id',
         name: 'preview-model.safetensors',
+        storage_url: null,
         thumbnailUrl: 'https://example.com/model-preview.jpg'
       }
     ])
@@ -587,7 +593,12 @@ describe('useWorkflowShareService', () => {
 
     const backendResult = {
       assets: [
-        { name: 'photo.png', thumbnailUrl: 'https://example.com/t.jpg' }
+        {
+          id: 'backend-photo-id',
+          name: 'photo.png',
+          storage_url: '/storage/backend-photo',
+          thumbnailUrl: '/storage/backend-photo'
+        }
       ],
       models: []
     }
@@ -602,7 +613,9 @@ describe('useWorkflowShareService', () => {
 
     expect(result.assets).toEqual([
       {
+        id: 'photo.png',
         name: 'photo.png',
+        storage_url: null,
         thumbnailUrl: '/api/view?filename=photo.png&type=input'
       }
     ])
@@ -637,10 +650,15 @@ describe('useWorkflowShareService', () => {
     mockApp.graphToPrompt.mockResolvedValue({ output: {} })
     mockGetShareableAssets.mockResolvedValue({
       assets: [
-        { name: 'server-asset.png', thumbnail_url: 'https://example.com/a.jpg' }
+        {
+          id: 'asset-server-1',
+          name: 'server-asset.png',
+          thumbnail_url: 'https://example.com/a.jpg'
+        }
       ],
       models: [
         {
+          id: 'model-server-1',
           name: 'server-model.safetensors',
           preview_url: 'https://example.com/m.jpg'
         }
@@ -652,11 +670,18 @@ describe('useWorkflowShareService', () => {
 
     expect(result).toEqual({
       assets: [
-        { name: 'server-asset.png', thumbnailUrl: 'https://example.com/a.jpg' }
+        {
+          id: 'asset-server-1',
+          name: 'server-asset.png',
+          storage_url: null,
+          thumbnailUrl: 'https://example.com/a.jpg'
+        }
       ],
       models: [
         {
+          id: 'model-server-1',
           name: 'server-model.safetensors',
+          storage_url: null,
           thumbnailUrl: 'https://example.com/m.jpg'
         }
       ]
@@ -667,9 +692,16 @@ describe('useWorkflowShareService', () => {
     mockRootGraph.nodes = [] as LGraphNode[]
     mockApp.graphToPrompt.mockResolvedValue({ output: {} })
     mockGetShareableAssets.mockResolvedValue({
-      assets: [{ name: 'asset.png', thumbnail: '/view?filename=asset.png' }],
+      assets: [
+        {
+          id: 'asset-1',
+          name: 'asset.png',
+          thumbnail: '/view?filename=asset.png'
+        }
+      ],
       models: [
         {
+          id: 'model-1',
           name: 'model.safetensors',
           preview: '/api/assets/model-thumb'
         }
@@ -681,10 +713,20 @@ describe('useWorkflowShareService', () => {
 
     expect(result).toEqual({
       assets: [
-        { name: 'asset.png', thumbnailUrl: '/api/view?filename=asset.png' }
+        {
+          id: 'asset-1',
+          name: 'asset.png',
+          storage_url: null,
+          thumbnailUrl: '/api/view?filename=asset.png'
+        }
       ],
       models: [
-        { name: 'model.safetensors', thumbnailUrl: '/api/assets/model-thumb' }
+        {
+          id: 'model-1',
+          name: 'model.safetensors',
+          storage_url: null,
+          thumbnailUrl: '/api/assets/model-thumb'
+        }
       ]
     })
   })

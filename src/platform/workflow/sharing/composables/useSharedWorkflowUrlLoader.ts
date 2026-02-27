@@ -86,7 +86,7 @@ export function useSharedWorkflowUrlLoader() {
         sharedWorkflow.workflowJson,
         true,
         true,
-        sharedWorkflow.name || shareParam
+        shareParam
       )
       shouldCleanupShareQuery = true
       return 'loaded'

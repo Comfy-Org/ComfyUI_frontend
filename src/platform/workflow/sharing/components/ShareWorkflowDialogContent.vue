@@ -3,7 +3,11 @@
     <header
       class="flex h-12 items-center justify-between gap-2 border-b border-border-default px-4"
     >
-      <div role="tablist" class="flex flex-1 items-center gap-2">
+      <div
+        v-if="showPublishToHubTab"
+        role="tablist"
+        class="flex flex-1 items-center gap-2"
+      >
         <Button
           role="tab"
           :aria-selected="dialogMode === 'shareLink'"
@@ -13,7 +17,6 @@
           {{ $t('shareWorkflow.shareLinkTab') }}
         </Button>
         <Button
-          v-if="showPublishToHubTab"
           role="tab"
           :aria-selected="dialogMode === 'publishToHub'"
           :class="tabButtonClass('publishToHub')"
@@ -22,6 +25,9 @@
           <i class="icon-[lucide--globe] size-4" />
           {{ $t('shareWorkflow.publishToHubTab') }}
         </Button>
+      </div>
+      <div v-else class="select-none">
+        {{ $t('shareWorkflow.shareLinkTab') }}
       </div>
       <Button size="icon" :aria-label="$t('g.close')" @click="onClose">
         <i class="icon-[lucide--x] size-4" />
@@ -338,16 +344,21 @@ async function refreshDialogState() {
     return
   }
 
-  const status = await shareService.getPublishStatus(
-    workflow.path,
-    workflow.lastModified
-  )
-  if (status.isPublished && status.shareUrl && status.publishedAt) {
+  const status = await shareService.getPublishStatus(workflow.path)
+  if (
+    status.isPublished &&
+    status.shareId &&
+    status.shareUrl &&
+    status.publishedAt
+  ) {
     publishResult.value = {
+      shareId: status.shareId,
       shareUrl: status.shareUrl,
       publishedAt: status.publishedAt
     }
-    dialogState.value = status.hasChangesSincePublish ? 'stale' : 'shared'
+    const publishedAtMs = status.publishedAt.getTime()
+    const currentSavedAtMs = workflow.lastModified
+    dialogState.value = currentSavedAtMs > publishedAtMs ? 'stale' : 'shared'
   } else {
     dialogState.value = 'ready'
   }
@@ -379,12 +390,15 @@ const { isLoading: isSaving, execute: handleSave } = useAsyncState(
     acknowledged.value = false
     reloadAssets()
 
-    const status = await shareService.getPublishStatus(
-      workflow.path,
-      workflow.lastModified
-    )
-    if (status.isPublished && status.shareUrl && status.publishedAt) {
+    const status = await shareService.getPublishStatus(workflow.path)
+    if (
+      status.isPublished &&
+      status.shareId &&
+      status.shareUrl &&
+      status.publishedAt
+    ) {
       publishResult.value = {
+        shareId: status.shareId,
         shareUrl: status.shareUrl,
         publishedAt: status.publishedAt
       }
@@ -419,7 +433,7 @@ const {
 
     const result = await shareService.publishWorkflow(
       workflow.path,
-      workflow.lastModified
+      assetInfo.value
     )
     dialogState.value = 'shared'
     acknowledged.value = false

@@ -884,7 +884,7 @@ export class ComfyApi extends EventTarget {
     const res = await this.fetchApi('/prompt/assets', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ prompt })
+      body: JSON.stringify({ workflow_api_json: prompt })
     })
     if (res.status !== 200) {
       throw new Error(`Failed to fetch shareable assets: ${res.status}`)

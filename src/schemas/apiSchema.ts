@@ -491,12 +491,16 @@ const zComfyHubProfile = z.object({
 export type ComfyHubProfile = z.infer<typeof zComfyHubProfile>
 
 const zWorkflowAsset = z.object({
+  id: z.string(),
   name: z.string(),
-  thumbnailUrl: z.string().nullable()
+  storage_url: z.string().nullable().optional(),
+  thumbnailUrl: z.string().nullable().optional()
 })
 
 const zWorkflowModel = z.object({
+  id: z.string(),
   name: z.string(),
+  storage_url: z.string().nullable().optional(),
   thumbnailUrl: z.string().nullable().optional()
 })
 

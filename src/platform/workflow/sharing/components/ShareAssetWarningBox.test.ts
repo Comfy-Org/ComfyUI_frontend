@@ -30,9 +30,15 @@ describe('ShareAssetWarningBox', () => {
     return mount(ShareAssetWarningBox, {
       props: {
         assets: [
-          { name: 'image.png', thumbnailUrl: 'https://example.com/a.jpg' }
+          {
+            id: 'asset-image',
+            name: 'image.png',
+            thumbnailUrl: 'https://example.com/a.jpg'
+          }
         ],
-        models: [{ name: 'model.safetensors', thumbnailUrl: null }],
+        models: [
+          { id: 'model-default', name: 'model.safetensors', thumbnailUrl: null }
+        ],
         acknowledged: false,
         ...props
       },
@@ -161,8 +167,10 @@ describe('ShareAssetWarningBox', () => {
 
   it('renders fallback icon when thumbnail is missing', () => {
     const wrapper = createWrapper({
-      assets: [{ name: 'image.png', thumbnailUrl: null }],
-      models: [{ name: 'model.safetensors', thumbnailUrl: null }]
+      assets: [{ id: 'asset-image', name: 'image.png', thumbnailUrl: null }],
+      models: [
+        { id: 'model-default', name: 'model.safetensors', thumbnailUrl: null }
+      ]
     })
 
     const fallbackIcons = wrapper
