@@ -3349,5 +3349,9 @@
     "saveSuccessAppPrompt": "Would you like to view it now?",
     "saveSuccessGraphMessage": "'{name}' has been saved. It will open as a node graph by default.",
     "viewApp": "View app"
+  },
+  "builderMenu": {
+    "saveApp": "Save app",
+    "exitAppBuilder": "Exit app builder"
   }
 }

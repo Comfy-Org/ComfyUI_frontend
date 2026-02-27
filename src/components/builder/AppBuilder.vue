@@ -8,7 +8,6 @@ import DraggableList from '@/components/common/DraggableList.vue'
 import IoItem from '@/components/builder/IoItem.vue'
 import PropertiesAccordionItem from '@/components/rightSidePanel/layout/PropertiesAccordionItem.vue'
 import WidgetItem from '@/components/rightSidePanel/parameters/WidgetItem.vue'
-import Button from '@/components/ui/button/Button.vue'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { LGraphNode, NodeId } from '@/lib/litegraph/src/LGraphNode'
 import type { INodeInputSlot } from '@/lib/litegraph/src/interfaces'
@@ -211,9 +210,6 @@ const renderedInputs = computed<[string, MaybeRef<BoundStyle> | undefined][]>(
     {{
       isArrangeMode ? t('nodeHelpPage.inputs') : t('linearMode.builder.title')
     }}
-    <Button class="ml-auto" @click="appModeStore.exitBuilder">
-      {{ t('linearMode.builder.exit') }}
-    </Button>
   </div>
   <DraggableList
     v-if="isArrangeMode"

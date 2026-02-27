@@ -2,11 +2,9 @@ import { defineStore } from 'pinia'
 import { reactive, computed, watch } from 'vue'
 
 import { useAppMode } from '@/composables/useAppMode'
-import { t } from '@/i18n'
 import type { NodeId } from '@/lib/litegraph/src/LGraphNode'
 import type { LinearData } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { useDialogService } from '@/services/dialogService'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 
 export const useAppModeStore = defineStore('appMode', () => {
@@ -69,14 +67,6 @@ export const useAppModeStore = defineStore('appMode', () => {
   )
 
   async function exitBuilder() {
-    if (
-      !(await useDialogService().confirm({
-        title: t('linearMode.builder.exitConfirmTitle'),
-        message: t('linearMode.builder.exitConfirmMessage')
-      }))
-    )
-      return
-
     const workflow = workflowStore.activeWorkflow
     if (workflow) workflow.dirtyLinearData = null
     resetSelectedToWorkflow()
