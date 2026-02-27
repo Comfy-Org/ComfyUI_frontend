@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import { useEventListener, useInfiniteScroll } from '@vueuse/core'
-import { ListboxContent, ListboxItem, ListboxRoot } from 'reka-ui'
+import type { ComponentPublicInstance } from 'vue'
 import {
   computed,
   nextTick,
+  ref,
   toValue,
   useTemplateRef,
   watch,
@@ -35,10 +36,6 @@ const emit = defineEmits<{
 const queueCount = computed(
   () => queueStore.runningTasks.length + queueStore.pendingTasks.length
 )
-
-const listboxRef = useTemplateRef<{
-  highlightItem: (value: SelectionValue) => void
-}>('listboxRef')
 
 const itemClass = cn(
   'shrink-0 cursor-pointer p-1 rounded-lg border-2 border-transparent outline-none',
@@ -83,9 +80,22 @@ const selectedValue = computed(() => {
   return selectionMap.value.get(store.selectedId)
 })
 
-function onSelectionChange(val: unknown) {
-  const sv = val as SelectionValue | undefined
-  store.select(sv?.id ?? null)
+function itemAttrs(id: string) {
+  const selected = store.selectedId === id
+  return {
+    'data-state': selected ? 'checked' : 'unchecked',
+    tabindex: selected ? 0 : -1
+  }
+}
+
+const selectedItemEl = ref<Element | null>(null)
+
+function selectedRef(id: string) {
+  return store.selectedId === id
+    ? (el: Element | ComponentPublicInstance | null) => {
+        selectedItemEl.value = el instanceof Element ? el : null
+      }
+    : undefined
 }
 
 function doEmit() {
@@ -178,31 +188,28 @@ function selectFirstHistory() {
   }
 }
 
+// Compensate scroll position when items are prepended on the left.
+watch(
+  [
+    () => store.inProgressItems.length,
+    () => visibleHistory.value[0]?.id,
+    queueCount
+  ],
+  () => {
+    const el = outputsRef.value
+    if (!el || el.scrollLeft === 0) return
+    const prevScrollWidth = el.scrollWidth
+    nextTick(() => {
+      const delta = el.scrollWidth - prevScrollWidth
+      if (delta !== 0) el.scrollLeft += delta
+    })
+  }
+)
+
 const outputsRef = useTemplateRef('outputsRef')
 useInfiniteScroll(outputsRef, outputs.loadMore, {
   canLoadMore: () => outputs.hasMore.value
 })
-
-// Reka UI's ListboxContent stops propagation on ALL Enter keydown events,
-// which blocks modifier+Enter (Ctrl+Enter = run workflow) from reaching
-// the global keybinding handler on window. Intercept in capture phase
-// and re-dispatch from above the Listbox.
-function onModifierEnter(e: KeyboardEvent) {
-  if (e.key !== 'Enter' || !(e.ctrlKey || e.metaKey || e.shiftKey)) return
-  e.stopImmediatePropagation()
-  outputsRef.value?.parentElement?.dispatchEvent(
-    new KeyboardEvent('keydown', {
-      key: e.key,
-      code: e.code,
-      ctrlKey: e.ctrlKey,
-      metaKey: e.metaKey,
-      shiftKey: e.shiftKey,
-      altKey: e.altKey,
-      bubbles: true,
-      cancelable: true
-    })
-  )
-}
 
 function navigateToAdjacent(direction: 1 | -1) {
   const items = selectableItems.value
@@ -211,9 +218,13 @@ function navigateToAdjacent(direction: 1 | -1) {
   const idx = currentId ? items.findIndex((i) => i.id === currentId) : -1
   const nextIdx =
     idx === -1 ? 0 : Math.max(0, Math.min(items.length - 1, idx + direction))
-  const next = items[nextIdx]
-  store.select(next.id)
-  nextTick(() => listboxRef.value?.highlightItem(next))
+  store.select(items[nextIdx].id)
+  nextTick(() => {
+    selectedItemEl.value?.scrollIntoView({
+      block: 'nearest',
+      inline: 'nearest'
+    })
+  })
 }
 
 const pointer = new CanvasPointer(document.body)
@@ -255,9 +266,15 @@ useEventListener(
   { passive: false }
 )
 
+const keyHandlers: Record<string, 1 | -1> = {
+  ArrowUp: -1,
+  ArrowDown: 1,
+  ArrowLeft: -1,
+  ArrowRight: 1
+}
 useEventListener(document.body, 'keydown', (e: KeyboardEvent) => {
   if (
-    (e.key !== 'ArrowDown' && e.key !== 'ArrowUp') ||
+    !(e.key in keyHandlers) ||
     e.target instanceof HTMLTextAreaElement ||
     e.target instanceof HTMLInputElement
   )
@@ -265,28 +282,26 @@ useEventListener(document.body, 'keydown', (e: KeyboardEvent) => {
 
   e.preventDefault()
   e.stopPropagation()
-  if (e.key === 'ArrowDown') navigateToAdjacent(1)
-  else navigateToAdjacent(-1)
+  navigateToAdjacent(keyHandlers[e.key])
 })
 </script>
 <template>
-  <ListboxRoot
-    ref="listboxRef"
-    :model-value="selectedValue"
-    orientation="horizontal"
-    selection-behavior="replace"
-    by="id"
-    class="min-w-0 px-4 pb-4"
-    @update:model-value="onSelectionChange"
-  >
-    <ListboxContent as-child>
-      <article
-        ref="outputsRef"
-        data-testid="linear-outputs"
-        class="p-3 overflow-y-clip overflow-x-auto min-w-0"
-        @keydown.capture="onModifierEnter"
-      >
-        <div class="flex items-center gap-0.5 mx-auto w-fit">
+  <div role="group" class="min-w-0 px-4 pb-4">
+    <article
+      ref="outputsRef"
+      data-testid="linear-outputs"
+      class="py-3 overflow-y-clip overflow-x-auto min-w-0"
+    >
+      <div class="flex items-center gap-0.5 mx-auto w-fit">
+        <div
+          v-if="queueCount > 0 || hasActiveContent"
+          :class="
+            cn(
+              'sticky left-0 z-10 shrink-0 flex items-center gap-0.5',
+              'bg-comfy-menu-bg md:bg-comfy-menu-secondary-bg'
+            )
+          "
+        >
           <div v-if="queueCount > 0" class="shrink-0 flex items-center gap-0.5">
             <OutputHistoryActiveQueueItem :queue-count="queueCount" />
             <div
@@ -295,49 +310,44 @@ useEventListener(document.body, 'keydown', (e: KeyboardEvent) => {
             />
           </div>
 
-          <ListboxItem
+          <div
             v-for="item in store.inProgressItems"
             :key="`${item.id}-${item.state}`"
-            :value="{
-              id: `slot:${item.id}`,
-              kind: 'inProgress',
-              itemId: item.id
-            }"
+            :ref="selectedRef(`slot:${item.id}`)"
+            v-bind="itemAttrs(`slot:${item.id}`)"
             :class="itemClass"
+            @click="store.select(`slot:${item.id}`)"
           >
             <OutputPreviewItem
               v-if="item.state !== 'image' || !item.output"
               :latent-preview="item.latentPreviewUrl"
             />
             <OutputHistoryItem v-else :output="item.output" />
-          </ListboxItem>
+          </div>
 
           <div
             v-if="hasActiveContent && visibleHistory.length > 0"
             class="border-l border-border-default h-12 shrink-0 mx-4"
           />
-
-          <template v-for="(asset, aIdx) in visibleHistory" :key="asset.id">
-            <div
-              v-if="aIdx > 0"
-              class="border-l border-border-default h-12 shrink-0 mx-4"
-            />
-            <ListboxItem
-              v-for="(output, key) in toValue(allOutputs(asset))"
-              :key
-              :value="{
-                id: `history:${asset.id}:${key}`,
-                kind: 'history',
-                assetId: asset.id,
-                key
-              }"
-              :class="itemClass"
-            >
-              <OutputHistoryItem :output="output" />
-            </ListboxItem>
-          </template>
         </div>
-      </article>
-    </ListboxContent>
-  </ListboxRoot>
+
+        <template v-for="(asset, aIdx) in visibleHistory" :key="asset.id">
+          <div
+            v-if="aIdx > 0"
+            class="border-l border-border-default h-12 shrink-0 mx-4"
+          />
+          <div
+            v-for="(output, key) in toValue(allOutputs(asset))"
+            :key
+            :ref="selectedRef(`history:${asset.id}:${key}`)"
+            v-bind="itemAttrs(`history:${asset.id}:${key}`)"
+            :class="itemClass"
+            @click="store.select(`history:${asset.id}:${key}`)"
+          >
+            <OutputHistoryItem :output="output" />
+          </div>
+        </template>
+      </div>
+    </article>
+  </div>
 </template>
