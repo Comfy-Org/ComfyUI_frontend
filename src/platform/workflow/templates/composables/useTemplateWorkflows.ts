@@ -62,14 +62,14 @@ export function useTemplateWorkflows() {
   const getTemplateThumbnailUrl = (
     template: TemplateInfo,
     sourceModule: string,
-    index = '1'
+    index: string | null = null
   ) => {
     const basePath =
       sourceModule === 'default'
         ? api.fileURL(`/templates/${template.name}`)
         : api.apiURL(`/workflow_templates/${sourceModule}/${template.name}`)
 
-    const indexSuffix = sourceModule === 'default' && index ? `-${index}` : ''
+    const indexSuffix = index ? `-${index}` : ''
     return `${basePath}${indexSuffix}.${template.mediaSubtype}`
   }
 
