@@ -12,6 +12,7 @@ const isAppModeRef = ref(true)
 const activeWorkflowPathRef = ref<string>('workflows/test-workflow.json')
 const queuedJobsRef = ref<Record<string, { workflow?: { path: string } }>>({})
 const jobIdToWorkflowPathRef = ref(new Map<string, string>())
+const selectedOutputsRef = ref<string[]>([])
 
 const { apiTarget } = vi.hoisted(() => ({
   apiTarget: new EventTarget()
@@ -20,6 +21,14 @@ const { apiTarget } = vi.hoisted(() => ({
 vi.mock('@/composables/useAppMode', () => ({
   useAppMode: () => ({
     isAppMode: isAppModeRef
+  })
+}))
+
+vi.mock('@/stores/appModeStore', () => ({
+  useAppModeStore: () => ({
+    get selectedOutputs() {
+      return selectedOutputsRef.value
+    }
   })
 }))
 
@@ -109,6 +118,7 @@ describe('linearOutputStore', () => {
     activeWorkflowPathRef.value = 'workflows/test-workflow.json'
     queuedJobsRef.value = {}
     jobIdToWorkflowPathRef.value = new Map()
+    selectedOutputsRef.value = []
   })
 
   afterEach(() => {
@@ -116,6 +126,7 @@ describe('linearOutputStore', () => {
     previewsRef.value = {}
     queuedJobsRef.value = {}
     jobIdToWorkflowPathRef.value = new Map()
+    selectedOutputsRef.value = []
   })
 
   it('creates a skeleton item when a job starts', () => {
@@ -751,6 +762,34 @@ describe('linearOutputStore', () => {
     expect(jobIdToWorkflowPathRef.value.get('job-1')).toBe(
       'workflows/original.json'
     )
+  })
+
+  it('skips output items for nodes not in selectedOutputs', () => {
+    selectedOutputsRef.value = ['2']
+    const store = useLinearOutputStore()
+    store.onJobStart('job-1')
+
+    // Node 1 executes — not in selectedOutputs, should be skipped
+    store.onNodeExecuted('job-1', makeExecutedDetail('job-1', undefined, '1'))
+
+    // Skeleton should still be there (not consumed by non-output node)
+    expect(
+      store.inProgressItems.filter((i) => i.state === 'image')
+    ).toHaveLength(0)
+
+    // Node 2 executes — in selectedOutputs, should create image item
+    store.onNodeExecuted(
+      'job-1',
+      makeExecutedDetail(
+        'job-1',
+        [{ filename: 'out.png', subfolder: '', type: 'output' }],
+        '2'
+      )
+    )
+
+    const imageItems = store.inProgressItems.filter((i) => i.state === 'image')
+    expect(imageItems).toHaveLength(1)
+    expect(imageItems[0].output?.nodeId).toBe('2')
   })
 
   it('ignores execution events when not in app mode', async () => {

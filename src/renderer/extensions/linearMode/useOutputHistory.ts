@@ -9,6 +9,7 @@ import { useWorkflowStore } from '@/platform/workflow/management/stores/workflow
 import { flattenNodeOutput } from '@/renderer/extensions/linearMode/flattenNodeOutput'
 import { useLinearOutputStore } from '@/renderer/extensions/linearMode/linearOutputStore'
 import { getJobDetail } from '@/services/jobOutputCache'
+import { useAppModeStore } from '@/stores/appModeStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import type { ResultItemImpl } from '@/stores/queueStore'
 
@@ -22,6 +23,15 @@ export function useOutputHistory(): {
   const linearStore = useLinearOutputStore()
   const workflowStore = useWorkflowStore()
   const executionStore = useExecutionStore()
+  const appModeStore = useAppModeStore()
+
+  function filterByOutputNodes(items: ResultItemImpl[]): ResultItemImpl[] {
+    const nodeIds = appModeStore.selectedOutputs
+    if (!nodeIds.length) return items
+    return items.filter((r) =>
+      nodeIds.some((id) => String(id) === String(r.nodeId))
+    )
+  }
 
   const sessionMedia = computed(() => {
     const path = workflowStore.activeWorkflow?.path
@@ -53,7 +63,7 @@ export function useOutputHistory(): {
     if (!item?.id) return []
 
     const cached = resolvedCache.get(item.id)
-    if (cached) return cached
+    if (cached) return filterByOutputNodes(cached)
 
     const user_metadata = getOutputAssetMetadata(item.user_metadata)
     if (!user_metadata) return []
@@ -66,7 +76,7 @@ export function useOutputHistory(): {
         .map((i) => i.output!)
       if (ordered.length > 0) {
         resolvedCache.set(item.id, ordered)
-        return ordered
+        return filterByOutputNodes(ordered)
       }
     }
 
@@ -77,12 +87,12 @@ export function useOutputHistory(): {
     ) {
       const reversed = user_metadata.allOutputs.toReversed()
       resolvedCache.set(item.id, reversed)
-      return reversed
+      return filterByOutputNodes(reversed)
     }
 
     // Async fetch — return empty until resolved, then re-render via ref
     const existing = asyncRefs.get(item.id)
-    if (existing) return existing.value
+    if (existing) return filterByOutputNodes(existing.value)
 
     const outputRef = useAsyncState(
       getJobDetail(user_metadata.jobId).then((jobDetail) => {
@@ -96,7 +106,7 @@ export function useOutputHistory(): {
       []
     ).state
     asyncRefs.set(item.id, outputRef)
-    return outputRef.value
+    return filterByOutputNodes(outputRef.value)
   }
 
   function selectFirstHistory() {

@@ -5,6 +5,7 @@ import { nextTick, ref } from 'vue'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import type { InProgressItem } from '@/renderer/extensions/linearMode/linearModeTypes'
 import { useOutputHistory } from '@/renderer/extensions/linearMode/useOutputHistory'
+import { useAppModeStore } from '@/stores/appModeStore'
 import { ResultItemImpl } from '@/stores/queueStore'
 
 const mediaRef = ref<AssetItem[]>([])
@@ -109,12 +110,12 @@ function makeAsset(
   }
 }
 
-function makeResult(filename: string): ResultItemImpl {
+function makeResult(filename: string, nodeId: string = '1'): ResultItemImpl {
   return new ResultItemImpl({
     filename,
     subfolder: '',
     type: 'output',
-    nodeId: '1',
+    nodeId,
     mediaType: 'images'
   })
 }
@@ -205,6 +206,40 @@ describe(useOutputHistory, () => {
       // Should be reversed
       expect(outputs[0].filename).toBe('b.png')
       expect(outputs[1].filename).toBe('a.png')
+    })
+
+    it('filters outputs to selected output nodes only', () => {
+      const results = [
+        makeResult('a.png', '1'),
+        makeResult('b.png', '2'),
+        makeResult('c.png', '3')
+      ]
+      const asset = makeAsset('a1', 'job-1', {
+        allOutputs: results,
+        outputCount: 3
+      })
+
+      const appModeStore = useAppModeStore()
+      appModeStore.selectedOutputs.push('2')
+
+      const { allOutputs } = useOutputHistory()
+      const outputs = allOutputs(asset)
+
+      expect(outputs).toHaveLength(1)
+      expect(outputs[0].filename).toBe('b.png')
+    })
+
+    it('returns all outputs when no output nodes are selected', () => {
+      const results = [makeResult('a.png', '1'), makeResult('b.png', '2')]
+      const asset = makeAsset('a1', 'job-1', {
+        allOutputs: results,
+        outputCount: 2
+      })
+
+      const { allOutputs } = useOutputHistory()
+      const outputs = allOutputs(asset)
+
+      expect(outputs).toHaveLength(2)
     })
 
     it('caches results on subsequent calls', () => {

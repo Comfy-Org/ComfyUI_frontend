@@ -7,11 +7,13 @@ import { useWorkflowStore } from '@/platform/workflow/management/stores/workflow
 import type { ExecutedWsMessage } from '@/schemas/apiSchema'
 import { api } from '@/scripts/api'
 import { useAppMode } from '@/composables/useAppMode'
+import { useAppModeStore } from '@/stores/appModeStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useJobPreviewStore } from '@/stores/jobPreviewStore'
 
 export const useLinearOutputStore = defineStore('linearOutput', () => {
   const { isAppMode } = useAppMode()
+  const appModeStore = useAppModeStore()
   const executionStore = useExecutionStore()
   const jobPreviewStore = useJobPreviewStore()
   const workflowStore = useWorkflowStore()
@@ -121,6 +123,14 @@ export const useLinearOutputStore = defineStore('linearOutput', () => {
     }
     const newOutputs = flattenNodeOutput([nodeId, detail.output])
     if (newOutputs.length === 0) return
+
+    // Skip output items for nodes not flagged as output nodes
+    const outputNodeIds = appModeStore.selectedOutputs
+    if (
+      outputNodeIds.length > 0 &&
+      !outputNodeIds.some((id) => String(id) === nodeId)
+    )
+      return
 
     const skeletonItem = inProgressItems.value.find(
       (i) => i.id === currentSkeletonId.value && i.jobId === jobId
