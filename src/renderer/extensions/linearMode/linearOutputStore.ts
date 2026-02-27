@@ -19,6 +19,7 @@ export const useLinearOutputStore = defineStore('linearOutput', () => {
   const isFollowing = ref(true)
   const trackedJobId = ref<string | null>(null)
   const pendingResolve = ref(new Set<string>())
+  const executedNodeIds = new Set<string>()
 
   let nextSeq = 0
 
@@ -40,6 +41,7 @@ export const useLinearOutputStore = defineStore('linearOutput', () => {
   const currentSkeletonId = shallowRef<string | null>(null)
 
   function onJobStart(jobId: string) {
+    executedNodeIds.clear()
     const item: InProgressItem = {
       id: makeItemId(jobId),
       jobId,
@@ -53,7 +55,9 @@ export const useLinearOutputStore = defineStore('linearOutput', () => {
   }
 
   let raf: number | null = null
-  function onLatentPreview(jobId: string, url: string) {
+  function onLatentPreview(jobId: string, url: string, nodeId?: string) {
+    if (nodeId && executedNodeIds.has(nodeId)) return
+
     // Issue in Firefox where it doesnt seem to always re-render, wrapping in RAF fixes it
     if (raf) cancelAnimationFrame(raf)
     raf = requestAnimationFrame(() => {
@@ -89,6 +93,11 @@ export const useLinearOutputStore = defineStore('linearOutput', () => {
 
   function onNodeExecuted(jobId: string, detail: ExecutedWsMessage) {
     const nodeId = String(detail.display_node || detail.node)
+    executedNodeIds.add(nodeId)
+    if (raf) {
+      cancelAnimationFrame(raf)
+      raf = null
+    }
     const newOutputs = flattenNodeOutput([nodeId, detail.output])
     if (newOutputs.length === 0) return
 
@@ -134,7 +143,14 @@ export const useLinearOutputStore = defineStore('linearOutput', () => {
   }
 
   function onJobComplete(jobId: string) {
+    if (raf) {
+      cancelAnimationFrame(raf)
+      raf = null
+    }
     currentSkeletonId.value = null
+    if (trackedJobId.value === jobId) {
+      trackedJobId.value = null
+    }
 
     const hasImages = inProgressItems.value.some(
       (i) => i.jobId === jobId && i.state === 'image'
@@ -209,6 +225,7 @@ export const useLinearOutputStore = defineStore('linearOutput', () => {
       cancelAnimationFrame(raf)
       raf = null
     }
+    executedNodeIds.clear()
     inProgressItems.value = []
     selectedId.value = null
     isFollowing.value = true
@@ -231,13 +248,13 @@ export const useLinearOutputStore = defineStore('linearOutput', () => {
   )
 
   watch(
-    () => jobPreviewStore.previewsByPromptId,
+    () => jobPreviewStore.nodePreviewsByPromptId,
     (previews) => {
       if (!isAppMode.value) return
       const jobId = executionStore.activeJobId
       if (!jobId) return
-      const url = previews[jobId]
-      if (url) onLatentPreview(jobId, url)
+      const preview = previews[jobId]
+      if (preview) onLatentPreview(jobId, preview.url, preview.nodeId)
     },
     { deep: true }
   )
