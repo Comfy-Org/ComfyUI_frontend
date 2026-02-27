@@ -112,7 +112,7 @@ watch(
 
     const override = widgetState.positionOverride
     const isDisabled = override
-      ? (override.widget.computedDisabled ?? false)
+      ? (override.widget.computedDisabled ?? widget.computedDisabled)
       : widget.computedDisabled
 
     style.value = {
