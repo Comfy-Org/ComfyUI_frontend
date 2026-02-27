@@ -62,6 +62,7 @@ class PromotedWidgetView implements IPromotedWidgetView {
 
   private readonly graphId: string
   private yValue = 0
+  private _computedDisabled = false
 
   private projectedSourceNode?: LGraphNode
   private projectedSourceWidget?: IBaseWidget
@@ -96,11 +97,13 @@ class PromotedWidgetView implements IPromotedWidgetView {
     this.syncDomOverride()
   }
 
-  get computedDisabled(): false {
-    return false
+  get computedDisabled(): boolean {
+    return this._computedDisabled
   }
 
-  set computedDisabled(_value: boolean | undefined) {}
+  set computedDisabled(value: boolean | undefined) {
+    this._computedDisabled = value ?? false
+  }
 
   get type(): IBaseWidget['type'] {
     return this.resolveConcrete()?.widget.type ?? 'button'
