@@ -18,7 +18,7 @@
       <Splitter
         :key="splitterRefreshKey"
         class="bg-transparent pointer-events-none border-none flex-1 overflow-hidden"
-        :state-key="sidebarStateKey"
+        :state-key="isSelectMode ? 'builder-splitter' : sidebarStateKey"
         state-storage="local"
         @resizestart="onResizestart"
       >
@@ -35,8 +35,10 @@
                 )
               : 'bg-comfy-menu-bg pointer-events-auto'
           "
-          :min-size="sidebarLocation === 'left' ? 10 : 15"
-          :size="20"
+          :min-size="
+            sidebarLocation === 'left' ? SIDEBAR_MIN_SIZE : BUILDER_MIN_SIZE
+          "
+          :size="SIDE_PANEL_SIZE"
           :style="firstPanelStyle"
           :role="sidebarLocation === 'left' ? 'complementary' : undefined"
           :aria-label="
@@ -54,7 +56,7 @@
         </SplitterPanel>
 
         <!-- Main panel (always present) -->
-        <SplitterPanel :size="80" class="flex flex-col">
+        <SplitterPanel :size="CENTER_PANEL_SIZE" class="flex flex-col">
           <slot name="topmenu" :sidebar-panel-visible />
 
           <Splitter
@@ -95,8 +97,10 @@
                 )
               : 'bg-comfy-menu-bg pointer-events-auto'
           "
-          :min-size="sidebarLocation === 'right' ? 10 : 15"
-          :size="20"
+          :min-size="
+            sidebarLocation === 'right' ? SIDEBAR_MIN_SIZE : BUILDER_MIN_SIZE
+          "
+          :size="SIDE_PANEL_SIZE"
           :style="lastPanelStyle"
           :role="sidebarLocation === 'right' ? 'complementary' : undefined"
           :aria-label="
@@ -123,8 +127,14 @@ import SplitterPanel from 'primevue/splitterpanel'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { useSettingStore } from '@/platform/settings/settingStore'
 import { useAppMode } from '@/composables/useAppMode'
+import {
+  BUILDER_MIN_SIZE,
+  CENTER_PANEL_SIZE,
+  SIDEBAR_MIN_SIZE,
+  SIDE_PANEL_SIZE
+} from '@/constants/splitterConstants'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { useBottomPanelStore } from '@/stores/workspace/bottomPanelStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
@@ -145,12 +155,12 @@ const unifiedWidth = computed(() =>
 
 const { focusMode } = storeToRefs(workspaceStore)
 
-const { mode } = useAppMode()
+const { isSelectMode } = useAppMode()
 const { activeSidebarTabId, activeSidebarTab } = storeToRefs(sidebarTabStore)
 const { bottomPanelVisible } = storeToRefs(useBottomPanelStore())
 const { isOpen: rightSidePanelVisible } = storeToRefs(rightSidePanelStore)
 const showOffsideSplitter = computed(
-  () => rightSidePanelVisible.value || mode.value === 'builder:select'
+  () => rightSidePanelVisible.value || isSelectMode.value
 )
 
 const sidebarPanelVisible = computed(() => activeSidebarTab.value !== null)
@@ -174,7 +184,7 @@ function onResizestart({ originalEvent: event }: SplitterResizeStartEvent) {
  * to recalculate the width and panel order
  */
 const splitterRefreshKey = computed(() => {
-  return `main-splitter${rightSidePanelVisible.value ? '-with-right-panel' : ''}-${sidebarLocation.value}`
+  return `main-splitter${rightSidePanelVisible.value ? '-with-right-panel' : ''}${isSelectMode.value ? '-builder' : ''}-${sidebarLocation.value}`
 })
 
 const firstPanelStyle = computed(() => {
