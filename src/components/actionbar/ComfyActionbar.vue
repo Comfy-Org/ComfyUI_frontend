@@ -48,7 +48,7 @@
           size="md"
           :aria-pressed="
             isQueuePanelV2Enabled
-              ? activeSidebarTabId === 'assets'
+              ? activeSidebarTabId === 'job-history'
               : queueOverlayExpanded
           "
           class="relative px-3"
@@ -79,7 +79,7 @@
 
     <Teleport v-if="inlineProgressTarget" :to="inlineProgressTarget">
       <QueueInlineProgress
-        :hidden="queueOverlayExpanded"
+        :hidden="shouldHideInlineProgress"
         :radius-class="cn(isDocked ? 'rounded-[7px]' : 'rounded-[5px]')"
         data-testid="queue-inline-progress"
       />
@@ -329,6 +329,9 @@ const inlineProgressTarget = computed(() => {
   if (isDocked.value) return topMenuContainer ?? null
   return panelElement.value
 })
+const shouldHideInlineProgress = computed(
+  () => !isQueuePanelV2Enabled.value && queueOverlayExpanded
+)
 watch(
   panelElement,
   (target) => {
@@ -387,7 +390,7 @@ const cancelCurrentJob = async () => {
 }
 const toggleQueueOverlay = () => {
   if (isQueuePanelV2Enabled.value) {
-    sidebarTabStore.toggleSidebarTab('assets')
+    sidebarTabStore.toggleSidebarTab('job-history')
     return
   }
   commandStore.execute('Comfy.Queue.ToggleOverlay')

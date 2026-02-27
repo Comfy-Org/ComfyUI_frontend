@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import type { CurvePoint } from '@/lib/litegraph/src/types/widgets'
+import type { CurvePoint } from './types'
 
 import {
   createMonotoneInterpolator,

@@ -1,30 +1,36 @@
-import { watch } from 'vue'
+import { ref } from 'vue'
 
+import { useErrorHandling } from '@/composables/useErrorHandling'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useDialogService } from '@/services/dialogService'
+import { useAppMode } from '@/composables/useAppMode'
 import { useAppModeStore } from '@/stores/appModeStore'
 import { useDialogStore } from '@/stores/dialogStore'
 
 import BuilderSaveDialogContent from './BuilderSaveDialogContent.vue'
 import BuilderSaveSuccessDialogContent from './BuilderSaveSuccessDialogContent.vue'
+import { whenever } from '@vueuse/core'
 
 const SAVE_DIALOG_KEY = 'builder-save'
 const SUCCESS_DIALOG_KEY = 'builder-save-success'
 
 export function useBuilderSave() {
-  const appModeStore = useAppModeStore()
+  const { setMode } = useAppMode()
+  const { toastErrorHandler } = useErrorHandling()
   const workflowStore = useWorkflowStore()
   const workflowService = useWorkflowService()
   const dialogService = useDialogService()
+  const appModeStore = useAppModeStore()
   const dialogStore = useDialogStore()
 
-  watch(
-    () => appModeStore.isBuilderSaving,
-    (saving) => {
-      if (saving) void onBuilderSave()
-    }
-  )
+  const saving = ref(false)
+
+  whenever(saving, onBuilderSave)
+
+  function setSaving(value: boolean) {
+    saving.value = value
+  }
 
   async function onBuilderSave() {
     const workflow = workflowStore.activeWorkflow
@@ -33,15 +39,14 @@ export function useBuilderSave() {
       return
     }
 
-    // TODO: Update this to show the save dialog if it is temp OR if the user has not saved app mode before.
-    // If they have saved app mode before, just save the workflow, but use the initial app mode state not current.
-
-    if (!workflow.isTemporary) {
+    if (!workflow.isTemporary && workflow.initialMode != null) {
+      // Re-save with the previously chosen mode — no dialog needed.
       try {
-        workflow.changeTracker?.checkState()
+        appModeStore.flushSelections()
         await workflowService.saveWorkflow(workflow)
-        showSuccessDialog(workflow.filename, appModeStore.isAppMode)
-      } catch {
+        showSuccessDialog(workflow.filename, workflow.initialMode === 'app')
+      } catch (e) {
+        toastErrorHandler(e)
         resetSaving()
       }
       return
@@ -75,16 +80,19 @@ export function useBuilderSave() {
       const workflow = workflowStore.activeWorkflow
       if (!workflow) return
 
+      appModeStore.flushSelections()
+      const mode = openAsApp ? 'app' : 'graph'
       const saved = await workflowService.saveWorkflowAs(workflow, {
         filename,
-        openAsApp
+        initialMode: mode
       })
 
       if (!saved) return
 
       closeSaveDialog()
       showSuccessDialog(filename, openAsApp)
-    } catch {
+    } catch (e) {
+      toastErrorHandler(e)
       closeSaveDialog()
       resetSaving()
     }
@@ -98,7 +106,7 @@ export function useBuilderSave() {
         workflowName,
         savedAsApp,
         onViewApp: () => {
-          appModeStore.setMode('app')
+          setMode('app')
           closeSuccessDialog()
         },
         onClose: closeSuccessDialog
@@ -119,6 +127,8 @@ export function useBuilderSave() {
   }
 
   function resetSaving() {
-    appModeStore.setBuilderSaving(false)
+    saving.value = false
   }
+
+  return { saving, setSaving }
 }

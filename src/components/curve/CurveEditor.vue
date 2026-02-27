@@ -77,7 +77,8 @@
 import { computed, useTemplateRef } from 'vue'
 
 import { useCurveEditor } from '@/composables/useCurveEditor'
-import type { CurvePoint } from '@/lib/litegraph/src/types/widgets'
+
+import type { CurvePoint } from './types'
 
 import { histogramToPath } from './curveUtils'
 

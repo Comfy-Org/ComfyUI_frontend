@@ -5,12 +5,12 @@ import { flattenNodeOutput } from '@/renderer/extensions/linearMode/flattenNodeO
 import type { InProgressItem } from '@/renderer/extensions/linearMode/linearModeTypes'
 import type { ExecutedWsMessage } from '@/schemas/apiSchema'
 import { api } from '@/scripts/api'
-import { useAppModeStore } from '@/stores/appModeStore'
+import { useAppMode } from '@/composables/useAppMode'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useJobPreviewStore } from '@/stores/jobPreviewStore'
 
 export const useLinearOutputStore = defineStore('linearOutput', () => {
-  const appModeStore = useAppModeStore()
+  const { isAppMode } = useAppMode()
   const executionStore = useExecutionStore()
   const jobPreviewStore = useJobPreviewStore()
 
@@ -220,7 +220,7 @@ export const useLinearOutputStore = defineStore('linearOutput', () => {
   watch(
     () => executionStore.activeJobId,
     (jobId, oldJobId) => {
-      if (!appModeStore.isAppMode) return
+      if (!isAppMode.value) return
       if (oldJobId && oldJobId !== jobId) {
         onJobComplete(oldJobId)
       }
@@ -233,7 +233,7 @@ export const useLinearOutputStore = defineStore('linearOutput', () => {
   watch(
     () => jobPreviewStore.previewsByPromptId,
     (previews) => {
-      if (!appModeStore.isAppMode) return
+      if (!isAppMode.value) return
       const jobId = executionStore.activeJobId
       if (!jobId) return
       const url = previews[jobId]
@@ -243,7 +243,7 @@ export const useLinearOutputStore = defineStore('linearOutput', () => {
   )
 
   watch(
-    () => appModeStore.isAppMode,
+    isAppMode,
     (active, wasActive) => {
       if (active) {
         api.addEventListener('executed', handleExecuted)

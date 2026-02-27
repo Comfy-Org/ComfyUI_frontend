@@ -225,6 +225,7 @@
     "login": {
       "andText": "以及",
       "backToLogin": "返回登入",
+      "backToSocialLogin": "改用 Google 或 Github 註冊",
       "confirmPasswordLabel": "確認密碼",
       "confirmPasswordPlaceholder": "請再次輸入相同密碼",
       "didntReceiveEmail": "沒有收到電子郵件？請聯絡我們：",
@@ -233,6 +234,9 @@
       "failed": "登入失敗",
       "forgotPassword": "忘記密碼？",
       "forgotPasswordError": "密碼重設郵件發送失敗",
+      "freeTierBadge": "符合免費方案資格",
+      "freeTierDescription": "使用 Google 註冊，每月可獲得 {credits} 免費點數。無需信用卡。",
+      "freeTierDescriptionGeneric": "使用 Google 註冊，每月可獲得免費點數。無需信用卡。",
       "insecureContextWarning": "此連線不安全（HTTP）。如果您繼續登入，您的憑證可能會被攻擊者攔截。",
       "loginButton": "登入",
       "loginWithGithub": "使用 Github 登入",
@@ -251,11 +255,13 @@
       "sendResetLink": "發送重設連結",
       "signInOrSignUp": "登入 / 註冊",
       "signUp": "註冊",
+      "signUpFreeTierPromo": "新用戶？{signUp} 使用 Google 註冊，每月獲得 {credits} 免費點數。",
       "success": "登入成功",
       "termsLink": "使用條款",
       "termsText": "點擊「下一步」或「註冊」即表示您同意我們的",
       "title": "登入您的帳戶",
       "useApiKey": "Comfy API 金鑰",
+      "useEmailInstead": "改用電子郵件",
       "userAvatar": "用戶頭像"
     },
     "loginButton": {
@@ -282,6 +288,7 @@
     "signup": {
       "alreadyHaveAccount": "已經有帳戶？",
       "emailLabel": "電子郵件",
+      "emailNotEligibleForFreeTier": "電子郵件註冊不符合免費方案資格。",
       "emailPlaceholder": "請輸入您的電子郵件",
       "passwordLabel": "密碼",
       "passwordPlaceholder": "請輸入新密碼",
@@ -1331,6 +1338,20 @@
       "switchToSelectButton": "切換到選擇"
     },
     "beta": "App 模式 Beta - 提供回饋",
+    "builder": {
+      "exit": "離開建構器",
+      "exitConfirmMessage": "您有尚未儲存的變更將會遺失\n確定要不儲存直接離開嗎？",
+      "exitConfirmTitle": "要離開應用程式建構器嗎？",
+      "inputsDesc": "使用者可調整這些參數以產生輸出。",
+      "inputsExample": "例如：「載入圖像」、「文字提示」、「步數」",
+      "noInputs": "尚未新增任何輸入",
+      "noOutputs": "尚未新增任何輸出節點",
+      "outputsDesc": "請至少連接一個輸出節點，讓使用者在執行後能看到結果。",
+      "outputsExample": "例如：「儲存圖像」或「儲存影片」",
+      "promptAddInputs": "點擊節點參數，將其新增為輸入",
+      "promptAddOutputs": "點擊輸出節點，將其新增於此。這些將是產生的結果。",
+      "title": "應用程式建構模式"
+    },
     "downloadAll": "全部下載",
     "dragAndDropImage": "拖曳圖片到此",
     "graphMode": "圖形模式",
@@ -1868,11 +1889,18 @@
     "showLinks": "顯示連結"
   },
   "missingModelsDialog": {
+    "customModelsInstruction": "您需要自行尋找並下載這些模型。請在網路上搜尋（可嘗試 Civitai 或 Hugging Face），或聯絡原始工作流程提供者。",
+    "customModelsWarning": "其中有些是我們無法識別的自訂模型。",
+    "description": "此工作流程需要您尚未下載的模型。",
     "doNotAskAgain": "不要再顯示此訊息",
-    "missingModels": "缺少模型",
-    "missingModelsMessage": "載入圖形時，找不到以下模型",
+    "downloadAll": "全部下載",
+    "downloadAvailable": "下載可用項目",
+    "footerDescription": "請下載並將這些模型放置在正確的資料夾中。\n缺少模型的節點會在畫布上以紅色標示。",
+    "gotIt": "知道了",
     "reEnableInSettings": "請在{link}中重新啟用",
-    "reEnableInSettingsLink": "設定"
+    "reEnableInSettingsLink": "設定",
+    "title": "此工作流程缺少模型",
+    "totalSize": "總下載大小："
   },
   "missingNodes": {
     "cloud": {
@@ -2684,7 +2712,9 @@
     "addCreditsLabel": "隨時可儲值點數",
     "benefits": {
       "benefit1": "合作節點每月點數 — 需要時可隨時加值",
-      "benefit2": "每項任務最多運行 30 分鐘"
+      "benefit1FreeTier": "每月更多點數，隨時加值",
+      "benefit2": "每項任務最多運行 30 分鐘",
+      "benefit3": "可自帶模型（Creator & Pro）"
     },
     "beta": "測試版",
     "billedMonthly": "每月收費",
@@ -2722,6 +2752,21 @@
     "description": "選擇最適合您的方案",
     "descriptionWorkspace": "為您的工作區選擇最佳方案",
     "expiresDate": "將於 {date} 到期",
+    "freeTier": {
+      "description": "您的免費方案每月包含 {credits} 點數，可體驗 Comfy Cloud。",
+      "descriptionGeneric": "您的免費方案每月包含點數額度，可體驗 Comfy Cloud。",
+      "nextRefresh": "您的點數將於 {date} 重置。",
+      "outOfCredits": {
+        "subtitle": "訂閱以解鎖加值與更多功能",
+        "title": "您的免費點數已用完"
+      },
+      "subscribeCta": "訂閱以獲得更多",
+      "title": "您目前使用的是免費方案",
+      "topUpBlocked": {
+        "title": "解鎖加值與更多功能"
+      },
+      "upgradeCta": "查看方案"
+    },
     "gpuLabel": "RTX 6000 Pro（96GB VRAM）",
     "haveQuestions": "有疑問或想了解企業方案？",
     "invoiceHistory": "發票記錄",
@@ -2732,6 +2777,7 @@
     "maxDuration": {
       "creator": "30 分鐘",
       "founder": "30 分鐘",
+      "free": "30 分鐘",
       "pro": "1 小時",
       "standard": "30 分鐘"
     },
@@ -2803,6 +2849,9 @@
       },
       "founder": {
         "name": "創始版"
+      },
+      "free": {
+        "name": "免費"
       },
       "pro": {
         "name": "專業版"

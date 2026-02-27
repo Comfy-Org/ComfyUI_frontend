@@ -201,7 +201,8 @@ class PromotedWidgetView implements IPromotedWidgetView {
     projected.drawWidget(ctx, {
       width: widgetWidth,
       showText: !lowQuality,
-      suppressPromotedOutline: true
+      suppressPromotedOutline: true,
+      previewImages: resolved.node.imgs
     })
 
     projected.y = originalY

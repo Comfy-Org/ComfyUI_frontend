@@ -14,11 +14,9 @@ const { apiTarget } = vi.hoisted(() => ({
   apiTarget: new EventTarget()
 }))
 
-vi.mock('@/stores/appModeStore', () => ({
-  useAppModeStore: () => ({
-    get isAppMode() {
-      return isAppModeRef.value
-    }
+vi.mock('@/composables/useAppMode', () => ({
+  useAppMode: () => ({
+    isAppMode: isAppModeRef
   })
 }))
 

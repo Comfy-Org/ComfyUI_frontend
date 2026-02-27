@@ -1,6 +1,7 @@
 import { useNodeDragAndDrop } from '@/composables/node/useNodeDragAndDrop'
 import { useNodeFileInput } from '@/composables/node/useNodeFileInput'
 import { useNodePaste } from '@/composables/node/useNodePaste'
+import { t } from '@/i18n'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import type { ResultItemType } from '@/schemas/apiSchema'
@@ -62,6 +63,8 @@ interface ImageUploadOptions {
    * @example 'input', 'output', 'temp'
    */
   folder?: ResultItemType
+  onUploadStart?: (files: File[]) => void
+  onUploadError?: () => void
 }
 
 /**
@@ -90,10 +93,29 @@ export const useNodeImageUpload = (
   }
 
   const handleUploadBatch = async (files: File[]) => {
-    const paths = await Promise.all(files.map(handleUpload))
-    const validPaths = paths.filter((p): p is string => !!p)
-    if (validPaths.length) onUploadComplete(validPaths)
-    return validPaths
+    if (node.isUploading) {
+      useToastStore().addAlert(t('g.uploadAlreadyInProgress'))
+      return []
+    }
+    node.isUploading = true
+
+    try {
+      node.imgs = undefined
+      node.graph?.setDirtyCanvas(true)
+      options.onUploadStart?.(files)
+
+      const paths = await Promise.all(files.map(handleUpload))
+      const validPaths = paths.filter((p): p is string => !!p)
+      if (validPaths.length) {
+        onUploadComplete(validPaths)
+      } else {
+        options.onUploadError?.()
+      }
+      return validPaths
+    } finally {
+      node.isUploading = false
+      node.graph?.setDirtyCanvas(true)
+    }
   }
 
   // Handle drag & drop

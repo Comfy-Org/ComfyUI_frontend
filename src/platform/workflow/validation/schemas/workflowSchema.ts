@@ -277,7 +277,13 @@ const zExtra = z
     reroutes: z.array(zReroute).optional(),
     workflowRendererVersion: zRendererType.optional(),
     BlueprintDescription: z.string().optional(),
-    BlueprintSearchAliases: z.array(z.string()).optional()
+    BlueprintSearchAliases: z.array(z.string()).optional(),
+    linearData: z
+      .object({
+        inputs: z.array(z.tuple([zNodeId, z.string()])).optional(),
+        outputs: z.array(zNodeId).optional()
+      })
+      .optional()
   })
   .passthrough()
 
@@ -547,7 +553,6 @@ export type ComfyApiWorkflow = z.infer<typeof zComfyApiWorkflow>
  * where that definition is instantiated in the workflow.
  *
  * "def-A" → ["5", "10"] for each container node instantiating that subgraph definition.
- * @knipIgnoreUsedByStackedPR
  */
 export function buildSubgraphExecutionPaths(
   rootNodes: ComfyNode[],

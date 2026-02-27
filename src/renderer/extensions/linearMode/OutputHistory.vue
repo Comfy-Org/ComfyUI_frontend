@@ -12,6 +12,7 @@ import {
 
 import { CanvasPointer } from '@/lib/litegraph/src/CanvasPointer'
 import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
+import OutputHistoryActiveQueueItem from '@/renderer/extensions/linearMode/OutputHistoryActiveQueueItem.vue'
 import OutputHistoryItem from '@/renderer/extensions/linearMode/OutputHistoryItem.vue'
 import { useLinearOutputStore } from '@/renderer/extensions/linearMode/linearOutputStore'
 import type {
@@ -275,7 +276,7 @@ useEventListener(document.body, 'keydown', (e: KeyboardEvent) => {
     orientation="horizontal"
     selection-behavior="replace"
     by="id"
-    class="min-w-0"
+    class="min-w-0 px-4 pb-4"
     @update:model-value="onSelectionChange"
   >
     <ListboxContent as-child>
@@ -287,23 +288,7 @@ useEventListener(document.body, 'keydown', (e: KeyboardEvent) => {
       >
         <div class="flex items-center gap-0.5 mx-auto w-fit">
           <div v-if="queueCount > 0" class="shrink-0 flex items-center gap-0.5">
-            <div
-              class="shrink-0 p-1 border-2 border-transparent relative"
-              data-testid="linear-job"
-            >
-              <div
-                class="size-10 rounded-sm bg-secondary-background flex items-center justify-center"
-              >
-                <i
-                  class="icon-[lucide--loader-circle] size-4 animate-spin text-muted-foreground"
-                />
-              </div>
-              <div
-                v-if="queueCount > 1"
-                class="absolute top-0 right-0 min-w-4 h-4 flex justify-center items-center rounded-full bg-primary-background text-text-primary text-xs"
-                v-text="queueCount"
-              />
-            </div>
+            <OutputHistoryActiveQueueItem :queue-count="queueCount" />
             <div
               v-if="hasActiveContent || visibleHistory.length > 0"
               class="border-l border-border-default h-12 shrink-0 mx-4"
