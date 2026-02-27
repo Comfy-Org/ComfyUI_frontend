@@ -44,7 +44,7 @@
         </Button>
         <Button
           v-tooltip.bottom="queueHistoryTooltipConfig"
-          type="destructive"
+          variant="secondary"
           size="md"
           :aria-pressed="
             isQueuePanelV2Enabled
