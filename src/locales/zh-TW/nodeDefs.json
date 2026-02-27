@@ -2137,6 +2137,35 @@
       }
     }
   },
+  "CropByBBoxes": {
+    "description": "根據提供的邊界框，從輸入影像批次中裁切並調整區域大小。",
+    "display_name": "CropByBBoxes",
+    "inputs": {
+      "bboxes": {
+        "name": "bboxes"
+      },
+      "image": {
+        "name": "image"
+      },
+      "output_height": {
+        "name": "output_height",
+        "tooltip": "每個裁切區域調整後的高度。"
+      },
+      "output_width": {
+        "name": "output_width",
+        "tooltip": "每個裁切區域調整後的寬度。"
+      },
+      "padding": {
+        "name": "padding",
+        "tooltip": "在裁切前，於邊界框每側額外增加的像素邊距。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "所有裁切區域堆疊為單一影像批次。"
+      }
+    }
+  },
   "CropMask": {
     "display_name": "裁剪遮罩",
     "inputs": {
@@ -3693,6 +3722,57 @@
       "file": {
         "name": "檔案",
         "tooltip": "要作為模型上下文包含的輸入檔案。目前僅接受文字 (.txt) 和 PDF (.pdf) 檔案。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "GeminiNanoBanana2": {
+    "description": "透過 Google Vertex API 同步產生或編輯影像。",
+    "display_name": "Nano Banana 2",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio",
+        "tooltip": "若設為「auto」，則會配合輸入影像的長寬比；若未提供影像，通常會產生 16:9 的正方形。"
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "files": {
+        "name": "files",
+        "tooltip": "可選的檔案，作為模型的參考內容。可接受來自 Gemini Generate Content Input Files 節點的輸入。"
+      },
+      "images": {
+        "name": "images",
+        "tooltip": "可選的參考影像。若要加入多張影像，請使用 Batch Images 節點（最多 14 張）。"
+      },
+      "model": {
+        "name": "model"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "描述要產生影像或要套用編輯的文字提示。請包含模型應遵循的任何限制、風格或細節。"
+      },
+      "resolution": {
+        "name": "resolution",
+        "tooltip": "目標輸出解析度。若選擇 2K/4K，將使用原生 Gemini 放大器。"
+      },
+      "response_modalities": {
+        "name": "response_modalities"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "當 seed 設定為特定值時，模型會盡力在重複請求時提供相同的回應，但不保證完全一致。更改模型或參數（如 temperature）即使使用相同 seed 也可能導致回應不同。預設會使用隨機 seed 值。"
+      },
+      "system_prompt": {
+        "name": "system_prompt",
+        "tooltip": "決定 AI 行為的基礎指令。"
+      },
+      "thinking_level": {
+        "name": "thinking_level"
       }
     },
     "outputs": {
@@ -12975,6 +13055,90 @@
     "outputs": {
       "0": {
         "tooltip": null
+      }
+    }
+  },
+  "SDPoseDrawKeypoints": {
+    "display_name": "SDPoseDrawKeypoints",
+    "inputs": {
+      "draw_body": {
+        "name": "draw_body"
+      },
+      "draw_face": {
+        "name": "draw_face"
+      },
+      "draw_feet": {
+        "name": "draw_feet"
+      },
+      "draw_hands": {
+        "name": "draw_hands"
+      },
+      "face_point_size": {
+        "name": "face_point_size"
+      },
+      "keypoints": {
+        "name": "keypoints"
+      },
+      "score_threshold": {
+        "name": "score_threshold"
+      },
+      "stick_width": {
+        "name": "stick_width"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SDPoseFaceBBoxes": {
+    "display_name": "SDPoseFaceBBoxes",
+    "inputs": {
+      "force_square": {
+        "name": "force_square",
+        "tooltip": "將較短的邊界框軸向擴展，使裁切區域始終為正方形。"
+      },
+      "keypoints": {
+        "name": "keypoints"
+      },
+      "scale": {
+        "name": "scale",
+        "tooltip": "每個偵測到的臉部邊界框區域的倍率。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "bboxes",
+        "tooltip": "每幀的臉部邊界框，與 SDPoseKeypointExtractor 的 bboxes 輸入相容。"
+      }
+    }
+  },
+  "SDPoseKeypointExtractor": {
+    "description": "使用 SDPose 模型從影像中提取姿勢關鍵點：https://huggingface.co/Comfy-Org/SDPose/tree/main/checkpoints",
+    "display_name": "SDPoseKeypointExtractor",
+    "inputs": {
+      "batch_size": {
+        "name": "batch_size"
+      },
+      "bboxes": {
+        "name": "bboxes",
+        "tooltip": "可選的邊界框以提升偵測準確度。多人偵測時必須提供。"
+      },
+      "image": {
+        "name": "image"
+      },
+      "model": {
+        "name": "model"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "keypoints",
+        "tooltip": "以 OpenPose 幀格式（canvas_width, canvas_height, people）表示的關鍵點"
       }
     }
   },

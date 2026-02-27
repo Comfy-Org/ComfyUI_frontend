@@ -2137,6 +2137,35 @@
       }
     }
   },
+  "CropByBBoxes": {
+    "description": "제공된 바운딩 박스를 기반으로 입력 이미지 배치에서 영역을 자르고 크기를 조정합니다.",
+    "display_name": "CropByBBoxes",
+    "inputs": {
+      "bboxes": {
+        "name": "bboxes"
+      },
+      "image": {
+        "name": "image"
+      },
+      "output_height": {
+        "name": "output_height",
+        "tooltip": "각 잘라낸 이미지의 높이로 크기가 조정됩니다."
+      },
+      "output_width": {
+        "name": "output_width",
+        "tooltip": "각 잘라낸 이미지의 너비로 크기가 조정됩니다."
+      },
+      "padding": {
+        "name": "padding",
+        "tooltip": "자르기 전에 바운딩 박스의 각 면에 추가되는 픽셀 단위의 여백입니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "모든 잘라낸 이미지가 하나의 이미지 배치로 쌓입니다."
+      }
+    }
+  },
   "CropMask": {
     "display_name": "마스크 자르기",
     "inputs": {
@@ -3693,6 +3722,57 @@
       "file": {
         "name": "file",
         "tooltip": "모델의 컨텍스트로 포함할 입력 파일. 현재는 텍스트(.txt) 및 PDF(.pdf) 파일만 허용됩니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "GeminiNanoBanana2": {
+    "description": "Google Vertex API를 통해 이미지를 동기적으로 생성하거나 편집합니다.",
+    "display_name": "Nano Banana 2",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "종횡비",
+        "tooltip": "'auto'로 설정하면 입력 이미지의 종횡비와 일치합니다. 이미지가 제공되지 않으면 일반적으로 16:9 정사각형이 생성됩니다."
+      },
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "files": {
+        "name": "파일",
+        "tooltip": "모델의 컨텍스트로 사용할 선택적 파일(들)입니다. Gemini Generate Content Input Files 노드에서 입력을 받을 수 있습니다."
+      },
+      "images": {
+        "name": "이미지",
+        "tooltip": "선택적 참조 이미지(들)입니다. 여러 이미지를 포함하려면 Batch Images 노드를 사용하세요(최대 14개)."
+      },
+      "model": {
+        "name": "모델"
+      },
+      "prompt": {
+        "name": "프롬프트",
+        "tooltip": "생성할 이미지 또는 적용할 편집을 설명하는 텍스트 프롬프트입니다. 모델이 따라야 할 제약 조건, 스타일 또는 세부 정보를 포함하세요."
+      },
+      "resolution": {
+        "name": "해상도",
+        "tooltip": "목표 출력 해상도입니다. 2K/4K의 경우 Gemini 기본 업스케일러가 사용됩니다."
+      },
+      "response_modalities": {
+        "name": "응답 모달리티"
+      },
+      "seed": {
+        "name": "시드",
+        "tooltip": "시드를 특정 값으로 고정하면, 모델은 반복 요청에 대해 동일한 응답을 제공하려고 최선을 다합니다. 결정적 결과는 보장되지 않습니다. 또한, 모델이나 파라미터 설정(예: temperature)을 변경하면 동일한 시드 값을 사용해도 응답이 달라질 수 있습니다. 기본적으로 무작위 시드 값이 사용됩니다."
+      },
+      "system_prompt": {
+        "name": "시스템 프롬프트",
+        "tooltip": "AI의 동작을 지시하는 기본 지침입니다."
+      },
+      "thinking_level": {
+        "name": "사고 수준"
       }
     },
     "outputs": {
@@ -12975,6 +13055,90 @@
     "outputs": {
       "0": {
         "tooltip": null
+      }
+    }
+  },
+  "SDPoseDrawKeypoints": {
+    "display_name": "SDPoseDrawKeypoints",
+    "inputs": {
+      "draw_body": {
+        "name": "draw_body"
+      },
+      "draw_face": {
+        "name": "draw_face"
+      },
+      "draw_feet": {
+        "name": "draw_feet"
+      },
+      "draw_hands": {
+        "name": "draw_hands"
+      },
+      "face_point_size": {
+        "name": "face_point_size"
+      },
+      "keypoints": {
+        "name": "keypoints"
+      },
+      "score_threshold": {
+        "name": "score_threshold"
+      },
+      "stick_width": {
+        "name": "stick_width"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SDPoseFaceBBoxes": {
+    "display_name": "SDPoseFaceBBoxes",
+    "inputs": {
+      "force_square": {
+        "name": "force_square",
+        "tooltip": "자르기 영역이 항상 정사각형이 되도록 더 짧은 바운딩 박스 축을 확장합니다."
+      },
+      "keypoints": {
+        "name": "keypoints"
+      },
+      "scale": {
+        "name": "scale",
+        "tooltip": "각 감지된 얼굴 주위의 바운딩 박스 영역에 곱해지는 배수입니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "bboxes",
+        "tooltip": "프레임별 얼굴 바운딩 박스이며, SDPoseKeypointExtractor의 bboxes 입력과 호환됩니다."
+      }
+    }
+  },
+  "SDPoseKeypointExtractor": {
+    "description": "SDPose 모델을 사용하여 이미지에서 포즈 키포인트를 추출합니다: https://huggingface.co/Comfy-Org/SDPose/tree/main/checkpoints",
+    "display_name": "SDPoseKeypointExtractor",
+    "inputs": {
+      "batch_size": {
+        "name": "batch_size"
+      },
+      "bboxes": {
+        "name": "bboxes",
+        "tooltip": "더 정확한 감지를 위한 선택적 바운딩 박스입니다. 다중 인물 감지 시 필수입니다."
+      },
+      "image": {
+        "name": "image"
+      },
+      "model": {
+        "name": "model"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "keypoints",
+        "tooltip": "OpenPose 프레임 형식의 키포인트 (canvas_width, canvas_height, people)"
       }
     }
   },

@@ -699,6 +699,7 @@
     "OPENAI_INPUT_FILES": "OPENAI_GİRİŞ_DOSYALARI",
     "PHOTOMAKER": "PHOTOMAKER",
     "PIXVERSE_TEMPLATE": "PIXVERSE_ŞABLONU",
+    "POSE_KEYPOINT": "POZ ANAHTAR NOKTASI",
     "RECRAFT_COLOR": "RECRAFT_RENK",
     "RECRAFT_CONTROLS": "RECRAFT_KONTROLLERİ",
     "RECRAFT_V3_STYLE": "RECRAFT_V3_STİLİ",
@@ -958,6 +959,7 @@
     "imageUrl": "Görsel URL'si",
     "import": "İçe Aktar",
     "inProgress": "Devam ediyor",
+    "inSubgraph": "'{name}' alt grafında",
     "increment": "Arttır",
     "info": "Düğüm Bilgisi",
     "input": "Girdi",
@@ -1115,6 +1117,7 @@
     "updated": "Güncellendi",
     "updating": "{id} güncelleniyor",
     "upload": "Yükle",
+    "uploadAlreadyInProgress": "Yükleme zaten devam ediyor",
     "usageHint": "Kullanım ipucu",
     "use": "Kullan",
     "user": "Kullanıcı",
@@ -1354,8 +1357,13 @@
     },
     "downloadAll": "Tümünü İndir",
     "dragAndDropImage": "Bir görseli sürükleyip bırakın",
+    "giveFeedback": "Geri bildirim ver",
     "graphMode": "Grafik Modu",
     "linearMode": "Uygulama Modu",
+    "queue": {
+      "clear": "Kuyruğu temizle",
+      "clickToClear": "Kuyruğu temizlemek için tıklayın"
+    },
     "rerun": "Tekrar Çalıştır",
     "reuseParameters": "Parametreleri Yeniden Kullan",
     "runCount": "Çalıştırma sayısı:",
@@ -1575,6 +1583,9 @@
     "nodePack": "Düğüm Paketi",
     "nodePackInfo": "Düğüm Paketi Bilgisi",
     "notAvailable": "Mevcut Değil",
+    "packInstall": {
+      "nodeIdRequired": "Kurulum için Düğüm Kimliği gereklidir"
+    },
     "packsSelected": "paket seçildi",
     "repository": "Depo",
     "restartToApplyChanges": "Değişiklikleri uygulamak için lütfen ComfyUI'yi yeniden başlatın",
@@ -2072,7 +2083,10 @@
     "openNodeManager": "Node Manager'ı Aç",
     "quickFixAvailable": "Hızlı Düzeltme Mevcut",
     "redHighlight": "kırmızı",
+    "replaceAll": "Hepsini Değiştir",
+    "replaceAllWarning": "Bu gruptaki mevcut tüm düğümleri değiştirir.",
     "replaceFailed": "Düğümler değiştirilemedi",
+    "replaceNode": "Düğümü Değiştir",
     "replaceSelected": "Seçilenleri Değiştir ({count})",
     "replaceWarning": "Bu işlem iş akışını kalıcı olarak değiştirecek. Emin değilseniz önce bir kopyasını kaydedin.",
     "replaceable": "Değiştirilebilir",
@@ -2080,7 +2094,11 @@
     "replacedAllNodes": "{count} düğüm türü değiştirildi",
     "replacedNode": "Değiştirilen düğüm: {nodeType}",
     "selectAll": "Tümünü Seç",
-    "skipForNow": "Şimdilik Atla"
+    "skipForNow": "Şimdilik Atla",
+    "swapNodesGuide": "Aşağıdaki düğümler, uyumlu alternatiflerle otomatik olarak değiştirilebilir.",
+    "swapNodesTitle": "Düğümleri Değiştir",
+    "unknownNode": "Bilinmeyen",
+    "willBeReplacedBy": "Bu düğüm şununla değiştirilecek:"
   },
   "nodeTemplates": {
     "enterName": "İsim girin",
@@ -2098,6 +2116,19 @@
       "windows": "Windows (CUDA destekli Nvidia GPU)"
     },
     "title": "Cihazınız desteklenmiyor"
+  },
+  "painter": {
+    "background": "Arka Plan",
+    "brush": "Fırça",
+    "clear": "Temizle",
+    "color": "Renk Seçici",
+    "eraser": "Silgi",
+    "hardness": "Sertlik",
+    "height": "Yükseklik",
+    "size": "İmleç Boyutu",
+    "tool": "Araç",
+    "uploadError": "Ressam görseli yüklenemedi: {status} - {statusText}",
+    "width": "Genişlik"
   },
   "progressToast": {
     "allDownloadsCompleted": "Tüm indirmeler tamamlandı",
@@ -2219,6 +2250,22 @@
     "inputsNone": "GİRİŞ YOK",
     "inputsNoneTooltip": "Düğümün girişi yok",
     "locateNode": "Düğümü tuvalde bul",
+    "missingNodePacks": {
+      "applyChanges": "Değişiklikleri Uygula",
+      "cloudMessage": "Bu iş akışı, Comfy Cloud'da henüz mevcut olmayan özel düğümler gerektiriyor.",
+      "collapse": "Daralt",
+      "expand": "Genişlet",
+      "installAll": "Tümünü Yükle",
+      "installNodePack": "Düğüm paketini yükle",
+      "installed": "Yüklendi",
+      "installing": "Yükleniyor...",
+      "ossMessage": "Bu iş akışı, henüz yüklemediğiniz özel düğümler kullanıyor.",
+      "searchInManager": "Düğüm Yöneticisinde Ara",
+      "title": "Eksik Düğüm Paketleri",
+      "unknownPack": "Bilinmeyen paket",
+      "unsupportedTitle": "Desteklenmeyen Düğüm Paketleri",
+      "viewInManager": "Yöneticide Görüntüle"
+    },
     "mute": "Sessiz",
     "noErrors": "Hata yok",
     "noSelection": "Bir düğüm seçerek özelliklerini ve bilgisini görebilirsiniz.",

@@ -699,6 +699,7 @@
     "OPENAI_INPUT_FILES": "فایل‌های ورودی OpenAI",
     "PHOTOMAKER": "photomaker",
     "PIXVERSE_TEMPLATE": "قالب Pixverse",
+    "POSE_KEYPOINT": "POSE_KEYPOINT",
     "RECRAFT_COLOR": "رنگ Recraft",
     "RECRAFT_CONTROLS": "کنترل‌های Recraft",
     "RECRAFT_V3_STYLE": "سبک Recraft V3",
@@ -958,6 +959,7 @@
     "imageUrl": "آدرس تصویر",
     "import": "وارد کردن",
     "inProgress": "در حال انجام",
+    "inSubgraph": "در زیرگراف «{name}»",
     "increment": "افزایش",
     "info": "اطلاعات node",
     "input": "ورودی",
@@ -1115,6 +1117,7 @@
     "updated": "به‌روزرسانی شد",
     "updating": "در حال به‌روزرسانی {id}",
     "upload": "بارگذاری",
+    "uploadAlreadyInProgress": "بارگذاری در حال انجام است",
     "usageHint": "راهنمای استفاده",
     "use": "استفاده",
     "user": "کاربر",
@@ -1354,8 +1357,13 @@
     },
     "downloadAll": "دانلود همه",
     "dragAndDropImage": "تصویر را بکشید و رها کنید",
+    "giveFeedback": "ارسال بازخورد",
     "graphMode": "حالت گراف",
     "linearMode": "حالت برنامه",
+    "queue": {
+      "clear": "پاک‌سازی صف",
+      "clickToClear": "برای پاک‌سازی صف کلیک کنید"
+    },
     "rerun": "اجرای مجدد",
     "reuseParameters": "استفاده مجدد از پارامترها",
     "runCount": "تعداد اجرا: ",
@@ -1575,6 +1583,9 @@
     "nodePack": "بسته نود",
     "nodePackInfo": "اطلاعات Node Pack",
     "notAvailable": "در دسترس نیست",
+    "packInstall": {
+      "nodeIdRequired": "شناسه node برای نصب الزامی است"
+    },
     "packsSelected": "بسته انتخاب شد",
     "repository": "مخزن",
     "restartToApplyChanges": "برای اعمال تغییرات، لطفاً ComfyUI را مجدداً راه‌اندازی کنید",
@@ -2072,7 +2083,10 @@
     "openNodeManager": "باز کردن Node Manager",
     "quickFixAvailable": "رفع سریع در دسترس است",
     "redHighlight": "قرمز",
+    "replaceAll": "جایگزینی همه",
+    "replaceAllWarning": "همه گره‌های موجود در این گروه جایگزین خواهند شد.",
     "replaceFailed": "جایگزینی نودها ناموفق بود",
+    "replaceNode": "جایگزینی گره",
     "replaceSelected": "جایگزینی انتخاب‌شده‌ها ({count})",
     "replaceWarning": "این کار workflow را به طور دائمی تغییر می‌دهد. اگر مطمئن نیستید، ابتدا یک نسخه ذخیره کنید.",
     "replaceable": "قابل جایگزینی",
@@ -2080,7 +2094,11 @@
     "replacedAllNodes": "{count} نوع نود جایگزین شد",
     "replacedNode": "نود جایگزین شد: {nodeType}",
     "selectAll": "انتخاب همه",
-    "skipForNow": "فعلاً رد شود"
+    "skipForNow": "فعلاً رد شود",
+    "swapNodesGuide": "گره‌های زیر می‌توانند به‌صورت خودکار با گزینه‌های سازگار جایگزین شوند.",
+    "swapNodesTitle": "جایگزینی گره‌ها",
+    "unknownNode": "ناشناخته",
+    "willBeReplacedBy": "این گره جایگزین خواهد شد با:"
   },
   "nodeTemplates": {
     "enterName": "نام را وارد کنید",
@@ -2098,6 +2116,19 @@
       "windows": "Windows (کارت گرافیک Nvidia با پشتیبانی CUDA)"
     },
     "title": "دستگاه شما پشتیبانی نمی‌شود"
+  },
+  "painter": {
+    "background": "پس‌زمینه",
+    "brush": "براش",
+    "clear": "پاک‌سازی",
+    "color": "انتخاب رنگ",
+    "eraser": "پاک‌کن",
+    "hardness": "سختی",
+    "height": "ارتفاع",
+    "size": "اندازه نشانگر",
+    "tool": "ابزار",
+    "uploadError": "بارگذاری تصویر painter ناموفق بود: {status} - {statusText}",
+    "width": "عرض"
   },
   "progressToast": {
     "allDownloadsCompleted": "همه دانلودها تکمیل شدند",
@@ -2219,6 +2250,22 @@
     "inputsNone": "بدون ورودی",
     "inputsNoneTooltip": "این نود ورودی ندارد",
     "locateNode": "یافتن node در canvas",
+    "missingNodePacks": {
+      "applyChanges": "اعمال تغییرات",
+      "cloudMessage": "این workflow به nodeهای سفارشی نیاز دارد که هنوز در Comfy Cloud موجود نیستند.",
+      "collapse": "جمع کردن",
+      "expand": "باز کردن",
+      "installAll": "نصب همه",
+      "installNodePack": "نصب پک node",
+      "installed": "نصب شد",
+      "installing": "در حال نصب...",
+      "ossMessage": "این workflow از nodeهای سفارشی استفاده می‌کند که هنوز نصب نکرده‌اید.",
+      "searchInManager": "جستجو در Node Manager",
+      "title": "پک‌های node مفقود",
+      "unknownPack": "پک ناشناخته",
+      "unsupportedTitle": "پک‌های node پشتیبانی‌نشده",
+      "viewInManager": "مشاهده در Manager"
+    },
     "mute": "بی‌صدا",
     "noErrors": "بدون خطا",
     "noSelection": "یک نود را انتخاب کنید تا ویژگی‌ها و اطلاعات آن نمایش داده شود.",

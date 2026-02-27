@@ -2137,6 +2137,35 @@
       }
     }
   },
+  "CropByBBoxes": {
+    "description": "指定されたバウンディングボックスに基づいて、入力画像バッチから領域を切り抜きリサイズします。",
+    "display_name": "CropByBBoxes",
+    "inputs": {
+      "bboxes": {
+        "name": "バウンディングボックス"
+      },
+      "image": {
+        "name": "画像"
+      },
+      "output_height": {
+        "name": "出力高さ",
+        "tooltip": "各切り抜き画像がリサイズされる高さ。"
+      },
+      "output_width": {
+        "name": "出力幅",
+        "tooltip": "各切り抜き画像がリサイズされる幅。"
+      },
+      "padding": {
+        "name": "パディング",
+        "tooltip": "切り抜き前にバウンディングボックスの各辺に追加される余白（ピクセル単位）。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "すべての切り抜き画像が1つの画像バッチとしてまとめられます。"
+      }
+    }
+  },
   "CropMask": {
     "display_name": "マスクをトリミング",
     "inputs": {
@@ -3693,6 +3722,57 @@
       "file": {
         "name": "ファイル",
         "tooltip": "モデルのコンテキストとして含める入力ファイル。現在はテキスト（.txt）ファイルとPDF（.pdf）ファイルのみ受け付けます。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "GeminiNanoBanana2": {
+    "description": "Google Vertex API を使って画像を同期的に生成または編集します。",
+    "display_name": "Nano Banana 2",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "アスペクト比",
+        "tooltip": "「auto」に設定すると入力画像のアスペクト比に合わせます。画像が指定されていない場合は通常16:9の正方形が生成されます。"
+      },
+      "control_after_generate": {
+        "name": "生成後のコントロール"
+      },
+      "files": {
+        "name": "ファイル",
+        "tooltip": "モデルのコンテキストとして使用する任意のファイル。Gemini Generate Content Input Filesノードからの入力を受け付けます。"
+      },
+      "images": {
+        "name": "画像",
+        "tooltip": "任意の参照画像。複数画像を含める場合はBatch Imagesノードを使用してください（最大14枚まで）。"
+      },
+      "model": {
+        "name": "モデル"
+      },
+      "prompt": {
+        "name": "プロンプト",
+        "tooltip": "生成する画像や適用する編集内容を説明するテキストプロンプトです。モデルが従うべき制約、スタイル、詳細なども含めてください。"
+      },
+      "resolution": {
+        "name": "解像度",
+        "tooltip": "出力画像の目標解像度です。2K/4Kの場合はGeminiのネイティブアップスケーラーが使用されます。"
+      },
+      "response_modalities": {
+        "name": "レスポンスモダリティ"
+      },
+      "seed": {
+        "name": "シード",
+        "tooltip": "シード値を特定の値に固定すると、モデルは繰り返しリクエストに対して同じ応答を返すよう最善を尽くしますが、完全な決定論的出力は保証されません。また、モデルやパラメータ設定（例：temperature）を変更すると、同じシード値でも応答が変化する場合があります。デフォルトではランダムなシード値が使用されます。"
+      },
+      "system_prompt": {
+        "name": "システムプロンプト",
+        "tooltip": "AIの挙動を決定する基本的な指示です。"
+      },
+      "thinking_level": {
+        "name": "思考レベル"
       }
     },
     "outputs": {
@@ -12975,6 +13055,90 @@
     "outputs": {
       "0": {
         "tooltip": null
+      }
+    }
+  },
+  "SDPoseDrawKeypoints": {
+    "display_name": "SDPoseDrawKeypoints",
+    "inputs": {
+      "draw_body": {
+        "name": "ボディを描画"
+      },
+      "draw_face": {
+        "name": "顔を描画"
+      },
+      "draw_feet": {
+        "name": "足を描画"
+      },
+      "draw_hands": {
+        "name": "手を描画"
+      },
+      "face_point_size": {
+        "name": "顔ポイントサイズ"
+      },
+      "keypoints": {
+        "name": "キーポイント"
+      },
+      "score_threshold": {
+        "name": "スコア閾値"
+      },
+      "stick_width": {
+        "name": "スティック幅"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SDPoseFaceBBoxes": {
+    "display_name": "SDPoseFaceBBoxes",
+    "inputs": {
+      "force_square": {
+        "name": "正方形に強制",
+        "tooltip": "短い辺を拡張して、切り抜き領域が常に正方形になるようにします。"
+      },
+      "keypoints": {
+        "name": "キーポイント"
+      },
+      "scale": {
+        "name": "スケール",
+        "tooltip": "各検出された顔のバウンディングボックス領域の倍率。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "バウンディングボックス",
+        "tooltip": "各フレームごとの顔バウンディングボックス。SDPoseKeypointExtractorのbboxes入力と互換性があります。"
+      }
+    }
+  },
+  "SDPoseKeypointExtractor": {
+    "description": "SDPoseモデル（https://huggingface.co/Comfy-Org/SDPose/tree/main/checkpoints）を使用して画像からポーズキーポイントを抽出します。",
+    "display_name": "SDPoseKeypointExtractor",
+    "inputs": {
+      "batch_size": {
+        "name": "バッチサイズ"
+      },
+      "bboxes": {
+        "name": "バウンディングボックス",
+        "tooltip": "より正確な検出のためのオプションのバウンディングボックス。複数人検出時は必須です。"
+      },
+      "image": {
+        "name": "画像"
+      },
+      "model": {
+        "name": "モデル"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "キーポイント",
+        "tooltip": "OpenPoseフレーム形式（canvas_width, canvas_height, people）のキーポイント"
       }
     }
   },

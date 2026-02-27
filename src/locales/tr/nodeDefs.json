@@ -2137,6 +2137,35 @@
       }
     }
   },
+  "CropByBBoxes": {
+    "description": "Sağlanan sınırlayıcı kutulara göre giriş görüntü grubundan bölgeleri kırp ve yeniden boyutlandır.",
+    "display_name": "CropByBBoxes",
+    "inputs": {
+      "bboxes": {
+        "name": "sınırlayıcı_kutular"
+      },
+      "image": {
+        "name": "görüntü"
+      },
+      "output_height": {
+        "name": "çıktı_yüksekliği",
+        "tooltip": "Her kırpmanın yeniden boyutlandırılacağı yükseklik."
+      },
+      "output_width": {
+        "name": "çıktı_genişliği",
+        "tooltip": "Her kırpmanın yeniden boyutlandırılacağı genişlik."
+      },
+      "padding": {
+        "name": "dolgu",
+        "tooltip": "Kırpmadan önce sınırlayıcı kutunun her bir kenarına piksel cinsinden eklenen ekstra dolgu."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "Tüm kırpmalar tek bir görüntü grubunda birleştirilir."
+      }
+    }
+  },
   "CropMask": {
     "display_name": "Maskeyi Kırp",
     "inputs": {
@@ -3693,6 +3722,57 @@
       "file": {
         "name": "dosya",
         "tooltip": "Model için bağlam olarak dahil edilecek girdi dosyaları. Şu an için yalnızca metin (.txt) ve PDF (.pdf) dosyalarını kabul eder."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "GeminiNanoBanana2": {
+    "description": "Google Vertex API üzerinden senkron olarak görseller oluşturun veya düzenleyin.",
+    "display_name": "Nano Banana 2",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio",
+        "tooltip": "'auto' olarak ayarlanırsa, giriş görselinizin en-boy oranı kullanılır; görsel yoksa genellikle 16:9 kare oluşturulur."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "files": {
+        "name": "files",
+        "tooltip": "Model için bağlam olarak kullanılacak isteğe bağlı dosya(lar). Gemini Generate Content Input Files düğümünden gelen girdileri kabul eder."
+      },
+      "images": {
+        "name": "images",
+        "tooltip": "İsteğe bağlı referans görsel(ler)i. Birden fazla görsel eklemek için Batch Images düğümünü kullanın (en fazla 14)."
+      },
+      "model": {
+        "name": "model"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Oluşturulacak görseli veya uygulanacak düzenlemeleri tanımlayan metin istemi. Modelin uyması gereken kısıtlamalar, stiller veya detayları ekleyin."
+      },
+      "resolution": {
+        "name": "resolution",
+        "tooltip": "Hedef çıktı çözünürlüğü. 2K/4K için yerel Gemini yükselticisi kullanılır."
+      },
+      "response_modalities": {
+        "name": "response_modalities"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed belirli bir değere sabitlendiğinde, model tekrarlanan isteklerde aynı yanıtı vermeye çalışır. Deterministik çıktı garanti edilmez. Ayrıca, model veya parametre ayarlarını (ör. sıcaklık) değiştirmek, aynı seed değeriyle bile yanıtın farklı olmasına neden olabilir. Varsayılan olarak rastgele bir seed değeri kullanılır."
+      },
+      "system_prompt": {
+        "name": "system_prompt",
+        "tooltip": "Bir yapay zekanın davranışını belirleyen temel talimatlar."
+      },
+      "thinking_level": {
+        "name": "thinking_level"
       }
     },
     "outputs": {
@@ -12975,6 +13055,90 @@
     "outputs": {
       "0": {
         "tooltip": null
+      }
+    }
+  },
+  "SDPoseDrawKeypoints": {
+    "display_name": "SDPoseDrawKeypoints",
+    "inputs": {
+      "draw_body": {
+        "name": "gövde_çiz"
+      },
+      "draw_face": {
+        "name": "yüzü_çiz"
+      },
+      "draw_feet": {
+        "name": "ayakları_çiz"
+      },
+      "draw_hands": {
+        "name": "elleri_çiz"
+      },
+      "face_point_size": {
+        "name": "yüz_nokta_boyutu"
+      },
+      "keypoints": {
+        "name": "anahtar_noktalar"
+      },
+      "score_threshold": {
+        "name": "puan_eşiği"
+      },
+      "stick_width": {
+        "name": "çizgi_genişliği"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SDPoseFaceBBoxes": {
+    "display_name": "SDPoseFaceBBoxes",
+    "inputs": {
+      "force_square": {
+        "name": "kare_zorla",
+        "tooltip": "Kırpma bölgesinin her zaman kare olması için kısa olan kutu eksenini genişlet."
+      },
+      "keypoints": {
+        "name": "anahtar_noktalar"
+      },
+      "scale": {
+        "name": "ölçek",
+        "tooltip": "Her tespit edilen yüzün etrafındaki sınırlayıcı kutu alanı için çarpan."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "sınırlayıcı_kutular",
+        "tooltip": "Her kare için yüz sınırlayıcı kutuları, SDPoseKeypointExtractor bboxes girişiyle uyumlu."
+      }
+    }
+  },
+  "SDPoseKeypointExtractor": {
+    "description": "SDPose modeli ile görüntülerden poz anahtar noktalarını çıkar: https://huggingface.co/Comfy-Org/SDPose/tree/main/checkpoints",
+    "display_name": "SDPoseKeypointExtractor",
+    "inputs": {
+      "batch_size": {
+        "name": "toplu_boyut"
+      },
+      "bboxes": {
+        "name": "sınırlayıcı_kutular",
+        "tooltip": "Daha doğru tespitler için isteğe bağlı sınırlayıcı kutular. Çoklu kişi tespiti için gereklidir."
+      },
+      "image": {
+        "name": "görüntü"
+      },
+      "model": {
+        "name": "model"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "anahtar_noktalar",
+        "tooltip": "OpenPose çerçeve formatında anahtar noktalar (canvas_genişliği, canvas_yüksekliği, kişiler)"
       }
     }
   },

@@ -699,6 +699,7 @@
     "OPENAI_INPUT_FILES": "FICHIERS_ENTRÉE_OPENAI",
     "PHOTOMAKER": "PHOTOMAKER",
     "PIXVERSE_TEMPLATE": "Modèle Pixverse",
+    "POSE_KEYPOINT": "POINT CLÉ DE POSE",
     "RECRAFT_COLOR": "Couleur Recraft",
     "RECRAFT_CONTROLS": "Contrôles Recraft",
     "RECRAFT_V3_STYLE": "Style Recraft V3",
@@ -958,6 +959,7 @@
     "imageUrl": "URL de l'image",
     "import": "Importer",
     "inProgress": "En cours",
+    "inSubgraph": "dans le sous-graphe « {name} »",
     "increment": "Augmenter",
     "info": "Informations du nœud",
     "input": "Entrée",
@@ -1115,6 +1117,7 @@
     "updated": "Mis à jour",
     "updating": "Mise à jour",
     "upload": "Téléverser",
+    "uploadAlreadyInProgress": "Téléversement déjà en cours",
     "usageHint": "Conseil d'utilisation",
     "use": "Utiliser",
     "user": "Utilisateur",
@@ -1354,8 +1357,13 @@
     },
     "downloadAll": "Tout télécharger",
     "dragAndDropImage": "Glissez-déposez une image",
+    "giveFeedback": "Donner un avis",
     "graphMode": "Mode graphique",
     "linearMode": "Mode App",
+    "queue": {
+      "clear": "Vider la file d'attente",
+      "clickToClear": "Cliquez pour vider la file d'attente"
+    },
     "rerun": "Relancer",
     "reuseParameters": "Réutiliser les paramètres",
     "runCount": "Nombre d’exécutions :",
@@ -1575,6 +1583,9 @@
     "nodePack": "Pack de Nœuds",
     "nodePackInfo": "Informations sur le pack de nœuds",
     "notAvailable": "Non disponible",
+    "packInstall": {
+      "nodeIdRequired": "L'identifiant du nœud est requis pour l'installation"
+    },
     "packsSelected": "Packs sélectionnés",
     "repository": "Référentiel",
     "restartToApplyChanges": "Pour appliquer les modifications, veuillez redémarrer ComfyUI",
@@ -2072,7 +2083,10 @@
     "openNodeManager": "Ouvrir le Gestionnaire de nœuds",
     "quickFixAvailable": "Correction rapide disponible",
     "redHighlight": "rouge",
+    "replaceAll": "Tout remplacer",
+    "replaceAllWarning": "Remplace tous les nœuds disponibles dans ce groupe.",
     "replaceFailed": "Échec du remplacement des nœuds",
+    "replaceNode": "Remplacer le nœud",
     "replaceSelected": "Remplacer la sélection ({count})",
     "replaceWarning": "Cela modifiera définitivement le workflow. Sauvegardez une copie si vous n’êtes pas sûr.",
     "replaceable": "Remplaçable",
@@ -2080,7 +2094,11 @@
     "replacedAllNodes": "{count} type(s) de nœud remplacé(s)",
     "replacedNode": "Nœud remplacé : {nodeType}",
     "selectAll": "Tout sélectionner",
-    "skipForNow": "Ignorer pour l’instant"
+    "skipForNow": "Ignorer pour l’instant",
+    "swapNodesGuide": "Les nœuds suivants peuvent être automatiquement remplacés par des alternatives compatibles.",
+    "swapNodesTitle": "Échanger les nœuds",
+    "unknownNode": "Inconnu",
+    "willBeReplacedBy": "Ce nœud sera remplacé par :"
   },
   "nodeTemplates": {
     "enterName": "Entrez le nom",
@@ -2098,6 +2116,19 @@
       "windows": "Windows (GPU Nvidia avec support CUDA)"
     },
     "title": "Votre appareil n'est pas pris en charge"
+  },
+  "painter": {
+    "background": "Arrière-plan",
+    "brush": "Pinceau",
+    "clear": "Effacer",
+    "color": "Sélecteur de couleur",
+    "eraser": "Gomme",
+    "hardness": "Dureté",
+    "height": "Hauteur",
+    "size": "Taille du curseur",
+    "tool": "Outil",
+    "uploadError": "Échec du téléversement de l'image du peintre : {status} - {statusText}",
+    "width": "Largeur"
   },
   "progressToast": {
     "allDownloadsCompleted": "Tous les téléchargements sont terminés",
@@ -2219,6 +2250,22 @@
     "inputsNone": "AUCUNE ENTRÉE",
     "inputsNoneTooltip": "Le nœud n’a pas d’entrées",
     "locateNode": "Localiser le nœud sur le canevas",
+    "missingNodePacks": {
+      "applyChanges": "Appliquer les modifications",
+      "cloudMessage": "Ce workflow nécessite des nœuds personnalisés qui ne sont pas encore disponibles sur Comfy Cloud.",
+      "collapse": "Réduire",
+      "expand": "Développer",
+      "installAll": "Tout installer",
+      "installNodePack": "Installer le pack de nœuds",
+      "installed": "Installé",
+      "installing": "Installation en cours...",
+      "ossMessage": "Ce workflow utilise des nœuds personnalisés que vous n'avez pas encore installés.",
+      "searchInManager": "Rechercher dans le gestionnaire de nœuds",
+      "title": "Packs de nœuds manquants",
+      "unknownPack": "Pack inconnu",
+      "unsupportedTitle": "Packs de nœuds non pris en charge",
+      "viewInManager": "Voir dans le gestionnaire"
+    },
     "mute": "Muet",
     "noErrors": "Aucune erreur",
     "noSelection": "Sélectionnez un nœud pour voir ses propriétés et informations.",

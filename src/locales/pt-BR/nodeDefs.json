@@ -2137,6 +2137,35 @@
       }
     }
   },
+  "CropByBBoxes": {
+    "description": "Recorta e redimensiona regiões do lote de imagens de entrada com base nas caixas delimitadoras fornecidas.",
+    "display_name": "CropByBBoxes",
+    "inputs": {
+      "bboxes": {
+        "name": "caixas delimitadoras"
+      },
+      "image": {
+        "name": "imagem"
+      },
+      "output_height": {
+        "name": "altura_de_saida",
+        "tooltip": "Altura para a qual cada recorte será redimensionado."
+      },
+      "output_width": {
+        "name": "largura_de_saida",
+        "tooltip": "Largura para a qual cada recorte será redimensionado."
+      },
+      "padding": {
+        "name": "preenchimento",
+        "tooltip": "Preenchimento extra em pixels adicionado em cada lado da caixa antes do recorte."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "Todos os recortes empilhados em um único lote de imagens."
+      }
+    }
+  },
   "CropMask": {
     "display_name": "Cortar Máscara",
     "inputs": {
@@ -3693,6 +3722,57 @@
       "file": {
         "name": "arquivo",
         "tooltip": "Arquivos de entrada para incluir como contexto para o modelo. Aceita apenas arquivos de texto (.txt) e PDF (.pdf) no momento."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "GeminiNanoBanana2": {
+    "description": "Gere ou edite imagens de forma síncrona via Google Vertex API.",
+    "display_name": "Nano Banana 2",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio",
+        "tooltip": "Se definido como 'auto', corresponde à proporção da imagem de entrada; se nenhuma imagem for fornecida, normalmente é gerado um quadrado 16:9."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "files": {
+        "name": "files",
+        "tooltip": "Arquivo(s) opcional(is) para usar como contexto para o modelo. Aceita entradas do nó Gemini Generate Content Input Files."
+      },
+      "images": {
+        "name": "images",
+        "tooltip": "Imagem(ns) de referência opcional(is). Para incluir várias imagens, use o nó Batch Images (até 14)."
+      },
+      "model": {
+        "name": "model"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Prompt de texto descrevendo a imagem a ser gerada ou as edições a serem aplicadas. Inclua quaisquer restrições, estilos ou detalhes que o modelo deve seguir."
+      },
+      "resolution": {
+        "name": "resolution",
+        "tooltip": "Resolução de saída desejada. Para 2K/4K, o upscaler nativo do Gemini é utilizado."
+      },
+      "response_modalities": {
+        "name": "response_modalities"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Quando a seed é fixada em um valor específico, o modelo faz o melhor esforço para fornecer a mesma resposta em solicitações repetidas. A saída determinística não é garantida. Além disso, alterar o modelo ou configurações de parâmetros, como a temperatura, pode causar variações na resposta mesmo usando o mesmo valor de seed. Por padrão, um valor de seed aleatório é usado."
+      },
+      "system_prompt": {
+        "name": "system_prompt",
+        "tooltip": "Instruções fundamentais que ditam o comportamento da IA."
+      },
+      "thinking_level": {
+        "name": "thinking_level"
       }
     },
     "outputs": {
@@ -12975,6 +13055,90 @@
     "outputs": {
       "0": {
         "tooltip": null
+      }
+    }
+  },
+  "SDPoseDrawKeypoints": {
+    "display_name": "SDPoseDrawKeypoints",
+    "inputs": {
+      "draw_body": {
+        "name": "desenhar_corpo"
+      },
+      "draw_face": {
+        "name": "desenhar_rosto"
+      },
+      "draw_feet": {
+        "name": "desenhar_pés"
+      },
+      "draw_hands": {
+        "name": "desenhar_mãos"
+      },
+      "face_point_size": {
+        "name": "tamanho_do_ponto_do_rosto"
+      },
+      "keypoints": {
+        "name": "pontos-chave"
+      },
+      "score_threshold": {
+        "name": "limite_de_pontuação"
+      },
+      "stick_width": {
+        "name": "largura_da_linha"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SDPoseFaceBBoxes": {
+    "display_name": "SDPoseFaceBBoxes",
+    "inputs": {
+      "force_square": {
+        "name": "forçar_quadrado",
+        "tooltip": "Expande o eixo menor da caixa para que a região recortada seja sempre quadrada."
+      },
+      "keypoints": {
+        "name": "pontos-chave"
+      },
+      "scale": {
+        "name": "escala",
+        "tooltip": "Multiplicador para a área da caixa delimitadora ao redor de cada rosto detectado."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "caixas_delimitadoras",
+        "tooltip": "Caixas delimitadoras de rosto por quadro, compatíveis com a entrada de caixas do SDPoseKeypointExtractor."
+      }
+    }
+  },
+  "SDPoseKeypointExtractor": {
+    "description": "Extrai pontos-chave de pose das imagens usando o modelo SDPose: https://huggingface.co/Comfy-Org/SDPose/tree/main/checkpoints",
+    "display_name": "SDPoseKeypointExtractor",
+    "inputs": {
+      "batch_size": {
+        "name": "tamanho_do_lote"
+      },
+      "bboxes": {
+        "name": "caixas_delimitadoras",
+        "tooltip": "Caixas delimitadoras opcionais para detecções mais precisas. Necessário para detecção de múltiplas pessoas."
+      },
+      "image": {
+        "name": "imagem"
+      },
+      "model": {
+        "name": "modelo"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "pontos-chave",
+        "tooltip": "Pontos-chave no formato de quadro OpenPose (canvas_width, canvas_height, pessoas)"
       }
     }
   },

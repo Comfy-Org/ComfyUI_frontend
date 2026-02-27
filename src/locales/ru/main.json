@@ -699,6 +699,7 @@
     "OPENAI_INPUT_FILES": "ВХОДНЫЕ_ФАЙЛЫ_OPENAI",
     "PHOTOMAKER": "PHOTOMAKER",
     "PIXVERSE_TEMPLATE": "ШАБЛОН_PIXVERSE",
+    "POSE_KEYPOINT": "POSE_KEYPOINT",
     "RECRAFT_COLOR": "RECRAFT_ЦВЕТ",
     "RECRAFT_CONTROLS": "RECRAFT_УПРАВЛЕНИЯ",
     "RECRAFT_V3_STYLE": "RECRAFT_V3_СТИЛЬ",
@@ -958,6 +959,7 @@
     "imageUrl": "URL изображения",
     "import": "Импорт",
     "inProgress": "В процессе",
+    "inSubgraph": "в подграфе «{name}»",
     "increment": "Увеличить",
     "info": "Информация о ноде",
     "input": "Вход",
@@ -1115,6 +1117,7 @@
     "updated": "Обновлено",
     "updating": "Обновление",
     "upload": "Загрузить",
+    "uploadAlreadyInProgress": "Загрузка уже выполняется",
     "usageHint": "Подсказка по использованию",
     "use": "Использовать",
     "user": "Пользователь",
@@ -1354,8 +1357,13 @@
     },
     "downloadAll": "Скачать всё",
     "dragAndDropImage": "Перетащите изображение",
+    "giveFeedback": "Оставить отзыв",
     "graphMode": "Графовый режим",
     "linearMode": "Режим приложения",
+    "queue": {
+      "clear": "Очистить очередь",
+      "clickToClear": "Нажмите, чтобы очистить очередь"
+    },
     "rerun": "Перезапустить",
     "reuseParameters": "Повторно использовать параметры",
     "runCount": "Количество запусков:",
@@ -1575,6 +1583,9 @@
     "nodePack": "Пакет Узлов",
     "nodePackInfo": "Информация о пакете узлов",
     "notAvailable": "Недоступно",
+    "packInstall": {
+      "nodeIdRequired": "Для установки требуется идентификатор узла"
+    },
     "packsSelected": "Выбрано пакетов",
     "repository": "Репозиторий",
     "restartToApplyChanges": "Чтобы применить изменения, пожалуйста, перезапустите ComfyUI",
@@ -2072,7 +2083,10 @@
     "openNodeManager": "Открыть Менеджер узлов",
     "quickFixAvailable": "Доступно быстрое исправление",
     "redHighlight": "красным",
+    "replaceAll": "Заменить все",
+    "replaceAllWarning": "Заменяет все доступные узлы в этой группе.",
     "replaceFailed": "Не удалось заменить узлы",
+    "replaceNode": "Заменить узел",
     "replaceSelected": "Заменить выбранные ({count})",
     "replaceWarning": "Это действие навсегда изменит рабочий процесс. Сохраните копию, если не уверены.",
     "replaceable": "Можно заменить",
@@ -2080,7 +2094,11 @@
     "replacedAllNodes": "Заменено {count} типов(а) узлов",
     "replacedNode": "Заменённый узел: {nodeType}",
     "selectAll": "Выбрать все",
-    "skipForNow": "Пропустить сейчас"
+    "skipForNow": "Пропустить сейчас",
+    "swapNodesGuide": "Следующие узлы могут быть автоматически заменены совместимыми альтернативами.",
+    "swapNodesTitle": "Заменить узлы",
+    "unknownNode": "Неизвестно",
+    "willBeReplacedBy": "Этот узел будет заменён на:"
   },
   "nodeTemplates": {
     "enterName": "Введите название",
@@ -2098,6 +2116,19 @@
       "windows": "Windows (Nvidia GPU с поддержкой CUDA)"
     },
     "title": "Ваше устройство не поддерживается"
+  },
+  "painter": {
+    "background": "Фон",
+    "brush": "Кисть",
+    "clear": "Очистить",
+    "color": "Палитра цветов",
+    "eraser": "Ластик",
+    "hardness": "Жёсткость",
+    "height": "Высота",
+    "size": "Размер курсора",
+    "tool": "Инструмент",
+    "uploadError": "Не удалось загрузить изображение: {status} - {statusText}",
+    "width": "Ширина"
   },
   "progressToast": {
     "allDownloadsCompleted": "Все загрузки завершены",
@@ -2219,6 +2250,22 @@
     "inputsNone": "НЕТ ВХОДОВ",
     "inputsNoneTooltip": "Узел не имеет входов",
     "locateNode": "Найти узел на холсте",
+    "missingNodePacks": {
+      "applyChanges": "Применить изменения",
+      "cloudMessage": "Для этого рабочего процесса требуются пользовательские узлы, которые ещё недоступны в Comfy Cloud.",
+      "collapse": "Свернуть",
+      "expand": "Развернуть",
+      "installAll": "Установить все",
+      "installNodePack": "Установить пакет узлов",
+      "installed": "Установлено",
+      "installing": "Установка...",
+      "ossMessage": "В этом рабочем процессе используются пользовательские узлы, которые вы ещё не установили.",
+      "searchInManager": "Поиск в менеджере узлов",
+      "title": "Отсутствующие пакеты узлов",
+      "unknownPack": "Неизвестный пакет",
+      "unsupportedTitle": "Неподдерживаемые пакеты узлов",
+      "viewInManager": "Просмотреть в менеджере"
+    },
     "mute": "Отключить",
     "noErrors": "Ошибок нет",
     "noSelection": "Выберите узел, чтобы увидеть его свойства и информацию.",

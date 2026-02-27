@@ -10,7 +10,6 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import { useI18n } from 'vue-i18n'
 
 import type { TopbarBadge as TopbarBadgeType } from '@/types/comfy'
 
@@ -28,10 +27,8 @@ const {
   backgroundColor?: string
 }>()
 
-const { t } = useI18n()
-
 const cloudBadge = computed<TopbarBadgeType>(() => ({
-  label: t('g.beta'),
+  icon: 'icon-[lucide--cloud]',
   text: 'Comfy Cloud'
 }))
 </script>
