@@ -1,6 +1,7 @@
 type PromotionEntry = {
   interiorNodeId: string
   widgetName: string
+  viewKey?: string
 }
 
 type CreateView<TView> = (entry: PromotionEntry) => TView
@@ -27,7 +28,11 @@ export class PromotedWidgetViewManager<TView> {
     const seenKeys = new Set<string>()
 
     for (const entry of entries) {
-      const key = this.makeKey(entry.interiorNodeId, entry.widgetName)
+      const key = this.makeKey(
+        entry.interiorNodeId,
+        entry.widgetName,
+        entry.viewKey
+      )
       if (seenKeys.has(key)) continue
       seenKeys.add(key)
 
@@ -54,9 +59,10 @@ export class PromotedWidgetViewManager<TView> {
   getOrCreate(
     interiorNodeId: string,
     widgetName: string,
-    createView: () => TView
+    createView: () => TView,
+    viewKey?: string
   ): TView {
-    const key = this.makeKey(interiorNodeId, widgetName)
+    const key = this.makeKey(interiorNodeId, widgetName, viewKey)
     const cached = this.viewCache.get(key)
     if (cached) return cached
 
@@ -70,6 +76,15 @@ export class PromotedWidgetViewManager<TView> {
     this.invalidateMemoizedList()
   }
 
+  removeByViewKey(
+    interiorNodeId: string,
+    widgetName: string,
+    viewKey: string
+  ): void {
+    this.viewCache.delete(this.makeKey(interiorNodeId, widgetName, viewKey))
+    this.invalidateMemoizedList()
+  }
+
   clear(): void {
     this.viewCache.clear()
     this.invalidateMemoizedList()
@@ -80,7 +95,11 @@ export class PromotedWidgetViewManager<TView> {
     this.cachedEntriesRef = null
   }
 
-  private makeKey(interiorNodeId: string, widgetName: string): string {
-    return `${interiorNodeId}:${widgetName}`
+  private makeKey(
+    interiorNodeId: string,
+    widgetName: string,
+    viewKey?: string
+  ): string {
+    return viewKey ?? `${interiorNodeId}:${widgetName}`
   }
 }

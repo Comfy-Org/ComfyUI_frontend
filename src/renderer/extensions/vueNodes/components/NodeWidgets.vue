@@ -184,6 +184,8 @@ const processedWidgets = computed((): ProcessedWidget[] => {
   for (const widget of widgets) {
     if (!shouldRenderAsVue(widget)) continue
 
+    const isPromotedView = !!widget.nodeId
+
     const vueComponent =
       getComponent(widget.type) ||
       (widget.isDOMWidget ? WidgetDOM : WidgetLegacy)
@@ -208,7 +210,6 @@ const processedWidgets = computed((): ProcessedWidget[] => {
       ? { ...storeOptions, disabled: true }
       : storeOptions
 
-    const isPromotedView = !!widget.nodeId
     const borderStyle =
       graphId &&
       !isPromotedView &&

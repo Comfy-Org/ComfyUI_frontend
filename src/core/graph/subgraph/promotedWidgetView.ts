@@ -9,186 +9,20 @@ import type { BaseWidget } from '@/lib/litegraph/src/widgets/BaseWidget'
 import { toConcreteWidget } from '@/lib/litegraph/src/widgets/widgetMap'
 import { t } from '@/i18n'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
-import { usePromotionStore } from '@/stores/promotionStore'
 import {
   stripGraphPrefix,
   useWidgetValueStore
 } from '@/stores/widgetValueStore'
+import {
+  resolveConcretePromotedWidget,
+  resolvePromotedWidgetAtHost,
+  resolvePromotedWidgetLookupTarget
+} from '@/core/graph/subgraph/resolveConcretePromotedWidget'
 
-import { isPromotedWidgetView } from './promotedWidgetTypes';
-import type { PromotedWidgetView as IPromotedWidgetView } from './promotedWidgetTypes';
+import type { PromotedWidgetView as IPromotedWidgetView } from './promotedWidgetTypes'
 
 export type { PromotedWidgetView } from './promotedWidgetTypes'
 export { isPromotedWidgetView } from './promotedWidgetTypes'
-
-function resolve(
-  subgraphNode: SubgraphNode,
-  nodeId: string,
-  widgetName: string
-): { node: LGraphNode; widget: IBaseWidget } | undefined {
-  const node = subgraphNode.subgraph.getNodeById(nodeId)
-  if (!node) return undefined
-
-  const widget = node.widgets?.find((w: IBaseWidget) => w.name === widgetName)
-  if (widget) return { node, widget }
-
-  if (!node.isSubgraphNode?.()) return undefined
-
-  // Some nested rebind/prune sequences leave the intermediate SubgraphNode
-  // without a materialized widgets[] entry for a frame, while input _widget
-  // bindings are already updated. Follow that binding to avoid disconnecteds.
-  const inputWidget = node.inputs.find(
-    (input) => input.name === widgetName
-  )?._widget
-  return inputWidget ? { node, widget: inputWidget } : undefined
-}
-
-function resolveViaPromotionStore(
-  graphId: string,
-  hostNode: SubgraphNode,
-  nodeId: string,
-  widgetName: string
-): { hostNode: SubgraphNode; nodeId: string; widgetName: string } | undefined {
-  const sourceNode = hostNode.subgraph.getNodeById(nodeId)
-  if (!sourceNode?.isSubgraphNode?.()) return undefined
-
-  const fallback = usePromotionStore()
-    .getPromotionsRef(graphId, sourceNode.id)
-    .find((entry) => entry.widgetName === widgetName)
-  if (!fallback) return undefined
-
-  return {
-    hostNode: sourceNode,
-    nodeId: fallback.interiorNodeId,
-    widgetName: fallback.widgetName
-  }
-}
-
-function resolveViaInputLink(
-  hostNode: SubgraphNode,
-  nodeId: string,
-  widgetName: string
-): { hostNode: SubgraphNode; nodeId: string; widgetName: string } | undefined {
-  const sourceNode = hostNode.subgraph.getNodeById(nodeId)
-  if (!sourceNode?.isSubgraphNode?.()) return undefined
-
-  const fallbackMatches: Array<{
-    hostNode: SubgraphNode
-    nodeId: string
-    widgetName: string
-    score: number
-  }> = []
-
-  for (const sourceSlot of sourceNode.subgraph.inputNode.slots) {
-    for (const linkId of sourceSlot.linkIds) {
-      const link = sourceNode.subgraph.getLink(linkId)
-      if (!link) continue
-
-      const { inputNode } = link.resolve(sourceNode.subgraph)
-      if (!inputNode) continue
-
-      const targetInput = inputNode.inputs.find(
-        (input) => input.link === linkId
-      )
-      if (!targetInput) continue
-
-      const targetWidget = inputNode.getWidgetFromSlot(targetInput)
-      if (!targetWidget) continue
-
-      let score = 0
-      if (sourceSlot.name === widgetName) score = 3
-      if (targetWidget.name === widgetName) score = Math.max(score, 2)
-      if (
-        isPromotedWidgetView(targetWidget) &&
-        targetWidget.sourceWidgetName === widgetName
-      ) {
-        score = Math.max(score, 2)
-      }
-
-      if (score === 0) continue
-
-      if (isPromotedWidgetView(targetWidget)) {
-        fallbackMatches.push({
-          hostNode: targetWidget.node,
-          nodeId: targetWidget.sourceNodeId,
-          widgetName: targetWidget.sourceWidgetName,
-          score
-        })
-        continue
-      }
-
-      fallbackMatches.push({
-        hostNode: sourceNode,
-        nodeId: String(inputNode.id),
-        widgetName: targetWidget.name,
-        score
-      })
-    }
-  }
-
-  if (fallbackMatches.length === 0) return undefined
-  fallbackMatches.sort((a, b) => b.score - a.score)
-  const bestMatch = fallbackMatches[0]
-  return {
-    hostNode: bestMatch.hostNode,
-    nodeId: bestMatch.nodeId,
-    widgetName: bestMatch.widgetName
-  }
-}
-
-function resolveNestedFallback(
-  graphId: string,
-  hostNode: SubgraphNode,
-  nodeId: string,
-  widgetName: string
-): { hostNode: SubgraphNode; nodeId: string; widgetName: string } | undefined {
-  return (
-    resolveViaPromotionStore(graphId, hostNode, nodeId, widgetName) ??
-    resolveViaInputLink(hostNode, nodeId, widgetName)
-  )
-}
-
-function resolveConcrete(
-  subgraphNode: SubgraphNode,
-  graphId: string,
-  nodeId: string,
-  widgetName: string
-): { node: LGraphNode; widget: IBaseWidget } | undefined {
-  const visited = new Set<string>()
-  let currentHost = subgraphNode
-  let currentNodeId = nodeId
-  let currentWidgetName = widgetName
-
-  while (true) {
-    const key = `${currentHost.id}:${currentNodeId}:${currentWidgetName}`
-    if (visited.has(key)) break
-    visited.add(key)
-
-    const current = resolve(currentHost, currentNodeId, currentWidgetName)
-    if (current) {
-      if (!isPromotedWidgetView(current.widget)) return current
-
-      currentHost = current.widget.node
-      currentNodeId = current.widget.sourceNodeId
-      currentWidgetName = current.widget.sourceWidgetName
-      continue
-    }
-
-    const promotedFallback = resolveNestedFallback(
-      graphId,
-      currentHost,
-      currentNodeId,
-      currentWidgetName
-    )
-    if (!promotedFallback) break
-
-    currentHost = promotedFallback.hostNode
-    currentNodeId = promotedFallback.nodeId
-    currentWidgetName = promotedFallback.widgetName
-  }
-
-  return undefined
-}
 
 function isWidgetValue(value: unknown): value is IBaseWidget['value'] {
   if (value === undefined) return true
@@ -406,18 +240,23 @@ class PromotedWidgetView implements IPromotedWidgetView {
   }
 
   private resolve(): { node: LGraphNode; widget: IBaseWidget } | undefined {
-    return resolve(this.subgraphNode, this.sourceNodeId, this.sourceWidgetName)
+    return resolvePromotedWidgetAtHost(
+      this.subgraphNode,
+      this.sourceNodeId,
+      this.sourceWidgetName
+    )
   }
 
   private resolveConcrete():
     | { node: LGraphNode; widget: IBaseWidget }
     | undefined {
-    return resolveConcrete(
+    const result = resolveConcretePromotedWidget(
       this.subgraphNode,
       this.graphId,
       this.sourceNodeId,
       this.sourceWidgetName
     )
+    return 'resolved' in result ? result.resolved : undefined
   }
 
   private getWidgetState() {
@@ -430,42 +269,16 @@ class PromotedWidgetView implements IPromotedWidgetView {
   }
 
   private resolveStateLookupTarget(): { nodeId: NodeId; widgetName: string } {
-    let currentHost = this.subgraphNode
-    let currentNodeId = this.sourceNodeId
-    let currentWidgetName = this.sourceWidgetName
-    const visited = new Set<string>()
-
-    while (true) {
-      const visitKey = `${currentHost.id}:${currentNodeId}:${currentWidgetName}`
-      if (visited.has(visitKey)) break
-      visited.add(visitKey)
-
-      const resolved = resolve(currentHost, currentNodeId, currentWidgetName)
-      if (resolved) {
-        if (!isPromotedWidgetView(resolved.widget)) break
-
-        currentHost = resolved.widget.node
-        currentNodeId = resolved.widget.sourceNodeId
-        currentWidgetName = resolved.widget.sourceWidgetName
-        continue
-      }
-
-      const promotedFallback = resolveNestedFallback(
-        this.graphId,
-        currentHost,
-        currentNodeId,
-        currentWidgetName
-      )
-      if (!promotedFallback) break
-
-      currentHost = promotedFallback.hostNode
-      currentNodeId = promotedFallback.nodeId
-      currentWidgetName = promotedFallback.widgetName
-    }
+    const lookupTarget = resolvePromotedWidgetLookupTarget(
+      this.subgraphNode,
+      this.graphId,
+      this.sourceNodeId,
+      this.sourceWidgetName
+    )
 
     return {
-      nodeId: stripGraphPrefix(currentNodeId),
-      widgetName: currentWidgetName
+      nodeId: stripGraphPrefix(lookupTarget.nodeId),
+      widgetName: lookupTarget.widgetName
     }
   }
 

@@ -17,6 +17,7 @@ import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 
 import { createPromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetView'
 import type { PromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetView'
+import { resolvePromotedWidgetSource } from '@/core/graph/subgraph/resolvePromotedWidgetSource'
 import { usePromotionStore } from '@/stores/promotionStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 
@@ -453,12 +454,40 @@ describe('SubgraphNode.widgets getter', () => {
     expect(subgraphNode.widgets[0].value).toBe('b')
   })
 
+  test('preserves distinct promoted display names when two inputs share one concrete widget name', () => {
+    const subgraph = createTestSubgraph({
+      inputs: [
+        { name: 'strength_model', type: '*' },
+        { name: 'strength_model_1', type: '*' }
+      ]
+    })
+    const subgraphNode = createTestSubgraphNode(subgraph, { id: 90 })
+    subgraphNode.graph?.add(subgraphNode)
+
+    const innerNode = new LGraphNode('InnerNumberNode')
+    const firstInput = innerNode.addInput('strength_model', '*')
+    const secondInput = innerNode.addInput('strength_model_1', '*')
+    innerNode.addWidget('number', 'strength_model', 1, () => {})
+    firstInput.widget = { name: 'strength_model' }
+    secondInput.widget = { name: 'strength_model' }
+    subgraph.add(innerNode)
+
+    subgraph.inputNode.slots[0].connect(firstInput, innerNode)
+    subgraph.inputNode.slots[1].connect(secondInput, innerNode)
+
+    expect(subgraphNode.widgets).toHaveLength(2)
+    expect(subgraphNode.widgets.map((widget) => widget.name)).toStrictEqual([
+      'strength_model',
+      'strength_model_1'
+    ])
+  })
+
   test('returns empty array when no proxyWidgets', () => {
     const [subgraphNode] = setupSubgraph()
     expect(subgraphNode.widgets).toEqual([])
   })
 
-  test('widgets getter preserves unresolved entries for later reconciliation', () => {
+  test('widgets getter prefers live linked entries over stale store entries', () => {
     const [subgraphNode, innerNodes] = setupSubgraph(1)
     const innerNode = firstInnerNode(innerNodes)
     innerNode.addWidget('text', 'widgetA', 'a', () => {})
@@ -468,10 +497,43 @@ describe('SubgraphNode.widgets getter', () => {
       ['9999', 'missingWidget']
     ])
 
-    expect(subgraphNode.widgets).toHaveLength(2)
+    expect(subgraphNode.widgets).toHaveLength(1)
     expect(subgraphNode.widgets[0].name).toBe('widgetA')
-    expect(subgraphNode.widgets[1].name).toBe('missingWidget')
-    expect(subgraphNode.widgets[1].type).toBe('button')
+  })
+
+  test('partial linked coverage does not destructively prune unresolved store promotions', () => {
+    const subgraph = createTestSubgraph({
+      inputs: [
+        { name: 'widgetA', type: '*' },
+        { name: 'widgetB', type: '*' }
+      ]
+    })
+    const subgraphNode = createTestSubgraphNode(subgraph, { id: 92 })
+    subgraphNode.graph?.add(subgraphNode)
+
+    const liveNode = new LGraphNode('LiveNode')
+    const liveInput = liveNode.addInput('widgetA', '*')
+    liveNode.addWidget('text', 'widgetA', 'a', () => {})
+    liveInput.widget = { name: 'widgetA' }
+    subgraph.add(liveNode)
+    subgraph.inputNode.slots[0].connect(liveInput, liveNode)
+
+    setPromotions(subgraphNode, [
+      [String(liveNode.id), 'widgetA'],
+      ['9999', 'widgetB']
+    ])
+
+    // Trigger widgets getter reconciliation in partial-linked state.
+    void subgraphNode.widgets
+
+    const promotions = usePromotionStore().getPromotions(
+      subgraphNode.rootGraph.id,
+      subgraphNode.id
+    )
+    expect(promotions).toStrictEqual([
+      { interiorNodeId: String(liveNode.id), widgetName: 'widgetA' },
+      { interiorNodeId: '9999', widgetName: 'widgetB' }
+    ])
   })
 
   test('caches view objects across getter calls (stable references)', () => {
@@ -1104,7 +1166,7 @@ describe('promoted combo rendering', () => {
     )
   })
 
-  test('state lookup falls back to promotion store chain when intermediate view is temporarily unavailable', () => {
+  test('state lookup does not use promotion store fallback when intermediate view is unavailable', () => {
     const subgraphA = createTestSubgraph({
       inputs: [{ name: 'strength_model', type: '*' }]
     })
@@ -1133,11 +1195,10 @@ describe('promoted combo rendering', () => {
       configurable: true
     })
 
-    expect(subgraphNodeB.widgets[0].type).toBe('number')
-    expect(subgraphNodeB.widgets[0].value).toBe(1)
+    expect(subgraphNodeB.widgets[0].type).toBe('button')
   })
 
-  test('state lookup falls back to input widget binding when intermediate promotions are temporarily absent', () => {
+  test('state lookup does not use input-widget fallback when intermediate promotions are absent', () => {
     const subgraphA = createTestSubgraph({
       inputs: [{ name: 'strength_model', type: '*' }]
     })
@@ -1171,11 +1232,10 @@ describe('promoted combo rendering', () => {
       configurable: true
     })
 
-    expect(subgraphNodeB.widgets[0].type).toBe('number')
-    expect(subgraphNodeB.widgets[0].value).toBe(1)
+    expect(subgraphNodeB.widgets[0].type).toBe('button')
   })
 
-  test('state lookup falls back to subgraph input link when intermediate bindings are unavailable', () => {
+  test('state lookup does not use subgraph-link fallback when intermediate bindings are unavailable', () => {
     const subgraphA = createTestSubgraph({
       inputs: [{ name: 'strength_model', type: '*' }]
     })
@@ -1208,8 +1268,7 @@ describe('promoted combo rendering', () => {
     })
     subgraphNodeA.inputs[0]._widget = undefined
 
-    expect(subgraphNodeB.widgets[0].type).toBe('number')
-    expect(subgraphNodeB.widgets[0].value).toBe(1)
+    expect(subgraphNodeB.widgets[0].type).toBe('button')
   })
 
   test('nested promotion keeps concrete widget types at top level', () => {
@@ -1287,6 +1346,25 @@ describe('promoted combo rendering', () => {
       interiorNodeId: String(innerNode.id),
       widgetName: 'lora_name'
     })
+  })
+
+  test('resolvePromotedWidgetSource is safe for detached subgraph hosts', () => {
+    const subgraph = createTestSubgraph()
+    const subgraphNode = createTestSubgraphNode(subgraph, { id: 101 })
+    const promotedView = createPromotedWidgetView(
+      subgraphNode,
+      '999',
+      'missingWidget'
+    )
+
+    subgraphNode.graph = null
+
+    expect(() =>
+      resolvePromotedWidgetSource(subgraphNode, promotedView)
+    ).not.toThrow()
+    expect(
+      resolvePromotedWidgetSource(subgraphNode, promotedView)
+    ).toBeUndefined()
   })
 })
 
