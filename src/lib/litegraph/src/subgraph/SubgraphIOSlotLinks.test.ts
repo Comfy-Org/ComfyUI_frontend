@@ -41,9 +41,8 @@ describe('SubgraphInput.connect triggers node:slot-links:changed', () => {
 
       subgraph.inputNode.slots[0].connect(node.inputs[0], node)
 
-      expect(triggerSpy).not.toHaveBeenCalledWith(
-        'node:slot-links:changed',
-        expect.anything()
+      expect(triggerSpy.mock.calls.map((c) => c[0])).not.toContain(
+        'node:slot-links:changed'
       )
     }
   )
@@ -93,9 +92,8 @@ describe('SubgraphInputNode._disconnectNodeInput triggers node:slot-links:change
 
       subgraph.inputNode._disconnectNodeInput(node, node.inputs[0], link!)
 
-      expect(triggerSpy).not.toHaveBeenCalledWith(
-        'node:slot-links:changed',
-        expect.anything()
+      expect(triggerSpy.mock.calls.map((c) => c[0])).not.toContain(
+        'node:slot-links:changed'
       )
     }
   )
