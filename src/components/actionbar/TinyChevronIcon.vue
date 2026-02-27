@@ -1,7 +1,7 @@
 <template>
   <svg
-    :class="rotateUp && 'rotate-180'"
-    style="width: 8px; height: 5px; min-width: 8px; min-height: 5px"
+    class="h-[5px] w-[8px] min-h-[5px] min-w-[8px]"
+    :class="{ 'rotate-180': rotateUp }"
     xmlns="http://www.w3.org/2000/svg"
     width="8"
     height="5"
@@ -11,7 +11,6 @@
   >
     <path
       d="M0.650391 0.649902L3.65039 3.6499L6.65039 0.649902"
-      class="text-muted-foreground"
       stroke="currentColor"
       stroke-width="1.3"
       stroke-linecap="round"
