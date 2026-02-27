@@ -133,6 +133,16 @@ export class SubgraphInput extends SubgraphSlot {
       return
     }
 
+    if (slot.widget) {
+      subgraph.trigger('node:slot-links:changed', {
+        nodeId: node.id,
+        slotType: NodeSlotType.INPUT,
+        slotIndex: inputIndex,
+        connected: true,
+        linkId: link.id
+      })
+    }
+
     node.onConnectionsChange?.(NodeSlotType.INPUT, inputIndex, true, link, slot)
     if (subgraph.getLink(link.id) !== link) {
       subgraph.afterChange()

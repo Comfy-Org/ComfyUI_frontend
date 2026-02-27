@@ -185,6 +185,7 @@ import { useWorkflowAutoSave } from '@/platform/workflow/persistence/composables
 import { useWorkflowPersistenceV2 as useWorkflowPersistence } from '@/platform/workflow/persistence/composables/useWorkflowPersistenceV2'
 import { useNodeDataStore } from '@/stores/nodeDataStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { useSubgraphDragBridge } from '@/renderer/core/canvas/links/useSubgraphDragBridge'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
 import { arrangeForLegacyRender } from '@/renderer/core/canvas/litegraph/arrangeForLegacyRender'
 import { notifyLayoutChanges } from '@/renderer/core/canvas/litegraph/notifyLayoutChanges'
@@ -487,6 +488,7 @@ useGroupContextMenu()
 useCopy()
 usePaste()
 useWorkflowAutoSave()
+useSubgraphDragBridge()
 
 // Start watching for locale change after the initial value is loaded.
 watch(
