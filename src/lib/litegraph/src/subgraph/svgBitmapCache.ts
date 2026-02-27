@@ -12,7 +12,11 @@ export function createBitmapCache(svg: HTMLImageElement, bitmapSize: number) {
       const ctx = canvas.getContext('2d')
       if (!ctx) return svg
 
-      ctx.drawImage(svg, 0, 0, bitmapSize, bitmapSize)
+      try {
+        ctx.drawImage(svg, 0, 0, bitmapSize, bitmapSize)
+      } catch {
+        return svg
+      }
       bitmap = canvas
       return bitmap
     }

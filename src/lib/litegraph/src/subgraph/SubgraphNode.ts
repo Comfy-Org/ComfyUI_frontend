@@ -50,7 +50,7 @@ workflowSvg.src =
 
 // Pre-rasterize the SVG to a bitmap canvas to avoid Firefox re-processing
 // the SVG's internal stylesheet on every ctx.drawImage() call per frame.
-const workflowBitmapCache = createBitmapCache(workflowSvg, 16)
+const workflowBitmapCache = createBitmapCache(workflowSvg, 32)
 
 /**
  * An instance of a {@link Subgraph}, displayed as a node on the containing (parent) graph.
