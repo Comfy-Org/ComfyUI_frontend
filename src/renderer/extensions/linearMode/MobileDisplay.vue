@@ -22,9 +22,9 @@ import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import { cn } from '@/utils/tailwindUtil'
 
 const tabs = [
-  ['Assets', 'icon-[lucide--images]'],
   ['Edit & Run', 'icon-[lucide--play]'],
-  ['Results', 'icon-[comfy--image-ai-edit]']
+  ['Outputs', 'icon-[comfy--image-ai-edit]'],
+  ['Assets', 'icon-[lucide--images]']
 ]
 
 const canvasStore = useCanvasStore()
@@ -181,19 +181,17 @@ const menuEntries = computed<MenuItem[]>(() => [
         :class="cn('size-full relative', !isSwiping && 'transition-all')"
         :style="{ translate }"
       >
-        <AssetsSidebarTab
-          class="h-full w-screen absolute bg-base-background [&>:first-child>:nth-child(odd)]:hidden"
-        />
-        <div
-          class="overflow-y-auto contain-size h-full w-screen absolute left-[100vw] top-0"
-        >
-          <LinearControls mobile @navigate-assets="activeIndex = 0" />
+        <div class="overflow-y-auto contain-size h-full w-screen absolute">
+          <LinearControls mobile @navigate-assets="activeIndex = 1" />
         </div>
         <div
-          class="w-screen absolute h-full bg-base-background left-[200vw] top-0 flex flex-col"
+          class="w-screen absolute h-full bg-base-background left-[100vw] top-0 flex flex-col"
         >
           <LinearPreview mobile />
         </div>
+        <AssetsSidebarTab
+          class="h-full w-screen absolute bg-base-background [&>:first-child>:nth-child(odd)]:hidden left-[200vw] top-0"
+        />
       </div>
     </div>
     <div
@@ -211,9 +209,9 @@ const menuEntries = computed<MenuItem[]>(() => [
           <i :class="cn('size-4', icon)" />
           <div
             v-if="
-              index === 2 &&
-              queueStore.runningTasks.length > 0 &&
-              queueStore.pendingTasks.length > 0
+              index === 1 &&
+              (queueStore.runningTasks.length > 0 ||
+                queueStore.pendingTasks.length > 0)
             "
             class="absolute bg-primary-background size-2 -top-1 -right-1 rounded-full animate-pulse"
           />
