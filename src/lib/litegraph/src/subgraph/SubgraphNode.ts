@@ -73,15 +73,128 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
 
   private _promotedViewManager =
     new PromotedWidgetViewManager<PromotedWidgetView>()
+  private _pendingPromotions: Array<{
+    interiorNodeId: string
+    widgetName: string
+  }> = []
 
   // Declared as accessor via Object.defineProperty in constructor.
   // TypeScript doesn't allow overriding a property with get/set syntax,
   // so we use declare + defineProperty instead.
   declare widgets: IBaseWidget[]
 
+  private _resolveLinkedPromotionByInputName(
+    widgetName: string
+  ): { interiorNodeId: string; widgetName: string } | undefined {
+    const input = this.inputs.find((slot) => slot.name === widgetName)
+    if (input?._widget && isPromotedWidgetView(input._widget)) {
+      return {
+        interiorNodeId: input._widget.sourceNodeId,
+        widgetName: input._widget.sourceWidgetName
+      }
+    }
+
+    const subgraphInput = this.subgraph.inputNode.slots.find(
+      (slot) => slot.name === widgetName
+    )
+    if (!subgraphInput) return undefined
+
+    for (const linkId of subgraphInput.linkIds) {
+      const link = this.subgraph.getLink(linkId)
+      if (!link) continue
+
+      const { inputNode } = link.resolve(this.subgraph)
+      if (!inputNode) continue
+
+      const targetInput = inputNode.inputs.find(
+        (inputSlot) => inputSlot.link === linkId
+      )
+      if (!targetInput) continue
+
+      const targetWidget = inputNode.getWidgetFromSlot(targetInput)
+      if (!targetWidget) continue
+
+      if (isPromotedWidgetView(targetWidget)) {
+        return {
+          interiorNodeId: targetWidget.sourceNodeId,
+          widgetName: targetWidget.sourceWidgetName
+        }
+      }
+
+      return {
+        interiorNodeId: String(inputNode.id),
+        widgetName: targetWidget.name
+      }
+    }
+
+    return undefined
+  }
+
+  private _reconcilePromotionEntry(entry: {
+    interiorNodeId: string
+    widgetName: string
+  }): { interiorNodeId: string; widgetName: string } | undefined {
+    const sourceNode = this.subgraph.getNodeById(entry.interiorNodeId)
+
+    if (!sourceNode) {
+      const resolved = this._resolveLinkedPromotionByInputName(entry.widgetName)
+      return resolved ?? entry
+    }
+
+    const sourceWidget = sourceNode.widgets?.find(
+      (widget) => widget.name === entry.widgetName
+    )
+    if (sourceWidget) return entry
+
+    if (sourceNode.isSubgraphNode?.()) {
+      const nestedResolved = this._resolveLinkedPromotionByInputName(
+        entry.widgetName
+      )
+      if (nestedResolved) return nestedResolved
+    }
+
+    // Keep the original entry when the source node still exists but the widget
+    // is temporarily unavailable. This preserves recoverability on rebind/readd.
+    return entry
+  }
+
   private _getPromotedViews(): PromotedWidgetView[] {
     const store = usePromotionStore()
     const entries = store.getPromotionsRef(this.rootGraph.id, this.id)
+    const reconciledEntries = entries
+      .map((entry) => this._reconcilePromotionEntry(entry))
+      .filter(
+        (
+          entry
+        ): entry is {
+          interiorNodeId: string
+          widgetName: string
+        } => entry !== undefined
+      )
+    const dedupedEntries = reconciledEntries.filter((entry, index, array) => {
+      const firstIndex = array.findIndex(
+        (candidate) =>
+          candidate.interiorNodeId === entry.interiorNodeId &&
+          candidate.widgetName === entry.widgetName
+      )
+      return firstIndex === index
+    })
+
+    const hasChanged =
+      dedupedEntries.length !== entries.length ||
+      dedupedEntries.some(
+        (entry, index) =>
+          entry.interiorNodeId !== entries[index]?.interiorNodeId ||
+          entry.widgetName !== entries[index]?.widgetName
+      )
+
+    if (hasChanged) {
+      store.setPromotions(this.rootGraph.id, this.id, dedupedEntries)
+
+      return this._promotedViewManager.reconcile(dedupedEntries, (entry) =>
+        createPromotedWidgetView(this, entry.interiorNodeId, entry.widgetName)
+      )
+    }
 
     return this._promotedViewManager.reconcile(entries, (entry) =>
       createPromotedWidgetView(this, entry.interiorNodeId, entry.widgetName)
@@ -473,11 +586,52 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     inputWidget: IWidgetLocator | undefined,
     interiorNode: LGraphNode
   ) {
+    this._flushPendingPromotions()
+
     const nodeId = String(interiorNode.id)
     const widgetName = _widget.name
 
-    // Add to promotion store
-    usePromotionStore().promote(this.rootGraph.id, this.id, nodeId, widgetName)
+    const previousView = input._widget
+
+    if (
+      previousView &&
+      isPromotedWidgetView(previousView) &&
+      (previousView.sourceNodeId !== nodeId ||
+        previousView.sourceWidgetName !== widgetName)
+    ) {
+      usePromotionStore().demote(
+        this.rootGraph.id,
+        this.id,
+        previousView.sourceNodeId,
+        previousView.sourceWidgetName
+      )
+      this._promotedViewManager.remove(
+        previousView.sourceNodeId,
+        previousView.sourceWidgetName
+      )
+    }
+
+    if (this.id === -1) {
+      if (
+        !this._pendingPromotions.some(
+          (entry) =>
+            entry.interiorNodeId === nodeId && entry.widgetName === widgetName
+        )
+      ) {
+        this._pendingPromotions.push({
+          interiorNodeId: nodeId,
+          widgetName
+        })
+      }
+    } else {
+      // Add to promotion store
+      usePromotionStore().promote(
+        this.rootGraph.id,
+        this.id,
+        nodeId,
+        widgetName
+      )
+    }
 
     // Create/retrieve the view from cache
     const view = this._promotedViewManager.getOrCreate(nodeId, widgetName, () =>
@@ -498,6 +652,25 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
       widget: view,
       subgraphNode: this
     })
+  }
+
+  private _flushPendingPromotions() {
+    if (this.id === -1 || this._pendingPromotions.length === 0) return
+
+    for (const entry of this._pendingPromotions) {
+      usePromotionStore().promote(
+        this.rootGraph.id,
+        this.id,
+        entry.interiorNodeId,
+        entry.widgetName
+      )
+    }
+
+    this._pendingPromotions = []
+  }
+
+  override onAdded(_graph: LGraph): void {
+    this._flushPendingPromotions()
   }
 
   /**

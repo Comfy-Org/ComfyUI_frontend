@@ -9,12 +9,14 @@ import type { BaseWidget } from '@/lib/litegraph/src/widgets/BaseWidget'
 import { toConcreteWidget } from '@/lib/litegraph/src/widgets/widgetMap'
 import { t } from '@/i18n'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
+import { usePromotionStore } from '@/stores/promotionStore'
 import {
   stripGraphPrefix,
   useWidgetValueStore
 } from '@/stores/widgetValueStore'
 
-import type { PromotedWidgetView as IPromotedWidgetView } from './promotedWidgetTypes'
+import { isPromotedWidgetView } from './promotedWidgetTypes';
+import type { PromotedWidgetView as IPromotedWidgetView } from './promotedWidgetTypes';
 
 export type { PromotedWidgetView } from './promotedWidgetTypes'
 export { isPromotedWidgetView } from './promotedWidgetTypes'
@@ -26,8 +28,166 @@ function resolve(
 ): { node: LGraphNode; widget: IBaseWidget } | undefined {
   const node = subgraphNode.subgraph.getNodeById(nodeId)
   if (!node) return undefined
+
   const widget = node.widgets?.find((w: IBaseWidget) => w.name === widgetName)
-  return widget ? { node, widget } : undefined
+  if (widget) return { node, widget }
+
+  if (!node.isSubgraphNode?.()) return undefined
+
+  // Some nested rebind/prune sequences leave the intermediate SubgraphNode
+  // without a materialized widgets[] entry for a frame, while input _widget
+  // bindings are already updated. Follow that binding to avoid disconnecteds.
+  const inputWidget = node.inputs.find(
+    (input) => input.name === widgetName
+  )?._widget
+  return inputWidget ? { node, widget: inputWidget } : undefined
+}
+
+function resolveViaPromotionStore(
+  graphId: string,
+  hostNode: SubgraphNode,
+  nodeId: string,
+  widgetName: string
+): { hostNode: SubgraphNode; nodeId: string; widgetName: string } | undefined {
+  const sourceNode = hostNode.subgraph.getNodeById(nodeId)
+  if (!sourceNode?.isSubgraphNode?.()) return undefined
+
+  const fallback = usePromotionStore()
+    .getPromotionsRef(graphId, sourceNode.id)
+    .find((entry) => entry.widgetName === widgetName)
+  if (!fallback) return undefined
+
+  return {
+    hostNode: sourceNode,
+    nodeId: fallback.interiorNodeId,
+    widgetName: fallback.widgetName
+  }
+}
+
+function resolveViaInputLink(
+  hostNode: SubgraphNode,
+  nodeId: string,
+  widgetName: string
+): { hostNode: SubgraphNode; nodeId: string; widgetName: string } | undefined {
+  const sourceNode = hostNode.subgraph.getNodeById(nodeId)
+  if (!sourceNode?.isSubgraphNode?.()) return undefined
+
+  const fallbackMatches: Array<{
+    hostNode: SubgraphNode
+    nodeId: string
+    widgetName: string
+    score: number
+  }> = []
+
+  for (const sourceSlot of sourceNode.subgraph.inputNode.slots) {
+    for (const linkId of sourceSlot.linkIds) {
+      const link = sourceNode.subgraph.getLink(linkId)
+      if (!link) continue
+
+      const { inputNode } = link.resolve(sourceNode.subgraph)
+      if (!inputNode) continue
+
+      const targetInput = inputNode.inputs.find(
+        (input) => input.link === linkId
+      )
+      if (!targetInput) continue
+
+      const targetWidget = inputNode.getWidgetFromSlot(targetInput)
+      if (!targetWidget) continue
+
+      let score = 0
+      if (sourceSlot.name === widgetName) score = 3
+      if (targetWidget.name === widgetName) score = Math.max(score, 2)
+      if (
+        isPromotedWidgetView(targetWidget) &&
+        targetWidget.sourceWidgetName === widgetName
+      ) {
+        score = Math.max(score, 2)
+      }
+
+      if (score === 0) continue
+
+      if (isPromotedWidgetView(targetWidget)) {
+        fallbackMatches.push({
+          hostNode: targetWidget.node,
+          nodeId: targetWidget.sourceNodeId,
+          widgetName: targetWidget.sourceWidgetName,
+          score
+        })
+        continue
+      }
+
+      fallbackMatches.push({
+        hostNode: sourceNode,
+        nodeId: String(inputNode.id),
+        widgetName: targetWidget.name,
+        score
+      })
+    }
+  }
+
+  if (fallbackMatches.length === 0) return undefined
+  fallbackMatches.sort((a, b) => b.score - a.score)
+  const bestMatch = fallbackMatches[0]
+  return {
+    hostNode: bestMatch.hostNode,
+    nodeId: bestMatch.nodeId,
+    widgetName: bestMatch.widgetName
+  }
+}
+
+function resolveNestedFallback(
+  graphId: string,
+  hostNode: SubgraphNode,
+  nodeId: string,
+  widgetName: string
+): { hostNode: SubgraphNode; nodeId: string; widgetName: string } | undefined {
+  return (
+    resolveViaPromotionStore(graphId, hostNode, nodeId, widgetName) ??
+    resolveViaInputLink(hostNode, nodeId, widgetName)
+  )
+}
+
+function resolveConcrete(
+  subgraphNode: SubgraphNode,
+  graphId: string,
+  nodeId: string,
+  widgetName: string
+): { node: LGraphNode; widget: IBaseWidget } | undefined {
+  const visited = new Set<string>()
+  let currentHost = subgraphNode
+  let currentNodeId = nodeId
+  let currentWidgetName = widgetName
+
+  while (true) {
+    const key = `${currentHost.id}:${currentNodeId}:${currentWidgetName}`
+    if (visited.has(key)) break
+    visited.add(key)
+
+    const current = resolve(currentHost, currentNodeId, currentWidgetName)
+    if (current) {
+      if (!isPromotedWidgetView(current.widget)) return current
+
+      currentHost = current.widget.node
+      currentNodeId = current.widget.sourceNodeId
+      currentWidgetName = current.widget.sourceWidgetName
+      continue
+    }
+
+    const promotedFallback = resolveNestedFallback(
+      graphId,
+      currentHost,
+      currentNodeId,
+      currentWidgetName
+    )
+    if (!promotedFallback) break
+
+    currentHost = promotedFallback.hostNode
+    currentNodeId = promotedFallback.nodeId
+    currentWidgetName = promotedFallback.widgetName
+  }
+
+  return undefined
 }
 
 function isWidgetValue(value: unknown): value is IBaseWidget['value'] {
@@ -67,11 +227,11 @@ class PromotedWidgetView implements IPromotedWidgetView {
   computedHeight?: number
 
   private readonly graphId: string
-  private readonly bareNodeId: NodeId
   private yValue = 0
 
   private projectedSourceNode?: LGraphNode
   private projectedSourceWidget?: IBaseWidget
+  private projectedSourceWidgetType?: IBaseWidget['type']
   private projectedWidget?: BaseWidget
 
   constructor(
@@ -83,7 +243,6 @@ class PromotedWidgetView implements IPromotedWidgetView {
     this.sourceNodeId = nodeId
     this.sourceWidgetName = widgetName
     this.graphId = subgraphNode.rootGraph.id
-    this.bareNodeId = stripGraphPrefix(nodeId)
   }
 
   get node(): SubgraphNode {
@@ -110,19 +269,19 @@ class PromotedWidgetView implements IPromotedWidgetView {
   set computedDisabled(_value: boolean | undefined) {}
 
   get type(): IBaseWidget['type'] {
-    return this.resolve()?.widget.type ?? 'button'
+    return this.resolveConcrete()?.widget.type ?? 'button'
   }
 
   get options(): IBaseWidget['options'] {
-    return this.resolve()?.widget.options ?? {}
+    return this.resolveConcrete()?.widget.options ?? {}
   }
 
   get tooltip(): string | undefined {
-    return this.resolve()?.widget.tooltip
+    return this.resolveConcrete()?.widget.tooltip
   }
 
   get linkedWidgets(): IBaseWidget[] | undefined {
-    return this.resolve()?.widget.linkedWidgets
+    return this.resolveConcrete()?.widget.linkedWidgets
   }
 
   get value(): IBaseWidget['value'] {
@@ -155,18 +314,18 @@ class PromotedWidgetView implements IPromotedWidgetView {
   }
 
   get hidden(): boolean {
-    return this.resolve()?.widget.hidden ?? false
+    return this.resolveConcrete()?.widget.hidden ?? false
   }
 
   get computeLayoutSize(): IBaseWidget['computeLayoutSize'] {
-    const resolved = this.resolve()
+    const resolved = this.resolveConcrete()
     const computeLayoutSize = resolved?.widget.computeLayoutSize
     if (!computeLayoutSize) return undefined
     return (node: LGraphNode) => computeLayoutSize.call(resolved.widget, node)
   }
 
   get computeSize(): IBaseWidget['computeSize'] {
-    const resolved = this.resolve()
+    const resolved = this.resolveConcrete()
     const computeSize = resolved?.widget.computeSize
     if (!computeSize) return undefined
     return (width?: number) => computeSize.call(resolved.widget, width)
@@ -180,7 +339,7 @@ class PromotedWidgetView implements IPromotedWidgetView {
     H: number,
     lowQuality?: boolean
   ): void {
-    const resolved = this.resolve()
+    const resolved = this.resolveConcrete()
     if (!resolved) {
       drawDisconnectedPlaceholder(ctx, widgetWidth, y, H)
       return
@@ -250,12 +409,64 @@ class PromotedWidgetView implements IPromotedWidgetView {
     return resolve(this.subgraphNode, this.sourceNodeId, this.sourceWidgetName)
   }
 
-  private getWidgetState() {
-    return useWidgetValueStore().getWidget(
+  private resolveConcrete():
+    | { node: LGraphNode; widget: IBaseWidget }
+    | undefined {
+    return resolveConcrete(
+      this.subgraphNode,
       this.graphId,
-      this.bareNodeId,
+      this.sourceNodeId,
       this.sourceWidgetName
     )
+  }
+
+  private getWidgetState() {
+    const lookupTarget = this.resolveStateLookupTarget()
+    return useWidgetValueStore().getWidget(
+      this.graphId,
+      lookupTarget.nodeId,
+      lookupTarget.widgetName
+    )
+  }
+
+  private resolveStateLookupTarget(): { nodeId: NodeId; widgetName: string } {
+    let currentHost = this.subgraphNode
+    let currentNodeId = this.sourceNodeId
+    let currentWidgetName = this.sourceWidgetName
+    const visited = new Set<string>()
+
+    while (true) {
+      const visitKey = `${currentHost.id}:${currentNodeId}:${currentWidgetName}`
+      if (visited.has(visitKey)) break
+      visited.add(visitKey)
+
+      const resolved = resolve(currentHost, currentNodeId, currentWidgetName)
+      if (resolved) {
+        if (!isPromotedWidgetView(resolved.widget)) break
+
+        currentHost = resolved.widget.node
+        currentNodeId = resolved.widget.sourceNodeId
+        currentWidgetName = resolved.widget.sourceWidgetName
+        continue
+      }
+
+      const promotedFallback = resolveNestedFallback(
+        this.graphId,
+        currentHost,
+        currentNodeId,
+        currentWidgetName
+      )
+      if (!promotedFallback) break
+
+      currentHost = promotedFallback.hostNode
+      currentNodeId = promotedFallback.nodeId
+      currentWidgetName = promotedFallback.widgetName
+    }
+
+    return {
+      nodeId: stripGraphPrefix(currentNodeId),
+      widgetName: currentWidgetName
+    }
   }
 
   private getProjectedWidget(resolved: {
@@ -265,7 +476,8 @@ class PromotedWidgetView implements IPromotedWidgetView {
     const shouldRebuild =
       !this.projectedWidget ||
       this.projectedSourceNode !== resolved.node ||
-      this.projectedSourceWidget !== resolved.widget
+      this.projectedSourceWidget !== resolved.widget ||
+      this.projectedSourceWidgetType !== resolved.widget.type
 
     if (!shouldRebuild) return this.projectedWidget
 
@@ -274,12 +486,14 @@ class PromotedWidgetView implements IPromotedWidgetView {
       this.projectedWidget = undefined
       this.projectedSourceNode = undefined
       this.projectedSourceWidget = undefined
+      this.projectedSourceWidgetType = undefined
       return undefined
     }
 
     this.projectedWidget = concrete.createCopyForNode(this.subgraphNode)
     this.projectedSourceNode = resolved.node
     this.projectedSourceWidget = resolved.widget
+    this.projectedSourceWidgetType = resolved.widget.type
     return this.projectedWidget
   }
 

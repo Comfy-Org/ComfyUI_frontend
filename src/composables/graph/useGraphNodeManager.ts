@@ -225,26 +225,51 @@ function safeWidgetMapper(
         : undefined
       const subgraphId = node.isSubgraphNode() && node.subgraph.id
 
+      const resolvedSource = isPromotedWidgetView(widget)
+        ? resolvePromotedWidgetSource(node, widget)
+        : undefined
+      const sourceWidget = resolvedSource?.widget
+      const sourceNode = resolvedSource?.node
+
+      const effectiveWidget = sourceWidget ?? widget
+
       const localId = isPromotedWidgetView(widget)
-        ? widget.sourceNodeId
+        ? String(sourceNode?.id ?? widget.sourceNodeId)
         : undefined
       const nodeId =
         subgraphId && localId ? `${subgraphId}:${localId}` : undefined
       const name = isPromotedWidgetView(widget)
-        ? widget.sourceWidgetName
+        ? (sourceWidget?.name ?? widget.sourceWidgetName)
         : widget.name
 
       return {
         nodeId,
         name,
-        type: widget.type,
+        type: effectiveWidget.type,
         ...sharedEnhancements,
         callback,
-        hasLayoutSize: typeof widget.computeLayoutSize === 'function',
+        hasLayoutSize: typeof effectiveWidget.computeLayoutSize === 'function',
         isDOMWidget: isDOMWidget(widget) || isPromotedDOMWidget(widget),
         options: isPromotedPseudoWidget
-          ? { ...options, canvasOnly: true }
-          : options,
+          ? {
+              ...(effectiveWidget.options
+                ? {
+                    canvasOnly: effectiveWidget.options.canvasOnly,
+                    advanced: effectiveWidget.advanced,
+                    hidden: effectiveWidget.options.hidden,
+                    read_only: effectiveWidget.options.read_only
+                  }
+                : options),
+              canvasOnly: true
+            }
+          : effectiveWidget.options
+            ? {
+                canvasOnly: effectiveWidget.options.canvasOnly,
+                advanced: effectiveWidget.advanced,
+                hidden: effectiveWidget.options.hidden,
+                read_only: effectiveWidget.options.read_only
+              }
+            : options,
         slotMetadata: slotInfo,
         slotName: name !== widget.name ? widget.name : undefined
       }

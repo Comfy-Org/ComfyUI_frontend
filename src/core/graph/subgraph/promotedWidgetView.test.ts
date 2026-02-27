@@ -382,9 +382,96 @@ describe('SubgraphNode.widgets getter', () => {
     setActivePinia(createTestingPinia({ stubActions: false }))
   })
 
+  test('defers promotions while subgraph node id is -1 and flushes on add', () => {
+    const subgraph = createTestSubgraph({
+      inputs: [{ name: 'picker_input', type: '*' }]
+    })
+    const subgraphNode = createTestSubgraphNode(subgraph, { id: -1 })
+
+    const innerNode = new LGraphNode('InnerNode')
+    const innerInput = innerNode.addInput('picker_input', '*')
+    innerNode.addWidget('combo', 'picker', 'a', () => {}, {
+      values: ['a', 'b']
+    })
+    innerInput.widget = { name: 'picker' }
+    subgraph.add(innerNode)
+
+    subgraph.inputNode.slots[0].connect(innerInput, innerNode)
+    subgraphNode._internalConfigureAfterSlots()
+
+    const store = usePromotionStore()
+    expect(store.getPromotions(subgraphNode.rootGraph.id, -1)).toStrictEqual([])
+
+    subgraphNode.graph?.add(subgraphNode)
+    expect(subgraphNode.id).not.toBe(-1)
+    expect(
+      store.getPromotions(subgraphNode.rootGraph.id, subgraphNode.id)
+    ).toStrictEqual([
+      {
+        interiorNodeId: String(innerNode.id),
+        widgetName: 'picker'
+      }
+    ])
+  })
+
+  test('rebinds one input to latest source without stale disconnected views', () => {
+    const subgraph = createTestSubgraph({
+      inputs: [{ name: 'picker_input', type: '*' }]
+    })
+    const subgraphNode = createTestSubgraphNode(subgraph, { id: 41 })
+    subgraphNode.graph?.add(subgraphNode)
+
+    const firstNode = new LGraphNode('FirstNode')
+    const firstInput = firstNode.addInput('picker_input', '*')
+    firstNode.addWidget('combo', 'picker', 'a', () => {}, {
+      values: ['a', 'b']
+    })
+    firstInput.widget = { name: 'picker' }
+    subgraph.add(firstNode)
+    subgraph.inputNode.slots[0].connect(firstInput, firstNode)
+
+    const secondNode = new LGraphNode('SecondNode')
+    const secondInput = secondNode.addInput('picker_input', '*')
+    secondNode.addWidget('combo', 'picker', 'b', () => {}, {
+      values: ['a', 'b']
+    })
+    secondInput.widget = { name: 'picker' }
+    subgraph.add(secondNode)
+    subgraph.inputNode.slots[0].connect(secondInput, secondNode)
+
+    const promotions = usePromotionStore().getPromotions(
+      subgraphNode.rootGraph.id,
+      subgraphNode.id
+    )
+
+    expect(promotions).toHaveLength(1)
+    expect(promotions[0]).toStrictEqual({
+      interiorNodeId: String(secondNode.id),
+      widgetName: 'picker'
+    })
+    expect(subgraphNode.widgets).toHaveLength(1)
+    expect(subgraphNode.widgets[0].value).toBe('b')
+  })
+
   test('returns empty array when no proxyWidgets', () => {
     const [subgraphNode] = setupSubgraph()
     expect(subgraphNode.widgets).toEqual([])
+  })
+
+  test('widgets getter preserves unresolved entries for later reconciliation', () => {
+    const [subgraphNode, innerNodes] = setupSubgraph(1)
+    const innerNode = firstInnerNode(innerNodes)
+    innerNode.addWidget('text', 'widgetA', 'a', () => {})
+
+    setPromotions(subgraphNode, [
+      [String(innerNode.id), 'widgetA'],
+      ['9999', 'missingWidget']
+    ])
+
+    expect(subgraphNode.widgets).toHaveLength(2)
+    expect(subgraphNode.widgets[0].name).toBe('widgetA')
+    expect(subgraphNode.widgets[1].name).toBe('missingWidget')
+    expect(subgraphNode.widgets[1].type).toBe('button')
   })
 
   test('caches view objects across getter calls (stable references)', () => {
@@ -741,7 +828,7 @@ describe('disconnected state', () => {
     expect(subgraphNode.widgets[0].type).toBe('number')
   })
 
-  test('view falls back to button type when interior node is removed', () => {
+  test('keeps promoted entry as disconnected when interior node is removed', () => {
     const [subgraphNode, innerNodes] = setupSubgraph(1)
     innerNodes[0].addWidget('text', 'myWidget', 'val', () => {})
     setPromotions(subgraphNode, [['1', 'myWidget']])
@@ -750,6 +837,7 @@ describe('disconnected state', () => {
 
     // Remove the interior node from the subgraph
     subgraphNode.subgraph.remove(innerNodes[0])
+    expect(subgraphNode.widgets).toHaveLength(1)
     expect(subgraphNode.widgets[0].type).toBe('button')
   })
 
@@ -767,16 +855,11 @@ describe('disconnected state', () => {
     expect(subgraphNode.widgets[0].type).toBe('text')
   })
 
-  test('options returns empty object when disconnected', () => {
+  test('keeps missing source-node promotions as disconnected views', () => {
     const [subgraphNode] = setupSubgraph()
     setPromotions(subgraphNode, [['999', 'ghost']])
-    expect(subgraphNode.widgets[0].options).toEqual({})
-  })
-
-  test('tooltip returns undefined when disconnected', () => {
-    const [subgraphNode] = setupSubgraph()
-    setPromotions(subgraphNode, [['999', 'ghost']])
-    expect(subgraphNode.widgets[0].tooltip).toBeUndefined()
+    expect(subgraphNode.widgets).toHaveLength(1)
+    expect(subgraphNode.widgets[0].type).toBe('button')
   })
 })
 
@@ -845,6 +928,365 @@ describe('promoted combo rendering', () => {
 
     const renderedText = fillText.mock.calls.map((call) => call[0])
     expect(renderedText).toContain('a')
+  })
+
+  test('draw shows value through two input-based promotion layers', () => {
+    const subgraphA = createTestSubgraph({
+      inputs: [{ name: 'a_input', type: '*' }]
+    })
+    const innerNode = new LGraphNode('InnerComboNode')
+    const innerInput = innerNode.addInput('picker_input', '*')
+    const comboWidget = innerNode.addWidget('combo', 'picker', 'a', () => {}, {
+      values: ['a', 'b']
+    })
+    innerInput.widget = { name: 'picker' }
+    subgraphA.add(innerNode)
+    subgraphA.inputNode.slots[0].connect(innerInput, innerNode)
+
+    const subgraphNodeA = createTestSubgraphNode(subgraphA, { id: 11 })
+    comboWidget.computedDisabled = true
+
+    const subgraphB = createTestSubgraph({
+      inputs: [{ name: 'b_input', type: '*' }]
+    })
+    subgraphB.add(subgraphNodeA)
+    subgraphNodeA._internalConfigureAfterSlots()
+    subgraphB.inputNode.slots[0].connect(subgraphNodeA.inputs[0], subgraphNodeA)
+
+    const subgraphNodeB = createTestSubgraphNode(subgraphB, { id: 22 })
+    const fillText = vi.fn()
+    const ctx = createInspectableCanvasContext(fillText)
+
+    subgraphNodeB.widgets[0].draw?.(
+      ctx,
+      subgraphNodeB,
+      260,
+      0,
+      LiteGraph.NODE_WIDGET_HEIGHT,
+      false
+    )
+
+    const renderedText = fillText.mock.calls.map((call) => call[0])
+    expect(renderedText).toContain('a')
+  })
+
+  test('value updates propagate through two promoted input layers', () => {
+    const subgraphA = createTestSubgraph({
+      inputs: [{ name: 'a_input', type: '*' }]
+    })
+    const innerNode = new LGraphNode('InnerComboNode')
+    const innerInput = innerNode.addInput('picker_input', '*')
+    const comboWidget = innerNode.addWidget('combo', 'picker', 'a', () => {}, {
+      values: ['a', 'b']
+    })
+    innerInput.widget = { name: 'picker' }
+    subgraphA.add(innerNode)
+    subgraphA.inputNode.slots[0].connect(innerInput, innerNode)
+
+    const subgraphNodeA = createTestSubgraphNode(subgraphA, { id: 11 })
+    comboWidget.computedDisabled = true
+
+    const subgraphB = createTestSubgraph({
+      inputs: [{ name: 'b_input', type: '*' }]
+    })
+    subgraphB.add(subgraphNodeA)
+    subgraphNodeA._internalConfigureAfterSlots()
+    subgraphB.inputNode.slots[0].connect(subgraphNodeA.inputs[0], subgraphNodeA)
+
+    const subgraphNodeB = createTestSubgraphNode(subgraphB, { id: 22 })
+    const promotedWidget = subgraphNodeB.widgets[0]
+
+    expect(promotedWidget.value).toBe('a')
+    promotedWidget.value = 'b'
+    expect(comboWidget.value).toBe('b')
+
+    const fillText = vi.fn()
+    const ctx = createInspectableCanvasContext(fillText)
+    promotedWidget.draw?.(
+      ctx,
+      subgraphNodeB,
+      260,
+      0,
+      LiteGraph.NODE_WIDGET_HEIGHT,
+      false
+    )
+
+    const renderedText = fillText.mock.calls.map((call) => call[0])
+    expect(renderedText).toContain('b')
+  })
+
+  test('draw projection recovers after transient button fallback in nested promotion', () => {
+    const subgraphA = createTestSubgraph({
+      inputs: [{ name: 'a_input', type: '*' }]
+    })
+    const innerNode = new LGraphNode('InnerComboNode')
+    const innerInput = innerNode.addInput('picker_input', '*')
+    innerNode.addWidget('combo', 'picker', 'a', () => {}, {
+      values: ['a', 'b']
+    })
+    innerInput.widget = { name: 'picker' }
+    subgraphA.add(innerNode)
+    subgraphA.inputNode.slots[0].connect(innerInput, innerNode)
+
+    const subgraphNodeA = createTestSubgraphNode(subgraphA, { id: 11 })
+
+    const subgraphB = createTestSubgraph({
+      inputs: [{ name: 'b_input', type: '*' }]
+    })
+    subgraphB.add(subgraphNodeA)
+    subgraphNodeA._internalConfigureAfterSlots()
+    subgraphB.inputNode.slots[0].connect(subgraphNodeA.inputs[0], subgraphNodeA)
+
+    const subgraphNodeB = createTestSubgraphNode(subgraphB, { id: 22 })
+    const promotedWidget = subgraphNodeB.widgets[0]
+
+    // Force a transient disconnect to project a fallback widget once.
+    innerNode.widgets = []
+    promotedWidget.draw?.(
+      createInspectableCanvasContext(),
+      subgraphNodeB,
+      260,
+      0,
+      LiteGraph.NODE_WIDGET_HEIGHT,
+      false
+    )
+
+    // Restore the concrete widget and verify draw reflects recovery.
+    innerNode.addWidget('combo', 'picker', 'a', () => {}, {
+      values: ['a', 'b']
+    })
+    const fillText = vi.fn()
+    promotedWidget.draw?.(
+      createInspectableCanvasContext(fillText),
+      subgraphNodeB,
+      260,
+      0,
+      LiteGraph.NODE_WIDGET_HEIGHT,
+      false
+    )
+
+    const renderedText = fillText.mock.calls.map((call) => call[0])
+    expect(renderedText).toContain('a')
+  })
+
+  test('state lookup resolves to deepest promoted widget source', () => {
+    const subgraphA = createTestSubgraph({
+      inputs: [{ name: 'a_input', type: '*' }]
+    })
+    const innerNode = new LGraphNode('InnerComboNode')
+    const innerInput = innerNode.addInput('picker_input', '*')
+    innerNode.addWidget('combo', 'picker', 'a', () => {}, {
+      values: ['a', 'b']
+    })
+    innerInput.widget = { name: 'picker' }
+    subgraphA.add(innerNode)
+    subgraphA.inputNode.slots[0].connect(innerInput, innerNode)
+
+    const subgraphNodeA = createTestSubgraphNode(subgraphA, { id: 11 })
+
+    const subgraphB = createTestSubgraph({
+      inputs: [{ name: 'b_input', type: '*' }]
+    })
+    subgraphB.add(subgraphNodeA)
+    subgraphNodeA._internalConfigureAfterSlots()
+    subgraphB.inputNode.slots[0].connect(subgraphNodeA.inputs[0], subgraphNodeA)
+
+    const subgraphNodeB = createTestSubgraphNode(subgraphB, { id: 22 })
+    const widgetValueStore = useWidgetValueStore()
+    const getWidgetSpy = vi.spyOn(widgetValueStore, 'getWidget')
+
+    void subgraphNodeB.widgets[0].value
+
+    expect(getWidgetSpy).toHaveBeenCalledWith(
+      subgraphNodeB.rootGraph.id,
+      String(innerNode.id),
+      'picker'
+    )
+  })
+
+  test('state lookup falls back to promotion store chain when intermediate view is temporarily unavailable', () => {
+    const subgraphA = createTestSubgraph({
+      inputs: [{ name: 'strength_model', type: '*' }]
+    })
+    const innerNode = new LGraphNode('InnerNumberNode')
+    const innerInput = innerNode.addInput('strength_model', '*')
+    innerNode.addWidget('number', 'strength_model', 1, () => {})
+    innerInput.widget = { name: 'strength_model' }
+    subgraphA.add(innerNode)
+    subgraphA.inputNode.slots[0].connect(innerInput, innerNode)
+
+    const subgraphNodeA = createTestSubgraphNode(subgraphA, { id: 47 })
+
+    const subgraphB = createTestSubgraph({
+      inputs: [{ name: 'strength_model', type: '*' }]
+    })
+    subgraphB.add(subgraphNodeA)
+    subgraphNodeA._internalConfigureAfterSlots()
+    subgraphB.inputNode.slots[0].connect(subgraphNodeA.inputs[0], subgraphNodeA)
+
+    const subgraphNodeB = createTestSubgraphNode(subgraphB, { id: 46 })
+
+    // Simulate transient stale intermediate view state by forcing host 47
+    // to report no promoted widgets while promotionStore still has entries.
+    Object.defineProperty(subgraphNodeA, 'widgets', {
+      get: () => [],
+      configurable: true
+    })
+
+    expect(subgraphNodeB.widgets[0].type).toBe('number')
+    expect(subgraphNodeB.widgets[0].value).toBe(1)
+  })
+
+  test('state lookup falls back to input widget binding when intermediate promotions are temporarily absent', () => {
+    const subgraphA = createTestSubgraph({
+      inputs: [{ name: 'strength_model', type: '*' }]
+    })
+    const innerNode = new LGraphNode('InnerNumberNode')
+    const innerInput = innerNode.addInput('strength_model', '*')
+    innerNode.addWidget('number', 'strength_model', 1, () => {})
+    innerInput.widget = { name: 'strength_model' }
+    subgraphA.add(innerNode)
+    subgraphA.inputNode.slots[0].connect(innerInput, innerNode)
+
+    const subgraphNodeA = createTestSubgraphNode(subgraphA, { id: 47 })
+
+    const subgraphB = createTestSubgraph({
+      inputs: [{ name: 'strength_model', type: '*' }]
+    })
+    subgraphB.add(subgraphNodeA)
+    subgraphNodeA._internalConfigureAfterSlots()
+    subgraphB.inputNode.slots[0].connect(subgraphNodeA.inputs[0], subgraphNodeA)
+
+    const subgraphNodeB = createTestSubgraphNode(subgraphB, { id: 46 })
+
+    // Simulate a transient where intermediate promotions are unavailable but
+    // input _widget binding is already updated.
+    usePromotionStore().setPromotions(
+      subgraphNodeA.rootGraph.id,
+      subgraphNodeA.id,
+      []
+    )
+    Object.defineProperty(subgraphNodeA, 'widgets', {
+      get: () => [],
+      configurable: true
+    })
+
+    expect(subgraphNodeB.widgets[0].type).toBe('number')
+    expect(subgraphNodeB.widgets[0].value).toBe(1)
+  })
+
+  test('state lookup falls back to subgraph input link when intermediate bindings are unavailable', () => {
+    const subgraphA = createTestSubgraph({
+      inputs: [{ name: 'strength_model', type: '*' }]
+    })
+    const innerNode = new LGraphNode('InnerNumberNode')
+    const innerInput = innerNode.addInput('strength_model', '*')
+    innerNode.addWidget('number', 'strength_model', 1, () => {})
+    innerInput.widget = { name: 'strength_model' }
+    subgraphA.add(innerNode)
+    subgraphA.inputNode.slots[0].connect(innerInput, innerNode)
+
+    const subgraphNodeA = createTestSubgraphNode(subgraphA, { id: 47 })
+
+    const subgraphB = createTestSubgraph({
+      inputs: [{ name: 'strength_model', type: '*' }]
+    })
+    subgraphB.add(subgraphNodeA)
+    subgraphNodeA._internalConfigureAfterSlots()
+    subgraphB.inputNode.slots[0].connect(subgraphNodeA.inputs[0], subgraphNodeA)
+
+    const subgraphNodeB = createTestSubgraphNode(subgraphB, { id: 46 })
+
+    usePromotionStore().setPromotions(
+      subgraphNodeA.rootGraph.id,
+      subgraphNodeA.id,
+      []
+    )
+    Object.defineProperty(subgraphNodeA, 'widgets', {
+      get: () => [],
+      configurable: true
+    })
+    subgraphNodeA.inputs[0]._widget = undefined
+
+    expect(subgraphNodeB.widgets[0].type).toBe('number')
+    expect(subgraphNodeB.widgets[0].value).toBe(1)
+  })
+
+  test('nested promotion keeps concrete widget types at top level', () => {
+    const subgraphA = createTestSubgraph({
+      inputs: [
+        { name: 'lora_name', type: '*' },
+        { name: 'strength_model', type: '*' }
+      ]
+    })
+    const innerNode = new LGraphNode('InnerLoraNode')
+    const comboInput = innerNode.addInput('lora_name', '*')
+    const numberInput = innerNode.addInput('strength_model', '*')
+    innerNode.addWidget('combo', 'lora_name', 'a', () => {}, {
+      values: ['a', 'b']
+    })
+    innerNode.addWidget('number', 'strength_model', 1, () => {})
+    comboInput.widget = { name: 'lora_name' }
+    numberInput.widget = { name: 'strength_model' }
+    subgraphA.add(innerNode)
+    subgraphA.inputNode.slots[0].connect(comboInput, innerNode)
+    subgraphA.inputNode.slots[1].connect(numberInput, innerNode)
+
+    const subgraphNodeA = createTestSubgraphNode(subgraphA, { id: 60 })
+
+    const subgraphB = createTestSubgraph({
+      inputs: [
+        { name: 'lora_name', type: '*' },
+        { name: 'strength_model', type: '*' }
+      ]
+    })
+    subgraphB.add(subgraphNodeA)
+    subgraphNodeA._internalConfigureAfterSlots()
+    subgraphB.inputNode.slots[0].connect(subgraphNodeA.inputs[0], subgraphNodeA)
+    subgraphB.inputNode.slots[1].connect(subgraphNodeA.inputs[1], subgraphNodeA)
+
+    const subgraphNodeB = createTestSubgraphNode(subgraphB, { id: 61 })
+
+    expect(subgraphNodeB.widgets[0].type).toBe('combo')
+    expect(subgraphNodeB.widgets[1].type).toBe('number')
+  })
+
+  test('input promotion from promoted view stores immediate source node id', () => {
+    const subgraphA = createTestSubgraph({
+      inputs: [{ name: 'lora_name', type: '*' }]
+    })
+    const innerNode = new LGraphNode('InnerNode')
+    const innerInput = innerNode.addInput('lora_name', '*')
+    innerNode.addWidget('combo', 'lora_name', 'a', () => {}, {
+      values: ['a', 'b']
+    })
+    innerInput.widget = { name: 'lora_name' }
+    subgraphA.add(innerNode)
+    subgraphA.inputNode.slots[0].connect(innerInput, innerNode)
+
+    const subgraphNodeA = createTestSubgraphNode(subgraphA, { id: 70 })
+
+    const subgraphB = createTestSubgraph({
+      inputs: [{ name: 'lora_name', type: '*' }]
+    })
+    subgraphB.add(subgraphNodeA)
+    subgraphNodeA._internalConfigureAfterSlots()
+    subgraphB.inputNode.slots[0].connect(subgraphNodeA.inputs[0], subgraphNodeA)
+
+    const subgraphNodeB = createTestSubgraphNode(subgraphB, { id: 71 })
+    const promotions = usePromotionStore().getPromotions(
+      subgraphNodeB.rootGraph.id,
+      subgraphNodeB.id
+    )
+
+    expect(promotions).toContainEqual({
+      interiorNodeId: String(subgraphNodeA.id),
+      widgetName: 'lora_name'
+    })
+    expect(promotions).not.toContainEqual({
+      interiorNodeId: String(innerNode.id),
+      widgetName: 'lora_name'
+    })
   })
 })
 
