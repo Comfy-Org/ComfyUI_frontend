@@ -23,10 +23,8 @@ import type {
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { NodeSearchService } from '@/services/nodeSearchService'
 import { useSubgraphStore } from '@/stores/subgraphStore'
-import {
-  CORE_NODE_MODULES,
-  getNodeSource
-} from '@/types/nodeSource'
+import { ESSENTIALS_CATEGORY_CANONICAL } from '@/constants/essentialsNodes'
+import { CORE_NODE_MODULES, getNodeSource } from '@/types/nodeSource'
 import type { NodeSource } from '@/types/nodeSource'
 import type { TreeNode } from '@/types/treeExplorerTypes'
 import type { FuseSearchable, SearchAuxScore } from '@/utils/fuseUtil'
@@ -164,6 +162,10 @@ export class ComfyNodeDefImpl
     this.input_order = obj.input_order
     this.price_badge = obj.price_badge
     this.essentials_category = obj.essentials_category
+      ? (ESSENTIALS_CATEGORY_CANONICAL.get(
+          obj.essentials_category.toLowerCase()
+        ) ?? obj.essentials_category)
+      : undefined
     this.isGlobal = obj.isGlobal
     this.isCoreNode = CORE_NODE_MODULES.includes(
       this.python_module.split('.')[0]
