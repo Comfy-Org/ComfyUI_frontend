@@ -391,6 +391,7 @@ export function extractVueNodeData(node: LGraphNode): VueNodeData {
   const safeWidgets = reactiveComputed<SafeWidgetData[]>(() => {
     const widgetsSnapshot = node.widgets ?? []
 
+    slotMetadata.clear()
     node.inputs?.forEach((input, index) => {
       const slotInfo = {
         index,
