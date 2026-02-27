@@ -48,7 +48,9 @@ describe('minimapCanvasRenderer', () => {
       fill: vi.fn(),
       fillStyle: '',
       strokeStyle: '',
-      lineWidth: 1
+      lineWidth: 1,
+      save: vi.fn(),
+      restore: vi.fn()
     } as Partial<CanvasRenderingContext2D> as CanvasRenderingContext2D
 
     mockCanvas = {

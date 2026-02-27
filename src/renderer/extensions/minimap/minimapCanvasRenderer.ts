@@ -105,6 +105,8 @@ function renderNodes(
   const nodes = dataSource.getNodes()
   if (nodes.length === 0) return
 
+  ctx.save()
+
   // Group nodes by color for batch rendering (performance optimization)
   const nodesByColor = new Map<
     string,
@@ -160,12 +162,17 @@ function renderNodes(
       } else if (node.executionState === 'finished') {
         ctx.strokeStyle = colors.successColor
         ctx.strokeRect(node.x, node.y, node.w, node.h)
-      } else if (node.executionState === 'error') {
+      } else if (
+        node.executionState === 'error' &&
+        context.settings.renderError
+      ) {
         ctx.strokeStyle = colors.errorColor
         ctx.strokeRect(node.x, node.y, node.w, node.h)
       }
     }
   }
+
+  ctx.restore()
 }
 
 /**
