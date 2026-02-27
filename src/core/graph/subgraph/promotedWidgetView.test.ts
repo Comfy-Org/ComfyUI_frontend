@@ -122,11 +122,19 @@ describe(createPromotedWidgetView, () => {
     expect(view.serialize).toBe(false)
   })
 
-  test('computedDisabled is false and setter is a no-op', () => {
+  test('computedDisabled defaults to false and accepts boolean values', () => {
     const [subgraphNode] = setupSubgraph()
     const view = createPromotedWidgetView(subgraphNode, '1', 'myWidget')
     expect(view.computedDisabled).toBe(false)
     view.computedDisabled = true
+    expect(view.computedDisabled).toBe(true)
+  })
+
+  test('computedDisabled treats undefined as false', () => {
+    const [subgraphNode] = setupSubgraph()
+    const view = createPromotedWidgetView(subgraphNode, '1', 'myWidget')
+    view.computedDisabled = true
+    view.computedDisabled = undefined
     expect(view.computedDisabled).toBe(false)
   })
 
