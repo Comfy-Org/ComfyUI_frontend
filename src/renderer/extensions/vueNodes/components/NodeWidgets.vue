@@ -191,9 +191,12 @@ const processedWidgets = computed((): ProcessedWidget[] => {
     const { slotMetadata } = widget
 
     // Get metadata from store (registered during BaseWidget.setNodeId)
-    const bareWidgetId = stripGraphPrefix(widget.nodeId ?? nodeId)
+    const bareWidgetId = stripGraphPrefix(
+      widget.storeNodeId ?? widget.nodeId ?? nodeId
+    )
+    const storeWidgetName = widget.storeName ?? widget.name
     const widgetState = graphId
-      ? widgetValueStore.getWidget(graphId, bareWidgetId, widget.name)
+      ? widgetValueStore.getWidget(graphId, bareWidgetId, storeWidgetName)
       : undefined
 
     // Get value from store (falls back to undefined if not registered)
