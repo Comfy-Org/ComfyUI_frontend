@@ -15,13 +15,17 @@ type CreateView<TView> = (entry: PromotionEntry) => TView
 export class PromotedWidgetViewManager<TView> {
   private viewCache = new Map<string, TView>()
   private cachedViews: TView[] | null = null
-  private cachedEntriesRef: readonly PromotionEntry[] | null = null
+  private cachedEntryKeys: string[] | null = null
 
   reconcile(
     entries: readonly PromotionEntry[],
     createView: CreateView<TView>
   ): TView[] {
-    if (this.cachedViews && entries === this.cachedEntriesRef)
+    const entryKeys = entries.map((entry) =>
+      this.makeKey(entry.interiorNodeId, entry.widgetName, entry.viewKey)
+    )
+
+    if (this.cachedViews && this.areEntryKeysEqual(entryKeys))
       return this.cachedViews
 
     const views: TView[] = []
@@ -52,7 +56,7 @@ export class PromotedWidgetViewManager<TView> {
     }
 
     this.cachedViews = views
-    this.cachedEntriesRef = entries
+    this.cachedEntryKeys = entryKeys
     return views
   }
 
@@ -92,7 +96,17 @@ export class PromotedWidgetViewManager<TView> {
 
   invalidateMemoizedList(): void {
     this.cachedViews = null
-    this.cachedEntriesRef = null
+    this.cachedEntryKeys = null
+  }
+
+  private areEntryKeysEqual(entryKeys: string[]): boolean {
+    if (!this.cachedEntryKeys) return false
+    if (this.cachedEntryKeys.length !== entryKeys.length) return false
+
+    for (let index = 0; index < entryKeys.length; index += 1) {
+      if (this.cachedEntryKeys[index] !== entryKeys[index]) return false
+    }
+    return true
   }
 
   private makeKey(

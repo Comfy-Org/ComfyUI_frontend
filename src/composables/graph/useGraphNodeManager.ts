@@ -9,6 +9,7 @@ import { useChainCallback } from '@/composables/functional/useChainCallback'
 import { isPromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetTypes'
 import { resolveConcretePromotedWidget } from '@/core/graph/subgraph/resolveConcretePromotedWidget'
 import { resolvePromotedWidgetSource } from '@/core/graph/subgraph/resolvePromotedWidgetSource'
+import { resolveSubgraphInputLink } from '@/core/graph/subgraph/resolveSubgraphInputLink'
 import type {
   INodeInputSlot,
   INodeOutputSlot
@@ -164,7 +165,7 @@ function getSharedWidgetEnhancements(
 /**
  * Validates that a value is a valid WidgetValue type
  */
-const normalizeWidgetValue = (value: unknown): WidgetValue => {
+function normalizeWidgetValue(value: unknown): WidgetValue {
   if (value === null || value === undefined || value === void 0) {
     return undefined
   }
@@ -196,46 +197,44 @@ function safeWidgetMapper(
   node: LGraphNode,
   slotMetadata: Map<string, WidgetSlotMetadata>
 ): (widget: IBaseWidget) => SafeWidgetData {
+  function extractWidgetDisplayOptions(
+    widget: IBaseWidget
+  ): SafeWidgetData['options'] {
+    if (!widget.options) return undefined
+
+    return {
+      canvasOnly: widget.options.canvasOnly,
+      advanced: widget.advanced,
+      hidden: widget.options.hidden,
+      read_only: widget.options.read_only
+    }
+  }
+
   function resolveSourceSeedByInputName(inputName: string): {
     sourceNodeId: string
     sourceWidgetName: string
   } | null {
-    if (!node.isSubgraphNode()) return null
+    const resolved = resolveSubgraphInputLink(
+      node,
+      inputName,
+      ({ inputNode, targetInput, getTargetWidget }) => {
+        if (inputNode.isSubgraphNode()) {
+          return {
+            sourceNodeId: String(inputNode.id),
+            sourceWidgetName: targetInput.name
+          }
+        }
 
-    const subgraphInput = node.subgraph.inputNode.slots.find(
-      (slot) => slot.name === inputName
-    )
-    if (!subgraphInput) return null
-
-    for (const linkId of subgraphInput.linkIds) {
-      const link = node.subgraph.getLink(linkId)
-      if (!link) continue
-
-      const { inputNode } = link.resolve(node.subgraph)
-      if (!inputNode) continue
-
-      const targetInput = inputNode.inputs.find(
-        (entry) => entry.link === linkId
-      )
-      if (!targetInput) continue
-
-      if (inputNode.isSubgraphNode?.()) {
+        const targetWidget = getTargetWidget()
+        if (!targetWidget) return undefined
         return {
           sourceNodeId: String(inputNode.id),
-          sourceWidgetName: targetInput.name
+          sourceWidgetName: targetWidget.name
         }
       }
+    )
 
-      const targetWidget = inputNode.getWidgetFromSlot(targetInput)
-      if (!targetWidget) continue
-
-      return {
-        sourceNodeId: String(inputNode.id),
-        sourceWidgetName: targetWidget.name
-      }
-    }
-
-    return null
+    return resolved ?? null
   }
 
   return function (widget) {
@@ -277,27 +276,19 @@ function safeWidgetMapper(
         isPromotedWidgetView(widget) && widget.sourceWidgetName.startsWith('$$')
 
       // Extract only render-critical options (canvasOnly, advanced, read_only)
-      const options = widget.options
-        ? {
-            canvasOnly: widget.options.canvasOnly,
-            advanced: widget.advanced,
-            hidden: widget.options.hidden,
-            read_only: widget.options.read_only
-          }
-        : undefined
+      const options = extractWidgetDisplayOptions(widget)
       const subgraphId = node.isSubgraphNode() && node.subgraph.id
 
       const resolvedSourceResult =
         isPromotedWidgetView(widget) && promotedSourceSeed
           ? resolveConcretePromotedWidget(
               node,
-              node.isSubgraphNode() ? node.rootGraph.id : '',
               promotedSourceSeed.sourceNodeId,
               promotedSourceSeed.sourceWidgetName
             )
           : null
       const resolvedSource =
-        resolvedSourceResult && 'resolved' in resolvedSourceResult
+        resolvedSourceResult?.status === 'resolved'
           ? resolvedSourceResult.resolved
           : undefined
       const sourceWidget = resolvedSource?.widget
@@ -327,24 +318,10 @@ function safeWidgetMapper(
         isDOMWidget: isDOMWidget(widget) || isPromotedDOMWidget(widget),
         options: isPromotedPseudoWidget
           ? {
-              ...(effectiveWidget.options
-                ? {
-                    canvasOnly: effectiveWidget.options.canvasOnly,
-                    advanced: effectiveWidget.advanced,
-                    hidden: effectiveWidget.options.hidden,
-                    read_only: effectiveWidget.options.read_only
-                  }
-                : options),
+              ...(extractWidgetDisplayOptions(effectiveWidget) ?? options),
               canvasOnly: true
             }
-          : effectiveWidget.options
-            ? {
-                canvasOnly: effectiveWidget.options.canvasOnly,
-                advanced: effectiveWidget.advanced,
-                hidden: effectiveWidget.options.hidden,
-                read_only: effectiveWidget.options.read_only
-              }
-            : options,
+          : (extractWidgetDisplayOptions(effectiveWidget) ?? options),
         slotMetadata: slotInfo,
         slotName: name !== widget.name ? widget.name : undefined
       }

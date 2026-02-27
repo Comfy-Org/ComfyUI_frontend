@@ -252,11 +252,10 @@ class PromotedWidgetView implements IPromotedWidgetView {
     | undefined {
     const result = resolveConcretePromotedWidget(
       this.subgraphNode,
-      this.graphId,
       this.sourceNodeId,
       this.sourceWidgetName
     )
-    return 'resolved' in result ? result.resolved : undefined
+    return result.status === 'resolved' ? result.resolved : undefined
   }
 
   private getWidgetState() {
@@ -271,7 +270,6 @@ class PromotedWidgetView implements IPromotedWidgetView {
   private resolveStateLookupTarget(): { nodeId: NodeId; widgetName: string } {
     const lookupTarget = resolvePromotedWidgetLookupTarget(
       this.subgraphNode,
-      this.graphId,
       this.sourceNodeId,
       this.sourceWidgetName
     )
@@ -386,13 +384,30 @@ function drawDisconnectedPlaceholder(
   y: number,
   H: number
 ) {
+  const backgroundColor = readDesignToken(
+    '--color-secondary-background',
+    '#333'
+  )
+  const textColor = readDesignToken('--color-text-secondary', '#999')
+  const fontSize = readDesignToken('--text-xxs', '11px')
+  const fontFamily = readDesignToken('--font-inter', 'sans-serif')
+
   ctx.save()
-  ctx.fillStyle = '#333'
+  ctx.fillStyle = backgroundColor
   ctx.fillRect(15, y, width - 30, H)
-  ctx.fillStyle = '#999'
-  ctx.font = '11px monospace'
+  ctx.fillStyle = textColor
+  ctx.font = `${fontSize} ${fontFamily}`
   ctx.textAlign = 'center'
   ctx.textBaseline = 'middle'
   ctx.fillText(t('subgraphStore.disconnected'), width / 2, y + H / 2)
   ctx.restore()
+}
+
+function readDesignToken(token: string, fallback: string): string {
+  if (typeof document === 'undefined') return fallback
+
+  const value = getComputedStyle(document.documentElement)
+    .getPropertyValue(token)
+    .trim()
+  return value || fallback
 }

@@ -429,7 +429,12 @@ describe('SubgraphNode.widgets getter', () => {
     })
     firstInput.widget = { name: 'picker' }
     subgraph.add(firstNode)
-    subgraph.inputNode.slots[0].connect(firstInput, firstNode)
+    const subgraphInputSlot = subgraph.inputNode.slots[0]
+    subgraphInputSlot.connect(firstInput, firstNode)
+
+    // Mirror user-driven rebind behavior: move the slot connection from first
+    // source to second source, rather than keeping both links connected.
+    subgraphInputSlot.disconnect()
 
     const secondNode = new LGraphNode('SecondNode')
     const secondInput = secondNode.addInput('picker_input', '*')
@@ -438,7 +443,7 @@ describe('SubgraphNode.widgets getter', () => {
     })
     secondInput.widget = { name: 'picker' }
     subgraph.add(secondNode)
-    subgraph.inputNode.slots[0].connect(secondInput, secondNode)
+    subgraphInputSlot.connect(secondInput, secondNode)
 
     const promotions = usePromotionStore().getPromotions(
       subgraphNode.rootGraph.id,
@@ -488,12 +493,21 @@ describe('SubgraphNode.widgets getter', () => {
   })
 
   test('widgets getter prefers live linked entries over stale store entries', () => {
-    const [subgraphNode, innerNodes] = setupSubgraph(1)
-    const innerNode = firstInnerNode(innerNodes)
-    innerNode.addWidget('text', 'widgetA', 'a', () => {})
+    const subgraph = createTestSubgraph({
+      inputs: [{ name: 'widgetA', type: '*' }]
+    })
+    const subgraphNode = createTestSubgraphNode(subgraph, { id: 91 })
+    subgraphNode.graph?.add(subgraphNode)
+
+    const liveNode = new LGraphNode('LiveNode')
+    const liveInput = liveNode.addInput('widgetA', '*')
+    liveNode.addWidget('text', 'widgetA', 'a', () => {})
+    liveInput.widget = { name: 'widgetA' }
+    subgraph.add(liveNode)
+    subgraph.inputNode.slots[0].connect(liveInput, liveNode)
 
     setPromotions(subgraphNode, [
-      [String(innerNode.id), 'widgetA'],
+      [String(liveNode.id), 'widgetA'],
       ['9999', 'missingWidget']
     ])
 

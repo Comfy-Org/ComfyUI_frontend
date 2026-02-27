@@ -1,61 +1,69 @@
+import type { ResolvedPromotedWidget } from '@/core/graph/subgraph/promotedWidgetTypes'
 import { isPromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetTypes'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 
-type ResolvedPromotedWidget = {
-  node: LGraphNode
-  widget: IBaseWidget
-}
-
-function resolveWidgetByInputLink(
-  node: LGraphNode,
-  inputName: string
-): ResolvedPromotedWidget | undefined {
-  if (!node.isSubgraphNode?.()) return undefined
-
-  const inputSlot = node.subgraph.inputNode.slots.find(
-    (slot) => slot.name === inputName
-  )
-  if (!inputSlot) return undefined
-
-  for (const linkId of inputSlot.linkIds) {
-    const link = node.subgraph.getLink(linkId)
-    if (!link) continue
-
-    const { inputNode } = link.resolve(node.subgraph)
-    if (!inputNode) continue
-
-    const targetInput = inputNode.inputs.find((entry) => entry.link === linkId)
-    if (!targetInput) continue
-
-    const targetWidget = inputNode.getWidgetFromSlot(targetInput)
-    if (!targetWidget) continue
-
-    return {
-      node: inputNode,
-      widget: targetWidget
-    }
-  }
-
-  return undefined
-}
-
-type PromotedWidgetResolutionFailure = {
-  reason: 'invalid-host' | 'cycle' | 'missing-node' | 'missing-widget'
-  currentHostId: string
-  sourceNodeId: string
-  sourceWidgetName: string
-  availableWidgetNames?: string[]
-}
+type PromotedWidgetResolutionFailure =
+  | 'invalid-host'
+  | 'cycle'
+  | 'missing-node'
+  | 'missing-widget'
+  | 'max-depth-exceeded'
 
 type PromotedWidgetResolutionResult =
-  | {
-      resolved: ResolvedPromotedWidget
+  | { status: 'resolved'; resolved: ResolvedPromotedWidget }
+  | { status: 'failure'; failure: PromotedWidgetResolutionFailure }
+
+const MAX_PROMOTED_WIDGET_CHAIN_DEPTH = 100
+
+function traversePromotedWidgetChain(
+  hostNode: SubgraphNode,
+  nodeId: string,
+  widgetName: string
+): PromotedWidgetResolutionResult {
+  const visited = new Set<string>()
+  let currentHost = hostNode
+  let currentNodeId = nodeId
+  let currentWidgetName = widgetName
+
+  for (let depth = 0; depth < MAX_PROMOTED_WIDGET_CHAIN_DEPTH; depth++) {
+    const key = `${currentHost.id}:${currentNodeId}:${currentWidgetName}`
+    if (visited.has(key)) {
+      return { status: 'failure', failure: 'cycle' }
     }
-  | {
-      failure: PromotedWidgetResolutionFailure
+    visited.add(key)
+
+    const sourceNode = currentHost.subgraph.getNodeById(currentNodeId)
+    if (!sourceNode) {
+      return { status: 'failure', failure: 'missing-node' }
     }
+
+    const sourceWidget = sourceNode.widgets?.find(
+      (entry) => entry.name === currentWidgetName
+    )
+    if (!sourceWidget) {
+      return { status: 'failure', failure: 'missing-widget' }
+    }
+
+    if (!isPromotedWidgetView(sourceWidget)) {
+      return {
+        status: 'resolved',
+        resolved: { node: sourceNode, widget: sourceWidget }
+      }
+    }
+
+    if (!sourceWidget.node?.isSubgraphNode()) {
+      return { status: 'failure', failure: 'missing-node' }
+    }
+
+    currentHost = sourceWidget.node
+    currentNodeId = sourceWidget.sourceNodeId
+    currentWidgetName = sourceWidget.sourceWidgetName
+  }
+
+  return { status: 'failure', failure: 'max-depth-exceeded' }
+}
 
 export function resolvePromotedWidgetAtHost(
   hostNode: SubgraphNode,
@@ -68,147 +76,33 @@ export function resolvePromotedWidgetAtHost(
   const widget = node.widgets?.find(
     (entry: IBaseWidget) => entry.name === widgetName
   )
-  if (widget) return { node, widget }
+  if (!widget) return undefined
 
-  return resolveWidgetByInputLink(node, widgetName)
+  return { node, widget }
 }
 
 export function resolvePromotedWidgetLookupTarget(
   hostNode: SubgraphNode,
-  _graphId: string,
   nodeId: string,
   widgetName: string
 ): { nodeId: string; widgetName: string } {
-  const visited = new Set<string>()
-  let currentHost = hostNode
-  let currentNodeId = nodeId
-  let currentWidgetName = widgetName
-
-  while (true) {
-    const visitKey = `${currentHost.id}:${currentNodeId}:${currentWidgetName}`
-    if (visited.has(visitKey)) {
-      return { nodeId: currentNodeId, widgetName: currentWidgetName }
+  const result = traversePromotedWidgetChain(hostNode, nodeId, widgetName)
+  if (result.status === 'resolved') {
+    return {
+      nodeId: String(result.resolved.node.id),
+      widgetName: result.resolved.widget.name
     }
-    visited.add(visitKey)
-
-    const resolved = resolvePromotedWidgetAtHost(
-      currentHost,
-      currentNodeId,
-      currentWidgetName
-    )
-    if (!resolved)
-      return { nodeId: currentNodeId, widgetName: currentWidgetName }
-    if (!isPromotedWidgetView(resolved.widget)) {
-      return {
-        nodeId: String(resolved.node.id),
-        widgetName: resolved.widget.name
-      }
-    }
-
-    if (!resolved.widget.node?.isSubgraphNode?.()) {
-      return {
-        nodeId: resolved.widget.sourceNodeId,
-        widgetName: resolved.widget.sourceWidgetName
-      }
-    }
-
-    currentHost = resolved.widget.node
-    currentNodeId = resolved.widget.sourceNodeId
-    currentWidgetName = resolved.widget.sourceWidgetName
   }
+  return { nodeId, widgetName }
 }
 
 export function resolveConcretePromotedWidget(
   hostNode: LGraphNode,
-  _graphId: string,
   nodeId: string,
   widgetName: string
 ): PromotedWidgetResolutionResult {
   if (!hostNode.isSubgraphNode()) {
-    return {
-      failure: {
-        reason: 'invalid-host',
-        currentHostId: String(hostNode.id),
-        sourceNodeId: nodeId,
-        sourceWidgetName: widgetName
-      }
-    }
+    return { status: 'failure', failure: 'invalid-host' }
   }
-
-  const visited = new Set<string>()
-  let currentHost = hostNode
-  let currentNodeId = nodeId
-  let currentWidgetName = widgetName
-
-  while (true) {
-    const key = `${currentHost.id}:${currentNodeId}:${currentWidgetName}`
-    if (visited.has(key)) {
-      return {
-        failure: {
-          reason: 'cycle',
-          currentHostId: String(currentHost.id),
-          sourceNodeId: currentNodeId,
-          sourceWidgetName: currentWidgetName
-        }
-      }
-    }
-    visited.add(key)
-
-    const sourceNode = currentHost.subgraph.getNodeById(currentNodeId)
-    if (!sourceNode) {
-      return {
-        failure: {
-          reason: 'missing-node',
-          currentHostId: String(currentHost.id),
-          sourceNodeId: currentNodeId,
-          sourceWidgetName: currentWidgetName
-        }
-      }
-    }
-
-    const sourceWidget = sourceNode.widgets?.find(
-      (entry) => entry.name === currentWidgetName
-    )
-    const resolvedSource = sourceWidget
-      ? { node: sourceNode, widget: sourceWidget }
-      : resolveWidgetByInputLink(sourceNode, currentWidgetName)
-    if (!resolvedSource) {
-      return {
-        failure: {
-          reason: 'missing-widget',
-          currentHostId: String(currentHost.id),
-          sourceNodeId: currentNodeId,
-          sourceWidgetName: currentWidgetName,
-          availableWidgetNames: sourceNode.widgets?.map((entry) => entry.name)
-        }
-      }
-    }
-
-    const concreteSourceNode = resolvedSource.node
-    const concreteSourceWidget = resolvedSource.widget
-
-    if (!isPromotedWidgetView(concreteSourceWidget)) {
-      return {
-        resolved: {
-          node: concreteSourceNode,
-          widget: concreteSourceWidget
-        }
-      }
-    }
-
-    if (!concreteSourceWidget.node?.isSubgraphNode?.()) {
-      return {
-        failure: {
-          reason: 'missing-node',
-          currentHostId: String(currentHost.id),
-          sourceNodeId: concreteSourceWidget.sourceNodeId,
-          sourceWidgetName: concreteSourceWidget.sourceWidgetName
-        }
-      }
-    }
-
-    currentHost = concreteSourceWidget.node
-    currentNodeId = concreteSourceWidget.sourceNodeId
-    currentWidgetName = concreteSourceWidget.sourceWidgetName
-  }
+  return traversePromotedWidgetChain(hostNode, nodeId, widgetName)
 }
