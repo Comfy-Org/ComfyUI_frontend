@@ -1,5 +1,9 @@
 <template>
-  <TabsContent value="essentials" class="flex-1 overflow-y-auto px-3 h-full">
+  <TabsContent
+    ref="panelEl"
+    value="essentials"
+    class="flex-1 overflow-y-auto px-3 h-full"
+  >
     <div class="flex flex-col gap-2 pb-6">
       <!-- Flat sorted grid when alphabetical -->
       <div
@@ -63,11 +67,16 @@ import {
   CollapsibleTrigger,
   TabsContent
 } from 'reka-ui'
-import { computed, ref, watch } from 'vue'
+import type { ComponentPublicInstance } from 'vue'
+import { computed, provide, ref, watch } from 'vue'
 
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 import type { RenderedTreeExplorerNode } from '@/types/treeExplorerTypes'
 import { cn } from '@/utils/tailwindUtil'
+
+const panelEl = ref<ComponentPublicInstance | null>(null)
+const panelRef = computed(() => panelEl.value?.$el as HTMLElement | null)
+provide('essentialsPanelRef', panelRef)
 
 import EssentialNodeCard from './EssentialNodeCard.vue'
 

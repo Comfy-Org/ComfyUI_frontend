@@ -35,7 +35,8 @@
 
 <script setup lang="ts">
 import { kebabCase } from 'es-toolkit/string'
-import { computed } from 'vue'
+import type { Ref } from 'vue'
+import { computed, inject } from 'vue'
 
 import TextTickerMultiLine from '@/components/common/TextTickerMultiLine.vue'
 import NodePreviewCard from '@/components/node/NodePreviewCard.vue'
@@ -47,6 +48,11 @@ import { cn } from '@/utils/tailwindUtil'
 const { node } = defineProps<{
   node: RenderedTreeExplorerNode<ComfyNodeDefImpl>
 }>()
+
+const panelRef = inject<Ref<HTMLElement | null>>(
+  'essentialsPanelRef',
+  undefined!
+)
 
 const emit = defineEmits<{
   click: [node: RenderedTreeExplorerNode<ComfyNodeDefImpl>]
@@ -62,7 +68,7 @@ const {
   handleMouseLeave,
   handleDragStart,
   handleDragEnd
-} = useNodePreviewAndDrag(nodeDef)
+} = useNodePreviewAndDrag(nodeDef, panelRef)
 
 const nodeIcon = computed(() => {
   const nodeName = node.data?.name

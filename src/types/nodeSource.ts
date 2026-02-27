@@ -1,8 +1,3 @@
-import {
-  ESSENTIALS_CATEGORY_CANONICAL,
-  ESSENTIALS_CATEGORY_MAP
-} from '@/constants/essentialsNodes'
-
 export enum NodeSourceType {
   Core = 'core',
   CustomNodes = 'custom_nodes',
