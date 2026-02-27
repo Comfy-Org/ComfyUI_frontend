@@ -20,7 +20,7 @@
             class="w-full justify-between text-sm font-light"
             variant="textonly"
             size="sm"
-            @click="onToggleDockedJobHistory"
+            @click="onToggleDockedJobHistory(close)"
           >
             <span class="flex items-center gap-2">
               <i
@@ -100,14 +100,22 @@ const onClearHistoryFromMenu = (close: () => void) => {
   emit('clearHistory')
 }
 
-const onToggleDockedJobHistory = async () => {
-  if (isQueuePanelV2Enabled.value) {
-    await settingStore.set('Comfy.Queue.QPOV2', false)
-    await settingStore.set('Comfy.Queue.History.Expanded', true)
+const onToggleDockedJobHistory = async (close: () => void) => {
+  close()
+
+  try {
+    if (isQueuePanelV2Enabled.value) {
+      await settingStore.setMany({
+        'Comfy.Queue.QPOV2': false,
+        'Comfy.Queue.History.Expanded': true
+      })
+      return
+    }
+
+    sidebarTabStore.activeSidebarTabId = 'job-history'
+    await settingStore.set('Comfy.Queue.QPOV2', true)
+  } catch {
     return
   }
-
-  await settingStore.set('Comfy.Queue.QPOV2', true)
-  sidebarTabStore.activeSidebarTabId = 'job-history'
 }
 </script>
