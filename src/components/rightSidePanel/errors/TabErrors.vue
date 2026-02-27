@@ -27,7 +27,11 @@
           :key="group.title"
           :collapse="collapseState[group.title] ?? false"
           class="border-b border-interface-stroke"
-          :size="group.type === 'missing_node' ? 'lg' : 'default'"
+          :size="
+            group.type === 'missing_node' || group.type === 'swap_nodes'
+              ? 'lg'
+              : 'default'
+          "
           @update:collapse="collapseState[group.title] = $event"
         >
           <template #label>
@@ -40,7 +44,9 @@
                   {{
                     group.type === 'missing_node'
                       ? `${group.title} (${missingPackGroups.length})`
-                      : group.title
+                      : group.type === 'swap_nodes'
+                        ? `${group.title} (${swapNodeGroups.length})`
+                        : group.title
                   }}
                 </span>
                 <span
@@ -69,6 +75,21 @@
                     : t('rightSidePanel.missingNodePacks.installAll')
                 }}
               </Button>
+              <Button
+                v-else-if="group.type === 'swap_nodes'"
+                v-tooltip.top="
+                  t(
+                    'nodeReplacement.replaceAllWarning',
+                    'Replaces all available nodes in this group.'
+                  )
+                "
+                variant="secondary"
+                size="sm"
+                class="shrink-0 mr-2 h-8 rounded-lg text-sm"
+                @click.stop="handleReplaceAll()"
+              >
+                {{ t('nodeReplacement.replaceAll', 'Replace All') }}
+              </Button>
             </div>
           </template>
 
@@ -82,8 +103,16 @@
             @open-manager-info="handleOpenManagerInfo"
           />
 
+          <!-- Swap Nodes -->
+          <SwapNodesCard
+            v-else-if="group.type === 'swap_nodes'"
+            :swap-node-groups="swapNodeGroups"
+            :show-node-id-badge="showNodeIdBadge"
+            @locate-node="handleLocateMissingNode"
+          />
+
           <!-- Execution Errors -->
-          <div v-else class="px-4 space-y-3">
+          <div v-else-if="group.type === 'execution'" class="px-4 space-y-3">
             <ErrorNodeCard
               v-for="card in group.cards"
               :key="card.id"
@@ -150,11 +179,14 @@ import PropertiesAccordionItem from '../layout/PropertiesAccordionItem.vue'
 import FormSearchInput from '@/renderer/extensions/vueNodes/widgets/components/form/FormSearchInput.vue'
 import ErrorNodeCard from './ErrorNodeCard.vue'
 import MissingNodeCard from './MissingNodeCard.vue'
+import SwapNodesCard from './SwapNodesCard.vue'
 import Button from '@/components/ui/button/Button.vue'
 import DotSpinner from '@/components/common/DotSpinner.vue'
 import { usePackInstall } from '@/workbench/extensions/manager/composables/nodePack/usePackInstall'
 import { useMissingNodes } from '@/workbench/extensions/manager/composables/nodePack/useMissingNodes'
 import { useErrorGroups } from './useErrorGroups'
+import { useNodeReplacement } from '@/platform/nodeReplacement/useNodeReplacement'
+import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 
 const { t } = useI18n()
 const { copyToClipboard } = useCopyToClipboard()
@@ -167,6 +199,8 @@ const { shouldShowManagerButtons, shouldShowInstallButton, openManager } =
 const { missingNodePacks } = useMissingNodes()
 const { isInstalling: isInstallingAll, installAllPacks: installAll } =
   usePackInstall(() => missingNodePacks.value)
+const { replaceNodesInPlace } = useNodeReplacement()
+const executionErrorStore = useExecutionErrorStore()
 
 const searchQuery = ref('')
 
@@ -183,7 +217,8 @@ const {
   isSingleNodeSelected,
   errorNodeCache,
   missingNodeCache,
-  missingPackGroups
+  missingPackGroups,
+  swapNodeGroups
 } = useErrorGroups(searchQuery, t)
 
 /**
@@ -226,6 +261,14 @@ function handleOpenManagerInfo(packId: string) {
     openManager({ initialTab: ManagerTab.Missing, initialPackId: packId })
   } else {
     openManager({ initialTab: ManagerTab.All, initialPackId: packId })
+  }
+}
+
+function handleReplaceAll() {
+  const allNodeTypes = swapNodeGroups.value.flatMap((g) => g.nodeTypes)
+  const replaced = replaceNodesInPlace(allNodeTypes)
+  if (replaced.length > 0) {
+    executionErrorStore.removeMissingNodesByType(replaced)
   }
 }
 

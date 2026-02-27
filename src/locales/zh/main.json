@@ -699,6 +699,7 @@
     "OPENAI_INPUT_FILES": "OpenAI输入文件",
     "PHOTOMAKER": "PhotoMaker",
     "PIXVERSE_TEMPLATE": "Pixverse 模板",
+    "POSE_KEYPOINT": "POSE_KEYPOINT",
     "RECRAFT_COLOR": "Recraft 颜色",
     "RECRAFT_CONTROLS": "Recraft 控件",
     "RECRAFT_V3_STYLE": "Recraft V3 风格",
@@ -958,6 +959,7 @@
     "imageUrl": "图片网址",
     "import": "导入",
     "inProgress": "进行中",
+    "inSubgraph": "在子图 '{name}' 中",
     "increment": "增加",
     "info": "节点信息",
     "input": "输入",
@@ -1115,6 +1117,7 @@
     "updated": "已更新",
     "updating": "更新中",
     "upload": "上传",
+    "uploadAlreadyInProgress": "上传已在进行中",
     "usageHint": "使用提示",
     "use": "使用",
     "user": "用户",
@@ -1354,8 +1357,13 @@
     },
     "downloadAll": "全部下载",
     "dragAndDropImage": "拖拽图片到此处",
+    "giveFeedback": "提供反馈",
     "graphMode": "图形模式",
     "linearMode": "App 模式",
+    "queue": {
+      "clear": "清空队列",
+      "clickToClear": "点击清空队列"
+    },
     "rerun": "重新运行",
     "reuseParameters": "复用参数",
     "runCount": "运行次数：",
@@ -1575,6 +1583,9 @@
     "nodePack": "节点包",
     "nodePackInfo": "节点包信息",
     "notAvailable": "不可用",
+    "packInstall": {
+      "nodeIdRequired": "安装需要节点 ID"
+    },
     "packsSelected": "选定的包",
     "repository": "仓库",
     "restartToApplyChanges": "要应用更改，请重新启动ComfyUI",
@@ -2072,7 +2083,10 @@
     "openNodeManager": "打开节点管理器",
     "quickFixAvailable": "可用快速修复",
     "redHighlight": "红色",
+    "replaceAll": "全部替换",
+    "replaceAllWarning": "将替换此组中所有可用节点。",
     "replaceFailed": "替换节点失败",
+    "replaceNode": "替换节点",
     "replaceSelected": "替换已选（{count}）",
     "replaceWarning": "此操作将永久修改工作流。如不确定，请先保存副本。",
     "replaceable": "可替换",
@@ -2080,7 +2094,11 @@
     "replacedAllNodes": "已替换 {count} 种节点类型",
     "replacedNode": "已替换节点：{nodeType}",
     "selectAll": "全选",
-    "skipForNow": "暂时跳过"
+    "skipForNow": "暂时跳过",
+    "swapNodesGuide": "以下节点可以自动替换为兼容的替代项。",
+    "swapNodesTitle": "交换节点",
+    "unknownNode": "未知",
+    "willBeReplacedBy": "此节点将被替换为："
   },
   "nodeTemplates": {
     "enterName": "输入名称",
@@ -2098,6 +2116,19 @@
       "windows": "Windows (支持 CUDA 的 Nvidia GPU)"
     },
     "title": "您的设备不受支持"
+  },
+  "painter": {
+    "background": "背景",
+    "brush": "画笔",
+    "clear": "清除",
+    "color": "取色器",
+    "eraser": "橡皮擦",
+    "hardness": "硬度",
+    "height": "高度",
+    "size": "光标大小",
+    "tool": "工具",
+    "uploadError": "上传绘图图像失败：{status} - {statusText}",
+    "width": "宽度"
   },
   "progressToast": {
     "allDownloadsCompleted": "所有下载已完成",
@@ -2219,6 +2250,22 @@
     "inputsNone": "无输入",
     "inputsNoneTooltip": "节点没有输入",
     "locateNode": "在画布上定位节点",
+    "missingNodePacks": {
+      "applyChanges": "应用更改",
+      "cloudMessage": "此工作流需要 Comfy Cloud 上尚未提供的自定义节点。",
+      "collapse": "收起",
+      "expand": "展开",
+      "installAll": "全部安装",
+      "installNodePack": "安装节点包",
+      "installed": "已安装",
+      "installing": "正在安装...",
+      "ossMessage": "此工作流使用了你尚未安装的自定义节点。",
+      "searchInManager": "在节点管理器中搜索",
+      "title": "缺失节点包",
+      "unknownPack": "未知包",
+      "unsupportedTitle": "不支持的节点包",
+      "viewInManager": "在管理器中查看"
+    },
     "mute": "禁用",
     "noErrors": "无错误",
     "noSelection": "选择一个节点查看其属性信息。",

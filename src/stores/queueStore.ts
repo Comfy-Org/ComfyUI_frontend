@@ -495,7 +495,7 @@ export const useQueueStore = defineStore('queue', () => {
     tasks.value.flatMap((task: TaskItemImpl) => task.flatten())
   )
 
-  const lastHistoryQueueIndex = computed<number>(() =>
+  const lastJobHistoryPriority = computed<number>(() =>
     historyTasks.value.length ? historyTasks.value[0].job.priority : -1
   )
 
@@ -607,7 +607,7 @@ export const useQueueStore = defineStore('queue', () => {
 
     tasks,
     flatTasks,
-    lastHistoryQueueIndex,
+    lastJobHistoryPriority,
     hasPendingTasks,
     activeJobsCount,
 

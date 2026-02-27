@@ -1,93 +1,70 @@
 import { describe, expect, it } from 'vitest'
 
+import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+
 import {
-  buildMissingNodeHint,
-  createMissingNodeTypeFromError
+  getCnrIdFromProperties,
+  getCnrIdFromNode
 } from './missingNodeErrorUtil'
 
-describe('buildMissingNodeHint', () => {
-  it('returns hint with title and node ID when both available', () => {
-    expect(buildMissingNodeHint('My Node', 'MyNodeClass', '42')).toBe(
-      '"My Node" (Node ID #42)'
+describe('getCnrIdFromProperties', () => {
+  it('returns cnr_id when present', () => {
+    expect(getCnrIdFromProperties({ cnr_id: 'my-pack' })).toBe('my-pack')
+  })
+
+  it('returns aux_id when cnr_id is absent', () => {
+    expect(getCnrIdFromProperties({ aux_id: 'my-aux-pack' })).toBe(
+      'my-aux-pack'
     )
   })
 
-  it('returns hint with title only when no node ID', () => {
-    expect(buildMissingNodeHint('My Node', 'MyNodeClass', undefined)).toBe(
-      '"My Node"'
-    )
-  })
-
-  it('returns hint with node ID only when title matches class type', () => {
-    expect(buildMissingNodeHint('MyNodeClass', 'MyNodeClass', '42')).toBe(
-      'Node ID #42'
-    )
-  })
-
-  it('returns undefined when title matches class type and no node ID', () => {
+  it('prefers cnr_id over aux_id', () => {
     expect(
-      buildMissingNodeHint('MyNodeClass', 'MyNodeClass', undefined)
-    ).toBeUndefined()
+      getCnrIdFromProperties({ cnr_id: 'primary', aux_id: 'secondary' })
+    ).toBe('primary')
   })
 
-  it('returns undefined when title is null and no node ID', () => {
-    expect(buildMissingNodeHint(null, 'MyNodeClass', undefined)).toBeUndefined()
+  it('returns undefined when neither is present', () => {
+    expect(getCnrIdFromProperties({})).toBeUndefined()
   })
 
-  it('returns node ID hint when title is null but node ID exists', () => {
-    expect(buildMissingNodeHint(null, 'MyNodeClass', '42')).toBe('Node ID #42')
+  it('returns undefined for null properties', () => {
+    expect(getCnrIdFromProperties(null)).toBeUndefined()
+  })
+
+  it('returns undefined for undefined properties', () => {
+    expect(getCnrIdFromProperties(undefined)).toBeUndefined()
+  })
+
+  it('returns undefined when cnr_id is not a string', () => {
+    expect(getCnrIdFromProperties({ cnr_id: 123 })).toBeUndefined()
   })
 })
 
-describe('createMissingNodeTypeFromError', () => {
-  it('returns string type when no hint is generated', () => {
-    const result = createMissingNodeTypeFromError({
-      class_type: 'MyNodeClass',
-      node_title: 'MyNodeClass'
-    })
-    expect(result).toBe('MyNodeClass')
+describe('getCnrIdFromNode', () => {
+  it('returns cnr_id from node properties', () => {
+    const node = {
+      properties: { cnr_id: 'node-pack' }
+    } as unknown as LGraphNode
+    expect(getCnrIdFromNode(node)).toBe('node-pack')
   })
 
-  it('returns object with hint when title differs from class type', () => {
-    const result = createMissingNodeTypeFromError({
-      class_type: 'MyNodeClass',
-      node_title: 'My Custom Title',
-      node_id: '42'
-    })
-    expect(result).toEqual({
-      type: 'MyNodeClass',
-      nodeId: '42',
-      hint: '"My Custom Title" (Node ID #42)'
-    })
+  it('returns aux_id when cnr_id is absent', () => {
+    const node = {
+      properties: { aux_id: 'node-aux-pack' }
+    } as unknown as LGraphNode
+    expect(getCnrIdFromNode(node)).toBe('node-aux-pack')
   })
 
-  it('handles null class_type by defaulting to Unknown', () => {
-    const result = createMissingNodeTypeFromError({
-      class_type: null,
-      node_title: 'Some Title',
-      node_id: '42'
-    })
-    expect(result).toEqual({
-      type: 'Unknown',
-      nodeId: '42',
-      hint: '"Some Title" (Node ID #42)'
-    })
+  it('prefers cnr_id over aux_id in node properties', () => {
+    const node = {
+      properties: { cnr_id: 'primary', aux_id: 'secondary' }
+    } as unknown as LGraphNode
+    expect(getCnrIdFromNode(node)).toBe('primary')
   })
 
-  it('handles empty extra_info', () => {
-    const result = createMissingNodeTypeFromError({})
-    expect(result).toBe('Unknown')
-  })
-
-  it('returns object with node ID hint when only node_id is available', () => {
-    const result = createMissingNodeTypeFromError({
-      class_type: 'MyNodeClass',
-      node_id: '123'
-    })
-    expect(result).toEqual({
-      type: 'MyNodeClass',
-      nodeId: '123',
-      hint: 'Node ID #123'
-    })
+  it('returns undefined when node has no cnr_id or aux_id', () => {
+    const node = { properties: {} } as unknown as LGraphNode
+    expect(getCnrIdFromNode(node)).toBeUndefined()
   })
 })

@@ -271,7 +271,7 @@ describe('useQueueStore', () => {
       expect(store.tasks).toEqual([])
       expect(store.flatTasks).toEqual([])
       expect(store.hasPendingTasks).toBe(false)
-      expect(store.lastHistoryQueueIndex).toBe(-1)
+      expect(store.lastJobHistoryPriority).toBe(-1)
     })
   })
 
@@ -686,7 +686,7 @@ describe('useQueueStore', () => {
       expect(store.hasPendingTasks).toBe(false)
     })
 
-    it('lastHistoryQueueIndex should return highest queue index', async () => {
+    it('lastJobHistoryPriority should return highest job priority', async () => {
       const hist1 = createHistoryJob(10, 'hist-1')
       const hist2 = createHistoryJob(25, 'hist-2')
       const hist3 = createHistoryJob(15, 'hist-3')
@@ -695,15 +695,15 @@ describe('useQueueStore', () => {
       mockGetHistory.mockResolvedValue([hist1, hist2, hist3])
 
       await store.update()
-      expect(store.lastHistoryQueueIndex).toBe(25)
+      expect(store.lastJobHistoryPriority).toBe(25)
     })
 
-    it('lastHistoryQueueIndex should be -1 when no history', async () => {
+    it('lastJobHistoryPriority should be -1 when no history', async () => {
       mockGetQueue.mockResolvedValue({ Running: [], Pending: [] })
       mockGetHistory.mockResolvedValue([])
 
       await store.update()
-      expect(store.lastHistoryQueueIndex).toBe(-1)
+      expect(store.lastJobHistoryPriority).toBe(-1)
     })
   })
 

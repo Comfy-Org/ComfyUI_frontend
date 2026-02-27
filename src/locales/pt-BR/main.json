@@ -699,6 +699,7 @@
     "OPENAI_INPUT_FILES": "ARQUIVOS DE ENTRADA OPENAI",
     "PHOTOMAKER": "photomaker",
     "PIXVERSE_TEMPLATE": "MODELO PIXVERSE",
+    "POSE_KEYPOINT": "POSE_KEYPOINT",
     "RECRAFT_COLOR": "COR RECRAFT",
     "RECRAFT_CONTROLS": "CONTROLES RECRAFT",
     "RECRAFT_V3_STYLE": "ESTILO RECRAFT V3",
@@ -958,6 +959,7 @@
     "imageUrl": "URL da imagem",
     "import": "Importar",
     "inProgress": "Em andamento",
+    "inSubgraph": "no subgrafo '{name}'",
     "increment": "Aumentar",
     "info": "Informações do nó",
     "input": "Entrada",
@@ -1115,6 +1117,7 @@
     "updated": "Atualizado",
     "updating": "Atualizando {id}",
     "upload": "Enviar",
+    "uploadAlreadyInProgress": "O upload já está em andamento",
     "usageHint": "Dica de uso",
     "use": "Usar",
     "user": "Usuário",
@@ -1354,8 +1357,13 @@
     },
     "downloadAll": "Baixar tudo",
     "dragAndDropImage": "Arraste e solte uma imagem",
+    "giveFeedback": "Enviar feedback",
     "graphMode": "Modo Gráfico",
     "linearMode": "Modo App",
+    "queue": {
+      "clear": "Limpar fila",
+      "clickToClear": "Clique para limpar a fila"
+    },
     "rerun": "Executar novamente",
     "reuseParameters": "Reutilizar parâmetros",
     "runCount": "Número de execuções:",
@@ -1575,6 +1583,9 @@
     "nodePack": "Node Pack",
     "nodePackInfo": "Informações do Pacote de Nós",
     "notAvailable": "Não Disponível",
+    "packInstall": {
+      "nodeIdRequired": "ID do nó é obrigatório para instalação"
+    },
     "packsSelected": "pacotes selecionados",
     "repository": "Repositório",
     "restartToApplyChanges": "Para aplicar as alterações, reinicie o ComfyUI",
@@ -2072,7 +2083,10 @@
     "openNodeManager": "Abrir Gerenciador de Nós",
     "quickFixAvailable": "Correção Rápida Disponível",
     "redHighlight": "vermelho",
+    "replaceAll": "Substituir Todos",
+    "replaceAllWarning": "Substitui todos os nós disponíveis neste grupo.",
     "replaceFailed": "Falha ao substituir nós",
+    "replaceNode": "Substituir Nó",
     "replaceSelected": "Substituir Selecionados ({count})",
     "replaceWarning": "Isso modificará permanentemente o fluxo de trabalho. Salve uma cópia antes se não tiver certeza.",
     "replaceable": "Substituível",
@@ -2080,7 +2094,11 @@
     "replacedAllNodes": "Substituídos {count} tipo(s) de nó",
     "replacedNode": "Nó substituído: {nodeType}",
     "selectAll": "Selecionar Tudo",
-    "skipForNow": "Pular por enquanto"
+    "skipForNow": "Pular por enquanto",
+    "swapNodesGuide": "Os seguintes nós podem ser automaticamente substituídos por alternativas compatíveis.",
+    "swapNodesTitle": "Trocar Nós",
+    "unknownNode": "Desconhecido",
+    "willBeReplacedBy": "Este nó será substituído por:"
   },
   "nodeTemplates": {
     "enterName": "Digite o nome",
@@ -2098,6 +2116,19 @@
       "windows": "Windows (GPU Nvidia com suporte a CUDA)"
     },
     "title": "Seu dispositivo não é suportado"
+  },
+  "painter": {
+    "background": "Fundo",
+    "brush": "Pincel",
+    "clear": "Limpar",
+    "color": "Seletor de cor",
+    "eraser": "Borracha",
+    "hardness": "Dureza",
+    "height": "Altura",
+    "size": "Tamanho do cursor",
+    "tool": "Ferramenta",
+    "uploadError": "Falha ao enviar imagem do painter: {status} - {statusText}",
+    "width": "Largura"
   },
   "progressToast": {
     "allDownloadsCompleted": "Todos os downloads concluídos",
@@ -2219,6 +2250,22 @@
     "inputsNone": "SEM ENTRADAS",
     "inputsNoneTooltip": "O nó não possui entradas",
     "locateNode": "Localizar nó no canvas",
+    "missingNodePacks": {
+      "applyChanges": "Aplicar alterações",
+      "cloudMessage": "Este fluxo de trabalho requer nós personalizados que ainda não estão disponíveis no Comfy Cloud.",
+      "collapse": "Recolher",
+      "expand": "Expandir",
+      "installAll": "Instalar todos",
+      "installNodePack": "Instalar pacote de nós",
+      "installed": "Instalado",
+      "installing": "Instalando...",
+      "ossMessage": "Este fluxo de trabalho usa nós personalizados que você ainda não instalou.",
+      "searchInManager": "Buscar no Gerenciador de Nós",
+      "title": "Pacotes de nós ausentes",
+      "unknownPack": "Pacote desconhecido",
+      "unsupportedTitle": "Pacotes de nós não suportados",
+      "viewInManager": "Ver no Gerenciador"
+    },
     "mute": "Silenciar",
     "noErrors": "Sem erros",
     "noSelection": "Selecione um nó para ver suas propriedades e informações.",

@@ -699,6 +699,7 @@
     "OPENAI_INPUT_FILES": "OpenAI入力ファイル",
     "PHOTOMAKER": "PHOTOMAKER",
     "PIXVERSE_TEMPLATE": "Pixverseテンプレート",
+    "POSE_KEYPOINT": "POSE_KEYPOINT",
     "RECRAFT_COLOR": "Recraftカラー",
     "RECRAFT_CONTROLS": "Recraftコントロール",
     "RECRAFT_V3_STYLE": "Recraft V3スタイル",
@@ -958,6 +959,7 @@
     "imageUrl": "画像URL",
     "import": "インポート",
     "inProgress": "進行中",
+    "inSubgraph": "サブグラフ「{name}」内",
     "increment": "増加",
     "info": "ノード情報",
     "input": "入力",
@@ -1115,6 +1117,7 @@
     "updated": "更新済み",
     "updating": "更新中",
     "upload": "アップロード",
+    "uploadAlreadyInProgress": "アップロードはすでに進行中です",
     "usageHint": "使用ヒント",
     "use": "使用",
     "user": "ユーザー",
@@ -1354,8 +1357,13 @@
     },
     "downloadAll": "すべてダウンロード",
     "dragAndDropImage": "画像をドラッグ＆ドロップ",
+    "giveFeedback": "フィードバックを送る",
     "graphMode": "グラフモード",
     "linearMode": "アプリモード",
+    "queue": {
+      "clear": "キューをクリア",
+      "clickToClear": "クリックしてキューをクリア"
+    },
     "rerun": "再実行",
     "reuseParameters": "パラメータを再利用",
     "runCount": "実行回数：",
@@ -1575,6 +1583,9 @@
     "nodePack": "ノードパック",
     "nodePackInfo": "ノードパック情報",
     "notAvailable": "利用不可",
+    "packInstall": {
+      "nodeIdRequired": "インストールにはノードIDが必要です"
+    },
     "packsSelected": "選択したパック",
     "repository": "リポジトリ",
     "restartToApplyChanges": "変更を適用するには、ComfyUIを再起動してください",
@@ -2072,7 +2083,10 @@
     "openNodeManager": "Node Managerを開く",
     "quickFixAvailable": "クイック修正可能",
     "redHighlight": "赤",
+    "replaceAll": "すべて置き換える",
+    "replaceAllWarning": "このグループ内の利用可能なすべてのノードを置き換えます。",
     "replaceFailed": "ノードの置き換えに失敗しました",
+    "replaceNode": "ノードを置き換える",
     "replaceSelected": "選択したものを置き換え ({count})",
     "replaceWarning": "この操作はワークフローを永久に変更します。心配な場合は、先にコピーを保存してください。",
     "replaceable": "置き換え可能",
@@ -2080,7 +2094,11 @@
     "replacedAllNodes": "{count} 種類のノードを置き換えました",
     "replacedNode": "置き換えたノード: {nodeType}",
     "selectAll": "すべて選択",
-    "skipForNow": "今はスキップ"
+    "skipForNow": "今はスキップ",
+    "swapNodesGuide": "以下のノードは互換性のある代替品に自動的に置き換えることができます。",
+    "swapNodesTitle": "ノードの入れ替え",
+    "unknownNode": "不明",
+    "willBeReplacedBy": "このノードは次で置き換えられます："
   },
   "nodeTemplates": {
     "enterName": "名前を入力",
@@ -2098,6 +2116,19 @@
       "windows": "Windows (CUDA対応のNvidia GPU)"
     },
     "title": "お使いのデバイスはサポートされていません"
+  },
+  "painter": {
+    "background": "背景",
+    "brush": "ブラシ",
+    "clear": "クリア",
+    "color": "カラーピッカー",
+    "eraser": "消しゴム",
+    "hardness": "硬さ",
+    "height": "高さ",
+    "size": "カーソルサイズ",
+    "tool": "ツール",
+    "uploadError": "ペインター画像のアップロードに失敗しました: {status} - {statusText}",
+    "width": "幅"
   },
   "progressToast": {
     "allDownloadsCompleted": "すべてのダウンロードが完了しました",
@@ -2219,6 +2250,22 @@
     "inputsNone": "入力なし",
     "inputsNoneTooltip": "このノードには入力がありません",
     "locateNode": "キャンバス上でノードを探す",
+    "missingNodePacks": {
+      "applyChanges": "変更を適用",
+      "cloudMessage": "このワークフローにはComfy Cloudでまだ利用できないカスタムノードが必要です。",
+      "collapse": "折りたたむ",
+      "expand": "展開",
+      "installAll": "すべてインストール",
+      "installNodePack": "ノードパックをインストール",
+      "installed": "インストール済み",
+      "installing": "インストール中...",
+      "ossMessage": "このワークフローにはまだインストールしていないカスタムノードが使われています。",
+      "searchInManager": "ノードマネージャーで検索",
+      "title": "不足しているノードパック",
+      "unknownPack": "不明なパック",
+      "unsupportedTitle": "サポートされていないノードパック",
+      "viewInManager": "マネージャーで表示"
+    },
     "mute": "ミュート",
     "noErrors": "エラーなし",
     "noSelection": "ノードを選択すると、そのプロパティと情報が表示されます。",

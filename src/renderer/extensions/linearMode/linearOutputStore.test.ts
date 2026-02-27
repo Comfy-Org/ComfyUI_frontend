@@ -7,7 +7,7 @@ import type { ExecutedWsMessage } from '@/schemas/apiSchema'
 import { ResultItemImpl } from '@/stores/queueStore'
 
 const activeJobIdRef = ref<string | null>(null)
-const previewsRef = ref<Record<string, string>>({})
+const previewsRef = ref<Record<string, { url: string; nodeId?: string }>>({})
 const isAppModeRef = ref(true)
 
 const { apiTarget } = vi.hoisted(() => ({
@@ -30,7 +30,7 @@ vi.mock('@/stores/executionStore', () => ({
 
 vi.mock('@/stores/jobPreviewStore', () => ({
   useJobPreviewStore: () => ({
-    get previewsByPromptId() {
+    get nodePreviewsByPromptId() {
       return previewsRef.value
     }
   })
@@ -63,12 +63,13 @@ function makeExecutedDetail(
   promptId: string,
   images: Array<Record<string, string>> = [
     { filename: 'out.png', subfolder: '', type: 'output' }
-  ]
+  ],
+  nodeId = '1'
 ): ExecutedWsMessage {
   return {
     prompt_id: promptId,
-    node: '1',
-    display_node: '1',
+    node: nodeId,
+    display_node: nodeId,
     output: { images }
   } as ExecutedWsMessage
 }
@@ -329,7 +330,7 @@ describe('linearOutputStore', () => {
     expect(store.selectedId).toBeNull()
   })
 
-  it('transitions to latent via previewsByPromptId watcher', async () => {
+  it('transitions to latent via previews watcher', async () => {
     vi.useFakeTimers()
     const { nextTick } = await import('vue')
     const store = useLinearOutputStore()
@@ -341,7 +342,9 @@ describe('linearOutputStore', () => {
     expect(store.inProgressItems[0].state).toBe('skeleton')
 
     // Simulate jobPreviewStore update
-    previewsRef.value = { 'job-1': 'blob:preview-1' }
+    previewsRef.value = {
+      'job-1': { url: 'blob:preview-1', nodeId: 'node-1' }
+    }
     await nextTick()
     vi.advanceTimersByTime(16)
 
@@ -485,6 +488,104 @@ describe('linearOutputStore', () => {
     // Once allOutputs() loads, caller passes true — safe to resolve
     store.resolveIfReady('job-1', true)
     expect(store.inProgressItems).toHaveLength(0)
+  })
+
+  it('discards latent previews for already-executed nodes', () => {
+    vi.useFakeTimers()
+    const store = useLinearOutputStore()
+    store.onJobStart('job-1')
+
+    // Node 1 sends latent then executes
+    store.onLatentPreview('job-1', 'blob:node1-latent', '1')
+    vi.advanceTimersByTime(16)
+    store.onNodeExecuted('job-1', makeExecutedDetail('job-1', undefined, '1'))
+
+    // Stale latent for node 1 arrives after it already executed
+    store.onLatentPreview('job-1', 'blob:node1-stale', '1')
+    vi.advanceTimersByTime(16)
+
+    // Should not create a new latent item for the executed node
+    expect(
+      store.inProgressItems.filter((i) => i.state === 'latent')
+    ).toHaveLength(0)
+    vi.useRealTimers()
+  })
+
+  it('accepts latent previews for new nodes after prior node executed', () => {
+    vi.useFakeTimers()
+    const store = useLinearOutputStore()
+    store.onJobStart('job-1')
+
+    // Node 1 executes
+    store.onNodeExecuted('job-1', makeExecutedDetail('job-1', undefined, '1'))
+
+    // Node 2 sends latent preview — should be accepted
+    store.onLatentPreview('job-1', 'blob:node2-latent', '2')
+    vi.advanceTimersByTime(16)
+
+    expect(
+      store.inProgressItems.filter((i) => i.state === 'latent')
+    ).toHaveLength(1)
+    expect(store.inProgressItems[0].latentPreviewUrl).toBe('blob:node2-latent')
+    vi.useRealTimers()
+  })
+
+  it('cancels pending RAF when a node executes', () => {
+    vi.useFakeTimers()
+    const store = useLinearOutputStore()
+    store.onJobStart('job-1')
+
+    // Latent preview scheduled in RAF
+    store.onLatentPreview('job-1', 'blob:node1-latent')
+    // Node executes before RAF fires — should cancel it
+    store.onNodeExecuted('job-1', makeExecutedDetail('job-1', undefined, '1'))
+    vi.advanceTimersByTime(16)
+
+    // Only the image item, no latent
+    expect(
+      store.inProgressItems.filter((i) => i.state === 'latent')
+    ).toHaveLength(0)
+    expect(
+      store.inProgressItems.filter((i) => i.state === 'image')
+    ).toHaveLength(1)
+    vi.useRealTimers()
+  })
+
+  it('discards latent previews arriving after job completion', () => {
+    vi.useFakeTimers()
+    const store = useLinearOutputStore()
+    store.onJobStart('job-1')
+    store.onNodeExecuted('job-1', makeExecutedDetail('job-1'))
+
+    // Latent preview scheduled in RAF before job completes
+    store.onLatentPreview('job-1', 'blob:late')
+    store.onJobComplete('job-1')
+
+    // RAF fires after completion — should be cancelled
+    vi.advanceTimersByTime(16)
+
+    // No new latent items should have been created
+    expect(
+      store.inProgressItems.filter((i) => i.state === 'latent')
+    ).toHaveLength(0)
+    vi.useRealTimers()
+  })
+
+  it('discards latent previews for completed job after RAF', () => {
+    vi.useFakeTimers()
+    const store = useLinearOutputStore()
+    store.onJobStart('job-1')
+    store.onNodeExecuted('job-1', makeExecutedDetail('job-1'))
+    store.onJobComplete('job-1')
+
+    // Late preview arrives after job already completed
+    store.onLatentPreview('job-1', 'blob:very-late')
+    vi.advanceTimersByTime(16)
+
+    expect(
+      store.inProgressItems.filter((i) => i.state === 'latent')
+    ).toHaveLength(0)
+    vi.useRealTimers()
   })
 
   it('ignores executed events for other jobs', () => {

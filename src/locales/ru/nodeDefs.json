@@ -2137,6 +2137,35 @@
       }
     }
   },
+  "CropByBBoxes": {
+    "description": "Обрезать и изменить размер областей из входного пакета изображений на основе предоставленных ограничивающих рамок.",
+    "display_name": "CropByBBoxes",
+    "inputs": {
+      "bboxes": {
+        "name": "bboxes"
+      },
+      "image": {
+        "name": "image"
+      },
+      "output_height": {
+        "name": "output_height",
+        "tooltip": "Высота, до которой изменяется каждый обрезанный фрагмент."
+      },
+      "output_width": {
+        "name": "output_width",
+        "tooltip": "Ширина, до которой изменяется каждый обрезанный фрагмент."
+      },
+      "padding": {
+        "name": "padding",
+        "tooltip": "Дополнительный отступ в пикселях, добавляемый с каждой стороны ограничивающей рамки перед обрезкой."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "Все обрезанные фрагменты объединены в один пакет изображений."
+      }
+    }
+  },
   "CropMask": {
     "display_name": "Обрезать маску",
     "inputs": {
@@ -3693,6 +3722,57 @@
       "file": {
         "name": "file",
         "tooltip": "Входные файлы для включения в качестве контекста для модели. Пока принимаются только текстовые (.txt) и PDF (.pdf) файлы."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "GeminiNanoBanana2": {
+    "description": "Генерируйте или редактируйте изображения синхронно через Google Vertex API.",
+    "display_name": "Nano Banana 2",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio",
+        "tooltip": "Если установлено значение 'auto', используется соотношение сторон вашего входного изображения; если изображение не предоставлено, обычно генерируется квадрат 16:9."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "files": {
+        "name": "files",
+        "tooltip": "Необязательные файлы для использования в качестве контекста для модели. Принимает входные данные из узла Gemini Generate Content Input Files."
+      },
+      "images": {
+        "name": "images",
+        "tooltip": "Необязательное изображение(я) для ссылки. Чтобы добавить несколько изображений, используйте узел Batch Images (до 14)."
+      },
+      "model": {
+        "name": "model"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Текстовый запрос, описывающий изображение для генерации или редактирования. Укажите любые ограничения, стили или детали, которым должна следовать модель."
+      },
+      "resolution": {
+        "name": "resolution",
+        "tooltip": "Целевое разрешение вывода. Для 2K/4K используется собственный Gemini upscaler."
+      },
+      "response_modalities": {
+        "name": "response_modalities"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Когда seed фиксирован на определённом значении, модель старается выдавать одинаковый результат при повторных запросах. Детерминированный результат не гарантируется. Также изменение модели или параметров, например, температуры, может привести к различиям в ответе даже при одинаковом seed. По умолчанию используется случайное значение seed."
+      },
+      "system_prompt": {
+        "name": "system_prompt",
+        "tooltip": "Базовые инструкции, определяющие поведение ИИ."
+      },
+      "thinking_level": {
+        "name": "thinking_level"
       }
     },
     "outputs": {
@@ -12975,6 +13055,90 @@
     "outputs": {
       "0": {
         "tooltip": null
+      }
+    }
+  },
+  "SDPoseDrawKeypoints": {
+    "display_name": "SDPoseDrawKeypoints",
+    "inputs": {
+      "draw_body": {
+        "name": "draw_body"
+      },
+      "draw_face": {
+        "name": "draw_face"
+      },
+      "draw_feet": {
+        "name": "draw_feet"
+      },
+      "draw_hands": {
+        "name": "draw_hands"
+      },
+      "face_point_size": {
+        "name": "face_point_size"
+      },
+      "keypoints": {
+        "name": "keypoints"
+      },
+      "score_threshold": {
+        "name": "score_threshold"
+      },
+      "stick_width": {
+        "name": "stick_width"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SDPoseFaceBBoxes": {
+    "display_name": "SDPoseFaceBBoxes",
+    "inputs": {
+      "force_square": {
+        "name": "force_square",
+        "tooltip": "Увеличить меньшую сторону рамки, чтобы область обрезки всегда была квадратной."
+      },
+      "keypoints": {
+        "name": "keypoints"
+      },
+      "scale": {
+        "name": "scale",
+        "tooltip": "Множитель для области ограничивающей рамки вокруг каждого обнаруженного лица."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "bboxes",
+        "tooltip": "Ограничивающие рамки лиц для каждого кадра, совместимы с входом bboxes SDPoseKeypointExtractor."
+      }
+    }
+  },
+  "SDPoseKeypointExtractor": {
+    "description": "Извлекает ключевые точки позы из изображений с помощью модели SDPose: https://huggingface.co/Comfy-Org/SDPose/tree/main/checkpoints",
+    "display_name": "SDPoseKeypointExtractor",
+    "inputs": {
+      "batch_size": {
+        "name": "batch_size"
+      },
+      "bboxes": {
+        "name": "bboxes",
+        "tooltip": "Необязательные ограничивающие рамки для более точного обнаружения. Требуется для обнаружения нескольких людей."
+      },
+      "image": {
+        "name": "image"
+      },
+      "model": {
+        "name": "model"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "keypoints",
+        "tooltip": "Ключевые точки в формате OpenPose (canvas_width, canvas_height, people)"
       }
     }
   },

@@ -42,6 +42,12 @@ export interface MissingPackGroup {
   isResolving: boolean
 }
 
+export interface SwapNodeGroup {
+  type: string
+  newNodeId: string | undefined
+  nodeTypes: MissingNodeType[]
+}
+
 interface GroupEntry {
   type: 'execution'
   priority: number
@@ -444,6 +450,8 @@ export function useErrorGroups(
     const resolvingKeys = new Set<string | null>()
 
     for (const nodeType of nodeTypes) {
+      if (typeof nodeType !== 'string' && nodeType.isReplaceable) continue
+
       let packId: string | null
 
       if (typeof nodeType === 'string') {
@@ -495,18 +503,53 @@ export function useErrorGroups(
       }))
   })
 
+  const swapNodeGroups = computed<SwapNodeGroup[]>(() => {
+    const nodeTypes = executionErrorStore.missingNodesError?.nodeTypes ?? []
+    const map = new Map<string, SwapNodeGroup>()
+
+    for (const nodeType of nodeTypes) {
+      if (typeof nodeType === 'string' || !nodeType.isReplaceable) continue
+
+      const typeName = nodeType.type
+      const existing = map.get(typeName)
+      if (existing) {
+        existing.nodeTypes.push(nodeType)
+      } else {
+        map.set(typeName, {
+          type: typeName,
+          newNodeId: nodeType.replacement?.new_node_id,
+          nodeTypes: [nodeType]
+        })
+      }
+    }
+
+    return Array.from(map.values()).sort((a, b) => a.type.localeCompare(b.type))
+  })
+
   /** Builds an ErrorGroup from missingNodesError. Returns [] when none present. */
   function buildMissingNodeGroups(): ErrorGroup[] {
     const error = executionErrorStore.missingNodesError
     if (!error) return []
 
-    return [
-      {
+    const groups: ErrorGroup[] = []
+
+    if (swapNodeGroups.value.length > 0) {
+      groups.push({
+        type: 'swap_nodes' as const,
+        title: st('nodeReplacement.swapNodesTitle', 'Swap Nodes'),
+        priority: 0
+      })
+    }
+
+    if (missingPackGroups.value.length > 0) {
+      groups.push({
         type: 'missing_node' as const,
         title: error.message,
-        priority: 0
-      }
-    ]
+        priority: 1
+      })
+    }
+
+    return groups.sort((a, b) => a.priority - b.priority)
   }
 
   const allErrorGroups = computed<ErrorGroup[]>(() => {
@@ -564,6 +607,7 @@ export function useErrorGroups(
     errorNodeCache,
     missingNodeCache,
     groupedErrorMessages,
-    missingPackGroups
+    missingPackGroups,
+    swapNodeGroups
   }
 }

@@ -85,8 +85,12 @@ export const useDomClipping = (options: ClippingOptions = {}) => {
     return ''
   }
 
+  let pendingRaf = 0
+
   /**
-   * Updates the clip-path style based on element and selection information
+   * Updates the clip-path style based on element and selection information.
+   * Batched via requestAnimationFrame to avoid forcing synchronous layout
+   * from getBoundingClientRect() on every reactive state change.
    */
   const updateClipPath = (
     element: HTMLElement,
@@ -101,20 +105,24 @@ export const useDomClipping = (options: ClippingOptions = {}) => {
       offset: [number, number]
     }
   ) => {
-    const elementRect = element.getBoundingClientRect()
-    const canvasRect = canvasElement.getBoundingClientRect()
+    if (pendingRaf) cancelAnimationFrame(pendingRaf)
+    pendingRaf = requestAnimationFrame(() => {
+      pendingRaf = 0
+      const elementRect = element.getBoundingClientRect()
+      const canvasRect = canvasElement.getBoundingClientRect()
 
-    const clipPath = calculateClipPath(
-      elementRect,
-      canvasRect,
-      isSelected,
-      selectedArea
-    )
+      const clipPath = calculateClipPath(
+        elementRect,
+        canvasRect,
+        isSelected,
+        selectedArea
+      )
 
-    style.value = {
-      clipPath: clipPath || 'none',
-      willChange: 'clip-path'
-    }
+      style.value = {
+        clipPath: clipPath || 'none',
+        willChange: 'clip-path'
+      }
+    })
   }
 
   return {

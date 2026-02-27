@@ -42,6 +42,38 @@
         >
           <i class="icon-[lucide--x] size-4" />
         </Button>
+        <Button
+          v-tooltip.bottom="queueHistoryTooltipConfig"
+          variant="secondary"
+          size="md"
+          :aria-pressed="
+            isQueuePanelV2Enabled
+              ? activeSidebarTabId === 'job-history'
+              : queueOverlayExpanded
+          "
+          class="relative px-3"
+          data-testid="queue-overlay-toggle"
+          @click="toggleQueueOverlay"
+          @contextmenu.stop.prevent="showQueueContextMenu"
+        >
+          <span class="text-sm font-normal tabular-nums">
+            {{ activeJobsLabel }}
+          </span>
+          <StatusBadge
+            v-if="activeJobsCount > 0"
+            data-testid="active-jobs-indicator"
+            variant="dot"
+            class="pointer-events-none absolute -top-0.5 -right-0.5 animate-pulse"
+          />
+          <span class="sr-only">
+            {{
+              isQueuePanelV2Enabled
+                ? t('sideToolbar.queueProgressOverlay.viewJobHistory')
+                : t('sideToolbar.queueProgressOverlay.expandCollapsedQueue')
+            }}
+          </span>
+        </Button>
+        <ContextMenu ref="queueContextMenu" :model="queueContextMenuItems" />
       </div>
     </Panel>
 
@@ -65,11 +97,14 @@ import {
 } from '@vueuse/core'
 import { clamp } from 'es-toolkit/compat'
 import { storeToRefs } from 'pinia'
+import ContextMenu from 'primevue/contextmenu'
+import type { MenuItem } from 'primevue/menuitem'
 import Panel from 'primevue/panel'
 import { computed, nextTick, ref, watch } from 'vue'
 import type { ComponentPublicInstance } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import StatusBadge from '@/components/common/StatusBadge.vue'
 import QueueInlineProgress from '@/components/queue/QueueInlineProgress.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { buildTooltipConfig } from '@/composables/useTooltipConfig'
@@ -77,6 +112,8 @@ import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
 import { useCommandStore } from '@/stores/commandStore'
 import { useExecutionStore } from '@/stores/executionStore'
+import { useQueueStore } from '@/stores/queueStore'
+import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 import { cn } from '@/utils/tailwindUtil'
 
 import ComfyRunButton from './ComfyRunButton'
@@ -92,8 +129,13 @@ const emit = defineEmits<{
 
 const settingsStore = useSettingStore()
 const commandStore = useCommandStore()
-const { t } = useI18n()
-const { isIdle: isExecutionIdle } = storeToRefs(useExecutionStore())
+const executionStore = useExecutionStore()
+const queueStore = useQueueStore()
+const sidebarTabStore = useSidebarTabStore()
+const { t, n } = useI18n()
+const { isIdle: isExecutionIdle } = storeToRefs(executionStore)
+const { activeJobsCount } = storeToRefs(queueStore)
+const { activeSidebarTabId } = storeToRefs(sidebarTabStore)
 
 const position = computed(() => settingsStore.get('Comfy.UseNewMenu'))
 const visible = computed(() => position.value !== 'Disabled')
@@ -318,10 +360,51 @@ watch(isDragging, (dragging) => {
 const cancelJobTooltipConfig = computed(() =>
   buildTooltipConfig(t('menu.interrupt'))
 )
+const queueHistoryTooltipConfig = computed(() =>
+  buildTooltipConfig(t('sideToolbar.queueProgressOverlay.viewJobHistory'))
+)
+const activeJobsLabel = computed(() => {
+  const count = activeJobsCount.value
+  return t(
+    'sideToolbar.queueProgressOverlay.activeJobsShort',
+    { count: n(count) },
+    count
+  )
+})
+const queueContextMenu = ref<InstanceType<typeof ContextMenu> | null>(null)
+const queueContextMenuItems = computed<MenuItem[]>(() => [
+  {
+    label: t('sideToolbar.queueProgressOverlay.clearQueueTooltip'),
+    icon: 'icon-[lucide--list-x] text-destructive-background',
+    class: '*:text-destructive-background',
+    disabled: queueStore.pendingTasks.length === 0,
+    command: () => {
+      void handleClearQueue()
+    }
+  }
+])
 
 const cancelCurrentJob = async () => {
   if (isExecutionIdle.value) return
   await commandStore.execute('Comfy.Interrupt')
+}
+const toggleQueueOverlay = () => {
+  if (isQueuePanelV2Enabled.value) {
+    sidebarTabStore.toggleSidebarTab('job-history')
+    return
+  }
+  commandStore.execute('Comfy.Queue.ToggleOverlay')
+}
+const showQueueContextMenu = (event: MouseEvent) => {
+  queueContextMenu.value?.show(event)
+}
+const handleClearQueue = async () => {
+  const pendingJobIds = queueStore.pendingTasks
+    .map((task) => task.jobId)
+    .filter((id): id is string => typeof id === 'string' && id.length > 0)
+
+  await commandStore.execute('Comfy.ClearPendingTasks')
+  executionStore.clearInitializationByJobIds(pendingJobIds)
 }
 
 const actionbarClass = computed(() =>

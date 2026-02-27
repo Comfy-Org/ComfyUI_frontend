@@ -1,12 +1,13 @@
 <script setup lang="ts">
 import { remove } from 'es-toolkit'
-import { computed, ref, toValue } from 'vue'
+import { computed, provide, ref, toValue, watchEffect } from 'vue'
 import type { MaybeRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import DraggableList from '@/components/common/DraggableList.vue'
 import IoItem from '@/components/builder/IoItem.vue'
 import PropertiesAccordionItem from '@/components/rightSidePanel/layout/PropertiesAccordionItem.vue'
+import WidgetItem from '@/components/rightSidePanel/parameters/WidgetItem.vue'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { LGraphNode, NodeId } from '@/lib/litegraph/src/LGraphNode'
 import type { INodeInputSlot } from '@/lib/litegraph/src/interfaces'
@@ -22,8 +23,10 @@ import TransformPane from '@/renderer/core/layout/transform/TransformPane.vue'
 import { app } from '@/scripts/app'
 import { DOMWidgetImpl } from '@/scripts/domWidget'
 import { useDialogService } from '@/services/dialogService'
+import { useAppMode } from '@/composables/useAppMode'
 import { useAppModeStore } from '@/stores/appModeStore'
 import { cn } from '@/utils/tailwindUtil'
+import { HideLayoutFieldKey } from '@/types/widgetTypes'
 
 type BoundStyle = { top: string; left: string; width: string; height: string }
 
@@ -35,9 +38,35 @@ const workflowStore = useWorkflowStore()
 const { t } = useI18n()
 const canvas: LGraphCanvas = canvasStore.getCanvas()
 
+const { mode, isArrangeMode } = useAppMode()
 const hoveringSelectable = ref(false)
 
+provide(HideLayoutFieldKey, true)
+
 workflowStore.activeWorkflow?.changeTracker?.reset()
+
+// Prune stale entries whose node/widget no longer exists, so the
+// DraggableList model always matches the rendered items.
+watchEffect(() => {
+  const valid = appModeStore.selectedInputs.filter(([nodeId, widgetName]) => {
+    const node = app.rootGraph.getNodeById(nodeId)
+    return node?.widgets?.some((w) => w.name === widgetName)
+  })
+  if (valid.length < appModeStore.selectedInputs.length) {
+    appModeStore.selectedInputs = valid
+  }
+})
+
+const arrangeInputs = computed(() =>
+  appModeStore.selectedInputs
+    .map(([nodeId, widgetName]) => {
+      const node = app.rootGraph.getNodeById(nodeId)
+      const widget = node?.widgets?.find((w) => w.name === widgetName)
+      if (!node || !widget) return null
+      return { nodeId, widgetName, node, widget }
+    })
+    .filter((item): item is NonNullable<typeof item> => item !== null)
+)
 
 const inputsWithState = computed(() =>
   appModeStore.selectedInputs.map(([nodeId, widgetName]) => {
@@ -178,9 +207,33 @@ const renderedInputs = computed<[string, MaybeRef<BoundStyle> | undefined][]>(
 </script>
 <template>
   <div class="flex font-bold p-2 border-border-subtle border-b items-center">
-    {{ t('linearMode.builder.title') }}
+    {{
+      isArrangeMode ? t('nodeHelpPage.inputs') : t('linearMode.builder.title')
+    }}
   </div>
+  <DraggableList
+    v-if="isArrangeMode"
+    v-slot="{ dragClass }"
+    v-model="appModeStore.selectedInputs"
+  >
+    <div
+      v-for="{ nodeId, widgetName, node, widget } in arrangeInputs"
+      :key="`${nodeId}: ${widgetName}`"
+      :class="cn(dragClass, 'p-2 my-2 pointer-events-auto')"
+      :aria-label="`${widget.label ?? widgetName} — ${node.title}`"
+    >
+      <div class="pointer-events-none" inert>
+        <WidgetItem
+          :widget="widget"
+          :node="node"
+          show-node-name
+          hidden-widget-actions
+        />
+      </div>
+    </div>
+  </DraggableList>
   <PropertiesAccordionItem
+    v-else
     :label="t('nodeHelpPage.inputs')"
     enable-empty-state
     :disabled="!appModeStore.selectedInputs.length"
@@ -228,6 +281,7 @@ const renderedInputs = computed<[string, MaybeRef<BoundStyle> | undefined][]>(
     </DraggableList>
   </PropertiesAccordionItem>
   <PropertiesAccordionItem
+    v-if="!isArrangeMode"
     :label="t('nodeHelpPage.outputs')"
     enable-empty-state
     :disabled="!appModeStore.selectedOutputs.length"
@@ -270,7 +324,7 @@ const renderedInputs = computed<[string, MaybeRef<BoundStyle> | undefined][]>(
     </DraggableList>
   </PropertiesAccordionItem>
 
-  <Teleport to="body">
+  <Teleport v-if="mode === 'builder:select'" to="body">
     <div
       :class="
         cn(

@@ -79,12 +79,8 @@ import type { ComfyExtension, MissingNodeType } from '@/types/comfy'
 import type { ExtensionManager } from '@/types/extensionTypes'
 import type { NodeExecutionId } from '@/types/nodeIdentification'
 import { graphToPrompt } from '@/utils/executionUtil'
-import type { MissingNodeTypeExtraInfo } from '@/workbench/extensions/manager/types/missingNodeErrorTypes'
-import {
-  createMissingNodeTypeFromError,
-  getCnrIdFromNode,
-  getCnrIdFromProperties
-} from '@/workbench/extensions/manager/utils/missingNodeErrorUtil'
+import { getCnrIdFromProperties } from '@/workbench/extensions/manager/utils/missingNodeErrorUtil'
+import { rescanAndSurfaceMissingNodes } from '@/composables/useMissingNodeScan'
 import { anyItemOverlapsRect } from '@/utils/mathUtil'
 import {
   collectAllNodes,
@@ -765,7 +761,7 @@ export class ComfyApp {
       const { setNodePreviewsByExecutionId, revokePreviewsByExecutionId } =
         useNodeOutputStore()
       const blobUrl = createSharedObjectUrl(blob)
-      useJobPreviewStore().setPreviewUrl(jobId, blobUrl)
+      useJobPreviewStore().setPreviewUrl(jobId, blobUrl, displayNodeId)
       // Ensure clean up if `executing` event is missed.
       revokePreviewsByExecutionId(displayNodeId)
       // Preview cleanup is handled in progress_state event to support multiple concurrent previews
@@ -1190,7 +1186,7 @@ export class ComfyApp {
     const embeddedModels: ModelFile[] = []
 
     const nodeReplacementStore = useNodeReplacementStore()
-
+    await nodeReplacementStore.load()
     const collectMissingNodesAndModels = (
       nodes: ComfyWorkflowJSON['nodes'],
       pathPrefix: string = '',
@@ -1527,35 +1523,8 @@ export class ComfyApp {
               typeof error.response.error === 'object' &&
               error.response.error?.type === 'missing_node_type'
             ) {
-              const extraInfo = (error.response.error.extra_info ??
-                {}) as MissingNodeTypeExtraInfo
-
-              let graphNode = null
-              if (extraInfo.node_id && this.rootGraph) {
-                graphNode = getNodeByExecutionId(
-                  this.rootGraph,
-                  extraInfo.node_id
-                )
-              }
-
-              const enrichedExtraInfo: MissingNodeTypeExtraInfo = {
-                ...extraInfo,
-                class_type: extraInfo.class_type ?? graphNode?.type,
-                node_title: extraInfo.node_title ?? graphNode?.title
-              }
-
-              const missingNodeType =
-                createMissingNodeTypeFromError(enrichedExtraInfo)
-
-              if (
-                graphNode &&
-                typeof missingNodeType !== 'string' &&
-                !missingNodeType.cnrId
-              ) {
-                missingNodeType.cnrId = getCnrIdFromNode(graphNode)
-              }
-
-              this.showMissingNodesError([missingNodeType])
+              // Re-scan the full graph instead of using the server's single-node response.
+              rescanAndSurfaceMissingNodes(this.rootGraph)
             } else if (
               !useSettingStore().get('Comfy.RightSidePanel.ShowErrorsTab') ||
               !(error instanceof PromptExecutionError)

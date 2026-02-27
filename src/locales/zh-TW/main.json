@@ -699,6 +699,7 @@
     "OPENAI_INPUT_FILES": "OpenAI輸入檔案",
     "PHOTOMAKER": "PhotoMaker",
     "PIXVERSE_TEMPLATE": "PIXVERSE 範本",
+    "POSE_KEYPOINT": "POSE_KEYPOINT",
     "RECRAFT_COLOR": "RECRAFT 顏色",
     "RECRAFT_CONTROLS": "RECRAFT 控制",
     "RECRAFT_V3_STYLE": "RECRAFT V3 風格",
@@ -958,6 +959,7 @@
     "imageUrl": "圖片網址",
     "import": "匯入",
     "inProgress": "進行中",
+    "inSubgraph": "於子圖「{name}」中",
     "increment": "增加",
     "info": "節點資訊",
     "input": "輸入",
@@ -1115,6 +1117,7 @@
     "updated": "已更新",
     "updating": "更新中",
     "upload": "上傳",
+    "uploadAlreadyInProgress": "上傳已在進行中",
     "usageHint": "使用提示",
     "use": "使用",
     "user": "使用者",
@@ -1354,8 +1357,13 @@
     },
     "downloadAll": "全部下載",
     "dragAndDropImage": "拖曳圖片到此",
+    "giveFeedback": "提供回饋",
     "graphMode": "圖形模式",
     "linearMode": "App 模式",
+    "queue": {
+      "clear": "清除佇列",
+      "clickToClear": "點擊以清除佇列"
+    },
     "rerun": "重新執行",
     "reuseParameters": "重用參數",
     "runCount": "執行次數：",
@@ -1575,6 +1583,9 @@
     "nodePack": "節點包",
     "nodePackInfo": "節點包資訊",
     "notAvailable": "不可用",
+    "packInstall": {
+      "nodeIdRequired": "安裝需要節點 ID"
+    },
     "packsSelected": "已選擇套件",
     "repository": "儲存庫",
     "restartToApplyChanges": "請重新啟動 ComfyUI 以套用變更",
@@ -2072,7 +2083,10 @@
     "openNodeManager": "開啟節點管理器",
     "quickFixAvailable": "可用快速修復",
     "redHighlight": "紅色",
+    "replaceAll": "全部替換",
+    "replaceAllWarning": "將替換此群組中所有可用的節點。",
     "replaceFailed": "替換節點失敗",
+    "replaceNode": "替換節點",
     "replaceSelected": "替換所選 ({count})",
     "replaceWarning": "這將永久修改工作流程。如有疑慮，請先儲存副本。",
     "replaceable": "可替換",
@@ -2080,7 +2094,11 @@
     "replacedAllNodes": "已替換 {count} 種節點類型",
     "replacedNode": "已替換節點：{nodeType}",
     "selectAll": "全選",
-    "skipForNow": "暫時略過"
+    "skipForNow": "暫時略過",
+    "swapNodesGuide": "以下節點可以自動替換為相容的替代品。",
+    "swapNodesTitle": "交換節點",
+    "unknownNode": "未知",
+    "willBeReplacedBy": "此節點將被替換為："
   },
   "nodeTemplates": {
     "enterName": "輸入名稱",
@@ -2098,6 +2116,19 @@
       "windows": "Windows（支援 CUDA 的 NVIDIA 顯示卡）"
     },
     "title": "您的裝置不受支援"
+  },
+  "painter": {
+    "background": "背景",
+    "brush": "畫筆",
+    "clear": "清除",
+    "color": "顏色選擇器",
+    "eraser": "橡皮擦",
+    "hardness": "硬度",
+    "height": "高度",
+    "size": "游標大小",
+    "tool": "工具",
+    "uploadError": "上傳繪圖圖像失敗：{status} - {statusText}",
+    "width": "寬度"
   },
   "progressToast": {
     "allDownloadsCompleted": "所有下載已完成",
@@ -2219,6 +2250,22 @@
     "inputsNone": "無輸入",
     "inputsNoneTooltip": "此節點沒有輸入",
     "locateNode": "在畫布上定位節點",
+    "missingNodePacks": {
+      "applyChanges": "套用變更",
+      "cloudMessage": "此工作流程需要 Comfy Cloud 尚未提供的自訂節點。",
+      "collapse": "收合",
+      "expand": "展開",
+      "installAll": "全部安裝",
+      "installNodePack": "安裝節點包",
+      "installed": "已安裝",
+      "installing": "安裝中⋯⋯",
+      "ossMessage": "此工作流程使用了你尚未安裝的自訂節點。",
+      "searchInManager": "在節點管理器中搜尋",
+      "title": "缺少節點包",
+      "unknownPack": "未知的節點包",
+      "unsupportedTitle": "不支援的節點包",
+      "viewInManager": "在管理器中檢視"
+    },
     "mute": "靜音",
     "noErrors": "沒有錯誤",
     "noSelection": "請選擇節點以檢視其屬性與資訊。",
