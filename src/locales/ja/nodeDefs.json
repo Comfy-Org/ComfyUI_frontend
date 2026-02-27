@@ -2137,6 +2137,35 @@
       }
     }
   },
+  "CropByBBoxes": {
+    "description": "指定されたバウンディングボックスに基づいて、入力画像バッチから領域を切り抜きリサイズします。",
+    "display_name": "CropByBBoxes",
+    "inputs": {
+      "bboxes": {
+        "name": "バウンディングボックス"
+      },
+      "image": {
+        "name": "画像"
+      },
+      "output_height": {
+        "name": "出力高さ",
+        "tooltip": "各切り抜き画像がリサイズされる高さ。"
+      },
+      "output_width": {
+        "name": "出力幅",
+        "tooltip": "各切り抜き画像がリサイズされる幅。"
+      },
+      "padding": {
+        "name": "パディング",
+        "tooltip": "切り抜き前にバウンディングボックスの各辺に追加される余白（ピクセル単位）。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "すべての切り抜き画像が1つの画像バッチとしてまとめられます。"
+      }
+    }
+  },
   "CropMask": {
     "display_name": "マスクをトリミング",
     "inputs": {
@@ -13026,6 +13055,90 @@
     "outputs": {
       "0": {
         "tooltip": null
+      }
+    }
+  },
+  "SDPoseDrawKeypoints": {
+    "display_name": "SDPoseDrawKeypoints",
+    "inputs": {
+      "draw_body": {
+        "name": "ボディを描画"
+      },
+      "draw_face": {
+        "name": "顔を描画"
+      },
+      "draw_feet": {
+        "name": "足を描画"
+      },
+      "draw_hands": {
+        "name": "手を描画"
+      },
+      "face_point_size": {
+        "name": "顔ポイントサイズ"
+      },
+      "keypoints": {
+        "name": "キーポイント"
+      },
+      "score_threshold": {
+        "name": "スコア閾値"
+      },
+      "stick_width": {
+        "name": "スティック幅"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SDPoseFaceBBoxes": {
+    "display_name": "SDPoseFaceBBoxes",
+    "inputs": {
+      "force_square": {
+        "name": "正方形に強制",
+        "tooltip": "短い辺を拡張して、切り抜き領域が常に正方形になるようにします。"
+      },
+      "keypoints": {
+        "name": "キーポイント"
+      },
+      "scale": {
+        "name": "スケール",
+        "tooltip": "各検出された顔のバウンディングボックス領域の倍率。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "バウンディングボックス",
+        "tooltip": "各フレームごとの顔バウンディングボックス。SDPoseKeypointExtractorのbboxes入力と互換性があります。"
+      }
+    }
+  },
+  "SDPoseKeypointExtractor": {
+    "description": "SDPoseモデル（https://huggingface.co/Comfy-Org/SDPose/tree/main/checkpoints）を使用して画像からポーズキーポイントを抽出します。",
+    "display_name": "SDPoseKeypointExtractor",
+    "inputs": {
+      "batch_size": {
+        "name": "バッチサイズ"
+      },
+      "bboxes": {
+        "name": "バウンディングボックス",
+        "tooltip": "より正確な検出のためのオプションのバウンディングボックス。複数人検出時は必須です。"
+      },
+      "image": {
+        "name": "画像"
+      },
+      "model": {
+        "name": "モデル"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "キーポイント",
+        "tooltip": "OpenPoseフレーム形式（canvas_width, canvas_height, people）のキーポイント"
       }
     }
   },

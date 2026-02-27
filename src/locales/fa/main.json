@@ -699,6 +699,7 @@
     "OPENAI_INPUT_FILES": "فایل‌های ورودی OpenAI",
     "PHOTOMAKER": "photomaker",
     "PIXVERSE_TEMPLATE": "قالب Pixverse",
+    "POSE_KEYPOINT": "POSE_KEYPOINT",
     "RECRAFT_COLOR": "رنگ Recraft",
     "RECRAFT_CONTROLS": "کنترل‌های Recraft",
     "RECRAFT_V3_STYLE": "سبک Recraft V3",
@@ -2082,7 +2083,10 @@
     "openNodeManager": "باز کردن Node Manager",
     "quickFixAvailable": "رفع سریع در دسترس است",
     "redHighlight": "قرمز",
+    "replaceAll": "جایگزینی همه",
+    "replaceAllWarning": "همه گره‌های موجود در این گروه جایگزین خواهند شد.",
     "replaceFailed": "جایگزینی نودها ناموفق بود",
+    "replaceNode": "جایگزینی گره",
     "replaceSelected": "جایگزینی انتخاب‌شده‌ها ({count})",
     "replaceWarning": "این کار workflow را به طور دائمی تغییر می‌دهد. اگر مطمئن نیستید، ابتدا یک نسخه ذخیره کنید.",
     "replaceable": "قابل جایگزینی",
@@ -2090,7 +2094,11 @@
     "replacedAllNodes": "{count} نوع نود جایگزین شد",
     "replacedNode": "نود جایگزین شد: {nodeType}",
     "selectAll": "انتخاب همه",
-    "skipForNow": "فعلاً رد شود"
+    "skipForNow": "فعلاً رد شود",
+    "swapNodesGuide": "گره‌های زیر می‌توانند به‌صورت خودکار با گزینه‌های سازگار جایگزین شوند.",
+    "swapNodesTitle": "جایگزینی گره‌ها",
+    "unknownNode": "ناشناخته",
+    "willBeReplacedBy": "این گره جایگزین خواهد شد با:"
   },
   "nodeTemplates": {
     "enterName": "نام را وارد کنید",

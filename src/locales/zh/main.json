@@ -699,6 +699,7 @@
     "OPENAI_INPUT_FILES": "OpenAI输入文件",
     "PHOTOMAKER": "PhotoMaker",
     "PIXVERSE_TEMPLATE": "Pixverse 模板",
+    "POSE_KEYPOINT": "POSE_KEYPOINT",
     "RECRAFT_COLOR": "Recraft 颜色",
     "RECRAFT_CONTROLS": "Recraft 控件",
     "RECRAFT_V3_STYLE": "Recraft V3 风格",
@@ -2082,7 +2083,10 @@
     "openNodeManager": "打开节点管理器",
     "quickFixAvailable": "可用快速修复",
     "redHighlight": "红色",
+    "replaceAll": "全部替换",
+    "replaceAllWarning": "将替换此组中所有可用节点。",
     "replaceFailed": "替换节点失败",
+    "replaceNode": "替换节点",
     "replaceSelected": "替换已选（{count}）",
     "replaceWarning": "此操作将永久修改工作流。如不确定，请先保存副本。",
     "replaceable": "可替换",
@@ -2090,7 +2094,11 @@
     "replacedAllNodes": "已替换 {count} 种节点类型",
     "replacedNode": "已替换节点：{nodeType}",
     "selectAll": "全选",
-    "skipForNow": "暂时跳过"
+    "skipForNow": "暂时跳过",
+    "swapNodesGuide": "以下节点可以自动替换为兼容的替代项。",
+    "swapNodesTitle": "交换节点",
+    "unknownNode": "未知",
+    "willBeReplacedBy": "此节点将被替换为："
   },
   "nodeTemplates": {
     "enterName": "输入名称",

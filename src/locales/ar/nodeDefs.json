@@ -2137,6 +2137,35 @@
       }
     }
   },
+  "CropByBBoxes": {
+    "description": "قص وتغيير حجم المناطق من دفعة الصور المدخلة بناءً على مربعات التحديد المقدمة.",
+    "display_name": "CropByBBoxes",
+    "inputs": {
+      "bboxes": {
+        "name": "مربعات التحديد"
+      },
+      "image": {
+        "name": "الصورة"
+      },
+      "output_height": {
+        "name": "ارتفاع الناتج",
+        "tooltip": "الارتفاع الذي يتم تغيير حجم كل قص إليه."
+      },
+      "output_width": {
+        "name": "عرض الناتج",
+        "tooltip": "العرض الذي يتم تغيير حجم كل قص إليه."
+      },
+      "padding": {
+        "name": "هامش إضافي",
+        "tooltip": "هامش إضافي بالبكسل يُضاف على كل جانب من مربع التحديد قبل القص."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "جميع القصاصات مكدسة في دفعة صور واحدة."
+      }
+    }
+  },
   "CropMask": {
     "display_name": "قص القناع",
     "inputs": {
@@ -13026,6 +13055,90 @@
     "outputs": {
       "0": {
         "tooltip": null
+      }
+    }
+  },
+  "SDPoseDrawKeypoints": {
+    "display_name": "SDPoseDrawKeypoints",
+    "inputs": {
+      "draw_body": {
+        "name": "رسم الجسم"
+      },
+      "draw_face": {
+        "name": "رسم الوجه"
+      },
+      "draw_feet": {
+        "name": "رسم القدمين"
+      },
+      "draw_hands": {
+        "name": "رسم اليدين"
+      },
+      "face_point_size": {
+        "name": "حجم نقطة الوجه"
+      },
+      "keypoints": {
+        "name": "النقاط الرئيسية"
+      },
+      "score_threshold": {
+        "name": "عتبة الدرجات"
+      },
+      "stick_width": {
+        "name": "عرض الخط"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SDPoseFaceBBoxes": {
+    "display_name": "SDPoseFaceBBoxes",
+    "inputs": {
+      "force_square": {
+        "name": "إجبار الشكل المربع",
+        "tooltip": "توسيع المحور الأقصر لمربع التحديد بحيث تكون منطقة القص دائماً مربعة."
+      },
+      "keypoints": {
+        "name": "النقاط الرئيسية"
+      },
+      "scale": {
+        "name": "المقياس",
+        "tooltip": "معامل ضرب لمساحة مربع التحديد حول كل وجه مكتشف."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "مربعات التحديد",
+        "tooltip": "مربعات تحديد الوجه لكل إطار، متوافقة مع مدخل مربعات التحديد في SDPoseKeypointExtractor."
+      }
+    }
+  },
+  "SDPoseKeypointExtractor": {
+    "description": "استخراج النقاط الرئيسية للوضعية من الصور باستخدام نموذج SDPose: https://huggingface.co/Comfy-Org/SDPose/tree/main/checkpoints",
+    "display_name": "SDPoseKeypointExtractor",
+    "inputs": {
+      "batch_size": {
+        "name": "حجم الدفعة"
+      },
+      "bboxes": {
+        "name": "مربعات التحديد",
+        "tooltip": "مربعات التحديد الاختيارية للحصول على كشف أدق. مطلوبة لاكتشاف عدة أشخاص."
+      },
+      "image": {
+        "name": "الصورة"
+      },
+      "model": {
+        "name": "النموذج"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "النقاط الرئيسية",
+        "tooltip": "النقاط الرئيسية بتنسيق OpenPose (عرض اللوحة، ارتفاع اللوحة، الأشخاص)"
       }
     }
   },

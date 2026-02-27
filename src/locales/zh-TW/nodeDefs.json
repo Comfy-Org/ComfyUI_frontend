@@ -2137,6 +2137,35 @@
       }
     }
   },
+  "CropByBBoxes": {
+    "description": "根據提供的邊界框，從輸入影像批次中裁切並調整區域大小。",
+    "display_name": "CropByBBoxes",
+    "inputs": {
+      "bboxes": {
+        "name": "bboxes"
+      },
+      "image": {
+        "name": "image"
+      },
+      "output_height": {
+        "name": "output_height",
+        "tooltip": "每個裁切區域調整後的高度。"
+      },
+      "output_width": {
+        "name": "output_width",
+        "tooltip": "每個裁切區域調整後的寬度。"
+      },
+      "padding": {
+        "name": "padding",
+        "tooltip": "在裁切前，於邊界框每側額外增加的像素邊距。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "所有裁切區域堆疊為單一影像批次。"
+      }
+    }
+  },
   "CropMask": {
     "display_name": "裁剪遮罩",
     "inputs": {
@@ -13026,6 +13055,90 @@
     "outputs": {
       "0": {
         "tooltip": null
+      }
+    }
+  },
+  "SDPoseDrawKeypoints": {
+    "display_name": "SDPoseDrawKeypoints",
+    "inputs": {
+      "draw_body": {
+        "name": "draw_body"
+      },
+      "draw_face": {
+        "name": "draw_face"
+      },
+      "draw_feet": {
+        "name": "draw_feet"
+      },
+      "draw_hands": {
+        "name": "draw_hands"
+      },
+      "face_point_size": {
+        "name": "face_point_size"
+      },
+      "keypoints": {
+        "name": "keypoints"
+      },
+      "score_threshold": {
+        "name": "score_threshold"
+      },
+      "stick_width": {
+        "name": "stick_width"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SDPoseFaceBBoxes": {
+    "display_name": "SDPoseFaceBBoxes",
+    "inputs": {
+      "force_square": {
+        "name": "force_square",
+        "tooltip": "將較短的邊界框軸向擴展，使裁切區域始終為正方形。"
+      },
+      "keypoints": {
+        "name": "keypoints"
+      },
+      "scale": {
+        "name": "scale",
+        "tooltip": "每個偵測到的臉部邊界框區域的倍率。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "bboxes",
+        "tooltip": "每幀的臉部邊界框，與 SDPoseKeypointExtractor 的 bboxes 輸入相容。"
+      }
+    }
+  },
+  "SDPoseKeypointExtractor": {
+    "description": "使用 SDPose 模型從影像中提取姿勢關鍵點：https://huggingface.co/Comfy-Org/SDPose/tree/main/checkpoints",
+    "display_name": "SDPoseKeypointExtractor",
+    "inputs": {
+      "batch_size": {
+        "name": "batch_size"
+      },
+      "bboxes": {
+        "name": "bboxes",
+        "tooltip": "可選的邊界框以提升偵測準確度。多人偵測時必須提供。"
+      },
+      "image": {
+        "name": "image"
+      },
+      "model": {
+        "name": "model"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "keypoints",
+        "tooltip": "以 OpenPose 幀格式（canvas_width, canvas_height, people）表示的關鍵點"
       }
     }
   },

@@ -699,6 +699,7 @@
     "OPENAI_INPUT_FILES": "ARQUIVOS DE ENTRADA OPENAI",
     "PHOTOMAKER": "photomaker",
     "PIXVERSE_TEMPLATE": "MODELO PIXVERSE",
+    "POSE_KEYPOINT": "POSE_KEYPOINT",
     "RECRAFT_COLOR": "COR RECRAFT",
     "RECRAFT_CONTROLS": "CONTROLES RECRAFT",
     "RECRAFT_V3_STYLE": "ESTILO RECRAFT V3",
@@ -2082,7 +2083,10 @@
     "openNodeManager": "Abrir Gerenciador de Nós",
     "quickFixAvailable": "Correção Rápida Disponível",
     "redHighlight": "vermelho",
+    "replaceAll": "Substituir Todos",
+    "replaceAllWarning": "Substitui todos os nós disponíveis neste grupo.",
     "replaceFailed": "Falha ao substituir nós",
+    "replaceNode": "Substituir Nó",
     "replaceSelected": "Substituir Selecionados ({count})",
     "replaceWarning": "Isso modificará permanentemente o fluxo de trabalho. Salve uma cópia antes se não tiver certeza.",
     "replaceable": "Substituível",
@@ -2090,7 +2094,11 @@
     "replacedAllNodes": "Substituídos {count} tipo(s) de nó",
     "replacedNode": "Nó substituído: {nodeType}",
     "selectAll": "Selecionar Tudo",
-    "skipForNow": "Pular por enquanto"
+    "skipForNow": "Pular por enquanto",
+    "swapNodesGuide": "Os seguintes nós podem ser automaticamente substituídos por alternativas compatíveis.",
+    "swapNodesTitle": "Trocar Nós",
+    "unknownNode": "Desconhecido",
+    "willBeReplacedBy": "Este nó será substituído por:"
   },
   "nodeTemplates": {
     "enterName": "Digite o nome",

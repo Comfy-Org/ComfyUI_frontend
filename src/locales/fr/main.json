@@ -699,6 +699,7 @@
     "OPENAI_INPUT_FILES": "FICHIERS_ENTRÉE_OPENAI",
     "PHOTOMAKER": "PHOTOMAKER",
     "PIXVERSE_TEMPLATE": "Modèle Pixverse",
+    "POSE_KEYPOINT": "POINT CLÉ DE POSE",
     "RECRAFT_COLOR": "Couleur Recraft",
     "RECRAFT_CONTROLS": "Contrôles Recraft",
     "RECRAFT_V3_STYLE": "Style Recraft V3",
@@ -2082,7 +2083,10 @@
     "openNodeManager": "Ouvrir le Gestionnaire de nœuds",
     "quickFixAvailable": "Correction rapide disponible",
     "redHighlight": "rouge",
+    "replaceAll": "Tout remplacer",
+    "replaceAllWarning": "Remplace tous les nœuds disponibles dans ce groupe.",
     "replaceFailed": "Échec du remplacement des nœuds",
+    "replaceNode": "Remplacer le nœud",
     "replaceSelected": "Remplacer la sélection ({count})",
     "replaceWarning": "Cela modifiera définitivement le workflow. Sauvegardez une copie si vous n’êtes pas sûr.",
     "replaceable": "Remplaçable",
@@ -2090,7 +2094,11 @@
     "replacedAllNodes": "{count} type(s) de nœud remplacé(s)",
     "replacedNode": "Nœud remplacé : {nodeType}",
     "selectAll": "Tout sélectionner",
-    "skipForNow": "Ignorer pour l’instant"
+    "skipForNow": "Ignorer pour l’instant",
+    "swapNodesGuide": "Les nœuds suivants peuvent être automatiquement remplacés par des alternatives compatibles.",
+    "swapNodesTitle": "Échanger les nœuds",
+    "unknownNode": "Inconnu",
+    "willBeReplacedBy": "Ce nœud sera remplacé par :"
   },
   "nodeTemplates": {
     "enterName": "Entrez le nom",

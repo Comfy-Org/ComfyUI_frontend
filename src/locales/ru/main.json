@@ -699,6 +699,7 @@
     "OPENAI_INPUT_FILES": "ВХОДНЫЕ_ФАЙЛЫ_OPENAI",
     "PHOTOMAKER": "PHOTOMAKER",
     "PIXVERSE_TEMPLATE": "ШАБЛОН_PIXVERSE",
+    "POSE_KEYPOINT": "POSE_KEYPOINT",
     "RECRAFT_COLOR": "RECRAFT_ЦВЕТ",
     "RECRAFT_CONTROLS": "RECRAFT_УПРАВЛЕНИЯ",
     "RECRAFT_V3_STYLE": "RECRAFT_V3_СТИЛЬ",
@@ -2082,7 +2083,10 @@
     "openNodeManager": "Открыть Менеджер узлов",
     "quickFixAvailable": "Доступно быстрое исправление",
     "redHighlight": "красным",
+    "replaceAll": "Заменить все",
+    "replaceAllWarning": "Заменяет все доступные узлы в этой группе.",
     "replaceFailed": "Не удалось заменить узлы",
+    "replaceNode": "Заменить узел",
     "replaceSelected": "Заменить выбранные ({count})",
     "replaceWarning": "Это действие навсегда изменит рабочий процесс. Сохраните копию, если не уверены.",
     "replaceable": "Можно заменить",
@@ -2090,7 +2094,11 @@
     "replacedAllNodes": "Заменено {count} типов(а) узлов",
     "replacedNode": "Заменённый узел: {nodeType}",
     "selectAll": "Выбрать все",
-    "skipForNow": "Пропустить сейчас"
+    "skipForNow": "Пропустить сейчас",
+    "swapNodesGuide": "Следующие узлы могут быть автоматически заменены совместимыми альтернативами.",
+    "swapNodesTitle": "Заменить узлы",
+    "unknownNode": "Неизвестно",
+    "willBeReplacedBy": "Этот узел будет заменён на:"
   },
   "nodeTemplates": {
     "enterName": "Введите название",

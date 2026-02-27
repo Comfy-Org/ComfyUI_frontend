@@ -2137,6 +2137,35 @@
       }
     }
   },
+  "CropByBBoxes": {
+    "description": "برش و تغییر اندازه نواحی از دسته تصویر ورودی بر اساس جعبه‌های مرزی ارائه‌شده.",
+    "display_name": "CropByBBoxes",
+    "inputs": {
+      "bboxes": {
+        "name": "جعبه‌های مرزی"
+      },
+      "image": {
+        "name": "تصویر"
+      },
+      "output_height": {
+        "name": "ارتفاع خروجی",
+        "tooltip": "ارتفاعی که هر برش به آن تغییر اندازه داده می‌شود."
+      },
+      "output_width": {
+        "name": "عرض خروجی",
+        "tooltip": "عرضی که هر برش به آن تغییر اندازه داده می‌شود."
+      },
+      "padding": {
+        "name": "حاشیه",
+        "tooltip": "حاشیه اضافی (بر حسب پیکسل) که به هر طرف جعبه مرزی قبل از برش اضافه می‌شود."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "تمام برش‌ها به صورت یک دسته تصویر واحد جمع‌آوری شده‌اند."
+      }
+    }
+  },
   "CropMask": {
     "display_name": "برش Mask",
     "inputs": {
@@ -13026,6 +13055,90 @@
     "outputs": {
       "0": {
         "tooltip": null
+      }
+    }
+  },
+  "SDPoseDrawKeypoints": {
+    "display_name": "SDPoseDrawKeypoints",
+    "inputs": {
+      "draw_body": {
+        "name": "ترسیم بدن"
+      },
+      "draw_face": {
+        "name": "ترسیم صورت"
+      },
+      "draw_feet": {
+        "name": "ترسیم پاها"
+      },
+      "draw_hands": {
+        "name": "ترسیم دست‌ها"
+      },
+      "face_point_size": {
+        "name": "اندازه نقطه صورت"
+      },
+      "keypoints": {
+        "name": "نقاط کلیدی"
+      },
+      "score_threshold": {
+        "name": "آستانه امتیاز"
+      },
+      "stick_width": {
+        "name": "ضخامت خط"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SDPoseFaceBBoxes": {
+    "display_name": "SDPoseFaceBBoxes",
+    "inputs": {
+      "force_square": {
+        "name": "اجبار به مربع بودن",
+        "tooltip": "محور کوتاه‌تر جعبه مرزی را گسترش می‌دهد تا ناحیه برش همیشه مربع باشد."
+      },
+      "keypoints": {
+        "name": "نقاط کلیدی"
+      },
+      "scale": {
+        "name": "مقیاس",
+        "tooltip": "ضریب بزرگنمایی برای ناحیه جعبه مرزی اطراف هر صورت شناسایی‌شده."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "جعبه‌های مرزی",
+        "tooltip": "جعبه‌های مرزی صورت برای هر فریم، سازگار با ورودی bboxes در SDPoseKeypointExtractor."
+      }
+    }
+  },
+  "SDPoseKeypointExtractor": {
+    "description": "استخراج نقاط کلیدی ژست از تصاویر با استفاده از مدل SDPose: https://huggingface.co/Comfy-Org/SDPose/tree/main/checkpoints",
+    "display_name": "SDPoseKeypointExtractor",
+    "inputs": {
+      "batch_size": {
+        "name": "اندازه دسته"
+      },
+      "bboxes": {
+        "name": "جعبه‌های مرزی",
+        "tooltip": "جعبه‌های مرزی اختیاری برای تشخیص دقیق‌تر. برای تشخیص چند نفره الزامی است."
+      },
+      "image": {
+        "name": "تصویر"
+      },
+      "model": {
+        "name": "مدل"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "نقاط کلیدی",
+        "tooltip": "نقاط کلیدی در قالب قاب OpenPose (عرض بوم، ارتفاع بوم، افراد)"
       }
     }
   },

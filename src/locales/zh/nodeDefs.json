@@ -2137,6 +2137,35 @@
       }
     }
   },
+  "CropByBBoxes": {
+    "description": "根据提供的边界框，从输入图像批量中裁剪并调整区域大小。",
+    "display_name": "CropByBBoxes",
+    "inputs": {
+      "bboxes": {
+        "name": "bboxes"
+      },
+      "image": {
+        "name": "image"
+      },
+      "output_height": {
+        "name": "output_height",
+        "tooltip": "每个裁剪区域调整后的高度。"
+      },
+      "output_width": {
+        "name": "output_width",
+        "tooltip": "每个裁剪区域调整后的宽度。"
+      },
+      "padding": {
+        "name": "padding",
+        "tooltip": "在裁剪前，每个边界框四周额外添加的像素填充。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "所有裁剪区域堆叠为一个图像批量。"
+      }
+    }
+  },
   "CropMask": {
     "display_name": "裁剪遮罩",
     "inputs": {
@@ -13026,6 +13055,90 @@
     "outputs": {
       "0": {
         "tooltip": null
+      }
+    }
+  },
+  "SDPoseDrawKeypoints": {
+    "display_name": "SDPoseDrawKeypoints",
+    "inputs": {
+      "draw_body": {
+        "name": "draw_body"
+      },
+      "draw_face": {
+        "name": "draw_face"
+      },
+      "draw_feet": {
+        "name": "draw_feet"
+      },
+      "draw_hands": {
+        "name": "draw_hands"
+      },
+      "face_point_size": {
+        "name": "face_point_size"
+      },
+      "keypoints": {
+        "name": "keypoints"
+      },
+      "score_threshold": {
+        "name": "score_threshold"
+      },
+      "stick_width": {
+        "name": "stick_width"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SDPoseFaceBBoxes": {
+    "display_name": "SDPoseFaceBBoxes",
+    "inputs": {
+      "force_square": {
+        "name": "force_square",
+        "tooltip": "扩展较短的边界框轴，使裁剪区域始终为正方形。"
+      },
+      "keypoints": {
+        "name": "keypoints"
+      },
+      "scale": {
+        "name": "scale",
+        "tooltip": "每个检测到的人脸边界框区域的缩放倍数。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "bboxes",
+        "tooltip": "每帧的人脸边界框，可与SDPoseKeypointExtractor的bboxes输入兼容。"
+      }
+    }
+  },
+  "SDPoseKeypointExtractor": {
+    "description": "使用SDPose模型从图像中提取姿态关键点：https://huggingface.co/Comfy-Org/SDPose/tree/main/checkpoints",
+    "display_name": "SDPoseKeypointExtractor",
+    "inputs": {
+      "batch_size": {
+        "name": "batch_size"
+      },
+      "bboxes": {
+        "name": "bboxes",
+        "tooltip": "可选的边界框，用于更精确的检测。多人检测时必需。"
+      },
+      "image": {
+        "name": "image"
+      },
+      "model": {
+        "name": "model"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "keypoints",
+        "tooltip": "OpenPose帧格式的关键点（canvas_width, canvas_height, people）"
       }
     }
   },

@@ -2137,6 +2137,35 @@
       }
     }
   },
+  "CropByBBoxes": {
+    "description": "Rogner et redimensionner des régions du lot d’images d’entrée selon les boîtes englobantes fournies.",
+    "display_name": "CropByBBoxes",
+    "inputs": {
+      "bboxes": {
+        "name": "bboxes"
+      },
+      "image": {
+        "name": "image"
+      },
+      "output_height": {
+        "name": "output_height",
+        "tooltip": "Hauteur à laquelle chaque découpe est redimensionnée."
+      },
+      "output_width": {
+        "name": "output_width",
+        "tooltip": "Largeur à laquelle chaque découpe est redimensionnée."
+      },
+      "padding": {
+        "name": "padding",
+        "tooltip": "Marge supplémentaire en pixels ajoutée de chaque côté de la boîte avant le rognage."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "Toutes les découpes empilées dans un seul lot d’images."
+      }
+    }
+  },
   "CropMask": {
     "display_name": "CropMask",
     "inputs": {
@@ -13026,6 +13055,90 @@
     "outputs": {
       "0": {
         "tooltip": null
+      }
+    }
+  },
+  "SDPoseDrawKeypoints": {
+    "display_name": "SDPoseDrawKeypoints",
+    "inputs": {
+      "draw_body": {
+        "name": "draw_body"
+      },
+      "draw_face": {
+        "name": "draw_face"
+      },
+      "draw_feet": {
+        "name": "draw_feet"
+      },
+      "draw_hands": {
+        "name": "draw_hands"
+      },
+      "face_point_size": {
+        "name": "face_point_size"
+      },
+      "keypoints": {
+        "name": "keypoints"
+      },
+      "score_threshold": {
+        "name": "score_threshold"
+      },
+      "stick_width": {
+        "name": "stick_width"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SDPoseFaceBBoxes": {
+    "display_name": "SDPoseFaceBBoxes",
+    "inputs": {
+      "force_square": {
+        "name": "force_square",
+        "tooltip": "Agrandir l’axe le plus court de la boîte pour que la région découpée soit toujours carrée."
+      },
+      "keypoints": {
+        "name": "keypoints"
+      },
+      "scale": {
+        "name": "scale",
+        "tooltip": "Multiplicateur pour la zone de la boîte englobante autour de chaque visage détecté."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "bboxes",
+        "tooltip": "Boîtes englobantes des visages par image, compatibles avec l’entrée bboxes de SDPoseKeypointExtractor."
+      }
+    }
+  },
+  "SDPoseKeypointExtractor": {
+    "description": "Extraire les points clés de pose à partir d’images en utilisant le modèle SDPose : https://huggingface.co/Comfy-Org/SDPose/tree/main/checkpoints",
+    "display_name": "SDPoseKeypointExtractor",
+    "inputs": {
+      "batch_size": {
+        "name": "batch_size"
+      },
+      "bboxes": {
+        "name": "bboxes",
+        "tooltip": "Boîtes englobantes optionnelles pour des détections plus précises. Requis pour la détection multi-personnes."
+      },
+      "image": {
+        "name": "image"
+      },
+      "model": {
+        "name": "model"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "keypoints",
+        "tooltip": "Points clés au format OpenPose (canvas_width, canvas_height, people)"
       }
     }
   },

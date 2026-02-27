@@ -2137,6 +2137,35 @@
       }
     }
   },
+  "CropByBBoxes": {
+    "description": "Recorta y redimensiona regiones del lote de imágenes de entrada según las cajas delimitadoras proporcionadas.",
+    "display_name": "CropByBBoxes",
+    "inputs": {
+      "bboxes": {
+        "name": "cajas delimitadoras"
+      },
+      "image": {
+        "name": "imagen"
+      },
+      "output_height": {
+        "name": "alto de salida",
+        "tooltip": "Alto al que se redimensiona cada recorte."
+      },
+      "output_width": {
+        "name": "ancho de salida",
+        "tooltip": "Ancho al que se redimensiona cada recorte."
+      },
+      "padding": {
+        "name": "relleno",
+        "tooltip": "Relleno extra en píxeles añadido a cada lado de la caja antes de recortar."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "Todos los recortes apilados en un solo lote de imágenes."
+      }
+    }
+  },
   "CropMask": {
     "display_name": "CropMask",
     "inputs": {
@@ -13026,6 +13055,90 @@
     "outputs": {
       "0": {
         "tooltip": null
+      }
+    }
+  },
+  "SDPoseDrawKeypoints": {
+    "display_name": "SDPoseDrawKeypoints",
+    "inputs": {
+      "draw_body": {
+        "name": "dibujar cuerpo"
+      },
+      "draw_face": {
+        "name": "dibujar rostro"
+      },
+      "draw_feet": {
+        "name": "dibujar pies"
+      },
+      "draw_hands": {
+        "name": "dibujar manos"
+      },
+      "face_point_size": {
+        "name": "tamaño de punto facial"
+      },
+      "keypoints": {
+        "name": "puntos clave"
+      },
+      "score_threshold": {
+        "name": "umbral de puntuación"
+      },
+      "stick_width": {
+        "name": "ancho de línea"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SDPoseFaceBBoxes": {
+    "display_name": "SDPoseFaceBBoxes",
+    "inputs": {
+      "force_square": {
+        "name": "forzar cuadrado",
+        "tooltip": "Expande el eje más corto de la caja para que la región recortada sea siempre cuadrada."
+      },
+      "keypoints": {
+        "name": "puntos clave"
+      },
+      "scale": {
+        "name": "escala",
+        "tooltip": "Multiplicador para el área de la caja delimitadora alrededor de cada rostro detectado."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "cajas delimitadoras",
+        "tooltip": "Cajas delimitadoras de rostro por fotograma, compatibles con la entrada de cajas delimitadoras de SDPoseKeypointExtractor."
+      }
+    }
+  },
+  "SDPoseKeypointExtractor": {
+    "description": "Extrae puntos clave de pose de imágenes usando el modelo SDPose: https://huggingface.co/Comfy-Org/SDPose/tree/main/checkpoints",
+    "display_name": "SDPoseKeypointExtractor",
+    "inputs": {
+      "batch_size": {
+        "name": "tamaño de lote"
+      },
+      "bboxes": {
+        "name": "cajas delimitadoras",
+        "tooltip": "Cajas delimitadoras opcionales para detecciones más precisas. Requerido para la detección de múltiples personas."
+      },
+      "image": {
+        "name": "imagen"
+      },
+      "model": {
+        "name": "modelo"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "puntos clave",
+        "tooltip": "Puntos clave en formato de marco OpenPose (ancho_lienzo, alto_lienzo, personas)"
       }
     }
   },

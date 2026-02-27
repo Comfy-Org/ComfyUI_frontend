@@ -699,6 +699,7 @@
     "OPENAI_INPUT_FILES": "ARCHIVOS_ENTRADA_OPENAI",
     "PHOTOMAKER": "PHOTOMAKER",
     "PIXVERSE_TEMPLATE": "PLANTILLA PIXVERSE",
+    "POSE_KEYPOINT": "POSE_KEYPOINT",
     "RECRAFT_COLOR": "COLOR RECRAFT",
     "RECRAFT_CONTROLS": "CONTROLES RECRAFT",
     "RECRAFT_V3_STYLE": "ESTILO RECRAFT V3",
@@ -2082,7 +2083,10 @@
     "openNodeManager": "Abrir Administrador de Nodos",
     "quickFixAvailable": "Solución rápida disponible",
     "redHighlight": "rojo",
+    "replaceAll": "Reemplazar todo",
+    "replaceAllWarning": "Reemplaza todos los nodos disponibles en este grupo.",
     "replaceFailed": "Error al reemplazar nodos",
+    "replaceNode": "Reemplazar nodo",
     "replaceSelected": "Reemplazar seleccionados ({count})",
     "replaceWarning": "Esto modificará permanentemente el flujo de trabajo. Guarda una copia primero si no estás seguro.",
     "replaceable": "Reemplazable",
@@ -2090,7 +2094,11 @@
     "replacedAllNodes": "Reemplazados {count} tipo(s) de nodo",
     "replacedNode": "Nodo reemplazado: {nodeType}",
     "selectAll": "Seleccionar todo",
-    "skipForNow": "Omitir por ahora"
+    "skipForNow": "Omitir por ahora",
+    "swapNodesGuide": "Los siguientes nodos pueden ser reemplazados automáticamente por alternativas compatibles.",
+    "swapNodesTitle": "Intercambiar nodos",
+    "unknownNode": "Desconocido",
+    "willBeReplacedBy": "Este nodo será reemplazado por:"
   },
   "nodeTemplates": {
     "enterName": "Introduzca el nombre",

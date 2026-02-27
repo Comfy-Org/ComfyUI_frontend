@@ -699,6 +699,7 @@
     "OPENAI_INPUT_FILES": "OPENAI_GİRİŞ_DOSYALARI",
     "PHOTOMAKER": "PHOTOMAKER",
     "PIXVERSE_TEMPLATE": "PIXVERSE_ŞABLONU",
+    "POSE_KEYPOINT": "POZ ANAHTAR NOKTASI",
     "RECRAFT_COLOR": "RECRAFT_RENK",
     "RECRAFT_CONTROLS": "RECRAFT_KONTROLLERİ",
     "RECRAFT_V3_STYLE": "RECRAFT_V3_STİLİ",
@@ -2082,7 +2083,10 @@
     "openNodeManager": "Node Manager'ı Aç",
     "quickFixAvailable": "Hızlı Düzeltme Mevcut",
     "redHighlight": "kırmızı",
+    "replaceAll": "Hepsini Değiştir",
+    "replaceAllWarning": "Bu gruptaki mevcut tüm düğümleri değiştirir.",
     "replaceFailed": "Düğümler değiştirilemedi",
+    "replaceNode": "Düğümü Değiştir",
     "replaceSelected": "Seçilenleri Değiştir ({count})",
     "replaceWarning": "Bu işlem iş akışını kalıcı olarak değiştirecek. Emin değilseniz önce bir kopyasını kaydedin.",
     "replaceable": "Değiştirilebilir",
@@ -2090,7 +2094,11 @@
     "replacedAllNodes": "{count} düğüm türü değiştirildi",
     "replacedNode": "Değiştirilen düğüm: {nodeType}",
     "selectAll": "Tümünü Seç",
-    "skipForNow": "Şimdilik Atla"
+    "skipForNow": "Şimdilik Atla",
+    "swapNodesGuide": "Aşağıdaki düğümler, uyumlu alternatiflerle otomatik olarak değiştirilebilir.",
+    "swapNodesTitle": "Düğümleri Değiştir",
+    "unknownNode": "Bilinmeyen",
+    "willBeReplacedBy": "Bu düğüm şununla değiştirilecek:"
   },
   "nodeTemplates": {
     "enterName": "İsim girin",

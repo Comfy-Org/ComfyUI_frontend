@@ -699,6 +699,7 @@
     "OPENAI_INPUT_FILES": "ملفات إدخال أوبن إيه آي",
     "PHOTOMAKER": "صانع الصور",
     "PIXVERSE_TEMPLATE": "قالب PixVerse",
+    "POSE_KEYPOINT": "نقطة مفتاحية للوضعية",
     "RECRAFT_COLOR": "لون Recraft",
     "RECRAFT_CONTROLS": "عناصر تحكم Recraft",
     "RECRAFT_V3_STYLE": "نمط Recraft V3",
@@ -2082,7 +2083,10 @@
     "openNodeManager": "فتح مدير العقد",
     "quickFixAvailable": "إصلاح سريع متاح",
     "redHighlight": "أحمر",
+    "replaceAll": "استبدال الكل",
+    "replaceAllWarning": "سيتم استبدال جميع العقد المتاحة في هذه المجموعة.",
     "replaceFailed": "فشل في استبدال العقد",
+    "replaceNode": "استبدال العقدة",
     "replaceSelected": "استبدال المحدد ({count})",
     "replaceWarning": "سيؤدي هذا إلى تعديل سير العمل بشكل دائم. احفظ نسخة أولاً إذا لم تكن متأكدًا.",
     "replaceable": "قابل للاستبدال",
@@ -2090,7 +2094,11 @@
     "replacedAllNodes": "تم استبدال {count} نوع/أنواع من العقد",
     "replacedNode": "تم استبدال العقدة: {nodeType}",
     "selectAll": "تحديد الكل",
-    "skipForNow": "تخطي الآن"
+    "skipForNow": "تخطي الآن",
+    "swapNodesGuide": "يمكن استبدال العقد التالية تلقائيًا ببدائل متوافقة.",
+    "swapNodesTitle": "تبديل العقد",
+    "unknownNode": "غير معروف",
+    "willBeReplacedBy": "سيتم استبدال هذه العقدة بـ:"
   },
   "nodeTemplates": {
     "enterName": "أدخل الاسم",
