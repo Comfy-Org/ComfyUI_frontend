@@ -445,6 +445,7 @@ export class LinkConnector {
     this.state.connectingTo = 'input'
 
     this._setLegacyLinks(false)
+    this.events.dispatch('connecting', { connectingTo: 'input' })
   }
 
   dragNewFromSubgraphOutput(
@@ -466,6 +467,7 @@ export class LinkConnector {
     this.state.connectingTo = 'output'
 
     this._setLegacyLinks(true)
+    this.events.dispatch('connecting', { connectingTo: 'output' })
   }
 
   /**
@@ -878,7 +880,10 @@ export class LinkConnector {
       (link) => link instanceof MovingInputLink && link.disconnectOnDrop
     ).forEach((link) => (link as MovingLinkBase).disconnect())
     if (this.renderLinks.length === 0) return
-    // For external event only.
+
+    const intercepted = this.events.dispatch('before-drop-on-canvas', event)
+    if (intercepted === false) return
+
     const mayContinue = this.events.dispatch('dropped-on-canvas', event)
     if (mayContinue === false) return
 
