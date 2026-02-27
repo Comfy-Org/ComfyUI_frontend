@@ -156,6 +156,7 @@
 :root {
   --fg-color: #000;
   --bg-color: #fff;
+  --default-transition-duration: 0.1s;
   --comfy-menu-bg: #353535;
   --comfy-menu-secondary-bg: #292929;
   --comfy-topbar-height: 2.5rem;

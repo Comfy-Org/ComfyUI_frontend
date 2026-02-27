@@ -3,7 +3,7 @@ import { defineStore } from 'pinia'
 import { computed, markRaw, ref, shallowRef } from 'vue'
 import type { Raw } from 'vue'
 
-import { useAppModeStore } from '@/stores/appModeStore'
+import { useAppMode } from '@/composables/useAppMode'
 
 import type { Point, Positionable } from '@/lib/litegraph/src/interfaces'
 import type {
@@ -44,10 +44,11 @@ export const useCanvasStore = defineStore('canvas', () => {
   // Reactive scale percentage that syncs with app.canvas.ds.scale
   const appScalePercentage = ref(100)
 
+  const { isAppMode, setMode } = useAppMode()
   const linearMode = computed({
-    get: () => useAppModeStore().isAppMode,
+    get: () => isAppMode.value,
     set: (val: boolean) => {
-      useAppModeStore().setMode(val ? 'app' : 'graph')
+      setMode(val ? 'app' : 'graph')
     }
   })
 

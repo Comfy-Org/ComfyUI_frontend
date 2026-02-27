@@ -2,6 +2,7 @@
 import { breakpointsTailwind, unrefElement, useBreakpoints } from '@vueuse/core'
 import Splitter from 'primevue/splitter'
 import SplitterPanel from 'primevue/splitterpanel'
+import { storeToRefs } from 'pinia'
 import { computed, useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -12,17 +13,20 @@ import TopbarBadges from '@/components/topbar/TopbarBadges.vue'
 import WorkflowTabs from '@/components/topbar/WorkflowTabs.vue'
 import TypeformPopoverButton from '@/components/ui/TypeformPopoverButton.vue'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { cn } from '@/utils/tailwindUtil'
 import LinearControls from '@/renderer/extensions/linearMode/LinearControls.vue'
 import LinearPreview from '@/renderer/extensions/linearMode/LinearPreview.vue'
 import LinearProgressBar from '@/renderer/extensions/linearMode/LinearProgressBar.vue'
 import MobileMenu from '@/renderer/extensions/linearMode/MobileMenu.vue'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
+import { useAppMode } from '@/composables/useAppMode'
 import { useAppModeStore } from '@/stores/appModeStore'
 
 const { t } = useI18n()
 const settingStore = useSettingStore()
 const workspaceStore = useWorkspaceStore()
-const appModeStore = useAppModeStore()
+const { isBuilderMode } = useAppMode()
+const { hasOutputs } = storeToRefs(useAppModeStore())
 
 const mobileDisplay = useBreakpoints(breakpointsTailwind).smaller('md')
 
@@ -31,10 +35,14 @@ const sidebarOnLeft = computed(
   () => settingStore.get('Comfy.Sidebar.Location') === 'left'
 )
 const hasLeftPanel = computed(
-  () => (sidebarOnLeft.value && activeTab.value) || !sidebarOnLeft.value
+  () =>
+    (sidebarOnLeft.value && activeTab.value) ||
+    (!sidebarOnLeft.value && !isBuilderMode.value && hasOutputs.value)
 )
 const hasRightPanel = computed(
-  () => sidebarOnLeft.value || (!sidebarOnLeft.value && activeTab.value)
+  () =>
+    (sidebarOnLeft.value && !isBuilderMode.value && hasOutputs.value) ||
+    (!sidebarOnLeft.value && activeTab.value)
 )
 
 const bottomLeftRef = useTemplateRef('bottomLeftRef')
@@ -105,22 +113,27 @@ const linearWorkflowRef = useTemplateRef('linearWorkflowRef')
           class="absolute top-0 left-0 w-[calc(100%+16px)] z-21"
         />
         <LinearPreview :run-button-click="linearWorkflowRef?.runButtonClick" />
-        <div class="absolute z-21 top-1 left-1">
-          <AppModeToolbar v-if="!appModeStore.isBuilderMode" />
+        <div class="absolute z-21 top-4 left-4">
+          <AppModeToolbar v-if="!isBuilderMode" />
         </div>
-        <div ref="bottomLeftRef" class="absolute z-20 bottom-4 left-4" />
-        <div ref="bottomRightRef" class="absolute z-20 bottom-24 right-4" />
+        <div ref="bottomLeftRef" class="absolute z-20 bottom-7 left-4" />
+        <div ref="bottomRightRef" class="absolute z-20 bottom-7 right-4" />
         <div
-          class="absolute z-20 bottom-4 right-4 text-base-foreground flex items-center gap-4"
+          :class="
+            cn(
+              'absolute z-20 bottom-4 text-base-foreground flex items-center gap-2',
+              sidebarOnLeft ? 'left-4' : 'right-4'
+            )
+          "
         >
           <TypeformPopoverButton
             data-tf-widget="gmVqFi8l"
-            :align="
-              settingStore.get('Comfy.Sidebar.Location') === 'left'
-                ? 'end'
-                : 'start'
-            "
+            :align="sidebarOnLeft ? 'start' : 'end'"
           />
+          <div class="flex flex-col text-sm text-muted-foreground">
+            <span>{{ t('linearMode.beta') }}</span>
+            <span>{{ t('linearMode.giveFeedback') }}</span>
+          </div>
         </div>
       </SplitterPanel>
       <SplitterPanel

@@ -20,7 +20,7 @@
             class="w-full justify-between text-sm font-light"
             variant="textonly"
             size="md"
-            @click="onToggleDockedJobHistory"
+            @click="onToggleDockedJobHistory(close)"
           >
             <span class="flex items-center gap-2">
               <i
@@ -97,6 +97,7 @@ import Button from '@/components/ui/button/Button.vue'
 import { buildTooltipConfig } from '@/composables/useTooltipConfig'
 import { isCloud } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 
 const emit = defineEmits<{
   (e: 'clearHistory'): void
@@ -104,6 +105,7 @@ const emit = defineEmits<{
 
 const { t } = useI18n()
 const settingStore = useSettingStore()
+const sidebarTabStore = useSidebarTabStore()
 
 const moreTooltipConfig = computed(() => buildTooltipConfig(t('g.more')))
 const isQueuePanelV2Enabled = computed(() =>
@@ -119,8 +121,23 @@ const onClearHistoryFromMenu = (close: () => void) => {
   emit('clearHistory')
 }
 
-const onToggleDockedJobHistory = async () => {
-  await settingStore.set('Comfy.Queue.QPOV2', !isQueuePanelV2Enabled.value)
+const onToggleDockedJobHistory = async (close: () => void) => {
+  close()
+
+  try {
+    if (isQueuePanelV2Enabled.value) {
+      await settingStore.setMany({
+        'Comfy.Queue.QPOV2': false,
+        'Comfy.Queue.History.Expanded': true
+      })
+      return
+    }
+
+    sidebarTabStore.activeSidebarTabId = 'job-history'
+    await settingStore.set('Comfy.Queue.QPOV2', true)
+  } catch {
+    return
+  }
 }
 
 const onToggleRunProgressBar = async () => {

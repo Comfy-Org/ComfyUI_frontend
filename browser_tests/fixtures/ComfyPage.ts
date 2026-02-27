@@ -24,6 +24,7 @@ import {
 } from './components/SidebarTab'
 import { Topbar } from './components/Topbar'
 import { CanvasHelper } from './helpers/CanvasHelper'
+import { PerformanceHelper } from './helpers/PerformanceHelper'
 import { ClipboardHelper } from './helpers/ClipboardHelper'
 import { CommandHelper } from './helpers/CommandHelper'
 import { DragDropHelper } from './helpers/DragDropHelper'
@@ -185,6 +186,7 @@ export class ComfyPage {
   public readonly dragDrop: DragDropHelper
   public readonly command: CommandHelper
   public readonly bottomPanel: BottomPanel
+  public readonly perf: PerformanceHelper
 
   /** Worker index to test user ID */
   public readonly userIds: string[] = []
@@ -229,6 +231,7 @@ export class ComfyPage {
     this.dragDrop = new DragDropHelper(page, this.assetPath.bind(this))
     this.command = new CommandHelper(page)
     this.bottomPanel = new BottomPanel(page)
+    this.perf = new PerformanceHelper(page)
   }
 
   get visibleToasts() {
@@ -436,7 +439,13 @@ export const comfyPageFixture = base.extend<{
     }
 
     await comfyPage.setup()
+
+    const isPerf = testInfo.tags.includes('@perf')
+    if (isPerf) await comfyPage.perf.init()
+
     await use(comfyPage)
+
+    if (isPerf) await comfyPage.perf.dispose()
   },
   comfyMouse: async ({ comfyPage }, use) => {
     const comfyMouse = new ComfyMouse(comfyPage)

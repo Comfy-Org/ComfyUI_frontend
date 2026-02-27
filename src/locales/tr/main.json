@@ -225,6 +225,7 @@
     "login": {
       "andText": "ve",
       "backToLogin": "Girişe dön",
+      "backToSocialLogin": "Bunun yerine Google veya Github ile kaydolun",
       "confirmPasswordLabel": "Şifreyi Onayla",
       "confirmPasswordPlaceholder": "Aynı şifreyi tekrar girin",
       "didntReceiveEmail": "E-posta almadınız mı? Bize şu adresten ulaşın:",
@@ -233,6 +234,9 @@
       "failed": "Giriş başarısız",
       "forgotPassword": "Şifrenizi mi unuttunuz?",
       "forgotPasswordError": "Şifre sıfırlama e-postası gönderilemedi",
+      "freeTierBadge": "Ücretsiz Katman Uygun",
+      "freeTierDescription": "Google ile kaydolun, her ay {credits} ücretsiz kredi kazanın. Kart gerekmez.",
+      "freeTierDescriptionGeneric": "Google ile kaydolun, her ay ücretsiz kredi kazanın. Kart gerekmez.",
       "insecureContextWarning": "Bu bağlantı güvensiz (HTTP) - giriş yapmaya devam ederseniz kimlik bilgileriniz saldırganlar tarafından ele geçirilebilir.",
       "loginButton": "Giriş Yap",
       "loginWithGithub": "Github ile giriş yap",
@@ -251,11 +255,13 @@
       "sendResetLink": "Sıfırlama bağlantısını gönder",
       "signInOrSignUp": "Giriş Yap / Kaydol",
       "signUp": "Kaydol",
+      "signUpFreeTierPromo": "Yeni misiniz? Her ay {credits} ücretsiz kredi almak için Google ile {signUp} olun.",
       "success": "Giriş başarılı",
       "termsLink": "Kullanım Koşullarımızı",
       "termsText": "\"İleri\" veya \"Kaydol\" düğmesine tıklayarak,",
       "title": "Hesabınıza giriş yapın",
       "useApiKey": "Comfy API Anahtarı",
+      "useEmailInstead": "Bunun yerine e-posta kullan",
       "userAvatar": "Kullanıcı Avatarı"
     },
     "loginButton": {
@@ -282,6 +288,7 @@
     "signup": {
       "alreadyHaveAccount": "Zaten bir hesabınız var mı?",
       "emailLabel": "E-posta",
+      "emailNotEligibleForFreeTier": "E-posta ile kayıt Ücretsiz Katman için uygun değildir.",
       "emailPlaceholder": "E-postanızı girin",
       "passwordLabel": "Şifre",
       "passwordPlaceholder": "Yeni şifre girin",
@@ -293,6 +300,9 @@
       "signUpWithGoogle": "Google ile kaydol",
       "title": "Hesap oluşturun"
     }
+  },
+  "batch": {
+    "index": "{current} / {total}"
   },
   "billingOperation": {
     "subscriptionFailed": "Abonelik güncellemesi başarısız oldu",
@@ -315,8 +325,36 @@
     "deleteBlueprint": "Taslağı Sil",
     "deleteWorkflow": "İş Akışını Sil",
     "duplicate": "Çoğalt",
+    "enterAppMode": "Uygulama moduna gir",
     "enterNewName": "Yeni isim girin",
-    "missingNodesWarning": "İş akışında desteklenmeyen düğümler var (kırmızı ile vurgulanmış)."
+    "exitAppMode": "Uygulama modundan çık",
+    "missingNodesWarning": "İş akışında desteklenmeyen düğümler var (kırmızı ile vurgulanmış).",
+    "workflowActions": "İş akışı işlemleri"
+  },
+  "builderToolbar": {
+    "app": "Uygulama",
+    "appDescription": "Varsayılan olarak uygulama olarak açılır",
+    "arrange": "Önizleme",
+    "arrangeDescription": "Uygulama düzenini gözden geçir",
+    "connectOutput": "Bir çıktı bağla",
+    "connectOutputBody1": "Uygulamanızın kaydedilebilmesi için en az bir çıktı bağlanmalıdır.",
+    "connectOutputBody2": "'Seç' adımına geçin ve çıktı düğümlerine tıklayarak buraya ekleyin.",
+    "filename": "Dosya adı",
+    "label": "Uygulama Oluşturucu",
+    "nodeGraph": "Düğüm grafiği",
+    "nodeGraphDescription": "Varsayılan olarak düğüm grafiği olarak açılır",
+    "save": "Kaydet",
+    "saveAs": "Farklı kaydet",
+    "saveAsLabel": "Bu iş akışını farklı kaydet ...",
+    "saveDescription": "Kaydet ve bitir",
+    "saveSuccess": "Başarıyla kaydedildi",
+    "saveSuccessAppMessage": "'{name}' kaydedildi. Artık varsayılan olarak Uygulama Modunda açılacak.",
+    "saveSuccessAppPrompt": "Şimdi görüntülemek ister misiniz?",
+    "saveSuccessGraphMessage": "'{name}' kaydedildi. Varsayılan olarak düğüm grafiği olarak açılacak.",
+    "select": "Seç",
+    "selectDescription": "Girdi/çıktı seçin",
+    "switchToSelect": "Seç'e Geç",
+    "viewApp": "Uygulamayı görüntüle"
   },
   "clipboard": {
     "errorMessage": "Panoya kopyalanamadı",
@@ -661,6 +699,7 @@
     "OPENAI_INPUT_FILES": "OPENAI_GİRİŞ_DOSYALARI",
     "PHOTOMAKER": "PHOTOMAKER",
     "PIXVERSE_TEMPLATE": "PIXVERSE_ŞABLONU",
+    "POSE_KEYPOINT": "POZ ANAHTAR NOKTASI",
     "RECRAFT_COLOR": "RECRAFT_RENK",
     "RECRAFT_CONTROLS": "RECRAFT_KONTROLLERİ",
     "RECRAFT_V3_STYLE": "RECRAFT_V3_STİLİ",
@@ -879,6 +918,7 @@
     "enableSelected": "Seçilenleri Etkinleştir",
     "enabled": "Etkin",
     "enabling": "{id} etkinleştiriliyor",
+    "enter": "Giriş",
     "enterBaseName": "Temel adı girin",
     "enterNewName": "Yeni adı girin",
     "enterNewNamePrompt": "Yeni adı girin:",
@@ -919,6 +959,7 @@
     "imageUrl": "Görsel URL'si",
     "import": "İçe Aktar",
     "inProgress": "Devam ediyor",
+    "inSubgraph": "'{name}' alt grafında",
     "increment": "Arttır",
     "info": "Düğüm Bilgisi",
     "input": "Girdi",
@@ -1076,6 +1117,7 @@
     "updated": "Güncellendi",
     "updating": "{id} güncelleniyor",
     "upload": "Yükle",
+    "uploadAlreadyInProgress": "Yükleme zaten devam ediyor",
     "usageHint": "Kullanım ipucu",
     "use": "Kullan",
     "user": "Kullanıcı",
@@ -1149,6 +1191,8 @@
     "star": "Yıldız"
   },
   "imageCompare": {
+    "batchLabelA": "A:",
+    "batchLabelB": "B:",
     "noImages": "Karşılaştırılacak görsel yok"
   },
   "imageCrop": {
@@ -1282,20 +1326,55 @@
     "helpFix": "Bunu Düzeltmeye Yardım Et"
   },
   "linearMode": {
+    "appModeToolbar": {
+      "appBuilder": "Uygulama oluşturucu",
+      "apps": "Uygulamalar"
+    },
+    "arrange": {
+      "atLeastOne": "en az bir",
+      "connectAtLeastOne": "Kullanıcıların çalıştırdıktan sonra sonuçları görebilmesi için {atLeastOne} çıktı düğümünü bağlayın.",
+      "noOutputs": "Henüz çıktı eklenmedi",
+      "outputExamples": "Örnekler: 'Görseli Kaydet' veya 'Videoyu Kaydet'",
+      "outputs": "Çıktılar",
+      "resultsLabel": "Seçili çıktı düğüm(ler)inden üretilen sonuçlar bu uygulama çalıştırıldıktan sonra burada gösterilecektir.",
+      "switchToSelect": "'Seç' adımına geçin ve çıktı düğümlerine tıklayarak buraya ekleyin.",
+      "switchToSelectButton": "Seç'e Geç"
+    },
     "beta": "Uygulama Modu Beta - Geri Bildirim Verin",
+    "builder": {
+      "exit": "Oluşturucudan çık",
+      "exitConfirmMessage": "Kaydedilmemiş değişiklikleriniz kaybolacak\nKaydetmeden çıkılsın mı?",
+      "exitConfirmTitle": "Uygulama oluşturucudan çıkılsın mı?",
+      "inputsDesc": "Kullanıcılar bunlarla etkileşime geçip ayarlayarak çıktılarını oluşturacak.",
+      "inputsExample": "Örnekler: “Resim yükle”, “Metin istemi”, “Adımlar”",
+      "noInputs": "Henüz giriş eklenmedi",
+      "noOutputs": "Henüz çıktı düğümü eklenmedi",
+      "outputsDesc": "Kullanıcıların çalıştırdıktan sonra sonuçları görebilmesi için en az bir çıktı düğümü bağlayın.",
+      "outputsExample": "Örnekler: “Resmi Kaydet” veya “Videoyu Kaydet”",
+      "promptAddInputs": "Girdi olarak eklemek için düğüm parametrelerine tıklayın",
+      "promptAddOutputs": "Çıktı olarak eklemek için çıktı düğümlerine tıklayın. Bunlar oluşturulan sonuçlar olacak.",
+      "title": "Uygulama oluşturucu modu"
+    },
     "downloadAll": "Tümünü İndir",
     "dragAndDropImage": "Bir görseli sürükleyip bırakın",
+    "giveFeedback": "Geri bildirim ver",
     "graphMode": "Grafik Modu",
     "linearMode": "Uygulama Modu",
+    "queue": {
+      "clear": "Kuyruğu temizle",
+      "clickToClear": "Kuyruğu temizlemek için tıklayın"
+    },
     "rerun": "Tekrar Çalıştır",
     "reuseParameters": "Parametreleri Yeniden Kullan",
     "runCount": "Çalıştırma sayısı:",
     "welcome": {
-      "intro": "Düğüm grafiğini gizleyerek odaklanmanızı sağlayan basitleştirilmiş bir görünüm.",
-      "layout": "Solda oluşturulan görsellerinizi, videolarınızı ve çıktılarınızı göreceksiniz. Sağda ise sadece ihtiyacınız olan kontroller var. Karmaşık her şey gözden uzak.",
+      "backToWorkflow": "İş akışına geri dön",
+      "buildApp": "Uygulama oluştur",
+      "controls": "Çıktılarınız altta, kontrolleriniz sağda görünür. Diğer her şey arka planda kalır.",
+      "getStarted": "Başlamak için {runButton} tıklayın.",
+      "message": "Düğüm grafiğini gizleyerek odaklanmanıza yardımcı olan basitleştirilmiş bir görünüm.",
       "sharing": "Paylaşmak çok kolay: iş akışınızı oluşturun, Uygulama Modunu açın, sekmeye sağ tıklayın ve dışa aktarın. Başkaları dosyanızı açtığında, doğrudan bu sade görünüme geçer. Güçlü iş akışlarını, kimsenin düğüm grafiğini anlamasına gerek kalmadan basit araçlar olarak paylaşabilirsiniz.",
-      "title": "Uygulama Moduna Hoş Geldiniz",
-      "widget": "Hangi ayarların görüneceğini kontrol etmek istiyorsanız, üst düzey düğümlerinizi bir alt grafiğe dönüştürün, ardından üstündeki araç kutusunda widget tanıtımını kullanarak nelerin görüneceğini seçin."
+      "title": "Uygulama Moduna Hoş Geldiniz"
     }
   },
   "load3d": {
@@ -1504,6 +1583,9 @@
     "nodePack": "Düğüm Paketi",
     "nodePackInfo": "Düğüm Paketi Bilgisi",
     "notAvailable": "Mevcut Değil",
+    "packInstall": {
+      "nodeIdRequired": "Kurulum için Düğüm Kimliği gereklidir"
+    },
     "packsSelected": "paket seçildi",
     "repository": "Depo",
     "restartToApplyChanges": "Değişiklikleri uygulamak için lütfen ComfyUI'yi yeniden başlatın",
@@ -1818,11 +1900,18 @@
     "showLinks": "Bağlantıları Göster"
   },
   "missingModelsDialog": {
+    "customModelsInstruction": "Bunları manuel olarak bulup indirmeniz gerekecek. İnternette arayın (Civitai veya Hugging Face deneyin) ya da orijinal iş akışı sağlayıcısıyla iletişime geçin.",
+    "customModelsWarning": "Bunlardan bazıları tanımadığımız özel modellerdir.",
+    "description": "Bu iş akışı, henüz indirmediğiniz modellere ihtiyaç duyuyor.",
     "doNotAskAgain": "Bunu bir daha gösterme",
-    "missingModels": "Eksik Modeller",
-    "missingModelsMessage": "Grafik yüklenirken aşağıdaki modeller bulunamadı",
+    "downloadAll": "Hepsini indir",
+    "downloadAvailable": "İndirilebilir",
+    "footerDescription": "Bu modelleri indirip doğru klasöre yerleştirin.\nEksik modeli olan düğümler tuvalde kırmızı ile vurgulanır.",
+    "gotIt": "Tamam, anladım",
     "reEnableInSettings": "{link} içinde tekrar etkinleştir",
-    "reEnableInSettingsLink": "Ayarlar"
+    "reEnableInSettingsLink": "Ayarlar",
+    "title": "Bu iş akışında eksik modeller var",
+    "totalSize": "Toplam indirme boyutu:"
   },
   "missingNodes": {
     "cloud": {
@@ -1844,6 +1933,14 @@
       "label": "Önizleme Sürümü",
       "tooltip": "ComfyUI'nin nightly sürümünü kullanıyorsunuz. Lütfen bu özelliklerle ilgili görüşlerinizi paylaşmak için geri bildirim butonunu kullanın."
     }
+  },
+  "nightlySurvey": {
+    "accept": "Tabii, yardımcı olacağım!",
+    "description": "Bu özelliği kullanıyorsunuz. Geri bildiriminizi bizimle paylaşır mısınız?",
+    "dontAskAgain": "Bir daha sorma",
+    "loadError": "Anket yüklenemedi. Lütfen daha sonra tekrar deneyin.",
+    "notNow": "Şimdi değil",
+    "title": "Bize Yardımcı Olun"
   },
   "nodeCategories": {
     "": "",
@@ -1986,7 +2083,10 @@
     "openNodeManager": "Node Manager'ı Aç",
     "quickFixAvailable": "Hızlı Düzeltme Mevcut",
     "redHighlight": "kırmızı",
+    "replaceAll": "Hepsini Değiştir",
+    "replaceAllWarning": "Bu gruptaki mevcut tüm düğümleri değiştirir.",
     "replaceFailed": "Düğümler değiştirilemedi",
+    "replaceNode": "Düğümü Değiştir",
     "replaceSelected": "Seçilenleri Değiştir ({count})",
     "replaceWarning": "Bu işlem iş akışını kalıcı olarak değiştirecek. Emin değilseniz önce bir kopyasını kaydedin.",
     "replaceable": "Değiştirilebilir",
@@ -1994,7 +2094,11 @@
     "replacedAllNodes": "{count} düğüm türü değiştirildi",
     "replacedNode": "Değiştirilen düğüm: {nodeType}",
     "selectAll": "Tümünü Seç",
-    "skipForNow": "Şimdilik Atla"
+    "skipForNow": "Şimdilik Atla",
+    "swapNodesGuide": "Aşağıdaki düğümler, uyumlu alternatiflerle otomatik olarak değiştirilebilir.",
+    "swapNodesTitle": "Düğümleri Değiştir",
+    "unknownNode": "Bilinmeyen",
+    "willBeReplacedBy": "Bu düğüm şununla değiştirilecek:"
   },
   "nodeTemplates": {
     "enterName": "İsim girin",
@@ -2012,6 +2116,19 @@
       "windows": "Windows (CUDA destekli Nvidia GPU)"
     },
     "title": "Cihazınız desteklenmiyor"
+  },
+  "painter": {
+    "background": "Arka Plan",
+    "brush": "Fırça",
+    "clear": "Temizle",
+    "color": "Renk Seçici",
+    "eraser": "Silgi",
+    "hardness": "Sertlik",
+    "height": "Yükseklik",
+    "size": "İmleç Boyutu",
+    "tool": "Araç",
+    "uploadError": "Ressam görseli yüklenemedi: {status} - {statusText}",
+    "width": "Genişlik"
   },
   "progressToast": {
     "allDownloadsCompleted": "Tüm indirmeler tamamlandı",
@@ -2133,6 +2250,22 @@
     "inputsNone": "GİRİŞ YOK",
     "inputsNoneTooltip": "Düğümün girişi yok",
     "locateNode": "Düğümü tuvalde bul",
+    "missingNodePacks": {
+      "applyChanges": "Değişiklikleri Uygula",
+      "cloudMessage": "Bu iş akışı, Comfy Cloud'da henüz mevcut olmayan özel düğümler gerektiriyor.",
+      "collapse": "Daralt",
+      "expand": "Genişlet",
+      "installAll": "Tümünü Yükle",
+      "installNodePack": "Düğüm paketini yükle",
+      "installed": "Yüklendi",
+      "installing": "Yükleniyor...",
+      "ossMessage": "Bu iş akışı, henüz yüklemediğiniz özel düğümler kullanıyor.",
+      "searchInManager": "Düğüm Yöneticisinde Ara",
+      "title": "Eksik Düğüm Paketleri",
+      "unknownPack": "Bilinmeyen paket",
+      "unsupportedTitle": "Desteklenmeyen Düğüm Paketleri",
+      "viewInManager": "Yöneticide Görüntüle"
+    },
     "mute": "Sessiz",
     "noErrors": "Hata yok",
     "noSelection": "Bir düğüm seçerek özelliklerini ve bilgisini görebilirsiniz.",
@@ -2599,14 +2732,17 @@
     "cannotDeleteGlobal": "Yüklü şablonlar silinemez",
     "confirmDelete": "Bu işlem taslağı kütüphanenizden kalıcı olarak kaldıracaktır",
     "confirmDeleteTitle": "Taslak silinsin mi?",
+    "disconnected": "Bağlantı kesildi",
     "enterDescription": "Bir açıklama girin",
     "enterSearchAliases": "Arama takma adlarını girin (virgülle ayrılmış)",
     "hidden": "Gizli / iç içe parametreler",
     "hideAll": "Tümünü gizle",
+    "linked": "(Bağlı)",
     "loadFailure": "Alt grafik taslakları yüklenemedi",
     "overwriteBlueprint": "Kaydetmek, mevcut taslağın üzerine değişikliklerinizi yazacaktır",
     "overwriteBlueprintTitle": "Mevcut taslağın üzerine yazılsın mı?",
     "promoteOutsideSubgraph": "Alt grafikte değilken widget yükseltilemez",
+    "promoteWidget": "Widget'ı Yükselt: {name}",
     "publish": "Alt Grafiği Yayınla",
     "publishSuccess": "Düğüm Kütüphanesine Kaydedildi",
     "publishSuccessMessage": "Alt grafik taslağınızı düğüm kütüphanesinde \"Alt Grafik Taslakları\" altında bulabilirsiniz",
@@ -2614,7 +2750,8 @@
     "searchAliases": "Takma Adlarda Ara",
     "showAll": "Tümünü göster",
     "showRecommended": "Önerilen widget'ları göster",
-    "shown": "Düğümde gösterilen"
+    "shown": "Düğümde gösterilen",
+    "unpromoteWidget": "Widget'ı Geri Al: {name}"
   },
   "subscription": {
     "addApiCredits": "API kredisi ekle",
@@ -2622,7 +2759,9 @@
     "addCreditsLabel": "İstediğiniz zaman kredi ekleyin",
     "benefits": {
       "benefit1": "Partner Düğümleri için aylık krediler — ihtiyaç duyulduğunda yükleyin",
-      "benefit2": "İş başına en fazla 30 dakika çalışma süresi"
+      "benefit1FreeTier": "Daha fazla aylık kredi, istediğiniz zaman yükleyin",
+      "benefit2": "İş başına en fazla 30 dakika çalışma süresi",
+      "benefit3": "Kendi modellerinizi getirin (Creator & Pro)"
     },
     "beta": "BETA",
     "billedMonthly": "Aylık faturalandırılır",
@@ -2660,6 +2799,21 @@
     "description": "Sizin için en iyi planı seçin",
     "descriptionWorkspace": "Çalışma alanınız için en iyi planı seçin",
     "expiresDate": "{date} tarihinde sona erer",
+    "freeTier": {
+      "description": "Ücretsiz planınız, Comfy Cloud'u denemek için her ay {credits} kredi içerir.",
+      "descriptionGeneric": "Ücretsiz planınız, Comfy Cloud'u denemek için aylık kredi hakkı içerir.",
+      "nextRefresh": "Kredileriniz {date} tarihinde yenilenecek.",
+      "outOfCredits": {
+        "subtitle": "Yeniden yükleme ve daha fazlasının kilidini açmak için abone olun",
+        "title": "Ücretsiz kredileriniz bitti"
+      },
+      "subscribeCta": "Daha fazlası için abone olun",
+      "title": "Ücretsiz plandasınız",
+      "topUpBlocked": {
+        "title": "Yeniden yükleme ve daha fazlasının kilidini açın"
+      },
+      "upgradeCta": "Planları görüntüle"
+    },
     "gpuLabel": "RTX 6000 Pro (96GB VRAM)",
     "haveQuestions": "Sorularınız mı var veya kurumsal çözüm mü arıyorsunuz?",
     "invoiceHistory": "Fatura geçmişi",
@@ -2670,6 +2824,7 @@
     "maxDuration": {
       "creator": "30 dk",
       "founder": "30 dk",
+      "free": "30 dk",
       "pro": "1 sa",
       "standard": "30 dk"
     },
@@ -2741,6 +2896,9 @@
       },
       "founder": {
         "name": "Kurucu Sürümü"
+      },
+      "free": {
+        "name": "Ücretsiz"
       },
       "pro": {
         "name": "Pro"
@@ -2852,6 +3010,7 @@
     "emptyCanvas": "Boş tuval",
     "errorCopyImage": "Görüntü kopyalanırken hata oluştu: {error}",
     "errorLoadingModel": "Model yüklenirken hata oluştu",
+    "errorOpenImage": "Görüntü açılırken hata oluştu: {error}",
     "errorSaveSetting": "{id} ayarı kaydedilirken hata oluştu: {err}",
     "exportSuccess": "Model başarıyla {format} olarak dışa aktarıldı",
     "failedExecutionPathResolution": "Seçilen düğümlerin yolu çözülemedi",

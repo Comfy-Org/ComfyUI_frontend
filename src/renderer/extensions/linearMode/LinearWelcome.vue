@@ -1,10 +1,13 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
+import { useAppMode } from '@/composables/useAppMode'
 import { useAppModeStore } from '@/stores/appModeStore'
 import Button from '@/components/ui/button/Button.vue'
+import { storeToRefs } from 'pinia'
 
 const { t } = useI18n()
-const appModeStore = useAppModeStore()
+const { setMode } = useAppMode()
+const { hasOutputs } = storeToRefs(useAppModeStore())
 </script>
 
 <template>
@@ -24,7 +27,7 @@ const appModeStore = useAppModeStore()
       <p class="mt-0">{{ t('linearMode.welcome.controls') }}</p>
       <p class="mt-0">{{ t('linearMode.welcome.sharing') }}</p>
     </div>
-    <div v-if="appModeStore.hasOutputs" class="flex flex-row gap-2 text-[14px]">
+    <div v-if="hasOutputs" class="flex flex-row gap-2 text-[14px]">
       <p class="mt-0 text-base-foreground">
         <i18n-t keypath="linearMode.welcome.getStarted" tag="span">
           <template #runButton>
@@ -38,18 +41,10 @@ const appModeStore = useAppModeStore()
       </p>
     </div>
     <div v-else class="flex flex-row gap-2">
-      <Button
-        variant="textonly"
-        size="lg"
-        @click="appModeStore.setMode('graph')"
-      >
+      <Button variant="textonly" size="lg" @click="setMode('graph')">
         {{ t('linearMode.welcome.backToWorkflow') }}
       </Button>
-      <Button
-        variant="primary"
-        size="lg"
-        @click="appModeStore.setMode('builder:select')"
-      >
+      <Button variant="primary" size="lg" @click="setMode('builder:select')">
         <i class="icon-[lucide--hammer]" />
         {{ t('linearMode.welcome.buildApp') }}
         <div

@@ -27,13 +27,13 @@ import { useQueueStore } from '@/stores/queueStore'
 import type { ResultItemImpl } from '@/stores/queueStore'
 import { collectAllNodes } from '@/utils/graphTraversalUtil'
 import { executeWidgetsCallback } from '@/utils/litegraphUtil'
-import { useAppModeStore } from '@/stores/appModeStore'
+import { useAppMode } from '@/composables/useAppMode'
 const { t } = useI18n()
 const commandStore = useCommandStore()
 const executionStore = useExecutionStore()
 const mediaActions = useMediaAssetActions()
 const queueStore = useQueueStore()
-const appModeStore = useAppModeStore()
+const { mode: appModeValue } = useAppMode()
 const { runButtonClick } = defineProps<{
   runButtonClick?: (e: Event) => void
   mobile?: boolean
@@ -165,7 +165,7 @@ async function rerun(e: Event) {
     :model-url="selectedOutput!.url"
   />
   <LatentPreview v-else-if="queueStore.runningTasks.length > 0" />
-  <LinearArrange v-else-if="appModeStore.mode === 'builder:arrange'" />
+  <LinearArrange v-else-if="appModeValue === 'builder:arrange'" />
   <LinearWelcome v-else />
-  <OutputHistory @update-selection="handleSelection" />
+  <OutputHistory class="not-md:mx-40" @update-selection="handleSelection" />
 </template>

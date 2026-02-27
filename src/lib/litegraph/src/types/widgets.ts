@@ -1,4 +1,5 @@
 import type { Bounds } from '@/renderer/core/layout/types'
+import type { CurvePoint } from '@/components/curve/types'
 
 import type {
   CanvasColour,
@@ -136,6 +137,8 @@ export type IWidget =
   | IAssetWidget
   | IImageCropWidget
   | IBoundingBoxWidget
+  | ICurveWidget
+  | IPainterWidget
 
 export interface IBooleanWidget extends IBaseWidget<boolean, 'toggle'> {
   type: 'toggle'
@@ -328,6 +331,16 @@ export interface IBoundingBoxWidget extends IBaseWidget<Bounds, 'boundingbox'> {
   value: Bounds
 }
 
+export interface ICurveWidget extends IBaseWidget<CurvePoint[], 'curve'> {
+  type: 'curve'
+  value: CurvePoint[]
+}
+
+export interface IPainterWidget extends IBaseWidget<string, 'painter'> {
+  type: 'painter'
+  value: string
+}
+
 /**
  * Valid widget types.  TS cannot provide easily extensible type safety for this at present.
  * Override linkedWidgets[]
@@ -359,7 +372,6 @@ export interface IBaseWidget<
   /** Widget type (see {@link TWidgetType}) */
   type: TType
   value?: TValue
-  vueTrack?: () => void
 
   /**
    * Whether the widget value is persisted in the workflow JSON

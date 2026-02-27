@@ -438,7 +438,6 @@ onMounted(() => {
 const systemStatsStore = useSystemStatsStore()
 
 const distributions = computed(() => {
-  // eslint-disable-next-line no-undef
   switch (__DISTRIBUTION__) {
     case 'cloud':
       return [TemplateIncludeOnDistributionEnum.Cloud]

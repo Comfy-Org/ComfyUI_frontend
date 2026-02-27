@@ -26,22 +26,18 @@ useExtensionService().registerExtension({
       const { a_images: aImages, b_images: bImages } = output
       const rand = app.getRandParam()
 
-      const beforeUrl =
-        aImages && aImages.length > 0
-          ? api.apiURL(`/view?${new URLSearchParams(aImages[0])}${rand}`)
-          : ''
-      const afterUrl =
-        bImages && bImages.length > 0
-          ? api.apiURL(`/view?${new URLSearchParams(bImages[0])}${rand}`)
-          : ''
+      const toUrl = (params: Record<string, string>) =>
+        api.apiURL(`/view?${new URLSearchParams(params)}${rand}`)
+
+      const beforeImages =
+        aImages && aImages.length > 0 ? aImages.map(toUrl) : []
+      const afterImages =
+        bImages && bImages.length > 0 ? bImages.map(toUrl) : []
 
       const widget = node.widgets?.find((w) => w.type === 'imagecompare')
 
       if (widget) {
-        widget.value = {
-          before: beforeUrl,
-          after: afterUrl
-        }
+        widget.value = { beforeImages, afterImages }
         widget.callback?.(widget.value)
       }
     }

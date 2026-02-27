@@ -133,8 +133,6 @@ const wrapperStyle = computed(() => {
 </script>
 
 <style scoped>
-@reference '../../assets/css/style.css';
-
 :deep(.p-inputtext) {
   --p-form-field-padding-x: 0.625rem;
 }

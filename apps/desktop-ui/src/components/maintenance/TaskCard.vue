@@ -1,11 +1,20 @@
 <template>
   <div
-    class="task-div relative grid min-h-52 max-w-48"
-    :class="{ 'opacity-75': isLoading }"
+    :class="
+      cn(
+        'task-div group/task-card relative grid min-h-52 max-w-48',
+        isLoading && 'opacity-75'
+      )
+    "
   >
     <Card
-      class="relative h-full max-w-48 overflow-hidden"
-      :class="{ 'opacity-65': runner.state !== 'error' }"
+      :class="
+        cn(
+          'relative h-full max-w-48 overflow-hidden',
+          runner.state !== 'error' && 'opacity-65'
+        )
+      "
+      :pt="cardPt"
       v-bind="(({ onClick, ...rest }) => rest)($attrs)"
     >
       <template #header>
@@ -43,7 +52,7 @@
 
     <i
       v-if="!isLoading && runner.state === 'OK'"
-      class="task-card-ok pi pi-check"
+      class="pi pi-check pointer-events-none absolute -right-4 -bottom-4 col-span-full row-span-full z-10 text-[4rem] text-green-500 opacity-100 transition-opacity group-hover/task-card:opacity-20 [text-shadow:0.25rem_0_0.5rem_black]"
     />
   </div>
 </template>
@@ -55,6 +64,7 @@ import { computed } from 'vue'
 
 import { useMaintenanceTaskStore } from '@/stores/maintenanceTaskStore'
 import type { MaintenanceTask } from '@/types/desktop/maintenanceTypes'
+import { cn } from '@/utils/tailwindUtil'
 import { useMinLoadingDurationRef } from '@/utils/refUtil'
 
 const taskStore = useMaintenanceTaskStore()
@@ -83,51 +93,9 @@ const reactiveExecuting = computed(() => !!runner.value.executing)
 
 const isLoading = useMinLoadingDurationRef(reactiveLoading, 250)
 const isExecuting = useMinLoadingDurationRef(reactiveExecuting, 250)
+
+const cardPt = {
+  header: { class: 'z-0' },
+  body: { class: 'z-[1] grow justify-between' }
+}
 </script>
-
-<style scoped>
-@reference '../../assets/css/style.css';
-
-.task-card-ok {
-  @apply text-green-500 absolute -right-4 -bottom-4 opacity-100 row-span-full col-span-full transition-opacity;
-
-  font-size: 4rem;
-  text-shadow: 0.25rem 0 0.5rem black;
-  z-index: 10;
-}
-
-.p-card {
-  @apply transition-opacity;
-
-  --p-card-background: var(--p-button-secondary-background);
-  opacity: 0.9;
-
-  &.opacity-65 {
-    opacity: 0.4;
-  }
-
-  &:hover {
-    opacity: 1;
-  }
-}
-
-:deep(.p-card-header) {
-  z-index: 0;
-}
-
-:deep(.p-card-body) {
-  z-index: 1;
-  flex-grow: 1;
-  justify-content: space-between;
-}
-
-.task-div {
-  > i {
-    pointer-events: none;
-  }
-
-  &:hover > i {
-    opacity: 0.2;
-  }
-}
-</style>

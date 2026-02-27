@@ -71,6 +71,7 @@
     "error": "Error",
     "enter": "Enter",
     "enterSubgraph": "Enter Subgraph",
+    "inSubgraph": "in subgraph '{name}'",
     "resizeFromBottomRight": "Resize from bottom-right corner",
     "resizeFromTopRight": "Resize from top-right corner",
     "resizeFromBottomLeft": "Resize from bottom-left corner",
@@ -174,6 +175,7 @@
     "control_after_generate": "control after generate",
     "control_before_generate": "control before generate",
     "choose_file_to_upload": "choose file to upload",
+    "uploadAlreadyInProgress": "Upload already in progress",
     "capture": "capture",
     "nodes": "Nodes",
     "nodesCount": "{count} nodes | {count} node | {count} nodes",
@@ -449,6 +451,9 @@
         "import_failed": "Import Failed"
       },
       "warningTooltip": "This package may have compatibility issues with your current environment"
+    },
+    "packInstall": {
+      "nodeIdRequired": "Node ID is required for installation"
     }
   },
   "importFailed": {
@@ -1155,8 +1160,8 @@
   "queue": {
     "initializingAlmostReady": "Initializing - Almost ready",
     "inQueue": "In queue...",
-    "jobAddedToQueue": "Job added to queue",
-    "jobQueueing": "Job queueing",
+    "jobAddedToQueue": "Job queued",
+    "jobQueueing": "Job queuing",
     "completedIn": "Finished in {duration}",
     "jobMenu": {
       "openAsWorkflowNewTab": "Open as workflow in new tab",
@@ -1699,6 +1704,7 @@
     "OPENAI_INPUT_FILES": "OPENAI_INPUT_FILES",
     "PHOTOMAKER": "PHOTOMAKER",
     "PIXVERSE_TEMPLATE": "PIXVERSE_TEMPLATE",
+    "POSE_KEYPOINT": "POSE_KEYPOINT",
     "RECRAFT_COLOR": "RECRAFT_COLOR",
     "RECRAFT_CONTROLS": "RECRAFT_CONTROLS",
     "RECRAFT_V3_STYLE": "RECRAFT_V3_STYLE",
@@ -1750,8 +1756,15 @@
     "doNotAskAgain": "Don't show this again",
     "reEnableInSettings": "Re-enable in {link}",
     "reEnableInSettingsLink": "Settings",
-    "missingModels": "Missing Models",
-    "missingModelsMessage": "When loading the graph, the following models were not found"
+    "title": "This workflow is missing models",
+    "description": "This workflow requires models you haven't downloaded yet.",
+    "totalSize": "Total download size:",
+    "downloadAll": "Download all",
+    "downloadAvailable": "Download available",
+    "gotIt": "Ok, got it",
+    "footerDescription": "Download and place these models in the correct folder.\nNodes with missing models are highlighted red on the canvas.",
+    "customModelsWarning": "Some of these are custom models that we don't recognize.",
+    "customModelsInstruction": "You'll need to find and download them manually. Search for them online (try Civitai or HuggingFace) or contact the original workflow provider."
   },
   "versionMismatchWarning": {
     "title": "Version Compatibility Warning",
@@ -1797,7 +1810,12 @@
     "errorNotSupported": "Clipboard API not supported in your browser"
   },
   "imageCompare": {
-    "noImages": "No images to compare"
+    "noImages": "No images to compare",
+    "batchLabelA": "A:",
+    "batchLabelB": "B:"
+  },
+  "batch": {
+    "index": "{current} / {total}"
   },
   "load3d": {
     "switchCamera": "Switch Camera",
@@ -1872,6 +1890,19 @@
     "unlockRatio": "Unlock aspect ratio",
     "custom": "Custom"
   },
+  "painter": {
+    "tool": "Tool",
+    "brush": "Brush",
+    "eraser": "Eraser",
+    "size": "Cursor Size",
+    "color": "Color Picker",
+    "hardness": "Hardness",
+    "width": "Width",
+    "height": "Height",
+    "background": "Background",
+    "clear": "Clear",
+    "uploadError": "Failed to upload painter image: {status} - {statusText}"
+  },
   "boundingBox": {
     "x": "X",
     "y": "Y",
@@ -1906,6 +1937,7 @@
     "nodeDefinitionsUpdated": "Node definitions updated",
     "errorSaveSetting": "Error saving setting {id}: {err}",
     "errorCopyImage": "Error copying image: {error}",
+    "errorOpenImage": "Error opening image: {error}",
     "noTemplatesToExport": "No templates to export",
     "failedToFetchLogs": "Failed to fetch server logs",
     "migrateToLitegraphReroute": "Reroute nodes will be removed in future versions. Click to migrate to litegraph-native reroute.",
@@ -1975,6 +2007,7 @@
       "newUser": "New here?",
       "userAvatar": "User Avatar",
       "signUp": "Sign up",
+      "signUpFreeTierPromo": "New here? {signUp} with Google to get {credits} free credits every month.",
       "emailLabel": "Email",
       "emailPlaceholder": "Enter your email",
       "passwordLabel": "Password",
@@ -1999,7 +2032,12 @@
       "failed": "Login failed",
       "insecureContextWarning": "This connection is insecure (HTTP) - your credentials may be intercepted by attackers if you proceed to login.",
       "questionsContactPrefix": "Questions? Contact us at",
-      "noAssociatedUser": "There is no Comfy user associated with the provided API key"
+      "noAssociatedUser": "There is no Comfy user associated with the provided API key",
+      "useEmailInstead": "Use email instead",
+      "freeTierBadge": "Eligible for Free Tier",
+      "freeTierDescription": "Sign up with Google to get {credits} free credits every month. No card needed.",
+      "freeTierDescriptionGeneric": "Sign up with Google to get free credits every month. No card needed.",
+      "backToSocialLogin": "Sign up with Google or Github instead"
     },
     "signup": {
       "title": "Create an account",
@@ -2013,7 +2051,8 @@
       "signUpWithGoogle": "Sign up with Google",
       "signUpWithGithub": "Sign up with Github",
       "regionRestrictionChina": "In accordance with local regulatory requirements, our services are temporarily unavailable to users located in China.",
-      "personalDataConsentLabel": "I agree to the processing of my personal data."
+      "personalDataConsentLabel": "I agree to the processing of my personal data.",
+      "emailNotEligibleForFreeTier": "Email sign-up is not eligible for Free Tier."
     },
     "signOut": {
       "signOut": "Log Out",
@@ -2204,10 +2243,15 @@
     "invoiceHistory": "Invoice history",
     "benefits": {
       "benefit1": "Monthly credits for Partner Nodes — top up when needed",
-      "benefit2": "Up to 30 min runtime per job"
+      "benefit1FreeTier": "More monthly credits, top up anytime",
+      "benefit2": "Up to 1 hour runtime per job on Pro",
+      "benefit3": "Bring your own models (Creator & Pro)"
     },
     "yearlyDiscount": "20% DISCOUNT",
     "tiers": {
+      "free": {
+        "name": "Free"
+      },
       "founder": {
         "name": "Founder's Edition"
       },
@@ -2241,6 +2285,21 @@
     "haveQuestions": "Have questions or wondering about enterprise?",
     "contactUs": "Contact us",
     "viewEnterprise": "View enterprise",
+    "freeTier": {
+      "title": "You're on the Free plan",
+      "description": "Your free plan includes {credits} credits each month to try Comfy Cloud.",
+      "descriptionGeneric": "Your free plan includes a monthly credit allowance to try Comfy Cloud.",
+      "nextRefresh": "Your credits refresh on {date}.",
+      "subscribeCta": "Subscribe for more",
+      "outOfCredits": {
+        "title": "You're out of free credits",
+        "subtitle": "Subscribe to unlock top-ups and more"
+      },
+      "topUpBlocked": {
+        "title": "Unlock top-ups and more"
+      },
+      "upgradeCta": "View plans"
+    },
     "partnerNodesCredits": "Partner nodes pricing",
     "plansAndPricing": "Plans & pricing",
     "managePlan": "Manage plan",
@@ -2268,6 +2327,7 @@
     "upgradeTo": "Upgrade to {plan}",
     "changeTo": "Change to {plan}",
     "maxDuration": {
+      "free": "30 min",
       "standard": "30 min",
       "creator": "30 min",
       "pro": "1 hr",
@@ -2938,7 +2998,8 @@
   },
   "linearMode": {
     "linearMode": "App Mode",
-    "beta": "App Mode in Beta - Feedback",
+    "beta": "App mode in beta",
+    "giveFeedback": "Give feedback",
     "graphMode": "Graph Mode",
     "dragAndDropImage": "Click to browse or drag an image",
     "runCount": "Number of runs",
@@ -2967,6 +3028,24 @@
       "switchToSelectButton": "Switch to Select",
       "outputs": "Outputs",
       "resultsLabel": "Results generated from the selected output node(s) will be shown here after running this app"
+    },
+    "builder": {
+      "title": "App builder mode",
+      "exit": "Exit builder",
+      "exitConfirmTitle": "Exit app builder?",
+      "exitConfirmMessage": "You have unsaved changes that will be lost\nExit without saving?",
+      "promptAddInputs": "Click on node parameters to add them here as inputs",
+      "noInputs": "No inputs added yet",
+      "inputsDesc": "Users will interact and adjust these to generate their outputs.",
+      "inputsExample": "Examples: “Load image”, “Text prompt”, “Steps”",
+      "promptAddOutputs": "Click on output nodes to add them here. These will be the generated results.",
+      "noOutputs": "No output nodes added yet",
+      "outputsDesc": "Connect at least one output node so users can see results after running.",
+      "outputsExample": "Examples: “Save Image” or “Save Video”"
+    },
+    "queue": {
+      "clickToClear": "Click to clear queue",
+      "clear": "Clear queue"
     }
   },
   "missingNodes": {
@@ -3001,7 +3080,14 @@
     "openNodeManager": "Open Node Manager",
     "skipForNow": "Skip for Now",
     "installMissingNodes": "Install Missing Nodes",
-    "replaceWarning": "This will permanently modify the workflow. Save a copy first if unsure."
+    "replaceWarning": "This will permanently modify the workflow. Save a copy first if unsure.",
+    "swapNodesGuide": "The following nodes can be automatically replaced with compatible alternatives.",
+    "willBeReplacedBy": "This node will be replaced by:",
+    "replaceNode": "Replace Node",
+    "replaceAll": "Replace All",
+    "unknownNode": "Unknown",
+    "replaceAllWarning": "Replaces all available nodes in this group.",
+    "swapNodesTitle": "Swap Nodes"
   },
   "rightSidePanel": {
     "togglePanel": "Toggle properties panel",
@@ -3081,7 +3167,23 @@
     "errorHelpGithub": "submit a GitHub issue",
     "errorHelpSupport": "contact our support",
     "resetToDefault": "Reset to default",
-    "resetAllParameters": "Reset all parameters"
+    "resetAllParameters": "Reset all parameters",
+    "missingNodePacks": {
+      "title": "Missing Node Packs",
+      "unsupportedTitle": "Unsupported Node Packs",
+      "cloudMessage": "This workflow requires custom nodes not yet available on Comfy Cloud.",
+      "ossMessage": "This workflow uses custom nodes you haven't installed yet.",
+      "installAll": "Install All",
+      "installNodePack": "Install node pack",
+      "unknownPack": "Unknown pack",
+      "installing": "Installing...",
+      "installed": "Installed",
+      "applyChanges": "Apply Changes",
+      "searchInManager": "Search in Node Manager",
+      "viewInManager": "View in Manager",
+      "collapse": "Collapse",
+      "expand": "Expand"
+    }
   },
   "errorOverlay": {
     "errorCount": "{count} ERRORS | {count} ERROR | {count} ERRORS",

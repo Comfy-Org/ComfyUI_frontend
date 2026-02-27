@@ -8,12 +8,12 @@ import { useWorkflowTemplateSelectorDialog } from '@/composables/useWorkflowTemp
 import { useCommandStore } from '@/stores/commandStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { cn } from '@/utils/tailwindUtil'
-import { useAppModeStore } from '@/stores/appModeStore'
+import { useAppMode } from '@/composables/useAppMode'
 
 const { t } = useI18n()
 const commandStore = useCommandStore()
 const workspaceStore = useWorkspaceStore()
-const appModeStore = useAppModeStore()
+const { enableAppBuilder, setMode } = useAppMode()
 const tooltipOptions = { showDelay: 300, hideDelay: 300 }
 
 const isAssetsActive = computed(
@@ -24,7 +24,7 @@ const isWorkflowsActive = computed(
 )
 
 function enterBuilderMode() {
-  appModeStore.setMode('builder:select')
+  setMode('builder:select')
 }
 
 function openAssets() {
@@ -61,7 +61,7 @@ function openTemplates() {
     </WorkflowActionsDropdown>
 
     <Button
-      v-if="appModeStore.enableAppBuilder"
+      v-if="enableAppBuilder"
       v-tooltip.right="{
         value: t('linearMode.appModeToolbar.appBuilder'),
         ...tooltipOptions

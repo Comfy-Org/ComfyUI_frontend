@@ -225,6 +225,7 @@
     "login": {
       "andText": "et",
       "backToLogin": "Retour à la connexion",
+      "backToSocialLogin": "Inscrivez-vous avec Google ou Github à la place",
       "confirmPasswordLabel": "Confirmer le mot de passe",
       "confirmPasswordPlaceholder": "Entrez à nouveau le même mot de passe",
       "didntReceiveEmail": "Vous n'avez pas reçu d'e-mail ? Contactez-nous à",
@@ -233,6 +234,9 @@
       "failed": "Échec de la connexion",
       "forgotPassword": "Mot de passe oublié?",
       "forgotPasswordError": "Échec de l'envoi de l'e-mail de réinitialisation du mot de passe",
+      "freeTierBadge": "Éligible à l’offre gratuite",
+      "freeTierDescription": "Inscrivez-vous avec Google pour obtenir {credits} crédits gratuits chaque mois. Aucune carte requise.",
+      "freeTierDescriptionGeneric": "Inscrivez-vous avec Google pour obtenir des crédits gratuits chaque mois. Aucune carte requise.",
       "insecureContextWarning": "Cette connexion n'est pas sécurisée (HTTP) - vos identifiants pourraient être interceptés par des attaquants si vous continuez à vous connecter.",
       "loginButton": "Se connecter",
       "loginWithGithub": "Se connecter avec Github",
@@ -251,11 +255,13 @@
       "sendResetLink": "Envoyer le lien de réinitialisation",
       "signInOrSignUp": "Se connecter / S’inscrire",
       "signUp": "S'inscrire",
+      "signUpFreeTierPromo": "Nouveau ici ? {signUp} avec Google pour obtenir {credits} crédits gratuits chaque mois.",
       "success": "Connexion réussie",
       "termsLink": "Conditions d'utilisation",
       "termsText": "En cliquant sur \"Suivant\" ou \"S'inscrire\", vous acceptez nos",
       "title": "Connectez-vous à votre compte",
       "useApiKey": "Clé API Comfy",
+      "useEmailInstead": "Utiliser l’e-mail à la place",
       "userAvatar": "Avatar utilisateur"
     },
     "loginButton": {
@@ -282,6 +288,7 @@
     "signup": {
       "alreadyHaveAccount": "Vous avez déjà un compte?",
       "emailLabel": "Email",
+      "emailNotEligibleForFreeTier": "L’inscription par e-mail n’est pas éligible à l’offre gratuite.",
       "emailPlaceholder": "Entrez votre email",
       "passwordLabel": "Mot de passe",
       "passwordPlaceholder": "Entrez un nouveau mot de passe",
@@ -293,6 +300,9 @@
       "signUpWithGoogle": "S'inscrire avec Google",
       "title": "Créer un compte"
     }
+  },
+  "batch": {
+    "index": "{current} / {total}"
   },
   "billingOperation": {
     "subscriptionFailed": "Échec de la mise à jour de l'abonnement",
@@ -315,8 +325,36 @@
     "deleteBlueprint": "Supprimer le plan",
     "deleteWorkflow": "Supprimer le workflow",
     "duplicate": "Dupliquer",
+    "enterAppMode": "Entrer en mode application",
     "enterNewName": "Entrez un nouveau nom",
-    "missingNodesWarning": "Le workflow contient des nœuds non pris en charge (surlignés en rouge)."
+    "exitAppMode": "Quitter le mode application",
+    "missingNodesWarning": "Le workflow contient des nœuds non pris en charge (surlignés en rouge).",
+    "workflowActions": "Actions du workflow"
+  },
+  "builderToolbar": {
+    "app": "Application",
+    "appDescription": "S'ouvre par défaut en tant qu'application",
+    "arrange": "Aperçu",
+    "arrangeDescription": "Vérifier la disposition de l'application",
+    "connectOutput": "Connecter une sortie",
+    "connectOutputBody1": "Votre application doit avoir au moins une sortie connectée avant de pouvoir être enregistrée.",
+    "connectOutputBody2": "Passez à l'étape « Sélectionner » et cliquez sur les nœuds de sortie pour les ajouter ici.",
+    "filename": "Nom du fichier",
+    "label": "Créateur d'applications",
+    "nodeGraph": "Graphe de nœuds",
+    "nodeGraphDescription": "S'ouvre par défaut en tant que graphe de nœuds",
+    "save": "Enregistrer",
+    "saveAs": "Enregistrer sous",
+    "saveAsLabel": "Enregistrer ce workflow sous ...",
+    "saveDescription": "Enregistrer et terminer",
+    "saveSuccess": "Enregistré avec succès",
+    "saveSuccessAppMessage": "« {name} » a été enregistré. Il s'ouvrira désormais par défaut en mode application.",
+    "saveSuccessAppPrompt": "Voulez-vous le voir maintenant ?",
+    "saveSuccessGraphMessage": "« {name} » a été enregistré. Il s'ouvrira par défaut en tant que graphe de nœuds.",
+    "select": "Sélectionner",
+    "selectDescription": "Choisir les entrées/sorties",
+    "switchToSelect": "Passer à Sélectionner",
+    "viewApp": "Voir l'application"
   },
   "clipboard": {
     "errorMessage": "Échec de la copie dans le presse-papiers",
@@ -661,6 +699,7 @@
     "OPENAI_INPUT_FILES": "FICHIERS_ENTRÉE_OPENAI",
     "PHOTOMAKER": "PHOTOMAKER",
     "PIXVERSE_TEMPLATE": "Modèle Pixverse",
+    "POSE_KEYPOINT": "POINT CLÉ DE POSE",
     "RECRAFT_COLOR": "Couleur Recraft",
     "RECRAFT_CONTROLS": "Contrôles Recraft",
     "RECRAFT_V3_STYLE": "Style Recraft V3",
@@ -879,6 +918,7 @@
     "enableSelected": "Activer la sélection",
     "enabled": "Activé",
     "enabling": "Activation",
+    "enter": "Entrer",
     "enterBaseName": "Entrez le nom de base",
     "enterNewName": "Entrez le nouveau nom",
     "enterNewNamePrompt": "Entrez le nouveau nom :",
@@ -919,6 +959,7 @@
     "imageUrl": "URL de l'image",
     "import": "Importer",
     "inProgress": "En cours",
+    "inSubgraph": "dans le sous-graphe « {name} »",
     "increment": "Augmenter",
     "info": "Informations du nœud",
     "input": "Entrée",
@@ -1076,6 +1117,7 @@
     "updated": "Mis à jour",
     "updating": "Mise à jour",
     "upload": "Téléverser",
+    "uploadAlreadyInProgress": "Téléversement déjà en cours",
     "usageHint": "Conseil d'utilisation",
     "use": "Utiliser",
     "user": "Utilisateur",
@@ -1149,6 +1191,8 @@
     "star": "Étoile"
   },
   "imageCompare": {
+    "batchLabelA": "A :",
+    "batchLabelB": "B :",
     "noImages": "Aucune image à comparer"
   },
   "imageCrop": {
@@ -1282,20 +1326,55 @@
     "helpFix": "Aidez à résoudre cela"
   },
   "linearMode": {
+    "appModeToolbar": {
+      "appBuilder": "Créateur d'applications",
+      "apps": "Applications"
+    },
+    "arrange": {
+      "atLeastOne": "au moins un",
+      "connectAtLeastOne": "Connectez {atLeastOne} nœud de sortie pour que les utilisateurs puissent voir les résultats après l'exécution.",
+      "noOutputs": "Aucune sortie ajoutée pour le moment",
+      "outputExamples": "Exemples : « Enregistrer l'image » ou « Enregistrer la vidéo »",
+      "outputs": "Sorties",
+      "resultsLabel": "Les résultats générés à partir du ou des nœuds de sortie sélectionnés seront affichés ici après l'exécution de cette application",
+      "switchToSelect": "Passez à l'étape « Sélectionner » et cliquez sur les nœuds de sortie pour les ajouter ici.",
+      "switchToSelectButton": "Passer à Sélectionner"
+    },
     "beta": "Mode App Bêta - Donnez votre avis",
+    "builder": {
+      "exit": "Quitter le mode créateur",
+      "exitConfirmMessage": "Vous avez des modifications non enregistrées qui seront perdues\nQuitter sans enregistrer ?",
+      "exitConfirmTitle": "Quitter le créateur d’application ?",
+      "inputsDesc": "Les utilisateurs interagiront avec ces paramètres pour générer leurs résultats.",
+      "inputsExample": "Exemples : « Charger une image », « Prompt texte », « Étapes »",
+      "noInputs": "Aucune entrée ajoutée pour le moment",
+      "noOutputs": "Aucun nœud de sortie ajouté pour le moment",
+      "outputsDesc": "Connectez au moins un nœud de sortie pour que les utilisateurs voient les résultats après l’exécution.",
+      "outputsExample": "Exemples : « Enregistrer l’image » ou « Enregistrer la vidéo »",
+      "promptAddInputs": "Cliquez sur les paramètres du nœud pour les ajouter ici comme entrées",
+      "promptAddOutputs": "Cliquez sur les nœuds de sortie pour les ajouter ici. Ce seront les résultats générés.",
+      "title": "Mode créateur d’application"
+    },
     "downloadAll": "Tout télécharger",
     "dragAndDropImage": "Glissez-déposez une image",
+    "giveFeedback": "Donner un avis",
     "graphMode": "Mode graphique",
     "linearMode": "Mode App",
+    "queue": {
+      "clear": "Vider la file d'attente",
+      "clickToClear": "Cliquez pour vider la file d'attente"
+    },
     "rerun": "Relancer",
     "reuseParameters": "Réutiliser les paramètres",
     "runCount": "Nombre d’exécutions :",
     "welcome": {
-      "intro": "Une vue simplifiée qui masque le graphe de nœuds pour vous permettre de vous concentrer sur la création.",
-      "layout": "À gauche, vous verrez vos images, vidéos et sorties générées. À droite, seulement les contrôles nécessaires. Tout ce qui est complexe reste caché.",
+      "backToWorkflow": "Retour au workflow",
+      "buildApp": "Créer une application",
+      "controls": "Vos sorties apparaissent en bas, vos contrôles sont à droite. Tout le reste reste à l'écart.",
+      "getStarted": "Cliquez sur {runButton} pour commencer.",
+      "message": "Une vue simplifiée qui masque le graphe de nœuds pour vous permettre de vous concentrer sur la création.",
       "sharing": "Le partage est facile : créez votre workflow, ouvrez le mode App, faites un clic droit sur l’onglet et exportez. Quand d’autres ouvrent votre fichier, il s’ouvre directement dans cette vue épurée. Vous pouvez partager des workflows puissants comme des outils simples, sans que personne n’ait besoin de comprendre les graphes de nœuds.",
-      "title": "Bienvenue en mode App",
-      "widget": "Si vous souhaitez contrôler quels paramètres apparaissent, convertissez vos nœuds principaux en sous-graphe, puis utilisez la promotion de widget dans la boîte à outils au-dessus pour choisir ce qui est exposé."
+      "title": "Bienvenue en mode App"
     }
   },
   "load3d": {
@@ -1504,6 +1583,9 @@
     "nodePack": "Pack de Nœuds",
     "nodePackInfo": "Informations sur le pack de nœuds",
     "notAvailable": "Non disponible",
+    "packInstall": {
+      "nodeIdRequired": "L'identifiant du nœud est requis pour l'installation"
+    },
     "packsSelected": "Packs sélectionnés",
     "repository": "Référentiel",
     "restartToApplyChanges": "Pour appliquer les modifications, veuillez redémarrer ComfyUI",
@@ -1818,11 +1900,18 @@
     "showLinks": "Afficher les liens"
   },
   "missingModelsDialog": {
+    "customModelsInstruction": "Vous devrez les trouver et les télécharger manuellement. Cherchez-les en ligne (essayez Civitai ou Hugging Face) ou contactez le créateur du workflow d'origine.",
+    "customModelsWarning": "Certains de ces modèles sont personnalisés et nous ne les reconnaissons pas.",
+    "description": "Ce workflow nécessite des modèles que vous n'avez pas encore téléchargés.",
     "doNotAskAgain": "Ne plus afficher ce message",
-    "missingModels": "Modèles manquants",
-    "missingModelsMessage": "Lors du chargement du graphique, les modèles suivants n'ont pas été trouvés",
+    "downloadAll": "Tout télécharger",
+    "downloadAvailable": "Téléchargement disponible",
+    "footerDescription": "Téléchargez et placez ces modèles dans le dossier approprié.\nLes nœuds avec des modèles manquants sont surlignés en rouge sur le canevas.",
+    "gotIt": "Ok, compris",
     "reEnableInSettings": "Réactiver dans {link}",
-    "reEnableInSettingsLink": "Paramètres"
+    "reEnableInSettingsLink": "Paramètres",
+    "title": "Ce workflow est incomplet : modèles manquants",
+    "totalSize": "Taille totale du téléchargement :"
   },
   "missingNodes": {
     "cloud": {
@@ -1844,6 +1933,14 @@
       "label": "Version de prévisualisation",
       "tooltip": "Vous utilisez une version nightly de ComfyUI. Veuillez utiliser le bouton de retour pour partager vos impressions sur ces fonctionnalités."
     }
+  },
+  "nightlySurvey": {
+    "accept": "Oui, je veux aider !",
+    "description": "Vous avez utilisé cette fonctionnalité. Pourriez-vous prendre un moment pour partager votre avis ?",
+    "dontAskAgain": "Ne plus demander",
+    "loadError": "Échec du chargement du sondage. Veuillez réessayer plus tard.",
+    "notNow": "Pas maintenant",
+    "title": "Aidez-nous à nous améliorer"
   },
   "nodeCategories": {
     "": "",
@@ -1986,7 +2083,10 @@
     "openNodeManager": "Ouvrir le Gestionnaire de nœuds",
     "quickFixAvailable": "Correction rapide disponible",
     "redHighlight": "rouge",
+    "replaceAll": "Tout remplacer",
+    "replaceAllWarning": "Remplace tous les nœuds disponibles dans ce groupe.",
     "replaceFailed": "Échec du remplacement des nœuds",
+    "replaceNode": "Remplacer le nœud",
     "replaceSelected": "Remplacer la sélection ({count})",
     "replaceWarning": "Cela modifiera définitivement le workflow. Sauvegardez une copie si vous n’êtes pas sûr.",
     "replaceable": "Remplaçable",
@@ -1994,7 +2094,11 @@
     "replacedAllNodes": "{count} type(s) de nœud remplacé(s)",
     "replacedNode": "Nœud remplacé : {nodeType}",
     "selectAll": "Tout sélectionner",
-    "skipForNow": "Ignorer pour l’instant"
+    "skipForNow": "Ignorer pour l’instant",
+    "swapNodesGuide": "Les nœuds suivants peuvent être automatiquement remplacés par des alternatives compatibles.",
+    "swapNodesTitle": "Échanger les nœuds",
+    "unknownNode": "Inconnu",
+    "willBeReplacedBy": "Ce nœud sera remplacé par :"
   },
   "nodeTemplates": {
     "enterName": "Entrez le nom",
@@ -2012,6 +2116,19 @@
       "windows": "Windows (GPU Nvidia avec support CUDA)"
     },
     "title": "Votre appareil n'est pas pris en charge"
+  },
+  "painter": {
+    "background": "Arrière-plan",
+    "brush": "Pinceau",
+    "clear": "Effacer",
+    "color": "Sélecteur de couleur",
+    "eraser": "Gomme",
+    "hardness": "Dureté",
+    "height": "Hauteur",
+    "size": "Taille du curseur",
+    "tool": "Outil",
+    "uploadError": "Échec du téléversement de l'image du peintre : {status} - {statusText}",
+    "width": "Largeur"
   },
   "progressToast": {
     "allDownloadsCompleted": "Tous les téléchargements sont terminés",
@@ -2133,6 +2250,22 @@
     "inputsNone": "AUCUNE ENTRÉE",
     "inputsNoneTooltip": "Le nœud n’a pas d’entrées",
     "locateNode": "Localiser le nœud sur le canevas",
+    "missingNodePacks": {
+      "applyChanges": "Appliquer les modifications",
+      "cloudMessage": "Ce workflow nécessite des nœuds personnalisés qui ne sont pas encore disponibles sur Comfy Cloud.",
+      "collapse": "Réduire",
+      "expand": "Développer",
+      "installAll": "Tout installer",
+      "installNodePack": "Installer le pack de nœuds",
+      "installed": "Installé",
+      "installing": "Installation en cours...",
+      "ossMessage": "Ce workflow utilise des nœuds personnalisés que vous n'avez pas encore installés.",
+      "searchInManager": "Rechercher dans le gestionnaire de nœuds",
+      "title": "Packs de nœuds manquants",
+      "unknownPack": "Pack inconnu",
+      "unsupportedTitle": "Packs de nœuds non pris en charge",
+      "viewInManager": "Voir dans le gestionnaire"
+    },
     "mute": "Muet",
     "noErrors": "Aucune erreur",
     "noSelection": "Sélectionnez un nœud pour voir ses propriétés et informations.",
@@ -2599,14 +2732,17 @@
     "cannotDeleteGlobal": "Impossible de supprimer les blueprints installés",
     "confirmDelete": "Cette action supprimera définitivement le plan de votre bibliothèque",
     "confirmDeleteTitle": "Supprimer le plan ?",
+    "disconnected": "Déconnecté",
     "enterDescription": "Saisissez une description",
     "enterSearchAliases": "Saisissez des alias de recherche (séparés par des virgules)",
     "hidden": "Paramètres cachés / imbriqués",
     "hideAll": "Tout masquer",
+    "linked": "(Lié)",
     "loadFailure": "Échec du chargement des plans de sous-graphes",
     "overwriteBlueprint": "L'enregistrement écrasera le plan actuel avec vos modifications",
     "overwriteBlueprintTitle": "Écraser le plan existant ?",
     "promoteOutsideSubgraph": "Impossible de promouvoir le widget en dehors d'un sous-graphe",
+    "promoteWidget": "Promouvoir le widget : {name}",
     "publish": "Publier le sous-graphe",
     "publishSuccess": "Enregistré dans la bibliothèque de nœuds",
     "publishSuccessMessage": "Vous pouvez trouver votre plan de sous-graphe dans la bibliothèque de nœuds sous \"Plans de sous-graphes\"",
@@ -2614,7 +2750,8 @@
     "searchAliases": "Rechercher des alias",
     "showAll": "Tout afficher",
     "showRecommended": "Afficher les widgets recommandés",
-    "shown": "Affiché sur le nœud"
+    "shown": "Affiché sur le nœud",
+    "unpromoteWidget": "Rétrograder le widget : {name}"
   },
   "subscription": {
     "addApiCredits": "Ajouter des crédits API",
@@ -2622,7 +2759,9 @@
     "addCreditsLabel": "Ajoutez des crédits à tout moment",
     "benefits": {
       "benefit1": "Crédits mensuels pour les Nœuds Partenaires — rechargez si nécessaire",
-      "benefit2": "Jusqu'à 30 min d'exécution par tâche"
+      "benefit1FreeTier": "Plus de crédits mensuels, recharge à tout moment",
+      "benefit2": "Jusqu'à 30 min d'exécution par tâche",
+      "benefit3": "Utilisez vos propres modèles (Creator & Pro)"
     },
     "beta": "BÊTA",
     "billedMonthly": "Facturé mensuellement",
@@ -2660,6 +2799,21 @@
     "description": "Choisissez le forfait qui vous convient",
     "descriptionWorkspace": "Choisissez la meilleure offre pour votre espace de travail",
     "expiresDate": "Expire le {date}",
+    "freeTier": {
+      "description": "Votre plan gratuit inclut {credits} crédits chaque mois pour essayer Comfy Cloud.",
+      "descriptionGeneric": "Votre plan gratuit inclut une allocation mensuelle de crédits pour essayer Comfy Cloud.",
+      "nextRefresh": "Vos crédits seront renouvelés le {date}.",
+      "outOfCredits": {
+        "subtitle": "Abonnez-vous pour débloquer les recharges et plus encore",
+        "title": "Vous n’avez plus de crédits gratuits"
+      },
+      "subscribeCta": "Abonnez-vous pour plus",
+      "title": "Vous êtes sur le plan Gratuit",
+      "topUpBlocked": {
+        "title": "Débloquez les recharges et plus encore"
+      },
+      "upgradeCta": "Voir les offres"
+    },
     "gpuLabel": "RTX 6000 Pro (96GB VRAM)",
     "haveQuestions": "Des questions ou besoin d'une offre entreprise ?",
     "invoiceHistory": "Historique des factures",
@@ -2670,6 +2824,7 @@
     "maxDuration": {
       "creator": "30 min",
       "founder": "30 min",
+      "free": "30 min",
       "pro": "1 h",
       "standard": "30 min"
     },
@@ -2741,6 +2896,9 @@
       },
       "founder": {
         "name": "Édition Fondateur"
+      },
+      "free": {
+        "name": "Gratuit"
       },
       "pro": {
         "name": "Pro"
@@ -2852,6 +3010,7 @@
     "emptyCanvas": "Toile vide",
     "errorCopyImage": "Erreur lors de la copie de l'image: {error}",
     "errorLoadingModel": "Erreur lors du chargement du modèle",
+    "errorOpenImage": "Erreur lors de l'ouverture de l'image : {error}",
     "errorSaveSetting": "Erreur lors de l'enregistrement du paramètre {id}: {err}",
     "exportSuccess": "Modèle exporté avec succès au format {format}",
     "failedExecutionPathResolution": "Impossible de résoudre le chemin vers les nœuds sélectionnés",

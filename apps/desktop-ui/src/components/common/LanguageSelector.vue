@@ -187,13 +187,17 @@ async function onLocaleChange(event: SelectChangeEvent) {
 </script>
 
 <style scoped>
-@reference '../../assets/css/style.css';
-
 :deep(.p-dropdown-panel .p-dropdown-item) {
-  @apply transition-colors;
+  transition-property: color, background-color, border-color;
+  transition-duration: var(--default-transition-duration);
 }
 
 :deep(.p-dropdown) {
-  @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-yellow/60 focus-visible:ring-offset-2;
+  &:focus-visible {
+    outline: none;
+    box-shadow:
+      0 0 0 2px var(--color-neutral-900),
+      0 0 0 4px color-mix(in srgb, var(--color-brand-yellow) 60%, transparent);
+  }
 }
 </style>

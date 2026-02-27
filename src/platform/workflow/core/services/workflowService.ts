@@ -7,22 +7,30 @@ import type { Point, SerialisableGraph } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useWorkflowDraftStore } from '@/platform/workflow/persistence/stores/workflowDraftStore'
+import { syncLinearMode } from '@/platform/workflow/management/stores/comfyWorkflow'
 import {
   ComfyWorkflow,
   useWorkflowStore
 } from '@/platform/workflow/management/stores/workflowStore'
 import { useTelemetry } from '@/platform/telemetry'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
-import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useWorkflowThumbnail } from '@/renderer/core/thumbnail/useWorkflowThumbnail'
 import { app } from '@/scripts/app'
 import { blankGraph, defaultGraph } from '@/scripts/defaultGraph'
 import { useMissingModelsDialog } from '@/composables/useMissingModelsDialog'
 import { useMissingNodesDialog } from '@/composables/useMissingNodesDialog'
 import { useDialogService } from '@/services/dialogService'
+import { useAppMode } from '@/composables/useAppMode'
+import type { AppMode } from '@/composables/useAppMode'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
+import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { appendJsonExt } from '@/utils/formatUtil'
+
+function linearModeToAppMode(linearMode: unknown): AppMode | null {
+  if (typeof linearMode !== 'boolean') return null
+  return linearMode ? 'app' : 'graph'
+}
 
 export const useWorkflowService = () => {
   const settingStore = useSettingStore()
@@ -33,6 +41,7 @@ export const useWorkflowService = () => {
   const missingNodesDialog = useMissingNodesDialog()
   const workflowThumbnail = useWorkflowThumbnail()
   const domWidgetStore = useDomWidgetStore()
+  const executionErrorStore = useExecutionErrorStore()
   const workflowDraftStore = useWorkflowDraftStore()
 
   async function getFilename(defaultName: string): Promise<string | null> {
@@ -91,23 +100,19 @@ export const useWorkflowService = () => {
    * Save a workflow as a new file
    * @param workflow The workflow to save
    * @param options.filename Pre-supplied filename (skips the prompt dialog)
-   * @param options.openAsApp If set, updates linearMode extra before saving
    */
   const saveWorkflowAs = async (
     workflow: ComfyWorkflow,
-    options: { filename?: string; openAsApp?: boolean } = {}
+    options: { filename?: string; initialMode?: AppMode } = {}
   ): Promise<boolean> => {
     const newFilename = options.filename ?? (await workflow.promptSave())
     if (!newFilename) return false
 
-    if (options.openAsApp !== undefined) {
-      app.rootGraph.extra ??= {}
-      app.rootGraph.extra.linearMode = options.openAsApp
-      workflow.changeTracker?.checkState()
-    }
-
     const newPath = workflow.directory + '/' + appendJsonExt(newFilename)
     const existingWorkflow = workflowStore.getWorkflowByPath(newPath)
+
+    const isSelfOverwrite =
+      existingWorkflow?.path === workflow.path && !existingWorkflow?.isTemporary
 
     if (existingWorkflow && !existingWorkflow.isTemporary) {
       const res = await dialogService.confirm({
@@ -119,15 +124,20 @@ export const useWorkflowService = () => {
 
       if (res !== true) return false
 
-      if (existingWorkflow.path === workflow.path) {
-        await saveWorkflow(workflow)
-        return true
+      if (!isSelfOverwrite) {
+        const deleted = await deleteWorkflow(existingWorkflow, true)
+        if (!deleted) return false
       }
-      const deleted = await deleteWorkflow(existingWorkflow, true)
-      if (!deleted) return false
     }
 
-    if (workflow.isTemporary) {
+    if (options.initialMode) workflow.initialMode = options.initialMode
+
+    syncLinearMode(workflow, [app.rootGraph], { flushLinearData: true })
+    workflow.changeTracker?.checkState()
+
+    if (isSelfOverwrite) {
+      await saveWorkflow(workflow)
+    } else if (workflow.isTemporary) {
       await renameWorkflow(workflow, newPath)
       await workflowStore.saveWorkflow(workflow)
     } else {
@@ -146,6 +156,8 @@ export const useWorkflowService = () => {
     if (workflow.isTemporary) {
       await saveWorkflowAs(workflow)
     } else {
+      syncLinearMode(workflow, [app.rootGraph], { flushLinearData: true })
+      workflow.changeTracker?.checkState()
       await workflowStore.saveWorkflow(workflow)
     }
   }
@@ -356,13 +368,17 @@ export const useWorkflowService = () => {
     workflowData: ComfyWorkflowJSON
   ) => {
     const workflowStore = useWorkspaceStore().workflow
-    if (
-      workflowData.extra?.linearMode !== undefined ||
-      !workflowData.nodes.length
-    ) {
-      if (workflowData.extra?.linearMode && !useCanvasStore().linearMode)
+    const { isAppMode } = useAppMode()
+    const wasAppMode = isAppMode.value
+
+    // Determine the initial app mode for fresh loads from serialized state.
+    // null means linearMode was never explicitly set (not builder-saved).
+    const freshLoadMode = linearModeToAppMode(workflowData.extra?.linearMode)
+
+    function trackIfEnteringApp(workflow: ComfyWorkflow) {
+      if (!wasAppMode && workflow.initialMode === 'app') {
         useTelemetry()?.trackEnterLinear({ source: 'workflow' })
-      useCanvasStore().linearMode = !!workflowData.extra?.linearMode
+      }
     }
 
     if (value === null || typeof value === 'string') {
@@ -379,26 +395,39 @@ export const useWorkflowService = () => {
         if (existingWorkflow?.isPersisted && !existingWorkflow.isLoaded) {
           const loadedWorkflow =
             await workflowStore.openWorkflow(existingWorkflow)
+          if (loadedWorkflow.initialMode === undefined) {
+            // Prefer the file's linearMode over the draft's since the file
+            // is the authoritative saved state.
+            loadedWorkflow.initialMode =
+              linearModeToAppMode(
+                loadedWorkflow.initialState?.extra?.linearMode
+              ) ?? freshLoadMode
+            trackIfEnteringApp(loadedWorkflow)
+          }
+          syncLinearMode(loadedWorkflow, [workflowData, app.rootGraph])
           loadedWorkflow.changeTracker.reset(workflowData)
           loadedWorkflow.changeTracker.restore()
           return
         }
       }
 
-      if (useCanvasStore().linearMode) {
-        app.rootGraph.extra ??= {}
-        app.rootGraph.extra.linearMode = true
-      }
-
       const tempWorkflow = workflowStore.createNewTemporary(
         path ? appendJsonExt(path) : undefined,
         workflowData
       )
+      tempWorkflow.initialMode = freshLoadMode
+      trackIfEnteringApp(tempWorkflow)
+      syncLinearMode(tempWorkflow, [workflowData, app.rootGraph])
       await workflowStore.openWorkflow(tempWorkflow)
       return
     }
 
     const loadedWorkflow = await workflowStore.openWorkflow(value)
+    if (loadedWorkflow.initialMode === undefined) {
+      loadedWorkflow.initialMode = freshLoadMode
+      trackIfEnteringApp(loadedWorkflow)
+    }
+    syncLinearMode(loadedWorkflow, [workflowData, app.rootGraph])
     loadedWorkflow.changeTracker.reset(workflowData)
     loadedWorkflow.changeTracker.restore()
   }
@@ -467,12 +496,15 @@ export const useWorkflowService = () => {
     const { missingNodeTypes, missingModels } = wf.pendingWarnings
     wf.pendingWarnings = null
 
-    if (
-      missingNodeTypes?.length &&
-      settingStore.get('Comfy.Workflow.ShowMissingNodesWarning')
-    ) {
-      missingNodesDialog.show({ missingNodeTypes })
+    if (missingNodeTypes?.length) {
+      // Remove modal once Node Replacement is implemented in TabErrors.
+      if (settingStore.get('Comfy.Workflow.ShowMissingNodesWarning')) {
+        missingNodesDialog.show({ missingNodeTypes })
+      }
+
+      executionErrorStore.surfaceMissingNodes(missingNodeTypes)
     }
+
     if (
       missingModels &&
       settingStore.get('Comfy.Workflow.ShowMissingModelsWarning')
