@@ -23,10 +23,16 @@ interface NodeSlotLinksChangedEvent {
   linkId: number
 }
 
+interface NodeSlotLabelChangedEvent {
+  type: 'node:slot-label:changed'
+  nodeId: NodeId
+}
+
 export type LGraphTriggerEvent =
   | NodePropertyChangedEvent
   | NodeSlotErrorsChangedEvent
   | NodeSlotLinksChangedEvent
+  | NodeSlotLabelChangedEvent
 
 export type LGraphTriggerAction = LGraphTriggerEvent['type']
 

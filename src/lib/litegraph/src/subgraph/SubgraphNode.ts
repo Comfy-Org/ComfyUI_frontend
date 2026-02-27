@@ -441,6 +441,9 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
         if (input._widget) {
           input._widget.label = newName
         }
+        this.graph?.trigger('node:slot-label:changed', {
+          nodeId: this.id
+        })
       },
       { signal }
     )
@@ -453,6 +456,9 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
         if (!output) throw new Error('Subgraph output not found')
 
         output.label = newName
+        this.graph?.trigger('node:slot-label:changed', {
+          nodeId: this.id
+        })
       },
       { signal }
     )

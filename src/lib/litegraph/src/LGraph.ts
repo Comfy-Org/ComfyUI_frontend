@@ -1331,7 +1331,8 @@ export class LGraph
     const validEventTypes = new Set([
       'node:slot-links:changed',
       'node:slot-errors:changed',
-      'node:property:changed'
+      'node:property:changed',
+      'node:slot-label:changed'
     ])
 
     if (validEventTypes.has(action) && param && typeof param === 'object') {

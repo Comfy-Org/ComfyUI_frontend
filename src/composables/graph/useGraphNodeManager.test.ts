@@ -240,6 +240,34 @@ describe('Widget slotMetadata reactivity on link disconnect', () => {
   })
 })
 
+describe('Subgraph output slot label reactivity', () => {
+  beforeEach(() => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
+  })
+
+  it('updates output slot label when node:slot-label:changed is triggered', async () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('test')
+    node.addOutput('original_name', 'STRING')
+    graph.add(node)
+
+    const { vueNodeData } = useGraphNodeManager(graph)
+    const nodeData = vueNodeData.get(String(node.id))
+
+    expect(nodeData?.outputs?.[0].label).toBeUndefined()
+
+    // Simulate what SubgraphNode does: set the label, then fire the trigger
+    node.outputs[0].label = 'custom_label'
+    graph.trigger('node:slot-label:changed', { nodeId: node.id })
+
+    await nextTick()
+
+    // Re-read after trigger — the outputs array was replaced
+    const updatedData = vueNodeData.get(String(node.id))
+    expect(updatedData?.outputs?.[0].label).toBe('custom_label')
+  })
+})
+
 describe('Subgraph Promoted Pseudo Widgets', () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
