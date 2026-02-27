@@ -5,6 +5,7 @@ import { computed, nextTick, useTemplateRef, watch, watchEffect } from 'vue'
 
 import { CanvasPointer } from '@/lib/litegraph/src/CanvasPointer'
 import OutputHistoryItem from '@/renderer/extensions/linearMode/OutputHistoryItem.vue'
+import OutputHistoryActiveQueueItem from '@/renderer/extensions/linearMode/OutputHistoryActiveQueueItem.vue'
 import { useLinearOutputStore } from '@/renderer/extensions/linearMode/linearOutputStore'
 import type {
   OutputSelection,
