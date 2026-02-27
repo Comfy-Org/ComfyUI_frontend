@@ -4,6 +4,8 @@ import { useExecutionStore } from '@/stores/executionStore'
 import type { MinimapNodeData } from '../types'
 import { AbstractMinimapDataSource } from './AbstractMinimapDataSource'
 
+let executionStore: ReturnType<typeof useExecutionStore> | null = null
+
 /**
  * Layout Store data source implementation
  */
@@ -12,8 +14,10 @@ export class LayoutStoreDataSource extends AbstractMinimapDataSource {
     const allNodes = layoutStore.getAllNodes().value
     if (allNodes.size === 0) return []
 
-    const executionStore = useExecutionStore()
-    const nodeProgressStates = executionStore.nodeProgressStates
+    if (!executionStore) {
+      executionStore = useExecutionStore()
+    }
+    const nodeProgressStates = executionStore.nodeLocationProgressStates
 
     const nodes: MinimapNodeData[] = []
 
