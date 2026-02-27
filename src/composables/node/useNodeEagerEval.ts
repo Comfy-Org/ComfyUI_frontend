@@ -31,7 +31,7 @@ type EagerEvalContext = Record<string, number | null>
 type CacheEntry = { sig: string; result: EagerEvalResult }
 type InflightEntry = { sig: string; promise: Promise<void> }
 
-export type EagerEvalResult = {
+type EagerEvalResult = {
   value: unknown
   error?: string
 }
