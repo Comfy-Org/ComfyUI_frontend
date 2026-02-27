@@ -270,6 +270,21 @@ const zPriceBadge = z.object({
 
 export type PriceBadge = z.infer<typeof zPriceBadge>
 
+/**
+ * Schema for eager evaluation definition.
+ * Allows nodes to be evaluated on the frontend without a backend round-trip.
+ * Used for math expression nodes and similar pure-computation nodes.
+ */
+const zEagerEval = z.object({
+  engine: z.literal('jsonata').optional().default('jsonata'),
+  /** Static JSONata expression (e.g., "$sum($values)" for an Add blueprint). */
+  expr: z.string().optional(),
+  /** Widget name containing a user-editable JSONata expression. */
+  expr_widget: z.string().optional()
+})
+
+export type EagerEval = z.infer<typeof zEagerEval>
+
 export const zComfyNodeDef = z.object({
   input: zComfyInputsSpec.optional(),
   output: zComfyOutputTypesSpec.optional(),
@@ -311,6 +326,13 @@ export const zComfyNodeDef = z.object({
    * and input connectivity.
    */
   price_badge: zPriceBadge.optional(),
+  /**
+   * Eager evaluation definition for frontend-side computation.
+   * When present, the frontend evaluates the node's expression client-side
+   * using JSONata whenever input values change, displaying the result
+   * without requiring a backend round-trip.
+   */
+  eager_eval: zEagerEval.optional(),
   /** Category for the Essentials tab. If set, the node appears in Essentials. */
   essentials_category: z.string().optional(),
   /** Whether the blueprint is a global/installed blueprint (not user-created). */
