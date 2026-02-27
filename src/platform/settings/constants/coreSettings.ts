@@ -1,8 +1,4 @@
-import {
-  LGraphCanvas,
-  LinkMarkerShape,
-  LiteGraph
-} from '@/lib/litegraph/src/litegraph'
+import { LinkMarkerShape, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { isCloud } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import type { SettingParams } from '@/platform/settings/types'
@@ -1271,10 +1267,6 @@ export const CORE_SETTINGS: SettingParams[] = [
       'When enabled, clicking a group selects all nodes and items inside it',
     type: 'boolean',
     defaultValue: false,
-    onChange(newValue) {
-      const canvas = LGraphCanvas.active_canvas
-      if (canvas) canvas.groupSelectChildren = newValue as boolean
-    },
     versionAdded: '1.42.0'
   }
 ]

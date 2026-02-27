@@ -4391,8 +4391,21 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     if (item instanceof LGraphGroup) {
       item.recomputeInsideNodes()
       if (this.groupSelectChildren) {
-        for (const child of item._children) {
-          this.select(child)
+        // Iterative traversal avoids stack overflow on deeply nested groups
+        // and skips redundant recomputeInsideNodes (already done recursively)
+        const stack: Positionable[] = [...item._children]
+        while (stack.length > 0) {
+          const child = stack.pop()!
+          if (child instanceof LGraphGroup) {
+            if (!child.selected || !this.selectedItems.has(child)) {
+              child.selected = true
+              this.selectedItems.add(child)
+              this.state.selectionChanged = true
+            }
+            for (const nested of child._children) stack.push(nested)
+          } else if (!child.selected || !this.selectedItems.has(child)) {
+            this.select(child)
+          }
         }
       }
       return
@@ -4435,8 +4448,19 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     this.state.selectionChanged = true
 
     if (item instanceof LGraphGroup && this.groupSelectChildren) {
-      for (const child of item._children) {
-        this.deselect(child)
+      const stack: Positionable[] = [...item._children]
+      while (stack.length > 0) {
+        const child = stack.pop()!
+        if (child instanceof LGraphGroup) {
+          if (child.selected || this.selectedItems.has(child)) {
+            child.selected = false
+            this.selectedItems.delete(child)
+            this.state.selectionChanged = true
+          }
+          for (const nested of child._children) stack.push(nested)
+        } else if (child.selected || this.selectedItems.has(child)) {
+          this.deselect(child)
+        }
       }
       return
     }
@@ -4608,7 +4632,9 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     this.emitBeforeChange()
     graph.beforeChange()
 
-    for (const item of this.selectedItems) {
+    // Snapshot to prevent mutation during iteration (e.g. group deselect cascade)
+    const toDelete = [...this.selectedItems]
+    for (const item of toDelete) {
       if (item instanceof LGraphNode) {
         const node = item
         if (node.block_delete) continue
