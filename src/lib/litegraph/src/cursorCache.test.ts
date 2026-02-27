@@ -19,24 +19,24 @@ function createMockElement() {
 
 describe('createCursorCache', () => {
   it('should only write to DOM when cursor value changes', () => {
-    const setCursor = createCursorCache()
     const { element, setter } = createMockElement()
+    const setCursor = createCursorCache(element)
 
-    setCursor('crosshair', element)
-    setCursor('crosshair', element)
-    setCursor('crosshair', element)
+    setCursor('crosshair')
+    setCursor('crosshair')
+    setCursor('crosshair')
 
     expect(setter).toHaveBeenCalledTimes(1)
     expect(setter).toHaveBeenCalledWith('crosshair')
   })
 
   it('should write to DOM when cursor value differs', () => {
-    const setCursor = createCursorCache()
     const { element, setter } = createMockElement()
+    const setCursor = createCursorCache(element)
 
-    setCursor('default', element)
-    setCursor('crosshair', element)
-    setCursor('grabbing', element)
+    setCursor('default')
+    setCursor('crosshair')
+    setCursor('grabbing')
 
     expect(setter).toHaveBeenCalledTimes(3)
     expect(setter).toHaveBeenNthCalledWith(1, 'default')
@@ -45,14 +45,14 @@ describe('createCursorCache', () => {
   })
 
   it('should skip repeated values interspersed with changes', () => {
-    const setCursor = createCursorCache()
     const { element, setter } = createMockElement()
+    const setCursor = createCursorCache(element)
 
-    setCursor('default', element)
-    setCursor('default', element)
-    setCursor('grab', element)
-    setCursor('grab', element)
-    setCursor('default', element)
+    setCursor('default')
+    setCursor('default')
+    setCursor('grab')
+    setCursor('grab')
+    setCursor('default')
 
     expect(setter).toHaveBeenCalledTimes(3)
   })

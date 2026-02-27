@@ -365,7 +365,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     this.canvas.dispatchEvent(new CustomEvent(type, { detail }))
   }
 
-  private _setCursor = createCursorCache()
+  private _setCursor!: ReturnType<typeof createCursorCache>
 
   private _updateCursorStyle() {
     if (!this.state.shouldSetCursor) return
@@ -389,7 +389,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       cursor = 'grab'
     }
 
-    this._setCursor(cursor, this.canvas)
+    this._setCursor(cursor)
   }
 
   // Whether the canvas was previously being dragged prior to pressing space key.
@@ -1914,6 +1914,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     this.pointer.element = element
 
     if (!element) return
+    this._setCursor = createCursorCache(element)
 
     // TODO: classList.add
     element.className += ' lgraphcanvas'
@@ -2973,7 +2974,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
           }
 
           // Set appropriate cursor for resize direction
-          this._setCursor(cursors[resizeDirection], this.canvas)
+          this._setCursor(cursors[resizeDirection])
           return
         }
       }
