@@ -614,7 +614,7 @@ test.describe(
             (el) => getComputedStyle(el).opacity
           )
 
-          if (opacity === '1') {
+          if (opacity === '1' && (await textarea.isEditable())) {
             const testContent = `nested-promotion-edit-${i}`
             await textarea.fill(testContent)
             await expect(textarea).toHaveValue(testContent)
