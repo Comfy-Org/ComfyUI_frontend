@@ -1,6 +1,6 @@
 <template>
   <div
-    class="fixed bottom-4 left-1/2 z-[1000] flex -translate-x-1/2 items-center rounded-2xl border border-border-default bg-base-background p-2 shadow-interface"
+    class="fixed bottom-4 left-1/2 z-1000 flex -translate-x-1/2 items-center rounded-2xl border border-border-default bg-base-background p-2 shadow-interface"
   >
     <Button size="lg" @click="onExitBuilder">
       {{ t('builderMenu.exitAppBuilder') }}
