@@ -148,22 +148,19 @@ function renderNodes(
     }
   }
 
+  ctx.lineWidth = 0.3
   for (const nodes of nodesByColor.values()) {
     for (const node of nodes) {
       if (node.hasErrors && context.settings.renderError) {
-        ctx.lineWidth = 0.3
         ctx.strokeStyle = colors.errorColor
         ctx.strokeRect(node.x, node.y, node.w, node.h)
       } else if (node.executionState === 'running') {
-        ctx.lineWidth = 1
         ctx.strokeStyle = colors.runningColor
         ctx.strokeRect(node.x, node.y, node.w, node.h)
       } else if (node.executionState === 'finished') {
-        ctx.lineWidth = 1
         ctx.strokeStyle = colors.successColor
         ctx.strokeRect(node.x, node.y, node.w, node.h)
       } else if (node.executionState === 'error') {
-        ctx.lineWidth = 1
         ctx.strokeStyle = colors.errorColor
         ctx.strokeRect(node.x, node.y, node.w, node.h)
       }
