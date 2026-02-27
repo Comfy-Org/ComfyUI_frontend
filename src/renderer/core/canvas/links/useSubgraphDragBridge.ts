@@ -172,6 +172,7 @@ export function useSubgraphDragBridge() {
     let pendingMove: { clientX: number; clientY: number } | null = null
     let highlightedSlotEl: HTMLElement | null = null
 
+    /** Resolves the Vue slot under the pointer and updates snap/highlight state. */
     const processFrame = () => {
       const data = pendingMove
       if (!data) return
@@ -293,6 +294,7 @@ export function useSubgraphDragBridge() {
 
     const raf = createRafBatch(processFrame)
 
+    /** Buffers the latest pointer position and schedules a RAF frame. */
     const onPointerMove = (e: PointerEvent) => {
       pendingMove = { clientX: e.clientX, clientY: e.clientY }
       raf.schedule()
