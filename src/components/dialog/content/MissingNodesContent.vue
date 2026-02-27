@@ -234,6 +234,7 @@ import { isCloud } from '@/platform/distribution/types'
 import type { NodeReplacement } from '@/platform/nodeReplacement/types'
 import { useNodeReplacement } from '@/platform/nodeReplacement/useNodeReplacement'
 import { useDialogStore } from '@/stores/dialogStore'
+import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import type { MissingNodeType } from '@/types/comfy'
 import { cn } from '@/utils/tailwindUtil'
 import { useMissingNodes } from '@/workbench/extensions/manager/composables/nodePack/useMissingNodes'
@@ -245,6 +246,7 @@ const { missingNodeTypes } = defineProps<{
 const { missingCoreNodes } = useMissingNodes()
 const { replaceNodesInPlace } = useNodeReplacement()
 const dialogStore = useDialogStore()
+const executionErrorStore = useExecutionErrorStore()
 
 interface ProcessedNode {
   label: string
@@ -338,6 +340,11 @@ function handleReplaceSelected() {
   }
   replacedTypes.value = nextReplaced
   selectedTypes.value = nextSelected
+
+  // Sync with execution error store so the Errors Tab updates immediately
+  if (result.length > 0) {
+    executionErrorStore.removeMissingNodesByType(result)
+  }
 
   // Auto-close when all replaceable nodes replaced and no non-replaceable remain
   const allReplaced = replaceableNodes.value.every((n) =>

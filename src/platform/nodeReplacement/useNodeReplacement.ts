@@ -229,7 +229,12 @@ export function useNodeReplacement() {
     try {
       const placeholders = collectAllNodes(
         graph,
-        (n) => !!n.has_errors && !!n.last_serialization
+        (n) =>
+          !!n.last_serialization &&
+          !(
+            (n.last_serialization.type ?? n.type ?? '') in
+            LiteGraph.registered_node_types
+          )
       )
 
       for (const node of placeholders) {
