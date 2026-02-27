@@ -3701,6 +3701,57 @@
       }
     }
   },
+  "GeminiNanoBanana2": {
+    "description": "Gere ou edite imagens de forma síncrona via Google Vertex API.",
+    "display_name": "Nano Banana 2",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio",
+        "tooltip": "Se definido como 'auto', corresponde à proporção da imagem de entrada; se nenhuma imagem for fornecida, normalmente é gerado um quadrado 16:9."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "files": {
+        "name": "files",
+        "tooltip": "Arquivo(s) opcional(is) para usar como contexto para o modelo. Aceita entradas do nó Gemini Generate Content Input Files."
+      },
+      "images": {
+        "name": "images",
+        "tooltip": "Imagem(ns) de referência opcional(is). Para incluir várias imagens, use o nó Batch Images (até 14)."
+      },
+      "model": {
+        "name": "model"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Prompt de texto descrevendo a imagem a ser gerada ou as edições a serem aplicadas. Inclua quaisquer restrições, estilos ou detalhes que o modelo deve seguir."
+      },
+      "resolution": {
+        "name": "resolution",
+        "tooltip": "Resolução de saída desejada. Para 2K/4K, o upscaler nativo do Gemini é utilizado."
+      },
+      "response_modalities": {
+        "name": "response_modalities"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Quando a seed é fixada em um valor específico, o modelo faz o melhor esforço para fornecer a mesma resposta em solicitações repetidas. A saída determinística não é garantida. Além disso, alterar o modelo ou configurações de parâmetros, como a temperatura, pode causar variações na resposta mesmo usando o mesmo valor de seed. Por padrão, um valor de seed aleatório é usado."
+      },
+      "system_prompt": {
+        "name": "system_prompt",
+        "tooltip": "Instruções fundamentais que ditam o comportamento da IA."
+      },
+      "thinking_level": {
+        "name": "thinking_level"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "GeminiNode": {
     "description": "Gere respostas em texto com o modelo Gemini AI do Google. Você pode fornecer múltiplos tipos de entrada (texto, imagens, áudio, vídeo) como contexto para gerar respostas mais relevantes e significativas.",
     "display_name": "Google Gemini",

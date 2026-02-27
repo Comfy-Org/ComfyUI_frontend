@@ -3701,6 +3701,57 @@
       }
     }
   },
+  "GeminiNanoBanana2": {
+    "description": "Google Vertex API를 통해 이미지를 동기적으로 생성하거나 편집합니다.",
+    "display_name": "Nano Banana 2",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "종횡비",
+        "tooltip": "'auto'로 설정하면 입력 이미지의 종횡비와 일치합니다. 이미지가 제공되지 않으면 일반적으로 16:9 정사각형이 생성됩니다."
+      },
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "files": {
+        "name": "파일",
+        "tooltip": "모델의 컨텍스트로 사용할 선택적 파일(들)입니다. Gemini Generate Content Input Files 노드에서 입력을 받을 수 있습니다."
+      },
+      "images": {
+        "name": "이미지",
+        "tooltip": "선택적 참조 이미지(들)입니다. 여러 이미지를 포함하려면 Batch Images 노드를 사용하세요(최대 14개)."
+      },
+      "model": {
+        "name": "모델"
+      },
+      "prompt": {
+        "name": "프롬프트",
+        "tooltip": "생성할 이미지 또는 적용할 편집을 설명하는 텍스트 프롬프트입니다. 모델이 따라야 할 제약 조건, 스타일 또는 세부 정보를 포함하세요."
+      },
+      "resolution": {
+        "name": "해상도",
+        "tooltip": "목표 출력 해상도입니다. 2K/4K의 경우 Gemini 기본 업스케일러가 사용됩니다."
+      },
+      "response_modalities": {
+        "name": "응답 모달리티"
+      },
+      "seed": {
+        "name": "시드",
+        "tooltip": "시드를 특정 값으로 고정하면, 모델은 반복 요청에 대해 동일한 응답을 제공하려고 최선을 다합니다. 결정적 결과는 보장되지 않습니다. 또한, 모델이나 파라미터 설정(예: temperature)을 변경하면 동일한 시드 값을 사용해도 응답이 달라질 수 있습니다. 기본적으로 무작위 시드 값이 사용됩니다."
+      },
+      "system_prompt": {
+        "name": "시스템 프롬프트",
+        "tooltip": "AI의 동작을 지시하는 기본 지침입니다."
+      },
+      "thinking_level": {
+        "name": "사고 수준"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "GeminiNode": {
     "description": "Google의 Gemini AI 모델로 텍스트 응답을 생성합니다. 더 관련성 있고 의미 있는 응답을 생성하기 위해 컨텍스트로 여러 유형의 입력(텍스트, 이미지, 오디오, 비디오)을 제공할 수 있습니다.",
     "display_name": "Google Gemini",

@@ -958,6 +958,7 @@
     "imageUrl": "آدرس تصویر",
     "import": "وارد کردن",
     "inProgress": "در حال انجام",
+    "inSubgraph": "در زیرگراف «{name}»",
     "increment": "افزایش",
     "info": "اطلاعات node",
     "input": "ورودی",
@@ -1115,6 +1116,7 @@
     "updated": "به‌روزرسانی شد",
     "updating": "در حال به‌روزرسانی {id}",
     "upload": "بارگذاری",
+    "uploadAlreadyInProgress": "بارگذاری در حال انجام است",
     "usageHint": "راهنمای استفاده",
     "use": "استفاده",
     "user": "کاربر",
@@ -1354,8 +1356,13 @@
     },
     "downloadAll": "دانلود همه",
     "dragAndDropImage": "تصویر را بکشید و رها کنید",
+    "giveFeedback": "ارسال بازخورد",
     "graphMode": "حالت گراف",
     "linearMode": "حالت برنامه",
+    "queue": {
+      "clear": "پاک‌سازی صف",
+      "clickToClear": "برای پاک‌سازی صف کلیک کنید"
+    },
     "rerun": "اجرای مجدد",
     "reuseParameters": "استفاده مجدد از پارامترها",
     "runCount": "تعداد اجرا: ",
@@ -1575,6 +1582,9 @@
     "nodePack": "بسته نود",
     "nodePackInfo": "اطلاعات Node Pack",
     "notAvailable": "در دسترس نیست",
+    "packInstall": {
+      "nodeIdRequired": "شناسه node برای نصب الزامی است"
+    },
     "packsSelected": "بسته انتخاب شد",
     "repository": "مخزن",
     "restartToApplyChanges": "برای اعمال تغییرات، لطفاً ComfyUI را مجدداً راه‌اندازی کنید",
@@ -2099,6 +2109,19 @@
     },
     "title": "دستگاه شما پشتیبانی نمی‌شود"
   },
+  "painter": {
+    "background": "پس‌زمینه",
+    "brush": "براش",
+    "clear": "پاک‌سازی",
+    "color": "انتخاب رنگ",
+    "eraser": "پاک‌کن",
+    "hardness": "سختی",
+    "height": "ارتفاع",
+    "size": "اندازه نشانگر",
+    "tool": "ابزار",
+    "uploadError": "بارگذاری تصویر painter ناموفق بود: {status} - {statusText}",
+    "width": "عرض"
+  },
   "progressToast": {
     "allDownloadsCompleted": "همه دانلودها تکمیل شدند",
     "downloadingModel": "در حال دانلود مدل...",
@@ -2219,6 +2242,22 @@
     "inputsNone": "بدون ورودی",
     "inputsNoneTooltip": "این نود ورودی ندارد",
     "locateNode": "یافتن node در canvas",
+    "missingNodePacks": {
+      "applyChanges": "اعمال تغییرات",
+      "cloudMessage": "این workflow به nodeهای سفارشی نیاز دارد که هنوز در Comfy Cloud موجود نیستند.",
+      "collapse": "جمع کردن",
+      "expand": "باز کردن",
+      "installAll": "نصب همه",
+      "installNodePack": "نصب پک node",
+      "installed": "نصب شد",
+      "installing": "در حال نصب...",
+      "ossMessage": "این workflow از nodeهای سفارشی استفاده می‌کند که هنوز نصب نکرده‌اید.",
+      "searchInManager": "جستجو در Node Manager",
+      "title": "پک‌های node مفقود",
+      "unknownPack": "پک ناشناخته",
+      "unsupportedTitle": "پک‌های node پشتیبانی‌نشده",
+      "viewInManager": "مشاهده در Manager"
+    },
     "mute": "بی‌صدا",
     "noErrors": "بدون خطا",
     "noSelection": "یک نود را انتخاب کنید تا ویژگی‌ها و اطلاعات آن نمایش داده شود.",

@@ -3701,6 +3701,57 @@
       }
     }
   },
+  "GeminiNanoBanana2": {
+    "description": "透過 Google Vertex API 同步產生或編輯影像。",
+    "display_name": "Nano Banana 2",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio",
+        "tooltip": "若設為「auto」，則會配合輸入影像的長寬比；若未提供影像，通常會產生 16:9 的正方形。"
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "files": {
+        "name": "files",
+        "tooltip": "可選的檔案，作為模型的參考內容。可接受來自 Gemini Generate Content Input Files 節點的輸入。"
+      },
+      "images": {
+        "name": "images",
+        "tooltip": "可選的參考影像。若要加入多張影像，請使用 Batch Images 節點（最多 14 張）。"
+      },
+      "model": {
+        "name": "model"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "描述要產生影像或要套用編輯的文字提示。請包含模型應遵循的任何限制、風格或細節。"
+      },
+      "resolution": {
+        "name": "resolution",
+        "tooltip": "目標輸出解析度。若選擇 2K/4K，將使用原生 Gemini 放大器。"
+      },
+      "response_modalities": {
+        "name": "response_modalities"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "當 seed 設定為特定值時，模型會盡力在重複請求時提供相同的回應，但不保證完全一致。更改模型或參數（如 temperature）即使使用相同 seed 也可能導致回應不同。預設會使用隨機 seed 值。"
+      },
+      "system_prompt": {
+        "name": "system_prompt",
+        "tooltip": "決定 AI 行為的基礎指令。"
+      },
+      "thinking_level": {
+        "name": "thinking_level"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "GeminiNode": {
     "description": "使用 Google 的 Gemini AI 模型生成文字回應。您可以提供多種類型的輸入（文字、圖片、音訊、影片）作為上下文，以生成更相關且有意義的回應。",
     "display_name": "Google Gemini",

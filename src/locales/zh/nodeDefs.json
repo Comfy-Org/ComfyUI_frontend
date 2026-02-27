@@ -3701,6 +3701,57 @@
       }
     }
   },
+  "GeminiNanoBanana2": {
+    "description": "通过 Google Vertex API 同步生成或编辑图像。",
+    "display_name": "Nano Banana 2",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "宽高比",
+        "tooltip": "如果设置为“自动”，则匹配输入图像的宽高比；如果未提供图像，通常会生成 16:9 的正方形。"
+      },
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "files": {
+        "name": "文件",
+        "tooltip": "可选的文件，作为模型的上下文使用。可接受来自 Gemini 生成内容输入文件节点的输入。"
+      },
+      "images": {
+        "name": "图像",
+        "tooltip": "可选的参考图像。要包含多张图片，请使用批量图像节点（最多 14 张）。"
+      },
+      "model": {
+        "name": "模型"
+      },
+      "prompt": {
+        "name": "提示词",
+        "tooltip": "描述要生成图像或要应用编辑的文本提示。请包含模型应遵循的任何约束、风格或细节。"
+      },
+      "resolution": {
+        "name": "分辨率",
+        "tooltip": "目标输出分辨率。对于 2K/4K，使用原生 Gemini 超分辨率算法。"
+      },
+      "response_modalities": {
+        "name": "响应模式"
+      },
+      "seed": {
+        "name": "种子",
+        "tooltip": "当种子值固定时，模型会尽力为重复请求提供相同的响应，但不能保证输出完全一致。此外，更改模型或参数设置（如温度）即使使用相同的种子值，也可能导致响应不同。默认情况下使用随机种子值。"
+      },
+      "system_prompt": {
+        "name": "系统提示词",
+        "tooltip": "决定 AI 行为的基础性指令。"
+      },
+      "thinking_level": {
+        "name": "思考层级"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "GeminiNode": {
     "description": "使用 Google 的 Gemini AI 模型生成文本响应。您可以提供多种类型的输入（文本、图像、音频、视频）作为上下文，以生成更相关和有意义的响应。",
     "display_name": "Google Gemini",

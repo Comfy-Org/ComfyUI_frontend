@@ -3701,6 +3701,57 @@
       }
     }
   },
+  "GeminiNanoBanana2": {
+    "description": "Google Vertex API を使って画像を同期的に生成または編集します。",
+    "display_name": "Nano Banana 2",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "アスペクト比",
+        "tooltip": "「auto」に設定すると入力画像のアスペクト比に合わせます。画像が指定されていない場合は通常16:9の正方形が生成されます。"
+      },
+      "control_after_generate": {
+        "name": "生成後のコントロール"
+      },
+      "files": {
+        "name": "ファイル",
+        "tooltip": "モデルのコンテキストとして使用する任意のファイル。Gemini Generate Content Input Filesノードからの入力を受け付けます。"
+      },
+      "images": {
+        "name": "画像",
+        "tooltip": "任意の参照画像。複数画像を含める場合はBatch Imagesノードを使用してください（最大14枚まで）。"
+      },
+      "model": {
+        "name": "モデル"
+      },
+      "prompt": {
+        "name": "プロンプト",
+        "tooltip": "生成する画像や適用する編集内容を説明するテキストプロンプトです。モデルが従うべき制約、スタイル、詳細なども含めてください。"
+      },
+      "resolution": {
+        "name": "解像度",
+        "tooltip": "出力画像の目標解像度です。2K/4Kの場合はGeminiのネイティブアップスケーラーが使用されます。"
+      },
+      "response_modalities": {
+        "name": "レスポンスモダリティ"
+      },
+      "seed": {
+        "name": "シード",
+        "tooltip": "シード値を特定の値に固定すると、モデルは繰り返しリクエストに対して同じ応答を返すよう最善を尽くしますが、完全な決定論的出力は保証されません。また、モデルやパラメータ設定（例：temperature）を変更すると、同じシード値でも応答が変化する場合があります。デフォルトではランダムなシード値が使用されます。"
+      },
+      "system_prompt": {
+        "name": "システムプロンプト",
+        "tooltip": "AIの挙動を決定する基本的な指示です。"
+      },
+      "thinking_level": {
+        "name": "思考レベル"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "GeminiNode": {
     "description": "GoogleのGemini AIモデルでテキスト応答を生成します。テキスト、画像、音声、動画など複数の種類の入力をコンテキストとして提供し、より関連性の高い意味のある応答を生成できます。",
     "display_name": "Google Gemini",

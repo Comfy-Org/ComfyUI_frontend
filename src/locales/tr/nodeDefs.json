@@ -3701,6 +3701,57 @@
       }
     }
   },
+  "GeminiNanoBanana2": {
+    "description": "Google Vertex API üzerinden senkron olarak görseller oluşturun veya düzenleyin.",
+    "display_name": "Nano Banana 2",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio",
+        "tooltip": "'auto' olarak ayarlanırsa, giriş görselinizin en-boy oranı kullanılır; görsel yoksa genellikle 16:9 kare oluşturulur."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "files": {
+        "name": "files",
+        "tooltip": "Model için bağlam olarak kullanılacak isteğe bağlı dosya(lar). Gemini Generate Content Input Files düğümünden gelen girdileri kabul eder."
+      },
+      "images": {
+        "name": "images",
+        "tooltip": "İsteğe bağlı referans görsel(ler)i. Birden fazla görsel eklemek için Batch Images düğümünü kullanın (en fazla 14)."
+      },
+      "model": {
+        "name": "model"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Oluşturulacak görseli veya uygulanacak düzenlemeleri tanımlayan metin istemi. Modelin uyması gereken kısıtlamalar, stiller veya detayları ekleyin."
+      },
+      "resolution": {
+        "name": "resolution",
+        "tooltip": "Hedef çıktı çözünürlüğü. 2K/4K için yerel Gemini yükselticisi kullanılır."
+      },
+      "response_modalities": {
+        "name": "response_modalities"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed belirli bir değere sabitlendiğinde, model tekrarlanan isteklerde aynı yanıtı vermeye çalışır. Deterministik çıktı garanti edilmez. Ayrıca, model veya parametre ayarlarını (ör. sıcaklık) değiştirmek, aynı seed değeriyle bile yanıtın farklı olmasına neden olabilir. Varsayılan olarak rastgele bir seed değeri kullanılır."
+      },
+      "system_prompt": {
+        "name": "system_prompt",
+        "tooltip": "Bir yapay zekanın davranışını belirleyen temel talimatlar."
+      },
+      "thinking_level": {
+        "name": "thinking_level"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "GeminiNode": {
     "description": "Google'ın Gemini AI modeli ile metin yanıtları oluşturun. Daha alakalı ve anlamlı yanıtlar oluşturmak için bağlam olarak birden fazla girdi türü (metin, görseller, ses, video) sağlayabilirsiniz.",
     "display_name": "Google Gemini",

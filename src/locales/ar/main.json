@@ -958,6 +958,7 @@
     "imageUrl": "رابط الصورة",
     "import": "استيراد",
     "inProgress": "جارٍ التنفيذ",
+    "inSubgraph": "في الرسم البياني الفرعي '{name}'",
     "increment": "زيادة",
     "info": "معلومات العقدة",
     "input": "إدخال",
@@ -1115,6 +1116,7 @@
     "updated": "تم التحديث",
     "updating": "جارٍ التحديث",
     "upload": "رفع",
+    "uploadAlreadyInProgress": "الرفع جارٍ بالفعل",
     "usageHint": "تلميح الاستخدام",
     "use": "استخدم",
     "user": "المستخدم",
@@ -1354,8 +1356,13 @@
     },
     "downloadAll": "تنزيل الكل",
     "dragAndDropImage": "اسحب وأسقط صورة",
+    "giveFeedback": "إعطاء ملاحظات",
     "graphMode": "وضع الرسم البياني",
     "linearMode": "وضع التطبيق",
+    "queue": {
+      "clear": "مسح قائمة الانتظار",
+      "clickToClear": "انقر لمسح قائمة الانتظار"
+    },
     "rerun": "تشغيل مجدد",
     "reuseParameters": "إعادة استخدام المعلمات",
     "runCount": "عدد مرات التشغيل:",
@@ -1575,6 +1582,9 @@
     "nodePack": "حزمة العقد",
     "nodePackInfo": "معلومات حزمة العقد",
     "notAvailable": "غير متوفر",
+    "packInstall": {
+      "nodeIdRequired": "معرّف العقدة مطلوب للتثبيت"
+    },
     "packsSelected": "الحزم المحددة",
     "repository": "المستودع",
     "restartToApplyChanges": "لـتطبيق التغييرات، يرجى إعادة تشغيل ComfyUI",
@@ -2099,6 +2109,19 @@
     },
     "title": "جهازك غير مدعوم"
   },
+  "painter": {
+    "background": "الخلفية",
+    "brush": "فرشاة",
+    "clear": "مسح",
+    "color": "منتقي اللون",
+    "eraser": "ممحاة",
+    "hardness": "الصلابة",
+    "height": "الارتفاع",
+    "size": "حجم المؤشر",
+    "tool": "أداة",
+    "uploadError": "فشل في رفع صورة الرسام: {status} - {statusText}",
+    "width": "العرض"
+  },
   "progressToast": {
     "allDownloadsCompleted": "اكتملت جميع التنزيلات",
     "downloadingModel": "جاري تنزيل النموذج...",
@@ -2219,6 +2242,22 @@
     "inputsNone": "لا توجد مدخلات",
     "inputsNoneTooltip": "العقدة ليس لديها مدخلات",
     "locateNode": "تحديد موقع العقدة على اللوحة",
+    "missingNodePacks": {
+      "applyChanges": "تطبيق التغييرات",
+      "cloudMessage": "يتطلب سير العمل هذا عقدًا مخصصة غير متوفرة بعد على Comfy Cloud.",
+      "collapse": "طي",
+      "expand": "توسيع",
+      "installAll": "تثبيت الكل",
+      "installNodePack": "تثبيت حزمة العقد",
+      "installed": "تم التثبيت",
+      "installing": "جارٍ التثبيت...",
+      "ossMessage": "يستخدم سير العمل هذا عقدًا مخصصة لم تقم بتثبيتها بعد.",
+      "searchInManager": "البحث في مدير العقد",
+      "title": "حزم العقد المفقودة",
+      "unknownPack": "حزمة غير معروفة",
+      "unsupportedTitle": "حزم العقد غير المدعومة",
+      "viewInManager": "عرض في المدير"
+    },
     "mute": "كتم",
     "noErrors": "لا توجد أخطاء",
     "noSelection": "حدد عقدة لعرض خصائصها ومعلوماتها.",

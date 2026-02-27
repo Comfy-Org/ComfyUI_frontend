@@ -958,6 +958,7 @@
     "imageUrl": "画像URL",
     "import": "インポート",
     "inProgress": "進行中",
+    "inSubgraph": "サブグラフ「{name}」内",
     "increment": "増加",
     "info": "ノード情報",
     "input": "入力",
@@ -1115,6 +1116,7 @@
     "updated": "更新済み",
     "updating": "更新中",
     "upload": "アップロード",
+    "uploadAlreadyInProgress": "アップロードはすでに進行中です",
     "usageHint": "使用ヒント",
     "use": "使用",
     "user": "ユーザー",
@@ -1354,8 +1356,13 @@
     },
     "downloadAll": "すべてダウンロード",
     "dragAndDropImage": "画像をドラッグ＆ドロップ",
+    "giveFeedback": "フィードバックを送る",
     "graphMode": "グラフモード",
     "linearMode": "アプリモード",
+    "queue": {
+      "clear": "キューをクリア",
+      "clickToClear": "クリックしてキューをクリア"
+    },
     "rerun": "再実行",
     "reuseParameters": "パラメータを再利用",
     "runCount": "実行回数：",
@@ -1575,6 +1582,9 @@
     "nodePack": "ノードパック",
     "nodePackInfo": "ノードパック情報",
     "notAvailable": "利用不可",
+    "packInstall": {
+      "nodeIdRequired": "インストールにはノードIDが必要です"
+    },
     "packsSelected": "選択したパック",
     "repository": "リポジトリ",
     "restartToApplyChanges": "変更を適用するには、ComfyUIを再起動してください",
@@ -2099,6 +2109,19 @@
     },
     "title": "お使いのデバイスはサポートされていません"
   },
+  "painter": {
+    "background": "背景",
+    "brush": "ブラシ",
+    "clear": "クリア",
+    "color": "カラーピッカー",
+    "eraser": "消しゴム",
+    "hardness": "硬さ",
+    "height": "高さ",
+    "size": "カーソルサイズ",
+    "tool": "ツール",
+    "uploadError": "ペインター画像のアップロードに失敗しました: {status} - {statusText}",
+    "width": "幅"
+  },
   "progressToast": {
     "allDownloadsCompleted": "すべてのダウンロードが完了しました",
     "downloadingModel": "モデルをダウンロード中...",
@@ -2219,6 +2242,22 @@
     "inputsNone": "入力なし",
     "inputsNoneTooltip": "このノードには入力がありません",
     "locateNode": "キャンバス上でノードを探す",
+    "missingNodePacks": {
+      "applyChanges": "変更を適用",
+      "cloudMessage": "このワークフローにはComfy Cloudでまだ利用できないカスタムノードが必要です。",
+      "collapse": "折りたたむ",
+      "expand": "展開",
+      "installAll": "すべてインストール",
+      "installNodePack": "ノードパックをインストール",
+      "installed": "インストール済み",
+      "installing": "インストール中...",
+      "ossMessage": "このワークフローにはまだインストールしていないカスタムノードが使われています。",
+      "searchInManager": "ノードマネージャーで検索",
+      "title": "不足しているノードパック",
+      "unknownPack": "不明なパック",
+      "unsupportedTitle": "サポートされていないノードパック",
+      "viewInManager": "マネージャーで表示"
+    },
     "mute": "ミュート",
     "noErrors": "エラーなし",
     "noSelection": "ノードを選択すると、そのプロパティと情報が表示されます。",

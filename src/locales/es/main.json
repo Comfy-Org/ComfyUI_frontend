@@ -958,6 +958,7 @@
     "imageUrl": "URL de la imagen",
     "import": "Importar",
     "inProgress": "En progreso",
+    "inSubgraph": "en subgrafo '{name}'",
     "increment": "Incrementar",
     "info": "Información del Nodo",
     "input": "Entrada",
@@ -1115,6 +1116,7 @@
     "updated": "Actualizado",
     "updating": "Actualizando",
     "upload": "Subir",
+    "uploadAlreadyInProgress": "La carga ya está en curso",
     "usageHint": "Sugerencia de uso",
     "use": "Usar",
     "user": "Usuario",
@@ -1354,8 +1356,13 @@
     },
     "downloadAll": "Descargar todo",
     "dragAndDropImage": "Arrastra y suelta una imagen",
+    "giveFeedback": "Enviar comentarios",
     "graphMode": "Modo gráfico",
     "linearMode": "Modo App",
+    "queue": {
+      "clear": "Limpiar cola",
+      "clickToClear": "Haz clic para limpiar la cola"
+    },
     "rerun": "Volver a ejecutar",
     "reuseParameters": "Reutilizar parámetros",
     "runCount": "Número de ejecuciones:",
@@ -1575,6 +1582,9 @@
     "nodePack": "Paquete de Nodos",
     "nodePackInfo": "Información del paquete de nodos",
     "notAvailable": "No Disponible",
+    "packInstall": {
+      "nodeIdRequired": "Se requiere el ID del nodo para la instalación"
+    },
     "packsSelected": "Paquetes Seleccionados",
     "repository": "Repositorio",
     "restartToApplyChanges": "Para aplicar los cambios, por favor reinicia ComfyUI",
@@ -2099,6 +2109,19 @@
     },
     "title": "Tu dispositivo no es compatible"
   },
+  "painter": {
+    "background": "Fondo",
+    "brush": "Pincel",
+    "clear": "Limpiar",
+    "color": "Selector de color",
+    "eraser": "Borrador",
+    "hardness": "Dureza",
+    "height": "Alto",
+    "size": "Tamaño del cursor",
+    "tool": "Herramienta",
+    "uploadError": "Error al cargar la imagen del pintor: {status} - {statusText}",
+    "width": "Ancho"
+  },
   "progressToast": {
     "allDownloadsCompleted": "Todas las descargas completadas",
     "downloadingModel": "Descargando modelo...",
@@ -2219,6 +2242,22 @@
     "inputsNone": "SIN ENTRADAS",
     "inputsNoneTooltip": "El nodo no tiene entradas",
     "locateNode": "Localizar nodo en el lienzo",
+    "missingNodePacks": {
+      "applyChanges": "Aplicar cambios",
+      "cloudMessage": "Este flujo de trabajo requiere nodos personalizados que aún no están disponibles en Comfy Cloud.",
+      "collapse": "Colapsar",
+      "expand": "Expandir",
+      "installAll": "Instalar todo",
+      "installNodePack": "Instalar paquete de nodos",
+      "installed": "Instalado",
+      "installing": "Instalando...",
+      "ossMessage": "Este flujo de trabajo utiliza nodos personalizados que aún no has instalado.",
+      "searchInManager": "Buscar en el Gestor de Nodos",
+      "title": "Paquetes de nodos faltantes",
+      "unknownPack": "Paquete desconocido",
+      "unsupportedTitle": "Paquetes de nodos no compatibles",
+      "viewInManager": "Ver en el Gestor"
+    },
     "mute": "Silenciar",
     "noErrors": "Sin errores",
     "noSelection": "Selecciona un nodo para ver sus propiedades e información.",

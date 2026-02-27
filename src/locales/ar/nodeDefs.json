@@ -3701,6 +3701,57 @@
       }
     }
   },
+  "GeminiNanoBanana2": {
+    "description": "إنشاء أو تعديل الصور بشكل متزامن عبر Google Vertex API.",
+    "display_name": "Nano Banana 2",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio",
+        "tooltip": "إذا تم تعيينها إلى 'auto'، سيتم مطابقة نسبة العرض إلى الارتفاع لصورتك المدخلة؛ إذا لم يتم توفير صورة، يتم عادةً إنشاء صورة مربعة بنسبة 16:9."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "files": {
+        "name": "files",
+        "tooltip": "ملف (ملفات) اختيارية لاستخدامها كسياق للنموذج. يقبل المدخلات من عقدة Gemini Generate Content Input Files."
+      },
+      "images": {
+        "name": "images",
+        "tooltip": "صورة (صور) مرجعية اختيارية. لإضافة عدة صور، استخدم عقدة Batch Images (حتى ١٤ صورة)."
+      },
+      "model": {
+        "name": "model"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "وصف نصي للصورة المراد إنشاؤها أو التعديلات المطلوب تطبيقها. أدرج أي قيود أو أنماط أو تفاصيل يجب على النموذج اتباعها."
+      },
+      "resolution": {
+        "name": "resolution",
+        "tooltip": "دقة الإخراج المستهدفة. بالنسبة لـ 2K/4K يتم استخدام أداة التكبير الأصلية لـ Gemini."
+      },
+      "response_modalities": {
+        "name": "response_modalities"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "عند تثبيت قيمة seed على رقم محدد، يحاول النموذج تقديم نفس الاستجابة للطلبات المتكررة قدر الإمكان. لا يمكن ضمان نتائج حتمية. كما أن تغيير النموذج أو إعدادات المعلمات مثل درجة العشوائية قد يؤدي إلى اختلاف النتائج حتى مع نفس قيمة seed. بشكل افتراضي، يتم استخدام قيمة seed عشوائية."
+      },
+      "system_prompt": {
+        "name": "system_prompt",
+        "tooltip": "تعليمات أساسية تحدد سلوك الذكاء الاصطناعي."
+      },
+      "thinking_level": {
+        "name": "thinking_level"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "GeminiNode": {
     "description": "إنشاء استجابات نصية باستخدام نموذج الذكاء الاصطناعي Gemini من Google. يمكنك تقديم أنواع متعددة من المدخلات (نص، صور، صوت، فيديو) كسياق لإنشاء استجابات أكثر صلة ومعنى.",
     "display_name": "Google Gemini",
