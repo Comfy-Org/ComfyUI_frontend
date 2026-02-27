@@ -737,7 +737,10 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
         if (!nodeRef) return
 
         // Force shallowReactive to detect the deep property change
-        // by re-assigning the outputs array through the defineProperty setter
+        // by re-assigning the arrays through the defineProperty setter
+        if (nodeRef.inputs) {
+          nodeRef.inputs = [...nodeRef.inputs]
+        }
         if (nodeRef.outputs) {
           nodeRef.outputs = [...nodeRef.outputs]
         }
