@@ -313,11 +313,12 @@ function safeWidgetMapper(
       const storeName = isPromotedWidgetView(widget)
         ? (sourceWidget?.name ?? promotedSourceSeed?.sourceWidgetName)
         : undefined
+      const name = storeName ?? displayName
 
       return {
         nodeId,
         storeNodeId: nodeId,
-        name: displayName,
+        name,
         storeName,
         type: effectiveWidget.type,
         ...sharedEnhancements,

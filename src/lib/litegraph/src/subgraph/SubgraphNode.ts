@@ -156,36 +156,68 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     const store = usePromotionStore()
     const entries = store.getPromotionsRef(this.rootGraph.id, this.id)
     const linkedEntries = this._getLinkedPromotionEntries()
+    const {
+      displayNameByViewKey,
+      mergedEntries,
+      reconcileEntries,
+      shouldPersistLinkedOnly
+    } = this._buildPromotionMergeState(entries, linkedEntries)
+
+    const hasChanged =
+      mergedEntries.length !== entries.length ||
+      mergedEntries.some(
+        (entry, index) =>
+          entry.interiorNodeId !== entries[index]?.interiorNodeId ||
+          entry.widgetName !== entries[index]?.widgetName
+      )
+
+    if (shouldPersistLinkedOnly && hasChanged) {
+      store.setPromotions(this.rootGraph.id, this.id, mergedEntries)
+    }
+
+    return this._promotedViewManager.reconcile(reconcileEntries, (entry) =>
+      createPromotedWidgetView(
+        this,
+        entry.interiorNodeId,
+        entry.widgetName,
+        displayNameByViewKey.get(entry.viewKey ?? '')
+      )
+    )
+  }
+
+  private _buildPromotionMergeState(
+    entries: Array<{ interiorNodeId: string; widgetName: string }>,
+    linkedEntries: Array<{
+      inputName: string
+      interiorNodeId: string
+      widgetName: string
+    }>
+  ): {
+    displayNameByViewKey: Map<string, string>
+    mergedEntries: Array<{ interiorNodeId: string; widgetName: string }>
+    reconcileEntries: Array<{
+      interiorNodeId: string
+      widgetName: string
+      viewKey?: string
+    }>
+    shouldPersistLinkedOnly: boolean
+  } {
     const linkedPromotionEntries = linkedEntries.map(
       ({ interiorNodeId, widgetName }) => ({
         interiorNodeId,
         widgetName
       })
     )
-    const hasCompleteLinkedCoverage =
-      this.inputs.length > 0 && linkedEntries.length === this.inputs.length
-    const finalEntries = hasCompleteLinkedCoverage
-      ? linkedPromotionEntries
-      : [
-          ...linkedPromotionEntries,
-          ...entries.filter(
-            (entry) =>
-              !linkedPromotionEntries.some(
-                (linkedEntry) =>
-                  linkedEntry.interiorNodeId === entry.interiorNodeId &&
-                  linkedEntry.widgetName === entry.widgetName
-              )
-          )
-        ]
-    const displayNameByViewKey = new Map(
-      linkedEntries.map((entry) => [
-        this._makePromotionViewKey(
-          entry.inputName,
-          entry.interiorNodeId,
-          entry.widgetName
-        ),
-        entry.inputName
-      ])
+    const linkedKeys = new Set(
+      linkedPromotionEntries.map((entry) =>
+        this._makePromotionEntryKey(entry.interiorNodeId, entry.widgetName)
+      )
+    )
+    const fallbackStoredEntries = entries.filter(
+      (entry) =>
+        !linkedKeys.has(
+          this._makePromotionEntryKey(entry.interiorNodeId, entry.widgetName)
+        )
     )
     const linkedReconcileEntries = linkedEntries.map(
       ({ inputName, interiorNodeId, widgetName }) => ({
@@ -198,40 +230,35 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
         )
       })
     )
-    const reconcileEntries = hasCompleteLinkedCoverage
-      ? linkedReconcileEntries
-      : [
-          ...linkedReconcileEntries,
-          ...entries.filter(
-            (entry) =>
-              !linkedPromotionEntries.some(
-                (linkedEntry) =>
-                  linkedEntry.interiorNodeId === entry.interiorNodeId &&
-                  linkedEntry.widgetName === entry.widgetName
-              )
-          )
-        ]
+    const shouldPersistLinkedOnly =
+      this.inputs.length > 0 && linkedEntries.length === this.inputs.length
 
-    const hasChanged =
-      finalEntries.length !== entries.length ||
-      finalEntries.some(
-        (entry, index) =>
-          entry.interiorNodeId !== entries[index]?.interiorNodeId ||
-          entry.widgetName !== entries[index]?.widgetName
-      )
-
-    if (hasCompleteLinkedCoverage && hasChanged) {
-      store.setPromotions(this.rootGraph.id, this.id, finalEntries)
+    return {
+      displayNameByViewKey: new Map(
+        linkedEntries.map((entry) => [
+          this._makePromotionViewKey(
+            entry.inputName,
+            entry.interiorNodeId,
+            entry.widgetName
+          ),
+          entry.inputName
+        ])
+      ),
+      mergedEntries: shouldPersistLinkedOnly
+        ? linkedPromotionEntries
+        : [...linkedPromotionEntries, ...fallbackStoredEntries],
+      reconcileEntries: shouldPersistLinkedOnly
+        ? linkedReconcileEntries
+        : [...linkedReconcileEntries, ...fallbackStoredEntries],
+      shouldPersistLinkedOnly
     }
+  }
 
-    return this._promotedViewManager.reconcile(reconcileEntries, (entry) =>
-      createPromotedWidgetView(
-        this,
-        entry.interiorNodeId,
-        entry.widgetName,
-        displayNameByViewKey.get(entry.viewKey ?? '')
-      )
-    )
+  private _makePromotionEntryKey(
+    interiorNodeId: string,
+    widgetName: string
+  ): string {
+    return `${interiorNodeId}:${widgetName}`
   }
 
   private _makePromotionViewKey(
