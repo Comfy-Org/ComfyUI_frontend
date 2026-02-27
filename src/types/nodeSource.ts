@@ -10,6 +10,7 @@ export enum NodeSourceType {
   Essentials = 'essentials',
   Unknown = 'unknown'
 }
+export const CORE_NODE_MODULES = ['nodes', 'comfy_extras', 'comfy_api_nodes']
 
 export type NodeSource = {
   type: NodeSourceType
@@ -68,9 +69,7 @@ export const getNodeSource = (
       displayText: displayName,
       badgeText: displayName
     }
-  } else if (
-    ['nodes', 'comfy_extras', 'comfy_api_nodes'].includes(modules[0])
-  ) {
+  } else if (CORE_NODE_MODULES.includes(modules[0])) {
     return {
       type: NodeSourceType.Core,
       className: 'comfy-core',

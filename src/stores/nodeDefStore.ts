@@ -24,7 +24,7 @@ import { useSettingStore } from '@/platform/settings/settingStore'
 import { NodeSearchService } from '@/services/nodeSearchService'
 import { useSubgraphStore } from '@/stores/subgraphStore'
 import {
-  NodeSourceType,
+  CORE_NODE_MODULES,
   getEssentialsCategory,
   getNodeSource
 } from '@/types/nodeSource'
@@ -199,7 +199,7 @@ export class ComfyNodeDefImpl
   }
 
   get isCoreNode(): boolean {
-    return this.nodeSource.type === NodeSourceType.Core
+    return CORE_NODE_MODULES.includes(this.python_module.split('.')[0])
   }
 
   get nodeLifeCycleBadgeText(): string {
