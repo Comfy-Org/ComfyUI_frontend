@@ -341,7 +341,10 @@ function handleReplaceSelected() {
   replacedTypes.value = nextReplaced
   selectedTypes.value = nextSelected
 
-  // Sync with execution error store so the Errors Tab updates immediately
+  // replaceNodesInPlace() handles canvas rendering via onNodeAdded(),
+  // but the modal only updates its own local UI state above.
+  // Without this call the Errors Tab would still list the replaced nodes
+  // as missing because executionErrorStore is not aware of the replacement.
   if (result.length > 0) {
     executionErrorStore.removeMissingNodesByType(result)
   }
