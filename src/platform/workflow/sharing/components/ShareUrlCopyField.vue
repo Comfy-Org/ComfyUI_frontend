@@ -6,10 +6,16 @@
       class="flex-1"
       @focus="($event.target as HTMLInputElement).select()"
     />
-    <Button variant="secondary" size="md" @click="handleCopy">
+    <Button
+      variant="secondary"
+      size="lg"
+      class="font-normal"
+      @click="handleCopy"
+    >
       {{
         copied ? $t('shareWorkflow.linkCopied') : $t('shareWorkflow.copyLink')
       }}
+      <i class="icon-[lucide--link] size-3.5" />
     </Button>
   </div>
 </template>

@@ -47,11 +47,11 @@
         </template>
 
         <template v-if="dialogState === 'unsaved'">
-          <p class="m-0 text-xs text-muted-foreground">
+          <p class="m-0 text-sm text-muted-foreground">
             {{ $t('shareWorkflow.unsavedDescription') }}
           </p>
           <label v-if="isTemporary" class="flex flex-col gap-1">
-            <span class="text-xs font-medium text-muted-foreground">
+            <span class="text-sm font-medium text-muted-foreground">
               {{ $t('shareWorkflow.workflowNameLabel') }}
             </span>
             <Input
@@ -78,7 +78,7 @@
         <template v-if="dialogState === 'ready'">
           <p
             v-if="isLoadingAssets"
-            class="m-0 text-xs italic text-muted-foreground"
+            class="m-0 text-sm italic text-muted-foreground"
           >
             {{ $t('shareWorkflow.checkingAssets') }}
           </p>
