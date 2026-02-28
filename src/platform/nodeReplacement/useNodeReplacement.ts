@@ -226,11 +226,22 @@ export function useNodeReplacement() {
       useWorkflowStore().activeWorkflow?.changeTracker ?? null
     changeTracker?.beforeChange()
 
+    // Target types come from node_replacements fetched at workflow load time
+    // and the missing nodes detected at that point — not from the current
+    // registered_node_types. This ensures replacement still works even if
+    // the user has since installed the missing node pack.
+    const targetTypes = new Set(
+      selectedTypes.map((t) => (typeof t === 'string' ? t : t.type))
+    )
+
     try {
-      const placeholders = collectAllNodes(
-        graph,
-        (n) => !!n.has_errors && !!n.last_serialization
-      )
+      const placeholders = collectAllNodes(graph, (n) => {
+        if (!n.last_serialization) return false
+        // Prefer the original serialized type; fall back to the live type
+        // for nodes whose serialization predates the type field.
+        const originalType = n.last_serialization.type ?? n.type
+        return !!originalType && targetTypes.has(originalType)
+      })
 
       for (const node of placeholders) {
         const match = findMatchingType(node, selectedTypes)
