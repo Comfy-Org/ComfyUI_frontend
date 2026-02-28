@@ -188,7 +188,6 @@ import { useMissingNodes } from '@/workbench/extensions/manager/composables/node
 import { useErrorGroups } from './useErrorGroups'
 import type { SwapNodeGroup } from './useErrorGroups'
 import { useNodeReplacement } from '@/platform/nodeReplacement/useNodeReplacement'
-import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 
 const { t } = useI18n()
 const { copyToClipboard } = useCopyToClipboard()
@@ -201,8 +200,7 @@ const { shouldShowManagerButtons, shouldShowInstallButton, openManager } =
 const { missingNodePacks } = useMissingNodes()
 const { isInstalling: isInstallingAll, installAllPacks: installAll } =
   usePackInstall(() => missingNodePacks.value)
-const { replaceNodesInPlace } = useNodeReplacement()
-const executionErrorStore = useExecutionErrorStore()
+const { replaceGroup, replaceAllGroups } = useNodeReplacement()
 
 const searchQuery = ref('')
 
@@ -267,18 +265,11 @@ function handleOpenManagerInfo(packId: string) {
 }
 
 function handleReplaceGroup(group: SwapNodeGroup) {
-  const replaced = replaceNodesInPlace(group.nodeTypes)
-  if (replaced.length > 0) {
-    executionErrorStore.removeMissingNodesByType([group.type])
-  }
+  replaceGroup(group)
 }
 
 function handleReplaceAll() {
-  const allNodeTypes = swapNodeGroups.value.flatMap((g) => g.nodeTypes)
-  const replaced = replaceNodesInPlace(allNodeTypes)
-  if (replaced.length > 0) {
-    executionErrorStore.removeMissingNodesByType(replaced)
-  }
+  replaceAllGroups(swapNodeGroups.value)
 }
 
 function handleEnterSubgraph(nodeId: string) {

@@ -44,6 +44,12 @@ vi.mock('@/i18n', () => ({
     params ? `${key}:${JSON.stringify(params)}` : key
 }))
 
+vi.mock('@/stores/executionErrorStore', () => ({
+  useExecutionErrorStore: vi.fn(() => ({
+    removeMissingNodesByType: vi.fn()
+  }))
+}))
+
 import { app } from '@/scripts/app'
 import { collectAllNodes } from '@/utils/graphTraversalUtil'
 import { useNodeReplacement } from './useNodeReplacement'

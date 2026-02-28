@@ -25,8 +25,6 @@ describe('executionErrorStore — missing node operations', () => {
     setActivePinia(createPinia())
   })
 
-  // ─── setMissingNodeTypes ───
-
   describe('setMissingNodeTypes', () => {
     it('sets missingNodesError with provided types', () => {
       const store = useExecutionErrorStore()
@@ -36,7 +34,7 @@ describe('executionErrorStore — missing node operations', () => {
       store.setMissingNodeTypes(types)
 
       expect(store.missingNodesError).not.toBeNull()
-      expect(store.missingNodesError!.nodeTypes).toHaveLength(1)
+      expect(store.missingNodesError?.nodeTypes).toHaveLength(1)
       expect(store.hasMissingNodes).toBe(true)
     })
 
@@ -60,7 +58,7 @@ describe('executionErrorStore — missing node operations', () => {
         'NodeB'
       ] as MissingNodeType[])
 
-      expect(store.missingNodesError!.nodeTypes).toHaveLength(2)
+      expect(store.missingNodesError?.nodeTypes).toHaveLength(2)
     })
 
     it('deduplicates object entries by nodeId when present', () => {
@@ -72,7 +70,7 @@ describe('executionErrorStore — missing node operations', () => {
       ])
 
       // Same nodeId='1' deduplicated, nodeId='2' kept
-      expect(store.missingNodesError!.nodeTypes).toHaveLength(2)
+      expect(store.missingNodesError?.nodeTypes).toHaveLength(2)
     })
 
     it('deduplicates object entries by type when nodeId is absent', () => {
@@ -83,7 +81,7 @@ describe('executionErrorStore — missing node operations', () => {
       ] as MissingNodeType[])
 
       // Same type, no nodeId → deduplicated
-      expect(store.missingNodesError!.nodeTypes).toHaveLength(1)
+      expect(store.missingNodesError?.nodeTypes).toHaveLength(1)
     })
 
     it('keeps distinct nodeIds even when type is the same', () => {
@@ -94,11 +92,9 @@ describe('executionErrorStore — missing node operations', () => {
         { type: 'NodeA', nodeId: '3', isReplaceable: false }
       ])
 
-      expect(store.missingNodesError!.nodeTypes).toHaveLength(3)
+      expect(store.missingNodesError?.nodeTypes).toHaveLength(3)
     })
   })
-
-  // ─── removeMissingNodesByType ───
 
   describe('removeMissingNodesByType', () => {
     it('removes matching types from the missing nodes list', () => {
@@ -111,9 +107,9 @@ describe('executionErrorStore — missing node operations', () => {
 
       store.removeMissingNodesByType(['NodeA', 'NodeC'])
 
-      expect(store.missingNodesError!.nodeTypes).toHaveLength(1)
-      const remaining = store.missingNodesError!.nodeTypes[0]
-      expect(typeof remaining !== 'string' && remaining.type).toBe('NodeB')
+      expect(store.missingNodesError?.nodeTypes).toHaveLength(1)
+      const remaining = store.missingNodesError?.nodeTypes[0]
+      expect(typeof remaining !== 'string' && remaining?.type).toBe('NodeB')
     })
 
     it('clears missingNodesError when all types are removed', () => {
@@ -145,7 +141,7 @@ describe('executionErrorStore — missing node operations', () => {
 
       store.removeMissingNodesByType(['NonExistent'])
 
-      expect(store.missingNodesError!.nodeTypes).toHaveLength(1)
+      expect(store.missingNodesError?.nodeTypes).toHaveLength(1)
     })
 
     it('handles removing from string entries', () => {
@@ -157,7 +153,7 @@ describe('executionErrorStore — missing node operations', () => {
 
       store.removeMissingNodesByType(['StringNodeA'])
 
-      expect(store.missingNodesError!.nodeTypes).toHaveLength(1)
+      expect(store.missingNodesError?.nodeTypes).toHaveLength(1)
     })
   })
 })

@@ -7,6 +7,8 @@ import type { NodeReplacement } from '@/platform/nodeReplacement/types'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { app, sanitizeNodeName } from '@/scripts/app'
+import type { SwapNodeGroup } from '@/components/rightSidePanel/errors/useErrorGroups'
+import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import type { MissingNodeType } from '@/types/comfy'
 import { collectAllNodes } from '@/utils/graphTraversalUtil'
 
@@ -314,7 +316,32 @@ export function useNodeReplacement() {
     return replacedTypes
   }
 
+  /**
+   * Replaces all nodes in a single swap group and removes the group type
+   * from the execution error store when at least one replacement succeeds.
+   */
+  function replaceGroup(group: SwapNodeGroup): void {
+    const replaced = replaceNodesInPlace(group.nodeTypes)
+    if (replaced.length > 0) {
+      useExecutionErrorStore().removeMissingNodesByType([group.type])
+    }
+  }
+
+  /**
+   * Replaces every available node across all swap groups and removes
+   * the succeeded types from the execution error store.
+   */
+  function replaceAllGroups(groups: SwapNodeGroup[]): void {
+    const allNodeTypes = groups.flatMap((g) => g.nodeTypes)
+    const replaced = replaceNodesInPlace(allNodeTypes)
+    if (replaced.length > 0) {
+      useExecutionErrorStore().removeMissingNodesByType(replaced)
+    }
+  }
+
   return {
-    replaceNodesInPlace
+    replaceNodesInPlace,
+    replaceGroup,
+    replaceAllGroups
   }
 }
