@@ -11,3 +11,4 @@ reviews:
     ignore_usernames:
       - comfy-pr-bot
       - github-actions
+      - github-actions[bot]
