@@ -210,7 +210,7 @@ function safeWidgetMapper(
     }
   }
 
-  function resolveSourceSeedByInputName(inputName: string): {
+  function resolvePromotedSourceByInputName(inputName: string): {
     sourceNodeId: string
     sourceWidgetName: string
   } | null {
@@ -223,23 +223,38 @@ function safeWidgetMapper(
     }
   }
 
+  function resolvePromotedWidgetIdentity(widget: IBaseWidget): {
+    displayName: string
+    promotedSource: { sourceNodeId: string; sourceWidgetName: string } | null
+  } {
+    if (!isPromotedWidgetView(widget)) {
+      return {
+        displayName: widget.name,
+        promotedSource: null
+      }
+    }
+
+    const promotedInputName = node.inputs?.find((input) => {
+      if (input.name === widget.name) return true
+      if (input._widget === widget) return true
+      return false
+    })?.name
+    const displayName = promotedInputName ?? widget.name
+    const promotedSource = resolvePromotedSourceByInputName(displayName) ?? {
+      sourceNodeId: widget.sourceNodeId,
+      sourceWidgetName: widget.sourceWidgetName
+    }
+
+    return {
+      displayName,
+      promotedSource
+    }
+  }
+
   return function (widget) {
     try {
-      const promotedInputName = isPromotedWidgetView(widget)
-        ? node.inputs?.find((input) => {
-            if (input.name === widget.name) return true
-            if (input._widget === widget) return true
-            return false
-          })?.name
-        : undefined
-      const displayName = promotedInputName ?? widget.name
-      const promotedSourceSeed =
-        isPromotedWidgetView(widget) && displayName
-          ? (resolveSourceSeedByInputName(displayName) ?? {
-              sourceNodeId: widget.sourceNodeId,
-              sourceWidgetName: widget.sourceWidgetName
-            })
-          : null
+      const { displayName, promotedSource } =
+        resolvePromotedWidgetIdentity(widget)
 
       // Get shared enhancements (controlWidget, spec, nodeType)
       const sharedEnhancements = getSharedWidgetEnhancements(node, widget)
@@ -266,11 +281,11 @@ function safeWidgetMapper(
       const subgraphId = node.isSubgraphNode() && node.subgraph.id
 
       const resolvedSourceResult =
-        isPromotedWidgetView(widget) && promotedSourceSeed
+        isPromotedWidgetView(widget) && promotedSource
           ? resolveConcretePromotedWidget(
               node,
-              promotedSourceSeed.sourceNodeId,
-              promotedSourceSeed.sourceWidgetName
+              promotedSource.sourceNodeId,
+              promotedSource.sourceWidgetName
             )
           : null
       const resolvedSource =
@@ -283,12 +298,12 @@ function safeWidgetMapper(
       const effectiveWidget = sourceWidget ?? widget
 
       const localId = isPromotedWidgetView(widget)
-        ? String(sourceNode?.id ?? promotedSourceSeed?.sourceNodeId)
+        ? String(sourceNode?.id ?? promotedSource?.sourceNodeId)
         : undefined
       const nodeId =
         subgraphId && localId ? `${subgraphId}:${localId}` : undefined
       const storeName = isPromotedWidgetView(widget)
-        ? (sourceWidget?.name ?? promotedSourceSeed?.sourceWidgetName)
+        ? (sourceWidget?.name ?? promotedSource?.sourceWidgetName)
         : undefined
       const name = storeName ?? displayName
 

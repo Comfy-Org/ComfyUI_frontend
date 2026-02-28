@@ -111,6 +111,8 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
   private _getLinkedPromotionEntries(): LinkedPromotionEntry[] {
     const linkedEntries: LinkedPromotionEntry[] = []
 
+    // TODO(pr9282): Optimization target. This path runs on widgets getter reads
+    // and resolves each input link chain eagerly.
     for (const input of this.inputs) {
       const resolved = this._resolveLinkedPromotionByInputName(input.name)
       if (!resolved) continue
@@ -139,7 +141,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     const entries = store.getPromotionsRef(this.rootGraph.id, this.id)
     const linkedEntries = this._getLinkedPromotionEntries()
     const { displayNameByViewKey, reconcileEntries } =
-      this._buildPromotionMergeState(entries, linkedEntries)
+      this._buildPromotionReconcileState(entries, linkedEntries)
 
     return this._promotedViewManager.reconcile(reconcileEntries, (entry) =>
       createPromotedWidgetView(
@@ -158,7 +160,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     const entries = store.getPromotionsRef(this.rootGraph.id, this.id)
     const linkedEntries = this._getLinkedPromotionEntries()
     const { mergedEntries, shouldPersistLinkedOnly } =
-      this._buildPromotionMergeState(entries, linkedEntries)
+      this._buildPromotionPersistenceState(entries, linkedEntries)
     if (!shouldPersistLinkedOnly) return
 
     const hasChanged =
@@ -173,39 +175,78 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     store.setPromotions(this.rootGraph.id, this.id, mergedEntries)
   }
 
-  private _buildPromotionMergeState(
+  private _buildPromotionReconcileState(
     entries: Array<{ interiorNodeId: string; widgetName: string }>,
     linkedEntries: LinkedPromotionEntry[]
   ): {
     displayNameByViewKey: Map<string, string>
-    mergedEntries: Array<{ interiorNodeId: string; widgetName: string }>
     reconcileEntries: Array<{
       interiorNodeId: string
       widgetName: string
       viewKey?: string
     }>
+  } {
+    const { fallbackStoredEntries } = this._collectLinkedAndFallbackEntries(
+      entries,
+      linkedEntries
+    )
+    const linkedReconcileEntries =
+      this._buildLinkedReconcileEntries(linkedEntries)
+    const shouldPersistLinkedOnly = this._shouldPersistLinkedOnly(linkedEntries)
+
+    return {
+      displayNameByViewKey: this._buildDisplayNameByViewKey(linkedEntries),
+      reconcileEntries: shouldPersistLinkedOnly
+        ? linkedReconcileEntries
+        : [...linkedReconcileEntries, ...fallbackStoredEntries]
+    }
+  }
+
+  private _buildPromotionPersistenceState(
+    entries: Array<{ interiorNodeId: string; widgetName: string }>,
+    linkedEntries: LinkedPromotionEntry[]
+  ): {
+    mergedEntries: Array<{ interiorNodeId: string; widgetName: string }>
     shouldPersistLinkedOnly: boolean
+  } {
+    const { linkedPromotionEntries, fallbackStoredEntries } =
+      this._collectLinkedAndFallbackEntries(entries, linkedEntries)
+    const shouldPersistLinkedOnly = this._shouldPersistLinkedOnly(linkedEntries)
+
+    return {
+      mergedEntries: shouldPersistLinkedOnly
+        ? linkedPromotionEntries
+        : [...linkedPromotionEntries, ...fallbackStoredEntries],
+      shouldPersistLinkedOnly
+    }
+  }
+
+  private _collectLinkedAndFallbackEntries(
+    entries: Array<{ interiorNodeId: string; widgetName: string }>,
+    linkedEntries: LinkedPromotionEntry[]
+  ): {
+    linkedPromotionEntries: Array<{
+      interiorNodeId: string
+      widgetName: string
+    }>
+    fallbackStoredEntries: Array<{ interiorNodeId: string; widgetName: string }>
   } {
     const linkedPromotionEntries = this._toPromotionEntries(linkedEntries)
     const fallbackStoredEntries = this._getFallbackStoredEntries(
       entries,
       linkedPromotionEntries
     )
-    const linkedReconcileEntries =
-      this._buildLinkedReconcileEntries(linkedEntries)
-    const shouldPersistLinkedOnly =
-      this.inputs.length > 0 && linkedEntries.length === this.inputs.length
 
     return {
-      displayNameByViewKey: this._buildDisplayNameByViewKey(linkedEntries),
-      mergedEntries: shouldPersistLinkedOnly
-        ? linkedPromotionEntries
-        : [...linkedPromotionEntries, ...fallbackStoredEntries],
-      reconcileEntries: shouldPersistLinkedOnly
-        ? linkedReconcileEntries
-        : [...linkedReconcileEntries, ...fallbackStoredEntries],
-      shouldPersistLinkedOnly
+      linkedPromotionEntries,
+      fallbackStoredEntries
     }
+  }
+
+  private _shouldPersistLinkedOnly(
+    linkedEntries: LinkedPromotionEntry[]
+  ): boolean {
+    return this.inputs.length > 0 && linkedEntries.length === this.inputs.length
   }
 
   private _toPromotionEntries(
@@ -890,6 +931,8 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
 
   private _removePromotedView(view: PromotedWidgetView): void {
     this._promotedViewManager.remove(view.sourceNodeId, view.sourceWidgetName)
+    // Reconciled views can also be keyed by inputName-scoped view keys.
+    // Remove both key shapes to avoid stale cache entries across promote/rebind flows.
     this._promotedViewManager.removeByViewKey(
       view.sourceNodeId,
       view.sourceWidgetName,

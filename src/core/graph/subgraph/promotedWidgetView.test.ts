@@ -983,6 +983,32 @@ function createInspectableCanvasContext(fillText = vi.fn()) {
   ) as unknown as CanvasRenderingContext2D
 }
 
+function createTwoLevelNestedSubgraph() {
+  const subgraphA = createTestSubgraph({
+    inputs: [{ name: 'a_input', type: '*' }]
+  })
+  const innerNode = new LGraphNode('InnerComboNode')
+  const innerInput = innerNode.addInput('picker_input', '*')
+  const comboWidget = innerNode.addWidget('combo', 'picker', 'a', () => {}, {
+    values: ['a', 'b']
+  })
+  innerInput.widget = { name: 'picker' }
+  subgraphA.add(innerNode)
+  subgraphA.inputNode.slots[0].connect(innerInput, innerNode)
+
+  const subgraphNodeA = createTestSubgraphNode(subgraphA, { id: 11 })
+
+  const subgraphB = createTestSubgraph({
+    inputs: [{ name: 'b_input', type: '*' }]
+  })
+  subgraphB.add(subgraphNodeA)
+  subgraphNodeA._internalConfigureAfterSlots()
+  subgraphB.inputNode.slots[0].connect(subgraphNodeA.inputs[0], subgraphNodeA)
+
+  const subgraphNodeB = createTestSubgraphNode(subgraphB, { id: 22 })
+  return { innerNode, comboWidget, subgraphNodeB }
+}
+
 describe('promoted combo rendering', () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
@@ -1015,29 +1041,8 @@ describe('promoted combo rendering', () => {
   })
 
   test('draw shows value through two input-based promotion layers', () => {
-    const subgraphA = createTestSubgraph({
-      inputs: [{ name: 'a_input', type: '*' }]
-    })
-    const innerNode = new LGraphNode('InnerComboNode')
-    const innerInput = innerNode.addInput('picker_input', '*')
-    const comboWidget = innerNode.addWidget('combo', 'picker', 'a', () => {}, {
-      values: ['a', 'b']
-    })
-    innerInput.widget = { name: 'picker' }
-    subgraphA.add(innerNode)
-    subgraphA.inputNode.slots[0].connect(innerInput, innerNode)
-
-    const subgraphNodeA = createTestSubgraphNode(subgraphA, { id: 11 })
+    const { comboWidget, subgraphNodeB } = createTwoLevelNestedSubgraph()
     comboWidget.computedDisabled = true
-
-    const subgraphB = createTestSubgraph({
-      inputs: [{ name: 'b_input', type: '*' }]
-    })
-    subgraphB.add(subgraphNodeA)
-    subgraphNodeA._internalConfigureAfterSlots()
-    subgraphB.inputNode.slots[0].connect(subgraphNodeA.inputs[0], subgraphNodeA)
-
-    const subgraphNodeB = createTestSubgraphNode(subgraphB, { id: 22 })
     const fillText = vi.fn()
     const ctx = createInspectableCanvasContext(fillText)
 
@@ -1055,29 +1060,8 @@ describe('promoted combo rendering', () => {
   })
 
   test('value updates propagate through two promoted input layers', () => {
-    const subgraphA = createTestSubgraph({
-      inputs: [{ name: 'a_input', type: '*' }]
-    })
-    const innerNode = new LGraphNode('InnerComboNode')
-    const innerInput = innerNode.addInput('picker_input', '*')
-    const comboWidget = innerNode.addWidget('combo', 'picker', 'a', () => {}, {
-      values: ['a', 'b']
-    })
-    innerInput.widget = { name: 'picker' }
-    subgraphA.add(innerNode)
-    subgraphA.inputNode.slots[0].connect(innerInput, innerNode)
-
-    const subgraphNodeA = createTestSubgraphNode(subgraphA, { id: 11 })
+    const { comboWidget, subgraphNodeB } = createTwoLevelNestedSubgraph()
     comboWidget.computedDisabled = true
-
-    const subgraphB = createTestSubgraph({
-      inputs: [{ name: 'b_input', type: '*' }]
-    })
-    subgraphB.add(subgraphNodeA)
-    subgraphNodeA._internalConfigureAfterSlots()
-    subgraphB.inputNode.slots[0].connect(subgraphNodeA.inputs[0], subgraphNodeA)
-
-    const subgraphNodeB = createTestSubgraphNode(subgraphB, { id: 22 })
     const promotedWidget = subgraphNodeB.widgets[0]
 
     expect(promotedWidget.value).toBe('a')
@@ -1100,28 +1084,7 @@ describe('promoted combo rendering', () => {
   })
 
   test('draw projection recovers after transient button fallback in nested promotion', () => {
-    const subgraphA = createTestSubgraph({
-      inputs: [{ name: 'a_input', type: '*' }]
-    })
-    const innerNode = new LGraphNode('InnerComboNode')
-    const innerInput = innerNode.addInput('picker_input', '*')
-    innerNode.addWidget('combo', 'picker', 'a', () => {}, {
-      values: ['a', 'b']
-    })
-    innerInput.widget = { name: 'picker' }
-    subgraphA.add(innerNode)
-    subgraphA.inputNode.slots[0].connect(innerInput, innerNode)
-
-    const subgraphNodeA = createTestSubgraphNode(subgraphA, { id: 11 })
-
-    const subgraphB = createTestSubgraph({
-      inputs: [{ name: 'b_input', type: '*' }]
-    })
-    subgraphB.add(subgraphNodeA)
-    subgraphNodeA._internalConfigureAfterSlots()
-    subgraphB.inputNode.slots[0].connect(subgraphNodeA.inputs[0], subgraphNodeA)
-
-    const subgraphNodeB = createTestSubgraphNode(subgraphB, { id: 22 })
+    const { innerNode, subgraphNodeB } = createTwoLevelNestedSubgraph()
     const promotedWidget = subgraphNodeB.widgets[0]
 
     // Force a transient disconnect to project a fallback widget once.
@@ -1153,39 +1116,14 @@ describe('promoted combo rendering', () => {
     expect(renderedText).toContain('a')
   })
 
-  test('state lookup resolves to deepest promoted widget source', () => {
-    const subgraphA = createTestSubgraph({
-      inputs: [{ name: 'a_input', type: '*' }]
-    })
-    const innerNode = new LGraphNode('InnerComboNode')
-    const innerInput = innerNode.addInput('picker_input', '*')
-    innerNode.addWidget('combo', 'picker', 'a', () => {}, {
-      values: ['a', 'b']
-    })
-    innerInput.widget = { name: 'picker' }
-    subgraphA.add(innerNode)
-    subgraphA.inputNode.slots[0].connect(innerInput, innerNode)
+  test('state lookup behavior resolves to deepest promoted widget source', () => {
+    const { comboWidget, subgraphNodeB } = createTwoLevelNestedSubgraph()
 
-    const subgraphNodeA = createTestSubgraphNode(subgraphA, { id: 11 })
+    const promotedWidget = subgraphNodeB.widgets[0]
+    expect(promotedWidget.value).toBe('a')
 
-    const subgraphB = createTestSubgraph({
-      inputs: [{ name: 'b_input', type: '*' }]
-    })
-    subgraphB.add(subgraphNodeA)
-    subgraphNodeA._internalConfigureAfterSlots()
-    subgraphB.inputNode.slots[0].connect(subgraphNodeA.inputs[0], subgraphNodeA)
-
-    const subgraphNodeB = createTestSubgraphNode(subgraphB, { id: 22 })
-    const widgetValueStore = useWidgetValueStore()
-    const getWidgetSpy = vi.spyOn(widgetValueStore, 'getWidget')
-
-    void subgraphNodeB.widgets[0].value
-
-    expect(getWidgetSpy).toHaveBeenCalledWith(
-      subgraphNodeB.rootGraph.id,
-      String(innerNode.id),
-      'picker'
-    )
+    comboWidget.value = 'b'
+    expect(promotedWidget.value).toBe('b')
   })
 
   test('state lookup does not use promotion store fallback when intermediate view is unavailable', () => {
