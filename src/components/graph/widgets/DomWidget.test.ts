@@ -1,8 +1,13 @@
 import { mount } from '@vue/test-utils'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { createTestingPinia } from '@pinia/testing'
+import { setActivePinia } from 'pinia'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { reactive } from 'vue'
 
+import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
+import type { BaseDOMWidget } from '@/scripts/domWidget'
 import type { DomWidgetState } from '@/stores/domWidgetStore'
+import { useDomWidgetStore } from '@/stores/domWidgetStore'
 
 import DomWidget from './DomWidget.vue'
 
@@ -50,38 +55,46 @@ vi.mock('@/platform/settings/settingStore', () => ({
 }))
 
 function createWidgetState(overrideDisabled: boolean): DomWidgetState {
-  return reactive({
-    widget: {
-      id: 'dom-widget-id',
-      name: 'test_widget',
-      type: 'custom',
-      value: '',
-      options: {},
-      node: {
-        id: 1,
-        constructor: {
-          nodeData: {}
-        }
-      },
-      computedDisabled: false
-    },
-    visible: true,
-    readonly: false,
-    zIndex: 2,
-    active: true,
-    pos: [0, 0],
-    size: [100, 40],
-    positionOverride: {
-      node: { id: 2 },
-      widget: {
-        computedDisabled: overrideDisabled
-      }
+  const domWidgetStore = useDomWidgetStore()
+  const node = createMockLGraphNode({
+    id: 1,
+    constructor: {
+      nodeData: {}
     }
-  }) as unknown as DomWidgetState
+  })
+
+  const widget = {
+    id: 'dom-widget-id',
+    name: 'test_widget',
+    type: 'custom',
+    value: '',
+    options: {},
+    node,
+    computedDisabled: false
+  } as unknown as BaseDOMWidget<object | string>
+
+  domWidgetStore.registerWidget(widget)
+  domWidgetStore.setPositionOverride(widget.id, {
+    node: createMockLGraphNode({ id: 2 }),
+    widget: { computedDisabled: overrideDisabled } as DomWidgetState['widget']
+  })
+
+  const state = domWidgetStore.widgetStates.get(widget.id)
+  if (!state) throw new Error('Expected registered DomWidgetState')
+
+  state.zIndex = 2
+  state.size = [100, 40]
+
+  return reactive(state)
 }
 
 describe('DomWidget disabled style', () => {
+  beforeEach(() => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
+  })
+
   afterEach(() => {
+    useDomWidgetStore().clear()
     vi.clearAllMocks()
   })
 
