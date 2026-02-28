@@ -53,7 +53,6 @@ import NodeSearchCategoryTreeNode, {
   CATEGORY_UNSELECTED_CLASS
 } from '@/components/searchbox/v2/NodeSearchCategoryTreeNode.vue'
 import type { CategoryNode } from '@/components/searchbox/v2/NodeSearchCategoryTreeNode.vue'
-import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { nodeOrganizationService } from '@/services/nodeOrganizationService'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { NodeSourceType } from '@/types/nodeSource'
@@ -65,11 +64,11 @@ const selectedCategory = defineModel<string>('selectedCategory', {
 })
 
 const { t } = useI18n()
-const { flags } = useFeatureFlags()
 const nodeDefStore = useNodeDefStore()
 
 const topCategories = computed(() => [
   { id: 'most-relevant', label: t('g.mostRelevant') },
+  { id: 'recents', label: t('g.recents') },
   { id: 'favorites', label: t('g.favorites') }
 ])
 
@@ -81,10 +80,18 @@ const hasEssentialNodes = computed(() =>
 
 const sourceCategories = computed(() => {
   const categories = []
-  if (flags.nodeLibraryEssentialsEnabled && hasEssentialNodes.value) {
+  if (hasEssentialNodes.value) {
     categories.push({ id: 'essentials', label: t('g.essentials') })
   }
-  categories.push({ id: 'custom', label: t('g.custom') })
+  categories.push(
+    {
+      id: 'blueprints',
+      label: t('sideToolbar.nodeLibraryTab.filterOptions.blueprints')
+    },
+    { id: 'partner', label: t('g.partner') },
+    { id: 'comfy', label: t('g.comfy') },
+    { id: 'extensions', label: t('g.extensions') }
+  )
   return categories
 })
 
