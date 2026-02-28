@@ -18,14 +18,14 @@
       <button
         v-for="(url, index) in imageUrls"
         :key="index"
-        class="relative aspect-square cursor-pointer overflow-hidden rounded border-0 bg-transparent p-0 transition-opacity hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        class="focus-visible:ring-ring relative aspect-square cursor-pointer overflow-hidden rounded-sm border-0 bg-transparent p-0 transition-opacity hover:opacity-80 focus-visible:ring-2 focus-visible:outline-none"
         :aria-label="
           $t('g.viewImageOfTotal', {
             index: index + 1,
             total: imageUrls.length
           })
         "
-        @click="selectGridImage(index)"
+        @click="openImageInGallery(index)"
       >
         <img
           :src="url"
@@ -46,7 +46,7 @@
           :aria-label="$t('g.viewGallery')"
           @click="viewMode = 'gallery'"
         >
-          <i class="icon-[lucide--image] h-4 w-4" />
+          <i class="icon-[lucide--image] size-4" />
         </button>
 
         <!-- Close Button -->
@@ -56,7 +56,7 @@
           :aria-label="$t('g.removeImage')"
           @click="handleRemove"
         >
-          <i class="icon-[lucide--x] h-4 w-4" />
+          <i class="icon-[lucide--x] size-4" />
         </button>
       </div>
     </div>
@@ -121,7 +121,7 @@
           :aria-label="$t('g.viewGrid')"
           @click="viewMode = 'grid'"
         >
-          <i class="icon-[lucide--layout-grid] h-4 w-4" />
+          <i class="icon-[lucide--layout-grid] size-4" />
         </button>
 
         <!-- Mask/Edit Button -->
@@ -188,12 +188,12 @@
     >
       <!-- Back to Grid button -->
       <button
-        class="mr-1 flex cursor-pointer items-center justify-center rounded border-0 bg-transparent p-0.5 text-base-foreground/50 transition-colors hover:text-base-foreground"
+        class="mr-1 flex cursor-pointer items-center justify-center rounded-sm border-0 bg-transparent p-0.5 text-base-foreground/50 transition-colors hover:text-base-foreground"
         :title="$t('g.viewGrid')"
         :aria-label="$t('g.viewGrid')"
         @click="viewMode = 'grid'"
       >
-        <i class="icon-[lucide--layout-grid] h-3.5 w-3.5" />
+        <i class="icon-[lucide--layout-grid] size-3.5" />
       </button>
 
       <!-- Navigation Dots -->
@@ -265,7 +265,9 @@ const { start: startDelayedLoader, stop: stopDelayedLoader } = useTimeoutFn(
 )
 
 // Computed values
-const currentImageUrl = computed(() => props.imageUrls[currentIndex.value])
+const currentImageUrl = computed(
+  () => props.imageUrls[currentIndex.value] ?? ''
+)
 const hasMultipleImages = computed(() => props.imageUrls.length > 1)
 const imageAltText = computed(() => `Node output ${currentIndex.value + 1}`)
 const gridCols = computed(() => {
@@ -367,7 +369,7 @@ const setCurrentIndex = (index: number) => {
   }
 }
 
-function selectGridImage(index: number) {
+function openImageInGallery(index: number) {
   setCurrentIndex(index)
   viewMode.value = 'gallery'
 }
