@@ -37,6 +37,12 @@ vi.mock('primevue', () => ({
   })
 }))
 
+vi.mock('primevue/usetoast', () => ({
+  useToast: () => ({
+    add: mockToastAdd
+  })
+}))
+
 vi.mock('vue-i18n', async (importOriginal) => {
   const actual = await importOriginal<typeof I18n>()
   return {
