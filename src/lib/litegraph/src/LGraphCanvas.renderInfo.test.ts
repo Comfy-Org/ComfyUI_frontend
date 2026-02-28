@@ -1,9 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import {
-  LGraph,
-  LGraphCanvas
-} from '@/lib/litegraph/src/litegraph'
+import { LGraph, LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 
 describe('LGraphCanvas.renderInfo', () => {
   let lgCanvas: LGraphCanvas
@@ -43,12 +40,18 @@ describe('LGraphCanvas.renderInfo', () => {
     lgCanvas.canvas.height = 2160
 
     const originalDPR = window.devicePixelRatio
-    Object.defineProperty(window, 'devicePixelRatio', { value: 2, configurable: true })
+    Object.defineProperty(window, 'devicePixelRatio', {
+      value: 2,
+      configurable: true
+    })
 
     lgCanvas.renderInfo(ctx, 10, 0)
 
     expect(ctx.translate).toHaveBeenCalledWith(10, 2160 / 2 - 80)
 
-    Object.defineProperty(window, 'devicePixelRatio', { value: originalDPR, configurable: true })
+    Object.defineProperty(window, 'devicePixelRatio', {
+      value: originalDPR,
+      configurable: true
+    })
   })
 })
