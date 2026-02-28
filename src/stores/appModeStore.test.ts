@@ -48,13 +48,13 @@ describe('appModeStore', () => {
     mockSetMode.mockClear()
   })
 
-  describe('enterAppBuilder', () => {
+  describe('enterBuilder', () => {
     it('navigates to builder:arrange when in app mode with outputs', () => {
       modeRef.value = 'app'
       const store = useAppModeStore()
       store.selectedOutputs.push('1')
 
-      store.enterAppBuilder()
+      store.enterBuilder()
 
       expect(mockSetMode).toHaveBeenCalledWith('builder:arrange')
     })
@@ -63,7 +63,7 @@ describe('appModeStore', () => {
       modeRef.value = 'app'
       const store = useAppModeStore()
 
-      store.enterAppBuilder()
+      store.enterBuilder()
 
       expect(mockSetMode).toHaveBeenCalledWith('builder:select')
     })
@@ -73,7 +73,7 @@ describe('appModeStore', () => {
       const store = useAppModeStore()
       store.selectedOutputs.push('1')
 
-      store.enterAppBuilder()
+      store.enterBuilder()
 
       expect(mockSetMode).toHaveBeenCalledWith('builder:select')
     })
@@ -82,7 +82,7 @@ describe('appModeStore', () => {
       modeRef.value = 'graph'
       const store = useAppModeStore()
 
-      store.enterAppBuilder()
+      store.enterBuilder()
 
       expect(mockSetMode).toHaveBeenCalledWith('builder:select')
     })

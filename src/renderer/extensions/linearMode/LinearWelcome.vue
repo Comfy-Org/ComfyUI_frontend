@@ -45,11 +45,7 @@ const { hasOutputs } = storeToRefs(appModeStore)
       <Button variant="textonly" size="lg" @click="setMode('graph')">
         {{ t('linearMode.welcome.backToWorkflow') }}
       </Button>
-      <Button
-        variant="primary"
-        size="lg"
-        @click="appModeStore.enterAppBuilder()"
-      >
+      <Button variant="primary" size="lg" @click="appModeStore.enterBuilder()">
         <i class="icon-[lucide--hammer]" />
         {{ t('linearMode.welcome.buildApp') }}
         <div

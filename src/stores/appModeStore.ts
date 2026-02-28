@@ -66,7 +66,7 @@ export const useAppModeStore = defineStore('appMode', () => {
     (inSelect) => (getCanvas().read_only = inSelect)
   )
 
-  function enterAppBuilder() {
+  function enterBuilder() {
     setMode(
       mode.value === 'app' && hasOutputs.value
         ? 'builder:arrange'
@@ -82,7 +82,7 @@ export const useAppModeStore = defineStore('appMode', () => {
   }
 
   return {
-    enterAppBuilder,
+    enterBuilder,
     exitBuilder,
     hasOutputs,
     flushSelections,

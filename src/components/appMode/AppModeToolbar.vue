@@ -15,7 +15,7 @@ const { t } = useI18n()
 const commandStore = useCommandStore()
 const workspaceStore = useWorkspaceStore()
 const { enableAppBuilder } = useAppMode()
-const { enterAppBuilder } = useAppModeStore()
+const { enterBuilder } = useAppModeStore()
 const tooltipOptions = { showDelay: 300, hideDelay: 300 }
 
 const isAssetsActive = computed(
@@ -68,7 +68,7 @@ function openTemplates() {
       size="unset"
       :aria-label="t('linearMode.appModeToolbar.appBuilder')"
       class="size-10 rounded-lg"
-      @click="enterAppBuilder"
+      @click="enterBuilder"
     >
       <i class="icon-[lucide--hammer] size-4" />
     </Button>
