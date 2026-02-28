@@ -4,10 +4,11 @@ import { ref } from 'vue'
 
 import { useGLSLPreview } from '@/renderer/glsl/useGLSLPreview'
 
+import type { GLSLRendererConfig } from '@/renderer/glsl/useGLSLRenderer'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { MaybeRefOrGetter } from 'vue'
 
-vi.mock('@/renderer/glsl/useGLSLRenderer', () => {
+const mockRendererFactory = vi.hoisted(() => {
   const init = vi.fn(() => true)
   const compileFragment = vi.fn(() => ({ success: true, log: '' }))
   const setResolution = vi.fn()
@@ -17,21 +18,40 @@ vi.mock('@/renderer/glsl/useGLSLRenderer', () => {
   const render = vi.fn()
   const toBlob = vi.fn(() => Promise.resolve(new Blob(['test'])))
   const dispose = vi.fn()
+  const lastConfig = { value: undefined as GLSLRendererConfig | undefined }
 
   return {
-    useGLSLRenderer: () => ({
-      init,
-      compileFragment,
-      setResolution,
-      setFloatUniform,
-      setIntUniform,
-      bindInputImage,
-      render,
-      toBlob,
-      dispose
-    })
+    create: (config?: GLSLRendererConfig) => {
+      lastConfig.value = config
+      return {
+        init,
+        compileFragment,
+        setResolution,
+        setFloatUniform,
+        setIntUniform,
+        bindInputImage,
+        render,
+        toBlob,
+        dispose
+      }
+    },
+    lastConfig,
+    init,
+    compileFragment,
+    setResolution,
+    setFloatUniform,
+    setIntUniform,
+    bindInputImage,
+    render,
+    toBlob,
+    dispose
   }
 })
+
+vi.mock('@/renderer/glsl/useGLSLRenderer', () => ({
+  useGLSLRenderer: (config?: GLSLRendererConfig) =>
+    mockRendererFactory.create(config)
+}))
 
 const mockGetNodeOutputs = vi.fn()
 const mockSetNodePreviewsByNodeId = vi.fn()
@@ -85,6 +105,7 @@ describe('useGLSLPreview', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
     vi.clearAllMocks()
+    mockRendererFactory.lastConfig.value = undefined
     globalThis.URL.createObjectURL = vi.fn(() => 'blob:test')
     globalThis.URL.revokeObjectURL = vi.fn()
   })
@@ -126,5 +147,34 @@ describe('useGLSLPreview', () => {
     const node = createMockNode()
     const { dispose } = useGLSLPreview(wrapNode(node))
     expect(() => dispose()).not.toThrow()
+  })
+
+  describe('autogrow config extraction', () => {
+    it('uses default limits when node has no comfyDynamic', () => {
+      const node = createMockNode()
+      mockGetNodeOutputs.mockReturnValue({
+        images: [{ filename: 'test.png', subfolder: '', type: 'temp' }]
+      })
+      useGLSLPreview(wrapNode(node))
+      expect(mockRendererFactory.lastConfig.value).toBeUndefined()
+    })
+
+    it('extracts autogrow limits from node comfyDynamic', () => {
+      const node = createMockNode({
+        comfyDynamic: {
+          autogrow: {
+            images: { min: 1, max: 3 },
+            floats: { min: 0, max: 8 },
+            ints: { min: 0, max: 4 }
+          }
+        }
+      })
+      mockGetNodeOutputs.mockReturnValue({
+        images: [{ filename: 'test.png', subfolder: '', type: 'temp' }]
+      })
+
+      const { isActive } = useGLSLPreview(wrapNode(node))
+      expect(isActive.value).toBe(true)
+    })
   })
 })
