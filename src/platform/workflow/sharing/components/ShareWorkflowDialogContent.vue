@@ -357,8 +357,8 @@ async function refreshDialogState() {
       publishedAt: status.publishedAt
     }
     const publishedAtMs = status.publishedAt.getTime()
-    const currentSavedAtMs = workflow.lastModified
-    dialogState.value = currentSavedAtMs > publishedAtMs ? 'stale' : 'shared'
+    const lastModifiedMs = workflow.lastModified * 1000
+    dialogState.value = lastModifiedMs > publishedAtMs ? 'stale' : 'shared'
   } else {
     dialogState.value = 'ready'
   }

@@ -85,15 +85,11 @@ const mockShareServiceData = vi.hoisted(() => ({
   }[]
 }))
 
+const mockGetPublishStatus = vi.hoisted(() => vi.fn())
+
 vi.mock('@/platform/workflow/sharing/services/workflowShareService', () => ({
   useWorkflowShareService: () => ({
-    getPublishStatus: () =>
-      Promise.resolve({
-        isPublished: false,
-        shareId: null,
-        shareUrl: null,
-        publishedAt: null
-      }),
+    getPublishStatus: mockGetPublishStatus,
     publishWorkflow: () =>
       Promise.resolve({
         shareId: 'test-123',
@@ -155,6 +151,12 @@ describe('ShareWorkflowDialogContent', () => {
       isModified: false,
       lastModified: 1000
     }
+    mockGetPublishStatus.mockResolvedValue({
+      isPublished: false,
+      shareId: null,
+      shareUrl: null,
+      publishedAt: null
+    })
     mockFlags.comfyHubUploadEnabled = false
     mockHasProfile.value = null
     mockCheckProfile.mockResolvedValue(true)
@@ -321,5 +323,57 @@ describe('ShareWorkflowDialogContent', () => {
     await closeButton.trigger('click')
 
     expect(onClose).toHaveBeenCalled()
+  })
+
+  it('shows update button when workflow was saved after last publish', async () => {
+    const publishedAt = new Date('2026-01-15T00:00:00Z')
+    const savedAfterPublishUnixSeconds = publishedAt.getTime() / 1000 + 60
+
+    mockWorkflowStore.activeWorkflow = {
+      path: 'workflows/test.json',
+      directory: 'workflows',
+      filename: 'test.json',
+      isTemporary: false,
+      isModified: false,
+      lastModified: savedAfterPublishUnixSeconds
+    }
+    mockGetPublishStatus.mockResolvedValue({
+      isPublished: true,
+      shareId: 'abc-123',
+      shareUrl: 'https://comfy.org/shared/abc-123',
+      publishedAt
+    })
+
+    const wrapper = createWrapper()
+    await flushPromises()
+
+    expect(wrapper.text()).toContain('You have made changes...')
+    expect(wrapper.text()).toContain('Update link')
+  })
+
+  it('shows copy URL when workflow has not changed since publish', async () => {
+    const publishedAt = new Date('2026-01-15T00:00:00Z')
+    const savedBeforePublishUnixSeconds = publishedAt.getTime() / 1000 - 60
+
+    mockWorkflowStore.activeWorkflow = {
+      path: 'workflows/test.json',
+      directory: 'workflows',
+      filename: 'test.json',
+      isTemporary: false,
+      isModified: false,
+      lastModified: savedBeforePublishUnixSeconds
+    }
+    mockGetPublishStatus.mockResolvedValue({
+      isPublished: true,
+      shareId: 'abc-123',
+      shareUrl: 'https://comfy.org/shared/abc-123',
+      publishedAt
+    })
+
+    const wrapper = createWrapper()
+    await flushPromises()
+
+    expect(wrapper.text()).toContain('Anyone with this link...')
+    expect(wrapper.text()).not.toContain('Update link')
   })
 })
