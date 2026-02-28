@@ -5259,7 +5259,10 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     const lineHeight = 13
     const lineCount = (this.graph ? 5 : 1) + (this.info_text ? 1 : 0)
     x = x || 10
-    y = y || this.canvas.offsetHeight - (lineCount + 1) * lineHeight
+    y =
+      y ||
+      this.canvas.height / (window.devicePixelRatio || 1) -
+        (lineCount + 1) * lineHeight
 
     ctx.save()
     ctx.translate(x, y)
