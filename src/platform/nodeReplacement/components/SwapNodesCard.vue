@@ -16,14 +16,15 @@
       :group="group"
       :show-node-id-badge="showNodeIdBadge"
       @locate-node="emit('locate-node', $event)"
+      @replace="emit('replace', $event)"
     />
   </div>
 </template>
 
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
-import type { SwapNodeGroup } from './useErrorGroups'
-import SwapNodeGroupRow from './SwapNodeGroupRow.vue'
+import type { SwapNodeGroup } from '@/components/rightSidePanel/errors/useErrorGroups'
+import SwapNodeGroupRow from '@/platform/nodeReplacement/components/SwapNodeGroupRow.vue'
 
 const { t } = useI18n()
 
@@ -34,5 +35,6 @@ const { swapNodeGroups, showNodeIdBadge } = defineProps<{
 
 const emit = defineEmits<{
   'locate-node': [nodeId: string]
+  replace: [group: SwapNodeGroup]
 }>()
 </script>

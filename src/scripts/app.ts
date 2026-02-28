@@ -80,7 +80,7 @@ import type { ExtensionManager } from '@/types/extensionTypes'
 import type { NodeExecutionId } from '@/types/nodeIdentification'
 import { graphToPrompt } from '@/utils/executionUtil'
 import { getCnrIdFromProperties } from '@/workbench/extensions/manager/utils/missingNodeErrorUtil'
-import { rescanAndSurfaceMissingNodes } from '@/composables/useMissingNodeScan'
+import { rescanAndSurfaceMissingNodes } from '@/platform/nodeReplacement/missingNodeScan'
 import { anyItemOverlapsRect } from '@/utils/mathUtil'
 import {
   collectAllNodes,
