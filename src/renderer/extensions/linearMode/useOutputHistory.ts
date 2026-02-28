@@ -1,8 +1,8 @@
 import { useAsyncState } from '@vueuse/core'
 import { computed, ref, watchEffect } from 'vue'
 
-import { useMediaAssets } from '@/platform/assets/composables/media/useMediaAssets'
 import type { IAssetsProvider } from '@/platform/assets/composables/media/IAssetsProvider'
+import { useMediaAssets } from '@/platform/assets/composables/media/useMediaAssets'
 import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
@@ -94,13 +94,14 @@ export function useOutputHistory(): {
     const existing = asyncRefs.get(item.id)
     if (existing) return filterByOutputNodes(existing.value)
 
+    const itemId = item.id
     const outputRef = useAsyncState(
       getJobDetail(user_metadata.jobId).then((jobDetail) => {
         if (!jobDetail?.outputs) return []
         const results = Object.entries(jobDetail.outputs)
           .flatMap(flattenNodeOutput)
           .toReversed()
-        resolvedCache.set(item!.id, results)
+        resolvedCache.set(itemId, results)
         return results
       }),
       []

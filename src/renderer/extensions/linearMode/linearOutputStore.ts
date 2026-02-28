@@ -1,12 +1,12 @@
 import { defineStore } from 'pinia'
 import { computed, ref, shallowRef, watch } from 'vue'
 
+import { useAppMode } from '@/composables/useAppMode'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { flattenNodeOutput } from '@/renderer/extensions/linearMode/flattenNodeOutput'
 import type { InProgressItem } from '@/renderer/extensions/linearMode/linearModeTypes'
-import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { ExecutedWsMessage } from '@/schemas/apiSchema'
 import { api } from '@/scripts/api'
-import { useAppMode } from '@/composables/useAppMode'
 import { useAppModeStore } from '@/stores/appModeStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useJobPreviewStore } from '@/stores/jobPreviewStore'
@@ -55,15 +55,6 @@ export const useLinearOutputStore = defineStore('linearOutput', () => {
 
   function onJobStart(jobId: string) {
     executedNodeIds.clear()
-
-    // Ensure path mapping exists — execution_start can arrive via WebSocket
-    // before the HTTP response from queuePrompt triggers storeJob.
-    if (!executionStore.jobIdToSessionWorkflowPath.has(jobId)) {
-      const path = executionStore.queuedJobs[jobId]?.workflow?.path
-      if (path) {
-        executionStore.ensureSessionWorkflowPath(jobId, path)
-      }
-    }
 
     const item: InProgressItem = {
       id: makeItemId(jobId),
@@ -128,7 +119,7 @@ export const useLinearOutputStore = defineStore('linearOutput', () => {
     const outputNodeIds = appModeStore.selectedOutputs
     if (
       outputNodeIds.length > 0 &&
-      !outputNodeIds.some((id) => String(id) === nodeId)
+      !outputNodeIds.some((id) => String(id) === String(nodeId))
     )
       return
 

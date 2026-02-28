@@ -1,5 +1,5 @@
 import { createPinia, setActivePinia } from 'pinia'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, ref } from 'vue'
 
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
@@ -134,11 +134,6 @@ describe(useOutputHistory, () => {
     resolveIfReadyFn.mockReset()
   })
 
-  afterEach(() => {
-    mediaRef.value = []
-    jobIdToPathRef.value = new Map()
-  })
-
   describe('sessionMedia filtering', () => {
     it('filters assets to match active workflow path', () => {
       jobIdToPathRef.value = new Map([
@@ -242,18 +237,23 @@ describe(useOutputHistory, () => {
       expect(outputs).toHaveLength(2)
     })
 
-    it('caches results on subsequent calls', () => {
-      const results = [makeResult('a.png')]
+    it('returns consistent filtered outputs across repeated calls', () => {
+      const results = [makeResult('a.png', '1'), makeResult('b.png', '2')]
       const asset = makeAsset('a1', 'job-1', {
         allOutputs: results,
-        outputCount: 1
+        outputCount: 2
       })
+
+      const appModeStore = useAppModeStore()
+      appModeStore.selectedOutputs.push('2')
 
       const { allOutputs } = useOutputHistory()
       const first = allOutputs(asset)
       const second = allOutputs(asset)
 
-      expect(first).toBe(second)
+      expect(first).toEqual(second)
+      expect(first).toHaveLength(1)
+      expect(first[0].filename).toBe('b.png')
     })
 
     it('returns in-progress outputs for pending resolve jobs', () => {
@@ -306,6 +306,54 @@ describe(useOutputHistory, () => {
       const resolved = allOutputs(asset)
       expect(resolved).toHaveLength(1)
       expect(resolved[0].filename).toBe('fetched.png')
+    })
+  })
+
+  describe('watchEffect resolve loop', () => {
+    it('resolves pending jobs when history outputs load', async () => {
+      const results = [makeResult('a.png')]
+      const asset = makeAsset('a1', 'job-1', {
+        allOutputs: results,
+        outputCount: 1
+      })
+      jobIdToPathRef.value = new Map([['job-1', 'workflows/test.json']])
+      pendingResolveRef.value = new Set(['job-1'])
+      mediaRef.value = [asset]
+      selectedIdRef.value = null
+
+      useOutputHistory()
+      await nextTick()
+
+      expect(resolveIfReadyFn).toHaveBeenCalledWith('job-1', true)
+      expect(selectAsLatestFn).toHaveBeenCalledWith('history:a1:0')
+    })
+
+    it('does not select first history when a selection exists', async () => {
+      const results = [makeResult('a.png')]
+      const asset = makeAsset('a1', 'job-1', {
+        allOutputs: results,
+        outputCount: 1
+      })
+      jobIdToPathRef.value = new Map([['job-1', 'workflows/test.json']])
+      pendingResolveRef.value = new Set(['job-1'])
+      mediaRef.value = [asset]
+      selectedIdRef.value = 'history:existing:0'
+
+      useOutputHistory()
+      await nextTick()
+
+      expect(resolveIfReadyFn).toHaveBeenCalledWith('job-1', true)
+      expect(selectAsLatestFn).not.toHaveBeenCalled()
+    })
+
+    it('skips jobs with no matching asset in media', async () => {
+      pendingResolveRef.value = new Set(['job-missing'])
+      mediaRef.value = []
+
+      useOutputHistory()
+      await nextTick()
+
+      expect(resolveIfReadyFn).not.toHaveBeenCalled()
     })
   })
 

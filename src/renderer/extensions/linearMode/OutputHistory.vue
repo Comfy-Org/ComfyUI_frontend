@@ -1,11 +1,11 @@
 <script setup lang="ts">
-import { useEventListener, useInfiniteScroll } from '@vueuse/core'
+import { useEventListener } from '@vueuse/core'
 import { ListboxContent, ListboxItem, ListboxRoot } from 'reka-ui'
 import { computed, nextTick, useTemplateRef, watch, watchEffect } from 'vue'
 
 import { CanvasPointer } from '@/lib/litegraph/src/CanvasPointer'
-import OutputHistoryItem from '@/renderer/extensions/linearMode/OutputHistoryItem.vue'
 import OutputHistoryActiveQueueItem from '@/renderer/extensions/linearMode/OutputHistoryActiveQueueItem.vue'
+import OutputHistoryItem from '@/renderer/extensions/linearMode/OutputHistoryItem.vue'
 import { useLinearOutputStore } from '@/renderer/extensions/linearMode/linearOutputStore'
 import type {
   OutputSelection,
@@ -148,9 +148,6 @@ watch(
 )
 
 const outputsRef = useTemplateRef('outputsRef')
-useInfiniteScroll(outputsRef, outputs.loadMore, {
-  canLoadMore: () => outputs.hasMore.value
-})
 
 // Reka UI's ListboxContent stops propagation on ALL Enter keydown events,
 // which blocks modifier+Enter (Ctrl+Enter = run workflow) from reaching

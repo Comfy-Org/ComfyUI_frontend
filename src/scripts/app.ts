@@ -1491,12 +1491,12 @@ export class ComfyApp {
             }
           })
 
-          const p = await this.graphToPrompt(this.rootGraph)
-          const queuedNodes = collectAllNodes(this.rootGraph)
           // Capture workflow before await — activeWorkflow may change if the
           // user switches tabs while the request is in flight.
           const queuedWorkflow = useWorkspaceStore().workflow
             .activeWorkflow as ComfyWorkflow
+          const p = await this.graphToPrompt(this.rootGraph)
+          const queuedNodes = collectAllNodes(this.rootGraph)
           try {
             api.authToken = comfyOrgAuthToken
             api.apiKey = comfyOrgApiKey ?? undefined

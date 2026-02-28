@@ -224,6 +224,13 @@ export const useExecutionStore = defineStore('execution', () => {
     activeJobId.value = e.detail.prompt_id
     queuedJobs.value[activeJobId.value] ??= { nodes: {} }
     clearInitializationByJobId(activeJobId.value)
+
+    // Ensure path mapping exists — execution_start can arrive via WebSocket
+    // before the HTTP response from queuePrompt triggers storeJob.
+    if (!jobIdToSessionWorkflowPath.value.has(activeJobId.value)) {
+      const path = queuedJobs.value[activeJobId.value]?.workflow?.path
+      if (path) ensureSessionWorkflowPath(activeJobId.value, path)
+    }
   }
 
   function handleExecutionCached(e: CustomEvent<ExecutionCachedWsMessage>) {
@@ -493,10 +500,18 @@ export const useExecutionStore = defineStore('execution', () => {
     }
   }
 
+  // ~0.65 MB at capacity (32 char GUID key + 50 char path value)
+  const MAX_SESSION_PATH_ENTRIES = 4000
+
   function ensureSessionWorkflowPath(jobId: string, path: string) {
     if (jobIdToSessionWorkflowPath.value.get(jobId) === path) return
     const next = new Map(jobIdToSessionWorkflowPath.value)
     next.set(jobId, path)
+    while (next.size > MAX_SESSION_PATH_ENTRIES) {
+      const oldest = next.keys().next().value
+      if (oldest !== undefined) next.delete(oldest)
+      else break
+    }
     jobIdToSessionWorkflowPath.value = next
   }
 

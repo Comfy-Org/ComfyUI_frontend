@@ -1,5 +1,5 @@
 import { createPinia, setActivePinia } from 'pinia'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 
 import { useLinearOutputStore } from '@/renderer/extensions/linearMode/linearOutputStore'
@@ -10,7 +10,6 @@ const activeJobIdRef = ref<string | null>(null)
 const previewsRef = ref<Record<string, { url: string; nodeId?: string }>>({})
 const isAppModeRef = ref(true)
 const activeWorkflowPathRef = ref<string>('workflows/test-workflow.json')
-const queuedJobsRef = ref<Record<string, { workflow?: { path: string } }>>({})
 const jobIdToWorkflowPathRef = ref(new Map<string, string>())
 const selectedOutputsRef = ref<string[]>([])
 
@@ -37,15 +36,9 @@ vi.mock('@/stores/executionStore', () => ({
     get activeJobId() {
       return activeJobIdRef.value
     },
-    get queuedJobs() {
-      return queuedJobsRef.value
-    },
     get jobIdToSessionWorkflowPath() {
       return jobIdToWorkflowPathRef.value
-    },
-    ensureSessionWorkflowPath: vi.fn((jobId: string, path: string) => {
-      setJobWorkflowPath(jobId, path)
-    })
+    }
   })
 }))
 
@@ -116,15 +109,6 @@ describe('linearOutputStore', () => {
     previewsRef.value = {}
     isAppModeRef.value = true
     activeWorkflowPathRef.value = 'workflows/test-workflow.json'
-    queuedJobsRef.value = {}
-    jobIdToWorkflowPathRef.value = new Map()
-    selectedOutputsRef.value = []
-  })
-
-  afterEach(() => {
-    activeJobIdRef.value = null
-    previewsRef.value = {}
-    queuedJobsRef.value = {}
     jobIdToWorkflowPathRef.value = new Map()
     selectedOutputsRef.value = []
   })
@@ -724,44 +708,6 @@ describe('linearOutputStore', () => {
     expect(items[0].jobId).toBe('job-2')
     expect(items[0].latentPreviewUrl).toBe('blob:landscape')
     vi.useRealTimers()
-  })
-
-  it('records workflow path from queuedJobs when not already mapped', () => {
-    const store = useLinearOutputStore()
-
-    // queuedJobs has a workflow path but jobIdToSessionWorkflowPath does not
-    queuedJobsRef.value = {
-      'job-1': { workflow: { path: 'workflows/from-queue.json' } }
-    }
-
-    store.onJobStart('job-1')
-
-    expect(jobIdToWorkflowPathRef.value.get('job-1')).toBe(
-      'workflows/from-queue.json'
-    )
-  })
-
-  it('does not fall back to activeWorkflow when queuedJobs has no path', () => {
-    const store = useLinearOutputStore()
-
-    activeWorkflowPathRef.value = 'workflows/fallback.json'
-
-    store.onJobStart('job-1')
-
-    expect(jobIdToWorkflowPathRef.value.has('job-1')).toBe(false)
-  })
-
-  it('does not overwrite existing path mapping on job start', () => {
-    const store = useLinearOutputStore()
-
-    setJobWorkflowPath('job-1', 'workflows/original.json')
-    activeWorkflowPathRef.value = 'workflows/different.json'
-
-    store.onJobStart('job-1')
-
-    expect(jobIdToWorkflowPathRef.value.get('job-1')).toBe(
-      'workflows/original.json'
-    )
   })
 
   it('skips output items for nodes not in selectedOutputs', () => {
