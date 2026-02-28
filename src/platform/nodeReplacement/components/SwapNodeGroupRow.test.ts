@@ -10,7 +10,22 @@ import SwapNodeGroupRow from './SwapNodeGroupRow.vue'
 const i18n = createI18n({
   legacy: false,
   locale: 'en',
-  messages: { en: {} },
+  messages: {
+    en: {
+      rightSidePanel: {
+        locateNode: 'Locate Node',
+        missingNodePacks: {
+          collapse: 'Collapse',
+          expand: 'Expand'
+        }
+      },
+      nodeReplacement: {
+        willBeReplacedBy: 'This node will be replaced by:',
+        replaceNode: 'Replace Node',
+        unknownNode: 'Unknown'
+      }
+    }
+  },
   missingWarn: false,
   fallbackWarn: false
 })
@@ -25,14 +40,6 @@ function makeGroup(overrides: Partial<SwapNodeGroup> = {}): SwapNodeGroup {
     ],
     ...overrides
   }
-}
-
-function findChevron(wrapper: ReturnType<typeof mountRow>) {
-  const btn = wrapper
-    .findAll('button')
-    .find((b) => b.html().includes('chevron'))
-  if (!btn) throw new Error('Chevron button not found')
-  return btn
 }
 
 function mountRow(
@@ -90,16 +97,12 @@ describe('SwapNodeGroupRow', () => {
       const wrapper = mountRow({
         group: makeGroup({ newNodeId: undefined })
       })
-      // Falls back to unknownNode key
-      expect(wrapper.text()).toMatch(/unknown/i)
+      expect(wrapper.text()).toContain('Unknown')
     })
 
     it('renders "Replace Node" button', () => {
       const wrapper = mountRow()
-      const replaceBtn = wrapper
-        .findAll('button')
-        .find((b) => b.html().includes('repeat'))
-      expect(replaceBtn).toBeTruthy()
+      expect(wrapper.text()).toContain('Replace Node')
     })
   })
 
@@ -111,30 +114,30 @@ describe('SwapNodeGroupRow', () => {
 
     it('expands when chevron is clicked', async () => {
       const wrapper = mountRow({ showNodeIdBadge: true })
-      await findChevron(wrapper).trigger('click')
+      await wrapper.get('button[aria-label="Expand"]').trigger('click')
       expect(wrapper.text()).toContain('#1')
       expect(wrapper.text()).toContain('#2')
     })
 
     it('collapses when chevron is clicked again', async () => {
       const wrapper = mountRow({ showNodeIdBadge: true })
-      await findChevron(wrapper).trigger('click')
+      await wrapper.get('button[aria-label="Expand"]').trigger('click')
       expect(wrapper.text()).toContain('#1')
-      await findChevron(wrapper).trigger('click')
+      await wrapper.get('button[aria-label="Collapse"]').trigger('click')
       expect(wrapper.text()).not.toContain('#1')
     })
 
     it('toggles chevron rotation when expanded', async () => {
       const wrapper = mountRow()
       expect(wrapper.html()).not.toContain('rotate-180')
-      await findChevron(wrapper).trigger('click')
+      await wrapper.get('button[aria-label="Expand"]').trigger('click')
       expect(wrapper.html()).toContain('rotate-180')
     })
   })
 
   describe('Node Type List (Expanded)', () => {
     async function expand(wrapper: ReturnType<typeof mountRow>) {
-      await findChevron(wrapper).trigger('click')
+      await wrapper.get('button[aria-label="Expand"]').trigger('click')
     }
 
     it('renders all nodeTypes when expanded', async () => {
@@ -171,10 +174,9 @@ describe('SwapNodeGroupRow', () => {
     it('renders Locate button for each nodeType with nodeId', async () => {
       const wrapper = mountRow({ showNodeIdBadge: true })
       await expand(wrapper)
-      const locateBtns = wrapper
-        .findAll('button')
-        .filter((b) => b.html().includes('locate'))
-      expect(locateBtns).toHaveLength(2)
+      expect(wrapper.findAll('button[aria-label="Locate Node"]')).toHaveLength(
+        2
+      )
     })
 
     it('does not render Locate button for nodeTypes without nodeId', async () => {
@@ -184,20 +186,17 @@ describe('SwapNodeGroupRow', () => {
         })
       })
       await expand(wrapper)
-      const locateBtns = wrapper
-        .findAll('button')
-        .filter((b) => b.html().includes('locate'))
-      expect(locateBtns).toHaveLength(0)
+      expect(wrapper.find('button[aria-label="Locate Node"]').exists()).toBe(
+        false
+      )
     })
   })
 
   describe('Events', () => {
     it('emits locate-node with correct nodeId', async () => {
       const wrapper = mountRow({ showNodeIdBadge: true })
-      await findChevron(wrapper).trigger('click')
-      const locateBtns = wrapper
-        .findAll('button')
-        .filter((b) => b.html().includes('locate'))
+      await wrapper.get('button[aria-label="Expand"]').trigger('click')
+      const locateBtns = wrapper.findAll('button[aria-label="Locate Node"]')
       await locateBtns[0].trigger('click')
       expect(wrapper.emitted('locate-node')).toBeTruthy()
       expect(wrapper.emitted('locate-node')?.[0]).toEqual(['1'])
@@ -211,7 +210,7 @@ describe('SwapNodeGroupRow', () => {
       const wrapper = mountRow({ group })
       const replaceBtn = wrapper
         .findAll('button')
-        .find((b) => b.html().includes('repeat'))
+        .find((b) => b.text().includes('Replace Node'))
       if (!replaceBtn) throw new Error('Replace button not found')
       await replaceBtn.trigger('click')
       expect(wrapper.emitted('replace')).toBeTruthy()
@@ -233,7 +232,7 @@ describe('SwapNodeGroupRow', () => {
           nodeTypes: ['StringType'] as never[]
         })
       })
-      await findChevron(wrapper).trigger('click')
+      await wrapper.get('button[aria-label="Expand"]').trigger('click')
       expect(wrapper.text()).toContain('StringType')
     })
   })

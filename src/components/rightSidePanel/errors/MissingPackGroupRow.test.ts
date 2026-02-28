@@ -57,7 +57,26 @@ import MissingPackGroupRow from './MissingPackGroupRow.vue'
 const i18n = createI18n({
   legacy: false,
   locale: 'en',
-  messages: { en: {} },
+  messages: {
+    en: {
+      g: {
+        loading: 'Loading'
+      },
+      rightSidePanel: {
+        locateNode: 'Locate node on canvas',
+        missingNodePacks: {
+          unknownPack: 'Unknown pack',
+          installNodePack: 'Install node pack',
+          installing: 'Installing...',
+          installed: 'Installed',
+          searchInManager: 'Search in Node Manager',
+          viewInManager: 'View in Manager',
+          collapse: 'Collapse',
+          expand: 'Expand'
+        }
+      }
+    }
+  },
   missingWarn: false,
   fallbackWarn: false
 })
@@ -94,7 +113,9 @@ function mountRow(
       plugins: [createTestingPinia({ createSpy: vi.fn }), PrimeVue, i18n],
       stubs: {
         TransitionCollapse: { template: '<div><slot /></div>' },
-        DotSpinner: { template: '<span class="dot-spinner" />' }
+        DotSpinner: {
+          template: '<span role="status" aria-label="loading" />'
+        }
       }
     }
   })
@@ -118,14 +139,14 @@ describe('MissingPackGroupRow', () => {
       expect(wrapper.text()).toContain('my-pack')
     })
 
-    it('renders "Unknown Pack" when packId is null', () => {
+    it('renders "Unknown pack" when packId is null', () => {
       const wrapper = mountRow({ group: makeGroup({ packId: null }) })
-      expect(wrapper.html()).toContain('triangle-alert')
+      expect(wrapper.text()).toContain('Unknown pack')
     })
 
     it('renders loading text when isResolving is true', () => {
       const wrapper = mountRow({ group: makeGroup({ isResolving: true }) })
-      expect(wrapper.text()).toContain('loading')
+      expect(wrapper.text()).toContain('Loading')
     })
 
     it('renders node count', () => {
@@ -148,19 +169,6 @@ describe('MissingPackGroupRow', () => {
   })
 
   describe('Expand / Collapse', () => {
-    function findChevron(wrapper: ReturnType<typeof mountRow>) {
-      const btn = wrapper
-        .findAll('button')
-        .find(
-          (b) =>
-            b.html().includes('chevron') ||
-            b.attributes('aria-label')?.toLowerCase().includes('expand') ||
-            b.attributes('aria-label')?.toLowerCase().includes('collapse')
-        )
-      if (!btn) throw new Error('Chevron button not found')
-      return btn
-    }
-
     it('starts collapsed', () => {
       const wrapper = mountRow()
       expect(wrapper.text()).not.toContain('MissingA')
@@ -168,27 +176,23 @@ describe('MissingPackGroupRow', () => {
 
     it('expands when chevron is clicked', async () => {
       const wrapper = mountRow()
-      await findChevron(wrapper).trigger('click')
+      await wrapper.get('button[aria-label="Expand"]').trigger('click')
       expect(wrapper.text()).toContain('MissingA')
       expect(wrapper.text()).toContain('MissingB')
     })
 
     it('collapses when chevron is clicked again', async () => {
       const wrapper = mountRow()
-      await findChevron(wrapper).trigger('click')
+      await wrapper.get('button[aria-label="Expand"]').trigger('click')
       expect(wrapper.text()).toContain('MissingA')
-      await findChevron(wrapper).trigger('click')
+      await wrapper.get('button[aria-label="Collapse"]').trigger('click')
       expect(wrapper.text()).not.toContain('MissingA')
     })
   })
 
   describe('Node Type List', () => {
     async function expand(wrapper: ReturnType<typeof mountRow>) {
-      const chevron = wrapper
-        .findAll('button')
-        .find((b) => b.html().includes('chevron'))
-      if (!chevron) throw new Error('Chevron button not found')
-      await chevron.trigger('click')
+      await wrapper.get('button[aria-label="Expand"]').trigger('click')
     }
 
     it('renders all nodeTypes when expanded', async () => {
@@ -222,11 +226,9 @@ describe('MissingPackGroupRow', () => {
     it('emits locateNode when Locate button is clicked', async () => {
       const wrapper = mountRow({ showNodeIdBadge: true })
       await expand(wrapper)
-      const locateBtn = wrapper
-        .findAll('button')
-        .find((b) => b.html().includes('locate'))
-      if (!locateBtn) throw new Error('Locate button not found')
-      await locateBtn.trigger('click')
+      await wrapper
+        .get('button[aria-label="Locate node on canvas"]')
+        .trigger('click')
       expect(wrapper.emitted('locateNode')).toBeTruthy()
       expect(wrapper.emitted('locateNode')?.[0]).toEqual(['10'])
     })
@@ -238,10 +240,9 @@ describe('MissingPackGroupRow', () => {
         })
       })
       await expand(wrapper)
-      const locateBtn = wrapper
-        .findAll('button')
-        .find((b) => b.html().includes('locate'))
-      expect(locateBtn).toBeUndefined()
+      expect(
+        wrapper.find('button[aria-label="Locate node on canvas"]').exists()
+      ).toBe(false)
     })
 
     it('handles mixed nodeTypes with and without nodeId', async () => {
@@ -257,10 +258,9 @@ describe('MissingPackGroupRow', () => {
       await expand(wrapper)
       expect(wrapper.text()).toContain('WithId')
       expect(wrapper.text()).toContain('WithoutId')
-      const locateBtns = wrapper
-        .findAll('button')
-        .filter((b) => b.html().includes('locate'))
-      expect(locateBtns).toHaveLength(1)
+      expect(
+        wrapper.findAll('button[aria-label="Locate node on canvas"]')
+      ).toHaveLength(1)
     })
   })
 
@@ -268,38 +268,29 @@ describe('MissingPackGroupRow', () => {
     it('hides install UI when shouldShowManagerButtons is false', () => {
       mockShouldShowManagerButtons.value = false
       const wrapper = mountRow()
-      const installBtn = wrapper
-        .findAll('button')
-        .find((b) => b.html().includes('download'))
-      expect(installBtn).toBeUndefined()
+      expect(wrapper.text()).not.toContain('Install node pack')
     })
 
     it('hides install UI when packId is null', () => {
       mockShouldShowManagerButtons.value = true
       const wrapper = mountRow({ group: makeGroup({ packId: null }) })
-      const installBtn = wrapper
-        .findAll('button')
-        .find((b) => b.html().includes('download'))
-      expect(installBtn).toBeUndefined()
+      expect(wrapper.text()).not.toContain('Install node pack')
     })
 
-    it('shows "Search in Manager" when packId exists but pack not in registry', () => {
+    it('shows "Search in Node Manager" when packId exists but pack not in registry', () => {
       mockShouldShowManagerButtons.value = true
       mockIsPackInstalled.mockReturnValue(false)
-      mockMissingNodePacks.value = [] // not found
+      mockMissingNodePacks.value = []
       const wrapper = mountRow()
-      const searchBtn = wrapper
-        .findAll('button')
-        .find((b) => b.html().includes('search'))
-      expect(searchBtn).toBeTruthy()
+      expect(wrapper.text()).toContain('Search in Node Manager')
     })
 
     it('shows "Installed" state when pack is installed', () => {
       mockShouldShowManagerButtons.value = true
       mockIsPackInstalled.mockReturnValue(true)
+      mockMissingNodePacks.value = [{ id: 'my-pack', name: 'My Pack' }]
       const wrapper = mountRow()
-      const checkIcon = wrapper.find('.icon-\\[lucide--check\\]')
-      expect(checkIcon.exists()).toBe(true)
+      expect(wrapper.text()).toContain('Installed')
     })
 
     it('shows spinner when installing', () => {
@@ -307,7 +298,7 @@ describe('MissingPackGroupRow', () => {
       mockIsInstalling.value = true
       mockMissingNodePacks.value = [{ id: 'my-pack', name: 'My Pack' }]
       const wrapper = mountRow()
-      expect(wrapper.find('.dot-spinner').exists()).toBe(true)
+      expect(wrapper.find('[role="status"]').exists()).toBe(true)
     })
 
     it('shows install button when not installed and pack found', () => {
@@ -315,10 +306,7 @@ describe('MissingPackGroupRow', () => {
       mockIsPackInstalled.mockReturnValue(false)
       mockMissingNodePacks.value = [{ id: 'my-pack', name: 'My Pack' }]
       const wrapper = mountRow()
-      const downloadBtn = wrapper
-        .findAll('button')
-        .find((b) => b.html().includes('download'))
-      expect(downloadBtn).toBeTruthy()
+      expect(wrapper.text()).toContain('Install node pack')
     })
 
     it('calls installAllPacks when Install button is clicked', async () => {
@@ -326,11 +314,7 @@ describe('MissingPackGroupRow', () => {
       mockIsPackInstalled.mockReturnValue(false)
       mockMissingNodePacks.value = [{ id: 'my-pack', name: 'My Pack' }]
       const wrapper = mountRow()
-      const installBtn = wrapper
-        .findAll('button')
-        .find((b) => b.html().includes('download'))
-      if (!installBtn) throw new Error('Install button not found')
-      await installBtn.trigger('click')
+      await wrapper.get('button:not([aria-label])').trigger('click')
       expect(mockInstallAllPacks).toHaveBeenCalledOnce()
     })
 
@@ -338,25 +322,23 @@ describe('MissingPackGroupRow', () => {
       mockShouldShowManagerButtons.value = true
       mockIsLoading.value = true
       const wrapper = mountRow()
-      expect(wrapper.find('.dot-spinner').exists()).toBe(true)
+      expect(wrapper.find('[role="status"]').exists()).toBe(true)
     })
   })
 
   describe('Info Button', () => {
     it('shows Info button when showInfoButton true and packId not null', () => {
       const wrapper = mountRow({ showInfoButton: true })
-      const infoBtn = wrapper
-        .findAll('button')
-        .find((b) => b.html().includes('info'))
-      expect(infoBtn).toBeTruthy()
+      expect(
+        wrapper.find('button[aria-label="View in Manager"]').exists()
+      ).toBe(true)
     })
 
     it('hides Info button when showInfoButton is false', () => {
       const wrapper = mountRow({ showInfoButton: false })
-      const infoBtn = wrapper
-        .findAll('button')
-        .find((b) => b.html().includes('info'))
-      expect(infoBtn).toBeUndefined()
+      expect(
+        wrapper.find('button[aria-label="View in Manager"]').exists()
+      ).toBe(false)
     })
 
     it('hides Info button when packId is null', () => {
@@ -364,19 +346,14 @@ describe('MissingPackGroupRow', () => {
         showInfoButton: true,
         group: makeGroup({ packId: null })
       })
-      const infoBtn = wrapper
-        .findAll('button')
-        .find((b) => b.html().includes('info'))
-      expect(infoBtn).toBeUndefined()
+      expect(
+        wrapper.find('button[aria-label="View in Manager"]').exists()
+      ).toBe(false)
     })
 
     it('emits openManagerInfo when Info button is clicked', async () => {
       const wrapper = mountRow({ showInfoButton: true })
-      const infoBtn = wrapper
-        .findAll('button')
-        .find((b) => b.html().includes('info'))
-      if (!infoBtn) throw new Error('Info button not found')
-      await infoBtn.trigger('click')
+      await wrapper.get('button[aria-label="View in Manager"]').trigger('click')
       expect(wrapper.emitted('openManagerInfo')).toBeTruthy()
       expect(wrapper.emitted('openManagerInfo')?.[0]).toEqual(['my-pack'])
     })

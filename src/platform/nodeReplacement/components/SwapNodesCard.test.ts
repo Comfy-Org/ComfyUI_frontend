@@ -114,10 +114,10 @@ describe('SwapNodesCard', () => {
       const rows = wrapper.findAllComponents({ name: 'SwapNodeGroupRow' })
 
       await rows[2].vm.$emit('locate-node', '99')
-      expect(wrapper.emitted('locate-node')![0]).toEqual(['99'])
+      expect(wrapper.emitted('locate-node')?.[0]).toEqual(['99'])
 
       await rows[1].vm.$emit('replace', groups[1])
-      expect(wrapper.emitted('replace')![0][0]).toEqual(groups[1])
+      expect(wrapper.emitted('replace')?.[0][0]).toEqual(groups[1])
     })
   })
 })

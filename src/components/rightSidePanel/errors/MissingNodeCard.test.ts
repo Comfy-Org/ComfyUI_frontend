@@ -93,7 +93,7 @@ function mountCard(
     global: {
       plugins: [createTestingPinia({ createSpy: vi.fn }), PrimeVue, i18n],
       stubs: {
-        DotSpinner: { template: '<span class="dot-spinner" />' }
+        DotSpinner: { template: '<span role="status" aria-label="loading" />' }
       }
     }
   })
@@ -168,7 +168,7 @@ describe('MissingNodeCard', () => {
       mockIsPackInstalled.mockReturnValue(true)
       mockIsRestarting.value = true
       const wrapper = mountCard()
-      expect(wrapper.find('.dot-spinner').exists()).toBe(true)
+      expect(wrapper.find('[role="status"]').exists()).toBe(true)
     })
 
     it('disables button during restart', () => {
