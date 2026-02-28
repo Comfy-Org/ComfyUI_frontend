@@ -16,7 +16,7 @@ const modelValue = defineModel<string | number>()
     v-model="modelValue"
     :class="
       cn(
-        'flex min-h-16 w-full rounded-lg border-none bg-secondary-background px-4 py-2 text-sm text-base-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-border-default disabled:pointer-events-none disabled:opacity-50 font-inter',
+        'flex min-h-16 w-full rounded-lg border-none bg-secondary-background px-4 py-2 text-sm text-base-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-border-default disabled:pointer-events-none disabled:opacity-50',
         className
       )
     "
