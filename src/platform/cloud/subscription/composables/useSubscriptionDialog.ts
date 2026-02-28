@@ -2,6 +2,8 @@ import { defineAsyncComponent } from 'vue'
 import { useDialogService } from '@/services/dialogService'
 import { useDialogStore } from '@/stores/dialogStore'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import { isCloud } from '@/platform/distribution/types'
+import { useTelemetry } from '@/platform/telemetry'
 import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
@@ -13,19 +15,38 @@ export type SubscriptionDialogReason =
   | 'out_of_credits'
   | 'top_up_blocked'
 
+interface SubscriptionDialogOptions {
+  reason?: SubscriptionDialogReason
+  entry_point?: string
+}
+
 export const useSubscriptionDialog = () => {
   const { flags } = useFeatureFlags()
   const dialogService = useDialogService()
   const dialogStore = useDialogStore()
   const workspaceStore = useTeamWorkspaceStore()
-  const { isFreeTier } = useSubscription()
+  const { isFreeTier, subscriptionTier } = useSubscription()
 
   function hide() {
     dialogStore.closeDialog({ key: DIALOG_KEY })
     dialogStore.closeDialog({ key: FREE_TIER_DIALOG_KEY })
   }
 
-  function showPricingTable(options?: { reason?: SubscriptionDialogReason }) {
+  function trackModalOpened(
+    modalName: 'free_tier_upsell' | 'pricing_table',
+    options?: SubscriptionDialogOptions
+  ) {
+    if (isCloud) {
+      useTelemetry()?.trackSubscription('modal_opened', {
+        current_tier: subscriptionTier.value?.toLowerCase(),
+        reason: options?.reason,
+        entry_point: options?.entry_point,
+        modal_name: modalName
+      })
+    }
+  }
+
+  function openPricingDialog(options?: SubscriptionDialogOptions) {
     const useWorkspaceVariant =
       flags.teamWorkspacesEnabled && !workspaceStore.isInPersonalWorkspace
 
@@ -61,8 +82,17 @@ export const useSubscriptionDialog = () => {
     })
   }
 
-  function show(options?: { reason?: SubscriptionDialogReason }) {
-    if (isFreeTier.value && workspaceStore.isInPersonalWorkspace) {
+  function showPricingTable(options?: SubscriptionDialogOptions) {
+    trackModalOpened('pricing_table', options)
+    openPricingDialog(options)
+  }
+
+  function show(options?: SubscriptionDialogOptions) {
+    const isPersonalContext =
+      workspaceStore.isInPersonalWorkspace || !flags.teamWorkspacesEnabled
+    if (isFreeTier.value && isPersonalContext) {
+      trackModalOpened('free_tier_upsell', options)
+
       const component = defineAsyncComponent(
         () =>
           import('@/platform/cloud/subscription/components/FreeTierDialogContent.vue')
@@ -75,6 +105,13 @@ export const useSubscriptionDialog = () => {
           reason: options?.reason,
           onClose: hide,
           onUpgrade: () => {
+            if (isCloud) {
+              useTelemetry()?.trackSubscription('subscribe_clicked', {
+                current_tier: subscriptionTier.value?.toLowerCase(),
+                reason: options?.reason,
+                entry_point: options?.entry_point
+              })
+            }
             hide()
             showPricingTable(options)
           }

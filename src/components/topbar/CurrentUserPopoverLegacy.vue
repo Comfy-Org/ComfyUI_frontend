@@ -27,6 +27,20 @@
       >
         {{ subscriptionTierName }}
       </span>
+      <Button
+        v-if="isFreeTier"
+        variant="primary"
+        size="sm"
+        class="mt-2 whitespace-nowrap"
+        :style="{
+          background: 'var(--color-subscription-button-gradient)',
+          color: 'var(--color-white)',
+          borderColor: 'transparent'
+        }"
+        @click="handleSubscribeForMore"
+      >
+        {{ $t('subscription.subscribeForMore') }}
+      </Button>
     </div>
 
     <!-- Credits Section -->
@@ -170,6 +184,7 @@ const settingsDialog = useSettingsDialog()
 const dialogService = useDialogService()
 const {
   isActiveSubscription,
+  isFreeTier,
   subscriptionTierName,
   subscriptionTier,
   fetchStatus
@@ -208,7 +223,9 @@ const handleOpenUserSettings = () => {
 }
 
 const handleOpenPlansAndPricing = () => {
-  subscriptionDialog.showPricingTable()
+  subscriptionDialog.showPricingTable({
+    entry_point: 'popover_plans_and_pricing'
+  })
   emit('close')
 }
 
@@ -224,7 +241,9 @@ const handleOpenPlanAndCreditsSettings = () => {
 
 const handleTopUp = () => {
   // Track purchase credits entry from avatar popover
-  useTelemetry()?.trackAddApiCreditButtonClicked()
+  useTelemetry()?.trackAddApiCreditButtonClicked({
+    current_tier: subscriptionTier.value?.toLowerCase()
+  })
   dialogService.showTopUpCreditsDialog()
   emit('close')
 }
@@ -239,6 +258,11 @@ const handleOpenPartnerNodesInfo = () => {
 
 const handleLogout = async () => {
   await handleSignOut()
+  emit('close')
+}
+
+const handleSubscribeForMore = () => {
+  subscriptionDialog.show({ entry_point: 'popover_upgrade' })
   emit('close')
 }
 

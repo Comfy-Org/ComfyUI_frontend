@@ -296,7 +296,9 @@ const handleOpenWorkspaceSettings = () => {
 }
 
 const handleOpenPlansAndPricing = () => {
-  subscriptionDialog.showPricingTable()
+  subscriptionDialog.showPricingTable({
+    entry_point: 'popover_plans_and_pricing'
+  })
   emit('close')
 }
 
@@ -312,7 +314,9 @@ const handleOpenPlanAndCreditsSettings = () => {
 
 const handleTopUp = () => {
   // Track purchase credits entry from avatar popover
-  useTelemetry()?.trackAddApiCreditButtonClicked()
+  useTelemetry()?.trackAddApiCreditButtonClicked({
+    current_tier: subscription.value?.tier?.toLowerCase()
+  })
   dialogService.showTopUpCreditsDialog()
   emit('close')
 }

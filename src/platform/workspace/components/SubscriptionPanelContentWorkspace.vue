@@ -462,7 +462,12 @@ function handleSubscribeWorkspace() {
 }
 
 function handleUpgrade() {
-  isFreeTierPlan.value ? showPricingTable() : showSubscriptionDialog()
+  const options = { entry_point: 'settings_upgrade_plan' }
+  if (isFreeTierPlan.value) {
+    showPricingTable(options)
+  } else {
+    showSubscriptionDialog()
+  }
 }
 const subscriptionTier = computed(() => subscription.value?.tier ?? null)
 const isYearlySubscription = computed(

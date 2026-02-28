@@ -136,13 +136,7 @@ function useSubscriptionInternal() {
   const showSubscriptionDialog = (options?: {
     reason?: SubscriptionDialogReason
   }) => {
-    if (isCloud) {
-      useTelemetry()?.trackSubscription('modal_opened', {
-        current_tier: subscriptionTier.value?.toLowerCase(),
-        reason: options?.reason
-      })
-    }
-
+    // modal_opened tracking is handled by useSubscriptionDialog.show()/showPricingTable()
     void showSubscriptionRequiredDialog(options)
   }
 

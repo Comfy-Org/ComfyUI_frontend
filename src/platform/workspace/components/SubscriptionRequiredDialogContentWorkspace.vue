@@ -78,9 +78,13 @@ import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
+import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
-import type { TierKey } from '@/platform/cloud/subscription/constants/tierPricing'
+import { TIER_TO_KEY } from '@/platform/cloud/subscription/constants/tierPricing';
+import type { TierKey } from '@/platform/cloud/subscription/constants/tierPricing';
 import type { BillingCycle } from '@/platform/cloud/subscription/utils/subscriptionTierRank'
+import { useTelemetry } from '@/platform/telemetry'
+import { getCheckoutAttribution } from '@/platform/telemetry/utils/checkoutAttribution'
 import type { PreviewSubscribeResponse } from '@/platform/workspace/api/workspaceApi'
 import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
 import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
@@ -104,9 +108,17 @@ const emit = defineEmits<{
 
 const { t } = useI18n()
 const toast = useToast()
-const { subscribe, previewSubscribe, plans, fetchStatus, fetchBalance } =
-  useBillingContext()
+const {
+  subscribe,
+  previewSubscribe,
+  plans,
+  fetchStatus,
+  fetchBalance,
+  subscription
+} = useBillingContext()
 
+const telemetry = useTelemetry()
+const { resolvedUserInfo } = useCurrentUser()
 const billingOperationStore = useBillingOperationStore()
 const isPolling = computed(() => billingOperationStore.hasPendingOperations)
 
@@ -184,6 +196,22 @@ async function handleSubscribeClick(payload: {
   }
 }
 
+async function trackCheckout(checkoutType: 'new' | 'change') {
+  if (!resolvedUserInfo.value?.id || !selectedTierKey.value) return
+
+  const attribution = await getCheckoutAttribution()
+  telemetry?.trackBeginCheckout({
+    user_id: resolvedUserInfo.value.id,
+    tier: selectedTierKey.value,
+    cycle: selectedBillingCycle.value,
+    checkout_type: checkoutType,
+    ...(subscription.value?.tier
+      ? { previous_tier: TIER_TO_KEY[subscription.value.tier] }
+      : {}),
+    ...attribution
+  })
+}
+
 function handleBackToPricing() {
   checkoutStep.value = 'pricing'
   previewData.value = null
@@ -194,6 +222,8 @@ async function handleAddCreditCard() {
 
   isSubscribing.value = true
   try {
+    await trackCheckout('new')
+
     const planSlug = getApiPlanSlug(
       selectedTierKey.value,
       selectedBillingCycle.value
@@ -208,6 +238,10 @@ async function handleAddCreditCard() {
     if (!response) return
 
     if (response.status === 'subscribed') {
+      telemetry?.trackSubscriptionSucceeded({
+        tier: selectedTierKey.value ?? undefined,
+        duration: selectedBillingCycle.value === 'yearly' ? 'annual' : 'monthly'
+      })
       toast.add({
         severity: 'success',
         summary: t('subscription.required.pollingSuccess'),
@@ -249,6 +283,8 @@ async function handleConfirmTransition() {
 
   isSubscribing.value = true
   try {
+    await trackCheckout('change')
+
     const planSlug = getApiPlanSlug(
       selectedTierKey.value,
       selectedBillingCycle.value
@@ -263,6 +299,10 @@ async function handleConfirmTransition() {
     if (!response) return
 
     if (response.status === 'subscribed') {
+      telemetry?.trackSubscriptionSucceeded({
+        tier: selectedTierKey.value ?? undefined,
+        duration: selectedBillingCycle.value === 'yearly' ? 'annual' : 'monthly'
+      })
       toast.add({
         severity: 'success',
         summary: t('subscription.required.pollingSuccess'),

@@ -11,6 +11,7 @@ import AppModeToolbar from '@/components/appMode/AppModeToolbar.vue'
 import ExtensionSlot from '@/components/common/ExtensionSlot.vue'
 import ModeToggle from '@/components/sidebar/ModeToggle.vue'
 import TopbarBadges from '@/components/topbar/TopbarBadges.vue'
+import TopbarSubscribeButton from '@/components/topbar/TopbarSubscribeButton.vue'
 import WorkflowTabs from '@/components/topbar/WorkflowTabs.vue'
 import TypeformPopoverButton from '@/components/ui/TypeformPopoverButton.vue'
 import { useSettingStore } from '@/platform/settings/settingStore'
@@ -82,6 +83,7 @@ const linearWorkflowRef = useTemplateRef('linearWorkflowRef')
       <div class="flex h-full items-center">
         <WorkflowTabs />
         <TopbarBadges />
+        <TopbarSubscribeButton />
       </div>
     </div>
     <div

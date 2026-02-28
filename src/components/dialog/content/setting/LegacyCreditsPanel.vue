@@ -137,7 +137,7 @@ const authStore = useFirebaseAuthStore()
 const authActions = useFirebaseAuthActions()
 const commandStore = useCommandStore()
 const telemetry = useTelemetry()
-const { isActiveSubscription } = useBillingContext()
+const { isActiveSubscription, subscription } = useBillingContext()
 const loading = computed(() => authStore.loading)
 const balanceLoading = computed(() => authStore.isFetchingBalance)
 
@@ -160,7 +160,9 @@ watch(
 
 const handlePurchaseCreditsClick = () => {
   // Track purchase credits entry from Settings > Credits panel
-  useTelemetry()?.trackAddApiCreditButtonClicked()
+  useTelemetry()?.trackAddApiCreditButtonClicked({
+    current_tier: subscription.value?.tier?.toLowerCase()
+  })
   dialogService.showTopUpCreditsDialog()
 }
 

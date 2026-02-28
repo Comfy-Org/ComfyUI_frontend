@@ -36,6 +36,7 @@ import type {
   RunButtonProperties,
   SettingChangedMetadata,
   SubscriptionMetadata,
+  SubscriptionSucceededMetadata,
   SurveyResponses,
   TabCountMetadata,
   TelemetryEventName,
@@ -235,12 +236,12 @@ export class MixpanelTelemetryProvider implements TelemetryProvider {
     this.trackEvent(eventName, metadata)
   }
 
-  trackAddApiCreditButtonClicked(): void {
-    this.trackEvent(TelemetryEvents.ADD_API_CREDIT_BUTTON_CLICKED)
+  trackAddApiCreditButtonClicked(metadata?: { current_tier?: string }): void {
+    this.trackEvent(TelemetryEvents.ADD_API_CREDIT_BUTTON_CLICKED, metadata)
   }
 
-  trackMonthlySubscriptionSucceeded(): void {
-    this.trackEvent(TelemetryEvents.MONTHLY_SUBSCRIPTION_SUCCEEDED)
+  trackSubscriptionSucceeded(metadata?: SubscriptionSucceededMetadata): void {
+    this.trackEvent(TelemetryEvents.SUBSCRIPTION_SUCCEEDED, metadata)
   }
 
   /**
@@ -281,6 +282,7 @@ export class MixpanelTelemetryProvider implements TelemetryProvider {
   trackRunButton(options?: {
     subscribe_to_run?: boolean
     trigger_source?: ExecutionTriggerSource
+    current_tier?: string
   }): void {
     const executionContext = this.getExecutionContext()
 
@@ -295,7 +297,8 @@ export class MixpanelTelemetryProvider implements TelemetryProvider {
       api_node_names: executionContext.api_node_names,
       has_toolkit_nodes: executionContext.has_toolkit_nodes,
       toolkit_node_names: executionContext.toolkit_node_names,
-      trigger_source: options?.trigger_source
+      trigger_source: options?.trigger_source,
+      current_tier: options?.current_tier
     }
 
     this.lastTriggerSource = options?.trigger_source

@@ -185,26 +185,31 @@ defineExpose({ runButtonClick })
         root-class="text-base-foreground grid-cols-[auto_96px]"
         class="*:[.min-w-0]:w-24"
       />
-      <SubscribeToRunButton v-if="!isActiveSubscription" class="w-full mt-4" />
-      <div v-else class="flex mt-4 gap-2">
-        <Button
-          variant="primary"
-          class="grow-1"
-          size="lg"
-          @click="runButtonClick"
-        >
-          <i class="icon-[lucide--play]" />
-          {{ t('menu.run') }}
-        </Button>
-        <Button
-          v-if="!executionStore.isIdle"
-          variant="destructive"
-          size="lg"
-          class="w-10 p-2"
-          @click="commandStore.execute('Comfy.Interrupt')"
-        >
-          <i class="icon-[lucide--x]" />
-        </Button>
+      <div class="relative mt-4">
+        <div class="flex gap-2">
+          <Button
+            variant="primary"
+            class="grow-1"
+            size="lg"
+            @click="runButtonClick"
+          >
+            <i class="icon-[lucide--play]" />
+            {{ t('menu.run') }}
+          </Button>
+          <Button
+            v-if="!executionStore.isIdle"
+            variant="destructive"
+            size="lg"
+            class="w-10 p-2"
+            @click="commandStore.execute('Comfy.Interrupt')"
+          >
+            <i class="icon-[lucide--x]" />
+          </Button>
+        </div>
+        <SubscribeToRunButton
+          v-if="!isActiveSubscription"
+          class="absolute inset-0 w-full z-10"
+        />
       </div>
     </section>
     <section

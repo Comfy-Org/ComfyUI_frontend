@@ -63,6 +63,7 @@ export interface RunButtonProperties {
   has_toolkit_nodes: boolean
   toolkit_node_names: string[]
   trigger_source?: ExecutionTriggerSource
+  current_tier?: string
 }
 
 /**
@@ -305,6 +306,13 @@ export interface CheckoutAttributionMetadata {
 export interface SubscriptionMetadata {
   current_tier?: string
   reason?: SubscriptionDialogReason
+  entry_point?: string
+  modal_name?: 'free_tier_upsell' | 'pricing_table'
+}
+
+export interface SubscriptionSucceededMetadata {
+  tier?: string
+  duration?: string
 }
 
 export interface BeginCheckoutMetadata
@@ -332,14 +340,15 @@ export interface TelemetryProvider {
     metadata?: SubscriptionMetadata
   ): void
   trackBeginCheckout?(metadata: BeginCheckoutMetadata): void
-  trackMonthlySubscriptionSucceeded?(): void
+  trackSubscriptionSucceeded?(metadata?: SubscriptionSucceededMetadata): void
   trackMonthlySubscriptionCancelled?(): void
-  trackAddApiCreditButtonClicked?(): void
+  trackAddApiCreditButtonClicked?(metadata?: { current_tier?: string }): void
   trackApiCreditTopupButtonPurchaseClicked?(amount: number): void
   trackApiCreditTopupSucceeded?(): void
   trackRunButton?(options?: {
     subscribe_to_run?: boolean
     trigger_source?: ExecutionTriggerSource
+    current_tier?: string
   }): void
 
   // Credit top-up tracking (composition with internal utilities)
@@ -423,7 +432,7 @@ export const TelemetryEvents = {
   RUN_BUTTON_CLICKED: 'app:run_button_click',
   SUBSCRIPTION_REQUIRED_MODAL_OPENED: 'app:subscription_required_modal_opened',
   SUBSCRIBE_NOW_BUTTON_CLICKED: 'app:subscribe_now_button_clicked',
-  MONTHLY_SUBSCRIPTION_SUCCEEDED: 'app:monthly_subscription_succeeded',
+  SUBSCRIPTION_SUCCEEDED: 'app:subscription_succeeded',
   MONTHLY_SUBSCRIPTION_CANCELLED: 'app:monthly_subscription_cancelled',
   ADD_API_CREDIT_BUTTON_CLICKED: 'app:add_api_credit_button_clicked',
   API_CREDIT_TOPUP_BUTTON_PURCHASE_CLICKED:
@@ -522,3 +531,4 @@ export type TelemetryEventProperties =
   | WorkflowCreatedMetadata
   | EnterLinearMetadata
   | SubscriptionMetadata
+  | SubscriptionSucceededMetadata

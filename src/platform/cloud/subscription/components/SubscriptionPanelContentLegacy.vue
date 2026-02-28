@@ -48,7 +48,7 @@
             v-if="isActiveSubscription"
             variant="primary"
             class="rounded-lg px-4 py-2 text-sm font-normal text-text-primary"
-            @click="showSubscriptionDialog"
+            @click="handleUpgradePlan"
           >
             {{ $t('subscription.upgradePlan') }}
           </Button>
@@ -234,7 +234,11 @@ const {
   isYearlySubscription
 } = useSubscription()
 
-const { show: showSubscriptionDialog } = useSubscriptionDialog()
+const { showPricingTable } = useSubscriptionDialog()
+
+function handleUpgradePlan() {
+  showPricingTable({ entry_point: 'settings_upgrade_plan' })
+}
 
 const tierKey = computed(() => {
   const tier = subscriptionTier.value
