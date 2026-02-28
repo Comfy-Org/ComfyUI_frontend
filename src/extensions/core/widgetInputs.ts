@@ -44,6 +44,22 @@ export class PrimitiveNode extends LGraphNode {
 
   override serialize() {
     const data = super.serialize()
+
+    // When widgets exist, always capture all widget values — including
+    // canvas-only control widgets that LGraphNode.serialize() may skip
+    // when widget.serialize === false.
+    if (this.widgets?.length) {
+      data.widgets_values = this.widgets.map((w) => {
+        const v = w?.value
+        return v != null && typeof v === 'object'
+          ? JSON.parse(JSON.stringify(v))
+          : (v ?? null)
+      })
+      return data
+    }
+
+    // Clone case: no widgets yet (PrimitiveNode creates them lazily on
+    // connection), but configure() stored widgets_values on the instance.
     if (!data.widgets_values && this.widgets_values) {
       data.widgets_values = [...this.widgets_values]
     }

@@ -96,7 +96,7 @@ test.describe('Primitive Node', { tag: ['@screenshot', '@node'] }, () => {
       canvas.pasteFromClipboard()
 
       const graph = canvas.graph!
-      const pastedPrimitive = graph._nodes.find(
+      const pastedPrimitive = graph.nodes.find(
         (n) => n.type === 'PrimitiveNode' && n.id !== 1
       )
       if (!pastedPrimitive?.widgets) return null
