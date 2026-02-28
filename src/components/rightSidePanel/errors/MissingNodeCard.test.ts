@@ -123,12 +123,16 @@ describe('MissingNodeCard', () => {
 
     it('renders correct number of MissingPackGroupRow components', () => {
       const wrapper = mountCard({ missingPackGroups: makePackGroups(3) })
-      expect(wrapper.findAll('.pack-row')).toHaveLength(3)
+      expect(
+        wrapper.findAllComponents({ name: 'MissingPackGroupRow' })
+      ).toHaveLength(3)
     })
 
     it('renders zero rows when missingPackGroups is empty', () => {
       const wrapper = mountCard({ missingPackGroups: [] })
-      expect(wrapper.findAll('.pack-row')).toHaveLength(0)
+      expect(
+        wrapper.findAllComponents({ name: 'MissingPackGroupRow' })
+      ).toHaveLength(0)
     })
 
     it('passes props correctly to MissingPackGroupRow children', () => {

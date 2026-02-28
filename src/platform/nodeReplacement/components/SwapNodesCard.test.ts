@@ -60,17 +60,23 @@ describe('SwapNodesCard', () => {
 
     it('renders correct number of SwapNodeGroupRow components', () => {
       const wrapper = mountCard({ swapNodeGroups: makeGroups(3) })
-      expect(wrapper.findAll('.swap-row')).toHaveLength(3)
+      expect(
+        wrapper.findAllComponents({ name: 'SwapNodeGroupRow' })
+      ).toHaveLength(3)
     })
 
     it('renders zero rows when swapNodeGroups is empty', () => {
       const wrapper = mountCard({ swapNodeGroups: [] })
-      expect(wrapper.findAll('.swap-row')).toHaveLength(0)
+      expect(
+        wrapper.findAllComponents({ name: 'SwapNodeGroupRow' })
+      ).toHaveLength(0)
     })
 
     it('renders one row when swapNodeGroups has one entry', () => {
       const wrapper = mountCard({ swapNodeGroups: makeGroups(1) })
-      expect(wrapper.findAll('.swap-row')).toHaveLength(1)
+      expect(
+        wrapper.findAllComponents({ name: 'SwapNodeGroupRow' })
+      ).toHaveLength(1)
     })
 
     it('passes showNodeIdBadge to children', () => {
