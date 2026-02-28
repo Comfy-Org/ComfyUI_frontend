@@ -331,6 +331,10 @@
     "missingNodesWarning": "워크플로우에 지원되지 않는 노드가 포함되어 있습니다(빨간색으로 표시됨).",
     "workflowActions": "워크플로우 작업"
   },
+  "builderMenu": {
+    "exitAppBuilder": "앱 빌더 종료",
+    "saveApp": "앱 저장"
+  },
   "builderToolbar": {
     "app": "앱",
     "appDescription": "기본적으로 앱으로 열립니다",

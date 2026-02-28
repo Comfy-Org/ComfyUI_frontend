@@ -331,6 +331,10 @@
     "missingNodesWarning": "Le workflow contient des nœuds non pris en charge (surlignés en rouge).",
     "workflowActions": "Actions du workflow"
   },
+  "builderMenu": {
+    "exitAppBuilder": "Quitter le constructeur d'application",
+    "saveApp": "Enregistrer l'application"
+  },
   "builderToolbar": {
     "app": "Application",
     "appDescription": "S'ouvre par défaut en tant qu'application",

@@ -12799,6 +12799,30 @@
       }
     }
   },
+  "ResolutionSelector": {
+    "description": "En-boy oranı ve megapiksel hedefinden genişlik ve yükseklik hesaplayın. Boş Latent Görüntü boyutlarını ayarlamak için kullanışlıdır.",
+    "display_name": "Çözünürlük Seçici",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "en_boy_orani",
+        "tooltip": "Çıktı boyutları için en-boy oranı."
+      },
+      "megapixels": {
+        "name": "megapiksel",
+        "tooltip": "Hedef toplam megapiksel. 1,0 MP ≈ 1024×1024 (kare için)."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "genislik",
+        "tooltip": "Piksel cinsinden hesaplanan genişlik (8'in katı)."
+      },
+      "1": {
+        "name": "yukseklik",
+        "tooltip": "Piksel cinsinden hesaplanan yükseklik (8'in katı)."
+      }
+    }
+  },
   "Rodin3D_Detail": {
     "description": "Rodin API kullanarak 3D Varlıklar Oluştur",
     "display_name": "Rodin 3D Oluştur - Detay Oluştur",

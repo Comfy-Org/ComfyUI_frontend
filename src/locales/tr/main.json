@@ -331,6 +331,10 @@
     "missingNodesWarning": "İş akışında desteklenmeyen düğümler var (kırmızı ile vurgulanmış).",
     "workflowActions": "İş akışı işlemleri"
   },
+  "builderMenu": {
+    "exitAppBuilder": "Uygulama oluşturucudan çık",
+    "saveApp": "Uygulamayı kaydet"
+  },
   "builderToolbar": {
     "app": "Uygulama",
     "appDescription": "Varsayılan olarak uygulama olarak açılır",

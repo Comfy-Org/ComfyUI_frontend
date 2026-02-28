@@ -331,6 +331,10 @@
     "missingNodesWarning": "يحتوي سير العمل على عقد غير مدعومة (مظللة باللون الأحمر).",
     "workflowActions": "إجراءات سير العمل"
   },
+  "builderMenu": {
+    "exitAppBuilder": "الخروج من مُنشئ التطبيق",
+    "saveApp": "حفظ التطبيق"
+  },
   "builderToolbar": {
     "app": "تطبيق",
     "appDescription": "يفتح كتطبيق بشكل افتراضي",

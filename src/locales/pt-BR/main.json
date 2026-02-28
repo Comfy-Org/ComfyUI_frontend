@@ -331,6 +331,10 @@
     "missingNodesWarning": "O fluxo de trabalho contém nós não suportados (destacados em vermelho).",
     "workflowActions": "Ações do fluxo de trabalho"
   },
+  "builderMenu": {
+    "exitAppBuilder": "Sair do construtor de aplicativos",
+    "saveApp": "Salvar aplicativo"
+  },
   "builderToolbar": {
     "app": "Aplicativo",
     "appDescription": "Abre como aplicativo por padrão",
