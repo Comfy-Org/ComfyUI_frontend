@@ -144,16 +144,12 @@ test.describe('Change Tracker', { tag: '@workflow' }, () => {
 
         return {
           normalLinkMatches:
-            graph.getLink(firstLink.id) ===
-            graph.linkStore.getLink(firstLink.id),
+            graph.getLink(firstLink.id) === graph.links.get(firstLink.id),
           floatingLinkRequiresExplicitProjection:
-            graph.getLink(floatingLink.id) !==
-              graph.linkStore.getFloatingLink(floatingLink.id) &&
-            graph.linkStore.getFloatingLink(floatingLink.id) ===
-              graph.floatingLinks.get(floatingLink.id),
+            graph.getLink(floatingLink.id) === undefined &&
+            graph.floatingLinks.get(floatingLink.id) !== undefined,
           rerouteMatches:
-            graph.getReroute(reroute.id) ===
-            graph.linkStore.getReroute(reroute.id)
+            graph.getReroute(reroute.id) === graph.reroutes.get(reroute.id)
         }
       })
 
