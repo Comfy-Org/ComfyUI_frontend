@@ -3,34 +3,59 @@ import { useToast } from 'primevue/usetoast'
 
 import { t } from '@/i18n'
 
+function legacyCopy(text: string): boolean {
+  const textarea = document.createElement('textarea')
+  textarea.setAttribute('readonly', '')
+  textarea.value = text
+  textarea.style.position = 'absolute'
+  textarea.style.opacity = '0'
+  document.body.appendChild(textarea)
+  textarea.select()
+  try {
+    return document.execCommand('copy')
+  } finally {
+    textarea.remove()
+  }
+}
+
 export function useCopyToClipboard() {
-  const { copy, copied } = useClipboard({ legacy: true })
+  const { copy, copied, isSupported } = useClipboard()
   const toast = useToast()
 
   async function copyToClipboard(text: string) {
+    let success = false
+
     try {
-      await copy(text)
-      if (copied.value) {
-        toast.add({
-          severity: 'success',
-          summary: t('g.success'),
-          detail: t('clipboard.successMessage'),
-          life: 3000
-        })
-      } else {
-        toast.add({
-          severity: 'error',
-          summary: t('g.error'),
-          detail: t('clipboard.errorMessage')
-        })
+      if (isSupported.value) {
+        await copy(text)
+        success = copied.value
       }
     } catch {
-      toast.add({
-        severity: 'error',
-        summary: t('g.error'),
-        detail: t('clipboard.errorMessage')
-      })
+      // Modern clipboard API failed, fall through to legacy
     }
+
+    if (!success) {
+      try {
+        success = legacyCopy(text)
+      } catch {
+        // Legacy also failed
+      }
+    }
+
+    toast.add(
+      success
+        ? {
+            severity: 'success',
+            summary: t('g.success'),
+            detail: t('clipboard.successMessage'),
+            life: 3000
+          }
+        : {
+            severity: 'error',
+            summary: t('g.error'),
+            detail: t('clipboard.errorMessage')
+          }
+    )
   }
 
   return {
