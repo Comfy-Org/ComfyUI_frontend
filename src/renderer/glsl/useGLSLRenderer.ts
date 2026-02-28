@@ -11,19 +11,19 @@ void main() {
 }
 `
 
-const MAX_INPUTS = 5
-const MAX_FLOAT_UNIFORMS = 5
-const MAX_INT_UNIFORMS = 5
 const MAX_PASSES = 32
 
-const UNIFORM_NAMES = [
-  'u_resolution',
-  'u_pass',
-  'u_prevPass',
-  ...Array.from({ length: MAX_INPUTS }, (_, i) => `u_image${i}`),
-  ...Array.from({ length: MAX_FLOAT_UNIFORMS }, (_, i) => `u_float${i}`),
-  ...Array.from({ length: MAX_INT_UNIFORMS }, (_, i) => `u_int${i}`)
-]
+export interface GLSLRendererConfig {
+  maxInputs: number
+  maxFloatUniforms: number
+  maxIntUniforms: number
+}
+
+const DEFAULT_CONFIG: GLSLRendererConfig = {
+  maxInputs: 5,
+  maxFloatUniforms: 5,
+  maxIntUniforms: 5
+}
 
 interface CompileResult {
   success: boolean
@@ -49,23 +49,18 @@ function compileShader(
   return shader
 }
 
-function flipVertically(
-  pixels: Uint8ClampedArray,
-  width: number,
-  height: number
-): void {
-  const rowSize = width * 4
-  const temp = new Uint8ClampedArray(rowSize)
-  for (let y = 0; y < height / 2; y++) {
-    const topOffset = y * rowSize
-    const bottomOffset = (height - y - 1) * rowSize
-    temp.set(pixels.subarray(topOffset, topOffset + rowSize))
-    pixels.copyWithin(topOffset, bottomOffset, bottomOffset + rowSize)
-    pixels.set(temp, bottomOffset)
-  }
-}
+export function useGLSLRenderer(config: GLSLRendererConfig = DEFAULT_CONFIG) {
+  const { maxInputs, maxFloatUniforms, maxIntUniforms } = config
 
-export function useGLSLRenderer() {
+  const uniformNames = [
+    'u_resolution',
+    'u_pass',
+    'u_prevPass',
+    ...Array.from({ length: maxInputs }, (_, i) => `u_image${i}`),
+    ...Array.from({ length: maxFloatUniforms }, (_, i) => `u_float${i}`),
+    ...Array.from({ length: maxIntUniforms }, (_, i) => `u_int${i}`)
+  ]
+
   let canvas: OffscreenCanvas | null = null
   let gl: WebGL2RenderingContext | null = null
   let vertexShader: WebGLShader | null = null
@@ -73,8 +68,9 @@ export function useGLSLRenderer() {
   let fragmentShader: WebGLShader | null = null
   let pingPongFBOs: [WebGLFramebuffer, WebGLFramebuffer] | null = null
   let pingPongTextures: [WebGLTexture, WebGLTexture] | null = null
+  let fallbackTexture: WebGLTexture | null = null
   const inputTextures: (WebGLTexture | null)[] = Array.from<null>({
-    length: MAX_INPUTS
+    length: maxInputs
   }).fill(null)
   const uniformLocations = new Map<string, WebGLUniformLocation | null>()
   let outputCount = 1
@@ -143,26 +139,28 @@ export function useGLSLRenderer() {
 
   function cacheUniformLocations(): void {
     if (!program || !gl) return
-    for (const name of UNIFORM_NAMES) {
+    for (const name of uniformNames) {
       uniformLocations.set(name, gl.getUniformLocation(program, name))
     }
   }
 
-  function createEmptyTexture(): WebGLTexture {
-    const tex = gl!.createTexture()!
-    gl!.bindTexture(gl!.TEXTURE_2D, tex)
-    gl!.texImage2D(
-      gl!.TEXTURE_2D,
-      0,
-      gl!.RGBA,
-      1,
-      1,
-      0,
-      gl!.RGBA,
-      gl!.UNSIGNED_BYTE,
-      new Uint8Array([0, 0, 0, 255])
-    )
-    return tex
+  function getFallbackTexture(): WebGLTexture {
+    if (!fallbackTexture) {
+      fallbackTexture = gl!.createTexture()!
+      gl!.bindTexture(gl!.TEXTURE_2D, fallbackTexture)
+      gl!.texImage2D(
+        gl!.TEXTURE_2D,
+        0,
+        gl!.RGBA,
+        1,
+        1,
+        0,
+        gl!.RGBA,
+        gl!.UNSIGNED_BYTE,
+        new Uint8Array([0, 0, 0, 255])
+      )
+    }
+    return fallbackTexture
   }
 
   function init(width: number, height: number): boolean {
@@ -177,6 +175,7 @@ export function useGLSLRenderer() {
     if (!ctx) return false
 
     gl = ctx
+    gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true)
     vertexShader = compileShader(gl, gl.VERTEX_SHADER, VERTEX_SHADER_SOURCE)
     initPingPongFBOs(gl, width, height)
     return true
@@ -286,16 +285,16 @@ export function useGLSLRenderer() {
       gl.uniform2f(resLoc, canvas.width, canvas.height)
     }
 
-    for (let i = 0; i < MAX_INPUTS; i++) {
+    for (let i = 0; i < maxInputs; i++) {
       const loc = uniformLocations.get(`u_image${i}`)
       if (loc != null) {
         gl.activeTexture(gl.TEXTURE0 + i)
-        gl.bindTexture(gl.TEXTURE_2D, inputTextures[i] ?? createEmptyTexture())
+        gl.bindTexture(gl.TEXTURE_2D, inputTextures[i] ?? getFallbackTexture())
         gl.uniform1i(loc, i)
       }
     }
 
-    const prevPassUnit = MAX_INPUTS
+    const prevPassUnit = maxInputs
     const prevPassLoc = uniformLocations.get('u_prevPass')
 
     for (let pass = 0; pass < passCount; pass++) {
@@ -312,6 +311,8 @@ export function useGLSLRenderer() {
         gl.bindFramebuffer(gl.FRAMEBUFFER, pingPongFBOs[writeIdx])
       }
 
+      // Note: u_prevPass uses ping-pong FBOs rather than overwriting the input
+      // texture in-place as the backend does for single-input iteration.
       if (pass > 0 && prevPassLoc != null) {
         gl.activeTexture(gl.TEXTURE0 + prevPassUnit)
         gl.bindTexture(gl.TEXTURE_2D, pingPongTextures![readIdx])
@@ -336,14 +337,15 @@ export function useGLSLRenderer() {
     const w = canvas!.width
     const h = canvas!.height
     const pixels = new Uint8ClampedArray(w * h * 4)
+
+    gl!.pixelStorei(gl!.PACK_ROW_LENGTH, 0)
     gl!.readPixels(0, 0, w, h, gl!.RGBA, gl!.UNSIGNED_BYTE, pixels)
 
-    flipVertically(pixels, w, h)
     return new ImageData(pixels, w, h)
   }
 
   async function toBlob(): Promise<Blob> {
-    return canvas!.convertToBlob({ type: 'image/png' })
+    return canvas!.convertToBlob({ type: 'image/jpeg', quality: 0.92 })
   }
 
   function dispose(): void {
@@ -355,6 +357,11 @@ export function useGLSLRenderer() {
       if (tex) gl.deleteTexture(tex)
     }
     inputTextures.fill(null)
+
+    if (fallbackTexture) {
+      gl.deleteTexture(fallbackTexture)
+      fallbackTexture = null
+    }
 
     destroyPingPongFBOs()
 
