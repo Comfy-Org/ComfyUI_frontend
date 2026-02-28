@@ -45,7 +45,7 @@ jobs:
       - name: Run performance tests
         id: perf
         continue-on-error: true
-        run: pnpm exec playwright test --project=performance --workers=1
+        run: pnpm exec playwright test --project=performance --workers=1 --repeat-each=3
 
       - name: Upload perf metrics
         if: always()
@@ -89,6 +89,25 @@ jobs:
           name: perf-metrics
           path: temp/perf-baseline/
           if_no_artifact_found: warn
+
+      - name: Download historical perf baselines
+        run: |
+          RUNS=$(gh api \
+            "/repos/${{ github.repository }}/actions/workflows/ci-perf-report.yaml/runs?branch=${{ github.event.pull_request.base.ref }}&event=push&status=success&per_page=5" \
+            --jq '.workflow_runs[].id')
+
+          mkdir -p temp/perf-history
+          INDEX=0
+          for RUN_ID in $RUNS; do
+            DIR="temp/perf-history/$INDEX"
+            mkdir -p "$DIR"
+            gh run download "$RUN_ID" -n perf-metrics -D "$DIR/" 2>/dev/null || true
+            INDEX=$((INDEX + 1))
+          done
+
+          echo "Downloaded $(ls temp/perf-history/*/perf-metrics.json 2>/dev/null | wc -l) historical baselines"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Generate perf report
         run: npx --yes tsx scripts/perf-report.ts > perf-report.md
