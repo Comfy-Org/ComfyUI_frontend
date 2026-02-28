@@ -163,6 +163,9 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
     // sends outputs with no images. Without this guard, execution results
     // overwrite the upload widget's preview, causing LoadImage/LoadVideo
     // nodes to lose their preview after execution + tab switch.
+    // Note: intentional preview clears go through setNodeOutputs (widget
+    // path), not setNodeOutputsByExecutionId, so this guard does not
+    // interfere with user-initiated clears.
     const incomingImages = (outputs as ExecutedWsMessage['output'])?.images
     const hasIncomingImages =
       Array.isArray(incomingImages) && incomingImages.length > 0
@@ -170,7 +173,11 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
       !hasIncomingImages &&
       isInputPreviewOutput(app.nodeOutputs[nodeLocatorId])
     ) {
-      return
+      outputs = {
+        ...outputs,
+        images: (app.nodeOutputs[nodeLocatorId] as ExecutedWsMessage['output'])
+          .images
+      }
     }
 
     if (options.merge) {

@@ -229,6 +229,30 @@ describe('nodeOutputStore input preview preservation', () => {
 
     expect(store.nodeOutputs[executionId]?.images).toBeUndefined()
   })
+
+  it('should pass through non-image fields while preserving input preview images', () => {
+    const store = useNodeOutputStore()
+    const executionId = '5'
+
+    const inputPreview = createMockOutputs([
+      { filename: 'example.png', subfolder: '', type: 'input' }
+    ])
+    store.setNodeOutputsByExecutionId(executionId, inputPreview)
+
+    const videoOutput: ExecutedWsMessage['output'] = {
+      video: [{ filename: 'output.mp4', subfolder: '', type: 'output' }]
+    }
+    store.setNodeOutputsByExecutionId(executionId, videoOutput)
+
+    expect(store.nodeOutputs[executionId]?.images).toHaveLength(1)
+    expect(store.nodeOutputs[executionId]?.images?.[0].filename).toBe(
+      'example.png'
+    )
+    expect(store.nodeOutputs[executionId]?.video).toHaveLength(1)
+    expect(store.nodeOutputs[executionId]?.video?.[0].filename).toBe(
+      'output.mp4'
+    )
+  })
 })
 
 describe('nodeOutputStore getPreviewParam', () => {
