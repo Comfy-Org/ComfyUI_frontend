@@ -4,6 +4,7 @@ import { computed, provide, ref, toRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { useTransformCompatOverlayProps } from '@/composables/useTransformCompatOverlayProps'
+import { getCloudResParam } from '@/platform/distribution/cloudPreviewUtil'
 import { SUPPORTED_EXTENSIONS_ACCEPT } from '@/extensions/core/load3d/constants'
 import { useAssetFilterOptions } from '@/platform/assets/composables/useAssetFilterOptions'
 import {
@@ -460,7 +461,7 @@ function getMediaUrl(
   type: 'input' | 'output' = 'input'
 ): string {
   if (!['image', 'video'].includes(props.assetKind ?? '')) return ''
-  return `/api/view?filename=${encodeURIComponent(filename)}&type=${type}`
+  return `/api/view?filename=${encodeURIComponent(filename)}&type=${type}${getCloudResParam(filename)}`
 }
 </script>
 

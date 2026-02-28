@@ -23,12 +23,16 @@ type OutputOverrides = Partial<{
 }>
 
 function createOutput(overrides: OutputOverrides = {}): ResultItemImpl {
-  return {
+  const merged = {
     filename: 'file.png',
     subfolder: 'sub',
     nodeId: '1',
     url: 'https://example.com/file.png',
     ...overrides
+  }
+  return {
+    ...merged,
+    previewUrl: merged.url
   } as ResultItemImpl
 }
 
