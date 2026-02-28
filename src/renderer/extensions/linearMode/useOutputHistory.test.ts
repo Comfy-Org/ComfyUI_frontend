@@ -17,6 +17,7 @@ const jobIdToPathRef = ref(new Map<string, string>())
 
 const selectAsLatestFn = vi.fn()
 const resolveIfReadyFn = vi.fn()
+const resolvedOutputsCacheRef = new Map<string, ResultItemImpl[]>()
 
 vi.mock('@/platform/assets/composables/media/useMediaAssets', () => ({
   useMediaAssets: () => ({
@@ -42,6 +43,7 @@ vi.mock('@/renderer/extensions/linearMode/linearOutputStore', () => ({
     get selectedId() {
       return selectedIdRef.value
     },
+    resolvedOutputsCache: resolvedOutputsCacheRef,
     selectAsLatest: selectAsLatestFn,
     resolveIfReady: resolveIfReadyFn
   })
@@ -129,6 +131,7 @@ describe(useOutputHistory, () => {
     selectedIdRef.value = null
     activeWorkflowPathRef.value = 'workflows/test.json'
     jobIdToPathRef.value = new Map()
+    resolvedOutputsCacheRef.clear()
     jobDetailResults.clear()
     selectAsLatestFn.mockReset()
     resolveIfReadyFn.mockReset()
@@ -282,11 +285,15 @@ describe(useOutputHistory, () => {
       expect(outputs[1].filename).toBe('b.png')
     })
 
-    it('falls back to async fetch when metadata lacks allOutputs', async () => {
+    it('fetches full job detail for multi-output jobs', async () => {
       jobDetailResults.set('job-1', {
         outputs: {
           '1': {
-            images: [{ filename: 'fetched.png', subfolder: '', type: 'output' }]
+            images: [
+              { filename: 'a.png', subfolder: '', type: 'output' },
+              { filename: 'b.png', subfolder: '', type: 'output' },
+              { filename: 'c.png', subfolder: '', type: 'output' }
+            ]
           }
         }
       })
@@ -294,18 +301,14 @@ describe(useOutputHistory, () => {
 
       const { allOutputs } = useOutputHistory()
 
-      // First call returns empty (async not resolved yet)
-      const initial = allOutputs(asset)
-      expect(initial).toEqual([])
+      expect(allOutputs(asset)).toEqual([])
 
-      // Wait for async to resolve
       await nextTick()
       await nextTick()
 
-      // Second call should return cached results
       const resolved = allOutputs(asset)
-      expect(resolved).toHaveLength(1)
-      expect(resolved[0].filename).toBe('fetched.png')
+      expect(resolved).toHaveLength(3)
+      expect(resolved[0].filename).toBe('c.png')
     })
   })
 

@@ -53,7 +53,7 @@ export function useOutputHistory(): {
     loadMore: async () => {}
   }
 
-  const resolvedCache = new Map<string, ResultItemImpl[]>()
+  const resolvedCache = linearStore.resolvedOutputsCache
   const asyncRefs = new Map<
     string,
     ReturnType<typeof useAsyncState<ResultItemImpl[]>>['state']
@@ -80,17 +80,21 @@ export function useOutputHistory(): {
       }
     }
 
+    // Use metadata when all outputs are present. The /jobs list endpoint
+    // only returns preview_output (single item), so outputCount may exceed
+    // allOutputs.length for multi-output jobs.
     if (
-      user_metadata.allOutputs &&
-      user_metadata.outputCount &&
-      user_metadata.outputCount <= user_metadata.allOutputs.length
+      user_metadata.allOutputs?.length &&
+      (!user_metadata.outputCount ||
+        user_metadata.outputCount <= user_metadata.allOutputs.length)
     ) {
       const reversed = user_metadata.allOutputs.toReversed()
       resolvedCache.set(item.id, reversed)
       return filterByOutputNodes(reversed)
     }
 
-    // Async fetch — return empty until resolved, then re-render via ref
+    // Async fallback for multi-output jobs — fetch full /jobs/{id} detail.
+    // This can be hit if the user executes the job then switches tabs.
     const existing = asyncRefs.get(item.id)
     if (existing) return filterByOutputNodes(existing.value)
 
