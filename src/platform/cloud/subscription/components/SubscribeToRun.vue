@@ -40,11 +40,14 @@ const buttonLabel = computed(() =>
     : t('subscription.subscribeToRun')
 )
 
-const { showSubscriptionDialog } = useBillingContext()
+const { showSubscriptionDialog, subscription } = useBillingContext()
 
 const handleSubscribeToRun = () => {
   if (isCloud) {
-    useTelemetry()?.trackRunButton({ subscribe_to_run: true })
+    useTelemetry()?.trackRunButton({
+      subscribe_to_run: true,
+      current_tier: subscription.value?.tier?.toLowerCase()
+    })
   }
 
   showSubscriptionDialog()

@@ -259,6 +259,7 @@ async function handleBuy() {
     const response = await workspaceApi.createTopup(amountCents)
 
     if (response.status === 'completed') {
+      telemetry?.trackApiCreditTopupSucceeded()
       toast.add({
         severity: 'success',
         summary: t('credits.topUp.purchaseSuccess'),

@@ -16,6 +16,7 @@ import type {
   PageVisibilityMetadata,
   SettingChangedMetadata,
   SubscriptionMetadata,
+  SubscriptionSucceededMetadata,
   SurveyResponses,
   TabCountMetadata,
   TelemetryDispatcher,
@@ -77,16 +78,18 @@ export class TelemetryRegistry implements TelemetryDispatcher {
     this.dispatch((provider) => provider.trackBeginCheckout?.(metadata))
   }
 
-  trackMonthlySubscriptionSucceeded(): void {
-    this.dispatch((provider) => provider.trackMonthlySubscriptionSucceeded?.())
+  trackSubscriptionSucceeded(metadata?: SubscriptionSucceededMetadata): void {
+    this.dispatch((provider) => provider.trackSubscriptionSucceeded?.(metadata))
   }
 
   trackMonthlySubscriptionCancelled(): void {
     this.dispatch((provider) => provider.trackMonthlySubscriptionCancelled?.())
   }
 
-  trackAddApiCreditButtonClicked(): void {
-    this.dispatch((provider) => provider.trackAddApiCreditButtonClicked?.())
+  trackAddApiCreditButtonClicked(metadata?: { current_tier?: string }): void {
+    this.dispatch((provider) =>
+      provider.trackAddApiCreditButtonClicked?.(metadata)
+    )
   }
 
   trackApiCreditTopupButtonPurchaseClicked(amount: number): void {
@@ -102,6 +105,7 @@ export class TelemetryRegistry implements TelemetryDispatcher {
   trackRunButton(options?: {
     subscribe_to_run?: boolean
     trigger_source?: ExecutionTriggerSource
+    current_tier?: string
   }): void {
     this.dispatch((provider) => provider.trackRunButton?.(options))
   }

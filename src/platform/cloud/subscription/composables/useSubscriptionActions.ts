@@ -15,7 +15,7 @@ export function useSubscriptionActions() {
   const authActions = useFirebaseAuthActions()
   const commandStore = useCommandStore()
   const telemetry = useTelemetry()
-  const { fetchStatus } = useBillingContext()
+  const { fetchStatus, subscription } = useBillingContext()
 
   const isLoadingSupport = ref(false)
 
@@ -24,6 +24,11 @@ export function useSubscriptionActions() {
   })
 
   const handleAddApiCredits = () => {
+    if (isCloud) {
+      telemetry?.trackAddApiCreditButtonClicked({
+        current_tier: subscription.value?.tier?.toLowerCase()
+      })
+    }
     void dialogService.showTopUpCreditsDialog()
   }
 

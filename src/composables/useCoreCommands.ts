@@ -71,7 +71,8 @@ import { useDialogStore } from '@/stores/dialogStore'
 
 const moveSelectedNodesVersionAdded = '1.22.2'
 export function useCoreCommands(): ComfyCommand[] {
-  const { isActiveSubscription, showSubscriptionDialog } = useBillingContext()
+  const { isActiveSubscription, showSubscriptionDialog, subscription } =
+    useBillingContext()
   const workflowService = useWorkflowService()
   const workflowStore = useWorkflowStore()
   const settingsDialog = useSettingsDialog()
@@ -495,7 +496,10 @@ export function useCoreCommands(): ComfyCommand[] {
         subscribe_to_run?: boolean
         trigger_source?: ExecutionTriggerSource
       }) => {
-        useTelemetry()?.trackRunButton(metadata)
+        useTelemetry()?.trackRunButton({
+          ...metadata,
+          current_tier: subscription.value?.tier?.toLowerCase()
+        })
         if (!isActiveSubscription.value) {
           showSubscriptionDialog()
           return
@@ -518,7 +522,10 @@ export function useCoreCommands(): ComfyCommand[] {
         subscribe_to_run?: boolean
         trigger_source?: ExecutionTriggerSource
       }) => {
-        useTelemetry()?.trackRunButton(metadata)
+        useTelemetry()?.trackRunButton({
+          ...metadata,
+          current_tier: subscription.value?.tier?.toLowerCase()
+        })
         if (!isActiveSubscription.value) {
           showSubscriptionDialog()
           return
@@ -540,7 +547,10 @@ export function useCoreCommands(): ComfyCommand[] {
         subscribe_to_run?: boolean
         trigger_source?: ExecutionTriggerSource
       }) => {
-        useTelemetry()?.trackRunButton(metadata)
+        useTelemetry()?.trackRunButton({
+          ...metadata,
+          current_tier: subscription.value?.tier?.toLowerCase()
+        })
         if (!isActiveSubscription.value) {
           showSubscriptionDialog()
           return

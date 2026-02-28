@@ -4,6 +4,7 @@ import { computed, ref } from 'vue'
 
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { t } from '@/i18n'
+import { useTelemetry } from '@/platform/telemetry'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
@@ -138,6 +139,15 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
       billingContext.fetchStatus(),
       billingContext.fetchBalance()
     ])
+
+    if (operation.type === 'subscription') {
+      useTelemetry()?.trackSubscriptionSucceeded({
+        tier: billingContext.subscription.value?.tier?.toLowerCase(),
+        duration: billingContext.subscription.value?.duration?.toLowerCase()
+      })
+    } else if (operation.type === 'topup') {
+      useTelemetry()?.trackApiCreditTopupSucceeded()
+    }
 
     // Close any open billing dialogs and show settings
     const dialogStore = useDialogStore()
