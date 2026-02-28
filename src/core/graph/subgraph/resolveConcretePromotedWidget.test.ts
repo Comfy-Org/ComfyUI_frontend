@@ -263,6 +263,30 @@ describe('resolveConcretePromotedWidget', () => {
     })
   })
 
+  test('does not report a cycle when different host objects share an id', () => {
+    const rootHost = createSubgraphNode('shared')
+    const nestedHost = createSubgraphNode('shared')
+    const leafNode = createRegularNode('leaf', [createConcreteWidget('seed')])
+
+    addNodeToHost(nestedHost, leafNode)
+    nestedHost.widgets = [
+      createPromotedWidget('outer', 'leaf', 'seed', nestedHost)
+    ]
+    addNodeToHost(rootHost, nestedHost)
+
+    const result = resolveConcretePromotedWidget(
+      asGraphNode(rootHost),
+      'shared',
+      'outer'
+    )
+
+    expect(result.status).toBe('resolved')
+    if (result.status !== 'resolved') return
+
+    expect(result.resolved.node.id).toBe('leaf')
+    expect(result.resolved.widget.name).toBe('seed')
+  })
+
   test('returns max-depth-exceeded for very deep non-cyclic promoted chains', () => {
     const hosts: MockGraphNode[] = Array.from({ length: 102 }, (_, index) =>
       createSubgraphNode(`host-${index}`)

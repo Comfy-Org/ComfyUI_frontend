@@ -23,12 +23,21 @@ function traversePromotedWidgetChain(
   widgetName: string
 ): PromotedWidgetResolutionResult {
   const visited = new Set<string>()
+  const hostUidByObject = new WeakMap<SubgraphNode, number>()
+  let nextHostUid = 0
   let currentHost = hostNode
   let currentNodeId = nodeId
   let currentWidgetName = widgetName
 
   for (let depth = 0; depth < MAX_PROMOTED_WIDGET_CHAIN_DEPTH; depth++) {
-    const key = `${currentHost.id}:${currentNodeId}:${currentWidgetName}`
+    let hostUid = hostUidByObject.get(currentHost)
+    if (hostUid === undefined) {
+      hostUid = nextHostUid
+      nextHostUid += 1
+      hostUidByObject.set(currentHost, hostUid)
+    }
+
+    const key = `${hostUid}:${currentNodeId}:${currentWidgetName}`
     if (visited.has(key)) {
       return { status: 'failure', failure: 'cycle' }
     }

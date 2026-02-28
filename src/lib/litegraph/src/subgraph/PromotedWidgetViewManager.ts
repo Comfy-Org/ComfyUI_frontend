@@ -114,6 +114,7 @@ export class PromotedWidgetViewManager<TView> {
     widgetName: string,
     viewKey?: string
   ): string {
-    return viewKey ?? `${interiorNodeId}:${widgetName}`
+    const baseKey = `${interiorNodeId}:${widgetName}`
+    return viewKey ? `${baseKey}:${viewKey}` : baseKey
   }
 }

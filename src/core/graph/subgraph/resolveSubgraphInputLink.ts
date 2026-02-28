@@ -19,6 +19,7 @@ export function resolveSubgraphInputLink<TResult>(
   )
   if (!inputSlot) return undefined
 
+  // Iterate from newest to oldest so the latest connection wins.
   for (let index = inputSlot.linkIds.length - 1; index >= 0; index -= 1) {
     const linkId = inputSlot.linkIds[index]
     const link = node.subgraph.getLink(linkId)
@@ -26,6 +27,7 @@ export function resolveSubgraphInputLink<TResult>(
 
     const { inputNode } = link.resolve(node.subgraph)
     if (!inputNode) continue
+    if (!Array.isArray(inputNode.inputs)) continue
 
     const targetInput = inputNode.inputs.find((entry) => entry.link === linkId)
     if (!targetInput) continue

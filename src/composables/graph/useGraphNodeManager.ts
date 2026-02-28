@@ -9,7 +9,7 @@ import { useChainCallback } from '@/composables/functional/useChainCallback'
 import { isPromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetTypes'
 import { resolveConcretePromotedWidget } from '@/core/graph/subgraph/resolveConcretePromotedWidget'
 import { resolvePromotedWidgetSource } from '@/core/graph/subgraph/resolvePromotedWidgetSource'
-import { resolveSubgraphInputLink } from '@/core/graph/subgraph/resolveSubgraphInputLink'
+import { resolveSubgraphInputTarget } from '@/core/graph/subgraph/resolveSubgraphInputTarget'
 import type {
   INodeInputSlot,
   INodeOutputSlot
@@ -214,27 +214,13 @@ function safeWidgetMapper(
     sourceNodeId: string
     sourceWidgetName: string
   } | null {
-    const resolved = resolveSubgraphInputLink(
-      node,
-      inputName,
-      ({ inputNode, targetInput, getTargetWidget }) => {
-        if (inputNode.isSubgraphNode()) {
-          return {
-            sourceNodeId: String(inputNode.id),
-            sourceWidgetName: targetInput.name
-          }
-        }
+    const resolvedTarget = resolveSubgraphInputTarget(node, inputName)
+    if (!resolvedTarget) return null
 
-        const targetWidget = getTargetWidget()
-        if (!targetWidget) return undefined
-        return {
-          sourceNodeId: String(inputNode.id),
-          sourceWidgetName: targetWidget.name
-        }
-      }
-    )
-
-    return resolved ?? null
+    return {
+      sourceNodeId: resolvedTarget.nodeId,
+      sourceWidgetName: resolvedTarget.widgetName
+    }
   }
 
   return function (widget) {
