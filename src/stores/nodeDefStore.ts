@@ -24,7 +24,7 @@ import { useSettingStore } from '@/platform/settings/settingStore'
 import { NodeSearchService } from '@/services/nodeSearchService'
 import { useSubgraphStore } from '@/stores/subgraphStore'
 import {
-  NodeSourceType,
+  CORE_NODE_MODULES,
   getEssentialsCategory,
   getNodeSource
 } from '@/types/nodeSource'
@@ -92,6 +92,7 @@ export class ComfyNodeDefImpl
   readonly essentials_category?: string
   /** Whether the blueprint is a global/installed blueprint (not user-created). */
   readonly isGlobal?: boolean
+  readonly isCoreNode: boolean
 
   // V2 fields
   readonly inputs: Record<string, InputSpecV2>
@@ -169,6 +170,9 @@ export class ComfyNodeDefImpl
       obj.essentials_category
     )
     this.isGlobal = obj.isGlobal
+    this.isCoreNode = CORE_NODE_MODULES.includes(
+      this.python_module.split('.')[0]
+    )
 
     // Initialize V2 fields
     const defV2 = transformNodeDefV1ToV2(obj)
@@ -196,10 +200,6 @@ export class ComfyNodeDefImpl
     const nodeFrequencyStore = useNodeFrequencyStore()
     const nodeFrequency = nodeFrequencyStore.getNodeFrequencyByName(this.name)
     return [scores[0], -nodeFrequency, ...scores.slice(1)]
-  }
-
-  get isCoreNode(): boolean {
-    return this.nodeSource.type === NodeSourceType.Core
   }
 
   get nodeLifeCycleBadgeText(): string {
