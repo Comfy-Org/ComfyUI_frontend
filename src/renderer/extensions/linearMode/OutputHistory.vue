@@ -1,5 +1,9 @@
 <script setup lang="ts">
-import { useEventListener, useInfiniteScroll } from '@vueuse/core'
+import {
+  useEventListener,
+  useInfiniteScroll,
+  useResizeObserver
+} from '@vueuse/core'
 import type { ComponentPublicInstance } from 'vue'
 import {
   computed,
@@ -188,7 +192,13 @@ function selectFirstHistory() {
   }
 }
 
-// Compensate scroll position when items are prepended on the left.
+const outputsRef = useTemplateRef('outputsRef')
+
+// Track scrollWidth so we can compensate when items are prepended on the left.
+let lastScrollWidth = 0
+useResizeObserver(outputsRef, () => {
+  lastScrollWidth = outputsRef.value?.scrollWidth ?? 0
+})
 watch(
   [
     () => store.inProgressItems.length,
@@ -197,16 +207,18 @@ watch(
   ],
   () => {
     const el = outputsRef.value
-    if (!el || el.scrollLeft === 0) return
-    const prevScrollWidth = el.scrollWidth
+    if (!el || el.scrollLeft === 0) {
+      lastScrollWidth = el?.scrollWidth ?? 0
+      return
+    }
     nextTick(() => {
-      const delta = el.scrollWidth - prevScrollWidth
+      const delta = el.scrollWidth - lastScrollWidth
       if (delta !== 0) el.scrollLeft += delta
+      lastScrollWidth = el.scrollWidth
     })
   }
 )
 
-const outputsRef = useTemplateRef('outputsRef')
 useInfiniteScroll(outputsRef, outputs.loadMore, {
   canLoadMore: () => outputs.hasMore.value
 })
