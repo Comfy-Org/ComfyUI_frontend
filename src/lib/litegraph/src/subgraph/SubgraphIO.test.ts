@@ -565,6 +565,29 @@ describe('SubgraphIO - Output Slot Dual-Nature Behavior', () => {
       expect(internalNode.outputs[0].links).toEqual([])
     }
   )
+
+  subgraphTest(
+    'disconnect is idempotent and keeps output endpoints detached',
+    ({ subgraphWithNode }) => {
+      const { subgraph } = subgraphWithNode
+
+      const internalNode = new LGraphNode('Internal Source')
+      internalNode.addOutput('out', '*')
+      subgraph.add(internalNode)
+
+      const subgraphOutput = subgraph.outputNode.slots[0]
+      const link = subgraphOutput.connect(internalNode.outputs[0], internalNode)
+      if (!link) throw new Error('Expected link')
+
+      subgraphOutput.disconnect()
+      subgraphOutput.disconnect()
+
+      expect(subgraph.getLink(link.id)).toBeUndefined()
+      expect(subgraphOutput.getLinks()).toEqual([])
+      expect(subgraphOutput.linkIds).toEqual([])
+      expect(internalNode.outputs[0].links).toEqual([])
+    }
+  )
 })
 
 describe('SubgraphIO - Boundary Connection Management', () => {

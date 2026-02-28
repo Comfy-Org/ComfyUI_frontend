@@ -136,7 +136,7 @@ export class SubgraphOutput extends SubgraphSlot {
 
     //should never have more than one connection
     for (const linkId of [...this.linkIds]) {
-      const link = subgraph.links[linkId]
+      const link = subgraph.links.get(linkId)
       if (!link) continue
 
       const { outputNode } = link.resolve(subgraph)
