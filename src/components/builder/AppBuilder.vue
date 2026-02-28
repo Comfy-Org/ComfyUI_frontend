@@ -169,14 +169,14 @@ function handleClick(e: MouseEvent) {
   if (!widget) {
     if (!node.constructor.nodeData?.output_node)
       return canvasInteractions.forwardEventToCanvas(e)
-    const index = appModeStore.selectedOutputs.findIndex((id) => id === node.id)
+    const index = appModeStore.selectedOutputs.findIndex((id) => id == node.id)
     if (index === -1) appModeStore.selectedOutputs.push(node.id)
     else appModeStore.selectedOutputs.splice(index, 1)
     return
   }
 
   const index = appModeStore.selectedInputs.findIndex(
-    ([nodeId, widgetName]) => node.id === nodeId && widget.name === widgetName
+    ([nodeId, widgetName]) => node.id == nodeId && widget.name === widgetName
   )
   if (index === -1) appModeStore.selectedInputs.push([node.id, widget.name])
   else appModeStore.selectedInputs.splice(index, 1)
@@ -276,7 +276,7 @@ const renderedInputs = computed<[string, MaybeRef<BoundStyle> | undefined][]>(
           () =>
             remove(
               appModeStore.selectedInputs,
-              ([id, name]) => nodeId === id && widgetName === name
+              ([id, name]) => nodeId == id && widgetName === name
             )
         "
       />
@@ -322,7 +322,7 @@ const renderedInputs = computed<[string, MaybeRef<BoundStyle> | undefined][]>(
         "
         :title
         :sub-title="String(key)"
-        :remove="() => remove(appModeStore.selectedOutputs, (k) => k === key)"
+        :remove="() => remove(appModeStore.selectedOutputs, (k) => k == key)"
       />
     </DraggableList>
   </PropertiesAccordionItem>
@@ -366,7 +366,7 @@ const renderedInputs = computed<[string, MaybeRef<BoundStyle> | undefined][]>(
               v-if="isSelected"
               class="absolute -top-1/2 -right-1/2 size-full p-2 bg-warning-background rounded-lg cursor-pointer pointer-events-auto"
               @click.stop="
-                remove(appModeStore.selectedOutputs, (k) => k === key)
+                remove(appModeStore.selectedOutputs, (k) => k == key)
               "
               @pointerdown.stop
             >
