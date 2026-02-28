@@ -331,6 +331,10 @@
     "missingNodesWarning": "workflow شامل نودهای پشتیبانی‌نشده است (با رنگ قرمز مشخص شده‌اند).",
     "workflowActions": "عملیات گردش‌کار"
   },
+  "builderMenu": {
+    "exitAppBuilder": "خروج از سازنده برنامه",
+    "saveApp": "ذخیره برنامه"
+  },
   "builderToolbar": {
     "app": "اپلیکیشن",
     "appDescription": "به طور پیش‌فرض به صورت اپلیکیشن باز می‌شود",

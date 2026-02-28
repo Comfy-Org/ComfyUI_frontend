@@ -12799,6 +12799,30 @@
       }
     }
   },
+  "ResolutionSelector": {
+    "description": "アスペクト比とメガピクセルの目標値から幅と高さを計算します。Empty Latent Image の寸法設定に便利です。",
+    "display_name": "解像度セレクター",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "アスペクト比",
+        "tooltip": "出力寸法のアスペクト比です。"
+      },
+      "megapixels": {
+        "name": "メガピクセル",
+        "tooltip": "目標とする総メガピクセル数。1.0 MP ≈ 1024×1024（正方形の場合）。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "幅",
+        "tooltip": "計算された幅（ピクセル単位、8の倍数）。"
+      },
+      "1": {
+        "name": "高さ",
+        "tooltip": "計算された高さ（ピクセル単位、8の倍数）。"
+      }
+    }
+  },
   "Rodin3D_Detail": {
     "description": "Rodin APIを使用して3Dアセットを生成",
     "display_name": "Rodin 3D生成 - 詳細生成",

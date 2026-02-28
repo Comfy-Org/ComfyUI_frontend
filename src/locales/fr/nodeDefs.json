@@ -12799,6 +12799,30 @@
       }
     }
   },
+  "ResolutionSelector": {
+    "description": "Calcule la largeur et la hauteur à partir du ratio d'aspect et de la cible en mégapixels. Utile pour définir les dimensions d'une image latente vide.",
+    "display_name": "Sélecteur de résolution",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "ratio d'aspect",
+        "tooltip": "Le ratio d'aspect pour les dimensions de sortie."
+      },
+      "megapixels": {
+        "name": "mégapixels",
+        "tooltip": "Nombre total de mégapixels visé. 1,0 MP ≈ 1024×1024 pour un carré."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "largeur",
+        "tooltip": "Largeur calculée en pixels (multiple de 8)."
+      },
+      "1": {
+        "name": "hauteur",
+        "tooltip": "Hauteur calculée en pixels (multiple de 8)."
+      }
+    }
+  },
   "Rodin3D_Detail": {
     "description": "Générer des actifs 3D en utilisant l'API Rodin",
     "display_name": "Rodin 3D Générer - Générer Détails",

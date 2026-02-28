@@ -12799,6 +12799,30 @@
       }
     }
   },
+  "ResolutionSelector": {
+    "description": "Calcula el ancho y la altura a partir de la relación de aspecto y el objetivo de megapíxeles. Útil para configurar las dimensiones de una Imagen Latent Vacía.",
+    "display_name": "Selector de Resolución",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "relación_de_aspecto",
+        "tooltip": "La relación de aspecto para las dimensiones de salida."
+      },
+      "megapixels": {
+        "name": "megapíxeles",
+        "tooltip": "Total de megapíxeles objetivo. 1.0 MP ≈ 1024×1024 para cuadrado."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "ancho",
+        "tooltip": "Ancho calculado en píxeles (múltiplo de 8)."
+      },
+      "1": {
+        "name": "alto",
+        "tooltip": "Altura calculada en píxeles (múltiplo de 8)."
+      }
+    }
+  },
   "Rodin3D_Detail": {
     "description": "Generar activos 3D usando la API de Rodin",
     "display_name": "Rodin 3D Generar - Generar Detalle",
