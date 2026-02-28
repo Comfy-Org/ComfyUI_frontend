@@ -35,8 +35,10 @@ const { t } = useI18n()
 const toast = useToast()
 const { switchWorkspace } = useWorkspaceSwitch()
 
-function viewWorkspace(workspaceId: string) {
-  void switchWorkspace(workspaceId)
-  toast.removeGroup('invite-accepted')
+async function viewWorkspace(workspaceId: string) {
+  const success = await switchWorkspace(workspaceId)
+  if (success) {
+    toast.removeGroup('invite-accepted')
+  }
 }
 </script>
