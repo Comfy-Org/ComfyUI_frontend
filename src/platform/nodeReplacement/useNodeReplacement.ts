@@ -329,13 +329,13 @@ export function useNodeReplacement() {
   }
 
   /**
-   * Replaces all nodes in a single swap group and removes the group type
-   * from the execution error store when at least one replacement succeeds.
+   * Replaces all nodes in a single swap group and removes successfully
+   * replaced types from the execution error store.
    */
   function replaceGroup(group: ReplacementGroup): void {
     const replaced = replaceNodesInPlace(group.nodeTypes)
     if (replaced.length > 0) {
-      useExecutionErrorStore().removeMissingNodesByType([group.type])
+      useExecutionErrorStore().removeMissingNodesByType(replaced)
     }
   }
 
