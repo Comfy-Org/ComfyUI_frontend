@@ -16,9 +16,6 @@ export function resolveSubgraphInputTarget(
     inputName,
     ({ inputNode, targetInput, getTargetWidget }) => {
       if (inputNode.isSubgraphNode()) {
-        const targetWidget = getTargetWidget()
-        if (!targetWidget) return undefined
-
         return {
           nodeId: String(inputNode.id),
           widgetName: targetInput.name
