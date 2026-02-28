@@ -51,7 +51,7 @@
     @drop.stop.prevent="handleDrop"
   >
     <AppOutput
-      v-if="lgraphNode?.constructor?.nodeData?.output_node"
+      v-if="lgraphNode?.constructor?.nodeData?.output_node && isSelectMode"
       :id="nodeData.id"
     />
     <div
@@ -269,6 +269,7 @@ import { useI18n } from 'vue-i18n'
 import Button from '@/components/ui/button/Button.vue'
 import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
 import { showNodeOptions } from '@/composables/graph/useMoreOptionsMenu'
+import { useAppMode } from '@/composables/useAppMode'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { hasUnpromotedWidgets } from '@/core/graph/subgraph/unpromotedWidgetUtils'
 import { st } from '@/i18n'
@@ -334,6 +335,7 @@ const { nodeData, error = null } = defineProps<LGraphNodeProps>()
 
 const { t } = useI18n()
 
+const { isSelectMode } = useAppMode()
 const settingStore = useSettingStore()
 
 const { handleNodeCollapse, handleNodeTitleUpdate, handleNodeRightClick } =

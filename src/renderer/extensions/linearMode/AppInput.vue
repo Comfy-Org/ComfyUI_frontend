@@ -2,16 +2,17 @@
 import { remove } from 'es-toolkit'
 import { computed } from 'vue'
 
-import { useAppMode } from '@/composables/useAppMode'
 import type { NodeId } from '@/lib/litegraph/src/LGraphNode'
 import { useAppModeStore } from '@/stores/appModeStore'
 import { cn } from '@/utils/tailwindUtil'
 
-const { mode } = useAppMode()
+const { id, name } = defineProps<{
+  id: string
+  isSelectMode: boolean
+  name: string
+}>()
+
 const appModeStore = useAppModeStore()
-
-const { id, name } = defineProps<{ id: string; name: string }>()
-
 const isPromoted = computed(() => appModeStore.selectedInputs.some(matchesThis))
 
 function matchesThis([nodeId, widgetName]: [NodeId, string]) {
@@ -24,12 +25,13 @@ function togglePromotion() {
 </script>
 <template>
   <div
-    v-if="mode === 'builder:select'"
+    v-if="isSelectMode"
     class="col-span-2 flex flex-row pointer-events-auto cursor-pointer gap-1 relative"
     @pointerdown.capture.stop.prevent="togglePromotion"
     @click.capture.stop.prevent
     @pointerup.capture.stop.prevent
     @pointermove.capture.stop.prevent
+    @contextmenu.capture.stop.prevent
   >
     <div
       :class="

@@ -1,17 +1,14 @@
 <script setup lang="ts">
 import { remove } from 'es-toolkit'
 import { computed } from 'vue'
-import type { NodeId } from '@/lib/litegraph/src/LGraphNode'
 
-import { useAppMode } from '@/composables/useAppMode'
+import type { NodeId } from '@/lib/litegraph/src/LGraphNode'
 import { useAppModeStore } from '@/stores/appModeStore'
 import { cn } from '@/utils/tailwindUtil'
 
-const { isSelectMode } = useAppMode()
-const appModeStore = useAppModeStore()
-
 const { id } = defineProps<{ id: string }>()
 
+const appModeStore = useAppModeStore()
 const isPromoted = computed(() =>
   appModeStore.selectedOutputs.some(matchesThis)
 )
@@ -26,7 +23,6 @@ function togglePromotion() {
 </script>
 <template>
   <div
-    v-if="isSelectMode"
     :class="
       cn(
         'absolute w-full h-full pointer-events-auto ring-warning-background/50 ring-5 rounded-2xl',
@@ -36,7 +32,8 @@ function togglePromotion() {
     @click.capture.stop.prevent
     @pointerup.capture.stop.prevent
     @pointermove.capture.stop.prevent
-    @pointerdown.capture="togglePromotion"
+    @pointerdown.capture.stop="togglePromotion"
+    @contextmenu.capture.stop.prevent
   >
     <div class="absolute top-0 right-0 size-8">
       <div
