@@ -40,6 +40,20 @@ type EagerEvalResult = {
 // Helpers
 // ---------------------
 
+/** Convert 0-based index to spreadsheet-style alias: a..z, aa..az, ba... */
+function positionalAlias(index: number): string {
+  let s = ''
+  let n = index
+  while (true) {
+    const rem = n % 26
+    s = String.fromCharCode(97 + rem) + s
+    n = Math.floor(n / 26)
+    if (n === 0) break
+    n -= 1
+  }
+  return s
+}
+
 const getNodeConstructorData = (
   node: LGraphNode
 ): NodeConstructorData | undefined =>
@@ -178,16 +192,16 @@ export function buildEagerEvalContext(node: LGraphNode): EagerEvalContext {
     }
   }
 
-  // Map positional variables: a, b, c, ...
-  // Only assign if the letter doesn't already exist as a named input
+  // Map positional variables: a, b, c, ... aa, ab, ...
+  // Only assign if the alias doesn't already exist as a named input
   let letterIdx = 0
   if (node.inputs) {
     for (const input of node.inputs) {
       if (input.name === exprWidgetName) continue
       if (!(input.name in ctx)) continue
-      const letter = String.fromCharCode(97 + letterIdx) // a, b, c...
-      if (!(letter in ctx)) {
-        ctx[letter] = ctx[input.name]
+      const alias = positionalAlias(letterIdx)
+      if (!(alias in ctx)) {
+        ctx[alias] = ctx[input.name]
       }
       letterIdx++
     }
