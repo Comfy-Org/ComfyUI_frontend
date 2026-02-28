@@ -70,10 +70,6 @@ class PromotedWidgetView implements IPromotedWidgetView {
   private projectedSourceWidget?: IBaseWidget
   private projectedSourceWidgetType?: IBaseWidget['type']
   private projectedWidget?: BaseWidget
-  private cachedConcrete?: { node: LGraphNode; widget: IBaseWidget } | null
-  private cachedConcreteRevision?: string
-  private cachedLookupTarget?: { nodeId: NodeId; widgetName: string }
-  private cachedLookupTargetRevision?: string
 
   constructor(
     private readonly subgraphNode: SubgraphNode,
@@ -259,20 +255,12 @@ class PromotedWidgetView implements IPromotedWidgetView {
   private resolveConcrete():
     | { node: LGraphNode; widget: IBaseWidget }
     | undefined {
-    const resolutionRevision = this.currentResolutionRevision()
-    if (this.cachedConcreteRevision === resolutionRevision) {
-      return this.cachedConcrete ?? undefined
-    }
-
     const result = resolveConcretePromotedWidget(
       this.subgraphNode,
       this.sourceNodeId,
       this.sourceWidgetName
     )
-    this.cachedConcreteRevision = resolutionRevision
-    this.cachedConcrete = result.status === 'resolved' ? result.resolved : null
-
-    return this.cachedConcrete ?? undefined
+    return result.status === 'resolved' ? result.resolved : undefined
   }
 
   private getWidgetState() {
@@ -285,31 +273,16 @@ class PromotedWidgetView implements IPromotedWidgetView {
   }
 
   private resolveStateLookupTarget(): { nodeId: NodeId; widgetName: string } {
-    const resolutionRevision = this.currentResolutionRevision()
-    if (this.cachedLookupTargetRevision === resolutionRevision) {
-      if (this.cachedLookupTarget) return this.cachedLookupTarget
-    }
-
     const lookupTarget = resolvePromotedWidgetLookupTarget(
       this.subgraphNode,
       this.sourceNodeId,
       this.sourceWidgetName
     )
 
-    this.cachedLookupTargetRevision = resolutionRevision
-    this.cachedLookupTarget = {
+    return {
       nodeId: stripGraphPrefix(lookupTarget.nodeId),
       widgetName: lookupTarget.widgetName
     }
-
-    return this.cachedLookupTarget
-  }
-
-  private currentResolutionRevision(): string {
-    const rootVersion = this.subgraphNode.rootGraph._version
-    const subgraphVersion = this.subgraphNode.subgraph._version
-
-    return `${rootVersion}:${subgraphVersion}`
   }
 
   private getProjectedWidget(resolved: {
