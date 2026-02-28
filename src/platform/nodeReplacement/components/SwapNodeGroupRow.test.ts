@@ -127,11 +127,11 @@ describe('SwapNodeGroupRow', () => {
       expect(wrapper.text()).not.toContain('#1')
     })
 
-    it('toggles chevron rotation when expanded', async () => {
+    it('updates the toggle control state when expanded', async () => {
       const wrapper = mountRow()
-      expect(wrapper.html()).not.toContain('rotate-180')
+      expect(wrapper.find('button[aria-label="Expand"]').exists()).toBe(true)
       await wrapper.get('button[aria-label="Expand"]').trigger('click')
-      expect(wrapper.html()).toContain('rotate-180')
+      expect(wrapper.find('button[aria-label="Collapse"]').exists()).toBe(true)
     })
   })
 
