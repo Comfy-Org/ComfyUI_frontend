@@ -242,6 +242,17 @@ export const useExecutionStore = defineStore('execution', () => {
     api.removeEventListener('status', handleStatus)
     api.removeEventListener('execution_error', handleExecutionError)
     api.removeEventListener('progress_text', handleProgressText)
+
+    if (_progressRafId !== null) {
+      cancelAnimationFrame(_progressRafId)
+      _progressRafId = null
+      _pendingProgress = null
+    }
+    if (_progressStateRafId !== null) {
+      cancelAnimationFrame(_progressStateRafId)
+      _progressStateRafId = null
+      _pendingProgressState = null
+    }
   }
 
   function handleExecutionStart(e: CustomEvent<ExecutionStartWsMessage>) {
@@ -332,8 +343,24 @@ export const useExecutionStore = defineStore('execution', () => {
     nodeProgressStatesByJob.value = pruned
   }
 
+  let _pendingProgressState: ProgressStateWsMessage | null = null
+  let _progressStateRafId: number | null = null
+
   function handleProgressState(e: CustomEvent<ProgressStateWsMessage>) {
-    const { nodes, prompt_id: jobId } = e.detail
+    _pendingProgressState = e.detail
+    if (_progressStateRafId === null) {
+      _progressStateRafId = requestAnimationFrame(() => {
+        _progressStateRafId = null
+        if (_pendingProgressState) {
+          _applyProgressState(_pendingProgressState)
+          _pendingProgressState = null
+        }
+      })
+    }
+  }
+
+  function _applyProgressState(detail: ProgressStateWsMessage) {
+    const { nodes, prompt_id: jobId } = detail
 
     // Revoke previews for nodes that are starting to execute
     const previousForJob = nodeProgressStatesByJob.value[jobId] || {}
@@ -369,8 +396,20 @@ export const useExecutionStore = defineStore('execution', () => {
     }
   }
 
+  let _pendingProgress: ProgressWsMessage | null = null
+  let _progressRafId: number | null = null
+
   function handleProgress(e: CustomEvent<ProgressWsMessage>) {
-    _executingNodeProgress.value = e.detail
+    _pendingProgress = e.detail
+    if (_progressRafId === null) {
+      _progressRafId = requestAnimationFrame(() => {
+        _progressRafId = null
+        if (_pendingProgress) {
+          _executingNodeProgress.value = _pendingProgress
+          _pendingProgress = null
+        }
+      })
+    }
   }
 
   function handleStatus() {
