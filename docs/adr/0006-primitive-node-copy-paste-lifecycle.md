@@ -4,7 +4,7 @@ Date: 2026-02-22
 
 ## Status
 
-Proposed
+Accepted (Option A)
 
 ## Context
 
@@ -42,4 +42,4 @@ Primitives act as a synchronization mechanism — no own state, just a projectio
 
 ## Decision
 
-Pending. Option A is the most pragmatic first step. Option B can be revisited after Option A ships and stabilizes.
+Option A — override `serialize()` on PrimitiveNode to preserve `this.widgets_values` when the base implementation omits it. This is the minimal, lowest-risk fix that solves the immediate bug without changing connection lifecycle semantics. Option B can be revisited if broader PrimitiveNode lifecycle issues surface.
