@@ -82,7 +82,7 @@ function createMockNode(
   } as Partial<LGraphNode>
 }
 
-describe('useWorkflowShareService', () => {
+describe(useWorkflowShareService, () => {
   const mockShareableAssets = {
     assets: [{ id: 'asset-1', name: 'asset.png', storage_url: null }],
     models: [{ id: 'model-1', name: 'model.safetensors', storage_url: null }]

@@ -1,7 +1,9 @@
 import { mount } from '@vue/test-utils'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
+
+import type { ComponentProps } from 'vue-component-type-helpers'
 
 import ShareAssetWarningBox from '@/platform/workflow/sharing/components/ShareAssetWarningBox.vue'
 
@@ -21,12 +23,10 @@ const i18n = createI18n({
   }
 })
 
-describe('ShareAssetWarningBox', () => {
-  beforeEach(() => {
-    vi.clearAllMocks()
-  })
-
-  function createWrapper(props = {}) {
+describe(ShareAssetWarningBox, () => {
+  function createWrapper(
+    props: Partial<ComponentProps<typeof ShareAssetWarningBox>> = {}
+  ) {
     return mount(ShareAssetWarningBox, {
       props: {
         assets: [

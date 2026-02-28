@@ -90,15 +90,9 @@
 
     <label class="mt-3 flex cursor-pointer items-center gap-2">
       <input
+        v-model="acknowledged"
         type="checkbox"
-        :checked="acknowledged"
         class="size-3.5 shrink-0 cursor-pointer accent-primary-background"
-        @change="
-          $emit(
-            'update:acknowledged',
-            ($event.target as HTMLInputElement).checked
-          )
-        "
       />
       <span class="text-sm text-muted-foreground">
         {{ $t('shareWorkflow.acknowledgeCheckbox') }}
@@ -123,12 +117,9 @@ import Button from '@/components/ui/button/Button.vue'
 const { assets, models } = defineProps<{
   assets: WorkflowAsset[]
   models: WorkflowModel[]
-  acknowledged: boolean
 }>()
 
-defineEmits<{
-  'update:acknowledged': [value: boolean]
-}>()
+const acknowledged = defineModel<boolean>('acknowledged')
 
 type SectionId = 'media' | 'models'
 

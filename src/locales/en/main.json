@@ -3021,6 +3021,8 @@
     "copyLink": "Copy",
     "linkCopied": "Copied!",
     "loadFailed": "Failed to load shared workflow",
+    "saveFailedTitle": "Save failed",
+    "saveFailedDescription": "Failed to save workflow. Please try again.",
     "mediaLabel": "{count} Media File | {count} Media Files",
     "modelsLabel": "{count} Model | {count} Models",
     "checkingAssets": "Checking media visibility…",

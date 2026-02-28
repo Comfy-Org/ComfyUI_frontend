@@ -414,8 +414,8 @@ const { isLoading: isSaving, execute: handleSave } = useAsyncState(
       console.error('Failed to save workflow:', error)
       toast.add({
         severity: 'error',
-        summary: t('g.error'),
-        detail: t('g.error'),
+        summary: t('shareWorkflow.saveFailedTitle'),
+        detail: t('shareWorkflow.saveFailedDescription'),
         life: 5000
       })
     }
