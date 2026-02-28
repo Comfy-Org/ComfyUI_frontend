@@ -34,7 +34,7 @@ const commandStore = useCommandStore()
 const executionStore = useExecutionStore()
 const mediaActions = useMediaAssetActions()
 const queueStore = useQueueStore()
-const { mode: appModeValue } = useAppMode()
+const { isBuilderMode, isArrangeMode } = useAppMode()
 const { runButtonClick, mobile, typeformWidgetId } = defineProps<{
   runButtonClick?: (e: Event) => void
   mobile?: boolean
@@ -167,7 +167,7 @@ async function rerun(e: Event) {
     :model-url="selectedOutput!.url"
   />
   <LatentPreview v-else-if="queueStore.runningTasks.length > 0" />
-  <LinearArrange v-else-if="appModeValue === 'builder:arrange'" />
+  <LinearArrange v-else-if="isArrangeMode" />
   <LinearWelcome v-else />
   <div
     v-if="!mobile"
@@ -178,7 +178,11 @@ async function rerun(e: Event) {
       side="left"
       :widget-id="typeformWidgetId"
     />
-    <OutputHistory class="min-w-0" @update-selection="handleSelection" />
+    <OutputHistory
+      v-if="!isBuilderMode"
+      class="min-w-0"
+      @update-selection="handleSelection"
+    />
     <LinearFeedback
       v-if="typeformWidgetId"
       side="right"
