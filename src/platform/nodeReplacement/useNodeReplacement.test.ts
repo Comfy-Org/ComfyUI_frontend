@@ -798,5 +798,37 @@ describe('useNodeReplacement', () => {
       const predicate = capturedPredicate()
       expect(predicate(node)).toBe(true)
     })
+
+    it('should match node via sanitized type when last_serialization.type is absent and live type contains HTML special chars', () => {
+      // Simulates an old serialization format (no last_serialization.type)
+      // where app.ts has already run sanitizeNodeName on n.type,
+      // stripping '&' from "OldNode&Special" → "OldNodeSpecial".
+      // targetTypes still holds the original unsanitized name "OldNode&Special",
+      // so the predicate must fall back to checking sanitizeNodeName(originalType).
+      const node = createPlaceholderNode(1, 'OldNodeSpecial')
+      node.last_serialization!.type = undefined as unknown as string
+      // Simulate what sanitizeNodeName does to '&' in the live type
+      node.type = 'OldNodeSpecial' // '&' already stripped by sanitizeNodeName
+      const graph = createMockGraph([node])
+      Object.assign(app, { rootGraph: graph })
+
+      vi.mocked(collectAllNodes).mockReturnValue([])
+
+      const { replaceNodesInPlace } = useNodeReplacement()
+      replaceNodesInPlace([
+        // targetTypes will contain the original name with '&'
+        makeMissingNodeType('OldNode&Special', {
+          new_node_id: 'NewNode',
+          old_node_id: 'OldNode&Special',
+          old_widget_ids: null,
+          input_mapping: null,
+          output_mapping: null
+        })
+      ])
+
+      const predicate = capturedPredicate()
+      // Without the sanitize fallback this would return false.
+      expect(predicate(node)).toBe(true)
+    })
   })
 })

@@ -232,15 +232,23 @@ export function useNodeReplacement() {
     // and the missing nodes detected at that point — not from the current
     // registered_node_types. This ensures replacement still works even if
     // the user has since installed the missing node pack.
-    const targetTypes = new Set(
-      selectedTypes.map((t) => (typeof t === 'string' ? t : t.type))
-    )
+    // Also include sanitized variants so that when the fallback path reads
+    // n.type (which app.ts may have already run through sanitizeNodeName),
+    // we can still match against the original type stored in selectedTypes.
+    const targetTypes = new Set([
+      ...selectedTypes.map((t) => (typeof t === 'string' ? t : t.type)),
+      ...selectedTypes.map((t) =>
+        sanitizeNodeName(typeof t === 'string' ? t : t.type)
+      )
+    ])
 
     try {
       const placeholders = collectAllNodes(graph, (n) => {
         if (!n.last_serialization) return false
         // Prefer the original serialized type; fall back to the live type
         // for nodes whose serialization predates the type field.
+        // n.type may have been sanitized by app.ts (HTML special chars stripped);
+        // the sanitized variants in targetTypes ensure we still match correctly.
         const originalType = n.last_serialization.type ?? n.type
         return !!originalType && targetTypes.has(originalType)
       })
