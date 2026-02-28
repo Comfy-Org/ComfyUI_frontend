@@ -5,6 +5,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
 import type { SwapNodeGroup } from '@/components/rightSidePanel/errors/useErrorGroups'
+import type { MissingNodeType } from '@/types/comfy'
 import SwapNodeGroupRow from './SwapNodeGroupRow.vue'
 
 const i18n = createI18n({
@@ -182,7 +183,10 @@ describe('SwapNodeGroupRow', () => {
     it('does not render Locate button for nodeTypes without nodeId', async () => {
       const wrapper = mountRow({
         group: makeGroup({
-          nodeTypes: [{ type: 'NoIdNode', isReplaceable: true } as never]
+          // Intentionally omits nodeId to test graceful handling of incomplete node data
+          nodeTypes: [
+            { type: 'NoIdNode', isReplaceable: true }
+          ] as unknown as MissingNodeType[]
         })
       })
       await expand(wrapper)
@@ -229,7 +233,8 @@ describe('SwapNodeGroupRow', () => {
     it('handles string nodeType entries', async () => {
       const wrapper = mountRow({
         group: makeGroup({
-          nodeTypes: ['StringType'] as never[]
+          // Intentionally uses a plain string entry to test legacy node type handling
+          nodeTypes: ['StringType'] as unknown as MissingNodeType[]
         })
       })
       await wrapper.get('button[aria-label="Expand"]').trigger('click')

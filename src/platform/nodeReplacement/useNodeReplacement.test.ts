@@ -44,9 +44,10 @@ vi.mock('@/i18n', () => ({
     params ? `${key}:${JSON.stringify(params)}` : key
 }))
 
+const mockRemoveMissingNodesByType = vi.fn()
 vi.mock('@/stores/executionErrorStore', () => ({
   useExecutionErrorStore: vi.fn(() => ({
-    removeMissingNodesByType: vi.fn()
+    removeMissingNodesByType: mockRemoveMissingNodesByType
   }))
 }))
 
@@ -829,6 +830,147 @@ describe('useNodeReplacement', () => {
       const predicate = capturedPredicate()
       // Without the sanitize fallback this would return false.
       expect(predicate(node)).toBe(true)
+    })
+  })
+
+  describe('replaceGroup', () => {
+    it('calls removeMissingNodesByType with replaced types on success', () => {
+      const placeholder = createPlaceholderNode(1, 'OldNode')
+      const graph = createMockGraph([placeholder])
+      placeholder.graph = graph
+      Object.assign(app, { rootGraph: graph })
+
+      const newNode = createNewNode()
+      vi.mocked(collectAllNodes).mockReturnValue([placeholder])
+      vi.mocked(LiteGraph.createNode).mockReturnValue(newNode)
+
+      const { replaceGroup } = useNodeReplacement()
+      replaceGroup({
+        type: 'OldNode',
+        nodeTypes: [
+          makeMissingNodeType('OldNode', {
+            new_node_id: 'NewNode',
+            old_node_id: 'OldNode',
+            old_widget_ids: null,
+            input_mapping: null,
+            output_mapping: null
+          })
+        ]
+      })
+
+      expect(mockRemoveMissingNodesByType).toHaveBeenCalledWith(['OldNode'])
+    })
+
+    it('does not call removeMissingNodesByType when no nodes are replaced', () => {
+      const graph = createMockGraph([])
+      Object.assign(app, { rootGraph: graph })
+      vi.mocked(collectAllNodes).mockReturnValue([])
+
+      const { replaceGroup } = useNodeReplacement()
+      replaceGroup({
+        type: 'OldNode',
+        nodeTypes: [
+          makeMissingNodeType('OldNode', {
+            new_node_id: 'NewNode',
+            old_node_id: 'OldNode',
+            old_widget_ids: null,
+            input_mapping: null,
+            output_mapping: null
+          })
+        ]
+      })
+
+      expect(mockRemoveMissingNodesByType).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('replaceAllGroups', () => {
+    it('calls removeMissingNodesByType with all successfully replaced types', () => {
+      const p1 = createPlaceholderNode(1, 'TypeA')
+      const p2 = createPlaceholderNode(2, 'TypeB')
+      const graph = createMockGraph([p1, p2])
+      p1.graph = graph
+      p2.graph = graph
+      Object.assign(app, { rootGraph: graph })
+
+      vi.mocked(collectAllNodes).mockReturnValue([p1, p2])
+      vi.mocked(LiteGraph.createNode)
+        .mockReturnValueOnce(createNewNode())
+        .mockReturnValueOnce(createNewNode())
+
+      const { replaceAllGroups } = useNodeReplacement()
+      replaceAllGroups([
+        {
+          type: 'TypeA',
+          nodeTypes: [
+            makeMissingNodeType('TypeA', {
+              new_node_id: 'NewA',
+              old_node_id: 'TypeA',
+              old_widget_ids: null,
+              input_mapping: null,
+              output_mapping: null
+            })
+          ]
+        },
+        {
+          type: 'TypeB',
+          nodeTypes: [
+            makeMissingNodeType('TypeB', {
+              new_node_id: 'NewB',
+              old_node_id: 'TypeB',
+              old_widget_ids: null,
+              input_mapping: null,
+              output_mapping: null
+            })
+          ]
+        }
+      ])
+
+      expect(mockRemoveMissingNodesByType).toHaveBeenCalledWith(
+        expect.arrayContaining(['TypeA', 'TypeB'])
+      )
+    })
+
+    it('removes only the types that were actually replaced when some fail', () => {
+      const p1 = createPlaceholderNode(1, 'TypeA')
+      const graph = createMockGraph([p1])
+      p1.graph = graph
+      Object.assign(app, { rootGraph: graph })
+
+      // Only TypeA appears as a placeholder; TypeB has no matching node
+      vi.mocked(collectAllNodes).mockReturnValue([p1])
+      vi.mocked(LiteGraph.createNode).mockReturnValueOnce(createNewNode())
+
+      const { replaceAllGroups } = useNodeReplacement()
+      replaceAllGroups([
+        {
+          type: 'TypeA',
+          nodeTypes: [
+            makeMissingNodeType('TypeA', {
+              new_node_id: 'NewA',
+              old_node_id: 'TypeA',
+              old_widget_ids: null,
+              input_mapping: null,
+              output_mapping: null
+            })
+          ]
+        },
+        {
+          type: 'TypeB',
+          nodeTypes: [
+            makeMissingNodeType('TypeB', {
+              new_node_id: 'NewB',
+              old_node_id: 'TypeB',
+              old_widget_ids: null,
+              input_mapping: null,
+              output_mapping: null
+            })
+          ]
+        }
+      ])
+
+      // Only TypeA was replaced; TypeB had no matching placeholder
+      expect(mockRemoveMissingNodesByType).toHaveBeenCalledWith(['TypeA'])
     })
   })
 })
