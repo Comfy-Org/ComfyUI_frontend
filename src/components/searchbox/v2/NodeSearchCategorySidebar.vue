@@ -79,10 +79,17 @@ const hasEssentialNodes = computed(() =>
   )
 )
 
+const hasApiNodes = computed(() =>
+  nodeDefStore.visibleNodeDefs.some((n) => n.api_node)
+)
+
 const sourceCategories = computed(() => {
   const categories = []
   if (flags.nodeLibraryEssentialsEnabled && hasEssentialNodes.value) {
     categories.push({ id: 'essentials', label: t('g.essentials') })
+  }
+  if (hasApiNodes.value) {
+    categories.push({ id: 'api', label: t('g.API Nodes') })
   }
   categories.push({ id: 'custom', label: t('g.custom') })
   return categories

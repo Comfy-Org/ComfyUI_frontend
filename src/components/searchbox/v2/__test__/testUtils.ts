@@ -39,6 +39,7 @@ export const testI18n = createI18n({
         mostRelevant: 'Most relevant',
         favorites: 'Favorites',
         essentials: 'Essentials',
+        'API Nodes': 'API Nodes',
         custom: 'Custom',
         noResults: 'No results',
         filterByType: 'Filter by {type}...',

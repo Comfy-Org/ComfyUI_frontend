@@ -51,6 +51,11 @@ describe('NodeSearchCategorySidebar', () => {
         createMockNodeDef({
           name: 'EssentialNode',
           essentials_category: 'basic'
+        }),
+        createMockNodeDef({
+          name: 'ApiNode',
+          display_name: 'API Node',
+          api_node: true
         })
       ])
       await nextTick()
@@ -60,6 +65,7 @@ describe('NodeSearchCategorySidebar', () => {
       expect(wrapper.text()).toContain('Most relevant')
       expect(wrapper.text()).toContain('Favorites')
       expect(wrapper.text()).toContain('Essentials')
+      expect(wrapper.text()).toContain('API Nodes')
       expect(wrapper.text()).toContain('Custom')
     })
 

@@ -163,6 +163,32 @@ describe('NodeSearchContent', () => {
       expect(items[0].text()).toContain('Custom Node')
     })
 
+    it('should show only API nodes when API Nodes is selected', async () => {
+      useNodeDefStore().updateNodeDefs([
+        createMockNodeDef({
+          name: 'ApiNode',
+          display_name: 'API Node',
+          python_module: 'comfy_api_nodes.provider',
+          api_node: true
+        }),
+        createMockNodeDef({
+          name: 'CoreNode',
+          display_name: 'Core Node',
+          python_module: 'nodes',
+          api_node: false
+        })
+      ])
+      await nextTick()
+
+      const wrapper = await createWrapper()
+      await wrapper.find('[data-testid="category-api"]').trigger('click')
+      await nextTick()
+
+      const items = getNodeItems(wrapper)
+      expect(items).toHaveLength(1)
+      expect(items[0].text()).toContain('API Node')
+    })
+
     it('should hide Essentials category when no essential nodes exist', async () => {
       useNodeDefStore().updateNodeDefs([
         createMockNodeDef({

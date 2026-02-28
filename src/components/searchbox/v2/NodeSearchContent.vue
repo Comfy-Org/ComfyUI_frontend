@@ -212,6 +212,9 @@ const displayedResults = computed<ComfyNodeDefImpl[]>(() => {
         (n) => n.nodeSource.type === NodeSourceType.Essentials
       )
       break
+    case 'api':
+      results = allNodes.filter((n) => n.api_node)
+      break
     case 'custom':
       results = allNodes.filter(
         (n) =>
