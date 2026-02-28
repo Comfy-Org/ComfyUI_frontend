@@ -1,4 +1,4 @@
-import type { LGraphNode, NodeId } from '@/lib/litegraph/src/LGraphNode'
+import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
 import type { CanvasPointer } from '@/lib/litegraph/src/CanvasPointer'
 import type { Point } from '@/lib/litegraph/src/interfaces'
@@ -15,8 +15,7 @@ import {
 } from '@/stores/widgetValueStore'
 import {
   resolveConcretePromotedWidget,
-  resolvePromotedWidgetAtHost,
-  resolvePromotedWidgetLookupTarget
+  resolvePromotedWidgetAtHost
 } from '@/core/graph/subgraph/resolveConcretePromotedWidget'
 
 import type { PromotedWidgetView as IPromotedWidgetView } from './promotedWidgetTypes'
@@ -279,25 +278,13 @@ class PromotedWidgetView implements IPromotedWidgetView {
   }
 
   private getWidgetState() {
-    const lookupTarget = this.resolveStateLookupTarget()
+    const resolved = this.resolveDeepest()
+    if (!resolved) return undefined
     return useWidgetValueStore().getWidget(
       this.graphId,
-      lookupTarget.nodeId,
-      lookupTarget.widgetName
+      stripGraphPrefix(String(resolved.node.id)),
+      resolved.widget.name
     )
-  }
-
-  private resolveStateLookupTarget(): { nodeId: NodeId; widgetName: string } {
-    const lookupTarget = resolvePromotedWidgetLookupTarget(
-      this.subgraphNode,
-      this.sourceNodeId,
-      this.sourceWidgetName
-    )
-
-    return {
-      nodeId: stripGraphPrefix(lookupTarget.nodeId),
-      widgetName: lookupTarget.widgetName
-    }
   }
 
   private getProjectedWidget(resolved: {

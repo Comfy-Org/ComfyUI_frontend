@@ -4,8 +4,7 @@ import { beforeEach, describe, expect, test, vi } from 'vitest'
 
 import {
   resolveConcretePromotedWidget,
-  resolvePromotedWidgetAtHost,
-  resolvePromotedWidgetLookupTarget
+  resolvePromotedWidgetAtHost
 } from '@/core/graph/subgraph/resolveConcretePromotedWidget'
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
@@ -94,77 +93,6 @@ describe('resolvePromotedWidgetAtHost', () => {
     const resolved = resolvePromotedWidgetAtHost(host, 'missing', 'seed')
 
     expect(resolved).toBeUndefined()
-  })
-})
-
-describe('resolvePromotedWidgetLookupTarget', () => {
-  test('returns direct concrete target for a non-promoted source widget', () => {
-    const host = createHostNode(100)
-    const concreteNode = addNodeToHost(host, 'leaf')
-    addConcreteWidget(concreteNode, 'seed')
-
-    const target = resolvePromotedWidgetLookupTarget(
-      host,
-      String(concreteNode.id),
-      'seed'
-    )
-
-    expect(target).toEqual({
-      nodeId: String(concreteNode.id),
-      widgetName: 'seed'
-    })
-  })
-
-  test('follows nested promoted chain and returns deepest concrete target', () => {
-    const rootHost = createHostNode(100)
-    const nestedHost = createHostNode(101)
-    const leafNode = addNodeToHost(nestedHost, 'leaf')
-    addConcreteWidget(leafNode, 'seed')
-    const sourceNode = addNodeToHost(rootHost, 'source')
-    sourceNode.widgets = [
-      createPromotedWidget(
-        'outerWidget',
-        String(leafNode.id),
-        'seed',
-        nestedHost
-      )
-    ]
-
-    const target = resolvePromotedWidgetLookupTarget(
-      rootHost,
-      String(sourceNode.id),
-      'outerWidget'
-    )
-
-    expect(target).toEqual({
-      nodeId: String(leafNode.id),
-      widgetName: 'seed'
-    })
-  })
-
-  test('returns current lookup target when a promoted chain cycles', () => {
-    const hostA = createHostNode(200)
-    const hostB = createHostNode(201)
-    const relayA = addNodeToHost(hostA, 'relayA')
-    const relayB = addNodeToHost(hostB, 'relayB')
-
-    relayA.widgets = [
-      createPromotedWidget('wA', String(relayB.id), 'wB', hostB)
-    ]
-    relayB.widgets = [
-      createPromotedWidget('wB', String(relayA.id), 'wA', hostA)
-    ]
-
-    const target = resolvePromotedWidgetLookupTarget(
-      hostA,
-      String(relayA.id),
-      'wA'
-    )
-
-    expect(target).toEqual({
-      nodeId: String(relayA.id),
-      widgetName: 'wA'
-    })
   })
 })
 

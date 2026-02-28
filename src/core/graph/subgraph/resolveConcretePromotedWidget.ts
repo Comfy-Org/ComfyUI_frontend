@@ -90,21 +90,6 @@ export function resolvePromotedWidgetAtHost(
   return { node, widget }
 }
 
-export function resolvePromotedWidgetLookupTarget(
-  hostNode: SubgraphNode,
-  nodeId: string,
-  widgetName: string
-): { nodeId: string; widgetName: string } {
-  const result = traversePromotedWidgetChain(hostNode, nodeId, widgetName)
-  if (result.status === 'resolved') {
-    return {
-      nodeId: String(result.resolved.node.id),
-      widgetName: result.resolved.widget.name
-    }
-  }
-  return { nodeId, widgetName }
-}
-
 export function resolveConcretePromotedWidget(
   hostNode: LGraphNode,
   nodeId: string,
