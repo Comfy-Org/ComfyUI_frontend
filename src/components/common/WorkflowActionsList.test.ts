@@ -17,7 +17,7 @@ function createWrapper(items: WorkflowMenuItem[]) {
 describe('WorkflowActionsList', () => {
   it('renders action items with label and icon', () => {
     const items: WorkflowMenuItem[] = [
-      { label: 'Save', icon: 'pi pi-save', command: vi.fn() }
+      { id: 'save', label: 'Save', icon: 'pi pi-save', command: vi.fn() }
     ]
 
     const wrapper = createWrapper(items)
@@ -28,9 +28,9 @@ describe('WorkflowActionsList', () => {
 
   it('renders separator items', () => {
     const items: WorkflowMenuItem[] = [
-      { label: 'Before', icon: 'pi pi-a', command: vi.fn() },
+      { id: 'before', label: 'Before', icon: 'pi pi-a', command: vi.fn() },
       { separator: true },
-      { label: 'After', icon: 'pi pi-b', command: vi.fn() }
+      { id: 'after', label: 'After', icon: 'pi pi-b', command: vi.fn() }
     ]
 
     const wrapper = createWrapper(items)
@@ -44,7 +44,7 @@ describe('WorkflowActionsList', () => {
   it('dispatches command on select', async () => {
     const command = vi.fn()
     const items: WorkflowMenuItem[] = [
-      { label: 'Action', icon: 'pi pi-play', command }
+      { id: 'action', label: 'Action', icon: 'pi pi-play', command }
     ]
 
     const wrapper = createWrapper(items)
@@ -57,6 +57,7 @@ describe('WorkflowActionsList', () => {
   it('renders badge when present', () => {
     const items: WorkflowMenuItem[] = [
       {
+        id: 'new-feature',
         label: 'New Feature',
         icon: 'pi pi-star',
         command: vi.fn(),
@@ -71,7 +72,7 @@ describe('WorkflowActionsList', () => {
 
   it('does not render badge when absent', () => {
     const items: WorkflowMenuAction[] = [
-      { label: 'Plain', icon: 'pi pi-check', command: vi.fn() }
+      { id: 'plain', label: 'Plain', icon: 'pi pi-check', command: vi.fn() }
     ]
 
     const wrapper = createWrapper(items)
