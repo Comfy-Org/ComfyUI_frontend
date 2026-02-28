@@ -44,7 +44,9 @@ vi.mock('@/i18n', () => ({
     params ? `${key}:${JSON.stringify(params)}` : key
 }))
 
-const mockRemoveMissingNodesByType = vi.fn()
+const { mockRemoveMissingNodesByType } = vi.hoisted(() => ({
+  mockRemoveMissingNodesByType: vi.fn()
+}))
 vi.mock('@/stores/executionErrorStore', () => ({
   useExecutionErrorStore: vi.fn(() => ({
     removeMissingNodesByType: mockRemoveMissingNodesByType

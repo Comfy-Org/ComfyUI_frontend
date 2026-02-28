@@ -109,7 +109,7 @@ describe('SwapNodeGroupRow', () => {
 
   describe('Expand / Collapse', () => {
     it('starts collapsed — node list not visible', () => {
-      const wrapper = mountRow()
+      const wrapper = mountRow({ showNodeIdBadge: true })
       expect(wrapper.text()).not.toContain('#1')
     })
 
