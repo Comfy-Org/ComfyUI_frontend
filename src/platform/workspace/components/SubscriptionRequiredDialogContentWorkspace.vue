@@ -80,8 +80,8 @@ import { useI18n } from 'vue-i18n'
 import Button from '@/components/ui/button/Button.vue'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
-import { TIER_TO_KEY } from '@/platform/cloud/subscription/constants/tierPricing';
-import type { TierKey } from '@/platform/cloud/subscription/constants/tierPricing';
+import { TIER_TO_KEY } from '@/platform/cloud/subscription/constants/tierPricing'
+import type { TierKey } from '@/platform/cloud/subscription/constants/tierPricing'
 import type { BillingCycle } from '@/platform/cloud/subscription/utils/subscriptionTierRank'
 import { useTelemetry } from '@/platform/telemetry'
 import { getCheckoutAttribution } from '@/platform/telemetry/utils/checkoutAttribution'
