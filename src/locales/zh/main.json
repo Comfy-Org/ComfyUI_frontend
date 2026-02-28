@@ -331,6 +331,10 @@
     "missingNodesWarning": "工作流包含不支持的节点（红色突出显示）。",
     "workflowActions": "工作流操作"
   },
+  "builderMenu": {
+    "exitAppBuilder": "退出应用构建器",
+    "saveApp": "保存应用"
+  },
   "builderToolbar": {
     "app": "应用",
     "appDescription": "默认以应用方式打开",

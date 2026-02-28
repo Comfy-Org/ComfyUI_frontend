@@ -1,6 +1,6 @@
 <template>
   <nav
-    class="fixed top-[calc(var(--workflow-tabs-height)+var(--spacing)*1.5)] left-1/2 z-[1000] -translate-x-1/2"
+    class="fixed top-[calc(var(--workflow-tabs-height)+var(--spacing)*1.5)] left-1/2 z-1000 -translate-x-1/2"
     :aria-label="t('builderToolbar.label')"
   >
     <div

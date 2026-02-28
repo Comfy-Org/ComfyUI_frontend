@@ -12799,6 +12799,30 @@
       }
     }
   },
+  "ResolutionSelector": {
+    "display_name": "Resolution Selector",
+    "description": "Calculate width and height from aspect ratio and megapixel target. Useful for setting up Empty Latent Image dimensions.",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio",
+        "tooltip": "The aspect ratio for the output dimensions."
+      },
+      "megapixels": {
+        "name": "megapixels",
+        "tooltip": "Target total megapixels. 1.0 MP ≈ 1024×1024 for square."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "width",
+        "tooltip": "Calculated width in pixels (multiple of 8)."
+      },
+      "1": {
+        "name": "height",
+        "tooltip": "Calculated height in pixels (multiple of 8)."
+      }
+    }
+  },
   "Rodin3D_Detail": {
     "display_name": "Rodin 3D Generate - Detail Generate",
     "description": "Generate 3D Assets using Rodin API",

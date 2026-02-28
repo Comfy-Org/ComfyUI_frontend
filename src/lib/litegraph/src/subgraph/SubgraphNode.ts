@@ -43,6 +43,7 @@ import { ExecutableNodeDTO } from './ExecutableNodeDTO'
 import type { ExecutableLGraphNode, ExecutionId } from './ExecutableNodeDTO'
 import { PromotedWidgetViewManager } from './PromotedWidgetViewManager'
 import type { SubgraphInput } from './SubgraphInput'
+import { createBitmapCache } from './svgBitmapCache'
 
 const workflowSvg = new Image()
 workflowSvg.src =
@@ -53,6 +54,9 @@ type LinkedPromotionEntry = {
   interiorNodeId: string
   widgetName: string
 }
+// Pre-rasterize the SVG to a bitmap canvas to avoid Firefox re-processing
+// the SVG's internal stylesheet on every ctx.drawImage() call per frame.
+const workflowBitmapCache = createBitmapCache(workflowSvg, 32)
 
 /**
  * An instance of a {@link Subgraph}, displayed as a node on the containing (parent) graph.
@@ -1024,7 +1028,13 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     if (!low_quality) {
       ctx.translate(25, 23)
       ctx.scale(-1.5, 1.5)
-      ctx.drawImage(workflowSvg, 0, -title_height, box_size, box_size)
+      ctx.drawImage(
+        workflowBitmapCache.get(),
+        0,
+        -title_height,
+        box_size,
+        box_size
+      )
     }
     ctx.restore()
   }

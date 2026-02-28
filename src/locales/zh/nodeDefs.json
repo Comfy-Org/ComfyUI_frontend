@@ -12799,6 +12799,30 @@
       }
     }
   },
+  "ResolutionSelector": {
+    "description": "根据宽高比和目标百万像素数计算宽度和高度。适用于设置空latent图像的尺寸。",
+    "display_name": "分辨率选择器",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "宽高比",
+        "tooltip": "输出尺寸的宽高比。"
+      },
+      "megapixels": {
+        "name": "百万像素",
+        "tooltip": "目标总百万像素数。1.0 MP ≈ 1024×1024（正方形）。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "宽度",
+        "tooltip": "计算得到的像素宽度（8的倍数）。"
+      },
+      "1": {
+        "name": "高度",
+        "tooltip": "计算得到的像素高度（8的倍数）。"
+      }
+    }
+  },
   "Rodin3D_Detail": {
     "description": "使用Rodin API生成3D资源",
     "display_name": "Rodin 3D生成 - 细节生成",

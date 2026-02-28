@@ -331,6 +331,10 @@
     "missingNodesWarning": "ワークフローに未対応のノードが含まれています（赤でハイライト）。",
     "workflowActions": "ワークフロー操作"
   },
+  "builderMenu": {
+    "exitAppBuilder": "アプリビルダーを終了",
+    "saveApp": "アプリを保存"
+  },
   "builderToolbar": {
     "app": "アプリ",
     "appDescription": "デフォルトでアプリとして開きます",

@@ -331,6 +331,10 @@
     "missingNodesWarning": "工作流程包含不支援的節點（以紅色標示）。",
     "workflowActions": "工作流程操作"
   },
+  "builderMenu": {
+    "exitAppBuilder": "離開應用程式建構器",
+    "saveApp": "儲存應用程式"
+  },
   "builderToolbar": {
     "app": "應用",
     "appDescription": "預設以應用模式開啟",

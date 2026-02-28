@@ -12799,6 +12799,30 @@
       }
     }
   },
+  "ResolutionSelector": {
+    "description": "Calcula a largura e altura a partir da proporção de aspecto e do alvo de megapixels. Útil para definir as dimensões da Imagem Latent Vazia.",
+    "display_name": "Seletor de Resolução",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "proporção_de_aspecto",
+        "tooltip": "A proporção de aspecto para as dimensões de saída."
+      },
+      "megapixels": {
+        "name": "megapixels",
+        "tooltip": "Total de megapixels desejado. 1,0 MP ≈ 1024×1024 para quadrado."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "largura",
+        "tooltip": "Largura calculada em pixels (múltiplo de 8)."
+      },
+      "1": {
+        "name": "altura",
+        "tooltip": "Altura calculada em pixels (múltiplo de 8)."
+      }
+    }
+  },
   "Rodin3D_Detail": {
     "description": "Gerar ativos 3D usando a API Rodin",
     "display_name": "Rodin 3D Gerar - Geração Detalhada",

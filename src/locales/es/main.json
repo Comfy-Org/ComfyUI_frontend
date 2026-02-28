@@ -331,6 +331,10 @@
     "missingNodesWarning": "El flujo de trabajo contiene nodos no compatibles (resaltados en rojo).",
     "workflowActions": "Acciones del flujo de trabajo"
   },
+  "builderMenu": {
+    "exitAppBuilder": "Salir del constructor de aplicaciones",
+    "saveApp": "Guardar aplicación"
+  },
   "builderToolbar": {
     "app": "Aplicación",
     "appDescription": "Se abre como una aplicación por defecto",
