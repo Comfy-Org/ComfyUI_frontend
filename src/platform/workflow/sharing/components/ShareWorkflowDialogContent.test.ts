@@ -86,21 +86,14 @@ const mockShareServiceData = vi.hoisted(() => ({
 }))
 
 const mockGetPublishStatus = vi.hoisted(() => vi.fn())
+const mockPublishWorkflow = vi.hoisted(() => vi.fn())
+const mockGetShareableAssets = vi.hoisted(() => vi.fn())
 
 vi.mock('@/platform/workflow/sharing/services/workflowShareService', () => ({
   useWorkflowShareService: () => ({
     getPublishStatus: mockGetPublishStatus,
-    publishWorkflow: () =>
-      Promise.resolve({
-        shareId: 'test-123',
-        shareUrl: 'https://comfy.org/shared/test-123',
-        publishedAt: new Date('2026-01-15')
-      }),
-    getShareableAssets: () =>
-      Promise.resolve({
-        assets: mockShareServiceData.assets,
-        models: mockShareServiceData.models
-      })
+    publishWorkflow: mockPublishWorkflow,
+    getShareableAssets: mockGetShareableAssets
   })
 }))
 
@@ -143,6 +136,8 @@ describe('ShareWorkflowDialogContent', () => {
 
   beforeEach(() => {
     vi.clearAllMocks()
+    mockPublishWorkflow.mockReset()
+    mockGetShareableAssets.mockReset()
     mockWorkflowStore.activeWorkflow = {
       path: 'workflows/test.json',
       directory: 'workflows',
@@ -166,6 +161,15 @@ describe('ShareWorkflowDialogContent', () => {
     mockShareServiceData.models = [
       { id: 'model.safetensors', name: 'model.safetensors' }
     ]
+    mockPublishWorkflow.mockResolvedValue({
+      shareId: 'test-123',
+      shareUrl: 'https://comfy.org/shared/test-123',
+      publishedAt: new Date('2026-01-15')
+    })
+    mockGetShareableAssets.mockResolvedValue({
+      assets: mockShareServiceData.assets,
+      models: mockShareServiceData.models
+    })
   })
 
   function createWrapper() {
@@ -323,6 +327,44 @@ describe('ShareWorkflowDialogContent', () => {
     await closeButton.trigger('click')
 
     expect(onClose).toHaveBeenCalled()
+  })
+
+  it('publishes using refreshed shareable assets payload', async () => {
+    const initialShareableAssets = {
+      assets: [{ id: 'local-photo-id', name: 'photo.png', thumbnailUrl: null }],
+      models: [{ id: 'local-model-id', name: 'model.safetensors' }]
+    }
+    const refinedShareableAssets = {
+      assets: [
+        { id: 'backend-photo-id', name: 'photo.png', thumbnailUrl: null }
+      ],
+      models: [{ id: 'backend-model-id', name: 'model.safetensors' }]
+    }
+
+    mockGetShareableAssets
+      .mockResolvedValueOnce(initialShareableAssets)
+      .mockResolvedValueOnce(refinedShareableAssets)
+
+    const wrapper = createWrapper()
+    await flushPromises()
+
+    const checkbox = wrapper.find('input[type="checkbox"]')
+    await checkbox.setValue(true)
+    await nextTick()
+
+    const publishButton = wrapper
+      .findAll('button')
+      .find((button) => button.text().includes('Create link'))
+    expect(publishButton).toBeDefined()
+
+    await publishButton!.trigger('click')
+    await flushPromises()
+
+    expect(mockGetShareableAssets).toHaveBeenCalledTimes(2)
+    expect(mockPublishWorkflow).toHaveBeenCalledWith(
+      'workflows/test.json',
+      refinedShareableAssets
+    )
   })
 
   it('shows update button when workflow was saved after last publish', async () => {

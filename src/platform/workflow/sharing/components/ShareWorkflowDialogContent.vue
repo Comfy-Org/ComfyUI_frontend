@@ -431,9 +431,11 @@ const {
     const workflow = workflowStore.activeWorkflow
     if (!workflow) return null
 
+    const publishableAssets = await shareService.getShareableAssets()
+
     const result = await shareService.publishWorkflow(
       workflow.path,
-      assetInfo.value
+      publishableAssets
     )
     dialogState.value = 'shared'
     acknowledged.value = false
