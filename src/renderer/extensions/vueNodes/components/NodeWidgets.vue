@@ -184,6 +184,8 @@ const processedWidgets = computed((): ProcessedWidget[] => {
   for (const widget of widgets) {
     if (!shouldRenderAsVue(widget)) continue
 
+    const isPromotedView = !!widget.nodeId
+
     const vueComponent =
       getComponent(widget.type) ||
       (widget.isDOMWidget ? WidgetDOM : WidgetLegacy)
@@ -191,9 +193,12 @@ const processedWidgets = computed((): ProcessedWidget[] => {
     const { slotMetadata } = widget
 
     // Get metadata from store (registered during BaseWidget.setNodeId)
-    const bareWidgetId = stripGraphPrefix(widget.nodeId ?? nodeId)
+    const bareWidgetId = stripGraphPrefix(
+      widget.storeNodeId ?? widget.nodeId ?? nodeId
+    )
+    const storeWidgetName = widget.storeName ?? widget.name
     const widgetState = graphId
-      ? widgetValueStore.getWidget(graphId, bareWidgetId, widget.name)
+      ? widgetValueStore.getWidget(graphId, bareWidgetId, storeWidgetName)
       : undefined
 
     // Get value from store (falls back to undefined if not registered)
@@ -205,7 +210,6 @@ const processedWidgets = computed((): ProcessedWidget[] => {
       ? { ...storeOptions, disabled: true }
       : storeOptions
 
-    const isPromotedView = !!widget.nodeId
     const borderStyle =
       graphId &&
       !isPromotedView &&

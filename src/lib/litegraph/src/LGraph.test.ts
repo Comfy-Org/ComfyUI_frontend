@@ -1166,6 +1166,27 @@ describe('Subgraph Unpacking', () => {
       cleanupRegistration()
     }
   })
+
+  it('keeps subgraph definition when unpacking one instance while another remains', () => {
+    const rootGraph = new LGraph()
+    const subgraph = createSubgraphOnGraph(rootGraph)
+
+    const firstInstance = createTestSubgraphNode(subgraph, { pos: [100, 100] })
+    const secondInstance = createTestSubgraphNode(subgraph, { pos: [300, 100] })
+    secondInstance.id = 2
+    rootGraph.add(firstInstance)
+    rootGraph.add(secondInstance)
+
+    rootGraph.unpackSubgraph(firstInstance)
+
+    expect(rootGraph.subgraphs.has(subgraph.id)).toBe(true)
+
+    const serialized = rootGraph.serialize()
+    const definitionIds =
+      serialized.definitions?.subgraphs?.map((definition) => definition.id) ??
+      []
+    expect(definitionIds).toContain(subgraph.id)
+  })
 })
 
 describe('Subgraph Layout Integration', () => {
