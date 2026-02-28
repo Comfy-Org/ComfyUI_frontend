@@ -15,7 +15,7 @@
       v-if="collapsible"
       :class="
         cn(
-          'pi transition-transform duration-200 text-xs text-text-secondary ',
+          'pi transition-transform duration-200 text-xs text-text-secondary',
           isCollapsed ? 'pi-chevron-right' : 'pi-chevron-down'
         )
       "
