@@ -47,85 +47,75 @@ async function getSelectionCounts(comfyPage: ComfyPage) {
   })
 }
 
-test.describe(
-  'Group Select Children',
-  { tag: ['@canvas', '@node'] },
-  () => {
-    test.afterEach(async ({ comfyPage }) => {
-      await comfyPage.canvasOps.resetView()
-    })
+test.describe('Group Select Children', { tag: ['@canvas', '@node'] }, () => {
+  test.afterEach(async ({ comfyPage }) => {
+    await comfyPage.canvasOps.resetView()
+  })
 
-    test('Setting enabled: clicking outer group selects nested group and inner node', async ({
-      comfyPage
-    }) => {
-      await comfyPage.settings.setSetting(
-        'LiteGraph.Group.SelectChildrenOnClick',
-        true
-      )
-      await comfyPage.workflow.loadWorkflow(
-        'groups/nested-groups-1-inner-node'
-      )
-      await comfyPage.nextFrame()
+  test('Setting enabled: clicking outer group selects nested group and inner node', async ({
+    comfyPage
+  }) => {
+    await comfyPage.settings.setSetting(
+      'LiteGraph.Group.SelectChildrenOnClick',
+      true
+    )
+    await comfyPage.workflow.loadWorkflow('groups/nested-groups-1-inner-node')
+    await comfyPage.nextFrame()
 
-      const outerPos = await getGroupTitlePosition(comfyPage, 'Outer Group')
-      await comfyPage.canvas.click({ position: outerPos })
-      await comfyPage.nextFrame()
+    const outerPos = await getGroupTitlePosition(comfyPage, 'Outer Group')
+    await comfyPage.canvas.click({ position: outerPos })
+    await comfyPage.nextFrame()
 
-      const counts = await getSelectionCounts(comfyPage)
-      // Outer Group + Inner Group + 1 node = 3 items
-      expect(counts.selectedItemCount).toBe(3)
-      expect(counts.selectedGroupCount).toBe(2)
-      expect(counts.selectedNodeCount).toBe(1)
-    })
+    const counts = await getSelectionCounts(comfyPage)
+    // Outer Group + Inner Group + 1 node = 3 items
+    expect(counts.selectedItemCount).toBe(3)
+    expect(counts.selectedGroupCount).toBe(2)
+    expect(counts.selectedNodeCount).toBe(1)
+  })
 
-    test('Setting disabled: clicking outer group selects only the group', async ({
-      comfyPage
-    }) => {
-      await comfyPage.settings.setSetting(
-        'LiteGraph.Group.SelectChildrenOnClick',
-        false
-      )
-      await comfyPage.workflow.loadWorkflow(
-        'groups/nested-groups-1-inner-node'
-      )
-      await comfyPage.nextFrame()
+  test('Setting disabled: clicking outer group selects only the group', async ({
+    comfyPage
+  }) => {
+    await comfyPage.settings.setSetting(
+      'LiteGraph.Group.SelectChildrenOnClick',
+      false
+    )
+    await comfyPage.workflow.loadWorkflow('groups/nested-groups-1-inner-node')
+    await comfyPage.nextFrame()
 
-      const outerPos = await getGroupTitlePosition(comfyPage, 'Outer Group')
-      await comfyPage.canvas.click({ position: outerPos })
-      await comfyPage.nextFrame()
+    const outerPos = await getGroupTitlePosition(comfyPage, 'Outer Group')
+    await comfyPage.canvas.click({ position: outerPos })
+    await comfyPage.nextFrame()
 
-      const counts = await getSelectionCounts(comfyPage)
-      expect(counts.selectedItemCount).toBe(1)
-      expect(counts.selectedGroupCount).toBe(1)
-      expect(counts.selectedNodeCount).toBe(0)
-    })
+    const counts = await getSelectionCounts(comfyPage)
+    expect(counts.selectedItemCount).toBe(1)
+    expect(counts.selectedGroupCount).toBe(1)
+    expect(counts.selectedNodeCount).toBe(0)
+  })
 
-    test('Deselecting outer group deselects all children', async ({
-      comfyPage
-    }) => {
-      await comfyPage.settings.setSetting(
-        'LiteGraph.Group.SelectChildrenOnClick',
-        true
-      )
-      await comfyPage.workflow.loadWorkflow(
-        'groups/nested-groups-1-inner-node'
-      )
-      await comfyPage.nextFrame()
+  test('Deselecting outer group deselects all children', async ({
+    comfyPage
+  }) => {
+    await comfyPage.settings.setSetting(
+      'LiteGraph.Group.SelectChildrenOnClick',
+      true
+    )
+    await comfyPage.workflow.loadWorkflow('groups/nested-groups-1-inner-node')
+    await comfyPage.nextFrame()
 
-      // Select the outer group (cascades to children)
-      const outerPos = await getGroupTitlePosition(comfyPage, 'Outer Group')
-      await comfyPage.canvas.click({ position: outerPos })
-      await comfyPage.nextFrame()
+    // Select the outer group (cascades to children)
+    const outerPos = await getGroupTitlePosition(comfyPage, 'Outer Group')
+    await comfyPage.canvas.click({ position: outerPos })
+    await comfyPage.nextFrame()
 
-      let counts = await getSelectionCounts(comfyPage)
-      expect(counts.selectedItemCount).toBe(3)
+    let counts = await getSelectionCounts(comfyPage)
+    expect(counts.selectedItemCount).toBe(3)
 
-      // Click empty space to deselect all
-      await comfyPage.canvasOps.clickEmptySpace()
-      await comfyPage.nextFrame()
+    // Click empty space to deselect all
+    await comfyPage.canvasOps.clickEmptySpace()
+    await comfyPage.nextFrame()
 
-      counts = await getSelectionCounts(comfyPage)
-      expect(counts.selectedItemCount).toBe(0)
-    })
-  }
-)
+    counts = await getSelectionCounts(comfyPage)
+    expect(counts.selectedItemCount).toBe(0)
+  })
+})
