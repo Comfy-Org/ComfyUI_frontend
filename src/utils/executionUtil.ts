@@ -109,7 +109,7 @@ export const graphToPrompt = async (
         // execution.
         inputs[widget.name] = Array.isArray(widgetValue)
           ? widget.type === 'curve'
-            ? { __type: 'CURVE', value: widgetValue }
+            ? { __type__: 'CURVE', __value__: widgetValue }
             : { __value__: widgetValue }
           : widgetValue
       }
