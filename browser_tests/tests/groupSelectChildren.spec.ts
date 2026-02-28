@@ -111,8 +111,10 @@ test.describe('Group Select Children', { tag: ['@canvas', '@node'] }, () => {
     let counts = await getSelectionCounts(comfyPage)
     expect(counts.selectedItemCount).toBe(3)
 
-    // Click empty space to deselect all
-    await comfyPage.canvasOps.clickEmptySpace()
+    // Deselect all via page.evaluate to avoid UI overlay interception
+    await comfyPage.page.evaluate(() => {
+      window.app!.canvas.deselectAll()
+    })
     await comfyPage.nextFrame()
 
     counts = await getSelectionCounts(comfyPage)
