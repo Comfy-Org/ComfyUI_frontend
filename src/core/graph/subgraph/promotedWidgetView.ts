@@ -70,6 +70,8 @@ class PromotedWidgetView implements IPromotedWidgetView {
   private projectedSourceWidget?: IBaseWidget
   private projectedSourceWidgetType?: IBaseWidget['type']
   private projectedWidget?: BaseWidget
+  private cachedDeepestByFrame?: { node: LGraphNode; widget: IBaseWidget }
+  private cachedDeepestFrame = -1
 
   constructor(
     private readonly subgraphNode: SubgraphNode,
@@ -257,12 +259,23 @@ class PromotedWidgetView implements IPromotedWidgetView {
   private resolveDeepest():
     | { node: LGraphNode; widget: IBaseWidget }
     | undefined {
+    const frame = this.subgraphNode.rootGraph.primaryCanvas?.frame
+    if (frame !== undefined && this.cachedDeepestFrame === frame)
+      return this.cachedDeepestByFrame
+
     const result = resolveConcretePromotedWidget(
       this.subgraphNode,
       this.sourceNodeId,
       this.sourceWidgetName
     )
-    return result.status === 'resolved' ? result.resolved : undefined
+    const resolved = result.status === 'resolved' ? result.resolved : undefined
+
+    if (frame !== undefined) {
+      this.cachedDeepestFrame = frame
+      this.cachedDeepestByFrame = resolved
+    }
+
+    return resolved
   }
 
   private getWidgetState() {
