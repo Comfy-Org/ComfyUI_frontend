@@ -189,5 +189,8 @@ async function rerun(e: Event) {
       :widget-id="typeformWidgetId"
     />
   </div>
-  <OutputHistory v-else @update-selection="handleSelection" />
+  <OutputHistory
+    v-else-if="!isBuilderMode"
+    @update-selection="handleSelection"
+  />
 </template>
