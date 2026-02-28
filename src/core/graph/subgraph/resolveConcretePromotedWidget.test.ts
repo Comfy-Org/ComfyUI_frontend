@@ -1,141 +1,97 @@
-import { describe, expect, test } from 'vitest'
+import { createTestingPinia } from '@pinia/testing'
+import { setActivePinia } from 'pinia'
+import { beforeEach, describe, expect, test, vi } from 'vitest'
 
 import {
   resolveConcretePromotedWidget,
   resolvePromotedWidgetAtHost,
   resolvePromotedWidgetLookupTarget
 } from '@/core/graph/subgraph/resolveConcretePromotedWidget'
-import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
+import {
+  createTestSubgraph,
+  createTestSubgraphNode
+} from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 
-type MockGraphNode = {
-  id: string
-  widgets?: IBaseWidget[]
-  subgraph?: MockSubgraph
-  isSubgraphNode: () => boolean
+vi.mock('@/renderer/core/canvas/canvasStore', () => ({
+  useCanvasStore: () => ({})
+}))
+vi.mock('@/stores/domWidgetStore', () => ({
+  useDomWidgetStore: () => ({ widgetStates: new Map() })
+}))
+vi.mock('@/services/litegraphService', () => ({
+  useLitegraphService: () => ({ updatePreviews: () => ({}) })
+}))
+
+type PromotedWidgetStub = Pick<
+  IBaseWidget,
+  'name' | 'type' | 'options' | 'value' | 'y'
+> & {
+  sourceNodeId: string
+  sourceWidgetName: string
+  node?: SubgraphNode
 }
 
-type MockSubgraph = {
-  inputNode: { slots: Array<{ name: string; linkIds: number[] }> }
-  getNodeById: (id: string) => MockGraphNode | undefined
-  getLink: (_id: number) => undefined
+function createHostNode(id: number): SubgraphNode {
+  return createTestSubgraphNode(createTestSubgraph(), { id })
 }
 
-function createSubgraphNode(id: string): MockGraphNode {
-  const nodeMap = new Map<string, MockGraphNode>()
-  const subgraph: MockSubgraph = {
-    inputNode: { slots: [] },
-    getNodeById(nodeId: string) {
-      return nodeMap.get(nodeId)
-    },
-    getLink() {
-      return undefined
-    }
-  }
-
-  const node: MockGraphNode = {
-    id,
-    subgraph,
-    isSubgraphNode() {
-      return true
-    }
-  }
-
-  nodeMap.set(id, node)
+function addNodeToHost(host: SubgraphNode, title: string): LGraphNode {
+  const node = new LGraphNode(title)
+  host.subgraph.add(node)
   return node
 }
 
-function createRegularNode(
-  id: string,
-  widgets: IBaseWidget[] = []
-): MockGraphNode {
-  return {
-    id,
-    widgets,
-    isSubgraphNode() {
-      return false
-    }
-  }
-}
-
-function addNodeToHost(host: MockGraphNode, node: MockGraphNode): void {
-  const nodeMap = new Map<string, MockGraphNode>()
-  const originalGetNodeById = host.subgraph?.getNodeById
-  if (!host.subgraph || !originalGetNodeById) return
-
-  for (const key of [host.id, node.id]) {
-    const existing = originalGetNodeById(key)
-    if (existing) nodeMap.set(key, existing)
-  }
-
-  nodeMap.set(node.id, node)
-
-  host.subgraph.getNodeById = (id: string) => nodeMap.get(id)
-}
-
-function createConcreteWidget(name: string): IBaseWidget {
-  return {
-    name,
-    type: 'text',
-    options: {},
-    y: 0,
-    value: `${name}-value`
-  } as unknown as IBaseWidget
+function addConcreteWidget(node: LGraphNode, name: string): IBaseWidget {
+  return node.addWidget('text', name, `${name}-value`, () => undefined)
 }
 
 function createPromotedWidget(
   name: string,
   sourceNodeId: string,
   sourceWidgetName: string,
-  node?: MockGraphNode
+  node?: SubgraphNode
 ): IBaseWidget {
-  return {
+  const promotedWidget: PromotedWidgetStub = {
     name,
     type: 'button',
     options: {},
     y: 0,
+    value: undefined,
     sourceNodeId,
     sourceWidgetName,
     node
-  } as unknown as IBaseWidget
+  }
+  return promotedWidget as IBaseWidget
 }
 
-function asGraphNode(node: MockGraphNode): LGraphNode {
-  return node as unknown as LGraphNode
-}
-
-function asSubgraphNode(node: MockGraphNode): SubgraphNode {
-  return node as unknown as SubgraphNode
-}
+beforeEach(() => {
+  setActivePinia(createTestingPinia({ stubActions: false }))
+})
 
 describe('resolvePromotedWidgetAtHost', () => {
   test('resolves a direct concrete widget on the host subgraph node', () => {
-    const host = createSubgraphNode('host')
-    const concreteNode = createRegularNode('leaf', [
-      createConcreteWidget('seed')
-    ])
-    addNodeToHost(host, concreteNode)
+    const host = createHostNode(100)
+    const concreteNode = addNodeToHost(host, 'leaf')
+    addConcreteWidget(concreteNode, 'seed')
 
     const resolved = resolvePromotedWidgetAtHost(
-      asSubgraphNode(host),
-      'leaf',
+      host,
+      String(concreteNode.id),
       'seed'
     )
 
     expect(resolved).toBeDefined()
-    expect(resolved?.node.id).toBe('leaf')
+    expect(resolved?.node.id).toBe(concreteNode.id)
     expect(resolved?.widget.name).toBe('seed')
   })
 
   test('returns undefined when host does not contain the target node', () => {
-    const host = createSubgraphNode('host')
+    const host = createHostNode(100)
 
-    const resolved = resolvePromotedWidgetAtHost(
-      asSubgraphNode(host),
-      'missing',
-      'seed'
-    )
+    const resolved = resolvePromotedWidgetAtHost(host, 'missing', 'seed')
 
     expect(resolved).toBeUndefined()
   })
@@ -143,119 +99,129 @@ describe('resolvePromotedWidgetAtHost', () => {
 
 describe('resolvePromotedWidgetLookupTarget', () => {
   test('returns direct concrete target for a non-promoted source widget', () => {
-    const host = createSubgraphNode('host')
-    const concreteNode = createRegularNode('leaf', [
-      createConcreteWidget('seed')
-    ])
-    addNodeToHost(host, concreteNode)
+    const host = createHostNode(100)
+    const concreteNode = addNodeToHost(host, 'leaf')
+    addConcreteWidget(concreteNode, 'seed')
 
     const target = resolvePromotedWidgetLookupTarget(
-      asSubgraphNode(host),
-      'leaf',
+      host,
+      String(concreteNode.id),
       'seed'
     )
 
-    expect(target).toEqual({ nodeId: 'leaf', widgetName: 'seed' })
+    expect(target).toEqual({
+      nodeId: String(concreteNode.id),
+      widgetName: 'seed'
+    })
   })
 
   test('follows nested promoted chain and returns deepest concrete target', () => {
-    const rootHost = createSubgraphNode('root')
-    const nestedHost = createSubgraphNode('nested')
-    const leafNode = createRegularNode('leaf', [createConcreteWidget('seed')])
-    addNodeToHost(nestedHost, leafNode)
-
-    nestedHost.widgets = [
-      createPromotedWidget('outerWidget', 'leaf', 'seed', nestedHost)
+    const rootHost = createHostNode(100)
+    const nestedHost = createHostNode(101)
+    const leafNode = addNodeToHost(nestedHost, 'leaf')
+    addConcreteWidget(leafNode, 'seed')
+    const sourceNode = addNodeToHost(rootHost, 'source')
+    sourceNode.widgets = [
+      createPromotedWidget(
+        'outerWidget',
+        String(leafNode.id),
+        'seed',
+        nestedHost
+      )
     ]
-    addNodeToHost(rootHost, nestedHost)
 
     const target = resolvePromotedWidgetLookupTarget(
-      asSubgraphNode(rootHost),
-      'nested',
+      rootHost,
+      String(sourceNode.id),
       'outerWidget'
     )
 
-    expect(target).toEqual({ nodeId: 'leaf', widgetName: 'seed' })
+    expect(target).toEqual({
+      nodeId: String(leafNode.id),
+      widgetName: 'seed'
+    })
   })
 
   test('returns current lookup target when a promoted chain cycles', () => {
-    const hostA = createSubgraphNode('hostA')
-    const hostB = createSubgraphNode('hostB')
+    const hostA = createHostNode(200)
+    const hostB = createHostNode(201)
+    const relayA = addNodeToHost(hostA, 'relayA')
+    const relayB = addNodeToHost(hostB, 'relayB')
 
-    hostA.widgets = [createPromotedWidget('wA', 'hostB', 'wB', hostB)]
-    hostB.widgets = [createPromotedWidget('wB', 'hostA', 'wA', hostA)]
-
-    addNodeToHost(hostA, hostB)
-    addNodeToHost(hostB, hostA)
+    relayA.widgets = [
+      createPromotedWidget('wA', String(relayB.id), 'wB', hostB)
+    ]
+    relayB.widgets = [
+      createPromotedWidget('wB', String(relayA.id), 'wA', hostA)
+    ]
 
     const target = resolvePromotedWidgetLookupTarget(
-      asSubgraphNode(hostA),
-      'hostA',
+      hostA,
+      String(relayA.id),
       'wA'
     )
 
-    expect(target).toEqual({ nodeId: 'hostA', widgetName: 'wA' })
+    expect(target).toEqual({
+      nodeId: String(relayA.id),
+      widgetName: 'wA'
+    })
   })
 })
 
 describe('resolveConcretePromotedWidget', () => {
   test('resolves a direct concrete source widget', () => {
-    const host = createSubgraphNode('host')
-    const concreteNode = createRegularNode('leaf', [
-      createConcreteWidget('seed')
-    ])
-    addNodeToHost(host, concreteNode)
+    const host = createHostNode(100)
+    const concreteNode = addNodeToHost(host, 'leaf')
+    addConcreteWidget(concreteNode, 'seed')
 
     const result = resolveConcretePromotedWidget(
-      asGraphNode(host),
-      'leaf',
+      host,
+      String(concreteNode.id),
       'seed'
     )
 
     expect(result.status).toBe('resolved')
     if (result.status !== 'resolved') return
-    expect(result.resolved.node.id).toBe('leaf')
+    expect(result.resolved.node.id).toBe(concreteNode.id)
     expect(result.resolved.widget.name).toBe('seed')
   })
 
   test('descends through nested promoted widgets to resolve concrete source', () => {
-    const rootHost = createSubgraphNode('root')
-    const nestedHost = createSubgraphNode('nested')
-    const leafNode = createRegularNode('leaf', [createConcreteWidget('seed')])
-    addNodeToHost(nestedHost, leafNode)
-
-    nestedHost.widgets = [
-      createPromotedWidget('outer', 'leaf', 'seed', nestedHost)
+    const rootHost = createHostNode(100)
+    const nestedHost = createHostNode(101)
+    const leafNode = addNodeToHost(nestedHost, 'leaf')
+    addConcreteWidget(leafNode, 'seed')
+    const sourceNode = addNodeToHost(rootHost, 'source')
+    sourceNode.widgets = [
+      createPromotedWidget('outer', String(leafNode.id), 'seed', nestedHost)
     ]
-    addNodeToHost(rootHost, nestedHost)
 
     const result = resolveConcretePromotedWidget(
-      asGraphNode(rootHost),
-      'nested',
+      rootHost,
+      String(sourceNode.id),
       'outer'
     )
 
     expect(result.status).toBe('resolved')
     if (result.status !== 'resolved') return
-    expect(result.resolved.node.id).toBe('leaf')
+    expect(result.resolved.node.id).toBe(leafNode.id)
     expect(result.resolved.widget.name).toBe('seed')
   })
 
   test('returns cycle failure when promoted widgets form a loop', () => {
-    const hostA = createSubgraphNode('hostA')
-    const hostB = createSubgraphNode('hostB')
+    const hostA = createHostNode(200)
+    const hostB = createHostNode(201)
+    const relayA = addNodeToHost(hostA, 'relayA')
+    const relayB = addNodeToHost(hostB, 'relayB')
 
-    hostA.widgets = [createPromotedWidget('wA', 'hostB', 'wB', hostB)]
-    hostB.widgets = [createPromotedWidget('wB', 'hostA', 'wA', hostA)]
+    relayA.widgets = [
+      createPromotedWidget('wA', String(relayB.id), 'wB', hostB)
+    ]
+    relayB.widgets = [
+      createPromotedWidget('wB', String(relayA.id), 'wA', hostA)
+    ]
 
-    addNodeToHost(hostA, hostB)
-    addNodeToHost(hostB, hostA)
-
-    const result = resolveConcretePromotedWidget(
-      asGraphNode(hostA),
-      'hostA',
-      'wA'
-    )
+    const result = resolveConcretePromotedWidget(hostA, String(relayA.id), 'wA')
 
     expect(result).toEqual({
       status: 'failure',
@@ -264,55 +230,55 @@ describe('resolveConcretePromotedWidget', () => {
   })
 
   test('does not report a cycle when different host objects share an id', () => {
-    const rootHost = createSubgraphNode('shared')
-    const nestedHost = createSubgraphNode('shared')
-    const leafNode = createRegularNode('leaf', [createConcreteWidget('seed')])
-
-    addNodeToHost(nestedHost, leafNode)
-    nestedHost.widgets = [
-      createPromotedWidget('outer', 'leaf', 'seed', nestedHost)
+    const rootHost = createHostNode(41)
+    const nestedHost = createHostNode(41)
+    const leafNode = addNodeToHost(nestedHost, 'leaf')
+    addConcreteWidget(leafNode, 'w')
+    const sourceNode = addNodeToHost(rootHost, 'source')
+    sourceNode.widgets = [
+      createPromotedWidget('w', String(leafNode.id), 'w', nestedHost)
     ]
-    addNodeToHost(rootHost, nestedHost)
 
     const result = resolveConcretePromotedWidget(
-      asGraphNode(rootHost),
-      'shared',
-      'outer'
+      rootHost,
+      String(sourceNode.id),
+      'w'
     )
 
     expect(result.status).toBe('resolved')
     if (result.status !== 'resolved') return
 
-    expect(result.resolved.node.id).toBe('leaf')
-    expect(result.resolved.widget.name).toBe('seed')
+    expect(result.resolved.node.id).toBe(leafNode.id)
+    expect(result.resolved.widget.name).toBe('w')
   })
 
   test('returns max-depth-exceeded for very deep non-cyclic promoted chains', () => {
-    const hosts: MockGraphNode[] = Array.from({ length: 102 }, (_, index) =>
-      createSubgraphNode(`host-${index}`)
+    const hosts = Array.from({ length: 102 }, (_, index) =>
+      createHostNode(index + 1)
+    )
+    const relayNodes = hosts.map((host, index) =>
+      addNodeToHost(host, `relay-${index}`)
     )
 
-    for (let index = 0; index < hosts.length - 1; index += 1) {
-      const currentHost = hosts[index]
-      const nextHost = hosts[index + 1]
-      currentHost.widgets = [
+    for (let index = 0; index < relayNodes.length - 1; index += 1) {
+      relayNodes[index].widgets = [
         createPromotedWidget(
           `w-${index}`,
-          `host-${index + 1}`,
+          String(relayNodes[index + 1].id),
           `w-${index + 1}`,
-          nextHost
+          hosts[index + 1]
         )
       ]
-      addNodeToHost(currentHost, nextHost)
     }
 
-    hosts[hosts.length - 1].widgets = [
-      createConcreteWidget(`w-${hosts.length - 1}`)
-    ]
+    addConcreteWidget(
+      relayNodes[relayNodes.length - 1],
+      `w-${relayNodes.length - 1}`
+    )
 
     const result = resolveConcretePromotedWidget(
-      asGraphNode(hosts[0]),
-      'host-0',
+      hosts[0],
+      String(relayNodes[0].id),
       'w-0'
     )
 
@@ -323,9 +289,9 @@ describe('resolveConcretePromotedWidget', () => {
   })
 
   test('returns invalid-host for non-subgraph host node', () => {
-    const host = createRegularNode('plain-host')
+    const host = new LGraphNode('plain-host')
 
-    const result = resolveConcretePromotedWidget(asGraphNode(host), 'x', 'y')
+    const result = resolveConcretePromotedWidget(host, 'x', 'y')
 
     expect(result).toEqual({
       status: 'failure',
@@ -334,13 +300,9 @@ describe('resolveConcretePromotedWidget', () => {
   })
 
   test('returns missing-node when source node does not exist in host subgraph', () => {
-    const host = createSubgraphNode('host')
+    const host = createHostNode(100)
 
-    const result = resolveConcretePromotedWidget(
-      asGraphNode(host),
-      'missing-node',
-      'seed'
-    )
+    const result = resolveConcretePromotedWidget(host, 'missing-node', 'seed')
 
     expect(result).toEqual({
       status: 'failure',
@@ -349,13 +311,13 @@ describe('resolveConcretePromotedWidget', () => {
   })
 
   test('returns missing-widget when source node exists but widget cannot be resolved', () => {
-    const host = createSubgraphNode('host')
-    const sourceNode = createRegularNode('source', [])
-    addNodeToHost(host, sourceNode)
+    const host = createHostNode(100)
+    const sourceNode = addNodeToHost(host, 'source')
+    sourceNode.widgets = []
 
     const result = resolveConcretePromotedWidget(
-      asGraphNode(host),
-      'source',
+      host,
+      String(sourceNode.id),
       'missing-widget'
     )
 
