@@ -20,7 +20,7 @@ describe('computeStats', () => {
 
   it('computes correct stats for known values', () => {
     // Values: [2, 4, 4, 4, 5, 5, 7, 9]
-    // Mean = 5, Sample variance = 4, Stddev = 2
+    // Mean = 5, sample variance ≈ 4.57, sample stddev ≈ 2.14
     const stats = computeStats([2, 4, 4, 4, 5, 5, 7, 9])
     expect(stats.mean).toBe(5)
     expect(stats.stddev).toBeCloseTo(2.138, 2)

@@ -93,6 +93,10 @@ function formatDelta(pct: number): string {
   return `${sign}${pct.toFixed(0)}%`
 }
 
+function meanMetric(samples: PerfMeasurement[], key: MetricKey): number {
+  return samples.reduce((sum, s) => sum + s[key], 0) / samples.length
+}
+
 function formatBytes(bytes: number): string {
   if (Math.abs(bytes) < 1024) return `${bytes} B`
   if (Math.abs(bytes) < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
@@ -105,13 +109,14 @@ function renderFullReport(
   historical: PerfReport[]
 ): string[] {
   const lines: string[] = []
+  const baselineGroups = groupByName(baseline.measurements)
   lines.push(
     '| Metric | Baseline | PR (n=3) | Δ | Sig |',
     '|--------|----------|----------|---|-----|'
   )
 
   for (const [testName, prSamples] of prGroups) {
-    const base = baseline.measurements.find((b) => b.name === testName)
+    const baseSamples = baselineGroups.get(testName)
 
     for (const { key, label, unit } of REPORTED_METRICS) {
       const prValues = prSamples.map((s) => s[key])
@@ -119,14 +124,14 @@ function renderFullReport(
       const histStats = getHistoricalStats(historical, testName, key)
       const cv = computeCV(histStats)
 
-      if (!base) {
+      if (!baseSamples?.length) {
         lines.push(
           `| ${testName}: ${label} | — | ${formatValue(prMean, unit)} | new | — |`
         )
         continue
       }
 
-      const baseVal = base[key]
+      const baseVal = meanMetric(baseSamples, key)
       const deltaPct = baseVal > 0 ? ((prMean - baseVal) / baseVal) * 100 : 0
       const z = zScore(prMean, histStats)
       const sig = classifyChange(z, cv)
@@ -165,6 +170,7 @@ function renderColdStartReport(
   historicalCount: number
 ): string[] {
   const lines: string[] = []
+  const baselineGroups = groupByName(baseline.measurements)
   lines.push(
     `> ℹ️ Collecting baseline variance data (${historicalCount}/5 runs). Significance will appear after 2 main branch runs.`,
     '',
@@ -173,20 +179,20 @@ function renderColdStartReport(
   )
 
   for (const [testName, prSamples] of prGroups) {
-    const base = baseline.measurements.find((b) => b.name === testName)
+    const baseSamples = baselineGroups.get(testName)
 
     for (const { key, label, unit } of REPORTED_METRICS) {
       const prValues = prSamples.map((s) => s[key])
       const prMean = prValues.reduce((a, b) => a + b, 0) / prValues.length
 
-      if (!base) {
+      if (!baseSamples?.length) {
         lines.push(
           `| ${testName}: ${label} | — | ${formatValue(prMean, unit)} | new |`
         )
         continue
       }
 
-      const baseVal = base[key]
+      const baseVal = meanMetric(baseSamples, key)
       const deltaPct = baseVal > 0 ? ((prMean - baseVal) / baseVal) * 100 : 0
       lines.push(
         `| ${testName}: ${label} | ${formatValue(baseVal, unit)} | ${formatValue(prMean, unit)} | ${formatDelta(deltaPct)} |`

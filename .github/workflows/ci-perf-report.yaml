@@ -61,6 +61,7 @@ jobs:
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     permissions:
+      actions: read
       contents: read
       pull-requests: write
 
@@ -91,10 +92,16 @@ jobs:
           if_no_artifact_found: warn
 
       - name: Download historical perf baselines
+        continue-on-error: true
         run: |
           RUNS=$(gh api \
             "/repos/${{ github.repository }}/actions/workflows/ci-perf-report.yaml/runs?branch=${{ github.event.pull_request.base.ref }}&event=push&status=success&per_page=5" \
-            --jq '.workflow_runs[].id')
+            --jq '.workflow_runs[].id' || true)
+
+          if [ -z "$RUNS" ]; then
+            echo "No historical runs available"
+            exit 0
+          fi
 
           mkdir -p temp/perf-history
           INDEX=0
