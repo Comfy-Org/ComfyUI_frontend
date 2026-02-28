@@ -2,7 +2,7 @@ import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 
 import { resolveSubgraphInputLink } from './resolveSubgraphInputLink'
 
-export type ResolvedSubgraphInputTarget = {
+type ResolvedSubgraphInputTarget = {
   nodeId: string
   widgetName: string
 }
