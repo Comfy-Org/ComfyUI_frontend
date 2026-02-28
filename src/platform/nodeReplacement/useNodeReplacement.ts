@@ -261,6 +261,10 @@ export function useNodeReplacement() {
             }
         replaceWithMapping(node, newNode, effectiveReplacement, nodeGraph, idx)
 
+        // Refresh Vue node data — replaceWithMapping bypasses graph.add()
+        // so onNodeAdded must be called explicitly to update VueNodeData.
+        nodeGraph.onNodeAdded?.(newNode)
+
         if (!replacedTypes.includes(match.type)) {
           replacedTypes.push(match.type)
         }
@@ -279,6 +283,19 @@ export function useNodeReplacement() {
           life: 3000
         })
       }
+    } catch (error) {
+      console.error('Failed to replace nodes:', error)
+      if (replacedTypes.length > 0) {
+        graph.updateExecutionOrder()
+        graph.setDirtyCanvas(true, true)
+      }
+      toastStore.add({
+        severity: 'error',
+        summary: t('g.error', 'Error'),
+        detail: t('nodeReplacement.replaceFailed', 'Failed to replace nodes'),
+        life: 5000
+      })
+      return replacedTypes
     } finally {
       changeTracker?.afterChange()
     }

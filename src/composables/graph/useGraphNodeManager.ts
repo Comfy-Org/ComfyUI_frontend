@@ -14,6 +14,7 @@ import type {
 } from '@/lib/litegraph/src/interfaces'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
+import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { LayoutSource } from '@/renderer/core/layout/types'
 import type { NodeId } from '@/renderer/core/layout/types'
 import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
@@ -69,6 +70,12 @@ export interface SafeWidgetData {
   spec?: InputSpec
   /** Input slot metadata (index and link status) */
   slotMetadata?: WidgetSlotMetadata
+  /**
+   * Original LiteGraph widget name used for slot metadata matching.
+   * For promoted widgets, `name` is `sourceWidgetName` (interior widget name)
+   * which differs from the subgraph node's input slot widget name.
+   */
+  slotName?: string
 }
 
 export interface VueNodeData {
@@ -238,7 +245,8 @@ function safeWidgetMapper(
         options: isPromotedPseudoWidget
           ? { ...options, canvasOnly: true }
           : options,
-        slotMetadata: slotInfo
+        slotMetadata: slotInfo,
+        slotName: name !== widget.name ? widget.name : undefined
       }
     } catch (error) {
       return {
@@ -376,7 +384,7 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
 
     // Update only widgets with new slot metadata, keeping other widget data intact
     for (const widget of currentData.widgets ?? []) {
-      const slotInfo = slotMetadata.get(widget.name)
+      const slotInfo = slotMetadata.get(widget.slotName ?? widget.name)
       if (slotInfo) widget.slotMetadata = slotInfo
     }
   }
@@ -434,6 +442,11 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
       // Extract actual positions after configure() has potentially updated them
       const nodePosition = { x: node.pos[0], y: node.pos[1] }
       const nodeSize = { width: node.size[0], height: node.size[1] }
+
+      // Skip layout creation if it already exists
+      // (e.g. in-place node replacement where the old node's layout is reused for the new node with the same ID).
+      const existingLayout = layoutStore.getNodeLayoutRef(id).value
+      if (existingLayout) return
 
       // Add node to layout store with final positions
       setSource(LayoutSource.Canvas)

@@ -225,6 +225,7 @@
     "login": {
       "andText": "و",
       "backToLogin": "العودة إلى تسجيل الدخول",
+      "backToSocialLogin": "سجّل باستخدام Google أو Github بدلاً من ذلك",
       "confirmPasswordLabel": "تأكيد كلمة المرور",
       "confirmPasswordPlaceholder": "أدخل نفس كلمة المرور مرة أخرى",
       "didntReceiveEmail": "لم تستلم البريد الإلكتروني؟ اتصل بنا على",
@@ -233,6 +234,9 @@
       "failed": "فشل تسجيل الدخول",
       "forgotPassword": "هل نسيت كلمة المرور؟",
       "forgotPasswordError": "فشل في إرسال بريد إعادة تعيين كلمة المرور",
+      "freeTierBadge": "مؤهل للخطة المجانية",
+      "freeTierDescription": "سجّل باستخدام Google للحصول على {credits} رصيد مجاني كل شهر. لا حاجة لبطاقة.",
+      "freeTierDescriptionGeneric": "سجّل باستخدام Google للحصول على رصيد مجاني كل شهر. لا حاجة لبطاقة.",
       "insecureContextWarning": "هذا الاتصال غير آمن (HTTP) - قد يتم اعتراض بيانات اعتمادك من قبل المهاجمين إذا تابعت تسجيل الدخول.",
       "loginButton": "تسجيل الدخول",
       "loginWithGithub": "تسجيل الدخول باستخدام Github",
@@ -251,11 +255,13 @@
       "sendResetLink": "إرسال رابط إعادة التعيين",
       "signInOrSignUp": "تسجيل الدخول / إنشاء حساب",
       "signUp": "إنشاء حساب",
+      "signUpFreeTierPromo": "جديد هنا؟ {signUp} باستخدام Google للحصول على {credits} رصيد مجاني كل شهر.",
       "success": "تم تسجيل الدخول بنجاح",
       "termsLink": "شروط الاستخدام",
       "termsText": "بالنقر على \"التالي\" أو \"إنشاء حساب\"، فإنك توافق على",
       "title": "تسجيل الدخول إلى حسابك",
       "useApiKey": "مفتاح API الخاص بـ Comfy",
+      "useEmailInstead": "استخدم البريد الإلكتروني بدلاً من ذلك",
       "userAvatar": "صورة المستخدم"
     },
     "loginButton": {
@@ -282,6 +288,7 @@
     "signup": {
       "alreadyHaveAccount": "هل لديك حساب بالفعل؟",
       "emailLabel": "البريد الإلكتروني",
+      "emailNotEligibleForFreeTier": "التسجيل بالبريد الإلكتروني غير مؤهل للخطة المجانية.",
       "emailPlaceholder": "أدخل بريدك الإلكتروني",
       "passwordLabel": "كلمة المرور",
       "passwordPlaceholder": "أدخل كلمة مرور جديدة",
@@ -293,6 +300,9 @@
       "signUpWithGoogle": "إنشاء حساب باستخدام Google",
       "title": "إنشاء حساب"
     }
+  },
+  "batch": {
+    "index": "{current} / {total}"
   },
   "billingOperation": {
     "subscriptionFailed": "فشل تحديث الاشتراك",
@@ -320,6 +330,10 @@
     "exitAppMode": "الخروج من وضع التطبيق",
     "missingNodesWarning": "يحتوي سير العمل على عقد غير مدعومة (مظللة باللون الأحمر).",
     "workflowActions": "إجراءات سير العمل"
+  },
+  "builderMenu": {
+    "exitAppBuilder": "الخروج من مُنشئ التطبيق",
+    "saveApp": "حفظ التطبيق"
   },
   "builderToolbar": {
     "app": "تطبيق",
@@ -689,6 +703,7 @@
     "OPENAI_INPUT_FILES": "ملفات إدخال أوبن إيه آي",
     "PHOTOMAKER": "صانع الصور",
     "PIXVERSE_TEMPLATE": "قالب PixVerse",
+    "POSE_KEYPOINT": "نقطة مفتاحية للوضعية",
     "RECRAFT_COLOR": "لون Recraft",
     "RECRAFT_CONTROLS": "عناصر تحكم Recraft",
     "RECRAFT_V3_STYLE": "نمط Recraft V3",
@@ -948,6 +963,7 @@
     "imageUrl": "رابط الصورة",
     "import": "استيراد",
     "inProgress": "جارٍ التنفيذ",
+    "inSubgraph": "في الرسم البياني الفرعي '{name}'",
     "increment": "زيادة",
     "info": "معلومات العقدة",
     "input": "إدخال",
@@ -1105,6 +1121,7 @@
     "updated": "تم التحديث",
     "updating": "جارٍ التحديث",
     "upload": "رفع",
+    "uploadAlreadyInProgress": "الرفع جارٍ بالفعل",
     "usageHint": "تلميح الاستخدام",
     "use": "استخدم",
     "user": "المستخدم",
@@ -1178,6 +1195,8 @@
     "star": "نجمة"
   },
   "imageCompare": {
+    "batchLabelA": "أ: ",
+    "batchLabelB": "ب: ",
     "noImages": "لا توجد صور للمقارنة"
   },
   "imageCrop": {
@@ -1326,10 +1345,29 @@
       "switchToSelectButton": "الانتقال إلى التحديد"
     },
     "beta": "وضع التطبيق تجريبي - أرسل ملاحظاتك",
+    "builder": {
+      "exit": "خروج من البناء",
+      "exitConfirmMessage": "لديك تغييرات غير محفوظة ستفقد\nهل تريد الخروج بدون حفظ؟",
+      "exitConfirmTitle": "الخروج من بناء التطبيق؟",
+      "inputsDesc": "سيتفاعل المستخدمون مع هذه المدخلات ويعدلونها لإنشاء النتائج.",
+      "inputsExample": "أمثلة: \"تحميل صورة\"، \"موجه نصي\"، \"خطوات\"",
+      "noInputs": "لم تتم إضافة أي مدخلات بعد",
+      "noOutputs": "لم تتم إضافة أي عقد إخراج بعد",
+      "outputsDesc": "وصل عقدة إخراج واحدة على الأقل حتى يتمكن المستخدمون من رؤية النتائج بعد التشغيل.",
+      "outputsExample": "أمثلة: \"حفظ صورة\" أو \"حفظ فيديو\"",
+      "promptAddInputs": "انقر على معلمات العقدة لإضافتها هنا كمدخلات",
+      "promptAddOutputs": "انقر على عقد الإخراج لإضافتها هنا. هذه ستكون النتائج المُولدة.",
+      "title": "وضع بناء التطبيق"
+    },
     "downloadAll": "تنزيل الكل",
     "dragAndDropImage": "اسحب وأسقط صورة",
+    "giveFeedback": "إعطاء ملاحظات",
     "graphMode": "وضع الرسم البياني",
     "linearMode": "وضع التطبيق",
+    "queue": {
+      "clear": "مسح قائمة الانتظار",
+      "clickToClear": "انقر لمسح قائمة الانتظار"
+    },
     "rerun": "تشغيل مجدد",
     "reuseParameters": "إعادة استخدام المعلمات",
     "runCount": "عدد مرات التشغيل:",
@@ -1549,6 +1587,9 @@
     "nodePack": "حزمة العقد",
     "nodePackInfo": "معلومات حزمة العقد",
     "notAvailable": "غير متوفر",
+    "packInstall": {
+      "nodeIdRequired": "معرّف العقدة مطلوب للتثبيت"
+    },
     "packsSelected": "الحزم المحددة",
     "repository": "المستودع",
     "restartToApplyChanges": "لـتطبيق التغييرات، يرجى إعادة تشغيل ComfyUI",
@@ -1863,11 +1904,18 @@
     "showLinks": "إظهار الروابط"
   },
   "missingModelsDialog": {
+    "customModelsInstruction": "ستحتاج إلى العثور عليها وتنزيلها يدويًا. ابحث عنها عبر الإنترنت (جرّب Civitai أو Hugging Face) أو تواصل مع مزود سير العمل الأصلي.",
+    "customModelsWarning": "بعض هذه النماذج مخصصة ولا نتعرف عليها.",
+    "description": "يتطلب سير العمل هذا نماذج لم تقم بتنزيلها بعد.",
     "doNotAskAgain": "عدم العرض مرة أخرى",
-    "missingModels": "نماذج مفقودة",
-    "missingModelsMessage": "عند تحميل الرسم البياني، لم يتم العثور على النماذج التالية",
+    "downloadAll": "تنزيل الكل",
+    "downloadAvailable": "التنزيل متاح",
+    "footerDescription": "قم بتنزيل هذه النماذج وضعها في المجلد الصحيح.\nالعُقد التي تفتقد إلى النماذج مميزة باللون الأحمر على اللوحة.",
+    "gotIt": "حسنًا، فهمت",
     "reEnableInSettings": "إعادة التفعيل في {link}",
-    "reEnableInSettingsLink": "الإعدادات"
+    "reEnableInSettingsLink": "الإعدادات",
+    "title": "هذا سير العمل يفتقد إلى النماذج",
+    "totalSize": "إجمالي حجم التنزيل:"
   },
   "missingNodes": {
     "cloud": {
@@ -2039,7 +2087,10 @@
     "openNodeManager": "فتح مدير العقد",
     "quickFixAvailable": "إصلاح سريع متاح",
     "redHighlight": "أحمر",
+    "replaceAll": "استبدال الكل",
+    "replaceAllWarning": "سيتم استبدال جميع العقد المتاحة في هذه المجموعة.",
     "replaceFailed": "فشل في استبدال العقد",
+    "replaceNode": "استبدال العقدة",
     "replaceSelected": "استبدال المحدد ({count})",
     "replaceWarning": "سيؤدي هذا إلى تعديل سير العمل بشكل دائم. احفظ نسخة أولاً إذا لم تكن متأكدًا.",
     "replaceable": "قابل للاستبدال",
@@ -2047,7 +2098,11 @@
     "replacedAllNodes": "تم استبدال {count} نوع/أنواع من العقد",
     "replacedNode": "تم استبدال العقدة: {nodeType}",
     "selectAll": "تحديد الكل",
-    "skipForNow": "تخطي الآن"
+    "skipForNow": "تخطي الآن",
+    "swapNodesGuide": "يمكن استبدال العقد التالية تلقائيًا ببدائل متوافقة.",
+    "swapNodesTitle": "تبديل العقد",
+    "unknownNode": "غير معروف",
+    "willBeReplacedBy": "سيتم استبدال هذه العقدة بـ:"
   },
   "nodeTemplates": {
     "enterName": "أدخل الاسم",
@@ -2065,6 +2120,19 @@
       "windows": "Windows (بطاقة Nvidia تدعم CUDA)"
     },
     "title": "جهازك غير مدعوم"
+  },
+  "painter": {
+    "background": "الخلفية",
+    "brush": "فرشاة",
+    "clear": "مسح",
+    "color": "منتقي اللون",
+    "eraser": "ممحاة",
+    "hardness": "الصلابة",
+    "height": "الارتفاع",
+    "size": "حجم المؤشر",
+    "tool": "أداة",
+    "uploadError": "فشل في رفع صورة الرسام: {status} - {statusText}",
+    "width": "العرض"
   },
   "progressToast": {
     "allDownloadsCompleted": "اكتملت جميع التنزيلات",
@@ -2186,6 +2254,22 @@
     "inputsNone": "لا توجد مدخلات",
     "inputsNoneTooltip": "العقدة ليس لديها مدخلات",
     "locateNode": "تحديد موقع العقدة على اللوحة",
+    "missingNodePacks": {
+      "applyChanges": "تطبيق التغييرات",
+      "cloudMessage": "يتطلب سير العمل هذا عقدًا مخصصة غير متوفرة بعد على Comfy Cloud.",
+      "collapse": "طي",
+      "expand": "توسيع",
+      "installAll": "تثبيت الكل",
+      "installNodePack": "تثبيت حزمة العقد",
+      "installed": "تم التثبيت",
+      "installing": "جارٍ التثبيت...",
+      "ossMessage": "يستخدم سير العمل هذا عقدًا مخصصة لم تقم بتثبيتها بعد.",
+      "searchInManager": "البحث في مدير العقد",
+      "title": "حزم العقد المفقودة",
+      "unknownPack": "حزمة غير معروفة",
+      "unsupportedTitle": "حزم العقد غير المدعومة",
+      "viewInManager": "عرض في المدير"
+    },
     "mute": "كتم",
     "noErrors": "لا توجد أخطاء",
     "noSelection": "حدد عقدة لعرض خصائصها ومعلوماتها.",
@@ -2679,7 +2763,9 @@
     "addCreditsLabel": "أضف المزيد من الرصيد في أي وقت",
     "benefits": {
       "benefit1": "رصيد شهري للعقد الشريكة - تجديد عند الحاجة",
-      "benefit2": "حتى 30 دقيقة وقت تشغيل لكل مهمة"
+      "benefit1FreeTier": "رصيد شهري أكثر، مع إمكانية الشحن في أي وقت",
+      "benefit2": "حتى 30 دقيقة وقت تشغيل لكل مهمة",
+      "benefit3": "استخدم نماذجك الخاصة (Creator & Pro)"
     },
     "beta": "نسخة تجريبية",
     "billedMonthly": "يتم الفوترة شهريًا",
@@ -2717,6 +2803,21 @@
     "description": "اختر الخطة الأنسب لك",
     "descriptionWorkspace": "اختر أفضل خطة لمساحة العمل الخاصة بك",
     "expiresDate": "ينتهي في {date}",
+    "freeTier": {
+      "description": "تشمل خطتك المجانية {credits} رصيد شهري لتجربة Comfy Cloud.",
+      "descriptionGeneric": "تشمل خطتك المجانية رصيدًا شهريًا لتجربة Comfy Cloud.",
+      "nextRefresh": "سيتم تجديد رصيدك في {date}.",
+      "outOfCredits": {
+        "subtitle": "اشترك لفتح الشحن والمزيد",
+        "title": "لقد نفد رصيدك المجاني"
+      },
+      "subscribeCta": "اشترك للمزيد",
+      "title": "أنت على الخطة المجانية",
+      "topUpBlocked": {
+        "title": "افتح الشحن والمزيد"
+      },
+      "upgradeCta": "عرض الخطط"
+    },
     "gpuLabel": "RTX 6000 Pro (ذاكرة 96GB VRAM)",
     "haveQuestions": "هل لديك أسئلة أو ترغب في معرفة المزيد عن المؤسسات؟",
     "invoiceHistory": "سجل الفواتير",
@@ -2727,6 +2828,7 @@
     "maxDuration": {
       "creator": "30 دقيقة",
       "founder": "30 دقيقة",
+      "free": "٣٠ دقيقة",
       "pro": "ساعة واحدة",
       "standard": "30 دقيقة"
     },
@@ -2798,6 +2900,9 @@
       },
       "founder": {
         "name": "إصدار المؤسس"
+      },
+      "free": {
+        "name": "مجاني"
       },
       "pro": {
         "name": "احترافي"
@@ -2909,6 +3014,7 @@
     "emptyCanvas": "لوحة فارغة",
     "errorCopyImage": "خطأ في نسخ الصورة: {error}",
     "errorLoadingModel": "خطأ في تحميل النموذج",
+    "errorOpenImage": "حدث خطأ أثناء فتح الصورة: {error}",
     "errorSaveSetting": "خطأ في حفظ الإعداد {id}: {err}",
     "exportSuccess": "تم تصدير النموذج بنجاح كـ {format}",
     "failedExecutionPathResolution": "تعذر حل المسار إلى العُقَد المحددة",

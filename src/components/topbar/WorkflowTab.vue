@@ -10,7 +10,7 @@
         @click="handleClick"
       >
         <i
-          v-if="workflowOption.workflow.activeState?.extra?.linearMode"
+          v-if="workflowOption.workflow.initialMode === 'app'"
           class="icon-[lucide--panels-top-left] bg-primary-background"
         />
         <span

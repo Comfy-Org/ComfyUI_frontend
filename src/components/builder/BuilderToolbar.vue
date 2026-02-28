@@ -1,6 +1,6 @@
 <template>
   <nav
-    class="fixed top-[calc(var(--workflow-tabs-height)+var(--spacing)*1.5)] left-1/2 z-[1000] -translate-x-1/2"
+    class="fixed top-[calc(var(--workflow-tabs-height)+var(--spacing)*1.5)] left-1/2 z-1000 -translate-x-1/2"
     :aria-label="t('builderToolbar.label')"
   >
     <div
@@ -20,7 +20,7 @@
             )
           "
           :aria-current="activeStep === step.id ? 'step' : undefined"
-          @click="appModeStore.setMode(step.id)"
+          @click="setMode(step.id)"
         >
           <StepBadge :step :index :model-value="activeStep" />
           <StepLabel :step />
@@ -31,9 +31,9 @@
 
       <!-- Save -->
       <ConnectOutputPopover
-        v-if="!appModeStore.hasOutputs"
+        v-if="!hasOutputs"
         :is-select-active="activeStep === 'builder:select'"
-        @switch="appModeStore.setMode('builder:select')"
+        @switch="setMode('builder:select')"
       >
         <button :class="cn(stepClasses, 'opacity-30 bg-transparent')">
           <StepBadge :step="saveStep" :index="2" :model-value="activeStep" />
@@ -50,7 +50,7 @@
               : 'hover:bg-secondary-background bg-transparent'
           )
         "
-        @click="appModeStore.setBuilderSaving(true)"
+        @click="setSaving(true)"
       >
         <StepBadge :step="saveStep" :index="2" :model-value="activeStep" />
         <StepLabel :step="saveStep" />
@@ -63,21 +63,24 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import { useAppMode } from '@/composables/useAppMode'
+import type { AppMode } from '@/composables/useAppMode'
 import { useAppModeStore } from '@/stores/appModeStore'
-import type { AppMode } from '@/stores/appModeStore'
 import { cn } from '@/utils/tailwindUtil'
 
+import { useBuilderSave } from './useBuilderSave'
 import ConnectOutputPopover from './ConnectOutputPopover.vue'
 import StepBadge from './StepBadge.vue'
 import StepLabel from './StepLabel.vue'
 import type { BuilderToolbarStep } from './types'
+import { storeToRefs } from 'pinia'
 
 const { t } = useI18n()
-const appModeStore = useAppModeStore()
+const { mode, setMode } = useAppMode()
+const { hasOutputs } = storeToRefs(useAppModeStore())
+const { saving, setSaving } = useBuilderSave()
 
-const activeStep = computed(() =>
-  appModeStore.isBuilderSaving ? 'save' : appModeStore.mode
-)
+const activeStep = computed(() => (saving.value ? 'save' : mode.value))
 
 const stepClasses =
   'inline-flex h-14 min-h-8 cursor-pointer items-center gap-3 rounded-lg py-2 pr-4 pl-2 transition-colors border-none'

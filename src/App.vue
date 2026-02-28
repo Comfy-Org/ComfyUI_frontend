@@ -51,7 +51,6 @@ onMounted(() => {
   // See: https://vite.dev/guide/build#load-error-handling
   window.addEventListener('vite:preloadError', (event) => {
     event.preventDefault()
-    // eslint-disable-next-line no-undef
     if (__DISTRIBUTION__ === 'cloud') {
       captureException(event.payload, {
         tags: { error_type: 'vite_preload_error' }

@@ -696,8 +696,7 @@
         "tooltip": "Nombre maximum d'images à générer lorsque sequential_image_generation='auto'. Le nombre total d'images (entrée + générées) ne peut pas dépasser 15."
       },
       "model": {
-        "name": "model",
-        "tooltip": "Nom du modèle"
+        "name": "model"
       },
       "prompt": {
         "name": "prompt",
@@ -2135,6 +2134,35 @@
     "outputs": {
       "0": {
         "tooltip": null
+      }
+    }
+  },
+  "CropByBBoxes": {
+    "description": "Rogner et redimensionner des régions du lot d’images d’entrée selon les boîtes englobantes fournies.",
+    "display_name": "CropByBBoxes",
+    "inputs": {
+      "bboxes": {
+        "name": "bboxes"
+      },
+      "image": {
+        "name": "image"
+      },
+      "output_height": {
+        "name": "output_height",
+        "tooltip": "Hauteur à laquelle chaque découpe est redimensionnée."
+      },
+      "output_width": {
+        "name": "output_width",
+        "tooltip": "Largeur à laquelle chaque découpe est redimensionnée."
+      },
+      "padding": {
+        "name": "padding",
+        "tooltip": "Marge supplémentaire en pixels ajoutée de chaque côté de la boîte avant le rognage."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "Toutes les découpes empilées dans un seul lot d’images."
       }
     }
   },
@@ -3702,6 +3730,57 @@
       }
     }
   },
+  "GeminiNanoBanana2": {
+    "description": "Générez ou modifiez des images de manière synchrone via l’API Google Vertex.",
+    "display_name": "Nano Banana 2",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "rapport d’aspect",
+        "tooltip": "Si défini sur « auto », correspond au rapport d’aspect de votre image d’entrée ; si aucune image n’est fournie, un carré 16:9 est généralement généré."
+      },
+      "control_after_generate": {
+        "name": "contrôle après génération"
+      },
+      "files": {
+        "name": "fichiers",
+        "tooltip": "Fichier(s) optionnel(s) à utiliser comme contexte pour le modèle. Accepte les entrées du nœud Gemini Generate Content Input Files."
+      },
+      "images": {
+        "name": "images",
+        "tooltip": "Image(s) de référence optionnelle(s). Pour inclure plusieurs images, utilisez le nœud Batch Images (jusqu’à 14)."
+      },
+      "model": {
+        "name": "modèle"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Invite textuelle décrivant l’image à générer ou les modifications à appliquer. Incluez toutes contraintes, styles ou détails que le modèle doit respecter."
+      },
+      "resolution": {
+        "name": "résolution",
+        "tooltip": "Résolution de sortie cible. Pour le 2K/4K, l’upscaler natif Gemini est utilisé."
+      },
+      "response_modalities": {
+        "name": "modalités de réponse"
+      },
+      "seed": {
+        "name": "graine",
+        "tooltip": "Lorsque la graine est fixée à une valeur spécifique, le modèle s’efforce de fournir la même réponse pour des requêtes répétées. Un résultat déterministe n’est pas garanti. De plus, changer le modèle ou les paramètres, comme la température, peut entraîner des variations de la réponse même avec la même valeur de graine. Par défaut, une graine aléatoire est utilisée."
+      },
+      "system_prompt": {
+        "name": "invite système",
+        "tooltip": "Instructions fondamentales qui dictent le comportement de l’IA."
+      },
+      "thinking_level": {
+        "name": "niveau de réflexion"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "GeminiNode": {
     "description": "Génère des réponses textuelles avec le modèle d'IA Gemini de Google. Vous pouvez fournir plusieurs types d'entrées (texte, images, audio, vidéo) comme contexte pour générer des réponses plus pertinentes et significatives.",
     "display_name": "Google Gemini",
@@ -4746,6 +4825,28 @@
     "inputs": {
       "image": {
         "name": "image"
+      }
+    }
+  },
+  "ImageMergeTileList": {
+    "display_name": "Fusionner une liste de tuiles en image",
+    "inputs": {
+      "final_height": {
+        "name": "hauteur_finale"
+      },
+      "final_width": {
+        "name": "largeur_finale"
+      },
+      "image_list": {
+        "name": "liste_d'images"
+      },
+      "overlap": {
+        "name": "chevauchement"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -12698,6 +12799,30 @@
       }
     }
   },
+  "ResolutionSelector": {
+    "description": "Calcule la largeur et la hauteur à partir du ratio d'aspect et de la cible en mégapixels. Utile pour définir les dimensions d'une image latente vide.",
+    "display_name": "Sélecteur de résolution",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "ratio d'aspect",
+        "tooltip": "Le ratio d'aspect pour les dimensions de sortie."
+      },
+      "megapixels": {
+        "name": "mégapixels",
+        "tooltip": "Nombre total de mégapixels visé. 1,0 MP ≈ 1024×1024 pour un carré."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "largeur",
+        "tooltip": "Largeur calculée en pixels (multiple de 8)."
+      },
+      "1": {
+        "name": "hauteur",
+        "tooltip": "Hauteur calculée en pixels (multiple de 8)."
+      }
+    }
+  },
   "Rodin3D_Detail": {
     "description": "Générer des actifs 3D en utilisant l'API Rodin",
     "display_name": "Rodin 3D Générer - Générer Détails",
@@ -12954,6 +13079,90 @@
     "outputs": {
       "0": {
         "tooltip": null
+      }
+    }
+  },
+  "SDPoseDrawKeypoints": {
+    "display_name": "SDPoseDrawKeypoints",
+    "inputs": {
+      "draw_body": {
+        "name": "draw_body"
+      },
+      "draw_face": {
+        "name": "draw_face"
+      },
+      "draw_feet": {
+        "name": "draw_feet"
+      },
+      "draw_hands": {
+        "name": "draw_hands"
+      },
+      "face_point_size": {
+        "name": "face_point_size"
+      },
+      "keypoints": {
+        "name": "keypoints"
+      },
+      "score_threshold": {
+        "name": "score_threshold"
+      },
+      "stick_width": {
+        "name": "stick_width"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SDPoseFaceBBoxes": {
+    "display_name": "SDPoseFaceBBoxes",
+    "inputs": {
+      "force_square": {
+        "name": "force_square",
+        "tooltip": "Agrandir l’axe le plus court de la boîte pour que la région découpée soit toujours carrée."
+      },
+      "keypoints": {
+        "name": "keypoints"
+      },
+      "scale": {
+        "name": "scale",
+        "tooltip": "Multiplicateur pour la zone de la boîte englobante autour de chaque visage détecté."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "bboxes",
+        "tooltip": "Boîtes englobantes des visages par image, compatibles avec l’entrée bboxes de SDPoseKeypointExtractor."
+      }
+    }
+  },
+  "SDPoseKeypointExtractor": {
+    "description": "Extraire les points clés de pose à partir d’images en utilisant le modèle SDPose : https://huggingface.co/Comfy-Org/SDPose/tree/main/checkpoints",
+    "display_name": "SDPoseKeypointExtractor",
+    "inputs": {
+      "batch_size": {
+        "name": "batch_size"
+      },
+      "bboxes": {
+        "name": "bboxes",
+        "tooltip": "Boîtes englobantes optionnelles pour des détections plus précises. Requis pour la détection multi-personnes."
+      },
+      "image": {
+        "name": "image"
+      },
+      "model": {
+        "name": "model"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "keypoints",
+        "tooltip": "Points clés au format OpenPose (canvas_width, canvas_height, people)"
       }
     }
   },
@@ -14031,6 +14240,29 @@
       },
       "1": {
         "name": "droite",
+        "tooltip": null
+      }
+    }
+  },
+  "SplitImageToTileList": {
+    "description": "Divise une image en une liste groupée de tuiles avec un chevauchement spécifié.",
+    "display_name": "Diviser l'image en liste de tuiles",
+    "inputs": {
+      "image": {
+        "name": "image"
+      },
+      "overlap": {
+        "name": "chevauchement"
+      },
+      "tile_height": {
+        "name": "hauteur_tuile"
+      },
+      "tile_width": {
+        "name": "largeur_tuile"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }

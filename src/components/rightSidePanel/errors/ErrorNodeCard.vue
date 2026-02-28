@@ -17,24 +17,26 @@
       >
         {{ card.nodeTitle }}
       </span>
-      <Button
-        v-if="card.isSubgraphNode"
-        variant="secondary"
-        size="sm"
-        class="rounded-lg text-sm shrink-0"
-        @click.stop="handleEnterSubgraph"
-      >
-        {{ t('rightSidePanel.enterSubgraph') }}
-      </Button>
-      <Button
-        variant="textonly"
-        size="icon-sm"
-        class="size-7 text-muted-foreground hover:text-base-foreground shrink-0"
-        :aria-label="t('rightSidePanel.locateNode')"
-        @click.stop="handleLocateNode"
-      >
-        <i class="icon-[lucide--locate] size-3.5" />
-      </Button>
+      <div class="flex items-center shrink-0">
+        <Button
+          v-if="card.isSubgraphNode"
+          variant="secondary"
+          size="sm"
+          class="rounded-lg text-sm shrink-0 h-8"
+          @click.stop="handleEnterSubgraph"
+        >
+          {{ t('rightSidePanel.enterSubgraph') }}
+        </Button>
+        <Button
+          variant="textonly"
+          size="icon-sm"
+          class="size-8 text-muted-foreground hover:text-base-foreground shrink-0"
+          :aria-label="t('rightSidePanel.locateNode')"
+          @click.stop="handleLocateNode"
+        >
+          <i class="icon-[lucide--locate] size-4" />
+        </Button>
+      </div>
     </div>
 
     <!-- Multiple Errors within one Card -->

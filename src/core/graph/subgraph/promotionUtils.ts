@@ -227,6 +227,29 @@ export function promoteRecommendedWidgets(subgraphNode: SubgraphNode) {
     // defer. Core $$ preview widgets are the lazy path that needs updatePreviews.
     if (hasPreviewWidget()) continue
 
+    // Nodes in CANVAS_IMAGE_PREVIEW_NODE_TYPES support a virtual $$
+    // preview widget. Eagerly promote it so getPseudoWidgetPreviewTargets
+    // includes this node and onDrawBackground can call updatePreviews on it
+    // once execution outputs arrive.
+    if (supportsVirtualCanvasImagePreview(node)) {
+      if (
+        !store.isPromoted(
+          subgraphNode.rootGraph.id,
+          subgraphNode.id,
+          String(node.id),
+          CANVAS_IMAGE_PREVIEW_WIDGET
+        )
+      ) {
+        store.promote(
+          subgraphNode.rootGraph.id,
+          subgraphNode.id,
+          String(node.id),
+          CANVAS_IMAGE_PREVIEW_WIDGET
+        )
+      }
+      continue
+    }
+
     // Also schedule a deferred check: core $$ widgets are created lazily by
     // updatePreviews when node outputs are first loaded.
     requestAnimationFrame(() => updatePreviews(node, promotePreviewWidget))

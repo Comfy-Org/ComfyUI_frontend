@@ -318,10 +318,6 @@ export class TaskItemImpl {
     return this.jobId + this.displayStatus
   }
 
-  get queueIndex() {
-    return this.job.priority
-  }
-
   get jobId() {
     return this.job.id
   }
@@ -505,8 +501,8 @@ export const useQueueStore = defineStore('queue', () => {
     tasks.value.flatMap((task: TaskItemImpl) => task.flatten())
   )
 
-  const lastHistoryQueueIndex = computed<number>(() =>
-    historyTasks.value.length ? historyTasks.value[0].queueIndex : -1
+  const lastJobHistoryPriority = computed<number>(() =>
+    historyTasks.value.length ? historyTasks.value[0].job.priority : -1
   )
 
   const hasPendingTasks = computed<boolean>(() => pendingTasks.value.length > 0)
@@ -617,7 +613,7 @@ export const useQueueStore = defineStore('queue', () => {
 
     tasks,
     flatTasks,
-    lastHistoryQueueIndex,
+    lastJobHistoryPriority,
     hasPendingTasks,
     activeJobsCount,
 

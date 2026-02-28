@@ -67,7 +67,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, defineAsyncComponent, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import JobFilterActions from '@/components/queue/job/JobFilterActions.vue'
@@ -86,11 +86,17 @@ import SidebarTabTemplate from '@/components/sidebar/tabs/SidebarTabTemplate.vue
 import ResultGallery from '@/components/sidebar/tabs/queue/ResultGallery.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useCommandStore } from '@/stores/commandStore'
+import { useDialogStore } from '@/stores/dialogStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useQueueStore } from '@/stores/queueStore'
 
+const Load3dViewerContent = defineAsyncComponent(
+  () => import('@/components/load3d/Load3dViewerContent.vue')
+)
+
 const { t, n } = useI18n()
 const commandStore = useCommandStore()
+const dialogStore = useDialogStore()
 const executionStore = useExecutionStore()
 const queueStore = useQueueStore()
 const { showQueueClearHistoryDialog } = useQueueClearHistoryDialog()
@@ -151,6 +157,24 @@ const {
 } = useResultGallery(() => filteredTasks.value)
 
 const onViewItem = wrapWithErrorHandlingAsync(async (item: JobListItem) => {
+  const previewOutput = item.taskRef?.previewOutput
+
+  if (previewOutput?.is3D) {
+    dialogStore.showDialog({
+      key: 'asset-3d-viewer',
+      title: item.title,
+      component: Load3dViewerContent,
+      props: {
+        modelUrl: previewOutput.url || ''
+      },
+      dialogComponentProps: {
+        style: 'width: 80vw; height: 80vh;',
+        maximizable: true
+      }
+    })
+    return
+  }
+
   await openResultGallery(item)
 })
 

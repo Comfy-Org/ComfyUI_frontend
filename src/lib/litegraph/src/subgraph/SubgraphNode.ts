@@ -42,10 +42,15 @@ import { ExecutableNodeDTO } from './ExecutableNodeDTO'
 import type { ExecutableLGraphNode, ExecutionId } from './ExecutableNodeDTO'
 import { PromotedWidgetViewManager } from './PromotedWidgetViewManager'
 import type { SubgraphInput } from './SubgraphInput'
+import { createBitmapCache } from './svgBitmapCache'
 
 const workflowSvg = new Image()
 workflowSvg.src =
   "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' width='16' height='16'%3E%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 16 16'%3E%3Cpath stroke='white' stroke-linecap='round' stroke-width='1.3' d='M9.18613 3.09999H6.81377M9.18613 12.9H7.55288c-3.08678 0-5.35171-2.99581-4.60305-6.08843l.3054-1.26158M14.7486 2.1721l-.5931 2.45c-.132.54533-.6065.92789-1.1508.92789h-2.2993c-.77173 0-1.33797-.74895-1.1508-1.5221l.5931-2.45c.132-.54533.6065-.9279 1.1508-.9279h2.2993c.7717 0 1.3379.74896 1.1508 1.52211Zm-8.3033 0-.59309 2.45c-.13201.54533-.60646.92789-1.15076.92789H2.4021c-.7717 0-1.33793-.74895-1.15077-1.5221l.59309-2.45c.13201-.54533.60647-.9279 1.15077-.9279h2.29935c.77169 0 1.33792.74896 1.15076 1.52211Zm8.3033 9.8-.5931 2.45c-.132.5453-.6065.9279-1.1508.9279h-2.2993c-.77173 0-1.33797-.749-1.1508-1.5221l.5931-2.45c.132-.5453.6065-.9279 1.1508-.9279h2.2993c.7717 0 1.3379.7489 1.1508 1.5221Z'/%3E%3C/svg%3E %3C/svg%3E"
+
+// Pre-rasterize the SVG to a bitmap canvas to avoid Firefox re-processing
+// the SVG's internal stylesheet on every ctx.drawImage() call per frame.
+const workflowBitmapCache = createBitmapCache(workflowSvg, 32)
 
 /**
  * An instance of a {@link Subgraph}, displayed as a node on the containing (parent) graph.
@@ -726,7 +731,13 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     if (!low_quality) {
       ctx.translate(25, 23)
       ctx.scale(-1.5, 1.5)
-      ctx.drawImage(workflowSvg, 0, -title_height, box_size, box_size)
+      ctx.drawImage(
+        workflowBitmapCache.get(),
+        0,
+        -title_height,
+        box_size,
+        box_size
+      )
     }
     ctx.restore()
   }

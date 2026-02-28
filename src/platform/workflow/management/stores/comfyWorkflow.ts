@@ -2,6 +2,8 @@ import { markRaw } from 'vue'
 
 import { t } from '@/i18n'
 import type { ChangeTracker } from '@/scripts/changeTracker'
+import type { AppMode } from '@/composables/useAppMode'
+import type { NodeId } from '@/lib/litegraph/src/LGraphNode'
 import { UserFile } from '@/stores/userFileStore'
 import type {
   ComfyWorkflowJSON,
@@ -9,11 +11,41 @@ import type {
 } from '@/platform/workflow/validation/schemas/workflowSchema'
 import type { MissingNodeType } from '@/types/comfy'
 
+export interface LinearData {
+  inputs: [NodeId, string][]
+  outputs: NodeId[]
+}
+
 export interface PendingWarnings {
   missingNodeTypes?: MissingNodeType[]
   missingModels?: {
     missingModels: ModelFile[]
     paths: Record<string, string[]>
+  }
+}
+
+type LinearModeTarget = { extra?: Record<string, unknown> | null } | null
+
+export function syncLinearMode(
+  workflow: ComfyWorkflow,
+  targets: LinearModeTarget[],
+  options?: { flushLinearData?: boolean }
+): void {
+  for (const target of targets) {
+    if (!target) continue
+    if (workflow.initialMode === 'app' || workflow.initialMode === 'graph') {
+      const extra = (target.extra ??= {})
+      extra.linearMode = workflow.initialMode === 'app'
+    } else {
+      delete target.extra?.linearMode
+    }
+    if (options?.flushLinearData && workflow.dirtyLinearData) {
+      const extra = (target.extra ??= {})
+      extra.linearData = workflow.dirtyLinearData
+    }
+  }
+  if (options?.flushLinearData && workflow.dirtyLinearData) {
+    workflow.dirtyLinearData = null
   }
 }
 
@@ -33,6 +65,23 @@ export class ComfyWorkflow extends UserFile {
    * Warnings deferred from load time, shown when the workflow is first focused.
    */
   pendingWarnings: PendingWarnings | null = null
+  /**
+   * Initial app mode derived from the serialized workflow (extra.linearMode).
+   * - `undefined`: not yet resolved (first load hasn't happened)
+   * - `null`: resolved, but no mode was set (never builder-saved)
+   * - `AppMode`: resolved to a specific mode
+   */
+  initialMode: AppMode | null | undefined = undefined
+  /**
+   * Current app mode set by the user during the session.
+   * Takes precedence over initialMode when present.
+   */
+  activeMode: AppMode | null = null
+  /**
+   * In-progress builder selections not yet persisted via save.
+   * Preserved across tab switches, discarded on exitBuilder.
+   */
+  dirtyLinearData: LinearData | null = null
 
   /**
    * @param options The path, modified, and size of the workflow.
@@ -129,6 +178,7 @@ export class ComfyWorkflow extends UserFile {
 
   override unload(): void {
     this.changeTracker = null
+    this.activeMode = null
     super.unload()
   }
 

@@ -189,25 +189,36 @@ export function useNodeResize(
       }
     }
 
+    const cleanup = () => {
+      if (!isResizing.value) return
+      isResizing.value = false
+      layoutStore.isResizingVueNodes.value = false
+      resizeStartPointer.value = null
+      resizeStartSize.value = null
+      resizeStartPosition.value = null
+
+      // Stop tracking shift key state
+      stopShiftSync()
+
+      stopMoveListen()
+      stopUpListen()
+      stopCancelListen()
+    }
+
     const handlePointerUp = (upEvent: PointerEvent) => {
       if (isResizing.value) {
-        isResizing.value = false
-        layoutStore.isResizingVueNodes.value = false
-        resizeStartPointer.value = null
-        resizeStartSize.value = null
-        resizeStartPosition.value = null
-
-        // Stop tracking shift key state
-        stopShiftSync()
-
-        target.releasePointerCapture(upEvent.pointerId)
-        stopMoveListen()
-        stopUpListen()
+        try {
+          target.releasePointerCapture(upEvent.pointerId)
+        } catch {
+          // Pointer capture may already be released
+        }
+        cleanup()
       }
     }
 
     const stopMoveListen = useEventListener('pointermove', handlePointerMove)
     const stopUpListen = useEventListener('pointerup', handlePointerUp)
+    const stopCancelListen = useEventListener('pointercancel', cleanup)
   }
 
   return {

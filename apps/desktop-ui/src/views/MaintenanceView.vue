@@ -114,12 +114,12 @@ import Tag from 'primevue/tag'
 import Toast from 'primevue/toast'
 import { useToast } from 'primevue/usetoast'
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import RefreshButton from '@/components/common/RefreshButton.vue'
 import StatusTag from '@/components/maintenance/StatusTag.vue'
 import TaskListPanel from '@/components/maintenance/TaskListPanel.vue'
 import TerminalOutputDrawer from '@/components/maintenance/TerminalOutputDrawer.vue'
-import { t } from '@/i18n'
 import { useMaintenanceTaskStore } from '@/stores/maintenanceTaskStore'
 import type { MaintenanceFilter } from '@/types/desktop/maintenanceTypes'
 import { electronAPI } from '@/utils/envUtil'
@@ -129,6 +129,7 @@ import BaseViewTemplate from './templates/BaseViewTemplate.vue'
 
 const electron = electronAPI()
 const toast = useToast()
+const { t } = useI18n()
 const taskStore = useMaintenanceTaskStore()
 const { clearResolved, processUpdate, refreshDesktopTasks } = taskStore
 
@@ -220,14 +221,14 @@ onUnmounted(() => electron.Validation.dispose())
 </script>
 
 <style scoped>
-@reference '../assets/css/style.css';
-
 :deep(.p-tag) {
   --p-tag-gap: 0.375rem;
 }
 
 .backspan::before {
-  @apply m-0 absolute text-muted;
+  position: absolute;
+  margin: 0;
+  color: var(--muted-foreground);
   font-family: 'primeicons', sans-serif;
   top: -2rem;
   right: -2rem;

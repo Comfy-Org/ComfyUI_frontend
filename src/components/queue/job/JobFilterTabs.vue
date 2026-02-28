@@ -5,7 +5,7 @@
         v-for="tab in visibleJobTabs"
         :key="tab"
         :variant="selectedJobTab === tab ? 'secondary' : 'muted-textonly'"
-        size="sm"
+        size="md"
         @click="$emit('update:selectedJobTab', tab)"
       >
         {{ tabLabel(tab) }}

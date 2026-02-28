@@ -673,12 +673,11 @@
     }
   },
   "ByteDanceSeedreamNode": {
-    "display_name": "ByteDance Seedream 4.5",
+    "display_name": "ByteDance Seedream 4.5 & 5.0",
     "description": "Unified text-to-image generation and precise single-sentence editing at up to 4K resolution.",
     "inputs": {
       "model": {
-        "name": "model",
-        "tooltip": "Model name"
+        "name": "model"
       },
       "prompt": {
         "name": "prompt",
@@ -690,7 +689,7 @@
       },
       "image": {
         "name": "image",
-        "tooltip": "Input image(s) for image-to-image generation. List of 1-10 images for single or multi-reference generation."
+        "tooltip": "Input image(s) for image-to-image generation. Reference image(s) for single or multi-reference generation."
       },
       "width": {
         "name": "width",
@@ -2135,6 +2134,35 @@
     "outputs": {
       "0": {
         "tooltip": null
+      }
+    }
+  },
+  "CropByBBoxes": {
+    "display_name": "CropByBBoxes",
+    "description": "Crop and resize regions from the input image batch based on provided bounding boxes.",
+    "inputs": {
+      "image": {
+        "name": "image"
+      },
+      "bboxes": {
+        "name": "bboxes"
+      },
+      "output_width": {
+        "name": "output_width",
+        "tooltip": "Width each crop is resized to."
+      },
+      "output_height": {
+        "name": "output_height",
+        "tooltip": "Height each crop is resized to."
+      },
+      "padding": {
+        "name": "padding",
+        "tooltip": "Extra padding in pixels added on each side of the bbox before cropping."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "All crops stacked into a single image batch."
       }
     }
   },
@@ -3602,6 +3630,57 @@
       }
     }
   },
+  "GeminiNanoBanana2": {
+    "display_name": "Nano Banana 2",
+    "description": "Generate or edit images synchronously via Google Vertex API.",
+    "inputs": {
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Text prompt describing the image to generate or the edits to apply. Include any constraints, styles, or details the model should follow."
+      },
+      "model": {
+        "name": "model"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "When the seed is fixed to a specific value, the model makes a best effort to provide the same response for repeated requests. Deterministic output isn't guaranteed. Also, changing the model or parameter settings, such as the temperature, can cause variations in the response even when you use the same seed value. By default, a random seed value is used."
+      },
+      "aspect_ratio": {
+        "name": "aspect_ratio",
+        "tooltip": "If set to 'auto', matches your input image's aspect ratio; if no image is provided, a 16:9 square is usually generated."
+      },
+      "resolution": {
+        "name": "resolution",
+        "tooltip": "Target output resolution. For 2K/4K the native Gemini upscaler is used."
+      },
+      "response_modalities": {
+        "name": "response_modalities"
+      },
+      "thinking_level": {
+        "name": "thinking_level"
+      },
+      "images": {
+        "name": "images",
+        "tooltip": "Optional reference image(s). To include multiple images, use the Batch Images node (up to 14)."
+      },
+      "files": {
+        "name": "files",
+        "tooltip": "Optional file(s) to use as context for the model. Accepts inputs from the Gemini Generate Content Input Files node."
+      },
+      "system_prompt": {
+        "name": "system_prompt",
+        "tooltip": "Foundational instructions that dictate an AI's behavior."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "GeminiNode": {
     "display_name": "Google Gemini",
     "description": "Generate text responses with Google's Gemini AI model. You can provide multiple types of inputs (text, images, audio, video) as context for generating more relevant and meaningful responses.",
@@ -4746,6 +4825,28 @@
     "inputs": {
       "image": {
         "name": "image"
+      }
+    }
+  },
+  "ImageMergeTileList": {
+    "display_name": "Merge List of Tiles to Image",
+    "inputs": {
+      "image_list": {
+        "name": "image_list"
+      },
+      "final_width": {
+        "name": "final_width"
+      },
+      "final_height": {
+        "name": "final_height"
+      },
+      "overlap": {
+        "name": "overlap"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -12698,6 +12799,30 @@
       }
     }
   },
+  "ResolutionSelector": {
+    "display_name": "Resolution Selector",
+    "description": "Calculate width and height from aspect ratio and megapixel target. Useful for setting up Empty Latent Image dimensions.",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio",
+        "tooltip": "The aspect ratio for the output dimensions."
+      },
+      "megapixels": {
+        "name": "megapixels",
+        "tooltip": "Target total megapixels. 1.0 MP ≈ 1024×1024 for square."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "width",
+        "tooltip": "Calculated width in pixels (multiple of 8)."
+      },
+      "1": {
+        "name": "height",
+        "tooltip": "Calculated height in pixels (multiple of 8)."
+      }
+    }
+  },
   "Rodin3D_Detail": {
     "display_name": "Rodin 3D Generate - Detail Generate",
     "description": "Generate 3D Assets using Rodin API",
@@ -13669,6 +13794,90 @@
       }
     }
   },
+  "SDPoseDrawKeypoints": {
+    "display_name": "SDPoseDrawKeypoints",
+    "inputs": {
+      "keypoints": {
+        "name": "keypoints"
+      },
+      "draw_body": {
+        "name": "draw_body"
+      },
+      "draw_hands": {
+        "name": "draw_hands"
+      },
+      "draw_face": {
+        "name": "draw_face"
+      },
+      "draw_feet": {
+        "name": "draw_feet"
+      },
+      "stick_width": {
+        "name": "stick_width"
+      },
+      "face_point_size": {
+        "name": "face_point_size"
+      },
+      "score_threshold": {
+        "name": "score_threshold"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SDPoseFaceBBoxes": {
+    "display_name": "SDPoseFaceBBoxes",
+    "inputs": {
+      "keypoints": {
+        "name": "keypoints"
+      },
+      "scale": {
+        "name": "scale",
+        "tooltip": "Multiplier for the bounding box area around each detected face."
+      },
+      "force_square": {
+        "name": "force_square",
+        "tooltip": "Expand the shorter bbox axis so the crop region is always square."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "bboxes",
+        "tooltip": "Face bounding boxes per frame, compatible with SDPoseKeypointExtractor bboxes input."
+      }
+    }
+  },
+  "SDPoseKeypointExtractor": {
+    "display_name": "SDPoseKeypointExtractor",
+    "description": "Extract pose keypoints from images using the SDPose model: https://huggingface.co/Comfy-Org/SDPose/tree/main/checkpoints",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "image": {
+        "name": "image"
+      },
+      "batch_size": {
+        "name": "batch_size"
+      },
+      "bboxes": {
+        "name": "bboxes",
+        "tooltip": "Optional bounding boxes for more accurate detections. Required for multi-person detection."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "keypoints",
+        "tooltip": "Keypoints in OpenPose frame format (canvas_width, canvas_height, people)"
+      }
+    }
+  },
   "SDTurboScheduler": {
     "display_name": "SDTurboScheduler",
     "inputs": {
@@ -13948,6 +14157,29 @@
       },
       "1": {
         "name": "right",
+        "tooltip": null
+      }
+    }
+  },
+  "SplitImageToTileList": {
+    "display_name": "Split Image into List of Tiles",
+    "description": "Splits an image into a batched list of tiles with a specified overlap.",
+    "inputs": {
+      "image": {
+        "name": "image"
+      },
+      "tile_width": {
+        "name": "tile_width"
+      },
+      "tile_height": {
+        "name": "tile_height"
+      },
+      "overlap": {
+        "name": "overlap"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
