@@ -28,6 +28,7 @@ interface WorkflowActionsMenuOptions {
 }
 
 interface AddItemOptions {
+  id: string
   label: string
   icon: string
   command: () => void
@@ -71,6 +72,7 @@ export function useWorkflowActionsMenu(
     const items: WorkflowMenuItem[] = []
 
     const addItem = ({
+      id,
       label,
       icon,
       command,
@@ -81,9 +83,10 @@ export function useWorkflowActionsMenu(
     }: AddItemOptions) => {
       if (!visible) return
       if (prependSeparator) items.push({ separator: true })
-      const item: WorkflowMenuAction = { label, icon, command, disabled }
+      const item: WorkflowMenuAction = { id, label, icon, command, disabled }
       if (isNew) {
-        item.badge = t('contextMenu.new')
+        item.badge = t('g.experimental')
+        item.isNew = true
       }
       items.push(item)
     }
@@ -94,6 +97,7 @@ export function useWorkflowActionsMenu(
     const isBookmarked = bookmarkStore.isBookmarked(workflow?.path ?? '')
 
     addItem({
+      id: 'rename',
       label: t('g.rename'),
       icon: 'pi pi-pencil',
       command: async () => {
@@ -104,6 +108,7 @@ export function useWorkflowActionsMenu(
     })
 
     addItem({
+      id: 'duplicate',
       label: t('breadcrumbsMenu.duplicate'),
       icon: 'pi pi-copy',
       command: async () => {
@@ -115,6 +120,7 @@ export function useWorkflowActionsMenu(
     })
 
     addItem({
+      id: 'toggle-bookmark',
       label: isBookmarked
         ? t('tabMenu.removeFromBookmarks')
         : t('tabMenu.addToBookmarks'),
@@ -129,6 +135,7 @@ export function useWorkflowActionsMenu(
     })
 
     addItem({
+      id: 'save',
       label: t('menuLabels.Save'),
       icon: 'pi pi-save',
       command: async () => {
@@ -140,6 +147,7 @@ export function useWorkflowActionsMenu(
     })
 
     addItem({
+      id: 'save-as',
       label: t('menuLabels.Save As'),
       icon: 'pi pi-save',
       command: async () => {
@@ -150,6 +158,7 @@ export function useWorkflowActionsMenu(
     })
 
     addItem({
+      id: 'export',
       label: t('menuLabels.Export'),
       icon: 'pi pi-download',
       command: async () => {
@@ -161,6 +170,7 @@ export function useWorkflowActionsMenu(
     })
 
     addItem({
+      id: 'export-api',
       label: t('menuLabels.Export (API)'),
       icon: 'pi pi-download',
       command: async () => {
@@ -171,6 +181,7 @@ export function useWorkflowActionsMenu(
     })
 
     addItem({
+      id: 'toggle-app-mode',
       label: isLinearMode
         ? t('breadcrumbsMenu.exitAppMode')
         : t('breadcrumbsMenu.enterAppMode'),
@@ -188,6 +199,7 @@ export function useWorkflowActionsMenu(
     })
 
     addItem({
+      id: 'clear-workflow',
       label: t('breadcrumbsMenu.clearWorkflow'),
       icon: 'pi pi-trash',
       command: async () => {
@@ -198,6 +210,7 @@ export function useWorkflowActionsMenu(
     })
 
     addItem({
+      id: 'publish',
       label: t('subgraphStore.publish'),
       icon: 'pi pi-upload',
       command: async () => {
@@ -210,6 +223,7 @@ export function useWorkflowActionsMenu(
     })
 
     addItem({
+      id: 'delete',
       label: isBlueprint
         ? t('breadcrumbsMenu.deleteBlueprint')
         : t('breadcrumbsMenu.deleteWorkflow'),
