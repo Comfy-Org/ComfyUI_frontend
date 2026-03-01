@@ -22,8 +22,13 @@ export async function initServerCapabilities(): Promise<void> {
         capabilities = Object.freeze(await res.json())
         return
       }
-    } catch {
-      // Retry on network errors
+    } catch (error) {
+      if (error instanceof SyntaxError) {
+        console.warn(
+          '[serverCapabilities] Invalid JSON response, skipping retries'
+        )
+        break
+      }
     }
   }
 

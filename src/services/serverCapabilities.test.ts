@@ -66,6 +66,21 @@ describe('serverCapabilities', () => {
       expect(getServerCapability('supports_preview_metadata')).toBe(true)
     })
 
+    it('stops retrying on JSON parse error (SyntaxError)', async () => {
+      vi.mocked(fetch).mockResolvedValue({
+        ok: true,
+        json: () => Promise.reject(new SyntaxError('Unexpected token'))
+      } as unknown as Response)
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+
+      await initServerCapabilities()
+
+      expect(fetch).toHaveBeenCalledTimes(1)
+      expect(warnSpy).toHaveBeenCalledWith(
+        '[serverCapabilities] Invalid JSON response, skipping retries'
+      )
+    })
+
     it('falls back to empty object on persistent non-ok response', async () => {
       vi.mocked(fetch).mockResolvedValue({
         ok: false,
@@ -102,6 +117,12 @@ describe('serverCapabilities', () => {
 
     it('returns undefined for missing key with no default', () => {
       expect(getServerCapability('missing_key')).toBeUndefined()
+    })
+
+    it('returns undefined for deeply nested non-existent path', () => {
+      expect(
+        getServerCapability('extension.non_existent.deep.path')
+      ).toBeUndefined()
     })
   })
 
