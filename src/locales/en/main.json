@@ -3033,15 +3033,13 @@
   },
   "openSharedWorkflow": {
     "dialogTitle": "Open shared workflow",
-    "sharedBy": "Shared by:",
     "author": "Author:",
     "copyDescription": "Opening the workflow will create a new copy in your workspace",
     "nonPublicAssetsWarningLine1": "This workflow comes with non-public assets.",
     "nonPublicAssetsWarningLine2": "These will be added to your library when you open the workflow",
     "copyAssetsAndOpen": "Copy assets & open workflow",
     "openWorkflow": "Open workflow",
-    "importFailed": "Failed to import workflow assets",
-    "discoveryFailed": "Failed to check workflow assets"
+    "importFailed": "Failed to import workflow assets"
   },
   "comfyHubPublish": {
     "title": "Publish to ComfyHub",
