@@ -634,6 +634,10 @@
   }
 }
 
+@utility bg-subscription-gradient {
+  background: var(--color-subscription-button-gradient);
+}
+
 @utility highlight {
   background-color: color-mix(in srgb, currentColor 20%, transparent);
   font-weight: 700;
