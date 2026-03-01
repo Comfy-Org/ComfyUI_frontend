@@ -490,7 +490,7 @@ export const useWorkflowService = () => {
    * Takes an existing workflow and duplicates it with a new name
    */
   const duplicateWorkflow = async (workflow: ComfyWorkflow) => {
-    if (!workflow.isLoaded) await workflowStore.openWorkflow(workflow)
+    if (!workflow.isLoaded) await workflow.load()
     const state = JSON.parse(JSON.stringify(workflow.activeState))
     // Ensure duplicates are always treated as distinct workflows.
     if (state) state.id = generateUUID()
