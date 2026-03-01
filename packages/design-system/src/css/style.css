@@ -199,9 +199,7 @@
       #3e1ffc 65.17%,
       #009dff 103.86%
     ),
-    linear-gradient(
-      var(--color-button-surface, #2d2e32)
-    );
+    linear-gradient(var(--color-button-surface, #2d2e32));
 
   /* Code styling colors for help menu*/
   --code-text-color: rgb(0 122 255 / 1);
