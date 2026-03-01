@@ -36,6 +36,7 @@ import type {
   IContextMenuValue,
   INodeInputSlot,
   INodeOutputSlot,
+  ISlotType,
   LinkNetwork,
   LinkSegment,
   MethodNames,
@@ -1658,7 +1659,44 @@ export class LGraph
     this._version++
   }
 
-  /** Always returns a valid LLink — callers rely on non-nullable return. */
+  private _createAndRegisterLink(
+    type: ISlotType,
+    originId: NodeId,
+    originSlot: number,
+    targetId: NodeId,
+    targetSlot: number,
+    afterRerouteId?: RerouteId
+  ): LLink {
+    const link = new LLink(
+      ++this.state.lastLinkId,
+      type,
+      originId,
+      originSlot,
+      targetId,
+      targetSlot,
+      afterRerouteId
+    )
+    this._links.set(link.id, link)
+
+    const layoutMutations = useLayoutMutations()
+    layoutMutations.setSource(LayoutSource.Canvas)
+    layoutMutations.createLink(
+      link.id,
+      originId,
+      originSlot,
+      targetId,
+      targetSlot
+    )
+    return link
+  }
+
+  /**
+   * Always returns a valid LLink — callers rely on non-nullable return.
+   *
+   * Note: This method does NOT dispatch `dispatchConnectNodePair`.
+   * Callers (e.g. `LGraphNode.connectSlots`) are responsible for dispatching
+   * connection callbacks after this returns.
+   */
   connectSlots(
     sourceNode: LGraphNode,
     outputIndex: number,
@@ -1671,8 +1709,7 @@ export class LGraph
 
     const maybeCommonType =
       input.type && output.type && commonType(input.type, output.type)
-    const link = new LLink(
-      ++this.state.lastLinkId,
+    const link = this._createAndRegisterLink(
       maybeCommonType || input.type || output.type,
       sourceNode.id,
       outputIndex,
@@ -1681,25 +1718,8 @@ export class LGraph
       afterRerouteId
     )
 
-    // add to graph links list
-    this._links.set(link.id, link)
-
-    const layoutMutations = useLayoutMutations()
-
-    // Register link in Layout Store for spatial tracking
-    layoutMutations.setSource(LayoutSource.Canvas)
-    layoutMutations.createLink(
-      link.id,
-      sourceNode.id,
-      outputIndex,
-      targetNode.id,
-      inputIndex
-    )
-
-    // connect in output
     output.links ??= []
     output.links.push(link.id)
-    // connect in input
     input.link = link.id
     graphLifecycleEventDispatcher.dispatchSlotLinkChanged({
       graph: this,
@@ -1723,8 +1743,7 @@ export class LGraph
   ): LLink {
     const targetInput = targetNode.inputs[targetSlotIndex]
     const subgraphInputIndex = subgraphInput.parent.slots.indexOf(subgraphInput)
-    const link = new LLink(
-      ++this.state.lastLinkId,
+    const link = this._createAndRegisterLink(
       targetInput.type,
       subgraphInput.parent.id,
       subgraphInputIndex,
@@ -1733,20 +1752,17 @@ export class LGraph
       afterRerouteId
     )
 
-    this._links.set(link.id, link)
-
-    const layoutMutations = useLayoutMutations()
-    layoutMutations.setSource(LayoutSource.Canvas)
-    layoutMutations.createLink(
-      link.id,
-      subgraphInput.parent.id,
-      subgraphInputIndex,
-      targetNode.id,
-      targetSlotIndex
-    )
-
     subgraphInput.linkIds.push(link.id)
     targetInput.link = link.id
+    graphLifecycleEventDispatcher.dispatchSlotLinkChanged({
+      graph: this,
+      nodeId: targetNode.id,
+      slotType: NodeSlotType.INPUT,
+      slotIndex: targetSlotIndex,
+      connected: true,
+      linkId: link.id,
+      hasWidget: !!targetInput.widget
+    })
 
     this.finalizeConnectedLink(link)
     return link
@@ -1761,26 +1777,13 @@ export class LGraph
     const sourceOutput = sourceNode.outputs[sourceSlotIndex]
     const subgraphOutputIndex =
       subgraphOutput.parent.slots.indexOf(subgraphOutput)
-    const link = new LLink(
-      ++this.state.lastLinkId,
+    const link = this._createAndRegisterLink(
       sourceOutput.type,
       sourceNode.id,
       sourceSlotIndex,
       subgraphOutput.parent.id,
       subgraphOutputIndex,
       afterRerouteId
-    )
-
-    this._links.set(link.id, link)
-
-    const layoutMutations = useLayoutMutations()
-    layoutMutations.setSource(LayoutSource.Canvas)
-    layoutMutations.createLink(
-      link.id,
-      sourceNode.id,
-      sourceSlotIndex,
-      subgraphOutput.parent.id,
-      subgraphOutputIndex
     )
 
     subgraphOutput.linkIds[0] = link.id
@@ -1791,6 +1794,8 @@ export class LGraph
     return link
   }
 
+  // Versioning: `disconnectLink` / `link.disconnect()` does not increment
+  // `_version`. Each disconnect method is responsible for its own increment.
   disconnectSubgraphInputLink(
     subgraphInput: SubgraphInput,
     targetNode: LGraphNode,

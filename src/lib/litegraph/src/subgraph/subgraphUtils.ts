@@ -52,6 +52,12 @@ export function splitPositionables(
 
   for (const item of items) {
     switch (true) {
+      case item instanceof SubgraphInputNode:
+        subgraphInputNodes.add(item)
+        break
+      case item instanceof SubgraphOutputNode:
+        subgraphOutputNodes.add(item)
+        break
       case item instanceof LGraphNode:
         nodes.add(item)
         break
@@ -60,12 +66,6 @@ export function splitPositionables(
         break
       case item instanceof Reroute:
         reroutes.add(item)
-        break
-      case item instanceof SubgraphInputNode:
-        subgraphInputNodes.add(item)
-        break
-      case item instanceof SubgraphOutputNode:
-        subgraphOutputNodes.add(item)
         break
       default:
         unknown.add(item)
@@ -348,7 +348,7 @@ export function groupResolvedByOutput(
 function mapReroutes(
   link: SerialisableLLink,
   reroutes: Map<RerouteId, Reroute>
-) {
+): RerouteId | undefined {
   let child: SerialisableLLink | Reroute = link
   let nextReroute =
     child.parentId === undefined ? undefined : reroutes.get(child.parentId)

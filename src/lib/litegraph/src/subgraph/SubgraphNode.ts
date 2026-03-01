@@ -433,6 +433,8 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
       { signal }
     )
 
+    // Compat: `.name` now changes on rename (previously only `.label` changed).
+    // Extensions that key on `input.name` should be aware of this.
     subgraphEvents.addEventListener(
       'renaming-input',
       (e) => {

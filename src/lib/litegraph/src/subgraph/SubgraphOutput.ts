@@ -128,11 +128,16 @@ export class SubgraphOutput extends SubgraphSlot {
 
     return false
   }
+  private static _disconnectDeprecationWarned = false
+
   override disconnect() {
     const { subgraph } = this.parent
-    warnDeprecated(
-      '[DEPRECATED] SubgraphOutput.disconnect now dispatches onConnectionsChange for output-node disconnect parity. Remedy: update extension handlers to treat OUTPUT/disconnected callbacks as the canonical disconnect signal and no-op safely if already detached.'
-    )
+    if (!SubgraphOutput._disconnectDeprecationWarned) {
+      SubgraphOutput._disconnectDeprecationWarned = true
+      warnDeprecated(
+        '[DEPRECATED] SubgraphOutput.disconnect now dispatches onConnectionsChange for output-node disconnect parity. Remedy: update extension handlers to treat OUTPUT/disconnected callbacks as the canonical disconnect signal and no-op safely if already detached.'
+      )
+    }
 
     //should never have more than one connection
     for (const linkId of [...this.linkIds]) {

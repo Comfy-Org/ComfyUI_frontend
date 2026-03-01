@@ -44,6 +44,10 @@ function dispatchNodeConnectionChange(params: {
   node?.onConnectionsChange?.(slotType, slotIndex, connected, link, slot)
 }
 
+// Dispatch ordering: connect fires OUTPUT→INPUT; disconnect fires INPUT→OUTPUT
+// (LIFO-style teardown). disconnect accepts SubgraphIO as targetSlot because
+// subgraph output nodes act as inputs inside the subgraph and are passed
+// directly from the disconnect callsite.
 function dispatchConnectNodePair(params: {
   sourceNode: LGraphNode
   sourceSlotIndex: number

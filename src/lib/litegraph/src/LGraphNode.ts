@@ -3087,6 +3087,9 @@ export class LGraphNode
               slot,
               link_info
             )
+            // Compat: onConnectionsChange now fires for subgraph output
+            // disconnects (previously did not). Extensions should handle
+            // OUTPUT/disconnected callbacks idempotently.
             graphLifecycleEventDispatcher.dispatchNodeConnectionChange({
               node: this,
               slotType: NodeSlotType.OUTPUT,

@@ -4,6 +4,10 @@ import type { LinkId, LLink } from '@/lib/litegraph/src/LLink'
 import type { Reroute, RerouteId } from '@/lib/litegraph/src/Reroute'
 import type { UUID } from '@/lib/litegraph/src/utils/uuid'
 
+/**
+ * ReadonlyMap fields are live projections of mutable graph-owned Maps,
+ * not immutable snapshots. Do not cache or rely on referential stability.
+ */
 interface LinkStoreTopology {
   links: ReadonlyMap<LinkId, LLink>
   floatingLinks: ReadonlyMap<LinkId, LLink>

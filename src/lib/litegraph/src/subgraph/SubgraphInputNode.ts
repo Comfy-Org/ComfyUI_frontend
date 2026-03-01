@@ -1,6 +1,6 @@
 import type { CanvasPointer } from '@/lib/litegraph/src/CanvasPointer'
 import type { LGraphNode, NodeId } from '@/lib/litegraph/src/LGraphNode'
-import { LLink } from '@/lib/litegraph/src/LLink'
+import type { LLink } from '@/lib/litegraph/src/LLink'
 import type { RerouteId } from '@/lib/litegraph/src/Reroute'
 import type { LinkConnector } from '@/lib/litegraph/src/canvas/LinkConnector'
 import { SUBGRAPH_INPUT_ID } from '@/lib/litegraph/src/constants'
@@ -92,31 +92,6 @@ export class SubgraphInputNode
     return inputNode.canConnectTo(this, input, fromSlot)
   }
 
-  connectSlots(
-    fromSlot: SubgraphInput,
-    inputNode: LGraphNode,
-    input: INodeInputSlot,
-    afterRerouteId: RerouteId | undefined
-  ): LLink {
-    const { subgraph } = this
-
-    const outputIndex = this.slots.indexOf(fromSlot)
-    const inputIndex = inputNode.inputs.indexOf(input)
-
-    if (outputIndex === -1 || inputIndex === -1)
-      throw new Error('Invalid slot indices.')
-
-    return new LLink(
-      ++subgraph.state.lastLinkId,
-      input.type || fromSlot.type,
-      this.id,
-      outputIndex,
-      inputNode.id,
-      inputIndex,
-      afterRerouteId
-    )
-  }
-
   // #region Legacy LGraphNode compatibility
 
   connectByType(
@@ -203,6 +178,9 @@ export class SubgraphInputNode
     subgraph.disconnectSubgraphInputLink(subgraphInput, node, slotIndex, link)
     subgraph.setDirtyCanvas(false, true)
 
+    // Compat: onConnectionsChange 5th arg is now the INodeInputSlot (previously
+    // passed the SubgraphInput). Extensions relying on the old type should
+    // adapt to accept INodeInputSlot.
     graphLifecycleEventDispatcher.dispatchNodeConnectionChange({
       node,
       slotType: NodeSlotType.INPUT,
