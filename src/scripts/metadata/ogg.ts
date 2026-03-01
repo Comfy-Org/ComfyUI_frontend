@@ -1,30 +1,124 @@
 export async function getOggMetadata(file: File) {
-  const reader = new FileReader()
-  const read_process = new Promise(
-    (r) => (reader.onload = (event) => r(event?.target?.result))
-  )
-  reader.readAsArrayBuffer(file)
-  const arrayBuffer = (await read_process) as ArrayBuffer
-  const signature = String.fromCharCode(...new Uint8Array(arrayBuffer, 0, 4))
-  if (signature !== 'OggS') console.error('Invalid file signature.')
-  let oggs = 0
-  let header = ''
-  while (header.length < arrayBuffer.byteLength) {
-    const page = String.fromCharCode(
-      ...new Uint8Array(arrayBuffer, header.length, header.length + 4096)
+  // Read the entire file into memory (Opus files are generally small enough)
+  const arrayBuffer = await file.arrayBuffer()
+  const data = new Uint8Array(arrayBuffer)
+  const decoder = new TextDecoder('utf-8')
+
+  // Sequentially trace Ogg pages to extract segments of the 'OpusTags' packet containing metadata
+  const segments = extractOpusTags(data, decoder)
+  if (segments.length === 0) {
+    console.error(
+      'Ogg metadata parsing failed: No OpusTags found or invalid Ogg file'
     )
-    if (page.match('OggS\u0000')) oggs++
-    header += page
-    if (oggs > 1) break
+    return { prompt: undefined, workflow: undefined }
   }
-  let workflow, prompt
-  let prompt_s = header
-    .match(/prompt=(\{.*?(\}.*?\u0000))/s)?.[1]
-    ?.match(/\{.*\}/)?.[0]
-  if (prompt_s) prompt = JSON.parse(prompt_s)
-  let workflow_s = header
-    .match(/workflow=(\{.*?(\}.*?\u0000))/s)?.[1]
-    ?.match(/\{.*\}/)?.[0]
-  if (workflow_s) workflow = JSON.parse(workflow_s)
+
+  // Concatenate the extracted segments to reconstruct the complete OpusTags packet (binary data)
+  const packetData = new Uint8Array(
+    segments.reduce((sum, seg) => sum + seg.length, 0)
+  )
+  let currentOffset = 0
+  for (const seg of segments) {
+    packetData.set(seg, currentOffset)
+    currentOffset += seg.length
+  }
+
+  // Parse the reconstructed packet according to the Vorbis Comments specification to extract JSON
+  return parseVorbisComments(packetData, decoder)
+}
+
+function extractOpusTags(data: Uint8Array, decoder: TextDecoder): Uint8Array[] {
+  const OGG_HEADER_SIZE = 27 // Base size of the Ogg page header (from magic number to just before segment count)
+  const OGG_PAGE_SEGMENTS_OFFSET = 26 // Offset position where the number of segments in the page is stored
+  const OGG_MAX_SEGMENT_SIZE = 255 // Ogg spec: the maximum size of a single segment is 255 bytes
+
+  const segments: Uint8Array[] = []
+  let offset = 0
+  let inOpusTags = false
+
+  while (offset + OGG_HEADER_SIZE < data.length) {
+    const pageSignature = decoder.decode(data.subarray(offset, offset + 4))
+    if (pageSignature !== 'OggS') break
+
+    const pageSegmentsCount = data[offset + OGG_PAGE_SEGMENTS_OFFSET]
+    const lengthsOffset = offset + OGG_HEADER_SIZE
+    let dataOffset = lengthsOffset + pageSegmentsCount
+
+    if (dataOffset > data.length) break
+
+    let pageProcessingEnded = false
+
+    for (let i = 0; i < pageSegmentsCount; i++) {
+      const segmentLength = data[lengthsOffset + i]
+      const segment = data.subarray(dataOffset, dataOffset + segmentLength)
+      dataOffset += segmentLength
+
+      if (!inOpusTags) {
+        const segmentMagic = decoder.decode(segment.subarray(0, 8))
+        if (segmentMagic === 'OpusTags') {
+          inOpusTags = true
+        }
+      }
+
+      if (inOpusTags) {
+        segments.push(segment)
+        // Ogg lacing spec: If a segment length is less than 255 (OGG_MAX_SEGMENT_SIZE),
+        // it marks the end of the current packet (data chunk)
+        if (segmentLength < OGG_MAX_SEGMENT_SIZE) {
+          pageProcessingEnded = true
+          break
+        }
+      }
+    }
+
+    if (pageProcessingEnded) break
+    offset = dataOffset
+  }
+
+  return segments
+}
+
+function parseVorbisComments(packetData: Uint8Array, decoder: TextDecoder) {
+  let readIndex = 8 // Skip 'OpusTags' magic string (8 bytes)
+  const packetView = new DataView(
+    packetData.buffer,
+    packetData.byteOffset,
+    packetData.byteLength
+  )
+
+  // Skip vendor string length (4 bytes) + vendor string
+  const vendorLength = packetView.getUint32(readIndex, true)
+  readIndex += 4 + vendorLength
+
+  // Get the number of user comments
+  const userCommentListLength = packetView.getUint32(readIndex, true)
+  readIndex += 4
+
+  let prompt, workflow
+  for (let i = 0; i < userCommentListLength; i++) {
+    // Vorbis Comments spec: Get comment length (32-bit little-endian)
+    const commentLength = packetView.getUint32(readIndex, true)
+    readIndex += 4
+
+    // Extract and decode the comment string (UTF-8)
+    const text = decoder.decode(
+      packetData.subarray(readIndex, readIndex + commentLength)
+    )
+    readIndex += commentLength
+
+    const separatorIndex = text.indexOf('=')
+    if (separatorIndex !== -1) {
+      const key = text.substring(0, separatorIndex)
+      const value = text.substring(separatorIndex + 1)
+      if (key === 'prompt') {
+        prompt = JSON.parse(value)
+      } else if (key === 'workflow') {
+        workflow = JSON.parse(value)
+      }
+    }
+
+    if (prompt !== undefined && workflow !== undefined) break
+  }
+
   return { prompt, workflow }
 }
