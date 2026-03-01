@@ -106,8 +106,8 @@ describe('OpenSharedWorkflowDialogContent', () => {
         workflowName: 'My Workflow',
         ...assetsProps
       })
-      const header = wrapper.find('header span')
-      expect(header.text()).toBe('My Workflow')
+      const title = wrapper.find('main h2')
+      expect(title.text()).toBe('My Workflow')
     })
 
     it('shows "Copy assets & open workflow" as primary CTA', () => {
