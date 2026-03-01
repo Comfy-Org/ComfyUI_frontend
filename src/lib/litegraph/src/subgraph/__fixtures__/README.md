@@ -18,8 +18,8 @@ A subgraph in LiteGraph is a graph-within-a-graph that can be reused as a single
 import {
   createTestSubgraph,
   assertSubgraphStructure
-} from './fixtures/subgraphHelpers'
-import { subgraphTest } from './fixtures/subgraphFixtures'
+} from './__fixtures__/subgraphHelpers'
+import { subgraphTest } from './__fixtures__/subgraphFixtures'
 
 // Option 1: Create a subgraph manually
 it('should do something', () => {

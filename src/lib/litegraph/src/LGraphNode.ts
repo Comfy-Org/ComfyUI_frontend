@@ -10,7 +10,11 @@ import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMuta
 import { LayoutSource } from '@/renderer/core/layout/types'
 import { adjustColor } from '@/utils/colorUtil'
 import type { ColorAdjustOptions } from '@/utils/colorUtil'
-import { commonType, toClass } from '@/lib/litegraph/src/utils/type'
+import {
+  commonType,
+  isNodeBindable,
+  toClass
+} from '@/lib/litegraph/src/utils/type'
 
 import { SUBGRAPH_OUTPUT_ID } from '@/lib/litegraph/src/constants'
 import type { DragAndScale } from './DragAndScale'
@@ -393,6 +397,10 @@ export class LGraphNode
   action_call?: string
   execute_triggered?: number
   action_triggered?: number
+  /**
+   * @deprecated This property is unsupported and will be removed in a future release.
+   * Use `widgets_start_y` or a custom `arrange()` override instead.
+   */
   widgets_up?: boolean
   widgets_start_y?: number
   lostFocusAt?: number
@@ -482,6 +490,17 @@ export class LGraphNode
 
     this._pos[0] = value[0]
     this._pos[1] = value[1]
+
+    const mutations = useLayoutMutations()
+    mutations.setSource(LayoutSource.Canvas)
+    mutations.moveNode(String(this.id), { x: value[0], y: value[1] })
+  }
+
+  /**
+   * Set the node position to an absolute location.
+   */
+  setPos(x: number, y: number): void {
+    this.pos = [x, y]
   }
 
   public get size() {
@@ -493,6 +512,13 @@ export class LGraphNode
 
     this._size[0] = value[0]
     this._size[1] = value[1]
+
+    const mutations = useLayoutMutations()
+    mutations.setSource(LayoutSource.Canvas)
+    mutations.resizeNode(String(this.id), {
+      width: value[0],
+      height: value[1]
+    })
   }
 
   /**
@@ -893,6 +919,14 @@ export class LGraphNode
     // Sync the state of this.resizable.
     if (this.pinned) this.resizable = false
 
+    if (this.widgets_up) {
+      console.warn(
+        `[LiteGraph] Node type "${this.type}" uses deprecated property "widgets_up". ` +
+          'This property is unsupported and will be removed. ' +
+          'Use "widgets_start_y" or a custom arrange() override instead.'
+      )
+    }
+
     this.onConfigure?.(info)
   }
 
@@ -931,8 +965,12 @@ export class LGraphNode
       o.widgets_values = []
       for (const [i, widget] of widgets.entries()) {
         if (widget.serialize === false) continue
-        // @ts-expect-error #595 No-null
-        o.widgets_values[i] = widget ? widget.value : null
+        const val = widget?.value
+        // Ensure object values are plain (not reactive proxies) for structuredClone compatibility.
+        o.widgets_values[i] =
+          val != null && typeof val === 'object'
+            ? JSON.parse(JSON.stringify(val))
+            : (val ?? null)
       }
     }
 
@@ -1945,6 +1983,14 @@ export class LGraphNode
     this.widgets ||= []
     const widget = toConcreteWidget(custom_widget, this, false) ?? custom_widget
     this.widgets.push(widget)
+
+    // Only register with store if node has a valid ID (is already in a graph).
+    // If the node isn't in a graph yet (id === -1), registration happens
+    // when the node is added via LGraph.add() -> node.onAdded.
+    if (this.id !== -1 && isNodeBindable(widget)) {
+      widget.setNodeId(this.id)
+    }
+
     return widget
   }
 
@@ -2008,8 +2054,7 @@ export class LGraphNode
       return
     }
 
-    this.pos[0] += deltaX
-    this.pos[1] += deltaY
+    this.pos = [this._pos[0] + deltaX, this._pos[1] + deltaY]
   }
 
   /**
@@ -3487,7 +3532,7 @@ export class LGraphNode
    * Toggles advanced mode of the node, showing advanced widgets
    */
   toggleAdvanced() {
-    if (!this.widgets?.some((w) => w.advanced)) return
+    if (!this.hasAdvancedWidgets()) return
     if (!this.graph) throw new NullGraphError()
     this.graph._version++
     this.showAdvanced = !this.showAdvanced
@@ -3865,6 +3910,21 @@ export class LGraphNode
     return !isHidden
   }
 
+  /**
+   * Returns all widgets that should participate in layout calculations.
+   * Filters out hidden widgets only (not collapsed/advanced).
+   */
+  getLayoutWidgets(): IBaseWidget[] {
+    return this.widgets?.filter((w) => !w.hidden) ?? []
+  }
+
+  /**
+   * Returns `true` if the node has any advanced widgets.
+   */
+  hasAdvancedWidgets(): boolean {
+    return this.widgets?.some((w) => w.advanced) ?? false
+  }
+
   updateComputedDisabled() {
     if (!this.widgets) return
     for (const widget of this.widgets)
@@ -4075,7 +4135,7 @@ export class LGraphNode
       w: IBaseWidget
     }[] = []
 
-    const visibleWidgets = this.widgets.filter((w) => !w.hidden)
+    const visibleWidgets = this.getLayoutWidgets()
 
     for (const w of visibleWidgets) {
       if (w.computeSize) {
@@ -4127,7 +4187,12 @@ export class LGraphNode
     // Ref: https://github.com/Comfy-Org/ComfyUI_frontend/issues/2652
     // TODO: Move the layout logic before drawing of the node shape, so we don't
     // need to trigger extra round of rendering.
-    if (y > bodyHeight) {
+    // In Vue mode, the DOM is the source of truth for node sizing — the
+    // ResizeObserver feeds measurements back to the layout store.  Allowing
+    // LiteGraph to also call setSize() here creates an infinite feedback loop
+    // (LG grows node → CSS min-height increases → textarea fills extra space →
+    // ResizeObserver reports larger size → LG grows node again).
+    if (!LiteGraph.vueNodesMode && y > bodyHeight) {
       this.setSize([this.size[0], y])
       this.graph.setDirtyCanvas(false, true)
     }

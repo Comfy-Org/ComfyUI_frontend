@@ -160,14 +160,15 @@
 
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import { BrushShape } from '@/extensions/core/maskeditor/types'
-import { t } from '@/i18n'
 import { useMaskEditorStore } from '@/stores/maskEditorStore'
 import { cn } from '@/utils/tailwindUtil'
 
 import SliderControl from './controls/SliderControl.vue'
 
+const { t } = useI18n()
 const store = useMaskEditorStore()
 
 const colorInputRef = ref<HTMLInputElement>()

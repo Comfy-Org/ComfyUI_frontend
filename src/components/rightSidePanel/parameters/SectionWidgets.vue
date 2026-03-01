@@ -3,15 +3,20 @@ import { computed, inject, provide, ref, shallowRef, watchEffect } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
-import { isProxyWidget } from '@/core/graph/subgraph/proxyWidget'
-import { parseProxyWidgets } from '@/core/schemas/proxyWidget'
-import type {
-  LGraphGroup,
-  LGraphNode,
-  SubgraphNode
-} from '@/lib/litegraph/src/litegraph'
+import { isPromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetTypes'
+import type { LGraphGroup, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { SubgraphNode } from '@/lib/litegraph/src/litegraph'
+import { usePromotionStore } from '@/stores/promotionStore'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { useExecutionErrorStore } from '@/stores/executionErrorStore'
+import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
+import { useSettingStore } from '@/platform/settings/settingStore'
+import { cn } from '@/utils/tailwindUtil'
+import { isGroupNode } from '@/utils/executableGroupNodeDto'
+import { useNodeDefStore } from '@/stores/nodeDefStore'
+import { getWidgetDefaultValue } from '@/utils/widgetUtil'
+import type { WidgetValue } from '@/utils/widgetUtil'
 
 import PropertiesAccordionItem from '../layout/PropertiesAccordionItem.vue'
 import { HideLayoutFieldKey } from '@/types/widgetTypes'
@@ -57,31 +62,35 @@ watchEffect(() => (widgets.value = widgetsProp))
 provide(HideLayoutFieldKey, true)
 
 const canvasStore = useCanvasStore()
+const executionErrorStore = useExecutionErrorStore()
+const rightSidePanelStore = useRightSidePanelStore()
+const nodeDefStore = useNodeDefStore()
 const { t } = useI18n()
 
 const getNodeParentGroup = inject(GetNodeParentGroupKey, null)
+
+const promotionStore = usePromotionStore()
 
 function isWidgetShownOnParents(
   widgetNode: LGraphNode,
   widget: IBaseWidget
 ): boolean {
-  if (!parents.length) return false
-  const proxyWidgets = parseProxyWidgets(parents[0].properties.proxyWidgets)
-
-  // For proxy widgets (already promoted), check using overlay information
-  if (isProxyWidget(widget)) {
-    return proxyWidgets.some(
-      ([nodeId, widgetName]) =>
-        widget._overlay.nodeId == nodeId &&
-        widget._overlay.widgetName === widgetName
+  return parents.some((parent) => {
+    if (isPromotedWidgetView(widget)) {
+      return promotionStore.isPromoted(
+        parent.rootGraph.id,
+        parent.id,
+        widget.sourceNodeId,
+        widget.sourceWidgetName
+      )
+    }
+    return promotionStore.isPromoted(
+      parent.rootGraph.id,
+      parent.id,
+      String(widgetNode.id),
+      widget.name
     )
-  }
-
-  // For regular widgets (not yet promoted), check using node ID and widget name
-  return proxyWidgets.some(
-    ([nodeId, widgetName]) =>
-      widgetNode.id == nodeId && widget.name === widgetName
-  )
+  })
 }
 
 const isEmpty = computed(() => widgets.value.length === 0)
@@ -99,6 +108,34 @@ const targetNode = computed<LGraphNode | null>(() => {
 
   return allSameNode ? widgets.value[0].node : null
 })
+
+const hasDirectError = computed(() => {
+  if (!targetNode.value) return false
+  return executionErrorStore.activeGraphErrorNodeIds.has(
+    String(targetNode.value.id)
+  )
+})
+
+const hasContainerInternalError = computed(() => {
+  if (!targetNode.value) return false
+  const isContainer =
+    targetNode.value instanceof SubgraphNode || isGroupNode(targetNode.value)
+  if (!isContainer) return false
+
+  return executionErrorStore.isContainerWithInternalError(targetNode.value)
+})
+
+const nodeHasError = computed(() => {
+  if (!targetNode.value) return false
+  if (canvasStore.selectedItems.length === 1) return false
+  return hasDirectError.value || hasContainerInternalError.value
+})
+
+const showSeeError = computed(
+  () =>
+    nodeHasError.value &&
+    useSettingStore().get('Comfy.RightSidePanel.ShowErrorsTab')
+)
 
 const parentGroup = computed<LGraphGroup | null>(() => {
   if (!targetNode.value || !getNodeParentGroup) return null
@@ -118,6 +155,38 @@ function handleLocateNode() {
   }
 }
 
+function navigateToErrorTab() {
+  if (!targetNode.value) return
+  if (!useSettingStore().get('Comfy.RightSidePanel.ShowErrorsTab')) return
+  rightSidePanelStore.focusedErrorNodeId = String(targetNode.value.id)
+  rightSidePanelStore.openPanel('errors')
+}
+
+function writeWidgetValue(widget: IBaseWidget, value: WidgetValue) {
+  widget.value = value
+  widget.callback?.(value)
+  canvasStore.canvas?.setDirty(true, true)
+}
+
+function handleResetAllWidgets() {
+  for (const { widget, node: widgetNode } of widgetsProp) {
+    const spec = nodeDefStore.getInputSpecForWidget(widgetNode, widget.name)
+    const defaultValue = getWidgetDefaultValue(spec)
+    if (defaultValue !== undefined) {
+      writeWidgetValue(widget, defaultValue)
+    }
+  }
+}
+
+function handleWidgetValueUpdate(widget: IBaseWidget, newValue: WidgetValue) {
+  if (newValue === undefined) return
+  writeWidgetValue(widget, newValue)
+}
+
+function handleWidgetReset(widget: IBaseWidget, newValue: WidgetValue) {
+  writeWidgetValue(widget, newValue)
+}
+
 defineExpose({
   widgetsContainer,
   rootElement
@@ -131,11 +200,23 @@ defineExpose({
       :enable-empty-state
       :disabled="isEmpty"
       :tooltip
+      :size="showSeeError ? 'lg' : 'default'"
     >
       <template #label>
-        <div class="flex items-center gap-2 flex-1 min-w-0">
+        <div class="flex flex-wrap items-center gap-2 flex-1 min-w-0">
           <span class="flex-1 flex items-center gap-2 min-w-0">
-            <span class="truncate">
+            <i
+              v-if="nodeHasError"
+              class="icon-[lucide--octagon-alert] size-4 shrink-0 text-destructive-background-hover"
+            />
+            <span
+              :class="
+                cn(
+                  'truncate',
+                  nodeHasError && 'text-destructive-background-hover'
+                )
+              "
+            >
               <slot name="label">
                 {{ displayLabel }}
               </slot>
@@ -149,10 +230,30 @@ defineExpose({
             </span>
           </span>
           <Button
-            v-if="canShowLocateButton"
-            variant="textonly"
+            v-if="showSeeError"
+            variant="secondary"
+            size="sm"
+            class="shrink-0 rounded-lg text-sm h-8"
+            @click.stop="navigateToErrorTab"
+          >
+            {{ t('rightSidePanel.seeError') }}
+          </Button>
+          <Button
+            v-if="!isEmpty"
+            variant="muted-textonly"
             size="icon-sm"
-            class="subbutton shrink-0 mr-3 size-8 cursor-pointer text-muted-foreground hover:text-base-foreground"
+            class="subbutton shrink-0 size-8 hover:text-base-foreground"
+            :title="t('rightSidePanel.resetAllParameters')"
+            :aria-label="t('rightSidePanel.resetAllParameters')"
+            @click.stop="handleResetAllWidgets"
+          >
+            <i class="icon-[lucide--rotate-ccw] size-4" />
+          </Button>
+          <Button
+            v-if="canShowLocateButton"
+            variant="muted-textonly"
+            size="icon-sm"
+            class="subbutton shrink-0 mr-3 size-8 hover:text-base-foreground"
             :title="t('rightSidePanel.locateNode')"
             :aria-label="t('rightSidePanel.locateNode')"
             @click.stop="handleLocateNode"
@@ -179,6 +280,8 @@ defineExpose({
             :show-node-name="showNodeName"
             :parents="parents"
             :is-shown-on-parents="isWidgetShownOnParents(node, widget)"
+            @update:widget-value="handleWidgetValueUpdate(widget, $event)"
+            @reset-to-default="handleWidgetReset(widget, $event)"
           />
         </TransitionGroup>
       </div>

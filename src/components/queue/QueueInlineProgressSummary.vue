@@ -44,6 +44,7 @@ const props = defineProps<{
 }>()
 
 const { t } = useI18n()
+
 const executionStore = useExecutionStore()
 const {
   totalPercent,

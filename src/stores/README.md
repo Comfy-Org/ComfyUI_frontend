@@ -102,7 +102,7 @@ The following diagram illustrates the store architecture and data flow:
 
 ## Core Stores
 
-The following table lists ALL 46 store instances in the system as of 2025-09-01:
+The following table lists ALL 46 store instances in the system as of 2026-01-29:
 
 ### Main Stores
 

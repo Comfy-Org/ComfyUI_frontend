@@ -18,35 +18,21 @@ import WidgetSelect from '@/renderer/extensions/vueNodes/widgets/components/Widg
 import WidgetSelectDefault from '@/renderer/extensions/vueNodes/widgets/components/WidgetSelectDefault.vue'
 import WidgetSelectDropdown from '@/renderer/extensions/vueNodes/widgets/components/WidgetSelectDropdown.vue'
 
-// Mock state for distribution and settings
-const mockDistributionState = vi.hoisted(() => ({ isCloud: false }))
-const mockSettingStoreGet = vi.hoisted(() => vi.fn(() => false))
-const mockIsAssetBrowserEligible = vi.hoisted(() => vi.fn(() => false))
-
-vi.mock('@/platform/distribution/types', () => ({
-  get isCloud() {
-    return mockDistributionState.isCloud
-  }
-}))
-
-vi.mock('@/platform/settings/settingStore', () => ({
-  useSettingStore: vi.fn(() => ({
-    get: mockSettingStoreGet
-  }))
-}))
+// Mock state for asset service
+const mockShouldUseAssetBrowser = vi.hoisted(() => vi.fn(() => false))
+const mockIsAssetAPIEnabled = vi.hoisted(() => vi.fn(() => false))
 
 vi.mock('@/platform/assets/services/assetService', () => ({
   assetService: {
-    isAssetBrowserEligible: mockIsAssetBrowserEligible
+    shouldUseAssetBrowser: mockShouldUseAssetBrowser,
+    isAssetAPIEnabled: mockIsAssetAPIEnabled
   }
 }))
 
 describe('WidgetSelect Value Binding', () => {
   beforeEach(() => {
-    // Reset all mocks before each test
-    mockDistributionState.isCloud = false
-    mockSettingStoreGet.mockReturnValue(false)
-    mockIsAssetBrowserEligible.mockReturnValue(false)
+    mockShouldUseAssetBrowser.mockReturnValue(false)
+    mockIsAssetAPIEnabled.mockReturnValue(false)
     vi.clearAllMocks()
   })
 
@@ -263,10 +249,8 @@ describe('WidgetSelect Value Binding', () => {
   })
 
   describe('Asset mode detection', () => {
-    it('enables asset mode when all conditions are met', () => {
-      mockDistributionState.isCloud = true
-      mockSettingStoreGet.mockReturnValue(true)
-      mockIsAssetBrowserEligible.mockReturnValue(true)
+    it('enables asset mode when shouldUseAssetBrowser returns true', () => {
+      mockShouldUseAssetBrowser.mockReturnValue(true)
 
       const widget = createMockWidget('test.safetensors')
       const wrapper = mount(WidgetSelect, {
@@ -284,8 +268,8 @@ describe('WidgetSelect Value Binding', () => {
       expect(wrapper.findComponent(WidgetSelectDropdown).exists()).toBe(true)
     })
 
-    it('disables asset mode when conditions are not met', () => {
-      mockDistributionState.isCloud = false
+    it('disables asset mode when shouldUseAssetBrowser returns false', () => {
+      mockShouldUseAssetBrowser.mockReturnValue(false)
 
       const widget = createMockWidget('test.safetensors')
       const wrapper = mount(WidgetSelect, {
@@ -332,6 +316,24 @@ describe('WidgetSelect Value Binding', () => {
       expect(dropdown.exists()).toBe(true)
       expect(dropdown.props('assetKind')).toBe('audio')
       expect(dropdown.props('allowUpload')).toBe(false)
+    })
+
+    it('uses dropdown variant for mesh uploads via spec', () => {
+      const spec: ComboInputSpec = {
+        type: 'COMBO',
+        name: 'model_file',
+        mesh_upload: true,
+        upload_subfolder: '3d'
+      }
+      const widget = createMockWidget('model.glb', {}, undefined, spec)
+      const wrapper = mountComponent(widget, 'model.glb')
+      const dropdown = wrapper.findComponent(WidgetSelectDropdown)
+
+      expect(dropdown.exists()).toBe(true)
+      expect(dropdown.props('assetKind')).toBe('mesh')
+      expect(dropdown.props('allowUpload')).toBe(true)
+      expect(dropdown.props('uploadFolder')).toBe('input')
+      expect(dropdown.props('uploadSubfolder')).toBe('3d')
     })
 
     it('keeps default select when no spec or media hints are present', () => {

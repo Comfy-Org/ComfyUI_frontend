@@ -5,7 +5,8 @@ import { useI18n } from 'vue-i18n'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import type { JobListItem } from '@/composables/queue/useJobList'
 import { useJobMenu } from '@/composables/queue/useJobMenu'
-import type { JobState } from '@/types/queue'
+import type { TaskItemImpl } from '@/stores/queueStore'
+import { isActiveJobState } from '@/utils/queueUtil'
 
 export type JobAction = {
   icon: string
@@ -18,7 +19,7 @@ export function useJobActions(
 ) {
   const { t } = useI18n()
   const { wrapWithErrorHandlingAsync } = useErrorHandling()
-  const { cancelJob } = useJobMenu()
+  const { cancelJob, removeFailedJob } = useJobMenu()
 
   const cancelAction: JobAction = {
     icon: 'icon-[lucide--x]',
@@ -26,7 +27,11 @@ export function useJobActions(
     variant: 'destructive'
   }
 
-  const cancellableStates: JobState[] = ['pending', 'initialization', 'running']
+  const deleteAction: JobAction = {
+    icon: 'icon-[lucide--circle-minus]',
+    label: t('queue.jobMenu.removeJob'),
+    variant: 'destructive'
+  }
 
   const jobRef = computed(() => toValue(job) ?? null)
 
@@ -36,10 +41,16 @@ export function useJobActions(
       return false
     }
 
-    return (
-      currentJob.showClear !== false &&
-      cancellableStates.includes(currentJob.state)
-    )
+    return currentJob.showClear !== false && isActiveJobState(currentJob.state)
+  })
+
+  const canDeleteJob = computed(() => {
+    const currentJob = jobRef.value
+    if (!currentJob) {
+      return false
+    }
+
+    return currentJob.state === 'failed'
   })
 
   const runCancelJob = wrapWithErrorHandlingAsync(async () => {
@@ -51,9 +62,22 @@ export function useJobActions(
     await cancelJob(currentJob)
   })
 
+  const runDeleteJob = wrapWithErrorHandlingAsync(async () => {
+    const currentJob = jobRef.value
+    const task = currentJob?.taskRef as TaskItemImpl | undefined
+    if (!task) {
+      return
+    }
+
+    await removeFailedJob(task)
+  })
+
   return {
     cancelAction,
     canCancelJob,
-    runCancelJob
+    runCancelJob,
+    deleteAction,
+    canDeleteJob,
+    runDeleteJob
   }
 }

@@ -9,6 +9,7 @@
         'tree-leaf': props.node.leaf
       }
     ]"
+    :data-testid="`tree-node-${node.key}`"
   >
     <div class="node-content">
       <span class="node-label">
@@ -35,7 +36,7 @@
   </div>
 </template>
 
-<script setup lang="ts">
+<script setup lang="ts" generic="T">
 import { setCustomNativeDragPreview } from '@atlaskit/pragmatic-drag-and-drop/element/set-custom-native-drag-preview'
 import Badge from 'primevue/badge'
 import { computed, inject, ref } from 'vue'
@@ -52,17 +53,17 @@ import type {
 } from '@/types/treeExplorerTypes'
 
 const props = defineProps<{
-  node: RenderedTreeExplorerNode
+  node: RenderedTreeExplorerNode<T>
 }>()
 
 const emit = defineEmits<{
   (
     e: 'itemDropped',
-    node: RenderedTreeExplorerNode,
-    data: RenderedTreeExplorerNode
+    node: RenderedTreeExplorerNode<T>,
+    data: RenderedTreeExplorerNode<T>
   ): void
-  (e: 'dragStart', node: RenderedTreeExplorerNode): void
-  (e: 'dragEnd', node: RenderedTreeExplorerNode): void
+  (e: 'dragStart', node: RenderedTreeExplorerNode<T>): void
+  (e: 'dragEnd', node: RenderedTreeExplorerNode<T>): void
 }>()
 
 const nodeBadgeText = computed<string>(() => {
@@ -79,7 +80,7 @@ const showNodeBadgeText = computed<boolean>(() => nodeBadgeText.value !== '')
 const isEditing = computed<boolean>(() => props.node.isEditingLabel ?? false)
 const handleEditLabel = inject(InjectKeyHandleEditLabelFunction)
 const handleRename = (newName: string) => {
-  handleEditLabel?.(props.node, newName)
+  handleEditLabel?.(props.node as RenderedTreeExplorerNode, newName)
 }
 
 const container = ref<HTMLElement | null>(null)
@@ -116,9 +117,13 @@ if (props.node.droppable) {
     onDrop: async (event) => {
       const dndData = event.source.data as TreeExplorerDragAndDropData
       if (dndData.type === 'tree-explorer-node') {
-        await props.node.handleDrop?.(dndData)
+        await props.node.handleDrop?.(dndData as TreeExplorerDragAndDropData<T>)
         canDrop.value = false
-        emit('itemDropped', props.node, dndData.data)
+        emit(
+          'itemDropped',
+          props.node,
+          dndData.data as RenderedTreeExplorerNode<T>
+        )
       }
     },
     onDragEnter: (event) => {

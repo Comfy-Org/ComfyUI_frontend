@@ -3,10 +3,9 @@ import type { MaybeRefOrGetter } from 'vue'
 
 import type { JobAction } from '../../composables/queue/useJobActions'
 import type { JobListItem } from '../../composables/queue/useJobList'
-import type { JobState } from '../../types/queue'
+import { isActiveJobState } from '../../utils/queueUtil'
 
 const actionsByJobId = ref<Record<string, JobAction[]>>({})
-const cancellableStates: JobState[] = ['pending', 'initialization', 'running']
 const cancelAction: JobAction = {
   icon: 'icon-[lucide--x]',
   label: 'Cancel',
@@ -33,10 +32,7 @@ export function useJobActions(
       return configuredActions.length > 0
     }
 
-    return (
-      currentJob.showClear !== false &&
-      cancellableStates.includes(currentJob.state)
-    )
+    return currentJob.showClear !== false && isActiveJobState(currentJob.state)
   })
 
   async function runCancelJob() {

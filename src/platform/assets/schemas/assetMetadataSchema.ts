@@ -6,7 +6,7 @@ import type { ResultItemImpl } from '@/stores/queueStore'
  * Extends Record<string, unknown> for compatibility with AssetItem schema
  */
 export interface OutputAssetMetadata extends Record<string, unknown> {
-  promptId: string
+  jobId: string
   nodeId: string | number
   subfolder: string
   executionTimeInSeconds?: number
@@ -24,7 +24,7 @@ function isOutputAssetMetadata(
 ): metadata is OutputAssetMetadata {
   if (!metadata) return false
   return (
-    typeof metadata.promptId === 'string' &&
+    typeof metadata.jobId === 'string' &&
     (typeof metadata.nodeId === 'string' || typeof metadata.nodeId === 'number')
   )
 }

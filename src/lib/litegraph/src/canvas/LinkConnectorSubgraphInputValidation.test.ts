@@ -73,6 +73,28 @@ describe('LinkConnector SubgraphInput connection validation', () => {
       expect(toTargetNode.onConnectionsChange).toHaveBeenCalledTimes(1)
       expect(fromTargetNode.onConnectionsChange).toHaveBeenCalledTimes(1)
     })
+    it('should allow reconnection to same target', () => {
+      const subgraph = createTestSubgraph({
+        inputs: [{ name: 'number_input', type: 'number' }]
+      })
+
+      const node = new LGraphNode('TargetNode')
+      node.addInput('number_in', 'number')
+      subgraph.add(node)
+
+      const link = subgraph.inputNode.slots[0].connect(node.inputs[0], node)
+
+      const renderLink = new ToInputFromIoNodeLink(
+        subgraph,
+        subgraph.inputNode,
+        subgraph.inputNode.slots[0],
+        undefined,
+        LinkDirection.CENTER,
+        link
+      )
+      renderLink.connectToInput(node, node.inputs[0], connector.events)
+      expect(node.inputs[0].link).not.toBeNull()
+    })
   })
 
   describe('MovingOutputLink validation', () => {

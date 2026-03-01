@@ -2,6 +2,7 @@
   <SidebarTabTemplate
     :title="$t('sideToolbar.workflows')"
     v-bind="$attrs"
+    data-testid="workflows-sidebar"
     class="workflows-sidebar-tab"
   >
     <template #tool-buttons>
@@ -21,7 +22,9 @@
           ref="searchBoxRef"
           v-model:model-value="searchQuery"
           class="workflows-search-box"
-          :placeholder="$t('g.searchWorkflows') + '...'"
+          :placeholder="
+            $t('g.searchPlaceholder', { subject: $t('g.workflow') })
+          "
           @search="handleSearch"
         />
       </div>
@@ -47,7 +50,8 @@
                 <template #before-label="{ node: treeNode }">
                   <span
                     v-if="
-                      treeNode.data?.isModified || !treeNode.data?.isPersisted
+                      (treeNode.data as ComfyWorkflow)?.isModified ||
+                      !(treeNode.data as ComfyWorkflow)?.isPersisted
                     "
                     >*</span
                   >

@@ -1,36 +1,51 @@
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { resolveNodeRootGraphId } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { isStringInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { app } from '@/scripts/app'
 import type { ComfyWidgetConstructorV2 } from '@/scripts/widgets'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
 
 const TRACKPAD_DETECTION_THRESHOLD = 50
 
+// TODO: This widget manually syncs with widgetValueStore via getValue/setValue.
+// Consolidate with useMarkdownWidget into shared helpers (domWidgetHelpers.ts).
 function addMultilineWidget(
   node: LGraphNode,
   name: string,
   opts: { defaultVal: string; placeholder?: string }
 ) {
+  const widgetStore = useWidgetValueStore()
   const inputEl = document.createElement('textarea')
   inputEl.className = 'comfy-multiline-input'
+  inputEl.dataset.testid = 'dom-widget-textarea'
   inputEl.value = opts.defaultVal
   inputEl.placeholder = opts.placeholder || name
   inputEl.spellcheck = useSettingStore().get('Comfy.TextareaWidget.Spellcheck')
 
   const widget = node.addDOMWidget(name, 'customtext', inputEl, {
     getValue(): string {
-      return inputEl.value
+      const graphId = resolveNodeRootGraphId(node, app.rootGraph.id)
+      const widgetState = widgetStore.getWidget(graphId, node.id, name)
+
+      return (widgetState?.value as string) ?? inputEl.value
     },
     setValue(v: string) {
       inputEl.value = v
+      const graphId = resolveNodeRootGraphId(node, app.rootGraph.id)
+      const widgetState = widgetStore.getWidget(graphId, node.id, name)
+      if (widgetState) widgetState.value = v
     }
   })
 
-  widget.inputEl = inputEl
+  widget.element = inputEl
   widget.options.minNodeSize = [400, 200]
 
-  inputEl.addEventListener('input', () => {
+  inputEl.addEventListener('input', (event) => {
+    if (event.target instanceof HTMLTextAreaElement) {
+      widget.value = event.target.value
+    }
     widget.callback?.(widget.value)
   })
 

@@ -13,18 +13,14 @@ export function useManagerDialog() {
     dialogStore.closeDialog({ key: DIALOG_KEY })
   }
 
-  function show(initialTab?: ManagerTab) {
+  function show(initialTab?: ManagerTab, initialPackId?: string) {
     dialogService.showLayoutDialog({
       key: DIALOG_KEY,
       component: ManagerDialog,
       props: {
         onClose: hide,
-        initialTab
-      },
-      dialogComponentProps: {
-        pt: {
-          content: { class: '!px-0 overflow-hidden h-full !py-0' }
-        }
+        initialTab,
+        initialPackId
       }
     })
   }

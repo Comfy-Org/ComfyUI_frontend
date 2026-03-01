@@ -1,11 +1,12 @@
 import { computed, reactive, readonly } from 'vue'
 
-import { isCloud } from '@/platform/distribution/types'
+import { isCloud, isNightly } from '@/platform/distribution/types'
 import {
   isAuthenticatedConfigLoaded,
   remoteConfig
 } from '@/platform/remoteConfig/remoteConfig'
 import { api } from '@/scripts/api'
+import { getDevOverride } from '@/utils/devFeatureFlagOverride'
 
 /**
  * Known server feature flags (top-level, not extensions)
@@ -15,14 +16,27 @@ export enum ServerFeatureFlag {
   MAX_UPLOAD_SIZE = 'max_upload_size',
   MANAGER_SUPPORTS_V4 = 'extension.manager.supports_v4',
   MODEL_UPLOAD_BUTTON_ENABLED = 'model_upload_button_enabled',
-  ASSET_DELETION_ENABLED = 'asset_deletion_enabled',
   ASSET_RENAME_ENABLED = 'asset_rename_enabled',
   PRIVATE_MODELS_ENABLED = 'private_models_enabled',
   ONBOARDING_SURVEY_ENABLED = 'onboarding_survey_enabled',
-  HUGGINGFACE_MODEL_IMPORT_ENABLED = 'huggingface_model_import_enabled',
   LINEAR_TOGGLE_ENABLED = 'linear_toggle_enabled',
-  ASYNC_MODEL_UPLOAD_ENABLED = 'async_model_upload_enabled',
-  TEAM_WORKSPACES_ENABLED = 'team_workspaces_enabled'
+  TEAM_WORKSPACES_ENABLED = 'team_workspaces_enabled',
+  USER_SECRETS_ENABLED = 'user_secrets_enabled',
+  NODE_REPLACEMENTS = 'node_replacements',
+  NODE_LIBRARY_ESSENTIALS_ENABLED = 'node_library_essentials_enabled'
+}
+
+/**
+ * Resolves a feature flag value with dev override > remoteConfig > serverFeature priority.
+ */
+function resolveFlag<T>(
+  flagKey: string,
+  remoteConfigValue: T | undefined,
+  defaultValue: T
+): T {
+  const override = getDevOverride<T>(flagKey)
+  if (override !== undefined) return override
+  return remoteConfigValue ?? api.getServerFeature(flagKey, defaultValue)
 }
 
 /**
@@ -40,62 +54,40 @@ export function useFeatureFlags() {
       return api.getServerFeature(ServerFeatureFlag.MANAGER_SUPPORTS_V4)
     },
     get modelUploadButtonEnabled() {
-      // Check remote config first (from /api/features), fall back to websocket feature flags
-      return (
-        remoteConfig.value.model_upload_button_enabled ??
-        api.getServerFeature(
-          ServerFeatureFlag.MODEL_UPLOAD_BUTTON_ENABLED,
-          false
-        )
-      )
-    },
-    get assetDeletionEnabled() {
-      return (
-        remoteConfig.value.asset_deletion_enabled ??
-        api.getServerFeature(ServerFeatureFlag.ASSET_DELETION_ENABLED, false)
+      return resolveFlag(
+        ServerFeatureFlag.MODEL_UPLOAD_BUTTON_ENABLED,
+        remoteConfig.value.model_upload_button_enabled,
+        false
       )
     },
     get assetRenameEnabled() {
-      return (
-        remoteConfig.value.asset_rename_enabled ??
-        api.getServerFeature(ServerFeatureFlag.ASSET_RENAME_ENABLED, false)
+      return resolveFlag(
+        ServerFeatureFlag.ASSET_RENAME_ENABLED,
+        remoteConfig.value.asset_rename_enabled,
+        false
       )
     },
     get privateModelsEnabled() {
-      // Check remote config first (from /api/features), fall back to websocket feature flags
-      return (
-        remoteConfig.value.private_models_enabled ??
-        api.getServerFeature(ServerFeatureFlag.PRIVATE_MODELS_ENABLED, false)
+      return resolveFlag(
+        ServerFeatureFlag.PRIVATE_MODELS_ENABLED,
+        remoteConfig.value.private_models_enabled,
+        false
       )
     },
     get onboardingSurveyEnabled() {
-      return (
-        remoteConfig.value.onboarding_survey_enabled ??
-        api.getServerFeature(ServerFeatureFlag.ONBOARDING_SURVEY_ENABLED, true)
-      )
-    },
-    get huggingfaceModelImportEnabled() {
-      return (
-        remoteConfig.value.huggingface_model_import_enabled ??
-        api.getServerFeature(
-          ServerFeatureFlag.HUGGINGFACE_MODEL_IMPORT_ENABLED,
-          false
-        )
+      return resolveFlag(
+        ServerFeatureFlag.ONBOARDING_SURVEY_ENABLED,
+        remoteConfig.value.onboarding_survey_enabled,
+        false
       )
     },
     get linearToggleEnabled() {
-      return (
-        remoteConfig.value.linear_toggle_enabled ??
-        api.getServerFeature(ServerFeatureFlag.LINEAR_TOGGLE_ENABLED, false)
-      )
-    },
-    get asyncModelUploadEnabled() {
-      return (
-        remoteConfig.value.async_model_upload_enabled ??
-        api.getServerFeature(
-          ServerFeatureFlag.ASYNC_MODEL_UPLOAD_ENABLED,
-          false
-        )
+      if (isNightly) return true
+
+      return resolveFlag(
+        ServerFeatureFlag.LINEAR_TOGGLE_ENABLED,
+        remoteConfig.value.linear_toggle_enabled,
+        false
       )
     },
     /**
@@ -105,16 +97,38 @@ export function useFeatureFlags() {
      * and prevents race conditions during initialization.
      */
     get teamWorkspacesEnabled() {
-      if (!isCloud) return false
+      const override = getDevOverride<boolean>(
+        ServerFeatureFlag.TEAM_WORKSPACES_ENABLED
+      )
+      if (override !== undefined) return override
 
-      // Only return true if authenticated config has been loaded.
-      // This prevents race conditions where code checks this flag before
-      // WorkspaceAuthGate has refreshed the config with auth.
+      if (!isCloud) return false
       if (!isAuthenticatedConfigLoaded.value) return false
 
       return (
         remoteConfig.value.team_workspaces_enabled ??
         api.getServerFeature(ServerFeatureFlag.TEAM_WORKSPACES_ENABLED, false)
+      )
+    },
+    get userSecretsEnabled() {
+      return resolveFlag(
+        ServerFeatureFlag.USER_SECRETS_ENABLED,
+        remoteConfig.value.user_secrets_enabled,
+        false
+      )
+    },
+    get nodeReplacementsEnabled() {
+      return api.getServerFeature(ServerFeatureFlag.NODE_REPLACEMENTS, false)
+    },
+    get nodeLibraryEssentialsEnabled() {
+      if (isNightly || import.meta.env.DEV) return true
+
+      return (
+        remoteConfig.value.node_library_essentials_enabled ??
+        api.getServerFeature(
+          ServerFeatureFlag.NODE_LIBRARY_ESSENTIALS_ENABLED,
+          false
+        )
       )
     }
   })

@@ -3,22 +3,22 @@ import { expect } from '@playwright/test'
 import { comfyPageFixture as test } from '../fixtures/ComfyPage'
 
 test.beforeEach(async ({ comfyPage }) => {
-  await comfyPage.setSetting('Comfy.UseNewMenu', 'Disabled')
+  await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Disabled')
 })
 
 test.describe('Keybindings', { tag: '@keyboard' }, () => {
   test('Should not trigger non-modifier keybinding when typing in input fields', async ({
     comfyPage
   }) => {
-    await comfyPage.registerKeybinding({ key: 'k' }, () => {
-      window['TestCommand'] = true
+    await comfyPage.command.registerKeybinding({ key: 'k' }, () => {
+      window.TestCommand = true
     })
 
     const textBox = comfyPage.widgetTextBox
     await textBox.click()
     await textBox.fill('k')
     await expect(textBox).toHaveValue('k')
-    expect(await comfyPage.page.evaluate(() => window['TestCommand'])).toBe(
+    expect(await comfyPage.page.evaluate(() => window.TestCommand)).toBe(
       undefined
     )
   })
@@ -26,8 +26,8 @@ test.describe('Keybindings', { tag: '@keyboard' }, () => {
   test('Should not trigger modifier keybinding when typing in input fields', async ({
     comfyPage
   }) => {
-    await comfyPage.registerKeybinding({ key: 'k', ctrl: true }, () => {
-      window['TestCommand'] = true
+    await comfyPage.command.registerKeybinding({ key: 'k', ctrl: true }, () => {
+      window.TestCommand = true
     })
 
     const textBox = comfyPage.widgetTextBox
@@ -35,23 +35,21 @@ test.describe('Keybindings', { tag: '@keyboard' }, () => {
     await textBox.fill('q')
     await textBox.press('Control+k')
     await expect(textBox).toHaveValue('q')
-    expect(await comfyPage.page.evaluate(() => window['TestCommand'])).toBe(
-      true
-    )
+    expect(await comfyPage.page.evaluate(() => window.TestCommand)).toBe(true)
   })
 
   test('Should not trigger keybinding reserved by text input when typing in input fields', async ({
     comfyPage
   }) => {
-    await comfyPage.registerKeybinding({ key: 'Ctrl+v' }, () => {
-      window['TestCommand'] = true
+    await comfyPage.command.registerKeybinding({ key: 'Ctrl+v' }, () => {
+      window.TestCommand = true
     })
 
     const textBox = comfyPage.widgetTextBox
     await textBox.click()
     await textBox.press('Control+v')
     await expect(textBox).toBeFocused()
-    expect(await comfyPage.page.evaluate(() => window['TestCommand'])).toBe(
+    expect(await comfyPage.page.evaluate(() => window.TestCommand)).toBe(
       undefined
     )
   })

@@ -50,6 +50,20 @@ export const CORE_KEYBINDINGS: Keybinding[] = [
   },
   {
     combo: {
+      key: 'a'
+    },
+    commandId: 'Workspace.ToggleSidebarTab.assets'
+  },
+  {
+    combo: {
+      ctrl: true,
+      shift: true,
+      key: 'a'
+    },
+    commandId: 'Comfy.ToggleLinear'
+  },
+  {
+    combo: {
       key: 's',
       ctrl: true
     },

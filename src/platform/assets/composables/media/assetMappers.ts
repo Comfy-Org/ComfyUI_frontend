@@ -27,7 +27,7 @@ export function mapTaskOutputToAssetItem(
   output: ResultItemImpl
 ): AssetItem {
   const metadata: OutputAssetMetadata = {
-    promptId: taskItem.promptId,
+    jobId: taskItem.jobId,
     nodeId: output.nodeId,
     subfolder: output.subfolder,
     executionTimeInSeconds: taskItem.executionTimeInSeconds,
@@ -36,7 +36,7 @@ export function mapTaskOutputToAssetItem(
   }
 
   return {
-    id: taskItem.promptId,
+    id: taskItem.jobId,
     name: output.filename,
     size: 0,
     created_at: taskItem.executionStartTimestamp

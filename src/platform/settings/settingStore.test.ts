@@ -15,7 +15,8 @@ import { app } from '@/scripts/app'
 vi.mock('@/scripts/api', () => ({
   api: {
     getSettings: vi.fn(),
-    storeSetting: vi.fn()
+    storeSetting: vi.fn(),
+    storeSettings: vi.fn()
   }
 }))
 
@@ -117,7 +118,7 @@ describe('useSettingStore', () => {
         name: 'test.setting',
         type: 'text',
         defaultValue: 'default',
-        migrateDeprecatedValue: (value: string) => value.toUpperCase()
+        migrateDeprecatedValue: (val: unknown) => (val as string).toUpperCase()
       }
 
       store.settingValues['test.setting'] = 'oldvalue'
@@ -501,6 +502,85 @@ describe('useSettingStore', () => {
         // Verify the stored value wasn't affected by the mutation
         expect(newRetrievedValue).toEqual([1, 2, { value: 3 }])
       })
+    })
+  })
+
+  describe('setMany', () => {
+    it('should set multiple values and make a single API call', async () => {
+      const onChange1 = vi.fn()
+      const onChange2 = vi.fn()
+      store.addSetting({
+        id: 'Comfy.Release.Version',
+        name: 'Release Version',
+        type: 'hidden',
+        defaultValue: '',
+        onChange: onChange1
+      })
+      store.addSetting({
+        id: 'Comfy.Release.Status',
+        name: 'Release Status',
+        type: 'hidden',
+        defaultValue: 'skipped',
+        onChange: onChange2
+      })
+      vi.clearAllMocks()
+
+      await store.setMany({
+        'Comfy.Release.Version': '1.0.0',
+        'Comfy.Release.Status': 'changelog seen'
+      })
+
+      expect(store.get('Comfy.Release.Version')).toBe('1.0.0')
+      expect(store.get('Comfy.Release.Status')).toBe('changelog seen')
+      expect(onChange1).toHaveBeenCalledWith('1.0.0', '')
+      expect(onChange2).toHaveBeenCalledWith('changelog seen', 'skipped')
+      expect(api.storeSettings).toHaveBeenCalledTimes(1)
+      expect(api.storeSettings).toHaveBeenCalledWith({
+        'Comfy.Release.Version': '1.0.0',
+        'Comfy.Release.Status': 'changelog seen'
+      })
+      expect(api.storeSetting).not.toHaveBeenCalled()
+    })
+
+    it('should skip unchanged values', async () => {
+      store.addSetting({
+        id: 'Comfy.Release.Version',
+        name: 'Release Version',
+        type: 'hidden',
+        defaultValue: ''
+      })
+      store.addSetting({
+        id: 'Comfy.Release.Status',
+        name: 'Release Status',
+        type: 'hidden',
+        defaultValue: 'skipped'
+      })
+      await store.set('Comfy.Release.Version', 'existing')
+      vi.clearAllMocks()
+
+      await store.setMany({
+        'Comfy.Release.Version': 'existing',
+        'Comfy.Release.Status': 'changelog seen'
+      })
+
+      expect(api.storeSettings).toHaveBeenCalledWith({
+        'Comfy.Release.Status': 'changelog seen'
+      })
+    })
+
+    it('should not call API when all values are unchanged', async () => {
+      store.addSetting({
+        id: 'Comfy.Release.Version',
+        name: 'Release Version',
+        type: 'hidden',
+        defaultValue: ''
+      })
+      await store.set('Comfy.Release.Version', 'existing')
+      vi.clearAllMocks()
+
+      await store.setMany({ 'Comfy.Release.Version': 'existing' })
+
+      expect(api.storeSettings).not.toHaveBeenCalled()
     })
   })
 })

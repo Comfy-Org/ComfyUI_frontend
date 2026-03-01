@@ -152,19 +152,51 @@ class LegacyMenuCompat {
       const patchedItems = methodToCall.apply(context, args) as
         | (IContextMenuValue | null)[]
         | undefined
-      if (!patchedItems) return []
+      if (!patchedItems) {
+        return []
+      }
+      // Use content-based diff to detect additions (not reference-based)
+      // Create composite keys from multiple properties to handle undefined content
+      const createItemKey = (item: IContextMenuValue): string => {
+        const parts = [
+          item.content ?? '',
+          item.title ?? '',
+          item.className ?? '',
+          item.property ?? '',
+          item.type ?? ''
+        ]
+        return parts.join('|')
+      }
 
-      // Use set-based diff to detect additions by reference
-      const originalSet = new Set<IContextMenuValue | null>(originalItems)
-      const addedItems = patchedItems.filter((item) => !originalSet.has(item))
+      const originalKeys = new Set(
+        originalItems
+          .filter(
+            (item): item is IContextMenuValue =>
+              item !== null && typeof item === 'object' && 'content' in item
+          )
+          .map(createItemKey)
+      )
+      const addedItems = patchedItems.filter((item) => {
+        if (item === null) return false
+        if (typeof item !== 'object' || !('content' in item)) return false
+        return !originalKeys.has(createItemKey(item))
+      })
 
       // Warn if items were removed (patched has fewer original items than expected)
-      const retainedOriginalCount = patchedItems.filter((item) =>
-        originalSet.has(item)
+      const patchedKeys = new Set(
+        patchedItems
+          .filter(
+            (item): item is IContextMenuValue =>
+              item !== null && typeof item === 'object' && 'content' in item
+          )
+          .map(createItemKey)
+      )
+      const removedCount = [...originalKeys].filter(
+        (key) => !patchedKeys.has(key)
       ).length
-      if (retainedOriginalCount < originalItems.length) {
+      if (removedCount > 0) {
         console.warn(
-          `[Context Menu Compat] Monkey patch for ${methodName} removed ${originalItems.length - retainedOriginalCount} original menu item(s). ` +
+          `[Context Menu Compat] Monkey patch for ${methodName} removed ${removedCount} original menu item(s). ` +
             `This may cause unexpected behavior.`
         )
       }

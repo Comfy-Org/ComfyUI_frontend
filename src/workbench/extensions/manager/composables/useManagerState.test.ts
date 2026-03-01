@@ -28,18 +28,13 @@ vi.mock('@/composables/useFeatureFlags', () => {
   }
 })
 
-vi.mock('@/services/dialogService', () => {
-  const showManagerPopup = vi.fn()
-  const showLegacyManagerPopup = vi.fn()
-  const showSettingsDialog = vi.fn()
-  return {
-    useDialogService: vi.fn(() => ({
-      showManagerPopup,
-      showLegacyManagerPopup,
-      showSettingsDialog
-    }))
-  }
-})
+vi.mock('@/platform/settings/composables/useSettingsDialog', () => ({
+  useSettingsDialog: vi.fn(() => ({
+    show: vi.fn(),
+    hide: vi.fn(),
+    showAbout: vi.fn()
+  }))
+}))
 
 vi.mock('@/stores/commandStore', () => ({
   useCommandStore: vi.fn(() => ({

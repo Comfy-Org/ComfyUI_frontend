@@ -20,10 +20,6 @@ const config: KnipConfig = {
     'packages/tailwind-utils': {
       project: ['src/**/*.{js,ts}']
     },
-    'packages/design-system': {
-      entry: ['src/**/*.ts'],
-      project: ['src/**/*.{js,ts}', '*.{js,ts,mts}']
-    },
     'packages/registry-types': {
       project: ['src/**/*.{js,ts}']
     }
@@ -31,6 +27,7 @@ const config: KnipConfig = {
   ignoreBinaries: ['python3', 'gh'],
   ignoreDependencies: [
     // Weird importmap things
+    '@iconify-json/lucide',
     '@iconify/json',
     '@primeuix/forms',
     '@primeuix/styled',
@@ -42,7 +39,11 @@ const config: KnipConfig = {
     'src/workbench/extensions/manager/types/generatedManagerTypes.ts',
     'packages/registry-types/src/comfyRegistryTypes.ts',
     // Used by a custom node (that should move off of this)
-    'src/scripts/ui/components/splitButton.ts'
+    'src/scripts/ui/components/splitButton.ts',
+    // Workflow files contain license names that knip misinterprets as binaries
+    '.github/workflows/ci-oss-assets-validation.yaml',
+    // Pending integration in stacked PR
+    'src/components/sidebar/tabs/nodeLibrary/CustomNodesPanel.vue'
   ],
   compilers: {
     // https://github.com/webpro-nl/knip/issues/1008#issuecomment-3207756199
@@ -67,7 +68,8 @@ const config: KnipConfig = {
   },
   tags: [
     '-knipIgnoreUnusedButUsedByCustomNodes',
-    '-knipIgnoreUnusedButUsedByVueNodesBranch'
+    '-knipIgnoreUnusedButUsedByVueNodesBranch',
+    '-knipIgnoreUsedByStackedPR'
   ]
 }
 

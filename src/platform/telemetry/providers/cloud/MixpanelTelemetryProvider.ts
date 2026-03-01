@@ -3,11 +3,16 @@ import { watch } from 'vue'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import {
+  TOOLKIT_BLUEPRINT_MODULES,
+  TOOLKIT_NODE_NAMES
+} from '@/constants/toolkitNodes'
+import {
   checkForCompletedTopup as checkTopupUtil,
   clearTopupTracking as clearTopupUtil,
   startTopupTracking as startTopupUtil
 } from '@/platform/telemetry/topupTracker'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import type { AuditLog } from '@/services/customerEventsService'
 import { useWorkflowTemplatesStore } from '@/platform/workflow/templates/repositories/workflowTemplatesStore'
 import { app } from '@/scripts/app'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
@@ -30,6 +35,7 @@ import type {
   PageVisibilityMetadata,
   RunButtonProperties,
   SettingChangedMetadata,
+  SubscriptionMetadata,
   SurveyResponses,
   TabCountMetadata,
   TelemetryEventName,
@@ -217,13 +223,16 @@ export class MixpanelTelemetryProvider implements TelemetryProvider {
     this.trackEvent(TelemetryEvents.USER_LOGGED_IN)
   }
 
-  trackSubscription(event: 'modal_opened' | 'subscribe_clicked'): void {
+  trackSubscription(
+    event: 'modal_opened' | 'subscribe_clicked',
+    metadata?: SubscriptionMetadata
+  ): void {
     const eventName =
       event === 'modal_opened'
         ? TelemetryEvents.SUBSCRIPTION_REQUIRED_MODAL_OPENED
         : TelemetryEvents.SUBSCRIBE_NOW_BUTTON_CLICKED
 
-    this.trackEvent(eventName)
+    this.trackEvent(eventName, metadata)
   }
 
   trackAddApiCreditButtonClicked(): void {
@@ -261,7 +270,7 @@ export class MixpanelTelemetryProvider implements TelemetryProvider {
     startTopupUtil()
   }
 
-  checkForCompletedTopup(events: any[] | undefined | null): boolean {
+  checkForCompletedTopup(events: AuditLog[] | undefined | null): boolean {
     return checkTopupUtil(events)
   }
 
@@ -284,6 +293,8 @@ export class MixpanelTelemetryProvider implements TelemetryProvider {
       subgraph_count: executionContext.subgraph_count,
       has_api_nodes: executionContext.has_api_nodes,
       api_node_names: executionContext.api_node_names,
+      has_toolkit_nodes: executionContext.has_toolkit_nodes,
+      toolkit_node_names: executionContext.toolkit_node_names,
       trigger_source: options?.trigger_source
     }
 
@@ -431,10 +442,13 @@ export class MixpanelTelemetryProvider implements TelemetryProvider {
     type NodeMetrics = {
       custom_node_count: number
       api_node_count: number
+      toolkit_node_count: number
       subgraph_count: number
       total_node_count: number
       has_api_nodes: boolean
       api_node_names: string[]
+      has_toolkit_nodes: boolean
+      toolkit_node_names: string[]
     }
 
     const nodeCounts = reduceAllNodes<NodeMetrics>(
@@ -457,8 +471,21 @@ export class MixpanelTelemetryProvider implements TelemetryProvider {
           }
         }
 
+        const isToolkitNode =
+          TOOLKIT_NODE_NAMES.has(node.type) ||
+          (nodeDef?.python_module !== undefined &&
+            TOOLKIT_BLUEPRINT_MODULES.has(nodeDef.python_module))
+        if (isToolkitNode) {
+          metrics.has_toolkit_nodes = true
+          const trackingName = nodeDef?.name ?? node.type
+          if (!metrics.toolkit_node_names.includes(trackingName)) {
+            metrics.toolkit_node_names.push(trackingName)
+          }
+        }
+
         metrics.custom_node_count += isCustomNode ? 1 : 0
         metrics.api_node_count += isApiNode ? 1 : 0
+        metrics.toolkit_node_count += isToolkitNode ? 1 : 0
         metrics.subgraph_count += isSubgraph ? 1 : 0
         metrics.total_node_count += 1
 
@@ -467,10 +494,13 @@ export class MixpanelTelemetryProvider implements TelemetryProvider {
       {
         custom_node_count: 0,
         api_node_count: 0,
+        toolkit_node_count: 0,
         subgraph_count: 0,
         total_node_count: 0,
         has_api_nodes: false,
-        api_node_names: []
+        api_node_names: [],
+        has_toolkit_nodes: false,
+        toolkit_node_names: []
       }
     )
 

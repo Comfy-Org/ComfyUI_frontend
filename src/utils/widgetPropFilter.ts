@@ -55,13 +55,13 @@ export const BADGE_EXCLUDED_PROPS = [
  * @param excludeList - List of property names to exclude
  * @returns Filtered props object
  */
-export function filterWidgetProps<T extends Record<string, any>>(
+export function filterWidgetProps<T extends object>(
   props: T | undefined,
   excludeList: readonly string[]
 ): Partial<T> {
   if (!props) return {}
 
-  const filtered: Record<string, any> = {}
+  const filtered: Record<string, unknown> = {}
   for (const [key, value] of Object.entries(props)) {
     if (!excludeList.includes(key)) {
       filtered[key] = value

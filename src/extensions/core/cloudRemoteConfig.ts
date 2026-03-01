@@ -1,7 +1,7 @@
 import { watchDebounced } from '@vueuse/core'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
-import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
+import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { refreshRemoteConfig } from '@/platform/remoteConfig/refreshRemoteConfig'
 import { useExtensionService } from '@/services/extensionService'
 
@@ -14,7 +14,7 @@ useExtensionService().registerExtension({
 
   setup: async () => {
     const { isLoggedIn } = useCurrentUser()
-    const { isActiveSubscription } = useSubscription()
+    const { isActiveSubscription } = useBillingContext()
 
     // Refresh config when auth or subscription status changes
     // Primary auth refresh is handled by WorkspaceAuthGate on mount

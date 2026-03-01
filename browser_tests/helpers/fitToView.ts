@@ -23,7 +23,7 @@ export async function fitToViewInstant(
     { selectionOnly: boolean }
   >(
     ({ selectionOnly }) => {
-      const app = window['app']
+      const app = window.app
       if (!app?.canvas) return null
 
       const canvas = app.canvas
@@ -90,7 +90,7 @@ export async function fitToViewInstant(
 
   await comfyPage.page.evaluate(
     ({ bounds, zoom }) => {
-      const app = window['app']
+      const app = window.app
       if (!app?.canvas) return
 
       const canvas = app.canvas

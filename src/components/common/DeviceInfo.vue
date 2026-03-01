@@ -28,13 +28,17 @@ const deviceColumns: { field: keyof DeviceStats; header: string }[] = [
   { field: 'torch_vram_free', header: 'Torch VRAM Free' }
 ]
 
-const formatValue = (value: any, field: string) => {
+const formatValue = (value: string | number, field: string) => {
   if (
     ['vram_total', 'vram_free', 'torch_vram_total', 'torch_vram_free'].includes(
       field
     )
   ) {
-    return formatSize(value)
+    const num = Number(value)
+    if (Number.isFinite(num)) {
+      return formatSize(num)
+    }
+    return value
   }
   return value
 }

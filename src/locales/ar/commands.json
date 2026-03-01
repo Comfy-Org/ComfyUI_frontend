@@ -36,13 +36,16 @@
     "label": "إعادة التشغيل"
   },
   "Comfy_3DViewer_Open3DViewer": {
-    "label": "فتح عارض ثلاثي الأبعاد (بيتا) للعقدة المحددة"
+    "label": "افتح عارض ثلاثي الأبعاد (تجريبي) للعقدة المحددة"
   },
   "Comfy_BrowseModelAssets": {
     "label": "تجريبي: تصفح أصول النماذج"
   },
   "Comfy_BrowseTemplates": {
     "label": "تصفح القوالب"
+  },
+  "Comfy_Canvas_CopySelected": {
+    "label": "نسخ"
   },
   "Comfy_Canvas_DeleteSelectedItems": {
     "label": "حذف العناصر المحددة"
@@ -65,11 +68,17 @@
   "Comfy_Canvas_MoveSelectedNodes_Up": {
     "label": "تحريك العقد المحددة للأعلى"
   },
+  "Comfy_Canvas_PasteFromClipboard": {
+    "label": "لصق"
+  },
   "Comfy_Canvas_ResetView": {
     "label": "إعادة تعيين العرض"
   },
   "Comfy_Canvas_Resize": {
     "label": "تغيير حجم العقد المحددة"
+  },
+  "Comfy_Canvas_SelectAll": {
+    "label": "تحديد الكل"
   },
   "Comfy_Canvas_ToggleLinkVisibility": {
     "label": "تبديل رؤية الروابط في اللوحة"
@@ -265,6 +274,12 @@
   },
   "Comfy_ShowSettingsDialog": {
     "label": "عرض نافذة الإعدادات"
+  },
+  "Comfy_Subgraph_SetDescription": {
+    "label": "تعيين وصف الرسم البياني الفرعي"
+  },
+  "Comfy_Subgraph_SetSearchAliases": {
+    "label": "تعيين الأسماء المستعارة للبحث في الرسم البياني الفرعي"
   },
   "Comfy_ToggleAssetAPI": {
     "label": "تجريبي: تمكين AssetAPI"

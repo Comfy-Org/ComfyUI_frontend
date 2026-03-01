@@ -5,6 +5,7 @@ import { useNodeFileInput } from '@/composables/node/useNodeFileInput'
 import { useNodePaste } from '@/composables/node/useNodePaste'
 import { t } from '@/i18n'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { resolveNodeRootGraphId } from '@/lib/litegraph/src/litegraph'
 import type {
   IBaseWidget,
   IStringWidget
@@ -23,6 +24,7 @@ import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
 
 import { api } from '../../scripts/api'
 import { app } from '../../scripts/app'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
 
 function updateUIWidget(
   audioUIWidget: DOMWidget<HTMLAudioElement, string>,
@@ -41,7 +43,7 @@ async function uploadFile(
   file: File,
   updateNode: boolean,
   pasted: boolean = false
-) {
+): Promise<boolean> {
   try {
     // Wrap file in formdata so it includes filename
     const body = new FormData()
@@ -70,15 +72,19 @@ async function uploadFile(
           api.apiURL(getResourceURL(...splitFilePath(path)))
         )
 
+        audioWidget.value = path
         // Manually trigger the callback to update VueNodes
         audioWidget.callback?.(path)
       }
+      return true
     } else {
       useToastStore().addAlert(resp.status + ' - ' + resp.statusText)
+      return false
     }
   } catch (error) {
     // @ts-expect-error fixme ts strict error
     useToastStore().addAlert(error)
+    return false
   }
 }
 
@@ -86,7 +92,10 @@ async function uploadFile(
 // present.
 app.registerExtension({
   name: 'Comfy.AudioWidget',
-  async beforeRegisterNodeDef(nodeType, nodeData) {
+  async beforeRegisterNodeDef(
+    nodeType: typeof LGraphNode,
+    nodeData: ComfyNodeDef
+  ) {
     if (
       [
         'LoadAudio',
@@ -137,9 +146,21 @@ app.registerExtension({
           }
         }
 
-        let value = ''
-        audioUIWidget.options.getValue = () => value
-        audioUIWidget.options.setValue = (v) => (value = v)
+        audioUIWidget.options.getValue = () =>
+          (useWidgetValueStore().getWidget(
+            resolveNodeRootGraphId(node, app.rootGraph.id),
+            node.id,
+            inputName
+          )?.value as string) ?? ''
+        audioUIWidget.options.setValue = (v) => {
+          const graphId = resolveNodeRootGraphId(node, app.rootGraph.id)
+          const widgetState = useWidgetValueStore().getWidget(
+            graphId,
+            node.id,
+            inputName
+          )
+          if (widgetState) widgetState.value = v
+        }
 
         return { widget: audioUIWidget }
       }
@@ -170,7 +191,10 @@ app.registerExtension({
 
 app.registerExtension({
   name: 'Comfy.UploadAudio',
-  async beforeRegisterNodeDef(_nodeType, nodeData: ComfyNodeDef) {
+  async beforeRegisterNodeDef(
+    _nodeType: typeof LGraphNode,
+    nodeData: ComfyNodeDef
+  ) {
     if (nodeData?.input?.required?.audio?.[1]?.audio_upload === true) {
       nodeData.input.required.upload = ['AUDIOUPLOAD', {}]
     }
@@ -211,7 +235,17 @@ app.registerExtension({
 
         const handleUpload = async (files: File[]) => {
           if (files?.length) {
-            uploadFile(audioWidget, audioUIWidget, files[0], true)
+            const previousValue = audioWidget.value
+            audioWidget.value = files[0].name
+            const success = await uploadFile(
+              audioWidget,
+              audioUIWidget,
+              files[0],
+              true
+            )
+            if (!success) {
+              audioWidget.value = previousValue
+            }
           }
           return files
         }
@@ -410,7 +444,7 @@ app.registerExtension({
     }
   },
 
-  async nodeCreated(node) {
+  async nodeCreated(node: LGraphNode) {
     if (node.constructor.comfyClass !== 'RecordAudio') return
 
     await useAudioService().registerWavEncoder()

@@ -1,11 +1,9 @@
 <template>
-  <PanelTemplate value="Keybinding" class="keybinding-panel">
-    <template #header>
-      <SearchBox
-        v-model="filters['global'].value"
-        :placeholder="$t('g.searchKeybindings') + '...'"
-      />
-    </template>
+  <div class="keybinding-panel flex flex-col gap-2">
+    <SearchBox
+      v-model="filters['global'].value"
+      :placeholder="$t('g.searchPlaceholder', { subject: $t('g.keybindings') })"
+    />
 
     <DataTable
       v-model:selection="selectedCommandData"
@@ -19,9 +17,9 @@
       }"
       @row-dblclick="editKeybinding($event.data)"
     >
-      <Column field="actions" header="">
+      <Column field="actions" header="" :pt="{ bodyCell: 'p-1 min-h-8' }">
         <template #body="slotProps">
-          <div class="actions invisible flex flex-row">
+          <div class="actions flex flex-row">
             <Button
               variant="textonly"
               size="icon"
@@ -58,6 +56,7 @@
         :header="$t('g.command')"
         sortable
         class="max-w-64 2xl:max-w-full"
+        :pt="{ bodyCell: 'p-1 min-h-8' }"
       >
         <template #body="slotProps">
           <div class="truncate" :title="slotProps.data.id">
@@ -65,7 +64,11 @@
           </div>
         </template>
       </Column>
-      <Column field="keybinding" :header="$t('g.keybinding')">
+      <Column
+        field="keybinding"
+        :header="$t('g.keybinding')"
+        :pt="{ bodyCell: 'p-1 min-h-8' }"
+      >
         <template #body="slotProps">
           <KeyComboDisplay
             v-if="slotProps.data.keybinding"
@@ -77,7 +80,11 @@
           <span v-else>-</span>
         </template>
       </Column>
-      <Column field="source" :header="$t('g.source')">
+      <Column
+        field="source"
+        :header="$t('g.source')"
+        :pt="{ bodyCell: 'p-1 min-h-8' }"
+      >
         <template #body="slotProps">
           <span class="overflow-hidden text-ellipsis">{{
             slotProps.data.source || '-'
@@ -133,7 +140,7 @@
       <i class="pi pi-replay" />
       {{ $t('g.resetAll') }}
     </Button>
-  </PanelTemplate>
+  </div>
 </template>
 
 <script setup lang="ts">
@@ -157,7 +164,6 @@ import { useKeybindingStore } from '@/platform/keybindings/keybindingStore'
 import { useCommandStore } from '@/stores/commandStore'
 import { normalizeI18nKey } from '@/utils/formatUtil'
 
-import PanelTemplate from './PanelTemplate.vue'
 import KeyComboDisplay from './keybinding/KeyComboDisplay.vue'
 
 const filters = ref({
@@ -296,17 +302,3 @@ async function resetAllKeybindings() {
   })
 }
 </script>
-
-<style scoped>
-@reference '../../../../assets/css/style.css';
-
-:deep(.p-datatable-tbody) > tr > td {
-  @apply p-1;
-  min-height: 2rem;
-}
-
-:deep(.p-datatable-row-selected) .actions,
-:deep(.p-datatable-selectable-row:hover) .actions {
-  @apply visible;
-}
-</style>

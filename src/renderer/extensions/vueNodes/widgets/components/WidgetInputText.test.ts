@@ -5,6 +5,7 @@ import type { InputTextProps } from 'primevue/inputtext'
 import Textarea from 'primevue/textarea'
 import { describe, expect, it } from 'vitest'
 
+import type { IWidgetOptions } from '@/lib/litegraph/src/types/widgets'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 
 import WidgetInputText from './WidgetInputText.vue'
@@ -18,7 +19,7 @@ describe('WidgetInputText Value Binding', () => {
     name: 'test_input',
     type: 'string',
     value,
-    options,
+    options: options as IWidgetOptions,
     callback
   })
 

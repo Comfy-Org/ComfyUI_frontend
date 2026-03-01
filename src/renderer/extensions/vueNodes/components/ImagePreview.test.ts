@@ -29,6 +29,8 @@ const i18n = createI18n({
         failedToDownloadImage: 'Failed to download image',
         calculatingDimensions: 'Calculating dimensions',
         imageFailedToLoad: 'Image failed to load',
+        imageDoesNotExist: 'Image does not exist',
+        unknownFile: 'Unknown file',
         loading: 'Loading'
       }
     }

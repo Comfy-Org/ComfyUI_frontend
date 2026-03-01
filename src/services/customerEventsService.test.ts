@@ -31,8 +31,8 @@ vi.mock('@/stores/firebaseAuthStore', () => ({
   useFirebaseAuthStore: vi.fn(() => mockFirebaseAuthStore)
 }))
 
-vi.mock('vue-i18n', () => ({
-  useI18n: vi.fn(() => mockI18n)
+vi.mock('@/i18n', () => ({
+  d: mockI18n.d
 }))
 
 vi.mock('@/utils/typeGuardUtil', () => ({

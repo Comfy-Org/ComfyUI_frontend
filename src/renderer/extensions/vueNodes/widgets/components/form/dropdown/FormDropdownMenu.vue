@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import type { MaybeRefOrGetter } from 'vue'
+import type { CSSProperties, MaybeRefOrGetter } from 'vue'
+import { computed } from 'vue'
 
-import { cn } from '@/utils/tailwindUtil'
+import VirtualGrid from '@/components/common/VirtualGrid.vue'
 
 import type {
   FilterOption,
@@ -30,7 +31,18 @@ interface Props {
   baseModelOptions?: FilterOption[]
 }
 
-defineProps<Props>()
+const {
+  items,
+  isSelected,
+  filterOptions,
+  sortOptions,
+  searcher,
+  updateKey,
+  showOwnershipFilter,
+  ownershipOptions,
+  showBaseModelFilter,
+  baseModelOptions
+} = defineProps<Props>()
 const emit = defineEmits<{
   (e: 'item-click', item: FormDropdownItem, index: number): void
 }>()
@@ -41,11 +53,48 @@ const sortSelected = defineModel<string>('sortSelected')
 const searchQuery = defineModel<string>('searchQuery')
 const ownershipSelected = defineModel<OwnershipOption>('ownershipSelected')
 const baseModelSelected = defineModel<Set<string>>('baseModelSelected')
+
+type LayoutConfig = {
+  maxColumns: number
+  itemHeight: number
+  itemWidth: number
+  gap: string
+}
+
+const LAYOUT_CONFIGS: Record<LayoutMode, LayoutConfig> = {
+  grid: { maxColumns: 4, itemHeight: 120, itemWidth: 89, gap: '1rem 0.5rem' },
+  list: { maxColumns: 1, itemHeight: 64, itemWidth: 380, gap: '0.5rem' },
+  'list-small': {
+    maxColumns: 1,
+    itemHeight: 40,
+    itemWidth: 380,
+    gap: '0.25rem'
+  }
+}
+
+const layoutConfig = computed<LayoutConfig>(
+  () => LAYOUT_CONFIGS[layoutMode.value ?? 'grid']
+)
+
+const gridStyle = computed<CSSProperties>(() => ({
+  display: 'grid',
+  gap: layoutConfig.value.gap,
+  padding: '1rem',
+  width: '100%'
+}))
+
+type VirtualDropdownItem = FormDropdownItem & { key: string }
+const virtualItems = computed<VirtualDropdownItem[]>(() =>
+  items.map((item) => ({
+    ...item,
+    key: String(item.id)
+  }))
+)
 </script>
 
 <template>
   <div
-    class="flex max-h-[640px] w-103 flex-col rounded-lg bg-component-node-background pt-4 outline outline-offset-[-1px] outline-node-component-border"
+    class="flex h-[640px] w-103 flex-col rounded-lg bg-component-node-background pt-4 outline outline-offset-[-1px] outline-node-component-border"
   >
     <FormDropdownMenuFilter
       v-if="filterOptions.length > 0"
@@ -66,34 +115,30 @@ const baseModelSelected = defineModel<Set<string>>('baseModelSelected')
       :show-base-model-filter
       :base-model-options
     />
-    <div class="relative flex h-full mt-2 overflow-y-scroll">
-      <div
-        :class="
-          cn(
-            'h-full max-h-full grid gap-x-2 gap-y-4 overflow-y-auto px-4 pt-4 pb-4 w-full',
-            {
-              'grid-cols-4': layoutMode === 'grid',
-              'grid-cols-1 gap-y-2': layoutMode === 'list',
-              'grid-cols-1 gap-y-1': layoutMode === 'list-small'
-            }
-          )
-        "
-      >
-        <div class="pointer-events-none absolute inset-x-3 top-0 z-10 h-5" />
-        <div
-          v-if="items.length === 0"
-          class="h-50 col-span-full flex items-center justify-center"
-        >
-          <i
-            :title="$t('g.noItems')"
-            :aria-label="$t('g.noItems')"
-            class="icon-[lucide--circle-off] size-30 text-zinc-500/20"
-          />
-        </div>
+    <div
+      v-if="items.length === 0"
+      class="flex h-50 items-center justify-center"
+    >
+      <i
+        :title="$t('g.noItems')"
+        :aria-label="$t('g.noItems')"
+        class="icon-[lucide--circle-off] size-30 text-muted-foreground/20"
+      />
+    </div>
+    <VirtualGrid
+      v-else
+      :key="layoutMode"
+      :items="virtualItems"
+      :grid-style
+      :max-columns="layoutConfig.maxColumns"
+      :default-item-height="layoutConfig.itemHeight"
+      :default-item-width="layoutConfig.itemWidth"
+      :buffer-rows="2"
+      class="mt-2 min-h-0 flex-1"
+    >
+      <template #item="{ item, index }">
         <FormDropdownMenuItem
-          v-for="(item, index) in items"
-          :key="item.id"
-          :index="index"
+          :index
           :selected="isSelected(item, index)"
           :preview-url="item.preview_url ?? ''"
           :name="item.name"
@@ -101,7 +146,7 @@ const baseModelSelected = defineModel<Set<string>>('baseModelSelected')
           :layout="layoutMode"
           @click="emit('item-click', item, index)"
         />
-      </div>
-    </div>
+      </template>
+    </VirtualGrid>
   </div>
 </template>

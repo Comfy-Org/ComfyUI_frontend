@@ -67,7 +67,7 @@ vi.mock('@/scripts/api', () => ({
 
 describe('TaskItemImpl', () => {
   it('should remove animated property from outputs during construction', () => {
-    const job = createHistoryJob(0, 'prompt-id')
+    const job = createHistoryJob(0, 'job-id')
     const taskItem = new TaskItemImpl(job, {
       'node-1': {
         images: [{ filename: 'test.png', type: 'output', subfolder: '' }],
@@ -83,7 +83,7 @@ describe('TaskItemImpl', () => {
   })
 
   it('should handle outputs without animated property', () => {
-    const job = createHistoryJob(0, 'prompt-id')
+    const job = createHistoryJob(0, 'job-id')
     const taskItem = new TaskItemImpl(job, {
       'node-1': {
         images: [{ filename: 'test.png', type: 'output', subfolder: '' }]
@@ -95,7 +95,7 @@ describe('TaskItemImpl', () => {
   })
 
   it('should recognize webm video from core', () => {
-    const job = createHistoryJob(0, 'prompt-id')
+    const job = createHistoryJob(0, 'job-id')
     const taskItem = new TaskItemImpl(job, {
       'node-1': {
         video: [{ filename: 'test.webm', type: 'output', subfolder: '' }]
@@ -112,7 +112,7 @@ describe('TaskItemImpl', () => {
 
   // https://github.com/Kosinkadink/ComfyUI-VideoHelperSuite/blob/0a75c7958fe320efcb052f1d9f8451fd20c730a8/videohelpersuite/nodes.py#L578-L590
   it('should recognize webm video from VHS', () => {
-    const job = createHistoryJob(0, 'prompt-id')
+    const job = createHistoryJob(0, 'job-id')
     const taskItem = new TaskItemImpl(job, {
       'node-1': {
         gifs: [
@@ -136,7 +136,7 @@ describe('TaskItemImpl', () => {
   })
 
   it('should recognize mp4 video from core', () => {
-    const job = createHistoryJob(0, 'prompt-id')
+    const job = createHistoryJob(0, 'job-id')
     const taskItem = new TaskItemImpl(job, {
       'node-1': {
         images: [
@@ -167,7 +167,7 @@ describe('TaskItemImpl', () => {
 
     audioFormats.forEach(({ extension, mimeType }) => {
       it(`should recognize ${extension} audio`, () => {
-        const job = createHistoryJob(0, 'prompt-id')
+        const job = createHistoryJob(0, 'job-id')
         const taskItem = new TaskItemImpl(job, {
           'node-1': {
             audio: [
@@ -193,14 +193,14 @@ describe('TaskItemImpl', () => {
 
   describe('error extraction getters', () => {
     it('errorMessage returns undefined when no execution_error', () => {
-      const job = createHistoryJob(0, 'prompt-id')
+      const job = createHistoryJob(0, 'job-id')
       const taskItem = new TaskItemImpl(job)
       expect(taskItem.errorMessage).toBeUndefined()
     })
 
     it('errorMessage returns the exception_message from execution_error', () => {
       const job: JobListItem = {
-        ...createHistoryJob(0, 'prompt-id'),
+        ...createHistoryJob(0, 'job-id'),
         status: 'failed',
         execution_error: {
           node_id: 'node-1',
@@ -217,7 +217,7 @@ describe('TaskItemImpl', () => {
     })
 
     it('executionError returns undefined when no execution_error', () => {
-      const job = createHistoryJob(0, 'prompt-id')
+      const job = createHistoryJob(0, 'job-id')
       const taskItem = new TaskItemImpl(job)
       expect(taskItem.executionError).toBeUndefined()
     })
@@ -234,7 +234,7 @@ describe('TaskItemImpl', () => {
         current_outputs: {}
       }
       const job: JobListItem = {
-        ...createHistoryJob(0, 'prompt-id'),
+        ...createHistoryJob(0, 'job-id'),
         status: 'failed',
         execution_error: errorDetail
       }
@@ -271,7 +271,7 @@ describe('useQueueStore', () => {
       expect(store.tasks).toEqual([])
       expect(store.flatTasks).toEqual([])
       expect(store.hasPendingTasks).toBe(false)
-      expect(store.lastHistoryQueueIndex).toBe(-1)
+      expect(store.lastJobHistoryPriority).toBe(-1)
     })
   })
 
@@ -292,9 +292,9 @@ describe('useQueueStore', () => {
 
       expect(store.runningTasks).toHaveLength(1)
       expect(store.pendingTasks).toHaveLength(2)
-      expect(store.runningTasks[0].promptId).toBe('run-1')
-      expect(store.pendingTasks[0].promptId).toBe('pend-2')
-      expect(store.pendingTasks[1].promptId).toBe('pend-1')
+      expect(store.runningTasks[0].jobId).toBe('run-1')
+      expect(store.pendingTasks[0].jobId).toBe('pend-2')
+      expect(store.pendingTasks[1].jobId).toBe('pend-1')
     })
 
     it('should load history tasks from API', async () => {
@@ -307,8 +307,8 @@ describe('useQueueStore', () => {
       await store.update()
 
       expect(store.historyTasks).toHaveLength(2)
-      expect(store.historyTasks[0].promptId).toBe('hist-1')
-      expect(store.historyTasks[1].promptId).toBe('hist-2')
+      expect(store.historyTasks[0].jobId).toBe('hist-1')
+      expect(store.historyTasks[1].jobId).toBe('hist-2')
     })
 
     it('should set loading state correctly', async () => {
@@ -334,7 +334,7 @@ describe('useQueueStore', () => {
   })
 
   describe('update() - sorting', () => {
-    it('should sort tasks by queueIndex descending', async () => {
+    it('should sort tasks by job.priority descending', async () => {
       const job1 = createHistoryJob(1, 'hist-1')
       const job2 = createHistoryJob(5, 'hist-2')
       const job3 = createHistoryJob(3, 'hist-3')
@@ -344,9 +344,9 @@ describe('useQueueStore', () => {
 
       await store.update()
 
-      expect(store.historyTasks[0].queueIndex).toBe(5)
-      expect(store.historyTasks[1].queueIndex).toBe(3)
-      expect(store.historyTasks[2].queueIndex).toBe(1)
+      expect(store.historyTasks[0].job.priority).toBe(5)
+      expect(store.historyTasks[1].job.priority).toBe(3)
+      expect(store.historyTasks[2].job.priority).toBe(1)
     })
 
     it('should preserve API sort order for pending tasks', async () => {
@@ -363,14 +363,14 @@ describe('useQueueStore', () => {
 
       await store.update()
 
-      expect(store.pendingTasks[0].queueIndex).toBe(15)
-      expect(store.pendingTasks[1].queueIndex).toBe(12)
-      expect(store.pendingTasks[2].queueIndex).toBe(10)
+      expect(store.pendingTasks[0].job.priority).toBe(15)
+      expect(store.pendingTasks[1].job.priority).toBe(12)
+      expect(store.pendingTasks[2].job.priority).toBe(10)
     })
   })
 
   describe('update() - queue index collision (THE BUG FIX)', () => {
-    it('should NOT confuse different prompts with same queueIndex', async () => {
+    it('should NOT confuse different prompts with same job.priority', async () => {
       const hist1 = createHistoryJob(50, 'prompt-uuid-aaa')
 
       mockGetQueue.mockResolvedValue({ Running: [], Pending: [] })
@@ -378,7 +378,7 @@ describe('useQueueStore', () => {
 
       await store.update()
       expect(store.historyTasks).toHaveLength(1)
-      expect(store.historyTasks[0].promptId).toBe('prompt-uuid-aaa')
+      expect(store.historyTasks[0].jobId).toBe('prompt-uuid-aaa')
 
       const hist2 = createHistoryJob(51, 'prompt-uuid-bbb')
       mockGetHistory.mockResolvedValue([hist2])
@@ -386,11 +386,11 @@ describe('useQueueStore', () => {
       await store.update()
 
       expect(store.historyTasks).toHaveLength(1)
-      expect(store.historyTasks[0].promptId).toBe('prompt-uuid-bbb')
-      expect(store.historyTasks[0].queueIndex).toBe(51)
+      expect(store.historyTasks[0].jobId).toBe('prompt-uuid-bbb')
+      expect(store.historyTasks[0].job.priority).toBe(51)
     })
 
-    it('should correctly reconcile when queueIndex is reused', async () => {
+    it('should correctly reconcile when job.priority is reused', async () => {
       const hist1 = createHistoryJob(100, 'first-prompt-at-100')
       const hist2 = createHistoryJob(99, 'prompt-at-99')
 
@@ -406,13 +406,13 @@ describe('useQueueStore', () => {
       await store.update()
 
       expect(store.historyTasks).toHaveLength(2)
-      const promptIds = store.historyTasks.map((t) => t.promptId)
-      expect(promptIds).toContain('second-prompt-at-101')
-      expect(promptIds).toContain('prompt-at-99')
-      expect(promptIds).not.toContain('first-prompt-at-100')
+      const jobIds = store.historyTasks.map((t) => t.jobId)
+      expect(jobIds).toContain('second-prompt-at-101')
+      expect(jobIds).toContain('prompt-at-99')
+      expect(jobIds).not.toContain('first-prompt-at-100')
     })
 
-    it('should handle multiple queueIndex collisions simultaneously', async () => {
+    it('should handle multiple job.priority collisions simultaneously', async () => {
       const hist1 = createHistoryJob(10, 'old-at-10')
       const hist2 = createHistoryJob(20, 'old-at-20')
       const hist3 = createHistoryJob(30, 'keep-at-30')
@@ -430,13 +430,13 @@ describe('useQueueStore', () => {
       await store.update()
 
       expect(store.historyTasks).toHaveLength(3)
-      const promptIds = store.historyTasks.map((t) => t.promptId)
-      expect(promptIds).toEqual(['new-at-32', 'new-at-31', 'keep-at-30'])
+      const jobIds = store.historyTasks.map((t) => t.jobId)
+      expect(jobIds).toEqual(['new-at-32', 'new-at-31', 'keep-at-30'])
     })
   })
 
   describe('update() - history reconciliation', () => {
-    it('should keep existing items still on server (by promptId)', async () => {
+    it('should keep existing items still on server (by jobId)', async () => {
       const hist1 = createHistoryJob(10, 'existing-1')
       const hist2 = createHistoryJob(9, 'existing-2')
 
@@ -452,9 +452,9 @@ describe('useQueueStore', () => {
       await store.update()
 
       expect(store.historyTasks).toHaveLength(3)
-      expect(store.historyTasks.map((t) => t.promptId)).toContain('existing-1')
-      expect(store.historyTasks.map((t) => t.promptId)).toContain('existing-2')
-      expect(store.historyTasks.map((t) => t.promptId)).toContain('new-1')
+      expect(store.historyTasks.map((t) => t.jobId)).toContain('existing-1')
+      expect(store.historyTasks.map((t) => t.jobId)).toContain('existing-2')
+      expect(store.historyTasks.map((t) => t.jobId)).toContain('new-1')
     })
 
     it('should remove items no longer on server', async () => {
@@ -472,7 +472,7 @@ describe('useQueueStore', () => {
       await store.update()
 
       expect(store.historyTasks).toHaveLength(1)
-      expect(store.historyTasks[0].promptId).toBe('keep-me')
+      expect(store.historyTasks[0].jobId).toBe('keep-me')
     })
 
     it('should add new items from server', async () => {
@@ -490,8 +490,8 @@ describe('useQueueStore', () => {
       await store.update()
 
       expect(store.historyTasks).toHaveLength(3)
-      expect(store.historyTasks.map((t) => t.promptId)).toContain('new-1')
-      expect(store.historyTasks.map((t) => t.promptId)).toContain('new-2')
+      expect(store.historyTasks.map((t) => t.jobId)).toContain('new-1')
+      expect(store.historyTasks.map((t) => t.jobId)).toContain('new-2')
     })
 
     it('should recreate TaskItemImpl when outputs_count changes', async () => {
@@ -535,6 +535,7 @@ describe('useQueueStore', () => {
 
       await store.update()
       const initialTask = store.historyTasks[0]
+      const initialHistoryTasks = store.historyTasks
 
       // Same job with same outputs_count
       mockGetHistory.mockResolvedValue([{ ...job }])
@@ -543,6 +544,8 @@ describe('useQueueStore', () => {
 
       // Should reuse the same instance
       expect(store.historyTasks[0]).toBe(initialTask)
+      // Should preserve array identity when history is unchanged
+      expect(store.historyTasks).toBe(initialHistoryTasks)
     })
   })
 
@@ -560,9 +563,9 @@ describe('useQueueStore', () => {
       await store.update()
 
       expect(store.historyTasks).toHaveLength(3)
-      expect(store.historyTasks[0].queueIndex).toBe(10)
-      expect(store.historyTasks[1].queueIndex).toBe(9)
-      expect(store.historyTasks[2].queueIndex).toBe(8)
+      expect(store.historyTasks[0].job.priority).toBe(10)
+      expect(store.historyTasks[1].job.priority).toBe(9)
+      expect(store.historyTasks[2].job.priority).toBe(8)
     })
 
     it('should respect maxHistoryItems when combining new and existing', async () => {
@@ -586,7 +589,7 @@ describe('useQueueStore', () => {
       await store.update()
 
       expect(store.historyTasks).toHaveLength(5)
-      expect(store.historyTasks[0].queueIndex).toBe(23)
+      expect(store.historyTasks[0].job.priority).toBe(23)
     })
 
     it('should handle maxHistoryItems = 0', async () => {
@@ -616,7 +619,7 @@ describe('useQueueStore', () => {
       await store.update()
 
       expect(store.historyTasks).toHaveLength(1)
-      expect(store.historyTasks[0].queueIndex).toBe(10)
+      expect(store.historyTasks[0].job.priority).toBe(10)
     })
 
     it('should dynamically adjust when maxHistoryItems changes', async () => {
@@ -683,7 +686,7 @@ describe('useQueueStore', () => {
       expect(store.hasPendingTasks).toBe(false)
     })
 
-    it('lastHistoryQueueIndex should return highest queue index', async () => {
+    it('lastJobHistoryPriority should return highest job priority', async () => {
       const hist1 = createHistoryJob(10, 'hist-1')
       const hist2 = createHistoryJob(25, 'hist-2')
       const hist3 = createHistoryJob(15, 'hist-3')
@@ -692,15 +695,15 @@ describe('useQueueStore', () => {
       mockGetHistory.mockResolvedValue([hist1, hist2, hist3])
 
       await store.update()
-      expect(store.lastHistoryQueueIndex).toBe(25)
+      expect(store.lastJobHistoryPriority).toBe(25)
     })
 
-    it('lastHistoryQueueIndex should be -1 when no history', async () => {
+    it('lastJobHistoryPriority should be -1 when no history', async () => {
       mockGetQueue.mockResolvedValue({ Running: [], Pending: [] })
       mockGetHistory.mockResolvedValue([])
 
       await store.update()
-      expect(store.lastHistoryQueueIndex).toBe(-1)
+      expect(store.lastJobHistoryPriority).toBe(-1)
     })
   })
 
@@ -831,7 +834,7 @@ describe('useQueueStore', () => {
       await secondUpdate
 
       expect(store.pendingTasks).toHaveLength(1)
-      expect(store.pendingTasks[0].promptId).toBe('new-job')
+      expect(store.pendingTasks[0].jobId).toBe('new-job')
 
       resolveFirst!({
         Running: [],
@@ -840,7 +843,7 @@ describe('useQueueStore', () => {
       await firstUpdate
 
       expect(store.pendingTasks).toHaveLength(1)
-      expect(store.pendingTasks[0].promptId).toBe('new-job')
+      expect(store.pendingTasks[0].jobId).toBe('new-job')
     })
 
     it('should set isLoading to false only for the latest request', async () => {
@@ -897,13 +900,13 @@ describe('useQueueStore', () => {
       await secondUpdate
 
       expect(store.pendingTasks).toHaveLength(1)
-      expect(store.pendingTasks[0].promptId).toBe('new-job')
+      expect(store.pendingTasks[0].jobId).toBe('new-job')
       expect(store.isLoading).toBe(false)
 
       await expect(firstUpdate).rejects.toThrow('stale network error')
 
       expect(store.pendingTasks).toHaveLength(1)
-      expect(store.pendingTasks[0].promptId).toBe('new-job')
+      expect(store.pendingTasks[0].jobId).toBe('new-job')
       expect(store.isLoading).toBe(false)
     })
   })

@@ -275,7 +275,15 @@ const zExtra = z
     frontendVersion: z.string().optional(),
     linkExtensions: z.array(zComfyLinkExtension).optional(),
     reroutes: z.array(zReroute).optional(),
-    workflowRendererVersion: zRendererType.optional()
+    workflowRendererVersion: zRendererType.optional(),
+    BlueprintDescription: z.string().optional(),
+    BlueprintSearchAliases: z.array(z.string()).optional(),
+    linearData: z
+      .object({
+        inputs: z.array(z.tuple([zNodeId, z.string()])).optional(),
+        outputs: z.array(zNodeId).optional()
+      })
+      .optional()
   })
   .passthrough()
 
@@ -394,7 +402,14 @@ interface SubgraphDefinitionBase<
   id: string
   revision: number
   name: string
+  /** Optional description shown as tooltip when hovering over the subgraph node. */
+  description?: string
   category?: string
+  essentials_category?: string
+  /** Custom metadata for the subgraph (description, searchAliases, etc.) */
+  extra?: T extends ComfyWorkflow1BaseInput
+    ? z.input<typeof zExtra> | null
+    : z.output<typeof zExtra> | null
 
   inputNode: T extends ComfyWorkflow1BaseInput
     ? z.input<typeof zExportedSubgraphIONode>
@@ -426,7 +441,10 @@ const zSubgraphDefinition = zComfyWorkflow1
     id: z.string().uuid(),
     revision: z.number(),
     name: z.string(),
+    /** Optional description shown as tooltip when hovering over the subgraph node. */
+    description: z.string().optional(),
     category: z.string().optional(),
+    essentials_category: z.string().optional(),
     inputNode: zExportedSubgraphIONode,
     outputNode: zExportedSubgraphIONode,
 
@@ -531,3 +549,46 @@ const zNodeData = z.object({
 
 const zComfyApiWorkflow = z.record(zNodeId, zNodeData)
 export type ComfyApiWorkflow = z.infer<typeof zComfyApiWorkflow>
+
+/**
+ * Builds a map from subgraph definition ID to all execution path prefixes
+ * where that definition is instantiated in the workflow.
+ *
+ * "def-A" → ["5", "10"] for each container node instantiating that subgraph definition.
+ */
+export function buildSubgraphExecutionPaths(
+  rootNodes: ComfyNode[],
+  allSubgraphDefs: unknown[]
+): Map<string, string[]> {
+  const subgraphDefMap = new Map(
+    allSubgraphDefs.filter(isSubgraphDefinition).map((s) => [s.id, s])
+  )
+  const pathMap = new Map<string, string[]>()
+  const visited = new Set<string>()
+
+  const build = (nodes: ComfyNode[], parentPrefix: string) => {
+    for (const n of nodes ?? []) {
+      if (typeof n.type !== 'string' || !subgraphDefMap.has(n.type)) continue
+      const path = parentPrefix ? `${parentPrefix}:${n.id}` : String(n.id)
+      const existing = pathMap.get(n.type)
+      if (existing) {
+        existing.push(path)
+      } else {
+        pathMap.set(n.type, [path])
+      }
+
+      if (visited.has(n.type)) continue
+      visited.add(n.type)
+
+      const innerDef = subgraphDefMap.get(n.type)
+      if (innerDef) {
+        build(innerDef.nodes, path)
+      }
+
+      visited.delete(n.type)
+    }
+  }
+
+  build(rootNodes, '')
+  return pathMap
+}

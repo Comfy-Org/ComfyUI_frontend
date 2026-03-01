@@ -4,11 +4,11 @@ import { computed, onMounted } from 'vue'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
 import { useReleaseStore } from '@/platform/updates/common/releaseStore'
-import { useDialogService } from '@/services/dialogService'
 import { useHelpCenterStore } from '@/stores/helpCenterStore'
 import type { HelpCenterTriggerLocation } from '@/stores/helpCenterStore'
 import { useConflictAcknowledgment } from '@/workbench/extensions/manager/composables/useConflictAcknowledgment'
 import { useConflictDetection } from '@/workbench/extensions/manager/composables/useConflictDetection'
+import { useNodeConflictDialog } from '@/workbench/extensions/manager/composables/useNodeConflictDialog'
 
 export function useHelpCenter(
   triggerFrom: HelpCenterTriggerLocation = 'sidebar'
@@ -21,7 +21,7 @@ export function useHelpCenter(
   const { shouldShowRedDot: showReleaseRedDot } = storeToRefs(releaseStore)
 
   const conflictDetection = useConflictDetection()
-  const { showNodeConflictDialog } = useDialogService()
+  const { show: showNodeConflictDialog } = useNodeConflictDialog()
 
   // Use conflict acknowledgment state from composable - call only once
   const { shouldShowRedDot: shouldShowConflictRedDot, markConflictsAsSeen } =
@@ -72,7 +72,7 @@ export function useHelpCenter(
    * Show the node conflict dialog with current conflict data
    */
   const showConflictModal = () => {
-    showNodeConflictDialog({
+    void showNodeConflictDialog({
       showAfterWhatsNew: true,
       dialogComponentProps: {
         onClose: () => {

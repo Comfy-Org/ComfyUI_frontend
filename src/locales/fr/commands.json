@@ -44,6 +44,9 @@
   "Comfy_BrowseTemplates": {
     "label": "Parcourir les modèles"
   },
+  "Comfy_Canvas_CopySelected": {
+    "label": "Copier"
+  },
   "Comfy_Canvas_DeleteSelectedItems": {
     "label": "Supprimer les éléments sélectionnés"
   },
@@ -65,11 +68,17 @@
   "Comfy_Canvas_MoveSelectedNodes_Up": {
     "label": "Déplacer les nœuds sélectionnés vers le haut"
   },
+  "Comfy_Canvas_PasteFromClipboard": {
+    "label": "Coller"
+  },
   "Comfy_Canvas_ResetView": {
     "label": "Réinitialiser la vue"
   },
   "Comfy_Canvas_Resize": {
     "label": "Redimensionner les nœuds sélectionnés"
+  },
+  "Comfy_Canvas_SelectAll": {
+    "label": "Tout sélectionner"
   },
   "Comfy_Canvas_ToggleLinkVisibility": {
     "label": "Basculer la visibilité du lien sur le canevas"
@@ -266,6 +275,12 @@
   "Comfy_ShowSettingsDialog": {
     "label": "Afficher la boîte de dialogue des paramètres"
   },
+  "Comfy_Subgraph_SetDescription": {
+    "label": "Définir la description du sous-graphe"
+  },
+  "Comfy_Subgraph_SetSearchAliases": {
+    "label": "Définir les alias de recherche du sous-graphe"
+  },
   "Comfy_ToggleAssetAPI": {
     "label": "Expérimental : Activer AssetAPI"
   },
@@ -312,10 +327,10 @@
     "label": "Basculer le panneau inférieur"
   },
   "Workspace_ToggleBottomPanelTab_command-terminal": {
-    "label": "Basculer le panneau inférieur du terminal"
+    "label": "Afficher/Masquer le panneau inférieur du terminal"
   },
   "Workspace_ToggleBottomPanelTab_logs-terminal": {
-    "label": "Basculer le panneau inférieur des journaux"
+    "label": "Afficher/Masquer le panneau inférieur des journaux"
   },
   "Workspace_ToggleBottomPanelTab_shortcuts-essentials": {
     "label": "Afficher/Masquer le panneau inférieur essentiel"

@@ -226,7 +226,7 @@
           {{ t('subscription.videoEstimateExplanation') }}
         </p>
         <a
-          href="https://cloud.comfy.org/?template=video_wan2_2_14B_fun_camera"
+          href="https://cloud.comfy.org/?template=video_wan2_2_14B_i2v"
           target="_blank"
           rel="noopener noreferrer"
           class="text-sm text-azure-600 hover:text-azure-400 no-underline flex gap-1"
@@ -243,6 +243,7 @@
 
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
+import { storeToRefs } from 'pinia'
 import Popover from 'primevue/popover'
 import SelectButton from 'primevue/selectbutton'
 import type { ToggleButtonPassThroughMethodOptions } from 'primevue/togglebutton'
@@ -252,7 +253,6 @@ import { useI18n } from 'vue-i18n'
 import Button from '@/components/ui/button/Button.vue'
 import { useFirebaseAuthActions } from '@/composables/auth/useFirebaseAuthActions'
 import { useErrorHandling } from '@/composables/useErrorHandling'
-import { t } from '@/i18n'
 import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
 import {
   TIER_PRICING,
@@ -266,16 +266,31 @@ import { performSubscriptionCheckout } from '@/platform/cloud/subscription/utils
 import { isPlanDowngrade } from '@/platform/cloud/subscription/utils/subscriptionTierRank'
 import type { BillingCycle } from '@/platform/cloud/subscription/utils/subscriptionTierRank'
 import { isCloud } from '@/platform/distribution/types'
+import { useTelemetry } from '@/platform/telemetry'
+import type { CheckoutAttributionMetadata } from '@/platform/telemetry/types'
+import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
 import type { components } from '@/types/comfyRegistryTypes'
 
 type SubscriptionTier = components['schemas']['SubscriptionTier']
-type CheckoutTierKey = Exclude<TierKey, 'founder'>
+type CheckoutTierKey = Exclude<TierKey, 'free' | 'founder'>
 type CheckoutTier = CheckoutTierKey | `${CheckoutTierKey}-yearly`
 
 const getCheckoutTier = (
   tierKey: CheckoutTierKey,
   billingCycle: BillingCycle
 ): CheckoutTier => (billingCycle === 'yearly' ? `${tierKey}-yearly` : tierKey)
+
+const getCheckoutAttributionForCloud =
+  async (): Promise<CheckoutAttributionMetadata> => {
+    if (__DISTRIBUTION__ !== 'cloud') {
+      return {}
+    }
+
+    const { getCheckoutAttribution } =
+      await import('@/platform/telemetry/utils/checkoutAttribution')
+
+    return getCheckoutAttribution()
+  }
 
 interface BillingCycleOption {
   label: string
@@ -291,6 +306,8 @@ interface PricingTierConfig {
   customLoRAs: boolean
   isPopular?: boolean
 }
+
+const { t, n } = useI18n()
 
 const billingCycleOptions: BillingCycleOption[] = [
   { label: t('subscription.yearly'), value: 'yearly' },
@@ -326,10 +343,14 @@ const tiers: PricingTierConfig[] = [
     isPopular: false
   }
 ]
-
-const { n } = useI18n()
-const { isActiveSubscription, subscriptionTier, isYearlySubscription } =
-  useSubscription()
+const {
+  isActiveSubscription,
+  isFreeTier,
+  subscriptionTier,
+  isYearlySubscription
+} = useSubscription()
+const telemetry = useTelemetry()
+const { userId } = storeToRefs(useFirebaseAuthStore())
 const { accessBillingPortal, reportError } = useFirebaseAuthActions()
 const { wrapWithErrorHandlingAsync } = useErrorHandling()
 
@@ -337,6 +358,10 @@ const isLoading = ref(false)
 const loadingTier = ref<CheckoutTierKey | null>(null)
 const popover = ref()
 const currentBillingCycle = ref<BillingCycle>('yearly')
+
+const hasPaidSubscription = computed(
+  () => isActiveSubscription.value && !isFreeTier.value
+)
 
 const currentTierKey = computed<TierKey | null>(() =>
   subscriptionTier.value ? TIER_TO_KEY[subscriptionTier.value] : null
@@ -374,7 +399,7 @@ const getButtonLabel = (tier: PricingTierConfig): string => {
       ? t('subscription.tierNameYearly', { name: tier.name })
       : tier.name
 
-  return isActiveSubscription.value
+  return hasPaidSubscription.value
     ? t('subscription.changeTo', { plan: planName })
     : t('subscription.subscribeTo', { plan: planName })
 }
@@ -409,7 +434,20 @@ const handleSubscribe = wrapWithErrorHandlingAsync(
     loadingTier.value = tierKey
 
     try {
-      if (isActiveSubscription.value) {
+      if (hasPaidSubscription.value) {
+        const checkoutAttribution = await getCheckoutAttributionForCloud()
+        if (userId.value) {
+          telemetry?.trackBeginCheckout({
+            user_id: userId.value,
+            tier: tierKey,
+            cycle: currentBillingCycle.value,
+            checkout_type: 'change',
+            ...checkoutAttribution,
+            ...(currentTierKey.value
+              ? { previous_tier: currentTierKey.value }
+              : {})
+          })
+        }
         // Pass the target tier to create a deep link to subscription update confirmation
         const checkoutTier = getCheckoutTier(tierKey, currentBillingCycle.value)
         const targetPlan = {
@@ -430,7 +468,11 @@ const handleSubscribe = wrapWithErrorHandlingAsync(
           await accessBillingPortal(checkoutTier)
         }
       } else {
-        await performSubscriptionCheckout(tierKey, currentBillingCycle.value)
+        await performSubscriptionCheckout(
+          tierKey,
+          currentBillingCycle.value,
+          true
+        )
       }
     } finally {
       isLoading.value = false

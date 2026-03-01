@@ -54,9 +54,21 @@ describe.skip('SubgraphNode Construction', () => {
   it('should maintain reference to root graph', () => {
     const subgraph = createTestSubgraph()
     const subgraphNode = createTestSubgraphNode(subgraph)
-    const parentGraph = subgraphNode.graph
+    const parentGraph = subgraphNode.graph!
 
     expect(subgraphNode.rootGraph).toBe(parentGraph.rootGraph)
+  })
+
+  it('should throw NullGraphError when accessing rootGraph after removal', () => {
+    const subgraph = createTestSubgraph()
+    const subgraphNode = createTestSubgraphNode(subgraph)
+    const parentGraph = subgraphNode.graph!
+    parentGraph.add(subgraphNode)
+
+    parentGraph.remove(subgraphNode)
+
+    expect(() => subgraphNode.rootGraph).toThrow()
+    expect(subgraphNode.graph).toBeNull()
   })
 
   subgraphTest(

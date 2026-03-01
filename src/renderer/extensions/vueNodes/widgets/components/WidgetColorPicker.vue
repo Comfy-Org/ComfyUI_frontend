@@ -38,10 +38,12 @@ import {
   filterWidgetProps
 } from '@/utils/widgetPropFilter'
 
+import type { IWidgetOptions } from '@/lib/litegraph/src/types/widgets'
+
 import { WidgetInputBaseClass } from './layout'
 import WidgetLayoutField from './layout/WidgetLayoutField.vue'
 
-type WidgetOptions = { format?: ColorFormat } & Record<string, unknown>
+type WidgetOptions = IWidgetOptions & { format?: ColorFormat }
 
 const props = defineProps<{
   widget: SimplifiedWidget<string, WidgetOptions>

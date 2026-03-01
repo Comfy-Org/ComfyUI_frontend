@@ -3,7 +3,9 @@ import _ from 'es-toolkit/compat'
 import { defineStore } from 'pinia'
 import { computed, ref, watchEffect } from 'vue'
 
-import { isProxyWidget } from '@/core/graph/subgraph/proxyWidget'
+import { t } from '@/i18n'
+import { isPromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetTypes'
+import { resolvePromotedWidgetSource } from '@/core/graph/subgraph/resolvePromotedWidgetSource'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { transformNodeDefV1ToV2 } from '@/schemas/nodeDef/migration'
@@ -21,7 +23,8 @@ import type {
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { NodeSearchService } from '@/services/nodeSearchService'
 import { useSubgraphStore } from '@/stores/subgraphStore'
-import { NodeSourceType, getNodeSource } from '@/types/nodeSource'
+import { ESSENTIALS_CATEGORY_CANONICAL } from '@/constants/essentialsNodes'
+import { CORE_NODE_MODULES, getNodeSource } from '@/types/nodeSource'
 import type { NodeSource } from '@/types/nodeSource'
 import type { TreeNode } from '@/types/treeExplorerTypes'
 import type { FuseSearchable, SearchAuxScore } from '@/utils/fuseUtil'
@@ -38,6 +41,7 @@ export class ComfyNodeDefImpl
    * needs to write to it to assign a node to a custom folder.
    */
   category: string
+  readonly main_category?: string
   readonly python_module: string
   readonly description: string
   readonly help: string
@@ -76,11 +80,21 @@ export class ComfyNodeDefImpl
    * and input connectivity.
    */
   readonly price_badge?: PriceBadge
+  /**
+   * Alternative names for search. Useful for synonyms, abbreviations,
+   * or old names after renaming a node.
+   */
+  readonly search_aliases?: string[]
+  /** Category for the Essentials tab. If set, the node appears in Essentials. */
+  readonly essentials_category?: string
+  /** Whether the blueprint is a global/installed blueprint (not user-created). */
+  readonly isGlobal?: boolean
+  readonly isCoreNode: boolean
 
   // V2 fields
   readonly inputs: Record<string, InputSpecV2>
   readonly outputs: OutputSpecV2[]
-  readonly hidden?: Record<string, any>
+  readonly hidden?: Record<string, boolean>
 
   // ComfyNodeDefImpl fields
   readonly nodeSource: NodeSource
@@ -130,6 +144,7 @@ export class ComfyNodeDefImpl
     this.name = obj.name
     this.display_name = obj.display_name
     this.category = obj.category
+    this.main_category = obj.main_category
     this.python_module = obj.python_module
     this.description = obj.description
     this.help = obj.help ?? ''
@@ -146,6 +161,15 @@ export class ComfyNodeDefImpl
     this.output_tooltips = obj.output_tooltips
     this.input_order = obj.input_order
     this.price_badge = obj.price_badge
+    this.essentials_category = obj.essentials_category
+      ? (ESSENTIALS_CATEGORY_CANONICAL.get(
+          obj.essentials_category.toLowerCase()
+        ) ?? obj.essentials_category)
+      : undefined
+    this.isGlobal = obj.isGlobal
+    this.isCoreNode = CORE_NODE_MODULES.includes(
+      this.python_module.split('.')[0]
+    )
 
     // Initialize V2 fields
     const defV2 = transformNodeDefV1ToV2(obj)
@@ -154,7 +178,7 @@ export class ComfyNodeDefImpl
     this.hidden = defV2.hidden
 
     // Initialize node source
-    this.nodeSource = getNodeSource(obj.python_module)
+    this.nodeSource = getNodeSource(obj.python_module, this.essentials_category)
   }
 
   get nodePath(): string {
@@ -169,10 +193,6 @@ export class ComfyNodeDefImpl
     const nodeFrequencyStore = useNodeFrequencyStore()
     const nodeFrequency = nodeFrequencyStore.getNodeFrequencyByName(this.name)
     return [scores[0], -nodeFrequency, ...scores.slice(1)]
-  }
-
-  get isCoreNode(): boolean {
-    return this.nodeSource.type === NodeSourceType.Core
   }
 
   get nodeLifeCycleBadgeText(): string {
@@ -345,6 +365,14 @@ export const useNodeDefStore = defineStore('nodeDef', () => {
     }
     return types
   })
+  const allNodeDefsByName = computed(() => {
+    const map: Record<string, ComfyNodeDefImpl> = {}
+    for (const nodeDef of nodeDefs.value) {
+      map[nodeDef.name] = nodeDef
+    }
+    return map
+  })
+
   const visibleNodeDefs = computed(() => {
     return nodeDefs.value.filter((nodeDef) =>
       nodeDefFilters.value.every((filter) => filter.predicate(nodeDef))
@@ -395,14 +423,12 @@ export const useNodeDefStore = defineStore('nodeDef', () => {
       return nodeDef.inputs[widgetName]
     }
     const widget = node.widgets?.find((w) => w.name === widgetName)
-    //TODO: resolve spec for linked
-    if (!widget || !isProxyWidget(widget)) return undefined
+    if (!widget || !isPromotedWidgetView(widget)) return undefined
 
-    const { nodeId, widgetName: subWidgetName } = widget._overlay
-    const subNode = node.subgraph.getNodeById(nodeId)
-    if (!subNode) return undefined
+    const sourceWidget = resolvePromotedWidgetSource(node, widget)
+    if (!sourceWidget) return undefined
 
-    return getInputSpecForWidget(subNode, subWidgetName)
+    return getInputSpecForWidget(sourceWidget.node, sourceWidget.widget.name)
   }
 
   /**
@@ -428,25 +454,24 @@ export const useNodeDefStore = defineStore('nodeDef', () => {
     // Deprecated nodes filter
     registerNodeDefFilter({
       id: 'core.deprecated',
-      name: 'Hide Deprecated Nodes',
-      description: 'Hides nodes marked as deprecated unless explicitly enabled',
+      name: t('nodeFilters.hideDeprecated'),
+      description: t('nodeFilters.hideDeprecatedDescription'),
       predicate: (nodeDef) => showDeprecated.value || !nodeDef.deprecated
     })
 
     // Experimental nodes filter
     registerNodeDefFilter({
       id: 'core.experimental',
-      name: 'Hide Experimental Nodes',
-      description:
-        'Hides nodes marked as experimental unless explicitly enabled',
+      name: t('nodeFilters.hideExperimental'),
+      description: t('nodeFilters.hideExperimentalDescription'),
       predicate: (nodeDef) => showExperimental.value || !nodeDef.experimental
     })
 
     // Dev-only nodes filter
     registerNodeDefFilter({
       id: 'core.dev_only',
-      name: 'Hide Dev-Only Nodes',
-      description: 'Hides nodes marked as dev-only unless dev mode is enabled',
+      name: t('nodeFilters.hideDevOnly'),
+      description: t('nodeFilters.hideDevOnlyDescription'),
       predicate: (nodeDef) => showDevOnly.value || !nodeDef.dev_only
     })
 
@@ -454,9 +479,8 @@ export const useNodeDefStore = defineStore('nodeDef', () => {
     // Filter out litegraph typed subgraphs, saved blueprints are added in separately
     registerNodeDefFilter({
       id: 'core.subgraph',
-      name: 'Hide Subgraph Nodes',
-      description:
-        'Temporarily hides subgraph nodes from node library and search',
+      name: t('nodeFilters.hideSubgraph'),
+      description: t('nodeFilters.hideSubgraphDescription'),
       predicate: (nodeDef) => {
         // Hide subgraph nodes (identified by category='subgraph' and python_module='nodes')
         return !(
@@ -472,6 +496,7 @@ export const useNodeDefStore = defineStore('nodeDef', () => {
   return {
     nodeDefsByName,
     nodeDefsByDisplayName,
+    allNodeDefsByName,
     showDeprecated,
     showExperimental,
     showDevOnly,

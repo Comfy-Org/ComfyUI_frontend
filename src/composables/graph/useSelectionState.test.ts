@@ -87,6 +87,25 @@ describe('useSelectionState', () => {
       const { hasAnySelection } = useSelectionState()
       expect(hasAnySelection.value).toBe(true)
     })
+
+    test('hasMultipleSelection should be true when 2+ items selected', () => {
+      const canvasStore = useCanvasStore()
+      const node1 = createMockLGraphNode({ id: 1 })
+      const node2 = createMockLGraphNode({ id: 2 })
+      canvasStore.$state.selectedItems = [node1, node2]
+
+      const { hasMultipleSelection } = useSelectionState()
+      expect(hasMultipleSelection.value).toBe(true)
+    })
+
+    test('hasMultipleSelection should be false when only 1 item selected', () => {
+      const canvasStore = useCanvasStore()
+      const node1 = createMockLGraphNode({ id: 1 })
+      canvasStore.$state.selectedItems = [node1]
+
+      const { hasMultipleSelection } = useSelectionState()
+      expect(hasMultipleSelection.value).toBe(false)
+    })
   })
 
   describe('Node Type Filtering', () => {

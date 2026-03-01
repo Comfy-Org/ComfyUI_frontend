@@ -5,16 +5,16 @@ import { getMiddlePoint } from '../fixtures/utils/litegraphUtils'
 
 test.describe('Reroute Node', { tag: ['@screenshot', '@node'] }, () => {
   test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.setSetting('Comfy.UseNewMenu', 'Top')
+    await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
   })
 
   test.afterEach(async ({ comfyPage }) => {
-    await comfyPage.setupWorkflowsDirectory({})
+    await comfyPage.workflow.setupWorkflowsDirectory({})
   })
 
   test('loads from inserted workflow', async ({ comfyPage }) => {
     const workflowName = 'single_connected_reroute_node.json'
-    await comfyPage.setupWorkflowsDirectory({
+    await comfyPage.workflow.setupWorkflowsDirectory({
       [workflowName]: 'links/single_connected_reroute_node.json'
     })
     await comfyPage.setup()
@@ -43,12 +43,12 @@ test.describe(
   { tag: ['@screenshot', '@node'] },
   () => {
     test.beforeEach(async ({ comfyPage }) => {
-      await comfyPage.setSetting('Comfy.UseNewMenu', 'Disabled')
-      await comfyPage.setSetting('LiteGraph.Reroute.SplineOffset', 80)
+      await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Disabled')
+      await comfyPage.settings.setSetting('LiteGraph.Reroute.SplineOffset', 80)
     })
 
     test('loads from workflow', async ({ comfyPage }) => {
-      await comfyPage.loadWorkflow('reroute/native_reroute')
+      await comfyPage.workflow.loadWorkflow('reroute/native_reroute')
       await expect(comfyPage.canvas).toHaveScreenshot('native_reroute.png')
     })
 
@@ -56,10 +56,10 @@ test.describe(
       comfyPage
     }) => {
       const loadCheckpointNode = (
-        await comfyPage.getNodeRefsByTitle('Load Checkpoint')
+        await comfyPage.nodeOps.getNodeRefsByTitle('Load Checkpoint')
       )[0]
       const clipEncodeNode = (
-        await comfyPage.getNodeRefsByTitle('CLIP Text Encode (Prompt)')
+        await comfyPage.nodeOps.getNodeRefsByTitle('CLIP Text Encode (Prompt)')
       )[0]
 
       const slot1 = await loadCheckpointNode.getOutput(1)
@@ -82,10 +82,10 @@ test.describe(
       comfyPage
     }) => {
       const loadCheckpointNode = (
-        await comfyPage.getNodeRefsByTitle('Load Checkpoint')
+        await comfyPage.nodeOps.getNodeRefsByTitle('Load Checkpoint')
       )[0]
       const clipEncodeNode = (
-        await comfyPage.getNodeRefsByTitle('CLIP Text Encode (Prompt)')
+        await comfyPage.nodeOps.getNodeRefsByTitle('CLIP Text Encode (Prompt)')
       )[0]
 
       const slot1 = await loadCheckpointNode.getOutput(1)
@@ -109,7 +109,7 @@ test.describe(
       comfyPage
     }) => {
       // https://github.com/Comfy-Org/ComfyUI_frontend/issues/4695
-      await comfyPage.loadWorkflow(
+      await comfyPage.workflow.loadWorkflow(
         'reroute/single-native-reroute-default-workflow'
       )
 

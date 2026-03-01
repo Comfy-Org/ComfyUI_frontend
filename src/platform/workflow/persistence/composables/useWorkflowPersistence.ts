@@ -53,6 +53,13 @@ export function useWorkflowPersistence() {
 
   const lastSavedJsonByPath = ref<Record<string, string>>({})
 
+  watch(workflowPersistenceEnabled, (enabled) => {
+    if (!enabled) {
+      workflowDraftStore.reset()
+      lastSavedJsonByPath.value = {}
+    }
+  })
+
   const persistCurrentWorkflow = () => {
     if (!workflowPersistenceEnabled.value) return
     const activeWorkflow = workflowStore.activeWorkflow

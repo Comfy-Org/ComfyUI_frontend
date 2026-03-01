@@ -15,8 +15,11 @@ async function checkTemplateFileExists(
 
 test.describe('Templates', { tag: ['@slow', '@workflow'] }, () => {
   test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.setSetting('Comfy.UseNewMenu', 'Top')
-    await comfyPage.setSetting('Comfy.Workflow.ShowMissingModelsWarning', false)
+    await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
+    await comfyPage.settings.setSetting(
+      'Comfy.Workflow.ShowMissingModelsWarning',
+      false
+    )
   })
 
   test('should have a JSON workflow file for each template', async ({
@@ -72,13 +75,13 @@ test.describe('Templates', { tag: ['@slow', '@workflow'] }, () => {
   test('Can load template workflows', async ({ comfyPage }) => {
     // Clear the workflow
     await comfyPage.menu.workflowsTab.open()
-    await comfyPage.executeCommand('Comfy.NewBlankWorkflow')
+    await comfyPage.command.executeCommand('Comfy.NewBlankWorkflow')
     await expect(async () => {
-      expect(await comfyPage.getGraphNodesCount()).toBe(0)
+      expect(await comfyPage.nodeOps.getGraphNodesCount()).toBe(0)
     }).toPass({ timeout: 250 })
 
     // Load a template
-    await comfyPage.executeCommand('Comfy.BrowseTemplates')
+    await comfyPage.command.executeCommand('Comfy.BrowseTemplates')
     await expect(comfyPage.templates.content).toBeVisible()
 
     await comfyPage.page
@@ -89,7 +92,7 @@ test.describe('Templates', { tag: ['@slow', '@workflow'] }, () => {
 
     // Ensure we now have some nodes
     await expect(async () => {
-      expect(await comfyPage.getGraphNodesCount()).toBeGreaterThan(0)
+      expect(await comfyPage.nodeOps.getGraphNodesCount()).toBeGreaterThan(0)
     }).toPass({ timeout: 250 })
   })
 
@@ -97,7 +100,7 @@ test.describe('Templates', { tag: ['@slow', '@workflow'] }, () => {
     comfyPage
   }) => {
     // Set the tutorial as not completed to mark the user as a first-time user
-    await comfyPage.setSetting('Comfy.TutorialCompleted', false)
+    await comfyPage.settings.setSetting('Comfy.TutorialCompleted', false)
 
     // Load the page
     await comfyPage.setup({ clearStorage: true })
@@ -107,9 +110,9 @@ test.describe('Templates', { tag: ['@slow', '@workflow'] }, () => {
   })
 
   test('Uses proper locale files for templates', async ({ comfyPage }) => {
-    await comfyPage.setSetting('Comfy.Locale', 'fr')
+    await comfyPage.settings.setSetting('Comfy.Locale', 'fr')
 
-    await comfyPage.executeCommand('Comfy.BrowseTemplates')
+    await comfyPage.command.executeCommand('Comfy.BrowseTemplates')
 
     const dialog = comfyPage.page.getByRole('dialog').filter({
       has: comfyPage.page.getByRole('heading', { name: 'Modèles', exact: true })
@@ -134,7 +137,7 @@ test.describe('Templates', { tag: ['@slow', '@workflow'] }, () => {
     comfyPage
   }) => {
     // Set locale to a language that doesn't have a template file
-    await comfyPage.setSetting('Comfy.Locale', 'de') // German - no index.de.json exists
+    await comfyPage.settings.setSetting('Comfy.Locale', 'de') // German - no index.de.json exists
 
     // Wait for the German request (expected to 404)
     const germanRequestPromise = comfyPage.page.waitForRequest(
@@ -161,7 +164,7 @@ test.describe('Templates', { tag: ['@slow', '@workflow'] }, () => {
     )
 
     // Load the templates dialog
-    await comfyPage.executeCommand('Comfy.BrowseTemplates')
+    await comfyPage.command.executeCommand('Comfy.BrowseTemplates')
     await expect(comfyPage.templates.content).toBeVisible()
 
     // Verify German was requested first, then English as fallback
@@ -181,7 +184,7 @@ test.describe('Templates', { tag: ['@slow', '@workflow'] }, () => {
     comfyPage
   }) => {
     // Open templates dialog
-    await comfyPage.executeCommand('Comfy.BrowseTemplates')
+    await comfyPage.command.executeCommand('Comfy.BrowseTemplates')
     await comfyPage.templates.content.waitFor({ state: 'visible' })
 
     const templateGrid = comfyPage.page.locator(
@@ -189,20 +192,20 @@ test.describe('Templates', { tag: ['@slow', '@workflow'] }, () => {
     )
     const nav = comfyPage.page.locator('header', { hasText: 'Templates' })
 
-    await comfyPage.templates.waitForMinimumCardCount(1)
+    await comfyPage.templates.expectMinimumCardCount(1)
     await expect(templateGrid).toBeVisible()
     await expect(nav).toBeVisible() // Nav should be visible at desktop size
 
     const mobileSize = { width: 640, height: 800 }
     await comfyPage.page.setViewportSize(mobileSize)
-    await comfyPage.templates.waitForMinimumCardCount(1)
+    await comfyPage.templates.expectMinimumCardCount(1)
     await expect(templateGrid).toBeVisible()
     // Nav header is clipped by overflow-hidden parent at mobile size
     await expect(nav).not.toBeInViewport()
 
     const tabletSize = { width: 1024, height: 800 }
     await comfyPage.page.setViewportSize(tabletSize)
-    await comfyPage.templates.waitForMinimumCardCount(1)
+    await comfyPage.templates.expectMinimumCardCount(1)
     await expect(templateGrid).toBeVisible()
     await expect(nav).toBeVisible() // Nav should be visible at tablet size
   })
@@ -272,7 +275,7 @@ test.describe('Templates', { tag: ['@slow', '@workflow'] }, () => {
       })
 
       // Open templates dialog
-      await comfyPage.executeCommand('Comfy.BrowseTemplates')
+      await comfyPage.command.executeCommand('Comfy.BrowseTemplates')
       await expect(comfyPage.templates.content).toBeVisible()
 
       // Wait for cards to load

@@ -22,7 +22,9 @@ const extraFileExtensions = ['.vue']
 
 const commonGlobals = {
   ...globals.browser,
-  __COMFYUI_FRONTEND_VERSION__: 'readonly'
+  __COMFYUI_FRONTEND_VERSION__: 'readonly',
+  __DISTRIBUTION__: 'readonly',
+  __IS_NIGHTLY__: 'readonly'
 } as const
 
 const settings = {
@@ -278,6 +280,47 @@ export default defineConfig([
       'import-x/namespace': 'off',
       'import-x/no-duplicates': 'off',
       'import-x/consistent-type-specifier-style': 'off'
+    }
+  },
+
+  // i18n import enforcement
+  // Vue components must use the useI18n() composable, not the global t/d/st/te
+  {
+    files: ['**/*.vue'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          paths: [
+            {
+              name: '@/i18n',
+              importNames: ['t', 'd', 'te'],
+              message:
+                "In Vue components, use `const { t } = useI18n()` instead of importing from '@/i18n'."
+            }
+          ]
+        }
+      ]
+    }
+  },
+  // Non-composable .ts files must use the global t/d/te, not useI18n()
+  {
+    files: ['**/*.ts'],
+    ignores: ['**/use[A-Z]*.ts', '**/*.test.ts', 'src/i18n.ts'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          paths: [
+            {
+              name: 'vue-i18n',
+              importNames: ['useI18n'],
+              message:
+                "useI18n() requires Vue setup context. Use `import { t } from '@/i18n'` instead."
+            }
+          ]
+        }
+      ]
     }
   }
 ])

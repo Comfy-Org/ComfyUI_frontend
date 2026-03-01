@@ -2,7 +2,6 @@ import type { Ref } from 'vue'
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { st } from '@/i18n'
 import { civitaiImportSource } from '@/platform/assets/importSources/civitaiImportSource'
 import { huggingfaceImportSource } from '@/platform/assets/importSources/huggingfaceImportSource'
@@ -32,7 +31,6 @@ export function useUploadModelWizard(modelTypes: Ref<ModelTypeOption[]>) {
   const assetsStore = useAssetsStore()
   const assetDownloadStore = useAssetDownloadStore()
   const modelToNodeStore = useModelToNodeStore()
-  const { flags } = useFeatureFlags()
   const currentStep = ref(1)
   const isFetchingMetadata = ref(false)
   const isUploading = ref(false)
@@ -47,10 +45,10 @@ export function useUploadModelWizard(modelTypes: Ref<ModelTypeOption[]>) {
 
   const selectedModelType = ref<string>()
 
-  // Available import sources
-  const importSources: ImportSource[] = flags.huggingfaceModelImportEnabled
-    ? [civitaiImportSource, huggingfaceImportSource]
-    : [civitaiImportSource]
+  const importSources: ImportSource[] = [
+    civitaiImportSource,
+    huggingfaceImportSource
+  ]
 
   // Detected import source based on URL
   const detectedSource = computed(() => {
@@ -69,9 +67,9 @@ export function useUploadModelWizard(modelTypes: Ref<ModelTypeOption[]>) {
     }
   )
 
-  // Validation
+  // Validation - only enable Continue when URL matches a supported source
   const canFetchMetadata = computed(() => {
-    return wizardData.value.url.trim().length > 0
+    return detectedSource.value !== null
   })
 
   const canUploadModel = computed(() => {
@@ -233,40 +231,27 @@ export function useUploadModelWizard(modelTypes: Ref<ModelTypeOption[]>) {
         model_type: selectedModelType.value
       }
 
-      if (flags.asyncModelUploadEnabled) {
-        const result = await assetService.uploadAssetAsync({
-          source_url: wizardData.value.url,
-          tags,
-          user_metadata: userMetadata,
-          preview_id: previewId
-        })
+      const result = await assetService.uploadAssetAsync({
+        source_url: wizardData.value.url,
+        tags,
+        user_metadata: userMetadata,
+        preview_id: previewId
+      })
 
-        if (result.type === 'async' && result.task.status !== 'completed') {
-          if (selectedModelType.value) {
-            assetDownloadStore.trackDownload(
-              result.task.task_id,
-              selectedModelType.value,
-              filename
-            )
-          }
-          uploadStatus.value = 'processing'
-        } else {
-          uploadStatus.value = 'success'
-          await refreshModelCaches()
+      if (result.type === 'async' && result.task.status !== 'completed') {
+        if (selectedModelType.value) {
+          assetDownloadStore.trackDownload(
+            result.task.task_id,
+            selectedModelType.value,
+            filename
+          )
         }
-        currentStep.value = 3
+        uploadStatus.value = 'processing'
       } else {
-        await assetService.uploadAssetFromUrl({
-          url: wizardData.value.url,
-          name: filename,
-          tags,
-          user_metadata: userMetadata,
-          preview_id: previewId
-        })
         uploadStatus.value = 'success'
         await refreshModelCaches()
-        currentStep.value = 3
       }
+      currentStep.value = 3
     } catch (error) {
       console.error('Failed to upload asset:', error)
       uploadStatus.value = 'error'

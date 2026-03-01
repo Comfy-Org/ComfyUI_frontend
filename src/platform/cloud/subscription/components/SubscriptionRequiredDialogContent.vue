@@ -81,7 +81,11 @@
         <div class="flex flex-col gap-6">
           <div class="inline-flex items-center gap-2">
             <div class="text-sm text-text-primary">
-              {{ $t('subscription.required.title') }}
+              {{
+                reason === 'out_of_credits'
+                  ? $t('credits.topUp.insufficientTitle')
+                  : $t('subscription.required.title')
+              }}
             </div>
             <CloudBadge
               reverse-order
@@ -90,6 +94,13 @@
               use-subscription
             />
           </div>
+
+          <p
+            v-if="reason === 'out_of_credits'"
+            class="m-0 text-sm text-text-secondary"
+          >
+            {{ $t('credits.topUp.insufficientMessage') }}
+          </p>
 
           <div class="flex items-baseline gap-2">
             <span class="text-4xl font-bold">{{ formattedMonthlyPrice }}</span>
@@ -127,20 +138,25 @@ import { MONTHLY_SUBSCRIPTION_PRICE } from '@/config/subscriptionPricesConfig'
 import PricingTable from '@/platform/cloud/subscription/components/PricingTable.vue'
 import SubscribeButton from '@/platform/cloud/subscription/components/SubscribeButton.vue'
 import SubscriptionBenefits from '@/platform/cloud/subscription/components/SubscriptionBenefits.vue'
-import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
+import { useBillingContext } from '@/composables/billing/useBillingContext'
+import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
 import { useCommandStore } from '@/stores/commandStore'
+import type { SubscriptionDialogReason } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
 
-const props = defineProps<{
+const { onClose, reason } = defineProps<{
   onClose: () => void
+  reason?: SubscriptionDialogReason
 }>()
 
 const emit = defineEmits<{
   close: [subscribed: boolean]
 }>()
 
-const { fetchStatus, isActiveSubscription, isSubscriptionEnabled } =
-  useSubscription()
+const { fetchStatus, isActiveSubscription } = useBillingContext()
+
+const isSubscriptionEnabled = (): boolean =>
+  Boolean(isCloud && window.__CONFIG__?.subscription_required)
 
 // Legacy price for non-tier flow with locale-aware formatting
 const formattedMonthlyPrice = new Intl.NumberFormat(
@@ -231,7 +247,7 @@ const handleSubscribed = () => {
 
 const handleClose = () => {
   stopPolling()
-  props.onClose()
+  onClose()
 }
 
 const handleContactUs = async () => {

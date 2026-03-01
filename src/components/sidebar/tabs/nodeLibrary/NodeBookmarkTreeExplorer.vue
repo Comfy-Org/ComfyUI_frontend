@@ -215,7 +215,11 @@ const renderedBookmarkedRoot = computed<TreeExplorerNode<ComfyNodeDefImpl>>(
   }
 )
 
-const treeExplorerRef = ref<InstanceType<typeof TreeExplorer> | null>(null)
+interface TreeExplorerExposed {
+  addFolderCommand: (targetNodeKey: string) => void
+}
+
+const treeExplorerRef = ref<TreeExplorerExposed | null>(null)
 defineExpose({
   addNewBookmarkFolder: () => treeExplorerRef.value?.addFolderCommand('root')
 })

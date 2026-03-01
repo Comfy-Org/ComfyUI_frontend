@@ -1,5 +1,5 @@
 <template>
-  <div class="_content">
+  <div class="flex flex-col gap-2">
     <SelectButton
       v-model="selectedFilter"
       class="filter-type-select"
@@ -16,7 +16,7 @@
       auto-filter-focus
     />
   </div>
-  <div class="_footer">
+  <div class="flex flex-col items-end pt-4">
     <Button type="button" @click="submit">{{ $t('g.add') }}</Button>
   </div>
 </template>
@@ -67,15 +67,3 @@ const submit = () => {
   })
 }
 </script>
-
-<style scoped>
-@reference '../../assets/css/style.css';
-
-._content {
-  @apply flex flex-col space-y-2;
-}
-
-._footer {
-  @apply flex flex-col pt-4 items-end;
-}
-</style>

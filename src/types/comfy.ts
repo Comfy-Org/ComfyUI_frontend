@@ -3,6 +3,7 @@ import type {
   Positionable
 } from '@/lib/litegraph/src/interfaces'
 import type { LGraphCanvas, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { NodeReplacement } from '@/platform/nodeReplacement/types'
 import type { SettingParams } from '@/platform/settings/types'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import type { Keybinding } from '@/platform/keybindings/types'
@@ -19,6 +20,7 @@ export interface AboutPageBadge {
   label: string
   url: string
   icon: string
+  severity?: 'danger' | 'warn'
 }
 
 type MenuCommandGroup = {
@@ -88,11 +90,15 @@ export type MissingNodeType =
   // Primarily used by group nodes.
   | {
       type: string
+      nodeId?: string | number
+      cnrId?: string
       hint?: string
       action?: {
         text: string
         callback: () => void
       }
+      isReplaceable?: boolean
+      replacement?: NodeReplacement
     }
 
 export interface ComfyExtension {
@@ -259,5 +265,5 @@ export interface ComfyExtension {
    */
   onAuthUserLogout?(): Promise<void> | void
 
-  [key: string]: any
+  [key: string]: unknown
 }

@@ -2,7 +2,7 @@ import type { NeverNever, PickNevers } from '@/lib/litegraph/src/types/utility'
 
 type EventListeners<T> = {
   readonly [K in keyof T]:
-    | ((this: EventTarget, ev: CustomEvent<T[K]>) => any)
+    | ((this: EventTarget, ev: CustomEvent<T[K]>) => unknown)
     | EventListenerObject
     | null
 }

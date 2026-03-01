@@ -37,17 +37,18 @@
 import Popover from 'primevue/popover'
 import type { HTMLAttributes } from 'vue'
 import { ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useExternalLink } from '@/composables/useExternalLink'
-import { t } from '@/i18n'
 import { cn } from '@/utils/tailwindUtil'
 
 const { class: className } = defineProps<{
   class?: HTMLAttributes['class']
 }>()
 
+const { t } = useI18n()
 const { isLoggedIn, handleSignIn } = useCurrentUser()
 const { buildDocsUrl } = useExternalLink()
 const apiNodesOverviewUrl = buildDocsUrl(

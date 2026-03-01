@@ -2,13 +2,14 @@
   <div
     v-show="widgetState.visible"
     ref="widgetElement"
-    class="dom-widget"
+    class="dom-widget h-full w-full"
     :title="tooltip"
     :style="style"
   >
     <component
       :is="widget.component"
       v-if="isComponentWidget(widget)"
+      class="h-full w-full"
       :model-value="widget.value"
       :widget="widget"
       v-bind="widget.props"
@@ -18,7 +19,7 @@
 </template>
 
 <script setup lang="ts">
-import { useElementBounding, useEventListener } from '@vueuse/core'
+import { useElementBounding, useEventListener, whenever } from '@vueuse/core'
 import type { CSSProperties } from 'vue'
 import { computed, nextTick, onMounted, ref, watch } from 'vue'
 
@@ -68,7 +69,11 @@ const updateDomClipping = () => {
     return
   }
 
-  const isSelected = selectedNode === widgetState.widget.node
+  const override = widgetState.positionOverride
+  const overrideInGraph =
+    override && lgCanvas.graph?.getNodeById(override.node.id)
+  const ownerNode = overrideInGraph ? override.node : widgetState.widget.node
+  const isSelected = selectedNode === ownerNode
   const renderArea = selectedNode?.renderArea
   const offset = lgCanvas.ds.offset
   const scale = lgCanvas.ds.scale
@@ -105,13 +110,17 @@ watch(
       updateDomClipping()
     }
 
+    const override = widgetState.positionOverride
+    const isDisabled = override
+      ? (override.widget.computedDisabled ?? widget.computedDisabled)
+      : widget.computedDisabled
+
     style.value = {
       ...positionStyle.value,
       ...(enableDomClipping.value ? clippingStyle.value : {}),
       zIndex: widgetState.zIndex,
-      pointerEvents:
-        widgetState.readonly || widget.computedDisabled ? 'none' : 'auto',
-      opacity: widget.computedDisabled ? 0.5 : 1
+      pointerEvents: widgetState.readonly || isDisabled ? 'none' : 'auto',
+      opacity: isDisabled ? 0.5 : 1
     }
   },
   { deep: true }
@@ -143,8 +152,17 @@ onMounted(() => {
     widget.options.selectOn ?? ['focus', 'click'],
     () => {
       const lgCanvas = canvasStore.canvas
-      lgCanvas?.selectNode(widgetState.widget.node)
-      lgCanvas?.bringToFront(widgetState.widget.node)
+      if (!lgCanvas) return
+
+      const override = widgetState.positionOverride
+      const overrideInGraph =
+        override && lgCanvas.graph?.getNodeById(override.node.id)
+      const ownerNode = overrideInGraph
+        ? override.node
+        : widgetState.widget.node
+
+      lgCanvas.selectNode(ownerNode)
+      lgCanvas.bringToFront(ownerNode)
     }
   )
 })
@@ -161,6 +179,8 @@ const mountElementIfVisible = () => {
   if (widgetElement.value.contains(widget.element)) {
     return
   }
+
+  widget.element.classList.add('h-full', 'w-full')
   widgetElement.value.appendChild(widget.element)
 }
 
@@ -180,12 +200,6 @@ watch(
     mountElementIfVisible()
   }
 )
+
+whenever(() => !canvasStore.linearMode, mountElementIfVisible)
 </script>
-
-<style scoped>
-@reference '../../../assets/css/style.css';
-
-.dom-widget > * {
-  @apply h-full w-full;
-}
-</style>

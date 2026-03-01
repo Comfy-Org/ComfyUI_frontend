@@ -8,6 +8,8 @@ import { getComfyApiBaseUrl, getComfyPlatformBaseUrl } from '@/config/comfyApi'
 import { t } from '@/i18n'
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
+import type { SubscriptionDialogReason } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
+import type { CheckoutAttributionMetadata } from '@/platform/telemetry/types'
 import {
   FirebaseAuthStoreError,
   useFirebaseAuthStore
@@ -38,7 +40,8 @@ function useSubscriptionInternal() {
   const { reportError, accessBillingPortal } = useFirebaseAuthActions()
   const { showSubscriptionRequiredDialog } = useDialogService()
 
-  const { getFirebaseAuthHeader } = useFirebaseAuthStore()
+  const firebaseAuthStore = useFirebaseAuthStore()
+  const { getAuthHeader } = firebaseAuthStore
   const { wrapWithErrorHandlingAsync } = useErrorHandling()
 
   const { isLoggedIn } = useCurrentUser()
@@ -75,6 +78,8 @@ function useSubscriptionInternal() {
     () => subscriptionStatus.value?.subscription_tier ?? null
   )
 
+  const isFreeTier = computed(() => subscriptionTier.value === 'FREE')
+
   const subscriptionDuration = computed(
     () => subscriptionStatus.value?.subscription_duration ?? null
   )
@@ -93,7 +98,21 @@ function useSubscriptionInternal() {
       : baseName
   })
 
-  const buildApiUrl = (path: string) => `${getComfyApiBaseUrl()}${path}`
+  function buildApiUrl(path: string): string {
+    return `${getComfyApiBaseUrl()}${path}`
+  }
+
+  const getCheckoutAttributionForCloud =
+    async (): Promise<CheckoutAttributionMetadata> => {
+      if (__DISTRIBUTION__ !== 'cloud') {
+        return {}
+      }
+
+      const { getCheckoutAttribution } =
+        await import('@/platform/telemetry/utils/checkoutAttribution')
+
+      return getCheckoutAttribution()
+    }
 
   const fetchStatus = wrapWithErrorHandlingAsync(
     fetchSubscriptionStatus,
@@ -114,12 +133,17 @@ function useSubscriptionInternal() {
     window.open(response.checkout_url, '_blank')
   }, reportError)
 
-  const showSubscriptionDialog = () => {
+  const showSubscriptionDialog = (options?: {
+    reason?: SubscriptionDialogReason
+  }) => {
     if (isCloud) {
-      useTelemetry()?.trackSubscription('modal_opened')
+      useTelemetry()?.trackSubscription('modal_opened', {
+        current_tier: subscriptionTier.value?.toLowerCase(),
+        reason: options?.reason
+      })
     }
 
-    void showSubscriptionRequiredDialog()
+    void showSubscriptionRequiredDialog(options)
   }
 
   /**
@@ -168,7 +192,7 @@ function useSubscriptionInternal() {
    * @returns Subscription status or null if no subscription exists
    */
   async function fetchSubscriptionStatus(): Promise<CloudSubscriptionStatusResponse | null> {
-    const authHeader = await getFirebaseAuthHeader()
+    const authHeader = await getAuthHeader()
     if (!authHeader) {
       throw new FirebaseAuthStoreError(t('toastMessages.userNotAuthenticated'))
     }
@@ -194,13 +218,14 @@ function useSubscriptionInternal() {
 
     const statusData = await response.json()
     subscriptionStatus.value = statusData
+
     return statusData
   }
 
   watch(
     () => isLoggedIn.value,
     async (loggedIn) => {
-      if (loggedIn) {
+      if (loggedIn && isCloud) {
         try {
           await fetchSubscriptionStatus()
         } catch (error) {
@@ -221,12 +246,13 @@ function useSubscriptionInternal() {
 
   const initiateSubscriptionCheckout =
     async (): Promise<CloudSubscriptionCheckoutResponse> => {
-      const authHeader = await getFirebaseAuthHeader()
+      const authHeader = await getAuthHeader()
       if (!authHeader) {
         throw new FirebaseAuthStoreError(
           t('toastMessages.userNotAuthenticated')
         )
       }
+      const checkoutAttribution = await getCheckoutAttributionForCloud()
 
       const response = await fetch(
         buildApiUrl('/customers/cloud-subscription-checkout'),
@@ -235,7 +261,8 @@ function useSubscriptionInternal() {
           headers: {
             ...authHeader,
             'Content-Type': 'application/json'
-          }
+          },
+          body: JSON.stringify(checkoutAttribution)
         }
       )
 
@@ -259,6 +286,7 @@ function useSubscriptionInternal() {
     formattedRenewalDate,
     formattedEndDate,
     subscriptionTier,
+    isFreeTier,
     subscriptionDuration,
     isYearlySubscription,
     subscriptionTierName,

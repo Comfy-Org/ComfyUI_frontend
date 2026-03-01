@@ -28,7 +28,7 @@ export const useNodePreviewState = (
 
   const latestPreviewUrl = computed(() => {
     const urls = previewUrls.value
-    return urls?.length ? urls.at(-1) : ''
+    return urls?.length ? urls.at(-1)! : ''
   })
 
   const shouldShowPreviewImg = computed(() => {

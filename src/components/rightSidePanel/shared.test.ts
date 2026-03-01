@@ -138,7 +138,6 @@ describe('flatAndCategorizeSelectedItems', () => {
     expect(result.nodes).toEqual([testNode1])
     expect(result.groups).toEqual([testGroup1, testGroup2])
     expect(result.nodeToParentGroup.get(testNode1)).toBe(testGroup2)
-    expect(result.nodeToParentGroup.has(testGroup2 as any)).toBe(false)
   })
 
   it('should handle mixed selection of nodes and groups', () => {

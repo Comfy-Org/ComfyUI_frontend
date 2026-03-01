@@ -1,5 +1,13 @@
 <template>
   <Toast />
+  <Toast group="billing-operation" position="top-right">
+    <template #message="slotProps">
+      <div class="flex items-center gap-2">
+        <i class="pi pi-spin pi-spinner text-primary" />
+        <span>{{ slotProps.message.summary }}</span>
+      </div>
+    </template>
+  </Toast>
 </template>
 
 <script setup lang="ts">

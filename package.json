@@ -1,6 +1,6 @@
 {
   "name": "@comfyorg/comfyui-frontend",
-  "version": "1.39.4",
+  "version": "1.41.8",
   "private": true,
   "description": "Official front-end implementation of ComfyUI",
   "homepage": "https://comfy.org",
@@ -18,7 +18,7 @@
     "collect-i18n": "pnpm exec playwright test --config=playwright.i18n.config.ts",
     "dev:cloud": "cross-env DEV_SERVER_COMFYUI_URL='https://testcloud.comfy.org/' nx serve",
     "dev:desktop": "nx dev @comfyorg/desktop-ui",
-    "dev:electron": "nx serve --config vite.electron.config.mts",
+    "dev:electron": "cross-env DISTRIBUTION=desktop nx serve --config vite.electron.config.mts",
     "dev:no-vue": "cross-env DISABLE_VUE_PLUGINS=true nx serve",
     "dev": "nx serve",
     "devtools:pycheck": "python3 -m compileall -q tools/devtools",
@@ -29,10 +29,10 @@
     "knip": "knip --cache",
     "lint:fix:no-cache": "oxlint src --type-aware --fix && eslint src --fix",
     "lint:fix": "oxlint src --type-aware --fix && eslint src --cache --fix",
-    "lint:no-cache": "oxlint src --type-aware && eslint src",
+    "lint:no-cache": "pnpm exec stylelint '{apps,packages,src}/**/*.{css,vue}' && oxlint src --type-aware && eslint src",
     "lint:unstaged:fix": "git diff --name-only HEAD | grep -E '\\.(js|ts|vue|mts)$' | xargs -r eslint --cache --fix",
     "lint:unstaged": "git diff --name-only HEAD | grep -E '\\.(js|ts|vue|mts)$' | xargs -r eslint --cache",
-    "lint": "oxlint src --type-aware && eslint src --cache",
+    "lint": "pnpm stylelint && oxlint src --type-aware && eslint src --cache",
     "lint:desktop": "nx run @comfyorg/desktop-ui:lint",
     "locale": "lobe-i18n locale",
     "oxlint": "oxlint src --type-aware",
@@ -47,6 +47,7 @@
     "test:browser:local": "cross-env PLAYWRIGHT_LOCAL=1 pnpm test:browser",
     "test:unit": "nx run test",
     "typecheck": "vue-tsc --noEmit",
+    "typecheck:browser": "vue-tsc --project browser_tests/tsconfig.json",
     "typecheck:desktop": "nx run @comfyorg/desktop-ui:typecheck",
     "zipdist": "node scripts/zipdist.js",
     "clean": "nx reset"
@@ -69,13 +70,14 @@
     "@primevue/themes": "catalog:",
     "@sentry/vue": "catalog:",
     "@sparkjsdev/spark": "catalog:",
-    "@tiptap/core": "^2.10.4",
-    "@tiptap/extension-link": "^2.10.4",
-    "@tiptap/extension-table": "^2.10.4",
-    "@tiptap/extension-table-cell": "^2.10.4",
-    "@tiptap/extension-table-header": "^2.10.4",
-    "@tiptap/extension-table-row": "^2.10.4",
-    "@tiptap/starter-kit": "^2.10.4",
+    "@tiptap/core": "catalog:",
+    "@tiptap/extension-link": "catalog:",
+    "@tiptap/extension-table": "catalog:",
+    "@tiptap/extension-table-cell": "catalog:",
+    "@tiptap/extension-table-header": "catalog:",
+    "@tiptap/extension-table-row": "catalog:",
+    "@tiptap/pm": "catalog:",
+    "@tiptap/starter-kit": "catalog:",
     "@vueuse/core": "catalog:",
     "@vueuse/integrations": "catalog:",
     "@xterm/addon-fit": "^0.10.0",
@@ -92,9 +94,9 @@
     "extendable-media-recorder-wav-encoder": "^7.0.129",
     "firebase": "catalog:",
     "fuse.js": "^7.0.0",
-    "glob": "^11.0.3",
+    "glob": "catalog:",
     "jsonata": "catalog:",
-    "jsondiffpatch": "^0.6.0",
+    "jsondiffpatch": "catalog:",
     "loglevel": "^1.9.2",
     "marked": "^15.0.11",
     "pinia": "catalog:",
@@ -192,7 +194,7 @@
   },
   "pnpm": {
     "overrides": {
-      "vite": "^8.0.0-beta.8"
+      "vite": "catalog:"
     }
   }
 }

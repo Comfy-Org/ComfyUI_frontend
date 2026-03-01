@@ -6,12 +6,7 @@
     <div class="min-h-0 flex-auto basis-0 overflow-y-auto">
       <!-- Step 1: Enter URL -->
       <UploadModelUrlInput
-        v-if="currentStep === 1 && flags.huggingfaceModelImportEnabled"
-        v-model="wizardData.url"
-        :error="uploadError"
-      />
-      <UploadModelUrlInputCivitai
-        v-else-if="currentStep === 1"
+        v-if="currentStep === 1"
         v-model="wizardData.url"
         :error="uploadError"
       />
@@ -56,17 +51,14 @@
 <script setup lang="ts">
 import { onMounted } from 'vue'
 
-import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import UploadModelConfirmation from '@/platform/assets/components/UploadModelConfirmation.vue'
 import UploadModelFooter from '@/platform/assets/components/UploadModelFooter.vue'
 import UploadModelProgress from '@/platform/assets/components/UploadModelProgress.vue'
 import UploadModelUrlInput from '@/platform/assets/components/UploadModelUrlInput.vue'
-import UploadModelUrlInputCivitai from '@/platform/assets/components/UploadModelUrlInputCivitai.vue'
 import { useModelTypes } from '@/platform/assets/composables/useModelTypes'
 import { useUploadModelWizard } from '@/platform/assets/composables/useUploadModelWizard'
 import { useDialogStore } from '@/stores/dialogStore'
 
-const { flags } = useFeatureFlags()
 const dialogStore = useDialogStore()
 const { modelTypes, fetchModelTypes } = useModelTypes()
 

@@ -39,6 +39,32 @@ const mockUseComfyManagerStore = vi.mocked(useComfyManagerStore)
 const mockSemverCompare = vi.mocked(compare)
 const mockSemverValid = vi.mocked(valid)
 
+type InstalledPacksReturn = ReturnType<typeof useInstalledPacks>
+type ManagerStoreReturn = ReturnType<typeof useComfyManagerStore>
+
+function createMockInstalledPacksReturn(
+  overrides: Partial<InstalledPacksReturn> = {}
+): InstalledPacksReturn {
+  return {
+    installedPacks: ref([]),
+    isLoading: ref(false),
+    isReady: ref(false),
+    error: ref(null),
+    startFetchInstalled: vi.fn(),
+    installedPacksWithVersions: ref([]),
+    filterInstalledPack: vi.fn(),
+    ...overrides
+  } as Partial<InstalledPacksReturn> as InstalledPacksReturn
+}
+
+function createMockManagerStoreReturn(
+  overrides: Partial<ManagerStoreReturn> = {}
+): ManagerStoreReturn {
+  return {
+    ...overrides
+  } as Partial<ManagerStoreReturn> as ManagerStoreReturn
+}
+
 describe('useUpdateAvailableNodes', () => {
   const mockInstalledPacks = [
     {
@@ -103,34 +129,29 @@ describe('useUpdateAvailableNodes', () => {
       return 0
     })
 
-    mockUseComfyManagerStore.mockReturnValue({
-      isPackInstalled: mockIsPackInstalled,
-      getInstalledPackVersion: mockGetInstalledPackVersion,
-      isPackEnabled: mockIsPackEnabled
-    } as unknown as ReturnType<typeof useComfyManagerStore>)
+    mockUseComfyManagerStore.mockReturnValue(
+      createMockManagerStoreReturn({
+        isPackInstalled: mockIsPackInstalled,
+        getInstalledPackVersion: mockGetInstalledPackVersion,
+        isPackEnabled: mockIsPackEnabled
+      })
+    )
 
-    mockUseInstalledPacks.mockReturnValue({
-      installedPacks: ref([]),
-      isLoading: ref(false),
-      isReady: ref(false),
-      error: ref(null),
-      startFetchInstalled: mockStartFetchInstalled,
-      installedPacksWithVersions: ref([]),
-      filterInstalledPack: vi.fn()
-    } as unknown as ReturnType<typeof useInstalledPacks>)
+    mockUseInstalledPacks.mockReturnValue(
+      createMockInstalledPacksReturn({
+        startFetchInstalled: mockStartFetchInstalled
+      })
+    )
   })
 
   describe('core filtering logic', () => {
     it('identifies outdated packs correctly', () => {
-      mockUseInstalledPacks.mockReturnValue({
-        installedPacks: ref(mockInstalledPacks),
-        isLoading: ref(false),
-        isReady: ref(false),
-        error: ref(null),
-        startFetchInstalled: mockStartFetchInstalled,
-        installedPacksWithVersions: ref([]),
-        filterInstalledPack: vi.fn()
-      } as unknown as ReturnType<typeof useInstalledPacks>)
+      mockUseInstalledPacks.mockReturnValue(
+        createMockInstalledPacksReturn({
+          installedPacks: ref(mockInstalledPacks),
+          startFetchInstalled: mockStartFetchInstalled
+        })
+      )
 
       const { updateAvailableNodePacks } = useUpdateAvailableNodes()
 
@@ -140,15 +161,12 @@ describe('useUpdateAvailableNodes', () => {
     })
 
     it('excludes up-to-date packs', () => {
-      mockUseInstalledPacks.mockReturnValue({
-        installedPacks: ref([mockInstalledPacks[1]]), // pack-2: up to date
-        isLoading: ref(false),
-        isReady: ref(false),
-        error: ref(null),
-        startFetchInstalled: mockStartFetchInstalled,
-        installedPacksWithVersions: ref([]),
-        filterInstalledPack: vi.fn()
-      } as unknown as ReturnType<typeof useInstalledPacks>)
+      mockUseInstalledPacks.mockReturnValue(
+        createMockInstalledPacksReturn({
+          installedPacks: ref([mockInstalledPacks[1]]), // pack-2: up to date
+          startFetchInstalled: mockStartFetchInstalled
+        })
+      )
 
       const { updateAvailableNodePacks } = useUpdateAvailableNodes()
 
@@ -156,15 +174,12 @@ describe('useUpdateAvailableNodes', () => {
     })
 
     it('excludes nightly packs from updates', () => {
-      mockUseInstalledPacks.mockReturnValue({
-        installedPacks: ref([mockInstalledPacks[2]]), // pack-3: nightly
-        isLoading: ref(false),
-        isReady: ref(false),
-        error: ref(null),
-        startFetchInstalled: mockStartFetchInstalled,
-        installedPacksWithVersions: ref([]),
-        filterInstalledPack: vi.fn()
-      } as unknown as ReturnType<typeof useInstalledPacks>)
+      mockUseInstalledPacks.mockReturnValue(
+        createMockInstalledPacksReturn({
+          installedPacks: ref([mockInstalledPacks[2]]), // pack-3: nightly
+          startFetchInstalled: mockStartFetchInstalled
+        })
+      )
 
       const { updateAvailableNodePacks } = useUpdateAvailableNodes()
 
@@ -172,15 +187,12 @@ describe('useUpdateAvailableNodes', () => {
     })
 
     it('excludes packs with no latest version', () => {
-      mockUseInstalledPacks.mockReturnValue({
-        installedPacks: ref([mockInstalledPacks[3]]), // pack-4: no latest version
-        isLoading: ref(false),
-        isReady: ref(false),
-        error: ref(null),
-        startFetchInstalled: mockStartFetchInstalled,
-        installedPacksWithVersions: ref([]),
-        filterInstalledPack: vi.fn()
-      } as unknown as ReturnType<typeof useInstalledPacks>)
+      mockUseInstalledPacks.mockReturnValue(
+        createMockInstalledPacksReturn({
+          installedPacks: ref([mockInstalledPacks[3]]), // pack-4: no latest version
+          startFetchInstalled: mockStartFetchInstalled
+        })
+      )
 
       const { updateAvailableNodePacks } = useUpdateAvailableNodes()
 
@@ -189,15 +201,12 @@ describe('useUpdateAvailableNodes', () => {
 
     it('excludes uninstalled packs', () => {
       mockIsPackInstalled.mockReturnValue(false)
-      mockUseInstalledPacks.mockReturnValue({
-        installedPacks: ref(mockInstalledPacks),
-        isLoading: ref(false),
-        isReady: ref(false),
-        error: ref(null),
-        startFetchInstalled: mockStartFetchInstalled,
-        installedPacksWithVersions: ref([]),
-        filterInstalledPack: vi.fn()
-      } as unknown as ReturnType<typeof useInstalledPacks>)
+      mockUseInstalledPacks.mockReturnValue(
+        createMockInstalledPacksReturn({
+          installedPacks: ref(mockInstalledPacks),
+          startFetchInstalled: mockStartFetchInstalled
+        })
+      )
 
       const { updateAvailableNodePacks } = useUpdateAvailableNodes()
 
@@ -213,15 +222,12 @@ describe('useUpdateAvailableNodes', () => {
 
   describe('hasUpdateAvailable computed', () => {
     it('returns true when updates are available', () => {
-      mockUseInstalledPacks.mockReturnValue({
-        installedPacks: ref([mockInstalledPacks[0]]), // pack-1: outdated
-        isLoading: ref(false),
-        error: ref(null),
-        startFetchInstalled: mockStartFetchInstalled,
-        isReady: ref(false),
-        installedPacksWithVersions: ref([]),
-        filterInstalledPack: vi.fn()
-      } as unknown as ReturnType<typeof useInstalledPacks>)
+      mockUseInstalledPacks.mockReturnValue(
+        createMockInstalledPacksReturn({
+          installedPacks: ref([mockInstalledPacks[0]]), // pack-1: outdated
+          startFetchInstalled: mockStartFetchInstalled
+        })
+      )
 
       const { hasUpdateAvailable } = useUpdateAvailableNodes()
 
@@ -229,15 +235,12 @@ describe('useUpdateAvailableNodes', () => {
     })
 
     it('returns false when no updates are available', () => {
-      mockUseInstalledPacks.mockReturnValue({
-        installedPacks: ref([mockInstalledPacks[1]]), // pack-2: up to date
-        isLoading: ref(false),
-        isReady: ref(false),
-        error: ref(null),
-        startFetchInstalled: mockStartFetchInstalled,
-        installedPacksWithVersions: ref([]),
-        filterInstalledPack: vi.fn()
-      } as unknown as ReturnType<typeof useInstalledPacks>)
+      mockUseInstalledPacks.mockReturnValue(
+        createMockInstalledPacksReturn({
+          installedPacks: ref([mockInstalledPacks[1]]), // pack-2: up to date
+          startFetchInstalled: mockStartFetchInstalled
+        })
+      )
 
       const { hasUpdateAvailable } = useUpdateAvailableNodes()
 
@@ -253,15 +256,12 @@ describe('useUpdateAvailableNodes', () => {
     })
 
     it('does not fetch when packs already exist', () => {
-      mockUseInstalledPacks.mockReturnValue({
-        installedPacks: ref(mockInstalledPacks),
-        isLoading: ref(false),
-        isReady: ref(false),
-        error: ref(null),
-        startFetchInstalled: mockStartFetchInstalled,
-        installedPacksWithVersions: ref([]),
-        filterInstalledPack: vi.fn()
-      } as unknown as ReturnType<typeof useInstalledPacks>)
+      mockUseInstalledPacks.mockReturnValue(
+        createMockInstalledPacksReturn({
+          installedPacks: ref(mockInstalledPacks),
+          startFetchInstalled: mockStartFetchInstalled
+        })
+      )
 
       useUpdateAvailableNodes()
 
@@ -269,15 +269,12 @@ describe('useUpdateAvailableNodes', () => {
     })
 
     it('does not fetch when already loading', () => {
-      mockUseInstalledPacks.mockReturnValue({
-        installedPacks: ref([]),
-        isLoading: ref(true),
-        error: ref(null),
-        startFetchInstalled: mockStartFetchInstalled,
-        isReady: ref(false),
-        installedPacksWithVersions: ref([]),
-        filterInstalledPack: vi.fn()
-      } as unknown as ReturnType<typeof useInstalledPacks>)
+      mockUseInstalledPacks.mockReturnValue(
+        createMockInstalledPacksReturn({
+          isLoading: ref(true),
+          startFetchInstalled: mockStartFetchInstalled
+        })
+      )
 
       useUpdateAvailableNodes()
 
@@ -287,15 +284,12 @@ describe('useUpdateAvailableNodes', () => {
 
   describe('state management', () => {
     it('exposes loading state from useInstalledPacks', () => {
-      mockUseInstalledPacks.mockReturnValue({
-        installedPacks: ref([]),
-        isLoading: ref(true),
-        error: ref(null),
-        startFetchInstalled: mockStartFetchInstalled,
-        isReady: ref(false),
-        installedPacksWithVersions: ref([]),
-        filterInstalledPack: vi.fn()
-      } as unknown as ReturnType<typeof useInstalledPacks>)
+      mockUseInstalledPacks.mockReturnValue(
+        createMockInstalledPacksReturn({
+          isLoading: ref(true),
+          startFetchInstalled: mockStartFetchInstalled
+        })
+      )
 
       const { isLoading } = useUpdateAvailableNodes()
 
@@ -304,15 +298,12 @@ describe('useUpdateAvailableNodes', () => {
 
     it('exposes error state from useInstalledPacks', () => {
       const testError = 'Failed to fetch installed packs'
-      mockUseInstalledPacks.mockReturnValue({
-        installedPacks: ref([]),
-        isLoading: ref(false),
-        error: ref(testError),
-        startFetchInstalled: mockStartFetchInstalled,
-        isReady: ref(false),
-        installedPacksWithVersions: ref([]),
-        filterInstalledPack: vi.fn()
-      } as unknown as ReturnType<typeof useInstalledPacks>)
+      mockUseInstalledPacks.mockReturnValue(
+        createMockInstalledPacksReturn({
+          error: ref(testError),
+          startFetchInstalled: mockStartFetchInstalled
+        })
+      )
 
       const { error } = useUpdateAvailableNodes()
 
@@ -323,15 +314,12 @@ describe('useUpdateAvailableNodes', () => {
   describe('reactivity', () => {
     it('updates when installed packs change', async () => {
       const installedPacksRef = ref<components['schemas']['Node'][]>([])
-      mockUseInstalledPacks.mockReturnValue({
-        installedPacks: installedPacksRef,
-        isLoading: ref(false),
-        error: ref(null),
-        startFetchInstalled: mockStartFetchInstalled,
-        isReady: ref(false),
-        installedPacksWithVersions: ref([]),
-        filterInstalledPack: vi.fn()
-      } as unknown as ReturnType<typeof useInstalledPacks>)
+      mockUseInstalledPacks.mockReturnValue(
+        createMockInstalledPacksReturn({
+          installedPacks: installedPacksRef,
+          startFetchInstalled: mockStartFetchInstalled
+        })
+      )
 
       const { updateAvailableNodePacks, hasUpdateAvailable } =
         useUpdateAvailableNodes()
@@ -352,15 +340,12 @@ describe('useUpdateAvailableNodes', () => {
 
   describe('version comparison logic', () => {
     it('calls compareVersions with correct parameters', () => {
-      mockUseInstalledPacks.mockReturnValue({
-        installedPacks: ref([mockInstalledPacks[0]]), // pack-1
-        isLoading: ref(false),
-        error: ref(null),
-        startFetchInstalled: mockStartFetchInstalled,
-        isReady: ref(false),
-        installedPacksWithVersions: ref([]),
-        filterInstalledPack: vi.fn()
-      } as unknown as ReturnType<typeof useInstalledPacks>)
+      mockUseInstalledPacks.mockReturnValue(
+        createMockInstalledPacksReturn({
+          installedPacks: ref([mockInstalledPacks[0]]), // pack-1
+          startFetchInstalled: mockStartFetchInstalled
+        })
+      )
 
       const { updateAvailableNodePacks } = useUpdateAvailableNodes()
 
@@ -371,15 +356,12 @@ describe('useUpdateAvailableNodes', () => {
     })
 
     it('calls semver.valid to check nightly versions', () => {
-      mockUseInstalledPacks.mockReturnValue({
-        installedPacks: ref([mockInstalledPacks[2]]), // pack-3: nightly
-        isLoading: ref(false),
-        isReady: ref(false),
-        error: ref(null),
-        startFetchInstalled: mockStartFetchInstalled,
-        installedPacksWithVersions: ref([]),
-        filterInstalledPack: vi.fn()
-      } as unknown as ReturnType<typeof useInstalledPacks>)
+      mockUseInstalledPacks.mockReturnValue(
+        createMockInstalledPacksReturn({
+          installedPacks: ref([mockInstalledPacks[2]]), // pack-3: nightly
+          startFetchInstalled: mockStartFetchInstalled
+        })
+      )
 
       const { updateAvailableNodePacks } = useUpdateAvailableNodes()
 
@@ -390,15 +372,12 @@ describe('useUpdateAvailableNodes', () => {
     })
 
     it('calls isPackInstalled for each pack', () => {
-      mockUseInstalledPacks.mockReturnValue({
-        installedPacks: ref(mockInstalledPacks),
-        isLoading: ref(false),
-        isReady: ref(false),
-        error: ref(null),
-        startFetchInstalled: mockStartFetchInstalled,
-        installedPacksWithVersions: ref([]),
-        filterInstalledPack: vi.fn()
-      } as unknown as ReturnType<typeof useInstalledPacks>)
+      mockUseInstalledPacks.mockReturnValue(
+        createMockInstalledPacksReturn({
+          installedPacks: ref(mockInstalledPacks),
+          startFetchInstalled: mockStartFetchInstalled
+        })
+      )
 
       const { updateAvailableNodePacks } = useUpdateAvailableNodes()
 
@@ -419,15 +398,12 @@ describe('useUpdateAvailableNodes', () => {
         return id !== 'pack-1'
       })
 
-      mockUseInstalledPacks.mockReturnValue({
-        installedPacks: ref([mockInstalledPacks[0], mockInstalledPacks[1]]),
-        isLoading: ref(false),
-        error: ref(null),
-        startFetchInstalled: mockStartFetchInstalled,
-        isReady: ref(false),
-        installedPacksWithVersions: ref([]),
-        filterInstalledPack: vi.fn()
-      } as unknown as ReturnType<typeof useInstalledPacks>)
+      mockUseInstalledPacks.mockReturnValue(
+        createMockInstalledPacksReturn({
+          installedPacks: ref([mockInstalledPacks[0], mockInstalledPacks[1]]),
+          startFetchInstalled: mockStartFetchInstalled
+        })
+      )
 
       const { updateAvailableNodePacks, enabledUpdateAvailableNodePacks } =
         useUpdateAvailableNodes()
@@ -441,15 +417,12 @@ describe('useUpdateAvailableNodes', () => {
     })
 
     it('returns all packs when all are enabled', () => {
-      mockUseInstalledPacks.mockReturnValue({
-        installedPacks: ref([mockInstalledPacks[0]]), // pack-1: outdated
-        isLoading: ref(false),
-        error: ref(null),
-        startFetchInstalled: mockStartFetchInstalled,
-        isReady: ref(false),
-        installedPacksWithVersions: ref([]),
-        filterInstalledPack: vi.fn()
-      } as unknown as ReturnType<typeof useInstalledPacks>)
+      mockUseInstalledPacks.mockReturnValue(
+        createMockInstalledPacksReturn({
+          installedPacks: ref([mockInstalledPacks[0]]), // pack-1: outdated
+          startFetchInstalled: mockStartFetchInstalled
+        })
+      )
 
       const { updateAvailableNodePacks, enabledUpdateAvailableNodePacks } =
         useUpdateAvailableNodes()
@@ -467,15 +440,12 @@ describe('useUpdateAvailableNodes', () => {
         return id !== 'pack-1'
       })
 
-      mockUseInstalledPacks.mockReturnValue({
-        installedPacks: ref([mockInstalledPacks[0]]), // pack-1: outdated
-        isLoading: ref(false),
-        error: ref(null),
-        startFetchInstalled: mockStartFetchInstalled,
-        isReady: ref(false),
-        installedPacksWithVersions: ref([]),
-        filterInstalledPack: vi.fn()
-      } as unknown as ReturnType<typeof useInstalledPacks>)
+      mockUseInstalledPacks.mockReturnValue(
+        createMockInstalledPacksReturn({
+          installedPacks: ref([mockInstalledPacks[0]]), // pack-1: outdated
+          startFetchInstalled: mockStartFetchInstalled
+        })
+      )
 
       const { hasDisabledUpdatePacks } = useUpdateAvailableNodes()
 
@@ -483,15 +453,12 @@ describe('useUpdateAvailableNodes', () => {
     })
 
     it('returns false when all packs with updates are enabled', () => {
-      mockUseInstalledPacks.mockReturnValue({
-        installedPacks: ref([mockInstalledPacks[0]]), // pack-1: outdated
-        isLoading: ref(false),
-        error: ref(null),
-        startFetchInstalled: mockStartFetchInstalled,
-        isReady: ref(false),
-        installedPacksWithVersions: ref([]),
-        filterInstalledPack: vi.fn()
-      } as unknown as ReturnType<typeof useInstalledPacks>)
+      mockUseInstalledPacks.mockReturnValue(
+        createMockInstalledPacksReturn({
+          installedPacks: ref([mockInstalledPacks[0]]), // pack-1: outdated
+          startFetchInstalled: mockStartFetchInstalled
+        })
+      )
 
       const { hasDisabledUpdatePacks } = useUpdateAvailableNodes()
 
@@ -499,15 +466,12 @@ describe('useUpdateAvailableNodes', () => {
     })
 
     it('returns false when no packs have updates', () => {
-      mockUseInstalledPacks.mockReturnValue({
-        installedPacks: ref([mockInstalledPacks[1]]), // pack-2: up to date
-        isLoading: ref(false),
-        isReady: ref(false),
-        error: ref(null),
-        startFetchInstalled: mockStartFetchInstalled,
-        installedPacksWithVersions: ref([]),
-        filterInstalledPack: vi.fn()
-      } as unknown as ReturnType<typeof useInstalledPacks>)
+      mockUseInstalledPacks.mockReturnValue(
+        createMockInstalledPacksReturn({
+          installedPacks: ref([mockInstalledPacks[1]]), // pack-2: up to date
+          startFetchInstalled: mockStartFetchInstalled
+        })
+      )
 
       const { hasDisabledUpdatePacks } = useUpdateAvailableNodes()
 
@@ -519,15 +483,12 @@ describe('useUpdateAvailableNodes', () => {
     it('returns false when only disabled packs have updates', () => {
       mockIsPackEnabled.mockReturnValue(false) // All packs disabled
 
-      mockUseInstalledPacks.mockReturnValue({
-        installedPacks: ref([mockInstalledPacks[0]]), // pack-1: outdated
-        isLoading: ref(false),
-        error: ref(null),
-        startFetchInstalled: mockStartFetchInstalled,
-        isReady: ref(false),
-        installedPacksWithVersions: ref([]),
-        filterInstalledPack: vi.fn()
-      } as unknown as ReturnType<typeof useInstalledPacks>)
+      mockUseInstalledPacks.mockReturnValue(
+        createMockInstalledPacksReturn({
+          installedPacks: ref([mockInstalledPacks[0]]), // pack-1: outdated
+          startFetchInstalled: mockStartFetchInstalled
+        })
+      )
 
       const { hasUpdateAvailable } = useUpdateAvailableNodes()
 
@@ -540,15 +501,12 @@ describe('useUpdateAvailableNodes', () => {
         return id === 'pack-1'
       })
 
-      mockUseInstalledPacks.mockReturnValue({
-        installedPacks: ref([mockInstalledPacks[0]]), // pack-1: outdated
-        isLoading: ref(false),
-        error: ref(null),
-        startFetchInstalled: mockStartFetchInstalled,
-        isReady: ref(false),
-        installedPacksWithVersions: ref([]),
-        filterInstalledPack: vi.fn()
-      } as unknown as ReturnType<typeof useInstalledPacks>)
+      mockUseInstalledPacks.mockReturnValue(
+        createMockInstalledPacksReturn({
+          installedPacks: ref([mockInstalledPacks[0]]), // pack-1: outdated
+          startFetchInstalled: mockStartFetchInstalled
+        })
+      )
 
       const { hasUpdateAvailable } = useUpdateAvailableNodes()
 

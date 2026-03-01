@@ -19,7 +19,8 @@ import config from '@/config'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { useConflictDetection } from '@/workbench/extensions/manager/composables/useConflictDetection'
 
-import { electronAPI, isElectron } from './utils/envUtil'
+import { electronAPI } from '@/utils/envUtil'
+import { isDesktop } from '@/platform/distribution/types'
 import { app } from '@/scripts/app'
 
 const workspaceStore = useWorkspaceStore()
@@ -42,7 +43,7 @@ const showContextMenu = (event: MouseEvent) => {
 onMounted(() => {
   window['__COMFYUI_FRONTEND_VERSION__'] = config.app_version
 
-  if (isElectron()) {
+  if (isDesktop) {
     document.addEventListener('contextmenu', showContextMenu)
   }
 
@@ -50,7 +51,6 @@ onMounted(() => {
   // See: https://vite.dev/guide/build#load-error-handling
   window.addEventListener('vite:preloadError', (event) => {
     event.preventDefault()
-    // eslint-disable-next-line no-undef
     if (__DISTRIBUTION__ === 'cloud') {
       captureException(event.payload, {
         tags: { error_type: 'vite_preload_error' }

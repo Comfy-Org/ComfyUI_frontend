@@ -1,3 +1,4 @@
+import { isCloud } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { app } from '@/scripts/app'
 import { useCommandStore } from '@/stores/commandStore'
@@ -108,6 +109,12 @@ export function useKeybindingService() {
 
   function registerCoreKeybindings() {
     for (const keybinding of CORE_KEYBINDINGS) {
+      if (
+        isCloud &&
+        keybinding.commandId === 'Workspace.ToggleBottomPanelTab.logs-terminal'
+      ) {
+        continue
+      }
       keybindingStore.addDefaultKeybinding(new KeybindingImpl(keybinding))
     }
   }
@@ -119,19 +126,25 @@ export function useKeybindingService() {
     }
     const newBindings = settingStore.get('Comfy.Keybinding.NewBindings')
     for (const keybinding of newBindings) {
+      if (
+        isCloud &&
+        keybinding.commandId === 'Workspace.ToggleBottomPanelTab.logs-terminal'
+      ) {
+        continue
+      }
       keybindingStore.addUserKeybinding(new KeybindingImpl(keybinding))
     }
   }
 
   async function persistUserKeybindings() {
-    await settingStore.set(
-      'Comfy.Keybinding.NewBindings',
-      Object.values(keybindingStore.getUserKeybindings())
-    )
-    await settingStore.set(
-      'Comfy.Keybinding.UnsetBindings',
-      Object.values(keybindingStore.getUserUnsetKeybindings())
-    )
+    await settingStore.setMany({
+      'Comfy.Keybinding.NewBindings': Object.values(
+        keybindingStore.getUserKeybindings()
+      ),
+      'Comfy.Keybinding.UnsetBindings': Object.values(
+        keybindingStore.getUserUnsetKeybindings()
+      )
+    })
   }
 
   return {

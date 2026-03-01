@@ -1,17 +1,17 @@
 <script setup lang="ts">
 import { useEventListener, useTimeout } from '@vueuse/core'
-import { partition } from 'es-toolkit'
+import { partition, remove, takeWhile } from 'es-toolkit'
 import { storeToRefs } from 'pinia'
 import { computed, ref, shallowRef } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import Popover from '@/components/ui/Popover.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { extractVueNodeData } from '@/composables/graph/useGraphNodeManager'
-import { t } from '@/i18n'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import { useBillingContext } from '@/composables/billing/useBillingContext'
 import SubscribeToRunButton from '@/platform/cloud/subscription/components/SubscribeToRun.vue'
-import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
-import { isCloud } from '@/platform/distribution/types'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import DropZone from '@/renderer/extensions/linearMode/DropZone.vue'
@@ -22,19 +22,26 @@ import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { useCommandStore } from '@/stores/commandStore'
 import { useExecutionStore } from '@/stores/executionStore'
+import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useQueueSettingsStore } from '@/stores/queueStore'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import { cn } from '@/utils/tailwindUtil'
-
+import { useAppMode } from '@/composables/useAppMode'
+import { useAppModeStore } from '@/stores/appModeStore'
+const { t } = useI18n()
 const commandStore = useCommandStore()
 const executionStore = useExecutionStore()
+const executionErrorStore = useExecutionErrorStore()
 const { batchCount } = storeToRefs(useQueueSettingsStore())
-const { isActiveSubscription } = useSubscription()
+const settingStore = useSettingStore()
+const { isActiveSubscription } = useBillingContext()
 const workflowStore = useWorkflowStore()
+const { isBuilderMode } = useAppMode()
+const appModeStore = useAppModeStore()
+const { hasOutputs } = storeToRefs(appModeStore)
 
 const props = defineProps<{
   toastTo?: string | HTMLElement
-  notesTo?: string | HTMLElement
   mobile?: boolean
 }>()
 
@@ -50,6 +57,27 @@ useEventListener(
   'configured',
   () => (graphNodes.value = app.rootGraph.nodes)
 )
+
+const mappedSelections = computed(() => {
+  let unprocessedInputs = [...appModeStore.selectedInputs]
+  //FIXME strict typing here
+  const processedInputs: ReturnType<typeof nodeToNodeData>[] = []
+  while (unprocessedInputs.length) {
+    const nodeId = unprocessedInputs[0][0]
+    const inputGroup = takeWhile(
+      unprocessedInputs,
+      ([id]) => id === nodeId
+    ).map(([, widgetName]) => widgetName)
+    unprocessedInputs = unprocessedInputs.slice(inputGroup.length)
+    const node = app.rootGraph.getNodeById(nodeId)
+    if (!node) continue
+
+    const nodeData = nodeToNodeData(node)
+    remove(nodeData.widgets ?? [], (w) => !inputGroup.includes(w.name))
+    processedInputs.push(nodeData)
+  }
+  return processedInputs
+})
 
 function getDropIndicator(node: LGraphNode) {
   if (node.type !== 'LoadImage') return undefined
@@ -77,7 +105,7 @@ function nodeToNodeData(node: LGraphNode) {
   return {
     ...nodeData,
     //note lastNodeErrors uses exeuctionid, node.id is execution for root
-    hasErrors: !!executionStore.lastNodeErrors?.[node.id],
+    hasErrors: !!executionErrorStore.lastNodeErrors?.[node.id],
 
     dropIndicator,
     onDragDrop: node.onDragDrop,
@@ -100,7 +128,11 @@ const partitionedNodes = computed(() => {
 })
 
 const batchCountWidget: SimplifiedWidget<number> = {
-  options: { precision: 0, min: 1, max: isCloud ? 4 : 99 },
+  options: {
+    precision: 0,
+    min: 1,
+    max: settingStore.get('Comfy.QueueButton.BatchCountLimit')
+  },
   value: 1,
   name: t('linearMode.runCount'),
   type: 'number'
@@ -138,7 +170,10 @@ async function runButtonClick(e: Event) {
 defineExpose({ runButtonClick })
 </script>
 <template>
-  <div class="flex flex-col min-w-80 md:h-full">
+  <div
+    v-if="!isBuilderMode && hasOutputs"
+    class="flex flex-col min-w-80 md:h-full"
+  >
     <section
       v-if="mobile"
       data-testid="linear-run-button"
@@ -147,7 +182,8 @@ defineExpose({ runButtonClick })
       <WidgetInputNumberInput
         v-model="batchCount"
         :widget="batchCountWidget"
-        class="*:[.min-w-0]:w-24 grid-cols-[auto_96px]!"
+        root-class="text-base-foreground grid-cols-[auto_96px]"
+        class="*:[.min-w-0]:w-24"
       />
       <SubscribeToRunButton v-if="!isActiveSubscription" class="w-full mt-4" />
       <div v-else class="flex mt-4 gap-2">
@@ -182,11 +218,10 @@ defineExpose({ runButtonClick })
       <div class="flex-1" />
       <Popover
         v-if="partitionedNodes[0].length"
-        align="start"
+        align="end"
         class="overflow-y-auto overflow-x-clip max-h-(--reka-popover-content-available-height) z-100"
-        :reference="notesTo"
-        side="left"
-        :to="notesTo"
+        side="bottom"
+        :side-offset="-8"
       >
         <template #button>
           <Button variant="muted-textonly">
@@ -220,11 +255,13 @@ defineExpose({ runButtonClick })
         class="grow-1 md:overflow-y-auto md:contain-size"
       >
         <template
-          v-for="(nodeData, index) of partitionedNodes[1]"
+          v-for="(nodeData, index) of appModeStore.selectedInputs.length
+            ? mappedSelections
+            : partitionedNodes[0]"
           :key="nodeData.id"
         >
           <div
-            v-if="index !== 0"
+            v-if="index !== 0 && !appModeStore.selectedInputs.length"
             class="w-full border-t-1 border-node-component-border"
           />
           <DropZone
@@ -255,32 +292,23 @@ defineExpose({ runButtonClick })
         <WidgetInputNumberInput
           v-model="batchCount"
           :widget="batchCountWidget"
-          class="*:[.min-w-0]:w-24 grid-cols-[auto_96px]!"
+          root-class="text-base-foreground grid-cols-[auto_96px]"
+          class="*:[.min-w-0]:w-24"
         />
         <SubscribeToRunButton
           v-if="!isActiveSubscription"
           class="w-full mt-4"
         />
-        <div v-else class="flex mt-4 gap-2">
-          <Button
-            variant="primary"
-            class="grow-1"
-            size="lg"
-            @click="runButtonClick"
-          >
-            <i class="icon-[lucide--play]" />
-            {{ t('menu.run') }}
-          </Button>
-          <Button
-            v-if="!executionStore.isIdle"
-            variant="destructive"
-            size="lg"
-            class="w-10 p-2"
-            @click="commandStore.execute('Comfy.Interrupt')"
-          >
-            <i class="icon-[lucide--x]" />
-          </Button>
-        </div>
+        <Button
+          v-else
+          variant="primary"
+          class="w-full mt-4 text-sm"
+          size="lg"
+          @click="runButtonClick"
+        >
+          <i class="icon-[lucide--play]" />
+          {{ t('menu.run') }}
+        </Button>
       </section>
     </div>
   </div>
@@ -290,19 +318,18 @@ defineExpose({ runButtonClick })
     :to="toastTo"
   >
     <div
-      class="bg-base-foreground text-base-background rounded-sm flex h-8 p-1 pr-2 gap-2 items-center"
+      class="bg-secondary-background text-base-foreground rounded-lg flex h-8 p-1 pr-2 gap-2 items-center"
     >
       <i
         v-if="jobFinishedQueue"
-        class="icon-[lucide--check] size-5 bg-success-background"
+        class="icon-[lucide--check] size-5 text-muted-foreground"
       />
       <i v-else class="icon-[lucide--loader-circle] size-4 animate-spin" />
-      <span v-text="t('queue.jobAddedToQueue')" />
+      <span
+        v-text="
+          jobFinishedQueue ? t('queue.jobAddedToQueue') : t('queue.jobQueueing')
+        "
+      />
     </div>
-  </Teleport>
-  <Teleport v-if="false" defer :to="notesTo">
-    <div
-      class="bg-base-background text-muted-foreground flex flex-col w-90 gap-2 rounded-2xl border-1 border-border-subtle py-3"
-    ></div>
   </Teleport>
 </template>

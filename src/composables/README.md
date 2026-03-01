@@ -85,7 +85,7 @@ The following diagram shows how composables fit into the application architectur
 
 ## Composable Categories
 
-The following tables list ALL composables in the system as of 2025-01-30:
+The following tables list ALL composables in the system as of 2026-01-30:
 
 ### Auth
 
@@ -245,10 +245,10 @@ General-purpose composables:
 | `useServerLogs`             | Manages server log display                                |
 | `useTemplateWorkflows`      | Manages template workflow loading, selection, and display |
 | `useTreeExpansion`          | Handles tree node expansion state                         |
-| `useValueTransform`         | Transforms values between formats                         |
-| `useWorkflowAutoSave`       | Handles automatic workflow saving                         |
-| `useWorkflowPersistence`    | Manages workflow persistence                              |
-| `useWorkflowValidation`     | Validates workflow integrity                              |
+
+| `useWorkflowAutoSave` | Handles automatic workflow saving |
+| `useWorkflowPersistence` | Manages workflow persistence |
+| `useWorkflowValidation` | Validates workflow integrity |
 
 ## Usage Guidelines
 

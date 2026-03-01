@@ -1,5 +1,10 @@
 <template>
-  <div ref="container" class="node-lib-node-container">
+  <div
+    ref="container"
+    class="node-lib-node-container h-full w-full"
+    data-testid="node-tree-leaf"
+    :data-node-name="nodeDef.display_name"
+  >
     <TreeExplorerTreeNode :node="node" @contextmenu="handleContextMenu">
       <template #before-label>
         <Tag
@@ -201,11 +206,3 @@ onUnmounted(() => {
   nodeContentElement.value?.removeEventListener('mouseleave', handleMouseLeave)
 })
 </script>
-
-<style scoped>
-@reference '../../../../assets/css/style.css';
-
-.node-lib-node-container {
-  @apply h-full w-full;
-}
-</style>

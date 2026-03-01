@@ -1,24 +1,31 @@
 import { expect } from '@playwright/test'
 
 import { comfyPageFixture as test } from '../fixtures/ComfyPage'
+import { DefaultGraphPositions } from '../fixtures/constants/defaultGraphPositions'
 
 test.beforeEach(async ({ comfyPage }) => {
-  await comfyPage.setSetting('Comfy.UseNewMenu', 'Disabled')
+  await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Disabled')
 })
 
 test.describe('Copy Paste', { tag: ['@screenshot', '@workflow'] }, () => {
   test('Can copy and paste node', async ({ comfyPage }) => {
-    await comfyPage.clickEmptyLatentNode()
+    await comfyPage.canvas.click({
+      position: DefaultGraphPositions.emptyLatentWidgetClick
+    })
     await comfyPage.page.mouse.move(10, 10)
-    await comfyPage.ctrlC()
-    await comfyPage.ctrlV()
+    await comfyPage.nextFrame()
+    await comfyPage.clipboard.copy()
+    await comfyPage.clipboard.paste()
     await expect(comfyPage.canvas).toHaveScreenshot('copied-node.png')
   })
 
   test('Can copy and paste node with link', async ({ comfyPage }) => {
-    await comfyPage.clickTextEncodeNode1()
+    await comfyPage.canvas.click({
+      position: DefaultGraphPositions.textEncodeNode1
+    })
+    await comfyPage.nextFrame()
     await comfyPage.page.mouse.move(10, 10)
-    await comfyPage.ctrlC()
+    await comfyPage.clipboard.copy()
     await comfyPage.page.keyboard.press('Control+Shift+V')
     await expect(comfyPage.canvas).toHaveScreenshot('copied-node-with-link.png')
   })
@@ -28,9 +35,9 @@ test.describe('Copy Paste', { tag: ['@screenshot', '@workflow'] }, () => {
     await textBox.click()
     const originalString = await textBox.inputValue()
     await textBox.selectText()
-    await comfyPage.ctrlC(null)
-    await comfyPage.ctrlV(null)
-    await comfyPage.ctrlV(null)
+    await comfyPage.clipboard.copy(null)
+    await comfyPage.clipboard.paste(null)
+    await comfyPage.clipboard.paste(null)
     const resultString = await textBox.inputValue()
     expect(resultString).toBe(originalString + originalString)
   })
@@ -44,7 +51,7 @@ test.describe('Copy Paste', { tag: ['@screenshot', '@workflow'] }, () => {
         y: 281
       }
     })
-    await comfyPage.ctrlC(null)
+    await comfyPage.clipboard.copy(null)
     // Empty latent node's width
     await comfyPage.canvas.click({
       position: {
@@ -52,7 +59,7 @@ test.describe('Copy Paste', { tag: ['@screenshot', '@workflow'] }, () => {
         y: 643
       }
     })
-    await comfyPage.ctrlV(null)
+    await comfyPage.clipboard.paste(null)
     await comfyPage.page.keyboard.press('Enter')
     await expect(comfyPage.canvas).toHaveScreenshot('copied-widget-value.png')
   })
@@ -63,15 +70,19 @@ test.describe('Copy Paste', { tag: ['@screenshot', '@workflow'] }, () => {
   test('Paste in text area with node previously copied', async ({
     comfyPage
   }) => {
-    await comfyPage.clickEmptyLatentNode()
-    await comfyPage.ctrlC(null)
+    await comfyPage.canvas.click({
+      position: DefaultGraphPositions.emptyLatentWidgetClick
+    })
+    await comfyPage.page.mouse.move(10, 10)
+    await comfyPage.nextFrame()
+    await comfyPage.clipboard.copy(null)
     const textBox = comfyPage.widgetTextBox
     await textBox.click()
     await textBox.inputValue()
     await textBox.selectText()
-    await comfyPage.ctrlC(null)
-    await comfyPage.ctrlV(null)
-    await comfyPage.ctrlV(null)
+    await comfyPage.clipboard.copy(null)
+    await comfyPage.clipboard.paste(null)
+    await comfyPage.clipboard.paste(null)
     await expect(comfyPage.canvas).toHaveScreenshot(
       'paste-in-text-area-with-node-previously-copied.png'
     )
@@ -82,10 +93,10 @@ test.describe('Copy Paste', { tag: ['@screenshot', '@workflow'] }, () => {
     await textBox.click()
     await textBox.inputValue()
     await textBox.selectText()
-    await comfyPage.ctrlC(null)
+    await comfyPage.clipboard.copy(null)
     // Unfocus textbox.
     await comfyPage.page.mouse.click(10, 10)
-    await comfyPage.ctrlV(null)
+    await comfyPage.clipboard.paste(null)
     await expect(comfyPage.canvas).toHaveScreenshot('no-node-copied.png')
   })
 
@@ -103,19 +114,19 @@ test.describe('Copy Paste', { tag: ['@screenshot', '@workflow'] }, () => {
   test('Can undo paste multiple nodes as single action', async ({
     comfyPage
   }) => {
-    const initialCount = await comfyPage.getGraphNodesCount()
+    const initialCount = await comfyPage.nodeOps.getGraphNodesCount()
     expect(initialCount).toBeGreaterThan(1)
     await comfyPage.canvas.click()
-    await comfyPage.ctrlA()
+    await comfyPage.keyboard.selectAll()
     await comfyPage.page.mouse.move(10, 10)
-    await comfyPage.ctrlC()
-    await comfyPage.ctrlV()
+    await comfyPage.clipboard.copy()
+    await comfyPage.clipboard.paste()
 
-    const pasteCount = await comfyPage.getGraphNodesCount()
+    const pasteCount = await comfyPage.nodeOps.getGraphNodesCount()
     expect(pasteCount).toBe(initialCount * 2)
 
-    await comfyPage.ctrlZ()
-    const undoCount = await comfyPage.getGraphNodesCount()
+    await comfyPage.keyboard.undo()
+    const undoCount = await comfyPage.nodeOps.getGraphNodesCount()
     expect(undoCount).toBe(initialCount)
   })
 })

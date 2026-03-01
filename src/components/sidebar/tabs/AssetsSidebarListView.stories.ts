@@ -1,7 +1,9 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
+import { toRef } from 'vue'
 
 import type { JobAction } from '@/composables/queue/useJobActions'
 import type { JobListItem } from '@/composables/queue/useJobList'
+import { useOutputStacks } from '@/platform/assets/composables/useOutputStacks'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { setMockJobActions } from '@/storybook/mocks/useJobActions'
 import { setMockJobItems } from '@/storybook/mocks/useJobList'
@@ -78,7 +80,7 @@ const sampleAssets: AssetItem[] = [
     size: 1887437,
     tags: [],
     user_metadata: {
-      promptId: 'job-running-1',
+      jobId: 'job-running-1',
       nodeId: 12,
       executionTimeInSeconds: 1.84
     }
@@ -110,6 +112,22 @@ const sampleAssets: AssetItem[] = [
     created_at: baseTimestamp,
     size: 134217728,
     tags: []
+  },
+  {
+    id: 'asset-text-1',
+    name: 'generation-notes.txt',
+    created_at: baseTimestamp,
+    preview_url: '/assets/images/default-template.png',
+    size: 2048,
+    tags: []
+  },
+  {
+    id: 'asset-other-1',
+    name: 'workflow-payload.bin',
+    created_at: baseTimestamp,
+    preview_url: '/assets/images/default-template.png',
+    size: 4096,
+    tags: []
   }
 ]
 
@@ -132,22 +150,49 @@ export const RunningAndGenerated: Story = {
   render: renderAssetsSidebarListView
 }
 
+export const TextAndMiscGeneratedAssets: Story = {
+  args: {
+    assets: sampleAssets.filter((asset) =>
+      ['.txt', '.bin'].some((suffix) => asset.name.endsWith(suffix))
+    ),
+    jobs: []
+  },
+  render: renderAssetsSidebarListView
+}
+
 function renderAssetsSidebarListView(args: StoryArgs) {
   return {
     components: { AssetsSidebarListView },
     setup() {
       setMockJobItems(args.jobs)
       setMockJobActions(args.actionsByJobId ?? {})
+      const { assetItems, selectableAssets, isStackExpanded, toggleStack } =
+        useOutputStacks({
+          assets: toRef(args, 'assets')
+        })
       const selectedIds = new Set(args.selectedAssetIds ?? [])
       function isSelected(assetId: string) {
         return selectedIds.has(assetId)
       }
 
-      return { args, isSelected }
+      return {
+        args,
+        assetItems,
+        selectableAssets,
+        isSelected,
+        isStackExpanded,
+        toggleStack
+      }
     },
     template: `
       <div class="h-[520px] w-[320px] overflow-hidden rounded-lg border border-panel-border">
-        <AssetsSidebarListView :assets="args.assets" :is-selected="isSelected" />
+        <AssetsSidebarListView
+          :asset-items="assetItems"
+          :selectable-assets="selectableAssets"
+          :is-selected="isSelected"
+          :is-stack-expanded="isStackExpanded"
+          :toggle-stack="toggleStack"
+        />
       </div>
     `
   }

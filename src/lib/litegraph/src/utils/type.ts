@@ -1,6 +1,7 @@
 import { without } from 'es-toolkit'
 
 import type { IColorable, ISlotType } from '@/lib/litegraph/src/interfaces'
+import type { NodeBindable } from '@/lib/litegraph/src/types/widgets'
 
 /**
  * Converts a plain object to a class instance if it is not already an instance of the class.
@@ -26,6 +27,15 @@ export function isColorable(obj: unknown): obj is IColorable {
     obj !== null &&
     'setColorOption' in obj &&
     'getColorOption' in obj
+  )
+}
+
+export function isNodeBindable(widget: unknown): widget is NodeBindable {
+  return (
+    typeof widget === 'object' &&
+    widget !== null &&
+    'setNodeId' in widget &&
+    typeof widget.setNodeId === 'function'
   )
 }
 

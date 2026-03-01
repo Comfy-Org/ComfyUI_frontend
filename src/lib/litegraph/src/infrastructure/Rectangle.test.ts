@@ -510,7 +510,7 @@ describe('Rectangle', () => {
         lineWidth: 1,
         beginPath: vi.fn(),
         strokeRect: vi.fn()
-      } as unknown as CanvasRenderingContext2D
+      } as Partial<CanvasRenderingContext2D> as CanvasRenderingContext2D
 
       rect._drawDebug(mockCtx, 'blue')
 
@@ -533,7 +533,7 @@ describe('Rectangle', () => {
         lineWidth: 1,
         beginPath: vi.fn(),
         strokeRect: vi.fn()
-      } as unknown as CanvasRenderingContext2D
+      } as Partial<CanvasRenderingContext2D> as CanvasRenderingContext2D
       rect._drawDebug(mockCtx)
       // Check if strokeStyle was "red" at the time of strokeRect
       // This requires a more complex mock or observing calls.

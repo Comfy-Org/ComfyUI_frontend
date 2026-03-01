@@ -1,9 +1,9 @@
 import type { AxiosError, AxiosResponse } from 'axios'
 import axios from 'axios'
 import { ref, watch } from 'vue'
-import { useI18n } from 'vue-i18n'
 
 import { getComfyApiBaseUrl } from '@/config/comfyApi'
+import { d } from '@/i18n'
 import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
 import type { components, operations } from '@/types/comfyRegistryTypes'
 import { isAbortError } from '@/utils/typeGuardUtil'
@@ -33,7 +33,6 @@ const customerApiClient = axios.create({
 export const useCustomerEventsService = () => {
   const isLoading = ref(false)
   const error = ref<string | null>(null)
-  const { d } = useI18n()
 
   watch(
     () => getComfyApiBaseUrl(),
@@ -122,7 +121,7 @@ export const useCustomerEventsService = () => {
       .join(' ')
   }
 
-  function formatJsonValue(value: any) {
+  function formatJsonValue(value: unknown) {
     if (typeof value === 'number') {
       // Format numbers with commas and decimals if needed
       return value.toLocaleString()

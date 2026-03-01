@@ -4,11 +4,11 @@ import { createBounds } from '@/lib/litegraph/src/measure'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
+import { LayoutSource } from '@/renderer/core/layout/types'
 import type { NodeBoundsUpdate } from '@/renderer/core/layout/types'
 import { app as comfyApp } from '@/scripts/app'
 import type { SubgraphInputNode } from '@/lib/litegraph/src/subgraph/SubgraphInputNode'
 import type { SubgraphOutputNode } from '@/lib/litegraph/src/subgraph/SubgraphOutputNode'
-import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 
 const SCALE_FACTOR = 1.2
 
@@ -67,9 +67,7 @@ export function ensureCorrectLayoutScale(
 
     const scaledWidth = lgNode.width * scaleFactor
 
-    const scaledHeight = needsUpscale
-      ? lgNode.size[1] * scaleFactor + LiteGraph.NODE_TITLE_HEIGHT
-      : (lgNode.size[1] - LiteGraph.NODE_TITLE_HEIGHT) * scaleFactor
+    const scaledHeight = lgNode.size[1] * scaleFactor
 
     // Directly update LiteGraph node to ensure immediate consistency
     // Dont need to reference vue directly because the pos and dims are already in yjs
@@ -93,6 +91,7 @@ export function ensureCorrectLayoutScale(
   }
 
   if (onActiveGraph && yjsMoveNodeUpdates.length > 0) {
+    layoutStore.setSource(LayoutSource.Canvas)
     layoutStore.batchUpdateNodeBounds(yjsMoveNodeUpdates)
   }
 

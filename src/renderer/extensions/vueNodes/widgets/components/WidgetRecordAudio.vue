@@ -85,8 +85,8 @@
 import { useIntervalFn } from '@vueuse/core'
 import { Button } from 'primevue'
 import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 
-import { t } from '@/i18n'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { useToastStore } from '@/platform/updates/common/toastStore'
@@ -97,6 +97,8 @@ import { useAudioPlayback } from '../composables/audio/useAudioPlayback'
 import { useAudioRecorder } from '../composables/audio/useAudioRecorder'
 import { useAudioWaveform } from '../composables/audio/useAudioWaveform'
 import { formatTime } from '../utils/audioUtils'
+
+const { t } = useI18n()
 
 const props = defineProps<{
   readonly?: boolean

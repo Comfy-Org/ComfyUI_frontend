@@ -64,10 +64,10 @@ vi.mock('@/components/common/UserAvatar.vue', () => ({
   }
 }))
 
-// Mock the CurrentUserPopover component
-vi.mock('./CurrentUserPopover.vue', () => ({
+// Mock the CurrentUserPopoverLegacy component
+vi.mock('./CurrentUserPopoverLegacy.vue', () => ({
   default: {
-    name: 'CurrentUserPopoverMock',
+    name: 'CurrentUserPopoverLegacyMock',
     render() {
       return h('div', 'Popover Content')
     },

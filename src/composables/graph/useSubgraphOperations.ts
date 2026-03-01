@@ -3,9 +3,7 @@ import { SubgraphNode } from '@/lib/litegraph/src/litegraph'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useNodeOutputStore } from '@/stores/imagePreviewStore'
-import { useNodeBookmarkStore } from '@/stores/nodeBookmarkStore'
-import { useNodeDefStore } from '@/stores/nodeDefStore'
-import { isLGraphNode } from '@/utils/litegraphUtil'
+import { useSubgraphStore } from '@/stores/subgraphStore'
 
 /**
  * Composable for handling subgraph-related operations
@@ -15,8 +13,7 @@ export function useSubgraphOperations() {
   const canvasStore = useCanvasStore()
   const workflowStore = useWorkflowStore()
   const nodeOutputStore = useNodeOutputStore()
-  const nodeDefStore = useNodeDefStore()
-  const nodeBookmarkStore = useNodeBookmarkStore()
+  const subgraphStore = useSubgraphStore()
 
   const convertToSubgraph = () => {
     const canvas = canvasStore.getCanvas()
@@ -73,48 +70,13 @@ export function useSubgraphOperations() {
 
   const addSubgraphToLibrary = async () => {
     const selectedItems = Array.from(canvasStore.selectedItems)
-
-    // Handle single node selection like BookmarkButton.vue
-    if (selectedItems.length === 1) {
-      const item = selectedItems[0]
-      if (isLGraphNode(item)) {
-        const nodeDef = nodeDefStore.fromLGraphNode(item)
-        if (nodeDef) {
-          await nodeBookmarkStore.addBookmark(nodeDef.nodePath)
-          return
-        }
-      }
-    }
-
-    // Handle multiple nodes - convert to subgraph first then bookmark
-    const selectedNodes = getSelectedNodes()
-
-    if (selectedNodes.length === 0) {
-      return
-    }
-
-    // Check if selection contains subgraph nodes
-    const hasSubgraphs = selectedNodes.some(
-      (node) => node instanceof SubgraphNode
+    const subgraphNodes = selectedItems.filter(
+      (item): item is SubgraphNode => item instanceof SubgraphNode
     )
-
-    if (!hasSubgraphs) {
-      // Convert regular nodes to subgraph first
-      convertToSubgraph()
+    if (subgraphNodes.length !== 1) {
       return
     }
-
-    // For subgraph nodes, bookmark them
-    let bookmarkedCount = 0
-    for (const node of selectedNodes) {
-      if (node instanceof SubgraphNode) {
-        const nodeDef = nodeDefStore.fromLGraphNode(node)
-        if (nodeDef) {
-          await nodeBookmarkStore.addBookmark(nodeDef.nodePath)
-          bookmarkedCount++
-        }
-      }
-    }
+    await subgraphStore.publishSubgraph()
   }
 
   const isSubgraphSelected = (): boolean => {

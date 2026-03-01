@@ -1,7 +1,7 @@
 <template>
   <BaseModalLayout
     :content-title="$t('templateWorkflows.title', 'Workflow Templates')"
-    class="workflow-template-selector-dialog"
+    size="md"
   >
     <template #leftPanelHeaderTitle>
       <i class="icon-[comfy--template]" />
@@ -412,8 +412,8 @@ import { useTemplateFiltering } from '@/composables/useTemplateFiltering'
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
 import { useTemplateWorkflows } from '@/platform/workflow/templates/composables/useTemplateWorkflows'
-import { useWorkflowTemplatesStore } from '@/platform/workflow/templates/repositories/workflowTemplatesStore'
 import type { TemplateInfo } from '@/platform/workflow/templates/types/template'
+import { useWorkflowTemplatesStore } from '@/platform/workflow/templates/repositories/workflowTemplatesStore'
 import { TemplateIncludeOnDistributionEnum } from '@/platform/workflow/templates/types/template'
 import { useSystemStatsStore } from '@/stores/systemStatsStore'
 import type { NavGroupData, NavItemData } from '@/types/navTypes'
@@ -422,8 +422,9 @@ import { createGridStyle } from '@/utils/gridUtil'
 
 const { t } = useI18n()
 
-const { onClose: originalOnClose } = defineProps<{
+const { onClose: originalOnClose, initialCategory = 'all' } = defineProps<{
   onClose: () => void
+  initialCategory?: string
 }>()
 
 // Track session time for telemetry
@@ -437,7 +438,6 @@ onMounted(() => {
 const systemStatsStore = useSystemStatsStore()
 
 const distributions = computed(() => {
-  // eslint-disable-next-line no-undef
   switch (__DISTRIBUTION__) {
     case 'cloud':
       return [TemplateIncludeOnDistributionEnum.Cloud]
@@ -547,7 +547,7 @@ const allTemplates = computed(() => {
 })
 
 // Navigation
-const selectedNavItem = ref<string | null>('all')
+const selectedNavItem = ref<string | null>(initialCategory)
 
 // Filter templates based on selected navigation item
 const navigationFilteredTemplates = computed(() => {
@@ -794,7 +794,7 @@ watch(
 )
 
 // Methods
-const onLoadWorkflow = async (template: any) => {
+const onLoadWorkflow = async (template: TemplateInfo) => {
   loadingTemplate.value = template.name
   try {
     await loadWorkflowTemplate(
@@ -853,19 +853,3 @@ onBeforeUnmount(() => {
   cardRefs.value = [] // Release DOM refs
 })
 </script>
-
-<style>
-/* Ensure the workflow template selector dialog fits within provided dialog */
-.workflow-template-selector-dialog.base-widget-layout {
-  width: 100% !important;
-  max-width: 1400px;
-  height: 100% !important;
-  aspect-ratio: auto !important;
-}
-
-@media (min-width: 1600px) {
-  .workflow-template-selector-dialog.base-widget-layout {
-    max-width: 1600px;
-  }
-}
-</style>

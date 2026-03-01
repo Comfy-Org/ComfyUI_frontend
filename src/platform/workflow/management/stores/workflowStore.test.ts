@@ -12,6 +12,7 @@ import {
   useWorkflowBookmarkStore,
   useWorkflowStore
 } from '@/platform/workflow/management/stores/workflowStore'
+import { useWorkflowDraftStore } from '@/platform/workflow/persistence/stores/workflowDraftStore'
 import { api } from '@/scripts/api'
 import { app as comfyApp } from '@/scripts/app'
 import { defaultGraph, defaultGraphJSON } from '@/scripts/defaultGraph'
@@ -909,6 +910,43 @@ describe('useWorkflowStore', () => {
       // C is current, no valid history
       const mostRecent = store.getMostRecentWorkflow()
       expect(mostRecent).toBeNull()
+    })
+  })
+
+  describe('closeWorkflow draft cleanup', () => {
+    it('should remove draft for persisted workflows on close', async () => {
+      const draftStore = useWorkflowDraftStore()
+      await syncRemoteWorkflows(['a.json'])
+      const workflow = store.getWorkflowByPath('workflows/a.json')!
+
+      draftStore.saveDraft('workflows/a.json', {
+        data: '{"dirty":true}',
+        updatedAt: Date.now(),
+        name: 'a.json',
+        isTemporary: false
+      })
+      expect(draftStore.getDraft('workflows/a.json')).toBeDefined()
+
+      await store.closeWorkflow(workflow)
+
+      expect(draftStore.getDraft('workflows/a.json')).toBeUndefined()
+    })
+
+    it('should remove draft for temporary workflows on close', async () => {
+      const draftStore = useWorkflowDraftStore()
+      const workflow = store.createTemporary('temp.json')
+
+      draftStore.saveDraft(workflow.path, {
+        data: '{"dirty":true}',
+        updatedAt: Date.now(),
+        name: 'temp.json',
+        isTemporary: true
+      })
+      expect(draftStore.getDraft(workflow.path)).toBeDefined()
+
+      await store.closeWorkflow(workflow)
+
+      expect(draftStore.getDraft(workflow.path)).toBeUndefined()
     })
   })
 })

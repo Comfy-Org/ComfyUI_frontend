@@ -20,6 +20,12 @@ vi.mock('@/platform/cloud/subscription/composables/useSubscription', () => ({
   })
 }))
 
+vi.mock('@/composables/billing/useBillingContext', () => ({
+  useBillingContext: () => ({
+    fetchStatus: mockFetchStatus
+  })
+}))
+
 vi.mock('@/services/dialogService', () => ({
   useDialogService: () => ({
     showTopUpCreditsDialog: mockShowTopUpCreditsDialog

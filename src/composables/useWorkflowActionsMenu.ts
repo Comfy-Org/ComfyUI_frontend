@@ -1,16 +1,22 @@
-import type { MenuItem } from 'primevue/menuitem'
 import type { ComputedRef, Ref } from 'vue'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import {
   useWorkflowBookmarkStore,
   useWorkflowStore
 } from '@/platform/workflow/management/stores/workflowStore'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCommandStore } from '@/stores/commandStore'
+import { useMenuItemStore } from '@/stores/menuItemStore'
 import { useSubgraphStore } from '@/stores/subgraphStore'
+import type {
+  WorkflowMenuAction,
+  WorkflowMenuItem
+} from '@/types/workflowMenuItem'
 
 interface WorkflowActionsMenuOptions {
   /** Whether this is the root workflow level. Defaults to true. */
@@ -19,6 +25,17 @@ interface WorkflowActionsMenuOptions {
   includeDelete?: boolean
   /** Override the workflow to operate on. If not provided, uses activeWorkflow. */
   workflow?: Ref<ComfyWorkflow | null> | ComputedRef<ComfyWorkflow | null>
+}
+
+interface AddItemOptions {
+  id: string
+  label: string
+  icon: string
+  command: () => void
+  visible?: boolean
+  disabled?: boolean
+  prependSeparator?: boolean
+  isNew?: boolean
 }
 
 export function useWorkflowActionsMenu(
@@ -32,6 +49,9 @@ export function useWorkflowActionsMenu(
   const bookmarkStore = useWorkflowBookmarkStore()
   const commandStore = useCommandStore()
   const subgraphStore = useSubgraphStore()
+  const menuItemStore = useMenuItemStore()
+  const canvasStore = useCanvasStore()
+  const { flags } = useFeatureFlags()
 
   const targetWorkflow = computed(
     () => workflow?.value ?? workflowStore.activeWorkflow
@@ -43,145 +63,179 @@ export function useWorkflowActionsMenu(
     await workflowService.openWorkflow(wf)
   }
 
-  const menuItems = computed<MenuItem[]>(() => {
+  const menuItems = computed<WorkflowMenuItem[]>(() => {
     const workflow = targetWorkflow.value
     const isBlueprint = workflow
       ? subgraphStore.isSubgraphBlueprint(workflow)
       : false
 
-    const items: MenuItem[] = []
+    const items: WorkflowMenuItem[] = []
 
-    const addItem = (
-      label: string,
-      icon: string,
-      command: () => void,
+    const addItem = ({
+      id,
+      label,
+      icon,
+      command,
       visible = true,
       disabled = false,
-      separator = false
-    ) => {
+      prependSeparator = false,
+      isNew = false
+    }: AddItemOptions) => {
       if (!visible) return
-      if (separator) items.push({ separator: true })
-      items.push({ label, icon, command, disabled })
+      if (prependSeparator) items.push({ separator: true })
+      const item: WorkflowMenuAction = { id, label, icon, command, disabled }
+      if (isNew) {
+        item.badge = t('g.experimental')
+        item.isNew = true
+      }
+      items.push(item)
     }
 
-    addItem(
-      t('g.rename'),
-      'pi pi-pencil',
-      async () => {
+    const isLinearMode = canvasStore.linearMode
+    const showAppModeItems =
+      isRoot && (menuItemStore.hasSeenLinear || flags.linearToggleEnabled)
+    const isBookmarked = bookmarkStore.isBookmarked(workflow?.path ?? '')
+
+    addItem({
+      id: 'rename',
+      label: t('g.rename'),
+      icon: 'pi pi-pencil',
+      command: async () => {
         await ensureWorkflowActive(targetWorkflow.value)
         startRename()
       },
-      true,
-      isRoot && !workflow?.isPersisted
-    )
+      disabled: isRoot && !workflow?.isPersisted
+    })
 
-    addItem(
-      t('breadcrumbsMenu.duplicate'),
-      'pi pi-copy',
-      async () => {
+    addItem({
+      id: 'duplicate',
+      label: t('breadcrumbsMenu.duplicate'),
+      icon: 'pi pi-copy',
+      command: async () => {
         if (workflow) {
           await workflowService.duplicateWorkflow(workflow)
         }
       },
-      isRoot && !isBlueprint
-    )
+      visible: isRoot && !isBlueprint
+    })
 
-    addItem(
-      t('menuLabels.Save'),
-      'pi pi-save',
-      async () => {
-        await ensureWorkflowActive(workflow)
-        await commandStore.execute('Comfy.SaveWorkflow')
-      },
-      isRoot,
-      false,
-      true
-    )
-
-    addItem(
-      t('menuLabels.Save As'),
-      'pi pi-save',
-      async () => {
-        await ensureWorkflowActive(workflow)
-        await commandStore.execute('Comfy.SaveWorkflowAs')
-      },
-      isRoot
-    )
-
-    addItem(
-      bookmarkStore.isBookmarked(workflow?.path ?? '')
+    addItem({
+      id: 'toggle-bookmark',
+      label: isBookmarked
         ? t('tabMenu.removeFromBookmarks')
         : t('tabMenu.addToBookmarks'),
-      'pi pi-bookmark' +
-        (bookmarkStore.isBookmarked(workflow?.path ?? '') ? '-fill' : ''),
-      async () => {
+      icon: 'pi pi-bookmark' + (isBookmarked ? '-fill' : ''),
+      command: async () => {
         if (workflow?.path) {
           await bookmarkStore.toggleBookmarked(workflow.path)
         }
       },
-      isRoot,
-      workflow?.isTemporary ?? false
-    )
+      visible: isRoot,
+      disabled: workflow?.isTemporary ?? false
+    })
 
-    addItem(
-      t('menuLabels.Export'),
-      'pi pi-download',
-      async () => {
+    addItem({
+      id: 'save',
+      label: t('menuLabels.Save'),
+      icon: 'pi pi-save',
+      command: async () => {
+        await ensureWorkflowActive(workflow)
+        await commandStore.execute('Comfy.SaveWorkflow')
+      },
+      visible: isRoot,
+      prependSeparator: true
+    })
+
+    addItem({
+      id: 'save-as',
+      label: t('menuLabels.Save As'),
+      icon: 'pi pi-save',
+      command: async () => {
+        await ensureWorkflowActive(workflow)
+        await commandStore.execute('Comfy.SaveWorkflowAs')
+      },
+      visible: isRoot
+    })
+
+    addItem({
+      id: 'export',
+      label: t('menuLabels.Export'),
+      icon: 'pi pi-download',
+      command: async () => {
         await ensureWorkflowActive(workflow)
         await commandStore.execute('Comfy.ExportWorkflow')
       },
-      isRoot
-    )
+      visible: isRoot,
+      prependSeparator: true
+    })
 
-    addItem(
-      t('menuLabels.Export (API)'),
-      'pi pi-download',
-      async () => {
+    addItem({
+      id: 'export-api',
+      label: t('menuLabels.Export (API)'),
+      icon: 'pi pi-download',
+      command: async () => {
         await ensureWorkflowActive(workflow)
         await commandStore.execute('Comfy.ExportWorkflowAPI')
       },
-      isRoot
-    )
+      visible: isRoot
+    })
 
-    addItem(
-      t('breadcrumbsMenu.clearWorkflow'),
-      'pi pi-trash',
-      async () => {
+    addItem({
+      id: 'toggle-app-mode',
+      label: isLinearMode
+        ? t('breadcrumbsMenu.exitAppMode')
+        : t('breadcrumbsMenu.enterAppMode'),
+      icon: isLinearMode
+        ? 'icon-[comfy--workflow]'
+        : 'icon-[lucide--panels-top-left]',
+      command: async () => {
+        await commandStore.execute('Comfy.ToggleLinear', {
+          metadata: { source: 'breadcrumb_menu' }
+        })
+      },
+      visible: showAppModeItems,
+      prependSeparator: true,
+      isNew: !isLinearMode
+    })
+
+    addItem({
+      id: 'clear-workflow',
+      label: t('breadcrumbsMenu.clearWorkflow'),
+      icon: 'pi pi-trash',
+      command: async () => {
         await ensureWorkflowActive(workflow)
         await commandStore.execute('Comfy.ClearWorkflow')
       },
-      true,
-      false,
-      true
-    )
+      prependSeparator: true
+    })
 
-    addItem(
-      t('subgraphStore.publish'),
-      'pi pi-upload',
-      async () => {
+    addItem({
+      id: 'publish',
+      label: t('subgraphStore.publish'),
+      icon: 'pi pi-upload',
+      command: async () => {
         if (workflow) {
           await workflowService.saveWorkflowAs(workflow)
         }
       },
-      isRoot && isBlueprint,
-      false,
-      true
-    )
+      visible: isRoot && isBlueprint,
+      prependSeparator: true
+    })
 
-    addItem(
-      isBlueprint
+    addItem({
+      id: 'delete',
+      label: isBlueprint
         ? t('breadcrumbsMenu.deleteBlueprint')
         : t('breadcrumbsMenu.deleteWorkflow'),
-      'pi pi-times',
-      async () => {
+      icon: 'pi pi-times',
+      command: async () => {
         if (workflow) {
           await workflowService.deleteWorkflow(workflow)
         }
       },
-      isRoot && includeDelete,
-      false,
-      true
-    )
+      visible: isRoot && includeDelete,
+      prependSeparator: true
+    })
 
     return items
   })

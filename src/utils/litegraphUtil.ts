@@ -1,9 +1,12 @@
 import _ from 'es-toolkit/compat'
 
 import type { ColorOption, LGraph } from '@/lib/litegraph/src/litegraph'
+import type { ExecutedWsMessage } from '@/schemas/apiSchema'
 import {
+  LGraphCanvas,
   LGraphGroup,
   LGraphNode,
+  LiteGraph,
   Reroute,
   isColorable
 } from '@/lib/litegraph/src/litegraph'
@@ -14,14 +17,49 @@ import type {
 } from '@/lib/litegraph/src/types/serialisation'
 import type {
   IBaseWidget,
-  IComboWidget
+  IComboWidget,
+  WidgetCallbackOptions
 } from '@/lib/litegraph/src/types/widgets'
 import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
+import { useToastStore } from '@/platform/updates/common/toastStore'
+import { t } from '@/i18n'
 
 type ImageNode = LGraphNode & { imgs: HTMLImageElement[] | undefined }
 type VideoNode = LGraphNode & {
   videoContainer: HTMLElement | undefined
   imgs: HTMLVideoElement[] | undefined
+}
+
+/**
+ * Extract & Promisify Litegraph.createNode to allow for positioning
+ * @param canvas
+ * @param name
+ */
+export async function createNode(
+  canvas: LGraphCanvas,
+  name: string
+): Promise<LGraphNode | null> {
+  if (!name) {
+    return null
+  }
+
+  const {
+    graph,
+    graph_mouse: [posX, posY]
+  } = canvas
+  const newNode = LiteGraph.createNode(name)
+  await new Promise((r) => setTimeout(r, 0))
+
+  if (newNode && graph) {
+    newNode.pos = [posX, posY]
+    const addedNode = graph.add(newNode) ?? null
+
+    if (addedNode) graph.change()
+    return addedNode
+  } else {
+    useToastStore().addAlert(t('assetBrowser.failedToCreateNode'))
+    return null
+  }
 }
 
 export function isImageNode(node: LGraphNode | undefined): node is ImageNode {
@@ -35,6 +73,32 @@ export function isImageNode(node: LGraphNode | undefined): node is ImageNode {
 export function isVideoNode(node: LGraphNode | undefined): node is VideoNode {
   if (!node) return false
   return node.previewMediaType === 'video' || !!node.videoContainer
+}
+
+/**
+ * Check if output data indicates animated content (animated webp/png or video).
+ */
+export function isAnimatedOutput(
+  output: ExecutedWsMessage['output'] | undefined
+): boolean {
+  return !!output?.animated?.find(Boolean)
+}
+
+/**
+ * Check if output data indicates video content (animated but not webp/png).
+ */
+export function isVideoOutput(
+  output: ExecutedWsMessage['output'] | undefined
+): boolean {
+  if (!isAnimatedOutput(output)) return false
+
+  const isAnimatedWebp = output?.images?.some((img) =>
+    img.filename?.endsWith('.webp')
+  )
+  const isAnimatedPng = output?.images?.some((img) =>
+    img.filename?.endsWith('.png')
+  )
+  return !isAnimatedWebp && !isAnimatedPng
 }
 
 export function isAudioNode(node: LGraphNode | undefined): boolean {
@@ -83,11 +147,12 @@ export const getItemsColorOption = (items: unknown[]): ColorOption | null => {
 
 export function executeWidgetsCallback(
   nodes: LGraphNode[],
-  callbackName: 'onRemove' | 'beforeQueued' | 'afterQueued'
+  callbackName: 'onRemove' | 'beforeQueued' | 'afterQueued',
+  options?: WidgetCallbackOptions
 ) {
   for (const node of nodes) {
     for (const widget of node.widgets ?? []) {
-      widget[callbackName]?.()
+      widget[callbackName]?.(options)
     }
   }
 }
@@ -112,23 +177,17 @@ export function migrateWidgetsValues<TWidgetValue>(
   const originalWidgetsInputs = Object.values(inputDefs).filter(
     (input) => widgetNames.has(input.name) || input.forceInput
   )
-  // Count the number of original widgets inputs.
-  const numOriginalWidgets = _.sum(
-    originalWidgetsInputs.map((input) =>
-      // If the input has control, it will have 2 widgets.
-      input.control_after_generate ||
-      ['seed', 'noise_seed'].includes(input.name)
-        ? 2
-        : 1
-    )
+
+  const widgetIndexHasForceInput = originalWidgetsInputs.flatMap((input) =>
+    input.control_after_generate
+      ? [!!input.forceInput, false]
+      : [!!input.forceInput]
   )
 
-  if (numOriginalWidgets === widgetsValues?.length) {
-    return _.zip(originalWidgetsInputs, widgetsValues)
-      .filter(([input]) => !input?.forceInput)
-      .map(([_, value]) => value as TWidgetValue)
-  }
-  return widgetsValues
+  if (widgetIndexHasForceInput.length !== widgetsValues?.length)
+    return widgetsValues
+
+  return widgetsValues.filter((_, index) => !widgetIndexHasForceInput[index])
 }
 
 /**
@@ -239,6 +298,10 @@ function compressSubgraphWidgetInputSlots(
 
     compressSubgraphWidgetInputSlots(subgraph.definitions?.subgraphs, visited)
   }
+}
+
+export function getLinkTypeColor(typeName: string): string {
+  return LGraphCanvas.link_type_colors[typeName] ?? LiteGraph.LINK_COLOR
 }
 
 export function isLoad3dNode(node: LGraphNode) {

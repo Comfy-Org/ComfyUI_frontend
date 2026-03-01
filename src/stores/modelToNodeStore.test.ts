@@ -27,12 +27,23 @@ const EXPECTED_DEFAULT_TYPES = [
   'chatterbox/chatterbox',
   'chatterbox/chatterbox_turbo',
   'chatterbox/chatterbox_multilingual',
-  'chatterbox/chatterbox_vc'
+  'chatterbox/chatterbox_vc',
+  'latent_upscale_models',
+  'sam2',
+  'sams',
+  'ultralytics',
+  'depthanything',
+  'ipadapter',
+  'segformer_b2_clothes',
+  'segformer_b3_clothes',
+  'segformer_b3_fashion',
+  'nlf',
+  'FlashVSR',
+  'FlashVSR-v1.1'
 ] as const
 
 type NodeDefStoreType = ReturnType<typeof useNodeDefStore>
 
-// Create minimal but valid ComfyNodeDefImpl for testing
 function createMockNodeDef(name: string): ComfyNodeDefImpl {
   const def: ComfyNodeDefV1 = {
     name,
@@ -69,15 +80,22 @@ const MOCK_NODE_NAMES = [
   'FL_ChatterboxTTS',
   'FL_ChatterboxTurboTTS',
   'FL_ChatterboxMultilingualTTS',
-  'FL_ChatterboxVC'
+  'FL_ChatterboxVC',
+  'LatentUpscaleModelLoader',
+  'DownloadAndLoadSAM2Model',
+  'SAMLoader',
+  'UltralyticsDetectorProvider',
+  'DownloadAndLoadDepthAnythingV2Model',
+  'IPAdapterModelLoader',
+  'LS_LoadSegformerModel',
+  'LoadNLFModel',
+  'FlashVSRNode'
 ] as const
 
 const mockNodeDefsByName = Object.fromEntries(
   MOCK_NODE_NAMES.map((name) => [name, createMockNodeDef(name)])
 )
 
-// Mock nodeDefStore dependency - modelToNodeStore relies on this for registration
-// Most tests expect this to be populated; tests that need empty state can override
 vi.mock('@/stores/nodeDefStore', async (importOriginal) => {
   const original = await importOriginal<NodeDefStoreType>()
 
@@ -117,7 +135,6 @@ describe('useModelToNodeStore', () => {
 
       const provider = modelToNodeStore.getNodeProvider('checkpoints')
       expect(provider).toBeDefined()
-      // After asserting provider is defined, we can safely access its properties
       expect(provider?.nodeDef?.name).toBe('CheckpointLoaderSimple')
       expect(provider?.key).toBe('ckpt_name')
     })
@@ -133,7 +150,6 @@ describe('useModelToNodeStore', () => {
       modelToNodeStore.registerDefaults()
 
       const provider = modelToNodeStore.getNodeProvider('checkpoints')
-      // Using optional chaining for safety since getNodeProvider() can return undefined
       expect(provider?.nodeDef?.name).toBe('CheckpointLoaderSimple')
     })
 
@@ -173,6 +189,29 @@ describe('useModelToNodeStore', () => {
       expect(provider?.nodeDef?.name).toBe('FL_ChatterboxVC')
       expect(provider?.key).toBe('')
     })
+
+    it.each([
+      ['sam2', 'DownloadAndLoadSAM2Model', 'model'],
+      ['sams', 'SAMLoader', 'model_name'],
+      ['ipadapter', 'IPAdapterModelLoader', 'ipadapter_file'],
+      ['depthanything', 'DownloadAndLoadDepthAnythingV2Model', 'model'],
+      ['ultralytics/bbox', 'UltralyticsDetectorProvider', 'model_name'],
+      ['ultralytics/segm', 'UltralyticsDetectorProvider', 'model_name'],
+      ['FlashVSR', 'FlashVSRNode', ''],
+      ['FlashVSR-v1.1', 'FlashVSRNode', ''],
+      ['segformer_b2_clothes', 'LS_LoadSegformerModel', 'model_name'],
+      ['segformer_b3_fashion', 'LS_LoadSegformerModel', 'model_name']
+    ])(
+      'should return correct provider for %s',
+      (modelType, expectedNodeName, expectedKey) => {
+        const modelToNodeStore = useModelToNodeStore()
+        modelToNodeStore.registerDefaults()
+
+        const provider = modelToNodeStore.getNodeProvider(modelType)
+        expect(provider?.nodeDef?.name).toBe(expectedNodeName)
+        expect(provider?.key).toBe(expectedKey)
+      }
+    )
   })
 
   describe('getAllNodeProviders', () => {
@@ -264,7 +303,6 @@ describe('useModelToNodeStore', () => {
 
       const retrieved = modelToNodeStore.getNodeProvider('custom_type')
       expect(retrieved).toStrictEqual(customProvider)
-      // Optional chaining for consistency with getNodeProvider() return type
       expect(retrieved?.key).toBe('custom_key')
     })
 
@@ -313,7 +351,6 @@ describe('useModelToNodeStore', () => {
 
       const provider = modelToNodeStore.getNodeProvider('test_type')
       expect(provider).toBeDefined()
-      // After asserting provider is defined, we can safely access its properties
       expect(provider!.nodeDef.name).toBe('UNETLoader')
       expect(provider!.key).toBe('test_param')
     })
@@ -379,7 +416,6 @@ describe('useModelToNodeStore', () => {
     })
 
     it('should not register when nodeDefStore is empty', () => {
-      // Create fresh Pinia for this test to avoid state persistence
       setActivePinia(createTestingPinia({ stubActions: false }))
 
       vi.mocked(useNodeDefStore, { partial: true }).mockReturnValue({
@@ -389,7 +425,6 @@ describe('useModelToNodeStore', () => {
       modelToNodeStore.registerDefaults()
       expect(modelToNodeStore.getNodeProvider('checkpoints')).toBeUndefined()
 
-      // Restore original mock for subsequent tests
       vi.mocked(useNodeDefStore, { partial: true }).mockReturnValue({
         nodeDefsByName: mockNodeDefsByName
       })
@@ -404,7 +439,6 @@ describe('useModelToNodeStore', () => {
     })
 
     it('should return empty Record when nodeDefStore is empty', () => {
-      // Create fresh Pinia for this test to avoid state persistence
       setActivePinia(createTestingPinia({ stubActions: false }))
 
       vi.mocked(useNodeDefStore, { partial: true }).mockReturnValue({
@@ -415,7 +449,6 @@ describe('useModelToNodeStore', () => {
       const result = modelToNodeStore.getRegisteredNodeTypes()
       expect(result).toStrictEqual({})
 
-      // Restore original mock for subsequent tests
       vi.mocked(useNodeDefStore, { partial: true }).mockReturnValue({
         nodeDefsByName: mockNodeDefsByName
       })
@@ -506,7 +539,6 @@ describe('useModelToNodeStore', () => {
       const modelToNodeStore = useModelToNodeStore()
       modelToNodeStore.registerDefaults()
 
-      // These should not throw but return undefined
       expect(modelToNodeStore.getCategoryForNodeType(null!)).toBeUndefined()
       expect(
         modelToNodeStore.getCategoryForNodeType(undefined!)
@@ -541,11 +573,11 @@ describe('useModelToNodeStore', () => {
       const modelToNodeStore = useModelToNodeStore()
       modelToNodeStore.registerDefaults()
 
-      expect(modelToNodeStore.getNodeProvider(null as any)).toBeUndefined()
-      expect(modelToNodeStore.getNodeProvider(undefined as any)).toBeUndefined()
-      expect(modelToNodeStore.getNodeProvider(123 as any)).toBeUndefined()
-      expect(modelToNodeStore.getAllNodeProviders(null as any)).toEqual([])
-      expect(modelToNodeStore.getAllNodeProviders(undefined as any)).toEqual([])
+      expect(modelToNodeStore.getNodeProvider(null)).toBeUndefined()
+      expect(modelToNodeStore.getNodeProvider(undefined)).toBeUndefined()
+      expect(modelToNodeStore.getNodeProvider(123)).toBeUndefined()
+      expect(modelToNodeStore.getAllNodeProviders(null)).toEqual([])
+      expect(modelToNodeStore.getAllNodeProviders(undefined)).toEqual([])
     })
   })
 })
