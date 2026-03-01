@@ -174,7 +174,8 @@ describe.skip('SubgraphNode Synchronization', () => {
       input: subgraph.inputs[0],
       index: 0,
       oldName: 'oldName',
-      newName: 'newName'
+      newName: 'newName',
+      canonicalName: 'newName'
     })
 
     expect(subgraphNode.inputs[0].label).toBe('newName')
@@ -185,7 +186,8 @@ describe.skip('SubgraphNode Synchronization', () => {
       output: subgraph.outputs[0],
       index: 0,
       oldName: 'oldOutput',
-      newName: 'newOutput'
+      newName: 'newOutput',
+      canonicalName: 'newOutput'
     })
 
     expect(subgraphNode.outputs[0].label).toBe('newOutput')

@@ -380,7 +380,10 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
         const existingInput = this.inputs.find((i) => i.name === name)
         if (existingInput) {
           const linkId = subgraphInput.linkIds[0]
-          const { inputNode, input } = subgraph.links[linkId].resolve(subgraph)
+          const link = subgraph.links.get(linkId)
+          if (!link) return
+
+          const { inputNode, input } = link.resolve(subgraph)
           const widget = inputNode?.widgets?.find?.((w) => w.name === name)
           if (widget && inputNode)
             this._setWidget(
@@ -437,7 +440,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
         const input = this.inputs.at(index)
         if (!input) throw new Error('Subgraph input not found')
 
-        input.name = canonicalName ?? newName
+        input.name = canonicalName
         input.label = newName
         if (input.widget) input.widget.name = input.name
         if (input._widget) {
@@ -454,7 +457,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
         const output = this.outputs.at(index)
         if (!output) throw new Error('Subgraph output not found')
 
-        output.name = canonicalName ?? newName
+        output.name = canonicalName
         output.label = newName
       },
       { signal }

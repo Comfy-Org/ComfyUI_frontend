@@ -36,14 +36,14 @@ export interface SubgraphEventMap extends LGraphEventMap {
     index: number
     oldName: string
     newName: string
-    canonicalName?: string
+    canonicalName: string
   }
   'renaming-output': {
     output: SubgraphOutput
     index: number
     oldName: string
     newName: string
-    canonicalName?: string
+    canonicalName: string
   }
 
   'widget-promoted': {

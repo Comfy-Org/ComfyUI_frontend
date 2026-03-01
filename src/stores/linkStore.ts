@@ -10,17 +10,24 @@ interface LinkStoreTopology {
   reroutes: ReadonlyMap<RerouteId, Reroute>
 }
 
+const EMPTY_TOPOLOGY: Readonly<LinkStoreTopology> = Object.freeze({
+  links: new Map(),
+  floatingLinks: new Map(),
+  reroutes: new Map()
+})
+
 /**
  * Graph-scoped topology store (Pinia).
  *
- * Slice 1 contract: this store owns no mutation logic and is rehydrated from
- * graph lifecycle boundaries (`clear` and `configure`).
+ * This store owns no mutation logic and is rehydrated from graph lifecycle
+ * boundaries (`clear` and `configure`). The `ReadonlyMap` fields are live
+ * projections of mutable graph state, not immutable snapshots.
  *
  * Each graph/subgraph registers its own topology keyed by graph UUID.
  */
 export const useLinkStore = defineStore('link', () => {
-  // Intentionally non-reactive for now: this store is used as an imperative
-  // graph lookup boundary, not as UI-driven reactive state.
+  // Intentionally non-reactive: used as an imperative graph lookup boundary,
+  // not as UI-driven reactive state.
   const topologies = new Map<UUID, LinkStoreTopology>()
 
   function rehydrate(graphId: UUID, topology: LinkStoreTopology) {
@@ -28,13 +35,7 @@ export const useLinkStore = defineStore('link', () => {
   }
 
   function getTopology(graphId: UUID): LinkStoreTopology {
-    return (
-      topologies.get(graphId) ?? {
-        links: new Map(),
-        floatingLinks: new Map(),
-        reroutes: new Map()
-      }
-    )
+    return topologies.get(graphId) ?? EMPTY_TOPOLOGY
   }
 
   function getLink(

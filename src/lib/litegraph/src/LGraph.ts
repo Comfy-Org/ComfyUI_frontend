@@ -277,6 +277,11 @@ export class LGraph
   /** Stable instance key for the link store — never changes once created. */
   readonly linkStoreKey: UUID = createUuidv4()
 
+  private _linkStoreCache?: ReturnType<typeof useLinkStore>
+  private get linkStore() {
+    return (this._linkStoreCache ??= useLinkStore())
+  }
+
   private readonly floatingLinksInternal: Map<LinkId, LLink> = new Map()
 
   get floatingLinks(): ReadonlyMap<LinkId, LLink> {
@@ -368,6 +373,7 @@ export class LGraph
       usePromotionStore().clearGraph(graphId)
       useWidgetValueStore().clearGraph(graphId)
     }
+    this.linkStore.clearGraph(this.linkStoreKey)
 
     this.id = zeroUuid
     this.revision = 0
@@ -440,7 +446,7 @@ export class LGraph
   }
 
   private rehydrateLinkStore(): void {
-    useLinkStore().rehydrate(this.linkStoreKey, {
+    this.linkStore.rehydrate(this.linkStoreKey, {
       links: this._links,
       floatingLinks: this.floatingLinksInternal,
       reroutes: this.reroutesInternal
@@ -1464,7 +1470,7 @@ export class LGraph
   getLink(id: null | undefined): undefined
   getLink(id: LinkId | null | undefined): LLink | undefined
   getLink(id: LinkId | null | undefined): LLink | undefined {
-    return useLinkStore().getLink(this.linkStoreKey, id)
+    return this.linkStore.getLink(this.linkStoreKey, id)
   }
 
   /**
@@ -1475,7 +1481,7 @@ export class LGraph
   getReroute(id: null | undefined): undefined
   getReroute(id: RerouteId | null | undefined): Reroute | undefined
   getReroute(id: RerouteId | null | undefined): Reroute | undefined {
-    return useLinkStore().getReroute(this.linkStoreKey, id)
+    return this.linkStore.getReroute(this.linkStoreKey, id)
   }
 
   /**
@@ -1655,6 +1661,7 @@ export class LGraph
     this._version++
   }
 
+  /** Always returns a valid LLink — callers rely on non-nullable return. */
   connectSlots(
     sourceNode: LGraphNode,
     outputIndex: number,
@@ -2083,7 +2090,7 @@ export class LGraph
               link.parentId
             )
           } else {
-            throw new TypeError('Subgraph input node is not a SubgraphInput')
+            throw new TypeError('Subgraph output node is not a SubgraphOutput')
           }
           continue
         }
