@@ -44,6 +44,7 @@ function resolveFlag<T>(
  */
 export function useFeatureFlags() {
   const flags = reactive({
+    // Direct server-only flags — resolved via getServerCapability() only
     get supportsPreviewMetadata() {
       return getServerCapability(ServerFeatureFlag.SUPPORTS_PREVIEW_METADATA)
     },
@@ -53,6 +54,8 @@ export function useFeatureFlags() {
     get supportsManagerV4() {
       return getServerCapability(ServerFeatureFlag.MANAGER_SUPPORTS_V4)
     },
+
+    // Flags with remoteConfig override — resolved via resolveFlag()
     get modelUploadButtonEnabled() {
       return resolveFlag(
         ServerFeatureFlag.MODEL_UPLOAD_BUTTON_ENABLED,
@@ -81,6 +84,7 @@ export function useFeatureFlags() {
         false
       )
     },
+    // Flags with extra conditional logic (isNightly/isCloud guards)
     get linearToggleEnabled() {
       if (isNightly) return true
 
@@ -117,6 +121,7 @@ export function useFeatureFlags() {
         false
       )
     },
+    // Direct server-only flags with defaults
     get nodeReplacementsEnabled() {
       return getServerCapability(ServerFeatureFlag.NODE_REPLACEMENTS, false)
     },
