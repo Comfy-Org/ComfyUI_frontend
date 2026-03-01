@@ -9,6 +9,7 @@ import ExtensionSlot from '@/components/common/ExtensionSlot.vue'
 import ModeToggle from '@/components/sidebar/ModeToggle.vue'
 import SideToolbar from '@/components/sidebar/SideToolbar.vue'
 import TopbarBadges from '@/components/topbar/TopbarBadges.vue'
+import TopbarSubscribeButton from '@/components/topbar/TopbarSubscribeButton.vue'
 import WorkflowTabs from '@/components/topbar/WorkflowTabs.vue'
 import Button from '@/components/ui/button/Button.vue'
 import Popover from '@/components/ui/Popover.vue'
@@ -46,6 +47,7 @@ const linearWorkflowRef = useTemplateRef('linearWorkflowRef')
       <div class="flex h-full items-center">
         <WorkflowTabs />
         <TopbarBadges />
+        <TopbarSubscribeButton />
       </div>
     </div>
     <div

@@ -2239,6 +2239,8 @@
     },
     "subscribeToRun": "Subscribe",
     "subscribeToRunFull": "Subscribe to Run",
+    "subscribeForMore": "Upgrade",
+    "upgradeToAddCredits": "Upgrade to add credits",
     "subscribeNow": "Subscribe Now",
     "subscribeToComfyCloud": "Subscribe to Comfy Cloud",
     "workspaceNotSubscribed": "This workspace is not on a subscription",

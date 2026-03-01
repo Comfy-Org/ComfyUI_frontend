@@ -252,9 +252,18 @@
                     !showZeroState &&
                     permissions.canTopUp
                   "
-                  class="flex items-center justify-between"
+                  class="flex flex-col gap-3"
                 >
                   <Button
+                    v-if="isFreeTierPlan"
+                    variant="gradient"
+                    class="p-2 min-h-8 rounded-lg text-sm font-normal w-full"
+                    @click="handleUpgradeToAddCredits"
+                  >
+                    {{ $t('subscription.upgradeToAddCredits') }}
+                  </Button>
+                  <Button
+                    v-else
                     variant="secondary"
                     class="p-2 min-h-8 rounded-lg text-sm font-normal text-text-primary bg-interface-menu-component-surface-selected"
                     @click="handleAddApiCredits"
@@ -463,6 +472,10 @@ function handleSubscribeWorkspace() {
 
 function handleUpgrade() {
   isFreeTierPlan.value ? showPricingTable() : showSubscriptionDialog()
+}
+
+function handleUpgradeToAddCredits() {
+  showPricingTable()
 }
 const subscriptionTier = computed(() => subscription.value?.tier ?? null)
 const isYearlySubscription = computed(
