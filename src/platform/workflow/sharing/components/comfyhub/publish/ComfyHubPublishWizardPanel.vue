@@ -66,17 +66,14 @@
 <script setup lang="ts">
 import ComfyHubProfileGateDialog from '@/platform/workflow/sharing/components/comfyhub/profile/ComfyHubProfileGateDialog.vue'
 import type { ComfyHubPublishStep } from '@/platform/workflow/sharing/composables/useComfyHubPublishWizard'
-import type { ComfyHubPublishFormData } from '@/platform/workflow/sharing/types/comfyHubTypes'
+import type {
+  ComfyHubPublishFormData,
+  PublishPanelState
+} from '@/platform/workflow/sharing/types/comfyHubTypes'
 import ComfyHubDescribeStep from './ComfyHubDescribeStep.vue'
 import ComfyHubExamplesStep from './ComfyHubExamplesStep.vue'
 import ComfyHubFinishStep from './ComfyHubFinishStep.vue'
 import ComfyHubPublishFooter from './ComfyHubPublishFooter.vue'
-
-type PublishPanelState =
-  | 'uninitialized'
-  | 'checkingAccess'
-  | 'gateFlow'
-  | 'publishWizard'
 
 const {
   currentStep,

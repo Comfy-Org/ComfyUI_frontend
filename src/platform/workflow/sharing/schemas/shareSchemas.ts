@@ -1,7 +1,6 @@
 import { z } from 'zod'
 
 import { zComfyHubProfile } from '@/schemas/apiSchema'
-import type { KeysToCamelCase } from '@/types/caseConversion'
 
 export const zPublishRecordResponse = z.object({
   workflow_id: z.string().optional(),
@@ -9,10 +8,6 @@ export const zPublishRecordResponse = z.object({
   listed: z.boolean().optional(),
   publish_time: z.string().nullish()
 })
-
-export type PublishRecordResponse = KeysToCamelCase<
-  z.infer<typeof zPublishRecordResponse>
->
 
 export const zSharedWorkflowResponse = z.object({
   share_id: z.string(),
@@ -22,10 +17,6 @@ export const zSharedWorkflowResponse = z.object({
   workflow_json: z.record(z.string(), z.unknown()),
   imported_assets: z.array(z.unknown()).optional()
 })
-
-export type SharedWorkflowResponse = KeysToCamelCase<
-  z.infer<typeof zSharedWorkflowResponse>
->
 
 export const zHubProfileResponse = z.preprocess((data) => {
   if (!data || typeof data !== 'object') return data

@@ -54,19 +54,16 @@ import ComfyHubPublishNav from '@/platform/workflow/sharing/components/comfyhub/
 import ComfyHubPublishWizardPanel from '@/platform/workflow/sharing/components/comfyhub/publish/ComfyHubPublishWizardPanel.vue'
 import { useComfyHubPublishWizard } from '@/platform/workflow/sharing/composables/useComfyHubPublishWizard'
 import { useComfyHubProfileGate } from '@/platform/workflow/sharing/composables/useComfyHubProfileGate'
-import type { ComfyHubPublishFormData } from '@/platform/workflow/sharing/types/comfyHubTypes'
+import type {
+  ComfyHubPublishFormData,
+  PublishPanelState
+} from '@/platform/workflow/sharing/types/comfyHubTypes'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { OnCloseKey } from '@/types/widgetTypes'
 
 const { onClose } = defineProps<{
   onClose: () => void
 }>()
-
-type PublishPanelState =
-  | 'uninitialized'
-  | 'checkingAccess'
-  | 'gateFlow'
-  | 'publishWizard'
 
 const { checkProfile } = useComfyHubProfileGate()
 const { flags } = useFeatureFlags()

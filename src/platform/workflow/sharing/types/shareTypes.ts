@@ -6,12 +6,14 @@ export interface WorkflowPublishResult {
   shareUrl: string
 }
 
-export interface WorkflowPublishStatus {
-  isPublished: boolean
-  publishedAt: Date | null
-  shareId: string | null
-  shareUrl: string | null
-}
+export type WorkflowPublishStatus =
+  | { isPublished: false; publishedAt: null; shareId: null; shareUrl: null }
+  | {
+      isPublished: true
+      publishedAt: Date
+      shareId: string
+      shareUrl: string
+    }
 
 export interface SharedWorkflowPayload {
   importedAssets: unknown[]

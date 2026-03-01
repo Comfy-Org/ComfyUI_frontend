@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { HTMLAttributes } from 'vue'
+import { useTemplateRef } from 'vue'
 
 import { cn } from '@/utils/tailwindUtil'
 
@@ -8,10 +9,18 @@ const { class: className } = defineProps<{
 }>()
 
 const modelValue = defineModel<string | number>()
+
+const inputRef = useTemplateRef<HTMLInputElement>('inputEl')
+
+defineExpose({
+  focus: () => inputRef.value?.focus(),
+  select: () => inputRef.value?.select()
+})
 </script>
 
 <template>
   <input
+    ref="inputEl"
     v-model="modelValue"
     :class="
       cn(

@@ -185,7 +185,10 @@ import Input from '@/components/ui/input/Input.vue'
 import Skeleton from '@/components/ui/skeleton/Skeleton.vue'
 import { useComfyHubPublishDialog } from '@/platform/workflow/sharing/composables/useComfyHubPublishDialog'
 import { useComfyHubProfileGate } from '@/platform/workflow/sharing/composables/useComfyHubProfileGate'
-import type { WorkflowPublishResult } from '@/platform/workflow/sharing/types/shareTypes'
+import type {
+  WorkflowPublishResult,
+  WorkflowPublishStatus
+} from '@/platform/workflow/sharing/types/shareTypes'
 import { useWorkflowShareService } from '@/platform/workflow/sharing/services/workflowShareService'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
@@ -209,41 +212,32 @@ const workflowService = useWorkflowService()
 type DialogState = 'loading' | 'unsaved' | 'ready' | 'shared' | 'stale'
 type DialogMode = 'shareLink' | 'publishToHub'
 
+function resolveDialogStateFromStatus(
+  status: WorkflowPublishStatus,
+  workflow: { lastModified: number }
+): { publishResult: WorkflowPublishResult | null; dialogState: DialogState } {
+  if (!status.isPublished) return { publishResult: null, dialogState: 'ready' }
+  const publishedAtMs = status.publishedAt.getTime()
+  const lastModifiedMs = workflow.lastModified * 1000
+  return {
+    publishResult: {
+      shareId: status.shareId,
+      shareUrl: status.shareUrl,
+      publishedAt: status.publishedAt
+    },
+    dialogState: lastModifiedMs > publishedAtMs ? 'stale' : 'shared'
+  }
+}
+
 const dialogState = ref<DialogState>('loading')
 const dialogMode = ref<DialogMode>('shareLink')
 const acknowledged = ref(false)
 const workflowName = ref('')
-type InputRefTarget = {
-  focus?: () => void
-  select?: () => void
-  $el?: Element
-}
-
-const nameInputRef = ref<InputRefTarget | HTMLInputElement | null>(null)
+const nameInputRef = ref<InstanceType<typeof Input> | null>(null)
 
 function focusNameInput() {
-  const target = nameInputRef.value
-  if (!target) return
-
-  if (target instanceof HTMLInputElement) {
-    target.focus()
-    target.select()
-    return
-  }
-
-  if (typeof target.focus === 'function') {
-    target.focus()
-  }
-
-  if (typeof target.select === 'function') {
-    target.select()
-  }
-
-  const nestedInput = target.$el?.querySelector('input')
-  if (nestedInput instanceof HTMLInputElement) {
-    nestedInput.focus()
-    nestedInput.select()
-  }
+  nameInputRef.value?.focus()
+  nameInputRef.value?.select()
 }
 
 const isTemporary = computed(
@@ -345,23 +339,9 @@ async function refreshDialogState() {
   }
 
   const status = await shareService.getPublishStatus(workflow.path)
-  if (
-    status.isPublished &&
-    status.shareId &&
-    status.shareUrl &&
-    status.publishedAt
-  ) {
-    publishResult.value = {
-      shareId: status.shareId,
-      shareUrl: status.shareUrl,
-      publishedAt: status.publishedAt
-    }
-    const publishedAtMs = status.publishedAt.getTime()
-    const lastModifiedMs = workflow.lastModified * 1000
-    dialogState.value = lastModifiedMs > publishedAtMs ? 'stale' : 'shared'
-  } else {
-    dialogState.value = 'ready'
-  }
+  const resolved = resolveDialogStateFromStatus(status, workflow)
+  publishResult.value = resolved.publishResult
+  dialogState.value = resolved.dialogState
 }
 
 onMounted(() => {
@@ -391,21 +371,9 @@ const { isLoading: isSaving, execute: handleSave } = useAsyncState(
     reloadAssets()
 
     const status = await shareService.getPublishStatus(workflow.path)
-    if (
-      status.isPublished &&
-      status.shareId &&
-      status.shareUrl &&
-      status.publishedAt
-    ) {
-      publishResult.value = {
-        shareId: status.shareId,
-        shareUrl: status.shareUrl,
-        publishedAt: status.publishedAt
-      }
-      dialogState.value = 'stale'
-    } else {
-      dialogState.value = 'ready'
-    }
+    const resolved = resolveDialogStateFromStatus(status, workflow)
+    publishResult.value = resolved.publishResult
+    dialogState.value = resolved.dialogState
   },
   undefined,
   {

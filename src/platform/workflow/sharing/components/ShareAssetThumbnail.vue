@@ -36,7 +36,7 @@ import { cn } from '@/utils/tailwindUtil'
 
 const { name, thumbnailUrl } = defineProps<{
   name: string
-  thumbnailUrl: unknown
+  thumbnailUrl: string | null | undefined
 }>()
 
 defineEmits<{

@@ -1,3 +1,9 @@
+export type PublishPanelState =
+  | 'uninitialized'
+  | 'checkingAccess'
+  | 'gateFlow'
+  | 'publishWizard'
+
 export type ThumbnailType = 'image' | 'video' | 'imageComparison'
 
 export interface ExampleImage {
