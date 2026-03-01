@@ -535,7 +535,7 @@ onMounted(async () => {
 
   // Restore saved workflow and workflow tabs state
   await workflowPersistence.initializeWorkflow()
-  workflowPersistence.restoreWorkflowTabsState()
+  await workflowPersistence.restoreWorkflowTabsState()
 
   // Load template from URL if present
   await workflowPersistence.loadTemplateFromUrlIfPresent()
