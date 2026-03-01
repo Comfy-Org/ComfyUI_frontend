@@ -609,6 +609,10 @@
   }
 }
 
+@utility bg-subscription-gradient {
+  background: var(--color-subscription-button-gradient);
+}
+
 @utility scrollbar-hide {
   scrollbar-width: none;
   &::-webkit-scrollbar {
