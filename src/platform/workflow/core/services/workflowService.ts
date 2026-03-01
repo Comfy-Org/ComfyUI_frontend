@@ -25,7 +25,7 @@ import type { AppMode } from '@/composables/useAppMode'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
-import { appendJsonExt } from '@/utils/formatUtil'
+import { appendJsonExt, generateUUID } from '@/utils/formatUtil'
 
 function linearModeToAppMode(linearMode: unknown): AppMode | null {
   if (typeof linearMode !== 'boolean') return null
@@ -395,10 +395,17 @@ export const useWorkflowService = () => {
         //
         // This prevents accidental duplicate tabs when startup/load flows
         // invoke loadGraphData more than once for the same workflow name.
+        const isSameActiveWorkflowLoad =
+          !!existingWorkflow &&
+          workflowStore.isActive(existingWorkflow) &&
+          existingWorkflow.activeState?.id !== undefined &&
+          workflowData.id !== undefined &&
+          existingWorkflow.activeState.id === workflowData.id
+
         if (
           existingWorkflow &&
           ((existingWorkflow.isPersisted && !existingWorkflow.isLoaded) ||
-            workflowStore.isActive(existingWorkflow))
+            isSameActiveWorkflowLoad)
         ) {
           const loadedWorkflow =
             await workflowStore.openWorkflow(existingWorkflow)
@@ -483,7 +490,10 @@ export const useWorkflowService = () => {
    * Takes an existing workflow and duplicates it with a new name
    */
   const duplicateWorkflow = async (workflow: ComfyWorkflow) => {
+    if (!workflow.isLoaded) await workflowStore.openWorkflow(workflow)
     const state = JSON.parse(JSON.stringify(workflow.activeState))
+    // Ensure duplicates are always treated as distinct workflows.
+    if (state) state.id = generateUUID()
     const suffix = workflow.isPersisted ? ' (Copy)' : ''
     // Remove the suffix `(2)` or similar
     const filename = workflow.filename.replace(/\s*\(\d+\)$/, '') + suffix
