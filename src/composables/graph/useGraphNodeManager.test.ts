@@ -310,8 +310,8 @@ describe('Nested promoted widget mapping', () => {
 
     expect(mappedWidget).toBeDefined()
     expect(mappedWidget?.type).toBe('combo')
-    expect(mappedWidget?.storeName).toBe('picker')
-    expect(mappedWidget?.storeNodeId).toBe(
+    expect(mappedWidget?.name).toBe('picker')
+    expect(mappedWidget?.nodeId).toBe(
       `${subgraphNodeB.subgraph.id}:${innerNode.id}`
     )
   })

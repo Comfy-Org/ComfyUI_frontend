@@ -83,10 +83,7 @@ import type {
 import { getAllNestedItems } from './utils/collections'
 import { warnDeprecated } from './utils/feedback'
 
-export type {
-  LGraphTriggerAction,
-  LGraphTriggerParam
-} from './types/graphTriggers'
+export type { LGraphTriggerParam } from './types/graphTriggers'
 
 export type RendererType = 'LG' | 'Vue'
 
