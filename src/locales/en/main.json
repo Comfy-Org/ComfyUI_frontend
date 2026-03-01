@@ -3497,6 +3497,5 @@
   },
   "builderMenu": {
     "exitAppBuilder": "Exit app builder"
-  },
-  "comfyHubPublish.tagsPlaceholder": "e.g #nanobanana, #anime or #faceswap"
+  }
 }

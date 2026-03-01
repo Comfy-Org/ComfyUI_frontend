@@ -2,6 +2,7 @@ import { ref } from 'vue'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import { zHubProfileResponse } from '@/platform/workflow/sharing/schemas/shareSchemas'
 import type { ComfyHubProfile } from '@/schemas/apiSchema'
 import { api } from '@/scripts/api'
 import { useDialogStore } from '@/stores/dialogStore'
@@ -17,25 +18,14 @@ const isCheckingProfile = ref(false)
 const cachedUserId = ref<string | null>(null)
 
 function mapHubProfileResponse(payload: unknown): ComfyHubProfile {
-  const data = payload as Record<string, unknown>
-
+  const result = zHubProfileResponse.safeParse(payload)
+  if (result.success) return result.data
   return {
-    username: typeof data.username === 'string' ? data.username : '',
-    name: typeof data.name === 'string' ? data.name : undefined,
-    description:
-      typeof data.description === 'string' ? data.description : undefined,
-    coverImageUrl:
-      typeof data.coverImageUrl === 'string'
-        ? data.coverImageUrl
-        : typeof data.cover_image_url === 'string'
-          ? data.cover_image_url
-          : undefined,
-    profilePictureUrl:
-      typeof data.profilePictureUrl === 'string'
-        ? data.profilePictureUrl
-        : typeof data.profile_picture_url === 'string'
-          ? data.profile_picture_url
-          : undefined
+    username: '',
+    name: undefined,
+    description: undefined,
+    coverImageUrl: undefined,
+    profilePictureUrl: undefined
   }
 }
 
@@ -96,7 +86,9 @@ export function useComfyHubProfileGate() {
     })
 
     if (!response.ok) {
-      const error = await response.json().catch(() => ({}))
+      const error: { message?: string } = await response
+        .json()
+        .catch(() => ({}))
       throw new Error(error.message ?? 'Failed to create profile')
     }
 

@@ -10,6 +10,10 @@ import type {
   WorkflowModel
 } from '@/schemas/apiSchema'
 import type { ComboInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
+import {
+  zPublishRecordResponse,
+  zSharedWorkflowResponse
+} from '@/platform/workflow/sharing/schemas/shareSchemas'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { useAssetsStore } from '@/stores/assetsStore'
@@ -271,14 +275,6 @@ async function getWorkflowModelsFromGraph(): Promise<WorkflowModel[]> {
   return [...resolvedModels.values()]
 }
 
-interface PublishRecord {
-  listed?: boolean
-  publishedAt?: string | null
-  shareId?: string
-  shareUrl?: string | null
-  workflowId?: string
-}
-
 export class SharedWorkflowLoadError extends Error {
   readonly status: number | null
 
@@ -294,26 +290,16 @@ export class SharedWorkflowLoadError extends Error {
   }
 }
 
-function decodePublishRecord(payload: unknown): PublishRecord | null {
-  if (!payload || typeof payload !== 'object') return null
-
-  const record = payload as Record<string, unknown>
-  const workflowId =
-    typeof record.workflow_id === 'string' ? record.workflow_id : undefined
-  const shareId =
-    typeof record.share_id === 'string' ? record.share_id : undefined
-  const listed = typeof record.listed === 'boolean' ? record.listed : undefined
-
-  const shareUrl = shareId ? normalizeShareUrl(shareId) : undefined
-  const publishedAt =
-    typeof record.publish_time === 'string' ? record.publish_time : undefined
-
+function decodePublishRecord(payload: unknown) {
+  const result = zPublishRecordResponse.safeParse(payload)
+  if (!result.success) return null
+  const r = result.data
   return {
-    listed,
-    publishedAt,
-    shareId,
-    shareUrl,
-    workflowId
+    workflowId: r.workflow_id,
+    shareId: r.share_id ?? undefined,
+    listed: r.listed,
+    publishedAt: r.publish_time ?? undefined,
+    shareUrl: r.share_id ? normalizeShareUrl(r.share_id) : undefined
   }
 }
 
@@ -344,39 +330,25 @@ function normalizeShareUrl(shareId: string): string {
 function decodeSharedWorkflowPayload(
   payload: unknown
 ): SharedWorkflowPayload | null {
-  if (!payload || typeof payload !== 'object') return null
-
-  const record = payload as Record<string, unknown>
-  if (
-    typeof record.share_id !== 'string' ||
-    typeof record.workflow_id !== 'string' ||
-    typeof record.listed !== 'boolean'
-  ) {
-    return null
-  }
-
-  const workflowJson = record.workflow_json
-  if (!workflowJson || typeof workflowJson !== 'object') {
-    return null
-  }
-
-  const publishedAt =
-    typeof record.publish_time === 'string'
-      ? parsePublishedAt(record.publish_time)
-      : null
-  const importedAssets = Array.isArray(record.imported_assets)
-    ? record.imported_assets
-    : []
-
+  const result = zSharedWorkflowResponse.safeParse(payload)
+  if (!result.success) return null
+  const r = result.data
   return {
-    shareId: record.share_id,
-    workflowId: record.workflow_id,
-    listed: record.listed,
-    publishedAt,
-    workflowJson: workflowJson as ComfyWorkflowJSON,
-    importedAssets
+    shareId: r.share_id,
+    workflowId: r.workflow_id,
+    listed: r.listed,
+    publishedAt: r.publish_time ? parsePublishedAt(r.publish_time) : null,
+    workflowJson: r.workflow_json as ComfyWorkflowJSON,
+    importedAssets: r.imported_assets ?? []
   }
 }
+
+const UNPUBLISHED: Readonly<WorkflowPublishStatus> = {
+  isPublished: false,
+  shareId: null,
+  shareUrl: null,
+  publishedAt: null
+} as const
 
 export function useWorkflowShareService() {
   async function publishWorkflow(
@@ -419,32 +391,17 @@ export function useWorkflowShareService() {
       `/userdata/${encodeURIComponent(workflowPath)}/publish`
     )
     if (!response.ok) {
-      return {
-        isPublished: false,
-        shareId: null,
-        shareUrl: null,
-        publishedAt: null
-      }
+      return UNPUBLISHED
     }
 
     const record = decodePublishRecord(await response.json())
     if (!record || !record.shareId) {
-      return {
-        isPublished: false,
-        shareId: null,
-        shareUrl: null,
-        publishedAt: null
-      }
+      return UNPUBLISHED
     }
 
     const publishedAt = parsePublishedAt(record.publishedAt)
     if (!publishedAt) {
-      return {
-        isPublished: false,
-        shareId: null,
-        shareUrl: null,
-        publishedAt: null
-      }
+      return UNPUBLISHED
     }
 
     return {
