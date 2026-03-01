@@ -45,13 +45,21 @@ provide(HideLayoutFieldKey, true)
 
 workflowStore.activeWorkflow?.changeTracker?.reset()
 
+function resolveNode(nodeId: NodeId) {
+  return (
+    app.rootGraph.getNodeById(nodeId) ??
+    [...app.rootGraph.subgraphs.values()]
+      .flatMap((sg) => sg.nodes)
+      .find((n) => n.id == nodeId)
+  )
+}
+
 // Prune stale entries whose node/widget no longer exists, so the
 // DraggableList model always matches the rendered items.
 watchEffect(() => {
-  const valid = appModeStore.selectedInputs.filter(([nodeId, widgetName]) => {
-    const node = app.rootGraph.getNodeById(nodeId)
-    return node?.widgets?.some((w) => w.name === widgetName)
-  })
+  const valid = appModeStore.selectedInputs.filter(([nodeId, widgetName]) =>
+    resolveNode(nodeId)?.widgets?.some((w) => w.name === widgetName)
+  )
   if (valid.length < appModeStore.selectedInputs.length) {
     appModeStore.selectedInputs = valid
   }
@@ -60,7 +68,7 @@ watchEffect(() => {
 const arrangeInputs = computed(() =>
   appModeStore.selectedInputs
     .map(([nodeId, widgetName]) => {
-      const node = app.rootGraph.getNodeById(nodeId)
+      const node = resolveNode(nodeId)
       const widget = node?.widgets?.find((w) => w.name === widgetName)
       if (!node || !widget) return null
       return { nodeId, widgetName, node, widget }
@@ -70,7 +78,7 @@ const arrangeInputs = computed(() =>
 
 const inputsWithState = computed(() =>
   appModeStore.selectedInputs.map(([nodeId, widgetName]) => {
-    const node = app.rootGraph.getNodeById(nodeId)
+    const node = resolveNode(nodeId)
     const widget = node?.widgets?.find((w) => w.name === widgetName)
     if (!node || !widget) return { nodeId, widgetName }
 

@@ -273,7 +273,7 @@ const processedWidgets = computed((): ProcessedWidget[] => {
           (error) => error.extra_info?.input_name === widget.name
         ) ?? false,
       hidden: widget.options?.hidden ?? false,
-      id: widget.nodeId ?? nodeId,
+      id: String(bareWidgetId),
       name: widget.name,
       type: widget.type,
       vueComponent,
