@@ -1,16 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
-import {
-  fixLinkInputSlots,
-  hasLegacyLinkInputSlotMismatch
-} from '@/utils/litegraphUtil'
+import { fixLinkInputSlots } from '@/utils/litegraphUtil'
 
 import { addAfterConfigureHandler } from './graphConfigureUtil'
 
 vi.mock('@/utils/litegraphUtil', () => ({
-  fixLinkInputSlots: vi.fn(),
-  hasLegacyLinkInputSlotMismatch: vi.fn()
+  fixLinkInputSlots: vi.fn()
 }))
 
 vi.mock('@/utils/graphTraversalUtil', () => ({
@@ -40,8 +36,7 @@ describe('addAfterConfigureHandler', () => {
     vi.clearAllMocks()
   })
 
-  it('runs legacy slot repair when mismatch is detected', () => {
-    vi.mocked(hasLegacyLinkInputSlotMismatch).mockReturnValue(true)
+  it('runs legacy slot repair on configure', () => {
     const graph = createConfigureGraph()
 
     addAfterConfigureHandler(graph, () => undefined)
@@ -50,21 +45,6 @@ describe('addAfterConfigureHandler', () => {
       {} as Parameters<NonNullable<LGraph['onConfigure']>>[0]
     )
 
-    expect(hasLegacyLinkInputSlotMismatch).toHaveBeenCalledWith(graph)
     expect(fixLinkInputSlots).toHaveBeenCalledWith(graph)
-  })
-
-  it('skips legacy slot repair when no mismatch is present', () => {
-    vi.mocked(hasLegacyLinkInputSlotMismatch).mockReturnValue(false)
-    const graph = createConfigureGraph()
-
-    addAfterConfigureHandler(graph, () => undefined)
-    graph.onConfigure!.call(
-      graph,
-      {} as Parameters<NonNullable<LGraph['onConfigure']>>[0]
-    )
-
-    expect(hasLegacyLinkInputSlotMismatch).toHaveBeenCalledWith(graph)
-    expect(fixLinkInputSlots).not.toHaveBeenCalled()
   })
 })

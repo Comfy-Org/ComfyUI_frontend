@@ -4,6 +4,10 @@ import {
   SUBGRAPH_INPUT_ID,
   SUBGRAPH_OUTPUT_ID
 } from '@/lib/litegraph/src/constants'
+import {
+  normalizeLegacySlotIdentity,
+  resolveCanonicalSlotName
+} from '@/lib/litegraph/src/utils/slotIdentity'
 import { commonType, isNodeBindable } from '@/lib/litegraph/src/utils/type'
 import type { UUID } from '@/lib/litegraph/src/utils/uuid'
 import { createUuidv4, zeroUuid } from '@/lib/litegraph/src/utils/uuid'
@@ -82,7 +86,6 @@ import type {
   SerialisableReroute
 } from './types/serialisation'
 import { getAllNestedItems } from './utils/collections'
-import { warnDeprecated } from './utils/feedback'
 
 export type { LGraphTriggerParam } from './types/graphTriggers'
 
@@ -2034,12 +2037,9 @@ export class LGraph
 
       // Special handling: Subgraph input node
       i++
-      if (subgraphBoundaryAdapter.isInputBoundary(link)) {
-        subgraphBoundaryAdapter.remapInputBoundaryForConvert(
-          link,
-          subgraphNode.id,
-          i - 1
-        )
+      if (link.originIsIoNode) {
+        link.target_id = subgraphNode.id
+        link.target_slot = i - 1
         if (subgraphInput instanceof SubgraphInput) {
           subgraphInput.connect(
             subgraphNode.findInputSlotByType(link.type, true, true),
@@ -2078,12 +2078,9 @@ export class LGraph
       for (const connection of connections) {
         const { input, inputNode, link, subgraphOutput } = connection
         // Special handling: Subgraph output node
-        if (subgraphBoundaryAdapter.isOutputBoundary(link)) {
-          subgraphBoundaryAdapter.remapOutputBoundaryForConvert(
-            link,
-            subgraphNode.id,
-            i - 1
-          )
+        if (link.targetIsIoNode) {
+          link.origin_id = subgraphNode.id
+          link.origin_slot = i - 1
           this.links.set(link.id, link)
           if (subgraphOutput instanceof SubgraphOutput) {
             subgraphOutput.connect(
@@ -2253,7 +2250,7 @@ export class LGraph
     }[] = []
     for (const [, link] of subgraphNode.subgraph._links) {
       let externalParentId: RerouteId | undefined
-      if (subgraphBoundaryAdapter.isInputBoundary(link)) {
+      if (link.originIsIoNode) {
         const endpoint = subgraphBoundaryAdapter.remapInputBoundaryForUnpack(
           link,
           subgraphNode,
@@ -2275,7 +2272,7 @@ export class LGraph
         }
         link.origin_id = origin_id
       }
-      if (subgraphBoundaryAdapter.isOutputBoundary(link)) {
+      if (link.targetIsIoNode) {
         const outputEndpoints =
           subgraphBoundaryAdapter.resolveOutputBoundaryForUnpack(
             link,
@@ -2905,7 +2902,6 @@ export class Subgraph
   implements BaseLGraph, Serialisable<ExportedSubgraph>
 {
   override readonly events = new CustomEventTarget<SubgraphEventMap>()
-  private static duplicateIdentitySeparator = '__'
 
   /** Limits the number of levels / depth that subgraphs may be nested.  Prevents uncontrolled programmatic nesting. */
   static MAX_NESTED_SUBGRAPHS = 1000
@@ -2975,7 +2971,7 @@ export class Subgraph
         this.inputs.push(subgraphInput)
       }
 
-      this._normalizeLegacySlotIdentity(this.inputs)
+      normalizeLegacySlotIdentity(this.inputs)
       for (const subgraphInput of this.inputs)
         this.events.dispatch('input-added', { input: subgraphInput })
     }
@@ -2986,7 +2982,7 @@ export class Subgraph
         this.outputs.push(new SubgraphOutput(output, this.outputNode))
       }
 
-      this._normalizeLegacySlotIdentity(this.outputs)
+      normalizeLegacySlotIdentity(this.outputs)
     }
 
     if (widgets) {
@@ -3026,7 +3022,7 @@ export class Subgraph
     this.events.dispatch('adding-input', { name, type })
 
     const id = createUuidv4()
-    const canonicalName = this._resolveCanonicalSlotName(this.inputs, name, id)
+    const canonicalName = resolveCanonicalSlotName(this.inputs, name, id)
 
     const input = new SubgraphInput(
       {
@@ -3052,7 +3048,7 @@ export class Subgraph
     this.events.dispatch('adding-output', { name, type })
 
     const id = createUuidv4()
-    const canonicalName = this._resolveCanonicalSlotName(this.outputs, name, id)
+    const canonicalName = resolveCanonicalSlotName(this.outputs, name, id)
 
     const output = new SubgraphOutput(
       {
@@ -3080,11 +3076,7 @@ export class Subgraph
     if (index === -1) throw new Error('Input not found')
 
     const oldName = input.displayName
-    const canonicalName = this._resolveCanonicalSlotName(
-      this.inputs,
-      name,
-      input.id
-    )
+    const canonicalName = resolveCanonicalSlotName(this.inputs, name, input.id)
     this.events.dispatch('renaming-input', {
       input,
       index,
@@ -3107,7 +3099,7 @@ export class Subgraph
     if (index === -1) throw new Error('Output not found')
 
     const oldName = output.displayName
-    const canonicalName = this._resolveCanonicalSlotName(
+    const canonicalName = resolveCanonicalSlotName(
       this.outputs,
       name,
       output.id
@@ -3122,47 +3114,6 @@ export class Subgraph
 
     output.name = canonicalName
     output.label = name
-  }
-
-  private _resolveCanonicalSlotName<TSlot extends { id: UUID; name: string }>(
-    slots: readonly TSlot[],
-    requestedName: string,
-    slotId: UUID
-  ): string {
-    if (
-      !slots.some((slot) => slot.id !== slotId && slot.name === requestedName)
-    )
-      return requestedName
-
-    return `${requestedName}${Subgraph.duplicateIdentitySeparator}${slotId}`
-  }
-
-  private _normalizeLegacySlotIdentity<
-    TSlot extends { id: UUID; name: string; label?: string }
-  >(slots: TSlot[]): void {
-    const seenCounts = new Map<string, number>()
-
-    for (const slot of slots) {
-      const count = seenCounts.get(slot.name) ?? 0
-      seenCounts.set(slot.name, count + 1)
-      if (count === 0) continue
-
-      warnDeprecated(
-        '[DEPRECATED] Legacy subgraph workflows with duplicate slot names are automatically canonicalized by appending a stable slot ID. Remedy: resave the workflow in the current frontend to persist canonical slot names and avoid compatibility fallback.'
-      )
-
-      const oldName = slot.name
-      slot.label ??= slot.name
-      slot.name = `${slot.name}${Subgraph.duplicateIdentitySeparator}${slot.id}`
-      console.warn(
-        'Subgraph slot identity deduplicated during legacy normalization',
-        {
-          slotId: slot.id,
-          oldName,
-          canonicalName: slot.name
-        }
-      )
-    }
   }
 
   /**

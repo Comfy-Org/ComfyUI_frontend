@@ -110,32 +110,6 @@ interface SubgraphBoundaryInputEndpoint {
 }
 
 export const subgraphBoundaryAdapter = {
-  isInputBoundary(link: LLink): boolean {
-    return link.origin_id === SUBGRAPH_INPUT_ID
-  },
-
-  isOutputBoundary(link: LLink): boolean {
-    return link.target_id === SUBGRAPH_OUTPUT_ID
-  },
-
-  remapInputBoundaryForConvert(
-    link: LLink,
-    subgraphNodeId: NodeId,
-    subgraphInputSlot: number
-  ): void {
-    link.target_id = subgraphNodeId
-    link.target_slot = subgraphInputSlot
-  },
-
-  remapOutputBoundaryForConvert(
-    link: LLink,
-    subgraphNodeId: NodeId,
-    subgraphOutputSlot: number
-  ): void {
-    link.origin_id = subgraphNodeId
-    link.origin_slot = subgraphOutputSlot
-  },
-
   remapInputBoundaryForUnpack(
     link: LLink,
     subgraphNode: SubgraphBoundaryNodeView,

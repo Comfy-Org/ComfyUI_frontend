@@ -14,7 +14,6 @@ import {
   compressWidgetInputSlots,
   createNode,
   fixLinkInputSlots,
-  hasLegacyLinkInputSlotMismatch,
   isAnimatedOutput,
   isVideoOutput,
   migrateWidgetsValues
@@ -24,6 +23,10 @@ vi.mock('@/lib/litegraph/src/litegraph', () => ({
   LiteGraph: {
     createNode: vi.fn()
   }
+}))
+
+vi.mock('@/lib/litegraph/src/utils/feedback', () => ({
+  warnDeprecated: vi.fn()
 }))
 
 vi.mock('@/platform/updates/common/toastStore', () => ({
@@ -433,39 +436,6 @@ function createGraphWithLinks(options: {
   }
 }
 
-describe('hasLegacyLinkInputSlotMismatch', () => {
-  it('returns true when a root link target slot is stale', () => {
-    const { graph } = createGraphWithLinks({
-      targetSlot: 3,
-      inputLink: 11
-    })
-
-    expect(hasLegacyLinkInputSlotMismatch(graph)).toBe(true)
-  })
-
-  it('returns true when a nested subgraph link target slot is stale', () => {
-    const { graph } = createGraphWithLinks({
-      targetSlot: 0,
-      inputLink: 11,
-      nestedTargetSlot: 2,
-      nestedInputLink: 22
-    })
-
-    expect(hasLegacyLinkInputSlotMismatch(graph)).toBe(true)
-  })
-
-  it('returns false when link target slots already match input indices', () => {
-    const { graph } = createGraphWithLinks({
-      targetSlot: 0,
-      inputLink: 11,
-      nestedTargetSlot: 0,
-      nestedInputLink: 22
-    })
-
-    expect(hasLegacyLinkInputSlotMismatch(graph)).toBe(false)
-  })
-})
-
 describe('fixLinkInputSlots', () => {
   it('repairs stale target slot indices recursively', () => {
     const { graph, nestedGraph } = createGraphWithLinks({
@@ -475,9 +445,23 @@ describe('fixLinkInputSlots', () => {
       nestedInputLink: 22
     })
 
-    fixLinkInputSlots(graph)
+    const result = fixLinkInputSlots(graph)
 
+    expect(result).toBe(true)
     expect(graph.links.get(11)?.target_slot).toBe(0)
     expect(nestedGraph.links.get(22)?.target_slot).toBe(0)
+  })
+
+  it('returns false when no repair is needed', () => {
+    const { graph } = createGraphWithLinks({
+      targetSlot: 0,
+      inputLink: 11,
+      nestedTargetSlot: 0,
+      nestedInputLink: 22
+    })
+
+    const result = fixLinkInputSlots(graph)
+
+    expect(result).toBe(false)
   })
 })

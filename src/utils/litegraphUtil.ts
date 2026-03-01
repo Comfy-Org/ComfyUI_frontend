@@ -217,37 +217,9 @@ export function migrateWidgetsValues<TWidgetValue>(
  *
  * @param graph - The graph to fix links for.
  */
-export function fixLinkInputSlots(graph: LGraph) {
-  warnDeprecated(
-    '[DEPRECATED] Legacy slot-index repair (fixLinkInputSlots) now narrows to connected inputs only. Remedy: resave workflows in the current frontend to persist canonical link target slots and remove reliance on migration repair.'
-  )
+export function fixLinkInputSlots(graph: LGraph, isRoot = true): boolean {
+  let hasMismatch = false
 
-  // Note: We can't use forEachNode here because we need access to the graph's
-  // links map at each level. Links are stored in their respective graph/subgraph.
-  for (const node of graph.nodes) {
-    // Fix links for the current node
-    for (const [inputIndex, input] of node.inputs.entries()) {
-      const linkId = input.link
-      if (!linkId) continue
-
-      const link = graph.links.get(linkId)
-      if (!link) continue
-
-      link.target_slot = inputIndex
-    }
-
-    // Recursively fix links in subgraphs
-    if (node.isSubgraphNode?.() && node.subgraph) {
-      fixLinkInputSlots(node.subgraph)
-    }
-  }
-}
-
-/**
- * Detect legacy slot-index drift where a link still points to an old input
- * index after input ordering changes.
- */
-export function hasLegacyLinkInputSlotMismatch(graph: LGraph): boolean {
   for (const node of graph.nodes) {
     for (const [inputIndex, input] of node.inputs.entries()) {
       const linkId = input.link
@@ -255,15 +227,25 @@ export function hasLegacyLinkInputSlotMismatch(graph: LGraph): boolean {
 
       const link = graph.links.get(linkId)
       if (!link) continue
-      if (link.target_slot !== inputIndex) return true
+
+      if (link.target_slot !== inputIndex) {
+        link.target_slot = inputIndex
+        hasMismatch = true
+      }
     }
 
     if (node.isSubgraphNode?.() && node.subgraph) {
-      if (hasLegacyLinkInputSlotMismatch(node.subgraph)) return true
+      if (fixLinkInputSlots(node.subgraph, false)) hasMismatch = true
     }
   }
 
-  return false
+  if (isRoot && hasMismatch) {
+    warnDeprecated(
+      '[DEPRECATED] Legacy slot-index repair (fixLinkInputSlots) now narrows to connected inputs only. Remedy: resave workflows in the current frontend to persist canonical link target slots and remove reliance on migration repair.'
+    )
+  }
+
+  return hasMismatch
 }
 
 /**

@@ -3,10 +3,7 @@ import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { flushScheduledSlotLayoutSync } from '@/renderer/extensions/vueNodes/composables/useSlotElementTracking'
 import { triggerCallbackOnAllNodes } from '@/utils/graphTraversalUtil'
-import {
-  fixLinkInputSlots,
-  hasLegacyLinkInputSlotMismatch
-} from '@/utils/litegraphUtil'
+import { fixLinkInputSlots } from '@/utils/litegraphUtil'
 
 /**
  * Wraps graph.onConfigure to add legacy slot repair,
@@ -23,7 +20,7 @@ export function addAfterConfigureHandler(
     }
 
     try {
-      if (hasLegacyLinkInputSlotMismatch(this)) fixLinkInputSlots(this)
+      fixLinkInputSlots(this)
 
       triggerCallbackOnAllNodes(this, 'onGraphConfigured')
 
