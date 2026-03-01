@@ -277,7 +277,7 @@ defineExpose({ runButtonClick })
               variant="inverted"
               @click="$emit('navigateAssets')"
             >
-              {{ t('View Job') }}
+              {{ t('linearMode.viewJob') }}
             </Button>
           </template>
           <template v-else>

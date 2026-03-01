@@ -22,9 +22,9 @@ import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import { cn } from '@/utils/tailwindUtil'
 
 const tabs = [
-  ['Edit & Run', 'icon-[lucide--play]'],
-  ['Outputs', 'icon-[comfy--image-ai-edit]'],
-  ['Assets', 'icon-[lucide--images]']
+  ['linearMode.mobileControls', 'icon-[lucide--play]'],
+  ['nodeHelpPage.outputs', 'icon-[comfy--image-ai-edit]'],
+  ['sideToolbar.assets', 'icon-[lucide--images]']
 ]
 
 const canvasStore = useCanvasStore()
@@ -83,10 +83,13 @@ const workflowsEntries = computed(() => {
 })
 
 const menuEntries = computed<MenuItem[]>(() => [
-  { label: '[PH]Apps', icon: 'icon-[lucide--panels-top-left]' },
+  {
+    label: t('linearMode.appModeToolbar.apps'),
+    icon: 'icon-[lucide--panels-top-left]'
+  },
   {
     ...commandIdToMenuItem('Comfy.BrowseTemplates'),
-    label: 'Templates',
+    label: t('sideToolbar.templates'),
     icon: 'icon-[comfy--template]'
   },
   { separator: true },
@@ -115,7 +118,7 @@ const menuEntries = computed<MenuItem[]>(() => [
     ]
   },
   {
-    label: '[PH]Enter node graph',
+    label: t('linearMode.enterNodeGraph'),
     icon: 'icon-[comfy--workflow]',
     new: true,
     command: () => (canvasStore.linearMode = false)
@@ -139,7 +142,7 @@ const menuEntries = computed<MenuItem[]>(() => [
   },
   { ...commandIdToMenuItem('Comfy.ToggleHelpCenter'), label: t('menu.help') },
   {
-    label: 'Fullscreen',
+    label: t('menu.fullscreen'),
     icon: 'icon-[lucide--fullscreen]',
     command: toggleFullscreen
   }
@@ -169,7 +172,7 @@ const menuEntries = computed<MenuItem[]>(() => [
               v-text="workflowStore.activeWorkflow?.filename"
             />
             <i
-              class="shirnk-0 icon-[lucide--chevron-down] bg-muted-foreground"
+              class="shrink-0 icon-[lucide--chevron-down] bg-muted-foreground"
             />
           </div>
         </template>

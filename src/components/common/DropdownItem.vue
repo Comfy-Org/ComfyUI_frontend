@@ -59,7 +59,7 @@ defineProps<{ itemClass: string; contentClass: string; item: MenuItem }>()
     <div
       v-if="item.new"
       class="ml-auto bg-primary-background rounded-full text-xxs font-bold px-1 flex leading-none items-center"
-      v-text="t('NEW')"
+      v-text="t('contextMenu.new')"
     />
   </DropdownMenuItem>
 </template>

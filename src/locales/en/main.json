@@ -966,7 +966,8 @@
     "settings": "Settings",
     "help": "Help",
     "helpAndFeedback": "Help & Feedback",
-    "queue": "Queue Panel"
+    "queue": "Queue Panel",
+    "fullscreen": "Fullscreen"
   },
   "tabMenu": {
     "duplicateTab": "Duplicate Tab",
@@ -3022,10 +3023,13 @@
     "giveFeedback": "Give feedback",
     "graphMode": "Graph Mode",
     "dragAndDropImage": "Click to browse or drag an image",
+    "mobileControls":"Edit & Run",
     "runCount": "Number of runs",
     "rerun": "Rerun",
     "reuseParameters": "Reuse Parameters",
     "downloadAll": "Download All",
+    "viewJob": "View Job",
+    "enterNodeGraph": "Enter node graph",
     "welcome": {
       "title": "App Mode",
       "message": "A simplified view that hides the node graph so you can focus on creating.",
