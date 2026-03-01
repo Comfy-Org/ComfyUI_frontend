@@ -1,0 +1,91 @@
+<template>
+  <div class="flex flex-col gap-1">
+    <CollapsibleRoot
+      v-for="section in sections"
+      :key="section.id"
+      class="overflow-hidden rounded-sm"
+      :open="expandedSectionId === section.id"
+      @update:open="onSectionOpenChange(section.id, $event)"
+    >
+      <CollapsibleTrigger as-child>
+        <Button
+          :data-testid="`section-header-${section.id}`"
+          :aria-expanded="expandedSectionId === section.id"
+          :aria-controls="`section-content-${section.id}`"
+          variant="secondary"
+          class="w-full justify-between px-6 py-1"
+        >
+          <span>
+            {{ $t(section.labelKey, section.items.length) }}
+          </span>
+          <i
+            :class="
+              cn(
+                'icon-[lucide--chevron-right] size-4 text-muted-foreground transition-transform',
+                expandedSectionId === section.id && 'rotate-90'
+              )
+            "
+          />
+        </Button>
+      </CollapsibleTrigger>
+      <CollapsibleContent
+        :id="`section-content-${section.id}`"
+        :data-testid="`section-content-${section.id}`"
+        class="overflow-hidden data-[state=closed]:animate-collapsible-up data-[state=open]:animate-collapsible-down"
+      >
+        <div class="max-h-25 overflow-y-auto px-6 pb-1 pt-0.5">
+          <div
+            v-for="item in section.items"
+            :key="item.name"
+            class="flex items-center gap-2 rounded-sm py-1"
+          >
+            <ShareAssetThumbnail
+              :name="item.name"
+              :thumbnail-url="item.thumbnailUrl"
+              @thumbnail-error="
+                onThumbnailError($event.name, $event.thumbnailUrl)
+              "
+            />
+            <span class="truncate text-xs text-base-foreground">
+              {{ item.name }}
+            </span>
+          </div>
+        </div>
+      </CollapsibleContent>
+    </CollapsibleRoot>
+  </div>
+</template>
+
+<script setup lang="ts">
+import {
+  CollapsibleContent,
+  CollapsibleRoot,
+  CollapsibleTrigger
+} from 'reka-ui'
+
+import type { WorkflowAsset, WorkflowModel } from '@/schemas/apiSchema'
+import ShareAssetThumbnail from '@/platform/workflow/sharing/components/ShareAssetThumbnail.vue'
+import { useAssetSections } from '@/platform/workflow/sharing/composables/useAssetSections'
+import Button from '@/components/ui/button/Button.vue'
+import { cn } from '@/utils/tailwindUtil'
+
+const { assets, models } = defineProps<{
+  assets: WorkflowAsset[]
+  models: WorkflowModel[]
+}>()
+
+const { sections, expandedSectionId, onSectionOpenChange } = useAssetSections(
+  () => assets,
+  () => models
+)
+
+function onThumbnailError(
+  name: string,
+  thumbnailUrl: string | null | undefined
+) {
+  console.warn('[share][assets][thumbnail-error]', {
+    name,
+    thumbnailUrl: thumbnailUrl ?? null
+  })
+}
+</script>

@@ -2,6 +2,7 @@ import { useToast } from 'primevue/usetoast'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 
+import OpenSharedWorkflowDialogContent from '@/platform/workflow/sharing/components/OpenSharedWorkflowDialogContent.vue'
 import {
   clearPreservedQuery,
   hydratePreservedQuery,
@@ -10,9 +11,14 @@ import {
 import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQueryNamespaces'
 import {
   SharedWorkflowLoadError,
+  normalizeShareableAssetsResponse,
   useWorkflowShareService
 } from '@/platform/workflow/sharing/services/workflowShareService'
+import type { ShareableAssetsResponse } from '@/schemas/apiSchema'
+import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
+import { useDialogService } from '@/services/dialogService'
+import { useDialogStore } from '@/stores/dialogStore'
 
 type SharedWorkflowUrlLoadStatus = 'not-present' | 'loaded' | 'failed'
 
@@ -22,6 +28,8 @@ export function useSharedWorkflowUrlLoader() {
   const toast = useToast()
   const { t } = useI18n()
   const workflowShareService = useWorkflowShareService()
+  const dialogService = useDialogService()
+  const dialogStore = useDialogStore()
   const SHARE_NAMESPACE = PRESERVED_QUERY_NAMESPACES.SHARE
 
   function isValidParameter(param: string): boolean {
@@ -53,6 +61,61 @@ export function useSharedWorkflowUrlLoader() {
       return error.isRetryable
     }
     return true
+  }
+
+  async function discoverNonOwnedAssets(): Promise<ShareableAssetsResponse | null> {
+    try {
+      const { output } = await app.graphToPrompt()
+      const raw = await api.getShareableAssets(output, { owned: false })
+      const normalized = normalizeShareableAssetsResponse(raw)
+      return normalized
+    } catch {
+      return null
+    }
+  }
+
+  function showOpenSharedWorkflowDialog(
+    workflowName: string,
+    nonOwnedAssets: ShareableAssetsResponse | null
+  ): Promise<boolean> {
+    const dialogKey = 'open-shared-workflow'
+    const assets = nonOwnedAssets?.assets ?? []
+    const models = nonOwnedAssets?.models ?? []
+
+    return new Promise<boolean>((resolve) => {
+      dialogService.showLayoutDialog({
+        key: dialogKey,
+        component: OpenSharedWorkflowDialogContent,
+        props: {
+          workflowName,
+          assets,
+          models,
+          onConfirm: () => {
+            resolve(true)
+            dialogStore.closeDialog({ key: dialogKey })
+          },
+          onCancel: () => {
+            resolve(false)
+            dialogStore.closeDialog({ key: dialogKey })
+          }
+        },
+        dialogComponentProps: {
+          onClose: () => resolve(false),
+          pt: {
+            root: {
+              class: 'rounded-2xl overflow-hidden w-full sm:w-176 max-w-full'
+            }
+          }
+        }
+      })
+    })
+  }
+
+  function extractWorkflowName(workflowJson: Record<string, unknown>): string {
+    if (typeof workflowJson.name === 'string' && workflowJson.name) {
+      return workflowJson.name
+    }
+    return t('openSharedWorkflow.dialogTitle')
   }
 
   async function loadSharedWorkflowFromUrl(): Promise<SharedWorkflowUrlLoadStatus> {
@@ -88,6 +151,40 @@ export function useSharedWorkflowUrlLoader() {
         true,
         shareParam
       )
+
+      const workflowName = extractWorkflowName(
+        sharedWorkflow.workflowJson as unknown as Record<string, unknown>
+      )
+      const nonOwnedAssets = await discoverNonOwnedAssets()
+
+      const hasImportableAssets =
+        (nonOwnedAssets?.assets?.length ?? 0) > 0 ||
+        (nonOwnedAssets?.models?.length ?? 0) > 0
+
+      const confirmed = await showOpenSharedWorkflowDialog(
+        workflowName,
+        nonOwnedAssets
+      )
+
+      if (confirmed && hasImportableAssets) {
+        try {
+          await workflowShareService.getSharedWorkflow(shareParam, {
+            import: true
+          })
+        } catch (importError) {
+          console.error(
+            '[useSharedWorkflowUrlLoader] Failed to import assets:',
+            importError
+          )
+          toast.add({
+            severity: 'error',
+            summary: t('g.error'),
+            detail: t('openSharedWorkflow.importFailed'),
+            life: 3000
+          })
+        }
+      }
+
       shouldCleanupShareQuery = true
       return 'loaded'
     } catch (error) {

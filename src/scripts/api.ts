@@ -879,12 +879,17 @@ export class ComfyApi extends EventTarget {
    * need user consent before sharing.
    */
   async getShareableAssets(
-    prompt: ComfyApiWorkflow
+    prompt: ComfyApiWorkflow,
+    options?: { owned?: boolean }
   ): Promise<ShareableAssetsResponse> {
+    const body: Record<string, unknown> = { workflow_api_json: prompt }
+    if (options?.owned !== undefined) {
+      body.owned = options.owned
+    }
     const res = await this.fetchApi('/prompt/assets', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ workflow_api_json: prompt })
+      body: JSON.stringify(body)
     })
     if (res.status !== 200) {
       throw new Error(`Failed to fetch shareable assets: ${res.status}`)

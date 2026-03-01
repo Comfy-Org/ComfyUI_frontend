@@ -285,6 +285,46 @@ describe(useWorkflowShareService, () => {
     )
   })
 
+  it('appends import query param when import option is set', async () => {
+    mockFetchApi.mockResolvedValue(
+      mockJsonResponse({
+        share_id: 'share-import',
+        workflow_id: 'wf-import',
+        listed: true,
+        publish_time: '2026-02-23T00:00:00Z',
+        workflow_json: { nodes: [] },
+        imported_assets: [{ id: 'imported-1' }]
+      })
+    )
+
+    const service = useWorkflowShareService()
+    await service.getSharedWorkflow('share-import', { import: true })
+
+    expect(mockFetchApi).toHaveBeenCalledWith(
+      '/workflows/published/share-import?import=true'
+    )
+  })
+
+  it('omits import query param when import option is not set', async () => {
+    mockFetchApi.mockResolvedValue(
+      mockJsonResponse({
+        share_id: 'share-no-import',
+        workflow_id: 'wf-no-import',
+        listed: true,
+        publish_time: '2026-02-23T00:00:00Z',
+        workflow_json: { nodes: [] },
+        imported_assets: []
+      })
+    )
+
+    const service = useWorkflowShareService()
+    await service.getSharedWorkflow('share-no-import')
+
+    expect(mockFetchApi).toHaveBeenCalledWith(
+      '/workflows/published/share-no-import'
+    )
+  })
+
   it('throws when shared workflow payload is invalid', async () => {
     mockFetchApi.mockResolvedValue(
       mockJsonResponse({ name: 'Invalid', version: 1 })

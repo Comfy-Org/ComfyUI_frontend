@@ -84,19 +84,30 @@ function resolveThumbnailUrl(rawUrl: string | null | undefined): string | null {
   return rawUrl
 }
 
-function getNormalizedThumbnailUrl(item: ThumbnailLike): string | null {
-  return resolveThumbnailUrl(
-    item.storage_url ??
-      item.thumbnailUrl ??
-      item.thumbnail_url ??
-      item.thumbnail ??
-      item.preview_url ??
-      item.preview ??
-      null
-  )
+function storageUrlToViewThumbnail(storageUrl: string): string {
+  const hashFilename = storageUrl.split('/').at(-1) ?? storageUrl
+  return `/view?filename=${encodeURIComponent(hashFilename)}&type=input&res=256`
 }
 
-function normalizeShareableAssetsResponse(
+function getNormalizedThumbnailUrl(item: ThumbnailLike): string | null {
+  const explicitUrl =
+    item.thumbnailUrl ??
+    item.thumbnail_url ??
+    item.thumbnail ??
+    item.preview_url ??
+    item.preview ??
+    null
+
+  if (explicitUrl) return resolveThumbnailUrl(explicitUrl)
+
+  if (item.storage_url) {
+    return resolveThumbnailUrl(storageUrlToViewThumbnail(item.storage_url))
+  }
+
+  return null
+}
+
+export function normalizeShareableAssetsResponse(
   response: ShareableAssetsResponse
 ): ShareableAssetsResponse {
   return {
@@ -480,13 +491,16 @@ export function useWorkflowShareService() {
   }
 
   async function getSharedWorkflow(
-    shareId: string
+    shareId: string,
+    options?: { import?: boolean }
   ): Promise<SharedWorkflowPayload> {
     let response: Response
     try {
-      response = await api.fetchApi(
-        `/workflows/published/${encodeURIComponent(shareId)}`
-      )
+      let url = `/workflows/published/${encodeURIComponent(shareId)}`
+      if (options?.import) {
+        url += '?import=true'
+      }
+      response = await api.fetchApi(url)
     } catch {
       throw new SharedWorkflowLoadError(
         null,
