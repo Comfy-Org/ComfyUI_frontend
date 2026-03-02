@@ -70,6 +70,7 @@
               @click="openShareDialog"
               @pointerenter="prefetchShareDialog"
             >
+              <i class="icon-[lucide--share-2] size-4" />
               <span class="not-md:hidden">
                 {{ t('actionbar.share') }}
               </span>
@@ -237,12 +238,18 @@ function importShareDialog() {
 }
 
 function prefetchShareDialog() {
-  importShareDialog()
+  importShareDialog().catch((error) => {
+    console.error(error)
+  })
 }
 
 async function openShareDialog() {
-  const { useShareDialog } = await importShareDialog()
-  useShareDialog().show()
+  try {
+    const { useShareDialog } = await importShareDialog()
+    useShareDialog().show()
+  } catch (error) {
+    toastErrorHandler(error)
+  }
 }
 
 

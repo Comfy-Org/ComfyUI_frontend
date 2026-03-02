@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { cn } from '@comfyorg/tailwind-utils'
+import { cn } from '@/utils/tailwindUtil'
 import { statusBadgeVariants } from './statusBadge.variants'
 import type { StatusBadgeVariants } from './statusBadge.variants'
 
