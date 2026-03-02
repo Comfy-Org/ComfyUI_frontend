@@ -146,3 +146,23 @@ export function getParentExecutionIds(
 ): NodeExecutionId[] {
   return getAncestorExecutionIds(executionId).slice(0, -1)
 }
+
+/**
+ * Compare two NodeExecutionIds for ascending numeric sort order.
+ * Splits each ID by ":" and compares segments numerically left to right.
+ *
+ * Example order: "1" < "1:20" < "2" < "10:11:12"
+ */
+export function compareExecutionId(
+  a: string | undefined,
+  b: string | undefined
+): number {
+  const parse = (id: string | undefined) => (id ?? '').split(':').map(Number)
+  const idA = parse(a)
+  const idB = parse(b)
+  for (let i = 0; i < Math.max(idA.length, idB.length); i++) {
+    const diff = (idA[i] ?? 0) - (idB[i] ?? 0)
+    if (diff !== 0) return diff
+  }
+  return 0
+}
