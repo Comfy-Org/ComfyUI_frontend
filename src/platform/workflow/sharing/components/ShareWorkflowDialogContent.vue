@@ -255,13 +255,10 @@ const {
   state: assetInfo,
   isLoading: isLoadingAssets,
   execute: reloadAssets
-} = useAsyncState(
-  () =>
-    shareService.getShareableAssets((refined) => {
-      assetInfo.value = refined
-    }),
-  { assets: [], models: [] }
-)
+} = useAsyncState(() => shareService.getShareableAssets(), {
+  assets: [],
+  models: []
+})
 
 const requiresAcknowledgment = computed(
   () => assetInfo.value.assets.length > 0 || assetInfo.value.models.length > 0

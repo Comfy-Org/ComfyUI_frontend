@@ -4,29 +4,13 @@ import type {
   WorkflowPublishStatus
 } from '@/platform/workflow/sharing/types/shareTypes'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
-import type {
-  ShareableAssetsResponse,
-  WorkflowAsset,
-  WorkflowModel
-} from '@/schemas/apiSchema'
-import type { ComboInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
+import type { ShareableAssetsResponse } from '@/schemas/apiSchema'
 import {
   zPublishRecordResponse,
   zSharedWorkflowResponse
 } from '@/platform/workflow/sharing/schemas/shareSchemas'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
-import { useAssetsStore } from '@/stores/assetsStore'
-import { useModelToNodeStore } from '@/stores/modelToNodeStore'
-import { useNodeDefStore } from '@/stores/nodeDefStore'
-import { mapAllNodes } from '@/utils/graphTraversalUtil'
-
-const UPLOAD_FLAGS = [
-  'image_upload',
-  'animated_image_upload',
-  'video_upload',
-  'audio_upload'
-] as const
 
 type ThumbnailLike = {
   storage_url?: string | null
@@ -35,30 +19,6 @@ type ThumbnailLike = {
   thumbnail?: string | null
   preview_url?: string | null
   preview?: string | null
-}
-
-type AssetSourceType = 'input' | 'output'
-
-function isMediaUploadCombo(input: { type: string }): input is ComboInputSpec {
-  if (input.type !== 'COMBO') return false
-  const combo = input as ComboInputSpec
-  return UPLOAD_FLAGS.some((flag) => combo[flag] === true)
-}
-
-function getAssetNodeWidgets(): Record<string, string> {
-  const { nodeDefsByName } = useNodeDefStore()
-  const result: Record<string, string> = {}
-
-  for (const [nodeTypeName, nodeDef] of Object.entries(nodeDefsByName)) {
-    for (const [widgetName, inputSpec] of Object.entries(nodeDef.inputs)) {
-      if (isMediaUploadCombo(inputSpec)) {
-        result[nodeTypeName] = widgetName
-        break
-      }
-    }
-  }
-
-  return result
 }
 
 function resolveThumbnailUrl(rawUrl: string | null | undefined): string | null {
@@ -128,151 +88,6 @@ export function normalizeShareableAssetsResponse(
       thumbnailUrl: getNormalizedThumbnailUrl(model)
     }))
   }
-}
-
-function parseAssetWidgetValue(value: string): {
-  name: string
-  sourceType: AssetSourceType
-} {
-  const trimmed = value.trim()
-  if (trimmed.endsWith(' [output]')) {
-    return {
-      name: trimmed.slice(0, -' [output]'.length),
-      sourceType: 'output'
-    }
-  }
-
-  return {
-    name: trimmed,
-    sourceType: 'input'
-  }
-}
-
-async function getWorkflowAssetsFromGraph(): Promise<WorkflowAsset[]> {
-  const graph = app.rootGraph
-  if (!graph) return []
-
-  const assetNodeWidgets = getAssetNodeWidgets()
-  const assetsStore = useAssetsStore()
-
-  try {
-    await assetsStore.updateInputs()
-  } catch {
-    // Continue with null thumbnails if input assets cannot be refreshed.
-  }
-
-  const inputAssets = assetsStore.inputAssets
-
-  return mapAllNodes(graph, (node) => {
-    const widgetName = assetNodeWidgets[node.type ?? '']
-    if (!widgetName) return undefined
-
-    const widget = node.widgets?.find((w) => w.name === widgetName)
-    const value = widget?.value
-    if (typeof value !== 'string' || !value.trim()) return undefined
-
-    const { name, sourceType } = parseAssetWidgetValue(value)
-
-    const matchingInputAsset = inputAssets.find(
-      (asset) => asset.name === name || asset.asset_hash === name
-    )
-    const fallbackThumbnailUrl = api.apiURL(
-      `/view?filename=${encodeURIComponent(name)}&type=${sourceType}`
-    )
-
-    return {
-      id: matchingInputAsset?.id ?? name,
-      name,
-      storage_url: null,
-      thumbnailUrl: matchingInputAsset?.preview_url ?? fallbackThumbnailUrl
-    } satisfies WorkflowAsset
-  })
-}
-
-async function getWorkflowModelsFromGraph(): Promise<WorkflowModel[]> {
-  const graph = app.rootGraph
-  if (!graph) return []
-
-  const registeredTypes = useModelToNodeStore().getRegisteredNodeTypes()
-  const assetsStore = useAssetsStore()
-
-  const nodeTypesInGraph = new Set(
-    mapAllNodes(graph, (node) => {
-      const nodeType = node.type ?? ''
-      return registeredTypes[nodeType] ? nodeType : undefined
-    })
-  )
-
-  await Promise.allSettled(
-    [...nodeTypesInGraph].map((nodeType) =>
-      assetsStore.updateModelsForNodeType(nodeType)
-    )
-  )
-
-  // Load the global model index so custom/extension loader nodes that are not
-  // registered in modelToNodeStore can still resolve selected model names.
-  await assetsStore.updateModelsForTag('models')
-
-  const globalModelAssets = assetsStore.getAssets('tag:models')
-  const globalModelByName = new Map(
-    globalModelAssets.map((asset) => [asset.name, asset])
-  )
-
-  const resolvedModels = new Map<string, WorkflowModel>()
-
-  function toCandidateNames(value: string): string[] {
-    const trimmed = value.trim()
-    if (!trimmed) return []
-
-    const basename = trimmed.split(/[\\/]/).at(-1) ?? trimmed
-    return basename === trimmed ? [trimmed] : [trimmed, basename]
-  }
-
-  for (const model of mapAllNodes(graph, (node) => {
-    const nodeType = node.type ?? ''
-    const widgetKey = registeredTypes[nodeType]
-    if (!widgetKey) return undefined
-
-    const widget = node.widgets?.find((w) => w.name === widgetKey)
-    const value = widget?.value
-    if (typeof value !== 'string' || !value.trim()) return undefined
-
-    const cachedAssets = assetsStore.getAssets(nodeType)
-    const matchingAsset = cachedAssets.find((a) => a.name === value)
-    if (matchingAsset?.is_immutable) return undefined
-
-    return {
-      id: matchingAsset?.id ?? value,
-      name: value,
-      storage_url: null,
-      thumbnailUrl: matchingAsset?.preview_url ?? null
-    } satisfies WorkflowModel
-  })) {
-    resolvedModels.set(model.name, model)
-  }
-
-  for (const node of mapAllNodes(graph, (candidateNode) => candidateNode)) {
-    for (const widget of node.widgets ?? []) {
-      if (typeof widget.value !== 'string') continue
-
-      const modelAsset = toCandidateNames(widget.value)
-        .map((candidateName) => globalModelByName.get(candidateName))
-        .find((asset) => !!asset)
-      if (!modelAsset) continue
-      if (modelAsset.is_immutable) continue
-
-      if (!resolvedModels.has(modelAsset.name)) {
-        resolvedModels.set(modelAsset.name, {
-          id: modelAsset.id,
-          name: modelAsset.name,
-          storage_url: null,
-          thumbnailUrl: modelAsset.preview_url ?? null
-        })
-      }
-    }
-  }
-
-  return [...resolvedModels.values()]
 }
 
 export class SharedWorkflowLoadError extends Error {
@@ -412,39 +227,13 @@ export function useWorkflowShareService() {
     }
   }
 
-  async function getShareableAssets(
-    onRefine?: (result: ShareableAssetsResponse) => void
-  ): Promise<ShareableAssetsResponse> {
+  async function getShareableAssets(): Promise<ShareableAssetsResponse> {
     const graph = app.rootGraph
     if (!graph) return { assets: [], models: [] }
 
-    let refinedResult: ShareableAssetsResponse | null = null
-    const backendCall = app
-      .graphToPrompt(graph)
-      .then(({ output }) => api.getShareableAssets(output))
-      .then((result) => {
-        const normalizedResult = normalizeShareableAssetsResponse(result)
-        refinedResult = normalizedResult
-        onRefine?.(normalizedResult)
-      })
-      .catch(() => {})
-
-    const [assets, models] = await Promise.all([
-      getWorkflowAssetsFromGraph(),
-      getWorkflowModelsFromGraph()
-    ])
-
-    if (onRefine) {
-      return { assets, models }
-    }
-
-    await backendCall
-
-    if (refinedResult) {
-      return refinedResult
-    }
-
-    return { assets, models }
+    const { output } = await app.graphToPrompt(graph)
+    const result = await api.getShareableAssets(output)
+    return normalizeShareableAssetsResponse(result)
   }
 
   async function getSharedWorkflow(
