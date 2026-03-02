@@ -11,6 +11,7 @@ import {
 } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import CollapseToggleButton from '@/components/rightSidePanel/layout/CollapseToggleButton.vue'
 import FormSearchInput from '@/renderer/extensions/vueNodes/widgets/components/form/FormSearchInput.vue'
 import { DraggableList } from '@/scripts/ui/draggableList'
 import { useFavoritedWidgetsStore } from '@/stores/workspace/favoritedWidgetsStore'
@@ -28,6 +29,7 @@ const { t } = useI18n()
 const draggableList = ref<DraggableList | undefined>(undefined)
 const sectionWidgetsRef = ref<{ widgetsContainer: HTMLElement }>()
 const isSearching = ref(false)
+const isAllCollapsed = ref(false)
 
 const favoritedWidgets = computed(
   () => favoritedWidgetsStore.validFavoritedWidgets
@@ -117,9 +119,11 @@ onBeforeUnmount(() => {
       :searcher
       :update-key="favoritedWidgets"
     />
+    <CollapseToggleButton v-model="isAllCollapsed" />
   </div>
   <SectionWidgets
     ref="sectionWidgetsRef"
+    v-model:collapse="isAllCollapsed"
     :label
     :widgets="searchedFavoritedWidgets"
     :is-draggable="!isSearching"

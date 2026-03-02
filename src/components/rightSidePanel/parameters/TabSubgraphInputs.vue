@@ -17,6 +17,7 @@ import { isPromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetTypes'
 import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import FormSearchInput from '@/renderer/extensions/vueNodes/widgets/components/form/FormSearchInput.vue'
+import CollapseToggleButton from '@/components/rightSidePanel/layout/CollapseToggleButton.vue'
 import { DraggableList } from '@/scripts/ui/draggableList'
 import { usePromotionStore } from '@/stores/promotionStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
@@ -36,6 +37,19 @@ const rightSidePanelStore = useRightSidePanelStore()
 const { focusedSection, searchQuery } = storeToRefs(rightSidePanelStore)
 
 const advancedInputsCollapsed = ref(true)
+const firstSectionCollapsed = ref(false)
+const isAllCollapsed = computed({
+  get() {
+    const hasAdvanced = advancedInputsWidgets.value.length > 0
+    return hasAdvanced
+      ? firstSectionCollapsed.value && advancedInputsCollapsed.value
+      : firstSectionCollapsed.value
+  },
+  set(collapse: boolean) {
+    firstSectionCollapsed.value = collapse
+    advancedInputsCollapsed.value = collapse
+  }
+})
 const draggableList = ref<DraggableList | undefined>(undefined)
 const sectionWidgetsRef = useTemplateRef('sectionWidgetsRef')
 const advancedInputsSectionRef = useTemplateRef('advancedInputsSectionRef')
@@ -192,9 +206,11 @@ const label = computed(() => {
       :searcher
       :update-key="widgetsList"
     />
+    <CollapseToggleButton v-model="isAllCollapsed" />
   </div>
   <SectionWidgets
     ref="sectionWidgetsRef"
+    v-model:collapse="firstSectionCollapsed"
     :node
     :label
     :parents

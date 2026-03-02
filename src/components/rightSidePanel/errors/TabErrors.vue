@@ -1,10 +1,11 @@
 <template>
   <div class="flex flex-col h-full min-w-0">
-    <!-- Search bar -->
+    <!-- Search bar + collapse toggle -->
     <div
       class="px-4 pt-1 pb-4 flex gap-2 border-b border-interface-stroke shrink-0 min-w-0"
     >
       <FormSearchInput v-model="searchQuery" />
+      <CollapseToggleButton v-model="isAllCollapsed" />
     </div>
 
     <!-- Scrollable content -->
@@ -25,14 +26,14 @@
         <PropertiesAccordionItem
           v-for="group in filteredGroups"
           :key="group.title"
-          :collapse="collapseState[group.title] ?? false"
+          :collapse="isSectionCollapsed(group.title)"
           class="border-b border-interface-stroke"
           :size="
             group.type === 'missing_node' || group.type === 'swap_nodes'
               ? 'lg'
               : 'default'
           "
-          @update:collapse="collapseState[group.title] = $event"
+          @update:collapse="setSectionCollapsed(group.title, $event)"
         >
           <template #label>
             <div class="flex items-center gap-2 flex-1 min-w-0">
@@ -177,6 +178,7 @@ import { ManagerTab } from '@/workbench/extensions/manager/types/comfyManagerTyp
 import { NodeBadgeMode } from '@/types/nodeSource'
 
 import PropertiesAccordionItem from '../layout/PropertiesAccordionItem.vue'
+import CollapseToggleButton from '../layout/CollapseToggleButton.vue'
 import FormSearchInput from '@/renderer/extensions/vueNodes/widgets/components/form/FormSearchInput.vue'
 import ErrorNodeCard from './ErrorNodeCard.vue'
 import MissingNodeCard from './MissingNodeCard.vue'
@@ -221,6 +223,28 @@ const {
   swapNodeGroups
 } = useErrorGroups(searchQuery, t)
 
+const isAllCollapsed = computed({
+  get() {
+    return filteredGroups.value.every(
+      (g) => isSectionCollapsed(g.title) === true
+    )
+  },
+  set(collapse: boolean) {
+    for (const group of filteredGroups.value) {
+      setSectionCollapsed(group.title, collapse)
+    }
+  }
+})
+
+function isSectionCollapsed(title: string): boolean {
+  // Defaults to expanded when not explicitly set by the user
+  return collapseState[title] ?? false
+}
+
+function setSectionCollapsed(title: string, collapsed: boolean) {
+  collapseState[title] = collapsed
+}
+
 /**
  * When an external trigger (e.g. "See Error" button in SectionWidgets)
  * sets focusedErrorNodeId, expand only the group containing the target
@@ -240,7 +264,7 @@ watch(
             card.graphNodeId === graphNodeId ||
             (card.nodeId?.startsWith(prefix) ?? false)
         )
-      collapseState[group.title] = !hasMatch
+      setSectionCollapsed(group.title, !hasMatch)
     }
     rightSidePanelStore.focusedErrorNodeId = null
   },

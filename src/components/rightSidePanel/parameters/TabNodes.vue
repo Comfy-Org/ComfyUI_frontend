@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { storeToRefs } from 'pinia'
-import { computed, ref, shallowRef } from 'vue'
+import { computed, reactive, ref, shallowRef } from 'vue'
+
+import CollapseToggleButton from '@/components/rightSidePanel/layout/CollapseToggleButton.vue'
 
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
@@ -30,6 +32,31 @@ const searchedWidgetsSectionDataList = shallowRef<NodeWidgetsListList>(
   widgetsSectionDataList.value
 )
 const isSearching = ref(false)
+
+const collapseMap = reactive<Record<string, boolean>>({})
+
+function isSectionCollapsed(nodeId: string): boolean {
+  // Defaults to collapsed when not explicitly set by the user
+  return collapseMap[nodeId] ?? true
+}
+
+function setSectionCollapsed(nodeId: string, collapsed: boolean) {
+  collapseMap[nodeId] = collapsed
+}
+
+const isAllCollapsed = computed({
+  get() {
+    return searchedWidgetsSectionDataList.value.every(
+      ({ node }) => isSectionCollapsed(String(node.id)) === true
+    )
+  },
+  set(collapse: boolean) {
+    for (const { node } of searchedWidgetsSectionDataList.value) {
+      setSectionCollapsed(String(node.id), collapse)
+    }
+  }
+})
+
 async function searcher(query: string) {
   const list = widgetsSectionDataList.value
   const target = searchedWidgetsSectionDataList
@@ -45,6 +72,7 @@ async function searcher(query: string) {
       :searcher
       :update-key="widgetsSectionDataList"
     />
+    <CollapseToggleButton v-model="isAllCollapsed" />
   </div>
   <TransitionGroup tag="div" name="list-scale" class="relative">
     <div
@@ -58,7 +86,7 @@ async function searcher(query: string) {
       :key="node.id"
       :node
       :widgets
-      :collapse="!isSearching"
+      :collapse="isSectionCollapsed(String(node.id)) && !isSearching"
       :tooltip="
         isSearching || widgets.length
           ? ''
@@ -66,6 +94,7 @@ async function searcher(query: string) {
       "
       show-locate-button
       class="border-b border-interface-stroke"
+      @update:collapse="setSectionCollapsed(String(node.id), $event)"
     />
   </TransitionGroup>
 </template>
