@@ -331,6 +331,10 @@
     "missingNodesWarning": "Le workflow contient des nœuds non pris en charge (surlignés en rouge).",
     "workflowActions": "Actions du workflow"
   },
+  "builderMenu": {
+    "exitAppBuilder": "Quitter le constructeur d'application",
+    "saveApp": "Enregistrer l'application"
+  },
   "builderToolbar": {
     "app": "Application",
     "appDescription": "S'ouvre par défaut en tant qu'application",
@@ -1027,6 +1031,7 @@
     "or": "ou",
     "output": "Sortie",
     "overwrite": "Écraser",
+    "partner": "Partenaire",
     "playPause": "Lecture/Pause",
     "playRecording": "Lire l'enregistrement",
     "playbackSpeed": "Vitesse de lecture",
@@ -1037,6 +1042,7 @@
     "progressCountOf": "sur",
     "queued": "En file d’attente",
     "ready": "Prêt",
+    "recents": "Récents",
     "reconnected": "Reconnecté",
     "reconnecting": "Reconnexion",
     "refresh": "Rafraîchir",
@@ -2625,8 +2631,16 @@
     "nodeLibrary": "Bibliothèque de nœuds",
     "nodeLibraryTab": {
       "allNodes": "Tous les nœuds",
+      "blueprints": "Plans",
       "custom": "Personnalisé",
       "essentials": "Essentiels",
+      "filter": "Filtrer",
+      "filterOptions": {
+        "blueprints": "Plans",
+        "comfyNodes": "Nœuds Comfy",
+        "extensions": "Extensions",
+        "partnerNodes": "Nœuds partenaires"
+      },
       "groupBy": "Grouper par",
       "groupStrategies": {
         "category": "Catégorie",
@@ -2636,10 +2650,18 @@
         "source": "Source",
         "sourceDesc": "Grouper par type de source (Core, Custom, API)"
       },
+      "noBookmarkedNodes": "Aucun favori pour le moment",
       "resetView": "Réinitialiser la vue par défaut",
       "sections": {
+        "bookmarked": "Favoris",
+        "comfyBlueprints": "Plans Comfy",
+        "comfyNodes": "Nœuds Comfy",
+        "extensions": "Extensions",
         "favoriteNode": "Nœud favori",
         "favorites": "Favoris",
+        "myBlueprints": "Mes plans",
+        "partnerNodes": "Nœuds partenaires",
+        "subgraphBlueprints": "Plans de sous-graphe",
         "unfavoriteNode": "Retirer des favoris"
       },
       "sortBy": {
@@ -2883,6 +2905,7 @@
     "resubscribe": "Se réabonner",
     "resubscribeSuccess": "Abonnement réactivé avec succès",
     "resubscribeTo": "Se réabonner à {plan}",
+    "subscribeForMore": "Mettre à niveau",
     "subscribeNow": "S'abonner maintenant",
     "subscribeTo": "S'abonner à {plan}",
     "subscribeToComfyCloud": "S'abonner à Comfy Cloud",
@@ -2913,6 +2936,7 @@
     "upgrade": "AMÉLIORER",
     "upgradePlan": "Améliorer le forfait",
     "upgradeTo": "Passer à {plan}",
+    "upgradeToAddCredits": "Mettre à niveau pour ajouter des crédits",
     "usdPerMonth": "USD / mois",
     "usdPerMonthPerMember": "USD / mois / membre",
     "videoEstimateExplanation": "Ces estimations sont basées sur le modèle Wan 2.2 Image-to-Video avec les paramètres par défaut (5 secondes, 640x640, 16fps, échantillonnage en 4 étapes).",

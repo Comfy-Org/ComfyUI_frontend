@@ -3,7 +3,7 @@ import type { TreeNode } from '@/types/treeExplorerTypes'
 
 export type GroupingStrategyId = 'category' | 'module' | 'source'
 export type SortingStrategyId = 'original' | 'alphabetical'
-export type TabId = 'essentials' | 'all' | 'custom'
+export type TabId = 'essentials' | 'all' | 'blueprints'
 
 /**
  * Strategy for grouping nodes into tree structure
@@ -45,11 +45,23 @@ export interface NodeOrganizationOptions {
   sortBy?: string
 }
 
-/**
- * A section of nodes with an optional header title
- */
+export type NodeCategoryId =
+  | 'blueprints'
+  | 'partnerNodes'
+  | 'comfyNodes'
+  | 'extensions'
+
+export const NODE_CATEGORY_LABELS: Record<NodeCategoryId, string> = {
+  blueprints: 'sideToolbar.nodeLibraryTab.sections.subgraphBlueprints',
+  partnerNodes: 'sideToolbar.nodeLibraryTab.sections.partnerNodes',
+  comfyNodes: 'sideToolbar.nodeLibraryTab.sections.comfyNodes',
+  extensions: 'sideToolbar.nodeLibraryTab.sections.extensions'
+}
+
 export interface NodeSection {
-  /** Section title (i18n key), optional */
+  /** Filter category identifier */
+  category?: NodeCategoryId
+  /** Section title (i18n key) for tabs that don't use category-based labels */
   title?: string
   /** Tree of nodes in this section */
   tree: TreeNode

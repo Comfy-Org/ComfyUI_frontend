@@ -7,7 +7,9 @@ import { reactive, shallowReactive } from 'vue'
 
 import { useChainCallback } from '@/composables/functional/useChainCallback'
 import { isPromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetTypes'
+import { resolveConcretePromotedWidget } from '@/core/graph/subgraph/resolveConcretePromotedWidget'
 import { resolvePromotedWidgetSource } from '@/core/graph/subgraph/resolvePromotedWidgetSource'
+import { resolveSubgraphInputTarget } from '@/core/graph/subgraph/resolveSubgraphInputTarget'
 import type {
   INodeInputSlot,
   INodeOutputSlot
@@ -46,7 +48,9 @@ export interface WidgetSlotMetadata {
  */
 export interface SafeWidgetData {
   nodeId?: NodeId
+  storeNodeId?: NodeId
   name: string
+  storeName?: string
   type: string
   /** Callback to invoke when widget value changes (wraps LiteGraph callback + triggerDraw) */
   callback?: ((value: unknown) => void) | undefined
@@ -161,7 +165,7 @@ function getSharedWidgetEnhancements(
 /**
  * Validates that a value is a valid WidgetValue type
  */
-const normalizeWidgetValue = (value: unknown): WidgetValue => {
+function normalizeWidgetValue(value: unknown): WidgetValue {
   if (value === null || value === undefined || value === void 0) {
     return undefined
   }
@@ -193,11 +197,69 @@ function safeWidgetMapper(
   node: LGraphNode,
   slotMetadata: Map<string, WidgetSlotMetadata>
 ): (widget: IBaseWidget) => SafeWidgetData {
+  function extractWidgetDisplayOptions(
+    widget: IBaseWidget
+  ): SafeWidgetData['options'] {
+    if (!widget.options) return undefined
+
+    return {
+      canvasOnly: widget.options.canvasOnly,
+      advanced: widget.advanced,
+      hidden: widget.options.hidden,
+      read_only: widget.options.read_only
+    }
+  }
+
+  function resolvePromotedSourceByInputName(inputName: string): {
+    sourceNodeId: string
+    sourceWidgetName: string
+  } | null {
+    const resolvedTarget = resolveSubgraphInputTarget(node, inputName)
+    if (!resolvedTarget) return null
+
+    return {
+      sourceNodeId: resolvedTarget.nodeId,
+      sourceWidgetName: resolvedTarget.widgetName
+    }
+  }
+
+  function resolvePromotedWidgetIdentity(widget: IBaseWidget): {
+    displayName: string
+    promotedSource: { sourceNodeId: string; sourceWidgetName: string } | null
+  } {
+    if (!isPromotedWidgetView(widget)) {
+      return {
+        displayName: widget.name,
+        promotedSource: null
+      }
+    }
+
+    const promotedInputName = node.inputs?.find((input) => {
+      if (input.name === widget.name) return true
+      if (input._widget === widget) return true
+      return false
+    })?.name
+    const displayName = promotedInputName ?? widget.name
+    const promotedSource = resolvePromotedSourceByInputName(displayName) ?? {
+      sourceNodeId: widget.sourceNodeId,
+      sourceWidgetName: widget.sourceWidgetName
+    }
+
+    return {
+      displayName,
+      promotedSource
+    }
+  }
+
   return function (widget) {
     try {
+      const { displayName, promotedSource } =
+        resolvePromotedWidgetIdentity(widget)
+
       // Get shared enhancements (controlWidget, spec, nodeType)
       const sharedEnhancements = getSharedWidgetEnhancements(node, widget)
-      const slotInfo = slotMetadata.get(widget.name)
+      const slotInfo =
+        slotMetadata.get(displayName) ?? slotMetadata.get(widget.name)
 
       // Wrapper callback specific to Nodes 2.0 rendering
       const callback = (v: unknown) => {
@@ -215,36 +277,52 @@ function safeWidgetMapper(
         isPromotedWidgetView(widget) && widget.sourceWidgetName.startsWith('$$')
 
       // Extract only render-critical options (canvasOnly, advanced, read_only)
-      const options = widget.options
-        ? {
-            canvasOnly: widget.options.canvasOnly,
-            advanced: widget.advanced,
-            hidden: widget.options.hidden,
-            read_only: widget.options.read_only
-          }
-        : undefined
+      const options = extractWidgetDisplayOptions(widget)
       const subgraphId = node.isSubgraphNode() && node.subgraph.id
 
+      const resolvedSourceResult =
+        isPromotedWidgetView(widget) && promotedSource
+          ? resolveConcretePromotedWidget(
+              node,
+              promotedSource.sourceNodeId,
+              promotedSource.sourceWidgetName
+            )
+          : null
+      const resolvedSource =
+        resolvedSourceResult?.status === 'resolved'
+          ? resolvedSourceResult.resolved
+          : undefined
+      const sourceWidget = resolvedSource?.widget
+      const sourceNode = resolvedSource?.node
+
+      const effectiveWidget = sourceWidget ?? widget
+
       const localId = isPromotedWidgetView(widget)
-        ? widget.sourceNodeId
+        ? String(sourceNode?.id ?? promotedSource?.sourceNodeId)
         : undefined
       const nodeId =
         subgraphId && localId ? `${subgraphId}:${localId}` : undefined
-      const name = isPromotedWidgetView(widget)
-        ? widget.sourceWidgetName
-        : widget.name
+      const storeName = isPromotedWidgetView(widget)
+        ? (sourceWidget?.name ?? promotedSource?.sourceWidgetName)
+        : undefined
+      const name = storeName ?? displayName
 
       return {
         nodeId,
+        storeNodeId: nodeId,
         name,
-        type: widget.type,
+        storeName,
+        type: effectiveWidget.type,
         ...sharedEnhancements,
         callback,
-        hasLayoutSize: typeof widget.computeLayoutSize === 'function',
+        hasLayoutSize: typeof effectiveWidget.computeLayoutSize === 'function',
         isDOMWidget: isDOMWidget(widget) || isPromotedDOMWidget(widget),
         options: isPromotedPseudoWidget
-          ? { ...options, canvasOnly: true }
-          : options,
+          ? {
+              ...(extractWidgetDisplayOptions(effectiveWidget) ?? options),
+              canvasOnly: true
+            }
+          : (extractWidgetDisplayOptions(effectiveWidget) ?? options),
         slotMetadata: slotInfo,
         slotName: name !== widget.name ? widget.name : undefined
       }
@@ -312,14 +390,18 @@ export function extractVueNodeData(node: LGraphNode): VueNodeData {
   })
 
   const safeWidgets = reactiveComputed<SafeWidgetData[]>(() => {
+    const widgetsSnapshot = node.widgets ?? []
+
+    slotMetadata.clear()
     node.inputs?.forEach((input, index) => {
-      if (!input?.widget?.name) return
-      slotMetadata.set(input.widget.name, {
+      const slotInfo = {
         index,
         linked: input.link != null
-      })
+      }
+      if (input.name) slotMetadata.set(input.name, slotInfo)
+      if (input.widget?.name) slotMetadata.set(input.widget.name, slotInfo)
     })
-    return node.widgets?.map(safeWidgetMapper(node, slotMetadata)) ?? []
+    return widgetsSnapshot.map(safeWidgetMapper(node, slotMetadata))
   })
 
   const nodeType =
@@ -375,11 +457,12 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
     const slotMetadata = new Map<string, WidgetSlotMetadata>()
 
     nodeRef.inputs?.forEach((input, index) => {
-      if (!input?.widget?.name) return
-      slotMetadata.set(input.widget.name, {
+      const slotInfo = {
         index,
         linked: input.link != null
-      })
+      }
+      if (input.name) slotMetadata.set(input.name, slotInfo)
+      if (input.widget?.name) slotMetadata.set(input.widget.name, slotInfo)
     })
 
     // Update only widgets with new slot metadata, keeping other widget data intact

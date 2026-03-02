@@ -8030,7 +8030,7 @@
     }
   },
   "Mahiro": {
-    "display_name": "Mahiro CFG",
+    "display_name": "Positive-Biased Guidance",
     "description": "Modify the guidance to scale more on the 'direction' of the positive prompt rather than the difference between the negative prompt.",
     "inputs": {
       "model": {
@@ -12796,6 +12796,30 @@
       "1": {
         "name": "conditioning",
         "tooltip": "List of condition lists, one per resolution bucket."
+      }
+    }
+  },
+  "ResolutionSelector": {
+    "display_name": "Resolution Selector",
+    "description": "Calculate width and height from aspect ratio and megapixel target. Useful for setting up Empty Latent Image dimensions.",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio",
+        "tooltip": "The aspect ratio for the output dimensions."
+      },
+      "megapixels": {
+        "name": "megapixels",
+        "tooltip": "Target total megapixels. 1.0 MP ≈ 1024×1024 for square."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "width",
+        "tooltip": "Calculated width in pixels (multiple of 8)."
+      },
+      "1": {
+        "name": "height",
+        "tooltip": "Calculated height in pixels (multiple of 8)."
       }
     }
   },
@@ -18166,6 +18190,68 @@
     "outputs": {
       "0": {
         "tooltip": null
+      }
+    }
+  },
+  "WanSCAILToVideo": {
+    "display_name": "WanSCAILToVideo",
+    "inputs": {
+      "positive": {
+        "name": "positive"
+      },
+      "negative": {
+        "name": "negative"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "width"
+      },
+      "height": {
+        "name": "height"
+      },
+      "length": {
+        "name": "length"
+      },
+      "batch_size": {
+        "name": "batch_size"
+      },
+      "pose_strength": {
+        "name": "pose_strength",
+        "tooltip": "Strength of the pose latent."
+      },
+      "pose_start": {
+        "name": "pose_start",
+        "tooltip": "Start step to use pose conditioning."
+      },
+      "pose_end": {
+        "name": "pose_end",
+        "tooltip": "End step to use pose conditioning."
+      },
+      "clip_vision_output": {
+        "name": "clip_vision_output"
+      },
+      "reference_image": {
+        "name": "reference_image"
+      },
+      "pose_video": {
+        "name": "pose_video",
+        "tooltip": "Video used for pose conditioning. Will be downscaled to half the resolution of the main video."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": null
+      },
+      "1": {
+        "name": "negative",
+        "tooltip": null
+      },
+      "2": {
+        "name": "latent",
+        "tooltip": "Empty latent of the generation size."
       }
     }
   },

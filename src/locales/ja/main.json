@@ -331,6 +331,10 @@
     "missingNodesWarning": "ワークフローに未対応のノードが含まれています（赤でハイライト）。",
     "workflowActions": "ワークフロー操作"
   },
+  "builderMenu": {
+    "exitAppBuilder": "アプリビルダーを終了",
+    "saveApp": "アプリを保存"
+  },
   "builderToolbar": {
     "app": "アプリ",
     "appDescription": "デフォルトでアプリとして開きます",
@@ -1027,6 +1031,7 @@
     "or": "または",
     "output": "出力",
     "overwrite": "上書き",
+    "partner": "パートナー",
     "playPause": "再生/一時停止",
     "playRecording": "録音を再生",
     "playbackSpeed": "再生速度",
@@ -1037,6 +1042,7 @@
     "progressCountOf": "の",
     "queued": "キュー中",
     "ready": "準備完了",
+    "recents": "最近使用",
     "reconnected": "再接続されました",
     "reconnecting": "再接続中",
     "refresh": "更新",
@@ -2625,8 +2631,16 @@
     "nodeLibrary": "ノードライブラリ",
     "nodeLibraryTab": {
       "allNodes": "すべてのノード",
+      "blueprints": "ブループリント",
       "custom": "カスタム",
       "essentials": "必須",
+      "filter": "フィルター",
+      "filterOptions": {
+        "blueprints": "ブループリント",
+        "comfyNodes": "Comfyノード",
+        "extensions": "拡張機能",
+        "partnerNodes": "パートナーノード"
+      },
       "groupBy": "グループ化",
       "groupStrategies": {
         "category": "カテゴリ",
@@ -2636,10 +2650,18 @@
         "source": "ソース",
         "sourceDesc": "ソースタイプ（Core、Custom、API）でグループ化"
       },
+      "noBookmarkedNodes": "お気に入りはまだありません",
       "resetView": "ビューをデフォルトにリセット",
       "sections": {
+        "bookmarked": "ブックマーク済み",
+        "comfyBlueprints": "Comfyブループリント",
+        "comfyNodes": "Comfyノード",
+        "extensions": "拡張機能",
         "favoriteNode": "お気に入りノード",
         "favorites": "お気に入り",
+        "myBlueprints": "マイブループリント",
+        "partnerNodes": "パートナーノード",
+        "subgraphBlueprints": "サブグラフブループリント",
         "unfavoriteNode": "お気に入りノードから削除"
       },
       "sortBy": {
@@ -2883,6 +2905,7 @@
     "resubscribe": "再購読する",
     "resubscribeSuccess": "サブスクリプションが再開されました",
     "resubscribeTo": "{plan}を再購読する",
+    "subscribeForMore": "アップグレード",
     "subscribeNow": "今すぐ購読",
     "subscribeTo": "{plan}に登録",
     "subscribeToComfyCloud": "Comfy Cloudを購読",
@@ -2913,6 +2936,7 @@
     "upgrade": "アップグレード",
     "upgradePlan": "プランをアップグレード",
     "upgradeTo": "{plan}にアップグレード",
+    "upgradeToAddCredits": "クレジット追加のためアップグレード",
     "usdPerMonth": "USD / 月",
     "usdPerMonthPerMember": "USD / 月 / メンバー",
     "videoEstimateExplanation": "これらの見積もりは、Wan 2.2 画像から動画テンプレートのデフォルト設定（5秒、640x640、16fps、4ステップサンプリング）に基づいています。",

@@ -12799,6 +12799,30 @@
       }
     }
   },
+  "ResolutionSelector": {
+    "description": "종횡비와 메가픽셀 목표값으로 너비와 높이를 계산합니다. Empty Latent Image의 크기를 설정할 때 유용합니다.",
+    "display_name": "해상도 선택기",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "종횡비",
+        "tooltip": "출력 크기의 종횡비입니다."
+      },
+      "megapixels": {
+        "name": "메가픽셀",
+        "tooltip": "목표 총 메가픽셀. 1.0 MP ≈ 1024×1024 (정사각형 기준)."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "너비",
+        "tooltip": "계산된 픽셀 단위 너비 (8의 배수)."
+      },
+      "1": {
+        "name": "높이",
+        "tooltip": "계산된 픽셀 단위 높이 (8의 배수)."
+      }
+    }
+  },
   "Rodin3D_Detail": {
     "description": "Rodin API를 사용하여 3D 에셋 생성",
     "display_name": "Rodin 3D 생성 - 디테일 생성",
@@ -18127,6 +18151,68 @@
     "outputs": {
       "0": {
         "tooltip": null
+      }
+    }
+  },
+  "WanSCAILToVideo": {
+    "display_name": "WanSCAILToVideo",
+    "inputs": {
+      "batch_size": {
+        "name": "배치 크기"
+      },
+      "clip_vision_output": {
+        "name": "clip_vision_output"
+      },
+      "height": {
+        "name": "높이"
+      },
+      "length": {
+        "name": "길이"
+      },
+      "negative": {
+        "name": "negative"
+      },
+      "pose_end": {
+        "name": "포즈 종료",
+        "tooltip": "포즈 컨디셔닝을 적용할 마지막 스텝입니다."
+      },
+      "pose_start": {
+        "name": "포즈 시작",
+        "tooltip": "포즈 컨디셔닝을 적용할 시작 스텝입니다."
+      },
+      "pose_strength": {
+        "name": "포즈 강도",
+        "tooltip": "포즈 latent의 강도입니다."
+      },
+      "pose_video": {
+        "name": "포즈 비디오",
+        "tooltip": "포즈 컨디셔닝에 사용되는 비디오입니다. 메인 비디오 해상도의 절반으로 다운스케일됩니다."
+      },
+      "positive": {
+        "name": "positive"
+      },
+      "reference_image": {
+        "name": "참조 이미지"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "너비"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": null
+      },
+      "1": {
+        "name": "negative",
+        "tooltip": null
+      },
+      "2": {
+        "name": "latent",
+        "tooltip": "생성 크기의 빈 latent입니다."
       }
     }
   },

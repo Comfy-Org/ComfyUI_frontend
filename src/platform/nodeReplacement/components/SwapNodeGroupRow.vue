@@ -102,9 +102,7 @@ import { useI18n } from 'vue-i18n'
 import Button from '@/components/ui/button/Button.vue'
 import TransitionCollapse from '@/components/rightSidePanel/layout/TransitionCollapse.vue'
 import type { MissingNodeType } from '@/types/comfy'
-import type { SwapNodeGroup } from './useErrorGroups'
-import { useNodeReplacement } from '@/platform/nodeReplacement/useNodeReplacement'
-import { useExecutionErrorStore } from '@/stores/executionErrorStore'
+import type { SwapNodeGroup } from '@/components/rightSidePanel/errors/useErrorGroups'
 
 const props = defineProps<{
   group: SwapNodeGroup
@@ -113,11 +111,10 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   'locate-node': [nodeId: string]
+  replace: [group: SwapNodeGroup]
 }>()
 
 const { t } = useI18n()
-const { replaceNodesInPlace } = useNodeReplacement()
-const executionErrorStore = useExecutionErrorStore()
 
 const expanded = ref(false)
 
@@ -142,9 +139,6 @@ function handleLocateNode(nodeType: MissingNodeType) {
 }
 
 function handleReplaceNode() {
-  const replaced = replaceNodesInPlace(props.group.nodeTypes)
-  if (replaced.length > 0) {
-    executionErrorStore.removeMissingNodesByType([props.group.type])
-  }
+  emit('replace', props.group)
 }
 </script>

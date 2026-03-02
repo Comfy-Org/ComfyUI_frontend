@@ -1,24 +1,40 @@
 import { defineStore } from 'pinia'
-import { ref, shallowRef, watch } from 'vue'
+import { computed, ref, shallowRef, watch } from 'vue'
 
+import { useAppMode } from '@/composables/useAppMode'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { flattenNodeOutput } from '@/renderer/extensions/linearMode/flattenNodeOutput'
 import type { InProgressItem } from '@/renderer/extensions/linearMode/linearModeTypes'
+import type { ResultItemImpl } from '@/stores/queueStore'
 import type { ExecutedWsMessage } from '@/schemas/apiSchema'
 import { api } from '@/scripts/api'
-import { useAppMode } from '@/composables/useAppMode'
+import { useAppModeStore } from '@/stores/appModeStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useJobPreviewStore } from '@/stores/jobPreviewStore'
 
 export const useLinearOutputStore = defineStore('linearOutput', () => {
   const { isAppMode } = useAppMode()
+  const appModeStore = useAppModeStore()
   const executionStore = useExecutionStore()
   const jobPreviewStore = useJobPreviewStore()
+  const workflowStore = useWorkflowStore()
 
   const inProgressItems = ref<InProgressItem[]>([])
+  const resolvedOutputsCache = new Map<string, ResultItemImpl[]>()
   const selectedId = ref<string | null>(null)
   const isFollowing = ref(true)
   const trackedJobId = ref<string | null>(null)
   const pendingResolve = ref(new Set<string>())
+  const executedNodeIds = new Set<string>()
+
+  const activeWorkflowInProgressItems = computed(() => {
+    const path = workflowStore.activeWorkflow?.path
+    if (!path) return []
+    const all = inProgressItems.value
+    return all.filter(
+      (i) => executionStore.jobIdToSessionWorkflowPath.get(i.jobId) === path
+    )
+  })
 
   let nextSeq = 0
 
@@ -40,6 +56,8 @@ export const useLinearOutputStore = defineStore('linearOutput', () => {
   const currentSkeletonId = shallowRef<string | null>(null)
 
   function onJobStart(jobId: string) {
+    executedNodeIds.clear()
+
     const item: InProgressItem = {
       id: makeItemId(jobId),
       jobId,
@@ -53,7 +71,9 @@ export const useLinearOutputStore = defineStore('linearOutput', () => {
   }
 
   let raf: number | null = null
-  function onLatentPreview(jobId: string, url: string) {
+  function onLatentPreview(jobId: string, url: string, nodeId?: string) {
+    if (nodeId && executedNodeIds.has(nodeId)) return
+
     // Issue in Firefox where it doesnt seem to always re-render, wrapping in RAF fixes it
     if (raf) cancelAnimationFrame(raf)
     raf = requestAnimationFrame(() => {
@@ -89,8 +109,21 @@ export const useLinearOutputStore = defineStore('linearOutput', () => {
 
   function onNodeExecuted(jobId: string, detail: ExecutedWsMessage) {
     const nodeId = String(detail.display_node || detail.node)
+    executedNodeIds.add(nodeId)
+    if (raf) {
+      cancelAnimationFrame(raf)
+      raf = null
+    }
     const newOutputs = flattenNodeOutput([nodeId, detail.output])
     if (newOutputs.length === 0) return
+
+    // Skip output items for nodes not flagged as output nodes
+    const outputNodeIds = appModeStore.selectedOutputs
+    if (
+      outputNodeIds.length > 0 &&
+      !outputNodeIds.some((id) => String(id) === String(nodeId))
+    )
+      return
 
     const skeletonItem = inProgressItems.value.find(
       (i) => i.id === currentSkeletonId.value && i.jobId === jobId
@@ -134,7 +167,14 @@ export const useLinearOutputStore = defineStore('linearOutput', () => {
   }
 
   function onJobComplete(jobId: string) {
+    if (raf) {
+      cancelAnimationFrame(raf)
+      raf = null
+    }
     currentSkeletonId.value = null
+    if (trackedJobId.value === jobId) {
+      trackedJobId.value = null
+    }
 
     const hasImages = inProgressItems.value.some(
       (i) => i.jobId === jobId && i.state === 'image'
@@ -209,6 +249,7 @@ export const useLinearOutputStore = defineStore('linearOutput', () => {
       cancelAnimationFrame(raf)
       raf = null
     }
+    executedNodeIds.clear()
     inProgressItems.value = []
     selectedId.value = null
     isFollowing.value = true
@@ -231,13 +272,13 @@ export const useLinearOutputStore = defineStore('linearOutput', () => {
   )
 
   watch(
-    () => jobPreviewStore.previewsByPromptId,
+    () => jobPreviewStore.nodePreviewsByPromptId,
     (previews) => {
       if (!isAppMode.value) return
       const jobId = executionStore.activeJobId
       if (!jobId) return
-      const url = previews[jobId]
-      if (url) onLatentPreview(jobId, url)
+      const preview = previews[jobId]
+      if (preview) onLatentPreview(jobId, preview.url, preview.nodeId)
     },
     { deep: true }
   )
@@ -256,14 +297,14 @@ export const useLinearOutputStore = defineStore('linearOutput', () => {
   )
 
   return {
-    inProgressItems,
+    activeWorkflowInProgressItems,
+    resolvedOutputsCache,
     selectedId,
-    trackedJobId,
     pendingResolve,
     select,
     selectAsLatest,
     resolveIfReady,
-
+    inProgressItems,
     onJobStart,
     onLatentPreview,
     onNodeExecuted,

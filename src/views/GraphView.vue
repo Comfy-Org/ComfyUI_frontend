@@ -13,7 +13,11 @@
       <GraphCanvas @ready="onGraphReady" />
     </div>
     <LinearView v-if="linearMode" />
-    <BuilderToolbar v-if="isBuilderMode" />
+    <template v-if="isBuilderMode">
+      <BuilderToolbar />
+      <BuilderMenu />
+      <BuilderExitButton />
+    </template>
   </div>
 
   <GlobalToast />
@@ -87,6 +91,8 @@ import { useBottomPanelStore } from '@/stores/workspace/bottomPanelStore'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 import { electronAPI } from '@/utils/envUtil'
+import BuilderExitButton from '@/components/builder/BuilderExitButton.vue'
+import BuilderMenu from '@/components/builder/BuilderMenu.vue'
 import BuilderToolbar from '@/components/builder/BuilderToolbar.vue'
 import LinearView from '@/views/LinearView.vue'
 import ManagerProgressToast from '@/workbench/extensions/manager/components/ManagerProgressToast.vue'

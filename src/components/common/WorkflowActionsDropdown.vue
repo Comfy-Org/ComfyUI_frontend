@@ -9,6 +9,7 @@ import { useI18n } from 'vue-i18n'
 
 import WorkflowActionsList from '@/components/common/WorkflowActionsList.vue'
 import Button from '@/components/ui/button/Button.vue'
+import { useNewMenuItemIndicator } from '@/composables/useNewMenuItemIndicator'
 import { useWorkflowActionsMenu } from '@/composables/useWorkflowActionsMenu'
 import { useTelemetry } from '@/platform/telemetry'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
@@ -27,8 +28,13 @@ const { menuItems } = useWorkflowActionsMenu(
   { isRoot: true }
 )
 
+const { hasUnseenItems, markAsSeen } = useNewMenuItemIndicator(
+  () => menuItems.value
+)
+
 function handleOpen(open: boolean) {
   if (open) {
+    markAsSeen()
     useTelemetry()?.trackUiButtonClicked({
       button_id: source
     })
@@ -39,7 +45,7 @@ function handleOpen(open: boolean) {
 <template>
   <DropdownMenuRoot @update:open="handleOpen">
     <DropdownMenuTrigger as-child>
-      <slot name="button">
+      <slot name="button" :has-unseen-items="hasUnseenItems">
         <Button
           v-tooltip="{
             value: t('breadcrumbsMenu.workflowActions'),
@@ -49,7 +55,7 @@ function handleOpen(open: boolean) {
           variant="secondary"
           size="unset"
           :aria-label="t('breadcrumbsMenu.workflowActions')"
-          class="h-10 rounded-lg pl-3 pr-2 pointer-events-auto gap-1 data-[state=open]:bg-secondary-background-hover data-[state=open]:shadow-interface"
+          class="relative h-10 rounded-lg pl-3 pr-2 pointer-events-auto gap-1 data-[state=open]:bg-secondary-background-hover data-[state=open]:shadow-interface"
         >
           <i
             class="size-4"
@@ -60,6 +66,11 @@ function handleOpen(open: boolean) {
             "
           />
           <i class="icon-[lucide--chevron-down] size-4 text-muted-foreground" />
+          <span
+            v-if="hasUnseenItems"
+            aria-hidden="true"
+            class="absolute -top-0.5 -right-0.5 size-2 rounded-full bg-primary-background"
+          />
         </Button>
       </slot>
     </DropdownMenuTrigger>

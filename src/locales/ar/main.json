@@ -331,6 +331,10 @@
     "missingNodesWarning": "يحتوي سير العمل على عقد غير مدعومة (مظللة باللون الأحمر).",
     "workflowActions": "إجراءات سير العمل"
   },
+  "builderMenu": {
+    "exitAppBuilder": "الخروج من مُنشئ التطبيق",
+    "saveApp": "حفظ التطبيق"
+  },
   "builderToolbar": {
     "app": "تطبيق",
     "appDescription": "يفتح كتطبيق بشكل افتراضي",
@@ -1027,6 +1031,7 @@
     "or": "أو",
     "output": "إخراج",
     "overwrite": "الكتابة فوق",
+    "partner": "شريك",
     "playPause": "تشغيل/إيقاف مؤقت",
     "playRecording": "تشغيل التسجيل",
     "playbackSpeed": "سرعة التشغيل",
@@ -1037,6 +1042,7 @@
     "progressCountOf": "من",
     "queued": "في قائمة الانتظار",
     "ready": "جاهز",
+    "recents": "الأخيرة",
     "reconnected": "تم الاتصال من جديد",
     "reconnecting": "إعادة الاتصال",
     "refresh": "تحديث",
@@ -2625,8 +2631,16 @@
     "nodeLibrary": "مكتبة العقد",
     "nodeLibraryTab": {
       "allNodes": "جميع العقد",
+      "blueprints": "المخططات",
       "custom": "مخصص",
       "essentials": "الأساسيات",
+      "filter": "تصفية",
+      "filterOptions": {
+        "blueprints": "المخططات",
+        "comfyNodes": "عُقد Comfy",
+        "extensions": "الإضافات",
+        "partnerNodes": "عُقد الشركاء"
+      },
       "groupBy": "التجميع حسب",
       "groupStrategies": {
         "category": "الفئة",
@@ -2636,10 +2650,18 @@
         "source": "المصدر",
         "sourceDesc": "التجميع حسب نوع المصدر (أساسي، مخصص، API)"
       },
+      "noBookmarkedNodes": "لا توجد مفضلات بعد",
       "resetView": "إعادة تعيين العرض إلى الافتراضي",
       "sections": {
+        "bookmarked": "المفضلة",
+        "comfyBlueprints": "مخططات Comfy",
+        "comfyNodes": "عُقد Comfy",
+        "extensions": "الإضافات",
         "favoriteNode": "العقدة المفضلة",
         "favorites": "المفضلة",
+        "myBlueprints": "مخططاتي",
+        "partnerNodes": "عُقد الشركاء",
+        "subgraphBlueprints": "مخططات الرسم الفرعي",
         "unfavoriteNode": "إزالة العقدة من المفضلة"
       },
       "sortBy": {
@@ -2883,6 +2905,7 @@
     "resubscribe": "إعادة الاشتراك",
     "resubscribeSuccess": "تمت إعادة تفعيل الاشتراك بنجاح",
     "resubscribeTo": "إعادة الاشتراك في {plan}",
+    "subscribeForMore": "ترقية",
     "subscribeNow": "اشترك الآن",
     "subscribeTo": "اشترك في {plan}",
     "subscribeToComfyCloud": "الاشتراك في Comfy Cloud",
@@ -2913,6 +2936,7 @@
     "upgrade": "ترقية",
     "upgradePlan": "ترقية الخطة",
     "upgradeTo": "الترقية إلى {plan}",
+    "upgradeToAddCredits": "قم بالترقية لإضافة أرصدة",
     "usdPerMonth": "دولار أمريكي / شهريًا",
     "usdPerMonthPerMember": "دولار أمريكي / شهر / عضو",
     "videoEstimateExplanation": "هذه التقديرات مبنية على قالب Wan 2.2 لتحويل الصورة إلى فيديو باستخدام الإعدادات الافتراضية (5 ثوانٍ، 640x640، 16 إطار/ثانية، 4 خطوات أخذ عينات).",

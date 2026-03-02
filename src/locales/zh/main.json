@@ -331,6 +331,10 @@
     "missingNodesWarning": "工作流包含不支持的节点（红色突出显示）。",
     "workflowActions": "工作流操作"
   },
+  "builderMenu": {
+    "exitAppBuilder": "退出应用构建器",
+    "saveApp": "保存应用"
+  },
   "builderToolbar": {
     "app": "应用",
     "appDescription": "默认以应用方式打开",
@@ -1027,6 +1031,7 @@
     "or": "或",
     "output": "输出",
     "overwrite": "覆盖",
+    "partner": "合作伙伴",
     "playPause": "开启/暂停",
     "playRecording": "播放录音",
     "playbackSpeed": "播放速度",
@@ -1037,6 +1042,7 @@
     "progressCountOf": "共",
     "queued": "已执行",
     "ready": "就绪",
+    "recents": "最近使用",
     "reconnected": "已重新连接",
     "reconnecting": "重新连接中",
     "refresh": "刷新",
@@ -2637,8 +2643,16 @@
     "nodeLibrary": "节点库",
     "nodeLibraryTab": {
       "allNodes": "全部节点",
+      "blueprints": "蓝图",
       "custom": "自定义",
       "essentials": "基础",
+      "filter": "筛选",
+      "filterOptions": {
+        "blueprints": "蓝图",
+        "comfyNodes": "Comfy 节点",
+        "extensions": "扩展",
+        "partnerNodes": "合作伙伴节点"
+      },
       "groupBy": "分组方式",
       "groupStrategies": {
         "category": "类别",
@@ -2648,10 +2662,18 @@
         "source": "来源",
         "sourceDesc": "按来源类型分组（核心，自定义，API）"
       },
+      "noBookmarkedNodes": "暂无收藏",
       "resetView": "重置视图为默认",
       "sections": {
+        "bookmarked": "已收藏",
+        "comfyBlueprints": "Comfy 蓝图",
+        "comfyNodes": "Comfy 节点",
+        "extensions": "扩展",
         "favoriteNode": "收藏节点",
         "favorites": "收藏夹",
+        "myBlueprints": "我的蓝图",
+        "partnerNodes": "合作伙伴节点",
+        "subgraphBlueprints": "子图蓝图",
         "unfavoriteNode": "取消收藏节点"
       },
       "sortBy": {
@@ -2895,6 +2917,7 @@
     "resubscribe": "重新订阅",
     "resubscribeSuccess": "订阅已成功重新激活",
     "resubscribeTo": "重新订阅 {plan}",
+    "subscribeForMore": "升级",
     "subscribeNow": "立即订阅",
     "subscribeTo": "订阅 {plan}",
     "subscribeToComfyCloud": "订阅 Comfy Cloud",
@@ -2925,6 +2948,7 @@
     "upgrade": "升级",
     "upgradePlan": "升级订阅",
     "upgradeTo": "升级到 {plan}",
+    "upgradeToAddCredits": "升级以添加积分",
     "usdPerMonth": "USD / mo",
     "usdPerMonthPerMember": "美元 / 月 / 每成员",
     "videoEstimateExplanation": "这些预估基于 Wan Fun Control 生成 5 秒视频。",
