@@ -6,6 +6,8 @@
         widget.borderStyle
       )
     "
+    @mouseenter="isHovered = true"
+    @mouseleave="isHovered = false"
   >
     <label
       v-if="!hideLayoutField"
@@ -33,13 +35,27 @@
       @pointerup.capture.stop
       @contextmenu.capture.stop
     />
+    <Button
+      v-if="isReadOnly && isHovered"
+      variant="textonly"
+      size="icon"
+      class="absolute top-1.5 right-1.5 z-10 hover:bg-base-foreground/10"
+      :title="$t('g.copyToClipboard')"
+      :aria-label="$t('g.copyToClipboard')"
+      @click="handleCopy"
+      @pointerdown.capture.stop
+    >
+      <i class="icon-[lucide--copy] h-4 w-4" />
+    </Button>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, useId } from 'vue'
+import { computed, ref, useId } from 'vue'
 
+import Button from '@/components/ui/button/Button.vue'
 import Textarea from '@/components/ui/textarea/Textarea.vue'
+import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import { useHideLayoutField } from '@/types/widgetTypes'
 import { cn } from '@/utils/tailwindUtil'
@@ -58,6 +74,8 @@ const { widget, placeholder = '' } = defineProps<{
 const modelValue = defineModel<string>({ default: '' })
 
 const hideLayoutField = useHideLayoutField()
+const { copyToClipboard } = useCopyToClipboard()
+const isHovered = ref(false)
 
 const filteredProps = computed(() =>
   filterWidgetProps(widget.options, INPUT_EXCLUDED_PROPS)
@@ -69,4 +87,8 @@ const id = useId()
 const isReadOnly = computed(
   () => widget.options?.read_only ?? widget.options?.disabled ?? false
 )
+
+function handleCopy() {
+  copyToClipboard(modelValue.value)
+}
 </script>

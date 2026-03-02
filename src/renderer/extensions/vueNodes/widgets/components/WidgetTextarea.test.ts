@@ -5,6 +5,12 @@ import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 
 import WidgetTextarea from './WidgetTextarea.vue'
 
+vi.mock('@/composables/useCopyToClipboard', () => ({
+  useCopyToClipboard: vi.fn().mockReturnValue({
+    copyToClipboard: vi.fn()
+  })
+}))
+
 function createMockWidget(
   value: string = 'default text',
   options: SimplifiedWidget['options'] = {},
