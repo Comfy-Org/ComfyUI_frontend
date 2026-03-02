@@ -1,6 +1,7 @@
 import { useVueFeatureFlags } from '@/composables/useVueFeatureFlags'
 import type { LGraph, RendererType } from '@/lib/litegraph/src/LGraph'
-import { createBounds } from '@/lib/litegraph/src/measure'
+import { LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { createBounds, snapPoint } from '@/lib/litegraph/src/measure'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
@@ -16,7 +17,8 @@ export function ensureCorrectLayoutScale(
   renderer: RendererType = 'LG',
   targetGraph?: LGraph
 ) {
-  const autoScaleLayoutSetting = useSettingStore().get(
+  const settingStore = useSettingStore()
+  const autoScaleLayoutSetting = settingStore.get(
     'Comfy.VueNodes.AutoScaleLayout'
   )
 
@@ -38,6 +40,10 @@ export function ensureCorrectLayoutScale(
     return
   }
 
+  const alwaysSnapToGrid = settingStore.get('pysssss.SnapToGrid')
+  const snapSize =
+    settingStore.get('Comfy.SnapToGrid.GridSize') || LiteGraph.CANVAS_GRID_SIZE
+
   const lgBounds = createBounds(graph.nodes)
 
   if (!lgBounds) return
@@ -52,6 +58,12 @@ export function ensureCorrectLayoutScale(
 
   const onActiveGraph = !targetGraph || targetGraph === canvas?.graph
 
+  const applySnap = (pos: [number, number]) => {
+    if (alwaysSnapToGrid) {
+      snapPoint(pos, snapSize)
+    }
+  }
+
   //TODO: once we remove the need for LiteGraph.NODE_TITLE_HEIGHT in vue nodes we nned to remove everything here.
   for (const node of graph.nodes) {
     const lgNode = lgNodesById.get(node.id)
@@ -62,12 +74,23 @@ export function ensureCorrectLayoutScale(
     const relativeX = oldX - originX
     const relativeY = oldY - originY
 
-    const scaledX = originX + relativeX * scaleFactor
-    const scaledY = originY + relativeY * scaleFactor
+    const posTarget: [number, number] = [
+      originX + relativeX * scaleFactor,
+      originY + relativeY * scaleFactor
+    ]
+    applySnap(posTarget)
 
-    const scaledWidth = lgNode.width * scaleFactor
+    const scaledX = posTarget[0]
+    const scaledY = posTarget[1]
 
-    const scaledHeight = lgNode.size[1] * scaleFactor
+    const sizeTarget: [number, number] = [
+      lgNode.size[0] * scaleFactor,
+      lgNode.size[1] * scaleFactor
+    ]
+    applySnap(sizeTarget)
+
+    const scaledWidth = sizeTarget[0]
+    const scaledHeight = sizeTarget[1]
 
     // Directly update LiteGraph node to ensure immediate consistency
     // Dont need to reference vue directly because the pos and dims are already in yjs
@@ -101,8 +124,14 @@ export function ensureCorrectLayoutScale(
     const relativeX = oldX - originX
     const relativeY = oldY - originY
 
-    const scaledX = originX + relativeX * scaleFactor
-    const scaledY = originY + relativeY * scaleFactor
+    const posTarget: [number, number] = [
+      originX + relativeX * scaleFactor,
+      originY + relativeY * scaleFactor
+    ]
+    applySnap(posTarget)
+
+    const scaledX = posTarget[0]
+    const scaledY = posTarget[1]
 
     reroute.pos = [scaledX, scaledY]
 
@@ -128,11 +157,23 @@ export function ensureCorrectLayoutScale(
       const relativeX = oldX - originX
       const relativeY = oldY - originY
 
-      const scaledX = originX + relativeX * scaleFactor
-      const scaledY = originY + relativeY * scaleFactor
+      const posTarget: [number, number] = [
+        originX + relativeX * scaleFactor,
+        originY + relativeY * scaleFactor
+      ]
+      applySnap(posTarget)
 
-      const scaledWidth = oldWidth * scaleFactor
-      const scaledHeight = oldHeight * scaleFactor
+      const scaledX = posTarget[0]
+      const scaledY = posTarget[1]
+
+      const sizeTarget: [number, number] = [
+        oldWidth * scaleFactor,
+        oldHeight * scaleFactor
+      ]
+      applySnap(sizeTarget)
+
+      const scaledWidth = sizeTarget[0]
+      const scaledHeight = sizeTarget[1]
 
       ioNode.pos = [scaledX, scaledY]
       ioNode.size = [scaledWidth, scaledHeight]
@@ -146,11 +187,23 @@ export function ensureCorrectLayoutScale(
     const relativeX = oldX - originX
     const relativeY = oldY - originY
 
-    const scaledX = originX + relativeX * scaleFactor
-    const scaledY = originY + relativeY * scaleFactor
+    const posTarget: [number, number] = [
+      originX + relativeX * scaleFactor,
+      originY + relativeY * scaleFactor
+    ]
+    applySnap(posTarget)
 
-    const scaledWidth = oldWidth * scaleFactor
-    const scaledHeight = oldHeight * scaleFactor
+    const scaledX = posTarget[0]
+    const scaledY = posTarget[1]
+
+    const sizeTarget: [number, number] = [
+      oldWidth * scaleFactor,
+      oldHeight * scaleFactor
+    ]
+    applySnap(sizeTarget)
+
+    const scaledWidth = sizeTarget[0]
+    const scaledHeight = sizeTarget[1]
 
     group.pos = [scaledX, scaledY]
     group.size = [scaledWidth, scaledHeight]
