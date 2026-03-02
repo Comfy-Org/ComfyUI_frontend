@@ -188,6 +188,18 @@ describe('getOggMetadata', () => {
         }
       },
       {
+        name: 'segment data exceeds buffer boundary',
+        createBuffer: () => {
+          // Page header declares 1 segment of length 200, but only 10 bytes of data follow
+          const buffer = new Uint8Array(27 + 1 + 10)
+          buffer.set(new TextEncoder().encode('OggS'), 0)
+          buffer[26] = 1 // 1 segment
+          buffer[27] = 200 // segment length = 200 (exceeds remaining 10 bytes)
+          // Only 10 bytes of data follow; segment exceeds boundary
+          return buffer.buffer
+        }
+      },
+      {
         name: 'truncated user comment in OpusTags',
         createBuffer: () => {
           const packet = new Uint8Array(20)
@@ -207,7 +219,6 @@ describe('getOggMetadata', () => {
         name: 'file smaller than the Ogg magic number',
         createBuffer: () => new Uint8Array([1, 2]).buffer
       },
-
       {
         name: 'page has an invalid magic number (stop parsing)',
         createBuffer: () => {
@@ -222,6 +233,73 @@ describe('getOggMetadata', () => {
           combined.set(page2, page1.length)
           return combined.buffer
         }
+      },
+      {
+        name: 'OpusTags packet truncated before vendorLength field',
+        createBuffer: () => {
+          // Packet is only 10 bytes: 'OpusTags'(8) + 2 extra bytes (not enough for 4-byte vendorLength)
+          const packet = new Uint8Array(10)
+          packet.set(new TextEncoder().encode('OpusTags'), 0)
+          const buffer = new Uint8Array(27 + 1 + packet.length)
+          buffer.set(new TextEncoder().encode('OggS'), 0)
+          buffer[26] = 1
+          buffer[27] = packet.length
+          buffer.set(packet, 28)
+          return buffer.buffer
+        }
+      },
+      {
+        name: 'OpusTags packet with oversized vendorLength',
+        createBuffer: () => {
+          // Packet: 'OpusTags'(8) + vendorLength=9999(4) + no actual vendor bytes
+          const packet = new Uint8Array(12)
+          packet.set(new TextEncoder().encode('OpusTags'), 0)
+          new DataView(packet.buffer).setUint32(8, 9999, true) // vendor string claims 9999 bytes
+          const buffer = new Uint8Array(27 + 1 + packet.length)
+          buffer.set(new TextEncoder().encode('OggS'), 0)
+          buffer[26] = 1
+          buffer[27] = packet.length
+          buffer.set(packet, 28)
+          return buffer.buffer
+        }
+      },
+      {
+        name: 'OpusTags packet truncated before userCommentListLength',
+        createBuffer: () => {
+          // Packet: 'OpusTags'(8) + vendorLength=0(4) + no userCommentListLength
+          const packet = new Uint8Array(12) // exactly 8 + 4, no bytes for userCommentListLength
+          packet.set(new TextEncoder().encode('OpusTags'), 0)
+          new DataView(packet.buffer).setUint32(8, 0, true) // vendorLength=0
+          // packet ends here — no room for userCommentListLength (needs 4 more bytes)
+          const buffer = new Uint8Array(27 + 1 + packet.length)
+          buffer.set(new TextEncoder().encode('OggS'), 0)
+          buffer[26] = 1
+          buffer[27] = packet.length
+          buffer.set(packet, 28)
+          return buffer.buffer
+        }
+      },
+      {
+        name: 'OpusTags packet truncated mid-comment-list (missing comment length field)',
+        createBuffer: () => {
+          const commentBytes = new TextEncoder().encode('key=value')
+          // Packet: 'OpusTags'(8) + vendorLength=0(4) + userCommentListLength=2(4) +
+          //         commentLength=9(4) + commentData(9) — second comment length field is missing
+          const packet = new Uint8Array(8 + 4 + 4 + 4 + commentBytes.length)
+          const view = new DataView(packet.buffer)
+          packet.set(new TextEncoder().encode('OpusTags'), 0)
+          view.setUint32(8, 0, true) // vendorLength = 0
+          view.setUint32(12, 2, true) // userCommentListLength = 2 (but only 1 follows)
+          view.setUint32(16, commentBytes.length, true) // first comment length
+          packet.set(commentBytes, 20) // first comment data
+          // second comment's length field is absent — packet ends here
+          const buffer = new Uint8Array(27 + 1 + packet.length)
+          buffer.set(new TextEncoder().encode('OggS'), 0)
+          buffer[26] = 1
+          buffer[27] = packet.length
+          buffer.set(packet, 28)
+          return buffer.buffer
+        }
       }
     ]
 
@@ -231,14 +309,12 @@ describe('getOggMetadata', () => {
           [createBuffer()],
           `test_${name.replace(/\s+/g, '_')}.ogg`
         )
-        try {
-          const result = await getOggMetadata(file)
-          expect(result.prompt).toBeUndefined()
-          expect(result.workflow).toBeUndefined()
-        } catch (e) {
-          // If it throws (e.g. RangeError from DataView out of bounds), it's successfully handled gracefully by the caller
-          expect(e).toBeInstanceOf(Error)
-        }
+        await expect(
+          getOggMetadata(file).then((result) => {
+            expect(result.prompt).toBeUndefined()
+            expect(result.workflow).toBeUndefined()
+          })
+        ).resolves.not.toThrow()
       })
     }
   })
@@ -247,7 +323,7 @@ describe('getOggMetadata', () => {
     const scenarios: {
       name: string
       createBuffer: () => ArrayBuffer
-      expectedPrompt?: any
+      expectedPrompt?: Record<string, unknown>
     }[] = [
       {
         name: 'unrelated Vorbis comments',
@@ -257,6 +333,14 @@ describe('getOggMetadata', () => {
             prompt: '{"valid": true}'
           }),
         expectedPrompt: { valid: true } // Workflow is undefined, Prompt is valid
+      },
+      {
+        name: 'invalid JSON in prompt/workflow comments (plain text)',
+        createBuffer: () =>
+          createOggWithOpusTags({
+            prompt: 'hello world',
+            workflow: 'plain text workflow'
+          })
       },
       {
         name: 'user comments without an equal sign',
@@ -287,18 +371,15 @@ describe('getOggMetadata', () => {
           [createBuffer()],
           `test_${name.replace(/\s+/g, '_')}.ogg`
         )
-        try {
-          const result = await getOggMetadata(file)
+        await expect(getOggMetadata(file)).resolves.toSatisfy((result) => {
           if (expectedPrompt) {
-            expect(result.prompt).toEqual(expectedPrompt) // either undefined or { valid: true }
+            expect(result.prompt).toEqual(expectedPrompt)
           } else {
             expect(result.prompt).toBeUndefined()
           }
           expect(result.workflow).toBeUndefined()
-        } catch (e) {
-          // Handled via thrown exception
-          expect(e).toBeInstanceOf(Error)
-        }
+          return true
+        })
       })
     }
   })

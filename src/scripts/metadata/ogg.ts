@@ -50,6 +50,10 @@ function extractOpusTags(data: Uint8Array, decoder: TextDecoder): Uint8Array[] {
 
     for (let i = 0; i < pageSegmentsCount; i++) {
       const segmentLength = data[lengthsOffset + i]
+
+      // Bounds check: ensure the segment data lies within the available data
+      if (dataOffset + segmentLength > data.length) break
+
       const segment = data.subarray(dataOffset, dataOffset + segmentLength)
       dataOffset += segmentLength
 
@@ -86,9 +90,22 @@ function parseVorbisComments(packetData: Uint8Array, decoder: TextDecoder) {
     packetData.byteLength
   )
 
+  // Bounds check: ensure vendor length field is within packet
+  if (readIndex + 4 > packetData.length)
+    return { prompt: undefined, workflow: undefined }
+
   // Skip vendor string length (4 bytes) + vendor string
   const vendorLength = packetView.getUint32(readIndex, true)
-  readIndex += 4 + vendorLength
+  readIndex += 4
+
+  // Bounds check: ensure vendor string is within packet
+  if (readIndex + vendorLength > packetData.length)
+    return { prompt: undefined, workflow: undefined }
+  readIndex += vendorLength
+
+  // Bounds check: ensure user comment list length field is within packet
+  if (readIndex + 4 > packetData.length)
+    return { prompt: undefined, workflow: undefined }
 
   // Get the number of user comments
   const userCommentListLength = packetView.getUint32(readIndex, true)
@@ -96,9 +113,15 @@ function parseVorbisComments(packetData: Uint8Array, decoder: TextDecoder) {
 
   let prompt, workflow
   for (let i = 0; i < userCommentListLength; i++) {
+    // Bounds check: ensure comment length field is within packet
+    if (readIndex + 4 > packetData.length) break
+
     // Vorbis Comments spec: Get comment length (32-bit little-endian)
     const commentLength = packetView.getUint32(readIndex, true)
     readIndex += 4
+
+    // Bounds check: ensure comment data is within packet
+    if (readIndex + commentLength > packetData.length) break
 
     // Extract and decode the comment string (UTF-8)
     const text = decoder.decode(
@@ -111,9 +134,17 @@ function parseVorbisComments(packetData: Uint8Array, decoder: TextDecoder) {
       const key = text.substring(0, separatorIndex)
       const value = text.substring(separatorIndex + 1)
       if (key === 'prompt') {
-        prompt = JSON.parse(value)
+        try {
+          prompt = JSON.parse(value)
+        } catch (e) {
+          console.warn('Ogg metadata parsing failed for prompt:', e)
+        }
       } else if (key === 'workflow') {
-        workflow = JSON.parse(value)
+        try {
+          workflow = JSON.parse(value)
+        } catch (e) {
+          console.warn('Ogg metadata parsing failed for workflow:', e)
+        }
       }
     }
 
