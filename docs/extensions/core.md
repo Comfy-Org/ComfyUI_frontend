@@ -29,43 +29,43 @@ The following table lists ALL core extensions in the system as of 2026-03-02:
 
 ### Main Extensions
 
-| Extension                      | Description                                                   | Category  |
-| ------------------------------ | ------------------------------------------------------------- | --------- |
-| clipspace.ts                   | Implements the Clipspace feature for temporary image storage  | Image     |
-| cloudBadges.ts                 | Displays cloud-specific badges and indicators                 | Cloud     |
-| cloudFeedbackTopbarButton.ts   | Provides cloud feedback UI in the topbar                      | Cloud     |
-| cloudRemoteConfig.ts           | Manages cloud remote configuration                            | Cloud     |
-| cloudSessionCookie.ts          | Handles cloud session cookie management                       | Cloud     |
-| cloudSubscription.ts           | Manages cloud subscription features                           | Cloud     |
-| contextMenuFilter.ts           | Provides context menu filtering capabilities                  | UI        |
-| customWidgets.ts               | Implements custom widget types                                | Widgets   |
-| dynamicPrompts.ts              | Provides dynamic prompt generation capabilities               | Prompts   |
-| editAttention.ts               | Implements attention editing functionality                    | Text      |
-| electronAdapter.ts             | Adapts functionality for Electron environment                 | Platform  |
-| groupNode.ts                   | Implements the group node functionality to organize workflows | Graph     |
-| groupNodeManage.ts             | Provides group node management operations                     | Graph     |
-| groupOptions.ts                | Handles group node configuration options                      | Graph     |
-| imageCompare.ts                | Implements image comparison functionality                     | Image     |
-| imageCrop.ts                   | Provides image cropping functionality                         | Image     |
-| index.ts                       | Main extension registration and coordination                  | Core      |
-| load3d.ts                      | Supports 3D model loading and visualization                   | 3D        |
-| load3dLazy.ts                  | Implements lazy loading for 3D models                         | 3D        |
-| maskeditor.ts                  | Implements the mask editor for image masking operations       | Image     |
-| nightlyBadges.ts               | Displays nightly build badges                                 | System    |
-| nodeTemplates.ts               | Provides node template functionality                          | Templates |
-| noteNode.ts                    | Adds note nodes for documentation within workflows            | Graph     |
-| painter.ts                     | Implements painting and drawing functionality                 | Image     |
-| previewAny.ts                  | Universal preview functionality for various data types        | Preview   |
-| rerouteNode.ts                 | Implements reroute nodes for cleaner workflow connections     | Graph     |
-| saveImageExtraOutput.ts        | Handles additional image output saving                        | Image     |
-| saveMesh.ts                    | Implements 3D mesh saving functionality                       | 3D        |
-| selectionBorder.ts             | Renders selection borders for selected nodes                  | UI        |
-| simpleTouchSupport.ts          | Provides basic touch interaction support                      | Input     |
-| slotDefaults.ts                | Manages default values for node slots                         | Nodes     |
-| uploadAudio.ts                 | Handles audio file upload functionality                       | Audio     |
-| uploadImage.ts                 | Handles image upload functionality                            | Image     |
-| webcamCapture.ts               | Provides webcam capture capabilities                          | Media     |
-| widgetInputs.ts                | Implements various widget input types                         | Widgets   |
+| Extension                    | Description                                                   | Category  |
+| ---------------------------- | ------------------------------------------------------------- | --------- |
+| clipspace.ts                 | Implements the Clipspace feature for temporary image storage  | Image     |
+| cloudBadges.ts               | Displays cloud-specific badges and indicators                 | Cloud     |
+| cloudFeedbackTopbarButton.ts | Provides cloud feedback UI in the topbar                      | Cloud     |
+| cloudRemoteConfig.ts         | Manages cloud remote configuration                            | Cloud     |
+| cloudSessionCookie.ts        | Handles cloud session cookie management                       | Cloud     |
+| cloudSubscription.ts         | Manages cloud subscription features                           | Cloud     |
+| contextMenuFilter.ts         | Provides context menu filtering capabilities                  | UI        |
+| customWidgets.ts             | Implements custom widget types                                | Widgets   |
+| dynamicPrompts.ts            | Provides dynamic prompt generation capabilities               | Prompts   |
+| editAttention.ts             | Implements attention editing functionality                    | Text      |
+| electronAdapter.ts           | Adapts functionality for Electron environment                 | Platform  |
+| groupNode.ts                 | Implements the group node functionality to organize workflows | Graph     |
+| groupNodeManage.ts           | Provides group node management operations                     | Graph     |
+| groupOptions.ts              | Handles group node configuration options                      | Graph     |
+| imageCompare.ts              | Implements image comparison functionality                     | Image     |
+| imageCrop.ts                 | Provides image cropping functionality                         | Image     |
+| index.ts                     | Main extension registration and coordination                  | Core      |
+| load3d.ts                    | Supports 3D model loading and visualization                   | 3D        |
+| load3dLazy.ts                | Implements lazy loading for 3D models                         | 3D        |
+| maskeditor.ts                | Implements the mask editor for image masking operations       | Image     |
+| nightlyBadges.ts             | Displays nightly build badges                                 | System    |
+| nodeTemplates.ts             | Provides node template functionality                          | Templates |
+| noteNode.ts                  | Adds note nodes for documentation within workflows            | Graph     |
+| painter.ts                   | Implements painting and drawing functionality                 | Image     |
+| previewAny.ts                | Universal preview functionality for various data types        | Preview   |
+| rerouteNode.ts               | Implements reroute nodes for cleaner workflow connections     | Graph     |
+| saveImageExtraOutput.ts      | Handles additional image output saving                        | Image     |
+| saveMesh.ts                  | Implements 3D mesh saving functionality                       | 3D        |
+| selectionBorder.ts           | Renders selection borders for selected nodes                  | UI        |
+| simpleTouchSupport.ts        | Provides basic touch interaction support                      | Input     |
+| slotDefaults.ts              | Manages default values for node slots                         | Nodes     |
+| uploadAudio.ts               | Handles audio file upload functionality                       | Audio     |
+| uploadImage.ts               | Handles image upload functionality                            | Image     |
+| webcamCapture.ts             | Provides webcam capture capabilities                          | Media     |
+| widgetInputs.ts              | Implements various widget input types                         | Widgets   |
 
 ### Load3D Subdirectory
 
@@ -73,26 +73,26 @@ Located in `extensions/core/load3d/`:
 
 The load3d extension has been refactored into multiple manager modules:
 
-| File                      | Description                                   |
-| ------------------------- | --------------------------------------------- |
-| AnimationManager.ts       | Manages 3D animations                         |
-| CameraManager.ts          | Handles camera controls and positioning       |
-| ControlsManager.ts        | Manages user controls for 3D viewing          |
-| EventManager.ts           | Handles events for 3D viewer                  |
-| LightingManager.ts        | Manages lighting in 3D scenes                 |
-| Load3d.ts                 | Main 3D loading logic                         |
-| Load3DConfiguration.ts    | Configuration for 3D loading                  |
-| Load3dUtils.ts            | Utility functions for 3D operations           |
-| LoaderManager.ts          | Manages different 3D format loaders           |
-| ModelExporter.ts          | Handles 3D model export functionality         |
-| RecordingManager.ts       | Manages 3D scene recording                    |
-| SceneManager.ts           | Manages 3D scene setup and rendering          |
-| SceneModelManager.ts      | Manages models within scenes                  |
-| ViewHelperManager.ts      | Provides view helpers for 3D navigation       |
-| constants.ts              | Constants for 3D loading                      |
-| exportMenuHelper.ts       | Helper for export menu functionality          |
-| interfaces.ts             | TypeScript interfaces for 3D loading          |
-| loader/FastPLYLoader.ts   | Fast PLY format loader implementation         |
+| File                    | Description                             |
+| ----------------------- | --------------------------------------- |
+| AnimationManager.ts     | Manages 3D animations                   |
+| CameraManager.ts        | Handles camera controls and positioning |
+| ControlsManager.ts      | Manages user controls for 3D viewing    |
+| EventManager.ts         | Handles events for 3D viewer            |
+| LightingManager.ts      | Manages lighting in 3D scenes           |
+| Load3d.ts               | Main 3D loading logic                   |
+| Load3DConfiguration.ts  | Configuration for 3D loading            |
+| Load3dUtils.ts          | Utility functions for 3D operations     |
+| LoaderManager.ts        | Manages different 3D format loaders     |
+| ModelExporter.ts        | Handles 3D model export functionality   |
+| RecordingManager.ts     | Manages 3D scene recording              |
+| SceneManager.ts         | Manages 3D scene setup and rendering    |
+| SceneModelManager.ts    | Manages models within scenes            |
+| ViewHelperManager.ts    | Provides view helpers for 3D navigation |
+| constants.ts            | Constants for 3D loading                |
+| exportMenuHelper.ts     | Helper for export menu functionality    |
+| interfaces.ts           | TypeScript interfaces for 3D loading    |
+| loader/FastPLYLoader.ts | Fast PLY format loader implementation   |
 
 ## Extension Development
 
