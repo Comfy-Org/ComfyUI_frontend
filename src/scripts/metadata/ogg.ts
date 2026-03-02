@@ -1,4 +1,6 @@
-export async function getOggMetadata(file: File) {
+import type { ComfyMetadata } from '@/types/metadataTypes'
+
+export async function getOggMetadata(file: File): Promise<ComfyMetadata> {
   // Read the entire file into memory (Opus files are generally small enough)
   const arrayBuffer = await file.arrayBuffer()
   const data = new Uint8Array(arrayBuffer)
@@ -82,7 +84,10 @@ function extractOpusTags(data: Uint8Array, decoder: TextDecoder): Uint8Array[] {
   return segments
 }
 
-function parseVorbisComments(packetData: Uint8Array, decoder: TextDecoder) {
+function parseVorbisComments(
+  packetData: Uint8Array,
+  decoder: TextDecoder
+): ComfyMetadata {
   let readIndex = 8 // Skip 'OpusTags' magic string (8 bytes)
   const packetView = new DataView(
     packetData.buffer,
@@ -111,7 +116,7 @@ function parseVorbisComments(packetData: Uint8Array, decoder: TextDecoder) {
   const userCommentListLength = packetView.getUint32(readIndex, true)
   readIndex += 4
 
-  let prompt, workflow
+  const result: ComfyMetadata = {}
   for (let i = 0; i < userCommentListLength; i++) {
     // Bounds check: ensure comment length field is within packet
     if (readIndex + 4 > packetData.length) break
@@ -135,21 +140,21 @@ function parseVorbisComments(packetData: Uint8Array, decoder: TextDecoder) {
       const value = text.substring(separatorIndex + 1)
       if (key === 'prompt') {
         try {
-          prompt = JSON.parse(value)
+          result.prompt = JSON.parse(value)
         } catch (e) {
           console.warn('Ogg metadata parsing failed for prompt:', e)
         }
       } else if (key === 'workflow') {
         try {
-          workflow = JSON.parse(value)
+          result.workflow = JSON.parse(value)
         } catch (e) {
           console.warn('Ogg metadata parsing failed for workflow:', e)
         }
       }
     }
 
-    if (prompt !== undefined && workflow !== undefined) break
+    if (result.prompt !== undefined && result.workflow !== undefined) break
   }
 
-  return { prompt, workflow }
+  return result
 }
