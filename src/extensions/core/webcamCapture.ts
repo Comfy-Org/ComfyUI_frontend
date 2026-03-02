@@ -24,9 +24,11 @@ app.registerExtension({
         const video = document.createElement('video')
         video.style.height = video.style.width = '100%'
 
+        let stream: MediaStream | null = null
+
         const loadVideo = async () => {
           try {
-            const stream = await navigator.mediaDevices.getUserMedia({
+            stream = await navigator.mediaDevices.getUserMedia({
               video: true,
               audio: false
             })
@@ -59,6 +61,13 @@ app.registerExtension({
 
             container.replaceChildren(label)
           }
+        }
+
+        const originalOnRemoved = node.onRemoved
+        node.onRemoved = function () {
+          stream?.getTracks().forEach((track) => track.stop())
+          stream = null
+          originalOnRemoved?.call(this)
         }
 
         loadVideo()
