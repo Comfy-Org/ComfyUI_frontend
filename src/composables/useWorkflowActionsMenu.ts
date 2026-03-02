@@ -13,6 +13,7 @@ import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCommandStore } from '@/stores/commandStore'
 import { useMenuItemStore } from '@/stores/menuItemStore'
 import { useSubgraphStore } from '@/stores/subgraphStore'
+import { useAppMode } from '@/composables/useAppMode'
 import type {
   WorkflowMenuAction,
   WorkflowMenuItem
@@ -52,6 +53,7 @@ export function useWorkflowActionsMenu(
   const menuItemStore = useMenuItemStore()
   const canvasStore = useCanvasStore()
   const { flags } = useFeatureFlags()
+  const { setMode } = useAppMode()
 
   const targetWorkflow = computed(
     () => workflow?.value ?? workflowStore.activeWorkflow
@@ -196,6 +198,17 @@ export function useWorkflowActionsMenu(
       visible: showAppModeItems,
       prependSeparator: true,
       isNew: !isLinearMode
+    })
+
+    addItem({
+      id: 'enter-builder-mode',
+      label: t('breadcrumbsMenu.enterBuilderMode'),
+      icon: 'icon-[lucide--hammer]',
+      command: async () => {
+        setMode('builder:select')
+      },
+      visible: showAppModeItems,
+      isNew: true
     })
 
     addItem({
