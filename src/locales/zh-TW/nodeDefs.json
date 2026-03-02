@@ -18154,6 +18154,68 @@
       }
     }
   },
+  "WanSCAILToVideo": {
+    "display_name": "WanSCAILToVideo",
+    "inputs": {
+      "batch_size": {
+        "name": "批次大小"
+      },
+      "clip_vision_output": {
+        "name": "clip_vision_output"
+      },
+      "height": {
+        "name": "高度"
+      },
+      "length": {
+        "name": "長度"
+      },
+      "negative": {
+        "name": "負向"
+      },
+      "pose_end": {
+        "name": "姿勢結束步驟",
+        "tooltip": "結束使用姿勢條件的步驟。"
+      },
+      "pose_start": {
+        "name": "姿勢起始步驟",
+        "tooltip": "開始使用姿勢條件的步驟。"
+      },
+      "pose_strength": {
+        "name": "姿勢強度",
+        "tooltip": "姿勢 latent 的強度。"
+      },
+      "pose_video": {
+        "name": "姿勢影片",
+        "tooltip": "用於姿勢條件的影片。將會縮小為主影片解析度的一半。"
+      },
+      "positive": {
+        "name": "正向"
+      },
+      "reference_image": {
+        "name": "參考圖片"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "寬度"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "正向",
+        "tooltip": null
+      },
+      "1": {
+        "name": "負向",
+        "tooltip": null
+      },
+      "2": {
+        "name": "latent",
+        "tooltip": "生成尺寸的空 latent。"
+      }
+    }
+  },
   "WanSoundImageToVideo": {
     "display_name": "萬聲圖像轉影片",
     "inputs": {
