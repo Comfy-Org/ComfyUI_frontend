@@ -7,6 +7,7 @@ import type { Point, SerialisableGraph } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useWorkflowDraftStore } from '@/platform/workflow/persistence/stores/workflowDraftStore'
+import type { LinearData } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { syncLinearMode } from '@/platform/workflow/management/stores/comfyWorkflow'
 import {
   ComfyWorkflow,
@@ -25,11 +26,18 @@ import type { AppMode } from '@/composables/useAppMode'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
-import { appendJsonExt } from '@/utils/formatUtil'
+import { appendJsonExt, appendWorkflowJsonExt } from '@/utils/formatUtil'
 
 function linearModeToAppMode(linearMode: unknown): AppMode | null {
   if (typeof linearMode !== 'boolean') return null
   return linearMode ? 'app' : 'graph'
+}
+
+function graphHasOutputs(
+  graph: { extra?: Record<string, unknown> } | null | undefined
+): boolean {
+  const linearData = graph?.extra?.linearData as Partial<LinearData> | undefined
+  return Array.isArray(linearData?.outputs) && linearData.outputs.length > 0
 }
 
 export const useWorkflowService = () => {
@@ -108,7 +116,10 @@ export const useWorkflowService = () => {
     const newFilename = options.filename ?? (await workflow.promptSave())
     if (!newFilename) return false
 
-    const newPath = workflow.directory + '/' + appendJsonExt(newFilename)
+    const newPath =
+      workflow.directory +
+      '/' +
+      appendWorkflowJsonExt(newFilename, graphHasOutputs(app.rootGraph))
     const existingWorkflow = workflowStore.getWorkflowByPath(newPath)
 
     const isSelfOverwrite =
@@ -132,7 +143,7 @@ export const useWorkflowService = () => {
 
     if (options.initialMode) workflow.initialMode = options.initialMode
 
-    syncLinearMode(workflow, [app.rootGraph], { flushLinearData: true })
+    syncLinearMode(workflow, [app.rootGraph])
     workflow.changeTracker?.checkState()
 
     if (isSelfOverwrite) {
@@ -156,8 +167,41 @@ export const useWorkflowService = () => {
     if (workflow.isTemporary) {
       await saveWorkflowAs(workflow)
     } else {
-      syncLinearMode(workflow, [app.rootGraph], { flushLinearData: true })
+      syncLinearMode(workflow, [app.rootGraph])
       workflow.changeTracker?.checkState()
+
+      const isApp = graphHasOutputs(app.rootGraph)
+      const expectedPath =
+        workflow.directory +
+        '/' +
+        appendWorkflowJsonExt(workflow.filename, isApp)
+      if (workflow.path !== expectedPath) {
+        const existing = workflowStore.getWorkflowByPath(expectedPath)
+        if (existing && !existing.isTemporary) {
+          const confirmed = await dialogService.confirm({
+            title: t('sideToolbar.workflowTab.confirmOverwriteTitle'),
+            type: 'overwrite',
+            message: t('sideToolbar.workflowTab.confirmOverwrite'),
+            itemList: [expectedPath]
+          })
+          if (confirmed !== true) {
+            await workflowStore.saveWorkflow(workflow)
+            return
+          }
+          await deleteWorkflow(existing, true)
+        }
+        await renameWorkflow(workflow, expectedPath)
+        toastStore.add({
+          severity: 'info',
+          summary: t(
+            isApp
+              ? 'workflowService.savedAsApp'
+              : 'workflowService.savedAsWorkflow'
+          ),
+          life: 3000
+        })
+      }
+
       await workflowStore.saveWorkflow(workflow)
     }
   }

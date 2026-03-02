@@ -54,15 +54,22 @@ import Popover from '@/components/ui/Popover.vue'
 import { useAppModeStore } from '@/stores/appModeStore'
 import { cn } from '@/utils/tailwindUtil'
 
-import { useBuilderSave } from './useBuilderSave'
+import { useErrorHandling } from '@/composables/useErrorHandling'
+import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 
 const { t } = useI18n()
 const appModeStore = useAppModeStore()
 const { hasOutputs } = storeToRefs(appModeStore)
-const { setSaving } = useBuilderSave()
+const workflowService = useWorkflowService()
+const workflowStore = useWorkflowStore()
+const { toastErrorHandler } = useErrorHandling()
 
-function onSave(close: () => void) {
-  setSaving(true)
+async function onSave(close: () => void) {
+  const workflow = workflowStore.activeWorkflow
+  if (workflow) {
+    await workflowService.saveWorkflow(workflow).catch(toastErrorHandler)
+  }
   close()
 }
 
