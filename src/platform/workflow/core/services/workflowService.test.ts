@@ -564,11 +564,9 @@ describe('useWorkflowService', () => {
       return workflow as LoadedComfyWorkflow
     }
 
-    it('appends .app.json extension when graph has outputs', async () => {
+    it('appends .app.json extension when initialMode is app', async () => {
       const workflow = createTemporaryWorkflow()
-      vi.mocked(app.rootGraph).extra = {
-        linearData: { inputs: [], outputs: [1] }
-      }
+      workflow.initialMode = 'app'
 
       await service.saveWorkflowAs(workflow, { filename: 'my-workflow' })
 
@@ -578,11 +576,9 @@ describe('useWorkflowService', () => {
       )
     })
 
-    it('appends .json extension when graph has no outputs', async () => {
+    it('appends .json extension when initialMode is graph', async () => {
       const workflow = createTemporaryWorkflow()
-      vi.mocked(app.rootGraph).extra = {
-        linearData: { inputs: [], outputs: [] }
-      }
+      workflow.initialMode = 'graph'
 
       await service.saveWorkflowAs(workflow, { filename: 'my-workflow' })
 
@@ -592,9 +588,8 @@ describe('useWorkflowService', () => {
       )
     })
 
-    it('appends .json extension when graph has no linearData', async () => {
+    it('appends .json extension when initialMode is not set', async () => {
       const workflow = createTemporaryWorkflow()
-      vi.mocked(app.rootGraph).extra = {}
 
       await service.saveWorkflowAs(workflow, { filename: 'my-workflow' })
 
@@ -630,11 +625,9 @@ describe('useWorkflowService', () => {
       return workflow as LoadedComfyWorkflow
     }
 
-    it('renames .json to .app.json when graph has outputs', async () => {
+    it('renames .json to .app.json when initialMode is app', async () => {
       const workflow = createSaveableWorkflow('workflows/test.json')
-      vi.mocked(app.rootGraph).extra = {
-        linearData: { inputs: [], outputs: [1] }
-      }
+      workflow.initialMode = 'app'
 
       await service.saveWorkflow(workflow)
 
@@ -645,11 +638,9 @@ describe('useWorkflowService', () => {
       expect(workflowStore.saveWorkflow).toHaveBeenCalledWith(workflow)
     })
 
-    it('renames .app.json to .json when graph has no outputs', async () => {
+    it('renames .app.json to .json when initialMode is graph', async () => {
       const workflow = createSaveableWorkflow('workflows/test.app.json')
-      vi.mocked(app.rootGraph).extra = {
-        linearData: { inputs: [], outputs: [] }
-      }
+      workflow.initialMode = 'graph'
 
       await service.saveWorkflow(workflow)
 
@@ -662,9 +653,7 @@ describe('useWorkflowService', () => {
 
     it('does not rename when extension already matches', async () => {
       const workflow = createSaveableWorkflow('workflows/test.app.json')
-      vi.mocked(app.rootGraph).extra = {
-        linearData: { inputs: [], outputs: [1] }
-      }
+      workflow.initialMode = 'app'
 
       await service.saveWorkflow(workflow)
 
@@ -676,9 +665,7 @@ describe('useWorkflowService', () => {
       const addSpy = vi.spyOn(toastStore, 'add')
 
       const workflow = createSaveableWorkflow('workflows/test.json')
-      vi.mocked(app.rootGraph).extra = {
-        linearData: { inputs: [], outputs: [1] }
-      }
+      workflow.initialMode = 'app'
 
       await service.saveWorkflow(workflow)
 
@@ -691,18 +678,15 @@ describe('useWorkflowService', () => {
       const addSpy = vi.spyOn(toastStore, 'add')
 
       const workflow = createSaveableWorkflow('workflows/test.app.json')
-      vi.mocked(app.rootGraph).extra = {
-        linearData: { inputs: [], outputs: [1] }
-      }
+      workflow.initialMode = 'app'
 
       await service.saveWorkflow(workflow)
 
       expect(addSpy).not.toHaveBeenCalled()
     })
 
-    it('does not rename when graph has no linearData', async () => {
+    it('does not rename when initialMode is not set', async () => {
       const workflow = createSaveableWorkflow('workflows/test.json')
-      vi.mocked(app.rootGraph).extra = {}
 
       await service.saveWorkflow(workflow)
 
@@ -711,9 +695,7 @@ describe('useWorkflowService', () => {
 
     it('prompts for overwrite when target path already exists', async () => {
       const workflow = createSaveableWorkflow('workflows/test.json')
-      vi.mocked(app.rootGraph).extra = {
-        linearData: { inputs: [], outputs: [1] }
-      }
+      workflow.initialMode = 'app'
 
       const existing = createSaveableWorkflow('workflows/test.app.json')
       vi.spyOn(workflowStore, 'getWorkflowByPath').mockReturnValue(existing)
@@ -732,9 +714,7 @@ describe('useWorkflowService', () => {
 
     it('saves without renaming when user declines overwrite', async () => {
       const workflow = createSaveableWorkflow('workflows/test.json')
-      vi.mocked(app.rootGraph).extra = {
-        linearData: { inputs: [], outputs: [1] }
-      }
+      workflow.initialMode = 'app'
 
       const existing = createSaveableWorkflow('workflows/test.app.json')
       vi.spyOn(workflowStore, 'getWorkflowByPath').mockReturnValue(existing)

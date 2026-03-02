@@ -7,7 +7,6 @@ import type { Point, SerialisableGraph } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useWorkflowDraftStore } from '@/platform/workflow/persistence/stores/workflowDraftStore'
-import type { LinearData } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { syncLinearMode } from '@/platform/workflow/management/stores/comfyWorkflow'
 import {
   ComfyWorkflow,
@@ -31,13 +30,6 @@ import { appendJsonExt, appendWorkflowJsonExt } from '@/utils/formatUtil'
 function linearModeToAppMode(linearMode: unknown): AppMode | null {
   if (typeof linearMode !== 'boolean') return null
   return linearMode ? 'app' : 'graph'
-}
-
-function graphHasOutputs(
-  graph: { extra?: Record<string, unknown> } | null | undefined
-): boolean {
-  const linearData = graph?.extra?.linearData as Partial<LinearData> | undefined
-  return Array.isArray(linearData?.outputs) && linearData.outputs.length > 0
 }
 
 export const useWorkflowService = () => {
@@ -120,15 +112,14 @@ export const useWorkflowService = () => {
    */
   const saveWorkflowAs = async (
     workflow: ComfyWorkflow,
-    options: { filename?: string; initialMode?: AppMode } = {}
+    options: { filename?: string } = {}
   ): Promise<boolean> => {
     const newFilename = options.filename ?? (await workflow.promptSave())
     if (!newFilename) return false
 
+    const isApp = workflow.initialMode === 'app'
     const newPath =
-      workflow.directory +
-      '/' +
-      appendWorkflowJsonExt(newFilename, graphHasOutputs(app.rootGraph))
+      workflow.directory + '/' + appendWorkflowJsonExt(newFilename, isApp)
     const existingWorkflow = workflowStore.getWorkflowByPath(newPath)
 
     const isSelfOverwrite =
@@ -142,8 +133,6 @@ export const useWorkflowService = () => {
         if (!deleted) return false
       }
     }
-
-    if (options.initialMode) workflow.initialMode = options.initialMode
 
     syncLinearMode(workflow, [app.rootGraph])
     workflow.changeTracker?.checkState()
@@ -172,7 +161,7 @@ export const useWorkflowService = () => {
       syncLinearMode(workflow, [app.rootGraph])
       workflow.changeTracker?.checkState()
 
-      const isApp = graphHasOutputs(app.rootGraph)
+      const isApp = workflow.initialMode === 'app'
       const expectedPath =
         workflow.directory +
         '/' +
