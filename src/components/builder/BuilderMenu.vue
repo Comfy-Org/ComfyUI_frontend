@@ -51,12 +51,11 @@ import { storeToRefs } from 'pinia'
 import { useI18n } from 'vue-i18n'
 
 import Popover from '@/components/ui/Popover.vue'
-import { useAppModeStore } from '@/stores/appModeStore'
-import { cn } from '@/utils/tailwindUtil'
-
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { useAppModeStore } from '@/stores/appModeStore'
+import { cn } from '@/utils/tailwindUtil'
 
 const { t } = useI18n()
 const appModeStore = useAppModeStore()
@@ -67,10 +66,13 @@ const { toastErrorHandler } = useErrorHandling()
 
 async function onSave(close: () => void) {
   const workflow = workflowStore.activeWorkflow
-  if (workflow) {
-    await workflowService.saveWorkflow(workflow).catch(toastErrorHandler)
+  if (!workflow) return
+  try {
+    await workflowService.saveWorkflow(workflow)
+    close()
+  } catch (error) {
+    toastErrorHandler(error)
   }
-  close()
 }
 
 function onExitBuilder(close: () => void) {

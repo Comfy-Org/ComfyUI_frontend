@@ -68,6 +68,7 @@
 </template>
 
 <script setup lang="ts">
+import { storeToRefs } from 'pinia'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -76,12 +77,11 @@ import type { AppMode } from '@/composables/useAppMode'
 import { useAppModeStore } from '@/stores/appModeStore'
 import { cn } from '@/utils/tailwindUtil'
 
-import { useAppSetDefaultView } from './useAppSetDefaultView'
 import ConnectOutputPopover from './ConnectOutputPopover.vue'
 import StepBadge from './StepBadge.vue'
 import StepLabel from './StepLabel.vue'
 import type { BuilderToolbarStep } from './types'
-import { storeToRefs } from 'pinia'
+import { useAppSetDefaultView } from './useAppSetDefaultView'
 
 const { t } = useI18n()
 const { mode, setMode } = useAppMode()

@@ -52,6 +52,15 @@ export const useWorkflowService = () => {
   const executionErrorStore = useExecutionErrorStore()
   const workflowDraftStore = useWorkflowDraftStore()
 
+  function confirmOverwrite(targetPath: string) {
+    return dialogService.confirm({
+      title: t('sideToolbar.workflowTab.confirmOverwriteTitle'),
+      type: 'overwrite',
+      message: t('sideToolbar.workflowTab.confirmOverwrite'),
+      itemList: [targetPath]
+    })
+  }
+
   async function getFilename(defaultName: string): Promise<string | null> {
     if (settingStore.get('Comfy.PromptFilename')) {
       let filename = await dialogService.prompt({
@@ -126,14 +135,7 @@ export const useWorkflowService = () => {
       existingWorkflow?.path === workflow.path && !existingWorkflow?.isTemporary
 
     if (existingWorkflow && !existingWorkflow.isTemporary) {
-      const res = await dialogService.confirm({
-        title: t('sideToolbar.workflowTab.confirmOverwriteTitle'),
-        type: 'overwrite',
-        message: t('sideToolbar.workflowTab.confirmOverwrite'),
-        itemList: [newPath]
-      })
-
-      if (res !== true) return false
+      if ((await confirmOverwrite(newPath)) !== true) return false
 
       if (!isSelfOverwrite) {
         const deleted = await deleteWorkflow(existingWorkflow, true)
@@ -178,13 +180,7 @@ export const useWorkflowService = () => {
       if (workflow.path !== expectedPath) {
         const existing = workflowStore.getWorkflowByPath(expectedPath)
         if (existing && !existing.isTemporary) {
-          const confirmed = await dialogService.confirm({
-            title: t('sideToolbar.workflowTab.confirmOverwriteTitle'),
-            type: 'overwrite',
-            message: t('sideToolbar.workflowTab.confirmOverwrite'),
-            itemList: [expectedPath]
-          })
-          if (confirmed !== true) {
+          if ((await confirmOverwrite(expectedPath)) !== true) {
             await workflowStore.saveWorkflow(workflow)
             return
           }

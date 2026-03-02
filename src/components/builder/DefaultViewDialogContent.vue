@@ -4,7 +4,6 @@
       {{ $t('builderToolbar.defaultViewTitle') }}
     </template>
 
-    <!-- Default view selector -->
     <div class="flex flex-col gap-2">
       <label class="text-sm text-muted-foreground">
         {{ $t('builderToolbar.defaultViewLabel') }}
