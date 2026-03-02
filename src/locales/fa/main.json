@@ -1031,6 +1031,7 @@
     "or": "یا",
     "output": "خروجی",
     "overwrite": "جایگزینی",
+    "partner": "همکار",
     "playPause": "پخش/توقف",
     "playRecording": "پخش ضبط",
     "playbackSpeed": "سرعت پخش",
@@ -1041,6 +1042,7 @@
     "progressCountOf": "از",
     "queued": "در صف",
     "ready": "آماده",
+    "recents": "اخیراً",
     "reconnected": "اتصال مجدد برقرار شد",
     "reconnecting": "در حال اتصال مجدد",
     "refresh": "بازنشانی",
@@ -2641,8 +2643,16 @@
     "nodeLibrary": "کتابخانه Node",
     "nodeLibraryTab": {
       "allNodes": "همه nodeها",
+      "blueprints": "بلوپرینت‌ها",
       "custom": "سفارشی",
       "essentials": "ضروریات",
+      "filter": "فیلتر",
+      "filterOptions": {
+        "blueprints": "بلوپرینت‌ها",
+        "comfyNodes": "گره‌های Comfy",
+        "extensions": "افزونه‌ها",
+        "partnerNodes": "گره‌های همکار"
+      },
       "groupBy": "گروه‌بندی بر اساس",
       "groupStrategies": {
         "category": "دسته‌بندی",
@@ -2652,10 +2662,18 @@
         "source": "منبع",
         "sourceDesc": "گروه‌بندی بر اساس نوع منبع (Core، Custom، API)"
       },
+      "noBookmarkedNodes": "هنوز مورد علاقه‌ای وجود ندارد",
       "resetView": "بازنشانی نمای پیش‌فرض",
       "sections": {
+        "bookmarked": "نشان‌شده‌ها",
+        "comfyBlueprints": "بلوپرینت‌های Comfy",
+        "comfyNodes": "گره‌های Comfy",
+        "extensions": "افزونه‌ها",
         "favoriteNode": "گره مورد علاقه",
         "favorites": "علاقه‌مندی‌ها",
+        "myBlueprints": "بلوپرینت‌های من",
+        "partnerNodes": "گره‌های همکار",
+        "subgraphBlueprints": "بلوپرینت‌های زیرگراف",
         "unfavoriteNode": "حذف از علاقه‌مندی‌ها"
       },
       "sortBy": {
@@ -2899,6 +2917,7 @@
     "resubscribe": "تمدید اشتراک",
     "resubscribeSuccess": "اشتراک با موفقیت فعال شد",
     "resubscribeTo": "تمدید اشتراک {plan}",
+    "subscribeForMore": "ارتقاء",
     "subscribeNow": "هم‌اکنون اشتراک بگیرید",
     "subscribeTo": "اشتراک در {plan}",
     "subscribeToComfyCloud": "اشتراک در Comfy Cloud",
@@ -2929,6 +2948,7 @@
     "upgrade": "ارتقا",
     "upgradePlan": "ارتقا طرح",
     "upgradeTo": "ارتقا به {plan}",
+    "upgradeToAddCredits": "برای افزودن اعتبار ارتقاء دهید",
     "usdPerMonth": "دلار آمریکا / ماه",
     "usdPerMonthPerMember": "دلار آمریکا / ماه / هر عضو",
     "videoEstimateExplanation": "این تخمین‌ها بر اساس قالب Wan 2.2 Image-to-Video با تنظیمات پیش‌فرض (۵ ثانیه، ۶۴۰×۶۴۰، ۱۶ فریم بر ثانیه، ۴ مرحله نمونه‌گیری) است.",

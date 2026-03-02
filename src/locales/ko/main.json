@@ -1031,6 +1031,7 @@
     "or": "또는",
     "output": "출력",
     "overwrite": "덮어쓰기",
+    "partner": "파트너",
     "playPause": "재생/일시정지",
     "playRecording": "녹음 재생",
     "playbackSpeed": "재생 속도",
@@ -1041,6 +1042,7 @@
     "progressCountOf": "중",
     "queued": "대기 중",
     "ready": "준비됨",
+    "recents": "최근 항목",
     "reconnected": "재연결됨",
     "reconnecting": "재연결 중",
     "refresh": "새로 고침",
@@ -2629,8 +2631,16 @@
     "nodeLibrary": "노드 라이브러리",
     "nodeLibraryTab": {
       "allNodes": "모든 노드",
+      "blueprints": "블루프린트",
       "custom": "사용자 정의",
       "essentials": "필수",
+      "filter": "필터",
+      "filterOptions": {
+        "blueprints": "블루프린트",
+        "comfyNodes": "Comfy 노드",
+        "extensions": "확장 프로그램",
+        "partnerNodes": "파트너 노드"
+      },
       "groupBy": "그룹 기준",
       "groupStrategies": {
         "category": "카테고리",
@@ -2640,10 +2650,18 @@
         "source": "소스",
         "sourceDesc": "소스 유형(Core, Custom, API)별로 그룹화"
       },
+      "noBookmarkedNodes": "아직 즐겨찾기가 없습니다",
       "resetView": "기본 보기로 재설정",
       "sections": {
+        "bookmarked": "즐겨찾기",
+        "comfyBlueprints": "Comfy 블루프린트",
+        "comfyNodes": "Comfy 노드",
+        "extensions": "확장 프로그램",
         "favoriteNode": "즐겨찾는 노드",
         "favorites": "즐겨찾기",
+        "myBlueprints": "내 블루프린트",
+        "partnerNodes": "파트너 노드",
+        "subgraphBlueprints": "서브그래프 블루프린트",
         "unfavoriteNode": "즐겨찾기 해제 노드"
       },
       "sortBy": {
@@ -2887,6 +2905,7 @@
     "resubscribe": "다시 구독하기",
     "resubscribeSuccess": "구독이 성공적으로 재활성화되었습니다",
     "resubscribeTo": "{plan} 다시 구독하기",
+    "subscribeForMore": "업그레이드",
     "subscribeNow": "지금 구독하기",
     "subscribeTo": "{plan} 구독하기",
     "subscribeToComfyCloud": "Comfy Cloud 구독",
@@ -2917,6 +2936,7 @@
     "upgrade": "업그레이드",
     "upgradePlan": "플랜 업그레이드",
     "upgradeTo": "{plan}로 업그레이드",
+    "upgradeToAddCredits": "크레딧 추가를 위해 업그레이드하세요",
     "usdPerMonth": "USD / 월",
     "usdPerMonthPerMember": "USD / 월 / 멤버",
     "videoEstimateExplanation": "이 추정치는 기본 설정(5초, 640x640, 16fps, 4단계 샘플링)을 사용한 Wan 2.2 이미지-투-비디오 템플릿을 기준으로 합니다.",
