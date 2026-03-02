@@ -309,12 +309,9 @@ describe('getOggMetadata', () => {
           [createBuffer()],
           `test_${name.replace(/\s+/g, '_')}.ogg`
         )
-        await expect(
-          getOggMetadata(file).then((result) => {
-            expect(result.prompt).toBeUndefined()
-            expect(result.workflow).toBeUndefined()
-          })
-        ).resolves.not.toThrow()
+        const result = await getOggMetadata(file)
+        expect(result.prompt).toBeUndefined()
+        expect(result.workflow).toBeUndefined()
       })
     }
   })
@@ -372,7 +369,7 @@ describe('getOggMetadata', () => {
           `test_${name.replace(/\s+/g, '_')}.ogg`
         )
         await expect(getOggMetadata(file)).resolves.toSatisfy((result) => {
-          if (expectedPrompt) {
+          if (expectedPrompt !== undefined) {
             expect(result.prompt).toEqual(expectedPrompt)
           } else {
             expect(result.prompt).toBeUndefined()
