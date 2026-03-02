@@ -147,7 +147,7 @@ it('should subscribe to logs API', () => {
 })
 ```
 
-## Mocking Lodash Functions
+## Mocking Utility Functions
 
 Mocking utility functions like debounce:
 

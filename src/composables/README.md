@@ -85,7 +85,7 @@ The following diagram shows how composables fit into the application architectur
 
 ## Composable Categories
 
-The following tables list ALL composables in the system as of 2026-01-30:
+The following tables list core composables in the system as of 2026-03-02. For a complete list, browse the subdirectories in this folder:
 
 ### Auth
 
@@ -236,7 +236,6 @@ General-purpose composables:
 | `useErrorHandling`          | Centralized error handling                                |
 | `useGlobalLitegraph`        | Access to global LiteGraph instance                       |
 | `useLitegraphSettings`      | Manages LiteGraph configuration                           |
-| `useManagerQueue`           | Handles manager queue operations                          |
 | `usePaste`                  | Provides paste functionality                              |
 | `usePragmaticDragAndDrop`   | Integrates Atlassian's drag-and-drop library              |
 | `useProgressFavicon`        | Updates favicon with progress indicator                   |
@@ -245,10 +244,6 @@ General-purpose composables:
 | `useServerLogs`             | Manages server log display                                |
 | `useTemplateWorkflows`      | Manages template workflow loading, selection, and display |
 | `useTreeExpansion`          | Handles tree node expansion state                         |
-
-| `useWorkflowAutoSave` | Handles automatic workflow saving |
-| `useWorkflowPersistence` | Manages workflow persistence |
-| `useWorkflowValidation` | Validates workflow integrity |
 
 ## Usage Guidelines
 
