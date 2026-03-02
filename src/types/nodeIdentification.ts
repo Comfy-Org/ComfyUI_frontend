@@ -161,7 +161,10 @@ export function compareExecutionId(
   const idA = parse(a)
   const idB = parse(b)
   for (let i = 0; i < Math.max(idA.length, idB.length); i++) {
-    const diff = (idA[i] ?? 0) - (idB[i] ?? 0)
+    const segA = idA[i] ?? 0
+    const segB = idB[i] ?? 0
+    const diff =
+      (Number.isNaN(segA) ? 0 : segA) - (Number.isNaN(segB) ? 0 : segB)
     if (diff !== 0) return diff
   }
   return 0
