@@ -15,7 +15,7 @@ useExtensionService().registerExtension({
 
     for (const widget of node.widgets ?? []) {
       if (HIDDEN_WIDGETS.has(widget.name)) {
-        widget.hidden = true
+        widget.options.hidden = true
       }
     }
   }
