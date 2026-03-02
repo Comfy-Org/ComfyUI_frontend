@@ -1031,6 +1031,7 @@
     "or": "o",
     "output": "Salida",
     "overwrite": "Sobrescribir",
+    "partner": "Socio",
     "playPause": "Reproducir/Pausar",
     "playRecording": "Reproducir grabación",
     "playbackSpeed": "Velocidad de reproducción",
@@ -1041,6 +1042,7 @@
     "progressCountOf": "de",
     "queued": "En cola",
     "ready": "Listo",
+    "recents": "Recientes",
     "reconnected": "Reconectado",
     "reconnecting": "Reconectando",
     "refresh": "Actualizar",
@@ -2629,8 +2631,16 @@
     "nodeLibrary": "Biblioteca de nodos",
     "nodeLibraryTab": {
       "allNodes": "Todos los nodos",
+      "blueprints": "Planos",
       "custom": "Personalizado",
       "essentials": "Esenciales",
+      "filter": "Filtrar",
+      "filterOptions": {
+        "blueprints": "Planos",
+        "comfyNodes": "Nodos Comfy",
+        "extensions": "Extensiones",
+        "partnerNodes": "Nodos de socios"
+      },
       "groupBy": "Agrupar por",
       "groupStrategies": {
         "category": "Categoría",
@@ -2640,10 +2650,18 @@
         "source": "Fuente",
         "sourceDesc": "Agrupar por tipo de fuente (Core, Custom, API)"
       },
+      "noBookmarkedNodes": "Aún no hay favoritos",
       "resetView": "Restablecer vista a la predeterminada",
       "sections": {
+        "bookmarked": "Favoritos",
+        "comfyBlueprints": "Planos Comfy",
+        "comfyNodes": "Nodos Comfy",
+        "extensions": "Extensiones",
         "favoriteNode": "Nodo favorito",
         "favorites": "Favoritos",
+        "myBlueprints": "Mis planos",
+        "partnerNodes": "Nodos de socios",
+        "subgraphBlueprints": "Planos de subgráficos",
         "unfavoriteNode": "Quitar de favoritos"
       },
       "sortBy": {
@@ -2887,6 +2905,7 @@
     "resubscribe": "Volver a suscribirse",
     "resubscribeSuccess": "¡Suscripción reactivada correctamente!",
     "resubscribeTo": "Volver a suscribirse a {plan}",
+    "subscribeForMore": "Mejorar",
     "subscribeNow": "Suscribirse Ahora",
     "subscribeTo": "Suscribirse a {plan}",
     "subscribeToComfyCloud": "Suscribirse a Comfy Cloud",
@@ -2917,6 +2936,7 @@
     "upgrade": "MEJORAR",
     "upgradePlan": "Mejorar plan",
     "upgradeTo": "Mejorar a {plan}",
+    "upgradeToAddCredits": "Mejorar para añadir créditos",
     "usdPerMonth": "USD / mes",
     "usdPerMonthPerMember": "USD / mes / miembro",
     "videoEstimateExplanation": "Estas estimaciones se basan en la plantilla Wan 2.2 Imagen a Video usando la configuración predeterminada (5 segundos, 640x640, 16fps, muestreo de 4 pasos).",

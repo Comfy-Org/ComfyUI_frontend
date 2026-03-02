@@ -18154,6 +18154,68 @@
       }
     }
   },
+  "WanSCAILToVideo": {
+    "display_name": "WanSCAILToVideo",
+    "inputs": {
+      "batch_size": {
+        "name": "バッチサイズ"
+      },
+      "clip_vision_output": {
+        "name": "clip_vision_output"
+      },
+      "height": {
+        "name": "高さ"
+      },
+      "length": {
+        "name": "長さ"
+      },
+      "negative": {
+        "name": "negative"
+      },
+      "pose_end": {
+        "name": "ポーズ終了ステップ",
+        "tooltip": "ポーズ条件付けを使用する終了ステップ。"
+      },
+      "pose_start": {
+        "name": "ポーズ開始ステップ",
+        "tooltip": "ポーズ条件付けを使用する開始ステップ。"
+      },
+      "pose_strength": {
+        "name": "ポーズ強度",
+        "tooltip": "ポーズのlatentの強さ。"
+      },
+      "pose_video": {
+        "name": "ポーズビデオ",
+        "tooltip": "ポーズ条件付けに使用するビデオ。メインビデオの解像度の半分にダウンサンプリングされます。"
+      },
+      "positive": {
+        "name": "positive"
+      },
+      "reference_image": {
+        "name": "参照画像"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "幅"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": null
+      },
+      "1": {
+        "name": "negative",
+        "tooltip": null
+      },
+      "2": {
+        "name": "latent",
+        "tooltip": "生成サイズの空のlatent。"
+      }
+    }
+  },
   "WanSoundImageToVideo": {
     "display_name": "WanSoundImageToVideo",
     "inputs": {
