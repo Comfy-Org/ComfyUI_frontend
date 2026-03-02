@@ -38,7 +38,7 @@ function extractOpusTags(data: Uint8Array, decoder: TextDecoder): Uint8Array[] {
   let offset = 0
   let inOpusTags = false
 
-  while (offset + OGG_HEADER_SIZE < data.length) {
+  while (offset + OGG_HEADER_SIZE <= data.length) {
     const pageSignature = decoder.decode(data.subarray(offset, offset + 4))
     if (pageSignature !== 'OggS') break
 
