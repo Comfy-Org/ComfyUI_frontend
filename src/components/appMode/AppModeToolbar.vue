@@ -9,11 +9,13 @@ import { useCommandStore } from '@/stores/commandStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { cn } from '@/utils/tailwindUtil'
 import { useAppMode } from '@/composables/useAppMode'
+import { useAppModeStore } from '@/stores/appModeStore'
 
 const { t } = useI18n()
 const commandStore = useCommandStore()
 const workspaceStore = useWorkspaceStore()
-const { enableAppBuilder, setMode } = useAppMode()
+const { enableAppBuilder } = useAppMode()
+const { enterBuilder } = useAppModeStore()
 const tooltipOptions = { showDelay: 300, hideDelay: 300 }
 
 const isAssetsActive = computed(
@@ -22,10 +24,6 @@ const isAssetsActive = computed(
 const isWorkflowsActive = computed(
   () => workspaceStore.sidebarTab.activeSidebarTab?.id === 'workflows'
 )
-
-function enterBuilderMode() {
-  setMode('builder:select')
-}
 
 function openAssets() {
   void commandStore.execute('Workspace.ToggleSidebarTab.assets')
@@ -75,7 +73,7 @@ function openTemplates() {
       size="unset"
       :aria-label="t('linearMode.appModeToolbar.appBuilder')"
       class="size-10 rounded-lg"
-      @click="enterBuilderMode"
+      @click="enterBuilder"
     >
       <i class="icon-[lucide--hammer] size-4" />
     </Button>

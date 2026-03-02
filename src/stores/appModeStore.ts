@@ -66,6 +66,14 @@ export const useAppModeStore = defineStore('appMode', () => {
     (inSelect) => (getCanvas().read_only = inSelect)
   )
 
+  function enterBuilder() {
+    setMode(
+      mode.value === 'app' && hasOutputs.value
+        ? 'builder:arrange'
+        : 'builder:select'
+    )
+  }
+
   async function exitBuilder() {
     const workflow = workflowStore.activeWorkflow
     if (workflow) workflow.dirtyLinearData = null
@@ -74,6 +82,7 @@ export const useAppModeStore = defineStore('appMode', () => {
   }
 
   return {
+    enterBuilder,
     exitBuilder,
     hasOutputs,
     flushSelections,
