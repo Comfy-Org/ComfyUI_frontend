@@ -71,6 +71,8 @@ function sidePanelMinSize(isBuilder: boolean, isHidden: boolean) {
   return SIDEBAR_MIN_SIZE
 }
 
+const TYPEFORM_WIDGET_ID = 'gmVqFi8l'
+
 const bottomLeftRef = useTemplateRef('bottomLeftRef')
 const bottomRightRef = useTemplateRef('bottomRightRef')
 const linearWorkflowRef = useTemplateRef('linearWorkflowRef')
@@ -104,7 +106,10 @@ const linearWorkflowRef = useTemplateRef('linearWorkflowRef')
           <ModeToggle class="m-2" />
         </div>
         <div v-text="t('linearMode.beta')" />
-        <TypeformPopoverButton data-tf-widget="gmVqFi8l" class="mx-2" />
+        <TypeformPopoverButton
+          :data-tf-widget="TYPEFORM_WIDGET_ID"
+          class="mx-2"
+        />
       </div>
     </div>
     <Splitter
@@ -150,34 +155,20 @@ const linearWorkflowRef = useTemplateRef('linearWorkflowRef')
       <SplitterPanel
         id="linearCenterPanel"
         :size="isArrangeMode ? CENTER_PANEL_SIZE : 98"
-        class="flex flex-col min-w-0 gap-4 px-10 pt-8 pb-4 relative text-muted-foreground outline-none"
+        class="flex flex-col min-w-0 gap-4 relative text-muted-foreground outline-none"
       >
         <LinearProgressBar
           class="absolute top-0 left-0 w-[calc(100%+16px)] z-21"
         />
-        <LinearPreview :run-button-click="linearWorkflowRef?.runButtonClick" />
+        <LinearPreview
+          :run-button-click="linearWorkflowRef?.runButtonClick"
+          :typeform-widget-id="TYPEFORM_WIDGET_ID"
+        />
         <div class="absolute z-21 top-4 left-4">
           <AppModeToolbar v-if="!isBuilderMode" />
         </div>
         <div ref="bottomLeftRef" class="absolute z-20 bottom-7 left-4" />
         <div ref="bottomRightRef" class="absolute z-20 bottom-7 right-4" />
-        <div
-          :class="
-            cn(
-              'absolute z-20 bottom-4 text-base-foreground flex items-center gap-2',
-              sidebarOnLeft ? 'left-4' : 'right-4'
-            )
-          "
-        >
-          <TypeformPopoverButton
-            data-tf-widget="gmVqFi8l"
-            :align="sidebarOnLeft ? 'start' : 'end'"
-          />
-          <div class="flex flex-col text-sm text-muted-foreground">
-            <span>{{ t('linearMode.beta') }}</span>
-            <span>{{ t('linearMode.giveFeedback') }}</span>
-          </div>
-        </div>
       </SplitterPanel>
       <SplitterPanel
         v-if="hasRightPanel"
