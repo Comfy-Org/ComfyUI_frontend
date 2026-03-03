@@ -54,7 +54,7 @@ const { distanceX, isSwiping } = usePointerSwipe(sliderPaneRef, {
       return
     if (distanceX.value < 0)
       activeIndex.value = Math.max(activeIndex.value - 1, 0)
-    else activeIndex.value = Math.min(activeIndex.value + 1, 2)
+    else activeIndex.value = Math.min(activeIndex.value + 1, tabs.length)
   }
 })
 
@@ -187,7 +187,7 @@ const menuEntries = computed<MenuItem[]>(() => [
         :style="{ translate }"
       >
         <div class="overflow-y-auto contain-size h-full w-screen absolute">
-          <LinearControls mobile @navigate-assets="activeIndex = 1" />
+          <LinearControls mobile @navigate-assets="activeIndex = 2" />
         </div>
         <div
           class="w-screen absolute h-full bg-base-background left-[100vw] top-0 flex flex-col"
