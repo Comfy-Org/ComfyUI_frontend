@@ -20,7 +20,7 @@
         {{ t('templateWorkflows.publish.shortDescription') }}
       </label>
       <Textarea
-        v-model="wizard.wizardData.value.shortDescription"
+        v-model="wizardData.shortDescription"
         :class="errors.shortDescription && 'border-destructive-background'"
         :placeholder="
           t('templateWorkflows.publish.shortDescriptionPlaceholder')
@@ -35,7 +35,7 @@
         {{ errors.shortDescription }}
       </span>
       <span v-else class="text-xs text-muted">
-        {{ (wizard.wizardData.value.shortDescription ?? '').length }}/200
+        {{ (wizardData.shortDescription ?? '').length }}/200
       </span>
     </div>
 
@@ -44,7 +44,7 @@
         {{ t('templateWorkflows.publish.difficulty') }}
       </label>
       <SingleSelect
-        v-model="wizard.wizardData.value.difficulty"
+        v-model="wizardData.difficulty"
         :label="t('templateWorkflows.publish.difficulty')"
         :options="difficultyOptions"
       />
@@ -60,10 +60,7 @@
       <label class="text-sm font-medium">
         {{ t('templateWorkflows.publish.version') }}
       </label>
-      <InputText
-        v-model="wizard.wizardData.value.version"
-        placeholder="1.0.0"
-      />
+      <InputText v-model="wizardData.version" placeholder="1.0.0" />
     </div>
 
     <div class="flex flex-col gap-2">
@@ -71,12 +68,10 @@
         {{ t('templateWorkflows.publish.changelog') }}
       </label>
       <Textarea
-        :model-value="wizard.wizardData.value.changelog ?? ''"
+        :model-value="wizardData.changelog ?? ''"
         :placeholder="t('templateWorkflows.publish.changelogPlaceholder')"
         rows="2"
-        @update:model-value="
-          (value) => (wizard.wizardData.value.changelog = String(value))
-        "
+        @update:model-value="(value) => (wizardData.changelog = String(value))"
       />
     </div>
   </div>
@@ -95,13 +90,13 @@ import { usePublishTemplateWizard } from '../composables/usePublishTemplateWizar
 import { metadataSchema } from '../schemas/templateSchema'
 
 const { t } = useI18n()
-const wizard = usePublishTemplateWizard()
+const { wizardData } = usePublishTemplateWizard()
 const workflowStore = useWorkflowStore()
 
 const errors = ref<Record<string, string>>({})
 
 const selectedWorkflowPath = ref<string | undefined>(
-  wizard.wizardData.value.template?.name
+  wizardData.value.template?.name
 )
 
 const workflowOptions = computed(() =>
@@ -114,13 +109,13 @@ const workflowOptions = computed(() =>
 function onWorkflowSelected(path: string | undefined) {
   selectedWorkflowPath.value = path
   if (!path) {
-    wizard.wizardData.value.template = undefined
+    wizardData.value.template = undefined
     return
   }
   const wf = workflowStore.getWorkflowByPath(path)
   if (!wf) return
 
-  wizard.wizardData.value.template = {
+  wizardData.value.template = {
     name: wf.filename,
     title: wf.filename.replace(/\.json$/, ''),
     description: '',
@@ -138,11 +133,11 @@ const difficultyOptions = [
 function validate(): boolean {
   const map: Record<string, string> = {}
 
-  if (!wizard.wizardData.value.template) {
+  if (!wizardData.value.template) {
     map.template = 'Select a workflow to submit'
   }
 
-  const result = metadataSchema.safeParse(wizard.wizardData.value)
+  const result = metadataSchema.safeParse(wizardData.value)
   if (!result.success) {
     for (const issue of result.error.issues) {
       const key = issue.path.join('.')

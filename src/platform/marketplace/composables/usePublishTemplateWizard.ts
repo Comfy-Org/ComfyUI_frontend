@@ -7,12 +7,10 @@ import type { CreateTemplateRequest } from '../types/marketplace'
 function createPublishTemplateWizard() {
   const currentStep = ref(1)
   const wizardData = ref<Partial<CreateTemplateRequest>>({
-    version: '1.0.0'
+    version: '1.0.0',
+    gallery: []
   })
-  // Uploaded file URLs managed by the media step
-  const uploadedFiles = ref<string[]>([])
   const isSubmitting = ref(false)
-  const submitError = ref<string | null>(null)
 
   function goToStep(step: number) {
     if (step >= currentStep.value) return
@@ -33,15 +31,12 @@ function createPublishTemplateWizard() {
 
   function resetWizard() {
     currentStep.value = 1
-    wizardData.value = { version: '1.0.0' }
-    uploadedFiles.value = []
+    wizardData.value = { version: '1.0.0', gallery: [] }
     isSubmitting.value = false
-    submitError.value = null
   }
 
   async function submit() {
     isSubmitting.value = true
-    submitError.value = null
 
     try {
       const body: CreateTemplateRequest = {
@@ -49,15 +44,13 @@ function createPublishTemplateWizard() {
         shortDescription: wizardData.value.shortDescription!,
         difficulty: wizardData.value.difficulty!,
         categories: wizardData.value.categories,
+        gallery: wizardData.value.gallery,
         version: wizardData.value.version ?? '1.0.0',
         changelog: wizardData.value.changelog
       }
 
       const { id } = await createTemplate(body)
       await submitTemplate(id)
-    } catch (err) {
-      submitError.value =
-        err instanceof Error ? err.message : 'Submission failed'
     } finally {
       isSubmitting.value = false
     }
@@ -66,9 +59,7 @@ function createPublishTemplateWizard() {
   return {
     currentStep,
     wizardData,
-    uploadedFiles,
     isSubmitting,
-    submitError,
 
     goToStep,
     goToNextStep,

@@ -73,6 +73,7 @@ export const marketplaceTemplateSchema = z.object({
   author: authorInfoSchema,
   difficulty: difficultySchema,
   categories: z.array(z.string()).optional(),
+  gallery: z.array(z.string()).optional(),
   changelog: z.string().optional(),
   version: z.string().min(1),
   status: templateStatusSchema,
@@ -89,6 +90,7 @@ export const createTemplateRequestSchema = z.object({
   shortDescription: z.string().min(1).max(200),
   difficulty: difficultySchema,
   categories: z.array(z.string()).optional(),
+  gallery: z.array(z.string()).optional(),
   version: z.string().min(1),
   changelog: z.string().optional()
 })

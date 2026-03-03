@@ -1035,6 +1035,7 @@
       "description": "Description",
       "useCase": "Use Case",
       "license": "License",
+      "publishing": "Publishing",
       "requirements": "Requirements",
       "models": "Models",
       "customNodes": "Custom Nodes",
@@ -1053,7 +1054,15 @@
         "approved": "Approved",
         "rejected": "Rejected",
         "unpublished": "Unpublished"
-      }
+      },
+      "statusLabel": "Status",
+      "reviewFeedback": "Review Feedback",
+      "createdAt": "Created",
+      "updatedAt": "Updated",
+      "stats": "Statistics",
+      "downloads": "Downloads",
+      "favorites": "Favorites",
+      "rating": "Rating"
     },
     "publish": {
       "title": "Publish Template",

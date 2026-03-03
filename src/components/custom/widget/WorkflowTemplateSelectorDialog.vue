@@ -133,11 +133,8 @@
         @submitted="onPublishSubmitted"
       />
 
-      <MyTemplatesGrid
-        v-else-if="isMyTemplatesView"
-        :templates="myTemplates"
-        :loading="isMyTemplatesLoading"
-        @select="(template) => (selected = template)"
+      <MyTemplatesEmptyState
+        v-else-if="isMyTemplatesView && myTemplates.length === 0 && !isLoading"
         @create="startPublishing"
       />
 
@@ -223,7 +220,7 @@
             "
             @mouseenter="hoveredTemplate = template.name"
             @mouseleave="hoveredTemplate = null"
-            @click="selected = template"
+            @click="selectedTemplate = template"
           >
             <template #top>
               <CardTop ratio="square">
@@ -304,7 +301,20 @@
                   </div>
                 </template>
                 <template #bottom-right>
-                  <template v-if="template.tags && template.tags.length > 0">
+                  <StatusBadge
+                    v-if="findSubmission(template)"
+                    :label="
+                      t(
+                        `templateWorkflows.myTemplates.status.${findSubmission(template)!.status}`
+                      )
+                    "
+                    :severity="
+                      STATUS_SEVERITY[findSubmission(template)!.status]
+                    "
+                  />
+                  <template
+                    v-else-if="template.tags && template.tags.length > 0"
+                  >
                     <SquareChip
                       v-for="tag in template.tags"
                       :key="tag"
@@ -420,13 +430,28 @@
           })
         }}
       </div>
+
+      <!-- My Templates Footer -->
+      <div
+        v-if="isMyTemplatesView && !isPublishing && myTemplates.length > 0"
+        class="mt-6 flex justify-center border-t border-border-default px-6 pt-4"
+      >
+        <Button variant="primary" size="lg" @click="startPublishing">
+          <i class="icon-[lucide--plus] size-4" />
+          {{ t('templateWorkflows.publish.newTemplate') }}
+        </Button>
+      </div>
     </template>
 
     <template #rightPanel>
+      <MarketplaceTemplateDetailsPanel
+        v-if="selectedSubmission"
+        :submission="selectedSubmission"
+      />
       <WorkflowTemplateDetailsPanel
-        v-if="!!selected"
-        :template="selected"
-        :is-installing="loadingTemplate === selectedTemplate?.name"
+        v-else-if="selectedTemplate"
+        :template="selectedTemplate"
+        :is-installing="loadingTemplate === selectedTemplate.name"
         @install="onLoadWorkflow"
       />
     </template>
@@ -444,6 +469,8 @@ import CardContainer from '@/components/card/CardContainer.vue'
 import CardTop from '@/components/card/CardTop.vue'
 import SquareChip from '@/components/chip/SquareChip.vue'
 import SearchBox from '@/components/common/SearchBox.vue'
+import StatusBadge from '@/components/common/StatusBadge.vue'
+import type { StatusBadgeVariants } from '@/components/common/statusBadge.variants'
 import StepBreadcrumbs from '@/components/common/StepBreadcrumbs.vue'
 import MultiSelect from '@/components/input/MultiSelect.vue'
 import SingleSelect from '@/components/input/SingleSelect.vue'
@@ -454,9 +481,10 @@ import HoverDissolveThumbnail from '@/components/templates/thumbnails/HoverDisso
 import LogoOverlay from '@/components/templates/thumbnails/LogoOverlay.vue'
 import Button from '@/components/ui/button/Button.vue'
 import WorkflowTemplateDetailsPanel from '@/components/custom/widget/WorkflowTemplateDetailsPanel.vue'
-import MyTemplatesGrid from '@/platform/marketplace/components/MyTemplatesGrid.vue'
+import MarketplaceTemplateDetailsPanel from '@/platform/marketplace/components/MarketplaceTemplateDetailsPanel.vue'
+import MyTemplatesEmptyState from '@/platform/marketplace/components/MyTemplatesEmptyState.vue'
 import { useMyTemplates } from '@/platform/marketplace/composables/useMyTemplates'
-import type { MarketplaceTemplate } from '@/platform/marketplace/types/marketplace'
+import type { TemplateStatus } from '@/platform/marketplace/types/marketplace'
 import PublishTemplateWizard from '@/platform/marketplace/components/PublishTemplateWizard.vue'
 import { usePublishTemplateWizard } from '@/platform/marketplace/composables/usePublishTemplateWizard'
 import BaseModalLayout from '@/components/widget/layout/BaseModalLayout.vue'
@@ -486,22 +514,21 @@ const { onClose: originalOnClose, initialCategory = 'all' } = defineProps<{
 // Track session time for telemetry
 const sessionStartTime = ref<number>(0)
 const templateWasSelected = ref(false)
-const selected = ref<TemplateInfo | MarketplaceTemplate | null>(null)
-const selectedTemplate = computed(() => {
-  if (!selected.value) {
-    return null
-  }
+const selectedTemplate = ref<TemplateInfo | null>(null)
 
-  return 'template' in selected.value ? selected.value.template : selected.value
+const selectedSubmission = computed(() => {
+  if (!isMyTemplatesView.value || !selectedTemplate.value) return null
+
+  return myTemplates.value.find(({ id }) => id === selectedTemplate.value?.name)
 })
 
 const isRightPanelOpen = computed({
   get() {
-    return !!selected.value
+    return !!selectedTemplate.value
   },
   set(value: boolean) {
     if (!value) {
-      selected.value = null
+      selectedTemplate.value = null
     }
   }
 })
@@ -551,11 +578,7 @@ const onClose = () => {
 
 provide(OnCloseKey, onClose)
 
-const {
-  templates: myTemplates,
-  isLoading: isMyTemplatesLoading,
-  refresh: refreshMyTemplates
-} = useMyTemplates()
+const { templates: myTemplates, refresh: refreshMyTemplates } = useMyTemplates()
 
 const isPublishing = ref(false)
 const publishWizard = usePublishTemplateWizard()
@@ -597,12 +620,31 @@ const {
 const getEffectiveSourceModule = (template: TemplateInfo) =>
   template.sourceModule || 'default'
 
+function findSubmission(template: TemplateInfo) {
+  if (template.sourceModule !== 'marketplace') return null
+  return myTemplates.value.find(({ id }) => id === template.name) ?? null
+}
+
+const STATUS_SEVERITY: Record<TemplateStatus, StatusBadgeVariants['severity']> =
+  {
+    draft: 'secondary',
+    pending_review: 'warn',
+    approved: 'default',
+    rejected: 'danger',
+    unpublished: 'secondary'
+  }
+
 const getBaseThumbnailSrc = (template: TemplateInfo) => {
+  const submission = findSubmission(template)
+  if (submission?.gallery?.length) return submission.gallery[0]
   const sm = getEffectiveSourceModule(template)
   return getTemplateThumbnailUrl(template, sm, sm === 'default' ? '1' : '')
 }
 
 const getOverlayThumbnailSrc = (template: TemplateInfo) => {
+  const submission = findSubmission(template)
+  if (submission?.gallery && submission.gallery.length >= 2)
+    return submission.gallery[1]
   const sm = getEffectiveSourceModule(template)
   return getTemplateThumbnailUrl(template, sm, sm === 'default' ? '2' : '')
 }
@@ -721,7 +763,7 @@ const coordinateNavAndSort = (source: 'nav' | 'sort') => {
 // Watch for changes from the two sources ('nav' and 'sort') and trigger the coordinator.
 watch(selectedNavItem, () => {
   coordinateNavAndSort('nav')
-  selected.value = null
+  selectedTemplate.value = null
 })
 watch(sortBy, () => coordinateNavAndSort('sort'))
 
@@ -877,6 +919,16 @@ const {
 
 // Display templates (all when searching, paginated when not)
 const displayTemplates = computed(() => {
+  if (isMyTemplatesView.value) {
+    return myTemplates.value.map((submission) => ({
+      ...submission.template,
+      name: submission.id,
+      title: submission.template.name,
+      description: submission.shortDescription,
+      sourceModule: 'marketplace',
+      mediaSubtype: 'webp'
+    }))
+  }
   return shouldUsePagination.value
     ? paginatedTemplates.value
     : filteredTemplates.value

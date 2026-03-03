@@ -32,7 +32,7 @@
 
       <component
         :is="uploadComponent"
-        :files="wizard.uploadedFiles.value"
+        :files="wizardData.gallery ?? []"
         @add="onFileAdded"
         @remove="onFileRemoved"
       />
@@ -58,38 +58,18 @@ import MediaUploadCompare from './media/MediaUploadCompare.vue'
 import MediaUploadImages from './media/MediaUploadImages.vue'
 import MediaUploadVideo from './media/MediaUploadVideo.vue'
 
-type ThumbnailVariant = 'default' | 'compareSlider' | 'hoverDissolve'
-
 const { t } = useI18n()
-const wizard = usePublishTemplateWizard()
+const { wizardData } = usePublishTemplateWizard()
 
 const errors = ref<Record<string, string>>({})
-
-const selectedVariant = ref<ThumbnailVariant>(
-  (wizard.wizardData.value.template?.thumbnailVariant as ThumbnailVariant) ??
-    'default'
+const selectedVariant = ref<string>(
+  wizardData.value.template?.thumbnailVariant ?? 'default'
 )
 
-function ensureTemplate() {
-  if (!wizard.wizardData.value.template) {
-    wizard.wizardData.value.template = {
-      name: '',
-      description: '',
-      mediaType: 'image',
-      mediaSubtype: 'photo'
-    }
-  }
-  return wizard.wizardData.value.template
-}
-
-function selectVariant(variant: ThumbnailVariant) {
+function selectVariant(variant: string) {
   if (variant === selectedVariant.value) return
   selectedVariant.value = variant
-  const tmpl = ensureTemplate()
-  tmpl.thumbnailVariant = variant === 'default' ? undefined : variant
-  tmpl.mediaType = 'image'
-  tmpl.mediaSubtype = 'photo'
-  wizard.uploadedFiles.value = []
+  wizardData.value.gallery = []
 }
 
 const variants = [
@@ -110,13 +90,18 @@ const variants = [
   }
 ]
 
-const UPLOAD_COMPONENTS = {
-  default: MediaUploadImages,
-  compareSlider: MediaUploadCompare,
-  hoverDissolve: MediaUploadVideo
-} as const
-
-const uploadComponent = computed(() => UPLOAD_COMPONENTS[selectedVariant.value])
+const uploadComponent = computed(() => {
+  switch (selectedVariant.value) {
+    case 'default':
+      return MediaUploadImages
+    case 'compareSlider':
+      return MediaUploadCompare
+    case 'hoverDissolve':
+      return MediaUploadVideo
+    default:
+      return undefined
+  }
+})
 
 const uploadHint = computed(() => {
   if (selectedVariant.value === 'compareSlider')
@@ -128,21 +113,21 @@ const uploadHint = computed(() => {
 
 async function onFileAdded(file: File) {
   const result = await uploadMedia('draft', file)
-  wizard.uploadedFiles.value = [...wizard.uploadedFiles.value, result.url]
+  wizardData.value.gallery = [...(wizardData.value.gallery ?? []), result.url]
 }
 
 function onFileRemoved(index: number) {
-  wizard.uploadedFiles.value = wizard.uploadedFiles.value.filter(
+  wizardData.value.gallery = wizardData.value.gallery?.filter(
     (_: string, i: number) => i !== index
   )
 }
 
 function validate(): boolean {
-  const tmpl = wizard.wizardData.value.template
+  const tmpl = wizardData.value.template
   const result = mediaStepSchema.safeParse({
     mediaType: tmpl?.mediaType ?? '',
     thumbnailVariant: selectedVariant.value,
-    fileCount: wizard.uploadedFiles.value.length
+    fileCount: wizardData.value.gallery?.length ?? 0
   })
   if (result.success) {
     errors.value = {}

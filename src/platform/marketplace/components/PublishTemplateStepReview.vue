@@ -113,13 +113,6 @@
           <p class="m-0 whitespace-pre-wrap">{{ wizardData.changelog }}</p>
         </div>
       </div>
-
-      <p
-        v-if="wizard.submitError.value"
-        class="rounded-lg bg-destructive-background/10 p-3 text-sm text-destructive-background"
-      >
-        {{ wizard.submitError.value }}
-      </p>
     </div>
   </div>
 </template>
@@ -139,10 +132,9 @@ import HoverDissolveThumbnail from '@/components/templates/thumbnails/HoverDisso
 import { usePublishTemplateWizard } from '../composables/usePublishTemplateWizard'
 
 const { t } = useI18n()
-const wizard = usePublishTemplateWizard()
+const { wizardData } = usePublishTemplateWizard()
 
-const wizardData = computed(() => wizard.wizardData.value)
 const template = computed(() => wizardData.value.template)
-const files = computed(() => wizard.uploadedFiles.value)
+const files = computed(() => wizardData.value.gallery ?? [])
 const isHovered = ref(false)
 </script>

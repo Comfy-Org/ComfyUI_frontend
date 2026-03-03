@@ -51,8 +51,6 @@ function handleNext() {
 
 async function handleSubmit() {
   await wizard.submit()
-  if (!wizard.submitError.value) {
-    emit('submitted')
-  }
+  emit('submitted')
 }
 </script>
