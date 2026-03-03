@@ -1,5 +1,5 @@
 <template>
-  <BuilderDialog @close="emit('close')">
+  <BuilderDialog @close="$emit('close')">
     <template #title>
       {{ $t('builderToolbar.defaultViewTitle') }}
     </template>
@@ -45,10 +45,10 @@
     </div>
 
     <template #footer>
-      <Button variant="muted-textonly" size="lg" @click="emit('close')">
+      <Button variant="muted-textonly" size="lg" @click="$emit('close')">
         {{ $t('g.cancel') }}
       </Button>
-      <Button variant="secondary" size="lg" @click="emit('apply', openAsApp)">
+      <Button variant="secondary" size="lg" @click="$emit('apply', openAsApp)">
         {{ $t('g.apply') }}
       </Button>
     </template>
@@ -70,7 +70,7 @@ const { initialOpenAsApp = true } = defineProps<{
   initialOpenAsApp?: boolean
 }>()
 
-const emit = defineEmits<{
+defineEmits<{
   apply: [openAsApp: boolean]
   close: []
 }>()
