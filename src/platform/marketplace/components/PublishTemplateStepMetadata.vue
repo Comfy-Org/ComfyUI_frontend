@@ -58,6 +58,28 @@
 
     <div class="flex flex-col gap-2">
       <label class="text-sm font-medium">
+        {{ t('templateWorkflows.publish.categories') }}
+      </label>
+      <MultiSelectInput
+        v-model="selectedCategories"
+        :label="t('templateWorkflows.publish.categoriesPlaceholder')"
+        :options="categoryOptions"
+        show-search-box
+      />
+    </div>
+
+    <div class="flex flex-col gap-2">
+      <label class="text-sm font-medium">
+        {{ t('templateWorkflows.publish.tags') }}
+      </label>
+      <TagAutocompleteInput
+        v-model="selectedTags"
+        :placeholder="t('templateWorkflows.publish.tagsPlaceholder')"
+      />
+    </div>
+
+    <div class="flex flex-col gap-2">
+      <label class="text-sm font-medium">
         {{ t('templateWorkflows.publish.version') }}
       </label>
       <InputText v-model="wizardData.version" placeholder="1.0.0" />
@@ -78,16 +100,20 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import MultiSelectInput from '@/components/input/MultiSelect.vue'
 import SingleSelect from '@/components/input/SingleSelect.vue'
+import type { SelectOption } from '@/components/input/types'
 import Textarea from '@/components/ui/textarea/Textarea.vue'
 import InputText from 'primevue/inputtext'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 
+import TagAutocompleteInput from './TagAutocompleteInput.vue'
 import { usePublishTemplateWizard } from '../composables/usePublishTemplateWizard'
 import { metadataSchema } from '../schemas/templateSchema'
+import { getCategories } from '../services/tagApi'
 
 const { t } = useI18n()
 const { wizardData } = usePublishTemplateWizard()
@@ -129,6 +155,30 @@ const difficultyOptions = [
   { name: t('templateWorkflows.publish.intermediate'), value: 'intermediate' },
   { name: t('templateWorkflows.publish.advanced'), value: 'advanced' }
 ]
+
+// Categories
+const categoryOptions = ref<SelectOption[]>([])
+const selectedCategories = ref<SelectOption[]>(
+  (wizardData.value.categories ?? []).map((c) => ({ name: c, value: c }))
+)
+
+onMounted(async () => {
+  const { categories } = await getCategories()
+  categoryOptions.value = categories.map((c) => ({ name: c, value: c }))
+})
+
+watch(selectedCategories, (cats) => {
+  wizardData.value.categories = cats.map((c) => c.value)
+})
+
+// Tags
+const selectedTags = ref<string[]>(wizardData.value.template?.tags ?? [])
+
+watch(selectedTags, (tags) => {
+  if (wizardData.value.template) {
+    wizardData.value.template.tags = tags
+  }
+})
 
 function validate(): boolean {
   const map: Record<string, string> = {}

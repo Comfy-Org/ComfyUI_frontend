@@ -82,6 +82,25 @@
           }}</span>
           <span>{{ wizardData.difficulty }}</span>
         </div>
+        <div
+          v-if="categories.length > 0"
+          class="flex items-start justify-between"
+        >
+          <span class="text-muted">{{
+            t('templateWorkflows.publish.categories')
+          }}</span>
+          <div class="flex flex-wrap justify-end gap-1">
+            <SquareChip v-for="cat in categories" :key="cat" :label="cat" />
+          </div>
+        </div>
+        <div v-if="tags.length > 0" class="flex items-start justify-between">
+          <span class="text-muted">{{
+            t('templateWorkflows.publish.tags')
+          }}</span>
+          <div class="flex flex-wrap justify-end gap-1">
+            <SquareChip v-for="tag in tags" :key="tag" :label="tag" />
+          </div>
+        </div>
         <div class="flex justify-between">
           <span class="text-muted">{{
             t('templateWorkflows.publish.version')
@@ -136,5 +155,7 @@ const { wizardData } = usePublishTemplateWizard()
 
 const template = computed(() => wizardData.value.template)
 const files = computed(() => wizardData.value.gallery ?? [])
+const categories = computed(() => wizardData.value.categories ?? [])
+const tags = computed(() => wizardData.value.template?.tags ?? [])
 const isHovered = ref(false)
 </script>

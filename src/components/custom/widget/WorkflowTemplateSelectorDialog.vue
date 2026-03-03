@@ -618,6 +618,7 @@ function handleEditSubmission(id: string) {
   }
 
   wizardData.value.id = id
+  selectedTemplate.value = null
   isPublishing.value = true
 }
 
