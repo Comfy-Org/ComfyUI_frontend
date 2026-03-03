@@ -11,17 +11,22 @@ import type {
   difficultySchema,
   licenseTypeSchema,
   marketplaceTemplateSchema,
+  requiredModelSchema,
   submitTemplateRequestSchema,
   templateStatsSchema,
   templateStatusSchema,
   updateTemplateRequestSchema
 } from '../schemas/templateSchema'
 import type { TemplateInfo } from '@/platform/workflow/templates/types/template'
+import type { StatusBadgeVariants } from '@/components/common/statusBadge.variants'
 
-export const MARKETPLACE_TEMPLATE_KEY = Symbol('MarketplaceTemplate')
+// todo: use symbol when we aren't relying on JSON for storage
+// export const MARKETPLACE_TEMPLATE_KEY = Symbol('MarketplaceTemplate')
+export const MARKETPLACE_TEMPLATE_KEY = '__is_marketplace'
 
 export type Difficulty = z.infer<typeof difficultySchema>
 export type LicenseType = z.infer<typeof licenseTypeSchema>
+export type RequiredModel = z.infer<typeof requiredModelSchema>
 export type TemplateStatus = z.infer<typeof templateStatusSchema>
 export type StatsPeriod = z.infer<typeof statsPeriodSchema>
 
@@ -43,6 +48,17 @@ export function isMarketplaceTemplate(
   return (
     MARKETPLACE_TEMPLATE_KEY in template && !!template[MARKETPLACE_TEMPLATE_KEY]
   )
+}
+
+export const STATUS_SEVERITY: Record<
+  TemplateStatus,
+  StatusBadgeVariants['severity']
+> = {
+  draft: 'muted',
+  pending_review: 'warn',
+  approved: 'default',
+  rejected: 'danger',
+  unpublished: 'secondary'
 }
 
 export type AuthorDashboardStats = z.infer<typeof authorDashboardStatsSchema>

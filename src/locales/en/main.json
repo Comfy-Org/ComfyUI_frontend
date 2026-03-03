@@ -1056,9 +1056,17 @@
         "unpublished": "Unpublished"
       },
       "statusLabel": "Status",
+      "statusDescription": {
+        "draft": "This template has not been submitted for review yet.",
+        "pending_review": "Your submission is being reviewed by the Comfy team.",
+        "approved": "Your template has been approved and is live.",
+        "rejected": "Your submission was not approved. See the feedback below.",
+        "unpublished": "This template has been unpublished and is no longer visible."
+      },
       "reviewFeedback": "Review Feedback",
       "createdAt": "Created",
       "updatedAt": "Updated",
+      "publishedAt": "Published",
       "stats": "Statistics",
       "downloads": "Downloads",
       "favorites": "Favorites",
@@ -1097,6 +1105,16 @@
       },
       "tutorialUrl": "Tutorial / Documentation",
       "tutorialUrlPlaceholder": "https://...",
+      "customNodes": "Custom Nodes",
+      "customNodesPlaceholder": "Type to add custom nodes...",
+      "customNodesHint": "Auto-detected from workflow. You can add or remove entries.",
+      "requiredModels": "Required Models",
+      "requiredModelsPlaceholder": "category/model_name...",
+      "requiredModelsHint": "Auto-detected from workflow. Format: category/model_name",
+      "vramEstimate": "VRAM Requirement",
+      "vramEstimatePlaceholder": "e.g. 8",
+      "vramEstimateUnit": "GB",
+      "vramDetect": "Detect",
       "version": "Version",
       "changelog": "Changelog",
       "changelogPlaceholder": "What changed in this version...",
@@ -1120,7 +1138,12 @@
       "back": "Back",
       "next": "Next",
       "newTemplate": "New Template",
-      "saveDraft": "Save Draft"
+      "saveDraft": "Save Draft",
+      "updateDraft": "Update Draft",
+      "revertToDraft": "Revert to Draft",
+      "requirements": "Workflow Requirements",
+      "detected": "Detected {customNodes} custom node(s), {models} model(s), {vram} VRAM",
+      "detectedNone": "No requirements detected"
     },
     "error": {
       "templateNotFound": "Template \"{templateName}\" not found"

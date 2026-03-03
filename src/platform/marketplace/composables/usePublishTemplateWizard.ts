@@ -15,15 +15,17 @@ import {
 
 function createPublishTemplateWizard() {
   const currentStep = ref(1)
-  const initialData: Partial<MarketplaceTemplate> = {
-    gallery: [],
-    categories: [],
-    tags: [],
-    mediaType: 'image',
-    mediaSubtype: 'photo'
+  function createInitialData(): Partial<MarketplaceTemplate> {
+    return {
+      gallery: [],
+      categories: [],
+      tags: [],
+      mediaType: 'image',
+      mediaSubtype: 'photo'
+    }
   }
 
-  const wizardData = ref<Partial<MarketplaceTemplate>>(initialData)
+  const wizardData = ref<Partial<MarketplaceTemplate>>(createInitialData())
   const isSubmitting = ref(false)
   const isSaving = ref(false)
 
@@ -46,7 +48,7 @@ function createPublishTemplateWizard() {
 
   function resetWizard() {
     currentStep.value = 1
-    wizardData.value = initialData
+    wizardData.value = createInitialData()
     isSubmitting.value = false
     isSaving.value = false
   }
@@ -61,6 +63,21 @@ function createPublishTemplateWizard() {
         const request = createTemplateDraftRequestSchema.parse(wizardData.value)
         await createTemplateDraft(request)
       }
+    } finally {
+      isSaving.value = false
+    }
+  }
+
+  async function revertToDraft() {
+    if (!wizardData.value.id) return
+    isSaving.value = true
+    try {
+      const request = updateTemplateRequestSchema.parse({
+        ...wizardData.value,
+        status: 'draft'
+      })
+      await updateTemplate(request)
+      wizardData.value.status = 'draft'
     } finally {
       isSaving.value = false
     }
@@ -86,6 +103,7 @@ function createPublishTemplateWizard() {
     goToNextStep,
     goToPreviousStep,
     resetWizard,
+    revertToDraft,
     saveDraft,
     submit
   }

@@ -28,9 +28,61 @@
         :label="t('templateWorkflows.publish.version')"
         :value="submission.version"
       />
+      <DetailsField
+        v-if="submission.categories?.length"
+        :label="t('templateWorkflows.publish.categories')"
+      >
+        <div class="flex flex-wrap gap-1">
+          <span
+            v-for="category in submission.categories"
+            :key="category"
+            class="rounded-md bg-dialog-surface px-2 py-0.5 text-xs text-muted-foreground"
+          >
+            {{ category }}
+          </span>
+        </div>
+      </DetailsField>
+      <DetailsField
+        v-if="submission.tags?.length"
+        :label="t('templateWorkflows.publish.tags')"
+      >
+        <div class="flex flex-wrap gap-1">
+          <span
+            v-for="tag in submission.tags"
+            :key="tag"
+            class="rounded-md bg-dialog-surface px-2 py-0.5 text-xs text-muted-foreground"
+          >
+            {{ tag }}
+          </span>
+        </div>
+      </DetailsField>
+      <DetailsField
+        v-if="submission.license"
+        :label="t('templateWorkflows.publish.license')"
+        :value="
+          t(
+            `templateWorkflows.publish.licenses.${submission.license}`,
+            submission.license
+          )
+        "
+      />
+      <DetailsField
+        v-if="submission.tutorialUrl"
+        :label="t('templateWorkflows.publish.tutorialUrl')"
+      >
+        <a
+          :href="submission.tutorialUrl"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="text-sm text-blue-500 break-all hover:underline"
+        >
+          {{ submission.tutorialUrl }}
+        </a>
+      </DetailsField>
     </PropertiesAccordionItem>
 
     <PropertiesAccordionItem
+      :collapse="true"
       class="border-t border-border-default bg-transparent"
     >
       <template #label>
@@ -64,6 +116,34 @@
         v-if="submission.updatedAt"
         :label="t('templateWorkflows.myTemplates.updatedAt')"
         :value="formatDate(submission.updatedAt)"
+      />
+      <DetailsField
+        v-if="submission.publishedAt"
+        :label="t('templateWorkflows.myTemplates.publishedAt')"
+        :value="formatDate(submission.publishedAt)"
+      />
+      <DetailsField
+        v-if="submission.changelog"
+        :label="t('templateWorkflows.publish.changelog')"
+      >
+        <p class="text-sm whitespace-pre-wrap text-muted-foreground">
+          {{ submission.changelog }}
+        </p>
+      </DetailsField>
+      <DetailsField
+        v-if="submission.stats.downloads > 0"
+        :label="t('templateWorkflows.myTemplates.downloads')"
+        :value="String(submission.stats.downloads)"
+      />
+      <DetailsField
+        v-if="submission.stats.favorites > 0"
+        :label="t('templateWorkflows.myTemplates.favorites')"
+        :value="String(submission.stats.favorites)"
+      />
+      <DetailsField
+        v-if="submission.stats.rating > 0"
+        :label="t('templateWorkflows.myTemplates.rating')"
+        :value="String(submission.stats.rating)"
       />
     </PropertiesAccordionItem>
 
@@ -108,29 +188,6 @@
         v-if="submission.vram"
         :label="t('templateWorkflows.details.vram')"
         :value="formatSize(submission.vram)"
-      />
-    </PropertiesAccordionItem>
-
-    <PropertiesAccordionItem
-      v-if="hasStats"
-      class="border-t border-border-default bg-transparent"
-    >
-      <template #label>
-        <span class="text-xs font-inter uppercase select-none">
-          {{ t('templateWorkflows.myTemplates.stats') }}
-        </span>
-      </template>
-      <DetailsField
-        :label="t('templateWorkflows.myTemplates.downloads')"
-        :value="String(submission.stats.downloads)"
-      />
-      <DetailsField
-        :label="t('templateWorkflows.myTemplates.favorites')"
-        :value="String(submission.stats.favorites)"
-      />
-      <DetailsField
-        :label="t('templateWorkflows.myTemplates.rating')"
-        :value="String(submission.stats.rating)"
       />
     </PropertiesAccordionItem>
 
@@ -183,17 +240,17 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
 import StatusBadge from '@/components/common/StatusBadge.vue'
-import type { StatusBadgeVariants } from '@/components/common/statusBadge.variants'
 import PropertiesAccordionItem from '@/components/rightSidePanel/layout/PropertiesAccordionItem.vue'
 import WorkflowTemplateDetailsField from '@/components/custom/widget/WorkflowTemplateDetailsField.vue'
 import { formatSize } from '@/utils/formatUtil'
 
-import type { MarketplaceTemplate, TemplateStatus } from '../types/marketplace'
+import { STATUS_SEVERITY } from '../types/marketplace';
+import type { MarketplaceTemplate } from '../types/marketplace';
 
 const DetailsField = WorkflowTemplateDetailsField
 
@@ -209,22 +266,6 @@ const emit = defineEmits<{
 }>()
 
 const confirmingRemove = ref(false)
-
-const STATUS_SEVERITY: Record<TemplateStatus, StatusBadgeVariants['severity']> =
-  {
-    draft: 'muted',
-    pending_review: 'warn',
-    approved: 'default',
-    rejected: 'danger',
-    unpublished: 'secondary'
-  }
-
-const hasStats = computed(
-  () =>
-    submission.stats.downloads > 0 ||
-    submission.stats.favorites > 0 ||
-    submission.stats.rating > 0
-)
 
 function formatDate(iso: string): string {
   return new Date(iso).toLocaleDateString()

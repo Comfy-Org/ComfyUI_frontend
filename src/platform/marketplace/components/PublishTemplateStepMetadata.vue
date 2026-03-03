@@ -15,6 +15,68 @@
       </span>
     </div>
 
+    <div
+      class="rounded-lg border border-border-default p-4 flex flex-col gap-4"
+    >
+      <div class="flex items-center justify-between">
+        <span class="text-sm font-medium">
+          {{ t('templateWorkflows.publish.requirements') }}
+        </span>
+        <div class="flex items-center gap-2">
+          <span v-if="detectionResult" class="text-xs italic text-muted">
+            {{ detectionResult }}
+          </span>
+          <Button variant="secondary" size="sm" @click="autoDetectRequirements">
+            {{ t('templateWorkflows.publish.vramDetect') }}
+          </Button>
+        </div>
+      </div>
+
+      <div class="flex flex-col gap-2">
+        <label class="text-sm font-medium">
+          {{ t('templateWorkflows.publish.customNodes') }}
+        </label>
+        <TagAutocompleteInput
+          :model-value="wizardData.customNodes ?? []"
+          :suggest="suggestCustomNodes"
+          :placeholder="t('templateWorkflows.publish.customNodesPlaceholder')"
+          @update:model-value="(value) => (wizardData.customNodes = value)"
+        />
+        <span class="text-xs text-muted">
+          {{ t('templateWorkflows.publish.customNodesHint') }}
+        </span>
+      </div>
+
+      <div class="flex flex-col gap-2">
+        <label class="text-sm font-medium">
+          {{ t('templateWorkflows.publish.requiredModels') }}
+        </label>
+        <TagAutocompleteInput
+          :model-value="modelDisplayStrings"
+          :placeholder="
+            t('templateWorkflows.publish.requiredModelsPlaceholder')
+          "
+          @update:model-value="onModelsChanged"
+        />
+        <span class="text-xs text-muted">
+          {{ t('templateWorkflows.publish.requiredModelsHint') }}
+        </span>
+      </div>
+
+      <div class="flex flex-col gap-2">
+        <label class="text-sm font-medium">
+          {{ t('templateWorkflows.publish.vramEstimate') }}
+          ({{ t('templateWorkflows.publish.vramEstimateUnit') }})
+        </label>
+        <InputText
+          :model-value="vramDisplay"
+          :placeholder="t('templateWorkflows.publish.vramEstimatePlaceholder')"
+          class="w-full"
+          @update:model-value="onVramInput"
+        />
+      </div>
+    </div>
+
     <div class="flex flex-col gap-2">
       <label class="text-sm font-medium">
         {{ t('templateWorkflows.publish.shortDescription') }}
@@ -41,17 +103,41 @@
 
     <div class="flex flex-col gap-2">
       <label class="text-sm font-medium">
+        {{ t('templateWorkflows.publish.tutorialUrl') }}
+      </label>
+      <InputText
+        v-model="wizardData.tutorialUrl"
+        :placeholder="t('templateWorkflows.publish.tutorialUrlPlaceholder')"
+      />
+    </div>
+
+    <div class="flex flex-col gap-2">
+      <label class="text-sm font-medium">
         {{ t('templateWorkflows.publish.difficulty') }}
       </label>
-      <SingleSelect
+      <RadioGroupRoot
         :model-value="wizardData.difficulty ?? undefined"
-        :label="t('templateWorkflows.publish.difficulty')"
-        :options="difficultyOptions"
+        class="flex flex-wrap gap-2"
         @update:model-value="
-          (value: string | undefined) =>
+          (value: string) =>
             (wizardData.difficulty = value as Difficulty | undefined)
         "
-      />
+      >
+        <label
+          v-for="option in difficultyOptions"
+          :key="option.value"
+          :class="
+            cn(
+              'flex cursor-pointer items-center gap-2 rounded-lg border border-border-default px-3 py-2 text-sm transition-colors',
+              wizardData.difficulty === option.value &&
+                'border-primary-background bg-primary-background/10'
+            )
+          "
+        >
+          <RadioGroupItem :value="option.value" class="sr-only" />
+          {{ option.name }}
+        </label>
+      </RadioGroupRoot>
       <span
         v-if="errors.difficulty"
         class="text-xs text-destructive-background"
@@ -107,47 +193,30 @@
         @update:model-value="(value) => (wizardData.license = value)"
       />
     </div>
-
-    <div class="flex flex-col gap-2">
-      <label class="text-sm font-medium">
-        {{ t('templateWorkflows.publish.tutorialUrl') }}
-      </label>
-      <InputText
-        v-model="wizardData.tutorialUrl"
-        :placeholder="t('templateWorkflows.publish.tutorialUrlPlaceholder')"
-      />
-    </div>
-
-    <div class="flex flex-col gap-2">
-      <label class="text-sm font-medium">
-        {{ t('templateWorkflows.publish.version') }}
-      </label>
-      <InputText v-model="wizardData.version" placeholder="1.0.0" />
-    </div>
-
-    <div class="flex flex-col gap-2">
-      <label class="text-sm font-medium">
-        {{ t('templateWorkflows.publish.changelog') }}
-      </label>
-      <Textarea
-        v-model="wizardData.changelog"
-        :placeholder="t('templateWorkflows.publish.changelogPlaceholder')"
-        rows="2"
-      />
-    </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
+
+import { RadioGroupItem, RadioGroupRoot } from 'reka-ui'
 
 import MultiSelectInput from '@/components/input/MultiSelect.vue'
 import SingleSelect from '@/components/input/SingleSelect.vue'
+import Button from '@/components/ui/button/Button.vue'
 import type { SelectOption } from '@/components/input/types'
-import Textarea from '@/components/ui/textarea/Textarea.vue'
+import Textarea from 'primevue/textarea'
 import InputText from 'primevue/inputtext'
+import { cn } from '@/utils/tailwindUtil'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { app } from '@/scripts/app'
+import { detectCustomNodeTypes } from '@/services/workflowCustomNodeDetectionService'
+import { detectModels } from '@/services/workflowModelDetectionService'
+import { useModelToNodeStore } from '@/stores/modelToNodeStore'
+import { useNodeDefStore } from '@/stores/nodeDefStore'
+import { useSystemStatsStore } from '@/stores/systemStatsStore'
+import { extractVramSnapshot } from '@/utils/vramUtil'
 
 import TagAutocompleteInput from './TagAutocompleteInput.vue'
 import { usePublishTemplateWizard } from '../composables/usePublishTemplateWizard'
@@ -158,10 +227,22 @@ import type { Difficulty } from '../types/marketplace'
 const { t } = useI18n()
 const { wizardData } = usePublishTemplateWizard()
 const workflowStore = useWorkflowStore()
+const nodeDefStore = useNodeDefStore()
+const modelToNodeStore = useModelToNodeStore()
+const systemStatsStore = useSystemStatsStore()
 
 const errors = ref<Record<string, string>>({})
 
 const selectedWorkflowPath = ref<string | undefined>(wizardData.value.name)
+
+watch(
+  () => wizardData.value.name,
+  (name) => {
+    if (!name) {
+      resetForm()
+    }
+  }
+)
 
 const workflowOptions = computed(() =>
   workflowStore.persistedWorkflows.map(({ filename, path }) => ({
@@ -170,24 +251,115 @@ const workflowOptions = computed(() =>
   }))
 )
 
+function resetForm() {
+  wizardData.value.name = undefined
+  wizardData.value.title = undefined
+  wizardData.value.description = undefined
+  wizardData.value.mediaType = undefined
+  wizardData.value.mediaSubtype = undefined
+  selectedWorkflowPath.value = undefined
+}
+
 function onWorkflowSelected(path: string | undefined) {
-  selectedWorkflowPath.value = path
   if (!path) {
-    wizardData.value.name = undefined
-    wizardData.value.title = undefined
-    wizardData.value.description = undefined
-    wizardData.value.mediaType = undefined
-    wizardData.value.mediaSubtype = undefined
+    resetForm()
     return
   }
   const wf = workflowStore.getWorkflowByPath(path)
   if (!wf) return
 
+  selectedWorkflowPath.value = path
   wizardData.value.name = wf.filename
   wizardData.value.title = wf.filename.replace(/\.json$/, '')
   wizardData.value.description = ''
   wizardData.value.mediaType = 'image'
   wizardData.value.mediaSubtype = 'photo'
+
+  autoDetectRequirements()
+}
+
+function detectCustomNodes() {
+  wizardData.value.customNodes = detectCustomNodeTypes(
+    app.rootGraph,
+    nodeDefStore.nodeDefsByName
+  )
+}
+
+function detectRequiredModels() {
+  wizardData.value.requiredModels = detectModels(
+    app.rootGraph,
+    modelToNodeStore.modelToNodeMap
+  ).map(({ name, category }) => ({ name, category }))
+}
+
+const modelDisplayStrings = computed(
+  () =>
+    wizardData.value.requiredModels?.map((m) => `${m.category}/${m.name}`) ?? []
+)
+
+function onModelsChanged(strings: string[]) {
+  wizardData.value.requiredModels = strings.map(parseModelString)
+}
+
+function parseModelString(s: string) {
+  const slashIndex = s.indexOf('/')
+  if (slashIndex > 0) {
+    return { category: s.slice(0, slashIndex), name: s.slice(slashIndex + 1) }
+  }
+  return { category: 'other', name: s }
+}
+
+const BYTES_PER_GB = 1024 ** 3
+
+const vramDisplay = computed(() => {
+  const estimate = wizardData.value.vramEstimate
+  return estimate != null ? String(Math.round(estimate / BYTES_PER_GB)) : ''
+})
+
+function onVramInput(value: string | undefined) {
+  if (!value) {
+    wizardData.value.vramEstimate = undefined
+    return
+  }
+  const parsed = parseFloat(value)
+  wizardData.value.vramEstimate =
+    !isNaN(parsed) && parsed > 0 ? Math.round(parsed * BYTES_PER_GB) : undefined
+}
+
+function detectVram() {
+  const stats = systemStatsStore.systemStats
+  if (!stats) return
+
+  const { torchVramTotal, torchVramFree } = extractVramSnapshot(stats)
+  const used = torchVramTotal - torchVramFree
+  if (used > 0) {
+    wizardData.value.vramEstimate = used
+  }
+}
+
+const detectionResult = ref<string>()
+
+function autoDetectRequirements() {
+  detectCustomNodes()
+  detectRequiredModels()
+  detectVram()
+
+  const customNodeCount = wizardData.value.customNodes?.length ?? 0
+  const modelCount = wizardData.value.requiredModels?.length ?? 0
+  const vram = vramDisplay.value ? `${vramDisplay.value} GB` : '0 GB'
+
+  detectionResult.value =
+    customNodeCount || modelCount || vram !== '0 GB'
+      ? t('templateWorkflows.publish.detected', {
+          customNodes: customNodeCount,
+          models: modelCount,
+          vram
+        })
+      : t('templateWorkflows.publish.detectedNone')
+
+  setTimeout(() => {
+    detectionResult.value = undefined
+  }, 4000)
 }
 
 const difficultyOptions = [
@@ -202,6 +374,20 @@ const licenseOptions = licenseTypeSchema.options.map((value) => ({
 })) satisfies SelectOption[]
 
 const { categories: categoryOptions } = useCategories()
+
+async function suggestCustomNodes(query: string): Promise<{ tags: string[] }> {
+  const allNames = Object.values(nodeDefStore.nodeDefsByName)
+    .filter((def) => !def.isCoreNode)
+    .map((def) => def.name)
+  const unique = [...new Set(allNames)]
+
+  if (!query) return { tags: unique.slice(0, 20) }
+
+  const lower = query.toLowerCase()
+  return {
+    tags: unique.filter((name) => name.toLowerCase().includes(lower))
+  }
+}
 
 function validate(): boolean {
   const map: Record<string, string> = {}

@@ -27,13 +27,15 @@ function getCurrentAuthor(): AuthorInfo {
   }
 }
 
-const EMPTY_STATS = {
-  downloads: 0,
-  favorites: 0,
-  rating: 0,
-  reviewCount: 0,
-  weeklyTrend: 0
-} as const
+function getRandomStats(): MarketplaceTemplate['stats'] {
+  return {
+    downloads: Math.floor(Math.random() * 1000),
+    favorites: Math.floor(Math.random() * 100),
+    rating: Math.floor(Math.random() * 5) + 1,
+    reviewCount: Math.floor(Math.random() * 100),
+    weeklyTrend: Math.floor(Math.random() * 100)
+  }
+}
 
 // POST /api/marketplace/templates
 export async function createTemplateDraft(
@@ -47,7 +49,7 @@ export async function createTemplateDraft(
     ...body,
     author: getCurrentAuthor(),
     status: 'draft',
-    stats: EMPTY_STATS,
+    stats: getRandomStats(),
     createdAt: timestamp
   })
   return { id: record.id, status: record.status }
@@ -106,6 +108,7 @@ export async function submitTemplate(
   }
 
   return collection.update(template.id, {
+    ...body,
     status: 'pending_review',
     updatedAt: now()
   })

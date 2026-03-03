@@ -62,7 +62,7 @@ describe('templateApi', () => {
       expect(stored).not.toBeNull()
       expect(stored!.createdAt).toBeTruthy()
       expect(stored!.updatedAt).toBeTruthy()
-      expect(stored!.stats.downloads).toBe(0)
+      expect(stored!.stats).toBeTruthy()
     })
   })
 
@@ -104,7 +104,6 @@ describe('templateApi', () => {
       const before = await getTemplate(id)
       vi.advanceTimersByTime(1000)
       const result = await updateTemplate({
-        ...before!,
         id,
         shortDescription: 'Updated'
       })

@@ -47,6 +47,11 @@ export const thumbnailVariantSchema = z.enum([
   'hoverDissolve'
 ])
 
+export const requiredModelSchema = z.object({
+  name: z.string().min(1),
+  category: z.string().min(1)
+})
+
 export const metadataSchema = z.object({
   shortDescription: z.string().min(1).max(200),
   difficulty: difficultySchema
@@ -80,35 +85,62 @@ export const marketplaceTemplateSchema = templateInfoSchema.and(
     publishedAt: z.string().optional(),
     updatedAt: z.string().optional(),
     createdAt: z.string(),
-    stats: templateStatsSchema
+    stats: templateStatsSchema,
+    customNodes: z.array(z.string()).optional(),
+    requiredModels: z.array(requiredModelSchema).optional(),
+    vramEstimate: z.number().positive().optional()
   })
 )
 
-export const createTemplateDraftRequestSchema = z.object({
-  shortDescription: z.string().min(1).max(200).optional(),
-  difficulty: difficultySchema.optional(),
-  categories: z.array(z.string()).optional(),
-  gallery: z.array(z.string()).optional(),
-  version: z.string().min(1).optional(),
-  changelog: z.string().optional()
+const templateInfoCreateSchema = z.object({
+  name: z.string().min(1).optional(),
+  title: z.string().optional(),
+  description: z.string().optional(),
+  mediaType: z.string().optional(),
+  mediaSubtype: z.string().optional(),
+  thumbnailVariant: thumbnailVariantSchema.optional(),
+  tags: z.array(z.string()).optional(),
+  license: z.string().optional(),
+  tutorialUrl: z.string().optional()
 })
 
-export const updateTemplateRequestSchema = z.object({
+export const createTemplateDraftRequestSchema = templateInfoCreateSchema.extend(
+  {
+    shortDescription: z.string().min(1).max(200).optional(),
+    difficulty: difficultySchema.optional(),
+    categories: z.array(z.string()).optional(),
+    gallery: z.array(z.string()).optional(),
+    version: z.string().min(1).optional(),
+    changelog: z.string().optional(),
+    customNodes: z.array(z.string()).optional(),
+    requiredModels: z.array(requiredModelSchema).optional(),
+    vramEstimate: z.number().positive().optional()
+  }
+)
+
+export const updateTemplateRequestSchema = templateInfoCreateSchema.extend({
   id: z.string().min(1),
   shortDescription: z.string().min(1).max(200).optional(),
   difficulty: difficultySchema.optional(),
   categories: z.array(z.string()).optional(),
   gallery: z.array(z.string()).optional(),
   version: z.string().min(1).optional(),
-  changelog: z.string().optional()
+  changelog: z.string().optional(),
+  status: templateStatusSchema.optional(),
+  customNodes: z.array(z.string()).optional(),
+  requiredModels: z.array(requiredModelSchema).optional(),
+  vramEstimate: z.number().positive().optional()
 })
 
-export const submitTemplateRequestSchema = z.object({
+export const submitTemplateRequestSchema = templateInfoCreateSchema.extend({
   id: z.string().min(1).optional(),
   shortDescription: z.string().min(1).max(200),
   difficulty: difficultySchema,
   categories: z.array(z.string()).default([]),
   gallery: z.array(z.string()).min(1),
-  version: z.string().min(1),
-  changelog: z.string().optional()
+  version: z.string().default('1.0.0'),
+  changelog: z.string().optional(),
+  customNodes: z.array(z.string()).optional(),
+  requiredModels: z.array(requiredModelSchema).optional(),
+  vramEstimate: z.number().positive().optional()
 })

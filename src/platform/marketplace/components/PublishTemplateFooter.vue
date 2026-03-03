@@ -16,12 +16,17 @@
 
     <div class="flex gap-2">
       <Button
+        v-if="isDraft"
         variant="secondary"
         size="lg"
         :loading="isSaving"
         @click="emit('save')"
       >
-        {{ t('templateWorkflows.publish.saveDraft') }}
+        {{
+          isExisting
+            ? t('templateWorkflows.publish.updateDraft')
+            : t('templateWorkflows.publish.saveDraft')
+        }}
       </Button>
 
       <Button
@@ -34,7 +39,7 @@
         <i class="icon-[lucide--arrow-right] size-4" />
       </Button>
       <Button
-        v-else
+        v-else-if="isDraft"
         variant="primary"
         size="lg"
         :loading="isSubmitting"
@@ -53,10 +58,12 @@ import Button from '@/components/ui/button/Button.vue'
 
 const { t } = useI18n()
 
-defineProps<{
+const { isExisting = false, isDraft = true } = defineProps<{
   currentStep: number
   isSubmitting: boolean
   isSaving: boolean
+  isExisting?: boolean
+  isDraft?: boolean
 }>()
 
 const emit = defineEmits<{

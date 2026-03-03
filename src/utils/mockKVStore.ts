@@ -1,7 +1,8 @@
 type Identifiable = { id: string }
 
 interface KVCollection<T extends Identifiable> {
-  create(data: Omit<T, 'id'> & Partial<Pick<T, 'id'>>): T
+  create(data: Omit<T, 'id'>): T
+  upsert(id: string, data: T): T | null
   get(id: string): T | null
   update(id: string, partial: Partial<T>): T | null
   delete(id: string): boolean
@@ -74,10 +75,19 @@ export function useMockKVStore(namespace: string): MockKVStore {
 
     return {
       create(data) {
-        const id = data.id ?? generateId()
+        const id = generateId()
         const record = { ...data, id } as T
         set(`${collectionPrefix}${id}`, record)
         return record
+      },
+
+      upsert(id, data) {
+        const existing = this.get(id)
+        if (existing) {
+          return this.update(id, data)
+        }
+
+        return this.create(data)
       },
 
       get(id) {

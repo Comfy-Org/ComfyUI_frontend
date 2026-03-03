@@ -1,18 +1,28 @@
 import { MARKETPLACE_TEMPLATE_KEY } from '../../types/marketplace'
-import type { MarketplaceTemplate } from '../../types/marketplace'
+import type {
+  AuthorInfo,
+  CreateTemplateDraftRequest,
+  TemplateStats,
+  TemplateStatus
+} from '../../types/marketplace'
 
 type Identifiable = { id: string }
 
-export function createMockMarketplaceTemplate(
-  overrides: Partial<MarketplaceTemplate> = {}
-): Omit<MarketplaceTemplate, 'id'> {
-  const { id: _id, ...rest } = overrides
+type MockOverrides = Partial<
+  CreateTemplateDraftRequest & {
+    author: AuthorInfo
+    status: TemplateStatus
+    stats: TemplateStats
+  }
+>
+
+export function createMockMarketplaceTemplate(overrides: MockOverrides = {}) {
   return {
     [MARKETPLACE_TEMPLATE_KEY]: true as const,
     name: 'test-workflow',
     description: 'A test workflow',
-    mediaType: 'image',
-    mediaSubtype: 'photo',
+    mediaType: 'image' as const,
+    mediaSubtype: 'photo' as const,
     shortDescription: 'Short description',
     author: {
       id: 'author-1',
@@ -20,11 +30,11 @@ export function createMockMarketplaceTemplate(
       isVerified: false,
       profileUrl: '/authors/1'
     },
-    difficulty: 'beginner',
+    difficulty: 'beginner' as const,
     categories: ['Image Generation'],
-    gallery: [],
+    gallery: [] as string[],
     version: '1.0.0',
-    status: 'draft',
+    status: 'draft' as const,
     updatedAt: new Date().toISOString(),
     createdAt: new Date().toISOString(),
     stats: {
@@ -34,7 +44,7 @@ export function createMockMarketplaceTemplate(
       reviewCount: 0,
       weeklyTrend: 0
     },
-    ...rest
+    ...overrides
   }
 }
 

@@ -103,7 +103,7 @@
       </div>
       <div
         v-if="!isLoading"
-        class="text-neutral px-6 pt-4 pb-2 text-2xl font-semibold flex items-center gap-1"
+        class="text-neutral px-6 pt-4 pb-2 text-2xl font-semibold flex items-center gap-2"
       >
         <template v-if="isMyTemplatesView && showSubmissionForm">
           <a
@@ -122,6 +122,14 @@
           <span>
             {{ pageTitle }}
           </span>
+          <button
+            v-if="isMyTemplatesView && myTemplates.length > 0"
+            class="border-none cursor-pointer flex size-7 items-center justify-center rounded-full text-blue-500 transition-colors hover:bg-blue-500/10"
+            :title="t('templateWorkflows.publish.newTemplate')"
+            @click="startPublishing"
+          >
+            <i class="icon-[lucide--plus] size-5" />
+          </button>
         </template>
       </div>
     </template>
@@ -352,21 +360,6 @@
                         {{ getTemplateDescription(template) }}
                       </p>
                     </div>
-                    <div
-                      v-if="template.tutorialUrl"
-                      class="flex flex-col-reverse justify-center"
-                    >
-                      <Button
-                        v-if="hoveredTemplate === template.name"
-                        v-tooltip.bottom="$t('g.seeTutorial')"
-                        v-bind="$attrs"
-                        variant="inverted"
-                        size="icon"
-                        @click.stop="openTutorial(template)"
-                      >
-                        <i class="icon-[lucide--info] size-4" />
-                      </Button>
-                    </div>
                   </div>
                 </div>
               </CardBottom>
@@ -430,19 +423,6 @@
           })
         }}
       </div>
-
-      <!-- My Templates Footer -->
-      <div
-        v-if="
-          isMyTemplatesView && !showSubmissionForm && myTemplates.length > 0
-        "
-        class="mt-6 flex justify-center border-t border-border-default px-6 pt-4"
-      >
-        <Button variant="primary" size="lg" @click="startPublishing">
-          <i class="icon-[lucide--plus] size-4" />
-          {{ t('templateWorkflows.publish.newTemplate') }}
-        </Button>
-      </div>
     </template>
 
     <template #rightPanel>
@@ -474,7 +454,6 @@ import CardTop from '@/components/card/CardTop.vue'
 import SquareChip from '@/components/chip/SquareChip.vue'
 import SearchBox from '@/components/common/SearchBox.vue'
 import StatusBadge from '@/components/common/StatusBadge.vue'
-import type { StatusBadgeVariants } from '@/components/common/statusBadge.variants'
 import StepBreadcrumbs from '@/components/common/StepBreadcrumbs.vue'
 import MultiSelect from '@/components/input/MultiSelect.vue'
 import SingleSelect from '@/components/input/SingleSelect.vue'
@@ -489,8 +468,10 @@ import MarketplaceTemplateDetailsPanel from '@/platform/marketplace/components/M
 import MyTemplatesEmptyState from '@/platform/marketplace/components/MyTemplatesEmptyState.vue'
 import { useMyTemplates } from '@/platform/marketplace/composables/useMyTemplates'
 import { deleteTemplate } from '@/platform/marketplace/services/templateApi'
-import type { TemplateStatus } from '@/platform/marketplace/types/marketplace'
-import { isMarketplaceTemplate } from '@/platform/marketplace/types/marketplace'
+import {
+  isMarketplaceTemplate,
+  STATUS_SEVERITY
+} from '@/platform/marketplace/types/marketplace'
 import PublishTemplateWizard from '@/platform/marketplace/components/PublishTemplateWizard.vue'
 import { usePublishTemplateWizard } from '@/platform/marketplace/composables/usePublishTemplateWizard'
 import BaseModalLayout from '@/components/widget/layout/BaseModalLayout.vue'
@@ -645,15 +626,6 @@ const {
 const getEffectiveSourceModule = (template: TemplateInfo) =>
   template.sourceModule || 'default'
 
-const STATUS_SEVERITY: Record<TemplateStatus, StatusBadgeVariants['severity']> =
-  {
-    draft: 'muted',
-    pending_review: 'warn',
-    approved: 'default',
-    rejected: 'danger',
-    unpublished: 'secondary'
-  }
-
 const getBaseThumbnailSrc = (template: TemplateInfo) => {
   if (isMarketplaceTemplate(template)) {
     const gallery = template.gallery
@@ -670,13 +642,6 @@ const getOverlayThumbnailSrc = (template: TemplateInfo) => {
   }
   const sm = getEffectiveSourceModule(template)
   return getTemplateThumbnailUrl(template, sm, sm === 'default' ? '2' : '')
-}
-
-// Open tutorial in new tab
-const openTutorial = (template: TemplateInfo) => {
-  if (template.tutorialUrl) {
-    window.open(template.tutorialUrl, '_blank')
-  }
 }
 
 // Get navigation items from the store, with skeleton items while loading

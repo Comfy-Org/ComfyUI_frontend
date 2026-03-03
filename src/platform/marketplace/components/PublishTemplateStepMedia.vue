@@ -69,6 +69,7 @@ const selectedVariant = ref<string>(
 function selectVariant(variant: string) {
   if (variant === selectedVariant.value) return
   selectedVariant.value = variant
+  wizardData.value.thumbnailVariant = variant
   wizardData.value.gallery = []
 }
 
@@ -129,6 +130,7 @@ function validate(): boolean {
   })
   if (result.success) {
     errors.value = {}
+    wizardData.value.thumbnailVariant = selectedVariant.value
     return true
   }
   const map: Record<string, string> = {}

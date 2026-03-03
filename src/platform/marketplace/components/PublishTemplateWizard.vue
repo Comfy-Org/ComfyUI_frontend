@@ -8,6 +8,11 @@
       :current-step="wizard.currentStep.value"
       :is-submitting="wizard.isSubmitting.value"
       :is-saving="wizard.isSaving.value"
+      :is-existing="!!wizard.wizardData.value.id"
+      :is-draft="
+        wizard.wizardData.value.status === 'draft' ||
+        !wizard.wizardData.value.status
+      "
       @cancel="emit('cancel')"
       @back="wizard.goToPreviousStep"
       @next="handleNext"
