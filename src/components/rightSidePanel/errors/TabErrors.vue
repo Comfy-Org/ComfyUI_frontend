@@ -10,18 +10,19 @@
 
     <!-- Scrollable content -->
     <div class="flex-1 overflow-y-auto min-w-0">
-      <div
-        v-if="filteredGroups.length === 0"
-        class="text-sm text-muted-foreground px-4 text-center pt-5 pb-15"
-      >
-        {{
-          searchQuery.trim()
-            ? t('rightSidePanel.noneSearchDesc')
-            : t('rightSidePanel.noErrors')
-        }}
-      </div>
+      <TransitionGroup tag="div" name="list-scale" class="relative">
+        <div
+          v-if="filteredGroups.length === 0"
+          key="empty"
+          class="text-sm text-muted-foreground px-4 text-center pt-5 pb-15"
+        >
+          {{
+            searchQuery.trim()
+              ? t('rightSidePanel.noneSearchDesc')
+              : t('rightSidePanel.noErrors')
+          }}
+        </div>
 
-      <div v-else>
         <!-- Group by Class Type -->
         <PropertiesAccordionItem
           v-for="group in filteredGroups"
@@ -127,7 +128,7 @@
             />
           </div>
         </PropertiesAccordionItem>
-      </div>
+      </TransitionGroup>
     </div>
 
     <!-- Fixed Footer: Help Links -->
