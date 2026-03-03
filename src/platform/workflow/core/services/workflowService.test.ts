@@ -311,10 +311,12 @@ describe('useWorkflowService', () => {
     it('should reuse the active workflow when loading the same path repeatedly', async () => {
       const reset = vi.fn()
       const restore = vi.fn()
+      const workflowId = 'repeat-workflow-id'
       const existingWorkflow = {
         path: 'workflows/repeat.json',
         isPersisted: true,
         isLoaded: true,
+        activeState: { id: workflowId },
         changeTracker: {
           reset,
           restore
@@ -335,6 +337,7 @@ describe('useWorkflowService', () => {
       )
 
       await useWorkflowService().afterLoadNewGraph('repeat', {
+        id: workflowId,
         nodes: [{ id: 1, type: 'TestNode', pos: [0, 0], size: [100, 100] }]
       } as never)
 
