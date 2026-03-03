@@ -26,27 +26,29 @@ export function formatCamelCase(str: string): string {
   return processedWords.join(' ')
 }
 
+// Metadata cannot be associated with workflows, so extension encodes the mode.
+const JSON = 'json'
+const APP_JSON = `app.${JSON}`
+const JSON_EXT = `.${JSON}`
+const APP_JSON_EXT = `.${APP_JSON}`
+
 export function appendJsonExt(path: string) {
-  if (!path.toLowerCase().endsWith('.json')) {
-    path += '.json'
+  if (!path.toLowerCase().endsWith(JSON_EXT)) {
+    path += JSON_EXT
   }
   return path
 }
 
-// Metadata cannot be associated with workflows, so extension encodes the mode.
-const JSON_EXT = '.json'
-const APP_JSON_EXT = `.app${JSON_EXT}`
-
-export type WorkflowSuffix = 'json' | 'app.json'
+export type WorkflowSuffix = typeof JSON | typeof APP_JSON
 
 export function getWorkflowSuffix(
   suffix: string | null | undefined
 ): WorkflowSuffix {
-  return suffix === 'app.json' ? 'app.json' : 'json'
+  return suffix === APP_JSON ? APP_JSON : JSON
 }
 
 export function appendWorkflowJsonExt(path: string, isApp: boolean): string {
-  return ensureWorkflowSuffix(path, isApp ? 'app.json' : 'json')
+  return ensureWorkflowSuffix(path, isApp ? APP_JSON : JSON)
 }
 
 export function ensureWorkflowSuffix(
@@ -135,7 +137,7 @@ export function getFilenameDetails(fullFilename: string) {
   if (lower.endsWith(APP_JSON_EXT)) {
     return {
       filename: fullFilename.slice(0, -APP_JSON_EXT.length),
-      suffix: 'app.json'
+      suffix: APP_JSON
     }
   }
   const dotIndex = fullFilename.lastIndexOf('.')
