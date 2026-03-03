@@ -33,7 +33,8 @@ export function useAppSetDefaultView() {
     if (!workflow) return
 
     workflow.initialMode = openAsApp ? 'app' : 'graph'
-    app.rootGraph.extra.linearMode = openAsApp
+    const extra = (app.rootGraph.extra ??= {})
+    extra.linearMode = openAsApp
     workflow.changeTracker?.checkState()
     closeDialog()
   }
