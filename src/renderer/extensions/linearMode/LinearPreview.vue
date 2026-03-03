@@ -16,13 +16,16 @@ import LinearWelcome from '@/renderer/extensions/linearMode/LinearWelcome.vue'
 import LinearArrange from '@/renderer/extensions/linearMode/LinearArrange.vue'
 import LinearFeedback from '@/renderer/extensions/linearMode/LinearFeedback.vue'
 import MediaOutputPreview from '@/renderer/extensions/linearMode/MediaOutputPreview.vue'
+import MobileError from '@/renderer/extensions/linearMode/MobileError.vue'
 import OutputHistory from '@/renderer/extensions/linearMode/OutputHistory.vue'
 import { useOutputHistory } from '@/renderer/extensions/linearMode/useOutputHistory'
 import type { OutputSelection } from '@/renderer/extensions/linearMode/linearModeTypes'
 import { app } from '@/scripts/app'
+import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import type { ResultItemImpl } from '@/stores/queueStore'
 
 const { t } = useI18n()
+const executionErrorStore = useExecutionErrorStore()
 const mediaActions = useMediaAssetActions()
 const { isBuilderMode, isArrangeMode } = useAppMode()
 const { allOutputs, isWorkflowActive, cancelActiveWorkflowJobs } =
@@ -132,8 +135,9 @@ async function rerun(e: Event) {
       ]"
     />
   </section>
+  <MobileError v-if="mobile && executionErrorStore.isErrorOverlayOpen" />
   <ImagePreview
-    v-if="canShowPreview && latentPreview"
+    v-else-if="canShowPreview && latentPreview"
     :mobile
     :src="latentPreview"
   />
