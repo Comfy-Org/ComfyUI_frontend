@@ -28,8 +28,9 @@
         />
         <div
           v-show="cursorVisible"
-          class="pointer-events-none absolute left-0 top-0 rounded-full border border-black/60 shadow-[0_0_0_1px_rgba(255,255,255,0.8)]"
-          :style="cursorStyle"
+          ref="cursorEl"
+          class="pointer-events-none absolute left-0 top-0 rounded-full border border-black/60 shadow-[0_0_0_1px_rgba(255,255,255,0.8)] will-change-transform"
+          :style="cursorSizeStyle"
         />
       </div>
     </div>
@@ -141,7 +142,7 @@
               max="100"
               step="1"
               class="w-7 appearance-none border-0 bg-transparent text-right text-xs text-node-text-muted outline-none [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none [-moz-appearance:textfield]"
-              @click.prevent
+              @click.stop
               @change="
                 (e) => {
                   const val = Math.min(
@@ -281,6 +282,7 @@ const { nodeId } = defineProps<{
 const modelValue = defineModel<string>({ default: '' })
 
 const canvasEl = useTemplateRef<HTMLCanvasElement>('canvasEl')
+const cursorEl = useTemplateRef<HTMLElement>('cursorEl')
 const controlsEl = useTemplateRef<HTMLDivElement>('controlsEl')
 const { width: controlsWidth } = useElementSize(controlsEl)
 const compact = computed(
@@ -296,8 +298,6 @@ const {
   backgroundColor,
   canvasWidth,
   canvasHeight,
-  cursorX,
-  cursorY,
   cursorVisible,
   displayBrushSize,
   inputImageUrl,
@@ -309,7 +309,7 @@ const {
   handlePointerLeave,
   handleInputImageLoad,
   handleClear
-} = usePainter(nodeId, { canvasEl, modelValue })
+} = usePainter(nodeId, { canvasEl, cursorEl, modelValue })
 
 const canvasContainerStyle = computed(() => ({
   aspectRatio: `${canvasWidth.value} / ${canvasHeight.value}`,
@@ -318,16 +318,10 @@ const canvasContainerStyle = computed(() => ({
     : backgroundColor.value
 }))
 
-const cursorStyle = computed(() => {
-  const size = displayBrushSize.value
-  const x = cursorX.value - size / 2
-  const y = cursorY.value - size / 2
-  return {
-    width: `${size}px`,
-    height: `${size}px`,
-    transform: `translate(${x}px, ${y}px)`
-  }
-})
+const cursorSizeStyle = computed(() => ({
+  width: `${displayBrushSize.value}px`,
+  height: `${displayBrushSize.value}px`
+}))
 
 const brushOpacityPercent = computed({
   get: () => Math.round(brushOpacity.value * 100),

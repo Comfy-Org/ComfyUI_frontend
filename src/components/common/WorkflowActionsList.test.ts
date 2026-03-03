@@ -70,6 +70,24 @@ describe('WorkflowActionsList', () => {
     expect(wrapper.text()).toContain('NEW')
   })
 
+  it('does not render items with visible set to false', () => {
+    const items: WorkflowMenuItem[] = [
+      {
+        id: 'hidden',
+        label: 'Hidden Item',
+        icon: 'pi pi-eye-slash',
+        command: vi.fn(),
+        visible: false
+      },
+      { id: 'shown', label: 'Shown Item', icon: 'pi pi-eye', command: vi.fn() }
+    ]
+
+    const wrapper = createWrapper(items)
+
+    expect(wrapper.text()).not.toContain('Hidden Item')
+    expect(wrapper.text()).toContain('Shown Item')
+  })
+
   it('does not render badge when absent', () => {
     const items: WorkflowMenuAction[] = [
       { id: 'plain', label: 'Plain', icon: 'pi pi-check', command: vi.fn() }

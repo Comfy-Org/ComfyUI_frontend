@@ -98,6 +98,80 @@ describe('useNewMenuItemIndicator', () => {
     )
   })
 
+  it('does not count hidden items as unseen', () => {
+    const items: WorkflowMenuItem[] = [
+      {
+        id: 'hidden-feature',
+        label: 'Hidden',
+        icon: 'pi pi-test',
+        command: vi.fn(),
+        isNew: true,
+        badge: 'BETA',
+        visible: false
+      }
+    ]
+    const { hasUnseenItems } = useNewMenuItemIndicator(() => items)
+
+    expect(hasUnseenItems.value).toBe(false)
+  })
+
+  it('markAsSeen does not include never-seen hidden items', () => {
+    const items: WorkflowMenuItem[] = [
+      ...createItems('feature-a'),
+      {
+        id: 'hidden-feature',
+        label: 'Hidden',
+        icon: 'pi pi-test',
+        command: vi.fn(),
+        isNew: true,
+        badge: 'BETA',
+        visible: false
+      }
+    ]
+    const { markAsSeen } = useNewMenuItemIndicator(() => items)
+
+    markAsSeen()
+
+    expect(mockSettingStore.set).toHaveBeenCalledWith(
+      'Comfy.WorkflowActions.SeenItems',
+      ['feature-a']
+    )
+  })
+
+  it('markAsSeen retains previously-seen hidden items', () => {
+    mockSettingStore.get.mockReturnValue(['hidden-feature'])
+    const items: WorkflowMenuItem[] = [
+      ...createItems('feature-a'),
+      {
+        id: 'hidden-feature',
+        label: 'Hidden',
+        icon: 'pi pi-test',
+        command: vi.fn(),
+        isNew: true,
+        badge: 'BETA',
+        visible: false
+      }
+    ]
+    const { markAsSeen } = useNewMenuItemIndicator(() => items)
+
+    markAsSeen()
+
+    expect(mockSettingStore.set).toHaveBeenCalledWith(
+      'Comfy.WorkflowActions.SeenItems',
+      ['feature-a', 'hidden-feature']
+    )
+  })
+
+  it('markAsSeen skips write when stored list already matches', () => {
+    mockSettingStore.get.mockReturnValue(['feature-a', 'feature-b'])
+    const items = createItems('feature-a', 'feature-b')
+    const { markAsSeen } = useNewMenuItemIndicator(() => items)
+
+    markAsSeen()
+
+    expect(mockSettingStore.set).not.toHaveBeenCalled()
+  })
+
   it('markAsSeen does nothing when there are no new items', () => {
     const items: WorkflowMenuItem[] = [
       { id: 'regular', label: 'Regular', icon: 'pi pi-test', command: vi.fn() }
