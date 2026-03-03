@@ -16,7 +16,8 @@ import type { ComboInputSpec, InputSpec } from '@/schemas/nodeDefSchema'
 import type { InputSpec as InputSpecV2 } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import {
   zAutogrowOptions,
-  zDynamicComboInputSpec
+  zDynamicComboInputSpec,
+  zMatchTypeOptions
 } from '@/schemas/nodeDefSchema'
 import { useLitegraphService } from '@/services/litegraphService'
 import { app } from '@/scripts/app'
@@ -205,6 +206,16 @@ const dynamicInputs: Record<
   COMFY_AUTOGROW_V3: applyAutogrow,
   COMFY_MATCHTYPE_V3: applyMatchType
 }
+const dynamicTypeResolvers: Record<
+  string,
+  (inputSpec: InputSpecV2) => string[]
+> = {
+  COMFY_AUTOGROW_V3: resolveAutogrowType,
+  COMFY_MATCHTYPE_V3: (input) =>
+    zMatchTypeOptions
+      .safeParse(input)
+      .data?.template?.allowed_types?.split(',') ?? []
+}
 
 export function applyDynamicInputs(
   node: LGraphNode,
@@ -215,6 +226,27 @@ export function applyDynamicInputs(
   dynamicInputs[inputSpec.type](node, inputSpec)
   return true
 }
+
+export function resolveInputType(input: InputSpecV2): string[] {
+  return input.type in dynamicTypeResolvers
+    ? dynamicTypeResolvers[input.type](input)
+    : input.type.split(',')
+}
+
+function resolveAutogrowType(rawSpec: InputSpecV2): string[] {
+  const { input } = zAutogrowOptions.safeParse(rawSpec).data?.template ?? {}
+
+  const inputTypes: (Record<string, InputSpec> | undefined)[] = [
+    input?.required,
+    input?.optional
+  ]
+  return inputTypes.flatMap((inputType) =>
+    Object.entries(inputType ?? {}).flatMap(([name, v]) =>
+      resolveInputType(transformInputSpecV1ToV2(v, { name }))
+    )
+  )
+}
+
 function spliceInputs(
   node: LGraphNode,
   startIndex: number,
@@ -329,11 +361,10 @@ function withComfyMatchType(node: LGraphNode): asserts node is MatchTypeNode {
 function applyMatchType(node: LGraphNode, inputSpec: InputSpecV2) {
   const { addNodeInput } = useLitegraphService()
   const name = inputSpec.name
-  const { allowed_types, template_id } = (
-    inputSpec as InputSpecV2 & {
-      template: { allowed_types: string; template_id: string }
-    }
-  ).template
+  const matchTypeSpec = zMatchTypeOptions.safeParse(inputSpec).data
+  if (!matchTypeSpec) return
+
+  const { allowed_types, template_id } = matchTypeSpec.template
   const typedSpec = { ...inputSpec, type: allowed_types }
   addNodeInput(node, typedSpec)
   withComfyMatchType(node)
