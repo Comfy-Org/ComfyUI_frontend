@@ -8859,9 +8859,8 @@ export function remapClipboardSubgraphNodeIds(
 
   for (const nodeInfo of allNodeInfo) {
     if (typeof nodeInfo.type !== 'string') continue
-    graphPersistenceAdapter.remapProxyWidgets(
-      nodeInfo,
-      subgraphNodeIdMap.get(nodeInfo.type)
-    )
+    const remappedIds = subgraphNodeIdMap.get(nodeInfo.type)
+    if (!remappedIds) continue
+    graphPersistenceAdapter.remapProxyWidgets(nodeInfo, remappedIds)
   }
 }

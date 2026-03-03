@@ -52,41 +52,53 @@ export class SubgraphOutput extends SubgraphSlot {
     )
       return
 
-    // Link should not be present, but just in case, disconnect it
-    const existingLink = this.getLinks().at(0)
-    if (existingLink != null) {
-      subgraph.beforeChange()
+    subgraph.beforeChange()
+    try {
+      // Link should not be present, but just in case, disconnect it
+      const existingLink = this.getLinks().at(0)
+      if (existingLink != null) {
+        const { outputNode } = existingLink.resolve(subgraph)
+        if (!outputNode)
+          throw new Error('Expected output node for existing link')
 
-      const { outputNode } = existingLink.resolve(subgraph)
-      if (!outputNode) throw new Error('Expected output node for existing link')
+        subgraph.disconnectSubgraphOutputLink(
+          this,
+          outputNode,
+          existingLink.origin_slot,
+          existingLink
+        )
 
-      subgraph.disconnectSubgraphOutputLink(
+        graphLifecycleEventDispatcher.dispatchNodeConnectionChange({
+          node: outputNode,
+          slotType: NodeSlotType.OUTPUT,
+          slotIndex: existingLink.origin_slot,
+          connected: false,
+          link: existingLink,
+          slot: this
+        })
+      }
+
+      const link = subgraph.connectSubgraphOutputSlot(
+        node,
+        outputIndex,
         this,
-        outputNode,
-        existingLink.origin_slot,
-        existingLink
+        afterRerouteId
       )
+      if (!link) return
+
+      graphLifecycleEventDispatcher.dispatchNodeConnectionChange({
+        node,
+        slotType: NodeSlotType.OUTPUT,
+        slotIndex: outputIndex,
+        connected: true,
+        link,
+        slot
+      })
+
+      return link
+    } finally {
+      subgraph.afterChange()
     }
-
-    const link = subgraph.connectSubgraphOutputSlot(
-      node,
-      outputIndex,
-      this,
-      afterRerouteId
-    )
-
-    graphLifecycleEventDispatcher.dispatchNodeConnectionChange({
-      node,
-      slotType: NodeSlotType.OUTPUT,
-      slotIndex: outputIndex,
-      connected: true,
-      link,
-      slot
-    })
-
-    subgraph.afterChange()
-
-    return link
   }
 
   get labelPos(): Point {

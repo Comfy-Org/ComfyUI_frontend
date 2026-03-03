@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
 import { fixLinkInputSlots } from '@/utils/litegraphUtil'
+import { triggerCallbackOnAllNodes } from '@/utils/graphTraversalUtil'
 
 import { addAfterConfigureHandler } from './graphConfigureUtil'
 
@@ -28,7 +29,7 @@ function createConfigureGraph(): LGraph {
   return {
     nodes: [],
     onConfigure: vi.fn()
-  } as Partial<LGraph> as LGraph
+  } satisfies Partial<LGraph> as unknown as LGraph
 }
 
 describe('addAfterConfigureHandler', () => {
@@ -46,5 +47,26 @@ describe('addAfterConfigureHandler', () => {
     )
 
     expect(fixLinkInputSlots).toHaveBeenCalledWith(graph)
+  })
+
+  it('runs onAfterGraphConfigured even if onConfigure throws', () => {
+    const graph = createConfigureGraph()
+    graph.onConfigure = vi.fn(() => {
+      throw new Error('onConfigure failed')
+    })
+
+    addAfterConfigureHandler(graph, () => undefined)
+
+    expect(() =>
+      graph.onConfigure!.call(
+        graph,
+        {} as Parameters<NonNullable<LGraph['onConfigure']>>[0]
+      )
+    ).toThrow('onConfigure failed')
+
+    expect(triggerCallbackOnAllNodes).toHaveBeenCalledWith(
+      graph,
+      'onAfterGraphConfigured'
+    )
   })
 })

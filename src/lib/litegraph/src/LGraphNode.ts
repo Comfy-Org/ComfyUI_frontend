@@ -3121,26 +3121,29 @@ export class LGraphNode
             hasWidget: !!input.widget
           })
 
+          graph.disconnectLink(link_info, 'input')
+
+          graphLifecycleEventDispatcher.dispatchDisconnectNodePair({
+            sourceNode: this,
+            sourceSlotIndex: slot,
+            sourceSlot: output,
+            targetNode: target,
+            targetSlotIndex: link_info.target_slot,
+            targetSlot: input,
+            link: link_info
+          })
+        } else {
+          graph.disconnectLink(link_info, 'input')
+
           graphLifecycleEventDispatcher.dispatchNodeConnectionChange({
-            node: target,
-            slotType: NodeSlotType.INPUT,
-            slotIndex: link_info.target_slot,
+            node: this,
+            slotType: NodeSlotType.OUTPUT,
+            slotIndex: slot,
             connected: false,
             link: link_info,
-            slot: input
+            slot: output
           })
         }
-        // remove the link from the links pool
-        graph.disconnectLink(link_info, 'input')
-
-        graphLifecycleEventDispatcher.dispatchNodeConnectionChange({
-          node: this,
-          slotType: NodeSlotType.OUTPUT,
-          slotIndex: slot,
-          connected: false,
-          link: link_info,
-          slot: output
-        })
       }
       output.links = null
     }

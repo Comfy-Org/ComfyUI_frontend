@@ -302,7 +302,9 @@ describe('LinkStore Lifecycle Rehydration', () => {
 
     const restored = new LGraph(serialised)
     const linkedInput = restored.getNodeById(linkedNodeId)?.inputs[0]
-    const linkedInputLink = restored.getLink(linkedInput?.link)
+    expect(linkedInput?.link).toBeDefined()
+    const linkedInputLink = restored.getLink(linkedInput!.link!)
+    expect(linkedInputLink).toBeDefined()
 
     const linkStore = useLinkStore()
     const topology = linkStore.getTopology(restored.linkStoreKey)
@@ -313,7 +315,7 @@ describe('LinkStore Lifecycle Rehydration', () => {
       linkStore.getFloatingLink(restored.linkStoreKey, floatingLinkId)
     ).toBeDefined()
     expect(linkStore.getReroute(restored.linkStoreKey, rerouteId)).toBeDefined()
-    expect(linkStore.getLink(restored.linkStoreKey, linkedInput?.link)).toBe(
+    expect(linkStore.getLink(restored.linkStoreKey, linkedInput!.link!)).toBe(
       linkedInputLink
     )
   })

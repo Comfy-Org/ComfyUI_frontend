@@ -1792,6 +1792,15 @@ export class LGraph
     subgraphOutput.linkIds[0] = link.id
     sourceOutput.links ??= []
     sourceOutput.links.push(link.id)
+    graphLifecycleEventDispatcher.dispatchSlotLinkChanged({
+      graph: this,
+      nodeId: sourceNode.id,
+      slotType: NodeSlotType.OUTPUT,
+      slotIndex: sourceSlotIndex,
+      connected: true,
+      linkId: link.id,
+      hasWidget: false
+    })
 
     this.finalizeConnectedLink(link)
     return link

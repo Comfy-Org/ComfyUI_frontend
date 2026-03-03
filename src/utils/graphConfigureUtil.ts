@@ -24,12 +24,10 @@ export function addAfterConfigureHandler(
 
       triggerCallbackOnAllNodes(this, 'onGraphConfigured')
 
-      const r = onConfigure?.apply(this, args)
-
+      return onConfigure?.apply(this, args)
+    } finally {
       triggerCallbackOnAllNodes(this, 'onAfterGraphConfigured')
 
-      return r
-    } finally {
       if (LiteGraph.vueNodesMode) {
         flushScheduledSlotLayoutSync()
         getCanvas()?.setDirty(true, true)

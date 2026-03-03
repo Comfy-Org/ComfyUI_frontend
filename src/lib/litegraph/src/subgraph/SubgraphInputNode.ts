@@ -172,6 +172,14 @@ export class SubgraphInputNode
         subgraph._version++
       }
       subgraph.setDirtyCanvas(false, true)
+      graphLifecycleEventDispatcher.dispatchNodeConnectionChange({
+        node,
+        slotType: NodeSlotType.INPUT,
+        slotIndex,
+        connected: false,
+        link,
+        slot: input
+      })
       return
     }
 
