@@ -59,12 +59,12 @@ const IS_PROD_CONFIG = process.env.USE_PROD_CONFIG === 'true'
 // Select the correct Sentry DSN and project based on environment.
 // Prod uses SENTRY_DSN_PROD / SENTRY_PROJECT_PROD; stage falls back to SENTRY_DSN / SENTRY_PROJECT.
 const SENTRY_DSN = IS_PROD_CONFIG
-  ? (process.env.SENTRY_DSN_PROD || process.env.SENTRY_DSN || '')
-  : (process.env.SENTRY_DSN || '')
+  ? process.env.SENTRY_DSN_PROD || process.env.SENTRY_DSN || ''
+  : process.env.SENTRY_DSN || ''
 
 const SENTRY_PROJECT = IS_PROD_CONFIG
-  ? (process.env.SENTRY_PROJECT_PROD || process.env.SENTRY_PROJECT || '')
-  : (process.env.SENTRY_PROJECT || '')
+  ? process.env.SENTRY_PROJECT_PROD || process.env.SENTRY_PROJECT || ''
+  : process.env.SENTRY_PROJECT || ''
 
 // Disable Vue DevTools for production cloud distribution
 const DISABLE_VUE_PLUGINS =
