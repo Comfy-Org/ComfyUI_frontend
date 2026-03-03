@@ -34,7 +34,7 @@ const entries = computed(() => {
 <template>
   <div class="p-2 my-2 rounded-lg flex items-center-safe gap-2">
     <span
-      class="mr-auto flex-[3_1_0%] max-w-max min-w-0 truncate"
+      class="mr-auto flex-[4_1_0%] max-w-max min-w-0 truncate"
       v-text="title"
     />
     <span
