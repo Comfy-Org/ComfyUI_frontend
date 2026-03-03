@@ -32,10 +32,10 @@ const entries = computed(() => {
 })
 </script>
 <template>
-  <div class="p-2 my-2 rounded-lg flex items-center-safe min-w-0 gap-0.5">
-    <span class="max-w-3/4 truncate mr-auto" v-text="title" />
+  <div class="p-2 my-2 rounded-lg flex items-center-safe gap-2">
+    <span class="max-w-3/5 truncate mr-auto shrink" v-text="title" />
     <span
-      class="text-muted-foreground mr-2 text-end truncate"
+      class="text-muted-foreground mr-2 text-end truncate grow basis-0"
       v-text="subTitle"
     />
     <Popover :entries>

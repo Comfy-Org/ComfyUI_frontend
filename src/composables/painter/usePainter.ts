@@ -27,11 +27,12 @@ export const PAINTER_TOOLS: Record<string, PainterTool> = {
 
 interface UsePainterOptions {
   canvasEl: Ref<HTMLCanvasElement | null>
+  cursorEl: Ref<HTMLElement | null>
   modelValue: Ref<string>
 }
 
 export function usePainter(nodeId: string, options: UsePainterOptions) {
-  const { canvasEl, modelValue } = options
+  const { canvasEl, cursorEl, modelValue } = options
   const { t } = useI18n()
   const nodeOutputStore = useNodeOutputStore()
   const toastStore = useToastStore()
@@ -41,8 +42,6 @@ export function usePainter(nodeId: string, options: UsePainterOptions) {
   const canvasWidth = ref(512)
   const canvasHeight = ref(512)
 
-  const cursorX = ref(0)
-  const cursorY = ref(0)
   const cursorVisible = ref(false)
 
   const inputImageUrl = ref<string | null>(null)
@@ -518,8 +517,10 @@ export function usePainter(nodeId: string, options: UsePainterOptions) {
   }
 
   function updateCursorPos(e: PointerEvent) {
-    cursorX.value = e.offsetX
-    cursorY.value = e.offsetY
+    const el = cursorEl.value
+    if (!el) return
+    const size = displayBrushSize.value
+    el.style.transform = `translate(${e.offsetX - size / 2}px, ${e.offsetY - size / 2}px)`
   }
 
   function handlePointerDown(e: PointerEvent) {
@@ -760,8 +761,6 @@ export function usePainter(nodeId: string, options: UsePainterOptions) {
     canvasWidth,
     canvasHeight,
 
-    cursorX,
-    cursorY,
     cursorVisible,
     displayBrushSize,
 
