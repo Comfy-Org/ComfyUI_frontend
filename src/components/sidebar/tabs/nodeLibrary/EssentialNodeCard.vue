@@ -10,11 +10,11 @@
     @mouseleave="handleMouseLeave"
   >
     <div class="flex flex-1 items-center justify-center">
-      <i :class="cn(nodeIcon, 'size-14 text-muted-foreground')" />
+      <i :class="cn(nodeIcon, 'size-6 text-muted-foreground')" />
     </div>
 
     <TextTickerMultiLine
-      class="shrink-0 h-8 w-full text-xs font-bold text-foreground leading-4"
+      class="shrink-0 h-8 w-full text-xs font-medium text-foreground leading-4 mt-2"
     >
       {{ node.label }}
     </TextTickerMultiLine>
@@ -41,6 +41,7 @@ import { computed, inject } from 'vue'
 import TextTickerMultiLine from '@/components/common/TextTickerMultiLine.vue'
 import NodePreviewCard from '@/components/node/NodePreviewCard.vue'
 import { useNodePreviewAndDrag } from '@/composables/node/useNodePreviewAndDrag'
+import { ESSENTIALS_ICON_OVERRIDES } from '@/constants/essentialsNodes'
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 import type { RenderedTreeExplorerNode } from '@/types/treeExplorerTypes'
 import { cn } from '@/utils/tailwindUtil'
@@ -72,6 +73,8 @@ const {
 
 const nodeIcon = computed(() => {
   const nodeName = node.data?.name
+  if (nodeName && nodeName in ESSENTIALS_ICON_OVERRIDES)
+    return ESSENTIALS_ICON_OVERRIDES[nodeName]
   const iconName = nodeName ? kebabCase(nodeName) : 'node'
   return `icon-[comfy--${iconName}]`
 })

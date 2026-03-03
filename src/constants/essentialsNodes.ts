@@ -6,6 +6,17 @@
  * Source: https://www.notion.so/comfy-org/2fe6d73d365080d0a951d14cdf540778
  */
 
+export const ESSENTIALS_ICON_OVERRIDES: Record<string, string> = {
+  LoadImage: 'icon-[lucide--image-up]',
+  LoadImageOutput: 'icon-[lucide--image-up]',
+  SaveImage: 'icon-[lucide--image-down]',
+  PrimitiveStringMultiline: 'icon-[lucide--text]',
+  ImageCrop: 'icon-[lucide--crop]',
+  VideoCrop: 'icon-[lucide--crop]',
+  KlingLipSyncAudioToVideoNode: 'icon-[lucide--mic-vocal]',
+  WebcamCapture: 'icon-[lucide--camera]',
+}
+
 export const ESSENTIALS_CATEGORIES = [
   'basics',
   'text generation',
