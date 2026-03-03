@@ -13,7 +13,7 @@ import { resolveNode } from '@/utils/litegraphUtil'
 export const useAppModeStore = defineStore('appMode', () => {
   const { getCanvas } = useCanvasStore()
   const workflowStore = useWorkflowStore()
-  const { mode, setMode, isBuilderMode } = useAppMode()
+  const { mode, setMode, isBuilderMode, isSelectMode } = useAppMode()
   const emptyWorkflowDialog = useEmptyWorkflowDialog()
 
   const selectedInputs = reactive<[NodeId, string][]>([])
@@ -78,8 +78,7 @@ export const useAppModeStore = defineStore('appMode', () => {
   )
 
   let unwatch: () => void | undefined
-  watch(
-    () => mode.value === 'builder:select',
+  watch(isSelectMode,
     (inSelect) => {
       const { state } = getCanvas()
       if (!state) return
@@ -105,7 +104,7 @@ export const useAppModeStore = defineStore('appMode', () => {
     setMode(
       mode.value === 'app' && hasOutputs.value
         ? 'builder:arrange'
-        : 'builder:select'
+        : 'builder:inputs'
     )
   }
 

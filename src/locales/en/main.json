@@ -3358,8 +3358,10 @@
   },
   "builderToolbar": {
     "label": "App Builder",
-    "select": "Select",
-    "selectDescription": "Choose inputs/outputs",
+    "inputs": "Inputs",
+    "outputs": "Outputs",
+    "inputsDescription": "Choose inputs",
+    "outputsDescription": "Choose outputs",
     "arrange": "Preview",
     "arrangeDescription": "Review app layout",
     "defaultView": "Set a default view",

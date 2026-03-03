@@ -53,7 +53,7 @@
           />
         </div>
         <!-- Widget Component -->
-        <AppInput :id="widget.id" :name="widget.name" :is-select-mode>
+        <AppInput :id="widget.id" :name="widget.name" :is-select-inputs-mode>
           <component
             :is="widget.vueComponent"
             v-model="widget.value"
@@ -123,7 +123,7 @@ const { nodeData } = defineProps<NodeWidgetsProps>()
 
 const { shouldHandleNodePointerEvents, forwardEventToCanvas } =
   useCanvasInteractions()
-const { isSelectMode } = useAppMode()
+const { isSelectInputsMode } = useAppMode()
 const canvasStore = useCanvasStore()
 const { bringNodeToFront } = useNodeZIndex()
 const promotionStore = usePromotionStore()

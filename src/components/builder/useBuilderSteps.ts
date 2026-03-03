@@ -7,7 +7,8 @@ import { useAppMode } from '@/composables/useAppMode'
 import { useAppSetDefaultView } from './useAppSetDefaultView'
 
 const BUILDER_STEPS = [
-  'builder:select',
+  'builder:inputs',
+  'builder:outputs',
   'builder:arrange',
   'setDefaultView'
 ] as const
@@ -25,7 +26,7 @@ export function useBuilderSteps(options?: { hasOutputs?: Ref<boolean> }) {
     if (isBuilderMode.value) {
       return mode.value as BuilderStepId
     }
-    return 'builder:select'
+    return 'builder:inputs'
   })
 
   const activeStepIndex = computed(() =>
@@ -39,6 +40,11 @@ export function useBuilderSteps(options?: { hasOutputs?: Ref<boolean> }) {
       return activeStepIndex.value >= ARRANGE_INDEX
     return activeStepIndex.value >= BUILDER_STEPS.length - 1
   })
+
+  const isSelectStep = computed(() =>
+    activeStep.value === 'builder:inputs'
+      || activeStep.value === 'builder:outputs'
+  )
 
   function navigateToStep(stepId: BuilderStepId) {
     if (stepId === 'setDefaultView') {
@@ -64,6 +70,7 @@ export function useBuilderSteps(options?: { hasOutputs?: Ref<boolean> }) {
     activeStepIndex,
     isFirstStep,
     isLastStep,
+    isSelectStep,
     navigateToStep,
     goBack,
     goNext

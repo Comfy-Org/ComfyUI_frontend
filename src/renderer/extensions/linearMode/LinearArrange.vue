@@ -50,7 +50,7 @@ const { hasOutputs } = storeToRefs(useAppModeStore())
       <p class="mt-0 p-0">{{ t('linearMode.arrange.outputExamples') }}</p>
     </div>
     <div class="flex flex-row gap-2">
-      <Button variant="primary" size="lg" @click="setMode('builder:select')">
+      <Button variant="primary" size="lg" @click="setMode('builder:outputs')">
         {{ t('linearMode.arrange.switchToSelectButton') }}
       </Button>
     </div>
