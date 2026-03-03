@@ -1062,7 +1062,11 @@
       "stats": "Statistics",
       "downloads": "Downloads",
       "favorites": "Favorites",
-      "rating": "Rating"
+      "rating": "Rating",
+      "edit": "Edit Submission",
+      "remove": "Remove",
+      "removeConfirm": "Remove",
+      "confirmRemove": "Are you sure you want to remove this submission?"
     },
     "publish": {
       "title": "Publish Template",

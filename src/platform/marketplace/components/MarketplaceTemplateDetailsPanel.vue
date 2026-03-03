@@ -136,13 +136,60 @@
         :value="String(submission.stats.rating)"
       />
     </PropertiesAccordionItem>
+
+    <div class="mt-auto border-t border-border-default p-4 flex flex-col gap-2">
+      <template v-if="confirmingRemove">
+        <p class="m-0 text-sm text-muted">
+          {{ t('templateWorkflows.myTemplates.confirmRemove') }}
+        </p>
+        <div class="flex gap-2">
+          <Button
+            variant="destructive"
+            size="lg"
+            class="flex-1"
+            @click="emit('remove', submission.id)"
+          >
+            {{ t('templateWorkflows.myTemplates.removeConfirm') }}
+          </Button>
+          <Button
+            variant="secondary"
+            size="lg"
+            class="flex-1"
+            @click="confirmingRemove = false"
+          >
+            {{ t('templateWorkflows.publish.cancel') }}
+          </Button>
+        </div>
+      </template>
+      <template v-else>
+        <Button
+          variant="primary"
+          size="lg"
+          class="w-full"
+          @click="emit('edit', submission.id)"
+        >
+          <i class="icon-[lucide--pencil] size-4" />
+          {{ t('templateWorkflows.myTemplates.edit') }}
+        </Button>
+        <Button
+          variant="secondary"
+          size="lg"
+          class="w-full"
+          @click="confirmingRemove = true"
+        >
+          <i class="icon-[lucide--trash-2] size-4" />
+          {{ t('templateWorkflows.myTemplates.remove') }}
+        </Button>
+      </template>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import Button from '@/components/ui/button/Button.vue'
 import StatusBadge from '@/components/common/StatusBadge.vue'
 import type { StatusBadgeVariants } from '@/components/common/statusBadge.variants'
 import PropertiesAccordionItem from '@/components/rightSidePanel/layout/PropertiesAccordionItem.vue'
@@ -158,6 +205,13 @@ const { t } = useI18n()
 const { submission } = defineProps<{
   submission: MarketplaceTemplate
 }>()
+
+const emit = defineEmits<{
+  edit: [id: string]
+  remove: [id: string]
+}>()
+
+const confirmingRemove = ref(false)
 
 const STATUS_SEVERITY: Record<TemplateStatus, StatusBadgeVariants['severity']> =
   {

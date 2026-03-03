@@ -447,6 +447,8 @@
       <MarketplaceTemplateDetailsPanel
         v-if="selectedSubmission"
         :submission="selectedSubmission"
+        @edit="handleEditSubmission"
+        @remove="handleRemoveSubmission"
       />
       <WorkflowTemplateDetailsPanel
         v-else-if="selectedTemplate"
@@ -484,6 +486,7 @@ import WorkflowTemplateDetailsPanel from '@/components/custom/widget/WorkflowTem
 import MarketplaceTemplateDetailsPanel from '@/platform/marketplace/components/MarketplaceTemplateDetailsPanel.vue'
 import MyTemplatesEmptyState from '@/platform/marketplace/components/MyTemplatesEmptyState.vue'
 import { useMyTemplates } from '@/platform/marketplace/composables/useMyTemplates'
+import { deleteTemplate } from '@/platform/marketplace/services/templateApi'
 import type { TemplateStatus } from '@/platform/marketplace/types/marketplace'
 import PublishTemplateWizard from '@/platform/marketplace/components/PublishTemplateWizard.vue'
 import { usePublishTemplateWizard } from '@/platform/marketplace/composables/usePublishTemplateWizard'
@@ -594,6 +597,22 @@ function cancelPublishing() {
 
 function onPublishSubmitted() {
   isPublishing.value = false
+  void refreshMyTemplates()
+}
+
+function handleEditSubmission(id: string) {
+  const submission = myTemplates.value.find((s) => s.id === id)
+  if (!submission) return
+
+  publishWizard.wizardData.value = {
+    ...submission
+  }
+  isPublishing.value = true
+}
+
+async function handleRemoveSubmission(id: string) {
+  await deleteTemplate(id)
+  selectedTemplate.value = null
   void refreshMyTemplates()
 }
 
