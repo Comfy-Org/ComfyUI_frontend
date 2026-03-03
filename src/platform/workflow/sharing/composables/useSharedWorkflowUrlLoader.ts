@@ -14,7 +14,6 @@ import {
   SharedWorkflowLoadError,
   useWorkflowShareService
 } from '@/platform/workflow/sharing/services/workflowShareService'
-import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { useDialogService } from '@/services/dialogService'
 import { useDialogStore } from '@/stores/dialogStore'
@@ -62,22 +61,11 @@ export function useSharedWorkflowUrlLoader() {
     return true
   }
 
-  async function discoverNonOwnedAssets(): Promise<AssetInfo[] | null> {
-    try {
-      const { output } = await app.graphToPrompt()
-      const raw = await api.getShareableAssets(output, { owned: false })
-      return raw.assets.filter((a) => !a.in_library)
-    } catch {
-      return null
-    }
-  }
-
   function showOpenSharedWorkflowDialog(
     workflowName: string,
-    nonOwnedAssets: AssetInfo[] | null
+    nonOwnedAssets: AssetInfo[]
   ): Promise<boolean> {
     const dialogKey = 'open-shared-workflow'
-    const items = nonOwnedAssets ?? []
 
     return new Promise<boolean>((resolve) => {
       dialogService.showLayoutDialog({
@@ -85,7 +73,7 @@ export function useSharedWorkflowUrlLoader() {
         component: OpenSharedWorkflowDialogContent,
         props: {
           workflowName,
-          items,
+          items: nonOwnedAssets,
           onConfirm: () => {
             resolve(true)
             dialogStore.closeDialog({ key: dialogKey })
@@ -145,42 +133,43 @@ export function useSharedWorkflowUrlLoader() {
     try {
       const sharedWorkflow =
         await workflowShareService.getSharedWorkflow(shareParam)
-      await app.loadGraphData(
-        sharedWorkflow.workflowJson,
-        true,
-        true,
-        shareParam
-      )
 
       const workflowName = extractWorkflowName(
         sharedWorkflow.name,
         sharedWorkflow.workflowJson as unknown as Record<string, unknown>
       )
-      const nonOwnedAssets = await discoverNonOwnedAssets()
-
-      const hasImportableAssets = (nonOwnedAssets?.length ?? 0) > 0
+      const nonOwnedAssets = sharedWorkflow.assets.filter((a) => !a.in_library)
 
       const confirmed = await showOpenSharedWorkflowDialog(
         workflowName,
         nonOwnedAssets
       )
 
-      if (confirmed && hasImportableAssets) {
-        try {
-          await workflowShareService.getSharedWorkflow(shareParam, {
-            import: true
-          })
-        } catch (importError) {
-          console.error(
-            '[useSharedWorkflowUrlLoader] Failed to import assets:',
-            importError
-          )
-          toast.add({
-            severity: 'error',
-            summary: t('g.error'),
-            detail: t('openSharedWorkflow.importFailed'),
-            life: 3000
-          })
+      if (confirmed) {
+        await app.loadGraphData(
+          sharedWorkflow.workflowJson,
+          true,
+          true,
+          workflowName
+        )
+
+        if (nonOwnedAssets.length > 0) {
+          try {
+            await workflowShareService.getSharedWorkflow(shareParam, {
+              import: true
+            })
+          } catch (importError) {
+            console.error(
+              '[useSharedWorkflowUrlLoader] Failed to import assets:',
+              importError
+            )
+            toast.add({
+              severity: 'error',
+              summary: t('g.error'),
+              detail: t('openSharedWorkflow.importFailed'),
+              life: 3000
+            })
+          }
         }
       }
 
