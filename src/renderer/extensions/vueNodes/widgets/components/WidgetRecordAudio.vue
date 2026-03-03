@@ -1,5 +1,5 @@
 <template>
-  <div class="relative">
+  <div class="relative" @pointerdown.stop>
     <div class="mb-4">
       <Button
         class="text-base-foreground w-full border-0 bg-secondary-background hover:bg-secondary-background-hover"
