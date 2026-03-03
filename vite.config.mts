@@ -54,6 +54,17 @@ const DISTRIBUTION: 'desktop' | 'localhost' | 'cloud' =
 // Nightly builds are from main branch; RC/stable builds are from core/* branches
 // Can be overridden via IS_NIGHTLY env var for testing
 const IS_NIGHTLY = process.env.IS_NIGHTLY === 'true'
+const IS_PROD_CONFIG = process.env.USE_PROD_CONFIG === 'true'
+
+// Select the correct Sentry DSN and project based on environment.
+// Prod uses SENTRY_DSN_PROD / SENTRY_PROJECT_PROD; stage falls back to SENTRY_DSN / SENTRY_PROJECT.
+const SENTRY_DSN = IS_PROD_CONFIG
+  ? (process.env.SENTRY_DSN_PROD || process.env.SENTRY_DSN || '')
+  : (process.env.SENTRY_DSN || '')
+
+const SENTRY_PROJECT = IS_PROD_CONFIG
+  ? (process.env.SENTRY_PROJECT_PROD || process.env.SENTRY_PROJECT || '')
+  : (process.env.SENTRY_PROJECT || '')
 
 // Disable Vue DevTools for production cloud distribution
 const DISABLE_VUE_PLUGINS =
@@ -413,12 +424,12 @@ export default defineConfig({
     ...(DISTRIBUTION === 'cloud' &&
     process.env.SENTRY_AUTH_TOKEN &&
     process.env.SENTRY_ORG &&
-    process.env.SENTRY_PROJECT &&
+    SENTRY_PROJECT &&
     !IS_DEV
       ? [
           sentryVitePlugin({
             org: process.env.SENTRY_ORG,
-            project: process.env.SENTRY_PROJECT,
+            project: SENTRY_PROJECT,
             authToken: process.env.SENTRY_AUTH_TOKEN,
             sourcemaps: {
               // Delete source maps after upload to prevent public access
@@ -587,9 +598,9 @@ export default defineConfig({
       process.env.npm_package_version
     ),
     __SENTRY_ENABLED__: JSON.stringify(
-      !(process.env.NODE_ENV === 'development' || !process.env.SENTRY_DSN)
+      !(process.env.NODE_ENV === 'development' || !SENTRY_DSN)
     ),
-    __SENTRY_DSN__: JSON.stringify(process.env.SENTRY_DSN || ''),
+    __SENTRY_DSN__: JSON.stringify(SENTRY_DSN),
     __ALGOLIA_APP_ID__: JSON.stringify(process.env.ALGOLIA_APP_ID || ''),
     __ALGOLIA_API_KEY__: JSON.stringify(process.env.ALGOLIA_API_KEY || ''),
     __USE_PROD_CONFIG__: process.env.USE_PROD_CONFIG === 'true',
