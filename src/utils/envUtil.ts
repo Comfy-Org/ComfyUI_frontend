@@ -7,7 +7,7 @@ import { isDesktop } from '@/platform/distribution/types'
  * Used by desktop-ui app storybook stories
  * @public
  */
-export type ElectronWindow = typeof window & {
+type ElectronWindow = typeof window & {
   electronAPI?: ElectronAPI
 }
 

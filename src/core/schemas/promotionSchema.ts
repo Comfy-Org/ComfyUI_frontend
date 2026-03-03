@@ -9,10 +9,17 @@ type ProxyWidgetsProperty = z.infer<typeof proxyWidgetsPropertySchema>
 export function parseProxyWidgets(
   property: NodeProperty | undefined
 ): ProxyWidgetsProperty {
-  if (typeof property === 'string') property = JSON.parse(property)
-  const result = proxyWidgetsPropertySchema.safeParse(
-    typeof property === 'string' ? JSON.parse(property) : property
-  )
+  let parsed = property
+  if (typeof parsed === 'string') {
+    try {
+      parsed = JSON.parse(parsed)
+    } catch {
+      throw new Error(
+        `Invalid assignment for properties.proxyWidgets:\nMalformed JSON string`
+      )
+    }
+  }
+  const result = proxyWidgetsPropertySchema.safeParse(parsed)
   if (result.success) return result.data
 
   const error = fromZodError(result.error)

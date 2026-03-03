@@ -382,32 +382,26 @@ export class ComfyApp {
   }
 
   static copyToClipspace(node: LGraphNode) {
-    var widgets = null
-    if (node.widgets) {
-      widgets = node.widgets.map(({ type, name, value }) => ({
-        type,
-        name,
-        value
-      }))
-    }
+    const widgets = node.widgets
+      ? node.widgets.map(({ type, name, value }) => ({
+          type,
+          name,
+          value
+        }))
+      : null
 
-    var imgs = undefined
-    var orig_imgs = undefined
+    let imgs: HTMLImageElement[] | undefined
+    let orig_imgs: HTMLImageElement[] | undefined
     if (node.imgs != undefined) {
-      imgs = []
-      orig_imgs = []
-
-      for (let i = 0; i < node.imgs.length; i++) {
-        imgs[i] = new Image()
-        imgs[i].src = node.imgs[i].src
-        orig_imgs[i] = imgs[i]
-      }
+      imgs = node.imgs.map((img) => {
+        const copy = new Image()
+        copy.src = img.src
+        return copy
+      })
+      orig_imgs = [...imgs]
     }
 
-    var selectedIndex = 0
-    if (node.imageIndex) {
-      selectedIndex = node.imageIndex
-    }
+    const selectedIndex = node.imageIndex ?? 0
 
     const paintedIndex = imgs ? imgs.length + 1 : 1
     const combinedIndex = imgs ? imgs.length + 2 : 2
@@ -1518,7 +1512,9 @@ export class ComfyApp {
                     workflow: queuedWorkflow
                   })
                 }
-              } catch (error) {}
+              } catch (error) {
+                console.warn('Failed to store execution job:', error)
+              }
             }
           } catch (error: unknown) {
             if (

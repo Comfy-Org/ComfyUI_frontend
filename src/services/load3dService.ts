@@ -82,7 +82,7 @@ interface Load3DNode extends LGraphNode {
 
 const viewerInstances = new Map<NodeId, ReturnType<UseLoad3dViewerFn>>()
 
-export class Load3dService {
+class Load3dService {
   private static instance: Load3dService
 
   private constructor() {}

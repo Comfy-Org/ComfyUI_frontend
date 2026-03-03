@@ -407,7 +407,9 @@ app.registerExtension({
                 if (mediaRecorder) {
                   try {
                     mediaRecorder.stop()
-                  } catch {}
+                  } catch {
+                    // Recorder may already be stopped — safe to ignore
+                  }
                 }
                 useAudioService().stopAllTracks(currentStream)
                 currentStream = null

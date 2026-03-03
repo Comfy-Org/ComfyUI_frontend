@@ -99,83 +99,47 @@ export class ResultItemImpl {
     return !!this.format && !!this.frame_rate
   }
 
+  get extension(): string {
+    const dotIndex = this.filename.lastIndexOf('.')
+    return dotIndex >= 0 ? this.filename.slice(dotIndex + 1).toLowerCase() : ''
+  }
+
   get htmlVideoType(): string | undefined {
-    if (this.isWebm) {
-      return 'video/webm'
+    const videoMimeTypes: Record<string, string> = {
+      webm: 'video/webm',
+      mp4: 'video/mp4'
     }
-    if (this.isMp4) {
-      return 'video/mp4'
-    }
+    const byExtension = videoMimeTypes[this.extension]
+    if (byExtension) return byExtension
 
     if (this.isVhsFormat) {
-      if (this.format?.endsWith('webm')) {
-        return 'video/webm'
-      }
-      if (this.format?.endsWith('mp4')) {
-        return 'video/mp4'
+      for (const [ext, mime] of Object.entries(videoMimeTypes)) {
+        if (this.format?.endsWith(ext)) return mime
       }
     }
     return undefined
   }
 
   get htmlAudioType(): string | undefined {
-    if (this.isMp3) {
-      return 'audio/mpeg'
+    const audioMimeTypes: Record<string, string> = {
+      mp3: 'audio/mpeg',
+      wav: 'audio/wav',
+      ogg: 'audio/ogg',
+      flac: 'audio/flac'
     }
-    if (this.isWav) {
-      return 'audio/wav'
-    }
-    if (this.isOgg) {
-      return 'audio/ogg'
-    }
-    if (this.isFlac) {
-      return 'audio/flac'
-    }
-    return undefined
-  }
-
-  get isGif(): boolean {
-    return this.filename.endsWith('.gif')
-  }
-
-  get isWebp(): boolean {
-    return this.filename.endsWith('.webp')
-  }
-
-  get isWebm(): boolean {
-    return this.filename.endsWith('.webm')
-  }
-
-  get isMp4(): boolean {
-    return this.filename.endsWith('.mp4')
+    return audioMimeTypes[this.extension]
   }
 
   get isVideoBySuffix(): boolean {
-    return this.isWebm || this.isMp4
+    return this.extension === 'webm' || this.extension === 'mp4'
   }
 
   get isImageBySuffix(): boolean {
-    return this.isGif || this.isWebp
-  }
-
-  get isMp3(): boolean {
-    return this.filename.endsWith('.mp3')
-  }
-
-  get isWav(): boolean {
-    return this.filename.endsWith('.wav')
-  }
-
-  get isOgg(): boolean {
-    return this.filename.endsWith('.ogg')
-  }
-
-  get isFlac(): boolean {
-    return this.filename.endsWith('.flac')
+    return this.extension === 'gif' || this.extension === 'webp'
   }
 
   get isAudioBySuffix(): boolean {
-    return this.isMp3 || this.isWav || this.isOgg || this.isFlac
+    return ['mp3', 'wav', 'ogg', 'flac'].includes(this.extension)
   }
 
   get isVideo(): boolean {
@@ -631,11 +595,7 @@ export const useQueuePendingTaskCountStore = defineStore(
   }
 )
 
-export type AutoQueueMode =
-  | 'disabled'
-  | 'change'
-  | 'instant-idle'
-  | 'instant-running'
+type AutoQueueMode = 'disabled' | 'change' | 'instant-idle' | 'instant-running'
 
 export const isInstantMode = (
   mode: AutoQueueMode
