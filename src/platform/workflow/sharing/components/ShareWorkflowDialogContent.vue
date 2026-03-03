@@ -85,8 +85,7 @@
           <ShareAssetWarningBox
             v-else-if="requiresAcknowledgment"
             v-model:acknowledged="acknowledged"
-            :assets="assetInfo.assets"
-            :models="assetInfo.models"
+            :items="assetInfo"
           />
           <Button
             variant="primary"
@@ -132,8 +131,7 @@
           <ShareAssetWarningBox
             v-else-if="requiresAcknowledgment"
             v-model:acknowledged="acknowledged"
-            :assets="assetInfo.assets"
-            :models="assetInfo.models"
+            :items="assetInfo"
           />
           <Button
             variant="primary"
@@ -252,14 +250,9 @@ const {
   state: assetInfo,
   isLoading: isLoadingAssets,
   execute: reloadAssets
-} = useAsyncState(() => shareService.getShareableAssets(), {
-  assets: [],
-  models: []
-})
+} = useAsyncState(() => shareService.getShareableAssets(), [])
 
-const requiresAcknowledgment = computed(
-  () => assetInfo.value.assets.length > 0 || assetInfo.value.models.length > 0
-)
+const requiresAcknowledgment = computed(() => assetInfo.value.length > 0)
 const showPublishToHubTab = computed(() => flags.comfyHubUploadEnabled)
 
 function handleOpenPublishDialog() {

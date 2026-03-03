@@ -41,9 +41,9 @@
           >
             <ShareAssetThumbnail
               :name="item.name"
-              :thumbnail-url="item.thumbnailUrl"
+              :preview-url="item.preview_url"
               @thumbnail-error="
-                onThumbnailError($event.name, $event.thumbnailUrl)
+                onThumbnailError($event.name, $event.previewUrl)
               "
             />
             <span class="truncate text-xs text-base-foreground">
@@ -63,29 +63,24 @@ import {
   CollapsibleTrigger
 } from 'reka-ui'
 
-import type { WorkflowAsset, WorkflowModel } from '@/schemas/apiSchema'
+import type { AssetInfo } from '@/schemas/apiSchema'
 import ShareAssetThumbnail from '@/platform/workflow/sharing/components/ShareAssetThumbnail.vue'
 import { useAssetSections } from '@/platform/workflow/sharing/composables/useAssetSections'
 import Button from '@/components/ui/button/Button.vue'
 import { cn } from '@/utils/tailwindUtil'
 
-const { assets, models } = defineProps<{
-  assets: WorkflowAsset[]
-  models: WorkflowModel[]
+const { items } = defineProps<{
+  items: AssetInfo[]
 }>()
 
 const { sections, expandedSectionId, onSectionOpenChange } = useAssetSections(
-  () => assets,
-  () => models
+  () => items
 )
 
-function onThumbnailError(
-  name: string,
-  thumbnailUrl: string | null | undefined
-) {
+function onThumbnailError(name: string, previewUrl: string | null | undefined) {
   console.warn('[share][assets][thumbnail-error]', {
     name,
-    thumbnailUrl: thumbnailUrl ?? null
+    previewUrl: previewUrl ?? null
   })
 }
 </script>

@@ -31,7 +31,7 @@
         class="overflow-hidden data-[state=closed]:animate-collapsible-up data-[state=open]:animate-collapsible-down"
       >
         <div class="p-0">
-          <AssetSectionList :assets="assets" :models="models" />
+          <AssetSectionList :items />
         </div>
       </CollapsibleContent>
     </CollapsibleRoot>
@@ -57,14 +57,13 @@ import {
 } from 'reka-ui'
 import { ref } from 'vue'
 
-import type { WorkflowAsset, WorkflowModel } from '@/schemas/apiSchema'
+import type { AssetInfo } from '@/schemas/apiSchema'
 import AssetSectionList from '@/platform/workflow/sharing/components/AssetSectionList.vue'
 import { cn } from '@/utils/tailwindUtil'
 import Button from '@/components/ui/button/Button.vue'
 
-const { assets, models } = defineProps<{
-  assets: WorkflowAsset[]
-  models: WorkflowModel[]
+const { items } = defineProps<{
+  items: AssetInfo[]
 }>()
 
 const acknowledged = defineModel<boolean>('acknowledged')

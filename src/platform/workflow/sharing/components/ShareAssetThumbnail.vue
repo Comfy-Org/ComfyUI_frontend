@@ -3,12 +3,12 @@
     class="relative flex size-8 shrink-0 items-center justify-center overflow-hidden rounded-md bg-muted"
   >
     <Skeleton
-      v-if="normalizedThumbnailUrl && isLoading"
+      v-if="normalizedPreviewUrl && isLoading"
       class="absolute inset-0"
     />
     <img
-      v-if="normalizedThumbnailUrl && !error"
-      :src="normalizedThumbnailUrl"
+      v-if="normalizedPreviewUrl && !error"
+      :src="normalizedPreviewUrl"
       :alt="name"
       :class="
         cn(
@@ -17,11 +17,11 @@
         )
       "
       @error="
-        $emit('thumbnailError', { name, thumbnailUrl: normalizedThumbnailUrl })
+        $emit('thumbnailError', { name, previewUrl: normalizedPreviewUrl })
       "
     />
     <i
-      v-if="!normalizedThumbnailUrl || error"
+      v-if="!normalizedPreviewUrl || error"
       class="icon-[lucide--image] size-4 text-muted-foreground"
     />
   </div>
@@ -34,33 +34,31 @@ import { computed, watchEffect } from 'vue'
 import Skeleton from '@/components/ui/skeleton/Skeleton.vue'
 import { cn } from '@/utils/tailwindUtil'
 
-const { name, thumbnailUrl } = defineProps<{
+const { name, previewUrl } = defineProps<{
   name: string
-  thumbnailUrl: string | null | undefined
+  previewUrl: string | null | undefined
 }>()
 
 defineEmits<{
-  thumbnailError: [{ name: string; thumbnailUrl: string | null }]
+  thumbnailError: [{ name: string; previewUrl: string | null }]
 }>()
 
-const normalizedThumbnailUrl = computed(() =>
-  typeof thumbnailUrl === 'string' && thumbnailUrl.length > 0
-    ? thumbnailUrl
-    : null
+const normalizedPreviewUrl = computed(() =>
+  typeof previewUrl === 'string' && previewUrl.length > 0 ? previewUrl : null
 )
 
 watchEffect(() => {
-  if (thumbnailUrl != null && typeof thumbnailUrl !== 'string') {
-    console.warn('[share][assets][invalid-thumbnail-type]', {
+  if (previewUrl != null && typeof previewUrl !== 'string') {
+    console.warn('[share][assets][invalid-preview-url-type]', {
       name,
-      receivedType: typeof thumbnailUrl,
-      value: thumbnailUrl
+      receivedType: typeof previewUrl,
+      value: previewUrl
     })
   }
 })
 
 const imageOptions = computed(() => ({
-  src: normalizedThumbnailUrl.value ?? ''
+  src: normalizedPreviewUrl.value ?? ''
 }))
 
 const { isReady, isLoading, error } = useImage(imageOptions)

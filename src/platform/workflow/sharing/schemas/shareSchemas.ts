@@ -1,21 +1,23 @@
 import { z } from 'zod'
 
-import { zComfyHubProfile } from '@/schemas/apiSchema'
+import { zAssetInfo, zComfyHubProfile } from '@/schemas/apiSchema'
 
 export const zPublishRecordResponse = z.object({
-  workflow_id: z.string().optional(),
-  share_id: z.string().nullish(),
-  listed: z.boolean().optional(),
-  publish_time: z.string().nullish()
+  workflow_id: z.string(),
+  share_id: z.string(),
+  listed: z.boolean(),
+  publish_time: z.string().nullable(),
+  assets: z.array(zAssetInfo)
 })
 
 export const zSharedWorkflowResponse = z.object({
   share_id: z.string(),
   workflow_id: z.string(),
+  name: z.string(),
   listed: z.boolean(),
-  publish_time: z.string().optional(),
+  publish_time: z.string().nullable(),
   workflow_json: z.record(z.string(), z.unknown()),
-  imported_assets: z.array(z.unknown()).optional()
+  assets: z.array(zAssetInfo)
 })
 
 export const zHubProfileResponse = z.preprocess((data) => {

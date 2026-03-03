@@ -62,15 +62,26 @@ vi.mock('@/platform/workflow/core/services/workflowService', () => ({
 }))
 
 const mockShareServiceData = vi.hoisted(() => ({
-  assets: [{ id: 'test.png', name: 'test.png', thumbnailUrl: null }] as {
-    id: string
-    name: string
-    thumbnailUrl: string | null
-  }[],
-  models: [{ id: 'model.safetensors', name: 'model.safetensors' }] as {
-    id: string
-    name: string
-  }[]
+  items: [
+    {
+      id: 'test.png',
+      name: 'test.png',
+      preview_url: '',
+      storage_url: '',
+      model: false,
+      public: false,
+      in_library: false
+    },
+    {
+      id: 'model.safetensors',
+      name: 'model.safetensors',
+      preview_url: '',
+      storage_url: '',
+      model: true,
+      public: false,
+      in_library: false
+    }
+  ]
 }))
 
 const mockGetPublishStatus = vi.hoisted(() => vi.fn())
@@ -141,21 +152,32 @@ describe('ShareWorkflowDialogContent', () => {
       publishedAt: null
     })
     mockFlags.comfyHubUploadEnabled = false
-    mockShareServiceData.assets = [
-      { id: 'test.png', name: 'test.png', thumbnailUrl: null }
-    ]
-    mockShareServiceData.models = [
-      { id: 'model.safetensors', name: 'model.safetensors' }
+    mockShareServiceData.items = [
+      {
+        id: 'test.png',
+        name: 'test.png',
+        preview_url: '',
+        storage_url: '',
+        model: false,
+        public: false,
+        in_library: false
+      },
+      {
+        id: 'model.safetensors',
+        name: 'model.safetensors',
+        preview_url: '',
+        storage_url: '',
+        model: true,
+        public: false,
+        in_library: false
+      }
     ]
     mockPublishWorkflow.mockResolvedValue({
       shareId: 'test-123',
       shareUrl: 'https://comfy.org/shared/test-123',
       publishedAt: new Date('2026-01-15')
     })
-    mockGetShareableAssets.mockResolvedValue({
-      assets: mockShareServiceData.assets,
-      models: mockShareServiceData.models
-    })
+    mockGetShareableAssets.mockResolvedValue(mockShareServiceData.items)
   })
 
   function createWrapper() {
@@ -315,16 +337,46 @@ describe('ShareWorkflowDialogContent', () => {
   })
 
   it('publishes using refreshed shareable assets payload', async () => {
-    const initialShareableAssets = {
-      assets: [{ id: 'local-photo-id', name: 'photo.png', thumbnailUrl: null }],
-      models: [{ id: 'local-model-id', name: 'model.safetensors' }]
-    }
-    const refinedShareableAssets = {
-      assets: [
-        { id: 'backend-photo-id', name: 'photo.png', thumbnailUrl: null }
-      ],
-      models: [{ id: 'backend-model-id', name: 'model.safetensors' }]
-    }
+    const initialShareableAssets = [
+      {
+        id: 'local-photo-id',
+        name: 'photo.png',
+        preview_url: '',
+        storage_url: '',
+        model: false,
+        public: false,
+        in_library: false
+      },
+      {
+        id: 'local-model-id',
+        name: 'model.safetensors',
+        preview_url: '',
+        storage_url: '',
+        model: true,
+        public: false,
+        in_library: false
+      }
+    ]
+    const refinedShareableAssets = [
+      {
+        id: 'backend-photo-id',
+        name: 'photo.png',
+        preview_url: '',
+        storage_url: '',
+        model: false,
+        public: false,
+        in_library: false
+      },
+      {
+        id: 'backend-model-id',
+        name: 'model.safetensors',
+        preview_url: '',
+        storage_url: '',
+        model: true,
+        public: false,
+        in_library: false
+      }
+    ]
 
     mockGetShareableAssets
       .mockResolvedValueOnce(initialShareableAssets)

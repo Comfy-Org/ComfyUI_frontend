@@ -37,7 +37,7 @@
           </p>
         </div>
 
-        <AssetSectionList :assets :models class="rounded-lg pb-2" />
+        <AssetSectionList :items class="rounded-lg pb-2" />
       </div>
     </main>
 
@@ -61,24 +61,22 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
-import type { WorkflowAsset, WorkflowModel } from '@/schemas/apiSchema'
+import type { AssetInfo } from '@/schemas/apiSchema'
 import AssetSectionList from '@/platform/workflow/sharing/components/AssetSectionList.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { cn } from '@/utils/tailwindUtil'
 
 const {
   workflowName,
-  assets = [],
-  models = [],
+  items = [],
   onConfirm,
   onCancel
 } = defineProps<{
   workflowName: string
-  assets?: WorkflowAsset[]
-  models?: WorkflowModel[]
+  items?: AssetInfo[]
   onConfirm: () => void
   onCancel: () => void
 }>()
 
-const hasAssets = computed(() => assets.length > 0 || models.length > 0)
+const hasAssets = computed(() => items.length > 0)
 </script>

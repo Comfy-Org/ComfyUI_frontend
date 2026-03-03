@@ -490,6 +490,18 @@ export const zComfyHubProfile = z.object({
 
 export type ComfyHubProfile = z.infer<typeof zComfyHubProfile>
 
+export const zAssetInfo = z.object({
+  id: z.string(),
+  name: z.string(),
+  preview_url: z.string(),
+  storage_url: z.string(),
+  model: z.boolean(),
+  public: z.boolean(),
+  in_library: z.boolean()
+})
+
+export type AssetInfo = z.infer<typeof zAssetInfo>
+
 const zWorkflowAsset = z.object({
   id: z.string(),
   name: z.string(),
@@ -505,8 +517,7 @@ const zWorkflowModel = z.object({
 })
 
 const zShareableAssetsResponse = z.object({
-  assets: z.array(zWorkflowAsset),
-  models: z.array(zWorkflowModel)
+  assets: z.array(zAssetInfo)
 })
 
 export type WorkflowAsset = z.infer<typeof zWorkflowAsset>

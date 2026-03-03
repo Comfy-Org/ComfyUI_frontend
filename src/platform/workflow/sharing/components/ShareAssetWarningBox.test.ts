@@ -29,15 +29,25 @@ describe(ShareAssetWarningBox, () => {
   ) {
     return mount(ShareAssetWarningBox, {
       props: {
-        assets: [
+        items: [
           {
             id: 'asset-image',
             name: 'image.png',
-            thumbnailUrl: 'https://example.com/a.jpg'
+            storage_url: '',
+            preview_url: 'https://example.com/a.jpg',
+            model: false,
+            public: false,
+            in_library: false
+          },
+          {
+            id: 'model-default',
+            name: 'model.safetensors',
+            storage_url: '',
+            preview_url: '',
+            model: true,
+            public: false,
+            in_library: false
           }
-        ],
-        models: [
-          { id: 'model-default', name: 'model.safetensors', thumbnailUrl: null }
         ],
         acknowledged: false,
         ...props
@@ -115,7 +125,19 @@ describe(ShareAssetWarningBox, () => {
   })
 
   it('defaults to models section when media is unavailable', () => {
-    const wrapper = createWrapper({ assets: [] })
+    const wrapper = createWrapper({
+      items: [
+        {
+          id: 'model-default',
+          name: 'model.safetensors',
+          storage_url: '',
+          preview_url: '',
+          model: true,
+          public: false,
+          in_library: false
+        }
+      ]
+    })
 
     expect(wrapper.text()).toContain('1 Model')
     const modelsHeader = wrapper.get('[data-testid="section-header-models"]')
@@ -124,7 +146,19 @@ describe(ShareAssetWarningBox, () => {
   })
 
   it('allows collapsing the only expanded section when models are unavailable', async () => {
-    const wrapper = createWrapper({ models: [] })
+    const wrapper = createWrapper({
+      items: [
+        {
+          id: 'asset-image',
+          name: 'image.png',
+          storage_url: '',
+          preview_url: 'https://example.com/a.jpg',
+          model: false,
+          public: false,
+          in_library: false
+        }
+      ]
+    })
 
     const mediaHeader = wrapper.get('[data-testid="section-header-media"]')
     const mediaChevron = mediaHeader.get('i')
@@ -167,9 +201,25 @@ describe(ShareAssetWarningBox, () => {
 
   it('renders fallback icon when thumbnail is missing', () => {
     const wrapper = createWrapper({
-      assets: [{ id: 'asset-image', name: 'image.png', thumbnailUrl: null }],
-      models: [
-        { id: 'model-default', name: 'model.safetensors', thumbnailUrl: null }
+      items: [
+        {
+          id: 'asset-image',
+          name: 'image.png',
+          storage_url: '',
+          preview_url: '',
+          model: false,
+          public: false,
+          in_library: false
+        },
+        {
+          id: 'model-default',
+          name: 'model.safetensors',
+          storage_url: '',
+          preview_url: '',
+          model: true,
+          public: false,
+          in_library: false
+        }
       ]
     })
 
@@ -181,13 +231,37 @@ describe(ShareAssetWarningBox, () => {
   })
 
   it('hides assets section when no assets provided', () => {
-    const wrapper = createWrapper({ assets: [] })
+    const wrapper = createWrapper({
+      items: [
+        {
+          id: 'model-default',
+          name: 'model.safetensors',
+          storage_url: '',
+          preview_url: '',
+          model: true,
+          public: false,
+          in_library: false
+        }
+      ]
+    })
 
     expect(wrapper.text()).not.toContain('Media File')
   })
 
   it('hides models section when no models provided', () => {
-    const wrapper = createWrapper({ models: [] })
+    const wrapper = createWrapper({
+      items: [
+        {
+          id: 'asset-image',
+          name: 'image.png',
+          storage_url: '',
+          preview_url: '',
+          model: false,
+          public: false,
+          in_library: false
+        }
+      ]
+    })
 
     expect(wrapper.text()).not.toContain('Model')
   })

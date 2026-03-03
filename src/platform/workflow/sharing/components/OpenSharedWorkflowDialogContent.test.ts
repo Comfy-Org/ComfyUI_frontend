@@ -94,11 +94,35 @@ describe('OpenSharedWorkflowDialogContent', () => {
 
   describe('assets-present variant', () => {
     const assetsProps = {
-      assets: [
-        { id: 'a1', name: 'photo.png', thumbnailUrl: null },
-        { id: 'a2', name: 'image.jpg', thumbnailUrl: null }
-      ],
-      models: [{ id: 'm1', name: 'model.safetensors', thumbnailUrl: null }]
+      items: [
+        {
+          id: 'a1',
+          name: 'photo.png',
+          preview_url: '',
+          storage_url: '',
+          model: false,
+          public: false,
+          in_library: false
+        },
+        {
+          id: 'a2',
+          name: 'image.jpg',
+          preview_url: '',
+          storage_url: '',
+          model: false,
+          public: false,
+          in_library: false
+        },
+        {
+          id: 'm1',
+          name: 'model.safetensors',
+          preview_url: '',
+          storage_url: '',
+          model: true,
+          public: false,
+          in_library: false
+        }
+      ]
     }
 
     it('shows workflow name in header when assets exist', () => {

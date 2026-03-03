@@ -9,12 +9,11 @@ import {
   mergePreservedQueryIntoQuery
 } from '@/platform/navigation/preservedQueryManager'
 import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQueryNamespaces'
+import type { AssetInfo } from '@/schemas/apiSchema'
 import {
   SharedWorkflowLoadError,
-  normalizeShareableAssetsResponse,
   useWorkflowShareService
 } from '@/platform/workflow/sharing/services/workflowShareService'
-import type { ShareableAssetsResponse } from '@/schemas/apiSchema'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { useDialogService } from '@/services/dialogService'
@@ -63,12 +62,11 @@ export function useSharedWorkflowUrlLoader() {
     return true
   }
 
-  async function discoverNonOwnedAssets(): Promise<ShareableAssetsResponse | null> {
+  async function discoverNonOwnedAssets(): Promise<AssetInfo[] | null> {
     try {
       const { output } = await app.graphToPrompt()
       const raw = await api.getShareableAssets(output, { owned: false })
-      const normalized = normalizeShareableAssetsResponse(raw)
-      return normalized
+      return raw.assets
     } catch {
       return null
     }
@@ -76,11 +74,10 @@ export function useSharedWorkflowUrlLoader() {
 
   function showOpenSharedWorkflowDialog(
     workflowName: string,
-    nonOwnedAssets: ShareableAssetsResponse | null
+    nonOwnedAssets: AssetInfo[] | null
   ): Promise<boolean> {
     const dialogKey = 'open-shared-workflow'
-    const assets = nonOwnedAssets?.assets ?? []
-    const models = nonOwnedAssets?.models ?? []
+    const items = nonOwnedAssets ?? []
 
     return new Promise<boolean>((resolve) => {
       dialogService.showLayoutDialog({
@@ -88,8 +85,7 @@ export function useSharedWorkflowUrlLoader() {
         component: OpenSharedWorkflowDialogContent,
         props: {
           workflowName,
-          assets,
-          models,
+          items,
           onConfirm: () => {
             resolve(true)
             dialogStore.closeDialog({ key: dialogKey })
@@ -111,7 +107,11 @@ export function useSharedWorkflowUrlLoader() {
     })
   }
 
-  function extractWorkflowName(workflowJson: Record<string, unknown>): string {
+  function extractWorkflowName(
+    name: string,
+    workflowJson: Record<string, unknown>
+  ): string {
+    if (name) return name
     if (typeof workflowJson.name === 'string' && workflowJson.name) {
       return workflowJson.name
     }
@@ -153,13 +153,12 @@ export function useSharedWorkflowUrlLoader() {
       )
 
       const workflowName = extractWorkflowName(
+        sharedWorkflow.name,
         sharedWorkflow.workflowJson as unknown as Record<string, unknown>
       )
       const nonOwnedAssets = await discoverNonOwnedAssets()
 
-      const hasImportableAssets =
-        (nonOwnedAssets?.assets?.length ?? 0) > 0 ||
-        (nonOwnedAssets?.models?.length ?? 0) > 0
+      const hasImportableAssets = (nonOwnedAssets?.length ?? 0) > 0
 
       const confirmed = await showOpenSharedWorkflowDialog(
         workflowName,

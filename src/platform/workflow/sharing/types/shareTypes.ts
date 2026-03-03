@@ -1,3 +1,4 @@
+import type { AssetInfo } from '@/schemas/apiSchema'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 
 export interface WorkflowPublishResult {
@@ -16,8 +17,9 @@ export type WorkflowPublishStatus =
     }
 
 export interface SharedWorkflowPayload {
-  importedAssets: unknown[]
+  assets: AssetInfo[]
   listed: boolean
+  name: string
   publishedAt: Date | null
   shareId: string
   workflowId: string

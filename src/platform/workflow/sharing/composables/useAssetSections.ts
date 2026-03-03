@@ -1,30 +1,26 @@
+import { partition } from 'es-toolkit'
 import { computed, ref, watch } from 'vue'
 
-import type { WorkflowAsset, WorkflowModel } from '@/schemas/apiSchema'
+import type { AssetInfo } from '@/schemas/apiSchema'
 
 type SectionId = 'media' | 'models'
 
-export function useAssetSections(
-  assets: () => WorkflowAsset[],
-  models: () => WorkflowModel[]
-) {
-  const sections = computed(() =>
-    [
+export function useAssetSections(items: () => AssetInfo[]) {
+  const sections = computed(() => {
+    const [models, media] = partition(items(), (a) => a.model)
+    return [
       {
         id: 'media' as SectionId,
         labelKey: 'shareWorkflow.mediaLabel',
-        items: assets()
+        items: media
       },
       {
         id: 'models' as SectionId,
         labelKey: 'shareWorkflow.modelsLabel',
-        items: models().map((model) => ({
-          ...model,
-          thumbnailUrl: model.thumbnailUrl ?? null
-        }))
+        items: models
       }
     ].filter((s) => s.items.length > 0)
-  )
+  })
 
   const expandedSectionId = ref<SectionId | null>(null)
 

@@ -41,7 +41,6 @@ const mockSharedWorkflowErrorClass = vi.hoisted(
 
 vi.mock('@/platform/workflow/sharing/services/workflowShareService', () => ({
   SharedWorkflowLoadError: mockSharedWorkflowErrorClass,
-  normalizeShareableAssetsResponse: (r: unknown) => r,
   useWorkflowShareService: () => ({
     getSharedWorkflow: mockGetSharedWorkflow
   })
@@ -120,10 +119,11 @@ function makeSharedWorkflow(overrides: Record<string, unknown> = {}) {
   return {
     shareId: 'share-id-1',
     workflowId: 'workflow-id-1',
+    name: 'Test Workflow',
     listed: true,
     publishedAt: new Date('2026-02-20T00:00:00Z'),
     workflowJson: { nodes: [] },
-    importedAssets: [],
+    assets: [],
     ...overrides
   }
 }
@@ -134,7 +134,7 @@ describe('useSharedWorkflowUrlLoader', () => {
     mockQueryParams = {}
     preservedQueryMocks.mergePreservedQueryIntoQuery.mockReturnValue(null)
     mockGraphToPrompt.mockResolvedValue({ output: {} })
-    mockGetShareableAssets.mockResolvedValue({ assets: [], models: [] })
+    mockGetShareableAssets.mockResolvedValue({ assets: [] })
   })
 
   it('does nothing when no share query param is present', async () => {
@@ -175,7 +175,7 @@ describe('useSharedWorkflowUrlLoader', () => {
   it('does not call import when no non-owned assets exist', async () => {
     mockQueryParams = { share: 'share-id-1' }
     mockGetSharedWorkflow.mockResolvedValue(makeSharedWorkflow())
-    mockGetShareableAssets.mockResolvedValue({ assets: [], models: [] })
+    mockGetShareableAssets.mockResolvedValue({ assets: [] })
     mockShowLayoutDialog.mockImplementation(() => {
       resolveDialog(true)
     })
@@ -191,8 +191,17 @@ describe('useSharedWorkflowUrlLoader', () => {
     mockQueryParams = { share: 'share-id-1' }
     mockGetSharedWorkflow.mockResolvedValue(makeSharedWorkflow())
     mockGetShareableAssets.mockResolvedValue({
-      assets: [{ id: 'a1', name: 'img.png' }],
-      models: []
+      assets: [
+        {
+          id: 'a1',
+          name: 'img.png',
+          preview_url: '',
+          storage_url: '',
+          model: false,
+          public: false,
+          in_library: false
+        }
+      ]
     })
     mockShowLayoutDialog.mockImplementation(() => {
       resolveDialog(true)
@@ -212,8 +221,17 @@ describe('useSharedWorkflowUrlLoader', () => {
     mockQueryParams = { share: 'share-id-1' }
     mockGetSharedWorkflow.mockResolvedValue(makeSharedWorkflow())
     mockGetShareableAssets.mockResolvedValue({
-      assets: [{ id: 'a1', name: 'img.png' }],
-      models: []
+      assets: [
+        {
+          id: 'a1',
+          name: 'img.png',
+          preview_url: '',
+          storage_url: '',
+          model: false,
+          public: false,
+          in_library: false
+        }
+      ]
     })
     mockShowLayoutDialog.mockImplementation(() => {
       resolveDialog(false)
@@ -231,8 +249,17 @@ describe('useSharedWorkflowUrlLoader', () => {
       .mockResolvedValueOnce(makeSharedWorkflow())
       .mockRejectedValueOnce(new Error('Import failed'))
     mockGetShareableAssets.mockResolvedValue({
-      assets: [],
-      models: [{ id: 'm1', name: 'model.safetensors' }]
+      assets: [
+        {
+          id: 'm1',
+          name: 'model.safetensors',
+          preview_url: '',
+          storage_url: '',
+          model: true,
+          public: false,
+          in_library: false
+        }
+      ]
     })
     mockShowLayoutDialog.mockImplementation(() => {
       resolveDialog(true)
@@ -253,11 +280,28 @@ describe('useSharedWorkflowUrlLoader', () => {
   it('passes non-owned assets to dialog props', async () => {
     mockQueryParams = { share: 'share-id-1' }
     mockGetSharedWorkflow.mockResolvedValue(makeSharedWorkflow())
-    const nonOwnedAssets = {
-      assets: [{ id: 'a1', name: 'photo.png' }],
-      models: [{ id: 'm1', name: 'lora.safetensors' }]
-    }
-    mockGetShareableAssets.mockResolvedValue(nonOwnedAssets)
+    mockGetShareableAssets.mockResolvedValue({
+      assets: [
+        {
+          id: 'a1',
+          name: 'photo.png',
+          preview_url: 'https://example.com/p.jpg',
+          storage_url: 's/p',
+          model: false,
+          public: false,
+          in_library: false
+        },
+        {
+          id: 'm1',
+          name: 'lora.safetensors',
+          preview_url: 'https://example.com/l.jpg',
+          storage_url: 's/l',
+          model: true,
+          public: false,
+          in_library: false
+        }
+      ]
+    })
     mockShowLayoutDialog.mockImplementation(() => {
       resolveDialog(true)
     })
@@ -266,8 +310,26 @@ describe('useSharedWorkflowUrlLoader', () => {
     await loadSharedWorkflowFromUrl()
 
     const dialogCall = mockShowLayoutDialog.mock.calls[0][0]
-    expect(dialogCall.props.assets).toEqual(nonOwnedAssets.assets)
-    expect(dialogCall.props.models).toEqual(nonOwnedAssets.models)
+    expect(dialogCall.props.items).toEqual([
+      {
+        id: 'a1',
+        name: 'photo.png',
+        preview_url: 'https://example.com/p.jpg',
+        storage_url: 's/p',
+        model: false,
+        public: false,
+        in_library: false
+      },
+      {
+        id: 'm1',
+        name: 'lora.safetensors',
+        preview_url: 'https://example.com/l.jpg',
+        storage_url: 's/l',
+        model: true,
+        public: false,
+        in_library: false
+      }
+    ])
   })
 
   it('calls getShareableAssets with owned:false', async () => {
@@ -385,16 +447,13 @@ describe('useSharedWorkflowUrlLoader', () => {
     expect(loaded).toBe('loaded')
     expect(mockShowLayoutDialog).toHaveBeenCalled()
     const dialogCall = mockShowLayoutDialog.mock.calls[0][0]
-    expect(dialogCall.props.assets).toEqual([])
-    expect(dialogCall.props.models).toEqual([])
+    expect(dialogCall.props.items).toEqual([])
   })
 
-  it('extracts workflow name from workflowJson', async () => {
+  it('uses name from payload for workflow name', async () => {
     mockQueryParams = { share: 'share-id-1' }
     mockGetSharedWorkflow.mockResolvedValue(
-      makeSharedWorkflow({
-        workflowJson: { nodes: [], name: 'My Custom Workflow' }
-      })
+      makeSharedWorkflow({ name: 'My Published Workflow' })
     )
     mockShowLayoutDialog.mockImplementation(() => {
       resolveDialog(true)
@@ -404,6 +463,6 @@ describe('useSharedWorkflowUrlLoader', () => {
     await loadSharedWorkflowFromUrl()
 
     const dialogCall = mockShowLayoutDialog.mock.calls[0][0]
-    expect(dialogCall.props.workflowName).toBe('My Custom Workflow')
+    expect(dialogCall.props.workflowName).toBe('My Published Workflow')
   })
 })

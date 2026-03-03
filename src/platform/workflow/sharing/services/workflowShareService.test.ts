@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import type { AssetInfo } from '@/schemas/apiSchema'
 import { useWorkflowShareService } from '@/platform/workflow/sharing/services/workflowShareService'
 
 const mockApp = vi.hoisted(() => ({
@@ -24,10 +25,26 @@ vi.mock('@/scripts/api', () => ({
 }))
 
 describe(useWorkflowShareService, () => {
-  const mockShareableAssets = {
-    assets: [{ id: 'asset-1', name: 'asset.png', storage_url: null }],
-    models: [{ id: 'model-1', name: 'model.safetensors', storage_url: null }]
-  }
+  const mockShareableAssets: AssetInfo[] = [
+    {
+      id: 'asset-1',
+      name: 'asset.png',
+      storage_url: '',
+      preview_url: '',
+      model: false,
+      public: false,
+      in_library: false
+    },
+    {
+      id: 'model-1',
+      name: 'model.safetensors',
+      storage_url: '',
+      preview_url: '',
+      model: true,
+      public: false,
+      in_library: false
+    }
+  ]
 
   function mockJsonResponse(payload: unknown, ok = true, status = 200) {
     return {
@@ -68,7 +85,8 @@ describe(useWorkflowShareService, () => {
         workflow_id: 'test-workflow',
         share_id: 'abc123',
         publish_time: '2026-02-23T00:00:00Z',
-        listed: false
+        listed: false,
+        assets: []
       })
     )
 
@@ -88,8 +106,7 @@ describe(useWorkflowShareService, () => {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          assets: [{ id: 'asset-1' }],
-          models: [{ id: 'model-1' }]
+          asset_ids: ['asset-1', 'model-1']
         })
       }
     )
@@ -102,7 +119,8 @@ describe(useWorkflowShareService, () => {
         workflow_id: 'test-workflow',
         share_id: 'subpath-id',
         publish_time: '2026-02-23T00:00:00Z',
-        listed: false
+        listed: false,
+        assets: []
       })
     )
 
@@ -123,7 +141,8 @@ describe(useWorkflowShareService, () => {
         workflow_id: 'wf-1',
         share_id: 'wf-1',
         publish_time: '2026-02-23T00:00:00Z',
-        listed: false
+        listed: false,
+        assets: []
       })
     )
 
@@ -143,7 +162,8 @@ describe(useWorkflowShareService, () => {
         workflow_id: 'wf-subpath',
         share_id: 'wf-subpath',
         publish_time: '2026-02-23T00:00:00Z',
-        listed: false
+        listed: false,
+        assets: []
       })
     )
 
@@ -191,10 +211,21 @@ describe(useWorkflowShareService, () => {
       mockJsonResponse({
         share_id: 'share-123',
         workflow_id: 'wf-123',
+        name: 'Test Workflow',
         listed: true,
         publish_time: '2026-02-23T00:00:00Z',
         workflow_json: { nodes: [] },
-        imported_assets: [{ id: 'asset-1' }]
+        assets: [
+          {
+            id: 'asset-1',
+            name: 'asset.png',
+            preview_url: 'https://example.com/a.jpg',
+            storage_url: 'storage/a',
+            model: false,
+            public: false,
+            in_library: false
+          }
+        ]
       })
     )
 
@@ -205,10 +236,21 @@ describe(useWorkflowShareService, () => {
     expect(shared).toEqual({
       shareId: 'share-123',
       workflowId: 'wf-123',
+      name: 'Test Workflow',
       listed: true,
       publishedAt: new Date('2026-02-23T00:00:00Z'),
       workflowJson: { nodes: [] },
-      importedAssets: [{ id: 'asset-1' }]
+      assets: [
+        {
+          id: 'asset-1',
+          name: 'asset.png',
+          preview_url: 'https://example.com/a.jpg',
+          storage_url: 'storage/a',
+          model: false,
+          public: false,
+          in_library: false
+        }
+      ]
     })
   })
 
@@ -227,10 +269,21 @@ describe(useWorkflowShareService, () => {
       mockJsonResponse({
         share_id: 'share-import',
         workflow_id: 'wf-import',
+        name: 'Import Test',
         listed: true,
         publish_time: '2026-02-23T00:00:00Z',
         workflow_json: { nodes: [] },
-        imported_assets: [{ id: 'imported-1' }]
+        assets: [
+          {
+            id: 'imported-1',
+            name: 'imported.png',
+            preview_url: 'https://example.com/i.jpg',
+            storage_url: 'storage/i',
+            model: false,
+            public: false,
+            in_library: false
+          }
+        ]
       })
     )
 
@@ -247,10 +300,11 @@ describe(useWorkflowShareService, () => {
       mockJsonResponse({
         share_id: 'share-no-import',
         workflow_id: 'wf-no-import',
+        name: 'No Import Test',
         listed: true,
         publish_time: '2026-02-23T00:00:00Z',
         workflow_json: { nodes: [] },
-        imported_assets: []
+        assets: []
       })
     )
 
@@ -294,13 +348,13 @@ describe(useWorkflowShareService, () => {
     const service = useWorkflowShareService()
     const result = await service.getShareableAssets()
 
-    expect(result).toEqual({ assets: [], models: [] })
+    expect(result).toEqual([])
     expect(mockApp.graphToPrompt).not.toHaveBeenCalled()
   })
 
   it('calls backend API with graph prompt output', async () => {
     mockApp.graphToPrompt.mockResolvedValue({ output: { '1': {} } })
-    mockGetShareableAssets.mockResolvedValue({ assets: [], models: [] })
+    mockGetShareableAssets.mockResolvedValue({ assets: [] })
 
     const service = useWorkflowShareService()
     await service.getShareableAssets()
@@ -323,80 +377,96 @@ describe(useWorkflowShareService, () => {
         {
           id: 'asset-server-1',
           name: 'server-asset.png',
-          thumbnail_url: 'https://example.com/a.jpg'
-        }
-      ],
-      models: [
+          preview_url: 'https://example.com/a.jpg',
+          storage_url: 'storage/a',
+          model: false,
+          public: false,
+          in_library: false
+        },
         {
           id: 'model-server-1',
           name: 'server-model.safetensors',
-          preview_url: 'https://example.com/m.jpg'
+          preview_url: 'https://example.com/m.jpg',
+          storage_url: 'storage/m',
+          model: true,
+          public: false,
+          in_library: true
         }
       ]
-    } as unknown)
+    })
 
     const service = useWorkflowShareService()
     const result = await service.getShareableAssets()
 
-    expect(result).toEqual({
-      assets: [
-        {
-          id: 'asset-server-1',
-          name: 'server-asset.png',
-          storage_url: null,
-          thumbnailUrl: 'https://example.com/a.jpg'
-        }
-      ],
-      models: [
-        {
-          id: 'model-server-1',
-          name: 'server-model.safetensors',
-          storage_url: null,
-          thumbnailUrl: 'https://example.com/m.jpg'
-        }
-      ]
-    })
+    expect(result).toEqual([
+      {
+        id: 'asset-server-1',
+        name: 'server-asset.png',
+        preview_url: 'https://example.com/a.jpg',
+        storage_url: 'storage/a',
+        model: false,
+        public: false,
+        in_library: false
+      },
+      {
+        id: 'model-server-1',
+        name: 'server-model.safetensors',
+        preview_url: 'https://example.com/m.jpg',
+        storage_url: 'storage/m',
+        model: true,
+        public: false,
+        in_library: true
+      }
+    ])
   })
 
-  it('normalizes relative backend thumbnail URLs', async () => {
+  it('returns assets with preview_url intact', async () => {
     mockApp.graphToPrompt.mockResolvedValue({ output: {} })
     mockGetShareableAssets.mockResolvedValue({
       assets: [
         {
           id: 'asset-1',
           name: 'asset.png',
-          thumbnail: '/view?filename=asset.png'
-        }
-      ],
-      models: [
+          preview_url: '/view?filename=asset.png',
+          storage_url: 'storage/asset',
+          model: false,
+          public: false,
+          in_library: false
+        },
         {
           id: 'model-1',
           name: 'model.safetensors',
-          preview: '/api/assets/model-thumb'
+          preview_url: '/api/assets/model-thumb',
+          storage_url: 'storage/model',
+          model: true,
+          public: false,
+          in_library: false
         }
       ]
-    } as unknown)
+    })
 
     const service = useWorkflowShareService()
     const result = await service.getShareableAssets()
 
-    expect(result).toEqual({
-      assets: [
-        {
-          id: 'asset-1',
-          name: 'asset.png',
-          storage_url: null,
-          thumbnailUrl: '/api/view?filename=asset.png'
-        }
-      ],
-      models: [
-        {
-          id: 'model-1',
-          name: 'model.safetensors',
-          storage_url: null,
-          thumbnailUrl: '/api/assets/model-thumb'
-        }
-      ]
-    })
+    expect(result).toEqual([
+      {
+        id: 'asset-1',
+        name: 'asset.png',
+        preview_url: '/view?filename=asset.png',
+        storage_url: 'storage/asset',
+        model: false,
+        public: false,
+        in_library: false
+      },
+      {
+        id: 'model-1',
+        name: 'model.safetensors',
+        preview_url: '/api/assets/model-thumb',
+        storage_url: 'storage/model',
+        model: true,
+        public: false,
+        in_library: false
+      }
+    ])
   })
 })

@@ -4,91 +4,13 @@ import type {
   WorkflowPublishStatus
 } from '@/platform/workflow/sharing/types/shareTypes'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
-import type { ShareableAssetsResponse } from '@/schemas/apiSchema'
+import type { AssetInfo } from '@/schemas/apiSchema'
 import {
   zPublishRecordResponse,
   zSharedWorkflowResponse
 } from '@/platform/workflow/sharing/schemas/shareSchemas'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
-
-type ThumbnailLike = {
-  storage_url?: string | null
-  thumbnailUrl?: string | null
-  thumbnail_url?: string | null
-  thumbnail?: string | null
-  preview_url?: string | null
-  preview?: string | null
-}
-
-function resolveThumbnailUrl(rawUrl: string | null | undefined): string | null {
-  if (!rawUrl) return null
-
-  if (
-    rawUrl.startsWith('http://') ||
-    rawUrl.startsWith('https://') ||
-    rawUrl.startsWith('blob:') ||
-    rawUrl.startsWith('data:')
-  ) {
-    return rawUrl
-  }
-
-  if (rawUrl.startsWith('/api/')) {
-    return api.fileURL(rawUrl)
-  }
-
-  if (rawUrl.startsWith('/view')) {
-    return api.apiURL(rawUrl)
-  }
-
-  if (rawUrl.startsWith('/')) {
-    return api.fileURL(rawUrl)
-  }
-
-  return rawUrl
-}
-
-function storageUrlToViewThumbnail(storageUrl: string): string {
-  const hashFilename = storageUrl.split('/').at(-1) ?? storageUrl
-  return `/view?filename=${encodeURIComponent(hashFilename)}&type=input&res=256`
-}
-
-function getNormalizedThumbnailUrl(item: ThumbnailLike): string | null {
-  const explicitUrl =
-    item.thumbnailUrl ??
-    item.thumbnail_url ??
-    item.thumbnail ??
-    item.preview_url ??
-    item.preview ??
-    null
-
-  if (explicitUrl) return resolveThumbnailUrl(explicitUrl)
-
-  if (item.storage_url) {
-    return resolveThumbnailUrl(storageUrlToViewThumbnail(item.storage_url))
-  }
-
-  return null
-}
-
-export function normalizeShareableAssetsResponse(
-  response: ShareableAssetsResponse
-): ShareableAssetsResponse {
-  return {
-    assets: response.assets.map((asset) => ({
-      id: asset.id,
-      name: asset.name,
-      storage_url: asset.storage_url ?? null,
-      thumbnailUrl: getNormalizedThumbnailUrl(asset)
-    })),
-    models: response.models.map((model) => ({
-      id: model.id,
-      name: model.name,
-      storage_url: model.storage_url ?? null,
-      thumbnailUrl: getNormalizedThumbnailUrl(model)
-    }))
-  }
-}
 
 export class SharedWorkflowLoadError extends Error {
   readonly status: number | null
@@ -151,10 +73,11 @@ function decodeSharedWorkflowPayload(
   return {
     shareId: r.share_id,
     workflowId: r.workflow_id,
+    name: r.name,
     listed: r.listed,
     publishedAt: r.publish_time ? parsePublishedAt(r.publish_time) : null,
     workflowJson: r.workflow_json as ComfyWorkflowJSON,
-    importedAssets: r.imported_assets ?? []
+    assets: r.assets
   }
 }
 
@@ -168,17 +91,15 @@ const UNPUBLISHED: Readonly<WorkflowPublishStatus> = {
 export function useWorkflowShareService() {
   async function publishWorkflow(
     workflowPath: string,
-    shareableAssets: ShareableAssetsResponse
+    shareableAssets: AssetInfo[]
   ): Promise<WorkflowPublishResult> {
+    const assetIds = shareableAssets.map((a) => a.id)
     const response = await api.fetchApi(
       `/userdata/${encodeURIComponent(workflowPath)}/publish`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          assets: shareableAssets.assets.map((asset) => ({ id: asset.id })),
-          models: shareableAssets.models.map((model) => ({ id: model.id }))
-        })
+        body: JSON.stringify({ asset_ids: assetIds })
       }
     )
 
@@ -227,13 +148,13 @@ export function useWorkflowShareService() {
     }
   }
 
-  async function getShareableAssets(): Promise<ShareableAssetsResponse> {
+  async function getShareableAssets(): Promise<AssetInfo[]> {
     const graph = app.rootGraph
-    if (!graph) return { assets: [], models: [] }
+    if (!graph) return []
 
     const { output } = await app.graphToPrompt(graph)
     const result = await api.getShareableAssets(output)
-    return normalizeShareableAssetsResponse(result)
+    return result.assets
   }
 
   async function getSharedWorkflow(
