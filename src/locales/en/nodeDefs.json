@@ -3678,6 +3678,9 @@
     "outputs": {
       "0": {
         "tooltip": null
+      },
+      "1": {
+        "tooltip": null
       }
     }
   },
