@@ -886,7 +886,7 @@ export class ComfyApi extends EventTarget {
     if (options?.owned !== undefined) {
       body.owned = options.owned
     }
-    const res = await this.fetchApi('/assets/from-workflow', {
+    const res = await this.fetchApi('/prompt/assets', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body)
