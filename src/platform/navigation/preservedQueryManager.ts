@@ -25,13 +25,11 @@ const readFromStorage = (namespace: string): Record<string, string> | null => {
 
     const parsed = JSON.parse(raw)
     if (!isValidQueryRecord(parsed)) {
-      console.warn('[preservedQuery] invalid storage format')
       sessionStorage.removeItem(getStorageKey(namespace))
       return null
     }
     return parsed
   } catch (error) {
-    console.warn('[preservedQuery] storage operation failed')
     sessionStorage.removeItem(getStorageKey(namespace))
     return null
   }
@@ -47,11 +45,8 @@ const writeToStorage = (
       return
     }
     sessionStorage.setItem(getStorageKey(namespace), JSON.stringify(payload))
-  } catch (error) {
-    console.warn('[preservedQuery] failed to write storage', {
-      namespace,
-      error
-    })
+  } catch {
+    // Storage unavailable — silently ignore
   }
 }
 

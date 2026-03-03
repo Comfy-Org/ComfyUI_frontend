@@ -20,7 +20,6 @@ export function getDevOverride<T>(flagKey: string): T | undefined {
   try {
     return JSON.parse(raw) as T
   } catch {
-    console.warn(`[ff] Invalid JSON for override "${flagKey}":`, raw)
     return undefined
   }
 }

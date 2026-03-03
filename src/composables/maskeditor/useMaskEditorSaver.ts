@@ -256,8 +256,8 @@ export function useMaskEditorSaver() {
           type: data.type || layer.ref.type
         }
       }
-    } catch (error) {
-      console.warn('[MaskEditorSaver] Failed to parse upload response:', error)
+    } catch {
+      // JSON parse failed — fall through to return existing ref
     }
 
     return layer.ref
@@ -291,8 +291,8 @@ export function useMaskEditorSaver() {
           type: data.type || layer.ref.type
         }
       }
-    } catch (error) {
-      console.warn('[MaskEditorSaver] Failed to parse upload response:', error)
+    } catch {
+      // JSON parse failed — fall through to return existing ref
     }
 
     return layer.ref

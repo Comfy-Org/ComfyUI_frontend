@@ -331,9 +331,6 @@ export const formatPricingResult = (
   }
 
   if (!isPricingResult(result)) {
-    if (result !== undefined && result !== null) {
-      console.warn('[pricing/jsonata] invalid result format:', result)
-    }
     return ''
   }
 

@@ -530,7 +530,6 @@ function captureDynamicSubmenu(
     return converted
   }
 
-  console.warn('[ContextMenuConverter] No items captured for:', item.content)
   return undefined
 }
 

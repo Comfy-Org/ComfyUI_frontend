@@ -24,10 +24,6 @@ export class GtmTelemetryProvider implements TelemetryProvider {
     const gtmId = window.__CONFIG__?.gtm_container_id
     if (gtmId) {
       this.initializeGtm(gtmId)
-    } else {
-      if (import.meta.env.MODE === 'development') {
-        console.warn('[GTM] No GTM ID configured, skipping initialization')
-      }
     }
 
     const measurementId = window.__CONFIG__?.ga_measurement_id
