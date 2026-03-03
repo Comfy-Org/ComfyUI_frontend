@@ -242,7 +242,15 @@ const handleDownload = () => {
 
 const handleRemove = () => {
   if (!props.nodeId) return
+  const node = app.rootGraph?.getNodeById(Number(props.nodeId))
   nodeOutputStore.removeNodeOutputs(props.nodeId)
+  if (node) {
+    node.imgs = undefined
+    const imageWidget = node.widgets?.find((w) => w.name === 'image')
+    if (imageWidget) {
+      imageWidget.value = ''
+    }
+  }
 }
 
 const setCurrentIndex = (index: number) => {
