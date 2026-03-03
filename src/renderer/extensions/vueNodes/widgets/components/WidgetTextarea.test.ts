@@ -208,32 +208,30 @@ describe('WidgetTextarea Value Binding', () => {
       mockCopyToClipboard.mockClear()
     })
 
-    it('does not show copy button when not read-only', async () => {
+    it('hides copy button when not read-only', async () => {
       const widget = createMockWidget('test')
       const wrapper = mountComponent(widget, 'test', false)
-
-      await wrapper.trigger('mouseenter')
 
       const button = wrapper.find('button')
       expect(button.exists()).toBe(false)
     })
 
-    it('does not show copy button when read-only but not hovered', () => {
+    it('copy button has invisible class by default when read-only', () => {
       const widget = createMockWidget('test', { read_only: true })
       const wrapper = mountComponent(widget, 'test', true)
 
       const button = wrapper.find('button')
-      expect(button.exists()).toBe(false)
+      expect(button.exists()).toBe(true)
+      expect(button.classes()).toContain('invisible')
     })
 
-    it('shows copy button when read-only and hovered, and copies on click', async () => {
+    it('copy button has group-hover:visible class when read-only, and copies on click', async () => {
       const widget = createMockWidget('test value', { read_only: true })
       const wrapper = mountComponent(widget, 'test value', true)
 
-      await wrapper.trigger('mouseenter')
-
       const button = wrapper.find('button')
       expect(button.exists()).toBe(true)
+      expect(button.classes()).toContain('group-hover:visible')
 
       await button.trigger('click')
 

@@ -2,12 +2,10 @@
   <div
     :class="
       cn(
-        'relative rounded-lg focus-within:ring focus-within:ring-component-node-widget-background-highlighted transition-all',
+        'group relative rounded-lg focus-within:ring focus-within:ring-component-node-widget-background-highlighted transition-all',
         widget.borderStyle
       )
     "
-    @mouseenter="isHovered = true"
-    @mouseleave="isHovered = false"
   >
     <label
       v-if="!hideLayoutField"
@@ -36,10 +34,10 @@
       @contextmenu.capture.stop
     />
     <Button
-      v-if="isReadOnly && isHovered"
+      v-if="isReadOnly"
       variant="textonly"
       size="icon"
-      class="absolute top-1.5 right-1.5 z-10 hover:bg-base-foreground/10"
+      class="invisible absolute top-1.5 right-1.5 z-10 hover:bg-base-foreground/10 group-hover:visible"
       :title="$t('g.copyToClipboard')"
       :aria-label="$t('g.copyToClipboard')"
       @click="handleCopy"
@@ -51,7 +49,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, useId } from 'vue'
+import { computed, useId } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
 import Textarea from '@/components/ui/textarea/Textarea.vue'
@@ -75,7 +73,6 @@ const modelValue = defineModel<string>({ default: '' })
 
 const hideLayoutField = useHideLayoutField()
 const { copyToClipboard } = useCopyToClipboard()
-const isHovered = ref(false)
 
 const filteredProps = computed(() =>
   filterWidgetProps(widget.options, INPUT_EXCLUDED_PROPS)
