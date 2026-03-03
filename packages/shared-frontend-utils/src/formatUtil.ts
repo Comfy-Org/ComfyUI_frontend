@@ -141,13 +141,11 @@ export function getFilenameDetails(fullFilename: string) {
     }
   }
   const dotIndex = fullFilename.lastIndexOf('.')
-  if (dotIndex > 0) {
-    return {
-      filename: fullFilename.slice(0, dotIndex),
-      suffix: fullFilename.slice(dotIndex + 1)
-    }
+  if (dotIndex <= 0) return { filename: fullFilename, suffix: null }
+  return {
+    filename: fullFilename.slice(0, dotIndex),
+    suffix: fullFilename.slice(dotIndex + 1)
   }
-  return { filename: fullFilename, suffix: null }
 }
 
 /**
