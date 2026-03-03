@@ -44,9 +44,13 @@
         {{ t('templateWorkflows.publish.difficulty') }}
       </label>
       <SingleSelect
-        v-model="wizardData.difficulty"
+        :model-value="wizardData.difficulty ?? undefined"
         :label="t('templateWorkflows.publish.difficulty')"
         :options="difficultyOptions"
+        @update:model-value="
+          (value: string | undefined) =>
+            (wizardData.difficulty = value as Difficulty | undefined)
+        "
       />
       <span
         v-if="errors.difficulty"
@@ -61,10 +65,23 @@
         {{ t('templateWorkflows.publish.categories') }}
       </label>
       <MultiSelectInput
-        v-model="selectedCategories"
+        :model-value="
+          wizardData.categories?.map((category) => ({
+            name: category,
+            value: category
+          })) ?? []
+        "
         :label="t('templateWorkflows.publish.categoriesPlaceholder')"
-        :options="categoryOptions"
+        :options="
+          categoryOptions?.map((category) => ({
+            name: category,
+            value: category
+          })) ?? []
+        "
         show-search-box
+        @update:model-value="
+          (value) => (wizardData.categories = value.map(({ value }) => value))
+        "
       />
     </div>
 
@@ -73,8 +90,31 @@
         {{ t('templateWorkflows.publish.tags') }}
       </label>
       <TagAutocompleteInput
-        v-model="selectedTags"
+        :model-value="wizardData.tags ?? []"
         :placeholder="t('templateWorkflows.publish.tagsPlaceholder')"
+        @update:model-value="(value) => (wizardData.tags = value)"
+      />
+    </div>
+
+    <div class="flex flex-col gap-2">
+      <label class="text-sm font-medium">
+        {{ t('templateWorkflows.publish.license') }}
+      </label>
+      <SingleSelect
+        :model-value="wizardData.license ?? undefined"
+        :label="t('templateWorkflows.publish.licensePlaceholder')"
+        :options="licenseOptions"
+        @update:model-value="(value) => (wizardData.license = value)"
+      />
+    </div>
+
+    <div class="flex flex-col gap-2">
+      <label class="text-sm font-medium">
+        {{ t('templateWorkflows.publish.tutorialUrl') }}
+      </label>
+      <InputText
+        v-model="wizardData.tutorialUrl"
+        :placeholder="t('templateWorkflows.publish.tutorialUrlPlaceholder')"
       />
     </div>
 
@@ -90,17 +130,16 @@
         {{ t('templateWorkflows.publish.changelog') }}
       </label>
       <Textarea
-        :model-value="wizardData.changelog ?? ''"
+        v-model="wizardData.changelog"
         :placeholder="t('templateWorkflows.publish.changelogPlaceholder')"
         rows="2"
-        @update:model-value="(value) => (wizardData.changelog = String(value))"
       />
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import MultiSelectInput from '@/components/input/MultiSelect.vue'
@@ -112,8 +151,9 @@ import { useWorkflowStore } from '@/platform/workflow/management/stores/workflow
 
 import TagAutocompleteInput from './TagAutocompleteInput.vue'
 import { usePublishTemplateWizard } from '../composables/usePublishTemplateWizard'
-import { metadataSchema } from '../schemas/templateSchema'
-import { getCategories } from '../services/tagApi'
+import { licenseTypeSchema, metadataSchema } from '../schemas/templateSchema'
+import { useCategories } from '../composables/useCategories'
+import type { Difficulty } from '../types/marketplace'
 
 const { t } = useI18n()
 const { wizardData } = usePublishTemplateWizard()
@@ -121,69 +161,52 @@ const workflowStore = useWorkflowStore()
 
 const errors = ref<Record<string, string>>({})
 
-const selectedWorkflowPath = ref<string | undefined>(
-  wizardData.value.template?.name
-)
+const selectedWorkflowPath = ref<string | undefined>(wizardData.value.name)
 
 const workflowOptions = computed(() =>
-  workflowStore.persistedWorkflows.map((wf) => ({
-    name: wf.filename,
-    value: wf.path
+  workflowStore.persistedWorkflows.map(({ filename, path }) => ({
+    name: filename,
+    value: path
   }))
 )
 
 function onWorkflowSelected(path: string | undefined) {
   selectedWorkflowPath.value = path
   if (!path) {
-    wizardData.value.template = undefined
+    wizardData.value.name = undefined
+    wizardData.value.title = undefined
+    wizardData.value.description = undefined
+    wizardData.value.mediaType = undefined
+    wizardData.value.mediaSubtype = undefined
     return
   }
   const wf = workflowStore.getWorkflowByPath(path)
   if (!wf) return
 
-  wizardData.value.template = {
-    name: wf.filename,
-    title: wf.filename.replace(/\.json$/, ''),
-    description: '',
-    mediaType: 'image',
-    mediaSubtype: 'photo'
-  }
+  wizardData.value.name = wf.filename
+  wizardData.value.title = wf.filename.replace(/\.json$/, '')
+  wizardData.value.description = ''
+  wizardData.value.mediaType = 'image'
+  wizardData.value.mediaSubtype = 'photo'
 }
 
 const difficultyOptions = [
   { name: t('templateWorkflows.publish.beginner'), value: 'beginner' },
   { name: t('templateWorkflows.publish.intermediate'), value: 'intermediate' },
   { name: t('templateWorkflows.publish.advanced'), value: 'advanced' }
-]
+] satisfies SelectOption[]
 
-// Categories
-const categoryOptions = ref<SelectOption[]>([])
-const selectedCategories = ref<SelectOption[]>(
-  (wizardData.value.categories ?? []).map((c) => ({ name: c, value: c }))
-)
+const licenseOptions = licenseTypeSchema.options.map((value) => ({
+  name: t(`templateWorkflows.publish.licenses.${value}`),
+  value
+})) satisfies SelectOption[]
 
-onMounted(async () => {
-  const { categories } = await getCategories()
-  categoryOptions.value = categories.map((c) => ({ name: c, value: c }))
-})
-
-watch(selectedCategories, (cats) => {
-  wizardData.value.categories = cats.map((c) => c.value)
-})
-
-// Tags
-const selectedTags = ref<string[]>(wizardData.value.template?.tags ?? [])
-
-watch(selectedTags, (tags) => {
-  if (wizardData.value.template) {
-    wizardData.value.template.tags = tags
-  }
-})
+const { categories: categoryOptions } = useCategories()
 
 function validate(): boolean {
   const map: Record<string, string> = {}
 
-  if (!wizardData.value.template) {
+  if (!wizardData.value.name) {
     map.template = 'Select a workflow to submit'
   }
 

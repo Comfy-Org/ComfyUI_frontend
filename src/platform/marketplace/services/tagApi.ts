@@ -7,9 +7,7 @@ const collection = store.collection<MarketplaceTemplate>('templates')
 
 // GET /api/marketplace/categories
 export async function getCategories(): Promise<{ categories: string[] }> {
-  // Static list matching the spec's predefined categories.
-  // Real implementation: GET from server.
-  return {
+  return Promise.resolve({
     categories: [
       'Image Generation',
       'Video',
@@ -22,7 +20,7 @@ export async function getCategories(): Promise<{ categories: string[] }> {
       'Inpainting',
       'Img2Img'
     ]
-  }
+  })
 }
 
 // GET /api/marketplace/tags/suggest?query=...&nodeTypes=...
@@ -30,9 +28,7 @@ export async function suggestTags(
   query: string,
   _nodeTypes?: string[]
 ): Promise<{ tags: string[] }> {
-  const allTags = collection
-    .list()
-    .flatMap((entry) => entry.template.tags ?? [])
+  const allTags = collection.list().flatMap((entry) => entry.tags ?? [])
   const unique = [...new Set(allTags)]
 
   if (!query) return { tags: unique.slice(0, 10) }

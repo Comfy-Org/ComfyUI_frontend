@@ -2,25 +2,28 @@ import type { InjectionKey } from 'vue'
 import { inject, provide, ref } from 'vue'
 
 import {
-  createDraftTemplate,
-  createTemplate,
+  createTemplateDraft,
   submitTemplate,
   updateTemplate
 } from '../services/templateApi'
-import { isUpdateTemplateRequest } from '../types/marketplace'
-import type {
-  CreateTemplateRequest,
-  UpdateTemplateRequest
-} from '../types/marketplace'
+import type { MarketplaceTemplate } from '../types/marketplace'
+import {
+  createTemplateDraftRequestSchema,
+  submitTemplateRequestSchema,
+  updateTemplateRequestSchema
+} from '../schemas/templateSchema'
 
 function createPublishTemplateWizard() {
   const currentStep = ref(1)
-  const wizardData = ref<
-    Partial<CreateTemplateRequest> | UpdateTemplateRequest
-  >({
-    version: '1.0.0',
-    gallery: []
-  })
+  const initialData: Partial<MarketplaceTemplate> = {
+    gallery: [],
+    categories: [],
+    tags: [],
+    mediaType: 'image',
+    mediaSubtype: 'photo'
+  }
+
+  const wizardData = ref<Partial<MarketplaceTemplate>>(initialData)
   const isSubmitting = ref(false)
   const isSaving = ref(false)
 
@@ -43,7 +46,7 @@ function createPublishTemplateWizard() {
 
   function resetWizard() {
     currentStep.value = 1
-    wizardData.value = { version: '1.0.0', gallery: [] }
+    wizardData.value = initialData
     isSubmitting.value = false
     isSaving.value = false
   }
@@ -51,10 +54,12 @@ function createPublishTemplateWizard() {
   async function saveDraft() {
     isSaving.value = true
     try {
-      if (isUpdateTemplateRequest(wizardData.value)) {
-        await updateTemplate(wizardData.value)
+      if (wizardData.value.id) {
+        const request = updateTemplateRequestSchema.parse(wizardData.value)
+        await updateTemplate(request)
       } else {
-        await createDraftTemplate(wizardData.value)
+        const request = createTemplateDraftRequestSchema.parse(wizardData.value)
+        await createTemplateDraft(request)
       }
     } finally {
       isSaving.value = false
@@ -64,23 +69,8 @@ function createPublishTemplateWizard() {
   async function submit() {
     isSubmitting.value = true
     try {
-      const body: CreateTemplateRequest = {
-        template: wizardData.value.template!,
-        shortDescription: wizardData.value.shortDescription!,
-        difficulty: wizardData.value.difficulty!,
-        categories: wizardData.value.categories,
-        gallery: wizardData.value.gallery,
-        version: wizardData.value.version ?? '1.0.0',
-        changelog: wizardData.value.changelog
-      }
-
-      if (isUpdateTemplateRequest(wizardData.value)) {
-        await updateTemplate(wizardData.value)
-        await submitTemplate(wizardData.value.id)
-      } else {
-        const { id } = await createTemplate(body)
-        await submitTemplate(id)
-      }
+      const request = submitTemplateRequestSchema.parse(wizardData.value)
+      await submitTemplate(request)
     } finally {
       isSubmitting.value = false
     }

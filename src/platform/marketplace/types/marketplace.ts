@@ -7,14 +7,18 @@ import type {
 } from '../schemas/authorStatsSchema'
 import type {
   authorInfoSchema,
-  createTemplateRequestSchema,
+  createTemplateDraftRequestSchema,
   difficultySchema,
   licenseTypeSchema,
   marketplaceTemplateSchema,
+  submitTemplateRequestSchema,
   templateStatsSchema,
   templateStatusSchema,
   updateTemplateRequestSchema
 } from '../schemas/templateSchema'
+import type { TemplateInfo } from '@/platform/workflow/templates/types/template'
+
+export const MARKETPLACE_TEMPLATE_KEY = Symbol('MarketplaceTemplate')
 
 export type Difficulty = z.infer<typeof difficultySchema>
 export type LicenseType = z.infer<typeof licenseTypeSchema>
@@ -23,15 +27,22 @@ export type StatsPeriod = z.infer<typeof statsPeriodSchema>
 
 export type AuthorInfo = z.infer<typeof authorInfoSchema>
 export type TemplateStats = z.infer<typeof templateStatsSchema>
-export type MarketplaceTemplate = z.infer<typeof marketplaceTemplateSchema>
+export type MarketplaceTemplate = z.infer<typeof marketplaceTemplateSchema> & {
+  [MARKETPLACE_TEMPLATE_KEY]: true
+}
 
-export type CreateTemplateRequest = z.infer<typeof createTemplateRequestSchema>
+export type CreateTemplateDraftRequest = z.infer<
+  typeof createTemplateDraftRequestSchema
+>
 export type UpdateTemplateRequest = z.infer<typeof updateTemplateRequestSchema>
+export type SubmitTemplateRequest = z.infer<typeof submitTemplateRequestSchema>
 
-export function isUpdateTemplateRequest(
-  request: Partial<CreateTemplateRequest> | UpdateTemplateRequest
-): request is UpdateTemplateRequest {
-  return 'id' in request
+export function isMarketplaceTemplate(
+  template: Partial<TemplateInfo>
+): template is MarketplaceTemplate {
+  return (
+    MARKETPLACE_TEMPLATE_KEY in template && !!template[MARKETPLACE_TEMPLATE_KEY]
+  )
 }
 
 export type AuthorDashboardStats = z.infer<typeof authorDashboardStatsSchema>

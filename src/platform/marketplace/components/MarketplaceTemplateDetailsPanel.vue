@@ -10,7 +10,7 @@
       </template>
       <DetailsField
         :label="t('templateWorkflows.details.name')"
-        :value="submission.template.title ?? submission.template.name"
+        :value="submission.title ?? submission.name"
       />
       <DetailsField
         v-if="submission.shortDescription"
@@ -68,10 +68,7 @@
     </PropertiesAccordionItem>
 
     <PropertiesAccordionItem
-      v-if="
-        submission.template.models?.length ||
-        submission.template.requiresCustomNodes?.length
-      "
+      v-if="submission.models?.length || submission.requiresCustomNodes?.length"
       class="border-t border-border-default bg-transparent"
     >
       <template #label>
@@ -80,12 +77,12 @@
         </span>
       </template>
       <DetailsField
-        v-if="submission.template.models?.length"
+        v-if="submission.models?.length"
         :label="t('templateWorkflows.details.models')"
       >
         <div class="flex flex-wrap gap-1">
           <span
-            v-for="model in submission.template.models"
+            v-for="model in submission.models"
             :key="model"
             class="rounded-md bg-dialog-surface px-2 py-0.5 text-xs text-muted-foreground"
           >
@@ -94,12 +91,12 @@
         </div>
       </DetailsField>
       <DetailsField
-        v-if="submission.template.requiresCustomNodes?.length"
+        v-if="submission.requiresCustomNodes?.length"
         :label="t('templateWorkflows.details.customNodes')"
       >
         <div class="flex flex-wrap gap-1">
           <span
-            v-for="node in submission.template.requiresCustomNodes"
+            v-for="node in submission.requiresCustomNodes"
             :key="node"
             class="rounded-md bg-dialog-surface px-2 py-0.5 text-xs text-muted-foreground"
           >
@@ -108,9 +105,9 @@
         </div>
       </DetailsField>
       <DetailsField
-        v-if="submission.template.vram"
+        v-if="submission.vram"
         :label="t('templateWorkflows.details.vram')"
-        :value="formatSize(submission.template.vram)"
+        :value="formatSize(submission.vram)"
       />
     </PropertiesAccordionItem>
 
@@ -215,7 +212,7 @@ const confirmingRemove = ref(false)
 
 const STATUS_SEVERITY: Record<TemplateStatus, StatusBadgeVariants['severity']> =
   {
-    draft: 'secondary',
+    draft: 'muted',
     pending_review: 'warn',
     approved: 'default',
     rejected: 'danger',

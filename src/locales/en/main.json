@@ -1085,6 +1085,18 @@
       "categoriesPlaceholder": "Select categories...",
       "tags": "Tags",
       "tagsPlaceholder": "Type to add tags...",
+      "license": "License",
+      "licensePlaceholder": "Select a license...",
+      "licenses": {
+        "cc-by": "CC BY",
+        "cc-by-sa": "CC BY-SA",
+        "cc-by-nc": "CC BY-NC",
+        "mit": "MIT",
+        "apache": "Apache 2.0",
+        "custom": "Custom"
+      },
+      "tutorialUrl": "Tutorial / Documentation",
+      "tutorialUrlPlaceholder": "https://...",
       "version": "Version",
       "changelog": "Changelog",
       "changelogPlaceholder": "What changed in this version...",

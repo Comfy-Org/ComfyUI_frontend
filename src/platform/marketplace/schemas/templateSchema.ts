@@ -37,7 +37,7 @@ export const authorInfoSchema = z.object({
   profileUrl: z.string()
 })
 
-export const templateInfoSchema = z.custom<TemplateInfo>(
+export const templateInfoSchema = z.custom<Partial<TemplateInfo>>(
   (value) => value != null && typeof value === 'object' && 'name' in value
 )
 
@@ -65,41 +65,50 @@ export const mediaStepSchema = z
     }
   )
 
-export const marketplaceTemplateSchema = z.object({
-  id: z.string().min(1),
-  template: templateInfoSchema,
-  shortDescription: z.string().max(200),
-  author: authorInfoSchema,
-  difficulty: difficultySchema,
-  categories: z.array(z.string()).optional(),
-  gallery: z.array(z.string()).optional(),
-  changelog: z.string().optional(),
-  version: z.string().min(1),
-  status: templateStatusSchema,
-  reviewFeedback: z.string().optional(),
-  publishedAt: z.string().optional(),
-  updatedAt: z.string(),
-  createdAt: z.string(),
-  stats: templateStatsSchema
-})
+export const marketplaceTemplateSchema = templateInfoSchema.and(
+  z.object({
+    id: z.string().min(1),
+    shortDescription: z.string().optional(),
+    author: authorInfoSchema,
+    difficulty: difficultySchema.optional(),
+    categories: z.array(z.string()),
+    gallery: z.array(z.string()),
+    changelog: z.string().optional(),
+    reviewFeedback: z.string().optional(),
+    version: z.string().optional(),
+    status: templateStatusSchema,
+    publishedAt: z.string().optional(),
+    updatedAt: z.string().optional(),
+    createdAt: z.string(),
+    stats: templateStatsSchema
+  })
+)
 
-export const createTemplateRequestSchema = z.object({
-  template: templateInfoSchema,
-  shortDescription: z.string().min(1).max(200),
-  difficulty: difficultySchema,
+export const createTemplateDraftRequestSchema = z.object({
+  shortDescription: z.string().min(1).max(200).optional(),
+  difficulty: difficultySchema.optional(),
   categories: z.array(z.string()).optional(),
   gallery: z.array(z.string()).optional(),
-  version: z.string().min(1),
+  version: z.string().min(1).optional(),
   changelog: z.string().optional()
 })
 
 export const updateTemplateRequestSchema = z.object({
   id: z.string().min(1),
-  template: templateInfoSchema,
-  shortDescription: z.string().min(1).max(200),
-  difficulty: difficultySchema,
+  shortDescription: z.string().min(1).max(200).optional(),
+  difficulty: difficultySchema.optional(),
   categories: z.array(z.string()).optional(),
   gallery: z.array(z.string()).optional(),
+  version: z.string().min(1).optional(),
+  changelog: z.string().optional()
+})
+
+export const submitTemplateRequestSchema = z.object({
+  id: z.string().min(1).optional(),
+  shortDescription: z.string().min(1).max(200),
+  difficulty: difficultySchema,
+  categories: z.array(z.string()).default([]),
+  gallery: z.array(z.string()).min(1),
   version: z.string().min(1),
   changelog: z.string().optional()
 })

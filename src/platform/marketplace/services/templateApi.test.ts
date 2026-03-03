@@ -1,11 +1,27 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { MarketplaceTemplate } from '../types/marketplace'
+import type {
+  MarketplaceTemplate,
+  SubmitTemplateRequest
+} from '../types/marketplace'
 
 import {
   createMemoryCollection,
   createMockMarketplaceTemplate
 } from './__tests__/testUtils'
+
+function createMockSubmitRequest(
+  overrides: Partial<SubmitTemplateRequest> = {}
+): SubmitTemplateRequest {
+  return {
+    shortDescription: 'Short description',
+    difficulty: 'beginner',
+    categories: ['Image Generation'],
+    gallery: ['https://example.com/image.png'],
+    version: '1.0.0',
+    ...overrides
+  }
+}
 
 const mockCollection = createMemoryCollection<MarketplaceTemplate>()
 
@@ -16,8 +32,7 @@ vi.mock('@/utils/mockKVStore', () => ({
 }))
 
 const {
-  createTemplate,
-  createDraftTemplate,
+  createTemplateDraft,
   getTemplate,
   updateTemplate,
   deleteTemplate,
@@ -36,13 +51,13 @@ describe('templateApi', () => {
 
   describe('createTemplate', () => {
     it('returns id and draft status', async () => {
-      const result = await createTemplate(createMockMarketplaceTemplate())
+      const result = await createTemplateDraft(createMockMarketplaceTemplate())
       expect(result.id).toBeTruthy()
       expect(result.status).toBe('draft')
     })
 
     it('persists the template with timestamps and default stats', async () => {
-      const { id } = await createTemplate(createMockMarketplaceTemplate())
+      const { id } = await createTemplateDraft(createMockMarketplaceTemplate())
       const stored = await getTemplate(id)
       expect(stored).not.toBeNull()
       expect(stored!.createdAt).toBeTruthy()
@@ -53,21 +68,21 @@ describe('templateApi', () => {
 
   describe('createDraftTemplate', () => {
     it('creates a draft with empty partial data', async () => {
-      const result = await createDraftTemplate({})
+      const result = await createTemplateDraft({})
       expect(result.id).toBeTruthy()
       expect(result.status).toBe('draft')
     })
 
     it('fills defaults for missing required fields', async () => {
-      const { id } = await createDraftTemplate({})
+      const { id } = await createTemplateDraft({})
       const stored = await getTemplate(id)
-      expect(stored!.shortDescription).toBe('')
-      expect(stored!.difficulty).toBe('beginner')
-      expect(stored!.version).toBe('1.0.0')
+      expect(stored!.categories).toEqual([])
+      expect(stored!.gallery).toEqual([])
+      expect(stored!.status).toBe('draft')
     })
 
     it('preserves provided fields', async () => {
-      const { id } = await createDraftTemplate({
+      const { id } = await createTemplateDraft({
         shortDescription: 'My draft',
         difficulty: 'advanced'
       })
@@ -85,7 +100,7 @@ describe('templateApi', () => {
 
   describe('updateTemplate', () => {
     it('updates fields and refreshes updatedAt', async () => {
-      const { id } = await createTemplate(createMockMarketplaceTemplate())
+      const { id } = await createTemplateDraft(createMockMarketplaceTemplate())
       const before = await getTemplate(id)
       vi.advanceTimersByTime(1000)
       const result = await updateTemplate({
@@ -100,7 +115,7 @@ describe('templateApi', () => {
 
   describe('deleteTemplate', () => {
     it('deletes an existing template', async () => {
-      const { id } = await createTemplate(createMockMarketplaceTemplate())
+      const { id } = await createTemplateDraft(createMockMarketplaceTemplate())
       expect(await deleteTemplate(id)).toEqual({ success: true })
       expect(await getTemplate(id)).toBeNull()
     })
@@ -112,30 +127,32 @@ describe('templateApi', () => {
 
   describe('submitTemplate', () => {
     it('transitions draft to pending_review', async () => {
-      const { id } = await createTemplate(createMockMarketplaceTemplate())
-      const result = await submitTemplate(id)
-      expect(result.status).toBe('pending_review')
+      const { id } = await createTemplateDraft(createMockMarketplaceTemplate())
+      const result = await submitTemplate(createMockSubmitRequest({ id }))
+      expect(result!.status).toBe('pending_review')
       const stored = await getTemplate(id)
       expect(stored!.status).toBe('pending_review')
     })
 
     it('allows resubmission of rejected templates', async () => {
-      const { id } = await createTemplate(createMockMarketplaceTemplate())
+      const { id } = await createTemplateDraft(createMockMarketplaceTemplate())
       mockCollection.update(id, { status: 'rejected' })
-      const result = await submitTemplate(id)
-      expect(result.status).toBe('pending_review')
+      const result = await submitTemplate(createMockSubmitRequest({ id }))
+      expect(result!.status).toBe('pending_review')
     })
 
     it('throws for nonexistent template', async () => {
-      await expect(submitTemplate('nope')).rejects.toThrow('Template not found')
+      await expect(
+        submitTemplate(createMockSubmitRequest({ id: 'nope' }))
+      ).rejects.toThrow('Template not found')
     })
 
     it('throws for already pending template', async () => {
-      const { id } = await createTemplate(createMockMarketplaceTemplate())
-      await submitTemplate(id)
-      await expect(submitTemplate(id)).rejects.toThrow(
-        'Cannot submit template with status "pending_review"'
-      )
+      const { id } = await createTemplateDraft(createMockMarketplaceTemplate())
+      await submitTemplate(createMockSubmitRequest({ id }))
+      await expect(
+        submitTemplate(createMockSubmitRequest({ id }))
+      ).rejects.toThrow('Cannot submit template with status "pending_review"')
     })
   })
 })

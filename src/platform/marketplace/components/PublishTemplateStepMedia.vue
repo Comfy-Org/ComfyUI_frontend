@@ -63,7 +63,7 @@ const { wizardData } = usePublishTemplateWizard()
 
 const errors = ref<Record<string, string>>({})
 const selectedVariant = ref<string>(
-  wizardData.value.template?.thumbnailVariant ?? 'default'
+  wizardData.value.thumbnailVariant ?? 'default'
 )
 
 function selectVariant(variant: string) {

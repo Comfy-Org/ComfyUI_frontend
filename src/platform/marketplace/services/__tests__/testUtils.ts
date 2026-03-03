@@ -1,3 +1,4 @@
+import { MARKETPLACE_TEMPLATE_KEY } from '../../types/marketplace'
 import type { MarketplaceTemplate } from '../../types/marketplace'
 
 type Identifiable = { id: string }
@@ -7,12 +8,11 @@ export function createMockMarketplaceTemplate(
 ): Omit<MarketplaceTemplate, 'id'> {
   const { id: _id, ...rest } = overrides
   return {
-    template: {
-      name: 'test-workflow',
-      description: 'A test workflow',
-      mediaType: 'image',
-      mediaSubtype: 'photo'
-    },
+    [MARKETPLACE_TEMPLATE_KEY]: true as const,
+    name: 'test-workflow',
+    description: 'A test workflow',
+    mediaType: 'image',
+    mediaSubtype: 'photo',
     shortDescription: 'Short description',
     author: {
       id: 'author-1',
@@ -22,6 +22,7 @@ export function createMockMarketplaceTemplate(
     },
     difficulty: 'beginner',
     categories: ['Image Generation'],
+    gallery: [],
     version: '1.0.0',
     status: 'draft',
     updatedAt: new Date().toISOString(),

@@ -13,7 +13,7 @@
             <div class="relative h-full w-full overflow-hidden rounded-lg">
               <CompareSliderThumbnail
                 v-if="
-                  template?.thumbnailVariant === 'compareSlider' &&
+                  wizardData.thumbnailVariant === 'compareSlider' &&
                   files.length === 2
                 "
                 :base-image-src="files[0]"
@@ -24,7 +24,7 @@
               />
               <HoverDissolveThumbnail
                 v-else-if="
-                  template?.thumbnailVariant === 'hoverDissolve' &&
+                  wizardData.thumbnailVariant === 'hoverDissolve' &&
                   files.length >= 2
                 "
                 :base-image-src="files[0]"
@@ -57,7 +57,7 @@
           <CardBottom>
             <div class="flex flex-col gap-2 pt-3">
               <h3 class="m-0 line-clamp-1 text-sm">
-                {{ template?.title ?? template?.name }}
+                {{ wizardData.title ?? wizardData.name }}
               </h3>
               <p
                 v-if="wizardData.shortDescription"
@@ -101,6 +101,20 @@
             <SquareChip v-for="tag in tags" :key="tag" :label="tag" />
           </div>
         </div>
+        <div v-if="wizardData.license" class="flex justify-between">
+          <span class="text-muted">{{
+            t('templateWorkflows.publish.license')
+          }}</span>
+          <span>{{
+            t(`templateWorkflows.publish.licenses.${wizardData.license}`)
+          }}</span>
+        </div>
+        <div v-if="wizardData.tutorialUrl" class="flex justify-between">
+          <span class="text-muted">{{
+            t('templateWorkflows.publish.tutorialUrl')
+          }}</span>
+          <span class="truncate ml-4">{{ wizardData.tutorialUrl }}</span>
+        </div>
         <div class="flex justify-between">
           <span class="text-muted">{{
             t('templateWorkflows.publish.version')
@@ -111,7 +125,7 @@
           <span class="text-muted">{{
             t('templateWorkflows.publish.mediaMode.label')
           }}</span>
-          <span>{{ template?.thumbnailVariant ?? 'default' }}</span>
+          <span>{{ wizardData.thumbnailVariant ?? 'default' }}</span>
         </div>
         <div v-if="files.length > 0" class="flex justify-between">
           <span class="text-muted">{{
@@ -153,9 +167,8 @@ import { usePublishTemplateWizard } from '../composables/usePublishTemplateWizar
 const { t } = useI18n()
 const { wizardData } = usePublishTemplateWizard()
 
-const template = computed(() => wizardData.value.template)
 const files = computed(() => wizardData.value.gallery ?? [])
 const categories = computed(() => wizardData.value.categories ?? [])
-const tags = computed(() => wizardData.value.template?.tags ?? [])
+const tags = computed(() => wizardData.value.tags ?? [])
 const isHovered = ref(false)
 </script>

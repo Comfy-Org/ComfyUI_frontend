@@ -35,24 +35,14 @@ describe('tagApi', () => {
     it('returns matching tags filtered by query', async () => {
       mockCollection.create(
         createMockMarketplaceTemplate({
-          template: {
-            name: 'wf1',
-            description: '',
-            mediaType: 'image',
-            mediaSubtype: 'photo',
-            tags: ['portrait', 'landscape', 'photo']
-          }
+          name: 'wf1',
+          tags: ['portrait', 'landscape', 'photo']
         })
       )
       mockCollection.create(
         createMockMarketplaceTemplate({
-          template: {
-            name: 'wf2',
-            description: '',
-            mediaType: 'image',
-            mediaSubtype: 'photo',
-            tags: ['portrait', 'anime']
-          }
+          name: 'wf2',
+          tags: ['portrait', 'anime']
         })
       )
 
@@ -63,24 +53,14 @@ describe('tagApi', () => {
     it('returns deduplicated tags when query is empty', async () => {
       mockCollection.create(
         createMockMarketplaceTemplate({
-          template: {
-            name: 'wf1',
-            description: '',
-            mediaType: 'image',
-            mediaSubtype: 'photo',
-            tags: ['a', 'b']
-          }
+          name: 'wf1',
+          tags: ['a', 'b']
         })
       )
       mockCollection.create(
         createMockMarketplaceTemplate({
-          template: {
-            name: 'wf2',
-            description: '',
-            mediaType: 'image',
-            mediaSubtype: 'photo',
-            tags: ['b', 'c']
-          }
+          name: 'wf2',
+          tags: ['b', 'c']
         })
       )
 
@@ -91,13 +71,8 @@ describe('tagApi', () => {
     it('returns empty array when no tags match', async () => {
       mockCollection.create(
         createMockMarketplaceTemplate({
-          template: {
-            name: 'wf1',
-            description: '',
-            mediaType: 'image',
-            mediaSubtype: 'photo',
-            tags: ['portrait']
-          }
+          name: 'wf1',
+          tags: ['portrait']
         })
       )
 
