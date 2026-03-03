@@ -10,7 +10,7 @@ import type {
   ResultItem,
   ResultItemType
 } from '@/schemas/apiSchema'
-import { getCloudResParam } from '@/platform/distribution/cloudPreviewUtil'
+import { appendCloudResParam } from '@/platform/distribution/cloudPreviewUtil'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import type { NodeLocatorId } from '@/types/nodeIdentification'
@@ -119,13 +119,13 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
 
     const rand = app.getRandParam()
     const previewParam = getPreviewParam(node, outputs)
-    const resParam = isImageOutputs(node, outputs)
-      ? getCloudResParam(outputs.images[0]?.filename)
-      : ''
+    const isImage = isImageOutputs(node, outputs)
+    const firstFilename = outputs.images[0]?.filename
 
     return outputs.images.map((image) => {
-      const imgUrlPart = new URLSearchParams(image)
-      return api.apiURL(`/view?${imgUrlPart}${previewParam}${resParam}${rand}`)
+      const params = new URLSearchParams(image)
+      if (isImage) appendCloudResParam(params, firstFilename)
+      return api.apiURL(`/view?${params}${previewParam}${rand}`)
     })
   }
 

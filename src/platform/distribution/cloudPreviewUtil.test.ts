@@ -1,50 +1,66 @@
 import { describe, expect, it, vi } from 'vitest'
 
-let mockIsCloud = false
+const mockIsCloud = vi.hoisted(() => ({ value: false }))
+
 vi.mock('./types', () => ({
   get isCloud() {
-    return mockIsCloud
+    return mockIsCloud.value
   }
 }))
 
-const { getCloudResParam } = await import('./cloudPreviewUtil')
+import { appendCloudResParam } from './cloudPreviewUtil'
 
-describe('getCloudResParam', () => {
-  it('returns empty string in non-cloud mode', () => {
-    mockIsCloud = false
-    expect(getCloudResParam('test.png')).toBe('')
+function buildParams(filename?: string): URLSearchParams {
+  const params = new URLSearchParams()
+  appendCloudResParam(params, filename)
+  return params
+}
+
+describe('appendCloudResParam', () => {
+  it('does not set res in non-cloud mode', () => {
+    mockIsCloud.value = false
+    expect(buildParams('test.png').has('res')).toBe(false)
   })
 
-  it('returns res param for image files in cloud mode', () => {
-    mockIsCloud = true
-    expect(getCloudResParam('test.png')).toBe('&res=512')
-    expect(getCloudResParam('photo.jpg')).toBe('&res=512')
-    expect(getCloudResParam('photo.jpeg')).toBe('&res=512')
-    expect(getCloudResParam('image.webp')).toBe('&res=512')
-    expect(getCloudResParam('image.gif')).toBe('&res=512')
-    expect(getCloudResParam('image.bmp')).toBe('&res=512')
-    expect(getCloudResParam('image.tiff')).toBe('&res=512')
-    expect(getCloudResParam('image.tif')).toBe('&res=512')
+  it('sets res=512 for image files in cloud mode', () => {
+    mockIsCloud.value = true
+    for (const ext of [
+      'png',
+      'jpg',
+      'jpeg',
+      'webp',
+      'gif',
+      'bmp',
+      'tiff',
+      'tif'
+    ]) {
+      const params = buildParams(`file.${ext}`)
+      expect(params.get('res')).toBe('512')
+    }
   })
 
-  it('returns empty string for non-image files in cloud mode', () => {
-    mockIsCloud = true
-    expect(getCloudResParam('video.mp4')).toBe('')
-    expect(getCloudResParam('video.webm')).toBe('')
-    expect(getCloudResParam('audio.mp3')).toBe('')
-    expect(getCloudResParam('audio.wav')).toBe('')
-    expect(getCloudResParam('model.glb')).toBe('')
-    expect(getCloudResParam('icon.svg')).toBe('')
+  it('does not set res for non-image files in cloud mode', () => {
+    mockIsCloud.value = true
+    for (const name of [
+      'video.mp4',
+      'video.webm',
+      'audio.mp3',
+      'audio.wav',
+      'model.glb',
+      'icon.svg'
+    ]) {
+      expect(buildParams(name).has('res')).toBe(false)
+    }
   })
 
-  it('returns res param when no filename provided in cloud mode', () => {
-    mockIsCloud = true
-    expect(getCloudResParam()).toBe('&res=512')
-    expect(getCloudResParam(undefined)).toBe('&res=512')
+  it('sets res=512 when no filename provided in cloud mode', () => {
+    mockIsCloud.value = true
+    expect(buildParams().get('res')).toBe('512')
+    expect(buildParams(undefined).get('res')).toBe('512')
   })
 
-  it('returns empty string when no filename provided in non-cloud mode', () => {
-    mockIsCloud = false
-    expect(getCloudResParam()).toBe('')
+  it('does not set res when no filename provided in non-cloud mode', () => {
+    mockIsCloud.value = false
+    expect(buildParams().has('res')).toBe(false)
   })
 })

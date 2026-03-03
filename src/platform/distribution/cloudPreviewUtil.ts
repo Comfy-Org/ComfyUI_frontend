@@ -1,32 +1,19 @@
+import { getMediaTypeFromFilename } from '@/utils/formatUtil'
+
 import { isCloud } from './types'
 
-const CLOUD_PREVIEW_RES = 512
-
-const IMAGE_EXTENSIONS = new Set([
-  'png',
-  'jpg',
-  'jpeg',
-  'webp',
-  'gif',
-  'bmp',
-  'tiff',
-  'tif'
-])
-
-function isImageFilename(filename: string): boolean {
-  const ext = filename.split('.').pop()?.toLowerCase()
-  return ext ? IMAGE_EXTENSIONS.has(ext) : false
-}
-
 /**
- * Returns `&res=N` for cloud image preview URLs.
- * The cloud backend resizes images server-side to prevent
- * the frontend from loading very large images.
+ * Appends `res=512` to the given URLSearchParams when in cloud mode
+ * and the file is an image (or filename is unknown).
  *
- * Returns empty string when not in cloud mode or for non-image files.
+ * The cloud backend resizes images server-side to prevent
+ * the frontend from loading very large originals for previews.
  */
-export function getCloudResParam(filename?: string): string {
-  if (!isCloud) return ''
-  if (filename && !isImageFilename(filename)) return ''
-  return `&res=${CLOUD_PREVIEW_RES}`
+export function appendCloudResParam(
+  params: URLSearchParams,
+  filename?: string
+): void {
+  if (!isCloud) return
+  if (filename && getMediaTypeFromFilename(filename) !== 'image') return
+  params.set('res', '512')
 }
