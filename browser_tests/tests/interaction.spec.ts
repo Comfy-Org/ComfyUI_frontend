@@ -171,6 +171,7 @@ test.describe('Node Interaction', () => {
 
   test('Can drag node', { tag: '@screenshot' }, async ({ comfyPage }) => {
     await comfyPage.nodeOps.dragTextEncodeNode2()
+    await comfyPage.nextFrame()
     await expect(comfyPage.canvas).toHaveScreenshot('dragged-node1.png')
   })
 

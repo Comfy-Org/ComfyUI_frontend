@@ -1,7 +1,7 @@
 <template>
   <div
     data-testid="subgraph-breadcrumb"
-    class="subgraph-breadcrumb flex w-auto drop-shadow-(--interface-panel-drop-shadow) items-center"
+    class="subgraph-breadcrumb flex w-auto drop-shadow-(--interface-panel-drop-shadow) items-center -mt-4 pt-4"
     :class="{
       'subgraph-breadcrumb-collapse': collapseTabs,
       'subgraph-breadcrumb-overflow': overflowingTabs

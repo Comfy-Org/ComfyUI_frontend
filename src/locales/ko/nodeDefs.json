@@ -3778,6 +3778,9 @@
     "outputs": {
       "0": {
         "tooltip": null
+      },
+      "1": {
+        "tooltip": null
       }
     }
   },
@@ -18151,6 +18154,68 @@
     "outputs": {
       "0": {
         "tooltip": null
+      }
+    }
+  },
+  "WanSCAILToVideo": {
+    "display_name": "WanSCAILToVideo",
+    "inputs": {
+      "batch_size": {
+        "name": "배치 크기"
+      },
+      "clip_vision_output": {
+        "name": "clip_vision_output"
+      },
+      "height": {
+        "name": "높이"
+      },
+      "length": {
+        "name": "길이"
+      },
+      "negative": {
+        "name": "negative"
+      },
+      "pose_end": {
+        "name": "포즈 종료",
+        "tooltip": "포즈 컨디셔닝을 적용할 마지막 스텝입니다."
+      },
+      "pose_start": {
+        "name": "포즈 시작",
+        "tooltip": "포즈 컨디셔닝을 적용할 시작 스텝입니다."
+      },
+      "pose_strength": {
+        "name": "포즈 강도",
+        "tooltip": "포즈 latent의 강도입니다."
+      },
+      "pose_video": {
+        "name": "포즈 비디오",
+        "tooltip": "포즈 컨디셔닝에 사용되는 비디오입니다. 메인 비디오 해상도의 절반으로 다운스케일됩니다."
+      },
+      "positive": {
+        "name": "positive"
+      },
+      "reference_image": {
+        "name": "참조 이미지"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "너비"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": null
+      },
+      "1": {
+        "name": "negative",
+        "tooltip": null
+      },
+      "2": {
+        "name": "latent",
+        "tooltip": "생성 크기의 빈 latent입니다."
       }
     }
   },
