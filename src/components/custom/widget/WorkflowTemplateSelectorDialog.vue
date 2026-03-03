@@ -1,5 +1,6 @@
 <template>
   <BaseModalLayout
+    v-model:right-panel-open="isRightPanelOpen"
     :content-title="$t('templateWorkflows.title', 'Workflow Templates')"
     size="md"
   >
@@ -184,10 +185,16 @@
             variant="ghost"
             rounded="lg"
             :data-testid="`template-workflow-${template.name}`"
-            class="hover:bg-base-background"
+            :class="
+              cn(
+                'hover:bg-base-background',
+                selectedTemplate?.name === template.name &&
+                  'bg-secondary-background outline-solid outline-4 outline-base-foreground'
+              )
+            "
             @mouseenter="hoveredTemplate = template.name"
             @mouseleave="hoveredTemplate = null"
-            @click="onLoadWorkflow(template)"
+            @click="selectedTemplate = template"
           >
             <template #top>
               <CardTop ratio="square">
@@ -382,6 +389,15 @@
         }}
       </div>
     </template>
+
+    <template #rightPanel>
+      <WorkflowTemplateDetailsPanel
+        v-if="!!selectedTemplate"
+        :template="selectedTemplate"
+        :is-installing="loadingTemplate === selectedTemplate.name"
+        @install="onLoadWorkflow"
+      />
+    </template>
   </BaseModalLayout>
 </template>
 
@@ -404,6 +420,7 @@ import DefaultThumbnail from '@/components/templates/thumbnails/DefaultThumbnail
 import HoverDissolveThumbnail from '@/components/templates/thumbnails/HoverDissolveThumbnail.vue'
 import LogoOverlay from '@/components/templates/thumbnails/LogoOverlay.vue'
 import Button from '@/components/ui/button/Button.vue'
+import WorkflowTemplateDetailsPanel from '@/components/custom/widget/WorkflowTemplateDetailsPanel.vue'
 import BaseModalLayout from '@/components/widget/layout/BaseModalLayout.vue'
 import LeftSidePanel from '@/components/widget/panel/LeftSidePanel.vue'
 import { useIntersectionObserver } from '@/composables/useIntersectionObserver'
@@ -419,6 +436,7 @@ import { useSystemStatsStore } from '@/stores/systemStatsStore'
 import type { NavGroupData, NavItemData } from '@/types/navTypes'
 import { OnCloseKey } from '@/types/widgetTypes'
 import { createGridStyle } from '@/utils/gridUtil'
+import { cn } from '@/utils/tailwindUtil'
 
 const { t } = useI18n()
 
@@ -430,6 +448,18 @@ const { onClose: originalOnClose, initialCategory = 'all' } = defineProps<{
 // Track session time for telemetry
 const sessionStartTime = ref<number>(0)
 const templateWasSelected = ref(false)
+const selectedTemplate = ref<TemplateInfo | null>(null)
+
+const isRightPanelOpen = computed({
+  get() {
+    return !!selectedTemplate.value
+  },
+  set(value: boolean) {
+    if (!value) {
+      selectedTemplate.value = null
+    }
+  }
+})
 
 onMounted(() => {
   sessionStartTime.value = Date.now()
@@ -539,7 +569,7 @@ const navItems = computed<(NavItemData | NavGroupData)[]>(() => {
   return workflowTemplatesStore.navGroupedTemplates
 })
 
-const gridStyle = computed(() => createGridStyle())
+const gridStyle = computed(() => createGridStyle({ padding: '4px' }))
 
 // Get enhanced templates for better filtering
 const allTemplates = computed(() => {

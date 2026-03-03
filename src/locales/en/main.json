@@ -1029,6 +1029,20 @@
       "modelSizeLowToHigh": "Model Size (Low to High)",
       "default": "Default"
     },
+    "details": {
+      "overview": "Overview",
+      "name": "Name",
+      "description": "Description",
+      "useCase": "Use Case",
+      "license": "License",
+      "requirements": "Requirements",
+      "models": "Models",
+      "customNodes": "Custom Nodes",
+      "vram": "VRAM",
+      "tags": "Tags",
+      "install": "Install",
+      "viewTutorial": "View Tutorial"
+    },
     "error": {
       "templateNotFound": "Template \"{templateName}\" not found"
     }
