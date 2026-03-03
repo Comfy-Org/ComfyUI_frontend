@@ -1,5 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 
+import { appendCloudResParam } from './cloudPreviewUtil'
+
 const mockIsCloud = vi.hoisted(() => ({ value: false }))
 
 vi.mock('./types', () => ({
@@ -7,8 +9,6 @@ vi.mock('./types', () => ({
     return mockIsCloud.value
   }
 }))
-
-import { appendCloudResParam } from './cloudPreviewUtil'
 
 function buildParams(filename?: string): URLSearchParams {
   const params = new URLSearchParams()
@@ -22,35 +22,25 @@ describe('appendCloudResParam', () => {
     expect(buildParams('test.png').has('res')).toBe(false)
   })
 
-  it('sets res=512 for image files in cloud mode', () => {
-    mockIsCloud.value = true
-    for (const ext of [
-      'png',
-      'jpg',
-      'jpeg',
-      'webp',
-      'gif',
-      'bmp',
-      'tiff',
-      'tif'
-    ]) {
+  it.for(['png', 'jpg', 'jpeg', 'webp', 'gif', 'bmp', 'tiff', 'tif'])(
+    'sets res=512 for .%s in cloud mode',
+    (ext) => {
+      mockIsCloud.value = true
       const params = buildParams(`file.${ext}`)
       expect(params.get('res')).toBe('512')
     }
-  })
+  )
 
-  it('does not set res for non-image files in cloud mode', () => {
+  it.for([
+    'video.mp4',
+    'video.webm',
+    'audio.mp3',
+    'audio.wav',
+    'model.glb',
+    'icon.svg'
+  ])('does not set res for %s in cloud mode', (name) => {
     mockIsCloud.value = true
-    for (const name of [
-      'video.mp4',
-      'video.webm',
-      'audio.mp3',
-      'audio.wav',
-      'model.glb',
-      'icon.svg'
-    ]) {
-      expect(buildParams(name).has('res')).toBe(false)
-    }
+    expect(buildParams(name).has('res')).toBe(false)
   })
 
   it('sets res=512 when no filename provided in cloud mode', () => {
