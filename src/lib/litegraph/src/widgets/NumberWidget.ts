@@ -1,3 +1,5 @@
+import { t } from '@/i18n'
+import type { IContextMenuValue } from '@/lib/litegraph/src/interfaces'
 import type { INumericWidget } from '@/lib/litegraph/src/types/widgets'
 import { evaluateInput, getWidgetStep } from '@/lib/litegraph/src/utils/widget'
 
@@ -93,6 +95,31 @@ export class NumberWidget
         step: getWidgetStep(this.options)
       }
     )
+  }
+
+  getContextMenuOptions({
+    e,
+    node,
+    canvas
+  }: WidgetEventOptions): IContextMenuValue[] {
+    return [
+      {
+        content: t('widgets.editExpression'),
+        callback: () => {
+          canvas.prompt(
+            'Value',
+            this.value,
+            (v: string) => {
+              const parsed = evaluateInput(v)
+              if (parsed !== undefined)
+                this.setValue(parsed, { e, node, canvas })
+            },
+            e,
+            { inputType: 'text' }
+          )
+        }
+      }
+    ]
   }
 
   override onDrag({ e, node, canvas }: WidgetEventOptions) {

@@ -6973,6 +6973,12 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       if (e.key == 'Escape') {
         // ESC
         dialog.close()
+      } else if (e.key === '/' && this.type === 'number') {
+        // Switch to text mode for expression editing
+        this.type = 'text'
+        this.removeAttribute('min')
+        this.removeAttribute('max')
+        this.removeAttribute('step')
       } else if (
         e.key == 'Enter' &&
         (e.target as Element).localName != 'textarea'
@@ -8511,6 +8517,26 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       } else {
         // on node
         menu_info = this.getNodeMenuOptions(node)
+
+        const widget = node.getWidgetOnPos(event.canvasX, event.canvasY)
+        if (
+          widget &&
+          'getContextMenuOptions' in widget &&
+          typeof widget.getContextMenuOptions === 'function'
+        ) {
+          const widgetMenuItems = (
+            widget as {
+              getContextMenuOptions: (opts: {
+                e: CanvasPointerEvent
+                node: LGraphNode
+                canvas: LGraphCanvas
+              }) => IContextMenuValue[]
+            }
+          ).getContextMenuOptions({ e: event, node, canvas: this })
+          if (widgetMenuItems.length) {
+            menu_info.unshift(...widgetMenuItems, null)
+          }
+        }
       }
     } else {
       menu_info = this.getCanvasMenuOptions()

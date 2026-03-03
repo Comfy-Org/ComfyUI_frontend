@@ -149,4 +149,32 @@ describe(NumberWidget, () => {
       { inputType: 'number', min: -1000, max: 1000, step: 1 }
     )
   })
+
+  it('getContextMenuOptions returns Edit Expression with text inputType', () => {
+    const canvas = createMockCanvas()
+    const e = createMockEvent(100)
+    const widget = createNumberWidget(node)
+
+    const options = widget.getContextMenuOptions({ e, node, canvas })
+
+    expect(options).toHaveLength(1)
+    expect(options[0].content).toBe('Edit Expression')
+  })
+
+  it('getContextMenuOptions callback opens prompt in text mode', () => {
+    const canvas = createMockCanvas()
+    const e = createMockEvent(100)
+    const widget = createNumberWidget(node)
+
+    const options = widget.getContextMenuOptions({ e, node, canvas })
+    void options[0].callback!.call({} as never)
+
+    expect(canvas.prompt).toHaveBeenCalledWith(
+      'Value',
+      50,
+      expect.any(Function),
+      e,
+      { inputType: 'text' }
+    )
+  })
 })
