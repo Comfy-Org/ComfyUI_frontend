@@ -114,8 +114,8 @@ const onToggleDockedJobHistory = async (close: () => void) => {
 
     sidebarTabStore.activeSidebarTabId = 'job-history'
     await settingStore.set('Comfy.Queue.QPOV2', true)
-  } catch {
-    return
+  } catch (error) {
+    console.warn('[JobHistory] Failed to toggle docked job history:', error)
   }
 }
 </script>

@@ -60,14 +60,12 @@ function renderUploadSpinner(
   const radius = 16
   const angle = ((Date.now() % 1000) / 1000) * TWO_PI
 
-  ctx.save()
   ctx.strokeStyle = LiteGraph.NODE_TEXT_COLOR
   ctx.lineWidth = 3
   ctx.lineCap = 'round'
   ctx.beginPath()
   ctx.arc(centerX, centerY, radius, angle, angle + SPINNER_ARC_LENGTH)
   ctx.stroke()
-  ctx.restore()
 
   // Schedule next frame to keep spinner animating continuously.
   // Only runs while node.isUploading is true (checked by caller).
