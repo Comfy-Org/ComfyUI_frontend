@@ -121,11 +121,20 @@ export function useKeybindingService() {
 
   function registerUserKeybindings() {
     const unsetBindings = settingStore.get('Comfy.Keybinding.UnsetBindings')
-    for (const keybinding of unsetBindings) {
+    const registeredUnsetBindings = unsetBindings.filter((kb) =>
+      commandStore.isRegistered(kb.commandId)
+    )
+
+    for (const keybinding of registeredUnsetBindings) {
       keybindingStore.unsetKeybinding(new KeybindingImpl(keybinding))
     }
+
     const newBindings = settingStore.get('Comfy.Keybinding.NewBindings')
-    for (const keybinding of newBindings) {
+    const registeredNewBindings = newBindings.filter((kb) =>
+      commandStore.isRegistered(kb.commandId)
+    )
+
+    for (const keybinding of registeredNewBindings) {
       if (
         isCloud &&
         keybinding.commandId === 'Workspace.ToggleBottomPanelTab.logs-terminal'
@@ -133,6 +142,13 @@ export function useKeybindingService() {
         continue
       }
       keybindingStore.addUserKeybinding(new KeybindingImpl(keybinding))
+    }
+
+    const hadOrphans =
+      registeredUnsetBindings.length < unsetBindings.length ||
+      registeredNewBindings.length < newBindings.length
+    if (hadOrphans) {
+      void persistUserKeybindings()
     }
   }
 
