@@ -1043,6 +1043,18 @@
       "install": "Install",
       "viewTutorial": "View Tutorial"
     },
+    "myTemplates": {
+      "title": "My Templates",
+      "empty": "You haven't submitted any templates yet",
+      "createFirst": "Submit Your First Template",
+      "status": {
+        "draft": "Draft",
+        "pending_review": "Pending Review",
+        "approved": "Approved",
+        "rejected": "Rejected",
+        "unpublished": "Unpublished"
+      }
+    },
     "error": {
       "templateNotFound": "Template \"{templateName}\" not found"
     }
