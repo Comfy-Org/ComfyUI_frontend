@@ -202,9 +202,9 @@ const showLeftPanel = computed(() => {
 
 const contentContainerClass = computed(() =>
   cn(
-    'min-h-0 flex-1 overflow-y-auto scrollbar-custom',
+    'flex min-h-0 flex-1 flex-col overflow-y-auto scrollbar-custom',
     contentPadding === 'default' && 'px-6 pt-0 pb-10',
-    contentPadding === 'compact' && 'flex px-6 pt-0 pb-2'
+    contentPadding === 'compact' && 'px-6 pt-0 pb-2'
   )
 )
 
