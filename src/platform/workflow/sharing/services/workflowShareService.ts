@@ -152,16 +152,13 @@ export function useWorkflowShareService() {
   }
 
   async function getSharedWorkflow(
-    shareId: string,
-    options?: { import?: boolean }
+    shareId: string
   ): Promise<SharedWorkflowPayload> {
     let response: Response
     try {
-      let url = `/workflows/published/${encodeURIComponent(shareId)}`
-      if (options?.import) {
-        url += '?import=true'
-      }
-      response = await api.fetchApi(url)
+      response = await api.fetchApi(
+        `/workflows/published/${encodeURIComponent(shareId)}`
+      )
     } catch {
       throw new SharedWorkflowLoadError(
         null,
@@ -181,10 +178,23 @@ export function useWorkflowShareService() {
     return workflow
   }
 
+  async function importPublishedAssets(assetIds: string[]): Promise<void> {
+    const response = await api.fetchApi('/assets/import', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ published_asset_ids: assetIds })
+    })
+
+    if (!response.ok) {
+      throw new Error(`Failed to import assets: ${response.status}`)
+    }
+  }
+
   return {
     publishWorkflow,
     getPublishStatus,
     getShareableAssets,
-    getSharedWorkflow
+    getSharedWorkflow,
+    importPublishedAssets
   }
 }

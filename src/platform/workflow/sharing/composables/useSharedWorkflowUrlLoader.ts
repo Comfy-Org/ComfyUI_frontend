@@ -157,9 +157,9 @@ export function useSharedWorkflowUrlLoader() {
 
         if (nonOwnedAssets.length > 0) {
           try {
-            await workflowShareService.getSharedWorkflow(shareParam, {
-              import: true
-            })
+            await workflowShareService.importPublishedAssets(
+              nonOwnedAssets.map((a) => a.id)
+            )
           } catch (importError) {
             console.error(
               '[useSharedWorkflowUrlLoader] Failed to import assets:',

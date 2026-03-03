@@ -250,55 +250,26 @@ describe(useWorkflowShareService, () => {
     )
   })
 
-  it('appends import query param when import option is set', async () => {
-    mockFetchApi.mockResolvedValue(
-      mockJsonResponse({
-        share_id: 'share-import',
-        workflow_id: 'wf-import',
-        name: 'Import Test',
-        listed: true,
-        publish_time: '2026-02-23T00:00:00Z',
-        workflow_json: { nodes: [] },
-        assets: [
-          {
-            id: 'imported-1',
-            name: 'imported.png',
-            preview_url: 'https://example.com/i.jpg',
-            storage_url: 'storage/i',
-            model: false,
-            public: false,
-            in_library: false
-          }
-        ]
-      })
-    )
+  it('imports published assets via POST /assets/import', async () => {
+    mockFetchApi.mockResolvedValue(mockJsonResponse({}, true, 200))
 
     const service = useWorkflowShareService()
-    await service.getSharedWorkflow('share-import', { import: true })
+    await service.importPublishedAssets(['pa-1', 'pa-2'])
 
-    expect(mockFetchApi).toHaveBeenCalledWith(
-      '/workflows/published/share-import?import=true'
-    )
+    expect(mockFetchApi).toHaveBeenCalledWith('/assets/import', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ published_asset_ids: ['pa-1', 'pa-2'] })
+    })
   })
 
-  it('omits import query param when import option is not set', async () => {
-    mockFetchApi.mockResolvedValue(
-      mockJsonResponse({
-        share_id: 'share-no-import',
-        workflow_id: 'wf-no-import',
-        name: 'No Import Test',
-        listed: true,
-        publish_time: '2026-02-23T00:00:00Z',
-        workflow_json: { nodes: [] },
-        assets: []
-      })
-    )
+  it('throws when import request fails', async () => {
+    mockFetchApi.mockResolvedValue(mockJsonResponse({}, false, 400))
 
     const service = useWorkflowShareService()
-    await service.getSharedWorkflow('share-no-import')
 
-    expect(mockFetchApi).toHaveBeenCalledWith(
-      '/workflows/published/share-no-import'
+    await expect(service.importPublishedAssets(['bad-id'])).rejects.toThrow(
+      'Failed to import assets: 400'
     )
   })
 

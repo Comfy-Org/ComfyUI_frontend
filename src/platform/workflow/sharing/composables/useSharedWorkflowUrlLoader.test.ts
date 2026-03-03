@@ -26,6 +26,7 @@ vi.mock('vue-router', () => ({
 }))
 
 const mockGetSharedWorkflow = vi.fn()
+const mockImportPublishedAssets = vi.fn()
 const mockSharedWorkflowErrorClass = vi.hoisted(
   () =>
     class extends Error {
@@ -42,7 +43,8 @@ const mockSharedWorkflowErrorClass = vi.hoisted(
 vi.mock('@/platform/workflow/sharing/services/workflowShareService', () => ({
   SharedWorkflowLoadError: mockSharedWorkflowErrorClass,
   useWorkflowShareService: () => ({
-    getSharedWorkflow: mockGetSharedWorkflow
+    getSharedWorkflow: mockGetSharedWorkflow,
+    importPublishedAssets: mockImportPublishedAssets
   })
 }))
 
@@ -199,11 +201,8 @@ describe('useSharedWorkflowUrlLoader', () => {
     const { loadSharedWorkflowFromUrl } = useSharedWorkflowUrlLoader()
     await loadSharedWorkflowFromUrl()
 
-    expect(mockGetSharedWorkflow).toHaveBeenCalledTimes(2)
-    expect(mockGetSharedWorkflow).toHaveBeenNthCalledWith(1, 'share-id-1')
-    expect(mockGetSharedWorkflow).toHaveBeenNthCalledWith(2, 'share-id-1', {
-      import: true
-    })
+    expect(mockGetSharedWorkflow).toHaveBeenCalledTimes(1)
+    expect(mockImportPublishedAssets).toHaveBeenCalledWith(['a1'])
   })
 
   it('does not call import when user declines dialog', async () => {
@@ -236,23 +235,22 @@ describe('useSharedWorkflowUrlLoader', () => {
 
   it('shows toast on import failure but still returns loaded', async () => {
     mockQueryParams = { share: 'share-id-1' }
-    mockGetSharedWorkflow
-      .mockResolvedValueOnce(
-        makeSharedWorkflow({
-          assets: [
-            {
-              id: 'm1',
-              name: 'model.safetensors',
-              preview_url: '',
-              storage_url: '',
-              model: true,
-              public: false,
-              in_library: false
-            }
-          ]
-        })
-      )
-      .mockRejectedValueOnce(new Error('Import failed'))
+    mockGetSharedWorkflow.mockResolvedValue(
+      makeSharedWorkflow({
+        assets: [
+          {
+            id: 'm1',
+            name: 'model.safetensors',
+            preview_url: '',
+            storage_url: '',
+            model: true,
+            public: false,
+            in_library: false
+          }
+        ]
+      })
+    )
+    mockImportPublishedAssets.mockRejectedValue(new Error('Import failed'))
     mockShowLayoutDialog.mockImplementation(() => {
       resolveDialog(true)
     })
