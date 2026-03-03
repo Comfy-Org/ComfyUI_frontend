@@ -1,6 +1,6 @@
 import { flushPromises, mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { nextTick, reactive, ref } from 'vue'
+import { nextTick, reactive } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import ShareWorkflowDialogContent from '@/platform/workflow/sharing/components/ShareWorkflowDialogContent.vue'
@@ -38,8 +38,6 @@ const mockFlags = vi.hoisted(() => ({
 }))
 
 const mockShowPublishDialog = vi.hoisted(() => vi.fn())
-const mockCheckProfile = vi.hoisted(() => vi.fn(() => Promise.resolve(true)))
-const mockHasProfile = ref<boolean | null>(null)
 
 vi.mock('@/composables/useFeatureFlags', () => ({
   useFeatureFlags: () => ({
@@ -52,16 +50,6 @@ vi.mock(
   () => ({
     useComfyHubPublishDialog: () => ({
       show: mockShowPublishDialog
-    })
-  })
-)
-
-vi.mock(
-  '@/platform/workflow/sharing/composables/useComfyHubProfileGate',
-  () => ({
-    useComfyHubProfileGate: () => ({
-      hasProfile: mockHasProfile,
-      checkProfile: mockCheckProfile
     })
   })
 )
@@ -125,7 +113,7 @@ const i18n = createI18n({
       comfyHubProfile: {
         introTitle: 'Introducing ComfyHub',
         createProfileButton: 'Create my profile',
-        startPublishingButton: 'Start Publishing'
+        startPublishingButton: 'Start publishing'
       }
     }
   }
@@ -153,8 +141,6 @@ describe('ShareWorkflowDialogContent', () => {
       publishedAt: null
     })
     mockFlags.comfyHubUploadEnabled = false
-    mockHasProfile.value = null
-    mockCheckProfile.mockResolvedValue(true)
     mockShareServiceData.assets = [
       { id: 'test.png', name: 'test.png', thumbnailUrl: null }
     ]
@@ -180,13 +166,13 @@ describe('ShareWorkflowDialogContent', () => {
         stubs: {
           ComfyHubIntroPopover: {
             template:
-              '<section data-testid="publish-intro"><button data-testid="publish-intro-cta" @click="$props.onCreateProfile()">{{ $props.hasProfile ? "Start Publishing" : "Create my profile" }}</button></section>',
-            props: ['onCreateProfile', 'hasProfile']
+              '<section data-testid="publish-intro"><button data-testid="publish-intro-cta" @click="$props.onCreateProfile()">Start publishing</button></section>',
+            props: ['onCreateProfile']
           },
           'comfy-hub-intro-popover': {
             template:
-              '<section data-testid="publish-intro"><button data-testid="publish-intro-cta" @click="$props.onCreateProfile()">{{ $props.hasProfile ? "Start Publishing" : "Create my profile" }}</button></section>',
-            props: ['onCreateProfile', 'hasProfile']
+              '<section data-testid="publish-intro"><button data-testid="publish-intro-cta" @click="$props.onCreateProfile()">Start publishing</button></section>',
+            props: ['onCreateProfile']
           },
           Input: {
             template: '<input v-bind="$attrs" />',
@@ -254,9 +240,8 @@ describe('ShareWorkflowDialogContent', () => {
     expect(wrapper.find('[data-testid="publish-intro"]').exists()).toBe(true)
   })
 
-  it('shows start publishing CTA when user already has a profile', async () => {
+  it('shows start publishing CTA in the publish intro panel', async () => {
     mockFlags.comfyHubUploadEnabled = true
-    mockHasProfile.value = true
     const wrapper = createWrapper()
     await flushPromises()
 
@@ -269,7 +254,7 @@ describe('ShareWorkflowDialogContent', () => {
     await flushPromises()
 
     expect(wrapper.find('[data-testid="publish-intro-cta"]').text()).toBe(
-      'Start Publishing'
+      'Start publishing'
     )
   })
 

@@ -12,24 +12,12 @@
     </template>
 
     <template #leftPanel>
-      <ComfyHubPublishNav
-        v-if="publishPanelState === 'publishWizard'"
-        :current-step
-        @step-click="goToStep"
-      />
-      <div v-else class="flex flex-col gap-2 px-3 py-4">
-        <div
-          class="flex h-10 items-center rounded-lg bg-secondary-background-selected px-4 py-3 text-sm text-base-foreground"
-        >
-          {{ $t('comfyHubProfile.profileCreationNav') }}
-        </div>
-      </div>
+      <ComfyHubPublishNav :current-step @step-click="goToStep" />
     </template>
 
     <template #header />
     <template #content>
       <ComfyHubPublishWizardPanel
-        :publish-panel-state="publishPanelState"
         :current-step="currentStep"
         :form-data="formData"
         :is-first-step="isFirstStep"
@@ -37,9 +25,9 @@
         :on-update-form-data="updateFormData"
         :on-go-next="goNext"
         :on-go-back="goBack"
-        :on-cancel="onClose"
+        :on-require-profile="handleRequireProfile"
         :on-gate-complete="handlePublishGateComplete"
-        :on-gate-close="onClose"
+        :on-gate-close="handlePublishGateClose"
         :on-publish="onClose"
       />
     </template>
@@ -47,27 +35,21 @@
 </template>
 
 <script setup lang="ts">
-import { onBeforeUnmount, onMounted, provide, ref } from 'vue'
+import { onBeforeUnmount, onMounted, provide } from 'vue'
 
 import BaseModalLayout from '@/components/widget/layout/BaseModalLayout.vue'
 import ComfyHubPublishNav from '@/platform/workflow/sharing/components/comfyhub/publish/ComfyHubPublishNav.vue'
 import ComfyHubPublishWizardPanel from '@/platform/workflow/sharing/components/comfyhub/publish/ComfyHubPublishWizardPanel.vue'
 import { useComfyHubPublishWizard } from '@/platform/workflow/sharing/composables/useComfyHubPublishWizard'
 import { useComfyHubProfileGate } from '@/platform/workflow/sharing/composables/useComfyHubProfileGate'
-import type {
-  ComfyHubPublishFormData,
-  PublishPanelState
-} from '@/platform/workflow/sharing/types/comfyHubTypes'
-import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import type { ComfyHubPublishFormData } from '@/platform/workflow/sharing/types/comfyHubTypes'
 import { OnCloseKey } from '@/types/widgetTypes'
 
 const { onClose } = defineProps<{
   onClose: () => void
 }>()
 
-const { checkProfile } = useComfyHubProfileGate()
-const { flags } = useFeatureFlags()
-const publishPanelState = ref<PublishPanelState>('uninitialized')
+const { fetchProfile } = useComfyHubProfileGate()
 const {
   currentStep,
   formData,
@@ -75,35 +57,31 @@ const {
   isLastStep,
   goToStep,
   goNext,
-  goBack
+  goBack,
+  openProfileCreationStep,
+  closeProfileCreationStep
 } = useComfyHubPublishWizard()
 
 function handlePublishGateComplete() {
-  publishPanelState.value = 'publishWizard'
+  closeProfileCreationStep()
+  void fetchProfile({ force: true })
+}
+
+function handlePublishGateClose() {
+  closeProfileCreationStep()
+}
+
+function handleRequireProfile() {
+  openProfileCreationStep()
 }
 
 function updateFormData(patch: Partial<ComfyHubPublishFormData>) {
   formData.value = { ...formData.value, ...patch }
 }
 
-async function resolvePublishPanelState() {
-  if (!flags.comfyHubProfileGateEnabled) {
-    publishPanelState.value = 'publishWizard'
-    return
-  }
-
-  publishPanelState.value = 'checkingAccess'
-  try {
-    const hasPublishAccess = await checkProfile()
-    publishPanelState.value = hasPublishAccess ? 'publishWizard' : 'gateFlow'
-  } catch (error) {
-    console.error('Failed to resolve publish dialog access:', error)
-    onClose()
-  }
-}
-
 onMounted(() => {
-  void resolvePublishPanelState()
+  // Prefetch profile data in the background so finish-step profile context is ready.
+  void fetchProfile()
 })
 
 onBeforeUnmount(() => {

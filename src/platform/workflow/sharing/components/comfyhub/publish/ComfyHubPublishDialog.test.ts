@@ -4,25 +4,18 @@ import { ref } from 'vue'
 
 import ComfyHubPublishDialog from '@/platform/workflow/sharing/components/comfyhub/publish/ComfyHubPublishDialog.vue'
 
-const mockFlags = vi.hoisted(() => ({
-  comfyHubProfileGateEnabled: true
-}))
-const mockCheckProfile = vi.hoisted(() => vi.fn<() => Promise<boolean>>())
+const mockFetchProfile = vi.hoisted(() => vi.fn())
 const mockGoToStep = vi.hoisted(() => vi.fn())
 const mockGoNext = vi.hoisted(() => vi.fn())
 const mockGoBack = vi.hoisted(() => vi.fn())
-
-vi.mock('@/composables/useFeatureFlags', () => ({
-  useFeatureFlags: () => ({
-    flags: mockFlags
-  })
-}))
+const mockOpenProfileCreationStep = vi.hoisted(() => vi.fn())
+const mockCloseProfileCreationStep = vi.hoisted(() => vi.fn())
 
 vi.mock(
   '@/platform/workflow/sharing/composables/useComfyHubProfileGate',
   () => ({
     useComfyHubProfileGate: () => ({
-      checkProfile: mockCheckProfile
+      fetchProfile: mockFetchProfile
     })
   })
 )
@@ -31,7 +24,7 @@ vi.mock(
   '@/platform/workflow/sharing/composables/useComfyHubPublishWizard',
   () => ({
     useComfyHubPublishWizard: () => ({
-      currentStep: ref('describe'),
+      currentStep: ref('finish'),
       formData: ref({
         name: '',
         description: '',
@@ -44,11 +37,13 @@ vi.mock(
         exampleImages: [],
         selectedExampleIds: []
       }),
-      isFirstStep: ref(true),
-      isLastStep: ref(false),
+      isFirstStep: ref(false),
+      isLastStep: ref(true),
       goToStep: mockGoToStep,
       goNext: mockGoNext,
-      goBack: mockGoBack
+      goBack: mockGoBack,
+      openProfileCreationStep: mockOpenProfileCreationStep,
+      closeProfileCreationStep: mockCloseProfileCreationStep
     })
   })
 )
@@ -58,8 +53,7 @@ describe('ComfyHubPublishDialog', () => {
 
   beforeEach(() => {
     vi.clearAllMocks()
-    mockFlags.comfyHubProfileGateEnabled = true
-    mockCheckProfile.mockResolvedValue(true)
+    mockFetchProfile.mockResolvedValue(null)
   })
 
   function createWrapper() {
@@ -84,30 +78,17 @@ describe('ComfyHubPublishDialog', () => {
           },
           ComfyHubPublishWizardPanel: {
             template:
-              '<div data-testid="publish-panel-state">{{ $props.publishPanelState }}</div>',
+              '<div><button data-testid="require-profile" @click="$props.onRequireProfile()" /><button data-testid="gate-complete" @click="$props.onGateComplete()" /><button data-testid="gate-close" @click="$props.onGateClose()" /></div>',
             props: [
-              'publishPanelState',
               'currentStep',
               'formData',
               'isFirstStep',
               'isLastStep',
               'onGoNext',
               'onGoBack',
-              'onCancel'
-            ]
-          },
-          'comfy-hub-publish-wizard-panel': {
-            template:
-              '<div data-testid="publish-panel-state">{{ $props.publishPanelState }}</div>',
-            props: [
-              'publishPanelState',
-              'currentStep',
-              'formData',
-              'isFirstStep',
-              'isLastStep',
-              'onGoNext',
-              'onGoBack',
-              'onCancel'
+              'onRequireProfile',
+              'onGateComplete',
+              'onGateClose'
             ]
           }
         }
@@ -115,42 +96,44 @@ describe('ComfyHubPublishDialog', () => {
     })
   }
 
-  it('shows publish wizard immediately when profile gate is disabled', async () => {
-    mockFlags.comfyHubProfileGateEnabled = false
-    const wrapper = createWrapper()
-    await flushPromises()
-
-    expect(wrapper.find('[data-testid="publish-panel-state"]').text()).toBe(
-      'publishWizard'
-    )
-    expect(mockCheckProfile).not.toHaveBeenCalled()
-  })
-
-  it('shows gate flow when profile is missing', async () => {
-    mockCheckProfile.mockResolvedValueOnce(false)
-    const wrapper = createWrapper()
-    await flushPromises()
-
-    expect(wrapper.find('[data-testid="publish-panel-state"]').text()).toBe(
-      'gateFlow'
-    )
-  })
-
-  it('shows publish wizard when profile exists', async () => {
-    mockCheckProfile.mockResolvedValueOnce(true)
-    const wrapper = createWrapper()
-    await flushPromises()
-
-    expect(wrapper.find('[data-testid="publish-panel-state"]').text()).toBe(
-      'publishWizard'
-    )
-  })
-
-  it('closes dialog when access check fails', async () => {
-    mockCheckProfile.mockRejectedValueOnce(new Error('Network error'))
+  it('starts in publish wizard mode and prefetches profile asynchronously', async () => {
     createWrapper()
     await flushPromises()
 
-    expect(onClose).toHaveBeenCalledOnce()
+    expect(mockFetchProfile).toHaveBeenCalledWith()
+  })
+
+  it('switches to profile creation step when final-step publish requires profile', async () => {
+    const wrapper = createWrapper()
+    await flushPromises()
+
+    await wrapper.find('[data-testid="require-profile"]').trigger('click')
+
+    expect(mockOpenProfileCreationStep).toHaveBeenCalledOnce()
+  })
+
+  it('returns to finish state after gate complete and does not auto-close', async () => {
+    const wrapper = createWrapper()
+    await flushPromises()
+
+    await wrapper.find('[data-testid="require-profile"]').trigger('click')
+    await wrapper.find('[data-testid="gate-complete"]').trigger('click')
+
+    expect(mockOpenProfileCreationStep).toHaveBeenCalledOnce()
+    expect(mockCloseProfileCreationStep).toHaveBeenCalledOnce()
+    expect(mockFetchProfile).toHaveBeenCalledWith({ force: true })
+    expect(onClose).not.toHaveBeenCalled()
+  })
+
+  it('returns to finish state when profile gate is closed', async () => {
+    const wrapper = createWrapper()
+    await flushPromises()
+
+    await wrapper.find('[data-testid="require-profile"]').trigger('click')
+    await wrapper.find('[data-testid="gate-close"]').trigger('click')
+
+    expect(mockOpenProfileCreationStep).toHaveBeenCalledOnce()
+    expect(mockCloseProfileCreationStep).toHaveBeenCalledOnce()
+    expect(onClose).not.toHaveBeenCalled()
   })
 })

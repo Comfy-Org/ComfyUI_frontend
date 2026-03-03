@@ -2,38 +2,60 @@
   <div class="flex flex-col gap-6 px-3 py-4">
     <!-- Steps -->
     <nav class="flex flex-col">
-      <button
+      <div
         v-for="step in steps"
         :key="step.name"
+        v-auto-animate
         :class="
-          cn(
-            'flex h-10 cursor-pointer items-center gap-2 rounded-lg border-none bg-transparent px-4 py-3 transition-colors',
-            currentStep === step.name
-              ? 'bg-secondary-background-selected'
-              : 'hover:bg-interface-menu-component-surface-hovered'
-          )
+          isProfileCreationFlow && step.name === 'finish'
+            ? 'rounded-lg bg-secondary-background-hover'
+            : ''
         "
-        @click="$emit('stepClick', step.name)"
       >
-        <StatusBadge
-          :label="step.number"
-          variant="circle"
-          severity="contrast"
+        <Button
+          variant="textonly"
+          size="unset"
           :class="
             cn(
-              'size-5 shrink-0 border text-xs font-bold font-inter',
-              isCurrentStep(step.name)
-                ? 'border-base-foreground bg-base-foreground text-base-background'
-                : isCompletedStep(step.name)
-                  ? 'border-base-foreground bg-transparent text-base-foreground'
-                  : 'border-muted-foreground bg-transparent text-muted-foreground'
+              'h-10 w-full justify-start rounded-lg px-4 py-3 text-left',
+              isCurrentStep(step.name) &&
+                !(isProfileCreationFlow && step.name === 'finish')
+                ? 'bg-secondary-background-selected'
+                : 'hover:bg-interface-menu-component-surface-hovered'
             )
           "
-        />
-        <span class="truncate text-sm text-base-foreground">
-          {{ step.label }}
-        </span>
-      </button>
+          @click="$emit('stepClick', step.name)"
+        >
+          <StatusBadge
+            :label="step.number"
+            variant="circle"
+            severity="contrast"
+            :class="
+              cn(
+                'size-5 shrink-0 border text-xs font-bold font-inter bg-transparent',
+                isCurrentStep(step.name)
+                  ? 'border-base-foreground bg-base-foreground text-base-background'
+                  : isCompletedStep(step.name)
+                    ? 'border-base-foreground text-base-foreground'
+                    : 'border-muted-foreground text-muted-foreground'
+              )
+            "
+          />
+          <span class="truncate text-sm text-base-foreground">
+            {{ step.label }}
+          </span>
+        </Button>
+
+        <div
+          v-if="isProfileCreationFlow && step.name === 'finish'"
+          v-auto-animate
+          class="flex h-10 w-full items-center rounded-lg bg-secondary-background-selected pl-11 select-none"
+        >
+          <span class="truncate text-sm text-base-foreground">
+            {{ $t('comfyHubProfile.profileCreationNav') }}
+          </span>
+        </div>
+      </div>
     </nav>
   </div>
 </template>
@@ -41,17 +63,22 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
+import { vAutoAnimate } from '@formkit/auto-animate/vue'
+
 import StatusBadge from '@/components/common/StatusBadge.vue'
+import Button from '@/components/ui/button/Button.vue'
 import type { ComfyHubPublishStep } from '@/platform/workflow/sharing/composables/useComfyHubPublishWizard'
 import { cn } from '@/utils/tailwindUtil'
 import { useI18n } from 'vue-i18n'
 
-const { currentStep } = defineProps<{
+type ComfyHubPrimaryStep = Exclude<ComfyHubPublishStep, 'profileCreation'>
+
+const props = defineProps<{
   currentStep: ComfyHubPublishStep
 }>()
 
 defineEmits<{
-  stepClick: [step: ComfyHubPublishStep]
+  stepClick: [step: ComfyHubPrimaryStep]
 }>()
 
 const { t } = useI18n()
@@ -70,14 +97,22 @@ const steps = [
   { name: 'finish' as const, number: 3, label: t('comfyHubPublish.stepFinish') }
 ]
 
-const currentStepNumber = computed(
-  () => steps.find((step) => step.name === currentStep)?.number ?? 0
+const isProfileCreationFlow = computed(
+  () => props.currentStep === 'profileCreation'
 )
 
-const isCurrentStep = (stepName: ComfyHubPublishStep) =>
-  currentStep === stepName
+const currentStepNumber = computed(() => {
+  if (isProfileCreationFlow.value) {
+    return 3
+  }
 
-const isCompletedStep = (stepName: ComfyHubPublishStep) =>
+  return steps.find((step) => step.name === props.currentStep)?.number ?? 0
+})
+
+const isCurrentStep = (stepName: ComfyHubPrimaryStep) =>
+  props.currentStep === stepName
+
+const isCompletedStep = (stepName: ComfyHubPrimaryStep) =>
   (steps.find((step) => step.name === stepName)?.number ?? 0) <
   currentStepNumber.value
 </script>

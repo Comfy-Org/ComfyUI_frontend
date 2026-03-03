@@ -36,13 +36,7 @@
         class="mt-2 w-full"
         @click="onCreateProfile"
       >
-        {{
-          $t(
-            hasProfile
-              ? 'comfyHubProfile.startPublishingButton'
-              : 'comfyHubProfile.createProfileButton'
-          )
-        }}
+        {{ $t('comfyHubProfile.startPublishingButton') }}
       </Button>
     </div>
   </div>
@@ -54,12 +48,10 @@ import Button from '@/components/ui/button/Button.vue'
 const {
   onCreateProfile,
   onClose,
-  showCloseButton = true,
-  hasProfile = false
+  showCloseButton = true
 } = defineProps<{
   onCreateProfile: () => void
   onClose: () => void
   showCloseButton?: boolean
-  hasProfile?: boolean
 }>()
 </script>

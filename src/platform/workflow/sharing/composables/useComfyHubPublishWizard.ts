@@ -4,7 +4,12 @@ import { computed, ref } from 'vue'
 import type { ComfyHubPublishFormData } from '@/platform/workflow/sharing/types/comfyHubTypes'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 
-const PUBLISH_STEPS = ['describe', 'examples', 'finish'] as const
+const PUBLISH_STEPS = [
+  'describe',
+  'examples',
+  'finish',
+  'profileCreation'
+] as const
 
 export type ComfyHubPublishStep = (typeof PUBLISH_STEPS)[number]
 
@@ -35,6 +40,19 @@ export function useComfyHubPublishWizard() {
     return true
   })
 
+  const isLastStep = computed(() => stepper.isCurrent('finish'))
+  const isProfileCreationStep = computed(() =>
+    stepper.isCurrent('profileCreation')
+  )
+
+  function openProfileCreationStep() {
+    stepper.goTo('profileCreation')
+  }
+
+  function closeProfileCreationStep() {
+    stepper.goTo('finish')
+  }
+
   function resetWizard() {
     stepper.goTo('describe')
     formData.value = createDefaultFormData()
@@ -45,10 +63,13 @@ export function useComfyHubPublishWizard() {
     formData,
     canGoNext,
     isFirstStep: stepper.isFirst,
-    isLastStep: stepper.isLast,
+    isLastStep,
+    isProfileCreationStep,
     goToStep: stepper.goTo,
     goNext: stepper.goToNext,
     goBack: stepper.goToPrevious,
+    openProfileCreationStep,
+    closeProfileCreationStep,
     resetWizard
   }
 }

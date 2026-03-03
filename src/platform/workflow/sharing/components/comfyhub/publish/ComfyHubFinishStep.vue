@@ -1,5 +1,5 @@
 <template>
-  <div class="flex min-h-0 flex-1 flex-col gap-6 px-6 py-4">
+  <div v-if="embedded" :class="containerClass">
     <p class="text-sm text-base-foreground">
       {{ $t('comfyHubPublish.finishDescription') }}
     </p>
@@ -210,6 +210,28 @@
       </template>
     </div>
   </div>
+
+  <div v-else class="flex min-h-0 flex-1 flex-col gap-4 px-6 py-4">
+    <p class="text-sm text-base-foreground">
+      {{ $t('comfyHubPublish.createProfileToPublish') }}
+    </p>
+
+    <button
+      type="button"
+      class="flex w-64 items-center gap-4 rounded-2xl border border-dashed border-border-default px-6 py-4 hover:bg-secondary-background-hover"
+      @click="emit('requestProfile')"
+    >
+      <div
+        class="flex size-12 items-center justify-center rounded-full border border-dashed border-border-default"
+      >
+        <i class="icon-[lucide--user] size-4 text-muted-foreground" />
+      </div>
+      <span class="inline-flex items-center gap-1 text-sm text-base-foreground">
+        <i class="icon-[lucide--plus] size-4" />
+        {{ $t('comfyHubPublish.createProfileCta') }}
+      </span>
+    </button>
+  </div>
 </template>
 
 <script setup lang="ts">
@@ -221,8 +243,9 @@ import { useDropZone, useMouseInElement } from '@vueuse/core'
 import { computed, onBeforeUnmount, reactive, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-const { thumbnailType } = defineProps<{
-  thumbnailType: ThumbnailType
+const { thumbnailType = 'image', embedded = false } = defineProps<{
+  thumbnailType?: ThumbnailType
+  embedded?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -230,9 +253,14 @@ const emit = defineEmits<{
   'update:thumbnailFile': [value: File]
   'update:comparisonBeforeFile': [value: File]
   'update:comparisonAfterFile': [value: File]
+  requestProfile: []
 }>()
 
 const { t } = useI18n()
+
+const containerClass = computed(() =>
+  cn('flex min-h-0 flex-1 flex-col gap-6', embedded ? 'px-0 py-0' : 'px-6 py-4')
+)
 
 function isThumbnailType(value: string): value is ThumbnailType {
   return value === 'image' || value === 'video' || value === 'imageComparison'

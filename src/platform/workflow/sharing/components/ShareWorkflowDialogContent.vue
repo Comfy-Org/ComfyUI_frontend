@@ -160,7 +160,6 @@
       >
         <ComfyHubIntroPopover
           data-testid="publish-intro"
-          :has-profile="hasProfile === true"
           :on-create-profile="handleOpenPublishDialog"
           :on-close="onClose"
           :show-close-button="false"
@@ -184,7 +183,6 @@ import Button from '@/components/ui/button/Button.vue'
 import Input from '@/components/ui/input/Input.vue'
 import Skeleton from '@/components/ui/skeleton/Skeleton.vue'
 import { useComfyHubPublishDialog } from '@/platform/workflow/sharing/composables/useComfyHubPublishDialog'
-import { useComfyHubProfileGate } from '@/platform/workflow/sharing/composables/useComfyHubProfileGate'
 import type {
   WorkflowPublishResult,
   WorkflowPublishStatus
@@ -204,7 +202,6 @@ const { t, locale } = useI18n()
 const toast = useToast()
 const { flags } = useFeatureFlags()
 const publishDialog = useComfyHubPublishDialog()
-const { hasProfile, checkProfile } = useComfyHubProfileGate()
 const shareService = useWorkflowShareService()
 const workflowStore = useWorkflowStore()
 const workflowService = useWorkflowService()
@@ -342,10 +339,6 @@ async function refreshDialogState() {
 }
 
 onMounted(() => {
-  if (showPublishToHubTab.value) {
-    void checkProfile()
-  }
-
   void refreshDialogState()
 })
 

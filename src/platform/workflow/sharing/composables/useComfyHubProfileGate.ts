@@ -1,20 +1,15 @@
 import { ref } from 'vue'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
-import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { zHubProfileResponse } from '@/platform/workflow/sharing/schemas/shareSchemas'
 import type { ComfyHubProfile } from '@/schemas/apiSchema'
 import { api } from '@/scripts/api'
-import { useDialogStore } from '@/stores/dialogStore'
-
-import { useComfyHubPublishDialog } from './useComfyHubPublishDialog'
-import { useShareDialog } from './useShareDialog'
-
-const PROFILE_GATE_DIALOG_KEY = 'comfyhub-profile-gate'
 
 // User-scoped, session-cached profile state (module-level singleton)
 const hasProfile = ref<boolean | null>(null)
 const isCheckingProfile = ref(false)
+const isFetchingProfile = ref(false)
+const profile = ref<ComfyHubProfile | null>(null)
 const cachedUserId = ref<string | null>(null)
 
 function mapHubProfileResponse(payload: unknown): ComfyHubProfile {
@@ -31,10 +26,6 @@ function mapHubProfileResponse(payload: unknown): ComfyHubProfile {
 
 export function useComfyHubProfileGate() {
   const { resolvedUserInfo } = useCurrentUser()
-  const { flags } = useFeatureFlags()
-  const publishDialog = useComfyHubPublishDialog()
-  const shareDialog = useShareDialog()
-  const dialogStore = useDialogStore()
 
   function syncCachedProfileWithCurrentUser(): void {
     const currentUserId = resolvedUserInfo.value?.id ?? null
@@ -43,7 +34,39 @@ export function useComfyHubProfileGate() {
     }
 
     hasProfile.value = null
+    profile.value = null
     cachedUserId.value = currentUserId
+  }
+
+  async function fetchProfile(options?: {
+    force?: boolean
+  }): Promise<ComfyHubProfile | null> {
+    syncCachedProfileWithCurrentUser()
+
+    if (!options?.force && profile.value) {
+      return profile.value
+    }
+
+    isFetchingProfile.value = true
+    try {
+      const response = await api.fetchApi('/hub/profile')
+      if (!response.ok) {
+        hasProfile.value = false
+        profile.value = null
+        return null
+      }
+
+      const nextProfile = mapHubProfileResponse(await response.json())
+      hasProfile.value = true
+      profile.value = nextProfile
+      return nextProfile
+    } catch {
+      hasProfile.value = false
+      profile.value = null
+      return null
+    } finally {
+      isFetchingProfile.value = false
+    }
   }
 
   async function checkProfile(): Promise<boolean> {
@@ -52,12 +75,8 @@ export function useComfyHubProfileGate() {
     if (hasProfile.value !== null) return hasProfile.value
     isCheckingProfile.value = true
     try {
-      const response = await api.fetchApi('/hub/profile')
-      hasProfile.value = response.ok
-      return hasProfile.value
-    } catch {
-      hasProfile.value = false
-      return false
+      const fetchedProfile = await fetchProfile()
+      return fetchedProfile !== null
     } finally {
       isCheckingProfile.value = false
     }
@@ -92,79 +111,19 @@ export function useComfyHubProfileGate() {
       throw new Error(error.message ?? 'Failed to create profile')
     }
 
-    const profile = mapHubProfileResponse(await response.json())
+    const createdProfile = mapHubProfileResponse(await response.json())
     hasProfile.value = true
-    return profile
-  }
-
-  async function showProfileGateDialog(): Promise<'complete' | 'cancel'> {
-    const { default: ComfyHubProfileGateDialog } =
-      await import('@/platform/workflow/sharing/components/comfyhub/profile/ComfyHubProfileGateDialog.vue')
-
-    return new Promise<'complete' | 'cancel'>((resolve) => {
-      dialogStore.showDialog({
-        key: PROFILE_GATE_DIALOG_KEY,
-        component: ComfyHubProfileGateDialog,
-        props: {
-          onComplete: () => resolve('complete'),
-          onClose: () => resolve('cancel')
-        },
-        dialogComponentProps: {
-          headless: true,
-          modal: true,
-          closable: true,
-          dismissableMask: true,
-          onClose: () => resolve('cancel'),
-          pt: {
-            root: {
-              class: 'rounded-2xl overflow-hidden w-full sm:w-144 max-w-full'
-            },
-            header: { class: 'p-0! hidden' },
-            content: { class: 'p-0! m-0!' }
-          }
-        }
-      })
-    }).then((result) => {
-      dialogStore.closeDialog({ key: PROFILE_GATE_DIALOG_KEY })
-      return result
-    })
-  }
-
-  async function ensurePublishAccess(options?: {
-    hideShareDialogOnGate?: boolean
-  }): Promise<boolean> {
-    if (!flags.comfyHubProfileGateEnabled) {
-      return true
-    }
-
-    const profileExists = await checkProfile()
-    if (profileExists) {
-      return true
-    }
-
-    if (options?.hideShareDialogOnGate ?? false) {
-      shareDialog.hide()
-    }
-
-    const result = await showProfileGateDialog()
-    return result === 'complete'
-  }
-
-  async function openPublishWithGate() {
-    const hasPublishAccess = await ensurePublishAccess({
-      hideShareDialogOnGate: true
-    })
-    if (hasPublishAccess) {
-      publishDialog.show()
-    }
+    profile.value = createdProfile
+    return createdProfile
   }
 
   return {
     hasProfile,
+    profile,
     isCheckingProfile,
+    isFetchingProfile,
     checkProfile,
-    createProfile,
-    ensurePublishAccess,
-    openPublishWithGate
+    fetchProfile,
+    createProfile
   }
 }

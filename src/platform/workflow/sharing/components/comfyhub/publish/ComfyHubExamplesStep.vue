@@ -1,5 +1,5 @@
 <template>
-  <div class="flex min-h-0 flex-1 flex-col gap-6 px-6 py-4">
+  <div :class="containerClass">
     <p class="text-sm text-muted-foreground">
       {{
         $t('comfyHubPublish.examplesDescription', {
@@ -61,15 +61,21 @@
 
 <script setup lang="ts">
 import { v4 as uuidv4 } from 'uuid'
+import { computed } from 'vue'
 
 import type { ExampleImage } from '@/platform/workflow/sharing/types/comfyHubTypes'
 import { cn } from '@/utils/tailwindUtil'
 
 const MAX_EXAMPLES = 8
 
-const { exampleImages, selectedExampleIds } = defineProps<{
+const {
+  exampleImages,
+  selectedExampleIds,
+  embedded = false
+} = defineProps<{
   exampleImages: ExampleImage[]
   selectedExampleIds: string[]
+  embedded?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -122,4 +128,8 @@ function handleFileDrop(event: DragEvent) {
     addImages(event.dataTransfer.files)
   }
 }
+
+const containerClass = computed(() =>
+  cn('flex min-h-0 flex-1 flex-col gap-6', embedded ? 'px-0 py-0' : 'px-6 py-4')
+)
 </script>
