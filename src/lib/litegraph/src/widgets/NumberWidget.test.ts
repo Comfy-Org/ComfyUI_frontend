@@ -113,4 +113,40 @@ describe(NumberWidget, () => {
       { inputType: 'number', min: undefined, max: undefined, step: 1 }
     )
   })
+
+  it('omits min/max exceeding MAX_SAFE_INTEGER from prompt options', () => {
+    const canvas = createMockCanvas()
+    const e = createMockEvent(100)
+    const widget = createNumberWidget(node, {
+      options: { min: -9223372036854776000, max: 9223372036854776000 }
+    })
+
+    widget.onClick({ e, node, canvas })
+
+    expect(canvas.prompt).toHaveBeenCalledWith(
+      'Value',
+      50,
+      expect.any(Function),
+      e,
+      { inputType: 'number', min: undefined, max: undefined, step: 1 }
+    )
+  })
+
+  it('keeps safe min/max in prompt options', () => {
+    const canvas = createMockCanvas()
+    const e = createMockEvent(100)
+    const widget = createNumberWidget(node, {
+      options: { min: -1000, max: 1000 }
+    })
+
+    widget.onClick({ e, node, canvas })
+
+    expect(canvas.prompt).toHaveBeenCalledWith(
+      'Value',
+      50,
+      expect.any(Function),
+      e,
+      { inputType: 'number', min: -1000, max: 1000, step: 1 }
+    )
+  })
 })
