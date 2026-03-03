@@ -1,10 +1,11 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { defineAsyncComponent, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { downloadFile } from '@/base/common/downloadUtil'
 import Popover from '@/components/ui/Popover.vue'
 import Button from '@/components/ui/button/Button.vue'
+import { useAppMode } from '@/composables/useAppMode'
 import { useMediaAssetActions } from '@/platform/assets/composables/useMediaAssetActions'
 import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
@@ -17,8 +18,6 @@ import LinearArrange from '@/renderer/extensions/linearMode/LinearArrange.vue'
 import LinearFeedback from '@/renderer/extensions/linearMode/LinearFeedback.vue'
 import OutputHistory from '@/renderer/extensions/linearMode/OutputHistory.vue'
 import type { OutputSelection } from '@/renderer/extensions/linearMode/linearModeTypes'
-// Lazy-loaded to avoid pulling THREE.js into the main bundle
-const Preview3d = () => import('@/renderer/extensions/linearMode/Preview3d.vue')
 import VideoPreview from '@/renderer/extensions/linearMode/VideoPreview.vue'
 import { getMediaType } from '@/renderer/extensions/linearMode/mediaTypes'
 import { app } from '@/scripts/app'
@@ -28,7 +27,12 @@ import { useQueueStore } from '@/stores/queueStore'
 import type { ResultItemImpl } from '@/stores/queueStore'
 import { collectAllNodes } from '@/utils/graphTraversalUtil'
 import { executeWidgetsCallback } from '@/utils/litegraphUtil'
-import { useAppMode } from '@/composables/useAppMode'
+
+// Lazy-loaded to avoid pulling THREE.js into the main bundle
+const Preview3d = defineAsyncComponent(
+  () => import('@/renderer/extensions/linearMode/Preview3d.vue')
+)
+
 const { t } = useI18n()
 const commandStore = useCommandStore()
 const executionStore = useExecutionStore()
