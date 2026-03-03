@@ -12,13 +12,36 @@
         :label="t('templateWorkflows.details.name')"
         :value="title"
       />
+      <WorkflowTemplateDetailsField :label="t('g.author')">
+        <span class="flex items-center gap-1 text-sm text-muted-foreground">
+          {{ authorName }}
+          <i
+            v-if="isAuthorVerified"
+            class="icon-[lucide--badge-check] size-4 text-blue-500"
+          />
+        </span>
+      </WorkflowTemplateDetailsField>
+      <WorkflowTemplateDetailsField
+        v-if="isMarketplaceTemplate(template) && template.difficulty"
+        :label="t('templateWorkflows.publish.difficulty')"
+      >
+        <span class="flex items-center gap-2 text-sm text-muted-foreground">
+          <img
+            :src="DIFFICULTY_SPRITES[template.difficulty]"
+            :alt="template.difficulty"
+            class="size-5 rounded-sm object-cover"
+          />
+          {{ t(`templateWorkflows.publish.${template.difficulty}`) }}
+        </span>
+      </WorkflowTemplateDetailsField>
       <WorkflowTemplateDetailsField
         v-if="description"
         :label="t('templateWorkflows.details.description')"
       >
-        <p class="text-sm whitespace-pre-wrap text-muted-foreground">
-          {{ description }}
-        </p>
+        <div
+          class="comfy-markdown-content text-sm text-muted-foreground"
+          v-html="renderedDescription"
+        />
       </WorkflowTemplateDetailsField>
       <WorkflowTemplateDetailsField
         v-if="template.useCase"
@@ -126,6 +149,7 @@ import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { formatSize } from '@/utils/formatUtil'
+import { renderMarkdownToHtml } from '@/utils/markdownRendererUtil'
 
 import Button from '@/components/ui/button/Button.vue'
 import PropertiesAccordionItem from '@/components/rightSidePanel/layout/PropertiesAccordionItem.vue'
@@ -134,6 +158,10 @@ import type { TemplateInfo } from '@/platform/workflow/templates/types/template'
 
 import WorkflowTemplateDetailsField from './WorkflowTemplateDetailsField.vue'
 import type { MarketplaceTemplate } from '@/platform/marketplace/types/marketplace'
+import {
+  DIFFICULTY_SPRITES,
+  isMarketplaceTemplate
+} from '@/platform/marketplace/types/marketplace'
 
 const { t } = useI18n()
 
@@ -158,6 +186,17 @@ const title = computed(() =>
 )
 
 const description = computed(() => getTemplateDescription(templateInfo.value))
+const renderedDescription = computed(() =>
+  renderMarkdownToHtml(description.value)
+)
+
+const authorName = computed(() =>
+  isMarketplaceTemplate(template) ? template.author.name : 'Comfy Team'
+)
+
+const isAuthorVerified = computed(() =>
+  isMarketplaceTemplate(template) ? template.author.isVerified : true
+)
 
 const formattedVram = computed(() =>
   template.vram ? formatSize(template.vram) : null

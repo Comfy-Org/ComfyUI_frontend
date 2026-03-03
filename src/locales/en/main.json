@@ -1085,6 +1085,7 @@
       "selectWorkflowPlaceholder": "Choose a workflow to submit...",
       "shortDescription": "Short Description",
       "shortDescriptionPlaceholder": "Provide a short description of your workflow",
+      "markdownSupported": "Markdown supported",
       "difficulty": "Difficulty",
       "beginner": "Beginner",
       "intermediate": "Intermediate",

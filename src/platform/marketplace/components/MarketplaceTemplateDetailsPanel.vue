@@ -12,18 +12,37 @@
         :label="t('templateWorkflows.details.name')"
         :value="submission.title ?? submission.name"
       />
+      <DetailsField :label="t('g.author')">
+        <span class="flex items-center gap-1 text-sm text-muted-foreground">
+          {{ submission.author.name }}
+          <i
+            v-if="submission.author.isVerified"
+            class="icon-[lucide--badge-check] size-4 text-blue-500"
+          />
+        </span>
+      </DetailsField>
       <DetailsField
         v-if="submission.shortDescription"
         :label="t('templateWorkflows.publish.shortDescription')"
       >
-        <p class="text-sm whitespace-pre-wrap text-muted-foreground">
-          {{ submission.shortDescription }}
-        </p>
+        <div
+          class="comfy-markdown-content text-sm text-muted-foreground"
+          v-html="renderedShortDescription"
+        />
       </DetailsField>
       <DetailsField
+        v-if="submission.difficulty"
         :label="t('templateWorkflows.publish.difficulty')"
-        :value="submission.difficulty"
-      />
+      >
+        <span class="flex items-center gap-2 text-sm text-muted-foreground">
+          <img
+            :src="DIFFICULTY_SPRITES[submission.difficulty]"
+            :alt="submission.difficulty"
+            class="size-6 rounded-sm object-cover"
+          />
+          {{ t(`templateWorkflows.publish.${submission.difficulty}`) }}
+        </span>
+      </DetailsField>
       <DetailsField
         :label="t('templateWorkflows.publish.version')"
         :value="submission.version"
@@ -240,7 +259,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
@@ -248,9 +267,10 @@ import StatusBadge from '@/components/common/StatusBadge.vue'
 import PropertiesAccordionItem from '@/components/rightSidePanel/layout/PropertiesAccordionItem.vue'
 import WorkflowTemplateDetailsField from '@/components/custom/widget/WorkflowTemplateDetailsField.vue'
 import { formatSize } from '@/utils/formatUtil'
+import { renderMarkdownToHtml } from '@/utils/markdownRendererUtil'
 
-import { STATUS_SEVERITY } from '../types/marketplace';
-import type { MarketplaceTemplate } from '../types/marketplace';
+import { DIFFICULTY_SPRITES, STATUS_SEVERITY } from '../types/marketplace'
+import type { MarketplaceTemplate } from '../types/marketplace'
 
 const DetailsField = WorkflowTemplateDetailsField
 
@@ -266,6 +286,10 @@ const emit = defineEmits<{
 }>()
 
 const confirmingRemove = ref(false)
+
+const renderedShortDescription = computed(() =>
+  renderMarkdownToHtml(submission.shortDescription ?? '')
+)
 
 function formatDate(iso: string): string {
   return new Date(iso).toLocaleDateString()

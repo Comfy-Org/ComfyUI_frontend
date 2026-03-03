@@ -353,12 +353,13 @@
                   </h3>
                   <div class="flex justify-between gap-2">
                     <div class="flex-1">
-                      <p
-                        class="m-0 line-clamp-2 text-sm text-muted"
+                      <div
+                        class="comfy-markdown-content m-0 line-clamp-1 text-sm text-muted"
                         :title="getTemplateDescription(template)"
-                      >
-                        {{ getTemplateDescription(template) }}
-                      </p>
+                        v-html="
+                          renderMarkdownToHtml(getTemplateDescription(template))
+                        "
+                      />
                     </div>
                   </div>
                 </div>
@@ -467,7 +468,11 @@ import WorkflowTemplateDetailsPanel from '@/components/custom/widget/WorkflowTem
 import MarketplaceTemplateDetailsPanel from '@/platform/marketplace/components/MarketplaceTemplateDetailsPanel.vue'
 import MyTemplatesEmptyState from '@/platform/marketplace/components/MyTemplatesEmptyState.vue'
 import { useMyTemplates } from '@/platform/marketplace/composables/useMyTemplates'
-import { deleteTemplate } from '@/platform/marketplace/services/templateApi'
+import {
+  approveTemplate,
+  deleteTemplate
+} from '@/platform/marketplace/services/templateApi'
+import type { MarketplaceTemplate } from '@/platform/marketplace/types/marketplace'
 import {
   isMarketplaceTemplate,
   STATUS_SEVERITY
@@ -489,6 +494,7 @@ import { useSystemStatsStore } from '@/stores/systemStatsStore'
 import type { NavGroupData, NavItemData } from '@/types/navTypes'
 import { OnCloseKey } from '@/types/widgetTypes'
 
+import { renderMarkdownToHtml } from '@/utils/markdownRendererUtil'
 import { cn } from '@/utils/tailwindUtil'
 
 const { t } = useI18n()
@@ -566,6 +572,21 @@ const onClose = () => {
 provide(OnCloseKey, onClose)
 
 const { templates: myTemplates, refresh: refreshMyTemplates } = useMyTemplates()
+
+// DEV ONLY: Expose back-door for testing marketplace templates
+// Usage: window.__marketplace.approve('template-id')
+// Usage: window.__marketplace.list() to see all templates and IDs
+Object.assign(window, {
+  __marketplace: {
+    async approve(id: string) {
+      const result = await approveTemplate(id)
+      if (result) await refreshMyTemplates()
+      return result
+    },
+    list: () =>
+      myTemplates.value.map(({ id, name, status }) => ({ id, name, status }))
+  }
+})
 
 const showSubmissionForm = ref(false)
 const { resetWizard, wizardData, currentStep, goToStep } =
@@ -903,22 +924,31 @@ const {
   reset: resetPagination
 } = useLazyPagination(filteredTemplates, { itemsPerPage: 24 }) // Load 24 items per page
 
+function toTemplateInfo(submission: MarketplaceTemplate): TemplateInfo {
+  return {
+    ...submission,
+    name: submission.id,
+    title: submission.name,
+    description: submission.shortDescription ?? '',
+    mediaType: submission.mediaType ?? 'image',
+    sourceModule: 'marketplace',
+    mediaSubtype: 'webp'
+  }
+}
+
+const approvedMarketplaceTemplates = computed(() =>
+  myTemplates.value.filter((t) => t.status === 'approved').map(toTemplateInfo)
+)
+
 // Display templates (all when searching, paginated when not)
 const displayTemplates = computed(() => {
   if (isMyTemplatesView.value) {
-    return myTemplates.value.map((submission) => ({
-      ...submission,
-      name: submission.id,
-      title: submission.name,
-      description: submission.shortDescription ?? '',
-      mediaType: submission.mediaType ?? 'image',
-      sourceModule: 'marketplace',
-      mediaSubtype: 'webp'
-    }))
+    return myTemplates.value.map(toTemplateInfo)
   }
-  return shouldUsePagination.value
+  const base = shouldUsePagination.value
     ? paginatedTemplates.value
     : filteredTemplates.value
+  return [...approvedMarketplaceTemplates.value, ...base]
 })
 
 // Set up intersection observer for lazy loading

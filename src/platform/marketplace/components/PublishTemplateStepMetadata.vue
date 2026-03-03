@@ -81,14 +81,13 @@
       <label class="text-sm font-medium">
         {{ t('templateWorkflows.publish.shortDescription') }}
       </label>
-      <Textarea
+      <MarkdownInput
         v-model="wizardData.shortDescription"
-        :class="errors.shortDescription && 'border-destructive-background'"
+        :has-error="!!errors.shortDescription"
         :placeholder="
           t('templateWorkflows.publish.shortDescriptionPlaceholder')
         "
         :maxlength="200"
-        rows="3"
       />
       <span
         v-if="errors.shortDescription"
@@ -97,7 +96,8 @@
         {{ errors.shortDescription }}
       </span>
       <span v-else class="text-xs text-muted">
-        {{ (wizardData.shortDescription ?? '').length }}/200
+        {{ (wizardData.shortDescription ?? '').length }}/200 ·
+        {{ t('templateWorkflows.publish.markdownSupported') }}
       </span>
     </div>
 
@@ -135,6 +135,11 @@
           "
         >
           <RadioGroupItem :value="option.value" class="sr-only" />
+          <img
+            :src="DIFFICULTY_SPRITES[option.value]"
+            :alt="option.name"
+            class="size-5 rounded-sm object-cover"
+          />
           {{ option.name }}
         </label>
       </RadioGroupRoot>
@@ -206,8 +211,8 @@ import MultiSelectInput from '@/components/input/MultiSelect.vue'
 import SingleSelect from '@/components/input/SingleSelect.vue'
 import Button from '@/components/ui/button/Button.vue'
 import type { SelectOption } from '@/components/input/types'
-import Textarea from 'primevue/textarea'
 import InputText from 'primevue/inputtext'
+import MarkdownInput from '@/components/input/MarkdownInput.vue'
 import { cn } from '@/utils/tailwindUtil'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { app } from '@/scripts/app'
@@ -223,6 +228,7 @@ import { usePublishTemplateWizard } from '../composables/usePublishTemplateWizar
 import { licenseTypeSchema, metadataSchema } from '../schemas/templateSchema'
 import { useCategories } from '../composables/useCategories'
 import type { Difficulty } from '../types/marketplace'
+import { DIFFICULTY_SPRITES } from '../types/marketplace'
 
 const { t } = useI18n()
 const { wizardData } = usePublishTemplateWizard()
@@ -233,7 +239,11 @@ const systemStatsStore = useSystemStatsStore()
 
 const errors = ref<Record<string, string>>({})
 
-const selectedWorkflowPath = ref<string | undefined>(wizardData.value.name)
+const selectedWorkflowPath = ref<string | undefined>(
+  workflowStore.persistedWorkflows.find(
+    (wf) => wf.filename === wizardData.value.name
+  )?.path
+)
 
 watch(
   () => wizardData.value.name,
@@ -346,13 +356,15 @@ function autoDetectRequirements() {
 
   const customNodeCount = wizardData.value.customNodes?.length ?? 0
   const modelCount = wizardData.value.requiredModels?.length ?? 0
-  const vram = vramDisplay.value ? `${vramDisplay.value} GB` : '0 GB'
+  const vram = vramDisplay.value
+    ? `${Number(vramDisplay.value).toLocaleString()} GB`
+    : '0 GB'
 
   detectionResult.value =
     customNodeCount || modelCount || vram !== '0 GB'
       ? t('templateWorkflows.publish.detected', {
-          customNodes: customNodeCount,
-          models: modelCount,
+          customNodes: customNodeCount.toLocaleString(),
+          models: modelCount.toLocaleString(),
           vram
         })
       : t('templateWorkflows.publish.detectedNone')

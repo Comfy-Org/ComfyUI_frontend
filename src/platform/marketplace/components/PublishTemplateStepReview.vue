@@ -59,13 +59,12 @@
               <h3 class="m-0 line-clamp-1 text-sm">
                 {{ wizardData.title ?? wizardData.name }}
               </h3>
-              <p
+              <div
                 v-if="wizardData.shortDescription"
-                class="m-0 line-clamp-2 text-sm text-muted"
+                class="comfy-markdown-content m-0 line-clamp-2 text-sm text-muted"
                 :title="wizardData.shortDescription"
-              >
-                {{ wizardData.shortDescription }}
-              </p>
+                v-html="renderedShortDescription"
+              />
             </div>
           </CardBottom>
         </template>
@@ -254,6 +253,7 @@ import CompareSliderThumbnail from '@/components/templates/thumbnails/CompareSli
 import DefaultThumbnail from '@/components/templates/thumbnails/DefaultThumbnail.vue'
 import HoverDissolveThumbnail from '@/components/templates/thumbnails/HoverDissolveThumbnail.vue'
 import { formatSize } from '@/utils/formatUtil'
+import { renderMarkdownToHtml } from '@/utils/markdownRendererUtil'
 
 import { usePublishTemplateWizard } from '../composables/usePublishTemplateWizard'
 import { STATUS_SEVERITY } from '../types/marketplace'
@@ -266,6 +266,9 @@ const categories = computed(() => wizardData.value.categories ?? [])
 const tags = computed(() => wizardData.value.tags ?? [])
 const customNodes = computed(() => wizardData.value.customNodes ?? [])
 const requiredModels = computed(() => wizardData.value.requiredModels ?? [])
+const renderedShortDescription = computed(() =>
+  renderMarkdownToHtml(wizardData.value.shortDescription ?? '')
+)
 
 function formatDate(iso: string): string {
   return new Date(iso).toLocaleDateString()

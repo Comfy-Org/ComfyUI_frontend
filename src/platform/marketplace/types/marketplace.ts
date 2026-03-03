@@ -61,5 +61,11 @@ export const STATUS_SEVERITY: Record<
   unpublished: 'secondary'
 }
 
+export const DIFFICULTY_SPRITES: Record<string, string> = {
+  beginner: '/assets/images/DOOM-beginner.png',
+  intermediate: '/assets/images/DOOM-intermediate.png',
+  advanced: '/assets/images/DOOM-advanced.png'
+}
+
 export type AuthorDashboardStats = z.infer<typeof authorDashboardStatsSchema>
 export type PeriodDataPoint = z.infer<typeof periodDataPointSchema>

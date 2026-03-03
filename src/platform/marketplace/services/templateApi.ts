@@ -76,6 +76,17 @@ export async function deleteTemplate(
   return { success: collection.delete(id) }
 }
 
+// ADMIN ONLY: Approve a template by ID (back-door for testing)
+export async function approveTemplate(
+  id: string
+): Promise<MarketplaceTemplate | null> {
+  return collection.update(id, {
+    status: 'approved',
+    updatedAt: now(),
+    publishedAt: now()
+  })
+}
+
 // POST /api/marketplace/templates/:id/submit
 export async function submitTemplate(
   body: CreateTemplateDraftRequest
