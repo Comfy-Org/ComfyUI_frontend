@@ -38,36 +38,36 @@ export type DialogComponentProps = ComponentAttrs<typeof GlobalDialog> &
   CustomDialogComponentProps
 
 export interface DialogInstance<
-  H extends Component = Component,
-  B extends Component = Component,
-  F extends Component = Component
+  Header extends Component = Component,
+  Body extends Component = Component,
+  Footer extends Component = Component
 > {
   key: string
   visible: boolean
   title?: string
-  headerComponent?: H
-  headerProps?: ComponentAttrs<H>
-  component: B
-  contentProps: ComponentAttrs<B>
-  footerComponent?: F
-  footerProps?: ComponentAttrs<F>
+  headerComponent?: Header
+  headerProps?: ComponentAttrs<Header>
+  component: Body
+  contentProps: ComponentAttrs<Body>
+  footerComponent?: Footer
+  footerProps?: ComponentAttrs<Footer>
   dialogComponentProps: DialogComponentProps
   priority: number
 }
 
 export interface ShowDialogOptions<
-  H extends Component = Component,
-  B extends Component = Component,
-  F extends Component = Component
+  Header extends Component = Component,
+  Body extends Component = Component,
+  Footer extends Component = Component
 > {
   key?: string
   title?: string
-  headerComponent?: H
-  footerComponent?: F
-  component: B
-  props?: ComponentAttrs<B>
-  headerProps?: ComponentAttrs<H>
-  footerProps?: ComponentAttrs<F>
+  headerComponent?: Header
+  footerComponent?: Footer
+  component: Body
+  props?: ComponentAttrs<Body>
+  headerProps?: ComponentAttrs<Header>
+  footerProps?: ComponentAttrs<Footer>
   dialogComponentProps?: DialogComponentProps
   /**
    * Optional priority for dialog stacking.
@@ -135,10 +135,10 @@ export const useDialogStore = defineStore('dialog', () => {
   }
 
   function createDialog<
-    H extends Component = Component,
-    B extends Component = Component,
-    F extends Component = Component
-  >(options: ShowDialogOptions<H, B, F> & { key: string }) {
+    Header extends Component = Component,
+    Body extends Component = Component,
+    Footer extends Component = Component
+  >(options: ShowDialogOptions<Header, Body, Footer> & { key: string }) {
     if (dialogStack.value.length >= 10) {
       dialogStack.value.shift()
     }
@@ -210,10 +210,10 @@ export const useDialogStore = defineStore('dialog', () => {
   }
 
   function showDialog<
-    H extends Component = Component,
-    B extends Component = Component,
-    F extends Component = Component
-  >(options: ShowDialogOptions<H, B, F>) {
+    Header extends Component = Component,
+    Body extends Component = Component,
+    Footer extends Component = Component
+  >(options: ShowDialogOptions<Header, Body, Footer>) {
     const dialogKey = options.key || genDialogKey()
 
     let dialog = dialogStack.value.find((d) => d.key === dialogKey)

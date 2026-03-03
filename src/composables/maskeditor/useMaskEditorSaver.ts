@@ -11,7 +11,6 @@ import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 
-// Private layer filename functions
 interface ImageLayerFilenames {
   maskedImage: string
   paint: string
@@ -28,6 +27,32 @@ function imageLayerFilenamesByTimestamp(
     paintedImage: `clipspace-painted-${timestamp}.png`,
     paintedMaskedImage: `clipspace-painted-masked-${timestamp}.png`
   }
+}
+
+function getContext2D(canvas: HTMLCanvasElement): CanvasRenderingContext2D {
+  const ctx = canvas.getContext('2d')
+  if (!ctx) throw new Error('Failed to get 2D rendering context')
+  return ctx
+}
+
+function applyInvertedMaskAlpha(
+  targetCtx: CanvasRenderingContext2D,
+  maskCanvas: HTMLCanvasElement
+): void {
+  const maskCtx = getContext2D(maskCanvas)
+  const maskData = maskCtx.getImageData(
+    0,
+    0,
+    maskCanvas.width,
+    maskCanvas.height
+  )
+
+  const { width, height } = targetCtx.canvas
+  const imageData = targetCtx.getImageData(0, 0, width, height)
+  for (let i = 0; i < imageData.data.length; i += 4) {
+    imageData.data[i + 3] = 255 - maskData.data[i + 3]
+  }
+  targetCtx.putImageData(imageData, 0, 0)
 }
 
 export function useMaskEditorSaver() {
@@ -99,31 +124,10 @@ export function useMaskEditorSaver() {
     const canvas = document.createElement('canvas')
     canvas.width = imgCanvas.width
     canvas.height = imgCanvas.height
-    const ctx = canvas.getContext('2d')!
+    const ctx = getContext2D(canvas)
 
     ctx.drawImage(imgCanvas, 0, 0)
-
-    const maskCtx = maskCanvas.getContext('2d')!
-    const maskData = maskCtx.getImageData(
-      0,
-      0,
-      maskCanvas.width,
-      maskCanvas.height
-    )
-
-    const refinedMaskData = new Uint8ClampedArray(maskData.data.length)
-    for (let i = 0; i < maskData.data.length; i += 4) {
-      refinedMaskData[i] = 0
-      refinedMaskData[i + 1] = 0
-      refinedMaskData[i + 2] = 0
-      refinedMaskData[i + 3] = 255 - maskData.data[i + 3]
-    }
-
-    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height)
-    for (let i = 0; i < imageData.data.length; i += 4) {
-      imageData.data[i + 3] = refinedMaskData[i + 3]
-    }
-    ctx.putImageData(imageData, 0, 0)
+    applyInvertedMaskAlpha(ctx, maskCanvas)
 
     const blob = await canvasToBlob(canvas)
     const ref = createFileRef(filename)
@@ -150,11 +154,9 @@ export function useMaskEditorSaver() {
     const canvas = document.createElement('canvas')
     canvas.width = imgCanvas.width
     canvas.height = imgCanvas.height
-    const ctx = canvas.getContext('2d')!
+    const ctx = getContext2D(canvas)
 
     ctx.drawImage(imgCanvas, 0, 0)
-
-    ctx.globalCompositeOperation = 'source-over'
     ctx.drawImage(paintCanvas, 0, 0)
 
     const blob = await canvasToBlob(canvas)
@@ -172,34 +174,11 @@ export function useMaskEditorSaver() {
     const canvas = document.createElement('canvas')
     canvas.width = imgCanvas.width
     canvas.height = imgCanvas.height
-    const ctx = canvas.getContext('2d')!
+    const ctx = getContext2D(canvas)
 
     ctx.drawImage(imgCanvas, 0, 0)
-
-    ctx.globalCompositeOperation = 'source-over'
     ctx.drawImage(paintCanvas, 0, 0)
-
-    const maskCtx = maskCanvas.getContext('2d')!
-    const maskData = maskCtx.getImageData(
-      0,
-      0,
-      maskCanvas.width,
-      maskCanvas.height
-    )
-
-    const refinedMaskData = new Uint8ClampedArray(maskData.data.length)
-    for (let i = 0; i < maskData.data.length; i += 4) {
-      refinedMaskData[i] = 0
-      refinedMaskData[i + 1] = 0
-      refinedMaskData[i + 2] = 0
-      refinedMaskData[i + 3] = 255 - maskData.data[i + 3]
-    }
-
-    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height)
-    for (let i = 0; i < imageData.data.length; i += 4) {
-      imageData.data[i + 3] = refinedMaskData[i + 3]
-    }
-    ctx.putImageData(imageData, 0, 0)
+    applyInvertedMaskAlpha(ctx, maskCanvas)
 
     const blob = await canvasToBlob(canvas)
     const ref = createFileRef(filename)
@@ -210,16 +189,26 @@ export function useMaskEditorSaver() {
   async function uploadAllLayers(outputData: EditorOutputData): Promise<void> {
     const sourceRef = dataStore.inputData!.sourceRef
 
-    const actualMaskedRef = await uploadMask(outputData.maskedImage, sourceRef)
-    const actualPaintRef = await uploadImage(outputData.paintLayer, sourceRef)
-    const actualPaintedRef = await uploadImage(
+    const actualMaskedRef = await uploadLayer(
+      outputData.maskedImage,
+      sourceRef,
+      '/upload/mask'
+    )
+    const actualPaintRef = await uploadLayer(
+      outputData.paintLayer,
+      sourceRef,
+      '/upload/image'
+    )
+    const actualPaintedRef = await uploadLayer(
       outputData.paintedImage,
-      sourceRef
+      sourceRef,
+      '/upload/image'
     )
 
-    const actualPaintedMaskedRef = await uploadMask(
+    const actualPaintedMaskedRef = await uploadLayer(
       outputData.paintedMaskedImage,
-      actualPaintedRef
+      actualPaintedRef,
+      '/upload/mask'
     )
 
     outputData.maskedImage.ref = actualMaskedRef
@@ -228,9 +217,10 @@ export function useMaskEditorSaver() {
     outputData.paintedMaskedImage.ref = actualPaintedMaskedRef
   }
 
-  async function uploadMask(
+  async function uploadLayer(
     layer: EditorOutputLayer,
-    originalRef: ImageRef
+    originalRef: ImageRef,
+    endpoint: '/upload/mask' | '/upload/image'
   ): Promise<ImageRef> {
     const formData = new FormData()
     formData.append('image', layer.blob, layer.ref.filename)
@@ -238,61 +228,22 @@ export function useMaskEditorSaver() {
     formData.append('type', 'input')
     formData.append('subfolder', 'clipspace')
 
-    const response = await api.fetchApi('/upload/mask', {
+    const response = await api.fetchApi(endpoint, {
       method: 'POST',
       body: formData
     })
 
     if (!response.ok) {
-      throw new Error(`Failed to upload mask: ${layer.ref.filename}`)
+      throw new Error(`Failed to upload to ${endpoint}: ${layer.ref.filename}`)
     }
 
-    try {
-      const data = await response.json()
-      if (data?.name) {
-        return {
-          filename: data.name,
-          subfolder: data.subfolder || layer.ref.subfolder,
-          type: data.type || layer.ref.type
-        }
+    const data = await response.json()
+    if (data?.name) {
+      return {
+        filename: data.name,
+        subfolder: data.subfolder || layer.ref.subfolder,
+        type: data.type || layer.ref.type
       }
-    } catch {
-      // JSON parse failed — fall through to return existing ref
-    }
-
-    return layer.ref
-  }
-
-  async function uploadImage(
-    layer: EditorOutputLayer,
-    originalRef: ImageRef
-  ): Promise<ImageRef> {
-    const formData = new FormData()
-    formData.append('image', layer.blob, layer.ref.filename)
-    formData.append('original_ref', JSON.stringify(originalRef))
-    formData.append('type', 'input')
-    formData.append('subfolder', 'clipspace')
-
-    const response = await api.fetchApi('/upload/image', {
-      method: 'POST',
-      body: formData
-    })
-
-    if (!response.ok) {
-      throw new Error(`Failed to upload image: ${layer.ref.filename}`)
-    }
-
-    try {
-      const data = await response.json()
-      if (data?.name) {
-        return {
-          filename: data.name,
-          subfolder: data.subfolder || layer.ref.subfolder,
-          type: data.type || layer.ref.type
-        }
-      }
-    } catch {
-      // JSON parse failed — fall through to return existing ref
     }
 
     return layer.ref
@@ -373,7 +324,7 @@ export function useMaskEditorSaver() {
     const canvas = document.createElement('canvas')
     canvas.width = source.width
     canvas.height = source.height
-    const ctx = canvas.getContext('2d')!
+    const ctx = getContext2D(canvas)
     ctx.drawImage(source, 0, 0)
     return canvas
   }

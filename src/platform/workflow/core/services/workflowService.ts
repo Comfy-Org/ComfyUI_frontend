@@ -476,7 +476,7 @@ export const useWorkflowService = () => {
    * Takes an existing workflow and duplicates it with a new name
    */
   const duplicateWorkflow = async (workflow: ComfyWorkflow) => {
-    const state = JSON.parse(JSON.stringify(workflow.activeState))
+    const state = structuredClone(workflow.activeState) as ComfyWorkflowJSON
     const suffix = workflow.isPersisted ? ' (Copy)' : ''
     // Remove the suffix `(2)` or similar
     const filename = workflow.filename.replace(/\s*\(\d+\)$/, '') + suffix
