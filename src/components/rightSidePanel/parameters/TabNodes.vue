@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { storeToRefs } from 'pinia'
-import { computed, reactive, ref, shallowRef } from 'vue'
+import { computed, reactive, ref, shallowRef, watch } from 'vue'
 
 import CollapseToggleButton from '@/components/rightSidePanel/layout/CollapseToggleButton.vue'
 
@@ -19,7 +19,7 @@ const workflowStore = useWorkflowStore()
 
 const nodes = computed((): LGraphNode[] => {
   // Depend on activeWorkflow to trigger recomputation when workflow changes
-  void workflowStore.activeWorkflow?.path
+  Boolean(workflowStore.activeWorkflow?.path)
   return (canvasStore.canvas?.graph?.nodes ?? []) as LGraphNode[]
 })
 
@@ -34,6 +34,15 @@ const searchedWidgetsSectionDataList = shallowRef<NodeWidgetsListList>(
 const isSearching = ref(false)
 
 const collapseMap = reactive<Record<string, boolean>>({})
+
+watch(
+  () => workflowStore.activeWorkflow?.path,
+  () => {
+    for (const nodeId of Object.keys(collapseMap)) {
+      delete collapseMap[nodeId]
+    }
+  }
+)
 
 function isSectionCollapsed(nodeId: string): boolean {
   // Defaults to collapsed when not explicitly set by the user

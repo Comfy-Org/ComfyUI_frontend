@@ -1,11 +1,12 @@
 <script setup lang="ts">
 import { storeToRefs } from 'pinia'
-import { computed, reactive, ref, shallowRef } from 'vue'
+import { computed, reactive, ref, shallowRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import CollapseToggleButton from '@/components/rightSidePanel/layout/CollapseToggleButton.vue'
 import FormSearchInput from '@/renderer/extensions/vueNodes/widgets/components/form/FormSearchInput.vue'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 
 import { computedSectionDataList, searchWidgetsAndNodes } from '../shared'
@@ -18,6 +19,7 @@ const { nodes, mustShowNodeTitle } = defineProps<{
 }>()
 
 const { t } = useI18n()
+const workflowStore = useWorkflowStore()
 
 const rightSidePanelStore = useRightSidePanelStore()
 const { searchQuery } = storeToRefs(rightSidePanelStore)
@@ -55,6 +57,16 @@ const isSearching = ref(false)
 
 const collapseMap = reactive<Record<string, boolean>>({})
 const advancedCollapsed = ref(true)
+
+watch(
+  () => workflowStore.activeWorkflow?.path,
+  () => {
+    for (const nodeId of Object.keys(collapseMap)) {
+      delete collapseMap[nodeId]
+    }
+    advancedCollapsed.value = true
+  }
+)
 
 function isSectionCollapsed(nodeId: string): boolean {
   // When not explicitly set, sections are collapsed if multiple nodes are selected
