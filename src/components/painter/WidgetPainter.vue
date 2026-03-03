@@ -141,7 +141,7 @@
               max="100"
               step="1"
               class="w-7 appearance-none border-0 bg-transparent text-right text-xs text-node-text-muted outline-none [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none [-moz-appearance:textfield]"
-              @click.prevent
+              @click.stop
               @change="
                 (e) => {
                   const val = Math.min(
