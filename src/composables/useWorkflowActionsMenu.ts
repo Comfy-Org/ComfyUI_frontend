@@ -3,6 +3,7 @@ import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import { useWorkflowTemplateSelectorDialog } from '@/composables/useWorkflowTemplateSelectorDialog'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import {
@@ -51,6 +52,7 @@ export function useWorkflowActionsMenu(
   const subgraphStore = useSubgraphStore()
   const menuItemStore = useMenuItemStore()
   const canvasStore = useCanvasStore()
+  const templateDialog = useWorkflowTemplateSelectorDialog()
   const { flags } = useFeatureFlags()
 
   const targetWorkflow = computed(
@@ -178,6 +180,20 @@ export function useWorkflowActionsMenu(
         await commandStore.execute('Comfy.ExportWorkflowAPI')
       },
       visible: isRoot
+    })
+
+    addItem({
+      id: 'publish-as-template',
+      label: t('breadcrumbsMenu.publishAsTemplate'),
+      icon: 'pi pi-globe',
+      command: () => {
+        templateDialog.show('menu', {
+          initialCategory: 'my-templates',
+          publishWorkflow: workflow?.filename
+        })
+      },
+      visible: isRoot && !isBlueprint && (workflow?.isPersisted ?? false),
+      prependSeparator: true
     })
 
     addItem({

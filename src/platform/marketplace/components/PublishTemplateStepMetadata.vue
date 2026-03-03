@@ -81,13 +81,20 @@
       <label class="text-sm font-medium">
         {{ t('templateWorkflows.publish.shortDescription') }}
       </label>
-      <MarkdownInput
+      <Textarea
         v-model="wizardData.shortDescription"
-        :has-error="!!errors.shortDescription"
         :placeholder="
           t('templateWorkflows.publish.shortDescriptionPlaceholder')
         "
         :maxlength="200"
+        :class="
+          cn(
+            'w-full',
+            errors.shortDescription && 'border-destructive-background'
+          )
+        "
+        rows="3"
+        auto-resize
       />
       <span
         v-if="errors.shortDescription"
@@ -212,7 +219,7 @@ import SingleSelect from '@/components/input/SingleSelect.vue'
 import Button from '@/components/ui/button/Button.vue'
 import type { SelectOption } from '@/components/input/types'
 import InputText from 'primevue/inputtext'
-import MarkdownInput from '@/components/input/MarkdownInput.vue'
+import Textarea from 'primevue/textarea'
 import { cn } from '@/utils/tailwindUtil'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { app } from '@/scripts/app'

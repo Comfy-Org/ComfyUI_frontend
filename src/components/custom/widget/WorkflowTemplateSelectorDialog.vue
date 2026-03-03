@@ -499,9 +499,14 @@ import { cn } from '@/utils/tailwindUtil'
 
 const { t } = useI18n()
 
-const { onClose: originalOnClose, initialCategory = 'all' } = defineProps<{
+const {
+  onClose: originalOnClose,
+  initialCategory = 'all',
+  publishWorkflow
+} = defineProps<{
   onClose: () => void
   initialCategory?: string
+  publishWorkflow?: string
 }>()
 
 // Track session time for telemetry
@@ -528,6 +533,9 @@ const isRightPanelOpen = computed({
 
 onMounted(() => {
   sessionStartTime.value = Date.now()
+  if (publishWorkflow) {
+    startPublishingWithWorkflow(publishWorkflow)
+  }
 })
 
 const systemStatsStore = useSystemStatsStore()
@@ -594,6 +602,12 @@ const { resetWizard, wizardData, currentStep, goToStep } =
 
 function startPublishing() {
   resetWizard()
+  showSubmissionForm.value = true
+}
+
+function startPublishingWithWorkflow(workflowFilename: string) {
+  resetWizard()
+  wizardData.value.name = workflowFilename
   showSubmissionForm.value = true
 }
 

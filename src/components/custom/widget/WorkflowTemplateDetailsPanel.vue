@@ -53,6 +53,10 @@
         :label="t('templateWorkflows.details.license')"
         :value="template.license"
       />
+      <TemplateStatsDisplay
+        v-if="isMarketplaceTemplate(template)"
+        :stats="template.stats"
+      />
     </PropertiesAccordionItem>
 
     <PropertiesAccordionItem
@@ -162,6 +166,7 @@ import {
   DIFFICULTY_SPRITES,
   isMarketplaceTemplate
 } from '@/platform/marketplace/types/marketplace'
+import TemplateStatsDisplay from '@/platform/marketplace/components/TemplateStatsDisplay.vue'
 
 const { t } = useI18n()
 

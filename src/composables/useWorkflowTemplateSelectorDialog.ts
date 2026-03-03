@@ -18,7 +18,7 @@ export const useWorkflowTemplateSelectorDialog = () => {
 
   function show(
     source: 'sidebar' | 'menu' | 'command' = 'command',
-    options?: { initialCategory?: string }
+    options?: { initialCategory?: string; publishWorkflow?: string }
   ) {
     useTelemetry()?.trackTemplateLibraryOpened({ source })
 
@@ -31,7 +31,8 @@ export const useWorkflowTemplateSelectorDialog = () => {
       component: WorkflowTemplateSelectorDialog,
       props: {
         onClose: hide,
-        initialCategory
+        initialCategory,
+        publishWorkflow: options?.publishWorkflow
       }
     })
   }

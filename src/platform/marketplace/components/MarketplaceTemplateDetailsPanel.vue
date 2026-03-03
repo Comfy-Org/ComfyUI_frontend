@@ -149,21 +149,7 @@
           {{ submission.changelog }}
         </p>
       </DetailsField>
-      <DetailsField
-        v-if="submission.stats.downloads > 0"
-        :label="t('templateWorkflows.myTemplates.downloads')"
-        :value="String(submission.stats.downloads)"
-      />
-      <DetailsField
-        v-if="submission.stats.favorites > 0"
-        :label="t('templateWorkflows.myTemplates.favorites')"
-        :value="String(submission.stats.favorites)"
-      />
-      <DetailsField
-        v-if="submission.stats.rating > 0"
-        :label="t('templateWorkflows.myTemplates.rating')"
-        :value="String(submission.stats.rating)"
-      />
+      <TemplateStatsDisplay :stats="submission.stats" />
     </PropertiesAccordionItem>
 
     <PropertiesAccordionItem
@@ -271,6 +257,7 @@ import { renderMarkdownToHtml } from '@/utils/markdownRendererUtil'
 
 import { DIFFICULTY_SPRITES, STATUS_SEVERITY } from '../types/marketplace'
 import type { MarketplaceTemplate } from '../types/marketplace'
+import TemplateStatsDisplay from './TemplateStatsDisplay.vue'
 
 const DetailsField = WorkflowTemplateDetailsField
 
