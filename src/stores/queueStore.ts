@@ -14,6 +14,7 @@ import type {
   StatusWsMessageStatus,
   TaskOutput
 } from '@/schemas/apiSchema'
+import { appendCloudResParam } from '@/platform/distribution/cloudPreviewUtil'
 import { api } from '@/scripts/api'
 import type { ComfyApp } from '@/scripts/app'
 import { useExtensionService } from '@/services/extensionService'
@@ -89,6 +90,13 @@ export class ResultItemImpl {
 
   get url(): string {
     return api.apiURL('/view?' + this.urlParams)
+  }
+
+  get previewUrl(): string {
+    if (!this.isImage) return this.url
+    const params = new URLSearchParams(this.urlParams)
+    appendCloudResParam(params, this.filename)
+    return api.apiURL('/view?' + params)
   }
 
   get urlWithTimestamp(): string {
