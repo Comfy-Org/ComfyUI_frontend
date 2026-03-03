@@ -4,23 +4,19 @@ import Splitter from 'primevue/splitter'
 import SplitterPanel from 'primevue/splitterpanel'
 import { storeToRefs } from 'pinia'
 import { computed, useTemplateRef } from 'vue'
-import { useI18n } from 'vue-i18n'
 
 import AppBuilder from '@/components/builder/AppBuilder.vue'
 import AppModeToolbar from '@/components/appMode/AppModeToolbar.vue'
 import ExtensionSlot from '@/components/common/ExtensionSlot.vue'
-import ModeToggle from '@/components/sidebar/ModeToggle.vue'
 import TopbarBadges from '@/components/topbar/TopbarBadges.vue'
 import TopbarSubscribeButton from '@/components/topbar/TopbarSubscribeButton.vue'
 import WorkflowTabs from '@/components/topbar/WorkflowTabs.vue'
-import TypeformPopoverButton from '@/components/ui/TypeformPopoverButton.vue'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { cn } from '@/utils/tailwindUtil'
 import LinearControls from '@/renderer/extensions/linearMode/LinearControls.vue'
 import LinearPreview from '@/renderer/extensions/linearMode/LinearPreview.vue'
 import LinearProgressBar from '@/renderer/extensions/linearMode/LinearProgressBar.vue'
 import MobileDisplay from '@/renderer/extensions/linearMode/MobileDisplay.vue'
-import MobileMenu from '@/renderer/extensions/linearMode/MobileMenu.vue'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { useAppMode } from '@/composables/useAppMode'
 import {
@@ -31,7 +27,6 @@ import {
 } from '@/constants/splitterConstants'
 import { useAppModeStore } from '@/stores/appModeStore'
 
-const { t } = useI18n()
 const settingStore = useSettingStore()
 const workspaceStore = useWorkspaceStore()
 const { isBuilderMode, isArrangeMode } = useAppMode()
@@ -90,32 +85,7 @@ const linearWorkflowRef = useTemplateRef('linearWorkflowRef')
         <TopbarSubscribeButton />
       </div>
     </div>
-    <div
-      v-if="mobileDisplay"
-      class="justify-center border-border-subtle border-t overflow-y-scroll h-[calc(100%-var(--workflow-tabs-height))] bg-comfy-menu-bg"
-    >
-      <MobileMenu />
-      <LinearProgressBar class="w-full" />
-      <div class="flex flex-col text-muted-foreground">
-        <LinearPreview
-          :run-button-click="linearWorkflowRef?.runButtonClick"
-          mobile
-        />
-      </div>
-      <LinearControls ref="linearWorkflowRef" mobile />
-      <div class="text-base-foreground flex items-center gap-4">
-        <div class="border-r border-border-subtle mr-auto">
-          <ModeToggle class="m-2" />
-        </div>
-        <div v-text="t('linearMode.beta')" />
-        <TypeformPopoverButton
-          :data-tf-widget="TYPEFORM_WIDGET_ID"
-          class="mx-2"
-        />
-      </div>
-    </div>
     <Splitter
-      v-else
       :key="isArrangeMode ? 'arrange' : 'normal'"
       class="h-[calc(100%-var(--workflow-tabs-height))] w-full border-none bg-comfy-menu-secondary-bg"
       :state-key="isArrangeMode ? 'builder-splitter' : undefined"

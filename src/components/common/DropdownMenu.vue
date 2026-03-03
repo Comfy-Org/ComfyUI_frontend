@@ -60,7 +60,7 @@ const contentClass = computed(() =>
       >
         <slot :item-class>
           <DropdownItem
-            v-for="(item, index) in entries!"
+            v-for="(item, index) in entries ?? []"
             :key="toValue(item.label) ?? index"
             :item-class
             :content-class

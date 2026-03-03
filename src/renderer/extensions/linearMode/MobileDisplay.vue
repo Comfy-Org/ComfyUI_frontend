@@ -177,11 +177,13 @@ const menuEntries = computed<MenuItem[]>(() => [
           </div>
         </template>
       </Popover>
-      <CurrentUserButton v-if="isLoggedIn" class="[&_i]:hidden" />
+      <CurrentUserButton v-if="isLoggedIn" :show-arrow="false" />
     </header>
     <div class="size-full contain-content rounded-b-4xl">
       <div
-        :class="cn('size-full relative', !isSwiping && 'transition-all')"
+        :class="
+          cn('size-full relative', !isSwiping && 'transition-[translate]')
+        "
         :style="{ translate }"
       >
         <div class="overflow-y-auto contain-size h-full w-screen absolute">
@@ -193,7 +195,7 @@ const menuEntries = computed<MenuItem[]>(() => [
           <LinearPreview mobile />
         </div>
         <AssetsSidebarTab
-          class="h-full w-screen absolute bg-base-background [&>:first-child>:nth-child(odd)]:hidden left-[200vw] top-0"
+          class="h-full w-screen absolute bg-base-background left-[200vw] top-0"
         />
       </div>
     </div>
