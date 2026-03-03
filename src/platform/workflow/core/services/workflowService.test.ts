@@ -308,33 +308,25 @@ describe('useWorkflowService', () => {
   })
 
   describe('afterLoadNewGraph', () => {
-    it('should reuse the active workflow when loading the same path repeatedly', async () => {
-      const reset = vi.fn()
-      const restore = vi.fn()
-      const workflowId = 'repeat-workflow-id'
-      const existingWorkflow = {
-        path: 'workflows/repeat.json',
-        isPersisted: true,
-        isLoaded: true,
-        activeState: { id: workflowId },
-        changeTracker: {
-          reset,
-          restore
-        }
-      } as unknown as ComfyWorkflow
+    let workflowStore: ReturnType<typeof useWorkflowStore>
+    let existingWorkflow: LoadedComfyWorkflow
 
-      const workflowStore = useWorkflowStore()
-      vi.spyOn(workflowStore, 'getWorkflowByPath').mockReturnValue(
+    beforeEach(() => {
+      setActivePinia(createTestingPinia())
+      workflowStore = useWorkflowStore()
+      existingWorkflow = createModeTestWorkflow({
+        path: 'workflows/repeat.json'
+      })
+      vi.mocked(workflowStore.getWorkflowByPath).mockReturnValue(
         existingWorkflow
       )
-      vi.spyOn(workflowStore, 'isActive').mockReturnValue(true)
-      vi.spyOn(workflowStore, 'openWorkflow').mockResolvedValue(
-        existingWorkflow as LoadedComfyWorkflow
-      )
-      const createNewTemporarySpy = vi.spyOn(
-        workflowStore,
-        'createNewTemporary'
-      )
+      vi.mocked(workflowStore.isActive).mockReturnValue(true)
+      vi.mocked(workflowStore.openWorkflow).mockResolvedValue(existingWorkflow)
+    })
+
+    it('should reuse the active workflow when loading the same path repeatedly', async () => {
+      const workflowId = 'repeat-workflow-id'
+      existingWorkflow.changeTracker.activeState.id = workflowId
 
       await useWorkflowService().afterLoadNewGraph('repeat', {
         id: workflowId,
@@ -345,38 +337,12 @@ describe('useWorkflowService', () => {
         'workflows/repeat.json'
       )
       expect(workflowStore.openWorkflow).toHaveBeenCalledWith(existingWorkflow)
-      expect(reset).toHaveBeenCalled()
-      expect(restore).toHaveBeenCalled()
-      expect(createNewTemporarySpy).not.toHaveBeenCalled()
+      expect(existingWorkflow.changeTracker.reset).toHaveBeenCalled()
+      expect(existingWorkflow.changeTracker.restore).toHaveBeenCalled()
+      expect(workflowStore.createNewTemporary).not.toHaveBeenCalled()
     })
 
     it('should reuse active workflow for repeated same-path loads without ids', async () => {
-      const reset = vi.fn()
-      const restore = vi.fn()
-      const existingWorkflow = {
-        path: 'workflows/repeat.json',
-        isPersisted: true,
-        isLoaded: true,
-        activeState: {},
-        changeTracker: {
-          reset,
-          restore
-        }
-      } as unknown as ComfyWorkflow
-
-      const workflowStore = useWorkflowStore()
-      vi.spyOn(workflowStore, 'getWorkflowByPath').mockReturnValue(
-        existingWorkflow
-      )
-      vi.spyOn(workflowStore, 'isActive').mockReturnValue(true)
-      vi.spyOn(workflowStore, 'openWorkflow').mockResolvedValue(
-        existingWorkflow as LoadedComfyWorkflow
-      )
-      const createNewTemporarySpy = vi.spyOn(
-        workflowStore,
-        'createNewTemporary'
-      )
-
       await useWorkflowService().afterLoadNewGraph('repeat', {
         nodes: [{ id: 1, type: 'TestNode', pos: [0, 0], size: [100, 100] }]
       } as never)
@@ -385,9 +351,9 @@ describe('useWorkflowService', () => {
         'workflows/repeat.json'
       )
       expect(workflowStore.openWorkflow).toHaveBeenCalledWith(existingWorkflow)
-      expect(reset).toHaveBeenCalled()
-      expect(restore).toHaveBeenCalled()
-      expect(createNewTemporarySpy).not.toHaveBeenCalled()
+      expect(existingWorkflow.changeTracker.reset).toHaveBeenCalled()
+      expect(existingWorkflow.changeTracker.restore).toHaveBeenCalled()
+      expect(workflowStore.createNewTemporary).not.toHaveBeenCalled()
     })
   })
 
