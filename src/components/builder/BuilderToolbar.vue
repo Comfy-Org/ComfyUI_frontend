@@ -54,7 +54,7 @@
               : 'hover:bg-secondary-background bg-transparent'
           )
         "
-        @click="setSettingView(true)"
+        @click="showDialog()"
       >
         <StepBadge
           :step="defaultViewStep"
@@ -86,7 +86,7 @@ import { useAppSetDefaultView } from './useAppSetDefaultView'
 const { t } = useI18n()
 const { mode, setMode } = useAppMode()
 const { hasOutputs } = storeToRefs(useAppModeStore())
-const { settingView, setSettingView } = useAppSetDefaultView()
+const { settingView, showDialog } = useAppSetDefaultView()
 
 const activeStep = computed(() =>
   settingView.value ? 'setDefaultView' : mode.value

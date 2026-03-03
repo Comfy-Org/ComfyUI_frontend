@@ -1,4 +1,4 @@
-import { ref } from 'vue'
+import { computed } from 'vue'
 
 import { syncLinearMode } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
@@ -15,12 +15,7 @@ export function useAppSetDefaultView() {
   const dialogService = useDialogService()
   const dialogStore = useDialogStore()
 
-  const settingView = ref(false)
-
-  function setSettingView(value: boolean) {
-    settingView.value = value
-    if (value) showDialog()
-  }
+  const settingView = computed(() => dialogStore.isDialogOpen(DIALOG_KEY))
 
   function showDialog() {
     dialogService.showLayoutDialog({
@@ -30,9 +25,6 @@ export function useAppSetDefaultView() {
         initialOpenAsApp: workflowStore.activeWorkflow?.initialMode !== 'graph',
         onApply: handleApply,
         onClose: closeDialog
-      },
-      dialogComponentProps: {
-        onClose: reset
       }
     })
   }
@@ -48,12 +40,7 @@ export function useAppSetDefaultView() {
 
   function closeDialog() {
     dialogStore.closeDialog({ key: DIALOG_KEY })
-    reset()
   }
 
-  function reset() {
-    settingView.value = false
-  }
-
-  return { settingView, setSettingView }
+  return { settingView, showDialog }
 }

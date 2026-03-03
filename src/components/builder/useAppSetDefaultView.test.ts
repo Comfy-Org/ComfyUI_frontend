@@ -5,7 +5,8 @@ const mockDialogService = vi.hoisted(() => ({
 }))
 
 const mockDialogStore = vi.hoisted(() => ({
-  closeDialog: vi.fn()
+  closeDialog: vi.fn(),
+  isDialogOpen: vi.fn<(key: string) => boolean>().mockReturnValue(false)
 }))
 
 const mockWorkflowStore = vi.hoisted(() => ({
@@ -50,36 +51,26 @@ describe('useAppSetDefaultView', () => {
     mockWorkflowStore.activeWorkflow = null
   })
 
-  describe('setSettingView', () => {
-    it('opens dialog when set to true', () => {
-      const { setSettingView } = useAppSetDefaultView()
-      setSettingView(true)
-
-      expect(mockDialogService.showLayoutDialog).toHaveBeenCalledOnce()
-    })
-
-    it('does not open dialog when set to false', () => {
-      const { setSettingView } = useAppSetDefaultView()
-      setSettingView(false)
-
-      expect(mockDialogService.showLayoutDialog).not.toHaveBeenCalled()
-    })
-
-    it('resets settingView when set to false', () => {
-      const { settingView, setSettingView } = useAppSetDefaultView()
-      setSettingView(true)
+  describe('settingView', () => {
+    it('reflects dialogStore.isDialogOpen', () => {
+      mockDialogStore.isDialogOpen.mockReturnValue(true)
+      const { settingView } = useAppSetDefaultView()
       expect(settingView.value).toBe(true)
-
-      setSettingView(false)
-      expect(settingView.value).toBe(false)
     })
   })
 
   describe('showDialog', () => {
+    it('opens dialog via dialogService', () => {
+      const { showDialog } = useAppSetDefaultView()
+      showDialog()
+
+      expect(mockDialogService.showLayoutDialog).toHaveBeenCalledOnce()
+    })
+
     it('passes initialOpenAsApp true when initialMode is not graph', () => {
       mockWorkflowStore.activeWorkflow = { initialMode: 'app' }
-      const { setSettingView } = useAppSetDefaultView()
-      setSettingView(true)
+      const { showDialog } = useAppSetDefaultView()
+      showDialog()
 
       const call = mockDialogService.showLayoutDialog.mock.calls[0][0]
       expect(call.props.initialOpenAsApp).toBe(true)
@@ -87,8 +78,8 @@ describe('useAppSetDefaultView', () => {
 
     it('passes initialOpenAsApp false when initialMode is graph', () => {
       mockWorkflowStore.activeWorkflow = { initialMode: 'graph' }
-      const { setSettingView } = useAppSetDefaultView()
-      setSettingView(true)
+      const { showDialog } = useAppSetDefaultView()
+      showDialog()
 
       const call = mockDialogService.showLayoutDialog.mock.calls[0][0]
       expect(call.props.initialOpenAsApp).toBe(false)
@@ -96,8 +87,8 @@ describe('useAppSetDefaultView', () => {
 
     it('passes initialOpenAsApp true when no active workflow', () => {
       mockWorkflowStore.activeWorkflow = null
-      const { setSettingView } = useAppSetDefaultView()
-      setSettingView(true)
+      const { showDialog } = useAppSetDefaultView()
+      showDialog()
 
       const call = mockDialogService.showLayoutDialog.mock.calls[0][0]
       expect(call.props.initialOpenAsApp).toBe(true)
@@ -109,8 +100,8 @@ describe('useAppSetDefaultView', () => {
       const workflow = { initialMode: null as string | null }
       mockWorkflowStore.activeWorkflow = workflow
 
-      const { setSettingView } = useAppSetDefaultView()
-      setSettingView(true)
+      const { showDialog } = useAppSetDefaultView()
+      showDialog()
 
       const call = mockDialogService.showLayoutDialog.mock.calls[0][0]
       call.props.onApply(true)
@@ -122,8 +113,8 @@ describe('useAppSetDefaultView', () => {
       const workflow = { initialMode: null as string | null }
       mockWorkflowStore.activeWorkflow = workflow
 
-      const { setSettingView } = useAppSetDefaultView()
-      setSettingView(true)
+      const { showDialog } = useAppSetDefaultView()
+      showDialog()
 
       const call = mockDialogService.showLayoutDialog.mock.calls[0][0]
       call.props.onApply(false)
@@ -135,8 +126,8 @@ describe('useAppSetDefaultView', () => {
       const workflow = { initialMode: null as string | null }
       mockWorkflowStore.activeWorkflow = workflow
 
-      const { setSettingView } = useAppSetDefaultView()
-      setSettingView(true)
+      const { showDialog } = useAppSetDefaultView()
+      showDialog()
 
       const call = mockDialogService.showLayoutDialog.mock.calls[0][0]
       call.props.onApply(true)
@@ -149,8 +140,8 @@ describe('useAppSetDefaultView', () => {
     it('closes dialog after applying', () => {
       mockWorkflowStore.activeWorkflow = { initialMode: null }
 
-      const { settingView, setSettingView } = useAppSetDefaultView()
-      setSettingView(true)
+      const { showDialog } = useAppSetDefaultView()
+      showDialog()
 
       const call = mockDialogService.showLayoutDialog.mock.calls[0][0]
       call.props.onApply(true)
@@ -158,14 +149,13 @@ describe('useAppSetDefaultView', () => {
       expect(mockDialogStore.closeDialog).toHaveBeenCalledWith({
         key: 'builder-default-view'
       })
-      expect(settingView.value).toBe(false)
     })
 
     it('does nothing when no active workflow', () => {
       mockWorkflowStore.activeWorkflow = null
 
-      const { setSettingView } = useAppSetDefaultView()
-      setSettingView(true)
+      const { showDialog } = useAppSetDefaultView()
+      showDialog()
 
       const call = mockDialogService.showLayoutDialog.mock.calls[0][0]
       call.props.onApply(true)
