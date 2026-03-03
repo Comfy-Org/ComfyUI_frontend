@@ -44,7 +44,8 @@ const props = defineProps<{
 
 defineEmits<{ navigateAssets: [] }>()
 
-const jobFinishedQueue = ref(true)
+//NOTE: due to batching, will never be greater than 2
+const pendingJobQueues = ref(0)
 const { ready: jobToastTimeout, start: resetJobToastTimeout } = useTimeout(
   8000,
   { controls: true, immediate: false }
@@ -136,9 +137,8 @@ const partitionedNodes = computed(() => {
 //TODO: refactor out of this file.
 //code length is small, but changes should propagate
 async function runButtonClick(e: Event) {
-  if (!jobFinishedQueue.value) return
   try {
-    jobFinishedQueue.value = false
+    pendingJobQueues.value += 1
     resetJobToastTimeout()
     const isShiftPressed = 'shiftKey' in e && e.shiftKey
     const commandId = isShiftPressed
@@ -158,7 +158,7 @@ async function runButtonClick(e: Event) {
     })
   } finally {
     //TODO: Error state indicator for failed queue?
-    jobFinishedQueue.value = true
+    pendingJobQueues.value -= 1
   }
 }
 
@@ -247,7 +247,7 @@ defineExpose({ runButtonClick })
         </template>
       </section>
       <Teleport
-        v-if="!jobToastTimeout || !jobFinishedQueue"
+        v-if="!jobToastTimeout || pendingJobQueues > 0"
         defer
         :disabled="mobile"
         :to="toastTo"
@@ -255,7 +255,7 @@ defineExpose({ runButtonClick })
         <div
           class="bg-base-foreground md:bg-secondary-background text-base-background md:text-base-foreground rounded-lg flex h-10 md:h-8 p-1 pr-2 gap-2 items-center"
         >
-          <template v-if="jobFinishedQueue">
+          <template v-if="pendingJobQueues === 0">
             <i
               class="icon-[lucide--check] size-5 not-md:bg-success-background"
             />
