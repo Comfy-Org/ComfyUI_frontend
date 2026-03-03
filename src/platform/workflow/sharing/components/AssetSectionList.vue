@@ -49,6 +49,12 @@
             <span class="truncate text-xs text-base-foreground">
               {{ item.name }}
             </span>
+            <span
+              v-if="item.in_library"
+              class="ml-auto shrink-0 text-xs text-muted-foreground"
+            >
+              {{ $t('shareWorkflow.inLibrary') }}
+            </span>
           </div>
         </div>
       </CollapsibleContent>

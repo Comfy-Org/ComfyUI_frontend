@@ -3027,6 +3027,7 @@
     "modelsLabel": "{count} Model | {count} Models",
     "checkingAssets": "Checking media visibility…",
     "acknowledgeCheckbox": "I understand these media items will be published and made public",
+    "inLibrary": "In library",
     "comfyHubTitle": "Upload to ComfyHub",
     "comfyHubDescription": "ComfyHub is ComfyUI's official community hub.\nYour workflow will have a public page viewable by all.",
     "comfyHubButton": "Upload to ComfyHub"

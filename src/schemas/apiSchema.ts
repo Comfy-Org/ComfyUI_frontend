@@ -502,24 +502,8 @@ export const zAssetInfo = z.object({
 
 export type AssetInfo = z.infer<typeof zAssetInfo>
 
-const zWorkflowAsset = z.object({
-  id: z.string(),
-  name: z.string(),
-  storage_url: z.string().nullable().optional(),
-  thumbnailUrl: z.string().nullable().optional()
-})
-
-const zWorkflowModel = z.object({
-  id: z.string(),
-  name: z.string(),
-  storage_url: z.string().nullable().optional(),
-  thumbnailUrl: z.string().nullable().optional()
-})
-
 const zShareableAssetsResponse = z.object({
   assets: z.array(zAssetInfo)
 })
 
-export type WorkflowAsset = z.infer<typeof zWorkflowAsset>
-export type WorkflowModel = z.infer<typeof zWorkflowModel>
 export type ShareableAssetsResponse = z.infer<typeof zShareableAssetsResponse>
