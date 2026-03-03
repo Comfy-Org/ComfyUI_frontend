@@ -1055,6 +1055,44 @@
         "unpublished": "Unpublished"
       }
     },
+    "publish": {
+      "title": "Publish Template",
+      "stepMetadata": "Details",
+      "stepMedia": "Media",
+      "stepReview": "Review",
+      "selectWorkflow": "Workflow",
+      "selectWorkflowPlaceholder": "Choose a workflow to submit...",
+      "shortDescription": "Short Description",
+      "shortDescriptionPlaceholder": "Provide a short description of your workflow",
+      "difficulty": "Difficulty",
+      "beginner": "Beginner",
+      "intermediate": "Intermediate",
+      "advanced": "Advanced",
+      "categories": "Categories",
+      "version": "Version",
+      "changelog": "Changelog",
+      "changelogPlaceholder": "What changed in this version...",
+      "mediaMode": {
+        "label": "Display Mode",
+        "gallery": "Gallery",
+        "comparison": "Comparison",
+        "video": "Video"
+      },
+      "compareMode": "Before / After comparison",
+      "mediaUpload": "Upload Files",
+      "mediaUploadHintImages": "Upload 1-6 images to showcase your template",
+      "mediaUploadHintCompare": "Upload a before image and an after image",
+      "mediaUploadHintVideo": "Upload a short video preview",
+      "addFile": "Add",
+      "fileCount": "{count} file | {count} files",
+      "before": "Before",
+      "after": "After",
+      "submit": "Submit for Review",
+      "cancel": "Cancel",
+      "back": "Back",
+      "next": "Next",
+      "newTemplate": "New Template"
+    },
     "error": {
       "templateNotFound": "Template \"{templateName}\" not found"
     }

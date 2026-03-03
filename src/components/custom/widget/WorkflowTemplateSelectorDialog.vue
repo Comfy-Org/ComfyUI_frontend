@@ -103,20 +103,42 @@
       </div>
       <div
         v-if="!isLoading"
-        class="text-neutral px-6 pt-4 pb-2 text-2xl font-semibold"
+        class="text-neutral px-6 pt-4 pb-2 text-2xl font-semibold flex items-center gap-1"
       >
-        <span>
-          {{ pageTitle }}
-        </span>
+        <template v-if="isMyTemplatesView && isPublishing">
+          <a
+            class="cursor-pointer text-muted transition-colors hover:text-foreground hover:underline"
+            @click.prevent="cancelPublishing"
+          >
+            {{ pageTitle }}
+          </a>
+          <StepBreadcrumbs
+            :labels="stepLabels"
+            :current-step="publishWizard.currentStep.value"
+            @navigate="(step) => publishWizard.goToStep(step)"
+          />
+        </template>
+        <template v-else>
+          <span>
+            {{ pageTitle }}
+          </span>
+        </template>
       </div>
     </template>
 
     <template #content>
+      <PublishTemplateWizard
+        v-if="isMyTemplatesView && isPublishing"
+        @cancel="cancelPublishing"
+        @submitted="onPublishSubmitted"
+      />
+
       <MyTemplatesGrid
-        v-if="isMyTemplatesView"
+        v-else-if="isMyTemplatesView"
         :templates="myTemplates"
         :loading="isMyTemplatesLoading"
         @select="(template) => (selected = template)"
+        @create="startPublishing"
       />
 
       <!-- No Results State (only show when loaded and no results) -->
@@ -422,6 +444,7 @@ import CardContainer from '@/components/card/CardContainer.vue'
 import CardTop from '@/components/card/CardTop.vue'
 import SquareChip from '@/components/chip/SquareChip.vue'
 import SearchBox from '@/components/common/SearchBox.vue'
+import StepBreadcrumbs from '@/components/common/StepBreadcrumbs.vue'
 import MultiSelect from '@/components/input/MultiSelect.vue'
 import SingleSelect from '@/components/input/SingleSelect.vue'
 import AudioThumbnail from '@/components/templates/thumbnails/AudioThumbnail.vue'
@@ -433,6 +456,9 @@ import Button from '@/components/ui/button/Button.vue'
 import WorkflowTemplateDetailsPanel from '@/components/custom/widget/WorkflowTemplateDetailsPanel.vue'
 import MyTemplatesGrid from '@/platform/marketplace/components/MyTemplatesGrid.vue'
 import { useMyTemplates } from '@/platform/marketplace/composables/useMyTemplates'
+import type { MarketplaceTemplate } from '@/platform/marketplace/types/marketplace'
+import PublishTemplateWizard from '@/platform/marketplace/components/PublishTemplateWizard.vue'
+import { usePublishTemplateWizard } from '@/platform/marketplace/composables/usePublishTemplateWizard'
 import BaseModalLayout from '@/components/widget/layout/BaseModalLayout.vue'
 import LeftSidePanel from '@/components/widget/panel/LeftSidePanel.vue'
 import { useIntersectionObserver } from '@/composables/useIntersectionObserver'
@@ -449,7 +475,6 @@ import type { NavGroupData, NavItemData } from '@/types/navTypes'
 import { OnCloseKey } from '@/types/widgetTypes'
 import { createGridStyle } from '@/utils/gridUtil'
 import { cn } from '@/utils/tailwindUtil'
-import type { MarketplaceTemplate } from '@/platform/marketplace/types/marketplace'
 
 const { t } = useI18n()
 
@@ -526,8 +551,34 @@ const onClose = () => {
 
 provide(OnCloseKey, onClose)
 
-const { templates: myTemplates, isLoading: isMyTemplatesLoading } =
-  useMyTemplates()
+const {
+  templates: myTemplates,
+  isLoading: isMyTemplatesLoading,
+  refresh: refreshMyTemplates
+} = useMyTemplates()
+
+const isPublishing = ref(false)
+const publishWizard = usePublishTemplateWizard()
+
+function startPublishing() {
+  publishWizard.resetWizard()
+  isPublishing.value = true
+}
+
+function cancelPublishing() {
+  isPublishing.value = false
+}
+
+function onPublishSubmitted() {
+  isPublishing.value = false
+  void refreshMyTemplates()
+}
+
+const stepLabels = [
+  t('templateWorkflows.publish.stepMetadata'),
+  t('templateWorkflows.publish.stepMedia'),
+  t('templateWorkflows.publish.stepReview')
+]
 
 const isMyTemplatesView = computed(
   () => selectedNavItem.value === 'my-templates'
@@ -668,7 +719,10 @@ const coordinateNavAndSort = (source: 'nav' | 'sort') => {
 }
 
 // Watch for changes from the two sources ('nav' and 'sort') and trigger the coordinator.
-watch(selectedNavItem, () => coordinateNavAndSort('nav'))
+watch(selectedNavItem, () => {
+  coordinateNavAndSort('nav')
+  selected.value = null
+})
 watch(sortBy, () => coordinateNavAndSort('sort'))
 
 // Convert between string array and object array for MultiSelect component

@@ -21,15 +21,6 @@ export const templateStatusSchema = z.enum([
   'unpublished'
 ])
 
-export const galleryItemTypeSchema = z.enum(['image', 'video'])
-
-export const galleryItemSchema = z.object({
-  type: galleryItemTypeSchema,
-  url: z.string().url(),
-  caption: z.string().optional(),
-  isBefore: z.boolean().optional()
-})
-
 export const templateStatsSchema = z.object({
   downloads: z.number().nonnegative(),
   favorites: z.number().nonnegative(),
@@ -47,9 +38,33 @@ export const authorInfoSchema = z.object({
 })
 
 export const templateInfoSchema = z.custom<TemplateInfo>(
-  // todo: should have a template schema under workflow/templates/schemas
   (value) => value != null && typeof value === 'object' && 'name' in value
 )
+
+export const thumbnailVariantSchema = z.enum([
+  'default',
+  'compareSlider',
+  'hoverDissolve'
+])
+
+export const metadataSchema = z.object({
+  shortDescription: z.string().min(1).max(200),
+  difficulty: difficultySchema
+})
+
+export const mediaStepSchema = z
+  .object({
+    mediaType: z.string().min(1, 'Select a media type'),
+    thumbnailVariant: thumbnailVariantSchema,
+    fileCount: z.number().min(1, 'Upload at least one file')
+  })
+  .refine(
+    (data) => data.thumbnailVariant !== 'compareSlider' || data.fileCount === 2,
+    {
+      message: 'Before/after comparison requires exactly 2 images',
+      path: ['fileCount']
+    }
+  )
 
 export const marketplaceTemplateSchema = z.object({
   id: z.string().min(1),
@@ -57,31 +72,23 @@ export const marketplaceTemplateSchema = z.object({
   shortDescription: z.string().max(200),
   author: authorInfoSchema,
   difficulty: difficultySchema,
-  categories: z.array(z.string()).min(1),
-
-  gallery: z.array(galleryItemSchema).max(6),
-  videoPreview: z.string().url().optional(),
-  workflowPreview: z.string(),
-
-  version: z.string().min(1),
+  categories: z.array(z.string()).optional(),
   changelog: z.string().optional(),
+  version: z.string().min(1),
   status: templateStatusSchema,
   reviewFeedback: z.string().optional(),
   publishedAt: z.string().optional(),
   updatedAt: z.string(),
   createdAt: z.string(),
-
   stats: templateStatsSchema
 })
 
+// Create request (what the wizard submits)
 export const createTemplateRequestSchema = z.object({
   template: templateInfoSchema,
   shortDescription: z.string().min(1).max(200),
   difficulty: difficultySchema,
-  categories: z.array(z.string()).min(1),
-  gallery: z.array(galleryItemSchema).max(6),
-  videoPreview: z.string().url().optional(),
-  workflowPreview: z.string().min(1),
+  categories: z.array(z.string()).optional(),
   version: z.string().min(1),
   changelog: z.string().optional()
 })

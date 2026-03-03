@@ -22,8 +22,6 @@ export function createMockMarketplaceTemplate(
     },
     difficulty: 'beginner',
     categories: ['Image Generation'],
-    gallery: [],
-    workflowPreview: '/previews/test.png',
     version: '1.0.0',
     status: 'draft',
     updatedAt: new Date().toISOString(),
