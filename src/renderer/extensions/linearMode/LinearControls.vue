@@ -5,6 +5,7 @@ import { storeToRefs } from 'pinia'
 import { computed, ref, shallowRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import ScrubableNumberInput from '@/components/common/ScrubableNumberInput.vue'
 import Popover from '@/components/ui/Popover.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { extractVueNodeData } from '@/composables/graph/useGraphNodeManager'
@@ -17,13 +18,11 @@ import { useTelemetry } from '@/platform/telemetry'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import DropZone from '@/renderer/extensions/linearMode/DropZone.vue'
 import NodeWidgets from '@/renderer/extensions/vueNodes/components/NodeWidgets.vue'
-import WidgetInputNumberInput from '@/renderer/extensions/vueNodes/widgets/components/WidgetInputNumber.vue'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { useCommandStore } from '@/stores/commandStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useQueueSettingsStore } from '@/stores/queueStore'
-import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import { cn } from '@/utils/tailwindUtil'
 import { useAppMode } from '@/composables/useAppMode'
 import { useAppModeStore } from '@/stores/appModeStore'
@@ -134,17 +133,6 @@ const partitionedNodes = computed(() => {
   return parts
 })
 
-const batchCountWidget: SimplifiedWidget<number> = {
-  options: {
-    precision: 0,
-    min: 1,
-    max: settingStore.get('Comfy.QueueButton.BatchCountLimit')
-  },
-  value: 1,
-  name: t('linearMode.runCount'),
-  type: 'number'
-} as const
-
 //TODO: refactor out of this file.
 //code length is small, but changes should propagate
 async function runButtonClick(e: Event) {
@@ -249,7 +237,7 @@ defineExpose({ runButtonClick })
               :node-data
               :class="
                 cn(
-                  'py-3 gap-y-3 **:[.col-span-2]:grid-cols-1 *:has-[textarea]:h-50 rounded-lg **:[.h-7]:h-10 **:[.h-7_button.w-8]:w-12',
+                  'py-3 gap-y-3 **:[.col-span-2]:grid-cols-1 *:has-[textarea]:h-50 rounded-lg **:[.h-7]:h-10',
                   nodeData.hasErrors &&
                     'ring-2 ring-inset ring-node-stroke-error'
                 )
@@ -303,10 +291,16 @@ defineExpose({ runButtonClick })
                 <div v-else class="tabular-nums" v-text="`${batchCount}x`" />
               </Button>
             </template>
-            <WidgetInputNumberInput
+            <div
+              class="mb-2 m-1 text-node-component-slot-text"
+              v-text="t('linearMode.runCount')"
+            />
+            <ScrubableNumberInput
               v-model="batchCount"
-              :widget="batchCountWidget"
-              class="*:[.min-w-0]:w-40 **:[.h-7]:h-10 **:[.h-7_button.w-8]:w-12"
+              :aria-label="t('linearMode.runCount')"
+              :min="1"
+              :max="settingStore.get('Comfy.QueueButton.BatchCountLimit')"
+              class="h-10 min-w-40"
             />
           </Popover>
           <Button
@@ -325,11 +319,16 @@ defineExpose({ runButtonClick })
         data-testid="linear-run-button"
         class="p-4 pb-6 border-t border-node-component-border"
       >
-        <WidgetInputNumberInput
+        <div
+          class="mb-2 m-1 text-node-component-slot-text"
+          v-text="t('linearMode.runCount')"
+        />
+        <ScrubableNumberInput
           v-model="batchCount"
-          :widget="batchCountWidget"
-          root-class="text-base-foreground grid-cols-[auto_96px]"
-          class="*:[.min-w-0]:w-24"
+          :aria-label="t('linearMode.runCount')"
+          :min="1"
+          :max="settingStore.get('Comfy.QueueButton.BatchCountLimit')"
+          class="h-7 min-w-40"
         />
         <SubscribeToRunButton
           v-if="!isActiveSubscription"
