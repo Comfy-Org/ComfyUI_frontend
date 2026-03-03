@@ -53,9 +53,9 @@
         />
       </div>
       <ComfyHubPublishFooter
-        :is-first-step="isFirstStep"
-        :is-last-step="isLastStep"
-        :is-publish-disabled="isPublishDisabled"
+        :is-first-step
+        :is-last-step
+        :is-publish-disabled
         @back="onGoBack"
         @next="onGoNext"
         @publish="handlePublish"

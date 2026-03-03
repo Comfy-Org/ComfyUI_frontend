@@ -35,7 +35,7 @@ function decodePublishRecord(payload: unknown) {
     workflowId: r.workflow_id,
     shareId: r.share_id ?? undefined,
     listed: r.listed,
-    publishedAt: r.publish_time ?? undefined,
+    publishedAt: parsePublishedAt(r.publish_time),
     shareUrl: r.share_id ? normalizeShareUrl(r.share_id) : undefined
   }
 }
@@ -45,11 +45,6 @@ function parsePublishedAt(value: string | null | undefined): Date | null {
 
   const parsed = new Date(value)
   return Number.isNaN(parsed.getTime()) ? null : parsed
-}
-
-function extractShareId(rawShareUrl: string): string | null {
-  const match = rawShareUrl.match(/\/workflows\/published\/([^/?#]+)/)
-  return match?.[1] ?? null
 }
 
 function normalizeShareUrl(shareId: string): string {
@@ -76,17 +71,18 @@ function decodeSharedWorkflowPayload(
     name: r.name,
     listed: r.listed,
     publishedAt: r.publish_time ? parsePublishedAt(r.publish_time) : null,
+    // workflow_json is validated by our backend publish pipeline before storage
     workflowJson: r.workflow_json as ComfyWorkflowJSON,
     assets: r.assets
   }
 }
 
-const UNPUBLISHED: Readonly<WorkflowPublishStatus> = {
+const UNPUBLISHED = {
   isPublished: false,
   shareId: null,
   shareUrl: null,
   publishedAt: null
-} as const
+} as const satisfies WorkflowPublishStatus
 
 export function useWorkflowShareService() {
   async function publishWorkflow(
@@ -108,15 +104,14 @@ export function useWorkflowShareService() {
     }
 
     const record = decodePublishRecord(await response.json())
-    const publishedAt = parsePublishedAt(record?.publishedAt)
-    if (!record?.shareId || !publishedAt) {
+    if (!record?.shareId || !record.publishedAt) {
       throw new Error('Failed to publish workflow: invalid response')
     }
 
     return {
       shareId: record.shareId,
       shareUrl: normalizeShareUrl(record.shareId),
-      publishedAt
+      publishedAt: record.publishedAt
     }
   }
 
@@ -135,8 +130,7 @@ export function useWorkflowShareService() {
       return UNPUBLISHED
     }
 
-    const publishedAt = parsePublishedAt(record.publishedAt)
-    if (!publishedAt) {
+    if (!record.publishedAt) {
       return UNPUBLISHED
     }
 
@@ -144,7 +138,7 @@ export function useWorkflowShareService() {
       isPublished: true,
       shareId: record.shareId,
       shareUrl: normalizeShareUrl(record.shareId),
-      publishedAt
+      publishedAt: record.publishedAt
     }
   }
 
@@ -188,7 +182,6 @@ export function useWorkflowShareService() {
   }
 
   return {
-    extractShareId,
     publishWorkflow,
     getPublishStatus,
     getShareableAssets,

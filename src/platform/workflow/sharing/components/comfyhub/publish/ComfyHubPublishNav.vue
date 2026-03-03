@@ -7,9 +7,11 @@
         :key="step.name"
         v-auto-animate
         :class="
-          isProfileCreationFlow && step.name === 'finish'
-            ? 'rounded-lg bg-secondary-background-hover'
-            : ''
+          cn(
+            isProfileCreationFlow &&
+              step.name === 'finish' &&
+              'rounded-lg bg-secondary-background-hover'
+          )
         "
       >
         <Button
@@ -73,7 +75,7 @@ import { useI18n } from 'vue-i18n'
 
 type ComfyHubPrimaryStep = Exclude<ComfyHubPublishStep, 'profileCreation'>
 
-const props = defineProps<{
+const { currentStep } = defineProps<{
   currentStep: ComfyHubPublishStep
 }>()
 
@@ -97,22 +99,24 @@ const steps = [
   { name: 'finish' as const, number: 3, label: t('comfyHubPublish.stepFinish') }
 ]
 
-const isProfileCreationFlow = computed(
-  () => props.currentStep === 'profileCreation'
-)
+const isProfileCreationFlow = computed(() => currentStep === 'profileCreation')
 
 const currentStepNumber = computed(() => {
   if (isProfileCreationFlow.value) {
     return 3
   }
 
-  return steps.find((step) => step.name === props.currentStep)?.number ?? 0
+  return steps.find((step) => step.name === currentStep)?.number ?? 0
 })
 
-const isCurrentStep = (stepName: ComfyHubPrimaryStep) =>
-  props.currentStep === stepName
+function isCurrentStep(stepName: ComfyHubPrimaryStep) {
+  return currentStep === stepName
+}
 
-const isCompletedStep = (stepName: ComfyHubPrimaryStep) =>
-  (steps.find((step) => step.name === stepName)?.number ?? 0) <
-  currentStepNumber.value
+function isCompletedStep(stepName: ComfyHubPrimaryStep) {
+  return (
+    (steps.find((step) => step.name === stepName)?.number ?? 0) <
+    currentStepNumber.value
+  )
+}
 </script>

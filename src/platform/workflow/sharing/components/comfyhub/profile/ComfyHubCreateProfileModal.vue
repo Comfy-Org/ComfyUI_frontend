@@ -62,9 +62,11 @@
           </label>
           <div class="relative">
             <span
-              class="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-sm"
               :class="
-                username ? 'text-base-foreground' : 'text-muted-foreground'
+                cn(
+                  'pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-sm',
+                  username ? 'text-base-foreground' : 'text-muted-foreground'
+                )
               "
             >
               @
@@ -86,28 +88,6 @@
             :placeholder="$t('comfyHubProfile.descriptionPlaceholder')"
             class="h-[98px] resize-none rounded-lg border-none bg-secondary-background px-4 py-4 text-sm shadow-none"
           />
-        </div>
-
-        <div class="flex flex-col gap-2">
-          <label class="text-sm text-muted-foreground">
-            {{ $t('comfyHubProfile.socialLinksLabel') }}
-          </label>
-          <div class="flex flex-col gap-2">
-            <Input
-              v-for="(_, index) in socialLinks"
-              :key="index"
-              v-model="socialLinks[index]"
-              :placeholder="$t('comfyHubProfile.socialLinkPlaceholder')"
-            />
-          </div>
-          <Button
-            size="sm"
-            class="mt-2 h-8 w-fit gap-1 rounded-lg bg-secondary-background px-3 text-xs text-base-foreground hover:bg-secondary-background-selected"
-            @click="addSocialLink"
-          >
-            <i class="icon-[lucide--plus] size-3" />
-            {{ $t('comfyHubProfile.addAnotherLink') }}
-          </Button>
         </div>
       </div>
     </div>
@@ -139,6 +119,7 @@ import { computed, onBeforeUnmount, ref } from 'vue'
 import { useToast } from 'primevue/usetoast'
 import { useI18n } from 'vue-i18n'
 
+import { cn } from '@/utils/tailwindUtil'
 import Button from '@/components/ui/button/Button.vue'
 import Input from '@/components/ui/input/Input.vue'
 import Textarea from '@/components/ui/textarea/Textarea.vue'
@@ -162,7 +143,6 @@ const { t } = useI18n()
 const name = ref('')
 const username = ref('')
 const description = ref('')
-const socialLinks = ref<string[]>([''])
 const profilePictureFile = ref<File | null>(null)
 const profilePreviewUrl = ref<string | null>(null)
 const isCreating = ref(false)
@@ -182,10 +162,6 @@ function handleProfileSelect(event: Event) {
   const input = event.target as HTMLInputElement
   const file = input.files?.[0]
   if (file) setProfilePreview(file)
-}
-
-function addSocialLink() {
-  socialLinks.value = [...socialLinks.value, '']
 }
 
 async function handleCreate() {

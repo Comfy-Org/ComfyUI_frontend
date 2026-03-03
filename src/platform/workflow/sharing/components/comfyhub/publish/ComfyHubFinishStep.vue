@@ -237,10 +237,11 @@
 <script setup lang="ts">
 import Button from '@/components/ui/button/Button.vue'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
+import { useSliderFromMouse } from '@/platform/workflow/sharing/composables/useSliderFromMouse'
 import type { ThumbnailType } from '@/platform/workflow/sharing/types/comfyHubTypes'
 import { cn } from '@/utils/tailwindUtil'
-import { useDropZone, useMouseInElement } from '@vueuse/core'
-import { computed, onBeforeUnmount, reactive, ref, watch } from 'vue'
+import { useDropZone } from '@vueuse/core'
+import { computed, onBeforeUnmount, reactive, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 const { thumbnailType = 'image', embedded = false } = defineProps<{
@@ -314,16 +315,8 @@ onBeforeUnmount(() => {
   }
 })
 
-const compareSliderPosition = ref(50)
 const compareContainerRef = ref<HTMLElement | null>(null)
-const { elementX, elementWidth, isOutside } =
-  useMouseInElement(compareContainerRef)
-
-watch([elementX, elementWidth, isOutside], ([x, width, outside]) => {
-  if (!outside && width > 0) {
-    compareSliderPosition.value = (x / width) * 100
-  }
-})
+const compareSliderPosition = useSliderFromMouse(compareContainerRef)
 
 function setThumbnailPreview(file: File) {
   if (thumbnailPreviewUrl.value) {
@@ -346,18 +339,7 @@ const hasBothComparisonImages = computed(
 )
 
 const comparisonPreviewRef = ref<HTMLElement | null>(null)
-const previewSliderPosition = ref(50)
-const {
-  elementX: previewX,
-  elementWidth: previewWidth,
-  isOutside: previewIsOutside
-} = useMouseInElement(comparisonPreviewRef)
-
-watch([previewX, previewWidth, previewIsOutside], ([x, width, outside]) => {
-  if (!outside && width > 0) {
-    previewSliderPosition.value = (x / width) * 100
-  }
-})
+const previewSliderPosition = useSliderFromMouse(comparisonPreviewRef)
 
 const hasThumbnailContent = computed(() => {
   if (thumbnailType === 'imageComparison') {
@@ -394,7 +376,7 @@ function isImageType(types: readonly string[]) {
   return types.some((type) => type.startsWith('image/'))
 }
 
-function isVideoType(types: readonly string[]) {
+function isMediaType(types: readonly string[]) {
   return types.some(
     (type) => type.startsWith('video/') || type.startsWith('image/')
   )
@@ -402,7 +384,7 @@ function isVideoType(types: readonly string[]) {
 
 const { isOverDropZone: isOverSingleDrop } = useDropZone(singleDropRef, {
   dataTypes: (types: readonly string[]) =>
-    thumbnailType === 'video' ? isVideoType(types) : isImageType(types),
+    thumbnailType === 'video' ? isMediaType(types) : isImageType(types),
   multiple: false,
   onDrop(files) {
     const file = files?.[0]
@@ -463,11 +445,6 @@ function handleComparisonSelect(event: Event, slot: ComparisonSlot) {
 const comparisonDropRefs = reactive<Record<ComparisonSlot, HTMLElement | null>>(
   { before: null, after: null }
 )
-const comparisonOverStates = reactive<Record<ComparisonSlot, boolean>>({
-  before: false,
-  after: false
-})
-
 const { isOverDropZone: isOverBefore } = useDropZone(
   computed(() => comparisonDropRefs.before),
   {
@@ -496,8 +473,8 @@ const { isOverDropZone: isOverAfter } = useDropZone(
   }
 )
 
-watch([isOverBefore, isOverAfter], ([before, after]) => {
-  comparisonOverStates.before = before
-  comparisonOverStates.after = after
-})
+const comparisonOverStates = computed(() => ({
+  before: isOverBefore.value,
+  after: isOverAfter.value
+}))
 </script>

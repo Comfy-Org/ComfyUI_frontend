@@ -2,21 +2,21 @@
   <ComfyHubIntroPopover
     v-if="stepper.isCurrent('intro')"
     :on-create-profile="stepper.goToNext"
-    :on-close="close"
-    :show-close-button="showCloseButton"
+    :on-close
+    :show-close-button
   />
   <ComfyHubCreateProfileModal
     v-else-if="stepper.isCurrent('create')"
-    :on-profile-created="handleProfileCreated"
-    :on-close="close"
-    :show-close-button="showCloseButton"
+    :on-profile-created
+    :on-close
+    :show-close-button
   />
   <ComfyHubProfileSuccessPopover
     v-else-if="stepper.isCurrent('success') && createdProfile"
     :profile="createdProfile"
-    :on-upload="handleUpload"
-    :on-close="close"
-    :show-close-button="showCloseButton"
+    :on-upload="onComplete"
+    :on-close
+    :show-close-button
   />
 </template>
 
@@ -45,22 +45,14 @@ const {
 }>()
 
 const stepper = useStepper(['intro', 'create', 'success'])
-const createdProfile = ref<ComfyHubProfile | null>(null)
+const createdProfile = ref<ComfyHubProfile>()
 
 onMounted(() => {
   stepper.goTo(initialStep)
 })
 
-function handleProfileCreated(profile: ComfyHubProfile) {
+function onProfileCreated(profile: ComfyHubProfile) {
   createdProfile.value = profile
   stepper.goToNext()
-}
-
-function handleUpload() {
-  onComplete()
-}
-
-function close() {
-  onClose()
 }
 </script>

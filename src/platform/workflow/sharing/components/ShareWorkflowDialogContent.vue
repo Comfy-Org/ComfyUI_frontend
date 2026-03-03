@@ -75,7 +75,13 @@
           </Button>
         </template>
 
-        <template v-if="dialogState === 'ready'">
+        <template v-if="dialogState === 'ready' || dialogState === 'stale'">
+          <p
+            v-if="dialogState === 'stale'"
+            class="m-0 text-xs text-muted-foreground"
+          >
+            {{ $t('shareWorkflow.hasChangesDescription') }}
+          </p>
           <p
             v-if="isLoadingAssets"
             class="m-0 text-sm italic text-muted-foreground"
@@ -95,11 +101,7 @@
             "
             @click="handlePublish"
           >
-            {{
-              isPublishing
-                ? $t('shareWorkflow.creatingLink')
-                : $t('shareWorkflow.createLinkButton')
-            }}
+            {{ publishButtonLabel }}
           </Button>
         </template>
 
@@ -116,37 +118,6 @@
               {{ $t('shareWorkflow.successDescription') }}
             </p>
           </div>
-        </template>
-
-        <template v-if="dialogState === 'stale'">
-          <p class="m-0 text-xs text-muted-foreground">
-            {{ $t('shareWorkflow.hasChangesDescription') }}
-          </p>
-          <p
-            v-if="isLoadingAssets"
-            class="m-0 text-xs italic text-muted-foreground"
-          >
-            {{ $t('shareWorkflow.checkingAssets') }}
-          </p>
-          <ShareAssetWarningBox
-            v-else-if="requiresAcknowledgment"
-            v-model:acknowledged="acknowledged"
-            :items="assetInfo"
-          />
-          <Button
-            variant="primary"
-            size="lg"
-            :disabled="
-              isPublishing || (requiresAcknowledgment && !acknowledged)
-            "
-            @click="handlePublish"
-          >
-            {{
-              isPublishing
-                ? $t('shareWorkflow.updatingLink')
-                : $t('shareWorkflow.updateLinkButton')
-            }}
-          </Button>
         </template>
       </div>
       <div
@@ -299,6 +270,17 @@ const formattedDate = computed(() => {
     month: 'long',
     day: 'numeric'
   })
+})
+
+const publishButtonLabel = computed(() => {
+  if (dialogState.value === 'stale') {
+    return isPublishing.value
+      ? t('shareWorkflow.updatingLink')
+      : t('shareWorkflow.updateLinkButton')
+  }
+  return isPublishing.value
+    ? t('shareWorkflow.creatingLink')
+    : t('shareWorkflow.createLinkButton')
 })
 
 function stripJsonExtension(filename: string): string {

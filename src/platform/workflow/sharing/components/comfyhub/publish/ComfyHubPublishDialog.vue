@@ -18,10 +18,10 @@
     <template #header />
     <template #content>
       <ComfyHubPublishWizardPanel
-        :current-step="currentStep"
-        :form-data="formData"
-        :is-first-step="isFirstStep"
-        :is-last-step="isLastStep"
+        :current-step
+        :form-data
+        :is-first-step
+        :is-last-step
         :on-update-form-data="updateFormData"
         :on-go-next="goNext"
         :on-go-back="goBack"

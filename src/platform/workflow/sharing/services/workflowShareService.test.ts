@@ -192,20 +192,6 @@ describe(useWorkflowShareService, () => {
     expect(status.shareId).toBeNull()
   })
 
-  it('extracts share ID from backend share URL', () => {
-    const service = useWorkflowShareService()
-
-    expect(
-      service.extractShareId('https://comfy.org/workflows/published/share-1')
-    ).toBe('share-1')
-  })
-
-  it('returns null when share ID cannot be extracted from URL', () => {
-    const service = useWorkflowShareService()
-
-    expect(service.extractShareId('https://comfy.org/workflows')).toBeNull()
-  })
-
   it('fetches and maps shared workflow payload', async () => {
     mockFetchApi.mockResolvedValue(
       mockJsonResponse({

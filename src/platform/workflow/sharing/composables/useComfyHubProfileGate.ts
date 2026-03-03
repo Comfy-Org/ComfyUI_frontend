@@ -105,10 +105,12 @@ export function useComfyHubProfileGate() {
     })
 
     if (!response.ok) {
-      const error: { message?: string } = await response
-        .json()
-        .catch(() => ({}))
-      throw new Error(error.message ?? 'Failed to create profile')
+      const body: unknown = await response.json().catch(() => ({}))
+      const message =
+        body && typeof body === 'object' && 'message' in body
+          ? String((body as Record<string, unknown>).message)
+          : 'Failed to create profile'
+      throw new Error(message)
     }
 
     const createdProfile = mapHubProfileResponse(await response.json())

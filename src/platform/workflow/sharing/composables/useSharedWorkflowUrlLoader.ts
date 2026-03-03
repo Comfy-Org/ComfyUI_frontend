@@ -2,6 +2,7 @@ import { useToast } from 'primevue/usetoast'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 
+import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import OpenSharedWorkflowDialogContent from '@/platform/workflow/sharing/components/OpenSharedWorkflowDialogContent.vue'
 import {
   clearPreservedQuery,
@@ -97,11 +98,12 @@ export function useSharedWorkflowUrlLoader() {
 
   function extractWorkflowName(
     name: string,
-    workflowJson: Record<string, unknown>
+    workflowJson: ComfyWorkflowJSON
   ): string {
     if (name) return name
-    if (typeof workflowJson.name === 'string' && workflowJson.name) {
-      return workflowJson.name
+    const jsonName = (workflowJson as Record<string, unknown>).name
+    if (typeof jsonName === 'string' && jsonName) {
+      return jsonName
     }
     return t('openSharedWorkflow.dialogTitle')
   }
@@ -136,7 +138,7 @@ export function useSharedWorkflowUrlLoader() {
 
       const workflowName = extractWorkflowName(
         sharedWorkflow.name,
-        sharedWorkflow.workflowJson as unknown as Record<string, unknown>
+        sharedWorkflow.workflowJson
       )
       const nonOwnedAssets = sharedWorkflow.assets.filter((a) => !a.in_library)
 
