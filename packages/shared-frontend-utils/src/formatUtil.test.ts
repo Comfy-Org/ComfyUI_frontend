@@ -244,6 +244,13 @@ describe('formatUtil', () => {
         suffix: 'json'
       })
     })
+
+    it('treats bare .app.json as a dotfile without basename', () => {
+      expect(getFilenameDetails('.app.json')).toEqual({
+        filename: '.app',
+        suffix: 'json'
+      })
+    })
   })
 
   describe('getPathDetails', () => {
