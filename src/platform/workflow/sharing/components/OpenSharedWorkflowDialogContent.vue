@@ -16,7 +16,7 @@
         cn('flex gap-8 px-8 pt-4 pb-6', hasAssets ? 'flex-row' : 'flex-col')
       "
     >
-      <div class="flex flex-col gap-12 py-4">
+      <div class="flex min-w-0 flex-1 flex-col gap-12 py-4">
         <h2 class="m-0 text-2xl font-semibold text-base-foreground">
           {{ workflowName }}
         </h2>
@@ -25,7 +25,7 @@
         </p>
       </div>
 
-      <div v-if="hasAssets" class="flex flex-col gap-2 py-4">
+      <div v-if="hasAssets" class="flex w-72 shrink-0 flex-col gap-2 py-4">
         <div class="flex gap-2 items-center">
           <i
             class="icon-[lucide--circle-alert] shrink-0 size-4 text-warning-background"
