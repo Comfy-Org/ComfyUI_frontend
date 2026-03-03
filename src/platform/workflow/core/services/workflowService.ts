@@ -401,11 +401,17 @@ export const useWorkflowService = () => {
           existingWorkflow.activeState?.id !== undefined &&
           workflowData.id !== undefined &&
           existingWorkflow.activeState.id === workflowData.id
+        const isSameActiveWorkflowLoadWithoutIds =
+          !!existingWorkflow &&
+          workflowStore.isActive(existingWorkflow) &&
+          existingWorkflow.activeState?.id === undefined &&
+          workflowData.id === undefined
 
         if (
           existingWorkflow &&
           ((existingWorkflow.isPersisted && !existingWorkflow.isLoaded) ||
-            isSameActiveWorkflowLoad)
+            isSameActiveWorkflowLoad ||
+            isSameActiveWorkflowLoadWithoutIds)
         ) {
           const loadedWorkflow =
             await workflowStore.openWorkflow(existingWorkflow)
