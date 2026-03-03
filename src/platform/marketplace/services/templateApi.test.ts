@@ -17,6 +17,7 @@ vi.mock('@/utils/mockKVStore', () => ({
 
 const {
   createTemplate,
+  createDraftTemplate,
   getTemplate,
   updateTemplate,
   deleteTemplate,
@@ -50,6 +51,32 @@ describe('templateApi', () => {
     })
   })
 
+  describe('createDraftTemplate', () => {
+    it('creates a draft with empty partial data', async () => {
+      const result = await createDraftTemplate({})
+      expect(result.id).toBeTruthy()
+      expect(result.status).toBe('draft')
+    })
+
+    it('fills defaults for missing required fields', async () => {
+      const { id } = await createDraftTemplate({})
+      const stored = await getTemplate(id)
+      expect(stored!.shortDescription).toBe('')
+      expect(stored!.difficulty).toBe('beginner')
+      expect(stored!.version).toBe('1.0.0')
+    })
+
+    it('preserves provided fields', async () => {
+      const { id } = await createDraftTemplate({
+        shortDescription: 'My draft',
+        difficulty: 'advanced'
+      })
+      const stored = await getTemplate(id)
+      expect(stored!.shortDescription).toBe('My draft')
+      expect(stored!.difficulty).toBe('advanced')
+    })
+  })
+
   describe('getTemplate', () => {
     it('returns null for nonexistent id', async () => {
       expect(await getTemplate('nope')).toBeNull()
@@ -61,15 +88,13 @@ describe('templateApi', () => {
       const { id } = await createTemplate(createMockMarketplaceTemplate())
       const before = await getTemplate(id)
       vi.advanceTimersByTime(1000)
-      const result = await updateTemplate(id, {
+      const result = await updateTemplate({
+        ...before!,
+        id,
         shortDescription: 'Updated'
       })
       expect(result!.shortDescription).toBe('Updated')
       expect(result!.updatedAt).not.toBe(before!.updatedAt)
-    })
-
-    it('returns null for nonexistent id', async () => {
-      expect(await updateTemplate('nope', {})).toBeNull()
     })
   })
 

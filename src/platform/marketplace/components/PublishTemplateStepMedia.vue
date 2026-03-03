@@ -123,9 +123,7 @@ function onFileRemoved(index: number) {
 }
 
 function validate(): boolean {
-  const tmpl = wizardData.value.template
   const result = mediaStepSchema.safeParse({
-    mediaType: tmpl?.mediaType ?? '',
     thumbnailVariant: selectedVariant.value,
     fileCount: wizardData.value.gallery?.length ?? 0
   })

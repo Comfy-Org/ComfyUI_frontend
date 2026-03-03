@@ -114,8 +114,8 @@
           </a>
           <StepBreadcrumbs
             :labels="stepLabels"
-            :current-step="publishWizard.currentStep.value"
-            @navigate="(step) => publishWizard.goToStep(step)"
+            :current-step="currentStep"
+            @navigate="(step) => goToStep(step)"
           />
         </template>
         <template v-else>
@@ -131,6 +131,7 @@
         v-if="isMyTemplatesView && isPublishing"
         @cancel="cancelPublishing"
         @submitted="onPublishSubmitted"
+        @draft-saved="onDraftSaved"
       />
 
       <MyTemplatesEmptyState
@@ -584,10 +585,11 @@ provide(OnCloseKey, onClose)
 const { templates: myTemplates, refresh: refreshMyTemplates } = useMyTemplates()
 
 const isPublishing = ref(false)
-const publishWizard = usePublishTemplateWizard()
+const { resetWizard, wizardData, currentStep, goToStep } =
+  usePublishTemplateWizard()
 
 function startPublishing() {
-  publishWizard.resetWizard()
+  resetWizard()
   isPublishing.value = true
 }
 
@@ -600,13 +602,22 @@ function onPublishSubmitted() {
   void refreshMyTemplates()
 }
 
+function onDraftSaved() {
+  void refreshMyTemplates()
+}
+
 function handleEditSubmission(id: string) {
-  const submission = myTemplates.value.find((s) => s.id === id)
+  const submission = myTemplates.value.find(
+    (submission) => submission.id === id
+  )
   if (!submission) return
 
-  publishWizard.wizardData.value = {
-    ...submission
+  wizardData.value = {
+    ...submission,
+    id
   }
+
+  wizardData.value.id = id
   isPublishing.value = true
 }
 

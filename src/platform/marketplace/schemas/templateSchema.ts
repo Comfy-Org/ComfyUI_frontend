@@ -54,7 +54,6 @@ export const metadataSchema = z.object({
 
 export const mediaStepSchema = z
   .object({
-    mediaType: z.string().min(1, 'Select a media type'),
     thumbnailVariant: thumbnailVariantSchema,
     fileCount: z.number().min(1, 'Upload at least one file')
   })
@@ -84,7 +83,6 @@ export const marketplaceTemplateSchema = z.object({
   stats: templateStatsSchema
 })
 
-// Create request (what the wizard submits)
 export const createTemplateRequestSchema = z.object({
   template: templateInfoSchema,
   shortDescription: z.string().min(1).max(200),
@@ -95,4 +93,13 @@ export const createTemplateRequestSchema = z.object({
   changelog: z.string().optional()
 })
 
-export const updateTemplateRequestSchema = createTemplateRequestSchema.partial()
+export const updateTemplateRequestSchema = z.object({
+  id: z.string().min(1),
+  template: templateInfoSchema,
+  shortDescription: z.string().min(1).max(200),
+  difficulty: difficultySchema,
+  categories: z.array(z.string()).optional(),
+  gallery: z.array(z.string()).optional(),
+  version: z.string().min(1),
+  changelog: z.string().optional()
+})

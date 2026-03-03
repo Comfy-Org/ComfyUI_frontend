@@ -1104,7 +1104,8 @@
       "cancel": "Cancel",
       "back": "Back",
       "next": "Next",
-      "newTemplate": "New Template"
+      "newTemplate": "New Template",
+      "saveDraft": "Save Draft"
     },
     "error": {
       "templateNotFound": "Template \"{templateName}\" not found"

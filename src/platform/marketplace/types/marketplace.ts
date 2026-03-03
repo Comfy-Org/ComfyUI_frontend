@@ -28,5 +28,11 @@ export type MarketplaceTemplate = z.infer<typeof marketplaceTemplateSchema>
 export type CreateTemplateRequest = z.infer<typeof createTemplateRequestSchema>
 export type UpdateTemplateRequest = z.infer<typeof updateTemplateRequestSchema>
 
+export function isUpdateTemplateRequest(
+  request: Partial<CreateTemplateRequest> | UpdateTemplateRequest
+): request is UpdateTemplateRequest {
+  return 'id' in request
+}
+
 export type AuthorDashboardStats = z.infer<typeof authorDashboardStatsSchema>
 export type PeriodDataPoint = z.infer<typeof periodDataPointSchema>

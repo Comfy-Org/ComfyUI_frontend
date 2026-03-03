@@ -1,16 +1,28 @@
 import type { InjectionKey } from 'vue'
 import { inject, provide, ref } from 'vue'
 
-import { createTemplate, submitTemplate } from '../services/templateApi'
-import type { CreateTemplateRequest } from '../types/marketplace'
+import {
+  createDraftTemplate,
+  createTemplate,
+  submitTemplate,
+  updateTemplate
+} from '../services/templateApi'
+import { isUpdateTemplateRequest } from '../types/marketplace'
+import type {
+  CreateTemplateRequest,
+  UpdateTemplateRequest
+} from '../types/marketplace'
 
 function createPublishTemplateWizard() {
   const currentStep = ref(1)
-  const wizardData = ref<Partial<CreateTemplateRequest>>({
+  const wizardData = ref<
+    Partial<CreateTemplateRequest> | UpdateTemplateRequest
+  >({
     version: '1.0.0',
     gallery: []
   })
   const isSubmitting = ref(false)
+  const isSaving = ref(false)
 
   function goToStep(step: number) {
     if (step >= currentStep.value) return
@@ -33,11 +45,24 @@ function createPublishTemplateWizard() {
     currentStep.value = 1
     wizardData.value = { version: '1.0.0', gallery: [] }
     isSubmitting.value = false
+    isSaving.value = false
+  }
+
+  async function saveDraft() {
+    isSaving.value = true
+    try {
+      if (isUpdateTemplateRequest(wizardData.value)) {
+        await updateTemplate(wizardData.value)
+      } else {
+        await createDraftTemplate(wizardData.value)
+      }
+    } finally {
+      isSaving.value = false
+    }
   }
 
   async function submit() {
     isSubmitting.value = true
-
     try {
       const body: CreateTemplateRequest = {
         template: wizardData.value.template!,
@@ -49,8 +74,13 @@ function createPublishTemplateWizard() {
         changelog: wizardData.value.changelog
       }
 
-      const { id } = await createTemplate(body)
-      await submitTemplate(id)
+      if (isUpdateTemplateRequest(wizardData.value)) {
+        await updateTemplate(wizardData.value)
+        await submitTemplate(wizardData.value.id)
+      } else {
+        const { id } = await createTemplate(body)
+        await submitTemplate(id)
+      }
     } finally {
       isSubmitting.value = false
     }
@@ -60,11 +90,13 @@ function createPublishTemplateWizard() {
     currentStep,
     wizardData,
     isSubmitting,
+    isSaving,
 
     goToStep,
     goToNextStep,
     goToPreviousStep,
     resetWizard,
+    saveDraft,
     submit
   }
 }

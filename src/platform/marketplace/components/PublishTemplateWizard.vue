@@ -7,10 +7,12 @@
     <PublishTemplateFooter
       :current-step="wizard.currentStep.value"
       :is-submitting="wizard.isSubmitting.value"
+      :is-saving="wizard.isSaving.value"
       @cancel="emit('cancel')"
       @back="wizard.goToPreviousStep"
       @next="handleNext"
       @submit="handleSubmit"
+      @save="handleSaveDraft"
     />
   </div>
 </template>
@@ -30,6 +32,7 @@ const wizard = usePublishTemplateWizard()
 const emit = defineEmits<{
   cancel: []
   submitted: []
+  draftSaved: []
 }>()
 
 const STEP_COMPONENTS = [
@@ -52,5 +55,10 @@ function handleNext() {
 async function handleSubmit() {
   await wizard.submit()
   emit('submitted')
+}
+
+async function handleSaveDraft() {
+  await wizard.saveDraft()
+  emit('draftSaved')
 }
 </script>

@@ -25,6 +25,14 @@ function getCurrentAuthor(): AuthorInfo {
   }
 }
 
+const EMPTY_STATS = {
+  downloads: 0,
+  favorites: 0,
+  rating: 0,
+  reviewCount: 0,
+  weeklyTrend: 0
+} as const
+
 // POST /api/marketplace/templates
 export async function createTemplate(
   body: CreateTemplateRequest
@@ -34,13 +42,29 @@ export async function createTemplate(
     ...body,
     author: getCurrentAuthor(),
     status: 'draft',
-    stats: {
-      downloads: 0,
-      favorites: 0,
-      rating: 0,
-      reviewCount: 0,
-      weeklyTrend: 0
-    },
+    stats: EMPTY_STATS,
+    createdAt: timestamp,
+    updatedAt: timestamp
+  })
+  return { id: record.id, status: record.status }
+}
+
+// POST /api/marketplace/templates/draft
+export async function createDraftTemplate(
+  body: Partial<CreateTemplateRequest>
+): Promise<{ id: string; status: TemplateStatus }> {
+  const timestamp = now()
+  const record = collection.create({
+    template: body.template ?? ({} as CreateTemplateRequest['template']),
+    shortDescription: body.shortDescription ?? '',
+    difficulty: body.difficulty ?? 'beginner',
+    version: body.version ?? '1.0.0',
+    categories: body.categories,
+    gallery: body.gallery,
+    changelog: body.changelog,
+    author: getCurrentAuthor(),
+    status: 'draft',
+    stats: EMPTY_STATS,
     createdAt: timestamp,
     updatedAt: timestamp
   })
@@ -56,10 +80,9 @@ export async function getTemplate(
 
 // PUT /api/marketplace/templates/:id
 export async function updateTemplate(
-  id: string,
   body: UpdateTemplateRequest
 ): Promise<MarketplaceTemplate | null> {
-  return collection.update(id, { ...body, updatedAt: now() })
+  return collection.update(body.id, { ...body, updatedAt: now() })
 }
 
 // DELETE /api/marketplace/templates/:id

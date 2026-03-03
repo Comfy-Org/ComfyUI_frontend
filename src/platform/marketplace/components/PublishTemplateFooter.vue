@@ -14,24 +14,35 @@
       {{ t('templateWorkflows.publish.back') }}
     </Button>
 
-    <Button
-      v-if="currentStep < 3"
-      variant="primary"
-      size="lg"
-      @click="emit('next')"
-    >
-      {{ t('templateWorkflows.publish.next') }}
-      <i class="icon-[lucide--arrow-right] size-4" />
-    </Button>
-    <Button
-      v-else
-      variant="primary"
-      size="lg"
-      :loading="isSubmitting"
-      @click="emit('submit')"
-    >
-      {{ t('templateWorkflows.publish.submit') }}
-    </Button>
+    <div class="flex gap-2">
+      <Button
+        variant="secondary"
+        size="lg"
+        :loading="isSaving"
+        @click="emit('save')"
+      >
+        {{ t('templateWorkflows.publish.saveDraft') }}
+      </Button>
+
+      <Button
+        v-if="currentStep < 3"
+        variant="primary"
+        size="lg"
+        @click="emit('next')"
+      >
+        {{ t('templateWorkflows.publish.next') }}
+        <i class="icon-[lucide--arrow-right] size-4" />
+      </Button>
+      <Button
+        v-else
+        variant="primary"
+        size="lg"
+        :loading="isSubmitting"
+        @click="emit('submit')"
+      >
+        {{ t('templateWorkflows.publish.submit') }}
+      </Button>
+    </div>
   </div>
 </template>
 
@@ -45,6 +56,7 @@ const { t } = useI18n()
 defineProps<{
   currentStep: number
   isSubmitting: boolean
+  isSaving: boolean
 }>()
 
 const emit = defineEmits<{
@@ -52,5 +64,6 @@ const emit = defineEmits<{
   back: []
   next: []
   submit: []
+  save: []
 }>()
 </script>
