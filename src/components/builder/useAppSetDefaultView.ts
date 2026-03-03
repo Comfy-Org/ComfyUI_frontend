@@ -1,6 +1,5 @@
 import { computed } from 'vue'
 
-import { syncLinearMode } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { app } from '@/scripts/app'
 import { useDialogService } from '@/services/dialogService'
@@ -34,7 +33,8 @@ export function useAppSetDefaultView() {
     if (!workflow) return
 
     workflow.initialMode = openAsApp ? 'app' : 'graph'
-    syncLinearMode(workflow, [app.rootGraph])
+    app.rootGraph.extra.linearMode = openAsApp
+    workflow.changeTracker?.checkState()
     closeDialog()
   }
 

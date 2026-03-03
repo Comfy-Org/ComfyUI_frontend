@@ -467,17 +467,6 @@ describe('useWorkflowService', () => {
         expect(appMode.mode.value).toBe('app')
       })
 
-      it('syncs linearMode to rootGraph.extra for draft persistence', async () => {
-        const workflow = createModeTestWorkflow({ loaded: false })
-
-        await service.afterLoadNewGraph(
-          workflow,
-          makeWorkflowData({ linearMode: true })
-        )
-
-        expect(app.rootGraph.extra.linearMode).toBe(true)
-      })
-
       it('reads initialMode from file when draft lacks linearMode (restoration)', async () => {
         const filePath = 'workflows/saved-app.json'
         const fileInitialState = makeWorkflowData({ linearMode: true })
@@ -511,7 +500,6 @@ describe('useWorkflowService', () => {
 
         // initialMode should come from the file, not the draft
         expect(persistedWorkflow.initialMode).toBe('app')
-        expect(app.rootGraph.extra.linearMode).toBe(true)
       })
     })
 

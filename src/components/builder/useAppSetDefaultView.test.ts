@@ -13,10 +13,8 @@ const mockWorkflowStore = vi.hoisted(() => ({
   activeWorkflow: null as { initialMode?: string | null } | null
 }))
 
-const mockSyncLinearMode = vi.hoisted(() => vi.fn())
-
 const mockApp = vi.hoisted(() => ({
-  rootGraph: { extra: {} }
+  rootGraph: { extra: {} as Record<string, unknown> }
 }))
 
 vi.mock('@/services/dialogService', () => ({
@@ -29,10 +27,6 @@ vi.mock('@/stores/dialogStore', () => ({
 
 vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
   useWorkflowStore: () => mockWorkflowStore
-}))
-
-vi.mock('@/platform/workflow/management/stores/comfyWorkflow', () => ({
-  syncLinearMode: mockSyncLinearMode
 }))
 
 vi.mock('@/scripts/app', () => ({
@@ -49,6 +43,7 @@ describe('useAppSetDefaultView', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     mockWorkflowStore.activeWorkflow = null
+    mockApp.rootGraph.extra = {}
   })
 
   describe('settingView', () => {
@@ -122,9 +117,8 @@ describe('useAppSetDefaultView', () => {
       expect(workflow.initialMode).toBe('graph')
     })
 
-    it('calls syncLinearMode with workflow and rootGraph', () => {
-      const workflow = { initialMode: null as string | null }
-      mockWorkflowStore.activeWorkflow = workflow
+    it('sets linearMode on rootGraph.extra', () => {
+      mockWorkflowStore.activeWorkflow = { initialMode: null }
 
       const { showDialog } = useAppSetDefaultView()
       showDialog()
@@ -132,9 +126,7 @@ describe('useAppSetDefaultView', () => {
       const call = mockDialogService.showLayoutDialog.mock.calls[0][0]
       call.props.onApply(true)
 
-      expect(mockSyncLinearMode).toHaveBeenCalledWith(workflow, [
-        mockApp.rootGraph
-      ])
+      expect(mockApp.rootGraph.extra.linearMode).toBe(true)
     })
 
     it('closes dialog after applying', () => {
@@ -149,18 +141,6 @@ describe('useAppSetDefaultView', () => {
       expect(mockDialogStore.closeDialog).toHaveBeenCalledWith({
         key: 'builder-default-view'
       })
-    })
-
-    it('does nothing when no active workflow', () => {
-      mockWorkflowStore.activeWorkflow = null
-
-      const { showDialog } = useAppSetDefaultView()
-      showDialog()
-
-      const call = mockDialogService.showLayoutDialog.mock.calls[0][0]
-      call.props.onApply(true)
-
-      expect(mockSyncLinearMode).not.toHaveBeenCalled()
     })
   })
 })

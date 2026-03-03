@@ -24,23 +24,6 @@ export interface PendingWarnings {
   }
 }
 
-type LinearModeTarget = { extra?: Record<string, unknown> | null } | null
-
-export function syncLinearMode(
-  workflow: ComfyWorkflow,
-  targets: LinearModeTarget[]
-): void {
-  for (const target of targets) {
-    if (!target) continue
-    if (workflow.initialMode === 'app' || workflow.initialMode === 'graph') {
-      const extra = (target.extra ??= {})
-      extra.linearMode = workflow.initialMode === 'app'
-    } else {
-      delete target.extra?.linearMode
-    }
-  }
-}
-
 export class ComfyWorkflow extends UserFile {
   static readonly basePath: string = 'workflows/'
   readonly tintCanvasBg?: string
