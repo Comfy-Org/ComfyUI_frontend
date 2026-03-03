@@ -54,7 +54,7 @@ const { distanceX, isSwiping } = usePointerSwipe(sliderPaneRef, {
       return
     if (distanceX.value < 0)
       activeIndex.value = Math.max(activeIndex.value - 1, 0)
-    else activeIndex.value = Math.min(activeIndex.value + 1, tabs.length)
+    else activeIndex.value = Math.min(activeIndex.value + 1, tabs.length - 1)
   }
 })
 
