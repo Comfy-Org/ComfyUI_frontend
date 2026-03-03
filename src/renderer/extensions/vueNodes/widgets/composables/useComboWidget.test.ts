@@ -74,7 +74,8 @@ vi.mock('@/i18n', () => ({
 
 vi.mock('@/platform/assets/services/assetService', () => ({
   assetService: {
-    isAssetBrowserEligible: vi.fn(() => false)
+    isAssetBrowserEligible: vi.fn(() => false),
+    shouldUseAssetBrowser: vi.fn(() => false)
   }
 }))
 
@@ -135,6 +136,7 @@ describe('useComboWidget', () => {
     vi.clearAllMocks()
     mockSettingStoreGet.mockReturnValue(false)
     vi.mocked(assetService.isAssetBrowserEligible).mockReturnValue(false)
+    vi.mocked(assetService.shouldUseAssetBrowser).mockReturnValue(false)
     vi.mocked(useAssetBrowserDialog).mockClear()
     mockDistributionState.isCloud = false
     mockAssetsStoreState.inputAssets = []
@@ -165,8 +167,8 @@ describe('useComboWidget', () => {
 
   it('should create normal combo widget when asset API is disabled', () => {
     mockDistributionState.isCloud = true
-    mockSettingStoreGet.mockReturnValue(false) // Asset API disabled
-    vi.mocked(assetService.isAssetBrowserEligible).mockReturnValue(true) // Widget is eligible
+    mockSettingStoreGet.mockReturnValue(false)
+    vi.mocked(assetService.shouldUseAssetBrowser).mockReturnValue(false)
 
     const constructor = useComboWidget()
     const mockWidget = createMockWidget()
@@ -187,14 +189,12 @@ describe('useComboWidget', () => {
       expect.any(Function),
       { values: ['model1.safetensors', 'model2.safetensors'] }
     )
-    expect(mockSettingStoreGet).toHaveBeenCalledWith('Comfy.Assets.UseAssetAPI')
     expect(widget).toBe(mockWidget)
   })
 
   it('should create asset browser widget when API enabled', () => {
     mockDistributionState.isCloud = true
-    mockSettingStoreGet.mockReturnValue(true)
-    vi.mocked(assetService.isAssetBrowserEligible).mockReturnValue(true)
+    vi.mocked(assetService.shouldUseAssetBrowser).mockReturnValue(true)
 
     const constructor = useComboWidget()
     const mockWidget = createMockWidget({
@@ -218,8 +218,7 @@ describe('useComboWidget', () => {
       expect.any(Function),
       expect.any(Object)
     )
-    expect(mockSettingStoreGet).toHaveBeenCalledWith('Comfy.Assets.UseAssetAPI')
-    expect(vi.mocked(assetService.isAssetBrowserEligible)).toHaveBeenCalledWith(
+    expect(vi.mocked(assetService.shouldUseAssetBrowser)).toHaveBeenCalledWith(
       'CheckpointLoaderSimple',
       'ckpt_name'
     )
@@ -228,8 +227,7 @@ describe('useComboWidget', () => {
 
   it('should create asset browser widget when default value provided without options', () => {
     mockDistributionState.isCloud = true
-    mockSettingStoreGet.mockReturnValue(true)
-    vi.mocked(assetService.isAssetBrowserEligible).mockReturnValue(true)
+    vi.mocked(assetService.shouldUseAssetBrowser).mockReturnValue(true)
 
     const constructor = useComboWidget()
     const mockWidget = createMockWidget({
@@ -254,14 +252,12 @@ describe('useComboWidget', () => {
       expect.any(Function),
       expect.any(Object)
     )
-    expect(mockSettingStoreGet).toHaveBeenCalledWith('Comfy.Assets.UseAssetAPI')
     expect(widget).toBe(mockWidget)
   })
 
   it('should show Select model when asset widget has undefined current value', () => {
     mockDistributionState.isCloud = true
-    mockSettingStoreGet.mockReturnValue(true)
-    vi.mocked(assetService.isAssetBrowserEligible).mockReturnValue(true)
+    vi.mocked(assetService.shouldUseAssetBrowser).mockReturnValue(true)
 
     const constructor = useComboWidget()
     const mockWidget = createMockWidget({
@@ -285,7 +281,6 @@ describe('useComboWidget', () => {
       expect.any(Function),
       expect.any(Object)
     )
-    expect(mockSettingStoreGet).toHaveBeenCalledWith('Comfy.Assets.UseAssetAPI')
     expect(widget).toBe(mockWidget)
   })
 

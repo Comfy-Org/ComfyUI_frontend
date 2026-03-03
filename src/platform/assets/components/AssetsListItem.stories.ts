@@ -82,6 +82,7 @@ export const GeneratedVideo: Story = {
   args: {
     previewUrl: VIDEO_PREVIEW,
     previewAlt: 'clip-01.mp4',
+    isVideoPreview: true,
     primaryText: 'clip-01.mp4',
     secondaryText: '2m 12s'
   }

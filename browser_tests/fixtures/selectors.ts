@@ -27,6 +27,7 @@ export const TestIds = {
     settingsContainer: 'settings-container',
     settingsTabAbout: 'settings-tab-about',
     confirm: 'confirm-dialog',
+    missingNodes: 'missing-nodes-warning',
     about: 'about-panel',
     whatsNewSection: 'whats-new-section'
   },
@@ -43,10 +44,20 @@ export const TestIds = {
   node: {
     titleInput: 'node-title-input'
   },
+  selectionToolbox: {
+    colorPickerButton: 'color-picker-button',
+    colorPickerCurrentColor: 'color-picker-current-color',
+    colorBlue: 'blue',
+    colorRed: 'red'
+  },
   widgets: {
     decrement: 'decrement',
     increment: 'increment',
+    domWidgetTextarea: 'dom-widget-textarea',
     subgraphEnterButton: 'subgraph-enter-button'
+  },
+  breadcrumb: {
+    subgraph: 'subgraph-breadcrumb'
   },
   templates: {
     content: 'template-workflows-content',
@@ -69,7 +80,9 @@ export type TestIdValue =
   | (typeof TestIds.nodeLibrary)[keyof typeof TestIds.nodeLibrary]
   | (typeof TestIds.propertiesPanel)[keyof typeof TestIds.propertiesPanel]
   | (typeof TestIds.node)[keyof typeof TestIds.node]
+  | (typeof TestIds.selectionToolbox)[keyof typeof TestIds.selectionToolbox]
   | (typeof TestIds.widgets)[keyof typeof TestIds.widgets]
+  | (typeof TestIds.breadcrumb)[keyof typeof TestIds.breadcrumb]
   | Exclude<
       (typeof TestIds.templates)[keyof typeof TestIds.templates],
       (id: string) => string

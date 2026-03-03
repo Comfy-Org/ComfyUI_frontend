@@ -8,6 +8,10 @@ export function iconForMediaType(mediaType: MediaKind): string {
       return 'icon-[lucide--music]'
     case '3D':
       return 'icon-[lucide--box]'
+    case 'text':
+      return 'icon-[lucide--text]'
+    case 'other':
+      return 'icon-[lucide--check-check]'
     default:
       return 'icon-[lucide--image]'
   }

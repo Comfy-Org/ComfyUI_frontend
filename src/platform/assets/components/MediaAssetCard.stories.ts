@@ -141,6 +141,40 @@ export const AudioAsset: Story = {
   }
 }
 
+export const TextAsset: Story = {
+  decorators: [
+    () => ({
+      template: '<div style="max-width: 280px;"><story /></div>'
+    })
+  ],
+  args: {
+    asset: {
+      ...sampleAsset,
+      id: 'asset-5',
+      name: 'generation-notes.txt',
+      size: 2048,
+      preview_url: SAMPLE_MEDIA.image1
+    }
+  }
+}
+
+export const OtherAsset: Story = {
+  decorators: [
+    () => ({
+      template: '<div style="max-width: 280px;"><story /></div>'
+    })
+  ],
+  args: {
+    asset: {
+      ...sampleAsset,
+      id: 'asset-6',
+      name: 'workflow-payload.bin',
+      size: 8192,
+      preview_url: SAMPLE_MEDIA.image1
+    }
+  }
+}
+
 export const LoadingState: Story = {
   decorators: [
     () => ({

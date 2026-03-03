@@ -6,10 +6,12 @@
       </h2>
       <div class="grid grid-cols-2 gap-2">
         <template v-for="col in systemColumns" :key="col.field">
-          <div class="font-medium">
+          <div :class="cn('font-medium', isOutdated(col) && 'text-danger-100')">
             {{ col.header }}
           </div>
-          <div>{{ getDisplayValue(col) }}</div>
+          <div :class="cn(isOutdated(col) && 'text-danger-100')">
+            {{ getDisplayValue(col) }}
+          </div>
         </template>
       </div>
     </div>
@@ -47,6 +49,7 @@ import DeviceInfo from '@/components/common/DeviceInfo.vue'
 import { isCloud } from '@/platform/distribution/types'
 import type { SystemStats } from '@/schemas/apiSchema'
 import { formatCommitHash, formatSize } from '@/utils/formatUtil'
+import { cn } from '@/utils/tailwindUtil'
 
 const props = defineProps<{
   stats: SystemStats
@@ -76,7 +79,8 @@ const localColumns: ColumnDef[] = [
   { field: 'pytorch_version', header: 'Pytorch Version' },
   { field: 'argv', header: 'Arguments' },
   { field: 'ram_total', header: 'RAM Total', formatNumber: formatSize },
-  { field: 'ram_free', header: 'RAM Free', formatNumber: formatSize }
+  { field: 'ram_free', header: 'RAM Free', formatNumber: formatSize },
+  { field: 'installed_templates_version', header: 'Templates Version' }
 ]
 
 /** Columns for cloud distribution */
@@ -96,6 +100,13 @@ const cloudColumns: ColumnDef[] = [
 ]
 
 const systemColumns = computed(() => (isCloud ? cloudColumns : localColumns))
+
+function isOutdated(column: ColumnDef): boolean {
+  if (column.field !== 'installed_templates_version') return false
+  const installed = props.stats.system.installed_templates_version
+  const required = props.stats.system.required_templates_version
+  return !!installed && !!required && installed !== required
+}
 
 const getDisplayValue = (column: ColumnDef) => {
   const value = systemInfo.value[column.field]

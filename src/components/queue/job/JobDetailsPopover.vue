@@ -139,7 +139,7 @@ const copyJobId = () => void copyToClipboard(jobIdValue.value)
 const taskForJob = computed(() => {
   const pid = props.jobId
   const findIn = (arr: TaskItemImpl[]) =>
-    arr.find((t) => String(t.promptId ?? '') === String(pid))
+    arr.find((t) => String(t.jobId ?? '') === String(pid))
   return (
     findIn(queueStore.pendingTasks) ||
     findIn(queueStore.runningTasks) ||
@@ -151,9 +151,7 @@ const taskForJob = computed(() => {
 const jobState = computed(() => {
   const task = taskForJob.value
   if (!task) return null
-  const isInitializing = executionStore.isPromptInitializing(
-    String(task?.promptId)
-  )
+  const isInitializing = executionStore.isJobInitializing(String(task?.jobId))
   return jobStateFromTask(task, isInitializing)
 })
 
@@ -168,16 +166,16 @@ const queuedAtValue = computed(() =>
     : ''
 )
 
-const currentQueueIndex = computed<number | null>(() => {
+const currentJobPriority = computed<number | null>(() => {
   const task = taskForJob.value
-  return task ? Number(task.queueIndex) : null
+  return task ? Number(task.job.priority) : null
 })
 
 const jobsAhead = computed<number | null>(() => {
-  const idx = currentQueueIndex.value
+  const idx = currentJobPriority.value
   if (idx == null) return null
   const ahead = queueStore.pendingTasks.filter(
-    (t: TaskItemImpl) => Number(t.queueIndex) < idx
+    (t: TaskItemImpl) => Number(t.job.priority) < idx
   )
   return ahead.length
 })

@@ -9,7 +9,7 @@
     >
       <MultiSelect
         v-if="availableFileFormats.length > 0"
-        v-model="fileFormats"
+        v-model="activeFileFormatObjects"
         :label="$t('assetBrowser.fileFormats')"
         :options="availableFileFormats"
         class="min-w-32"
@@ -19,7 +19,7 @@
 
       <MultiSelect
         v-if="availableBaseModels.length > 0"
-        v-model="baseModels"
+        v-model="activeBaseModelObjects"
         :label="$t('assetBrowser.baseModels')"
         :options="availableBaseModels"
         class="min-w-32"
@@ -83,13 +83,36 @@ const { assets = [], showOwnershipFilter = false } = defineProps<{
   showOwnershipFilter?: boolean
 }>()
 
-const fileFormats = ref<SelectOption[]>([])
-const baseModels = ref<SelectOption[]>([])
+const selectedFileFormats = ref<SelectOption[]>([])
+const selectedBaseModels = ref<SelectOption[]>([])
 const sortBy = ref<AssetSortOption>('recent')
 const ownership = ref<OwnershipOption>('all')
 
 const { availableFileFormats, availableBaseModels, ownershipOptions } =
   useAssetFilterOptions(() => assets)
+
+// Only show selected items that exist in the current scope
+const activeFileFormatObjects = computed({
+  get() {
+    return selectedFileFormats.value.filter((opt) =>
+      availableFileFormats.value.some((a) => a.value === opt.value)
+    )
+  },
+  set(value: SelectOption[]) {
+    selectedFileFormats.value = value
+  }
+})
+
+const activeBaseModelObjects = computed({
+  get() {
+    return selectedBaseModels.value.filter((opt) =>
+      availableBaseModels.value.some((a) => a.value === opt.value)
+    )
+  },
+  set(value: SelectOption[]) {
+    selectedBaseModels.value = value
+  }
+})
 
 const emit = defineEmits<{
   filterChange: [filters: AssetFilterState]
@@ -97,8 +120,8 @@ const emit = defineEmits<{
 
 function handleFilterChange() {
   emit('filterChange', {
-    fileFormats: fileFormats.value.map((option: SelectOption) => option.value),
-    baseModels: baseModels.value.map((option: SelectOption) => option.value),
+    fileFormats: activeFileFormatObjects.value.map((opt) => opt.value),
+    baseModels: activeBaseModelObjects.value.map((opt) => opt.value),
     sortBy: sortBy.value,
     ownership: ownership.value
   })

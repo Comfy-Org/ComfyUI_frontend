@@ -225,6 +225,7 @@
     "login": {
       "andText": "و",
       "backToLogin": "العودة إلى تسجيل الدخول",
+      "backToSocialLogin": "سجّل باستخدام Google أو Github بدلاً من ذلك",
       "confirmPasswordLabel": "تأكيد كلمة المرور",
       "confirmPasswordPlaceholder": "أدخل نفس كلمة المرور مرة أخرى",
       "didntReceiveEmail": "لم تستلم البريد الإلكتروني؟ اتصل بنا على",
@@ -233,6 +234,9 @@
       "failed": "فشل تسجيل الدخول",
       "forgotPassword": "هل نسيت كلمة المرور؟",
       "forgotPasswordError": "فشل في إرسال بريد إعادة تعيين كلمة المرور",
+      "freeTierBadge": "مؤهل للخطة المجانية",
+      "freeTierDescription": "سجّل باستخدام Google للحصول على {credits} رصيد مجاني كل شهر. لا حاجة لبطاقة.",
+      "freeTierDescriptionGeneric": "سجّل باستخدام Google للحصول على رصيد مجاني كل شهر. لا حاجة لبطاقة.",
       "insecureContextWarning": "هذا الاتصال غير آمن (HTTP) - قد يتم اعتراض بيانات اعتمادك من قبل المهاجمين إذا تابعت تسجيل الدخول.",
       "loginButton": "تسجيل الدخول",
       "loginWithGithub": "تسجيل الدخول باستخدام Github",
@@ -251,11 +255,13 @@
       "sendResetLink": "إرسال رابط إعادة التعيين",
       "signInOrSignUp": "تسجيل الدخول / إنشاء حساب",
       "signUp": "إنشاء حساب",
+      "signUpFreeTierPromo": "جديد هنا؟ {signUp} باستخدام Google للحصول على {credits} رصيد مجاني كل شهر.",
       "success": "تم تسجيل الدخول بنجاح",
       "termsLink": "شروط الاستخدام",
       "termsText": "بالنقر على \"التالي\" أو \"إنشاء حساب\"، فإنك توافق على",
       "title": "تسجيل الدخول إلى حسابك",
       "useApiKey": "مفتاح API الخاص بـ Comfy",
+      "useEmailInstead": "استخدم البريد الإلكتروني بدلاً من ذلك",
       "userAvatar": "صورة المستخدم"
     },
     "loginButton": {
@@ -275,11 +281,14 @@
     "signOut": {
       "signOut": "تسجيل الخروج",
       "success": "تم تسجيل الخروج بنجاح",
-      "successDetail": "لقد تم تسجيل خروجك من حسابك."
+      "successDetail": "لقد تم تسجيل خروجك من حسابك.",
+      "unsavedChangesMessage": "لديك تغييرات غير محفوظة ستفقد عند تسجيل الخروج. هل ترغب في المتابعة؟",
+      "unsavedChangesTitle": "تغييرات غير محفوظة"
     },
     "signup": {
       "alreadyHaveAccount": "هل لديك حساب بالفعل؟",
       "emailLabel": "البريد الإلكتروني",
+      "emailNotEligibleForFreeTier": "التسجيل بالبريد الإلكتروني غير مؤهل للخطة المجانية.",
       "emailPlaceholder": "أدخل بريدك الإلكتروني",
       "passwordLabel": "كلمة المرور",
       "passwordPlaceholder": "أدخل كلمة مرور جديدة",
@@ -291,6 +300,9 @@
       "signUpWithGoogle": "إنشاء حساب باستخدام Google",
       "title": "إنشاء حساب"
     }
+  },
+  "batch": {
+    "index": "{current} / {total}"
   },
   "billingOperation": {
     "subscriptionFailed": "فشل تحديث الاشتراك",
@@ -313,8 +325,40 @@
     "deleteBlueprint": "حذف المخطط",
     "deleteWorkflow": "حذف سير العمل",
     "duplicate": "تكرار",
+    "enterAppMode": "الدخول إلى وضع التطبيق",
     "enterNewName": "أدخل اسمًا جديدًا",
-    "missingNodesWarning": "يحتوي سير العمل على عقد غير مدعومة (مظللة باللون الأحمر)."
+    "exitAppMode": "الخروج من وضع التطبيق",
+    "missingNodesWarning": "يحتوي سير العمل على عقد غير مدعومة (مظللة باللون الأحمر).",
+    "workflowActions": "إجراءات سير العمل"
+  },
+  "builderMenu": {
+    "exitAppBuilder": "الخروج من مُنشئ التطبيق",
+    "saveApp": "حفظ التطبيق"
+  },
+  "builderToolbar": {
+    "app": "تطبيق",
+    "appDescription": "يفتح كتطبيق بشكل افتراضي",
+    "arrange": "معاينة",
+    "arrangeDescription": "مراجعة تخطيط التطبيق",
+    "connectOutput": "توصيل مخرج",
+    "connectOutputBody1": "يجب توصيل مخرج واحد على الأقل قبل حفظ التطبيق.",
+    "connectOutputBody2": "انتقل إلى خطوة 'تحديد' وانقر على عقد المخرجات لإضافتها هنا.",
+    "filename": "اسم الملف",
+    "label": "منشئ التطبيقات",
+    "nodeGraph": "رسم العقد",
+    "nodeGraphDescription": "يفتح كرسم عقد بشكل افتراضي",
+    "save": "حفظ",
+    "saveAs": "حفظ باسم",
+    "saveAsLabel": "احفظ سير العمل هذا كـ ...",
+    "saveDescription": "حفظ وإنهاء",
+    "saveSuccess": "تم الحفظ بنجاح",
+    "saveSuccessAppMessage": "تم حفظ '{name}'. سيفتح في وضع التطبيق بشكل افتراضي من الآن فصاعدًا.",
+    "saveSuccessAppPrompt": "هل ترغب في عرضه الآن؟",
+    "saveSuccessGraphMessage": "تم حفظ '{name}'. سيفتح كرسم عقد بشكل افتراضي.",
+    "select": "تحديد",
+    "selectDescription": "اختيار المدخلات/المخرجات",
+    "switchToSelect": "الانتقال إلى التحديد",
+    "viewApp": "عرض التطبيق"
   },
   "clipboard": {
     "errorMessage": "فشل النسخ إلى الحافظة",
@@ -608,6 +652,7 @@
     "AUDIO_ENCODER_OUTPUT": "مخرجات مُشَفِّر الصوت",
     "AUDIO_RECORD": "تسجيل صوتي",
     "BOOLEAN": "منطقي",
+    "BOUNDING_BOX": "مربع التحديد",
     "CAMERA_CONTROL": "تحكم الكاميرا",
     "CLIP": "CLIP",
     "CLIP_VISION": "رؤية CLIP",
@@ -619,6 +664,7 @@
     "COMFY_MATCHTYPE_V3": "COMFY_MATCHTYPE_V3",
     "CONDITIONING": "تكييف",
     "CONTROL_NET": "ControlNet",
+    "ELEVENLABS_VOICE": "ELEVENLABS_VOICE",
     "FILE_3D": "ملف ثلاثي الأبعاد",
     "FILE_3D_FBX": "ملف FBX ثلاثي الأبعاد",
     "FILE_3D_GLB": "ملف GLB ثلاثي الأبعاد",
@@ -657,6 +703,7 @@
     "OPENAI_INPUT_FILES": "ملفات إدخال أوبن إيه آي",
     "PHOTOMAKER": "صانع الصور",
     "PIXVERSE_TEMPLATE": "قالب PixVerse",
+    "POSE_KEYPOINT": "نقطة مفتاحية للوضعية",
     "RECRAFT_COLOR": "لون Recraft",
     "RECRAFT_CONTROLS": "عناصر تحكم Recraft",
     "RECRAFT_V3_STYLE": "نمط Recraft V3",
@@ -727,11 +774,68 @@
     "noStackTrace": "لا توجد تتبع للمكدس متاحة",
     "promptExecutionError": "فشل تنفيذ الطلب"
   },
+  "errorOverlay": {
+    "errorCount": "{count} أخطاء | {count} خطأ | {count} أخطاء",
+    "seeErrors": "عرض الأخطاء"
+  },
+  "essentials": {
+    "batchImage": "معالجة صور دفعة واحدة",
+    "canny": "كانّي",
+    "cannyToImage": "تحويل كانّي إلى صورة",
+    "cannyToVideo": "تحويل كانّي إلى فيديو",
+    "cropImage": "قص الصورة",
+    "depthToImage": "تحويل العمق إلى صورة",
+    "depthToVideo": "تحويل العمق إلى فيديو",
+    "extractFrame": "استخراج إطار",
+    "imageCompare": "مقارنة الصور",
+    "imageTo3DModel": "تحويل الصورة إلى نموذج ثلاثي الأبعاد",
+    "imageToImage": "تحويل صورة إلى صورة",
+    "imageToVideo": "تحويل صورة إلى فيديو",
+    "inpaintImage": "ترميم الصورة",
+    "invert": "عكس",
+    "lipsync": "مزامنة الشفاه",
+    "load3DModel": "تحميل نموذج ثلاثي الأبعاد",
+    "loadAudio": "تحميل صوت",
+    "loadImage": "تحميل صورة",
+    "loadStyleLora": "تحميل نمط (LoRA)",
+    "loadVideo": "تحميل فيديو",
+    "musicGeneration": "توليد موسيقى",
+    "outpaintImage": "توسيع الصورة",
+    "poseToImage": "تحويل وضعية إلى صورة",
+    "poseToVideo": "تحويل وضعية إلى فيديو",
+    "removeBackground": "إزالة الخلفية",
+    "resizeImage": "تغيير حجم الصورة",
+    "rotate": "تدوير",
+    "save3DModel": "حفظ نموذج ثلاثي الأبعاد",
+    "saveAudio": "حفظ صوت",
+    "saveImage": "حفظ صورة",
+    "saveVideo": "حفظ فيديو",
+    "text": "نص",
+    "textGenerationLLM": "توليد نص (LLM)",
+    "textTo3DModel": "تحويل النص إلى نموذج ثلاثي الأبعاد",
+    "textToImage": "تحويل نص إلى صورة",
+    "textToVideo": "تحويل نص إلى فيديو"
+  },
+  "exportToast": {
+    "allExportsCompleted": "اكتملت جميع عمليات التصدير",
+    "downloadExport": "تحميل التصدير",
+    "downloadFailed": "فشل تحميل \"{name}\"",
+    "exportCompleted": "تحميل ZIP جاهز",
+    "exportError": "فشل التصدير",
+    "exportFailed": "{count} فشل في التصدير | {count} فشل في التصدير | {count} عمليات تصدير فشلت",
+    "exportFailedSingle": "فشل إنشاء تصدير ZIP",
+    "exportStarted": "يتم تجهيز تحميل ZIP...",
+    "exportingAssets": "جاري تصدير العناصر",
+    "noExportsInQueue": "لا يوجد {filter} عمليات تصدير في قائمة الانتظار",
+    "preparingExport": "جاري تجهيز التصدير...",
+    "retryDownload": "إعادة محاولة التحميل"
+  },
   "g": {
     "1x": "1x",
     "2x": "2x",
     "about": "حول",
     "add": "إضافة",
+    "addNode": "إضافة عقدة...",
     "addNodeFilterCondition": "إضافة شرط لتصفية العقد",
     "all": "الكل",
     "amount": "الكمية",
@@ -818,6 +922,7 @@
     "enableSelected": "تفعيل المحدد",
     "enabled": "ممكّن",
     "enabling": "جارٍ التمكين",
+    "enter": "إدخال",
     "enterBaseName": "أدخل الاسم الأساسي",
     "enterNewName": "أدخل الاسم الجديد",
     "enterNewNamePrompt": "أدخل اسمًا جديدًا:",
@@ -825,6 +930,7 @@
     "error": "خطأ",
     "errorLoadingImage": "حدث خطأ أثناء تحميل الصورة",
     "errorLoadingVideo": "حدث خطأ أثناء تحميل الفيديو",
+    "essentials": "الأساسيات",
     "experimental": "تجريبي",
     "export": "تصدير",
     "extensionName": "اسم الامتداد",
@@ -833,9 +939,12 @@
     "failedToCopyJobId": "فشل نسخ معرف المهمة",
     "failedToDownloadImage": "فشل في تنزيل الصورة",
     "failedToDownloadVideo": "فشل في تنزيل الفيديو",
+    "favorites": "المفضلة",
     "feedback": "ملاحظات",
     "file": "ملف",
     "filter": "تصفية",
+    "filterBy": "تصفية حسب:",
+    "filterByType": "تصفية حسب {type}...",
     "findIssues": "العثور على مشاكل",
     "frameNodes": "تأطير العقد",
     "frontendNewer": "إصدار الواجهة الأمامية {frontendVersion} قد لا يكون متوافقاً مع الإصدار الخلفي {backendVersion}.",
@@ -854,8 +963,10 @@
     "imageUrl": "رابط الصورة",
     "import": "استيراد",
     "inProgress": "جارٍ التنفيذ",
+    "inSubgraph": "في الرسم البياني الفرعي '{name}'",
     "increment": "زيادة",
     "info": "معلومات العقدة",
+    "input": "إدخال",
     "insert": "إدراج",
     "install": "تثبيت",
     "installed": "مثبت",
@@ -879,6 +990,7 @@
     "login": "تسجيل الدخول",
     "logoAlt": "شعار ComfyUI",
     "logs": "السجلات",
+    "manageExtensions": "إدارة الإضافات",
     "markdown": "ماركداون",
     "micPermissionDenied": "تم رفض إذن الميكروفون",
     "migrate": "ترحيل",
@@ -886,6 +998,7 @@
     "more": "المزيد",
     "moreOptions": "خيارات إضافية",
     "moreWorkflows": "المزيد من سير العمل",
+    "mostRelevant": "الأكثر صلة",
     "multiSelectDropdown": "قائمة منسدلة متعددة الاختيار",
     "name": "الاسم",
     "newFolder": "مجلد جديد",
@@ -916,7 +1029,9 @@
     "openManager": "فتح المدير",
     "openNewIssue": "فتح مشكلة جديدة",
     "or": "أو",
+    "output": "إخراج",
     "overwrite": "الكتابة فوق",
+    "partner": "شريك",
     "playPause": "تشغيل/إيقاف مؤقت",
     "playRecording": "تشغيل التسجيل",
     "playbackSpeed": "سرعة التشغيل",
@@ -927,6 +1042,7 @@
     "progressCountOf": "من",
     "queued": "في قائمة الانتظار",
     "ready": "جاهز",
+    "recents": "الأخيرة",
     "reconnected": "تم الاتصال من جديد",
     "reconnecting": "إعادة الاتصال",
     "refresh": "تحديث",
@@ -942,6 +1058,7 @@
     },
     "releaseTitle": "إصدار {package} {version}",
     "reloadToApplyChanges": "أعد التحميل لتطبيق التغييرات",
+    "remove": "إزالة",
     "removeImage": "إزالة الصورة",
     "removeTag": "إزالة الوسم",
     "removeVideo": "إزالة الفيديو",
@@ -1006,6 +1123,7 @@
     "updated": "تم التحديث",
     "updating": "جارٍ التحديث",
     "upload": "رفع",
+    "uploadAlreadyInProgress": "الرفع جارٍ بالفعل",
     "usageHint": "تلميح الاستخدام",
     "use": "استخدم",
     "user": "المستخدم",
@@ -1079,6 +1197,8 @@
     "star": "نجمة"
   },
   "imageCompare": {
+    "batchLabelA": "أ: ",
+    "batchLabelB": "ب: ",
     "noImages": "لا توجد صور للمقارنة"
   },
   "imageCrop": {
@@ -1212,20 +1332,55 @@
     "helpFix": "المساعدة في الإصلاح"
   },
   "linearMode": {
+    "appModeToolbar": {
+      "appBuilder": "منشئ التطبيقات",
+      "apps": "التطبيقات"
+    },
+    "arrange": {
+      "atLeastOne": "عقدة واحدة على الأقل",
+      "connectAtLeastOne": "قم بتوصيل {atLeastOne} عقدة مخرجات حتى يتمكن المستخدمون من رؤية النتائج بعد التشغيل.",
+      "noOutputs": "لم تتم إضافة أي مخرجات بعد",
+      "outputExamples": "أمثلة: 'حفظ صورة' أو 'حفظ فيديو'",
+      "outputs": "المخرجات",
+      "resultsLabel": "سيتم عرض النتائج الناتجة من عقدة/عقد المخرجات المحددة هنا بعد تشغيل هذا التطبيق",
+      "switchToSelect": "انتقل إلى خطوة 'تحديد' وانقر على عقد المخرجات لإضافتها هنا.",
+      "switchToSelectButton": "الانتقال إلى التحديد"
+    },
     "beta": "وضع التطبيق تجريبي - أرسل ملاحظاتك",
+    "builder": {
+      "exit": "خروج من البناء",
+      "exitConfirmMessage": "لديك تغييرات غير محفوظة ستفقد\nهل تريد الخروج بدون حفظ؟",
+      "exitConfirmTitle": "الخروج من بناء التطبيق؟",
+      "inputsDesc": "سيتفاعل المستخدمون مع هذه المدخلات ويعدلونها لإنشاء النتائج.",
+      "inputsExample": "أمثلة: \"تحميل صورة\"، \"موجه نصي\"، \"خطوات\"",
+      "noInputs": "لم تتم إضافة أي مدخلات بعد",
+      "noOutputs": "لم تتم إضافة أي عقد إخراج بعد",
+      "outputsDesc": "وصل عقدة إخراج واحدة على الأقل حتى يتمكن المستخدمون من رؤية النتائج بعد التشغيل.",
+      "outputsExample": "أمثلة: \"حفظ صورة\" أو \"حفظ فيديو\"",
+      "promptAddInputs": "انقر على معلمات العقدة لإضافتها هنا كمدخلات",
+      "promptAddOutputs": "انقر على عقد الإخراج لإضافتها هنا. هذه ستكون النتائج المُولدة.",
+      "title": "وضع بناء التطبيق"
+    },
     "downloadAll": "تنزيل الكل",
     "dragAndDropImage": "اسحب وأسقط صورة",
+    "giveFeedback": "إعطاء ملاحظات",
     "graphMode": "وضع الرسم البياني",
     "linearMode": "وضع التطبيق",
+    "queue": {
+      "clear": "مسح قائمة الانتظار",
+      "clickToClear": "انقر لمسح قائمة الانتظار"
+    },
     "rerun": "تشغيل مجدد",
     "reuseParameters": "إعادة استخدام المعلمات",
     "runCount": "عدد مرات التشغيل:",
     "welcome": {
-      "intro": "عرض مبسط يخفي مخطط العقد حتى تتمكن من التركيز على الإبداع.",
-      "layout": "على اليسار، سترى الصور والفيديوهات والمخرجات التي تم إنشاؤها. على اليمين، فقط عناصر التحكم التي تحتاجها. كل ما هو معقد يبقى بعيدًا عن الأنظار.",
+      "backToWorkflow": "العودة إلى سير العمل",
+      "buildApp": "إنشاء تطبيق",
+      "controls": "تظهر المخرجات في الأسفل، وعناصر التحكم على اليمين. كل شيء آخر يبقى بعيدًا.",
+      "getStarted": "انقر على {runButton} للبدء.",
+      "message": "عرض مبسط يخفي رسم العقد حتى تتمكن من التركيز على الإنشاء.",
       "sharing": "المشاركة سهلة: أنشئ سير العمل الخاص بك، افتح وضع التطبيق، انقر بزر الماوس الأيمن على علامة التبويب، ثم صدّر. عندما يفتح الآخرون ملفك، سيتم تشغيله مباشرة في هذا العرض النظيف. يمكنك مشاركة سير عمل قوي كأداة بسيطة دون الحاجة لفهم مخططات العقد.",
-      "title": "مرحبًا بك في وضع التطبيق",
-      "widget": "إذا كنت تريد التحكم في الإعدادات الظاهرة، حوّل العقد العليا إلى مخطط فرعي، ثم استخدم ترقية عناصر التحكم في الأدوات أعلاه لاختيار ما يتم عرضه."
+      "title": "مرحبًا بك في وضع التطبيق"
     }
   },
   "load3d": {
@@ -1434,6 +1589,9 @@
     "nodePack": "حزمة العقد",
     "nodePackInfo": "معلومات حزمة العقد",
     "notAvailable": "غير متوفر",
+    "packInstall": {
+      "nodeIdRequired": "معرّف العقدة مطلوب للتثبيت"
+    },
     "packsSelected": "الحزم المحددة",
     "repository": "المستودع",
     "restartToApplyChanges": "لـتطبيق التغييرات، يرجى إعادة تشغيل ComfyUI",
@@ -1558,6 +1716,7 @@
       "downloadSelectedAll": "تحميل الكل",
       "downloadStarted": "جاري تحميل {count} ملف(ملفات)...",
       "downloadsStarted": "بدأ تنزيل {count} ملف(ملفات)",
+      "exportStarted": "يتم تجهيز تصدير ZIP لـ {count} ملف | يتم تجهيز تصدير ZIP لـ {count} ملفات",
       "exportWorkflowAll": "تصدير جميع سير العمل",
       "failedToAddNodes": "فشل في إضافة العقد إلى سير العمل",
       "failedToDeleteAssets": "فشل في حذف الأصول المحددة",
@@ -1609,6 +1768,8 @@
     "runWorkflowFront": "تشغيل سير العمل (انتظار في البداية)",
     "settings": "الإعدادات",
     "showMenu": "عرض القائمة",
+    "stopRunInstant": "إيقاف التشغيل (فوري)",
+    "stopRunInstantTooltip": "إيقاف التشغيل",
     "theme": "المظهر",
     "toggleBottomPanel": "تبديل اللوحة السفلية"
   },
@@ -1634,6 +1795,7 @@
     "Contact Support": "الاتصال بالدعم",
     "Convert Selection to Subgraph": "تحويل التحديد إلى رسم فرعي",
     "Convert selected nodes to group node": "تحويل العقد المحددة إلى عقدة مجموعة",
+    "Copy": "نسخ",
     "Custom Nodes (Legacy)": "العقد المخصصة (قديم)",
     "Custom Nodes Manager": "مدير العقد المخصصة",
     "Decrease Brush Size in MaskEditor": "تقليل حجم الفرشاة في محرر القناع",
@@ -1688,6 +1850,7 @@
     "Open Outputs Folder": "فتح مجلد المخرجات",
     "Open Sign In Dialog": "فتح نافذة تسجيل الدخول",
     "Open extra_model_paths_yaml": "فتح ملف extra_model_paths.yaml",
+    "Paste": "لصق",
     "Pin/Unpin Selected Items": "تثبيت/إلغاء تثبيت العناصر المحددة",
     "Pin/Unpin Selected Nodes": "تثبيت/إلغاء تثبيت العقد المحددة",
     "Previous Opened Workflow": "سير العمل السابق المفتوح",
@@ -1707,6 +1870,7 @@
     "Rotate Right in MaskEditor": "تدوير لليمين في محرر القناع",
     "Save": "حفظ",
     "Save As": "حفظ باسم",
+    "Select All": "تحديد الكل",
     "Set Subgraph Description": "تعيين وصف المخطط الفرعي",
     "Set Subgraph Search Aliases": "تعيين الأسماء المستعارة للبحث في المخطط الفرعي",
     "Show Keybindings Dialog": "عرض مربع حوار اختصارات لوحة المفاتيح",
@@ -1742,11 +1906,18 @@
     "showLinks": "إظهار الروابط"
   },
   "missingModelsDialog": {
+    "customModelsInstruction": "ستحتاج إلى العثور عليها وتنزيلها يدويًا. ابحث عنها عبر الإنترنت (جرّب Civitai أو Hugging Face) أو تواصل مع مزود سير العمل الأصلي.",
+    "customModelsWarning": "بعض هذه النماذج مخصصة ولا نتعرف عليها.",
+    "description": "يتطلب سير العمل هذا نماذج لم تقم بتنزيلها بعد.",
     "doNotAskAgain": "عدم العرض مرة أخرى",
-    "missingModels": "نماذج مفقودة",
-    "missingModelsMessage": "عند تحميل الرسم البياني، لم يتم العثور على النماذج التالية",
+    "downloadAll": "تنزيل الكل",
+    "downloadAvailable": "التنزيل متاح",
+    "footerDescription": "قم بتنزيل هذه النماذج وضعها في المجلد الصحيح.\nالعُقد التي تفتقد إلى النماذج مميزة باللون الأحمر على اللوحة.",
+    "gotIt": "حسنًا، فهمت",
     "reEnableInSettings": "إعادة التفعيل في {link}",
-    "reEnableInSettingsLink": "الإعدادات"
+    "reEnableInSettingsLink": "الإعدادات",
+    "title": "هذا سير العمل يفتقد إلى النماذج",
+    "totalSize": "إجمالي حجم التنزيل:"
   },
   "missingNodes": {
     "cloud": {
@@ -1769,6 +1940,14 @@
       "tooltip": "أنت تستخدم إصدارًا ليليًا من ComfyUI. يرجى استخدام زر الملاحظات لمشاركة آرائك حول هذه الميزات."
     }
   },
+  "nightlySurvey": {
+    "accept": "بكل سرور، سأساعد!",
+    "description": "لقد استخدمت هذه الميزة. هل يمكنك تخصيص لحظة لمشاركة ملاحظاتك؟",
+    "dontAskAgain": "لا تسأل مرة أخرى",
+    "loadError": "فشل في تحميل الاستبيان. يرجى المحاولة لاحقًا.",
+    "notNow": "ليس الآن",
+    "title": "ساعدنا في التحسين"
+  },
   "nodeCategories": {
     "": "",
     "3d": "ثلاثي الأبعاد",
@@ -1776,6 +1955,7 @@
     "BFL": "BFL",
     "Bria": "Bria",
     "ByteDance": "بايت دانس",
+    "ElevenLabs": "ElevenLabs",
     "Gemini": "جيميني",
     "Grok": "Grok",
     "HitPaw": "HitPaw",
@@ -1858,11 +2038,13 @@
     "scheduling": "الجدولة",
     "sd": "sd",
     "sd3": "sd3",
+    "shader": "shader",
     "sigmas": "سيجمات",
     "stable_cascade": "سلسلة ثابتة",
     "string": "سلسلة نصية",
     "style_model": "نموذج النمط",
     "text": "نص",
+    "textgen": "textgen",
     "training": "تدريب",
     "transform": "تحويل",
     "unet": "unet",
@@ -1907,7 +2089,10 @@
     "openNodeManager": "فتح مدير العقد",
     "quickFixAvailable": "إصلاح سريع متاح",
     "redHighlight": "أحمر",
+    "replaceAll": "استبدال الكل",
+    "replaceAllWarning": "سيتم استبدال جميع العقد المتاحة في هذه المجموعة.",
     "replaceFailed": "فشل في استبدال العقد",
+    "replaceNode": "استبدال العقدة",
     "replaceSelected": "استبدال المحدد ({count})",
     "replaceWarning": "سيؤدي هذا إلى تعديل سير العمل بشكل دائم. احفظ نسخة أولاً إذا لم تكن متأكدًا.",
     "replaceable": "قابل للاستبدال",
@@ -1915,7 +2100,11 @@
     "replacedAllNodes": "تم استبدال {count} نوع/أنواع من العقد",
     "replacedNode": "تم استبدال العقدة: {nodeType}",
     "selectAll": "تحديد الكل",
-    "skipForNow": "تخطي الآن"
+    "skipForNow": "تخطي الآن",
+    "swapNodesGuide": "يمكن استبدال العقد التالية تلقائيًا ببدائل متوافقة.",
+    "swapNodesTitle": "تبديل العقد",
+    "unknownNode": "غير معروف",
+    "willBeReplacedBy": "سيتم استبدال هذه العقدة بـ:"
   },
   "nodeTemplates": {
     "enterName": "أدخل الاسم",
@@ -1933,6 +2122,19 @@
       "windows": "Windows (بطاقة Nvidia تدعم CUDA)"
     },
     "title": "جهازك غير مدعوم"
+  },
+  "painter": {
+    "background": "الخلفية",
+    "brush": "فرشاة",
+    "clear": "مسح",
+    "color": "منتقي اللون",
+    "eraser": "ممحاة",
+    "hardness": "الصلابة",
+    "height": "الارتفاع",
+    "size": "حجم المؤشر",
+    "tool": "أداة",
+    "uploadError": "فشل في رفع صورة الرسام: {status} - {statusText}",
+    "width": "العرض"
   },
   "progressToast": {
     "allDownloadsCompleted": "اكتملت جميع التنزيلات",
@@ -2015,6 +2217,12 @@
     "advancedInputs": "مدخلات متقدمة",
     "bypass": "تجاوز",
     "color": "لون العقدة",
+    "enterSubgraph": "دخول الرسم الفرعي",
+    "errorHelp": "للمزيد من المساعدة، {github} أو {support}",
+    "errorHelpGithub": "إرسال مشكلة على GitHub",
+    "errorHelpSupport": "تواصل مع الدعم الفني",
+    "errors": "الأخطاء",
+    "executionErrorOccurred": "حدث خطأ أثناء التنفيذ. تحقق من علامة تبويب الأخطاء لمزيد من التفاصيل.",
     "fallbackGroupTitle": "مجموعة",
     "fallbackNodeTitle": "عقدة",
     "favorites": "المدخلات المفضلة",
@@ -2048,7 +2256,24 @@
     "inputsNone": "لا توجد مدخلات",
     "inputsNoneTooltip": "العقدة ليس لديها مدخلات",
     "locateNode": "تحديد موقع العقدة على اللوحة",
+    "missingNodePacks": {
+      "applyChanges": "تطبيق التغييرات",
+      "cloudMessage": "يتطلب سير العمل هذا عقدًا مخصصة غير متوفرة بعد على Comfy Cloud.",
+      "collapse": "طي",
+      "expand": "توسيع",
+      "installAll": "تثبيت الكل",
+      "installNodePack": "تثبيت حزمة العقد",
+      "installed": "تم التثبيت",
+      "installing": "جارٍ التثبيت...",
+      "ossMessage": "يستخدم سير العمل هذا عقدًا مخصصة لم تقم بتثبيتها بعد.",
+      "searchInManager": "البحث في مدير العقد",
+      "title": "حزم العقد المفقودة",
+      "unknownPack": "حزمة غير معروفة",
+      "unsupportedTitle": "حزم العقد غير المدعومة",
+      "viewInManager": "عرض في المدير"
+    },
     "mute": "كتم",
+    "noErrors": "لا توجد أخطاء",
     "noSelection": "حدد عقدة لعرض خصائصها ومعلوماتها.",
     "nodeState": "حالة العقدة",
     "nodes": "العقد",
@@ -2057,10 +2282,25 @@
     "normal": "عادي",
     "parameters": "المعلمات",
     "pinned": "مثبت",
+    "promptErrors": {
+      "no_prompt": {
+        "desc": "بيانات سير العمل المرسلة إلى الخادم فارغة. قد يكون هذا خطأ غير متوقع في النظام."
+      },
+      "prompt_no_outputs": {
+        "desc": "سير العمل لا يحتوي على أي عقدة إخراج (مثل حفظ الصورة، معاينة الصورة) لإنتاج نتيجة."
+      },
+      "server_error_cloud": {
+        "desc": "واجه الخادم خطأ غير متوقع. يرجى المحاولة لاحقاً."
+      },
+      "server_error_local": {
+        "desc": "واجه الخادم خطأ غير متوقع. يرجى مراجعة سجلات الخادم."
+      }
+    },
     "properties": "الخصائص",
     "removeFavorite": "إزالة من المفضلة",
     "resetAllParameters": "إعادة تعيين جميع المعلمات",
     "resetToDefault": "إعادة التعيين إلى الافتراضي",
+    "seeError": "عرض الخطأ",
     "settings": "الإعدادات",
     "showAdvancedInputsButton": "إظهار المدخلات المتقدمة",
     "showInput": "إظهار المدخل",
@@ -2285,6 +2525,7 @@
     "CustomColorPalettes": "لوحات ألوان مخصصة",
     "DevMode": "وضع المطور",
     "EditTokenWeight": "تعديل وزن الرمز",
+    "Error System": "نظام الأخطاء",
     "Execution": "التنفيذ",
     "Extension": "الإضافة",
     "General": "عام",
@@ -2301,6 +2542,7 @@
     "Menu": "القائمة",
     "ModelLibrary": "مكتبة النماذج",
     "Node": "العقدة",
+    "Node Library": "مكتبة العقد",
     "Node Search Box": "مربع بحث العقد",
     "Node Widget": "أداة العقدة",
     "NodeLibrary": "مكتبة العقد",
@@ -2359,6 +2601,10 @@
     "backToAssets": "العودة إلى جميع الأصول",
     "browseTemplates": "تصفح القوالب المثال",
     "downloads": "التنزيلات",
+    "folderView": {
+      "errorDetail": "تعذر استرجاع المخرجات لهذه المهمة. يرجى المحاولة مرة أخرى.",
+      "errorSummary": "فشل في تحميل المخرجات"
+    },
     "generatedAssetsHeader": "الأصول المُولدة",
     "helpCenter": "مركز المساعدة",
     "importedAssetsHeader": "الأصول المستوردة",
@@ -2384,6 +2630,17 @@
     "noImportedFiles": "لم يتم العثور على ملفات مستوردة",
     "nodeLibrary": "مكتبة العقد",
     "nodeLibraryTab": {
+      "allNodes": "جميع العقد",
+      "blueprints": "المخططات",
+      "custom": "مخصص",
+      "essentials": "الأساسيات",
+      "filter": "تصفية",
+      "filterOptions": {
+        "blueprints": "المخططات",
+        "comfyNodes": "عُقد Comfy",
+        "extensions": "الإضافات",
+        "partnerNodes": "عُقد الشركاء"
+      },
       "groupBy": "التجميع حسب",
       "groupStrategies": {
         "category": "الفئة",
@@ -2393,7 +2650,20 @@
         "source": "المصدر",
         "sourceDesc": "التجميع حسب نوع المصدر (أساسي، مخصص، API)"
       },
+      "noBookmarkedNodes": "لا توجد مفضلات بعد",
       "resetView": "إعادة تعيين العرض إلى الافتراضي",
+      "sections": {
+        "bookmarked": "المفضلة",
+        "comfyBlueprints": "مخططات Comfy",
+        "comfyNodes": "عُقد Comfy",
+        "extensions": "الإضافات",
+        "favoriteNode": "العقدة المفضلة",
+        "favorites": "المفضلة",
+        "myBlueprints": "مخططاتي",
+        "partnerNodes": "عُقد الشركاء",
+        "subgraphBlueprints": "مخططات الرسم الفرعي",
+        "unfavoriteNode": "إزالة العقدة من المفضلة"
+      },
       "sortBy": {
         "alphabetical": "أبجدي",
         "alphabeticalDesc": "الفرز أبجدياً داخل المجموعات",
@@ -2402,6 +2672,7 @@
       },
       "sortMode": "طريقة الفرز"
     },
+    "nodes": "العقد",
     "openWorkflow": "فتح سير العمل من نظام الملفات المحلي",
     "queue": "قائمة الانتظار",
     "queueProgressOverlay": {
@@ -2409,14 +2680,17 @@
       "activeJobsShort": "{count} نشط | {count} نشط",
       "activeJobsSuffix": "مهام نشطة",
       "cancelJobTooltip": "إلغاء المهمة",
+      "clearAllJobsTooltip": "إلغاء جميع المهام الجارية",
       "clearHistory": "مسح سجل قائمة الانتظار",
       "clearHistoryDialogAssetsNote": "لن يتم حذف الأصول التي تم إنشاؤها بواسطة هذه المهام ويمكنك دائمًا عرضها من لوحة الأصول.",
       "clearHistoryDialogDescription": "سيتم حذف جميع المهام المنتهية أو الفاشلة أدناه من لوحة قائمة المهام.",
       "clearHistoryDialogTitle": "مسح سجل قائمة المهام؟",
+      "clearHistoryMenuAssetsNote": "لن يتم حذف الوسائط.",
       "clearQueueTooltip": "مسح القائمة",
       "clearQueued": "مسح قائمة الانتظار",
       "colonPercent": ": {percent}",
       "currentNode": "العقدة الحالية:",
+      "dockedJobHistory": "سجل المهام المثبت",
       "expandCollapsedQueue": "توسيع قائمة المهام",
       "filterAllWorkflows": "جميع سير العمل",
       "filterBy": "تصفية حسب",
@@ -2438,6 +2712,7 @@
       "running": "قيد التشغيل",
       "runningJobsLabel": "{count} قيد التشغيل",
       "runningQueuedSummary": "{running} قيد التشغيل، {queued} في الانتظار",
+      "searchJobs": "بحث...",
       "showAssets": "عرض الأصول",
       "showAssetsPanel": "عرض لوحة الأصول",
       "sortBy": "ترتيب حسب",
@@ -2479,14 +2754,17 @@
     "cannotDeleteGlobal": "لا يمكن حذف المخططات المثبتة",
     "confirmDelete": "سيؤدي هذا الإجراء إلى إزالة المخطط نهائيًا من مكتبتك",
     "confirmDeleteTitle": "حذف المخطط؟",
+    "disconnected": "غير متصل",
     "enterDescription": "أدخل وصفًا",
     "enterSearchAliases": "أدخل الأسماء المستعارة للبحث (مفصولة بفواصل)",
     "hidden": "معاملات مخفية / متداخلة",
     "hideAll": "إخفاء الكل",
+    "linked": "(مرتبط)",
     "loadFailure": "فشل تحميل مخططات الرسم البياني الفرعي",
     "overwriteBlueprint": "سيؤدي الحفظ إلى استبدال المخطط الحالي بالتغييرات الخاصة بك",
     "overwriteBlueprintTitle": "استبدال المخطط الحالي؟",
     "promoteOutsideSubgraph": "لا يمكن ترقية عنصر واجهة المستخدم عند عدم وجوده في الرسم البياني الفرعي",
+    "promoteWidget": "ترقية الأداة: {name}",
     "publish": "نشر الرسم البياني الفرعي",
     "publishSuccess": "تم الحفظ في مكتبة العقد",
     "publishSuccessMessage": "يمكنك العثور على مخطط الرسم البياني الفرعي الخاص بك في مكتبة العقد ضمن \"مخططات الرسم البياني الفرعي\"",
@@ -2494,7 +2772,8 @@
     "searchAliases": "بحث عن الأسماء المستعارة",
     "showAll": "إظهار الكل",
     "showRecommended": "إظهار العناصر الموصى بها",
-    "shown": "معروض على العقدة"
+    "shown": "معروض على العقدة",
+    "unpromoteWidget": "إلغاء ترقية الأداة: {name}"
   },
   "subscription": {
     "addApiCredits": "إضافة رصيد API",
@@ -2502,7 +2781,9 @@
     "addCreditsLabel": "أضف المزيد من الرصيد في أي وقت",
     "benefits": {
       "benefit1": "رصيد شهري للعقد الشريكة - تجديد عند الحاجة",
-      "benefit2": "حتى 30 دقيقة وقت تشغيل لكل مهمة"
+      "benefit1FreeTier": "رصيد شهري أكثر، مع إمكانية الشحن في أي وقت",
+      "benefit2": "حتى 30 دقيقة وقت تشغيل لكل مهمة",
+      "benefit3": "استخدم نماذجك الخاصة (Creator & Pro)"
     },
     "beta": "نسخة تجريبية",
     "billedMonthly": "يتم الفوترة شهريًا",
@@ -2540,6 +2821,21 @@
     "description": "اختر الخطة الأنسب لك",
     "descriptionWorkspace": "اختر أفضل خطة لمساحة العمل الخاصة بك",
     "expiresDate": "ينتهي في {date}",
+    "freeTier": {
+      "description": "تشمل خطتك المجانية {credits} رصيد شهري لتجربة Comfy Cloud.",
+      "descriptionGeneric": "تشمل خطتك المجانية رصيدًا شهريًا لتجربة Comfy Cloud.",
+      "nextRefresh": "سيتم تجديد رصيدك في {date}.",
+      "outOfCredits": {
+        "subtitle": "اشترك لفتح الشحن والمزيد",
+        "title": "لقد نفد رصيدك المجاني"
+      },
+      "subscribeCta": "اشترك للمزيد",
+      "title": "أنت على الخطة المجانية",
+      "topUpBlocked": {
+        "title": "افتح الشحن والمزيد"
+      },
+      "upgradeCta": "عرض الخطط"
+    },
     "gpuLabel": "RTX 6000 Pro (ذاكرة 96GB VRAM)",
     "haveQuestions": "هل لديك أسئلة أو ترغب في معرفة المزيد عن المؤسسات؟",
     "invoiceHistory": "سجل الفواتير",
@@ -2550,6 +2846,7 @@
     "maxDuration": {
       "creator": "30 دقيقة",
       "founder": "30 دقيقة",
+      "free": "٣٠ دقيقة",
       "pro": "ساعة واحدة",
       "standard": "30 دقيقة"
     },
@@ -2608,6 +2905,7 @@
     "resubscribe": "إعادة الاشتراك",
     "resubscribeSuccess": "تمت إعادة تفعيل الاشتراك بنجاح",
     "resubscribeTo": "إعادة الاشتراك في {plan}",
+    "subscribeForMore": "ترقية",
     "subscribeNow": "اشترك الآن",
     "subscribeTo": "اشترك في {plan}",
     "subscribeToComfyCloud": "الاشتراك في Comfy Cloud",
@@ -2622,6 +2920,9 @@
       "founder": {
         "name": "إصدار المؤسس"
       },
+      "free": {
+        "name": "مجاني"
+      },
       "pro": {
         "name": "احترافي"
       },
@@ -2635,6 +2936,7 @@
     "upgrade": "ترقية",
     "upgradePlan": "ترقية الخطة",
     "upgradeTo": "الترقية إلى {plan}",
+    "upgradeToAddCredits": "قم بالترقية لإضافة أرصدة",
     "usdPerMonth": "دولار أمريكي / شهريًا",
     "usdPerMonthPerMember": "دولار أمريكي / شهر / عضو",
     "videoEstimateExplanation": "هذه التقديرات مبنية على قالب Wan 2.2 لتحويل الصورة إلى فيديو باستخدام الإعدادات الافتراضية (5 ثوانٍ، 640x640، 16 إطار/ثانية، 4 خطوات أخذ عينات).",
@@ -2732,6 +3034,7 @@
     "emptyCanvas": "لوحة فارغة",
     "errorCopyImage": "خطأ في نسخ الصورة: {error}",
     "errorLoadingModel": "خطأ في تحميل النموذج",
+    "errorOpenImage": "حدث خطأ أثناء فتح الصورة: {error}",
     "errorSaveSetting": "خطأ في حفظ الإعداد {id}: {err}",
     "exportSuccess": "تم تصدير النموذج بنجاح كـ {format}",
     "failedExecutionPathResolution": "تعذر حل المسار إلى العُقَد المحددة",
@@ -2858,9 +3161,14 @@
     "dropPrompt": "أسقط ملفك أو"
   },
   "widgets": {
+    "boolean": {
+      "false": "خطأ",
+      "true": "صحيح"
+    },
     "node2only": "فقط Node 2.0",
     "selectModel": "اختر نموذج",
     "uploadSelect": {
+      "maxSelectionReached": "تم الوصول إلى الحد الأقصى للاختيار",
       "placeholder": "اختر...",
       "placeholderAudio": "اختر صوت...",
       "placeholderImage": "اختر صورة...",

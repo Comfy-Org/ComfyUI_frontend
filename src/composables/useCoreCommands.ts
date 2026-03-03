@@ -9,7 +9,7 @@ import {
   DEFAULT_LIGHT_COLOR_PALETTE
 } from '@/constants/coreColorPalettes'
 
-import { tryToggleWidgetPromotion } from '@/core/graph/subgraph/proxyWidgetUtils'
+import { tryToggleWidgetPromotion } from '@/core/graph/subgraph/promotionUtils'
 import { t } from '@/i18n'
 import {
   LGraphEventMode,
@@ -312,7 +312,7 @@ export function useCoreCommands(): ComfyCommand[] {
       label: 'Interrupt',
       category: 'essentials' as const,
       function: async () => {
-        await api.interrupt(executionStore.activePromptId)
+        await api.interrupt(executionStore.activeJobId)
         toastStore.add({
           severity: 'info',
           summary: t('g.interrupted'),
@@ -885,6 +885,32 @@ export function useCoreCommands(): ComfyCommand[] {
       }
     },
     {
+      id: 'Comfy.Canvas.CopySelected',
+      icon: 'icon-[lucide--copy]',
+      label: 'Copy',
+      function: () => {
+        if (app.canvas.selectedItems?.size) {
+          app.canvas.copyToClipboard()
+        }
+      }
+    },
+    {
+      id: 'Comfy.Canvas.PasteFromClipboard',
+      icon: 'icon-[lucide--clipboard-paste]',
+      label: 'Paste',
+      function: () => {
+        app.canvas.pasteFromClipboard()
+      }
+    },
+    {
+      id: 'Comfy.Canvas.SelectAll',
+      icon: 'icon-[lucide--lasso-select]',
+      label: 'Select All',
+      function: () => {
+        app.canvas.selectItems()
+      }
+    },
+    {
       id: 'Comfy.Canvas.DeleteSelectedItems',
       icon: 'pi pi-trash',
       label: 'Delete Selected Items',
@@ -1312,8 +1338,6 @@ export function useCoreCommands(): ComfyCommand[] {
           typeof metadata?.source === 'string' ? metadata.source : 'keybind'
         const newMode = !canvasStore.linearMode
         if (newMode) useTelemetry()?.trackEnterLinear({ source })
-        app.rootGraph.extra.linearMode = newMode
-        workflowStore.activeWorkflow?.changeTracker?.checkState()
         canvasStore.linearMode = newMode
       }
     }

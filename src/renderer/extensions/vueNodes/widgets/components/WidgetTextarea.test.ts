@@ -1,6 +1,4 @@
 import { mount } from '@vue/test-utils'
-import PrimeVue from 'primevue/config'
-import Textarea from 'primevue/textarea'
 import { describe, expect, it } from 'vitest'
 
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
@@ -28,10 +26,6 @@ function mountComponent(
   placeholder?: string
 ) {
   return mount(WidgetTextarea, {
-    global: {
-      plugins: [PrimeVue],
-      components: { Textarea }
-    },
     props: {
       widget,
       modelValue,

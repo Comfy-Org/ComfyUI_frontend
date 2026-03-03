@@ -272,7 +272,7 @@ import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
 import type { components } from '@/types/comfyRegistryTypes'
 
 type SubscriptionTier = components['schemas']['SubscriptionTier']
-type CheckoutTierKey = Exclude<TierKey, 'founder'>
+type CheckoutTierKey = Exclude<TierKey, 'free' | 'founder'>
 type CheckoutTier = CheckoutTierKey | `${CheckoutTierKey}-yearly`
 
 const getCheckoutTier = (
@@ -282,7 +282,6 @@ const getCheckoutTier = (
 
 const getCheckoutAttributionForCloud =
   async (): Promise<CheckoutAttributionMetadata> => {
-    // eslint-disable-next-line no-undef
     if (__DISTRIBUTION__ !== 'cloud') {
       return {}
     }
@@ -344,8 +343,12 @@ const tiers: PricingTierConfig[] = [
     isPopular: false
   }
 ]
-const { isActiveSubscription, subscriptionTier, isYearlySubscription } =
-  useSubscription()
+const {
+  isActiveSubscription,
+  isFreeTier,
+  subscriptionTier,
+  isYearlySubscription
+} = useSubscription()
 const telemetry = useTelemetry()
 const { userId } = storeToRefs(useFirebaseAuthStore())
 const { accessBillingPortal, reportError } = useFirebaseAuthActions()
@@ -355,6 +358,10 @@ const isLoading = ref(false)
 const loadingTier = ref<CheckoutTierKey | null>(null)
 const popover = ref()
 const currentBillingCycle = ref<BillingCycle>('yearly')
+
+const hasPaidSubscription = computed(
+  () => isActiveSubscription.value && !isFreeTier.value
+)
 
 const currentTierKey = computed<TierKey | null>(() =>
   subscriptionTier.value ? TIER_TO_KEY[subscriptionTier.value] : null
@@ -392,7 +399,7 @@ const getButtonLabel = (tier: PricingTierConfig): string => {
       ? t('subscription.tierNameYearly', { name: tier.name })
       : tier.name
 
-  return isActiveSubscription.value
+  return hasPaidSubscription.value
     ? t('subscription.changeTo', { plan: planName })
     : t('subscription.subscribeTo', { plan: planName })
 }
@@ -427,7 +434,7 @@ const handleSubscribe = wrapWithErrorHandlingAsync(
     loadingTier.value = tierKey
 
     try {
-      if (isActiveSubscription.value) {
+      if (hasPaidSubscription.value) {
         const checkoutAttribution = await getCheckoutAttributionForCloud()
         if (userId.value) {
           telemetry?.trackBeginCheckout({

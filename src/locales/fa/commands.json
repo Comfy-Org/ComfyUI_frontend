@@ -44,6 +44,9 @@
   "Comfy_BrowseTemplates": {
     "label": "مرور قالب‌ها"
   },
+  "Comfy_Canvas_CopySelected": {
+    "label": "کپی"
+  },
   "Comfy_Canvas_DeleteSelectedItems": {
     "label": "حذف آیتم‌های انتخاب‌شده"
   },
@@ -65,11 +68,17 @@
   "Comfy_Canvas_MoveSelectedNodes_Up": {
     "label": "انتقال nodeهای انتخاب‌شده به بالا"
   },
+  "Comfy_Canvas_PasteFromClipboard": {
+    "label": "چسباندن"
+  },
   "Comfy_Canvas_ResetView": {
     "label": "بازنشانی نما"
   },
   "Comfy_Canvas_Resize": {
     "label": "تغییر اندازه nodeهای انتخاب‌شده"
+  },
+  "Comfy_Canvas_SelectAll": {
+    "label": "انتخاب همه"
   },
   "Comfy_Canvas_ToggleLinkVisibility": {
     "label": "نمایش/مخفی‌سازی لینک‌ها در بوم"

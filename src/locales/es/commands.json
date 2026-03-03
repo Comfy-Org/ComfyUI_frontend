@@ -44,6 +44,9 @@
   "Comfy_BrowseTemplates": {
     "label": "Explorar plantillas"
   },
+  "Comfy_Canvas_CopySelected": {
+    "label": "Copiar"
+  },
   "Comfy_Canvas_DeleteSelectedItems": {
     "label": "Eliminar elementos seleccionados"
   },
@@ -65,11 +68,17 @@
   "Comfy_Canvas_MoveSelectedNodes_Up": {
     "label": "Mover nodos seleccionados hacia arriba"
   },
+  "Comfy_Canvas_PasteFromClipboard": {
+    "label": "Pegar"
+  },
   "Comfy_Canvas_ResetView": {
     "label": "Restablecer vista"
   },
   "Comfy_Canvas_Resize": {
     "label": "Redimensionar Nodos Seleccionados"
+  },
+  "Comfy_Canvas_SelectAll": {
+    "label": "Seleccionar todo"
   },
   "Comfy_Canvas_ToggleLinkVisibility": {
     "label": "Alternar visibilidad de enlace en lienzo"

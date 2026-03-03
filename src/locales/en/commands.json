@@ -44,6 +44,9 @@
   "Comfy_BrowseTemplates": {
     "label": "Browse Templates"
   },
+  "Comfy_Canvas_CopySelected": {
+    "label": "Copy"
+  },
   "Comfy_Canvas_DeleteSelectedItems": {
     "label": "Delete Selected Items"
   },
@@ -65,11 +68,17 @@
   "Comfy_Canvas_MoveSelectedNodes_Up": {
     "label": "Move Selected Nodes Up"
   },
+  "Comfy_Canvas_PasteFromClipboard": {
+    "label": "Paste"
+  },
   "Comfy_Canvas_ResetView": {
     "label": "Reset View"
   },
   "Comfy_Canvas_Resize": {
     "label": "Resize Selected Nodes"
+  },
+  "Comfy_Canvas_SelectAll": {
+    "label": "Select All"
   },
   "Comfy_Canvas_ToggleLinkVisibility": {
     "label": "Canvas Toggle Link Visibility"

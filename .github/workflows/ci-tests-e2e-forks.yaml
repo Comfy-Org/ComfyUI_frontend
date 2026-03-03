@@ -6,9 +6,6 @@ on:
     workflows: ['CI: Tests E2E']
     types: [requested, completed]
 
-env:
-  DATE_FORMAT: '+%m/%d/%Y, %I:%M:%S %p'
-
 jobs:
   deploy-and-comment-forked-pr:
     runs-on: ubuntu-latest
@@ -63,8 +60,7 @@ jobs:
           ./scripts/cicd/pr-playwright-deploy-and-comment.sh \
             "${{ steps.pr.outputs.result }}" \
             "${{ github.event.workflow_run.head_branch }}" \
-            "starting" \
-            "$(date -u '${{ env.DATE_FORMAT }}')"
+            "starting"
 
       - name: Download and Deploy Reports
         if: steps.pr.outputs.result != 'null' && github.event.action == 'completed'

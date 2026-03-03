@@ -2,6 +2,8 @@ import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { app } from '@/scripts/app'
 import { useExecutionStore } from '@/stores/executionStore'
+import { useExecutionErrorStore } from '@/stores/executionErrorStore'
+import { executionIdToNodeLocatorId } from '@/utils/graphTraversalUtil'
 
 // Create mock functions that will be shared
 const mockNodeExecutionIdToNodeLocatorId = vi.fn()
@@ -80,20 +82,20 @@ describe('useExecutionStore - NodeLocatorId conversions', () => {
       // Mock app.rootGraph.getNodeById to return the mock node
       vi.mocked(app.rootGraph.getNodeById).mockReturnValue(mockNode)
 
-      const result = store.executionIdToNodeLocatorId('123:456')
+      const result = executionIdToNodeLocatorId(app.rootGraph, '123:456')
 
       expect(result).toBe('a1b2c3d4-e5f6-7890-abcd-ef1234567890:456')
     })
 
     it('should convert simple node ID to NodeLocatorId', () => {
-      const result = store.executionIdToNodeLocatorId('123')
+      const result = executionIdToNodeLocatorId(app.rootGraph, '123')
 
       // For simple node IDs, it should return the ID as-is
       expect(result).toBe('123')
     })
 
     it('should handle numeric node IDs', () => {
-      const result = store.executionIdToNodeLocatorId(123)
+      const result = executionIdToNodeLocatorId(app.rootGraph, 123)
 
       // For numeric IDs, it should convert to string and return as-is
       expect(result).toBe('123')
@@ -103,7 +105,9 @@ describe('useExecutionStore - NodeLocatorId conversions', () => {
       // Mock app.rootGraph.getNodeById to return null (node not found)
       vi.mocked(app.rootGraph.getNodeById).mockReturnValue(null)
 
-      expect(store.executionIdToNodeLocatorId('999:456')).toBe(undefined)
+      expect(executionIdToNodeLocatorId(app.rootGraph, '999:456')).toBe(
+        undefined
+      )
     })
   })
 
@@ -132,13 +136,55 @@ describe('useExecutionStore - NodeLocatorId conversions', () => {
   })
 })
 
-describe('useExecutionStore - Node Error Lookups', () => {
+describe('useExecutionStore - reconcileInitializingJobs', () => {
   let store: ReturnType<typeof useExecutionStore>
 
   beforeEach(() => {
     vi.clearAllMocks()
     setActivePinia(createTestingPinia({ stubActions: false }))
     store = useExecutionStore()
+  })
+
+  it('should remove job IDs not present in active jobs', () => {
+    store.initializingJobIds = new Set(['job-1', 'job-2', 'job-3'])
+
+    store.reconcileInitializingJobs(new Set(['job-1']))
+
+    expect(store.initializingJobIds).toEqual(new Set(['job-1']))
+  })
+
+  it('should be a no-op when all initializing IDs are active', () => {
+    store.initializingJobIds = new Set(['job-1', 'job-2'])
+
+    store.reconcileInitializingJobs(new Set(['job-1', 'job-2', 'job-3']))
+
+    expect(store.initializingJobIds).toEqual(new Set(['job-1', 'job-2']))
+  })
+
+  it('should be a no-op when there are no initializing jobs', () => {
+    store.initializingJobIds = new Set()
+
+    store.reconcileInitializingJobs(new Set(['job-1']))
+
+    expect(store.initializingJobIds).toEqual(new Set())
+  })
+
+  it('should clear all initializing IDs when no active jobs exist', () => {
+    store.initializingJobIds = new Set(['job-1', 'job-2'])
+
+    store.reconcileInitializingJobs(new Set())
+
+    expect(store.initializingJobIds).toEqual(new Set())
+  })
+})
+
+describe('useExecutionErrorStore - Node Error Lookups', () => {
+  let store: ReturnType<typeof useExecutionErrorStore>
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    setActivePinia(createTestingPinia({ stubActions: false }))
+    store = useExecutionErrorStore()
   })
 
   describe('getNodeErrors', () => {
@@ -297,5 +343,102 @@ describe('useExecutionStore - Node Error Lookups', () => {
       const result = store.slotHasError('123', 'width')
       expect(result).toBe(false)
     })
+  })
+})
+
+describe('useExecutionErrorStore - setMissingNodeTypes', () => {
+  let store: ReturnType<typeof useExecutionErrorStore>
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    setActivePinia(createTestingPinia({ stubActions: false }))
+    store = useExecutionErrorStore()
+  })
+
+  it('clears missingNodesError when called with an empty array', () => {
+    store.setMissingNodeTypes([{ type: 'NodeA' }])
+    store.setMissingNodeTypes([])
+    expect(store.missingNodesError).toBeNull()
+  })
+
+  it('hasMissingNodes is false when error is null', () => {
+    store.setMissingNodeTypes([])
+    expect(store.hasMissingNodes).toBe(false)
+  })
+
+  it('hasMissingNodes is true after setting non-empty types', () => {
+    store.setMissingNodeTypes([{ type: 'NodeA' }])
+    expect(store.hasMissingNodes).toBe(true)
+  })
+
+  it('deduplicates string entries by value', () => {
+    store.setMissingNodeTypes(['GroupNode', 'GroupNode', 'OtherGroup'])
+    expect(store.missingNodesError?.nodeTypes).toHaveLength(2)
+    expect(store.missingNodesError?.nodeTypes).toEqual([
+      'GroupNode',
+      'OtherGroup'
+    ])
+  })
+
+  it('keeps a single string entry unchanged', () => {
+    store.setMissingNodeTypes(['GroupNode'])
+    expect(store.missingNodesError?.nodeTypes).toHaveLength(1)
+  })
+
+  it('deduplicates object entries with the same nodeId', () => {
+    store.setMissingNodeTypes([
+      { type: 'NodeA', nodeId: 1 },
+      { type: 'NodeA', nodeId: 1 }
+    ])
+    expect(store.missingNodesError?.nodeTypes).toHaveLength(1)
+  })
+
+  it('keeps object entries with different nodeIds even if same type', () => {
+    store.setMissingNodeTypes([
+      { type: 'NodeA', nodeId: 1 },
+      { type: 'NodeA', nodeId: 2 }
+    ])
+    expect(store.missingNodesError?.nodeTypes).toHaveLength(2)
+  })
+
+  it('deduplicates object entries by type when nodeId is absent', () => {
+    store.setMissingNodeTypes([{ type: 'NodeB' }, { type: 'NodeB' }])
+    expect(store.missingNodesError?.nodeTypes).toHaveLength(1)
+  })
+
+  it('keeps distinct types when nodeId is absent', () => {
+    store.setMissingNodeTypes([{ type: 'NodeB' }, { type: 'NodeC' }])
+    expect(store.missingNodesError?.nodeTypes).toHaveLength(2)
+  })
+
+  it('treats absent nodeId the same as type-only key (falls back to type)', () => {
+    store.setMissingNodeTypes([{ type: 'NodeD' }, { type: 'NodeD' }])
+    expect(store.missingNodesError?.nodeTypes).toHaveLength(1)
+  })
+
+  it('handles a mix of string and object entries correctly', () => {
+    store.setMissingNodeTypes([
+      'GroupNode',
+      'GroupNode', // string dup
+      { type: 'NodeA', nodeId: 1 },
+      { type: 'NodeA', nodeId: 1 }, // object dup by nodeId
+      { type: 'NodeA', nodeId: 2 }, // same type, different nodeId → kept
+      { type: 'NodeB' },
+      { type: 'NodeB' } // object dup by type
+    ])
+    // Unique: 'GroupNode', {NodeA,1}, {NodeA,2}, {NodeB} → 4
+    expect(store.missingNodesError?.nodeTypes).toHaveLength(4)
+  })
+
+  it('stores a non-empty message string in missingNodesError', () => {
+    store.setMissingNodeTypes([{ type: 'NodeA' }])
+    expect(typeof store.missingNodesError?.message).toBe('string')
+    expect(store.missingNodesError!.message.length).toBeGreaterThan(0)
+  })
+
+  it('stores the deduplicated nodeTypes array in missingNodesError', () => {
+    const input = [{ type: 'NodeA' }, { type: 'NodeB' }]
+    store.setMissingNodeTypes(input)
+    expect(store.missingNodesError?.nodeTypes).toEqual(input)
   })
 })

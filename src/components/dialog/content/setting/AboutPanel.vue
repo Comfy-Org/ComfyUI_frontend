@@ -13,7 +13,7 @@
         class="about-badge inline-flex items-center no-underline"
         :title="badge.url"
       >
-        <Tag class="mr-2">
+        <Tag class="mr-2" :severity="badge.severity">
           <template #icon>
             <i :class="[badge.icon, 'mr-2 text-xl']" />
           </template>

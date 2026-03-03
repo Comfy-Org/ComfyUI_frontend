@@ -271,7 +271,8 @@ describe('useMissingNodes', () => {
 
       // Update workflow packs
 
-      workflowPacksRef.value = mockWorkflowPacks as unknown as WorkflowPack[]
+      workflowPacksRef.value =
+        mockWorkflowPacks as Partial<WorkflowPack>[] as WorkflowPack[]
       await nextTick()
 
       // Should update missing packs (2 missing since pack-3 is installed)

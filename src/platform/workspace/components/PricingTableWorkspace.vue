@@ -196,7 +196,7 @@
           <Button
             :variant="getButtonSeverity(tier)"
             :disabled="isButtonDisabled(tier)"
-            :loading="props.loadingTier === tier.key"
+            :loading="loadingTier === tier.key"
             :class="
               cn(
                 'h-10 w-full',
@@ -298,17 +298,14 @@ import type { Plan } from '@/platform/workspace/api/workspaceApi'
 import type { components } from '@/types/comfyRegistryTypes'
 
 type SubscriptionTier = components['schemas']['SubscriptionTier']
-type CheckoutTierKey = Exclude<TierKey, 'founder'>
+type CheckoutTierKey = Exclude<TierKey, 'free' | 'founder'>
 
 interface Props {
   isLoading?: boolean
   loadingTier?: CheckoutTierKey | null
 }
 
-const props = withDefaults(defineProps<Props>(), {
-  isLoading: false,
-  loadingTier: null
-})
+const { isLoading = false, loadingTier = null } = defineProps<Props>()
 
 const emit = defineEmits<{
   subscribe: [payload: { tierKey: CheckoutTierKey; billingCycle: BillingCycle }]
@@ -463,7 +460,7 @@ const getButtonSeverity = (
 }
 
 const isButtonDisabled = (tier: PricingTierConfig): boolean => {
-  if (props.isLoading) return true
+  if (isLoading) return true
   if (isCurrentPlan(tier.key)) {
     // Allow clicking current plan button when cancelled (for resubscribe)
     return !isCancelled.value
@@ -495,7 +492,7 @@ const getMonthlyCreditsPerMember = (tier: PricingTierConfig): number =>
   tier.pricing.credits
 
 function handleSubscribe(tierKey: CheckoutTierKey) {
-  if (props.isLoading) return
+  if (isLoading) return
 
   // Handle resubscribe for cancelled subscription on current plan
   if (isCurrentPlan(tierKey)) {

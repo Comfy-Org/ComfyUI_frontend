@@ -1,10 +1,9 @@
 import { useNodeImage, useNodeVideo } from '@/composables/node/useNodeImage'
 import { useNodeImageUpload } from '@/composables/node/useNodeImageUpload'
-import { useValueTransform } from '@/composables/useValueTransform'
 import { t } from '@/i18n'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { IComboWidget } from '@/lib/litegraph/src/types/widgets'
-import type { ResultItem, ResultItemType } from '@/schemas/apiSchema'
+import type { ResultItemType } from '@/schemas/apiSchema'
 import type { InputSpec } from '@/schemas/nodeDefSchema'
 import type { ComfyWidgetConstructor } from '@/scripts/widgets'
 import { useNodeOutputStore } from '@/stores/imagePreviewStore'
@@ -15,17 +14,14 @@ import { addToComboValues } from '@/utils/litegraphUtil'
 const ACCEPTED_IMAGE_TYPES = 'image/png,image/jpeg,image/webp'
 const ACCEPTED_VIDEO_TYPES = 'video/webm,video/mp4'
 
-type InternalFile = string | ResultItem
-type InternalValue = InternalFile | InternalFile[]
-type ExposedValue = string | string[]
-
 const isImageFile = (file: File) => file.type.startsWith('image/')
 const isVideoFile = (file: File) => file.type.startsWith('video/')
 
-const findFileComboWidget = (node: LGraphNode, inputName: string) =>
-  node.widgets!.find((w) => w.name === inputName) as IComboWidget & {
-    value: ExposedValue
-  }
+const findFileComboWidget = (
+  node: LGraphNode,
+  inputName: string
+): IComboWidget | undefined =>
+  node.widgets?.find((w): w is IComboWidget => w.name === inputName)
 
 export const useImageUploadWidget = () => {
   const widgetConstructor: ComfyWidgetConstructor = (
@@ -51,36 +47,40 @@ export const useImageUploadWidget = () => {
 
     const fileFilter = isVideo ? isVideoFile : isImageFile
     const fileComboWidget = findFileComboWidget(node, imageInputName)
-    const initialFile = `${fileComboWidget.value}`
-    const formatPath = (value: InternalFile) =>
+    if (!fileComboWidget) {
+      throw new Error(`Widget "${imageInputName}" not found on node`)
+    }
+    const formatPath = (value: string) =>
       createAnnotatedPath(value, { rootFolder: image_folder })
 
-    const transform = (internalValue: InternalValue): ExposedValue => {
-      if (!internalValue) return initialFile
-      if (Array.isArray(internalValue))
-        return allow_batch
-          ? internalValue.map(formatPath)
-          : formatPath(internalValue[0])
-      return formatPath(internalValue)
-    }
-
-    Object.defineProperty(
-      fileComboWidget,
-      'value',
-      useValueTransform(transform, initialFile)
-    )
-
     // Setup file upload handling
+    let rollback: (() => void) | undefined
     const { openFileSelection } = useNodeImageUpload(node, {
       allow_batch,
       fileFilter,
       accept,
       folder,
+      onUploadStart: (files) => {
+        if (files.length > 0) {
+          const prev = fileComboWidget.value
+          fileComboWidget.value = files[0].name
+          rollback = () => {
+            fileComboWidget.value = prev
+          }
+        }
+      },
+      onUploadError: () => {
+        rollback?.()
+        rollback = undefined
+      },
       onUploadComplete: (output) => {
-        output.forEach((path) => addToComboValues(fileComboWidget, path))
+        rollback = undefined
+        const annotated = output.map(formatPath)
+        annotated.forEach((path) => {
+          addToComboValues(fileComboWidget, path)
+        })
 
-        // Create a NEW array to ensure Vue reactivity detects the change
-        const newValue = allow_batch ? [...output] : output[0]
+        const newValue = allow_batch ? annotated : annotated[0]
 
         // @ts-expect-error litegraph combo value type does not support arrays yet
         fileComboWidget.value = newValue
@@ -103,7 +103,8 @@ export const useImageUploadWidget = () => {
 
     // Add our own callback to the combo widget to render an image when it changes
     fileComboWidget.callback = function () {
-      nodeOutputStore.setNodeOutputs(node, fileComboWidget.value, {
+      node.imgs = undefined
+      nodeOutputStore.setNodeOutputs(node, String(fileComboWidget.value), {
         isAnimated
       })
       node.graph?.setDirtyCanvas(true)
@@ -113,7 +114,7 @@ export const useImageUploadWidget = () => {
     // The value isn't set immediately so we need to wait a moment
     // No change callbacks seem to be fired on initial setting of the value
     requestAnimationFrame(() => {
-      nodeOutputStore.setNodeOutputs(node, fileComboWidget.value, {
+      nodeOutputStore.setNodeOutputs(node, String(fileComboWidget.value), {
         isAnimated
       })
       showPreview({ block: false })

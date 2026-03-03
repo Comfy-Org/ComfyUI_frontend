@@ -10,12 +10,16 @@ const {
   label,
   enableEmptyState,
   tooltip,
+  size = 'default',
+  tooltipDelay = 1000,
   class: className
 } = defineProps<{
   disabled?: boolean
   label?: string
   enableEmptyState?: boolean
   tooltip?: string
+  size?: 'default' | 'lg'
+  tooltipDelay?: number
   class?: string
 }>()
 
@@ -25,7 +29,7 @@ const isExpanded = computed(() => !isCollapse.value && !disabled)
 
 const tooltipConfig = computed(() => {
   if (!tooltip) return undefined
-  return { value: tooltip, showDelay: 1000 }
+  return { value: tooltip, showDelay: tooltipDelay }
 })
 </script>
 
@@ -39,7 +43,8 @@ const tooltipConfig = computed(() => {
         type="button"
         :class="
           cn(
-            'group min-h-12 bg-transparent border-0 outline-0 ring-0 w-full text-left flex items-center justify-between pl-4 pr-3',
+            'group bg-transparent border-0 outline-0 ring-0 w-full text-left flex items-center justify-between pl-4 pr-3',
+            size === 'lg' ? 'min-h-16' : 'min-h-12',
             !disabled && 'cursor-pointer'
           )
         "

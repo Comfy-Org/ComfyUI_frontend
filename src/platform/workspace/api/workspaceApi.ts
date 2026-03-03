@@ -78,6 +78,7 @@ interface ListWorkspacesResponse {
 }
 
 export type SubscriptionTier =
+  | 'FREE'
   | 'STANDARD'
   | 'CREATOR'
   | 'PRO'

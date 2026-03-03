@@ -4187,7 +4187,12 @@ export class LGraphNode
     // Ref: https://github.com/Comfy-Org/ComfyUI_frontend/issues/2652
     // TODO: Move the layout logic before drawing of the node shape, so we don't
     // need to trigger extra round of rendering.
-    if (y > bodyHeight) {
+    // In Vue mode, the DOM is the source of truth for node sizing — the
+    // ResizeObserver feeds measurements back to the layout store.  Allowing
+    // LiteGraph to also call setSize() here creates an infinite feedback loop
+    // (LG grows node → CSS min-height increases → textarea fills extra space →
+    // ResizeObserver reports larger size → LG grows node again).
+    if (!LiteGraph.vueNodesMode && y > bodyHeight) {
       this.setSize([this.size[0], y])
       this.graph.setDirtyCanvas(false, true)
     }

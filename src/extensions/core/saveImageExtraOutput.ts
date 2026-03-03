@@ -1,3 +1,5 @@
+import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import { applyTextReplacements } from '@/utils/searchAndReplace'
 
 import { app } from '../../scripts/app'
@@ -21,7 +23,10 @@ const saveNodeTypes = new Set([
 
 app.registerExtension({
   name: 'Comfy.SaveImageExtraOutput',
-  async beforeRegisterNodeDef(nodeType, nodeData) {
+  async beforeRegisterNodeDef(
+    nodeType: typeof LGraphNode,
+    nodeData: ComfyNodeDef
+  ) {
     if (saveNodeTypes.has(nodeData.name)) {
       const onNodeCreated = nodeType.prototype.onNodeCreated
       // When the SaveImage node is created we want to override the serialization of the output name widget to run our S&R

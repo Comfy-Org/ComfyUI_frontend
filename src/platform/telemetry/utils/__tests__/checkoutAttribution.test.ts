@@ -38,7 +38,7 @@ describe('getCheckoutAttribution', () => {
         callback(valueByField[fieldName])
       }
     )
-    window.gtag = gtagSpy as unknown as Window['gtag']
+    window.gtag = gtagSpy as Partial<Window['gtag']> as Window['gtag']
 
     window.history.pushState(
       {},
@@ -108,7 +108,7 @@ describe('getCheckoutAttribution', () => {
         callback(valueByField[fieldName])
       }
     )
-    window.gtag = gtagSpy as unknown as Window['gtag']
+    window.gtag = gtagSpy as Partial<Window['gtag']> as Window['gtag']
 
     const attribution = await getCheckoutAttribution()
 

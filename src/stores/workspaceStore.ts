@@ -12,6 +12,7 @@ import type { SidebarTabExtension, ToastManager } from '@/types/extensionTypes'
 
 import { useApiKeyAuthStore } from './apiKeyAuthStore'
 import { useCommandStore } from './commandStore'
+import { useExecutionErrorStore } from './executionErrorStore'
 import { useFirebaseAuthStore } from './firebaseAuthStore'
 import { useQueueSettingsStore } from './queueStore'
 import { useBottomPanelStore } from './workspace/bottomPanelStore'
@@ -86,6 +87,8 @@ function workspaceStoreSetup() {
     return sidebarTab.value.sidebarTabs
   }
 
+  const executionErrorStore = useExecutionErrorStore()
+
   return {
     spinner,
     shiftDown,
@@ -103,6 +106,10 @@ function workspaceStoreSetup() {
     dialog,
     bottomPanel,
     user: partialUserStore,
+
+    // Execution error state (read-only, exposed for custom extensions)
+    lastNodeErrors: computed(() => executionErrorStore.lastNodeErrors),
+    lastExecutionError: computed(() => executionErrorStore.lastExecutionError),
 
     registerSidebarTab,
     unregisterSidebarTab,

@@ -11,7 +11,7 @@
         )
       }
     }"
-    @hide="emit('hide')"
+    @hide="onMenuHide"
   >
     <template #item="{ item, props }">
       <Button
@@ -29,7 +29,7 @@
 </template>
 
 <script setup lang="ts">
-import { onClickOutside } from '@vueuse/core'
+import { useEventListener } from '@vueuse/core'
 import ContextMenu from 'primevue/contextmenu'
 import type { MenuItem } from 'primevue/menuitem'
 import type { ComponentPublicInstance } from 'vue'
@@ -39,6 +39,7 @@ import { useI18n } from 'vue-i18n'
 import Button from '@/components/ui/button/Button.vue'
 import { isCloud } from '@/platform/distribution/types'
 import { supportsWorkflowMetadata } from '@/platform/workflow/utils/workflowExtractionUtil'
+import { isPreviewableMediaType } from '@/utils/formatUtil'
 import { detectNodeTypeFromFilename } from '@/utils/loaderNodeUtil'
 import { cn } from '@/utils/tailwindUtil'
 
@@ -76,19 +77,32 @@ const emit = defineEmits<{
 type ContextMenuInstance = ComponentPublicInstance & {
   show: (event: MouseEvent) => void
   hide: () => void
+  container?: HTMLElement
+  $el?: HTMLElement
 }
 
 const contextMenu = ref<ContextMenuInstance | null>(null)
+const isVisible = ref(false)
 const actions = useMediaAssetActions()
 const { t } = useI18n()
 
-// Close context menu when clicking outside
-onClickOutside(
-  computed(() => contextMenu.value?.$el),
-  () => {
-    hide()
-  }
-)
+function getOverlayEl(): HTMLElement | null {
+  return contextMenu.value?.container ?? contextMenu.value?.$el ?? null
+}
+
+function dismissIfOutside(event: Event) {
+  if (!isVisible.value) return
+  const overlay = getOverlayEl()
+  if (!overlay) return
+  if (overlay.contains(event.target as Node)) return
+  hide()
+}
+
+useEventListener(window, 'pointerdown', dismissIfOutside, { capture: true })
+useEventListener(window, 'scroll', dismissIfOutside, {
+  capture: true,
+  passive: true
+})
 
 const showAddToWorkflow = computed(() => {
   // Output assets can always be added
@@ -193,8 +207,8 @@ const contextMenuItems = computed<MenuItem[]>(() => {
 
   // Individual mode: Show all menu options
 
-  // Inspect (if not 3D)
-  if (fileKind !== '3D') {
+  // Inspect
+  if (isPreviewableMediaType(fileKind)) {
     items.push({
       label: t('mediaAsset.actions.inspect'),
       icon: 'icon-[lucide--zoom-in]',
@@ -265,11 +279,18 @@ const contextMenuItems = computed<MenuItem[]>(() => {
   return items
 })
 
-const show = (event: MouseEvent) => {
+function onMenuHide() {
+  isVisible.value = false
+  emit('hide')
+}
+
+function show(event: MouseEvent) {
+  isVisible.value = true
   contextMenu.value?.show(event)
 }
 
-const hide = () => {
+function hide() {
+  isVisible.value = false
   contextMenu.value?.hide()
 }
 

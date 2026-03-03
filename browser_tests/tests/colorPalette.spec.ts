@@ -244,24 +244,19 @@ test.describe(
       await comfyPage.settings.setSetting('Comfy.Node.Opacity', 0.5)
       await comfyPage.settings.setSetting('Comfy.ColorPalette', 'light')
       await comfyPage.nextFrame()
-      const parsed = await (
-        await comfyPage.page.waitForFunction(
-          () => {
-            const workflow = localStorage.getItem('workflow')
-            if (!workflow) return null
-            try {
-              const data = JSON.parse(workflow)
-              return Array.isArray(data?.nodes) ? data : null
-            } catch {
-              return null
-            }
-          },
-          { timeout: 3000 }
-        )
-      ).jsonValue()
+      const parsed = await comfyPage.page.evaluate(() => {
+        const graph = window.app!.graph!
+        if (typeof graph.serialize !== 'function') {
+          throw new Error('app.graph.serialize is not available')
+        }
+        return graph.serialize() as {
+          nodes: Array<{ bgcolor?: string; color?: string }>
+        }
+      })
       expect(parsed.nodes).toBeDefined()
       expect(Array.isArray(parsed.nodes)).toBe(true)
-      for (const node of parsed.nodes) {
+      const nodes = parsed.nodes
+      for (const node of nodes) {
         if (node.bgcolor) expect(node.bgcolor).not.toMatch(/hsla/)
         if (node.color) expect(node.color).not.toMatch(/hsla/)
       }

@@ -14,6 +14,7 @@ import { ComfyTemplates } from '../helpers/templates'
 import { ComfyMouse } from './ComfyMouse'
 import { VueNodeHelpers } from './VueNodeHelpers'
 import { ComfyNodeSearchBox } from './components/ComfyNodeSearchBox'
+import { ComfyNodeSearchBoxV2 } from './components/ComfyNodeSearchBoxV2'
 import { ContextMenu } from './components/ContextMenu'
 import { SettingDialog } from './components/SettingDialog'
 import { BottomPanel } from './components/BottomPanel'
@@ -23,9 +24,9 @@ import {
 } from './components/SidebarTab'
 import { Topbar } from './components/Topbar'
 import { CanvasHelper } from './helpers/CanvasHelper'
+import { PerformanceHelper } from './helpers/PerformanceHelper'
 import { ClipboardHelper } from './helpers/ClipboardHelper'
 import { CommandHelper } from './helpers/CommandHelper'
-import { DebugHelper } from './helpers/DebugHelper'
 import { DragDropHelper } from './helpers/DragDropHelper'
 import { KeyboardHelper } from './helpers/KeyboardHelper'
 import { NodeOperationsHelper } from './helpers/NodeOperationsHelper'
@@ -166,13 +167,13 @@ export class ComfyPage {
 
   // Components
   public readonly searchBox: ComfyNodeSearchBox
+  public readonly searchBoxV2: ComfyNodeSearchBoxV2
   public readonly menu: ComfyMenu
   public readonly actionbar: ComfyActionbar
   public readonly templates: ComfyTemplates
   public readonly settingDialog: SettingDialog
   public readonly confirmDialog: ConfirmDialog
   public readonly vueNodes: VueNodeHelpers
-  public readonly debug: DebugHelper
   public readonly subgraph: SubgraphHelper
   public readonly canvasOps: CanvasHelper
   public readonly nodeOps: NodeOperationsHelper
@@ -185,6 +186,7 @@ export class ComfyPage {
   public readonly dragDrop: DragDropHelper
   public readonly command: CommandHelper
   public readonly bottomPanel: BottomPanel
+  public readonly perf: PerformanceHelper
 
   /** Worker index to test user ID */
   public readonly userIds: string[] = []
@@ -210,13 +212,13 @@ export class ComfyPage {
     this.workflowUploadInput = page.locator('#comfy-file-input')
 
     this.searchBox = new ComfyNodeSearchBox(page)
+    this.searchBoxV2 = new ComfyNodeSearchBoxV2(page)
     this.menu = new ComfyMenu(page)
     this.actionbar = new ComfyActionbar(page)
     this.templates = new ComfyTemplates(page)
     this.settingDialog = new SettingDialog(page, this)
     this.confirmDialog = new ConfirmDialog(page)
     this.vueNodes = new VueNodeHelpers(page)
-    this.debug = new DebugHelper(page, this.canvas)
     this.subgraph = new SubgraphHelper(this)
     this.canvasOps = new CanvasHelper(page, this.canvas, this.resetViewButton)
     this.nodeOps = new NodeOperationsHelper(this)
@@ -229,6 +231,7 @@ export class ComfyPage {
     this.dragDrop = new DragDropHelper(page, this.assetPath.bind(this))
     this.command = new CommandHelper(page)
     this.bottomPanel = new BottomPanel(page)
+    this.perf = new PerformanceHelper(page)
   }
 
   get visibleToasts() {
@@ -436,7 +439,13 @@ export const comfyPageFixture = base.extend<{
     }
 
     await comfyPage.setup()
+
+    const isPerf = testInfo.tags.includes('@perf')
+    if (isPerf) await comfyPage.perf.init()
+
     await use(comfyPage)
+
+    if (isPerf) await comfyPage.perf.dispose()
   },
   comfyMouse: async ({ comfyPage }, use) => {
     const comfyMouse = new ComfyMouse(comfyPage)

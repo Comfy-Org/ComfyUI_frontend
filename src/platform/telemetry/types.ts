@@ -12,6 +12,7 @@
  * 3. Check dist/assets/*.js files contain no tracking code
  */
 
+import type { SubscriptionDialogReason } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
 import type { TierKey } from '@/platform/cloud/subscription/constants/tierPricing'
 import type { BillingCycle } from '@/platform/cloud/subscription/utils/subscriptionTierRank'
 import type { AuditLog } from '@/services/customerEventsService'
@@ -59,6 +60,8 @@ export interface RunButtonProperties {
   subgraph_count: number
   has_api_nodes: boolean
   api_node_names: string[]
+  has_toolkit_nodes: boolean
+  toolkit_node_names: string[]
   trigger_source?: ExecutionTriggerSource
 }
 
@@ -82,6 +85,9 @@ export interface ExecutionContext {
   total_node_count: number
   has_api_nodes: boolean
   api_node_names: string[]
+  has_toolkit_nodes: boolean
+  toolkit_node_names: string[]
+  toolkit_node_count: number
   trigger_source?: ExecutionTriggerSource
 }
 
@@ -296,6 +302,11 @@ export interface CheckoutAttributionMetadata {
   wbraid?: string
 }
 
+export interface SubscriptionMetadata {
+  current_tier?: string
+  reason?: SubscriptionDialogReason
+}
+
 export interface BeginCheckoutMetadata
   extends Record<string, unknown>, CheckoutAttributionMetadata {
   user_id: string
@@ -316,7 +327,10 @@ export interface TelemetryProvider {
   trackUserLoggedIn?(): void
 
   // Subscription flow events
-  trackSubscription?(event: 'modal_opened' | 'subscribe_clicked'): void
+  trackSubscription?(
+    event: 'modal_opened' | 'subscribe_clicked',
+    metadata?: SubscriptionMetadata
+  ): void
   trackBeginCheckout?(metadata: BeginCheckoutMetadata): void
   trackMonthlySubscriptionSucceeded?(): void
   trackMonthlySubscriptionCancelled?(): void
@@ -507,3 +521,4 @@ export type TelemetryEventProperties =
   | HelpCenterClosedMetadata
   | WorkflowCreatedMetadata
   | EnterLinearMetadata
+  | SubscriptionMetadata

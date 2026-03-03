@@ -2,14 +2,30 @@
   <div class="flex h-full items-center justify-center p-8">
     <div class="max-w-screen p-2 lg:w-96">
       <!-- Header -->
-      <div class="mt-6 mb-8 flex flex-col gap-4">
+      <div class="mb-8 flex flex-col gap-4">
         <h1 class="my-0 text-xl leading-normal font-medium">
           {{ t('auth.login.title') }}
         </h1>
-        <p class="my-0 text-base">
-          <span class="text-muted">{{ t('auth.login.newUser') }}</span>
+        <i18n-t
+          v-if="isFreeTierEnabled"
+          keypath="auth.login.signUpFreeTierPromo"
+          tag="p"
+          class="my-0 text-base text-muted"
+          :plural="freeTierCredits ?? undefined"
+        >
+          <template #signUp>
+            <span
+              class="cursor-pointer text-blue-500"
+              @click="navigateToSignup"
+              >{{ t('auth.login.signUp') }}</span
+            >
+          </template>
+          <template #credits>{{ freeTierCredits }}</template>
+        </i18n-t>
+        <p v-else class="my-0 text-base text-muted">
+          {{ t('auth.login.newUser') }}
           <span
-            class="ml-1 cursor-pointer text-blue-500"
+            class="cursor-pointer text-blue-500"
             @click="navigateToSignup"
             >{{ t('auth.login.signUp') }}</span
           >
@@ -20,36 +36,49 @@
         {{ t('auth.login.insecureContextWarning') }}
       </Message>
 
-      <!-- Form -->
-      <CloudSignInForm :auth-error="authError" @submit="signInWithEmail" />
+      <template v-if="!showEmailForm">
+        <!-- OAuth Buttons (primary) -->
+        <div class="flex flex-col gap-4">
+          <Button type="button" class="h-10 w-full" @click="signInWithGoogle">
+            <i class="pi pi-google mr-2"></i>
+            {{ t('auth.login.loginWithGoogle') }}
+          </Button>
 
-      <!-- Divider -->
-      <Divider align="center" layout="horizontal" class="my-8">
-        <span class="text-muted">{{ t('auth.login.orContinueWith') }}</span>
-      </Divider>
+          <Button
+            type="button"
+            class="h-10 bg-[#2d2e32]"
+            variant="secondary"
+            @click="signInWithGithub"
+          >
+            <i class="pi pi-github mr-2"></i>
+            {{ t('auth.login.loginWithGithub') }}
+          </Button>
+        </div>
 
-      <!-- Social Login Buttons -->
-      <div class="flex flex-col gap-6">
-        <Button
-          type="button"
-          class="h-10 bg-[#2d2e32]"
-          variant="secondary"
-          @click="signInWithGoogle"
-        >
-          <i class="pi pi-google mr-2"></i>
-          {{ t('auth.login.loginWithGoogle') }}
-        </Button>
+        <div class="mt-6 text-center">
+          <Button
+            variant="muted-textonly"
+            class="text-sm underline"
+            @click="switchToEmailForm"
+          >
+            {{ t('auth.login.useEmailInstead') }}
+          </Button>
+        </div>
+      </template>
 
-        <Button
-          type="button"
-          class="h-10 bg-[#2d2e32]"
-          variant="secondary"
-          @click="signInWithGithub"
-        >
-          <i class="pi pi-github mr-2"></i>
-          {{ t('auth.login.loginWithGithub') }}
-        </Button>
-      </div>
+      <template v-else>
+        <CloudSignInForm :auth-error="authError" @submit="signInWithEmail" />
+
+        <div class="mt-4 text-center">
+          <Button
+            variant="muted-textonly"
+            class="text-sm underline"
+            @click="switchToSocialLogin"
+          >
+            {{ t('auth.login.backToSocialLogin') }}
+          </Button>
+        </div>
+      </template>
 
       <!-- Terms & Contact -->
       <p class="mt-5 text-sm text-gray-600">
@@ -75,7 +104,6 @@
 </template>
 
 <script setup lang="ts">
-import Divider from 'primevue/divider'
 import Message from 'primevue/message'
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -84,6 +112,7 @@ import { useRoute, useRouter } from 'vue-router'
 import Button from '@/components/ui/button/Button.vue'
 import { useFirebaseAuthActions } from '@/composables/auth/useFirebaseAuthActions'
 import CloudSignInForm from '@/platform/cloud/onboarding/components/CloudSignInForm.vue'
+import { useFreeTierOnboarding } from '@/platform/cloud/onboarding/composables/useFreeTierOnboarding'
 import { getSafePreviousFullPath } from '@/platform/cloud/onboarding/utils/previousFullPath'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import type { SignInData } from '@/schemas/signInSchema'
@@ -95,6 +124,16 @@ const authActions = useFirebaseAuthActions()
 const isSecureContext = globalThis.isSecureContext
 const authError = ref('')
 const toastStore = useToastStore()
+const showEmailForm = ref(false)
+const { isFreeTierEnabled, freeTierCredits } = useFreeTierOnboarding()
+
+function switchToEmailForm() {
+  showEmailForm.value = true
+}
+
+function switchToSocialLogin() {
+  showEmailForm.value = false
+}
 
 const navigateToSignup = async () => {
   await router.push({ name: 'cloud-signup', query: route.query })

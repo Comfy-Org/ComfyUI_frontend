@@ -4,8 +4,10 @@ name: 'CI: Tests E2E'
 on:
   push:
     branches: [main, master, core/*, desktop/*]
+    paths-ignore: ['**/*.md']
   pull_request:
     branches-ignore: [wip/*, draft/*, temp/*]
+    paths-ignore: ['**/*.md']
   workflow_dispatch:
 
 concurrency:
@@ -182,10 +184,6 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v6
 
-      - name: Get start time
-        id: start-time
-        run: echo "time=$(date -u '+%m/%d/%Y, %I:%M:%S %p')" >> $GITHUB_OUTPUT
-
       - name: Post starting comment
         env:
           GITHUB_TOKEN: ${{ github.token }}
@@ -194,8 +192,7 @@ jobs:
           ./scripts/cicd/pr-playwright-deploy-and-comment.sh \
             "${{ github.event.pull_request.number }}" \
             "${{ github.head_ref }}" \
-            "starting" \
-            "${{ steps.start-time.outputs.time }}"
+            "starting"
 
   # Deploy and comment for non-forked PRs only
   deploy-and-comment:

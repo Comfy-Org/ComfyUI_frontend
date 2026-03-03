@@ -104,7 +104,7 @@ describe('useCanvasInteractions', () => {
 
     it('should return early when canvas is null', () => {
       const { getCanvas } = useCanvasStore()
-      vi.mocked(getCanvas).mockReturnValue(null as unknown as LGraphCanvas) // TODO: Fix misaligned types
+      vi.mocked(getCanvas).mockReturnValue(null!)
       const { handlePointer } = useCanvasInteractions()
 
       const mockEvent = createMockPointerEvent(1)

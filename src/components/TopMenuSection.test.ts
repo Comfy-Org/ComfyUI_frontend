@@ -262,7 +262,7 @@ describe('TopMenuSection', () => {
     )
   })
 
-  it('opens the assets sidebar tab when QPO V2 is enabled', async () => {
+  it('opens the job history sidebar tab when QPO V2 is enabled', async () => {
     const pinia = createTestingPinia({ createSpy: vi.fn, stubActions: false })
     const settingStore = useSettingStore(pinia)
     vi.mocked(settingStore.get).mockImplementation((key) =>
@@ -273,10 +273,10 @@ describe('TopMenuSection', () => {
 
     await wrapper.find('[data-testid="queue-overlay-toggle"]').trigger('click')
 
-    expect(sidebarTabStore.activeSidebarTabId).toBe('assets')
+    expect(sidebarTabStore.activeSidebarTabId).toBe('job-history')
   })
 
-  it('toggles the assets sidebar tab when QPO V2 is enabled', async () => {
+  it('toggles the job history sidebar tab when QPO V2 is enabled', async () => {
     const pinia = createTestingPinia({ createSpy: vi.fn, stubActions: false })
     const settingStore = useSettingStore(pinia)
     vi.mocked(settingStore.get).mockImplementation((key) =>
@@ -287,7 +287,7 @@ describe('TopMenuSection', () => {
     const toggleButton = wrapper.find('[data-testid="queue-overlay-toggle"]')
 
     await toggleButton.trigger('click')
-    expect(sidebarTabStore.activeSidebarTabId).toBe('assets')
+    expect(sidebarTabStore.activeSidebarTabId).toBe('job-history')
 
     await toggleButton.trigger('click')
     expect(sidebarTabStore.activeSidebarTabId).toBe(null)
@@ -339,7 +339,7 @@ describe('TopMenuSection', () => {
       const pinia = createTestingPinia({ createSpy: vi.fn })
       configureSettings(pinia, true)
       const executionStore = useExecutionStore(pinia)
-      executionStore.activePromptId = 'prompt-1'
+      executionStore.activeJobId = 'job-1'
 
       const ComfyActionbarStub = createComfyActionbarStub(actionbarTarget)
 
@@ -429,7 +429,7 @@ describe('TopMenuSection', () => {
       const pinia = createTestingPinia({ createSpy: vi.fn })
       configureSettings(pinia, true)
       const executionStore = useExecutionStore(pinia)
-      executionStore.activePromptId = 'prompt-1'
+      executionStore.activeJobId = 'job-1'
 
       const ComfyActionbarStub = createComfyActionbarStub(actionbarTarget)
 

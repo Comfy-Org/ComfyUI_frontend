@@ -225,6 +225,7 @@
     "login": {
       "andText": "e",
       "backToLogin": "Voltar para login",
+      "backToSocialLogin": "Cadastre-se com Google ou Github em vez disso",
       "confirmPasswordLabel": "Confirmar senha",
       "confirmPasswordPlaceholder": "Digite a mesma senha novamente",
       "didntReceiveEmail": "Não recebeu o e-mail? Entre em contato conosco em",
@@ -233,6 +234,9 @@
       "failed": "Falha no login",
       "forgotPassword": "Esqueceu a senha?",
       "forgotPasswordError": "Falha ao enviar e-mail de redefinição de senha",
+      "freeTierBadge": "Elegível para o Plano Gratuito",
+      "freeTierDescription": "Cadastre-se com Google para ganhar {credits} créditos gratuitos todo mês. Não precisa de cartão.",
+      "freeTierDescriptionGeneric": "Cadastre-se com Google para ganhar créditos gratuitos todo mês. Não precisa de cartão.",
       "insecureContextWarning": "Esta conexão é insegura (HTTP) - suas credenciais podem ser interceptadas por invasores se você continuar.",
       "loginButton": "Entrar",
       "loginWithGithub": "Entrar com Github",
@@ -251,11 +255,13 @@
       "sendResetLink": "Enviar link de redefinição",
       "signInOrSignUp": "Entrar / Cadastrar-se",
       "signUp": "Cadastrar-se",
+      "signUpFreeTierPromo": "Novo por aqui? {signUp} com Google para ganhar {credits} créditos gratuitos todo mês.",
       "success": "Login realizado com sucesso",
       "termsLink": "Termos de Uso",
       "termsText": "Ao clicar em \"Próximo\" ou \"Cadastrar-se\", você concorda com nossos",
       "title": "Faça login na sua conta",
       "useApiKey": "Chave de API Comfy",
+      "useEmailInstead": "Usar e-mail em vez disso",
       "userAvatar": "Avatar do usuário"
     },
     "loginButton": {
@@ -275,11 +281,14 @@
     "signOut": {
       "signOut": "Sair",
       "success": "Logout realizado com sucesso",
-      "successDetail": "Você saiu da sua conta."
+      "successDetail": "Você saiu da sua conta.",
+      "unsavedChangesMessage": "Você tem alterações não salvas que serão perdidas ao sair. Deseja continuar?",
+      "unsavedChangesTitle": "Alterações não salvas"
     },
     "signup": {
       "alreadyHaveAccount": "Já tem uma conta?",
       "emailLabel": "E-mail",
+      "emailNotEligibleForFreeTier": "Cadastro por e-mail não é elegível para o Plano Gratuito.",
       "emailPlaceholder": "Digite seu e-mail",
       "passwordLabel": "Senha",
       "passwordPlaceholder": "Digite uma nova senha",
@@ -291,6 +300,9 @@
       "signUpWithGoogle": "Cadastrar-se com Google",
       "title": "Criar uma conta"
     }
+  },
+  "batch": {
+    "index": "{current} / {total}"
   },
   "billingOperation": {
     "subscriptionFailed": "Falha ao atualizar a assinatura",
@@ -313,8 +325,40 @@
     "deleteBlueprint": "Excluir Blueprint",
     "deleteWorkflow": "Excluir Fluxo de Trabalho",
     "duplicate": "Duplicar",
+    "enterAppMode": "Entrar no modo de aplicativo",
     "enterNewName": "Digite um novo nome",
-    "missingNodesWarning": "O fluxo de trabalho contém nós não suportados (destacados em vermelho)."
+    "exitAppMode": "Sair do modo de aplicativo",
+    "missingNodesWarning": "O fluxo de trabalho contém nós não suportados (destacados em vermelho).",
+    "workflowActions": "Ações do fluxo de trabalho"
+  },
+  "builderMenu": {
+    "exitAppBuilder": "Sair do construtor de aplicativos",
+    "saveApp": "Salvar aplicativo"
+  },
+  "builderToolbar": {
+    "app": "Aplicativo",
+    "appDescription": "Abre como aplicativo por padrão",
+    "arrange": "Pré-visualizar",
+    "arrangeDescription": "Revisar layout do aplicativo",
+    "connectOutput": "Conectar uma saída",
+    "connectOutputBody1": "Seu aplicativo precisa de pelo menos uma saída conectada antes de ser salvo.",
+    "connectOutputBody2": "Altere para a etapa 'Selecionar' e clique nos nós de saída para adicioná-los aqui.",
+    "filename": "Nome do arquivo",
+    "label": "Construtor de aplicativos",
+    "nodeGraph": "Grafo de nós",
+    "nodeGraphDescription": "Abre como grafo de nós por padrão",
+    "save": "Salvar",
+    "saveAs": "Salvar como",
+    "saveAsLabel": "Salvar este fluxo de trabalho como ...",
+    "saveDescription": "Salvar e finalizar",
+    "saveSuccess": "Salvo com sucesso",
+    "saveSuccessAppMessage": "'{name}' foi salvo. Ele abrirá no Modo de Aplicativo por padrão a partir de agora.",
+    "saveSuccessAppPrompt": "Gostaria de visualizá-lo agora?",
+    "saveSuccessGraphMessage": "'{name}' foi salvo. Ele abrirá como grafo de nós por padrão.",
+    "select": "Selecionar",
+    "selectDescription": "Escolha entradas/saídas",
+    "switchToSelect": "Ir para Selecionar",
+    "viewApp": "Visualizar aplicativo"
   },
   "clipboard": {
     "errorMessage": "Falha ao copiar para a área de transferência",
@@ -608,6 +652,7 @@
     "AUDIO_ENCODER_OUTPUT": "SAÍDA DO CODIFICADOR DE ÁUDIO",
     "AUDIO_RECORD": "GRAVAÇÃO DE ÁUDIO",
     "BOOLEAN": "BOOLEANO",
+    "BOUNDING_BOX": "BOUNDING_BOX",
     "CAMERA_CONTROL": "CONTROLE DE CÂMERA",
     "CLIP": "clip",
     "CLIP_VISION": "clip visão",
@@ -619,6 +664,7 @@
     "COMFY_MATCHTYPE_V3": "COMFY_MATCHTYPE_V3",
     "CONDITIONING": "CONDICIONAMENTO",
     "CONTROL_NET": "controlnet",
+    "ELEVENLABS_VOICE": "ELEVENLABS_VOICE",
     "FILE_3D": "ARQUIVO_3D",
     "FILE_3D_FBX": "ARQUIVO_3D_FBX",
     "FILE_3D_GLB": "ARQUIVO_3D_GLB",
@@ -657,6 +703,7 @@
     "OPENAI_INPUT_FILES": "ARQUIVOS DE ENTRADA OPENAI",
     "PHOTOMAKER": "photomaker",
     "PIXVERSE_TEMPLATE": "MODELO PIXVERSE",
+    "POSE_KEYPOINT": "POSE_KEYPOINT",
     "RECRAFT_COLOR": "COR RECRAFT",
     "RECRAFT_CONTROLS": "CONTROLES RECRAFT",
     "RECRAFT_V3_STYLE": "ESTILO RECRAFT V3",
@@ -727,11 +774,68 @@
     "noStackTrace": "Nenhum stacktrace disponível",
     "promptExecutionError": "Falha na execução do prompt"
   },
+  "errorOverlay": {
+    "errorCount": "{count} ERROS | {count} ERRO | {count} ERROS",
+    "seeErrors": "Ver erros"
+  },
+  "essentials": {
+    "batchImage": "Imagem em lote",
+    "canny": "Canny",
+    "cannyToImage": "Canny para imagem",
+    "cannyToVideo": "Canny para vídeo",
+    "cropImage": "Cortar imagem",
+    "depthToImage": "Profundidade para imagem",
+    "depthToVideo": "Profundidade para vídeo",
+    "extractFrame": "Extrair quadro",
+    "imageCompare": "Comparar imagens",
+    "imageTo3DModel": "Imagem para modelo 3D",
+    "imageToImage": "Imagem para imagem",
+    "imageToVideo": "Imagem para vídeo",
+    "inpaintImage": "Inpaint na imagem",
+    "invert": "Inverter",
+    "lipsync": "Lipsync",
+    "load3DModel": "Carregar modelo 3D",
+    "loadAudio": "Carregar áudio",
+    "loadImage": "Carregar imagem",
+    "loadStyleLora": "Carregar estilo (LoRA)",
+    "loadVideo": "Carregar vídeo",
+    "musicGeneration": "Geração de música",
+    "outpaintImage": "Outpaint na imagem",
+    "poseToImage": "Pose para imagem",
+    "poseToVideo": "Pose para vídeo",
+    "removeBackground": "Remover fundo",
+    "resizeImage": "Redimensionar imagem",
+    "rotate": "Girar",
+    "save3DModel": "Salvar modelo 3D",
+    "saveAudio": "Salvar áudio",
+    "saveImage": "Salvar imagem",
+    "saveVideo": "Salvar vídeo",
+    "text": "Texto",
+    "textGenerationLLM": "Geração de texto (LLM)",
+    "textTo3DModel": "Texto para modelo 3D",
+    "textToImage": "Texto para imagem",
+    "textToVideo": "Texto para vídeo"
+  },
+  "exportToast": {
+    "allExportsCompleted": "Todas as exportações concluídas",
+    "downloadExport": "Baixar exportação",
+    "downloadFailed": "Falha ao baixar \"{name}\"",
+    "exportCompleted": "Download ZIP pronto",
+    "exportError": "Falha na exportação",
+    "exportFailed": "{count} exportação falhou | {count} exportação falhou | {count} exportações falharam",
+    "exportFailedSingle": "Falha ao criar exportação ZIP",
+    "exportStarted": "Preparando download ZIP...",
+    "exportingAssets": "Exportando ativos",
+    "noExportsInQueue": "Nenhuma exportação de {filter} na fila",
+    "preparingExport": "Preparando exportação...",
+    "retryDownload": "Tentar baixar novamente"
+  },
   "g": {
     "1x": "1x",
     "2x": "2x",
     "about": "Sobre",
     "add": "Adicionar",
+    "addNode": "Adicionar um nó...",
     "addNodeFilterCondition": "Adicionar condição de filtro de nó",
     "all": "Todos",
     "amount": "Quantidade",
@@ -818,6 +922,7 @@
     "enableSelected": "Ativar selecionados",
     "enabled": "Ativado",
     "enabling": "Ativando {id}",
+    "enter": "Entrar",
     "enterBaseName": "Digite o nome base",
     "enterNewName": "Digite o novo nome",
     "enterNewNamePrompt": "Digite o novo nome:",
@@ -825,6 +930,7 @@
     "error": "Erro",
     "errorLoadingImage": "Erro ao carregar imagem",
     "errorLoadingVideo": "Erro ao carregar vídeo",
+    "essentials": "Essenciais",
     "experimental": "BETA",
     "export": "Exportar",
     "extensionName": "Nome da extensão",
@@ -833,9 +939,12 @@
     "failedToCopyJobId": "Falha ao copiar o ID da tarefa",
     "failedToDownloadImage": "Falha ao baixar imagem",
     "failedToDownloadVideo": "Falha ao baixar vídeo",
+    "favorites": "Favoritos",
     "feedback": "Feedback",
     "file": "arquivo",
     "filter": "Filtrar",
+    "filterBy": "Filtrar por:",
+    "filterByType": "Filtrar por {type}...",
     "findIssues": "Encontrar problemas",
     "frameNodes": "Enquadrar nós",
     "frontendNewer": "A versão do frontend {frontendVersion} pode não ser compatível com a versão do backend {backendVersion}.",
@@ -854,8 +963,10 @@
     "imageUrl": "URL da imagem",
     "import": "Importar",
     "inProgress": "Em andamento",
+    "inSubgraph": "no subgrafo '{name}'",
     "increment": "Aumentar",
     "info": "Informações do nó",
+    "input": "Entrada",
     "insert": "Inserir",
     "install": "Instalar",
     "installed": "Instalado",
@@ -879,6 +990,7 @@
     "login": "Entrar",
     "logoAlt": "Logo do ComfyUI",
     "logs": "Logs",
+    "manageExtensions": "Gerenciar extensões",
     "markdown": "markdown",
     "micPermissionDenied": "Permissão do microfone negada",
     "migrate": "Migrar",
@@ -886,6 +998,7 @@
     "more": "Mais",
     "moreOptions": "Mais opções",
     "moreWorkflows": "Mais fluxos de trabalho",
+    "mostRelevant": "Mais relevante",
     "multiSelectDropdown": "Menu suspenso de seleção múltipla",
     "name": "Nome",
     "newFolder": "Nova pasta",
@@ -916,7 +1029,9 @@
     "openManager": "Abrir gerenciador",
     "openNewIssue": "Abrir novo problema",
     "or": "ou",
+    "output": "Saída",
     "overwrite": "Sobrescrever",
+    "partner": "Parceiro",
     "playPause": "Reproduzir/Pausar",
     "playRecording": "Reproduzir gravação",
     "playbackSpeed": "Velocidade de reprodução",
@@ -927,6 +1042,7 @@
     "progressCountOf": "de",
     "queued": "Na fila",
     "ready": "Pronto",
+    "recents": "Recentes",
     "reconnected": "Reconectado",
     "reconnecting": "Reconectando",
     "refresh": "Atualizar",
@@ -942,6 +1058,7 @@
     },
     "releaseTitle": "Lançamento {package} {version}",
     "reloadToApplyChanges": "Recarregue para aplicar as alterações",
+    "remove": "Remover",
     "removeImage": "Remover imagem",
     "removeTag": "Remover tag",
     "removeVideo": "Remover vídeo",
@@ -1006,6 +1123,7 @@
     "updated": "Atualizado",
     "updating": "Atualizando {id}",
     "upload": "Enviar",
+    "uploadAlreadyInProgress": "O upload já está em andamento",
     "usageHint": "Dica de uso",
     "use": "Usar",
     "user": "Usuário",
@@ -1079,6 +1197,8 @@
     "star": "Estrela"
   },
   "imageCompare": {
+    "batchLabelA": "A:",
+    "batchLabelB": "B:",
     "noImages": "Nenhuma imagem para comparar"
   },
   "imageCrop": {
@@ -1212,20 +1332,55 @@
     "helpFix": "Ajude a Corrigir Isto"
   },
   "linearMode": {
+    "appModeToolbar": {
+      "appBuilder": "Construtor de aplicativos",
+      "apps": "Aplicativos"
+    },
+    "arrange": {
+      "atLeastOne": "pelo menos um",
+      "connectAtLeastOne": "Conecte {atLeastOne} nó de saída para que os usuários possam ver os resultados após a execução.",
+      "noOutputs": "Nenhuma saída adicionada ainda",
+      "outputExamples": "Exemplos: 'Salvar imagem' ou 'Salvar vídeo'",
+      "outputs": "Saídas",
+      "resultsLabel": "Os resultados gerados pelo(s) nó(s) de saída selecionado(s) serão exibidos aqui após a execução deste aplicativo",
+      "switchToSelect": "Altere para a etapa 'Selecionar' e clique nos nós de saída para adicioná-los aqui.",
+      "switchToSelectButton": "Ir para Selecionar"
+    },
     "beta": "Modo App Beta - Envie seu feedback",
+    "builder": {
+      "exit": "Sair do construtor",
+      "exitConfirmMessage": "Você tem alterações não salvas que serão perdidas\nSair sem salvar?",
+      "exitConfirmTitle": "Sair do construtor de app?",
+      "inputsDesc": "Os usuários irão interagir e ajustar estes para gerar seus resultados.",
+      "inputsExample": "Exemplos: “Carregar imagem”, “Prompt de texto”, “Passos”",
+      "noInputs": "Nenhuma entrada adicionada ainda",
+      "noOutputs": "Nenhum nó de saída adicionado ainda",
+      "outputsDesc": "Conecte pelo menos um nó de saída para que os usuários vejam os resultados após executar.",
+      "outputsExample": "Exemplos: “Salvar imagem” ou “Salvar vídeo”",
+      "promptAddInputs": "Clique nos parâmetros do nó para adicioná-los aqui como entradas",
+      "promptAddOutputs": "Clique nos nós de saída para adicioná-los aqui. Estes serão os resultados gerados.",
+      "title": "Modo construtor de app"
+    },
     "downloadAll": "Baixar tudo",
     "dragAndDropImage": "Arraste e solte uma imagem",
+    "giveFeedback": "Enviar feedback",
     "graphMode": "Modo Gráfico",
     "linearMode": "Modo App",
+    "queue": {
+      "clear": "Limpar fila",
+      "clickToClear": "Clique para limpar a fila"
+    },
     "rerun": "Executar novamente",
     "reuseParameters": "Reutilizar parâmetros",
     "runCount": "Número de execuções:",
     "welcome": {
-      "intro": "Uma visualização simplificada que oculta o grafo de nós para você focar na criação.",
-      "layout": "À esquerda, você verá suas imagens, vídeos e saídas geradas. À direita, apenas os controles necessários. Tudo que é complexo fica fora de vista.",
+      "backToWorkflow": "Voltar ao fluxo de trabalho",
+      "buildApp": "Criar aplicativo",
+      "controls": "Seus resultados aparecem na parte inferior, seus controles estão à direita. Todo o resto fica fora do caminho.",
+      "getStarted": "Clique em {runButton} para começar.",
+      "message": "Uma visualização simplificada que oculta o grafo de nós para você focar na criação.",
       "sharing": "Compartilhar é fácil: crie seu fluxo de trabalho, abra o Modo App, clique com o botão direito na aba e exporte. Quando outros abrirem seu arquivo, ele será iniciado diretamente nesta visualização limpa. Você pode compartilhar fluxos de trabalho poderosos como ferramentas simples, sem que ninguém precise entender grafos de nós.",
-      "title": "Bem-vindo ao Modo App",
-      "widget": "Se quiser controlar quais configurações aparecem, converta seus nós de nível superior em um subgrafo e use a promoção de widgets na caixa de ferramentas acima dele para escolher o que será exposto."
+      "title": "Bem-vindo ao Modo App"
     }
   },
   "load3d": {
@@ -1434,6 +1589,9 @@
     "nodePack": "Node Pack",
     "nodePackInfo": "Informações do Pacote de Nós",
     "notAvailable": "Não Disponível",
+    "packInstall": {
+      "nodeIdRequired": "ID do nó é obrigatório para instalação"
+    },
     "packsSelected": "pacotes selecionados",
     "repository": "Repositório",
     "restartToApplyChanges": "Para aplicar as alterações, reinicie o ComfyUI",
@@ -1558,6 +1716,7 @@
       "downloadSelectedAll": "Baixar todos",
       "downloadStarted": "Baixando {count} arquivos...",
       "downloadsStarted": "Iniciada a transferência de {count} arquivo(s)",
+      "exportStarted": "Preparando exportação ZIP para {count} arquivo | Preparando exportação ZIP para {count} arquivos",
       "exportWorkflowAll": "Exportar todos os fluxos de trabalho",
       "failedToAddNodes": "Falha ao adicionar nós ao fluxo de trabalho",
       "failedToDeleteAssets": "Falha ao excluir os recursos selecionados",
@@ -1609,6 +1768,8 @@
     "runWorkflowFront": "Executar fluxo de trabalho (Enfileirar na frente)",
     "settings": "Configurações",
     "showMenu": "Mostrar menu",
+    "stopRunInstant": "Parar execução (Instantâneo)",
+    "stopRunInstantTooltip": "Parar execução",
     "theme": "Tema",
     "toggleBottomPanel": "Alternar painel inferior"
   },
@@ -1634,6 +1795,7 @@
     "Contact Support": "Contatar suporte",
     "Convert Selection to Subgraph": "Converter seleção em subgrafo",
     "Convert selected nodes to group node": "Converter nós selecionados em nó de grupo",
+    "Copy": "Copiar",
     "Custom Nodes (Legacy)": "Nós personalizados (Legado)",
     "Custom Nodes Manager": "Gerenciador de nós personalizados",
     "Decrease Brush Size in MaskEditor": "Diminuir tamanho do pincel no MaskEditor",
@@ -1688,6 +1850,7 @@
     "Open Outputs Folder": "Abrir pasta de saídas",
     "Open Sign In Dialog": "Abrir diálogo de login",
     "Open extra_model_paths_yaml": "Abrir extra_model_paths.yaml",
+    "Paste": "Colar",
     "Pin/Unpin Selected Items": "Fixar/Desafixar itens selecionados",
     "Pin/Unpin Selected Nodes": "Fixar/Desafixar nós selecionados",
     "Previous Opened Workflow": "Fluxo de trabalho anterior aberto",
@@ -1707,6 +1870,7 @@
     "Rotate Right in MaskEditor": "Girar para a direita no MaskEditor",
     "Save": "Salvar",
     "Save As": "Salvar como",
+    "Select All": "Selecionar tudo",
     "Set Subgraph Description": "Definir Descrição do Subgrafo",
     "Set Subgraph Search Aliases": "Definir Apelidos de Busca do Subgrafo",
     "Show Keybindings Dialog": "Mostrar diálogo de atalhos",
@@ -1742,11 +1906,18 @@
     "showLinks": "Mostrar Conexões"
   },
   "missingModelsDialog": {
+    "customModelsInstruction": "Você precisará encontrá-los e baixá-los manualmente. Procure por eles online (tente Civitai ou Hugging Face) ou entre em contato com o provedor original do fluxo de trabalho.",
+    "customModelsWarning": "Alguns desses são modelos personalizados que não reconhecemos.",
+    "description": "Este fluxo de trabalho requer modelos que você ainda não baixou.",
     "doNotAskAgain": "Não mostrar novamente",
-    "missingModels": "Modelos ausentes",
-    "missingModelsMessage": "Ao carregar o grafo, os seguintes modelos não foram encontrados",
+    "downloadAll": "Baixar todos",
+    "downloadAvailable": "Baixar disponíveis",
+    "footerDescription": "Baixe e coloque esses modelos na pasta correta.\nNós com modelos ausentes estão destacados em vermelho no canvas.",
+    "gotIt": "Ok, entendi",
     "reEnableInSettings": "Reativar em {link}",
-    "reEnableInSettingsLink": "Configurações"
+    "reEnableInSettingsLink": "Configurações",
+    "title": "Este fluxo de trabalho está sem modelos",
+    "totalSize": "Tamanho total do download:"
   },
   "missingNodes": {
     "cloud": {
@@ -1769,6 +1940,14 @@
       "tooltip": "Você está usando uma versão nightly do ComfyUI. Por favor, use o botão de feedback para compartilhar suas opiniões sobre esses recursos."
     }
   },
+  "nightlySurvey": {
+    "accept": "Claro, vou ajudar!",
+    "description": "Você tem usado este recurso. Pode dedicar um momento para compartilhar seu feedback?",
+    "dontAskAgain": "Não perguntar novamente",
+    "loadError": "Falha ao carregar a pesquisa. Por favor, tente novamente mais tarde.",
+    "notNow": "Agora não",
+    "title": "Ajude-nos a melhorar"
+  },
   "nodeCategories": {
     "": "",
     "3d": "3d",
@@ -1776,6 +1955,7 @@
     "BFL": "BFL",
     "Bria": "Bria",
     "ByteDance": "ByteDance",
+    "ElevenLabs": "ElevenLabs",
     "Gemini": "Gemini",
     "Grok": "Grok",
     "HitPaw": "HitPaw",
@@ -1858,11 +2038,13 @@
     "scheduling": "agendamento",
     "sd": "sd",
     "sd3": "sd3",
+    "shader": "shader",
     "sigmas": "sigmas",
     "stable_cascade": "stable_cascade",
     "string": "string",
     "style_model": "modelo_de_estilo",
     "text": "texto",
+    "textgen": "textgen",
     "training": "treinamento",
     "transform": "transformar",
     "unet": "unet",
@@ -1907,7 +2089,10 @@
     "openNodeManager": "Abrir Gerenciador de Nós",
     "quickFixAvailable": "Correção Rápida Disponível",
     "redHighlight": "vermelho",
+    "replaceAll": "Substituir Todos",
+    "replaceAllWarning": "Substitui todos os nós disponíveis neste grupo.",
     "replaceFailed": "Falha ao substituir nós",
+    "replaceNode": "Substituir Nó",
     "replaceSelected": "Substituir Selecionados ({count})",
     "replaceWarning": "Isso modificará permanentemente o fluxo de trabalho. Salve uma cópia antes se não tiver certeza.",
     "replaceable": "Substituível",
@@ -1915,7 +2100,11 @@
     "replacedAllNodes": "Substituídos {count} tipo(s) de nó",
     "replacedNode": "Nó substituído: {nodeType}",
     "selectAll": "Selecionar Tudo",
-    "skipForNow": "Pular por enquanto"
+    "skipForNow": "Pular por enquanto",
+    "swapNodesGuide": "Os seguintes nós podem ser automaticamente substituídos por alternativas compatíveis.",
+    "swapNodesTitle": "Trocar Nós",
+    "unknownNode": "Desconhecido",
+    "willBeReplacedBy": "Este nó será substituído por:"
   },
   "nodeTemplates": {
     "enterName": "Digite o nome",
@@ -1933,6 +2122,19 @@
       "windows": "Windows (GPU Nvidia com suporte a CUDA)"
     },
     "title": "Seu dispositivo não é suportado"
+  },
+  "painter": {
+    "background": "Fundo",
+    "brush": "Pincel",
+    "clear": "Limpar",
+    "color": "Seletor de cor",
+    "eraser": "Borracha",
+    "hardness": "Dureza",
+    "height": "Altura",
+    "size": "Tamanho do cursor",
+    "tool": "Ferramenta",
+    "uploadError": "Falha ao enviar imagem do painter: {status} - {statusText}",
+    "width": "Largura"
   },
   "progressToast": {
     "allDownloadsCompleted": "Todos os downloads concluídos",
@@ -2015,6 +2217,12 @@
     "advancedInputs": "ENTRADAS AVANÇADAS",
     "bypass": "Ignorar",
     "color": "Cor do nó",
+    "enterSubgraph": "Entrar no subgrafo",
+    "errorHelp": "Para mais ajuda, {github} ou {support}",
+    "errorHelpGithub": "enviar um issue no GitHub",
+    "errorHelpSupport": "contatar nosso suporte",
+    "errors": "Erros",
+    "executionErrorOccurred": "Ocorreu um erro durante a execução. Verifique a aba de Erros para mais detalhes.",
     "fallbackGroupTitle": "Grupo",
     "fallbackNodeTitle": "Nó",
     "favorites": "ENTRADAS FAVORITAS",
@@ -2048,7 +2256,24 @@
     "inputsNone": "SEM ENTRADAS",
     "inputsNoneTooltip": "O nó não possui entradas",
     "locateNode": "Localizar nó no canvas",
+    "missingNodePacks": {
+      "applyChanges": "Aplicar alterações",
+      "cloudMessage": "Este fluxo de trabalho requer nós personalizados que ainda não estão disponíveis no Comfy Cloud.",
+      "collapse": "Recolher",
+      "expand": "Expandir",
+      "installAll": "Instalar todos",
+      "installNodePack": "Instalar pacote de nós",
+      "installed": "Instalado",
+      "installing": "Instalando...",
+      "ossMessage": "Este fluxo de trabalho usa nós personalizados que você ainda não instalou.",
+      "searchInManager": "Buscar no Gerenciador de Nós",
+      "title": "Pacotes de nós ausentes",
+      "unknownPack": "Pacote desconhecido",
+      "unsupportedTitle": "Pacotes de nós não suportados",
+      "viewInManager": "Ver no Gerenciador"
+    },
     "mute": "Silenciar",
+    "noErrors": "Sem erros",
     "noSelection": "Selecione um nó para ver suas propriedades e informações.",
     "nodeState": "Estado do nó",
     "nodes": "Nós",
@@ -2057,10 +2282,25 @@
     "normal": "Normal",
     "parameters": "Parâmetros",
     "pinned": "Fixado",
+    "promptErrors": {
+      "no_prompt": {
+        "desc": "Os dados do fluxo de trabalho enviados ao servidor estão vazios. Isso pode ser um erro de sistema inesperado."
+      },
+      "prompt_no_outputs": {
+        "desc": "O fluxo de trabalho não contém nenhum nó de saída (por exemplo, Salvar Imagem, Visualizar Imagem) para produzir um resultado."
+      },
+      "server_error_cloud": {
+        "desc": "O servidor encontrou um erro inesperado. Por favor, tente novamente mais tarde."
+      },
+      "server_error_local": {
+        "desc": "O servidor encontrou um erro inesperado. Por favor, verifique os logs do servidor."
+      }
+    },
     "properties": "Propriedades",
     "removeFavorite": "Desfavoritar",
     "resetAllParameters": "Redefinir todos os parâmetros",
     "resetToDefault": "Restaurar para o padrão",
+    "seeError": "Ver erro",
     "settings": "Configurações",
     "showAdvancedInputsButton": "Mostrar entradas avançadas",
     "showInput": "Mostrar entrada",
@@ -2285,6 +2525,7 @@
     "CustomColorPalettes": "Paletas de Cores Personalizadas",
     "DevMode": "Modo Desenvolvedor",
     "EditTokenWeight": "Editar Peso do Token",
+    "Error System": "Sistema de Erros",
     "Execution": "Execução",
     "Extension": "Extensão",
     "General": "Geral",
@@ -2301,6 +2542,7 @@
     "Menu": "Menu",
     "ModelLibrary": "Biblioteca de Modelos",
     "Node": "Nó",
+    "Node Library": "Biblioteca de nós",
     "Node Search Box": "Caixa de Pesquisa de Nós",
     "Node Widget": "Widget de Nó",
     "NodeLibrary": "Biblioteca de Nós",
@@ -2359,6 +2601,10 @@
     "backToAssets": "Voltar para todos os ativos",
     "browseTemplates": "Explorar modelos de exemplo",
     "downloads": "Downloads",
+    "folderView": {
+      "errorDetail": "Não foi possível recuperar as saídas para este trabalho. Por favor, tente novamente.",
+      "errorSummary": "Falha ao carregar saídas"
+    },
     "generatedAssetsHeader": "Ativos gerados",
     "helpCenter": "Central de Ajuda",
     "importedAssetsHeader": "Ativos importados",
@@ -2385,7 +2631,8 @@
       "sortLongestFirst": "Tempo de geração (maior primeiro)",
       "sortNewestFirst": "Mais recentes primeiro",
       "sortOldestFirst": "Mais antigos primeiro",
-      "title": "Ativos de Mídia"
+      "title": "Ativos de Mídia",
+      "viewSettings": "Ver configurações"
     },
     "modelLibrary": "Biblioteca de modelos",
     "newBlankWorkflow": "Criar um novo workflow em branco",
@@ -2395,6 +2642,17 @@
     "noImportedFiles": "Nenhum arquivo importado encontrado",
     "nodeLibrary": "Biblioteca de nós",
     "nodeLibraryTab": {
+      "allNodes": "Todos os nós",
+      "blueprints": "Blueprints",
+      "custom": "Personalizado",
+      "essentials": "Essenciais",
+      "filter": "Filtrar",
+      "filterOptions": {
+        "blueprints": "Blueprints",
+        "comfyNodes": "Nós Comfy",
+        "extensions": "Extensões",
+        "partnerNodes": "Nós de Parceiros"
+      },
       "groupBy": "Agrupar por",
       "groupStrategies": {
         "category": "Categoria",
@@ -2404,7 +2662,20 @@
         "source": "Fonte",
         "sourceDesc": "Agrupar por tipo de fonte (Core, Custom, API)"
       },
+      "noBookmarkedNodes": "Nenhum favorito ainda",
       "resetView": "Restaurar visualização padrão",
+      "sections": {
+        "bookmarked": "Favoritos",
+        "comfyBlueprints": "Blueprints Comfy",
+        "comfyNodes": "Nós Comfy",
+        "extensions": "Extensões",
+        "favoriteNode": "Favoritar nó",
+        "favorites": "Favoritos",
+        "myBlueprints": "Meus Blueprints",
+        "partnerNodes": "Nós de Parceiros",
+        "subgraphBlueprints": "Blueprints de Subgrafo",
+        "unfavoriteNode": "Desfavoritar nó"
+      },
       "sortBy": {
         "alphabetical": "Alfabética",
         "alphabeticalDesc": "Ordenar alfabeticamente dentro dos grupos",
@@ -2413,6 +2684,7 @@
       },
       "sortMode": "Modo de ordenação"
     },
+    "nodes": "Nós",
     "openWorkflow": "Abrir workflow no sistema de arquivos local",
     "queue": "Fila",
     "queueProgressOverlay": {
@@ -2420,14 +2692,17 @@
       "activeJobsShort": "{count} ativo(s) | {count} ativo(s)",
       "activeJobsSuffix": "trabalhos ativos",
       "cancelJobTooltip": "Cancelar trabalho",
+      "clearAllJobsTooltip": "Cancelar todos os trabalhos em execução",
       "clearHistory": "Limpar histórico da fila de trabalhos",
       "clearHistoryDialogAssetsNote": "Os ativos gerados por esses trabalhos não serão excluídos e sempre poderão ser visualizados no painel de ativos.",
       "clearHistoryDialogDescription": "Todos os trabalhos finalizados ou com falha abaixo serão removidos deste painel de fila de trabalhos.",
       "clearHistoryDialogTitle": "Limpar o histórico da fila de trabalhos?",
+      "clearHistoryMenuAssetsNote": "Os ativos de mídia não serão excluídos.",
       "clearQueueTooltip": "Limpar fila",
       "clearQueued": "Limpar fila",
       "colonPercent": ": {percent}",
       "currentNode": "Nó atual:",
+      "dockedJobHistory": "Histórico de trabalhos acoplado",
       "expandCollapsedQueue": "Expandir fila de trabalhos",
       "filterAllWorkflows": "Todos os workflows",
       "filterBy": "Filtrar por",
@@ -2449,6 +2724,7 @@
       "running": "executando",
       "runningJobsLabel": "{count} em execução",
       "runningQueuedSummary": "{running} em execução, {queued} na fila",
+      "searchJobs": "Pesquisar...",
       "showAssets": "Mostrar ativos",
       "showAssetsPanel": "Mostrar painel de ativos",
       "sortBy": "Ordenar por",
@@ -2490,14 +2766,17 @@
     "cannotDeleteGlobal": "Não é possível excluir blueprints instalados",
     "confirmDelete": "Esta ação removerá permanentemente o blueprint da sua biblioteca",
     "confirmDeleteTitle": "Excluir blueprint?",
+    "disconnected": "Desconectado",
     "enterDescription": "Insira uma descrição",
     "enterSearchAliases": "Insira apelidos de busca (separados por vírgula)",
     "hidden": "Parâmetros ocultos/aninhados",
     "hideAll": "Ocultar tudo",
+    "linked": "(Vinculado)",
     "loadFailure": "Falha ao carregar blueprints de subgrafo",
     "overwriteBlueprint": "Salvar irá sobrescrever o blueprint atual com suas alterações",
     "overwriteBlueprintTitle": "Sobrescrever blueprint existente?",
     "promoteOutsideSubgraph": "Não é possível promover o widget fora do subgrafo",
+    "promoteWidget": "Promover Widget: {name}",
     "publish": "Publicar Subgrafo",
     "publishSuccess": "Salvo na Biblioteca de Nós",
     "publishSuccessMessage": "Você pode encontrar seu blueprint de subgrafo na biblioteca de nós em \"Blueprints de Subgrafo\"",
@@ -2505,7 +2784,8 @@
     "searchAliases": "Buscar Apelidos",
     "showAll": "Mostrar tudo",
     "showRecommended": "Mostrar widgets recomendados",
-    "shown": "Exibido no nó"
+    "shown": "Exibido no nó",
+    "unpromoteWidget": "Despromover Widget: {name}"
   },
   "subscription": {
     "addApiCredits": "Adicionar créditos de API",
@@ -2513,7 +2793,9 @@
     "addCreditsLabel": "Adicione mais créditos quando quiser",
     "benefits": {
       "benefit1": "$10 em créditos mensais para Partner Nodes — recarregue quando necessário",
-      "benefit2": "Até 30 min de execução por tarefa"
+      "benefit1FreeTier": "Mais créditos mensais, recarregue a qualquer momento",
+      "benefit2": "Até 30 min de execução por tarefa",
+      "benefit3": "Use seus próprios modelos (Creator & Pro)"
     },
     "beta": "BETA",
     "billedMonthly": "Cobrado mensalmente",
@@ -2551,6 +2833,21 @@
     "description": "Escolha o melhor plano para você",
     "descriptionWorkspace": "Escolha o melhor plano para seu workspace",
     "expiresDate": "Expira em {date}",
+    "freeTier": {
+      "description": "Seu plano gratuito inclui {credits} créditos por mês para testar o Comfy Cloud.",
+      "descriptionGeneric": "Seu plano gratuito inclui uma cota mensal de créditos para testar o Comfy Cloud.",
+      "nextRefresh": "Seus créditos serão renovados em {date}.",
+      "outOfCredits": {
+        "subtitle": "Assine para liberar recargas e mais benefícios",
+        "title": "Você ficou sem créditos gratuitos"
+      },
+      "subscribeCta": "Assine para mais",
+      "title": "Você está no plano Gratuito",
+      "topUpBlocked": {
+        "title": "Desbloqueie recargas e mais benefícios"
+      },
+      "upgradeCta": "Ver planos"
+    },
     "gpuLabel": "RTX 6000 Pro (96GB VRAM)",
     "haveQuestions": "Tem dúvidas ou interesse em soluções empresariais?",
     "invoiceHistory": "Histórico de faturas",
@@ -2561,6 +2858,7 @@
     "maxDuration": {
       "creator": "30 min",
       "founder": "30 min",
+      "free": "30 min",
       "pro": "1 h",
       "standard": "30 min"
     },
@@ -2619,6 +2917,7 @@
     "resubscribe": "Reassinar",
     "resubscribeSuccess": "Assinatura reativada com sucesso",
     "resubscribeTo": "Reassinar {plan}",
+    "subscribeForMore": "Fazer upgrade",
     "subscribeNow": "Assine Agora",
     "subscribeTo": "Assinar {plan}",
     "subscribeToComfyCloud": "Assine o Comfy Cloud",
@@ -2633,6 +2932,9 @@
       "founder": {
         "name": "Edição do Fundador"
       },
+      "free": {
+        "name": "Gratuito"
+      },
       "pro": {
         "name": "Pro"
       },
@@ -2646,6 +2948,7 @@
     "upgrade": "ATUALIZAR",
     "upgradePlan": "Atualizar Plano",
     "upgradeTo": "Atualizar para {plan}",
+    "upgradeToAddCredits": "Faça upgrade para adicionar créditos",
     "usdPerMonth": "USD / mês",
     "usdPerMonthPerMember": "USD / mês / membro",
     "videoEstimateExplanation": "Essas estimativas são baseadas no template Wan 2.2 Image-to-Video usando as configurações padrão (5 segundos, 640x640, 16fps, amostragem de 4 etapas).",
@@ -2743,6 +3046,7 @@
     "emptyCanvas": "Tela vazia",
     "errorCopyImage": "Erro ao copiar imagem: {error}",
     "errorLoadingModel": "Erro ao carregar o modelo",
+    "errorOpenImage": "Erro ao abrir a imagem: {error}",
     "errorSaveSetting": "Erro ao salvar configuração {id}: {err}",
     "exportSuccess": "Modelo exportado com sucesso como {format}",
     "failedExecutionPathResolution": "Não foi possível resolver o caminho para os nós selecionados",
@@ -2869,9 +3173,14 @@
     "dropPrompt": "Solte seu arquivo ou"
   },
   "widgets": {
+    "boolean": {
+      "false": "falso",
+      "true": "verdadeiro"
+    },
     "node2only": "Apenas Node 2.0",
     "selectModel": "Selecionar modelo",
     "uploadSelect": {
+      "maxSelectionReached": "Limite máximo de seleção atingido",
       "placeholder": "Selecionar...",
       "placeholderAudio": "Selecionar áudio...",
       "placeholderImage": "Selecionar imagem...",

@@ -44,6 +44,9 @@
   "Comfy_BrowseTemplates": {
     "label": "Просмотр шаблонов"
   },
+  "Comfy_Canvas_CopySelected": {
+    "label": "Копировать"
+  },
   "Comfy_Canvas_DeleteSelectedItems": {
     "label": "Удалить выбранные элементы"
   },
@@ -65,11 +68,17 @@
   "Comfy_Canvas_MoveSelectedNodes_Up": {
     "label": "Переместить выбранные узлы вверх"
   },
+  "Comfy_Canvas_PasteFromClipboard": {
+    "label": "Вставить"
+  },
   "Comfy_Canvas_ResetView": {
     "label": "Сбросить вид"
   },
   "Comfy_Canvas_Resize": {
     "label": "Изменить размер выбранных узлов"
+  },
+  "Comfy_Canvas_SelectAll": {
+    "label": "Выбрать все"
   },
   "Comfy_Canvas_ToggleLinkVisibility": {
     "label": "Переключить видимость ссылки"
