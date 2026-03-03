@@ -10,13 +10,13 @@ import Button from '@/components/ui/button/Button.vue'
 import { extractVueNodeData } from '@/composables/graph/useGraphNodeManager'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
+import { appendCloudResParam } from '@/platform/distribution/cloudPreviewUtil'
 import SubscribeToRunButton from '@/platform/cloud/subscription/components/SubscribeToRun.vue'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import DropZone from '@/renderer/extensions/linearMode/DropZone.vue'
 import NodeWidgets from '@/renderer/extensions/vueNodes/components/NodeWidgets.vue'
-import { applyLightThemeColor } from '@/renderer/extensions/vueNodes/utils/nodeStyleUtils'
 import WidgetInputNumberInput from '@/renderer/extensions/vueNodes/widgets/components/WidgetInputNumber.vue'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
@@ -69,7 +69,11 @@ const mappedSelections = computed(() => {
       ([id]) => id === nodeId
     ).map(([, widgetName]) => widgetName)
     unprocessedInputs = unprocessedInputs.slice(inputGroup.length)
-    const node = app.rootGraph.getNodeById(nodeId)
+    const node =
+      app.rootGraph.getNodeById(nodeId) ??
+      [...app.rootGraph.subgraphs.values()]
+        .flatMap((sg) => sg.nodes)
+        .find((n) => n.id == nodeId)
     if (!node) continue
 
     const nodeData = nodeToNodeData(node)
@@ -85,13 +89,16 @@ function getDropIndicator(node: LGraphNode) {
   const filename = node.widgets?.[0]?.value
   const resultItem = { type: 'input', filename: `${filename}` }
 
+  const buildImageUrl = () => {
+    if (!filename) return undefined
+    const params = new URLSearchParams(resultItem)
+    appendCloudResParam(params, String(filename))
+    return api.apiURL(`/view?${params}${app.getPreviewFormatParam()}`)
+  }
+
   return {
     iconClass: 'icon-[lucide--image]',
-    imageUrl: filename
-      ? api.apiURL(
-          `/view?${new URLSearchParams(resultItem)}${app.getPreviewFormatParam()}`
-        )
-      : undefined,
+    imageUrl: buildImageUrl(),
     label: t('linearMode.dragAndDropImage'),
     onClick: () => node.widgets?.[1]?.callback?.(undefined)
   }
@@ -239,7 +246,6 @@ defineExpose({ runButtonClick })
             />
             <NodeWidgets
               :node-data
-              :style="{ background: applyLightThemeColor(nodeData.bgcolor) }"
               class="py-3 gap-y-3 **:[.col-span-2]:grid-cols-1 *:has-[textarea]:h-50 rounded-lg max-w-100"
             />
           </template>
@@ -279,7 +285,6 @@ defineExpose({ runButtonClick })
                     'ring-2 ring-inset ring-node-stroke-error'
                 )
               "
-              :style="{ background: applyLightThemeColor(nodeData.bgcolor) }"
             />
           </DropZone>
         </template>

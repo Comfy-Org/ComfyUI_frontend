@@ -1,5 +1,5 @@
 <template>
-  <div class="relative">
+  <div class="relative" @pointerdown.stop>
     <div
       v-if="!hideWhenEmpty || modelValue"
       class="bg-component-node-widget-background box-border flex gap-4 items-center justify-start relative rounded-lg w-full h-16 px-4 py-0"

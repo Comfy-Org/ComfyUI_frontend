@@ -1031,6 +1031,7 @@
     "or": "或",
     "output": "輸出",
     "overwrite": "覆蓋",
+    "partner": "合作夥伴",
     "playPause": "播放/暫停",
     "playRecording": "播放錄製",
     "playbackSpeed": "播放速度",
@@ -1041,6 +1042,7 @@
     "progressCountOf": "共",
     "queued": "已排隊",
     "ready": "就緒",
+    "recents": "最近使用",
     "reconnected": "已重新連線",
     "reconnecting": "重新連線中",
     "refresh": "重新整理",
@@ -2629,8 +2631,16 @@
     "nodeLibrary": "節點庫",
     "nodeLibraryTab": {
       "allNodes": "所有節點",
+      "blueprints": "藍圖",
       "custom": "自訂",
       "essentials": "基本功能",
+      "filter": "篩選",
+      "filterOptions": {
+        "blueprints": "藍圖",
+        "comfyNodes": "Comfy 節點",
+        "extensions": "擴充功能",
+        "partnerNodes": "合作夥伴節點"
+      },
       "groupBy": "分組依據",
       "groupStrategies": {
         "category": "類別",
@@ -2640,10 +2650,18 @@
         "source": "來源",
         "sourceDesc": "依來源類型分組（核心、自訂、API）"
       },
+      "noBookmarkedNodes": "尚未有收藏",
       "resetView": "重設檢視為預設值",
       "sections": {
+        "bookmarked": "已收藏",
+        "comfyBlueprints": "Comfy 藍圖",
+        "comfyNodes": "Comfy 節點",
+        "extensions": "擴充功能",
         "favoriteNode": "收藏節點",
         "favorites": "我的最愛",
+        "myBlueprints": "我的藍圖",
+        "partnerNodes": "合作夥伴節點",
+        "subgraphBlueprints": "子圖藍圖",
         "unfavoriteNode": "取消收藏節點"
       },
       "sortBy": {
@@ -2887,6 +2905,7 @@
     "resubscribe": "重新訂閱",
     "resubscribeSuccess": "訂閱已重新啟用",
     "resubscribeTo": "重新訂閱 {plan}",
+    "subscribeForMore": "升級",
     "subscribeNow": "立即訂閱",
     "subscribeTo": "訂閱 {plan}",
     "subscribeToComfyCloud": "訂閱 Comfy Cloud",
@@ -2917,6 +2936,7 @@
     "upgrade": "升級",
     "upgradePlan": "升級方案",
     "upgradeTo": "升級至 {plan}",
+    "upgradeToAddCredits": "升級以增加點數",
     "usdPerMonth": "美元／月",
     "usdPerMonthPerMember": "美元／月／成員",
     "videoEstimateExplanation": "此估算以 Wan 2.2 圖轉影範本的預設設定（5 秒、640x640、16fps、4 步採樣）為基礎。",

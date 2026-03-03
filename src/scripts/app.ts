@@ -1458,6 +1458,10 @@ export class ComfyApp {
             }
           })
 
+          // Capture workflow before await — activeWorkflow may change if the
+          // user switches tabs while the request is in flight.
+          const queuedWorkflow = useWorkspaceStore().workflow
+            .activeWorkflow as ComfyWorkflow
           const p = await this.graphToPrompt(this.rootGraph)
           const queuedNodes = collectAllNodes(this.rootGraph)
           try {
@@ -1478,8 +1482,7 @@ export class ComfyApp {
                   executionStore.storeJob({
                     id: res.prompt_id,
                     nodes: Object.keys(p.output),
-                    workflow: useWorkspaceStore().workflow
-                      .activeWorkflow as ComfyWorkflow
+                    workflow: queuedWorkflow
                   })
                 }
               } catch (error) {}
