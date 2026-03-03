@@ -123,7 +123,7 @@ onBeforeUnmount(() => {
   </div>
   <SectionWidgets
     ref="sectionWidgetsRef"
-    v-model:collapse="isAllCollapsed"
+    :collapse="isAllCollapsed && !isSearching"
     :label
     :widgets="searchedFavoritedWidgets"
     :is-draggable="!isSearching"
@@ -131,7 +131,12 @@ onBeforeUnmount(() => {
     show-node-name
     enable-empty-state
     class="border-b border-interface-stroke"
-    @update:collapse="nextTick(setDraggableState)"
+    @update:collapse="
+      (v) => {
+        isAllCollapsed = v
+        nextTick(setDraggableState)
+      }
+    "
   >
     <template #empty>
       <div class="text-sm text-muted-foreground px-4 text-center py-10">

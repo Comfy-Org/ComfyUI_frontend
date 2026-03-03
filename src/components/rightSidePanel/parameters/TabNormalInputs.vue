@@ -132,7 +132,7 @@ const advancedLabel = computed(() => {
       :node
       :label
       :widgets
-      :collapse="isSectionCollapsed(String(node.id))"
+      :collapse="isSectionCollapsed(String(node.id)) && !isSearching"
       :show-locate-button="isMultipleNodesSelected"
       :tooltip="
         isSearching || widgets.length
