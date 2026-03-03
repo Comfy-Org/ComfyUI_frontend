@@ -102,7 +102,7 @@
         size="lg"
         class="w-full"
         :loading="isInstalling"
-        @click="emit('install', template)"
+        @click="emit('install', templateInfo)"
       >
         <i class="icon-[lucide--download] size-4" />
         {{ t('templateWorkflows.details.install') }}
@@ -137,31 +137,29 @@ import type { MarketplaceTemplate } from '@/platform/marketplace/types/marketpla
 
 const { t } = useI18n()
 
-const { template: templateOrMarketplaceTemplate, isInstalling = false } =
-  defineProps<{
-    template: TemplateInfo | MarketplaceTemplate
-    isInstalling?: boolean
-  }>()
+const { template, isInstalling = false } = defineProps<{
+  template: TemplateInfo | MarketplaceTemplate
+  isInstalling?: boolean
+}>()
 
 const emit = defineEmits<{
   install: [template: TemplateInfo]
 }>()
 
-const template = computed(() =>
-  'template' in templateOrMarketplaceTemplate
-    ? templateOrMarketplaceTemplate.template
-    : templateOrMarketplaceTemplate
-)
-
 const { getTemplateTitle, getTemplateDescription } = useTemplateWorkflows()
 
+const templateInfo = computed(() => template as TemplateInfo)
+
 const title = computed(() =>
-  getTemplateTitle(template.value, template.value.sourceModule ?? 'default')
+  getTemplateTitle(
+    templateInfo.value,
+    templateInfo.value.sourceModule ?? 'default'
+  )
 )
 
-const description = computed(() => getTemplateDescription(template.value))
+const description = computed(() => getTemplateDescription(templateInfo.value))
 
 const formattedVram = computed(() =>
-  template.value.vram ? formatSize(template.value.vram) : null
+  template.vram ? formatSize(template.vram) : null
 )
 </script>

@@ -105,7 +105,7 @@
         v-if="!isLoading"
         class="text-neutral px-6 pt-4 pb-2 text-2xl font-semibold flex items-center gap-1"
       >
-        <template v-if="isMyTemplatesView && isPublishing">
+        <template v-if="isMyTemplatesView && showSubmissionForm">
           <a
             class="cursor-pointer text-muted transition-colors hover:text-foreground hover:underline"
             @click.prevent="cancelPublishing"
@@ -128,7 +128,7 @@
 
     <template #content>
       <PublishTemplateWizard
-        v-if="isMyTemplatesView && isPublishing"
+        v-if="isMyTemplatesView && showSubmissionForm"
         @cancel="cancelPublishing"
         @submitted="onPublishSubmitted"
         @draft-saved="onDraftSaved"
@@ -157,7 +157,7 @@
           }}
         </p>
       </div>
-      <div v-else>
+      <div v-else class="flex flex-col flex-grow">
         <!-- Title -->
         <span
           v-if="isLoading"
@@ -167,8 +167,9 @@
         <!-- Template Cards Grid -->
         <div
           :key="templateListKey"
-          :style="gridStyle"
+          class="grid flex-1 grid-cols-2 content-start gap-4 p-1 lg:grid-cols-3 xl:grid-cols-4"
           data-testid="template-workflows-content"
+          @click.self="selectedTemplate = null"
         >
           <!-- Loading Skeletons (show while loading initial data) -->
           <CardContainer
@@ -303,15 +304,13 @@
                 </template>
                 <template #bottom-right>
                   <StatusBadge
-                    v-if="findSubmission(template)"
+                    v-if="isMyTemplatesView && isMarketplaceTemplate(template)"
                     :label="
                       t(
-                        `templateWorkflows.myTemplates.status.${findSubmission(template)!.status}`
+                        `templateWorkflows.myTemplates.status.${template.status}`
                       )
                     "
-                    :severity="
-                      STATUS_SEVERITY[findSubmission(template)!.status]
-                    "
+                    :severity="STATUS_SEVERITY[template.status]"
                   />
                   <template
                     v-else-if="template.tags && template.tags.length > 0"
@@ -434,7 +433,9 @@
 
       <!-- My Templates Footer -->
       <div
-        v-if="isMyTemplatesView && !isPublishing && myTemplates.length > 0"
+        v-if="
+          isMyTemplatesView && !showSubmissionForm && myTemplates.length > 0
+        "
         class="mt-6 flex justify-center border-t border-border-default px-6 pt-4"
       >
         <Button variant="primary" size="lg" @click="startPublishing">
@@ -489,6 +490,7 @@ import MyTemplatesEmptyState from '@/platform/marketplace/components/MyTemplates
 import { useMyTemplates } from '@/platform/marketplace/composables/useMyTemplates'
 import { deleteTemplate } from '@/platform/marketplace/services/templateApi'
 import type { TemplateStatus } from '@/platform/marketplace/types/marketplace'
+import { isMarketplaceTemplate } from '@/platform/marketplace/types/marketplace'
 import PublishTemplateWizard from '@/platform/marketplace/components/PublishTemplateWizard.vue'
 import { usePublishTemplateWizard } from '@/platform/marketplace/composables/usePublishTemplateWizard'
 import BaseModalLayout from '@/components/widget/layout/BaseModalLayout.vue'
@@ -505,7 +507,7 @@ import { TemplateIncludeOnDistributionEnum } from '@/platform/workflow/templates
 import { useSystemStatsStore } from '@/stores/systemStatsStore'
 import type { NavGroupData, NavItemData } from '@/types/navTypes'
 import { OnCloseKey } from '@/types/widgetTypes'
-import { createGridStyle } from '@/utils/gridUtil'
+
 import { cn } from '@/utils/tailwindUtil'
 
 const { t } = useI18n()
@@ -584,42 +586,34 @@ provide(OnCloseKey, onClose)
 
 const { templates: myTemplates, refresh: refreshMyTemplates } = useMyTemplates()
 
-const isPublishing = ref(false)
+const showSubmissionForm = ref(false)
 const { resetWizard, wizardData, currentStep, goToStep } =
   usePublishTemplateWizard()
 
 function startPublishing() {
   resetWizard()
-  isPublishing.value = true
+  showSubmissionForm.value = true
 }
 
 function cancelPublishing() {
-  isPublishing.value = false
+  showSubmissionForm.value = false
 }
 
 function onPublishSubmitted() {
-  isPublishing.value = false
+  showSubmissionForm.value = false
   void refreshMyTemplates()
 }
 
 function onDraftSaved() {
+  showSubmissionForm.value = false
   void refreshMyTemplates()
 }
 
-function handleEditSubmission(id: string) {
-  const submission = myTemplates.value.find(
-    (submission) => submission.id === id
-  )
-  if (!submission) return
-
-  wizardData.value = {
-    ...submission,
-    id
-  }
-
-  wizardData.value.id = id
+function handleEditSubmission() {
+  if (!selectedSubmission.value) return
+  wizardData.value = { ...selectedSubmission.value }
   selectedTemplate.value = null
-  isPublishing.value = true
+  showSubmissionForm.value = true
 }
 
 async function handleRemoveSubmission(id: string) {
@@ -651,14 +645,9 @@ const {
 const getEffectiveSourceModule = (template: TemplateInfo) =>
   template.sourceModule || 'default'
 
-function findSubmission(template: TemplateInfo) {
-  if (template.sourceModule !== 'marketplace') return null
-  return myTemplates.value.find(({ id }) => id === template.name) ?? null
-}
-
 const STATUS_SEVERITY: Record<TemplateStatus, StatusBadgeVariants['severity']> =
   {
-    draft: 'secondary',
+    draft: 'muted',
     pending_review: 'warn',
     approved: 'default',
     rejected: 'danger',
@@ -666,16 +655,19 @@ const STATUS_SEVERITY: Record<TemplateStatus, StatusBadgeVariants['severity']> =
   }
 
 const getBaseThumbnailSrc = (template: TemplateInfo) => {
-  const submission = findSubmission(template)
-  if (submission?.gallery?.length) return submission.gallery[0]
+  if (isMarketplaceTemplate(template)) {
+    const gallery = template.gallery
+    if (gallery?.length) return gallery[0]
+  }
   const sm = getEffectiveSourceModule(template)
   return getTemplateThumbnailUrl(template, sm, sm === 'default' ? '1' : '')
 }
 
 const getOverlayThumbnailSrc = (template: TemplateInfo) => {
-  const submission = findSubmission(template)
-  if (submission?.gallery && submission.gallery.length >= 2)
-    return submission.gallery[1]
+  if (isMarketplaceTemplate(template)) {
+    const gallery = template.gallery
+    if (gallery && gallery.length >= 2) return gallery[1]
+  }
   const sm = getEffectiveSourceModule(template)
   return getTemplateThumbnailUrl(template, sm, sm === 'default' ? '2' : '')
 }
@@ -726,8 +718,6 @@ const navItems = computed<(NavItemData | NavGroupData)[]>(() => {
   const [all, ...rest] = storeItems
   return all ? [all, myTemplatesItem, ...rest] : [myTemplatesItem]
 })
-
-const gridStyle = computed(() => createGridStyle({ padding: '4px' }))
 
 // Get enhanced templates for better filtering
 const allTemplates = computed(() => {
@@ -952,10 +942,11 @@ const {
 const displayTemplates = computed(() => {
   if (isMyTemplatesView.value) {
     return myTemplates.value.map((submission) => ({
-      ...submission.template,
+      ...submission,
       name: submission.id,
-      title: submission.template.name,
-      description: submission.shortDescription,
+      title: submission.name,
+      description: submission.shortDescription ?? '',
+      mediaType: submission.mediaType ?? 'image',
       sourceModule: 'marketplace',
       mediaSubtype: 'webp'
     }))
