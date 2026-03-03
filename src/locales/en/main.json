@@ -1126,6 +1126,8 @@
         "video": "Video"
       },
       "compareMode": "Before / After comparison",
+      "mediaSuggestionsOutputs": "Recent Outputs",
+      "mediaSuggestionsInputs": "Input Images",
       "mediaUpload": "Upload Files",
       "mediaUploadHintImages": "Upload 1-6 images to showcase your template",
       "mediaUploadHintCompare": "Upload a before image and an after image",

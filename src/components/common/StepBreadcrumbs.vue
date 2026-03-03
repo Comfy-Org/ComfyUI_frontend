@@ -1,5 +1,5 @@
 <template>
-  <template v-for="(label, index) in labels.slice(0, currentStep)" :key="index">
+  <template v-for="(label, index) in labels" :key="index">
     <i class="icon-[lucide--chevron-right] size-5 text-muted" />
     <a
       v-if="index < currentStep - 1"
@@ -8,7 +8,10 @@
     >
       {{ label }}
     </a>
-    <span v-else class="font-medium">
+    <span
+      v-else
+      :class="index === currentStep - 1 ? 'font-medium' : 'text-muted'"
+    >
       {{ label }}
     </span>
   </template>

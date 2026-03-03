@@ -30,6 +30,19 @@
       </label>
       <p class="text-xs text-muted">{{ uploadHint }}</p>
 
+      <MediaSuggestions
+        :label="t('templateWorkflows.publish.mediaSuggestionsOutputs')"
+        :assets="outputImageAssets"
+        :selected-urls="wizardData.gallery ?? []"
+        @select="onSuggestionSelected"
+      />
+      <MediaSuggestions
+        :label="t('templateWorkflows.publish.mediaSuggestionsInputs')"
+        :assets="inputImageAssets"
+        :selected-urls="wizardData.gallery ?? []"
+        @select="onSuggestionSelected"
+      />
+
       <component
         :is="uploadComponent"
         :files="wizardData.gallery ?? []"
@@ -45,21 +58,45 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import { useAssetsStore } from '@/stores/assetsStore'
 import { cn } from '@/utils/tailwindUtil'
 
 import { usePublishTemplateWizard } from '../composables/usePublishTemplateWizard'
 import { mediaStepSchema } from '../schemas/templateSchema'
 import { uploadMedia } from '../services/mediaApi'
 
+import MediaSuggestions from './media/MediaSuggestions.vue'
 import MediaUploadCompare from './media/MediaUploadCompare.vue'
 import MediaUploadImages from './media/MediaUploadImages.vue'
 import MediaUploadVideo from './media/MediaUploadVideo.vue'
 
+const IMAGE_EXTENSIONS = /\.(png|jpe?g|gif|webp|bmp|svg)$/i
+
+function isImageAsset(asset: AssetItem): boolean {
+  if (!asset.preview_url) return false
+  if (asset.mime_type) return asset.mime_type.startsWith('image/')
+  return IMAGE_EXTENSIONS.test(asset.name)
+}
+
 const { t } = useI18n()
 const { wizardData } = usePublishTemplateWizard()
+const assetsStore = useAssetsStore()
+
+const outputImageAssets = computed(() =>
+  assetsStore.historyAssets.filter(isImageAsset)
+)
+const inputImageAssets = computed(() =>
+  assetsStore.inputAssets.filter(isImageAsset)
+)
+
+onMounted(() => {
+  assetsStore.updateHistory()
+  assetsStore.updateInputs()
+})
 
 const errors = ref<Record<string, string>>({})
 const selectedVariant = ref<string>(
@@ -111,6 +148,12 @@ const uploadHint = computed(() => {
     return t('templateWorkflows.publish.mediaUploadHintVideo')
   return t('templateWorkflows.publish.mediaUploadHintImages')
 })
+
+function onSuggestionSelected(url: string) {
+  const gallery = wizardData.value.gallery ?? []
+  if (gallery.includes(url)) return
+  wizardData.value.gallery = [...gallery, url]
+}
 
 async function onFileAdded(file: File) {
   const result = await uploadMedia('draft', file)

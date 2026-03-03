@@ -230,7 +230,10 @@
             "
             @mouseenter="hoveredTemplate = template.name"
             @mouseleave="hoveredTemplate = null"
-            @click="selectedTemplate = template"
+            @click="
+              selectedTemplate =
+                selectedTemplate?.name === template.name ? null : template
+            "
           >
             <template #top>
               <CardTop ratio="square">
