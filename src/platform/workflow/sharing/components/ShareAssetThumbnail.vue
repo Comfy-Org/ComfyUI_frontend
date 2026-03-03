@@ -29,7 +29,7 @@
 
 <script setup lang="ts">
 import { useImage } from '@vueuse/core'
-import { computed, watchEffect } from 'vue'
+import { computed } from 'vue'
 
 import Skeleton from '@/components/ui/skeleton/Skeleton.vue'
 import { cn } from '@/utils/tailwindUtil'
@@ -43,17 +43,14 @@ defineEmits<{
   thumbnailError: [{ name: string; previewUrl: string | null }]
 }>()
 
-const normalizedPreviewUrl = computed(() =>
-  typeof previewUrl === 'string' && previewUrl.length > 0 ? previewUrl : null
-)
-
-watchEffect(() => {
-  if (previewUrl != null && typeof previewUrl !== 'string') {
-    console.warn('[share][assets][invalid-preview-url-type]', {
-      name,
-      receivedType: typeof previewUrl,
-      value: previewUrl
-    })
+const normalizedPreviewUrl = computed(() => {
+  if (typeof previewUrl !== 'string' || previewUrl.length === 0) return null
+  try {
+    const url = new URL(previewUrl)
+    if (!url.searchParams.has('res')) url.searchParams.set('res', '256')
+    return url.toString()
+  } catch {
+    return previewUrl
   }
 })
 
