@@ -3778,6 +3778,9 @@
     "outputs": {
       "0": {
         "tooltip": null
+      },
+      "1": {
+        "tooltip": null
       }
     }
   },
@@ -18151,6 +18154,68 @@
     "outputs": {
       "0": {
         "tooltip": null
+      }
+    }
+  },
+  "WanSCAILToVideo": {
+    "display_name": "WanSCAILToVideo",
+    "inputs": {
+      "batch_size": {
+        "name": "批量大小"
+      },
+      "clip_vision_output": {
+        "name": "clip视觉输出"
+      },
+      "height": {
+        "name": "高度"
+      },
+      "length": {
+        "name": "长度"
+      },
+      "negative": {
+        "name": "负向"
+      },
+      "pose_end": {
+        "name": "姿态结束步",
+        "tooltip": "用于姿态调控的结束步数。"
+      },
+      "pose_start": {
+        "name": "姿态起始步",
+        "tooltip": "用于姿态调控的起始步数。"
+      },
+      "pose_strength": {
+        "name": "姿态强度",
+        "tooltip": "姿态latent的强度。"
+      },
+      "pose_video": {
+        "name": "姿态视频",
+        "tooltip": "用于姿态调控的视频。将被缩小到主视频分辨率的一半。"
+      },
+      "positive": {
+        "name": "正向"
+      },
+      "reference_image": {
+        "name": "参考图像"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "宽度"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "正向",
+        "tooltip": null
+      },
+      "1": {
+        "name": "负向",
+        "tooltip": null
+      },
+      "2": {
+        "name": "latent",
+        "tooltip": "生成尺寸的空latent。"
       }
     }
   },
