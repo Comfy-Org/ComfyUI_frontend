@@ -26,7 +26,7 @@
         <PropertiesAccordionItem
           v-for="group in filteredGroups"
           :key="group.title"
-          :collapse="isSectionCollapsed(group.title)"
+          :collapse="isSectionCollapsed(group.title) && !isSearching"
           class="border-b border-interface-stroke"
           :size="
             group.type === 'missing_node' || group.type === 'swap_nodes'
@@ -205,6 +205,7 @@ const { isInstalling: isInstallingAll, installAllPacks: installAll } =
 const { replaceGroup, replaceAllGroups } = useNodeReplacement()
 
 const searchQuery = ref('')
+const isSearching = computed(() => searchQuery.value.trim() !== '')
 
 const showNodeIdBadge = computed(
   () =>
@@ -214,6 +215,7 @@ const showNodeIdBadge = computed(
 
 const {
   allErrorGroups,
+  tabErrorGroups,
   filteredGroups,
   collapseState,
   isSingleNodeSelected,
@@ -230,7 +232,7 @@ const isAllCollapsed = computed({
     )
   },
   set(collapse: boolean) {
-    for (const group of filteredGroups.value) {
+    for (const group of tabErrorGroups.value) {
       setSectionCollapsed(group.title, collapse)
     }
   }

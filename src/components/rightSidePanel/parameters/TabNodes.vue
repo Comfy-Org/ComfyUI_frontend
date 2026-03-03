@@ -51,7 +51,7 @@ const isAllCollapsed = computed({
     )
   },
   set(collapse: boolean) {
-    for (const { node } of searchedWidgetsSectionDataList.value) {
+    for (const { node } of widgetsSectionDataList.value) {
       setSectionCollapsed(String(node.id), collapse)
     }
   }
