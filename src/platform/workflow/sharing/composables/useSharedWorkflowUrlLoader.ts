@@ -66,7 +66,7 @@ export function useSharedWorkflowUrlLoader() {
     try {
       const { output } = await app.graphToPrompt()
       const raw = await api.getShareableAssets(output, { owned: false })
-      return raw.assets
+      return raw.assets.filter((a) => !a.in_library)
     } catch {
       return null
     }

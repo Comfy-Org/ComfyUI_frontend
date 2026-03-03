@@ -332,6 +332,43 @@ describe('useSharedWorkflowUrlLoader', () => {
     ])
   })
 
+  it('filters out assets already in library', async () => {
+    mockQueryParams = { share: 'share-id-1' }
+    mockGetSharedWorkflow.mockResolvedValue(makeSharedWorkflow())
+    mockGetShareableAssets.mockResolvedValue({
+      assets: [
+        {
+          id: 'a1',
+          name: 'needed.png',
+          preview_url: '',
+          storage_url: '',
+          model: false,
+          public: false,
+          in_library: false
+        },
+        {
+          id: 'a2',
+          name: 'already-have.png',
+          preview_url: '',
+          storage_url: '',
+          model: false,
+          public: false,
+          in_library: true
+        }
+      ]
+    })
+    mockShowLayoutDialog.mockImplementation(() => {
+      resolveDialog(true)
+    })
+
+    const { loadSharedWorkflowFromUrl } = useSharedWorkflowUrlLoader()
+    await loadSharedWorkflowFromUrl()
+
+    const dialogCall = mockShowLayoutDialog.mock.calls[0][0]
+    expect(dialogCall.props.items).toHaveLength(1)
+    expect(dialogCall.props.items[0].name).toBe('needed.png')
+  })
+
   it('calls getShareableAssets with owned:false', async () => {
     mockQueryParams = { share: 'share-id-1' }
     mockGetSharedWorkflow.mockResolvedValue(makeSharedWorkflow())
