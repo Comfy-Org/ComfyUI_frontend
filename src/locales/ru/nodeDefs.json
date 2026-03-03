@@ -3778,6 +3778,9 @@
     "outputs": {
       "0": {
         "tooltip": null
+      },
+      "1": {
+        "tooltip": null
       }
     }
   },
@@ -18151,6 +18154,68 @@
     "outputs": {
       "0": {
         "tooltip": null
+      }
+    }
+  },
+  "WanSCAILToVideo": {
+    "display_name": "WanSCAILToVideo",
+    "inputs": {
+      "batch_size": {
+        "name": "размер_пакета"
+      },
+      "clip_vision_output": {
+        "name": "clip_vision_output"
+      },
+      "height": {
+        "name": "высота"
+      },
+      "length": {
+        "name": "длина"
+      },
+      "negative": {
+        "name": "негативный"
+      },
+      "pose_end": {
+        "name": "конец_позы",
+        "tooltip": "Шаг окончания использования условия позы."
+      },
+      "pose_start": {
+        "name": "начало_позы",
+        "tooltip": "Шаг начала использования условия позы."
+      },
+      "pose_strength": {
+        "name": "сила_позы",
+        "tooltip": "Сила латентного пространства позы."
+      },
+      "pose_video": {
+        "name": "видео_позы",
+        "tooltip": "Видео, используемое для условия позы. Будет уменьшено до половины разрешения основного видео."
+      },
+      "positive": {
+        "name": "позитивный"
+      },
+      "reference_image": {
+        "name": "референсное_изображение"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "ширина"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "позитивный",
+        "tooltip": null
+      },
+      "1": {
+        "name": "негативный",
+        "tooltip": null
+      },
+      "2": {
+        "name": "латентный",
+        "tooltip": "Пустое латентное пространство размера генерации."
       }
     }
   },

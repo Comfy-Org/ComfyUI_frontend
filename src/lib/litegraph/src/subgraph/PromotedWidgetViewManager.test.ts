@@ -1,11 +1,18 @@
 import { describe, expect, test } from 'vitest'
 
 import { PromotedWidgetViewManager } from '@/lib/litegraph/src/subgraph/PromotedWidgetViewManager'
-import type { SubgraphPromotionEntry } from '@/services/subgraphPseudoWidgetCache'
 
-function makeView(entry: SubgraphPromotionEntry) {
+type TestPromotionEntry = {
+  interiorNodeId: string
+  widgetName: string
+  viewKey?: string
+}
+
+function makeView(entry: TestPromotionEntry) {
+  const baseKey = `${entry.interiorNodeId}:${entry.widgetName}`
+
   return {
-    key: `${entry.interiorNodeId}:${entry.widgetName}`
+    key: entry.viewKey ? `${baseKey}:${entry.viewKey}` : baseKey
   }
 }
 
@@ -75,5 +82,47 @@ describe('PromotedWidgetViewManager', () => {
 
     expect(restored[0]).toBe(first[1])
     expect(restored[1]).not.toBe(first[0])
+  })
+
+  test('keeps distinct views for same source widget when viewKeys differ', () => {
+    const manager = new PromotedWidgetViewManager<{ key: string }>()
+
+    const views = manager.reconcile(
+      [
+        { interiorNodeId: '1', widgetName: 'widgetA', viewKey: 'slotA' },
+        { interiorNodeId: '1', widgetName: 'widgetA', viewKey: 'slotB' }
+      ],
+      makeView
+    )
+
+    expect(views).toHaveLength(2)
+    expect(views[0]).not.toBe(views[1])
+    expect(views[0].key).toBe('1:widgetA:slotA')
+    expect(views[1].key).toBe('1:widgetA:slotB')
+  })
+
+  test('removeByViewKey removes only the targeted keyed view', () => {
+    const manager = new PromotedWidgetViewManager<{ key: string }>()
+
+    const firstPass = manager.reconcile(
+      [
+        { interiorNodeId: '1', widgetName: 'widgetA', viewKey: 'slotA' },
+        { interiorNodeId: '1', widgetName: 'widgetA', viewKey: 'slotB' }
+      ],
+      makeView
+    )
+
+    manager.removeByViewKey('1', 'widgetA', 'slotA')
+
+    const secondPass = manager.reconcile(
+      [
+        { interiorNodeId: '1', widgetName: 'widgetA', viewKey: 'slotA' },
+        { interiorNodeId: '1', widgetName: 'widgetA', viewKey: 'slotB' }
+      ],
+      makeView
+    )
+
+    expect(secondPass[0]).not.toBe(firstPass[0])
+    expect(secondPass[1]).toBe(firstPass[1])
   })
 })

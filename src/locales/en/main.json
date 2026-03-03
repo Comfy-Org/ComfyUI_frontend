@@ -303,7 +303,9 @@
     "beta": "BETA",
     "nightly": "NIGHTLY",
     "profile": "Profile",
-    "noItems": "No items"
+    "noItems": "No items",
+    "recents": "Recents",
+    "partner": "Partner"
   },
   "manager": {
     "title": "Nodes Manager",
@@ -790,8 +792,16 @@
     "newBlankWorkflow": "Create a new blank workflow",
     "nodeLibraryTab": {
       "essentials": "Essentials",
-      "allNodes": "All nodes",
+      "allNodes": "All",
+      "blueprints": "Blueprints",
       "custom": "Custom",
+      "filter": "Filter",
+      "filterOptions": {
+        "blueprints": "Blueprints",
+        "partnerNodes": "Partner Nodes",
+        "comfyNodes": "Comfy Nodes",
+        "extensions": "Extensions"
+      },
       "groupBy": "Group By",
       "sortMode": "Sort Mode",
       "resetView": "Reset View to Default",
@@ -804,16 +814,24 @@
         "sourceDesc": "Group by source type (Core, Custom, API)"
       },
       "sortBy": {
-        "original": "Original",
+        "original": "Categorized",
         "originalDesc": "Keep original order",
-        "alphabetical": "Alphabetical",
+        "alphabetical": "A-Z",
         "alphabeticalDesc": "Sort alphabetically within groups"
       },
       "sections": {
         "favorites": "Favorites",
         "favoriteNode": "Favorite Node",
-        "unfavoriteNode": "Unfavorite Node"
-      }
+        "unfavoriteNode": "Unfavorite Node",
+        "bookmarked": "Bookmarked",
+        "subgraphBlueprints": "Subgraph Blueprints",
+        "myBlueprints": "My Blueprints",
+        "comfyBlueprints": "Comfy Blueprints",
+        "partnerNodes": "Partner Nodes",
+        "comfyNodes": "Comfy Nodes",
+        "extensions": "Extensions"
+      },
+      "noBookmarkedNodes": "No favorites yet"
     },
     "modelLibrary": "Model Library",
     "downloads": "Downloads",
@@ -2274,6 +2292,8 @@
     },
     "subscribeToRun": "Subscribe",
     "subscribeToRunFull": "Subscribe to Run",
+    "subscribeForMore": "Upgrade",
+    "upgradeToAddCredits": "Upgrade to add credits",
     "subscribeNow": "Subscribe Now",
     "subscribeToComfyCloud": "Subscribe to Comfy Cloud",
     "workspaceNotSubscribed": "This workspace is not on a subscription",
@@ -3036,11 +3056,11 @@
       "promptAddInputs": "Click on node parameters to add them here as inputs",
       "noInputs": "No inputs added yet",
       "inputsDesc": "Users will interact and adjust these to generate their outputs.",
-      "inputsExample": "Examples: “Load image”, “Text prompt”, “Steps”",
+      "inputsExample": "Examples: “Load image”, “Text prompt”, “Steps”",
       "promptAddOutputs": "Click on output nodes to add them here. These will be the generated results.",
       "noOutputs": "No output nodes added yet",
       "outputsDesc": "Connect at least one output node so users can see results after running.",
-      "outputsExample": "Examples: “Save Image” or “Save Video”"
+      "outputsExample": "Examples: “Save Image” or “Save Video”"
     },
     "queue": {
       "clickToClear": "Click to clear queue",

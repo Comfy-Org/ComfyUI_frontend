@@ -1031,6 +1031,7 @@
     "or": "veya",
     "output": "Çıktı",
     "overwrite": "Üzerine Yaz",
+    "partner": "Partner",
     "playPause": "Oynat/Duraklat",
     "playRecording": "Kaydı Oynat",
     "playbackSpeed": "Oynatma Hızı",
@@ -1041,6 +1042,7 @@
     "progressCountOf": "/",
     "queued": "Kuyrukta",
     "ready": "Hazır",
+    "recents": "Son Kullanılanlar",
     "reconnected": "Yeniden bağlandı",
     "reconnecting": "Yeniden bağlanılıyor",
     "refresh": "Yenile",
@@ -2629,8 +2631,16 @@
     "nodeLibrary": "Düğüm Kütüphanesi",
     "nodeLibraryTab": {
       "allNodes": "Tüm düğümler",
+      "blueprints": "Şablonlar",
       "custom": "Özel",
       "essentials": "Temel",
+      "filter": "Filtrele",
+      "filterOptions": {
+        "blueprints": "Şablonlar",
+        "comfyNodes": "Comfy Düğümleri",
+        "extensions": "Eklentiler",
+        "partnerNodes": "Partner Düğümleri"
+      },
       "groupBy": "Gruplandır",
       "groupStrategies": {
         "category": "Kategori",
@@ -2640,10 +2650,18 @@
         "source": "Kaynak",
         "sourceDesc": "Kaynak türüne göre gruplandır (Çekirdek, Özel, API)"
       },
+      "noBookmarkedNodes": "Henüz favori yok",
       "resetView": "Görünümü Varsayılana Sıfırla",
       "sections": {
+        "bookmarked": "Favoriler",
+        "comfyBlueprints": "Comfy Şablonları",
+        "comfyNodes": "Comfy Düğümleri",
+        "extensions": "Eklentiler",
         "favoriteNode": "Favori Düğüm",
         "favorites": "Favoriler",
+        "myBlueprints": "Benim Şablonlarım",
+        "partnerNodes": "Partner Düğümleri",
+        "subgraphBlueprints": "Alt Grafik Şablonları",
         "unfavoriteNode": "Favori Düğümü Kaldır"
       },
       "sortBy": {
@@ -2887,6 +2905,7 @@
     "resubscribe": "Yeniden abone ol",
     "resubscribeSuccess": "Abonelik başarıyla yeniden etkinleştirildi",
     "resubscribeTo": "{plan} planına yeniden abone ol",
+    "subscribeForMore": "Yükselt",
     "subscribeNow": "Hemen Abone Ol",
     "subscribeTo": "{plan} abonesi ol",
     "subscribeToComfyCloud": "Comfy Cloud'a Abone Ol",
@@ -2917,6 +2936,7 @@
     "upgrade": "YÜKSELT",
     "upgradePlan": "Planı Yükselt",
     "upgradeTo": "{plan} planına yükselt",
+    "upgradeToAddCredits": "Kredi eklemek için yükselt",
     "usdPerMonth": "USD / ay",
     "usdPerMonthPerMember": "USD / ay / üye",
     "videoEstimateExplanation": "Bu tahminler, varsayılan ayarlarla (5 saniye, 640x640, 16fps, 4 adım örnekleme) Wan 2.2 Görselden Videoya şablonuna dayanmaktadır.",

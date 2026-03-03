@@ -1031,6 +1031,7 @@
     "or": "или",
     "output": "Выход",
     "overwrite": "Перезаписать",
+    "partner": "Партнёр",
     "playPause": "Воспроизвести/Пауза",
     "playRecording": "Воспроизвести запись",
     "playbackSpeed": "Скорость воспроизведения",
@@ -1041,6 +1042,7 @@
     "progressCountOf": "из",
     "queued": "В очереди",
     "ready": "Готов",
+    "recents": "Недавние",
     "reconnected": "Переподключено",
     "reconnecting": "Переподключение",
     "refresh": "Обновить",
@@ -2629,8 +2631,16 @@
     "nodeLibrary": "Библиотека нод",
     "nodeLibraryTab": {
       "allNodes": "Все узлы",
+      "blueprints": "Чертежи",
       "custom": "Пользовательские",
       "essentials": "Основное",
+      "filter": "Фильтр",
+      "filterOptions": {
+        "blueprints": "Чертежи",
+        "comfyNodes": "Comfy-узлы",
+        "extensions": "Расширения",
+        "partnerNodes": "Узлы партнёров"
+      },
       "groupBy": "Группировать по",
       "groupStrategies": {
         "category": "Категория",
@@ -2640,10 +2650,18 @@
         "source": "Источник",
         "sourceDesc": "Группировать по типу источника (Core, Custom, API)"
       },
+      "noBookmarkedNodes": "Избранных пока нет",
       "resetView": "Сбросить вид по умолчанию",
       "sections": {
+        "bookmarked": "Избранное",
+        "comfyBlueprints": "Comfy-чертежи",
+        "comfyNodes": "Comfy-узлы",
+        "extensions": "Расширения",
         "favoriteNode": "Избранный узел",
         "favorites": "Избранное",
+        "myBlueprints": "Мои чертежи",
+        "partnerNodes": "Узлы партнёров",
+        "subgraphBlueprints": "Чертежи подграфов",
         "unfavoriteNode": "Удалить из избранного"
       },
       "sortBy": {
@@ -2887,6 +2905,7 @@
     "resubscribe": "Возобновить подписку",
     "resubscribeSuccess": "Подписка успешно возобновлена",
     "resubscribeTo": "Возобновить подписку на {plan}",
+    "subscribeForMore": "Обновить",
     "subscribeNow": "Подписаться сейчас",
     "subscribeTo": "Подписаться на {plan}",
     "subscribeToComfyCloud": "Подписаться на Comfy Cloud",
@@ -2917,6 +2936,7 @@
     "upgrade": "УЛУЧШИТЬ",
     "upgradePlan": "Улучшить план",
     "upgradeTo": "Улучшить до {plan}",
+    "upgradeToAddCredits": "Обновите, чтобы добавить кредиты",
     "usdPerMonth": "USD / мес",
     "usdPerMonthPerMember": "USD / мес / участник",
     "videoEstimateExplanation": "Эти оценки основаны на шаблоне Wan 2.2 Image-to-Video с настройками по умолчанию (5 секунд, 640x640, 16 кадров/с, 4 шага семплирования).",

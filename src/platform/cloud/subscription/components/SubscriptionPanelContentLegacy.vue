@@ -130,17 +130,25 @@
                 </tbody>
               </table>
 
-              <div class="flex items-center justify-between">
+              <div class="flex flex-col gap-3">
                 <a
                   href="https://platform.comfy.org/profile/usage"
                   target="_blank"
                   rel="noopener noreferrer"
-                  class="text-sm underline text-center text-muted"
+                  class="text-sm underline text-muted"
                 >
                   {{ $t('subscription.viewUsageHistory') }}
                 </a>
                 <Button
-                  v-if="isActiveSubscription"
+                  v-if="isActiveSubscription && isFreeTier"
+                  variant="gradient"
+                  class="p-2 min-h-8 rounded-lg text-sm font-normal w-full"
+                  @click="handleUpgradeToAddCredits"
+                >
+                  {{ $t('subscription.upgradeToAddCredits') }}
+                </Button>
+                <Button
+                  v-else-if="isActiveSubscription"
                   variant="secondary"
                   class="p-2 min-h-8 rounded-lg text-sm font-normal text-text-primary bg-interface-menu-component-surface-selected"
                   @click="handleAddApiCredits"
@@ -234,7 +242,8 @@ const {
   isYearlySubscription
 } = useSubscription()
 
-const { show: showSubscriptionDialog } = useSubscriptionDialog()
+const { show: showSubscriptionDialog, showPricingTable } =
+  useSubscriptionDialog()
 
 const tierKey = computed(() => {
   const tier = subscriptionTier.value
@@ -295,6 +304,10 @@ const { totalCredits, monthlyBonusCredits, prepaidCredits, isLoadingBalance } =
   useSubscriptionCredits()
 
 const { handleAddApiCredits, handleRefresh } = useSubscriptionActions()
+
+function handleUpgradeToAddCredits() {
+  showPricingTable()
+}
 
 // Focus-based polling: refresh balance when user returns from Stripe checkout
 const PENDING_TOPUP_KEY = 'pending_topup_timestamp'

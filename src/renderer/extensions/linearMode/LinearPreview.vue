@@ -14,6 +14,7 @@ import ImagePreview from '@/renderer/extensions/linearMode/ImagePreview.vue'
 import LatentPreview from '@/renderer/extensions/linearMode/LatentPreview.vue'
 import LinearWelcome from '@/renderer/extensions/linearMode/LinearWelcome.vue'
 import LinearArrange from '@/renderer/extensions/linearMode/LinearArrange.vue'
+import LinearFeedback from '@/renderer/extensions/linearMode/LinearFeedback.vue'
 import OutputHistory from '@/renderer/extensions/linearMode/OutputHistory.vue'
 import type { OutputSelection } from '@/renderer/extensions/linearMode/linearModeTypes'
 // Lazy-loaded to avoid pulling THREE.js into the main bundle
@@ -33,10 +34,11 @@ const commandStore = useCommandStore()
 const executionStore = useExecutionStore()
 const mediaActions = useMediaAssetActions()
 const queueStore = useQueueStore()
-const { mode: appModeValue } = useAppMode()
-const { runButtonClick } = defineProps<{
+const { isBuilderMode, isArrangeMode } = useAppMode()
+const { runButtonClick, mobile, typeformWidgetId } = defineProps<{
   runButtonClick?: (e: Event) => void
   mobile?: boolean
+  typeformWidgetId?: string
 }>()
 
 const selectedItem = ref<AssetItem>()
@@ -165,7 +167,30 @@ async function rerun(e: Event) {
     :model-url="selectedOutput!.url"
   />
   <LatentPreview v-else-if="queueStore.runningTasks.length > 0" />
-  <LinearArrange v-else-if="appModeValue === 'builder:arrange'" />
+  <LinearArrange v-else-if="isArrangeMode" />
   <LinearWelcome v-else />
-  <OutputHistory class="not-md:mx-40" @update-selection="handleSelection" />
+  <div
+    v-if="!mobile"
+    class="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center"
+  >
+    <LinearFeedback
+      v-if="typeformWidgetId"
+      side="left"
+      :widget-id="typeformWidgetId"
+    />
+    <OutputHistory
+      v-if="!isBuilderMode"
+      class="min-w-0"
+      @update-selection="handleSelection"
+    />
+    <LinearFeedback
+      v-if="typeformWidgetId"
+      side="right"
+      :widget-id="typeformWidgetId"
+    />
+  </div>
+  <OutputHistory
+    v-else-if="!isBuilderMode"
+    @update-selection="handleSelection"
+  />
 </template>

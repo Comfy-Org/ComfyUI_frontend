@@ -2,15 +2,7 @@
   <Button
     :size
     :disabled="disabled"
-    variant="primary"
-    :style="
-      variant === 'gradient'
-        ? {
-            background: 'var(--color-subscription-button-gradient)',
-            color: 'var(--color-white)'
-          }
-        : undefined
-    "
+    :variant="buttonVariant === 'gradient' ? 'gradient' : 'primary'"
     :class="cn('font-bold', fluid && 'w-full')"
     @click="handleSubscribe"
   >
@@ -31,13 +23,13 @@ import { cn } from '@/utils/tailwindUtil'
 const {
   size = 'lg',
   fluid = true,
-  variant = 'default',
+  buttonVariant = 'default',
   label,
   disabled = false
 } = defineProps<{
   label?: string
   size?: 'sm' | 'lg'
-  variant?: 'default' | 'gradient'
+  buttonVariant?: 'default' | 'gradient'
   fluid?: boolean
   disabled?: boolean
 }>()
