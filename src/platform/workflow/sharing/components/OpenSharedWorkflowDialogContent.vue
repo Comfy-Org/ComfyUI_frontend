@@ -25,16 +25,16 @@
         </p>
       </div>
 
-      <div v-if="hasAssets" class="flex w-72 shrink-0 flex-col gap-2 py-4">
-        <div class="flex gap-2 items-center">
+      <div v-if="hasAssets" class="flex w-84 shrink-0 flex-col gap-2 py-4">
+        <div class="flex gap-2 items-start text-warning-background">
           <i
-            class="icon-[lucide--circle-alert] shrink-0 size-4 text-warning-background"
+            class="icon-[lucide--circle-alert] shrink-0 size-4 my-auto h-[1lh]"
           />
-          <p class="m-0 text-sm text-warning-background">
+          <div class="m-0 p-0 text-sm">
             {{ $t('openSharedWorkflow.nonPublicAssetsWarningLine1') }}
             <br />
             {{ $t('openSharedWorkflow.nonPublicAssetsWarningLine2') }}
-          </p>
+          </div>
         </div>
 
         <AssetSectionList :items class="rounded-lg pb-2" />
