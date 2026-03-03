@@ -10,6 +10,7 @@ import Button from '@/components/ui/button/Button.vue'
 import { extractVueNodeData } from '@/composables/graph/useGraphNodeManager'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
+import { appendCloudResParam } from '@/platform/distribution/cloudPreviewUtil'
 import SubscribeToRunButton from '@/platform/cloud/subscription/components/SubscribeToRun.vue'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
@@ -88,13 +89,16 @@ function getDropIndicator(node: LGraphNode) {
   const filename = node.widgets?.[0]?.value
   const resultItem = { type: 'input', filename: `${filename}` }
 
+  const buildImageUrl = () => {
+    if (!filename) return undefined
+    const params = new URLSearchParams(resultItem)
+    appendCloudResParam(params, String(filename))
+    return api.apiURL(`/view?${params}${app.getPreviewFormatParam()}`)
+  }
+
   return {
     iconClass: 'icon-[lucide--image]',
-    imageUrl: filename
-      ? api.apiURL(
-          `/view?${new URLSearchParams(resultItem)}${app.getPreviewFormatParam()}`
-        )
-      : undefined,
+    imageUrl: buildImageUrl(),
     label: t('linearMode.dragAndDropImage'),
     onClick: () => node.widgets?.[1]?.callback?.(undefined)
   }
