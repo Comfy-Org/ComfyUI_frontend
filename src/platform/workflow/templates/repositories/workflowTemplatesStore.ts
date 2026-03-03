@@ -449,7 +449,7 @@ export const useWorkflowTemplatesStore = defineStore(
               .filter((t) => t.sourceModule !== 'default')
               .map((t) => t.sourceModule)
           )
-        ).sort()
+        ).sort((a, b) => a.localeCompare(b))
 
         const extensionItems: NavItemData[] = extensionModules.map(
           (moduleName) => ({

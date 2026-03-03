@@ -79,16 +79,16 @@ const handleTouchStart = (event: TouchEvent) => {
   panZoom.handleTouchStart(event)
 }
 
-const handleTouchMove = async (event: TouchEvent) => {
-  await panZoom.handleTouchMove(event)
+const handleTouchMove = (event: TouchEvent) => {
+  panZoom.handleTouchMove(event)
 }
 
 const handleTouchEnd = (event: TouchEvent) => {
   panZoom.handleTouchEnd(event)
 }
 
-const handleWheel = async (event: WheelEvent) => {
-  await panZoom.zoom(event)
+const handleWheel = (event: WheelEvent) => {
+  panZoom.zoom(event)
   const newCursorPoint = { x: event.clientX, y: event.clientY }
   panZoom.updateCursorPosition(newCursorPoint)
 }

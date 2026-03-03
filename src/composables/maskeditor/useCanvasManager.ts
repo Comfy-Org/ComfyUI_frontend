@@ -5,11 +5,11 @@ import { MaskBlendMode } from '@/extensions/core/maskeditor/types'
 export function useCanvasManager() {
   const store = useMaskEditorStore()
 
-  const prepareMask = async (
+  const prepareMask = (
     image: HTMLImageElement,
     maskCanvasEl: HTMLCanvasElement,
     maskContext: CanvasRenderingContext2D
-  ): Promise<void> => {
+  ): void => {
     const maskColor = store.maskColor
 
     maskContext.drawImage(image, 0, 0, maskCanvasEl.width, maskCanvasEl.height)
@@ -33,11 +33,11 @@ export function useCanvasManager() {
     maskContext.putImageData(maskData, 0, 0)
   }
 
-  const invalidateCanvas = async (
+  const invalidateCanvas = (
     origImage: HTMLImageElement,
     maskImage: HTMLImageElement,
     paintImage: HTMLImageElement | null
-  ): Promise<void> => {
+  ): void => {
     const { imgCanvas, maskCanvas, rgbCanvas, imgCtx, maskCtx, rgbCtx } = store
 
     if (
@@ -64,7 +64,7 @@ export function useCanvasManager() {
       rgbCtx.drawImage(paintImage, 0, 0, paintImage.width, paintImage.height)
     }
 
-    await prepareMask(maskImage, maskCanvas, maskCtx)
+    prepareMask(maskImage, maskCanvas, maskCtx)
   }
 
   const setCanvasBackground = (): void => {
@@ -81,7 +81,7 @@ export function useCanvasManager() {
     }
   }
 
-  const updateMaskColor = async (): Promise<void> => {
+  const updateMaskColor = (): void => {
     const { maskCanvas, maskCtx, maskColor, maskBlendMode, maskOpacity } = store
 
     if (!maskCanvas || !maskCtx) return

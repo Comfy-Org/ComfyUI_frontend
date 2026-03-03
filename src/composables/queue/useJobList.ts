@@ -57,8 +57,8 @@ export type JobGroup = {
 
 const ADDED_HINT_DURATION_MS = 3000
 const relativeTimeFormatterCache = new Map<string, Intl.RelativeTimeFormat>()
-const taskIdToKey = (id: string | number | undefined) => {
-  if (id === null || id === undefined) return null
+function taskIdToKey(id: string | number | undefined) {
+  if (id === undefined) return null
   const key = String(id)
   return key.length ? key : null
 }

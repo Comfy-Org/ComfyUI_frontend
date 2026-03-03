@@ -352,7 +352,7 @@ app.registerExtension({
                   audioChunks.push(event.data)
                 }
 
-                mediaRecorder.onstop = async () => {
+                mediaRecorder.onstop = () => {
                   const audioBlob = new Blob(audioChunks, { type: 'audio/wav' })
 
                   useAudioService().stopAllTracks(currentStream)

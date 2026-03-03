@@ -68,7 +68,7 @@ export function useTemplateFiltering(
         template.models.forEach((model) => modelSet.add(model))
       }
     })
-    return Array.from(modelSet).sort()
+    return Array.from(modelSet).sort((a, b) => a.localeCompare(b))
   })
 
   const availableUseCases = computed(() => {
@@ -78,7 +78,7 @@ export function useTemplateFiltering(
         template.tags.forEach((tag) => tagSet.add(tag))
       }
     })
-    return Array.from(tagSet).sort()
+    return Array.from(tagSet).sort((a, b) => a.localeCompare(b))
   })
 
   const availableRunsOn = computed(() => {

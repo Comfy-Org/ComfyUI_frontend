@@ -595,7 +595,11 @@ export const useQueuePendingTaskCountStore = defineStore(
   }
 )
 
-type AutoQueueMode = 'disabled' | 'change' | 'instant-idle' | 'instant-running'
+export type AutoQueueMode =
+  | 'disabled'
+  | 'change'
+  | 'instant-idle'
+  | 'instant-running'
 
 export const isInstantMode = (
   mode: AutoQueueMode

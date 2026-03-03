@@ -37,13 +37,12 @@ export const useBrowserTabTitle = () => {
     () => !!workflowStore.activeWorkflow?.isPersisted
   )
 
-  const shouldShowUnsavedIndicator = computed(() => {
-    if (workspaceStore.shiftDown) return false
-    if (isAutoSaveEnabled.value) return false
-    if (!isActiveWorkflowPersisted.value) return true
-    if (isActiveWorkflowModified.value) return true
-    return false
-  })
+  const shouldShowUnsavedIndicator = computed(
+    () =>
+      !workspaceStore.shiftDown &&
+      !isAutoSaveEnabled.value &&
+      (!isActiveWorkflowPersisted.value || isActiveWorkflowModified.value)
+  )
 
   const isUnsavedText = computed(() =>
     shouldShowUnsavedIndicator.value ? ' *' : ''

@@ -129,7 +129,7 @@ export function useAssetBrowser(
       .map((tag) => tag.split('/')[0])
 
     return Array.from(new Set(categories))
-      .sort()
+      .sort((a, b) => a.localeCompare(b))
       .map((category) => ({
         id: category,
         label: category.charAt(0).toUpperCase() + category.slice(1),

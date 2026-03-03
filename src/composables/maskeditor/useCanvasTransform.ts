@@ -118,10 +118,7 @@ export function useCanvasTransform() {
    * Recreates and updates GPU textures after transformation
    * This is required because GPU textures have immutable dimensions
    */
-  const recreateGPUTextures = async (
-    width: number,
-    height: number
-  ): Promise<void> => {
+  const recreateGPUTextures = (width: number, height: number): void => {
     if (
       !store.tgpuRoot ||
       !store.maskCanvas ||
@@ -181,7 +178,7 @@ export function useCanvasTransform() {
   /**
    * Rotates all canvas layers 90 degrees clockwise and updates GPU
    */
-  const rotateClockwise = async (): Promise<void> => {
+  const rotateClockwise = (): void => {
     const { maskCanvas, maskCtx, rgbCanvas, rgbCtx, imgCanvas, imgCtx } = store
 
     if (
@@ -220,7 +217,7 @@ export function useCanvasTransform() {
 
     // Recreate GPU textures with new dimensions if GPU is active
     if (store.tgpuRoot) {
-      await recreateGPUTextures(origHeight, origWidth)
+      recreateGPUTextures(origHeight, origWidth)
     }
 
     // Save to history
@@ -230,7 +227,7 @@ export function useCanvasTransform() {
   /**
    * Rotates all canvas layers 90 degrees counter-clockwise and updates GPU
    */
-  const rotateCounterclockwise = async (): Promise<void> => {
+  const rotateCounterclockwise = (): void => {
     const { maskCanvas, maskCtx, rgbCanvas, rgbCtx, imgCanvas, imgCtx } = store
 
     if (
@@ -269,7 +266,7 @@ export function useCanvasTransform() {
 
     // Recreate GPU textures with new dimensions if GPU is active
     if (store.tgpuRoot) {
-      await recreateGPUTextures(origHeight, origWidth)
+      recreateGPUTextures(origHeight, origWidth)
     }
 
     // Save to history
@@ -279,7 +276,7 @@ export function useCanvasTransform() {
   /**
    * Mirrors all canvas layers horizontally and updates GPU
    */
-  const mirrorHorizontal = async (): Promise<void> => {
+  const mirrorHorizontal = (): void => {
     const { maskCanvas, maskCtx, rgbCanvas, rgbCtx, imgCanvas, imgCtx } = store
 
     if (
@@ -306,7 +303,7 @@ export function useCanvasTransform() {
 
     // Update GPU textures if GPU is active (dimensions unchanged, just data)
     if (store.tgpuRoot) {
-      await recreateGPUTextures(maskCanvas.width, maskCanvas.height)
+      recreateGPUTextures(maskCanvas.width, maskCanvas.height)
     }
 
     // Save to history
@@ -316,7 +313,7 @@ export function useCanvasTransform() {
   /**
    * Mirrors all canvas layers vertically and updates GPU
    */
-  const mirrorVertical = async (): Promise<void> => {
+  const mirrorVertical = (): void => {
     const { maskCanvas, maskCtx, rgbCanvas, rgbCtx, imgCanvas, imgCtx } = store
 
     if (
@@ -343,7 +340,7 @@ export function useCanvasTransform() {
 
     // Update GPU textures if GPU is active (dimensions unchanged, just data)
     if (store.tgpuRoot) {
-      await recreateGPUTextures(maskCanvas.width, maskCanvas.height)
+      recreateGPUTextures(maskCanvas.width, maskCanvas.height)
     }
 
     // Save to history

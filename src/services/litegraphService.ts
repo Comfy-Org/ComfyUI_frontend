@@ -142,7 +142,7 @@ export const useLitegraphService = () => {
     subgraphPseudoWidgetCache.delete(node)
   }
 
-  function getPseudoWidgetPreviewTargets(node: SubgraphNode): LGraphNode[] {
+  function resolvePseudoWidgetPreviewTargets(node: SubgraphNode): LGraphNode[] {
     const promotionStore = usePromotionStore()
     const promotions = promotionStore.getPromotionsRef(
       node.rootGraph.id,
@@ -829,7 +829,7 @@ export const useLitegraphService = () => {
 
       if (this instanceof SubgraphNode) {
         const parentGraph = this.graph
-        for (const interiorNode of getPseudoWidgetPreviewTargets(this)) {
+        for (const interiorNode of resolvePseudoWidgetPreviewTargets(this)) {
           updatePreviews(interiorNode, () => {
             parentGraph?.setDirtyCanvas(true)
           })

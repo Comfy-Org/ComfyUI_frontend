@@ -16,7 +16,7 @@ import {
   LGraphNode,
   LiteGraph
 } from '@/lib/litegraph/src/litegraph'
-import type { Vector2 } from '@/lib/litegraph/src/litegraph'
+import type { Point } from '@/lib/litegraph/src/interfaces'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { isCloud } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
@@ -230,8 +230,8 @@ export class ComfyApp {
   openClipspace: () => void = () => {}
 
   private positionConversion?: {
-    clientPosToCanvasPos: (pos: Vector2) => Vector2
-    canvasPosToClientPos: (pos: Vector2) => Vector2
+    clientPosToCanvasPos: (pos: Point) => Point
+    canvasPosToClientPos: (pos: Point) => Point
   }
 
   /**
@@ -2007,14 +2007,14 @@ export class ComfyApp {
     }
   }
 
-  clientPosToCanvasPos(pos: Vector2): Vector2 {
+  clientPosToCanvasPos(pos: Point): Point {
     if (!this.positionConversion) {
       throw new Error('clientPosToCanvasPos called before setup')
     }
     return this.positionConversion.clientPosToCanvasPos(pos)
   }
 
-  canvasPosToClientPos(pos: Vector2): Vector2 {
+  canvasPosToClientPos(pos: Point): Point {
     if (!this.positionConversion) {
       throw new Error('canvasPosToClientPos called before setup')
     }
