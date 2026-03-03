@@ -3371,7 +3371,6 @@
     "viewApp": "View app"
   },
   "builderMenu": {
-    "saveApp": "Save app",
     "exitAppBuilder": "Exit app builder"
   }
 }

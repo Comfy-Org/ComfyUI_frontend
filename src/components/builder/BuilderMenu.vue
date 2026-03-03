@@ -32,7 +32,7 @@
         @click="onSave(close)"
       >
         <i class="icon-[lucide--save] size-4" />
-        {{ t('builderMenu.saveApp') }}
+        {{ t('g.save') }}
       </button>
       <div class="my-1 border-t border-border-default" />
       <button
