@@ -133,27 +133,35 @@ import { useTemplateWorkflows } from '@/platform/workflow/templates/composables/
 import type { TemplateInfo } from '@/platform/workflow/templates/types/template'
 
 import WorkflowTemplateDetailsField from './WorkflowTemplateDetailsField.vue'
+import type { MarketplaceTemplate } from '@/platform/marketplace/types/marketplace'
 
 const { t } = useI18n()
 
-const { template, isInstalling = false } = defineProps<{
-  template: TemplateInfo
-  isInstalling?: boolean
-}>()
+const { template: templateOrMarketplaceTemplate, isInstalling = false } =
+  defineProps<{
+    template: TemplateInfo | MarketplaceTemplate
+    isInstalling?: boolean
+  }>()
 
 const emit = defineEmits<{
   install: [template: TemplateInfo]
 }>()
 
+const template = computed(() =>
+  'template' in templateOrMarketplaceTemplate
+    ? templateOrMarketplaceTemplate.template
+    : templateOrMarketplaceTemplate
+)
+
 const { getTemplateTitle, getTemplateDescription } = useTemplateWorkflows()
 
 const title = computed(() =>
-  getTemplateTitle(template, template.sourceModule ?? 'default')
+  getTemplateTitle(template.value, template.value.sourceModule ?? 'default')
 )
 
-const description = computed(() => getTemplateDescription(template))
+const description = computed(() => getTemplateDescription(template.value))
 
 const formattedVram = computed(() =>
-  template.vram ? formatSize(template.vram) : null
+  template.value.vram ? formatSize(template.value.vram) : null
 )
 </script>

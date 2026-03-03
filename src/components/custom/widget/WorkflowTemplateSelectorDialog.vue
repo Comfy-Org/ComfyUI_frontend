@@ -112,9 +112,16 @@
     </template>
 
     <template #content>
+      <MyTemplatesGrid
+        v-if="isMyTemplatesView"
+        :templates="myTemplates"
+        :loading="isMyTemplatesLoading"
+        @select="(template) => (selected = template)"
+      />
+
       <!-- No Results State (only show when loaded and no results) -->
       <div
-        v-if="!isLoading && filteredTemplates.length === 0"
+        v-else-if="!isLoading && filteredTemplates.length === 0"
         class="flex h-64 flex-col items-center justify-center text-neutral-500"
       >
         <i class="mb-4 icon-[lucide--search] h-12 w-12 opacity-50" />
@@ -194,7 +201,7 @@
             "
             @mouseenter="hoveredTemplate = template.name"
             @mouseleave="hoveredTemplate = null"
-            @click="selectedTemplate = template"
+            @click="selected = template"
           >
             <template #top>
               <CardTop ratio="square">
@@ -380,7 +387,10 @@
       </div>
 
       <!-- Results Summary -->
-      <div v-if="!isLoading" class="mt-6 px-6 text-sm text-muted">
+      <div
+        v-if="!isLoading && !isMyTemplatesView"
+        class="mt-6 px-6 text-sm text-muted"
+      >
         {{
           $t('templateWorkflows.resultsCount', {
             count: filteredCount,
@@ -392,9 +402,9 @@
 
     <template #rightPanel>
       <WorkflowTemplateDetailsPanel
-        v-if="!!selectedTemplate"
-        :template="selectedTemplate"
-        :is-installing="loadingTemplate === selectedTemplate.name"
+        v-if="!!selected"
+        :template="selected"
+        :is-installing="loadingTemplate === selectedTemplate?.name"
         @install="onLoadWorkflow"
       />
     </template>
@@ -421,6 +431,8 @@ import HoverDissolveThumbnail from '@/components/templates/thumbnails/HoverDisso
 import LogoOverlay from '@/components/templates/thumbnails/LogoOverlay.vue'
 import Button from '@/components/ui/button/Button.vue'
 import WorkflowTemplateDetailsPanel from '@/components/custom/widget/WorkflowTemplateDetailsPanel.vue'
+import MyTemplatesGrid from '@/platform/marketplace/components/MyTemplatesGrid.vue'
+import { useMyTemplates } from '@/platform/marketplace/composables/useMyTemplates'
 import BaseModalLayout from '@/components/widget/layout/BaseModalLayout.vue'
 import LeftSidePanel from '@/components/widget/panel/LeftSidePanel.vue'
 import { useIntersectionObserver } from '@/composables/useIntersectionObserver'
@@ -437,6 +449,7 @@ import type { NavGroupData, NavItemData } from '@/types/navTypes'
 import { OnCloseKey } from '@/types/widgetTypes'
 import { createGridStyle } from '@/utils/gridUtil'
 import { cn } from '@/utils/tailwindUtil'
+import type { MarketplaceTemplate } from '@/platform/marketplace/types/marketplace'
 
 const { t } = useI18n()
 
@@ -448,15 +461,22 @@ const { onClose: originalOnClose, initialCategory = 'all' } = defineProps<{
 // Track session time for telemetry
 const sessionStartTime = ref<number>(0)
 const templateWasSelected = ref(false)
-const selectedTemplate = ref<TemplateInfo | null>(null)
+const selected = ref<TemplateInfo | MarketplaceTemplate | null>(null)
+const selectedTemplate = computed(() => {
+  if (!selected.value) {
+    return null
+  }
+
+  return 'template' in selected.value ? selected.value.template : selected.value
+})
 
 const isRightPanelOpen = computed({
   get() {
-    return !!selectedTemplate.value
+    return !!selected.value
   },
   set(value: boolean) {
     if (!value) {
-      selectedTemplate.value = null
+      selected.value = null
     }
   }
 })
@@ -505,6 +525,13 @@ const onClose = () => {
 }
 
 provide(OnCloseKey, onClose)
+
+const { templates: myTemplates, isLoading: isMyTemplatesLoading } =
+  useMyTemplates()
+
+const isMyTemplatesView = computed(
+  () => selectedNavItem.value === 'my-templates'
+)
 
 // Workflow templates store and composable
 const workflowTemplatesStore = useWorkflowTemplatesStore()
@@ -566,7 +593,14 @@ const navItems = computed<(NavItemData | NavGroupData)[]>(() => {
       }
     ]
   }
-  return workflowTemplatesStore.navGroupedTemplates
+  const storeItems = workflowTemplatesStore.navGroupedTemplates
+  const myTemplatesItem: NavItemData = {
+    id: 'my-templates',
+    label: t('templateWorkflows.myTemplates.title'),
+    icon: 'icon-[lucide--user]'
+  }
+  const [all, ...rest] = storeItems
+  return all ? [all, myTemplatesItem, ...rest] : [myTemplatesItem]
 })
 
 const gridStyle = computed(() => createGridStyle({ padding: '4px' }))
