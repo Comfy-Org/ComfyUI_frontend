@@ -6,7 +6,7 @@ import { useAppMode } from '@/composables/useAppMode'
 
 import { useAppSetDefaultView } from './useAppSetDefaultView'
 
-export const BUILDER_STEPS = [
+const BUILDER_STEPS = [
   'builder:select',
   'builder:arrange',
   'setDefaultView'
