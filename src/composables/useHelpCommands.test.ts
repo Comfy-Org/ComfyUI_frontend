@@ -78,7 +78,7 @@ describe('useHelpCommands', () => {
     const issuesCommand = commands.find(
       (c) => c.id === 'Comfy.Help.OpenComfyUIIssues'
     )!
-    issuesCommand.function()
+    void issuesCommand.function()
     expect(openSpy).toHaveBeenCalledWith(expect.any(String), '_blank')
 
     openSpy.mockRestore()
