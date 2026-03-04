@@ -46,7 +46,7 @@
           </PopoverClose>
           <PopoverClose as-child>
             <Button variant="secondary" size="md" @click="emit('switch')">
-              {{ t('builderToolbar.switchToSelect') }}
+              {{ t('builderToolbar.switchToOutputs') }}
             </Button>
           </PopoverClose>
         </template>
