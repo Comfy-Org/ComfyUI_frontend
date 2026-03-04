@@ -39,13 +39,9 @@ test.describe(
       const result = await comfyPage.page.evaluate(async (wf) => {
         const app = window.app!
 
-        await app.loadGraphData(
-          wf as ComfyWorkflowJSON,
-          true,
-          true,
-          null,
-          { openSource: 'template' }
-        )
+        await app.loadGraphData(wf as ComfyWorkflowJSON, true, true, null, {
+          openSource: 'template'
+        })
 
         // Wait for slot layout sync (RAF + nextTick)
         await new Promise((r) => requestAnimationFrame(() => setTimeout(r, 50)))
@@ -84,18 +80,11 @@ test.describe(
           const nodeRect = nodeEl.getBoundingClientRect()
           for (const slotEl of slotEls) {
             const slotRect = slotEl.getBoundingClientRect()
-            const slotKey =
-              (slotEl as HTMLElement).dataset.slotKey ?? 'unknown'
+            const slotKey = (slotEl as HTMLElement).dataset.slotKey ?? 'unknown'
             slots.push({
               key: slotKey,
-              offsetX:
-                slotRect.left +
-                slotRect.width / 2 -
-                nodeRect.left,
-              offsetY:
-                slotRect.top +
-                slotRect.height / 2 -
-                nodeRect.top
+              offsetX: slotRect.left + slotRect.width / 2 - nodeRect.left,
+              offsetY: slotRect.top + slotRect.height / 2 - nodeRect.top
             })
           }
 

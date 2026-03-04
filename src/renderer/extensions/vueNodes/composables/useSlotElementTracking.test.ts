@@ -46,12 +46,32 @@ function createSlotElement(): HTMLElement {
   const container = document.createElement('div')
   container.dataset.nodeId = NODE_ID
   container.getBoundingClientRect = () =>
-    ({ left: 0, top: 0, right: 200, bottom: 100, width: 200, height: 100, x: 0, y: 0, toJSON: () => ({}) }) as DOMRect
+    ({
+      left: 0,
+      top: 0,
+      right: 200,
+      bottom: 100,
+      width: 200,
+      height: 100,
+      x: 0,
+      y: 0,
+      toJSON: () => ({})
+    }) as DOMRect
   document.body.appendChild(container)
 
   const el = document.createElement('div')
   el.getBoundingClientRect = () =>
-    ({ left: 10, top: 30, right: 20, bottom: 40, width: 10, height: 10, x: 10, y: 30, toJSON: () => ({}) }) as DOMRect
+    ({
+      left: 10,
+      top: 30,
+      right: 20,
+      bottom: 40,
+      width: 10,
+      height: 10,
+      x: 10,
+      y: 30,
+      toJSON: () => ({})
+    }) as DOMRect
   container.appendChild(el)
 
   return el
@@ -70,7 +90,9 @@ async function mountAndRegisterSlot(type: 'input' | 'output') {
 
 describe('useSlotElementTracking', () => {
   afterEach(() => {
-    document.body.querySelectorAll('[data-node-id]').forEach((el) => el.remove())
+    document.body
+      .querySelectorAll('[data-node-id]')
+      .forEach((el) => el.remove())
   })
 
   beforeEach(() => {
