@@ -76,18 +76,10 @@ jobs:
       - name: Generate size report
         run: node scripts/size-report.js > size-report.md
 
-      - name: Read size report
-        id: size-report
-        uses: juliangruber/read-file-action@b549046febe0fe86f8cb4f93c24e284433f9ab58 # v1.1.7
+      - name: Post PR comment
+        uses: ./.github/actions/post-pr-report-comment
         with:
-          path: ./size-report.md
-
-      - name: Create or update PR comment
-        uses: actions-cool/maintain-one-comment@4b2dbf086015f892dcb5e8c1106f5fccd6c1476b # v3.2.0
-        with:
+          pr-number: ${{ steps.pr-number.outputs.content }}
+          report-file: ./size-report.md
+          comment-marker: '<!-- COMFYUI_FRONTEND_SIZE -->'
           token: ${{ secrets.GITHUB_TOKEN }}
-          number: ${{ steps.pr-number.outputs.content }}
-          body: |
-            ${{ steps.size-report.outputs.content }}
-            <!-- COMFYUI_FRONTEND_SIZE -->
-          body-include: '<!-- COMFYUI_FRONTEND_SIZE -->'

@@ -1,0 +1,70 @@
+name: 'PR: Performance Report'
+
+on:
+  workflow_run:
+    workflows: ['CI: Performance Report']
+    types:
+      - completed
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  comment:
+    runs-on: ubuntu-latest
+    if: >
+      github.repository == 'Comfy-Org/ComfyUI_frontend' &&
+      github.event.workflow_run.event == 'pull_request' &&
+      github.event.workflow_run.conclusion == 'success'
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
+
+      - name: Download PR metadata
+        uses: dawidd6/action-download-artifact@0bd50d53a6d7fb5cb921e607957e9cc12b4ce392 # v12
+        with:
+          name: perf-meta
+          run_id: ${{ github.event.workflow_run.id }}
+          path: temp/perf-meta/
+
+      - name: Set PR number
+        id: pr-number
+        run: echo "content=$(cat temp/perf-meta/number.txt)" >> $GITHUB_OUTPUT
+
+      - name: Set base branch
+        id: pr-base
+        run: echo "content=$(cat temp/perf-meta/base.txt)" >> $GITHUB_OUTPUT
+
+      - name: Download PR perf metrics
+        uses: dawidd6/action-download-artifact@0bd50d53a6d7fb5cb921e607957e9cc12b4ce392 # v12
+        with:
+          name: perf-metrics
+          run_id: ${{ github.event.workflow_run.id }}
+          path: test-results/
+
+      - name: Download baseline perf metrics
+        uses: dawidd6/action-download-artifact@0bd50d53a6d7fb5cb921e607957e9cc12b4ce392 # v12
+        with:
+          branch: ${{ steps.pr-base.outputs.content }}
+          workflow: ci-perf-report.yaml
+          event: push
+          name: perf-metrics
+          path: temp/perf-baseline/
+          if_no_artifact_found: warn
+
+      - name: Generate perf report
+        run: npx --yes tsx scripts/perf-report.ts > perf-report.md
+
+      - name: Post PR comment
+        uses: ./.github/actions/post-pr-report-comment
+        with:
+          pr-number: ${{ steps.pr-number.outputs.content }}
+          report-file: ./perf-report.md
+          comment-marker: '<!-- COMFYUI_FRONTEND_PERF -->'
+          token: ${{ secrets.GITHUB_TOKEN }}
