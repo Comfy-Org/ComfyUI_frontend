@@ -35,13 +35,14 @@
       </label>
 
       <!-- Example images -->
-      <button
+      <Button
         v-for="(image, index) in exampleImages"
         :key="image.id"
-        type="button"
+        variant="textonly"
+        size="unset"
         :class="
           cn(
-            'relative h-25 cursor-pointer overflow-hidden rounded border-none p-0',
+            'relative h-25 cursor-pointer overflow-hidden rounded p-0',
             isSelected(image.id) ? 'ring-2 ring-ring' : 'ring-0'
           )
         "
@@ -58,7 +59,7 @@
         >
           {{ selectionIndex(image.id) }}
         </div>
-      </button>
+      </Button>
     </div>
   </div>
 </template>
@@ -66,6 +67,7 @@
 <script setup lang="ts">
 import { v4 as uuidv4 } from 'uuid'
 
+import Button from '@/components/ui/button/Button.vue'
 import type { ExampleImage } from '@/platform/workflow/sharing/types/comfyHubTypes'
 import { cn } from '@/utils/tailwindUtil'
 

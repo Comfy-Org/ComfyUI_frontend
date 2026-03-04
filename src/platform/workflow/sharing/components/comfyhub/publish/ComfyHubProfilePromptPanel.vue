@@ -4,8 +4,9 @@
       {{ $t('comfyHubPublish.createProfileToPublish') }}
     </p>
 
-    <button
-      type="button"
+    <Button
+      variant="textonly"
+      size="unset"
       class="flex w-64 items-center gap-4 rounded-2xl border border-dashed border-border-default px-6 py-4 hover:bg-secondary-background-hover"
       @click="emit('requestProfile')"
     >
@@ -18,11 +19,13 @@
         <i class="icon-[lucide--plus] size-4" />
         {{ $t('comfyHubPublish.createProfileCta') }}
       </span>
-    </button>
+    </Button>
   </div>
 </template>
 
 <script setup lang="ts">
+import Button from '@/components/ui/button/Button.vue'
+
 const emit = defineEmits<{
   requestProfile: []
 }>()
