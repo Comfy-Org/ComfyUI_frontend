@@ -36,7 +36,7 @@ if (isCloud) {
     const { initTelemetry } = await import('@/platform/telemetry/initTelemetry')
     await initTelemetry()
   } catch (error) {
-    console.warn('[init] Cloud initialization failed, continuing:', error)
+    console.warn('Cloud initialization failed, continuing:', error)
   }
 }
 
