@@ -205,9 +205,9 @@ describe('LGraphNode', () => {
     expect(wrapper.classes()).toContain('outline-node-component-outline')
 
     // The layered outline overlay should be present
-    const overlay = wrapper.find('.border-node-component-outline')
+    const overlay = wrapper.find('[data-testid="node-state-outline-overlay"]')
     expect(overlay.exists()).toBe(true)
-    expect(overlay.classes()).toContain('border-3')
+    expect(overlay.classes()).toContain('border-node-component-outline')
   })
 
   it('should render progress indicator when executing prop is true', () => {
@@ -219,9 +219,9 @@ describe('LGraphNode', () => {
     expect(wrapper.classes()).toContain('outline-node-stroke-executing')
 
     // The layered outline overlay should be present
-    const overlay = wrapper.find('.border-node-stroke-executing')
+    const overlay = wrapper.find('[data-testid="node-state-outline-overlay"]')
     expect(overlay.exists()).toBe(true)
-    expect(overlay.classes()).toContain('border-3')
+    expect(overlay.classes()).toContain('border-node-stroke-executing')
   })
 
   it('should initialize height CSS vars for collapsed nodes', () => {

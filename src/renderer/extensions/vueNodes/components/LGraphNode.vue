@@ -37,6 +37,7 @@
     <!-- Selection/Execution Outline Overlay -->
     <div
       v-if="isSelected || executing"
+      data-testid="node-state-outline-overlay"
       :class="
         cn(
           'absolute pointer-events-none border-3 z-60 outline-none',
