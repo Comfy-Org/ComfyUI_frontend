@@ -301,21 +301,7 @@ export const useModelToNodeStore = defineStore('modelToNode', () => {
     )
     quickRegister('LLM/checkpoints', 'LoadChatGLM3', 'chatglm3_checkpoint')
 
-    // LLM/llava text encoder models for HunyuanVideo
-    // These use DownloadAndLoadHyVideoTextEncoder which auto-downloads,
-    // so map to the closest user-facing HunyuanVideo node
-    quickRegister(
-      'LLM/llava-llama-3-8b-text-encoder-tokenizer',
-      'TextEncodeHunyuanVideo_ImageToVideo',
-      ''
-    )
-    quickRegister(
-      'LLM/llava-llama-3-8b-v1_1-transformers',
-      'TextEncodeHunyuanVideo_ImageToVideo',
-      ''
-    )
-
-    // Qwen3 TTS speech models (ComfyUI-FunBox)
+// Qwen3 TTS speech models (ComfyUI-FunBox)
     // Top-level 'qwen-tts' catches all qwen-tts/* subdirs via hierarchical fallback
     quickRegister('qwen-tts', 'FB_Qwen3TTSVoiceClone', 'model_choice')
 
@@ -361,20 +347,6 @@ export const useModelToNodeStore = defineStore('modelToNode', () => {
     // Detection models (vitpose, yolo)
     quickRegister('detection', 'OnnxDetectionModelLoader', 'yolo_model')
 
-    // LatentSync lip-sync models (node pack not yet deployed — pre-registered)
-    quickRegister('latentsync', 'LatentSyncNode', '')
-
-    // SAM-3D object generation models (node pack not yet deployed — pre-registered)
-    quickRegister('sam3d', 'SAM3DLoader', '')
-
-    // SAM-3D body models (node pack not yet deployed — pre-registered)
-    quickRegister('sam3dbody', 'SAM3DBodyLoader', '')
-
-    // Inpaint models (Fooocus inpaint, LAMA, MAT)
-    quickRegister('inpaint', 'InpaintModelConditioning', '')
-
-    // VAE approximate decoding (TAESD models, used internally by ComfyUI)
-    quickRegister('vae_approx', 'VAEDecodeTiled', '')
   }
 
   return {
