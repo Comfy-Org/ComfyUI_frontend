@@ -154,15 +154,12 @@ jobs:
       - name: Build Storybook
         run: pnpm build-storybook
 
-      - name: Install wrangler
-        run: npm install -g wrangler@^4.0.0
-
       - name: Deploy to Cloudflare Pages (production)
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: |
-          wrangler pages deploy storybook-static \
+          npx wrangler@^4.0.0 pages deploy storybook-static \
             --project-name=comfy-storybook \
             --branch=main
 
