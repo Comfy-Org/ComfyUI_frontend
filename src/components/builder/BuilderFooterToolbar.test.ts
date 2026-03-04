@@ -54,11 +54,7 @@ const i18n = createI18n({
   messages: {
     en: {
       builderMenu: { exitAppBuilder: 'Exit app builder' },
-      builderFooterToolbar: {
-        label: 'Builder navigation',
-        back: 'Back',
-        next: 'Next'
-      }
+      g: { back: 'Back', next: 'Next' }
     }
   }
 })

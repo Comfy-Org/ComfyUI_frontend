@@ -1,7 +1,6 @@
 <template>
   <nav
     class="fixed bottom-4 left-1/2 z-1000 flex -translate-x-1/2 items-center gap-2 rounded-2xl border border-border-default bg-base-background p-2 shadow-interface"
-    :aria-label="t('builderFooterToolbar.label')"
   >
     <Button variant="textonly" size="lg" @click="onExitBuilder">
       {{ t('builderMenu.exitAppBuilder') }}
@@ -10,13 +9,13 @@
       variant="textonly"
       size="lg"
       :disabled="isFirstStep"
-      @click="onBack"
+      @click="goBack"
     >
       <i class="icon-[lucide--chevron-left]" aria-hidden="true" />
-      {{ t('builderFooterToolbar.back') }}
+      {{ t('g.back') }}
     </Button>
-    <Button size="lg" :disabled="isLastStep" @click="onNext">
-      {{ t('builderFooterToolbar.next') }}
+    <Button size="lg" :disabled="isLastStep" @click="goNext">
+      {{ t('g.next') }}
       <i class="icon-[lucide--chevron-right]" aria-hidden="true" />
     </Button>
   </nav>
@@ -32,17 +31,14 @@ import { useAppMode } from '@/composables/useAppMode'
 import { useAppModeStore } from '@/stores/appModeStore'
 import { useDialogStore } from '@/stores/dialogStore'
 
-import { useAppSetDefaultView } from './useAppSetDefaultView'
-import type { BuilderStepId } from './useBuilderSteps'
-import { BUILDER_STEPS, useBuilderSteps } from './useBuilderSteps'
+import { useBuilderSteps } from './useBuilderSteps'
 
 const { t } = useI18n()
 const appModeStore = useAppModeStore()
 const dialogStore = useDialogStore()
-const { isBuilderMode, setMode } = useAppMode()
+const { isBuilderMode } = useAppMode()
 const { hasOutputs } = storeToRefs(appModeStore)
-const { showDialog } = useAppSetDefaultView()
-const { activeStepIndex, isFirstStep, isLastStep } = useBuilderSteps({
+const { isFirstStep, isLastStep, goBack, goNext } = useBuilderSteps({
   hasOutputs
 })
 
@@ -63,24 +59,5 @@ useEventListener(window, 'keydown', (e: KeyboardEvent) => {
 
 function onExitBuilder() {
   void appModeStore.exitBuilder()
-}
-
-function navigateToStep(stepId: BuilderStepId) {
-  if (stepId === 'setDefaultView') {
-    setMode('builder:arrange')
-    showDialog()
-  } else {
-    setMode(stepId)
-  }
-}
-
-function onBack() {
-  if (isFirstStep.value) return
-  navigateToStep(BUILDER_STEPS[activeStepIndex.value - 1])
-}
-
-function onNext() {
-  if (isLastStep.value) return
-  navigateToStep(BUILDER_STEPS[activeStepIndex.value + 1])
 }
 </script>

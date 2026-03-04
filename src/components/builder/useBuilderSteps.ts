@@ -17,8 +17,8 @@ export type BuilderStepId = (typeof BUILDER_STEPS)[number]
 const ARRANGE_INDEX = BUILDER_STEPS.indexOf('builder:arrange')
 
 export function useBuilderSteps(options?: { hasOutputs?: Ref<boolean> }) {
-  const { mode, isBuilderMode } = useAppMode()
-  const { settingView } = useAppSetDefaultView()
+  const { mode, isBuilderMode, setMode } = useAppMode()
+  const { settingView, showDialog } = useAppSetDefaultView()
 
   const activeStep = computed<BuilderStepId>(() => {
     if (settingView.value) return 'setDefaultView'
@@ -40,5 +40,32 @@ export function useBuilderSteps(options?: { hasOutputs?: Ref<boolean> }) {
     return activeStepIndex.value >= BUILDER_STEPS.length - 1
   })
 
-  return { activeStep, activeStepIndex, isFirstStep, isLastStep }
+  function navigateToStep(stepId: BuilderStepId) {
+    if (stepId === 'setDefaultView') {
+      setMode('builder:arrange')
+      showDialog()
+    } else {
+      setMode(stepId)
+    }
+  }
+
+  function goBack() {
+    if (isFirstStep.value) return
+    navigateToStep(BUILDER_STEPS[activeStepIndex.value - 1])
+  }
+
+  function goNext() {
+    if (isLastStep.value) return
+    navigateToStep(BUILDER_STEPS[activeStepIndex.value + 1])
+  }
+
+  return {
+    activeStep,
+    activeStepIndex,
+    isFirstStep,
+    isLastStep,
+    navigateToStep,
+    goBack,
+    goNext
+  }
 }
