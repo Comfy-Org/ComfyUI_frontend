@@ -47,6 +47,14 @@
       <Button variant="secondary" size="lg" @click="onCancel">
         {{ $t('g.cancel') }}
       </Button>
+      <Button
+        v-if="hasAssets"
+        variant="secondary"
+        size="lg"
+        @click="onOpenWithoutImporting"
+      >
+        {{ $t('openSharedWorkflow.openWithoutImporting') }}
+      </Button>
       <Button variant="primary" size="lg" @click="onConfirm">
         {{
           hasAssets
@@ -70,11 +78,13 @@ const {
   workflowName,
   items = [],
   onConfirm,
+  onOpenWithoutImporting,
   onCancel
 } = defineProps<{
   workflowName: string
   items?: AssetInfo[]
   onConfirm: () => void
+  onOpenWithoutImporting: () => void
   onCancel: () => void
 }>()
 

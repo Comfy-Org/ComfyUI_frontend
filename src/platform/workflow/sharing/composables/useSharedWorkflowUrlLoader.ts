@@ -65,10 +65,10 @@ export function useSharedWorkflowUrlLoader() {
   function showOpenSharedWorkflowDialog(
     workflowName: string,
     nonOwnedAssets: AssetInfo[]
-  ): Promise<boolean> {
+  ): Promise<'copy-and-open' | 'open-only' | 'cancel'> {
     const dialogKey = 'open-shared-workflow'
 
-    return new Promise<boolean>((resolve) => {
+    return new Promise<'copy-and-open' | 'open-only' | 'cancel'>((resolve) => {
       dialogService.showLayoutDialog({
         key: dialogKey,
         component: OpenSharedWorkflowDialogContent,
@@ -76,16 +76,20 @@ export function useSharedWorkflowUrlLoader() {
           workflowName,
           items: nonOwnedAssets,
           onConfirm: () => {
-            resolve(true)
+            resolve('copy-and-open')
+            dialogStore.closeDialog({ key: dialogKey })
+          },
+          onOpenWithoutImporting: () => {
+            resolve('open-only')
             dialogStore.closeDialog({ key: dialogKey })
           },
           onCancel: () => {
-            resolve(false)
+            resolve('cancel')
             dialogStore.closeDialog({ key: dialogKey })
           }
         },
         dialogComponentProps: {
-          onClose: () => resolve(false),
+          onClose: () => resolve('cancel'),
           pt: {
             root: {
               class: 'rounded-2xl overflow-hidden w-full sm:w-176 max-w-full'
@@ -142,12 +146,12 @@ export function useSharedWorkflowUrlLoader() {
       )
       const nonOwnedAssets = sharedWorkflow.assets.filter((a) => !a.in_library)
 
-      const confirmed = await showOpenSharedWorkflowDialog(
+      const result = await showOpenSharedWorkflowDialog(
         workflowName,
         nonOwnedAssets
       )
 
-      if (confirmed) {
+      if (result !== 'cancel') {
         await app.loadGraphData(
           sharedWorkflow.workflowJson,
           true,
@@ -155,7 +159,7 @@ export function useSharedWorkflowUrlLoader() {
           workflowName
         )
 
-        if (nonOwnedAssets.length > 0) {
+        if (result === 'copy-and-open' && nonOwnedAssets.length > 0) {
           try {
             await workflowShareService.importPublishedAssets(
               nonOwnedAssets.map((a) => a.id)

@@ -19,7 +19,8 @@ const i18n = createI18n({
         nonPublicAssetsWarningLine2:
           'These will be added to your library when you open the workflow',
         copyAssetsAndOpen: 'Copy assets & open workflow',
-        openWorkflow: 'Open workflow'
+        openWorkflow: 'Open workflow',
+        openWithoutImporting: 'Open without importing'
       },
       shareWorkflow: {
         mediaLabel: '{count} Media File | {count} Media Files',
@@ -37,6 +38,7 @@ function mountComponent(props: Record<string, unknown> = {}) {
     props: {
       workflowName: 'Test Workflow',
       onConfirm: vi.fn(),
+      onOpenWithoutImporting: vi.fn(),
       onCancel: vi.fn(),
       ...props
     }
@@ -65,6 +67,11 @@ describe('OpenSharedWorkflowDialogContent', () => {
     it('shows workflow name in body', () => {
       const wrapper = mountComponent({ workflowName: 'My Workflow' })
       expect(wrapper.find('h2').text()).toBe('My Workflow')
+    })
+
+    it('does not show "Open without importing" button', () => {
+      const wrapper = mountComponent()
+      expect(wrapper.text()).not.toContain('Open without importing')
     })
 
     it('does not show warning or asset sections', () => {
@@ -150,6 +157,24 @@ describe('OpenSharedWorkflowDialogContent', () => {
       const wrapper = mountComponent(assetsProps)
       expect(wrapper.text()).toContain('2 Media Files')
       expect(wrapper.text()).toContain('1 Model')
+    })
+
+    it('shows "Open without importing" button', () => {
+      const wrapper = mountComponent(assetsProps)
+      const openWithoutImporting = wrapper
+        .findAll('button')
+        .find((b) => b.text() === 'Open without importing')
+      expect(openWithoutImporting).toBeDefined()
+    })
+
+    it('calls onOpenWithoutImporting when "Open without importing" is clicked', async () => {
+      const onOpenWithoutImporting = vi.fn()
+      const wrapper = mountComponent({ ...assetsProps, onOpenWithoutImporting })
+      const button = wrapper
+        .findAll('button')
+        .find((b) => b.text() === 'Open without importing')
+      await button!.trigger('click')
+      expect(onOpenWithoutImporting).toHaveBeenCalled()
     })
 
     it('calls onConfirm when primary button is clicked', async () => {

@@ -3040,6 +3040,7 @@
     "nonPublicAssetsWarningLine2": "These will be added to your library when you open the workflow",
     "copyAssetsAndOpen": "Copy assets & open workflow",
     "openWorkflow": "Open workflow",
+    "openWithoutImporting": "Open without importing",
     "importFailed": "Failed to import workflow assets"
   },
   "comfyHubPublish": {
