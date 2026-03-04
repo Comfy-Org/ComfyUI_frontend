@@ -3,17 +3,29 @@ import { setActivePinia } from 'pinia'
 import { nextTick } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import type { LGraphNode, NodeId } from '@/lib/litegraph/src/LGraphNode'
 import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { ComfyWorkflow as ComfyWorkflowClass } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { app } from '@/scripts/app'
-import type { LGraphNode, NodeId } from '@/lib/litegraph/src/LGraphNode'
 import type { ChangeTracker } from '@/scripts/changeTracker'
 import { createMockChangeTracker } from '@/utils/__tests__/litegraphTestUtils'
 
+const mockEmptyWorkflowDialog = vi.hoisted(() => {
+  let lastOptions: { onEnterBuilder: () => void; onDismiss: () => void }
+  return {
+    show: vi.fn((options: typeof lastOptions) => {
+      lastOptions = options
+    }),
+    get lastOptions() {
+      return lastOptions
+    }
+  }
+})
+
 vi.mock('@/scripts/app', () => ({
   app: {
-    rootGraph: { extra: {} }
+    rootGraph: { extra: {}, nodes: [{ id: 1 }] }
   }
 }))
 
@@ -29,6 +41,10 @@ vi.mock('@/renderer/core/canvas/canvasStore', () => ({
   useCanvasStore: () => ({
     getCanvas: () => ({ read_only: false })
   })
+}))
+
+vi.mock('@/components/builder/useEmptyWorkflowDialog', () => ({
+  useEmptyWorkflowDialog: () => mockEmptyWorkflowDialog
 }))
 
 import { useAppModeStore } from './appModeStore'
@@ -49,19 +65,22 @@ function createBuilderWorkflow(
 }
 
 describe('appModeStore', () => {
+  let workflowStore: ReturnType<typeof useWorkflowStore>
+  let store: ReturnType<typeof useAppModeStore>
+
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
-    vi.clearAllMocks()
     vi.mocked(app.rootGraph).extra = {}
     mockResolveNode.mockReturnValue(undefined)
+    vi.mocked(app.rootGraph).nodes = [{ id: 1 } as LGraphNode]
+    workflowStore = useWorkflowStore()
+    store = useAppModeStore()
+    vi.clearAllMocks()
   })
 
   describe('enterBuilder', () => {
     it('navigates to builder:arrange when in app mode with outputs', () => {
-      const workflowStore = useWorkflowStore()
       workflowStore.activeWorkflow = createBuilderWorkflow('app')
-
-      const store = useAppModeStore()
       store.selectedOutputs.push(1)
 
       store.enterBuilder()
@@ -70,10 +89,7 @@ describe('appModeStore', () => {
     })
 
     it('navigates to builder:select when in app mode without outputs', () => {
-      const workflowStore = useWorkflowStore()
       workflowStore.activeWorkflow = createBuilderWorkflow('app')
-
-      const store = useAppModeStore()
 
       store.enterBuilder()
 
@@ -81,10 +97,7 @@ describe('appModeStore', () => {
     })
 
     it('navigates to builder:select when in graph mode with outputs', () => {
-      const workflowStore = useWorkflowStore()
       workflowStore.activeWorkflow = createBuilderWorkflow('graph')
-
-      const store = useAppModeStore()
       store.selectedOutputs.push(1)
 
       store.enterBuilder()
@@ -93,14 +106,66 @@ describe('appModeStore', () => {
     })
 
     it('navigates to builder:select when in graph mode without outputs', () => {
-      const workflowStore = useWorkflowStore()
       workflowStore.activeWorkflow = createBuilderWorkflow('graph')
-
-      const store = useAppModeStore()
 
       store.enterBuilder()
 
       expect(workflowStore.activeWorkflow!.activeMode).toBe('builder:select')
+    })
+
+    it('shows empty workflow dialog when graph has no nodes', () => {
+      vi.mocked(app.rootGraph).nodes = []
+      workflowStore.activeWorkflow = createBuilderWorkflow('graph')
+
+      store.enterBuilder()
+
+      expect(mockEmptyWorkflowDialog.show).toHaveBeenCalledWith(
+        expect.objectContaining({
+          onEnterBuilder: expect.any(Function),
+          onDismiss: expect.any(Function)
+        })
+      )
+      expect(workflowStore.activeWorkflow!.activeMode).toBe('graph')
+    })
+  })
+
+  describe('empty workflow dialog callbacks', () => {
+    function getDialogOptions() {
+      vi.mocked(app.rootGraph).nodes = []
+      workflowStore.activeWorkflow = createBuilderWorkflow('graph')
+      store.enterBuilder()
+      return mockEmptyWorkflowDialog.lastOptions
+    }
+
+    it('onDismiss sets graph mode', () => {
+      const options = getDialogOptions()
+
+      // Move to builder so onDismiss must actually transition back
+      workflowStore.activeWorkflow!.activeMode = 'builder:select'
+
+      options.onDismiss()
+
+      expect(workflowStore.activeWorkflow!.activeMode).toBe('graph')
+    })
+
+    it('onEnterBuilder enters builder when nodes exist', () => {
+      const options = getDialogOptions()
+
+      // Simulate template having loaded nodes
+      vi.mocked(app.rootGraph).nodes = [{ id: 1 } as LGraphNode]
+
+      options.onEnterBuilder()
+
+      expect(workflowStore.activeWorkflow!.activeMode).toBe('builder:select')
+    })
+
+    it('onEnterBuilder shows dialog again when no nodes', () => {
+      const options = getDialogOptions()
+
+      mockEmptyWorkflowDialog.show.mockClear()
+      options.onEnterBuilder()
+
+      expect(mockEmptyWorkflowDialog.show).toHaveBeenCalled()
     })
   })
 
@@ -135,9 +200,6 @@ describe('appModeStore', () => {
         id == 1 ? (node1 as unknown as LGraphNode) : undefined
       )
 
-      const workflowStore = useWorkflowStore()
-      const store = useAppModeStore()
-
       workflowStore.activeWorkflow = workflowWithLinearData(
         [
           [1, 'prompt'],
@@ -155,9 +217,6 @@ describe('appModeStore', () => {
       mockResolveNode.mockImplementation((id) =>
         id == 1 ? (node1 as unknown as LGraphNode) : undefined
       )
-
-      const workflowStore = useWorkflowStore()
-      const store = useAppModeStore()
 
       workflowStore.activeWorkflow = workflowWithLinearData(
         [
@@ -180,9 +239,6 @@ describe('appModeStore', () => {
         id == 1 ? (node1 as unknown as LGraphNode) : undefined
       )
 
-      const workflowStore = useWorkflowStore()
-      const store = useAppModeStore()
-
       workflowStore.activeWorkflow = workflowWithLinearData([], [1, 99])
       await nextTick()
 
@@ -191,9 +247,6 @@ describe('appModeStore', () => {
 
     it('hasOutputs is false when all output nodes are deleted', async () => {
       mockResolveNode.mockReturnValue(undefined)
-
-      const workflowStore = useWorkflowStore()
-      const store = useAppModeStore()
 
       workflowStore.activeWorkflow = workflowWithLinearData([], [10, 20])
       await nextTick()
@@ -205,9 +258,6 @@ describe('appModeStore', () => {
 
   describe('linearData sync watcher', () => {
     it('writes linearData to rootGraph.extra when in builder mode', async () => {
-      const workflowStore = useWorkflowStore()
-      const store = useAppModeStore()
-
       workflowStore.activeWorkflow = createBuilderWorkflow()
       await nextTick()
 
@@ -221,12 +271,7 @@ describe('appModeStore', () => {
     })
 
     it('does not write linearData when not in builder mode', async () => {
-      const workflowStore = useWorkflowStore()
-      const store = useAppModeStore()
-
-      const workflow = createBuilderWorkflow()
-      workflow.activeMode = 'graph'
-      workflowStore.activeWorkflow = workflow
+      workflowStore.activeWorkflow = createBuilderWorkflow('graph')
       await nextTick()
 
       store.selectedOutputs.push(1)
@@ -236,9 +281,6 @@ describe('appModeStore', () => {
     })
 
     it('does not write when rootGraph is null', async () => {
-      const workflowStore = useWorkflowStore()
-      const store = useAppModeStore()
-
       workflowStore.activeWorkflow = createBuilderWorkflow()
       await nextTick()
 
@@ -255,9 +297,6 @@ describe('appModeStore', () => {
     })
 
     it('reflects input changes in linearData', async () => {
-      const workflowStore = useWorkflowStore()
-      const store = useAppModeStore()
-
       workflowStore.activeWorkflow = createBuilderWorkflow()
       await nextTick()
 

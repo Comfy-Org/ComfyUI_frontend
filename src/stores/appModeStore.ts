@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { reactive, computed, watch } from 'vue'
 
+import { useEmptyWorkflowDialog } from '@/components/builder/useEmptyWorkflowDialog'
 import { useAppMode } from '@/composables/useAppMode'
 import type { NodeId } from '@/lib/litegraph/src/LGraphNode'
 import type { LinearData } from '@/platform/workflow/management/stores/comfyWorkflow'
@@ -13,6 +14,7 @@ export const useAppModeStore = defineStore('appMode', () => {
   const { getCanvas } = useCanvasStore()
   const workflowStore = useWorkflowStore()
   const { mode, setMode, isBuilderMode } = useAppMode()
+  const emptyWorkflowDialog = useEmptyWorkflowDialog()
 
   const selectedInputs = reactive<[NodeId, string][]>([])
   const selectedOutputs = reactive<NodeId[]>([])
@@ -92,6 +94,14 @@ export const useAppModeStore = defineStore('appMode', () => {
   )
 
   function enterBuilder() {
+    if (!app.rootGraph?.nodes?.length) {
+      emptyWorkflowDialog.show({
+        onEnterBuilder: () => enterBuilder(),
+        onDismiss: () => setMode('graph')
+      })
+      return
+    }
+
     setMode(
       mode.value === 'app' && hasOutputs.value
         ? 'builder:arrange'
