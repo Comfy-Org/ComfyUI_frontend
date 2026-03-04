@@ -66,6 +66,7 @@ catalog:
   eslint-plugin-storybook: ^10.2.10
   eslint-plugin-unused-imports: ^4.3.0
   eslint-plugin-vue: ^10.6.2
+  fast-check: ^4.5.3
   firebase: ^11.6.0
   glob: ^13.0.6
   globals: ^16.5.0

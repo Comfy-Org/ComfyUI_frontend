@@ -195,6 +195,9 @@ catalogs:
     eslint-plugin-vue:
       specifier: ^10.6.2
       version: 10.6.2
+    fast-check:
+      specifier: ^4.5.3
+      version: 4.5.3
     firebase:
       specifier: ^11.6.0
       version: 11.6.0
@@ -651,6 +654,9 @@ importers:
       eslint-plugin-vue:
         specifier: 'catalog:'
         version: 10.6.2(@typescript-eslint/parser@8.49.0(eslint@9.39.1(jiti@2.6.1))(typescript@5.9.3))(eslint@9.39.1(jiti@2.6.1))(vue-eslint-parser@10.4.0(eslint@9.39.1(jiti@2.6.1)))
+      fast-check:
+        specifier: 'catalog:'
+        version: 4.5.3
       fs-extra:
         specifier: ^11.2.0
         version: 11.3.2
@@ -5477,6 +5483,10 @@ packages:
   extendable-media-recorder@9.2.27:
     resolution: {integrity: sha512-2X+Ixi1cxLek0Cj9x9atmhQ+apG+LwJpP2p3ypP8Pxau0poDnicrg7FTfPVQV5PW/3DHFm/eQ16vbgo5Yk3HGQ==}
 
+  fast-check@4.5.3:
+    resolution: {integrity: sha512-IE9csY7lnhxBnA8g/WI5eg/hygA6MGWJMSNfFRrBlXUciADEhS1EDB0SIsMSvzubzIlOBbVITSsypCsW717poA==}
+    engines: {node: '>=12.17.0'}
+
   fast-deep-equal@3.1.3:
     resolution: {integrity: sha512-f3qQ9oQy9j2AhBe/H9VC91wLmKBCCU/gDOnKNAYG5hswO7BLKj09Hc5HYNz9cGI++xlpDCIgDaitVs03ATR84Q==}
 
@@ -7269,6 +7279,9 @@ packages:
   pupa@3.3.0:
     resolution: {integrity: sha512-LjgDO2zPtoXP2wJpDjZrGdojii1uqO0cnwKoIoUzkfS98HDmbeiGmYiXo3lXeFlq2xvne1QFQhwYXSUCLKtEuA==}
     engines: {node: '>=12.20'}
+
+  pure-rand@7.0.1:
+    resolution: {integrity: sha512-oTUZM/NAZS8p7ANR3SHh30kXB+zK2r2BPcEn/awJIbOvq82WoMN4p62AWWp3Hhw50G0xMsw1mhIBLqHw64EcNQ==}
 
   qified@0.5.3:
     resolution: {integrity: sha512-kXuQdQTB6oN3KhI6V4acnBSZx8D2I4xzZvn9+wFLLFCoBNQY/sFnCW6c43OL7pOQ2HvGV4lnWIXNmgfp7cTWhQ==}
@@ -13682,6 +13695,10 @@ snapshots:
       subscribable-things: 2.1.53
       tslib: 2.8.1
 
+  fast-check@4.5.3:
+    dependencies:
+      pure-rand: 7.0.1
+
   fast-deep-equal@3.1.3: {}
 
   fast-glob@3.3.3:
@@ -15882,6 +15899,8 @@ snapshots:
   pupa@3.3.0:
     dependencies:
       escape-goat: 4.0.0
+
+  pure-rand@7.0.1: {}
 
   qified@0.5.3:
     dependencies:

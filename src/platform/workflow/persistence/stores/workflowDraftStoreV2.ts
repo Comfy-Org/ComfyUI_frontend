@@ -109,6 +109,11 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
     const draftKey = hashPath(path)
     const now = Date.now()
 
+    // Prime the index cache before writing payload.
+    // loadIndex() runs orphan cleanup on cache miss, which would
+    // delete a payload written before the index is updated.
+    const index = loadIndex()
+
     // Write payload first (before index update)
     const payloadWritten = writePayload(workspaceId, draftKey, {
       data,
@@ -119,9 +124,6 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
       // Quota exceeded - try eviction loop
       return handleQuotaExceeded(path, data, meta)
     }
-
-    // Update index
-    const index = loadIndex()
     const { index: newIndex, evicted } = upsertEntry(
       index,
       path,
