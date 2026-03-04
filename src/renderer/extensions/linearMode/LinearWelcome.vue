@@ -7,7 +7,8 @@ import { storeToRefs } from 'pinia'
 
 const { t } = useI18n()
 const { setMode } = useAppMode()
-const { hasOutputs } = storeToRefs(useAppModeStore())
+const appModeStore = useAppModeStore()
+const { hasOutputs } = storeToRefs(appModeStore)
 </script>
 
 <template>
@@ -44,7 +45,7 @@ const { hasOutputs } = storeToRefs(useAppModeStore())
       <Button variant="textonly" size="lg" @click="setMode('graph')">
         {{ t('linearMode.welcome.backToWorkflow') }}
       </Button>
-      <Button variant="primary" size="lg" @click="setMode('builder:select')">
+      <Button variant="primary" size="lg" @click="appModeStore.enterBuilder()">
         <i class="icon-[lucide--hammer]" />
         {{ t('linearMode.welcome.buildApp') }}
         <div

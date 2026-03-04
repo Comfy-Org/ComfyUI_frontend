@@ -40,6 +40,7 @@ import InputText from 'primevue/inputtext'
 import { ref } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
+import { appendCloudResParam } from '@/platform/distribution/cloudPreviewUtil'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { api } from '@/scripts/api'
 
@@ -88,6 +89,7 @@ const handleFileUpload = async (event: Event) => {
           type: 'input',
           subfolder: 'backgrounds'
         })
+        appendCloudResParam(params, file.name)
         modelValue.value = `/api/view?${params.toString()}`
       }
     } catch (error) {

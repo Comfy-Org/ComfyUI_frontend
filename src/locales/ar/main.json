@@ -326,31 +326,40 @@
     "deleteWorkflow": "حذف سير العمل",
     "duplicate": "تكرار",
     "enterAppMode": "الدخول إلى وضع التطبيق",
+    "enterBuilderMode": "دخول وضع بناء التطبيق",
     "enterNewName": "أدخل اسمًا جديدًا",
     "exitAppMode": "الخروج من وضع التطبيق",
     "missingNodesWarning": "يحتوي سير العمل على عقد غير مدعومة (مظللة باللون الأحمر).",
     "workflowActions": "إجراءات سير العمل"
+  },
+  "builderMenu": {
+    "exitAppBuilder": "الخروج من مُنشئ التطبيق"
   },
   "builderToolbar": {
     "app": "تطبيق",
     "appDescription": "يفتح كتطبيق بشكل افتراضي",
     "arrange": "معاينة",
     "arrangeDescription": "مراجعة تخطيط التطبيق",
+    "backToWorkflow": "العودة إلى سير العمل",
     "connectOutput": "توصيل مخرج",
     "connectOutputBody1": "يجب توصيل مخرج واحد على الأقل قبل حفظ التطبيق.",
     "connectOutputBody2": "انتقل إلى خطوة 'تحديد' وانقر على عقد المخرجات لإضافتها هنا.",
-    "filename": "اسم الملف",
+    "defaultModeAppliedAppBody": "سيفتح سير العمل هذا في وضع التطبيق بشكل افتراضي من الآن فصاعدًا.",
+    "defaultModeAppliedAppPrompt": "هل ترغب في عرضه الآن؟",
+    "defaultModeAppliedGraphBody": "سيفتح سير العمل هذا كـمخطط عقد بشكل افتراضي من الآن فصاعدًا.",
+    "defaultModeAppliedGraphPrompt": "هل ترغب في عرض التطبيق مع ذلك؟",
+    "defaultModeAppliedTitle": "تم التعيين بنجاح",
+    "defaultView": "تعيين العرض الافتراضي",
+    "defaultViewDescription": "اختر كيفية الفتح",
+    "defaultViewLabel": "افتراضيًا، سيتم فتح سير العمل هذا كـ:",
+    "defaultViewTitle": "تعيين العرض الافتراضي لهذا سير العمل",
+    "emptyWorkflowExplanation": "سير العمل الخاص بك فارغ. تحتاج إلى بعض العقد أولاً للبدء في بناء تطبيق.",
+    "emptyWorkflowPrompt": "هل ترغب في البدء بقالب؟",
+    "emptyWorkflowTitle": "لا يحتوي سير العمل هذا على أي عقد",
     "label": "منشئ التطبيقات",
+    "loadTemplate": "تحميل قالب",
     "nodeGraph": "رسم العقد",
     "nodeGraphDescription": "يفتح كرسم عقد بشكل افتراضي",
-    "save": "حفظ",
-    "saveAs": "حفظ باسم",
-    "saveAsLabel": "احفظ سير العمل هذا كـ ...",
-    "saveDescription": "حفظ وإنهاء",
-    "saveSuccess": "تم الحفظ بنجاح",
-    "saveSuccessAppMessage": "تم حفظ '{name}'. سيفتح في وضع التطبيق بشكل افتراضي من الآن فصاعدًا.",
-    "saveSuccessAppPrompt": "هل ترغب في عرضه الآن؟",
-    "saveSuccessGraphMessage": "تم حفظ '{name}'. سيفتح كرسم عقد بشكل افتراضي.",
     "select": "تحديد",
     "selectDescription": "اختيار المدخلات/المخرجات",
     "switchToSelect": "الانتقال إلى التحديد",
@@ -1027,6 +1036,7 @@
     "or": "أو",
     "output": "إخراج",
     "overwrite": "الكتابة فوق",
+    "partner": "شريك",
     "playPause": "تشغيل/إيقاف مؤقت",
     "playRecording": "تشغيل التسجيل",
     "playbackSpeed": "سرعة التشغيل",
@@ -1037,6 +1047,7 @@
     "progressCountOf": "من",
     "queued": "في قائمة الانتظار",
     "ready": "جاهز",
+    "recents": "الأخيرة",
     "reconnected": "تم الاتصال من جديد",
     "reconnecting": "إعادة الاتصال",
     "refresh": "تحديث",
@@ -1328,7 +1339,9 @@
   "linearMode": {
     "appModeToolbar": {
       "appBuilder": "منشئ التطبيقات",
-      "apps": "التطبيقات"
+      "apps": "التطبيقات",
+      "appsEmptyMessage": "سيتم عرض التطبيقات المحفوظة هنا.\nانقر أدناه لبناء تطبيقك الأول.",
+      "enterAppMode": "الدخول إلى وضع التطبيق"
     },
     "arrange": {
       "atLeastOne": "عقدة واحدة على الأقل",
@@ -1353,13 +1366,16 @@
       "outputsExample": "أمثلة: \"حفظ صورة\" أو \"حفظ فيديو\"",
       "promptAddInputs": "انقر على معلمات العقدة لإضافتها هنا كمدخلات",
       "promptAddOutputs": "انقر على عقد الإخراج لإضافتها هنا. هذه ستكون النتائج المُولدة.",
-      "title": "وضع بناء التطبيق"
+      "title": "وضع بناء التطبيق",
+      "unknownWidget": "عنصر الواجهة غير مرئي"
     },
     "downloadAll": "تنزيل الكل",
     "dragAndDropImage": "اسحب وأسقط صورة",
+    "enterNodeGraph": "دخول مخطط العقد",
     "giveFeedback": "إعطاء ملاحظات",
     "graphMode": "وضع الرسم البياني",
     "linearMode": "وضع التطبيق",
+    "mobileControls": "تعديل وتشغيل",
     "queue": {
       "clear": "مسح قائمة الانتظار",
       "clickToClear": "انقر لمسح قائمة الانتظار"
@@ -1367,6 +1383,7 @@
     "rerun": "تشغيل مجدد",
     "reuseParameters": "إعادة استخدام المعلمات",
     "runCount": "عدد مرات التشغيل:",
+    "viewJob": "عرض المهمة",
     "welcome": {
       "backToWorkflow": "العودة إلى سير العمل",
       "buildApp": "إنشاء تطبيق",
@@ -1743,6 +1760,7 @@
     "disabled": "معطل",
     "disabledTooltip": "لن يتم وضع سير العمل في قائمة الانتظار تلقائيًا",
     "execute": "تنفيذ",
+    "fullscreen": "ملء الشاشة",
     "help": "مساعدة",
     "helpAndFeedback": "المساعدة والتعليقات",
     "hideMenu": "إخفاء القائمة",
@@ -1890,7 +1908,8 @@
     "Workflows": "سير العمل",
     "Zoom In": "تكبير",
     "Zoom Out": "تصغير",
-    "Zoom to fit": "تكبير لتناسب"
+    "Zoom to fit": "تكبير لتناسب",
+    "linearMode_appModeToolbar_apps": "linearMode.appModeToolbar.apps"
   },
   "minimap": {
     "nodeColors": "ألوان العقد",
@@ -2625,8 +2644,16 @@
     "nodeLibrary": "مكتبة العقد",
     "nodeLibraryTab": {
       "allNodes": "جميع العقد",
+      "blueprints": "المخططات",
       "custom": "مخصص",
       "essentials": "الأساسيات",
+      "filter": "تصفية",
+      "filterOptions": {
+        "blueprints": "المخططات",
+        "comfyNodes": "عُقد Comfy",
+        "extensions": "الإضافات",
+        "partnerNodes": "عُقد الشركاء"
+      },
       "groupBy": "التجميع حسب",
       "groupStrategies": {
         "category": "الفئة",
@@ -2636,10 +2663,18 @@
         "source": "المصدر",
         "sourceDesc": "التجميع حسب نوع المصدر (أساسي، مخصص، API)"
       },
+      "noBookmarkedNodes": "لا توجد مفضلات بعد",
       "resetView": "إعادة تعيين العرض إلى الافتراضي",
       "sections": {
+        "bookmarked": "المفضلة",
+        "comfyBlueprints": "مخططات Comfy",
+        "comfyNodes": "عُقد Comfy",
+        "extensions": "الإضافات",
         "favoriteNode": "العقدة المفضلة",
         "favorites": "المفضلة",
+        "myBlueprints": "مخططاتي",
+        "partnerNodes": "عُقد الشركاء",
+        "subgraphBlueprints": "مخططات الرسم الفرعي",
         "unfavoriteNode": "إزالة العقدة من المفضلة"
       },
       "sortBy": {
@@ -2883,6 +2918,7 @@
     "resubscribe": "إعادة الاشتراك",
     "resubscribeSuccess": "تمت إعادة تفعيل الاشتراك بنجاح",
     "resubscribeTo": "إعادة الاشتراك في {plan}",
+    "subscribeForMore": "ترقية",
     "subscribeNow": "اشترك الآن",
     "subscribeTo": "اشترك في {plan}",
     "subscribeToComfyCloud": "الاشتراك في Comfy Cloud",
@@ -2913,6 +2949,7 @@
     "upgrade": "ترقية",
     "upgradePlan": "ترقية الخطة",
     "upgradeTo": "الترقية إلى {plan}",
+    "upgradeToAddCredits": "قم بالترقية لإضافة أرصدة",
     "usdPerMonth": "دولار أمريكي / شهريًا",
     "usdPerMonthPerMember": "دولار أمريكي / شهر / عضو",
     "videoEstimateExplanation": "هذه التقديرات مبنية على قالب Wan 2.2 لتحويل الصورة إلى فيديو باستخدام الإعدادات الافتراضية (5 ثوانٍ، 640x640، 16 إطار/ثانية، 4 خطوات أخذ عينات).",
@@ -3178,7 +3215,9 @@
     "enterFilename": "أدخل اسم الملف",
     "enterFilenamePrompt": "أدخل اسم الملف:",
     "exportWorkflow": "تصدير سير العمل",
-    "saveWorkflow": "حفظ سير العمل"
+    "saveWorkflow": "حفظ سير العمل",
+    "savedAsApp": "تم التحويل إلى سير عمل تطبيق",
+    "savedAsWorkflow": "تم التحويل إلى سير عمل مخطط العقد فقط"
   },
   "workspace": {
     "addedToWorkspace": "تمت إضافتك إلى {workspaceName}",

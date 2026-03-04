@@ -8,7 +8,7 @@
       <!-- Section header -->
       <h3
         v-if="section.title"
-        class="px-4 py-2 text-xs font-medium tracking-wide text-muted-foreground mb-0"
+        class="px-4 py-2 text-xs font-medium uppercase tracking-wide text-muted-foreground mb-0"
       >
         {{ section.title }}
       </h3>
@@ -46,7 +46,7 @@ import type {
 import { useManagerState } from '@/workbench/extensions/manager/composables/useManagerState'
 
 defineProps<{
-  sections: NodeLibrarySection[]
+  sections: NodeLibrarySection<ComfyNodeDefImpl>[]
 }>()
 
 const expandedKeys = defineModel<string[]>('expandedKeys', { required: true })

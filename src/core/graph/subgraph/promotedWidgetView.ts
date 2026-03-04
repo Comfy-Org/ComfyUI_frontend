@@ -1,4 +1,4 @@
-import type { LGraphNode, NodeId } from '@/lib/litegraph/src/LGraphNode'
+import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
 import type { CanvasPointer } from '@/lib/litegraph/src/CanvasPointer'
 import type { Point } from '@/lib/litegraph/src/interfaces'
@@ -13,22 +13,15 @@ import {
   stripGraphPrefix,
   useWidgetValueStore
 } from '@/stores/widgetValueStore'
+import {
+  resolveConcretePromotedWidget,
+  resolvePromotedWidgetAtHost
+} from '@/core/graph/subgraph/resolveConcretePromotedWidget'
 
 import type { PromotedWidgetView as IPromotedWidgetView } from './promotedWidgetTypes'
 
 export type { PromotedWidgetView } from './promotedWidgetTypes'
 export { isPromotedWidgetView } from './promotedWidgetTypes'
-
-function resolve(
-  subgraphNode: SubgraphNode,
-  nodeId: string,
-  widgetName: string
-): { node: LGraphNode; widget: IBaseWidget } | undefined {
-  const node = subgraphNode.subgraph.getNodeById(nodeId)
-  if (!node) return undefined
-  const widget = node.widgets?.find((w: IBaseWidget) => w.name === widgetName)
-  return widget ? { node, widget } : undefined
-}
 
 function isWidgetValue(value: unknown): value is IBaseWidget['value'] {
   if (value === undefined) return true
@@ -45,6 +38,8 @@ type LegacyMouseWidget = IBaseWidget & {
 function hasLegacyMouse(widget: IBaseWidget): widget is LegacyMouseWidget {
   return 'mouse' in widget && typeof widget.mouse === 'function'
 }
+
+const designTokenCache = new Map<string, string>()
 
 export function createPromotedWidgetView(
   subgraphNode: SubgraphNode,
@@ -67,12 +62,15 @@ class PromotedWidgetView implements IPromotedWidgetView {
   computedHeight?: number
 
   private readonly graphId: string
-  private readonly bareNodeId: NodeId
   private yValue = 0
+  private _computedDisabled = false
 
   private projectedSourceNode?: LGraphNode
   private projectedSourceWidget?: IBaseWidget
+  private projectedSourceWidgetType?: IBaseWidget['type']
   private projectedWidget?: BaseWidget
+  private cachedDeepestByFrame?: { node: LGraphNode; widget: IBaseWidget }
+  private cachedDeepestFrame = -1
 
   constructor(
     private readonly subgraphNode: SubgraphNode,
@@ -83,7 +81,6 @@ class PromotedWidgetView implements IPromotedWidgetView {
     this.sourceNodeId = nodeId
     this.sourceWidgetName = widgetName
     this.graphId = subgraphNode.rootGraph.id
-    this.bareNodeId = stripGraphPrefix(nodeId)
   }
 
   get node(): SubgraphNode {
@@ -103,32 +100,34 @@ class PromotedWidgetView implements IPromotedWidgetView {
     this.syncDomOverride()
   }
 
-  get computedDisabled(): false {
-    return false
+  get computedDisabled(): boolean {
+    return this._computedDisabled
   }
 
-  set computedDisabled(_value: boolean | undefined) {}
+  set computedDisabled(value: boolean | undefined) {
+    this._computedDisabled = value ?? false
+  }
 
   get type(): IBaseWidget['type'] {
-    return this.resolve()?.widget.type ?? 'button'
+    return this.resolveDeepest()?.widget.type ?? 'button'
   }
 
   get options(): IBaseWidget['options'] {
-    return this.resolve()?.widget.options ?? {}
+    return this.resolveDeepest()?.widget.options ?? {}
   }
 
   get tooltip(): string | undefined {
-    return this.resolve()?.widget.tooltip
+    return this.resolveDeepest()?.widget.tooltip
   }
 
   get linkedWidgets(): IBaseWidget[] | undefined {
-    return this.resolve()?.widget.linkedWidgets
+    return this.resolveDeepest()?.widget.linkedWidgets
   }
 
   get value(): IBaseWidget['value'] {
     const state = this.getWidgetState()
     if (state && isWidgetValue(state.value)) return state.value
-    return this.resolve()?.widget.value
+    return this.resolveAtHost()?.widget.value
   }
 
   set value(value: IBaseWidget['value']) {
@@ -138,7 +137,7 @@ class PromotedWidgetView implements IPromotedWidgetView {
       return
     }
 
-    const resolved = this.resolve()
+    const resolved = this.resolveAtHost()
     if (resolved && isWidgetValue(value)) {
       resolved.widget.value = value
     }
@@ -155,18 +154,18 @@ class PromotedWidgetView implements IPromotedWidgetView {
   }
 
   get hidden(): boolean {
-    return this.resolve()?.widget.hidden ?? false
+    return this.resolveDeepest()?.widget.hidden ?? false
   }
 
   get computeLayoutSize(): IBaseWidget['computeLayoutSize'] {
-    const resolved = this.resolve()
+    const resolved = this.resolveDeepest()
     const computeLayoutSize = resolved?.widget.computeLayoutSize
     if (!computeLayoutSize) return undefined
     return (node: LGraphNode) => computeLayoutSize.call(resolved.widget, node)
   }
 
   get computeSize(): IBaseWidget['computeSize'] {
-    const resolved = this.resolve()
+    const resolved = this.resolveDeepest()
     const computeSize = resolved?.widget.computeSize
     if (!computeSize) return undefined
     return (width?: number) => computeSize.call(resolved.widget, width)
@@ -180,7 +179,7 @@ class PromotedWidgetView implements IPromotedWidgetView {
     H: number,
     lowQuality?: boolean
   ): void {
-    const resolved = this.resolve()
+    const resolved = this.resolveDeepest()
     if (!resolved) {
       drawDisconnectedPlaceholder(ctx, widgetWidth, y, H)
       return
@@ -193,9 +192,11 @@ class PromotedWidgetView implements IPromotedWidgetView {
 
     const originalY = projected.y
     const originalComputedHeight = projected.computedHeight
+    const originalComputedDisabled = projected.computedDisabled
 
     projected.y = this.y
     projected.computedHeight = this.computedHeight
+    projected.computedDisabled = this.computedDisabled
     projected.value = this.value
 
     projected.drawWidget(ctx, {
@@ -207,6 +208,7 @@ class PromotedWidgetView implements IPromotedWidgetView {
 
     projected.y = originalY
     projected.computedHeight = originalComputedHeight
+    projected.computedDisabled = originalComputedDisabled
   }
 
   onPointerDown(
@@ -214,7 +216,7 @@ class PromotedWidgetView implements IPromotedWidgetView {
     _node: LGraphNode,
     canvas: LGraphCanvas
   ): boolean {
-    const resolved = this.resolve()
+    const resolved = this.resolveAtHost()
     if (!resolved) return false
 
     const interior = resolved.widget
@@ -240,18 +242,48 @@ class PromotedWidgetView implements IPromotedWidgetView {
     pos?: Point,
     e?: CanvasPointerEvent
   ) {
-    this.resolve()?.widget.callback?.(value, canvas, node, pos, e)
+    this.resolveAtHost()?.widget.callback?.(value, canvas, node, pos, e)
   }
 
-  private resolve(): { node: LGraphNode; widget: IBaseWidget } | undefined {
-    return resolve(this.subgraphNode, this.sourceNodeId, this.sourceWidgetName)
+  private resolveAtHost():
+    | { node: LGraphNode; widget: IBaseWidget }
+    | undefined {
+    return resolvePromotedWidgetAtHost(
+      this.subgraphNode,
+      this.sourceNodeId,
+      this.sourceWidgetName
+    )
+  }
+
+  private resolveDeepest():
+    | { node: LGraphNode; widget: IBaseWidget }
+    | undefined {
+    const frame = this.subgraphNode.rootGraph.primaryCanvas?.frame
+    if (frame !== undefined && this.cachedDeepestFrame === frame)
+      return this.cachedDeepestByFrame
+
+    const result = resolveConcretePromotedWidget(
+      this.subgraphNode,
+      this.sourceNodeId,
+      this.sourceWidgetName
+    )
+    const resolved = result.status === 'resolved' ? result.resolved : undefined
+
+    if (frame !== undefined) {
+      this.cachedDeepestFrame = frame
+      this.cachedDeepestByFrame = resolved
+    }
+
+    return resolved
   }
 
   private getWidgetState() {
+    const resolved = this.resolveDeepest()
+    if (!resolved) return undefined
     return useWidgetValueStore().getWidget(
       this.graphId,
-      this.bareNodeId,
-      this.sourceWidgetName
+      stripGraphPrefix(String(resolved.node.id)),
+      resolved.widget.name
     )
   }
 
@@ -262,7 +294,8 @@ class PromotedWidgetView implements IPromotedWidgetView {
     const shouldRebuild =
       !this.projectedWidget ||
       this.projectedSourceNode !== resolved.node ||
-      this.projectedSourceWidget !== resolved.widget
+      this.projectedSourceWidget !== resolved.widget ||
+      this.projectedSourceWidgetType !== resolved.widget.type
 
     if (!shouldRebuild) return this.projectedWidget
 
@@ -271,12 +304,14 @@ class PromotedWidgetView implements IPromotedWidgetView {
       this.projectedWidget = undefined
       this.projectedSourceNode = undefined
       this.projectedSourceWidget = undefined
+      this.projectedSourceWidgetType = undefined
       return undefined
     }
 
     this.projectedWidget = concrete.createCopyForNode(this.subgraphNode)
     this.projectedSourceNode = resolved.node
     this.projectedSourceWidget = resolved.widget
+    this.projectedSourceWidgetType = resolved.widget.type
     return this.projectedWidget
   }
 
@@ -333,7 +368,7 @@ class PromotedWidgetView implements IPromotedWidgetView {
   private syncDomOverride(
     resolved:
       | { node: LGraphNode; widget: IBaseWidget }
-      | undefined = this.resolve()
+      | undefined = this.resolveAtHost()
   ) {
     if (!resolved || !isBaseDOMWidget(resolved.widget)) return
     useDomWidgetStore().setPositionOverride(resolved.widget.id, {
@@ -356,13 +391,35 @@ function drawDisconnectedPlaceholder(
   y: number,
   H: number
 ) {
+  const backgroundColor = readDesignToken(
+    '--color-secondary-background',
+    '#333'
+  )
+  const textColor = readDesignToken('--color-text-secondary', '#999')
+  const fontSize = readDesignToken('--text-xxs', '11px')
+  const fontFamily = readDesignToken('--font-inter', 'sans-serif')
+
   ctx.save()
-  ctx.fillStyle = '#333'
+  ctx.fillStyle = backgroundColor
   ctx.fillRect(15, y, width - 30, H)
-  ctx.fillStyle = '#999'
-  ctx.font = '11px monospace'
+  ctx.fillStyle = textColor
+  ctx.font = `${fontSize} ${fontFamily}`
   ctx.textAlign = 'center'
   ctx.textBaseline = 'middle'
   ctx.fillText(t('subgraphStore.disconnected'), width / 2, y + H / 2)
   ctx.restore()
+}
+
+function readDesignToken(token: string, fallback: string): string {
+  if (typeof document === 'undefined') return fallback
+
+  const cachedValue = designTokenCache.get(token)
+  if (cachedValue) return cachedValue
+
+  const value = getComputedStyle(document.documentElement)
+    .getPropertyValue(token)
+    .trim()
+  const resolvedValue = value || fallback
+  designTokenCache.set(token, resolvedValue)
+  return resolvedValue
 }

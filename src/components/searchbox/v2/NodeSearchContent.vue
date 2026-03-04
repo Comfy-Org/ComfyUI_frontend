@@ -19,9 +19,6 @@
 
     <!-- Filter header row -->
     <div class="flex items-center">
-      <div class="shrink-0 px-3 py-2 text-sm text-muted-foreground">
-        {{ $t('g.filterBy') }}
-      </div>
       <NodeSearchFilterBar
         class="flex-1"
         :active-chip-key="activeFilter?.key"
@@ -128,7 +125,6 @@ const searchQuery = ref('')
 const selectedCategory = ref('most-relevant')
 const selectedIndex = ref(0)
 
-// Filter selection mode
 const activeFilter = ref<FilterChip | null>(null)
 const filterQuery = ref('')
 
@@ -171,7 +167,6 @@ function cancelFilter() {
   nextTick(() => searchInputRef.value?.focus())
 }
 
-// Node search
 const searchResults = computed(() => {
   if (!searchQuery.value && filters.length === 0) {
     return nodeFrequencyStore.topNodeDefs
@@ -212,11 +207,24 @@ const displayedResults = computed<ComfyNodeDefImpl[]>(() => {
         (n) => n.nodeSource.type === NodeSourceType.Essentials
       )
       break
-    case 'custom':
+    case 'recents':
+      return searchResults.value
+    case 'blueprints':
       results = allNodes.filter(
-        (n) =>
-          n.nodeSource.type !== NodeSourceType.Core &&
-          n.nodeSource.type !== NodeSourceType.Essentials
+        (n) => n.nodeSource.type === NodeSourceType.Blueprint
+      )
+      break
+    case 'partner':
+      results = allNodes.filter((n) => n.api_node)
+      break
+    case 'comfy':
+      results = allNodes.filter(
+        (n) => n.nodeSource.type === NodeSourceType.Core
+      )
+      break
+    case 'extensions':
+      results = allNodes.filter(
+        (n) => n.nodeSource.type === NodeSourceType.CustomNodes
       )
       break
     default:
@@ -247,7 +255,6 @@ watch([selectedCategory, searchQuery, () => filters], () => {
   selectedIndex.value = 0
 })
 
-// Keyboard navigation
 function onKeyDown() {
   if (activeFilter.value) {
     filterPanelRef.value?.navigate(1)

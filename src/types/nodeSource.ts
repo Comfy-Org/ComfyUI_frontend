@@ -1,8 +1,3 @@
-import {
-  ESSENTIALS_CATEGORY_CANONICAL,
-  ESSENTIALS_CATEGORY_MAP
-} from '@/constants/essentialsNodes'
-
 export enum NodeSourceType {
   Core = 'core',
   CustomNodes = 'custom_nodes',
@@ -26,41 +21,21 @@ const UNKNOWN_NODE_SOURCE: NodeSource = {
   badgeText: '?'
 }
 
-const shortenNodeName = (name: string) => {
+function shortenNodeName(name: string) {
   return name
     .replace(/^(ComfyUI-|ComfyUI_|Comfy-|Comfy_)/, '')
     .replace(/(-ComfyUI|_ComfyUI|-Comfy|_Comfy)$/, '')
 }
 
-/**
- * Get the essentials category for a node, falling back to mock data if not provided.
- */
-export function getEssentialsCategory(
-  name?: string,
-  essentials_category?: string
-): string | undefined {
-  const normalizedCategory = essentials_category?.trim().toLowerCase()
-  const canonical = normalizedCategory
-    ? (ESSENTIALS_CATEGORY_CANONICAL.get(normalizedCategory) ??
-      normalizedCategory)
-    : undefined
-  return canonical ?? (name ? ESSENTIALS_CATEGORY_MAP[name] : undefined)
-}
-
-export const getNodeSource = (
+export function getNodeSource(
   python_module?: string,
-  essentials_category?: string,
-  name?: string
-): NodeSource => {
-  const resolvedEssentialsCategory = getEssentialsCategory(
-    name,
-    essentials_category
-  )
+  essentials_category?: string
+): NodeSource {
   if (!python_module) {
     return UNKNOWN_NODE_SOURCE
   }
   const modules = python_module.split('.')
-  if (resolvedEssentialsCategory) {
+  if (essentials_category) {
     const moduleName = modules[1] ?? modules[0] ?? 'essentials'
     const displayName = shortenNodeName(moduleName.split('@')[0])
     return {
@@ -85,6 +60,9 @@ export const getNodeSource = (
     }
   } else if (modules[0] === 'custom_nodes') {
     const moduleName = modules[1]
+    if (!moduleName) {
+      return UNKNOWN_NODE_SOURCE
+    }
     const customNodeName = moduleName.split('@')[0]
     const displayName = shortenNodeName(customNodeName)
     return {

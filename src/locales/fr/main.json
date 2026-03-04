@@ -326,35 +326,44 @@
     "deleteWorkflow": "Supprimer le workflow",
     "duplicate": "Dupliquer",
     "enterAppMode": "Entrer en mode application",
+    "enterBuilderMode": "Entrer dans le mode constructeur d'application",
     "enterNewName": "Entrez un nouveau nom",
     "exitAppMode": "Quitter le mode application",
     "missingNodesWarning": "Le workflow contient des nœuds non pris en charge (surlignés en rouge).",
     "workflowActions": "Actions du workflow"
+  },
+  "builderMenu": {
+    "exitAppBuilder": "Quitter le constructeur d'application"
   },
   "builderToolbar": {
     "app": "Application",
     "appDescription": "S'ouvre par défaut en tant qu'application",
     "arrange": "Aperçu",
     "arrangeDescription": "Vérifier la disposition de l'application",
+    "backToWorkflow": "Retour au workflow",
     "connectOutput": "Connecter une sortie",
     "connectOutputBody1": "Votre application doit avoir au moins une sortie connectée avant de pouvoir être enregistrée.",
     "connectOutputBody2": "Passez à l'étape « Sélectionner » et cliquez sur les nœuds de sortie pour les ajouter ici.",
-    "filename": "Nom du fichier",
+    "defaultModeAppliedAppBody": "Ce workflow s’ouvrira désormais par défaut en mode Application.",
+    "defaultModeAppliedAppPrompt": "Voulez-vous le voir maintenant ?",
+    "defaultModeAppliedGraphBody": "Ce workflow s’ouvrira désormais par défaut sous forme de graphe de nœuds.",
+    "defaultModeAppliedGraphPrompt": "Voulez-vous tout de même voir l’application ?",
+    "defaultModeAppliedTitle": "Défini avec succès",
+    "defaultView": "Définir une vue par défaut",
+    "defaultViewDescription": "Choisissez comment cela s'ouvre",
+    "defaultViewLabel": "Par défaut, ce workflow s'ouvrira comme :",
+    "defaultViewTitle": "Définir la vue par défaut pour ce workflow",
+    "emptyWorkflowExplanation": "Votre workflow est vide. Vous devez d’abord ajouter des nœuds pour commencer à créer une application.",
+    "emptyWorkflowPrompt": "Voulez-vous commencer avec un modèle ?",
+    "emptyWorkflowTitle": "Ce workflow ne contient aucun nœud",
     "label": "Créateur d'applications",
+    "loadTemplate": "Charger un modèle",
     "nodeGraph": "Graphe de nœuds",
     "nodeGraphDescription": "S'ouvre par défaut en tant que graphe de nœuds",
-    "save": "Enregistrer",
-    "saveAs": "Enregistrer sous",
-    "saveAsLabel": "Enregistrer ce workflow sous ...",
-    "saveDescription": "Enregistrer et terminer",
-    "saveSuccess": "Enregistré avec succès",
-    "saveSuccessAppMessage": "« {name} » a été enregistré. Il s'ouvrira désormais par défaut en mode application.",
-    "saveSuccessAppPrompt": "Voulez-vous le voir maintenant ?",
-    "saveSuccessGraphMessage": "« {name} » a été enregistré. Il s'ouvrira par défaut en tant que graphe de nœuds.",
     "select": "Sélectionner",
     "selectDescription": "Choisir les entrées/sorties",
     "switchToSelect": "Passer à Sélectionner",
-    "viewApp": "Voir l'application"
+    "viewApp": "Voir l’application"
   },
   "clipboard": {
     "errorMessage": "Échec de la copie dans le presse-papiers",
@@ -1027,6 +1036,7 @@
     "or": "ou",
     "output": "Sortie",
     "overwrite": "Écraser",
+    "partner": "Partenaire",
     "playPause": "Lecture/Pause",
     "playRecording": "Lire l'enregistrement",
     "playbackSpeed": "Vitesse de lecture",
@@ -1037,6 +1047,7 @@
     "progressCountOf": "sur",
     "queued": "En file d’attente",
     "ready": "Prêt",
+    "recents": "Récents",
     "reconnected": "Reconnecté",
     "reconnecting": "Reconnexion",
     "refresh": "Rafraîchir",
@@ -1328,7 +1339,9 @@
   "linearMode": {
     "appModeToolbar": {
       "appBuilder": "Créateur d'applications",
-      "apps": "Applications"
+      "apps": "Applications",
+      "appsEmptyMessage": "Les applications enregistrées apparaîtront ici.\nCliquez ci-dessous pour créer votre première application.",
+      "enterAppMode": "Entrer en mode application"
     },
     "arrange": {
       "atLeastOne": "au moins un",
@@ -1353,13 +1366,16 @@
       "outputsExample": "Exemples : « Enregistrer l’image » ou « Enregistrer la vidéo »",
       "promptAddInputs": "Cliquez sur les paramètres du nœud pour les ajouter ici comme entrées",
       "promptAddOutputs": "Cliquez sur les nœuds de sortie pour les ajouter ici. Ce seront les résultats générés.",
-      "title": "Mode créateur d’application"
+      "title": "Mode créateur d’application",
+      "unknownWidget": "Widget non visible"
     },
     "downloadAll": "Tout télécharger",
     "dragAndDropImage": "Glissez-déposez une image",
+    "enterNodeGraph": "Entrer dans le graphique de nœuds",
     "giveFeedback": "Donner un avis",
     "graphMode": "Mode graphique",
     "linearMode": "Mode App",
+    "mobileControls": "Éditer & Exécuter",
     "queue": {
       "clear": "Vider la file d'attente",
       "clickToClear": "Cliquez pour vider la file d'attente"
@@ -1367,6 +1383,7 @@
     "rerun": "Relancer",
     "reuseParameters": "Réutiliser les paramètres",
     "runCount": "Nombre d’exécutions :",
+    "viewJob": "Voir la tâche",
     "welcome": {
       "backToWorkflow": "Retour au workflow",
       "buildApp": "Créer une application",
@@ -1743,6 +1760,7 @@
     "disabled": "Désactivé",
     "disabledTooltip": "Le flux de travail ne sera pas mis en file d'attente automatiquement",
     "execute": "Exécuter",
+    "fullscreen": "Plein écran",
     "help": "Aide",
     "helpAndFeedback": "Aide et commentaires",
     "hideMenu": "Masquer le menu",
@@ -1890,7 +1908,8 @@
     "Workflows": "Flux de travail",
     "Zoom In": "Zoom avant",
     "Zoom Out": "Zoom arrière",
-    "Zoom to fit": "Ajuster à l'écran"
+    "Zoom to fit": "Ajuster à l'écran",
+    "linearMode_appModeToolbar_apps": "linearMode.appModeToolbar.apps"
   },
   "minimap": {
     "nodeColors": "Couleurs des nœuds",
@@ -2625,8 +2644,16 @@
     "nodeLibrary": "Bibliothèque de nœuds",
     "nodeLibraryTab": {
       "allNodes": "Tous les nœuds",
+      "blueprints": "Plans",
       "custom": "Personnalisé",
       "essentials": "Essentiels",
+      "filter": "Filtrer",
+      "filterOptions": {
+        "blueprints": "Plans",
+        "comfyNodes": "Nœuds Comfy",
+        "extensions": "Extensions",
+        "partnerNodes": "Nœuds partenaires"
+      },
       "groupBy": "Grouper par",
       "groupStrategies": {
         "category": "Catégorie",
@@ -2636,10 +2663,18 @@
         "source": "Source",
         "sourceDesc": "Grouper par type de source (Core, Custom, API)"
       },
+      "noBookmarkedNodes": "Aucun favori pour le moment",
       "resetView": "Réinitialiser la vue par défaut",
       "sections": {
+        "bookmarked": "Favoris",
+        "comfyBlueprints": "Plans Comfy",
+        "comfyNodes": "Nœuds Comfy",
+        "extensions": "Extensions",
         "favoriteNode": "Nœud favori",
         "favorites": "Favoris",
+        "myBlueprints": "Mes plans",
+        "partnerNodes": "Nœuds partenaires",
+        "subgraphBlueprints": "Plans de sous-graphe",
         "unfavoriteNode": "Retirer des favoris"
       },
       "sortBy": {
@@ -2883,6 +2918,7 @@
     "resubscribe": "Se réabonner",
     "resubscribeSuccess": "Abonnement réactivé avec succès",
     "resubscribeTo": "Se réabonner à {plan}",
+    "subscribeForMore": "Mettre à niveau",
     "subscribeNow": "S'abonner maintenant",
     "subscribeTo": "S'abonner à {plan}",
     "subscribeToComfyCloud": "S'abonner à Comfy Cloud",
@@ -2913,6 +2949,7 @@
     "upgrade": "AMÉLIORER",
     "upgradePlan": "Améliorer le forfait",
     "upgradeTo": "Passer à {plan}",
+    "upgradeToAddCredits": "Mettre à niveau pour ajouter des crédits",
     "usdPerMonth": "USD / mois",
     "usdPerMonthPerMember": "USD / mois / membre",
     "videoEstimateExplanation": "Ces estimations sont basées sur le modèle Wan 2.2 Image-to-Video avec les paramètres par défaut (5 secondes, 640x640, 16fps, échantillonnage en 4 étapes).",
@@ -3178,7 +3215,9 @@
     "enterFilename": "Entrez le nom du fichier",
     "enterFilenamePrompt": "Entrez le nom du fichier :",
     "exportWorkflow": "Exporter le flux de travail",
-    "saveWorkflow": "Enregistrer le flux de travail"
+    "saveWorkflow": "Enregistrer le flux de travail",
+    "savedAsApp": "Converti en workflow d'application",
+    "savedAsWorkflow": "Converti en workflow graphique de nœuds uniquement"
   },
   "workspace": {
     "addedToWorkspace": "Vous avez été ajouté à {workspaceName}",

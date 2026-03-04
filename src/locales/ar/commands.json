@@ -344,6 +344,10 @@
   "Workspace_ToggleFocusMode": {
     "label": "تبديل وضع التركيز"
   },
+  "Workspace_ToggleSidebarTab_apps": {
+    "label": "تبديل الشريط الجانبي للتطبيقات",
+    "tooltip": "التطبيقات"
+  },
   "Workspace_ToggleSidebarTab_assets": {
     "label": "تبديل الشريط الجانبي للأصول",
     "tooltip": "الأصول"

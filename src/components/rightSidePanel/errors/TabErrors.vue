@@ -109,6 +109,7 @@
             :swap-node-groups="swapNodeGroups"
             :show-node-id-badge="showNodeIdBadge"
             @locate-node="handleLocateMissingNode"
+            @replace="handleReplaceGroup"
           />
 
           <!-- Execution Errors -->
@@ -179,14 +180,14 @@ import PropertiesAccordionItem from '../layout/PropertiesAccordionItem.vue'
 import FormSearchInput from '@/renderer/extensions/vueNodes/widgets/components/form/FormSearchInput.vue'
 import ErrorNodeCard from './ErrorNodeCard.vue'
 import MissingNodeCard from './MissingNodeCard.vue'
-import SwapNodesCard from './SwapNodesCard.vue'
+import SwapNodesCard from '@/platform/nodeReplacement/components/SwapNodesCard.vue'
 import Button from '@/components/ui/button/Button.vue'
 import DotSpinner from '@/components/common/DotSpinner.vue'
 import { usePackInstall } from '@/workbench/extensions/manager/composables/nodePack/usePackInstall'
 import { useMissingNodes } from '@/workbench/extensions/manager/composables/nodePack/useMissingNodes'
 import { useErrorGroups } from './useErrorGroups'
+import type { SwapNodeGroup } from './useErrorGroups'
 import { useNodeReplacement } from '@/platform/nodeReplacement/useNodeReplacement'
-import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 
 const { t } = useI18n()
 const { copyToClipboard } = useCopyToClipboard()
@@ -199,8 +200,7 @@ const { shouldShowManagerButtons, shouldShowInstallButton, openManager } =
 const { missingNodePacks } = useMissingNodes()
 const { isInstalling: isInstallingAll, installAllPacks: installAll } =
   usePackInstall(() => missingNodePacks.value)
-const { replaceNodesInPlace } = useNodeReplacement()
-const executionErrorStore = useExecutionErrorStore()
+const { replaceGroup, replaceAllGroups } = useNodeReplacement()
 
 const searchQuery = ref('')
 
@@ -264,12 +264,12 @@ function handleOpenManagerInfo(packId: string) {
   }
 }
 
+function handleReplaceGroup(group: SwapNodeGroup) {
+  replaceGroup(group)
+}
+
 function handleReplaceAll() {
-  const allNodeTypes = swapNodeGroups.value.flatMap((g) => g.nodeTypes)
-  const replaced = replaceNodesInPlace(allNodeTypes)
-  if (replaced.length > 0) {
-    executionErrorStore.removeMissingNodesByType(replaced)
-  }
+  replaceAllGroups(swapNodeGroups.value)
 }
 
 function handleEnterSubgraph(nodeId: string) {

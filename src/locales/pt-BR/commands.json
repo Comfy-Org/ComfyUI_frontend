@@ -344,6 +344,10 @@
   "Workspace_ToggleFocusMode": {
     "label": "Alternar modo de foco"
   },
+  "Workspace_ToggleSidebarTab_apps": {
+    "label": "Alternar Barra Lateral de Apps",
+    "tooltip": "Apps"
+  },
   "Workspace_ToggleSidebarTab_assets": {
     "label": "Alternar barra lateral de assets",
     "tooltip": "Assets"

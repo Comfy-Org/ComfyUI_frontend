@@ -1,24 +1,41 @@
 import { defineStore } from 'pinia'
 import { reactive, computed, watch } from 'vue'
 
+import { useEmptyWorkflowDialog } from '@/components/builder/useEmptyWorkflowDialog'
 import { useAppMode } from '@/composables/useAppMode'
 import type { NodeId } from '@/lib/litegraph/src/LGraphNode'
 import type { LinearData } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { app } from '@/scripts/app'
+import { resolveNode } from '@/utils/litegraphUtil'
 
 export const useAppModeStore = defineStore('appMode', () => {
   const { getCanvas } = useCanvasStore()
   const workflowStore = useWorkflowStore()
   const { mode, setMode, isBuilderMode } = useAppMode()
+  const emptyWorkflowDialog = useEmptyWorkflowDialog()
 
   const selectedInputs = reactive<[NodeId, string][]>([])
   const selectedOutputs = reactive<NodeId[]>([])
   const hasOutputs = computed(() => !!selectedOutputs.length)
 
   function loadSelections(data: Partial<LinearData> | undefined) {
-    selectedInputs.splice(0, selectedInputs.length, ...(data?.inputs ?? []))
-    selectedOutputs.splice(0, selectedOutputs.length, ...(data?.outputs ?? []))
+    const rawInputs = data?.inputs ?? []
+    const rawOutputs = data?.outputs ?? []
+
+    // Prune entries referencing nodes deleted in workflow mode.
+    // Only check node existence, not widgets — dynamic widgets can
+    // hide/show other widgets so a missing widget does not mean stale data.
+    const inputs = app.rootGraph
+      ? rawInputs.filter(([nodeId]) => resolveNode(nodeId))
+      : rawInputs
+    const outputs = app.rootGraph
+      ? rawOutputs.filter((nodeId) => resolveNode(nodeId))
+      : rawOutputs
+
+    selectedInputs.splice(0, selectedInputs.length, ...inputs)
+    selectedOutputs.splice(0, selectedOutputs.length, ...outputs)
   }
 
   function resetSelectedToWorkflow() {
@@ -28,31 +45,12 @@ export const useAppModeStore = defineStore('appMode', () => {
     loadSelections(activeWorkflow.changeTracker?.activeState?.extra?.linearData)
   }
 
-  function flushSelections() {
-    const workflow = workflowStore.activeWorkflow
-    if (workflow) {
-      workflow.dirtyLinearData = {
-        inputs: [...selectedInputs],
-        outputs: [...selectedOutputs]
-      }
-    }
-  }
-
   watch(
     () => workflowStore.activeWorkflow,
-    (newWorkflow, oldWorkflow) => {
-      // Persist in-progress builder selections to the outgoing workflow
-      if (oldWorkflow && isBuilderMode.value) {
-        oldWorkflow.dirtyLinearData = {
-          inputs: [...selectedInputs],
-          outputs: [...selectedOutputs]
-        }
-      }
-      // Load from incoming workflow: dirty state first, then persisted
+    (newWorkflow) => {
       if (newWorkflow) {
         loadSelections(
-          newWorkflow.dirtyLinearData ??
-            newWorkflow.changeTracker?.activeState?.extra?.linearData
+          newWorkflow.changeTracker?.activeState?.extra?.linearData
         )
       } else {
         loadSelections(undefined)
@@ -62,21 +60,64 @@ export const useAppModeStore = defineStore('appMode', () => {
   )
 
   watch(
-    () => mode.value === 'builder:select',
-    (inSelect) => (getCanvas().read_only = inSelect)
+    () =>
+      isBuilderMode.value
+        ? { inputs: selectedInputs, outputs: selectedOutputs }
+        : null,
+    (data) => {
+      if (!data) return
+      const graph = app.rootGraph
+      if (!graph) return
+      const extra = (graph.extra ??= {})
+      extra.linearData = {
+        inputs: [...data.inputs],
+        outputs: [...data.outputs]
+      }
+    },
+    { deep: true }
   )
 
+  let unwatch: () => void | undefined
+  watch(
+    () => mode.value === 'builder:select',
+    (inSelect) => {
+      const { state } = getCanvas()
+      if (!state) return
+      state.readOnly = inSelect
+      unwatch?.()
+      if (inSelect)
+        unwatch = watch(
+          () => state.readOnly,
+          () => (state.readOnly = true)
+        )
+    }
+  )
+
+  function enterBuilder() {
+    if (!app.rootGraph?.nodes?.length) {
+      emptyWorkflowDialog.show({
+        onEnterBuilder: () => enterBuilder(),
+        onDismiss: () => setMode('graph')
+      })
+      return
+    }
+
+    setMode(
+      mode.value === 'app' && hasOutputs.value
+        ? 'builder:arrange'
+        : 'builder:select'
+    )
+  }
+
   async function exitBuilder() {
-    const workflow = workflowStore.activeWorkflow
-    if (workflow) workflow.dirtyLinearData = null
     resetSelectedToWorkflow()
     setMode('graph')
   }
 
   return {
+    enterBuilder,
     exitBuilder,
     hasOutputs,
-    flushSelections,
     resetSelectedToWorkflow,
     selectedInputs,
     selectedOutputs

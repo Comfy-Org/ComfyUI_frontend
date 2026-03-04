@@ -303,7 +303,9 @@
     "beta": "BETA",
     "nightly": "NIGHTLY",
     "profile": "Profile",
-    "noItems": "No items"
+    "noItems": "No items",
+    "recents": "Recents",
+    "partner": "Partner"
   },
   "manager": {
     "title": "Nodes Manager",
@@ -790,8 +792,16 @@
     "newBlankWorkflow": "Create a new blank workflow",
     "nodeLibraryTab": {
       "essentials": "Essentials",
-      "allNodes": "All nodes",
+      "allNodes": "All",
+      "blueprints": "Blueprints",
       "custom": "Custom",
+      "filter": "Filter",
+      "filterOptions": {
+        "blueprints": "Blueprints",
+        "partnerNodes": "Partner Nodes",
+        "comfyNodes": "Comfy Nodes",
+        "extensions": "Extensions"
+      },
       "groupBy": "Group By",
       "sortMode": "Sort Mode",
       "resetView": "Reset View to Default",
@@ -804,16 +814,24 @@
         "sourceDesc": "Group by source type (Core, Custom, API)"
       },
       "sortBy": {
-        "original": "Original",
+        "original": "Categorized",
         "originalDesc": "Keep original order",
-        "alphabetical": "Alphabetical",
+        "alphabetical": "A-Z",
         "alphabeticalDesc": "Sort alphabetically within groups"
       },
       "sections": {
         "favorites": "Favorites",
         "favoriteNode": "Favorite Node",
-        "unfavoriteNode": "Unfavorite Node"
-      }
+        "unfavoriteNode": "Unfavorite Node",
+        "bookmarked": "Bookmarked",
+        "subgraphBlueprints": "Subgraph Blueprints",
+        "myBlueprints": "My Blueprints",
+        "comfyBlueprints": "Comfy Blueprints",
+        "partnerNodes": "Partner Nodes",
+        "comfyNodes": "Comfy Nodes",
+        "extensions": "Extensions"
+      },
+      "noBookmarkedNodes": "No favorites yet"
     },
     "modelLibrary": "Model Library",
     "downloads": "Downloads",
@@ -836,6 +854,7 @@
       "clearQueued": "Clear queued",
       "clearHistory": "Clear job history",
       "dockedJobHistory": "Docked Job History",
+      "showRunProgressBar": "Show run progress bar",
       "clearHistoryMenuAssetsNote": "Media assets won't be deleted.",
       "filterJobs": "Filter jobs",
       "filterBy": "Filter by",
@@ -948,7 +967,8 @@
     "settings": "Settings",
     "help": "Help",
     "helpAndFeedback": "Help & Feedback",
-    "queue": "Queue Panel"
+    "queue": "Queue Panel",
+    "fullscreen": "Fullscreen"
   },
   "tabMenu": {
     "duplicateTab": "Duplicate Tab",
@@ -1057,7 +1077,9 @@
     "exportWorkflow": "Export Workflow",
     "enterFilename": "Enter the filename",
     "enterFilenamePrompt": "Enter the filename:",
-    "saveWorkflow": "Save workflow"
+    "saveWorkflow": "Save workflow",
+    "savedAsApp": "Converted to app workflow",
+    "savedAsWorkflow": "Converted to node graph only workflow"
   },
   "subgraphStore": {
     "confirmDeleteTitle": "Delete blueprint?",
@@ -1329,6 +1351,7 @@
     "Toggle Essential Bottom Panel": "Toggle Essential Bottom Panel",
     "Toggle View Controls Bottom Panel": "Toggle View Controls Bottom Panel",
     "Focus Mode": "Focus Mode",
+    "linearMode_appModeToolbar_apps": "linearMode.appModeToolbar.apps",
     "Assets": "Assets",
     "Model Library": "Model Library",
     "Node Library": "Node Library",
@@ -2274,6 +2297,8 @@
     },
     "subscribeToRun": "Subscribe",
     "subscribeToRunFull": "Subscribe to Run",
+    "subscribeForMore": "Upgrade",
+    "upgradeToAddCredits": "Upgrade to add credits",
     "subscribeNow": "Subscribe Now",
     "subscribeToComfyCloud": "Subscribe to Comfy Cloud",
     "workspaceNotSubscribed": "This workspace is not on a subscription",
@@ -2569,6 +2594,7 @@
     "duplicate": "Duplicate",
     "enterAppMode": "Enter app mode",
     "exitAppMode": "Exit app mode",
+    "enterBuilderMode": "App builder",
     "workflowActions": "Workflow actions",
     "clearWorkflow": "Clear Workflow",
     "deleteWorkflow": "Delete Workflow",
@@ -3001,10 +3027,13 @@
     "giveFeedback": "Give feedback",
     "graphMode": "Graph Mode",
     "dragAndDropImage": "Click to browse or drag an image",
+    "mobileControls": "Edit & Run",
     "runCount": "Number of runs",
     "rerun": "Rerun",
     "reuseParameters": "Reuse Parameters",
     "downloadAll": "Download All",
+    "viewJob": "View Job",
+    "enterNodeGraph": "Enter node graph",
     "welcome": {
       "title": "App Mode",
       "message": "A simplified view that hides the node graph so you can focus on creating.",
@@ -3016,7 +3045,9 @@
     },
     "appModeToolbar": {
       "appBuilder": "App builder",
-      "apps": "Apps"
+      "apps": "Apps",
+      "appsEmptyMessage": "Saved apps will show up here.\nClick below to build your first app.",
+      "enterAppMode": "Enter app mode"
     },
     "arrange": {
       "noOutputs": "No outputs added yet",
@@ -3036,11 +3067,12 @@
       "promptAddInputs": "Click on node parameters to add them here as inputs",
       "noInputs": "No inputs added yet",
       "inputsDesc": "Users will interact and adjust these to generate their outputs.",
-      "inputsExample": "Examples: “Load image”, “Text prompt”, “Steps”",
+      "inputsExample": "Examples: “Load image”, “Text prompt”, “Steps”",
       "promptAddOutputs": "Click on output nodes to add them here. These will be the generated results.",
       "noOutputs": "No output nodes added yet",
       "outputsDesc": "Connect at least one output node so users can see results after running.",
-      "outputsExample": "Examples: “Save Image” or “Save Video”"
+      "outputsExample": "Examples: “Save Image” or “Save Video”",
+      "unknownWidget": "Widget not visible"
     },
     "queue": {
       "clickToClear": "Click to clear queue",
@@ -3331,27 +3363,31 @@
     "selectDescription": "Choose inputs/outputs",
     "arrange": "Preview",
     "arrangeDescription": "Review app layout",
-    "save": "Save",
-    "saveDescription": "Save and finish",
+    "defaultView": "Set a default view",
+    "defaultViewDescription": "Choose how this opens",
     "connectOutput": "Connect an output",
     "connectOutputBody1": "Your app needs at least one output to be connected before it can be saved.",
     "connectOutputBody2": "Switch to the 'Select' step and click on output nodes to add them here.",
     "switchToSelect": "Switch to Select",
-    "saveAs": "Save as",
-    "filename": "Filename",
-    "saveAsLabel": "Save this workflow as a ...",
+    "defaultViewTitle": "Set the default view for this workflow",
+    "defaultViewLabel": "By default, this workflow will open as:",
     "app": "App",
     "appDescription": "Opens as an app by default",
     "nodeGraph": "Node graph",
     "nodeGraphDescription": "Opens as node graph by default",
-    "saveSuccess": "Successfully saved",
-    "saveSuccessAppMessage": "'{name}' has been saved. It will open in App Mode by default from now on.",
-    "saveSuccessAppPrompt": "Would you like to view it now?",
-    "saveSuccessGraphMessage": "'{name}' has been saved. It will open as a node graph by default.",
-    "viewApp": "View app"
+    "defaultModeAppliedTitle": "Successfully set",
+    "defaultModeAppliedAppBody": "This workflow will open in App Mode by default from now on.",
+    "defaultModeAppliedAppPrompt": "Would you like to view it now?",
+    "defaultModeAppliedGraphBody": "This workflow will open as a node graph by default from now on.",
+    "defaultModeAppliedGraphPrompt": "Would you like to view the app still?",
+    "viewApp": "View app",
+    "emptyWorkflowTitle": "This workflow has no nodes",
+    "emptyWorkflowExplanation": "Your workflow is empty. You need some nodes first to start building an app.",
+    "emptyWorkflowPrompt": "Do you want to start with a template?",
+    "backToWorkflow": "Back to workflow",
+    "loadTemplate": "Load a template"
   },
   "builderMenu": {
-    "saveApp": "Save app",
     "exitAppBuilder": "Exit app builder"
   }
 }

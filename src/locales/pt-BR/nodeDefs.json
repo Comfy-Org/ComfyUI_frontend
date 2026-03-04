@@ -3778,6 +3778,9 @@
     "outputs": {
       "0": {
         "tooltip": null
+      },
+      "1": {
+        "tooltip": null
       }
     }
   },
@@ -12799,6 +12802,30 @@
       }
     }
   },
+  "ResolutionSelector": {
+    "description": "Calcula a largura e altura a partir da proporção de aspecto e do alvo de megapixels. Útil para definir as dimensões da Imagem Latent Vazia.",
+    "display_name": "Seletor de Resolução",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "proporção_de_aspecto",
+        "tooltip": "A proporção de aspecto para as dimensões de saída."
+      },
+      "megapixels": {
+        "name": "megapixels",
+        "tooltip": "Total de megapixels desejado. 1,0 MP ≈ 1024×1024 para quadrado."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "largura",
+        "tooltip": "Largura calculada em pixels (múltiplo de 8)."
+      },
+      "1": {
+        "name": "altura",
+        "tooltip": "Altura calculada em pixels (múltiplo de 8)."
+      }
+    }
+  },
   "Rodin3D_Detail": {
     "description": "Gerar ativos 3D usando a API Rodin",
     "display_name": "Rodin 3D Gerar - Geração Detalhada",
@@ -18127,6 +18154,68 @@
     "outputs": {
       "0": {
         "tooltip": null
+      }
+    }
+  },
+  "WanSCAILToVideo": {
+    "display_name": "WanSCAILToVideo",
+    "inputs": {
+      "batch_size": {
+        "name": "tamanho_do_lote"
+      },
+      "clip_vision_output": {
+        "name": "clip_vision_output"
+      },
+      "height": {
+        "name": "altura"
+      },
+      "length": {
+        "name": "duração"
+      },
+      "negative": {
+        "name": "negativo"
+      },
+      "pose_end": {
+        "name": "fim_da_pose",
+        "tooltip": "Etapa final para usar o condicionamento de pose."
+      },
+      "pose_start": {
+        "name": "início_da_pose",
+        "tooltip": "Etapa inicial para usar o condicionamento de pose."
+      },
+      "pose_strength": {
+        "name": "força_da_pose",
+        "tooltip": "Força do espaço latente da pose."
+      },
+      "pose_video": {
+        "name": "vídeo_de_pose",
+        "tooltip": "Vídeo usado para condicionamento de pose. Será redimensionado para metade da resolução do vídeo principal."
+      },
+      "positive": {
+        "name": "positivo"
+      },
+      "reference_image": {
+        "name": "imagem_de_referência"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "largura"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positivo",
+        "tooltip": null
+      },
+      "1": {
+        "name": "negativo",
+        "tooltip": null
+      },
+      "2": {
+        "name": "latente",
+        "tooltip": "Espaço latente vazio do tamanho da geração."
       }
     }
   },

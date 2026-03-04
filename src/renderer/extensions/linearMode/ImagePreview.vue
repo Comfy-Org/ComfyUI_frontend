@@ -31,7 +31,7 @@ const height = ref('')
   <img
     v-else
     ref="imageRef"
-    class="w-full"
+    class="contain-size grow-1 object-contain"
     :src
     @load="
       () => {

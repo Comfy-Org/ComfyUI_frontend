@@ -11,6 +11,7 @@ const {
   enableEmptyState,
   tooltip,
   size = 'default',
+  tooltipDelay = 1000,
   class: className
 } = defineProps<{
   disabled?: boolean
@@ -18,6 +19,7 @@ const {
   enableEmptyState?: boolean
   tooltip?: string
   size?: 'default' | 'lg'
+  tooltipDelay?: number
   class?: string
 }>()
 
@@ -27,7 +29,7 @@ const isExpanded = computed(() => !isCollapse.value && !disabled)
 
 const tooltipConfig = computed(() => {
   if (!tooltip) return undefined
-  return { value: tooltip, showDelay: 1000 }
+  return { value: tooltip, showDelay: tooltipDelay }
 })
 </script>
 
