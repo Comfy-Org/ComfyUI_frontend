@@ -4,6 +4,7 @@ import {
   classifyChange,
   computeStats,
   formatSignificance,
+  isNoteworthy,
   zScore
 } from './perf-stats'
 
@@ -98,23 +99,35 @@ describe('classifyChange', () => {
 })
 
 describe('formatSignificance', () => {
-  it('formats regression with z-score', () => {
+  it('formats regression with z-score and emoji', () => {
     expect(formatSignificance('regression', 3.2)).toBe('⚠️ z=3.2')
   })
 
-  it('formats improvement with z-score', () => {
-    expect(formatSignificance('improvement', -2.5)).toBe('✅ z=-2.5')
+  it('formats improvement with z-score without emoji', () => {
+    expect(formatSignificance('improvement', -2.5)).toBe('z=-2.5')
   })
 
-  it('formats noisy without z-score', () => {
-    expect(formatSignificance('noisy', null)).toBe('🔇 noisy')
+  it('formats noisy as descriptive text', () => {
+    expect(formatSignificance('noisy', null)).toBe('variance too high')
   })
 
-  it('formats neutral with z-score', () => {
-    expect(formatSignificance('neutral', 0.5)).toBe('✅ z=0.5')
+  it('formats neutral with z-score without emoji', () => {
+    expect(formatSignificance('neutral', 0.5)).toBe('z=0.5')
   })
 
   it('formats neutral without z-score as dash', () => {
     expect(formatSignificance('neutral', null)).toBe('—')
+  })
+})
+
+describe('isNoteworthy', () => {
+  it('returns true for regressions', () => {
+    expect(isNoteworthy('regression')).toBe(true)
+  })
+
+  it('returns false for non-regressions', () => {
+    expect(isNoteworthy('improvement')).toBe(false)
+    expect(isNoteworthy('neutral')).toBe(false)
+    expect(isNoteworthy('noisy')).toBe(false)
   })
 })

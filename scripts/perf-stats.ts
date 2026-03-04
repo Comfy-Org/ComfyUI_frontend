@@ -50,10 +50,14 @@ export function formatSignificance(
     case 'regression':
       return `⚠️ z=${z!.toFixed(1)}`
     case 'improvement':
-      return `✅ z=${z!.toFixed(1)}`
+      return `z=${z!.toFixed(1)}`
     case 'noisy':
-      return '🔇 noisy'
+      return 'variance too high'
     case 'neutral':
-      return z !== null ? `✅ z=${z.toFixed(1)}` : '—'
+      return z !== null ? `z=${z.toFixed(1)}` : '—'
   }
+}
+
+export function isNoteworthy(sig: Significance): boolean {
+  return sig === 'regression'
 }

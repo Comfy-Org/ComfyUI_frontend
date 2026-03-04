@@ -6,6 +6,7 @@ import {
   classifyChange,
   computeStats,
   formatSignificance,
+  isNoteworthy,
   zScore
 } from './perf-stats'
 
@@ -114,10 +115,13 @@ function renderFullReport(
 ): string[] {
   const lines: string[] = []
   const baselineGroups = groupByName(baseline.measurements)
-  lines.push(
+  const tableHeader = [
     '| Metric | Baseline | PR (n=3) | Δ | Sig |',
     '|--------|----------|----------|---|-----|'
-  )
+  ]
+
+  const flaggedRows: string[] = []
+  const allRows: string[] = []
 
   for (const [testName, prSamples] of prGroups) {
     const baseSamples = baselineGroups.get(testName)
@@ -129,7 +133,7 @@ function renderFullReport(
       const cv = computeCV(histStats)
 
       if (!baseSamples?.length) {
-        lines.push(
+        allRows.push(
           `| ${testName}: ${label} | — | ${formatValue(prMean, unit)} | new | — |`
         )
         continue
@@ -145,14 +149,37 @@ function renderFullReport(
       const z = zScore(prMean, histStats)
       const sig = classifyChange(z, cv)
 
-      lines.push(
-        `| ${testName}: ${label} | ${formatValue(baseVal, unit)} | ${formatValue(prMean, unit)} | ${formatDelta(deltaPct)} | ${formatSignificance(sig, z)} |`
-      )
+      const row = `| ${testName}: ${label} | ${formatValue(baseVal, unit)} | ${formatValue(prMean, unit)} | ${formatDelta(deltaPct)} | ${formatSignificance(sig, z)} |`
+      allRows.push(row)
+      if (isNoteworthy(sig)) {
+        flaggedRows.push(row)
+      }
     }
   }
 
+  if (flaggedRows.length > 0) {
+    lines.push(
+      `⚠️ **${flaggedRows.length} regression${flaggedRows.length > 1 ? 's' : ''} detected**`,
+      '',
+      ...tableHeader,
+      ...flaggedRows,
+      ''
+    )
+  } else {
+    lines.push('No regressions detected.', '')
+  }
+
   lines.push(
+    `<details><summary>All metrics</summary>`,
     '',
+    ...tableHeader,
+    ...allRows,
+    '',
+    '</details>',
+    ''
+  )
+
+  lines.push(
     `<details><summary>Historical variance (last ${historical.length} runs)</summary>`,
     '',
     '| Metric | μ | σ | CV |',
