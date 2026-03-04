@@ -361,7 +361,13 @@ const cancelJobTooltipConfig = computed(() =>
   buildTooltipConfig(t('menu.interrupt'))
 )
 const queueHistoryTooltipConfig = computed(() =>
-  buildTooltipConfig(t('sideToolbar.queueProgressOverlay.viewJobHistory'))
+  buildTooltipConfig(
+    t(
+      isQueuePanelV2Enabled.value
+        ? 'sideToolbar.queueProgressOverlay.viewJobHistory'
+        : 'sideToolbar.queueProgressOverlay.expandCollapsedQueue'
+    )
+  )
 )
 const activeJobsLabel = computed(() => {
   const count = activeJobsCount.value
