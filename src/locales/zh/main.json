@@ -326,35 +326,40 @@
     "deleteWorkflow": "删除工作流",
     "duplicate": "复制",
     "enterAppMode": "进入应用模式",
+    "enterBuilderMode": "进入应用构建器",
     "enterNewName": "输入新名称",
     "exitAppMode": "退出应用模式",
     "missingNodesWarning": "工作流包含不支持的节点（红色突出显示）。",
     "workflowActions": "工作流操作"
   },
   "builderMenu": {
-    "exitAppBuilder": "退出应用构建器",
-    "saveApp": "保存应用"
+    "exitAppBuilder": "退出应用构建器"
   },
   "builderToolbar": {
     "app": "应用",
     "appDescription": "默认以应用方式打开",
     "arrange": "预览",
     "arrangeDescription": "查看应用布局",
+    "backToWorkflow": "返回工作流",
     "connectOutput": "连接输出",
     "connectOutputBody1": "您的应用需要至少连接一个输出，才能保存。",
     "connectOutputBody2": "切换到“选择”步骤，点击输出节点将其添加到此处。",
-    "filename": "文件名",
+    "defaultModeAppliedAppBody": "此工作流将从现在起默认以应用模式打开。",
+    "defaultModeAppliedAppPrompt": "你想现在查看吗？",
+    "defaultModeAppliedGraphBody": "此工作流将从现在起默认以节点图模式打开。",
+    "defaultModeAppliedGraphPrompt": "你还想查看应用吗？",
+    "defaultModeAppliedTitle": "设置成功",
+    "defaultView": "设置默认视图",
+    "defaultViewDescription": "选择打开方式",
+    "defaultViewLabel": "默认情况下，此工作流将以以下方式打开：",
+    "defaultViewTitle": "为此工作流设置默认视图",
+    "emptyWorkflowExplanation": "你的工作流为空。你需要先添加一些节点来开始构建应用。",
+    "emptyWorkflowPrompt": "要使用模板开始吗？",
+    "emptyWorkflowTitle": "此工作流没有节点",
     "label": "应用构建器",
+    "loadTemplate": "加载模板",
     "nodeGraph": "节点图",
     "nodeGraphDescription": "默认以节点图方式打开",
-    "save": "保存",
-    "saveAs": "另存为",
-    "saveAsLabel": "将此工作流另存为...",
-    "saveDescription": "保存并完成",
-    "saveSuccess": "保存成功",
-    "saveSuccessAppMessage": "“{name}”已保存。今后将默认以应用模式打开。",
-    "saveSuccessAppPrompt": "现在要查看吗？",
-    "saveSuccessGraphMessage": "“{name}”已保存。今后将默认以节点图方式打开。",
     "select": "选择",
     "selectDescription": "选择输入/输出",
     "switchToSelect": "切换到选择",
@@ -1334,7 +1339,9 @@
   "linearMode": {
     "appModeToolbar": {
       "appBuilder": "应用构建器",
-      "apps": "应用"
+      "apps": "应用",
+      "appsEmptyMessage": "已保存的应用会显示在这里。\n点击下方开始构建你的第一个应用。",
+      "enterAppMode": "进入应用模式"
     },
     "arrange": {
       "atLeastOne": "至少一个",
@@ -1359,13 +1366,16 @@
       "outputsExample": "示例：“保存图像”或“保存视频”",
       "promptAddInputs": "点击节点参数，将其添加为输入项",
       "promptAddOutputs": "点击输出节点，将其添加到此处。这些将作为生成结果。",
-      "title": "应用构建模式"
+      "title": "应用构建模式",
+      "unknownWidget": "组件不可见"
     },
     "downloadAll": "全部下载",
     "dragAndDropImage": "拖拽图片到此处",
+    "enterNodeGraph": "进入节点图",
     "giveFeedback": "提供反馈",
     "graphMode": "图形模式",
     "linearMode": "App 模式",
+    "mobileControls": "编辑与运行",
     "queue": {
       "clear": "清空队列",
       "clickToClear": "点击清空队列"
@@ -1373,6 +1383,7 @@
     "rerun": "重新运行",
     "reuseParameters": "复用参数",
     "runCount": "运行次数：",
+    "viewJob": "查看任务",
     "welcome": {
       "backToWorkflow": "返回工作流",
       "buildApp": "构建应用",
@@ -1749,6 +1760,7 @@
     "disabled": "禁用",
     "disabledTooltip": "工作流将不会自动执行",
     "execute": "执行",
+    "fullscreen": "全屏",
     "help": "说明",
     "helpAndFeedback": "帮助与反馈",
     "hideMenu": "隐藏菜单",
@@ -1896,7 +1908,8 @@
     "Workflows": "工作流",
     "Zoom In": "放大画面",
     "Zoom Out": "缩小画面",
-    "Zoom to fit": "缩放以适应"
+    "Zoom to fit": "缩放以适应",
+    "linearMode_appModeToolbar_apps": "linearMode.appModeToolbar.apps"
   },
   "minimap": {
     "nodeColors": "节点颜色",
@@ -3214,7 +3227,9 @@
     "enterFilename": "输入文件名",
     "enterFilenamePrompt": "输入文件名：",
     "exportWorkflow": "导出工作流",
-    "saveWorkflow": "保存工作流"
+    "saveWorkflow": "保存工作流",
+    "savedAsApp": "已转换为应用工作流",
+    "savedAsWorkflow": "已转换为节点图工作流"
   },
   "workspace": {
     "addedToWorkspace": "您已被加入 {workspaceName}",
