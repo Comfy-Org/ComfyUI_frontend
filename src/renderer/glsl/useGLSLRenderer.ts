@@ -86,7 +86,8 @@ export function useGLSLRenderer(config: GLSLRendererConfig = DEFAULT_CONFIG) {
     const textures: WebGLTexture[] = []
 
     for (let i = 0; i < 2; i++) {
-      const tex = ctx.createTexture()!
+      const tex = ctx.createTexture()
+      if (!tex) throw new Error('Failed to create ping-pong texture')
       ctx.bindTexture(ctx.TEXTURE_2D, tex)
       ctx.texImage2D(
         ctx.TEXTURE_2D,
@@ -104,7 +105,8 @@ export function useGLSLRenderer(config: GLSLRendererConfig = DEFAULT_CONFIG) {
       ctx.texParameteri(ctx.TEXTURE_2D, ctx.TEXTURE_WRAP_S, ctx.CLAMP_TO_EDGE)
       ctx.texParameteri(ctx.TEXTURE_2D, ctx.TEXTURE_WRAP_T, ctx.CLAMP_TO_EDGE)
 
-      const fbo = ctx.createFramebuffer()!
+      const fbo = ctx.createFramebuffer()
+      if (!fbo) throw new Error('Failed to create ping-pong framebuffer')
       ctx.bindFramebuffer(ctx.FRAMEBUFFER, fbo)
       ctx.framebufferTexture2D(
         ctx.FRAMEBUFFER,
@@ -145,18 +147,21 @@ export function useGLSLRenderer(config: GLSLRendererConfig = DEFAULT_CONFIG) {
   }
 
   function getFallbackTexture(): WebGLTexture {
+    if (!gl) throw new Error('Renderer not initialized')
     if (!fallbackTexture) {
-      fallbackTexture = gl!.createTexture()!
-      gl!.bindTexture(gl!.TEXTURE_2D, fallbackTexture)
-      gl!.texImage2D(
-        gl!.TEXTURE_2D,
+      const tex = gl.createTexture()
+      if (!tex) throw new Error('Failed to create fallback texture')
+      fallbackTexture = tex
+      gl.bindTexture(gl.TEXTURE_2D, fallbackTexture)
+      gl.texImage2D(
+        gl.TEXTURE_2D,
         0,
-        gl!.RGBA,
+        gl.RGBA,
         1,
         1,
         0,
-        gl!.RGBA,
-        gl!.UNSIGNED_BYTE,
+        gl.RGBA,
+        gl.UNSIGNED_BYTE,
         new Uint8Array([0, 0, 0, 255])
       )
     }
@@ -319,14 +324,16 @@ export function useGLSLRenderer(config: GLSLRendererConfig = DEFAULT_CONFIG) {
         gl.uniform1i(prevPassLoc, prevPassUnit)
       }
 
-      if (outputCount > 1 && !isLastPass) {
+      if (isLastPass) {
+        gl.drawBuffers([gl.BACK])
+      } else if (outputCount > 1) {
         const buffers = Array.from(
           { length: outputCount },
           (_, i) => gl!.COLOR_ATTACHMENT0 + i
         )
         gl.drawBuffers(buffers)
       } else {
-        gl.drawBuffers([gl.BACK])
+        gl.drawBuffers([gl.COLOR_ATTACHMENT0])
       }
 
       gl.drawArrays(gl.TRIANGLES, 0, 3)
@@ -334,18 +341,20 @@ export function useGLSLRenderer(config: GLSLRendererConfig = DEFAULT_CONFIG) {
   }
 
   function readPixels(): ImageData {
-    const w = canvas!.width
-    const h = canvas!.height
+    if (!gl || !canvas) throw new Error('Renderer not initialized')
+    const w = canvas.width
+    const h = canvas.height
     const pixels = new Uint8ClampedArray(w * h * 4)
 
-    gl!.pixelStorei(gl!.PACK_ROW_LENGTH, 0)
-    gl!.readPixels(0, 0, w, h, gl!.RGBA, gl!.UNSIGNED_BYTE, pixels)
+    gl.pixelStorei(gl.PACK_ROW_LENGTH, 0)
+    gl.readPixels(0, 0, w, h, gl.RGBA, gl.UNSIGNED_BYTE, pixels)
 
     return new ImageData(pixels, w, h)
   }
 
   async function toBlob(): Promise<Blob> {
-    return canvas!.convertToBlob({ type: 'image/jpeg', quality: 0.92 })
+    if (!canvas) throw new Error('Renderer not initialized')
+    return canvas.convertToBlob({ type: 'image/jpeg', quality: 0.92 })
   }
 
   function dispose(): void {
