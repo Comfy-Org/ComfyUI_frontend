@@ -254,6 +254,8 @@ class ResetCommand implements Command<PersistenceModel, PersistenceReal> {
       const draft = real.draftStore.getDraft(path)
       expect(draft, `Draft lost after reset: ${path}`).not.toBeNull()
       expect(draft!.data).toBe(expected.data)
+      expect(draft!.name).toBe(expected.name)
+      expect(draft!.isTemporary).toBe(expected.isTemporary)
     }
     assertIndexPayloadConsistency()
   }
@@ -278,13 +280,9 @@ describe('workflowDraftStoreV2 FSM', () => {
     sessionStorage.clear()
   })
 
+  // 33+ unique paths to exceed MAX_DRAFTS (32) and exercise LRU eviction
   const pathPool = fc.constantFrom(
-    'workflows/a.json',
-    'workflows/b.json',
-    'workflows/c.json',
-    'workflows/d.json',
-    'workflows/e.json',
-    'workflows/f.json'
+    ...Array.from({ length: 35 }, (_, i) => `workflows/${i}.json`)
   )
 
   const dataPool = fc.constantFrom(
