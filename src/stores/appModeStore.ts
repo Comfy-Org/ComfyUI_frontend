@@ -7,6 +7,7 @@ import type { LinearData } from '@/platform/workflow/management/stores/comfyWork
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { app } from '@/scripts/app'
+import { resolveNode } from '@/utils/litegraphUtil'
 
 export const useAppModeStore = defineStore('appMode', () => {
   const { getCanvas } = useCanvasStore()
@@ -18,8 +19,21 @@ export const useAppModeStore = defineStore('appMode', () => {
   const hasOutputs = computed(() => !!selectedOutputs.length)
 
   function loadSelections(data: Partial<LinearData> | undefined) {
-    selectedInputs.splice(0, selectedInputs.length, ...(data?.inputs ?? []))
-    selectedOutputs.splice(0, selectedOutputs.length, ...(data?.outputs ?? []))
+    const rawInputs = data?.inputs ?? []
+    const rawOutputs = data?.outputs ?? []
+
+    // Prune entries referencing nodes deleted in workflow mode.
+    // Only check node existence, not widgets — dynamic widgets can
+    // hide/show other widgets so a missing widget does not mean stale data.
+    const inputs = app.rootGraph
+      ? rawInputs.filter(([nodeId]) => resolveNode(nodeId))
+      : rawInputs
+    const outputs = app.rootGraph
+      ? rawOutputs.filter((nodeId) => resolveNode(nodeId))
+      : rawOutputs
+
+    selectedInputs.splice(0, selectedInputs.length, ...inputs)
+    selectedOutputs.splice(0, selectedOutputs.length, ...outputs)
   }
 
   function resetSelectedToWorkflow() {
