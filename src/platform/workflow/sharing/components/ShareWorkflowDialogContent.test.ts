@@ -404,7 +404,7 @@ describe('ShareWorkflowDialogContent', () => {
 
   it('shows update button when workflow was saved after last publish', async () => {
     const publishedAt = new Date('2026-01-15T00:00:00Z')
-    const savedAfterPublishUnixSeconds = publishedAt.getTime() / 1000 + 60
+    const savedAfterPublishMs = publishedAt.getTime() + 60_000
 
     mockWorkflowStore.activeWorkflow = {
       path: 'workflows/test.json',
@@ -412,7 +412,7 @@ describe('ShareWorkflowDialogContent', () => {
       filename: 'test.json',
       isTemporary: false,
       isModified: false,
-      lastModified: savedAfterPublishUnixSeconds
+      lastModified: savedAfterPublishMs
     }
     mockGetPublishStatus.mockResolvedValue({
       isPublished: true,
@@ -430,7 +430,7 @@ describe('ShareWorkflowDialogContent', () => {
 
   it('shows copy URL when workflow has not changed since publish', async () => {
     const publishedAt = new Date('2026-01-15T00:00:00Z')
-    const savedBeforePublishUnixSeconds = publishedAt.getTime() / 1000 - 60
+    const savedBeforePublishMs = publishedAt.getTime() - 60_000
 
     mockWorkflowStore.activeWorkflow = {
       path: 'workflows/test.json',
@@ -438,7 +438,7 @@ describe('ShareWorkflowDialogContent', () => {
       filename: 'test.json',
       isTemporary: false,
       isModified: false,
-      lastModified: savedBeforePublishUnixSeconds
+      lastModified: savedBeforePublishMs
     }
     mockGetPublishStatus.mockResolvedValue({
       isPublished: true,

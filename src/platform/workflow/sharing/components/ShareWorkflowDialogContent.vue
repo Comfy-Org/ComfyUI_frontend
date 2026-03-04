@@ -186,7 +186,7 @@ function resolveDialogStateFromStatus(
 ): { publishResult: WorkflowPublishResult | null; dialogState: DialogState } {
   if (!status.isPublished) return { publishResult: null, dialogState: 'ready' }
   const publishedAtMs = status.publishedAt.getTime()
-  const lastModifiedMs = workflow.lastModified * 1000
+  const lastModifiedMs = workflow.lastModified
   return {
     publishResult: {
       shareId: status.shareId,
