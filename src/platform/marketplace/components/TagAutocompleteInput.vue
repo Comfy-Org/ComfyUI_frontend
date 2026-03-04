@@ -37,7 +37,7 @@
           {{ searchTerm ? t('g.noResults') : '' }}
         </ComboboxEmpty>
         <ComboboxItem
-          v-for="suggestion in suggestions"
+          v-for="suggestion in tags"
           :key="suggestion"
           :value="suggestion"
           :class="
@@ -64,7 +64,7 @@ import {
   ComboboxRoot,
   ComboboxViewport
 } from 'reka-ui'
-import { ref, watch } from 'vue'
+import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import TagsInput from '@/components/ui/tags-input/TagsInput.vue'
@@ -73,8 +73,8 @@ import TagsInputItem from '@/components/ui/tags-input/TagsInputItem.vue'
 import TagsInputItemDelete from '@/components/ui/tags-input/TagsInputItemDelete.vue'
 import TagsInputItemText from '@/components/ui/tags-input/TagsInputItemText.vue'
 import { cn } from '@/utils/tailwindUtil'
-
-import { suggestTags } from '../services/tagApi'
+import { refDebounced } from '@vueuse/core'
+import { useTagSuggestions } from '../composables/useTagSuggestions'
 
 const { placeholder = '' } = defineProps<{
   placeholder?: string
@@ -84,12 +84,9 @@ const modelValue = defineModel<string[]>({ required: true })
 
 const { t } = useI18n()
 const searchTerm = ref('')
-const suggestions = ref<string[]>([])
+const searchTermDebounced = refDebounced(searchTerm)
 
-watch(searchTerm, async (query) => {
-  const { tags } = await suggestTags(query)
-  suggestions.value = tags.filter((tag) => !modelValue.value.includes(tag))
-})
+const { tags } = useTagSuggestions(searchTermDebounced)
 
 function filterFunction(options: string[]) {
   return options

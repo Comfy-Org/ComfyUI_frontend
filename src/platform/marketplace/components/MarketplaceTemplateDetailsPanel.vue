@@ -109,15 +109,17 @@
           {{ t('templateWorkflows.details.publishing') }}
         </span>
       </template>
-      <DetailsField :label="t('templateWorkflows.myTemplates.statusLabel')">
+      <div class="flex items-center justify-between px-4 py-2">
+        <span class="text-sm select-none">
+          {{ t('templateWorkflows.myTemplates.statusLabel') }}
+        </span>
         <StatusBadge
-          class="self-start"
           :label="
             t(`templateWorkflows.myTemplates.status.${submission.status}`)
           "
           :severity="STATUS_SEVERITY[submission.status]"
         />
-      </DetailsField>
+      </div>
       <DetailsField
         v-if="submission.reviewFeedback"
         :label="t('templateWorkflows.myTemplates.reviewFeedback')"
@@ -126,21 +128,41 @@
           {{ submission.reviewFeedback }}
         </p>
       </DetailsField>
-      <DetailsField
-        v-if="submission.createdAt"
-        :label="t('templateWorkflows.myTemplates.createdAt')"
-        :value="formatDate(submission.createdAt)"
-      />
-      <DetailsField
-        v-if="submission.updatedAt"
-        :label="t('templateWorkflows.myTemplates.updatedAt')"
-        :value="formatDate(submission.updatedAt)"
-      />
-      <DetailsField
-        v-if="submission.publishedAt"
-        :label="t('templateWorkflows.myTemplates.publishedAt')"
-        :value="formatDate(submission.publishedAt)"
-      />
+      <div class="flex flex-col gap-3 px-4 py-2">
+        <div
+          v-if="submission.createdAt"
+          class="flex items-center justify-between"
+        >
+          <span class="text-sm select-none">
+            {{ t('templateWorkflows.myTemplates.createdAt') }}
+          </span>
+          <span class="text-sm text-muted-foreground">
+            {{ formatDate(submission.createdAt) }}
+          </span>
+        </div>
+        <div
+          v-if="submission.updatedAt"
+          class="flex items-center justify-between"
+        >
+          <span class="text-sm select-none">
+            {{ t('templateWorkflows.myTemplates.updatedAt') }}
+          </span>
+          <span class="text-sm text-muted-foreground">
+            {{ formatDate(submission.updatedAt) }}
+          </span>
+        </div>
+        <div
+          v-if="submission.publishedAt"
+          class="flex items-center justify-between"
+        >
+          <span class="text-sm select-none">
+            {{ t('templateWorkflows.myTemplates.publishedAt') }}
+          </span>
+          <span class="text-sm text-muted-foreground">
+            {{ formatDate(submission.publishedAt) }}
+          </span>
+        </div>
+      </div>
       <DetailsField
         v-if="submission.changelog"
         :label="t('templateWorkflows.publish.changelog')"

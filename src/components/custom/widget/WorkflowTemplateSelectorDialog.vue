@@ -177,7 +177,6 @@
           :key="templateListKey"
           class="grid flex-1 grid-cols-2 content-start gap-4 p-1 lg:grid-cols-3 xl:grid-cols-4"
           data-testid="template-workflows-content"
-          @click.self="selectedTemplate = null"
         >
           <!-- Loading Skeletons (show while loading initial data) -->
           <CardContainer
@@ -430,24 +429,26 @@
     </template>
 
     <template #rightPanel>
-      <MarketplaceTemplateDetailsPanel
-        v-if="selectedSubmission"
-        :submission="selectedSubmission"
-        @edit="handleEditSubmission"
-        @remove="handleRemoveSubmission"
-      />
-      <WorkflowTemplateDetailsPanel
-        v-else-if="selectedTemplate"
-        :template="selectedTemplate"
-        :is-installing="loadingTemplate === selectedTemplate.name"
-        @install="onLoadWorkflow"
-      />
+      <div ref="rightPanelRef">
+        <MarketplaceTemplateDetailsPanel
+          v-if="selectedSubmission"
+          :submission="selectedSubmission"
+          @edit="handleEditSubmission"
+          @remove="handleRemoveSubmission"
+        />
+        <WorkflowTemplateDetailsPanel
+          v-else-if="selectedTemplate"
+          :template="selectedTemplate"
+          :is-installing="loadingTemplate === selectedTemplate.name"
+          @install="onLoadWorkflow"
+        />
+      </div>
     </template>
   </BaseModalLayout>
 </template>
 
 <script setup lang="ts">
-import { useAsyncState } from '@vueuse/core'
+import { onClickOutside, useAsyncState } from '@vueuse/core'
 import ProgressSpinner from 'primevue/progressspinner'
 import { computed, onBeforeUnmount, onMounted, provide, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -605,6 +606,7 @@ const { resetWizard, wizardData, currentStep, goToStep } =
 
 function startPublishing() {
   resetWizard()
+  selectedTemplate.value = null
   showSubmissionForm.value = true
 }
 
@@ -1011,6 +1013,12 @@ const onLoadWorkflow = async (template: TemplateInfo) => {
     loadingTemplate.value = null
   }
 }
+
+const rightPanelRef = ref<HTMLElement | null>(null)
+
+onClickOutside(rightPanelRef, () => {
+  selectedTemplate.value = null
+})
 
 const pageTitle = computed(() => {
   const navItem = navItems.value.find((item) =>
