@@ -11,7 +11,7 @@ export function useUngroupedAssets(
   assets: Ref<AssetItem[]>,
   groupByJob: Ref<boolean>
 ) {
-  const { call: cachedResolve, cancel } = useCachedRequest(
+  const { call: cachedResolve } = useCachedRequest(
     (jobId: string, signal?: AbortSignal) => {
       const asset = assets.value.find((a) => {
         const m = getOutputAssetMetadata(a.user_metadata)
@@ -29,10 +29,8 @@ export function useUngroupedAssets(
   const isResolving = ref(false)
 
   const resolvedAssets = computedAsync(
-    async (onCancel) => {
+    async () => {
       if (groupByJob.value) return []
-
-      onCancel(() => cancel())
 
       const entries = assets.value.map((asset) => ({
         asset,
@@ -41,7 +39,7 @@ export function useUngroupedAssets(
 
       for (const { metadata } of entries) {
         if ((metadata?.outputCount ?? 1) > 1 && metadata?.jobId) {
-          void cachedResolve(metadata.jobId)
+          void cachedResolve(metadata.jobId).catch(() => {})
         }
       }
 

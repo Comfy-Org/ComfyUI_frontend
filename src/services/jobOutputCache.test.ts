@@ -323,7 +323,7 @@ describe('jobOutputCache', () => {
       const result = await getJobDetail(jobId)
 
       expect(result).toEqual(mockDetail)
-      expect(api.getJobDetail).toHaveBeenCalledWith(jobId)
+      expect(api.getJobDetail).toHaveBeenCalledWith(jobId, undefined)
     })
 
     it('returns cached job detail on subsequent calls', async () => {

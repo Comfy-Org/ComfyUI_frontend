@@ -227,7 +227,9 @@ describe('fetchJobs', () => {
 
       const result = await fetchJobDetail(mockFetch, 'job1')
 
-      expect(mockFetch).toHaveBeenCalledWith('/jobs/job1')
+      expect(mockFetch).toHaveBeenCalledWith('/jobs/job1', {
+        signal: undefined
+      })
       expect(result?.id).toBe('job1')
       expect(result?.outputs).toBeDefined()
     })
