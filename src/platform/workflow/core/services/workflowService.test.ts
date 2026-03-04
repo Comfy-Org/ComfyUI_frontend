@@ -167,7 +167,6 @@ describe('useWorkflowService', () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
     vi.clearAllMocks()
-    mockWorkspaceWorkflow.activeWorkflow = null
   })
 
   describe('showPendingWarnings', () => {

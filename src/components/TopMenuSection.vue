@@ -252,7 +252,6 @@ async function openShareDialog() {
   }
 }
 
-
 const openCustomNodeManager = async () => {
   try {
     await managerState.openManager({
