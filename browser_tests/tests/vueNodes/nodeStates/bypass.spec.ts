@@ -25,7 +25,7 @@ test.describe('Vue Node Bypass', () => {
       const checkpointNode = comfyPage.page
         .locator('[data-node-id]')
         .filter({ hasText: 'Load Checkpoint' })
-        .locator('> div:nth-child(2)')
+        .getByTestId('node-inner-wrapper')
       await expect(checkpointNode).toHaveClass(BYPASS_CLASS)
       await comfyPage.nextFrame()
       await expect(comfyPage.canvas).toHaveScreenshot(
@@ -46,11 +46,11 @@ test.describe('Vue Node Bypass', () => {
     const checkpointNode = comfyPage.page
       .locator('[data-node-id]')
       .filter({ hasText: 'Load Checkpoint' })
-      .locator('> div:nth-child(2)')
+      .getByTestId('node-inner-wrapper')
     const ksamplerNode = comfyPage.page
       .locator('[data-node-id]')
       .filter({ hasText: 'KSampler' })
-      .locator('> div:nth-child(2)')
+      .getByTestId('node-inner-wrapper')
 
     await comfyPage.page.keyboard.press(BYPASS_HOTKEY)
     await expect(checkpointNode).toHaveClass(BYPASS_CLASS)

@@ -172,6 +172,6 @@ export class VueNodeHelpers {
   async enterSubgraph(nodeId?: string): Promise<void> {
     const locator = nodeId ? this.getNodeLocator(nodeId) : this.page
     const editButton = locator.getByTestId(TestIds.widgets.subgraphEnterButton)
-    await editButton.click()
+    await editButton.click({ force: true })
   }
 }

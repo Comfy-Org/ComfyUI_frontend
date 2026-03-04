@@ -21,7 +21,7 @@ test.describe('Vue Node Error', () => {
     const unknownNode = comfyPage.page
       .locator('[data-node-id]')
       .filter({ hasText: 'UNKNOWN NODE' })
-      .locator('> div:nth-child(2)')
+      .getByTestId('node-inner-wrapper')
     await expect(unknownNode).toHaveClass(ERROR_CLASS)
   })
 
@@ -35,7 +35,7 @@ test.describe('Vue Node Error', () => {
     const raiseErrorNode = comfyPage.page
       .locator('[data-node-id]')
       .filter({ hasText: 'Raise Error' })
-      .locator('> div:nth-child(2)')
+      .getByTestId('node-inner-wrapper')
     await expect(raiseErrorNode).toHaveClass(ERROR_CLASS)
   })
 })

@@ -62,6 +62,7 @@
       "
     />
     <div
+      data-testid="node-inner-wrapper"
       :class="
         cn(
           'flex flex-col flex-1 bg-node-component-header-surface',
