@@ -6,14 +6,7 @@
     <div
       class="inline-flex items-center gap-1 rounded-2xl border border-border-default bg-base-background p-2 shadow-interface"
     >
-      <template
-        v-for="(step, index) in [
-          selectInputsStep,
-          selectOutputsStep,
-          arrangeStep
-        ]"
-        :key="step.id"
-      >
+      <template v-for="(step, index) in steps" :key="step.id">
         <button
           :class="
             cn(
@@ -42,7 +35,7 @@
         <button :class="cn(stepClasses, 'opacity-30 bg-transparent')">
           <StepBadge
             :step="defaultViewStep"
-            :index="2"
+            :index="steps.length"
             :model-value="activeStep"
           />
           <StepLabel :step="defaultViewStep" />
@@ -62,7 +55,7 @@
       >
         <StepBadge
           :step="defaultViewStep"
-          :index="2"
+          :index="steps.length"
           :model-value="activeStep"
         />
         <StepLabel :step="defaultViewStep" />
@@ -120,4 +113,5 @@ const defaultViewStep: BuilderToolbarStep<BuilderStepId> = {
   subtitle: t('builderToolbar.defaultViewDescription'),
   icon: 'icon-[lucide--eye]'
 }
+const steps = [selectInputsStep, selectOutputsStep, arrangeStep]
 </script>
