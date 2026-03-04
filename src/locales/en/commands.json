@@ -344,6 +344,10 @@
   "Workspace_ToggleFocusMode": {
     "label": "Toggle Focus Mode"
   },
+  "Workspace_ToggleSidebarTab_apps": {
+    "label": "Toggle Apps Sidebar",
+    "tooltip": "Apps"
+  },
   "Workspace_ToggleSidebarTab_assets": {
     "label": "Toggle Assets Sidebar",
     "tooltip": "Assets"

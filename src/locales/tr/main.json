@@ -340,19 +340,30 @@
     "appDescription": "Varsayılan olarak uygulama olarak açılır",
     "arrange": "Önizleme",
     "arrangeDescription": "Uygulama düzenini gözden geçir",
+    "backToWorkflow": "İş akışına geri dön",
     "connectOutput": "Bir çıktı bağla",
     "connectOutputBody1": "Uygulamanızın kaydedilebilmesi için en az bir çıktı bağlanmalıdır.",
     "connectOutputBody2": "'Seç' adımına geçin ve çıktı düğümlerine tıklayarak buraya ekleyin.",
+    "defaultModeAppliedAppBody": "Bu iş akışı artık varsayılan olarak Uygulama Modunda açılacak.",
+    "defaultModeAppliedAppPrompt": "Şimdi görüntülemek ister misiniz?",
+    "defaultModeAppliedGraphBody": "Bu iş akışı artık varsayılan olarak bir düğüm grafiği olarak açılacak.",
+    "defaultModeAppliedGraphPrompt": "Uygulamayı yine de görüntülemek ister misiniz?",
+    "defaultModeAppliedTitle": "Başarıyla ayarlandı",
     "defaultView": "Varsayılan görünümü ayarla",
     "defaultViewDescription": "Nasıl açılacağını seçin",
     "defaultViewLabel": "Varsayılan olarak, bu iş akışı şu şekilde açılacak:",
     "defaultViewTitle": "Bu iş akışı için varsayılan görünümü ayarla",
+    "emptyWorkflowExplanation": "İş akışınız boş. Bir uygulama oluşturmaya başlamak için önce bazı düğümlere ihtiyacınız var.",
+    "emptyWorkflowPrompt": "Bir şablonla başlamak ister misiniz?",
+    "emptyWorkflowTitle": "Bu iş akışında düğüm yok",
     "label": "Uygulama Oluşturucu",
+    "loadTemplate": "Şablon yükle",
     "nodeGraph": "Düğüm grafiği",
     "nodeGraphDescription": "Varsayılan olarak düğüm grafiği olarak açılır",
     "select": "Seç",
     "selectDescription": "Girdi/çıktı seçin",
-    "switchToSelect": "Seç'e Geç"
+    "switchToSelect": "Seç'e Geç",
+    "viewApp": "Uygulamayı görüntüle"
   },
   "clipboard": {
     "errorMessage": "Panoya kopyalanamadı",
@@ -1328,7 +1339,9 @@
   "linearMode": {
     "appModeToolbar": {
       "appBuilder": "Uygulama oluşturucu",
-      "apps": "Uygulamalar"
+      "apps": "Uygulamalar",
+      "appsEmptyMessage": "Kaydedilen uygulamalar burada görünecek.\nİlk uygulamanızı oluşturmak için aşağıya tıklayın.",
+      "enterAppMode": "Uygulama moduna gir"
     },
     "arrange": {
       "atLeastOne": "en az bir",
@@ -1353,7 +1366,8 @@
       "outputsExample": "Örnekler: “Resmi Kaydet” veya “Videoyu Kaydet”",
       "promptAddInputs": "Girdi olarak eklemek için düğüm parametrelerine tıklayın",
       "promptAddOutputs": "Çıktı olarak eklemek için çıktı düğümlerine tıklayın. Bunlar oluşturulan sonuçlar olacak.",
-      "title": "Uygulama oluşturucu modu"
+      "title": "Uygulama oluşturucu modu",
+      "unknownWidget": "Widget görünür değil"
     },
     "downloadAll": "Tümünü İndir",
     "dragAndDropImage": "Bir görseli sürükleyip bırakın",
@@ -1894,7 +1908,8 @@
     "Workflows": "İş Akışları",
     "Zoom In": "Yakınlaştır",
     "Zoom Out": "Uzaklaştır",
-    "Zoom to fit": "Sığdırmak için yakınlaştır"
+    "Zoom to fit": "Sığdırmak için yakınlaştır",
+    "linearMode_appModeToolbar_apps": "linearMode.appModeToolbar.apps"
   },
   "minimap": {
     "nodeColors": "Düğüm Renkleri",

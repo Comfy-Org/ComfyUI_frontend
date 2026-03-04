@@ -340,19 +340,30 @@
     "appDescription": "به طور پیش‌فرض به صورت اپلیکیشن باز می‌شود",
     "arrange": "پیش‌نمایش",
     "arrangeDescription": "بررسی چیدمان اپلیکیشن",
+    "backToWorkflow": "بازگشت به ورک‌فلو",
     "connectOutput": "اتصال خروجی",
     "connectOutputBody1": "اپلیکیشن شما باید حداقل یک خروجی متصل داشته باشد تا بتوان آن را ذخیره کرد.",
     "connectOutputBody2": "به مرحله «انتخاب» بروید و روی nodeهای خروجی کلیک کنید تا اینجا اضافه شوند.",
+    "defaultModeAppliedAppBody": "این ورک‌فلو از این پس به طور پیش‌فرض در حالت اپلیکیشن باز خواهد شد.",
+    "defaultModeAppliedAppPrompt": "آیا مایل هستید اکنون آن را مشاهده کنید؟",
+    "defaultModeAppliedGraphBody": "این ورک‌فلو از این پس به طور پیش‌فرض به صورت گراف node باز خواهد شد.",
+    "defaultModeAppliedGraphPrompt": "آیا همچنان مایل به مشاهده اپلیکیشن هستید؟",
+    "defaultModeAppliedTitle": "با موفقیت تنظیم شد",
     "defaultView": "تنظیم نمای پیش‌فرض",
     "defaultViewDescription": "انتخاب نحوه باز شدن",
     "defaultViewLabel": "به طور پیش‌فرض، این گردش‌کار به صورت زیر باز می‌شود:",
     "defaultViewTitle": "تنظیم نمای پیش‌فرض برای این گردش‌کار",
+    "emptyWorkflowExplanation": "ورک‌فلو شما خالی است. ابتدا باید چند node اضافه کنید تا بتوانید اپلیکیشن بسازید.",
+    "emptyWorkflowPrompt": "آیا می‌خواهید با یک قالب شروع کنید؟",
+    "emptyWorkflowTitle": "این ورک‌فلو هیچ node ندارد",
     "label": "سازنده اپلیکیشن",
+    "loadTemplate": "بارگذاری قالب",
     "nodeGraph": "گراف node",
     "nodeGraphDescription": "به طور پیش‌فرض به صورت گراف node باز می‌شود",
     "select": "انتخاب",
     "selectDescription": "انتخاب ورودی/خروجی‌ها",
-    "switchToSelect": "رفتن به انتخاب"
+    "switchToSelect": "رفتن به انتخاب",
+    "viewApp": "مشاهده اپلیکیشن"
   },
   "clipboard": {
     "errorMessage": "کپی به کلیپ‌بورد ناموفق بود",
@@ -1328,7 +1339,9 @@
   "linearMode": {
     "appModeToolbar": {
       "appBuilder": "سازنده اپلیکیشن",
-      "apps": "اپلیکیشن‌ها"
+      "apps": "اپلیکیشن‌ها",
+      "appsEmptyMessage": "اپلیکیشن‌های ذخیره‌شده اینجا نمایش داده می‌شوند.\nبرای ساخت اولین اپلیکیشن خود، روی دکمه زیر کلیک کنید.",
+      "enterAppMode": "ورود به حالت اپلیکیشن"
     },
     "arrange": {
       "atLeastOne": "یک",
@@ -1353,7 +1366,8 @@
       "outputsExample": "مثال‌ها: «ذخیره تصویر» یا «ذخیره ویدیو»",
       "promptAddInputs": "برای افزودن پارامترها به عنوان ورودی، روی پارامترهای گره کلیک کنید",
       "promptAddOutputs": "برای افزودن خروجی، روی گره‌های خروجی کلیک کنید. این‌ها نتایج تولیدشده خواهند بود.",
-      "title": "حالت ساخت اپلیکیشن"
+      "title": "حالت ساخت اپلیکیشن",
+      "unknownWidget": "ویجت قابل مشاهده نیست"
     },
     "downloadAll": "دانلود همه",
     "dragAndDropImage": "تصویر را بکشید و رها کنید",
@@ -1894,7 +1908,8 @@
     "Workflows": "Workflowها",
     "Zoom In": "بزرگ‌نمایی",
     "Zoom Out": "کوچک‌نمایی",
-    "Zoom to fit": "بزرگ‌نمایی برای تطبیق"
+    "Zoom to fit": "بزرگ‌نمایی برای تطبیق",
+    "linearMode_appModeToolbar_apps": "linearMode.appModeToolbar.apps"
   },
   "minimap": {
     "nodeColors": "رنگ‌های نود",

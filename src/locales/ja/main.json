@@ -340,19 +340,30 @@
     "appDescription": "デフォルトでアプリとして開きます",
     "arrange": "プレビュー",
     "arrangeDescription": "アプリのレイアウトを確認",
+    "backToWorkflow": "ワークフローに戻る",
     "connectOutput": "出力を接続",
     "connectOutputBody1": "アプリを保存するには、少なくとも1つの出力を接続する必要があります。",
     "connectOutputBody2": "「選択」ステップに切り替えて、出力ノードをクリックしてここに追加してください。",
+    "defaultModeAppliedAppBody": "このワークフローは今後デフォルトでアプリモードで開きます。",
+    "defaultModeAppliedAppPrompt": "今すぐ表示しますか？",
+    "defaultModeAppliedGraphBody": "このワークフローは今後デフォルトでノードグラフとして開きます。",
+    "defaultModeAppliedGraphPrompt": "アプリを引き続き表示しますか？",
+    "defaultModeAppliedTitle": "正常に設定されました",
     "defaultView": "デフォルトビューを設定",
     "defaultViewDescription": "開き方を選択してください",
     "defaultViewLabel": "デフォルトでは、このワークフローは次のように開きます：",
     "defaultViewTitle": "このワークフローのデフォルトビューを設定",
+    "emptyWorkflowExplanation": "ワークフローが空です。アプリを作成するにはまずノードが必要です。",
+    "emptyWorkflowPrompt": "テンプレートから始めますか？",
+    "emptyWorkflowTitle": "このワークフローにはノードがありません",
     "label": "アプリビルダー",
+    "loadTemplate": "テンプレートを読み込む",
     "nodeGraph": "ノードグラフ",
     "nodeGraphDescription": "デフォルトでノードグラフとして開きます",
     "select": "選択",
     "selectDescription": "入力／出力を選択",
-    "switchToSelect": "選択に切り替え"
+    "switchToSelect": "選択に切り替え",
+    "viewApp": "アプリを表示"
   },
   "clipboard": {
     "errorMessage": "クリップボードへのコピーに失敗しました",
@@ -1328,7 +1339,9 @@
   "linearMode": {
     "appModeToolbar": {
       "appBuilder": "アプリビルダー",
-      "apps": "アプリ"
+      "apps": "アプリ",
+      "appsEmptyMessage": "保存されたアプリはここに表示されます。\n下をクリックして最初のアプリを作成しましょう。",
+      "enterAppMode": "アプリモードに入る"
     },
     "arrange": {
       "atLeastOne": "少なくとも1つ",
@@ -1353,7 +1366,8 @@
       "outputsExample": "例：「画像を保存」「動画を保存」",
       "promptAddInputs": "ノードのパラメータをクリックして、ここに入力として追加してください",
       "promptAddOutputs": "出力ノードをクリックしてここに追加してください。これが生成される結果となります。",
-      "title": "アプリビルダーモード"
+      "title": "アプリビルダーモード",
+      "unknownWidget": "ウィジェットが表示されていません"
     },
     "downloadAll": "すべてダウンロード",
     "dragAndDropImage": "画像をドラッグ＆ドロップ",
@@ -1894,7 +1908,8 @@
     "Workflows": "ワークフロー",
     "Zoom In": "ズームイン",
     "Zoom Out": "ズームアウト",
-    "Zoom to fit": "全体表示にズーム"
+    "Zoom to fit": "全体表示にズーム",
+    "linearMode_appModeToolbar_apps": "linearMode.appModeToolbar.apps"
   },
   "minimap": {
     "nodeColors": "ノードの色",

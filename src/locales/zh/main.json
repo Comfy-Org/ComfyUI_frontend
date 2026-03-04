@@ -340,19 +340,30 @@
     "appDescription": "默认以应用方式打开",
     "arrange": "预览",
     "arrangeDescription": "查看应用布局",
+    "backToWorkflow": "返回工作流",
     "connectOutput": "连接输出",
     "connectOutputBody1": "您的应用需要至少连接一个输出，才能保存。",
     "connectOutputBody2": "切换到“选择”步骤，点击输出节点将其添加到此处。",
+    "defaultModeAppliedAppBody": "此工作流将从现在起默认以应用模式打开。",
+    "defaultModeAppliedAppPrompt": "你想现在查看吗？",
+    "defaultModeAppliedGraphBody": "此工作流将从现在起默认以节点图模式打开。",
+    "defaultModeAppliedGraphPrompt": "你还想查看应用吗？",
+    "defaultModeAppliedTitle": "设置成功",
     "defaultView": "设置默认视图",
     "defaultViewDescription": "选择打开方式",
     "defaultViewLabel": "默认情况下，此工作流将以以下方式打开：",
     "defaultViewTitle": "为此工作流设置默认视图",
+    "emptyWorkflowExplanation": "你的工作流为空。你需要先添加一些节点来开始构建应用。",
+    "emptyWorkflowPrompt": "要使用模板开始吗？",
+    "emptyWorkflowTitle": "此工作流没有节点",
     "label": "应用构建器",
+    "loadTemplate": "加载模板",
     "nodeGraph": "节点图",
     "nodeGraphDescription": "默认以节点图方式打开",
     "select": "选择",
     "selectDescription": "选择输入/输出",
-    "switchToSelect": "切换到选择"
+    "switchToSelect": "切换到选择",
+    "viewApp": "查看应用"
   },
   "clipboard": {
     "errorMessage": "复制到剪贴板失败",
@@ -1328,7 +1339,9 @@
   "linearMode": {
     "appModeToolbar": {
       "appBuilder": "应用构建器",
-      "apps": "应用"
+      "apps": "应用",
+      "appsEmptyMessage": "已保存的应用会显示在这里。\n点击下方开始构建你的第一个应用。",
+      "enterAppMode": "进入应用模式"
     },
     "arrange": {
       "atLeastOne": "至少一个",
@@ -1353,7 +1366,8 @@
       "outputsExample": "示例：“保存图像”或“保存视频”",
       "promptAddInputs": "点击节点参数，将其添加为输入项",
       "promptAddOutputs": "点击输出节点，将其添加到此处。这些将作为生成结果。",
-      "title": "应用构建模式"
+      "title": "应用构建模式",
+      "unknownWidget": "组件不可见"
     },
     "downloadAll": "全部下载",
     "dragAndDropImage": "拖拽图片到此处",
@@ -1894,7 +1908,8 @@
     "Workflows": "工作流",
     "Zoom In": "放大画面",
     "Zoom Out": "缩小画面",
-    "Zoom to fit": "缩放以适应"
+    "Zoom to fit": "缩放以适应",
+    "linearMode_appModeToolbar_apps": "linearMode.appModeToolbar.apps"
   },
   "minimap": {
     "nodeColors": "节点颜色",

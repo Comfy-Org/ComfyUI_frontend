@@ -340,19 +340,30 @@
     "appDescription": "預設以應用模式開啟",
     "arrange": "預覽",
     "arrangeDescription": "檢視應用版面",
+    "backToWorkflow": "返回工作流程",
     "connectOutput": "連接輸出",
     "connectOutputBody1": "您的應用必須至少連接一個輸出才能儲存。",
     "connectOutputBody2": "切換到「選擇」步驟，點擊輸出節點以新增到這裡。",
+    "defaultModeAppliedAppBody": "此工作流程將從現在起預設以應用程式模式開啟。",
+    "defaultModeAppliedAppPrompt": "您想現在查看嗎？",
+    "defaultModeAppliedGraphBody": "此工作流程將從現在起預設以節點圖形模式開啟。",
+    "defaultModeAppliedGraphPrompt": "您還想查看應用程式嗎？",
+    "defaultModeAppliedTitle": "設定成功",
     "defaultView": "設定預設檢視",
     "defaultViewDescription": "選擇開啟方式",
     "defaultViewLabel": "預設情況下，此工作流程將以以下方式開啟：",
     "defaultViewTitle": "設定此工作流程的預設檢視",
+    "emptyWorkflowExplanation": "您的工作流程是空的。您需要先新增一些節點才能開始建立應用程式。",
+    "emptyWorkflowPrompt": "您想從範本開始嗎？",
+    "emptyWorkflowTitle": "此工作流程沒有節點",
     "label": "應用建立器",
+    "loadTemplate": "載入範本",
     "nodeGraph": "節點圖",
     "nodeGraphDescription": "預設以節點圖開啟",
     "select": "選擇",
     "selectDescription": "選擇輸入／輸出",
-    "switchToSelect": "切換到選擇"
+    "switchToSelect": "切換到選擇",
+    "viewApp": "查看應用程式"
   },
   "clipboard": {
     "errorMessage": "複製到剪貼簿失敗",
@@ -1328,7 +1339,9 @@
   "linearMode": {
     "appModeToolbar": {
       "appBuilder": "應用建立器",
-      "apps": "應用"
+      "apps": "應用",
+      "appsEmptyMessage": "已儲存的應用程式將顯示在這裡。\n點擊下方開始建立您的第一個應用程式。",
+      "enterAppMode": "進入應用程式模式"
     },
     "arrange": {
       "atLeastOne": "至少一個",
@@ -1353,7 +1366,8 @@
       "outputsExample": "例如：「儲存圖像」或「儲存影片」",
       "promptAddInputs": "點擊節點參數，將其新增為輸入",
       "promptAddOutputs": "點擊輸出節點，將其新增於此。這些將是產生的結果。",
-      "title": "應用程式建構模式"
+      "title": "應用程式建構模式",
+      "unknownWidget": "元件不可見"
     },
     "downloadAll": "全部下載",
     "dragAndDropImage": "拖曳圖片到此",
@@ -1894,7 +1908,8 @@
     "Workflows": "工作流程",
     "Zoom In": "放大",
     "Zoom Out": "縮小",
-    "Zoom to fit": "縮放至適合大小"
+    "Zoom to fit": "縮放至適合大小",
+    "linearMode_appModeToolbar_apps": "linearMode.appModeToolbar.apps"
   },
   "minimap": {
     "nodeColors": "節點顏色",

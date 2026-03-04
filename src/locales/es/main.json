@@ -340,19 +340,30 @@
     "appDescription": "Se abre como una aplicación por defecto",
     "arrange": "Vista previa",
     "arrangeDescription": "Revisar el diseño de la aplicación",
+    "backToWorkflow": "Volver al flujo de trabajo",
     "connectOutput": "Conectar una salida",
     "connectOutputBody1": "Tu aplicación necesita al menos una salida conectada antes de poder guardarse.",
     "connectOutputBody2": "Cambia al paso 'Seleccionar' y haz clic en los nodos de salida para agregarlos aquí.",
+    "defaultModeAppliedAppBody": "Este flujo de trabajo se abrirá en Modo de Aplicación por defecto a partir de ahora.",
+    "defaultModeAppliedAppPrompt": "¿Te gustaría verlo ahora?",
+    "defaultModeAppliedGraphBody": "Este flujo de trabajo se abrirá como un grafo de nodos por defecto a partir de ahora.",
+    "defaultModeAppliedGraphPrompt": "¿Aún quieres ver la aplicación?",
+    "defaultModeAppliedTitle": "Configurado correctamente",
     "defaultView": "Establecer vista predeterminada",
     "defaultViewDescription": "Elige cómo se abre esto",
     "defaultViewLabel": "Por defecto, este flujo de trabajo se abrirá como:",
     "defaultViewTitle": "Establecer la vista predeterminada para este flujo de trabajo",
+    "emptyWorkflowExplanation": "Tu flujo de trabajo está vacío. Necesitas algunos nodos para empezar a crear una aplicación.",
+    "emptyWorkflowPrompt": "¿Quieres empezar con una plantilla?",
+    "emptyWorkflowTitle": "Este flujo de trabajo no tiene nodos",
     "label": "Constructor de aplicaciones",
+    "loadTemplate": "Cargar una plantilla",
     "nodeGraph": "Grafo de nodos",
     "nodeGraphDescription": "Se abre como grafo de nodos por defecto",
     "select": "Seleccionar",
     "selectDescription": "Elegir entradas/salidas",
-    "switchToSelect": "Cambiar a Seleccionar"
+    "switchToSelect": "Cambiar a Seleccionar",
+    "viewApp": "Ver aplicación"
   },
   "clipboard": {
     "errorMessage": "Error al copiar al portapapeles",
@@ -1328,7 +1339,9 @@
   "linearMode": {
     "appModeToolbar": {
       "appBuilder": "Constructor de aplicaciones",
-      "apps": "Aplicaciones"
+      "apps": "Aplicaciones",
+      "appsEmptyMessage": "Las aplicaciones guardadas aparecerán aquí.\nHaz clic abajo para crear tu primera aplicación.",
+      "enterAppMode": "Entrar en modo de aplicación"
     },
     "arrange": {
       "atLeastOne": "al menos uno",
@@ -1353,7 +1366,8 @@
       "outputsExample": "Ejemplos: “Guardar imagen” o “Guardar video”",
       "promptAddInputs": "Haz clic en los parámetros del nodo para agregarlos aquí como entradas",
       "promptAddOutputs": "Haz clic en los nodos de salida para agregarlos aquí. Estos serán los resultados generados.",
-      "title": "Modo constructor de aplicaciones"
+      "title": "Modo constructor de aplicaciones",
+      "unknownWidget": "Widget no visible"
     },
     "downloadAll": "Descargar todo",
     "dragAndDropImage": "Arrastra y suelta una imagen",
@@ -1894,7 +1908,8 @@
     "Workflows": "Flujos de trabajo",
     "Zoom In": "Acercar",
     "Zoom Out": "Alejar",
-    "Zoom to fit": "Ajustar al tamaño"
+    "Zoom to fit": "Ajustar al tamaño",
+    "linearMode_appModeToolbar_apps": "linearMode.appModeToolbar.apps"
   },
   "minimap": {
     "nodeColors": "Colores de nodos",

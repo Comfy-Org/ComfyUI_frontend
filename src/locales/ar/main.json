@@ -340,19 +340,30 @@
     "appDescription": "يفتح كتطبيق بشكل افتراضي",
     "arrange": "معاينة",
     "arrangeDescription": "مراجعة تخطيط التطبيق",
+    "backToWorkflow": "العودة إلى سير العمل",
     "connectOutput": "توصيل مخرج",
     "connectOutputBody1": "يجب توصيل مخرج واحد على الأقل قبل حفظ التطبيق.",
     "connectOutputBody2": "انتقل إلى خطوة 'تحديد' وانقر على عقد المخرجات لإضافتها هنا.",
+    "defaultModeAppliedAppBody": "سيفتح سير العمل هذا في وضع التطبيق بشكل افتراضي من الآن فصاعدًا.",
+    "defaultModeAppliedAppPrompt": "هل ترغب في عرضه الآن؟",
+    "defaultModeAppliedGraphBody": "سيفتح سير العمل هذا كـمخطط عقد بشكل افتراضي من الآن فصاعدًا.",
+    "defaultModeAppliedGraphPrompt": "هل ترغب في عرض التطبيق مع ذلك؟",
+    "defaultModeAppliedTitle": "تم التعيين بنجاح",
     "defaultView": "تعيين العرض الافتراضي",
     "defaultViewDescription": "اختر كيفية الفتح",
     "defaultViewLabel": "افتراضيًا، سيتم فتح سير العمل هذا كـ:",
     "defaultViewTitle": "تعيين العرض الافتراضي لهذا سير العمل",
+    "emptyWorkflowExplanation": "سير العمل الخاص بك فارغ. تحتاج إلى بعض العقد أولاً للبدء في بناء تطبيق.",
+    "emptyWorkflowPrompt": "هل ترغب في البدء بقالب؟",
+    "emptyWorkflowTitle": "لا يحتوي سير العمل هذا على أي عقد",
     "label": "منشئ التطبيقات",
+    "loadTemplate": "تحميل قالب",
     "nodeGraph": "رسم العقد",
     "nodeGraphDescription": "يفتح كرسم عقد بشكل افتراضي",
     "select": "تحديد",
     "selectDescription": "اختيار المدخلات/المخرجات",
-    "switchToSelect": "الانتقال إلى التحديد"
+    "switchToSelect": "الانتقال إلى التحديد",
+    "viewApp": "عرض التطبيق"
   },
   "clipboard": {
     "errorMessage": "فشل النسخ إلى الحافظة",
@@ -1328,7 +1339,9 @@
   "linearMode": {
     "appModeToolbar": {
       "appBuilder": "منشئ التطبيقات",
-      "apps": "التطبيقات"
+      "apps": "التطبيقات",
+      "appsEmptyMessage": "سيتم عرض التطبيقات المحفوظة هنا.\nانقر أدناه لبناء تطبيقك الأول.",
+      "enterAppMode": "الدخول إلى وضع التطبيق"
     },
     "arrange": {
       "atLeastOne": "عقدة واحدة على الأقل",
@@ -1353,7 +1366,8 @@
       "outputsExample": "أمثلة: \"حفظ صورة\" أو \"حفظ فيديو\"",
       "promptAddInputs": "انقر على معلمات العقدة لإضافتها هنا كمدخلات",
       "promptAddOutputs": "انقر على عقد الإخراج لإضافتها هنا. هذه ستكون النتائج المُولدة.",
-      "title": "وضع بناء التطبيق"
+      "title": "وضع بناء التطبيق",
+      "unknownWidget": "عنصر الواجهة غير مرئي"
     },
     "downloadAll": "تنزيل الكل",
     "dragAndDropImage": "اسحب وأسقط صورة",
@@ -1894,7 +1908,8 @@
     "Workflows": "سير العمل",
     "Zoom In": "تكبير",
     "Zoom Out": "تصغير",
-    "Zoom to fit": "تكبير لتناسب"
+    "Zoom to fit": "تكبير لتناسب",
+    "linearMode_appModeToolbar_apps": "linearMode.appModeToolbar.apps"
   },
   "minimap": {
     "nodeColors": "ألوان العقد",
