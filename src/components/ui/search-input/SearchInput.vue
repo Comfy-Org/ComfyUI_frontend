@@ -126,7 +126,6 @@ function clearSearch() {
 watchDebounced(
   modelValue,
   (value: string) => {
-    if (value === '') return
     emit('search', value)
   },
   { debounce: debounceTime }
