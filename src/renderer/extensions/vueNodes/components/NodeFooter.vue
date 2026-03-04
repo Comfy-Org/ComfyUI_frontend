@@ -138,15 +138,16 @@ defineEmits<{
 
 const footerRadiusClass = computed(() => {
   const isExpanded = props.hasAnyError
-  const radius = isExpanded ? '[20px]' : '2xl'
 
   switch (props.shape) {
     case RenderShape.BOX:
       return 'rounded-none'
     case RenderShape.CARD:
-      return `rounded-bl-none rounded-br-${radius}`
+      return isExpanded
+        ? 'rounded-bl-none rounded-br-[20px]'
+        : 'rounded-bl-none rounded-br-2xl'
     default:
-      return `rounded-b-${radius}`
+      return isExpanded ? 'rounded-b-[20px]' : 'rounded-b-2xl'
   }
 })
 

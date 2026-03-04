@@ -39,12 +39,13 @@
       v-if="isSelected || executing"
       :class="
         cn(
-          'absolute -inset-[3px] pointer-events-none border-3 z-60 outline-none',
-          shapeClass,
+          'absolute pointer-events-none border-3 z-60 outline-none',
+          selectionShapeClass,
+          hasAnyError ? '-inset-[7px]' : '-inset-[3px]',
           isSelected
             ? 'border-node-component-outline'
             : 'border-node-stroke-executing',
-          hasFooter && 'bottom-[-34px]'
+          hasFooter && (hasAnyError ? '-bottom-[35px]' : '-bottom-[34px]')
         )
       "
     />
@@ -581,6 +582,20 @@ const rootBorderShapeClass = computed(() => {
         : 'rounded-tl-2xl rounded-br-2xl rounded-tr-none rounded-bl-none'
     default:
       return isExpanded ? 'rounded-[20px]' : 'rounded-2xl'
+  }
+})
+
+const selectionShapeClass = computed(() => {
+  const isExpanded = hasAnyError.value
+  switch (nodeData.shape) {
+    case RenderShape.BOX:
+      return 'rounded-none'
+    case RenderShape.CARD:
+      return isExpanded
+        ? 'rounded-tl-[23px] rounded-br-[23px] rounded-tr-none rounded-bl-none'
+        : 'rounded-tl-[19px] rounded-br-[19px] rounded-tr-none rounded-bl-none'
+    default:
+      return isExpanded ? 'rounded-[23px]' : 'rounded-[19px]'
   }
 })
 
