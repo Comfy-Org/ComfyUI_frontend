@@ -47,11 +47,7 @@
     </template>
 
     <template v-else-if="sharedWorkflow">
-      <main
-        :class="
-          cn('flex gap-8 px-8 pt-4 pb-6', hasAssets ? 'flex-row' : 'flex-col')
-        "
-      >
+      <main :class="cn('flex gap-8 px-8 pt-4 pb-6', !hasAssets && 'flex-col')">
         <div class="flex min-w-0 flex-1 flex-col gap-12 py-4">
           <h2 class="m-0 text-2xl font-semibold text-base-foreground">
             {{ workflowName }}
@@ -63,9 +59,7 @@
 
         <div v-if="hasAssets" class="flex w-84 shrink-0 flex-col gap-2 py-4">
           <div class="flex gap-2 items-start text-warning-background">
-            <i
-              class="icon-[lucide--circle-alert] shrink-0 size-4 my-auto h-[1lh]"
-            />
+            <i class="icon-[lucide--circle-alert] shrink-0 w-4 h-lh" />
             <div class="m-0 p-0 text-sm">
               {{ $t('openSharedWorkflow.nonPublicAssetsWarningLine1') }}
               <br />

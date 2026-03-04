@@ -5,7 +5,7 @@
       <img
         src="/assets/images/comfyhub/hub_profile_intro_hero.png"
         alt=""
-        class="size-full object-cover w-3/2 -translate-x-1/4"
+        class="h-full w-3/2 object-cover -translate-x-1/4"
       />
       <div
         class="absolute inset-0 bg-gradient-to-b from-transparent from-[53%] to-base-background to-[76%]"

@@ -35,7 +35,7 @@
         type="button"
         :class="
           cn(
-            'relative h-[100px] cursor-pointer overflow-hidden rounded border-none p-0',
+            'relative h-25 cursor-pointer overflow-hidden rounded border-none p-0',
             isSelected(image.id) ? 'ring-2 ring-ring' : 'ring-0'
           )
         "

@@ -21,7 +21,7 @@
           {{ $t('comfyHubProfile.chooseProfilePicture') }}
         </span>
         <label
-          class="flex size-[51px] cursor-pointer items-center justify-center overflow-hidden rounded-full bg-gradient-to-b from-green-600/50 to-green-900"
+          class="flex size-13 cursor-pointer items-center justify-center overflow-hidden rounded-full bg-gradient-to-b from-green-600/50 to-green-900"
         >
           <input
             type="file"
@@ -86,7 +86,7 @@
             id="profile-description"
             v-model="description"
             :placeholder="$t('comfyHubProfile.descriptionPlaceholder')"
-            class="h-[98px] resize-none rounded-lg border-none bg-secondary-background px-4 py-4 text-sm shadow-none"
+            class="h-24 resize-none rounded-lg border-none bg-secondary-background p-4 text-sm shadow-none"
           />
         </div>
       </div>

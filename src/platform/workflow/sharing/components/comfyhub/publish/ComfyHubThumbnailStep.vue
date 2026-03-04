@@ -23,7 +23,7 @@
       </ToggleGroup>
     </div>
 
-    <div class="flex min-h-0 flex-1 shrink flex-col gap-2">
+    <div class="flex min-h-0 flex-1 flex-col gap-2">
       <div class="flex items-center justify-between">
         <span class="text-sm text-base-foreground">
           {{ uploadSectionLabel }}
