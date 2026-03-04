@@ -3037,11 +3037,12 @@
     "author": "Author:",
     "copyDescription": "Opening the workflow will create a new copy in your workspace",
     "nonPublicAssetsWarningLine1": "This workflow comes with non-public assets.",
-    "nonPublicAssetsWarningLine2": "These will be added to your library when you open the workflow",
-    "copyAssetsAndOpen": "Copy assets & open workflow",
+    "nonPublicAssetsWarningLine2": "These will be imported to your library when you open the workflow",
+    "copyAssetsAndOpen": "Import assets & open workflow",
     "openWorkflow": "Open workflow",
     "openWithoutImporting": "Open without importing",
-    "importFailed": "Failed to import workflow assets"
+    "importFailed": "Failed to import workflow assets",
+    "loadError": "Could not load this shared workflow. Please try again later."
   },
   "comfyHubPublish": {
     "title": "Publish to ComfyHub",

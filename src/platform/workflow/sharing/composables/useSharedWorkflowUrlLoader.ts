@@ -2,24 +2,25 @@ import { useToast } from 'primevue/usetoast'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 
-import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import OpenSharedWorkflowDialogContent from '@/platform/workflow/sharing/components/OpenSharedWorkflowDialogContent.vue'
+import type { SharedWorkflowPayload } from '@/platform/workflow/sharing/types/shareTypes'
 import {
   clearPreservedQuery,
   hydratePreservedQuery,
   mergePreservedQueryIntoQuery
 } from '@/platform/navigation/preservedQueryManager'
 import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQueryNamespaces'
-import type { AssetInfo } from '@/schemas/apiSchema'
-import {
-  SharedWorkflowLoadError,
-  useWorkflowShareService
-} from '@/platform/workflow/sharing/services/workflowShareService'
+import { useWorkflowShareService } from '@/platform/workflow/sharing/services/workflowShareService'
 import { app } from '@/scripts/app'
 import { useDialogService } from '@/services/dialogService'
 import { useDialogStore } from '@/stores/dialogStore'
 
 type SharedWorkflowUrlLoadStatus = 'not-present' | 'loaded' | 'failed'
+
+type DialogResult =
+  | { action: 'copy-and-open'; payload: SharedWorkflowPayload }
+  | { action: 'open-only'; payload: SharedWorkflowPayload }
+  | { action: 'cancel' }
 
 export function useSharedWorkflowUrlLoader() {
   const route = useRoute()
@@ -55,41 +56,32 @@ export function useSharedWorkflowUrlLoader() {
     void router.replace({ query: newQuery })
   }
 
-  function shouldRetainShareQuery(error: unknown): boolean {
-    if (error instanceof SharedWorkflowLoadError) {
-      return error.isRetryable
-    }
-    return true
-  }
-
   function showOpenSharedWorkflowDialog(
-    workflowName: string,
-    nonOwnedAssets: AssetInfo[]
-  ): Promise<'copy-and-open' | 'open-only' | 'cancel'> {
+    shareId: string
+  ): Promise<DialogResult> {
     const dialogKey = 'open-shared-workflow'
 
-    return new Promise<'copy-and-open' | 'open-only' | 'cancel'>((resolve) => {
+    return new Promise<DialogResult>((resolve) => {
       dialogService.showLayoutDialog({
         key: dialogKey,
         component: OpenSharedWorkflowDialogContent,
         props: {
-          workflowName,
-          items: nonOwnedAssets,
-          onConfirm: () => {
-            resolve('copy-and-open')
+          shareId,
+          onConfirm: (payload: SharedWorkflowPayload) => {
+            resolve({ action: 'copy-and-open', payload })
             dialogStore.closeDialog({ key: dialogKey })
           },
-          onOpenWithoutImporting: () => {
-            resolve('open-only')
+          onOpenWithoutImporting: (payload: SharedWorkflowPayload) => {
+            resolve({ action: 'open-only', payload })
             dialogStore.closeDialog({ key: dialogKey })
           },
           onCancel: () => {
-            resolve('cancel')
+            resolve({ action: 'cancel' })
             dialogStore.closeDialog({ key: dialogKey })
           }
         },
         dialogComponentProps: {
-          onClose: () => resolve('cancel'),
+          onClose: () => resolve({ action: 'cancel' }),
           pt: {
             root: {
               class: 'rounded-2xl overflow-hidden w-full sm:w-176 max-w-full'
@@ -100,20 +92,7 @@ export function useSharedWorkflowUrlLoader() {
     })
   }
 
-  function extractWorkflowName(
-    name: string,
-    workflowJson: ComfyWorkflowJSON
-  ): string {
-    if (name) return name
-    const jsonName = (workflowJson as Record<string, unknown>).name
-    if (typeof jsonName === 'string' && jsonName) {
-      return jsonName
-    }
-    return t('openSharedWorkflow.dialogTitle')
-  }
-
   async function loadSharedWorkflowFromUrl(): Promise<SharedWorkflowUrlLoadStatus> {
-    let shouldCleanupShareQuery = false
     const query = await ensureShareQueryFromIntent()
     const shareParam = query.share
 
@@ -136,73 +115,49 @@ export function useSharedWorkflowUrlLoader() {
       return 'failed'
     }
 
+    const result = await showOpenSharedWorkflowDialog(shareParam)
+
+    if (result.action === 'cancel') {
+      cleanupUrlParams()
+      clearPreservedQuery(SHARE_NAMESPACE)
+      return 'loaded'
+    }
+
+    const { payload } = result
+    const workflowName = payload.name || t('openSharedWorkflow.dialogTitle')
+    const nonOwnedAssets = payload.assets.filter((a) => !a.in_library)
+
     try {
-      const sharedWorkflow =
-        await workflowShareService.getSharedWorkflow(shareParam)
+      await app.loadGraphData(payload.workflowJson, true, true, workflowName)
 
-      const workflowName = extractWorkflowName(
-        sharedWorkflow.name,
-        sharedWorkflow.workflowJson
-      )
-      const nonOwnedAssets = sharedWorkflow.assets.filter((a) => !a.in_library)
-
-      const result = await showOpenSharedWorkflowDialog(
-        workflowName,
-        nonOwnedAssets
-      )
-
-      if (result !== 'cancel') {
-        await app.loadGraphData(
-          sharedWorkflow.workflowJson,
-          true,
-          true,
-          workflowName
-        )
-
-        if (result === 'copy-and-open' && nonOwnedAssets.length > 0) {
-          try {
-            await workflowShareService.importPublishedAssets(
-              nonOwnedAssets.map((a) => a.id)
-            )
-          } catch (importError) {
-            console.error(
-              '[useSharedWorkflowUrlLoader] Failed to import assets:',
-              importError
-            )
-            toast.add({
-              severity: 'error',
-              summary: t('g.error'),
-              detail: t('openSharedWorkflow.importFailed'),
-              life: 3000
-            })
-          }
+      if (result.action === 'copy-and-open' && nonOwnedAssets.length > 0) {
+        try {
+          await workflowShareService.importPublishedAssets(
+            nonOwnedAssets.map((a) => a.id)
+          )
+        } catch (importError) {
+          console.error(
+            '[useSharedWorkflowUrlLoader] Failed to import assets:',
+            importError
+          )
+          toast.add({
+            severity: 'error',
+            summary: t('g.error'),
+            detail: t('openSharedWorkflow.importFailed'),
+            life: 3000
+          })
         }
       }
-
-      shouldCleanupShareQuery = true
-      return 'loaded'
     } catch (error) {
       console.error(
-        '[useSharedWorkflowUrlLoader] Failed to load shared workflow from URL:',
+        '[useSharedWorkflowUrlLoader] Failed to load workflow graph:',
         error
       )
-      toast.add({
-        severity: 'error',
-        summary: t('g.error'),
-        detail:
-          error instanceof Error
-            ? error.message
-            : t('shareWorkflow.loadFailed'),
-        life: 3000
-      })
-      shouldCleanupShareQuery = !shouldRetainShareQuery(error)
-      return 'failed'
-    } finally {
-      if (shouldCleanupShareQuery) {
-        cleanupUrlParams()
-        clearPreservedQuery(SHARE_NAMESPACE)
-      }
     }
+
+    cleanupUrlParams()
+    clearPreservedQuery(SHARE_NAMESPACE)
+    return 'loaded'
   }
 
   return {
