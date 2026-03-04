@@ -22,6 +22,7 @@ import {
   createBounds
 } from '@/lib/litegraph/src/litegraph'
 import type {
+  CreateNodeOptions,
   GraphAddOptions,
   IContextMenuValue,
   Point,
@@ -885,7 +886,7 @@ export const useLitegraphService = () => {
 
   function addNodeOnGraph(
     nodeDef: ComfyNodeDefV1 | ComfyNodeDefV2,
-    options: Record<string, unknown> & { pos?: Point } = {},
+    options: CreateNodeOptions = {},
     addOptions?: GraphAddOptions
   ): LGraphNode | null {
     options.pos ??= getCanvasCenter()

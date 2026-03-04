@@ -91,6 +91,7 @@ export { RecursionError } from './infrastructure/RecursionError'
 export type {
   CanvasColour,
   ColorOption,
+  CreateNodeOptions,
   IContextMenuOptions,
   IContextMenuValue,
   INodeInputSlot,
