@@ -297,7 +297,7 @@ useEventListener(document.body, 'keydown', (e: KeyboardEvent) => {
           "
         >
           <OutputHistoryActiveQueueItem
-            v-if="queueCount > 0"
+            v-if="queueCount > 1"
             class="mr-3"
             :queue-count="queueCount"
           />
